@@ -3,7 +3,7 @@
 - Version: 4.0.140
 - Upstream path: `.reference/vercel-ai-sdk-ai-6.0.195/packages/google-vertex`
 - Target Kotlin module: `:aisdk-provider-google-vertex`
-- Current parity status: missing: no Kotlin module or parity mapping exists yet
+- Current parity status: in-progress: createVertex/vertex, createVertexAnthropic/vertexAnthropic, createVertexMaas/vertexMaas, createGoogleVertexXai/googleVertexXai, GoogleVertexProviderSettings and option aliases, Vertex publisher base URL construction, Bearer auth/header behavior, Vertex Gemini language/embedding/image/video routing through the Google core adapter, Vertex hosted tool descriptors, and Vertex MaAS OpenAI-compatible chat routing are represented as Kotlin facades folded into the root module; native Vertex Anthropic and xAI adapters plus google-auth-library credential loading remain open; VERSION is exposed as GOOGLE_VERTEX_VERSION until package modules are split
 
 ## Entrypoints
 
