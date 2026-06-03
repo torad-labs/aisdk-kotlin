@@ -3,7 +3,7 @@
 - Version: 1.0.51
 - Upstream path: `.reference/vercel-ai-sdk-ai-6.0.195/packages/baseten`
 - Target Kotlin module: `:aisdk-provider-baseten`
-- Current parity status: missing: no Kotlin module or parity mapping exists yet
+- Current parity status: ported: createBaseten/baseten, BasetenProviderSettings, BasetenChatModelId, BasetenEmbeddingModelOptions, BasetenErrorData, default Model API chat routing, custom /sync/v1 chat routing, /predict chat rejection, embedding modelURL validation, /sync to /sync/v1 embedding normalization, and Baseten auth/user-agent behavior are represented as a Kotlin OpenAI-compatible facade folded into the root module; VERSION is exposed as BASETEN_VERSION until package modules are split
 
 ## Entrypoints
 

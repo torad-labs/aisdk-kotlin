@@ -41,6 +41,7 @@ const val MOONSHOTAI_VERSION: String = "2.0.23"
 const val PERPLEXITY_VERSION: String = "3.0.33"
 const val TOGETHERAI_VERSION: String = "2.0.53"
 const val VERCEL_VERSION: String = "2.0.50"
+const val BASETEN_VERSION: String = "1.0.51"
 
 @Serializable
 data class DeepSeekProviderSettings(
@@ -351,6 +352,56 @@ fun createVercel(
 
 val vercel: VercelProvider = providerNotConfigured("Vercel", "vercel")
 
+typealias BasetenChatModelId = String
+typealias BasetenEmbeddingModelId = String
+
+@Serializable
+data class BasetenEmbeddingModelOptions(
+    val raw: Map<String, JsonElement> = emptyMap(),
+)
+
+@Serializable
+data class BasetenErrorData(
+    val error: String,
+)
+
+@Serializable
+data class BasetenProviderSettings(
+    val apiKey: String? = null,
+    val baseURL: String = "https://inference.baseten.co/v1",
+    val modelURL: String? = null,
+    val headers: Map<String, String> = emptyMap(),
+)
+
+interface BasetenProvider : Provider {
+    operator fun invoke(): LanguageModel = chatModel()
+    operator fun invoke(modelId: BasetenChatModelId): LanguageModel = chatModel(modelId)
+    fun chatModel(): LanguageModel
+    fun chatModel(modelId: BasetenChatModelId): LanguageModel
+    fun languageModel(): LanguageModel = chatModel()
+    override fun languageModel(modelId: String): LanguageModel = chatModel(modelId)
+    fun embeddingModel(): EmbeddingModel
+    override fun embeddingModel(modelId: String): EmbeddingModel
+    fun textEmbeddingModel(): EmbeddingModel = embeddingModel()
+    fun textEmbeddingModel(modelId: BasetenEmbeddingModelId): EmbeddingModel = embeddingModel(modelId)
+}
+
+fun createBaseten(
+    client: HttpClient,
+    settings: BasetenProviderSettings = BasetenProviderSettings(),
+): BasetenProvider = DefaultBasetenProvider(client, settings)
+
+val baseten: BasetenProvider = object : BasetenProvider {
+    override val providerId: String = "baseten"
+    override fun chatModel(): LanguageModel =
+        throw AiSdkException("Baseten provider is not configured. Use createBaseten(client, settings).")
+    override fun chatModel(modelId: String): LanguageModel = chatModel()
+    override fun embeddingModel(): EmbeddingModel =
+        throw AiSdkException("Baseten provider is not configured. Use createBaseten(client, settings).")
+    override fun embeddingModel(modelId: String): EmbeddingModel = embeddingModel()
+    override fun imageModel(modelId: String): ImageModel = throw NoSuchModelError(providerId, "imageModel", modelId)
+}
+
 private class DefaultDeepSeekProvider(
     client: HttpClient,
     private val settings: DeepSeekProviderSettings,
@@ -498,6 +549,44 @@ private class DefaultVercelProvider(
     override fun imageModel(modelId: String): ImageModel = throw NoSuchModelError(providerId, "imageModel", modelId)
 }
 
+private class DefaultBasetenProvider(
+    private val client: HttpClient,
+    private val settings: BasetenProviderSettings,
+) : BasetenProvider {
+    override val providerId: String = "baseten"
+
+    override fun chatModel(): LanguageModel = createChatModel(null)
+    override fun chatModel(modelId: String): LanguageModel = createChatModel(modelId)
+    override fun embeddingModel(): EmbeddingModel = createEmbeddingModel(null)
+    override fun embeddingModel(modelId: String): EmbeddingModel = createEmbeddingModel(modelId)
+    override fun imageModel(modelId: String): ImageModel = throw NoSuchModelError(providerId, "imageModel", modelId)
+
+    private fun createChatModel(modelId: String?): LanguageModel {
+        val customURL = settings.modelURL?.trimEnd('/')
+        val baseURL = when {
+            customURL?.contains("/sync/v1") == true -> customURL
+            customURL?.contains("/predict") == true -> throw AiSdkException("Not supported. You must use a /sync/v1 endpoint for chat models.")
+            else -> settings.baseURL.trimEnd('/')
+        }
+        val resolvedModelId = if (customURL?.contains("/sync/v1") == true) {
+            modelId ?: "placeholder"
+        } else {
+            modelId ?: "chat"
+        }
+        return createOpenAICompatible(client, settings.toCompatible("baseten", BASETEN_VERSION, baseURL)).chatModel(resolvedModelId)
+    }
+
+    private fun createEmbeddingModel(modelId: String?): EmbeddingModel {
+        val customURL = settings.modelURL?.trimEnd('/')
+            ?: throw AiSdkException("No model URL provided for embeddings. Please set modelURL option for embeddings.")
+        if (!customURL.contains("/sync")) {
+            throw AiSdkException("Not supported. You must use a /sync or /sync/v1 endpoint for embeddings.")
+        }
+        val baseURL = if (customURL.contains("/sync/v1")) customURL else "$customURL/v1"
+        return createOpenAICompatible(client, settings.toCompatible("baseten", BASETEN_VERSION, baseURL)).embeddingModel(modelId ?: "embeddings")
+    }
+}
+
 private fun DeepSeekProviderSettings.toCompatible(
     name: String,
     version: String,
@@ -557,6 +646,15 @@ private fun TogetherAIProviderSettings.toCompatible(
 private fun VercelProviderSettings.toCompatible(
     name: String,
     version: String,
+    includeUsage: Boolean = false,
+    supportsStructuredOutputs: Boolean = false,
+): OpenAICompatibleProviderSettings =
+    compatibleSettings(name, version, baseURL, apiKey, headers, includeUsage, supportsStructuredOutputs)
+
+private fun BasetenProviderSettings.toCompatible(
+    name: String,
+    version: String,
+    baseURL: String,
     includeUsage: Boolean = false,
     supportsStructuredOutputs: Boolean = false,
 ): OpenAICompatibleProviderSettings =
