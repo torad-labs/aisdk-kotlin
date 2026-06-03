@@ -7,6 +7,7 @@ data class GeneratedFile(
     val base64: String,
     val filename: String? = null,
     val providerMetadata: Map<String, JsonElement> = emptyMap(),
+    val url: String? = null,
 )
 
 typealias GeneratedAudioFile = GeneratedFile
@@ -372,6 +373,9 @@ data class VideoGenerationParams(
     val providerOptions: Map<String, JsonElement> = emptyMap(),
     val headers: Map<String, String> = emptyMap(),
     val abortSignal: AbortSignal = AbortSignalNever,
+    val seed: Int? = null,
+    val fps: Int? = null,
+    val resolution: String? = null,
 )
 
 data class VideoModelResult(
@@ -401,11 +405,27 @@ suspend fun generateVideo(
     providerOptions: Map<String, JsonElement> = emptyMap(),
     headers: Map<String, String> = emptyMap(),
     abortSignal: AbortSignal = AbortSignalNever,
+    seed: Int? = null,
+    fps: Int? = null,
+    resolution: String? = null,
 ): GenerateVideoResult {
     require(prompt.isNotBlank()) { "generateVideo: prompt must not be blank" }
     require(n > 0) { "generateVideo: n must be > 0" }
     val result = model.generate(
-        VideoGenerationParams(prompt, n, image, durationSeconds, size, aspectRatio, providerOptions, headers, abortSignal),
+        VideoGenerationParams(
+            prompt = prompt,
+            n = n,
+            image = image,
+            durationSeconds = durationSeconds,
+            size = size,
+            aspectRatio = aspectRatio,
+            providerOptions = providerOptions,
+            headers = headers,
+            abortSignal = abortSignal,
+            seed = seed,
+            fps = fps,
+            resolution = resolution,
+        ),
     )
     if (result.videos.isEmpty()) throw NoVideoGeneratedError()
     return GenerateVideoResult(result.videos, result.warnings, result.response, result.providerMetadata)
@@ -422,6 +442,9 @@ suspend fun experimental_generateVideo(
     providerOptions: Map<String, JsonElement> = emptyMap(),
     headers: Map<String, String> = emptyMap(),
     abortSignal: AbortSignal = AbortSignalNever,
+    seed: Int? = null,
+    fps: Int? = null,
+    resolution: String? = null,
 ): GenerateVideoResult = generateVideo(
     model = model,
     prompt = prompt,
@@ -433,4 +456,7 @@ suspend fun experimental_generateVideo(
     providerOptions = providerOptions,
     headers = headers,
     abortSignal = abortSignal,
+    seed = seed,
+    fps = fps,
+    resolution = resolution,
 )

@@ -161,14 +161,23 @@ class KtorGatewayTransport(
             put("n", JsonPrimitive(params.n))
             params.aspectRatio?.let { put("aspectRatio", JsonPrimitive(it)) }
             params.durationSeconds?.let { put("duration", JsonPrimitive(it)) }
+            params.seed?.let { put("seed", JsonPrimitive(it)) }
+            params.fps?.let { put("fps", JsonPrimitive(it)) }
+            params.resolution?.let { put("resolution", JsonPrimitive(it)) }
+            params.size?.let { put("size", JsonPrimitive(it)) }
             if (params.providerOptions.isNotEmpty()) put("providerOptions", JsonObject(params.providerOptions))
             params.image?.let { image ->
                 put(
                     "image",
                     buildJsonObject {
-                        put("type", JsonPrimitive("file"))
-                        put("mediaType", JsonPrimitive(image.mediaType))
-                        put("data", JsonPrimitive(image.base64))
+                        if (image.url != null) {
+                            put("type", JsonPrimitive("url"))
+                            put("url", JsonPrimitive(image.url))
+                        } else {
+                            put("type", JsonPrimitive("file"))
+                            put("mediaType", JsonPrimitive(image.mediaType))
+                            put("data", JsonPrimitive(image.base64))
+                        }
                     },
                 )
             }
@@ -206,8 +215,8 @@ class KtorGatewayTransport(
                 val obj = video.jsonObject
                 GeneratedFile(
                     mediaType = obj["mediaType"]?.jsonPrimitive?.contentOrNull ?: "video/mp4",
-                    base64 = obj["data"]?.jsonPrimitive?.contentOrNull
-                        ?: obj["url"]?.jsonPrimitive?.contentOrNull.orEmpty(),
+                    base64 = obj["data"]?.jsonPrimitive?.contentOrNull.orEmpty(),
+                    url = obj["url"]?.jsonPrimitive?.contentOrNull,
                 )
             },
             warnings = callWarnings(event["warnings"]),
