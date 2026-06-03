@@ -112,7 +112,7 @@ data class TestServerCall(
         }
 
     val requestBodyMultipart: Map<String, String>?
-        get() = if (requestHeaders[HttpHeaders.ContentType]?.startsWith("multipart/form-data", ignoreCase = true) == true) {
+        get() = if (requestHeaders.headerValue(HttpHeaders.ContentType)?.startsWith("multipart/form-data", ignoreCase = true) == true) {
             parseMultipartFormData(requestBodyText)
         } else {
             null
@@ -199,7 +199,8 @@ class TestServer internal constructor(
             TestServerHttpRequest(
                 method = request.method.value,
                 url = request.url.toString(),
-                headers = request.headers.entries().associate { it.key to it.value.joinToString(",") },
+                headers = request.headers.entries().associate { it.key to it.value.joinToString(",") } +
+                    request.body.contentType?.let { mapOf(HttpHeaders.ContentType to it.toString()) }.orEmpty(),
                 body = request.body.bodyText(),
             ),
         ).toKtorResponse(this)
