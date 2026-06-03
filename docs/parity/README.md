@@ -9,7 +9,7 @@ Run `node tools/generate-parity-ledger.mjs --check` in CI to verify this directo
 
 | Package | Version | Target module | Upstream exports | Status |
 |---|---:|---|---:|---|
-| [@ai-sdk/alibaba](ai-sdk-alibaba.md) | 1.0.25 | `:aisdk-provider-alibaba` | 13 | missing: no Kotlin module or parity mapping exists yet |
+| [@ai-sdk/alibaba](ai-sdk-alibaba.md) | 1.0.25 | `:aisdk-provider-alibaba` | 13 | ported: createAlibaba/alibaba, AlibabaProviderSettings, Alibaba chat aliases/options/cache-control/usage aliases, Alibaba OpenAI-compatible chat routing, Qwen thinking option mapping, parallel tool-call option mapping, cache-write usage correction, reasoning/tool-call parsing via the shared chat adapter, DashScope video task creation/polling, T2V/I2V/R2V input mapping, video option mapping, URL video outputs, warnings, error handling, and provider metadata are represented as a Kotlin facade folded into the root module; VERSION is exposed as ALIBABA_VERSION until package modules are split |
 | [@ai-sdk/amazon-bedrock](ai-sdk-amazon-bedrock.md) | 4.0.112 | `:aisdk-provider-amazon-bedrock` | 21 | missing: no Kotlin module or parity mapping exists yet |
 | [@ai-sdk/angular](ai-sdk-angular.md) | 2.0.196 | `:aisdk-ui` | 5 | missing: no Kotlin module or parity mapping exists yet |
 | [@ai-sdk/anthropic](ai-sdk-anthropic.md) | 3.0.81 | `:aisdk-provider-anthropic` | 15 | missing: no Kotlin module or parity mapping exists yet |

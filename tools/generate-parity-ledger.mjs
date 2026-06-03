@@ -10,6 +10,7 @@ const checkOnly = process.argv.includes('--check');
 
 const packageStatus = new Map([
   ['ai', 'in-progress: current root module covers the core KMP surface; full package ecosystem parity remains open'],
+  ['@ai-sdk/alibaba', 'ported: createAlibaba/alibaba, AlibabaProviderSettings, Alibaba chat aliases/options/cache-control/usage aliases, Alibaba OpenAI-compatible chat routing, Qwen thinking option mapping, parallel tool-call option mapping, cache-write usage correction, reasoning/tool-call parsing via the shared chat adapter, DashScope video task creation/polling, T2V/I2V/R2V input mapping, video option mapping, URL video outputs, warnings, error handling, and provider metadata are represented as a Kotlin facade folded into the root module; VERSION is exposed as ALIBABA_VERSION until package modules are split'],
   ['@ai-sdk/provider', 'in-progress: provider contracts are currently folded into the root module'],
   ['@ai-sdk/provider-utils', 'in-progress: provider utility subset is currently folded into the root module'],
   ['@ai-sdk/quiverai', 'ported: createQuiverAI/quiverai, QuiverAIProviderSettings, QuiverAIImageModelId, QuiverAIImageModelOptions, SVG generation, vectorization, reference image validation, option snake_case mapping, unsupported option warnings, SVG byte conversion, usage/provider metadata, and QuiverAI error parsing are represented as a Kotlin facade folded into the root module; VERSION is exposed as QUIVERAI_VERSION until package modules are split'],

@@ -3,7 +3,7 @@
 - Version: 1.0.25
 - Upstream path: `.reference/vercel-ai-sdk-ai-6.0.195/packages/alibaba`
 - Target Kotlin module: `:aisdk-provider-alibaba`
-- Current parity status: missing: no Kotlin module or parity mapping exists yet
+- Current parity status: ported: createAlibaba/alibaba, AlibabaProviderSettings, Alibaba chat aliases/options/cache-control/usage aliases, Alibaba OpenAI-compatible chat routing, Qwen thinking option mapping, parallel tool-call option mapping, cache-write usage correction, reasoning/tool-call parsing via the shared chat adapter, DashScope video task creation/polling, T2V/I2V/R2V input mapping, video option mapping, URL video outputs, warnings, error handling, and provider metadata are represented as a Kotlin facade folded into the root module; VERSION is exposed as ALIBABA_VERSION until package modules are split
 
 ## Entrypoints
 
