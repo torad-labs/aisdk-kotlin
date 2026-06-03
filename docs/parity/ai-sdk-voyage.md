@@ -3,7 +3,7 @@
 - Version: 1.0.4
 - Upstream path: `.reference/vercel-ai-sdk-ai-6.0.195/packages/voyage`
 - Target Kotlin module: `:aisdk-provider-voyage`
-- Current parity status: missing: no Kotlin module or parity mapping exists yet
+- Current parity status: ported: createVoyage/voyage, VoyageProviderSettings, embedding/reranking option surfaces, embedding routing, reranking routing, usage parsing, and embedding input limits are represented as a Kotlin facade folded into the root module; VERSION is exposed as VOYAGE_VERSION until package modules are split
 
 ## Entrypoints
 
