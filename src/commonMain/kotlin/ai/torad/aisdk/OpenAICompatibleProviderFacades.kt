@@ -40,6 +40,7 @@ const val GROQ_VERSION: String = "3.0.39"
 const val MOONSHOTAI_VERSION: String = "2.0.23"
 const val PERPLEXITY_VERSION: String = "3.0.33"
 const val TOGETHERAI_VERSION: String = "2.0.53"
+const val VERCEL_VERSION: String = "2.0.50"
 
 @Serializable
 data class DeepSeekProviderSettings(
@@ -328,6 +329,28 @@ fun createTogetherAI(
 
 val togetherai: TogetherAIProvider = providerNotConfigured("TogetherAI", "togetherai")
 
+typealias VercelChatModelId = String
+typealias VercelErrorData = JsonElement
+
+@Serializable
+data class VercelProviderSettings(
+    val apiKey: String? = null,
+    val baseURL: String = "https://api.v0.dev/v1",
+    val headers: Map<String, String> = emptyMap(),
+)
+
+interface VercelProvider : Provider {
+    operator fun invoke(modelId: VercelChatModelId): LanguageModel = languageModel(modelId)
+    fun textEmbeddingModel(modelId: String): Nothing = throw NoSuchModelError(providerId, "embeddingModel", modelId)
+}
+
+fun createVercel(
+    client: HttpClient,
+    settings: VercelProviderSettings = VercelProviderSettings(),
+): VercelProvider = DefaultVercelProvider(client, settings)
+
+val vercel: VercelProvider = providerNotConfigured("Vercel", "vercel")
+
 private class DefaultDeepSeekProvider(
     client: HttpClient,
     private val settings: DeepSeekProviderSettings,
@@ -461,6 +484,20 @@ private class DefaultTogetherAIProvider(
     override fun rerankingModel(modelId: String): RerankingModel = TogetherAIRerankingModel(client, settings, modelId)
 }
 
+private class DefaultVercelProvider(
+    client: HttpClient,
+    private val settings: VercelProviderSettings,
+) : VercelProvider {
+    private val compatible = createOpenAICompatible(
+        client,
+        settings.toCompatible("vercel", VERCEL_VERSION),
+    )
+    override val providerId: String = "vercel"
+    override fun languageModel(modelId: String): LanguageModel = compatible.chatModel(modelId)
+    override fun embeddingModel(modelId: String): EmbeddingModel = throw NoSuchModelError(providerId, "embeddingModel", modelId)
+    override fun imageModel(modelId: String): ImageModel = throw NoSuchModelError(providerId, "imageModel", modelId)
+}
+
 private fun DeepSeekProviderSettings.toCompatible(
     name: String,
     version: String,
@@ -510,6 +547,14 @@ private fun GroqProviderSettings.toCompatible(
     compatibleSettings(name, version, baseURL, apiKey, headers, includeUsage, supportsStructuredOutputs)
 
 private fun TogetherAIProviderSettings.toCompatible(
+    name: String,
+    version: String,
+    includeUsage: Boolean = false,
+    supportsStructuredOutputs: Boolean = false,
+): OpenAICompatibleProviderSettings =
+    compatibleSettings(name, version, baseURL, apiKey, headers, includeUsage, supportsStructuredOutputs)
+
+private fun VercelProviderSettings.toCompatible(
     name: String,
     version: String,
     includeUsage: Boolean = false,
@@ -583,6 +628,7 @@ private inline fun <reified T : Provider> providerNotConfigured(
             override fun reranking(modelId: String): RerankingModel =
                 throw AiSdkException("$providerName provider is not configured. Use create$providerName(client, settings).")
         } as T
+        VercelProvider::class -> object : VercelProvider, Provider by error {} as T
         else -> error("Unsupported provider facade type: ${T::class}")
     }
 }

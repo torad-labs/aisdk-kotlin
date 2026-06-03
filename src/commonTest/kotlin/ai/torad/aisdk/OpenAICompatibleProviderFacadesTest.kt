@@ -69,6 +69,12 @@ class OpenAICompatibleProviderFacadesTest {
                 expectedUserAgent = "ai-sdk/togetherai/$TOGETHERAI_VERSION",
                 create = { client -> createTogetherAI(client, TogetherAIProviderSettings(apiKey = "key", baseURL = "https://together.test/v1")).chatModel("model") },
             ),
+            ProviderCase(
+                name = "vercel",
+                expectedChatUrl = "https://vercel.test/v1/chat/completions",
+                expectedUserAgent = "ai-sdk/vercel/$VERCEL_VERSION",
+                create = { client -> createVercel(client, VercelProviderSettings(apiKey = "key", baseURL = "https://vercel.test/v1")).languageModel("model") },
+            ),
         )
 
         for (case in providers) {
@@ -370,6 +376,16 @@ class OpenAICompatibleProviderFacadesTest {
         }
 
         assertTrue(error.message.orEmpty().contains("deepseek"))
+
+        val vercel = createVercel(
+            TestServer(mutableMapOf()).httpClient(),
+            VercelProviderSettings(baseURL = "https://vercel.test/v1"),
+        )
+        val vercelError = assertFailsWith<NoSuchModelError> {
+            vercel.imageModel("image")
+        }
+
+        assertTrue(vercelError.message.orEmpty().contains("vercel"))
     }
 
     private data class ProviderCase(

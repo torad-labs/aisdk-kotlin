@@ -30,6 +30,7 @@ const packageStatus = new Map([
   ['@ai-sdk/test-server', 'ported: createTestServer, TestResponseController, UrlResponse, UrlHandler, and UrlHandlers are represented as a Kotlin-native in-memory server with a Ktor MockEngine bridge folded into the root module'],
   ['@ai-sdk/togetherai', 'ported: createTogetherAI/togetherai, provider settings, image/reranking option surfaces, TogetherAIErrorData, chat/completion/embedding/image routing, and TogetherAI reranking are represented as a Kotlin facade folded into the root module; VERSION is exposed as TOGETHERAI_VERSION until package modules are split'],
   ['@ai-sdk/valibot', 'ported: valibotSchema is represented as a Kotlin-native Schema adapter folded into the root module'],
+  ['@ai-sdk/vercel', 'ported: createVercel/vercel, VercelProviderSettings, VercelErrorData, and chat-only routing are represented as an OpenAI-compatible Kotlin facade folded into the root module; VERSION is exposed as VERCEL_VERSION until package modules are split'],
 ]);
 
 function main() {
