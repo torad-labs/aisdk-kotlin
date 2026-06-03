@@ -149,6 +149,8 @@ class OpenAICompatibleProviderTest {
         val events = drainAllItems(provider.languageModel("gpt-test").stream(LanguageModelCallParams(listOf(userMessage("hi")))))
 
         assertIs<StreamEvent.StreamStart>(events[0])
+        val metadata = events.filterIsInstance<StreamEvent.ResponseMetadata>()
+        assertEquals("1", metadata.last().id)
         assertTrue(events.any { it is StreamEvent.ReasoningDelta && it.text == "think" })
         assertTrue(events.any { it is StreamEvent.TextDelta && it.text == "hello" })
         val toolCall = events.filterIsInstance<StreamEvent.ToolCall>().single()

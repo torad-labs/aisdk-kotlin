@@ -216,7 +216,8 @@ private class OpenAICompatibleChatLanguageModel(
             headers = mapOf(HttpHeaders.Accept to "text/event-stream"),
             parseJson = false,
         )
-        emit(StreamEvent.StreamStart)
+        emit(StreamEvent.StreamStart(prepared.warnings))
+        emit(StreamEvent.ResponseMetadata(headers = response.headers, body = JsonPrimitive(response.rawText)))
         val state = OpenAIChatStreamState(providerKey = providerOptionsKey())
         for (event in parseJsonEventStream(response.rawText, jsonSchema<JsonElement>(JsonObject(emptyMap())), json)) {
             when (event) {
@@ -299,15 +300,23 @@ private class OpenAICompatibleCompletionLanguageModel(
             headers = mapOf(HttpHeaders.Accept to "text/event-stream"),
             parseJson = false,
         )
-        emit(StreamEvent.StreamStart)
+        emit(StreamEvent.StreamStart(prepared.warnings))
+        emit(StreamEvent.ResponseMetadata(headers = response.headers, body = JsonPrimitive(response.rawText)))
         var activeText = false
         var finish = FinishReason.Other
         var usage = Usage()
+        var emittedResponseMetadata = false
         for (event in parseJsonEventStream(response.rawText, jsonSchema<JsonElement>(JsonObject(emptyMap())), json)) {
             when (event) {
                 is ParseResult.Failure -> emit(StreamEvent.Error("Failed to parse OpenAI-compatible completion stream event: ${event.error.message}"))
                 is ParseResult.Success -> {
                     val value = event.value.jsonObject
+                    if (!emittedResponseMetadata) {
+                        streamResponseMetadata(value)?.let {
+                            emit(it)
+                            emittedResponseMetadata = true
+                        }
+                    }
                     value["usage"]?.let { usage = openAIUsage(it) }
                     val choice = value["choices"]?.jsonArray?.firstOrNull()?.jsonObject
                     val text = choice?.get("text")?.jsonPrimitive?.contentOrNull
@@ -637,10 +646,17 @@ private class OpenAIChatStreamState(
     private var usage = Usage()
     private var activeReasoning = false
     private var activeText = false
+    private var emittedResponseMetadata = false
 
     fun accept(value: JsonElement): List<StreamEvent> {
         val events = mutableListOf<StreamEvent>()
         val obj = value.jsonObject
+        if (!emittedResponseMetadata) {
+            streamResponseMetadata(obj)?.let {
+                events += it
+                emittedResponseMetadata = true
+            }
+        }
         if (obj["error"] != null) {
             events += StreamEvent.Error(
                 obj["error"]?.jsonObject?.get("message")?.jsonPrimitive?.contentOrNull
@@ -745,6 +761,18 @@ private class OpenAIChatStreamState(
             }
         }
     }
+}
+
+private fun streamResponseMetadata(obj: JsonObject): StreamEvent.ResponseMetadata? {
+    val id = obj["id"]?.jsonPrimitive?.contentOrNull
+    val modelId = obj["model"]?.jsonPrimitive?.contentOrNull
+    val timestampMillis = obj["created"]?.jsonPrimitive?.doubleOrNull?.let { (it * 1000).toLong() }
+    if (id == null && modelId == null && timestampMillis == null) return null
+    return StreamEvent.ResponseMetadata(
+        id = id,
+        modelId = modelId,
+        timestampMillis = timestampMillis,
+    )
 }
 
 private data class StreamingToolCall(

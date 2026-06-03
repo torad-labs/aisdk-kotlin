@@ -327,7 +327,7 @@ open class ToolLoopAgent<TContext, TOutput>(
         require(prompt != null || priorMessages.isNotEmpty()) {
             "Agent.generate/stream: must provide either `prompt` or `messages`"
         }
-        emit(StreamEvent.StreamStart)
+        emit(StreamEvent.StreamStart())
         runHook(0) {
             onStart?.invoke(OnStartEvent(prompt, priorMessages, options))
             hooks?.onStart?.invoke(OnStartEvent(prompt, priorMessages, options))

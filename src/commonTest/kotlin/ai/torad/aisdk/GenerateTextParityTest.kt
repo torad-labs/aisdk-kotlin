@@ -35,6 +35,8 @@ class GenerateTextParityTest {
             StreamEvent.StepFinish(1, FinishReason.Stop, Usage(promptTokens = 1, completionTokens = 1)),
             StreamEvent.Finish(1, FinishReason.Stop, Usage(promptTokens = 1, completionTokens = 1)),
         ),
+        private val streamRequest: LanguageModelRequestMetadata = LanguageModelRequestMetadata(),
+        private val streamResponse: LanguageModelResponseMetadata = LanguageModelResponseMetadata(),
     ) : LanguageModel {
         override val modelId: String = "test/capture"
         var generateParams: LanguageModelCallParams? = null
@@ -51,6 +53,13 @@ class GenerateTextParityTest {
             streamParams = params
             for (event in streamEvents) emit(event)
         }
+
+        override fun streamResult(params: LanguageModelCallParams): LanguageModelStreamResult =
+            LanguageModelStreamResult(
+                stream = stream(params),
+                request = streamRequest,
+                response = streamResponse,
+            )
     }
 
     @Test
@@ -201,6 +210,48 @@ class GenerateTextParityTest {
         assertEquals(0.7f, params.presencePenalty)
         assertEquals(0.8f, params.frequencyPenalty)
         assertEquals("Recipe", assertIs<ResponseFormat.Json>(params.responseFormat).schemaName)
+    }
+
+    @Test
+    fun `streamTextResult exposes request warnings and response metadata`() = runTest {
+        // GIVEN
+        val warning = CallWarning("unsupported-setting", "topK ignored")
+        val request = LanguageModelRequestMetadata(
+            body = buildJsonObject { put("prompt", JsonPrimitive("hi")) },
+        )
+        val model = CapturingModel(
+            streamEvents = listOf(
+                StreamEvent.StreamStart(listOf(warning)),
+                StreamEvent.ResponseMetadata(
+                    id = "resp_1",
+                    timestampMillis = 123,
+                    modelId = "mock-large",
+                    headers = mapOf("x-stream-id" to "stream_1"),
+                    body = buildJsonObject { put("id", JsonPrimitive("resp_1")) },
+                ),
+                StreamEvent.TextStart("t1"),
+                StreamEvent.TextDelta("t1", "ok"),
+                StreamEvent.TextEnd("t1"),
+                StreamEvent.Finish(1, FinishReason.Stop, Usage(promptTokens = 1, completionTokens = 1)),
+            ),
+            streamRequest = request,
+            streamResponse = LanguageModelResponseMetadata(headers = mapOf("x-request-id" to "req_1")),
+        )
+
+        // WHEN
+        val result = streamTextResult(model = model, prompt = "hi")
+        val warnings = drainAllItems(result.warnings)
+        val responses = drainAllItems(result.response)
+
+        // THEN
+        assertEquals(request, result.request)
+        assertEquals(listOf(listOf(warning)), warnings)
+        val response = responses.single()
+        assertEquals("resp_1", response.id)
+        assertEquals(123, response.timestampMillis)
+        assertEquals("mock-large", response.modelId)
+        assertEquals(mapOf("x-request-id" to "req_1", "x-stream-id" to "stream_1"), response.headers)
+        assertEquals("resp_1", response.body?.jsonObject?.get("id")?.jsonPrimitive?.content)
     }
 
     @Suppress("DEPRECATION")

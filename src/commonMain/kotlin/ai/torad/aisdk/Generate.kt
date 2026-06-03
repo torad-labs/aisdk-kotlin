@@ -122,16 +122,11 @@ fun streamText(
     frequencyPenalty: Float? = null,
     responseFormat: ResponseFormat = ResponseFormat.Text,
 ): Flow<StreamEvent> = flow {
-    require(prompt != null || messages.isNotEmpty()) {
-        "streamText: must provide either `prompt` or `messages`"
-    }
-    val effectiveMessages = buildList {
-        if (system != null) add(systemMessage(system))
-        addAll(messages)
-        if (prompt != null) add(userMessage(prompt))
-    }
-    val params = LanguageModelCallParams(
-        messages = effectiveMessages,
+    streamTextResult(
+        model = model,
+        prompt = prompt,
+        messages = messages,
+        system = system,
         temperature = temperature,
         topP = topP,
         topK = topK,
@@ -140,21 +135,41 @@ fun streamText(
         seed = seed,
         providerOptions = providerOptions,
         abortSignal = abortSignal,
+        output = output,
         presencePenalty = presencePenalty,
         frequencyPenalty = frequencyPenalty,
-        responseFormat = output?.let { structuredOutput ->
-            if (responseFormat == ResponseFormat.Text) structuredOutput.toResponseFormat() else responseFormat
-        } ?: responseFormat,
-    )
-    model.stream(params).collect { emit(it) }
+        responseFormat = responseFormat,
+    ).fullStream.collect { emit(it) }
 }
 
 data class StreamTextResult(
     val fullStream: Flow<StreamEvent>,
+    val request: LanguageModelRequestMetadata = LanguageModelRequestMetadata(),
+    private val initialResponse: LanguageModelResponseMetadata = LanguageModelResponseMetadata(),
 ) {
     val textStream: Flow<String> = fullStream
         .filterIsInstance<StreamEvent.TextDelta>()
         .map { it.text }
+
+    val warnings: Flow<List<CallWarning>> = flow {
+        var warnings: List<CallWarning>? = null
+        fullStream.collect { event ->
+            if (event is StreamEvent.StreamStart && warnings == null) {
+                warnings = event.warnings
+            }
+        }
+        emit(warnings.orEmpty())
+    }
+
+    val response: Flow<LanguageModelResponseMetadata> = flow {
+        var response = initialResponse
+        fullStream.collect { event ->
+            if (event is StreamEvent.ResponseMetadata) {
+                response = response.merge(event.toLanguageModelResponseMetadata())
+            }
+        }
+        emit(response)
+    }
 
     fun toTextStreamResponse(): ai.torad.aisdk.ui.TextStreamResponse =
         ai.torad.aisdk.ui.createTextStreamResponse(textStream)
@@ -183,9 +198,8 @@ fun streamTextResult(
     presencePenalty: Float? = null,
     frequencyPenalty: Float? = null,
     responseFormat: ResponseFormat = ResponseFormat.Text,
-): StreamTextResult = StreamTextResult(
-    streamText(
-        model = model,
+): StreamTextResult {
+    val params = streamTextCallParams(
         prompt = prompt,
         messages = messages,
         system = system,
@@ -201,7 +215,75 @@ fun streamTextResult(
         presencePenalty = presencePenalty,
         frequencyPenalty = frequencyPenalty,
         responseFormat = responseFormat,
-    ),
+    )
+    val result = model.streamResult(params)
+    return StreamTextResult(
+        fullStream = result.stream,
+        request = result.request,
+        initialResponse = result.response,
+    )
+}
+
+private fun streamTextCallParams(
+    prompt: String?,
+    messages: List<ModelMessage>,
+    system: String?,
+    temperature: Float?,
+    topP: Float?,
+    topK: Int?,
+    maxOutputTokens: Int?,
+    stopSequences: List<String>,
+    seed: Int?,
+    providerOptions: Map<String, JsonElement>,
+    abortSignal: AbortSignal,
+    output: Output<*>?,
+    presencePenalty: Float?,
+    frequencyPenalty: Float?,
+    responseFormat: ResponseFormat,
+): LanguageModelCallParams {
+    require(prompt != null || messages.isNotEmpty()) {
+        "streamText: must provide either `prompt` or `messages`"
+    }
+    val effectiveMessages = buildList {
+        if (system != null) add(systemMessage(system))
+        addAll(messages)
+        if (prompt != null) add(userMessage(prompt))
+    }
+    return LanguageModelCallParams(
+        messages = effectiveMessages,
+        temperature = temperature,
+        topP = topP,
+        topK = topK,
+        maxOutputTokens = maxOutputTokens,
+        stopSequences = stopSequences,
+        seed = seed,
+        providerOptions = providerOptions,
+        abortSignal = abortSignal,
+        presencePenalty = presencePenalty,
+        frequencyPenalty = frequencyPenalty,
+        responseFormat = output?.let { structuredOutput ->
+            if (responseFormat == ResponseFormat.Text) structuredOutput.toResponseFormat() else responseFormat
+        } ?: responseFormat,
+    )
+}
+
+private fun StreamEvent.ResponseMetadata.toLanguageModelResponseMetadata(): LanguageModelResponseMetadata =
+    LanguageModelResponseMetadata(
+        id = id,
+        timestampMillis = timestampMillis,
+        modelId = modelId,
+        headers = headers,
+        body = body,
+    )
+
+private fun LanguageModelResponseMetadata.merge(
+    other: LanguageModelResponseMetadata,
+): LanguageModelResponseMetadata = LanguageModelResponseMetadata(
+    id = other.id ?: id,
+    timestampMillis = other.timestampMillis ?: timestampMillis,
+    modelId = other.modelId ?: modelId,
+    headers = headers + other.headers,
+    body = other.body ?: body,
 )
 
 /**

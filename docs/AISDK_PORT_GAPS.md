@@ -31,7 +31,9 @@ and everything the core package consumes directly — are done:
   `ResponseFormat`, `presence/frequencyPenalty`, `tool-output-denied` +
   `approvalId`, `fixJson` / `parsePartialJson`, `injectJsonInstruction`,
   truncation-repair in `extractJsonMiddleware`, `loggingMiddleware` over
-  the `Logger` primitive, `provider` + `supportedUrls`, CJK `smoothStream`.
+  the `Logger` primitive, `provider` + `supportedUrls`, CJK `smoothStream`,
+  `stream-start` warnings, `response-metadata`, `LanguageModelStreamResult`,
+  and `StreamTextResult.{request,warnings,response}` metadata access.
 - **Top-level generation/output parity**: `generateText` / `streamText`
   forward penalties and response format, `Output.choice` / `Output.json`
   are restored, `Output.array` accepts the v6 `{ elements: [...] }` shape,
@@ -75,10 +77,8 @@ dev knows the gap is *known and chosen*, not missed.
 | Item | Why deferred | Partial substitute |
 |---|---|---|
 | `extractJsonMiddleware` *incremental* streaming (v6's 12-char-lookahead state machine) | Current structured-output consumers decode the whole object through `Output.decode`; token-by-token JSON rendering has no core consumer. | single-emit-at-`Finish` + truncation repair |
-| `StreamTextResult` promise metadata (`.warnings`, `.response`) | KMP exposes cold `Flow<StreamEvent>` directly and keeps call metadata on `GenerateTextResult`; the text/UI stream facades are present. | `StreamTextResult.fullStream`, `.textStream`, and response helpers |
 | Structured tool-result **stream** output (v6's discriminated `ToolResultOutput` on the wire) | `StreamEvent.ToolResult` carries `outputJson` + `modelVisible: JsonElement` — a deliberate divergence; `ToolResultOutput` already exists for the `toModelOutput` return. | `outputJson` + `modelVisible` |
 | Agent-level persistent `activeTools` allowlist | `StepSettings.activeTools` gives per-step scoping, which covers the need. | per-step `activeTools` |
-| Deep stream sub-field drift (`doStream` returning JS `{request, response}` promise fields) | Telemetry/cloud-routing fields with no on-device meaning in the common model stream. | `GenerateTextResult.request/response`, provider metadata |
 | `callOptionsSchema` runtime validation | Low value; the schema is type-checked at construction. | — |
 
 ## Platform adapter surface

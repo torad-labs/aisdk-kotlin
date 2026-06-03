@@ -132,6 +132,7 @@ fun streamToUiMessages(
     events.collect { event ->
         when (event) {
             is StreamEvent.StreamStart -> Unit
+            is StreamEvent.ResponseMetadata -> Unit
             is StreamEvent.StepStart -> {
                 // Multi-step flows (tool round-trips) cross step boundaries;
                 // emitting a StepStart part lets the renderer chrome the

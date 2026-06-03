@@ -1,6 +1,7 @@
 package ai.torad.aisdk
 
 import kotlinx.coroutines.flow.Flow
+import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonElement
 
 /**
@@ -50,6 +51,15 @@ interface LanguageModel {
 
     /** Streaming completion. Hot until collected, then drives one upstream call. */
     fun stream(params: LanguageModelCallParams): Flow<StreamEvent>
+
+    /**
+     * Streaming completion plus metadata available before stream
+     * collection. Implementations must keep the returned stream cold.
+     * Providers can override this to expose request bodies and response
+     * headers while preserving the v6 `doStream` result shape.
+     */
+    fun streamResult(params: LanguageModelCallParams): LanguageModelStreamResult =
+        LanguageModelStreamResult(stream = stream(params))
 }
 
 /**
@@ -119,11 +129,19 @@ data class LanguageModelResult(
     val response: LanguageModelResponseMetadata = LanguageModelResponseMetadata(),
 )
 
+/** Provider stream plus request/response metadata known before collection. */
+data class LanguageModelStreamResult(
+    val stream: Flow<StreamEvent>,
+    val request: LanguageModelRequestMetadata = LanguageModelRequestMetadata(),
+    val response: LanguageModelResponseMetadata = LanguageModelResponseMetadata(),
+)
+
 /**
  * Provider warning for a call that still completed. Mirrors v6's
  * `CallWarning` shape without baking provider-specific warning enums
  * into common code.
  */
+@Serializable
 data class CallWarning(
     val type: String,
     val message: String? = null,

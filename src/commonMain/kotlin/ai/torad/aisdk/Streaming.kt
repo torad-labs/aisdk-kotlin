@@ -26,7 +26,7 @@ import kotlinx.serialization.json.JsonElement
  *
  * Sequence the model can produce in one step:
  * ```
- * StreamStart
+ * StreamStart(warnings)
  *   StepStart
  *     TextStart("t1") → TextDelta("t1", "...") → TextEnd("t1")
  *     ReasoningStart("r1") → ReasoningDelta("r1", "...") → ReasoningEnd("r1")
@@ -49,7 +49,24 @@ sealed interface StreamEvent {
 
     /** Stream began. Emitted exactly once at the very top. */
     @Serializable
-    data object StreamStart : StreamEvent
+    data class StreamStart(
+        val warnings: List<CallWarning> = emptyList(),
+    ) : StreamEvent
+
+    /**
+     * Provider response metadata that becomes available after the
+     * stream request starts. Mirrors v6's `response-metadata` stream
+     * part so [StreamTextResult.response] can expose IDs, timestamps,
+     * model IDs, headers, and retained response bodies.
+     */
+    @Serializable
+    data class ResponseMetadata(
+        val id: String? = null,
+        val timestampMillis: Long? = null,
+        val modelId: String? = null,
+        val headers: Map<String, String> = emptyMap(),
+        val body: JsonElement? = null,
+    ) : StreamEvent
 
     /** New step (one LLM call) began. Emitted at the start of every loop iteration. */
     @Serializable

@@ -76,7 +76,7 @@ class UIMessageShapeTest {
         // part (it's the implicit start of the message); step 2 SHOULD
         // emit a visible boundary.
         val events = flowOf(
-            StreamEvent.StreamStart,
+            StreamEvent.StreamStart(),
             StreamEvent.StepStart(stepNumber = 1),
             StreamEvent.TextStart("t1"),
             StreamEvent.TextDelta("t1", "calling tool…"),

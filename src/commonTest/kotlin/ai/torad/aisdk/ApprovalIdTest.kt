@@ -86,7 +86,7 @@ class ApprovalIdTest {
     fun `given a ToolOutputDenied event when converted to UIMessages then the part is OutputDenied with reason`() = runTest {
         // GIVEN
         val events = flowOf(
-            StreamEvent.StreamStart,
+            StreamEvent.StreamStart(),
             StreamEvent.ToolApprovalRequest("call_1", "saveNote", JsonPrimitive("data"), approvalId = "approval_a"),
             StreamEvent.ToolOutputDenied("call_1", "saveNote", "approval_a", reason = "user denied"),
             StreamEvent.Finish(totalSteps = 1, finishReason = FinishReason.Stop, usage = Usage()),
@@ -120,7 +120,7 @@ class ApprovalIdTest {
     @Test
     fun `given a ToolApprovalRequest event when converted then the UI state is ApprovalRequested`() = runTest {
         val events = flowOf(
-            StreamEvent.StreamStart,
+            StreamEvent.StreamStart(),
             StreamEvent.ToolApprovalRequest("call_1", "saveNote", JsonPrimitive("data")),
             StreamEvent.Finish(totalSteps = 1, finishReason = FinishReason.ToolApprovalRequested, usage = Usage()),
         )

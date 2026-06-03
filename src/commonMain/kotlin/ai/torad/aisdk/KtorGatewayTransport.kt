@@ -30,6 +30,7 @@ import kotlinx.serialization.json.intOrNull
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
+import kotlinx.serialization.json.longOrNull
 
 fun createGatewayHttpProvider(
     client: HttpClient,
@@ -624,7 +625,15 @@ private fun contentPartFromJson(value: JsonElement): ContentPart? {
 private fun streamEventFromJson(value: JsonElement): StreamEvent {
     val obj = value.jsonObject
     return when (val type = obj["type"]?.jsonPrimitive?.contentOrNull) {
-        "stream-start" -> StreamEvent.StreamStart
+        "stream-start" -> StreamEvent.StreamStart(callWarnings(obj["warnings"]))
+        "response-metadata" -> StreamEvent.ResponseMetadata(
+            id = obj["id"]?.jsonPrimitive?.contentOrNull,
+            timestampMillis = obj["timestampMillis"]?.jsonPrimitive?.longOrNull
+                ?: obj["timestamp"]?.jsonPrimitive?.doubleOrNull?.let { (it * 1000).toLong() },
+            modelId = obj["modelId"]?.jsonPrimitive?.contentOrNull,
+            headers = (obj["headers"] as? JsonObject)?.mapValues { it.value.jsonPrimitive.content }.orEmpty(),
+            body = obj["body"],
+        )
         "text-start" -> StreamEvent.TextStart(obj["id"]?.jsonPrimitive?.contentOrNull ?: "text")
         "text-delta" -> StreamEvent.TextDelta(
             id = obj["id"]?.jsonPrimitive?.contentOrNull ?: "text",
