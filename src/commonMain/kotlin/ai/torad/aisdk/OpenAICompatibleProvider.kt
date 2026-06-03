@@ -51,6 +51,7 @@ data class OpenAICompatibleProviderSettings(
     val userAgentSuffix: String? = "ai-sdk/openai-compatible-kotlin",
     val providerOptionsName: String? = null,
     val chatMaxOutputTokensKey: String = "max_tokens",
+    val chatSeedKey: String = "seed",
 )
 
 interface OpenAICompatibleProvider : Provider {
@@ -266,7 +267,7 @@ private class OpenAICompatibleChatLanguageModel(
             params.frequencyPenalty?.let { put("frequency_penalty", JsonPrimitive(it)) }
             params.presencePenalty?.let { put("presence_penalty", JsonPrimitive(it)) }
             if (params.stopSequences.isNotEmpty()) put("stop", JsonArray(params.stopSequences.map(::JsonPrimitive)))
-            params.seed?.let { put("seed", JsonPrimitive(it)) }
+            params.seed?.let { put(settings.chatSeedKey, JsonPrimitive(it)) }
             val responseFormat = openAIResponseFormat(params.responseFormat, strictJsonSchema)
             if (responseFormat != null) put("response_format", responseFormat)
             if (params.tools.isNotEmpty()) put("tools", JsonArray(params.tools.map(::openAIToolJson)))
