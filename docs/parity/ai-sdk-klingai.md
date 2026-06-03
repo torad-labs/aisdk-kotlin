@@ -3,7 +3,7 @@
 - Version: 3.0.18
 - Upstream path: `.reference/vercel-ai-sdk-ai-6.0.195/packages/klingai`
 - Target Kotlin module: `:aisdk-provider-klingai`
-- Current parity status: missing: no Kotlin module or parity mapping exists yet
+- Current parity status: ported: createKlingAI/klingai, KlingAIProviderSettings, KlingAIVideoModelId, KlingAIVideoModelOptions/KlingAIVideoProviderOptions, HS256 JWT authentication, text-to-video/image-to-video/motion-control endpoint routing, model-name normalization, provider-option snake_case mapping, passthrough options, task polling, URL video outputs, warnings, failure/timeout handling, and provider metadata are represented as a Kotlin facade folded into the root module; VERSION is exposed as KLINGAI_VERSION until package modules are split
 
 ## Entrypoints
 
