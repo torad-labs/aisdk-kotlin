@@ -13,9 +13,10 @@ JSON Schema-shaped descriptor system, and is the standard serialization
 choice for Kotlin Multiplatform libraries. Adding a second schema library
 would make consumers carry redundant schema/runtime dependencies.
 
-**Cost.** kotlinx.serialization's JSON Schema export isn't 1:1 with Zod's.
-`jsonSchemaFor(tool)` returns a permissive schema unless a caller provides
-an explicit `jsonSchema(...)` / `asSchema(...)` shape.
+**Cost.** kotlinx.serialization's JSON Schema export isn't 1:1 with Zod's,
+so `jsonSchemaFor(tool)` implements the provider-safe subset directly:
+objects, required fields, primitives, enums, arrays, maps, nullable fields,
+sealed variants, and explicit dynamic-tool schemas.
 
 ## Decision 2 — JSON handling: kotlinx.serialization JsonElement tree
 
