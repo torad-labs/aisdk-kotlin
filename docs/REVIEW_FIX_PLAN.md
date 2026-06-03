@@ -11,7 +11,7 @@ fail before the fix and stay green as the port evolves.
 
 Use TDD for each defect cluster:
 
-1. Add focused failing tests that reproduce the externally visible break.
+1. Add focused regression tests that first reproduce the externally visible break.
 2. Patch the smallest shared runtime seam that fixes the behavior.
 3. Add hardening cases for neighboring finish reasons, event ordering, and
    provider data shapes.
