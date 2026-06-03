@@ -14,7 +14,7 @@ Run `node tools/generate-parity-ledger.mjs --check` in CI to verify this directo
 | [@ai-sdk/angular](ai-sdk-angular.md) | 2.0.196 | `:aisdk-ui` | 5 | missing: no Kotlin module or parity mapping exists yet |
 | [@ai-sdk/anthropic](ai-sdk-anthropic.md) | 3.0.81 | `:aisdk-provider-anthropic` | 15 | missing: no Kotlin module or parity mapping exists yet |
 | [@ai-sdk/anthropic-aws](ai-sdk-anthropic-aws.md) | 1.0.3 | `:aisdk-provider-anthropic-aws` | 6 | missing: no Kotlin module or parity mapping exists yet |
-| [@ai-sdk/assemblyai](ai-sdk-assemblyai.md) | 2.0.33 | `:aisdk-provider-assemblyai` | 6 | missing: no Kotlin module or parity mapping exists yet |
+| [@ai-sdk/assemblyai](ai-sdk-assemblyai.md) | 2.0.33 | `:aisdk-provider-assemblyai` | 6 | ported: createAssemblyAI/assemblyai, AssemblyAIProviderSettings, AssemblyAITranscriptionModelOptions, upload/submit/poll transcription flow, provider-option snake_case mapping, transcript status errors, response headers/body, and segment parsing are represented as a Kotlin facade folded into the root module; VERSION is exposed as ASSEMBLYAI_VERSION until package modules are split |
 | [@ai-sdk/azure](ai-sdk-azure.md) | 3.0.69 | `:aisdk-provider-azure` | 13 | missing: no Kotlin module or parity mapping exists yet |
 | [@ai-sdk/baseten](ai-sdk-baseten.md) | 1.0.51 | `:aisdk-provider-baseten` | 8 | missing: no Kotlin module or parity mapping exists yet |
 | [@ai-sdk/black-forest-labs](ai-sdk-black-forest-labs.md) | 1.0.34 | `:aisdk-provider-black-forest-labs` | 9 | missing: no Kotlin module or parity mapping exists yet |
