@@ -259,6 +259,257 @@ class GoogleProviderTest {
         assertEquals("GET", fixture.calls[3].requestMethod)
     }
 
+    @Test
+    fun `interactions model posts v6 request and maps steps usage metadata and sources`() = runTest {
+        val fixture = createTestServer(
+            mutableMapOf(
+                "https://google.test/v1beta/interactions" to UrlHandler(
+                    UrlResponse.JsonValue(
+                        Json.parseToJsonElement(
+                            """
+                            {
+                              "id":"interaction-1",
+                              "model":"gemini-2.5-flash",
+                              "status":"completed",
+                              "service_tier":"priority",
+                              "created":"2026-06-03T00:00:00Z",
+                              "steps":[
+                                {
+                                  "type":"model_output",
+                                  "content":[
+                                    {
+                                      "type":"text",
+                                      "text":"Hello from interactions.",
+                                      "annotations":[{"type":"url_citation","url":"https://example.com","title":"Example"}]
+                                    },
+                                    {"type":"image","data":"aW1n","mime_type":"image/png"}
+                                  ]
+                                },
+                                {
+                                  "type":"thought",
+                                  "signature":"thought-sig",
+                                  "summary":[{"type":"text","text":"reasoning"}]
+                                },
+                                {
+                                  "type":"function_call",
+                                  "id":"call-1",
+                                  "name":"lookup",
+                                  "arguments":{"city":"Paris"},
+                                  "signature":"call-sig"
+                                }
+                              ],
+                              "usage":{
+                                "total_input_tokens":5,
+                                "total_cached_tokens":2,
+                                "total_output_tokens":7,
+                                "total_thought_tokens":3,
+                                "total_tokens":15
+                              }
+                            }
+                            """.trimIndent(),
+                        ),
+                    ),
+                ),
+            ),
+        )
+        fixture.server.start()
+        val provider = createGoogleGenerativeAI(
+            fixture.httpClient(),
+            GoogleGenerativeAIProviderSettings(
+                apiKey = "key",
+                baseURL = "https://google.test/v1beta",
+                headers = mapOf("X-Provider" to "provider"),
+            ),
+        )
+
+        val result = provider.interactions("gemini-2.5-flash").generate(
+            LanguageModelCallParams(
+                messages = listOf(
+                    systemMessage("Follow policy."),
+                    userMessage("Use interactions."),
+                ),
+                tools = listOf(LanguageModelTool("lookup", "Lookup a city.", objectSchema("city").toString())),
+                toolChoice = ToolChoice.Required,
+                temperature = 0.2f,
+                topP = 0.9f,
+                maxOutputTokens = 128,
+                stopSequences = listOf("END"),
+                seed = 7,
+                responseFormat = ResponseFormat.Json(schemaJson = objectSchema("answer")),
+                providerOptions = mapOf(
+                    "google" to buildJsonObject {
+                        put("store", JsonPrimitive(true))
+                        put("previousInteractionId", JsonPrimitive("prior-1"))
+                        put("thinkingLevel", JsonPrimitive("high"))
+                        put("thinkingSummaries", JsonPrimitive("auto"))
+                        put("responseModalities", Json.parseToJsonElement("""["text","image"]"""))
+                        put(
+                            "responseFormat",
+                            Json.parseToJsonElement("""[{"type":"image","mimeType":"image/png","aspectRatio":"1:1","imageSize":"1K"}]"""),
+                        )
+                        put("serviceTier", JsonPrimitive("priority"))
+                    },
+                ),
+                headers = mapOf("X-Request" to "request"),
+            ),
+        )
+
+        assertEquals("Hello from interactions.", result.text)
+        assertEquals(FinishReason.ToolCalls, result.finishReason)
+        assertEquals("call-1", result.toolCalls.single().toolCallId)
+        assertEquals("Paris", result.toolCalls.single().input.jsonObject["city"]?.jsonPrimitive?.contentOrNull)
+        assertEquals("reasoning", result.content.filterIsInstance<ContentPart.Reasoning>().single().text)
+        assertEquals("image/png", result.content.filterIsInstance<ContentPart.File>().single().mediaType)
+        assertEquals("https://example.com", result.content.filterIsInstance<ContentPart.Source>().single().url)
+        assertEquals(5, result.usage.promptTokens)
+        assertEquals(10, result.usage.completionTokens)
+        assertEquals(2, result.usage.inputTokens.cacheRead)
+        assertEquals(3, result.usage.outputTokens.reasoning)
+        assertEquals("interaction-1", result.response.id)
+        assertEquals("gemini-2.5-flash", result.response.modelId)
+        assertEquals("interaction-1", result.providerMetadata["google"]?.jsonObject?.get("interactionId")?.jsonPrimitive?.contentOrNull)
+        assertEquals("priority", result.providerMetadata["google"]?.jsonObject?.get("serviceTier")?.jsonPrimitive?.contentOrNull)
+
+        val request = fixture.calls.single()
+        assertEquals("key", request.requestHeaders.headerValue("x-goog-api-key"))
+        assertEquals("2026-05-20", request.requestHeaders.headerValue("Api-Revision"))
+        assertEquals("provider", request.requestHeaders.headerValue("X-Provider"))
+        assertEquals("request", request.requestHeaders.headerValue("X-Request"))
+        assertTrue(request.requestUserAgent.orEmpty().contains("ai-sdk/google/$GOOGLE_VERSION"))
+        val body = request.requestBodyJson.jsonObject
+        assertEquals("gemini-2.5-flash", body["model"]?.jsonPrimitive?.contentOrNull)
+        assertEquals("Follow policy.", body["system_instruction"]?.jsonPrimitive?.contentOrNull)
+        assertEquals("prior-1", body["previous_interaction_id"]?.jsonPrimitive?.contentOrNull)
+        assertEquals(true, body["store"]?.jsonPrimitive?.booleanOrNull)
+        assertEquals("Use interactions.", body["input"]?.jsonArray?.single()?.jsonObject?.get("content")?.jsonArray?.single()?.jsonObject?.get("text")?.jsonPrimitive?.contentOrNull)
+        val generationConfig = body["generation_config"]!!.jsonObject
+        assertEquals(128, generationConfig["max_output_tokens"]?.jsonPrimitive?.intOrNull)
+        assertEquals("high", generationConfig["thinking_level"]?.jsonPrimitive?.contentOrNull)
+        assertEquals("any", generationConfig["tool_choice"]?.jsonPrimitive?.contentOrNull)
+        assertEquals("lookup", body["tools"]?.jsonArray?.single()?.jsonObject?.get("name")?.jsonPrimitive?.contentOrNull)
+        assertEquals("application/json", body["response_format"]?.jsonArray?.first()?.jsonObject?.get("mime_type")?.jsonPrimitive?.contentOrNull)
+        assertEquals("image", body["response_format"]?.jsonArray?.last()?.jsonObject?.get("type")?.jsonPrimitive?.contentOrNull)
+        assertEquals("priority", body["service_tier"]?.jsonPrimitive?.contentOrNull)
+    }
+
+    @Test
+    fun `interactions stream maps SSE steps into stream events`() = runTest {
+        val fixture = createTestServer(
+            mutableMapOf(
+                "https://google.test/v1beta/interactions" to UrlHandler(
+                    UrlResponse.StreamChunks(
+                        listOf(
+                            """
+                            data: {"type":"interaction.created","interaction":{"id":"interaction-2","model":"gemini-2.5-flash","status":"in_progress"}}
+
+                            data: {"type":"step.start","step":{"type":"model_output","content":[{"type":"text","text":"Hello "}]},"interaction":{"id":"interaction-2"}}
+
+                            data: {"type":"step.start","step":{"type":"model_output","content":[{"type":"text","text":"stream"}]},"interaction":{"id":"interaction-2"}}
+
+                            data: {"type":"step.start","step":{"type":"function_call","id":"call-2","name":"lookup","arguments":{"city":"Berlin"}},"interaction":{"id":"interaction-2"}}
+
+                            data: {"type":"interaction.complete","interaction":{"id":"interaction-2","model":"gemini-2.5-flash","status":"completed","usage":{"total_input_tokens":1,"total_output_tokens":2}}}
+
+                            """.trimIndent(),
+                        ),
+                    ),
+                ),
+            ),
+        )
+        fixture.server.start()
+        val provider = createGoogleGenerativeAI(
+            fixture.httpClient(),
+            GoogleGenerativeAIProviderSettings(apiKey = "key", baseURL = "https://google.test/v1beta"),
+        )
+
+        val events = drainAllItems(
+            provider.interactions("gemini-2.5-flash").stream(LanguageModelCallParams(messages = listOf(userMessage("hi")))),
+        )
+
+        assertIs<StreamEvent.StreamStart>(events.first())
+        assertTrue(events.any { it is StreamEvent.ResponseMetadata && it.id == "interaction-2" })
+        assertTrue(events.any { it is StreamEvent.TextDelta && it.text == "Hello " })
+        assertTrue(events.any { it is StreamEvent.TextDelta && it.text == "stream" })
+        val toolCall = events.filterIsInstance<StreamEvent.ToolCall>().single()
+        assertEquals("lookup", toolCall.toolName)
+        assertEquals("Berlin", toolCall.inputJson.jsonObject["city"]?.jsonPrimitive?.contentOrNull)
+        val finish = events.filterIsInstance<StreamEvent.Finish>().single()
+        assertEquals(FinishReason.ToolCalls, finish.finishReason)
+        assertEquals(1, finish.usage.promptTokens)
+        assertEquals(2, finish.usage.completionTokens)
+
+        val request = fixture.calls.single()
+        assertEquals("2026-05-20", request.requestHeaders.headerValue("Api-Revision"))
+        assertEquals(true, request.requestBodyJson.jsonObject["stream"]?.jsonPrimitive?.booleanOrNull)
+    }
+
+    @Test
+    fun `interactions agent background stream omits stream on post and synthesizes terminal response`() = runTest {
+        val fixture = createTestServer(
+            mutableMapOf(
+                "https://google.test/v1beta/interactions" to UrlHandler(
+                    UrlResponse.JsonValue(
+                        Json.parseToJsonElement(
+                            """
+                            {
+                              "id":"agent-run-1",
+                              "model":"deep-research",
+                              "status":"completed",
+                              "steps":[{"type":"model_output","content":[{"type":"text","text":"Agent result"}]}],
+                              "usage":{"total_input_tokens":2,"total_output_tokens":3}
+                            }
+                            """.trimIndent(),
+                        ),
+                    ),
+                ),
+            ),
+        )
+        fixture.server.start()
+        val provider = createGoogleGenerativeAI(
+            fixture.httpClient(),
+            GoogleGenerativeAIProviderSettings(apiKey = "key", baseURL = "https://google.test/v1beta"),
+        )
+
+        val events = drainAllItems(
+            provider.agentInteraction("deep-research").stream(
+                LanguageModelCallParams(
+                    messages = listOf(userMessage("research this")),
+                    tools = listOf(LanguageModelTool("lookup", "Lookup.", objectSchema("q").toString())),
+                    temperature = 0.1f,
+                    providerOptions = mapOf(
+                        "google" to buildJsonObject {
+                            put("background", JsonPrimitive(true))
+                            put(
+                                "agentConfig",
+                                Json.parseToJsonElement("""{"type":"deep-research","thinkingSummaries":"auto","visualization":"auto","collaborativePlanning":true}"""),
+                            )
+                            put(
+                                "environment",
+                                Json.parseToJsonElement("""{"type":"remote","sources":[{"type":"inline","content":"notes","target":"/tmp/notes.txt"}],"network":{"allowlist":[{"domain":"example.com"}]}}"""),
+                            )
+                        },
+                    ),
+                ),
+            ),
+        )
+
+        assertTrue(events.any { it is StreamEvent.TextDelta && it.text == "Agent result" })
+        val finish = events.filterIsInstance<StreamEvent.Finish>().single()
+        assertEquals(FinishReason.Stop, finish.finishReason)
+        assertEquals(2, finish.usage.promptTokens)
+        assertEquals(3, finish.usage.completionTokens)
+
+        val body = fixture.calls.single().requestBodyJson.jsonObject
+        assertEquals("deep-research", body["agent"]?.jsonPrimitive?.contentOrNull)
+        assertEquals(null, body["model"])
+        assertEquals(null, body["stream"])
+        assertEquals(null, body["tools"])
+        assertEquals(null, body["generation_config"])
+        assertEquals(true, body["background"]?.jsonPrimitive?.booleanOrNull)
+        assertEquals("deep-research", body["agent_config"]?.jsonObject?.get("type")?.jsonPrimitive?.contentOrNull)
+        assertEquals("remote", body["environment"]?.jsonObject?.get("type")?.jsonPrimitive?.contentOrNull)
+    }
+
     private fun objectSchema(vararg required: String): JsonObject = buildJsonObject {
         put("type", JsonPrimitive("object"))
         put(
