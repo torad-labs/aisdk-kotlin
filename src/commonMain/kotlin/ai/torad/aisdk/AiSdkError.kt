@@ -22,8 +22,7 @@ class NoSuchModelError(
     providerId: String?,
     modelType: String,
     modelId: String,
-) : AiSdkException(
-    buildString {
+    message: String = buildString {
         append("No ")
         append(modelType)
         append(" model registered for `")
@@ -31,6 +30,8 @@ class NoSuchModelError(
         append(modelId)
         append("`")
     },
+) : AiSdkException(
+    message,
 )
 
 class NoOutputGeneratedError(message: String = "No output generated") : AiSdkException(message)
