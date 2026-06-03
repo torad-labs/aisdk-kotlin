@@ -3,7 +3,7 @@
 - Version: 3.0.67
 - Upstream path: `.reference/vercel-ai-sdk-ai-6.0.195/packages/openai`
 - Target Kotlin module: `:aisdk-openai`
-- Current parity status: missing: no Kotlin module or parity mapping exists yet
+- Current parity status: in-progress: createOpenAI/openai facade and hosted OpenAI tool descriptors are folded into the root module; Responses-specific model transport remains open
 
 ## Entrypoints
 

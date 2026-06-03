@@ -13,6 +13,7 @@ const packageStatus = new Map([
   ['@ai-sdk/provider', 'in-progress: provider contracts are currently folded into the root module'],
   ['@ai-sdk/provider-utils', 'in-progress: provider utility subset is currently folded into the root module'],
   ['@ai-sdk/gateway', 'in-progress: gateway facade and Ktor transport are currently folded into the root module'],
+  ['@ai-sdk/openai', 'in-progress: createOpenAI/openai facade and hosted OpenAI tool descriptors are folded into the root module; Responses-specific model transport remains open'],
   ['@ai-sdk/openai-compatible', 'in-progress: OpenAI-compatible Ktor adapter is currently folded into the root module'],
 ]);
 

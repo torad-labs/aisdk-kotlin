@@ -45,7 +45,7 @@ Run `node tools/generate-parity-ledger.mjs --check` in CI to verify this directo
 | [@ai-sdk/mistral](ai-sdk-mistral.md) | 3.0.37 | `:aisdk-provider-mistral` | 6 | missing: no Kotlin module or parity mapping exists yet |
 | [@ai-sdk/moonshotai](ai-sdk-moonshotai.md) | 2.0.23 | `:aisdk-provider-moonshotai` | 7 | missing: no Kotlin module or parity mapping exists yet |
 | [@ai-sdk/open-responses](ai-sdk-open-responses.md) | 1.0.16 | `:aisdk-open-responses` | 3 | missing: no Kotlin module or parity mapping exists yet |
-| [@ai-sdk/openai](ai-sdk-openai.md) | 3.0.67 | `:aisdk-openai` | 72 | missing: no Kotlin module or parity mapping exists yet |
+| [@ai-sdk/openai](ai-sdk-openai.md) | 3.0.67 | `:aisdk-openai` | 72 | in-progress: createOpenAI/openai facade and hosted OpenAI tool descriptors are folded into the root module; Responses-specific model transport remains open |
 | [@ai-sdk/openai-compatible](ai-sdk-openai-compatible.md) | 2.0.48 | `:aisdk-openai-compatible` | 26 | in-progress: OpenAI-compatible Ktor adapter is currently folded into the root module |
 | [@ai-sdk/perplexity](ai-sdk-perplexity.md) | 3.0.33 | `:aisdk-provider-perplexity` | 5 | missing: no Kotlin module or parity mapping exists yet |
 | [@ai-sdk/prodia](ai-sdk-prodia.md) | 1.0.31 | `:aisdk-provider-prodia` | 12 | missing: no Kotlin module or parity mapping exists yet |

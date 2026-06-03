@@ -27,6 +27,11 @@ The latest stable Vercel AI SDK v6 reference verified during this pass is `ai@6.
 - Gateway provider facade: `createGateway`, `gateway`, gateway model
   factories, metadata/credits/spend/generation-info calls, gateway tools,
   and gateway errors over an injected KMP transport.
+- OpenAI package facade: `createOpenAI`, `createOpenAIProvider`, `openai`,
+  OpenAI provider settings, model factory aliases, and hosted OpenAI tool
+  descriptors are present; the facade currently reuses the
+  OpenAI-compatible transport while Responses-specific transport is tracked
+  in the package parity ledger.
 - Text-stream, UI-message-stream, and chat transport primitives.
 - Telemetry helpers and host-injected telemetry integration registry.
 - Provider-utils-style helpers: `generateId`, `createIdGenerator`, `jsonSchema`, `asSchema`, `zodSchema`, and `dynamicTool`.
@@ -45,7 +50,7 @@ The extracted test suite is executed on both JVM and Android host targets.
 
 Last local verification:
 
-- `./gradlew allTests`: 440 test executions, 0 failures, 0 errors, 0 skips.
+- `./gradlew allTests`: 450 test executions, 0 failures, 0 errors, 0 skips.
 - `./gradlew publishToMavenLocal`: published JVM, Android, iOS x64, iOS arm64, and iOS simulator arm64 artifacts locally.
 
 On Linux, iOS unit-test binaries compile but iOS simulator execution is skipped by Gradle. Publication verification still compiles the iOS artifacts.
