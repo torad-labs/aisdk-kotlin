@@ -1,0 +1,64 @@
+# AI SDK Kotlin
+
+AI SDK Kotlin is a Kotlin Multiplatform, green-room port of Vercel AI SDK v6
+public feature areas. It is not an official Vercel package and not a
+TypeScript source translation.
+
+Repository: https://github.com/torad-labs/aisdk-kotlin
+Group/artifact: ai.torad:aisdk-kotlin
+Current snapshot version: 0.1.0-SNAPSHOT
+Primary package: ai.torad.aisdk
+
+## What To Read First
+
+- README.md: install, targets, included features, and quick start.
+- docs/wiki/README.md: human docs navigation.
+- docs/wiki/getting-started.md: first agent and provider choices.
+- docs/wiki/core.md: generateText, streamText, Output, tools, model families,
+  middleware, telemetry, and errors.
+- docs/wiki/agents.md: Agent, ToolLoopAgent, stop conditions, lifecycle hooks,
+  tool approval, subagents, and memory boundaries.
+- docs/wiki/providers.md: gateway, OpenAI-compatible, dedicated facades,
+  provider registry, and custom providers.
+- docs/wiki/ui-and-streams.md: Flow<StreamEvent>, UIMessage, Chat, transports,
+  stream responses, and persistence.
+- docs/wiki/coding-agents.md: source-of-truth map and commands for coding
+  agents.
+- docs/wiki/testing-and-release.md: local checks, CI, parity, and release.
+- docs/wiki/troubleshooting.md: common failures.
+- docs/parity/README.md: generated Vercel AI SDK v6 package/export parity
+  ledger.
+- docs/FUNCTIONALITY_AUDIT.md: verified feature surface and extension
+  boundaries.
+
+## Core Runtime Concepts
+
+- Agent<TContext, TOutput>: provider-neutral multi-step generation contract.
+- ToolLoopAgent: default tool-loop implementation.
+- LanguageModel, EmbeddingModel, ImageModel, SpeechModel, TranscriptionModel,
+  VideoModel, RerankingModel: provider-neutral model contracts.
+- generateText and streamText: single-call text APIs.
+- Output: structured output adapter for Kotlin serializers.
+- tool, dynamicTool, ToolSet: typed and dynamic tool definitions.
+- StreamEvent: low-level streaming event taxonomy.
+- UIMessage and UIMessagePart: framework-neutral render contracts.
+- Chat and ChatTransport: host-neutral chat state and transport contracts.
+- createGateway, createOpenAICompatible, createOpenAI, provider facades:
+  provider entry points.
+- createProviderRegistry and customProvider: provider routing.
+- createMCPClient: MCP client entry point.
+- devToolsMiddleware: recorder-backed development middleware.
+
+## Development Commands
+
+```sh
+node tools/check-ai-sdk-reference.mjs
+node tools/generate-parity-ledger.mjs --check
+./gradlew jvmTest
+./gradlew allTests
+./gradlew publishToMavenLocal
+```
+
+Use deterministic mock models, fake transports, and Ktor MockEngine in tests.
+Do not add live provider calls, real provider keys, production prompts, or
+customer data to fixtures.
