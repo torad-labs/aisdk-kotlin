@@ -3,7 +3,7 @@
 - Version: 2.0.52
 - Upstream path: `.reference/vercel-ai-sdk-ai-6.0.195/packages/deepinfra`
 - Target Kotlin module: `:aisdk-provider-deepinfra`
-- Current parity status: missing: no Kotlin module or parity mapping exists yet
+- Current parity status: ported: createDeepInfra/deepinfra, provider settings, chat/completion/embedding/image routing, DeepInfraErrorData, and DeepInfra usage correction are represented as a Kotlin facade folded into the root module; VERSION is exposed as DEEPINFRA_VERSION until package modules are split
 
 ## Entrypoints
 

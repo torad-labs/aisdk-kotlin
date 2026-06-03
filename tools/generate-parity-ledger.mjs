@@ -14,7 +14,9 @@ const packageStatus = new Map([
   ['@ai-sdk/provider-utils', 'in-progress: provider utility subset is currently folded into the root module'],
   ['@ai-sdk/devtools', 'in-progress: devToolsMiddleware is represented as a Kotlin-native recorder-backed middleware folded into the root module; DB viewer/server storage remains a platform/tooling module concern'],
   ['@ai-sdk/cerebras', 'ported: createCerebras/cerebras, chat provider settings, CerebrasErrorData, and chat model routing are represented as an OpenAI-compatible Kotlin facade folded into the root module; VERSION is exposed as CEREBRAS_VERSION until package modules are split'],
+  ['@ai-sdk/deepinfra', 'ported: createDeepInfra/deepinfra, provider settings, chat/completion/embedding/image routing, DeepInfraErrorData, and DeepInfra usage correction are represented as a Kotlin facade folded into the root module; VERSION is exposed as DEEPINFRA_VERSION until package modules are split'],
   ['@ai-sdk/deepseek', 'ported: createDeepSeek/deepseek, provider settings, language options, error data alias, and chat model routing are represented as an OpenAI-compatible Kotlin facade folded into the root module; VERSION is exposed as DEEPSEEK_VERSION until package modules are split'],
+  ['@ai-sdk/fireworks', 'ported: createFireworks/fireworks, provider settings, language/embedding option surfaces, FireworksErrorData, FireworksImageModel, chat/completion/embedding routing, and Fireworks image backend routing are represented as a Kotlin facade folded into the root module; VERSION is exposed as FIREWORKS_VERSION until package modules are split'],
   ['@ai-sdk/gateway', 'in-progress: gateway facade and Ktor transport are currently folded into the root module'],
   ['@ai-sdk/groq', 'ported: createGroq/groq, Groq tools, chat/transcription routing, provider settings, and option surfaces are represented as an OpenAI-compatible Kotlin facade folded into the root module; VERSION is exposed as GROQ_VERSION until package modules are split'],
   ['@ai-sdk/langchain', 'ported: toBaseMessages, convertModelMessages, toUIMessageStream, StreamCallbacks, and LangSmithDeploymentTransport are represented as Kotlin-native UI/Flow adapters folded into the root module'],
@@ -26,6 +28,7 @@ const packageStatus = new Map([
   ['@ai-sdk/openai-compatible', 'in-progress: OpenAI-compatible Ktor adapter is currently folded into the root module'],
   ['@ai-sdk/perplexity', 'ported: createPerplexity/perplexity and provider settings are represented as an OpenAI-compatible Kotlin facade folded into the root module; VERSION is exposed as PERPLEXITY_VERSION until package modules are split'],
   ['@ai-sdk/test-server', 'ported: createTestServer, TestResponseController, UrlResponse, UrlHandler, and UrlHandlers are represented as a Kotlin-native in-memory server with a Ktor MockEngine bridge folded into the root module'],
+  ['@ai-sdk/togetherai', 'ported: createTogetherAI/togetherai, provider settings, image/reranking option surfaces, TogetherAIErrorData, chat/completion/embedding/image routing, and TogetherAI reranking are represented as a Kotlin facade folded into the root module; VERSION is exposed as TOGETHERAI_VERSION until package modules are split'],
   ['@ai-sdk/valibot', 'ported: valibotSchema is represented as a Kotlin-native Schema adapter folded into the root module'],
 ]);
 

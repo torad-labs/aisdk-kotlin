@@ -23,12 +23,12 @@ Run `node tools/generate-parity-ledger.mjs --check` in CI to verify this directo
 | [@ai-sdk/codemod](ai-sdk-codemod.md) | 3.0.6 | `:aisdk-codemod` | 0 | missing: no Kotlin module or parity mapping exists yet |
 | [@ai-sdk/cohere](ai-sdk-cohere.md) | 3.0.36 | `:aisdk-provider-cohere` | 10 | missing: no Kotlin module or parity mapping exists yet |
 | [@ai-sdk/deepgram](ai-sdk-deepgram.md) | 2.0.33 | `:aisdk-provider-deepgram` | 10 | missing: no Kotlin module or parity mapping exists yet |
-| [@ai-sdk/deepinfra](ai-sdk-deepinfra.md) | 2.0.52 | `:aisdk-provider-deepinfra` | 6 | missing: no Kotlin module or parity mapping exists yet |
+| [@ai-sdk/deepinfra](ai-sdk-deepinfra.md) | 2.0.52 | `:aisdk-provider-deepinfra` | 6 | ported: createDeepInfra/deepinfra, provider settings, chat/completion/embedding/image routing, DeepInfraErrorData, and DeepInfra usage correction are represented as a Kotlin facade folded into the root module; VERSION is exposed as DEEPINFRA_VERSION until package modules are split |
 | [@ai-sdk/deepseek](ai-sdk-deepseek.md) | 2.0.35 | `:aisdk-provider-deepseek` | 8 | ported: createDeepSeek/deepseek, provider settings, language options, error data alias, and chat model routing are represented as an OpenAI-compatible Kotlin facade folded into the root module; VERSION is exposed as DEEPSEEK_VERSION until package modules are split |
 | [@ai-sdk/devtools](ai-sdk-devtools.md) | 0.0.18 | `:aisdk-devtools` | 1 | in-progress: devToolsMiddleware is represented as a Kotlin-native recorder-backed middleware folded into the root module; DB viewer/server storage remains a platform/tooling module concern |
 | [@ai-sdk/elevenlabs](ai-sdk-elevenlabs.md) | 2.0.33 | `:aisdk-provider-elevenlabs` | 9 | missing: no Kotlin module or parity mapping exists yet |
 | [@ai-sdk/fal](ai-sdk-fal.md) | 2.0.34 | `:aisdk-provider-fal` | 12 | missing: no Kotlin module or parity mapping exists yet |
-| [@ai-sdk/fireworks](ai-sdk-fireworks.md) | 2.0.53 | `:aisdk-provider-fireworks` | 13 | missing: no Kotlin module or parity mapping exists yet |
+| [@ai-sdk/fireworks](ai-sdk-fireworks.md) | 2.0.53 | `:aisdk-provider-fireworks` | 13 | ported: createFireworks/fireworks, provider settings, language/embedding option surfaces, FireworksErrorData, FireworksImageModel, chat/completion/embedding routing, and Fireworks image backend routing are represented as a Kotlin facade folded into the root module; VERSION is exposed as FIREWORKS_VERSION until package modules are split |
 | [@ai-sdk/gateway](ai-sdk-gateway.md) | 3.0.123 | `:aisdk-gateway` | 27 | in-progress: gateway facade and Ktor transport are currently folded into the root module |
 | [@ai-sdk/gladia](ai-sdk-gladia.md) | 2.0.33 | `:aisdk-provider-gladia` | 6 | missing: no Kotlin module or parity mapping exists yet |
 | [@ai-sdk/google](ai-sdk-google.md) | 3.0.80 | `:aisdk-provider-google` | 30 | missing: no Kotlin module or parity mapping exists yet |
@@ -58,7 +58,7 @@ Run `node tools/generate-parity-ledger.mjs --check` in CI to verify this directo
 | [@ai-sdk/rsc](ai-sdk-rsc.md) | 2.0.195 | `:aisdk-server` | 29 | missing: no Kotlin module or parity mapping exists yet |
 | [@ai-sdk/svelte](ai-sdk-svelte.md) | 4.0.195 | `:aisdk-ui` | 8 | missing: no Kotlin module or parity mapping exists yet |
 | [@ai-sdk/test-server](ai-sdk-test-server.md) | 1.0.5 | `:aisdk-test-server` | 5 | ported: createTestServer, TestResponseController, UrlResponse, UrlHandler, and UrlHandlers are represented as a Kotlin-native in-memory server with a Ktor MockEngine bridge folded into the root module |
-| [@ai-sdk/togetherai](ai-sdk-togetherai.md) | 2.0.53 | `:aisdk-provider-togetherai` | 10 | missing: no Kotlin module or parity mapping exists yet |
+| [@ai-sdk/togetherai](ai-sdk-togetherai.md) | 2.0.53 | `:aisdk-provider-togetherai` | 10 | ported: createTogetherAI/togetherai, provider settings, image/reranking option surfaces, TogetherAIErrorData, chat/completion/embedding/image routing, and TogetherAI reranking are represented as a Kotlin facade folded into the root module; VERSION is exposed as TOGETHERAI_VERSION until package modules are split |
 | [@ai-sdk/valibot](ai-sdk-valibot.md) | 2.0.28 | `:aisdk-validation` | 1 | ported: valibotSchema is represented as a Kotlin-native Schema adapter folded into the root module |
 | [@ai-sdk/vercel](ai-sdk-vercel.md) | 2.0.50 | `:aisdk-provider-vercel` | 6 | missing: no Kotlin module or parity mapping exists yet |
 | [@ai-sdk/voyage](ai-sdk-voyage.md) | 1.0.4 | `:aisdk-provider-voyage` | 7 | missing: no Kotlin module or parity mapping exists yet |

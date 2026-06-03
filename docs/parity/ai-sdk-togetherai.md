@@ -3,7 +3,7 @@
 - Version: 2.0.53
 - Upstream path: `.reference/vercel-ai-sdk-ai-6.0.195/packages/togetherai`
 - Target Kotlin module: `:aisdk-provider-togetherai`
-- Current parity status: missing: no Kotlin module or parity mapping exists yet
+- Current parity status: ported: createTogetherAI/togetherai, provider settings, image/reranking option surfaces, TogetherAIErrorData, chat/completion/embedding/image routing, and TogetherAI reranking are represented as a Kotlin facade folded into the root module; VERSION is exposed as TOGETHERAI_VERSION until package modules are split
 
 ## Entrypoints
 
