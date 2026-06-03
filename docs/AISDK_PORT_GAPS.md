@@ -75,13 +75,13 @@ and everything the core package consumes directly — are done:
   aliases, `pruneMessages`, uppercase `validateUIMessages` /
   `safeValidateUIMessages`, and the root v6 error taxonomy are present.
 
-## No Deferred Core Gaps
+## No Deferred Runtime Package Gaps
 
-No core-package behavioral gaps are currently listed here. Remaining
-forward-parity work is package expansion and platform adapters, tracked in
-`docs/parity/` and summarized below.
+No runtime package behavioral gaps are currently listed here. The parity
+ledgers in `docs/parity/` are the release gate for upstream v6 package
+coverage, and CI verifies that the checked reference is still npm `ai@latest`.
 
-## Platform adapter surface
+## Platform Binding Boundaries
 
 - **Server-shape helpers**: `createAgentUiStream*`,
   `pipeUIMessageStreamToResponse`, `createUIMessageStreamResponse`, and
@@ -96,17 +96,15 @@ forward-parity work is package expansion and platform adapters, tracked in
   and OpenAI-compatible Ktor provider exist in common contracts; framework
   response binding still lives in host/platform modules.
 - **Provider-executed tools** (`Tool.type = 'provider'`): represented by
-  `providerExecutedTool`, `LanguageModelTool.providerExecuted`, and
-  gateway `parallelSearch` / `perplexitySearch`; concrete hosted tools
-  beyond gateway are provider-module work because execution is
-  provider-specific.
+  `providerExecutedTool`, `LanguageModelTool.providerExecuted`, provider
+  tool factories, and hosted tool descriptors across the provider facades.
+  These tools intentionally have no local executor unless the host supplies
+  one; execution happens inside the upstream provider.
 - **React-binding plumbing**: `Chat` and transports exist in Kotlin;
   `useChat` remains a React hook concept and is expressed by collecting
   `Flow<UIMessage>` in the host UI layer.
 - **Deprecated v5 aliases**: `isToolOrDynamicToolUIPart`, etc.
 
----
-
-If a deferred item gains a real consumer, port it then and delete its row
-here. Don't re-grow the audit — `INTERFACE_CONTRACT.md` is the surface of
-record.
+Do not re-grow this document as an active punch list. If npm `ai@latest`
+moves, refresh the reference, regenerate `docs/parity/`, and close any new
+delta in code and tests.

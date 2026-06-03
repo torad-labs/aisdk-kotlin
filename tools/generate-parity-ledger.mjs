@@ -4,7 +4,8 @@ import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 
 import { dirname, join, relative, resolve } from 'node:path';
 
 const repoRoot = resolve(new URL('..', import.meta.url).pathname);
-const referenceRoot = join(repoRoot, '.reference', 'vercel-ai-sdk-ai-6.0.195', 'packages');
+const referenceVersion = process.env.AI_SDK_REFERENCE_VERSION ?? '6.0.195';
+const referenceRoot = join(repoRoot, '.reference', `vercel-ai-sdk-ai-${referenceVersion}`, 'packages');
 const outputRoot = join(repoRoot, 'docs', 'parity');
 const checkOnly = process.argv.includes('--check');
 

@@ -73,14 +73,14 @@ val agent = ToolLoopAgent<Unit, String>(
 - UI message aggregation types for Compose, SwiftUI, or server-rendered hosts.
 - Mock models for deterministic tests across every model family.
 
-Provider-specific packages for Anthropic, LiteRT, MLX, Gemini, or other runtimes can live in separate `aisdk-provider-*` modules. OpenAI-compatible HTTP providers can use the built-in Ktor adapter directly.
+Provider facades for the AI SDK v6 package ecosystem are folded into this root artifact for now. Future `aisdk-provider-*` artifacts can split publication boundaries without changing the common contracts.
 
 ## Documentation
 
 - [Interface contract](INTERFACE_CONTRACT.md)
 - [Port notes](docs/AISDK_PORT.md)
 - [Architecture decisions](docs/AISDK_PORT_DECISIONS.md)
-- [Known gaps](docs/AISDK_PORT_GAPS.md)
+- [Closed port audit](docs/AISDK_PORT_GAPS.md)
 - [Complete v6 port plan](docs/COMPLETE_PORT_PLAN.md)
 - [Parity ledgers](docs/parity/README.md)
 - [Usage guide](docs/AISDK_USAGE.md)
