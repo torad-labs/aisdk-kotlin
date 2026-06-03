@@ -3,7 +3,7 @@
 - Version: 2.0.33
 - Upstream path: `.reference/vercel-ai-sdk-ai-6.0.195/packages/luma`
 - Target Kotlin module: `:aisdk-provider-luma`
-- Current parity status: missing: no Kotlin module or parity mapping exists yet
+- Current parity status: ported: createLuma/luma, LumaProviderSettings, LumaImageModelOptions/LumaImageProviderOptions, async image generation, polling, image download, seed/size warnings, provider-option passthrough, URL reference images, character/style/modify_image reference mapping, and mask/base64 rejection are represented as a Kotlin facade folded into the root module; VERSION is exposed as LUMA_VERSION until package modules are split
 
 ## Entrypoints
 

@@ -68,6 +68,15 @@ data class ImageGenerationParams(
     val providerOptions: Map<String, JsonElement> = emptyMap(),
     val headers: Map<String, String> = emptyMap(),
     val abortSignal: AbortSignal = AbortSignalNever,
+    val files: List<ImageGenerationFile> = emptyList(),
+    val mask: ImageGenerationFile? = null,
+)
+
+data class ImageGenerationFile(
+    val mediaType: String? = null,
+    val base64: String? = null,
+    val url: String? = null,
+    val filename: String? = null,
 )
 
 data class ImageModelResult(
@@ -96,11 +105,13 @@ suspend fun generateImage(
     providerOptions: Map<String, JsonElement> = emptyMap(),
     headers: Map<String, String> = emptyMap(),
     abortSignal: AbortSignal = AbortSignalNever,
+    files: List<ImageGenerationFile> = emptyList(),
+    mask: ImageGenerationFile? = null,
 ): GenerateImageResult {
     require(prompt.isNotBlank()) { "generateImage: prompt must not be blank" }
     require(n > 0) { "generateImage: n must be > 0" }
     val result = model.generate(
-        ImageGenerationParams(prompt, n, size, aspectRatio, seed, providerOptions, headers, abortSignal),
+        ImageGenerationParams(prompt, n, size, aspectRatio, seed, providerOptions, headers, abortSignal, files, mask),
     )
     if (result.images.isEmpty()) throw NoImageGeneratedError()
     return GenerateImageResult(result.images, result.warnings, result.response, result.providerMetadata)
@@ -116,6 +127,8 @@ suspend fun experimental_generateImage(
     providerOptions: Map<String, JsonElement> = emptyMap(),
     headers: Map<String, String> = emptyMap(),
     abortSignal: AbortSignal = AbortSignalNever,
+    files: List<ImageGenerationFile> = emptyList(),
+    mask: ImageGenerationFile? = null,
 ): GenerateImageResult = generateImage(
     model = model,
     prompt = prompt,
@@ -126,6 +139,8 @@ suspend fun experimental_generateImage(
     providerOptions = providerOptions,
     headers = headers,
     abortSignal = abortSignal,
+    files = files,
+    mask = mask,
 )
 
 interface ImageModelMiddleware {
