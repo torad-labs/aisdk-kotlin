@@ -19,6 +19,7 @@ const packageStatus = new Map([
   ['@ai-sdk/open-responses', 'in-progress: createOpenResponses, OpenResponsesOptions, generate/stream response mapping, and fake HTTP tests are folded into the root module; VERSION is exposed as OPEN_RESPONSES_VERSION until package modules are split'],
   ['@ai-sdk/openai', 'in-progress: createOpenAI/openai facade and hosted OpenAI tool descriptors are folded into the root module; Responses-specific model transport remains open'],
   ['@ai-sdk/openai-compatible', 'in-progress: OpenAI-compatible Ktor adapter is currently folded into the root module'],
+  ['@ai-sdk/test-server', 'ported: createTestServer, TestResponseController, UrlResponse, UrlHandler, and UrlHandlers are represented as a Kotlin-native in-memory server with a Ktor MockEngine bridge folded into the root module'],
   ['@ai-sdk/valibot', 'ported: valibotSchema is represented as a Kotlin-native Schema adapter folded into the root module'],
 ]);
 

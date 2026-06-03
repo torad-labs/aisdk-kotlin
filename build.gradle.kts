@@ -47,6 +47,7 @@ kotlin {
             api(libs.kotlinx.coroutines.core)
             api(libs.kotlinx.serialization.json)
             api(libs.ktor.client.core)
+            api(libs.ktor.client.mock)
         }
         commonTest.dependencies {
             implementation(kotlin("test"))

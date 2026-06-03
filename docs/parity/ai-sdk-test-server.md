@@ -3,7 +3,7 @@
 - Version: 1.0.5
 - Upstream path: `.reference/vercel-ai-sdk-ai-6.0.195/packages/test-server`
 - Target Kotlin module: `:aisdk-test-server`
-- Current parity status: missing: no Kotlin module or parity mapping exists yet
+- Current parity status: ported: createTestServer, TestResponseController, UrlResponse, UrlHandler, and UrlHandlers are represented as a Kotlin-native in-memory server with a Ktor MockEngine bridge folded into the root module
 
 ## Entrypoints
 

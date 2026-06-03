@@ -57,7 +57,7 @@ Run `node tools/generate-parity-ledger.mjs --check` in CI to verify this directo
 | [@ai-sdk/revai](ai-sdk-revai.md) | 2.0.33 | `:aisdk-provider-revai` | 6 | missing: no Kotlin module or parity mapping exists yet |
 | [@ai-sdk/rsc](ai-sdk-rsc.md) | 2.0.195 | `:aisdk-server` | 29 | missing: no Kotlin module or parity mapping exists yet |
 | [@ai-sdk/svelte](ai-sdk-svelte.md) | 4.0.195 | `:aisdk-ui` | 8 | missing: no Kotlin module or parity mapping exists yet |
-| [@ai-sdk/test-server](ai-sdk-test-server.md) | 1.0.5 | `:aisdk-test-server` | 5 | missing: no Kotlin module or parity mapping exists yet |
+| [@ai-sdk/test-server](ai-sdk-test-server.md) | 1.0.5 | `:aisdk-test-server` | 5 | ported: createTestServer, TestResponseController, UrlResponse, UrlHandler, and UrlHandlers are represented as a Kotlin-native in-memory server with a Ktor MockEngine bridge folded into the root module |
 | [@ai-sdk/togetherai](ai-sdk-togetherai.md) | 2.0.53 | `:aisdk-provider-togetherai` | 10 | missing: no Kotlin module or parity mapping exists yet |
 | [@ai-sdk/valibot](ai-sdk-valibot.md) | 2.0.28 | `:aisdk-validation` | 1 | ported: valibotSchema is represented as a Kotlin-native Schema adapter folded into the root module |
 | [@ai-sdk/vercel](ai-sdk-vercel.md) | 2.0.50 | `:aisdk-provider-vercel` | 6 | missing: no Kotlin module or parity mapping exists yet |
