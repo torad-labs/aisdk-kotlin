@@ -205,6 +205,7 @@ class GatewayAndProviderUtilsParityTest {
         assertEquals(raw.toList(), convertBase64ToByteArray(encoded).toList())
         assertEquals(raw.toList(), convertBase64ToUint8Array(encoded).toList())
         assertEquals(encoded, convertUint8ArrayToBase64(raw))
+        assertEquals(byteArrayOf(0xfb.toByte(), 0xff.toByte()).toList(), convertBase64ToUint8Array("-_8=").toList())
         assertEquals("already-base64", convertToBase64("already-base64"))
         assertEquals(encoded, convertToBase64(raw))
         assertTrue(
