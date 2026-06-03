@@ -3,7 +3,7 @@
 - Version: 1.0.0
 - Upstream path: `.reference/vercel-ai-sdk-ai-6.0.195/packages/quiverai`
 - Target Kotlin module: `:aisdk-provider-quiverai`
-- Current parity status: missing: no Kotlin module or parity mapping exists yet
+- Current parity status: ported: createQuiverAI/quiverai, QuiverAIProviderSettings, QuiverAIImageModelId, QuiverAIImageModelOptions, SVG generation, vectorization, reference image validation, option snake_case mapping, unsupported option warnings, SVG byte conversion, usage/provider metadata, and QuiverAI error parsing are represented as a Kotlin facade folded into the root module; VERSION is exposed as QUIVERAI_VERSION until package modules are split
 
 ## Entrypoints
 
