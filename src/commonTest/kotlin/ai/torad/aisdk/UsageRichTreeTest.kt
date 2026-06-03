@@ -2,6 +2,7 @@ package ai.torad.aisdk
 
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 import kotlinx.serialization.json.Json
@@ -103,5 +104,27 @@ class UsageRichTreeTest {
         assertEquals(50, decoded.inputTokens.cacheRead)
         assertEquals(rawPayload, decoded.raw, "provider-specific raw payload survives")
         assertTrue(encoded.contains("anthropic_internal_cache_id"))
+    }
+
+    @Test
+    fun `given input breakdown parts exceeding total when constructed then it rejects impossible usage`() {
+        assertFailsWith<IllegalArgumentException> {
+            Usage.InputTokenBreakdown(
+                total = 100,
+                noCache = 60,
+                cacheRead = 41,
+            )
+        }
+    }
+
+    @Test
+    fun `given output breakdown parts exceeding total when constructed then it rejects impossible usage`() {
+        assertFailsWith<IllegalArgumentException> {
+            Usage.OutputTokenBreakdown(
+                total = 20,
+                text = 15,
+                reasoning = 6,
+            )
+        }
     }
 }

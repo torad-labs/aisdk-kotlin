@@ -755,16 +755,16 @@ private fun bedrockEmbeddingBody(modelId: String, value: String, options: JsonOb
     }
 
 private fun bedrockEmbeddingVector(response: JsonObject): List<Float> {
-    response["embedding"]?.let { return it.jsonArray.map { item -> item.jsonPrimitive.floatOrNull ?: 0f } }
+    response["embedding"]?.let { return it.jsonArray.map { item -> embeddingFloat(item, "amazon-bedrock.embedding") } }
     val embeddings = response["embeddings"]
     if (embeddings is JsonArray) {
         val first = embeddings.firstOrNull() ?: return emptyList()
-        if (first is JsonArray) return first.map { it.jsonPrimitive.floatOrNull ?: 0f }
+        if (first is JsonArray) return first.map { embeddingFloat(it, "amazon-bedrock.embedding") }
         val obj = first.jsonObject
-        return obj["embedding"]?.jsonArray.orEmpty().map { it.jsonPrimitive.floatOrNull ?: 0f }
+        return obj["embedding"]?.jsonArray.orEmpty().map { embeddingFloat(it, "amazon-bedrock.embedding") }
     }
     val floatEmbeddings = embeddings?.jsonObject?.get("float")?.jsonArray?.firstOrNull()?.jsonArray
-    return floatEmbeddings.orEmpty().map { it.jsonPrimitive.floatOrNull ?: 0f }
+    return floatEmbeddings.orEmpty().map { embeddingFloat(it, "amazon-bedrock.embedding") }
 }
 
 private fun bedrockEmbeddingTokens(response: JsonObject): Int =
@@ -1292,8 +1292,15 @@ private fun bedrockUsage(element: JsonElement?): Usage {
     val cacheWrite = obj["cacheWriteInputTokens"]?.jsonPrimitive?.intOrNull
         ?: obj["cacheWriteInputTokenCount"]?.jsonPrimitive?.intOrNull
         ?: 0
+    val safeCacheRead = cacheRead.coerceIn(0, input)
+    val safeCacheWrite = cacheWrite.coerceIn(0, input - safeCacheRead)
     return Usage(
-        inputTokens = Usage.InputTokenBreakdown(total = input, noCache = input - cacheRead - cacheWrite, cacheRead = cacheRead, cacheWrite = cacheWrite),
+        inputTokens = Usage.InputTokenBreakdown(
+            total = input,
+            noCache = input - safeCacheRead - safeCacheWrite,
+            cacheRead = safeCacheRead,
+            cacheWrite = safeCacheWrite,
+        ),
         outputTokens = Usage.OutputTokenBreakdown(total = output),
         raw = element,
     )
@@ -1394,10 +1401,26 @@ private fun appendUserAgent(existing: String?, suffix: String): String =
 
 private fun bedrockErrorMessage(parsed: JsonElement?, raw: String): String {
     val obj = parsed as? JsonObject ?: return raw
-    return obj["message"]?.jsonPrimitive?.contentOrNull
+    val message = obj["message"]?.jsonPrimitive?.contentOrNull
         ?: obj["error"]?.jsonObject?.get("message")?.jsonPrimitive?.contentOrNull
         ?: obj["type"]?.jsonPrimitive?.contentOrNull
         ?: raw
+    val code = obj["__type"]?.jsonPrimitive?.contentOrNull
+        ?: obj["code"]?.jsonPrimitive?.contentOrNull
+        ?: obj["type"]?.jsonPrimitive?.contentOrNull
+    return if (isBedrockClockSkewError(code, message)) {
+        "Amazon Bedrock request failed because the local clock appears to be skewed. Sync the host clock and retry. Provider message: $message"
+    } else {
+        message
+    }
+}
+
+private fun isBedrockClockSkewError(code: String?, message: String): Boolean {
+    val codeText = code.orEmpty()
+    return codeText.contains("RequestTimeTooSkewed", ignoreCase = true) ||
+        codeText.contains("RequestExpired", ignoreCase = true) ||
+        message.contains("Signature expired", ignoreCase = true) ||
+        message.contains("Request time too skewed", ignoreCase = true)
 }
 
 private fun HttpResponse.responseHeaders(): Map<String, String> =

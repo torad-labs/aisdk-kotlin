@@ -9,7 +9,7 @@ interfaces, middleware, telemetry, and the public error taxonomy.
 Use `generateText` for a single provider call without an agent loop:
 
 ```kotlin
-val result = generateText<String>(
+val result = generateText(
     model = model,
     system = "Be precise.",
     prompt = "Summarize Kotlin Multiplatform in one paragraph.",
@@ -21,7 +21,7 @@ println(result.text)
 Use `messages` when you already own the conversation state:
 
 ```kotlin
-val result = generateText<String>(
+val result = generateText(
     model = model,
     messages = listOf(
         systemMessage("Answer with short bullets."),

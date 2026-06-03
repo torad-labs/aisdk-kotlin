@@ -78,7 +78,7 @@ class OpenAICompatibleProviderTest {
             ),
         )
 
-        val result = generateText<String>(
+        val result = generateText(
             model = provider.languageModel("gpt-test"),
             prompt = "hi",
             responseFormat = ResponseFormat.Json(
@@ -236,7 +236,7 @@ class OpenAICompatibleProviderTest {
         )
         val provider = createOpenAICompatible(client, OpenAICompatibleProviderSettings("openai", "https://api.test/v1"))
 
-        val generated = generateText<String>(provider.completionModel("davinci"), prompt = "complete")
+        val generated = generateText(provider.completionModel("davinci"), prompt = "complete")
         val streamed = drainAllItems(provider.completionModel("davinci").stream(LanguageModelCallParams(listOf(userMessage("hi")))))
 
         assertEquals("done", generated.text)
@@ -325,6 +325,27 @@ class OpenAICompatibleProviderTest {
     }
 
     @Test
+    fun `embedding model rejects non numeric vector values`() = runTest {
+        val client = HttpClient(
+            MockEngine {
+                respond(
+                    """{"data":[{"index":0,"embedding":[1,"bad"]}],"usage":{"prompt_tokens":1}}""",
+                    HttpStatusCode.OK,
+                    headersOf(HttpHeaders.ContentType, "application/json"),
+                )
+            },
+        )
+        val provider = createOpenAICompatible(client, OpenAICompatibleProviderSettings("openai", "https://api.test/v1"))
+
+        val error = assertFailsWith<WireDecodeException> {
+            embed(provider.embeddingModel("embed"), "a")
+        }
+
+        assertEquals("openai.embedding", error.provider)
+        assertTrue(error.message.orEmpty().contains("expected number"))
+    }
+
+    @Test
     fun `OpenAI-compatible errors include status and provider message`() = runTest {
         val client = HttpClient(
             MockEngine {
@@ -338,7 +359,7 @@ class OpenAICompatibleProviderTest {
         val provider = createOpenAICompatible(client, OpenAICompatibleProviderSettings("openai", "https://api.test/v1"))
 
         val error = assertFailsWith<AiSdkException> {
-            generateText<String>(provider.languageModel("gpt-test"), prompt = "hi")
+            generateText(provider.languageModel("gpt-test"), prompt = "hi")
         }
 
         assertNotNull(error.message)

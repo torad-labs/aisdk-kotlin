@@ -4,6 +4,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emitAll
 import kotlinx.coroutines.flow.flow
 import kotlinx.serialization.json.JsonElement
+import kotlin.time.Clock
 
 typealias GatewayModelId = String
 typealias GatewayEmbeddingModelId = String
@@ -31,7 +32,7 @@ data class GatewayProviderSettings(
     val headers: Map<String, String> = emptyMap(),
     val transport: GatewayTransport = GatewayTransportNotConfigured,
     val metadataCacheRefreshMillis: Long = 5 * 60 * 1000L,
-    val nowMillis: () -> Long = { 0L },
+    val nowMillis: () -> Long = { Clock.System.now().toEpochMilliseconds() },
     val authTokenProvider: (suspend () -> GatewayAuthToken?)? = null,
 )
 
@@ -272,7 +273,10 @@ private class DefaultGatewayProvider(
     override suspend fun getAvailableModels(): GatewayFetchMetadataResponse {
         val now = settings.nowMillis()
         val cached = pendingMetadata
-        if (cached != null && now - lastFetchTime <= settings.metadataCacheRefreshMillis) {
+        if (cached != null &&
+            settings.metadataCacheRefreshMillis > 0 &&
+            now - lastFetchTime <= settings.metadataCacheRefreshMillis
+        ) {
             return cached
         }
         return settings.transport.getAvailableModels(requestContext()).also {

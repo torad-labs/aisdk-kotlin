@@ -308,6 +308,24 @@ class HuggingFaceProviderTest {
     }
 
     @Test
+    fun `stream surfaces Hugging Face missing output item as error`() = runTest {
+        val fixture = createTestServer(
+            mutableMapOf(
+                "https://hf.test/v1/responses" to UrlHandler(
+                    UrlResponse.StreamChunks(listOf("""data: {"type":"response.output_item.done"}""")),
+                ),
+            ),
+        )
+        fixture.server.start()
+        val provider = createHuggingFace(fixture.httpClient(), HuggingFaceProviderSettings(baseURL = "https://hf.test/v1"))
+
+        val events = drainAllItems(provider.responses("meta-llama/Llama-3.1-8B-Instruct").stream(LanguageModelCallParams(messages = listOf(userMessage("hi")))))
+
+        val error = events.filterIsInstance<StreamEvent.Error>().single()
+        assertTrue(error.message.contains("missing item"))
+    }
+
+    @Test
     fun `unsupported embedding and image factories match upstream guidance`() {
         val fixture = createTestServer(mutableMapOf())
         val provider = createHuggingFace(fixture.httpClient())

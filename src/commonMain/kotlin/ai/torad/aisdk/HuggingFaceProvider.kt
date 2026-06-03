@@ -498,7 +498,8 @@ private class HuggingFaceResponsesStreamState(
                 )
             }
             "response.output_item.added" -> {
-                val item = obj["item"]?.jsonObject ?: return emptyList()
+                val item = obj["item"] as? JsonObject
+                    ?: return listOf(StreamEvent.Error("Hugging Face stream protocol error: response.output_item.added missing item."))
                 val itemId = item["id"]?.jsonPrimitive?.contentOrNull ?: obj["item_id"]?.jsonPrimitive?.contentOrNull.orEmpty()
                 val itemType = item["type"]?.jsonPrimitive?.contentOrNull
                 when (itemType) {
@@ -521,7 +522,8 @@ private class HuggingFaceResponsesStreamState(
                 }
             }
             "response.output_item.done" -> {
-                val item = obj["item"]?.jsonObject ?: return emptyList()
+                val item = obj["item"] as? JsonObject
+                    ?: return listOf(StreamEvent.Error("Hugging Face stream protocol error: response.output_item.done missing item."))
                 val itemId = item["id"]?.jsonPrimitive?.contentOrNull ?: obj["item_id"]?.jsonPrimitive?.contentOrNull.orEmpty()
                 when (item["type"]?.jsonPrimitive?.contentOrNull) {
                     "message" -> events += StreamEvent.TextEnd(itemId, huggingFaceItemMetadata(itemId))
@@ -681,18 +683,21 @@ private fun huggingFaceNoImageModel(providerId: String?, modelId: String): NoSuc
 private fun huggingFaceUsage(element: JsonElement?): Usage {
     val obj = element as? JsonObject ?: return Usage()
     val inputTokens = obj["input_tokens"]?.jsonPrimitive?.intOrNull ?: 0
-    val cachedTokens = obj["input_tokens_details"]?.jsonObject?.get("cached_tokens")?.jsonPrimitive?.intOrNull ?: 0
+    val cachedTokens = (obj["input_tokens_details"]?.jsonObject?.get("cached_tokens")?.jsonPrimitive?.intOrNull ?: 0)
+        .coerceIn(0, inputTokens)
     val outputTokens = obj["output_tokens"]?.jsonPrimitive?.intOrNull ?: 0
-    val reasoningTokens = obj["output_tokens_details"]?.jsonObject?.get("reasoning_tokens")?.jsonPrimitive?.intOrNull ?: 0
+    val reasoningTokens = (obj["output_tokens_details"]?.jsonObject?.get("reasoning_tokens")?.jsonPrimitive?.intOrNull ?: 0)
+        .coerceAtLeast(0)
+    val outputTotal = if (reasoningTokens > outputTokens) outputTokens + reasoningTokens else outputTokens
     return Usage(
         inputTokens = Usage.InputTokenBreakdown(
             total = inputTokens,
-            noCache = inputTokens - cachedTokens,
+            noCache = (inputTokens - cachedTokens).coerceAtLeast(0),
             cacheRead = cachedTokens,
         ),
         outputTokens = Usage.OutputTokenBreakdown(
-            total = outputTokens,
-            text = outputTokens - reasoningTokens,
+            total = outputTotal,
+            text = outputTotal - reasoningTokens,
             reasoning = reasoningTokens,
         ),
         raw = element,

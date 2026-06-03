@@ -1,4 +1,5 @@
 import org.gradle.api.publish.maven.MavenPublication
+import org.gradle.api.publish.maven.tasks.PublishToMavenRepository
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
@@ -47,7 +48,7 @@ kotlin {
             api(libs.kotlinx.coroutines.core)
             api(libs.kotlinx.serialization.json)
             api(libs.ktor.client.core)
-            api(libs.ktor.client.mock)
+            implementation(libs.ktor.client.mock)
         }
         commonTest.dependencies {
             implementation(kotlin("test"))
@@ -100,11 +101,33 @@ publishing {
 
 val signingKey = providers.environmentVariable("SIGNING_KEY")
 val signingPassword = providers.environmentVariable("SIGNING_PASSWORD")
+val publishingToRemoteRepository = providers.provider {
+    gradle.startParameter.taskNames.any { taskName ->
+        taskName.startsWith("publish") && !taskName.contains("ToMavenLocal")
+    }
+}
 
 signing {
-    isRequired = signingKey.isPresent && signingPassword.isPresent
-    if (isRequired) {
+    isRequired = publishingToRemoteRepository.get()
+    if (signingKey.isPresent && signingPassword.isPresent) {
         useInMemoryPgpKeys(signingKey.get(), signingPassword.get())
-        sign(publishing.publications)
+    }
+    sign(publishing.publications)
+}
+
+tasks.withType<PublishToMavenRepository>().configureEach {
+    doFirst {
+        require(!version.toString().endsWith("-SNAPSHOT")) {
+            "Remote publication requires a stable VERSION_NAME; refusing to publish SNAPSHOT version $version."
+        }
+        require(signingKey.isPresent && signingPassword.isPresent) {
+            "Remote publication requires SIGNING_KEY and SIGNING_PASSWORD so artifacts cannot be published unsigned."
+        }
+        require(
+            providers.environmentVariable("GITHUB_ACTOR").isPresent &&
+                providers.environmentVariable("GITHUB_TOKEN").isPresent,
+        ) {
+            "Remote publication requires GITHUB_ACTOR and GITHUB_TOKEN for GitHub Packages credentials."
+        }
     }
 }

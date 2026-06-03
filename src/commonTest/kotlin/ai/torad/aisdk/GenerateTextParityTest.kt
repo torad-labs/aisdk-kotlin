@@ -173,7 +173,7 @@ class GenerateTextParityTest {
         )
 
         // WHEN
-        val result = generateText<String>(model = model, prompt = "hi")
+        val result = generateText(model = model, prompt = "hi")
 
         // THEN
         assertEquals("answer", result.output)

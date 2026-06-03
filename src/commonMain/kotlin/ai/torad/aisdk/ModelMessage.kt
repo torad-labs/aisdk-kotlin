@@ -226,7 +226,17 @@ data class Usage(
         val cacheRead: Int = 0,
         /** Tokens written to a provider prompt cache (first-time cost). */
         val cacheWrite: Int = 0,
-    )
+    ) {
+        init {
+            require(total >= 0) { "inputTokens.total must be non-negative." }
+            require(noCache >= 0) { "inputTokens.noCache must be non-negative." }
+            require(cacheRead >= 0) { "inputTokens.cacheRead must be non-negative." }
+            require(cacheWrite >= 0) { "inputTokens.cacheWrite must be non-negative." }
+            require(noCache + cacheRead + cacheWrite <= total) {
+                "input token breakdown parts must not exceed inputTokens.total."
+            }
+        }
+    }
 
     @Serializable
     data class OutputTokenBreakdown(
@@ -235,7 +245,16 @@ data class Usage(
         val text: Int = 0,
         /** Hidden reasoning tokens (Anthropic thinking, OpenAI reasoning). */
         val reasoning: Int = 0,
-    )
+    ) {
+        init {
+            require(total >= 0) { "outputTokens.total must be non-negative." }
+            require(text >= 0) { "outputTokens.text must be non-negative." }
+            require(reasoning >= 0) { "outputTokens.reasoning must be non-negative." }
+            require(text + reasoning <= total) {
+                "output token breakdown parts must not exceed outputTokens.total."
+            }
+        }
+    }
 }
 
 operator fun Usage.plus(other: Usage): Usage = Usage(

@@ -14,23 +14,99 @@ import kotlinx.serialization.json.JsonElement
  * For tool-loop agents, use [Agent.generate] instead. This is the
  * primitive for single-turn calls (no tool-loop wrapping).
  */
-suspend fun <TOutput> generateText(
+suspend fun generateText(
     model: LanguageModel,
     prompt: String? = null,
     messages: List<ModelMessage> = emptyList(),
     system: String? = null,
-    output: Output<TOutput>? = null,
     temperature: Float? = null,
     topP: Float? = null,
     topK: Int? = null,
     maxOutputTokens: Int? = null,
     stopSequences: List<String> = emptyList(),
     seed: Int? = null,
-    providerOptions: Map<String, kotlinx.serialization.json.JsonElement> = emptyMap(),
+    providerOptions: Map<String, JsonElement> = emptyMap(),
     abortSignal: AbortSignal = AbortSignalNever,
     presencePenalty: Float? = null,
     frequencyPenalty: Float? = null,
     responseFormat: ResponseFormat = ResponseFormat.Text,
+): GenerateTextResult<String> =
+    generateTextImpl(
+        model = model,
+        prompt = prompt,
+        messages = messages,
+        system = system,
+        output = null,
+        temperature = temperature,
+        topP = topP,
+        topK = topK,
+        maxOutputTokens = maxOutputTokens,
+        stopSequences = stopSequences,
+        seed = seed,
+        providerOptions = providerOptions,
+        abortSignal = abortSignal,
+        presencePenalty = presencePenalty,
+        frequencyPenalty = frequencyPenalty,
+        responseFormat = responseFormat,
+        decode = { it },
+    )
+
+suspend fun <TOutput> generateText(
+    model: LanguageModel,
+    prompt: String? = null,
+    messages: List<ModelMessage> = emptyList(),
+    system: String? = null,
+    output: Output<TOutput>,
+    temperature: Float? = null,
+    topP: Float? = null,
+    topK: Int? = null,
+    maxOutputTokens: Int? = null,
+    stopSequences: List<String> = emptyList(),
+    seed: Int? = null,
+    providerOptions: Map<String, JsonElement> = emptyMap(),
+    abortSignal: AbortSignal = AbortSignalNever,
+    presencePenalty: Float? = null,
+    frequencyPenalty: Float? = null,
+    responseFormat: ResponseFormat = ResponseFormat.Text,
+): GenerateTextResult<TOutput> =
+    generateTextImpl(
+        model = model,
+        prompt = prompt,
+        messages = messages,
+        system = system,
+        output = output,
+        temperature = temperature,
+        topP = topP,
+        topK = topK,
+        maxOutputTokens = maxOutputTokens,
+        stopSequences = stopSequences,
+        seed = seed,
+        providerOptions = providerOptions,
+        abortSignal = abortSignal,
+        presencePenalty = presencePenalty,
+        frequencyPenalty = frequencyPenalty,
+        responseFormat = responseFormat,
+        decode = output::decode,
+    )
+
+private suspend fun <TOutput> generateTextImpl(
+    model: LanguageModel,
+    prompt: String?,
+    messages: List<ModelMessage>,
+    system: String?,
+    output: Output<TOutput>?,
+    temperature: Float?,
+    topP: Float?,
+    topK: Int?,
+    maxOutputTokens: Int?,
+    stopSequences: List<String>,
+    seed: Int?,
+    providerOptions: Map<String, JsonElement>,
+    abortSignal: AbortSignal,
+    presencePenalty: Float?,
+    frequencyPenalty: Float?,
+    responseFormat: ResponseFormat,
+    decode: (String) -> TOutput,
 ): GenerateTextResult<TOutput> {
     require(prompt != null || messages.isNotEmpty()) {
         "generateText: must provide either `prompt` or `messages`"
@@ -57,8 +133,7 @@ suspend fun <TOutput> generateText(
         } ?: responseFormat,
     )
     val raw = model.generate(params)
-    @Suppress("UNCHECKED_CAST")
-    val typed: TOutput = output?.decode(raw.text) ?: (raw.text as TOutput)
+    val typed = decode(raw.text)
     return GenerateTextResult(
         output = typed,
         text = raw.text,

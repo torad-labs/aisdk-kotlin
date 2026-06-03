@@ -9,6 +9,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertTrue
+import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.JsonPrimitive
 
 /**
@@ -176,6 +177,68 @@ class ConvertToModelMessagesTest {
         val approval = result[0].content[0] as ContentPart.ToolApprovalRequest
         assertEquals("call_1", approval.toolCallId)
         assertEquals("saveNote", approval.toolName)
+    }
+
+    @Test
+    fun `given approval response UI messages when converted then they become tool approval responses`() {
+        val approved = UIMessage(
+            id = "approval_1",
+            role = UIMessageRole.User,
+            parts = listOf(
+                UIMessagePart.ToolUI(
+                    toolCallId = "call_1",
+                    toolName = "approval",
+                    state = ToolCallState.OutputAvailable,
+                ),
+            ),
+        )
+        val denied = UIMessage(
+            id = "approval_2",
+            role = UIMessageRole.User,
+            parts = listOf(
+                UIMessagePart.ToolUI(
+                    toolCallId = "call_2",
+                    toolName = "approval",
+                    state = ToolCallState.OutputDenied,
+                    error = "not allowed",
+                ),
+            ),
+        )
+
+        val result = convertToModelMessages(listOf(approved, denied))
+
+        assertEquals(2, result.size)
+        assertEquals(MessageRole.Tool, result[0].role)
+        val approvedResponse = result[0].content.single() as ContentPart.ToolApprovalResponse
+        assertEquals("call_1", approvedResponse.toolCallId)
+        assertEquals(true, approvedResponse.approved)
+        assertEquals("call_1", approvedResponse.approvalId)
+        assertEquals(MessageRole.Tool, result[1].role)
+        val deniedResponse = result[1].content.single() as ContentPart.ToolApprovalResponse
+        assertEquals("call_2", deniedResponse.toolCallId)
+        assertEquals(false, deniedResponse.approved)
+        assertEquals("not allowed", deniedResponse.reason)
+        assertEquals("call_2", deniedResponse.approvalId)
+    }
+
+    @Test
+    fun `given malformed approval response output when converted then it fails instead of dropping approval id`() {
+        val malformed = UIMessage(
+            id = "approval_bad",
+            role = UIMessageRole.User,
+            parts = listOf(
+                UIMessagePart.ToolUI(
+                    toolCallId = "call_1",
+                    toolName = "approval",
+                    state = ToolCallState.OutputAvailable,
+                    output = buildJsonObject { put("bad", JsonPrimitive(true)) },
+                ),
+            ),
+        )
+
+        assertFailsWith<IllegalArgumentException> {
+            convertToModelMessages(listOf(malformed))
+        }
     }
 
     @Test

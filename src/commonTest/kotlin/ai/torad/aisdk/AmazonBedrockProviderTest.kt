@@ -16,6 +16,7 @@ import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertIs
 import kotlin.test.assertTrue
 
@@ -401,6 +402,43 @@ class AmazonBedrockProviderTest {
         assertTrue(signedRequest.requestHeaders.headerValue(HttpHeaders.Authorization).orEmpty().contains("AWS4-HMAC-SHA256"))
         assertTrue(signedRequest.requestHeaders.headerValue(HttpHeaders.Authorization).orEmpty().contains("Credential=id/"))
         assertTrue(signedRequest.requestHeaders.headerValue(HttpHeaders.Authorization).orEmpty().contains("/bedrock/aws4_request"))
+    }
+
+    @Test
+    fun `bedrock SigV4 clock skew errors include actionable clock guidance`() = runTest {
+        val fixture = createTestServer(
+            mutableMapOf(
+                "https://bedrock.test/model/amazon.nova-lite-v1%3A0/converse" to UrlHandler(
+                    UrlResponse.Error(
+                        status = 403,
+                        body = """
+                            {
+                              "__type":"com.amazonaws.bedrock#RequestTimeTooSkewed",
+                              "message":"Signature expired: 20260603T010000Z is now earlier than 20260603T011000Z"
+                            }
+                        """.trimIndent(),
+                    ),
+                ),
+            ),
+        )
+        fixture.server.start()
+        val provider = createAmazonBedrock(
+            fixture.httpClient(),
+            AmazonBedrockProviderSettings(
+                accessKeyId = "id",
+                secretAccessKey = "secret",
+                baseURL = "https://bedrock.test",
+            ),
+        )
+
+        val error = assertFailsWith<AiSdkException> {
+            provider.languageModel("amazon.nova-lite-v1:0").generate(
+                LanguageModelCallParams(messages = listOf(userMessage("hi"))),
+            )
+        }
+
+        assertTrue(error.message.orEmpty().contains("local clock appears to be skewed"))
+        assertTrue(error.message.orEmpty().contains("Signature expired"))
     }
 
     private fun objectSchema(vararg required: String): JsonObject = buildJsonObject {

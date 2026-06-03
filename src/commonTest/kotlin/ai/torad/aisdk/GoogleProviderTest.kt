@@ -173,6 +173,7 @@ class GoogleProviderTest {
 
     @Test
     fun `embedding image and video models map Google payloads`() = runTest {
+        var videoPolls = 0
         val fixture = createTestServer(
             mutableMapOf(
                 "https://google.test/v1beta/models/text-embedding-004:batchEmbedContents" to UrlHandler(
@@ -185,21 +186,27 @@ class GoogleProviderTest {
                     UrlResponse.JsonValue(Json.parseToJsonElement("""{"name":"operations/video-1","done":false}""")),
                 ),
                 "https://google.test/v1beta/operations/video-1" to UrlHandler(
-                    UrlResponse.JsonValue(
-                        Json.parseToJsonElement(
-                            """
-                            {
-                              "name":"operations/video-1",
-                              "done":true,
-                              "response":{
-                                "generateVideoResponse":{
-                                  "generatedSamples":[{"video":{"uri":"https://videos.example/video.mp4"}}]
-                                }
-                              }
-                            }
-                            """.trimIndent(),
-                        ),
-                    ),
+                    {
+                        if (videoPolls++ == 0) {
+                            UrlResponse.Error(status = 503, body = """{"error":{"message":"temporarily unavailable"}}""")
+                        } else {
+                            UrlResponse.JsonValue(
+                                Json.parseToJsonElement(
+                                    """
+                                    {
+                                      "name":"operations/video-1",
+                                      "done":true,
+                                      "response":{
+                                        "generateVideoResponse":{
+                                          "generatedSamples":[{"video":{"uri":"https://videos.example/video.mp4"}}]
+                                        }
+                                      }
+                                    }
+                                    """.trimIndent(),
+                                ),
+                            )
+                        }
+                    },
                 ),
             ),
         )
@@ -245,7 +252,11 @@ class GoogleProviderTest {
 
         assertEquals(listOf(1.0f, 2.0f), embeddings.embeddings.first())
         assertEquals("image", convertBase64ToByteArray(image.images.single().base64).decodeToString())
-        assertEquals("https://videos.example/video.mp4?key=key", video.videos.single().url)
+        val generatedVideo = video.videos.single()
+        assertEquals("https://videos.example/video.mp4", generatedVideo.url)
+        val googleMetadata = generatedVideo.providerMetadata["google"]!!.jsonObject
+        assertEquals("https://videos.example/video.mp4", googleMetadata["uri"]!!.jsonPrimitive.content)
+        assertEquals(true, googleMetadata["requiresApiKey"]!!.jsonPrimitive.booleanOrNull)
 
         val embeddingBody = fixture.calls[0].requestBodyJson.jsonObject
         assertEquals(2, embeddingBody["requests"]?.jsonArray?.size)
@@ -257,6 +268,7 @@ class GoogleProviderTest {
         assertEquals("1080p", videoBody["parameters"]?.jsonObject?.get("resolution")?.jsonPrimitive?.contentOrNull)
         assertEquals(4f, videoBody["parameters"]?.jsonObject?.get("durationSeconds")?.jsonPrimitive?.floatOrNull)
         assertEquals("GET", fixture.calls[3].requestMethod)
+        assertEquals("GET", fixture.calls[4].requestMethod)
     }
 
     @Test

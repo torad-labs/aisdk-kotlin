@@ -1,12 +1,15 @@
 package ai.torad.aisdk
 
 import ai.torad.aisdk.testing.drainAllItems
+import ai.torad.aisdk.ui.TextUIPartState
 import ai.torad.aisdk.ui.ToolCallState
 import ai.torad.aisdk.ui.UIMessagePart
 import ai.torad.aisdk.ui.streamToUiMessages
+import ai.torad.aisdk.ui.transformTextToUiMessageStream
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
+import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.JsonObject
@@ -18,6 +21,16 @@ import kotlinx.serialization.json.JsonPrimitive
  * at the UI seam.
  */
 class MessagePartsTest {
+
+    @Test
+    fun `empty text stream emits done assistant message`() = runTest {
+        val messages = drainAllItems(transformTextToUiMessageStream(emptyFlow(), "msg_empty"))
+
+        val final = messages.single()
+        val text = final.parts.single() as UIMessagePart.Text
+        assertEquals("", text.text)
+        assertEquals(TextUIPartState.Done, text.state)
+    }
 
     @Test
     fun `text_deltas_grow_a_single_text_part`() = runTest {
@@ -81,6 +94,51 @@ class MessagePartsTest {
         assertEquals("before after", text.text)
         assertEquals(ToolCallState.InputAvailable, tool.state)
         assertEquals("call_1", tool.toolCallId)
+    }
+
+    @Test
+    fun `same-name tool placeholder removal keeps other active parallel calls`() = runTest {
+        val input = JsonObject(mapOf("location" to JsonPrimitive("nyc")))
+        val events = flow {
+            emit(StreamEvent.ToolInputStart("input_1", "weather"))
+            emit(StreamEvent.ToolInputStart("input_2", "weather"))
+            emit(StreamEvent.ToolInputDelta("input_1", input.toString()))
+            emit(StreamEvent.ToolInputDelta("input_2", input.toString()))
+            emit(StreamEvent.ToolCall("call_1", "weather", input))
+            emit(StreamEvent.Finish(1, FinishReason.Stop, Usage()))
+        }
+
+        val final = drainAllItems(streamToUiMessages(events, "msg_same_name")).last()
+
+        val tools = final.parts.filterIsInstance<UIMessagePart.ToolUI>()
+        assertEquals(2, tools.size)
+        assertEquals(ToolCallState.InputAvailable, tools.single { it.toolCallId == "call_1" }.state)
+        assertEquals(ToolCallState.InputStreaming, tools.single { it.toolCallId == "input_2" }.state)
+    }
+
+    @Test
+    fun `same-name placeholder removal uses current shifted indices`() = runTest {
+        val input = JsonObject(mapOf("location" to JsonPrimitive("nyc")))
+        val events = flow {
+            emit(StreamEvent.ToolInputStart("input_1", "weather"))
+            emit(StreamEvent.TextStart("text_1"))
+            emit(StreamEvent.TextDelta("text_1", "between"))
+            emit(StreamEvent.ToolInputStart("input_2", "weather"))
+            emit(StreamEvent.ToolInputDelta("input_1", input.toString()))
+            emit(StreamEvent.ToolInputDelta("input_2", input.toString()))
+            emit(StreamEvent.ToolCall("call_1", "weather", input))
+            emit(StreamEvent.TextEnd("text_1"))
+            emit(StreamEvent.Finish(1, FinishReason.Stop, Usage()))
+        }
+
+        val final = drainAllItems(streamToUiMessages(events, "msg_shifted_placeholders")).last()
+
+        val tools = final.parts.filterIsInstance<UIMessagePart.ToolUI>()
+        val text = final.parts.filterIsInstance<UIMessagePart.Text>().single()
+        assertEquals(2, tools.size)
+        assertEquals(ToolCallState.InputAvailable, tools.single { it.toolCallId == "call_1" }.state)
+        assertEquals(ToolCallState.InputStreaming, tools.single { it.toolCallId == "input_2" }.state)
+        assertEquals("between", text.text)
     }
 
     @Test

@@ -13,6 +13,8 @@ import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.booleanOrNull
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.contentOrNull
+import kotlinx.serialization.json.doubleOrNull
+import kotlinx.serialization.json.intOrNull
 import kotlinx.serialization.json.jsonPrimitive
 
 /**
@@ -363,12 +365,33 @@ fun <T> safeValidateTypes(
     context: TypeValidationContext? = null,
 ): ValidationResult<T> =
     try {
-        val validated = schema.validate?.invoke(value)
+        val validated = schema.validate?.invoke(value) ?: schemaFallbackValue(value, schema.jsonSchema)
         @Suppress("UNCHECKED_CAST")
-        ValidationResult.Success(validated ?: (value as T), value)
+        ValidationResult.Success(validated as T, value)
     } catch (error: Throwable) {
         ValidationResult.Failure(TypeValidationError.wrap(value, error, context), value)
     }
+
+private fun schemaFallbackValue(value: JsonElement, schema: JsonElement): Any? {
+    val schemaType = (schema as? JsonObject)?.get("type")?.jsonPrimitive?.contentOrNull
+    return when (schemaType) {
+        null -> value
+        "object" -> value as? JsonObject ?: throw IllegalArgumentException("Expected JSON object.")
+        "array" -> value as? JsonArray ?: throw IllegalArgumentException("Expected JSON array.")
+        "string" -> {
+            val primitive = value as? JsonPrimitive ?: throw IllegalArgumentException("Expected JSON string.")
+            if (!primitive.isJsonString()) throw IllegalArgumentException("Expected JSON string.")
+            primitive.content
+        }
+        "integer" -> value.jsonPrimitive.intOrNull ?: throw IllegalArgumentException("Expected JSON integer.")
+        "number" -> value.jsonPrimitive.doubleOrNull ?: throw IllegalArgumentException("Expected JSON number.")
+        "boolean" -> value.jsonPrimitive.booleanOrNull ?: throw IllegalArgumentException("Expected JSON boolean.")
+        else -> value
+    }
+}
+
+private fun JsonPrimitive.isJsonString(): Boolean =
+    toString().startsWith("\"")
 
 fun <T> safeValidateTypes(
     value: JsonElement,
@@ -932,16 +955,27 @@ fun toolResultOutputFromJson(json: JsonElement): ToolResultOutput =
 
 fun toolResultOutputFromWire(json: JsonElement): ToolResultOutput {
     val obj = json as? JsonObject ?: return toolResultOutputFromJson(json)
-    val type = obj["type"]?.jsonPrimitive?.contentOrNull ?: return toolResultOutputFromJson(json)
+    val type = WireDecoder.optionalString(obj, "type", "tool", "tool-result output")
+        ?: return toolResultOutputFromJson(json)
     return when (type) {
-        "text" -> ToolResultOutput.Text(obj["value"]?.jsonPrimitive?.contentOrNull.orEmpty())
-        "json" -> ToolResultOutput.Json(obj["value"] ?: json)
-        "error-text" -> ToolResultOutput.Error(obj["value"]?.jsonPrimitive?.contentOrNull.orEmpty())
-        "error-json" -> ToolResultOutput.ErrorJson(obj["value"] ?: json)
-        "execution-denied" -> ToolResultOutput.ExecutionDenied(obj["reason"]?.jsonPrimitive?.contentOrNull)
+        "text" -> ToolResultOutput.Text(
+            WireDecoder.requiredString(obj, "value", "tool", "tool-result output"),
+        )
+        "json" -> ToolResultOutput.Json(
+            WireDecoder.required(obj, "value", "tool", "tool-result output"),
+        )
+        "error-text" -> ToolResultOutput.Error(
+            WireDecoder.requiredString(obj, "value", "tool", "tool-result output"),
+        )
+        "error-json" -> ToolResultOutput.ErrorJson(
+            WireDecoder.required(obj, "value", "tool", "tool-result output"),
+        )
+        "execution-denied" -> ToolResultOutput.ExecutionDenied(
+            WireDecoder.optionalString(obj, "reason", "tool", "tool-result output"),
+        )
         "content" -> ToolResultOutput.Content(
-            value = (obj["value"] as? JsonArray)?.toList().orEmpty(),
-            isError = obj["isError"]?.jsonPrimitive?.booleanOrNull == true,
+            value = WireDecoder.requiredArray(obj, "value", "tool", "tool-result output").toList(),
+            isError = WireDecoder.optionalBoolean(obj, "isError", "tool", "tool-result output") ?: false,
         )
         else -> toolResultOutputFromJson(json)
     }

@@ -333,6 +333,65 @@ class AnthropicProviderTest {
     }
 
     @Test
+    fun `stream surfaces Anthropic deltas for unknown content blocks as errors`() = runTest {
+        val fixture = createTestServer(
+            mutableMapOf(
+                "https://anthropic.test/v1/messages" to UrlHandler(
+                    UrlResponse.StreamChunks(
+                        listOf(
+                            """
+                            data: {"type":"content_block_delta","index":4,"delta":{"type":"text_delta","text":"lost"}}
+
+                            data: {"type":"message_stop"}
+
+                            """.trimIndent(),
+                        ),
+                    ),
+                ),
+            ),
+        )
+        fixture.server.start()
+        val provider = createAnthropic(fixture.httpClient(), AnthropicProviderSettings(baseURL = "https://anthropic.test/v1"))
+
+        val events = drainAllItems(provider.messages("claude-sonnet-4-5").stream(LanguageModelCallParams(messages = listOf(userMessage("hi")))))
+
+        val error = events.filterIsInstance<StreamEvent.Error>().single()
+        assertTrue(error.message.contains("unknown block index 4"))
+    }
+
+    @Test
+    fun `stream malformed Anthropic tool input emits error and no final tool call`() = runTest {
+        val fixture = createTestServer(
+            mutableMapOf(
+                "https://anthropic.test/v1/messages" to UrlHandler(
+                    UrlResponse.StreamChunks(
+                        listOf(
+                            """
+                            data: {"type":"content_block_start","index":0,"content_block":{"type":"tool_use","id":"toolu_1","name":"lookup","input":{}}}
+
+                            data: {"type":"content_block_delta","index":0,"delta":{"type":"input_json_delta","partial_json":"{\"city\":"}}
+
+                            data: {"type":"content_block_stop","index":0}
+
+                            data: {"type":"message_stop"}
+
+                            """.trimIndent(),
+                        ),
+                    ),
+                ),
+            ),
+        )
+        fixture.server.start()
+        val provider = createAnthropic(fixture.httpClient(), AnthropicProviderSettings(baseURL = "https://anthropic.test/v1"))
+
+        val events = drainAllItems(provider.messages("claude-sonnet-4-5").stream(LanguageModelCallParams(messages = listOf(userMessage("hi")))))
+
+        assertTrue(events.filterIsInstance<StreamEvent.ToolCall>().isEmpty())
+        val error = events.filterIsInstance<StreamEvent.Error>().single()
+        assertTrue(error.message.contains("malformed tool input JSON"))
+    }
+
+    @Test
     fun `auth conflict hosted tools and container forwarding are exposed`() {
         val fixture = createTestServer(mutableMapOf())
         val provider = createAnthropic(

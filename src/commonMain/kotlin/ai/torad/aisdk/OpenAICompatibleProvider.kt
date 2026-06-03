@@ -409,7 +409,7 @@ private class OpenAICompatibleEmbeddingModel(
         return EmbeddingModelResult(
             embeddings = value["data"]?.jsonArray.orEmpty()
                 .sortedBy { it.jsonObject["index"]?.jsonPrimitive?.intOrNull ?: Int.MAX_VALUE }
-                .map { item -> item.jsonObject["embedding"]?.jsonArray.orEmpty().map { it.jsonPrimitive.floatOrNull ?: 0f } },
+                .map { item -> item.jsonObject["embedding"]?.jsonArray.orEmpty().map { embeddingFloat(it, provider) } },
             usage = EmbeddingUsage(
                 tokens = value["usage"]?.jsonObject?.get("prompt_tokens")?.jsonPrimitive?.intOrNull ?: 0,
                 raw = value["usage"],
@@ -973,14 +973,27 @@ private fun openAIContentString(value: JsonElement): String = when (value) {
 
 private fun openAIUsage(value: JsonElement?): Usage {
     val obj = value?.jsonObject ?: return Usage()
+    val promptTokens = obj["prompt_tokens"]?.jsonPrimitive?.intOrNull ?: 0
+    val completionTokens = obj["completion_tokens"]?.jsonPrimitive?.intOrNull ?: 0
+    val cachedTokens = (obj["prompt_tokens_details"]?.jsonObject?.get("cached_tokens")?.jsonPrimitive?.intOrNull ?: 0)
+        .coerceIn(0, promptTokens)
+    val reasoningTokens = (obj["completion_tokens_details"]?.jsonObject?.get("reasoning_tokens")?.jsonPrimitive?.intOrNull ?: 0)
+        .coerceAtLeast(0)
+    val outputTotal = if (reasoningTokens > completionTokens) {
+        completionTokens + reasoningTokens
+    } else {
+        completionTokens
+    }
     return Usage(
         inputTokens = Usage.InputTokenBreakdown(
-            total = obj["prompt_tokens"]?.jsonPrimitive?.intOrNull ?: 0,
-            cacheRead = obj["prompt_tokens_details"]?.jsonObject?.get("cached_tokens")?.jsonPrimitive?.intOrNull ?: 0,
+            total = promptTokens,
+            noCache = promptTokens - cachedTokens,
+            cacheRead = cachedTokens,
         ),
         outputTokens = Usage.OutputTokenBreakdown(
-            total = obj["completion_tokens"]?.jsonPrimitive?.intOrNull ?: 0,
-            reasoning = obj["completion_tokens_details"]?.jsonObject?.get("reasoning_tokens")?.jsonPrimitive?.intOrNull ?: 0,
+            total = outputTotal,
+            text = outputTotal - reasoningTokens,
+            reasoning = reasoningTokens,
         ),
         raw = value,
     )

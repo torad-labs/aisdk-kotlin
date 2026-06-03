@@ -794,9 +794,11 @@ private class AnthropicStreamState(
                 }
             }
             "content_block_delta" -> {
-                val index = obj["index"]?.jsonPrimitive?.intOrNull ?: return emptyList()
-                val block = blocks[index] ?: return emptyList()
-                val delta = obj["delta"]?.jsonObject ?: return emptyList()
+                val index = obj["index"]?.jsonPrimitive?.intOrNull ?: return listOf(StreamEvent.Error("Anthropic stream protocol error: content_block_delta missing index."))
+                val block = blocks[index]
+                    ?: return listOf(StreamEvent.Error("Anthropic stream protocol error: content_block_delta for unknown block index $index."))
+                val delta = obj["delta"]?.jsonObject
+                    ?: return listOf(StreamEvent.Error("Anthropic stream protocol error: content_block_delta missing delta for block index $index."))
                 when (delta["type"]?.jsonPrimitive?.contentOrNull) {
                     "text_delta" -> events += StreamEvent.TextDelta(block.id, delta["text"]?.jsonPrimitive?.contentOrNull.orEmpty())
                     "thinking_delta" -> events += StreamEvent.ReasoningDelta(block.id, delta["thinking"]?.jsonPrimitive?.contentOrNull.orEmpty())
@@ -808,17 +810,26 @@ private class AnthropicStreamState(
                 }
             }
             "content_block_stop" -> {
-                val index = obj["index"]?.jsonPrimitive?.intOrNull ?: return emptyList()
-                val block = blocks.remove(index) ?: return emptyList()
+                val index = obj["index"]?.jsonPrimitive?.intOrNull ?: return listOf(StreamEvent.Error("Anthropic stream protocol error: content_block_stop missing index."))
+                val block = blocks.remove(index)
+                    ?: return listOf(StreamEvent.Error("Anthropic stream protocol error: content_block_stop for unknown block index $index."))
                 when (block.type) {
                     "text" -> events += StreamEvent.TextEnd(block.id)
                     "thinking", "redacted_thinking" -> events += StreamEvent.ReasoningEnd(block.id)
                     "tool_use", "server_tool_use", "mcp_tool_use" -> {
                         events += StreamEvent.ToolInputEnd(block.id)
+                        val inputJson = if (block.input.isBlank()) {
+                            JsonObject(emptyMap())
+                        } else {
+                            runCatching { json.parseToJsonElement(block.input) }.getOrElse {
+                                events += StreamEvent.Error("Anthropic stream protocol error: malformed tool input JSON for `${block.toolName.orEmpty()}`.")
+                                return events
+                            }
+                        }
                         events += StreamEvent.ToolCall(
                             toolCallId = block.id,
                             toolName = block.toolName.orEmpty(),
-                            inputJson = if (block.input.isBlank()) JsonObject(emptyMap()) else runCatching { json.parseToJsonElement(block.input) }.getOrElse { JsonPrimitive(block.input) },
+                            inputJson = inputJson,
                             providerMetadata = if (block.type != "tool_use") mapOf("anthropic" to buildJsonObject { put("providerExecuted", JsonPrimitive(true)) }) else null,
                         )
                     }

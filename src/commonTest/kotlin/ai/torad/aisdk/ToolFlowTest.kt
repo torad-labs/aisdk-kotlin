@@ -4,12 +4,15 @@ import ai.torad.aisdk.providers.mockLanguageModelToolThenText
 import ai.torad.aisdk.providers.mockToolInput
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertIs
 import kotlin.test.assertTrue
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.serializer
 
 /**
@@ -26,6 +29,30 @@ import kotlinx.serialization.serializer
 class ToolFlowTest {
 
     @Serializable data class Empty(val unused: String = "")
+
+    @Test
+    fun `tool content result rejects malformed isError flag`() {
+        assertFailsWith<WireDecodeException> {
+            toolResultOutputFromWire(
+                buildJsonObject {
+                    put("type", JsonPrimitive("content"))
+                    put("value", kotlinx.serialization.json.JsonArray(emptyList()))
+                    put("isError", JsonNull)
+                },
+            )
+        }
+    }
+
+    @Test
+    fun `tagged tool result rejects missing required value`() {
+        assertFailsWith<WireDecodeException> {
+            toolResultOutputFromWire(
+                buildJsonObject {
+                    put("type", JsonPrimitive("text"))
+                },
+            )
+        }
+    }
 
     @Test
     fun `given a single-value tool when invoked then it emits exactly one final ToolResult with preliminary false`() =

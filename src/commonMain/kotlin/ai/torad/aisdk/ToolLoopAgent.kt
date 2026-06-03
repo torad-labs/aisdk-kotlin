@@ -116,6 +116,7 @@ open class ToolLoopAgent<TContext, TOutput>(
 
     private val engineScope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     private var currentEngineJob: Job? = null
+    private var currentEngineContext: TContext? = null
 
     /**
      * Drive the engine. Each action either advances [engineState] or
@@ -142,6 +143,7 @@ open class ToolLoopAgent<TContext, TOutput>(
             }
             ToolLoopAgentAction.Reset -> {
                 currentEngineJob?.cancel()
+                currentEngineContext = null
                 mutableEngineState.value = ToolLoopAgentState()
             }
         }
@@ -149,6 +151,7 @@ open class ToolLoopAgent<TContext, TOutput>(
 
     private fun submitPrompt(text: String, context: TContext?) {
         currentEngineJob?.cancel()
+        currentEngineContext = context
         val priorMessages = mutableEngineState.value.messages
         mutableEngineState.update {
             it.copy(
@@ -184,7 +187,7 @@ open class ToolLoopAgent<TContext, TOutput>(
             )
         }
         currentEngineJob = engineScope.launch {
-            runEngineLoop(prompt = null, priorMessages = updatedMessages, context = null)
+            runEngineLoop(prompt = null, priorMessages = updatedMessages, context = currentEngineContext)
         }
     }
 
@@ -556,7 +559,21 @@ open class ToolLoopAgent<TContext, TOutput>(
                 if (toolDef.providerExecuted) {
                     continue
                 }
-                if (callNeedsApproval(toolDef, call, activeContext, messages.toList())) {
+                val needsApproval = try {
+                    callNeedsApproval(toolDef, call, activeContext, messages.toList())
+                } catch (ce: CancellationException) {
+                    throw ce
+                } catch (@Suppress("TooGenericExceptionCaught") t: Throwable) {
+                    emitToolError(
+                        this,
+                        call.toolCallId,
+                        call.toolName,
+                        t as? AgentError ?: AgentError.ToolExecution(call.toolName, call.toolCallId, t),
+                        messages,
+                    )
+                    continue
+                }
+                if (needsApproval) {
                     toolsRequiringApproval.add(call)
                 } else {
                     toolsToExecute.add(call)
@@ -761,13 +778,25 @@ open class ToolLoopAgent<TContext, TOutput>(
 
         @Suppress("UNCHECKED_CAST")
         val approver = gate as suspend (input: Any?, opts: ToolPredicateOptions<TContext>) -> Boolean
-        val typedInput = decodeToolInput(toolDef, call.input)
+        val typedInput = try {
+            decodeToolInput(toolDef, call.input)
+        } catch (ce: CancellationException) {
+            throw ce
+        } catch (@Suppress("TooGenericExceptionCaught") t: Throwable) {
+            throw AgentError.InvalidToolInput(call.toolName, call.input.toString(), t)
+        }
         val predicateOptions = ToolPredicateOptions(
             toolCallId = call.toolCallId,
             messages = messages,
             experimental_context = options,
         )
-        return approver(typedInput, predicateOptions)
+        return try {
+            approver(typedInput, predicateOptions)
+        } catch (ce: CancellationException) {
+            throw ce
+        } catch (@Suppress("TooGenericExceptionCaught") t: Throwable) {
+            throw AgentError.ToolExecution(call.toolName, call.toolCallId, t)
+        }
     }
 
     /**
@@ -1086,7 +1115,7 @@ open class ToolLoopAgent<TContext, TOutput>(
     @Suppress("UNCHECKED_CAST")
     private fun decodeToolInput(tool: Tool<*, *, *>, input: JsonElement): Any? {
         val ser = tool.inputSerializer as KSerializer<Any?>
-        return jsonCodec.decodeFromJsonElement(ser, input)
+        return WireDecoder.decode(ser, input, provider = "tool", operation = "${tool.name} input")
     }
 
     @Suppress("UNCHECKED_CAST")

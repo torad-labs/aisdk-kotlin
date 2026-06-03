@@ -6,10 +6,15 @@ import kotlin.test.assertFailsWith
 import kotlin.test.assertIs
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.withTimeout
+import io.ktor.http.HttpHeaders
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
@@ -325,6 +330,66 @@ class MCPClientTest {
     }
 
     @Test
+    fun `JSON-RPC parser rejects malformed envelopes through wire decoder`() {
+        assertFailsWith<WireDecodeException> {
+            parseJSONRPCMessage("""{"jsonrpc":"2.0","id":1,"method":"tools/list","unexpected":true}""")
+        }
+        assertFailsWith<WireDecodeException> {
+            parseJSONRPCMessage("""{"jsonrpc":"1.0","id":1,"method":"tools/list"}""")
+        }
+    }
+
+    @Test
+    fun `server notifications without id do not surface as client errors`() = runTest {
+        val uncaught = mutableListOf<Throwable>()
+        val transport = FakeMCPTransport { message ->
+            when {
+                message is JSONRPCRequest && message.method == "initialize" -> {
+                    emitFromServer(JSONRPCNotification(method = "notifications/progress"))
+                    respond(message.id, initializeResult())
+                }
+                message is JSONRPCRequest && message.method == "tools/list" -> {
+                    emitFromServer(JSONRPCNotification(method = "notifications/resources/list_changed"))
+                    respond(message.id, listToolsResult())
+                }
+            }
+        }
+        val client = createMCPClient(MCPClientConfig(transport = transport, onUncaughtError = { uncaught += it }))
+
+        assertEquals("echo", client.listTools().tools.single().name)
+        assertTrue(uncaught.isEmpty(), "JSON-RPC notifications are advisory and must not trip uncaught errors")
+    }
+
+    @Test
+    fun `concurrent MCP requests allocate unique JSON RPC ids`() = runTest {
+        val transport = FakeMCPTransport { message ->
+            when {
+                message is JSONRPCRequest && message.method == "initialize" ->
+                    respond(message.id, initializeResult())
+                message is JSONRPCRequest && message.method == "tools/list" ->
+                    respond(message.id, listToolsResult())
+            }
+        }
+        val client = createMCPClient(MCPClientConfig(transport = transport))
+        val gate = CompletableDeferred<Unit>()
+
+        val jobs = List(100) {
+            async(Dispatchers.Default) {
+                gate.await()
+                client.listTools()
+            }
+        }
+        gate.complete(Unit)
+        jobs.awaitAll()
+
+        val ids = transport.sent
+            .filterIsInstance<JSONRPCRequest>()
+            .filter { it.method == "tools/list" }
+            .map { it.id.toString() }
+        assertEquals(ids.size, ids.toSet().size)
+    }
+
+    @Test
     fun `auth returns authorized with existing tokens and redirect when tokens are absent`() = runTest {
         val authorized = MemoryOAuthProvider(tokens = OAuthTokens(accessToken = "token", tokenType = "Bearer"))
         assertEquals(AuthResult.AUTHORIZED, auth(authorized, AuthOptions(serverUrl = "https://mcp.example.com")))
@@ -412,6 +477,87 @@ class MCPClientTest {
         assertEquals("POST", fixture.calls.single { it.requestUrl == "https://mcp.test/messages" }.requestMethod)
         val notification = assertIs<JSONRPCNotification>(received)
         assertEquals("notifications/server", notification.method)
+        transport.close()
+    }
+
+    @Test
+    fun `SSE MCP transport retries start GET after authorized auth`() = runTest {
+        var sseAttempts = 0
+        val fixture = createTestServer(
+            mutableMapOf(
+                "https://mcp.test/sse" to UrlHandler(
+                    { _, _ ->
+                        if (sseAttempts++ == 0) {
+                            UrlResponse.Error(status = 401, body = "unauthorized")
+                        } else {
+                            UrlResponse.StreamChunks(listOf("event: endpoint\ndata: /messages\n\n"))
+                        }
+                    },
+                ),
+                "https://mcp.test/messages" to UrlHandler(UrlResponse.Empty(status = 202)),
+            ),
+        )
+        fixture.server.start()
+        val authProvider = MemoryOAuthProvider(tokens = OAuthTokens(accessToken = "token", tokenType = "Bearer"))
+        val transport = SseMCPTransport(fixture.httpClient(), "https://mcp.test/sse", authProvider = authProvider)
+
+        transport.start()
+        transport.close()
+
+        val sseGets = fixture.calls.filter { it.requestUrl == "https://mcp.test/sse" && it.requestMethod == "GET" }
+        assertEquals(2, sseGets.size)
+        assertEquals("Bearer token", sseGets[1].requestHeaders.headerValue(HttpHeaders.Authorization))
+    }
+
+    @Test
+    fun `HTTP MCP transport starts at most one inbound SSE reader after concurrent accepted notifications`() = runTest {
+        val controller = TestResponseController()
+        var getAttempts = 0
+        val fixture = createTestServer(
+            mutableMapOf(
+                "https://mcp.test/mcp" to UrlHandler(
+                    { request, _ ->
+                        when {
+                            request.method == "GET" -> {
+                                if (getAttempts++ == 0) {
+                                    UrlResponse.Error(status = 405, body = "GET not supported")
+                                } else {
+                                    UrlResponse.ControlledStream(controller)
+                                }
+                            }
+                            request.method == "POST" -> UrlResponse.Empty(status = 202)
+                            else -> UrlResponse.Error(status = 500, body = "unexpected request")
+                        }
+                    },
+                ),
+            ),
+        )
+        fixture.server.start()
+        val transport = HttpMCPTransport(fixture.httpClient(), "https://mcp.test/mcp")
+
+        transport.start()
+        withTimeout(1_000) {
+            while (fixture.calls.count { it.requestMethod == "GET" } < 1) delay(10)
+        }
+        delay(50)
+
+        val gate = CompletableDeferred<Unit>()
+        val sends = List(25) { index ->
+            async(Dispatchers.Default) {
+                gate.await()
+                transport.send(JSONRPCNotification(method = "notifications/test$index"))
+            }
+        }
+        gate.complete(Unit)
+        sends.awaitAll()
+
+        withTimeout(1_000) {
+            while (fixture.calls.count { it.requestMethod == "GET" } < 2) delay(10)
+        }
+        delay(50)
+
+        assertEquals(2, fixture.calls.count { it.requestMethod == "GET" })
+        controller.close()
         transport.close()
     }
 

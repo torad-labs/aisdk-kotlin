@@ -103,9 +103,9 @@ class OpenAIProviderTest {
             ),
         )
 
-        val responses = generateText<String>(provider("gpt-5"), prompt = "hi")
-        val directChat = generateText<String>(provider.chat("gpt-5"), prompt = "hi")
-        val completion = generateText<String>(provider.completion("davinci"), prompt = "hi")
+        val responses = generateText(provider("gpt-5"), prompt = "hi")
+        val directChat = generateText(provider.chat("gpt-5"), prompt = "hi")
+        val completion = generateText(provider.completion("davinci"), prompt = "hi")
 
         assertEquals("from responses", responses.text)
         assertEquals("ok", directChat.text)
@@ -148,7 +148,7 @@ class OpenAIProviderTest {
         )
         val provider = createOpenAI(client, OpenAIProviderSettings(apiKey = "test-api-key"))
 
-        generateText<String>(
+        generateText(
             model = provider.chat("gpt-5"),
             prompt = "hi",
             providerOptions = mapOf(
@@ -190,7 +190,7 @@ class OpenAIProviderTest {
         )
 
         val model = provider.responses("gpt-5")
-        val result = generateText<String>(
+        val result = generateText(
             model = model,
             prompt = "hi",
             providerOptions = mapOf(

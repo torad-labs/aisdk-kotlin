@@ -118,7 +118,7 @@ private class VoyageEmbeddingModel(
         return EmbeddingModelResult(
             embeddings = value["data"]?.jsonArray.orEmpty()
                 .sortedBy { it.jsonObject["index"]?.jsonPrimitive?.intOrNull ?: Int.MAX_VALUE }
-                .map { item -> item.jsonObject["embedding"]?.jsonArray.orEmpty().map { it.jsonPrimitive.floatOrNull ?: 0f } },
+                .map { item -> item.jsonObject["embedding"]?.jsonArray.orEmpty().map { embeddingFloat(it, provider) } },
             usage = EmbeddingUsage(
                 tokens = value["usage"]?.jsonObject?.get("total_tokens")?.jsonPrimitive?.intOrNull ?: 0,
                 raw = value["usage"],

@@ -223,15 +223,19 @@ fun streamToUiMessages(
                 // from the final ToolCall.toolCallId. If we see a placeholder in
                 // toolByCallId for the same toolName, drop it before adding the
                 // final entry so we don't render two cards.
-                val placeholderId = toolNameByInputId.entries
-                    .firstOrNull { it.value == event.toolName && it.key != event.toolCallId }
-                    ?.key
+                val placeholderId = when {
+                    event.toolCallId in toolNameByInputId -> event.toolCallId
+                    else -> toolNameByInputId.entries
+                        .firstOrNull { it.value == event.toolName && it.key != event.toolCallId }
+                        ?.key
+                }
                 if (placeholderId != null) {
-                    val placeholderIdx = toolByCallId.remove(placeholderId)
+                    val placeholderIdx = toolByCallId[placeholderId]
                     if (placeholderIdx != null && placeholderIdx in parts.indices) {
                         parts.removeAt(placeholderIdx)
                         shiftIndexesAfterRemoval(placeholderIdx)
                     }
+                    toolByCallId.remove(placeholderId)
                     toolNameByInputId.remove(placeholderId)
                     toolInputBufById.remove(placeholderId)
                 }
@@ -254,7 +258,9 @@ fun streamToUiMessages(
             }
             is StreamEvent.ToolResult -> {
                 val existingIndex = toolByCallId[event.toolCallId]
-                val existingInput = (existingIndex?.let { parts[it] as? UIMessagePart.ToolUI })?.input
+                val existingInput = existingIndex?.takeIf { it in parts.indices }
+                    ?.let { parts[it] as? UIMessagePart.ToolUI }
+                    ?.input
                 val deniedOutput = event.output as? ToolResultOutput.ExecutionDenied
                 upsertTool(
                     toolCallId = event.toolCallId,
@@ -273,7 +279,9 @@ fun streamToUiMessages(
             }
             is StreamEvent.ToolError -> {
                 val existingIndex = toolByCallId[event.toolCallId]
-                val existingInput = (existingIndex?.let { parts[it] as? UIMessagePart.ToolUI })?.input
+                val existingInput = existingIndex?.takeIf { it in parts.indices }
+                    ?.let { parts[it] as? UIMessagePart.ToolUI }
+                    ?.input
                 upsertTool(
                     toolCallId = event.toolCallId,
                     toolName = event.toolName,
@@ -285,7 +293,9 @@ fun streamToUiMessages(
             }
             is StreamEvent.ToolOutputDenied -> {
                 val existingIndex = toolByCallId[event.toolCallId]
-                val existingInput = (existingIndex?.let { parts[it] as? UIMessagePart.ToolUI })?.input
+                val existingInput = existingIndex?.takeIf { it in parts.indices }
+                    ?.let { parts[it] as? UIMessagePart.ToolUI }
+                    ?.input
                 upsertTool(
                     toolCallId = event.toolCallId,
                     toolName = event.toolName,

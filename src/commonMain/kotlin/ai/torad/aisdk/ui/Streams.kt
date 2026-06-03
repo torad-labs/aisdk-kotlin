@@ -168,16 +168,14 @@ fun transformTextToUiMessageStream(
             ),
         )
     }
-    if (buffer.isNotEmpty()) {
-        emit(
-            UIMessage(
-                id = assistantMessageId,
-                role = UIMessageRole.Assistant,
-                parts = listOf(UIMessagePart.Text(buffer.toString(), TextUIPartState.Done)),
-                metadata = metadata,
-            ),
-        )
-    }
+    emit(
+        UIMessage(
+            id = assistantMessageId,
+            role = UIMessageRole.Assistant,
+            parts = listOf(UIMessagePart.Text(buffer.toString(), TextUIPartState.Done)),
+            metadata = metadata,
+        ),
+    )
 }
 
 fun lastAssistantMessageIsCompleteWithToolCalls(messages: List<UIMessage>): Boolean {

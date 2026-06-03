@@ -17,7 +17,6 @@ import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
-import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.booleanOrNull
@@ -111,7 +110,7 @@ class KtorGatewayTransport(
         val value = response.value.jsonObject
         return EmbeddingModelResult(
             embeddings = value["embeddings"]?.jsonArray.orEmpty().map { row ->
-                row.jsonArray.map { it.jsonPrimitive.floatOrNull ?: 0f }
+                row.jsonArray.map { embeddingFloat(it, "gateway.embedding") }
             },
             usage = EmbeddingUsage(tokens = value["usage"]?.jsonObject?.get("tokens")?.jsonPrimitive?.intOrNull ?: 0),
             response = LanguageModelResponseMetadata(headers = response.headers, body = response.value),
@@ -589,43 +588,42 @@ private fun responseFormatJson(format: ResponseFormat): JsonElement = when (form
 }
 
 private fun contentParts(value: JsonElement?): List<ContentPart> =
-    (value as? JsonArray).orEmpty().mapNotNull { contentPartFromJson(it) }
+    value?.let { WireDecoder.arrayValue(it, "gateway", "content parts").mapNotNull(::contentPartFromJson) }.orEmpty()
 
 private fun contentPartFromJson(value: JsonElement): ContentPart? {
-    val obj = value.jsonObject
-    return when (obj["type"]?.jsonPrimitive?.contentOrNull) {
+    val obj = WireDecoder.objectValue(value, "gateway", "content part")
+    return when (WireDecoder.requiredString(obj, "type", "gateway", "content part")) {
         "text" -> ContentPart.Text(
-            text = obj["text"]?.jsonPrimitive?.contentOrNull.orEmpty(),
+            text = WireDecoder.requiredString(obj, "text", "gateway", "content part"),
             providerMetadata = jsonObjectMapOrNull(obj["providerMetadata"]),
         )
         "reasoning" -> ContentPart.Reasoning(
-            text = obj["text"]?.jsonPrimitive?.contentOrNull.orEmpty(),
+            text = WireDecoder.requiredString(obj, "text", "gateway", "content part"),
             providerMetadata = jsonObjectMapOrNull(obj["providerMetadata"]),
         )
         "tool-call" -> ContentPart.ToolCall(
-            toolCallId = obj["toolCallId"]?.jsonPrimitive?.contentOrNull.orEmpty(),
-            toolName = obj["toolName"]?.jsonPrimitive?.contentOrNull.orEmpty(),
-            input = obj["input"] ?: JsonObject(emptyMap()),
+            toolCallId = WireDecoder.requiredString(obj, "toolCallId", "gateway", "content part"),
+            toolName = WireDecoder.requiredString(obj, "toolName", "gateway", "content part"),
+            input = WireDecoder.required(obj, "input", "gateway", "content part"),
             providerMetadata = jsonObjectMapOrNull(obj["providerMetadata"]),
         )
         "tool-result" -> ContentPart.ToolResult(
-            toolCallId = obj["toolCallId"]?.jsonPrimitive?.contentOrNull.orEmpty(),
-            toolName = obj["toolName"]?.jsonPrimitive?.contentOrNull.orEmpty(),
-            output = obj["output"] ?: JsonNull,
-            isError = obj["isError"]?.jsonPrimitive?.booleanOrNull ?: false,
+            toolCallId = WireDecoder.requiredString(obj, "toolCallId", "gateway", "content part"),
+            toolName = WireDecoder.requiredString(obj, "toolName", "gateway", "content part"),
+            output = WireDecoder.required(obj, "output", "gateway", "content part"),
+            isError = WireDecoder.optionalBoolean(obj, "isError", "gateway", "content part") ?: false,
             providerMetadata = jsonObjectMapOrNull(obj["providerMetadata"]),
         )
         "source-url" -> ContentPart.Source(
             sourceType = StreamEvent.SourcePart.SourceType.Url,
-            url = obj["url"]?.jsonPrimitive?.contentOrNull,
-            title = obj["title"]?.jsonPrimitive?.contentOrNull,
+            url = WireDecoder.requiredString(obj, "url", "gateway", "content part"),
+            title = WireDecoder.optionalString(obj, "title", "gateway", "content part"),
             providerMetadata = jsonObjectMapOrNull(obj["providerMetadata"]),
         )
         "file" -> ContentPart.File(
-            mediaType = obj["mediaType"]?.jsonPrimitive?.contentOrNull ?: "application/octet-stream",
-            base64 = obj["data"]?.jsonPrimitive?.contentOrNull
-                ?: obj["base64"]?.jsonPrimitive?.contentOrNull.orEmpty(),
-            filename = obj["filename"]?.jsonPrimitive?.contentOrNull,
+            mediaType = WireDecoder.optionalString(obj, "mediaType", "gateway", "content part") ?: "application/octet-stream",
+            base64 = requiredOneOfString(obj, "gateway", "content part", "data", "base64"),
+            filename = WireDecoder.optionalString(obj, "filename", "gateway", "content part"),
             providerMetadata = jsonObjectMapOrNull(obj["providerMetadata"]),
         )
         else -> null
@@ -633,52 +631,50 @@ private fun contentPartFromJson(value: JsonElement): ContentPart? {
 }
 
 private fun streamEventFromJson(value: JsonElement): StreamEvent {
-    val obj = value.jsonObject
-    return when (val type = obj["type"]?.jsonPrimitive?.contentOrNull) {
+    val obj = WireDecoder.objectValue(value, "gateway", "stream event")
+    return when (val type = WireDecoder.requiredString(obj, "type", "gateway", "stream event")) {
         "stream-start" -> StreamEvent.StreamStart(callWarnings(obj["warnings"]))
         "response-metadata" -> StreamEvent.ResponseMetadata(
-            id = obj["id"]?.jsonPrimitive?.contentOrNull,
+            id = WireDecoder.optionalString(obj, "id", "gateway", "stream event"),
             timestampMillis = obj["timestampMillis"]?.jsonPrimitive?.longOrNull
                 ?: obj["timestamp"]?.jsonPrimitive?.doubleOrNull?.let { (it * 1000).toLong() },
-            modelId = obj["modelId"]?.jsonPrimitive?.contentOrNull,
+            modelId = WireDecoder.optionalString(obj, "modelId", "gateway", "stream event"),
             headers = (obj["headers"] as? JsonObject)?.mapValues { it.value.jsonPrimitive.content }.orEmpty(),
             body = obj["body"],
         )
-        "text-start" -> StreamEvent.TextStart(obj["id"]?.jsonPrimitive?.contentOrNull ?: "text")
+        "text-start" -> StreamEvent.TextStart(WireDecoder.optionalString(obj, "id", "gateway", "stream event") ?: "text")
         "text-delta" -> StreamEvent.TextDelta(
-            id = obj["id"]?.jsonPrimitive?.contentOrNull ?: "text",
-            text = obj["delta"]?.jsonPrimitive?.contentOrNull
-                ?: obj["text"]?.jsonPrimitive?.contentOrNull.orEmpty(),
+            id = WireDecoder.optionalString(obj, "id", "gateway", "stream event") ?: "text",
+            text = requiredOneOfString(obj, "gateway", "stream event", "delta", "text"),
         )
-        "text-end" -> StreamEvent.TextEnd(obj["id"]?.jsonPrimitive?.contentOrNull ?: "text")
-        "reasoning-start" -> StreamEvent.ReasoningStart(obj["id"]?.jsonPrimitive?.contentOrNull ?: "reasoning")
+        "text-end" -> StreamEvent.TextEnd(WireDecoder.optionalString(obj, "id", "gateway", "stream event") ?: "text")
+        "reasoning-start" -> StreamEvent.ReasoningStart(WireDecoder.optionalString(obj, "id", "gateway", "stream event") ?: "reasoning")
         "reasoning-delta" -> StreamEvent.ReasoningDelta(
-            id = obj["id"]?.jsonPrimitive?.contentOrNull ?: "reasoning",
-            text = obj["delta"]?.jsonPrimitive?.contentOrNull
-                ?: obj["text"]?.jsonPrimitive?.contentOrNull.orEmpty(),
+            id = WireDecoder.optionalString(obj, "id", "gateway", "stream event") ?: "reasoning",
+            text = requiredOneOfString(obj, "gateway", "stream event", "delta", "text"),
         )
-        "reasoning-end" -> StreamEvent.ReasoningEnd(obj["id"]?.jsonPrimitive?.contentOrNull ?: "reasoning")
+        "reasoning-end" -> StreamEvent.ReasoningEnd(WireDecoder.optionalString(obj, "id", "gateway", "stream event") ?: "reasoning")
         "tool-input-start" -> StreamEvent.ToolInputStart(
-            id = obj["id"]?.jsonPrimitive?.contentOrNull ?: obj["toolCallId"]?.jsonPrimitive?.contentOrNull.orEmpty(),
-            toolName = obj["toolName"]?.jsonPrimitive?.contentOrNull.orEmpty(),
+            id = requiredOneOfString(obj, "gateway", "stream event", "id", "toolCallId"),
+            toolName = WireDecoder.requiredString(obj, "toolName", "gateway", "stream event"),
         )
         "tool-input-delta" -> StreamEvent.ToolInputDelta(
-            id = obj["id"]?.jsonPrimitive?.contentOrNull ?: obj["toolCallId"]?.jsonPrimitive?.contentOrNull.orEmpty(),
-            delta = obj["delta"]?.jsonPrimitive?.contentOrNull.orEmpty(),
+            id = requiredOneOfString(obj, "gateway", "stream event", "id", "toolCallId"),
+            delta = WireDecoder.requiredString(obj, "delta", "gateway", "stream event"),
         )
         "tool-input-end" -> StreamEvent.ToolInputEnd(
-            id = obj["id"]?.jsonPrimitive?.contentOrNull ?: obj["toolCallId"]?.jsonPrimitive?.contentOrNull.orEmpty(),
+            id = requiredOneOfString(obj, "gateway", "stream event", "id", "toolCallId"),
         )
         "tool-call" -> StreamEvent.ToolCall(
-            toolCallId = obj["toolCallId"]?.jsonPrimitive?.contentOrNull.orEmpty(),
-            toolName = obj["toolName"]?.jsonPrimitive?.contentOrNull.orEmpty(),
-            inputJson = obj["input"] ?: JsonObject(emptyMap()),
+            toolCallId = WireDecoder.requiredString(obj, "toolCallId", "gateway", "stream event"),
+            toolName = WireDecoder.requiredString(obj, "toolName", "gateway", "stream event"),
+            inputJson = WireDecoder.required(obj, "input", "gateway", "stream event"),
         )
         "tool-result" -> {
-            val output = toolResultOutputFromWire(obj["output"] ?: JsonNull)
+            val output = toolResultOutputFromWire(WireDecoder.required(obj, "output", "gateway", "stream event"))
             StreamEvent.ToolResult(
-                toolCallId = obj["toolCallId"]?.jsonPrimitive?.contentOrNull.orEmpty(),
-                toolName = obj["toolName"]?.jsonPrimitive?.contentOrNull.orEmpty(),
+                toolCallId = WireDecoder.requiredString(obj, "toolCallId", "gateway", "stream event"),
+                toolName = WireDecoder.requiredString(obj, "toolName", "gateway", "stream event"),
                 outputJson = output.toJsonElement(),
                 output = output,
                 modelOutput = output,
@@ -695,14 +691,29 @@ private fun streamEventFromJson(value: JsonElement): StreamEvent {
             finishReason = finishReason(obj["finishReason"]?.jsonPrimitive?.contentOrNull),
             usage = usageFromJson(obj["usage"]),
         )
-        "error" -> StreamEvent.Error(obj["message"]?.jsonPrimitive?.contentOrNull ?: "Gateway stream error")
+        "error" -> StreamEvent.Error(WireDecoder.requiredString(obj, "message", "gateway", "stream event"))
         "raw" -> StreamEvent.Raw(obj["rawValue"] ?: value)
         else -> StreamEvent.Raw(buildJsonObject {
-            put("type", JsonPrimitive(type ?: "unknown"))
+            put("type", JsonPrimitive(type))
             put("data", value)
         })
     }
 }
+
+private fun requiredOneOfString(
+    obj: JsonObject,
+    provider: String,
+    operation: String,
+    vararg keys: String,
+): String =
+    keys.firstNotNullOfOrNull { key -> WireDecoder.optionalString(obj, key, provider, operation) }
+        ?: WireDecoder.fail(
+            provider = provider,
+            operation = operation,
+            path = "$",
+            message = "missing one required field: ${keys.joinToString(" or ")}",
+            value = obj,
+        )
 
 private fun finishReason(value: String?): FinishReason = when (value) {
     "stop" -> FinishReason.Stop

@@ -244,10 +244,10 @@ private class GoogleGenerativeAIEmbeddingModel(
             parseJson = true,
         )
         val embeddings = if (single) {
-            listOf(response.value.jsonObject["embedding"]?.jsonObject?.get("values")?.jsonArray.orEmpty().map { it.jsonPrimitive.floatOrNull ?: 0f })
+            listOf(response.value.jsonObject["embedding"]?.jsonObject?.get("values")?.jsonArray.orEmpty().map { embeddingFloat(it, provider) })
         } else {
             response.value.jsonObject["embeddings"]?.jsonArray.orEmpty().map { item ->
-                item.jsonObject["values"]?.jsonArray.orEmpty().map { it.jsonPrimitive.floatOrNull ?: 0f }
+                item.jsonObject["values"]?.jsonArray.orEmpty().map { embeddingFloat(it, provider) }
             }
         }
         return EmbeddingModelResult(
@@ -370,11 +370,12 @@ private class GoogleGenerativeAIVideoModel(
         repeat(maxAttempts) {
             if (current["done"]?.jsonPrimitive?.booleanOrNull == true) return@repeat
             if (pollInterval > 0) delay(pollInterval)
-            val poll = googleGetJson(
+            val poll = googleGetJsonWithRetry(
                 client = client,
                 url = "${settings.baseURL.trimEnd('/')}/$operationName",
                 headers = googleHeaders(settings, params.headers),
                 abortSignal = params.abortSignal,
+                retryDelayMillis = pollInterval,
             )
             current = poll.value.jsonObject
             headers = poll.headers
@@ -389,8 +390,17 @@ private class GoogleGenerativeAIVideoModel(
         val videos = samples.mapNotNull { sample ->
             sample.jsonObject["video"]?.jsonObject?.get("uri")?.jsonPrimitive?.contentOrNull
         }.map { uri ->
-            val url = settings.apiKey?.let { key -> "$uri${if (uri.contains("?")) "&" else "?"}key=$key" } ?: uri
-            GeneratedFile(mediaType = "video/mp4", base64 = "", url = url, providerMetadata = mapOf("google" to buildJsonObject { put("uri", JsonPrimitive(uri)) }))
+            GeneratedFile(
+                mediaType = "video/mp4",
+                base64 = "",
+                url = uri,
+                providerMetadata = mapOf(
+                    "google" to buildJsonObject {
+                        put("uri", JsonPrimitive(uri))
+                        put("requiresApiKey", JsonPrimitive(settings.apiKey != null))
+                    },
+                ),
+            )
         }
         if (videos.isEmpty()) throw NoVideoGeneratedError("Google video response contained no videos.")
         return VideoModelResult(videos = videos, response = LanguageModelResponseMetadata(modelId = modelId, headers = headers, body = current), providerMetadata = mapOf("google" to current))
@@ -1161,7 +1171,7 @@ private fun googleInteractionsUsage(element: JsonElement?): Usage {
     val input = obj["total_input_tokens"]?.jsonPrimitive?.intOrNull ?: 0
     val output = obj["total_output_tokens"]?.jsonPrimitive?.intOrNull ?: 0
     val thought = obj["total_thought_tokens"]?.jsonPrimitive?.intOrNull ?: 0
-    val cached = obj["total_cached_tokens"]?.jsonPrimitive?.intOrNull ?: 0
+    val cached = (obj["total_cached_tokens"]?.jsonPrimitive?.intOrNull ?: 0).coerceIn(0, input)
     return Usage(
         inputTokens = Usage.InputTokenBreakdown(
             total = input,
@@ -1679,6 +1689,31 @@ private suspend fun googleGetJson(
     return response.parseGoogleResponse(parseJson = parseJson)
 }
 
+private suspend fun googleGetJsonWithRetry(
+    client: HttpClient,
+    url: String,
+    headers: Map<String, String>,
+    abortSignal: AbortSignal,
+    parseJson: Boolean = true,
+    maxRetries: Int = 2,
+    retryDelayMillis: Long = 0,
+): GoogleHttpResponse {
+    var attempt = 0
+    while (true) {
+        abortSignal.throwIfAborted()
+        val response = client.request(url) {
+            method = HttpMethod.Get
+            headers.forEach { (name, value) -> header(name, value) }
+        }
+        if (response.status.value !in 500..599 || attempt >= maxRetries) {
+            return response.parseGoogleResponse(parseJson = parseJson)
+        }
+        response.bodyAsText()
+        attempt += 1
+        if (retryDelayMillis > 0) delay(retryDelayMillis)
+    }
+}
+
 private suspend fun HttpResponse.parseGoogleResponse(parseJson: Boolean): GoogleHttpResponse {
     val raw = bodyAsText()
     val headers = responseHeaders()
@@ -1709,7 +1744,7 @@ private fun googleUsage(element: JsonElement?): Usage {
     val obj = element as? JsonObject ?: return Usage()
     val prompt = obj["promptTokenCount"]?.jsonPrimitive?.intOrNull ?: 0
     val candidates = obj["candidatesTokenCount"]?.jsonPrimitive?.intOrNull ?: 0
-    val thoughts = obj["thoughtsTokenCount"]?.jsonPrimitive?.intOrNull ?: 0
+    val thoughts = (obj["thoughtsTokenCount"]?.jsonPrimitive?.intOrNull ?: 0).coerceIn(0, candidates)
     return Usage(
         inputTokens = Usage.InputTokenBreakdown(total = prompt),
         outputTokens = Usage.OutputTokenBreakdown(total = candidates, reasoning = thoughts, text = (candidates - thoughts).coerceAtLeast(0)),
@@ -1770,7 +1805,9 @@ private fun googleVideoResolution(resolution: String): String = when (resolution
 
 private fun googleErrorMessage(parsed: JsonElement?, raw: String): String {
     val obj = parsed as? JsonObject ?: return raw
-    return obj["error"]?.jsonObject?.get("message")?.jsonPrimitive?.contentOrNull
+    val error = obj["error"]
+    return (error as? JsonObject)?.get("message")?.jsonPrimitive?.contentOrNull
+        ?: (error as? JsonPrimitive)?.contentOrNull
         ?: obj["message"]?.jsonPrimitive?.contentOrNull
         ?: raw
 }

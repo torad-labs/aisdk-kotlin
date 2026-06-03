@@ -47,6 +47,9 @@ fun cosineSimilarity(left: List<Float>, right: List<Float>): Float {
     return if (denom == 0.0) 0f else (dot / denom).toFloat()
 }
 
+internal fun embeddingFloat(value: JsonElement, provider: String): Float =
+    WireDecoder.embeddingFloat(value, provider)
+
 fun isDeepEqualData(left: JsonElement?, right: JsonElement?): Boolean = when {
     left === right -> true
     left == null || right == null -> false

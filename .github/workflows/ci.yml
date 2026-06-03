@@ -11,6 +11,7 @@ permissions:
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
   AI_SDK_REFERENCE_VERSION: 6.0.195
+  AI_SDK_REFERENCE_COMMIT: 5b183c0648a9e7fb7303e40a529e1f1a692925cd
 
 jobs:
   verify:
@@ -27,6 +28,8 @@ jobs:
         run: |
           mkdir -p .reference
           git clone --depth 1 --branch ai@${AI_SDK_REFERENCE_VERSION} https://github.com/vercel/ai .reference/vercel-ai-sdk-ai-${AI_SDK_REFERENCE_VERSION}
+          actual_commit="$(git -C .reference/vercel-ai-sdk-ai-${AI_SDK_REFERENCE_VERSION} rev-parse HEAD)"
+          test "${actual_commit}" = "${AI_SDK_REFERENCE_COMMIT}"
       - name: Verify AI SDK reference version
         run: node tools/check-ai-sdk-reference.mjs
       - name: Verify parity ledgers

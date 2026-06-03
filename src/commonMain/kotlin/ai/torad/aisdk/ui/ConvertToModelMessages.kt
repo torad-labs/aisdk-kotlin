@@ -3,6 +3,8 @@ package ai.torad.aisdk.ui
 import ai.torad.aisdk.ContentPart
 import ai.torad.aisdk.MessageRole
 import ai.torad.aisdk.ModelMessage
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.JsonNull
 
 /**
@@ -51,6 +53,10 @@ fun convertToModelMessages(
 ): List<ModelMessage> {
     val result = mutableListOf<ModelMessage>()
     for (uiMsg in messages) {
+        approvalResponseMessage(uiMsg)?.let { approvalResponse ->
+            result.add(approvalResponse)
+            continue
+        }
         val role = when (uiMsg.role) {
             UIMessageRole.System -> MessageRole.System
             UIMessageRole.User -> MessageRole.User
@@ -75,6 +81,33 @@ fun convertToModelMessages(
         }
     }
     return result
+}
+
+private fun approvalResponseMessage(uiMsg: UIMessage): ModelMessage? {
+    if (uiMsg.role != UIMessageRole.User || uiMsg.parts.size != 1) return null
+    val part = uiMsg.parts.single() as? UIMessagePart.ToolUI ?: return null
+    if (part.toolName != "approval") return null
+    val approved = when (part.state) {
+        ToolCallState.OutputAvailable -> true
+        ToolCallState.OutputDenied -> false
+        else -> return null
+    }
+    val approvalId = when (val output = part.output) {
+        null -> part.toolCallId
+        is JsonPrimitive -> output.contentOrNull ?: part.toolCallId
+        else -> throw IllegalArgumentException("Approval response output must be a string approval id.")
+    }
+    return ModelMessage(
+        role = MessageRole.Tool,
+        content = listOf(
+            ContentPart.ToolApprovalResponse(
+                toolCallId = part.toolCallId,
+                approved = approved,
+                reason = part.error,
+                approvalId = approvalId,
+            ),
+        ),
+    )
 }
 
 /**

@@ -49,8 +49,8 @@ class GatewayAndProviderUtilsParityTest {
             ),
         )
 
-        val text = generateText<String>(provider("chat-model"), prompt = "hi")
-        val chat = generateText<String>(provider.chat("chat-model-2"), prompt = "hi")
+        val text = generateText(provider("chat-model"), prompt = "hi")
+        val chat = generateText(provider.chat("chat-model-2"), prompt = "hi")
         val embedding = embed(provider.embedding("embed-model"), "hello")
         val image = generateImage(provider.image("image-model"), "logo")
         val video = generateVideo(provider.video("video-model"), "clip")
@@ -110,6 +110,25 @@ class GatewayAndProviderUtilsParityTest {
         assertEquals(12.5, spend.results.single().totalCost)
         assertEquals(GatewayCredentialType.Byok, transport.spendParams.single().credentialType)
         assertEquals("gen_123", generation.id)
+    }
+
+    @Test
+    fun `gateway metadata cache uses system clock by default`() = runTest {
+        val transport = CapturingGatewayTransport()
+        val provider = createGatewayProvider(
+            GatewayProviderSettings(
+                apiKey = "secret",
+                transport = transport,
+                metadataCacheRefreshMillis = 0L,
+            ),
+        )
+
+        val first = provider.getAvailableModels()
+        val second = provider.getAvailableModels()
+
+        assertEquals("model-1", first.models.single().id)
+        assertEquals("model-2", second.models.single().id)
+        assertEquals(2, transport.metadataCalls)
     }
 
     @Test
@@ -255,6 +274,24 @@ class GatewayAndProviderUtilsParityTest {
         assertEquals("optional", loadOptionalSetting(null, "TEST_OPTIONAL", mapOf("TEST_OPTIONAL" to "optional")))
         assertFailsWith<LoadAPIKeyError> { loadApiKey(null, "MISSING_API_KEY", description = "Missing") }
         assertFailsWith<LoadSettingError> { loadSetting(null, "MISSING_SETTING", "setting", "Missing") }
+    }
+
+    @Test
+    fun `schema fallback validates basic JSON schema type before returning values`() {
+        val stringSchema = jsonSchema<String>(
+            buildJsonObject { put("type", JsonPrimitive("string")) },
+        )
+        val objectSchema = jsonSchema<JsonObject>(
+            buildJsonObject { put("type", JsonPrimitive("object")) },
+        )
+
+        val string = assertIs<ValidationResult.Success<String>>(safeValidateTypes(JsonPrimitive("ok"), stringSchema))
+        val objectFailure = assertIs<ValidationResult.Failure>(safeValidateTypes(JsonPrimitive("not-object"), objectSchema))
+        val stringFailure = assertIs<ValidationResult.Failure>(safeValidateTypes(buildJsonObject { put("x", JsonPrimitive(1)) }, stringSchema))
+
+        assertEquals("ok", string.value)
+        assertTrue(objectFailure.error.message.orEmpty().contains("Expected JSON object"))
+        assertTrue(stringFailure.error.message.orEmpty().contains("Expected JSON string"))
     }
 
     @Test
@@ -490,7 +527,7 @@ class GatewayAndProviderUtilsParityTest {
             GatewayProviderSettings(baseUrl = "https://gateway.test/v3/ai", apiKey = "secret"),
         )
 
-        val generated = generateText<String>(provider.languageModel("gpt-test"), prompt = "hi")
+        val generated = generateText(provider.languageModel("gpt-test"), prompt = "hi")
         val streamed = drainAllItems(provider.languageModel("gpt-test").stream(LanguageModelCallParams(listOf(userMessage("hi")))))
 
         assertEquals("hello", generated.text)
@@ -500,6 +537,33 @@ class GatewayAndProviderUtilsParityTest {
         assertEquals(listOf("/v3/ai/language-model", "/v3/ai/language-model"), seenPaths)
         assertEquals("Bearer secret", seenHeaders.first()["authorization"]?.single())
         assertEquals("gpt-test", seenHeaders.first()["ai-language-model-id"]?.single())
+    }
+
+    @Test
+    fun `KtorGatewayTransport rejects malformed required stream event fields`() = runTest {
+        val client = HttpClient(
+            MockEngine { request ->
+                when (request.url.encodedPath) {
+                    "/v3/ai/language-model" -> respond(
+                        content = """data: {"type":"text-delta","id":"t1"}""",
+                        status = HttpStatusCode.OK,
+                        headers = headersOf(HttpHeaders.ContentType, "text/event-stream"),
+                    )
+                    else -> respond("""{}""", HttpStatusCode.NotFound, headersOf(HttpHeaders.ContentType, "application/json"))
+                }
+            },
+        )
+        val provider = createGatewayHttpProvider(
+            client,
+            GatewayProviderSettings(baseUrl = "https://gateway.test/v3/ai", apiKey = "secret"),
+        )
+
+        val error = assertFailsWith<WireDecodeException> {
+            drainAllItems(provider.languageModel("gpt-test").stream(LanguageModelCallParams(listOf(userMessage("hi")))))
+        }
+
+        assertEquals("gateway", error.provider)
+        assertEquals("stream event", error.operation)
     }
 
     @Test

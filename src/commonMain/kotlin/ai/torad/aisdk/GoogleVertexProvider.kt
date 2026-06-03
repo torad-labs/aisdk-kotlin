@@ -328,8 +328,10 @@ private fun googleVertexXaiUsage(value: JsonElement?): Usage {
     val obj = value as? JsonObject ?: return Usage()
     val promptTokens = obj["prompt_tokens"]?.jsonPrimitive?.intOrNull ?: 0
     val completionTokens = obj["completion_tokens"]?.jsonPrimitive?.intOrNull ?: 0
-    val cacheReadTokens = obj["prompt_tokens_details"]?.jsonObject?.get("cached_tokens")?.jsonPrimitive?.intOrNull ?: 0
-    val reasoningTokens = obj["completion_tokens_details"]?.jsonObject?.get("reasoning_tokens")?.jsonPrimitive?.intOrNull ?: 0
+    val cacheReadTokens = (obj["prompt_tokens_details"]?.jsonObject?.get("cached_tokens")?.jsonPrimitive?.intOrNull ?: 0)
+        .coerceIn(0, promptTokens)
+    val reasoningTokens = (obj["completion_tokens_details"]?.jsonObject?.get("reasoning_tokens")?.jsonPrimitive?.intOrNull ?: 0)
+        .coerceAtLeast(0)
     return Usage(
         inputTokens = Usage.InputTokenBreakdown(
             total = promptTokens,

@@ -5,9 +5,16 @@ import ai.torad.aisdk.providers.mockLanguageModelToolThenText
 import ai.torad.aisdk.providers.mockToolInput
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertIs
 import kotlin.test.assertTrue
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeout
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.serializer
 
 /**
@@ -101,5 +108,76 @@ class ToolApprovalTest {
         val resumed = agent.generate(messages = first.messages + denial)
         assertEquals(false, executed, "tool NOT executed after denial")
         assertEquals("ok skipped", resumed.text)
+    }
+
+    @Test
+    fun `approval gate malformed input emits structured tool error`() = runTest {
+        val sendTool = tool<SendInput, SendResult, Unit>(
+            name = "send",
+            description = "send message",
+            inputSerializer = serializer(),
+            outputSerializer = serializer(),
+            needsApproval = { _, _ -> true },
+        ) { _ ->
+            SendResult(sent = true)
+        }
+
+        val agent = ToolLoopAgent<Unit, String>(
+            model = mockLanguageModelToolThenText(
+                toolName = "send",
+                toolInput = JsonObject(emptyMap()),
+                finalText = "sent",
+            ),
+            instructions = "use send",
+            tools = toolSetOf(sendTool),
+        )
+
+        val events = agent.stream(prompt = "trigger").toList()
+
+        val error = events.filterIsInstance<StreamEvent.ToolError>().single()
+        assertEquals("send", error.toolName)
+        assertIs<AgentError.InvalidToolInput>(error.error)
+    }
+
+    @Test
+    fun `engine approval resume preserves original context for approved tool`() = runTest {
+        val seenContexts = mutableListOf<String?>()
+        val sendTool = tool<SendInput, SendResult, String>(
+            name = "send",
+            description = "send message",
+            inputSerializer = serializer(),
+            outputSerializer = serializer(),
+            needsApproval = { _, _ -> true },
+        ) { _ ->
+            seenContexts += context
+            SendResult(sent = true)
+        }
+
+        val agent = ToolLoopAgent<String, String>(
+            model = mockLanguageModelToolThenText(
+                toolName = "send",
+                toolInput = mockToolInput("message" to "hey friend"),
+                finalText = "sent",
+            ),
+            instructions = "use send",
+            tools = toolSetOf(sendTool),
+        )
+
+        agent.dispatchEngineAction(ToolLoopAgentAction.UserSubmitPrompt("trigger", context = "request-context"))
+        withContext(Dispatchers.Default) {
+            withTimeout(1_000) {
+                while (agent.engineState.value.pendingApprovals.isEmpty()) delay(10)
+            }
+        }
+
+        val pending = agent.engineState.value.pendingApprovals.single()
+        agent.dispatchEngineAction(ToolLoopAgentAction.ApproveToolCall(pending.toolCallId))
+        withContext(Dispatchers.Default) {
+            withTimeout(1_000) {
+                while (seenContexts.isEmpty() || agent.engineState.value.isStreaming) delay(10)
+            }
+        }
+
+        assertEquals(listOf<String?>("request-context"), seenContexts)
     }
 }

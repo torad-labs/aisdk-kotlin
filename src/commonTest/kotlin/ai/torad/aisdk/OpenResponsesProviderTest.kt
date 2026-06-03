@@ -183,6 +183,25 @@ class OpenResponsesProviderTest {
     }
 
     @Test
+    fun `stream surfaces Open Responses missing output item as error`() = runTest {
+        val client = HttpClient(
+            MockEngine {
+                respond(
+                    content = """data: {"type":"response.output_item.added"}""",
+                    status = HttpStatusCode.OK,
+                    headers = headersOf(HttpHeaders.ContentType, "text/event-stream"),
+                )
+            },
+        )
+        val provider = createOpenResponses(client, OpenResponsesProviderSettings("https://api.test/v1/responses", "openresponses"))
+
+        val events = drainAllItems(provider.languageModel("gpt-resp").stream(LanguageModelCallParams(listOf(userMessage("hi")))))
+
+        val error = events.filterIsInstance<StreamEvent.Error>().single()
+        assertTrue(error.message.contains("missing item"))
+    }
+
+    @Test
     fun `tool call and tool result content convert back to Open Responses input`() = runTest {
         val seenBodies = mutableListOf<JsonObject>()
         val client = HttpClient(
@@ -246,6 +265,64 @@ class OpenResponsesProviderTest {
         assertEquals("rendered", output[0].jsonObject["text"]!!.jsonPrimitive.content)
         assertEquals("input_image", output[1].jsonObject["type"]!!.jsonPrimitive.content)
         assertEquals("data:image/png;base64,iVBORw0=", output[1].jsonObject["image_url"]!!.jsonPrimitive.content)
+    }
+
+    @Test
+    fun `user file content does not infer file id from decodable base64 prefix`() = runTest {
+        val seenBodies = mutableListOf<JsonObject>()
+        val client = HttpClient(
+            MockEngine { request ->
+                seenBodies += Json.parseToJsonElement(requestBodyText(request)).jsonObject
+                respond(
+                    content = """{"id":"resp_3","created_at":1780000002,"model":"gpt-resp","output":[{"type":"message","id":"msg_3","role":"assistant","content":[{"type":"output_text","text":"ok"}]}]}""",
+                    status = HttpStatusCode.OK,
+                    headers = headersOf(HttpHeaders.ContentType, "application/json"),
+                )
+            },
+        )
+        val provider = createOpenResponses(
+            client,
+            OpenResponsesProviderSettings(
+                url = "https://api.test/v1/responses",
+                name = "openresponses",
+                fileIdPrefixes = listOf("file-"),
+            ),
+        )
+
+        provider.languageModel("gpt-resp").generate(
+            LanguageModelCallParams(
+                messages = listOf(
+                    ModelMessage(
+                        MessageRole.User,
+                        listOf(
+                            ContentPart.File(
+                                mediaType = "application/pdf",
+                                base64 = "file-abc",
+                                filename = "payload.pdf",
+                            ),
+                            ContentPart.File(
+                                mediaType = "application/pdf",
+                                base64 = "ignored",
+                                filename = "remote.pdf",
+                                providerMetadata = mapOf(
+                                    "openai" to buildJsonObject {
+                                        put("file_id", JsonPrimitive("file-explicit"))
+                                    },
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val content = seenBodies.single()["input"]!!.jsonArray.single().jsonObject["content"]!!.jsonArray
+        val payload = content[0].jsonObject
+        val explicit = content[1].jsonObject
+        assertEquals("data:application/pdf;base64,file-abc", payload["file_data"]!!.jsonPrimitive.content)
+        assertEquals(null, payload["file_id"])
+        assertEquals("file-explicit", explicit["file_id"]!!.jsonPrimitive.content)
+        assertEquals(null, explicit["file_data"])
     }
 
     private fun objectSchema(vararg required: String): JsonObject = buildJsonObject {

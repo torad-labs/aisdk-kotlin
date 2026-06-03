@@ -29,8 +29,8 @@ https://maven.pkg.github.com/torad-labs/aisdk-kotlin
 
 Required repository secrets:
 
-- `SIGNING_KEY`: optional in-memory PGP private key.
-- `SIGNING_PASSWORD`: optional PGP key password.
+- `SIGNING_KEY`: required in-memory PGP private key.
+- `SIGNING_PASSWORD`: required PGP key password.
 
 GitHub automatically provides `GITHUB_TOKEN` for package publication.
 
@@ -38,8 +38,8 @@ GitHub automatically provides `GITHUB_TOKEN` for package publication.
 
 1. Update `VERSION_NAME` in `gradle.properties`.
 2. Update `CHANGELOG.md`.
-3. Run `./gradlew allTests publishToMavenLocal`.
-4. Commit and tag with `v<version>`.
+3. Run `./gradlew check publishToMavenLocal`.
+4. Commit to `main` and tag with `v<version>`. The tag version must exactly match `VERSION_NAME`.
 5. Push the tag to trigger package publication.
 
 Maven Central publication is not wired yet. Add it only after package metadata, signing, and release ownership are finalized.

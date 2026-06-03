@@ -17,15 +17,56 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6.0.3
+        with:
+          fetch-depth: 0
       - uses: actions/setup-java@v5.2.0
         with:
           distribution: temurin
           java-version: "21"
       - uses: android-actions/setup-android@v4.0.1
       - uses: gradle/actions/setup-gradle@v6.1.0
+      - name: Verify release tag
+        run: |
+          tag_version="${GITHUB_REF_NAME#v}"
+          project_version="$(awk -F= '$1 == "VERSION_NAME" { print $2 }' gradle.properties)"
+          test "${tag_version}" = "${project_version}"
+          if [[ "${project_version}" == *-SNAPSHOT ]]; then
+            echo "Release tags must not publish SNAPSHOT versions: ${project_version}" >&2
+            exit 1
+          fi
+          git fetch origin main
+          git merge-base --is-ancestor "${GITHUB_SHA}" origin/main
+      - name: Verify checks
+        run: ./gradlew check
       - name: Publish to GitHub Packages
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SIGNING_KEY: ${{ secrets.SIGNING_KEY }}
           SIGNING_PASSWORD: ${{ secrets.SIGNING_PASSWORD }}
         run: ./gradlew publishAllPublicationsToGitHubPackagesRepository
+      - name: Verify published artifact resolves
+        env:
+          GITHUB_ACTOR: ${{ github.actor }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          version="$(awk -F= '$1 == "VERSION_NAME" { print $2 }' gradle.properties)"
+          mkdir -p build
+          cat > build/release-smoke.gradle.kts <<EOF
+          repositories {
+              maven {
+                  url = uri("https://maven.pkg.github.com/torad-labs/aisdk-kotlin")
+                  credentials {
+                      username = System.getenv("GITHUB_ACTOR")
+                      password = System.getenv("GITHUB_TOKEN")
+                  }
+              }
+              google()
+              mavenCentral()
+          }
+          configurations { create("smoke") }
+          dependencies { "smoke"("ai.torad:aisdk-kotlin:${version}") }
+          tasks.register("verifyPublishedArtifact") {
+              doLast { configurations["smoke"].resolve().forEach { println(it.name) } }
+          }
+          EOF
+          ./gradlew -b build/release-smoke.gradle.kts verifyPublishedArtifact --refresh-dependencies

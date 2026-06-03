@@ -147,7 +147,12 @@ private class CohereChatLanguageModel(
             emit(StreamEvent.ReasoningDelta(id, reasoning.text, reasoning.providerMetadata))
             emit(StreamEvent.ReasoningEnd(id, reasoning.providerMetadata))
         }
-        result.toolCalls.forEach { emit(StreamEvent.ToolCall(it.toolCallId, it.toolName, it.input, it.providerMetadata)) }
+        result.toolCalls.forEach {
+            emit(StreamEvent.ToolInputStart(it.toolCallId, it.toolName, it.providerMetadata))
+            emit(StreamEvent.ToolInputDelta(it.toolCallId, it.input.toString(), it.providerMetadata))
+            emit(StreamEvent.ToolInputEnd(it.toolCallId, it.providerMetadata))
+            emit(StreamEvent.ToolCall(it.toolCallId, it.toolName, it.input, it.providerMetadata))
+        }
         emit(StreamEvent.Finish(totalSteps = 1, finishReason = result.finishReason, usage = result.usage))
     }
 }
@@ -177,7 +182,7 @@ private class CohereEmbeddingModel(
         )
         val value = response.value.jsonObject
         val embeddings = value["embeddings"]?.jsonObject?.get("float")?.jsonArray.orEmpty()
-            .map { row -> row.jsonArray.map { it.jsonPrimitive.floatOrNull ?: 0f } }
+            .map { row -> row.jsonArray.map { embeddingFloat(it, provider) } }
         val usage = value["meta"]?.jsonObject
             ?.get("billed_units")?.jsonObject
             ?.get("input_tokens")?.jsonPrimitive?.intOrNull ?: 0

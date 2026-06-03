@@ -22,6 +22,8 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withTimeout
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
@@ -109,6 +111,16 @@ data class JSONRPCErrorData(
     val data: JsonElement? = null,
 )
 
+@Serializable
+private data class JSONRPCEnvelope(
+    val jsonrpc: String,
+    val id: JsonElement? = null,
+    val method: String? = null,
+    val params: JsonObject? = null,
+    val result: JsonElement? = null,
+    val error: JSONRPCErrorData? = null,
+)
+
 fun JSONRPCMessage.toJsonElement(): JsonObject = when (this) {
     is JSONRPCRequest -> mcpJson.encodeToJsonElement(JSONRPCRequest.serializer(), this).jsonObject
     is JSONRPCNotification -> mcpJson.encodeToJsonElement(JSONRPCNotification.serializer(), this).jsonObject
@@ -119,16 +131,29 @@ fun JSONRPCMessage.toJsonElement(): JsonObject = when (this) {
 fun JSONRPCMessage.toJsonString(): String = toJsonElement().toString()
 
 fun parseJSONRPCMessage(text: String): JSONRPCMessage {
-    val obj = mcpJson.parseToJsonElement(text).jsonObject
-    require(obj["jsonrpc"]?.jsonPrimitive?.contentOrNull == JSONRPC_VERSION) {
-        "Invalid JSON-RPC version"
+    val obj = WireDecoder.parseObject(text, provider = "mcp", operation = "json-rpc message")
+    val envelope = WireDecoder.decode(
+        JSONRPCEnvelope.serializer(),
+        obj,
+        provider = "mcp",
+        operation = "json-rpc message",
+    )
+    if (envelope.jsonrpc != JSONRPC_VERSION) {
+        WireDecoder.fail(
+            provider = "mcp",
+            operation = "json-rpc message",
+            path = "$.jsonrpc",
+            message = "expected JSON-RPC version $JSONRPC_VERSION",
+            value = obj["jsonrpc"],
+        )
     }
+    val hasId = "id" in obj
     return when {
-        "method" in obj && "id" in obj -> mcpJson.decodeFromJsonElement(JSONRPCRequest.serializer(), obj)
-        "method" in obj -> mcpJson.decodeFromJsonElement(JSONRPCNotification.serializer(), obj)
-        "result" in obj -> mcpJson.decodeFromJsonElement(JSONRPCResponse.serializer(), obj)
-        "error" in obj -> mcpJson.decodeFromJsonElement(JSONRPCError.serializer(), obj)
-        else -> throw IllegalArgumentException("Invalid JSON-RPC message")
+        envelope.method != null && hasId -> WireDecoder.decode(JSONRPCRequest.serializer(), obj, "mcp", "json-rpc request")
+        envelope.method != null -> WireDecoder.decode(JSONRPCNotification.serializer(), obj, "mcp", "json-rpc notification")
+        envelope.result != null && hasId -> WireDecoder.decode(JSONRPCResponse.serializer(), obj, "mcp", "json-rpc response")
+        envelope.error != null && hasId -> WireDecoder.decode(JSONRPCError.serializer(), obj, "mcp", "json-rpc error")
+        else -> WireDecoder.fail("mcp", "json-rpc message", "$", "invalid JSON-RPC envelope", obj)
     }
 }
 
@@ -406,6 +431,7 @@ private class DefaultMCPClient(config: MCPClientConfig) : MCPClient {
     )
     private val clientCapabilities = config.capabilities
     private val responseHandlers = mutableMapOf<String, CompletableDeferred<JsonElement>>()
+    private val responseHandlersMutex = Mutex()
     private var requestMessageId: Long = 0
     private var isClosed = true
     private var serverCapabilities = MCPServerCapabilities()
@@ -602,9 +628,10 @@ private class DefaultMCPClient(config: MCPClientConfig) : MCPClient {
         assertCapability(method)
         options?.signal?.throwIfAborted()
 
-        val id = JsonPrimitive(requestMessageId++)
         val deferred = CompletableDeferred<JsonElement>()
-        responseHandlers[id.rpcIdKey()] = deferred
+        val id = responseHandlersMutex.withLock {
+            JsonPrimitive(requestMessageId++).also { responseHandlers[it.rpcIdKey()] = deferred }
+        }
         try {
             transport.send(JSONRPCRequest(id = id, method = method, params = params))
             options?.signal?.throwIfAborted()
@@ -616,7 +643,7 @@ private class DefaultMCPClient(config: MCPClientConfig) : MCPClient {
                 throw MCPClientError("Failed to parse server response", cause = error)
             }
         } finally {
-            responseHandlers.remove(id.rpcIdKey())
+            responseHandlersMutex.withLock { responseHandlers.remove(id.rpcIdKey()) }
         }
     }
 
@@ -642,7 +669,7 @@ private class DefaultMCPClient(config: MCPClientConfig) : MCPClient {
             is JSONRPCRequest -> onRequestMessage(message)
             is JSONRPCResponse -> onResponse(message)
             is JSONRPCError -> onResponse(message)
-            is JSONRPCNotification -> onError(MCPClientError("Unsupported message type"))
+            is JSONRPCNotification -> Unit
         }
     }
 
@@ -723,14 +750,14 @@ private class DefaultMCPClient(config: MCPClientConfig) : MCPClient {
         }
     }
 
-    private fun onResponse(response: JSONRPCResponse) {
-        val handler = responseHandlers[response.id.rpcIdKey()]
+    private suspend fun onResponse(response: JSONRPCResponse) {
+        val handler = responseHandlersMutex.withLock { responseHandlers[response.id.rpcIdKey()] }
             ?: throw MCPClientError("Protocol error: Received a response for an unknown message ID: ${response.toJsonString()}")
         handler.complete(response.result)
     }
 
-    private fun onResponse(response: JSONRPCError) {
-        val handler = responseHandlers[response.id.rpcIdKey()]
+    private suspend fun onResponse(response: JSONRPCError) {
+        val handler = responseHandlersMutex.withLock { responseHandlers[response.id.rpcIdKey()] }
             ?: throw MCPClientError("Protocol error: Received a response for an unknown message ID: ${response.toJsonString()}")
         handler.completeExceptionally(
             MCPClientError(
@@ -1016,13 +1043,14 @@ class HttpMCPTransport(
     private var sessionId: String? = null
     private var scope: CoroutineScope? = null
     private var inboundJob: Job? = null
+    private val inboundMutex = Mutex()
     private var closed = true
 
     override suspend fun start() {
         if (!closed) throw MCPClientError("MCP HTTP Transport Error: Transport already started.")
         closed = false
         scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
-        openInboundSse()
+        ensureInboundSse()
     }
 
     override suspend fun send(message: JSONRPCMessage) {
@@ -1070,7 +1098,7 @@ class HttpMCPTransport(
             return
         }
         if (response.status.value == 202 || message is JSONRPCNotification) {
-            if (inboundJob == null) openInboundSse()
+            ensureInboundSse()
             return
         }
         if (response.status.value !in 200..299) {
@@ -1099,30 +1127,37 @@ class HttpMCPTransport(
         }
     }
 
-    private suspend fun openInboundSse() {
+    private suspend fun ensureInboundSse() {
         val activeScope = scope ?: return
-        if (inboundJob != null) return
-        inboundJob = activeScope.launch {
-            try {
-                val response = client.request(url) {
-                    method = HttpMethod.Get
-                    mcpCommonHeaders(mapOf(HttpHeaders.Accept to "text/event-stream")).forEach { (name, value) -> header(name, value) }
+        inboundMutex.withLock {
+            if (inboundJob == null) {
+                inboundJob = activeScope.launch { readInboundSse() }
+            }
+        }
+    }
+
+    private suspend fun readInboundSse() {
+        try {
+            val response = client.request(url) {
+                method = HttpMethod.Get
+                mcpCommonHeaders(mapOf(HttpHeaders.Accept to "text/event-stream")).forEach { (name, value) -> header(name, value) }
+            }
+            response.mcpSessionId()?.let { sessionId = it }
+            if (response.status.value == 405) return
+            if (response.status.value !in 200..299) {
+                val error = MCPClientError("MCP HTTP Transport Error: GET SSE failed: ${response.status.value} ${response.status.description}")
+                onError?.invoke(error)
+                return
+            }
+            processMcpSse(response.bodyAsChannel()) { event ->
+                if (event.event == "message") {
+                    onMessage?.invoke(parseJSONRPCMessage(event.data))
                 }
-                response.mcpSessionId()?.let { sessionId = it }
-                if (response.status.value == 405) return@launch
-                if (response.status.value !in 200..299) {
-                    val error = MCPClientError("MCP HTTP Transport Error: GET SSE failed: ${response.status.value} ${response.status.description}")
-                    onError?.invoke(error)
-                    return@launch
-                }
-                processMcpSse(response.bodyAsChannel()) { event ->
-                    if (event.event == "message") {
-                        onMessage?.invoke(parseJSONRPCMessage(event.data))
-                    }
-                }
-            } catch (error: Throwable) {
-                if (!closed) onError?.invoke(error)
-            } finally {
+            }
+        } catch (error: Throwable) {
+            if (!closed) onError?.invoke(error)
+        } finally {
+            inboundMutex.withLock {
                 inboundJob = null
             }
         }
@@ -1162,15 +1197,7 @@ class SseMCPTransport(
         val ready = CompletableDeferred<Unit>()
         readerJob = connectionScope.launch {
             try {
-                val response = client.request(url) {
-                    method = HttpMethod.Get
-                    mcpCommonHeaders(mapOf(HttpHeaders.Accept to "text/event-stream")).forEach { (name, value) -> header(name, value) }
-                }
-                if (response.status.value == 401 && authProvider != null) {
-                    if (auth(authProvider, AuthOptions(serverUrl = url)) != AuthResult.AUTHORIZED) {
-                        throw UnauthorizedError()
-                    }
-                }
+                val response = openSseConnection(triedAuth = false)
                 if (response.status.value !in 200..299) {
                     throw MCPClientError("MCP SSE Transport Error: ${response.status.value} ${response.status.description}")
                 }
@@ -1198,6 +1225,20 @@ class SseMCPTransport(
             }
         }
         ready.await()
+    }
+
+    private suspend fun openSseConnection(triedAuth: Boolean): HttpResponse {
+        val response = client.request(url) {
+            method = HttpMethod.Get
+            mcpCommonHeaders(mapOf(HttpHeaders.Accept to "text/event-stream")).forEach { (name, value) -> header(name, value) }
+        }
+        if (response.status.value == 401 && authProvider != null && !triedAuth) {
+            if (auth(authProvider, AuthOptions(serverUrl = url)) != AuthResult.AUTHORIZED) {
+                throw UnauthorizedError()
+            }
+            return openSseConnection(triedAuth = true)
+        }
+        return response
     }
 
     override suspend fun send(message: JSONRPCMessage) {

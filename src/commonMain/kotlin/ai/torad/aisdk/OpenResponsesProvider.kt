@@ -363,7 +363,29 @@ private fun List<ContentPart>.textContent(): String =
     }
 
 private fun isOpenResponsesFileId(value: String, prefixes: List<String>): Boolean =
-    prefixes.any { prefix -> prefix.isNotEmpty() && value.startsWith(prefix) }
+    prefixes.any { prefix -> prefix.isNotEmpty() && value.startsWith(prefix) } && !isOpenResponsesBase64Payload(value)
+
+private fun isOpenResponsesBase64Payload(value: String): Boolean =
+    runCatching { convertBase64ToByteArray(value) }.isSuccess
+
+private fun openResponsesFileId(
+    value: String,
+    prefixes: List<String>,
+    providerMetadata: Map<String, JsonElement>?,
+): String? =
+    explicitOpenResponsesFileId(providerMetadata)
+        ?: value.takeIf { isOpenResponsesFileId(it, prefixes) }
+
+private fun explicitOpenResponsesFileId(providerMetadata: Map<String, JsonElement>?): String? {
+    val openai = providerMetadata?.get("openai") as? JsonObject
+    return openai?.get("file_id").metadataString()
+        ?: openai?.get("fileId").metadataString()
+        ?: providerMetadata?.get("file_id").metadataString()
+        ?: providerMetadata?.get("fileId").metadataString()
+}
+
+private fun JsonElement?.metadataString(): String? =
+    (this as? JsonPrimitive)?.contentOrNull
 
 private fun openResponsesUserContentPart(
     part: ContentPart,
@@ -375,8 +397,9 @@ private fun openResponsesUserContentPart(
     }
     is ContentPart.Image -> buildJsonObject {
         put("type", JsonPrimitive("input_image"))
-        if (isOpenResponsesFileId(part.base64, fileIdPrefixes)) {
-            put("file_id", JsonPrimitive(part.base64))
+        val fileId = openResponsesFileId(part.base64, fileIdPrefixes, part.providerMetadata)
+        if (fileId != null) {
+            put("file_id", JsonPrimitive(fileId))
         } else {
             put("image_url", JsonPrimitive("data:${part.mediaType};base64,${part.base64}"))
         }
@@ -384,8 +407,9 @@ private fun openResponsesUserContentPart(
     is ContentPart.File -> if (part.mediaType.startsWith("image/")) {
         buildJsonObject {
             put("type", JsonPrimitive("input_image"))
-            if (isOpenResponsesFileId(part.base64, fileIdPrefixes)) {
-                put("file_id", JsonPrimitive(part.base64))
+            val fileId = openResponsesFileId(part.base64, fileIdPrefixes, part.providerMetadata)
+            if (fileId != null) {
+                put("file_id", JsonPrimitive(fileId))
             } else {
                 put("image_url", JsonPrimitive("data:${part.mediaType};base64,${part.base64}"))
             }
@@ -394,8 +418,9 @@ private fun openResponsesUserContentPart(
         buildJsonObject {
             put("type", JsonPrimitive("input_file"))
             put("filename", JsonPrimitive(part.filename ?: "data"))
-            if (isOpenResponsesFileId(part.base64, fileIdPrefixes)) {
-                put("file_id", JsonPrimitive(part.base64))
+            val fileId = openResponsesFileId(part.base64, fileIdPrefixes, part.providerMetadata)
+            if (fileId != null) {
+                put("file_id", JsonPrimitive(fileId))
             } else {
                 put("file_data", JsonPrimitive("data:${part.mediaType};base64,${part.base64}"))
             }
@@ -859,7 +884,8 @@ private class OpenResponsesStreamState(
         val events = mutableListOf<StreamEvent>()
         when (type) {
             "response.output_item.added" -> {
-                val item = obj["item"]?.jsonObject ?: return emptyList()
+                val item = obj["item"] as? JsonObject
+                    ?: return listOf(StreamEvent.Error("Open Responses stream protocol error: response.output_item.added missing item."))
                 val itemType = item["type"]?.jsonPrimitive?.contentOrNull
                 val itemId = item["id"]?.jsonPrimitive?.contentOrNull ?: obj["item_id"]?.jsonPrimitive?.contentOrNull.orEmpty()
                 when (itemType) {
@@ -888,7 +914,8 @@ private class OpenResponsesStreamState(
                 pending.arguments = obj["arguments"]?.jsonPrimitive?.contentOrNull
             }
             "response.output_item.done" -> {
-                val item = obj["item"]?.jsonObject ?: return emptyList()
+                val item = obj["item"] as? JsonObject
+                    ?: return listOf(StreamEvent.Error("Open Responses stream protocol error: response.output_item.done missing item."))
                 val itemType = item["type"]?.jsonPrimitive?.contentOrNull
                 val itemId = item["id"]?.jsonPrimitive?.contentOrNull ?: obj["item_id"]?.jsonPrimitive?.contentOrNull.orEmpty()
                 when (itemType) {
@@ -949,18 +976,21 @@ private data class PendingOpenResponsesToolCall(
 private fun openResponsesUsage(element: JsonElement?): Usage {
     val obj = element as? JsonObject ?: return Usage()
     val inputTokens = obj["input_tokens"]?.jsonPrimitive?.intOrNull ?: 0
-    val cachedInputTokens = obj["input_tokens_details"]?.jsonObject?.get("cached_tokens")?.jsonPrimitive?.intOrNull ?: 0
+    val cachedInputTokens = (obj["input_tokens_details"]?.jsonObject?.get("cached_tokens")?.jsonPrimitive?.intOrNull ?: 0)
+        .coerceIn(0, inputTokens)
     val outputTokens = obj["output_tokens"]?.jsonPrimitive?.intOrNull ?: 0
-    val reasoningTokens = obj["output_tokens_details"]?.jsonObject?.get("reasoning_tokens")?.jsonPrimitive?.intOrNull ?: 0
+    val reasoningTokens = (obj["output_tokens_details"]?.jsonObject?.get("reasoning_tokens")?.jsonPrimitive?.intOrNull ?: 0)
+        .coerceAtLeast(0)
+    val outputTotal = if (reasoningTokens > outputTokens) outputTokens + reasoningTokens else outputTokens
     return Usage(
         inputTokens = Usage.InputTokenBreakdown(
             total = inputTokens,
-            noCache = inputTokens - cachedInputTokens,
+            noCache = (inputTokens - cachedInputTokens).coerceAtLeast(0),
             cacheRead = cachedInputTokens,
         ),
         outputTokens = Usage.OutputTokenBreakdown(
-            total = outputTokens,
-            text = outputTokens - reasoningTokens,
+            total = outputTotal,
+            text = outputTotal - reasoningTokens,
             reasoning = reasoningTokens,
         ),
         raw = element,

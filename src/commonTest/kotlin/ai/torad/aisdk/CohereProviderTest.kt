@@ -1,6 +1,7 @@
 package ai.torad.aisdk
 
 import io.ktor.http.HttpHeaders
+import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonPrimitive
@@ -299,6 +300,75 @@ class CohereProviderTest {
         assertEquals(1, body["top_n"]?.jsonPrimitive?.intOrNull)
         assertEquals(64, body["max_tokens_per_doc"]?.jsonPrimitive?.intOrNull)
         assertEquals(1, body["priority"]?.jsonPrimitive?.intOrNull)
+    }
+
+    @Test
+    fun `stream emits tool input lifecycle before final tool call`() = runTest {
+        val fixture = createTestServer(
+            mutableMapOf(
+                "https://cohere.test/v2/chat" to UrlHandler(
+                    UrlResponse.JsonValue(
+                        Json.parseToJsonElement(
+                            """
+                            {
+                              "generation_id":"gen-1",
+                              "message":{
+                                "role":"assistant",
+                                "tool_calls":[
+                                  {
+                                    "id":"call-1",
+                                    "type":"function",
+                                    "function":{"name":"lookup","arguments":"{\"city\":\"Paris\"}"}
+                                  }
+                                ]
+                              },
+                              "finish_reason":"TOOL_CALL",
+                              "usage":{"tokens":{"input_tokens":1,"output_tokens":1}}
+                            }
+                            """.trimIndent(),
+                        ),
+                    ),
+                ),
+            ),
+        )
+        fixture.server.start()
+        val model = createCohere(
+            fixture.httpClient(),
+            CohereProviderSettings(apiKey = "key", baseURL = "https://cohere.test/v2"),
+        ).languageModel("command-r-plus")
+
+        val events = model.stream(
+            LanguageModelCallParams(
+                messages = listOf(userMessage("where")),
+                tools = listOf(
+                    LanguageModelTool(
+                        name = "lookup",
+                        description = "Look up a place.",
+                        parametersSchemaJson = """{"type":"object","properties":{"city":{"type":"string"}}}""",
+                    ),
+                ),
+            ),
+        ).toList()
+
+        assertEquals(
+            listOf(
+                StreamEvent.StreamStart::class,
+                StreamEvent.ToolInputStart::class,
+                StreamEvent.ToolInputDelta::class,
+                StreamEvent.ToolInputEnd::class,
+                StreamEvent.ToolCall::class,
+                StreamEvent.Finish::class,
+            ),
+            events.map { it::class },
+        )
+        val start = events[1] as StreamEvent.ToolInputStart
+        val delta = events[2] as StreamEvent.ToolInputDelta
+        val toolCall = events[4] as StreamEvent.ToolCall
+        assertEquals("call-1", start.id)
+        assertEquals("lookup", start.toolName)
+        assertEquals("call-1", delta.id)
+        assertEquals("Paris", Json.parseToJsonElement(delta.delta).jsonObject["city"]?.jsonPrimitive?.contentOrNull)
+        assertEquals("Paris", toolCall.inputJson.jsonObject["city"]?.jsonPrimitive?.contentOrNull)
     }
 
     @Test
