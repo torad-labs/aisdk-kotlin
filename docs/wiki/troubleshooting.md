@@ -72,6 +72,24 @@ git diff -- docs/parity
 If generated ledgers changed, either implement the new surface, map it to a
 KMP equivalent, or document why it is not a runtime feature.
 
+## Upstream Reference Comment Looks Like A Runtime Failure
+
+The pinned upstream reference is TypeScript source. Some comments inside
+`.reference/vercel-ai-sdk-ai-6.0.195` include historical JavaScript runtime
+messages, including the provider-utils note about calling browser or
+Cloudflare base64 globals with the wrong receiver.
+
+That string is documentation in the upstream source, not a Kotlin build or
+test failure. Verify by checking the command exit status first. The KMP port
+does not call Node, browser, or Cloudflare globals for this path:
+`convertBase64ToUint8Array`, `convertUint8ArrayToBase64`,
+`convertBase64ToByteArray`, and `convertByteArrayToBase64` use
+`kotlin.io.encoding.Base64`.
+
+Regression coverage lives in
+`GatewayAndProviderUtilsParityTest.binary url and media provider-utils are
+available in common code`, including standard and URL-safe base64 aliases.
+
 ## Publication Metadata Fails
 
 Inspect `gradle.properties`, `build.gradle.kts`, and `docs/PUBLISHING.md`.
