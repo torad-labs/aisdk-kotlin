@@ -44,7 +44,7 @@ Run `node tools/generate-parity-ledger.mjs --check` in CI to verify this directo
 | [@ai-sdk/mcp](ai-sdk-mcp.md) | 1.0.45 | `:aisdk-mcp` | 28 | in-progress: MCP JSON-RPC contracts, client handshake, capability-gated APIs, dynamic tool conversion, elicitation, OAuth type surface, and stdio API shape are currently folded into the root module; HTTP/SSE/stdio platform transports remain open |
 | [@ai-sdk/mistral](ai-sdk-mistral.md) | 3.0.37 | `:aisdk-provider-mistral` | 6 | missing: no Kotlin module or parity mapping exists yet |
 | [@ai-sdk/moonshotai](ai-sdk-moonshotai.md) | 2.0.23 | `:aisdk-provider-moonshotai` | 7 | missing: no Kotlin module or parity mapping exists yet |
-| [@ai-sdk/open-responses](ai-sdk-open-responses.md) | 1.0.16 | `:aisdk-open-responses` | 3 | missing: no Kotlin module or parity mapping exists yet |
+| [@ai-sdk/open-responses](ai-sdk-open-responses.md) | 1.0.16 | `:aisdk-open-responses` | 3 | in-progress: createOpenResponses, OpenResponsesOptions, generate/stream response mapping, and fake HTTP tests are folded into the root module; VERSION is exposed as OPEN_RESPONSES_VERSION until package modules are split |
 | [@ai-sdk/openai](ai-sdk-openai.md) | 3.0.67 | `:aisdk-openai` | 72 | in-progress: createOpenAI/openai facade and hosted OpenAI tool descriptors are folded into the root module; Responses-specific model transport remains open |
 | [@ai-sdk/openai-compatible](ai-sdk-openai-compatible.md) | 2.0.48 | `:aisdk-openai-compatible` | 26 | in-progress: OpenAI-compatible Ktor adapter is currently folded into the root module |
 | [@ai-sdk/perplexity](ai-sdk-perplexity.md) | 3.0.33 | `:aisdk-provider-perplexity` | 5 | missing: no Kotlin module or parity mapping exists yet |
@@ -59,7 +59,7 @@ Run `node tools/generate-parity-ledger.mjs --check` in CI to verify this directo
 | [@ai-sdk/svelte](ai-sdk-svelte.md) | 4.0.195 | `:aisdk-ui` | 8 | missing: no Kotlin module or parity mapping exists yet |
 | [@ai-sdk/test-server](ai-sdk-test-server.md) | 1.0.5 | `:aisdk-test-server` | 5 | missing: no Kotlin module or parity mapping exists yet |
 | [@ai-sdk/togetherai](ai-sdk-togetherai.md) | 2.0.53 | `:aisdk-provider-togetherai` | 10 | missing: no Kotlin module or parity mapping exists yet |
-| [@ai-sdk/valibot](ai-sdk-valibot.md) | 2.0.28 | `:aisdk-validation` | 1 | missing: no Kotlin module or parity mapping exists yet |
+| [@ai-sdk/valibot](ai-sdk-valibot.md) | 2.0.28 | `:aisdk-validation` | 1 | ported: valibotSchema is represented as a Kotlin-native Schema adapter folded into the root module |
 | [@ai-sdk/vercel](ai-sdk-vercel.md) | 2.0.50 | `:aisdk-provider-vercel` | 6 | missing: no Kotlin module or parity mapping exists yet |
 | [@ai-sdk/voyage](ai-sdk-voyage.md) | 1.0.4 | `:aisdk-provider-voyage` | 7 | missing: no Kotlin module or parity mapping exists yet |
 | [@ai-sdk/vue](ai-sdk-vue.md) | 3.0.195 | `:aisdk-ui` | 6 | missing: no Kotlin module or parity mapping exists yet |

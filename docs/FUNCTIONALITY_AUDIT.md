@@ -30,17 +30,25 @@ The latest stable Vercel AI SDK v6 reference verified during this pass is `ai@6.
 - OpenAI package facade: `createOpenAI`, `createOpenAIProvider`, `openai`,
   OpenAI provider settings, model factory aliases, and hosted OpenAI tool
   descriptors are present; the facade currently reuses the
-  OpenAI-compatible transport while Responses-specific transport is tracked
-  in the package parity ledger.
+  OpenAI-compatible transport for `responses(modelId)`, while the standalone
+  Open Responses package surface is listed separately below.
+- Open Responses package surface: `createOpenResponses`,
+  `OpenResponsesOptions`, request conversion, provider options,
+  generate/stream response mapping, reasoning, tool calls, usage, finish
+  reasons, response metadata, and model-visible tool-result content are
+  present with fake HTTP/SSE tests. The upstream `VERSION` export is exposed
+  as `OPEN_RESPONSES_VERSION` while packages are folded into the root module.
 - MCP package surface: JSON-RPC message contracts, transport callback
   interface, `createMCPClient`, initialize handshake, capability-gated tools,
   resources, prompts, elicitation, dynamic tool conversion, OAuth public
   types, `auth`, `UnauthorizedError`, and the stdio transport API shape are
   present with fake-transport tests; concrete HTTP/SSE/stdio platform
   transports are tracked in the package parity ledger.
+- Valibot package surface: `valibotSchema` is represented as a Kotlin-native
+  `Schema` adapter with JSON Schema preservation and validator callback tests.
 - Text-stream, UI-message-stream, and chat transport primitives.
 - Telemetry helpers and host-injected telemetry integration registry.
-- Provider-utils-style helpers: `generateId`, `createIdGenerator`, `jsonSchema`, `asSchema`, `zodSchema`, and `dynamicTool`.
+- Provider-utils-style helpers: `generateId`, `createIdGenerator`, `jsonSchema`, `asSchema`, `zodSchema`, `valibotSchema`, and `dynamicTool`.
 - Provider-utils and utility helpers: `parseJsonEventStream`, header
   normalization/user-agent helpers, base64 byte helpers, URL support and
   download validation, media-type helpers, cosine similarity, data URL
@@ -56,7 +64,7 @@ The extracted test suite is executed on both JVM and Android host targets.
 
 Last local verification:
 
-- `./gradlew allTests`: 470 test executions, 0 failures, 0 errors, 0 skips.
+- `./gradlew allTests`: 480 test executions, 0 failures, 0 errors, 0 skips.
 - `./gradlew publishToMavenLocal`: published JVM, Android, iOS x64, iOS arm64, and iOS simulator arm64 artifacts locally.
 
 On Linux, iOS unit-test binaries compile but iOS simulator execution is skipped by Gradle. Publication verification still compiles the iOS artifacts.

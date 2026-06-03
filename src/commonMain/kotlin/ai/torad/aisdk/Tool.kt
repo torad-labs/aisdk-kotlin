@@ -329,6 +329,13 @@ fun <T> zodSchema(
     validate: ((JsonElement) -> T)? = null,
 ): Schema<T> = Schema(schema, validate)
 
+fun <T> valibotSchema(
+    schema: JsonElement,
+    validate: ((JsonElement) -> T)? = null,
+): Schema<T> = jsonSchema(schema, validate)
+
+fun <T> valibotSchema(schema: Schema<T>): Schema<T> = schema
+
 internal fun jsonSchemaFor(tool: Tool<*, *, *>): String {
     tool.metadata["inputSchema"]?.let { return it.toString() }
     val descriptor = tool.inputSerializer.descriptor
