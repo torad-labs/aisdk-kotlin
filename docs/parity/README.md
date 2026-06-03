@@ -19,12 +19,12 @@ Run `node tools/generate-parity-ledger.mjs --check` in CI to verify this directo
 | [@ai-sdk/baseten](ai-sdk-baseten.md) | 1.0.51 | `:aisdk-provider-baseten` | 8 | missing: no Kotlin module or parity mapping exists yet |
 | [@ai-sdk/black-forest-labs](ai-sdk-black-forest-labs.md) | 1.0.34 | `:aisdk-provider-black-forest-labs` | 9 | missing: no Kotlin module or parity mapping exists yet |
 | [@ai-sdk/bytedance](ai-sdk-bytedance.md) | 1.0.14 | `:aisdk-provider-bytedance` | 7 | missing: no Kotlin module or parity mapping exists yet |
-| [@ai-sdk/cerebras](ai-sdk-cerebras.md) | 2.0.54 | `:aisdk-provider-cerebras` | 6 | missing: no Kotlin module or parity mapping exists yet |
+| [@ai-sdk/cerebras](ai-sdk-cerebras.md) | 2.0.54 | `:aisdk-provider-cerebras` | 6 | ported: createCerebras/cerebras, chat provider settings, CerebrasErrorData, and chat model routing are represented as an OpenAI-compatible Kotlin facade folded into the root module; VERSION is exposed as CEREBRAS_VERSION until package modules are split |
 | [@ai-sdk/codemod](ai-sdk-codemod.md) | 3.0.6 | `:aisdk-codemod` | 0 | missing: no Kotlin module or parity mapping exists yet |
 | [@ai-sdk/cohere](ai-sdk-cohere.md) | 3.0.36 | `:aisdk-provider-cohere` | 10 | missing: no Kotlin module or parity mapping exists yet |
 | [@ai-sdk/deepgram](ai-sdk-deepgram.md) | 2.0.33 | `:aisdk-provider-deepgram` | 10 | missing: no Kotlin module or parity mapping exists yet |
 | [@ai-sdk/deepinfra](ai-sdk-deepinfra.md) | 2.0.52 | `:aisdk-provider-deepinfra` | 6 | missing: no Kotlin module or parity mapping exists yet |
-| [@ai-sdk/deepseek](ai-sdk-deepseek.md) | 2.0.35 | `:aisdk-provider-deepseek` | 8 | missing: no Kotlin module or parity mapping exists yet |
+| [@ai-sdk/deepseek](ai-sdk-deepseek.md) | 2.0.35 | `:aisdk-provider-deepseek` | 8 | ported: createDeepSeek/deepseek, provider settings, language options, error data alias, and chat model routing are represented as an OpenAI-compatible Kotlin facade folded into the root module; VERSION is exposed as DEEPSEEK_VERSION until package modules are split |
 | [@ai-sdk/devtools](ai-sdk-devtools.md) | 0.0.18 | `:aisdk-devtools` | 1 | in-progress: devToolsMiddleware is represented as a Kotlin-native recorder-backed middleware folded into the root module; DB viewer/server storage remains a platform/tooling module concern |
 | [@ai-sdk/elevenlabs](ai-sdk-elevenlabs.md) | 2.0.33 | `:aisdk-provider-elevenlabs` | 9 | missing: no Kotlin module or parity mapping exists yet |
 | [@ai-sdk/fal](ai-sdk-fal.md) | 2.0.34 | `:aisdk-provider-fal` | 12 | missing: no Kotlin module or parity mapping exists yet |
@@ -33,7 +33,7 @@ Run `node tools/generate-parity-ledger.mjs --check` in CI to verify this directo
 | [@ai-sdk/gladia](ai-sdk-gladia.md) | 2.0.33 | `:aisdk-provider-gladia` | 6 | missing: no Kotlin module or parity mapping exists yet |
 | [@ai-sdk/google](ai-sdk-google.md) | 3.0.80 | `:aisdk-provider-google` | 30 | missing: no Kotlin module or parity mapping exists yet |
 | [@ai-sdk/google-vertex](ai-sdk-google-vertex.md) | 4.0.140 | `:aisdk-provider-google-vertex` | 25 | missing: no Kotlin module or parity mapping exists yet |
-| [@ai-sdk/groq](ai-sdk-groq.md) | 3.0.39 | `:aisdk-provider-groq` | 9 | missing: no Kotlin module or parity mapping exists yet |
+| [@ai-sdk/groq](ai-sdk-groq.md) | 3.0.39 | `:aisdk-provider-groq` | 9 | ported: createGroq/groq, Groq tools, chat/transcription routing, provider settings, and option surfaces are represented as an OpenAI-compatible Kotlin facade folded into the root module; VERSION is exposed as GROQ_VERSION until package modules are split |
 | [@ai-sdk/huggingface](ai-sdk-huggingface.md) | 1.0.50 | `:aisdk-provider-huggingface` | 7 | missing: no Kotlin module or parity mapping exists yet |
 | [@ai-sdk/hume](ai-sdk-hume.md) | 2.0.33 | `:aisdk-provider-hume` | 6 | missing: no Kotlin module or parity mapping exists yet |
 | [@ai-sdk/klingai](ai-sdk-klingai.md) | 3.0.18 | `:aisdk-provider-klingai` | 7 | missing: no Kotlin module or parity mapping exists yet |
@@ -43,11 +43,11 @@ Run `node tools/generate-parity-ledger.mjs --check` in CI to verify this directo
 | [@ai-sdk/luma](ai-sdk-luma.md) | 2.0.33 | `:aisdk-provider-luma` | 8 | missing: no Kotlin module or parity mapping exists yet |
 | [@ai-sdk/mcp](ai-sdk-mcp.md) | 1.0.45 | `:aisdk-mcp` | 28 | in-progress: MCP JSON-RPC contracts, client handshake, capability-gated APIs, dynamic tool conversion, elicitation, OAuth type surface, and stdio API shape are currently folded into the root module; HTTP/SSE/stdio platform transports remain open |
 | [@ai-sdk/mistral](ai-sdk-mistral.md) | 3.0.37 | `:aisdk-provider-mistral` | 6 | missing: no Kotlin module or parity mapping exists yet |
-| [@ai-sdk/moonshotai](ai-sdk-moonshotai.md) | 2.0.23 | `:aisdk-provider-moonshotai` | 7 | missing: no Kotlin module or parity mapping exists yet |
+| [@ai-sdk/moonshotai](ai-sdk-moonshotai.md) | 2.0.23 | `:aisdk-provider-moonshotai` | 7 | ported: createMoonshotAI/moonshotai, provider settings, model id/options aliases, and chat model routing are represented as an OpenAI-compatible Kotlin facade folded into the root module |
 | [@ai-sdk/open-responses](ai-sdk-open-responses.md) | 1.0.16 | `:aisdk-open-responses` | 3 | in-progress: createOpenResponses, OpenResponsesOptions, generate/stream response mapping, and fake HTTP tests are folded into the root module; VERSION is exposed as OPEN_RESPONSES_VERSION until package modules are split |
 | [@ai-sdk/openai](ai-sdk-openai.md) | 3.0.67 | `:aisdk-openai` | 72 | in-progress: createOpenAI/openai facade and hosted OpenAI tool descriptors are folded into the root module; Responses-specific model transport remains open |
 | [@ai-sdk/openai-compatible](ai-sdk-openai-compatible.md) | 2.0.48 | `:aisdk-openai-compatible` | 26 | in-progress: OpenAI-compatible Ktor adapter is currently folded into the root module |
-| [@ai-sdk/perplexity](ai-sdk-perplexity.md) | 3.0.33 | `:aisdk-provider-perplexity` | 5 | missing: no Kotlin module or parity mapping exists yet |
+| [@ai-sdk/perplexity](ai-sdk-perplexity.md) | 3.0.33 | `:aisdk-provider-perplexity` | 5 | ported: createPerplexity/perplexity and provider settings are represented as an OpenAI-compatible Kotlin facade folded into the root module; VERSION is exposed as PERPLEXITY_VERSION until package modules are split |
 | [@ai-sdk/prodia](ai-sdk-prodia.md) | 1.0.31 | `:aisdk-provider-prodia` | 12 | missing: no Kotlin module or parity mapping exists yet |
 | [@ai-sdk/provider](ai-sdk-provider.md) | 3.0.10 | `:aisdk-provider` | 122 | in-progress: provider contracts are currently folded into the root module |
 | [@ai-sdk/provider-utils](ai-sdk-provider-utils.md) | 4.0.27 | `:aisdk-provider-utils` | 111 | in-progress: provider utility subset is currently folded into the root module |

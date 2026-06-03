@@ -3,7 +3,7 @@
 - Version: 2.0.23
 - Upstream path: `.reference/vercel-ai-sdk-ai-6.0.195/packages/moonshotai`
 - Target Kotlin module: `:aisdk-provider-moonshotai`
-- Current parity status: missing: no Kotlin module or parity mapping exists yet
+- Current parity status: ported: createMoonshotAI/moonshotai, provider settings, model id/options aliases, and chat model routing are represented as an OpenAI-compatible Kotlin facade folded into the root module
 
 ## Entrypoints
 

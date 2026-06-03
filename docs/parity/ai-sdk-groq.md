@@ -3,7 +3,7 @@
 - Version: 3.0.39
 - Upstream path: `.reference/vercel-ai-sdk-ai-6.0.195/packages/groq`
 - Target Kotlin module: `:aisdk-provider-groq`
-- Current parity status: missing: no Kotlin module or parity mapping exists yet
+- Current parity status: ported: createGroq/groq, Groq tools, chat/transcription routing, provider settings, and option surfaces are represented as an OpenAI-compatible Kotlin facade folded into the root module; VERSION is exposed as GROQ_VERSION until package modules are split
 
 ## Entrypoints
 
