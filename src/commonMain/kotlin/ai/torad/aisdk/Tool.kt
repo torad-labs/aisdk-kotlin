@@ -1,6 +1,7 @@
 package ai.torad.aisdk
 
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.flow
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Serializable
@@ -318,12 +319,92 @@ data class Schema<T>(
     val validate: ((JsonElement) -> T)? = null,
 )
 
+class LazySchema<T>(
+    private val createSchema: () -> Schema<T>,
+) {
+    private var cached: Schema<T>? = null
+
+    operator fun invoke(): Schema<T> =
+        cached ?: createSchema().also { cached = it }
+}
+
+fun <T> lazySchema(createSchema: () -> Schema<T>): LazySchema<T> =
+    LazySchema(createSchema)
+
 fun <T> jsonSchema(
     schema: JsonElement,
     validate: ((JsonElement) -> T)? = null,
 ): Schema<T> = Schema(schema, validate)
 
-fun <T> asSchema(schema: Schema<T>): Schema<T> = schema
+fun <T> asSchema(schema: Schema<T>?): Schema<T> =
+    schema ?: jsonSchema(buildJsonObject {
+        put("properties", JsonObject(emptyMap()))
+        put("additionalProperties", JsonPrimitive(false))
+    })
+
+fun <T> asSchema(schema: LazySchema<T>): Schema<T> = schema()
+
+sealed interface ValidationResult<out T> {
+    data class Success<T>(
+        val value: T,
+        val rawValue: JsonElement,
+    ) : ValidationResult<T>
+
+    data class Failure(
+        val error: TypeValidationError,
+        val rawValue: JsonElement,
+    ) : ValidationResult<Nothing>
+}
+
+fun <T> safeValidateTypes(
+    value: JsonElement,
+    schema: Schema<T>,
+    context: TypeValidationContext? = null,
+): ValidationResult<T> =
+    try {
+        val validated = schema.validate?.invoke(value)
+        @Suppress("UNCHECKED_CAST")
+        ValidationResult.Success(validated ?: (value as T), value)
+    } catch (error: Throwable) {
+        ValidationResult.Failure(TypeValidationError.wrap(value, error, context), value)
+    }
+
+fun <T> safeValidateTypes(
+    value: JsonElement,
+    schema: LazySchema<T>,
+    context: TypeValidationContext? = null,
+): ValidationResult<T> = safeValidateTypes(value, schema(), context)
+
+fun <T> validateTypes(
+    value: JsonElement,
+    schema: Schema<T>,
+    context: TypeValidationContext? = null,
+): T = when (val result = safeValidateTypes(value, schema, context)) {
+    is ValidationResult.Success -> result.value
+    is ValidationResult.Failure -> throw result.error
+}
+
+fun <T> validateTypes(
+    value: JsonElement,
+    schema: LazySchema<T>,
+    context: TypeValidationContext? = null,
+): T = validateTypes(value, schema(), context)
+
+fun <T> parseProviderOptions(
+    provider: String,
+    providerOptions: Map<String, JsonElement>,
+    schema: Schema<T>,
+): T? {
+    val value = providerOptions[provider] ?: return null
+    return when (val result = safeValidateTypes(value, schema)) {
+        is ValidationResult.Success -> result.value
+        is ValidationResult.Failure -> throw InvalidArgumentError(
+            "providerOptions",
+            "invalid $provider provider options",
+            result.error,
+        )
+    }
+}
 
 fun <T> zodSchema(
     schema: JsonElement,
@@ -336,6 +417,202 @@ fun <T> valibotSchema(
 ): Schema<T> = jsonSchema(schema, validate)
 
 fun <T> valibotSchema(schema: Schema<T>): Schema<T> = schema
+
+sealed interface ExecuteToolResult<out TOutput> {
+    data class Preliminary<TOutput>(val output: TOutput) : ExecuteToolResult<TOutput>
+    data class Final<TOutput>(val output: TOutput) : ExecuteToolResult<TOutput>
+}
+
+fun <TInput, TOutput, TContext> executeTool(
+    tool: Tool<TInput, TOutput, TContext>,
+    input: TInput,
+    options: ToolExecutionContext<TContext>,
+): Flow<ExecuteToolResult<TOutput>> = flow {
+    val outputs = mutableListOf<TOutput>()
+    tool.executor.invoke(options, input).collect { output ->
+        outputs += output
+    }
+    if (outputs.isEmpty()) {
+        throw AgentError.ToolExecution(tool.name, options.toolCallId, NoOutputGeneratedError("Tool ${tool.name} produced no output"))
+    }
+    outputs.dropLast(1).forEach { emit(ExecuteToolResult.Preliminary(it)) }
+    emit(ExecuteToolResult.Final(outputs.last()))
+}
+
+data class ToolNameMapping(
+    private val customToolNameToProviderToolName: Map<String, String>,
+    private val providerToolNameToCustomToolName: Map<String, String>,
+) {
+    fun toProviderToolName(customToolName: String): String =
+        customToolNameToProviderToolName[customToolName] ?: customToolName
+
+    fun toCustomToolName(providerToolName: String): String =
+        providerToolNameToCustomToolName[providerToolName] ?: providerToolName
+}
+
+fun createToolNameMapping(
+    tools: List<LanguageModelTool> = emptyList(),
+    providerToolNames: Map<String, String>,
+    resolveProviderToolName: ((LanguageModelTool) -> String?)? = null,
+): ToolNameMapping {
+    val customToProvider = linkedMapOf<String, String>()
+    val providerToCustom = linkedMapOf<String, String>()
+    for (tool in tools) {
+        val providerToolId = tool.metadata["providerToolId"] as? JsonPrimitive ?: continue
+        val providerName = resolveProviderToolName?.invoke(tool) ?: providerToolNames[providerToolId.contentOrNull] ?: continue
+        customToProvider[tool.name] = providerName
+        providerToCustom[providerName] = tool.name
+    }
+    return ToolNameMapping(customToProvider, providerToCustom)
+}
+
+data class ProviderToolFactoryOptions<TInput, TOutput, TContext>(
+    val outputSerializer: KSerializer<TOutput>,
+    val outputSchema: Schema<TOutput>? = null,
+    val args: Map<String, JsonElement> = emptyMap(),
+    val name: String? = null,
+    val description: String? = null,
+    val metadata: Map<String, JsonElement> = emptyMap(),
+    val execute: (suspend ToolExecutionContext<TContext>.(TInput) -> TOutput)? = null,
+    val needsApproval: (suspend (input: TInput, options: ToolPredicateOptions<TContext>) -> Boolean)? = null,
+    val toModelOutput: ((TOutput, ToolPredicateOptions<TContext>) -> ToolResultOutput)? = null,
+    val onInputStart: (suspend (streamingId: String) -> Unit)? = null,
+    val onInputDelta: (suspend (streamingId: String, delta: String) -> Unit)? = null,
+    val onInputAvailable: (suspend (toolCallId: String, input: TInput) -> Unit)? = null,
+)
+
+class ProviderToolFactory<TInput, TContext>(
+    private val id: String,
+    private val inputSerializer: KSerializer<TInput>,
+    private val inputSchema: Schema<TInput>,
+    private val defaultDescription: String = "Provider tool $id",
+) {
+    operator fun <TOutput> invoke(
+        options: ProviderToolFactoryOptions<TInput, TOutput, TContext>,
+    ): Tool<TInput, TOutput, TContext> = create(options)
+
+    fun <TOutput> create(
+        options: ProviderToolFactoryOptions<TInput, TOutput, TContext>,
+    ): Tool<TInput, TOutput, TContext> = providerTool(
+        id = id,
+        inputSerializer = inputSerializer,
+        inputSchema = inputSchema,
+        defaultDescription = defaultDescription,
+        supportsDeferredResults = false,
+        options = options,
+    )
+}
+
+class ProviderToolFactoryWithOutputSchema<TInput, TOutput, TContext>(
+    private val id: String,
+    private val inputSerializer: KSerializer<TInput>,
+    private val inputSchema: Schema<TInput>,
+    private val outputSerializer: KSerializer<TOutput>,
+    private val outputSchema: Schema<TOutput>,
+    private val supportsDeferredResults: Boolean = false,
+    private val defaultDescription: String = "Provider tool $id",
+) {
+    operator fun invoke(
+        options: ProviderToolFactoryOptions<TInput, TOutput, TContext> =
+            ProviderToolFactoryOptions(outputSerializer = outputSerializer, outputSchema = outputSchema),
+    ): Tool<TInput, TOutput, TContext> = create(options)
+
+    fun create(
+        options: ProviderToolFactoryOptions<TInput, TOutput, TContext> =
+            ProviderToolFactoryOptions(outputSerializer = outputSerializer, outputSchema = outputSchema),
+    ): Tool<TInput, TOutput, TContext> = providerTool(
+        id = id,
+        inputSerializer = inputSerializer,
+        inputSchema = inputSchema,
+        defaultDescription = defaultDescription,
+        supportsDeferredResults = supportsDeferredResults,
+        options = options.copy(outputSerializer = outputSerializer, outputSchema = outputSchema),
+    )
+}
+
+fun <TInput, TContext> createProviderToolFactory(
+    id: String,
+    inputSerializer: KSerializer<TInput>,
+    inputSchema: Schema<TInput>,
+    description: String = "Provider tool $id",
+): ProviderToolFactory<TInput, TContext> =
+    ProviderToolFactory(id, inputSerializer, inputSchema, description)
+
+fun <TInput, TOutput, TContext> createProviderToolFactoryWithOutputSchema(
+    id: String,
+    inputSerializer: KSerializer<TInput>,
+    inputSchema: Schema<TInput>,
+    outputSerializer: KSerializer<TOutput>,
+    outputSchema: Schema<TOutput>,
+    supportsDeferredResults: Boolean = false,
+    description: String = "Provider tool $id",
+): ProviderToolFactoryWithOutputSchema<TInput, TOutput, TContext> =
+    ProviderToolFactoryWithOutputSchema(
+        id = id,
+        inputSerializer = inputSerializer,
+        inputSchema = inputSchema,
+        outputSerializer = outputSerializer,
+        outputSchema = outputSchema,
+        supportsDeferredResults = supportsDeferredResults,
+        defaultDescription = description,
+    )
+
+private fun <TInput, TOutput, TContext> providerTool(
+    id: String,
+    inputSerializer: KSerializer<TInput>,
+    inputSchema: Schema<TInput>,
+    defaultDescription: String,
+    supportsDeferredResults: Boolean,
+    options: ProviderToolFactoryOptions<TInput, TOutput, TContext>,
+): Tool<TInput, TOutput, TContext> {
+    val execute = options.execute
+    return Tool(
+        name = options.name ?: id.substringAfter('.'),
+        description = options.description ?: defaultDescription,
+        inputSerializer = inputSerializer,
+        outputSerializer = options.outputSerializer,
+        executor = { input ->
+            val context = this
+            flow {
+                if (execute == null) {
+                    throw AgentError.ToolExecution(
+                        options.name ?: id.substringAfter('.'),
+                        context.toolCallId,
+                        UnsupportedOperationException("provider-executed tool has no local executor"),
+                    )
+                }
+                emit(execute.invoke(context, input))
+            }
+        },
+        needsApproval = options.needsApproval,
+        toModelOutput = options.toModelOutput,
+        onInputStart = options.onInputStart,
+        onInputDelta = options.onInputDelta,
+        onInputAvailable = options.onInputAvailable,
+        providerExecuted = true,
+        metadata = options.metadata + providerToolMetadata(
+            id = id,
+            args = options.args,
+            inputSchema = inputSchema,
+            outputSchema = options.outputSchema,
+            supportsDeferredResults = supportsDeferredResults,
+        ),
+    )
+}
+
+private fun providerToolMetadata(
+    id: String,
+    args: Map<String, JsonElement>,
+    inputSchema: Schema<*>,
+    outputSchema: Schema<*>?,
+    supportsDeferredResults: Boolean,
+): Map<String, JsonElement> = buildMap {
+    put("providerToolId", JsonPrimitive(id))
+    put("args", JsonObject(args))
+    put("inputSchema", inputSchema.jsonSchema)
+    outputSchema?.let { put("outputSchema", it.jsonSchema) }
+    if (supportsDeferredResults) put("supportsDeferredResults", JsonPrimitive(true))
+}
 
 internal fun jsonSchemaFor(tool: Tool<*, *, *>): String {
     tool.metadata["inputSchema"]?.let { return it.toString() }

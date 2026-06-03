@@ -254,6 +254,41 @@ fun getErrorMessage(error: Any?): String = when (error) {
     else -> error.toString()
 }
 
+fun loadApiKey(
+    apiKey: String?,
+    environmentVariableName: String,
+    apiKeyParameterName: String = "apiKey",
+    description: String,
+    environment: Map<String, String> = emptyMap(),
+): String =
+    apiKey
+        ?: environment[environmentVariableName]
+        ?: throw LoadAPIKeyError(
+            "$description API key is missing. Pass it using the '$apiKeyParameterName' parameter " +
+                "or provide $environmentVariableName through the host environment map.",
+        )
+
+fun loadSetting(
+    settingValue: String?,
+    environmentVariableName: String,
+    settingName: String,
+    description: String,
+    environment: Map<String, String> = emptyMap(),
+): String =
+    settingValue
+        ?: environment[environmentVariableName]
+        ?: throw LoadSettingError(
+            "$description setting is missing. Pass it using the '$settingName' parameter " +
+                "or provide $environmentVariableName through the host environment map.",
+        )
+
+fun loadOptionalSetting(
+    settingValue: String?,
+    environmentVariableName: String,
+    environment: Map<String, String> = emptyMap(),
+): String? =
+    settingValue ?: environment[environmentVariableName]
+
 fun mediaTypeToExtension(mediaType: String): String {
     val subtype = mediaType.lowercase().substringAfter('/', missingDelimiterValue = "")
     return when (subtype) {
@@ -451,6 +486,14 @@ fun convertBase64ToByteArray(base64String: String): ByteArray =
 @OptIn(ExperimentalEncodingApi::class)
 fun convertByteArrayToBase64(array: ByteArray): String =
     Base64.Default.encode(array)
+
+typealias Uint8Array = ByteArray
+
+fun convertBase64ToUint8Array(base64String: String): Uint8Array =
+    convertBase64ToByteArray(base64String)
+
+fun convertUint8ArrayToBase64(array: Uint8Array): String =
+    convertByteArrayToBase64(array)
 
 fun convertToBase64(value: String): String = value
 

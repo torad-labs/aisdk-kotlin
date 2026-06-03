@@ -278,7 +278,9 @@ class LangSmithDeploymentTransport(
     }
 
     override fun reconnectToStream(chatId: String, headers: Map<String, String>): Flow<UIMessage>? =
-        throw UnsupportedOperationException("Method not implemented.")
+        throw UnsupportedOperationException(
+            "LangSmithDeploymentTransport.reconnectToStream is not implemented by upstream @ai-sdk/langchain.",
+        )
 }
 
 private class LangChainStreamState(

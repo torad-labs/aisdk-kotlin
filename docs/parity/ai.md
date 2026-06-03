@@ -3,7 +3,7 @@
 - Version: 6.0.195
 - Upstream path: `.reference/vercel-ai-sdk-ai-6.0.195/packages/ai`
 - Target Kotlin module: `:aisdk-core`
-- Current parity status: in-progress: current root module covers the core KMP surface; full package ecosystem parity remains open
+- Current parity status: ported: generateText/streamText, structured Output, deprecated generateObject/streamObject compatibility shims, embeddings, image/speech/transcription/video generation, reranking, tool-loop Agent/ToolLoopAgent, tool approvals, provider registry/customProvider, middleware, telemetry, prompt/message conversion, prune/fix-json/smooth/simulated streams, UI message/transport/response primitives, test mocks, gateway re-exports, provider/provider-utils re-exports, and KMP-safe server/UI stream concepts are represented in the root module; framework and browser-specific hooks are mapped to the framework-neutral Kotlin ui package
 
 ## Entrypoints
 

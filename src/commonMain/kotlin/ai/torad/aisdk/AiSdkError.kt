@@ -5,10 +5,110 @@ open class AiSdkException(
     cause: Throwable? = null,
 ) : RuntimeException(message, cause)
 
+typealias AISDKError = AiSdkException
+
 class InvalidArgumentError(
-    argument: String,
+    val argument: String,
     reason: String,
-) : AiSdkException("Invalid argument `$argument`: $reason")
+    cause: Throwable? = null,
+) : AiSdkException("Invalid argument `$argument`: $reason", cause)
+
+class APICallError(
+    message: String,
+    val url: String,
+    val requestBodyValues: Any? = null,
+    val statusCode: Int? = null,
+    val responseHeaders: Map<String, String>? = null,
+    val responseBody: String? = null,
+    cause: Throwable? = null,
+    val isRetryable: Boolean = statusCode == 408 || statusCode == 409 || statusCode == 429 || (statusCode ?: 0) >= 500,
+    val data: Any? = null,
+) : AiSdkException(message, cause)
+
+class EmptyResponseBodyError(message: String = "Empty response body") : AiSdkException(message)
+
+class InvalidPromptError(
+    val prompt: Any?,
+    message: String,
+    cause: Throwable? = null,
+) : AiSdkException("Invalid prompt: $message", cause)
+
+class InvalidResponseDataError(
+    val data: Any?,
+    message: String = "Invalid response data: $data.",
+) : AiSdkException(message)
+
+class JSONParseError(
+    val text: String,
+    cause: Throwable,
+) : AiSdkException(
+    "JSON parsing failed: Text: $text.\nError message: ${getErrorMessage(cause)}",
+    cause,
+)
+
+class LoadAPIKeyError(message: String) : AiSdkException(message)
+
+class LoadSettingError(message: String) : AiSdkException(message)
+
+class NoContentGeneratedError(message: String = "No content generated.") : AiSdkException(message)
+
+class TooManyEmbeddingValuesForCallError(
+    val provider: String,
+    val modelId: String,
+    val maxEmbeddingsPerCall: Int,
+    val values: List<Any?>,
+) : AiSdkException(
+    "Too many values for a single embedding call. " +
+        "The $provider model \"$modelId\" can only embed up to " +
+        "$maxEmbeddingsPerCall values per call, but ${values.size} values were provided.",
+)
+
+data class TypeValidationContext(
+    val field: String? = null,
+    val entityName: String? = null,
+    val entityId: String? = null,
+)
+
+class TypeValidationError(
+    val value: Any?,
+    cause: Throwable,
+    val context: TypeValidationContext? = null,
+) : AiSdkException(typeValidationMessage(value, cause, context), cause) {
+    companion object {
+        fun wrap(
+            value: Any?,
+            cause: Throwable,
+            context: TypeValidationContext? = null,
+        ): TypeValidationError =
+            if (cause is TypeValidationError && cause.value == value && cause.context == context) {
+                cause
+            } else {
+                TypeValidationError(value, cause, context)
+            }
+    }
+}
+
+class UnsupportedFunctionalityError(
+    val functionality: String,
+    message: String = "'$functionality' functionality not supported.",
+) : AiSdkException(message)
+
+private fun typeValidationMessage(
+    value: Any?,
+    cause: Throwable,
+    context: TypeValidationContext?,
+): String {
+    var prefix = "Type validation failed"
+    context?.field?.let { prefix += " for $it" }
+    if (context?.entityName != null || context?.entityId != null) {
+        val parts = buildList {
+            context.entityName?.let { add(it) }
+            context.entityId?.let { add("id: \"$it\"") }
+        }
+        prefix += " (${parts.joinToString(", ")})"
+    }
+    return "$prefix: Value: $value.\nError message: ${getErrorMessage(cause)}"
+}
 
 class UnsupportedModelVersionError(
     modelId: String,

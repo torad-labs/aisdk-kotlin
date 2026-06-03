@@ -3,7 +3,7 @@
 - Version: 0.0.18
 - Upstream path: `.reference/vercel-ai-sdk-ai-6.0.195/packages/devtools`
 - Target Kotlin module: `:aisdk-devtools`
-- Current parity status: in-progress: devToolsMiddleware is represented as a Kotlin-native recorder-backed middleware folded into the root module; DB viewer/server storage remains a platform/tooling module concern
+- Current parity status: ported: the public devToolsMiddleware export is represented as a Kotlin-native recorder-backed middleware with run/step/result recording, generate and stream capture, raw request/response/chunk capture, usage/error recording, and production-environment guard folded into the root module
 
 ## Entrypoints
 

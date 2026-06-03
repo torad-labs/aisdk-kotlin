@@ -29,6 +29,7 @@ import kotlin.test.assertTrue
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
+import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
@@ -202,6 +203,8 @@ class GatewayAndProviderUtilsParityTest {
         val encoded = convertByteArrayToBase64(raw)
 
         assertEquals(raw.toList(), convertBase64ToByteArray(encoded).toList())
+        assertEquals(raw.toList(), convertBase64ToUint8Array(encoded).toList())
+        assertEquals(encoded, convertUint8ArrayToBase64(raw))
         assertEquals("already-base64", convertToBase64("already-base64"))
         assertEquals(encoded, convertToBase64(raw))
         assertTrue(
@@ -216,6 +219,112 @@ class GatewayAndProviderUtilsParityTest {
         assertFailsWith<DownloadError> { validateDownloadUrl("http://localhost/file") }
         assertFailsWith<DownloadError> { validateDownloadUrl("http://10.0.0.1/file") }
         assertFailsWith<DownloadError> { validateDownloadUrl("file:///tmp/secret") }
+    }
+
+    @Test
+    fun `lazy schemas validation provider options and setting loaders match provider-utils`() {
+        var created = 0
+        val lazy = lazySchema<JsonObject> {
+            created += 1
+            jsonSchema(
+                buildJsonObject { put("type", JsonPrimitive("object")) },
+            ) { value -> value.jsonObject }
+        }
+        val value = buildJsonObject { put("name", JsonPrimitive("ok")) }
+
+        assertEquals(0, created)
+        assertEquals(JsonPrimitive("ok"), validateTypes(value, lazy)["name"])
+        assertEquals(JsonPrimitive("ok"), safeValidateTypes(value, lazy).let { (it as ValidationResult.Success).value["name"] })
+        assertEquals(1, created)
+        assertEquals(lazy(), asSchema(lazy))
+        assertEquals(1, created)
+        assertNull(parseProviderOptions("missing", emptyMap(), lazy()))
+        assertEquals(JsonPrimitive("ok"), parseProviderOptions("test", mapOf("test" to value), lazy())?.get("name"))
+        assertFailsWith<InvalidArgumentError> {
+            parseProviderOptions(
+                "test",
+                mapOf("test" to value),
+                jsonSchema<JsonObject>(JsonObject(emptyMap())) { throw IllegalStateException("bad") },
+            )
+        }
+
+        assertEquals("explicit", loadApiKey("explicit", "TEST_API_KEY", description = "Test"))
+        assertEquals("from-env", loadApiKey(null, "TEST_API_KEY", description = "Test", environment = mapOf("TEST_API_KEY" to "from-env")))
+        assertEquals("setting", loadSetting(null, "TEST_SETTING", "setting", "Test", mapOf("TEST_SETTING" to "setting")))
+        assertEquals("optional", loadOptionalSetting(null, "TEST_OPTIONAL", mapOf("TEST_OPTIONAL" to "optional")))
+        assertFailsWith<LoadAPIKeyError> { loadApiKey(null, "MISSING_API_KEY", description = "Missing") }
+        assertFailsWith<LoadSettingError> { loadSetting(null, "MISSING_SETTING", "setting", "Missing") }
+    }
+
+    @Test
+    fun `provider tool factories execute tools and create name mappings`() = runTest {
+        val inputSchema = jsonSchema<JsonObject>(
+            buildJsonObject {
+                put("type", JsonPrimitive("object"))
+                put("additionalProperties", JsonPrimitive(false))
+            },
+        ) { value -> value.jsonObject }
+        val outputSchema = jsonSchema<JsonElement>(
+            buildJsonObject { put("type", JsonPrimitive("object")) },
+        )
+        val factory = createProviderToolFactory<JsonObject, Unit>(
+            id = "web.search",
+            inputSerializer = JsonObject.serializer(),
+            inputSchema = inputSchema,
+            description = "Search the web",
+        )
+        val hosted = factory(
+            ProviderToolFactoryOptions(
+                outputSerializer = JsonElement.serializer(),
+                outputSchema = outputSchema,
+                args = mapOf("limit" to JsonPrimitive(3)),
+            ),
+        )
+        val descriptor = toolSetOf<Unit>(hosted).descriptors.single()
+        val mapping = createToolNameMapping(
+            tools = listOf(descriptor),
+            providerToolNames = mapOf("web.search" to "provider_search"),
+        )
+        val executable = factory(
+            ProviderToolFactoryOptions(
+                outputSerializer = JsonElement.serializer(),
+                execute = { input ->
+                    buildJsonObject { put("seen", input["query"] ?: JsonPrimitive("missing")) }
+                },
+            ),
+        )
+
+        val executed = drainAllItems(
+            executeTool(
+                executable,
+                buildJsonObject { put("query", JsonPrimitive("kmp")) },
+                ToolExecutionContext(
+                    context = Unit,
+                    abortSignal = AbortSignalNever,
+                    stepNumber = 1,
+                    messages = emptyList(),
+                    toolCallId = "call_1",
+                ),
+            ),
+        )
+        val withOutputSchema = createProviderToolFactoryWithOutputSchema<JsonObject, JsonElement, Unit>(
+            id = "web.lookup",
+            inputSerializer = JsonObject.serializer(),
+            inputSchema = inputSchema,
+            outputSerializer = JsonElement.serializer(),
+            outputSchema = outputSchema,
+            supportsDeferredResults = true,
+        )()
+
+        assertEquals(true, hosted.providerExecuted)
+        assertEquals("search", hosted.name)
+        assertEquals(inputSchema.jsonSchema.toString(), descriptor.parametersSchemaJson)
+        assertEquals("provider_search", mapping.toProviderToolName("search"))
+        assertEquals("search", mapping.toCustomToolName("provider_search"))
+        assertEquals("unknown", mapping.toProviderToolName("unknown"))
+        assertEquals(JsonPrimitive("kmp"), (executed.single() as ExecuteToolResult.Final).output.jsonObject["seen"])
+        assertEquals(JsonPrimitive(true), withOutputSchema.metadata["supportsDeferredResults"])
+        assertEquals(outputSchema.jsonSchema, withOutputSchema.metadata["outputSchema"])
     }
 
     @Test
@@ -297,6 +406,24 @@ class GatewayAndProviderUtilsParityTest {
         val repair = ToolCallRepairError(originalError = invalidToolInput, cause = noSuchTool)
         val missing = MissingToolResultsError(listOf("call_1", "call_2"))
         val retry = RetryError("stopped", RetryErrorReason.MaxRetriesExceeded, listOf(noSuchTool))
+        val api = APICallError(
+            message = "failed",
+            url = "https://api.test",
+            statusCode = 429,
+            responseHeaders = mapOf("retry-after" to "1"),
+            responseBody = "rate limited",
+        )
+        val prompt = InvalidPromptError(prompt = "bad", message = "unsupported role")
+        val responseData = InvalidResponseDataError(data = JsonPrimitive("bad"))
+        val parse = JSONParseError(text = "{", cause = IllegalArgumentException("unexpected eof"))
+        val tooMany = TooManyEmbeddingValuesForCallError("test", "embed", 1, listOf("a", "b"))
+        val validation = TypeValidationError(
+            value = JsonPrimitive("bad"),
+            cause = IllegalArgumentException("bad"),
+            context = TypeValidationContext(field = "message.parts[0]", entityName = "message", entityId = "m1"),
+        )
+        val wrapped = TypeValidationError.wrap(JsonPrimitive("bad"), validation, validation.context)
+        val unsupported = UnsupportedFunctionalityError("tool-result repair")
 
         assertEquals("search", invalidToolInput.toolName)
         assertEquals("{}", invalidToolInput.toolInput)
@@ -311,6 +438,17 @@ class GatewayAndProviderUtilsParityTest {
         assertEquals("raw", InvalidStreamPartError(chunk = "raw", message = "invalid").chunk)
         assertEquals("bytes", InvalidDataContentError("bytes").content)
         assertEquals("ui", MessageConversionError(originalMessage = "m", message = "ui").message)
+        assertTrue(api.isRetryable)
+        assertEquals("retry-after", api.responseHeaders?.keys?.single())
+        assertEquals("bad", prompt.prompt)
+        assertEquals(JsonPrimitive("bad"), responseData.data)
+        assertEquals("{", parse.text)
+        assertEquals(2, tooMany.values.size)
+        assertTrue(validation.message.orEmpty().contains("message.parts[0]"))
+        assertEquals(validation, wrapped)
+        assertEquals("tool-result repair", unsupported.functionality)
+        assertEquals("Empty response body", EmptyResponseBodyError().message)
+        assertEquals("No content generated.", NoContentGeneratedError().message)
     }
 
     @Test
