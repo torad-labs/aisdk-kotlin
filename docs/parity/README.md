@@ -37,7 +37,7 @@ Run `node tools/generate-parity-ledger.mjs --check` in CI to verify this directo
 | [@ai-sdk/huggingface](ai-sdk-huggingface.md) | 1.0.50 | `:aisdk-provider-huggingface` | 7 | missing: no Kotlin module or parity mapping exists yet |
 | [@ai-sdk/hume](ai-sdk-hume.md) | 2.0.33 | `:aisdk-provider-hume` | 6 | missing: no Kotlin module or parity mapping exists yet |
 | [@ai-sdk/klingai](ai-sdk-klingai.md) | 3.0.18 | `:aisdk-provider-klingai` | 7 | missing: no Kotlin module or parity mapping exists yet |
-| [@ai-sdk/langchain](ai-sdk-langchain.md) | 2.0.202 | `:aisdk-langchain` | 6 | missing: no Kotlin module or parity mapping exists yet |
+| [@ai-sdk/langchain](ai-sdk-langchain.md) | 2.0.202 | `:aisdk-langchain` | 6 | ported: toBaseMessages, convertModelMessages, toUIMessageStream, StreamCallbacks, and LangSmithDeploymentTransport are represented as Kotlin-native UI/Flow adapters folded into the root module |
 | [@ai-sdk/llamaindex](ai-sdk-llamaindex.md) | 2.0.195 | `:aisdk-llamaindex` | 1 | ported: toUIMessageStream is represented as a Kotlin Flow adapter over LlamaIndexEngineResponse, with callback lifecycle support folded into the root module |
 | [@ai-sdk/lmnt](ai-sdk-lmnt.md) | 2.0.33 | `:aisdk-provider-lmnt` | 6 | missing: no Kotlin module or parity mapping exists yet |
 | [@ai-sdk/luma](ai-sdk-luma.md) | 2.0.33 | `:aisdk-provider-luma` | 8 | missing: no Kotlin module or parity mapping exists yet |

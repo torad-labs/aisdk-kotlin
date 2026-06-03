@@ -6,6 +6,7 @@ import ai.torad.aisdk.ui.UIMessagePart
 import ai.torad.aisdk.ui.UIMessageRole
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
+import kotlinx.serialization.json.JsonElement
 
 data class LlamaIndexEngineResponse(
     val delta: String,
@@ -16,6 +17,9 @@ data class StreamCallbacks(
     val onFinal: (suspend (completion: String) -> Unit)? = null,
     val onToken: (suspend (token: String) -> Unit)? = null,
     val onText: (suspend (text: String) -> Unit)? = null,
+    val onFinish: (suspend (finalState: JsonElement?) -> Unit)? = null,
+    val onError: (suspend (error: Throwable) -> Unit)? = null,
+    val onAbort: (suspend () -> Unit)? = null,
 )
 
 fun toUIMessageStream(

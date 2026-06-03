@@ -3,7 +3,7 @@
 - Version: 2.0.202
 - Upstream path: `.reference/vercel-ai-sdk-ai-6.0.195/packages/langchain`
 - Target Kotlin module: `:aisdk-langchain`
-- Current parity status: missing: no Kotlin module or parity mapping exists yet
+- Current parity status: ported: toBaseMessages, convertModelMessages, toUIMessageStream, StreamCallbacks, and LangSmithDeploymentTransport are represented as Kotlin-native UI/Flow adapters folded into the root module
 
 ## Entrypoints
 
