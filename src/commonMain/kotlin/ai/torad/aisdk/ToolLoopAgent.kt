@@ -51,6 +51,7 @@ open class ToolLoopAgent<TContext, TOutput>(
     val model: LanguageModel,
     val instructions: String,
     override val tools: ToolSet<TContext>,
+    val activeTools: List<String>? = null,
     val output: Output<TOutput>? = null,
     val stopWhen: StopCondition = stepCountIs(20),
     val prepareCall: (suspend PrepareCallScope<TContext>.() -> AgentSettings<TContext>)? = null,
@@ -327,16 +328,17 @@ open class ToolLoopAgent<TContext, TOutput>(
         require(prompt != null || priorMessages.isNotEmpty()) {
             "Agent.generate/stream: must provide either `prompt` or `messages`"
         }
+        val validatedOptions = validateCallOptions(options)
         emit(StreamEvent.StreamStart())
         runHook(0) {
-            onStart?.invoke(OnStartEvent(prompt, priorMessages, options))
-            hooks?.onStart?.invoke(OnStartEvent(prompt, priorMessages, options))
+            onStart?.invoke(OnStartEvent(prompt, priorMessages, validatedOptions))
+            hooks?.onStart?.invoke(OnStartEvent(prompt, priorMessages, validatedOptions))
         }
 
         // prepareCall — once per invocation.
         val resolvedSettings: AgentSettings<TContext> = prepareCall?.let { hook ->
             try {
-                PrepareCallScope(options, instructions, model, tools).hook()
+                PrepareCallScope(validatedOptions, instructions, model, tools).hook()
             } catch (ce: CancellationException) {
                 throw ce
             } catch (t: Throwable) {
@@ -387,7 +389,7 @@ open class ToolLoopAgent<TContext, TOutput>(
         // StepSettings.experimental_context to evolve context mid-loop (e.g.
         // RAG augmentation after a tool result); this step's tool execution
         // and every subsequent step then see the new value.
-        var activeContext: TContext? = options
+        var activeContext: TContext? = validatedOptions
 
         loopFinished@ while (true) {
             stepNumber += 1
@@ -416,8 +418,10 @@ open class ToolLoopAgent<TContext, TOutput>(
 
             val stepModel = stepSettings.model ?: resolvedModel
             val stepMessages = stepSettings.messages ?: messages.toList()
-            val stepTools = stepSettings.activeTools?.let { active ->
-                ToolSet<TContext>(resolvedTools.byName.filterKeys { it in active })
+            val stepActiveTools = stepSettings.activeTools ?: resolvedSettings.activeTools ?: activeTools
+            val stepTools = stepActiveTools?.let { active ->
+                val activeNames = active.toSet()
+                ToolSet<TContext>(resolvedTools.byName.filterKeys { it in activeNames })
             } ?: resolvedTools
             val stepToolChoice = stepSettings.toolChoice ?: ToolChoice.Auto
             val stepProviderOptions =
@@ -809,10 +813,14 @@ open class ToolLoopAgent<TContext, TOutput>(
                 messages = messages,
                 experimental_context = options,
             )
-            val modelVisible = typedTool.toModelOutput
-                ?.let { summarize -> toJsonElement(summarize(lastOutput, predicateOptions)) }
-                ?: outputJson
-            ToolExecutionResult.Success(outputJson, modelVisible)
+            val output = toolResultOutputFromJson(outputJson)
+            val modelOutput = typedTool.toModelOutput?.invoke(lastOutput, predicateOptions) ?: output
+            ToolExecutionResult.Success(
+                outputJson = outputJson,
+                output = output,
+                modelOutput = modelOutput,
+                modelVisible = modelOutput.toJsonElement(),
+            )
         } catch (ce: CancellationException) {
             // Cancellation MUST propagate, never get persisted as a tool result
             // — otherwise the agent loop continues with a turn that says "the
@@ -846,11 +854,22 @@ open class ToolLoopAgent<TContext, TOutput>(
         var hasOutput = false
         tool.executor.invoke(ctx, input).collect { output ->
             if (hasOutput) {
+                val outputJson = encodeToolOutput(tool, lastOutput)
+                val output = toolResultOutputFromJson(outputJson)
+                val predicateOptions = ToolPredicateOptions(
+                    toolCallId = call.toolCallId,
+                    messages = ctx.messages,
+                    experimental_context = ctx.context,
+                )
+                val modelOutput = tool.toModelOutput?.invoke(lastOutput, predicateOptions) ?: output
                 out.emit(
                     StreamEvent.ToolResult(
                         toolCallId = call.toolCallId,
                         toolName = call.toolName,
-                        outputJson = encodeToolOutput(tool, lastOutput),
+                        outputJson = outputJson,
+                        output = output,
+                        modelOutput = modelOutput,
+                        isError = modelOutput.isToolResultError(),
                         preliminary = true,
                     ),
                 )
@@ -881,11 +900,21 @@ open class ToolLoopAgent<TContext, TOutput>(
     ) {
         when (result) {
             is ToolExecutionResult.Success -> {
-                out.emit(StreamEvent.ToolResult(call.toolCallId, call.toolName, result.outputJson))
+                out.emit(
+                    StreamEvent.ToolResult(
+                        toolCallId = call.toolCallId,
+                        toolName = call.toolName,
+                        outputJson = result.outputJson,
+                        output = result.output,
+                        modelOutput = result.modelOutput,
+                        isError = result.isError,
+                    ),
+                )
                 val toolPart = ContentPart.ToolResult(
                     toolCallId = call.toolCallId,
                     toolName = call.toolName,
                     output = result.outputJson,
+                    isError = result.isError,
                     modelVisible = result.modelVisible,
                 )
                 stepToolResults.add(toolPart)
@@ -908,11 +937,21 @@ open class ToolLoopAgent<TContext, TOutput>(
         messages: MutableList<ModelMessage>,
         out: FlowCollector<StreamEvent>,
     ) {
-        out.emit(StreamEvent.ToolResult(call.toolCallId, call.toolName, result.outputJson))
+        out.emit(
+            StreamEvent.ToolResult(
+                toolCallId = call.toolCallId,
+                toolName = call.toolName,
+                outputJson = result.outputJson,
+                output = result.output,
+                modelOutput = result.modelOutput,
+                isError = result.isError,
+            ),
+        )
         val toolPart = ContentPart.ToolResult(
             toolCallId = call.toolCallId,
             toolName = call.toolName,
             output = result.outputJson,
+            isError = result.isError,
             modelVisible = result.modelVisible,
         )
         messages.add(ModelMessage(MessageRole.Tool, listOf(toolPart)))
@@ -980,15 +1019,6 @@ open class ToolLoopAgent<TContext, TOutput>(
         }
     }
 
-    /** Bridge [ToolResultOutput] (typed sealed return from
-     *  `tool.toModelOutput`) to the wire-format `JsonElement` that
-     *  goes into `ContentPart.ToolResult.modelVisible`. */
-    private fun toJsonElement(output: ToolResultOutput): JsonElement = when (output) {
-        is ToolResultOutput.Text -> JsonPrimitive(output.text)
-        is ToolResultOutput.Json -> output.json
-        is ToolResultOutput.Error -> JsonPrimitive("Error: ${output.message}")
-    }
-
     @Suppress("UNCHECKED_CAST")
     private fun decodeToolInput(tool: Tool<*, *, *>, input: JsonElement): Any? {
         val ser = tool.inputSerializer as KSerializer<Any?>
@@ -999,6 +1029,16 @@ open class ToolLoopAgent<TContext, TOutput>(
     private fun encodeToolOutput(tool: Tool<*, *, *>, output: Any?): JsonElement {
         val ser = tool.outputSerializer as KSerializer<Any?>
         return jsonCodec.encodeToJsonElement(ser, output)
+    }
+
+    private fun validateCallOptions(options: TContext?): TContext? {
+        val serializer = callOptionsSchema ?: return options
+        if (options == null) return null
+        return try {
+            jsonCodec.decodeFromJsonElement(serializer, jsonCodec.encodeToJsonElement(serializer, options))
+        } catch (error: Exception) {
+            throw AgentError.InvalidCallOptions(error)
+        }
     }
 
     private suspend fun emitError(
@@ -1061,8 +1101,12 @@ open class ToolLoopAgent<TContext, TOutput>(
          */
         data class Success(
             val outputJson: JsonElement,
+            val output: ToolResultOutput = toolResultOutputFromJson(outputJson),
+            val modelOutput: ToolResultOutput = output,
             val modelVisible: JsonElement = outputJson,
-        ) : ToolExecutionResult
+        ) : ToolExecutionResult {
+            val isError: Boolean = modelOutput.isToolResultError()
+        }
         data class Failure(val error: AgentError) : ToolExecutionResult
     }
 

@@ -69,7 +69,7 @@ class AgentErrorTest {
     }
 
     @Test
-    fun `given the sealed parent when matched exhaustively then all 6 variants are covered`() {
+    fun `given the sealed parent when matched exhaustively then all variants are covered`() {
         // The whole point of the typed taxonomy is exhaustive `when`
         // at call sites. This compile-time check is the safety net.
         val errs = listOf<AgentError>(
@@ -78,6 +78,7 @@ class AgentErrorTest {
             AgentError.ToolExecution("w", "id", RuntimeException("x")),
             AgentError.ToolCallRepairFailed("w", RuntimeException("orig"), null),
             AgentError.InvalidApprovalResponse("id", emptyList()),
+            AgentError.InvalidCallOptions(RuntimeException("bad options")),
             AgentError.MaxStepsReached(20),
         )
         for (e in errs) {
@@ -90,6 +91,7 @@ class AgentErrorTest {
                 is AgentError.ToolExecution -> "ToolExecution"
                 is AgentError.ToolCallRepairFailed -> "ToolCallRepairFailed"
                 is AgentError.InvalidApprovalResponse -> "InvalidApprovalResponse"
+                is AgentError.InvalidCallOptions -> "InvalidCallOptions"
                 is AgentError.MaxStepsReached -> "MaxStepsReached"
             }
             assertTrue(label.isNotEmpty(), "every variant produces a label")

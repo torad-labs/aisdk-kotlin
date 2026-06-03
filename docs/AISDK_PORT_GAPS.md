@@ -25,15 +25,22 @@ and everything the core package consumes directly — are done:
   `ToolPredicateOptions` (toolCallId + messages), structured
   `ToolResultOutput`, `ToolExecutionContext.{toolCallId, writer}`,
   `prepareStep.experimental_context` override, `metadata`, `ToolStreamWriter`.
+  Agent-level and per-call `activeTools` allowlists are resolved before
+  each model call, with `prepareStep.activeTools` still taking precedence.
+  `callOptionsSchema` validates non-null call options before hooks,
+  `prepareCall`, or the model run.
 - **Streaming/provider/middleware**: the `{doGenerate, doStream}`
   middleware shape (fixed `simulateStreamingMiddleware`), `providerMetadata`
   swept across all content + tool-lifecycle variants, rich `Usage` tree,
   `ResponseFormat`, `presence/frequencyPenalty`, `tool-output-denied` +
   `approvalId`, `fixJson` / `parsePartialJson`, `injectJsonInstruction`,
-  truncation-repair in `extractJsonMiddleware`, `loggingMiddleware` over
-  the `Logger` primitive, `provider` + `supportedUrls`, CJK `smoothStream`,
-  `stream-start` warnings, `response-metadata`, `LanguageModelStreamResult`,
-  and `StreamTextResult.{request,warnings,response}` metadata access.
+  truncation-repair plus incremental 12-character suffix buffering in
+  `extractJsonMiddleware`, `loggingMiddleware` over the `Logger`
+  primitive, `provider` + `supportedUrls`, CJK `smoothStream`,
+  `stream-start` warnings, `response-metadata`, structured
+  `ToolResultOutput` on `StreamEvent.ToolResult`,
+  `LanguageModelStreamResult`, and
+  `StreamTextResult.{request,warnings,response}` metadata access.
 - **Top-level generation/output parity**: `generateText` / `streamText`
   forward penalties and response format, `Output.choice` / `Output.json`
   are restored, `Output.array` accepts the v6 `{ elements: [...] }` shape,
@@ -68,18 +75,11 @@ and everything the core package consumes directly — are done:
   aliases, `pruneMessages`, uppercase `validateUIMessages` /
   `safeValidateUIMessages`, and the root v6 error taxonomy are present.
 
-## Deliberately deferred — forward-parity, no current core consumer
+## No Deferred Core Gaps
 
-Each is real v6 surface the port could grow later; none blocks a current
-core-library consumer, so porting now would add dead code. Listed so a future
-dev knows the gap is *known and chosen*, not missed.
-
-| Item | Why deferred | Partial substitute |
-|---|---|---|
-| `extractJsonMiddleware` *incremental* streaming (v6's 12-char-lookahead state machine) | Current structured-output consumers decode the whole object through `Output.decode`; token-by-token JSON rendering has no core consumer. | single-emit-at-`Finish` + truncation repair |
-| Structured tool-result **stream** output (v6's discriminated `ToolResultOutput` on the wire) | `StreamEvent.ToolResult` carries `outputJson` + `modelVisible: JsonElement` — a deliberate divergence; `ToolResultOutput` already exists for the `toModelOutput` return. | `outputJson` + `modelVisible` |
-| Agent-level persistent `activeTools` allowlist | `StepSettings.activeTools` gives per-step scoping, which covers the need. | per-step `activeTools` |
-| `callOptionsSchema` runtime validation | Low value; the schema is type-checked at construction. | — |
+No core-package behavioral gaps are currently listed here. Remaining
+forward-parity work is package expansion and platform adapters, tracked in
+`docs/parity/` and summarized below.
 
 ## Platform adapter surface
 

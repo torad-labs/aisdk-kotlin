@@ -187,6 +187,11 @@ sealed interface StreamEvent {
         val toolCallId: String,
         val toolName: String,
         val outputJson: JsonElement,
+        val output: ToolResultOutput = toolResultOutputFromJson(outputJson),
+        val modelOutput: ToolResultOutput = output,
+        val isError: Boolean = modelOutput is ToolResultOutput.Error ||
+            modelOutput is ToolResultOutput.ErrorJson ||
+            modelOutput is ToolResultOutput.ExecutionDenied,
         val preliminary: Boolean = false,
         val providerMetadata: Map<String, JsonElement>? = null,
     ) : StreamEvent

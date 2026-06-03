@@ -10,10 +10,12 @@ import ai.torad.aisdk.providers.mockLanguageModelTextOnly
 import ai.torad.aisdk.userMessage
 import app.cash.turbine.test
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
+import kotlin.test.assertTrue
 
 /**
  * Behavior tests for [extractJsonMiddleware]. The load-bearing case is
@@ -96,27 +98,113 @@ class ExtractJsonTest {
 
     @Test
     fun `given a truncated object streamed when stream-wrapped then a repaired json delta is emitted`() = runTest {
-        // GIVEN a stream whose single text delta is an open object.
+        // GIVEN a text block whose content is an open object.
         val ctx = MiddlewareCallContext(
             params = LanguageModelCallParams(messages = listOf(userMessage("x"))),
             model = mockLanguageModelTextOnly("x"),
             doGenerate = { LanguageModelResult("x", emptyList(), FinishReason.Stop, Usage(1, 1)) },
             doStream = {
                 flowOf(
+                    StreamEvent.TextStart("t1"),
                     StreamEvent.TextDelta("t1", "result: {\"a\":1"),
+                    StreamEvent.TextEnd("t1"),
                     StreamEvent.StepFinish(0, FinishReason.Stop, Usage(1, 1)),
                 )
             },
         )
 
-        // WHEN / THEN — at StepFinish the buffered text is repaired and
-        // emitted as one delta, then the StepFinish passes through.
+        // WHEN / THEN — at TextEnd the buffered text is repaired and
+        // emitted as one delta, then the TextEnd passes through.
         extractJsonMiddleware().wrapStream(ctx).test {
+            assertIs<StreamEvent.TextStart>(awaitItem())
             val delta = awaitItem()
             assertIs<StreamEvent.TextDelta>(delta)
             assertEquals("{\"a\":1}", delta.text)
+            assertIs<StreamEvent.TextEnd>(awaitItem())
             assertIs<StreamEvent.StepFinish>(awaitItem())
             awaitComplete()
         }
+    }
+
+    @Test
+    fun `given fenced json streamed in split chunks when stream-wrapped then fences are stripped`() = runTest {
+        val ctx = MiddlewareCallContext(
+            params = LanguageModelCallParams(messages = listOf(userMessage("x"))),
+            model = mockLanguageModelTextOnly("x"),
+            doGenerate = { LanguageModelResult("x", emptyList(), FinishReason.Stop, Usage(1, 1)) },
+            doStream = {
+                flowOf(
+                    StreamEvent.TextStart("t1"),
+                    StreamEvent.TextDelta("t1", "`"),
+                    StreamEvent.TextDelta("t1", "``"),
+                    StreamEvent.TextDelta("t1", "json\n"),
+                    StreamEvent.TextDelta("t1", "{\"value\":\"test\"}"),
+                    StreamEvent.TextDelta("t1", "\n`"),
+                    StreamEvent.TextDelta("t1", "``"),
+                    StreamEvent.TextEnd("t1"),
+                )
+            },
+        )
+
+        val events = extractJsonMiddleware().wrapStream(ctx).toList()
+        val text = events.filterIsInstance<StreamEvent.TextDelta>().joinToString("") { it.text }
+
+        assertEquals("{\"value\":\"test\"}", text)
+        assertTrue(events.first() is StreamEvent.TextStart)
+        assertTrue(events.last() is StreamEvent.TextEnd)
+    }
+
+    @Test
+    fun `given large fenced json when stream-wrapped then text streams before text end`() = runTest {
+        val largeJson = """{"data":"${"x".repeat(100)}","nested":[0,1,2,3]}"""
+        val ctx = MiddlewareCallContext(
+            params = LanguageModelCallParams(messages = listOf(userMessage("x"))),
+            model = mockLanguageModelTextOnly("x"),
+            doGenerate = { LanguageModelResult("x", emptyList(), FinishReason.Stop, Usage(1, 1)) },
+            doStream = {
+                flowOf(
+                    StreamEvent.TextStart("t1"),
+                    StreamEvent.TextDelta("t1", "```json\n"),
+                    StreamEvent.TextDelta("t1", largeJson),
+                    StreamEvent.TextDelta("t1", "\n```"),
+                    StreamEvent.TextEnd("t1"),
+                )
+            },
+        )
+
+        val events = extractJsonMiddleware().wrapStream(ctx).toList()
+        val firstDeltaIndex = events.indexOfFirst { it is StreamEvent.TextDelta }
+        val textEndIndex = events.indexOfFirst { it is StreamEvent.TextEnd }
+        val text = events.filterIsInstance<StreamEvent.TextDelta>().joinToString("") { it.text }
+
+        assertEquals(largeJson, text)
+        assertTrue(firstDeltaIndex in 1 until textEndIndex, "large JSON should stream before TextEnd")
+    }
+
+    @Test
+    fun `given custom transform when stream-wrapped then text is buffered and transformed at text end`() = runTest {
+        val ctx = MiddlewareCallContext(
+            params = LanguageModelCallParams(messages = listOf(userMessage("x"))),
+            model = mockLanguageModelTextOnly("x"),
+            doGenerate = { LanguageModelResult("x", emptyList(), FinishReason.Stop, Usage(1, 1)) },
+            doStream = {
+                flowOf(
+                    StreamEvent.TextStart("t1"),
+                    StreamEvent.TextDelta("t1", "PREFIX"),
+                    StreamEvent.TextDelta("t1", "{\"value\":\"test\"}"),
+                    StreamEvent.TextDelta("t1", "SUFFIX"),
+                    StreamEvent.TextEnd("t1"),
+                )
+            },
+        )
+
+        val events = extractJsonMiddleware { it.removePrefix("PREFIX").removeSuffix("SUFFIX") }
+            .wrapStream(ctx)
+            .toList()
+
+        assertEquals(
+            "{\"value\":\"test\"}",
+            events.filterIsInstance<StreamEvent.TextDelta>().joinToString("") { it.text },
+        )
     }
 }

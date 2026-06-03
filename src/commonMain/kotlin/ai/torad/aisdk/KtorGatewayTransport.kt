@@ -664,11 +664,17 @@ private fun streamEventFromJson(value: JsonElement): StreamEvent {
             toolName = obj["toolName"]?.jsonPrimitive?.contentOrNull.orEmpty(),
             inputJson = obj["input"] ?: JsonObject(emptyMap()),
         )
-        "tool-result" -> StreamEvent.ToolResult(
-            toolCallId = obj["toolCallId"]?.jsonPrimitive?.contentOrNull.orEmpty(),
-            toolName = obj["toolName"]?.jsonPrimitive?.contentOrNull.orEmpty(),
-            outputJson = obj["output"] ?: JsonNull,
-        )
+        "tool-result" -> {
+            val output = toolResultOutputFromWire(obj["output"] ?: JsonNull)
+            StreamEvent.ToolResult(
+                toolCallId = obj["toolCallId"]?.jsonPrimitive?.contentOrNull.orEmpty(),
+                toolName = obj["toolName"]?.jsonPrimitive?.contentOrNull.orEmpty(),
+                outputJson = output.toJsonElement(),
+                output = output,
+                modelOutput = output,
+                isError = output.isToolResultError(),
+            )
+        }
         "finish-step" -> StreamEvent.StepFinish(
             stepNumber = obj["stepNumber"]?.jsonPrimitive?.intOrNull ?: 1,
             finishReason = finishReason(obj["finishReason"]?.jsonPrimitive?.contentOrNull),

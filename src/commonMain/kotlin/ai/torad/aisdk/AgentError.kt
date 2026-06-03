@@ -26,6 +26,8 @@ package ai.torad.aisdk
  *    Wraps the original decode error AND the repair error.
  *  - [InvalidApprovalResponse] — `toolApprovalResponseMessage(...)`
  *    referenced a `toolCallId` the agent has no pending request for.
+ *  - [InvalidCallOptions] — per-call `options` failed the
+ *    constructor's `callOptionsSchema` validation before any model call.
  *  - [MaxStepsReached] — `stopWhen` fired without a model emitting a
  *    terminal finish reason.
  *
@@ -86,6 +88,13 @@ sealed class AgentError(
     ) : AgentError(
         "Approval response references unknown tool call '$toolCallId' " +
             "(pending: ${knownPendingIds.joinToString().ifBlank { "<none>" }})",
+    )
+
+    data class InvalidCallOptions(
+        val validationError: Throwable,
+    ) : AgentError(
+        "Type validation failed for options: ${validationError.message ?: "<no message>"}",
+        cause = validationError,
     )
 
     data class MaxStepsReached(

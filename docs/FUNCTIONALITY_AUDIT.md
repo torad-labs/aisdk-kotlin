@@ -10,12 +10,14 @@ The latest stable Vercel AI SDK v6 reference verified during this pass is `ai@6.
 - Single-value tools, streaming tools, dynamic tools, and schema wrappers.
 - Tool approval return-then-resume flow.
 - Tool-call repair and typed `AgentError` wiring.
-- Stop conditions, lifecycle hooks, `prepareCall`, and `prepareStep`.
+- Stop conditions, lifecycle hooks, `prepareCall`, `prepareStep`,
+  constructor/per-call/per-step `activeTools`, and `callOptionsSchema`
+  runtime validation.
 - Middleware wrapping for generate and stream paths.
-- Structured output helpers: `Output.obj`, `Output.array`, `Output.choice`, `Output.json`, `fixJson`, partial JSON parsing, and JSON instruction injection.
+- Structured output helpers: `Output.obj`, `Output.array`, `Output.choice`, `Output.json`, `fixJson`, partial JSON parsing, JSON instruction injection, and incremental `extractJsonMiddleware` streaming with suffix-fence stripping.
 - Deprecated v6 object helpers: `generateObject` and `streamObject` delegate to the `generateText` / `streamText` structured-output path.
 - Rich top-level result metadata: provider metadata, warnings, request/response metadata, content, reasoning, files, sources, and raw finish reason.
-- Stream taxonomy and UI-message aggregation.
+- Stream taxonomy, structured tool-result stream output, and UI-message aggregation.
 - Provider metadata propagation.
 - Rich usage accounting.
 - Cancellation propagation to subagents.
@@ -43,7 +45,7 @@ The extracted test suite is executed on both JVM and Android host targets.
 
 Last local verification:
 
-- `./gradlew allTests`: 420 test executions, 0 failures, 0 errors, 0 skips.
+- `./gradlew allTests`: 440 test executions, 0 failures, 0 errors, 0 skips.
 - `./gradlew publishToMavenLocal`: published JVM, Android, iOS x64, iOS arm64, and iOS simulator arm64 artifacts locally.
 
 On Linux, iOS unit-test binaries compile but iOS simulator execution is skipped by Gradle. Publication verification still compiles the iOS artifacts.

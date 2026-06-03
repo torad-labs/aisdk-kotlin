@@ -3,8 +3,13 @@ package ai.torad.aisdk
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.serialization.KSerializer
+import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.contentOrNull
+import kotlinx.serialization.json.jsonPrimitive
 
 /**
  * A tool the LLM can call — application code constructs these via the
@@ -610,10 +615,54 @@ data class ToolPredicateOptions<TContext>(
  * v6 also defines a `multipart` variant for content blocks; deferred
  * (no on-device use case for it yet).
  */
+@Serializable
 sealed class ToolResultOutput {
+    @Serializable
     data class Text(val text: String) : ToolResultOutput()
+    @Serializable
     data class Json(val json: JsonElement) : ToolResultOutput()
+    @Serializable
     data class Error(val message: String) : ToolResultOutput()
+    @Serializable
+    data class ErrorJson(val json: JsonElement) : ToolResultOutput()
+    @Serializable
+    data class ExecutionDenied(val reason: String? = null) : ToolResultOutput()
+}
+
+fun toolResultOutputFromJson(json: JsonElement): ToolResultOutput =
+    if (json is JsonPrimitive && json.isString) {
+        ToolResultOutput.Text(json.contentOrNull.orEmpty())
+    } else {
+        ToolResultOutput.Json(json)
+    }
+
+fun toolResultOutputFromWire(json: JsonElement): ToolResultOutput {
+    val obj = json as? JsonObject ?: return toolResultOutputFromJson(json)
+    val type = obj["type"]?.jsonPrimitive?.contentOrNull ?: return toolResultOutputFromJson(json)
+    return when (type) {
+        "text" -> ToolResultOutput.Text(obj["value"]?.jsonPrimitive?.contentOrNull.orEmpty())
+        "json" -> ToolResultOutput.Json(obj["value"] ?: json)
+        "error-text" -> ToolResultOutput.Error(obj["value"]?.jsonPrimitive?.contentOrNull.orEmpty())
+        "error-json" -> ToolResultOutput.ErrorJson(obj["value"] ?: json)
+        "execution-denied" -> ToolResultOutput.ExecutionDenied(obj["reason"]?.jsonPrimitive?.contentOrNull)
+        else -> toolResultOutputFromJson(json)
+    }
+}
+
+fun ToolResultOutput.isToolResultError(): Boolean = when (this) {
+    is ToolResultOutput.Error,
+    is ToolResultOutput.ErrorJson,
+    is ToolResultOutput.ExecutionDenied -> true
+    is ToolResultOutput.Text,
+    is ToolResultOutput.Json -> false
+}
+
+fun ToolResultOutput.toJsonElement(): JsonElement = when (this) {
+    is ToolResultOutput.Text -> JsonPrimitive(text)
+    is ToolResultOutput.Json -> json
+    is ToolResultOutput.Error -> JsonPrimitive("Error: $message")
+    is ToolResultOutput.ErrorJson -> json
+    is ToolResultOutput.ExecutionDenied -> JsonPrimitive(reason ?: "Tool execution denied")
 }
 
 /**

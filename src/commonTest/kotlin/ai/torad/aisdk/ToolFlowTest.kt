@@ -4,10 +4,12 @@ import ai.torad.aisdk.providers.mockLanguageModelToolThenText
 import ai.torad.aisdk.providers.mockToolInput
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertIs
 import kotlin.test.assertTrue
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.serializer
 
 /**
@@ -35,7 +37,7 @@ class ToolFlowTest {
                 inputSerializer = serializer(),
                 outputSerializer = serializer(),
             ) { _ -> "pong" }
-            val agent = ToolLoopAgent<Unit, String>(
+            val streamAgent = ToolLoopAgent<Unit, String>(
                 model = mockLanguageModelToolThenText(
                     toolName = "ping",
                     toolInput = mockToolInput("unused" to ""),
@@ -47,12 +49,13 @@ class ToolFlowTest {
 
             // WHEN
             val events = mutableListOf<StreamEvent>()
-            agent.stream(prompt = "go").collect { events.add(it) }
+            streamAgent.stream(prompt = "go").collect { events.add(it) }
 
             // THEN
             val toolResults = events.filterIsInstance<StreamEvent.ToolResult>()
             assertEquals(1, toolResults.size, "single-value tool emits exactly one ToolResult")
             assertEquals(false, toolResults.single().preliminary, "the one emission is final")
+            assertIs<ToolResultOutput.Text>(toolResults.single().output)
         }
 
     @Test
@@ -71,7 +74,7 @@ class ToolFlowTest {
                     emit("v3")
                 }
             }
-            val agent = ToolLoopAgent<Unit, String>(
+            val streamAgent = ToolLoopAgent<Unit, String>(
                 model = mockLanguageModelToolThenText(
                     toolName = "streamer",
                     toolInput = mockToolInput("unused" to ""),
@@ -83,7 +86,7 @@ class ToolFlowTest {
 
             // WHEN
             val events = mutableListOf<StreamEvent>()
-            agent.stream(prompt = "go").collect { events.add(it) }
+            streamAgent.stream(prompt = "go").collect { events.add(it) }
 
             // THEN
             val toolResults = events.filterIsInstance<StreamEvent.ToolResult>()
@@ -93,10 +96,104 @@ class ToolFlowTest {
             assertEquals(false, toolResults[2].preliminary, "3rd emission is the final result")
             // The final ToolResult's output is what the model sees on the next turn.
             assertEquals(
-                kotlinx.serialization.json.JsonPrimitive("v3"),
+                JsonPrimitive("v3"),
                 toolResults[2].outputJson,
                 "the final ToolResult carries the LAST emission",
             )
+        }
+
+    @Test
+    fun `given toModelOutput when tool completes then stream carries full and model-visible output shapes`() =
+        runTest {
+            val pingTool = tool<Empty, String, Unit>(
+                name = "ping",
+                description = "respond with pong",
+                inputSerializer = serializer(),
+                outputSerializer = serializer(),
+                toModelOutput = { output, options ->
+                    ToolResultOutput.Text("summary:${options.toolCallId}:$output")
+                },
+            ) { _ -> "pong" }
+            val streamAgent = ToolLoopAgent<Unit, String>(
+                model = mockLanguageModelToolThenText(
+                    toolName = "ping",
+                    toolInput = mockToolInput("unused" to ""),
+                    finalText = "done",
+                ),
+                instructions = "use ping",
+                tools = toolSetOf(pingTool),
+            )
+
+            val events = mutableListOf<StreamEvent>()
+            streamAgent.stream(prompt = "go").collect { events += it }
+
+            val toolResult = events.filterIsInstance<StreamEvent.ToolResult>().single()
+            assertEquals(JsonPrimitive("pong"), toolResult.outputJson)
+            assertEquals(ToolResultOutput.Text("pong"), toolResult.output)
+            assertEquals(ToolResultOutput.Text("summary:call_1:pong"), toolResult.modelOutput)
+            assertEquals(false, toolResult.isError)
+
+            val generateAgent = ToolLoopAgent<Unit, String>(
+                model = mockLanguageModelToolThenText(
+                    toolName = "ping",
+                    toolInput = mockToolInput("unused" to ""),
+                    finalText = "done",
+                ),
+                instructions = "use ping",
+                tools = toolSetOf(pingTool),
+            )
+            val result = generateAgent.generate(prompt = "go")
+            val toolMessage = result.messages.filter { it.role == MessageRole.Tool }.last()
+            val toolPart = toolMessage.content.single()
+            assertIs<ContentPart.ToolResult>(toolPart)
+            assertEquals(JsonPrimitive("summary:call_1:pong"), toolPart.modelVisible)
+        }
+
+    @Test
+    fun `given toModelOutput error when tool completes then stream and message mark the result as error`() =
+        runTest {
+            val pingTool = tool<Empty, String, Unit>(
+                name = "ping",
+                description = "respond with pong",
+                inputSerializer = serializer(),
+                outputSerializer = serializer(),
+                toModelOutput = { _, _ -> ToolResultOutput.Error("redacted failure") },
+            ) { _ -> "pong" }
+            val streamAgent = ToolLoopAgent<Unit, String>(
+                model = mockLanguageModelToolThenText(
+                    toolName = "ping",
+                    toolInput = mockToolInput("unused" to ""),
+                    finalText = "done",
+                ),
+                instructions = "use ping",
+                tools = toolSetOf(pingTool),
+            )
+
+            val events = mutableListOf<StreamEvent>()
+            streamAgent.stream(prompt = "go").collect { events += it }
+
+            val toolResult = events.filterIsInstance<StreamEvent.ToolResult>().single()
+            assertTrue(toolResult.isError)
+            assertEquals(ToolResultOutput.Error("redacted failure"), toolResult.modelOutput)
+
+            val generateAgent = ToolLoopAgent<Unit, String>(
+                model = mockLanguageModelToolThenText(
+                    toolName = "ping",
+                    toolInput = mockToolInput("unused" to ""),
+                    finalText = "done",
+                ),
+                instructions = "use ping",
+                tools = toolSetOf(pingTool),
+            )
+            val result = generateAgent.generate(prompt = "go")
+            val toolPart = result.messages
+                .filter { it.role == MessageRole.Tool }
+                .last()
+                .content
+                .single()
+            assertIs<ContentPart.ToolResult>(toolPart)
+            assertTrue(toolPart.isError)
+            assertEquals(JsonPrimitive("Error: redacted failure"), toolPart.modelVisible)
         }
 
     @Test

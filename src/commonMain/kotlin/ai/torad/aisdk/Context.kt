@@ -37,6 +37,7 @@ data class AgentSettings<TContext>(
     val instructions: String? = null,
     val model: LanguageModel? = null,
     val tools: ToolSet<TContext>? = null,
+    val activeTools: List<String>? = null,
     val providerOptions: Map<String, JsonElement>? = null,
     val temperature: Float? = null,
     val topP: Float? = null,
