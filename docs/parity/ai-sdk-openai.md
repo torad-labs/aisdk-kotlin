@@ -3,7 +3,7 @@
 - Version: 3.0.67
 - Upstream path: `.reference/vercel-ai-sdk-ai-6.0.195/packages/openai`
 - Target Kotlin module: `:aisdk-openai`
-- Current parity status: in-progress: createOpenAI/openai facade and hosted OpenAI tool descriptors are folded into the root module; Responses-specific model transport remains open
+- Current parity status: in-progress: createOpenAI/openai facade, hosted OpenAI tool descriptors, default Responses API model routing, OpenAI Responses request option mapping, supported URL metadata, built-in Responses tool type mapping, Responses metadata/logprob output mapping, OpenAI/Azure file-id prefix handling, and fake HTTP tests are folded into the root module; provider-tool argument factories remain open; VERSION is exposed as VERSION until package modules are split
 
 ## Entrypoints
 

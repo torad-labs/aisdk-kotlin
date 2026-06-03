@@ -30,6 +30,9 @@ import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 
 const val OPEN_RESPONSES_VERSION: String = "1.0.16"
+const val OPEN_RESPONSES_TOP_LOGPROBS_MAX: Int = 20
+
+val OPEN_RESPONSES_SUPPORTED_URLS: Map<String, List<String>> = mapOf("image/*" to listOf("^https?://.*$"))
 
 data class OpenResponsesProviderSettings(
     val url: String,
@@ -39,12 +42,41 @@ data class OpenResponsesProviderSettings(
     val authHeadersProvider: (suspend () -> Map<String, String>)? = null,
     val userAgentSuffix: String? = "ai-sdk/open-responses/$OPEN_RESPONSES_VERSION",
     val providerOptionsName: String? = null,
+    val supportedUrls: Map<String, List<String>> = OPEN_RESPONSES_SUPPORTED_URLS,
+    val fileIdPrefixes: List<String> = emptyList(),
 )
 
 @Serializable
 data class OpenResponsesOptions(
+    val conversation: String? = null,
+    val include: List<String>? = null,
+    val instructions: String? = null,
+    val logprobs: JsonElement? = null,
+    val maxToolCalls: Int? = null,
+    val metadata: JsonElement? = null,
+    val parallelToolCalls: Boolean? = null,
+    val previousResponseId: String? = null,
+    val promptCacheKey: String? = null,
+    val promptCacheRetention: String? = null,
     val reasoningEffort: String? = null,
     val reasoningSummary: String? = null,
+    val safetyIdentifier: String? = null,
+    val serviceTier: String? = null,
+    val store: Boolean? = null,
+    val passThroughUnsupportedFiles: Boolean? = null,
+    val strictJsonSchema: Boolean? = null,
+    val textVerbosity: String? = null,
+    val truncation: String? = null,
+    val user: String? = null,
+    val systemMessageMode: String? = null,
+    val forceReasoning: Boolean? = null,
+    val allowedTools: OpenResponsesAllowedTools? = null,
+)
+
+@Serializable
+data class OpenResponsesAllowedTools(
+    val toolNames: List<String> = emptyList(),
+    val mode: String? = null,
 )
 
 interface OpenResponsesProvider : Provider {
@@ -76,7 +108,7 @@ private class OpenResponsesLanguageModel(
     override val modelId: String,
 ) : LanguageModel {
     override val provider: String = "${settings.name}.responses"
-    override val supportedUrls: Map<String, List<String>> = mapOf("image/*" to listOf("^https?://.*$"))
+    override val supportedUrls: Map<String, List<String>> = settings.supportedUrls
 
     override suspend fun generate(params: LanguageModelCallParams): LanguageModelResult {
         val prepared = openResponsesRequestBody(
@@ -85,6 +117,7 @@ private class OpenResponsesLanguageModel(
             providerOptionsName = settings.providerOptionsName ?: settings.name,
             modelId,
             json,
+            settings.fileIdPrefixes,
         )
         val response = postJson(prepared.body, acceptEventStream = false, headers = params.headers)
         return openResponsesGenerateResult(
@@ -94,6 +127,7 @@ private class OpenResponsesLanguageModel(
             responseBody = response.value,
             warnings = prepared.warnings,
             json = json,
+            providerMetadataKey = settings.providerOptionsName ?: settings.name,
         )
     }
 
@@ -104,6 +138,7 @@ private class OpenResponsesLanguageModel(
             providerOptionsName = settings.providerOptionsName ?: settings.name,
             modelId,
             json,
+            settings.fileIdPrefixes,
         )
         val response = postJson(prepared.body, acceptEventStream = true, parseJson = false, headers = params.headers)
         emit(StreamEvent.StreamStart(prepared.warnings))
@@ -128,6 +163,7 @@ private class OpenResponsesLanguageModel(
             providerOptionsName = settings.providerOptionsName ?: settings.name,
             modelId,
             json,
+            settings.fileIdPrefixes,
         )
         return LanguageModelStreamResult(
             stream = stream(params),
@@ -200,6 +236,7 @@ private fun openResponsesRequestBody(
     providerOptionsName: String,
     modelId: String,
     json: Json,
+    fileIdPrefixes: List<String> = emptyList(),
 ): PreparedOpenResponsesRequest {
     val warnings = mutableListOf<CallWarning>()
     if (params.stopSequences.isNotEmpty()) {
@@ -212,14 +249,20 @@ private fun openResponsesRequestBody(
         warnings += CallWarning("unsupported", "seed is not supported by Open Responses models")
     }
 
-    val convertedInput = convertToOpenResponsesInput(params.messages, warnings)
+    val convertedInput = convertToOpenResponsesInput(params.messages, warnings, fileIdPrefixes)
     val providerOptions = openResponsesProviderOptions(params.providerOptions, providerOptionsName, json)
+    val topLogprobs = openResponsesTopLogprobs(providerOptions?.logprobs)
+    val include = openResponsesInclude(providerOptions, params.tools, modelId, topLogprobs)
 
     return PreparedOpenResponsesRequest(
         body = buildJsonObject {
             put("model", JsonPrimitive(modelId))
             put("input", convertedInput.input)
-            convertedInput.instructions?.let { put("instructions", JsonPrimitive(it)) }
+            val instructions = when (providerOptions?.systemMessageMode) {
+                "remove" -> providerOptions.instructions
+                else -> providerOptions?.instructions ?: convertedInput.instructions
+            }
+            instructions?.let { put("instructions", JsonPrimitive(it)) }
             params.maxOutputTokens?.let { put("max_output_tokens", JsonPrimitive(it)) }
             params.temperature?.let { put("temperature", JsonPrimitive(it)) }
             params.topP?.let { put("top_p", JsonPrimitive(it)) }
@@ -231,8 +274,24 @@ private fun openResponsesRequestBody(
             if (reasoning.isNotEmpty()) put("reasoning", JsonObject(reasoning))
 
             if (params.tools.isNotEmpty()) put("tools", JsonArray(params.tools.map(::openResponsesToolJson)))
-            openResponsesToolChoice(params.toolChoice)?.let { put("tool_choice", it) }
-            openResponsesTextFormat(params.responseFormat)?.let { put("text", buildJsonObject { put("format", it) }) }
+            openResponsesToolChoice(params.toolChoice, providerOptions)?.let { put("tool_choice", it) }
+            val text = openResponsesText(params.responseFormat, providerOptions)
+            if (text.isNotEmpty()) put("text", JsonObject(text))
+
+            providerOptions?.conversation?.let { put("conversation", JsonPrimitive(it)) }
+            providerOptions?.maxToolCalls?.let { put("max_tool_calls", JsonPrimitive(it)) }
+            providerOptions?.metadata?.let { put("metadata", it) }
+            providerOptions?.parallelToolCalls?.let { put("parallel_tool_calls", JsonPrimitive(it)) }
+            providerOptions?.previousResponseId?.let { put("previous_response_id", JsonPrimitive(it)) }
+            providerOptions?.promptCacheKey?.let { put("prompt_cache_key", JsonPrimitive(it)) }
+            providerOptions?.promptCacheRetention?.let { put("prompt_cache_retention", JsonPrimitive(it)) }
+            providerOptions?.safetyIdentifier?.let { put("safety_identifier", JsonPrimitive(it)) }
+            providerOptions?.serviceTier?.let { put("service_tier", JsonPrimitive(it)) }
+            providerOptions?.store?.let { put("store", JsonPrimitive(it)) }
+            providerOptions?.truncation?.let { put("truncation", JsonPrimitive(it)) }
+            providerOptions?.user?.let { put("user", JsonPrimitive(it)) }
+            include?.let { put("include", it) }
+            topLogprobs?.let { put("top_logprobs", JsonPrimitive(it)) }
         },
         warnings = warnings,
     )
@@ -246,6 +305,7 @@ private data class ConvertedOpenResponsesInput(
 private fun convertToOpenResponsesInput(
     messages: List<ModelMessage>,
     warnings: MutableList<CallWarning>,
+    fileIdPrefixes: List<String> = emptyList(),
 ): ConvertedOpenResponsesInput {
     val input = mutableListOf<JsonElement>()
     val systemMessages = mutableListOf<String>()
@@ -256,7 +316,7 @@ private fun convertToOpenResponsesInput(
             MessageRole.User -> input += buildJsonObject {
                 put("type", JsonPrimitive("message"))
                 put("role", JsonPrimitive("user"))
-                put("content", JsonArray(message.content.mapNotNull(::openResponsesUserContentPart)))
+                put("content", JsonArray(message.content.mapNotNull { openResponsesUserContentPart(it, fileIdPrefixes) }))
             }
             MessageRole.Assistant -> {
                 val assistantContent = message.content.mapNotNull(::openResponsesAssistantContentPart)
@@ -301,25 +361,43 @@ private fun List<ContentPart>.textContent(): String =
         }
     }
 
-private fun openResponsesUserContentPart(part: ContentPart): JsonElement? = when (part) {
+private fun isOpenResponsesFileId(value: String, prefixes: List<String>): Boolean =
+    prefixes.any { prefix -> prefix.isNotEmpty() && value.startsWith(prefix) }
+
+private fun openResponsesUserContentPart(
+    part: ContentPart,
+    fileIdPrefixes: List<String>,
+): JsonElement? = when (part) {
     is ContentPart.Text -> buildJsonObject {
         put("type", JsonPrimitive("input_text"))
         put("text", JsonPrimitive(part.text))
     }
     is ContentPart.Image -> buildJsonObject {
         put("type", JsonPrimitive("input_image"))
-        put("image_url", JsonPrimitive("data:${part.mediaType};base64,${part.base64}"))
+        if (isOpenResponsesFileId(part.base64, fileIdPrefixes)) {
+            put("file_id", JsonPrimitive(part.base64))
+        } else {
+            put("image_url", JsonPrimitive("data:${part.mediaType};base64,${part.base64}"))
+        }
     }
     is ContentPart.File -> if (part.mediaType.startsWith("image/")) {
         buildJsonObject {
             put("type", JsonPrimitive("input_image"))
-            put("image_url", JsonPrimitive("data:${part.mediaType};base64,${part.base64}"))
+            if (isOpenResponsesFileId(part.base64, fileIdPrefixes)) {
+                put("file_id", JsonPrimitive(part.base64))
+            } else {
+                put("image_url", JsonPrimitive("data:${part.mediaType};base64,${part.base64}"))
+            }
         }
     } else {
         buildJsonObject {
             put("type", JsonPrimitive("input_file"))
             put("filename", JsonPrimitive(part.filename ?: "data"))
-            put("file_data", JsonPrimitive("data:${part.mediaType};base64,${part.base64}"))
+            if (isOpenResponsesFileId(part.base64, fileIdPrefixes)) {
+                put("file_id", JsonPrimitive(part.base64))
+            } else {
+                put("file_data", JsonPrimitive("data:${part.mediaType};base64,${part.base64}"))
+            }
         }
     }
     else -> null
@@ -374,7 +452,10 @@ private fun openResponsesToolOutput(
     })
 }
 
-private fun openResponsesToolJson(tool: LanguageModelTool): JsonObject = buildJsonObject {
+private fun openResponsesToolJson(tool: LanguageModelTool): JsonObject =
+    if (tool.providerExecuted) openResponsesProviderToolJson(tool) else openResponsesFunctionToolJson(tool)
+
+private fun openResponsesFunctionToolJson(tool: LanguageModelTool): JsonObject = buildJsonObject {
     put("type", JsonPrimitive("function"))
     put("name", JsonPrimitive(tool.name))
     put("description", JsonPrimitive(tool.description))
@@ -382,26 +463,136 @@ private fun openResponsesToolJson(tool: LanguageModelTool): JsonObject = buildJs
     put("strict", JsonPrimitive(true))
 }
 
-private fun openResponsesToolChoice(choice: ToolChoice): JsonElement? = when (choice) {
-    ToolChoice.Auto -> JsonPrimitive("auto")
-    ToolChoice.None -> JsonPrimitive("none")
-    ToolChoice.Required -> JsonPrimitive("required")
-    is ToolChoice.Specific -> buildJsonObject {
-        put("type", JsonPrimitive("function"))
-        put("name", JsonPrimitive(choice.toolName))
+private fun openResponsesProviderToolJson(tool: LanguageModelTool): JsonObject = buildJsonObject {
+    when (val type = openResponsesProviderToolType(tool.name)) {
+        "code_interpreter" -> {
+            put("type", JsonPrimitive(type))
+            put("container", buildJsonObject { put("type", JsonPrimitive("auto")) })
+        }
+        "custom" -> {
+            put("type", JsonPrimitive(type))
+            put("name", JsonPrimitive(tool.name))
+            put("description", JsonPrimitive(tool.description))
+        }
+        else -> put("type", JsonPrimitive(type))
     }
 }
 
-private fun openResponsesTextFormat(format: ResponseFormat): JsonElement? = when (format) {
+private fun openResponsesToolChoice(
+    choice: ToolChoice,
+    options: OpenResponsesOptions?,
+): JsonElement? {
+    options?.allowedTools?.takeIf { it.toolNames.isNotEmpty() }?.let { allowed ->
+        return buildJsonObject {
+            put("type", JsonPrimitive("allowed_tools"))
+            put("mode", JsonPrimitive(allowed.mode ?: "auto"))
+            put(
+                "tools",
+                JsonArray(
+                    allowed.toolNames.map { name ->
+                        buildJsonObject {
+                            put("type", JsonPrimitive("function"))
+                            put("name", JsonPrimitive(name))
+                        }
+                    },
+                ),
+            )
+        }
+    }
+    return when (choice) {
+        ToolChoice.Auto -> JsonPrimitive("auto")
+        ToolChoice.None -> JsonPrimitive("none")
+        ToolChoice.Required -> JsonPrimitive("required")
+        is ToolChoice.Specific -> buildJsonObject {
+            val providerToolType = openResponsesProviderToolTypeOrNull(choice.toolName)
+            if (providerToolType != null) {
+                put("type", JsonPrimitive(providerToolType))
+            } else {
+                put("type", JsonPrimitive("function"))
+                put("name", JsonPrimitive(choice.toolName))
+            }
+        }
+    }
+}
+
+private fun openResponsesText(
+    format: ResponseFormat,
+    options: OpenResponsesOptions?,
+): Map<String, JsonElement> = buildMap {
+    openResponsesTextFormat(format, options?.strictJsonSchema ?: true)?.let { put("format", it) }
+    options?.textVerbosity?.let { put("verbosity", JsonPrimitive(it)) }
+}
+
+private fun openResponsesTextFormat(format: ResponseFormat, strict: Boolean): JsonElement? = when (format) {
     ResponseFormat.Text -> null
     is ResponseFormat.Json -> buildJsonObject {
         put("type", JsonPrimitive("json_schema"))
         format.schemaName?.let { put("name", JsonPrimitive(it)) } ?: put("name", JsonPrimitive("response"))
         format.schemaDescription?.let { put("description", JsonPrimitive(it)) }
         format.schemaJson?.let { put("schema", it) }
-        put("strict", JsonPrimitive(true))
+        put("strict", JsonPrimitive(strict))
     }
 }
+
+private fun openResponsesTopLogprobs(logprobs: JsonElement?): Int? {
+    val primitive = logprobs?.jsonPrimitive ?: return null
+    primitive.booleanOrNull?.let { return if (it) OPEN_RESPONSES_TOP_LOGPROBS_MAX else null }
+    return primitive.intOrNull?.coerceIn(1, OPEN_RESPONSES_TOP_LOGPROBS_MAX)
+}
+
+private fun openResponsesInclude(
+    options: OpenResponsesOptions?,
+    tools: List<LanguageModelTool>,
+    modelId: String,
+    topLogprobs: Int?,
+): JsonArray? {
+    val include = linkedSetOf<String>()
+    options?.include.orEmpty().forEach { include += it }
+    if (topLogprobs != null) include += "message.output_text.logprobs"
+    if (tools.any { it.providerExecuted && it.name in setOf("web_search", "web_search_preview") }) {
+        include += "web_search_call.action.sources"
+    }
+    if (tools.any { it.providerExecuted && it.name == "code_interpreter" }) {
+        include += "code_interpreter_call.outputs"
+    }
+    if (options?.store == false && isOpenResponsesReasoningModel(modelId, options)) {
+        include += "reasoning.encrypted_content"
+    }
+    return include.takeIf { it.isNotEmpty() }?.let { JsonArray(it.map(::JsonPrimitive)) }
+}
+
+private fun openResponsesProviderToolType(toolName: String): String =
+    openResponsesProviderToolTypeOrNull(toolName) ?: "custom"
+
+private fun openResponsesProviderToolTypeOrNull(toolName: String): String? = when (toolName) {
+    "apply_patch",
+    "code_interpreter",
+    "file_search",
+    "image_generation",
+    "local_shell",
+    "mcp",
+    "shell",
+    "tool_search",
+    "web_search",
+    "web_search_preview",
+    -> toolName
+    else -> null
+}
+
+private fun isOpenResponsesReasoningModel(modelId: String, options: OpenResponsesOptions?): Boolean =
+    options?.forceReasoning == true ||
+        modelId == "o1" ||
+        modelId.startsWith("o1-") ||
+        modelId == "o3" ||
+        modelId.startsWith("o3-") ||
+        modelId == "o3-mini" ||
+        modelId.startsWith("o3-mini-") ||
+        modelId == "o4-mini" ||
+        modelId.startsWith("o4-mini-") ||
+        modelId == "gpt-5" ||
+        modelId.startsWith("gpt-5-") ||
+        modelId.startsWith("gpt-5.") ||
+        modelId.startsWith("gpt-5_")
 
 private fun openResponsesProviderOptions(
     providerOptions: Map<String, JsonElement>,
@@ -417,6 +608,32 @@ private fun openResponsesReasoning(options: OpenResponsesOptions?): Map<String, 
     options?.reasoningSummary?.let { put("summary", JsonPrimitive(it)) }
 }
 
+private fun openResponsesResultProviderMetadata(
+    response: JsonObject,
+    providerMetadataKey: String,
+    logprobs: List<JsonElement>,
+): Map<String, JsonElement> {
+    val metadata = buildJsonObject {
+        response["id"]?.jsonPrimitive?.contentOrNull?.let { put("responseId", JsonPrimitive(it)) }
+        if (logprobs.isNotEmpty()) put("logprobs", JsonArray(logprobs))
+    }
+    return metadata.takeIf { it.isNotEmpty() }?.let { mapOf(providerMetadataKey to it) }.orEmpty()
+}
+
+private fun openResponsesPartMetadata(
+    providerMetadataKey: String,
+    itemId: String?,
+    obj: JsonObject,
+): Map<String, JsonElement>? {
+    val metadata = buildJsonObject {
+        itemId?.let { put("itemId", JsonPrimitive(it)) }
+        (obj["annotations"] as? JsonArray)?.takeIf { it.isNotEmpty() }?.let { put("annotations", it) }
+        obj["logprobs"]?.let { put("logprobs", it) }
+        obj["encrypted_content"]?.let { put("encryptedContent", it) }
+    }
+    return metadata.takeIf { it.isNotEmpty() }?.let { mapOf(providerMetadataKey to it) }
+}
+
 private fun openResponsesGenerateResult(
     response: JsonObject,
     requestBody: JsonElement,
@@ -424,19 +641,24 @@ private fun openResponsesGenerateResult(
     responseBody: JsonElement,
     warnings: List<CallWarning>,
     json: Json,
+    providerMetadataKey: String,
 ): LanguageModelResult {
     val content = mutableListOf<ContentPart>()
     val toolCalls = mutableListOf<ContentPart.ToolCall>()
+    val logprobs = mutableListOf<JsonElement>()
     var hasToolCalls = false
 
     for (part in response["output"]?.jsonArray.orEmpty()) {
         val obj = part.jsonObject
+        val itemId = obj["id"]?.jsonPrimitive?.contentOrNull
         when (obj["type"]?.jsonPrimitive?.contentOrNull) {
             "reasoning" -> {
                 val reasoningParts = (obj["content"] as? JsonArray) ?: (obj["summary"] as? JsonArray) ?: JsonArray(emptyList())
                 reasoningParts.forEach { reasoning ->
                     val text = reasoning.jsonObject["text"]?.jsonPrimitive?.contentOrNull
-                    if (!text.isNullOrEmpty()) content += ContentPart.Reasoning(text)
+                    if (!text.isNullOrEmpty()) {
+                        content += ContentPart.Reasoning(text, openResponsesPartMetadata(providerMetadataKey, itemId, reasoning.jsonObject))
+                    }
                 }
             }
             "message" -> {
@@ -444,7 +666,10 @@ private fun openResponsesGenerateResult(
                     val messageObj = messagePart.jsonObject
                     val text = messageObj["text"]?.jsonPrimitive?.contentOrNull
                         ?: messageObj["refusal"]?.jsonPrimitive?.contentOrNull
-                    if (!text.isNullOrEmpty()) content += ContentPart.Text(text)
+                    messageObj["logprobs"]?.let { logprobs += it }
+                    if (!text.isNullOrEmpty()) {
+                        content += ContentPart.Text(text, openResponsesPartMetadata(providerMetadataKey, itemId, messageObj))
+                    }
                 }
             }
             "function_call" -> {
@@ -453,6 +678,7 @@ private fun openResponsesGenerateResult(
                     toolCallId = obj["call_id"]?.jsonPrimitive?.contentOrNull ?: generateId(prefix = "call"),
                     toolName = obj["name"]?.jsonPrimitive?.contentOrNull.orEmpty(),
                     input = parseToolInput(obj["arguments"]?.jsonPrimitive?.contentOrNull, json),
+                    providerMetadata = openResponsesPartMetadata(providerMetadataKey, itemId, obj),
                 )
                 toolCalls += toolCall
                 content += toolCall
@@ -470,6 +696,7 @@ private fun openResponsesGenerateResult(
         content = content,
         rawFinishReason = incompleteReason,
         warnings = warnings,
+        providerMetadata = openResponsesResultProviderMetadata(response, providerMetadataKey, logprobs),
         request = LanguageModelRequestMetadata(body = requestBody),
         response = LanguageModelResponseMetadata(
             id = response["id"]?.jsonPrimitive?.contentOrNull,

@@ -104,6 +104,8 @@ private class DefaultAzureOpenAIProvider(
                 authHeadersProvider = { azureHeaders() },
                 userAgentSuffix = null,
                 providerOptionsName = "openai",
+                supportedUrls = OPENAI_RESPONSES_SUPPORTED_URLS,
+                fileIdPrefixes = listOf("assistant-"),
             ),
         ).responses(deploymentId)
 

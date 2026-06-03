@@ -5,6 +5,9 @@ import kotlinx.serialization.json.JsonElement
 
 const val VERSION: String = "3.0.67"
 
+val OPENAI_RESPONSES_SUPPORTED_URLS: Map<String, List<String>> = OPEN_RESPONSES_SUPPORTED_URLS +
+    ("application/pdf" to listOf("^https?://.*$"))
+
 data class OpenAIProviderSettings(
     val baseURL: String = "https://api.openai.com/v1",
     val apiKey: String? = null,
@@ -70,7 +73,7 @@ private object OpenAIProviderNotConfigured : OpenAIProvider {
 }
 
 private class DefaultOpenAIProvider(
-    client: HttpClient,
+    private val client: HttpClient,
     override val settings: OpenAIProviderSettings,
 ) : OpenAIProvider {
     private val compatible = createOpenAICompatible(client, settings.toCompatibleSettings())
@@ -81,7 +84,19 @@ private class DefaultOpenAIProvider(
     override fun languageModel(modelId: String): LanguageModel = responses(modelId)
 
     override fun responses(modelId: String): LanguageModel =
-        compatible.chatModel(modelId)
+        createOpenResponses(
+            client,
+            OpenResponsesProviderSettings(
+                url = settings.responsesUrl(),
+                name = settings.name,
+                apiKey = settings.apiKey,
+                headers = settings.openAIHeaders(),
+                userAgentSuffix = "ai-sdk/openai/$VERSION",
+                providerOptionsName = "openai",
+                supportedUrls = OPENAI_RESPONSES_SUPPORTED_URLS,
+                fileIdPrefixes = listOf("file-"),
+            ),
+        ).responses(modelId)
 
     override fun chat(modelId: String): LanguageModel =
         compatible.chatModel(modelId)
@@ -158,11 +173,7 @@ private fun openAIProviderTool(
     )
 
 private fun OpenAIProviderSettings.toCompatibleSettings(): OpenAICompatibleProviderSettings {
-    val baseHeaders = linkedMapOf<String, String>()
-    organization?.takeIf { it.isNotBlank() }?.let { baseHeaders["OpenAI-Organization"] = it }
-    project?.takeIf { it.isNotBlank() }?.let { baseHeaders["OpenAI-Project"] = it }
-    baseHeaders.putAll(headers)
-    val headersWithUserAgent = withUserAgentSuffix(baseHeaders, "ai-sdk/openai/$VERSION")
+    val headersWithUserAgent = withUserAgentSuffix(openAIHeaders(), "ai-sdk/openai/$VERSION")
     return OpenAICompatibleProviderSettings(
         name = name,
         baseUrl = baseURL.trimEnd('/'),
@@ -173,3 +184,33 @@ private fun OpenAIProviderSettings.toCompatibleSettings(): OpenAICompatibleProvi
         supportsStructuredOutputs = true,
     )
 }
+
+private fun OpenAIProviderSettings.openAIHeaders(): Map<String, String> {
+    val baseHeaders = linkedMapOf<String, String>()
+    organization?.takeIf { it.isNotBlank() }?.let { baseHeaders["OpenAI-Organization"] = it }
+    project?.takeIf { it.isNotBlank() }?.let { baseHeaders["OpenAI-Project"] = it }
+    baseHeaders.putAll(headers)
+    return baseHeaders
+}
+
+private fun OpenAIProviderSettings.responsesUrl(): String {
+    val endpoint = "${baseURL.trimEnd('/')}/responses"
+    if (queryParams.isEmpty()) return endpoint
+    return endpoint + "?" + queryParams.entries.joinToString("&") { (key, value) ->
+        "${openAIProviderUrlEncode(key)}=${openAIProviderUrlEncode(value)}"
+    }
+}
+
+private fun openAIProviderUrlEncode(value: String): String =
+    buildString {
+        value.encodeToByteArray().forEach { byte ->
+            val unsigned = byte.toInt() and 0xff
+            val char = unsigned.toChar()
+            if (char.isLetterOrDigit() || char in setOf('-', '_', '.', '~')) {
+                append(char)
+            } else {
+                append('%')
+                append(unsigned.toString(16).uppercase().padStart(2, '0'))
+            }
+        }
+    }
