@@ -3,7 +3,7 @@
 - Version: 1.0.34
 - Upstream path: `.reference/vercel-ai-sdk-ai-6.0.195/packages/black-forest-labs`
 - Target Kotlin module: `:aisdk-provider-black-forest-labs`
-- Current parity status: missing: no Kotlin module or parity mapping exists yet
+- Current parity status: ported: createBlackForestLabs/blackForestLabs, BlackForestLabsProviderSettings, BlackForestLabsImageModelOptions/BlackForestLabsImageProviderOptions, async image submit/poll/download, x-key authentication, size-to-aspect-ratio warnings, input image and mask mapping, BFL provider-option snake_case mapping, poll timeout/interval controls, and provider metadata are represented as a Kotlin facade folded into the root module; VERSION is exposed as BLACK_FOREST_LABS_VERSION until package modules are split
 
 ## Entrypoints
 
