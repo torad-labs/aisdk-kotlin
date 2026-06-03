@@ -245,6 +245,7 @@ class ToolSet<TContext>(
                 description = descriptionWithExamples(tool),
                 parametersSchemaJson = jsonSchemaFor(tool),
                 providerExecuted = tool.providerExecuted,
+                metadata = tool.metadata,
             )
         }
     }

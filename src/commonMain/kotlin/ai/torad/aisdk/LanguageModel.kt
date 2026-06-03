@@ -111,6 +111,7 @@ data class LanguageModelTool(
     val description: String,
     val parametersSchemaJson: String,
     val providerExecuted: Boolean = false,
+    val metadata: Map<String, JsonElement> = emptyMap(),
 )
 
 /** One-shot generate result. */

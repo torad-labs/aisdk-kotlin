@@ -311,6 +311,95 @@ class OpenAIProviderTest {
     }
 
     @Test
+    fun `OpenAI provider tool factories preserve args through descriptors into Responses tools`() = runTest {
+        val seenBody = mutableListOf<JsonObject>()
+        val client = HttpClient(
+            MockEngine { request ->
+                seenBody += Json.parseToJsonElement(requestBodyText(request)).jsonObject
+                respond(
+                    """{"id":"resp_1","model":"gpt-5","output":[{"type":"message","id":"msg_1","role":"assistant","content":[{"type":"output_text","text":"ok"}]}]}""",
+                    HttpStatusCode.OK,
+                    headersOf(HttpHeaders.ContentType, "application/json"),
+                )
+            },
+        )
+        val provider = createOpenAI(client, OpenAIProviderSettings(apiKey = "test-api-key"))
+        val tools = toolSetOf<Any?>(
+            openAIFileSearch(
+                buildJsonObject {
+                    put("vectorStoreIds", JsonArray(listOf(JsonPrimitive("vs_1"))))
+                    put("maxNumResults", JsonPrimitive(3))
+                    put("ranking", buildJsonObject { put("scoreThreshold", JsonPrimitive(0.25)) })
+                    put("filters", buildJsonObject {
+                        put("key", JsonPrimitive("tenant"))
+                        put("type", JsonPrimitive("eq"))
+                        put("value", JsonPrimitive("torad"))
+                    })
+                },
+            ),
+            openAICodeInterpreter(
+                buildJsonObject {
+                    put("container", buildJsonObject { put("fileIds", JsonArray(listOf(JsonPrimitive("file_1")))) })
+                },
+            ),
+            openAIWebSearch(
+                buildJsonObject {
+                    put("externalWebAccess", JsonPrimitive(false))
+                    put("filters", buildJsonObject { put("allowedDomains", JsonArray(listOf(JsonPrimitive("example.com")))) })
+                    put("searchContextSize", JsonPrimitive("high"))
+                },
+            ),
+            openAIImageGeneration(
+                buildJsonObject {
+                    put("inputFidelity", JsonPrimitive("high"))
+                    put("inputImageMask", buildJsonObject { put("fileId", JsonPrimitive("file_mask")) })
+                    put("outputCompression", JsonPrimitive(80))
+                    put("outputFormat", JsonPrimitive("webp"))
+                },
+            ),
+            openAIMcp(
+                buildJsonObject {
+                    put("serverLabel", JsonPrimitive("docs"))
+                    put("allowedTools", buildJsonObject {
+                        put("readOnly", JsonPrimitive(true))
+                        put("toolNames", JsonArray(listOf(JsonPrimitive("search"))))
+                    })
+                    put("requireApproval", buildJsonObject {
+                        put("never", buildJsonObject { put("toolNames", JsonArray(listOf(JsonPrimitive("read")))) })
+                    })
+                    put("serverUrl", JsonPrimitive("https://mcp.example/sse"))
+                },
+            ),
+        )
+
+        provider.responses("gpt-5").generate(
+            LanguageModelCallParams(
+                messages = listOf(userMessage("hi")),
+                tools = tools.descriptors,
+            ),
+        )
+
+        val byType = seenBody.single()["tools"]!!.jsonArray.associate { tool ->
+            val obj = tool.jsonObject
+            obj["type"]!!.jsonPrimitive.content to obj
+        }
+        assertEquals(JsonArray(listOf(JsonPrimitive("vs_1"))), byType["file_search"]!!["vector_store_ids"])
+        assertEquals(3, byType["file_search"]!!["max_num_results"]?.jsonPrimitive?.content?.toInt())
+        assertEquals(0.25, byType["file_search"]!!["ranking_options"]?.jsonObject?.get("score_threshold")?.jsonPrimitive?.content?.toDouble())
+        assertEquals(JsonArray(listOf(JsonPrimitive("file_1"))), byType["code_interpreter"]!!["container"]?.jsonObject?.get("file_ids"))
+        assertEquals(false, byType["web_search"]!!["external_web_access"]?.jsonPrimitive?.booleanOrNull)
+        assertEquals(JsonArray(listOf(JsonPrimitive("example.com"))), byType["web_search"]!!["filters"]?.jsonObject?.get("allowed_domains"))
+        assertEquals("high", byType["image_generation"]!!["input_fidelity"]?.jsonPrimitive?.content)
+        assertEquals("file_mask", byType["image_generation"]!!["input_image_mask"]?.jsonObject?.get("file_id")?.jsonPrimitive?.content)
+        assertEquals(80, byType["image_generation"]!!["output_compression"]?.jsonPrimitive?.content?.toInt())
+        assertEquals("webp", byType["image_generation"]!!["output_format"]?.jsonPrimitive?.content)
+        assertEquals("docs", byType["mcp"]!!["server_label"]?.jsonPrimitive?.content)
+        assertEquals(JsonArray(listOf(JsonPrimitive("search"))), byType["mcp"]!!["allowed_tools"]?.jsonObject?.get("tool_names"))
+        assertEquals(JsonArray(listOf(JsonPrimitive("read"))), byType["mcp"]!!["require_approval"]?.jsonObject?.get("never")?.jsonObject?.get("tool_names"))
+        assertEquals("https://mcp.example/sse", byType["mcp"]!!["server_url"]?.jsonPrimitive?.content)
+    }
+
+    @Test
     fun `OpenAI responses sends matching file ids instead of data URLs`() = runTest {
         val seenBody = mutableListOf<JsonObject>()
         val client = HttpClient(

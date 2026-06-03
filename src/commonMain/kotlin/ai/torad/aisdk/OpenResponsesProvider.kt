@@ -19,6 +19,7 @@ import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonObjectBuilder
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.booleanOrNull
 import kotlinx.serialization.json.buildJsonObject
@@ -464,15 +465,65 @@ private fun openResponsesFunctionToolJson(tool: LanguageModelTool): JsonObject =
 }
 
 private fun openResponsesProviderToolJson(tool: LanguageModelTool): JsonObject = buildJsonObject {
-    when (val type = openResponsesProviderToolType(tool.name)) {
+    val args = openResponsesProviderToolArgs(tool)
+    when (val type = openResponsesProviderToolType(tool)) {
+        "file_search" -> {
+            put("type", JsonPrimitive(type))
+            putOpenResponsesField("vector_store_ids", args["vectorStoreIds"] ?: args["vector_store_ids"])
+            putOpenResponsesField("max_num_results", args["maxNumResults"] ?: args["max_num_results"])
+            openResponsesRankingOptions(args)?.let { put("ranking_options", it) }
+            putOpenResponsesField("filters", args["filters"])
+        }
+        "web_search", "web_search_preview" -> {
+            put("type", JsonPrimitive(type))
+            putOpenResponsesField("external_web_access", args["externalWebAccess"] ?: args["external_web_access"])
+            putOpenResponsesField("filters", openResponsesWebSearchFilters(args["filters"]))
+            putOpenResponsesField("search_context_size", args["searchContextSize"] ?: args["search_context_size"])
+            putOpenResponsesField("user_location", args["userLocation"] ?: args["user_location"])
+        }
         "code_interpreter" -> {
             put("type", JsonPrimitive(type))
-            put("container", buildJsonObject { put("type", JsonPrimitive("auto")) })
+            put("container", openResponsesCodeInterpreterContainer(args["container"]))
+        }
+        "image_generation" -> {
+            put("type", JsonPrimitive(type))
+            putOpenResponsesField("background", args["background"])
+            putOpenResponsesField("input_fidelity", args["inputFidelity"] ?: args["input_fidelity"])
+            putOpenResponsesField("input_image_mask", openResponsesInputImageMask(args["inputImageMask"] ?: args["input_image_mask"]))
+            putOpenResponsesField("model", args["model"])
+            putOpenResponsesField("moderation", args["moderation"])
+            putOpenResponsesField("partial_images", args["partialImages"] ?: args["partial_images"])
+            putOpenResponsesField("quality", args["quality"])
+            putOpenResponsesField("output_compression", args["outputCompression"] ?: args["output_compression"])
+            putOpenResponsesField("output_format", args["outputFormat"] ?: args["output_format"])
+            putOpenResponsesField("size", args["size"])
+        }
+        "mcp" -> {
+            put("type", JsonPrimitive(type))
+            putOpenResponsesField("server_label", args["serverLabel"] ?: args["server_label"])
+            putOpenResponsesField("allowed_tools", openResponsesAllowedMcpTools(args["allowedTools"] ?: args["allowed_tools"]))
+            putOpenResponsesField("authorization", args["authorization"])
+            putOpenResponsesField("connector_id", args["connectorId"] ?: args["connector_id"])
+            putOpenResponsesField("headers", args["headers"])
+            putOpenResponsesField("require_approval", openResponsesRequireApproval(args["requireApproval"] ?: args["require_approval"]))
+            putOpenResponsesField("server_description", args["serverDescription"] ?: args["server_description"])
+            putOpenResponsesField("server_url", args["serverUrl"] ?: args["server_url"])
+        }
+        "shell" -> {
+            put("type", JsonPrimitive(type))
+            putOpenResponsesField("environment", openResponsesShellEnvironment(args["environment"]))
+        }
+        "tool_search" -> {
+            put("type", JsonPrimitive(type))
+            putOpenResponsesField("execution", args["execution"])
+            putOpenResponsesField("description", args["description"])
+            putOpenResponsesField("parameters", args["parameters"])
         }
         "custom" -> {
             put("type", JsonPrimitive(type))
-            put("name", JsonPrimitive(tool.name))
-            put("description", JsonPrimitive(tool.description))
+            putOpenResponsesField("name", args["name"] ?: JsonPrimitive(tool.name))
+            putOpenResponsesField("description", args["description"] ?: JsonPrimitive(tool.description))
+            putOpenResponsesField("format", args["format"])
         }
         else -> put("type", JsonPrimitive(type))
     }
@@ -561,8 +612,19 @@ private fun openResponsesInclude(
     return include.takeIf { it.isNotEmpty() }?.let { JsonArray(it.map(::JsonPrimitive)) }
 }
 
-private fun openResponsesProviderToolType(toolName: String): String =
-    openResponsesProviderToolTypeOrNull(toolName) ?: "custom"
+private fun JsonObjectBuilder.putOpenResponsesField(name: String, value: JsonElement?) {
+    if (value != null && value !is JsonNull) put(name, value)
+}
+
+private fun openResponsesProviderToolArgs(tool: LanguageModelTool): JsonObject =
+    (tool.metadata["providerToolArgs"] as? JsonObject)
+        ?: (tool.metadata["providerOptions"] as? JsonObject)
+        ?: JsonObject(emptyMap())
+
+private fun openResponsesProviderToolType(tool: LanguageModelTool): String {
+    val providerToolId = tool.metadata["providerToolId"]?.jsonPrimitive?.contentOrNull
+    return providerToolId?.removePrefix("openai.") ?: openResponsesProviderToolTypeOrNull(tool.name) ?: "custom"
+}
 
 private fun openResponsesProviderToolTypeOrNull(toolName: String): String? = when (toolName) {
     "apply_patch",
@@ -577,6 +639,79 @@ private fun openResponsesProviderToolTypeOrNull(toolName: String): String? = whe
     "web_search_preview",
     -> toolName
     else -> null
+}
+
+private fun openResponsesRankingOptions(args: JsonObject): JsonObject? {
+    val ranking = args["ranking"] as? JsonObject ?: return null
+    val mapped = buildJsonObject {
+        putOpenResponsesField("ranker", ranking["ranker"])
+        putOpenResponsesField("score_threshold", ranking["scoreThreshold"] ?: ranking["score_threshold"])
+    }
+    return mapped.takeIf { it.isNotEmpty() }
+}
+
+private fun openResponsesWebSearchFilters(value: JsonElement?): JsonElement? {
+    val obj = value as? JsonObject ?: return value
+    val allowedDomains = obj["allowedDomains"] ?: obj["allowed_domains"]
+    return if (allowedDomains == null) value else buildJsonObject { put("allowed_domains", allowedDomains) }
+}
+
+private fun openResponsesCodeInterpreterContainer(value: JsonElement?): JsonElement =
+    when (value) {
+        null, JsonNull -> buildJsonObject { put("type", JsonPrimitive("auto")) }
+        is JsonPrimitive -> value
+        is JsonObject -> buildJsonObject {
+            put("type", JsonPrimitive("auto"))
+            putOpenResponsesField("file_ids", value["fileIds"] ?: value["file_ids"])
+        }
+        else -> value
+    }
+
+private fun openResponsesInputImageMask(value: JsonElement?): JsonElement? {
+    val obj = value as? JsonObject ?: return value
+    return buildJsonObject {
+        putOpenResponsesField("file_id", obj["fileId"] ?: obj["file_id"])
+        putOpenResponsesField("image_url", obj["imageUrl"] ?: obj["image_url"])
+    }.takeIf { it.isNotEmpty() }
+}
+
+private fun openResponsesAllowedMcpTools(value: JsonElement?): JsonElement? {
+    val obj = value as? JsonObject ?: return value
+    return buildJsonObject {
+        putOpenResponsesField("read_only", obj["readOnly"] ?: obj["read_only"])
+        putOpenResponsesField("tool_names", obj["toolNames"] ?: obj["tool_names"])
+    }.takeIf { it.isNotEmpty() }
+}
+
+private fun openResponsesRequireApproval(value: JsonElement?): JsonElement? {
+    val obj = value as? JsonObject ?: return value
+    val never = obj["never"] as? JsonObject ?: return value
+    return buildJsonObject {
+        put(
+            "never",
+            buildJsonObject {
+                putOpenResponsesField("tool_names", never["toolNames"] ?: never["tool_names"])
+            },
+        )
+    }
+}
+
+private fun openResponsesShellEnvironment(value: JsonElement?): JsonElement? {
+    val obj = value as? JsonObject ?: return value
+    return when (obj["type"]?.jsonPrimitive?.contentOrNull) {
+        "containerReference" -> buildJsonObject {
+            put("type", JsonPrimitive("container_reference"))
+            putOpenResponsesField("container_id", obj["containerId"] ?: obj["container_id"])
+        }
+        "containerAuto" -> buildJsonObject {
+            put("type", JsonPrimitive("container_auto"))
+            putOpenResponsesField("file_ids", obj["fileIds"] ?: obj["file_ids"])
+            putOpenResponsesField("memory_limit", obj["memoryLimit"] ?: obj["memory_limit"])
+            putOpenResponsesField("network_policy", obj["networkPolicy"] ?: obj["network_policy"])
+            putOpenResponsesField("skills", obj["skills"])
+        }
+        else -> value
+    }
 }
 
 private fun isOpenResponsesReasoningModel(modelId: String, options: OpenResponsesOptions?): Boolean =

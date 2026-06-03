@@ -2,6 +2,8 @@ package ai.torad.aisdk
 
 import io.ktor.client.HttpClient
 import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
 
 const val VERSION: String = "3.0.67"
 
@@ -118,58 +120,62 @@ private class DefaultOpenAIProvider(
 }
 
 data class OpenAITools(
-    val applyPatch: Tool<JsonElement, JsonElement, Any?> = openAIProviderTool(
-        id = "openai.apply_patch",
-        description = "Apply structured file patches proposed by the model.",
-    ),
-    val codeInterpreter: Tool<JsonElement, JsonElement, Any?> = openAIProviderTool(
-        id = "openai.code_interpreter",
-        description = "Run Python code in OpenAI's hosted code interpreter.",
-    ),
-    val fileSearch: Tool<JsonElement, JsonElement, Any?> = openAIProviderTool(
-        id = "openai.file_search",
-        description = "Search OpenAI vector stores through the Responses API.",
-    ),
-    val imageGeneration: Tool<JsonElement, JsonElement, Any?> = openAIProviderTool(
-        id = "openai.image_generation",
-        description = "Generate images with OpenAI's hosted image tool.",
-    ),
-    val localShell: Tool<JsonElement, JsonElement, Any?> = openAIProviderTool(
-        id = "openai.local_shell",
-        description = "Request local shell execution through a host integration.",
-    ),
-    val shell: Tool<JsonElement, JsonElement, Any?> = openAIProviderTool(
-        id = "openai.shell",
-        description = "Request controlled shell command execution.",
-    ),
-    val webSearchPreview: Tool<JsonElement, JsonElement, Any?> = openAIProviderTool(
-        id = "openai.web_search_preview",
-        description = "Search the web with OpenAI's preview web search tool.",
-    ),
-    val webSearch: Tool<JsonElement, JsonElement, Any?> = openAIProviderTool(
-        id = "openai.web_search",
-        description = "Search the web with OpenAI's web search tool.",
-    ),
-    val mcp: Tool<JsonElement, JsonElement, Any?> = openAIProviderTool(
-        id = "openai.mcp",
-        description = "Call remote MCP tools exposed to OpenAI Responses.",
-    ),
-    val toolSearch: Tool<JsonElement, JsonElement, Any?> = openAIProviderTool(
-        id = "openai.tool_search",
-        description = "Let the model search deferred tools dynamically.",
-    ),
+    val applyPatch: Tool<JsonElement, JsonElement, Any?> = openAIApplyPatch(),
+    val codeInterpreter: Tool<JsonElement, JsonElement, Any?> = openAICodeInterpreter(),
+    val fileSearch: Tool<JsonElement, JsonElement, Any?> = openAIFileSearch(JsonObject(emptyMap())),
+    val imageGeneration: Tool<JsonElement, JsonElement, Any?> = openAIImageGeneration(),
+    val localShell: Tool<JsonElement, JsonElement, Any?> = openAILocalShell(),
+    val shell: Tool<JsonElement, JsonElement, Any?> = openAIShell(),
+    val webSearchPreview: Tool<JsonElement, JsonElement, Any?> = openAIWebSearchPreview(),
+    val webSearch: Tool<JsonElement, JsonElement, Any?> = openAIWebSearch(),
+    val mcp: Tool<JsonElement, JsonElement, Any?> = openAIMcp(),
+    val toolSearch: Tool<JsonElement, JsonElement, Any?> = openAIToolSearch(),
 )
+
+fun openAIApplyPatch(args: JsonElement = JsonObject(emptyMap())): Tool<JsonElement, JsonElement, Any?> =
+    openAIProviderTool("openai.apply_patch", "Apply structured file patches proposed by the model.", args)
+
+fun openAICodeInterpreter(args: JsonElement = JsonObject(emptyMap())): Tool<JsonElement, JsonElement, Any?> =
+    openAIProviderTool("openai.code_interpreter", "Run Python code in OpenAI's hosted code interpreter.", args)
+
+fun openAIFileSearch(args: JsonElement): Tool<JsonElement, JsonElement, Any?> =
+    openAIProviderTool("openai.file_search", "Search OpenAI vector stores through the Responses API.", args)
+
+fun openAIImageGeneration(args: JsonElement = JsonObject(emptyMap())): Tool<JsonElement, JsonElement, Any?> =
+    openAIProviderTool("openai.image_generation", "Generate images with OpenAI's hosted image tool.", args)
+
+fun openAILocalShell(args: JsonElement = JsonObject(emptyMap())): Tool<JsonElement, JsonElement, Any?> =
+    openAIProviderTool("openai.local_shell", "Request local shell execution through a host integration.", args)
+
+fun openAIShell(args: JsonElement = JsonObject(emptyMap())): Tool<JsonElement, JsonElement, Any?> =
+    openAIProviderTool("openai.shell", "Request controlled shell command execution.", args)
+
+fun openAIWebSearchPreview(args: JsonElement = JsonObject(emptyMap())): Tool<JsonElement, JsonElement, Any?> =
+    openAIProviderTool("openai.web_search_preview", "Search the web with OpenAI's preview web search tool.", args)
+
+fun openAIWebSearch(args: JsonElement = JsonObject(emptyMap())): Tool<JsonElement, JsonElement, Any?> =
+    openAIProviderTool("openai.web_search", "Search the web with OpenAI's web search tool.", args)
+
+fun openAIMcp(args: JsonElement = JsonObject(emptyMap())): Tool<JsonElement, JsonElement, Any?> =
+    openAIProviderTool("openai.mcp", "Call remote MCP tools exposed to OpenAI Responses.", args)
+
+fun openAIToolSearch(args: JsonElement = JsonObject(emptyMap())): Tool<JsonElement, JsonElement, Any?> =
+    openAIProviderTool("openai.tool_search", "Let the model search deferred tools dynamically.", args)
 
 private fun openAIProviderTool(
     id: String,
     description: String,
+    args: JsonElement = JsonObject(emptyMap()),
 ): Tool<JsonElement, JsonElement, Any?> =
     providerExecutedTool(
         name = id.substringAfter("openai."),
         description = description,
         inputSerializer = JsonElement.serializer(),
         outputSerializer = JsonElement.serializer(),
-        metadata = mapOf("providerToolId" to kotlinx.serialization.json.JsonPrimitive(id)),
+        metadata = mapOf(
+            "providerToolId" to JsonPrimitive(id),
+            "providerToolArgs" to args,
+        ),
     )
 
 private fun OpenAIProviderSettings.toCompatibleSettings(): OpenAICompatibleProviderSettings {
