@@ -3,7 +3,7 @@
 - Version: 1.0.3
 - Upstream path: `.reference/vercel-ai-sdk-ai-6.0.195/packages/anthropic-aws`
 - Target Kotlin module: `:aisdk-provider-anthropic-aws`
-- Current parity status: missing: no Kotlin module or parity mapping exists yet
+- Current parity status: in-progress: createAnthropicAws/anthropicAws, AnthropicAwsProviderSettings, AnthropicAwsCredentials alias, AWS-hosted Anthropic base URL mapping, workspace header, API-key auth, Anthropic Messages generate/stream reuse, Anthropic hosted tool descriptors, unsupported embedding/image errors, and user-agent behavior are represented as a Kotlin facade folded into the root module; native SigV4 signing remains an open shared AWS infrastructure gap; VERSION is exposed as ANTHROPIC_AWS_VERSION until package modules are split
 
 ## Entrypoints
 
