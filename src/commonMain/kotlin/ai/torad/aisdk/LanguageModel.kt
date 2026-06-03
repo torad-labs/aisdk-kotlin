@@ -98,6 +98,7 @@ data class LanguageModelCallParams(
      * = no constraint.
      */
     val responseFormat: ResponseFormat = ResponseFormat.Text,
+    val headers: Map<String, String> = emptyMap(),
 )
 
 /**

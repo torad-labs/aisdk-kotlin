@@ -46,6 +46,10 @@ data class OpenAICompatibleProviderSettings(
     val supportsStructuredOutputs: Boolean = false,
     val supportedUrls: Map<String, List<String>> = emptyMap(),
     val maxEmbeddingsPerCall: Int = 2048,
+    val authHeadersProvider: (suspend () -> Map<String, String>)? = null,
+    val urlBuilder: ((path: String, modelId: String) -> String)? = null,
+    val userAgentSuffix: String? = "ai-sdk/openai-compatible-kotlin",
+    val providerOptionsName: String? = null,
 )
 
 interface OpenAICompatibleProvider : Provider {
@@ -105,6 +109,7 @@ private abstract class OpenAICompatibleHttpModel(
         get() = "${settings.name}.$modelType"
 
     protected fun url(path: String): String {
+        settings.urlBuilder?.let { return it(path, modelId) }
         val base = settings.baseUrl.trimEnd('/') + path
         if (settings.queryParams.isEmpty()) return base
         return base + "?" + settings.queryParams.entries.joinToString("&") { (key, value) ->
@@ -112,12 +117,19 @@ private abstract class OpenAICompatibleHttpModel(
         }
     }
 
-    protected fun commonHeaders(extra: Map<String, String> = emptyMap()): Map<String, String> {
+    protected suspend fun commonHeaders(extra: Map<String, String> = emptyMap()): Map<String, String> {
         val base = linkedMapOf<String, String>()
-        settings.apiKey?.takeIf { it.isNotBlank() }?.let { base[HttpHeaders.Authorization] = "Bearer $it" }
+        val dynamicAuthHeaders = settings.authHeadersProvider?.invoke()
+        if (dynamicAuthHeaders != null) {
+            base.putAll(dynamicAuthHeaders)
+        } else {
+            settings.apiKey?.takeIf { it.isNotBlank() }?.let { base[HttpHeaders.Authorization] = "Bearer $it" }
+        }
         base.putAll(settings.headers)
         base.putAll(extra)
-        return withUserAgentSuffix(base, "ai-sdk/openai-compatible-kotlin")
+        return settings.userAgentSuffix
+            ?.let { withUserAgentSuffix(base, it) }
+            ?: normalizeHeaders(base)
     }
 
     protected suspend fun postJson(
@@ -198,7 +210,7 @@ private class OpenAICompatibleChatLanguageModel(
 
     override suspend fun generate(params: LanguageModelCallParams): LanguageModelResult {
         val prepared = chatRequestBody(params, stream = false)
-        val response = postJson("/chat/completions", prepared.body)
+        val response = postJson("/chat/completions", prepared.body, params.headers)
         return chatResultFromJson(
             response.value,
             requestBody = prepared.body,
@@ -213,7 +225,7 @@ private class OpenAICompatibleChatLanguageModel(
         val response = postJson(
             path = "/chat/completions",
             body = prepared.body,
-            headers = mapOf(HttpHeaders.Accept to "text/event-stream"),
+            headers = params.headers + mapOf(HttpHeaders.Accept to "text/event-stream"),
             parseJson = false,
         )
         emit(StreamEvent.StreamStart(prepared.warnings))
@@ -271,10 +283,12 @@ private class OpenAICompatibleChatLanguageModel(
     }
 
     private fun providerOptions(options: Map<String, JsonElement>): JsonObject =
-        openAIProviderOptions(options, settings.name)
+        openAIProviderOptions(options, providerOptionsName())
 
     private fun providerOptionsKey(): String =
-        settings.name.substringBefore('.').trim().ifBlank { "openaiCompatible" }
+        providerOptionsName().substringBefore('.').trim().ifBlank { "openaiCompatible" }
+
+    private fun providerOptionsName(): String = settings.providerOptionsName ?: settings.name
 }
 
 private class OpenAICompatibleCompletionLanguageModel(
@@ -288,7 +302,7 @@ private class OpenAICompatibleCompletionLanguageModel(
 
     override suspend fun generate(params: LanguageModelCallParams): LanguageModelResult {
         val prepared = completionRequestBody(params, stream = false)
-        val response = postJson("/completions", prepared.body)
+        val response = postJson("/completions", prepared.body, params.headers)
         return completionResultFromJson(response.value, prepared.body, response.headers, response.value, prepared.warnings)
     }
 
@@ -297,7 +311,7 @@ private class OpenAICompatibleCompletionLanguageModel(
         val response = postJson(
             path = "/completions",
             body = prepared.body,
-            headers = mapOf(HttpHeaders.Accept to "text/event-stream"),
+            headers = params.headers + mapOf(HttpHeaders.Accept to "text/event-stream"),
             parseJson = false,
         )
         emit(StreamEvent.StreamStart(prepared.warnings))
@@ -339,7 +353,7 @@ private class OpenAICompatibleCompletionLanguageModel(
         val warnings = mutableListOf<CallWarning>()
         if (params.tools.isNotEmpty()) warnings += CallWarning("unsupported", "tools are not supported by completion models")
         if (params.topK != null) warnings += CallWarning("unsupported", "topK is not supported by completion models")
-        val options = openAIProviderOptions(params.providerOptions, settings.name)
+        val options = openAIProviderOptions(params.providerOptions, settings.providerOptionsName ?: settings.name)
         val body = buildJsonObject {
             put("model", JsonPrimitive(modelId))
             put("prompt", JsonPrimitive(openAICompletionPrompt(params.messages)))
@@ -376,7 +390,7 @@ private class OpenAICompatibleEmbeddingModel(
         if (params.values.size > max) {
             throw InvalidArgumentError("values", "embedding model ${settings.name}:$modelId supports at most $max values per call")
         }
-        val options = openAIProviderOptions(params.providerOptions, settings.name)
+        val options = openAIProviderOptions(params.providerOptions, settings.providerOptionsName ?: settings.name)
         val body = buildJsonObject {
             put("model", JsonPrimitive(modelId))
             put("input", JsonArray(params.values.map(::JsonPrimitive)))
@@ -420,7 +434,7 @@ private class OpenAICompatibleImageModel(
         if (params.seed != null) {
             warnings += CallWarning("unsupported", "seed is not supported by OpenAI-compatible image generation")
         }
-        val options = openAIProviderOptions(params.providerOptions, settings.name)
+        val options = openAIProviderOptions(params.providerOptions, settings.providerOptionsName ?: settings.name)
         val body = buildJsonObject {
             put("model", JsonPrimitive(modelId))
             put("prompt", JsonPrimitive(params.prompt))
@@ -457,7 +471,7 @@ private class OpenAICompatibleSpeechModel(
         get() = providerName
 
     override suspend fun generate(params: SpeechGenerationParams): SpeechModelResult {
-        val options = openAIProviderOptions(params.providerOptions, settings.name)
+        val options = openAIProviderOptions(params.providerOptions, settings.providerOptionsName ?: settings.name)
         val format = params.responseFormat ?: options["response_format"]?.jsonPrimitive?.contentOrNull ?: "mp3"
         val body = buildJsonObject {
             put("model", JsonPrimitive(modelId))
@@ -489,7 +503,7 @@ private class OpenAICompatibleTranscriptionModel(
         get() = providerName
 
     override suspend fun transcribe(params: TranscriptionParams): TranscriptionModelResult {
-        val options = openAIProviderOptions(params.providerOptions, settings.name)
+        val options = openAIProviderOptions(params.providerOptions, settings.providerOptionsName ?: settings.name)
         val multipart = MultiPartFormDataContent(
             formData {
                 append("model", modelId)

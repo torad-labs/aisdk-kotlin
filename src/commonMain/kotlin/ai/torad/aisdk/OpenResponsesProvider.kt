@@ -36,6 +36,9 @@ data class OpenResponsesProviderSettings(
     val name: String,
     val apiKey: String? = null,
     val headers: Map<String, String> = emptyMap(),
+    val authHeadersProvider: (suspend () -> Map<String, String>)? = null,
+    val userAgentSuffix: String? = "ai-sdk/open-responses/$OPEN_RESPONSES_VERSION",
+    val providerOptionsName: String? = null,
 )
 
 @Serializable
@@ -76,8 +79,14 @@ private class OpenResponsesLanguageModel(
     override val supportedUrls: Map<String, List<String>> = mapOf("image/*" to listOf("^https?://.*$"))
 
     override suspend fun generate(params: LanguageModelCallParams): LanguageModelResult {
-        val prepared = openResponsesRequestBody(params, stream = false, providerOptionsName = settings.name, modelId, json)
-        val response = postJson(prepared.body, acceptEventStream = false)
+        val prepared = openResponsesRequestBody(
+            params,
+            stream = false,
+            providerOptionsName = settings.providerOptionsName ?: settings.name,
+            modelId,
+            json,
+        )
+        val response = postJson(prepared.body, acceptEventStream = false, headers = params.headers)
         return openResponsesGenerateResult(
             response = response.value.jsonObject,
             requestBody = prepared.body,
@@ -89,8 +98,14 @@ private class OpenResponsesLanguageModel(
     }
 
     override fun stream(params: LanguageModelCallParams): Flow<StreamEvent> = flow {
-        val prepared = openResponsesRequestBody(params, stream = true, providerOptionsName = settings.name, modelId, json)
-        val response = postJson(prepared.body, acceptEventStream = true, parseJson = false)
+        val prepared = openResponsesRequestBody(
+            params,
+            stream = true,
+            providerOptionsName = settings.providerOptionsName ?: settings.name,
+            modelId,
+            json,
+        )
+        val response = postJson(prepared.body, acceptEventStream = true, parseJson = false, headers = params.headers)
         emit(StreamEvent.StreamStart(prepared.warnings))
         emit(StreamEvent.ResponseMetadata(headers = response.headers, body = JsonPrimitive(response.rawText)))
 
@@ -107,7 +122,13 @@ private class OpenResponsesLanguageModel(
     }
 
     override fun streamResult(params: LanguageModelCallParams): LanguageModelStreamResult {
-        val prepared = openResponsesRequestBody(params, stream = true, providerOptionsName = settings.name, modelId, json)
+        val prepared = openResponsesRequestBody(
+            params,
+            stream = true,
+            providerOptionsName = settings.providerOptionsName ?: settings.name,
+            modelId,
+            json,
+        )
         return LanguageModelStreamResult(
             stream = stream(params),
             request = LanguageModelRequestMetadata(body = prepared.body),
@@ -118,22 +139,31 @@ private class OpenResponsesLanguageModel(
         body: JsonElement,
         acceptEventStream: Boolean,
         parseJson: Boolean = true,
+        headers: Map<String, String> = emptyMap(),
     ): OpenResponsesHttpResponse {
         val response = client.request(settings.url) {
             method = HttpMethod.Post
             contentType(ContentType.Application.Json)
             if (acceptEventStream) header(HttpHeaders.Accept, "text/event-stream")
-            headers().forEach { (name, value) -> header(name, value) }
+            requestHeaders(headers).forEach { (name, value) -> header(name, value) }
             setBody(json.encodeToString(JsonElement.serializer(), body))
         }
         return parseResponse(response, parseJson)
     }
 
-    private fun headers(): Map<String, String> {
+    private suspend fun requestHeaders(extra: Map<String, String>): Map<String, String> {
         val base = linkedMapOf<String, String>()
-        settings.apiKey?.takeIf { it.isNotBlank() }?.let { base[HttpHeaders.Authorization] = "Bearer $it" }
+        val dynamicAuthHeaders = settings.authHeadersProvider?.invoke()
+        if (dynamicAuthHeaders != null) {
+            base.putAll(dynamicAuthHeaders)
+        } else {
+            settings.apiKey?.takeIf { it.isNotBlank() }?.let { base[HttpHeaders.Authorization] = "Bearer $it" }
+        }
         base.putAll(settings.headers)
-        return withUserAgentSuffix(base, "ai-sdk/open-responses/$OPEN_RESPONSES_VERSION")
+        base.putAll(extra)
+        return settings.userAgentSuffix
+            ?.let { withUserAgentSuffix(base, it) }
+            ?: normalizeHeaders(base)
     }
 
     private suspend fun parseResponse(

@@ -3,7 +3,7 @@
 - Version: 3.0.69
 - Upstream path: `.reference/vercel-ai-sdk-ai-6.0.195/packages/azure`
 - Target Kotlin module: `:aisdk-provider-azure`
-- Current parity status: missing: no Kotlin module or parity mapping exists yet
+- Current parity status: ported: createAzure/azure, AzureOpenAIProviderSettings, Azure OpenAI model aliases, responses/chat/completion/embedding/image/transcription/speech routing, api-key and tokenProvider authentication, v1 and deployment URL formats, api-version handling, Azure hosted OpenAI tools, per-call language headers, and OpenAI provider-option forwarding are represented as a Kotlin facade folded into the root module; VERSION is exposed as AZURE_VERSION until package modules are split
 
 ## Entrypoints
 
