@@ -32,6 +32,12 @@ The latest stable Vercel AI SDK v6 reference verified during this pass is `ai@6.
   descriptors are present; the facade currently reuses the
   OpenAI-compatible transport while Responses-specific transport is tracked
   in the package parity ledger.
+- MCP package surface: JSON-RPC message contracts, transport callback
+  interface, `createMCPClient`, initialize handshake, capability-gated tools,
+  resources, prompts, elicitation, dynamic tool conversion, OAuth public
+  types, `auth`, `UnauthorizedError`, and the stdio transport API shape are
+  present with fake-transport tests; concrete HTTP/SSE/stdio platform
+  transports are tracked in the package parity ledger.
 - Text-stream, UI-message-stream, and chat transport primitives.
 - Telemetry helpers and host-injected telemetry integration registry.
 - Provider-utils-style helpers: `generateId`, `createIdGenerator`, `jsonSchema`, `asSchema`, `zodSchema`, and `dynamicTool`.
@@ -50,7 +56,7 @@ The extracted test suite is executed on both JVM and Android host targets.
 
 Last local verification:
 
-- `./gradlew allTests`: 450 test executions, 0 failures, 0 errors, 0 skips.
+- `./gradlew allTests`: 470 test executions, 0 failures, 0 errors, 0 skips.
 - `./gradlew publishToMavenLocal`: published JVM, Android, iOS x64, iOS arm64, and iOS simulator arm64 artifacts locally.
 
 On Linux, iOS unit-test binaries compile but iOS simulator execution is skipped by Gradle. Publication verification still compiles the iOS artifacts.
@@ -60,6 +66,9 @@ On Linux, iOS unit-test binaries compile but iOS simulator execution is skipped 
 These are intentionally represented as extension/provider packages or platform adapters:
 
 - Provider-specific adapters beyond OpenAI-compatible HTTP: Anthropic, LiteRT, MLX, Gemini, local server adapters.
+- MCP concrete HTTP, SSE, and stdio platform transports; common KMP code now
+  exposes the transport interface and stdio API boundary, but process spawning
+  and streaming HTTP transports need platform modules.
 - React hooks and UI components; Kotlin hosts use `Chat`, `ChatTransport`, `Flow<UIMessage>`, Compose, SwiftUI, or server renderers.
 - Web framework response adapters; the core exposes stream response value objects and writer interfaces.
 - Alternate gateway HTTP client implementations; the core ships Ktor and

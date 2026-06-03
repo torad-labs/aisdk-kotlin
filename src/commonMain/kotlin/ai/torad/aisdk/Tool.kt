@@ -5,9 +5,12 @@ import kotlinx.coroutines.flow.flow
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.booleanOrNull
+import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonPrimitive
 
@@ -280,6 +283,7 @@ fun <TContext> dynamicTool(
     description: String,
     inputSchemaJson: String = "{}",
     metadata: Map<String, JsonElement> = emptyMap(),
+    toModelOutput: ((JsonElement, ToolPredicateOptions<TContext>) -> ToolResultOutput)? = null,
     executor: suspend ToolExecutionContext<TContext>.(JsonElement) -> JsonElement,
 ): Tool<JsonElement, JsonElement, TContext> = tool(
     name = name,
@@ -287,6 +291,7 @@ fun <TContext> dynamicTool(
     inputSerializer = JsonElement.serializer(),
     outputSerializer = JsonElement.serializer(),
     metadata = metadata + ("inputSchema" to Json.parseToJsonElement(inputSchemaJson)),
+    toModelOutput = toModelOutput,
     executor = executor,
 )
 
@@ -610,10 +615,8 @@ data class ToolPredicateOptions<TContext>(
  *
  * - [Text] → `JsonPrimitive(text)`, `isError = false`.
  * - [Json] → the JsonElement as-is, `isError = false`.
+ * - [Content] → a list of model-visible content parts, `isError = content.isError`.
  * - [Error] → `JsonPrimitive("Error: $message")`, `isError = true`.
- *
- * v6 also defines a `multipart` variant for content blocks; deferred
- * (no on-device use case for it yet).
  */
 @Serializable
 sealed class ToolResultOutput {
@@ -627,6 +630,11 @@ sealed class ToolResultOutput {
     data class ErrorJson(val json: JsonElement) : ToolResultOutput()
     @Serializable
     data class ExecutionDenied(val reason: String? = null) : ToolResultOutput()
+    @Serializable
+    data class Content(
+        val value: List<JsonElement>,
+        val isError: Boolean = false,
+    ) : ToolResultOutput()
 }
 
 fun toolResultOutputFromJson(json: JsonElement): ToolResultOutput =
@@ -645,6 +653,10 @@ fun toolResultOutputFromWire(json: JsonElement): ToolResultOutput {
         "error-text" -> ToolResultOutput.Error(obj["value"]?.jsonPrimitive?.contentOrNull.orEmpty())
         "error-json" -> ToolResultOutput.ErrorJson(obj["value"] ?: json)
         "execution-denied" -> ToolResultOutput.ExecutionDenied(obj["reason"]?.jsonPrimitive?.contentOrNull)
+        "content" -> ToolResultOutput.Content(
+            value = (obj["value"] as? JsonArray)?.toList().orEmpty(),
+            isError = obj["isError"]?.jsonPrimitive?.booleanOrNull == true,
+        )
         else -> toolResultOutputFromJson(json)
     }
 }
@@ -653,6 +665,7 @@ fun ToolResultOutput.isToolResultError(): Boolean = when (this) {
     is ToolResultOutput.Error,
     is ToolResultOutput.ErrorJson,
     is ToolResultOutput.ExecutionDenied -> true
+    is ToolResultOutput.Content -> isError
     is ToolResultOutput.Text,
     is ToolResultOutput.Json -> false
 }
@@ -663,6 +676,13 @@ fun ToolResultOutput.toJsonElement(): JsonElement = when (this) {
     is ToolResultOutput.Error -> JsonPrimitive("Error: $message")
     is ToolResultOutput.ErrorJson -> json
     is ToolResultOutput.ExecutionDenied -> JsonPrimitive(reason ?: "Tool execution denied")
+    is ToolResultOutput.Content -> buildJsonObject {
+        put("type", JsonPrimitive("content"))
+        put("value", JsonArray(value))
+        if (isError) {
+            put("isError", JsonPrimitive(true))
+        }
+    }
 }
 
 /**

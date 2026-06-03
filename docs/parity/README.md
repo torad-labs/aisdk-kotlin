@@ -41,7 +41,7 @@ Run `node tools/generate-parity-ledger.mjs --check` in CI to verify this directo
 | [@ai-sdk/llamaindex](ai-sdk-llamaindex.md) | 2.0.195 | `:aisdk-llamaindex` | 1 | missing: no Kotlin module or parity mapping exists yet |
 | [@ai-sdk/lmnt](ai-sdk-lmnt.md) | 2.0.33 | `:aisdk-provider-lmnt` | 6 | missing: no Kotlin module or parity mapping exists yet |
 | [@ai-sdk/luma](ai-sdk-luma.md) | 2.0.33 | `:aisdk-provider-luma` | 8 | missing: no Kotlin module or parity mapping exists yet |
-| [@ai-sdk/mcp](ai-sdk-mcp.md) | 1.0.45 | `:aisdk-mcp` | 28 | missing: no Kotlin module or parity mapping exists yet |
+| [@ai-sdk/mcp](ai-sdk-mcp.md) | 1.0.45 | `:aisdk-mcp` | 28 | in-progress: MCP JSON-RPC contracts, client handshake, capability-gated APIs, dynamic tool conversion, elicitation, OAuth type surface, and stdio API shape are currently folded into the root module; HTTP/SSE/stdio platform transports remain open |
 | [@ai-sdk/mistral](ai-sdk-mistral.md) | 3.0.37 | `:aisdk-provider-mistral` | 6 | missing: no Kotlin module or parity mapping exists yet |
 | [@ai-sdk/moonshotai](ai-sdk-moonshotai.md) | 2.0.23 | `:aisdk-provider-moonshotai` | 7 | missing: no Kotlin module or parity mapping exists yet |
 | [@ai-sdk/open-responses](ai-sdk-open-responses.md) | 1.0.16 | `:aisdk-open-responses` | 3 | missing: no Kotlin module or parity mapping exists yet |
