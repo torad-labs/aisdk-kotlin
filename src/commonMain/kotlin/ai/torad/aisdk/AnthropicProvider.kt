@@ -769,21 +769,45 @@ private class AnthropicStreamState(
     private var modelId: String? = null
 
     fun accept(chunk: JsonElement): List<StreamEvent> {
-        val obj = chunk as? JsonObject ?: return emptyList()
-        val type = obj["type"]?.jsonPrimitive?.contentOrNull ?: return emptyList()
+        val obj = try {
+            WireDecoder.objectValue(chunk, "anthropic", "stream event")
+        } catch (error: WireDecodeException) {
+            return listOf(StreamEvent.Error(error.message ?: "Anthropic stream protocol error"))
+        }
+        val type = try {
+            WireDecoder.requiredString(obj, "type", "anthropic", "stream event")
+        } catch (error: WireDecodeException) {
+            return listOf(StreamEvent.Error(error.message ?: "Anthropic stream protocol error"))
+        }
         val events = mutableListOf<StreamEvent>()
         when (type) {
             "message_start" -> {
-                val message = obj["message"]?.jsonObject ?: JsonObject(emptyMap())
+                val message = try {
+                    WireDecoder.objectValue(WireDecoder.required(obj, "message", "anthropic", "stream event"), "anthropic", "stream event", "$.message")
+                } catch (error: WireDecodeException) {
+                    return listOf(StreamEvent.Error(error.message ?: "Anthropic stream protocol error"))
+                }
                 responseId = message["id"]?.jsonPrimitive?.contentOrNull
                 modelId = message["model"]?.jsonPrimitive?.contentOrNull
                 usage = anthropicUsage(message["usage"])
                 events += StreamEvent.ResponseMetadata(id = responseId, modelId = modelId)
             }
             "content_block_start" -> {
-                val index = obj["index"]?.jsonPrimitive?.intOrNull ?: return emptyList()
-                val block = obj["content_block"]?.jsonObject ?: return emptyList()
-                val blockType = block["type"]?.jsonPrimitive?.contentOrNull.orEmpty()
+                val index = try {
+                    WireDecoder.optionalInt(obj, "index", "anthropic", "stream event") ?: blocks.size
+                } catch (error: WireDecodeException) {
+                    return listOf(StreamEvent.Error(error.message ?: "Anthropic stream protocol error"))
+                }
+                val block = try {
+                    WireDecoder.objectValue(WireDecoder.required(obj, "content_block", "anthropic", "stream event"), "anthropic", "stream event", "$.content_block")
+                } catch (error: WireDecodeException) {
+                    return listOf(StreamEvent.Error(error.message ?: "Anthropic stream protocol error"))
+                }
+                val blockType = try {
+                    WireDecoder.requiredString(block, "type", "anthropic", "stream event", "$.content_block")
+                } catch (error: WireDecodeException) {
+                    return listOf(StreamEvent.Error(error.message ?: "Anthropic stream protocol error"))
+                }
                 val id = block["id"]?.jsonPrimitive?.contentOrNull ?: "block-$index"
                 val toolName = block["name"]?.jsonPrimitive?.contentOrNull
                 blocks[index] = AnthropicStreamBlock(id, blockType, toolName, anthropicInitialStreamInput(block["input"]))
@@ -794,23 +818,38 @@ private class AnthropicStreamState(
                 }
             }
             "content_block_delta" -> {
-                val index = obj["index"]?.jsonPrimitive?.intOrNull ?: return listOf(StreamEvent.Error("Anthropic stream protocol error: content_block_delta missing index."))
+                val index = try {
+                    WireDecoder.required(obj, "index", "anthropic", "stream event")
+                    WireDecoder.optionalInt(obj, "index", "anthropic", "stream event") ?: blocks.size
+                } catch (error: WireDecodeException) {
+                    return listOf(StreamEvent.Error(error.message ?: "Anthropic stream protocol error"))
+                }
                 val block = blocks[index]
                     ?: return listOf(StreamEvent.Error("Anthropic stream protocol error: content_block_delta for unknown block index $index."))
-                val delta = obj["delta"]?.jsonObject
-                    ?: return listOf(StreamEvent.Error("Anthropic stream protocol error: content_block_delta missing delta for block index $index."))
-                when (delta["type"]?.jsonPrimitive?.contentOrNull) {
-                    "text_delta" -> events += StreamEvent.TextDelta(block.id, delta["text"]?.jsonPrimitive?.contentOrNull.orEmpty())
-                    "thinking_delta" -> events += StreamEvent.ReasoningDelta(block.id, delta["thinking"]?.jsonPrimitive?.contentOrNull.orEmpty())
+                val delta = try {
+                    WireDecoder.objectValue(WireDecoder.required(obj, "delta", "anthropic", "stream event"), "anthropic", "stream event", "$.delta")
+                } catch (error: WireDecodeException) {
+                    return listOf(StreamEvent.Error(error.message ?: "Anthropic stream protocol error"))
+                }
+                when (val deltaType = WireDecoder.optionalString(delta, "type", "anthropic", "stream event", "$.delta")) {
+                    "text_delta" -> events += StreamEvent.TextDelta(block.id, WireDecoder.requiredString(delta, "text", "anthropic", "stream event", "$.delta"))
+                    "thinking_delta" -> events += StreamEvent.ReasoningDelta(block.id, WireDecoder.requiredString(delta, "thinking", "anthropic", "stream event", "$.delta"))
                     "input_json_delta" -> {
-                        val text = delta["partial_json"]?.jsonPrimitive?.contentOrNull.orEmpty()
+                        val text = WireDecoder.requiredString(delta, "partial_json", "anthropic", "stream event", "$.delta")
                         block.input += text
                         events += StreamEvent.ToolInputDelta(block.id, text)
                     }
+                    null -> return listOf(StreamEvent.Error("Anthropic stream protocol error: content_block_delta missing delta.type."))
+                    else -> return listOf(StreamEvent.Error("Anthropic stream protocol error: unsupported content_block_delta type `$deltaType`."))
                 }
             }
             "content_block_stop" -> {
-                val index = obj["index"]?.jsonPrimitive?.intOrNull ?: return listOf(StreamEvent.Error("Anthropic stream protocol error: content_block_stop missing index."))
+                val index = try {
+                    WireDecoder.required(obj, "index", "anthropic", "stream event")
+                    WireDecoder.optionalInt(obj, "index", "anthropic", "stream event") ?: blocks.size
+                } catch (error: WireDecodeException) {
+                    return listOf(StreamEvent.Error(error.message ?: "Anthropic stream protocol error"))
+                }
                 val block = blocks.remove(index)
                     ?: return listOf(StreamEvent.Error("Anthropic stream protocol error: content_block_stop for unknown block index $index."))
                 when (block.type) {

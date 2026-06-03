@@ -16,6 +16,7 @@ import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertIs
 import kotlin.test.assertTrue
 
@@ -172,6 +173,33 @@ class GoogleProviderTest {
     }
 
     @Test
+    fun `stream surfaces malformed Gemini function call as wire error event`() = runTest {
+        val fixture = createTestServer(
+            mutableMapOf(
+                "https://google.test/v1beta/models/gemini-2.5-flash:streamGenerateContent?alt=sse" to UrlHandler(
+                    UrlResponse.StreamChunks(
+                        listOf(
+                            """data: {"candidates":[{"content":{"parts":[{"functionCall":{"args":{"city":"Paris"}}}]}}]}""",
+                        ),
+                    ),
+                ),
+            ),
+        )
+        fixture.server.start()
+        val provider = createGoogleGenerativeAI(
+            fixture.httpClient(),
+            GoogleGenerativeAIProviderSettings(apiKey = "key", baseURL = "https://google.test/v1beta"),
+        )
+
+        val events = drainAllItems(
+            provider.chat("gemini-2.5-flash").stream(LanguageModelCallParams(messages = listOf(userMessage("hi")))),
+        )
+
+        val error = events.filterIsInstance<StreamEvent.Error>().single()
+        assertTrue(error.message.contains("functionCall.name"))
+    }
+
+    @Test
     fun `embedding image and video models map Google payloads`() = runTest {
         var videoPolls = 0
         val fixture = createTestServer(
@@ -269,6 +297,49 @@ class GoogleProviderTest {
         assertEquals(4f, videoBody["parameters"]?.jsonObject?.get("durationSeconds")?.jsonPrimitive?.floatOrNull)
         assertEquals("GET", fixture.calls[3].requestMethod)
         assertEquals("GET", fixture.calls[4].requestMethod)
+    }
+
+    @Test
+    fun `image and video models reject malformed Google media wire data`() = runTest {
+        val fixture = createTestServer(
+            mutableMapOf(
+                "https://google.test/v1beta/models/imagen-4.0-generate-001:predict" to UrlHandler(
+                    UrlResponse.JsonValue(Json.parseToJsonElement("""{"predictions":[{}]}""")),
+                ),
+                "https://google.test/v1beta/models/veo-3.1-generate-preview:predictLongRunning" to UrlHandler(
+                    UrlResponse.JsonValue(
+                        Json.parseToJsonElement(
+                            """
+                            {
+                              "name":"operations/video-1",
+                              "done":true,
+                              "response":{
+                                "generateVideoResponse":{
+                                  "generatedSamples":[{"video":{}}]
+                                }
+                              }
+                            }
+                            """.trimIndent(),
+                        ),
+                    ),
+                ),
+            ),
+        )
+        fixture.server.start()
+        val provider = createGoogleGenerativeAI(
+            fixture.httpClient(),
+            GoogleGenerativeAIProviderSettings(apiKey = "key", baseURL = "https://google.test/v1beta", videoPollIntervalMillis = 0),
+        )
+
+        val imageError = assertFailsWith<WireDecodeException> {
+            provider.image("imagen-4.0-generate-001").generate(ImageGenerationParams(prompt = "x"))
+        }
+        val videoError = assertFailsWith<WireDecodeException> {
+            provider.video("veo-3.1-generate-preview").generate(VideoGenerationParams(prompt = "x"))
+        }
+
+        assertTrue(imageError.message.orEmpty().contains("bytesBase64Encoded"))
+        assertTrue(videoError.message.orEmpty().contains("video.uri"))
     }
 
     @Test

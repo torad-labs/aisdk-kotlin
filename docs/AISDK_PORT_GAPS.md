@@ -2,9 +2,10 @@
 
 > **Status (2026-06-03): the port target is the full stable v6 `ai`
 > package surface, adapted to Kotlin Multiplatform.** JS-only return
-> types such as browser `Response`, Node `ServerResponse`, and React
-> hooks are represented as Kotlin `Flow`, response value objects, and
-> host-facing interfaces.
+> types such as browser `Response` and Node `ServerResponse` are
+> represented as Kotlin `Flow`, response value objects, and host-facing
+> interfaces. Framework packages such as React, Vue, Svelte, Angular, and
+> RSC also have package-named Kotlin facades over the shared state engines.
 >
 > This file used to be a 390-line live audit (a numbered punch list + a
 > phased implementation plan + per-area prose). That audit did its job —
@@ -57,6 +58,13 @@ and everything the core package consumes directly — are done:
   `generate-speech`, `generate-video`, `rerank`, `transcribe`,
   `registry`, `telemetry`, `text-stream`, `ui-message-stream`, and
   `ui` chat transports now have KMP surfaces and tests.
+- **Framework package facades**: `ai.torad.aisdk.react`,
+  `ai.torad.aisdk.vue`, `ai.torad.aisdk.svelte`,
+  `ai.torad.aisdk.angular`, and `ai.torad.aisdk.rsc` expose the
+  upstream package concepts (`useChat`, `useCompletion`,
+  `experimental_useObject`, `Completion`, `StructuredObject`,
+  `createStreamableValue`, `createAI`, etc.) as KMP state/Flow facades
+  backed by the shared UI engines.
 - **Gateway**: `createGateway`, `createGatewayProvider`, `gateway`,
   gateway model-id aliases, metadata calls, credit/spend/generation info
   types, gateway errors, and provider-executed gateway tools are present.
@@ -105,9 +113,6 @@ coverage, and CI verifies that the checked reference is still npm `ai@latest`.
   tool factories, and hosted tool descriptors across the provider facades.
   These tools intentionally have no local executor unless the host supplies
   one; execution happens inside the upstream provider.
-- **React-binding plumbing**: `Chat` and transports exist in Kotlin;
-  `useChat` remains a React hook concept and is expressed by collecting
-  `Flow<UIMessage>` in the host UI layer.
 - **Deprecated v5 aliases**: `isToolOrDynamicToolUIPart`, etc.
 
 Do not re-grow this document as an active punch list. If npm `ai@latest`

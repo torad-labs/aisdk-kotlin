@@ -3,7 +3,7 @@
 - Version: 2.0.196
 - Upstream path: `.reference/vercel-ai-sdk-ai-6.0.195/packages/angular`
 - Target Kotlin module: `:aisdk-ui`
-- Current parity status: ported-as-kmp-ui: Angular Chat/Completion/StructuredObject runtime concepts are represented by the framework-neutral Kotlin ui package: Chat, ChatTransport, TextStreamChatTransport, UIMessage/UIMessagePart, streamToUiMessages, convertToModelMessages, text/UI message stream responses, tool state, and typed tool-part handler registry; Angular signal/component bindings are intentionally not emitted in the Kotlin runtime module
+- Current parity status: ported-as-kmp-facade: Angular Chat/Completion/StructuredObject runtime concepts are represented by package-named Kotlin facades in `ai.torad.aisdk.angular`, backed by the shared KMP Chat, completion, structured-object, UI message, stream, transport, response, tool state, and typed tool-part primitives. The facade exports `Chat`, `Completion`, `StructuredObject`, option types, and the shared `UIMessage` shape for Kotlin UI hosts.
 
 ## Entrypoints
 

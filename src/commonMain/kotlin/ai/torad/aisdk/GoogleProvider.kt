@@ -301,9 +301,15 @@ private class GoogleGenerativeAIImageModel(
             abortSignal = params.abortSignal,
             parseJson = true,
         )
-        val images = response.value.jsonObject["predictions"]?.jsonArray.orEmpty().mapNotNull {
-            it.jsonObject["bytesBase64Encoded"]?.jsonPrimitive?.contentOrNull
-        }.map { GeneratedFile(mediaType = "image/png", base64 = it) }
+        val responseObject = WireDecoder.objectValue(response.value, provider, "image generation response")
+        val predictions = WireDecoder.requiredArray(responseObject, "predictions", provider, "image generation response")
+        val images = predictions.mapIndexed { index, prediction ->
+            val obj = WireDecoder.objectValue(prediction, provider, "image generation response", "$.predictions[$index]")
+            GeneratedFile(
+                mediaType = "image/png",
+                base64 = WireDecoder.requiredString(obj, "bytesBase64Encoded", provider, "image generation response", "$.predictions[$index]"),
+            )
+        }
         if (images.isEmpty()) throw NoImageGeneratedError("Google image response contained no predictions.")
         return ImageModelResult(images, warnings, LanguageModelResponseMetadata(modelId = modelId, headers = response.headers, body = response.value), mapOf("google" to response.value))
     }
@@ -361,8 +367,8 @@ private class GoogleGenerativeAIVideoModel(
             headers = googleHeaders(settings, params.headers),
             abortSignal = params.abortSignal,
             parseJson = true,
-        ).value.jsonObject
-        val operationName = operation["name"]?.jsonPrimitive?.contentOrNull ?: throw AiSdkException("Google video response is missing operation name.")
+        ).value.let { WireDecoder.objectValue(it, provider, "video operation response") }
+        val operationName = WireDecoder.requiredString(operation, "name", provider, "video operation response")
         var current = operation
         val pollInterval = options["pollIntervalMs"]?.jsonPrimitive?.intOrNull?.toLong() ?: settings.videoPollIntervalMillis
         val maxAttempts = (options["maxPollAttempts"]?.jsonPrimitive?.intOrNull ?: settings.videoMaxPollAttempts).coerceAtLeast(1)
@@ -377,19 +383,35 @@ private class GoogleGenerativeAIVideoModel(
                 abortSignal = params.abortSignal,
                 retryDelayMillis = pollInterval,
             )
-            current = poll.value.jsonObject
+            current = WireDecoder.objectValue(poll.value, provider, "video poll response")
             headers = poll.headers
         }
         if (current["done"]?.jsonPrimitive?.booleanOrNull != true) {
             throw AiSdkException("Google video generation timed out after $maxAttempts poll attempts.")
         }
         current["error"]?.jsonObject?.let { throw AiSdkException("Google video generation failed: ${it["message"]?.jsonPrimitive?.contentOrNull ?: it}") }
-        val samples = current["response"]?.jsonObject
-            ?.get("generateVideoResponse")?.jsonObject
-            ?.get("generatedSamples")?.jsonArray.orEmpty()
-        val videos = samples.mapNotNull { sample ->
-            sample.jsonObject["video"]?.jsonObject?.get("uri")?.jsonPrimitive?.contentOrNull
-        }.map { uri ->
+        val responseObject = WireDecoder.objectValue(
+            WireDecoder.required(current, "response", provider, "video poll response"),
+            provider,
+            "video poll response",
+            "$.response",
+        )
+        val videoResponse = WireDecoder.objectValue(
+            WireDecoder.required(responseObject, "generateVideoResponse", provider, "video poll response", "$.response"),
+            provider,
+            "video poll response",
+            "$.response.generateVideoResponse",
+        )
+        val samples = WireDecoder.requiredArray(videoResponse, "generatedSamples", provider, "video poll response", "$.response.generateVideoResponse")
+        val videos = samples.mapIndexed { index, sample ->
+            val sampleObject = WireDecoder.objectValue(sample, provider, "video poll response", "$.response.generateVideoResponse.generatedSamples[$index]")
+            val video = WireDecoder.objectValue(
+                WireDecoder.required(sampleObject, "video", provider, "video poll response", "$.response.generateVideoResponse.generatedSamples[$index]"),
+                provider,
+                "video poll response",
+                "$.response.generateVideoResponse.generatedSamples[$index].video",
+            )
+            val uri = WireDecoder.requiredString(video, "uri", provider, "video poll response", "$.response.generateVideoResponse.generatedSamples[$index].video")
             GeneratedFile(
                 mediaType = "video/mp4",
                 base64 = "",
@@ -1088,22 +1110,37 @@ private class GoogleInteractionsStreamState(
         val events = mutableListOf<StreamEvent>()
         when (val type = step["type"]?.jsonPrimitive?.contentOrNull) {
             "model_output" -> {
-                step["content"]?.jsonArray.orEmpty().forEach { blockElement ->
-                    val block = blockElement.jsonObject
-                    when (block["type"]?.jsonPrimitive?.contentOrNull) {
+                step["content"]?.jsonArray.orEmpty().forEachIndexed { index, blockElement ->
+                    val block = try {
+                        WireDecoder.objectValue(blockElement, "google", "interactions stream step", "$.content[$index]")
+                    } catch (error: WireDecodeException) {
+                        return listOf(StreamEvent.Error(error.message ?: "Google stream protocol error"))
+                    }
+                    when (val blockType = WireDecoder.optionalString(block, "type", "google", "interactions stream step", "$.content[$index]")) {
                         "text" -> {
                             val id = textId ?: (textCounter++).toString().also {
                                 textId = it
                                 events += StreamEvent.TextStart(it, googleInteractionsMetadata(interactionId = interactionId))
                             }
-                            events += StreamEvent.TextDelta(id, block["text"]?.jsonPrimitive?.contentOrNull.orEmpty(), googleInteractionsMetadata(interactionId = interactionId))
+                            val text = try {
+                                WireDecoder.requiredString(block, "text", "google", "interactions stream step", "$.content[$index]")
+                            } catch (error: WireDecodeException) {
+                                return listOf(StreamEvent.Error(error.message ?: "Google stream protocol error"))
+                            }
+                            events += StreamEvent.TextDelta(id, text, googleInteractionsMetadata(interactionId = interactionId))
                         }
                         "image" -> events += StreamEvent.FilePart(
                             id = generateId(),
                             mediaType = block["mime_type"]?.jsonPrimitive?.contentOrNull ?: "image/png",
-                            base64 = block["data"]?.jsonPrimitive?.contentOrNull.orEmpty(),
+                            base64 = try {
+                                WireDecoder.requiredString(block, "data", "google", "interactions stream step", "$.content[$index]")
+                            } catch (error: WireDecodeException) {
+                                return listOf(StreamEvent.Error(error.message ?: "Google stream protocol error"))
+                            },
                             providerMetadata = googleInteractionsMetadata(interactionId = interactionId),
                         )
+                        null -> return listOf(StreamEvent.Error("Google stream protocol error: model_output content block missing type."))
+                        else -> return listOf(StreamEvent.Error("Google stream protocol error: unsupported model_output content block type `$blockType`."))
                     }
                 }
             }
@@ -1126,7 +1163,11 @@ private class GoogleInteractionsStreamState(
             "function_call" -> {
                 hasFunctionCall = true
                 val id = step["id"]?.jsonPrimitive?.contentOrNull ?: generateId()
-                val name = step["name"]?.jsonPrimitive?.contentOrNull.orEmpty()
+                val name = try {
+                    WireDecoder.requiredString(step, "name", "google", "interactions stream step")
+                } catch (error: WireDecodeException) {
+                    return listOf(StreamEvent.Error(error.message ?: "Google stream protocol error"))
+                }
                 val input = step["arguments"] ?: JsonObject(emptyMap())
                 val metadata = googleInteractionsMetadata(
                     signature = step["signature"]?.jsonPrimitive?.contentOrNull,
@@ -1141,7 +1182,7 @@ private class GoogleInteractionsStreamState(
                 hasFunctionCall = true
                 val id = step["id"]?.jsonPrimitive?.contentOrNull ?: generateId()
                 val name = if (type == "mcp_server_tool_call") {
-                    step["name"]?.jsonPrimitive?.contentOrNull ?: "mcp_server_tool"
+                    WireDecoder.optionalString(step, "name", "google", "interactions stream step") ?: "mcp_server_tool"
                 } else {
                     type.removeSuffix("_call")
                 }
@@ -1527,9 +1568,18 @@ private class GoogleStreamState(
         value["usageMetadata"]?.let { usage = googleUsage(it) }
         val candidate = value["candidates"]?.jsonArray?.firstOrNull()?.jsonObject ?: return events
         val parts = candidate["content"]?.jsonObject?.get("parts")?.jsonArray.orEmpty()
-        for (part in parts) {
-            val obj = part.jsonObject
-            obj["text"]?.jsonPrimitive?.contentOrNull?.let { text ->
+        for ((index, part) in parts.withIndex()) {
+            val obj = try {
+                WireDecoder.objectValue(part, "google", "generateContent stream part", "$.candidates[0].content.parts[$index]")
+            } catch (error: WireDecodeException) {
+                return listOf(StreamEvent.Error(error.message ?: "Google stream protocol error"))
+            }
+            val text = try {
+                WireDecoder.optionalString(obj, "text", "google", "generateContent stream part", "$.candidates[0].content.parts[$index]")
+            } catch (error: WireDecodeException) {
+                return listOf(StreamEvent.Error(error.message ?: "Google stream protocol error"))
+            }
+            text?.let {
                 if (obj["thought"]?.jsonPrimitive?.booleanOrNull == true) {
                     if (textId != null) {
                         events += StreamEvent.TextEnd(textId.orEmpty())
@@ -1539,7 +1589,7 @@ private class GoogleStreamState(
                         reasoningId = (blockCounter++).toString()
                         events += StreamEvent.ReasoningStart(reasoningId.orEmpty(), googlePartMetadata(obj))
                     }
-                    events += StreamEvent.ReasoningDelta(reasoningId.orEmpty(), text, googlePartMetadata(obj))
+                    events += StreamEvent.ReasoningDelta(reasoningId.orEmpty(), it, googlePartMetadata(obj))
                 } else {
                     if (reasoningId != null) {
                         events += StreamEvent.ReasoningEnd(reasoningId.orEmpty())
@@ -1549,12 +1599,21 @@ private class GoogleStreamState(
                         textId = (blockCounter++).toString()
                         events += StreamEvent.TextStart(textId.orEmpty(), googlePartMetadata(obj))
                     }
-                    events += StreamEvent.TextDelta(textId.orEmpty(), text, googlePartMetadata(obj))
+                    events += StreamEvent.TextDelta(textId.orEmpty(), it, googlePartMetadata(obj))
                 }
             }
-            obj["functionCall"]?.jsonObject?.let { call ->
+            obj["functionCall"]?.let { callElement ->
+                val call = try {
+                    WireDecoder.objectValue(callElement, "google", "generateContent stream part", "$.candidates[0].content.parts[$index].functionCall")
+                } catch (error: WireDecodeException) {
+                    return listOf(StreamEvent.Error(error.message ?: "Google stream protocol error"))
+                }
                 val id = call["id"]?.jsonPrimitive?.contentOrNull ?: generateId()
-                val name = call["name"]?.jsonPrimitive?.contentOrNull.orEmpty()
+                val name = try {
+                    WireDecoder.requiredString(call, "name", "google", "generateContent stream part", "$.candidates[0].content.parts[$index].functionCall")
+                } catch (error: WireDecodeException) {
+                    return listOf(StreamEvent.Error(error.message ?: "Google stream protocol error"))
+                }
                 val input = call["args"] ?: JsonObject(emptyMap())
                 hasToolCalls = true
                 events += StreamEvent.ToolInputStart(id, name, googlePartMetadata(obj))
@@ -1562,11 +1621,20 @@ private class GoogleStreamState(
                 events += StreamEvent.ToolInputEnd(id, googlePartMetadata(obj))
                 events += StreamEvent.ToolCall(id, name, input, googlePartMetadata(obj))
             }
-            obj["inlineData"]?.jsonObject?.let { data ->
+            obj["inlineData"]?.let { dataElement ->
+                val data = try {
+                    WireDecoder.objectValue(dataElement, "google", "generateContent stream part", "$.candidates[0].content.parts[$index].inlineData")
+                } catch (error: WireDecodeException) {
+                    return listOf(StreamEvent.Error(error.message ?: "Google stream protocol error"))
+                }
                 events += StreamEvent.FilePart(
                     id = generateId(),
                     mediaType = data["mimeType"]?.jsonPrimitive?.contentOrNull ?: "application/octet-stream",
-                    base64 = data["data"]?.jsonPrimitive?.contentOrNull.orEmpty(),
+                    base64 = try {
+                        WireDecoder.requiredString(data, "data", "google", "generateContent stream part", "$.candidates[0].content.parts[$index].inlineData")
+                    } catch (error: WireDecodeException) {
+                        return listOf(StreamEvent.Error(error.message ?: "Google stream protocol error"))
+                    },
                     providerMetadata = googlePartMetadata(obj),
                 )
             }

@@ -346,6 +346,71 @@ class OpenAICompatibleProviderTest {
     }
 
     @Test
+    fun `chat model rejects malformed tool call wire data`() = runTest {
+        val client = HttpClient(
+            MockEngine {
+                respond(
+                    """{"choices":[{"message":{"role":"assistant","tool_calls":[{"id":"call_1","function":{"arguments":"{}"}}]},"finish_reason":"tool_calls"}]}""",
+                    HttpStatusCode.OK,
+                    headersOf(HttpHeaders.ContentType, "application/json"),
+                )
+            },
+        )
+        val provider = createOpenAICompatible(client, OpenAICompatibleProviderSettings("openai", "https://api.test/v1"))
+
+        val error = assertFailsWith<WireDecodeException> {
+            generateText(provider.languageModel("gpt-test"), prompt = "hi")
+        }
+
+        assertEquals("openai.chat", error.provider)
+        assertTrue(error.message.orEmpty().contains("tool_calls[0].function.name"))
+    }
+
+    @Test
+    fun `completion and media models reject malformed required wire fields`() = runTest {
+        val client = HttpClient(
+            MockEngine { request ->
+                when (request.url.encodedPath) {
+                    "/v1/completions" -> respond(
+                        """{"choices":[{}]}""",
+                        HttpStatusCode.OK,
+                        headersOf(HttpHeaders.ContentType, "application/json"),
+                    )
+                    "/v1/images/generations" -> respond(
+                        """{"data":[{"media_type":"image/png"}]}""",
+                        HttpStatusCode.OK,
+                        headersOf(HttpHeaders.ContentType, "application/json"),
+                    )
+                    "/v1/audio/transcriptions" -> respond(
+                        """{"text":"hello","segments":[{"start":0.0}]}""",
+                        HttpStatusCode.OK,
+                        headersOf(HttpHeaders.ContentType, "application/json"),
+                    )
+                    else -> respond("{}", HttpStatusCode.OK, headersOf(HttpHeaders.ContentType, "application/json"))
+                }
+            },
+        )
+        val provider = createOpenAICompatible(client, OpenAICompatibleProviderSettings("openai", "https://api.test/v1"))
+
+        val completionError = assertFailsWith<WireDecodeException> {
+            generateText(provider.completionModel("davinci"), prompt = "complete")
+        }
+        val imageError = assertFailsWith<WireDecodeException> {
+            generateImage(provider.imageModel("image"), prompt = "logo")
+        }
+        val transcriptError = assertFailsWith<WireDecodeException> {
+            transcribe(
+                provider.transcriptionModel("whisper"),
+                AudioSource(mediaType = "audio/mpeg", base64 = convertByteArrayToBase64("abc".encodeToByteArray())),
+            )
+        }
+
+        assertTrue(completionError.message.orEmpty().contains("choices[0].text"))
+        assertTrue(imageError.message.orEmpty().contains("b64_json or url"))
+        assertTrue(transcriptError.message.orEmpty().contains("segments[0].text"))
+    }
+
+    @Test
     fun `OpenAI-compatible errors include status and provider message`() = runTest {
         val client = HttpClient(
             MockEngine {

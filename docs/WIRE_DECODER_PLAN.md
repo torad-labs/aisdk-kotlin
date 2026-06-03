@@ -27,9 +27,11 @@ Chosen: strict boundary plus staged migration. It gives the leverage point a rea
 
 When moving provider parsing behind the boundary, the provider may still accept documented optional fields. It must not use missing/malformed required wire fields as default domain values. Optional means the provider protocol says optional, not "the parser was convenient."
 
-## Next Migration Targets
+## Completed Migration Targets
 
 1. Gateway stream event parsing in `KtorGatewayTransport`.
-2. OpenAI-compatible chat/tool-call parsing.
-3. Google and Anthropic stream block parsing.
-4. Media generation response parsers for image, video, speech, and transcription.
+2. OpenAI-compatible chat/completion/tool-call parsing.
+3. Google and Anthropic stream block parsing, with malformed chunks surfaced as stream error events.
+4. OpenAI-compatible image/transcription and Google image/video media response parsers.
+
+Provider-specific optional fields remain optional. Required wire payloads now cross the shared decoder in these high-risk paths, and tests assert malformed values fail loudly instead of becoming empty names, empty files, empty text, or dropped events.

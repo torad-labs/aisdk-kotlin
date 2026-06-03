@@ -3,7 +3,7 @@
 - Version: 3.0.197
 - Upstream path: `.reference/vercel-ai-sdk-ai-6.0.195/packages/react`
 - Target Kotlin module: `:aisdk-ui`
-- Current parity status: ported-as-kmp-ui: React Chat/useChat/useCompletion/useObject concepts are represented by the framework-neutral Kotlin ui package: Chat, ChatRequest, ChatTransport, TextStreamChatTransport, UIMessage/UIMessagePart, streamToUiMessages, convertToModelMessages, TextStreamResponse/UIMessageStreamResponse, createUiMessageStream, tool approval state, and typed tool-part handler registry; React hooks themselves are intentionally not emitted in the Kotlin runtime module
+- Current parity status: ported-as-kmp-facade: React Chat/useChat/useCompletion/useObject concepts are represented by package-named Kotlin facades in `ai.torad.aisdk.react`, backed by the shared KMP Chat, completion, structured-object, UI message, stream, transport, tool approval, and typed tool-part primitives. The facade exports `useChat`, `useCompletion`, `experimental_useObject`, helper/state types, and the shared `UIMessage` shape for Kotlin UI hosts.
 
 ## Entrypoints
 

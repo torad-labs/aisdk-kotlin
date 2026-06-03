@@ -77,30 +77,29 @@ Last local verification:
 
 On Linux, iOS unit-test binaries compile but iOS simulator execution is skipped by Gradle. Publication verification still compiles the iOS artifacts.
 
-## Known Missing Or Deferred Surface
+## Platform Boundaries
 
-These are intentionally represented as extension/provider packages or platform adapters:
+No runtime package behavioral gaps are tracked in this audit. The remaining boundaries are host/platform bindings where a Kotlin Multiplatform library must hand control to the app, server, or operating system:
 
-- Provider-specific adapters beyond OpenAI-compatible HTTP: Anthropic, LiteRT, MLX, Gemini, local server adapters.
-- MCP concrete HTTP, SSE, and stdio platform transports; common KMP code now
-  exposes the transport interface and stdio API boundary, but process spawning
-  and streaming HTTP transports need platform modules.
-- Devtools DB persistence and viewer/server UI; common KMP code now exposes
-  recorder-backed middleware, while storage/viewer wiring belongs in tooling
-  or platform modules.
-- React hooks and UI components; Kotlin hosts use `Chat`, `ChatTransport`, `Flow<UIMessage>`, Compose, SwiftUI, or server renderers.
-- Web framework response adapters; the core exposes stream response value objects and writer interfaces.
+- MCP stdio process spawning is implemented on JVM and Android. iOS exposes
+  the same API boundary and uses HTTP, SSE, or custom `MCPTransport`
+  implementations because iOS app sandboxes cannot launch arbitrary child
+  processes.
+- Devtools DB persistence and viewer/server UI are tooling bindings. The
+  common module exposes recorder-backed middleware and run/step/result
+  structures; apps choose storage and viewer hosting.
+- Web framework response adapters are host bindings. The core exposes stream
+  response value objects and writer interfaces.
 - Alternate gateway HTTP client implementations; the core ships Ktor and
   keeps `GatewayTransport` so OkHttp, CIO, iOS, and server adapters can
   plug in.
 - External OpenTelemetry bridge packages; the core exposes telemetry
   settings, spans, tracer abstraction, and integration hooks.
-- Provider-executed tools beyond the gateway tool descriptors, such as
-  provider-specific code interpreter integrations.
+- Provider-executed tools are surfaced as hosted tool descriptors. Execution
+  happens inside the provider unless the host supplies a local executor.
 
-## Recommended Next Additions
+## Optional Hardening Additions
 
-- Add provider-specific packages as separate modules or repositories, for example `aisdk-provider-anthropic`, `aisdk-provider-litert`, and `aisdk-provider-mlx`.
 - Add binary API validation once the public API is stabilized for a first non-snapshot release.
 - Add Dokka-generated API docs once the publication artifact shape is final.
 - Add Maven Central publishing after GitHub Packages publication is proven in CI.

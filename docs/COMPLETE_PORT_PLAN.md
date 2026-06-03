@@ -181,13 +181,13 @@ Kotlin-native UI, framework, interop, and tooling modules:
 
 ### 2. Core Exactness
 
-- Remove the remaining rows from `docs/AISDK_PORT_GAPS.md` by implementing
-  Kotlin equivalents for each row.
-- Add tests for incremental `extractJsonMiddleware` streaming behavior.
-- Add `StreamTextResult` metadata accessors for warnings and response metadata.
-- Add structured tool-result stream output parity.
-- Add agent-level active tool configuration if upstream behavior requires it.
-- Add call-options schema validation where provider modules can consume it.
+- Keep `docs/AISDK_PORT_GAPS.md` collapsed by implementing any new upstream
+  delta before release.
+- Keep tests for incremental `extractJsonMiddleware` streaming behavior.
+- Keep `StreamTextResult` metadata accessors for warnings and response metadata.
+- Keep structured tool-result stream output parity.
+- Keep agent-level active tool configuration aligned with upstream behavior.
+- Keep call-options schema validation available where provider modules consume it.
 
 ### 3. Shared Provider Infrastructure
 

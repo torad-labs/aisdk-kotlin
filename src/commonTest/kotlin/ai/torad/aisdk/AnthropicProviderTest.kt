@@ -271,6 +271,33 @@ class AnthropicProviderTest {
     }
 
     @Test
+    fun `stream surfaces malformed content block delta as wire error event`() = runTest {
+        val fixture = createTestServer(
+            mutableMapOf(
+                "https://anthropic.test/v1/messages" to UrlHandler(
+                    UrlResponse.StreamChunks(
+                        listOf(
+                            """data: {"type":"content_block_delta","delta":{"type":"text_delta","text":"hi"}}""",
+                        ),
+                    ),
+                ),
+            ),
+        )
+        fixture.server.start()
+        val provider = createAnthropic(
+            fixture.httpClient(),
+            AnthropicProviderSettings(apiKey = "key", baseURL = "https://anthropic.test/v1"),
+        )
+
+        val events = drainAllItems(
+            provider.messages("claude-sonnet-4-5").stream(LanguageModelCallParams(messages = listOf(userMessage("hi")))),
+        )
+
+        val error = events.filterIsInstance<StreamEvent.Error>().single()
+        assertTrue(error.message.contains("$.index"))
+    }
+
+    @Test
     fun `stream maps Anthropic SSE text reasoning tool call and finish`() = runTest {
         val fixture = createTestServer(
             mutableMapOf(

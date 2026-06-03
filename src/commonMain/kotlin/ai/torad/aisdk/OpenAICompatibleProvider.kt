@@ -217,6 +217,7 @@ private class OpenAICompatibleChatLanguageModel(
         val response = postJson("/chat/completions", prepared.body, params.headers)
         return chatResultFromJson(
             response.value,
+            provider = providerName,
             requestBody = prepared.body,
             responseHeaders = response.headers,
             responseBody = response.value,
@@ -235,7 +236,7 @@ private class OpenAICompatibleChatLanguageModel(
         )
         emit(StreamEvent.StreamStart(prepared.warnings))
         emit(StreamEvent.ResponseMetadata(headers = response.headers, body = JsonPrimitive(response.rawText)))
-        val state = OpenAIChatStreamState(providerKey = providerOptionsKey(), convertUsage = settings.convertUsage)
+        val state = OpenAIChatStreamState(provider = providerName, providerKey = providerOptionsKey(), convertUsage = settings.convertUsage)
         for (event in parseJsonEventStream(response.rawText, jsonSchema<JsonElement>(JsonObject(emptyMap())), json)) {
             when (event) {
                 is ParseResult.Success -> state.accept(event.value).forEach { emit(it) }
@@ -308,7 +309,7 @@ private class OpenAICompatibleCompletionLanguageModel(
     override suspend fun generate(params: LanguageModelCallParams): LanguageModelResult {
         val prepared = completionRequestBody(params, stream = false)
         val response = postJson("/completions", prepared.body, params.headers)
-        return completionResultFromJson(response.value, prepared.body, response.headers, response.value, prepared.warnings)
+        return completionResultFromJson(response.value, providerName, prepared.body, response.headers, response.value, prepared.warnings)
     }
 
     override fun stream(params: LanguageModelCallParams): Flow<StreamEvent> = flow {
@@ -449,19 +450,22 @@ private class OpenAICompatibleImageModel(
             putProviderOptions(options, emptySet())
         }
         val response = postJson("/images/generations", body, params.headers)
-        val data = response.value.jsonObject["data"]?.jsonArray.orEmpty()
+        val responseObject = WireDecoder.objectValue(response.value, providerName, "image generation response")
+        val data = WireDecoder.requiredArray(responseObject, "data", providerName, "image generation response")
+        if (data.isEmpty()) throw NoImageGeneratedError("OpenAI-compatible image response contained no data.")
         return ImageModelResult(
-            images = data.map { image ->
-                val obj = image.jsonObject
+            images = data.mapIndexed { index, image ->
+                val obj = WireDecoder.objectValue(image, providerName, "image generation response", "$.data[$index]")
+                val imageData = WireDecoder.requiredOneOfString(obj, providerName, "image generation response", "$.data[$index]", "b64_json", "url")
                 GeneratedFile(
                     mediaType = obj["media_type"]?.jsonPrimitive?.contentOrNull ?: "image/png",
-                    base64 = obj["b64_json"]?.jsonPrimitive?.contentOrNull.orEmpty(),
+                    base64 = obj["b64_json"]?.let { imageData }.orEmpty(),
                     url = obj["url"]?.jsonPrimitive?.contentOrNull,
                 )
             },
             warnings = warnings,
             response = LanguageModelResponseMetadata(modelId = modelId, headers = response.headers, body = response.value),
-            providerMetadata = openAIProviderMetadata(response.value.jsonObject["providerMetadata"], settings.name),
+            providerMetadata = openAIProviderMetadata(responseObject["providerMetadata"], settings.name),
         )
     }
 }
@@ -532,15 +536,15 @@ private class OpenAICompatibleTranscriptionModel(
             },
         )
         val response = postMultipart("/audio/transcriptions", multipart, params.headers)
-        val value = response.value.jsonObject
+        val value = WireDecoder.objectValue(response.value, providerName, "transcription response")
         return TranscriptionModelResult(
-            text = value["text"]?.jsonPrimitive?.contentOrNull,
-            segments = value["segments"]?.jsonArray.orEmpty().map { segment ->
-                val obj = segment.jsonObject
+            text = WireDecoder.requiredString(value, "text", providerName, "transcription response"),
+            segments = WireDecoder.optionalArray(value, "segments", providerName, "transcription response").orEmpty().mapIndexed { index, segment ->
+                val obj = WireDecoder.objectValue(segment, providerName, "transcription response", "$.segments[$index]")
                 TranscriptSegment(
-                    text = obj["text"]?.jsonPrimitive?.contentOrNull.orEmpty(),
-                    startSeconds = obj["start"]?.jsonPrimitive?.floatOrNull,
-                    endSeconds = obj["end"]?.jsonPrimitive?.floatOrNull,
+                    text = WireDecoder.requiredString(obj, "text", providerName, "transcription response", "$.segments[$index]"),
+                    startSeconds = WireDecoder.optionalFloat(obj, "start", providerName, "transcription response", "$.segments[$index]"),
+                    endSeconds = WireDecoder.optionalFloat(obj, "end", providerName, "transcription response", "$.segments[$index]"),
                 )
             },
             response = LanguageModelResponseMetadata(modelId = modelId, headers = response.headers, body = response.value),
@@ -584,33 +588,48 @@ private val openAICompletionReservedOptions = setOf(
 
 private fun chatResultFromJson(
     value: JsonElement,
+    provider: String,
     requestBody: JsonElement,
     responseHeaders: Map<String, String>,
     responseBody: JsonElement,
     warnings: List<CallWarning>,
     convertUsage: ((JsonElement?) -> Usage)? = null,
 ): LanguageModelResult {
-    val obj = value.jsonObject
-    val choice = obj["choices"]?.jsonArray?.firstOrNull()?.jsonObject
-    val message = choice?.get("message")?.jsonObject ?: JsonObject(emptyMap())
+    val obj = WireDecoder.objectValue(value, provider, "chat completion response")
+    val choice = WireDecoder.requiredArray(obj, "choices", provider, "chat completion response")
+        .firstOrNull()
+        ?.let { WireDecoder.objectValue(it, provider, "chat completion response", "$.choices[0]") }
+        ?: WireDecoder.fail(provider, "chat completion response", "$.choices", "expected at least one choice")
+    val message = WireDecoder.objectValue(
+        WireDecoder.required(choice, "message", provider, "chat completion response", "$.choices[0]"),
+        provider,
+        "chat completion response",
+        "$.choices[0].message",
+    )
     val content = mutableListOf<ContentPart>()
     val text = openAITextContent(message["content"])
     if (text.isNotEmpty()) content += ContentPart.Text(text)
     val reasoning = message["reasoning_content"]?.jsonPrimitive?.contentOrNull
         ?: message["reasoning"]?.jsonPrimitive?.contentOrNull
     if (!reasoning.isNullOrEmpty()) content += ContentPart.Reasoning(reasoning)
-    val toolCalls = message["tool_calls"]?.jsonArray.orEmpty().map { call ->
-        val callObj = call.jsonObject
-        val function = callObj["function"]?.jsonObject ?: JsonObject(emptyMap())
+    val toolCalls = WireDecoder.optionalArray(message, "tool_calls", provider, "chat completion response", "$.choices[0].message").orEmpty()
+        .mapIndexed { index, call ->
+        val callObj = WireDecoder.objectValue(call, provider, "chat completion response", "$.choices[0].message.tool_calls[$index]")
+        val function = WireDecoder.objectValue(
+            WireDecoder.required(callObj, "function", provider, "chat completion response", "$.choices[0].message.tool_calls[$index]"),
+            provider,
+            "chat completion response",
+            "$.choices[0].message.tool_calls[$index].function",
+        )
         ContentPart.ToolCall(
             toolCallId = callObj["id"]?.jsonPrimitive?.contentOrNull ?: generateId("call"),
-            toolName = function["name"]?.jsonPrimitive?.contentOrNull.orEmpty(),
-            input = parseOpenAIToolInput(function["arguments"]?.jsonPrimitive?.contentOrNull),
+            toolName = WireDecoder.requiredString(function, "name", provider, "chat completion response", "$.choices[0].message.tool_calls[$index].function"),
+            input = parseOpenAIToolInput(WireDecoder.requiredString(function, "arguments", provider, "chat completion response", "$.choices[0].message.tool_calls[$index].function")),
             providerMetadata = thoughtSignatureMetadata(callObj),
         )
     }
     content += toolCalls
-    val finishReason = openAIFinishReason(choice?.get("finish_reason")?.jsonPrimitive?.contentOrNull)
+    val finishReason = openAIFinishReason(choice["finish_reason"]?.jsonPrimitive?.contentOrNull)
     return LanguageModelResult(
         text = text,
         toolCalls = toolCalls,
@@ -618,7 +637,7 @@ private fun chatResultFromJson(
         usage = (convertUsage ?: ::openAIUsage).invoke(obj["usage"]),
         providerMetadata = openAIProviderMetadata(obj["providerMetadata"], "openaiCompatible"),
         content = content,
-        rawFinishReason = choice?.get("finish_reason")?.jsonPrimitive?.contentOrNull,
+        rawFinishReason = choice["finish_reason"]?.jsonPrimitive?.contentOrNull,
         warnings = warnings,
         request = LanguageModelRequestMetadata(requestBody),
         response = LanguageModelResponseMetadata(
@@ -633,19 +652,23 @@ private fun chatResultFromJson(
 
 private fun completionResultFromJson(
     value: JsonElement,
+    provider: String,
     requestBody: JsonElement,
     responseHeaders: Map<String, String>,
     responseBody: JsonElement,
     warnings: List<CallWarning>,
 ): LanguageModelResult {
-    val obj = value.jsonObject
-    val choice = obj["choices"]?.jsonArray?.firstOrNull()?.jsonObject
-    val text = choice?.get("text")?.jsonPrimitive?.contentOrNull.orEmpty()
+    val obj = WireDecoder.objectValue(value, provider, "completion response")
+    val choice = WireDecoder.requiredArray(obj, "choices", provider, "completion response")
+        .firstOrNull()
+        ?.let { WireDecoder.objectValue(it, provider, "completion response", "$.choices[0]") }
+        ?: WireDecoder.fail(provider, "completion response", "$.choices", "expected at least one choice")
+    val text = WireDecoder.requiredString(choice, "text", provider, "completion response", "$.choices[0]")
     return LanguageModelResult(
         text = text,
-        finishReason = openAIFinishReason(choice?.get("finish_reason")?.jsonPrimitive?.contentOrNull),
+        finishReason = openAIFinishReason(choice["finish_reason"]?.jsonPrimitive?.contentOrNull),
         usage = openAIUsage(obj["usage"]),
-        rawFinishReason = choice?.get("finish_reason")?.jsonPrimitive?.contentOrNull,
+        rawFinishReason = choice["finish_reason"]?.jsonPrimitive?.contentOrNull,
         warnings = warnings,
         request = LanguageModelRequestMetadata(requestBody),
         response = LanguageModelResponseMetadata(
@@ -659,6 +682,7 @@ private fun completionResultFromJson(
 }
 
 private class OpenAIChatStreamState(
+    private val provider: String,
     private val providerKey: String,
     private val convertUsage: ((JsonElement?) -> Usage)? = null,
 ) {
@@ -671,7 +695,7 @@ private class OpenAIChatStreamState(
 
     fun accept(value: JsonElement): List<StreamEvent> {
         val events = mutableListOf<StreamEvent>()
-        val obj = value.jsonObject
+        val obj = WireDecoder.objectValue(value, provider, "chat stream event")
         if (!emittedResponseMetadata) {
             streamResponseMetadata(obj)?.let {
                 events += it
@@ -712,7 +736,7 @@ private class OpenAIChatStreamState(
             }
             events += StreamEvent.TextDelta("txt-0", text)
         }
-        val calls = delta["tool_calls"]?.jsonArray.orEmpty()
+        val calls = WireDecoder.optionalArray(delta, "tool_calls", provider, "chat stream event", "$.choices[0].delta").orEmpty()
         if (calls.isNotEmpty() && activeReasoning) {
             events += StreamEvent.ReasoningEnd("reasoning-0")
             activeReasoning = false
@@ -742,14 +766,16 @@ private class OpenAIChatStreamState(
     }
 
     private fun acceptToolCallDelta(value: JsonElement): List<StreamEvent> {
-        val obj = value.jsonObject
-        val index = obj["index"]?.jsonPrimitive?.intOrNull ?: toolCalls.size
-        val function = obj["function"]?.jsonObject ?: JsonObject(emptyMap())
+        val obj = WireDecoder.objectValue(value, provider, "chat stream tool call")
+        val index = WireDecoder.optionalInt(obj, "index", provider, "chat stream tool call") ?: toolCalls.size
+        val function = obj["function"]?.let {
+            WireDecoder.objectValue(it, provider, "chat stream tool call", "$.function")
+        } ?: JsonObject(emptyMap())
         val existing = toolCalls[index]
         if (existing == null) {
             val id = obj["id"]?.jsonPrimitive?.contentOrNull ?: generateId("call")
-            val name = function["name"]?.jsonPrimitive?.contentOrNull.orEmpty()
-            val arguments = function["arguments"]?.jsonPrimitive?.contentOrNull.orEmpty()
+            val name = WireDecoder.requiredString(function, "name", provider, "chat stream tool call", "$.function")
+            val arguments = WireDecoder.optionalString(function, "arguments", provider, "chat stream tool call", "$.function").orEmpty()
             val metadata = thoughtSignatureMetadata(obj)?.let { mapOf(providerKey to JsonObject(it)) }
             val toolCall = StreamingToolCall(id, name, arguments, metadata)
             toolCalls[index] = toolCall

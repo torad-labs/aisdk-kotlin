@@ -9,7 +9,9 @@ import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.booleanOrNull
 import kotlinx.serialization.json.decodeFromJsonElement
+import kotlinx.serialization.json.doubleOrNull
 import kotlinx.serialization.json.floatOrNull
+import kotlinx.serialization.json.intOrNull
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 
@@ -82,6 +84,16 @@ internal object WireDecoder {
     fun optionalString(obj: JsonObject, key: String, provider: String, operation: String, path: String = "$"): String? =
         obj[key]?.let { stringValue(it, provider, operation, child(path, key)) }
 
+    fun requiredOneOfString(
+        obj: JsonObject,
+        provider: String,
+        operation: String,
+        path: String = "$",
+        vararg keys: String,
+    ): String =
+        keys.firstNotNullOfOrNull { key -> optionalString(obj, key, provider, operation, path) }
+            ?: fail(provider, operation, path, "missing one required field: ${keys.joinToString(" or ")}")
+
     fun stringValue(value: JsonElement, provider: String, operation: String, path: String = "$"): String =
         (value as? JsonPrimitive)?.takeIf { it.isString }?.jsonPrimitive?.content
             ?: fail(provider, operation, path, "expected string", value)
@@ -93,9 +105,26 @@ internal object WireDecoder {
         (value as? JsonPrimitive)?.booleanOrNull
             ?: fail(provider, operation, path, "expected boolean", value)
 
+    fun optionalInt(obj: JsonObject, key: String, provider: String, operation: String, path: String = "$"): Int? =
+        obj[key]?.let { intValue(it, provider, operation, child(path, key)) }
+
+    fun intValue(value: JsonElement, provider: String, operation: String, path: String = "$"): Int =
+        (value as? JsonPrimitive)?.intOrNull
+            ?: fail(provider, operation, path, "expected integer", value)
+
+    fun optionalDouble(obj: JsonObject, key: String, provider: String, operation: String, path: String = "$"): Double? =
+        obj[key]?.let { doubleValue(it, provider, operation, child(path, key)) }
+
+    fun doubleValue(value: JsonElement, provider: String, operation: String, path: String = "$"): Double =
+        (value as? JsonPrimitive)?.doubleOrNull
+            ?: fail(provider, operation, path, "expected number", value)
+
     fun floatValue(value: JsonElement, provider: String, operation: String, path: String = "$"): Float =
         (value as? JsonPrimitive)?.floatOrNull
             ?: fail(provider, operation, path, "expected number", value)
+
+    fun optionalFloat(obj: JsonObject, key: String, provider: String, operation: String, path: String = "$"): Float? =
+        obj[key]?.let { floatValue(it, provider, operation, child(path, key)) }
 
     fun embeddingFloat(value: JsonElement, provider: String, operation: String = "embedding response", path: String = "$"): Float =
         floatValue(value, provider, operation, path)

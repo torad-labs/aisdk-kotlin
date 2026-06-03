@@ -1,6 +1,7 @@
 package ai.torad.aisdk.ui
 
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.flow
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonPrimitive
@@ -43,6 +44,13 @@ class TextStreamChatTransport(
         transformTextToUiMessageStream(handler(request), assistantMessageId(request))
 }
 
+enum class ChatStatus {
+    Ready,
+    Submitted,
+    Streaming,
+    Error,
+}
+
 class Chat(
     val id: String = "chat",
     initialMessages: List<UIMessage> = emptyList(),
@@ -50,6 +58,12 @@ class Chat(
 ) {
     private val mutableMessages: MutableList<UIMessage> = initialMessages.toMutableList()
     private var nextToolApprovalResponseIndex: Int = nextApprovalIndexAfter(initialMessages)
+
+    var status: ChatStatus = ChatStatus.Ready
+        private set
+
+    var error: Throwable? = null
+        private set
 
     val messages: List<UIMessage>
         get() = mutableMessages.toList()
@@ -59,6 +73,11 @@ class Chat(
         mutableMessages.clear()
         mutableMessages.addAll(messages)
         nextToolApprovalResponseIndex = nextApprovalIndexAfter(messages)
+    }
+
+    fun clearError() {
+        error = null
+        if (status == ChatStatus.Error) status = ChatStatus.Ready
     }
 
     fun addToolApprovalResponse(
@@ -82,17 +101,66 @@ class Chat(
         )
     }
 
+    fun addToolOutput(
+        toolCallId: String,
+        output: JsonElement,
+        toolName: String = "tool",
+    ) {
+        mutableMessages += UIMessage(
+            id = nextToolApprovalResponseId(),
+            role = UIMessageRole.User,
+            parts = listOf(
+                UIMessagePart.ToolUI(
+                    toolCallId = toolCallId,
+                    toolName = toolName,
+                    state = ToolCallState.OutputAvailable,
+                    output = output,
+                ),
+            ),
+        )
+    }
+
+    @Deprecated("Use addToolOutput instead.")
+    fun addToolResult(
+        toolCallId: String,
+        output: JsonElement,
+        toolName: String = "tool",
+    ) = addToolOutput(toolCallId, output, toolName)
+
     fun sendMessage(message: UIMessage, body: Map<String, JsonElement> = emptyMap()): Flow<UIMessage> = flow {
         mutableMessages += message
         val request = ChatRequest(messages = mutableMessages.toList(), body = body)
-        transport.sendMessages(request).collect { response ->
-            upsertMessage(response)
-            emit(response)
+        status = ChatStatus.Submitted
+        error = null
+        try {
+            transport.sendMessages(request).collect { response ->
+                status = ChatStatus.Streaming
+                upsertMessage(response)
+                emit(response)
+            }
+            status = ChatStatus.Ready
+        } catch (t: Throwable) {
+            error = t
+            status = ChatStatus.Error
+            throw t
         }
+    }
+
+    fun regenerate(body: Map<String, JsonElement> = emptyMap()): Flow<UIMessage> {
+        val lastUser = mutableMessages.lastOrNull { it.role == UIMessageRole.User }
+            ?: return emptyFlow()
+        return sendMessage(lastUser, body)
+    }
+
+    fun stop() {
+        status = ChatStatus.Ready
     }
 
     fun reconnectToStream(headers: Map<String, String> = emptyMap()): Flow<UIMessage>? =
         transport.reconnectToStream(id, headers)
+
+    fun resumeStream(headers: Map<String, String> = emptyMap()): Flow<UIMessage> =
+        reconnectToStream(headers) ?: emptyFlow()
 
     private fun upsertMessage(message: UIMessage) {
         val index = mutableMessages.indexOfFirst { it.id == message.id }
