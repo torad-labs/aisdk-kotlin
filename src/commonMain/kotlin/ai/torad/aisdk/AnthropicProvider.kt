@@ -45,6 +45,7 @@ data class AnthropicProviderSettings(
     val apiKey: String? = null,
     val authToken: String? = null,
     val headers: Map<String, String> = emptyMap(),
+    val requestHeadersProvider: (suspend (url: String, body: String, headers: Map<String, String>) -> Map<String, String>)? = null,
     val generateId: () -> String = { ai.torad.aisdk.generateId() },
     val name: String = "anthropic.messages",
 )
@@ -145,12 +146,16 @@ class AnthropicMessagesLanguageModel(
         acceptEventStream: Boolean,
         parseJson: Boolean,
     ): AnthropicHttpResponse {
-        val response = client.request("${settings.baseURL.trimEnd('/')}/messages") {
+        val url = "${settings.baseURL.trimEnd('/')}/messages"
+        val encodedBody = anthropicJson.encodeToString(JsonElement.serializer(), body)
+        val baseHeaders = anthropicHeaders(settings, extraHeaders, betas)
+        val requestHeaders = settings.requestHeadersProvider?.invoke(url, encodedBody, baseHeaders) ?: baseHeaders
+        val response = client.request(url) {
             method = HttpMethod.Post
             contentType(ContentType.Application.Json)
             if (acceptEventStream) header(HttpHeaders.Accept, "text/event-stream")
-            anthropicHeaders(settings, extraHeaders, betas).forEach { (name, value) -> header(name, value) }
-            setBody(anthropicJson.encodeToString(JsonElement.serializer(), body))
+            requestHeaders.forEach { (name, value) -> header(name, value) }
+            setBody(encodedBody)
         }
         return response.parseAnthropicResponse(parseJson)
     }

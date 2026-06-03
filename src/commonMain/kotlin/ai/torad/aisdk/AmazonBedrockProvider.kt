@@ -5,7 +5,7 @@ import io.ktor.client.request.header
 import io.ktor.client.request.request
 import io.ktor.client.request.setBody
 import io.ktor.client.statement.HttpResponse
-import io.ktor.client.statement.bodyAsText
+import io.ktor.client.statement.bodyAsBytes
 import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpMethod
@@ -204,7 +204,8 @@ private class BedrockChatLanguageModel(
             client = client,
             url = "${bedrockRuntimeBaseURL(settings)}/model/${bedrockEncodeModelId(modelId)}/converse",
             body = prepared.body,
-            headers = bedrockHeaders(settings, params.headers),
+            settings = settings,
+            extraHeaders = params.headers,
             abortSignal = params.abortSignal,
             parseJson = true,
         )
@@ -225,14 +226,15 @@ private class BedrockChatLanguageModel(
             client = client,
             url = "${bedrockRuntimeBaseURL(settings)}/model/${bedrockEncodeModelId(modelId)}/converse-stream",
             body = prepared.body,
-            headers = bedrockHeaders(settings, params.headers) + (HttpHeaders.Accept to "application/vnd.amazon.eventstream"),
+            settings = settings,
+            extraHeaders = params.headers + (HttpHeaders.Accept to "application/vnd.amazon.eventstream"),
             abortSignal = params.abortSignal,
             parseJson = false,
         )
         emit(StreamEvent.StreamStart(prepared.warnings))
         emit(StreamEvent.ResponseMetadata(id = response.headers.headerValue("x-amzn-requestid"), modelId = modelId, headers = response.headers))
         val state = BedrockStreamState(settings.generateId, prepared.usesJsonResponseTool)
-        for (line in response.rawText.lineSequence().map { it.trim() }.filter { it.isNotEmpty() }) {
+        for (line in bedrockStreamPayloads(response).map { it.trim() }.filter { it.isNotEmpty() }) {
             val parsed = runCatching { bedrockJson.parseToJsonElement(line).jsonObject }.getOrNull()
             if (parsed == null) {
                 emit(StreamEvent.Error("Failed to parse Bedrock stream event: $line"))
@@ -268,7 +270,8 @@ private class BedrockEmbeddingModel(
             client = client,
             url = "${bedrockRuntimeBaseURL(settings)}/model/${bedrockEncodeModelId(modelId)}/invoke",
             body = body,
-            headers = bedrockHeaders(settings, params.headers),
+            settings = settings,
+            extraHeaders = params.headers,
             abortSignal = params.abortSignal,
             parseJson = true,
         )
@@ -296,7 +299,8 @@ private class BedrockImageModel(
             client = client,
             url = "${bedrockRuntimeBaseURL(settings)}/model/${bedrockEncodeModelId(modelId)}/invoke",
             body = prepared.body,
-            headers = bedrockHeaders(settings, params.headers),
+            settings = settings,
+            extraHeaders = params.headers,
             abortSignal = params.abortSignal,
             parseJson = true,
         )
@@ -332,7 +336,8 @@ private class BedrockRerankingModel(
             client = client,
             url = "${bedrockAgentRuntimeBaseURL(settings)}/rerank",
             body = body,
-            headers = bedrockHeaders(settings, params.headers),
+            settings = settings,
+            extraHeaders = params.headers,
             abortSignal = params.abortSignal,
             parseJson = true,
         )
@@ -378,7 +383,9 @@ private class BedrockMantleChatLanguageModel(
             client = client,
             url = "${bedrockMantleBaseURL(settings)}$path",
             body = body,
-            headers = bedrockHeaders(settings, params.headers),
+            settings = settings,
+            extraHeaders = params.headers,
+            service = "bedrock-mantle",
             abortSignal = params.abortSignal,
             parseJson = true,
         )
@@ -428,6 +435,7 @@ private data class BedrockPreparedImageRequest(
 private data class BedrockHttpResponse(
     val value: JsonElement,
     val rawText: String,
+    val rawBytes: ByteArray,
     val headers: Map<String, String>,
 )
 
@@ -1097,18 +1105,23 @@ private suspend fun bedrockPostJson(
     client: HttpClient,
     url: String,
     body: JsonElement,
-    headers: Map<String, String>,
+    settings: AmazonBedrockProviderSettings,
+    extraHeaders: Map<String, String>,
+    service: String = "bedrock",
     abortSignal: AbortSignal,
     parseJson: Boolean,
 ): BedrockHttpResponse {
     abortSignal.throwIfAborted()
+    val encodedBody = bedrockJson.encodeToString(JsonElement.serializer(), body)
+    val headers = bedrockHeaders(settings, extraHeaders, url, encodedBody, service)
     val response = client.request(url) {
         method = HttpMethod.Post
         contentType(ContentType.Application.Json)
         headers.forEach { (name, value) -> header(name, value) }
-        setBody(bedrockJson.encodeToString(JsonElement.serializer(), body))
+        setBody(encodedBody)
     }
-    val raw = response.bodyAsText()
+    val rawBytes = response.bodyAsBytes()
+    val raw = rawBytes.decodeToString()
     val responseHeaders = response.responseHeaders()
     if (response.status.value !in 200..299) {
         val parsed = runCatching { bedrockJson.parseToJsonElement(raw) }.getOrNull()
@@ -1117,30 +1130,143 @@ private suspend fun bedrockPostJson(
     return BedrockHttpResponse(
         value = if (parseJson && raw.isNotBlank()) bedrockJson.parseToJsonElement(raw) else JsonObject(emptyMap()),
         rawText = raw,
+        rawBytes = rawBytes,
         headers = responseHeaders,
     )
 }
 
+private fun bedrockStreamPayloads(response: BedrockHttpResponse): List<String> {
+    val contentType = response.headers.headerValue(HttpHeaders.ContentType).orEmpty()
+    if (!contentType.contains("application/vnd.amazon.eventstream", ignoreCase = true)) {
+        return response.rawText.lineSequence().toList()
+    }
+    return decodeBedrockEventStream(response.rawBytes).map { message ->
+        val payload = runCatching { bedrockJson.parseToJsonElement(message.payloadText) }.getOrNull()
+        val eventType = message.eventType
+        if (eventType.isBlank()) {
+            message.payloadText
+        } else if (payload is JsonObject && payload.size == 1 && payload[eventType] != null) {
+            message.payloadText
+        } else {
+            buildJsonObject {
+                put(eventType, payload ?: JsonPrimitive(message.payloadText))
+            }.toString()
+        }
+    }
+}
+
+private data class BedrockEventStreamMessage(
+    val messageType: String,
+    val eventType: String,
+    val payloadText: String,
+)
+
+private fun decodeBedrockEventStream(bytes: ByteArray): List<BedrockEventStreamMessage> {
+    val messages = mutableListOf<BedrockEventStreamMessage>()
+    var offset = 0
+    while (offset + 16 <= bytes.size) {
+        val totalLength = bytes.readInt32BE(offset)
+        val headersLength = bytes.readInt32BE(offset + 4)
+        if (totalLength < 16 || headersLength < 0 || offset + totalLength > bytes.size) break
+        val headersStart = offset + 12
+        val payloadStart = headersStart + headersLength
+        val payloadEnd = offset + totalLength - 4
+        if (payloadStart > payloadEnd || payloadEnd > bytes.size) break
+        val headers = bytes.readSmithyHeaders(headersStart, payloadStart)
+        val payload = bytes.copyOfRange(payloadStart, payloadEnd).decodeToString()
+        messages += BedrockEventStreamMessage(
+            messageType = headers[":message-type"].orEmpty(),
+            eventType = headers[":event-type"].orEmpty().ifBlank {
+                headers[":error-code"].orEmpty().replaceFirstChar { it.lowercaseChar() }
+            },
+            payloadText = payload,
+        )
+        offset += totalLength
+    }
+    return messages
+}
+
+private fun ByteArray.readSmithyHeaders(start: Int, end: Int): Map<String, String> {
+    val headers = linkedMapOf<String, String>()
+    var offset = start
+    while (offset < end) {
+        val nameLength = this[offset].toInt() and 0xff
+        offset += 1
+        if (nameLength == 0 || offset + nameLength + 1 > end) break
+        val name = copyOfRange(offset, offset + nameLength).decodeToString()
+        offset += nameLength
+        val type = this[offset].toInt() and 0xff
+        offset += 1
+        when (type) {
+            0, 1 -> headers[name] = type.toString()
+            2 -> offset += 1
+            3 -> offset += 2
+            4 -> offset += 4
+            5, 8 -> offset += 8
+            6, 7 -> {
+                if (offset + 2 > end) break
+                val length = readUInt16BE(offset)
+                offset += 2
+                if (offset + length > end) break
+                if (type == 7) headers[name] = copyOfRange(offset, offset + length).decodeToString()
+                offset += length
+            }
+            9 -> offset += 16
+            else -> break
+        }
+    }
+    return headers
+}
+
+private fun ByteArray.readInt32BE(index: Int): Int =
+    ((this[index].toInt() and 0xff) shl 24) or
+        ((this[index + 1].toInt() and 0xff) shl 16) or
+        ((this[index + 2].toInt() and 0xff) shl 8) or
+        (this[index + 3].toInt() and 0xff)
+
+private fun ByteArray.readUInt16BE(index: Int): Int =
+    ((this[index].toInt() and 0xff) shl 8) or (this[index + 1].toInt() and 0xff)
+
 private suspend fun bedrockHeaders(
     settings: AmazonBedrockProviderSettings,
     extra: Map<String, String>,
+    url: String,
+    body: String,
+    service: String,
 ): Map<String, String> {
-    val headers = linkedMapOf<String, String>()
-    headers.putAll(settings.headers)
-    headers.putAll(extra)
+    val headers = linkedMapOf<String, String?>()
+    headers[HttpHeaders.ContentType] = ContentType.Application.Json.toString()
+    settings.headers.forEach { (key, value) -> headers[key] = value }
+    extra.forEach { (key, value) -> headers[key] = value }
+    val headersWithUserAgent = withUserAgentSuffix(headers, "ai-sdk/amazon-bedrock/$AMAZON_BEDROCK_VERSION")
     val apiKey = settings.apiKey?.trim()?.takeIf { it.isNotEmpty() }
     if (apiKey != null) {
-        headers[HttpHeaders.Authorization] = "Bearer $apiKey"
-    } else if (settings.accessKeyId != null || settings.secretAccessKey != null || settings.credentialProvider != null) {
+        return headersWithUserAgent + (HttpHeaders.Authorization to "Bearer $apiKey")
+    }
+    val credentials = if (settings.accessKeyId != null || settings.secretAccessKey != null || settings.credentialProvider != null) {
         val credentials = settings.credentialProvider?.invoke()
             ?: BedrockCredentials(settings.accessKeyId.orEmpty(), settings.secretAccessKey.orEmpty(), settings.sessionToken, settings.region)
         if (credentials.accessKeyId.isBlank() || credentials.secretAccessKey.isBlank()) {
             throw AiSdkException("AWS SigV4 authentication requires both accessKeyId and secretAccessKey.")
         }
-        throw AiSdkException("AWS SigV4 request signing is not available in this common Kotlin module yet. Use apiKey/AWS_BEARER_TOKEN_BEDROCK-style bearer authentication for this facade.")
+        credentials
+    } else {
+        return headersWithUserAgent
     }
-    headers[HttpHeaders.UserAgent] = appendUserAgent(headers[HttpHeaders.UserAgent], "ai-sdk/amazon-bedrock/$AMAZON_BEDROCK_VERSION")
-    return headers
+    val region = credentials.region ?: settings.region ?: "us-east-1"
+    return awsSigV4SignedHeaders(
+        method = "POST",
+        url = url,
+        service = service,
+        region = region,
+        headers = headersWithUserAgent,
+        body = body,
+        credentials = AwsSigV4Credentials(
+            accessKeyId = credentials.accessKeyId,
+            secretAccessKey = credentials.secretAccessKey,
+            sessionToken = credentials.sessionToken,
+        ),
+    )
 }
 
 private fun bedrockRuntimeBaseURL(settings: AmazonBedrockProviderSettings): String =

@@ -116,18 +116,49 @@ class AnthropicAwsProviderTest {
 
     @Test
     fun `unsupported models and SigV4 path are explicit`() = runTest {
-        val fixture = createTestServer(mutableMapOf())
+        val fixture = createTestServer(
+            mutableMapOf(
+                "https://aws-anthropic.test/v1/messages" to UrlHandler(
+                    UrlResponse.JsonValue(
+                        Json.parseToJsonElement(
+                            """
+                            {
+                              "id":"msg_sigv4",
+                              "model":"claude-sonnet-4-6",
+                              "content":[{"type":"text","text":"signed"}],
+                              "stop_reason":"end_turn",
+                              "usage":{"input_tokens":1,"output_tokens":1}
+                            }
+                            """.trimIndent(),
+                        ),
+                    ),
+                ),
+            ),
+        )
+        fixture.server.start()
         val provider = createAnthropicAws(
             fixture.httpClient(),
-            AnthropicAwsProviderSettings(workspaceId = "wrkspc_123", accessKeyId = "id", secretAccessKey = "secret"),
+            AnthropicAwsProviderSettings(
+                workspaceId = "wrkspc_123",
+                accessKeyId = "id",
+                secretAccessKey = "secret",
+                sessionToken = "token",
+                region = "us-east-1",
+                baseURL = "https://aws-anthropic.test/v1",
+            ),
         )
 
         assertFailsWith<NoSuchModelError> { provider.embeddingModel("embed") }
         assertEquals("advisor", provider.tools.advisor_20260301.name)
-        val error = assertFailsWith<AiSdkException> {
-            provider.languageModel("claude-sonnet-4-6").generate(LanguageModelCallParams(messages = listOf(userMessage("hi"))))
-        }
-        assertTrue(error.message.orEmpty().contains("SigV4 request signing"))
+        val result = provider.languageModel("claude-sonnet-4-6").generate(LanguageModelCallParams(messages = listOf(userMessage("hi"))))
+
+        val request = fixture.calls.single()
+        assertEquals("signed", result.text)
+        assertEquals("token", request.requestHeaders.headerValue("x-amz-security-token"))
+        assertEquals("aws-anthropic.test", request.requestHeaders.headerValue("host"))
+        assertTrue(request.requestHeaders.headerValue(HttpHeaders.Authorization).orEmpty().contains("AWS4-HMAC-SHA256"))
+        assertTrue(request.requestHeaders.headerValue(HttpHeaders.Authorization).orEmpty().contains("Credential=id/"))
+        assertTrue(request.requestHeaders.headerValue(HttpHeaders.Authorization).orEmpty().contains("/aws-external-anthropic/aws4_request"))
     }
 
     private fun Map<String, String>.headerValue(name: String): String? =

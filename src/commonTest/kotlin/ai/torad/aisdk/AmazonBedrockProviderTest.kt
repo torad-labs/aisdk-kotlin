@@ -16,7 +16,6 @@ import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import kotlin.test.assertFailsWith
 import kotlin.test.assertIs
 import kotlin.test.assertTrue
 
@@ -215,6 +214,47 @@ class AmazonBedrockProviderTest {
     }
 
     @Test
+    fun `chat stream decodes Smithy binary event stream frames`() = runTest {
+        val fixture = createTestServer(
+            mutableMapOf(
+                "https://bedrock.test/model/amazon.nova-lite-v1%3A0/converse-stream" to UrlHandler(
+                    UrlResponse.Binary(
+                        bedrockSmithyEventStream(
+                            "messageStart" to """{"role":"assistant"}""",
+                            "contentBlockDelta" to """{"contentBlockIndex":0,"delta":{"text":"binary"}}""",
+                            "contentBlockStop" to """{"contentBlockIndex":0}""",
+                            "messageStop" to """{"stopReason":"end_turn"}""",
+                            "metadata" to """{"usage":{"inputTokens":2,"outputTokens":3}}""",
+                        ),
+                        headers = mapOf(
+                            HttpHeaders.ContentType to "application/vnd.amazon.eventstream",
+                            "x-amzn-requestid" to "binary-stream",
+                        ),
+                    ),
+                ),
+            ),
+        )
+        fixture.server.start()
+        val provider = createAmazonBedrock(
+            fixture.httpClient(),
+            AmazonBedrockProviderSettings(apiKey = "key", baseURL = "https://bedrock.test"),
+        )
+
+        val events = drainAllItems(
+            provider.languageModel("amazon.nova-lite-v1:0").stream(
+                LanguageModelCallParams(messages = listOf(userMessage("hi"))),
+            ),
+        )
+
+        assertTrue(events.any { it is StreamEvent.ResponseMetadata && it.id == "binary-stream" })
+        assertTrue(events.any { it is StreamEvent.TextDelta && it.text == "binary" })
+        val finish = events.filterIsInstance<StreamEvent.Finish>().single()
+        assertEquals(FinishReason.Stop, finish.finishReason)
+        assertEquals(2, finish.usage.promptTokens)
+        assertEquals(3, finish.usage.completionTokens)
+    }
+
+    @Test
     fun `embedding image and reranking models map Bedrock runtime payloads`() = runTest {
         val fixture = createTestServer(
             mutableMapOf(
@@ -309,6 +349,20 @@ class AmazonBedrockProviderTest {
                         ),
                     ),
                 ),
+                "https://bedrock.test/model/amazon.nova-lite-v1%3A0/converse" to UrlHandler(
+                    UrlResponse.JsonValue(
+                        Json.parseToJsonElement(
+                            """
+                            {
+                              "output":{"message":{"role":"assistant","content":[{"text":"signed"}]}},
+                              "stopReason":"end_turn",
+                              "usage":{"inputTokens":1,"outputTokens":1}
+                            }
+                            """.trimIndent(),
+                        ),
+                        headers = mapOf("x-amzn-requestid" to "req-signed"),
+                    ),
+                ),
             ),
         )
         fixture.server.start()
@@ -330,14 +384,23 @@ class AmazonBedrockProviderTest {
 
         val sigV4Provider = createAmazonBedrock(
             fixture.httpClient(),
-            AmazonBedrockProviderSettings(accessKeyId = "id", secretAccessKey = "secret", baseURL = "https://bedrock.test"),
+            AmazonBedrockProviderSettings(
+                accessKeyId = "id",
+                secretAccessKey = "secret",
+                sessionToken = "token",
+                baseURL = "https://bedrock.test",
+            ),
         )
-        val error = assertFailsWith<AiSdkException> {
-            sigV4Provider.languageModel("amazon.nova-lite-v1:0").generate(
-                LanguageModelCallParams(messages = listOf(userMessage("hi"))),
-            )
-        }
-        assertTrue(error.message.orEmpty().contains("SigV4 request signing"))
+        val signed = sigV4Provider.languageModel("amazon.nova-lite-v1:0").generate(
+            LanguageModelCallParams(messages = listOf(userMessage("hi"))),
+        )
+        val signedRequest = fixture.calls.last()
+        assertEquals("signed", signed.text)
+        assertEquals("token", signedRequest.requestHeaders.headerValue("x-amz-security-token"))
+        assertEquals("bedrock.test", signedRequest.requestHeaders.headerValue("host"))
+        assertTrue(signedRequest.requestHeaders.headerValue(HttpHeaders.Authorization).orEmpty().contains("AWS4-HMAC-SHA256"))
+        assertTrue(signedRequest.requestHeaders.headerValue(HttpHeaders.Authorization).orEmpty().contains("Credential=id/"))
+        assertTrue(signedRequest.requestHeaders.headerValue(HttpHeaders.Authorization).orEmpty().contains("/bedrock/aws4_request"))
     }
 
     private fun objectSchema(vararg required: String): JsonObject = buildJsonObject {
@@ -351,6 +414,41 @@ class AmazonBedrockProviderTest {
             },
         )
         put("required", kotlinx.serialization.json.JsonArray(required.map(::JsonPrimitive)))
+    }
+
+    private fun bedrockSmithyEventStream(vararg events: Pair<String, String>): ByteArray =
+        events.fold(ByteArray(0)) { acc, (eventType, payload) ->
+            acc + bedrockSmithyFrame(
+                headers = smithyStringHeader(":message-type", "event") + smithyStringHeader(":event-type", eventType),
+                payload = payload.encodeToByteArray(),
+            )
+        }
+
+    private fun bedrockSmithyFrame(headers: ByteArray, payload: ByteArray): ByteArray {
+        val totalLength = 12 + headers.size + payload.size + 4
+        return ByteArray(totalLength).also { frame ->
+            frame.writeInt32BE(0, totalLength)
+            frame.writeInt32BE(4, headers.size)
+            headers.copyInto(frame, destinationOffset = 12)
+            payload.copyInto(frame, destinationOffset = 12 + headers.size)
+        }
+    }
+
+    private fun smithyStringHeader(name: String, value: String): ByteArray {
+        val nameBytes = name.encodeToByteArray()
+        val valueBytes = value.encodeToByteArray()
+        return byteArrayOf(nameBytes.size.toByte()) +
+            nameBytes +
+            byteArrayOf(7) +
+            byteArrayOf(((valueBytes.size ushr 8) and 0xff).toByte(), (valueBytes.size and 0xff).toByte()) +
+            valueBytes
+    }
+
+    private fun ByteArray.writeInt32BE(index: Int, value: Int) {
+        this[index] = (value ushr 24).toByte()
+        this[index + 1] = (value ushr 16).toByte()
+        this[index + 2] = (value ushr 8).toByte()
+        this[index + 3] = value.toByte()
     }
 
     private fun Map<String, String>.headerValue(name: String): String? =

@@ -73,6 +73,11 @@ private class AnthropicAwsMessagesLanguageModel(
             baseURL = anthropicAwsBaseURL(settings),
             apiKey = settings.apiKey,
             headers = anthropicAwsHeaders(settings),
+            requestHeadersProvider = if (settings.apiKey.isNullOrBlank()) {
+                { url, body, headers -> anthropicAwsSigV4Headers(settings, url, body, headers) }
+            } else {
+                null
+            },
             generateId = settings.generateId,
             name = "anthropic-aws.messages",
         ),
@@ -83,17 +88,14 @@ private class AnthropicAwsMessagesLanguageModel(
     override val supportedUrls: Map<String, List<String>> = delegate.supportedUrls
 
     override suspend fun generate(params: LanguageModelCallParams): LanguageModelResult {
-        ensureAnthropicAwsAuth(settings)
         return delegate.generate(params)
     }
 
     override fun stream(params: LanguageModelCallParams): Flow<StreamEvent> {
-        ensureAnthropicAwsAuth(settings)
         return delegate.stream(params)
     }
 
     override fun streamResult(params: LanguageModelCallParams): LanguageModelStreamResult {
-        ensureAnthropicAwsAuth(settings)
         return delegate.streamResult(params)
     }
 }
@@ -112,10 +114,33 @@ private fun anthropicAwsHeaders(settings: AnthropicAwsProviderSettings): Map<Str
     }
 }
 
-private fun ensureAnthropicAwsAuth(settings: AnthropicAwsProviderSettings) {
-    if (!settings.apiKey.isNullOrBlank()) return
-    if (settings.accessKeyId != null || settings.secretAccessKey != null || settings.credentialProvider != null) {
-        throw AiSdkException("AWS SigV4 request signing is not available in this common Kotlin module yet. Use apiKey/ANTHROPIC_AWS_API_KEY-style authentication for this facade.")
+suspend fun anthropicAwsSigV4Headers(
+    settings: AnthropicAwsProviderSettings,
+    url: String,
+    body: String,
+    headers: Map<String, String>,
+): Map<String, String> {
+    val credentials = settings.credentialProvider?.invoke()
+        ?: AnthropicAwsCredentials(
+            accessKeyId = settings.accessKeyId.orEmpty(),
+            secretAccessKey = settings.secretAccessKey.orEmpty(),
+            sessionToken = settings.sessionToken,
+            region = settings.region,
+        )
+    if (credentials.accessKeyId.isBlank() || credentials.secretAccessKey.isBlank()) {
+        throw AiSdkException("AWS SigV4 authentication requires both accessKeyId and secretAccessKey.")
     }
-    throw AiSdkException("Anthropic AWS requires apiKey authentication or AWS SigV4 credentials.")
+    return awsSigV4SignedHeaders(
+        method = "POST",
+        url = url,
+        service = "aws-external-anthropic",
+        region = credentials.region ?: settings.region ?: "us-east-1",
+        headers = headers + (HttpHeaders.ContentType to "application/json"),
+        body = body,
+        credentials = AwsSigV4Credentials(
+            accessKeyId = credentials.accessKeyId,
+            secretAccessKey = credentials.secretAccessKey,
+            sessionToken = credentials.sessionToken,
+        ),
+    )
 }
