@@ -1,0 +1,23 @@
+# @ai-sdk/vercel
+
+- Version: 2.0.50
+- Upstream path: `.reference/vercel-ai-sdk-ai-6.0.195/packages/vercel`
+- Target Kotlin module: `:aisdk-provider-vercel`
+- Current parity status: missing: no Kotlin module or parity mapping exists yet
+
+## Entrypoints
+
+| Subpath | Source | Export count |
+|---|---|---:|
+| `.` | `.reference/vercel-ai-sdk-ai-6.0.195/packages/vercel/src/index.ts` | 6 |
+
+## Public Exports
+
+| Export | Kind | Source | Entrypoints |
+|---|---|---|---|
+| `createVercel` | value | `src/vercel-provider.ts` | `.` |
+| `vercel` | value | `src/vercel-provider.ts` | `.` |
+| `VercelErrorData` | type | `@ai-sdk/openai-compatible` | `.` |
+| `VercelProvider` | type | `src/vercel-provider.ts` | `.` |
+| `VercelProviderSettings` | type | `src/vercel-provider.ts` | `.` |
+| `VERSION` | value | `src/version.ts` | `.` |

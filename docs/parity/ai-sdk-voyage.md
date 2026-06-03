@@ -1,0 +1,24 @@
+# @ai-sdk/voyage
+
+- Version: 1.0.4
+- Upstream path: `.reference/vercel-ai-sdk-ai-6.0.195/packages/voyage`
+- Target Kotlin module: `:aisdk-provider-voyage`
+- Current parity status: missing: no Kotlin module or parity mapping exists yet
+
+## Entrypoints
+
+| Subpath | Source | Export count |
+|---|---|---:|
+| `.` | `.reference/vercel-ai-sdk-ai-6.0.195/packages/voyage/src/index.ts` | 7 |
+
+## Public Exports
+
+| Export | Kind | Source | Entrypoints |
+|---|---|---|---|
+| `createVoyage` | value | `src/voyage-provider.ts` | `.` |
+| `VERSION` | value | `src/version.ts` | `.` |
+| `voyage` | value | `src/voyage-provider.ts` | `.` |
+| `VoyageEmbeddingModelOptions` | type | `src/voyage-embedding-options.ts` | `.` |
+| `VoyageProvider` | type | `src/voyage-provider.ts` | `.` |
+| `VoyageProviderSettings` | type | `src/voyage-provider.ts` | `.` |
+| `VoyageRerankingModelOptions` | type | `src/reranking/voyage-reranking-options.ts` | `.` |

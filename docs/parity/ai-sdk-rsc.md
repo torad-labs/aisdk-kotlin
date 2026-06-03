@@ -1,0 +1,46 @@
+# @ai-sdk/rsc
+
+- Version: 2.0.195
+- Upstream path: `.reference/vercel-ai-sdk-ai-6.0.195/packages/rsc`
+- Target Kotlin module: `:aisdk-server`
+- Current parity status: missing: no Kotlin module or parity mapping exists yet
+
+## Entrypoints
+
+| Subpath | Source | Export count |
+|---|---|---:|
+| `.` | `.reference/vercel-ai-sdk-ai-6.0.195/packages/rsc/src/index.ts` | 29 |
+
+## Public Exports
+
+| Export | Kind | Source | Entrypoints |
+|---|---|---|---|
+| `AIAction` | type | `src/types.ts` | `.` |
+| `AIActions` | type | `src/types.ts` | `.` |
+| `AIProvider` | type | `src/types.ts` | `.` |
+| `AIProviderProps` | type | `src/types.ts` | `.` |
+| `createAI` | value | `src/rsc-server.ts` | `.` |
+| `createStreamableUI` | value | `src/rsc-server.ts` | `.` |
+| `createStreamableValue` | value | `src/rsc-server.ts` | `.` |
+| `getAIState` | value | `src/rsc-server.ts` | `.` |
+| `getMutableAIState` | value | `src/rsc-server.ts` | `.` |
+| `InferActions` | type | `src/types.ts` | `.` |
+| `InferAIState` | type | `src/types.ts` | `.` |
+| `InferUIState` | type | `src/types.ts` | `.` |
+| `InternalAIProviderProps` | type | `src/types.ts` | `.` |
+| `InternalAIStateStorageOptions` | type | `src/types.ts` | `.` |
+| `JSONValue` | type | `src/types.ts` | `.` |
+| `MutableAIState` | type | `src/types.ts` | `.` |
+| `OnGetUIState` | type | `src/types.ts` | `.` |
+| `OnSetAIState` | type | `src/types.ts` | `.` |
+| `readStreamableValue` | value | `src/rsc-client.ts` | `.` |
+| `ServerWrappedAction` | type | `src/types.ts` | `.` |
+| `ServerWrappedActions` | type | `src/types.ts` | `.` |
+| `StreamableValue` | type | `src/streamable-value/streamable-value.ts` | `.` |
+| `streamUI` | value | `src/rsc-server.ts` | `.` |
+| `useActions` | value | `src/rsc-client.ts` | `.` |
+| `useAIState` | value | `src/rsc-client.ts` | `.` |
+| `useStreamableValue` | value | `src/rsc-client.ts` | `.` |
+| `useSyncUIState` | value | `src/rsc-client.ts` | `.` |
+| `useUIState` | value | `src/rsc-client.ts` | `.` |
+| `ValueOrUpdater` | type | `src/types.ts` | `.` |

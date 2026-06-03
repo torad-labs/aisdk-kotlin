@@ -82,6 +82,7 @@ Provider-specific packages for Anthropic, LiteRT, MLX, Gemini, or other runtimes
 - [Architecture decisions](docs/AISDK_PORT_DECISIONS.md)
 - [Known gaps](docs/AISDK_PORT_GAPS.md)
 - [Complete v6 port plan](docs/COMPLETE_PORT_PLAN.md)
+- [Parity ledgers](docs/parity/README.md)
 - [Usage guide](docs/AISDK_USAGE.md)
 - [Best practices](docs/AISDK_BEST_PRACTICES.md)
 - [Functionality audit](docs/FUNCTIONALITY_AUDIT.md)

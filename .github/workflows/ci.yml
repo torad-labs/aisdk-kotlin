@@ -22,6 +22,12 @@ jobs:
           java-version: "21"
       - uses: android-actions/setup-android@v4.0.1
       - uses: gradle/actions/setup-gradle@v6.1.0
+      - name: Fetch Vercel AI SDK v6 reference
+        run: |
+          mkdir -p .reference
+          git clone --depth 1 --branch ai@6.0.195 https://github.com/vercel/ai .reference/vercel-ai-sdk-ai-6.0.195
+      - name: Verify parity ledgers
+        run: node tools/generate-parity-ledger.mjs --check
       - name: Verify tests
         run: ./gradlew allTests
       - name: Verify publication metadata
