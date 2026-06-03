@@ -138,6 +138,17 @@ sealed interface UIMessagePart {
     data class Error(val message: String) : UIMessagePart
 
     /**
+     * Typed custom data part. Mirrors v6 `data-*` UI parts while using
+     * an explicit [type] string instead of TypeScript literal keys.
+     */
+    @Serializable
+    data class Data(
+        val type: String,
+        val data: JsonElement,
+        val providerMetadata: Map<String, JsonElement>? = null,
+    ) : UIMessagePart
+
+    /**
      * Step boundary marker — emitted between LLM call iterations
      * when the agent does multi-step work (tool-call → tool-result →
      * next LLM call). Preserves the v6 `step-start` UI part so a

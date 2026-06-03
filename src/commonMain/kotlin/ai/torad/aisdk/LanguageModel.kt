@@ -99,6 +99,7 @@ data class LanguageModelTool(
     val name: String,
     val description: String,
     val parametersSchemaJson: String,
+    val providerExecuted: Boolean = false,
 )
 
 /** One-shot generate result. */

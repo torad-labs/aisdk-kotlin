@@ -1,6 +1,6 @@
 # AI SDK Kotlin
 
-Kotlin Multiplatform agent, tool, streaming, and UI-message primitives inspired by Vercel AI SDK v6 patterns.
+Kotlin Multiplatform port of Vercel AI SDK v6 patterns and public feature areas.
 
 This is a green-room Kotlin rewrite of the architectural contracts, not a TypeScript source translation and not an official Vercel package.
 
@@ -57,15 +57,19 @@ val agent = ToolLoopAgent<Unit, String>(
 ## What Is Included
 
 - `Agent` and `ToolLoopAgent`.
-- Typed `tool()` definitions and `ToolSet`.
+- Typed `tool()` definitions, `dynamicTool()`, schemas, and `ToolSet`.
 - `generateText`, `streamText`, and cold `Flow<StreamEvent>` streaming.
 - Structured output through `Output.obj`, `Output.array`, `Output.choice`, and `Output.json`.
 - Deprecated v6 compatibility shims: `generateObject` and `streamObject`.
+- Embeddings, reranking, image generation, speech generation, transcription, and video generation model contracts.
+- Provider registry and `customProvider` routing.
+- Text stream, UI message stream, and chat transport primitives for Kotlin hosts.
+- Telemetry helpers and host-injected telemetry integrations.
 - Lifecycle hooks, middleware, stop conditions, call/step preparation, and cancellation.
 - UI message aggregation types for Compose, SwiftUI, or server-rendered hosts.
-- `MockLanguageModel` for deterministic tests.
+- Mock models for deterministic tests across every model family.
 
-Provider packages for OpenAI, Anthropic, LiteRT, MLX, or other runtimes should live in separate `aisdk-provider-*` modules.
+Provider packages for OpenAI, Anthropic, LiteRT, MLX, or other runtimes can live in separate `aisdk-provider-*` modules implementing these contracts.
 
 ## Documentation
 

@@ -16,14 +16,16 @@ model translated into the language Kotlin actually wants to use.
 
 | Layer | Status |
 |---|---|
-| AI SDK Core (`generateText`, `streamText`, `Output`, `tool()`, `Agent` + `ToolLoopAgent`, `wrapLanguageModel`, `stopWhen`, `LanguageModel`, lifecycle hooks, `prepareCall` / `prepareStep`) | ✅ ported |
-| AI SDK UI patterns (message parts, tool call states, `InferAgentUIMessage` equivalent, message stream reader) | ✅ ported as types only — Compose components live elsewhere |
-| `useChat` React hook | ❌ not ported — equivalent hosts collect `Flow<UIMessage>` from `streamToUiMessages` |
-| `DefaultChatTransport`, HTTP plumbing, `createAgentUIStreamResponse` | ❌ not ported — server-side concern, irrelevant for on-device |
+| AI SDK Core (`generateText`, `streamText`, `Output`, `tool()`, `dynamicTool()`, `Agent` + `ToolLoopAgent`, `wrapLanguageModel`, `stopWhen`, `LanguageModel`, lifecycle hooks, `prepareCall` / `prepareStep`) | ✅ ported |
+| AI SDK UI patterns (message parts, tool call states, `InferAgentUIMessage` equivalent, message stream reader, chat transports) | ✅ ported as Kotlin types/flows — Compose components live elsewhere |
+| `useChat` React hook | ✅ Kotlin equivalent is `Chat` + `ChatTransport` + `Flow<UIMessage>` collection |
+| `DefaultChatTransport`, text/UI stream response helpers | ✅ ported as `ChatTransport`, `TextStreamResponse`, `UIMessageStreamResponse`, and `ServerResponseWriter` |
 | `@vercel/ai-elements` components | ❌ not ported — Compose, SwiftUI, and server renderers have different idioms |
 | RSC integration | ❌ not ported (irrelevant) |
-| Embeddings, reranking, image gen, transcription, MCP, DevTools | ❌ deferred — not v0.1 |
-| Real provider implementations (MLX, LiteRT, cloud) | ❌ stubbed — only `MockLanguageModel` ships in this module |
+| Embeddings, reranking, image gen, speech, transcription, video | ✅ ported as provider-neutral model contracts + helpers |
+| Registry and provider routing | ✅ `Provider`, `customProvider`, `createProviderRegistry`, `wrapProvider` |
+| Telemetry | ✅ host-injected `TelemetryIntegration` primitives |
+| Real provider implementations (MLX, LiteRT, cloud) | provider modules implement this package's contracts |
 
 ## v5 → v6 deltas this port respects
 
@@ -61,6 +63,11 @@ The validator references make these renames non-negotiable:
 | `ToolExecutionContext` | `Context.kt` (member of) |
 | `generateText`, `streamText` | `Generate.kt` (top-level functions) |
 | `generateObject`, `streamObject` | `Generate.kt` (deprecated compatibility wrappers over structured `generateText` / `streamText`) |
+| `embed`, `embedMany` | `Embedding.kt` |
+| `generateImage`, `generateSpeech`, `generateVideo`, `transcribe` | `MediaModels.kt` |
+| `rerank` | `Rerank.kt` |
+| `customProvider`, `createProviderRegistry`, `wrapProvider` | `Provider.kt` |
+| `createTextStreamResponse`, `createUiMessageStreamResponse`, `Chat` | `ui/Streams.kt`, `ui/Chat.kt` |
 | `AbortSignal`, `AbortController` | `AbortSignal.kt` (custom interface wrapping coroutines `Job`) |
 | `CoreMessage` → `ModelMessage`, `Usage`, `FinishReason` | `ModelMessage.kt` |
 | Stream events (`text`, `tool-call`, `tool-result`, etc.) | `Streaming.kt` (sealed `StreamEvent`) |
@@ -87,10 +94,10 @@ diverges intentionally in these spots:
 4. **`AbortSignal` is a custom interface, not the JS `AbortSignal`.**
    Internally wraps a coroutine `Job` for ergonomics that match v6.
    See DECISION 3 in `AISDK_PORT_DECISIONS.md`.
-5. **No HTTP transport layer.** v6 ships server-side helpers such as
-   `toUIMessageStreamResponse()` for web routes. This core package keeps
-   transport outside the agent layer so Android, iOS, JVM, and server hosts
-   can choose their own networking boundary.
+5. **HTTP helpers are value objects and writer interfaces.** v6 ships
+   browser/Node response helpers. The KMP port exposes response metadata,
+   stream value objects, and `ServerResponseWriter` so Android, iOS, JVM,
+   and server hosts bind them to their own networking boundary.
 6. **`streamObject` returns `Flow<StreamEvent>`.** The TypeScript SDK returns
    a browser/Node stream facade with promise properties. The KMP core uses
    the same cold `Flow<StreamEvent>` contract as `streamText`; object typing

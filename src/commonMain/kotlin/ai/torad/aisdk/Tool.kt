@@ -3,6 +3,7 @@ package ai.torad.aisdk
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.serialization.KSerializer
+import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonElement
 
 /**
@@ -97,6 +98,7 @@ class Tool<TInput, TOutput, TContext>(
      * billing tier, owning team. Empty by default.
      */
     val metadata: Map<String, JsonElement> = emptyMap(),
+    val providerExecuted: Boolean = false,
 )
 
 /**
@@ -133,6 +135,7 @@ fun <TInput, TOutput, TContext> tool(
     onInputDelta: (suspend (streamingId: String, delta: String) -> Unit)? = null,
     onInputAvailable: (suspend (toolCallId: String, input: TInput) -> Unit)? = null,
     metadata: Map<String, JsonElement> = emptyMap(),
+    providerExecuted: Boolean = false,
     executor: suspend ToolExecutionContext<TContext>.(TInput) -> TOutput,
 ): Tool<TInput, TOutput, TContext> = Tool(
     name = name,
@@ -151,6 +154,7 @@ fun <TInput, TOutput, TContext> tool(
     onInputDelta = onInputDelta,
     onInputAvailable = onInputAvailable,
     metadata = metadata,
+    providerExecuted = providerExecuted,
 )
 
 /**
@@ -196,6 +200,7 @@ fun <TInput, TOutput, TContext> streamingTool(
     onInputDelta: (suspend (streamingId: String, delta: String) -> Unit)? = null,
     onInputAvailable: (suspend (toolCallId: String, input: TInput) -> Unit)? = null,
     metadata: Map<String, JsonElement> = emptyMap(),
+    providerExecuted: Boolean = false,
     executor: ToolExecutionContext<TContext>.(TInput) -> Flow<TOutput>,
 ): Tool<TInput, TOutput, TContext> = Tool(
     name = name,
@@ -211,6 +216,7 @@ fun <TInput, TOutput, TContext> streamingTool(
     onInputDelta = onInputDelta,
     onInputAvailable = onInputAvailable,
     metadata = metadata,
+    providerExecuted = providerExecuted,
 )
 
 /**
@@ -230,6 +236,7 @@ class ToolSet<TContext>(
                 name = tool.name,
                 description = descriptionWithExamples(tool),
                 parametersSchemaJson = jsonSchemaFor(tool),
+                providerExecuted = tool.providerExecuted,
             )
         }
     }
@@ -257,6 +264,60 @@ private fun descriptionWithExamples(tool: Tool<*, *, *>): String {
 /** Construct a [ToolSet] from individual tools. */
 fun <TContext> toolSetOf(vararg tools: Tool<*, *, TContext>): ToolSet<TContext> =
     ToolSet(tools.associateBy { it.name })
+
+/**
+ * Runtime-typed tool equivalent to v6's `dynamicTool`. Inputs and
+ * outputs are raw [JsonElement] values, so the tool can be registered
+ * from external manifests or MCP-style runtime catalogs.
+ */
+fun <TContext> dynamicTool(
+    name: String,
+    description: String,
+    inputSchemaJson: String = "{}",
+    metadata: Map<String, JsonElement> = emptyMap(),
+    executor: suspend ToolExecutionContext<TContext>.(JsonElement) -> JsonElement,
+): Tool<JsonElement, JsonElement, TContext> = tool(
+    name = name,
+    description = description,
+    inputSerializer = JsonElement.serializer(),
+    outputSerializer = JsonElement.serializer(),
+    metadata = metadata + ("inputSchema" to Json.parseToJsonElement(inputSchemaJson)),
+    executor = executor,
+)
+
+fun <TInput, TOutput, TContext> providerExecutedTool(
+    name: String,
+    description: String,
+    inputSerializer: KSerializer<TInput>,
+    outputSerializer: KSerializer<TOutput>,
+    metadata: Map<String, JsonElement> = emptyMap(),
+): Tool<TInput, TOutput, TContext> = streamingTool(
+    name = name,
+    description = description,
+    inputSerializer = inputSerializer,
+    outputSerializer = outputSerializer,
+    metadata = metadata,
+    providerExecuted = true,
+) {
+    flow { throw AgentError.ToolExecution(name, toolCallId, UnsupportedOperationException("provider-executed tool has no local executor")) }
+}
+
+data class Schema<T>(
+    val jsonSchema: JsonElement,
+    val validate: ((JsonElement) -> T)? = null,
+)
+
+fun <T> jsonSchema(
+    schema: JsonElement,
+    validate: ((JsonElement) -> T)? = null,
+): Schema<T> = Schema(schema, validate)
+
+fun <T> asSchema(schema: Schema<T>): Schema<T> = schema
+
+fun <T> zodSchema(
+    schema: JsonElement,
+    validate: ((JsonElement) -> T)? = null,
+): Schema<T> = Schema(schema, validate)
 
 /**
  * Render a tool's input schema as JSON Schema for the wire. Real

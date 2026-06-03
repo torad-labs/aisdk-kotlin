@@ -1,12 +1,10 @@
 # Port Gap Ledger
 
-> **Status (2026-06-03): the port is feature-complete for the extracted
-> core agent/tool/UI-message surface.** Every gap from the original audit
-> that had, or could plausibly get, a real core-library consumer is closed.
-> What remains is
-> forward-parity surface with no current consumer (deferred, below) and
-> cloud/server/multi-provider surface that does not belong in this package
-> (N/A, below).
+> **Status (2026-06-03): the port target is the full stable v6 `ai`
+> package surface, adapted to Kotlin Multiplatform.** JS-only return
+> types such as browser `Response`, Node `ServerResponse`, and React
+> hooks are represented as Kotlin `Flow`, response value objects, and
+> host-facing interfaces.
 >
 > This file used to be a 390-line live audit (a numbered punch list + a
 > phased implementation plan + per-area prose). That audit did its job —
@@ -46,6 +44,13 @@ and everything the core package consumes directly — are done:
   `convertToModelMessages(ignoreIncompleteToolCalls)`, `preliminary`.
 - **Directories**: `error/` (as `AgentError`), `logger/` (as `Logger` +
   `loggingMiddleware`), `util/` load-bearing helpers.
+- **Full-package feature areas**: `embed`, `generate-image`,
+  `generate-speech`, `generate-video`, `rerank`, `transcribe`,
+  `registry`, `telemetry`, `text-stream`, `ui-message-stream`, and
+  `ui` chat transports now have KMP surfaces and tests.
+- **Provider-utils exports**: `dynamicTool`, `jsonSchema`, `asSchema`,
+  `zodSchema`, `generateId`, and `createIdGenerator` are available in
+  Kotlin form.
 
 ## Deliberately deferred — forward-parity, no current core consumer
 
@@ -57,31 +62,31 @@ dev knows the gap is *known and chosen*, not missed.
 |---|---|---|
 | `extractJsonMiddleware` *incremental* streaming (v6's 12-char-lookahead state machine) | Current structured-output consumers decode the whole object through `Output.decode`; token-by-token JSON rendering has no core consumer. | single-emit-at-`Finish` + truncation repair |
 | `DataUIPart<DATA_TYPES>` (typed `data-*` parts) | No feature streams custom typed data parts yet. | `ToolStreamWriter.writeData(JsonElement)` → `StreamEvent.Raw` |
-| `dynamicTool` helper (type-erased, MCP-style) | No external/MCP tool integration on-device. | `tool(...)` / `streamingTool(...)` |
 | `StreamTextResult` facade promises (`.warnings`, `.response`, `.textStream`, `.fullStream`) | KMP exposes a cold `Flow<StreamEvent>` directly instead of a JS/Node stream facade. | `Flow<StreamEvent>` + `GenerateTextResult` metadata |
 | Structured tool-result **stream** output (v6's discriminated `ToolResultOutput` on the wire) | `StreamEvent.ToolResult` carries `outputJson` + `modelVisible: JsonElement` — a deliberate divergence; `ToolResultOutput` already exists for the `toModelOutput` return. | `outputJson` + `modelVisible` |
 | Agent-level persistent `activeTools` allowlist | `StepSettings.activeTools` gives per-step scoping, which covers the need. | per-step `activeTools` |
 | Deep stream sub-field drift (`dynamic` / `providerExecuted` flags, `rawFinishReason`, `doStream` returning `{request, response}`) | Telemetry/cloud-routing fields with no on-device meaning. | — |
 | `callOptionsSchema` runtime validation | Low value; the schema is type-checked at construction. | — |
 
-## What stays N/A (will not port)
+## Platform adapter surface
 
-- **Cloud API surfaces**: `embed`, `generate-image`, `generate-speech`,
-  `generate-video`, `rerank`, `transcribe`.
-- **Multi-provider routing**: `registry`, `customProvider`,
-  `createProviderRegistry`.
 - **Server-shape helpers**: `createAgentUiStream*`,
-  `pipeUIMessageStreamToResponse`, `createUIMessageStreamResponse`,
-  `processToolCalls` (Next.js / Hono).
-- **OTel telemetry**: the entire `telemetry/` dir. Hosts should provide
-  telemetry through middleware or provider-specific packages.
-- **Browser/server-specific**: `experimental_download`, `headers`,
-  `maxRetries`, web `Response` helpers.
+  `pipeUIMessageStreamToResponse`, `createUIMessageStreamResponse`, and
+  text-stream response helpers are represented as `Flow` value objects
+  and `ServerResponseWriter`; HTTP frameworks bind these to concrete
+  sockets/responses.
+- **OTel telemetry**: represented through host-injected
+  `TelemetryIntegration` rather than a hard OpenTelemetry dependency.
+- **Browser/server-specific transport concerns**: `headers`, retry
+  policy, and response helpers exist in common contracts; concrete HTTP
+  clients live in provider/platform modules.
 - **Provider-executed tools** (`Tool.type = 'provider'`): OpenAI Code
-  Interpreter, Anthropic web search.
-- **React-binding plumbing**: `Chat` class, `useChat`,
-  `addToolApprovalResponse`, `addToolOutput` (the Kotlin VM consumes the
-  Flow directly).
+  Interpreter, Anthropic web search. The core has `dynamicTool` and
+  provider metadata escape hatches; concrete hosted tools are provider
+  module work because execution is provider-specific.
+- **React-binding plumbing**: `Chat` and transports exist in Kotlin;
+  `useChat` remains a React hook concept and is expressed by collecting
+  `Flow<UIMessage>` in the host UI layer.
 - **Deprecated v5 aliases**: `isToolOrDynamicToolUIPart`, etc.
 
 ---

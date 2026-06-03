@@ -1,7 +1,9 @@
 package ai.torad.aisdk
 
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.filterIsInstance
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.map
 import kotlinx.serialization.json.JsonElement
 
 /**
@@ -146,6 +148,61 @@ fun streamText(
     )
     model.stream(params).collect { emit(it) }
 }
+
+data class StreamTextResult(
+    val fullStream: Flow<StreamEvent>,
+) {
+    val textStream: Flow<String> = fullStream
+        .filterIsInstance<StreamEvent.TextDelta>()
+        .map { it.text }
+
+    fun toTextStreamResponse(): ai.torad.aisdk.ui.TextStreamResponse =
+        ai.torad.aisdk.ui.createTextStreamResponse(textStream)
+
+    fun toUiMessageStream(assistantMessageId: String): Flow<ai.torad.aisdk.ui.UIMessage> =
+        ai.torad.aisdk.ui.streamToUiMessages(fullStream, assistantMessageId)
+
+    fun toUiMessageStreamResponse(assistantMessageId: String): ai.torad.aisdk.ui.UIMessageStreamResponse =
+        ai.torad.aisdk.ui.createUiMessageStreamResponse(toUiMessageStream(assistantMessageId))
+}
+
+fun streamTextResult(
+    model: LanguageModel,
+    prompt: String? = null,
+    messages: List<ModelMessage> = emptyList(),
+    system: String? = null,
+    temperature: Float? = null,
+    topP: Float? = null,
+    topK: Int? = null,
+    maxOutputTokens: Int? = null,
+    stopSequences: List<String> = emptyList(),
+    seed: Int? = null,
+    providerOptions: Map<String, JsonElement> = emptyMap(),
+    abortSignal: AbortSignal = AbortSignalNever,
+    output: Output<*>? = null,
+    presencePenalty: Float? = null,
+    frequencyPenalty: Float? = null,
+    responseFormat: ResponseFormat = ResponseFormat.Text,
+): StreamTextResult = StreamTextResult(
+    streamText(
+        model = model,
+        prompt = prompt,
+        messages = messages,
+        system = system,
+        temperature = temperature,
+        topP = topP,
+        topK = topK,
+        maxOutputTokens = maxOutputTokens,
+        stopSequences = stopSequences,
+        seed = seed,
+        providerOptions = providerOptions,
+        abortSignal = abortSignal,
+        output = output,
+        presencePenalty = presencePenalty,
+        frequencyPenalty = frequencyPenalty,
+        responseFormat = responseFormat,
+    ),
+)
 
 /**
  * Deprecated v6 compatibility helper. Prefer [generateText] with

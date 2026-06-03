@@ -5,6 +5,9 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
+import kotlinx.serialization.json.contentOrNull
 
 /**
  * Convert a raw agent [StreamEvent] flow into a flow of growing
@@ -284,7 +287,15 @@ fun streamToUiMessages(
                 parts.add(UIMessagePart.Error(event.message))
                 emit(snapshot())
             }
-            is StreamEvent.Raw -> Unit
+            is StreamEvent.Raw -> {
+                val rawObject = runCatching { event.rawValue.jsonObject }.getOrNull()
+                val type = rawObject?.get("type")?.jsonPrimitive?.contentOrNull
+                val data = rawObject?.get("data")
+                if (type != null && data != null) {
+                    parts.add(UIMessagePart.Data(type = type, data = data))
+                    emit(snapshot())
+                }
+            }
         }
     }
 }

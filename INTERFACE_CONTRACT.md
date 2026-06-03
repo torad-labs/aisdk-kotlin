@@ -132,6 +132,50 @@ Penalty and response-format fields participate in the `Step ?: Agent ?: agent-de
   - `loggingMiddleware(logger: Logger, tag = "agent")` — routes tool-call boundary events to `logger.debug` and errors to `logger.warn` (passing the `@Transient` typed `ToolError.error` as the throwable). The canonical consumer of the `Logger` primitive; logging lives in middleware, not the provider or loop.
 - `interface Logger { fun warn(message, throwable? = null); fun info(message); fun debug(message) }` — host-injected log sink. `object NoopLogger` (drop-everything default). Errors are NOT routed here — those ride `StreamEvent.Error` / `OnErrorEvent`.
 
+### Embeddings
+
+- `interface EmbeddingModel { val modelId; val provider; suspend fun embed(params): EmbeddingModelResult }`
+- `data class EmbeddingModelCallParams(values, maxEmbeddingsPerCall?, truncate?, providerOptions, abortSignal, headers)`
+- `data class EmbeddingModelResult(embeddings, usage, warnings, request, response, providerMetadata)`
+- `data class EmbeddingUsage(tokens, raw?)`
+- `suspend fun embed(model, value, providerOptions?, abortSignal?, headers?): EmbedResult<String>`
+- `suspend fun embedMany(model, values, maxEmbeddingsPerCall?, providerOptions?, abortSignal?, headers?): EmbedManyResult<String>`
+- `interface EmbeddingModelMiddleware`; `wrapEmbeddingModel`; `defaultEmbeddingSettingsMiddleware`
+
+### Media And Reranking
+
+- Image: `ImageModel`, `ImageGenerationParams`, `ImageModelResult`, `GenerateImageResult`, `generateImage(...)`
+- Speech: `SpeechModel`, `SpeechGenerationParams`, `SpeechModelResult`, `GenerateSpeechResult`, `generateSpeech(...)`
+- Transcription: `TranscriptionModel`, `AudioSource`, `TranscriptionParams`, `TranscriptSegment`, `TranscribeResult`, `transcribe(...)`
+- Video: `VideoModel`, `VideoGenerationParams`, `VideoModelResult`, `GenerateVideoResult`, `generateVideo(...)`
+- Rerank: `RerankingModel`, `RerankingParams`, `RerankedItem<T>`, `RerankResult<T>`, `rerank(...)`
+- Shared file payload: `GeneratedFile(mediaType, base64, filename?, providerMetadata)`
+- `ImageModelMiddleware`, `ImageMiddlewareCallContext`, `wrapImageModel`
+
+### Provider Registry
+
+- `interface Provider` with `languageModel`, `embeddingModel`, `imageModel`, `speechModel`, `transcriptionModel`, `rerankingModel`, and `videoModel`.
+- `customProvider(...)`, `CustomProvider`, `ProviderRegistry`, `createProviderRegistry(...)`, `wrapProvider(...)`, `ProviderMiddleware`.
+- Errors: `AiSdkException`, `InvalidArgumentError`, `UnsupportedModelVersionError`, `NoSuchProviderError`, `NoSuchModelError`, `NoOutputGeneratedError`, `NoObjectGeneratedError`, `NoImageGeneratedError`, `NoSpeechGeneratedError`, `NoTranscriptGeneratedError`, `NoVideoGeneratedError`, `UiMessageStreamError`.
+
+### Telemetry
+
+- `TelemetrySettings`, `TelemetrySpan`, `TelemetryIntegration`, `NoopTelemetryIntegration`, `TelemetryIntegrationRegistry`, `globalTelemetryIntegrations`.
+- Helpers: `assembleOperationName`, `recordSpan`, `selectTelemetryAttributes`, `stringifyForTelemetry`.
+
+### Provider-Utils Helpers
+
+- `dynamicTool(name, description, inputSchemaJson?, metadata?, executor)`
+- `Schema<T>`, `jsonSchema`, `asSchema`, `zodSchema`
+- `IdGenerator`, `createIdGenerator`, `generateId`
+
+### General Utilities
+
+- `cosineSimilarity`, `splitArray`, `asArray`, `mergeJsonObjects`, `isDeepEqualData`.
+- `DataUrl`, `splitDataUrl`, `detectMediaType`, `prepareHeaders`.
+- `RetryPolicy`, `retryWithExponentialBackoff`, `SerialJobExecutor`.
+- `mergeAbortSignals`, `abortSignalFromJobs`.
+
 ### Streaming helpers
 
 - `sealed interface ChunkBy { Word; Line; Pattern(regex) }`
@@ -188,6 +232,10 @@ Penalty and response-format fields participate in the `Step ?: Agent ?: agent-de
   - **+ `providerMetadata: Map<String, JsonElement>? = null`** on all content + tool-lifecycle variants — everything above EXCEPT `StreamStart`, `Abort`, `Error`, and `Raw` (whose `rawValue` already IS the provider payload). `StepFinish` / `Finish` carried it pre-sweep. gap #11.
 
 ### UI types — `ai.torad.aisdk.ui.*`
+
+- Text/UI stream helpers: `TextStreamResponse`, `UIMessageStreamResponse`, `ServerResponseWriter`, `textStreamFromEvents`, `createTextStreamResponse`, `pipeTextStreamToResponse`, `createUiMessageStream`, `createUiMessageStreamResponse`, `pipeUiMessageStreamToResponse`, `readUiMessageStream`, `transformTextToUiMessageStream`.
+- Chat: `ChatRequest`, `ChatTransport`, `DirectChatTransport`, `DefaultChatTransport`, `TextStreamChatTransport`, `Chat`.
+- Validation/completion helpers: `validateUiMessages`, `getResponseUiMessageId`, `handleUiMessageStreamFinish`, `lastAssistantMessageIsCompleteWithToolCalls`, `lastAssistantMessageIsCompleteWithApprovalResponses`.
 
 - `data class UIMessage(id, role, parts: List<UIMessagePart>, createdAtMs?, metadata: Map<String, JsonElement>? = null)` — `metadata` is the monomorphic substitute for v6's `<METADATA, DATA_PARTS, TOOLS>` generics; apps can attach source-agent identity or routing metadata under their own namespaced keys.
 - `enum UIMessageRole { System, User, Assistant }`

@@ -123,6 +123,7 @@ private fun convertPart(
         is UIMessagePart.SourceUrl,
         is UIMessagePart.SourceDocument,
         is UIMessagePart.File,
+        is UIMessagePart.Data,
         is UIMessagePart.Error,
         -> Unit
     }
