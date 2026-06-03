@@ -95,6 +95,11 @@ coverage, and CI verifies that the checked reference is still npm `ai@latest`.
   policy, gateway request context, response helpers, Ktor Gateway transport,
   and OpenAI-compatible Ktor provider exist in common contracts; framework
   response binding still lives in host/platform modules.
+- **JavaScript global binding concerns**: upstream provider-utils calls
+  `btoa` / `atob` as bare functions to avoid Cloudflare illegal-invocation
+  binding issues. The KMP port has no Node, browser, or Cloudflare global
+  dependency here; `convertBase64ToUint8Array` and
+  `convertUint8ArrayToBase64` are aliases over `kotlin.io.encoding.Base64`.
 - **Provider-executed tools** (`Tool.type = 'provider'`): represented by
   `providerExecutedTool`, `LanguageModelTool.providerExecuted`, provider
   tool factories, and hosted tool descriptors across the provider facades.
