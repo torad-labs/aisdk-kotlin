@@ -105,8 +105,28 @@ class GoogleVertexProviderTest {
     }
 
     @Test
-    fun `vertex anthropic subprovider is explicit and project is required`() = runTest {
-        val fixture = createTestServer(mutableMapOf())
+    fun `vertex anthropic maps rawPredict url headers and body`() = runTest {
+        val fixture = createTestServer(
+            mutableMapOf(
+                "https://us-central1-aiplatform.googleapis.com/v1/projects/project-1/locations/us-central1/publishers/anthropic/models/claude-sonnet-4:rawPredict" to UrlHandler(
+                    UrlResponse.JsonValue(
+                        Json.parseToJsonElement(
+                            """
+                            {
+                              "id":"msg_1",
+                              "type":"message",
+                              "role":"assistant",
+                              "content":[{"type":"text","text":"vertex anthropic"}],
+                              "stop_reason":"end_turn",
+                              "usage":{"input_tokens":3,"output_tokens":4}
+                            }
+                            """.trimIndent(),
+                        ),
+                    ),
+                ),
+            ),
+        )
+        fixture.server.start()
         val missingProject = assertFailsWith<AiSdkException> {
             createVertex(fixture.httpClient(), GoogleVertexProviderSettings(accessToken = "token"))
         }
@@ -116,11 +136,84 @@ class GoogleVertexProviderTest {
             fixture.httpClient(),
             GoogleVertexAnthropicProviderSettings(project = "project-1", accessToken = "token"),
         )
-        assertEquals("google.vertex.anthropic", anthropic.languageModel("claude-sonnet-4").provider)
-        val error = assertFailsWith<AiSdkException> {
-            anthropic.languageModel("claude-sonnet-4").generate(LanguageModelCallParams(messages = listOf(userMessage("hi"))))
-        }
-        assertTrue(error.message.orEmpty().contains("not implemented"))
+        assertEquals("vertex.anthropic.messages", anthropic.languageModel("claude-sonnet-4").provider)
+        assertEquals("vertex.anthropic.messages", anthropic.messages("claude-sonnet-4").provider)
+
+        val result = anthropic.messages("claude-sonnet-4").generate(
+            LanguageModelCallParams(
+                messages = listOf(userMessage("hi")),
+                headers = mapOf("X-Request" to "request"),
+            ),
+        )
+
+        assertEquals("vertex anthropic", result.text)
+        assertEquals(3, result.usage.promptTokens)
+        assertEquals(4, result.usage.completionTokens)
+        val request = fixture.calls.single()
+        assertEquals("Bearer token", request.requestHeaders.headerValue("Authorization"))
+        assertEquals("request", request.requestHeaders.headerValue("X-Request"))
+        assertEquals(null, request.requestHeaders.headerValue("anthropic-version"))
+        assertTrue(request.requestUserAgent.orEmpty().contains("ai-sdk/google-vertex/$GOOGLE_VERTEX_VERSION"))
+        val body = request.requestBodyJson.jsonObject
+        assertEquals(null, body["model"])
+        assertEquals("vertex-2023-10-16", body["anthropic_version"]?.jsonPrimitive?.contentOrNull)
+        assertEquals("hi", body["messages"]?.jsonArray?.single()?.jsonObject?.get("content")?.jsonArray?.single()?.jsonObject?.get("text")?.jsonPrimitive?.contentOrNull)
+    }
+
+    @Test
+    fun `vertex xai drops reasoning effort and uses xai usage totals`() = runTest {
+        val fixture = createTestServer(
+            mutableMapOf(
+                "https://aiplatform.googleapis.com/v1/projects/project-1/locations/global/endpoints/openapi/chat/completions" to UrlHandler(
+                    UrlResponse.JsonValue(
+                        Json.parseToJsonElement(
+                            """
+                            {
+                              "id":"chat-1",
+                              "model":"grok",
+                              "choices":[{"message":{"content":"xai"},"finish_reason":"stop"}],
+                              "usage":{
+                                "prompt_tokens":5,
+                                "completion_tokens":7,
+                                "prompt_tokens_details":{"cached_tokens":2},
+                                "completion_tokens_details":{"reasoning_tokens":3}
+                              }
+                            }
+                            """.trimIndent(),
+                        ),
+                    ),
+                ),
+            ),
+        )
+        fixture.server.start()
+        val provider = createGoogleVertexXai(
+            fixture.httpClient(),
+            GoogleVertexXaiProviderSettings(project = "project-1", location = "global", accessToken = "token"),
+        )
+
+        val result = provider.chatModel("grok").generate(
+            LanguageModelCallParams(
+                messages = listOf(userMessage("hi")),
+                providerOptions = mapOf(
+                    "xai" to buildJsonObject {
+                        put("reasoningEffort", JsonPrimitive("high"))
+                        put("topLogprobs", JsonPrimitive(3))
+                    },
+                ),
+            ),
+        )
+
+        assertEquals("xai", result.text)
+        assertEquals(5, result.usage.promptTokens)
+        assertEquals(10, result.usage.completionTokens)
+        assertEquals(2, result.usage.inputTokens.cacheRead)
+        assertEquals(3, result.usage.outputTokens.reasoning)
+        val request = fixture.calls.single()
+        assertEquals("Bearer token", request.requestHeaders.headerValue("Authorization"))
+        assertEquals("grok", request.requestBodyJson.jsonObject["model"]?.jsonPrimitive?.contentOrNull)
+        assertEquals(null, request.requestBodyJson.jsonObject["reasoning_effort"])
+        assertEquals(3, request.requestBodyJson.jsonObject["top_logprobs"]?.jsonPrimitive?.intOrNull)
+        assertEquals(true, request.requestBodyJson.jsonObject["logprobs"]?.jsonPrimitive?.contentOrNull?.toBoolean())
     }
 
     private fun Map<String, String>.headerValue(name: String): String? =

@@ -46,6 +46,9 @@ data class AnthropicProviderSettings(
     val authToken: String? = null,
     val headers: Map<String, String> = emptyMap(),
     val requestHeadersProvider: (suspend (url: String, body: String, headers: Map<String, String>) -> Map<String, String>)? = null,
+    val buildRequestUrl: ((baseURL: String, modelId: String, isStreaming: Boolean) -> String)? = null,
+    val transformRequestBody: ((modelId: String, body: JsonObject, isStreaming: Boolean) -> JsonObject)? = null,
+    val supportedUrls: Map<String, List<String>>? = null,
     val generateId: () -> String = { ai.torad.aisdk.generateId() },
     val name: String = "anthropic.messages",
 )
@@ -100,7 +103,7 @@ class AnthropicMessagesLanguageModel(
     override val modelId: String,
 ) : LanguageModel {
     override val provider: String = settings.name
-    override val supportedUrls: Map<String, List<String>> = mapOf(
+    override val supportedUrls: Map<String, List<String>> = settings.supportedUrls ?: mapOf(
         "image/*" to listOf("^https://.*$"),
         "application/pdf" to listOf("^https://.*$"),
     )
@@ -146,8 +149,10 @@ class AnthropicMessagesLanguageModel(
         acceptEventStream: Boolean,
         parseJson: Boolean,
     ): AnthropicHttpResponse {
-        val url = "${settings.baseURL.trimEnd('/')}/messages"
-        val encodedBody = anthropicJson.encodeToString(JsonElement.serializer(), body)
+        val baseURL = settings.baseURL.trimEnd('/')
+        val url = settings.buildRequestUrl?.invoke(baseURL, modelId, acceptEventStream) ?: "$baseURL/messages"
+        val requestBody = settings.transformRequestBody?.invoke(modelId, body, acceptEventStream) ?: body
+        val encodedBody = anthropicJson.encodeToString(JsonElement.serializer(), requestBody)
         val baseHeaders = anthropicHeaders(settings, extraHeaders, betas)
         val requestHeaders = settings.requestHeadersProvider?.invoke(url, encodedBody, baseHeaders) ?: baseHeaders
         val response = client.request(url) {

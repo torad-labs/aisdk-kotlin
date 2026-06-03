@@ -52,6 +52,8 @@ data class OpenAICompatibleProviderSettings(
     val providerOptionsName: String? = null,
     val chatMaxOutputTokensKey: String = "max_tokens",
     val chatSeedKey: String = "seed",
+    val transformChatRequestBody: ((JsonObject) -> JsonObject)? = null,
+    val convertUsage: ((JsonElement?) -> Usage)? = null,
 )
 
 interface OpenAICompatibleProvider : Provider {
@@ -219,6 +221,7 @@ private class OpenAICompatibleChatLanguageModel(
             responseHeaders = response.headers,
             responseBody = response.value,
             warnings = prepared.warnings,
+            convertUsage = settings.convertUsage,
         )
     }
 
@@ -232,7 +235,7 @@ private class OpenAICompatibleChatLanguageModel(
         )
         emit(StreamEvent.StreamStart(prepared.warnings))
         emit(StreamEvent.ResponseMetadata(headers = response.headers, body = JsonPrimitive(response.rawText)))
-        val state = OpenAIChatStreamState(providerKey = providerOptionsKey())
+        val state = OpenAIChatStreamState(providerKey = providerOptionsKey(), convertUsage = settings.convertUsage)
         for (event in parseJsonEventStream(response.rawText, jsonSchema<JsonElement>(JsonObject(emptyMap())), json)) {
             when (event) {
                 is ParseResult.Success -> state.accept(event.value).forEach { emit(it) }
@@ -281,7 +284,7 @@ private class OpenAICompatibleChatLanguageModel(
             }
             putProviderOptions(options, openAIChatReservedOptions)
         }
-        return PreparedOpenAIRequest(body, warnings)
+        return PreparedOpenAIRequest(settings.transformChatRequestBody?.invoke(body) ?: body, warnings)
     }
 
     private fun providerOptions(options: Map<String, JsonElement>): JsonObject =
@@ -585,6 +588,7 @@ private fun chatResultFromJson(
     responseHeaders: Map<String, String>,
     responseBody: JsonElement,
     warnings: List<CallWarning>,
+    convertUsage: ((JsonElement?) -> Usage)? = null,
 ): LanguageModelResult {
     val obj = value.jsonObject
     val choice = obj["choices"]?.jsonArray?.firstOrNull()?.jsonObject
@@ -611,7 +615,7 @@ private fun chatResultFromJson(
         text = text,
         toolCalls = toolCalls,
         finishReason = finishReason,
-        usage = openAIUsage(obj["usage"]),
+        usage = (convertUsage ?: ::openAIUsage).invoke(obj["usage"]),
         providerMetadata = openAIProviderMetadata(obj["providerMetadata"], "openaiCompatible"),
         content = content,
         rawFinishReason = choice?.get("finish_reason")?.jsonPrimitive?.contentOrNull,
@@ -656,6 +660,7 @@ private fun completionResultFromJson(
 
 private class OpenAIChatStreamState(
     private val providerKey: String,
+    private val convertUsage: ((JsonElement?) -> Usage)? = null,
 ) {
     private val toolCalls = linkedMapOf<Int, StreamingToolCall>()
     private var finishReason = FinishReason.Other
@@ -682,7 +687,7 @@ private class OpenAIChatStreamState(
             finishReason = FinishReason.Error
             return events
         }
-        obj["usage"]?.let { usage = openAIUsage(it) }
+        obj["usage"]?.let { usage = (convertUsage ?: ::openAIUsage).invoke(it) }
         val choice = obj["choices"]?.jsonArray?.firstOrNull()?.jsonObject ?: return events
         choice["finish_reason"]?.jsonPrimitive?.contentOrNull?.let { finishReason = openAIFinishReason(it) }
         val delta = choice["delta"]?.jsonObject ?: return events
