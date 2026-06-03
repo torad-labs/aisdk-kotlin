@@ -3,7 +3,7 @@
 - Version: 3.0.81
 - Upstream path: `.reference/vercel-ai-sdk-ai-6.0.195/packages/anthropic`
 - Target Kotlin module: `:aisdk-provider-anthropic`
-- Current parity status: missing: no Kotlin module or parity mapping exists yet
+- Current parity status: ported: createAnthropic/anthropic, AnthropicProviderSettings, Anthropic message model aliases/options/metadata aliases, Anthropic hosted tool descriptors, auth-token/api-key validation, Anthropic headers/beta/user-agent behavior, messages request conversion, multimodal image/PDF/text document blocks, cache-control/file citation metadata, thinking/adaptive-thinking options, structured output_config, metadata/MCP/container/context option mapping, function/provider tool mapping, response text/reasoning/source/tool parsing, usage/cache iteration accounting, SSE event mapping, container-id forwarding helper, and unsupported embedding/image model errors are represented as a Kotlin facade folded into the root module; VERSION is exposed as ANTHROPIC_VERSION until package modules are split
 
 ## Entrypoints
 
