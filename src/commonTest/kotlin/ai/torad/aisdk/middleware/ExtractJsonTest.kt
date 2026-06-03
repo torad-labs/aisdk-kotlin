@@ -4,6 +4,7 @@ import ai.torad.aisdk.FinishReason
 import ai.torad.aisdk.LanguageModelCallParams
 import ai.torad.aisdk.LanguageModelResult
 import ai.torad.aisdk.MiddlewareCallContext
+import ai.torad.aisdk.ContentPart
 import ai.torad.aisdk.StreamEvent
 import ai.torad.aisdk.Usage
 import ai.torad.aisdk.providers.mockLanguageModelTextOnly
@@ -52,6 +53,14 @@ class ExtractJsonTest {
 
         // THEN both the leading and trailing prose are dropped.
         assertEquals("{\"a\":1}", result.text)
+    }
+
+    @Test
+    fun `given prose around json when generate-wrapped then content text is rebuilt`() = runTest {
+        val result = extractJsonMiddleware().wrapGenerate(genContext("Here you go: {\"a\":1} thanks"))
+
+        assertEquals("{\"a\":1}", result.text)
+        assertEquals(listOf(ContentPart.Text("{\"a\":1}")), result.content)
     }
 
     @Test

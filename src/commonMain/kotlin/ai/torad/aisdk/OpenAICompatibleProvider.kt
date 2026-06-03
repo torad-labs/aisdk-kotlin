@@ -455,8 +455,8 @@ private class OpenAICompatibleImageModel(
                 val obj = image.jsonObject
                 GeneratedFile(
                     mediaType = obj["media_type"]?.jsonPrimitive?.contentOrNull ?: "image/png",
-                    base64 = obj["b64_json"]?.jsonPrimitive?.contentOrNull
-                        ?: obj["url"]?.jsonPrimitive?.contentOrNull.orEmpty(),
+                    base64 = obj["b64_json"]?.jsonPrimitive?.contentOrNull.orEmpty(),
+                    url = obj["url"]?.jsonPrimitive?.contentOrNull,
                 )
             },
             warnings = warnings,
@@ -904,7 +904,7 @@ private fun openAIToolJson(tool: LanguageModelTool): JsonObject = buildJsonObjec
             put("name", JsonPrimitive(tool.name))
             put("description", JsonPrimitive(tool.description))
             put("parameters", openAICompatibleJson.parseToJsonElement(tool.parametersSchemaJson))
-            put("strict", JsonPrimitive(true))
+            put("strict", JsonPrimitive(tool.strict))
         },
     )
 }

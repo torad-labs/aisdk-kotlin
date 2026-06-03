@@ -79,6 +79,19 @@ class ToolTest {
     }
 
     @Test
+    fun `toolSet descriptors preserve per-tool strict flag`() {
+        val loose = tool<WeatherInput, WeatherOutput, Unit>(
+            name = "loose",
+            description = "Non-strict schema tool",
+            inputSerializer = serializer(),
+            outputSerializer = serializer(),
+            strict = false,
+        ) { WeatherOutput(72, "sunny") }
+
+        assertEquals(false, toolSetOf(loose).descriptors.single().strict)
+    }
+
+    @Test
     fun `toolSet_descriptors_derive_strict_json_schema_from_serializers`() {
         val forecast = tool<ForecastInput, WeatherOutput, Unit>(
             name = "forecast",

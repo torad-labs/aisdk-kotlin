@@ -80,6 +80,7 @@ class OpenResponsesProviderTest {
                         name = "search",
                         description = "Search docs",
                         parametersSchemaJson = objectSchema("q").toString(),
+                        strict = false,
                     ),
                 ),
                 toolChoice = ToolChoice.Specific("search"),
@@ -108,6 +109,7 @@ class OpenResponsesProviderTest {
         assertEquals("low", body["reasoning"]!!.jsonObject["effort"]!!.jsonPrimitive.content)
         assertEquals("concise", body["reasoning"]!!.jsonObject["summary"]!!.jsonPrimitive.content)
         assertEquals("function", body["tools"]!!.jsonArray.single().jsonObject["type"]!!.jsonPrimitive.content)
+        assertEquals(false, body["tools"]!!.jsonArray.single().jsonObject["strict"]?.jsonPrimitive?.booleanOrNull)
         assertEquals("search", body["tool_choice"]!!.jsonObject["name"]!!.jsonPrimitive.content)
         assertEquals("json_schema", body["text"]!!.jsonObject["format"]!!.jsonObject["type"]!!.jsonPrimitive.content)
 

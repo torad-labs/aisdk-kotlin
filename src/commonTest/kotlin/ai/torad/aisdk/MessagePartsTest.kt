@@ -61,6 +61,29 @@ class MessagePartsTest {
     }
 
     @Test
+    fun `placeholder removal keeps open text part indices in sync`() = runTest {
+        val input = JsonObject(mapOf("location" to JsonPrimitive("nyc")))
+        val events = flow {
+            emit(StreamEvent.ToolInputStart("input_1", "weather"))
+            emit(StreamEvent.TextStart("text_1"))
+            emit(StreamEvent.TextDelta("text_1", "before "))
+            emit(StreamEvent.ToolInputEnd("input_1"))
+            emit(StreamEvent.ToolCall("call_1", "weather", input))
+            emit(StreamEvent.TextDelta("text_1", "after"))
+            emit(StreamEvent.TextEnd("text_1"))
+            emit(StreamEvent.Finish(1, FinishReason.Stop, Usage()))
+        }
+
+        val final = drainAllItems(streamToUiMessages(events, "msg_placeholder")).last()
+
+        val text = final.parts.filterIsInstance<UIMessagePart.Text>().single()
+        val tool = final.parts.filterIsInstance<UIMessagePart.ToolUI>().single()
+        assertEquals("before after", text.text)
+        assertEquals(ToolCallState.InputAvailable, tool.state)
+        assertEquals("call_1", tool.toolCallId)
+    }
+
+    @Test
     fun `tool_error_state_surfaces_message`() = runTest {
         val events = flow {
             emit(StreamEvent.ToolInputStart("ti1", "weather"))

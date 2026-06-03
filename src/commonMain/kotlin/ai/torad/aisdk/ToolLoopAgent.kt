@@ -270,10 +270,7 @@ open class ToolLoopAgent<TContext, TOutput>(
                 is StreamEvent.TextDelta -> accumulator.append(event.text)
                 is StreamEvent.StepFinish -> {
                     finishReason = event.finishReason
-                    totalUsage = Usage(
-                        promptTokens = totalUsage.promptTokens + event.usage.promptTokens,
-                        completionTokens = totalUsage.completionTokens + event.usage.completionTokens,
-                    )
+                    totalUsage += event.usage
                 }
                 is StreamEvent.Finish -> {
                     finishReason = event.finishReason
@@ -281,7 +278,12 @@ open class ToolLoopAgent<TContext, TOutput>(
                 }
                 is StreamEvent.ToolApprovalRequest -> {
                     collectedApprovals.add(
-                        PendingApproval(event.toolCallId, event.toolName, event.inputJson)
+                        PendingApproval(
+                            toolCallId = event.toolCallId,
+                            toolName = event.toolName,
+                            input = event.inputJson,
+                            approvalId = event.approvalId,
+                        ),
                     )
                 }
                 is StreamEvent.Error -> throw RuntimeException(event.message)
@@ -518,11 +520,14 @@ open class ToolLoopAgent<TContext, TOutput>(
                         }
                         is StreamEvent.Error -> {
                             emit(event)
-                            return@collect
+                            throw TerminalModelStreamError()
                         }
                         else -> emit(event)
                     }
                 }
+            } catch (_: TerminalModelStreamError) {
+                finalMessagesRef?.value = messages.toList()
+                return@flow
             } catch (ce: CancellationException) {
                 throw ce
             } catch (t: Throwable) {
@@ -548,12 +553,16 @@ open class ToolLoopAgent<TContext, TOutput>(
                     emitToolError(this, call.toolCallId, call.toolName, err, messages)
                     continue
                 }
+                if (toolDef.providerExecuted) {
+                    continue
+                }
                 if (callNeedsApproval(toolDef, call, activeContext, messages.toList())) {
                     toolsRequiringApproval.add(call)
                 } else {
                     toolsToExecute.add(call)
                 }
             }
+            val hasLocalToolWork = toolsRequiringApproval.isNotEmpty() || toolsToExecute.isNotEmpty()
 
             // Emit approval requests + add to assistant content. Loop ends after this step.
             for (call in toolsRequiringApproval) {
@@ -619,10 +628,7 @@ open class ToolLoopAgent<TContext, TOutput>(
             )
             completedSteps.add(step)
             stepsCapture?.steps?.add(step)
-            totalUsage = Usage(
-                promptTokens = totalUsage.promptTokens + stepUsage.promptTokens,
-                completionTokens = totalUsage.completionTokens + stepUsage.completionTokens,
-            )
+            totalUsage += stepUsage
             lastFinishReason = effectiveFinishReason
 
             runHook(stepNumber) {
@@ -644,8 +650,11 @@ open class ToolLoopAgent<TContext, TOutput>(
             )
             if (stopWhen.shouldStop(loopState)) break@loopFinished
 
-            // Natural termination: model said Stop, no tool calls left to execute.
-            if (stepToolCalls.isEmpty() && stepFinishReason == FinishReason.Stop) break@loopFinished
+            // Natural termination: any no-tool finish is terminal. `ToolCalls`
+            // only continues when actual tool calls were parsed and processed.
+            if (!hasLocalToolWork && effectiveFinishReason != FinishReason.ToolApprovalRequested) {
+                break@loopFinished
+            }
         }
 
         emit(StreamEvent.Finish(stepNumber, lastFinishReason, totalUsage))
@@ -655,7 +664,14 @@ open class ToolLoopAgent<TContext, TOutput>(
             messages.lastOrNull { it.role == MessageRole.Assistant }
                 ?.content
                 ?.filterIsInstance<ContentPart.ToolApprovalRequest>()
-                ?.map { PendingApproval(it.toolCallId, it.toolName, it.input) }
+                ?.map {
+                    PendingApproval(
+                        toolCallId = it.toolCallId,
+                        toolName = it.toolName,
+                        input = it.input,
+                        approvalId = it.approvalId,
+                    )
+                }
                 ?: emptyList()
         } else emptyList()
 
@@ -701,8 +717,13 @@ open class ToolLoopAgent<TContext, TOutput>(
                 ?: continue
             if (!approval.approved) {
                 val denialMsg = approval.reason ?: "user denied tool execution"
-                out.emit(StreamEvent.ToolError(matchingCall.toolCallId, matchingCall.toolName, denialMsg))
-                messages.add(toolMessage(matchingCall.toolCallId, matchingCall.toolName, JsonPrimitive("denied: $denialMsg")))
+                applyDeniedToolApproval(
+                    out = out,
+                    call = matchingCall,
+                    approvalId = approval.approvalId ?: matchingCall.toolCallId,
+                    reason = denialMsg,
+                    messages = messages,
+                )
                 continue
             }
             val toolDef = tools.find(matchingCall.toolName) ?: continue
@@ -957,6 +978,49 @@ open class ToolLoopAgent<TContext, TOutput>(
         messages.add(ModelMessage(MessageRole.Tool, listOf(toolPart)))
     }
 
+    /**
+     * Approval denials are an expected host decision, not a tool failure.
+     * They still need a tool-role result in the durable message log so a
+     * resumed conversation can explain that the tool was intentionally
+     * skipped without retriggering the approval path.
+     */
+    private suspend fun applyDeniedToolApproval(
+        out: FlowCollector<StreamEvent>,
+        call: ContentPart.ToolCall,
+        approvalId: String,
+        reason: String,
+        messages: MutableList<ModelMessage>,
+    ) {
+        val output = ToolResultOutput.ExecutionDenied(reason)
+        val outputJson = output.toJsonElement()
+        out.emit(
+            StreamEvent.ToolOutputDenied(
+                toolCallId = call.toolCallId,
+                toolName = call.toolName,
+                approvalId = approvalId,
+                reason = reason,
+            ),
+        )
+        out.emit(
+            StreamEvent.ToolResult(
+                toolCallId = call.toolCallId,
+                toolName = call.toolName,
+                outputJson = outputJson,
+                output = output,
+                modelOutput = output,
+                isError = true,
+            ),
+        )
+        val toolPart = ContentPart.ToolResult(
+            toolCallId = call.toolCallId,
+            toolName = call.toolName,
+            output = outputJson,
+            isError = true,
+            modelVisible = outputJson,
+        )
+        messages.add(ModelMessage(MessageRole.Tool, listOf(toolPart)))
+    }
+
     @Suppress("UNCHECKED_CAST")
     /**
      * Decode `call.input` to a typed value. On failure, invoke
@@ -1151,3 +1215,5 @@ private class FlowToolStreamWriter(
     override suspend fun write(event: StreamEvent) = out.emit(event)
     override suspend fun writeData(value: JsonElement) = out.emit(StreamEvent.Raw(value))
 }
+
+private class TerminalModelStreamError : RuntimeException()

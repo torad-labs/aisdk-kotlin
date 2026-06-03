@@ -151,7 +151,7 @@ class AnthropicProviderTest {
                     ),
                 ),
                 tools = listOf(
-                    LanguageModelTool("lookup", "Lookup a city.", objectSchema("city").toString()),
+                    LanguageModelTool("lookup", "Lookup a city.", objectSchema("city").toString(), strict = false),
                     LanguageModelTool("web_search", "Anthropic web search.", """{"type":"object"}""", providerExecuted = true),
                 ),
                 toolChoice = ToolChoice.Specific("lookup"),
@@ -258,6 +258,7 @@ class AnthropicProviderTest {
         assertEquals("pptx", body["container"]?.jsonObject?.get("skills")?.jsonArray?.single()?.jsonObject?.get("skill_id")?.jsonPrimitive?.contentOrNull)
         assertEquals("lookup", body["tool_choice"]?.jsonObject?.get("name")?.jsonPrimitive?.contentOrNull)
         assertEquals(true, body["tool_choice"]?.jsonObject?.get("disable_parallel_tool_use")?.jsonPrimitive?.booleanOrNull)
+        assertEquals(false, body["tools"]?.jsonArray?.first()?.jsonObject?.get("strict")?.jsonPrimitive?.booleanOrNull)
         assertEquals("web_search_20260209", body["tools"]?.jsonArray?.last()?.jsonObject?.get("type")?.jsonPrimitive?.contentOrNull)
         assertEquals("Follow policy.", body["system"]?.jsonArray?.single()?.jsonObject?.get("text")?.jsonPrimitive?.contentOrNull)
         val userContent = body["messages"]?.jsonArray?.first()?.jsonObject?.get("content")?.jsonArray.orEmpty()

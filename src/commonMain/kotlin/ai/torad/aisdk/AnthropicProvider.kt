@@ -536,7 +536,7 @@ private fun anthropicPrepareTools(
                 put("description", JsonPrimitive(tool.description))
                 put("input_schema", anthropicJson.parseToJsonElement(tool.parametersSchemaJson))
                 if (toolStreaming) put("eager_input_streaming", JsonPrimitive(true))
-                put("strict", JsonPrimitive(true))
+                put("strict", JsonPrimitive(tool.strict))
             }
             betas += "structured-outputs-2025-11-13"
         }

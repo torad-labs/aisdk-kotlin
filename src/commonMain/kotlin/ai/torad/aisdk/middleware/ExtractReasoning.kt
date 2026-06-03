@@ -37,50 +37,74 @@ fun extractReasoningMiddleware(
         var inReasoning = false
         var reasoningId: String? = null
         var nextReasoningIdx = 0
+        var lastTextId: String? = null
+
+        suspend fun emitBufferedText(id: String?) {
+            if (buffer.isEmpty()) return
+            val text = buffer.toString()
+            buffer.clear()
+            if (inReasoning && reasoningId != null) {
+                emit(StreamEvent.ReasoningDelta(reasoningId!!, text))
+            } else if (id != null) {
+                emit(StreamEvent.TextDelta(id, text))
+            }
+        }
 
         context.doStream(context.params).collect { event ->
-            if (event !is StreamEvent.TextDelta) {
-                emit(event)
-                return@collect
-            }
-            buffer.append(event.text)
-            while (true) {
-                if (!inReasoning) {
-                    val openIdx = buffer.indexOf(openTag)
-                    if (openIdx < 0) {
-                        if (buffer.isNotEmpty()) {
-                            emit(StreamEvent.TextDelta(event.id, buffer.toString()))
-                            buffer.clear()
+            when (event) {
+                is StreamEvent.TextDelta -> {
+                    lastTextId = event.id
+                    buffer.append(event.text)
+                    while (true) {
+                        if (!inReasoning) {
+                            val openIdx = buffer.indexOf(openTag)
+                            if (openIdx < 0) {
+                                val emitLength = buffer.length - buffer.longestSuffixPrefixOf(openTag)
+                                if (emitLength > 0) {
+                                    emit(StreamEvent.TextDelta(event.id, buffer.substring(0, emitLength), event.providerMetadata))
+                                    buffer.deleteRange(0, emitLength)
+                                }
+                                break
+                            }
+                            if (openIdx > 0) {
+                                emit(StreamEvent.TextDelta(event.id, buffer.substring(0, openIdx), event.providerMetadata))
+                            }
+                            buffer.deleteRange(0, openIdx + openTag.length)
+                            reasoningId = "reasoning_${++nextReasoningIdx}"
+                            emit(StreamEvent.ReasoningStart(reasoningId!!, event.providerMetadata))
+                            inReasoning = true
+                        } else {
+                            val closeIdx = buffer.indexOf(closeTag)
+                            if (closeIdx < 0) {
+                                val emitLength = buffer.length - buffer.longestSuffixPrefixOf(closeTag)
+                                if (emitLength > 0) {
+                                    emit(StreamEvent.ReasoningDelta(reasoningId!!, buffer.substring(0, emitLength), event.providerMetadata))
+                                    buffer.deleteRange(0, emitLength)
+                                }
+                                break
+                            }
+                            if (closeIdx > 0) {
+                                emit(StreamEvent.ReasoningDelta(reasoningId!!, buffer.substring(0, closeIdx), event.providerMetadata))
+                            }
+                            emit(StreamEvent.ReasoningEnd(reasoningId!!, event.providerMetadata))
+                            buffer.deleteRange(0, closeIdx + closeTag.length)
+                            if (separator.isNotEmpty()) emit(StreamEvent.TextDelta(event.id, separator, event.providerMetadata))
+                            inReasoning = false
+                            reasoningId = null
                         }
-                        break
                     }
-                    if (openIdx > 0) {
-                        emit(StreamEvent.TextDelta(event.id, buffer.substring(0, openIdx)))
-                    }
-                    buffer.deleteRange(0, openIdx + openTag.length)
-                    reasoningId = "reasoning_${++nextReasoningIdx}"
-                    emit(StreamEvent.ReasoningStart(reasoningId!!))
-                    inReasoning = true
-                } else {
-                    val closeIdx = buffer.indexOf(closeTag)
-                    if (closeIdx < 0) {
-                        if (buffer.isNotEmpty()) {
-                            emit(StreamEvent.ReasoningDelta(reasoningId!!, buffer.toString()))
-                            buffer.clear()
-                        }
-                        break
-                    }
-                    if (closeIdx > 0) {
-                        emit(StreamEvent.ReasoningDelta(reasoningId!!, buffer.substring(0, closeIdx)))
-                    }
-                    emit(StreamEvent.ReasoningEnd(reasoningId!!))
-                    buffer.deleteRange(0, closeIdx + closeTag.length)
-                    if (separator.isNotEmpty()) emit(StreamEvent.TextDelta(event.id, separator))
-                    inReasoning = false
-                    reasoningId = null
+                }
+                is StreamEvent.TextEnd -> {
+                    emitBufferedText(event.id)
+                    emit(event)
+                }
+                else -> {
+                    emitBufferedText(lastTextId)
+                    emit(event)
                 }
             }
         }
+        emitBufferedText(lastTextId)
     }
 
     private fun extractReasoning(text: String): Pair<String, String> {
@@ -98,4 +122,20 @@ fun extractReasoningMiddleware(
         }
         return sb.toString() to reasoningSb.toString()
     }
+}
+
+private fun StringBuilder.longestSuffixPrefixOf(value: String): Int {
+    val maxLength = minOf(length, value.length - 1)
+    for (candidateLength in maxLength downTo 1) {
+        val suffixStart = length - candidateLength
+        var matches = true
+        for (i in 0 until candidateLength) {
+            if (this[suffixStart + i] != value[i]) {
+                matches = false
+                break
+            }
+        }
+        if (matches) return candidateLength
+    }
+    return 0
 }

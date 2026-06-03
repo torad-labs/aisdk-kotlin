@@ -116,6 +116,51 @@ class OpenAICompatibleProviderTest {
     }
 
     @Test
+    fun `chat model preserves per-tool strict flag in OpenAI-compatible request`() = runTest {
+        val seenBodies = mutableListOf<JsonObject>()
+        val client = HttpClient(
+            MockEngine { request ->
+                seenBodies += Json.parseToJsonElement(requestBodyText(request)).jsonObject
+                respond(
+                    content = """{"id":"chatcmpl_1","choices":[{"message":{"role":"assistant","content":"ok"},"finish_reason":"stop"}]}""",
+                    status = HttpStatusCode.OK,
+                    headers = headersOf(HttpHeaders.ContentType, "application/json"),
+                )
+            },
+        )
+        val provider = createOpenAICompatible(
+            client,
+            OpenAICompatibleProviderSettings(name = "openai", baseUrl = "https://api.test/v1", apiKey = "secret"),
+        )
+
+        provider.languageModel("gpt-test").generate(
+            LanguageModelCallParams(
+                messages = listOf(userMessage("hi")),
+                tools = listOf(
+                    LanguageModelTool(
+                        name = "loose",
+                        description = "Loose schema",
+                        parametersSchemaJson = """{"type":"object"}""",
+                        strict = false,
+                    ),
+                ),
+            ),
+        )
+
+        val strict = seenBodies.single()
+            .getValue("tools")
+            .jsonArray
+            .single()
+            .jsonObject
+            .getValue("function")
+            .jsonObject
+            .getValue("strict")
+            .jsonPrimitive
+            .booleanOrNull
+        assertEquals(false, strict)
+    }
+
+    @Test
     fun `chat model streams text reasoning tool calls and finish usage`() = runTest {
         val client = HttpClient(
             MockEngine { request ->
@@ -199,6 +244,26 @@ class OpenAICompatibleProviderTest {
         assertTrue(streamed.any { it is StreamEvent.TextDelta && it.text == "a" })
         assertTrue(streamed.any { it is StreamEvent.TextDelta && it.text == "b" })
         assertEquals(listOf("/v1/completions", "/v1/completions"), seenPaths)
+    }
+
+    @Test
+    fun `image model preserves url-only OpenAI-compatible image output`() = runTest {
+        val client = HttpClient(
+            MockEngine {
+                respond(
+                    """{"data":[{"url":"https://cdn.test/image.png","media_type":"image/jpeg"}]}""",
+                    HttpStatusCode.OK,
+                    headersOf(HttpHeaders.ContentType, "application/json"),
+                )
+            },
+        )
+        val provider = createOpenAICompatible(client, OpenAICompatibleProviderSettings("openai", "https://api.test/v1"))
+
+        val image = generateImage(provider.imageModel("image"), prompt = "logo")
+
+        assertEquals("", image.image.base64)
+        assertEquals("https://cdn.test/image.png", image.image.url)
+        assertEquals("image/jpeg", image.image.mediaType)
     }
 
     @Test

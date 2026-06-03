@@ -461,7 +461,7 @@ private fun openResponsesFunctionToolJson(tool: LanguageModelTool): JsonObject =
     put("name", JsonPrimitive(tool.name))
     put("description", JsonPrimitive(tool.description))
     put("parameters", openResponsesJson.parseToJsonElement(tool.parametersSchemaJson))
-    put("strict", JsonPrimitive(true))
+    put("strict", JsonPrimitive(tool.strict))
 }
 
 private fun openResponsesProviderToolJson(tool: LanguageModelTool): JsonObject = buildJsonObject {

@@ -254,6 +254,34 @@ class GenerateTextParityTest {
         assertEquals("resp_1", response.body?.jsonObject?.get("id")?.jsonPrimitive?.content)
     }
 
+    @Test
+    fun `streamTextResult metadata accessors do not recollect provider stream`() = runTest {
+        // GIVEN
+        val warning = CallWarning("mock-warning")
+        val model = CapturingModel(
+            streamEvents = listOf(
+                StreamEvent.StreamStart(listOf(warning)),
+                StreamEvent.ResponseMetadata(id = "resp_1", headers = mapOf("x-stream-id" to "stream_1")),
+                StreamEvent.TextStart("t1"),
+                StreamEvent.TextDelta("t1", "ok"),
+                StreamEvent.TextEnd("t1"),
+                StreamEvent.Finish(1, FinishReason.Stop, Usage(promptTokens = 1, completionTokens = 1)),
+            ),
+            streamResponse = LanguageModelResponseMetadata(headers = mapOf("x-request-id" to "req_1")),
+        )
+
+        // WHEN
+        val result = streamTextResult(model = model, prompt = "hi")
+        assertEquals(listOf("ok"), drainAllItems(result.textStream))
+        assertEquals(listOf(listOf(warning)), drainAllItems(result.warnings))
+        val response = drainAllItems(result.response).single()
+
+        // THEN
+        assertEquals(1, model.streamCollections, "metadata access must not re-run the provider stream")
+        assertEquals("resp_1", response.id)
+        assertEquals(mapOf("x-request-id" to "req_1", "x-stream-id" to "stream_1"), response.headers)
+    }
+
     @Suppress("DEPRECATION")
     @Test
     fun `generateObject delegates to generateText and returns the typed value`() = runTest {

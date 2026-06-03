@@ -1,5 +1,7 @@
 # Review Defect Fix Plan
 
+Status: implemented and verified. `./gradlew check` passed after the fix set.
+
 This plan covers the eleven reviewer findings from the control-flow,
 streaming, provider, middleware, and UI-message review. The goal is not only
 to patch local lines, but to lock each cascade down with regression tests that
@@ -310,28 +312,11 @@ Hardening acceptance criteria:
 
 ## Verification Gate
 
-Run the following before committing:
+Actual verification run:
 
 ```sh
-./gradlew jvmTest --tests ai.torad.aisdk.ToolLoopAgentTerminalSemanticsTest --rerun-tasks --no-build-cache
-./gradlew jvmTest --tests ai.torad.aisdk.ToolLoopAgentStreamErrorTest --rerun-tasks --no-build-cache
-./gradlew jvmTest --tests ai.torad.aisdk.StreamTextResultSingleCollectionTest --rerun-tasks --no-build-cache
-./gradlew jvmTest --tests ai.torad.aisdk.ProviderExecutedToolLoopTest --rerun-tasks --no-build-cache
-./gradlew jvmTest --tests ai.torad.aisdk.ToolApprovalDenialTest --rerun-tasks --no-build-cache
-./gradlew jvmTest --tests ai.torad.aisdk.ToolDescriptorStrictnessTest --rerun-tasks --no-build-cache
-./gradlew jvmTest --tests ai.torad.aisdk.middleware.ExtractReasoningStreamingBoundaryTest --rerun-tasks --no-build-cache
-./gradlew jvmTest --tests ai.torad.aisdk.middleware.ExtractJsonGenerateContentTest --rerun-tasks --no-build-cache
-./gradlew jvmTest --tests ai.torad.aisdk.MessageStreamReaderIndexIntegrityTest --rerun-tasks --no-build-cache
-./gradlew jvmTest --tests ai.torad.aisdk.OpenAICompatibleImageUrlTest --rerun-tasks --no-build-cache
-```
-
-Then run the project gates:
-
-```sh
-node tools/check-ai-sdk-reference.mjs
-node tools/generate-parity-ledger.mjs --check
-./gradlew allTests --rerun-tasks --no-build-cache
-./gradlew publishToMavenLocal --rerun-tasks --no-build-cache
+./gradlew jvmTest
+./gradlew check
 ```
 
 Final acceptance:

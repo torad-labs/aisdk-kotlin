@@ -4,6 +4,7 @@ import ai.torad.aisdk.LanguageModelMiddleware
 import ai.torad.aisdk.LanguageModelResult
 import ai.torad.aisdk.MiddlewareCallContext
 import ai.torad.aisdk.PartialJsonState
+import ai.torad.aisdk.ContentPart
 import ai.torad.aisdk.StreamEvent
 import ai.torad.aisdk.parsePartialJson
 import kotlinx.coroutines.flow.Flow
@@ -44,7 +45,11 @@ fun extractJsonMiddleware(
 
     override suspend fun wrapGenerate(context: MiddlewareCallContext): LanguageModelResult {
         val raw = context.doGenerate(context.params)
-        return raw.copy(text = transformText(raw.text))
+        val text = transformText(raw.text)
+        return raw.copy(
+            text = text,
+            content = rebuildContent(raw.content, text),
+        )
     }
 
     override fun wrapStream(context: MiddlewareCallContext): Flow<StreamEvent> = flow {
@@ -147,6 +152,11 @@ fun extractJsonMiddleware(
 
     private fun transformText(text: String): String =
         transform?.invoke(text) ?: extractAndRepairJson(text)
+
+    private fun rebuildContent(content: List<ContentPart>, text: String): List<ContentPart> = buildList {
+        if (text.isNotEmpty()) add(ContentPart.Text(text))
+        addAll(content.filterNot { it is ContentPart.Text })
+    }
 
     /**
      * Strip prose/fences to the JSON region, then repair it if the

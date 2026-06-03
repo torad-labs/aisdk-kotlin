@@ -4,6 +4,8 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.filterIsInstance
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.serialization.json.JsonElement
 
 /**
@@ -142,33 +144,44 @@ fun streamText(
     ).fullStream.collect { emit(it) }
 }
 
-data class StreamTextResult(
-    val fullStream: Flow<StreamEvent>,
+class StreamTextResult(
+    sourceStream: Flow<StreamEvent>,
     val request: LanguageModelRequestMetadata = LanguageModelRequestMetadata(),
     private val initialResponse: LanguageModelResponseMetadata = LanguageModelResponseMetadata(),
 ) {
+    private val upstream = sourceStream
+    private val mutex = Mutex()
+    private val capturedEvents = mutableListOf<StreamEvent>()
+    private var collected = false
+    private var capturedWarnings: List<CallWarning> = emptyList()
+    private var capturedResponse: LanguageModelResponseMetadata = initialResponse
+
+    val fullStream: Flow<StreamEvent> = flow {
+        mutex.withLock {
+            if (collected) {
+                capturedEvents.forEach { emit(it) }
+            } else {
+                upstream.collect { event ->
+                    capture(event)
+                    emit(event)
+                }
+                collected = true
+            }
+        }
+    }
+
     val textStream: Flow<String> = fullStream
         .filterIsInstance<StreamEvent.TextDelta>()
         .map { it.text }
 
     val warnings: Flow<List<CallWarning>> = flow {
-        var warnings: List<CallWarning>? = null
-        fullStream.collect { event ->
-            if (event is StreamEvent.StreamStart && warnings == null) {
-                warnings = event.warnings
-            }
-        }
-        emit(warnings.orEmpty())
+        ensureCollected()
+        emit(capturedWarnings)
     }
 
     val response: Flow<LanguageModelResponseMetadata> = flow {
-        var response = initialResponse
-        fullStream.collect { event ->
-            if (event is StreamEvent.ResponseMetadata) {
-                response = response.merge(event.toLanguageModelResponseMetadata())
-            }
-        }
-        emit(response)
+        ensureCollected()
+        emit(capturedResponse)
     }
 
     fun toTextStreamResponse(): ai.torad.aisdk.ui.TextStreamResponse =
@@ -179,6 +192,27 @@ data class StreamTextResult(
 
     fun toUiMessageStreamResponse(assistantMessageId: String): ai.torad.aisdk.ui.UIMessageStreamResponse =
         ai.torad.aisdk.ui.createUiMessageStreamResponse(toUiMessageStream(assistantMessageId))
+
+    private suspend fun ensureCollected() {
+        mutex.withLock {
+            if (collected) return
+            upstream.collect { event -> capture(event) }
+            collected = true
+        }
+    }
+
+    private fun capture(event: StreamEvent) {
+        capturedEvents += event
+        when (event) {
+            is StreamEvent.StreamStart -> if (capturedWarnings.isEmpty()) {
+                capturedWarnings = event.warnings
+            }
+            is StreamEvent.ResponseMetadata -> {
+                capturedResponse = capturedResponse.merge(event.toLanguageModelResponseMetadata())
+            }
+            else -> Unit
+        }
+    }
 }
 
 fun streamTextResult(
@@ -218,7 +252,7 @@ fun streamTextResult(
     )
     val result = model.streamResult(params)
     return StreamTextResult(
-        fullStream = result.stream,
+        sourceStream = result.stream,
         request = result.request,
         initialResponse = result.response,
     )

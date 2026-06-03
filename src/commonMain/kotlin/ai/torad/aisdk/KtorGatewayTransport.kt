@@ -564,6 +564,7 @@ private fun languageModelToolJson(tool: LanguageModelTool): JsonObject = buildJs
     put("name", JsonPrimitive(tool.name))
     put("description", JsonPrimitive(tool.description))
     put("parameters", gatewayJson.parseToJsonElement(tool.parametersSchemaJson))
+    put("strict", JsonPrimitive(tool.strict))
     if (tool.providerExecuted) put("providerExecuted", JsonPrimitive(true))
 }
 

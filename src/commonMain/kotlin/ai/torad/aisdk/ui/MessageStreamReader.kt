@@ -1,6 +1,7 @@
 package ai.torad.aisdk.ui
 
 import ai.torad.aisdk.StreamEvent
+import ai.torad.aisdk.ToolResultOutput
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.serialization.json.Json
@@ -49,6 +50,15 @@ fun streamToUiMessages(
         role = UIMessageRole.Assistant,
         parts = parts.toList(),
     )
+
+    fun shiftIndexesAfterRemoval(removedIndex: Int) {
+        for ((key, value) in toolByCallId.toMap()) {
+            if (value > removedIndex) toolByCallId[key] = value - 1
+        }
+        for ((key, value) in partIndexById.toMap()) {
+            if (value > removedIndex) partIndexById[key] = value - 1
+        }
+    }
 
     fun openTextPart(id: String) {
         if (partIndexById.containsKey(id)) return
@@ -220,9 +230,7 @@ fun streamToUiMessages(
                     val placeholderIdx = toolByCallId.remove(placeholderId)
                     if (placeholderIdx != null && placeholderIdx in parts.indices) {
                         parts.removeAt(placeholderIdx)
-                        for ((k, v) in toolByCallId.toMap()) {
-                            if (v > placeholderIdx) toolByCallId[k] = v - 1
-                        }
+                        shiftIndexesAfterRemoval(placeholderIdx)
                     }
                     toolNameByInputId.remove(placeholderId)
                     toolInputBufById.remove(placeholderId)
@@ -247,12 +255,18 @@ fun streamToUiMessages(
             is StreamEvent.ToolResult -> {
                 val existingIndex = toolByCallId[event.toolCallId]
                 val existingInput = (existingIndex?.let { parts[it] as? UIMessagePart.ToolUI })?.input
+                val deniedOutput = event.output as? ToolResultOutput.ExecutionDenied
                 upsertTool(
                     toolCallId = event.toolCallId,
                     toolName = event.toolName,
-                    state = ToolCallState.OutputAvailable,
+                    state = if (deniedOutput != null) {
+                        ToolCallState.OutputDenied
+                    } else {
+                        ToolCallState.OutputAvailable
+                    },
                     input = existingInput,
                     output = event.outputJson,
+                    error = deniedOutput?.reason,
                     preliminary = event.preliminary,
                 )
                 emit(snapshot())

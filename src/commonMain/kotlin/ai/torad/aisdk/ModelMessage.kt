@@ -238,6 +238,21 @@ data class Usage(
     )
 }
 
+operator fun Usage.plus(other: Usage): Usage = Usage(
+    inputTokens = Usage.InputTokenBreakdown(
+        total = inputTokens.total + other.inputTokens.total,
+        noCache = inputTokens.noCache + other.inputTokens.noCache,
+        cacheRead = inputTokens.cacheRead + other.inputTokens.cacheRead,
+        cacheWrite = inputTokens.cacheWrite + other.inputTokens.cacheWrite,
+    ),
+    outputTokens = Usage.OutputTokenBreakdown(
+        total = outputTokens.total + other.outputTokens.total,
+        text = outputTokens.text + other.outputTokens.text,
+        reasoning = outputTokens.reasoning + other.outputTokens.reasoning,
+    ),
+    raw = other.raw ?: raw,
+)
+
 /** Why a generation step ended. */
 @Serializable
 enum class FinishReason {
