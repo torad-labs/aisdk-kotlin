@@ -6,8 +6,10 @@ import kotlin.test.assertFailsWith
 import kotlin.test.assertIs
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.withTimeout
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
@@ -335,11 +337,104 @@ class MCPClientTest {
     }
 
     @Test
-    fun `stdio transport common implementation exposes explicit runtime boundary`() = runTest {
-        val transport = Experimental_StdioMCPTransport(StdioConfig(command = "node", args = listOf("server.mjs")))
+    fun `HTTP MCP transport performs initialize post session headers and tool list`() = runTest {
+        val fixture = createTestServer(
+            mutableMapOf(
+                "https://mcp.test/mcp" to UrlHandler(
+                    { request, _ ->
+                        when {
+                            request.method == "GET" -> UrlResponse.Error(status = 405, body = "GET not supported")
+                            "\"method\":\"initialize\"" in request.body -> UrlResponse.JsonValue(
+                                JSONRPCResponse(id = JsonPrimitive(0), result = initializeResult()).toJsonElement(),
+                                headers = mapOf("mcp-session-id" to "session-1"),
+                            )
+                            "\"method\":\"notifications/initialized\"" in request.body -> UrlResponse.Empty(status = 202)
+                            "\"method\":\"tools/list\"" in request.body ->
+                                UrlResponse.JsonValue(JSONRPCResponse(id = JsonPrimitive(1), result = listToolsResult()).toJsonElement())
+                            else -> UrlResponse.Error(status = 500, body = "unexpected request: ${request.body}")
+                        }
+                    },
+                ),
+            ),
+        )
+        fixture.server.start()
 
-        val error = assertFailsWith<UnsupportedOperationException> { transport.start() }
-        assertTrue(error.message!!.contains("platform process adapter"))
+        val client = createMCPClient(
+            MCPClientConfig(
+                transport = HttpMCPTransport(
+                    client = fixture.httpClient(),
+                    url = "https://mcp.test/mcp",
+                    headers = mapOf("X-Test" to "transport"),
+                ),
+            ),
+        )
+
+        assertEquals("fixture-server", client.serverInfo.name)
+        assertEquals("echo", client.listTools().tools.single().name)
+        val posts = fixture.calls.filter { it.requestMethod == "POST" }
+        val initialize = posts[0]
+        val initialized = posts[1]
+        val listTools = posts[2]
+        assertEquals("POST", initialize.requestMethod)
+        assertEquals("transport", initialize.requestHeaders.headerValue("X-Test"))
+        assertEquals(LATEST_PROTOCOL_VERSION, initialize.requestHeaders.headerValue("mcp-protocol-version"))
+        assertEquals("session-1", initialized.requestHeaders.headerValue("mcp-session-id"))
+        assertEquals("session-1", listTools.requestHeaders.headerValue("mcp-session-id"))
+    }
+
+    @Test
+    fun `SSE MCP transport discovers endpoint posts messages and receives server messages`() = runTest {
+        val serverNotification = """{"jsonrpc":"2.0","method":"notifications/server"}"""
+        val fixture = createTestServer(
+            mutableMapOf(
+                "https://mcp.test/sse" to UrlHandler(
+                    UrlResponse.StreamChunks(
+                        listOf(
+                            "event: endpoint\ndata: /messages\n\n",
+                            "event: message\ndata: $serverNotification\n\n",
+                        ),
+                    ),
+                ),
+                "https://mcp.test/messages" to UrlHandler(UrlResponse.Empty(status = 202)),
+            ),
+        )
+        fixture.server.start()
+        val transport = SseMCPTransport(fixture.httpClient(), "https://mcp.test/sse")
+        var received: JSONRPCMessage? = null
+        transport.onMessage = { received = it }
+
+        transport.start()
+        withTimeout(1_000) {
+            while (received == null) delay(10)
+        }
+        transport.send(JSONRPCNotification(method = "notifications/test"))
+
+        assertEquals("POST", fixture.calls.single { it.requestUrl == "https://mcp.test/messages" }.requestMethod)
+        val notification = assertIs<JSONRPCNotification>(received)
+        assertEquals("notifications/server", notification.method)
+        transport.close()
+    }
+
+    @Test
+    fun `stdio transport exchanges newline-delimited JSON-RPC with process`() = runTest {
+        val transport = Experimental_StdioMCPTransport(
+            StdioConfig(
+                command = "/bin/sh",
+                args = listOf("-c", "while IFS= read -r line; do printf '%s\\n' \"\$line\"; done"),
+            ),
+        )
+        var received: JSONRPCMessage? = null
+        transport.onMessage = { received = it }
+
+        transport.start()
+        transport.send(JSONRPCNotification(method = "notifications/test"))
+        withTimeout(1_000) {
+            while (received == null) delay(10)
+        }
+
+        val notification = assertIs<JSONRPCNotification>(received)
+        assertEquals("notifications/test", notification.method)
+        transport.close()
     }
 
     private fun objectSchema(vararg required: String): JsonObject = buildJsonObject {
@@ -461,6 +556,9 @@ class MCPClientTest {
         override suspend fun clientInformation(): OAuthClientInformation? =
             OAuthClientInformation(clientId = "client-id")
     }
+
+    private fun Map<String, String>.headerValue(name: String): String? =
+        entries.firstOrNull { it.key.equals(name, ignoreCase = true) }?.value
 
     private companion object {
         val json = Json {

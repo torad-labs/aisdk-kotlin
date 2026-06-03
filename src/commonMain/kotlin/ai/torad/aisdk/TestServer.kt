@@ -76,21 +76,27 @@ class UrlHandler private constructor(
     constructor(responses: List<UrlResponse?>) : this(UrlResponseParameter.Sequence(responses))
 
     constructor(factory: (TestServerCallOptions) -> UrlResponse?) : this(UrlResponseParameter.Factory(factory))
+
+    constructor(factory: (TestServerHttpRequest, TestServerCallOptions) -> UrlResponse?) : this(UrlResponseParameter.RequestFactory(factory))
 }
 
 sealed interface UrlResponseParameter {
-    fun responseFor(callNumber: Int): UrlResponse?
+    fun responseFor(callNumber: Int, request: TestServerHttpRequest): UrlResponse?
 
     data class Single(val response: UrlResponse?) : UrlResponseParameter {
-        override fun responseFor(callNumber: Int): UrlResponse? = response
+        override fun responseFor(callNumber: Int, request: TestServerHttpRequest): UrlResponse? = response
     }
 
     data class Sequence(val responses: List<UrlResponse?>) : UrlResponseParameter {
-        override fun responseFor(callNumber: Int): UrlResponse? = responses.getOrNull(callNumber)
+        override fun responseFor(callNumber: Int, request: TestServerHttpRequest): UrlResponse? = responses.getOrNull(callNumber)
     }
 
     class Factory(private val factory: (TestServerCallOptions) -> UrlResponse?) : UrlResponseParameter {
-        override fun responseFor(callNumber: Int): UrlResponse? = factory(TestServerCallOptions(callNumber))
+        override fun responseFor(callNumber: Int, request: TestServerHttpRequest): UrlResponse? = factory(TestServerCallOptions(callNumber))
+    }
+
+    class RequestFactory(private val factory: (TestServerHttpRequest, TestServerCallOptions) -> UrlResponse?) : UrlResponseParameter {
+        override fun responseFor(callNumber: Int, request: TestServerHttpRequest): UrlResponse? = factory(request, TestServerCallOptions(callNumber))
     }
 }
 
@@ -177,9 +183,9 @@ class TestServer internal constructor(
             json = json,
         )
 
-        val response = urls[request.url]?.response?.responseFor(callNumber)
+        val response = urls[request.url]?.response?.responseFor(callNumber, request)
             ?: Url(request.url).let { parsedUrl ->
-                urls[parsedUrl.encodedPath]?.response?.responseFor(callNumber)
+                urls[parsedUrl.encodedPath]?.response?.responseFor(callNumber, request)
             }
             ?: return TestServerHttpResponse(
                 status = 404,
@@ -239,8 +245,8 @@ class TestResponseController {
         channel.cancel(error)
     }
 
-    suspend fun close() {
-        channel.flushAndClose()
+    fun close() {
+        channel.close()
     }
 }
 

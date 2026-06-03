@@ -2,7 +2,26 @@
 
 package ai.torad.aisdk
 
+import io.ktor.client.HttpClient
+import io.ktor.client.request.header
+import io.ktor.client.request.request
+import io.ktor.client.request.setBody
+import io.ktor.client.statement.HttpResponse
+import io.ktor.client.statement.bodyAsChannel
+import io.ktor.client.statement.bodyAsText
+import io.ktor.http.ContentType
+import io.ktor.http.HttpHeaders
+import io.ktor.http.HttpMethod
+import io.ktor.http.contentType
+import io.ktor.utils.io.ByteReadChannel
+import io.ktor.utils.io.readLine
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeout
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
@@ -965,6 +984,319 @@ private fun urlComponent(value: String): String = buildString {
     }
 }
 
+enum class MCPTransportKind {
+    Http,
+    Sse,
+}
+
+data class MCPTransportConfig(
+    val type: MCPTransportKind,
+    val url: String,
+    val headers: Map<String, String> = emptyMap(),
+    val authProvider: OAuthClientProvider? = null,
+)
+
+fun createMcpTransport(client: HttpClient, config: MCPTransportConfig): MCPTransport =
+    when (config.type) {
+        MCPTransportKind.Http -> HttpMCPTransport(client, config.url, config.headers, config.authProvider)
+        MCPTransportKind.Sse -> SseMCPTransport(client, config.url, config.headers, config.authProvider)
+    }
+
+class HttpMCPTransport(
+    private val client: HttpClient,
+    private val url: String,
+    private val headers: Map<String, String> = emptyMap(),
+    private val authProvider: OAuthClientProvider? = null,
+) : MCPTransport {
+    override var onClose: (() -> Unit)? = null
+    override var onError: ((Throwable) -> Unit)? = null
+    override var onMessage: (suspend (JSONRPCMessage) -> Unit)? = null
+    override var protocolVersion: String? = null
+
+    private var sessionId: String? = null
+    private var scope: CoroutineScope? = null
+    private var inboundJob: Job? = null
+    private var closed = true
+
+    override suspend fun start() {
+        if (!closed) throw MCPClientError("MCP HTTP Transport Error: Transport already started.")
+        closed = false
+        scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+        openInboundSse()
+    }
+
+    override suspend fun send(message: JSONRPCMessage) {
+        if (closed) throw MCPClientError("MCP HTTP Transport Error: Not connected")
+        postMessage(message, triedAuth = false)
+    }
+
+    override suspend fun close() {
+        if (closed) return
+        runCatching {
+            sessionId?.let { session ->
+                client.request(url) {
+                    method = HttpMethod.Delete
+                    mcpCommonHeaders(emptyMap()).forEach { (name, value) -> header(name, value) }
+                    header("mcp-session-id", session)
+                }
+            }
+        }
+        closed = true
+        inboundJob?.cancel()
+        scope?.cancel()
+        inboundJob = null
+        scope = null
+        onClose?.invoke()
+    }
+
+    private suspend fun postMessage(message: JSONRPCMessage, triedAuth: Boolean) {
+        val response = client.request(url) {
+            method = HttpMethod.Post
+            contentType(ContentType.Application.Json)
+            mcpCommonHeaders(
+                mapOf(
+                    HttpHeaders.ContentType to ContentType.Application.Json.toString(),
+                    HttpHeaders.Accept to "application/json, text/event-stream",
+                ),
+            ).forEach { (name, value) -> header(name, value) }
+            setBody(message.toJsonString())
+        }
+        response.mcpSessionId()?.let { sessionId = it }
+        if (response.status.value == 401 && authProvider != null && !triedAuth) {
+            if (auth(authProvider, AuthOptions(serverUrl = url)) != AuthResult.AUTHORIZED) {
+                throw UnauthorizedError()
+            }
+            postMessage(message, triedAuth = true)
+            return
+        }
+        if (response.status.value == 202 || message is JSONRPCNotification) {
+            if (inboundJob == null) openInboundSse()
+            return
+        }
+        if (response.status.value !in 200..299) {
+            val text = response.bodyAsText()
+            val error = MCPClientError("MCP HTTP Transport Error: POSTing to endpoint (HTTP ${response.status.value}): $text")
+            onError?.invoke(error)
+            throw error
+        }
+        val contentType = response.headers[HttpHeaders.ContentType].orEmpty()
+        when {
+            contentType.contains("application/json", ignoreCase = true) -> {
+                response.bodyAsText().mcpJsonRpcMessages().forEach { onMessage?.invoke(it) }
+            }
+            contentType.contains("text/event-stream", ignoreCase = true) -> {
+                processMcpSse(response.bodyAsChannel()) { event ->
+                    if (event.event == "message") {
+                        onMessage?.invoke(parseJSONRPCMessage(event.data))
+                    }
+                }
+            }
+            else -> {
+                val error = MCPClientError("MCP HTTP Transport Error: Unexpected content type: $contentType")
+                onError?.invoke(error)
+                throw error
+            }
+        }
+    }
+
+    private suspend fun openInboundSse() {
+        val activeScope = scope ?: return
+        if (inboundJob != null) return
+        inboundJob = activeScope.launch {
+            try {
+                val response = client.request(url) {
+                    method = HttpMethod.Get
+                    mcpCommonHeaders(mapOf(HttpHeaders.Accept to "text/event-stream")).forEach { (name, value) -> header(name, value) }
+                }
+                response.mcpSessionId()?.let { sessionId = it }
+                if (response.status.value == 405) return@launch
+                if (response.status.value !in 200..299) {
+                    val error = MCPClientError("MCP HTTP Transport Error: GET SSE failed: ${response.status.value} ${response.status.description}")
+                    onError?.invoke(error)
+                    return@launch
+                }
+                processMcpSse(response.bodyAsChannel()) { event ->
+                    if (event.event == "message") {
+                        onMessage?.invoke(parseJSONRPCMessage(event.data))
+                    }
+                }
+            } catch (error: Throwable) {
+                if (!closed) onError?.invoke(error)
+            } finally {
+                inboundJob = null
+            }
+        }
+    }
+
+    private suspend fun mcpCommonHeaders(base: Map<String, String>): Map<String, String> {
+        val values = linkedMapOf<String, String?>()
+        headers.forEach { (key, value) -> values[key] = value }
+        base.forEach { (key, value) -> values[key] = value }
+        values["mcp-protocol-version"] = protocolVersion ?: LATEST_PROTOCOL_VERSION
+        sessionId?.let { values["mcp-session-id"] = it }
+        authProvider?.tokens()?.accessToken?.takeIf { it.isNotBlank() }?.let { values[HttpHeaders.Authorization] = "Bearer $it" }
+        return withUserAgentSuffix(values, "ai-sdk/mcp/$MCP_PACKAGE_VERSION")
+    }
+}
+
+class SseMCPTransport(
+    private val client: HttpClient,
+    private val url: String,
+    private val headers: Map<String, String> = emptyMap(),
+    private val authProvider: OAuthClientProvider? = null,
+) : MCPTransport {
+    override var onClose: (() -> Unit)? = null
+    override var onError: ((Throwable) -> Unit)? = null
+    override var onMessage: (suspend (JSONRPCMessage) -> Unit)? = null
+    override var protocolVersion: String? = null
+
+    private var endpoint: String? = null
+    private var scope: CoroutineScope? = null
+    private var readerJob: Job? = null
+    private var connected = false
+
+    override suspend fun start() {
+        if (connected) return
+        val connectionScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+        scope = connectionScope
+        val ready = CompletableDeferred<Unit>()
+        readerJob = connectionScope.launch {
+            try {
+                val response = client.request(url) {
+                    method = HttpMethod.Get
+                    mcpCommonHeaders(mapOf(HttpHeaders.Accept to "text/event-stream")).forEach { (name, value) -> header(name, value) }
+                }
+                if (response.status.value == 401 && authProvider != null) {
+                    if (auth(authProvider, AuthOptions(serverUrl = url)) != AuthResult.AUTHORIZED) {
+                        throw UnauthorizedError()
+                    }
+                }
+                if (response.status.value !in 200..299) {
+                    throw MCPClientError("MCP SSE Transport Error: ${response.status.value} ${response.status.description}")
+                }
+                processMcpSse(response.bodyAsChannel()) { event ->
+                    when (event.event) {
+                        "endpoint" -> {
+                            endpoint = resolveMcpUrl(event.data, url).also { resolved ->
+                                if (mcpOrigin(resolved) != mcpOrigin(url)) {
+                                    throw MCPClientError("MCP SSE Transport Error: Endpoint origin does not match connection origin: ${mcpOrigin(resolved)}")
+                                }
+                            }
+                            connected = true
+                            if (!ready.isCompleted) ready.complete(Unit)
+                        }
+                        "message" -> onMessage?.invoke(parseJSONRPCMessage(event.data))
+                    }
+                }
+                if (connected) {
+                    connected = false
+                    onClose?.invoke()
+                }
+            } catch (error: Throwable) {
+                if (!ready.isCompleted) ready.completeExceptionally(error)
+                if (connected) onError?.invoke(error)
+            }
+        }
+        ready.await()
+    }
+
+    override suspend fun send(message: JSONRPCMessage) {
+        val destination = endpoint ?: throw MCPClientError("MCP SSE Transport Error: Not connected")
+        val response = client.request(destination) {
+            method = HttpMethod.Post
+            contentType(ContentType.Application.Json)
+            mcpCommonHeaders(mapOf(HttpHeaders.ContentType to ContentType.Application.Json.toString())).forEach { (name, value) -> header(name, value) }
+            setBody(message.toJsonString())
+        }
+        if (response.status.value == 401 && authProvider != null) {
+            if (auth(authProvider, AuthOptions(serverUrl = url)) != AuthResult.AUTHORIZED) {
+                throw UnauthorizedError()
+            }
+            send(message)
+            return
+        }
+        if (response.status.value !in 200..299) {
+            val error = MCPClientError("MCP SSE Transport Error: POSTing to endpoint (HTTP ${response.status.value}): ${response.bodyAsText()}")
+            onError?.invoke(error)
+            throw error
+        }
+    }
+
+    override suspend fun close() {
+        connected = false
+        readerJob?.cancel()
+        scope?.cancel()
+        readerJob = null
+        scope = null
+        onClose?.invoke()
+    }
+
+    private suspend fun mcpCommonHeaders(base: Map<String, String>): Map<String, String> {
+        val values = linkedMapOf<String, String?>()
+        headers.forEach { (key, value) -> values[key] = value }
+        base.forEach { (key, value) -> values[key] = value }
+        values["mcp-protocol-version"] = protocolVersion ?: LATEST_PROTOCOL_VERSION
+        authProvider?.tokens()?.accessToken?.takeIf { it.isNotBlank() }?.let { values[HttpHeaders.Authorization] = "Bearer $it" }
+        return withUserAgentSuffix(values, "ai-sdk/mcp/$MCP_PACKAGE_VERSION")
+    }
+}
+
+private data class McpSseEvent(
+    val event: String,
+    val data: String,
+    val id: String? = null,
+)
+
+private suspend fun processMcpSse(channel: ByteReadChannel, onEvent: suspend (McpSseEvent) -> Unit) {
+    var eventName = "message"
+    var eventId: String? = null
+    val data = mutableListOf<String>()
+
+    suspend fun flush() {
+        if (data.isEmpty()) return
+        onEvent(McpSseEvent(eventName, data.joinToString("\n"), eventId))
+        eventName = "message"
+        eventId = null
+        data.clear()
+    }
+
+    while (true) {
+        val line = channel.readLine() ?: break
+        when {
+            line.isEmpty() -> flush()
+            line.startsWith("event:") -> eventName = line.removePrefix("event:").trimStart()
+            line.startsWith("data:") -> data += line.removePrefix("data:").trimStart()
+            line.startsWith("id:") -> eventId = line.removePrefix("id:").trimStart()
+        }
+    }
+    flush()
+}
+
+private fun String.mcpJsonRpcMessages(): List<JSONRPCMessage> {
+    val element = mcpJson.parseToJsonElement(this)
+    return when (element) {
+        is JsonArray -> element.map { parseJSONRPCMessage(it.toString()) }
+        else -> listOf(parseJSONRPCMessage(element.toString()))
+    }
+}
+
+private fun HttpResponse.mcpSessionId(): String? =
+    headers["mcp-session-id"]?.takeIf { it.isNotBlank() }
+
+private fun resolveMcpUrl(value: String, base: String): String {
+    if (value.startsWith("http://") || value.startsWith("https://")) return value
+    val origin = mcpOrigin(base)
+    if (value.startsWith("/")) return origin + value
+    return base.substringBeforeLast('/', missingDelimiterValue = origin).trimEnd('/') + "/" + value
+}
+
+private fun mcpOrigin(url: String): String {
+    val schemeEnd = url.indexOf("://")
+    val authorityStart = if (schemeEnd >= 0) schemeEnd + 3 else 0
+    val authorityEnd = url.indexOf('/', authorityStart).takeIf { it >= 0 } ?: url.length
+    return url.substring(0, authorityEnd)
+}
+
 @Serializable
 data class StdioConfig(
     val command: String,
@@ -972,6 +1304,14 @@ data class StdioConfig(
     val env: Map<String, String> = emptyMap(),
     val cwd: String? = null,
 )
+
+internal interface MCPStdioProcess {
+    suspend fun readLine(): String?
+    suspend fun writeLine(line: String)
+    suspend fun close()
+}
+
+internal expect fun createMCPStdioProcess(config: StdioConfig): MCPStdioProcess
 
 class Experimental_StdioMCPTransport(
     val config: StdioConfig,
@@ -981,17 +1321,45 @@ class Experimental_StdioMCPTransport(
     override var onMessage: (suspend (JSONRPCMessage) -> Unit)? = null
     override var protocolVersion: String? = null
 
+    private var process: MCPStdioProcess? = null
+    private var scope: CoroutineScope? = null
+    private var readJob: Job? = null
+
     override suspend fun start() {
-        throw UnsupportedOperationException(
-            "Stdio MCP transport requires a platform process adapter. Use a custom MCPTransport on this target.",
-        )
+        if (process != null) throw MCPClientError("StdioMCPTransport already started.")
+        val started = createMCPStdioProcess(config)
+        process = started
+        scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+        readJob = scope!!.launch {
+            try {
+                while (true) {
+                    val line = started.readLine() ?: break
+                    try {
+                        onMessage?.invoke(parseJSONRPCMessage(line))
+                    } catch (error: Throwable) {
+                        onError?.invoke(error)
+                    }
+                }
+            } catch (error: Throwable) {
+                onError?.invoke(error)
+            } finally {
+                onClose?.invoke()
+            }
+        }
     }
 
     override suspend fun send(message: JSONRPCMessage) {
-        throw UnsupportedOperationException("Stdio MCP transport is not started.")
+        val active = process ?: throw MCPClientError("StdioClientTransport not connected")
+        active.writeLine(message.toJsonString())
     }
 
     override suspend fun close() {
+        readJob?.cancel()
+        scope?.cancel()
+        process?.close()
+        readJob = null
+        scope = null
+        process = null
         onClose?.invoke()
     }
 }
