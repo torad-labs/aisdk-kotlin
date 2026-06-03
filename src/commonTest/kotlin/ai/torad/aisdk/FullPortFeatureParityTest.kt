@@ -247,7 +247,7 @@ class FullPortFeatureParityTest {
         assertEquals(2, attempts)
         assertEquals("text/plain", dataUrl.mediaType)
         assertEquals("image/png", detectMediaType(filename = "a.png"))
-        assertTrue(generateId("test").startsWith("test_"))
+        assertTrue(generateId("test").startsWith("test-"))
         assertTrue(isDeepEqualData(JsonPrimitive(1), JsonPrimitive(1.0)))
         assertFalse(isDeepEqualData(JsonPrimitive(1), JsonPrimitive(2)))
         assertEquals(listOf(listOf(1, 2), listOf(3)), splitArray(listOf(1, 2, 3), 2))

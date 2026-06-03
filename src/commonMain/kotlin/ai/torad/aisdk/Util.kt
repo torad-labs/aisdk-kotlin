@@ -1,12 +1,18 @@
 package ai.torad.aisdk
 
 import kotlin.math.sqrt
+import kotlin.io.encoding.Base64
+import kotlin.io.encoding.ExperimentalEncodingApi
 import kotlin.random.Random
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import kotlinx.serialization.SerializationException
+import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonNull
@@ -146,29 +152,34 @@ class SerialJobExecutor {
 }
 
 data class IdGenerator(
-    val prefix: String = "id",
+    val prefix: String? = null,
     val size: Int = 16,
-    val alphabet: String = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ",
+    val alphabet: String = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz",
+    val separator: String = "-",
 ) {
     fun generate(): String {
         require(size > 0) { "size must be > 0" }
         require(alphabet.isNotEmpty()) { "alphabet must not be empty" }
+        require(separator !in alphabet) {
+            "The separator \"$separator\" must not be part of the alphabet \"$alphabet\"."
+        }
         val suffix = buildString {
             repeat(size) {
                 append(alphabet[Random.nextInt(alphabet.length)])
             }
         }
-        return if (prefix.isBlank()) suffix else "${prefix}_$suffix"
+        return prefix?.let { "$it$separator$suffix" } ?: suffix
     }
 }
 
 fun createIdGenerator(
-    prefix: String = "id",
+    prefix: String? = null,
     size: Int = 16,
-    alphabet: String = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ",
-): IdGenerator = IdGenerator(prefix, size, alphabet)
+    alphabet: String = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz",
+    separator: String = "-",
+): IdGenerator = IdGenerator(prefix, size, alphabet, separator)
 
-fun generateId(prefix: String = "id"): String = createIdGenerator(prefix = prefix).generate()
+fun generateId(prefix: String? = null): String = createIdGenerator(prefix = prefix).generate()
 
 fun mergeAbortSignals(vararg signals: AbortSignal): AbortSignal {
     if (signals.isEmpty()) return AbortSignalNever
@@ -205,3 +216,242 @@ private fun primitiveEquals(left: JsonPrimitive, right: JsonPrimitive): Boolean 
         else -> leftPrimitive.content == rightPrimitive.content
     }
 }
+
+fun combineHeaders(vararg headers: Map<String, String?>?): Map<String, String?> =
+    headers.fold(linkedMapOf()) { acc, current ->
+        current?.let { acc.putAll(it) }
+        acc
+    }
+
+fun normalizeHeaders(headers: Map<String, String?>?): Map<String, String> =
+    headers.orEmpty()
+        .filterValues { it != null }
+        .mapKeys { it.key.lowercase() }
+        .mapValues { it.value.orEmpty() }
+
+fun withUserAgentSuffix(
+    headers: Map<String, String?>?,
+    vararg userAgentSuffixParts: String,
+): Map<String, String> {
+    val normalized = normalizeHeaders(headers).toMutableMap()
+    val suffix = userAgentSuffixParts.filter { it.isNotBlank() }
+    normalized["user-agent"] = (listOfNotNull(normalized["user-agent"]?.takeIf { it.isNotBlank() }) + suffix)
+        .joinToString(" ")
+    return normalized
+}
+
+fun withoutTrailingSlash(url: String?): String? = url?.removeSuffix("/")
+
+fun removeUndefinedEntries(values: Map<String, JsonElement?>): Map<String, JsonElement> =
+    values.filterValues { it != null }.mapValues { it.value ?: JsonNull }
+
+fun getErrorMessage(error: Throwable?): String = error?.message ?: "unknown error"
+
+fun getErrorMessage(error: Any?): String = when (error) {
+    null -> "unknown error"
+    is String -> error
+    is Throwable -> getErrorMessage(error)
+    else -> error.toString()
+}
+
+fun mediaTypeToExtension(mediaType: String): String {
+    val subtype = mediaType.lowercase().substringAfter('/', missingDelimiterValue = "")
+    return when (subtype) {
+        "mpeg" -> "mp3"
+        "x-wav" -> "wav"
+        "opus" -> "ogg"
+        "mp4" -> "m4a"
+        "x-m4a" -> "m4a"
+        else -> subtype
+    }
+}
+
+fun stripFileExtension(filename: String): String =
+    filename.substringBefore('.', filename)
+
+fun isUrlSupported(
+    mediaType: String,
+    url: String,
+    supportedUrls: Map<String, List<Regex>>,
+): Boolean {
+    val lowerMediaType = mediaType.lowercase()
+    val lowerUrl = url.lowercase()
+    return supportedUrls.asSequence()
+        .map { (key, regexes) ->
+            val prefix = when (val lowerKey = key.lowercase()) {
+                "*", "*/*" -> ""
+                else -> lowerKey.replace("*", "")
+            }
+            prefix to regexes
+        }
+        .filter { (prefix, _) -> lowerMediaType.startsWith(prefix) }
+        .flatMap { (_, regexes) -> regexes.asSequence() }
+        .any { regex -> regex.containsMatchIn(lowerUrl) }
+}
+
+class DownloadError(
+    val url: String,
+    message: String,
+    cause: Throwable? = null,
+) : AiSdkException(message, cause)
+
+fun validateDownloadUrl(url: String) {
+    val parsed = parseUrl(url) ?: throw DownloadError(url, "Invalid URL: $url")
+    if (parsed.scheme == "data") return
+    if (parsed.scheme != "http" && parsed.scheme != "https") {
+        throw DownloadError(url, "URL scheme must be http, https, or data, got ${parsed.scheme}:")
+    }
+    if (parsed.hostname.isBlank()) {
+        throw DownloadError(url, "URL must have a hostname")
+    }
+    val host = parsed.hostname.lowercase().trim('[', ']')
+    if (host == "localhost" || host.endsWith(".local") || host.endsWith(".localhost")) {
+        throw DownloadError(url, "URL with hostname ${parsed.hostname} is not allowed")
+    }
+    if (isIPv4(host) && isPrivateIPv4(host)) {
+        throw DownloadError(url, "URL with IP address $host is not allowed")
+    }
+    if (isPrivateIPv6(host)) {
+        throw DownloadError(url, "URL with IPv6 address ${parsed.hostname} is not allowed")
+    }
+}
+
+private data class ParsedUrl(val scheme: String, val hostname: String)
+
+private fun parseUrl(url: String): ParsedUrl? {
+    val match = Regex("^([A-Za-z][A-Za-z0-9+.-]*):(.*)$").find(url) ?: return null
+    val scheme = match.groupValues[1].lowercase()
+    if (scheme == "data") return ParsedUrl(scheme, "")
+    val rest = match.groupValues[2]
+    if (!rest.startsWith("//")) return null
+    val authority = rest.removePrefix("//").substringBefore('/').substringBefore('?').substringBefore('#')
+    val host = if (authority.startsWith("[")) {
+        authority.substringBefore(']') + "]"
+    } else {
+        authority.substringAfter('@').substringBefore(':')
+    }
+    return ParsedUrl(scheme, host)
+}
+
+private fun isIPv4(hostname: String): Boolean {
+    val parts = hostname.split('.')
+    return parts.size == 4 && parts.all { part ->
+        val number = part.toIntOrNull()
+        number != null && number in 0..255 && number.toString() == part
+    }
+}
+
+private fun isPrivateIPv4(ip: String): Boolean {
+    val parts = ip.split('.').map { it.toInt() }
+    val first = parts[0]
+    val second = parts[1]
+    return first == 0 ||
+        first == 10 ||
+        first == 127 ||
+        (first == 169 && second == 254) ||
+        (first == 172 && second in 16..31) ||
+        (first == 192 && second == 168)
+}
+
+private fun isPrivateIPv6(ip: String): Boolean {
+    val normalized = ip.lowercase()
+    if (normalized == "::1" || normalized == "::") return true
+    if (normalized.startsWith("fc") || normalized.startsWith("fd")) return true
+    if (normalized.startsWith("fe80")) return true
+    if (normalized.startsWith("::ffff:")) {
+        val mapped = normalized.removePrefix("::ffff:")
+        if (isIPv4(mapped)) return isPrivateIPv4(mapped)
+    }
+    return false
+}
+
+sealed interface ParseResult<out T> {
+    data class Success<T>(val value: T) : ParseResult<T>
+    data class Failure(val error: Throwable, val text: String) : ParseResult<Nothing>
+}
+
+fun <T> parseJsonEventStream(
+    text: String,
+    schema: Schema<T>,
+    json: Json = Json,
+): List<ParseResult<T>> =
+    serverSentEventData(text).mapNotNull { data ->
+        if (data == "[DONE]") null else safeParseJson(data, schema, json)
+    }
+
+fun <T> parseJsonEventStream(
+    chunks: Flow<String>,
+    schema: Schema<T>,
+    json: Json = Json,
+): Flow<ParseResult<T>> = flow {
+    var buffer = ""
+    var eventData = mutableListOf<String>()
+    suspend fun flush() {
+        if (eventData.isEmpty()) return
+        val data = eventData.joinToString("\n")
+        eventData = mutableListOf()
+        if (data != "[DONE]") emit(safeParseJson(data, schema, json))
+    }
+    chunks.collect { chunk ->
+        buffer += chunk
+        while (true) {
+            val newline = buffer.indexOf('\n')
+            if (newline < 0) break
+            val rawLine = buffer.substring(0, newline).removeSuffix("\r")
+            buffer = buffer.substring(newline + 1)
+            if (rawLine.isEmpty()) {
+                flush()
+            } else if (rawLine.startsWith("data:")) {
+                eventData += rawLine.removePrefix("data:").trimStart()
+            }
+        }
+    }
+    if (buffer.isNotEmpty()) {
+        val rawLine = buffer.removeSuffix("\r")
+        if (rawLine.startsWith("data:")) eventData += rawLine.removePrefix("data:").trimStart()
+    }
+    flush()
+}
+
+private fun serverSentEventData(text: String): List<String> {
+    val events = mutableListOf<String>()
+    val current = mutableListOf<String>()
+    fun flush() {
+        if (current.isNotEmpty()) {
+            events += current.joinToString("\n")
+            current.clear()
+        }
+    }
+    text.lineSequence().forEach { raw ->
+        val line = raw.removeSuffix("\r")
+        when {
+            line.isEmpty() -> flush()
+            line.startsWith("data:") -> current += line.removePrefix("data:").trimStart()
+        }
+    }
+    flush()
+    return events
+}
+
+private fun <T> safeParseJson(text: String, schema: Schema<T>, json: Json): ParseResult<T> =
+    try {
+        val element = json.parseToJsonElement(text)
+        @Suppress("UNCHECKED_CAST")
+        ParseResult.Success(schema.validate?.invoke(element) ?: (element as T))
+    } catch (error: SerializationException) {
+        ParseResult.Failure(error, text)
+    } catch (error: IllegalArgumentException) {
+        ParseResult.Failure(error, text)
+    }
+
+@OptIn(ExperimentalEncodingApi::class)
+fun convertBase64ToByteArray(base64String: String): ByteArray =
+    Base64.Default.decode(base64String.replace('-', '+').replace('_', '/'))
+
+@OptIn(ExperimentalEncodingApi::class)
+fun convertByteArrayToBase64(array: ByteArray): String =
+    Base64.Default.encode(array)
+
+fun convertToBase64(value: String): String = value
+
+fun convertToBase64(value: ByteArray): String = convertByteArrayToBase64(value)

@@ -22,10 +22,20 @@ The latest stable Vercel AI SDK v6 reference verified during this pass is `ai@6.
 - Embeddings and embedding middleware.
 - Image, speech, transcription, video, and reranking model families.
 - Provider registry, `customProvider`, and provider wrapping.
+- Gateway provider facade: `createGateway`, `gateway`, gateway model
+  factories, metadata/credits/spend/generation-info calls, gateway tools,
+  and gateway errors over an injected KMP transport.
 - Text-stream, UI-message-stream, and chat transport primitives.
 - Telemetry helpers and host-injected telemetry integration registry.
 - Provider-utils-style helpers: `generateId`, `createIdGenerator`, `jsonSchema`, `asSchema`, `zodSchema`, and `dynamicTool`.
-- Utility helpers: cosine similarity, data URL parsing, media-type detection, deep JSON equality, retry policy, serial job execution, and abort-signal merging.
+- Provider-utils and utility helpers: `parseJsonEventStream`, header
+  normalization/user-agent helpers, base64 byte helpers, URL support and
+  download validation, media-type helpers, cosine similarity, data URL
+  parsing, deep JSON equality, retry policy, serial job execution, and
+  abort-signal merging.
+- Compatibility helpers: `DefaultGeneratedFile`, experimental media
+  aliases, `pruneMessages`, uppercase UI validation aliases, and the v6
+  public error taxonomy.
 
 ## Test Coverage
 
@@ -33,7 +43,7 @@ The extracted test suite is executed on both JVM and Android host targets.
 
 Last local verification:
 
-- `./gradlew allTests`: 370 test executions, 0 failures, 0 errors, 0 skips.
+- `./gradlew allTests`: 390 test executions, 0 failures, 0 errors, 0 skips.
 - `./gradlew publishToMavenLocal`: published JVM, Android, iOS x64, iOS arm64, and iOS simulator arm64 artifacts locally.
 
 On Linux, iOS unit-test binaries compile but iOS simulator execution is skipped by Gradle. Publication verification still compiles the iOS artifacts.
@@ -45,8 +55,12 @@ These are intentionally represented as extension/provider packages or platform a
 - Real providers: OpenAI, Anthropic, LiteRT, MLX, Gemini, local server adapters.
 - React hooks and UI components; Kotlin hosts use `Chat`, `ChatTransport`, `Flow<UIMessage>`, Compose, SwiftUI, or server renderers.
 - Concrete HTTP clients/web framework response adapters; the core exposes stream response value objects and writer interfaces.
+- Concrete gateway HTTP client implementation; the core exposes
+  `GatewayTransport` so Ktor, OkHttp, CIO, iOS, and server adapters can
+  plug in without making the common artifact choose one.
 - Concrete OpenTelemetry bridge; the core exposes telemetry settings, spans, and integration hooks.
-- Provider-executed tools such as hosted web search or code interpreter.
+- Provider-executed tools beyond the gateway tool descriptors, such as
+  provider-specific code interpreter integrations.
 
 ## Recommended Next Additions
 

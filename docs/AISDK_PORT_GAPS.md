@@ -48,9 +48,19 @@ and everything the core package consumes directly — are done:
   `generate-speech`, `generate-video`, `rerank`, `transcribe`,
   `registry`, `telemetry`, `text-stream`, `ui-message-stream`, and
   `ui` chat transports now have KMP surfaces and tests.
+- **Gateway**: `createGateway`, `createGatewayProvider`, `gateway`,
+  gateway model-id aliases, metadata calls, credit/spend/generation info
+  types, gateway errors, and provider-executed gateway tools are present.
+  The common module uses an injected `GatewayTransport` instead of forcing
+  a concrete HTTP client dependency onto Android/iOS/backend callers.
 - **Provider-utils exports**: `dynamicTool`, `jsonSchema`, `asSchema`,
-  `zodSchema`, `generateId`, and `createIdGenerator` are available in
-  Kotlin form.
+  `zodSchema`, `generateId`, `createIdGenerator`,
+  `parseJsonEventStream`, header normalization/user-agent helpers,
+  base64 byte helpers, media-type helpers, URL support/download
+  validation, and `DownloadError` are available in Kotlin form.
+- **Compatibility exports**: `DefaultGeneratedFile`, experimental media
+  aliases, `pruneMessages`, uppercase `validateUIMessages` /
+  `safeValidateUIMessages`, and the root v6 error taxonomy are present.
 
 ## Deliberately deferred — forward-parity, no current core consumer
 
@@ -61,11 +71,10 @@ dev knows the gap is *known and chosen*, not missed.
 | Item | Why deferred | Partial substitute |
 |---|---|---|
 | `extractJsonMiddleware` *incremental* streaming (v6's 12-char-lookahead state machine) | Current structured-output consumers decode the whole object through `Output.decode`; token-by-token JSON rendering has no core consumer. | single-emit-at-`Finish` + truncation repair |
-| `DataUIPart<DATA_TYPES>` (typed `data-*` parts) | No feature streams custom typed data parts yet. | `ToolStreamWriter.writeData(JsonElement)` → `StreamEvent.Raw` |
-| `StreamTextResult` facade promises (`.warnings`, `.response`, `.textStream`, `.fullStream`) | KMP exposes a cold `Flow<StreamEvent>` directly instead of a JS/Node stream facade. | `Flow<StreamEvent>` + `GenerateTextResult` metadata |
+| `StreamTextResult` promise metadata (`.warnings`, `.response`) | KMP exposes cold `Flow<StreamEvent>` directly and keeps call metadata on `GenerateTextResult`; the text/UI stream facades are present. | `StreamTextResult.fullStream`, `.textStream`, and response helpers |
 | Structured tool-result **stream** output (v6's discriminated `ToolResultOutput` on the wire) | `StreamEvent.ToolResult` carries `outputJson` + `modelVisible: JsonElement` — a deliberate divergence; `ToolResultOutput` already exists for the `toModelOutput` return. | `outputJson` + `modelVisible` |
 | Agent-level persistent `activeTools` allowlist | `StepSettings.activeTools` gives per-step scoping, which covers the need. | per-step `activeTools` |
-| Deep stream sub-field drift (`dynamic` / `providerExecuted` flags, `rawFinishReason`, `doStream` returning `{request, response}`) | Telemetry/cloud-routing fields with no on-device meaning. | — |
+| Deep stream sub-field drift (`doStream` returning JS `{request, response}` promise fields) | Telemetry/cloud-routing fields with no on-device meaning in the common model stream. | `GenerateTextResult.request/response`, provider metadata |
 | `callOptionsSchema` runtime validation | Low value; the schema is type-checked at construction. | — |
 
 ## Platform adapter surface
@@ -78,12 +87,13 @@ dev knows the gap is *known and chosen*, not missed.
 - **OTel telemetry**: represented through host-injected
   `TelemetryIntegration` rather than a hard OpenTelemetry dependency.
 - **Browser/server-specific transport concerns**: `headers`, retry
-  policy, and response helpers exist in common contracts; concrete HTTP
-  clients live in provider/platform modules.
-- **Provider-executed tools** (`Tool.type = 'provider'`): OpenAI Code
-  Interpreter, Anthropic web search. The core has `dynamicTool` and
-  provider metadata escape hatches; concrete hosted tools are provider
-  module work because execution is provider-specific.
+  policy, gateway request context, and response helpers exist in common
+  contracts; concrete HTTP clients live in provider/platform modules.
+- **Provider-executed tools** (`Tool.type = 'provider'`): represented by
+  `providerExecutedTool`, `LanguageModelTool.providerExecuted`, and
+  gateway `parallelSearch` / `perplexitySearch`; concrete hosted tools
+  beyond gateway are provider-module work because execution is
+  provider-specific.
 - **React-binding plumbing**: `Chat` and transports exist in Kotlin;
   `useChat` remains a React hook concept and is expressed by collecting
   `Flow<UIMessage>` in the host UI layer.

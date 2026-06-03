@@ -126,6 +126,7 @@ fun handleUiMessageStreamFinish(
 }
 
 fun validateUiMessages(messages: List<UIMessage>) {
+    require(messages.isNotEmpty()) { "Messages array must not be empty" }
     val ids = mutableSetOf<String>()
     for (message in messages) {
         require(message.id.isNotBlank()) { "UIMessage.id must not be blank" }
@@ -133,6 +134,22 @@ fun validateUiMessages(messages: List<UIMessage>) {
         require(message.parts.isNotEmpty()) { "UIMessage.parts must not be empty" }
     }
 }
+
+sealed interface SafeValidateUIMessagesResult {
+    data class Success(val messages: List<UIMessage>) : SafeValidateUIMessagesResult
+    data class Failure(val error: Throwable) : SafeValidateUIMessagesResult
+}
+
+fun validateUIMessages(messages: List<UIMessage>) = validateUiMessages(messages)
+
+fun safeValidateUIMessages(messages: List<UIMessage>?): SafeValidateUIMessagesResult =
+    try {
+        require(messages != null) { "messages parameter must be provided" }
+        validateUiMessages(messages)
+        SafeValidateUIMessagesResult.Success(messages)
+    } catch (t: Throwable) {
+        SafeValidateUIMessagesResult.Failure(t)
+    }
 
 fun transformTextToUiMessageStream(
     textStream: Flow<String>,

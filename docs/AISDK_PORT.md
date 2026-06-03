@@ -67,6 +67,10 @@ The validator references make these renames non-negotiable:
 | `generateImage`, `generateSpeech`, `generateVideo`, `transcribe` | `MediaModels.kt` |
 | `rerank` | `Rerank.kt` |
 | `customProvider`, `createProviderRegistry`, `wrapProvider` | `Provider.kt` |
+| `createGateway`, `gateway`, gateway metadata APIs | `Gateway.kt` |
+| `parseJsonEventStream`, ID/header/base64/download helpers | `Util.kt` |
+| `DefaultGeneratedFile`, experimental media aliases | `MediaModels.kt` |
+| `pruneMessages` | `PruneMessages.kt` |
 | `createTextStreamResponse`, `createUiMessageStreamResponse`, `Chat` | `ui/Streams.kt`, `ui/Chat.kt` |
 | `AbortSignal`, `AbortController` | `AbortSignal.kt` (custom interface wrapping coroutines `Job`) |
 | `CoreMessage` → `ModelMessage`, `Usage`, `FinishReason` | `ModelMessage.kt` |
@@ -102,3 +106,7 @@ diverges intentionally in these spots:
    a browser/Node stream facade with promise properties. The KMP core uses
    the same cold `Flow<StreamEvent>` contract as `streamText`; object typing
    is expressed by `Output<T>` and final decoding.
+7. **Gateway uses injected transport.** The v6 JS package uses `fetch`.
+   This common Kotlin library exposes `GatewayTransport` so platform or
+   provider modules can bind Ktor, OkHttp, NSURLSession, server frameworks,
+   or test fakes without adding a hard HTTP dependency to the core.

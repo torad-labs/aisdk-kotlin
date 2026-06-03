@@ -9,6 +9,48 @@ data class GeneratedFile(
     val providerMetadata: Map<String, JsonElement> = emptyMap(),
 )
 
+typealias GeneratedAudioFile = GeneratedFile
+typealias Experimental_GeneratedImage = GeneratedFile
+typealias Experimental_GenerateImageResult = GenerateImageResult
+typealias Experimental_SpeechResult = GenerateSpeechResult
+typealias Experimental_TranscriptionResult = TranscribeResult
+
+class DefaultGeneratedFile {
+    private var base64Data: String? = null
+    private var byteArrayData: ByteArray? = null
+
+    val mediaType: String
+
+    constructor(data: String, mediaType: String) {
+        this.base64Data = data
+        this.mediaType = mediaType
+    }
+
+    constructor(data: ByteArray, mediaType: String) {
+        this.byteArrayData = data
+        this.mediaType = mediaType
+    }
+
+    val base64: String
+        get() {
+            if (base64Data == null) {
+                base64Data = convertByteArrayToBase64(byteArrayData ?: ByteArray(0))
+            }
+            return base64Data.orEmpty()
+        }
+
+    val byteArray: ByteArray
+        get() {
+            if (byteArrayData == null) {
+                byteArrayData = convertBase64ToByteArray(base64Data.orEmpty())
+            }
+            return byteArrayData ?: ByteArray(0)
+        }
+
+    fun toGeneratedFile(filename: String? = null, providerMetadata: Map<String, JsonElement> = emptyMap()): GeneratedFile =
+        GeneratedFile(mediaType = mediaType, base64 = base64, filename = filename, providerMetadata = providerMetadata)
+}
+
 interface ImageModel {
     val modelId: String
     val provider: String
@@ -63,6 +105,28 @@ suspend fun generateImage(
     if (result.images.isEmpty()) throw NoImageGeneratedError()
     return GenerateImageResult(result.images, result.warnings, result.response, result.providerMetadata)
 }
+
+suspend fun experimental_generateImage(
+    model: ImageModel,
+    prompt: String,
+    n: Int = 1,
+    size: String? = null,
+    aspectRatio: String? = null,
+    seed: Int? = null,
+    providerOptions: Map<String, JsonElement> = emptyMap(),
+    headers: Map<String, String> = emptyMap(),
+    abortSignal: AbortSignal = AbortSignalNever,
+): GenerateImageResult = generateImage(
+    model = model,
+    prompt = prompt,
+    n = n,
+    size = size,
+    aspectRatio = aspectRatio,
+    seed = seed,
+    providerOptions = providerOptions,
+    headers = headers,
+    abortSignal = abortSignal,
+)
 
 interface ImageModelMiddleware {
     suspend fun wrapGenerate(context: ImageMiddlewareCallContext): ImageModelResult =
@@ -168,6 +232,28 @@ suspend fun generateSpeech(
     )
 }
 
+suspend fun experimental_generateSpeech(
+    model: SpeechModel,
+    text: String,
+    voice: String? = null,
+    instructions: String? = null,
+    speed: Float? = null,
+    responseFormat: String? = null,
+    providerOptions: Map<String, JsonElement> = emptyMap(),
+    headers: Map<String, String> = emptyMap(),
+    abortSignal: AbortSignal = AbortSignalNever,
+): GenerateSpeechResult = generateSpeech(
+    model = model,
+    text = text,
+    voice = voice,
+    instructions = instructions,
+    speed = speed,
+    responseFormat = responseFormat,
+    providerOptions = providerOptions,
+    headers = headers,
+    abortSignal = abortSignal,
+)
+
 interface TranscriptionModel {
     val modelId: String
     val provider: String
@@ -235,6 +321,24 @@ suspend fun transcribe(
     )
 }
 
+suspend fun experimental_transcribe(
+    model: TranscriptionModel,
+    audio: AudioSource,
+    language: String? = null,
+    prompt: String? = null,
+    providerOptions: Map<String, JsonElement> = emptyMap(),
+    headers: Map<String, String> = emptyMap(),
+    abortSignal: AbortSignal = AbortSignalNever,
+): TranscribeResult = transcribe(
+    model = model,
+    audio = audio,
+    language = language,
+    prompt = prompt,
+    providerOptions = providerOptions,
+    headers = headers,
+    abortSignal = abortSignal,
+)
+
 interface VideoModel {
     val modelId: String
     val provider: String
@@ -291,3 +395,27 @@ suspend fun generateVideo(
     if (result.videos.isEmpty()) throw NoVideoGeneratedError()
     return GenerateVideoResult(result.videos, result.warnings, result.response, result.providerMetadata)
 }
+
+suspend fun experimental_generateVideo(
+    model: VideoModel,
+    prompt: String,
+    n: Int = 1,
+    image: GeneratedFile? = null,
+    durationSeconds: Float? = null,
+    size: String? = null,
+    aspectRatio: String? = null,
+    providerOptions: Map<String, JsonElement> = emptyMap(),
+    headers: Map<String, String> = emptyMap(),
+    abortSignal: AbortSignal = AbortSignalNever,
+): GenerateVideoResult = generateVideo(
+    model = model,
+    prompt = prompt,
+    n = n,
+    image = image,
+    durationSeconds = durationSeconds,
+    size = size,
+    aspectRatio = aspectRatio,
+    providerOptions = providerOptions,
+    headers = headers,
+    abortSignal = abortSignal,
+)
