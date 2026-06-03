@@ -50,6 +50,7 @@ data class OpenAICompatibleProviderSettings(
     val urlBuilder: ((path: String, modelId: String) -> String)? = null,
     val userAgentSuffix: String? = "ai-sdk/openai-compatible-kotlin",
     val providerOptionsName: String? = null,
+    val chatMaxOutputTokensKey: String = "max_tokens",
 )
 
 interface OpenAICompatibleProvider : Provider {
@@ -259,7 +260,7 @@ private class OpenAICompatibleChatLanguageModel(
         val body = buildJsonObject {
             put("model", JsonPrimitive(modelId))
             put("messages", JsonArray(params.messages.map(::openAIChatMessageJson)))
-            params.maxOutputTokens?.let { put("max_tokens", JsonPrimitive(it)) }
+            params.maxOutputTokens?.let { put(settings.chatMaxOutputTokensKey, JsonPrimitive(it)) }
             params.temperature?.let { put("temperature", JsonPrimitive(it)) }
             params.topP?.let { put("top_p", JsonPrimitive(it)) }
             params.frequencyPenalty?.let { put("frequency_penalty", JsonPrimitive(it)) }

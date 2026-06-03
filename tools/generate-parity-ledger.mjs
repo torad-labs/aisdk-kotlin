@@ -46,6 +46,7 @@ const packageStatus = new Map([
   ['@ai-sdk/valibot', 'ported: valibotSchema is represented as a Kotlin-native Schema adapter folded into the root module'],
   ['@ai-sdk/vercel', 'ported: createVercel/vercel, VercelProviderSettings, VercelErrorData, and chat-only routing are represented as an OpenAI-compatible Kotlin facade folded into the root module; VERSION is exposed as VERCEL_VERSION until package modules are split'],
   ['@ai-sdk/voyage', 'ported: createVoyage/voyage, VoyageProviderSettings, embedding/reranking option surfaces, embedding routing, reranking routing, usage parsing, and embedding input limits are represented as a Kotlin facade folded into the root module; VERSION is exposed as VOYAGE_VERSION until package modules are split'],
+  ['@ai-sdk/xai', 'ported: createXai/xai, XaiProviderSettings, chat/responses/image/video model factories, hosted xAI tool descriptors, chat option snake_case mapping, citations, image generation/editing, image provider metadata, video generation/edit/extend/reference routing, video polling, warnings, URL video outputs, xAI auth/user-agent behavior, and unsupported embedding errors are represented as a Kotlin facade folded into the root module; VERSION is exposed as XAI_VERSION until package modules are split'],
 ]);
 
 function main() {
