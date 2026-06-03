@@ -3,7 +3,7 @@
 - Version: 3.0.197
 - Upstream path: `.reference/vercel-ai-sdk-ai-6.0.195/packages/react`
 - Target Kotlin module: `:aisdk-ui`
-- Current parity status: missing: no Kotlin module or parity mapping exists yet
+- Current parity status: ported-as-kmp-ui: React Chat/useChat/useCompletion/useObject concepts are represented by the framework-neutral Kotlin ui package: Chat, ChatRequest, ChatTransport, TextStreamChatTransport, UIMessage/UIMessagePart, streamToUiMessages, convertToModelMessages, TextStreamResponse/UIMessageStreamResponse, createUiMessageStream, tool approval state, and typed tool-part handler registry; React hooks themselves are intentionally not emitted in the Kotlin runtime module
 
 ## Entrypoints
 

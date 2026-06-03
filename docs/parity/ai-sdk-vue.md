@@ -3,7 +3,7 @@
 - Version: 3.0.195
 - Upstream path: `.reference/vercel-ai-sdk-ai-6.0.195/packages/vue`
 - Target Kotlin module: `:aisdk-ui`
-- Current parity status: missing: no Kotlin module or parity mapping exists yet
+- Current parity status: ported-as-kmp-ui: Vue Chat/useCompletion/useObject concepts are represented by the framework-neutral Kotlin ui package: Chat, ChatTransport, TextStreamChatTransport, UIMessage/UIMessagePart, streamToUiMessages, convertToModelMessages, stream responses, and typed tool-part handler registry; Vue refs/components are intentionally not emitted in the Kotlin runtime module
 
 ## Entrypoints
 
