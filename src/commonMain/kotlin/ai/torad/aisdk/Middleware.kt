@@ -79,6 +79,8 @@ private class WrappedLanguageModel(
     middlewares: List<LanguageModelMiddleware>,
 ) : LanguageModel {
     override val modelId: String = inner.modelId
+    override val provider: String = inner.provider
+    override val supportedUrls: Map<String, List<String>> = inner.supportedUrls
 
     private val chainGenerate: suspend (LanguageModelCallParams) -> LanguageModelResult
     private val chainStream: (LanguageModelCallParams) -> Flow<StreamEvent>

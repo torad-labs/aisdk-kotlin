@@ -12,6 +12,7 @@ const packageStatus = new Map([
   ['ai', 'in-progress: current root module covers the core KMP surface; full package ecosystem parity remains open'],
   ['@ai-sdk/provider', 'in-progress: provider contracts are currently folded into the root module'],
   ['@ai-sdk/provider-utils', 'in-progress: provider utility subset is currently folded into the root module'],
+  ['@ai-sdk/devtools', 'in-progress: devToolsMiddleware is represented as a Kotlin-native recorder-backed middleware folded into the root module; DB viewer/server storage remains a platform/tooling module concern'],
   ['@ai-sdk/gateway', 'in-progress: gateway facade and Ktor transport are currently folded into the root module'],
   ['@ai-sdk/mcp', 'in-progress: MCP JSON-RPC contracts, client handshake, capability-gated APIs, dynamic tool conversion, elicitation, OAuth type surface, and stdio API shape are currently folded into the root module; HTTP/SSE/stdio platform transports remain open'],
   ['@ai-sdk/open-responses', 'in-progress: createOpenResponses, OpenResponsesOptions, generate/stream response mapping, and fake HTTP tests are folded into the root module; VERSION is exposed as OPEN_RESPONSES_VERSION until package modules are split'],

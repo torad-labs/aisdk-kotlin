@@ -25,7 +25,7 @@ Run `node tools/generate-parity-ledger.mjs --check` in CI to verify this directo
 | [@ai-sdk/deepgram](ai-sdk-deepgram.md) | 2.0.33 | `:aisdk-provider-deepgram` | 10 | missing: no Kotlin module or parity mapping exists yet |
 | [@ai-sdk/deepinfra](ai-sdk-deepinfra.md) | 2.0.52 | `:aisdk-provider-deepinfra` | 6 | missing: no Kotlin module or parity mapping exists yet |
 | [@ai-sdk/deepseek](ai-sdk-deepseek.md) | 2.0.35 | `:aisdk-provider-deepseek` | 8 | missing: no Kotlin module or parity mapping exists yet |
-| [@ai-sdk/devtools](ai-sdk-devtools.md) | 0.0.18 | `:aisdk-devtools` | 1 | missing: no Kotlin module or parity mapping exists yet |
+| [@ai-sdk/devtools](ai-sdk-devtools.md) | 0.0.18 | `:aisdk-devtools` | 1 | in-progress: devToolsMiddleware is represented as a Kotlin-native recorder-backed middleware folded into the root module; DB viewer/server storage remains a platform/tooling module concern |
 | [@ai-sdk/elevenlabs](ai-sdk-elevenlabs.md) | 2.0.33 | `:aisdk-provider-elevenlabs` | 9 | missing: no Kotlin module or parity mapping exists yet |
 | [@ai-sdk/fal](ai-sdk-fal.md) | 2.0.34 | `:aisdk-provider-fal` | 12 | missing: no Kotlin module or parity mapping exists yet |
 | [@ai-sdk/fireworks](ai-sdk-fireworks.md) | 2.0.53 | `:aisdk-provider-fireworks` | 13 | missing: no Kotlin module or parity mapping exists yet |

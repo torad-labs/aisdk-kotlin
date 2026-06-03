@@ -46,6 +46,10 @@ The latest stable Vercel AI SDK v6 reference verified during this pass is `ai@6.
   transports are tracked in the package parity ledger.
 - Valibot package surface: `valibotSchema` is represented as a Kotlin-native
   `Schema` adapter with JSON Schema preservation and validator callback tests.
+- Devtools package surface: `devToolsMiddleware` is represented as a
+  Kotlin-native recorder-backed middleware with generate/stream aggregation,
+  raw chunk capture, production guard, and wrapped-provider metadata
+  preservation tests.
 - Text-stream, UI-message-stream, and chat transport primitives.
 - Telemetry helpers and host-injected telemetry integration registry.
 - Provider-utils-style helpers: `generateId`, `createIdGenerator`, `jsonSchema`, `asSchema`, `zodSchema`, `valibotSchema`, and `dynamicTool`.
@@ -64,7 +68,7 @@ The extracted test suite is executed on both JVM and Android host targets.
 
 Last local verification:
 
-- `./gradlew allTests`: 480 test executions, 0 failures, 0 errors, 0 skips.
+- `./gradlew allTests`: 486 test executions, 0 failures, 0 errors, 0 skips.
 - `./gradlew publishToMavenLocal`: published JVM, Android, iOS x64, iOS arm64, and iOS simulator arm64 artifacts locally.
 
 On Linux, iOS unit-test binaries compile but iOS simulator execution is skipped by Gradle. Publication verification still compiles the iOS artifacts.
@@ -77,6 +81,9 @@ These are intentionally represented as extension/provider packages or platform a
 - MCP concrete HTTP, SSE, and stdio platform transports; common KMP code now
   exposes the transport interface and stdio API boundary, but process spawning
   and streaming HTTP transports need platform modules.
+- Devtools DB persistence and viewer/server UI; common KMP code now exposes
+  recorder-backed middleware, while storage/viewer wiring belongs in tooling
+  or platform modules.
 - React hooks and UI components; Kotlin hosts use `Chat`, `ChatTransport`, `Flow<UIMessage>`, Compose, SwiftUI, or server renderers.
 - Web framework response adapters; the core exposes stream response value objects and writer interfaces.
 - Alternate gateway HTTP client implementations; the core ships Ktor and
