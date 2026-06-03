@@ -1,0 +1,118 @@
+package ai.torad.aisdk
+
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonElement
+
+/**
+ * Stock self-healing repair: re-prompt the model with the tool's JSON
+ * schema + the failed args + the parse error, asking for corrected JSON.
+ * If the second response parses cleanly, return a [ContentPart.ToolCall]
+ * with the corrected `input`; otherwise return null (the agent loop
+ * surfaces [StreamEvent.ToolError]).
+ *
+ * On-device targets like Gemma 4 E2B hallucinate args ~5% of the time;
+ * a single re-prompt typically recovers, and is cheap compared to a
+ * full user-visible failure. Wire via [ToolLoopAgent.experimental_repairToolCall].
+ *
+ * Generic over `TContext` — application code can use this directly
+ * regardless of its context type. The function does not look at the
+ * model's per-call options, only at the tool's published schema and the
+ * conversation history, so no context-specific behavior is needed.
+ *
+ * Bounded recursion: this builder makes ONE repair attempt per failed
+ * call. The loop never re-enters repair on the corrected call.
+ *
+ * @param model the [LanguageModel] to re-prompt. Typically the raw
+ *              (un-middlewared) model so the repair turn doesn't show
+ *              up in tool-call logs or other middleware side-channels.
+ *              Pass a wrapped model if you want repair attempts
+ *              instrumented the same way as main-flow calls.
+ */
+fun <TContext> modelRepromptRepair(
+    model: LanguageModel,
+): ToolCallRepairFunction<TContext> = { failedCall, error, messages, tools ->
+    val tool = tools.find(failedCall.toolName)
+    if (tool == null) {
+        null
+    } else {
+        val schema = tools.descriptors
+            .firstOrNull { it.name == failedCall.toolName }
+            ?.parametersSchemaJson
+            ?: "{}"
+        val correctedJson = repromptForJson(
+            model = model,
+            messages = messages,
+            request = RepairRequest(
+                toolName = failedCall.toolName,
+                failedArgs = failedCall.input.toString(),
+                schema = schema,
+                errorMessage = error.message ?: "JSON parse error",
+            ),
+        )
+        correctedJson?.let { json ->
+            ContentPart.ToolCall(
+                toolCallId = failedCall.toolCallId,
+                toolName = failedCall.toolName,
+                input = json,
+            )
+        }
+    }
+}
+
+private val repairCodec = Json {
+    ignoreUnknownKeys = true
+    isLenient = true
+}
+
+/** Inputs for a single repair re-prompt — bundled so the call doesn't
+ *  trip the long-parameter-list rule. The repair fn is the only caller. */
+private data class RepairRequest(
+    val toolName: String,
+    val failedArgs: String,
+    val schema: String,
+    val errorMessage: String,
+)
+
+/** Issue a focused re-prompt and parse the response as JSON. Returns
+ *  null if the model's reply doesn't parse — single attempt, no
+ *  recursion. */
+private suspend fun repromptForJson(
+    model: LanguageModel,
+    messages: List<ModelMessage>,
+    request: RepairRequest,
+): JsonElement? {
+    val prompt = buildRepairPrompt(request)
+    val result = model.generate(
+        LanguageModelCallParams(
+            messages = messages + userMessage(prompt),
+            tools = emptyList(),
+            toolChoice = ToolChoice.None,
+        ),
+    )
+    val text = stripCodeFences(result.text.trim())
+    return runCatching { repairCodec.parseToJsonElement(text) }.getOrNull()
+}
+
+private fun buildRepairPrompt(request: RepairRequest): String = """
+    Your previous call to tool `${request.toolName}` had invalid JSON arguments.
+
+    Failed arguments:
+    ${request.failedArgs}
+
+    Error: ${request.errorMessage}
+
+    Tool input schema:
+    ${request.schema}
+
+    Reply with ONLY the corrected JSON arguments — no prose, no
+    explanation, no markdown code fences. Just the raw JSON object.
+""".trimIndent()
+
+/** Strip Markdown code fences off a model response so the JSON inside parses cleanly. */
+private fun stripCodeFences(raw: String): String {
+    var t = raw
+    if (t.startsWith("```json")) t = t.removePrefix("```json").trim()
+    if (t.startsWith("```")) t = t.removePrefix("```").trim()
+    if (t.endsWith("```")) t = t.removeSuffix("```").trim()
+    return t
+}

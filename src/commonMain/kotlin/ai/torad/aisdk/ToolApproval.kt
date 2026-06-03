@@ -1,0 +1,37 @@
+package ai.torad.aisdk
+
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.JsonElement
+
+/**
+ * A pending tool-call approval surfaced from [Agent.generate] /
+ * [Agent.stream]. Per v6 RPC semantics, generation completes when one or
+ * more tools require approval — the host inspects [GenerateResult.pendingApprovals],
+ * presents UI, and resumes by calling [Agent.generate] again with
+ * `messages = result.messages + toolApprovalResponseMessage(...)`.
+ *
+ * There is no `Agent.submitApproval` — approval flows entirely through
+ * the message log so it is serializable, persistable, and resumable
+ * across process restarts.
+ */
+@Serializable
+data class PendingApproval(
+    val toolCallId: String,
+    val toolName: String,
+    val input: JsonElement,
+    /**
+     * Approval-identity key. Mirrors v6's `approvalId` (per
+     * AISDK_PORT_GAPS.md gap #7). Distinct from [toolCallId] because
+     * multiple approvals can share a `toolCallId` (e.g., parallel
+     * tool-call batches where the model emits one tool-call with the
+     * SAME id twice and each side needs separate approval). When
+     * null, the host treats `approvalId = toolCallId` — adequate for
+     * the common single-approval case.
+     */
+    val approvalId: String? = null,
+)
+
+/** The effective approval ID — explicit [PendingApproval.approvalId] or
+ *  fallback to [PendingApproval.toolCallId]. */
+fun effectiveApprovalId(approval: PendingApproval): String =
+    approval.approvalId ?: approval.toolCallId
