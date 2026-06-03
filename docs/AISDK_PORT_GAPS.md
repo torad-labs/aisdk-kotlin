@@ -51,8 +51,12 @@ and everything the core package consumes directly — are done:
 - **Gateway**: `createGateway`, `createGatewayProvider`, `gateway`,
   gateway model-id aliases, metadata calls, credit/spend/generation info
   types, gateway errors, and provider-executed gateway tools are present.
-  The common module uses an injected `GatewayTransport` instead of forcing
-  a concrete HTTP client dependency onto Android/iOS/backend callers.
+  The common module keeps the injected `GatewayTransport` seam and also
+  ships `KtorGatewayTransport` for Android/iOS/backend callers that want
+  an immediate HTTP implementation.
+- **HTTP provider adapters**: `createOpenAICompatible` provides the v6
+  OpenAI-compatible shape for chat, completion, embedding, image, speech,
+  and transcription endpoints over Ktor.
 - **Provider-utils exports**: `dynamicTool`, `jsonSchema`, `asSchema`,
   `zodSchema`, `generateId`, `createIdGenerator`,
   `parseJsonEventStream`, header normalization/user-agent helpers,
@@ -85,10 +89,12 @@ dev knows the gap is *known and chosen*, not missed.
   and `ServerResponseWriter`; HTTP frameworks bind these to concrete
   sockets/responses.
 - **OTel telemetry**: represented through host-injected
-  `TelemetryIntegration` rather than a hard OpenTelemetry dependency.
+  `TelemetryIntegration` and the KMP `TelemetryTracer` / `TelemetryActiveSpan`
+  abstraction rather than a hard OpenTelemetry dependency.
 - **Browser/server-specific transport concerns**: `headers`, retry
-  policy, gateway request context, and response helpers exist in common
-  contracts; concrete HTTP clients live in provider/platform modules.
+  policy, gateway request context, response helpers, Ktor Gateway transport,
+  and OpenAI-compatible Ktor provider exist in common contracts; framework
+  response binding still lives in host/platform modules.
 - **Provider-executed tools** (`Tool.type = 'provider'`): represented by
   `providerExecutedTool`, `LanguageModelTool.providerExecuted`, and
   gateway `parallelSearch` / `perplexitySearch`; concrete hosted tools

@@ -63,16 +63,17 @@ val agent = ToolLoopAgent<Unit, String>(
 - Deprecated v6 compatibility shims: `generateObject` and `streamObject`.
 - Embeddings, reranking, image generation, speech generation, transcription, and video generation model contracts.
 - Provider registry and `customProvider` routing.
-- Gateway facade with `createGateway`, `gateway`, gateway metadata APIs, gateway errors, and provider-executed gateway tool descriptors over an injected KMP transport.
+- Gateway facade with `createGateway`, `gateway`, gateway metadata APIs, gateway errors, provider-executed gateway tool descriptors, and a Ktor-backed `KtorGatewayTransport`.
+- OpenAI-compatible Ktor provider for chat, completions, embeddings, images, speech, and transcription through `createOpenAICompatible`.
 - Provider-utils parity helpers: schemas, IDs, JSON event stream parsing, headers, base64 byte helpers, media and URL validation utilities.
 - Text stream, UI message stream, and chat transport primitives for Kotlin hosts.
-- Telemetry helpers and host-injected telemetry integrations.
+- Telemetry helpers, global/local telemetry integrations, and a KMP tracer/span abstraction.
 - Compatibility helpers such as `DefaultGeneratedFile`, `pruneMessages`, experimental media aliases, and v6 public error types.
 - Lifecycle hooks, middleware, stop conditions, call/step preparation, and cancellation.
 - UI message aggregation types for Compose, SwiftUI, or server-rendered hosts.
 - Mock models for deterministic tests across every model family.
 
-Provider packages for OpenAI, Anthropic, LiteRT, MLX, or other runtimes can live in separate `aisdk-provider-*` modules implementing these contracts.
+Provider-specific packages for Anthropic, LiteRT, MLX, Gemini, or other runtimes can live in separate `aisdk-provider-*` modules. OpenAI-compatible HTTP providers can use the built-in Ktor adapter directly.
 
 ## Documentation
 

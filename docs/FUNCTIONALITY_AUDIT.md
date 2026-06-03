@@ -43,7 +43,7 @@ The extracted test suite is executed on both JVM and Android host targets.
 
 Last local verification:
 
-- `./gradlew allTests`: 390 test executions, 0 failures, 0 errors, 0 skips.
+- `./gradlew allTests`: 414 test executions, 0 failures, 0 errors, 0 skips.
 - `./gradlew publishToMavenLocal`: published JVM, Android, iOS x64, iOS arm64, and iOS simulator arm64 artifacts locally.
 
 On Linux, iOS unit-test binaries compile but iOS simulator execution is skipped by Gradle. Publication verification still compiles the iOS artifacts.
@@ -52,19 +52,20 @@ On Linux, iOS unit-test binaries compile but iOS simulator execution is skipped 
 
 These are intentionally represented as extension/provider packages or platform adapters:
 
-- Real providers: OpenAI, Anthropic, LiteRT, MLX, Gemini, local server adapters.
+- Provider-specific adapters beyond OpenAI-compatible HTTP: Anthropic, LiteRT, MLX, Gemini, local server adapters.
 - React hooks and UI components; Kotlin hosts use `Chat`, `ChatTransport`, `Flow<UIMessage>`, Compose, SwiftUI, or server renderers.
-- Concrete HTTP clients/web framework response adapters; the core exposes stream response value objects and writer interfaces.
-- Concrete gateway HTTP client implementation; the core exposes
-  `GatewayTransport` so Ktor, OkHttp, CIO, iOS, and server adapters can
-  plug in without making the common artifact choose one.
-- Concrete OpenTelemetry bridge; the core exposes telemetry settings, spans, and integration hooks.
+- Web framework response adapters; the core exposes stream response value objects and writer interfaces.
+- Alternate gateway HTTP client implementations; the core ships Ktor and
+  keeps `GatewayTransport` so OkHttp, CIO, iOS, and server adapters can
+  plug in.
+- External OpenTelemetry bridge packages; the core exposes telemetry
+  settings, spans, tracer abstraction, and integration hooks.
 - Provider-executed tools beyond the gateway tool descriptors, such as
   provider-specific code interpreter integrations.
 
 ## Recommended Next Additions
 
-- Add provider packages as separate modules or repositories, for example `aisdk-provider-openai`, `aisdk-provider-anthropic`, and `aisdk-provider-litert`.
+- Add provider-specific packages as separate modules or repositories, for example `aisdk-provider-anthropic`, `aisdk-provider-litert`, and `aisdk-provider-mlx`.
 - Add binary API validation once the public API is stabilized for a first non-snapshot release.
 - Add Dokka-generated API docs once the publication artifact shape is final.
 - Add Maven Central publishing after GitHub Packages publication is proven in CI.

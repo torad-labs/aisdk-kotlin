@@ -24,8 +24,9 @@ model translated into the language Kotlin actually wants to use.
 | RSC integration | ❌ not ported (irrelevant) |
 | Embeddings, reranking, image gen, speech, transcription, video | ✅ ported as provider-neutral model contracts + helpers |
 | Registry and provider routing | ✅ `Provider`, `customProvider`, `createProviderRegistry`, `wrapProvider` |
-| Telemetry | ✅ host-injected `TelemetryIntegration` primitives |
-| Real provider implementations (MLX, LiteRT, cloud) | provider modules implement this package's contracts |
+| Telemetry | ✅ host-injected `TelemetryIntegration` primitives plus KMP tracer/span support |
+| Gateway/OpenAI-compatible HTTP providers | ✅ Ktor-backed common adapters |
+| Provider-specific implementations (Anthropic, MLX, LiteRT, Gemini, etc.) | provider modules implement this package's contracts |
 
 ## v5 → v6 deltas this port respects
 
@@ -68,6 +69,8 @@ The validator references make these renames non-negotiable:
 | `rerank` | `Rerank.kt` |
 | `customProvider`, `createProviderRegistry`, `wrapProvider` | `Provider.kt` |
 | `createGateway`, `gateway`, gateway metadata APIs | `Gateway.kt` |
+| Gateway HTTP transport | `KtorGatewayTransport.kt` |
+| OpenAI-compatible provider | `OpenAICompatibleProvider.kt` |
 | `parseJsonEventStream`, ID/header/base64/download helpers | `Util.kt` |
 | `DefaultGeneratedFile`, experimental media aliases | `MediaModels.kt` |
 | `pruneMessages` | `PruneMessages.kt` |
@@ -109,4 +112,5 @@ diverges intentionally in these spots:
 7. **Gateway uses injected transport.** The v6 JS package uses `fetch`.
    This common Kotlin library exposes `GatewayTransport` so platform or
    provider modules can bind Ktor, OkHttp, NSURLSession, server frameworks,
-   or test fakes without adding a hard HTTP dependency to the core.
+   or test fakes. The module also ships `KtorGatewayTransport` for callers
+   that want a ready KMP HTTP implementation.
