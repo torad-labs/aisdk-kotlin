@@ -54,7 +54,7 @@ Run `node tools/generate-parity-ledger.mjs --check` in CI to verify this directo
 | [@ai-sdk/quiverai](ai-sdk-quiverai.md) | 1.0.0 | `:aisdk-provider-quiverai` | 7 | missing: no Kotlin module or parity mapping exists yet |
 | [@ai-sdk/react](ai-sdk-react.md) | 3.0.197 | `:aisdk-ui` | 9 | missing: no Kotlin module or parity mapping exists yet |
 | [@ai-sdk/replicate](ai-sdk-replicate.md) | 2.0.33 | `:aisdk-provider-replicate` | 10 | missing: no Kotlin module or parity mapping exists yet |
-| [@ai-sdk/revai](ai-sdk-revai.md) | 2.0.33 | `:aisdk-provider-revai` | 6 | missing: no Kotlin module or parity mapping exists yet |
+| [@ai-sdk/revai](ai-sdk-revai.md) | 2.0.33 | `:aisdk-provider-revai` | 6 | ported: createRevai/revai, RevaiProviderSettings, RevaiTranscriptionModelOptions, multipart media/config job submission, job status polling, transcript retrieval, Rev.ai config passthrough, transcript text reconstruction, word timing segment parsing, and failure/timeout handling are represented as a Kotlin facade folded into the root module; VERSION is exposed as REVAI_VERSION until package modules are split |
 | [@ai-sdk/rsc](ai-sdk-rsc.md) | 2.0.195 | `:aisdk-server` | 29 | missing: no Kotlin module or parity mapping exists yet |
 | [@ai-sdk/svelte](ai-sdk-svelte.md) | 4.0.195 | `:aisdk-ui` | 8 | missing: no Kotlin module or parity mapping exists yet |
 | [@ai-sdk/test-server](ai-sdk-test-server.md) | 1.0.5 | `:aisdk-test-server` | 5 | ported: createTestServer, TestResponseController, UrlResponse, UrlHandler, and UrlHandlers are represented as a Kotlin-native in-memory server with a Ktor MockEngine bridge folded into the root module |
