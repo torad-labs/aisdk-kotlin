@@ -70,6 +70,8 @@ open class ToolLoopAgent<TContext, TOutput>(
     val presencePenalty: Float? = null,
     /** v6 `CallSettings.frequencyPenalty` agent-default. */
     val frequencyPenalty: Float? = null,
+    /** Wire-level response constraint for providers that support it. */
+    val responseFormat: ResponseFormat = ResponseFormat.Text,
     val onStart: (suspend OnStartEvent.() -> Unit)? = null,
     val onStepStart: (suspend OnStepStartEvent.() -> Unit)? = null,
     val onStepFinish: (suspend OnStepFinishEvent.() -> Unit)? = null,
@@ -418,7 +420,8 @@ open class ToolLoopAgent<TContext, TOutput>(
                 ToolSet<TContext>(resolvedTools.byName.filterKeys { it in active })
             } ?: resolvedTools
             val stepToolChoice = stepSettings.toolChoice ?: ToolChoice.Auto
-            val stepProviderOptions = stepSettings.providerOptions ?: emptyMap()
+            val stepProviderOptions =
+                (resolvedSettings.providerOptions ?: emptyMap()) + (stepSettings.providerOptions ?: emptyMap())
             val stepSystem = stepSettings.system
 
             val effectiveMessages = if (stepSystem != null) {
@@ -443,6 +446,11 @@ open class ToolLoopAgent<TContext, TOutput>(
                     ?: resolvedSettings.presencePenalty ?: presencePenalty,
                 frequencyPenalty = stepSettings.frequencyPenalty
                     ?: resolvedSettings.frequencyPenalty ?: frequencyPenalty,
+                responseFormat = stepSettings.responseFormat
+                    ?: resolvedSettings.responseFormat
+                    ?: if (responseFormat == ResponseFormat.Text && output != null) {
+                        output.toResponseFormat()
+                    } else responseFormat,
             )
 
             val stepText = StringBuilder()

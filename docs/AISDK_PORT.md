@@ -34,8 +34,8 @@ The validator references make these renames non-negotiable:
 | `parameters: z.object({...})` | `inputSerializer = serializer<T>()` (Kotlin) / `inputSchema: z.object()` (TS) |
 | `maxSteps: 5` | `stopWhen = stepCountIs(5)` |
 | `maxTokens: 512` | `maxOutputTokens = 512` |
-| `generateObject({schema})` | `generateText(output = Output.obj(serializer<T>()))` |
-| `streamObject(...)` | `streamText(output = Output.obj(...))` |
+| `generateObject({schema})` | Prefer `generateText(output = Output.obj(serializer<T>()))`; deprecated `generateObject(output = ...)` exists for compatibility |
+| `streamObject(...)` | Prefer `streamText(output = Output.obj(...))`; deprecated `streamObject(output = ...)` exists for compatibility |
 | `CoreMessage` | `ModelMessage` |
 | `agent.generateText()` | `agent.generate()` |
 | `agent.streamText()` | `agent.stream()` |
@@ -60,6 +60,7 @@ The validator references make these renames non-negotiable:
 | `prepareCall`, `prepareStep` scopes | `Context.kt` |
 | `ToolExecutionContext` | `Context.kt` (member of) |
 | `generateText`, `streamText` | `Generate.kt` (top-level functions) |
+| `generateObject`, `streamObject` | `Generate.kt` (deprecated compatibility wrappers over structured `generateText` / `streamText`) |
 | `AbortSignal`, `AbortController` | `AbortSignal.kt` (custom interface wrapping coroutines `Job`) |
 | `CoreMessage` → `ModelMessage`, `Usage`, `FinishReason` | `ModelMessage.kt` |
 | Stream events (`text`, `tool-call`, `tool-result`, etc.) | `Streaming.kt` (sealed `StreamEvent`) |
@@ -90,3 +91,7 @@ diverges intentionally in these spots:
    `toUIMessageStreamResponse()` for web routes. This core package keeps
    transport outside the agent layer so Android, iOS, JVM, and server hosts
    can choose their own networking boundary.
+6. **`streamObject` returns `Flow<StreamEvent>`.** The TypeScript SDK returns
+   a browser/Node stream facade with promise properties. The KMP core uses
+   the same cold `Flow<StreamEvent>` contract as `streamText`; object typing
+   is expressed by `Output<T>` and final decoding.

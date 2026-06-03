@@ -5,6 +5,9 @@ import ai.torad.aisdk.FinishReason
 import ai.torad.aisdk.LanguageModel
 import ai.torad.aisdk.LanguageModelCallParams
 import ai.torad.aisdk.LanguageModelResult
+import ai.torad.aisdk.CallWarning
+import ai.torad.aisdk.LanguageModelRequestMetadata
+import ai.torad.aisdk.LanguageModelResponseMetadata
 import ai.torad.aisdk.StreamEvent
 import ai.torad.aisdk.Usage
 import kotlinx.coroutines.flow.Flow
@@ -37,11 +40,35 @@ class MockLanguageModel(
         val toolCalls = response.events
             .filterIsInstance<StreamEvent.ToolCall>()
             .map { ContentPart.ToolCall(it.toolCallId, it.toolName, it.inputJson) }
+        val reasoning = response.events
+            .filterIsInstance<StreamEvent.ReasoningDelta>()
+            .joinToString("") { it.text }
+            .takeIf { it.isNotEmpty() }
+            ?.let { listOf(ContentPart.Reasoning(it)) }
+            ?: emptyList()
+        val sources = response.events
+            .filterIsInstance<StreamEvent.SourcePart>()
+            .map { ContentPart.Source(it.sourceType, it.url, it.title, it.providerMetadata) }
+        val files = response.events
+            .filterIsInstance<StreamEvent.FilePart>()
+            .map { ContentPart.File(it.mediaType, it.base64, providerMetadata = it.providerMetadata) }
         return LanguageModelResult(
             text = text,
             toolCalls = toolCalls,
             finishReason = response.finishReason,
             usage = response.usage,
+            providerMetadata = response.providerMetadata,
+            content = buildList {
+                if (text.isNotEmpty()) add(ContentPart.Text(text))
+                addAll(reasoning)
+                addAll(sources)
+                addAll(files)
+                addAll(toolCalls)
+            },
+            rawFinishReason = response.rawFinishReason,
+            warnings = response.warnings,
+            request = response.request,
+            response = response.response,
         )
     }
 
@@ -53,6 +80,7 @@ class MockLanguageModel(
                 stepNumber = callIndex,
                 finishReason = response.finishReason,
                 usage = response.usage,
+                providerMetadata = response.providerMetadata.takeIf { it.isNotEmpty() },
             )
         )
     }
@@ -128,4 +156,9 @@ data class ScriptedResponse(
     val events: List<StreamEvent>,
     val finishReason: FinishReason = FinishReason.Stop,
     val usage: Usage = Usage(promptTokens = 1, completionTokens = 1),
+    val providerMetadata: Map<String, kotlinx.serialization.json.JsonElement> = emptyMap(),
+    val rawFinishReason: String? = null,
+    val warnings: List<CallWarning> = emptyList(),
+    val request: LanguageModelRequestMetadata = LanguageModelRequestMetadata(),
+    val response: LanguageModelResponseMetadata = LanguageModelResponseMetadata(),
 )

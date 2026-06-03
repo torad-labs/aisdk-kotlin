@@ -60,6 +60,7 @@ val agent = ToolLoopAgent<Unit, String>(
 - Typed `tool()` definitions and `ToolSet`.
 - `generateText`, `streamText`, and cold `Flow<StreamEvent>` streaming.
 - Structured output through `Output.obj`, `Output.array`, `Output.choice`, and `Output.json`.
+- Deprecated v6 compatibility shims: `generateObject` and `streamObject`.
 - Lifecycle hooks, middleware, stop conditions, call/step preparation, and cancellation.
 - UI message aggregation types for Compose, SwiftUI, or server-rendered hosts.
 - `MockLanguageModel` for deterministic tests.

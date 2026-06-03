@@ -54,6 +54,7 @@ data class AgentSettings<TContext>(
      */
     val presencePenalty: Float? = null,
     val frequencyPenalty: Float? = null,
+    val responseFormat: ResponseFormat? = null,
 )
 
 /**
@@ -95,6 +96,7 @@ data class StepSettings<TContext>(
     val seed: Int? = null,
     val presencePenalty: Float? = null,
     val frequencyPenalty: Float? = null,
+    val responseFormat: ResponseFormat? = null,
     /**
      * Per-step typed-context override. Mirrors v6's
      * `prepareStep.experimental_context` (per AISDK_PORT_GAPS.md

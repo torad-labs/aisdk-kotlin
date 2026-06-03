@@ -1,6 +1,8 @@
 # Functionality Audit
 
-Status as of extraction: the core KMP library is usable for agent loops, typed tools, streaming events, UI-message aggregation, middleware, structured output, approval flows, and mock-provider testing.
+Status as of 2026-06-03: the core KMP library is usable for agent loops, typed tools, streaming events, UI-message aggregation, middleware, structured output, approval flows, and mock-provider testing.
+
+The latest stable Vercel AI SDK v6 reference verified during this pass is `ai@6.0.195` (`vercel/ai` tag `ai@6.0.195`). No stable `ai@6.1.x` release was published at verification time; canary/beta releases had moved toward v7.
 
 ## Verified Surface
 
@@ -10,7 +12,9 @@ Status as of extraction: the core KMP library is usable for agent loops, typed t
 - Tool-call repair and typed `AgentError` wiring.
 - Stop conditions, lifecycle hooks, `prepareCall`, and `prepareStep`.
 - Middleware wrapping for generate and stream paths.
-- Structured output helpers: `Output`, `fixJson`, partial JSON parsing, and JSON instruction injection.
+- Structured output helpers: `Output.obj`, `Output.array`, `Output.choice`, `Output.json`, `fixJson`, partial JSON parsing, and JSON instruction injection.
+- Deprecated v6 object helpers: `generateObject` and `streamObject` delegate to the `generateText` / `streamText` structured-output path.
+- Rich top-level result metadata: provider metadata, warnings, request/response metadata, content, reasoning, files, sources, and raw finish reason.
 - Stream taxonomy and UI-message aggregation.
 - Provider metadata propagation.
 - Rich usage accounting.
@@ -18,11 +22,11 @@ Status as of extraction: the core KMP library is usable for agent loops, typed t
 
 ## Test Coverage
 
-The extracted test suite currently contains 37 test classes executed on both JVM and Android host targets.
+The extracted test suite currently contains 38 test classes executed on both JVM and Android host targets.
 
 Last local verification:
 
-- `./gradlew allTests`: 306 test executions, 0 failures, 0 errors, 0 skips.
+- `./gradlew allTests`: 340 test executions, 0 failures, 0 errors, 0 skips.
 - `./gradlew publishToMavenLocal`: published JVM, Android, iOS x64, iOS arm64, and iOS simulator arm64 artifacts locally.
 
 On Linux, iOS unit-test binaries compile but iOS simulator execution is skipped by Gradle. Publication verification still compiles the iOS artifacts.
@@ -35,7 +39,6 @@ These are intentionally not in the core package:
 - Provider registries and multi-provider routing.
 - HTTP transport helpers and web framework response adapters.
 - React hooks and UI components.
-- `generateObject` / `streamObject` convenience entry points.
 - Embeddings, reranking, speech, image, video, transcription, and MCP tools.
 - OpenTelemetry primitives.
 - Provider-executed tools such as hosted web search or code interpreter.

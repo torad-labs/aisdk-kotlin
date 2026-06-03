@@ -40,10 +40,15 @@
 ### Output
 
 - `sealed class Output<T>`
-  - `Output.obj<T>(serializer): Output<T>`
-  - `Output.array<T>(elementSerializer): Output<List<T>>`
-  - `Output.choice<T>(values, toString?, fromString)` / `Output.choice(values: Set<String>)`
-  - `Output.json(): Output<JsonElement>`
+  - `Output.obj<T>(serializer, name?, description?): Output<T>`
+  - `Output.array<T>(elementSerializer, name?, description?): Output<List<T>>`
+  - `Output.choice(values: Iterable<String> | vararg String, name?, description?): Output<String>`
+  - `Output.json(name?, description?): Output<JsonElement>`
+- Top-level mirrors:
+  - `outputObj(serializer, name?, description?)`
+  - `outputArray(elementSerializer, name?, description?)`
+  - `outputChoice(values | vararg values, name?, description?)`
+  - `outputJson(name?, description?)`
 
 ### Structured-output utilities
 
@@ -86,11 +91,11 @@ and repaired values are byte-identical to the JS SDK.
 ### Prepare scopes
 
 - `class PrepareCallScope<TContext>(options, instructions, model, tools)`
-- `data class AgentSettings<TContext>(instructions?, model?, tools?, providerOptions?, temperature?, topP?, topK?, maxOutputTokens?, stopSequences?, seed?, presencePenalty?, frequencyPenalty?)`
+- `data class AgentSettings<TContext>(instructions?, model?, tools?, providerOptions?, temperature?, topP?, topK?, maxOutputTokens?, stopSequences?, seed?, presencePenalty?, frequencyPenalty?, responseFormat?)`
 - `class PrepareStepScope<TContext>(stepNumber, model, steps, messages, context)`
-- `data class StepSettings(model?, activeTools?, toolChoice?, messages?, system?, providerOptions?, temperature?, topP?, topK?, maxOutputTokens?, stopSequences?, seed?, presencePenalty?, frequencyPenalty?)`
+- `data class StepSettings(model?, activeTools?, toolChoice?, messages?, system?, providerOptions?, temperature?, topP?, topK?, maxOutputTokens?, stopSequences?, seed?, presencePenalty?, frequencyPenalty?, responseFormat?)`
 
-The penalty fields participate in the `Step ?: Agent ?: agent-default ?: provider-default` resolution chain — same as the existing sampler params.
+Penalty and response-format fields participate in the `Step ?: Agent ?: agent-default ?: provider-default` resolution chain — same as the existing sampler params.
 
 ### Cancellation
 
@@ -103,9 +108,12 @@ The penalty fields participate in the `Step ?: Agent ?: agent-default ?: provide
 ### Provider abstraction
 
 - `interface LanguageModel { val modelId; suspend fun generate(...); fun stream(...) }`
-- `data class LanguageModelCallParams(messages, tools, toolChoice, temperature?, topP?, topK?, maxOutputTokens?, stopSequences, seed?, providerOptions, abortSignal, presencePenalty?, frequencyPenalty?)`
+- `data class LanguageModelCallParams(messages, tools, toolChoice, temperature?, topP?, topK?, maxOutputTokens?, stopSequences, seed?, providerOptions, abortSignal, presencePenalty?, frequencyPenalty?, responseFormat)`
 - `data class LanguageModelTool(name, description, parametersSchemaJson)`
-- `data class LanguageModelResult(text, toolCalls, finishReason, usage, providerMetadata)`
+- `data class LanguageModelResult(text, toolCalls, finishReason, usage, providerMetadata, content, rawFinishReason?, warnings, request, response)`
+- `data class CallWarning(type, message?, details?)`
+- `data class LanguageModelRequestMetadata(body?)`
+- `data class LanguageModelResponseMetadata(id?, timestampMillis?, modelId?, headers, body?)`
 - `class ai.torad.aisdk.providers.MockLanguageModel(...)` — for tests only
 
 ### Middleware
@@ -116,7 +124,7 @@ The penalty fields participate in the `Step ?: Agent ?: agent-default ?: provide
 - `data class MiddlewareCallContext(params, model, doGenerate, doStream)` — both `doGenerate` and `doStream` target the rest of the chain past THIS middleware. A middleware's `wrapStream` calling `context.doGenerate(...)` skips its own `wrapGenerate` and invokes the downstream chain's generate path. This is the v6 `{doGenerate, doStream, params, model}` shape — load-bearing for `simulateStreamingMiddleware`, fallback / cache / retry middlewares, and anything that synthesizes one direction from the other.
 - `fun wrapLanguageModel(model, middlewares): LanguageModel`
 - Built-ins (`ai.torad.aisdk.middleware.*`):
-  - `defaultSettingsMiddleware(temperature?, topP?, topK?, maxOutputTokens?, stopSequences, seed?, providerOptions)`
+  - `defaultSettingsMiddleware(temperature?, topP?, topK?, maxOutputTokens?, stopSequences, seed?, providerOptions, presencePenalty?, frequencyPenalty?, responseFormat)`
   - `extractReasoningMiddleware(tagName = "reasoning", separator = "\n")`
   - `simulateStreamingMiddleware()` — calls `doGenerate` then synthesizes `TextStart / TextDelta / TextEnd / ToolCall* / StepFinish / Finish`
   - `addToolInputExamplesMiddleware(examplesByTool)`
@@ -132,8 +140,10 @@ The penalty fields participate in the `Step ?: Agent ?: agent-default ?: provide
 
 ### Top-level inference
 
-- `suspend fun <TOutput> generateText(model, prompt? | messages?, system?, output?, temperature?, ..., abortSignal?): GenerateTextResult<TOutput>`
-- `fun streamText(model, prompt? | messages?, system?, ..., abortSignal?): Flow<StreamEvent>`
+- `suspend fun <TOutput> generateText(model, prompt? | messages?, system?, output?, temperature?, ..., abortSignal?, presencePenalty?, frequencyPenalty?, responseFormat?): GenerateTextResult<TOutput>`
+- `fun streamText(model, prompt? | messages?, system?, ..., abortSignal?, output?, presencePenalty?, frequencyPenalty?, responseFormat?): Flow<StreamEvent>`
+- `@Deprecated suspend fun <TOutput> generateObject(model, output, prompt? | messages?, ...): GenerateObjectResult<TOutput>`
+- `@Deprecated fun <TOutput> streamObject(model, output, prompt? | messages?, ...): Flow<StreamEvent>`
 
 ### Messages
 

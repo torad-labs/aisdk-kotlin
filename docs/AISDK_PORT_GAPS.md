@@ -1,6 +1,6 @@
 # Port Gap Ledger
 
-> **Status (2026-05-30): the port is feature-complete for the extracted
+> **Status (2026-06-03): the port is feature-complete for the extracted
 > core agent/tool/UI-message surface.** Every gap from the original audit
 > that had, or could plausibly get, a real core-library consumer is closed.
 > What remains is
@@ -34,6 +34,13 @@ and everything the core package consumes directly — are done:
   `approvalId`, `fixJson` / `parsePartialJson`, `injectJsonInstruction`,
   truncation-repair in `extractJsonMiddleware`, `loggingMiddleware` over
   the `Logger` primitive, `provider` + `supportedUrls`, CJK `smoothStream`.
+- **Top-level generation/output parity**: `generateText` / `streamText`
+  forward penalties and response format, `Output.choice` / `Output.json`
+  are restored, `Output.array` accepts the v6 `{ elements: [...] }` shape,
+  deprecated `generateObject` / `streamObject` wrappers delegate through
+  structured `generateText` / `streamText`, and `GenerateTextResult`
+  carries warnings, request/response metadata, provider metadata, content,
+  reasoning, files, sources, and raw finish reason.
 - **UI types**: full 7-state `ToolCallState`, `DynamicToolUI`, `StepStart`,
   `UIMessage.metadata`, `SourceUrl`/`SourceDocument` split, `TextUIPartState`,
   `convertToModelMessages(ignoreIncompleteToolCalls)`, `preliminary`.
@@ -48,11 +55,10 @@ dev knows the gap is *known and chosen*, not missed.
 
 | Item | Why deferred | Partial substitute |
 |---|---|---|
-| Standalone `generateObject` / `streamObject` | Structured output goes through `Output.{obj,array,json}` + `generateText(output = …)`; a parallel entry point has no caller. | `Output<T>` + `injectJsonInstruction` |
 | `extractJsonMiddleware` *incremental* streaming (v6's 12-char-lookahead state machine) | Current structured-output consumers decode the whole object through `Output.decode`; token-by-token JSON rendering has no core consumer. | single-emit-at-`Finish` + truncation repair |
 | `DataUIPart<DATA_TYPES>` (typed `data-*` parts) | No feature streams custom typed data parts yet. | `ToolStreamWriter.writeData(JsonElement)` → `StreamEvent.Raw` |
 | `dynamicTool` helper (type-erased, MCP-style) | No external/MCP tool integration on-device. | `tool(...)` / `streamingTool(...)` |
-| `GenerateTextResult` / `StreamTextResult` rich aggregates (`.warnings`, `.staticToolCalls`, `.dynamicToolCalls`, `.response`) | Consumers read the `Flow<StreamEvent>` + minimal result struct directly. | `Flow<StreamEvent>` + `GenerateResult` |
+| `StreamTextResult` facade promises (`.warnings`, `.response`, `.textStream`, `.fullStream`) | KMP exposes a cold `Flow<StreamEvent>` directly instead of a JS/Node stream facade. | `Flow<StreamEvent>` + `GenerateTextResult` metadata |
 | Structured tool-result **stream** output (v6's discriminated `ToolResultOutput` on the wire) | `StreamEvent.ToolResult` carries `outputJson` + `modelVisible: JsonElement` — a deliberate divergence; `ToolResultOutput` already exists for the `toModelOutput` return. | `outputJson` + `modelVisible` |
 | Agent-level persistent `activeTools` allowlist | `StepSettings.activeTools` gives per-step scoping, which covers the need. | per-step `activeTools` |
 | Deep stream sub-field drift (`dynamic` / `providerExecuted` flags, `rawFinishReason`, `doStream` returning `{request, response}`) | Telemetry/cloud-routing fields with no on-device meaning. | — |
@@ -69,8 +75,8 @@ dev knows the gap is *known and chosen*, not missed.
   `processToolCalls` (Next.js / Hono).
 - **OTel telemetry**: the entire `telemetry/` dir. Hosts should provide
   telemetry through middleware or provider-specific packages.
-- **Browser-specific**: `experimental_download`, `headers`, `maxRetries`,
-  `seed`.
+- **Browser/server-specific**: `experimental_download`, `headers`,
+  `maxRetries`, web `Response` helpers.
 - **Provider-executed tools** (`Tool.type = 'provider'`): OpenAI Code
   Interpreter, Anthropic web search.
 - **React-binding plumbing**: `Chat` class, `useChat`,

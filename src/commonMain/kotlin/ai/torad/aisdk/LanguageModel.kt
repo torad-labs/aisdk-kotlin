@@ -108,4 +108,37 @@ data class LanguageModelResult(
     val finishReason: FinishReason,
     val usage: Usage,
     val providerMetadata: Map<String, JsonElement> = emptyMap(),
+    val content: List<ContentPart> = buildList {
+        if (text.isNotEmpty()) add(ContentPart.Text(text))
+        addAll(toolCalls)
+    },
+    val rawFinishReason: String? = null,
+    val warnings: List<CallWarning> = emptyList(),
+    val request: LanguageModelRequestMetadata = LanguageModelRequestMetadata(),
+    val response: LanguageModelResponseMetadata = LanguageModelResponseMetadata(),
+)
+
+/**
+ * Provider warning for a call that still completed. Mirrors v6's
+ * `CallWarning` shape without baking provider-specific warning enums
+ * into common code.
+ */
+data class CallWarning(
+    val type: String,
+    val message: String? = null,
+    val details: JsonElement? = null,
+)
+
+/** Request metadata recorded by HTTP-backed or gateway providers. */
+data class LanguageModelRequestMetadata(
+    val body: JsonElement? = null,
+)
+
+/** Response metadata recorded by HTTP-backed or gateway providers. */
+data class LanguageModelResponseMetadata(
+    val id: String? = null,
+    val timestampMillis: Long? = null,
+    val modelId: String? = null,
+    val headers: Map<String, String> = emptyMap(),
+    val body: JsonElement? = null,
 )

@@ -1,4 +1,5 @@
 .gradle/
+.reference/
 build/
 **/build/
 out/

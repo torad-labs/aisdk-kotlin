@@ -56,4 +56,50 @@ class MiddlewareDefaultsTest {
         val captured = assertNotNull(observed)
         assertEquals(0.2f, captured.temperature, "call-site temperature wins over default")
     }
+
+    @Test
+    fun `default middleware applies penalties and response format when omitted`() = runTest {
+        var observed: LanguageModelCallParams? = null
+        val defaultResponseFormat = ResponseFormat.Json(schemaName = "DefaultJson")
+        val wrapped = wrapLanguageModel(
+            mockLanguageModelTextOnly("ok"),
+            listOf(
+                defaultSettingsMiddleware(
+                    presencePenalty = 0.3f,
+                    frequencyPenalty = 0.6f,
+                    responseFormat = defaultResponseFormat,
+                ),
+                CaptureMiddleware { observed = it },
+            ),
+        )
+
+        wrapped.generate(LanguageModelCallParams(messages = listOf(userMessage("hi"))))
+
+        val captured = assertNotNull(observed)
+        assertEquals(0.3f, captured.presencePenalty)
+        assertEquals(0.6f, captured.frequencyPenalty)
+        assertEquals(defaultResponseFormat, captured.responseFormat)
+    }
+
+    @Test
+    fun `explicit response format overrides default middleware response format`() = runTest {
+        var observed: LanguageModelCallParams? = null
+        val explicit = ResponseFormat.Json(schemaName = "ExplicitJson")
+        val wrapped = wrapLanguageModel(
+            mockLanguageModelTextOnly("ok"),
+            listOf(
+                defaultSettingsMiddleware(responseFormat = ResponseFormat.Json(schemaName = "DefaultJson")),
+                CaptureMiddleware { observed = it },
+            ),
+        )
+
+        wrapped.generate(
+            LanguageModelCallParams(
+                messages = listOf(userMessage("hi")),
+                responseFormat = explicit,
+            ),
+        )
+
+        assertEquals(explicit, assertNotNull(observed).responseFormat)
+    }
 }

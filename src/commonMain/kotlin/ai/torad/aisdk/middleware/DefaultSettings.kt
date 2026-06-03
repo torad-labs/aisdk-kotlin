@@ -4,6 +4,7 @@ import ai.torad.aisdk.LanguageModelCallParams
 import ai.torad.aisdk.LanguageModelMiddleware
 import ai.torad.aisdk.LanguageModelResult
 import ai.torad.aisdk.MiddlewareCallContext
+import ai.torad.aisdk.ResponseFormat
 import ai.torad.aisdk.StreamEvent
 import kotlinx.coroutines.flow.Flow
 import kotlinx.serialization.json.JsonElement
@@ -25,6 +26,9 @@ fun defaultSettingsMiddleware(
     stopSequences: List<String> = emptyList(),
     seed: Int? = null,
     providerOptions: Map<String, JsonElement> = emptyMap(),
+    presencePenalty: Float? = null,
+    frequencyPenalty: Float? = null,
+    responseFormat: ResponseFormat = ResponseFormat.Text,
 ): LanguageModelMiddleware = object : LanguageModelMiddleware {
     override suspend fun wrapGenerate(context: MiddlewareCallContext): LanguageModelResult =
         context.doGenerate(applyDefaults(context.params))
@@ -40,5 +44,8 @@ fun defaultSettingsMiddleware(
         stopSequences = params.stopSequences.ifEmpty { stopSequences },
         seed = params.seed ?: seed,
         providerOptions = providerOptions + params.providerOptions,
+        presencePenalty = params.presencePenalty ?: presencePenalty,
+        frequencyPenalty = params.frequencyPenalty ?: frequencyPenalty,
+        responseFormat = if (params.responseFormat == ResponseFormat.Text) responseFormat else params.responseFormat,
     )
 }
