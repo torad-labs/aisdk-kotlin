@@ -3,7 +3,7 @@
 - Version: 2.0.33
 - Upstream path: `.reference/vercel-ai-sdk-ai-6.0.195/packages/elevenlabs`
 - Target Kotlin module: `:aisdk-provider-elevenlabs`
-- Current parity status: missing: no Kotlin module or parity mapping exists yet
+- Current parity status: ported: createElevenLabs/elevenlabs, ElevenLabsProviderSettings, speech/transcription model id and option surfaces, speech query/body mapping, multipart transcription mapping, binary audio response parsing, and transcription segment parsing are represented as a Kotlin facade folded into the root module; VERSION is exposed as ELEVENLABS_VERSION until package modules are split
 
 ## Entrypoints
 
