@@ -50,6 +50,10 @@ The latest stable Vercel AI SDK v6 reference verified during this pass is `ai@6.
   Kotlin-native recorder-backed middleware with generate/stream aggregation,
   raw chunk capture, production guard, and wrapped-provider metadata
   preservation tests.
+- LlamaIndex package surface: `toUIMessageStream` is represented as a
+  Kotlin `Flow<LlamaIndexEngineResponse>` to `Flow<UIMessage>` adapter with
+  leading-whitespace trimming, streaming/done text states, and stream
+  callback lifecycle tests.
 - Text-stream, UI-message-stream, and chat transport primitives.
 - Telemetry helpers and host-injected telemetry integration registry.
 - Provider-utils-style helpers: `generateId`, `createIdGenerator`, `jsonSchema`, `asSchema`, `zodSchema`, `valibotSchema`, and `dynamicTool`.
@@ -68,7 +72,7 @@ The extracted test suite is executed on both JVM and Android host targets.
 
 Last local verification:
 
-- `./gradlew allTests`: 486 test executions, 0 failures, 0 errors, 0 skips.
+- `./gradlew allTests`: 490 test executions, 0 failures, 0 errors, 0 skips.
 - `./gradlew publishToMavenLocal`: published JVM, Android, iOS x64, iOS arm64, and iOS simulator arm64 artifacts locally.
 
 On Linux, iOS unit-test binaries compile but iOS simulator execution is skipped by Gradle. Publication verification still compiles the iOS artifacts.
