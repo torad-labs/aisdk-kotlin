@@ -19,12 +19,12 @@ import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlin.math.ceil
 
-const val BYTEDANCE_VERSION: String = "1.0.15"
+public const val BYTEDANCE_VERSION: String = "1.0.15"
 
-typealias ByteDanceVideoModelId = String
+public typealias ByteDanceVideoModelId = String
 
 @Serializable
-data class ByteDanceVideoProviderOptions(
+public data class ByteDanceVideoProviderOptions(
     val watermark: Boolean? = null,
     val generateAudio: Boolean? = null,
     val cameraFixed: Boolean? = null,
@@ -40,23 +40,23 @@ data class ByteDanceVideoProviderOptions(
 )
 
 @Serializable
-data class ByteDanceProviderSettings(
+public data class ByteDanceProviderSettings(
     val apiKey: String? = null,
     val baseURL: String = "https://ark.ap-southeast.bytepluses.com/api/v3",
     val headers: Map<String, String> = emptyMap(),
 )
 
-interface ByteDanceProvider : Provider {
-    fun video(modelId: ByteDanceVideoModelId): VideoModel
+public interface ByteDanceProvider : Provider {
+    public fun video(modelId: ByteDanceVideoModelId): VideoModel
     override fun videoModel(modelId: String): VideoModel = video(modelId)
 }
 
-fun createByteDance(
+public fun createByteDance(
     client: HttpClient,
     settings: ByteDanceProviderSettings = ByteDanceProviderSettings(),
 ): ByteDanceProvider = DefaultByteDanceProvider(client, settings)
 
-val byteDance: ByteDanceProvider = object : ByteDanceProvider {
+public val byteDance: ByteDanceProvider = object : ByteDanceProvider {
     override val providerId: String = "bytedance"
     override fun video(modelId: String): VideoModel =
         throw AiSdkException("ByteDance provider is not configured. Use createByteDance(client, settings).")

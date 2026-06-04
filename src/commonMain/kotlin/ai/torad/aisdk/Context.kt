@@ -15,11 +15,11 @@ import kotlinx.serialization.json.JsonElement
  * RAG context injection, per-user customization, database lookups that
  * shouldn't repeat per step.
  */
-class PrepareCallScope<TContext>(
-    val options: TContext?,
-    val instructions: String,
-    val model: LanguageModel,
-    val tools: ToolSet<TContext>,
+public class PrepareCallScope<TContext>(
+    public val options: TContext?,
+    public val instructions: String,
+    public val model: LanguageModel,
+    public val tools: ToolSet<TContext>,
 )
 
 /**
@@ -33,7 +33,7 @@ class PrepareCallScope<TContext>(
  * the agent loop is `StepSettings ?: AgentSettings ?: agent-default
  * ?: provider-default`.
  */
-data class AgentSettings<TContext>(
+public data class AgentSettings<TContext>(
     val instructions: String? = null,
     val model: LanguageModel? = null,
     val tools: ToolSet<TContext>? = null,
@@ -64,12 +64,12 @@ data class AgentSettings<TContext>(
  * 3), tool gating per step (only the search tool is callable on step 1),
  * dynamic system prompts, message compression.
  */
-class PrepareStepScope<TContext>(
-    val stepNumber: Int,
-    val model: LanguageModel,
-    val steps: List<StepResult>,
-    val messages: List<ModelMessage>,
-    val context: TContext?,
+public class PrepareStepScope<TContext>(
+    public val stepNumber: Int,
+    public val model: LanguageModel,
+    public val steps: List<StepResult>,
+    public val messages: List<ModelMessage>,
+    public val context: TContext?,
 )
 
 /**
@@ -82,7 +82,7 @@ class PrepareStepScope<TContext>(
  * (say) step 1 is a deterministic plan (`temperature = 0`) and the
  * following synthesis steps are warmer.
  */
-data class StepSettings<TContext>(
+public data class StepSettings<TContext>(
     val model: LanguageModel? = null,
     val activeTools: List<String>? = null,
     val toolChoice: ToolChoice? = null,

@@ -24,12 +24,12 @@ import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 
-const val REVAI_VERSION: String = "2.0.33"
+public const val REVAI_VERSION: String = "2.0.33"
 
-typealias RevaiTranscriptionModelId = String
+public typealias RevaiTranscriptionModelId = String
 
 @Serializable
-data class RevaiTranscriptionModelOptions(
+public data class RevaiTranscriptionModelOptions(
     val metadata: String? = null,
     val notification_config: JsonObject? = null,
     val delete_after_seconds: Int? = null,
@@ -57,27 +57,27 @@ data class RevaiTranscriptionModelOptions(
 )
 
 @Serializable
-data class RevaiProviderSettings(
+public data class RevaiProviderSettings(
     val apiKey: String? = null,
     val headers: Map<String, String> = emptyMap(),
     val pollingIntervalMillis: Long = 1_000L,
     val maxPollAttempts: Int = 60,
 )
 
-interface RevaiProvider : Provider {
-    operator fun invoke(modelId: RevaiTranscriptionModelId = "machine"): TranscriptionModel = transcription(modelId)
-    fun transcription(modelId: RevaiTranscriptionModelId): TranscriptionModel
-    fun textEmbeddingModel(modelId: String): Nothing = throw NoSuchModelError(providerId, "embeddingModel", modelId)
+public interface RevaiProvider : Provider {
+    public operator fun invoke(modelId: RevaiTranscriptionModelId = "machine"): TranscriptionModel = transcription(modelId)
+    public fun transcription(modelId: RevaiTranscriptionModelId): TranscriptionModel
+    public fun textEmbeddingModel(modelId: String): Nothing = throw NoSuchModelError(providerId, "embeddingModel", modelId)
 
     override fun transcriptionModel(modelId: String): TranscriptionModel = transcription(modelId)
 }
 
-fun createRevai(
+public fun createRevai(
     client: HttpClient,
     settings: RevaiProviderSettings = RevaiProviderSettings(),
 ): RevaiProvider = DefaultRevaiProvider(client, settings)
 
-val revai: RevaiProvider = object : RevaiProvider {
+public val revai: RevaiProvider = object : RevaiProvider {
     override val providerId: String = "revai"
     override fun transcription(modelId: String): TranscriptionModel =
         throw AiSdkException("Rev.ai provider is not configured. Use createRevai(client, settings).")

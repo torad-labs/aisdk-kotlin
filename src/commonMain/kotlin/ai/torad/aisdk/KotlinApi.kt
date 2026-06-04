@@ -16,9 +16,9 @@ import kotlinx.serialization.serializer
  */
 /** Marks AI SDK builder receivers so nested DSL blocks don't leak outer scopes. */
 @DslMarker
-annotation class AiSdkDsl
+public annotation class AiSdkDsl
 
-data class CallSettings(
+public data class CallSettings(
     val temperature: Float? = null,
     val topP: Float? = null,
     val topK: Int? = null,
@@ -36,33 +36,33 @@ data class CallSettings(
 )
 
 @AiSdkDsl
-class CallSettingsBuilder internal constructor() {
-    var temperature: Float? = null
-    var topP: Float? = null
-    var topK: Int? = null
-    var maxOutputTokens: Int? = null
-    var seed: Int? = null
-    var providerOptions: Map<String, JsonElement> = emptyMap()
-    var abortSignal: AbortSignal? = null
-    var presencePenalty: Float? = null
-    var frequencyPenalty: Float? = null
-    var responseFormat: ResponseFormat? = null
+public class CallSettingsBuilder internal constructor() {
+    public var temperature: Float? = null
+    public var topP: Float? = null
+    public var topK: Int? = null
+    public var maxOutputTokens: Int? = null
+    public var seed: Int? = null
+    public var providerOptions: Map<String, JsonElement> = emptyMap()
+    public var abortSignal: AbortSignal? = null
+    public var presencePenalty: Float? = null
+    public var frequencyPenalty: Float? = null
+    public var responseFormat: ResponseFormat? = null
 
     private val stopSequences = mutableListOf<String>()
 
-    fun stopSequence(value: String) {
+    public fun stopSequence(value: String) {
         stopSequences += value
     }
 
-    fun stopSequences(values: Iterable<String>) {
+    public fun stopSequences(values: Iterable<String>) {
         stopSequences += values
     }
 
-    fun providerOption(name: String, value: JsonElement) {
+    public fun providerOption(name: String, value: JsonElement) {
         providerOptions = providerOptions + (name to value)
     }
 
-    fun providerOptions(block: ProviderOptionsBuilder.() -> Unit) {
+    public fun providerOptions(block: ProviderOptionsBuilder.() -> Unit) {
         providerOptions = providerOptions + buildProviderOptions(block)
     }
 
@@ -81,48 +81,48 @@ class CallSettingsBuilder internal constructor() {
     )
 }
 
-fun callSettings(block: CallSettingsBuilder.() -> Unit): CallSettings =
+public fun callSettings(block: CallSettingsBuilder.() -> Unit): CallSettings =
     CallSettingsBuilder().apply(block).build()
 
 @AiSdkDsl
-class ProviderOptionsBuilder internal constructor() {
+public class ProviderOptionsBuilder internal constructor() {
     private val values = linkedMapOf<String, JsonElement>()
 
-    fun put(name: String, value: JsonElement) {
+    public fun put(name: String, value: JsonElement) {
         values[name] = value
     }
 
-    fun <T> put(name: String, value: T, serializer: KSerializer<T>) {
+    public fun <T> put(name: String, value: T, serializer: KSerializer<T>) {
         values[name] = encodeJsonElement(value, serializer)
     }
 
-    inline fun <reified T> put(name: String, value: T) {
+    public inline fun <reified T> put(name: String, value: T) {
         put(name, value, serializer())
     }
 
-    fun provider(name: String, block: JsonObjectBuilder.() -> Unit) {
+    public fun provider(name: String, block: JsonObjectBuilder.() -> Unit) {
         values[name] = buildJsonObject(block)
     }
 
-    fun <T> provider(name: String, value: T, serializer: KSerializer<T>) {
+    public fun <T> provider(name: String, value: T, serializer: KSerializer<T>) {
         values[name] = encodeJsonElement(value, serializer)
     }
 
-    inline fun <reified T> provider(name: String, value: T) {
+    public inline fun <reified T> provider(name: String, value: T) {
         provider(name, value, serializer())
     }
 
-    fun options(values: Map<String, JsonElement>) {
+    public fun options(values: Map<String, JsonElement>) {
         this.values.putAll(values)
     }
 
     internal fun build(): Map<String, JsonElement> = values.toMap()
 }
 
-fun buildProviderOptions(block: ProviderOptionsBuilder.() -> Unit): Map<String, JsonElement> =
+public fun buildProviderOptions(block: ProviderOptionsBuilder.() -> Unit): Map<String, JsonElement> =
     ProviderOptionsBuilder().apply(block).build()
 
-data class TextGenerationRequest(
+public data class TextGenerationRequest(
     val prompt: String? = null,
     val messages: List<ModelMessage> = emptyList(),
     val system: String? = null,
@@ -130,34 +130,34 @@ data class TextGenerationRequest(
 )
 
 @AiSdkDsl
-class TextGenerationRequestBuilder internal constructor() {
-    var prompt: String? = null
-    var system: String? = null
-    var settings: CallSettings = CallSettings()
+public class TextGenerationRequestBuilder internal constructor() {
+    public var prompt: String? = null
+    public var system: String? = null
+    public var settings: CallSettings = CallSettings()
 
     private val messages = mutableListOf<ModelMessage>()
 
-    fun prompt(value: String) {
+    public fun prompt(value: String) {
         prompt = value
     }
 
-    fun system(value: String) {
+    public fun system(value: String) {
         system = value
     }
 
-    fun message(message: ModelMessage) {
+    public fun message(message: ModelMessage) {
         messages += message
     }
 
-    fun messages(values: Iterable<ModelMessage>) {
+    public fun messages(values: Iterable<ModelMessage>) {
         messages += values
     }
 
-    fun settings(value: CallSettings) {
+    public fun settings(value: CallSettings) {
         settings = value
     }
 
-    fun settings(block: CallSettingsBuilder.() -> Unit) {
+    public fun settings(block: CallSettingsBuilder.() -> Unit) {
         settings = callSettings(block)
     }
 
@@ -169,10 +169,10 @@ class TextGenerationRequestBuilder internal constructor() {
     )
 }
 
-fun textGenerationRequest(block: TextGenerationRequestBuilder.() -> Unit): TextGenerationRequest =
+public fun textGenerationRequest(block: TextGenerationRequestBuilder.() -> Unit): TextGenerationRequest =
     TextGenerationRequestBuilder().apply(block).build()
 
-suspend fun generateText(
+public suspend fun generateText(
     model: LanguageModel,
     request: TextGenerationRequest,
 ): GenerateTextResult<String> = generateText(
@@ -183,7 +183,7 @@ suspend fun generateText(
     settings = request.settings,
 )
 
-suspend fun generateText(
+public suspend fun generateText(
     model: LanguageModel,
     settings: CallSettings = CallSettings(),
     block: TextGenerationRequestBuilder.() -> Unit,
@@ -192,7 +192,7 @@ suspend fun generateText(
     return generateText(model = model, request = request.copy(settings = settings.merge(request.settings)))
 }
 
-suspend fun <TOutput> generateText(
+public suspend fun <TOutput> generateText(
     model: LanguageModel,
     output: Output<TOutput>,
     request: TextGenerationRequest,
@@ -205,7 +205,7 @@ suspend fun <TOutput> generateText(
     settings = request.settings,
 )
 
-suspend fun <TOutput> generateText(
+public suspend fun <TOutput> generateText(
     model: LanguageModel,
     output: Output<TOutput>,
     settings: CallSettings = CallSettings(),
@@ -215,7 +215,7 @@ suspend fun <TOutput> generateText(
     return generateText(model = model, output = output, request = request.copy(settings = settings.merge(request.settings)))
 }
 
-suspend fun generateText(
+public suspend fun generateText(
     model: LanguageModel,
     prompt: String? = null,
     messages: List<ModelMessage> = emptyList(),
@@ -239,7 +239,7 @@ suspend fun generateText(
     responseFormat = settings.responseFormat ?: ResponseFormat.Text,
 )
 
-suspend fun <TOutput> generateText(
+public suspend fun <TOutput> generateText(
     model: LanguageModel,
     prompt: String? = null,
     messages: List<ModelMessage> = emptyList(),
@@ -265,12 +265,12 @@ suspend fun <TOutput> generateText(
     responseFormat = settings.responseFormat ?: ResponseFormat.Text,
 )
 
-fun streamText(
+public fun streamText(
     model: LanguageModel,
     request: TextGenerationRequest,
 ): Flow<StreamEvent> = streamTextResult(model = model, request = request).fullStream
 
-fun streamText(
+public fun streamText(
     model: LanguageModel,
     settings: CallSettings = CallSettings(),
     block: TextGenerationRequestBuilder.() -> Unit,
@@ -279,7 +279,7 @@ fun streamText(
     return streamText(model = model, request = request.copy(settings = settings.merge(request.settings)))
 }
 
-fun streamTextResult(
+public fun streamTextResult(
     model: LanguageModel,
     request: TextGenerationRequest,
 ): StreamTextResult = streamTextResult(
@@ -290,7 +290,7 @@ fun streamTextResult(
     settings = request.settings,
 )
 
-fun streamTextResult(
+public fun streamTextResult(
     model: LanguageModel,
     settings: CallSettings = CallSettings(),
     block: TextGenerationRequestBuilder.() -> Unit,
@@ -299,7 +299,7 @@ fun streamTextResult(
     return streamTextResult(model = model, request = request.copy(settings = settings.merge(request.settings)))
 }
 
-fun streamTextResult(
+public fun streamTextResult(
     model: LanguageModel,
     prompt: String? = null,
     messages: List<ModelMessage> = emptyList(),

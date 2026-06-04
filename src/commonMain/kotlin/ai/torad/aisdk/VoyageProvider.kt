@@ -16,13 +16,13 @@ import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 
-const val VOYAGE_VERSION: String = "1.0.4"
+public const val VOYAGE_VERSION: String = "1.0.4"
 
-typealias VoyageEmbeddingModelId = String
-typealias VoyageRerankingModelId = String
+public typealias VoyageEmbeddingModelId = String
+public typealias VoyageRerankingModelId = String
 
 @Serializable
-data class VoyageEmbeddingModelOptions(
+public data class VoyageEmbeddingModelOptions(
     val inputType: String? = null,
     val truncation: Boolean? = null,
     val outputDimension: Int? = null,
@@ -30,34 +30,34 @@ data class VoyageEmbeddingModelOptions(
 )
 
 @Serializable
-data class VoyageRerankingModelOptions(
+public data class VoyageRerankingModelOptions(
     val returnDocuments: Boolean? = null,
     val truncation: Boolean? = null,
 )
 
 @Serializable
-data class VoyageProviderSettings(
+public data class VoyageProviderSettings(
     val baseURL: String = "https://api.voyageai.com/v1",
     val apiKey: String? = null,
     val headers: Map<String, String> = emptyMap(),
 )
 
-interface VoyageProvider : Provider {
-    fun embedding(modelId: VoyageEmbeddingModelId): EmbeddingModel
-    fun textEmbedding(modelId: VoyageEmbeddingModelId): EmbeddingModel = embedding(modelId)
-    fun textEmbeddingModel(modelId: VoyageEmbeddingModelId): EmbeddingModel = embedding(modelId)
-    fun reranking(modelId: VoyageRerankingModelId): RerankingModel
+public interface VoyageProvider : Provider {
+    public fun embedding(modelId: VoyageEmbeddingModelId): EmbeddingModel
+    public fun textEmbedding(modelId: VoyageEmbeddingModelId): EmbeddingModel = embedding(modelId)
+    public fun textEmbeddingModel(modelId: VoyageEmbeddingModelId): EmbeddingModel = embedding(modelId)
+    public fun reranking(modelId: VoyageRerankingModelId): RerankingModel
 
     override fun embeddingModel(modelId: String): EmbeddingModel = embedding(modelId)
     override fun rerankingModel(modelId: String): RerankingModel = reranking(modelId)
 }
 
-fun createVoyage(
+public fun createVoyage(
     client: HttpClient,
     settings: VoyageProviderSettings = VoyageProviderSettings(),
 ): VoyageProvider = DefaultVoyageProvider(client, settings)
 
-val voyage: VoyageProvider = object : VoyageProvider {
+public val voyage: VoyageProvider = object : VoyageProvider {
     override val providerId: String = "voyage"
     override fun embedding(modelId: String): EmbeddingModel =
         throw AiSdkException("Voyage provider is not configured. Use createVoyage(client, settings).")

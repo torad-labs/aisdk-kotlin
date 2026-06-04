@@ -19,13 +19,13 @@ import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 
-const val QUIVERAI_VERSION: String = "1.0.0"
+public const val QUIVERAI_VERSION: String = "1.0.0"
 
-typealias QuiverAIImageModelId = String
-typealias QuiverAIOperation = String
+public typealias QuiverAIImageModelId = String
+public typealias QuiverAIOperation = String
 
 @Serializable
-data class QuiverAIImageModelOptions(
+public data class QuiverAIImageModelOptions(
     val operation: String? = null,
     val instructions: String? = null,
     val temperature: Double? = null,
@@ -37,24 +37,24 @@ data class QuiverAIImageModelOptions(
 )
 
 @Serializable
-data class QuiverAIProviderSettings(
+public data class QuiverAIProviderSettings(
     val apiKey: String? = null,
     val baseURL: String = "https://api.quiver.ai/v1",
     val headers: Map<String, String> = emptyMap(),
 )
 
-interface QuiverAIProvider : Provider {
-    fun image(modelId: QuiverAIImageModelId): ImageModel
+public interface QuiverAIProvider : Provider {
+    public fun image(modelId: QuiverAIImageModelId): ImageModel
     override fun imageModel(modelId: String): ImageModel = image(modelId)
-    fun textEmbeddingModel(modelId: String): Nothing = throw NoSuchModelError(providerId, "embeddingModel", modelId)
+    public fun textEmbeddingModel(modelId: String): Nothing = throw NoSuchModelError(providerId, "embeddingModel", modelId)
 }
 
-fun createQuiverAI(
+public fun createQuiverAI(
     client: HttpClient,
     settings: QuiverAIProviderSettings = QuiverAIProviderSettings(),
 ): QuiverAIProvider = DefaultQuiverAIProvider(client, settings)
 
-val quiverai: QuiverAIProvider = object : QuiverAIProvider {
+public val quiverai: QuiverAIProvider = object : QuiverAIProvider {
     override val providerId: String = "quiverai"
     override fun image(modelId: String): ImageModel =
         throw AiSdkException("QuiverAI provider is not configured. Use createQuiverAI(client, settings).")

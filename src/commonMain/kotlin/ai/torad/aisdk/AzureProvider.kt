@@ -4,16 +4,16 @@ import io.ktor.client.HttpClient
 import io.ktor.http.HttpHeaders
 import kotlinx.serialization.json.JsonElement
 
-const val AZURE_VERSION: String = "3.0.69"
+public const val AZURE_VERSION: String = "3.0.69"
 
-typealias AzureOpenAIChatModelId = String
-typealias AzureOpenAICompletionModelId = String
-typealias AzureOpenAIEmbeddingModelId = String
-typealias AzureOpenAIImageModelId = String
-typealias AzureOpenAITranscriptionModelId = String
-typealias AzureOpenAISpeechModelId = String
+public typealias AzureOpenAIChatModelId = String
+public typealias AzureOpenAICompletionModelId = String
+public typealias AzureOpenAIEmbeddingModelId = String
+public typealias AzureOpenAIImageModelId = String
+public typealias AzureOpenAITranscriptionModelId = String
+public typealias AzureOpenAISpeechModelId = String
 
-data class AzureOpenAIProviderSettings(
+public data class AzureOpenAIProviderSettings(
     val resourceName: String? = null,
     val baseURL: String? = null,
     val apiKey: String? = null,
@@ -23,29 +23,29 @@ data class AzureOpenAIProviderSettings(
     val useDeploymentBasedUrls: Boolean = false,
 )
 
-interface AzureOpenAIProvider : Provider {
-    val settings: AzureOpenAIProviderSettings
-    val tools: AzureOpenAITools
+public interface AzureOpenAIProvider : Provider {
+    public val settings: AzureOpenAIProviderSettings
+    public val tools: AzureOpenAITools
 
-    operator fun invoke(deploymentId: String): LanguageModel = responses(deploymentId)
-    fun responses(deploymentId: String): LanguageModel
-    fun chat(deploymentId: AzureOpenAIChatModelId): LanguageModel
-    fun completion(deploymentId: AzureOpenAICompletionModelId): LanguageModel
-    fun embedding(deploymentId: AzureOpenAIEmbeddingModelId): EmbeddingModel
-    fun image(deploymentId: AzureOpenAIImageModelId): ImageModel
-    fun transcription(deploymentId: AzureOpenAITranscriptionModelId): TranscriptionModel
-    fun speech(deploymentId: AzureOpenAISpeechModelId): SpeechModel
+    public operator fun invoke(deploymentId: String): LanguageModel = responses(deploymentId)
+    public fun responses(deploymentId: String): LanguageModel
+    public fun chat(deploymentId: AzureOpenAIChatModelId): LanguageModel
+    public fun completion(deploymentId: AzureOpenAICompletionModelId): LanguageModel
+    public fun embedding(deploymentId: AzureOpenAIEmbeddingModelId): EmbeddingModel
+    public fun image(deploymentId: AzureOpenAIImageModelId): ImageModel
+    public fun transcription(deploymentId: AzureOpenAITranscriptionModelId): TranscriptionModel
+    public fun speech(deploymentId: AzureOpenAISpeechModelId): SpeechModel
 
     override fun languageModel(modelId: String): LanguageModel = responses(modelId)
     override fun embeddingModel(modelId: String): EmbeddingModel = embedding(modelId)
-    fun textEmbedding(deploymentId: AzureOpenAIEmbeddingModelId): EmbeddingModel = embedding(deploymentId)
-    fun textEmbeddingModel(deploymentId: AzureOpenAIEmbeddingModelId): EmbeddingModel = embedding(deploymentId)
+    public fun textEmbedding(deploymentId: AzureOpenAIEmbeddingModelId): EmbeddingModel = embedding(deploymentId)
+    public fun textEmbeddingModel(deploymentId: AzureOpenAIEmbeddingModelId): EmbeddingModel = embedding(deploymentId)
     override fun imageModel(modelId: String): ImageModel = image(modelId)
     override fun transcriptionModel(modelId: String): TranscriptionModel = transcription(modelId)
     override fun speechModel(modelId: String): SpeechModel = speech(modelId)
 }
 
-data class AzureOpenAITools(
+public data class AzureOpenAITools(
     val codeInterpreter: Tool<JsonElement, JsonElement, Any?> = OpenAITools().codeInterpreter,
     val fileSearch: Tool<JsonElement, JsonElement, Any?> = OpenAITools().fileSearch,
     val imageGeneration: Tool<JsonElement, JsonElement, Any?> = OpenAITools().imageGeneration,
@@ -53,9 +53,9 @@ data class AzureOpenAITools(
     val webSearchPreview: Tool<JsonElement, JsonElement, Any?> = OpenAITools().webSearchPreview,
 )
 
-val azureOpenaiTools: AzureOpenAITools = AzureOpenAITools()
+public val azureOpenaiTools: AzureOpenAITools = AzureOpenAITools()
 
-fun createAzure(
+public fun createAzure(
     client: HttpClient,
     settings: AzureOpenAIProviderSettings = AzureOpenAIProviderSettings(),
 ): AzureOpenAIProvider {
@@ -68,7 +68,7 @@ fun createAzure(
     return DefaultAzureOpenAIProvider(client, settings)
 }
 
-val azure: AzureOpenAIProvider = AzureOpenAIProviderNotConfigured
+public val azure: AzureOpenAIProvider = AzureOpenAIProviderNotConfigured
 
 private object AzureOpenAIProviderNotConfigured : AzureOpenAIProvider {
     override val settings: AzureOpenAIProviderSettings = AzureOpenAIProviderSettings()

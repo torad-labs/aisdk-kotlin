@@ -18,13 +18,13 @@ import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 
-const val KLINGAI_VERSION: String = "3.0.18"
+public const val KLINGAI_VERSION: String = "3.0.18"
 
-typealias KlingAIVideoModelId = String
-typealias KlingAIVideoProviderOptions = KlingAIVideoModelOptions
+public typealias KlingAIVideoModelId = String
+public typealias KlingAIVideoProviderOptions = KlingAIVideoModelOptions
 
 @Serializable
-data class KlingAIProviderSettings(
+public data class KlingAIProviderSettings(
     val accessKey: String? = null,
     val secretKey: String? = null,
     val baseURL: String = "https://api-singapore.klingai.com",
@@ -32,7 +32,7 @@ data class KlingAIProviderSettings(
 )
 
 @Serializable
-data class KlingAIVideoModelOptions(
+public data class KlingAIVideoModelOptions(
     val mode: String? = null,
     val pollIntervalMs: Long? = null,
     val pollTimeoutMs: Long? = null,
@@ -54,16 +54,16 @@ data class KlingAIVideoModelOptions(
     val keepOriginalSound: String? = null,
 )
 
-interface KlingAIProvider : Provider {
-    fun video(modelId: KlingAIVideoModelId): VideoModel = videoModel(modelId)
+public interface KlingAIProvider : Provider {
+    public fun video(modelId: KlingAIVideoModelId): VideoModel = videoModel(modelId)
 }
 
-fun createKlingAI(
+public fun createKlingAI(
     client: HttpClient,
     settings: KlingAIProviderSettings = KlingAIProviderSettings(),
 ): KlingAIProvider = DefaultKlingAIProvider(client, settings)
 
-val klingai: KlingAIProvider = object : KlingAIProvider {
+public val klingai: KlingAIProvider = object : KlingAIProvider {
     override val providerId: String = "klingai"
     override fun videoModel(modelId: String): VideoModel =
         throw AiSdkException("KlingAI provider is not configured. Use createKlingAI(client, settings).")

@@ -18,64 +18,64 @@ import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 
-const val COHERE_VERSION: String = "3.0.36"
+public const val COHERE_VERSION: String = "3.0.36"
 
-typealias CohereChatModelId = String
-typealias CohereEmbeddingModelId = String
-typealias CohereRerankingModelId = String
-typealias CohereChatModelOptions = CohereLanguageModelOptions
-typealias CohereRerankingOptions = CohereRerankingModelOptions
+public typealias CohereChatModelId = String
+public typealias CohereEmbeddingModelId = String
+public typealias CohereRerankingModelId = String
+public typealias CohereChatModelOptions = CohereLanguageModelOptions
+public typealias CohereRerankingOptions = CohereRerankingModelOptions
 
 @Serializable
-data class CohereProviderSettings(
+public data class CohereProviderSettings(
     val baseURL: String = "https://api.cohere.com/v2",
     val apiKey: String? = null,
     val headers: Map<String, String> = emptyMap(),
 )
 
 @Serializable
-data class CohereLanguageModelOptions(
+public data class CohereLanguageModelOptions(
     val thinking: CohereThinkingOptions? = null,
 )
 
 @Serializable
-data class CohereThinkingOptions(
+public data class CohereThinkingOptions(
     val type: String? = null,
     val tokenBudget: Int? = null,
 )
 
 @Serializable
-data class CohereEmbeddingModelOptions(
+public data class CohereEmbeddingModelOptions(
     val inputType: String? = null,
     val truncate: String? = null,
     val outputDimension: Int? = null,
 )
 
 @Serializable
-data class CohereRerankingModelOptions(
+public data class CohereRerankingModelOptions(
     val maxTokensPerDoc: Int? = null,
     val priority: Int? = null,
 )
 
-interface CohereProvider : Provider {
-    val settings: CohereProviderSettings
+public interface CohereProvider : Provider {
+    public val settings: CohereProviderSettings
 
-    operator fun invoke(modelId: CohereChatModelId): LanguageModel = languageModel(modelId)
-    fun embedding(modelId: CohereEmbeddingModelId): EmbeddingModel
-    fun textEmbedding(modelId: CohereEmbeddingModelId): EmbeddingModel = embedding(modelId)
-    fun textEmbeddingModel(modelId: CohereEmbeddingModelId): EmbeddingModel = embedding(modelId)
-    fun reranking(modelId: CohereRerankingModelId): RerankingModel
+    public operator fun invoke(modelId: CohereChatModelId): LanguageModel = languageModel(modelId)
+    public fun embedding(modelId: CohereEmbeddingModelId): EmbeddingModel
+    public fun textEmbedding(modelId: CohereEmbeddingModelId): EmbeddingModel = embedding(modelId)
+    public fun textEmbeddingModel(modelId: CohereEmbeddingModelId): EmbeddingModel = embedding(modelId)
+    public fun reranking(modelId: CohereRerankingModelId): RerankingModel
 
     override fun embeddingModel(modelId: String): EmbeddingModel = embedding(modelId)
     override fun rerankingModel(modelId: String): RerankingModel = reranking(modelId)
 }
 
-fun createCohere(
+public fun createCohere(
     client: HttpClient,
     settings: CohereProviderSettings = CohereProviderSettings(),
 ): CohereProvider = DefaultCohereProvider(client, settings)
 
-val cohere: CohereProvider = object : CohereProvider {
+public val cohere: CohereProvider = object : CohereProvider {
     override val providerId: String = "cohere"
     override val settings: CohereProviderSettings = CohereProviderSettings()
     override fun languageModel(modelId: String): LanguageModel =

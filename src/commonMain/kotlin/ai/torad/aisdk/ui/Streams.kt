@@ -9,40 +9,40 @@ import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
 import kotlinx.serialization.json.JsonElement
 
-data class TextStreamResponse(
+public data class TextStreamResponse(
     val textStream: Flow<String>,
     val status: Int = 200,
     val headers: Map<String, String> = textStreamHeaders(),
 )
 
-data class UIMessageStreamResponse(
+public data class UIMessageStreamResponse(
     val stream: Flow<UIMessage>,
     val status: Int = 200,
     val headers: Map<String, String> = uiMessageStreamHeaders(),
 )
 
-interface ServerResponseWriter {
-    fun setStatus(status: Int)
-    fun setHeader(name: String, value: String)
-    suspend fun write(chunk: String)
+public interface ServerResponseWriter {
+    public fun setStatus(status: Int)
+    public fun setHeader(name: String, value: String)
+    public suspend fun write(chunk: String)
 }
 
-fun textStreamHeaders(): Map<String, String> =
+public fun textStreamHeaders(): Map<String, String> =
     mapOf("Content-Type" to "text/plain; charset=utf-8")
 
-fun uiMessageStreamHeaders(): Map<String, String> =
+public fun uiMessageStreamHeaders(): Map<String, String> =
     mapOf("Content-Type" to "text/event-stream; charset=utf-8")
 
-fun textStreamFromEvents(events: Flow<StreamEvent>): Flow<String> =
+public fun textStreamFromEvents(events: Flow<StreamEvent>): Flow<String> =
     events.filterIsInstance<StreamEvent.TextDelta>().map { it.text }
 
-fun createTextStreamResponse(
+public fun createTextStreamResponse(
     textStream: Flow<String>,
     status: Int = 200,
     headers: Map<String, String> = textStreamHeaders(),
 ): TextStreamResponse = TextStreamResponse(textStream, status, headers)
 
-suspend fun pipeTextStreamToResponse(
+public suspend fun pipeTextStreamToResponse(
     textStream: Flow<String>,
     response: ServerResponseWriter,
     status: Int = 200,
@@ -53,13 +53,13 @@ suspend fun pipeTextStreamToResponse(
     textStream.collect { response.write(it) }
 }
 
-fun createUiMessageStreamResponse(
+public fun createUiMessageStreamResponse(
     stream: Flow<UIMessage>,
     status: Int = 200,
     headers: Map<String, String> = uiMessageStreamHeaders(),
 ): UIMessageStreamResponse = UIMessageStreamResponse(stream, status, headers)
 
-suspend fun pipeUiMessageStreamToResponse(
+public suspend fun pipeUiMessageStreamToResponse(
     stream: Flow<UIMessage>,
     response: ServerResponseWriter,
     encoder: (UIMessage) -> String = { it.toString() },
@@ -71,13 +71,13 @@ suspend fun pipeUiMessageStreamToResponse(
     stream.collect { response.write(encoder(it)) }
 }
 
-interface UIMessageStreamWriter {
-    suspend fun write(message: UIMessage)
-    suspend fun merge(stream: Flow<UIMessage>)
-    suspend fun error(message: String)
+public interface UIMessageStreamWriter {
+    public suspend fun write(message: UIMessage)
+    public suspend fun merge(stream: Flow<UIMessage>)
+    public suspend fun error(message: String)
 }
 
-fun createUiMessageStream(
+public fun createUiMessageStream(
     onError: (Throwable) -> UIMessage = { throwable ->
         UIMessage(
             id = "error",
@@ -113,19 +113,19 @@ fun createUiMessageStream(
     }
 }
 
-fun readUiMessageStream(stream: Flow<UIMessage>): Flow<UIMessage> = stream
+public fun readUiMessageStream(stream: Flow<UIMessage>): Flow<UIMessage> = stream
 
-fun getResponseUiMessageId(messages: List<UIMessage>, createId: () -> String = { "msg_${messages.size + 1}" }): String =
+public fun getResponseUiMessageId(messages: List<UIMessage>, createId: () -> String = { "msg_${messages.size + 1}" }): String =
     messages.lastOrNull { it.role == UIMessageRole.Assistant }?.id ?: createId()
 
-fun handleUiMessageStreamFinish(
+public fun handleUiMessageStreamFinish(
     messages: List<UIMessage>,
     onFinish: (List<UIMessage>) -> Unit,
 ) {
     onFinish(messages)
 }
 
-fun validateUiMessages(messages: List<UIMessage>) {
+public fun validateUiMessages(messages: List<UIMessage>) {
     require(messages.isNotEmpty()) { "Messages array must not be empty" }
     val ids = mutableSetOf<String>()
     for (message in messages) {
@@ -135,14 +135,14 @@ fun validateUiMessages(messages: List<UIMessage>) {
     }
 }
 
-sealed interface SafeValidateUIMessagesResult {
-    data class Success(val messages: List<UIMessage>) : SafeValidateUIMessagesResult
-    data class Failure(val error: Throwable) : SafeValidateUIMessagesResult
+public sealed interface SafeValidateUIMessagesResult {
+    public data class Success(val messages: List<UIMessage>) : SafeValidateUIMessagesResult
+    public data class Failure(val error: Throwable) : SafeValidateUIMessagesResult
 }
 
-fun validateUIMessages(messages: List<UIMessage>) = validateUiMessages(messages)
+public fun validateUIMessages(messages: List<UIMessage>): Unit = validateUiMessages(messages)
 
-fun safeValidateUIMessages(messages: List<UIMessage>?): SafeValidateUIMessagesResult =
+public fun safeValidateUIMessages(messages: List<UIMessage>?): SafeValidateUIMessagesResult =
     try {
         require(messages != null) { "messages parameter must be provided" }
         validateUiMessages(messages)
@@ -151,7 +151,7 @@ fun safeValidateUIMessages(messages: List<UIMessage>?): SafeValidateUIMessagesRe
         SafeValidateUIMessagesResult.Failure(t)
     }
 
-fun transformTextToUiMessageStream(
+public fun transformTextToUiMessageStream(
     textStream: Flow<String>,
     assistantMessageId: String,
     metadata: Map<String, JsonElement>? = null,
@@ -178,7 +178,7 @@ fun transformTextToUiMessageStream(
     )
 }
 
-fun lastAssistantMessageIsCompleteWithToolCalls(messages: List<UIMessage>): Boolean {
+public fun lastAssistantMessageIsCompleteWithToolCalls(messages: List<UIMessage>): Boolean {
     val last = messages.lastOrNull { it.role == UIMessageRole.Assistant } ?: return true
     return last.parts.filterIsInstance<UIMessagePart.ToolUI>().all {
         it.state == ToolCallState.OutputAvailable ||
@@ -187,12 +187,12 @@ fun lastAssistantMessageIsCompleteWithToolCalls(messages: List<UIMessage>): Bool
     }
 }
 
-fun lastAssistantMessageIsCompleteWithApprovalResponses(messages: List<UIMessage>): Boolean =
+public fun lastAssistantMessageIsCompleteWithApprovalResponses(messages: List<UIMessage>): Boolean =
     messages.lastOrNull { it.role == UIMessageRole.Assistant }
         ?.parts
         ?.filterIsInstance<UIMessagePart.ToolUI>()
         ?.none { it.state == ToolCallState.ApprovalRequested }
         ?: true
 
-fun uiMessageStreamError(message: String, cause: Throwable? = null): UiMessageStreamError =
+public fun uiMessageStreamError(message: String, cause: Throwable? = null): UiMessageStreamError =
     UiMessageStreamError(message, cause)

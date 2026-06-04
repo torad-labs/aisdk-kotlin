@@ -20,7 +20,7 @@ import kotlinx.serialization.serializer
  * apps should prefix custom keys with their own namespace.
  */
 @Serializable
-data class UIMessage(
+public data class UIMessage(
     val id: String,
     val role: UIMessageRole,
     val parts: List<UIMessagePart>,
@@ -29,10 +29,10 @@ data class UIMessage(
 )
 
 @Serializable
-enum class UIMessageRole { System, User, Assistant }
+public enum class UIMessageRole { System, User, Assistant }
 
-fun <TMetadata> UIMessage.metadataAs(name: String, serializer: KSerializer<TMetadata>): TMetadata? =
+public fun <TMetadata> UIMessage.metadataAs(name: String, serializer: KSerializer<TMetadata>): TMetadata? =
     metadata?.decodeValue(name, serializer)
 
-inline fun <reified TMetadata> UIMessage.metadataAs(name: String): TMetadata? =
+public inline fun <reified TMetadata> UIMessage.metadataAs(name: String): TMetadata? =
     metadataAs(name, serializer())

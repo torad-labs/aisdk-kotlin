@@ -4,9 +4,9 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.serialization.json.JsonElement
 
-data class DeepPartial<T>(val value: T?)
+public data class DeepPartial<T>(val value: T?)
 
-data class StructuredObjectRequest<INPUT>(
+public data class StructuredObjectRequest<INPUT>(
     val api: String,
     val id: String,
     val input: INPUT,
@@ -14,23 +14,23 @@ data class StructuredObjectRequest<INPUT>(
     val abortSignal: AbortSignal = AbortSignalNever,
 )
 
-interface StructuredObjectTransport<INPUT> {
-    fun submit(request: StructuredObjectRequest<INPUT>): Flow<String>
+public interface StructuredObjectTransport<INPUT> {
+    public fun submit(request: StructuredObjectRequest<INPUT>): Flow<String>
 }
 
-class DirectStructuredObjectTransport<INPUT>(
+public class DirectStructuredObjectTransport<INPUT>(
     private val handler: (StructuredObjectRequest<INPUT>) -> Flow<String>,
 ) : StructuredObjectTransport<INPUT> {
     override fun submit(request: StructuredObjectRequest<INPUT>): Flow<String> = handler(request)
 }
 
-data class StructuredObjectFinish<RESULT>(
+public data class StructuredObjectFinish<RESULT>(
     val value: RESULT?,
     val error: Throwable?,
     val rawValue: JsonElement?,
 )
 
-data class StructuredObjectOptions<RESULT, INPUT>(
+public data class StructuredObjectOptions<RESULT, INPUT>(
     val api: String,
     val schema: Schema<RESULT>,
     val id: String = generateId("object"),
@@ -41,30 +41,30 @@ data class StructuredObjectOptions<RESULT, INPUT>(
     val onError: suspend (Throwable) -> Unit = {},
 )
 
-class StructuredObject<RESULT, INPUT>(
+public class StructuredObject<RESULT, INPUT>(
     private val options: StructuredObjectOptions<RESULT, INPUT>,
 ) {
-    val id: String = options.id
-    val api: String = options.api
+    public val id: String = options.id
+    public val api: String = options.api
 
-    var value: RESULT? = options.initialValue
+    public var value: RESULT? = options.initialValue
         private set
 
-    val objectValue: RESULT?
+    public val objectValue: RESULT?
         get() = value
 
-    var rawValue: JsonElement? = null
+    public var rawValue: JsonElement? = null
         private set
 
-    var error: Throwable? = null
+    public var error: Throwable? = null
         private set
 
-    var loading: Boolean = false
+    public var loading: Boolean = false
         private set
 
     private var abortController: AbortController? = null
 
-    suspend fun submit(input: INPUT) {
+    public suspend fun submit(input: INPUT) {
         clearObject()
         loading = true
         val controller = AbortController()
@@ -122,13 +122,13 @@ class StructuredObject<RESULT, INPUT>(
         }
     }
 
-    fun stop() {
+    public fun stop() {
         abortController?.abort()
         abortController = null
         loading = false
     }
 
-    fun clear() {
+    public fun clear() {
         stop()
         clearObject()
     }

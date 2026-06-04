@@ -48,10 +48,10 @@ import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 
-const val MCP_PACKAGE_VERSION = "1.0.46"
-const val LATEST_PROTOCOL_VERSION = "2025-11-25"
+public const val MCP_PACKAGE_VERSION: String = "1.0.46"
+public const val LATEST_PROTOCOL_VERSION: String = "2025-11-25"
 
-val SUPPORTED_PROTOCOL_VERSIONS: List<String> = listOf(
+public val SUPPORTED_PROTOCOL_VERSIONS: List<String> = listOf(
     LATEST_PROTOCOL_VERSION,
     "2025-06-18",
     "2025-03-26",
@@ -68,18 +68,18 @@ internal val mcpJson: Json = Json {
     explicitNulls = false
 }
 
-class MCPClientError(
+public class MCPClientError(
     message: String,
-    val code: Int? = null,
-    val data: JsonElement? = null,
+    public val code: Int? = null,
+    public val data: JsonElement? = null,
     cause: Throwable? = null,
 ) : AiSdkException(message, cause)
 
 @Serializable
-sealed interface JSONRPCMessage
+public sealed interface JSONRPCMessage
 
 @Serializable
-data class JSONRPCRequest(
+public data class JSONRPCRequest(
     val id: JsonElement,
     val method: String,
     val params: JsonObject? = null,
@@ -87,28 +87,28 @@ data class JSONRPCRequest(
 ) : JSONRPCMessage
 
 @Serializable
-data class JSONRPCNotification(
+public data class JSONRPCNotification(
     val method: String,
     val params: JsonObject? = null,
     val jsonrpc: String = JSONRPC_VERSION,
 ) : JSONRPCMessage
 
 @Serializable
-data class JSONRPCResponse(
+public data class JSONRPCResponse(
     val id: JsonElement,
     val result: JsonElement = JsonObject(emptyMap()),
     val jsonrpc: String = JSONRPC_VERSION,
 ) : JSONRPCMessage
 
 @Serializable
-data class JSONRPCError(
+public data class JSONRPCError(
     val id: JsonElement,
     val error: JSONRPCErrorData,
     val jsonrpc: String = JSONRPC_VERSION,
 ) : JSONRPCMessage
 
 @Serializable
-data class JSONRPCErrorData(
+public data class JSONRPCErrorData(
     val code: Int,
     val message: String,
     val data: JsonElement? = null,
@@ -124,16 +124,16 @@ private data class JSONRPCEnvelope(
     val error: JSONRPCErrorData? = null,
 )
 
-fun JSONRPCMessage.toJsonElement(): JsonObject = when (this) {
+internal fun JSONRPCMessage.toJsonElement(): JsonObject = when (this) {
     is JSONRPCRequest -> mcpJson.encodeToJsonElement(JSONRPCRequest.serializer(), this).jsonObject
     is JSONRPCNotification -> mcpJson.encodeToJsonElement(JSONRPCNotification.serializer(), this).jsonObject
     is JSONRPCResponse -> mcpJson.encodeToJsonElement(JSONRPCResponse.serializer(), this).jsonObject
     is JSONRPCError -> mcpJson.encodeToJsonElement(JSONRPCError.serializer(), this).jsonObject
 }
 
-fun JSONRPCMessage.toJsonString(): String = toJsonElement().toString()
+internal fun JSONRPCMessage.toJsonString(): String = toJsonElement().toString()
 
-fun parseJSONRPCMessage(text: String): JSONRPCMessage {
+internal fun parseJSONRPCMessage(text: String): JSONRPCMessage {
     val obj = WireDecoder.parseObject(text, provider = "mcp", operation = "json-rpc message")
     val envelope = WireDecoder.decode(
         JSONRPCEnvelope.serializer(),
@@ -164,45 +164,45 @@ fun parseJSONRPCMessage(text: String): JSONRPCMessage {
  * Transport interface for MCP communication. Implementations may wrap stdio,
  * Streamable HTTP, SSE, WebSockets, or a test fixture.
  */
-interface MCPTransport {
-    var onClose: (() -> Unit)?
-    var onError: ((Throwable) -> Unit)?
-    var onMessage: (suspend (JSONRPCMessage) -> Unit)?
-    var protocolVersion: String?
+public interface MCPTransport {
+    public var onClose: (() -> Unit)?
+    public var onError: ((Throwable) -> Unit)?
+    public var onMessage: (suspend (JSONRPCMessage) -> Unit)?
+    public var protocolVersion: String?
 
-    suspend fun start()
-    suspend fun send(message: JSONRPCMessage)
-    suspend fun close()
+    public suspend fun start()
+    public suspend fun send(message: JSONRPCMessage)
+    public suspend fun close()
 }
 
-data class MCPRequestOptions(
+public data class MCPRequestOptions(
     val signal: AbortSignal? = null,
     val timeoutMillis: Long? = null,
     val maxTotalTimeoutMillis: Long? = null,
 )
 
 @Serializable
-data class Configuration(
+public data class Configuration(
     val name: String,
     val version: String,
     val title: String? = null,
 )
 
 @Serializable
-data class ElicitationCapability(
+public data class ElicitationCapability(
     val applyDefaults: Boolean? = null,
 )
 
 @Serializable
-data class MCPClientCapabilities(
+public data class MCPClientCapabilities(
     val elicitation: ElicitationCapability? = null,
     val experimental: JsonObject? = null,
 )
 
-typealias experimental_MCPClientCapabilities = MCPClientCapabilities
+public typealias experimental_MCPClientCapabilities = MCPClientCapabilities
 
 @Serializable
-data class MCPServerCapabilities(
+public data class MCPServerCapabilities(
     val experimental: JsonObject? = null,
     val logging: JsonObject? = null,
     val prompts: JsonObject? = null,
@@ -212,12 +212,12 @@ data class MCPServerCapabilities(
 )
 
 @Serializable
-data class MCPBaseParams(
+public data class MCPBaseParams(
     @SerialName("_meta") val meta: JsonObject? = null,
 )
 
 @Serializable
-data class InitializeResult(
+public data class InitializeResult(
     val protocolVersion: String,
     val capabilities: MCPServerCapabilities = MCPServerCapabilities(),
     val serverInfo: Configuration,
@@ -226,7 +226,7 @@ data class InitializeResult(
 )
 
 @Serializable
-data class MCPToolDefinition(
+public data class MCPToolDefinition(
     val name: String,
     val title: String? = null,
     val description: String? = null,
@@ -237,22 +237,22 @@ data class MCPToolDefinition(
 )
 
 @Serializable
-data class ListToolsResult(
+public data class ListToolsResult(
     val tools: List<MCPToolDefinition>,
     val nextCursor: String? = null,
     @SerialName("_meta") val meta: JsonObject? = null,
 )
 
 @Serializable
-data class MCPToolSchema(
+public data class MCPToolSchema(
     val inputSchema: JsonElement,
     val outputSchema: JsonElement? = null,
 )
 
-typealias MCPToolSchemas = Map<String, MCPToolSchema>
+public typealias MCPToolSchemas = Map<String, MCPToolSchema>
 
 @Serializable
-data class CallToolResult(
+public data class CallToolResult(
     val content: List<JsonObject> = emptyList(),
     val structuredContent: JsonElement? = null,
     val isError: Boolean = false,
@@ -261,7 +261,7 @@ data class CallToolResult(
 )
 
 @Serializable
-data class MCPResource(
+public data class MCPResource(
     val uri: String,
     val name: String,
     val title: String? = null,
@@ -271,14 +271,14 @@ data class MCPResource(
 )
 
 @Serializable
-data class ListResourcesResult(
+public data class ListResourcesResult(
     val resources: List<MCPResource>,
     val nextCursor: String? = null,
     @SerialName("_meta") val meta: JsonObject? = null,
 )
 
 @Serializable
-data class MCPResourceTemplate(
+public data class MCPResourceTemplate(
     val uriTemplate: String,
     val name: String,
     val title: String? = null,
@@ -287,27 +287,27 @@ data class MCPResourceTemplate(
 )
 
 @Serializable
-data class ListResourceTemplatesResult(
+public data class ListResourceTemplatesResult(
     val resourceTemplates: List<MCPResourceTemplate>,
     val nextCursor: String? = null,
     @SerialName("_meta") val meta: JsonObject? = null,
 )
 
 @Serializable
-data class ReadResourceResult(
+public data class ReadResourceResult(
     val contents: List<JsonObject>,
     @SerialName("_meta") val meta: JsonObject? = null,
 )
 
 @Serializable
-data class MCPPromptArgument(
+public data class MCPPromptArgument(
     val name: String,
     val description: String? = null,
     val required: Boolean? = null,
 )
 
 @Serializable
-data class MCPPrompt(
+public data class MCPPrompt(
     val name: String,
     val title: String? = null,
     val description: String? = null,
@@ -315,49 +315,49 @@ data class MCPPrompt(
 )
 
 @Serializable
-data class ListPromptsResult(
+public data class ListPromptsResult(
     val prompts: List<MCPPrompt>,
     val nextCursor: String? = null,
     @SerialName("_meta") val meta: JsonObject? = null,
 )
 
 @Serializable
-data class MCPPromptMessage(
+public data class MCPPromptMessage(
     val role: String,
     val content: JsonObject,
 )
 
 @Serializable
-data class GetPromptResult(
+public data class GetPromptResult(
     val messages: List<MCPPromptMessage>,
     val description: String? = null,
     @SerialName("_meta") val meta: JsonObject? = null,
 )
 
-object ElicitationRequestSchema
-object ElicitResultSchema
+public object ElicitationRequestSchema
+public object ElicitResultSchema
 
 @Serializable
-data class ElicitationRequestParams(
+public data class ElicitationRequestParams(
     val message: String,
     val requestedSchema: JsonElement,
     @SerialName("_meta") val meta: JsonObject? = null,
 )
 
 @Serializable
-data class ElicitationRequest(
+public data class ElicitationRequest(
     val params: ElicitationRequestParams,
     val method: String = "elicitation/create",
 )
 
 @Serializable
-data class ElicitResult(
+public data class ElicitResult(
     val action: String,
     val content: JsonObject? = null,
     @SerialName("_meta") val meta: JsonObject? = null,
 )
 
-data class MCPClientConfig(
+public data class MCPClientConfig(
     val transport: MCPTransport,
     val onUncaughtError: ((Throwable) -> Unit)? = null,
     val clientName: String? = null,
@@ -366,63 +366,63 @@ data class MCPClientConfig(
     val capabilities: MCPClientCapabilities = MCPClientCapabilities(),
 )
 
-typealias experimental_MCPClientConfig = MCPClientConfig
+public typealias experimental_MCPClientConfig = MCPClientConfig
 
-interface MCPClient {
-    val serverInfo: Configuration
-    val instructions: String?
+public interface MCPClient {
+    public val serverInfo: Configuration
+    public val instructions: String?
 
-    suspend fun <TContext> tools(schemas: MCPToolSchemas? = null): ToolSet<TContext>
+    public suspend fun <TContext> tools(schemas: MCPToolSchemas? = null): ToolSet<TContext>
 
-    suspend fun listTools(
+    public suspend fun listTools(
         params: JsonObject? = null,
         options: MCPRequestOptions? = null,
     ): ListToolsResult
 
-    fun <TContext> toolsFromDefinitions(
+    public fun <TContext> toolsFromDefinitions(
         definitions: ListToolsResult,
         schemas: MCPToolSchemas? = null,
     ): ToolSet<TContext>
 
-    suspend fun listResources(
+    public suspend fun listResources(
         params: JsonObject? = null,
         options: MCPRequestOptions? = null,
     ): ListResourcesResult
 
-    suspend fun readResource(
+    public suspend fun readResource(
         uri: String,
         options: MCPRequestOptions? = null,
     ): ReadResourceResult
 
-    suspend fun listResourceTemplates(
+    public suspend fun listResourceTemplates(
         options: MCPRequestOptions? = null,
     ): ListResourceTemplatesResult
 
-    suspend fun experimental_listPrompts(
+    public suspend fun experimental_listPrompts(
         params: JsonObject? = null,
         options: MCPRequestOptions? = null,
     ): ListPromptsResult
 
-    suspend fun experimental_getPrompt(
+    public suspend fun experimental_getPrompt(
         name: String,
         arguments: JsonObject? = null,
         options: MCPRequestOptions? = null,
     ): GetPromptResult
 
-    fun onElicitationRequest(
+    public fun onElicitationRequest(
         schema: ElicitationRequestSchema,
         handler: suspend (ElicitationRequest) -> ElicitResult,
     )
 
-    suspend fun close()
+    public suspend fun close()
 }
 
-typealias experimental_MCPClient = MCPClient
+public typealias experimental_MCPClient = MCPClient
 
-suspend fun createMCPClient(config: MCPClientConfig): MCPClient =
+public suspend fun createMCPClient(config: MCPClientConfig): MCPClient =
     DefaultMCPClient(config).also { it.init() }
 
-suspend fun experimental_createMCPClient(config: MCPClientConfig): MCPClient =
+public suspend fun experimental_createMCPClient(config: MCPClientConfig): MCPClient =
     createMCPClient(config)
 
 private class DefaultMCPClient(config: MCPClientConfig) : MCPClient {
@@ -883,7 +883,7 @@ private fun JsonElement.rpcIdKey(): String {
 }
 
 @Serializable
-data class OAuthTokens(
+public data class OAuthTokens(
     @SerialName("access_token") val accessToken: String,
     @SerialName("token_type") val tokenType: String,
     @SerialName("id_token") val idToken: String? = null,
@@ -893,7 +893,7 @@ data class OAuthTokens(
 )
 
 @Serializable
-data class OAuthClientInformation(
+public data class OAuthClientInformation(
     @SerialName("client_id") val clientId: String,
     @SerialName("client_secret") val clientSecret: String? = null,
     @SerialName("client_id_issued_at") val clientIdIssuedAt: Long? = null,
@@ -901,7 +901,7 @@ data class OAuthClientInformation(
 )
 
 @Serializable
-data class OAuthClientMetadata(
+public data class OAuthClientMetadata(
     @SerialName("redirect_uris") val redirectUris: List<String>,
     @SerialName("token_endpoint_auth_method") val tokenEndpointAuthMethod: String? = null,
     @SerialName("grant_types") val grantTypes: List<String>? = null,
@@ -921,7 +921,7 @@ data class OAuthClientMetadata(
 )
 
 @Serializable
-data class AuthorizationServerMetadata(
+public data class AuthorizationServerMetadata(
     val issuer: String? = null,
     @SerialName("authorization_endpoint") val authorizationEndpoint: String? = null,
     @SerialName("token_endpoint") val tokenEndpoint: String? = null,
@@ -933,7 +933,7 @@ data class AuthorizationServerMetadata(
 )
 
 @Serializable
-data class OAuthProtectedResourceMetadata(
+public data class OAuthProtectedResourceMetadata(
     val resource: String,
     @SerialName("authorization_servers") val authorizationServers: List<String>? = null,
     @SerialName("jwks_uri") val jwksUri: String? = null,
@@ -942,23 +942,23 @@ data class OAuthProtectedResourceMetadata(
     @SerialName("resource_name") val resourceName: String? = null,
 )
 
-interface OAuthClientProvider {
-    val redirectUrl: String
-    val clientMetadata: OAuthClientMetadata
+public interface OAuthClientProvider {
+    public val redirectUrl: String
+    public val clientMetadata: OAuthClientMetadata
 
-    suspend fun tokens(): OAuthTokens?
-    suspend fun saveTokens(tokens: OAuthTokens)
-    suspend fun redirectToAuthorization(authorizationUrl: String)
-    suspend fun saveCodeVerifier(codeVerifier: String)
-    suspend fun codeVerifier(): String
-    suspend fun clientInformation(): OAuthClientInformation?
+    public suspend fun tokens(): OAuthTokens?
+    public suspend fun saveTokens(tokens: OAuthTokens)
+    public suspend fun redirectToAuthorization(authorizationUrl: String)
+    public suspend fun saveCodeVerifier(codeVerifier: String)
+    public suspend fun codeVerifier(): String
+    public suspend fun clientInformation(): OAuthClientInformation?
 
-    suspend fun saveClientInformation(clientInformation: OAuthClientInformation) = Unit
-    suspend fun invalidateCredentials(scope: String) = Unit
-    suspend fun state(): String? = null
-    suspend fun saveState(state: String) = Unit
-    suspend fun storedState(): String? = null
-    suspend fun validateResourceURL(serverUrl: String, resource: String?): String? {
+    public suspend fun saveClientInformation(clientInformation: OAuthClientInformation): Unit = Unit
+    public suspend fun invalidateCredentials(scope: String): Unit = Unit
+    public suspend fun state(): String? = null
+    public suspend fun saveState(state: String): Unit = Unit
+    public suspend fun storedState(): String? = null
+    public suspend fun validateResourceURL(serverUrl: String, resource: String?): String? {
         if (resource == null) return null
         val requestedResource = resourceUrlFromServerUrl(serverUrl)
         if (!checkResourceAllowed(requestedResource, resource)) {
@@ -966,22 +966,22 @@ interface OAuthClientProvider {
         }
         return resourceUrlStripSlash(resource)
     }
-    suspend fun addClientAuthentication(
+    public suspend fun addClientAuthentication(
         headers: MutableMap<String, String>,
         params: MutableMap<String, String>,
         url: String,
         metadata: AuthorizationServerMetadata?,
-    ) = Unit
+    ): Unit = Unit
 }
 
-class UnauthorizedError(message: String = "Unauthorized") : AiSdkException(message)
+public class UnauthorizedError(message: String = "Unauthorized") : AiSdkException(message)
 
-enum class AuthResult {
+public enum class AuthResult {
     AUTHORIZED,
     REDIRECT,
 }
 
-data class AuthOptions(
+public data class AuthOptions(
     val serverUrl: String,
     val authorizationCode: String? = null,
     val callbackState: String? = null,
@@ -990,7 +990,7 @@ data class AuthOptions(
     val client: HttpClient? = null,
 )
 
-suspend fun auth(
+internal suspend fun auth(
     provider: OAuthClientProvider,
     options: AuthOptions,
 ): AuthResult {
@@ -1100,7 +1100,7 @@ suspend fun auth(
     return AuthResult.REDIRECT
 }
 
-suspend fun discoverAuthorizationServerMetadata(
+internal suspend fun discoverAuthorizationServerMetadata(
     client: HttpClient,
     authorizationServerUrl: String,
 ): AuthorizationServerMetadata? {
@@ -1119,7 +1119,7 @@ suspend fun discoverAuthorizationServerMetadata(
     return null
 }
 
-suspend fun discoverOAuthProtectedResourceMetadata(
+internal suspend fun discoverOAuthProtectedResourceMetadata(
     client: HttpClient,
     serverUrl: String,
     resourceMetadataUrl: String? = null,
@@ -1140,7 +1140,7 @@ suspend fun discoverOAuthProtectedResourceMetadata(
     throw MCPClientError("Resource server does not implement OAuth 2.0 Protected Resource Metadata.")
 }
 
-suspend fun registerClient(
+internal suspend fun registerClient(
     client: HttpClient,
     authorizationServerUrl: String,
     metadata: AuthorizationServerMetadata?,
@@ -1158,7 +1158,7 @@ suspend fun registerClient(
     return mcpJson.decodeFromString(response.bodyAsText())
 }
 
-suspend fun exchangeAuthorization(
+internal suspend fun exchangeAuthorization(
     client: HttpClient,
     authorizationServerUrl: String,
     metadata: AuthorizationServerMetadata?,
@@ -1194,7 +1194,7 @@ suspend fun exchangeAuthorization(
     return postOAuthTokenRequest(client, tokenUrl, headers, params)
 }
 
-suspend fun refreshAuthorization(
+internal suspend fun refreshAuthorization(
     client: HttpClient,
     authorizationServerUrl: String,
     metadata: AuthorizationServerMetadata?,
@@ -1511,12 +1511,12 @@ private fun mcpSha256(input: ByteArray): ByteArray {
 
 private fun mcpRotr(value: Int, bits: Int): Int = (value ushr bits) or (value shl (32 - bits))
 
-enum class MCPTransportKind {
+public enum class MCPTransportKind {
     Http,
     Sse,
 }
 
-data class MCPTransportConfig(
+public data class MCPTransportConfig(
     val type: MCPTransportKind,
     val url: String,
     val headers: Map<String, String> = emptyMap(),
@@ -1524,7 +1524,7 @@ data class MCPTransportConfig(
     val engineContext: CoroutineContext = Dispatchers.Default,
 )
 
-fun createMcpTransport(client: HttpClient, config: MCPTransportConfig): MCPTransport =
+public fun createMcpTransport(client: HttpClient, config: MCPTransportConfig): MCPTransport =
     when (config.type) {
         MCPTransportKind.Http ->
             HttpMCPTransport(client, config.url, config.headers, config.authProvider, config.engineContext)
@@ -1532,7 +1532,7 @@ fun createMcpTransport(client: HttpClient, config: MCPTransportConfig): MCPTrans
             SseMCPTransport(client, config.url, config.headers, config.authProvider, config.engineContext)
     }
 
-class HttpMCPTransport(
+public class HttpMCPTransport(
     private val client: HttpClient,
     private val url: String,
     private val headers: Map<String, String> = emptyMap(),
@@ -1697,7 +1697,7 @@ class HttpMCPTransport(
     }
 }
 
-class SseMCPTransport(
+public class SseMCPTransport(
     private val client: HttpClient,
     private val url: String,
     private val headers: Map<String, String> = emptyMap(),
@@ -1864,7 +1864,7 @@ private fun mcpOrigin(url: String): String {
 }
 
 @Serializable
-data class StdioConfig(
+public data class StdioConfig(
     val command: String,
     val args: List<String> = emptyList(),
     val env: Map<String, String> = emptyMap(),
@@ -1879,8 +1879,8 @@ internal interface MCPStdioProcess {
 
 internal expect fun createMCPStdioProcess(config: StdioConfig): MCPStdioProcess
 
-class Experimental_StdioMCPTransport(
-    val config: StdioConfig,
+public class Experimental_StdioMCPTransport(
+    public val config: StdioConfig,
     private val engineContext: CoroutineContext = Dispatchers.Default,
 ) : MCPTransport {
     override var onClose: (() -> Unit)? = null

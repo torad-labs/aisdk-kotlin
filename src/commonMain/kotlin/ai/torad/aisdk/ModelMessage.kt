@@ -17,7 +17,7 @@ import kotlinx.serialization.json.JsonElement
  * approval state is persisted in the message log alongside everything else.
  */
 @Serializable
-data class ModelMessage(
+public data class ModelMessage(
     val role: MessageRole,
     val content: List<ContentPart>,
 )
@@ -25,25 +25,25 @@ data class ModelMessage(
 // Top-level convenience constructors.
 // Naming: `<role>Message(...)` for the four role-shaped factories.
 
-fun systemMessage(text: String) = ModelMessage(MessageRole.System, listOf(ContentPart.Text(text)))
-fun userMessage(text: String) = ModelMessage(MessageRole.User, listOf(ContentPart.Text(text)))
-fun assistantMessage(text: String) = ModelMessage(MessageRole.Assistant, listOf(ContentPart.Text(text)))
-fun toolMessage(toolCallId: String, toolName: String, output: JsonElement) = ModelMessage(
+public fun systemMessage(text: String): ModelMessage = ModelMessage(MessageRole.System, listOf(ContentPart.Text(text)))
+public fun userMessage(text: String): ModelMessage = ModelMessage(MessageRole.User, listOf(ContentPart.Text(text)))
+public fun assistantMessage(text: String): ModelMessage = ModelMessage(MessageRole.Assistant, listOf(ContentPart.Text(text)))
+public fun toolMessage(toolCallId: String, toolName: String, output: JsonElement): ModelMessage = ModelMessage(
     MessageRole.Tool,
     listOf(ContentPart.ToolResult(toolCallId, toolName, output)),
 )
-fun toolApprovalResponseMessage(
+public fun toolApprovalResponseMessage(
     toolCallId: String,
     approved: Boolean,
     reason: String? = null,
     approvalId: String? = null,
-) = ModelMessage(
+): ModelMessage = ModelMessage(
     MessageRole.Tool,
     listOf(ContentPart.ToolApprovalResponse(toolCallId, approved, reason, approvalId)),
 )
 
 @Serializable
-enum class MessageRole { System, User, Assistant, Tool }
+public enum class MessageRole { System, User, Assistant, Tool }
 
 /**
  * Content part of a [ModelMessage]. Sealed so consumers exhaust over
@@ -65,25 +65,25 @@ enum class MessageRole { System, User, Assistant, Tool }
 @OptIn(ExperimentalSerializationApi::class)
 @Serializable
 @JsonClassDiscriminator("type")
-sealed interface ContentPart {
+public sealed interface ContentPart {
 
     @Serializable
     @SerialName("text")
-    data class Text(
+    public data class Text(
         val text: String,
         val providerMetadata: Map<String, JsonElement>? = null,
     ) : ContentPart
 
     @Serializable
     @SerialName("reasoning")
-    data class Reasoning(
+    public data class Reasoning(
         val text: String,
         val providerMetadata: Map<String, JsonElement>? = null,
     ) : ContentPart
 
     @Serializable
     @SerialName("tool-call")
-    data class ToolCall(
+    public data class ToolCall(
         val toolCallId: String,
         val toolName: String,
         val input: JsonElement,
@@ -110,7 +110,7 @@ sealed interface ContentPart {
      */
     @Serializable
     @SerialName("tool-result")
-    data class ToolResult(
+    public data class ToolResult(
         val toolCallId: String,
         val toolName: String,
         val output: JsonElement,
@@ -126,7 +126,7 @@ sealed interface ContentPart {
     /** Assistant content: the LLM called a tool that requires approval. */
     @Serializable
     @SerialName("tool-approval-request")
-    data class ToolApprovalRequest(
+    public data class ToolApprovalRequest(
         val toolCallId: String,
         val toolName: String,
         val input: JsonElement,
@@ -144,7 +144,7 @@ sealed interface ContentPart {
     /** Tool content: the host's decision on a previously requested approval. */
     @Serializable
     @SerialName("tool-approval-response")
-    data class ToolApprovalResponse(
+    public data class ToolApprovalResponse(
         val toolCallId: String,
         val approved: Boolean,
         val reason: String? = null,
@@ -153,7 +153,7 @@ sealed interface ContentPart {
 
     @Serializable
     @SerialName("source")
-    data class Source(
+    public data class Source(
         val sourceType: StreamEvent.SourcePart.SourceType,
         val url: String? = null,
         val title: String? = null,
@@ -170,7 +170,7 @@ sealed interface ContentPart {
      */
     @Serializable
     @SerialName("file")
-    data class File(
+    public data class File(
         val mediaType: String,
         val base64: String,
         /** Optional display name. v6 calls this `filename`. */
@@ -192,7 +192,7 @@ sealed interface ContentPart {
      */
     @Serializable
     @SerialName("image")
-    data class Image(
+    public data class Image(
         val mediaType: String,
         val base64: String,
         val providerMetadata: Map<String, JsonElement>? = null,
@@ -217,7 +217,7 @@ sealed interface ContentPart {
  * keep working unchanged.
  */
 @Serializable
-data class Usage(
+public data class Usage(
     val inputTokens: InputTokenBreakdown = InputTokenBreakdown(),
     val outputTokens: OutputTokenBreakdown = OutputTokenBreakdown(),
     val raw: JsonElement? = null,
@@ -228,7 +228,7 @@ data class Usage(
      * constructor's `Usage()` no-arg path goes through default
      * `InputTokenBreakdown()` / `OutputTokenBreakdown()`.
      */
-    constructor(
+    public constructor(
         promptTokens: Int,
         completionTokens: Int,
     ) : this(
@@ -246,7 +246,7 @@ data class Usage(
     val totalTokens: Int get() = promptTokens + completionTokens
 
     @Serializable
-    data class InputTokenBreakdown(
+    public data class InputTokenBreakdown(
         val total: Int = 0,
         /** Tokens that were billed without cache participation. */
         val noCache: Int = 0,
@@ -267,7 +267,7 @@ data class Usage(
     }
 
     @Serializable
-    data class OutputTokenBreakdown(
+    public data class OutputTokenBreakdown(
         val total: Int = 0,
         /** Visible response tokens. */
         val text: Int = 0,
@@ -285,7 +285,7 @@ data class Usage(
     }
 }
 
-operator fun Usage.plus(other: Usage): Usage = Usage(
+public operator fun Usage.plus(other: Usage): Usage = Usage(
     inputTokens = Usage.InputTokenBreakdown(
         total = inputTokens.total + other.inputTokens.total,
         noCache = inputTokens.noCache + other.inputTokens.noCache,
@@ -302,7 +302,7 @@ operator fun Usage.plus(other: Usage): Usage = Usage(
 
 /** Why a generation step ended. */
 @Serializable
-enum class FinishReason {
+public enum class FinishReason {
     Stop,
     Length,
     ToolCalls,

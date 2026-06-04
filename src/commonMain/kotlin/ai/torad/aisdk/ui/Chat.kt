@@ -10,25 +10,25 @@ import kotlinx.coroutines.flow.updateAndGet
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonPrimitive
 
-data class ChatRequest(
+public data class ChatRequest(
     val messages: List<UIMessage>,
     val body: Map<String, JsonElement> = emptyMap(),
     val headers: Map<String, String> = emptyMap(),
 )
 
-interface ChatTransport {
-    fun sendMessages(request: ChatRequest): Flow<UIMessage>
+public interface ChatTransport {
+    public fun sendMessages(request: ChatRequest): Flow<UIMessage>
 
-    fun reconnectToStream(chatId: String, headers: Map<String, String> = emptyMap()): Flow<UIMessage>? = null
+    public fun reconnectToStream(chatId: String, headers: Map<String, String> = emptyMap()): Flow<UIMessage>? = null
 }
 
-class DirectChatTransport(
+public class DirectChatTransport(
     private val handler: (ChatRequest) -> Flow<UIMessage>,
 ) : ChatTransport {
     override fun sendMessages(request: ChatRequest): Flow<UIMessage> = handler(request)
 }
 
-class DefaultChatTransport(
+public class DefaultChatTransport(
     private val delegate: ChatTransport,
 ) : ChatTransport {
     override fun sendMessages(request: ChatRequest): Flow<UIMessage> =
@@ -38,7 +38,7 @@ class DefaultChatTransport(
         delegate.reconnectToStream(chatId, headers)
 }
 
-class TextStreamChatTransport(
+public class TextStreamChatTransport(
     private val handler: (ChatRequest) -> Flow<String>,
     private val assistantMessageId: (ChatRequest) -> String = { request ->
         getResponseUiMessageId(request.messages)
@@ -48,15 +48,15 @@ class TextStreamChatTransport(
         transformTextToUiMessageStream(handler(request), assistantMessageId(request))
 }
 
-enum class ChatStatus {
+public enum class ChatStatus {
     Ready,
     Submitted,
     Streaming,
     Error,
 }
 
-class Chat(
-    val id: String = "chat",
+public class Chat(
+    public val id: String = "chat",
     initialMessages: List<UIMessage> = emptyList(),
     private val transport: ChatTransport,
 ) {
@@ -80,16 +80,16 @@ class Chat(
     @Volatile
     private var currentOp: Any? = null
 
-    val status: ChatStatus
+    public val status: ChatStatus
         get() = internalState.value.status
 
-    val error: Throwable?
+    public val error: Throwable?
         get() = internalState.value.error
 
-    val messages: List<UIMessage>
+    public val messages: List<UIMessage>
         get() = internalState.value.messages
 
-    fun setMessages(messages: List<UIMessage>) {
+    public fun setMessages(messages: List<UIMessage>) {
         validateUiMessages(messages)
         internalState.update {
             it.copy(
@@ -99,7 +99,7 @@ class Chat(
         }
     }
 
-    fun clearError() {
+    public fun clearError() {
         internalState.update {
             it.copy(
                 error = null,
@@ -108,7 +108,7 @@ class Chat(
         }
     }
 
-    fun addToolApprovalResponse(
+    public fun addToolApprovalResponse(
         toolCallId: String,
         approved: Boolean,
         reason: String? = null,
@@ -124,7 +124,7 @@ class Chat(
         appendToolMessage(responsePart)
     }
 
-    fun addToolOutput(
+    public fun addToolOutput(
         toolCallId: String,
         output: JsonElement,
         toolName: String = "tool",
@@ -140,13 +140,13 @@ class Chat(
     }
 
     @Deprecated("Use addToolOutput instead.")
-    fun addToolResult(
+    public fun addToolResult(
         toolCallId: String,
         output: JsonElement,
         toolName: String = "tool",
-    ) = addToolOutput(toolCallId, output, toolName)
+    ): Unit = addToolOutput(toolCallId, output, toolName)
 
-    fun sendMessage(message: UIMessage, body: Map<String, JsonElement> = emptyMap()): Flow<UIMessage> = flow {
+    public fun sendMessage(message: UIMessage, body: Map<String, JsonElement> = emptyMap()): Flow<UIMessage> = flow {
         // The optimistic append stays inside the flow body to preserve the cold
         // contract: collecting starts the turn; merely calling sendMessage does
         // not mutate state. (See the L-3 note in ChatSession for why eager
@@ -179,23 +179,23 @@ class Chat(
         }
     }
 
-    fun regenerate(body: Map<String, JsonElement> = emptyMap()): Flow<UIMessage> {
+    public fun regenerate(body: Map<String, JsonElement> = emptyMap()): Flow<UIMessage> {
         val lastUser = internalState.value.messages.lastOrNull { it.role == UIMessageRole.User }
             ?: return emptyFlow()
         return sendMessage(lastUser, body)
     }
 
-    fun stop() {
+    public fun stop() {
         // Supersede any in-flight op so its trailing terminal writes are ignored,
         // then settle to Ready atomically.
         currentOp = null
         internalState.update { it.copy(status = ChatStatus.Ready) }
     }
 
-    fun reconnectToStream(headers: Map<String, String> = emptyMap()): Flow<UIMessage>? =
+    public fun reconnectToStream(headers: Map<String, String> = emptyMap()): Flow<UIMessage>? =
         transport.reconnectToStream(id, headers)
 
-    fun resumeStream(headers: Map<String, String> = emptyMap()): Flow<UIMessage> =
+    public fun resumeStream(headers: Map<String, String> = emptyMap()): Flow<UIMessage> =
         reconnectToStream(headers) ?: emptyFlow()
 
     private fun appendToolMessage(part: UIMessagePart.ToolUI) {

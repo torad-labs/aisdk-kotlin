@@ -25,14 +25,14 @@ import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 
-const val DEEPGRAM_VERSION: String = "2.0.33"
+public const val DEEPGRAM_VERSION: String = "2.0.33"
 
-typealias DeepgramSpeechModelId = String
-typealias DeepgramTranscriptionModelId = String
-typealias DeepgramSpeechCallOptions = DeepgramSpeechModelOptions
+public typealias DeepgramSpeechModelId = String
+public typealias DeepgramTranscriptionModelId = String
+public typealias DeepgramSpeechCallOptions = DeepgramSpeechModelOptions
 
 @Serializable
-data class DeepgramSpeechModelOptions(
+public data class DeepgramSpeechModelOptions(
     val bitRate: JsonElement? = null,
     val container: String? = null,
     val encoding: String? = null,
@@ -44,7 +44,7 @@ data class DeepgramSpeechModelOptions(
 )
 
 @Serializable
-data class DeepgramTranscriptionModelOptions(
+public data class DeepgramTranscriptionModelOptions(
     val language: String? = null,
     val detectLanguage: Boolean? = null,
     val smartFormat: Boolean? = null,
@@ -66,27 +66,27 @@ data class DeepgramTranscriptionModelOptions(
 )
 
 @Serializable
-data class DeepgramProviderSettings(
+public data class DeepgramProviderSettings(
     val apiKey: String? = null,
     val headers: Map<String, String> = emptyMap(),
 )
 
-interface DeepgramProvider : Provider {
-    operator fun invoke(modelId: DeepgramTranscriptionModelId = "nova-3"): TranscriptionModel = transcription(modelId)
-    fun transcription(modelId: DeepgramTranscriptionModelId): TranscriptionModel
-    fun speech(modelId: DeepgramSpeechModelId): SpeechModel
-    fun textEmbeddingModel(modelId: String): Nothing = throw NoSuchModelError(providerId, "embeddingModel", modelId)
+public interface DeepgramProvider : Provider {
+    public operator fun invoke(modelId: DeepgramTranscriptionModelId = "nova-3"): TranscriptionModel = transcription(modelId)
+    public fun transcription(modelId: DeepgramTranscriptionModelId): TranscriptionModel
+    public fun speech(modelId: DeepgramSpeechModelId): SpeechModel
+    public fun textEmbeddingModel(modelId: String): Nothing = throw NoSuchModelError(providerId, "embeddingModel", modelId)
 
     override fun transcriptionModel(modelId: String): TranscriptionModel = transcription(modelId)
     override fun speechModel(modelId: String): SpeechModel = speech(modelId)
 }
 
-fun createDeepgram(
+public fun createDeepgram(
     client: HttpClient,
     settings: DeepgramProviderSettings = DeepgramProviderSettings(),
 ): DeepgramProvider = DefaultDeepgramProvider(client, settings)
 
-val deepgram: DeepgramProvider = object : DeepgramProvider {
+public val deepgram: DeepgramProvider = object : DeepgramProvider {
     override val providerId: String = "deepgram"
     override fun transcription(modelId: String): TranscriptionModel =
         throw AiSdkException("Deepgram provider is not configured. Use createDeepgram(client, settings).")
@@ -106,7 +106,7 @@ private class DefaultDeepgramProvider(
     override fun imageModel(modelId: String): ImageModel = throw NoSuchModelError(providerId, "imageModel", modelId)
 }
 
-class DeepgramSpeechModel(
+public class DeepgramSpeechModel(
     private val client: HttpClient,
     private val settings: DeepgramProviderSettings,
     override val modelId: String,

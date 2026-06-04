@@ -22,18 +22,18 @@ import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 
-const val ASSEMBLYAI_VERSION: String = "2.0.33"
+public const val ASSEMBLYAI_VERSION: String = "2.0.33"
 
-typealias AssemblyAITranscriptionModelId = String
+public typealias AssemblyAITranscriptionModelId = String
 
 @Serializable
-data class AssemblyAICustomSpelling(
+public data class AssemblyAICustomSpelling(
     val from: List<String>,
     val to: String,
 )
 
 @Serializable
-data class AssemblyAITranscriptionModelOptions(
+public data class AssemblyAITranscriptionModelOptions(
     val audioEndAt: Int? = null,
     val audioStartFrom: Int? = null,
     val autoChapters: Boolean? = null,
@@ -71,26 +71,26 @@ data class AssemblyAITranscriptionModelOptions(
 )
 
 @Serializable
-data class AssemblyAIProviderSettings(
+public data class AssemblyAIProviderSettings(
     val apiKey: String? = null,
     val headers: Map<String, String> = emptyMap(),
     val pollingIntervalMillis: Long = 3_000L,
 )
 
-interface AssemblyAIProvider : Provider {
-    operator fun invoke(modelId: AssemblyAITranscriptionModelId = "best"): TranscriptionModel = transcription(modelId)
-    fun transcription(modelId: AssemblyAITranscriptionModelId): TranscriptionModel
-    fun textEmbeddingModel(modelId: String): Nothing = throw NoSuchModelError(providerId, "embeddingModel", modelId)
+public interface AssemblyAIProvider : Provider {
+    public operator fun invoke(modelId: AssemblyAITranscriptionModelId = "best"): TranscriptionModel = transcription(modelId)
+    public fun transcription(modelId: AssemblyAITranscriptionModelId): TranscriptionModel
+    public fun textEmbeddingModel(modelId: String): Nothing = throw NoSuchModelError(providerId, "embeddingModel", modelId)
 
     override fun transcriptionModel(modelId: String): TranscriptionModel = transcription(modelId)
 }
 
-fun createAssemblyAI(
+public fun createAssemblyAI(
     client: HttpClient,
     settings: AssemblyAIProviderSettings = AssemblyAIProviderSettings(),
 ): AssemblyAIProvider = DefaultAssemblyAIProvider(client, settings)
 
-val assemblyai: AssemblyAIProvider = object : AssemblyAIProvider {
+public val assemblyai: AssemblyAIProvider = object : AssemblyAIProvider {
     override val providerId: String = "assemblyai"
     override fun transcription(modelId: String): TranscriptionModel =
         throw AiSdkException("AssemblyAI provider is not configured. Use createAssemblyAI(client, settings).")

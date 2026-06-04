@@ -5,12 +5,12 @@ import io.ktor.http.HttpHeaders
 import kotlinx.coroutines.flow.Flow
 import kotlinx.serialization.Serializable
 
-const val ANTHROPIC_AWS_VERSION: String = "1.0.3"
+public const val ANTHROPIC_AWS_VERSION: String = "1.0.3"
 
-typealias AnthropicAwsCredentials = BedrockCredentials
+public typealias AnthropicAwsCredentials = BedrockCredentials
 
 @Serializable
-data class AnthropicAwsProviderSettings(
+public data class AnthropicAwsProviderSettings(
     val region: String? = null,
     val workspaceId: String? = null,
     val apiKey: String? = null,
@@ -23,22 +23,22 @@ data class AnthropicAwsProviderSettings(
     val generateId: () -> String = { ai.torad.aisdk.generateId() },
 )
 
-interface AnthropicAwsProvider : Provider {
-    val settings: AnthropicAwsProviderSettings
-    val tools: AnthropicTools
+public interface AnthropicAwsProvider : Provider {
+    public val settings: AnthropicAwsProviderSettings
+    public val tools: AnthropicTools
 
-    operator fun invoke(modelId: AnthropicMessagesModelId): LanguageModel = languageModel(modelId)
-    fun chat(modelId: AnthropicMessagesModelId): LanguageModel = languageModel(modelId)
-    fun messages(modelId: AnthropicMessagesModelId): LanguageModel = languageModel(modelId)
-    fun textEmbeddingModel(modelId: String): Nothing = throw NoSuchModelError(providerId, "embeddingModel", modelId)
+    public operator fun invoke(modelId: AnthropicMessagesModelId): LanguageModel = languageModel(modelId)
+    public fun chat(modelId: AnthropicMessagesModelId): LanguageModel = languageModel(modelId)
+    public fun messages(modelId: AnthropicMessagesModelId): LanguageModel = languageModel(modelId)
+    public fun textEmbeddingModel(modelId: String): Nothing = throw NoSuchModelError(providerId, "embeddingModel", modelId)
 }
 
-fun createAnthropicAws(
+public fun createAnthropicAws(
     client: HttpClient,
     settings: AnthropicAwsProviderSettings = AnthropicAwsProviderSettings(),
 ): AnthropicAwsProvider = DefaultAnthropicAwsProvider(client, settings)
 
-val anthropicAws: AnthropicAwsProvider = object : AnthropicAwsProvider {
+public val anthropicAws: AnthropicAwsProvider = object : AnthropicAwsProvider {
     override val providerId: String = "anthropic-aws"
     override val settings: AnthropicAwsProviderSettings = AnthropicAwsProviderSettings()
     override val tools: AnthropicTools = anthropicTools
@@ -114,7 +114,7 @@ private fun anthropicAwsHeaders(settings: AnthropicAwsProviderSettings): Map<Str
     }
 }
 
-suspend fun anthropicAwsSigV4Headers(
+internal suspend fun anthropicAwsSigV4Headers(
     settings: AnthropicAwsProviderSettings,
     url: String,
     body: String,

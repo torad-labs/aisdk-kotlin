@@ -5,12 +5,12 @@ import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 
-const val VERSION: String = "3.0.67"
+public const val VERSION: String = "3.0.67"
 
-val OPENAI_RESPONSES_SUPPORTED_URLS: Map<String, List<String>> = OPEN_RESPONSES_SUPPORTED_URLS +
+public val OPENAI_RESPONSES_SUPPORTED_URLS: Map<String, List<String>> = OPEN_RESPONSES_SUPPORTED_URLS +
     ("application/pdf" to listOf("^https?://.*$"))
 
-data class OpenAIProviderSettings(
+public data class OpenAIProviderSettings(
     val baseURL: String = "https://api.openai.com/v1",
     val apiKey: String? = null,
     val organization: String? = null,
@@ -21,40 +21,40 @@ data class OpenAIProviderSettings(
     val includeUsage: Boolean = false,
 )
 
-interface OpenAIProvider : Provider {
-    val settings: OpenAIProviderSettings
-    val tools: OpenAITools
+public interface OpenAIProvider : Provider {
+    public val settings: OpenAIProviderSettings
+    public val tools: OpenAITools
 
-    operator fun invoke(modelId: String): LanguageModel = languageModel(modelId)
-    fun chat(modelId: String): LanguageModel
-    fun responses(modelId: String): LanguageModel
-    fun completion(modelId: String): LanguageModel
-    fun embedding(modelId: String): EmbeddingModel
-    fun image(modelId: String): ImageModel
-    fun transcription(modelId: String): TranscriptionModel
-    fun speech(modelId: String): SpeechModel
+    public operator fun invoke(modelId: String): LanguageModel = languageModel(modelId)
+    public fun chat(modelId: String): LanguageModel
+    public fun responses(modelId: String): LanguageModel
+    public fun completion(modelId: String): LanguageModel
+    public fun embedding(modelId: String): EmbeddingModel
+    public fun image(modelId: String): ImageModel
+    public fun transcription(modelId: String): TranscriptionModel
+    public fun speech(modelId: String): SpeechModel
 
     override fun embeddingModel(modelId: String): EmbeddingModel = embedding(modelId)
-    fun textEmbedding(modelId: String): EmbeddingModel = embedding(modelId)
-    fun textEmbeddingModel(modelId: String): EmbeddingModel = embedding(modelId)
+    public fun textEmbedding(modelId: String): EmbeddingModel = embedding(modelId)
+    public fun textEmbeddingModel(modelId: String): EmbeddingModel = embedding(modelId)
     override fun imageModel(modelId: String): ImageModel = image(modelId)
     override fun transcriptionModel(modelId: String): TranscriptionModel = transcription(modelId)
     override fun speechModel(modelId: String): SpeechModel = speech(modelId)
 }
 
-fun createOpenAI(
+public fun createOpenAI(
     client: HttpClient,
     settings: OpenAIProviderSettings = OpenAIProviderSettings(),
 ): OpenAIProvider = DefaultOpenAIProvider(client, settings)
 
-fun createOpenAIProvider(
+public fun createOpenAIProvider(
     client: HttpClient,
     settings: OpenAIProviderSettings = OpenAIProviderSettings(),
 ): OpenAIProvider = createOpenAI(client, settings)
 
-val openai: OpenAIProvider = OpenAIProviderNotConfigured
+public val openai: OpenAIProvider = OpenAIProviderNotConfigured
 
-class OpenAIProviderNotConfiguredError :
+public class OpenAIProviderNotConfiguredError :
     AiSdkException("OpenAI provider is not configured. Use createOpenAI(client, settings).")
 
 private object OpenAIProviderNotConfigured : OpenAIProvider {
@@ -119,7 +119,7 @@ private class DefaultOpenAIProvider(
         compatible.speechModel(modelId)
 }
 
-data class OpenAITools(
+public data class OpenAITools(
     val applyPatch: Tool<JsonElement, JsonElement, Any?> = openAIApplyPatch(),
     val codeInterpreter: Tool<JsonElement, JsonElement, Any?> = openAICodeInterpreter(),
     val fileSearch: Tool<JsonElement, JsonElement, Any?> = openAIFileSearch(JsonObject(emptyMap())),
@@ -132,34 +132,34 @@ data class OpenAITools(
     val toolSearch: Tool<JsonElement, JsonElement, Any?> = openAIToolSearch(),
 )
 
-fun openAIApplyPatch(args: JsonElement = JsonObject(emptyMap())): Tool<JsonElement, JsonElement, Any?> =
+public fun openAIApplyPatch(args: JsonElement = JsonObject(emptyMap())): Tool<JsonElement, JsonElement, Any?> =
     openAIProviderTool("openai.apply_patch", "Apply structured file patches proposed by the model.", args)
 
-fun openAICodeInterpreter(args: JsonElement = JsonObject(emptyMap())): Tool<JsonElement, JsonElement, Any?> =
+public fun openAICodeInterpreter(args: JsonElement = JsonObject(emptyMap())): Tool<JsonElement, JsonElement, Any?> =
     openAIProviderTool("openai.code_interpreter", "Run Python code in OpenAI's hosted code interpreter.", args)
 
-fun openAIFileSearch(args: JsonElement): Tool<JsonElement, JsonElement, Any?> =
+public fun openAIFileSearch(args: JsonElement): Tool<JsonElement, JsonElement, Any?> =
     openAIProviderTool("openai.file_search", "Search OpenAI vector stores through the Responses API.", args)
 
-fun openAIImageGeneration(args: JsonElement = JsonObject(emptyMap())): Tool<JsonElement, JsonElement, Any?> =
+public fun openAIImageGeneration(args: JsonElement = JsonObject(emptyMap())): Tool<JsonElement, JsonElement, Any?> =
     openAIProviderTool("openai.image_generation", "Generate images with OpenAI's hosted image tool.", args)
 
-fun openAILocalShell(args: JsonElement = JsonObject(emptyMap())): Tool<JsonElement, JsonElement, Any?> =
+public fun openAILocalShell(args: JsonElement = JsonObject(emptyMap())): Tool<JsonElement, JsonElement, Any?> =
     openAIProviderTool("openai.local_shell", "Request local shell execution through a host integration.", args)
 
-fun openAIShell(args: JsonElement = JsonObject(emptyMap())): Tool<JsonElement, JsonElement, Any?> =
+public fun openAIShell(args: JsonElement = JsonObject(emptyMap())): Tool<JsonElement, JsonElement, Any?> =
     openAIProviderTool("openai.shell", "Request controlled shell command execution.", args)
 
-fun openAIWebSearchPreview(args: JsonElement = JsonObject(emptyMap())): Tool<JsonElement, JsonElement, Any?> =
+public fun openAIWebSearchPreview(args: JsonElement = JsonObject(emptyMap())): Tool<JsonElement, JsonElement, Any?> =
     openAIProviderTool("openai.web_search_preview", "Search the web with OpenAI's preview web search tool.", args)
 
-fun openAIWebSearch(args: JsonElement = JsonObject(emptyMap())): Tool<JsonElement, JsonElement, Any?> =
+public fun openAIWebSearch(args: JsonElement = JsonObject(emptyMap())): Tool<JsonElement, JsonElement, Any?> =
     openAIProviderTool("openai.web_search", "Search the web with OpenAI's web search tool.", args)
 
-fun openAIMcp(args: JsonElement = JsonObject(emptyMap())): Tool<JsonElement, JsonElement, Any?> =
+public fun openAIMcp(args: JsonElement = JsonObject(emptyMap())): Tool<JsonElement, JsonElement, Any?> =
     openAIProviderTool("openai.mcp", "Call remote MCP tools exposed to OpenAI Responses.", args)
 
-fun openAIToolSearch(args: JsonElement = JsonObject(emptyMap())): Tool<JsonElement, JsonElement, Any?> =
+public fun openAIToolSearch(args: JsonElement = JsonObject(emptyMap())): Tool<JsonElement, JsonElement, Any?> =
     openAIProviderTool("openai.tool_search", "Let the model search deferred tools dynamically.", args)
 
 private fun openAIProviderTool(

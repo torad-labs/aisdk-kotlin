@@ -20,26 +20,26 @@ import kotlinx.coroutines.SupervisorJob
  * scope cancels, the signal aborts, and any subagent/tool execution
  * observing [throwIfAborted] or [register] surfaces the cancellation.
  */
-interface AbortSignal {
+public interface AbortSignal {
     /** True once any cancellation source has fired. */
-    val isAborted: Boolean
+    public val isAborted: Boolean
 
     /** Throws [AbortError] if [isAborted]. Cheap to call repeatedly. */
-    fun throwIfAborted()
+    public fun throwIfAborted()
 
     /**
      * Register a callback that fires exactly once on abort. If already
      * aborted, fires synchronously. Returns a handle to deregister.
      */
-    fun register(onAbort: () -> Unit): AbortRegistration
+    public fun register(onAbort: () -> Unit): AbortRegistration
 
-    interface AbortRegistration {
-        fun cancel()
+    public interface AbortRegistration {
+        public fun cancel()
     }
 }
 
 /** A signal that is never aborted. Useful as a default. */
-val AbortSignalNever: AbortSignal = object : AbortSignal {
+public val AbortSignalNever: AbortSignal = object : AbortSignal {
     override val isAborted: Boolean = false
     override fun throwIfAborted() = Unit
     override fun register(onAbort: () -> Unit): AbortSignal.AbortRegistration =
@@ -52,7 +52,7 @@ val AbortSignalNever: AbortSignal = object : AbortSignal {
  * stop button.
  */
 @OptIn(ExperimentalAtomicApi::class)
-class AbortController {
+public class AbortController {
     private val backing: CompletableJob = SupervisorJob()
 
     // Copy-on-write callback list via atomic CAS. register/cancel/abort may be
@@ -60,9 +60,9 @@ class AbortController {
     // coroutine), so a plain mutableListOf would race — and is UB on Native.
     private val callbacks = AtomicReference<List<() -> Unit>>(emptyList())
 
-    val signal: AbortSignal = SignalImpl()
+    public val signal: AbortSignal = SignalImpl()
 
-    fun abort() {
+    public fun abort() {
         if (backing.isCancelled) return
         backing.cancel()
         // Atomically drain so a firing callback can't observe a half-cleared
@@ -121,25 +121,25 @@ class AbortController {
 }
 
 /** Thrown from [AbortSignal.throwIfAborted] when the signal has fired. */
-class AbortError(message: String = "operation aborted") : kotlin.coroutines.cancellation.CancellationException(message)
+public class AbortError(message: String = "operation aborted") : kotlin.coroutines.cancellation.CancellationException(message)
 
 /**
  * Bind an abort signal to a [Job] so the signal fires when the job
  * completes (cancelled or otherwise). Lets a parent scope's lifetime
  * automatically cancel anything observing the signal.
  */
-fun abortSignalFromJob(job: Job): AbortSignal {
+public fun abortSignalFromJob(job: Job): AbortSignal {
     val controller = AbortController()
     job.invokeOnCompletion { controller.abort() }
     return controller.signal
 }
 
-fun Job.asAbortSignal(): AbortSignal = abortSignalFromJob(this)
+public fun Job.asAbortSignal(): AbortSignal = abortSignalFromJob(this)
 
-fun CoroutineScope.asAbortSignal(): AbortSignal =
+public fun CoroutineScope.asAbortSignal(): AbortSignal =
     coroutineContext[Job]?.asAbortSignal() ?: AbortSignalNever
 
-fun combineAbortSignals(vararg signals: AbortSignal): AbortSignal {
+public fun combineAbortSignals(vararg signals: AbortSignal): AbortSignal {
     val active = signals.filterNot { it === AbortSignalNever }
     if (active.isEmpty()) return AbortSignalNever
     if (active.size == 1) return active.single()

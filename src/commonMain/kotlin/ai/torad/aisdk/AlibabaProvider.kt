@@ -21,17 +21,17 @@ import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 
-const val ALIBABA_VERSION: String = "1.0.25"
+public const val ALIBABA_VERSION: String = "1.0.25"
 
-typealias AlibabaChatModelId = String
-typealias AlibabaVideoModelId = String
-typealias AlibabaProviderOptions = AlibabaLanguageModelOptions
-typealias AlibabaVideoProviderOptions = AlibabaVideoModelOptions
-typealias AlibabaUsage = Usage
-typealias AlibabaCacheControl = JsonObject
+public typealias AlibabaChatModelId = String
+public typealias AlibabaVideoModelId = String
+public typealias AlibabaProviderOptions = AlibabaLanguageModelOptions
+public typealias AlibabaVideoProviderOptions = AlibabaVideoModelOptions
+public typealias AlibabaUsage = Usage
+public typealias AlibabaCacheControl = JsonObject
 
 @Serializable
-data class AlibabaProviderSettings(
+public data class AlibabaProviderSettings(
     val baseURL: String = "https://dashscope-intl.aliyuncs.com/compatible-mode/v1",
     val videoBaseURL: String = "https://dashscope-intl.aliyuncs.com",
     val apiKey: String? = null,
@@ -40,14 +40,14 @@ data class AlibabaProviderSettings(
 )
 
 @Serializable
-data class AlibabaLanguageModelOptions(
+public data class AlibabaLanguageModelOptions(
     val enableThinking: Boolean? = null,
     val thinkingBudget: Int? = null,
     val parallelToolCalls: Boolean? = null,
 )
 
 @Serializable
-data class AlibabaVideoModelOptions(
+public data class AlibabaVideoModelOptions(
     val negativePrompt: String? = null,
     val audioUrl: String? = null,
     val promptExtend: Boolean? = null,
@@ -59,18 +59,18 @@ data class AlibabaVideoModelOptions(
     val pollTimeoutMs: Long? = null,
 )
 
-interface AlibabaProvider : Provider {
-    operator fun invoke(modelId: AlibabaChatModelId): LanguageModel = languageModel(modelId)
-    fun chatModel(modelId: AlibabaChatModelId): LanguageModel = languageModel(modelId)
-    fun video(modelId: AlibabaVideoModelId): VideoModel = videoModel(modelId)
+public interface AlibabaProvider : Provider {
+    public operator fun invoke(modelId: AlibabaChatModelId): LanguageModel = languageModel(modelId)
+    public fun chatModel(modelId: AlibabaChatModelId): LanguageModel = languageModel(modelId)
+    public fun video(modelId: AlibabaVideoModelId): VideoModel = videoModel(modelId)
 }
 
-fun createAlibaba(
+public fun createAlibaba(
     client: HttpClient,
     settings: AlibabaProviderSettings = AlibabaProviderSettings(),
 ): AlibabaProvider = DefaultAlibabaProvider(client, settings)
 
-val alibaba: AlibabaProvider = object : AlibabaProvider {
+public val alibaba: AlibabaProvider = object : AlibabaProvider {
     override val providerId: String = "alibaba"
     override fun languageModel(modelId: String): LanguageModel =
         throw AiSdkException("Alibaba provider is not configured. Use createAlibaba(client, settings).")

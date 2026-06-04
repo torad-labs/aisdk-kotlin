@@ -47,13 +47,13 @@ import ai.torad.aisdk.Tool
  * Typed invocation handle — what a per-tool renderer receives. Carries
  * the typed input + output via the tool's own serializers.
  */
-class UIToolInvocation<TInput, TOutput>(
-    val toolCallId: String,
-    val toolName: String,
-    val state: ToolCallState,
-    val input: TInput?,
-    val output: TOutput?,
-    val error: String?,
+public class UIToolInvocation<TInput, TOutput>(
+    public val toolCallId: String,
+    public val toolName: String,
+    public val state: ToolCallState,
+    public val input: TInput?,
+    public val output: TOutput?,
+    public val error: String?,
 )
 
 /**
@@ -64,14 +64,14 @@ class UIToolInvocation<TInput, TOutput>(
  *
  * Stays out of `Compose` imports so the SDK remains platform-agnostic.
  */
-class ToolPartHandlerRegistry<TRenderResult> internal constructor(
+public class ToolPartHandlerRegistry<TRenderResult> internal constructor(
     private val handlers: Map<String, (UIMessagePart.ToolUI) -> TRenderResult>,
     private val fallback: (UIMessagePart.ToolUI) -> TRenderResult,
 ) {
-    fun render(part: UIMessagePart.ToolUI): TRenderResult =
+    public fun render(part: UIMessagePart.ToolUI): TRenderResult =
         handlers[part.toolName]?.invoke(part) ?: fallback(part)
 
-    class Builder<TRenderResult> internal constructor() {
+    public class Builder<TRenderResult> internal constructor() {
         internal val handlers: MutableMap<String, (UIMessagePart.ToolUI) -> TRenderResult> = mutableMapOf()
 
         /**
@@ -79,7 +79,7 @@ class ToolPartHandlerRegistry<TRenderResult> internal constructor(
          * [UIToolInvocation] with `input` / `output` already deserialized
          * via the tool's own serializers.
          */
-        fun <TInput, TOutput, TContext> register(
+        public fun <TInput, TOutput, TContext> register(
             tool: Tool<TInput, TOutput, TContext>,
             render: (UIToolInvocation<TInput, TOutput>) -> TRenderResult,
         ) {
@@ -104,7 +104,7 @@ class ToolPartHandlerRegistry<TRenderResult> internal constructor(
 }
 
 /** Top-level builder for [ToolPartHandlerRegistry]. */
-fun <TRenderResult> buildToolPartHandlerRegistry(
+public fun <TRenderResult> buildToolPartHandlerRegistry(
     fallback: (UIMessagePart.ToolUI) -> TRenderResult,
     block: ToolPartHandlerRegistry.Builder<TRenderResult>.() -> Unit,
 ): ToolPartHandlerRegistry<TRenderResult> {

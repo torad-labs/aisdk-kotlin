@@ -22,7 +22,7 @@ import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.longOrNull
 
-fun createGatewayHttpProvider(
+public fun createGatewayHttpProvider(
     client: HttpClient,
     settings: GatewayProviderSettings = GatewayProviderSettings(),
     json: Json = aiSdkJson,
@@ -30,7 +30,7 @@ fun createGatewayHttpProvider(
     settings.copy(transport = KtorGatewayTransport(client, json)),
 )
 
-class KtorGatewayTransport(
+public class KtorGatewayTransport(
     private val client: HttpClient,
     private val json: Json = aiSdkJson,
 ) : GatewayTransport {

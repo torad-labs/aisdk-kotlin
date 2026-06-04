@@ -2,15 +2,15 @@ package ai.torad.aisdk
 
 import kotlinx.serialization.json.JsonElement
 
-interface RerankingModel {
-    val modelId: String
-    val provider: String
+public interface RerankingModel {
+    public val modelId: String
+    public val provider: String
         get() = "unknown"
 
-    suspend fun rerank(params: RerankingParams): RerankingModelResult
+    public suspend fun rerank(params: RerankingParams): RerankingModelResult
 }
 
-data class RerankingParams(
+public data class RerankingParams(
     val query: String,
     val documents: List<String>,
     val topN: Int? = null,
@@ -19,13 +19,13 @@ data class RerankingParams(
     val abortSignal: AbortSignal = AbortSignalNever,
 )
 
-data class RerankedItem<T>(
+public data class RerankedItem<T>(
     val value: T,
     val score: Float,
     val index: Int,
 )
 
-data class RerankingModelResult(
+public data class RerankingModelResult(
     val results: List<RerankedItem<String>>,
     val usage: Usage = Usage(),
     val warnings: List<CallWarning> = emptyList(),
@@ -33,7 +33,7 @@ data class RerankingModelResult(
     val providerMetadata: Map<String, JsonElement> = emptyMap(),
 )
 
-data class RerankResult<T>(
+public data class RerankResult<T>(
     val results: List<RerankedItem<T>>,
     val usage: Usage = Usage(),
     val warnings: List<CallWarning> = emptyList(),
@@ -41,7 +41,7 @@ data class RerankResult<T>(
     val providerMetadata: Map<String, JsonElement> = emptyMap(),
 )
 
-suspend fun rerank(
+public suspend fun rerank(
     model: RerankingModel,
     query: String,
     documents: List<String>,

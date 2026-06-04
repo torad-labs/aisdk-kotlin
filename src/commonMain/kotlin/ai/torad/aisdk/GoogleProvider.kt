@@ -31,42 +31,42 @@ import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 
-const val GOOGLE_VERSION: String = "3.0.80"
+public const val GOOGLE_VERSION: String = "3.0.80"
 
-typealias GoogleGenerativeAIModelId = String
-typealias GoogleGenerativeAIEmbeddingModelId = String
-typealias GoogleGenerativeAIImageModelId = String
-typealias GoogleGenerativeAIVideoModelId = String
-typealias GoogleInteractionsModelId = String
-typealias GoogleInteractionsAgentName = String
-typealias GoogleLanguageModelOptions = JsonObject
-typealias GoogleGenerativeAIProviderOptions = JsonObject
-typealias GoogleEmbeddingModelOptions = JsonObject
-typealias GoogleGenerativeAIEmbeddingProviderOptions = JsonObject
-typealias GoogleImageModelOptions = JsonObject
-typealias GoogleGenerativeAIImageProviderOptions = JsonObject
-typealias GoogleVideoModelOptions = JsonObject
-typealias GoogleGenerativeAIVideoProviderOptions = JsonObject
-typealias GoogleLanguageModelInteractionsOptions = JsonObject
-typealias GoogleGenerativeAIProviderMetadata = JsonObject
-typealias GoogleInteractionsProviderMetadata = JsonObject
-typealias GoogleErrorData = JsonObject
-typealias GroundingMetadataSchema = JsonObject
-typealias UrlContextMetadataSchema = JsonObject
-typealias UsageMetadataSchema = JsonObject
-typealias SafetyRatingSchema = JsonObject
-typealias PromptFeedbackSchema = JsonObject
+public typealias GoogleGenerativeAIModelId = String
+public typealias GoogleGenerativeAIEmbeddingModelId = String
+public typealias GoogleGenerativeAIImageModelId = String
+public typealias GoogleGenerativeAIVideoModelId = String
+public typealias GoogleInteractionsModelId = String
+public typealias GoogleInteractionsAgentName = String
+public typealias GoogleLanguageModelOptions = JsonObject
+public typealias GoogleGenerativeAIProviderOptions = JsonObject
+public typealias GoogleEmbeddingModelOptions = JsonObject
+public typealias GoogleGenerativeAIEmbeddingProviderOptions = JsonObject
+public typealias GoogleImageModelOptions = JsonObject
+public typealias GoogleGenerativeAIImageProviderOptions = JsonObject
+public typealias GoogleVideoModelOptions = JsonObject
+public typealias GoogleGenerativeAIVideoProviderOptions = JsonObject
+public typealias GoogleLanguageModelInteractionsOptions = JsonObject
+public typealias GoogleGenerativeAIProviderMetadata = JsonObject
+public typealias GoogleInteractionsProviderMetadata = JsonObject
+public typealias GoogleErrorData = JsonObject
+public typealias GroundingMetadataSchema = JsonObject
+public typealias UrlContextMetadataSchema = JsonObject
+public typealias UsageMetadataSchema = JsonObject
+public typealias SafetyRatingSchema = JsonObject
+public typealias PromptFeedbackSchema = JsonObject
 
-sealed interface GoogleInteractionsModelInput {
-    val name: String
+public sealed interface GoogleInteractionsModelInput {
+    public val name: String
 
-    data class Model(override val name: String) : GoogleInteractionsModelInput
-    data class Agent(override val name: String) : GoogleInteractionsModelInput
-    data class ManagedAgent(override val name: String) : GoogleInteractionsModelInput
+    public data class Model(override val name: String) : GoogleInteractionsModelInput
+    public data class Agent(override val name: String) : GoogleInteractionsModelInput
+    public data class ManagedAgent(override val name: String) : GoogleInteractionsModelInput
 }
 
 @Serializable
-data class GoogleGenerativeAIProviderSettings(
+public data class GoogleGenerativeAIProviderSettings(
     val baseURL: String = "https://generativelanguage.googleapis.com/v1beta",
     val apiKey: String? = null,
     val headers: Map<String, String> = emptyMap(),
@@ -76,24 +76,24 @@ data class GoogleGenerativeAIProviderSettings(
     val videoMaxPollAttempts: Int = 120,
 )
 
-interface GoogleGenerativeAIProvider : Provider {
-    val settings: GoogleGenerativeAIProviderSettings
-    val tools: GoogleTools
+public interface GoogleGenerativeAIProvider : Provider {
+    public val settings: GoogleGenerativeAIProviderSettings
+    public val tools: GoogleTools
 
-    operator fun invoke(modelId: GoogleGenerativeAIModelId): LanguageModel = languageModel(modelId)
-    fun chat(modelId: GoogleGenerativeAIModelId): LanguageModel = languageModel(modelId)
-    fun generativeAI(modelId: GoogleGenerativeAIModelId): LanguageModel = languageModel(modelId)
-    fun embedding(modelId: GoogleGenerativeAIEmbeddingModelId): EmbeddingModel
-    fun textEmbedding(modelId: GoogleGenerativeAIEmbeddingModelId): EmbeddingModel = embedding(modelId)
-    fun textEmbeddingModel(modelId: GoogleGenerativeAIEmbeddingModelId): EmbeddingModel = embedding(modelId)
-    fun image(modelId: GoogleGenerativeAIImageModelId): ImageModel
-    fun video(modelId: GoogleGenerativeAIVideoModelId): VideoModel
-    fun interactions(modelIdOrAgent: GoogleInteractionsModelId): LanguageModel =
+    public operator fun invoke(modelId: GoogleGenerativeAIModelId): LanguageModel = languageModel(modelId)
+    public fun chat(modelId: GoogleGenerativeAIModelId): LanguageModel = languageModel(modelId)
+    public fun generativeAI(modelId: GoogleGenerativeAIModelId): LanguageModel = languageModel(modelId)
+    public fun embedding(modelId: GoogleGenerativeAIEmbeddingModelId): EmbeddingModel
+    public fun textEmbedding(modelId: GoogleGenerativeAIEmbeddingModelId): EmbeddingModel = embedding(modelId)
+    public fun textEmbeddingModel(modelId: GoogleGenerativeAIEmbeddingModelId): EmbeddingModel = embedding(modelId)
+    public fun image(modelId: GoogleGenerativeAIImageModelId): ImageModel
+    public fun video(modelId: GoogleGenerativeAIVideoModelId): VideoModel
+    public fun interactions(modelIdOrAgent: GoogleInteractionsModelId): LanguageModel =
         interactions(GoogleInteractionsModelInput.Model(modelIdOrAgent))
-    fun interactions(modelIdOrAgent: GoogleInteractionsModelInput): LanguageModel
-    fun agentInteraction(agentName: GoogleInteractionsAgentName): LanguageModel =
+    public fun interactions(modelIdOrAgent: GoogleInteractionsModelInput): LanguageModel
+    public fun agentInteraction(agentName: GoogleInteractionsAgentName): LanguageModel =
         interactions(GoogleInteractionsModelInput.Agent(agentName))
-    fun managedAgentInteraction(agentName: String): LanguageModel =
+    public fun managedAgentInteraction(agentName: String): LanguageModel =
         interactions(GoogleInteractionsModelInput.ManagedAgent(agentName))
 
     override fun embeddingModel(modelId: String): EmbeddingModel = embedding(modelId)
@@ -101,12 +101,12 @@ interface GoogleGenerativeAIProvider : Provider {
     override fun videoModel(modelId: String): VideoModel = video(modelId)
 }
 
-fun createGoogleGenerativeAI(
+public fun createGoogleGenerativeAI(
     client: HttpClient,
     settings: GoogleGenerativeAIProviderSettings = GoogleGenerativeAIProviderSettings(),
 ): GoogleGenerativeAIProvider = DefaultGoogleGenerativeAIProvider(client, settings)
 
-val google: GoogleGenerativeAIProvider = object : GoogleGenerativeAIProvider {
+public val google: GoogleGenerativeAIProvider = object : GoogleGenerativeAIProvider {
     override val providerId: String = "google"
     override val settings: GoogleGenerativeAIProviderSettings = GoogleGenerativeAIProviderSettings()
     override val tools: GoogleTools = GoogleTools()
@@ -145,7 +145,7 @@ private class DefaultGoogleGenerativeAIProvider(
         GoogleInteractionsLanguageModel(client, settings, modelIdOrAgent)
 }
 
-data class GoogleTools(
+public data class GoogleTools(
     val googleSearch: Tool<JsonElement, JsonElement, Any?> =
         googleProviderTool("google_search", "google.google_search", "Ground responses with Google Search."),
     val enterpriseWebSearch: Tool<JsonElement, JsonElement, Any?> =
@@ -162,7 +162,7 @@ data class GoogleTools(
         googleProviderTool("vertex_rag_store", "google.vertex_rag_store", "Use Vertex RAG Store."),
 )
 
-val googleTools: GoogleTools = GoogleTools()
+public val googleTools: GoogleTools = GoogleTools()
 
 private class GoogleGenerativeAILanguageModel(
     private val client: HttpClient,

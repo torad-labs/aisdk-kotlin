@@ -53,7 +53,7 @@ private const val DEFAULT_GENERIC_SUFFIX = "You MUST answer with JSON."
  * @param schemaSuffix closing instruction. Defaults to the
  *   schema-aware suffix when a schema is present, else the generic one.
  */
-fun injectJsonInstruction(
+public fun injectJsonInstruction(
     prompt: String? = null,
     schema: JsonElement? = null,
     schemaPrefix: String? = if (schema != null) DEFAULT_SCHEMA_PREFIX else null,
@@ -78,7 +78,7 @@ fun injectJsonInstruction(
  * call before generation when the caller requested structured output
  * but the engine has no native JSON mode.
  */
-fun injectJsonInstructionIntoMessages(
+public fun injectJsonInstructionIntoMessages(
     messages: List<ModelMessage>,
     schema: JsonElement? = null,
     schemaPrefix: String? = if (schema != null) DEFAULT_SCHEMA_PREFIX else null,

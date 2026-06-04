@@ -58,7 +58,7 @@ private fun isLiteralPrefix(partial: String): Boolean =
  * `-`). See [parsePartialJson] for the parse wrapper.
  */
 @Suppress("CyclomaticComplexMethod", "LongMethod")
-fun fixJson(input: String): String {
+public fun fixJson(input: String): String {
     val stack = ArrayDeque<FixJsonState>().apply { addLast(FixJsonState.ROOT) }
     var lastValidIndex = -1
     var literalStart: Int? = null
@@ -293,11 +293,11 @@ private fun literalTail(partial: String): String = when {
 }
 
 /** Outcome of [parsePartialJson], mirroring v6's four state strings. */
-enum class PartialJsonState { UndefinedInput, SuccessfulParse, RepairedParse, FailedParse }
+public enum class PartialJsonState { UndefinedInput, SuccessfulParse, RepairedParse, FailedParse }
 
 /** Result of [parsePartialJson]: [value] is non-null only on the two
  *  success states. */
-data class PartialJsonResult(val value: JsonElement?, val state: PartialJsonState)
+public data class PartialJsonResult(val value: JsonElement?, val state: PartialJsonState)
 
 private val partialJsonCodec: Json = Json { ignoreUnknownKeys = true }
 
@@ -335,7 +335,7 @@ private fun isStrictJsonValue(element: JsonElement): Boolean = when (element) {
  *
  * The repair runs on the ORIGINAL raw text, not on intermediate output.
  */
-fun parsePartialJson(jsonText: String?): PartialJsonResult {
+public fun parsePartialJson(jsonText: String?): PartialJsonResult {
     if (jsonText == null) return PartialJsonResult(null, PartialJsonState.UndefinedInput)
     tryParseJson(jsonText)?.let { return PartialJsonResult(it, PartialJsonState.SuccessfulParse) }
     val repaired = tryParseJson(fixJson(jsonText))

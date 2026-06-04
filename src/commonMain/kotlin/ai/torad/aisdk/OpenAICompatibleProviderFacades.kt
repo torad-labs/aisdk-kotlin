@@ -31,236 +31,236 @@ import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 
-const val DEEPSEEK_VERSION: String = "2.0.35"
-const val CEREBRAS_VERSION: String = "2.0.54"
-const val DEEPINFRA_VERSION: String = "2.0.52"
-const val FIREWORKS_VERSION: String = "2.0.53"
-const val GROQ_VERSION: String = "3.0.39"
-const val MOONSHOTAI_VERSION: String = "2.0.23"
-const val PERPLEXITY_VERSION: String = "3.0.33"
-const val TOGETHERAI_VERSION: String = "2.0.53"
-const val VERCEL_VERSION: String = "2.0.50"
-const val BASETEN_VERSION: String = "1.0.51"
+public const val DEEPSEEK_VERSION: String = "2.0.35"
+public const val CEREBRAS_VERSION: String = "2.0.54"
+public const val DEEPINFRA_VERSION: String = "2.0.52"
+public const val FIREWORKS_VERSION: String = "2.0.53"
+public const val GROQ_VERSION: String = "3.0.39"
+public const val MOONSHOTAI_VERSION: String = "2.0.23"
+public const val PERPLEXITY_VERSION: String = "3.0.33"
+public const val TOGETHERAI_VERSION: String = "2.0.53"
+public const val VERCEL_VERSION: String = "2.0.50"
+public const val BASETEN_VERSION: String = "1.0.51"
 
 @Serializable
-data class DeepSeekProviderSettings(
+public data class DeepSeekProviderSettings(
     val apiKey: String? = null,
     val baseURL: String = "https://api.deepseek.com",
     val headers: Map<String, String> = emptyMap(),
 )
 
 @Serializable
-data class DeepSeekLanguageModelOptions(
+public data class DeepSeekLanguageModelOptions(
     val raw: Map<String, JsonElement> = emptyMap(),
 )
 
-typealias DeepSeekChatOptions = DeepSeekLanguageModelOptions
-typealias DeepSeekErrorData = JsonElement
+public typealias DeepSeekChatOptions = DeepSeekLanguageModelOptions
+public typealias DeepSeekErrorData = JsonElement
 
-interface DeepSeekProvider : Provider {
-    operator fun invoke(modelId: String): LanguageModel = languageModel(modelId)
-    fun chat(modelId: String): LanguageModel
-    fun textEmbeddingModel(modelId: String): Nothing = throw NoSuchModelError(providerId, "embeddingModel", modelId)
+public interface DeepSeekProvider : Provider {
+    public operator fun invoke(modelId: String): LanguageModel = languageModel(modelId)
+    public fun chat(modelId: String): LanguageModel
+    public fun textEmbeddingModel(modelId: String): Nothing = throw NoSuchModelError(providerId, "embeddingModel", modelId)
 }
 
-fun createDeepSeek(
+public fun createDeepSeek(
     client: HttpClient,
     settings: DeepSeekProviderSettings = DeepSeekProviderSettings(),
 ): DeepSeekProvider = DefaultDeepSeekProvider(client, settings)
 
-val deepseek: DeepSeekProvider = providerNotConfigured("DeepSeek", "deepseek")
+public val deepseek: DeepSeekProvider = providerNotConfigured("DeepSeek", "deepseek")
 
 @Serializable
-data class CerebrasProviderSettings(
+public data class CerebrasProviderSettings(
     val apiKey: String? = null,
     val baseURL: String = "https://api.cerebras.ai/v1",
     val headers: Map<String, String> = emptyMap(),
 )
 
 @Serializable
-data class CerebrasErrorData(
+public data class CerebrasErrorData(
     val message: String,
     val type: String? = null,
     val param: String? = null,
     val code: String? = null,
 )
 
-interface CerebrasProvider : Provider {
-    operator fun invoke(modelId: String): LanguageModel = languageModel(modelId)
-    fun chat(modelId: String): LanguageModel
-    fun textEmbeddingModel(modelId: String): Nothing = throw NoSuchModelError(providerId, "embeddingModel", modelId)
+public interface CerebrasProvider : Provider {
+    public operator fun invoke(modelId: String): LanguageModel = languageModel(modelId)
+    public fun chat(modelId: String): LanguageModel
+    public fun textEmbeddingModel(modelId: String): Nothing = throw NoSuchModelError(providerId, "embeddingModel", modelId)
 }
 
-fun createCerebras(
+public fun createCerebras(
     client: HttpClient,
     settings: CerebrasProviderSettings = CerebrasProviderSettings(),
 ): CerebrasProvider = DefaultCerebrasProvider(client, settings)
 
-val cerebras: CerebrasProvider = providerNotConfigured("Cerebras", "cerebras")
+public val cerebras: CerebrasProvider = providerNotConfigured("Cerebras", "cerebras")
 
-typealias DeepInfraChatModelId = String
-typealias DeepInfraCompletionModelId = String
-typealias DeepInfraEmbeddingModelId = String
-typealias DeepInfraImageModelId = String
-typealias DeepInfraErrorData = JsonElement
+public typealias DeepInfraChatModelId = String
+public typealias DeepInfraCompletionModelId = String
+public typealias DeepInfraEmbeddingModelId = String
+public typealias DeepInfraImageModelId = String
+public typealias DeepInfraErrorData = JsonElement
 
 @Serializable
-data class DeepInfraProviderSettings(
+public data class DeepInfraProviderSettings(
     val apiKey: String? = null,
     val baseURL: String = "https://api.deepinfra.com/v1",
     val headers: Map<String, String> = emptyMap(),
 )
 
-interface DeepInfraProvider : Provider {
-    operator fun invoke(modelId: DeepInfraChatModelId): LanguageModel = languageModel(modelId)
-    fun chatModel(modelId: DeepInfraChatModelId): LanguageModel
-    fun completionModel(modelId: DeepInfraCompletionModelId): LanguageModel
-    fun textEmbeddingModel(modelId: DeepInfraEmbeddingModelId): EmbeddingModel = embeddingModel(modelId)
-    fun image(modelId: DeepInfraImageModelId): ImageModel = imageModel(modelId)
+public interface DeepInfraProvider : Provider {
+    public operator fun invoke(modelId: DeepInfraChatModelId): LanguageModel = languageModel(modelId)
+    public fun chatModel(modelId: DeepInfraChatModelId): LanguageModel
+    public fun completionModel(modelId: DeepInfraCompletionModelId): LanguageModel
+    public fun textEmbeddingModel(modelId: DeepInfraEmbeddingModelId): EmbeddingModel = embeddingModel(modelId)
+    public fun image(modelId: DeepInfraImageModelId): ImageModel = imageModel(modelId)
 }
 
-fun createDeepInfra(
+public fun createDeepInfra(
     client: HttpClient,
     settings: DeepInfraProviderSettings = DeepInfraProviderSettings(),
 ): DeepInfraProvider = DefaultDeepInfraProvider(client, settings)
 
-val deepinfra: DeepInfraProvider = providerNotConfigured("DeepInfra", "deepinfra")
+public val deepinfra: DeepInfraProvider = providerNotConfigured("DeepInfra", "deepinfra")
 
-typealias FireworksChatModelId = String
-typealias FireworksCompletionModelId = String
-typealias FireworksEmbeddingModelId = String
-typealias FireworksImageModelId = String
+public typealias FireworksChatModelId = String
+public typealias FireworksCompletionModelId = String
+public typealias FireworksEmbeddingModelId = String
+public typealias FireworksImageModelId = String
 
 @Serializable
-data class FireworksThinkingOptions(
+public data class FireworksThinkingOptions(
     val type: String? = null,
     val budgetTokens: Int? = null,
 )
 
 @Serializable
-data class FireworksLanguageModelOptions(
+public data class FireworksLanguageModelOptions(
     val thinking: FireworksThinkingOptions? = null,
     val reasoningHistory: String? = null,
     val raw: Map<String, JsonElement> = emptyMap(),
 )
 
-typealias FireworksProviderOptions = FireworksLanguageModelOptions
+public typealias FireworksProviderOptions = FireworksLanguageModelOptions
 
 @Serializable
-data class FireworksEmbeddingModelOptions(
+public data class FireworksEmbeddingModelOptions(
     val raw: Map<String, JsonElement> = emptyMap(),
 )
 
-typealias FireworksEmbeddingProviderOptions = FireworksEmbeddingModelOptions
+public typealias FireworksEmbeddingProviderOptions = FireworksEmbeddingModelOptions
 
 @Serializable
-data class FireworksErrorData(
+public data class FireworksErrorData(
     val error: String,
 )
 
 @Serializable
-data class FireworksProviderSettings(
+public data class FireworksProviderSettings(
     val apiKey: String? = null,
     val baseURL: String = "https://api.fireworks.ai/inference/v1",
     val headers: Map<String, String> = emptyMap(),
 )
 
-interface FireworksProvider : Provider {
-    operator fun invoke(modelId: FireworksChatModelId): LanguageModel = languageModel(modelId)
-    fun chatModel(modelId: FireworksChatModelId): LanguageModel
-    fun completionModel(modelId: FireworksCompletionModelId): LanguageModel
-    fun textEmbeddingModel(modelId: FireworksEmbeddingModelId): EmbeddingModel = embeddingModel(modelId)
-    fun image(modelId: FireworksImageModelId): ImageModel = imageModel(modelId)
+public interface FireworksProvider : Provider {
+    public operator fun invoke(modelId: FireworksChatModelId): LanguageModel = languageModel(modelId)
+    public fun chatModel(modelId: FireworksChatModelId): LanguageModel
+    public fun completionModel(modelId: FireworksCompletionModelId): LanguageModel
+    public fun textEmbeddingModel(modelId: FireworksEmbeddingModelId): EmbeddingModel = embeddingModel(modelId)
+    public fun image(modelId: FireworksImageModelId): ImageModel = imageModel(modelId)
 }
 
-fun createFireworks(
+public fun createFireworks(
     client: HttpClient,
     settings: FireworksProviderSettings = FireworksProviderSettings(),
 ): FireworksProvider = DefaultFireworksProvider(client, settings)
 
-val fireworks: FireworksProvider = providerNotConfigured("Fireworks", "fireworks")
+public val fireworks: FireworksProvider = providerNotConfigured("Fireworks", "fireworks")
 
 @Serializable
-data class PerplexityProviderSettings(
+public data class PerplexityProviderSettings(
     val apiKey: String? = null,
     val baseURL: String = "https://api.perplexity.ai",
     val headers: Map<String, String> = emptyMap(),
 )
 
-interface PerplexityProvider : Provider {
-    operator fun invoke(modelId: String): LanguageModel = languageModel(modelId)
-    fun textEmbeddingModel(modelId: String): Nothing = throw NoSuchModelError(providerId, "embeddingModel", modelId)
+public interface PerplexityProvider : Provider {
+    public operator fun invoke(modelId: String): LanguageModel = languageModel(modelId)
+    public fun textEmbeddingModel(modelId: String): Nothing = throw NoSuchModelError(providerId, "embeddingModel", modelId)
 }
 
-fun createPerplexity(
+public fun createPerplexity(
     client: HttpClient,
     settings: PerplexityProviderSettings = PerplexityProviderSettings(),
 ): PerplexityProvider = DefaultPerplexityProvider(client, settings)
 
-val perplexity: PerplexityProvider = providerNotConfigured("Perplexity", "perplexity")
+public val perplexity: PerplexityProvider = providerNotConfigured("Perplexity", "perplexity")
 
-typealias MoonshotAIChatModelId = String
+public typealias MoonshotAIChatModelId = String
 
 @Serializable
-data class MoonshotAIProviderSettings(
+public data class MoonshotAIProviderSettings(
     val apiKey: String? = null,
     val baseURL: String = "https://api.moonshot.ai/v1",
     val headers: Map<String, String> = emptyMap(),
 )
 
 @Serializable
-data class MoonshotAILanguageModelOptions(
+public data class MoonshotAILanguageModelOptions(
     val raw: Map<String, JsonElement> = emptyMap(),
 )
 
-typealias MoonshotAIProviderOptions = MoonshotAILanguageModelOptions
+public typealias MoonshotAIProviderOptions = MoonshotAILanguageModelOptions
 
-interface MoonshotAIProvider : Provider {
-    operator fun invoke(modelId: MoonshotAIChatModelId): LanguageModel = languageModel(modelId)
-    fun chatModel(modelId: MoonshotAIChatModelId): LanguageModel
+public interface MoonshotAIProvider : Provider {
+    public operator fun invoke(modelId: MoonshotAIChatModelId): LanguageModel = languageModel(modelId)
+    public fun chatModel(modelId: MoonshotAIChatModelId): LanguageModel
 }
 
-fun createMoonshotAI(
+public fun createMoonshotAI(
     client: HttpClient,
     settings: MoonshotAIProviderSettings = MoonshotAIProviderSettings(),
 ): MoonshotAIProvider = DefaultMoonshotAIProvider(client, settings)
 
-val moonshotai: MoonshotAIProvider = providerNotConfigured("MoonshotAI", "moonshotai")
+public val moonshotai: MoonshotAIProvider = providerNotConfigured("MoonshotAI", "moonshotai")
 
 @Serializable
-data class GroqProviderSettings(
+public data class GroqProviderSettings(
     val apiKey: String? = null,
     val baseURL: String = "https://api.groq.com/openai/v1",
     val headers: Map<String, String> = emptyMap(),
 )
 
 @Serializable
-data class GroqLanguageModelOptions(
+public data class GroqLanguageModelOptions(
     val raw: Map<String, JsonElement> = emptyMap(),
 )
 
-typealias GroqProviderOptions = GroqLanguageModelOptions
+public typealias GroqProviderOptions = GroqLanguageModelOptions
 
 @Serializable
-data class GroqTranscriptionModelOptions(
+public data class GroqTranscriptionModelOptions(
     val language: String? = null,
     val prompt: String? = null,
     val temperature: Float? = null,
     val responseFormat: String? = null,
 )
 
-interface GroqProvider : Provider {
-    val tools: GroqTools
+public interface GroqProvider : Provider {
+    public val tools: GroqTools
 
-    operator fun invoke(modelId: String): LanguageModel = languageModel(modelId)
-    fun chat(modelId: String): LanguageModel
-    fun transcription(modelId: String): TranscriptionModel
-    fun textEmbeddingModel(modelId: String): Nothing = throw NoSuchModelError(providerId, "embeddingModel", modelId)
+    public operator fun invoke(modelId: String): LanguageModel = languageModel(modelId)
+    public fun chat(modelId: String): LanguageModel
+    public fun transcription(modelId: String): TranscriptionModel
+    public fun textEmbeddingModel(modelId: String): Nothing = throw NoSuchModelError(providerId, "embeddingModel", modelId)
 
     override fun transcriptionModel(modelId: String): TranscriptionModel = transcription(modelId)
 }
 
-fun createGroq(
+public fun createGroq(
     client: HttpClient,
     settings: GroqProviderSettings = GroqProviderSettings(),
 ): GroqProvider = DefaultGroqProvider(client, settings)
@@ -273,23 +273,23 @@ private val groqBrowserSearchTool: Tool<JsonElement, JsonElement, Any?> = provid
     metadata = mapOf("providerToolId" to JsonPrimitive("groq.browser_search")),
 )
 
-data class GroqTools(
+public data class GroqTools(
     val browserSearch: Tool<JsonElement, JsonElement, Any?> = groqBrowserSearchTool,
 )
 
-val browserSearch: Tool<JsonElement, JsonElement, Any?> = groqBrowserSearchTool
+public val browserSearch: Tool<JsonElement, JsonElement, Any?> = groqBrowserSearchTool
 
-val groq: GroqProvider = providerNotConfigured("Groq", "groq")
+public val groq: GroqProvider = providerNotConfigured("Groq", "groq")
 
-typealias TogetherAIChatModelId = String
-typealias TogetherAICompletionModelId = String
-typealias TogetherAIEmbeddingModelId = String
-typealias TogetherAIImageModelId = String
-typealias TogetherAIRerankingModelId = String
-typealias TogetherAIErrorData = JsonElement
+public typealias TogetherAIChatModelId = String
+public typealias TogetherAICompletionModelId = String
+public typealias TogetherAIEmbeddingModelId = String
+public typealias TogetherAIImageModelId = String
+public typealias TogetherAIRerankingModelId = String
+public typealias TogetherAIErrorData = JsonElement
 
 @Serializable
-data class TogetherAIImageModelOptions(
+public data class TogetherAIImageModelOptions(
     val steps: Int? = null,
     val guidance: Float? = null,
     @SerialName("negative_prompt") val negativePrompt: String? = null,
@@ -297,100 +297,100 @@ data class TogetherAIImageModelOptions(
     val raw: Map<String, JsonElement> = emptyMap(),
 )
 
-typealias TogetherAIImageProviderOptions = TogetherAIImageModelOptions
+public typealias TogetherAIImageProviderOptions = TogetherAIImageModelOptions
 
 @Serializable
-data class TogetherAIRerankingModelOptions(
+public data class TogetherAIRerankingModelOptions(
     val rankFields: List<String>? = null,
 )
 
-typealias TogetherAIRerankingOptions = TogetherAIRerankingModelOptions
+public typealias TogetherAIRerankingOptions = TogetherAIRerankingModelOptions
 
 @Serializable
-data class TogetherAIProviderSettings(
+public data class TogetherAIProviderSettings(
     val apiKey: String? = null,
     val baseURL: String = "https://api.together.xyz/v1",
     val headers: Map<String, String> = emptyMap(),
 )
 
-interface TogetherAIProvider : Provider {
-    operator fun invoke(modelId: TogetherAIChatModelId): LanguageModel = languageModel(modelId)
-    fun chatModel(modelId: TogetherAIChatModelId): LanguageModel
-    fun completionModel(modelId: TogetherAICompletionModelId): LanguageModel
-    fun textEmbeddingModel(modelId: TogetherAIEmbeddingModelId): EmbeddingModel = embeddingModel(modelId)
-    fun image(modelId: TogetherAIImageModelId): ImageModel = imageModel(modelId)
-    fun reranking(modelId: TogetherAIRerankingModelId): RerankingModel = rerankingModel(modelId)
+public interface TogetherAIProvider : Provider {
+    public operator fun invoke(modelId: TogetherAIChatModelId): LanguageModel = languageModel(modelId)
+    public fun chatModel(modelId: TogetherAIChatModelId): LanguageModel
+    public fun completionModel(modelId: TogetherAICompletionModelId): LanguageModel
+    public fun textEmbeddingModel(modelId: TogetherAIEmbeddingModelId): EmbeddingModel = embeddingModel(modelId)
+    public fun image(modelId: TogetherAIImageModelId): ImageModel = imageModel(modelId)
+    public fun reranking(modelId: TogetherAIRerankingModelId): RerankingModel = rerankingModel(modelId)
 }
 
-fun createTogetherAI(
+public fun createTogetherAI(
     client: HttpClient,
     settings: TogetherAIProviderSettings = TogetherAIProviderSettings(),
 ): TogetherAIProvider = DefaultTogetherAIProvider(client, settings)
 
-val togetherai: TogetherAIProvider = providerNotConfigured("TogetherAI", "togetherai")
+public val togetherai: TogetherAIProvider = providerNotConfigured("TogetherAI", "togetherai")
 
-typealias VercelChatModelId = String
-typealias VercelErrorData = JsonElement
+public typealias VercelChatModelId = String
+public typealias VercelErrorData = JsonElement
 
 @Serializable
-data class VercelProviderSettings(
+public data class VercelProviderSettings(
     val apiKey: String? = null,
     val baseURL: String = "https://api.v0.dev/v1",
     val headers: Map<String, String> = emptyMap(),
 )
 
-interface VercelProvider : Provider {
-    operator fun invoke(modelId: VercelChatModelId): LanguageModel = languageModel(modelId)
-    fun textEmbeddingModel(modelId: String): Nothing = throw NoSuchModelError(providerId, "embeddingModel", modelId)
+public interface VercelProvider : Provider {
+    public operator fun invoke(modelId: VercelChatModelId): LanguageModel = languageModel(modelId)
+    public fun textEmbeddingModel(modelId: String): Nothing = throw NoSuchModelError(providerId, "embeddingModel", modelId)
 }
 
-fun createVercel(
+public fun createVercel(
     client: HttpClient,
     settings: VercelProviderSettings = VercelProviderSettings(),
 ): VercelProvider = DefaultVercelProvider(client, settings)
 
-val vercel: VercelProvider = providerNotConfigured("Vercel", "vercel")
+public val vercel: VercelProvider = providerNotConfigured("Vercel", "vercel")
 
-typealias BasetenChatModelId = String
-typealias BasetenEmbeddingModelId = String
+public typealias BasetenChatModelId = String
+public typealias BasetenEmbeddingModelId = String
 
 @Serializable
-data class BasetenEmbeddingModelOptions(
+public data class BasetenEmbeddingModelOptions(
     val raw: Map<String, JsonElement> = emptyMap(),
 )
 
 @Serializable
-data class BasetenErrorData(
+public data class BasetenErrorData(
     val error: String,
 )
 
 @Serializable
-data class BasetenProviderSettings(
+public data class BasetenProviderSettings(
     val apiKey: String? = null,
     val baseURL: String = "https://inference.baseten.co/v1",
     val modelURL: String? = null,
     val headers: Map<String, String> = emptyMap(),
 )
 
-interface BasetenProvider : Provider {
-    operator fun invoke(): LanguageModel = chatModel()
-    operator fun invoke(modelId: BasetenChatModelId): LanguageModel = chatModel(modelId)
-    fun chatModel(): LanguageModel
-    fun chatModel(modelId: BasetenChatModelId): LanguageModel
-    fun languageModel(): LanguageModel = chatModel()
+public interface BasetenProvider : Provider {
+    public operator fun invoke(): LanguageModel = chatModel()
+    public operator fun invoke(modelId: BasetenChatModelId): LanguageModel = chatModel(modelId)
+    public fun chatModel(): LanguageModel
+    public fun chatModel(modelId: BasetenChatModelId): LanguageModel
+    public fun languageModel(): LanguageModel = chatModel()
     override fun languageModel(modelId: String): LanguageModel = chatModel(modelId)
-    fun embeddingModel(): EmbeddingModel
+    public fun embeddingModel(): EmbeddingModel
     override fun embeddingModel(modelId: String): EmbeddingModel
-    fun textEmbeddingModel(): EmbeddingModel = embeddingModel()
-    fun textEmbeddingModel(modelId: BasetenEmbeddingModelId): EmbeddingModel = embeddingModel(modelId)
+    public fun textEmbeddingModel(): EmbeddingModel = embeddingModel()
+    public fun textEmbeddingModel(modelId: BasetenEmbeddingModelId): EmbeddingModel = embeddingModel(modelId)
 }
 
-fun createBaseten(
+public fun createBaseten(
     client: HttpClient,
     settings: BasetenProviderSettings = BasetenProviderSettings(),
 ): BasetenProvider = DefaultBasetenProvider(client, settings)
 
-val baseten: BasetenProvider = object : BasetenProvider {
+public val baseten: BasetenProvider = object : BasetenProvider {
     override val providerId: String = "baseten"
     override fun chatModel(): LanguageModel =
         throw AiSdkException("Baseten provider is not configured. Use createBaseten(client, settings).")
@@ -856,7 +856,7 @@ private class DeepInfraImageModel(
     }
 }
 
-class FireworksImageModel(
+public class FireworksImageModel(
     private val client: HttpClient,
     private val settings: FireworksProviderSettings,
     override val modelId: FireworksImageModelId,
@@ -996,7 +996,7 @@ private class TogetherAIImageModel(
     }
 }
 
-class TogetherAIRerankingModel(
+public class TogetherAIRerankingModel(
     private val client: HttpClient,
     private val settings: TogetherAIProviderSettings,
     override val modelId: TogetherAIRerankingModelId,

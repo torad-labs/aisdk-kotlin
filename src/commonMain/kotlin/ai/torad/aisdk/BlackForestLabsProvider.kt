@@ -24,14 +24,14 @@ import kotlinx.serialization.json.jsonPrimitive
 import kotlin.math.abs
 import kotlin.math.ceil
 
-const val BLACK_FOREST_LABS_VERSION: String = "1.0.34"
+public const val BLACK_FOREST_LABS_VERSION: String = "1.0.34"
 
-typealias BlackForestLabsImageModelId = String
-typealias BlackForestLabsAspectRatio = String
-typealias BlackForestLabsImageProviderOptions = BlackForestLabsImageModelOptions
+public typealias BlackForestLabsImageModelId = String
+public typealias BlackForestLabsAspectRatio = String
+public typealias BlackForestLabsImageProviderOptions = BlackForestLabsImageModelOptions
 
 @Serializable
-data class BlackForestLabsImageModelOptions(
+public data class BlackForestLabsImageModelOptions(
     val imagePrompt: String? = null,
     val imagePromptStrength: Double? = null,
     val inputImage: String? = null,
@@ -59,7 +59,7 @@ data class BlackForestLabsImageModelOptions(
 )
 
 @Serializable
-data class BlackForestLabsProviderSettings(
+public data class BlackForestLabsProviderSettings(
     val apiKey: String? = null,
     val baseURL: String = "https://api.bfl.ai/v1",
     val headers: Map<String, String> = emptyMap(),
@@ -67,18 +67,18 @@ data class BlackForestLabsProviderSettings(
     val pollTimeoutMillis: Long? = null,
 )
 
-interface BlackForestLabsProvider : Provider {
-    fun image(modelId: BlackForestLabsImageModelId): ImageModel
+public interface BlackForestLabsProvider : Provider {
+    public fun image(modelId: BlackForestLabsImageModelId): ImageModel
     override fun imageModel(modelId: String): ImageModel = image(modelId)
-    fun textEmbeddingModel(modelId: String): Nothing = throw NoSuchModelError(providerId, "embeddingModel", modelId)
+    public fun textEmbeddingModel(modelId: String): Nothing = throw NoSuchModelError(providerId, "embeddingModel", modelId)
 }
 
-fun createBlackForestLabs(
+public fun createBlackForestLabs(
     client: HttpClient,
     settings: BlackForestLabsProviderSettings = BlackForestLabsProviderSettings(),
 ): BlackForestLabsProvider = DefaultBlackForestLabsProvider(client, settings)
 
-val blackForestLabs: BlackForestLabsProvider = object : BlackForestLabsProvider {
+public val blackForestLabs: BlackForestLabsProvider = object : BlackForestLabsProvider {
     override val providerId: String = "black-forest-labs"
     override fun image(modelId: String): ImageModel =
         throw AiSdkException("Black Forest Labs provider is not configured. Use createBlackForestLabs(client, settings).")

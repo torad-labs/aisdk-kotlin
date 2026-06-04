@@ -8,7 +8,7 @@ import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.update
 import kotlinx.serialization.json.JsonElement
 
-data class ChatState(
+public data class ChatState(
     val id: String,
     val messages: List<UIMessage> = emptyList(),
     val status: ChatStatus = ChatStatus.Ready,
@@ -18,26 +18,26 @@ data class ChatState(
         get() = status == ChatStatus.Submitted || status == ChatStatus.Streaming
 }
 
-class ChatSession(
+public class ChatSession(
     private val chat: Chat,
 ) {
     private val mutableState = MutableStateFlow(chat.toState())
 
-    val state: StateFlow<ChatState> = mutableState.asStateFlow()
+    public val state: StateFlow<ChatState> = mutableState.asStateFlow()
 
-    val id: String get() = chat.id
+    public val id: String get() = chat.id
 
-    fun setMessages(messages: List<UIMessage>) {
+    public fun setMessages(messages: List<UIMessage>) {
         chat.setMessages(messages)
         syncState()
     }
 
-    fun clearError() {
+    public fun clearError() {
         chat.clearError()
         syncState()
     }
 
-    fun addToolApprovalResponse(
+    public fun addToolApprovalResponse(
         toolCallId: String,
         approved: Boolean,
         reason: String? = null,
@@ -47,7 +47,7 @@ class ChatSession(
         syncState()
     }
 
-    fun addToolOutput(
+    public fun addToolOutput(
         toolCallId: String,
         output: JsonElement,
         toolName: String = "tool",
@@ -56,7 +56,7 @@ class ChatSession(
         syncState()
     }
 
-    fun sendMessage(message: UIMessage, body: Map<String, JsonElement> = emptyMap()): Flow<UIMessage> = flow {
+    public fun sendMessage(message: UIMessage, body: Map<String, JsonElement> = emptyMap()): Flow<UIMessage> = flow {
         // L-3 (eager vs cold): this stays a cold Flow — its contract, exercised
         // by ChatSessionTest, is that no turn starts until collection. So the
         // optimistic Submitted/append happens at collection time, not at call
@@ -83,7 +83,7 @@ class ChatSession(
         }
     }
 
-    fun regenerate(body: Map<String, JsonElement> = emptyMap()): Flow<UIMessage> = flow {
+    public fun regenerate(body: Map<String, JsonElement> = emptyMap()): Flow<UIMessage> = flow {
         mutableState.update { it.copy(status = ChatStatus.Submitted, error = null) }
         try {
             chat.regenerate(body).collect { response ->
@@ -95,12 +95,12 @@ class ChatSession(
         }
     }
 
-    fun stop() {
+    public fun stop() {
         chat.stop()
         syncState()
     }
 
-    fun resumeStream(headers: Map<String, String> = emptyMap()): Flow<UIMessage> =
+    public fun resumeStream(headers: Map<String, String> = emptyMap()): Flow<UIMessage> =
         chat.resumeStream(headers)
 
     private fun syncState() {
@@ -108,7 +108,7 @@ class ChatSession(
     }
 }
 
-fun chatSession(
+public fun chatSession(
     id: String = "chat",
     initialMessages: List<UIMessage> = emptyList(),
     transport: ChatTransport,
@@ -120,7 +120,7 @@ fun chatSession(
     ),
 )
 
-fun Chat.asSession(): ChatSession = ChatSession(this)
+public fun Chat.asSession(): ChatSession = ChatSession(this)
 
 private fun Chat.toState(): ChatState = ChatState(
     id = id,

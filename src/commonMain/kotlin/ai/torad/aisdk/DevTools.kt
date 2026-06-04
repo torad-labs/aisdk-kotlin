@@ -10,7 +10,7 @@ import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
 
-data class DevToolsStep(
+public data class DevToolsStep(
     val id: String,
     val runId: String,
     val stepNumber: Int,
@@ -21,7 +21,7 @@ data class DevToolsStep(
     val providerOptions: Map<String, JsonElement>,
 )
 
-data class DevToolsStepResult(
+public data class DevToolsStepResult(
     val durationMs: Long,
     val output: JsonElement?,
     val usage: Usage?,
@@ -31,16 +31,16 @@ data class DevToolsStepResult(
     val rawChunks: List<JsonElement> = emptyList(),
 )
 
-interface DevToolsRecorder {
-    suspend fun createRun(runId: String)
-    suspend fun createStep(step: DevToolsStep)
-    suspend fun updateStepResult(stepId: String, result: DevToolsStepResult)
+public interface DevToolsRecorder {
+    public suspend fun createRun(runId: String)
+    public suspend fun createStep(step: DevToolsStep)
+    public suspend fun updateStepResult(stepId: String, result: DevToolsStepResult)
 }
 
-class InMemoryDevToolsRecorder : DevToolsRecorder {
-    val runs: MutableList<String> = mutableListOf()
-    val steps: MutableList<DevToolsStep> = mutableListOf()
-    val results: MutableMap<String, DevToolsStepResult> = linkedMapOf()
+public class InMemoryDevToolsRecorder : DevToolsRecorder {
+    public val runs: MutableList<String> = mutableListOf()
+    public val steps: MutableList<DevToolsStep> = mutableListOf()
+    public val results: MutableMap<String, DevToolsStepResult> = linkedMapOf()
 
     override suspend fun createRun(runId: String) {
         runs += runId
@@ -55,7 +55,7 @@ class InMemoryDevToolsRecorder : DevToolsRecorder {
     }
 }
 
-fun devToolsMiddleware(
+public fun devToolsMiddleware(
     recorder: DevToolsRecorder = InMemoryDevToolsRecorder(),
     environment: String = "development",
     runId: String = generateId(prefix = "run"),

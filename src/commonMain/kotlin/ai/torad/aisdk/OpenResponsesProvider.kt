@@ -30,12 +30,12 @@ import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 
-const val OPEN_RESPONSES_VERSION: String = "1.0.16"
-const val OPEN_RESPONSES_TOP_LOGPROBS_MAX: Int = 20
+public const val OPEN_RESPONSES_VERSION: String = "1.0.16"
+public const val OPEN_RESPONSES_TOP_LOGPROBS_MAX: Int = 20
 
-val OPEN_RESPONSES_SUPPORTED_URLS: Map<String, List<String>> = mapOf("image/*" to listOf("^https?://.*$"))
+public val OPEN_RESPONSES_SUPPORTED_URLS: Map<String, List<String>> = mapOf("image/*" to listOf("^https?://.*$"))
 
-data class OpenResponsesProviderSettings(
+public data class OpenResponsesProviderSettings(
     val url: String,
     val name: String,
     val apiKey: String? = null,
@@ -48,7 +48,7 @@ data class OpenResponsesProviderSettings(
 )
 
 @Serializable
-data class OpenResponsesOptions(
+public data class OpenResponsesOptions(
     val conversation: String? = null,
     val include: List<String>? = null,
     val instructions: String? = null,
@@ -75,17 +75,17 @@ data class OpenResponsesOptions(
 )
 
 @Serializable
-data class OpenResponsesAllowedTools(
+public data class OpenResponsesAllowedTools(
     val toolNames: List<String> = emptyList(),
     val mode: String? = null,
 )
 
-interface OpenResponsesProvider : Provider {
-    operator fun invoke(modelId: String): LanguageModel = languageModel(modelId)
-    fun responses(modelId: String): LanguageModel = languageModel(modelId)
+public interface OpenResponsesProvider : Provider {
+    public operator fun invoke(modelId: String): LanguageModel = languageModel(modelId)
+    public fun responses(modelId: String): LanguageModel = languageModel(modelId)
 }
 
-fun createOpenResponses(
+public fun createOpenResponses(
     client: HttpClient,
     settings: OpenResponsesProviderSettings,
     json: Json = openResponsesJson,

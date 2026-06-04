@@ -8,11 +8,11 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.serialization.json.JsonElement
 
-data class LlamaIndexEngineResponse(
+public data class LlamaIndexEngineResponse(
     val delta: String,
 )
 
-data class StreamCallbacks(
+public data class StreamCallbacks(
     val onStart: (suspend () -> Unit)? = null,
     val onFinal: (suspend (completion: String) -> Unit)? = null,
     val onToken: (suspend (token: String) -> Unit)? = null,
@@ -22,13 +22,13 @@ data class StreamCallbacks(
     val onAbort: (suspend () -> Unit)? = null,
 )
 
-fun toUIMessageStream(
+public fun toUIMessageStream(
     stream: Flow<LlamaIndexEngineResponse>,
     callbacks: StreamCallbacks? = null,
     assistantMessageId: String = "1",
 ): Flow<UIMessage> = llamaIndexToUIMessageStream(stream, callbacks, assistantMessageId)
 
-fun llamaIndexToUIMessageStream(
+public fun llamaIndexToUIMessageStream(
     stream: Flow<LlamaIndexEngineResponse>,
     callbacks: StreamCallbacks? = null,
     assistantMessageId: String = "1",

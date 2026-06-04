@@ -4,7 +4,7 @@ import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 
-data class TelemetrySettings(
+public data class TelemetrySettings(
     val isEnabled: Boolean = false,
     val functionId: String? = null,
     val metadata: Map<String, JsonElement> = emptyMap(),
@@ -14,81 +14,81 @@ data class TelemetrySettings(
     val tracer: TelemetryTracer? = null,
 )
 
-data class TelemetrySpan(
+public data class TelemetrySpan(
     val operationName: String,
     val attributes: Map<String, JsonElement> = emptyMap(),
 )
 
-data class TelemetryEvent(
+public data class TelemetryEvent(
     val name: String,
     val attributes: Map<String, JsonElement> = emptyMap(),
     val payload: JsonElement? = null,
 )
 
-interface TelemetryIntegration {
-    val name: String
-    suspend fun record(span: TelemetrySpan, block: suspend () -> Unit)
-    suspend fun onStart(event: TelemetryEvent) {}
-    suspend fun onStepStart(event: TelemetryEvent) {}
-    suspend fun onToolCallStart(event: TelemetryEvent) {}
-    suspend fun onToolCallFinish(event: TelemetryEvent) {}
-    suspend fun onStepFinish(event: TelemetryEvent) {}
-    suspend fun onFinish(event: TelemetryEvent) {}
+public interface TelemetryIntegration {
+    public val name: String
+    public suspend fun record(span: TelemetrySpan, block: suspend () -> Unit)
+    public suspend fun onStart(event: TelemetryEvent) {}
+    public suspend fun onStepStart(event: TelemetryEvent) {}
+    public suspend fun onToolCallStart(event: TelemetryEvent) {}
+    public suspend fun onToolCallFinish(event: TelemetryEvent) {}
+    public suspend fun onStepFinish(event: TelemetryEvent) {}
+    public suspend fun onFinish(event: TelemetryEvent) {}
 }
 
-data object NoopTelemetryIntegration : TelemetryIntegration {
+public data object NoopTelemetryIntegration : TelemetryIntegration {
     override val name: String = "noop"
     override suspend fun record(span: TelemetrySpan, block: suspend () -> Unit) {
         block()
     }
 }
 
-class TelemetryIntegrationRegistry(
+public class TelemetryIntegrationRegistry(
     private val integrations: MutableMap<String, TelemetryIntegration> = linkedMapOf(),
 ) {
-    fun register(integration: TelemetryIntegration) {
+    public fun register(integration: TelemetryIntegration) {
         integrations[integration.name] = integration
     }
 
-    fun get(name: String): TelemetryIntegration? = integrations[name]
-    fun list(): List<TelemetryIntegration> = integrations.values.toList()
-    fun clear() {
+    public fun get(name: String): TelemetryIntegration? = integrations[name]
+    public fun list(): List<TelemetryIntegration> = integrations.values.toList()
+    public fun clear() {
         integrations.clear()
     }
 }
 
-val globalTelemetryIntegrations: TelemetryIntegrationRegistry = TelemetryIntegrationRegistry()
+public val globalTelemetryIntegrations: TelemetryIntegrationRegistry = TelemetryIntegrationRegistry()
 
-fun registerTelemetryIntegration(integration: TelemetryIntegration) {
+public fun registerTelemetryIntegration(integration: TelemetryIntegration) {
     globalTelemetryIntegrations.register(integration)
 }
 
-fun getGlobalTelemetryIntegrations(): List<TelemetryIntegration> =
+public fun getGlobalTelemetryIntegrations(): List<TelemetryIntegration> =
     globalTelemetryIntegrations.list()
 
-fun clearGlobalTelemetryIntegrations() {
+public fun clearGlobalTelemetryIntegrations() {
     globalTelemetryIntegrations.clear()
 }
 
-fun bindTelemetryIntegration(integration: TelemetryIntegration): TelemetryIntegration = integration
+internal fun bindTelemetryIntegration(integration: TelemetryIntegration): TelemetryIntegration = integration
 
-fun getGlobalTelemetryIntegration(
+internal fun getGlobalTelemetryIntegration(
     integrations: List<TelemetryIntegration> = emptyList(),
 ): TelemetryIntegration {
     val allIntegrations = getGlobalTelemetryIntegrations() + integrations
     return CompositeTelemetryIntegration(allIntegrations)
 }
 
-fun getGlobalTelemetryIntegration(
+internal fun getGlobalTelemetryIntegration(
     integration: TelemetryIntegration?,
 ): TelemetryIntegration = getGlobalTelemetryIntegration(listOfNotNull(integration))
 
-fun assembleOperationName(
+internal fun assembleOperationName(
     operationId: String,
     telemetry: TelemetrySettings = TelemetrySettings(),
 ): String = telemetry.functionId?.let { "$it.$operationId" } ?: operationId
 
-fun assembleOperationNameAttributes(
+internal fun assembleOperationNameAttributes(
     operationId: String,
     telemetry: TelemetrySettings = TelemetrySettings(),
 ): Map<String, JsonElement> = buildMap {
@@ -98,7 +98,7 @@ fun assembleOperationNameAttributes(
     telemetry.functionId?.let { put("ai.telemetry.functionId", JsonPrimitive(it)) }
 }
 
-suspend fun recordSpan(
+internal suspend fun recordSpan(
     integration: TelemetryIntegration = NoopTelemetryIntegration,
     operationName: String,
     attributes: Map<String, JsonElement> = emptyMap(),
@@ -107,7 +107,7 @@ suspend fun recordSpan(
     integration.record(TelemetrySpan(operationName, attributes), block)
 }
 
-suspend fun <T> recordSpan(
+internal suspend fun <T> recordSpan(
     name: String,
     tracer: TelemetryTracer,
     attributes: Map<String, JsonElement> = emptyMap(),
@@ -128,18 +128,18 @@ suspend fun <T> recordSpan(
     }
 }
 
-fun recordErrorOnSpan(span: TelemetryActiveSpan, error: Throwable) {
+internal fun recordErrorOnSpan(span: TelemetryActiveSpan, error: Throwable) {
     span.recordException(error)
     span.status = TelemetrySpanStatus.Error(error.message)
 }
 
-fun getTracer(
+internal fun getTracer(
     isEnabled: Boolean = false,
     tracer: TelemetryTracer? = null,
 ): TelemetryTracer =
     if (!isEnabled) NoopTelemetryTracer else tracer ?: NoopTelemetryTracer
 
-fun selectTelemetryAttributes(
+internal fun selectTelemetryAttributes(
     telemetry: TelemetrySettings,
     input: JsonElement? = null,
     output: JsonElement? = null,
@@ -154,7 +154,7 @@ fun selectTelemetryAttributes(
     }
 }
 
-suspend fun selectTelemetryAttributes(
+internal suspend fun selectTelemetryAttributes(
     telemetry: TelemetrySettings,
     attributes: Map<String, TelemetryAttribute>,
 ): Map<String, JsonElement> {
@@ -174,54 +174,54 @@ suspend fun selectTelemetryAttributes(
     return selected
 }
 
-fun stringifyForTelemetry(value: JsonElement?): String? = when (value) {
+internal fun stringifyForTelemetry(value: JsonElement?): String? = when (value) {
     null -> null
     is JsonPrimitive -> value.content
     else -> value.toString()
 }
 
-sealed interface TelemetryAttribute {
+internal sealed interface TelemetryAttribute {
     data class Value(val value: JsonElement) : TelemetryAttribute
     data class Input(val resolve: suspend () -> JsonElement?) : TelemetryAttribute
     data class Output(val resolve: suspend () -> JsonElement?) : TelemetryAttribute
 }
 
-fun telemetryAttribute(value: JsonElement): TelemetryAttribute = TelemetryAttribute.Value(value)
-fun telemetryInput(resolve: suspend () -> JsonElement?): TelemetryAttribute = TelemetryAttribute.Input(resolve)
-fun telemetryOutput(resolve: suspend () -> JsonElement?): TelemetryAttribute = TelemetryAttribute.Output(resolve)
+internal fun telemetryAttribute(value: JsonElement): TelemetryAttribute = TelemetryAttribute.Value(value)
+internal fun telemetryInput(resolve: suspend () -> JsonElement?): TelemetryAttribute = TelemetryAttribute.Input(resolve)
+internal fun telemetryOutput(resolve: suspend () -> JsonElement?): TelemetryAttribute = TelemetryAttribute.Output(resolve)
 
-sealed interface TelemetrySpanStatus {
-    data object Ok : TelemetrySpanStatus
-    data class Error(val message: String? = null) : TelemetrySpanStatus
+public sealed interface TelemetrySpanStatus {
+    public data object Ok : TelemetrySpanStatus
+    public data class Error(val message: String? = null) : TelemetrySpanStatus
 }
 
-data class TelemetrySpanEvent(
+public data class TelemetrySpanEvent(
     val name: String,
     val attributes: Map<String, JsonElement> = emptyMap(),
 )
 
-interface TelemetryActiveSpan {
-    val name: String
-    val attributes: Map<String, JsonElement>
-    var status: TelemetrySpanStatus
-    val events: List<TelemetrySpanEvent>
-    var hasEnded: Boolean
+public interface TelemetryActiveSpan {
+    public val name: String
+    public val attributes: Map<String, JsonElement>
+    public var status: TelemetrySpanStatus
+    public val events: List<TelemetrySpanEvent>
+    public var hasEnded: Boolean
 
-    fun setAttribute(key: String, value: JsonElement)
-    fun addEvent(name: String, attributes: Map<String, JsonElement> = emptyMap())
-    fun recordException(error: Throwable)
-    fun end()
+    public fun setAttribute(key: String, value: JsonElement)
+    public fun addEvent(name: String, attributes: Map<String, JsonElement> = emptyMap())
+    public fun recordException(error: Throwable)
+    public fun end()
 }
 
-interface TelemetryTracer {
-    suspend fun <T> startActiveSpan(
+public interface TelemetryTracer {
+    public suspend fun <T> startActiveSpan(
         name: String,
         attributes: Map<String, JsonElement> = emptyMap(),
         block: suspend (TelemetryActiveSpan) -> T,
     ): T
 }
 
-data object NoopTelemetryTracer : TelemetryTracer {
+public data object NoopTelemetryTracer : TelemetryTracer {
     override suspend fun <T> startActiveSpan(
         name: String,
         attributes: Map<String, JsonElement>,
@@ -229,8 +229,8 @@ data object NoopTelemetryTracer : TelemetryTracer {
     ): T = block(NoopTelemetryActiveSpan(name, attributes))
 }
 
-class InMemoryTelemetryTracer : TelemetryTracer {
-    val spans: MutableList<MutableTelemetrySpan> = mutableListOf()
+public class InMemoryTelemetryTracer : TelemetryTracer {
+    public val spans: MutableList<MutableTelemetrySpan> = mutableListOf()
 
     override suspend fun <T> startActiveSpan(
         name: String,
@@ -243,7 +243,7 @@ class InMemoryTelemetryTracer : TelemetryTracer {
     }
 }
 
-class MutableTelemetrySpan(
+public class MutableTelemetrySpan(
     override val name: String,
     private val mutableAttributes: MutableMap<String, JsonElement> = linkedMapOf(),
 ) : TelemetryActiveSpan {

@@ -31,27 +31,27 @@ import kotlinx.serialization.json.intOrNull
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 
-const val PRODIA_VERSION: String = "1.0.31"
+public const val PRODIA_VERSION: String = "1.0.31"
 
-typealias ProdiaLanguageModelId = String
-typealias ProdiaImageModelId = String
-typealias ProdiaVideoModelId = String
-typealias ProdiaImageProviderOptions = ProdiaImageModelOptions
+public typealias ProdiaLanguageModelId = String
+public typealias ProdiaImageModelId = String
+public typealias ProdiaVideoModelId = String
+public typealias ProdiaImageProviderOptions = ProdiaImageModelOptions
 
 @Serializable
-data class ProdiaProviderSettings(
+public data class ProdiaProviderSettings(
     val apiKey: String? = null,
     val baseURL: String = "https://inference.prodia.com/v2",
     val headers: Map<String, String> = emptyMap(),
 )
 
 @Serializable
-data class ProdiaLanguageModelOptions(
+public data class ProdiaLanguageModelOptions(
     val aspectRatio: String? = null,
 )
 
 @Serializable
-data class ProdiaImageModelOptions(
+public data class ProdiaImageModelOptions(
     val steps: Int? = null,
     val width: Int? = null,
     val height: Int? = null,
@@ -61,23 +61,23 @@ data class ProdiaImageModelOptions(
 )
 
 @Serializable
-data class ProdiaVideoModelOptions(
+public data class ProdiaVideoModelOptions(
     val resolution: String? = null,
 )
 
-interface ProdiaProvider : Provider {
-    operator fun invoke(modelId: ProdiaLanguageModelId): LanguageModel = languageModel(modelId)
-    fun image(modelId: ProdiaImageModelId): ImageModel = imageModel(modelId)
-    fun video(modelId: ProdiaVideoModelId): VideoModel = videoModel(modelId)
-    fun textEmbeddingModel(modelId: String): Nothing = throw NoSuchModelError(providerId, "embeddingModel", modelId)
+public interface ProdiaProvider : Provider {
+    public operator fun invoke(modelId: ProdiaLanguageModelId): LanguageModel = languageModel(modelId)
+    public fun image(modelId: ProdiaImageModelId): ImageModel = imageModel(modelId)
+    public fun video(modelId: ProdiaVideoModelId): VideoModel = videoModel(modelId)
+    public fun textEmbeddingModel(modelId: String): Nothing = throw NoSuchModelError(providerId, "embeddingModel", modelId)
 }
 
-fun createProdia(
+public fun createProdia(
     client: HttpClient,
     settings: ProdiaProviderSettings = ProdiaProviderSettings(),
 ): ProdiaProvider = DefaultProdiaProvider(client, settings)
 
-val prodia: ProdiaProvider = object : ProdiaProvider {
+public val prodia: ProdiaProvider = object : ProdiaProvider {
     override val providerId: String = "prodia"
     override fun languageModel(modelId: String): LanguageModel =
         throw AiSdkException("Prodia provider is not configured. Use createProdia(client, settings).")

@@ -22,13 +22,13 @@ import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 
-const val LUMA_VERSION: String = "2.0.33"
+public const val LUMA_VERSION: String = "2.0.33"
 
-typealias LumaImageModelId = String
-typealias LumaImageProviderOptions = LumaImageModelOptions
+public typealias LumaImageModelId = String
+public typealias LumaImageProviderOptions = LumaImageModelOptions
 
 @Serializable
-data class LumaImageModelOptions(
+public data class LumaImageModelOptions(
     val referenceType: String? = null,
     val images: JsonArray? = null,
     val pollIntervalMillis: Long? = null,
@@ -36,24 +36,24 @@ data class LumaImageModelOptions(
 )
 
 @Serializable
-data class LumaProviderSettings(
+public data class LumaProviderSettings(
     val apiKey: String? = null,
     val baseURL: String = "https://api.lumalabs.ai",
     val headers: Map<String, String> = emptyMap(),
 )
 
-interface LumaProvider : Provider {
-    fun image(modelId: LumaImageModelId): ImageModel
+public interface LumaProvider : Provider {
+    public fun image(modelId: LumaImageModelId): ImageModel
     override fun imageModel(modelId: String): ImageModel = image(modelId)
-    fun textEmbeddingModel(modelId: String): Nothing = throw NoSuchModelError(providerId, "embeddingModel", modelId)
+    public fun textEmbeddingModel(modelId: String): Nothing = throw NoSuchModelError(providerId, "embeddingModel", modelId)
 }
 
-fun createLuma(
+public fun createLuma(
     client: HttpClient,
     settings: LumaProviderSettings = LumaProviderSettings(),
 ): LumaProvider = DefaultLumaProvider(client, settings)
 
-val luma: LumaProvider = object : LumaProvider {
+public val luma: LumaProvider = object : LumaProvider {
     override val providerId: String = "luma"
     override fun image(modelId: String): ImageModel =
         throw AiSdkException("Luma provider is not configured. Use createLuma(client, settings).")

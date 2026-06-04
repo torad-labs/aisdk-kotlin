@@ -8,21 +8,21 @@ import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.buildJsonObject
 
-const val MISTRAL_VERSION: String = "3.0.37"
+public const val MISTRAL_VERSION: String = "3.0.37"
 
-typealias MistralChatModelId = String
-typealias MistralEmbeddingModelId = String
-typealias MistralProviderOptions = MistralLanguageModelOptions
+public typealias MistralChatModelId = String
+public typealias MistralEmbeddingModelId = String
+public typealias MistralProviderOptions = MistralLanguageModelOptions
 
 @Serializable
-data class MistralProviderSettings(
+public data class MistralProviderSettings(
     val baseURL: String = "https://api.mistral.ai/v1",
     val apiKey: String? = null,
     val headers: Map<String, String> = emptyMap(),
 )
 
 @Serializable
-data class MistralLanguageModelOptions(
+public data class MistralLanguageModelOptions(
     val safePrompt: Boolean? = null,
     val documentImageLimit: Int? = null,
     val documentPageLimit: Int? = null,
@@ -32,25 +32,25 @@ data class MistralLanguageModelOptions(
     val reasoningEffort: String? = null,
 )
 
-interface MistralProvider : Provider {
-    val settings: MistralProviderSettings
+public interface MistralProvider : Provider {
+    public val settings: MistralProviderSettings
 
-    operator fun invoke(modelId: MistralChatModelId): LanguageModel = chat(modelId)
-    fun chat(modelId: MistralChatModelId): LanguageModel
-    fun embedding(modelId: MistralEmbeddingModelId): EmbeddingModel
+    public operator fun invoke(modelId: MistralChatModelId): LanguageModel = chat(modelId)
+    public fun chat(modelId: MistralChatModelId): LanguageModel
+    public fun embedding(modelId: MistralEmbeddingModelId): EmbeddingModel
 
     override fun languageModel(modelId: String): LanguageModel = chat(modelId)
     override fun embeddingModel(modelId: String): EmbeddingModel = embedding(modelId)
-    fun textEmbedding(modelId: MistralEmbeddingModelId): EmbeddingModel = embedding(modelId)
-    fun textEmbeddingModel(modelId: MistralEmbeddingModelId): EmbeddingModel = embedding(modelId)
+    public fun textEmbedding(modelId: MistralEmbeddingModelId): EmbeddingModel = embedding(modelId)
+    public fun textEmbeddingModel(modelId: MistralEmbeddingModelId): EmbeddingModel = embedding(modelId)
 }
 
-fun createMistral(
+public fun createMistral(
     client: HttpClient,
     settings: MistralProviderSettings = MistralProviderSettings(),
 ): MistralProvider = DefaultMistralProvider(client, settings)
 
-val mistral: MistralProvider = object : MistralProvider {
+public val mistral: MistralProvider = object : MistralProvider {
     override val providerId: String = "mistral"
     override val settings: MistralProviderSettings = MistralProviderSettings()
     override fun chat(modelId: String): LanguageModel =

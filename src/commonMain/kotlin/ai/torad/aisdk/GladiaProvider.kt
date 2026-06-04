@@ -24,12 +24,12 @@ import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 
-const val GLADIA_VERSION: String = "2.0.33"
+public const val GLADIA_VERSION: String = "2.0.33"
 
-typealias GladiaTranscriptionModelId = String
+public typealias GladiaTranscriptionModelId = String
 
 @Serializable
-data class GladiaTranscriptionModelOptions(
+public data class GladiaTranscriptionModelOptions(
     val contextPrompt: String? = null,
     val customVocabulary: JsonElement? = null,
     val customVocabularyConfig: JsonObject? = null,
@@ -65,27 +65,27 @@ data class GladiaTranscriptionModelOptions(
 )
 
 @Serializable
-data class GladiaProviderSettings(
+public data class GladiaProviderSettings(
     val apiKey: String? = null,
     val headers: Map<String, String> = emptyMap(),
     val pollingIntervalMillis: Long = 1_000L,
     val maxPollAttempts: Int = 60,
 )
 
-interface GladiaProvider : Provider {
-    operator fun invoke(): TranscriptionModel = transcription()
-    fun transcription(): TranscriptionModel
-    fun textEmbeddingModel(modelId: String): Nothing = throw NoSuchModelError(providerId, "embeddingModel", modelId)
+public interface GladiaProvider : Provider {
+    public operator fun invoke(): TranscriptionModel = transcription()
+    public fun transcription(): TranscriptionModel
+    public fun textEmbeddingModel(modelId: String): Nothing = throw NoSuchModelError(providerId, "embeddingModel", modelId)
 
     override fun transcriptionModel(modelId: String): TranscriptionModel = transcription()
 }
 
-fun createGladia(
+public fun createGladia(
     client: HttpClient,
     settings: GladiaProviderSettings = GladiaProviderSettings(),
 ): GladiaProvider = DefaultGladiaProvider(client, settings)
 
-val gladia: GladiaProvider = object : GladiaProvider {
+public val gladia: GladiaProvider = object : GladiaProvider {
     override val providerId: String = "gladia"
     override fun transcription(): TranscriptionModel =
         throw AiSdkException("Gladia provider is not configured. Use createGladia(client, settings).")

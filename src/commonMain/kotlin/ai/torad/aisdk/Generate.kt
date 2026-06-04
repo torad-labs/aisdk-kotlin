@@ -17,7 +17,7 @@ import kotlinx.serialization.json.JsonElement
  * For tool-loop agents, use [Agent.generate] instead. This is the
  * primitive for single-turn calls (no tool-loop wrapping).
  */
-suspend fun generateText(
+public suspend fun generateText(
     model: LanguageModel,
     prompt: String? = null,
     messages: List<ModelMessage> = emptyList(),
@@ -54,7 +54,7 @@ suspend fun generateText(
         decode = { it },
     )
 
-suspend fun <TOutput> generateText(
+public suspend fun <TOutput> generateText(
     model: LanguageModel,
     prompt: String? = null,
     messages: List<ModelMessage> = emptyList(),
@@ -156,7 +156,7 @@ private suspend fun <TOutput> generateTextImpl(
     )
 }
 
-data class GenerateTextResult<TOutput>(
+public data class GenerateTextResult<TOutput>(
     val output: TOutput,
     val text: String,
     val toolCalls: List<ContentPart.ToolCall>,
@@ -184,7 +184,7 @@ data class GenerateTextResult<TOutput>(
  * one upstream call when collected. For tool-loop agents, use
  * [Agent.stream] instead.
  */
-fun streamText(
+public fun streamText(
     model: LanguageModel,
     prompt: String? = null,
     messages: List<ModelMessage> = emptyList(),
@@ -223,9 +223,9 @@ fun streamText(
 }
 
 @OptIn(ExperimentalAtomicApi::class)
-class StreamTextResult(
+public class StreamTextResult(
     sourceStream: Flow<StreamEvent>,
-    val request: LanguageModelRequestMetadata = LanguageModelRequestMetadata(),
+    public val request: LanguageModelRequestMetadata = LanguageModelRequestMetadata(),
     private val initialResponse: LanguageModelResponseMetadata = LanguageModelResponseMetadata(),
 ) {
     private val upstream = sourceStream
@@ -246,7 +246,7 @@ class StreamTextResult(
      * collection. Capture commits only on successful completion, so a
      * cancelled collection never memoises a truncated or duplicated replay.
      */
-    val fullStream: Flow<StreamEvent> = flow {
+    public val fullStream: Flow<StreamEvent> = flow {
         while (true) {
             val mine = CompletableDeferred<List<StreamEvent>>()
             if (primaryResult.compareAndSet(null, mine)) {
@@ -276,27 +276,27 @@ class StreamTextResult(
         }
     }
 
-    val textStream: Flow<String> = fullStream
+    public val textStream: Flow<String> = fullStream
         .filterIsInstance<StreamEvent.TextDelta>()
         .map { it.text }
 
-    val warnings: Flow<List<CallWarning>> = flow {
+    public val warnings: Flow<List<CallWarning>> = flow {
         ensureCollected()
         emit(capturedWarnings)
     }
 
-    val response: Flow<LanguageModelResponseMetadata> = flow {
+    public val response: Flow<LanguageModelResponseMetadata> = flow {
         ensureCollected()
         emit(capturedResponse)
     }
 
-    fun toTextStreamResponse(): ai.torad.aisdk.ui.TextStreamResponse =
+    public fun toTextStreamResponse(): ai.torad.aisdk.ui.TextStreamResponse =
         ai.torad.aisdk.ui.createTextStreamResponse(textStream)
 
-    fun toUiMessageStream(assistantMessageId: String): Flow<ai.torad.aisdk.ui.UIMessage> =
+    public fun toUiMessageStream(assistantMessageId: String): Flow<ai.torad.aisdk.ui.UIMessage> =
         ai.torad.aisdk.ui.streamToUiMessages(fullStream, assistantMessageId)
 
-    fun toUiMessageStreamResponse(assistantMessageId: String): ai.torad.aisdk.ui.UIMessageStreamResponse =
+    public fun toUiMessageStreamResponse(assistantMessageId: String): ai.torad.aisdk.ui.UIMessageStreamResponse =
         ai.torad.aisdk.ui.createUiMessageStreamResponse(toUiMessageStream(assistantMessageId))
 
     private suspend fun ensureCollected() {
@@ -324,7 +324,7 @@ class StreamTextResult(
     }
 }
 
-fun streamTextResult(
+public fun streamTextResult(
     model: LanguageModel,
     prompt: String? = null,
     messages: List<ModelMessage> = emptyList(),
@@ -435,7 +435,7 @@ private fun LanguageModelResponseMetadata.merge(
  * the object-generation vocabulary.
  */
 @Deprecated("Use generateText(output = ...) instead.")
-suspend fun <TOutput> generateObject(
+public suspend fun <TOutput> generateObject(
     model: LanguageModel,
     output: Output<TOutput>,
     prompt: String? = null,
@@ -484,7 +484,7 @@ suspend fun <TOutput> generateObject(
     )
 }
 
-data class GenerateObjectResult<TOutput>(
+public data class GenerateObjectResult<TOutput>(
     val value: TOutput,
     val text: String,
     val reasoning: String? = null,
@@ -505,7 +505,7 @@ data class GenerateObjectResult<TOutput>(
  * instead of returning a browser/Node stream facade.
  */
 @Deprecated("Use streamText(output = ...) instead.")
-fun <TOutput> streamObject(
+public fun <TOutput> streamObject(
     model: LanguageModel,
     output: Output<TOutput>,
     prompt: String? = null,

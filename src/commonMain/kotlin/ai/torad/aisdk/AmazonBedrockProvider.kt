@@ -30,31 +30,31 @@ import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 
-const val AMAZON_BEDROCK_VERSION: String = "4.0.112"
+public const val AMAZON_BEDROCK_VERSION: String = "4.0.112"
 
-typealias BedrockChatModelId = String
-typealias BedrockEmbeddingModelId = String
-typealias BedrockImageModelId = String
-typealias BedrockRerankingModelId = String
-typealias BedrockProviderOptions = JsonObject
-typealias AmazonBedrockLanguageModelOptions = JsonObject
-typealias AmazonBedrockEmbeddingModelOptions = JsonObject
-typealias AmazonBedrockRerankingModelOptions = JsonObject
-typealias BedrockRerankingOptions = JsonObject
-typealias BedrockAnthropicModelId = String
-typealias BedrockMantleModelId = String
-typealias BedrockMantleChatModelId = String
-typealias BedrockMantleResponsesModelId = String
+public typealias BedrockChatModelId = String
+public typealias BedrockEmbeddingModelId = String
+public typealias BedrockImageModelId = String
+public typealias BedrockRerankingModelId = String
+public typealias BedrockProviderOptions = JsonObject
+public typealias AmazonBedrockLanguageModelOptions = JsonObject
+public typealias AmazonBedrockEmbeddingModelOptions = JsonObject
+public typealias AmazonBedrockRerankingModelOptions = JsonObject
+public typealias BedrockRerankingOptions = JsonObject
+public typealias BedrockAnthropicModelId = String
+public typealias BedrockMantleModelId = String
+public typealias BedrockMantleChatModelId = String
+public typealias BedrockMantleResponsesModelId = String
 
 @Serializable
-data class BedrockCredentials(
+public data class BedrockCredentials(
     val accessKeyId: String,
     val secretAccessKey: String,
     val sessionToken: String? = null,
     val region: String? = null,
 )
 
-data class AmazonBedrockProviderSettings(
+public data class AmazonBedrockProviderSettings(
     val region: String? = null,
     val apiKey: String? = null,
     val accessKeyId: String? = null,
@@ -67,28 +67,28 @@ data class AmazonBedrockProviderSettings(
     val generateId: () -> String = { ai.torad.aisdk.generateId() },
 )
 
-interface AmazonBedrockProvider : Provider {
-    val settings: AmazonBedrockProviderSettings
-    val tools: AnthropicTools
+public interface AmazonBedrockProvider : Provider {
+    public val settings: AmazonBedrockProviderSettings
+    public val tools: AnthropicTools
 
-    operator fun invoke(modelId: BedrockChatModelId): LanguageModel = languageModel(modelId)
-    fun embedding(modelId: BedrockEmbeddingModelId): EmbeddingModel
-    fun textEmbedding(modelId: BedrockEmbeddingModelId): EmbeddingModel = embedding(modelId)
-    fun textEmbeddingModel(modelId: BedrockEmbeddingModelId): EmbeddingModel = embedding(modelId)
-    fun image(modelId: BedrockImageModelId): ImageModel
-    fun reranking(modelId: BedrockRerankingModelId): RerankingModel
+    public operator fun invoke(modelId: BedrockChatModelId): LanguageModel = languageModel(modelId)
+    public fun embedding(modelId: BedrockEmbeddingModelId): EmbeddingModel
+    public fun textEmbedding(modelId: BedrockEmbeddingModelId): EmbeddingModel = embedding(modelId)
+    public fun textEmbeddingModel(modelId: BedrockEmbeddingModelId): EmbeddingModel = embedding(modelId)
+    public fun image(modelId: BedrockImageModelId): ImageModel
+    public fun reranking(modelId: BedrockRerankingModelId): RerankingModel
 
     override fun embeddingModel(modelId: String): EmbeddingModel = embedding(modelId)
     override fun imageModel(modelId: String): ImageModel = image(modelId)
     override fun rerankingModel(modelId: String): RerankingModel = reranking(modelId)
 }
 
-fun createAmazonBedrock(
+public fun createAmazonBedrock(
     client: HttpClient,
     settings: AmazonBedrockProviderSettings = AmazonBedrockProviderSettings(),
 ): AmazonBedrockProvider = DefaultAmazonBedrockProvider(client, settings)
 
-val bedrock: AmazonBedrockProvider = object : AmazonBedrockProvider {
+public val bedrock: AmazonBedrockProvider = object : AmazonBedrockProvider {
     override val providerId: String = "amazon-bedrock"
     override val settings: AmazonBedrockProviderSettings = AmazonBedrockProviderSettings()
     override val tools: AnthropicTools = anthropicTools
@@ -122,22 +122,22 @@ private class DefaultAmazonBedrockProvider(
         BedrockRerankingModel(client, settings, modelId)
 }
 
-interface BedrockAnthropicProvider : Provider {
-    val settings: AmazonBedrockProviderSettings
-    val tools: AnthropicTools
+public interface BedrockAnthropicProvider : Provider {
+    public val settings: AmazonBedrockProviderSettings
+    public val tools: AnthropicTools
 
-    operator fun invoke(modelId: BedrockAnthropicModelId): LanguageModel = languageModel(modelId)
-    fun textEmbeddingModel(modelId: String): Nothing = throw NoSuchModelError(providerId, "embeddingModel", modelId)
+    public operator fun invoke(modelId: BedrockAnthropicModelId): LanguageModel = languageModel(modelId)
+    public fun textEmbeddingModel(modelId: String): Nothing = throw NoSuchModelError(providerId, "embeddingModel", modelId)
 }
 
-typealias BedrockAnthropicProviderSettings = AmazonBedrockProviderSettings
+public typealias BedrockAnthropicProviderSettings = AmazonBedrockProviderSettings
 
-fun createBedrockAnthropic(
+public fun createBedrockAnthropic(
     client: HttpClient,
     settings: BedrockAnthropicProviderSettings = BedrockAnthropicProviderSettings(),
 ): BedrockAnthropicProvider = DefaultBedrockAnthropicProvider(client, settings)
 
-val bedrockAnthropic: BedrockAnthropicProvider = object : BedrockAnthropicProvider {
+public val bedrockAnthropic: BedrockAnthropicProvider = object : BedrockAnthropicProvider {
     override val providerId: String = "bedrock.anthropic"
     override val settings: AmazonBedrockProviderSettings = AmazonBedrockProviderSettings()
     override val tools: AnthropicTools = anthropicTools
@@ -155,23 +155,23 @@ private class DefaultBedrockAnthropicProvider(
         BedrockChatLanguageModel(client, settings, modelId, "bedrock.anthropic.messages")
 }
 
-interface BedrockMantleProvider : Provider {
-    val settings: AmazonBedrockProviderSettings
+public interface BedrockMantleProvider : Provider {
+    public val settings: AmazonBedrockProviderSettings
 
-    operator fun invoke(modelId: BedrockMantleChatModelId): LanguageModel = chat(modelId)
-    fun chat(modelId: BedrockMantleChatModelId): LanguageModel
-    fun responses(modelId: BedrockMantleResponsesModelId): LanguageModel
-    fun textEmbeddingModel(modelId: String): Nothing = throw NoSuchModelError(providerId, "embeddingModel", modelId)
+    public operator fun invoke(modelId: BedrockMantleChatModelId): LanguageModel = chat(modelId)
+    public fun chat(modelId: BedrockMantleChatModelId): LanguageModel
+    public fun responses(modelId: BedrockMantleResponsesModelId): LanguageModel
+    public fun textEmbeddingModel(modelId: String): Nothing = throw NoSuchModelError(providerId, "embeddingModel", modelId)
 }
 
-typealias BedrockMantleProviderSettings = AmazonBedrockProviderSettings
+public typealias BedrockMantleProviderSettings = AmazonBedrockProviderSettings
 
-fun createBedrockMantle(
+public fun createBedrockMantle(
     client: HttpClient,
     settings: BedrockMantleProviderSettings = BedrockMantleProviderSettings(),
 ): BedrockMantleProvider = DefaultBedrockMantleProvider(client, settings)
 
-val bedrockMantle: BedrockMantleProvider = object : BedrockMantleProvider {
+public val bedrockMantle: BedrockMantleProvider = object : BedrockMantleProvider {
     override val providerId: String = "bedrock-mantle"
     override val settings: AmazonBedrockProviderSettings = AmazonBedrockProviderSettings()
     override fun languageModel(modelId: String): LanguageModel =

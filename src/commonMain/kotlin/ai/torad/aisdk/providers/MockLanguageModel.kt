@@ -24,7 +24,7 @@ import kotlinx.serialization.json.buildJsonObject
  * stop conditions, and the message-parts conversion without spinning up a
  * real model.
  */
-class MockLanguageModel(
+public class MockLanguageModel(
     override val modelId: String = "mock/test",
     override val provider: String = "mock",
     private val responses: List<ScriptedResponse>,
@@ -95,7 +95,7 @@ class MockLanguageModel(
 // Top-level factories for concise tests and examples.
 
 /** A model that just emits the given text once and finishes. */
-fun mockLanguageModelTextOnly(text: String): MockLanguageModel = MockLanguageModel(
+public fun mockLanguageModelTextOnly(text: String): MockLanguageModel = MockLanguageModel(
     responses = listOf(
         ScriptedResponse(
             events = listOf(
@@ -113,7 +113,7 @@ fun mockLanguageModelTextOnly(text: String): MockLanguageModel = MockLanguageMod
  * A model whose first call requests a tool, second call (after the
  * tool result is appended) returns a final text response.
  */
-fun mockLanguageModelToolThenText(
+public fun mockLanguageModelToolThenText(
     toolName: String,
     toolInput: JsonObject,
     finalText: String,
@@ -147,12 +147,12 @@ fun mockLanguageModelToolThenText(
 )
 
 /** Convenience for a tool-call input expressed as JSON literal map. */
-fun mockToolInput(vararg pairs: Pair<String, String>): JsonObject = buildJsonObject {
+public fun mockToolInput(vararg pairs: Pair<String, String>): JsonObject = buildJsonObject {
     for ((k, v) in pairs) put(k, JsonPrimitive(v))
 }
 
 /** One scripted response — what a single `stream` call should emit. */
-data class ScriptedResponse(
+public data class ScriptedResponse(
     val events: List<StreamEvent>,
     val finishReason: FinishReason = FinishReason.Stop,
     val usage: Usage = Usage(promptTokens = 1, completionTokens = 1),

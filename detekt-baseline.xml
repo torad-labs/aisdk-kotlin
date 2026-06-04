@@ -2,6 +2,7 @@
 <SmellBaseline>
   <ManuallySuppressedIssues/>
   <CurrentIssues>
+    <ID>ArgumentListWrapping:AbortSignal.kt$AbortError$(message)</ID>
     <ID>ArgumentListWrapping:AlibabaProvider.kt$AlibabaChatLanguageModel$(params.copy(providerOptions = transformAlibabaChatOptions(params.providerOptions)))</ID>
     <ID>ArgumentListWrapping:AlibabaProvider.kt$AlibabaChatLanguageModel$(params.providerOptions)</ID>
     <ID>ArgumentListWrapping:AlibabaProvider.kt$AlibabaChatLanguageModel$(providerOptions = transformAlibabaChatOptions(params.providerOptions))</ID>
@@ -46,6 +47,7 @@
     <ID>ArgumentListWrapping:AmazonBedrockProvider.kt$(part.reason ?: "Tool execution ${if (part.approved) "approved" else "denied"}.")</ID>
     <ID>ArgumentListWrapping:AmazonBedrockProvider.kt$(tool.parametersSchemaJson)</ID>
     <ID>ArgumentListWrapping:AmazonBedrockProvider.kt$&lt;no name provided>$("Bedrock Anthropic provider is not configured. Use createBedrockAnthropic(client, settings).")</ID>
+    <ID>ArgumentListWrapping:AmazonBedrockProvider.kt$BedrockAnthropicProvider$(providerId, "embeddingModel", modelId)</ID>
     <ID>ArgumentListWrapping:AmazonBedrockProvider.kt$BedrockChatLanguageModel$("x-amzn-requestid")</ID>
     <ID>ArgumentListWrapping:AmazonBedrockProvider.kt$BedrockChatLanguageModel$(StreamEvent.ResponseMetadata(id = response.headers.headerValue("x-amzn-requestid"), modelId = modelId, headers = response.headers))</ID>
     <ID>ArgumentListWrapping:AmazonBedrockProvider.kt$BedrockChatLanguageModel$(id = response.headers.headerValue("x-amzn-requestid"), modelId = modelId, headers = response.headers)</ID>
@@ -54,6 +56,7 @@
     <ID>ArgumentListWrapping:AmazonBedrockProvider.kt$BedrockImageModel$(modelId = modelId, headers = response.headers, body = response.value)</ID>
     <ID>ArgumentListWrapping:AmazonBedrockProvider.kt$BedrockMantleChatLanguageModel$(StreamEvent.ResponseMetadata(result.response.id, result.response.timestampMillis, result.response.modelId, result.response.headers, result.response.body))</ID>
     <ID>ArgumentListWrapping:AmazonBedrockProvider.kt$BedrockMantleChatLanguageModel$(result.response.id, result.response.timestampMillis, result.response.modelId, result.response.headers, result.response.body)</ID>
+    <ID>ArgumentListWrapping:AmazonBedrockProvider.kt$BedrockMantleProvider$(providerId, "embeddingModel", modelId)</ID>
     <ID>ArgumentListWrapping:AmazonBedrockProvider.kt$BedrockRerankingModel$(modelId = modelId, headers = response.headers, body = response.value)</ID>
     <ID>ArgumentListWrapping:AmazonBedrockProviderTest.kt$AmazonBedrockProviderTest$("/bedrock/aws4_request")</ID>
     <ID>ArgumentListWrapping:AmazonBedrockProviderTest.kt$AmazonBedrockProviderTest$("&lt;/done>", result.providerMetadata["bedrock"]?.jsonObject?.get("stopSequence")?.jsonPrimitive?.contentOrNull)</ID>
@@ -95,6 +98,7 @@
     <ID>ArgumentListWrapping:AmazonBedrockProviderTest.kt$AmazonBedrockProviderTest$(signedRequest.requestHeaders.headerValue(HttpHeaders.Authorization).orEmpty().contains("Credential=id/"))</ID>
     <ID>ArgumentListWrapping:AmazonBedrockProviderTest.kt$AmazonBedrockProviderTest$(true, userContent[2].jsonObject["document"]?.jsonObject?.get("citations")?.jsonObject?.get("enabled")?.jsonPrimitive?.booleanOrNull)</ID>
     <ID>ArgumentListWrapping:AnthropicAwsProvider.kt$&lt;no name provided>$(providerId, "embeddingModel", modelId)</ID>
+    <ID>ArgumentListWrapping:AnthropicAwsProvider.kt$AnthropicAwsProvider$(providerId, "embeddingModel", modelId)</ID>
     <ID>ArgumentListWrapping:AnthropicAwsProvider.kt$DefaultAnthropicAwsProvider$(providerId, "embeddingModel", modelId)</ID>
     <ID>ArgumentListWrapping:AnthropicAwsProviderTest.kt$AnthropicAwsProviderTest$("/aws-external-anthropic/aws4_request")</ID>
     <ID>ArgumentListWrapping:AnthropicAwsProviderTest.kt$AnthropicAwsProviderTest$("claude-sonnet-4-6")</ID>
@@ -128,6 +132,7 @@
     <ID>ArgumentListWrapping:AnthropicProvider.kt$AnthropicMessagesLanguageModel$(prepared.body, prepared.betas, params.headers, acceptEventStream = false, parseJson = true)</ID>
     <ID>ArgumentListWrapping:AnthropicProvider.kt$AnthropicMessagesLanguageModel$(prepared.body, prepared.betas, params.headers, acceptEventStream = true, parseJson = false)</ID>
     <ID>ArgumentListWrapping:AnthropicProvider.kt$AnthropicMessagesLanguageModel$(response.rawText, jsonSchema&lt;JsonElement>(JsonObject(emptyMap())), aiSdkJson)</ID>
+    <ID>ArgumentListWrapping:AnthropicProvider.kt$AnthropicProvider$(providerId, "embeddingModel", modelId)</ID>
     <ID>ArgumentListWrapping:AnthropicProvider.kt$AnthropicStreamState$("Anthropic stream protocol error: content_block_delta missing delta.type.")</ID>
     <ID>ArgumentListWrapping:AnthropicProvider.kt$AnthropicStreamState$("Anthropic stream protocol error: unsupported content_block_delta type `$deltaType`.")</ID>
     <ID>ArgumentListWrapping:AnthropicProvider.kt$AnthropicStreamState$(StreamEvent.Error("Anthropic stream protocol error: content_block_delta missing delta.type."))</ID>
@@ -186,6 +191,8 @@
     <ID>ArgumentListWrapping:AnthropicProviderTest.kt$AnthropicProviderTest$(true, result.toolCalls[1].providerMetadata?.get("anthropic")?.jsonObject?.get("providerExecuted")?.jsonPrimitive?.booleanOrNull)</ID>
     <ID>ArgumentListWrapping:AnthropicProviderTest.kt$AnthropicProviderTest$(userMessage("hi"))</ID>
     <ID>ArgumentListWrapping:AssemblyAIProvider.kt$("Transcription failed: ${body["error"]?.jsonPrimitive?.contentOrNull ?: "Unknown error"}")</ID>
+    <ID>ArgumentListWrapping:AssemblyAIProvider.kt$AssemblyAIProvider$(modelId)</ID>
+    <ID>ArgumentListWrapping:AssemblyAIProvider.kt$AssemblyAIProvider$(providerId, "embeddingModel", modelId)</ID>
     <ID>ArgumentListWrapping:AssemblyAIProvider.kt$DefaultAssemblyAIProvider$(client, settings, modelId)</ID>
     <ID>ArgumentListWrapping:AssemblyAIProvider.kt$DefaultAssemblyAIProvider$(providerId, "embeddingModel", modelId)</ID>
     <ID>ArgumentListWrapping:AssemblyAIProvider.kt$DefaultAssemblyAIProvider$(providerId, "languageModel", modelId)</ID>
@@ -218,6 +225,7 @@
     <ID>ArgumentListWrapping:BlackForestLabsProvider.kt$(1)</ID>
     <ID>ArgumentListWrapping:BlackForestLabsProvider.kt$(pollTimeoutMillis.coerceAtLeast(1L).toDouble() / interval.toDouble())</ID>
     <ID>ArgumentListWrapping:BlackForestLabsProvider.kt$&lt;no name provided>$("Black Forest Labs provider is not configured. Use createBlackForestLabs(client, settings).")</ID>
+    <ID>ArgumentListWrapping:BlackForestLabsProvider.kt$BlackForestLabsProvider$(providerId, "embeddingModel", modelId)</ID>
     <ID>ArgumentListWrapping:BlackForestLabsProvider.kt$DefaultBlackForestLabsProvider$(providerId, "embeddingModel", modelId)</ID>
     <ID>ArgumentListWrapping:BlackForestLabsProvider.kt$DefaultBlackForestLabsProvider$(providerId, "languageModel", modelId)</ID>
     <ID>ArgumentListWrapping:ByteDanceProvider.kt$("audio_url", "audio_url", url.jsonPrimitive.contentOrNull.orEmpty(), "reference_audio")</ID>
@@ -264,6 +272,8 @@
     <ID>ArgumentListWrapping:CohereProviderTest.kt$CohereProviderTest$(false, body["response_format"]?.jsonObject?.get("json_schema")?.jsonObject?.get("additionalProperties")?.jsonPrimitive?.contentOrNull?.toBoolean())</ID>
     <ID>ArgumentListWrapping:CohereProviderTest.kt$CohereProviderTest$(mediaType = "application/pdf", base64 = "AA==", filename = "paper.pdf")</ID>
     <ID>ArgumentListWrapping:CohereProviderTest.kt$CohereProviderTest$(mutableMapOf())</ID>
+    <ID>ArgumentListWrapping:DeepgramProvider.kt$DeepgramProvider$(modelId)</ID>
+    <ID>ArgumentListWrapping:DeepgramProvider.kt$DeepgramProvider$(providerId, "embeddingModel", modelId)</ID>
     <ID>ArgumentListWrapping:DeepgramProvider.kt$DefaultDeepgramProvider$(client, settings, modelId)</ID>
     <ID>ArgumentListWrapping:DeepgramProvider.kt$DefaultDeepgramProvider$(providerId, "embeddingModel", modelId)</ID>
     <ID>ArgumentListWrapping:DeepgramProvider.kt$DefaultDeepgramProvider$(providerId, "languageModel", modelId)</ID>
@@ -272,6 +282,7 @@
     <ID>ArgumentListWrapping:ElevenLabsProvider.kt$DefaultElevenLabsProvider$(providerId, "embeddingModel", modelId)</ID>
     <ID>ArgumentListWrapping:ElevenLabsProvider.kt$DefaultElevenLabsProvider$(providerId, "languageModel", modelId)</ID>
     <ID>ArgumentListWrapping:ElevenLabsProvider.kt$ElevenLabsProvider$(modelId)</ID>
+    <ID>ArgumentListWrapping:ElevenLabsProvider.kt$ElevenLabsProvider$(providerId, "embeddingModel", modelId)</ID>
     <ID>ArgumentListWrapping:ElevenLabsProvider.kt$ElevenLabsTranscriptionModel$("language_code", it)</ID>
     <ID>ArgumentListWrapping:ElevenLabsProvider.kt$ElevenLabsTranscriptionModel$("timestamps_granularity", it)</ID>
     <ID>ArgumentListWrapping:ElevenLabsProvider.kt$ElevenLabsTranscriptionModel$(modelId = modelId, headers = response.headers, body = response.value)</ID>
@@ -293,6 +304,7 @@
     <ID>ArgumentListWrapping:FalProvider.kt$DefaultFalProvider$(providerId, "embeddingModel", modelId)</ID>
     <ID>ArgumentListWrapping:FalProvider.kt$DefaultFalProvider$(providerId, "languageModel", modelId)</ID>
     <ID>ArgumentListWrapping:FalProvider.kt$FalImageModel$(modelId = modelId, headers = response.headers, body = response.value)</ID>
+    <ID>ArgumentListWrapping:FalProvider.kt$FalProvider$(providerId, "embeddingModel", modelId)</ID>
     <ID>ArgumentListWrapping:FalProvider.kt$FalSpeechModel$(modelId = modelId, headers = response.headers, body = response.value)</ID>
     <ID>ArgumentListWrapping:FalProviderTest.kt$FalProviderTest$("Enhanced prompt", result.providerMetadata["fal"]?.jsonObject?.get("prompt")?.jsonPrimitive?.contentOrNull)</ID>
     <ID>ArgumentListWrapping:FalProviderTest.kt$FalProviderTest$("images")</ID>
@@ -349,6 +361,7 @@
     <ID>ArgumentListWrapping:GenerateTextParityTest.kt$GenerateTextParityTest$(StreamEvent.SourcePart.SourceType.Url, url = "https://example.com", title = "Example")</ID>
     <ID>ArgumentListWrapping:GladiaProvider.kt$DefaultGladiaProvider$(providerId, "embeddingModel", modelId)</ID>
     <ID>ArgumentListWrapping:GladiaProvider.kt$DefaultGladiaProvider$(providerId, "languageModel", modelId)</ID>
+    <ID>ArgumentListWrapping:GladiaProvider.kt$GladiaProvider$(providerId, "embeddingModel", modelId)</ID>
     <ID>ArgumentListWrapping:GladiaProviderTest.kt$GladiaProviderTest$("audio/wav", convertByteArrayToBase64(byteArrayOf(1)))</ID>
     <ID>ArgumentListWrapping:GladiaProviderTest.kt$GladiaProviderTest$("bullet_points", body["summarization_config"]?.jsonObject?.get("type")?.jsonPrimitive?.contentOrNull)</ID>
     <ID>ArgumentListWrapping:GladiaProviderTest.kt$GladiaProviderTest$("default_intensity")</ID>
@@ -479,6 +492,8 @@
     <ID>ArgumentListWrapping:GoogleVertexProvider.kt$&lt;no name provided>$("Google Vertex xAI provider is not configured. Use createGoogleVertexXai(client, settings).")</ID>
     <ID>ArgumentListWrapping:GoogleVertexProvider.kt$DefaultVertexAnthropicProvider$(providerId, "embeddingModel", modelId)</ID>
     <ID>ArgumentListWrapping:GoogleVertexProvider.kt$DefaultVertexXaiProvider$(providerId, "embeddingModel", modelId)</ID>
+    <ID>ArgumentListWrapping:GoogleVertexProvider.kt$GoogleVertexAnthropicProvider$(providerId, "embeddingModel", modelId)</ID>
+    <ID>ArgumentListWrapping:GoogleVertexProvider.kt$GoogleVertexXaiProvider$(providerId, "embeddingModel", modelId)</ID>
     <ID>ArgumentListWrapping:GoogleVertexProviderTest.kt$GoogleVertexProviderTest$("claude-sonnet-4")</ID>
     <ID>ArgumentListWrapping:GoogleVertexProviderTest.kt$GoogleVertexProviderTest$("content")</ID>
     <ID>ArgumentListWrapping:GoogleVertexProviderTest.kt$GoogleVertexProviderTest$("eu", eu.chat("gemini-2.5-flash").generate(LanguageModelCallParams(messages = listOf(userMessage("hi")))).text)</ID>
@@ -582,6 +597,7 @@
     <ID>ArgumentListWrapping:LumaProvider.kt$("Luma AI character supports up to 4 images per identity. Identity '$id' has ${images.size} images.")</ID>
     <ID>ArgumentListWrapping:LumaProvider.kt$DefaultLumaProvider$(providerId, "embeddingModel", modelId)</ID>
     <ID>ArgumentListWrapping:LumaProvider.kt$DefaultLumaProvider$(providerId, "languageModel", modelId)</ID>
+    <ID>ArgumentListWrapping:LumaProvider.kt$LumaProvider$(providerId, "embeddingModel", modelId)</ID>
     <ID>ArgumentListWrapping:LumaProviderTest.kt$LumaProviderTest$("hero")</ID>
     <ID>ArgumentListWrapping:LumaProviderTest.kt$LumaProviderTest$("https://example.com/a.png", character?.get("images")?.jsonArray?.first()?.jsonPrimitive?.contentOrNull)</ID>
     <ID>ArgumentListWrapping:LumaProviderTest.kt$LumaProviderTest$("https://example.com/ref-a.png", body["image"]?.jsonArray?.first()?.jsonObject?.get("url")?.jsonPrimitive?.contentOrNull)</ID>
@@ -634,8 +650,12 @@
     <ID>ArgumentListWrapping:MistralProviderTest.kt$MistralProviderTest$(apiKey = "key")</ID>
     <ID>ArgumentListWrapping:MistralProviderTest.kt$MistralProviderTest$(createTestServer(mutableMapOf()).httpClient(), MistralProviderSettings(apiKey = "key"))</ID>
     <ID>ArgumentListWrapping:MistralProviderTest.kt$MistralProviderTest$(mutableMapOf())</ID>
+    <ID>ArgumentListWrapping:MockModels.kt$(mediaType = "audio/mpeg", base64 = "SUQz", filename = "audio.mp3")</ID>
     <ID>ArgumentListWrapping:MockModels.kt$MockRerankingModel$(promptTokens = params.query.length, completionTokens = 0)</ID>
     <ID>ArgumentListWrapping:MockModels.kt$MockRerankingModel$(results = results, usage = Usage(promptTokens = params.query.length, completionTokens = 0))</ID>
+    <ID>ArgumentListWrapping:ModelMessage.kt$(ContentPart.Text(text))</ID>
+    <ID>ArgumentListWrapping:ModelMessage.kt$(MessageRole.Assistant, listOf(ContentPart.Text(text)))</ID>
+    <ID>ArgumentListWrapping:ModelMessage.kt$(text)</ID>
     <ID>ArgumentListWrapping:OpenAICompatibleProvider.kt$("")</ID>
     <ID>ArgumentListWrapping:OpenAICompatibleProvider.kt$("content", JsonPrimitive(message.content.filterIsInstance&lt;ContentPart.Text>().joinToString("") { it.text }))</ID>
     <ID>ArgumentListWrapping:OpenAICompatibleProvider.kt$("content", if (toolCalls.isEmpty()) JsonPrimitive(text) else JsonPrimitive(text.takeIf { it.isNotEmpty() }))</ID>
@@ -670,11 +690,13 @@
     <ID>ArgumentListWrapping:OpenAICompatibleProvider.kt$OpenAICompatibleTranscriptionModel$(obj, "text", providerName, "transcription response", "$.segments[$index]")</ID>
     <ID>ArgumentListWrapping:OpenAICompatibleProvider.kt$OpenAICompatibleTranscriptionModel$(value, "segments", providerName, "transcription response")</ID>
     <ID>ArgumentListWrapping:OpenAICompatibleProviderFacades.kt$&lt;no name provided>$("$providerName provider is not configured. Use create$providerName(client, settings).")</ID>
+    <ID>ArgumentListWrapping:OpenAICompatibleProviderFacades.kt$CerebrasProvider$(providerId, "embeddingModel", modelId)</ID>
     <ID>ArgumentListWrapping:OpenAICompatibleProviderFacades.kt$DeepInfraChatLanguageModel$(::fixDeepInfraUsageEvent)</ID>
     <ID>ArgumentListWrapping:OpenAICompatibleProviderFacades.kt$DeepInfraChatLanguageModel$(params)</ID>
     <ID>ArgumentListWrapping:OpenAICompatibleProviderFacades.kt$DeepInfraChatLanguageModel$(stream = result.stream.map(::fixDeepInfraUsageEvent))</ID>
     <ID>ArgumentListWrapping:OpenAICompatibleProviderFacades.kt$DeepInfraImageModel$(mediaType = "image/png", base64 = image.jsonPrimitive.contentOrNull.orEmpty().stripDataUriPrefix())</ID>
     <ID>ArgumentListWrapping:OpenAICompatibleProviderFacades.kt$DeepInfraImageModel$(modelId = modelId, headers = response.headers, body = response.value)</ID>
+    <ID>ArgumentListWrapping:OpenAICompatibleProviderFacades.kt$DeepSeekProvider$(providerId, "embeddingModel", modelId)</ID>
     <ID>ArgumentListWrapping:OpenAICompatibleProviderFacades.kt$DefaultBasetenProvider$("Not supported. You must use a /sync/v1 endpoint for chat models.")</ID>
     <ID>ArgumentListWrapping:OpenAICompatibleProviderFacades.kt$DefaultBasetenProvider$("baseten", BASETEN_VERSION, baseURL)</ID>
     <ID>ArgumentListWrapping:OpenAICompatibleProviderFacades.kt$DefaultBasetenProvider$(client, settings.toCompatible("baseten", BASETEN_VERSION, baseURL))</ID>
@@ -686,7 +708,10 @@
     <ID>ArgumentListWrapping:OpenAICompatibleProviderFacades.kt$DefaultMoonshotAIProvider$(providerId, "embeddingModel", modelId)</ID>
     <ID>ArgumentListWrapping:OpenAICompatibleProviderFacades.kt$DefaultPerplexityProvider$(providerId, "embeddingModel", modelId)</ID>
     <ID>ArgumentListWrapping:OpenAICompatibleProviderFacades.kt$DefaultVercelProvider$(providerId, "embeddingModel", modelId)</ID>
+    <ID>ArgumentListWrapping:OpenAICompatibleProviderFacades.kt$GroqProvider$(providerId, "embeddingModel", modelId)</ID>
+    <ID>ArgumentListWrapping:OpenAICompatibleProviderFacades.kt$PerplexityProvider$(providerId, "embeddingModel", modelId)</ID>
     <ID>ArgumentListWrapping:OpenAICompatibleProviderFacades.kt$TogetherAIImageModel$(modelId = modelId, headers = response.headers, body = response.value)</ID>
+    <ID>ArgumentListWrapping:OpenAICompatibleProviderFacades.kt$VercelProvider$(providerId, "embeddingModel", modelId)</ID>
     <ID>ArgumentListWrapping:OpenAICompatibleProviderFacadesTest.kt$OpenAICompatibleProviderFacadesTest$("accounts/fireworks/models/flux-kontext-pro")</ID>
     <ID>ArgumentListWrapping:OpenAICompatibleProviderFacadesTest.kt$OpenAICompatibleProviderFacadesTest$("done", provider.completionModel("model").generate(LanguageModelCallParams(listOf(userMessage("hi")))).text)</ID>
     <ID>ArgumentListWrapping:OpenAICompatibleProviderFacadesTest.kt$OpenAICompatibleProviderFacadesTest$("embed")</ID>
@@ -810,6 +835,7 @@
     <ID>ArgumentListWrapping:ProdiaProvider.kt$DefaultProdiaProvider$(providerId, "embeddingModel", modelId)</ID>
     <ID>ArgumentListWrapping:ProdiaProvider.kt$ProdiaLanguageModel$(StreamEvent.Finish(totalSteps = 1, finishReason = result.finishReason, usage = result.usage, providerMetadata = result.providerMetadata))</ID>
     <ID>ArgumentListWrapping:ProdiaProvider.kt$ProdiaLanguageModel$(totalSteps = 1, finishReason = result.finishReason, usage = result.usage, providerMetadata = result.providerMetadata)</ID>
+    <ID>ArgumentListWrapping:ProdiaProvider.kt$ProdiaProvider$(providerId, "embeddingModel", modelId)</ID>
     <ID>ArgumentListWrapping:ProdiaProvider.kt$ProdiaVideoModel$(it.base64)</ID>
     <ID>ArgumentListWrapping:ProdiaProvider.kt$ProdiaVideoModel$(it.mediaType, convertBase64ToByteArray(it.base64), it.filename)</ID>
     <ID>ArgumentListWrapping:ProdiaProviderTest.kt$ProdiaProviderTest$("createProdia")</ID>
@@ -848,6 +874,7 @@
     <ID>ArgumentListWrapping:QuiverAIProvider.kt$(item.jsonObject["mime_type"]?.jsonPrimitive?.contentOrNull ?: "image/svg+xml")</ID>
     <ID>ArgumentListWrapping:QuiverAIProvider.kt$DefaultQuiverAIProvider$(providerId, "embeddingModel", modelId)</ID>
     <ID>ArgumentListWrapping:QuiverAIProvider.kt$DefaultQuiverAIProvider$(providerId, "languageModel", modelId)</ID>
+    <ID>ArgumentListWrapping:QuiverAIProvider.kt$QuiverAIProvider$(providerId, "embeddingModel", modelId)</ID>
     <ID>ArgumentListWrapping:QuiverAIProviderTest.kt$QuiverAIProviderTest$("BAUG", body["references"]?.jsonArray?.get(1)?.jsonObject?.get("base64")?.jsonPrimitive?.contentOrNull)</ID>
     <ID>ArgumentListWrapping:QuiverAIProviderTest.kt$QuiverAIProviderTest$("base64")</ID>
     <ID>ArgumentListWrapping:QuiverAIProviderTest.kt$QuiverAIProviderTest$("https://example.com/logo.png", body["image"]?.jsonObject?.get("url")?.jsonPrimitive?.contentOrNull)</ID>
@@ -862,8 +889,11 @@
     <ID>ArgumentListWrapping:ReplicateProvider.kt$DefaultReplicateProvider$(providerId, "embeddingModel", modelId)</ID>
     <ID>ArgumentListWrapping:ReplicateProvider.kt$DefaultReplicateProvider$(providerId, "languageModel", modelId)</ID>
     <ID>ArgumentListWrapping:ReplicateProvider.kt$ReplicateImageModel$(output.jsonPrimitive.contentOrNull ?: throw AiSdkException("Replicate image output is not a URL"))</ID>
+    <ID>ArgumentListWrapping:ReplicateProvider.kt$ReplicateProvider$(providerId, "embeddingModel", modelId)</ID>
     <ID>ArgumentListWrapping:RevaiProvider.kt$DefaultRevaiProvider$(providerId, "embeddingModel", modelId)</ID>
     <ID>ArgumentListWrapping:RevaiProvider.kt$DefaultRevaiProvider$(providerId, "languageModel", modelId)</ID>
+    <ID>ArgumentListWrapping:RevaiProvider.kt$RevaiProvider$(modelId)</ID>
+    <ID>ArgumentListWrapping:RevaiProvider.kt$RevaiProvider$(providerId, "embeddingModel", modelId)</ID>
     <ID>ArgumentListWrapping:RevaiProviderTest.kt$RevaiProviderTest$("audio/wav", convertByteArrayToBase64(byteArrayOf(1)))</ID>
     <ID>ArgumentListWrapping:RevaiProviderTest.kt$RevaiProviderTest$(1)</ID>
     <ID>ArgumentListWrapping:RevaiProviderTest.kt$RevaiProviderTest$(TranscriptionParams(audio = AudioSource("audio/wav", convertByteArrayToBase64(byteArrayOf(1)))))</ID>
@@ -871,6 +901,7 @@
     <ID>ArgumentListWrapping:RevaiProviderTest.kt$RevaiProviderTest$(byteArrayOf(1))</ID>
     <ID>ArgumentListWrapping:StructuredObjectApi.kt$StructuredObject$("Structured object response did not contain JSON")</ID>
     <ID>ArgumentListWrapping:StructuredObjectApi.kt$StructuredObject$(null, IllegalArgumentException("Structured object response did not contain JSON"))</ID>
+    <ID>ArgumentListWrapping:Telemetry.kt$(resolve)</ID>
     <ID>ArgumentListWrapping:Telemetry.kt$MutableTelemetrySpan$("exception.stacktrace", JsonPrimitive(it))</ID>
     <ID>ArgumentListWrapping:Telemetry.kt$MutableTelemetrySpan$(it)</ID>
     <ID>ArgumentListWrapping:TestServer.kt$UrlHandler$(UrlResponseParameter.RequestFactory(factory))</ID>
@@ -905,6 +936,7 @@
     <ID>ArgumentListWrapping:XaiProvider.kt$XaiChatLanguageModel$(params.providerOptions)</ID>
     <ID>ArgumentListWrapping:XaiProvider.kt$XaiChatLanguageModel$(providerOptions = transformXaiChatProviderOptions(params.providerOptions))</ID>
     <ID>ArgumentListWrapping:XaiProvider.kt$XaiImageModel$(modelId = modelId, headers = response.headers, body = response.value)</ID>
+    <ID>ArgumentListWrapping:XaiProvider.kt$XaiProvider$(providerId, "embeddingModel", modelId)</ID>
     <ID>ArgumentListWrapping:XaiProvider.kt$XaiProviderNotConfigured$("xAI provider is not configured. Use createXai(client, settings).")</ID>
     <ID>ArgumentListWrapping:XaiProviderTest.kt$XaiProviderTest$("allowed_websites")</ID>
     <ID>ArgumentListWrapping:XaiProviderTest.kt$XaiProviderTest$("example.com", search?.get("sources")?.jsonArray?.single()?.jsonObject?.get("allowed_websites")?.jsonArray?.single()?.jsonPrimitive?.contentOrNull)</ID>
@@ -986,14 +1018,14 @@
     <ID>ConstructorParameterNaming:RevaiProvider.kt$RevaiTranscriptionModelOptions$val test_mode: Boolean? = null</ID>
     <ID>ConstructorParameterNaming:RevaiProvider.kt$RevaiTranscriptionModelOptions$val translation_config: JsonObject? = null</ID>
     <ID>ConstructorParameterNaming:Tool.kt$ToolPredicateOptions$val experimental_context: TContext? = null</ID>
-    <ID>ConstructorParameterNaming:ToolLoopAgent.kt$ToolLoopAgent$/** * Self-healing callback fired when a tool call's arguments fail to * decode. Return a corrected call to retry, or null to surface * `StreamEvent.ToolError`. See [ToolCallRepairFunction]. */ val experimental_repairToolCall: ToolCallRepairFunction&lt;TContext>? = null</ID>
-    <ID>ConstructorParameterNaming:ToolLoopAgent.kt$ToolLoopAgent$val experimental_onToolCallFinish: (suspend OnToolCallFinishEvent.() -> Unit)? = null</ID>
-    <ID>ConstructorParameterNaming:ToolLoopAgent.kt$ToolLoopAgent$val experimental_onToolCallStart: (suspend OnToolCallStartEvent.() -> Unit)? = null</ID>
+    <ID>ConstructorParameterNaming:ToolLoopAgent.kt$ToolLoopAgent$/** * Self-healing callback fired when a tool call's arguments fail to * decode. Return a corrected call to retry, or null to surface * `StreamEvent.ToolError`. See [ToolCallRepairFunction]. */ public val experimental_repairToolCall: ToolCallRepairFunction&lt;TContext>? = null</ID>
+    <ID>ConstructorParameterNaming:ToolLoopAgent.kt$ToolLoopAgent$public val experimental_onToolCallFinish: (suspend OnToolCallFinishEvent.() -> Unit)? = null</ID>
+    <ID>ConstructorParameterNaming:ToolLoopAgent.kt$ToolLoopAgent$public val experimental_onToolCallStart: (suspend OnToolCallStartEvent.() -> Unit)? = null</ID>
     <ID>ConstructorParameterNaming:XaiProvider.kt$XaiImageModelOptions$val aspect_ratio: String? = null</ID>
     <ID>ConstructorParameterNaming:XaiProvider.kt$XaiImageModelOptions$val output_format: String? = null</ID>
     <ID>ConstructorParameterNaming:XaiProvider.kt$XaiImageModelOptions$val sync_mode: Boolean? = null</ID>
     <ID>ConstructorParameterNaming:XaiProvider.kt$XaiLanguageModelChatOptions$val parallel_function_calling: Boolean? = null</ID>
-    <ID>CyclomaticComplexMethod:AgentSession.kt$AgentSession$fun submitStreaming( prompt: String? = null, messages: List&lt;ModelMessage> = state.value.messages, options: TContext? = null, abortSignal: AbortSignal = AbortSignalNever, hooks: AgentCallHooks? = null, ): Job</ID>
+    <ID>CyclomaticComplexMethod:AgentSession.kt$AgentSession$public fun submitStreaming( prompt: String? = null, messages: List&lt;ModelMessage> = state.value.messages, options: TContext? = null, abortSignal: AbortSignal = AbortSignalNever, hooks: AgentCallHooks? = null, ): Job</ID>
     <ID>CyclomaticComplexMethod:AmazonBedrockProvider.kt$BedrockStreamState$fun accept(value: JsonObject): List&lt;StreamEvent></ID>
     <ID>CyclomaticComplexMethod:AmazonBedrockProvider.kt$private fun ByteArray.readSmithyHeaders(start: Int, end: Int): Map&lt;String, String></ID>
     <ID>CyclomaticComplexMethod:AmazonBedrockProvider.kt$private fun bedrockAdditionalModelRequestFields( options: JsonObject, modelId: String, responseFormat: ResponseFormat, ): JsonObject</ID>
@@ -1029,8 +1061,8 @@
     <ID>CyclomaticComplexMethod:KtorGatewayTransport.kt$private fun streamEventFromJson(value: JsonElement): StreamEvent</ID>
     <ID>CyclomaticComplexMethod:LumaProvider.kt$private fun JsonObjectBuilder.putLumaEditingOptions( params: ImageGenerationParams, options: JsonObject, )</ID>
     <ID>CyclomaticComplexMethod:MCP.kt$HttpMCPTransport$private suspend fun postMessage(message: JSONRPCMessage, triedAuth: Boolean)</ID>
-    <ID>CyclomaticComplexMethod:MCP.kt$suspend fun auth( provider: OAuthClientProvider, options: AuthOptions, ): AuthResult</ID>
-    <ID>CyclomaticComplexMethod:MessageStreamReader.kt$fun streamToUiMessages( events: Flow&lt;StreamEvent>, assistantMessageId: String, ): Flow&lt;UIMessage></ID>
+    <ID>CyclomaticComplexMethod:MCP.kt$internal suspend fun auth( provider: OAuthClientProvider, options: AuthOptions, ): AuthResult</ID>
+    <ID>CyclomaticComplexMethod:MessageStreamReader.kt$public fun streamToUiMessages( events: Flow&lt;StreamEvent>, assistantMessageId: String, ): Flow&lt;UIMessage></ID>
     <ID>CyclomaticComplexMethod:OpenAICompatibleProvider.kt$OpenAIChatStreamState$fun accept(value: JsonElement): List&lt;StreamEvent></ID>
     <ID>CyclomaticComplexMethod:OpenAICompatibleProvider.kt$OpenAICompatibleChatLanguageModel$private fun chatRequestBody(params: LanguageModelCallParams, stream: Boolean): PreparedOpenAIRequest</ID>
     <ID>CyclomaticComplexMethod:OpenResponsesProvider.kt$OpenResponsesStreamState$fun accept(chunk: JsonElement): List&lt;StreamEvent></ID>
@@ -1039,22 +1071,22 @@
     <ID>CyclomaticComplexMethod:OpenResponsesProvider.kt$private fun openResponsesToolOutput( output: ToolResultOutput, warnings: MutableList&lt;CallWarning>, ): JsonElement</ID>
     <ID>CyclomaticComplexMethod:ProdiaProvider.kt$private fun parseProdiaMultipart(data: ByteArray, boundary: String): List&lt;ProdiaMultipartPart></ID>
     <ID>CyclomaticComplexMethod:PruneMessages.kt$private fun pruneToolCalls(messages: List&lt;ModelMessage>, rule: PruneToolCallRule): List&lt;ModelMessage></ID>
-    <ID>CyclomaticComplexMethod:SmoothStream.kt$fun smoothStream( upstream: Flow&lt;StreamEvent>, delayMs: Long = 10L, chunkBy: ChunkBy = ChunkBy.Word, ): Flow&lt;StreamEvent></ID>
+    <ID>CyclomaticComplexMethod:SmoothStream.kt$public fun smoothStream( upstream: Flow&lt;StreamEvent>, delayMs: Long = 10L, chunkBy: ChunkBy = ChunkBy.Word, ): Flow&lt;StreamEvent></ID>
     <ID>CyclomaticComplexMethod:Tool.kt$private fun schemaFallbackValue(value: JsonElement, schema: JsonElement): Any?</ID>
     <ID>CyclomaticComplexMethod:ToolLoopAgent.kt$ToolLoopAgent$private fun streamInternal( prompt: String?, priorMessages: List&lt;ModelMessage>, options: TContext?, abortSignal: AbortSignal, hooks: AgentCallHooks?, finalMessagesRef: MessageHolder?, stepsCapture: StepsHolder?, ): Flow&lt;StreamEvent></ID>
     <ID>CyclomaticComplexMethod:ToolLoopAgent.kt$ToolLoopAgent$private suspend fun applyToolApprovalResponses( out: FlowCollector&lt;StreamEvent>, messages: MutableList&lt;ModelMessage>, tools: ToolSet&lt;TContext>, options: TContext?, abortSignal: AbortSignal, hooks: AgentCallHooks?, ): Unit?</ID>
-    <ID>CyclomaticComplexMethod:Util.kt$fun detectMediaType(filename: String? = null, dataUrl: String? = null, explicit: String? = null): String?</ID>
-    <ID>CyclomaticComplexMethod:Util.kt$fun isDeepEqualData(left: JsonElement?, right: JsonElement?): Boolean</ID>
+    <ID>CyclomaticComplexMethod:Util.kt$internal fun isDeepEqualData(left: JsonElement?, right: JsonElement?): Boolean</ID>
+    <ID>CyclomaticComplexMethod:Util.kt$public fun detectMediaType(filename: String? = null, dataUrl: String? = null, explicit: String? = null): String?</ID>
     <ID>CyclomaticComplexMethod:XaiProvider.kt$private fun xaiVideoRequestBody( modelId: String, params: VideoGenerationParams, options: JsonObject, mode: String?, warnings: MutableList&lt;CallWarning>, ): JsonObject</ID>
     <ID>CyclomaticComplexMethod:XaiProvider.kt$private fun xaiVideoWarnings( params: VideoGenerationParams, options: JsonObject, mode: String?, ): MutableList&lt;CallWarning></ID>
     <ID>EmptyFunctionBlock:Telemetry.kt$NoopTelemetryActiveSpan${}</ID>
     <ID>Filename:Streaming.kt$ai.torad.aisdk.Streaming.kt</ID>
-    <ID>FunctionNaming:MediaModels.kt$suspend fun experimental_generateImage( model: ImageModel, prompt: String, n: Int = 1, size: String? = null, aspectRatio: String? = null, seed: Int? = null, providerOptions: Map&lt;String, JsonElement> = emptyMap(), headers: Map&lt;String, String> = emptyMap(), abortSignal: AbortSignal = AbortSignalNever, files: List&lt;ImageGenerationFile> = emptyList(), mask: ImageGenerationFile? = null, ): GenerateImageResult</ID>
-    <ID>FunctionNaming:MediaModels.kt$suspend fun experimental_generateSpeech( model: SpeechModel, text: String, voice: String? = null, instructions: String? = null, speed: Float? = null, responseFormat: String? = null, providerOptions: Map&lt;String, JsonElement> = emptyMap(), headers: Map&lt;String, String> = emptyMap(), abortSignal: AbortSignal = AbortSignalNever, ): GenerateSpeechResult</ID>
-    <ID>FunctionNaming:MediaModels.kt$suspend fun experimental_generateVideo( model: VideoModel, prompt: String, n: Int = 1, image: GeneratedFile? = null, durationSeconds: Float? = null, size: String? = null, aspectRatio: String? = null, providerOptions: Map&lt;String, JsonElement> = emptyMap(), headers: Map&lt;String, String> = emptyMap(), abortSignal: AbortSignal = AbortSignalNever, seed: Int? = null, fps: Int? = null, resolution: String? = null, ): GenerateVideoResult</ID>
-    <ID>FunctionNaming:MediaModels.kt$suspend fun experimental_transcribe( model: TranscriptionModel, audio: AudioSource, language: String? = null, prompt: String? = null, providerOptions: Map&lt;String, JsonElement> = emptyMap(), headers: Map&lt;String, String> = emptyMap(), abortSignal: AbortSignal = AbortSignalNever, ): TranscribeResult</ID>
-    <ID>FunctionNaming:React.kt$@ExperimentalAiSdkApi fun &lt;RESULT, INPUT> experimental_useObject( options: StructuredObjectOptions&lt;RESULT, INPUT>, ): Experimental_UseObjectHelpers&lt;RESULT, INPUT></ID>
-    <ID>FunctionNaming:Vue.kt$@ExperimentalAiSdkApi fun &lt;RESULT, INPUT> experimental_useObject( options: StructuredObjectOptions&lt;RESULT, INPUT>, ): Experimental_UseObjectHelpers&lt;RESULT, INPUT></ID>
+    <ID>FunctionNaming:MediaModels.kt$public suspend fun experimental_generateImage( model: ImageModel, prompt: String, n: Int = 1, size: String? = null, aspectRatio: String? = null, seed: Int? = null, providerOptions: Map&lt;String, JsonElement> = emptyMap(), headers: Map&lt;String, String> = emptyMap(), abortSignal: AbortSignal = AbortSignalNever, files: List&lt;ImageGenerationFile> = emptyList(), mask: ImageGenerationFile? = null, ): GenerateImageResult</ID>
+    <ID>FunctionNaming:MediaModels.kt$public suspend fun experimental_generateSpeech( model: SpeechModel, text: String, voice: String? = null, instructions: String? = null, speed: Float? = null, responseFormat: String? = null, providerOptions: Map&lt;String, JsonElement> = emptyMap(), headers: Map&lt;String, String> = emptyMap(), abortSignal: AbortSignal = AbortSignalNever, ): GenerateSpeechResult</ID>
+    <ID>FunctionNaming:MediaModels.kt$public suspend fun experimental_generateVideo( model: VideoModel, prompt: String, n: Int = 1, image: GeneratedFile? = null, durationSeconds: Float? = null, size: String? = null, aspectRatio: String? = null, providerOptions: Map&lt;String, JsonElement> = emptyMap(), headers: Map&lt;String, String> = emptyMap(), abortSignal: AbortSignal = AbortSignalNever, seed: Int? = null, fps: Int? = null, resolution: String? = null, ): GenerateVideoResult</ID>
+    <ID>FunctionNaming:MediaModels.kt$public suspend fun experimental_transcribe( model: TranscriptionModel, audio: AudioSource, language: String? = null, prompt: String? = null, providerOptions: Map&lt;String, JsonElement> = emptyMap(), headers: Map&lt;String, String> = emptyMap(), abortSignal: AbortSignal = AbortSignalNever, ): TranscribeResult</ID>
+    <ID>FunctionNaming:React.kt$@ExperimentalAiSdkApi public fun &lt;RESULT, INPUT> experimental_useObject( options: StructuredObjectOptions&lt;RESULT, INPUT>, ): Experimental_UseObjectHelpers&lt;RESULT, INPUT></ID>
+    <ID>FunctionNaming:Vue.kt$@ExperimentalAiSdkApi public fun &lt;RESULT, INPUT> experimental_useObject( options: StructuredObjectOptions&lt;RESULT, INPUT>, ): Experimental_UseObjectHelpers&lt;RESULT, INPUT></ID>
     <ID>ImportOrdering:AbortSignal.kt$import kotlin.concurrent.atomics.AtomicReference import kotlin.concurrent.atomics.ExperimentalAtomicApi import kotlinx.coroutines.CompletableJob import kotlinx.coroutines.CoroutineScope import kotlinx.coroutines.Job import kotlinx.coroutines.SupervisorJob</ID>
     <ID>ImportOrdering:AgentInterfaceTest.kt$import kotlin.test.Test import kotlin.test.assertEquals import kotlin.test.assertTrue import kotlinx.coroutines.flow.Flow import kotlinx.coroutines.flow.flowOf import kotlinx.coroutines.test.runTest</ID>
     <ID>ImportOrdering:AgentSession.kt$import kotlin.concurrent.Volatile import kotlinx.serialization.json.JsonPrimitive import kotlinx.coroutines.CancellationException import kotlinx.coroutines.CoroutineScope import kotlinx.coroutines.CoroutineStart import kotlinx.coroutines.Job import kotlinx.coroutines.flow.MutableStateFlow import kotlinx.coroutines.flow.StateFlow import kotlinx.coroutines.flow.asStateFlow import kotlinx.coroutines.flow.collect import kotlinx.coroutines.flow.update import kotlinx.coroutines.launch</ID>
@@ -1136,7 +1168,7 @@
     <ID>InstanceOfCheckForException:MCP.kt$SseMCPTransport$error is CancellationException</ID>
     <ID>LargeClass:MCPClientTest.kt$MCPClientTest</ID>
     <ID>LargeClass:ToolLoopAgent.kt$ToolLoopAgent&lt;TContext, TOutput> : Agent</ID>
-    <ID>LongMethod:AgentSession.kt$AgentSession$fun submitStreaming( prompt: String? = null, messages: List&lt;ModelMessage> = state.value.messages, options: TContext? = null, abortSignal: AbortSignal = AbortSignalNever, hooks: AgentCallHooks? = null, ): Job</ID>
+    <ID>LongMethod:AgentSession.kt$AgentSession$public fun submitStreaming( prompt: String? = null, messages: List&lt;ModelMessage> = state.value.messages, options: TContext? = null, abortSignal: AbortSignal = AbortSignalNever, hooks: AgentCallHooks? = null, ): Job</ID>
     <ID>LongMethod:AlibabaProviderTest.kt$AlibabaProviderTest$@Test fun `chat model maps Alibaba provider options and usage details`()</ID>
     <ID>LongMethod:AlibabaProviderTest.kt$AlibabaProviderTest$@Test fun `video model submits DashScope task polls and maps metadata`()</ID>
     <ID>LongMethod:AmazonBedrockProvider.kt$BedrockStreamState$fun accept(value: JsonObject): List&lt;StreamEvent></ID>
@@ -1183,12 +1215,12 @@
     <ID>LongMethod:KlingAIProviderTest.kt$KlingAIProviderTest$@Test fun `text to video sends KlingAI body polls and maps url video`()</ID>
     <ID>LongMethod:KtorGatewayTransport.kt$KtorGatewayTransport$override suspend fun generateVideo( context: GatewayRequestContext, modelId: GatewayVideoModelId, params: VideoGenerationParams, ): VideoModelResult</ID>
     <ID>LongMethod:KtorGatewayTransport.kt$private fun streamEventFromJson(value: JsonElement): StreamEvent</ID>
+    <ID>LongMethod:MCP.kt$internal suspend fun auth( provider: OAuthClientProvider, options: AuthOptions, ): AuthResult</ID>
     <ID>LongMethod:MCP.kt$private fun mcpSha256(input: ByteArray): ByteArray</ID>
-    <ID>LongMethod:MCP.kt$suspend fun auth( provider: OAuthClientProvider, options: AuthOptions, ): AuthResult</ID>
     <ID>LongMethod:MCPClientTest.kt$MCPClientTest$@Test fun `auth carries protected resource through code exchange and refresh`()</ID>
     <ID>LongMethod:MCPClientTest.kt$MCPClientTest$@Test fun `auth exchanges authorization code and awaits async client authentication`()</ID>
     <ID>LongMethod:MCPClientTest.kt$MCPClientTest$@Test fun `resources and prompts use MCP methods and parse results`()</ID>
-    <ID>LongMethod:MessageStreamReader.kt$fun streamToUiMessages( events: Flow&lt;StreamEvent>, assistantMessageId: String, ): Flow&lt;UIMessage></ID>
+    <ID>LongMethod:MessageStreamReader.kt$public fun streamToUiMessages( events: Flow&lt;StreamEvent>, assistantMessageId: String, ): Flow&lt;UIMessage></ID>
     <ID>LongMethod:MistralProviderTest.kt$MistralProviderTest$@Test fun `chat model uses Mistral endpoint headers and option mapping`()</ID>
     <ID>LongMethod:OpenAICompatibleProviderFacadesTest.kt$OpenAICompatibleProviderFacadesTest$@Test fun `provider facades use upstream base urls headers and provider ids`()</ID>
     <ID>LongMethod:OpenAICompatibleProviderFacadesTest.kt$OpenAICompatibleProviderFacadesTest$@Test fun `togetherai exposes completion embedding image and reranking`()</ID>
@@ -1210,7 +1242,7 @@
     <ID>LongMethod:XaiProviderTest.kt$XaiProviderTest$@Test fun `chat and responses route through xAI endpoints with headers options and citations`()</ID>
     <ID>LongMethod:XaiProviderTest.kt$XaiProviderTest$@Test fun `image model supports generation edits options metadata and warnings`()</ID>
     <ID>LongMethod:XaiProviderTest.kt$XaiProviderTest$@Test fun `video model submits polls maps modes warnings and metadata`()</ID>
-    <ID>LongParameterList:AiSdkError.kt$APICallError$( message: String, val url: String, val requestBodyValues: Any? = null, val statusCode: Int? = null, val responseHeaders: Map&lt;String, String>? = null, val responseBody: String? = null, cause: Throwable? = null, val isRetryable: Boolean = statusCode == 408 || statusCode == 409 || statusCode == 429 || (statusCode ?: 0) >= 500, val data: Any? = null, )</ID>
+    <ID>LongParameterList:AiSdkError.kt$APICallError$( message: String, public val url: String, public val requestBodyValues: Any? = null, public val statusCode: Int? = null, public val responseHeaders: Map&lt;String, String>? = null, public val responseBody: String? = null, cause: Throwable? = null, public val isRetryable: Boolean = statusCode == 408 || statusCode == 409 || statusCode == 429 || (statusCode ?: 0) >= 500, public val data: Any? = null, )</ID>
     <ID>LongParameterList:AmazonBedrockProvider.kt$( client: HttpClient, url: String, body: JsonElement, settings: AmazonBedrockProviderSettings, extraHeaders: Map&lt;String, String>, service: String = "bedrock", abortSignal: AbortSignal, parseJson: Boolean, )</ID>
     <ID>LongParameterList:AmazonBedrockProvider.kt$( response: JsonObject, requestBody: JsonObject, responseHeaders: Map&lt;String, String>, responseBody: JsonElement, warnings: List&lt;CallWarning>, generateId: () -> String, usesJsonResponseTool: Boolean, )</ID>
     <ID>LongParameterList:AnthropicProvider.kt$( response: JsonObject, requestBody: JsonElement, responseHeaders: Map&lt;String, String>, responseBody: JsonElement, warnings: List&lt;CallWarning>, settings: AnthropicProviderSettings, json: Json, )</ID>
@@ -1257,10 +1289,10 @@
     <ID>LongParameterList:Tool.kt$( id: String, inputSerializer: KSerializer&lt;TInput>, inputSchema: Schema&lt;TInput>, outputSerializer: KSerializer&lt;TOutput>, outputSchema: Schema&lt;TOutput>, supportsDeferredResults: Boolean = false, description: String = "Provider tool $id", )</ID>
     <ID>LongParameterList:Tool.kt$( name: String, description: String, inputSchemaJson: String = "{}", metadata: Map&lt;String, JsonElement> = emptyMap(), toModelOutput: ((JsonElement, ToolPredicateOptions&lt;TContext>) -> ToolResultOutput)? = null, executor: suspend ToolExecutionContext&lt;TContext>.(JsonElement) -> JsonElement, )</ID>
     <ID>LongParameterList:Tool.kt$ProviderToolFactoryWithOutputSchema$( private val id: String, private val inputSerializer: KSerializer&lt;TInput>, private val inputSchema: Schema&lt;TInput>, private val outputSerializer: KSerializer&lt;TOutput>, private val outputSchema: Schema&lt;TOutput>, private val supportsDeferredResults: Boolean = false, private val defaultDescription: String = "Provider tool $id", )</ID>
-    <ID>LongParameterList:Tool.kt$Tool$( val name: String, val description: String, val inputSerializer: KSerializer&lt;TInput>, val outputSerializer: KSerializer&lt;TOutput>, val executor: ToolExecutionContext&lt;TContext>.(TInput) -> Flow&lt;TOutput>, /** * Approval gate. Per AISDK_PORT_GAPS.md gap #17, the predicate * receives [ToolPredicateOptions] (toolCallId + messages + * experimental_context) — not just `context`. Lets the gate * decide based on conversation history or call identity. */ val needsApproval: (suspend (input: TInput, options: ToolPredicateOptions&lt;TContext>) -> Boolean)? = null, /** * Model-visible summary. Per AISDK_PORT_GAPS.md gaps #17 + #14, * the callback receives both the typed output AND * [ToolPredicateOptions]; returns a structured * [ToolResultOutput] (Text / Json / Error) instead of a bare * `String`. The agent loop bridges each variant to the * wire-format `ContentPart.ToolResult.modelVisible` (+ `isError`). */ val toModelOutput: ((TOutput, ToolPredicateOptions&lt;TContext>) -> ToolResultOutput)? = null, /** * Per best practice #9: strict JSON schema enforcement is opt-in per * tool, not global. Some providers reject schemas with format/regex * constraints under strict mode; mark such tools `strict = false`. */ val strict: Boolean = true, /** * Few-shot example inputs encoded as JSON strings. Mirrors v6's * `tool.inputExamples` (per AISDK_PORT_GAPS.md gap #19). Disproportionate * quality lift on small models — Gemma 4 E2B's tool-call accuracy * notably improves with 2-3 in-tool examples. [ToolSet.descriptors] * inlines these into the description as `Example: &lt;json>` so every * provider sees them (most don't expose a separate examples field). */ val inputExamples: List&lt;String> = emptyList(), /** * Lifecycle hook — fired when the model commits to calling this * tool (StreamEvent.ToolInputStart arrives). Mirrors v6's * `tool.onInputStart` (per AISDK_PORT_GAPS.md gap #18). Lets a * tool pre-warm: UI spinner, cache priming, etc. */ val onInputStart: (suspend (streamingId: String) -> Unit)? = null, /** * Lifecycle hook — fired as the model streams the tool's input * JSON token-by-token (StreamEvent.ToolInputDelta). The accumulated * input isn't yet valid JSON; this is for raw-character pre-warm. */ val onInputDelta: (suspend (streamingId: String, delta: String) -> Unit)? = null, /** * Lifecycle hook — fired after the streamed JSON has parsed * successfully into the typed [TInput], just before [executor] * runs. Mirrors v6's `tool.onInputAvailable`. */ val onInputAvailable: (suspend (toolCallId: String, input: TInput) -> Unit)? = null, /** * Application-defined metadata bag. Mirrors v6's `tool.metadata` * (per AISDK_PORT_GAPS.md gap #34). Opaque to the loop — * consumers (logger middleware, telemetry, host-side gating) can * read it via [ToolSet.byName]. Examples: feature-flag key, * billing tier, owning team. Empty by default. */ val metadata: Map&lt;String, JsonElement> = emptyMap(), val providerExecuted: Boolean = false, )</ID>
+    <ID>LongParameterList:Tool.kt$Tool$( public val name: String, public val description: String, public val inputSerializer: KSerializer&lt;TInput>, public val outputSerializer: KSerializer&lt;TOutput>, public val executor: ToolExecutionContext&lt;TContext>.(TInput) -> Flow&lt;TOutput>, /** * Approval gate. Per AISDK_PORT_GAPS.md gap #17, the predicate * receives [ToolPredicateOptions] (toolCallId + messages + * experimental_context) — not just `context`. Lets the gate * decide based on conversation history or call identity. */ public val needsApproval: (suspend (input: TInput, options: ToolPredicateOptions&lt;TContext>) -> Boolean)? = null, /** * Model-visible summary. Per AISDK_PORT_GAPS.md gaps #17 + #14, * the callback receives both the typed output AND * [ToolPredicateOptions]; returns a structured * [ToolResultOutput] (Text / Json / Error) instead of a bare * `String`. The agent loop bridges each variant to the * wire-format `ContentPart.ToolResult.modelVisible` (+ `isError`). */ public val toModelOutput: ((TOutput, ToolPredicateOptions&lt;TContext>) -> ToolResultOutput)? = null, /** * Per best practice #9: strict JSON schema enforcement is opt-in per * tool, not global. Some providers reject schemas with format/regex * constraints under strict mode; mark such tools `strict = false`. */ public val strict: Boolean = true, /** * Few-shot example inputs encoded as JSON strings. Mirrors v6's * `tool.inputExamples` (per AISDK_PORT_GAPS.md gap #19). Disproportionate * quality lift on small models — Gemma 4 E2B's tool-call accuracy * notably improves with 2-3 in-tool examples. [ToolSet.descriptors] * inlines these into the description as `Example: &lt;json>` so every * provider sees them (most don't expose a separate examples field). */ public val inputExamples: List&lt;String> = emptyList(), /** * Lifecycle hook — fired when the model commits to calling this * tool (StreamEvent.ToolInputStart arrives). Mirrors v6's * `tool.onInputStart` (per AISDK_PORT_GAPS.md gap #18). Lets a * tool pre-warm: UI spinner, cache priming, etc. */ public val onInputStart: (suspend (streamingId: String) -> Unit)? = null, /** * Lifecycle hook — fired as the model streams the tool's input * JSON token-by-token (StreamEvent.ToolInputDelta). The accumulated * input isn't yet valid JSON; this is for raw-character pre-warm. */ public val onInputDelta: (suspend (streamingId: String, delta: String) -> Unit)? = null, /** * Lifecycle hook — fired after the streamed JSON has parsed * successfully into the typed [TInput], just before [executor] * runs. Mirrors v6's `tool.onInputAvailable`. */ public val onInputAvailable: (suspend (toolCallId: String, input: TInput) -> Unit)? = null, /** * Application-defined metadata bag. Mirrors v6's `tool.metadata` * (per AISDK_PORT_GAPS.md gap #34). Opaque to the loop — * consumers (logger middleware, telemetry, host-side gating) can * read it via [ToolSet.byName]. Examples: feature-flag key, * billing tier, owning team. Empty by default. */ public val metadata: Map&lt;String, JsonElement> = emptyMap(), public val providerExecuted: Boolean = false, )</ID>
     <ID>LongParameterList:ToolLoopAgent.kt$ToolLoopAgent$( out: FlowCollector&lt;StreamEvent>, messages: MutableList&lt;ModelMessage>, tools: ToolSet&lt;TContext>, options: TContext?, abortSignal: AbortSignal, hooks: AgentCallHooks?, )</ID>
     <ID>LongParameterList:ToolLoopAgent.kt$ToolLoopAgent$( prompt: String?, priorMessages: List&lt;ModelMessage>, options: TContext?, abortSignal: AbortSignal, hooks: AgentCallHooks?, finalMessagesRef: MessageHolder?, stepsCapture: StepsHolder?, )</ID>
-    <ID>LongParameterList:ToolLoopAgent.kt$ToolLoopAgent$( val model: LanguageModel, val instructions: String, override val tools: ToolSet&lt;TContext>, val activeTools: List&lt;String>? = null, val output: Output&lt;TOutput>? = null, val stopWhen: StopCondition = stepCountIs(20), val prepareCall: (suspend PrepareCallScope&lt;TContext>.() -> AgentSettings&lt;TContext>)? = null, val prepareStep: (suspend PrepareStepScope&lt;TContext>.() -> StepSettings&lt;TContext>)? = null, val callOptionsSchema: KSerializer&lt;TContext>? = null, // Sampler-param defaults set at agent construction. Mirror v6's // `CallSettings` (tool-loop-agent-settings.ts:145-194). Resolution // chain inside the loop is `StepSettings ?: AgentSettings ?: these // constructor defaults ?: null` (null = provider's own default). val temperature: Float? = null, val topP: Float? = null, val topK: Int? = null, val maxOutputTokens: Int? = null, val stopSequences: List&lt;String>? = null, val seed: Int? = null, /** v6 `CallSettings.presencePenalty` agent-default. */ val presencePenalty: Float? = null, /** v6 `CallSettings.frequencyPenalty` agent-default. */ val frequencyPenalty: Float? = null, /** Wire-level response constraint for providers that support it. */ val responseFormat: ResponseFormat = ResponseFormat.Text, val onStart: (suspend OnStartEvent.() -> Unit)? = null, val onStepStart: (suspend OnStepStartEvent.() -> Unit)? = null, val onStepFinish: (suspend OnStepFinishEvent.() -> Unit)? = null, val onFinish: (suspend OnFinishEvent.() -> Unit)? = null, val onError: (suspend OnErrorEvent.() -> Unit)? = null, val onChunk: (suspend OnChunkEvent.() -> Unit)? = null, val experimental_onToolCallStart: (suspend OnToolCallStartEvent.() -> Unit)? = null, val experimental_onToolCallFinish: (suspend OnToolCallFinishEvent.() -> Unit)? = null, /** * Self-healing callback fired when a tool call's arguments fail to * decode. Return a corrected call to retry, or null to surface * `StreamEvent.ToolError`. See [ToolCallRepairFunction]. */ val experimental_repairToolCall: ToolCallRepairFunction&lt;TContext&gt;? = null, /** * Coroutine context for the engine-surface scope (the long-lived * StateFlow-driven surface). Defaults to [Dispatchers.Default]; inject a * test dispatcher or a host-controlled one for deterministic scheduling. * The per-call generate()/stream() API is unaffected. */ engineContext: CoroutineContext = Dispatchers.Default, )</ID>
+    <ID>LongParameterList:ToolLoopAgent.kt$ToolLoopAgent$( public val model: LanguageModel, public val instructions: String, override val tools: ToolSet&lt;TContext>, public val activeTools: List&lt;String>? = null, public val output: Output&lt;TOutput>? = null, public val stopWhen: StopCondition = stepCountIs(20), public val prepareCall: (suspend PrepareCallScope&lt;TContext>.() -> AgentSettings&lt;TContext>)? = null, public val prepareStep: (suspend PrepareStepScope&lt;TContext>.() -> StepSettings&lt;TContext>)? = null, public val callOptionsSchema: KSerializer&lt;TContext>? = null, // Sampler-param defaults set at agent construction. Mirror v6's // `CallSettings` (tool-loop-agent-settings.ts:145-194). Resolution // chain inside the loop is `StepSettings ?: AgentSettings ?: these // constructor defaults ?: null` (null = provider's own default). public val temperature: Float? = null, public val topP: Float? = null, public val topK: Int? = null, public val maxOutputTokens: Int? = null, public val stopSequences: List&lt;String>? = null, public val seed: Int? = null, /** v6 `CallSettings.presencePenalty` agent-default. */ public val presencePenalty: Float? = null, /** v6 `CallSettings.frequencyPenalty` agent-default. */ public val frequencyPenalty: Float? = null, /** Wire-level response constraint for providers that support it. */ public val responseFormat: ResponseFormat = ResponseFormat.Text, public val onStart: (suspend OnStartEvent.() -> Unit)? = null, public val onStepStart: (suspend OnStepStartEvent.() -> Unit)? = null, public val onStepFinish: (suspend OnStepFinishEvent.() -> Unit)? = null, public val onFinish: (suspend OnFinishEvent.() -> Unit)? = null, public val onError: (suspend OnErrorEvent.() -> Unit)? = null, public val onChunk: (suspend OnChunkEvent.() -> Unit)? = null, public val experimental_onToolCallStart: (suspend OnToolCallStartEvent.() -> Unit)? = null, public val experimental_onToolCallFinish: (suspend OnToolCallFinishEvent.() -> Unit)? = null, /** * Self-healing callback fired when a tool call's arguments fail to * decode. Return a corrected call to retry, or null to surface * `StreamEvent.ToolError`. See [ToolCallRepairFunction]. */ public val experimental_repairToolCall: ToolCallRepairFunction&lt;TContext>? = null, /** * Coroutine context for the engine-surface scope (the long-lived * StateFlow-driven surface). Defaults to [Dispatchers.Default]; inject a * test dispatcher or a host-controlled one for deterministic scheduling. * The per-call generate()/stream() API is unaffected. */ engineContext: CoroutineContext = Dispatchers.Default, )</ID>
     <ID>LongParameterList:WireDecoder.kt$WireDecoder$( provider: String, operation: String, path: String, message: String, value: JsonElement? = null, cause: Throwable? = null, )</ID>
     <ID>LongParameterList:XaiProvider.kt$( client: HttpClient, settings: XaiProviderSettings, requestId: String, callHeaders: Map&lt;String, String>, abortSignal: AbortSignal, pollIntervalMs: Long, pollTimeoutMs: Long, )</ID>
     <ID>LoopWithTooManyJumpStatements:AmazonBedrockProvider.kt$while</ID>
@@ -1527,6 +1559,8 @@
     <ID>MatchingDeclarationName:SmoothStream.kt$ChunkBy</ID>
     <ID>MatchingDeclarationName:Streaming.kt$StreamEvent</ID>
     <ID>MatchingDeclarationName:ToolApproval.kt$PendingApproval</ID>
+    <ID>MaxLineLength:AbortSignal.kt$AbortError$public</ID>
+    <ID>MaxLineLength:AiSdkError.kt$APICallError$public val isRetryable: Boolean = statusCode == 408 || statusCode == 409 || statusCode == 429 || (statusCode ?: 0) >= 500</ID>
     <ID>MaxLineLength:AlibabaProvider.kt$AlibabaChatLanguageModel$delegate.stream(params.copy(providerOptions = transformAlibabaChatOptions(params.providerOptions)))</ID>
     <ID>MaxLineLength:AlibabaProvider.kt$AlibabaChatLanguageModel$val result = delegate.generate(params.copy(providerOptions = transformAlibabaChatOptions(params.providerOptions)))</ID>
     <ID>MaxLineLength:AlibabaProvider.kt$AlibabaVideoModel$"Video generation ${taskStatus.lowercase()}. Task ID: $taskId. ${output["message"]?.jsonPrimitive?.contentOrNull.orEmpty()}"</ID>
@@ -1547,11 +1581,13 @@
     <ID>MaxLineLength:AmazonBedrockProvider.kt$(part.providerMetadata?.get("bedrock") as? JsonObject)?.get("signature")?.let { put("signature", it) }</ID>
     <ID>MaxLineLength:AmazonBedrockProvider.kt$&lt;no name provided>$throw AiSdkException("Bedrock Anthropic provider is not configured. Use createBedrockAnthropic(client, settings).")</ID>
     <ID>MaxLineLength:AmazonBedrockProvider.kt$?:</ID>
+    <ID>MaxLineLength:AmazonBedrockProvider.kt$BedrockAnthropicProvider$public fun textEmbeddingModel(modelId: String): Nothing</ID>
     <ID>MaxLineLength:AmazonBedrockProvider.kt$BedrockChatLanguageModel$emit(StreamEvent.ResponseMetadata(id = response.headers.headerValue("x-amzn-requestid"), modelId = modelId, headers = response.headers))</ID>
     <ID>MaxLineLength:AmazonBedrockProvider.kt$BedrockEmbeddingModel$response = LanguageModelResponseMetadata(modelId = modelId, headers = response.headers, body = response.value)</ID>
     <ID>MaxLineLength:AmazonBedrockProvider.kt$BedrockEmbeddingModel$throw AiSdkException("Amazon Bedrock embedding models support maxEmbeddingsPerCall=1. Received ${params.values.size} values.")</ID>
     <ID>MaxLineLength:AmazonBedrockProvider.kt$BedrockImageModel$response = LanguageModelResponseMetadata(modelId = modelId, headers = response.headers, body = response.value)</ID>
     <ID>MaxLineLength:AmazonBedrockProvider.kt$BedrockMantleChatLanguageModel$emit(StreamEvent.ResponseMetadata(result.response.id, result.response.timestampMillis, result.response.modelId, result.response.headers, result.response.body))</ID>
+    <ID>MaxLineLength:AmazonBedrockProvider.kt$BedrockMantleProvider$public fun textEmbeddingModel(modelId: String): Nothing</ID>
     <ID>MaxLineLength:AmazonBedrockProvider.kt$BedrockRerankingModel$response = LanguageModelResponseMetadata(modelId = modelId, headers = response.headers, body = response.value)</ID>
     <ID>MaxLineLength:AmazonBedrockProvider.kt$BedrockStreamBlock$Tool : BedrockStreamBlock</ID>
     <ID>MaxLineLength:AmazonBedrockProvider.kt$BedrockStreamState$events += StreamEvent.ReasoningDelta(index.toString(), reasoning["text"]?.jsonPrimitive?.contentOrNull.orEmpty(), metadata)</ID>
@@ -1590,6 +1626,7 @@
     <ID>MaxLineLength:AmazonBedrockProviderTest.kt$AmazonBedrockProviderTest$assertTrue(signedRequest.requestHeaders.headerValue(HttpHeaders.Authorization).orEmpty().contains("Credential=id/"))</ID>
     <ID>MaxLineLength:AnthropicAwsProvider.kt$&lt;no name provided>$override fun embeddingModel(modelId: String): EmbeddingModel</ID>
     <ID>MaxLineLength:AnthropicAwsProvider.kt$?:</ID>
+    <ID>MaxLineLength:AnthropicAwsProvider.kt$AnthropicAwsProvider$public fun textEmbeddingModel(modelId: String): Nothing</ID>
     <ID>MaxLineLength:AnthropicAwsProvider.kt$DefaultAnthropicAwsProvider$override fun embeddingModel(modelId: String): EmbeddingModel</ID>
     <ID>MaxLineLength:AnthropicAwsProviderTest.kt$AnthropicAwsProviderTest$assertTrue(request.requestHeaders.headerValue(HttpHeaders.Authorization).orEmpty().contains("/aws-external-anthropic/aws4_request"))</ID>
     <ID>MaxLineLength:AnthropicAwsProviderTest.kt$AnthropicAwsProviderTest$provider.messages("claude-sonnet-4-6").stream(LanguageModelCallParams(messages = listOf(userMessage("hi"))))</ID>
@@ -1602,6 +1639,7 @@
     <ID>MaxLineLength:AnthropicProvider.kt$AnthropicMessagesLanguageModel$is ParseResult.Failure -> emit(StreamEvent.Error("Failed to parse Anthropic stream event: ${event.error.message}"))</ID>
     <ID>MaxLineLength:AnthropicProvider.kt$AnthropicMessagesLanguageModel$val response = anthropicPost(prepared.body, prepared.betas, params.headers, acceptEventStream = false, parseJson = true)</ID>
     <ID>MaxLineLength:AnthropicProvider.kt$AnthropicMessagesLanguageModel$val response = anthropicPost(prepared.body, prepared.betas, params.headers, acceptEventStream = true, parseJson = false)</ID>
+    <ID>MaxLineLength:AnthropicProvider.kt$AnthropicProvider$public fun textEmbeddingModel(modelId: String): Nothing</ID>
     <ID>MaxLineLength:AnthropicProvider.kt$AnthropicProviderSettings$val requestHeadersProvider: (suspend (url: String, body: String, headers: Map&lt;String, String>) -> Map&lt;String, String>)? = null</ID>
     <ID>MaxLineLength:AnthropicProvider.kt$AnthropicStreamState$"text_delta" -> events += StreamEvent.TextDelta(block.id, WireDecoder.requiredString(delta, "text", "anthropic", "stream event", "$.delta"))</ID>
     <ID>MaxLineLength:AnthropicProvider.kt$AnthropicStreamState$"thinking_delta" -> events += StreamEvent.ReasoningDelta(block.id, WireDecoder.requiredString(delta, "thinking", "anthropic", "stream event", "$.delta"))</ID>
@@ -1651,6 +1689,8 @@
     <ID>MaxLineLength:AnthropicProviderTest.kt$AnthropicProviderTest$val provider = createAnthropic(fixture.httpClient(), AnthropicProviderSettings(baseURL = "https://anthropic.test/v1"))</ID>
     <ID>MaxLineLength:ApprovalIdTest.kt$ApprovalIdTest$fun</ID>
     <ID>MaxLineLength:AssemblyAIProvider.kt$"error" -> throw AiSdkException("Transcription failed: ${body["error"]?.jsonPrimitive?.contentOrNull ?: "Unknown error"}")</ID>
+    <ID>MaxLineLength:AssemblyAIProvider.kt$AssemblyAIProvider$public fun textEmbeddingModel(modelId: String): Nothing</ID>
+    <ID>MaxLineLength:AssemblyAIProvider.kt$AssemblyAIProvider$public operator fun invoke(modelId: AssemblyAITranscriptionModelId = "best"): TranscriptionModel</ID>
     <ID>MaxLineLength:AssemblyAIProvider.kt$DefaultAssemblyAIProvider$override fun embeddingModel(modelId: String): EmbeddingModel</ID>
     <ID>MaxLineLength:AssemblyAIProvider.kt$DefaultAssemblyAIProvider$override fun languageModel(modelId: String): LanguageModel</ID>
     <ID>MaxLineLength:AssemblyAIProvider.kt$DefaultAssemblyAIProvider$override fun transcription(modelId: String): TranscriptionModel</ID>
@@ -1675,6 +1715,7 @@
     <ID>MaxLineLength:BasetenProviderTest.kt$BasetenProviderTest$assertEquals("placeholder", fixture.calls.single().requestBodyJson.jsonObject["model"]?.jsonPrimitive?.contentOrNull)</ID>
     <ID>MaxLineLength:BasetenProviderTest.kt$BasetenProviderTest$val result = provider.chatModel("deepseek-ai/DeepSeek-V3-0324").generate(LanguageModelCallParams(listOf(userMessage("hi"))))</ID>
     <ID>MaxLineLength:BlackForestLabsProvider.kt$&lt;no name provided>$throw AiSdkException("Black Forest Labs provider is not configured. Use createBlackForestLabs(client, settings).")</ID>
+    <ID>MaxLineLength:BlackForestLabsProvider.kt$BlackForestLabsProvider$public fun textEmbeddingModel(modelId: String): Nothing</ID>
     <ID>MaxLineLength:BlackForestLabsProvider.kt$DefaultBlackForestLabsProvider$override fun embeddingModel(modelId: String): EmbeddingModel</ID>
     <ID>MaxLineLength:BlackForestLabsProvider.kt$DefaultBlackForestLabsProvider$override fun languageModel(modelId: String): LanguageModel</ID>
     <ID>MaxLineLength:BlackForestLabsProvider.kt$message = "Black Forest Labs ignores size when aspectRatio is provided. Use width and height provider options to specify dimensions for models that support them."</ID>
@@ -1721,6 +1762,8 @@
     <ID>MaxLineLength:CohereProviderTest.kt$CohereProviderTest$val provider = createCohere(createTestServer(mutableMapOf()).httpClient(), CohereProviderSettings(apiKey = "key"))</ID>
     <ID>MaxLineLength:ConvertToModelMessagesTest.kt$ConvertToModelMessagesTest$fun</ID>
     <ID>MaxLineLength:DeepgramProvider.kt$"linear16", "mulaw", "alaw" -> if (queryParams["container"] == "wav") "audio/wav" else "application/octet-stream"</ID>
+    <ID>MaxLineLength:DeepgramProvider.kt$DeepgramProvider$public fun textEmbeddingModel(modelId: String): Nothing</ID>
+    <ID>MaxLineLength:DeepgramProvider.kt$DeepgramProvider$public operator fun invoke(modelId: DeepgramTranscriptionModelId = "nova-3"): TranscriptionModel</ID>
     <ID>MaxLineLength:DeepgramProvider.kt$DeepgramSpeechModel$mediaType = response.headers.headerValue(HttpHeaders.ContentType) ?: deepgramSpeechMediaType(prepared.queryParams)</ID>
     <ID>MaxLineLength:DeepgramProvider.kt$DefaultDeepgramProvider$override fun embeddingModel(modelId: String): EmbeddingModel</ID>
     <ID>MaxLineLength:DeepgramProvider.kt$DefaultDeepgramProvider$override fun languageModel(modelId: String): LanguageModel</ID>
@@ -1746,7 +1789,8 @@
     <ID>MaxLineLength:ElevenLabsProvider.kt$DefaultElevenLabsProvider$override fun embeddingModel(modelId: String): EmbeddingModel</ID>
     <ID>MaxLineLength:ElevenLabsProvider.kt$DefaultElevenLabsProvider$override fun languageModel(modelId: String): LanguageModel</ID>
     <ID>MaxLineLength:ElevenLabsProvider.kt$DefaultElevenLabsProvider$override fun transcription(modelId: String): TranscriptionModel</ID>
-    <ID>MaxLineLength:ElevenLabsProvider.kt$ElevenLabsProvider$operator fun invoke(modelId: ElevenLabsTranscriptionModelId = "scribe_v1"): TranscriptionModel</ID>
+    <ID>MaxLineLength:ElevenLabsProvider.kt$ElevenLabsProvider$public fun textEmbeddingModel(modelId: String): Nothing</ID>
+    <ID>MaxLineLength:ElevenLabsProvider.kt$ElevenLabsProvider$public operator fun invoke(modelId: ElevenLabsTranscriptionModelId = "scribe_v1"): TranscriptionModel</ID>
     <ID>MaxLineLength:ElevenLabsProvider.kt$ElevenLabsSpeechModel$"https://api.elevenlabs.io/v1/text-to-speech/${params.voice ?: ELEVENLABS_DEFAULT_VOICE_ID}?${queryParams.toQueryString()}"</ID>
     <ID>MaxLineLength:ElevenLabsProvider.kt$ElevenLabsSpeechModel$warnings += CallWarning("unsupported", "ElevenLabs speech models do not support instructions. Instructions parameter was ignored.")</ID>
     <ID>MaxLineLength:ElevenLabsProvider.kt$ElevenLabsTranscriptionModel$(options["languageCode"]?.jsonPrimitive?.contentOrNull ?: params.language)?.let { append("language_code", it) }</ID>
@@ -1767,6 +1811,7 @@
     <ID>MaxLineLength:FalProvider.kt$DefaultFalProvider$override fun embeddingModel(modelId: String): EmbeddingModel</ID>
     <ID>MaxLineLength:FalProvider.kt$DefaultFalProvider$override fun languageModel(modelId: String): LanguageModel</ID>
     <ID>MaxLineLength:FalProvider.kt$FalImageModel$response = LanguageModelResponseMetadata(modelId = modelId, headers = response.headers, body = response.value)</ID>
+    <ID>MaxLineLength:FalProvider.kt$FalProvider$public fun textEmbeddingModel(modelId: String): Nothing</ID>
     <ID>MaxLineLength:FalProvider.kt$FalSpeechModel$response = LanguageModelResponseMetadata(modelId = modelId, headers = response.headers, body = response.value)</ID>
     <ID>MaxLineLength:FalProvider.kt$FalTranscriptionModel$timeoutMessage = "Transcription request timed out after ${settings.transcriptionPollIntervalMillis * settings.transcriptionMaxPollAttempts}ms"</ID>
     <ID>MaxLineLength:FalProvider.kt$FalVideoModel$?.</ID>
@@ -1800,6 +1845,7 @@
     <ID>MaxLineLength:GladiaProvider.kt$"queued"</ID>
     <ID>MaxLineLength:GladiaProvider.kt$DefaultGladiaProvider$override fun embeddingModel(modelId: String): EmbeddingModel</ID>
     <ID>MaxLineLength:GladiaProvider.kt$DefaultGladiaProvider$override fun languageModel(modelId: String): LanguageModel</ID>
+    <ID>MaxLineLength:GladiaProvider.kt$GladiaProvider$public fun textEmbeddingModel(modelId: String): Nothing</ID>
     <ID>MaxLineLength:GladiaProviderTest.kt$GladiaProviderTest$"""{"status":"done","result":{"metadata":{"audio_duration":3.5},"transcription":{"full_transcript":"hello world","languages":["en"],"utterances":[{"start":0.1,"end":0.3,"text":"hello"},{"start":0.4,"end":0.8,"text":"world"}]}}}"""</ID>
     <ID>MaxLineLength:GladiaProviderTest.kt$GladiaProviderTest$UrlResponse.JsonValue(Json.parseToJsonElement("""{"result_url":"https://api.gladia.io/v2/pre-recorded/job"}"""))</ID>
     <ID>MaxLineLength:GladiaProviderTest.kt$GladiaProviderTest$assertEquals("bullet_points", body["summarization_config"]?.jsonObject?.get("type")?.jsonPrimitive?.contentOrNull)</ID>
@@ -1918,6 +1964,8 @@
     <ID>MaxLineLength:GoogleVertexProvider.kt$?:</ID>
     <ID>MaxLineLength:GoogleVertexProvider.kt$DefaultVertexAnthropicProvider$override fun embeddingModel(modelId: String): EmbeddingModel</ID>
     <ID>MaxLineLength:GoogleVertexProvider.kt$DefaultVertexXaiProvider$override fun embeddingModel(modelId: String): EmbeddingModel</ID>
+    <ID>MaxLineLength:GoogleVertexProvider.kt$GoogleVertexAnthropicProvider$public fun textEmbeddingModel(modelId: String): Nothing</ID>
+    <ID>MaxLineLength:GoogleVertexProvider.kt$GoogleVertexXaiProvider$public fun textEmbeddingModel(modelId: String): Nothing</ID>
     <ID>MaxLineLength:GoogleVertexProvider.kt$val</ID>
     <ID>MaxLineLength:GoogleVertexProviderTest.kt$GoogleVertexProviderTest$"https://aiplatform.eu.rep.googleapis.com/v1/projects/project-1/locations/eu/endpoints/openapi/chat/completions"</ID>
     <ID>MaxLineLength:GoogleVertexProviderTest.kt$GoogleVertexProviderTest$"https://aiplatform.eu.rep.googleapis.com/v1/projects/project-1/locations/eu/publishers/anthropic/models/claude-sonnet-4:rawPredict"</ID>
@@ -2016,6 +2064,7 @@
     <ID>MaxLineLength:LumaProvider.kt$DefaultLumaProvider$override fun languageModel(modelId: String): LanguageModel</ID>
     <ID>MaxLineLength:LumaProvider.kt$LumaImageModel$pollIntervalMillis = options["pollIntervalMillis"]?.jsonPrimitive?.contentOrNull?.toLongOrNull() ?: DEFAULT_LUMA_POLL_INTERVAL_MILLIS</ID>
     <ID>MaxLineLength:LumaProvider.kt$LumaImageModel$warnings += CallWarning("unsupported", "This model does not support the `size` option. Use `aspectRatio` instead.")</ID>
+    <ID>MaxLineLength:LumaProvider.kt$LumaProvider$public fun textEmbeddingModel(modelId: String): Nothing</ID>
     <ID>MaxLineLength:LumaProvider.kt$if (images.size > 4) throw AiSdkException("Luma AI character supports up to 4 images per identity. Identity '$id' has ${images.size} images.")</ID>
     <ID>MaxLineLength:LumaProviderTest.kt$LumaProviderTest$UrlResponse.JsonValue(Json.parseToJsonElement("""{"id":"gen1","state":"completed","assets":{"image":"https://cdn.example/image.png"}}"""))</ID>
     <ID>MaxLineLength:LumaProviderTest.kt$LumaProviderTest$assertEquals("https://example.com/a.png", character?.get("images")?.jsonArray?.first()?.jsonPrimitive?.contentOrNull)</ID>
@@ -2061,11 +2110,13 @@
     <ID>MaxLineLength:MCPClientTest.kt$MCPClientTest$resourceTemplates = listOf(MCPResourceTemplate(uriTemplate = "file://{name}", name = "file"))</ID>
     <ID>MaxLineLength:MCPClientTest.kt$MCPClientTest$val initialized = fixture.calls.first { it.requestBodyText.contains("\"method\":\"notifications/initialized\"") }</ID>
     <ID>MaxLineLength:MCPStdioProcess.ios.kt$"Stdio MCP transport is not supported on this native target. Use HttpMCPTransport, SseMCPTransport, or a custom MCPTransport."</ID>
-    <ID>MaxLineLength:MediaModels.kt$DefaultGeneratedFile$fun</ID>
+    <ID>MaxLineLength:MediaModels.kt$DefaultGeneratedFile$public</ID>
     <ID>MaxLineLength:MistralProvider.kt$MistralChatLanguageModel$delegate.streamResult(params.copy(providerOptions = transformMistralProviderOptions(params.providerOptions)))</ID>
     <ID>MaxLineLength:MistralProviderTest.kt$MistralProviderTest$"""{"data":[{"object":"embedding","index":1,"embedding":[3,4]},{"object":"embedding","index":0,"embedding":[1,2]}],"model":"mistral-embed","usage":{"prompt_tokens":8,"total_tokens":8}}"""</ID>
     <ID>MaxLineLength:MistralProviderTest.kt$MistralProviderTest$val provider = createMistral(createTestServer(mutableMapOf()).httpClient(), MistralProviderSettings(apiKey = "key"))</ID>
     <ID>MaxLineLength:MockModels.kt$MockRerankingModel$return RerankingModelResult(results = results, usage = Usage(promptTokens = params.query.length, completionTokens = 0))</ID>
+    <ID>MaxLineLength:MockModels.kt$public fun mockAudioSource(): AudioSource</ID>
+    <ID>MaxLineLength:ModelMessage.kt$public fun assistantMessage(text: String): ModelMessage</ID>
     <ID>MaxLineLength:OpenAICompatibleProvider.kt$OpenAIChatStreamState$if (delta.isNotEmpty()) add(StreamEvent.ToolInputDelta(existing.id, delta, providerMetadata = existing.providerMetadata))</ID>
     <ID>MaxLineLength:OpenAICompatibleProvider.kt$OpenAIChatStreamState$val arguments = WireDecoder.optionalString(function, "arguments", provider, "chat stream tool call", "$.function").orEmpty()</ID>
     <ID>MaxLineLength:OpenAICompatibleProvider.kt$OpenAIChatStreamState$val calls = WireDecoder.optionalArray(delta, "tool_calls", provider, "chat stream event", "$.choices[0].delta").orEmpty()</ID>
@@ -2094,9 +2145,11 @@
     <ID>MaxLineLength:OpenAICompatibleProvider.kt$val callObj = WireDecoder.objectValue(call, provider, "chat completion response", "$.choices[0].message.tool_calls[$index]")</ID>
     <ID>MaxLineLength:OpenAICompatibleProvider.kt$val message = error?.get("message")?.jsonPrimitive?.contentOrNull ?: raw.ifBlank { "OpenAI-compatible request failed" }</ID>
     <ID>MaxLineLength:OpenAICompatibleProviderFacades.kt$&lt;no name provided>$throw AiSdkException("$providerName provider is not configured. Use create$providerName(client, settings).")</ID>
+    <ID>MaxLineLength:OpenAICompatibleProviderFacades.kt$CerebrasProvider$public fun textEmbeddingModel(modelId: String): Nothing</ID>
     <ID>MaxLineLength:OpenAICompatibleProviderFacades.kt$DeepInfraChatLanguageModel$delegate.streamResult(params).let { result -> result.copy(stream = result.stream.map(::fixDeepInfraUsageEvent)) }</ID>
     <ID>MaxLineLength:OpenAICompatibleProviderFacades.kt$DeepInfraImageModel$GeneratedFile(mediaType = "image/png", base64 = image.jsonPrimitive.contentOrNull.orEmpty().stripDataUriPrefix())</ID>
     <ID>MaxLineLength:OpenAICompatibleProviderFacades.kt$DeepInfraImageModel$response = LanguageModelResponseMetadata(modelId = modelId, headers = response.headers, body = response.value)</ID>
+    <ID>MaxLineLength:OpenAICompatibleProviderFacades.kt$DeepSeekProvider$public fun textEmbeddingModel(modelId: String): Nothing</ID>
     <ID>MaxLineLength:OpenAICompatibleProviderFacades.kt$DefaultBasetenProvider$customURL?.contains("/predict") == true -> throw AiSdkException("Not supported. You must use a /sync/v1 endpoint for chat models.")</ID>
     <ID>MaxLineLength:OpenAICompatibleProviderFacades.kt$DefaultBasetenProvider$return createOpenAICompatible(client, settings.toCompatible("baseten", BASETEN_VERSION, baseURL)).chatModel(resolvedModelId)</ID>
     <ID>MaxLineLength:OpenAICompatibleProviderFacades.kt$DefaultBasetenProvider$return createOpenAICompatible(client, settings.toCompatible("baseten", BASETEN_VERSION, baseURL)).embeddingModel(modelId ?: "embeddings")</ID>
@@ -2106,7 +2159,10 @@
     <ID>MaxLineLength:OpenAICompatibleProviderFacades.kt$DefaultMoonshotAIProvider$override fun embeddingModel(modelId: String): EmbeddingModel</ID>
     <ID>MaxLineLength:OpenAICompatibleProviderFacades.kt$DefaultPerplexityProvider$override fun embeddingModel(modelId: String): EmbeddingModel</ID>
     <ID>MaxLineLength:OpenAICompatibleProviderFacades.kt$DefaultVercelProvider$override fun embeddingModel(modelId: String): EmbeddingModel</ID>
+    <ID>MaxLineLength:OpenAICompatibleProviderFacades.kt$GroqProvider$public fun textEmbeddingModel(modelId: String): Nothing</ID>
+    <ID>MaxLineLength:OpenAICompatibleProviderFacades.kt$PerplexityProvider$public fun textEmbeddingModel(modelId: String): Nothing</ID>
     <ID>MaxLineLength:OpenAICompatibleProviderFacades.kt$TogetherAIImageModel$response = LanguageModelResponseMetadata(modelId = modelId, headers = response.headers, body = response.value)</ID>
+    <ID>MaxLineLength:OpenAICompatibleProviderFacades.kt$VercelProvider$public fun textEmbeddingModel(modelId: String): Nothing</ID>
     <ID>MaxLineLength:OpenAICompatibleProviderFacadesTest.kt$OpenAICompatibleProviderFacadesTest$"""{"id":"chat_1","model":"model","choices":[{"message":{"role":"assistant","content":"ok"},"finish_reason":"stop"}],"usage":{"prompt_tokens":3,"completion_tokens":4,"completion_tokens_details":{"reasoning_tokens":9},"total_tokens":7}}"""</ID>
     <ID>MaxLineLength:OpenAICompatibleProviderFacadesTest.kt$OpenAICompatibleProviderFacadesTest$"""{"id":"id_1","model":"model","choices":[{"message":{"role":"assistant","content":"${case.name}"},"finish_reason":"stop"}],"usage":{"prompt_tokens":1,"completion_tokens":2}}"""</ID>
     <ID>MaxLineLength:OpenAICompatibleProviderFacadesTest.kt$OpenAICompatibleProviderFacadesTest$"https://fireworks.test/inference/v1/workflows/accounts/fireworks/models/flux-1-dev-fp8/text_to_image"</ID>
@@ -2177,6 +2233,7 @@
     <ID>MaxLineLength:ProdiaProvider.kt$DefaultProdiaProvider$override fun embeddingModel(modelId: String): EmbeddingModel</ID>
     <ID>MaxLineLength:ProdiaProvider.kt$ProdiaImageModel$if (params.n != 1) warnings += CallWarning("unsupported", "Prodia image models support one image per call; n was ignored.")</ID>
     <ID>MaxLineLength:ProdiaProvider.kt$ProdiaLanguageModel$emit(StreamEvent.Finish(totalSteps = 1, finishReason = result.finishReason, usage = result.usage, providerMetadata = result.providerMetadata))</ID>
+    <ID>MaxLineLength:ProdiaProvider.kt$ProdiaProvider$public fun textEmbeddingModel(modelId: String): Nothing</ID>
     <ID>MaxLineLength:ProdiaProvider.kt$ProdiaVideoModel$val input = params.image?.let { ProdiaInputFile(it.mediaType, convertBase64ToByteArray(it.base64), it.filename) }</ID>
     <ID>MaxLineLength:ProdiaProvider.kt$append(HttpHeaders.ContentDisposition, "${ContentDisposition.File}; filename=\"${file.filename ?: "input.${mediaTypeToExtension(file.mediaType)}"}\"")</ID>
     <ID>MaxLineLength:ProdiaProvider.kt$contentType.startsWith("text/") || contentDisposition.contains(".txt") -> text = part.body.decodeToString()</ID>
@@ -2207,6 +2264,7 @@
     <ID>MaxLineLength:QuiverAIProvider.kt$DefaultQuiverAIProvider$override fun embeddingModel(modelId: String): EmbeddingModel</ID>
     <ID>MaxLineLength:QuiverAIProvider.kt$DefaultQuiverAIProvider$override fun languageModel(modelId: String): LanguageModel</ID>
     <ID>MaxLineLength:QuiverAIProvider.kt$QuiverAIImageModel$val svg = obj["svg"]?.jsonPrimitive?.contentOrNull ?: throw AiSdkException("QuiverAI image item is missing svg")</ID>
+    <ID>MaxLineLength:QuiverAIProvider.kt$QuiverAIProvider$public fun textEmbeddingModel(modelId: String): Nothing</ID>
     <ID>MaxLineLength:QuiverAIProvider.kt$if (params.aspectRatio != null) add(CallWarning("unsupported", "QuiverAI SVG generation does not support the `aspectRatio` option. The setting was ignored."))</ID>
     <ID>MaxLineLength:QuiverAIProvider.kt$if (params.mask != null) add(CallWarning("unsupported", "QuiverAI SVG generation does not support masks. The mask was ignored."))</ID>
     <ID>MaxLineLength:QuiverAIProvider.kt$if (params.seed != null) add(CallWarning("unsupported", "QuiverAI SVG generation does not support the `seed` option. The setting was ignored."))</ID>
@@ -2221,11 +2279,13 @@
     <ID>MaxLineLength:QuiverAIProviderTest.kt$QuiverAIProviderTest$assertEquals("https://example.com/ref.png", body["references"]?.jsonArray?.first()?.jsonObject?.get("url")?.jsonPrimitive?.contentOrNull)</ID>
     <ID>MaxLineLength:QuiverAIProviderTest.kt$QuiverAIProviderTest$assertEquals("image/svg+xml", metadata?.get("images")?.jsonArray?.single()?.jsonObject?.get("mimeType")?.jsonPrimitive?.contentOrNull)</ID>
     <ID>MaxLineLength:QuiverAIProviderTest.kt$QuiverAIProviderTest$providerOptions = mapOf("quiverai" to buildJsonObject { put("operation", JsonPrimitive("vectorize")) })</ID>
+    <ID>MaxLineLength:React.kt$UseCompletionHelpers$public suspend</ID>
     <ID>MaxLineLength:ReplicateProvider.kt$"failed" -> throw AiSdkException("Video generation failed: ${prediction["error"]?.jsonPrimitive?.contentOrNull ?: "Unknown error"}")</ID>
     <ID>MaxLineLength:ReplicateProvider.kt$DefaultReplicateProvider$override fun embeddingModel(modelId: String): EmbeddingModel</ID>
     <ID>MaxLineLength:ReplicateProvider.kt$DefaultReplicateProvider$override fun languageModel(modelId: String): LanguageModel</ID>
     <ID>MaxLineLength:ReplicateProvider.kt$ReplicateImageModel$else -> listOf(output.jsonPrimitive.contentOrNull ?: throw AiSdkException("Replicate image output is not a URL"))</ID>
     <ID>MaxLineLength:ReplicateProvider.kt$ReplicateImageModel$is JsonArray -> output.map { it.jsonPrimitive.contentOrNull ?: throw AiSdkException("Replicate image output contains a non-string URL") }</ID>
+    <ID>MaxLineLength:ReplicateProvider.kt$ReplicateProvider$public fun textEmbeddingModel(modelId: String): Nothing</ID>
     <ID>MaxLineLength:ReplicateProvider.kt$message = "Flux-2 models support up to $REPLICATE_MAX_FLUX_2_INPUT_IMAGES input images. Additional images are ignored."</ID>
     <ID>MaxLineLength:ReplicateProvider.kt$this["status"]?.jsonPrimitive?.contentOrNull ?: throw AiSdkException("Replicate prediction response is missing status")</ID>
     <ID>MaxLineLength:ReplicateProviderTest.kt$ReplicateProviderTest$"""{"id":"pred1","status":"failed","output":null,"error":"bad prompt","urls":{"get":"https://api.replicate.com/v1/predictions/pred1"}}"""</ID>
@@ -2234,14 +2294,19 @@
     <ID>MaxLineLength:ReplicateProviderTest.kt$ReplicateProviderTest$UrlResponse.JsonValue(Json.parseToJsonElement("""{"output":["https://cdn.example/a.png","https://cdn.example/b.webp"]}"""))</ID>
     <ID>MaxLineLength:RevaiProvider.kt$DefaultRevaiProvider$override fun embeddingModel(modelId: String): EmbeddingModel</ID>
     <ID>MaxLineLength:RevaiProvider.kt$DefaultRevaiProvider$override fun languageModel(modelId: String): LanguageModel</ID>
+    <ID>MaxLineLength:RevaiProvider.kt$RevaiProvider$public fun textEmbeddingModel(modelId: String): Nothing</ID>
+    <ID>MaxLineLength:RevaiProvider.kt$RevaiProvider$public operator fun invoke(modelId: RevaiTranscriptionModelId = "machine"): TranscriptionModel</ID>
     <ID>MaxLineLength:RevaiProvider.kt$RevaiTranscriptionModel$if</ID>
     <ID>MaxLineLength:RevaiProviderTest.kt$RevaiProviderTest$"""{"monologues":[{"elements":[{"type":"text","value":"Hello","ts":0.1,"end_ts":0.3},{"type":"punct","value":" "},{"type":"text","value":"world","ts":0.4,"end_ts":0.8}]}]}"""</ID>
     <ID>MaxLineLength:RevaiProviderTest.kt$RevaiProviderTest$UrlResponse.JsonValue(Json.parseToJsonElement("""{"id":"job1","status":"in_progress","language":"en"}"""))</ID>
     <ID>MaxLineLength:RevaiProviderTest.kt$RevaiProviderTest$UrlResponse.JsonValue(Json.parseToJsonElement("""{"id":"job1","status":"transcribed","language":"en"}"""))</ID>
     <ID>MaxLineLength:RevaiProviderTest.kt$RevaiProviderTest$model.transcribe(TranscriptionParams(audio = AudioSource("audio/wav", convertByteArrayToBase64(byteArrayOf(1)))))</ID>
+    <ID>MaxLineLength:Rsc.kt$public</ID>
     <ID>MaxLineLength:SimulateStreamingTest.kt$SimulateStreamingTest$fun</ID>
+    <ID>MaxLineLength:Streams.kt$public</ID>
     <ID>MaxLineLength:StructuredObjectApi.kt$StructuredObject$TypeValidationError.wrap(null, IllegalArgumentException("Structured object response did not contain JSON"))</ID>
     <ID>MaxLineLength:Telemetry.kt$MutableTelemetrySpan$error.stackTraceToString().takeIf { it.isNotBlank() }?.let { put("exception.stacktrace", JsonPrimitive(it)) }</ID>
+    <ID>MaxLineLength:Telemetry.kt$internal fun telemetryOutput(resolve: suspend () -> JsonElement?): TelemetryAttribute</ID>
     <ID>MaxLineLength:TestServer.kt$TestServer$body = ByteReadChannel(json.encodeToString(JsonObject(mapOf("error" to kotlinx.serialization.json.JsonPrimitive("Not Found")))))</ID>
     <ID>MaxLineLength:TestServer.kt$TestServerCall$get</ID>
     <ID>MaxLineLength:TestServer.kt$UrlHandler$constructor(factory: (TestServerHttpRequest, TestServerCallOptions) -> UrlResponse?) : this(UrlResponseParameter.RequestFactory(factory))</ID>
@@ -2271,6 +2336,7 @@
     <ID>MaxLineLength:XaiProvider.kt$XaiChatLanguageModel$delegate.streamResult(params.copy(providerOptions = transformXaiChatProviderOptions(params.providerOptions)))</ID>
     <ID>MaxLineLength:XaiProvider.kt$XaiImageModel$response = LanguageModelResponseMetadata(modelId = modelId, headers = response.headers, body = response.value)</ID>
     <ID>MaxLineLength:XaiProvider.kt$XaiImageModel$warnings += CallWarning("unsupported", "This model does not support the `size` option. Use `aspectRatio` instead.")</ID>
+    <ID>MaxLineLength:XaiProvider.kt$XaiProvider$public fun textEmbeddingModel(modelId: String): Nothing</ID>
     <ID>MaxLineLength:XaiProvider.kt$XaiProviderNotConfigured$private fun missing(): Nothing</ID>
     <ID>MaxLineLength:XaiProvider.kt$XaiVideoModel$pollIntervalMs = options["pollIntervalMs"]?.jsonPrimitive?.contentOrNull?.toLongOrNull() ?: DEFAULT_XAI_VIDEO_POLL_INTERVAL_MS</ID>
     <ID>MaxLineLength:XaiProvider.kt$XaiVideoModel$pollTimeoutMs = options["pollTimeoutMs"]?.jsonPrimitive?.contentOrNull?.toLongOrNull() ?: DEFAULT_XAI_VIDEO_POLL_TIMEOUT_MS</ID>
@@ -2292,6 +2358,8 @@
     <ID>MaxLineLength:XaiProviderTest.kt$XaiProviderTest$assertEquals("revised", metadata?.get("images")?.jsonArray?.single()?.jsonObject?.get("revisedPrompt")?.jsonPrimitive?.contentOrNull)</ID>
     <ID>MaxLineLength:XaiProviderTest.kt$XaiProviderTest$put("allowedWebsites", buildJsonArray { add(JsonPrimitive("example.com")) })</ID>
     <ID>MaxLineLength:XaiProviderTest.kt$XaiProviderTest$val provider = createXai(fixture.httpClient(), XaiProviderSettings(baseURL = "https://xai.test/v1", apiKey = "key"))</ID>
+    <ID>MaximumLineLength:AbortSignal.kt$AbortError$public</ID>
+    <ID>MaximumLineLength:AiSdkError.kt$APICallError$ </ID>
     <ID>MaximumLineLength:AlibabaProvider.kt$ </ID>
     <ID>MaximumLineLength:AlibabaProvider.kt$AlibabaChatLanguageModel$ </ID>
     <ID>MaximumLineLength:AlibabaProvider.kt$AlibabaVideoModel$ </ID>
@@ -2300,21 +2368,25 @@
     <ID>MaximumLineLength:AlibabaProviderTest.kt$AlibabaProviderTest$ </ID>
     <ID>MaximumLineLength:AmazonBedrockProvider.kt$ </ID>
     <ID>MaximumLineLength:AmazonBedrockProvider.kt$&lt;no name provided>$ </ID>
+    <ID>MaximumLineLength:AmazonBedrockProvider.kt$BedrockAnthropicProvider$ </ID>
     <ID>MaximumLineLength:AmazonBedrockProvider.kt$BedrockChatLanguageModel$ </ID>
     <ID>MaximumLineLength:AmazonBedrockProvider.kt$BedrockEmbeddingModel$ </ID>
     <ID>MaximumLineLength:AmazonBedrockProvider.kt$BedrockImageModel$ </ID>
     <ID>MaximumLineLength:AmazonBedrockProvider.kt$BedrockMantleChatLanguageModel$ </ID>
+    <ID>MaximumLineLength:AmazonBedrockProvider.kt$BedrockMantleProvider$ </ID>
     <ID>MaximumLineLength:AmazonBedrockProvider.kt$BedrockRerankingModel$ </ID>
     <ID>MaximumLineLength:AmazonBedrockProvider.kt$BedrockStreamBlock$ </ID>
     <ID>MaximumLineLength:AmazonBedrockProvider.kt$BedrockStreamState$ </ID>
     <ID>MaximumLineLength:AmazonBedrockProviderTest.kt$AmazonBedrockProviderTest$ </ID>
     <ID>MaximumLineLength:AnthropicAwsProvider.kt$ </ID>
     <ID>MaximumLineLength:AnthropicAwsProvider.kt$&lt;no name provided>$ </ID>
+    <ID>MaximumLineLength:AnthropicAwsProvider.kt$AnthropicAwsProvider$ </ID>
     <ID>MaximumLineLength:AnthropicAwsProvider.kt$DefaultAnthropicAwsProvider$ </ID>
     <ID>MaximumLineLength:AnthropicAwsProviderTest.kt$AnthropicAwsProviderTest$ </ID>
     <ID>MaximumLineLength:AnthropicProvider.kt$ </ID>
     <ID>MaximumLineLength:AnthropicProvider.kt$&lt;no name provided>$ </ID>
     <ID>MaximumLineLength:AnthropicProvider.kt$AnthropicMessagesLanguageModel$ </ID>
+    <ID>MaximumLineLength:AnthropicProvider.kt$AnthropicProvider$ </ID>
     <ID>MaximumLineLength:AnthropicProvider.kt$AnthropicProviderSettings$ </ID>
     <ID>MaximumLineLength:AnthropicProvider.kt$AnthropicStreamState$ </ID>
     <ID>MaximumLineLength:AnthropicProvider.kt$AnthropicTools$ </ID>
@@ -2322,6 +2394,7 @@
     <ID>MaximumLineLength:AnthropicProviderTest.kt$AnthropicProviderTest$ </ID>
     <ID>MaximumLineLength:ApprovalIdTest.kt$ApprovalIdTest$ </ID>
     <ID>MaximumLineLength:AssemblyAIProvider.kt$ </ID>
+    <ID>MaximumLineLength:AssemblyAIProvider.kt$AssemblyAIProvider$ </ID>
     <ID>MaximumLineLength:AssemblyAIProvider.kt$DefaultAssemblyAIProvider$ </ID>
     <ID>MaximumLineLength:AssemblyAIProvider.kt$private</ID>
     <ID>MaximumLineLength:AssemblyAIProviderTest.kt$AssemblyAIProviderTest$ </ID>
@@ -2332,6 +2405,7 @@
     <ID>MaximumLineLength:BasetenProviderTest.kt$BasetenProviderTest$ </ID>
     <ID>MaximumLineLength:BlackForestLabsProvider.kt$ </ID>
     <ID>MaximumLineLength:BlackForestLabsProvider.kt$&lt;no name provided>$ </ID>
+    <ID>MaximumLineLength:BlackForestLabsProvider.kt$BlackForestLabsProvider$ </ID>
     <ID>MaximumLineLength:BlackForestLabsProvider.kt$DefaultBlackForestLabsProvider$ </ID>
     <ID>MaximumLineLength:BlackForestLabsProvider.kt$private</ID>
     <ID>MaximumLineLength:BlackForestLabsProviderTest.kt$BlackForestLabsProviderTest$ </ID>
@@ -2349,6 +2423,7 @@
     <ID>MaximumLineLength:CohereProviderTest.kt$CohereProviderTest$ </ID>
     <ID>MaximumLineLength:ConvertToModelMessagesTest.kt$ConvertToModelMessagesTest$ </ID>
     <ID>MaximumLineLength:DeepgramProvider.kt$ </ID>
+    <ID>MaximumLineLength:DeepgramProvider.kt$DeepgramProvider$ </ID>
     <ID>MaximumLineLength:DeepgramProvider.kt$DeepgramSpeechModel$ </ID>
     <ID>MaximumLineLength:DeepgramProvider.kt$DefaultDeepgramProvider$ </ID>
     <ID>MaximumLineLength:DeepgramProviderTest.kt$DeepgramProviderTest$ </ID>
@@ -2365,6 +2440,7 @@
     <ID>MaximumLineLength:FalProvider.kt$ </ID>
     <ID>MaximumLineLength:FalProvider.kt$DefaultFalProvider$ </ID>
     <ID>MaximumLineLength:FalProvider.kt$FalImageModel$ </ID>
+    <ID>MaximumLineLength:FalProvider.kt$FalProvider$ </ID>
     <ID>MaximumLineLength:FalProvider.kt$FalSpeechModel$ </ID>
     <ID>MaximumLineLength:FalProvider.kt$FalTranscriptionModel$ </ID>
     <ID>MaximumLineLength:FalProvider.kt$FalVideoModel$ </ID>
@@ -2375,6 +2451,7 @@
     <ID>MaximumLineLength:GenerateTextParityTest.kt$GenerateTextParityTest$ </ID>
     <ID>MaximumLineLength:GladiaProvider.kt$ </ID>
     <ID>MaximumLineLength:GladiaProvider.kt$DefaultGladiaProvider$ </ID>
+    <ID>MaximumLineLength:GladiaProvider.kt$GladiaProvider$ </ID>
     <ID>MaximumLineLength:GladiaProviderTest.kt$GladiaProviderTest$ </ID>
     <ID>MaximumLineLength:GoogleProvider.kt$ </ID>
     <ID>MaximumLineLength:GoogleProvider.kt$&lt;no name provided>$ </ID>
@@ -2392,6 +2469,8 @@
     <ID>MaximumLineLength:GoogleVertexProvider.kt$&lt;no name provided>$ </ID>
     <ID>MaximumLineLength:GoogleVertexProvider.kt$DefaultVertexAnthropicProvider$ </ID>
     <ID>MaximumLineLength:GoogleVertexProvider.kt$DefaultVertexXaiProvider$ </ID>
+    <ID>MaximumLineLength:GoogleVertexProvider.kt$GoogleVertexAnthropicProvider$ </ID>
+    <ID>MaximumLineLength:GoogleVertexProvider.kt$GoogleVertexXaiProvider$ </ID>
     <ID>MaximumLineLength:GoogleVertexProviderTest.kt$GoogleVertexProviderTest$ </ID>
     <ID>MaximumLineLength:HuggingFaceProvider.kt$ </ID>
     <ID>MaximumLineLength:HuggingFaceProvider.kt$&lt;no name provided>$ </ID>
@@ -2415,6 +2494,7 @@
     <ID>MaximumLineLength:LumaProvider.kt$ </ID>
     <ID>MaximumLineLength:LumaProvider.kt$DefaultLumaProvider$ </ID>
     <ID>MaximumLineLength:LumaProvider.kt$LumaImageModel$ </ID>
+    <ID>MaximumLineLength:LumaProvider.kt$LumaProvider$ </ID>
     <ID>MaximumLineLength:LumaProviderTest.kt$LumaProviderTest$ </ID>
     <ID>MaximumLineLength:MCP.kt$ </ID>
     <ID>MaximumLineLength:MCP.kt$DefaultMCPClient$ </ID>
@@ -2426,6 +2506,8 @@
     <ID>MaximumLineLength:MistralProvider.kt$MistralChatLanguageModel$ </ID>
     <ID>MaximumLineLength:MistralProviderTest.kt$MistralProviderTest$ </ID>
     <ID>MaximumLineLength:MockModels.kt$MockRerankingModel$ </ID>
+    <ID>MaximumLineLength:MockModels.kt$public</ID>
+    <ID>MaximumLineLength:ModelMessage.kt$public</ID>
     <ID>MaximumLineLength:OpenAICompatibleProvider.kt$ </ID>
     <ID>MaximumLineLength:OpenAICompatibleProvider.kt$OpenAIChatStreamState$ </ID>
     <ID>MaximumLineLength:OpenAICompatibleProvider.kt$OpenAICompatibleChatLanguageModel$ </ID>
@@ -2434,8 +2516,10 @@
     <ID>MaximumLineLength:OpenAICompatibleProvider.kt$OpenAICompatibleImageModel$ </ID>
     <ID>MaximumLineLength:OpenAICompatibleProvider.kt$OpenAICompatibleTranscriptionModel$ </ID>
     <ID>MaximumLineLength:OpenAICompatibleProviderFacades.kt$&lt;no name provided>$ </ID>
+    <ID>MaximumLineLength:OpenAICompatibleProviderFacades.kt$CerebrasProvider$ </ID>
     <ID>MaximumLineLength:OpenAICompatibleProviderFacades.kt$DeepInfraChatLanguageModel$ </ID>
     <ID>MaximumLineLength:OpenAICompatibleProviderFacades.kt$DeepInfraImageModel$ </ID>
+    <ID>MaximumLineLength:OpenAICompatibleProviderFacades.kt$DeepSeekProvider$ </ID>
     <ID>MaximumLineLength:OpenAICompatibleProviderFacades.kt$DefaultBasetenProvider$ </ID>
     <ID>MaximumLineLength:OpenAICompatibleProviderFacades.kt$DefaultCerebrasProvider$ </ID>
     <ID>MaximumLineLength:OpenAICompatibleProviderFacades.kt$DefaultDeepSeekProvider$ </ID>
@@ -2443,7 +2527,10 @@
     <ID>MaximumLineLength:OpenAICompatibleProviderFacades.kt$DefaultMoonshotAIProvider$ </ID>
     <ID>MaximumLineLength:OpenAICompatibleProviderFacades.kt$DefaultPerplexityProvider$ </ID>
     <ID>MaximumLineLength:OpenAICompatibleProviderFacades.kt$DefaultVercelProvider$ </ID>
+    <ID>MaximumLineLength:OpenAICompatibleProviderFacades.kt$GroqProvider$ </ID>
+    <ID>MaximumLineLength:OpenAICompatibleProviderFacades.kt$PerplexityProvider$ </ID>
     <ID>MaximumLineLength:OpenAICompatibleProviderFacades.kt$TogetherAIImageModel$ </ID>
+    <ID>MaximumLineLength:OpenAICompatibleProviderFacades.kt$VercelProvider$ </ID>
     <ID>MaximumLineLength:OpenAICompatibleProviderFacadesTest.kt$OpenAICompatibleProviderFacadesTest$ </ID>
     <ID>MaximumLineLength:OpenAICompatibleProviderTest.kt$OpenAICompatibleProviderTest$ </ID>
     <ID>MaximumLineLength:OpenAIProviderTest.kt$OpenAIProviderTest$ </ID>
@@ -2455,23 +2542,31 @@
     <ID>MaximumLineLength:ProdiaProvider.kt$DefaultProdiaProvider$ </ID>
     <ID>MaximumLineLength:ProdiaProvider.kt$ProdiaImageModel$ </ID>
     <ID>MaximumLineLength:ProdiaProvider.kt$ProdiaLanguageModel$ </ID>
+    <ID>MaximumLineLength:ProdiaProvider.kt$ProdiaProvider$ </ID>
     <ID>MaximumLineLength:ProdiaProvider.kt$ProdiaVideoModel$ </ID>
     <ID>MaximumLineLength:ProdiaProviderTest.kt$ProdiaProviderTest$ </ID>
     <ID>MaximumLineLength:Provider.kt$ProviderRegistry$ </ID>
     <ID>MaximumLineLength:QuiverAIProvider.kt$ </ID>
     <ID>MaximumLineLength:QuiverAIProvider.kt$DefaultQuiverAIProvider$ </ID>
     <ID>MaximumLineLength:QuiverAIProvider.kt$QuiverAIImageModel$ </ID>
+    <ID>MaximumLineLength:QuiverAIProvider.kt$QuiverAIProvider$ </ID>
     <ID>MaximumLineLength:QuiverAIProviderTest.kt$QuiverAIProviderTest$ </ID>
+    <ID>MaximumLineLength:React.kt$UseCompletionHelpers$ </ID>
     <ID>MaximumLineLength:ReplicateProvider.kt$ </ID>
     <ID>MaximumLineLength:ReplicateProvider.kt$DefaultReplicateProvider$ </ID>
     <ID>MaximumLineLength:ReplicateProvider.kt$ReplicateImageModel$ </ID>
+    <ID>MaximumLineLength:ReplicateProvider.kt$ReplicateProvider$ </ID>
     <ID>MaximumLineLength:ReplicateProviderTest.kt$ReplicateProviderTest$ </ID>
     <ID>MaximumLineLength:RevaiProvider.kt$DefaultRevaiProvider$ </ID>
+    <ID>MaximumLineLength:RevaiProvider.kt$RevaiProvider$ </ID>
     <ID>MaximumLineLength:RevaiProvider.kt$RevaiTranscriptionModel$ </ID>
     <ID>MaximumLineLength:RevaiProviderTest.kt$RevaiProviderTest$ </ID>
+    <ID>MaximumLineLength:Rsc.kt$public</ID>
     <ID>MaximumLineLength:SimulateStreamingTest.kt$SimulateStreamingTest$ </ID>
+    <ID>MaximumLineLength:Streams.kt$public</ID>
     <ID>MaximumLineLength:StructuredObjectApi.kt$StructuredObject$ </ID>
     <ID>MaximumLineLength:Telemetry.kt$MutableTelemetrySpan$ </ID>
+    <ID>MaximumLineLength:Telemetry.kt$internal</ID>
     <ID>MaximumLineLength:TestServer.kt$TestServer$ </ID>
     <ID>MaximumLineLength:TestServer.kt$TestServerCall$ </ID>
     <ID>MaximumLineLength:TestServer.kt$UrlHandler$ </ID>
@@ -2492,12 +2587,13 @@
     <ID>MaximumLineLength:XaiProvider.kt$ </ID>
     <ID>MaximumLineLength:XaiProvider.kt$XaiChatLanguageModel$ </ID>
     <ID>MaximumLineLength:XaiProvider.kt$XaiImageModel$ </ID>
+    <ID>MaximumLineLength:XaiProvider.kt$XaiProvider$ </ID>
     <ID>MaximumLineLength:XaiProvider.kt$XaiProviderNotConfigured$ </ID>
     <ID>MaximumLineLength:XaiProvider.kt$XaiVideoModel$ </ID>
     <ID>MaximumLineLength:XaiProvider.kt$private</ID>
     <ID>MaximumLineLength:XaiProviderTest.kt$XaiProviderTest$ </ID>
-    <ID>MemberNameEqualsClassName:CompletionApi.kt$Completion$var completion: String = options.initialCompletion private set</ID>
-    <ID>MemberNameEqualsClassName:MediaModels.kt$FileData.Bytes$val bytes: ByteArray = bytes.copyOf()</ID>
+    <ID>MemberNameEqualsClassName:CompletionApi.kt$Completion$public var completion: String = options.initialCompletion private set</ID>
+    <ID>MemberNameEqualsClassName:MediaModels.kt$FileData.Bytes$public val bytes: ByteArray = bytes.copyOf()</ID>
     <ID>MultiLineIfElse:AnthropicProvider.kt$buildJsonObject { put("type", JsonPrimitive("auto")) disableParallel?.let { put("disable_parallel_tool_use", JsonPrimitive(it)) } }</ID>
     <ID>MultiLineIfElse:AnthropicProvider.kt$null</ID>
     <ID>MultiLineIfElse:CohereProvider.kt$JsonObject(emptyMap())</ID>
@@ -2517,7 +2613,7 @@
     <ID>NestedBlockDepth:HuggingFaceProvider.kt$private fun huggingFaceResponsesResult( response: JsonObject, requestBody: JsonElement, responseHeaders: Map&lt;String, String>, responseBody: JsonElement, warnings: List&lt;CallWarning>, settings: HuggingFaceProviderSettings, json: Json, ): LanguageModelResult</ID>
     <ID>NestedBlockDepth:OpenResponsesProvider.kt$private fun openResponsesGenerateResult( response: JsonObject, requestBody: JsonElement, responseHeaders: Map&lt;String, String>, responseBody: JsonElement, warnings: List&lt;CallWarning>, json: Json, providerMetadataKey: String, ): LanguageModelResult</ID>
     <ID>NestedBlockDepth:RevaiProvider.kt$private fun mapRevaiTranscript(value: JsonElement): RevaiTranscriptMapping</ID>
-    <ID>NestedBlockDepth:Telemetry.kt$suspend fun selectTelemetryAttributes( telemetry: TelemetrySettings, attributes: Map&lt;String, TelemetryAttribute>, ): Map&lt;String, JsonElement></ID>
+    <ID>NestedBlockDepth:Telemetry.kt$internal suspend fun selectTelemetryAttributes( telemetry: TelemetrySettings, attributes: Map&lt;String, TelemetryAttribute>, ): Map&lt;String, JsonElement></ID>
     <ID>NoBlankLineBeforeRbrace:Output.kt$Output$ </ID>
     <ID>NoConsecutiveBlankLines:AlibabaProvider.kt$ </ID>
     <ID>NoConsecutiveBlankLines:AmazonBedrockProvider.kt$ </ID>
@@ -2586,40 +2682,70 @@
     <ID>NoUnusedImports:ToolLoopAgentTest.kt$ai.torad.aisdk.ToolLoopAgentTest.kt</ID>
     <ID>NoUnusedImports:WireDecoder.kt$ai.torad.aisdk.WireDecoder.kt</ID>
     <ID>NoUnusedImports:XaiProvider.kt$ai.torad.aisdk.XaiProvider.kt</ID>
+    <ID>ParameterListWrapping:AbortSignal.kt$AbortError$(message: String = "operation aborted")</ID>
     <ID>ParameterListWrapping:AlibabaProvider.kt$DefaultAlibabaProvider$(modelId: String)</ID>
+    <ID>ParameterListWrapping:AmazonBedrockProvider.kt$BedrockAnthropicProvider$(modelId: String)</ID>
+    <ID>ParameterListWrapping:AmazonBedrockProvider.kt$BedrockMantleProvider$(modelId: String)</ID>
     <ID>ParameterListWrapping:AmazonBedrockProvider.kt$BedrockStreamBlock.Tool$(val id: String, val name: String, var input: String, val isJsonResponseTool: Boolean)</ID>
     <ID>ParameterListWrapping:AnthropicAwsProvider.kt$&lt;no name provided>$(modelId: String)</ID>
+    <ID>ParameterListWrapping:AnthropicAwsProvider.kt$AnthropicAwsProvider$(modelId: String)</ID>
     <ID>ParameterListWrapping:AnthropicProvider.kt$&lt;no name provided>$(modelId: String)</ID>
+    <ID>ParameterListWrapping:AnthropicProvider.kt$AnthropicProvider$(modelId: String)</ID>
     <ID>ParameterListWrapping:AnthropicProvider.kt$AnthropicProviderSettings$(suspend (url: String, body: String, headers: Map&lt;String, String>) -> Map&lt;String, String>)?</ID>
     <ID>ParameterListWrapping:AnthropicProvider.kt$AnthropicProviderSettings$(url: String, body: String, headers: Map&lt;String, String>)</ID>
+    <ID>ParameterListWrapping:AssemblyAIProvider.kt$AssemblyAIProvider$(modelId: AssemblyAITranscriptionModelId = "best")</ID>
+    <ID>ParameterListWrapping:AssemblyAIProvider.kt$AssemblyAIProvider$(modelId: String)</ID>
     <ID>ParameterListWrapping:AssemblyAIProvider.kt$DefaultAssemblyAIProvider$(modelId: String)</ID>
+    <ID>ParameterListWrapping:BlackForestLabsProvider.kt$BlackForestLabsProvider$(modelId: String)</ID>
     <ID>ParameterListWrapping:BlackForestLabsProvider.kt$DefaultBlackForestLabsProvider$(modelId: String)</ID>
     <ID>ParameterListWrapping:ByteDanceProvider.kt$DefaultByteDanceProvider$(modelId: String)</ID>
+    <ID>ParameterListWrapping:DeepgramProvider.kt$DeepgramProvider$(modelId: DeepgramTranscriptionModelId = "nova-3")</ID>
+    <ID>ParameterListWrapping:DeepgramProvider.kt$DeepgramProvider$(modelId: String)</ID>
     <ID>ParameterListWrapping:DeepgramProvider.kt$DefaultDeepgramProvider$(modelId: String)</ID>
     <ID>ParameterListWrapping:ElevenLabsProvider.kt$DefaultElevenLabsProvider$(modelId: String)</ID>
     <ID>ParameterListWrapping:ElevenLabsProvider.kt$ElevenLabsProvider$(modelId: ElevenLabsTranscriptionModelId = "scribe_v1")</ID>
+    <ID>ParameterListWrapping:ElevenLabsProvider.kt$ElevenLabsProvider$(modelId: String)</ID>
     <ID>ParameterListWrapping:FalProvider.kt$DefaultFalProvider$(modelId: String)</ID>
+    <ID>ParameterListWrapping:FalProvider.kt$FalProvider$(modelId: String)</ID>
     <ID>ParameterListWrapping:GladiaProvider.kt$DefaultGladiaProvider$(modelId: String)</ID>
+    <ID>ParameterListWrapping:GladiaProvider.kt$GladiaProvider$(modelId: String)</ID>
+    <ID>ParameterListWrapping:GoogleVertexProvider.kt$GoogleVertexAnthropicProvider$(modelId: String)</ID>
+    <ID>ParameterListWrapping:GoogleVertexProvider.kt$GoogleVertexXaiProvider$(modelId: String)</ID>
     <ID>ParameterListWrapping:HuggingFaceProvider.kt$&lt;no name provided>$(modelId: String)</ID>
     <ID>ParameterListWrapping:HumeProvider.kt$DefaultHumeProvider$(modelId: String)</ID>
     <ID>ParameterListWrapping:KlingAIProvider.kt$DefaultKlingAIProvider$(modelId: String)</ID>
     <ID>ParameterListWrapping:LMNTProvider.kt$DefaultLMNTProvider$(modelId: String)</ID>
     <ID>ParameterListWrapping:LangChain.kt$(messages: List&lt;LangChainBaseMessage>, options: LangSmithDeploymentTransportOptions)</ID>
     <ID>ParameterListWrapping:LumaProvider.kt$DefaultLumaProvider$(modelId: String)</ID>
+    <ID>ParameterListWrapping:LumaProvider.kt$LumaProvider$(modelId: String)</ID>
+    <ID>ParameterListWrapping:ModelMessage.kt$(text: String)</ID>
+    <ID>ParameterListWrapping:OpenAICompatibleProviderFacades.kt$CerebrasProvider$(modelId: String)</ID>
+    <ID>ParameterListWrapping:OpenAICompatibleProviderFacades.kt$DeepSeekProvider$(modelId: String)</ID>
     <ID>ParameterListWrapping:OpenAICompatibleProviderFacades.kt$DefaultCerebrasProvider$(modelId: String)</ID>
     <ID>ParameterListWrapping:OpenAICompatibleProviderFacades.kt$DefaultDeepSeekProvider$(modelId: String)</ID>
     <ID>ParameterListWrapping:OpenAICompatibleProviderFacades.kt$DefaultGroqProvider$(modelId: String)</ID>
     <ID>ParameterListWrapping:OpenAICompatibleProviderFacades.kt$DefaultMoonshotAIProvider$(modelId: String)</ID>
     <ID>ParameterListWrapping:OpenAICompatibleProviderFacades.kt$DefaultPerplexityProvider$(modelId: String)</ID>
     <ID>ParameterListWrapping:OpenAICompatibleProviderFacades.kt$DefaultVercelProvider$(modelId: String)</ID>
+    <ID>ParameterListWrapping:OpenAICompatibleProviderFacades.kt$GroqProvider$(modelId: String)</ID>
+    <ID>ParameterListWrapping:OpenAICompatibleProviderFacades.kt$PerplexityProvider$(modelId: String)</ID>
+    <ID>ParameterListWrapping:OpenAICompatibleProviderFacades.kt$VercelProvider$(modelId: String)</ID>
     <ID>ParameterListWrapping:ProdiaProvider.kt$DefaultProdiaProvider$(modelId: String)</ID>
+    <ID>ParameterListWrapping:ProdiaProvider.kt$ProdiaProvider$(modelId: String)</ID>
     <ID>ParameterListWrapping:QuiverAIProvider.kt$DefaultQuiverAIProvider$(modelId: String)</ID>
+    <ID>ParameterListWrapping:QuiverAIProvider.kt$QuiverAIProvider$(modelId: String)</ID>
     <ID>ParameterListWrapping:ReplicateProvider.kt$DefaultReplicateProvider$(modelId: String)</ID>
+    <ID>ParameterListWrapping:ReplicateProvider.kt$ReplicateProvider$(modelId: String)</ID>
     <ID>ParameterListWrapping:RevaiProvider.kt$DefaultRevaiProvider$(modelId: String)</ID>
+    <ID>ParameterListWrapping:RevaiProvider.kt$RevaiProvider$(modelId: RevaiTranscriptionModelId = "machine")</ID>
+    <ID>ParameterListWrapping:RevaiProvider.kt$RevaiProvider$(modelId: String)</ID>
+    <ID>ParameterListWrapping:Rsc.kt$(provider: AIProvider&lt;AI_STATE, UI_STATE>)</ID>
+    <ID>ParameterListWrapping:Telemetry.kt$(resolve: suspend () -> JsonElement?)</ID>
     <ID>ParameterListWrapping:TestServer.kt$UrlResponseParameter.Factory$(callNumber: Int, request: TestServerHttpRequest)</ID>
     <ID>ParameterListWrapping:TestServer.kt$UrlResponseParameter.RequestFactory$(callNumber: Int, request: TestServerHttpRequest)</ID>
     <ID>ParameterListWrapping:TestServer.kt$UrlResponseParameter.Sequence$(callNumber: Int, request: TestServerHttpRequest)</ID>
     <ID>ParameterListWrapping:VoyageProvider.kt$DefaultVoyageProvider$(modelId: String)</ID>
+    <ID>ParameterListWrapping:XaiProvider.kt$XaiProvider$(modelId: String)</ID>
     <ID>ParameterWrapping:AnthropicProvider.kt$AnthropicProviderSettings$val requestHeadersProvider: (suspend (url: String, body: String, headers: Map&lt;String, String>) -> Map&lt;String, String>)? = null</ID>
     <ID>PropertyWrapping:AlibabaProviderTest.kt$AlibabaProviderTest$val provider = createAlibaba(createTestServer(mutableMapOf()).httpClient(), AlibabaProviderSettings(apiKey = "key"))</ID>
     <ID>PropertyWrapping:AnthropicProvider.kt$AnthropicMessagesLanguageModel$val response = anthropicPost(prepared.body, prepared.betas, params.headers, acceptEventStream = false, parseJson = true)</ID>
@@ -2647,7 +2773,7 @@
     <ID>PropertyWrapping:ProdiaProviderTest.kt$ProdiaProviderTest$val provider = createProdia(createTestServer(mutableMapOf()).httpClient(), ProdiaProviderSettings(apiKey = "token"))</ID>
     <ID>PropertyWrapping:ToolLoopAgent.kt$ToolLoopAgent$val event = OnToolCallStartEvent(call.toolCallId, call.toolName, call.input, stepNumber, messages.toList())</ID>
     <ID>PropertyWrapping:XaiProviderTest.kt$XaiProviderTest$val provider = createXai(fixture.httpClient(), XaiProviderSettings(baseURL = "https://xai.test/v1", apiKey = "key"))</ID>
-    <ID>ReturnCount:AbortSignal.kt$fun combineAbortSignals(vararg signals: AbortSignal): AbortSignal</ID>
+    <ID>ReturnCount:AbortSignal.kt$public fun combineAbortSignals(vararg signals: AbortSignal): AbortSignal</ID>
     <ID>ReturnCount:AmazonBedrockProvider.kt$private fun bedrockEmbeddingVector(response: JsonObject): List&lt;Float></ID>
     <ID>ReturnCount:AmazonBedrockProvider.kt$private fun bedrockTools( modelId: String, tools: List&lt;LanguageModelTool>, choice: ToolChoice, responseFormat: ResponseFormat, ): BedrockPreparedTools</ID>
     <ID>ReturnCount:AmazonBedrockProvider.kt$private suspend fun bedrockHeaders( settings: AmazonBedrockProviderSettings, extra: Map&lt;String, String>, url: String, body: String, service: String, ): Map&lt;String, String></ID>
@@ -2657,19 +2783,19 @@
     <ID>ReturnCount:ConvertToModelMessages.kt$private fun approvalResponseMessage(uiMsg: UIMessage): ModelMessage?</ID>
     <ID>ReturnCount:ExtractJson.kt$&lt;no name provided>$private fun extractJsonRegion(text: String): String</ID>
     <ID>ReturnCount:FalProvider.kt$private fun falResponseImages(value: JsonObject): List&lt;JsonObject></ID>
-    <ID>ReturnCount:FixJson.kt$fun parsePartialJson(jsonText: String?): PartialJsonResult</ID>
     <ID>ReturnCount:FixJson.kt$private fun tryParseJson(text: String): JsonElement?</ID>
+    <ID>ReturnCount:FixJson.kt$public fun parsePartialJson(jsonText: String?): PartialJsonResult</ID>
     <ID>ReturnCount:GoogleProvider.kt$GoogleInteractionsStreamState$private fun acceptStep(step: JsonObject, interactionId: String?): List&lt;StreamEvent></ID>
     <ID>ReturnCount:GoogleProvider.kt$GoogleStreamState$fun accept(value: JsonObject): List&lt;StreamEvent></ID>
     <ID>ReturnCount:GoogleProvider.kt$private fun googleInteractionsAgentConfig(options: JsonObject): JsonObject?</ID>
     <ID>ReturnCount:GoogleProvider.kt$private fun googleInteractionsEnvironment( element: JsonElement?, isAgent: Boolean, warnings: MutableList&lt;CallWarning>, ): JsonElement?</ID>
     <ID>ReturnCount:HuggingFaceProvider.kt$HuggingFaceResponsesStreamState$fun accept(chunk: JsonElement): List&lt;StreamEvent></ID>
-    <ID>ReturnCount:IsLoopFinished.kt$suspend fun isLoopFinished( state: LoopState, stopWhen: StopCondition, ): Boolean</ID>
+    <ID>ReturnCount:IsLoopFinished.kt$public suspend fun isLoopFinished( state: LoopState, stopWhen: StopCondition, ): Boolean</ID>
+    <ID>ReturnCount:MCP.kt$internal suspend fun auth( provider: OAuthClientProvider, options: AuthOptions, ): AuthResult</ID>
     <ID>ReturnCount:MCP.kt$private fun checkResourceAllowed(requestedResource: String, configuredResource: String): Boolean</ID>
     <ID>ReturnCount:MCP.kt$private fun mcpToModelOutput(output: JsonElement): ToolResultOutput</ID>
     <ID>ReturnCount:MCP.kt$private fun resolveMcpUrl(value: String, base: String): String</ID>
     <ID>ReturnCount:MCP.kt$private fun selectOAuthClientAuthMethod( clientInformation: OAuthClientInformation, supportedMethods: List&lt;String>, ): String</ID>
-    <ID>ReturnCount:MCP.kt$suspend fun auth( provider: OAuthClientProvider, options: AuthOptions, ): AuthResult</ID>
     <ID>ReturnCount:OpenAICompatibleProvider.kt$OpenAIChatStreamState$fun accept(value: JsonElement): List&lt;StreamEvent></ID>
     <ID>ReturnCount:OpenAICompatibleProvider.kt$OpenAIChatStreamState$private fun acceptToolCallDelta(value: JsonElement): List&lt;StreamEvent></ID>
     <ID>ReturnCount:OpenAICompatibleProvider.kt$OpenAICompatibleHttpModel$protected fun url(path: String): String</ID>
@@ -2680,17 +2806,17 @@
     <ID>ReturnCount:ProdiaProvider.kt$private fun ByteArray.headerEndIndex(): Int</ID>
     <ID>ReturnCount:ProdiaProvider.kt$private fun ByteArray.indexOfBytes(needle: ByteArray, start: Int): Int</ID>
     <ID>ReturnCount:Tool.kt$@OptIn(kotlinx.serialization.ExperimentalSerializationApi::class) private fun descriptorToNonNullJsonSchema( descriptor: kotlinx.serialization.descriptors.SerialDescriptor, seen: Set&lt;String> = emptySet(), ): kotlinx.serialization.json.JsonElement</ID>
-    <ID>ReturnCount:Tool.kt$fun toolResultOutputFromWire(json: JsonElement): ToolResultOutput</ID>
+    <ID>ReturnCount:Tool.kt$internal fun toolResultOutputFromWire(json: JsonElement): ToolResultOutput</ID>
     <ID>ReturnCount:ToolLoopAgent.kt$ToolLoopAgent$private fun validateCallOptions(options: TContext?): TContext?</ID>
     <ID>ReturnCount:ToolLoopAgent.kt$ToolLoopAgent$private suspend fun applyToolApprovalResponses( out: FlowCollector&lt;StreamEvent>, messages: MutableList&lt;ModelMessage>, tools: ToolSet&lt;TContext>, options: TContext?, abortSignal: AbortSignal, hooks: AgentCallHooks?, ): Unit?</ID>
     <ID>ReturnCount:ToolLoopAgent.kt$ToolLoopAgent$private suspend fun tryRepairToolInput( originalToolDef: Tool&lt;*, *, TContext>, call: ContentPart.ToolCall, originalError: Throwable, messages: List&lt;ModelMessage>, ): Pair&lt;Tool&lt;*, *, TContext>, Any?>?</ID>
-    <ID>ReturnCount:UIMessagePart.kt$fun &lt;TInput> dynamicInputAs( part: UIMessagePart.DynamicToolUI, serializer: KSerializer&lt;TInput>, ): TInput?</ID>
-    <ID>ReturnCount:UIMessagePart.kt$fun &lt;TInput> inputAs(part: UIMessagePart.ToolUI, serializer: KSerializer&lt;TInput>): TInput?</ID>
-    <ID>ReturnCount:UIMessagePart.kt$fun &lt;TOutput> dynamicOutputAs( part: UIMessagePart.DynamicToolUI, serializer: KSerializer&lt;TOutput>, ): TOutput?</ID>
-    <ID>ReturnCount:UIMessagePart.kt$fun &lt;TOutput> outputAs(part: UIMessagePart.ToolUI, serializer: KSerializer&lt;TOutput>): TOutput?</ID>
-    <ID>ReturnCount:Util.kt$fun detectMediaType(filename: String? = null, dataUrl: String? = null, explicit: String? = null): String?</ID>
+    <ID>ReturnCount:UIMessagePart.kt$public fun &lt;TInput> dynamicInputAs( part: UIMessagePart.DynamicToolUI, serializer: KSerializer&lt;TInput>, ): TInput?</ID>
+    <ID>ReturnCount:UIMessagePart.kt$public fun &lt;TInput> inputAs(part: UIMessagePart.ToolUI, serializer: KSerializer&lt;TInput>): TInput?</ID>
+    <ID>ReturnCount:UIMessagePart.kt$public fun &lt;TOutput> dynamicOutputAs( part: UIMessagePart.DynamicToolUI, serializer: KSerializer&lt;TOutput>, ): TOutput?</ID>
+    <ID>ReturnCount:UIMessagePart.kt$public fun &lt;TOutput> outputAs(part: UIMessagePart.ToolUI, serializer: KSerializer&lt;TOutput>): TOutput?</ID>
     <ID>ReturnCount:Util.kt$private fun isPrivateIPv6(ip: String): Boolean</ID>
     <ID>ReturnCount:Util.kt$private fun parseUrl(url: String): ParsedUrl?</ID>
+    <ID>ReturnCount:Util.kt$public fun detectMediaType(filename: String? = null, dataUrl: String? = null, explicit: String? = null): String?</ID>
     <ID>ReturnCount:XaiProvider.kt$private fun xaiVideoMode(options: JsonObject): String?</ID>
     <ID>SpacingBetweenDeclarationsWithAnnotations:Tool.kt$ToolChoice$None : ToolChoice</ID>
     <ID>SpacingBetweenDeclarationsWithAnnotations:Tool.kt$ToolChoice$Required : ToolChoice</ID>
@@ -2717,14 +2843,14 @@
     <ID>ThrowsCount:LumaProvider.kt$private suspend fun lumaPollImageUrl( client: HttpClient, baseURL: String, generationId: String, headers: Map&lt;String, String>, abortSignal: AbortSignal, pollIntervalMillis: Long, maxPollAttempts: Int, ): String</ID>
     <ID>ThrowsCount:MCP.kt$DefaultMCPClient$private fun assertCapability(method: String)</ID>
     <ID>ThrowsCount:MCP.kt$HttpMCPTransport$private suspend fun postMessage(message: JSONRPCMessage, triedAuth: Boolean)</ID>
+    <ID>ThrowsCount:MCP.kt$internal suspend fun auth( provider: OAuthClientProvider, options: AuthOptions, ): AuthResult</ID>
     <ID>ThrowsCount:MCP.kt$private fun startAuthorization( serverUrl: String, metadata: AuthorizationServerMetadata?, clientInformation: OAuthClientInformation, redirectUrl: String, scope: String?, state: String, codeVerifier: String, resource: String?, ): String</ID>
-    <ID>ThrowsCount:MCP.kt$suspend fun auth( provider: OAuthClientProvider, options: AuthOptions, ): AuthResult</ID>
     <ID>ThrowsCount:OpenAICompatibleProviderFacades.kt$FireworksImageModel$private suspend fun pollForImageUrl(requestId: String, requestHeaders: Map&lt;String, String>): String</ID>
     <ID>ThrowsCount:ProdiaProvider.kt$private suspend fun HttpResponse.parseProdiaMultipart(url: String): ProdiaMultipartResult</ID>
     <ID>ThrowsCount:ReplicateProvider.kt$private suspend fun replicatePollVideoPrediction( client: HttpClient, settings: ReplicateProviderSettings, initialPrediction: JsonObject, options: JsonObject, abortSignal: AbortSignal, ): JsonObject</ID>
     <ID>ThrowsCount:Tool.kt$private fun schemaFallbackValue(value: JsonElement, schema: JsonElement): Any?</ID>
     <ID>ThrowsCount:ToolLoopAgent.kt$ToolLoopAgent$private suspend fun callNeedsApproval( toolDef: Tool&lt;*, *, TContext>, call: ContentPart.ToolCall, options: TContext?, messages: List&lt;ModelMessage>, ): Boolean</ID>
-    <ID>ThrowsCount:Util.kt$fun validateDownloadUrl(url: String)</ID>
+    <ID>ThrowsCount:Util.kt$public fun validateDownloadUrl(url: String)</ID>
     <ID>TooGenericExceptionCaught:AgentSession.kt$AgentSession$error: Throwable</ID>
     <ID>TooGenericExceptionCaught:Chat.kt$Chat$t: Throwable</ID>
     <ID>TooGenericExceptionCaught:CompletionApi.kt$t: Throwable</ID>
@@ -2933,6 +3059,7 @@
     <ID>Wrapping:RevaiProviderTest.kt$RevaiProviderTest$("auth_headers", buildJsonObject { put("Authorization", JsonPrimitive("Bearer hook")) })</ID>
     <ID>Wrapping:RevaiProviderTest.kt$RevaiProviderTest$("segments_to_transcribe", buildJsonArray { add(buildJsonObject { put("start", JsonPrimitive(0)) put("end", JsonPrimitive(60)) }) })</ID>
     <ID>Wrapping:RevaiProviderTest.kt$RevaiProviderTest$("target_languages", buildJsonArray { add(buildJsonObject { put("language", JsonPrimitive("es")) }) })</ID>
+    <ID>Wrapping:Streams.kt$"msg_${messages.size + 1}"</ID>
     <ID>Wrapping:TestServer.kt$TestServer$(</ID>
     <ID>Wrapping:Tool.kt$(</ID>
     <ID>Wrapping:Tool.kt$throw AgentError.ToolExecution(name, toolCallId, UnsupportedOperationException("provider-executed tool has no local executor"))</ID>

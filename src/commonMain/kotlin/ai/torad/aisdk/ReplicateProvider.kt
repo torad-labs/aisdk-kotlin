@@ -23,15 +23,15 @@ import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlin.math.ceil
 
-const val REPLICATE_VERSION: String = "2.0.33"
+public const val REPLICATE_VERSION: String = "2.0.33"
 
-typealias ReplicateImageModelId = String
-typealias ReplicateVideoModelId = String
-typealias ReplicateImageProviderOptions = ReplicateImageModelOptions
-typealias ReplicateVideoProviderOptions = ReplicateVideoModelOptions
+public typealias ReplicateImageModelId = String
+public typealias ReplicateVideoModelId = String
+public typealias ReplicateImageProviderOptions = ReplicateImageModelOptions
+public typealias ReplicateVideoProviderOptions = ReplicateVideoModelOptions
 
 @Serializable
-data class ReplicateImageModelOptions(
+public data class ReplicateImageModelOptions(
     val maxWaitTimeInSeconds: Double? = null,
     val guidance_scale: Double? = null,
     val num_inference_steps: Double? = null,
@@ -42,7 +42,7 @@ data class ReplicateImageModelOptions(
 )
 
 @Serializable
-data class ReplicateVideoModelOptions(
+public data class ReplicateVideoModelOptions(
     val pollIntervalMs: Long? = null,
     val pollTimeoutMs: Long? = null,
     val maxWaitTimeInSeconds: Double? = null,
@@ -58,26 +58,26 @@ data class ReplicateVideoModelOptions(
 )
 
 @Serializable
-data class ReplicateProviderSettings(
+public data class ReplicateProviderSettings(
     val apiToken: String? = null,
     val baseURL: String = "https://api.replicate.com/v1",
     val headers: Map<String, String> = emptyMap(),
 )
 
-interface ReplicateProvider : Provider {
-    fun image(modelId: ReplicateImageModelId): ImageModel
+public interface ReplicateProvider : Provider {
+    public fun image(modelId: ReplicateImageModelId): ImageModel
     override fun imageModel(modelId: String): ImageModel = image(modelId)
-    fun video(modelId: ReplicateVideoModelId): VideoModel
+    public fun video(modelId: ReplicateVideoModelId): VideoModel
     override fun videoModel(modelId: String): VideoModel = video(modelId)
-    fun textEmbeddingModel(modelId: String): Nothing = throw NoSuchModelError(providerId, "embeddingModel", modelId)
+    public fun textEmbeddingModel(modelId: String): Nothing = throw NoSuchModelError(providerId, "embeddingModel", modelId)
 }
 
-fun createReplicate(
+public fun createReplicate(
     client: HttpClient,
     settings: ReplicateProviderSettings = ReplicateProviderSettings(),
 ): ReplicateProvider = DefaultReplicateProvider(client, settings)
 
-val replicate: ReplicateProvider = object : ReplicateProvider {
+public val replicate: ReplicateProvider = object : ReplicateProvider {
     override val providerId: String = "replicate"
     override fun image(modelId: String): ImageModel =
         throw AiSdkException("Replicate provider is not configured. Use createReplicate(client, settings).")

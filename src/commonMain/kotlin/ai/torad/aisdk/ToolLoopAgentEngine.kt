@@ -16,7 +16,7 @@ package ai.torad.aisdk
  * (used by tests and any host that does want stateless calls). The
  * engine surface is layered on top, not a replacement.
  */
-data class ToolLoopAgentState(
+public data class ToolLoopAgentState(
     /** Persistent log of all messages — system, user, assistant, tool. */
     val messages: List<ModelMessage> = emptyList(),
     /** Text accumulating on the in-flight assistant message, before the step closes. */
@@ -42,23 +42,23 @@ data class ToolLoopAgentState(
  * Action sealed type a Compose ViewModel exposes — the agent is the
  * "model" of an MVI loop.
  */
-sealed interface ToolLoopAgentAction<out TContext> {
+public sealed interface ToolLoopAgentAction<out TContext> {
 
     /** New user turn. Cancels any in-flight stream and starts a fresh one. */
-    data class UserSubmitPrompt<TContext>(
+    public data class UserSubmitPrompt<TContext>(
         val text: String,
         val context: TContext? = null,
     ) : ToolLoopAgentAction<TContext>
 
     /** Approve a tool call that paused the loop. Resumes the agent. */
-    data class ApproveToolCall(val toolCallId: String) : ToolLoopAgentAction<Nothing>
+    public data class ApproveToolCall(val toolCallId: String) : ToolLoopAgentAction<Nothing>
 
     /** Deny a tool call. Resumes the agent with the denial fed back to the model. */
-    data class DenyToolCall(val toolCallId: String, val reason: String? = null) : ToolLoopAgentAction<Nothing>
+    public data class DenyToolCall(val toolCallId: String, val reason: String? = null) : ToolLoopAgentAction<Nothing>
 
     /** Cancel the in-flight stream without erasing history. */
-    data object Cancel : ToolLoopAgentAction<Nothing>
+    public data object Cancel : ToolLoopAgentAction<Nothing>
 
     /** Drop history + abort any in-flight stream. */
-    data object Reset : ToolLoopAgentAction<Nothing>
+    public data object Reset : ToolLoopAgentAction<Nothing>
 }

@@ -25,16 +25,16 @@ import kotlinx.serialization.json.intOrNull
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 
-const val ANTHROPIC_VERSION: String = "3.0.81"
+public const val ANTHROPIC_VERSION: String = "3.0.81"
 
-typealias AnthropicMessagesModelId = String
-typealias AnthropicLanguageModelOptions = JsonObject
-typealias AnthropicProviderOptions = AnthropicLanguageModelOptions
-typealias AnthropicToolOptions = JsonObject
-typealias AnthropicMessageMetadata = JsonObject
-typealias AnthropicUsageIteration = JsonObject
+public typealias AnthropicMessagesModelId = String
+public typealias AnthropicLanguageModelOptions = JsonObject
+public typealias AnthropicProviderOptions = AnthropicLanguageModelOptions
+public typealias AnthropicToolOptions = JsonObject
+public typealias AnthropicMessageMetadata = JsonObject
+public typealias AnthropicUsageIteration = JsonObject
 
-data class AnthropicProviderSettings(
+public data class AnthropicProviderSettings(
     val baseURL: String = "https://api.anthropic.com/v1",
     val apiKey: String? = null,
     val authToken: String? = null,
@@ -47,17 +47,17 @@ data class AnthropicProviderSettings(
     val name: String = "anthropic.messages",
 )
 
-interface AnthropicProvider : Provider {
-    val settings: AnthropicProviderSettings
-    val tools: AnthropicTools
+public interface AnthropicProvider : Provider {
+    public val settings: AnthropicProviderSettings
+    public val tools: AnthropicTools
 
-    operator fun invoke(modelId: AnthropicMessagesModelId): LanguageModel = languageModel(modelId)
-    fun chat(modelId: AnthropicMessagesModelId): LanguageModel = languageModel(modelId)
-    fun messages(modelId: AnthropicMessagesModelId): LanguageModel = languageModel(modelId)
-    fun textEmbeddingModel(modelId: String): Nothing = throw NoSuchModelError(providerId, "embeddingModel", modelId)
+    public operator fun invoke(modelId: AnthropicMessagesModelId): LanguageModel = languageModel(modelId)
+    public fun chat(modelId: AnthropicMessagesModelId): LanguageModel = languageModel(modelId)
+    public fun messages(modelId: AnthropicMessagesModelId): LanguageModel = languageModel(modelId)
+    public fun textEmbeddingModel(modelId: String): Nothing = throw NoSuchModelError(providerId, "embeddingModel", modelId)
 }
 
-fun createAnthropic(
+public fun createAnthropic(
     client: HttpClient,
     settings: AnthropicProviderSettings = AnthropicProviderSettings(),
 ): AnthropicProvider {
@@ -67,7 +67,7 @@ fun createAnthropic(
     return DefaultAnthropicProvider(client, settings)
 }
 
-val anthropic: AnthropicProvider = object : AnthropicProvider {
+public val anthropic: AnthropicProvider = object : AnthropicProvider {
     override val providerId: String = "anthropic"
     override val settings: AnthropicProviderSettings = AnthropicProviderSettings()
     override val tools: AnthropicTools = AnthropicTools()
@@ -91,7 +91,7 @@ private class DefaultAnthropicProvider(
     override fun imageModel(modelId: String): ImageModel = throw NoSuchModelError(providerId, "imageModel", modelId)
 }
 
-class AnthropicMessagesLanguageModel(
+public class AnthropicMessagesLanguageModel(
     private val client: HttpClient,
     private val settings: AnthropicProviderSettings,
     override val modelId: String,
@@ -165,7 +165,7 @@ class AnthropicMessagesLanguageModel(
     }
 }
 
-data class AnthropicTools(
+public data class AnthropicTools(
     val advisor_20260301: Tool<JsonElement, JsonElement, Any?> =
         anthropicProviderTool("advisor", "anthropic.advisor_20260301", "Consult an Anthropic advisor model during generation."),
     val bash_20241022: Tool<JsonElement, JsonElement, Any?> =
@@ -208,9 +208,9 @@ data class AnthropicTools(
         anthropicProviderTool("tool_search_tool_bm25", "anthropic.tool_search_bm25_20251119", "Search deferred tools with BM25."),
 )
 
-val anthropicTools: AnthropicTools = AnthropicTools()
+public val anthropicTools: AnthropicTools = AnthropicTools()
 
-fun forwardAnthropicContainerIdFromLastStep(
+public fun forwardAnthropicContainerIdFromLastStep(
     steps: List<Map<String, JsonElement>>,
 ): Map<String, JsonElement>? {
     for (step in steps.asReversed()) {

@@ -25,18 +25,18 @@ import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 
-const val FAL_VERSION: String = "2.0.34"
+public const val FAL_VERSION: String = "2.0.34"
 
-typealias FalImageModelId = String
-typealias FalSpeechModelId = String
-typealias FalTranscriptionModelId = String
-typealias FalVideoModelId = String
-typealias FalImageProviderOptions = FalImageModelOptions
-typealias FalVideoProviderOptions = FalVideoModelOptions
-typealias FalErrorData = JsonObject
+public typealias FalImageModelId = String
+public typealias FalSpeechModelId = String
+public typealias FalTranscriptionModelId = String
+public typealias FalVideoModelId = String
+public typealias FalImageProviderOptions = FalImageModelOptions
+public typealias FalVideoProviderOptions = FalVideoModelOptions
+public typealias FalErrorData = JsonObject
 
 @Serializable
-data class FalProviderSettings(
+public data class FalProviderSettings(
     val apiKey: String? = null,
     val baseURL: String = "https://fal.run",
     val headers: Map<String, String> = emptyMap(),
@@ -47,12 +47,12 @@ data class FalProviderSettings(
 )
 
 @Serializable
-data class FalImageModelOptions(
+public data class FalImageModelOptions(
     val useMultipleImages: Boolean? = null,
 )
 
 @Serializable
-data class FalSpeechModelOptions(
+public data class FalSpeechModelOptions(
     val voice_setting: JsonObject? = null,
     val audio_setting: JsonObject? = null,
     val language_boost: String? = null,
@@ -60,7 +60,7 @@ data class FalSpeechModelOptions(
 )
 
 @Serializable
-data class FalTranscriptionModelOptions(
+public data class FalTranscriptionModelOptions(
     val language: String? = "en",
     val diarize: Boolean? = true,
     val chunkLevel: String? = "segment",
@@ -70,7 +70,7 @@ data class FalTranscriptionModelOptions(
 )
 
 @Serializable
-data class FalVideoModelOptions(
+public data class FalVideoModelOptions(
     val loop: Boolean? = null,
     val motionStrength: Float? = null,
     val pollIntervalMs: Long? = null,
@@ -80,14 +80,14 @@ data class FalVideoModelOptions(
     val promptOptimizer: Boolean? = null,
 )
 
-interface FalProvider : Provider {
-    val settings: FalProviderSettings
+public interface FalProvider : Provider {
+    public val settings: FalProviderSettings
 
-    fun image(modelId: FalImageModelId): ImageModel
-    fun speech(modelId: FalSpeechModelId): SpeechModel
-    fun transcription(modelId: FalTranscriptionModelId): TranscriptionModel
-    fun video(modelId: FalVideoModelId): VideoModel
-    fun textEmbeddingModel(modelId: String): Nothing = throw NoSuchModelError(providerId, "embeddingModel", modelId)
+    public fun image(modelId: FalImageModelId): ImageModel
+    public fun speech(modelId: FalSpeechModelId): SpeechModel
+    public fun transcription(modelId: FalTranscriptionModelId): TranscriptionModel
+    public fun video(modelId: FalVideoModelId): VideoModel
+    public fun textEmbeddingModel(modelId: String): Nothing = throw NoSuchModelError(providerId, "embeddingModel", modelId)
 
     override fun imageModel(modelId: String): ImageModel = image(modelId)
     override fun speechModel(modelId: String): SpeechModel = speech(modelId)
@@ -95,12 +95,12 @@ interface FalProvider : Provider {
     override fun videoModel(modelId: String): VideoModel = video(modelId)
 }
 
-fun createFal(
+public fun createFal(
     client: HttpClient,
     settings: FalProviderSettings = FalProviderSettings(),
 ): FalProvider = DefaultFalProvider(client, settings)
 
-val fal: FalProvider = object : FalProvider {
+public val fal: FalProvider = object : FalProvider {
     override val providerId: String = "fal"
     override val settings: FalProviderSettings = FalProviderSettings()
     override fun image(modelId: String): ImageModel =

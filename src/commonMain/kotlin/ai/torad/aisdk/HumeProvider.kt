@@ -22,31 +22,31 @@ import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 
-const val HUME_VERSION: String = "2.0.33"
+public const val HUME_VERSION: String = "2.0.33"
 
 @Serializable
-data class HumeSpeechModelOptions(
+public data class HumeSpeechModelOptions(
     val context: JsonObject? = null,
 )
 
 @Serializable
-data class HumeProviderSettings(
+public data class HumeProviderSettings(
     val apiKey: String? = null,
     val headers: Map<String, String> = emptyMap(),
 )
 
-interface HumeProvider : Provider {
-    operator fun invoke(): SpeechModel = speech()
-    fun speech(): SpeechModel
+public interface HumeProvider : Provider {
+    public operator fun invoke(): SpeechModel = speech()
+    public fun speech(): SpeechModel
     override fun speechModel(modelId: String): SpeechModel = speech()
 }
 
-fun createHume(
+public fun createHume(
     client: HttpClient,
     settings: HumeProviderSettings = HumeProviderSettings(),
 ): HumeProvider = DefaultHumeProvider(client, settings)
 
-val hume: HumeProvider = object : HumeProvider {
+public val hume: HumeProvider = object : HumeProvider {
     override val providerId: String = "hume"
     override fun speech(): SpeechModel =
         throw AiSdkException("Hume provider is not configured. Use createHume(client, settings).")

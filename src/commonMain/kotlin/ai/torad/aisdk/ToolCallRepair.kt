@@ -28,7 +28,7 @@ import kotlinx.serialization.json.JsonElement
  *              Pass a wrapped model if you want repair attempts
  *              instrumented the same way as main-flow calls.
  */
-fun <TContext> modelRepromptRepair(
+public fun <TContext> modelRepromptRepair(
     model: LanguageModel,
 ): ToolCallRepairFunction<TContext> = { failedCall, error, messages, tools ->
     val tool = tools.find(failedCall.toolName)

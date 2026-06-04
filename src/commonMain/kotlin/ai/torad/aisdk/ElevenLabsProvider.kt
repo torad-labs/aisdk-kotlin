@@ -29,14 +29,14 @@ import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 
-const val ELEVENLABS_VERSION: String = "2.0.33"
+public const val ELEVENLABS_VERSION: String = "2.0.33"
 
-typealias ElevenLabsSpeechModelId = String
-typealias ElevenLabsSpeechVoiceId = String
-typealias ElevenLabsTranscriptionModelId = String
+public typealias ElevenLabsSpeechModelId = String
+public typealias ElevenLabsSpeechVoiceId = String
+public typealias ElevenLabsTranscriptionModelId = String
 
 @Serializable
-data class ElevenLabsSpeechModelOptions(
+public data class ElevenLabsSpeechModelOptions(
     val languageCode: String? = null,
     val voiceSettings: JsonObject? = null,
     val pronunciationDictionaryLocators: List<JsonObject>? = null,
@@ -51,7 +51,7 @@ data class ElevenLabsSpeechModelOptions(
 )
 
 @Serializable
-data class ElevenLabsTranscriptionModelOptions(
+public data class ElevenLabsTranscriptionModelOptions(
     val languageCode: String? = null,
     val tagAudioEvents: Boolean? = null,
     val numSpeakers: Int? = null,
@@ -61,27 +61,27 @@ data class ElevenLabsTranscriptionModelOptions(
 )
 
 @Serializable
-data class ElevenLabsProviderSettings(
+public data class ElevenLabsProviderSettings(
     val apiKey: String? = null,
     val headers: Map<String, String> = emptyMap(),
 )
 
-interface ElevenLabsProvider : Provider {
-    operator fun invoke(modelId: ElevenLabsTranscriptionModelId = "scribe_v1"): TranscriptionModel = transcription(modelId)
-    fun transcription(modelId: ElevenLabsTranscriptionModelId): TranscriptionModel
-    fun speech(modelId: ElevenLabsSpeechModelId): SpeechModel
-    fun textEmbeddingModel(modelId: String): Nothing = throw NoSuchModelError(providerId, "embeddingModel", modelId)
+public interface ElevenLabsProvider : Provider {
+    public operator fun invoke(modelId: ElevenLabsTranscriptionModelId = "scribe_v1"): TranscriptionModel = transcription(modelId)
+    public fun transcription(modelId: ElevenLabsTranscriptionModelId): TranscriptionModel
+    public fun speech(modelId: ElevenLabsSpeechModelId): SpeechModel
+    public fun textEmbeddingModel(modelId: String): Nothing = throw NoSuchModelError(providerId, "embeddingModel", modelId)
 
     override fun transcriptionModel(modelId: String): TranscriptionModel = transcription(modelId)
     override fun speechModel(modelId: String): SpeechModel = speech(modelId)
 }
 
-fun createElevenLabs(
+public fun createElevenLabs(
     client: HttpClient,
     settings: ElevenLabsProviderSettings = ElevenLabsProviderSettings(),
 ): ElevenLabsProvider = DefaultElevenLabsProvider(client, settings)
 
-val elevenlabs: ElevenLabsProvider = object : ElevenLabsProvider {
+public val elevenlabs: ElevenLabsProvider = object : ElevenLabsProvider {
     override val providerId: String = "elevenlabs"
     override fun transcription(modelId: String): TranscriptionModel =
         throw AiSdkException("ElevenLabs provider is not configured. Use createElevenLabs(client, settings).")

@@ -10,26 +10,26 @@ import ai.torad.aisdk.react.Experimental_UseObjectHelpers
 import ai.torad.aisdk.react.UseCompletionHelpers
 
 @ExperimentalAiSdkApi
-typealias Chat = ai.torad.aisdk.ui.Chat
+public typealias Chat = ai.torad.aisdk.ui.Chat
 
 @ExperimentalAiSdkApi
-typealias UIMessage = ai.torad.aisdk.ui.UIMessage
+public typealias UIMessage = ai.torad.aisdk.ui.UIMessage
 
 @ExperimentalAiSdkApi
-typealias UseCompletionOptions = ai.torad.aisdk.UseCompletionOptions
+public typealias UseCompletionOptions = ai.torad.aisdk.UseCompletionOptions
 
 @ExperimentalAiSdkApi
-typealias CompletionRequestOptions = ai.torad.aisdk.CompletionRequestOptions
+public typealias CompletionRequestOptions = ai.torad.aisdk.CompletionRequestOptions
 
 @ExperimentalAiSdkApi
-typealias Experimental_UseObjectOptions<RESULT, INPUT> = StructuredObjectOptions<RESULT, INPUT>
+public typealias Experimental_UseObjectOptions<RESULT, INPUT> = StructuredObjectOptions<RESULT, INPUT>
 
 @ExperimentalAiSdkApi
-fun useCompletion(options: UseCompletionOptions = UseCompletionOptions()): UseCompletionHelpers =
+public fun useCompletion(options: UseCompletionOptions = UseCompletionOptions()): UseCompletionHelpers =
     UseCompletionHelpers(Completion(options))
 
 @ExperimentalAiSdkApi
-fun <RESULT, INPUT> experimental_useObject(
+public fun <RESULT, INPUT> experimental_useObject(
     options: StructuredObjectOptions<RESULT, INPUT>,
 ): Experimental_UseObjectHelpers<RESULT, INPUT> =
     Experimental_UseObjectHelpers(StructuredObject(options))

@@ -23,12 +23,12 @@ import kotlinx.serialization.json.intOrNull
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 
-const val LMNT_VERSION: String = "2.0.33"
+public const val LMNT_VERSION: String = "2.0.33"
 
-typealias LMNTSpeechModelId = String
+public typealias LMNTSpeechModelId = String
 
 @Serializable
-data class LMNTSpeechModelOptions(
+public data class LMNTSpeechModelOptions(
     val model: String? = null,
     val format: String? = null,
     val sampleRate: Int? = null,
@@ -41,23 +41,23 @@ data class LMNTSpeechModelOptions(
 )
 
 @Serializable
-data class LMNTProviderSettings(
+public data class LMNTProviderSettings(
     val apiKey: String? = null,
     val headers: Map<String, String> = emptyMap(),
 )
 
-interface LMNTProvider : Provider {
-    operator fun invoke(modelId: LMNTSpeechModelId = "aurora"): SpeechModel = speech(modelId)
-    fun speech(modelId: LMNTSpeechModelId): SpeechModel
+public interface LMNTProvider : Provider {
+    public operator fun invoke(modelId: LMNTSpeechModelId = "aurora"): SpeechModel = speech(modelId)
+    public fun speech(modelId: LMNTSpeechModelId): SpeechModel
     override fun speechModel(modelId: String): SpeechModel = speech(modelId)
 }
 
-fun createLMNT(
+public fun createLMNT(
     client: HttpClient,
     settings: LMNTProviderSettings = LMNTProviderSettings(),
 ): LMNTProvider = DefaultLMNTProvider(client, settings)
 
-val lmnt: LMNTProvider = object : LMNTProvider {
+public val lmnt: LMNTProvider = object : LMNTProvider {
     override val providerId: String = "lmnt"
     override fun speech(modelId: String): SpeechModel =
         throw AiSdkException("LMNT provider is not configured. Use createLMNT(client, settings).")

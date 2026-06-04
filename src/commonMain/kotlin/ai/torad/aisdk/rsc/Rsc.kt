@@ -8,64 +8,64 @@ import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.flowOf
 
 @ExperimentalAiSdkApi
-class StreamableValue<T> internal constructor(
+public class StreamableValue<T> internal constructor(
     internal val stream: Flow<T>,
 )
 
 @ExperimentalAiSdkApi
-class StreamableValueController<T>(
+public class StreamableValueController<T>(
     initialValue: T? = null,
 ) {
     private val updates = MutableSharedFlow<T>(replay = 64)
-    val value: StreamableValue<T> = StreamableValue(updates)
+    public val value: StreamableValue<T> = StreamableValue(updates)
 
     init {
         initialValue?.let { updates.tryEmit(it) }
     }
 
-    suspend fun update(value: T) {
+    public suspend fun update(value: T) {
         updates.emit(value)
     }
 
-    suspend fun done(value: T? = null) {
+    public suspend fun done(value: T? = null) {
         if (value != null) updates.emit(value)
     }
 
-    suspend fun error(throwable: Throwable) {
+    public suspend fun error(throwable: Throwable) {
         throw throwable
     }
 }
 
 @ExperimentalAiSdkApi
-fun <T> createStreamableValue(initialValue: T? = null): StreamableValueController<T> =
+public fun <T> createStreamableValue(initialValue: T? = null): StreamableValueController<T> =
     StreamableValueController(initialValue)
 
 @ExperimentalAiSdkApi
-fun <T> readStreamableValue(value: StreamableValue<T>): Flow<T> = value.stream
+public fun <T> readStreamableValue(value: StreamableValue<T>): Flow<T> = value.stream
 
 @ExperimentalAiSdkApi
-class StreamableUI internal constructor(
+public class StreamableUI internal constructor(
     internal val stream: Flow<UIMessage>,
 )
 
 @ExperimentalAiSdkApi
-class StreamableUIController(initialValue: UIMessage? = null) {
+public class StreamableUIController(initialValue: UIMessage? = null) {
     private val updates = MutableSharedFlow<UIMessage>(replay = 64)
-    val value: StreamableUI = StreamableUI(updates)
+    public val value: StreamableUI = StreamableUI(updates)
 
     init {
         initialValue?.let { updates.tryEmit(it) }
     }
 
-    suspend fun update(value: UIMessage) {
+    public suspend fun update(value: UIMessage) {
         updates.emit(value)
     }
 
-    suspend fun done(value: UIMessage? = null) {
+    public suspend fun done(value: UIMessage? = null) {
         if (value != null) updates.emit(value)
     }
 
-    suspend fun error(message: String) {
+    public suspend fun error(message: String) {
         updates.emit(
             UIMessage(
                 id = "error",
@@ -77,43 +77,43 @@ class StreamableUIController(initialValue: UIMessage? = null) {
 }
 
 @ExperimentalAiSdkApi
-fun createStreamableUI(initialValue: UIMessage? = null): StreamableUIController =
+public fun createStreamableUI(initialValue: UIMessage? = null): StreamableUIController =
     StreamableUIController(initialValue)
 
 @ExperimentalAiSdkApi
-fun streamUI(stream: Flow<UIMessage>): StreamableUI = StreamableUI(stream)
+public fun streamUI(stream: Flow<UIMessage>): StreamableUI = StreamableUI(stream)
 
 @ExperimentalAiSdkApi
-fun createAIUIStream(stream: Flow<UIMessage>): Flow<UIMessage> = stream
+public fun createAIUIStream(stream: Flow<UIMessage>): Flow<UIMessage> = stream
 
 @ExperimentalAiSdkApi
-fun createAIUIStreamResponse(stream: Flow<UIMessage>): ai.torad.aisdk.ui.UIMessageStreamResponse =
+public fun createAIUIStreamResponse(stream: Flow<UIMessage>): ai.torad.aisdk.ui.UIMessageStreamResponse =
     ai.torad.aisdk.ui.createUiMessageStreamResponse(stream)
 
 @ExperimentalAiSdkApi
-class AIProvider<AI_STATE, UI_STATE>(
+public class AIProvider<AI_STATE, UI_STATE>(
     initialAIState: AI_STATE,
     initialUIState: UI_STATE,
     private val onSetAIState: ((AI_STATE) -> Unit)? = null,
 ) {
-    var aiState: AI_STATE = initialAIState
+    public var aiState: AI_STATE = initialAIState
         private set
 
-    var uiState: UI_STATE = initialUIState
+    public var uiState: UI_STATE = initialUIState
         private set
 
-    fun setAIState(value: AI_STATE) {
+    public fun setAIState(value: AI_STATE) {
         aiState = value
         onSetAIState?.invoke(value)
     }
 
-    fun setUIState(value: UI_STATE) {
+    public fun setUIState(value: UI_STATE) {
         uiState = value
     }
 }
 
 @ExperimentalAiSdkApi
-fun <AI_STATE, UI_STATE> createAI(
+public fun <AI_STATE, UI_STATE> createAI(
     initialAIState: AI_STATE,
     initialUIState: UI_STATE,
     onSetAIState: ((AI_STATE) -> Unit)? = null,
@@ -121,33 +121,33 @@ fun <AI_STATE, UI_STATE> createAI(
     AIProvider(initialAIState, initialUIState, onSetAIState)
 
 @ExperimentalAiSdkApi
-fun <AI_STATE, UI_STATE> getAIState(provider: AIProvider<AI_STATE, UI_STATE>): AI_STATE =
+public fun <AI_STATE, UI_STATE> getAIState(provider: AIProvider<AI_STATE, UI_STATE>): AI_STATE =
     provider.aiState
 
 @ExperimentalAiSdkApi
-fun <AI_STATE, UI_STATE> getMutableAIState(provider: AIProvider<AI_STATE, UI_STATE>): AIProvider<AI_STATE, UI_STATE> =
+public fun <AI_STATE, UI_STATE> getMutableAIState(provider: AIProvider<AI_STATE, UI_STATE>): AIProvider<AI_STATE, UI_STATE> =
     provider
 
 @ExperimentalAiSdkApi
-fun <AI_STATE, UI_STATE> useAIState(provider: AIProvider<AI_STATE, UI_STATE>): AI_STATE =
+public fun <AI_STATE, UI_STATE> useAIState(provider: AIProvider<AI_STATE, UI_STATE>): AI_STATE =
     provider.aiState
 
 @ExperimentalAiSdkApi
-fun <AI_STATE, UI_STATE> useUIState(provider: AIProvider<AI_STATE, UI_STATE>): UI_STATE =
+public fun <AI_STATE, UI_STATE> useUIState(provider: AIProvider<AI_STATE, UI_STATE>): UI_STATE =
     provider.uiState
 
 @ExperimentalAiSdkApi
-fun <AI_STATE, UI_STATE> useActions(provider: AIProvider<AI_STATE, UI_STATE>): AIProvider<AI_STATE, UI_STATE> =
+public fun <AI_STATE, UI_STATE> useActions(provider: AIProvider<AI_STATE, UI_STATE>): AIProvider<AI_STATE, UI_STATE> =
     provider
 
 @ExperimentalAiSdkApi
-fun <AI_STATE, UI_STATE> useSyncUIState(provider: AIProvider<AI_STATE, UI_STATE>): () -> UI_STATE =
+public fun <AI_STATE, UI_STATE> useSyncUIState(provider: AIProvider<AI_STATE, UI_STATE>): () -> UI_STATE =
     { provider.uiState }
 
 @ExperimentalAiSdkApi
-fun useStreamableValue(value: StreamableValue<UIMessage>): Flow<UIMessage> =
+public fun useStreamableValue(value: StreamableValue<UIMessage>): Flow<UIMessage> =
     readStreamableValue(value)
 
 @ExperimentalAiSdkApi
-fun createAgentUIStream(execute: suspend ai.torad.aisdk.ui.UIMessageStreamWriter.() -> Unit): Flow<UIMessage> =
+public fun createAgentUIStream(execute: suspend ai.torad.aisdk.ui.UIMessageStreamWriter.() -> Unit): Flow<UIMessage> =
     createUiMessageStream(execute = execute)

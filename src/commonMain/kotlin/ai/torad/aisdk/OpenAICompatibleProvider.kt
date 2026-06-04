@@ -34,7 +34,7 @@ import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 
-data class OpenAICompatibleProviderSettings(
+public data class OpenAICompatibleProviderSettings(
     val name: String,
     val baseUrl: String,
     val apiKey: String? = null,
@@ -54,19 +54,19 @@ data class OpenAICompatibleProviderSettings(
     val convertUsage: ((JsonElement?) -> Usage)? = null,
 )
 
-interface OpenAICompatibleProvider : Provider {
-    fun chatModel(modelId: String): LanguageModel
-    fun completionModel(modelId: String): LanguageModel
-    fun textEmbeddingModel(modelId: String): EmbeddingModel = embeddingModel(modelId)
+public interface OpenAICompatibleProvider : Provider {
+    public fun chatModel(modelId: String): LanguageModel
+    public fun completionModel(modelId: String): LanguageModel
+    public fun textEmbeddingModel(modelId: String): EmbeddingModel = embeddingModel(modelId)
 }
 
-fun createOpenAICompatible(
+public fun createOpenAICompatible(
     client: HttpClient,
     settings: OpenAICompatibleProviderSettings,
     json: Json = aiSdkJson,
 ): OpenAICompatibleProvider = KtorOpenAICompatibleProvider(client, settings, json)
 
-fun createOpenAICompatibleProvider(
+public fun createOpenAICompatibleProvider(
     client: HttpClient,
     settings: OpenAICompatibleProviderSettings,
     json: Json = aiSdkJson,

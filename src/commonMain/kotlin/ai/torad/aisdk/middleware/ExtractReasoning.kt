@@ -19,7 +19,7 @@ import kotlinx.coroutines.flow.flow
  * models that emit thinking inline rather than via dedicated reasoning
  * channels.
  */
-fun extractReasoningMiddleware(
+public fun extractReasoningMiddleware(
     tagName: String = "reasoning",
     separator: String = "\n",
 ): LanguageModelMiddleware = object : LanguageModelMiddleware {

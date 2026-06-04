@@ -26,27 +26,27 @@ import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlin.math.ceil
 
-const val XAI_VERSION: String = "3.0.93"
+public const val XAI_VERSION: String = "3.0.93"
 
-typealias XaiChatModelId = String
-typealias XaiResponsesModelId = String
-typealias XaiImageModelId = String
-typealias XaiVideoModelId = String
-typealias XaiProviderOptions = XaiLanguageModelChatOptions
-typealias XaiResponsesProviderOptions = XaiLanguageModelResponsesOptions
-typealias XaiImageProviderOptions = XaiImageModelOptions
-typealias XaiVideoProviderOptions = XaiVideoModelOptions
-typealias XaiErrorData = JsonElement
+public typealias XaiChatModelId = String
+public typealias XaiResponsesModelId = String
+public typealias XaiImageModelId = String
+public typealias XaiVideoModelId = String
+public typealias XaiProviderOptions = XaiLanguageModelChatOptions
+public typealias XaiResponsesProviderOptions = XaiLanguageModelResponsesOptions
+public typealias XaiImageProviderOptions = XaiImageModelOptions
+public typealias XaiVideoProviderOptions = XaiVideoModelOptions
+public typealias XaiErrorData = JsonElement
 
 @Serializable
-data class XaiProviderSettings(
+public data class XaiProviderSettings(
     val baseURL: String = "https://api.x.ai/v1",
     val apiKey: String? = null,
     val headers: Map<String, String> = emptyMap(),
 )
 
 @Serializable
-data class XaiLanguageModelChatOptions(
+public data class XaiLanguageModelChatOptions(
     val reasoningEffort: String? = null,
     val logprobs: Boolean? = null,
     val topLogprobs: Int? = null,
@@ -55,13 +55,13 @@ data class XaiLanguageModelChatOptions(
 )
 
 @Serializable
-data class XaiLanguageModelResponsesOptions(
+public data class XaiLanguageModelResponsesOptions(
     val reasoningEffort: String? = null,
     val reasoningSummary: String? = null,
 )
 
 @Serializable
-data class XaiImageModelOptions(
+public data class XaiImageModelOptions(
     val aspect_ratio: String? = null,
     val output_format: String? = null,
     val sync_mode: Boolean? = null,
@@ -71,7 +71,7 @@ data class XaiImageModelOptions(
 )
 
 @Serializable
-data class XaiVideoModelOptions(
+public data class XaiVideoModelOptions(
     val mode: String? = null,
     val videoUrl: String? = null,
     val referenceImageUrls: List<String>? = null,
@@ -80,23 +80,23 @@ data class XaiVideoModelOptions(
     val resolution: String? = null,
 )
 
-interface XaiProvider : Provider {
-    val settings: XaiProviderSettings
-    val tools: XaiTools
+public interface XaiProvider : Provider {
+    public val settings: XaiProviderSettings
+    public val tools: XaiTools
 
-    operator fun invoke(modelId: XaiChatModelId): LanguageModel = chat(modelId)
-    fun chat(modelId: XaiChatModelId): LanguageModel
-    fun responses(modelId: XaiResponsesModelId): LanguageModel
-    fun image(modelId: XaiImageModelId): ImageModel
-    fun video(modelId: XaiVideoModelId): VideoModel
+    public operator fun invoke(modelId: XaiChatModelId): LanguageModel = chat(modelId)
+    public fun chat(modelId: XaiChatModelId): LanguageModel
+    public fun responses(modelId: XaiResponsesModelId): LanguageModel
+    public fun image(modelId: XaiImageModelId): ImageModel
+    public fun video(modelId: XaiVideoModelId): VideoModel
 
     override fun languageModel(modelId: String): LanguageModel = chat(modelId)
     override fun imageModel(modelId: String): ImageModel = image(modelId)
     override fun videoModel(modelId: String): VideoModel = video(modelId)
-    fun textEmbeddingModel(modelId: String): Nothing = throw NoSuchModelError(providerId, "embeddingModel", modelId)
+    public fun textEmbeddingModel(modelId: String): Nothing = throw NoSuchModelError(providerId, "embeddingModel", modelId)
 }
 
-data class XaiTools(
+public data class XaiTools(
     val codeExecution: Tool<JsonElement, JsonElement, Any?> = codeExecution(),
     val fileSearch: Tool<JsonElement, JsonElement, Any?> = fileSearch(),
     val mcpServer: Tool<JsonElement, JsonElement, Any?> = mcpServer(),
@@ -106,35 +106,35 @@ data class XaiTools(
     val xSearch: Tool<JsonElement, JsonElement, Any?> = xSearch(),
 )
 
-val xaiTools: XaiTools = XaiTools()
+public val xaiTools: XaiTools = XaiTools()
 
-fun codeExecution(args: JsonElement = JsonObject(emptyMap())): Tool<JsonElement, JsonElement, Any?> =
+public fun codeExecution(args: JsonElement = JsonObject(emptyMap())): Tool<JsonElement, JsonElement, Any?> =
     xaiProviderTool("code_execution", "Execute code in xAI's hosted code execution environment.", args)
 
-fun fileSearch(args: JsonElement = JsonObject(emptyMap())): Tool<JsonElement, JsonElement, Any?> =
+public fun fileSearch(args: JsonElement = JsonObject(emptyMap())): Tool<JsonElement, JsonElement, Any?> =
     xaiProviderTool("file_search", "Search xAI collections and vector stores.", args)
 
-fun mcpServer(args: JsonElement = JsonObject(emptyMap())): Tool<JsonElement, JsonElement, Any?> =
+public fun mcpServer(args: JsonElement = JsonObject(emptyMap())): Tool<JsonElement, JsonElement, Any?> =
     xaiProviderTool("mcp", "Call tools from a remote MCP server through xAI.", args)
 
-fun viewImage(args: JsonElement = JsonObject(emptyMap())): Tool<JsonElement, JsonElement, Any?> =
+public fun viewImage(args: JsonElement = JsonObject(emptyMap())): Tool<JsonElement, JsonElement, Any?> =
     xaiProviderTool("view_image", "Inspect an image through xAI's hosted vision tool.", args)
 
-fun viewXVideo(args: JsonElement = JsonObject(emptyMap())): Tool<JsonElement, JsonElement, Any?> =
+public fun viewXVideo(args: JsonElement = JsonObject(emptyMap())): Tool<JsonElement, JsonElement, Any?> =
     xaiProviderTool("view_x_video", "Inspect an X video through xAI's hosted video tool.", args)
 
-fun webSearch(args: JsonElement = JsonObject(emptyMap())): Tool<JsonElement, JsonElement, Any?> =
+public fun webSearch(args: JsonElement = JsonObject(emptyMap())): Tool<JsonElement, JsonElement, Any?> =
     xaiProviderTool("web_search", "Search the web through xAI.", args)
 
-fun xSearch(args: JsonElement = JsonObject(emptyMap())): Tool<JsonElement, JsonElement, Any?> =
+public fun xSearch(args: JsonElement = JsonObject(emptyMap())): Tool<JsonElement, JsonElement, Any?> =
     xaiProviderTool("x_search", "Search X posts through xAI.", args)
 
-fun createXai(
+public fun createXai(
     client: HttpClient,
     settings: XaiProviderSettings = XaiProviderSettings(),
 ): XaiProvider = DefaultXaiProvider(client, settings)
 
-val xai: XaiProvider = XaiProviderNotConfigured
+public val xai: XaiProvider = XaiProviderNotConfigured
 
 private object XaiProviderNotConfigured : XaiProvider {
     override val settings: XaiProviderSettings = XaiProviderSettings()

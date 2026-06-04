@@ -15,7 +15,7 @@ import kotlinx.serialization.json.JsonElement
  * across process restarts.
  */
 @Serializable
-data class PendingApproval(
+public data class PendingApproval(
     val toolCallId: String,
     val toolName: String,
     val input: JsonElement,
@@ -33,5 +33,5 @@ data class PendingApproval(
 
 /** The effective approval ID — explicit [PendingApproval.approvalId] or
  *  fallback to [PendingApproval.toolCallId]. */
-fun effectiveApprovalId(approval: PendingApproval): String =
+public fun effectiveApprovalId(approval: PendingApproval): String =
     approval.approvalId ?: approval.toolCallId

@@ -28,12 +28,12 @@ import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.longOrNull
 
-const val HUGGINGFACE_VERSION: String = "1.0.50"
+public const val HUGGINGFACE_VERSION: String = "1.0.50"
 
-typealias HuggingFaceResponsesModelId = String
-typealias HuggingFaceErrorData = JsonObject
+public typealias HuggingFaceResponsesModelId = String
+public typealias HuggingFaceErrorData = JsonObject
 
-data class HuggingFaceProviderSettings(
+public data class HuggingFaceProviderSettings(
     val apiKey: String? = null,
     val baseURL: String = "https://router.huggingface.co/v1",
     val headers: Map<String, String> = emptyMap(),
@@ -41,27 +41,27 @@ data class HuggingFaceProviderSettings(
 )
 
 @Serializable
-data class HuggingFaceResponsesSettings(
+public data class HuggingFaceResponsesSettings(
     val metadata: Map<String, String>? = null,
     val instructions: String? = null,
     val strictJsonSchema: Boolean? = null,
     val reasoningEffort: String? = null,
 )
 
-interface HuggingFaceProvider : Provider {
-    val settings: HuggingFaceProviderSettings
+public interface HuggingFaceProvider : Provider {
+    public val settings: HuggingFaceProviderSettings
 
-    operator fun invoke(modelId: HuggingFaceResponsesModelId): LanguageModel = languageModel(modelId)
-    fun responses(modelId: HuggingFaceResponsesModelId): LanguageModel = languageModel(modelId)
-    fun textEmbeddingModel(modelId: String): Nothing = throw huggingFaceNoEmbeddingModel(providerId, modelId)
+    public operator fun invoke(modelId: HuggingFaceResponsesModelId): LanguageModel = languageModel(modelId)
+    public fun responses(modelId: HuggingFaceResponsesModelId): LanguageModel = languageModel(modelId)
+    public fun textEmbeddingModel(modelId: String): Nothing = throw huggingFaceNoEmbeddingModel(providerId, modelId)
 }
 
-fun createHuggingFace(
+public fun createHuggingFace(
     client: HttpClient,
     settings: HuggingFaceProviderSettings = HuggingFaceProviderSettings(),
 ): HuggingFaceProvider = DefaultHuggingFaceProvider(client, settings)
 
-val huggingface: HuggingFaceProvider = object : HuggingFaceProvider {
+public val huggingface: HuggingFaceProvider = object : HuggingFaceProvider {
     override val providerId: String = "huggingface"
     override val settings: HuggingFaceProviderSettings = HuggingFaceProviderSettings()
     override fun languageModel(modelId: String): LanguageModel =

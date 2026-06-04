@@ -22,11 +22,13 @@ version = providers.gradleProperty("VERSION_NAME").get()
 kotlin {
     jvmToolchain(21)
 
-    // Phase 3 (Kotlin modernization): warn — don't fail — on missing visibility
-    // modifiers / explicit return types across the public surface. This sizes the
-    // backlog for the later strict `explicitApi()` pass; it is compile-time-only
-    // and emits `w:` warnings without breaking the build.
-    explicitApiWarning()
+    // Phase 3 (Kotlin modernization): STRICT explicit API mode — every public
+    // declaration must carry an explicit visibility modifier and an explicit
+    // return type, or compilation fails. This is the 1.0-gate guarantee that the
+    // published surface is intentional (KEEP-0045: compile-time-only, no bytecode
+    // or semantic change). The non-API plumbing has been `internal`-ized so the
+    // remaining `public` surface is the supported SDK contract.
+    explicitApi()
 
     // KMP per-target + umbrella sources jars, attached to the publications
     // (Maven Central requires a -sources.jar alongside each artifact).

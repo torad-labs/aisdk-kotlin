@@ -22,10 +22,10 @@ import kotlinx.coroutines.flow.flow
  * Non-text events (tool calls, step-finish, etc.) pass through immediately
  * without delay so the loop logic isn't slowed down.
  */
-sealed interface ChunkBy {
-    data object Word : ChunkBy
-    data object Line : ChunkBy
-    data class Pattern(val regex: Regex) : ChunkBy
+public sealed interface ChunkBy {
+    public data object Word : ChunkBy
+    public data object Line : ChunkBy
+    public data class Pattern(val regex: Regex) : ChunkBy
 }
 
 // Word-boundary regex with CJK awareness (per AISDK_PORT_GAPS.md gap #32).
@@ -50,7 +50,7 @@ private val WORD_REGEX = Regex(
 )
 private val LINE_REGEX = Regex("""[^\n]*\n""", RegexOption.MULTILINE)
 
-fun smoothStream(
+public fun smoothStream(
     upstream: Flow<StreamEvent>,
     delayMs: Long = 10L,
     chunkBy: ChunkBy = ChunkBy.Word,
