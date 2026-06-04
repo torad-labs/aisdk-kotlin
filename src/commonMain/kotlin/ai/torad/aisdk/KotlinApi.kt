@@ -14,6 +14,10 @@ import kotlinx.serialization.serializer
  * Native Kotlin callers can use this grouped settings object to avoid
  * long nullable argument lists at call sites.
  */
+/** Marks AI SDK builder receivers so nested DSL blocks don't leak outer scopes. */
+@DslMarker
+annotation class AiSdkDsl
+
 data class CallSettings(
     val temperature: Float? = null,
     val topP: Float? = null,
@@ -31,6 +35,7 @@ data class CallSettings(
     val responseFormat: ResponseFormat? = null,
 )
 
+@AiSdkDsl
 class CallSettingsBuilder internal constructor() {
     var temperature: Float? = null
     var topP: Float? = null
@@ -79,6 +84,7 @@ class CallSettingsBuilder internal constructor() {
 fun callSettings(block: CallSettingsBuilder.() -> Unit): CallSettings =
     CallSettingsBuilder().apply(block).build()
 
+@AiSdkDsl
 class ProviderOptionsBuilder internal constructor() {
     private val values = linkedMapOf<String, JsonElement>()
 
@@ -123,6 +129,7 @@ data class TextGenerationRequest(
     val settings: CallSettings = CallSettings(),
 )
 
+@AiSdkDsl
 class TextGenerationRequestBuilder internal constructor() {
     var prompt: String? = null
     var system: String? = null

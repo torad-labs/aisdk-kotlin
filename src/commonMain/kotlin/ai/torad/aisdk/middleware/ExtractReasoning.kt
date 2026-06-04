@@ -43,8 +43,9 @@ fun extractReasoningMiddleware(
             if (buffer.isEmpty()) return
             val text = buffer.toString()
             buffer.clear()
-            if (inReasoning && reasoningId != null) {
-                emit(StreamEvent.ReasoningDelta(reasoningId!!, text))
+            val rid = reasoningId
+            if (inReasoning && rid != null) {
+                emit(StreamEvent.ReasoningDelta(rid, text))
             } else if (id != null) {
                 emit(StreamEvent.TextDelta(id, text))
             }
@@ -70,23 +71,28 @@ fun extractReasoningMiddleware(
                                 emit(StreamEvent.TextDelta(event.id, buffer.substring(0, openIdx), event.providerMetadata))
                             }
                             buffer.deleteRange(0, openIdx + openTag.length)
-                            reasoningId = "reasoning_${++nextReasoningIdx}"
-                            emit(StreamEvent.ReasoningStart(reasoningId!!, event.providerMetadata))
+                            val newReasoningId = "reasoning_${++nextReasoningIdx}"
+                            reasoningId = newReasoningId
+                            emit(StreamEvent.ReasoningStart(newReasoningId, event.providerMetadata))
                             inReasoning = true
                         } else {
+                            // Invariant: reasoningId is non-null whenever inReasoning.
+                            val rid = requireNotNull(reasoningId) {
+                                "reasoningId must be set while parsing a reasoning section"
+                            }
                             val closeIdx = buffer.indexOf(closeTag)
                             if (closeIdx < 0) {
                                 val emitLength = buffer.length - buffer.longestSuffixPrefixOf(closeTag)
                                 if (emitLength > 0) {
-                                    emit(StreamEvent.ReasoningDelta(reasoningId!!, buffer.substring(0, emitLength), event.providerMetadata))
+                                    emit(StreamEvent.ReasoningDelta(rid, buffer.substring(0, emitLength), event.providerMetadata))
                                     buffer.deleteRange(0, emitLength)
                                 }
                                 break
                             }
                             if (closeIdx > 0) {
-                                emit(StreamEvent.ReasoningDelta(reasoningId!!, buffer.substring(0, closeIdx), event.providerMetadata))
+                                emit(StreamEvent.ReasoningDelta(rid, buffer.substring(0, closeIdx), event.providerMetadata))
                             }
-                            emit(StreamEvent.ReasoningEnd(reasoningId!!, event.providerMetadata))
+                            emit(StreamEvent.ReasoningEnd(rid, event.providerMetadata))
                             buffer.deleteRange(0, closeIdx + closeTag.length)
                             if (separator.isNotEmpty()) emit(StreamEvent.TextDelta(event.id, separator, event.providerMetadata))
                             inReasoning = false

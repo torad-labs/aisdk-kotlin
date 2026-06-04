@@ -1,10 +1,12 @@
 package ai.torad.aisdk
 
+import kotlin.coroutines.CoroutineContext
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.FlowCollector
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -14,7 +16,6 @@ import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.serialization.KSerializer
-import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonPrimitive
 
@@ -87,9 +88,14 @@ open class ToolLoopAgent<TContext, TOutput>(
      * `StreamEvent.ToolError`. See [ToolCallRepairFunction].
      */
     val experimental_repairToolCall: ToolCallRepairFunction<TContext>? = null,
+    /**
+     * Coroutine context for the engine-surface scope (the long-lived
+     * StateFlow-driven surface). Defaults to [Dispatchers.Default]; inject a
+     * test dispatcher or a host-controlled one for deterministic scheduling.
+     * The per-call generate()/stream() API is unaffected.
+     */
+    engineContext: CoroutineContext = Dispatchers.Default,
 ) : Agent<TContext, TOutput> {
-
-    private val jsonCodec = Json { ignoreUnknownKeys = true; encodeDefaults = true }
 
     // ─── ENGINE-SHAPE STATE-HOLDER SURFACE ───────────────────────────────
     //
@@ -114,9 +120,20 @@ open class ToolLoopAgent<TContext, TOutput>(
      */
     val engineState: StateFlow<ToolLoopAgentState> = mutableEngineState.asStateFlow()
 
-    private val engineScope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+    private val engineScope: CoroutineScope = CoroutineScope(SupervisorJob() + engineContext)
     private var currentEngineJob: Job? = null
     private var currentEngineContext: TContext? = null
+
+    /**
+     * Cancel the engine scope and any in-flight engine job. Call when a
+     * long-lived host (ViewModel / Repository) that drove the engine surface
+     * is disposed. The per-call generate()/stream() API needs no close().
+     */
+    fun close() {
+        currentEngineJob?.cancel()
+        currentEngineJob = null
+        engineScope.cancel()
+    }
 
     /**
      * Drive the engine. Each action either advances [engineState] or
@@ -1121,14 +1138,14 @@ open class ToolLoopAgent<TContext, TOutput>(
     @Suppress("UNCHECKED_CAST")
     private fun encodeToolOutput(tool: Tool<*, *, *>, output: Any?): JsonElement {
         val ser = tool.outputSerializer as KSerializer<Any?>
-        return jsonCodec.encodeToJsonElement(ser, output)
+        return aiSdkOutputJson.encodeToJsonElement(ser, output)
     }
 
     private fun validateCallOptions(options: TContext?): TContext? {
         val serializer = callOptionsSchema ?: return options
         if (options == null) return null
         return try {
-            jsonCodec.decodeFromJsonElement(serializer, jsonCodec.encodeToJsonElement(serializer, options))
+            aiSdkOutputJson.decodeFromJsonElement(serializer, aiSdkOutputJson.encodeToJsonElement(serializer, options))
         } catch (error: Exception) {
             throw AgentError.InvalidCallOptions(error)
         }

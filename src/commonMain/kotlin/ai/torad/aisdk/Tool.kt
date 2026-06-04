@@ -300,6 +300,7 @@ internal fun <TContext> requireUniqueToolNames(
 fun <TContext> toolSetOf(vararg tools: Tool<*, *, TContext>): ToolSet<TContext> =
     ToolSet(requireUniqueToolNames(tools.toList()))
 
+@AiSdkDsl
 class ToolSetBuilder<TContext> internal constructor() {
     private val tools = linkedMapOf<String, Tool<*, *, TContext>>()
 

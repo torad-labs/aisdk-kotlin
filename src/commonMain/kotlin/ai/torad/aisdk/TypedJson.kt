@@ -15,6 +15,14 @@ internal val aiSdkJson = Json {
     explicitNulls = false
 }
 
+// Outbound codec — emits defaults so round-trips are stable. Paired with the
+// inbound lenient [aiSdkJson]; together these are the two core JSON instances
+// (M-3). Provider-local codecs remain only where they encode real wire quirks.
+internal val aiSdkOutputJson = Json {
+    ignoreUnknownKeys = true
+    encodeDefaults = true
+}
+
 fun <T> encodeJsonElement(value: T, serializer: KSerializer<T>): JsonElement =
     aiSdkJson.encodeToJsonElement(serializer, value)
 

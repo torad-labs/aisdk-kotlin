@@ -114,8 +114,8 @@ data class LanguageModelTool(
     val metadata: Map<String, JsonElement> = emptyMap(),
     val strict: Boolean = true,
 ) {
-    val parametersSchema: JsonElement
-        get() = aiSdkJson.parseToJsonElement(parametersSchemaJson)
+    /** Parsed once and cached — not a constructor arg, so not serialized. */
+    val parametersSchema: JsonElement by lazy { aiSdkJson.parseToJsonElement(parametersSchemaJson) }
 }
 
 /** One-shot generate result. */

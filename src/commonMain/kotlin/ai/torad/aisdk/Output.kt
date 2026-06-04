@@ -2,7 +2,6 @@ package ai.torad.aisdk
 
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.builtins.ListSerializer
-import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
@@ -41,8 +40,7 @@ sealed class Output<T> {
     abstract val schemaName: String
     open val schemaDescription: String? = null
     abstract val schemaJson: String
-    open val schema: JsonElement
-        get() = outputJsonCodec.parseToJsonElement(schemaJson)
+    open val schema: JsonElement by lazy { aiSdkOutputJson.parseToJsonElement(schemaJson) }
     abstract fun decode(text: String): T
 
     /** `Output.object()` in v6, renamed to `obj` because `object` is a Kotlin keyword. */
@@ -56,7 +54,7 @@ sealed class Output<T> {
             put("type", JsonPrimitive("object"))
             put("title", JsonPrimitive(name))
         }.toString()
-        override fun decode(text: String): T = outputJsonCodec.decodeFromString(serializer, text)
+        override fun decode(text: String): T = aiSdkOutputJson.decodeFromString(serializer, text)
     }
 
     class Arr<T>(
@@ -92,13 +90,13 @@ sealed class Output<T> {
 
         override fun decode(text: String): List<T> {
             val listSerializer = ListSerializer(elementSerializer)
-            val element = outputJsonCodec.parseToJsonElement(text)
+            val element = aiSdkOutputJson.parseToJsonElement(text)
             val elements = when (element) {
                 is JsonArray -> element
                 is JsonObject -> element["elements"] as? JsonArray
                 else -> null
             } ?: error("Expected a JSON array or an object with an `elements` array")
-            return outputJsonCodec.decodeFromJsonElement(listSerializer, elements)
+            return aiSdkOutputJson.decodeFromJsonElement(listSerializer, elements)
         }
     }
 
@@ -146,7 +144,7 @@ sealed class Output<T> {
     ) : Output<JsonElement>() {
         override val schemaName: String = name
         override val schemaJson: String = "{}"
-        override fun decode(text: String): JsonElement = outputJsonCodec.parseToJsonElement(text)
+        override fun decode(text: String): JsonElement = aiSdkOutputJson.parseToJsonElement(text)
     }
 
     companion object {
@@ -185,8 +183,6 @@ sealed class Output<T> {
 // Top-level constructors + codec.
 // Naming: `output<Variant>(...)` so call sites read as `outputObj(...)`
 // while `Output.obj(...)` also works for v6-shaped call sites.
-
-private val outputJsonCodec: Json = Json { ignoreUnknownKeys = true; encodeDefaults = true }
 
 fun <T> outputObj(
     serializer: KSerializer<T>,
@@ -232,7 +228,7 @@ internal fun Output<*>.toResponseFormat(): ResponseFormat = ResponseFormat.Json(
 )
 
 private fun extractChoiceValue(text: String): String {
-    val element = outputJsonCodec.parseToJsonElement(text)
+    val element = aiSdkOutputJson.parseToJsonElement(text)
     return when (element) {
         is JsonObject -> element["result"]?.jsonPrimitive?.contentOrNull
         is JsonPrimitive -> element.contentOrNull
