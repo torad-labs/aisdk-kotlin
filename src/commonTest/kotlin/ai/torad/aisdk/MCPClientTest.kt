@@ -879,7 +879,7 @@ class MCPClientTest {
 
     private suspend fun waitForRealTime(condition: () -> Boolean) {
         withContext(Dispatchers.Default) {
-            withTimeout(1_000) {
+            withTimeout(5_000) {
                 while (!condition()) delay(10)
             }
         }

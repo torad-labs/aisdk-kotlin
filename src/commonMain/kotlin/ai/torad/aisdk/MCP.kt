@@ -16,6 +16,7 @@ import io.ktor.http.contentType
 import io.ktor.utils.io.ByteReadChannel
 import io.ktor.utils.io.readLine
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -1622,7 +1623,7 @@ class HttpMCPTransport(
             val current = inboundJob
             if (current == null || current.isCompleted) {
                 inboundRetryRequested = false
-                inboundJob = activeScope.launch { readInboundSse() }
+                inboundJob = activeScope.launch(start = CoroutineStart.UNDISPATCHED) { readInboundSse() }
             } else {
                 inboundRetryRequested = true
             }
