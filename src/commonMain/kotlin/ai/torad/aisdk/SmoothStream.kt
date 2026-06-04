@@ -2,6 +2,7 @@ package ai.torad.aisdk
 
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.buffer
 import kotlinx.coroutines.flow.flow
 
 /**
@@ -100,7 +101,11 @@ fun smoothStream(
         }
     }
 
-    upstream.collect { event ->
+    // .buffer() decouples upstream token production from the artificial UI-pacing
+    // delay()s in flushText/flushReasoning: without it, the delay back-pressures the
+    // provider while we collect. The default (suspending, unbounded-ish) buffer means
+    // no token loss — fast on-device models keep producing while we pace the UI.
+    upstream.buffer().collect { event ->
         when (event) {
             is StreamEvent.TextDelta -> {
                 textBuffers.getOrPut(event.id) { StringBuilder() }.append(event.text)

@@ -3,6 +3,7 @@ import io.gitlab.arturbosch.detekt.DetektCreateBaselineTask
 import org.gradle.api.publish.maven.MavenPublication
 import org.gradle.api.publish.maven.tasks.PublishToMavenRepository
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+import org.jetbrains.kotlin.gradle.plugin.mpp.apple.XCFramework
 
 plugins {
     alias(libs.plugins.kotlin.multiplatform)
@@ -21,6 +22,10 @@ version = providers.gradleProperty("VERSION_NAME").get()
 kotlin {
     jvmToolchain(21)
 
+    // KMP per-target + umbrella sources jars, attached to the publications
+    // (Maven Central requires a -sources.jar alongside each artifact).
+    withSourcesJar(publish = true)
+
     android {
         namespace = "ai.torad.aisdk"
         compileSdk = libs.versions.android.compile.sdk.get().toInt()
@@ -37,6 +42,7 @@ kotlin {
         }
     }
 
+    val xcf = XCFramework("AiSdk")
     listOf(
         iosX64(),
         iosArm64(),
@@ -45,6 +51,8 @@ kotlin {
         iosTarget.binaries.framework {
             baseName = "AiSdk"
             isStatic = true
+            binaryOption("bundleId", "ai.torad.aisdk")
+            xcf.add(this)
         }
     }
 
@@ -142,6 +150,10 @@ publishing {
     }
 
     publications.withType<MavenPublication>().configureEach {
+        // Maven Central requires a -javadoc.jar per artifact. Dokka's Javadoc format
+        // doesn't support KMP, so dokkaJavadocJar packages the HTML output instead
+        // (Sonatype accepts arbitrary jar contents for the javadoc classifier).
+        artifact(dokkaJavadocJar)
         pom {
             name.set(providers.gradleProperty("POM_NAME"))
             description.set(providers.gradleProperty("POM_DESCRIPTION"))

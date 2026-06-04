@@ -49,12 +49,14 @@ interface LanguageModel {
     /** One-shot completion. */
     suspend fun generate(params: LanguageModelCallParams): LanguageModelResult
 
-    /** Streaming completion. Hot until collected, then drives one upstream call. */
+    /** Streaming completion. Cold until collected, then drives one upstream call per collection. */
     fun stream(params: LanguageModelCallParams): Flow<StreamEvent>
 
     /**
      * Streaming completion plus metadata available before stream
-     * collection. Implementations must keep the returned stream cold.
+     * collection. Implementations must keep the returned stream cold, and
+     * must not `flowOn`/emit from a foreign context — the collection context
+     * is the caller's choice.
      * Providers can override this to expose request bodies and response
      * headers while preserving the v6 `doStream` result shape.
      */
