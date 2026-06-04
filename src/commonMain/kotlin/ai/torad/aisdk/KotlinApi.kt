@@ -1,7 +1,11 @@
 package ai.torad.aisdk
 
 import kotlinx.coroutines.flow.Flow
+import kotlinx.serialization.KSerializer
 import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonObjectBuilder
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.serializer
 
 /**
  * Kotlin-first call settings shared by text generation entry points.
@@ -50,6 +54,10 @@ class CallSettingsBuilder internal constructor() {
         providerOptions = providerOptions + (name to value)
     }
 
+    fun providerOptions(block: ProviderOptionsBuilder.() -> Unit) {
+        providerOptions = providerOptions + buildProviderOptions(block)
+    }
+
     internal fun build(): CallSettings = CallSettings(
         temperature = temperature,
         topP = topP,
@@ -67,6 +75,43 @@ class CallSettingsBuilder internal constructor() {
 
 fun callSettings(block: CallSettingsBuilder.() -> Unit): CallSettings =
     CallSettingsBuilder().apply(block).build()
+
+class ProviderOptionsBuilder internal constructor() {
+    private val values = linkedMapOf<String, JsonElement>()
+
+    fun put(name: String, value: JsonElement) {
+        values[name] = value
+    }
+
+    fun <T> put(name: String, value: T, serializer: KSerializer<T>) {
+        values[name] = encodeJsonElement(value, serializer)
+    }
+
+    inline fun <reified T> put(name: String, value: T) {
+        put(name, value, serializer())
+    }
+
+    fun provider(name: String, block: JsonObjectBuilder.() -> Unit) {
+        values[name] = buildJsonObject(block)
+    }
+
+    fun <T> provider(name: String, value: T, serializer: KSerializer<T>) {
+        values[name] = encodeJsonElement(value, serializer)
+    }
+
+    inline fun <reified T> provider(name: String, value: T) {
+        provider(name, value, serializer())
+    }
+
+    fun options(values: Map<String, JsonElement>) {
+        this.values.putAll(values)
+    }
+
+    internal fun build(): Map<String, JsonElement> = values.toMap()
+}
+
+fun buildProviderOptions(block: ProviderOptionsBuilder.() -> Unit): Map<String, JsonElement> =
+    ProviderOptionsBuilder().apply(block).build()
 
 data class TextGenerationRequest(
     val prompt: String? = null,

@@ -5,6 +5,7 @@ import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.flow
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.serializer
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
@@ -277,6 +278,146 @@ private fun descriptionWithExamples(tool: Tool<*, *, *>): String {
 /** Construct a [ToolSet] from individual tools. */
 fun <TContext> toolSetOf(vararg tools: Tool<*, *, TContext>): ToolSet<TContext> =
     ToolSet(tools.associateBy { it.name })
+
+class ToolSetBuilder<TContext> internal constructor() {
+    private val tools = linkedMapOf<String, Tool<*, *, TContext>>()
+
+    fun add(tool: Tool<*, *, TContext>) {
+        require(tool.name !in tools) { "Duplicate tool name `${tool.name}`." }
+        tools[tool.name] = tool
+    }
+
+    @Suppress("LongParameterList")
+    inline fun <reified TInput, reified TOutput> tool(
+        name: String,
+        description: String,
+        noinline needsApproval: (suspend (input: TInput, options: ToolPredicateOptions<TContext>) -> Boolean)? = null,
+        noinline toModelOutput: ((TOutput, ToolPredicateOptions<TContext>) -> ToolResultOutput)? = null,
+        strict: Boolean = true,
+        inputExamples: List<String> = emptyList(),
+        noinline onInputStart: (suspend (streamingId: String) -> Unit)? = null,
+        noinline onInputDelta: (suspend (streamingId: String, delta: String) -> Unit)? = null,
+        noinline onInputAvailable: (suspend (toolCallId: String, input: TInput) -> Unit)? = null,
+        metadata: Map<String, JsonElement> = emptyMap(),
+        providerExecuted: Boolean = false,
+        noinline executor: suspend ToolExecutionContext<TContext>.(TInput) -> TOutput,
+    ): Tool<TInput, TOutput, TContext> =
+        ai.torad.aisdk.tool<TInput, TOutput, TContext>(
+            name = name,
+            description = description,
+            inputSerializer = serializer<TInput>(),
+            outputSerializer = serializer<TOutput>(),
+            needsApproval = needsApproval,
+            toModelOutput = toModelOutput,
+            strict = strict,
+            inputExamples = inputExamples,
+            onInputStart = onInputStart,
+            onInputDelta = onInputDelta,
+            onInputAvailable = onInputAvailable,
+            metadata = metadata,
+            providerExecuted = providerExecuted,
+            executor = executor,
+        ).also(::add)
+
+    @Suppress("LongParameterList")
+    inline fun <reified TInput, reified TOutput> streamingTool(
+        name: String,
+        description: String,
+        noinline needsApproval: (suspend (input: TInput, options: ToolPredicateOptions<TContext>) -> Boolean)? = null,
+        noinline toModelOutput: ((TOutput, ToolPredicateOptions<TContext>) -> ToolResultOutput)? = null,
+        strict: Boolean = true,
+        inputExamples: List<String> = emptyList(),
+        noinline onInputStart: (suspend (streamingId: String) -> Unit)? = null,
+        noinline onInputDelta: (suspend (streamingId: String, delta: String) -> Unit)? = null,
+        noinline onInputAvailable: (suspend (toolCallId: String, input: TInput) -> Unit)? = null,
+        metadata: Map<String, JsonElement> = emptyMap(),
+        providerExecuted: Boolean = false,
+        noinline executor: ToolExecutionContext<TContext>.(TInput) -> Flow<TOutput>,
+    ): Tool<TInput, TOutput, TContext> =
+        ai.torad.aisdk.streamingTool<TInput, TOutput, TContext>(
+            name = name,
+            description = description,
+            inputSerializer = serializer<TInput>(),
+            outputSerializer = serializer<TOutput>(),
+            needsApproval = needsApproval,
+            toModelOutput = toModelOutput,
+            strict = strict,
+            inputExamples = inputExamples,
+            onInputStart = onInputStart,
+            onInputDelta = onInputDelta,
+            onInputAvailable = onInputAvailable,
+            metadata = metadata,
+            providerExecuted = providerExecuted,
+            executor = executor,
+        ).also(::add)
+
+    internal fun build(): ToolSet<TContext> = ToolSet(tools.toMap())
+}
+
+fun <TContext> toolSet(block: ToolSetBuilder<TContext>.() -> Unit): ToolSet<TContext> =
+    ToolSetBuilder<TContext>().apply(block).build()
+
+@Suppress("LongParameterList")
+inline fun <reified TInput, reified TOutput, TContext> tool(
+    name: String,
+    description: String,
+    noinline needsApproval: (suspend (input: TInput, options: ToolPredicateOptions<TContext>) -> Boolean)? = null,
+    noinline toModelOutput: ((TOutput, ToolPredicateOptions<TContext>) -> ToolResultOutput)? = null,
+    strict: Boolean = true,
+    inputExamples: List<String> = emptyList(),
+    noinline onInputStart: (suspend (streamingId: String) -> Unit)? = null,
+    noinline onInputDelta: (suspend (streamingId: String, delta: String) -> Unit)? = null,
+    noinline onInputAvailable: (suspend (toolCallId: String, input: TInput) -> Unit)? = null,
+    metadata: Map<String, JsonElement> = emptyMap(),
+    providerExecuted: Boolean = false,
+    noinline executor: suspend ToolExecutionContext<TContext>.(TInput) -> TOutput,
+): Tool<TInput, TOutput, TContext> = tool(
+    name = name,
+    description = description,
+    inputSerializer = serializer<TInput>(),
+    outputSerializer = serializer<TOutput>(),
+    needsApproval = needsApproval,
+    toModelOutput = toModelOutput,
+    strict = strict,
+    inputExamples = inputExamples,
+    onInputStart = onInputStart,
+    onInputDelta = onInputDelta,
+    onInputAvailable = onInputAvailable,
+    metadata = metadata,
+    providerExecuted = providerExecuted,
+    executor = executor,
+)
+
+@Suppress("LongParameterList")
+inline fun <reified TInput, reified TOutput, TContext> streamingTool(
+    name: String,
+    description: String,
+    noinline needsApproval: (suspend (input: TInput, options: ToolPredicateOptions<TContext>) -> Boolean)? = null,
+    noinline toModelOutput: ((TOutput, ToolPredicateOptions<TContext>) -> ToolResultOutput)? = null,
+    strict: Boolean = true,
+    inputExamples: List<String> = emptyList(),
+    noinline onInputStart: (suspend (streamingId: String) -> Unit)? = null,
+    noinline onInputDelta: (suspend (streamingId: String, delta: String) -> Unit)? = null,
+    noinline onInputAvailable: (suspend (toolCallId: String, input: TInput) -> Unit)? = null,
+    metadata: Map<String, JsonElement> = emptyMap(),
+    providerExecuted: Boolean = false,
+    noinline executor: ToolExecutionContext<TContext>.(TInput) -> Flow<TOutput>,
+): Tool<TInput, TOutput, TContext> = streamingTool(
+    name = name,
+    description = description,
+    inputSerializer = serializer<TInput>(),
+    outputSerializer = serializer<TOutput>(),
+    needsApproval = needsApproval,
+    toModelOutput = toModelOutput,
+    strict = strict,
+    inputExamples = inputExamples,
+    onInputStart = onInputStart,
+    onInputDelta = onInputDelta,
+    onInputAvailable = onInputAvailable,
+    metadata = metadata,
+    providerExecuted = providerExecuted,
+    executor = executor,
+)
 
 /**
  * Runtime-typed tool equivalent to v6's `dynamicTool`. Inputs and

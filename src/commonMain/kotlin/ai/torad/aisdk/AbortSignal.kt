@@ -102,3 +102,23 @@ fun abortSignalFromJob(job: Job): AbortSignal {
     job.invokeOnCompletion { controller.abort() }
     return controller.signal
 }
+
+fun Job.asAbortSignal(): AbortSignal = abortSignalFromJob(this)
+
+fun CoroutineScope.asAbortSignal(): AbortSignal =
+    coroutineContext[Job]?.asAbortSignal() ?: AbortSignalNever
+
+fun combineAbortSignals(vararg signals: AbortSignal): AbortSignal {
+    val active = signals.filterNot { it === AbortSignalNever }
+    if (active.isEmpty()) return AbortSignalNever
+    if (active.size == 1) return active.single()
+
+    val controller = AbortController()
+    val registrations = active.map { signal ->
+        signal.register { controller.abort() }
+    }
+    controller.signal.register {
+        registrations.forEach { it.cancel() }
+    }
+    return controller.signal
+}

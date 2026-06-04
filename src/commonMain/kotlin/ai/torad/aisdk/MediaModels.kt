@@ -10,6 +10,98 @@ data class GeneratedFile(
     val url: String? = null,
 )
 
+sealed interface FileData {
+    val mediaType: String?
+    val filename: String?
+
+    data class Base64(
+        val value: String,
+        override val mediaType: String? = null,
+        override val filename: String? = null,
+    ) : FileData
+
+    class Bytes(
+        bytes: ByteArray,
+        override val mediaType: String? = null,
+        override val filename: String? = null,
+    ) : FileData {
+        val bytes: ByteArray = bytes.copyOf()
+
+        override fun equals(other: Any?): Boolean =
+            other is Bytes &&
+                bytes.contentEquals(other.bytes) &&
+                mediaType == other.mediaType &&
+                filename == other.filename
+
+        override fun hashCode(): Int {
+            var result = bytes.contentHashCode()
+            result = 31 * result + mediaType.hashCode()
+            result = 31 * result + filename.hashCode()
+            return result
+        }
+
+        override fun toString(): String =
+            "Bytes(size=${bytes.size}, mediaType=$mediaType, filename=$filename)"
+    }
+
+    data class Url(
+        val value: String,
+        override val mediaType: String? = null,
+        override val filename: String? = null,
+    ) : FileData
+}
+
+fun generatedFile(
+    data: FileData,
+    mediaType: String = data.mediaType ?: "application/octet-stream",
+    filename: String? = data.filename,
+    providerMetadata: Map<String, JsonElement> = emptyMap(),
+): GeneratedFile = when (data) {
+    is FileData.Base64 -> GeneratedFile(
+        mediaType = mediaType,
+        base64 = data.value,
+        filename = filename,
+        providerMetadata = providerMetadata,
+    )
+    is FileData.Bytes -> GeneratedFile(
+        mediaType = mediaType,
+        base64 = convertByteArrayToBase64(data.bytes),
+        filename = filename,
+        providerMetadata = providerMetadata,
+    )
+    is FileData.Url -> GeneratedFile(
+        mediaType = mediaType,
+        base64 = "",
+        filename = filename,
+        providerMetadata = providerMetadata,
+        url = data.value,
+    )
+}
+
+fun imageGenerationFile(data: FileData): ImageGenerationFile = when (data) {
+    is FileData.Base64 -> ImageGenerationFile(
+        mediaType = data.mediaType,
+        base64 = data.value,
+        filename = data.filename,
+    )
+    is FileData.Bytes -> ImageGenerationFile(
+        mediaType = data.mediaType,
+        base64 = convertByteArrayToBase64(data.bytes),
+        filename = data.filename,
+    )
+    is FileData.Url -> ImageGenerationFile(
+        mediaType = data.mediaType,
+        url = data.value,
+        filename = data.filename,
+    )
+}
+
+fun GeneratedFile.fileData(): FileData =
+    url?.let { FileData.Url(it, mediaType = mediaType, filename = filename) }
+        ?: FileData.Base64(base64, mediaType = mediaType, filename = filename)
+
+fun GeneratedFile.bytes(): ByteArray = convertBase64ToByteArray(base64)
+
 typealias GeneratedAudioFile = GeneratedFile
 typealias Experimental_GeneratedImage = GeneratedFile
 typealias Experimental_GenerateImageResult = GenerateImageResult

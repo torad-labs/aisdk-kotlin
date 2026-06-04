@@ -53,6 +53,20 @@ fun searchDocsTool(search: SearchService) = tool<SearchInput, List<SearchResult>
 }
 ```
 
+For native Kotlin call sites, the reified tool and tool-set builders remove
+the serializer boilerplate and reject duplicate names:
+
+```kotlin
+val tools = toolSet<AppContext> {
+    tool<SearchInput, List<SearchResult>>(
+        name = "searchDocs",
+        description = "Search the product documentation.",
+    ) { input ->
+        search.query(input.query)
+    }
+}
+```
+
 ## Compose An Agent
 
 ```kotlin
@@ -108,8 +122,30 @@ val result = generateText(model) {
         temperature = 0.2f
         maxOutputTokens = 600
         stopSequence("</answer>")
+        providerOptions {
+            provider("openai", OpenAiTuning(reasoningEffort = "high"))
+        }
     }
 }
+```
+
+Provider options and metadata can stay typed at application boundaries:
+
+```kotlin
+@Serializable
+data class OpenAiTuning(val reasoningEffort: String)
+
+@Serializable
+data class OpenAiMetadata(val cacheHit: Boolean)
+
+val options = buildProviderOptions {
+    provider("openai", OpenAiTuning(reasoningEffort = "high"))
+    provider("anthropic") {
+        putJson("cacheControl", CacheControl(type = "ephemeral"))
+    }
+}
+
+val cacheHit = result.providerMetadataAs<OpenAiMetadata>("openai")?.cacheHit
 ```
 
 Structured output keeps the same native shape:
@@ -135,6 +171,19 @@ val registry = createProviderRegistry(
 )
 
 val model = registry.languageModel(modelRef("openai:gpt-5"))
+```
+
+For generated or attached files, prefer `FileData` at application
+boundaries and convert to provider wire shapes only when calling a model:
+
+```kotlin
+val inputImage = imageGenerationFile(
+    FileData.Bytes(
+        bytes = editedImageBytes,
+        mediaType = "image/png",
+        filename = "mask.png",
+    ),
+)
 ```
 
 ## Stream
@@ -181,6 +230,49 @@ session.state.collect { state ->
 }
 ```
 
+For agent-level state, use `AgentSession` with a caller-owned scope:
+
+```kotlin
+val session = supportAgent.session(viewModelScope)
+
+session.submit(
+    prompt = "How do I configure streaming?",
+    options = AppContext(userId = "u_123", workspaceId = "w_123"),
+)
+
+session.state.collect { state ->
+    renderMessages(state.messages)
+    renderPendingApprovals(state.pendingApprovals)
+}
+```
+
+For live text updates, use the streaming session path. `session.cancel()`
+cancels the coroutine job and aborts providers/tools that observe the SDK
+abort signal:
+
+```kotlin
+val job = session.submitStreaming(
+    prompt = "How do I configure streaming?",
+    options = AppContext(userId = "u_123", workspaceId = "w_123"),
+)
+
+stopButton.onClick { session.cancel() }
+```
+
+Coroutine callers can bind cancellation directly:
+
+```kotlin
+val signal = coroutineScope.asAbortSignal()
+
+generateText(
+    model = model,
+    prompt = "Summarize the current document.",
+    settings = callSettings {
+        abortSignal = signal
+    },
+)
+```
+
 Renderer dispatch can stay string-based:
 
 ```kotlin
@@ -188,7 +280,7 @@ fun render(part: UIMessagePart) {
     when (part) {
         is UIMessagePart.Text -> renderText(part.text)
         is UIMessagePart.ToolUI -> when (part.toolName) {
-            "searchDocs" -> renderSearchResult(outputAs(part, serializer<List<SearchResult>>()))
+            "searchDocs" -> renderSearchResult(part.outputAs<List<SearchResult>>())
             else -> renderUnknownTool(part.toolName)
         }
         is UIMessagePart.Reasoning -> renderReasoning(part.text)

@@ -151,3 +151,21 @@ devices or provider sandboxes.
 Applications use the built-in Ktor adapters where the protocol matches and
 wire provider-specific packages or host code for everything else; the SDK
 stays platform-agnostic.
+
+## Decision 11 — Kotlin-first surfaces sit beside compatibility surfaces
+
+**Choice.** Public parity APIs stay available, but Kotlin callers get
+typed builders and reified helpers for the highest-friction boundaries:
+tool registration, provider options, provider metadata, output schemas,
+file payloads, UI part decoding, and session/cancellation state.
+
+**Rationale.** A full port cannot leave Kotlin users manually threading
+raw JSON maps, schema strings, and controller-style cancellation through
+normal application code. The compatibility shape remains useful for
+upstream vocabulary and parity ledgers, but application code should be
+able to express these same concepts with `@Serializable` data classes,
+`Flow`, `StateFlow`, coroutine scopes, and exhaustive sealed hierarchies.
+
+**Guardrail.** New provider features may enter through raw `JsonElement`
+escape hatches, but stable surfaces should graduate to typed DSLs or
+extension helpers once the shape is understood.

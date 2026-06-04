@@ -1,7 +1,10 @@
 package ai.torad.aisdk.ui
 
+import ai.torad.aisdk.decodeValue
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.KSerializer
 import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.serializer
 
 /**
  * UI-shape message — what the chat surface renders. Carries an ordered
@@ -27,3 +30,9 @@ data class UIMessage(
 
 @Serializable
 enum class UIMessageRole { System, User, Assistant }
+
+fun <TMetadata> UIMessage.metadataAs(name: String, serializer: KSerializer<TMetadata>): TMetadata? =
+    metadata?.decodeValue(name, serializer)
+
+inline fun <reified TMetadata> UIMessage.metadataAs(name: String): TMetadata? =
+    metadataAs(name, serializer())

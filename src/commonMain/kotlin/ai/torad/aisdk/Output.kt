@@ -41,6 +41,8 @@ sealed class Output<T> {
     abstract val schemaName: String
     open val schemaDescription: String? = null
     abstract val schemaJson: String
+    open val schema: JsonElement
+        get() = outputJsonCodec.parseToJsonElement(schemaJson)
     abstract fun decode(text: String): T
 
     /** `Output.object()` in v6, renamed to `obj` because `object` is a Kotlin keyword. */
@@ -226,7 +228,7 @@ fun outputJson(
 internal fun Output<*>.toResponseFormat(): ResponseFormat = ResponseFormat.Json(
     schemaName = schemaName,
     schemaDescription = schemaDescription,
-    schemaJson = runCatching { outputJsonCodec.parseToJsonElement(schemaJson) }.getOrNull(),
+    schemaJson = runCatching { schema }.getOrNull(),
 )
 
 private fun extractChoiceValue(text: String): String {

@@ -113,7 +113,10 @@ data class LanguageModelTool(
     val providerExecuted: Boolean = false,
     val metadata: Map<String, JsonElement> = emptyMap(),
     val strict: Boolean = true,
-)
+) {
+    val parametersSchema: JsonElement
+        get() = aiSdkJson.parseToJsonElement(parametersSchemaJson)
+}
 
 /** One-shot generate result. */
 data class LanguageModelResult(
