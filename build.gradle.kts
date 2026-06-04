@@ -1,3 +1,5 @@
+import io.gitlab.arturbosch.detekt.Detekt
+import io.gitlab.arturbosch.detekt.DetektCreateBaselineTask
 import org.gradle.api.publish.maven.MavenPublication
 import org.gradle.api.publish.maven.tasks.PublishToMavenRepository
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
@@ -6,6 +8,9 @@ plugins {
     alias(libs.plugins.kotlin.multiplatform)
     alias(libs.plugins.android.kotlin.multiplatform.library)
     alias(libs.plugins.kotlin.serialization)
+    alias(libs.plugins.detekt)
+    alias(libs.plugins.kover)
+    alias(libs.plugins.dokka)
     `maven-publish`
     signing
 }
@@ -56,6 +61,72 @@ kotlin {
             implementation(libs.turbine)
         }
     }
+}
+
+// --- Static analysis: detekt (1.23.x) + ktlint-backed formatting rules ---
+// Runs WITHOUT type resolution: detekt 1.23.x bundles an older Kotlin front-end and
+// cannot resolve types for KMP non-JVM source sets anyway (detekt#5961), and detekt 2.0
+// is config-cache-incompatible + KMP-variant-exploding (detekt#8882). Style/formatting
+// rules are compiler-version-agnostic, so we point detekt straight at the KMP source dirs.
+detekt {
+    buildUponDefaultConfig = true
+    parallel = true
+    baseline = file("$projectDir/detekt-baseline.xml")
+    source.setFrom(
+        "src/commonMain/kotlin",
+        "src/jvmMain/kotlin",
+        "src/androidMain/kotlin",
+        "src/iosMain/kotlin",
+        "src/commonTest/kotlin",
+    )
+}
+
+dependencies {
+    detektPlugins(libs.detekt.formatting)
+}
+
+tasks.withType<Detekt>().configureEach {
+    jvmTarget = JvmTarget.JVM_17.target
+    reports {
+        html.required.set(true)
+        xml.required.set(true)
+        sarif.required.set(false)
+        md.required.set(false)
+    }
+}
+
+tasks.withType<DetektCreateBaselineTask>().configureEach {
+    jvmTarget = JvmTarget.JVM_17.target
+}
+
+// --- Coverage: Kover (0.9.x). Measures the JVM target; excludes generated serializers. ---
+kover {
+    reports {
+        filters {
+            excludes {
+                classes("*\$\$serializer")
+            }
+        }
+        // Measurement only for now — no enforced threshold so the build is not gated.
+    }
+}
+
+// --- API docs: Dokka 2.x. HTML output (`./gradlew dokkaGenerate` → build/dokka/html). ---
+// Note: Dokka's *Javadoc* format does not support KMP projects by design (it models Kotlin
+// as consumed from Java, which is meaningless for Kotlin/Native and Kotlin/JS — Kotlin/dokka#1753).
+// For the Maven Central javadoc-jar requirement we therefore package the HTML output, which
+// Sonatype accepts (the jar contents are arbitrary). Wired but not added to any publication yet —
+// the publication itself is finalized in the later publishing pass.
+dokka {
+    moduleName.set(providers.gradleProperty("POM_NAME"))
+}
+
+val dokkaJavadocJar by tasks.registering(Jar::class) {
+    description = "Assembles a javadoc-classifier jar from the Dokka HTML output (Maven Central requirement)."
+    group = JavaBasePlugin.DOCUMENTATION_GROUP
+    dependsOn(tasks.named("dokkaGeneratePublicationHtml"))
+    from(layout.buildDirectory.dir("dokka/html"))
+    archiveClassifier.set("javadoc")
 }
 
 publishing {
