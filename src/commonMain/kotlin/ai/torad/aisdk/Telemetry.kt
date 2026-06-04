@@ -36,7 +36,7 @@ interface TelemetryIntegration {
     suspend fun onFinish(event: TelemetryEvent) {}
 }
 
-object NoopTelemetryIntegration : TelemetryIntegration {
+data object NoopTelemetryIntegration : TelemetryIntegration {
     override val name: String = "noop"
     override suspend fun record(span: TelemetrySpan, block: suspend () -> Unit) {
         block()
@@ -221,7 +221,7 @@ interface TelemetryTracer {
     ): T
 }
 
-object NoopTelemetryTracer : TelemetryTracer {
+data object NoopTelemetryTracer : TelemetryTracer {
     override suspend fun <T> startActiveSpan(
         name: String,
         attributes: Map<String, JsonElement>,

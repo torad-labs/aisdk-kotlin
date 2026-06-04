@@ -1876,8 +1876,9 @@ class Experimental_StdioMCPTransport(
         if (process != null) throw MCPClientError("StdioMCPTransport already started.")
         val started = createMCPStdioProcess(config)
         process = started
-        scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
-        readJob = scope!!.launch {
+        val readerScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+        scope = readerScope
+        readJob = readerScope.launch {
             try {
                 while (true) {
                     val line = started.readLine() ?: break

@@ -1017,7 +1017,7 @@ interface ToolStreamWriter {
  * constructed outside the loop (test fixtures, the approval-resume path
  * before the loop wires a real writer). Drops every write.
  */
-object NoopToolStreamWriter : ToolStreamWriter {
+data object NoopToolStreamWriter : ToolStreamWriter {
     override suspend fun write(event: StreamEvent) = Unit
     override suspend fun writeData(value: JsonElement) = Unit
 }

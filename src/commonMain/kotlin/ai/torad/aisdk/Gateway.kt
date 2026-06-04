@@ -214,7 +214,7 @@ interface GatewayTransport {
     ): GatewayGenerationInfo = gatewayTransportMissing()
 }
 
-object GatewayTransportNotConfigured : GatewayTransport
+data object GatewayTransportNotConfigured : GatewayTransport
 
 class GatewayTransportNotConfiguredError :
     AiSdkException("Gateway transport is not configured. Provide GatewayProviderSettings.transport.")

@@ -158,7 +158,8 @@ fun fixJson(input: String): String {
     }
 
     fun processLiteral(char: Char, i: Int) {
-        val partialLiteral = input.substring(literalStart!!, i + 1)
+        val start = requireNotNull(literalStart) { "literalStart must be set in INSIDE_LITERAL state" }
+        val partialLiteral = input.substring(start, i + 1)
         if (isLiteralPrefix(partialLiteral)) {
             lastValidIndex = i
             return
@@ -279,7 +280,7 @@ private fun drainClose(state: FixJsonState, input: String, literalStart: Int?): 
     FixJsonState.INSIDE_ARRAY_AFTER_COMMA,
     FixJsonState.INSIDE_ARRAY_AFTER_VALUE,
     -> "]"
-    FixJsonState.INSIDE_LITERAL -> literalTail(input.substring(literalStart!!, input.length))
+    FixJsonState.INSIDE_LITERAL -> literalTail(input.substring(requireNotNull(literalStart), input.length))
     // ROOT, FINISH, INSIDE_STRING_ESCAPE, INSIDE_NUMBER -> nothing.
     else -> ""
 }

@@ -32,7 +32,7 @@ interface Logger {
 }
 
 /** Drop-everything logger. Default when no DI-injected impl is wired. */
-object NoopLogger : Logger {
+data object NoopLogger : Logger {
     override fun warn(message: String, throwable: Throwable?) = Unit
     override fun info(message: String) = Unit
     override fun debug(message: String) = Unit

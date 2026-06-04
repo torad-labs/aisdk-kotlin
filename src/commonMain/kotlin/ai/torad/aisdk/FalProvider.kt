@@ -613,12 +613,11 @@ private fun falHeaders(settings: FalProviderSettings, extra: Map<String, String>
     return withUserAgentSuffix(headers, "ai-sdk/fal/$FAL_VERSION")
 }
 
-private fun falResponseImages(value: JsonObject): List<JsonObject> =
-    when {
-        value["images"] is JsonArray -> value["images"]!!.jsonArray.map { it.jsonObject }
-        value["image"] is JsonObject -> listOf(value["image"]!!.jsonObject)
-        else -> emptyList()
-    }
+private fun falResponseImages(value: JsonObject): List<JsonObject> {
+    (value["images"] as? JsonArray)?.let { images -> return images.map { it.jsonObject } }
+    (value["image"] as? JsonObject)?.let { return listOf(it) }
+    return emptyList()
+}
 
 private fun falImageProviderMetadata(
     value: JsonObject,
