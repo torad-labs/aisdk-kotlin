@@ -27,7 +27,7 @@ import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlin.math.ceil
 
-const val BYTEDANCE_VERSION: String = "1.0.14"
+const val BYTEDANCE_VERSION: String = "1.0.15"
 
 typealias ByteDanceVideoModelId = String
 
@@ -239,6 +239,7 @@ private fun byteDanceContent(params: VideoGenerationParams, options: JsonObject)
         add(buildJsonObject {
             put("type", JsonPrimitive("image_url"))
             put("image_url", buildJsonObject { put("url", JsonPrimitive(image.byteDanceDataUri())) })
+            if (options["lastFrameImage"] != null) put("role", JsonPrimitive("first_frame"))
         })
     }
     options["lastFrameImage"]?.jsonPrimitive?.contentOrNull?.let { url ->

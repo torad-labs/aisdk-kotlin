@@ -70,6 +70,58 @@ class GoogleVertexProviderTest {
     }
 
     @Test
+    fun `vertex core provider uses multi-region REP host for eu and us`() = runTest {
+        val fixture = createTestServer(
+            mutableMapOf(
+                "https://aiplatform.eu.rep.googleapis.com/v1/projects/project-1/locations/eu/publishers/google/models/gemini-2.5-flash:generateContent" to UrlHandler(
+                    UrlResponse.JsonValue(
+                        Json.parseToJsonElement(
+                            """
+                            {
+                              "candidates":[{"content":{"parts":[{"text":"eu"}]},"finishReason":"STOP"}],
+                              "usageMetadata":{"promptTokenCount":1,"candidatesTokenCount":1}
+                            }
+                            """.trimIndent(),
+                        ),
+                    ),
+                ),
+                "https://aiplatform.us.rep.googleapis.com/v1/projects/project-1/locations/us/publishers/google/models/gemini-2.5-flash:generateContent" to UrlHandler(
+                    UrlResponse.JsonValue(
+                        Json.parseToJsonElement(
+                            """
+                            {
+                              "candidates":[{"content":{"parts":[{"text":"us"}]},"finishReason":"STOP"}],
+                              "usageMetadata":{"promptTokenCount":1,"candidatesTokenCount":1}
+                            }
+                            """.trimIndent(),
+                        ),
+                    ),
+                ),
+            ),
+        )
+        fixture.server.start()
+
+        val eu = createVertex(
+            fixture.httpClient(),
+            GoogleVertexProviderSettings(project = "project-1", location = "eu", accessToken = "token"),
+        )
+        val us = createVertex(
+            fixture.httpClient(),
+            GoogleVertexProviderSettings(project = "project-1", location = "us", accessToken = "token"),
+        )
+
+        assertEquals("eu", eu.chat("gemini-2.5-flash").generate(LanguageModelCallParams(messages = listOf(userMessage("hi")))).text)
+        assertEquals("us", us.chat("gemini-2.5-flash").generate(LanguageModelCallParams(messages = listOf(userMessage("hi")))).text)
+        assertEquals(
+            listOf(
+                "https://aiplatform.eu.rep.googleapis.com/v1/projects/project-1/locations/eu/publishers/google/models/gemini-2.5-flash:generateContent",
+                "https://aiplatform.us.rep.googleapis.com/v1/projects/project-1/locations/us/publishers/google/models/gemini-2.5-flash:generateContent",
+            ),
+            fixture.calls.map { it.requestUrl },
+        )
+    }
+
+    @Test
     fun `vertex maas routes through OpenAI compatible chat`() = runTest {
         val fixture = createTestServer(
             mutableMapOf(
@@ -102,6 +154,55 @@ class GoogleVertexProviderTest {
         assertEquals(4, result.usage.completionTokens)
         assertEquals("Bearer token", fixture.calls.single().requestHeaders.headerValue("Authorization"))
         assertEquals("llama-model", fixture.calls.single().requestBodyJson.jsonObject["model"]?.jsonPrimitive?.contentOrNull)
+    }
+
+    @Test
+    fun `vertex maas constructs global regional and multi-region base urls`() = runTest {
+        val fixture = createTestServer(
+            mutableMapOf(
+                "https://aiplatform.googleapis.com/v1/projects/project-1/locations/global/endpoints/openapi/chat/completions" to UrlHandler(
+                    UrlResponse.JsonValue(
+                        Json.parseToJsonElement("""{"id":"global","model":"llama","choices":[{"message":{"content":"global"},"finish_reason":"stop"}]}"""),
+                    ),
+                ),
+                "https://us-central1-aiplatform.googleapis.com/v1/projects/project-1/locations/us-central1/endpoints/openapi/chat/completions" to UrlHandler(
+                    UrlResponse.JsonValue(
+                        Json.parseToJsonElement("""{"id":"regional","model":"llama","choices":[{"message":{"content":"regional"},"finish_reason":"stop"}]}"""),
+                    ),
+                ),
+                "https://aiplatform.eu.rep.googleapis.com/v1/projects/project-1/locations/eu/endpoints/openapi/chat/completions" to UrlHandler(
+                    UrlResponse.JsonValue(
+                        Json.parseToJsonElement("""{"id":"eu","model":"llama","choices":[{"message":{"content":"eu"},"finish_reason":"stop"}]}"""),
+                    ),
+                ),
+            ),
+        )
+        fixture.server.start()
+
+        val global = createVertexMaas(
+            fixture.httpClient(),
+            GoogleVertexMaasProviderSettings(project = "project-1", location = "global", accessToken = "token"),
+        )
+        val regional = createVertexMaas(
+            fixture.httpClient(),
+            GoogleVertexMaasProviderSettings(project = "project-1", location = "us-central1", accessToken = "token"),
+        )
+        val eu = createVertexMaas(
+            fixture.httpClient(),
+            GoogleVertexMaasProviderSettings(project = "project-1", location = "eu", accessToken = "token"),
+        )
+
+        assertEquals("global", global.chat("llama").generate(LanguageModelCallParams(messages = listOf(userMessage("hi")))).text)
+        assertEquals("regional", regional.chat("llama").generate(LanguageModelCallParams(messages = listOf(userMessage("hi")))).text)
+        assertEquals("eu", eu.chat("llama").generate(LanguageModelCallParams(messages = listOf(userMessage("hi")))).text)
+        assertEquals(
+            listOf(
+                "https://aiplatform.googleapis.com/v1/projects/project-1/locations/global/endpoints/openapi/chat/completions",
+                "https://us-central1-aiplatform.googleapis.com/v1/projects/project-1/locations/us-central1/endpoints/openapi/chat/completions",
+                "https://aiplatform.eu.rep.googleapis.com/v1/projects/project-1/locations/eu/endpoints/openapi/chat/completions",
+            ),
+            fixture.calls.map { it.requestUrl },
+        )
     }
 
     @Test
@@ -158,6 +259,66 @@ class GoogleVertexProviderTest {
         assertEquals(null, body["model"])
         assertEquals("vertex-2023-10-16", body["anthropic_version"]?.jsonPrimitive?.contentOrNull)
         assertEquals("hi", body["messages"]?.jsonArray?.single()?.jsonObject?.get("content")?.jsonArray?.single()?.jsonObject?.get("text")?.jsonPrimitive?.contentOrNull)
+    }
+
+    @Test
+    fun `vertex anthropic uses multi-region REP host for eu and us`() = runTest {
+        val fixture = createTestServer(
+            mutableMapOf(
+                "https://aiplatform.eu.rep.googleapis.com/v1/projects/project-1/locations/eu/publishers/anthropic/models/claude-sonnet-4:rawPredict" to UrlHandler(
+                    UrlResponse.JsonValue(
+                        Json.parseToJsonElement(
+                            """
+                            {
+                              "id":"msg_1",
+                              "type":"message",
+                              "role":"assistant",
+                              "content":[{"type":"text","text":"eu"}],
+                              "stop_reason":"end_turn",
+                              "usage":{"input_tokens":1,"output_tokens":1}
+                            }
+                            """.trimIndent(),
+                        ),
+                    ),
+                ),
+                "https://aiplatform.us.rep.googleapis.com/v1/projects/project-1/locations/us/publishers/anthropic/models/claude-sonnet-4:rawPredict" to UrlHandler(
+                    UrlResponse.JsonValue(
+                        Json.parseToJsonElement(
+                            """
+                            {
+                              "id":"msg_2",
+                              "type":"message",
+                              "role":"assistant",
+                              "content":[{"type":"text","text":"us"}],
+                              "stop_reason":"end_turn",
+                              "usage":{"input_tokens":1,"output_tokens":1}
+                            }
+                            """.trimIndent(),
+                        ),
+                    ),
+                ),
+            ),
+        )
+        fixture.server.start()
+
+        val eu = createVertexAnthropic(
+            fixture.httpClient(),
+            GoogleVertexAnthropicProviderSettings(project = "project-1", location = "eu", accessToken = "token"),
+        )
+        val us = createVertexAnthropic(
+            fixture.httpClient(),
+            GoogleVertexAnthropicProviderSettings(project = "project-1", location = "us", accessToken = "token"),
+        )
+
+        assertEquals("eu", eu.messages("claude-sonnet-4").generate(LanguageModelCallParams(messages = listOf(userMessage("hi")))).text)
+        assertEquals("us", us.messages("claude-sonnet-4").generate(LanguageModelCallParams(messages = listOf(userMessage("hi")))).text)
+        assertEquals(
+            listOf(
+                "https://aiplatform.eu.rep.googleapis.com/v1/projects/project-1/locations/eu/publishers/anthropic/models/claude-sonnet-4:rawPredict",
+                "https://aiplatform.us.rep.googleapis.com/v1/projects/project-1/locations/us/publishers/anthropic/models/claude-sonnet-4:rawPredict",
+            ),
+            fixture.calls.map { it.requestUrl },
+        )
     }
 
     @Test

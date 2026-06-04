@@ -14,7 +14,7 @@ import kotlinx.serialization.json.intOrNull
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 
-const val GOOGLE_VERTEX_VERSION: String = "4.0.140"
+const val GOOGLE_VERTEX_VERSION: String = "4.0.142"
 
 typealias GoogleVertexEmbeddingModelOptions = JsonObject
 typealias GoogleVertexImageModelOptions = JsonObject
@@ -243,7 +243,7 @@ private fun googleVertexPublisherBaseURL(settings: GoogleVertexProviderSettings)
 
 private fun googleVertexOpenAIBaseURL(settings: GoogleVertexProviderSettings): String =
     settings.baseURL?.trimEnd('/')
-        ?: "https://aiplatform.googleapis.com/v1/projects/${googleVertexProject(settings)}/locations/${settings.location}/endpoints/openapi"
+        ?: "https://${googleVertexApiHost(settings.location)}/v1/projects/${googleVertexProject(settings)}/locations/${settings.location}/endpoints/openapi"
 
 private fun googleVertexAnthropicBaseURL(settings: GoogleVertexProviderSettings): String =
     settings.baseURL?.trimEnd('/')
@@ -253,7 +253,11 @@ private fun googleVertexProject(settings: GoogleVertexProviderSettings): String 
     settings.project ?: throw AiSdkException("Google Vertex project is required.")
 
 private fun googleVertexApiHost(location: String): String =
-    if (location == "global") "aiplatform.googleapis.com" else "$location-aiplatform.googleapis.com"
+    when (location) {
+        "global" -> "aiplatform.googleapis.com"
+        "eu", "us" -> "aiplatform.$location.rep.googleapis.com"
+        else -> "$location-aiplatform.googleapis.com"
+    }
 
 private fun googleVertexHeaders(settings: GoogleVertexProviderSettings): Map<String, String> {
     val headers = linkedMapOf<String, String>()

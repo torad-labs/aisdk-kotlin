@@ -6,12 +6,12 @@ package is JavaScript, browser, Node, or framework-specific.
 
 Reference locked for this pass:
 
-- npm `ai@latest`: `6.0.195`
-- upstream tag/reference directory: `.reference/vercel-ai-sdk-ai-6.0.195`
-- package source root: `.reference/vercel-ai-sdk-ai-6.0.195/packages`
+- npm `ai@latest`: `6.0.196`
+- upstream tag/reference directory: `.reference/vercel-ai-sdk-ai-6.0.196`
+- package source root: `.reference/vercel-ai-sdk-ai-6.0.196/packages`
 
 There is no stable `ai@6.1.x` release in npm metadata at verification time.
-The stable target is therefore v6.0.195. Beta and canary dist-tags point at v7.
+The stable target is therefore v6.0.196. Beta and canary dist-tags point at v7.
 
 ## Completion Rule
 

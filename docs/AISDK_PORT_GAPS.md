@@ -1,7 +1,7 @@
 # Port Gap Ledger
 
-> **Status (2026-06-03): the port target is the full stable v6 `ai`
-> package surface, adapted to Kotlin Multiplatform.** JS-only return
+> **Status (2026-06-04): the port target is the full stable Vercel AI SDK
+> v6.0.196 package surface, adapted to Kotlin Multiplatform.** JS-only return
 > types such as browser `Response` and Node `ServerResponse` are
 > represented as Kotlin `Flow`, response value objects, and host-facing
 > interfaces. Framework packages such as React, Vue, Svelte, Angular, and

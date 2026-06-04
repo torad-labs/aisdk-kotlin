@@ -1,8 +1,8 @@
 # Functionality Audit
 
-Status as of 2026-06-03: the KMP library is a full-package port target for the stable Vercel AI SDK v6 `ai` package surface, adapted to Kotlin `Flow` and host-injected provider/runtime contracts.
+Status as of 2026-06-04: the KMP library is a full-package port target for the stable Vercel AI SDK v6 `ai` package surface, adapted to Kotlin `Flow` and host-injected provider/runtime contracts.
 
-The latest stable Vercel AI SDK v6 reference verified during this pass is `ai@6.0.195` (`vercel/ai` tag `ai@6.0.195`). No stable `ai@6.1.x` release was published at verification time; canary/beta releases had moved toward v7.
+The latest stable Vercel AI SDK v6 reference verified during this pass is `ai@6.0.196` (`vercel/ai` tag `ai@6.0.196`). No stable `ai@6.1.x` release was published at verification time; canary/beta releases have moved toward v7.
 
 ## Verified Surface
 
@@ -72,7 +72,9 @@ The extracted test suite is executed on both JVM and Android host targets.
 
 Last local verification:
 
-- `./gradlew allTests`: 490 test executions, 0 failures, 0 errors, 0 skips.
+- `node tools/check-ai-sdk-reference.mjs`: verified `ai@6.0.196` is current.
+- `node tools/generate-parity-ledger.mjs --check`: verified 57 current parity ledgers.
+- `./gradlew allTests`: 878 test executions, 0 failures, 0 errors, 0 skips.
 - `./gradlew publishToMavenLocal`: published JVM, Android, iOS x64, iOS arm64, and iOS simulator arm64 artifacts locally.
 
 On Linux, iOS unit-test binaries compile but iOS simulator execution is skipped by Gradle. Publication verification still compiles the iOS artifacts.

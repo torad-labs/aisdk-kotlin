@@ -54,6 +54,7 @@ class GatewayAndProviderUtilsParityTest {
         val embedding = embed(provider.embedding("embed-model"), "hello")
         val image = generateImage(provider.image("image-model"), "logo")
         val video = generateVideo(provider.video("video-model"), "clip")
+        val previewVideo = generateVideo(provider.video("xai/grok-imagine-video-1.5-preview"), "clip")
         val reranked = rerank(provider.reranking("rank-model"), "q", listOf("a", "bb"))
 
         assertEquals("gateway:chat-model", text.text)
@@ -61,6 +62,7 @@ class GatewayAndProviderUtilsParityTest {
         assertEquals(listOf(5f), embedding.embedding)
         assertEquals("image-model", image.image.filename)
         assertEquals("video-model", video.video.filename)
+        assertEquals("xai/grok-imagine-video-1.5-preview", previewVideo.video.filename)
         assertEquals("bb", reranked.results.first().value)
         assertEquals("gateway", provider.languageModel("x").provider)
         assertEquals("gateway", provider.textEmbeddingModel("x").provider)

@@ -1,7 +1,7 @@
 # @ai-sdk/svelte
 
-- Version: 4.0.195
-- Upstream path: `.reference/vercel-ai-sdk-ai-6.0.195/packages/svelte`
+- Version: 4.0.196
+- Upstream path: `.reference/vercel-ai-sdk-ai-6.0.196/packages/svelte`
 - Target Kotlin module: `:aisdk-ui`
 - Current parity status: ported-as-kmp-ui: Svelte Chat/Completion/StructuredObject store concepts are represented by the framework-neutral Kotlin ui package: Chat, ChatTransport, TextStreamChatTransport, UIMessage/UIMessagePart, streamToUiMessages, convertToModelMessages, stream responses, and typed tool-part handler registry; Svelte stores/components are intentionally not emitted in the Kotlin runtime module
 
@@ -9,7 +9,7 @@
 
 | Subpath | Source | Export count |
 |---|---|---:|
-| `.` | `.reference/vercel-ai-sdk-ai-6.0.195/packages/svelte/src/index.ts` | 8 |
+| `.` | `.reference/vercel-ai-sdk-ai-6.0.196/packages/svelte/src/index.ts` | 8 |
 
 ## Public Exports
 

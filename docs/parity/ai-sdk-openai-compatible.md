@@ -1,7 +1,7 @@
 # @ai-sdk/openai-compatible
 
 - Version: 2.0.48
-- Upstream path: `.reference/vercel-ai-sdk-ai-6.0.195/packages/openai-compatible`
+- Upstream path: `.reference/vercel-ai-sdk-ai-6.0.196/packages/openai-compatible`
 - Target Kotlin module: `:aisdk-openai-compatible`
 - Current parity status: ported: createOpenAICompatible/createOpenAICompatibleProvider, OpenAICompatibleProviderSettings, chat/completion/embedding/image/speech/transcription models, request URL/header/auth/query handling, structured-output controls, provider-option forwarding, request transforms, usage conversion hooks, response metadata, finish-reason/usage mapping, SSE chat/completion streaming, multimodal/tool message conversion, and facade reuse for compatible providers are represented as Kotlin adapters folded into the root module
 
@@ -9,8 +9,8 @@
 
 | Subpath | Source | Export count |
 |---|---|---:|
-| `.` | `.reference/vercel-ai-sdk-ai-6.0.195/packages/openai-compatible/src/index.ts` | 20 |
-| `./internal` | `.reference/vercel-ai-sdk-ai-6.0.195/packages/openai-compatible/src/internal/index.ts` | 6 |
+| `.` | `.reference/vercel-ai-sdk-ai-6.0.196/packages/openai-compatible/src/index.ts` | 20 |
+| `./internal` | `.reference/vercel-ai-sdk-ai-6.0.196/packages/openai-compatible/src/internal/index.ts` | 6 |
 
 ## Public Exports
 

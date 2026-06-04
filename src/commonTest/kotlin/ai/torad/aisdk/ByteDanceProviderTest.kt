@@ -96,6 +96,7 @@ class ByteDanceProviderTest {
         val content = body["content"]?.jsonArray.orEmpty()
         assertEquals("text", content[0].jsonObject["type"]?.jsonPrimitive?.contentOrNull)
         assertEquals("data:image/png;base64,frame", content[1].jsonObject["image_url"]?.jsonObject?.get("url")?.jsonPrimitive?.contentOrNull)
+        assertEquals("first_frame", content[1].jsonObject["role"]?.jsonPrimitive?.contentOrNull)
         assertEquals("last_frame", content[2].jsonObject["role"]?.jsonPrimitive?.contentOrNull)
         assertEquals("reference_image", content[3].jsonObject["role"]?.jsonPrimitive?.contentOrNull)
         assertEquals("reference_video", content[4].jsonObject["role"]?.jsonPrimitive?.contentOrNull)

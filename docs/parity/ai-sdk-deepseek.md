@@ -1,7 +1,7 @@
 # @ai-sdk/deepseek
 
 - Version: 2.0.35
-- Upstream path: `.reference/vercel-ai-sdk-ai-6.0.195/packages/deepseek`
+- Upstream path: `.reference/vercel-ai-sdk-ai-6.0.196/packages/deepseek`
 - Target Kotlin module: `:aisdk-provider-deepseek`
 - Current parity status: ported: createDeepSeek/deepseek, provider settings, language options, error data alias, and chat model routing are represented as an OpenAI-compatible Kotlin facade folded into the root module; VERSION is exposed as DEEPSEEK_VERSION until package modules are split
 
@@ -9,7 +9,7 @@
 
 | Subpath | Source | Export count |
 |---|---|---:|
-| `.` | `.reference/vercel-ai-sdk-ai-6.0.195/packages/deepseek/src/index.ts` | 8 |
+| `.` | `.reference/vercel-ai-sdk-ai-6.0.196/packages/deepseek/src/index.ts` | 8 |
 
 ## Public Exports
 

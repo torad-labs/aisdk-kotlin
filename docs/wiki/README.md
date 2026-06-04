@@ -70,7 +70,7 @@ into the root module.
 ## Upstream Reference
 
 Parity is verified against the pinned Vercel AI SDK v6 reference stored under
-`.reference/vercel-ai-sdk-ai-6.0.195`. Regenerate ledgers after refreshing the
+`.reference/vercel-ai-sdk-ai-6.0.196`. Regenerate ledgers after refreshing the
 reference:
 
 ```sh

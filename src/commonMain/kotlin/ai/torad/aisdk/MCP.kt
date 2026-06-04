@@ -45,7 +45,7 @@ import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 
-const val MCP_PACKAGE_VERSION = "1.0.45"
+const val MCP_PACKAGE_VERSION = "1.0.46"
 const val LATEST_PROTOCOL_VERSION = "2025-11-25"
 
 val SUPPORTED_PROTOCOL_VERSIONS: List<String> = listOf(
@@ -911,6 +911,28 @@ data class OAuthClientMetadata(
     @SerialName("software_statement") val softwareStatement: String? = null,
 )
 
+@Serializable
+data class AuthorizationServerMetadata(
+    val issuer: String? = null,
+    @SerialName("authorization_endpoint") val authorizationEndpoint: String? = null,
+    @SerialName("token_endpoint") val tokenEndpoint: String? = null,
+    @SerialName("registration_endpoint") val registrationEndpoint: String? = null,
+    @SerialName("response_types_supported") val responseTypesSupported: List<String>? = null,
+    @SerialName("grant_types_supported") val grantTypesSupported: List<String>? = null,
+    @SerialName("token_endpoint_auth_methods_supported") val tokenEndpointAuthMethodsSupported: List<String>? = null,
+    @SerialName("code_challenge_methods_supported") val codeChallengeMethodsSupported: List<String>? = null,
+)
+
+@Serializable
+data class OAuthProtectedResourceMetadata(
+    val resource: String,
+    @SerialName("authorization_servers") val authorizationServers: List<String>? = null,
+    @SerialName("jwks_uri") val jwksUri: String? = null,
+    @SerialName("scopes_supported") val scopesSupported: List<String>? = null,
+    @SerialName("bearer_methods_supported") val bearerMethodsSupported: List<String>? = null,
+    @SerialName("resource_name") val resourceName: String? = null,
+)
+
 interface OAuthClientProvider {
     val redirectUrl: String
     val clientMetadata: OAuthClientMetadata
@@ -927,7 +949,20 @@ interface OAuthClientProvider {
     suspend fun state(): String? = null
     suspend fun saveState(state: String) = Unit
     suspend fun storedState(): String? = null
-    suspend fun validateResourceURL(serverUrl: String, resource: String?): String? = resource ?: serverUrl
+    suspend fun validateResourceURL(serverUrl: String, resource: String?): String? {
+        if (resource == null) return null
+        val requestedResource = resourceUrlFromServerUrl(serverUrl)
+        if (!checkResourceAllowed(requestedResource, resource)) {
+            throw MCPClientError("Protected resource $resource does not match expected $requestedResource (or origin)")
+        }
+        return resourceUrlStripSlash(resource)
+    }
+    suspend fun addClientAuthentication(
+        headers: MutableMap<String, String>,
+        params: MutableMap<String, String>,
+        url: String,
+        metadata: AuthorizationServerMetadata?,
+    ) = Unit
 }
 
 class UnauthorizedError(message: String = "Unauthorized") : AiSdkException(message)
@@ -943,6 +978,7 @@ data class AuthOptions(
     val callbackState: String? = null,
     val scope: String? = null,
     val resourceMetadataUrl: String? = null,
+    val client: HttpClient? = null,
 )
 
 suspend fun auth(
@@ -950,13 +986,84 @@ suspend fun auth(
     options: AuthOptions,
 ): AuthResult {
     val currentTokens = provider.tokens()
-    if (currentTokens?.accessToken?.isNotBlank() == true && options.authorizationCode == null) {
+    if (currentTokens?.accessToken?.isNotBlank() == true &&
+        currentTokens.refreshToken.isNullOrBlank() &&
+        options.authorizationCode == null
+    ) {
         return AuthResult.AUTHORIZED
     }
+    val resourceMetadata = options.client?.let { client ->
+        runCatching {
+            discoverOAuthProtectedResourceMetadata(
+                client = client,
+                serverUrl = options.serverUrl,
+                resourceMetadataUrl = options.resourceMetadataUrl,
+            )
+        }.getOrNull()
+    }
+    val authorizationServerUrl = resourceMetadata?.authorizationServers?.firstOrNull() ?: options.serverUrl
+    val resource = provider.validateResourceURL(options.serverUrl, resourceMetadata?.resource)
+    val metadata = options.client?.let { discoverAuthorizationServerMetadata(it, authorizationServerUrl) }
+    var clientInformation = provider.clientInformation()
+    if (clientInformation == null) {
+        if (options.authorizationCode != null) {
+            throw MCPClientError(
+                "Existing OAuth client information is required when exchanging an authorization code.",
+            )
+        }
+        if (options.client != null) {
+            clientInformation = registerClient(
+                client = options.client,
+                authorizationServerUrl = authorizationServerUrl,
+                metadata = metadata,
+                clientMetadata = provider.clientMetadata,
+            )
+            provider.saveClientInformation(clientInformation)
+        }
+    }
     if (options.authorizationCode != null) {
-        throw MCPClientError(
-            "OAuth authorization-code exchange requires a platform transport; store tokens in OAuthClientProvider before calling auth.",
+        val client = options.client ?: throw MCPClientError(
+            "OAuth authorization-code exchange requires AuthOptions.client.",
         )
+        val info = clientInformation ?: throw MCPClientError(
+            "Existing OAuth client information is required when exchanging an authorization code.",
+        )
+        provider.storedState()?.let { expected ->
+            if (expected != options.callbackState) {
+                throw MCPClientError("OAuth state parameter mismatch - possible CSRF attack.")
+            }
+        }
+        val tokens = exchangeAuthorization(
+            client = client,
+            authorizationServerUrl = authorizationServerUrl,
+            metadata = metadata,
+            clientInformation = info,
+            authorizationCode = options.authorizationCode,
+            codeVerifier = provider.codeVerifier(),
+            redirectUri = provider.redirectUrl,
+            resource = resource,
+            addClientAuthentication = provider::addClientAuthentication,
+        )
+        provider.saveTokens(tokens)
+        return AuthResult.AUTHORIZED
+    }
+
+    if (currentTokens?.refreshToken?.isNotBlank() == true && options.client != null && clientInformation != null) {
+        val tokens = refreshAuthorization(
+            client = options.client,
+            authorizationServerUrl = authorizationServerUrl,
+            metadata = metadata,
+            clientInformation = clientInformation,
+            refreshToken = currentTokens.refreshToken,
+            resource = resource,
+            addClientAuthentication = provider::addClientAuthentication,
+        )
+        provider.saveTokens(tokens)
+        return AuthResult.AUTHORIZED
+    }
+
+    if (currentTokens?.accessToken?.isNotBlank() == true) {
+        return AuthResult.AUTHORIZED
     }
 
     val state = provider.state() ?: generateId(prefix = "mcp")
@@ -964,34 +1071,185 @@ suspend fun auth(
     val codeVerifier = createIdGenerator(prefix = "mcp-verifier", size = 48).generate()
     provider.saveCodeVerifier(codeVerifier)
 
-    val clientId = provider.clientInformation()?.clientId ?: provider.clientMetadata.clientName ?: DEFAULT_MCP_CLIENT_NAME
-    val authorizationUrl = buildAuthorizationUrl(
+    val authClientInformation = clientInformation
+        ?: OAuthClientInformation(clientId = provider.clientMetadata.clientName ?: DEFAULT_MCP_CLIENT_NAME)
+    val authorizationUrl = startAuthorization(
         serverUrl = options.serverUrl,
-        clientId = clientId,
+        metadata = metadata,
+        clientInformation = authClientInformation,
         redirectUrl = provider.redirectUrl,
         scope = options.scope ?: provider.clientMetadata.scope,
         state = state,
+        codeVerifier = codeVerifier,
+        resource = resource,
     )
     provider.redirectToAuthorization(authorizationUrl)
     return AuthResult.REDIRECT
 }
 
-private fun buildAuthorizationUrl(
+suspend fun discoverAuthorizationServerMetadata(
+    client: HttpClient,
+    authorizationServerUrl: String,
+): AuthorizationServerMetadata? {
+    val urls = authorizationDiscoveryUrls(authorizationServerUrl)
+    for (url in urls) {
+        val response = client.request(url) {
+            method = HttpMethod.Get
+            header("MCP-Protocol-Version", LATEST_PROTOCOL_VERSION)
+        }
+        if (response.status.value in 400..499) continue
+        if (response.status.value !in 200..299) {
+            throw MCPClientError("HTTP ${response.status.value} trying to load OAuth metadata from $url")
+        }
+        return mcpJson.decodeFromString<AuthorizationServerMetadata>(response.bodyAsText())
+    }
+    return null
+}
+
+suspend fun discoverOAuthProtectedResourceMetadata(
+    client: HttpClient,
     serverUrl: String,
-    clientId: String,
+    resourceMetadataUrl: String? = null,
+): OAuthProtectedResourceMetadata {
+    val urls = protectedResourceDiscoveryUrls(serverUrl, resourceMetadataUrl)
+    for (url in urls) {
+        val response = client.request(url) {
+            method = HttpMethod.Get
+            header("MCP-Protocol-Version", LATEST_PROTOCOL_VERSION)
+        }
+        if (response.status.value == 404) continue
+        if (response.status.value in 400..499 && resourceMetadataUrl == null) continue
+        if (response.status.value !in 200..299) {
+            throw MCPClientError("HTTP ${response.status.value} trying to load well-known OAuth protected resource metadata.")
+        }
+        return mcpJson.decodeFromString<OAuthProtectedResourceMetadata>(response.bodyAsText())
+    }
+    throw MCPClientError("Resource server does not implement OAuth 2.0 Protected Resource Metadata.")
+}
+
+suspend fun registerClient(
+    client: HttpClient,
+    authorizationServerUrl: String,
+    metadata: AuthorizationServerMetadata?,
+    clientMetadata: OAuthClientMetadata,
+): OAuthClientInformation {
+    val registrationUrl = metadata?.registrationEndpoint ?: "${authorizationServerUrl.trimEnd('/')}/register"
+    val response = client.request(registrationUrl) {
+        method = HttpMethod.Post
+        contentType(ContentType.Application.Json)
+        setBody(mcpJson.encodeToString(clientMetadata))
+    }
+    if (response.status.value !in 200..299) {
+        throw MCPClientError("OAuth client registration failed (${response.status.value}): ${response.bodyAsText()}")
+    }
+    return mcpJson.decodeFromString(response.bodyAsText())
+}
+
+suspend fun exchangeAuthorization(
+    client: HttpClient,
+    authorizationServerUrl: String,
+    metadata: AuthorizationServerMetadata?,
+    clientInformation: OAuthClientInformation,
+    authorizationCode: String,
+    codeVerifier: String,
+    redirectUri: String,
+    resource: String? = null,
+    addClientAuthentication: suspend (
+        MutableMap<String, String>,
+        MutableMap<String, String>,
+        String,
+        AuthorizationServerMetadata?,
+    ) -> Unit = { _, _, _, _ -> },
+): OAuthTokens {
+    val grantType = "authorization_code"
+    if (metadata?.grantTypesSupported != null && grantType !in metadata.grantTypesSupported) {
+        throw MCPClientError("Incompatible auth server: does not support grant type $grantType")
+    }
+    val tokenUrl = metadata?.tokenEndpoint ?: "${authorizationServerUrl.trimEnd('/')}/token"
+    val headers = linkedMapOf(
+        HttpHeaders.ContentType to "application/x-www-form-urlencoded",
+        HttpHeaders.Accept to "application/json",
+    )
+    val params = linkedMapOf(
+        "grant_type" to grantType,
+        "code" to authorizationCode,
+        "code_verifier" to codeVerifier,
+        "redirect_uri" to redirectUri,
+    )
+    resource?.let { params["resource"] = it }
+    applyOAuthClientAuthentication(headers, params, authorizationServerUrl, metadata, clientInformation, addClientAuthentication)
+    return postOAuthTokenRequest(client, tokenUrl, headers, params)
+}
+
+suspend fun refreshAuthorization(
+    client: HttpClient,
+    authorizationServerUrl: String,
+    metadata: AuthorizationServerMetadata?,
+    clientInformation: OAuthClientInformation,
+    refreshToken: String,
+    resource: String? = null,
+    addClientAuthentication: suspend (
+        MutableMap<String, String>,
+        MutableMap<String, String>,
+        String,
+        AuthorizationServerMetadata?,
+    ) -> Unit = { _, _, _, _ -> },
+): OAuthTokens {
+    val grantType = "refresh_token"
+    if (metadata?.grantTypesSupported != null && grantType !in metadata.grantTypesSupported) {
+        throw MCPClientError("Incompatible auth server: does not support grant type $grantType")
+    }
+    val tokenUrl = metadata?.tokenEndpoint ?: "${authorizationServerUrl.trimEnd('/')}/token"
+    val headers = linkedMapOf(
+        HttpHeaders.ContentType to "application/x-www-form-urlencoded",
+        HttpHeaders.Accept to "application/json",
+    )
+    val params = linkedMapOf(
+        "grant_type" to grantType,
+        "refresh_token" to refreshToken,
+    )
+    resource?.let { params["resource"] = it }
+    applyOAuthClientAuthentication(headers, params, authorizationServerUrl, metadata, clientInformation, addClientAuthentication)
+    val tokens = postOAuthTokenRequest(client, tokenUrl, headers, params)
+    return if (tokens.refreshToken.isNullOrBlank()) tokens.copy(refreshToken = refreshToken) else tokens
+}
+
+private fun startAuthorization(
+    serverUrl: String,
+    metadata: AuthorizationServerMetadata?,
+    clientInformation: OAuthClientInformation,
     redirectUrl: String,
     scope: String?,
     state: String,
+    codeVerifier: String,
+    resource: String?,
 ): String {
-    val base = serverUrl.trimEnd('/') + "/authorize"
+    val responseType = "code"
+    val codeChallengeMethod = "S256"
+    val authorizationEndpoint = if (metadata != null) {
+        if (metadata.responseTypesSupported != null && responseType !in metadata.responseTypesSupported) {
+            throw MCPClientError("Incompatible auth server: does not support response type $responseType")
+        }
+        if (metadata.codeChallengeMethodsSupported != null && codeChallengeMethod !in metadata.codeChallengeMethodsSupported) {
+            throw MCPClientError("Incompatible auth server: does not support code challenge method $codeChallengeMethod")
+        }
+        metadata.authorizationEndpoint ?: throw MCPClientError("OAuth metadata is missing authorization_endpoint.")
+    } else {
+        serverUrl.trimEnd('/') + "/authorize"
+    }
+    val codeChallenge = pkceS256Challenge(codeVerifier)
     val params = listOfNotNull(
-        "response_type=code",
-        "client_id=${urlComponent(clientId)}",
+        "response_type=$responseType",
+        "client_id=${urlComponent(clientInformation.clientId)}",
+        "code_challenge=${urlComponent(codeChallenge)}",
+        "code_challenge_method=$codeChallengeMethod",
         "redirect_uri=${urlComponent(redirectUrl)}",
         scope?.let { "scope=${urlComponent(it)}" },
         "state=${urlComponent(state)}",
+        if (scope?.split(' ')?.contains("offline_access") == true) "prompt=consent" else null,
+        resource?.let { "resource=${urlComponent(it)}" },
     )
-    return "$base?${params.joinToString("&")}"
+    return "$authorizationEndpoint?${params.joinToString("&")}"
 }
 
 private fun urlComponent(value: String): String = buildString {
@@ -1010,6 +1268,235 @@ private fun urlComponent(value: String): String = buildString {
         }
     }
 }
+
+private fun pkceS256Challenge(codeVerifier: String): String =
+    convertByteArrayToBase64(mcpSha256(codeVerifier.encodeToByteArray()))
+        .replace('+', '-')
+        .replace('/', '_')
+        .trimEnd('=')
+
+private fun authorizationDiscoveryUrls(authorizationServerUrl: String): List<String> {
+    val trimmed = authorizationServerUrl.trimEnd('/')
+    val origin = mcpOrigin(trimmed)
+    val path = trimmed.removePrefix(origin).ifBlank { "/" }.trimEnd('/')
+    return if (path == "/") {
+        listOf(
+            "$origin/.well-known/oauth-authorization-server",
+            "$origin/.well-known/openid-configuration",
+        )
+    } else {
+        listOf(
+            "$origin/.well-known/oauth-authorization-server$path",
+            "$origin/.well-known/oauth-authorization-server",
+            "$origin/.well-known/openid-configuration$path",
+            "$trimmed/.well-known/openid-configuration",
+        )
+    }
+}
+
+private fun protectedResourceDiscoveryUrls(serverUrl: String, resourceMetadataUrl: String?): List<String> {
+    if (resourceMetadataUrl != null) return listOf(resourceMetadataUrl)
+    val trimmed = serverUrl.trimEnd('/')
+    val origin = mcpOrigin(trimmed)
+    val path = trimmed.removePrefix(origin).ifBlank { "/" }.trimEnd('/')
+    return if (path == "/") {
+        listOf("$origin/.well-known/oauth-protected-resource")
+    } else {
+        listOf(
+            "$origin/.well-known/oauth-protected-resource$path",
+            "$origin/.well-known/oauth-protected-resource",
+        )
+    }
+}
+
+private fun resourceUrlFromServerUrl(serverUrl: String): String {
+    val noFragment = serverUrl.substringBefore('#')
+    return resourceUrlStripSlash(noFragment)
+}
+
+private fun resourceUrlStripSlash(resource: String): String =
+    if (resource.endsWith("/") && resource.removeSuffix("/").count { it == '/' } == 2) {
+        resource.removeSuffix("/")
+    } else {
+        resource
+    }
+
+private fun checkResourceAllowed(requestedResource: String, configuredResource: String): Boolean {
+    val requested = parsedResourceUrl(requestedResource) ?: return false
+    val configured = parsedResourceUrl(configuredResource) ?: return false
+    if (requested.origin != configured.origin) return false
+    val requestedPath = requested.path.ensureTrailingSlash()
+    val configuredPath = configured.path.ensureTrailingSlash()
+    return requestedPath.startsWith(configuredPath)
+}
+
+private data class ParsedResourceUrl(
+    val origin: String,
+    val path: String,
+)
+
+private fun parsedResourceUrl(value: String): ParsedResourceUrl? {
+    val withoutFragment = value.substringBefore('#')
+    val schemeEnd = withoutFragment.indexOf("://")
+    if (schemeEnd <= 0) return null
+    val authorityStart = schemeEnd + 3
+    val pathStart = withoutFragment.indexOf('/', authorityStart)
+    val origin = if (pathStart == -1) withoutFragment else withoutFragment.substring(0, pathStart)
+    val rawPath = if (pathStart == -1) "/" else withoutFragment.substring(pathStart).substringBefore('?').ifBlank { "/" }
+    return ParsedResourceUrl(origin = origin, path = rawPath)
+}
+
+private fun String.ensureTrailingSlash(): String =
+    if (endsWith('/')) this else "$this/"
+
+private suspend fun applyOAuthClientAuthentication(
+    headers: MutableMap<String, String>,
+    params: MutableMap<String, String>,
+    tokenUrl: String,
+    metadata: AuthorizationServerMetadata?,
+    clientInformation: OAuthClientInformation,
+    addClientAuthentication: suspend (
+        MutableMap<String, String>,
+        MutableMap<String, String>,
+        String,
+        AuthorizationServerMetadata?,
+    ) -> Unit,
+) {
+    addClientAuthentication(headers, params, tokenUrl, metadata)
+    if ("client_id" in params || headers.keys.any { it.equals(HttpHeaders.Authorization, ignoreCase = true) }) {
+        return
+    }
+    when (selectOAuthClientAuthMethod(clientInformation, metadata?.tokenEndpointAuthMethodsSupported.orEmpty())) {
+        "client_secret_basic" -> {
+            val secret = clientInformation.clientSecret
+                ?: throw MCPClientError("client_secret_basic authentication requires a client_secret")
+            headers[HttpHeaders.Authorization] = "Basic ${convertByteArrayToBase64("${clientInformation.clientId}:$secret".encodeToByteArray())}"
+        }
+        "client_secret_post" -> {
+            params["client_id"] = clientInformation.clientId
+            clientInformation.clientSecret?.let { params["client_secret"] = it }
+        }
+        else -> params["client_id"] = clientInformation.clientId
+    }
+}
+
+private fun selectOAuthClientAuthMethod(
+    clientInformation: OAuthClientInformation,
+    supportedMethods: List<String>,
+): String {
+    val hasSecret = !clientInformation.clientSecret.isNullOrBlank()
+    if (supportedMethods.isEmpty()) return if (hasSecret) "client_secret_post" else "none"
+    if (hasSecret && "client_secret_basic" in supportedMethods) return "client_secret_basic"
+    if (hasSecret && "client_secret_post" in supportedMethods) return "client_secret_post"
+    return if ("none" in supportedMethods) "none" else if (hasSecret) "client_secret_post" else "none"
+}
+
+private suspend fun postOAuthTokenRequest(
+    client: HttpClient,
+    tokenUrl: String,
+    headers: Map<String, String>,
+    params: Map<String, String>,
+): OAuthTokens {
+    val response = client.request(tokenUrl) {
+        method = HttpMethod.Post
+        headers.forEach { (name, value) -> header(name, value) }
+        setBody(params.oauthFormBody())
+    }
+    if (response.status.value !in 200..299) {
+        throw MCPClientError("OAuth token request failed (${response.status.value}): ${response.bodyAsText()}")
+    }
+    return mcpJson.decodeFromString(response.bodyAsText())
+}
+
+private fun Map<String, String>.oauthFormBody(): String =
+    entries.joinToString("&") { (key, value) -> "${urlComponent(key)}=${urlComponent(value)}" }
+
+private val mcpSha256K = intArrayOf(
+    0x428a2f98, 0x71374491, -0x4a3f0431, -0x164a245b, 0x3956c25b, 0x59f111f1, -0x6dc07d5c, -0x54e3a12b,
+    -0x27f85568, 0x12835b01, 0x243185be, 0x550c7dc3, 0x72be5d74, -0x7f214e02, -0x6423f959, -0x3e640e8c,
+    -0x1b64963f, -0x1041b87a, 0x0fc19dc6, 0x240ca1cc, 0x2de92c6f, 0x4a7484aa, 0x5cb0a9dc, 0x76f988da,
+    -0x67c1aeae, -0x57ce3993, -0x4ffcd838, -0x40a68039, -0x391ff40d, -0x2a586eb9, 0x06ca6351, 0x14292967,
+    0x27b70a85, 0x2e1b2138, 0x4d2c6dfc, 0x53380d13, 0x650a7354, 0x766a0abb, -0x7e3d36d2, -0x6d8dd37b,
+    -0x5d40175f, -0x57e599b5, -0x3db47490, -0x3893ae5d, -0x2e6d17e7, -0x2966f9dc, -0xbf1ca7b, 0x106aa070,
+    0x19a4c116, 0x1e376c08, 0x2748774c, 0x34b0bcb5, 0x391c0cb3, 0x4ed8aa4a, 0x5b9cca4f, 0x682e6ff3,
+    0x748f82ee, 0x78a5636f, -0x7b3787ec, -0x7338fdf8, -0x6f410006, -0x5baf9315, -0x41065c09, -0x398e870e,
+)
+
+private fun mcpSha256(input: ByteArray): ByteArray {
+    var h0 = 0x6a09e667
+    var h1 = -0x4498517b
+    var h2 = 0x3c6ef372
+    var h3 = -0x5ab00ac6
+    var h4 = 0x510e527f
+    var h5 = -0x64fa9774
+    var h6 = 0x1f83d9ab
+    var h7 = 0x5be0cd19
+    val bitLength = input.size.toLong() * 8L
+    val paddingLength = ((56 - (input.size + 1) % 64) + 64) % 64
+    val padded = ByteArray(input.size + 1 + paddingLength + 8)
+    input.copyInto(padded)
+    padded[input.size] = 0x80.toByte()
+    for (index in 0 until 8) {
+        padded[padded.size - 1 - index] = (bitLength ushr (index * 8)).toByte()
+    }
+    val w = IntArray(64)
+    for (chunkStart in padded.indices step 64) {
+        for (index in 0 until 16) {
+            val offset = chunkStart + index * 4
+            w[index] = ((padded[offset].toInt() and 0xff) shl 24) or
+                ((padded[offset + 1].toInt() and 0xff) shl 16) or
+                ((padded[offset + 2].toInt() and 0xff) shl 8) or
+                (padded[offset + 3].toInt() and 0xff)
+        }
+        for (index in 16 until 64) {
+            val s0 = mcpRotr(w[index - 15], 7) xor mcpRotr(w[index - 15], 18) xor (w[index - 15] ushr 3)
+            val s1 = mcpRotr(w[index - 2], 17) xor mcpRotr(w[index - 2], 19) xor (w[index - 2] ushr 10)
+            w[index] = w[index - 16] + s0 + w[index - 7] + s1
+        }
+        var a = h0
+        var b = h1
+        var c = h2
+        var d = h3
+        var e = h4
+        var f = h5
+        var g = h6
+        var h = h7
+        for (index in 0 until 64) {
+            val s1 = mcpRotr(e, 6) xor mcpRotr(e, 11) xor mcpRotr(e, 25)
+            val ch = (e and f) xor (e.inv() and g)
+            val temp1 = h + s1 + ch + mcpSha256K[index] + w[index]
+            val s0 = mcpRotr(a, 2) xor mcpRotr(a, 13) xor mcpRotr(a, 22)
+            val maj = (a and b) xor (a and c) xor (b and c)
+            val temp2 = s0 + maj
+            h = g
+            g = f
+            f = e
+            e = d + temp1
+            d = c
+            c = b
+            b = a
+            a = temp1 + temp2
+        }
+        h0 += a
+        h1 += b
+        h2 += c
+        h3 += d
+        h4 += e
+        h5 += f
+        h6 += g
+        h7 += h
+    }
+    val out = ByteArray(32)
+    intArrayOf(h0, h1, h2, h3, h4, h5, h6, h7).forEachIndexed { index, value ->
+        out[index * 4] = (value ushr 24).toByte()
+        out[index * 4 + 1] = (value ushr 16).toByte()
+        out[index * 4 + 2] = (value ushr 8).toByte()
+        out[index * 4 + 3] = value.toByte()
+    }
+    return out
+}
+
+private fun mcpRotr(value: Int, bits: Int): Int = (value ushr bits) or (value shl (32 - bits))
 
 enum class MCPTransportKind {
     Http,
@@ -1043,6 +1530,7 @@ class HttpMCPTransport(
     private var sessionId: String? = null
     private var scope: CoroutineScope? = null
     private var inboundJob: Job? = null
+    private var inboundRetryRequested: Boolean = false
     private val inboundMutex = Mutex()
     private var closed = true
 
@@ -1071,6 +1559,7 @@ class HttpMCPTransport(
         }
         closed = true
         inboundJob?.cancel()
+        inboundRetryRequested = false
         scope?.cancel()
         inboundJob = null
         scope = null
@@ -1091,7 +1580,7 @@ class HttpMCPTransport(
         }
         response.mcpSessionId()?.let { sessionId = it }
         if (response.status.value == 401 && authProvider != null && !triedAuth) {
-            if (auth(authProvider, AuthOptions(serverUrl = url)) != AuthResult.AUTHORIZED) {
+            if (auth(authProvider, AuthOptions(serverUrl = url, client = client)) != AuthResult.AUTHORIZED) {
                 throw UnauthorizedError()
             }
             postMessage(message, triedAuth = true)
@@ -1130,8 +1619,12 @@ class HttpMCPTransport(
     private suspend fun ensureInboundSse() {
         val activeScope = scope ?: return
         inboundMutex.withLock {
-            if (inboundJob == null) {
+            val current = inboundJob
+            if (current == null || current.isCompleted) {
+                inboundRetryRequested = false
                 inboundJob = activeScope.launch { readInboundSse() }
+            } else {
+                inboundRetryRequested = true
             }
         }
     }
@@ -1157,8 +1650,16 @@ class HttpMCPTransport(
         } catch (error: Throwable) {
             if (!closed) onError?.invoke(error)
         } finally {
+            var restart = false
             inboundMutex.withLock {
                 inboundJob = null
+                if (!closed && inboundRetryRequested) {
+                    inboundRetryRequested = false
+                    restart = true
+                }
+            }
+            if (restart) {
+                ensureInboundSse()
             }
         }
     }
@@ -1233,7 +1734,7 @@ class SseMCPTransport(
             mcpCommonHeaders(mapOf(HttpHeaders.Accept to "text/event-stream")).forEach { (name, value) -> header(name, value) }
         }
         if (response.status.value == 401 && authProvider != null && !triedAuth) {
-            if (auth(authProvider, AuthOptions(serverUrl = url)) != AuthResult.AUTHORIZED) {
+            if (auth(authProvider, AuthOptions(serverUrl = url, client = client)) != AuthResult.AUTHORIZED) {
                 throw UnauthorizedError()
             }
             return openSseConnection(triedAuth = true)
@@ -1250,7 +1751,7 @@ class SseMCPTransport(
             setBody(message.toJsonString())
         }
         if (response.status.value == 401 && authProvider != null) {
-            if (auth(authProvider, AuthOptions(serverUrl = url)) != AuthResult.AUTHORIZED) {
+            if (auth(authProvider, AuthOptions(serverUrl = url, client = client)) != AuthResult.AUTHORIZED) {
                 throw UnauthorizedError()
             }
             send(message)

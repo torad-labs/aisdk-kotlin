@@ -1,7 +1,7 @@
 # @ai-sdk/alibaba
 
 - Version: 1.0.25
-- Upstream path: `.reference/vercel-ai-sdk-ai-6.0.195/packages/alibaba`
+- Upstream path: `.reference/vercel-ai-sdk-ai-6.0.196/packages/alibaba`
 - Target Kotlin module: `:aisdk-provider-alibaba`
 - Current parity status: ported: createAlibaba/alibaba, AlibabaProviderSettings, Alibaba chat aliases/options/cache-control/usage aliases, Alibaba OpenAI-compatible chat routing, Qwen thinking option mapping, parallel tool-call option mapping, cache-write usage correction, reasoning/tool-call parsing via the shared chat adapter, DashScope video task creation/polling, T2V/I2V/R2V input mapping, video option mapping, URL video outputs, warnings, error handling, and provider metadata are represented as a Kotlin facade folded into the root module; VERSION is exposed as ALIBABA_VERSION until package modules are split
 
@@ -9,7 +9,7 @@
 
 | Subpath | Source | Export count |
 |---|---|---:|
-| `.` | `.reference/vercel-ai-sdk-ai-6.0.195/packages/alibaba/src/index.ts` | 13 |
+| `.` | `.reference/vercel-ai-sdk-ai-6.0.196/packages/alibaba/src/index.ts` | 13 |
 
 ## Public Exports
 

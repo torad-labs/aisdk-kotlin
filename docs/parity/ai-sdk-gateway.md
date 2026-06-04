@@ -1,7 +1,7 @@
 # @ai-sdk/gateway
 
-- Version: 3.0.123
-- Upstream path: `.reference/vercel-ai-sdk-ai-6.0.195/packages/gateway`
+- Version: 3.0.124
+- Upstream path: `.reference/vercel-ai-sdk-ai-6.0.196/packages/gateway`
 - Target Kotlin module: `:aisdk-gateway`
 - Current parity status: ported: createGateway/createGatewayProvider/gateway, GatewayProviderSettings, model aliases, gateway hosted tools, auth headers/API-key/OIDC method propagation, metadata caching, credits/spend/generation endpoints, Gateway error classes, and Ktor HTTP transport for language/embedding/image/video/reranking calls and SSE streams are represented as Kotlin facades folded into the root module
 
@@ -9,7 +9,7 @@
 
 | Subpath | Source | Export count |
 |---|---|---:|
-| `.` | `.reference/vercel-ai-sdk-ai-6.0.195/packages/gateway/src/index.ts` | 27 |
+| `.` | `.reference/vercel-ai-sdk-ai-6.0.196/packages/gateway/src/index.ts` | 27 |
 
 ## Public Exports
 

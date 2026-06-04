@@ -1,15 +1,15 @@
 # @ai-sdk/bytedance
 
-- Version: 1.0.14
-- Upstream path: `.reference/vercel-ai-sdk-ai-6.0.195/packages/bytedance`
+- Version: 1.0.15
+- Upstream path: `.reference/vercel-ai-sdk-ai-6.0.196/packages/bytedance`
 - Target Kotlin module: `:aisdk-provider-bytedance`
-- Current parity status: ported: createByteDance/byteDance, ByteDanceProviderSettings, ByteDanceVideoModelId, ByteDanceVideoProviderOptions, video task creation, status polling, URL video output, resolution mapping, reference image/video/audio content mapping, provider-option snake_case mapping, warnings, task metadata, and ByteDance error parsing are represented as a Kotlin facade folded into the root module; VERSION is exposed as BYTEDANCE_VERSION until package modules are split
+- Current parity status: ported: createByteDance/byteDance, ByteDanceProviderSettings, ByteDanceVideoModelId, ByteDanceVideoProviderOptions, video task creation, status polling, URL video output, resolution mapping, first/last frame and reference image/video/audio content role mapping, provider-option snake_case mapping, warnings, task metadata, and ByteDance error parsing are represented as a Kotlin facade folded into the root module; VERSION is exposed as BYTEDANCE_VERSION until package modules are split
 
 ## Entrypoints
 
 | Subpath | Source | Export count |
 |---|---|---:|
-| `.` | `.reference/vercel-ai-sdk-ai-6.0.195/packages/bytedance/src/index.ts` | 7 |
+| `.` | `.reference/vercel-ai-sdk-ai-6.0.196/packages/bytedance/src/index.ts` | 7 |
 
 ## Public Exports
 

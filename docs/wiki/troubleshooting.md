@@ -75,7 +75,7 @@ KMP equivalent, or document why it is not a runtime feature.
 ## Upstream Reference Comment Looks Like A Runtime Failure
 
 The pinned upstream reference is TypeScript source. Some comments inside
-`.reference/vercel-ai-sdk-ai-6.0.195` include historical JavaScript runtime
+`.reference/vercel-ai-sdk-ai-6.0.196` include historical JavaScript runtime
 messages, including the provider-utils note about calling browser or
 Cloudflare base64 globals with the wrong receiver.
 
