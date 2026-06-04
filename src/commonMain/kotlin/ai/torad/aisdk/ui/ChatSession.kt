@@ -5,6 +5,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.update
 import kotlinx.serialization.json.JsonElement
 
 data class ChatState(
@@ -56,11 +57,22 @@ class ChatSession(
     }
 
     fun sendMessage(message: UIMessage, body: Map<String, JsonElement> = emptyMap()): Flow<UIMessage> = flow {
-        mutableState.value = chat.toState().copy(
-            messages = chat.messages + message,
-            status = ChatStatus.Submitted,
-            error = null,
-        )
+        // L-3 (eager vs cold): this stays a cold Flow — its contract, exercised
+        // by ChatSessionTest, is that no turn starts until collection. So the
+        // optimistic Submitted/append happens at collection time, not at call
+        // time. The write is now an atomic `update` based on the current state
+        // (not a torn read of `chat`'s loose fields), which is the real
+        // concurrency fix here. AgentSession can append eagerly because submit()
+        // returns a Job, not a cold Flow — making this one eager would mutate
+        // state on a bare sendMessage() call with no collector, a surprising
+        // side effect.
+        mutableState.update {
+            it.copy(
+                messages = it.messages + message,
+                status = ChatStatus.Submitted,
+                error = null,
+            )
+        }
         try {
             chat.sendMessage(message, body).collect { response ->
                 syncState()
@@ -72,7 +84,7 @@ class ChatSession(
     }
 
     fun regenerate(body: Map<String, JsonElement> = emptyMap()): Flow<UIMessage> = flow {
-        mutableState.value = chat.toState().copy(status = ChatStatus.Submitted, error = null)
+        mutableState.update { it.copy(status = ChatStatus.Submitted, error = null) }
         try {
             chat.regenerate(body).collect { response ->
                 syncState()
