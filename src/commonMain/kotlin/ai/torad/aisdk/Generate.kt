@@ -1,13 +1,14 @@
 package ai.torad.aisdk
 
+import kotlin.concurrent.atomics.AtomicReference
+import kotlin.concurrent.atomics.ExperimentalAtomicApi
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.filterIsInstance
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.sync.withLock
 import kotlinx.serialization.json.JsonElement
 
 /**
@@ -221,15 +222,20 @@ fun streamText(
     ).fullStream.collect { emit(it) }
 }
 
+@OptIn(ExperimentalAtomicApi::class)
 class StreamTextResult(
     sourceStream: Flow<StreamEvent>,
     val request: LanguageModelRequestMetadata = LanguageModelRequestMetadata(),
     private val initialResponse: LanguageModelResponseMetadata = LanguageModelResponseMetadata(),
 ) {
     private val upstream = sourceStream
-    private val mutex = Mutex()
-    private val capturedEvents = mutableListOf<StreamEvent>()
-    private var collected = false
+
+    // The first collector becomes primary, drives the upstream live, and on
+    // successful completion publishes the captured events here; other collectors
+    // await + replay it (cancellable) instead of suspending on a lock held
+    // across the whole run. Reset to null on failure/cancel so a later
+    // collector can retry as primary.
+    private val primaryResult = AtomicReference<CompletableDeferred<List<StreamEvent>>?>(null)
     private var capturedWarnings: List<CallWarning> = emptyList()
     private var capturedResponse: LanguageModelResponseMetadata = initialResponse
 
@@ -241,18 +247,32 @@ class StreamTextResult(
      * cancelled collection never memoises a truncated or duplicated replay.
      */
     val fullStream: Flow<StreamEvent> = flow {
-        mutex.withLock {
-            if (collected) {
-                capturedEvents.forEach { emit(it) }
-            } else {
+        while (true) {
+            val mine = CompletableDeferred<List<StreamEvent>>()
+            if (primaryResult.compareAndSet(null, mine)) {
+                // Primary: drive the upstream live, memoise only on success.
                 val buffer = mutableListOf<StreamEvent>()
-                upstream.collect { event ->
-                    currentCoroutineContext().ensureActive()
-                    buffer += event
-                    emit(event)
+                try {
+                    upstream.collect { event ->
+                        currentCoroutineContext().ensureActive()
+                        buffer += event
+                        emit(event)
+                    }
+                } catch (t: Throwable) {
+                    primaryResult.compareAndSet(mine, null) // release so a retry can re-collect
+                    mine.completeExceptionally(t)
+                    throw t
                 }
                 commit(buffer)
+                mine.complete(buffer.toList())
+                return@flow
             }
+            val existing = primaryResult.load()
+            if (existing != null) {
+                existing.await().forEach { emit(it) }
+                return@flow
+            }
+            // Primary released the slot between the CAS and the load → retry.
         }
     }
 
@@ -280,26 +300,15 @@ class StreamTextResult(
         ai.torad.aisdk.ui.createUiMessageStreamResponse(toUiMessageStream(assistantMessageId))
 
     private suspend fun ensureCollected() {
-        mutex.withLock {
-            if (collected) return
-            val buffer = mutableListOf<StreamEvent>()
-            upstream.collect { event ->
-                currentCoroutineContext().ensureActive()
-                buffer += event
-            }
-            commit(buffer)
-        }
+        // Drives the primary collection (or replays it); commit() has then run.
+        fullStream.collect { }
     }
 
     /**
-     * Commit a fully-collected event buffer to the memoised caches. Only
-     * invoked after the upstream completes normally; a cancelled collection
-     * skips it, so [capturedEvents] is never left partially populated and a
-     * later replay always reflects a single clean run.
+     * Derive the memoised warnings/response from a fully-collected buffer.
+     * Only invoked after the upstream completes normally.
      */
     private fun commit(buffer: List<StreamEvent>) {
-        capturedEvents.clear()
-        capturedEvents.addAll(buffer)
         capturedWarnings = buffer.asSequence()
             .filterIsInstance<StreamEvent.StreamStart>()
             .map { it.warnings }
@@ -312,7 +321,6 @@ class StreamTextResult(
             }
         }
         capturedResponse = response
-        collected = true
     }
 }
 

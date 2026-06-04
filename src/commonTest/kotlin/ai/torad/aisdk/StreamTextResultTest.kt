@@ -1,8 +1,12 @@
 package ai.torad.aisdk
 
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.take
 import kotlinx.coroutines.flow.toList
+import kotlinx.coroutines.test.advanceUntilIdle
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -33,5 +37,29 @@ class StreamTextResultTest {
         assertEquals(full, replay)
         assertEquals(4, replay.size)
         assertEquals(listOf("a", "b"), replay.filterIsInstance<StreamEvent.TextDelta>().map { it.text })
+    }
+
+    @Test
+    fun `concurrent fullStream collectors both observe the full sequence`() = runTest {
+        val gate = CompletableDeferred<Unit>()
+        val upstream = flow {
+            emit(StreamEvent.TextStart("t"))
+            emit(StreamEvent.TextDelta("t", "a"))
+            gate.await()
+            emit(StreamEvent.TextDelta("t", "b"))
+            emit(StreamEvent.TextEnd("t"))
+        }
+        val result = StreamTextResult(sourceStream = upstream)
+
+        val first = async { result.fullStream.toList() }
+        runCurrent() // first becomes primary, parks at the gate after 2 events
+        val second = async { result.fullStream.toList() } // must await + replay, not deadlock
+        runCurrent()
+        gate.complete(Unit)
+        advanceUntilIdle()
+
+        val firstEvents = first.await()
+        assertEquals(4, firstEvents.size)
+        assertEquals(firstEvents, second.await()) // replay matches the live run
     }
 }
