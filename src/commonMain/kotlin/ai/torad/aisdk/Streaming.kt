@@ -284,7 +284,11 @@ sealed interface StreamEvent {
 
     /** Terminal error. Loop unwinds. */
     @Serializable
-    data class Error(val message: String) : StreamEvent
+    data class Error(
+        val message: String,
+        /** Typed cause when available, preserved to the boundary; not serialized. */
+        @Transient val cause: Throwable? = null,
+    ) : StreamEvent
 
     /**
      * Unprocessed provider-specific chunk. Escape hatch for cutting-edge

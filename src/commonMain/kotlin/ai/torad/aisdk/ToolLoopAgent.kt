@@ -306,7 +306,7 @@ open class ToolLoopAgent<TContext, TOutput>(
                         ),
                     )
                 }
-                is StreamEvent.Error -> throw RuntimeException(event.message)
+                is StreamEvent.Error -> throw AiSdkException(event.message, event.cause)
                 else -> Unit
             }
         }
@@ -365,7 +365,7 @@ open class ToolLoopAgent<TContext, TOutput>(
                 throw ce
             } catch (t: Throwable) {
                 emitError(t, 0, OnErrorEvent.ErrorSource.PrepareCall, hooks)
-                emit(StreamEvent.Error(t.message ?: "prepareCall failed"))
+                emit(StreamEvent.Error(t.message ?: "prepareCall failed", cause = t))
                 finalMessagesRef?.value = priorMessages
                 return@flow
             }
@@ -429,7 +429,7 @@ open class ToolLoopAgent<TContext, TOutput>(
                     throw ce
                 } catch (t: Throwable) {
                     emitError(t, stepNumber, OnErrorEvent.ErrorSource.PrepareStep, hooks)
-                    emit(StreamEvent.Error(t.message ?: "prepareStep failed"))
+                    emit(StreamEvent.Error(t.message ?: "prepareStep failed", cause = t))
                     finalMessagesRef?.value = messages.toList()
                     return@flow
                 }
@@ -552,7 +552,7 @@ open class ToolLoopAgent<TContext, TOutput>(
                 throw ce
             } catch (t: Throwable) {
                 emitError(t, stepNumber, OnErrorEvent.ErrorSource.Model, hooks)
-                emit(StreamEvent.Error(t.message ?: "model failed"))
+                emit(StreamEvent.Error(t.message ?: "model failed", cause = t))
                 finalMessagesRef?.value = messages.toList()
                 return@flow
             }

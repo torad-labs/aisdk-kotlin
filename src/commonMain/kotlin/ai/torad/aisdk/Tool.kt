@@ -593,18 +593,6 @@ fun <T> parseProviderOptions(
     }
 }
 
-fun <T> zodSchema(
-    schema: JsonElement,
-    validate: ((JsonElement) -> T)? = null,
-): Schema<T> = Schema(schema, validate)
-
-fun <T> valibotSchema(
-    schema: JsonElement,
-    validate: ((JsonElement) -> T)? = null,
-): Schema<T> = jsonSchema(schema, validate)
-
-fun <T> valibotSchema(schema: Schema<T>): Schema<T> = schema
-
 sealed interface ExecuteToolResult<out TOutput> {
     data class Preliminary<TOutput>(val output: TOutput) : ExecuteToolResult<TOutput>
     data class Final<TOutput>(val output: TOutput) : ExecuteToolResult<TOutput>
