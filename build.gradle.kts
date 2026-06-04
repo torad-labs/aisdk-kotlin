@@ -22,6 +22,12 @@ version = providers.gradleProperty("VERSION_NAME").get()
 kotlin {
     jvmToolchain(21)
 
+    // Phase 3 (Kotlin modernization): warn — don't fail — on missing visibility
+    // modifiers / explicit return types across the public surface. This sizes the
+    // backlog for the later strict `explicitApi()` pass; it is compile-time-only
+    // and emits `w:` warnings without breaking the build.
+    explicitApiWarning()
+
     // KMP per-target + umbrella sources jars, attached to the publications
     // (Maven Central requires a -sources.jar alongside each artifact).
     withSourcesJar(publish = true)

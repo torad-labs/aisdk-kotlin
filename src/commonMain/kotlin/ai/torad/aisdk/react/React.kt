@@ -2,6 +2,7 @@ package ai.torad.aisdk.react
 
 import ai.torad.aisdk.Completion
 import ai.torad.aisdk.CompletionRequestOptions
+import ai.torad.aisdk.ExperimentalAiSdkApi
 import ai.torad.aisdk.StructuredObject
 import ai.torad.aisdk.StructuredObjectOptions
 import ai.torad.aisdk.UseCompletionOptions
@@ -14,11 +15,19 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.serialization.json.JsonElement
 
+@ExperimentalAiSdkApi
 typealias UIMessage = ai.torad.aisdk.ui.UIMessage
+
+@ExperimentalAiSdkApi
 typealias UseCompletionOptions = ai.torad.aisdk.UseCompletionOptions
+
+@ExperimentalAiSdkApi
 typealias CompletionRequestOptions = ai.torad.aisdk.CompletionRequestOptions
+
+@ExperimentalAiSdkApi
 typealias Experimental_UseObjectOptions<RESULT, INPUT> = StructuredObjectOptions<RESULT, INPUT>
 
+@ExperimentalAiSdkApi
 data class UseChatOptions(
     val chat: Chat? = null,
     val id: String = "chat",
@@ -27,6 +36,7 @@ data class UseChatOptions(
     val resume: Boolean = false,
 )
 
+@ExperimentalAiSdkApi
 class UseChatHelpers internal constructor(
     private val chat: Chat,
 ) {
@@ -62,6 +72,7 @@ class UseChatHelpers internal constructor(
     ) = chat.addToolApprovalResponse(toolCallId, approved, reason, approvalId)
 }
 
+@ExperimentalAiSdkApi
 fun useChat(options: UseChatOptions = UseChatOptions()): UseChatHelpers {
     val chat = options.chat ?: Chat(
         id = options.id,
@@ -71,6 +82,7 @@ fun useChat(options: UseChatOptions = UseChatOptions()): UseChatHelpers {
     return UseChatHelpers(chat)
 }
 
+@ExperimentalAiSdkApi
 class UseCompletionHelpers internal constructor(
     private val completionState: Completion,
 ) {
@@ -91,9 +103,11 @@ class UseCompletionHelpers internal constructor(
     suspend fun handleSubmit(): String? = completionState.handleSubmit()
 }
 
+@ExperimentalAiSdkApi
 fun useCompletion(options: UseCompletionOptions = UseCompletionOptions()): UseCompletionHelpers =
     UseCompletionHelpers(Completion(options))
 
+@ExperimentalAiSdkApi
 class Experimental_UseObjectHelpers<RESULT, INPUT> internal constructor(
     private val structuredObject: StructuredObject<RESULT, INPUT>,
 ) {
@@ -107,6 +121,7 @@ class Experimental_UseObjectHelpers<RESULT, INPUT> internal constructor(
     fun clear() = structuredObject.clear()
 }
 
+@ExperimentalAiSdkApi
 fun <RESULT, INPUT> experimental_useObject(
     options: StructuredObjectOptions<RESULT, INPUT>,
 ): Experimental_UseObjectHelpers<RESULT, INPUT> =

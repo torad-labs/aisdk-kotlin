@@ -1,11 +1,15 @@
 package ai.torad.aisdk.codemod
 
+import ai.torad.aisdk.ExperimentalAiSdkApi
+
+@ExperimentalAiSdkApi
 data class CodemodRule(
     val id: String,
     val description: String,
     val apply: (String) -> String,
 )
 
+@ExperimentalAiSdkApi
 data class CodemodResult(
     val output: String,
     val appliedRules: List<String>,
@@ -13,6 +17,7 @@ data class CodemodResult(
     val changed: Boolean get() = appliedRules.isNotEmpty()
 }
 
+@ExperimentalAiSdkApi
 object AiSdkCodemods {
     val replaceDataStreamWithUiMessageStream = CodemodRule(
         id = "replace-datastream-to-uimessagestream",
@@ -54,6 +59,7 @@ object AiSdkCodemods {
     )
 }
 
+@ExperimentalAiSdkApi
 fun applyAiSdkCodemods(
     source: String,
     rules: List<CodemodRule> = AiSdkCodemods.all,
