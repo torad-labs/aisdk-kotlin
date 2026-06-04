@@ -235,7 +235,7 @@ private class BedrockChatLanguageModel(
         emit(StreamEvent.ResponseMetadata(id = response.headers.headerValue("x-amzn-requestid"), modelId = modelId, headers = response.headers))
         val state = BedrockStreamState(settings.generateId, prepared.usesJsonResponseTool)
         for (line in bedrockStreamPayloads(response).map { it.trim() }.filter { it.isNotEmpty() }) {
-            val parsed = runCatching { bedrockJson.parseToJsonElement(line).jsonObject }.getOrNull()
+            val parsed = runCatching { aiSdkJson.parseToJsonElement(line).jsonObject }.getOrNull()
             if (parsed == null) {
                 emit(StreamEvent.Error("Failed to parse Bedrock stream event: $line"))
             } else {
@@ -439,11 +439,6 @@ private data class BedrockHttpResponse(
     val headers: Map<String, String>,
 )
 
-private val bedrockJson = Json {
-    ignoreUnknownKeys = true
-    isLenient = true
-    explicitNulls = false
-}
 
 private fun bedrockChatRequestBody(
     modelId: String,
@@ -656,7 +651,7 @@ private fun bedrockTools(
                     buildJsonObject {
                         put("name", JsonPrimitive(tool.name))
                         if (tool.description.isNotBlank()) put("description", JsonPrimitive(tool.description))
-                        put("inputSchema", buildJsonObject { put("json", bedrockJson.parseToJsonElement(tool.parametersSchemaJson)) })
+                        put("inputSchema", buildJsonObject { put("json", aiSdkJson.parseToJsonElement(tool.parametersSchemaJson)) })
                     },
                 )
             }
@@ -1068,7 +1063,7 @@ private class BedrockStreamState(
                         events += StreamEvent.ToolCall(
                             toolCallId = block.id,
                             toolName = block.name,
-                            inputJson = runCatching { bedrockJson.parseToJsonElement(block.input.ifBlank { "{}" }) }.getOrElse { JsonPrimitive(block.input) },
+                            inputJson = runCatching { aiSdkJson.parseToJsonElement(block.input.ifBlank { "{}" }) }.getOrElse { JsonPrimitive(block.input) },
                         )
                     }
                 }
@@ -1112,7 +1107,7 @@ private suspend fun bedrockPostJson(
     parseJson: Boolean,
 ): BedrockHttpResponse {
     abortSignal.throwIfAborted()
-    val encodedBody = bedrockJson.encodeToString(JsonElement.serializer(), body)
+    val encodedBody = aiSdkJson.encodeToString(JsonElement.serializer(), body)
     val headers = bedrockHeaders(settings, extraHeaders, url, encodedBody, service)
     val response = client.request(url) {
         method = HttpMethod.Post
@@ -1124,11 +1119,11 @@ private suspend fun bedrockPostJson(
     val raw = rawBytes.decodeToString()
     val responseHeaders = response.responseHeaders()
     if (response.status.value !in 200..299) {
-        val parsed = runCatching { bedrockJson.parseToJsonElement(raw) }.getOrNull()
+        val parsed = runCatching { aiSdkJson.parseToJsonElement(raw) }.getOrNull()
         throw AiSdkException(bedrockErrorMessage(parsed, raw))
     }
     return BedrockHttpResponse(
-        value = if (parseJson && raw.isNotBlank()) bedrockJson.parseToJsonElement(raw) else JsonObject(emptyMap()),
+        value = if (parseJson && raw.isNotBlank()) aiSdkJson.parseToJsonElement(raw) else JsonObject(emptyMap()),
         rawText = raw,
         rawBytes = rawBytes,
         headers = responseHeaders,
@@ -1141,7 +1136,7 @@ private fun bedrockStreamPayloads(response: BedrockHttpResponse): List<String> {
         return response.rawText.lineSequence().toList()
     }
     return decodeBedrockEventStream(response.rawBytes).map { message ->
-        val payload = runCatching { bedrockJson.parseToJsonElement(message.payloadText) }.getOrNull()
+        val payload = runCatching { aiSdkJson.parseToJsonElement(message.payloadText) }.getOrNull()
         val eventType = message.eventType
         if (eventType.isBlank()) {
             message.payloadText
@@ -1357,7 +1352,7 @@ private fun bedrockMantleTool(tool: LanguageModelTool): JsonObject = buildJsonOb
         buildJsonObject {
             put("name", JsonPrimitive(tool.name))
             put("description", JsonPrimitive(tool.description))
-            put("parameters", bedrockJson.parseToJsonElement(tool.parametersSchemaJson))
+            put("parameters", aiSdkJson.parseToJsonElement(tool.parametersSchemaJson))
         },
     )
 }

@@ -198,11 +198,6 @@ private class AlibabaVideoModel(
 
 private enum class AlibabaVideoMode { TextToVideo, ImageToVideo, ReferenceToVideo }
 
-private val alibabaJson = Json {
-    ignoreUnknownKeys = true
-    isLenient = true
-    explicitNulls = false
-}
 
 private data class AlibabaJsonResponse(
     val value: JsonElement,
@@ -334,7 +329,7 @@ private suspend fun alibabaPostJson(
         method = HttpMethod.Post
         contentType(ContentType.Application.Json)
         headers.forEach { (name, value) -> header(name, value) }
-        setBody(alibabaJson.encodeToString(JsonElement.serializer(), body))
+        setBody(aiSdkJson.encodeToString(JsonElement.serializer(), body))
     }
     return response.parseAlibabaJson()
 }
@@ -357,7 +352,7 @@ private suspend fun HttpResponse.parseAlibabaJson(): AlibabaJsonResponse {
         throw AiSdkException("Alibaba request failed (${status.value}): ${alibabaErrorMessage(raw)}")
     }
     return AlibabaJsonResponse(
-        value = if (raw.isBlank()) JsonObject(emptyMap()) else alibabaJson.parseToJsonElement(raw),
+        value = if (raw.isBlank()) JsonObject(emptyMap()) else aiSdkJson.parseToJsonElement(raw),
         headers = headers.entries().associate { it.key to it.value.joinToString(",") },
     )
 }
@@ -374,7 +369,7 @@ private fun alibabaOptions(providerOptions: Map<String, JsonElement>): JsonObjec
     providerOptions["alibaba"] as? JsonObject ?: JsonObject(emptyMap())
 
 private fun alibabaErrorMessage(raw: String): String {
-    val obj = runCatching { alibabaJson.parseToJsonElement(raw).jsonObject }.getOrNull() ?: return raw.ifBlank { "request failed" }
+    val obj = runCatching { aiSdkJson.parseToJsonElement(raw).jsonObject }.getOrNull() ?: return raw.ifBlank { "request failed" }
     return obj["message"]?.jsonPrimitive?.contentOrNull
         ?: obj["error"]?.jsonObject?.get("message")?.jsonPrimitive?.contentOrNull
         ?: raw.ifBlank { "request failed" }

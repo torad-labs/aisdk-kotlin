@@ -359,11 +359,6 @@ private class XaiVideoModel(
 private const val DEFAULT_XAI_VIDEO_POLL_INTERVAL_MS: Long = 5_000L
 private const val DEFAULT_XAI_VIDEO_POLL_TIMEOUT_MS: Long = 600_000L
 
-private val xaiJson = Json {
-    ignoreUnknownKeys = true
-    isLenient = true
-    explicitNulls = false
-}
 
 private data class XaiJsonResponse(
     val value: JsonElement,
@@ -542,7 +537,7 @@ private suspend fun xaiPostJson(
         method = HttpMethod.Post
         contentType(ContentType.Application.Json)
         headers.forEach { (name, value) -> header(name, value) }
-        setBody(xaiJson.encodeToString(JsonElement.serializer(), body))
+        setBody(aiSdkJson.encodeToString(JsonElement.serializer(), body))
     }
     return response.parseXaiJson()
 }
@@ -613,7 +608,7 @@ private suspend fun HttpResponse.parseXaiJson(): XaiJsonResponse {
         throw AiSdkException("xAI request failed (${status.value}): ${xaiErrorMessage(raw)}")
     }
     return XaiJsonResponse(
-        value = if (raw.isBlank()) JsonObject(emptyMap()) else xaiJson.parseToJsonElement(raw),
+        value = if (raw.isBlank()) JsonObject(emptyMap()) else aiSdkJson.parseToJsonElement(raw),
         headers = headers.entries().associate { it.key to it.value.joinToString(",") },
     )
 }
@@ -630,7 +625,7 @@ private fun xaiOptions(providerOptions: Map<String, JsonElement>): JsonObject =
     providerOptions["xai"] as? JsonObject ?: JsonObject(emptyMap())
 
 private fun xaiErrorMessage(raw: String): String {
-    val obj = runCatching { xaiJson.parseToJsonElement(raw).jsonObject }.getOrNull() ?: return raw.ifBlank { "request failed" }
+    val obj = runCatching { aiSdkJson.parseToJsonElement(raw).jsonObject }.getOrNull() ?: return raw.ifBlank { "request failed" }
     return obj["error"]?.jsonObject?.get("message")?.jsonPrimitive?.contentOrNull
         ?: obj["error"]?.jsonPrimitive?.contentOrNull
         ?: raw.ifBlank { "request failed" }

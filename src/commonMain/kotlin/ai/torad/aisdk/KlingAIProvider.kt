@@ -212,11 +212,6 @@ private val klingAIHandledProviderOptions = setOf(
     "watermarkEnabled",
 )
 
-private val klingAIJson = Json {
-    ignoreUnknownKeys = true
-    isLenient = true
-    explicitNulls = false
-}
 
 private data class KlingAIJsonResponse(
     val value: JsonElement,
@@ -353,7 +348,7 @@ private suspend fun klingAIRequestJson(
         this.method = method
         if (body != null) {
             contentType(ContentType.Application.Json)
-            setBody(klingAIJson.encodeToString(JsonElement.serializer(), body))
+            setBody(aiSdkJson.encodeToString(JsonElement.serializer(), body))
         }
         headers.forEach { (name, value) -> header(name, value) }
     }
@@ -366,7 +361,7 @@ private suspend fun HttpResponse.parseKlingAIJson(): KlingAIJsonResponse {
         throw AiSdkException("KlingAI request failed (${status.value}): ${klingAIErrorMessage(raw)}")
     }
     return KlingAIJsonResponse(
-        value = if (raw.isBlank()) JsonObject(emptyMap()) else klingAIJson.parseToJsonElement(raw),
+        value = if (raw.isBlank()) JsonObject(emptyMap()) else aiSdkJson.parseToJsonElement(raw),
         headers = headers.entries().associate { it.key to it.value.joinToString(",") },
     )
 }
@@ -394,7 +389,7 @@ private fun klingAIVideoMetadata(value: JsonObject): JsonObject = buildJsonObjec
 }
 
 private fun klingAIErrorMessage(raw: String): String {
-    val obj = runCatching { klingAIJson.parseToJsonElement(raw).jsonObject }.getOrNull() ?: return raw.ifBlank { "request failed" }
+    val obj = runCatching { aiSdkJson.parseToJsonElement(raw).jsonObject }.getOrNull() ?: return raw.ifBlank { "request failed" }
     return obj["message"]?.jsonPrimitive?.contentOrNull ?: raw.ifBlank { "request failed" }
 }
 
@@ -409,8 +404,8 @@ private fun generateKlingAIAuthToken(accessKey: String, secretKey: String): Stri
         put("exp", JsonPrimitive(now + 1800))
         put("nbf", JsonPrimitive(now - 5))
     }
-    val signingInput = "${base64Url(klingAIJson.encodeToString(JsonElement.serializer(), header).encodeToByteArray())}." +
-        base64Url(klingAIJson.encodeToString(JsonElement.serializer(), payload).encodeToByteArray())
+    val signingInput = "${base64Url(aiSdkJson.encodeToString(JsonElement.serializer(), header).encodeToByteArray())}." +
+        base64Url(aiSdkJson.encodeToString(JsonElement.serializer(), payload).encodeToByteArray())
     val signature = hmacSha256(secretKey.encodeToByteArray(), signingInput.encodeToByteArray())
     return "$signingInput.${base64Url(signature)}"
 }

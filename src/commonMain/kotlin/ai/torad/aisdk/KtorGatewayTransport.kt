@@ -34,14 +34,14 @@ import kotlinx.serialization.json.longOrNull
 fun createGatewayHttpProvider(
     client: HttpClient,
     settings: GatewayProviderSettings = GatewayProviderSettings(),
-    json: Json = gatewayJson,
+    json: Json = aiSdkJson,
 ): GatewayProvider = createGatewayProvider(
     settings.copy(transport = KtorGatewayTransport(client, json)),
 )
 
 class KtorGatewayTransport(
     private val client: HttpClient,
-    private val json: Json = gatewayJson,
+    private val json: Json = aiSdkJson,
 ) : GatewayTransport {
     override suspend fun generateText(
         context: GatewayRequestContext,
@@ -479,11 +479,6 @@ private data class GatewayHttpJsonResponse(
     val headers: Map<String, String>,
 )
 
-private val gatewayJson = Json {
-    ignoreUnknownKeys = true
-    isLenient = true
-    explicitNulls = false
-}
 
 private fun modelMessageJson(message: ModelMessage): JsonObject = buildJsonObject {
     put("role", JsonPrimitive(message.role.name.lowercase()))
@@ -562,7 +557,7 @@ private fun providerMetadata(part: ContentPart): Map<String, JsonElement>? = whe
 private fun languageModelToolJson(tool: LanguageModelTool): JsonObject = buildJsonObject {
     put("name", JsonPrimitive(tool.name))
     put("description", JsonPrimitive(tool.description))
-    put("parameters", gatewayJson.parseToJsonElement(tool.parametersSchemaJson))
+    put("parameters", aiSdkJson.parseToJsonElement(tool.parametersSchemaJson))
     put("strict", JsonPrimitive(tool.strict))
     if (tool.providerExecuted) put("providerExecuted", JsonPrimitive(true))
 }
@@ -768,7 +763,7 @@ private fun gatewayOrigin(baseUrl: String): String =
     Regex("^(https?://[^/]+)").find(baseUrl)?.groupValues?.get(1) ?: baseUrl.trimEnd('/')
 
 private fun gatewayErrorFromResponse(statusCode: Int, raw: String): GatewayError {
-    val parsed = runCatching { gatewayJson.parseToJsonElement(raw).jsonObject }.getOrNull()
+    val parsed = runCatching { aiSdkJson.parseToJsonElement(raw).jsonObject }.getOrNull()
     val error = parsed?.get("error")?.jsonObject
     val type = error?.get("type")?.jsonPrimitive?.contentOrNull
     val message = error?.get("message")?.jsonPrimitive?.contentOrNull ?: raw.ifBlank { "Gateway request failed" }

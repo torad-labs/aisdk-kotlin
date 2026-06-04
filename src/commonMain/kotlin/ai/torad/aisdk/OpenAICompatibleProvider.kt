@@ -65,13 +65,13 @@ interface OpenAICompatibleProvider : Provider {
 fun createOpenAICompatible(
     client: HttpClient,
     settings: OpenAICompatibleProviderSettings,
-    json: Json = openAICompatibleJson,
+    json: Json = aiSdkJson,
 ): OpenAICompatibleProvider = KtorOpenAICompatibleProvider(client, settings, json)
 
 fun createOpenAICompatibleProvider(
     client: HttpClient,
     settings: OpenAICompatibleProviderSettings,
-    json: Json = openAICompatibleJson,
+    json: Json = aiSdkJson,
 ): OpenAICompatibleProvider = createOpenAICompatible(client, settings, json)
 
 private class KtorOpenAICompatibleProvider(
@@ -569,11 +569,6 @@ private data class OpenAIBytesResponse(
     val headers: Map<String, String>,
 )
 
-private val openAICompatibleJson = Json {
-    ignoreUnknownKeys = true
-    isLenient = true
-    explicitNulls = false
-}
 
 private val openAIChatReservedOptions = setOf(
     "user",
@@ -929,7 +924,7 @@ private fun openAIToolJson(tool: LanguageModelTool): JsonObject = buildJsonObjec
         buildJsonObject {
             put("name", JsonPrimitive(tool.name))
             put("description", JsonPrimitive(tool.description))
-            put("parameters", openAICompatibleJson.parseToJsonElement(tool.parametersSchemaJson))
+            put("parameters", aiSdkJson.parseToJsonElement(tool.parametersSchemaJson))
             put("strict", JsonPrimitive(tool.strict))
         },
     )
@@ -1037,11 +1032,11 @@ private fun parseOpenAIToolInput(value: String?): JsonElement =
     if (value.isNullOrBlank()) {
         JsonObject(emptyMap())
     } else {
-        runCatching { openAICompatibleJson.parseToJsonElement(value) }.getOrElse { JsonPrimitive(value) }
+        runCatching { aiSdkJson.parseToJsonElement(value) }.getOrElse { JsonPrimitive(value) }
     }
 
 private fun isParsableOpenAIJson(value: String): Boolean =
-    value.isNotBlank() && runCatching { openAICompatibleJson.parseToJsonElement(value) }.isSuccess
+    value.isNotBlank() && runCatching { aiSdkJson.parseToJsonElement(value) }.isSuccess
 
 private fun thoughtSignatureMetadata(value: JsonObject): Map<String, JsonElement>? {
     val signature = value["extra_content"]?.jsonObject

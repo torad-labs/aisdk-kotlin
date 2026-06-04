@@ -14,7 +14,6 @@ import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpMethod
 import kotlinx.coroutines.delay
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonObject
@@ -165,11 +164,6 @@ private class RevaiTranscriptionModel(
 
 private const val REVAI_BASE_URL: String = "https://api.rev.ai"
 
-private val revaiJson = Json {
-    ignoreUnknownKeys = true
-    isLenient = true
-    explicitNulls = false
-}
 
 private data class RevaiJsonResponse(
     val value: JsonElement,
@@ -204,7 +198,7 @@ private suspend fun revaiPostMultipart(
                             append(HttpHeaders.ContentDisposition, "${ContentDisposition.File}; filename=\"$filename\"")
                         },
                     )
-                    append("config", revaiJson.encodeToString(JsonElement.serializer(), config))
+                    append("config", aiSdkJson.encodeToString(JsonElement.serializer(), config))
                 },
             ),
         )
@@ -319,7 +313,7 @@ private suspend fun HttpResponse.parseRevaiJson(): RevaiJsonResponse {
         throw AiSdkException("Rev.ai request failed (${status.value}): ${revaiErrorMessage(raw)}")
     }
     return RevaiJsonResponse(
-        value = if (raw.isBlank()) JsonObject(emptyMap()) else revaiJson.parseToJsonElement(raw),
+        value = if (raw.isBlank()) JsonObject(emptyMap()) else aiSdkJson.parseToJsonElement(raw),
         headers = headers.entries().associate { it.key to it.value.joinToString(",") },
     )
 }
@@ -336,7 +330,7 @@ private fun revaiOptions(providerOptions: Map<String, JsonElement>): JsonObject 
     providerOptions["revai"] as? JsonObject ?: JsonObject(emptyMap())
 
 private fun revaiErrorMessage(raw: String): String {
-    val obj = runCatching { revaiJson.parseToJsonElement(raw).jsonObject }.getOrNull() ?: return raw.ifBlank { "request failed" }
+    val obj = runCatching { aiSdkJson.parseToJsonElement(raw).jsonObject }.getOrNull() ?: return raw.ifBlank { "request failed" }
     return obj["error"]?.jsonObject?.get("message")?.jsonPrimitive?.contentOrNull
         ?: obj["error"]?.jsonPrimitive?.contentOrNull
         ?: raw.ifBlank { "request failed" }

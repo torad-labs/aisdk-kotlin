@@ -1094,11 +1094,6 @@ private fun fireworksImageWarnings(params: ImageGenerationParams, backend: Firew
         }
     }
 
-private val providerFacadeJson = Json {
-    ignoreUnknownKeys = true
-    isLenient = true
-    explicitNulls = false
-}
 
 private data class ProviderFacadeJsonResponse(
     val value: JsonElement,
@@ -1127,7 +1122,7 @@ private suspend fun postFacadeJson(
         method = HttpMethod.Post
         contentType(ContentType.Application.Json)
         headers.forEach { (name, value) -> header(name, value) }
-        setBody(providerFacadeJson.encodeToString(JsonElement.serializer(), body))
+        setBody(aiSdkJson.encodeToString(JsonElement.serializer(), body))
     }
     return response.parseFacadeJson()
 }
@@ -1142,7 +1137,7 @@ private suspend fun postFacadeBinary(
         method = HttpMethod.Post
         contentType(ContentType.Application.Json)
         headers.forEach { (name, value) -> header(name, value) }
-        setBody(providerFacadeJson.encodeToString(JsonElement.serializer(), body))
+        setBody(aiSdkJson.encodeToString(JsonElement.serializer(), body))
     }
     return response.parseFacadeBinary()
 }
@@ -1165,7 +1160,7 @@ private suspend fun HttpResponse.parseFacadeJson(): ProviderFacadeJsonResponse {
         throw AiSdkException("Provider request failed (${status.value}): ${providerFacadeErrorMessage(raw)}")
     }
     return ProviderFacadeJsonResponse(
-        value = if (raw.isBlank()) JsonObject(emptyMap()) else providerFacadeJson.parseToJsonElement(raw),
+        value = if (raw.isBlank()) JsonObject(emptyMap()) else aiSdkJson.parseToJsonElement(raw),
         headers = responseHeaders(),
     )
 }
@@ -1215,7 +1210,7 @@ private fun String.stripDataUriPrefix(): String =
     replace(Regex("^data:[^;]+;base64,"), "")
 
 private fun providerFacadeErrorMessage(raw: String): String {
-    val obj = runCatching { providerFacadeJson.parseToJsonElement(raw).jsonObject }.getOrNull() ?: return raw.ifBlank { "request failed" }
+    val obj = runCatching { aiSdkJson.parseToJsonElement(raw).jsonObject }.getOrNull() ?: return raw.ifBlank { "request failed" }
     val error = obj["error"]
     if (error is JsonPrimitive) return error.contentOrNull ?: raw
     if (error is JsonObject) return error["message"]?.jsonPrimitive?.contentOrNull ?: error.toString()

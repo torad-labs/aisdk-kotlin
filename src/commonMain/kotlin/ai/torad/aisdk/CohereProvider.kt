@@ -239,11 +239,6 @@ private class CohereRerankingModel(
     }
 }
 
-private val cohereJson = Json {
-    ignoreUnknownKeys = true
-    isLenient = true
-    explicitNulls = false
-}
 
 private data class CohereJsonResponse(
     val value: JsonElement,
@@ -387,7 +382,7 @@ private fun cohereAssistantToolCall(call: ContentPart.ToolCall): JsonObject = bu
     put("type", JsonPrimitive("function"))
     put("function", buildJsonObject {
         put("name", JsonPrimitive(call.toolName))
-        put("arguments", JsonPrimitive(cohereJson.encodeToString(JsonElement.serializer(), call.input)))
+        put("arguments", JsonPrimitive(aiSdkJson.encodeToString(JsonElement.serializer(), call.input)))
     })
 }
 
@@ -401,7 +396,7 @@ private fun cohereToolMessages(content: List<ContentPart>): List<JsonObject> =
     }
 
 private fun cohereToolResultContent(value: JsonElement): String =
-    if (value is JsonPrimitive) value.contentOrNull ?: value.toString() else cohereJson.encodeToString(JsonElement.serializer(), value)
+    if (value is JsonPrimitive) value.contentOrNull ?: value.toString() else aiSdkJson.encodeToString(JsonElement.serializer(), value)
 
 private fun cohereImagePart(
     mediaType: String,
@@ -474,7 +469,7 @@ private fun cohereToolJson(tool: LanguageModelTool): JsonObject = buildJsonObjec
     put("function", buildJsonObject {
         put("name", JsonPrimitive(tool.name))
         put("description", JsonPrimitive(tool.description))
-        put("parameters", cohereJson.parseToJsonElement(tool.parametersSchemaJson))
+        put("parameters", aiSdkJson.parseToJsonElement(tool.parametersSchemaJson))
     })
 }
 
@@ -563,7 +558,7 @@ private fun cohereChatResult(
 private fun cohereToolInput(value: String?): JsonElement {
     val normalized = if (value == "null") "{}" else value
     return if (normalized.isNullOrBlank()) JsonObject(emptyMap()) else runCatching {
-        cohereJson.parseToJsonElement(normalized)
+        aiSdkJson.parseToJsonElement(normalized)
     }.getOrElse { JsonPrimitive(normalized) }
 }
 
@@ -600,7 +595,7 @@ private suspend fun coherePostJson(
         method = HttpMethod.Post
         contentType(ContentType.Application.Json)
         headers.forEach { (name, value) -> header(name, value) }
-        setBody(cohereJson.encodeToString(JsonElement.serializer(), body))
+        setBody(aiSdkJson.encodeToString(JsonElement.serializer(), body))
     }
     return response.parseCohereJson()
 }
@@ -611,7 +606,7 @@ private suspend fun HttpResponse.parseCohereJson(): CohereJsonResponse {
         throw AiSdkException("Cohere request failed (${status.value}): ${cohereErrorMessage(raw)}")
     }
     return CohereJsonResponse(
-        value = if (raw.isBlank()) JsonObject(emptyMap()) else cohereJson.parseToJsonElement(raw),
+        value = if (raw.isBlank()) JsonObject(emptyMap()) else aiSdkJson.parseToJsonElement(raw),
         headers = headers.entries().associate { it.key to it.value.joinToString(",") },
     )
 }
@@ -628,7 +623,7 @@ private fun cohereOptions(providerOptions: Map<String, JsonElement>): JsonObject
     providerOptions["cohere"] as? JsonObject ?: JsonObject(emptyMap())
 
 private fun cohereErrorMessage(raw: String): String {
-    val obj = runCatching { cohereJson.parseToJsonElement(raw).jsonObject }.getOrNull() ?: return raw.ifBlank { "request failed" }
+    val obj = runCatching { aiSdkJson.parseToJsonElement(raw).jsonObject }.getOrNull() ?: return raw.ifBlank { "request failed" }
     return obj["message"]?.jsonPrimitive?.contentOrNull
         ?: obj["error"]?.jsonPrimitive?.contentOrNull
         ?: raw.ifBlank { "request failed" }

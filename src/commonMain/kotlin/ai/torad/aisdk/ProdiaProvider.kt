@@ -278,11 +278,6 @@ private data class ProdiaMultipartResult(
     val headers: Map<String, String>,
 )
 
-private val prodiaJson = Json {
-    ignoreUnknownKeys = true
-    isLenient = true
-    explicitNulls = false
-}
 
 private fun prodiaLanguageWarnings(params: LanguageModelCallParams): List<CallWarning> = buildList {
     if (params.temperature != null) add(CallWarning("unsupported", "Prodia language models do not support temperature."))
@@ -344,7 +339,7 @@ private suspend fun prodiaPostJsonForMultipart(
         contentType(ContentType.Application.Json)
         header(HttpHeaders.Accept, accept)
         headers.forEach { (name, value) -> header(name, value) }
-        setBody(prodiaJson.encodeToString(JsonElement.serializer(), body))
+        setBody(aiSdkJson.encodeToString(JsonElement.serializer(), body))
     }
     return response.parseProdiaMultipart()
 }
@@ -366,7 +361,7 @@ private suspend fun prodiaPostMultipart(
                 formData {
                     append(
                         "job",
-                        prodiaJson.encodeToString(JsonElement.serializer(), body),
+                        aiSdkJson.encodeToString(JsonElement.serializer(), body),
                         Headers.build { append(HttpHeaders.ContentType, "application/json") },
                     )
                     input?.let { file ->
@@ -403,7 +398,7 @@ private suspend fun HttpResponse.parseProdiaMultipart(): ProdiaMultipartResult {
         val contentDisposition = part.headers["content-disposition"].orEmpty()
         val contentType = part.headers["content-type"].orEmpty()
         if (contentDisposition.contains("name=\"job\"")) {
-            job = prodiaJson.parseToJsonElement(part.body.decodeToString()).jsonObject
+            job = aiSdkJson.parseToJsonElement(part.body.decodeToString()).jsonObject
         } else if (contentDisposition.contains("name=\"output\"")) {
             when {
                 contentType.startsWith("text/") || contentDisposition.contains(".txt") -> text = part.body.decodeToString()
@@ -530,7 +525,7 @@ private fun prodiaJobMetadata(job: JsonObject): JsonObject = buildJsonObject {
 }
 
 private fun prodiaErrorMessage(raw: String): String {
-    val obj = runCatching { prodiaJson.parseToJsonElement(raw).jsonObject }.getOrNull() ?: return raw.ifBlank { "request failed" }
+    val obj = runCatching { aiSdkJson.parseToJsonElement(raw).jsonObject }.getOrNull() ?: return raw.ifBlank { "request failed" }
     return obj["detail"]?.jsonPrimitive?.contentOrNull
         ?: obj["error"]?.jsonPrimitive?.contentOrNull
         ?: obj["message"]?.jsonPrimitive?.contentOrNull

@@ -174,11 +174,6 @@ private class AssemblyAITranscriptionModel(
 
 private const val ASSEMBLYAI_BASE_URL: String = "https://api.assemblyai.com"
 
-private val assemblyAIJson = Json {
-    ignoreUnknownKeys = true
-    isLenient = true
-    explicitNulls = false
-}
 
 private data class AssemblyAIJsonResponse(
     val value: JsonElement,
@@ -210,7 +205,7 @@ private suspend fun assemblyAIPostJson(
         method = HttpMethod.Post
         contentType(ContentType.Application.Json)
         headers.forEach { (name, value) -> header(name, value) }
-        setBody(assemblyAIJson.encodeToString(JsonElement.serializer(), body))
+        setBody(aiSdkJson.encodeToString(JsonElement.serializer(), body))
     }
     return response.parseAssemblyAIJson()
 }
@@ -317,7 +312,7 @@ private suspend fun HttpResponse.parseAssemblyAIJson(): AssemblyAIJsonResponse {
         throw AiSdkException("AssemblyAI request failed (${status.value}): ${assemblyAIErrorMessage(raw)}")
     }
     return AssemblyAIJsonResponse(
-        value = if (raw.isBlank()) JsonObject(emptyMap()) else assemblyAIJson.parseToJsonElement(raw),
+        value = if (raw.isBlank()) JsonObject(emptyMap()) else aiSdkJson.parseToJsonElement(raw),
         headers = headers.entries().associate { it.key to it.value.joinToString(",") },
     )
 }
@@ -334,7 +329,7 @@ private fun assemblyAIOptions(providerOptions: Map<String, JsonElement>): JsonOb
     providerOptions["assemblyai"] as? JsonObject ?: JsonObject(emptyMap())
 
 private fun assemblyAIErrorMessage(raw: String): String {
-    val obj = runCatching { assemblyAIJson.parseToJsonElement(raw).jsonObject }.getOrNull() ?: return raw.ifBlank { "request failed" }
+    val obj = runCatching { aiSdkJson.parseToJsonElement(raw).jsonObject }.getOrNull() ?: return raw.ifBlank { "request failed" }
     return obj["error"]?.jsonObject?.get("message")?.jsonPrimitive?.contentOrNull
         ?: obj["error"]?.jsonPrimitive?.contentOrNull
         ?: raw.ifBlank { "request failed" }

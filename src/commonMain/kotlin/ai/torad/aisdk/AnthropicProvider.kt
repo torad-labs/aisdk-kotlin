@@ -118,7 +118,7 @@ class AnthropicMessagesLanguageModel(
             responseBody = response.value,
             warnings = prepared.warnings,
             settings = settings,
-            json = anthropicJson,
+            json = aiSdkJson,
         )
     }
 
@@ -127,8 +127,8 @@ class AnthropicMessagesLanguageModel(
         val response = anthropicPost(prepared.body, prepared.betas, params.headers, acceptEventStream = true, parseJson = false)
         emit(StreamEvent.StreamStart(prepared.warnings))
         emit(StreamEvent.ResponseMetadata(headers = response.headers, body = JsonPrimitive(response.rawText)))
-        val state = AnthropicStreamState(settings, anthropicJson)
-        for (event in parseJsonEventStream(response.rawText, jsonSchema<JsonElement>(JsonObject(emptyMap())), anthropicJson)) {
+        val state = AnthropicStreamState(settings, aiSdkJson)
+        for (event in parseJsonEventStream(response.rawText, jsonSchema<JsonElement>(JsonObject(emptyMap())), aiSdkJson)) {
             when (event) {
                 is ParseResult.Success -> state.accept(event.value).forEach { emit(it) }
                 is ParseResult.Failure -> emit(StreamEvent.Error("Failed to parse Anthropic stream event: ${event.error.message}"))
@@ -152,7 +152,7 @@ class AnthropicMessagesLanguageModel(
         val baseURL = settings.baseURL.trimEnd('/')
         val url = settings.buildRequestUrl?.invoke(baseURL, modelId, acceptEventStream) ?: "$baseURL/messages"
         val requestBody = settings.transformRequestBody?.invoke(modelId, body, acceptEventStream) ?: body
-        val encodedBody = anthropicJson.encodeToString(JsonElement.serializer(), requestBody)
+        val encodedBody = aiSdkJson.encodeToString(JsonElement.serializer(), requestBody)
         val baseHeaders = anthropicHeaders(settings, extraHeaders, betas)
         val requestHeaders = settings.requestHeadersProvider?.invoke(url, encodedBody, baseHeaders) ?: baseHeaders
         val response = client.request(url) {
@@ -254,11 +254,6 @@ private data class PreparedAnthropicTools(
     val betas: Set<String>,
 )
 
-private val anthropicJson = Json {
-    ignoreUnknownKeys = true
-    isLenient = true
-    explicitNulls = false
-}
 
 private fun anthropicRequestBody(
     settings: AnthropicProviderSettings,
@@ -534,7 +529,7 @@ private fun anthropicPrepareTools(
             prepared += buildJsonObject {
                 put("name", JsonPrimitive(tool.name))
                 put("description", JsonPrimitive(tool.description))
-                put("input_schema", anthropicJson.parseToJsonElement(tool.parametersSchemaJson))
+                put("input_schema", aiSdkJson.parseToJsonElement(tool.parametersSchemaJson))
                 if (toolStreaming) put("eager_input_streaming", JsonPrimitive(true))
                 put("strict", JsonPrimitive(tool.strict))
             }
@@ -913,11 +908,11 @@ private suspend fun HttpResponse.parseAnthropicResponse(parseJson: Boolean): Ant
     val raw = bodyAsText()
     val headers = responseHeaders()
     if (status.value !in 200..299) {
-        val parsed = runCatching { anthropicJson.parseToJsonElement(raw) }.getOrNull()
+        val parsed = runCatching { aiSdkJson.parseToJsonElement(raw) }.getOrNull()
         throw AiSdkException(anthropicErrorMessage(parsed, raw))
     }
     return AnthropicHttpResponse(
-        value = if (parseJson && raw.isNotBlank()) anthropicJson.parseToJsonElement(raw) else JsonObject(emptyMap()),
+        value = if (parseJson && raw.isNotBlank()) aiSdkJson.parseToJsonElement(raw) else JsonObject(emptyMap()),
         rawText = raw,
         headers = headers,
     )

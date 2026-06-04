@@ -230,11 +230,6 @@ private data class ReplicateJsonResponse(
     val headers: Map<String, String>,
 )
 
-private val replicateJson = Json {
-    ignoreUnknownKeys = true
-    isLenient = true
-    explicitNulls = false
-}
 
 private val replicateImageExcludedOptionKeys = setOf("maxWaitTimeInSeconds")
 private val replicateVideoExcludedOptionKeys = setOf("pollIntervalMs", "pollTimeoutMs", "maxWaitTimeInSeconds")
@@ -326,7 +321,7 @@ private suspend fun replicatePostJson(
         method = HttpMethod.Post
         contentType(ContentType.Application.Json)
         headers.forEach { (name, value) -> header(name, value) }
-        setBody(replicateJson.encodeToString(JsonElement.serializer(), body))
+        setBody(aiSdkJson.encodeToString(JsonElement.serializer(), body))
     }
     return response.parseReplicateJson()
 }
@@ -411,7 +406,7 @@ private suspend fun HttpResponse.parseReplicateJson(): ReplicateJsonResponse {
         throw AiSdkException("Replicate request failed (${status.value}): ${replicateErrorMessage(raw)}")
     }
     return ReplicateJsonResponse(
-        value = if (raw.isBlank()) JsonObject(emptyMap()) else replicateJson.parseToJsonElement(raw),
+        value = if (raw.isBlank()) JsonObject(emptyMap()) else aiSdkJson.parseToJsonElement(raw),
         headers = headers.entries().associate { it.key to it.value.joinToString(",") },
     )
 }
@@ -441,7 +436,7 @@ private fun replicateOptions(providerOptions: Map<String, JsonElement>): JsonObj
     providerOptions["replicate"] as? JsonObject ?: JsonObject(emptyMap())
 
 private fun replicateErrorMessage(raw: String): String {
-    val obj = runCatching { replicateJson.parseToJsonElement(raw).jsonObject }.getOrNull() ?: return raw.ifBlank { "request failed" }
+    val obj = runCatching { aiSdkJson.parseToJsonElement(raw).jsonObject }.getOrNull() ?: return raw.ifBlank { "request failed" }
     return obj["detail"]?.jsonPrimitive?.contentOrNull
         ?: obj["error"]?.jsonPrimitive?.contentOrNull
         ?: raw.ifBlank { "request failed" }

@@ -123,11 +123,6 @@ private class LumaImageModel(
 private const val DEFAULT_LUMA_POLL_INTERVAL_MILLIS: Long = 500L
 private const val DEFAULT_LUMA_MAX_POLL_ATTEMPTS: Int = 120
 
-private val lumaJson = Json {
-    ignoreUnknownKeys = true
-    isLenient = true
-    explicitNulls = false
-}
 
 private data class LumaJsonResponse(
     val value: JsonElement,
@@ -225,7 +220,7 @@ private suspend fun lumaPostJson(
         method = HttpMethod.Post
         contentType(ContentType.Application.Json)
         headers.forEach { (name, value) -> header(name, value) }
-        setBody(lumaJson.encodeToString(JsonElement.serializer(), body))
+        setBody(aiSdkJson.encodeToString(JsonElement.serializer(), body))
     }
     return response.parseLumaJson()
 }
@@ -289,7 +284,7 @@ private suspend fun HttpResponse.parseLumaJson(): LumaJsonResponse {
         throw AiSdkException("Luma request failed (${status.value}): ${lumaErrorMessage(raw)}")
     }
     return LumaJsonResponse(
-        value = if (raw.isBlank()) JsonObject(emptyMap()) else lumaJson.parseToJsonElement(raw),
+        value = if (raw.isBlank()) JsonObject(emptyMap()) else aiSdkJson.parseToJsonElement(raw),
         headers = headers.entries().associate { it.key to it.value.joinToString(",") },
     )
 }
@@ -306,7 +301,7 @@ private fun lumaOptions(providerOptions: Map<String, JsonElement>): JsonObject =
     providerOptions["luma"] as? JsonObject ?: JsonObject(emptyMap())
 
 private fun lumaErrorMessage(raw: String): String {
-    val obj = runCatching { lumaJson.parseToJsonElement(raw).jsonObject }.getOrNull() ?: return raw.ifBlank { "request failed" }
+    val obj = runCatching { aiSdkJson.parseToJsonElement(raw).jsonObject }.getOrNull() ?: return raw.ifBlank { "request failed" }
     val details = obj["detail"]?.jsonArray?.firstOrNull()?.jsonObject?.get("msg")?.jsonPrimitive?.contentOrNull
     return details ?: obj["error"]?.jsonPrimitive?.contentOrNull ?: raw.ifBlank { "request failed" }
 }

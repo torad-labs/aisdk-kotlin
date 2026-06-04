@@ -203,7 +203,7 @@ private class GoogleGenerativeAILanguageModel(
         )
         emit(StreamEvent.StreamStart(prepared.warnings))
         val state = GoogleStreamState(settings.generateId)
-        for (event in parseJsonEventStream(response.rawText, jsonSchema<JsonElement>(JsonObject(emptyMap())), googleJson)) {
+        for (event in parseJsonEventStream(response.rawText, jsonSchema<JsonElement>(JsonObject(emptyMap())), aiSdkJson)) {
             when (event) {
                 is ParseResult.Success -> state.accept(event.value.jsonObject).forEach { emit(it) }
                 is ParseResult.Failure -> emit(StreamEvent.Error("Failed to parse Google stream event: ${event.error.message}"))
@@ -498,7 +498,7 @@ private class GoogleInteractionsLanguageModel(
                     abortSignal = params.abortSignal,
                     parseJson = false,
                 )
-                for (event in parseJsonEventStream(response.rawText, jsonSchema<JsonElement>(JsonObject(emptyMap())), googleJson)) {
+                for (event in parseJsonEventStream(response.rawText, jsonSchema<JsonElement>(JsonObject(emptyMap())), aiSdkJson)) {
                     when (event) {
                         is ParseResult.Success -> state.accept(event.value.jsonObject).forEach { emit(it) }
                         is ParseResult.Failure -> emit(StreamEvent.Error("Failed to parse Google Interactions stream event: ${event.error.message}"))
@@ -514,7 +514,7 @@ private class GoogleInteractionsLanguageModel(
                 abortSignal = params.abortSignal,
                 parseJson = false,
             )
-            for (event in parseJsonEventStream(response.rawText, jsonSchema<JsonElement>(JsonObject(emptyMap())), googleJson)) {
+            for (event in parseJsonEventStream(response.rawText, jsonSchema<JsonElement>(JsonObject(emptyMap())), aiSdkJson)) {
                 when (event) {
                     is ParseResult.Success -> state.accept(event.value.jsonObject).forEach { emit(it) }
                     is ParseResult.Failure -> emit(StreamEvent.Error("Failed to parse Google Interactions stream event: ${event.error.message}"))
@@ -818,7 +818,7 @@ private fun googleInteractionsTools(
                 put("type", JsonPrimitive("function"))
                 put("name", JsonPrimitive(tool.name))
                 if (tool.description.isNotBlank()) put("description", JsonPrimitive(tool.description))
-                put("parameters", googleJson.parseToJsonElement(tool.parametersSchemaJson))
+                put("parameters", aiSdkJson.parseToJsonElement(tool.parametersSchemaJson))
             }
         } else {
             when (tool.metadata["providerToolId"]?.jsonPrimitive?.contentOrNull) {
@@ -1274,11 +1274,6 @@ private fun googleInteractionsMetadata(
 private fun googleInteractionsSignature(metadata: Map<String, JsonElement>?): String? =
     (metadata?.get("google") as? JsonObject)?.get("signature")?.jsonPrimitive?.contentOrNull
 
-private val googleJson = Json {
-    ignoreUnknownKeys = true
-    isLenient = true
-    explicitNulls = false
-}
 
 private fun googleGenerateContentBody(
     modelId: String,
@@ -1431,7 +1426,7 @@ private fun googleToolsJson(
         buildJsonObject {
             put("name", JsonPrimitive(tool.name))
             if (tool.description.isNotBlank()) put("description", JsonPrimitive(tool.description))
-            put("parameters", googleJson.parseToJsonElement(tool.parametersSchemaJson))
+            put("parameters", aiSdkJson.parseToJsonElement(tool.parametersSchemaJson))
         }
     }
     if (functionDeclarations.isNotEmpty()) {
@@ -1737,7 +1732,7 @@ private suspend fun googlePostJson(
         method = HttpMethod.Post
         contentType(ContentType.Application.Json)
         headers.forEach { (name, value) -> header(name, value) }
-        setBody(googleJson.encodeToString(JsonElement.serializer(), body))
+        setBody(aiSdkJson.encodeToString(JsonElement.serializer(), body))
     }
     return response.parseGoogleResponse(parseJson)
 }
@@ -1786,11 +1781,11 @@ private suspend fun HttpResponse.parseGoogleResponse(parseJson: Boolean): Google
     val raw = bodyAsText()
     val headers = responseHeaders()
     if (status.value !in 200..299) {
-        val parsed = runCatching { googleJson.parseToJsonElement(raw) }.getOrNull()
+        val parsed = runCatching { aiSdkJson.parseToJsonElement(raw) }.getOrNull()
         throw AiSdkException(googleErrorMessage(parsed, raw))
     }
     return GoogleHttpResponse(
-        value = if (parseJson && raw.isNotBlank()) googleJson.parseToJsonElement(raw) else JsonObject(emptyMap()),
+        value = if (parseJson && raw.isNotBlank()) aiSdkJson.parseToJsonElement(raw) else JsonObject(emptyMap()),
         rawText = raw,
         headers = headers,
     )

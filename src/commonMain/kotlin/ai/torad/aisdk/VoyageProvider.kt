@@ -171,11 +171,6 @@ private class VoyageRerankingModel(
 
 private const val VOYAGE_MAX_EMBEDDINGS_PER_CALL: Int = 128
 
-private val voyageJson = Json {
-    ignoreUnknownKeys = true
-    isLenient = true
-    explicitNulls = false
-}
 
 private data class VoyageJsonResponse(
     val value: JsonElement,
@@ -193,7 +188,7 @@ private suspend fun voyagePostJson(
         method = HttpMethod.Post
         contentType(ContentType.Application.Json)
         headers.forEach { (name, value) -> header(name, value) }
-        setBody(voyageJson.encodeToString(JsonElement.serializer(), body))
+        setBody(aiSdkJson.encodeToString(JsonElement.serializer(), body))
     }
     return response.parseVoyageJson(body)
 }
@@ -204,7 +199,7 @@ private suspend fun HttpResponse.parseVoyageJson(requestBody: JsonObject): Voyag
         throw AiSdkException("Voyage request failed (${status.value}): ${voyageErrorMessage(raw)}")
     }
     return VoyageJsonResponse(
-        value = if (raw.isBlank()) JsonObject(emptyMap()) else voyageJson.parseToJsonElement(raw),
+        value = if (raw.isBlank()) JsonObject(emptyMap()) else aiSdkJson.parseToJsonElement(raw),
         headers = headers.entries().associate { it.key to it.value.joinToString(",") },
         requestBody = requestBody,
     )
@@ -222,7 +217,7 @@ private fun voyageOptions(providerOptions: Map<String, JsonElement>): JsonObject
     providerOptions["voyage"] as? JsonObject ?: JsonObject(emptyMap())
 
 private fun voyageErrorMessage(raw: String): String {
-    val obj = runCatching { voyageJson.parseToJsonElement(raw).jsonObject }.getOrNull() ?: return raw.ifBlank { "request failed" }
+    val obj = runCatching { aiSdkJson.parseToJsonElement(raw).jsonObject }.getOrNull() ?: return raw.ifBlank { "request failed" }
     val message = obj["message"]?.jsonPrimitive?.contentOrNull
         ?: obj["detail"]?.jsonPrimitive?.contentOrNull
         ?: obj["error"]?.jsonObject?.get("message")?.jsonPrimitive?.contentOrNull

@@ -139,11 +139,6 @@ private class ByteDanceVideoModel(
 private const val DEFAULT_BYTEDANCE_POLL_INTERVAL_MS: Long = 3_000L
 private const val DEFAULT_BYTEDANCE_POLL_TIMEOUT_MS: Long = 300_000L
 
-private val byteDanceJson = Json {
-    ignoreUnknownKeys = true
-    isLenient = true
-    explicitNulls = false
-}
 
 private data class ByteDanceJsonResponse(
     val value: JsonElement,
@@ -277,7 +272,7 @@ private suspend fun byteDancePostJson(
         method = HttpMethod.Post
         contentType(ContentType.Application.Json)
         headers.forEach { (name, value) -> header(name, value) }
-        setBody(byteDanceJson.encodeToString(JsonElement.serializer(), body))
+        setBody(aiSdkJson.encodeToString(JsonElement.serializer(), body))
     }
     return response.parseByteDanceJson()
 }
@@ -330,7 +325,7 @@ private suspend fun HttpResponse.parseByteDanceJson(): ByteDanceJsonResponse {
         throw AiSdkException("ByteDance request failed (${status.value}): ${byteDanceErrorMessage(raw)}")
     }
     return ByteDanceJsonResponse(
-        value = if (raw.isBlank()) JsonObject(emptyMap()) else byteDanceJson.parseToJsonElement(raw),
+        value = if (raw.isBlank()) JsonObject(emptyMap()) else aiSdkJson.parseToJsonElement(raw),
         headers = headers.entries().associate { it.key to it.value.joinToString(",") },
     )
 }
@@ -348,7 +343,7 @@ private fun byteDanceOptions(providerOptions: Map<String, JsonElement>): JsonObj
     providerOptions["bytedance"] as? JsonObject ?: JsonObject(emptyMap())
 
 private fun byteDanceErrorMessage(raw: String): String {
-    val obj = runCatching { byteDanceJson.parseToJsonElement(raw).jsonObject }.getOrNull() ?: return raw.ifBlank { "request failed" }
+    val obj = runCatching { aiSdkJson.parseToJsonElement(raw).jsonObject }.getOrNull() ?: return raw.ifBlank { "request failed" }
     return obj["error"]?.jsonObject?.get("message")?.jsonPrimitive?.contentOrNull ?: raw.ifBlank { "request failed" }
 }
 

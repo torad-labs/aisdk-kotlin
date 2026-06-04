@@ -304,11 +304,6 @@ private class FalVideoModel(
     }
 }
 
-private val falJson = Json {
-    ignoreUnknownKeys = true
-    isLenient = true
-    explicitNulls = false
-}
 
 private data class FalJsonResponse(
     val value: JsonElement,
@@ -531,7 +526,7 @@ private suspend fun falPostJson(
         method = HttpMethod.Post
         contentType(ContentType.Application.Json)
         headers.forEach { (name, value) -> header(name, value) }
-        setBody(falJson.encodeToString(JsonElement.serializer(), body))
+        setBody(aiSdkJson.encodeToString(JsonElement.serializer(), body))
     }
     return response.parseFalJson()
 }
@@ -593,7 +588,7 @@ private suspend fun falGetBinary(
 private suspend fun HttpResponse.parseFalJson(): FalJsonResponse {
     val raw = bodyAsText()
     val headers = this.headers.entries().associate { it.key to it.value.joinToString(",") }
-    val parsed = runCatching { falJson.parseToJsonElement(raw) }.getOrNull()
+    val parsed = runCatching { aiSdkJson.parseToJsonElement(raw) }.getOrNull()
     if (status.value !in 200..299) {
         val detail = (parsed as? JsonObject)?.get("detail")?.jsonPrimitive?.contentOrNull
         if (detail == "Request is still in progress") throw AiSdkException(detail)

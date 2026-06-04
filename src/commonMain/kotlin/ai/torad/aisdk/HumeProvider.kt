@@ -102,7 +102,7 @@ private class HumeSpeechModel(
             method = HttpMethod.Post
             contentType(ContentType.Application.Json)
             humeHeaders(settings, params.headers).forEach { (name, value) -> header(name, value) }
-            setBody(humeJson.encodeToString(JsonElement.serializer(), body))
+            setBody(aiSdkJson.encodeToString(JsonElement.serializer(), body))
         }.parseHumeBinary(format)
         return SpeechModelResult(
             audio = GeneratedFile(
@@ -117,11 +117,6 @@ private class HumeSpeechModel(
 
 private const val HUME_DEFAULT_VOICE_ID: String = "d8ab67c6-953d-4bd8-9370-8fa53a0f1453"
 
-private val humeJson = Json {
-    ignoreUnknownKeys = true
-    isLenient = true
-    explicitNulls = false
-}
 
 private data class HumeBinaryResponse(
     val bytes: ByteArray,

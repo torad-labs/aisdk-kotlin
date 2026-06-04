@@ -169,11 +169,6 @@ private class GladiaTranscriptionModel(
 
 private const val GLADIA_BASE_URL: String = "https://api.gladia.io"
 
-private val gladiaJson = Json {
-    ignoreUnknownKeys = true
-    isLenient = true
-    explicitNulls = false
-}
 
 private data class GladiaJsonResponse(
     val value: JsonElement,
@@ -218,7 +213,7 @@ private suspend fun gladiaPostJson(
         method = HttpMethod.Post
         contentType(ContentType.Application.Json)
         headers.forEach { (name, value) -> header(name, value) }
-        setBody(gladiaJson.encodeToString(JsonElement.serializer(), body))
+        setBody(aiSdkJson.encodeToString(JsonElement.serializer(), body))
     }
     return response.parseGladiaJson()
 }
@@ -371,7 +366,7 @@ private suspend fun HttpResponse.parseGladiaJson(): GladiaJsonResponse {
         throw AiSdkException("Gladia request failed (${status.value}): ${gladiaErrorMessage(raw)}")
     }
     return GladiaJsonResponse(
-        value = if (raw.isBlank()) JsonObject(emptyMap()) else gladiaJson.parseToJsonElement(raw),
+        value = if (raw.isBlank()) JsonObject(emptyMap()) else aiSdkJson.parseToJsonElement(raw),
         headers = headers.entries().associate { it.key to it.value.joinToString(",") },
     )
 }
@@ -390,7 +385,7 @@ private fun gladiaOptions(providerOptions: Map<String, JsonElement>): JsonObject
 private fun JsonElement.jsonObjectOrNull(): JsonObject? = this as? JsonObject
 
 private fun gladiaErrorMessage(raw: String): String {
-    val obj = runCatching { gladiaJson.parseToJsonElement(raw).jsonObject }.getOrNull() ?: return raw.ifBlank { "request failed" }
+    val obj = runCatching { aiSdkJson.parseToJsonElement(raw).jsonObject }.getOrNull() ?: return raw.ifBlank { "request failed" }
     return obj["error"]?.jsonObject?.get("message")?.jsonPrimitive?.contentOrNull
         ?: obj["error"]?.jsonPrimitive?.contentOrNull
         ?: raw.ifBlank { "request failed" }

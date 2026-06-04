@@ -150,11 +150,6 @@ private class BlackForestLabsImageModel(
 private const val DEFAULT_BFL_POLL_INTERVAL_MILLIS: Long = 500L
 private const val DEFAULT_BFL_POLL_TIMEOUT_MILLIS: Long = 60_000L
 
-private val bflJson = Json {
-    ignoreUnknownKeys = true
-    isLenient = true
-    explicitNulls = false
-}
 
 private data class BflArgs(
     val body: JsonObject,
@@ -243,7 +238,7 @@ private suspend fun bflPostJson(
         method = HttpMethod.Post
         contentType(ContentType.Application.Json)
         headers.forEach { (name, value) -> header(name, value) }
-        setBody(bflJson.encodeToString(JsonElement.serializer(), body))
+        setBody(aiSdkJson.encodeToString(JsonElement.serializer(), body))
     }
     return response.parseBflJson()
 }
@@ -325,7 +320,7 @@ private suspend fun HttpResponse.parseBflJson(): BflJsonResponse {
         throw AiSdkException("Black Forest Labs request failed (${status.value}): ${bflErrorMessage(raw)}")
     }
     return BflJsonResponse(
-        value = if (raw.isBlank()) JsonObject(emptyMap()) else bflJson.parseToJsonElement(raw),
+        value = if (raw.isBlank()) JsonObject(emptyMap()) else aiSdkJson.parseToJsonElement(raw),
         headers = headers.entries().associate { it.key to it.value.joinToString(",") },
     )
 }
@@ -386,7 +381,7 @@ private fun bflGcd(a: Int, b: Int): Int {
 }
 
 private fun bflErrorMessage(raw: String): String {
-    val obj = runCatching { bflJson.parseToJsonElement(raw).jsonObject }.getOrNull() ?: return raw.ifBlank { "request failed" }
+    val obj = runCatching { aiSdkJson.parseToJsonElement(raw).jsonObject }.getOrNull() ?: return raw.ifBlank { "request failed" }
     val detail = obj["detail"]
     return when {
         detail?.jsonPrimitive?.contentOrNull != null -> detail.jsonPrimitive.content

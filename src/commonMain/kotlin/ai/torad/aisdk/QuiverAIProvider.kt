@@ -120,11 +120,6 @@ private class QuiverAIImageModel(
     }
 }
 
-private val quiverAIJson = Json {
-    ignoreUnknownKeys = true
-    isLenient = true
-    explicitNulls = false
-}
 
 private data class QuiverAIJsonResponse(
     val value: JsonElement,
@@ -226,7 +221,7 @@ private suspend fun quiverAIPostJson(
         method = HttpMethod.Post
         contentType(ContentType.Application.Json)
         headers.forEach { (name, value) -> header(name, value) }
-        setBody(quiverAIJson.encodeToString(JsonElement.serializer(), body))
+        setBody(aiSdkJson.encodeToString(JsonElement.serializer(), body))
     }
     return response.parseQuiverAIJson()
 }
@@ -237,7 +232,7 @@ private suspend fun HttpResponse.parseQuiverAIJson(): QuiverAIJsonResponse {
         throw AiSdkException("QuiverAI request failed (${status.value}): ${quiverAIErrorMessage(raw)}")
     }
     return QuiverAIJsonResponse(
-        value = if (raw.isBlank()) JsonObject(emptyMap()) else quiverAIJson.parseToJsonElement(raw),
+        value = if (raw.isBlank()) JsonObject(emptyMap()) else aiSdkJson.parseToJsonElement(raw),
         headers = headers.entries().associate { it.key to it.value.joinToString(",") },
     )
 }
@@ -270,7 +265,7 @@ private fun quiverAIOperationPath(operation: String): String =
     if (operation == "generate") "/svgs/generations" else "/svgs/vectorizations"
 
 private fun quiverAIErrorMessage(raw: String): String {
-    val obj = runCatching { quiverAIJson.parseToJsonElement(raw).jsonObject }.getOrNull() ?: return raw.ifBlank { "request failed" }
+    val obj = runCatching { aiSdkJson.parseToJsonElement(raw).jsonObject }.getOrNull() ?: return raw.ifBlank { "request failed" }
     return obj["message"]?.jsonPrimitive?.contentOrNull ?: raw.ifBlank { "request failed" }
 }
 

@@ -183,11 +183,6 @@ private class DeepgramTranscriptionModel(
 
 private const val DEEPGRAM_BASE_URL: String = "https://api.deepgram.com"
 
-private val deepgramJson = Json {
-    ignoreUnknownKeys = true
-    isLenient = true
-    explicitNulls = false
-}
 
 private data class DeepgramSpeechArgs(
     val body: JsonObject,
@@ -452,7 +447,7 @@ private suspend fun deepgramPostJsonBinary(
         method = HttpMethod.Post
         contentType(ContentType.Application.Json)
         headers.forEach { (name, value) -> header(name, value) }
-        setBody(deepgramJson.encodeToString(JsonElement.serializer(), body))
+        setBody(aiSdkJson.encodeToString(JsonElement.serializer(), body))
     }
     return response.parseDeepgramBinary()
 }
@@ -490,7 +485,7 @@ private suspend fun HttpResponse.parseDeepgramJson(): DeepgramJsonResponse {
         throw AiSdkException("Deepgram request failed (${status.value}): ${deepgramErrorMessage(raw)}")
     }
     return DeepgramJsonResponse(
-        value = if (raw.isBlank()) JsonObject(emptyMap()) else deepgramJson.parseToJsonElement(raw),
+        value = if (raw.isBlank()) JsonObject(emptyMap()) else aiSdkJson.parseToJsonElement(raw),
         headers = responseHeaders(),
     )
 }
@@ -527,7 +522,7 @@ private fun deepgramSpeechMediaType(queryParams: Map<String, String>): String =
     }
 
 private fun deepgramErrorMessage(raw: String): String {
-    val obj = runCatching { deepgramJson.parseToJsonElement(raw).jsonObject }.getOrNull() ?: return raw.ifBlank { "request failed" }
+    val obj = runCatching { aiSdkJson.parseToJsonElement(raw).jsonObject }.getOrNull() ?: return raw.ifBlank { "request failed" }
     return obj["error"]?.jsonObject?.get("message")?.jsonPrimitive?.contentOrNull
         ?: obj["error"]?.jsonPrimitive?.contentOrNull
         ?: raw.ifBlank { "request failed" }

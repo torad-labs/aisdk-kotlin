@@ -161,7 +161,7 @@ private class ElevenLabsSpeechModel(
             method = HttpMethod.Post
             contentType(ContentType.Application.Json)
             elevenLabsHeaders(settings, params.headers).forEach { (name, value) -> header(name, value) }
-            setBody(elevenLabsJson.encodeToString(JsonElement.serializer(), body))
+            setBody(aiSdkJson.encodeToString(JsonElement.serializer(), body))
         }.parseElevenLabsBinary(queryParams["output_format"].orEmpty())
         return SpeechModelResult(
             audio = GeneratedFile(
@@ -230,11 +230,6 @@ private class ElevenLabsTranscriptionModel(
 
 private const val ELEVENLABS_DEFAULT_VOICE_ID: String = "21m00Tcm4TlvDq8ikWAM"
 
-private val elevenLabsJson = Json {
-    ignoreUnknownKeys = true
-    isLenient = true
-    explicitNulls = false
-}
 
 private data class ElevenLabsBinaryResponse(
     val bytes: ByteArray,
@@ -266,7 +261,7 @@ private suspend fun HttpResponse.parseElevenLabsJson(): ElevenLabsJsonResponse {
         throw AiSdkException("ElevenLabs request failed (${status.value}): ${raw.ifBlank { "request failed" }}")
     }
     return ElevenLabsJsonResponse(
-        value = if (raw.isBlank()) JsonObject(emptyMap()) else elevenLabsJson.parseToJsonElement(raw),
+        value = if (raw.isBlank()) JsonObject(emptyMap()) else aiSdkJson.parseToJsonElement(raw),
         headers = responseHeaders(),
     )
 }

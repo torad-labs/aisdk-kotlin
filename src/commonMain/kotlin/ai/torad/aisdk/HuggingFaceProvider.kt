@@ -102,7 +102,7 @@ private class HuggingFaceResponsesLanguageModel(
             responseBody = response.value,
             warnings = prepared.warnings,
             settings = settings,
-            json = huggingFaceJson,
+            json = aiSdkJson,
         )
     }
 
@@ -112,8 +112,8 @@ private class HuggingFaceResponsesLanguageModel(
         emit(StreamEvent.StreamStart(prepared.warnings))
         emit(StreamEvent.ResponseMetadata(headers = response.headers, body = JsonPrimitive(response.rawText)))
 
-        val state = HuggingFaceResponsesStreamState(settings, huggingFaceJson)
-        for (event in parseJsonEventStream(response.rawText, jsonSchema<JsonElement>(JsonObject(emptyMap())), huggingFaceJson)) {
+        val state = HuggingFaceResponsesStreamState(settings, aiSdkJson)
+        for (event in parseJsonEventStream(response.rawText, jsonSchema<JsonElement>(JsonObject(emptyMap())), aiSdkJson)) {
             when (event) {
                 is ParseResult.Success -> state.accept(event.value).forEach { emit(it) }
                 is ParseResult.Failure -> emit(
@@ -143,7 +143,7 @@ private class HuggingFaceResponsesLanguageModel(
             contentType(ContentType.Application.Json)
             if (acceptEventStream) header(HttpHeaders.Accept, "text/event-stream")
             huggingFaceHeaders(settings, headers).forEach { (name, value) -> header(name, value) }
-            setBody(huggingFaceJson.encodeToString(JsonElement.serializer(), body))
+            setBody(aiSdkJson.encodeToString(JsonElement.serializer(), body))
         }
         return huggingFaceParseResponse(response, parseJson)
     }
@@ -171,11 +171,6 @@ private data class HuggingFacePreparedTools(
     val warnings: List<CallWarning>,
 )
 
-private val huggingFaceJson = Json {
-    ignoreUnknownKeys = true
-    isLenient = true
-    explicitNulls = false
-}
 
 private fun huggingFaceResponsesRequestBody(
     modelId: String,
@@ -312,7 +307,7 @@ private fun huggingFaceTools(
                 put("type", JsonPrimitive("function"))
                 put("name", JsonPrimitive(tool.name))
                 if (tool.description.isNotBlank()) put("description", JsonPrimitive(tool.description))
-                put("parameters", huggingFaceJson.parseToJsonElement(tool.parametersSchemaJson))
+                put("parameters", aiSdkJson.parseToJsonElement(tool.parametersSchemaJson))
             }
         }
     }
@@ -348,7 +343,7 @@ private fun huggingFaceTextFormat(
 
 private fun huggingFaceProviderOptions(providerOptions: Map<String, JsonElement>): HuggingFaceResponsesSettings? {
     val element = providerOptions["huggingface"] ?: providerOptions["hugging-face"] ?: return null
-    return runCatching { huggingFaceJson.decodeFromJsonElement(HuggingFaceResponsesSettings.serializer(), element) }
+    return runCatching { aiSdkJson.decodeFromJsonElement(HuggingFaceResponsesSettings.serializer(), element) }
         .getOrNull()
 }
 
@@ -644,11 +639,11 @@ private suspend fun huggingFaceParseResponse(
     val raw = response.bodyAsText()
     val headers = response.headers.entries().associate { it.key to it.value.joinToString(",") }
     if (response.status.value !in 200..299) {
-        val error = runCatching { huggingFaceJson.parseToJsonElement(raw) }.getOrNull()
+        val error = runCatching { aiSdkJson.parseToJsonElement(raw) }.getOrNull()
         throw AiSdkException("Hugging Face API error: ${error?.let(::huggingFaceErrorMessage) ?: raw}")
     }
     return HuggingFaceHttpResponse(
-        value = if (parseJson && raw.isNotBlank()) huggingFaceJson.parseToJsonElement(raw) else JsonObject(emptyMap()),
+        value = if (parseJson && raw.isNotBlank()) aiSdkJson.parseToJsonElement(raw) else JsonObject(emptyMap()),
         rawText = raw,
         headers = headers,
     )

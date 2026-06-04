@@ -103,7 +103,7 @@ private class LMNTSpeechModel(
             method = HttpMethod.Post
             contentType(ContentType.Application.Json)
             lmntHeaders(settings, params.headers).forEach { (name, value) -> header(name, value) }
-            setBody(lmntJson.encodeToString(JsonElement.serializer(), body))
+            setBody(aiSdkJson.encodeToString(JsonElement.serializer(), body))
         }.parseLMNTBinary(responseFormat)
         return SpeechModelResult(
             audio = GeneratedFile(
@@ -116,11 +116,6 @@ private class LMNTSpeechModel(
     }
 }
 
-private val lmntJson = Json {
-    ignoreUnknownKeys = true
-    isLenient = true
-    explicitNulls = false
-}
 
 private data class LMNTBinaryResponse(
     val bytes: ByteArray,
