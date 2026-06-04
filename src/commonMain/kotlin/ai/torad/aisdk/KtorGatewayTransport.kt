@@ -790,16 +790,3 @@ private fun jsonInt(obj: JsonObject, vararg names: String): Int =
 private fun jsonIntOrNull(obj: JsonObject, vararg names: String): Int? =
     names.firstNotNullOfOrNull { name -> obj[name]?.jsonPrimitive?.intOrNull }
 
-private fun urlEncode(value: String): String =
-    buildString {
-        value.encodeToByteArray().forEach { byte ->
-            val unsigned = byte.toInt() and 0xff
-            val char = unsigned.toChar()
-            if (char.isLetterOrDigit() || char in setOf('-', '_', '.', '~')) {
-                append(char)
-            } else {
-                append('%')
-                append(unsigned.toString(16).uppercase().padStart(2, '0'))
-            }
-        }
-    }

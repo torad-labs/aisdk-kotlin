@@ -203,20 +203,7 @@ private fun OpenAIProviderSettings.responsesUrl(): String {
     val endpoint = "${baseURL.trimEnd('/')}/responses"
     if (queryParams.isEmpty()) return endpoint
     return endpoint + "?" + queryParams.entries.joinToString("&") { (key, value) ->
-        "${openAIProviderUrlEncode(key)}=${openAIProviderUrlEncode(value)}"
+        "${urlEncode(key)}=${urlEncode(value)}"
     }
 }
 
-private fun openAIProviderUrlEncode(value: String): String =
-    buildString {
-        value.encodeToByteArray().forEach { byte ->
-            val unsigned = byte.toInt() and 0xff
-            val char = unsigned.toChar()
-            if (char.isLetterOrDigit() || char in setOf('-', '_', '.', '~')) {
-                append(char)
-            } else {
-                append('%')
-                append(unsigned.toString(16).uppercase().padStart(2, '0'))
-            }
-        }
-    }

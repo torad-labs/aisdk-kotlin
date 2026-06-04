@@ -501,3 +501,22 @@ fun convertUint8ArrayToBase64(array: Uint8Array): String =
 fun convertToBase64(value: String): String = value
 
 fun convertToBase64(value: ByteArray): String = convertByteArrayToBase64(value)
+
+
+/**
+ * RFC-3986 percent-encoding (unreserved chars kept). Shared by providers that
+ * build query/path segments; AwsSigV4 keeps its stricter signing variant.
+ */
+internal fun urlEncode(value: String): String =
+    buildString {
+        value.encodeToByteArray().forEach { byte ->
+            val unsigned = byte.toInt() and 0xff
+            val char = unsigned.toChar()
+            if (char.isLetterOrDigit() || char in setOf('-', '_', '.', '~')) {
+                append(char)
+            } else {
+                append('%')
+                append(unsigned.toString(16).uppercase().padStart(2, '0'))
+            }
+        }
+    }

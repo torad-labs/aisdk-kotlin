@@ -117,7 +117,7 @@ private abstract class OpenAICompatibleHttpModel(
         val base = settings.baseUrl.trimEnd('/') + path
         if (settings.queryParams.isEmpty()) return base
         return base + "?" + settings.queryParams.entries.joinToString("&") { (key, value) ->
-            "${openAIUrlEncode(key)}=${openAIUrlEncode(value)}"
+            "${urlEncode(key)}=${urlEncode(value)}"
         }
     }
 
@@ -1094,16 +1094,3 @@ private fun toOpenAICamelCase(value: String): String =
         .mapIndexed { index, part -> if (index == 0) part.lowercase() else part.replaceFirstChar { it.uppercase() } }
         .joinToString("")
 
-private fun openAIUrlEncode(value: String): String =
-    buildString {
-        value.encodeToByteArray().forEach { byte ->
-            val unsigned = byte.toInt() and 0xff
-            val char = unsigned.toChar()
-            if (char.isLetterOrDigit() || char in setOf('-', '_', '.', '~')) {
-                append(char)
-            } else {
-                append('%')
-                append(unsigned.toString(16).uppercase().padStart(2, '0'))
-            }
-        }
-    }

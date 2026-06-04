@@ -160,7 +160,7 @@ private class DefaultAzureOpenAIProvider(
             "$baseUrlPrefix/v1$path"
         }
         val separator = if ('?' in endpoint) "&" else "?"
-        return "$endpoint${separator}api-version=${azureUrlEncode(settings.apiVersion)}"
+        return "$endpoint${separator}api-version=${urlEncode(settings.apiVersion)}"
     }
 }
 
@@ -170,16 +170,3 @@ private class AzureOpenAIEmbeddingModel(
     override val provider: String = "azure.embeddings"
 }
 
-private fun azureUrlEncode(value: String): String =
-    buildString {
-        value.encodeToByteArray().forEach { byte ->
-            val unsigned = byte.toInt() and 0xff
-            val char = unsigned.toChar()
-            if (char.isLetterOrDigit() || char in setOf('-', '_', '.', '~')) {
-                append(char)
-            } else {
-                append('%')
-                append(unsigned.toString(16).uppercase().padStart(2, '0'))
-            }
-        }
-    }

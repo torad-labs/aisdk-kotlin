@@ -300,21 +300,8 @@ private fun elevenLabsMediaType(format: String): String =
     }
 
 private fun Map<String, String>.toQueryString(): String =
-    entries.joinToString("&") { (key, value) -> "${elevenLabsUrlEncode(key)}=${elevenLabsUrlEncode(value)}" }
+    entries.joinToString("&") { (key, value) -> "${urlEncode(key)}=${urlEncode(value)}" }
 
-private fun elevenLabsUrlEncode(value: String): String =
-    buildString {
-        value.encodeToByteArray().forEach { byte ->
-            val unsigned = byte.toInt() and 0xff
-            val char = unsigned.toChar()
-            if (char.isLetterOrDigit() || char in setOf('-', '_', '.', '~')) {
-                append(char)
-            } else {
-                append('%')
-                append(unsigned.toString(16).uppercase().padStart(2, '0'))
-            }
-        }
-    }
 
 private fun Map<String, String>.headerValue(name: String): String? =
     entries.firstOrNull { it.key.equals(name, ignoreCase = true) }?.value
