@@ -3,6 +3,7 @@ import io.gitlab.arturbosch.detekt.DetektCreateBaselineTask
 import org.gradle.api.publish.maven.MavenPublication
 import org.gradle.api.publish.maven.tasks.PublishToMavenRepository
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+import org.jetbrains.kotlin.gradle.dsl.abi.ExperimentalAbiValidation
 import org.jetbrains.kotlin.gradle.plugin.mpp.apple.XCFramework
 
 plugins {
@@ -29,6 +30,32 @@ kotlin {
     // or semantic change). The non-API plumbing has been `internal`-ized so the
     // remaining `public` surface is the supported SDK contract.
     explicitApi()
+
+    // Phase 3 (Kotlin modernization): built-in KGP binary-compatibility (ABI)
+    // validation. Now that explicitApi() + `internal`-ization make the public
+    // surface intentional, freeze it against a committed golden dump. The dump
+    // (`api/jvm/aisdk-kotlin.api` for the JVM ABI + `api/aisdk-kotlin.klib.api`
+    // for the merged klib ABI) is the supported 1.0 contract; `checkKotlinAbi`
+    // (wired under `check`) fails the build on any unreviewed surface change,
+    // `updateKotlinAbi` regenerates the dump after an intentional change. (The
+    // `*LegacyAbi` task aliases work too but are deprecated in 2.3.x.)
+    //
+    // The DSL is Experimental in 2.3.x, hence the opt-in. `klib.keepUnsupportedTargets`
+    // lets a host without the Apple toolchain (Linux CI) infer the iOS klib ABI
+    // from the dump instead of failing, so the check is reproducible everywhere.
+    //
+    // `@InternalAiSdkApi` is fed into the exclusion filter: declarations that are
+    // technically `public` for KMP/inlining reasons but marked internal-contract
+    // are kept OUT of the frozen surface, so churning them never trips the check.
+    // (Today nothing carries that annotation — the internal plumbing uses the
+    // `internal` keyword, which is already absent from the ABI — so this is a
+    // forward-looking guard rather than an active exclusion.)
+    @OptIn(ExperimentalAbiValidation::class)
+    abiValidation {
+        enabled.set(true)
+        klib.keepUnsupportedTargets.set(true)
+        filters.exclude.annotatedWith.add("ai.torad.aisdk.InternalAiSdkApi")
+    }
 
     // KMP per-target + umbrella sources jars, attached to the publications
     // (Maven Central requires a -sources.jar alongside each artifact).
