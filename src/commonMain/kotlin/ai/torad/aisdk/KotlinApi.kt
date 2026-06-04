@@ -19,13 +19,16 @@ data class CallSettings(
     val topP: Float? = null,
     val topK: Int? = null,
     val maxOutputTokens: Int? = null,
-    val stopSequences: List<String> = emptyList(),
+    // Null = unset. Sentinel defaults (emptyList / AbortSignalNever /
+    // ResponseFormat.Text) could not be distinguished from an explicit
+    // same-value override during merge, so these are nullable instead (§2.3).
+    val stopSequences: List<String>? = null,
     val seed: Int? = null,
     val providerOptions: Map<String, JsonElement> = emptyMap(),
-    val abortSignal: AbortSignal = AbortSignalNever,
+    val abortSignal: AbortSignal? = null,
     val presencePenalty: Float? = null,
     val frequencyPenalty: Float? = null,
-    val responseFormat: ResponseFormat = ResponseFormat.Text,
+    val responseFormat: ResponseFormat? = null,
 )
 
 class CallSettingsBuilder internal constructor() {
@@ -35,10 +38,10 @@ class CallSettingsBuilder internal constructor() {
     var maxOutputTokens: Int? = null
     var seed: Int? = null
     var providerOptions: Map<String, JsonElement> = emptyMap()
-    var abortSignal: AbortSignal = AbortSignalNever
+    var abortSignal: AbortSignal? = null
     var presencePenalty: Float? = null
     var frequencyPenalty: Float? = null
-    var responseFormat: ResponseFormat = ResponseFormat.Text
+    var responseFormat: ResponseFormat? = null
 
     private val stopSequences = mutableListOf<String>()
 
@@ -63,7 +66,7 @@ class CallSettingsBuilder internal constructor() {
         topP = topP,
         topK = topK,
         maxOutputTokens = maxOutputTokens,
-        stopSequences = stopSequences.toList(),
+        stopSequences = stopSequences.toList().ifEmpty { null },
         seed = seed,
         providerOptions = providerOptions,
         abortSignal = abortSignal,
@@ -220,13 +223,13 @@ suspend fun generateText(
     topP = settings.topP,
     topK = settings.topK,
     maxOutputTokens = settings.maxOutputTokens,
-    stopSequences = settings.stopSequences,
+    stopSequences = settings.stopSequences ?: emptyList(),
     seed = settings.seed,
     providerOptions = settings.providerOptions,
-    abortSignal = settings.abortSignal,
+    abortSignal = settings.abortSignal ?: AbortSignalNever,
     presencePenalty = settings.presencePenalty,
     frequencyPenalty = settings.frequencyPenalty,
-    responseFormat = settings.responseFormat,
+    responseFormat = settings.responseFormat ?: ResponseFormat.Text,
 )
 
 suspend fun <TOutput> generateText(
@@ -246,13 +249,13 @@ suspend fun <TOutput> generateText(
     topP = settings.topP,
     topK = settings.topK,
     maxOutputTokens = settings.maxOutputTokens,
-    stopSequences = settings.stopSequences,
+    stopSequences = settings.stopSequences ?: emptyList(),
     seed = settings.seed,
     providerOptions = settings.providerOptions,
-    abortSignal = settings.abortSignal,
+    abortSignal = settings.abortSignal ?: AbortSignalNever,
     presencePenalty = settings.presencePenalty,
     frequencyPenalty = settings.frequencyPenalty,
-    responseFormat = settings.responseFormat,
+    responseFormat = settings.responseFormat ?: ResponseFormat.Text,
 )
 
 fun streamText(
@@ -304,13 +307,13 @@ fun streamTextResult(
     topP = settings.topP,
     topK = settings.topK,
     maxOutputTokens = settings.maxOutputTokens,
-    stopSequences = settings.stopSequences,
+    stopSequences = settings.stopSequences ?: emptyList(),
     seed = settings.seed,
     providerOptions = settings.providerOptions,
-    abortSignal = settings.abortSignal,
+    abortSignal = settings.abortSignal ?: AbortSignalNever,
     presencePenalty = settings.presencePenalty,
     frequencyPenalty = settings.frequencyPenalty,
-    responseFormat = settings.responseFormat,
+    responseFormat = settings.responseFormat ?: ResponseFormat.Text,
 )
 
 private fun CallSettings.merge(other: CallSettings): CallSettings = copy(
@@ -318,11 +321,11 @@ private fun CallSettings.merge(other: CallSettings): CallSettings = copy(
     topP = other.topP ?: topP,
     topK = other.topK ?: topK,
     maxOutputTokens = other.maxOutputTokens ?: maxOutputTokens,
-    stopSequences = other.stopSequences.ifEmpty { stopSequences },
+    stopSequences = other.stopSequences ?: stopSequences,
     seed = other.seed ?: seed,
     providerOptions = providerOptions + other.providerOptions,
-    abortSignal = if (other.abortSignal === AbortSignalNever) abortSignal else other.abortSignal,
+    abortSignal = other.abortSignal ?: abortSignal,
     presencePenalty = other.presencePenalty ?: presencePenalty,
     frequencyPenalty = other.frequencyPenalty ?: frequencyPenalty,
-    responseFormat = if (other.responseFormat == ResponseFormat.Text) responseFormat else other.responseFormat,
+    responseFormat = other.responseFormat ?: responseFormat,
 )

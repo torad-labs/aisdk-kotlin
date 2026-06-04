@@ -525,6 +525,10 @@ private class DefaultMCPClient(config: MCPClientConfig) : MCPClient {
                 }
             }
         }
+        // v6 parity: MCP tool names come from an external server and v6's
+        // client tolerates duplicates with last-wins (not a hard failure).
+        // The strict requireUniqueToolNames policy applies only to
+        // caller-owned tool sets (toolSetOf / ToolSet.plus / the builder).
         return ToolSet(tools.associateBy { it.name })
     }
 

@@ -1,5 +1,7 @@
 package ai.torad.aisdk
 
+import kotlin.concurrent.atomics.AtomicReference
+import kotlin.concurrent.atomics.ExperimentalAtomicApi
 import kotlinx.coroutines.CompletableJob
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
@@ -49,21 +51,41 @@ val AbortSignalNever: AbortSignal = object : AbortSignal {
  * controller, hand the [signal] to the agent, call [abort] from the UI's
  * stop button.
  */
+@OptIn(ExperimentalAtomicApi::class)
 class AbortController {
     private val backing: CompletableJob = SupervisorJob()
-    private val callbacks = mutableListOf<() -> Unit>()
+
+    // Copy-on-write callback list via atomic CAS. register/cancel/abort may be
+    // called from different threads (a UI stop button vs a background tool
+    // coroutine), so a plain mutableListOf would race — and is UB on Native.
+    private val callbacks = AtomicReference<List<() -> Unit>>(emptyList())
 
     val signal: AbortSignal = SignalImpl()
 
     fun abort() {
         if (backing.isCancelled) return
         backing.cancel()
-        // Snapshot to avoid concurrent-modification if a callback registers
-        // a new callback during invocation.
-        val snapshot = callbacks.toList()
-        callbacks.clear()
+        // Atomically drain so a firing callback can't observe a half-cleared
+        // list, and so abort() is idempotent under races.
+        val snapshot = callbacks.exchange(emptyList())
         for (cb in snapshot) {
             runCatching { cb() }
+        }
+    }
+
+    private fun addCallback(onAbort: () -> Unit) {
+        while (true) {
+            val current = callbacks.load()
+            if (callbacks.compareAndSet(current, current + onAbort)) return
+        }
+    }
+
+    private fun removeCallback(onAbort: () -> Unit) {
+        while (true) {
+            val current = callbacks.load()
+            val next = current - onAbort
+            if (next.size == current.size) return // already removed
+            if (callbacks.compareAndSet(current, next)) return
         }
     }
 
@@ -77,15 +99,24 @@ class AbortController {
         override fun register(onAbort: () -> Unit): AbortSignal.AbortRegistration {
             if (backing.isCancelled) {
                 runCatching { onAbort() }
-                return object : AbortSignal.AbortRegistration { override fun cancel() = Unit }
+                return NoopRegistration
             }
-            callbacks.add(onAbort)
-            return object : AbortSignal.AbortRegistration {
-                override fun cancel() {
-                    callbacks.remove(onAbort)
+            addCallback(onAbort)
+            // abort() may have drained between the isCancelled check and the
+            // add; if so this callback was missed — fire any stragglers now.
+            if (backing.isCancelled) {
+                for (cb in callbacks.exchange(emptyList())) {
+                    runCatching { cb() }
                 }
             }
+            return object : AbortSignal.AbortRegistration {
+                override fun cancel() = removeCallback(onAbort)
+            }
         }
+    }
+
+    private object NoopRegistration : AbortSignal.AbortRegistration {
+        override fun cancel() = Unit
     }
 }
 
@@ -114,11 +145,28 @@ fun combineAbortSignals(vararg signals: AbortSignal): AbortSignal {
     if (active.size == 1) return active.single()
 
     val controller = AbortController()
-    val registrations = active.map { signal ->
-        signal.register { controller.abort() }
+    // If a source has already fired, abort now and skip wiring — registering
+    // forwards onto an already-aborted source fires them synchronously and
+    // would leak the child registrations.
+    if (active.any { it.isAborted }) {
+        controller.abort()
+        return controller.signal
     }
-    controller.signal.register {
-        registrations.forEach { it.cancel() }
+
+    val registrations = mutableListOf<AbortSignal.AbortRegistration>()
+    // Attach teardown BEFORE the forwards, so a source that aborts
+    // synchronously mid-wiring still tears down everything registered so far.
+    controller.signal.register { registrations.forEach { it.cancel() } }
+    for (signal in active) {
+        val registration = signal.register { controller.abort() }
+        registrations += registration
+        // If that source fired synchronously, the teardown already ran (before
+        // this registration was listed). Cancel it explicitly and stop wiring
+        // the remaining sources — the controller is already terminal.
+        if (controller.signal.isAborted) {
+            registration.cancel()
+            break
+        }
     }
     return controller.signal
 }

@@ -1494,7 +1494,7 @@ private fun googleLanguageResult(
         obj["executableCode"]?.jsonObject?.let { code ->
             val id = settings.generateId()
             lastCodeExecutionId = id
-            val call = ContentPart.ToolCall(id, "code_execution", code, mapOf("google" to buildJsonObject { put("providerExecuted", JsonPrimitive(true)) }))
+            val call = ContentPart.ToolCall(id, "code_execution", code, providerMetadata = mapOf("google" to buildJsonObject { put("providerExecuted", JsonPrimitive(true)) }))
             content += call
             toolCalls += call
         }

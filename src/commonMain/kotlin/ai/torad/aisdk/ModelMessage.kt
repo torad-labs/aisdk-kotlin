@@ -1,6 +1,9 @@
 package ai.torad.aisdk
 
+import kotlinx.serialization.ExperimentalSerializationApi
+import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.JsonClassDiscriminator
 import kotlinx.serialization.json.JsonElement
 
 /**
@@ -55,26 +58,41 @@ enum class MessageRole { System, User, Assistant, Tool }
  *   - [ToolApprovalResponse] on a **tool** message — one per pending
  *     approval — to resume the loop.
  */
+// @SerialName values + the "type" discriminator match the Vercel AI SDK v6
+// wire tags, so kotlinx (de)serializes parts under v6's discriminators (H-6).
+// Note: a few fields are SDK extensions beyond v6's wire shape (e.g.
+// ToolResult.modelVisible), so this is tag-compatible, not byte-identical.
+@OptIn(ExperimentalSerializationApi::class)
 @Serializable
+@JsonClassDiscriminator("type")
 sealed interface ContentPart {
 
     @Serializable
+    @SerialName("text")
     data class Text(
         val text: String,
         val providerMetadata: Map<String, JsonElement>? = null,
     ) : ContentPart
 
     @Serializable
+    @SerialName("reasoning")
     data class Reasoning(
         val text: String,
         val providerMetadata: Map<String, JsonElement>? = null,
     ) : ContentPart
 
     @Serializable
+    @SerialName("tool-call")
     data class ToolCall(
         val toolCallId: String,
         val toolName: String,
         val input: JsonElement,
+        /** Provider ran the tool itself (e.g. server-side tools). v6 parity. */
+        val providerExecuted: Boolean = false,
+        /** Call made against a dynamic (runtime-typed) tool. v6 parity. */
+        val dynamic: Boolean = false,
+        /** Model emitted a malformed/unrepairable tool call. v6 parity. */
+        val invalid: Boolean = false,
         val providerMetadata: Map<String, JsonElement>? = null,
     ) : ContentPart
 
@@ -91,17 +109,23 @@ sealed interface ContentPart {
      * context to compose a follow-up response.
      */
     @Serializable
+    @SerialName("tool-result")
     data class ToolResult(
         val toolCallId: String,
         val toolName: String,
         val output: JsonElement,
         val isError: Boolean = false,
         val modelVisible: JsonElement = output,
+        /** Result of a dynamic (runtime-typed) tool call. v6 parity. */
+        val dynamic: Boolean = false,
+        /** Tool was executed by the provider. v6 parity. */
+        val providerExecuted: Boolean = false,
         val providerMetadata: Map<String, JsonElement>? = null,
     ) : ContentPart
 
     /** Assistant content: the LLM called a tool that requires approval. */
     @Serializable
+    @SerialName("tool-approval-request")
     data class ToolApprovalRequest(
         val toolCallId: String,
         val toolName: String,
@@ -119,6 +143,7 @@ sealed interface ContentPart {
 
     /** Tool content: the host's decision on a previously requested approval. */
     @Serializable
+    @SerialName("tool-approval-response")
     data class ToolApprovalResponse(
         val toolCallId: String,
         val approved: Boolean,
@@ -127,6 +152,7 @@ sealed interface ContentPart {
     ) : ContentPart
 
     @Serializable
+    @SerialName("source")
     data class Source(
         val sourceType: StreamEvent.SourcePart.SourceType,
         val url: String? = null,
@@ -143,6 +169,7 @@ sealed interface ContentPart {
      * artifact-like outputs; v6 has a dedicated slot for it).
      */
     @Serializable
+    @SerialName("file")
     data class File(
         val mediaType: String,
         val base64: String,
@@ -164,6 +191,7 @@ sealed interface ContentPart {
      * cloud Anthropic / OpenAI).
      */
     @Serializable
+    @SerialName("image")
     data class Image(
         val mediaType: String,
         val base64: String,

@@ -1,6 +1,9 @@
 package ai.torad.aisdk
 
-data class ProviderId(val value: String) {
+import kotlin.jvm.JvmInline
+
+@JvmInline
+value class ProviderId(val value: String) {
     init {
         require(value.isNotBlank()) { "ProviderId must not be blank." }
         require(':' !in value) { "ProviderId must not contain `:`." }
@@ -9,7 +12,8 @@ data class ProviderId(val value: String) {
     override fun toString(): String = value
 }
 
-data class ModelId(val value: String) {
+@JvmInline
+value class ModelId(val value: String) {
     init {
         require(value.isNotBlank()) { "ModelId must not be blank." }
     }

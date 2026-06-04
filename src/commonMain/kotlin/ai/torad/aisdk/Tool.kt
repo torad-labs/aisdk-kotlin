@@ -260,8 +260,13 @@ class ToolSet<TContext>(
     /** Registered tool names — for [AgentError.NoSuchTool] diagnostics. */
     fun names(): List<String> = byName.keys.toList()
 
-    operator fun plus(other: ToolSet<TContext>): ToolSet<TContext> =
-        ToolSet(byName + other.byName)
+    operator fun plus(other: ToolSet<TContext>): ToolSet<TContext> {
+        val overlap = byName.keys intersect other.byName.keys
+        require(overlap.isEmpty()) {
+            "Duplicate tool name(s) when combining tool sets: ${overlap.joinToString()}."
+        }
+        return ToolSet(byName + other.byName)
+    }
 }
 
 /** Inline `tool.inputExamples` into the description so every provider
@@ -275,9 +280,25 @@ private fun descriptionWithExamples(tool: Tool<*, *, *>): String {
     return "${tool.description}\n\n$appendix"
 }
 
-/** Construct a [ToolSet] from individual tools. */
+/**
+ * Build the name→tool map, rejecting duplicates. A silent last-wins
+ * `associateBy` drops a tool the caller registered; every tool-set
+ * construction path funnels through here so the policy is uniform (H-8).
+ */
+internal fun <TContext> requireUniqueToolNames(
+    tools: List<Tool<*, *, TContext>>,
+): Map<String, Tool<*, *, TContext>> {
+    val byName = linkedMapOf<String, Tool<*, *, TContext>>()
+    for (tool in tools) {
+        require(tool.name !in byName) { "Duplicate tool name `${tool.name}`." }
+        byName[tool.name] = tool
+    }
+    return byName
+}
+
+/** Construct a [ToolSet] from individual tools. Throws on duplicate names. */
 fun <TContext> toolSetOf(vararg tools: Tool<*, *, TContext>): ToolSet<TContext> =
-    ToolSet(tools.associateBy { it.name })
+    ToolSet(requireUniqueToolNames(tools.toList()))
 
 class ToolSetBuilder<TContext> internal constructor() {
     private val tools = linkedMapOf<String, Tool<*, *, TContext>>()

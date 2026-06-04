@@ -100,7 +100,28 @@ fun GeneratedFile.fileData(): FileData =
     url?.let { FileData.Url(it, mediaType = mediaType, filename = filename) }
         ?: FileData.Base64(base64, mediaType = mediaType, filename = filename)
 
-fun GeneratedFile.bytes(): ByteArray = convertBase64ToByteArray(base64)
+/**
+ * Decode the inline base64 payload to bytes.
+ *
+ * @throws IllegalStateException when this file is URL-backed (no inline
+ * bytes) — fetch [GeneratedFile.url] to obtain the data. Without this guard a
+ * URL-backed file (whose [base64] is `""`) silently decoded to an empty
+ * `ByteArray`, a wrong answer indistinguishable from a genuinely empty file.
+ */
+fun GeneratedFile.bytes(): ByteArray {
+    if (base64.isEmpty()) {
+        check(url == null) {
+            "GeneratedFile is URL-backed (mediaType=$mediaType); it has no inline bytes. " +
+                "Fetch `url` to obtain the data, or use bytesOrNull()."
+        }
+        return ByteArray(0)
+    }
+    return convertBase64ToByteArray(base64)
+}
+
+/** Like [bytes] but returns null for a URL-backed file instead of throwing. */
+fun GeneratedFile.bytesOrNull(): ByteArray? =
+    if (base64.isEmpty() && url != null) null else bytes()
 
 typealias GeneratedAudioFile = GeneratedFile
 typealias Experimental_GeneratedImage = GeneratedFile

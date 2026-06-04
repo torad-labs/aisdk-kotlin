@@ -1,5 +1,7 @@
 package ai.torad.aisdk
 
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.filterIsInstance
 import kotlinx.coroutines.flow.flow
@@ -231,16 +233,25 @@ class StreamTextResult(
     private var capturedWarnings: List<CallWarning> = emptyList()
     private var capturedResponse: LanguageModelResponseMetadata = initialResponse
 
+    /**
+     * Memoised replay of the upstream events. The upstream is collected at
+     * most once; later collectors replay the captured events. This differs
+     * from the cold top-level [streamText], which drives a fresh upstream per
+     * collection. Capture commits only on successful completion, so a
+     * cancelled collection never memoises a truncated or duplicated replay.
+     */
     val fullStream: Flow<StreamEvent> = flow {
         mutex.withLock {
             if (collected) {
                 capturedEvents.forEach { emit(it) }
             } else {
+                val buffer = mutableListOf<StreamEvent>()
                 upstream.collect { event ->
-                    capture(event)
+                    currentCoroutineContext().ensureActive()
+                    buffer += event
                     emit(event)
                 }
-                collected = true
+                commit(buffer)
             }
         }
     }
@@ -271,22 +282,37 @@ class StreamTextResult(
     private suspend fun ensureCollected() {
         mutex.withLock {
             if (collected) return
-            upstream.collect { event -> capture(event) }
-            collected = true
+            val buffer = mutableListOf<StreamEvent>()
+            upstream.collect { event ->
+                currentCoroutineContext().ensureActive()
+                buffer += event
+            }
+            commit(buffer)
         }
     }
 
-    private fun capture(event: StreamEvent) {
-        capturedEvents += event
-        when (event) {
-            is StreamEvent.StreamStart -> if (capturedWarnings.isEmpty()) {
-                capturedWarnings = event.warnings
+    /**
+     * Commit a fully-collected event buffer to the memoised caches. Only
+     * invoked after the upstream completes normally; a cancelled collection
+     * skips it, so [capturedEvents] is never left partially populated and a
+     * later replay always reflects a single clean run.
+     */
+    private fun commit(buffer: List<StreamEvent>) {
+        capturedEvents.clear()
+        capturedEvents.addAll(buffer)
+        capturedWarnings = buffer.asSequence()
+            .filterIsInstance<StreamEvent.StreamStart>()
+            .map { it.warnings }
+            .firstOrNull { it.isNotEmpty() }
+            ?: emptyList()
+        var response = initialResponse
+        for (event in buffer) {
+            if (event is StreamEvent.ResponseMetadata) {
+                response = response.merge(event.toLanguageModelResponseMetadata())
             }
-            is StreamEvent.ResponseMetadata -> {
-                capturedResponse = capturedResponse.merge(event.toLanguageModelResponseMetadata())
-            }
-            else -> Unit
         }
+        capturedResponse = response
+        collected = true
     }
 }
 
