@@ -3,17 +3,11 @@ package ai.torad.aisdk
 import io.ktor.client.HttpClient
 import io.ktor.client.request.header
 import io.ktor.client.request.request
-import io.ktor.client.request.setBody
-import io.ktor.client.statement.HttpResponse
 import io.ktor.client.statement.bodyAsBytes
-import io.ktor.client.statement.bodyAsText
-import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpMethod
-import io.ktor.http.contentType
 import kotlinx.coroutines.delay
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
@@ -305,10 +299,6 @@ private class FalVideoModel(
 }
 
 
-private data class FalJsonResponse(
-    val value: JsonElement,
-    val headers: Map<String, String>,
-)
 
 private data class FalBinaryResponse(
     val bytes: ByteArray,
@@ -521,26 +511,41 @@ private suspend fun falPostJson(
     url: String,
     body: JsonObject,
     headers: Map<String, String>,
-): FalJsonResponse {
-    val response = client.request(url) {
-        method = HttpMethod.Post
-        contentType(ContentType.Application.Json)
-        headers.forEach { (name, value) -> header(name, value) }
-        setBody(aiSdkJson.encodeToString(JsonElement.serializer(), body))
-    }
-    return response.parseFalJson()
-}
+): HttpJsonResponse =
+    requestJson(
+        client = client,
+        url = url,
+        method = HttpMethod.Post,
+        headers = headers,
+        body = body,
+        requestBodyValues = body,
+        errorMessage = falErrorMessage,
+        errorFromResponse = falInProgressSignal,
+    )
 
 private suspend fun falGetJson(
     client: HttpClient,
     url: String,
     headers: Map<String, String>,
-): FalJsonResponse {
-    val response = client.request(url) {
-        method = HttpMethod.Get
-        headers.forEach { (name, value) -> header(name, value) }
-    }
-    return response.parseFalJson()
+): HttpJsonResponse =
+    requestJson(
+        client = client,
+        url = url,
+        method = HttpMethod.Get,
+        headers = headers,
+        errorMessage = falErrorMessage,
+        errorFromResponse = falInProgressSignal,
+    )
+
+/**
+ * fal returns 4xx with `detail == "Request is still in progress"` while a job
+ * is queued; the poll loop treats that exception's message as a retry signal,
+ * so it must stay a plain [AiSdkException] (not an [APICallError]). Any other
+ * non-2xx falls through to the default rich [APICallError].
+ */
+private val falInProgressSignal: ResponseErrorFactory = { _, parsed, _, _ ->
+    val detail = (parsed as? JsonObject)?.get("detail")?.jsonPrimitive?.contentOrNull
+    if (detail == "Request is still in progress") AiSdkException(detail) else null
 }
 
 private suspend fun falPollJson(
@@ -551,7 +556,7 @@ private suspend fun falPollJson(
     pollIntervalMillis: Long,
     maxPollAttempts: Int,
     timeoutMessage: String,
-): FalJsonResponse {
+): HttpJsonResponse {
     repeat(maxPollAttempts.coerceAtLeast(1)) { attempt ->
         abortSignal.throwIfAborted()
         val response = runCatching { falGetJson(client, url, headers) }
@@ -576,27 +581,20 @@ private suspend fun falGetBinary(
         headers.forEach { (name, value) -> header(name, value) }
     }
     val bytes = response.bodyAsBytes()
+    val flattened = response.flattenedHeaders()
     if (response.status.value !in 200..299) {
-        throw AiSdkException("fal binary request failed with status ${response.status.value}: ${bytes.decodeToString()}")
+        val raw = bytes.decodeToString()
+        throw apiCallError(
+            url = url,
+            statusCode = response.status.value,
+            rawBody = raw,
+            headers = flattened,
+            message = "fal binary request failed with status ${response.status.value}: $raw",
+        )
     }
     return FalBinaryResponse(
         bytes = bytes,
-        headers = response.headers.entries().associate { it.key to it.value.joinToString(",") },
-    )
-}
-
-private suspend fun HttpResponse.parseFalJson(): FalJsonResponse {
-    val raw = bodyAsText()
-    val headers = this.headers.entries().associate { it.key to it.value.joinToString(",") }
-    val parsed = runCatching { aiSdkJson.parseToJsonElement(raw) }.getOrNull()
-    if (status.value !in 200..299) {
-        val detail = (parsed as? JsonObject)?.get("detail")?.jsonPrimitive?.contentOrNull
-        if (detail == "Request is still in progress") throw AiSdkException(detail)
-        throw AiSdkException(falErrorMessage(parsed, raw))
-    }
-    return FalJsonResponse(
-        value = parsed ?: JsonObject(emptyMap()),
-        headers = headers,
+        headers = flattened,
     )
 }
 
@@ -659,21 +657,21 @@ private fun falVideoMetadata(video: JsonObject): JsonObject = buildJsonObject {
     video["content_type"]?.takeUnless { it is JsonNull }?.let { put("contentType", it) }
 }
 
-private fun falErrorMessage(parsed: JsonElement?, raw: String): String {
-    val obj = parsed as? JsonObject ?: return raw
-    val validation = obj["detail"] as? JsonArray
-    if (validation != null) {
-        return validation.joinToString("\n") { item ->
+private val falErrorMessage: ErrorMessageExtractor = { _, parsed, raw ->
+    val obj = parsed as? JsonObject
+    val validation = obj?.get("detail") as? JsonArray
+    when {
+        obj == null -> raw
+        validation != null -> validation.joinToString("\n") { item ->
             val detail = item.jsonObject
             val loc = (detail["loc"] as? JsonArray)?.joinToString(".") { it.jsonPrimitive.contentOrNull.orEmpty() }
             val msg = detail["msg"]?.jsonPrimitive?.contentOrNull.orEmpty()
             listOfNotNull(loc?.takeIf { it.isNotBlank() }, msg.takeIf { it.isNotBlank() }).joinToString(": ")
         }
+        else -> (obj["error"] as? JsonObject)?.get("message")?.jsonPrimitive?.contentOrNull
+            ?: obj["message"]?.jsonPrimitive?.contentOrNull
+            ?: raw
     }
-    val nested = obj["error"] as? JsonObject
-    return nested?.get("message")?.jsonPrimitive?.contentOrNull
-        ?: obj["message"]?.jsonPrimitive?.contentOrNull
-        ?: raw
 }
 
 private fun Map<String, String>.headerValue(name: String): String? =

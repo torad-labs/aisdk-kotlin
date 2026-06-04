@@ -1,20 +1,12 @@
 package ai.torad.aisdk
 
 import io.ktor.client.HttpClient
-import io.ktor.client.request.header
-import io.ktor.client.request.request
-import io.ktor.client.request.setBody
-import io.ktor.client.statement.HttpResponse
-import io.ktor.client.statement.bodyAsText
-import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpMethod
-import io.ktor.http.contentType
 import kotlin.time.Clock
 import kotlinx.coroutines.delay
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
-import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
@@ -210,11 +202,6 @@ private val klingAIHandledProviderOptions = setOf(
 )
 
 
-private data class KlingAIJsonResponse(
-    val value: JsonElement,
-    val headers: Map<String, String>,
-)
-
 private fun klingAIDetectMode(modelId: String): KlingAIVideoMode = when {
     modelId.endsWith("-t2v") -> KlingAIVideoMode.TextToVideo
     modelId.endsWith("-i2v") -> KlingAIVideoMode.ImageToVideo
@@ -340,28 +327,16 @@ private suspend fun klingAIRequestJson(
     url: String,
     headers: Map<String, String>,
     body: JsonObject? = null,
-): KlingAIJsonResponse {
-    val response = client.request(url) {
-        this.method = method
-        if (body != null) {
-            contentType(ContentType.Application.Json)
-            setBody(aiSdkJson.encodeToString(JsonElement.serializer(), body))
-        }
-        headers.forEach { (name, value) -> header(name, value) }
-    }
-    return response.parseKlingAIJson()
-}
-
-private suspend fun HttpResponse.parseKlingAIJson(): KlingAIJsonResponse {
-    val raw = bodyAsText()
-    if (status.value !in 200..299) {
-        throw AiSdkException("KlingAI request failed (${status.value}): ${klingAIErrorMessage(raw)}")
-    }
-    return KlingAIJsonResponse(
-        value = if (raw.isBlank()) JsonObject(emptyMap()) else aiSdkJson.parseToJsonElement(raw),
-        headers = headers.entries().associate { it.key to it.value.joinToString(",") },
+): HttpJsonResponse =
+    requestJson(
+        client = client,
+        url = url,
+        method = method,
+        headers = headers,
+        body = body,
+        requestBodyValues = body,
+        errorMessage = ::klingAIErrorMessage,
     )
-}
 
 private fun klingAIHeaders(settings: KlingAIProviderSettings, callHeaders: Map<String, String>): Map<String, String> {
     val token = generateKlingAIAuthToken(
@@ -385,9 +360,10 @@ private fun klingAIVideoMetadata(value: JsonObject): JsonObject = buildJsonObjec
     value["duration"]?.jsonPrimitive?.contentOrNull?.let { put("duration", JsonPrimitive(it)) }
 }
 
-private fun klingAIErrorMessage(raw: String): String {
-    val obj = runCatching { aiSdkJson.parseToJsonElement(raw).jsonObject }.getOrNull() ?: return raw.ifBlank { "request failed" }
-    return obj["message"]?.jsonPrimitive?.contentOrNull ?: raw.ifBlank { "request failed" }
+private fun klingAIErrorMessage(statusCode: Int, parsed: JsonElement?, raw: String): String {
+    val detail = (parsed as? JsonObject)?.get("message")?.jsonPrimitive?.contentOrNull
+        ?: raw.ifBlank { "request failed" }
+    return "KlingAI request failed ($statusCode): $detail"
 }
 
 private fun generateKlingAIAuthToken(accessKey: String, secretKey: String): String {

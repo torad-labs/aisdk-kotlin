@@ -4,8 +4,6 @@ import io.ktor.client.HttpClient
 import io.ktor.client.request.header
 import io.ktor.client.request.request
 import io.ktor.client.request.setBody
-import io.ktor.client.statement.HttpResponse
-import io.ktor.client.statement.bodyAsText
 import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpMethod
@@ -144,7 +142,7 @@ class AnthropicMessagesLanguageModel(
         extraHeaders: Map<String, String>,
         acceptEventStream: Boolean,
         parseJson: Boolean,
-    ): AnthropicHttpResponse {
+    ): HttpJsonResponse {
         val baseURL = settings.baseURL.trimEnd('/')
         val url = settings.buildRequestUrl?.invoke(baseURL, modelId, acceptEventStream) ?: "$baseURL/messages"
         val requestBody = settings.transformRequestBody?.invoke(modelId, body, acceptEventStream) ?: body
@@ -158,7 +156,12 @@ class AnthropicMessagesLanguageModel(
             requestHeaders.forEach { (name, value) -> header(name, value) }
             setBody(encodedBody)
         }
-        return response.parseAnthropicResponse(parseJson)
+        return response.toJsonResponse(
+            url = url,
+            parseJson = parseJson,
+            requestBodyValues = requestBody,
+            errorMessage = { _, parsed, raw -> anthropicErrorMessage(parsed, raw) },
+        )
     }
 }
 
@@ -225,11 +228,6 @@ fun forwardAnthropicContainerIdFromLastStep(
     return null
 }
 
-private data class AnthropicHttpResponse(
-    val value: JsonElement,
-    val rawText: String,
-    val headers: Map<String, String>,
-)
 
 private data class PreparedAnthropicRequest(
     val body: JsonObject,
@@ -896,22 +894,6 @@ private fun anthropicInitialStreamInput(input: JsonElement?): String = when (inp
     else -> input.toString()
 }
 
-private suspend fun HttpResponse.parseAnthropicResponse(parseJson: Boolean): AnthropicHttpResponse {
-    val raw = bodyAsText()
-    val headers = responseHeaders()
-    if (status.value !in 200..299) {
-        val parsed = runCatching { aiSdkJson.parseToJsonElement(raw) }.getOrNull()
-        throw AiSdkException(anthropicErrorMessage(parsed, raw))
-    }
-    return AnthropicHttpResponse(
-        value = if (parseJson && raw.isNotBlank()) aiSdkJson.parseToJsonElement(raw) else JsonObject(emptyMap()),
-        rawText = raw,
-        headers = headers,
-    )
-}
-
-private fun HttpResponse.responseHeaders(): Map<String, String> =
-    headers.entries().associate { it.key to it.value.joinToString(",") }
 
 private fun anthropicHeaders(
     settings: AnthropicProviderSettings,

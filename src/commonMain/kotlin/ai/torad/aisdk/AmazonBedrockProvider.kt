@@ -1117,10 +1117,17 @@ private suspend fun bedrockPostJson(
     }
     val rawBytes = response.bodyAsBytes()
     val raw = rawBytes.decodeToString()
-    val responseHeaders = response.responseHeaders()
+    val responseHeaders = response.flattenedHeaders()
     if (response.status.value !in 200..299) {
         val parsed = runCatching { aiSdkJson.parseToJsonElement(raw) }.getOrNull()
-        throw AiSdkException(bedrockErrorMessage(parsed, raw))
+        throw apiCallError(
+            url = url,
+            statusCode = response.status.value,
+            rawBody = raw,
+            headers = responseHeaders,
+            message = bedrockErrorMessage(parsed, raw),
+            requestBodyValues = body,
+        )
     }
     return BedrockHttpResponse(
         value = if (parseJson && raw.isNotBlank()) aiSdkJson.parseToJsonElement(raw) else JsonObject(emptyMap()),
@@ -1417,9 +1424,6 @@ private fun isBedrockClockSkewError(code: String?, message: String): Boolean {
         message.contains("Signature expired", ignoreCase = true) ||
         message.contains("Request time too skewed", ignoreCase = true)
 }
-
-private fun HttpResponse.responseHeaders(): Map<String, String> =
-    headers.entries().associate { it.key to it.value.joinToString(",") }
 
 private fun JsonObjectBuilder.putJsonObjectFields(fields: JsonObject) {
     fields.forEach { (key, value) -> if (value !is JsonNull) put(key, value) }

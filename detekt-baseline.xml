@@ -294,7 +294,6 @@
     <ID>ArgumentListWrapping:ExtractReasoning.kt$&lt;no name provided>$(event.id, separator, event.providerMetadata)</ID>
     <ID>ArgumentListWrapping:ExtractReasoning.kt$&lt;no name provided>$(rid, buffer.substring(0, closeIdx), event.providerMetadata)</ID>
     <ID>ArgumentListWrapping:ExtractReasoning.kt$&lt;no name provided>$(rid, buffer.substring(0, emitLength), event.providerMetadata)</ID>
-    <ID>ArgumentListWrapping:FalProvider.kt$("fal binary request failed with status ${response.status.value}: ${bytes.decodeToString()}")</ID>
     <ID>ArgumentListWrapping:FalProvider.kt$DefaultFalProvider$(providerId, "embeddingModel", modelId)</ID>
     <ID>ArgumentListWrapping:FalProvider.kt$DefaultFalProvider$(providerId, "languageModel", modelId)</ID>
     <ID>ArgumentListWrapping:FalProvider.kt$FalImageModel$(modelId = modelId, headers = response.headers, body = response.value)</ID>
@@ -677,8 +676,6 @@
     <ID>ArgumentListWrapping:OpenAICompatibleProvider.kt$OpenAICompatibleTranscriptionModel$(obj, "start", providerName, "transcription response", "$.segments[$index]")</ID>
     <ID>ArgumentListWrapping:OpenAICompatibleProvider.kt$OpenAICompatibleTranscriptionModel$(obj, "text", providerName, "transcription response", "$.segments[$index]")</ID>
     <ID>ArgumentListWrapping:OpenAICompatibleProvider.kt$OpenAICompatibleTranscriptionModel$(value, "segments", providerName, "transcription response")</ID>
-    <ID>ArgumentListWrapping:OpenAICompatibleProviderFacades.kt$("Provider request failed (${status.value}): ${providerFacadeErrorMessage(bytes.decodeToString())}")</ID>
-    <ID>ArgumentListWrapping:OpenAICompatibleProviderFacades.kt$(bytes.decodeToString())</ID>
     <ID>ArgumentListWrapping:OpenAICompatibleProviderFacades.kt$&lt;no name provided>$("$providerName provider is not configured. Use create$providerName(client, settings).")</ID>
     <ID>ArgumentListWrapping:OpenAICompatibleProviderFacades.kt$DeepInfraChatLanguageModel$(::fixDeepInfraUsageEvent)</ID>
     <ID>ArgumentListWrapping:OpenAICompatibleProviderFacades.kt$DeepInfraChatLanguageModel$(params)</ID>
@@ -1070,11 +1067,12 @@
     <ID>ImportOrdering:AbortSignal.kt$import kotlin.concurrent.atomics.AtomicReference import kotlin.concurrent.atomics.ExperimentalAtomicApi import kotlinx.coroutines.CompletableJob import kotlinx.coroutines.CoroutineScope import kotlinx.coroutines.Job import kotlinx.coroutines.SupervisorJob</ID>
     <ID>ImportOrdering:AgentInterfaceTest.kt$import kotlin.test.Test import kotlin.test.assertEquals import kotlin.test.assertTrue import kotlinx.coroutines.flow.Flow import kotlinx.coroutines.flow.flowOf import kotlinx.coroutines.test.runTest</ID>
     <ID>ImportOrdering:AgentSession.kt$import kotlin.concurrent.Volatile import kotlinx.serialization.json.JsonPrimitive import kotlinx.coroutines.CancellationException import kotlinx.coroutines.CoroutineScope import kotlinx.coroutines.CoroutineStart import kotlinx.coroutines.Job import kotlinx.coroutines.flow.MutableStateFlow import kotlinx.coroutines.flow.StateFlow import kotlinx.coroutines.flow.asStateFlow import kotlinx.coroutines.flow.collect import kotlinx.coroutines.flow.update import kotlinx.coroutines.launch</ID>
-    <ID>ImportOrdering:AlibabaProvider.kt$import io.ktor.client.HttpClient import io.ktor.client.request.header import io.ktor.client.request.request import io.ktor.client.request.setBody import io.ktor.client.statement.HttpResponse import io.ktor.client.statement.bodyAsText import io.ktor.http.ContentType import io.ktor.http.HttpHeaders import io.ktor.http.HttpMethod import io.ktor.http.contentType import kotlin.time.Clock import kotlinx.coroutines.delay import kotlinx.coroutines.flow.Flow import kotlinx.coroutines.flow.collect import kotlinx.coroutines.flow.flow import kotlinx.serialization.Serializable import kotlinx.serialization.encodeToString import kotlinx.serialization.json.Json import kotlinx.serialization.json.JsonArray import kotlinx.serialization.json.JsonElement import kotlinx.serialization.json.JsonObject import kotlinx.serialization.json.JsonPrimitive import kotlinx.serialization.json.booleanOrNull import kotlinx.serialization.json.buildJsonObject import kotlinx.serialization.json.contentOrNull import kotlinx.serialization.json.intOrNull import kotlinx.serialization.json.jsonArray import kotlinx.serialization.json.jsonObject import kotlinx.serialization.json.jsonPrimitive</ID>
+    <ID>ImportOrdering:AlibabaProvider.kt$import io.ktor.client.HttpClient import io.ktor.http.HttpHeaders import io.ktor.http.HttpMethod import kotlin.time.Clock import kotlinx.coroutines.delay import kotlinx.coroutines.flow.Flow import kotlinx.coroutines.flow.collect import kotlinx.coroutines.flow.flow import kotlinx.serialization.Serializable import kotlinx.serialization.json.JsonArray import kotlinx.serialization.json.JsonElement import kotlinx.serialization.json.JsonObject import kotlinx.serialization.json.JsonPrimitive import kotlinx.serialization.json.booleanOrNull import kotlinx.serialization.json.buildJsonObject import kotlinx.serialization.json.contentOrNull import kotlinx.serialization.json.intOrNull import kotlinx.serialization.json.jsonArray import kotlinx.serialization.json.jsonObject import kotlinx.serialization.json.jsonPrimitive</ID>
     <ID>ImportOrdering:AlibabaProviderTest.kt$import io.ktor.http.HttpHeaders import kotlinx.coroutines.test.runTest import kotlinx.serialization.json.Json import kotlinx.serialization.json.JsonPrimitive import kotlinx.serialization.json.buildJsonObject import kotlinx.serialization.json.booleanOrNull import kotlinx.serialization.json.contentOrNull import kotlinx.serialization.json.floatOrNull import kotlinx.serialization.json.intOrNull import kotlinx.serialization.json.jsonArray import kotlinx.serialization.json.jsonObject import kotlinx.serialization.json.jsonPrimitive import kotlin.test.Test import kotlin.test.assertEquals import kotlin.test.assertFailsWith import kotlin.test.assertTrue</ID>
     <ID>ImportOrdering:AnthropicProviderTest.kt$import ai.torad.aisdk.testing.drainAllItems import io.ktor.http.HttpHeaders import kotlinx.coroutines.test.runTest import kotlinx.serialization.json.Json import kotlinx.serialization.json.JsonArray import kotlinx.serialization.json.JsonObject import kotlinx.serialization.json.JsonPrimitive import kotlinx.serialization.json.buildJsonObject import kotlinx.serialization.json.booleanOrNull import kotlinx.serialization.json.contentOrNull import kotlinx.serialization.json.intOrNull import kotlinx.serialization.json.jsonArray import kotlinx.serialization.json.jsonObject import kotlinx.serialization.json.jsonPrimitive import kotlin.test.Test import kotlin.test.assertEquals import kotlin.test.assertFailsWith import kotlin.test.assertIs import kotlin.test.assertTrue</ID>
     <ID>ImportOrdering:ApprovalIdTest.kt$import ai.torad.aisdk.ui.ToolCallState import ai.torad.aisdk.ui.UIMessagePart import ai.torad.aisdk.ui.streamToUiMessages import app.cash.turbine.test import kotlin.test.Test import kotlin.test.assertEquals import kotlin.test.assertNotNull import kotlinx.coroutines.flow.flowOf import kotlinx.coroutines.test.runTest import kotlinx.serialization.json.JsonPrimitive</ID>
     <ID>ImportOrdering:AzureProviderTest.kt$import io.ktor.client.HttpClient import io.ktor.client.engine.mock.MockEngine import io.ktor.client.engine.mock.respond import io.ktor.client.request.HttpRequestData import io.ktor.http.HttpHeaders import io.ktor.http.HttpStatusCode import io.ktor.http.Headers import io.ktor.http.content.OutgoingContent import io.ktor.http.headersOf import kotlinx.coroutines.test.runTest import kotlinx.serialization.json.Json import kotlinx.serialization.json.JsonElement import kotlinx.serialization.json.JsonObject import kotlinx.serialization.json.JsonPrimitive import kotlinx.serialization.json.contentOrNull import kotlinx.serialization.json.jsonObject import kotlinx.serialization.json.jsonPrimitive import kotlin.test.Test import kotlin.test.assertEquals import kotlin.test.assertFailsWith import kotlin.test.assertNotNull import kotlin.test.assertTrue</ID>
+    <ID>ImportOrdering:Chat.kt$import kotlin.concurrent.Volatile import kotlinx.coroutines.flow.Flow import kotlinx.coroutines.flow.MutableStateFlow import kotlinx.coroutines.flow.emptyFlow import kotlinx.coroutines.flow.flow import kotlinx.coroutines.flow.update import kotlinx.coroutines.flow.updateAndGet import kotlinx.serialization.json.JsonElement import kotlinx.serialization.json.JsonPrimitive</ID>
     <ID>ImportOrdering:ChatApprovalResponseTest.kt$import ai.torad.aisdk.ui.Chat import ai.torad.aisdk.ui.DirectChatTransport import ai.torad.aisdk.ui.UIMessage import ai.torad.aisdk.ui.UIMessagePart import ai.torad.aisdk.ui.UIMessageRole import kotlinx.coroutines.flow.emptyFlow import kotlin.test.Test import kotlin.test.assertEquals import kotlinx.serialization.json.jsonPrimitive</ID>
     <ID>ImportOrdering:ChatSessionTest.kt$import ai.torad.aisdk.testing.drainAllItems import ai.torad.aisdk.ui.ChatStatus import ai.torad.aisdk.ui.DirectChatTransport import ai.torad.aisdk.ui.UIMessage import ai.torad.aisdk.ui.UIMessagePart import ai.torad.aisdk.ui.UIMessageRole import ai.torad.aisdk.ui.chatSession import kotlin.test.Test import kotlin.test.assertEquals import kotlin.test.assertNull import kotlinx.coroutines.CompletableDeferred import kotlinx.coroutines.flow.flow import kotlinx.coroutines.launch import kotlinx.coroutines.test.runTest</ID>
     <ID>ImportOrdering:ContentPartPolishTest.kt$import kotlin.test.Test import kotlin.test.assertEquals import kotlin.test.assertNull import kotlin.test.assertTrue import kotlinx.serialization.json.Json</ID>
@@ -1091,7 +1089,7 @@
     <ID>ImportOrdering:Generate.kt$import kotlin.concurrent.atomics.AtomicReference import kotlin.concurrent.atomics.ExperimentalAtomicApi import kotlinx.coroutines.CompletableDeferred import kotlinx.coroutines.currentCoroutineContext import kotlinx.coroutines.ensureActive import kotlinx.coroutines.flow.Flow import kotlinx.coroutines.flow.filterIsInstance import kotlinx.coroutines.flow.flow import kotlinx.coroutines.flow.map import kotlinx.serialization.json.JsonElement</ID>
     <ID>ImportOrdering:GenerateTextParityTest.kt$import ai.torad.aisdk.testing.drainAllItems import kotlin.test.Test import kotlin.test.assertEquals import kotlin.test.assertIs import kotlin.test.assertNotNull import kotlin.test.assertNull import kotlinx.coroutines.flow.Flow import kotlinx.coroutines.flow.flow import kotlinx.coroutines.test.runTest import kotlinx.serialization.Serializable import kotlinx.serialization.json.JsonObject import kotlinx.serialization.json.JsonPrimitive import kotlinx.serialization.json.buildJsonObject import kotlinx.serialization.json.jsonObject import kotlinx.serialization.json.jsonPrimitive import kotlinx.serialization.serializer</ID>
     <ID>ImportOrdering:HuggingFaceProviderTest.kt$import ai.torad.aisdk.testing.drainAllItems import io.ktor.http.HttpHeaders import kotlinx.coroutines.test.runTest import kotlinx.serialization.json.Json import kotlinx.serialization.json.JsonArray import kotlinx.serialization.json.JsonObject import kotlinx.serialization.json.JsonPrimitive import kotlinx.serialization.json.buildJsonObject import kotlinx.serialization.json.booleanOrNull import kotlinx.serialization.json.contentOrNull import kotlinx.serialization.json.intOrNull import kotlinx.serialization.json.jsonArray import kotlinx.serialization.json.jsonObject import kotlinx.serialization.json.jsonPrimitive import kotlin.test.Test import kotlin.test.assertEquals import kotlin.test.assertFailsWith import kotlin.test.assertIs import kotlin.test.assertNull import kotlin.test.assertTrue</ID>
-    <ID>ImportOrdering:KlingAIProvider.kt$import io.ktor.client.HttpClient import io.ktor.client.request.header import io.ktor.client.request.request import io.ktor.client.request.setBody import io.ktor.client.statement.HttpResponse import io.ktor.client.statement.bodyAsText import io.ktor.http.ContentType import io.ktor.http.HttpHeaders import io.ktor.http.HttpMethod import io.ktor.http.contentType import kotlin.time.Clock import kotlinx.coroutines.delay import kotlinx.serialization.Serializable import kotlinx.serialization.encodeToString import kotlinx.serialization.json.Json import kotlinx.serialization.json.JsonArray import kotlinx.serialization.json.JsonElement import kotlinx.serialization.json.JsonObject import kotlinx.serialization.json.JsonPrimitive import kotlinx.serialization.json.booleanOrNull import kotlinx.serialization.json.buildJsonObject import kotlinx.serialization.json.contentOrNull import kotlinx.serialization.json.jsonArray import kotlinx.serialization.json.jsonObject import kotlinx.serialization.json.jsonPrimitive</ID>
+    <ID>ImportOrdering:KlingAIProvider.kt$import io.ktor.client.HttpClient import io.ktor.http.HttpHeaders import io.ktor.http.HttpMethod import kotlin.time.Clock import kotlinx.coroutines.delay import kotlinx.serialization.Serializable import kotlinx.serialization.encodeToString import kotlinx.serialization.json.JsonArray import kotlinx.serialization.json.JsonElement import kotlinx.serialization.json.JsonObject import kotlinx.serialization.json.JsonPrimitive import kotlinx.serialization.json.booleanOrNull import kotlinx.serialization.json.buildJsonObject import kotlinx.serialization.json.contentOrNull import kotlinx.serialization.json.jsonArray import kotlinx.serialization.json.jsonObject import kotlinx.serialization.json.jsonPrimitive</ID>
     <ID>ImportOrdering:KotlinApiTest.kt$import ai.torad.aisdk.testing.drainAllItems import kotlin.test.Test import kotlin.test.assertEquals import kotlin.test.assertIs import kotlin.test.assertNotNull import kotlin.test.assertNull import kotlinx.coroutines.flow.Flow import kotlinx.coroutines.flow.flow import kotlinx.coroutines.test.runTest import kotlinx.serialization.Serializable import kotlinx.serialization.json.JsonPrimitive import kotlinx.serialization.json.buildJsonObject import kotlinx.serialization.json.jsonObject import kotlinx.serialization.json.jsonPrimitive import kotlinx.serialization.serializer</ID>
     <ID>ImportOrdering:KotlinIdiomsTest.kt$import ai.torad.aisdk.providers.mockLanguageModelTextOnly import ai.torad.aisdk.ui.ToolCallState import ai.torad.aisdk.ui.UIMessage import ai.torad.aisdk.ui.UIMessagePart import ai.torad.aisdk.ui.UIMessageRole import ai.torad.aisdk.ui.dataAs import ai.torad.aisdk.ui.metadataAs import ai.torad.aisdk.ui.outputAs import kotlinx.coroutines.Job import kotlin.test.Test import kotlin.test.assertContentEquals import kotlin.test.assertEquals import kotlin.test.assertFailsWith import kotlin.test.assertFalse import kotlin.test.assertIs import kotlin.test.assertNotNull import kotlin.test.assertTrue import kotlinx.coroutines.test.runTest import kotlinx.serialization.Serializable import kotlinx.serialization.json.JsonObject import kotlinx.serialization.json.JsonPrimitive import kotlinx.serialization.json.buildJsonObject import kotlinx.serialization.json.jsonObject import kotlinx.serialization.json.jsonPrimitive import kotlinx.serialization.serializer</ID>
     <ID>ImportOrdering:LifecycleHooksTest.kt$import ai.torad.aisdk.providers.MockLanguageModel import ai.torad.aisdk.providers.mockLanguageModelTextOnly import kotlin.test.Test import kotlin.test.assertEquals import kotlin.test.assertTrue import kotlinx.coroutines.test.runTest</ID>
@@ -1242,6 +1240,9 @@
     <ID>LongParameterList:GoogleProvider.kt$( client: HttpClient, url: String, body: JsonElement, headers: Map&lt;String, String>, abortSignal: AbortSignal, parseJson: Boolean, )</ID>
     <ID>LongParameterList:GoogleProvider.kt$( client: HttpClient, url: String, headers: Map&lt;String, String>, abortSignal: AbortSignal, parseJson: Boolean = true, maxRetries: Int = 2, retryDelayMillis: Long = 0, )</ID>
     <ID>LongParameterList:GoogleProvider.kt$( response: JsonObject, requestBody: JsonObject, headers: Map&lt;String, String>, rawBody: JsonElement, warnings: List&lt;CallWarning>, settings: GoogleGenerativeAIProviderSettings, )</ID>
+    <ID>LongParameterList:HttpTransport.kt$( client: HttpClient, url: String, method: HttpMethod = HttpMethod.Post, headers: Map&lt;String, String> = emptyMap(), body: JsonElement? = null, json: Json = aiSdkJson, parseJson: Boolean = true, requestBodyValues: Any? = body, errorMessage: ErrorMessageExtractor = ::defaultErrorMessage, errorFromResponse: ResponseErrorFactory? = null, )</ID>
+    <ID>LongParameterList:HttpTransport.kt$( url: String, json: Json = aiSdkJson, parseJson: Boolean = true, requestBodyValues: Any? = null, errorMessage: ErrorMessageExtractor = ::defaultErrorMessage, errorFromResponse: ResponseErrorFactory? = null, )</ID>
+    <ID>LongParameterList:HttpTransport.kt$( url: String, statusCode: Int, rawBody: String, headers: Map&lt;String, String>, message: String, requestBodyValues: Any? = null, )</ID>
     <ID>LongParameterList:HuggingFaceProvider.kt$( response: JsonObject, requestBody: JsonElement, responseHeaders: Map&lt;String, String>, responseBody: JsonElement, warnings: List&lt;CallWarning>, settings: HuggingFaceProviderSettings, json: Json, )</ID>
     <ID>LongParameterList:KotlinApi.kt$( model: LanguageModel, prompt: String? = null, messages: List&lt;ModelMessage> = emptyList(), system: String? = null, output: Output&lt;TOutput>, settings: CallSettings, )</ID>
     <ID>LongParameterList:LumaProvider.kt$( client: HttpClient, baseURL: String, generationId: String, headers: Map&lt;String, String>, abortSignal: AbortSignal, pollIntervalMillis: Long, maxPollAttempts: Int, )</ID>
@@ -1283,8 +1284,6 @@
     <ID>MagicNumber:AiSdkError.kt$APICallError$409</ID>
     <ID>MagicNumber:AiSdkError.kt$APICallError$429</ID>
     <ID>MagicNumber:AiSdkError.kt$APICallError$500</ID>
-    <ID>MagicNumber:AlibabaProvider.kt$200</ID>
-    <ID>MagicNumber:AlibabaProvider.kt$299</ID>
     <ID>MagicNumber:AlibabaProvider.kt$AlibabaVideoModel$5_000L</ID>
     <ID>MagicNumber:AlibabaProvider.kt$AlibabaVideoModel$600_000L</ID>
     <ID>MagicNumber:AmazonBedrockProvider.kt$0xff</ID>
@@ -1302,8 +1301,6 @@
     <ID>MagicNumber:AmazonBedrockProvider.kt$8</ID>
     <ID>MagicNumber:AmazonBedrockProvider.kt$9</ID>
     <ID>MagicNumber:AnthropicProvider.kt$1024</ID>
-    <ID>MagicNumber:AnthropicProvider.kt$200</ID>
-    <ID>MagicNumber:AnthropicProvider.kt$299</ID>
     <ID>MagicNumber:AnthropicProvider.kt$4096</ID>
     <ID>MagicNumber:AssemblyAIProvider.kt$200</ID>
     <ID>MagicNumber:AssemblyAIProvider.kt$299</ID>
@@ -1412,13 +1409,13 @@
     <ID>MagicNumber:GladiaProvider.kt$200</ID>
     <ID>MagicNumber:GladiaProvider.kt$299</ID>
     <ID>MagicNumber:GoogleProvider.kt$1_000L</ID>
-    <ID>MagicNumber:GoogleProvider.kt$200</ID>
-    <ID>MagicNumber:GoogleProvider.kt$299</ID>
     <ID>MagicNumber:GoogleProvider.kt$30</ID>
     <ID>MagicNumber:GoogleProvider.kt$500</ID>
     <ID>MagicNumber:GoogleProvider.kt$599</ID>
     <ID>MagicNumber:GoogleProvider.kt$60</ID>
     <ID>MagicNumber:GoogleProvider.kt$GoogleGenerativeAIEmbeddingModel$2048</ID>
+    <ID>MagicNumber:HttpTransport.kt$200</ID>
+    <ID>MagicNumber:HttpTransport.kt$299</ID>
     <ID>MagicNumber:HuggingFaceProvider.kt$1000</ID>
     <ID>MagicNumber:HuggingFaceProvider.kt$200</ID>
     <ID>MagicNumber:HuggingFaceProvider.kt$299</ID>
@@ -1426,14 +1423,10 @@
     <ID>MagicNumber:HumeProvider.kt$200</ID>
     <ID>MagicNumber:HumeProvider.kt$299</ID>
     <ID>MagicNumber:KlingAIProvider.kt$1800</ID>
-    <ID>MagicNumber:KlingAIProvider.kt$200</ID>
-    <ID>MagicNumber:KlingAIProvider.kt$299</ID>
     <ID>MagicNumber:KlingAIProvider.kt$5</ID>
     <ID>MagicNumber:KlingAIProvider.kt$KlingAIVideoModel$5_000L</ID>
     <ID>MagicNumber:KlingAIProvider.kt$KlingAIVideoModel$600_000L</ID>
     <ID>MagicNumber:KtorGatewayTransport.kt$1000</ID>
-    <ID>MagicNumber:KtorGatewayTransport.kt$KtorGatewayTransport$200</ID>
-    <ID>MagicNumber:KtorGatewayTransport.kt$KtorGatewayTransport$299</ID>
     <ID>MagicNumber:LMNTProvider.kt$200</ID>
     <ID>MagicNumber:LMNTProvider.kt$299</ID>
     <ID>MagicNumber:LumaProvider.kt$0.85f</ID>
@@ -1567,7 +1560,6 @@
     <ID>MaxLineLength:AlibabaProvider.kt$if (params.aspectRatio != null) warnings += CallWarning("unsupported", "Alibaba video models use explicit size/resolution dimensions. Use the resolution option or providerOptions.alibaba for size control.")</ID>
     <ID>MaxLineLength:AlibabaProvider.kt$if (params.n > 1) warnings += CallWarning("unsupported", "Alibaba video models only support generating 1 video per call.")</ID>
     <ID>MaxLineLength:AlibabaProvider.kt$private</ID>
-    <ID>MaxLineLength:AlibabaProvider.kt$val obj = runCatching { aiSdkJson.parseToJsonElement(raw).jsonObject }.getOrNull() ?: return raw.ifBlank { "request failed" }</ID>
     <ID>MaxLineLength:AlibabaProviderTest.kt$AlibabaProviderTest$LanguageModelTool("lookup", "Lookup city details.", """{"type":"object","properties":{"city":{"type":"string"}}}""")</ID>
     <ID>MaxLineLength:AlibabaProviderTest.kt$AlibabaProviderTest$UrlResponse.JsonValue(Json.parseToJsonElement("""{"output":{"task_status":"PENDING","task_id":"task-1"},"request_id":"create-1"}"""))</ID>
     <ID>MaxLineLength:AlibabaProviderTest.kt$AlibabaProviderTest$assertEquals("I checked the cached context.", result.content.filterIsInstance&lt;ContentPart.Reasoning>().single().text)</ID>
@@ -1811,7 +1803,6 @@
     <ID>MaxLineLength:FalProvider.kt$FalVideoModel$?.</ID>
     <ID>MaxLineLength:FalProvider.kt$FalVideoModel$val videoUrl = video["url"]?.jsonPrimitive?.contentOrNull ?: throw NoVideoGeneratedError("No video URL in response")</ID>
     <ID>MaxLineLength:FalProvider.kt$if</ID>
-    <ID>MaxLineLength:FalProvider.kt$throw AiSdkException("fal binary request failed with status ${response.status.value}: ${bytes.decodeToString()}")</ID>
     <ID>MaxLineLength:FalProviderTest.kt$FalProviderTest$"""{"request_id":"video-1","response_url":"https://queue.fal.run/fal-ai/luma-dream-machine/requests/video-1"}"""</ID>
     <ID>MaxLineLength:FalProviderTest.kt$FalProviderTest$assertEquals("Enhanced prompt", result.providerMetadata["fal"]?.jsonObject?.get("prompt")?.jsonPrimitive?.contentOrNull)</ID>
     <ID>MaxLineLength:FalProviderTest.kt$FalProviderTest$assertEquals(1920, result.providerMetadata["fal"]?.jsonObject?.get("videos")?.jsonArray?.single()?.jsonObject?.get("width")?.jsonPrimitive?.intOrNull)</ID>
@@ -2022,7 +2013,6 @@
     <ID>MaxLineLength:KlingAIProvider.kt$if (params.seed != null) add(CallWarning("unsupported", "KlingAI video models do not support seed for deterministic generation."))</ID>
     <ID>MaxLineLength:KlingAIProvider.kt$options["watermarkEnabled"]?.jsonPrimitive?.booleanOrNull?.let { put("watermark_info", buildJsonObject { put("enabled", JsonPrimitive(it)) }) }</ID>
     <ID>MaxLineLength:KlingAIProvider.kt$throw AiSdkException("KlingAI Motion Control requires providerOptions.klingai with videoUrl, characterOrientation, and mode.")</ID>
-    <ID>MaxLineLength:KlingAIProvider.kt$val obj = runCatching { aiSdkJson.parseToJsonElement(raw).jsonObject }.getOrNull() ?: return raw.ifBlank { "request failed" }</ID>
     <ID>MaxLineLength:KlingAIProvider.kt$warnings += CallWarning("unsupported", "KlingAI Motion Control does not support aspectRatio. The output dimensions are determined by the reference image/video.")</ID>
     <ID>MaxLineLength:KlingAIProvider.kt$warnings += CallWarning("unsupported", "KlingAI Motion Control does not support custom duration. The output duration matches the reference video duration.")</ID>
     <ID>MaxLineLength:KlingAIProvider.kt$warnings += CallWarning("unsupported", "KlingAI image-to-video does not support aspectRatio. The output dimensions are determined by the input image.")</ID>
@@ -2153,8 +2143,6 @@
     <ID>MaxLineLength:OpenAICompatibleProviderFacades.kt$DefaultPerplexityProvider$override fun embeddingModel(modelId: String): EmbeddingModel</ID>
     <ID>MaxLineLength:OpenAICompatibleProviderFacades.kt$DefaultVercelProvider$override fun embeddingModel(modelId: String): EmbeddingModel</ID>
     <ID>MaxLineLength:OpenAICompatibleProviderFacades.kt$TogetherAIImageModel$response = LanguageModelResponseMetadata(modelId = modelId, headers = response.headers, body = response.value)</ID>
-    <ID>MaxLineLength:OpenAICompatibleProviderFacades.kt$throw AiSdkException("Provider request failed (${status.value}): ${providerFacadeErrorMessage(bytes.decodeToString())}")</ID>
-    <ID>MaxLineLength:OpenAICompatibleProviderFacades.kt$val obj = runCatching { aiSdkJson.parseToJsonElement(raw).jsonObject }.getOrNull() ?: return raw.ifBlank { "request failed" }</ID>
     <ID>MaxLineLength:OpenAICompatibleProviderFacadesTest.kt$OpenAICompatibleProviderFacadesTest$"""{"id":"chat_1","model":"model","choices":[{"message":{"role":"assistant","content":"ok"},"finish_reason":"stop"}],"usage":{"prompt_tokens":3,"completion_tokens":4,"completion_tokens_details":{"reasoning_tokens":9},"total_tokens":7}}"""</ID>
     <ID>MaxLineLength:OpenAICompatibleProviderFacadesTest.kt$OpenAICompatibleProviderFacadesTest$"""{"id":"id_1","model":"model","choices":[{"message":{"role":"assistant","content":"${case.name}"},"finish_reason":"stop"}],"usage":{"prompt_tokens":1,"completion_tokens":2}}"""</ID>
     <ID>MaxLineLength:OpenAICompatibleProviderFacadesTest.kt$OpenAICompatibleProviderFacadesTest$"https://fireworks.test/inference/v1/workflows/accounts/fireworks/models/flux-1-dev-fp8/text_to_image"</ID>
@@ -2491,7 +2479,6 @@
     <ID>MaximumLineLength:OpenAICompatibleProvider.kt$OpenAICompatibleEmbeddingModel$ </ID>
     <ID>MaximumLineLength:OpenAICompatibleProvider.kt$OpenAICompatibleImageModel$ </ID>
     <ID>MaximumLineLength:OpenAICompatibleProvider.kt$OpenAICompatibleTranscriptionModel$ </ID>
-    <ID>MaximumLineLength:OpenAICompatibleProviderFacades.kt$ </ID>
     <ID>MaximumLineLength:OpenAICompatibleProviderFacades.kt$&lt;no name provided>$ </ID>
     <ID>MaximumLineLength:OpenAICompatibleProviderFacades.kt$DeepInfraChatLanguageModel$ </ID>
     <ID>MaximumLineLength:OpenAICompatibleProviderFacades.kt$DeepInfraImageModel$ </ID>
@@ -2719,7 +2706,6 @@
     <ID>ReturnCount:AnthropicProvider.kt$private fun anthropicMetadata(options: JsonObject): JsonObject?</ID>
     <ID>ReturnCount:ConvertToModelMessages.kt$private fun approvalResponseMessage(uiMsg: UIMessage): ModelMessage?</ID>
     <ID>ReturnCount:ExtractJson.kt$&lt;no name provided>$private fun extractJsonRegion(text: String): String</ID>
-    <ID>ReturnCount:FalProvider.kt$private fun falErrorMessage(parsed: JsonElement?, raw: String): String</ID>
     <ID>ReturnCount:FalProvider.kt$private fun falResponseImages(value: JsonObject): List&lt;JsonObject></ID>
     <ID>ReturnCount:FixJson.kt$fun parsePartialJson(jsonText: String?): PartialJsonResult</ID>
     <ID>ReturnCount:FixJson.kt$private fun tryParseJson(text: String): JsonElement?</ID>
@@ -2738,7 +2724,6 @@
     <ID>ReturnCount:OpenAICompatibleProvider.kt$OpenAIChatStreamState$private fun acceptToolCallDelta(value: JsonElement): List&lt;StreamEvent></ID>
     <ID>ReturnCount:OpenAICompatibleProvider.kt$OpenAICompatibleHttpModel$protected fun url(path: String): String</ID>
     <ID>ReturnCount:OpenAICompatibleProviderFacades.kt$private fun Usage.fixDeepInfraUsage(): Usage</ID>
-    <ID>ReturnCount:OpenAICompatibleProviderFacades.kt$private fun providerFacadeErrorMessage(raw: String): String</ID>
     <ID>ReturnCount:OpenResponsesProvider.kt$OpenResponsesStreamState$fun accept(chunk: JsonElement): List&lt;StreamEvent></ID>
     <ID>ReturnCount:OpenResponsesProvider.kt$private fun openResponsesRequireApproval(value: JsonElement?): JsonElement?</ID>
     <ID>ReturnCount:OpenResponsesProvider.kt$private fun openResponsesTopLogprobs(logprobs: JsonElement?): Int?</ID>
@@ -2860,10 +2845,8 @@
     <ID>UnusedPrivateProperty:PrepareStepTest.kt$PrepareStepTest$val recordedActiveSubsets = mutableListOf&lt;List&lt;String>?>()</ID>
     <ID>UseCheckOrError:LangChainAdapterTest.kt$LangChainAdapterTest$throw IllegalStateException("boom")</ID>
     <ID>UseRequire:Tool.kt$throw IllegalArgumentException("Expected JSON string.")</ID>
-    <ID>Wrapping:AlibabaProvider.kt$"request failed"</ID>
     <ID>Wrapping:AlibabaProvider.kt$(</ID>
     <ID>Wrapping:AlibabaProvider.kt$("usage", buildJsonObject { usage["duration"]?.let { put("duration", it) } usage["output_video_duration"]?.let { put("outputVideoDuration", it) } usage["SR"]?.let { put("resolution", it) } usage["size"]?.let { put("size", it) } })</ID>
-    <ID>Wrapping:AlibabaProvider.kt$aiSdkJson.parseToJsonElement(raw).jsonObject</ID>
     <ID>Wrapping:AmazonBedrockProvider.kt$(</ID>
     <ID>Wrapping:AmazonBedrockProvider.kt$BedrockStreamState$"{}"</ID>
     <ID>Wrapping:AmazonBedrockProvider.kt$BedrockStreamState$JsonPrimitive(block.input)</ID>
@@ -2959,8 +2942,6 @@
     <ID>Wrapping:GoogleProvider.kt$put("vertexRagStore", buildJsonObject { })</ID>
     <ID>Wrapping:HuggingFaceProvider.kt$mapOf("huggingface" to buildJsonObject { put("responseId", JsonPrimitive(it)) })</ID>
     <ID>Wrapping:HuggingFaceProvider.kt$put("responseId", JsonPrimitive(it))</ID>
-    <ID>Wrapping:KlingAIProvider.kt$"request failed"</ID>
-    <ID>Wrapping:KlingAIProvider.kt$aiSdkJson.parseToJsonElement(raw).jsonObject</ID>
     <ID>Wrapping:KlingAIProvider.kt$put("enabled", JsonPrimitive(it))</ID>
     <ID>Wrapping:KlingAIProvider.kt$put("watermark_info", buildJsonObject { put("enabled", JsonPrimitive(it)) })</ID>
     <ID>Wrapping:KlingAIProviderTest.kt$KlingAIProviderTest$(</ID>
@@ -2990,8 +2971,6 @@
     <ID>Wrapping:MCPClientTest.kt$MCPClientTest.MemoryOAuthProvider$(</ID>
     <ID>Wrapping:MessageStreamReader.kt$-></ID>
     <ID>Wrapping:OpenAICompatibleProvider.kt$(</ID>
-    <ID>Wrapping:OpenAICompatibleProviderFacades.kt$"request failed"</ID>
-    <ID>Wrapping:OpenAICompatibleProviderFacades.kt$aiSdkJson.parseToJsonElement(raw).jsonObject</ID>
     <ID>Wrapping:OpenAICompatibleProviderFacadesTest.kt$OpenAICompatibleProviderFacadesTest$put("rankFields", JsonArray(listOf(JsonPrimitive("text"))))</ID>
     <ID>Wrapping:OpenAIProviderTest.kt$OpenAIProviderTest$(</ID>
     <ID>Wrapping:OpenAIProviderTest.kt$OpenAIProviderTest$("allowedTools", buildJsonObject { put("readOnly", JsonPrimitive(true)) put("toolNames", JsonArray(listOf(JsonPrimitive("search")))) })</ID>

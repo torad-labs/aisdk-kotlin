@@ -1,23 +1,14 @@
 package ai.torad.aisdk
 
 import io.ktor.client.HttpClient
-import io.ktor.client.request.header
-import io.ktor.client.request.request
-import io.ktor.client.request.setBody
-import io.ktor.client.statement.HttpResponse
-import io.ktor.client.statement.bodyAsText
-import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpMethod
-import io.ktor.http.contentType
 import kotlin.time.Clock
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.flow
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.encodeToString
-import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
@@ -199,11 +190,6 @@ private class AlibabaVideoModel(
 private enum class AlibabaVideoMode { TextToVideo, ImageToVideo, ReferenceToVideo }
 
 
-private data class AlibabaJsonResponse(
-    val value: JsonElement,
-    val headers: Map<String, String>,
-)
-
 private fun transformAlibabaChatOptions(providerOptions: Map<String, JsonElement>): Map<String, JsonElement> {
     val options = providerOptions["alibaba"] as? JsonObject ?: return providerOptions
     val transformed = buildJsonObject {
@@ -324,38 +310,29 @@ private suspend fun alibabaPostJson(
     url: String,
     body: JsonObject,
     headers: Map<String, String>,
-): AlibabaJsonResponse {
-    val response = client.request(url) {
-        method = HttpMethod.Post
-        contentType(ContentType.Application.Json)
-        headers.forEach { (name, value) -> header(name, value) }
-        setBody(aiSdkJson.encodeToString(JsonElement.serializer(), body))
-    }
-    return response.parseAlibabaJson()
-}
+): HttpJsonResponse =
+    requestJson(
+        client = client,
+        url = url,
+        method = HttpMethod.Post,
+        headers = headers,
+        body = body,
+        requestBodyValues = body,
+        errorMessage = ::alibabaErrorMessage,
+    )
 
 private suspend fun alibabaGetJson(
     client: HttpClient,
     url: String,
     headers: Map<String, String>,
-): AlibabaJsonResponse {
-    val response = client.request(url) {
-        method = HttpMethod.Get
-        headers.forEach { (name, value) -> header(name, value) }
-    }
-    return response.parseAlibabaJson()
-}
-
-private suspend fun HttpResponse.parseAlibabaJson(): AlibabaJsonResponse {
-    val raw = bodyAsText()
-    if (status.value !in 200..299) {
-        throw AiSdkException("Alibaba request failed (${status.value}): ${alibabaErrorMessage(raw)}")
-    }
-    return AlibabaJsonResponse(
-        value = if (raw.isBlank()) JsonObject(emptyMap()) else aiSdkJson.parseToJsonElement(raw),
-        headers = headers.entries().associate { it.key to it.value.joinToString(",") },
+): HttpJsonResponse =
+    requestJson(
+        client = client,
+        url = url,
+        method = HttpMethod.Get,
+        headers = headers,
+        errorMessage = ::alibabaErrorMessage,
     )
-}
 
 private fun alibabaHeaders(settings: AlibabaProviderSettings, callHeaders: Map<String, String>): Map<String, String> {
     val base = linkedMapOf<String, String?>()
@@ -368,9 +345,10 @@ private fun alibabaHeaders(settings: AlibabaProviderSettings, callHeaders: Map<S
 private fun alibabaOptions(providerOptions: Map<String, JsonElement>): JsonObject =
     providerOptions["alibaba"] as? JsonObject ?: JsonObject(emptyMap())
 
-private fun alibabaErrorMessage(raw: String): String {
-    val obj = runCatching { aiSdkJson.parseToJsonElement(raw).jsonObject }.getOrNull() ?: return raw.ifBlank { "request failed" }
-    return obj["message"]?.jsonPrimitive?.contentOrNull
-        ?: obj["error"]?.jsonObject?.get("message")?.jsonPrimitive?.contentOrNull
+private fun alibabaErrorMessage(statusCode: Int, parsed: JsonElement?, raw: String): String {
+    val obj = parsed as? JsonObject
+    val detail = obj?.get("message")?.jsonPrimitive?.contentOrNull
+        ?: obj?.get("error")?.jsonObject?.get("message")?.jsonPrimitive?.contentOrNull
         ?: raw.ifBlank { "request failed" }
+    return "Alibaba request failed ($statusCode): $detail"
 }

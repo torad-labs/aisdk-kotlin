@@ -6,9 +6,7 @@ import io.ktor.client.request.forms.formData
 import io.ktor.client.request.header
 import io.ktor.client.request.request
 import io.ktor.client.request.setBody
-import io.ktor.client.statement.HttpResponse
 import io.ktor.client.statement.bodyAsBytes
-import io.ktor.client.statement.bodyAsText
 import io.ktor.http.ContentType
 import io.ktor.http.Headers
 import io.ktor.http.HttpHeaders
@@ -141,27 +139,33 @@ private abstract class OpenAICompatibleHttpModel(
         body: JsonElement,
         headers: Map<String, String> = emptyMap(),
         parseJson: Boolean = true,
-    ): OpenAIHttpResponse {
-        val response = client.request(url(path)) {
-            method = HttpMethod.Post
-            contentType(ContentType.Application.Json)
-            commonHeaders(headers).forEach { (name, value) -> header(name, value) }
-            setBody(json.encodeToString(JsonElement.serializer(), body))
-        }
-        return parseOpenAIResponse(response, parseJson)
-    }
+    ): HttpJsonResponse =
+        requestJson(
+            client = client,
+            url = url(path),
+            method = HttpMethod.Post,
+            headers = commonHeaders(headers),
+            body = body,
+            json = json,
+            parseJson = parseJson,
+            errorMessage = ::openAICompatibleErrorMessage,
+        )
 
     protected suspend fun postMultipart(
         path: String,
         body: MultiPartFormDataContent,
         headers: Map<String, String> = emptyMap(),
-    ): OpenAIHttpResponse {
+    ): HttpJsonResponse {
         val response = client.request(url(path)) {
             method = HttpMethod.Post
             commonHeaders(headers).forEach { (name, value) -> header(name, value) }
             setBody(body)
         }
-        return parseOpenAIResponse(response, parseJson = true)
+        return response.toJsonResponse(
+            url = url(path),
+            json = json,
+            errorMessage = ::openAICompatibleErrorMessage,
+        )
     }
 
     protected suspend fun postBytes(
@@ -175,28 +179,20 @@ private abstract class OpenAICompatibleHttpModel(
             commonHeaders(headers).forEach { (name, value) -> header(name, value) }
             setBody(json.encodeToString(JsonElement.serializer(), body))
         }
-        val responseHeaders = response.headers.entries().associate { it.key to it.value.joinToString(",") }
+        val responseHeaders = response.flattenedHeaders()
         val bytes = response.bodyAsBytes()
         if (response.status.value !in 200..299) {
-            throw openAIErrorFromResponse(response.status.value, bytes.decodeToString(), json)
+            val raw = bytes.decodeToString()
+            val parsed = runCatching { json.parseToJsonElement(raw) }.getOrNull()
+            throw apiCallError(
+                url = url(path),
+                statusCode = response.status.value,
+                rawBody = raw,
+                headers = responseHeaders,
+                message = openAICompatibleErrorMessage(response.status.value, parsed, raw),
+            )
         }
         return OpenAIBytesResponse(bytes = bytes, headers = responseHeaders)
-    }
-
-    private suspend fun parseOpenAIResponse(
-        response: HttpResponse,
-        parseJson: Boolean,
-    ): OpenAIHttpResponse {
-        val raw = response.bodyAsText()
-        val headers = response.headers.entries().associate { it.key to it.value.joinToString(",") }
-        if (response.status.value !in 200..299) {
-            throw openAIErrorFromResponse(response.status.value, raw, json)
-        }
-        return OpenAIHttpResponse(
-            value = if (parseJson && raw.isNotBlank()) json.parseToJsonElement(raw) else JsonObject(emptyMap()),
-            rawText = raw,
-            headers = headers,
-        )
     }
 }
 
@@ -556,12 +552,6 @@ private class OpenAICompatibleTranscriptionModel(
 private data class PreparedOpenAIRequest(
     val body: JsonObject,
     val warnings: List<CallWarning>,
-)
-
-private data class OpenAIHttpResponse(
-    val value: JsonElement,
-    val rawText: String,
-    val headers: Map<String, String>,
 )
 
 private data class OpenAIBytesResponse(
@@ -1081,11 +1071,10 @@ private fun audioMediaType(format: String): String = when (format.lowercase()) {
     else -> "audio/mpeg"
 }
 
-private fun openAIErrorFromResponse(statusCode: Int, raw: String, json: Json): AiSdkException {
-    val parsed = runCatching { json.parseToJsonElement(raw).jsonObject }.getOrNull()
-    val error = parsed?.get("error")?.jsonObject
+private fun openAICompatibleErrorMessage(statusCode: Int, parsed: JsonElement?, raw: String): String {
+    val error = (parsed as? JsonObject)?.get("error")?.jsonObject
     val message = error?.get("message")?.jsonPrimitive?.contentOrNull ?: raw.ifBlank { "OpenAI-compatible request failed" }
-    return AiSdkException("OpenAI-compatible request failed ($statusCode): $message")
+    return "OpenAI-compatible request failed ($statusCode): $message"
 }
 
 private fun toOpenAICamelCase(value: String): String =

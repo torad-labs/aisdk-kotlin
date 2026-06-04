@@ -6,7 +6,6 @@ import io.ktor.client.request.request
 import io.ktor.client.request.setBody
 import io.ktor.client.statement.HttpResponse
 import io.ktor.client.statement.bodyAsBytes
-import io.ktor.client.statement.bodyAsText
 import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpMethod
@@ -1095,11 +1094,6 @@ private fun fireworksImageWarnings(params: ImageGenerationParams, backend: Firew
     }
 
 
-private data class ProviderFacadeJsonResponse(
-    val value: JsonElement,
-    val headers: Map<String, String>,
-)
-
 private data class ProviderFacadeBinaryResponse(
     val bytes: ByteArray,
     val headers: Map<String, String>,
@@ -1117,15 +1111,16 @@ private suspend fun postFacadeJson(
     url: String,
     body: JsonElement,
     headers: Map<String, String>,
-): ProviderFacadeJsonResponse {
-    val response = client.request(url) {
-        method = HttpMethod.Post
-        contentType(ContentType.Application.Json)
-        headers.forEach { (name, value) -> header(name, value) }
-        setBody(aiSdkJson.encodeToString(JsonElement.serializer(), body))
-    }
-    return response.parseFacadeJson()
-}
+): HttpJsonResponse =
+    requestJson(
+        client = client,
+        url = url,
+        method = HttpMethod.Post,
+        headers = headers,
+        body = body,
+        requestBodyValues = body,
+        errorMessage = ::providerFacadeErrorMessage,
+    )
 
 private suspend fun postFacadeBinary(
     client: HttpClient,
@@ -1139,7 +1134,7 @@ private suspend fun postFacadeBinary(
         headers.forEach { (name, value) -> header(name, value) }
         setBody(aiSdkJson.encodeToString(JsonElement.serializer(), body))
     }
-    return response.parseFacadeBinary()
+    return response.parseFacadeBinary(url)
 }
 
 private suspend fun getFacadeBinary(
@@ -1151,30 +1146,25 @@ private suspend fun getFacadeBinary(
         method = HttpMethod.Get
         headers.forEach { (name, value) -> header(name, value) }
     }
-    return response.parseFacadeBinary()
+    return response.parseFacadeBinary(url)
 }
 
-private suspend fun HttpResponse.parseFacadeJson(): ProviderFacadeJsonResponse {
-    val raw = bodyAsText()
-    if (status.value !in 200..299) {
-        throw AiSdkException("Provider request failed (${status.value}): ${providerFacadeErrorMessage(raw)}")
-    }
-    return ProviderFacadeJsonResponse(
-        value = if (raw.isBlank()) JsonObject(emptyMap()) else aiSdkJson.parseToJsonElement(raw),
-        headers = responseHeaders(),
-    )
-}
-
-private suspend fun HttpResponse.parseFacadeBinary(): ProviderFacadeBinaryResponse {
+private suspend fun HttpResponse.parseFacadeBinary(url: String): ProviderFacadeBinaryResponse {
     val bytes = bodyAsBytes()
+    val flattened = flattenedHeaders()
     if (status.value !in 200..299) {
-        throw AiSdkException("Provider request failed (${status.value}): ${providerFacadeErrorMessage(bytes.decodeToString())}")
+        val raw = bytes.decodeToString()
+        val parsed = runCatching { aiSdkJson.parseToJsonElement(raw) }.getOrNull()
+        throw apiCallError(
+            url = url,
+            statusCode = status.value,
+            rawBody = raw,
+            headers = flattened,
+            message = providerFacadeErrorMessage(status.value, parsed, raw),
+        )
     }
-    return ProviderFacadeBinaryResponse(bytes = bytes, headers = responseHeaders())
+    return ProviderFacadeBinaryResponse(bytes = bytes, headers = flattened)
 }
-
-private fun HttpResponse.responseHeaders(): Map<String, String> =
-    headers.entries().associate { it.key to it.value.joinToString(",") }
 
 private fun providerFacadeHeaders(
     apiKey: String?,
@@ -1209,14 +1199,18 @@ private fun togetherAIUsage(value: JsonElement?): Usage {
 private fun String.stripDataUriPrefix(): String =
     replace(Regex("^data:[^;]+;base64,"), "")
 
-private fun providerFacadeErrorMessage(raw: String): String {
-    val obj = runCatching { aiSdkJson.parseToJsonElement(raw).jsonObject }.getOrNull() ?: return raw.ifBlank { "request failed" }
+private fun providerFacadeErrorMessage(statusCode: Int, parsed: JsonElement?, raw: String): String {
+    val obj = parsed as? JsonObject
+        ?: return "Provider request failed ($statusCode): ${raw.ifBlank { "request failed" }}"
     val error = obj["error"]
-    if (error is JsonPrimitive) return error.contentOrNull ?: raw
-    if (error is JsonObject) return error["message"]?.jsonPrimitive?.contentOrNull ?: error.toString()
     val detail = obj["detail"]
-    if (detail is JsonObject) return detail["error"]?.jsonPrimitive?.contentOrNull ?: detail.toString()
-    return raw.ifBlank { "request failed" }
+    val message = when {
+        error is JsonPrimitive -> error.contentOrNull ?: raw
+        error is JsonObject -> error["message"]?.jsonPrimitive?.contentOrNull ?: error.toString()
+        detail is JsonObject -> detail["error"]?.jsonPrimitive?.contentOrNull ?: detail.toString()
+        else -> raw.ifBlank { "request failed" }
+    }
+    return "Provider request failed ($statusCode): $message"
 }
 
 private fun Map<String, String>.headerValue(name: String): String? =

@@ -423,13 +423,21 @@ class OpenAICompatibleProviderTest {
         )
         val provider = createOpenAICompatible(client, OpenAICompatibleProviderSettings("openai", "https://api.test/v1"))
 
-        val error = assertFailsWith<AiSdkException> {
+        val error = assertFailsWith<APICallError> {
             generateText(provider.languageModel("gpt-test"), prompt = "hi")
         }
 
+        // APICallError is an AiSdkException, so existing catch(AiSdkException) still catches it.
+        assertIs<AiSdkException>(error)
         assertNotNull(error.message)
         assertTrue(error.message.orEmpty().contains("401"))
         assertTrue(error.message.orEmpty().contains("bad key"))
+        // Rich fields: callers/retry layers can now branch on status/retryability/body.
+        assertEquals(401, error.statusCode)
+        assertEquals(false, error.isRetryable)
+        assertNotNull(error.responseBody)
+        assertTrue(error.responseBody.orEmpty().contains("bad key"))
+        assertNotNull(error.responseHeaders)
     }
 
     private fun requestBodyText(request: HttpRequestData): String =

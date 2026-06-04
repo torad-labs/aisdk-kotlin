@@ -548,11 +548,6 @@ private data class GoogleConvertedMessages(
     val warnings: List<CallWarning>,
 )
 
-private data class GoogleHttpResponse(
-    val value: JsonElement,
-    val rawText: String,
-    val headers: Map<String, String>,
-)
 
 private fun googleInteractionsRequestBody(
     input: GoogleInteractionsModelInput,
@@ -1247,7 +1242,7 @@ private suspend fun googlePollInteraction(
     headers: Map<String, String>,
     abortSignal: AbortSignal,
     timeoutMillis: Long?,
-): GoogleHttpResponse {
+): HttpJsonResponse {
     val maxAttempts = ((timeoutMillis ?: 30 * 60 * 1_000L) / settings.videoPollIntervalMillis.coerceAtLeast(1L)).coerceAtLeast(1L).toInt()
     var current = googleGetJson(client, "${settings.baseURL.trimEnd('/')}/interactions/$interactionId", headers, abortSignal)
     repeat(maxAttempts) {
@@ -1719,6 +1714,20 @@ private fun googleVideoRequestBody(params: VideoGenerationParams, options: JsonO
     )
 }
 
+private val googleErrorExtractor: ErrorMessageExtractor = { _, parsed, raw -> googleErrorMessage(parsed, raw) }
+
+private suspend fun HttpResponse.parseGoogleResponse(
+    url: String,
+    parseJson: Boolean,
+    requestBodyValues: Any? = null,
+): HttpJsonResponse =
+    toJsonResponse(
+        url = url,
+        parseJson = parseJson,
+        requestBodyValues = requestBodyValues,
+        errorMessage = googleErrorExtractor,
+    )
+
 private suspend fun googlePostJson(
     client: HttpClient,
     url: String,
@@ -1726,7 +1735,7 @@ private suspend fun googlePostJson(
     headers: Map<String, String>,
     abortSignal: AbortSignal,
     parseJson: Boolean,
-): GoogleHttpResponse {
+): HttpJsonResponse {
     abortSignal.throwIfAborted()
     val response = client.request(url) {
         method = HttpMethod.Post
@@ -1734,7 +1743,7 @@ private suspend fun googlePostJson(
         headers.forEach { (name, value) -> header(name, value) }
         setBody(aiSdkJson.encodeToString(JsonElement.serializer(), body))
     }
-    return response.parseGoogleResponse(parseJson)
+    return response.parseGoogleResponse(url, parseJson, requestBodyValues = body)
 }
 
 private suspend fun googleGetJson(
@@ -1743,13 +1752,13 @@ private suspend fun googleGetJson(
     headers: Map<String, String>,
     abortSignal: AbortSignal,
     parseJson: Boolean = true,
-): GoogleHttpResponse {
+): HttpJsonResponse {
     abortSignal.throwIfAborted()
     val response = client.request(url) {
         method = HttpMethod.Get
         headers.forEach { (name, value) -> header(name, value) }
     }
-    return response.parseGoogleResponse(parseJson = parseJson)
+    return response.parseGoogleResponse(url, parseJson = parseJson)
 }
 
 private suspend fun googleGetJsonWithRetry(
@@ -1760,7 +1769,7 @@ private suspend fun googleGetJsonWithRetry(
     parseJson: Boolean = true,
     maxRetries: Int = 2,
     retryDelayMillis: Long = 0,
-): GoogleHttpResponse {
+): HttpJsonResponse {
     var attempt = 0
     while (true) {
         abortSignal.throwIfAborted()
@@ -1769,26 +1778,12 @@ private suspend fun googleGetJsonWithRetry(
             headers.forEach { (name, value) -> header(name, value) }
         }
         if (response.status.value !in 500..599 || attempt >= maxRetries) {
-            return response.parseGoogleResponse(parseJson = parseJson)
+            return response.parseGoogleResponse(url, parseJson = parseJson)
         }
         response.bodyAsText()
         attempt += 1
         if (retryDelayMillis > 0) delay(retryDelayMillis)
     }
-}
-
-private suspend fun HttpResponse.parseGoogleResponse(parseJson: Boolean): GoogleHttpResponse {
-    val raw = bodyAsText()
-    val headers = responseHeaders()
-    if (status.value !in 200..299) {
-        val parsed = runCatching { aiSdkJson.parseToJsonElement(raw) }.getOrNull()
-        throw AiSdkException(googleErrorMessage(parsed, raw))
-    }
-    return GoogleHttpResponse(
-        value = if (parseJson && raw.isNotBlank()) aiSdkJson.parseToJsonElement(raw) else JsonObject(emptyMap()),
-        rawText = raw,
-        headers = headers,
-    )
 }
 
 private fun googleHeaders(settings: GoogleGenerativeAIProviderSettings, extra: Map<String, String>): Map<String, String> {
@@ -1887,9 +1882,6 @@ private fun googleProviderTool(
         outputSerializer = JsonElement.serializer(),
         metadata = mapOf("providerToolId" to JsonPrimitive(id)),
     )
-
-private fun HttpResponse.responseHeaders(): Map<String, String> =
-    headers.entries().associate { it.key to it.value.joinToString(",") }
 
 private fun JsonObjectBuilder.putJsonObjectFields(fields: JsonObject, excluded: Set<String> = emptySet()) {
     fields.forEach { (key, value) -> if (value !is JsonNull && key !in excluded) put(key, value) }

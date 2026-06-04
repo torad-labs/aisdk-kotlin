@@ -18,6 +18,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertIs
+import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
 class AmazonBedrockProviderTest {
@@ -431,7 +432,7 @@ class AmazonBedrockProviderTest {
             ),
         )
 
-        val error = assertFailsWith<AiSdkException> {
+        val error = assertFailsWith<APICallError> {
             provider.languageModel("amazon.nova-lite-v1:0").generate(
                 LanguageModelCallParams(messages = listOf(userMessage("hi"))),
             )
@@ -439,6 +440,10 @@ class AmazonBedrockProviderTest {
 
         assertTrue(error.message.orEmpty().contains("local clock appears to be skewed"))
         assertTrue(error.message.orEmpty().contains("Signature expired"))
+        // Rich APICallError fields populated by the shared transport helper.
+        assertEquals(403, error.statusCode)
+        assertNotNull(error.responseBody)
+        assertTrue(error.responseBody.orEmpty().contains("RequestTimeTooSkewed"))
     }
 
     private fun objectSchema(vararg required: String): JsonObject = buildJsonObject {
