@@ -94,6 +94,49 @@ val result = agent.generate(
 println(result.text)
 ```
 
+## Kotlin-First Text Calls
+
+For direct model calls, prefer grouped settings and request builders. The
+v6-shaped named-argument calls remain available for compatibility.
+
+```kotlin
+val result = generateText(model) {
+    system("Answer as a concise product engineer.")
+    message(userMessage("Use Kotlin examples."))
+    prompt("How do I configure streaming?")
+    settings {
+        temperature = 0.2f
+        maxOutputTokens = 600
+        stopSequence("</answer>")
+    }
+}
+```
+
+Structured output keeps the same native shape:
+
+```kotlin
+@Serializable
+data class Recipe(val name: String, val ingredients: List<String>)
+
+val recipe = generateText(
+    model = model,
+    output = outputObj<Recipe>(serializer(), name = "Recipe"),
+) {
+    prompt("Generate a recipe for chocolate cake.")
+}.output
+```
+
+Use typed model references when a provider registry is routing calls:
+
+```kotlin
+val registry = createProviderRegistry(
+    "openai" to openAiProvider,
+    "anthropic" to anthropicProvider,
+)
+
+val model = registry.languageModel(modelRef("openai:gpt-5"))
+```
+
 ## Stream
 
 ```kotlin
@@ -117,6 +160,25 @@ val assistantMessages: Flow<UIMessage> = streamToUiMessages(
     events = agent.stream(prompt, options),
     assistantMessageId = "assistant-${turn.index}",
 )
+```
+
+For UI state holders, use `ChatSession` to observe a single `StateFlow`:
+
+```kotlin
+val session = chatSession(
+    id = "support",
+    transport = DirectChatTransport { request ->
+        streamToUiMessages(
+            events = agent.stream(messages = convertToModelMessages(request.messages)),
+            assistantMessageId = getResponseUiMessageId(request.messages),
+        )
+    },
+)
+
+session.state.collect { state ->
+    renderMessages(state.messages)
+    renderLoading(state.isStreaming)
+}
 ```
 
 Renderer dispatch can stay string-based:
