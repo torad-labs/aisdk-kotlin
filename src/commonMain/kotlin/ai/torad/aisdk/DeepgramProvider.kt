@@ -6,13 +6,11 @@ import io.ktor.client.request.request
 import io.ktor.client.request.setBody
 import io.ktor.client.statement.HttpResponse
 import io.ktor.client.statement.bodyAsBytes
-import io.ktor.client.statement.bodyAsText
 import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpMethod
 import io.ktor.http.contentType
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
@@ -197,11 +195,6 @@ private data class DeepgramTranscriptionArgs(
 
 private data class DeepgramBinaryResponse(
     val bytes: ByteArray,
-    val headers: Map<String, String>,
-)
-
-private data class DeepgramJsonResponse(
-    val value: JsonElement,
     val headers: Map<String, String>,
 )
 
@@ -449,7 +442,7 @@ private suspend fun deepgramPostJsonBinary(
         headers.forEach { (name, value) -> header(name, value) }
         setBody(aiSdkJson.encodeToString(JsonElement.serializer(), body))
     }
-    return response.parseDeepgramBinary()
+    return response.parseDeepgramBinary(url)
 }
 
 private suspend fun deepgramPostBinaryJson(
@@ -458,40 +451,35 @@ private suspend fun deepgramPostBinaryJson(
     bytes: ByteArray,
     mediaType: String,
     headers: Map<String, String>,
-): DeepgramJsonResponse {
+): HttpJsonResponse {
     val response = client.request(url) {
         method = HttpMethod.Post
         contentType(ContentType.parse(mediaType))
         headers.forEach { (name, value) -> header(name, value) }
         setBody(bytes)
     }
-    return response.parseDeepgramJson()
+    return response.toJsonResponse(url = url, errorMessage = ::deepgramErrorMessage)
 }
 
-private suspend fun HttpResponse.parseDeepgramBinary(): DeepgramBinaryResponse {
+private suspend fun HttpResponse.parseDeepgramBinary(url: String): DeepgramBinaryResponse {
     val bytes = bodyAsBytes()
+    val headers = flattenedHeaders()
     if (status.value !in 200..299) {
-        throw AiSdkException("Deepgram request failed (${status.value}): ${deepgramErrorMessage(bytes.decodeToString())}")
+        val raw = bytes.decodeToString()
+        val parsed = runCatching { aiSdkJson.parseToJsonElement(raw) }.getOrNull()
+        throw apiCallError(
+            url = url,
+            statusCode = status.value,
+            rawBody = raw,
+            headers = headers,
+            message = deepgramErrorMessage(status.value, parsed, raw),
+        )
     }
     return DeepgramBinaryResponse(
         bytes = bytes,
-        headers = responseHeaders(),
+        headers = headers,
     )
 }
-
-private suspend fun HttpResponse.parseDeepgramJson(): DeepgramJsonResponse {
-    val raw = bodyAsText()
-    if (status.value !in 200..299) {
-        throw AiSdkException("Deepgram request failed (${status.value}): ${deepgramErrorMessage(raw)}")
-    }
-    return DeepgramJsonResponse(
-        value = if (raw.isBlank()) JsonObject(emptyMap()) else aiSdkJson.parseToJsonElement(raw),
-        headers = responseHeaders(),
-    )
-}
-
-private fun HttpResponse.responseHeaders(): Map<String, String> =
-    headers.entries().associate { it.key to it.value.joinToString(",") }
 
 private fun deepgramHeaders(settings: DeepgramProviderSettings, callHeaders: Map<String, String>): Map<String, String> {
     val base = linkedMapOf<String, String>()
@@ -521,11 +509,12 @@ private fun deepgramSpeechMediaType(queryParams: Map<String, String>): String =
         else -> "audio/mpeg"
     }
 
-private fun deepgramErrorMessage(raw: String): String {
-    val obj = runCatching { aiSdkJson.parseToJsonElement(raw).jsonObject }.getOrNull() ?: return raw.ifBlank { "request failed" }
-    return obj["error"]?.jsonObject?.get("message")?.jsonPrimitive?.contentOrNull
-        ?: obj["error"]?.jsonPrimitive?.contentOrNull
+private fun deepgramErrorMessage(statusCode: Int, parsed: JsonElement?, raw: String): String {
+    val obj = parsed as? JsonObject
+    val detail = obj?.get("error")?.jsonObject?.get("message")?.jsonPrimitive?.contentOrNull
+        ?: obj?.get("error")?.jsonPrimitive?.contentOrNull
         ?: raw.ifBlank { "request failed" }
+    return "Deepgram request failed ($statusCode): $detail"
 }
 
 private fun deepgramQueryValue(value: JsonElement): String =

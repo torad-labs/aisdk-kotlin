@@ -1,18 +1,10 @@
 package ai.torad.aisdk
 
 import io.ktor.client.HttpClient
-import io.ktor.client.request.header
-import io.ktor.client.request.request
-import io.ktor.client.request.setBody
-import io.ktor.client.statement.HttpResponse
-import io.ktor.client.statement.bodyAsText
-import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpMethod
-import io.ktor.http.contentType
 import kotlinx.coroutines.delay
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonNull
@@ -140,11 +132,6 @@ private const val DEFAULT_BYTEDANCE_POLL_INTERVAL_MS: Long = 3_000L
 private const val DEFAULT_BYTEDANCE_POLL_TIMEOUT_MS: Long = 300_000L
 
 
-private data class ByteDanceJsonResponse(
-    val value: JsonElement,
-    val headers: Map<String, String>,
-)
-
 private val byteDanceHandledOptions = setOf(
     "watermark",
     "generateAudio",
@@ -267,28 +254,31 @@ private suspend fun byteDancePostJson(
     url: String,
     body: JsonObject,
     headers: Map<String, String>,
-): ByteDanceJsonResponse {
-    val response = client.request(url) {
-        method = HttpMethod.Post
-        contentType(ContentType.Application.Json)
-        headers.forEach { (name, value) -> header(name, value) }
-        setBody(aiSdkJson.encodeToString(JsonElement.serializer(), body))
-    }
-    return response.parseByteDanceJson()
-}
+): HttpJsonResponse =
+    requestJson(
+        client = client,
+        url = url,
+        method = HttpMethod.Post,
+        headers = headers,
+        body = body,
+        requestBodyValues = body,
+        errorMessage = ::byteDanceErrorMessage,
+    )
 
 private suspend fun byteDanceGetJson(
     client: HttpClient,
     url: String,
     headers: Map<String, String>,
     abortSignal: AbortSignal,
-): ByteDanceJsonResponse {
+): HttpJsonResponse {
     abortSignal.throwIfAborted()
-    val response = client.request(url) {
-        method = HttpMethod.Get
-        headers.forEach { (name, value) -> header(name, value) }
-    }
-    return response.parseByteDanceJson()
+    return requestJson(
+        client = client,
+        url = url,
+        method = HttpMethod.Get,
+        headers = headers,
+        errorMessage = ::byteDanceErrorMessage,
+    )
 }
 
 private suspend fun byteDancePoll(
@@ -299,7 +289,7 @@ private suspend fun byteDancePoll(
     abortSignal: AbortSignal,
     pollIntervalMs: Long,
     pollTimeoutMs: Long,
-): ByteDanceJsonResponse {
+): HttpJsonResponse {
     val interval = pollIntervalMs.coerceAtLeast(1L)
     val maxPollAttempts = ceil(pollTimeoutMs.coerceAtLeast(1L).toDouble() / interval.toDouble()).toInt().coerceAtLeast(1)
     repeat(maxPollAttempts) { attempt ->
@@ -319,17 +309,6 @@ private suspend fun byteDancePoll(
     throw AiSdkException("ByteDance video generation timed out after ${pollTimeoutMs}ms")
 }
 
-private suspend fun HttpResponse.parseByteDanceJson(): ByteDanceJsonResponse {
-    val raw = bodyAsText()
-    if (status.value !in 200..299) {
-        throw AiSdkException("ByteDance request failed (${status.value}): ${byteDanceErrorMessage(raw)}")
-    }
-    return ByteDanceJsonResponse(
-        value = if (raw.isBlank()) JsonObject(emptyMap()) else aiSdkJson.parseToJsonElement(raw),
-        headers = headers.entries().associate { it.key to it.value.joinToString(",") },
-    )
-}
-
 private fun byteDanceHeaders(settings: ByteDanceProviderSettings, callHeaders: Map<String, String>): Map<String, String> {
     val base = linkedMapOf<String, String>()
     settings.apiKey?.takeIf { it.isNotBlank() }?.let { base[HttpHeaders.Authorization] = "Bearer $it" }
@@ -342,9 +321,11 @@ private fun byteDanceHeaders(settings: ByteDanceProviderSettings, callHeaders: M
 private fun byteDanceOptions(providerOptions: Map<String, JsonElement>): JsonObject =
     providerOptions["bytedance"] as? JsonObject ?: JsonObject(emptyMap())
 
-private fun byteDanceErrorMessage(raw: String): String {
-    val obj = runCatching { aiSdkJson.parseToJsonElement(raw).jsonObject }.getOrNull() ?: return raw.ifBlank { "request failed" }
-    return obj["error"]?.jsonObject?.get("message")?.jsonPrimitive?.contentOrNull ?: raw.ifBlank { "request failed" }
+private fun byteDanceErrorMessage(statusCode: Int, parsed: JsonElement?, raw: String): String {
+    val obj = parsed as? JsonObject
+    val detail = obj?.get("error")?.jsonObject?.get("message")?.jsonPrimitive?.contentOrNull
+        ?: raw.ifBlank { "request failed" }
+    return "ByteDance request failed ($statusCode): $detail"
 }
 
 private fun JsonObjectBuilder.putBooleanIfPresent(key: String, value: JsonElement?) {

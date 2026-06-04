@@ -1,19 +1,12 @@
 package ai.torad.aisdk
 
 import io.ktor.client.HttpClient
-import io.ktor.client.request.header
 import io.ktor.client.request.request
-import io.ktor.client.request.setBody
-import io.ktor.client.statement.HttpResponse
 import io.ktor.client.statement.bodyAsBytes
-import io.ktor.client.statement.bodyAsText
-import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpMethod
-import io.ktor.http.contentType
 import kotlinx.coroutines.delay
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonNull
@@ -124,11 +117,6 @@ private const val DEFAULT_LUMA_POLL_INTERVAL_MILLIS: Long = 500L
 private const val DEFAULT_LUMA_MAX_POLL_ATTEMPTS: Int = 120
 
 
-private data class LumaJsonResponse(
-    val value: JsonElement,
-    val headers: Map<String, String>,
-)
-
 private fun lumaRequestBody(
     modelId: String,
     params: ImageGenerationParams,
@@ -215,27 +203,29 @@ private suspend fun lumaPostJson(
     url: String,
     body: JsonObject,
     headers: Map<String, String>,
-): LumaJsonResponse {
-    val response = client.request(url) {
-        method = HttpMethod.Post
-        contentType(ContentType.Application.Json)
-        headers.forEach { (name, value) -> header(name, value) }
-        setBody(aiSdkJson.encodeToString(JsonElement.serializer(), body))
-    }
-    return response.parseLumaJson()
-}
+): HttpJsonResponse =
+    requestJson(
+        client = client,
+        url = url,
+        method = HttpMethod.Post,
+        headers = headers,
+        body = body,
+        requestBodyValues = body,
+        errorMessage = ::lumaErrorMessage,
+    )
 
 private suspend fun lumaGetJson(
     client: HttpClient,
     url: String,
     headers: Map<String, String>,
-): LumaJsonResponse {
-    val response = client.request(url) {
-        method = HttpMethod.Get
-        headers.forEach { (name, value) -> header(name, value) }
-    }
-    return response.parseLumaJson()
-}
+): HttpJsonResponse =
+    requestJson(
+        client = client,
+        url = url,
+        method = HttpMethod.Get,
+        headers = headers,
+        errorMessage = ::lumaErrorMessage,
+    )
 
 private suspend fun lumaPollImageUrl(
     client: HttpClient,
@@ -268,24 +258,20 @@ private suspend fun lumaDownloadImage(
     abortSignal.throwIfAborted()
     val response = client.request(url) { method = HttpMethod.Get }
     val bytes = response.bodyAsBytes()
+    val headers = response.flattenedHeaders()
     if (response.status.value !in 200..299) {
-        throw AiSdkException("Luma image download failed (${response.status.value}): ${bytes.decodeToString().ifBlank { "request failed" }}")
+        val raw = bytes.decodeToString()
+        throw apiCallError(
+            url = url,
+            statusCode = response.status.value,
+            rawBody = raw,
+            headers = headers,
+            message = "Luma image download failed (${response.status.value}): ${raw.ifBlank { "request failed" }}",
+        )
     }
-    val headers = response.headers.entries().associate { it.key to it.value.joinToString(",") }
     return GeneratedFile(
         mediaType = headers.headerValue(HttpHeaders.ContentType) ?: "image/png",
         base64 = convertByteArrayToBase64(bytes),
-    )
-}
-
-private suspend fun HttpResponse.parseLumaJson(): LumaJsonResponse {
-    val raw = bodyAsText()
-    if (status.value !in 200..299) {
-        throw AiSdkException("Luma request failed (${status.value}): ${lumaErrorMessage(raw)}")
-    }
-    return LumaJsonResponse(
-        value = if (raw.isBlank()) JsonObject(emptyMap()) else aiSdkJson.parseToJsonElement(raw),
-        headers = headers.entries().associate { it.key to it.value.joinToString(",") },
     )
 }
 
@@ -300,10 +286,11 @@ private fun lumaHeaders(settings: LumaProviderSettings, callHeaders: Map<String,
 private fun lumaOptions(providerOptions: Map<String, JsonElement>): JsonObject =
     providerOptions["luma"] as? JsonObject ?: JsonObject(emptyMap())
 
-private fun lumaErrorMessage(raw: String): String {
-    val obj = runCatching { aiSdkJson.parseToJsonElement(raw).jsonObject }.getOrNull() ?: return raw.ifBlank { "request failed" }
-    val details = obj["detail"]?.jsonArray?.firstOrNull()?.jsonObject?.get("msg")?.jsonPrimitive?.contentOrNull
-    return details ?: obj["error"]?.jsonPrimitive?.contentOrNull ?: raw.ifBlank { "request failed" }
+private fun lumaErrorMessage(statusCode: Int, parsed: JsonElement?, raw: String): String {
+    val obj = parsed as? JsonObject
+    val details = obj?.get("detail")?.jsonArray?.firstOrNull()?.jsonObject?.get("msg")?.jsonPrimitive?.contentOrNull
+    val message = details ?: obj?.get("error")?.jsonPrimitive?.contentOrNull ?: raw.ifBlank { "request failed" }
+    return "Luma request failed ($statusCode): $message"
 }
 
 private fun Map<String, String>.headerValue(name: String): String? =

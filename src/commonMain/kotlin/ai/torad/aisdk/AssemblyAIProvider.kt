@@ -4,15 +4,12 @@ import io.ktor.client.HttpClient
 import io.ktor.client.request.header
 import io.ktor.client.request.request
 import io.ktor.client.request.setBody
-import io.ktor.client.statement.HttpResponse
-import io.ktor.client.statement.bodyAsText
 import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpMethod
 import io.ktor.http.contentType
 import kotlinx.coroutines.delay
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonObject
@@ -175,24 +172,19 @@ private class AssemblyAITranscriptionModel(
 private const val ASSEMBLYAI_BASE_URL: String = "https://api.assemblyai.com"
 
 
-private data class AssemblyAIJsonResponse(
-    val value: JsonElement,
-    val headers: Map<String, String>,
-)
-
 private suspend fun assemblyAIPostBinary(
     client: HttpClient,
     url: String,
     bytes: ByteArray,
     headers: Map<String, String>,
-): AssemblyAIJsonResponse {
+): HttpJsonResponse {
     val response = client.request(url) {
         method = HttpMethod.Post
         contentType(ContentType.Application.OctetStream)
         headers.forEach { (name, value) -> header(name, value) }
         setBody(bytes)
     }
-    return response.parseAssemblyAIJson()
+    return response.toJsonResponse(url = url, errorMessage = ::assemblyAIErrorMessage)
 }
 
 private suspend fun assemblyAIPostJson(
@@ -200,27 +192,29 @@ private suspend fun assemblyAIPostJson(
     url: String,
     body: JsonObject,
     headers: Map<String, String>,
-): AssemblyAIJsonResponse {
-    val response = client.request(url) {
-        method = HttpMethod.Post
-        contentType(ContentType.Application.Json)
-        headers.forEach { (name, value) -> header(name, value) }
-        setBody(aiSdkJson.encodeToString(JsonElement.serializer(), body))
-    }
-    return response.parseAssemblyAIJson()
-}
+): HttpJsonResponse =
+    requestJson(
+        client = client,
+        url = url,
+        method = HttpMethod.Post,
+        headers = headers,
+        body = body,
+        requestBodyValues = body,
+        errorMessage = ::assemblyAIErrorMessage,
+    )
 
 private suspend fun assemblyAIGetJson(
     client: HttpClient,
     url: String,
     headers: Map<String, String>,
-): AssemblyAIJsonResponse {
-    val response = client.request(url) {
-        method = HttpMethod.Get
-        headers.forEach { (name, value) -> header(name, value) }
-    }
-    return response.parseAssemblyAIJson()
-}
+): HttpJsonResponse =
+    requestJson(
+        client = client,
+        url = url,
+        method = HttpMethod.Get,
+        headers = headers,
+        errorMessage = ::assemblyAIErrorMessage,
+    )
 
 private suspend fun assemblyAIPollTranscript(
     client: HttpClient,
@@ -228,7 +222,7 @@ private suspend fun assemblyAIPollTranscript(
     transcriptId: String,
     headers: Map<String, String>,
     abortSignal: AbortSignal,
-): AssemblyAIJsonResponse {
+): HttpJsonResponse {
     while (true) {
         abortSignal.throwIfAborted()
         val response = assemblyAIGetJson(
@@ -306,17 +300,6 @@ private val assemblyAIOptionKeyMap: Map<String, String> = linkedMapOf(
     "wordBoost" to "word_boost",
 )
 
-private suspend fun HttpResponse.parseAssemblyAIJson(): AssemblyAIJsonResponse {
-    val raw = bodyAsText()
-    if (status.value !in 200..299) {
-        throw AiSdkException("AssemblyAI request failed (${status.value}): ${assemblyAIErrorMessage(raw)}")
-    }
-    return AssemblyAIJsonResponse(
-        value = if (raw.isBlank()) JsonObject(emptyMap()) else aiSdkJson.parseToJsonElement(raw),
-        headers = headers.entries().associate { it.key to it.value.joinToString(",") },
-    )
-}
-
 private fun assemblyAIHeaders(settings: AssemblyAIProviderSettings, callHeaders: Map<String, String>): Map<String, String> {
     val base = linkedMapOf<String, String>()
     settings.apiKey?.takeIf { it.isNotBlank() }?.let { base[HttpHeaders.Authorization] = it }
@@ -328,9 +311,10 @@ private fun assemblyAIHeaders(settings: AssemblyAIProviderSettings, callHeaders:
 private fun assemblyAIOptions(providerOptions: Map<String, JsonElement>): JsonObject =
     providerOptions["assemblyai"] as? JsonObject ?: JsonObject(emptyMap())
 
-private fun assemblyAIErrorMessage(raw: String): String {
-    val obj = runCatching { aiSdkJson.parseToJsonElement(raw).jsonObject }.getOrNull() ?: return raw.ifBlank { "request failed" }
-    return obj["error"]?.jsonObject?.get("message")?.jsonPrimitive?.contentOrNull
-        ?: obj["error"]?.jsonPrimitive?.contentOrNull
+private fun assemblyAIErrorMessage(statusCode: Int, parsed: JsonElement?, raw: String): String {
+    val obj = parsed as? JsonObject
+    val detail = obj?.get("error")?.jsonObject?.get("message")?.jsonPrimitive?.contentOrNull
+        ?: obj?.get("error")?.jsonPrimitive?.contentOrNull
         ?: raw.ifBlank { "request failed" }
+    return "AssemblyAI request failed ($statusCode): $detail"
 }

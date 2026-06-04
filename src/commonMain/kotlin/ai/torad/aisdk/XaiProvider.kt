@@ -1,22 +1,14 @@
 package ai.torad.aisdk
 
 import io.ktor.client.HttpClient
-import io.ktor.client.request.header
 import io.ktor.client.request.request
-import io.ktor.client.request.setBody
-import io.ktor.client.statement.HttpResponse
 import io.ktor.client.statement.bodyAsBytes
-import io.ktor.client.statement.bodyAsText
-import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpMethod
-import io.ktor.http.contentType
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.encodeToString
-import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonNull
@@ -360,11 +352,6 @@ private const val DEFAULT_XAI_VIDEO_POLL_INTERVAL_MS: Long = 5_000L
 private const val DEFAULT_XAI_VIDEO_POLL_TIMEOUT_MS: Long = 600_000L
 
 
-private data class XaiJsonResponse(
-    val value: JsonElement,
-    val headers: Map<String, String>,
-)
-
 private fun xaiProviderTool(
     name: String,
     description: String,
@@ -532,28 +519,31 @@ private suspend fun xaiPostJson(
     url: String,
     body: JsonObject,
     headers: Map<String, String>,
-): XaiJsonResponse {
-    val response = client.request(url) {
-        method = HttpMethod.Post
-        contentType(ContentType.Application.Json)
-        headers.forEach { (name, value) -> header(name, value) }
-        setBody(aiSdkJson.encodeToString(JsonElement.serializer(), body))
-    }
-    return response.parseXaiJson()
-}
+): HttpJsonResponse =
+    requestJson(
+        client = client,
+        url = url,
+        method = HttpMethod.Post,
+        headers = headers,
+        body = body,
+        requestBodyValues = body,
+        errorMessage = ::xaiErrorMessage,
+    )
 
 private suspend fun xaiGetJson(
     client: HttpClient,
     url: String,
     headers: Map<String, String>,
     abortSignal: AbortSignal,
-): XaiJsonResponse {
+): HttpJsonResponse {
     abortSignal.throwIfAborted()
-    val response = client.request(url) {
-        method = HttpMethod.Get
-        headers.forEach { (name, value) -> header(name, value) }
-    }
-    return response.parseXaiJson()
+    return requestJson(
+        client = client,
+        url = url,
+        method = HttpMethod.Get,
+        headers = headers,
+        errorMessage = ::xaiErrorMessage,
+    )
 }
 
 private suspend fun xaiDownloadImage(
@@ -564,10 +554,17 @@ private suspend fun xaiDownloadImage(
     abortSignal.throwIfAborted()
     val response = client.request(url) { method = HttpMethod.Get }
     val bytes = response.bodyAsBytes()
+    val headers = response.flattenedHeaders()
     if (response.status.value !in 200..299) {
-        throw AiSdkException("xAI image download failed (${response.status.value}): ${bytes.decodeToString().ifBlank { "request failed" }}")
+        val raw = bytes.decodeToString()
+        throw apiCallError(
+            url = url,
+            statusCode = response.status.value,
+            rawBody = raw,
+            headers = headers,
+            message = "xAI image download failed (${response.status.value}): ${raw.ifBlank { "request failed" }}",
+        )
     }
-    val headers = response.headers.entries().associate { it.key to it.value.joinToString(",") }
     return GeneratedFile(
         mediaType = headers.xaiHeaderValue(HttpHeaders.ContentType) ?: "image/png",
         base64 = convertByteArrayToBase64(bytes),
@@ -582,7 +579,7 @@ private suspend fun xaiPollVideo(
     abortSignal: AbortSignal,
     pollIntervalMs: Long,
     pollTimeoutMs: Long,
-): XaiJsonResponse {
+): HttpJsonResponse {
     val interval = pollIntervalMs.coerceAtLeast(1L)
     val maxPollAttempts = ceil(pollTimeoutMs.coerceAtLeast(1L).toDouble() / interval.toDouble()).toInt().coerceAtLeast(1)
     repeat(maxPollAttempts) { attempt ->
@@ -602,17 +599,6 @@ private suspend fun xaiPollVideo(
     throw AiSdkException("xAI video generation timed out after ${pollTimeoutMs}ms")
 }
 
-private suspend fun HttpResponse.parseXaiJson(): XaiJsonResponse {
-    val raw = bodyAsText()
-    if (status.value !in 200..299) {
-        throw AiSdkException("xAI request failed (${status.value}): ${xaiErrorMessage(raw)}")
-    }
-    return XaiJsonResponse(
-        value = if (raw.isBlank()) JsonObject(emptyMap()) else aiSdkJson.parseToJsonElement(raw),
-        headers = headers.entries().associate { it.key to it.value.joinToString(",") },
-    )
-}
-
 private fun xaiHeaders(settings: XaiProviderSettings, callHeaders: Map<String, String> = emptyMap()): Map<String, String> {
     val base = linkedMapOf<String, String?>()
     settings.apiKey?.takeIf { it.isNotBlank() }?.let { base[HttpHeaders.Authorization] = "Bearer $it" }
@@ -624,11 +610,12 @@ private fun xaiHeaders(settings: XaiProviderSettings, callHeaders: Map<String, S
 private fun xaiOptions(providerOptions: Map<String, JsonElement>): JsonObject =
     providerOptions["xai"] as? JsonObject ?: JsonObject(emptyMap())
 
-private fun xaiErrorMessage(raw: String): String {
-    val obj = runCatching { aiSdkJson.parseToJsonElement(raw).jsonObject }.getOrNull() ?: return raw.ifBlank { "request failed" }
-    return obj["error"]?.jsonObject?.get("message")?.jsonPrimitive?.contentOrNull
-        ?: obj["error"]?.jsonPrimitive?.contentOrNull
+private fun xaiErrorMessage(statusCode: Int, parsed: JsonElement?, raw: String): String {
+    val obj = parsed as? JsonObject
+    val detail = obj?.get("error")?.jsonObject?.get("message")?.jsonPrimitive?.contentOrNull
+        ?: obj?.get("error")?.jsonPrimitive?.contentOrNull
         ?: raw.ifBlank { "request failed" }
+    return "xAI request failed ($statusCode): $detail"
 }
 
 private fun Map<String, String>.xaiHeaderValue(name: String): String? =

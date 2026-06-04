@@ -8,7 +8,6 @@ import io.ktor.client.request.request
 import io.ktor.client.request.setBody
 import io.ktor.client.statement.HttpResponse
 import io.ktor.client.statement.bodyAsBytes
-import io.ktor.client.statement.bodyAsText
 import io.ktor.http.ContentDisposition
 import io.ktor.http.ContentType
 import io.ktor.http.Headers
@@ -155,14 +154,14 @@ private class ElevenLabsSpeechModel(
             options["applyTextNormalization"]?.let { put("apply_text_normalization", it) }
             options["applyLanguageTextNormalization"]?.let { put("apply_language_text_normalization", it) }
         }
-        val response = client.request(
-            "https://api.elevenlabs.io/v1/text-to-speech/${params.voice ?: ELEVENLABS_DEFAULT_VOICE_ID}?${queryParams.toQueryString()}",
-        ) {
+        val url =
+            "https://api.elevenlabs.io/v1/text-to-speech/${params.voice ?: ELEVENLABS_DEFAULT_VOICE_ID}?${queryParams.toQueryString()}"
+        val response = client.request(url) {
             method = HttpMethod.Post
             contentType(ContentType.Application.Json)
             elevenLabsHeaders(settings, params.headers).forEach { (name, value) -> header(name, value) }
             setBody(aiSdkJson.encodeToString(JsonElement.serializer(), body))
-        }.parseElevenLabsBinary(queryParams["output_format"].orEmpty())
+        }.parseElevenLabsBinary(url, queryParams["output_format"].orEmpty())
         return SpeechModelResult(
             audio = GeneratedFile(
                 mediaType = response.mediaType,
@@ -210,7 +209,7 @@ private class ElevenLabsTranscriptionModel(
                     },
                 ),
             )
-        }.parseElevenLabsJson()
+        }.toJsonResponse(url = "https://api.elevenlabs.io/v1/speech-to-text", errorMessage = ::elevenLabsErrorMessage)
         val value = response.value.jsonObject
         val words = value["words"]?.jsonArray.orEmpty()
         return TranscriptionModelResult(
@@ -237,17 +236,19 @@ private data class ElevenLabsBinaryResponse(
     val headers: Map<String, String>,
 )
 
-private data class ElevenLabsJsonResponse(
-    val value: JsonElement,
-    val headers: Map<String, String>,
-)
-
-private suspend fun HttpResponse.parseElevenLabsBinary(outputFormat: String): ElevenLabsBinaryResponse {
+private suspend fun HttpResponse.parseElevenLabsBinary(url: String, outputFormat: String): ElevenLabsBinaryResponse {
     val bytes = bodyAsBytes()
+    val headers = flattenedHeaders()
     if (status.value !in 200..299) {
-        throw AiSdkException("ElevenLabs request failed (${status.value}): ${bytes.decodeToString().ifBlank { "request failed" }}")
+        val raw = bytes.decodeToString()
+        throw apiCallError(
+            url = url,
+            statusCode = status.value,
+            rawBody = raw,
+            headers = headers,
+            message = "ElevenLabs request failed (${status.value}): ${raw.ifBlank { "request failed" }}",
+        )
     }
-    val headers = responseHeaders()
     return ElevenLabsBinaryResponse(
         bytes = bytes,
         mediaType = headers.headerValue(HttpHeaders.ContentType) ?: elevenLabsMediaType(outputFormat),
@@ -255,19 +256,14 @@ private suspend fun HttpResponse.parseElevenLabsBinary(outputFormat: String): El
     )
 }
 
-private suspend fun HttpResponse.parseElevenLabsJson(): ElevenLabsJsonResponse {
-    val raw = bodyAsText()
-    if (status.value !in 200..299) {
-        throw AiSdkException("ElevenLabs request failed (${status.value}): ${raw.ifBlank { "request failed" }}")
-    }
-    return ElevenLabsJsonResponse(
-        value = if (raw.isBlank()) JsonObject(emptyMap()) else aiSdkJson.parseToJsonElement(raw),
-        headers = responseHeaders(),
-    )
+private fun elevenLabsErrorMessage(statusCode: Int, parsed: JsonElement?, raw: String): String {
+    val obj = parsed as? JsonObject
+    val detail = obj?.get("detail")?.jsonObject?.get("message")?.jsonPrimitive?.contentOrNull
+        ?: obj?.get("detail")?.jsonPrimitive?.contentOrNull
+        ?: obj?.get("message")?.jsonPrimitive?.contentOrNull
+        ?: raw.ifBlank { "request failed" }
+    return "ElevenLabs request failed ($statusCode): $detail"
 }
-
-private fun HttpResponse.responseHeaders(): Map<String, String> =
-    headers.entries().associate { it.key to it.value.joinToString(",") }
 
 private fun elevenLabsHeaders(settings: ElevenLabsProviderSettings, callHeaders: Map<String, String>): Map<String, String> {
     val base = linkedMapOf<String, String>()

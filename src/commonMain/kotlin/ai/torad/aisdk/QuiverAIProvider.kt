@@ -1,17 +1,9 @@
 package ai.torad.aisdk
 
 import io.ktor.client.HttpClient
-import io.ktor.client.request.header
-import io.ktor.client.request.request
-import io.ktor.client.request.setBody
-import io.ktor.client.statement.HttpResponse
-import io.ktor.client.statement.bodyAsText
-import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpMethod
-import io.ktor.http.contentType
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonNull
@@ -121,11 +113,6 @@ private class QuiverAIImageModel(
 }
 
 
-private data class QuiverAIJsonResponse(
-    val value: JsonElement,
-    val headers: Map<String, String>,
-)
-
 private fun quiverAIRequestBody(
     modelId: String,
     params: ImageGenerationParams,
@@ -216,26 +203,16 @@ private suspend fun quiverAIPostJson(
     url: String,
     body: JsonObject,
     headers: Map<String, String>,
-): QuiverAIJsonResponse {
-    val response = client.request(url) {
-        method = HttpMethod.Post
-        contentType(ContentType.Application.Json)
-        headers.forEach { (name, value) -> header(name, value) }
-        setBody(aiSdkJson.encodeToString(JsonElement.serializer(), body))
-    }
-    return response.parseQuiverAIJson()
-}
-
-private suspend fun HttpResponse.parseQuiverAIJson(): QuiverAIJsonResponse {
-    val raw = bodyAsText()
-    if (status.value !in 200..299) {
-        throw AiSdkException("QuiverAI request failed (${status.value}): ${quiverAIErrorMessage(raw)}")
-    }
-    return QuiverAIJsonResponse(
-        value = if (raw.isBlank()) JsonObject(emptyMap()) else aiSdkJson.parseToJsonElement(raw),
-        headers = headers.entries().associate { it.key to it.value.joinToString(",") },
+): HttpJsonResponse =
+    requestJson(
+        client = client,
+        url = url,
+        method = HttpMethod.Post,
+        headers = headers,
+        body = body,
+        requestBodyValues = body,
+        errorMessage = ::quiverAIErrorMessage,
     )
-}
 
 private fun quiverAIProviderMetadata(root: JsonObject): JsonElement = buildJsonObject {
     val data = root["data"]?.jsonArray.orEmpty()
@@ -264,9 +241,10 @@ private fun quiverAIOptions(providerOptions: Map<String, JsonElement>): JsonObje
 private fun quiverAIOperationPath(operation: String): String =
     if (operation == "generate") "/svgs/generations" else "/svgs/vectorizations"
 
-private fun quiverAIErrorMessage(raw: String): String {
-    val obj = runCatching { aiSdkJson.parseToJsonElement(raw).jsonObject }.getOrNull() ?: return raw.ifBlank { "request failed" }
-    return obj["message"]?.jsonPrimitive?.contentOrNull ?: raw.ifBlank { "request failed" }
+private fun quiverAIErrorMessage(statusCode: Int, parsed: JsonElement?, raw: String): String {
+    val obj = parsed as? JsonObject
+    val detail = obj?.get("message")?.jsonPrimitive?.contentOrNull ?: raw.ifBlank { "request failed" }
+    return "QuiverAI request failed ($statusCode): $detail"
 }
 
 private fun JsonObjectBuilder.putAll(values: JsonObject) {

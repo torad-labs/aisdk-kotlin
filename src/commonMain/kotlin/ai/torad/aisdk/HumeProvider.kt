@@ -98,12 +98,13 @@ private class HumeSpeechModel(
                 put("context", humeContext(context))
             }
         }
-        val response = client.request("https://api.hume.ai/v0/tts/file") {
+        val url = "https://api.hume.ai/v0/tts/file"
+        val response = client.request(url) {
             method = HttpMethod.Post
             contentType(ContentType.Application.Json)
             humeHeaders(settings, params.headers).forEach { (name, value) -> header(name, value) }
             setBody(aiSdkJson.encodeToString(JsonElement.serializer(), body))
-        }.parseHumeBinary(format)
+        }.parseHumeBinary(url, format)
         return SpeechModelResult(
             audio = GeneratedFile(
                 mediaType = response.mediaType,
@@ -124,12 +125,19 @@ private data class HumeBinaryResponse(
     val headers: Map<String, String>,
 )
 
-private suspend fun HttpResponse.parseHumeBinary(format: String): HumeBinaryResponse {
+private suspend fun HttpResponse.parseHumeBinary(url: String, format: String): HumeBinaryResponse {
     val bytes = bodyAsBytes()
+    val headers = flattenedHeaders()
     if (status.value !in 200..299) {
-        throw AiSdkException("Hume request failed (${status.value}): ${bytes.decodeToString().ifBlank { "request failed" }}")
+        val raw = bytes.decodeToString()
+        throw apiCallError(
+            url = url,
+            statusCode = status.value,
+            rawBody = raw,
+            headers = headers,
+            message = "Hume request failed (${status.value}): ${raw.ifBlank { "request failed" }}",
+        )
     }
-    val headers = headers.entries().associate { it.key to it.value.joinToString(",") }
     return HumeBinaryResponse(
         bytes = bytes,
         mediaType = headers.headerValue(HttpHeaders.ContentType) ?: humeMediaType(format),

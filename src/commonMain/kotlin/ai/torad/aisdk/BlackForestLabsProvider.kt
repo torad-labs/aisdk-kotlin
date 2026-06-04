@@ -3,17 +3,11 @@ package ai.torad.aisdk
 import io.ktor.client.HttpClient
 import io.ktor.client.request.header
 import io.ktor.client.request.request
-import io.ktor.client.request.setBody
-import io.ktor.client.statement.HttpResponse
 import io.ktor.client.statement.bodyAsBytes
-import io.ktor.client.statement.bodyAsText
-import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpMethod
-import io.ktor.http.contentType
 import kotlinx.coroutines.delay
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonNull
@@ -156,11 +150,6 @@ private data class BflArgs(
     val warnings: List<CallWarning>,
 )
 
-private data class BflJsonResponse(
-    val value: JsonElement,
-    val headers: Map<String, String>,
-)
-
 private data class BflPollResult(
     val imageUrl: String,
     val result: JsonObject,
@@ -233,28 +222,31 @@ private suspend fun bflPostJson(
     url: String,
     body: JsonObject,
     headers: Map<String, String>,
-): BflJsonResponse {
-    val response = client.request(url) {
-        method = HttpMethod.Post
-        contentType(ContentType.Application.Json)
-        headers.forEach { (name, value) -> header(name, value) }
-        setBody(aiSdkJson.encodeToString(JsonElement.serializer(), body))
-    }
-    return response.parseBflJson()
-}
+): HttpJsonResponse =
+    requestJson(
+        client = client,
+        url = url,
+        method = HttpMethod.Post,
+        headers = headers,
+        body = body,
+        requestBodyValues = body,
+        errorMessage = ::bflErrorMessage,
+    )
 
 private suspend fun bflGetJson(
     client: HttpClient,
     url: String,
     headers: Map<String, String>,
     abortSignal: AbortSignal,
-): BflJsonResponse {
+): HttpJsonResponse {
     abortSignal.throwIfAborted()
-    val response = client.request(url) {
-        method = HttpMethod.Get
-        headers.forEach { (name, value) -> header(name, value) }
-    }
-    return response.parseBflJson()
+    return requestJson(
+        client = client,
+        url = url,
+        method = HttpMethod.Get,
+        headers = headers,
+        errorMessage = ::bflErrorMessage,
+    )
 }
 
 private suspend fun bflPollForImage(
@@ -301,27 +293,24 @@ private suspend fun bflDownloadImage(
         headers.forEach { (name, value) -> header(name, value) }
     }
     val bytes = response.bodyAsBytes()
+    val headersMap = response.flattenedHeaders()
     if (response.status.value !in 200..299) {
-        throw AiSdkException("Black Forest Labs image download failed (${response.status.value}): ${bytes.decodeToString().ifBlank { "request failed" }}")
+        val raw = bytes.decodeToString()
+        val detail = raw.ifBlank { "request failed" }
+        throw apiCallError(
+            url = url,
+            statusCode = response.status.value,
+            rawBody = raw,
+            headers = headersMap,
+            message = "Black Forest Labs image download failed (${response.status.value}): $detail",
+        )
     }
-    val headersMap = response.headers.entries().associate { it.key to it.value.joinToString(",") }
     return BflDownloadedImage(
         file = GeneratedFile(
             mediaType = headersMap.bflHeaderValue(HttpHeaders.ContentType) ?: "image/png",
             base64 = convertByteArrayToBase64(bytes),
         ),
         headers = headersMap,
-    )
-}
-
-private suspend fun HttpResponse.parseBflJson(): BflJsonResponse {
-    val raw = bodyAsText()
-    if (status.value !in 200..299) {
-        throw AiSdkException("Black Forest Labs request failed (${status.value}): ${bflErrorMessage(raw)}")
-    }
-    return BflJsonResponse(
-        value = if (raw.isBlank()) JsonObject(emptyMap()) else aiSdkJson.parseToJsonElement(raw),
-        headers = headers.entries().associate { it.key to it.value.joinToString(",") },
     )
 }
 
@@ -380,15 +369,16 @@ private fun bflGcd(a: Int, b: Int): Int {
     return x.coerceAtLeast(1)
 }
 
-private fun bflErrorMessage(raw: String): String {
-    val obj = runCatching { aiSdkJson.parseToJsonElement(raw).jsonObject }.getOrNull() ?: return raw.ifBlank { "request failed" }
-    val detail = obj["detail"]
-    return when {
+private fun bflErrorMessage(statusCode: Int, parsed: JsonElement?, raw: String): String {
+    val obj = parsed as? JsonObject
+    val detail = obj?.get("detail")
+    val message = when {
         detail?.jsonPrimitive?.contentOrNull != null -> detail.jsonPrimitive.content
         detail != null && detail !is JsonNull -> detail.toString()
-        obj["message"]?.jsonPrimitive?.contentOrNull != null -> obj["message"]?.jsonPrimitive?.content.orEmpty()
+        obj?.get("message")?.jsonPrimitive?.contentOrNull != null -> obj["message"]?.jsonPrimitive?.content.orEmpty()
         else -> raw.ifBlank { "request failed" }
     }
+    return "Black Forest Labs request failed ($statusCode): $message"
 }
 
 private fun JsonObjectBuilder.putIfPresent(key: String, value: JsonElement?) {

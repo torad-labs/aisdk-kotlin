@@ -99,12 +99,13 @@ private class LMNTSpeechModel(
             options["topP"]?.let { put("top_p", it) }
             options["sampleRate"]?.let { put("sample_rate", it) }
         }
-        val response = client.request("https://api.lmnt.com/v1/ai/speech/bytes") {
+        val url = "https://api.lmnt.com/v1/ai/speech/bytes"
+        val response = client.request(url) {
             method = HttpMethod.Post
             contentType(ContentType.Application.Json)
             lmntHeaders(settings, params.headers).forEach { (name, value) -> header(name, value) }
             setBody(aiSdkJson.encodeToString(JsonElement.serializer(), body))
-        }.parseLMNTBinary(responseFormat)
+        }.parseLMNTBinary(url, responseFormat)
         return SpeechModelResult(
             audio = GeneratedFile(
                 mediaType = response.mediaType,
@@ -123,12 +124,19 @@ private data class LMNTBinaryResponse(
     val headers: Map<String, String>,
 )
 
-private suspend fun HttpResponse.parseLMNTBinary(responseFormat: String): LMNTBinaryResponse {
+private suspend fun HttpResponse.parseLMNTBinary(url: String, responseFormat: String): LMNTBinaryResponse {
     val bytes = bodyAsBytes()
+    val headers = flattenedHeaders()
     if (status.value !in 200..299) {
-        throw AiSdkException("LMNT request failed (${status.value}): ${bytes.decodeToString().ifBlank { "request failed" }}")
+        val raw = bytes.decodeToString()
+        throw apiCallError(
+            url = url,
+            statusCode = status.value,
+            rawBody = raw,
+            headers = headers,
+            message = "LMNT request failed (${status.value}): ${raw.ifBlank { "request failed" }}",
+        )
     }
-    val headers = headers.entries().associate { it.key to it.value.joinToString(",") }
     return LMNTBinaryResponse(
         bytes = bytes,
         mediaType = headers.headerValue(HttpHeaders.ContentType) ?: lmntMediaType(responseFormat),

@@ -1,19 +1,12 @@
 package ai.torad.aisdk
 
 import io.ktor.client.HttpClient
-import io.ktor.client.request.header
 import io.ktor.client.request.request
-import io.ktor.client.request.setBody
-import io.ktor.client.statement.HttpResponse
 import io.ktor.client.statement.bodyAsBytes
-import io.ktor.client.statement.bodyAsText
-import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpMethod
-import io.ktor.http.contentType
 import kotlinx.coroutines.delay
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonNull
@@ -225,12 +218,6 @@ private data class ReplicateModelRef(
     val version: String?,
 )
 
-private data class ReplicateJsonResponse(
-    val value: JsonElement,
-    val headers: Map<String, String>,
-)
-
-
 private val replicateImageExcludedOptionKeys = setOf("maxWaitTimeInSeconds")
 private val replicateVideoExcludedOptionKeys = setOf("pollIntervalMs", "pollTimeoutMs", "maxWaitTimeInSeconds")
 private const val REPLICATE_MAX_FLUX_2_INPUT_IMAGES = 8
@@ -316,28 +303,31 @@ private suspend fun replicatePostJson(
     url: String,
     body: JsonObject,
     headers: Map<String, String>,
-): ReplicateJsonResponse {
-    val response = client.request(url) {
-        method = HttpMethod.Post
-        contentType(ContentType.Application.Json)
-        headers.forEach { (name, value) -> header(name, value) }
-        setBody(aiSdkJson.encodeToString(JsonElement.serializer(), body))
-    }
-    return response.parseReplicateJson()
-}
+): HttpJsonResponse =
+    requestJson(
+        client = client,
+        url = url,
+        method = HttpMethod.Post,
+        headers = headers,
+        body = body,
+        requestBodyValues = body,
+        errorMessage = ::replicateErrorMessage,
+    )
 
 private suspend fun replicateGetJson(
     client: HttpClient,
     url: String,
     headers: Map<String, String>,
     abortSignal: AbortSignal,
-): ReplicateJsonResponse {
+): HttpJsonResponse {
     abortSignal.throwIfAborted()
-    val response = client.request(url) {
-        method = HttpMethod.Get
-        headers.forEach { (name, value) -> header(name, value) }
-    }
-    return response.parseReplicateJson()
+    return requestJson(
+        client = client,
+        url = url,
+        method = HttpMethod.Get,
+        headers = headers,
+        errorMessage = ::replicateErrorMessage,
+    )
 }
 
 private suspend fun replicateDownloadImage(
@@ -348,10 +338,17 @@ private suspend fun replicateDownloadImage(
     abortSignal.throwIfAborted()
     val response = client.request(url) { method = HttpMethod.Get }
     val bytes = response.bodyAsBytes()
+    val headers = response.flattenedHeaders()
     if (response.status.value !in 200..299) {
-        throw AiSdkException("Replicate image download failed (${response.status.value}): ${bytes.decodeToString().ifBlank { "request failed" }}")
+        val raw = bytes.decodeToString()
+        throw apiCallError(
+            url = url,
+            statusCode = response.status.value,
+            rawBody = raw,
+            headers = headers,
+            message = "Replicate image download failed (${response.status.value}): ${raw.ifBlank { "request failed" }}",
+        )
     }
-    val headers = response.headers.entries().associate { it.key to it.value.joinToString(",") }
     return GeneratedFile(
         mediaType = headers.replicateHeaderValue(HttpHeaders.ContentType) ?: "image/png",
         base64 = convertByteArrayToBase64(bytes),
@@ -400,17 +397,6 @@ private suspend fun replicatePollVideoPrediction(
 private fun JsonObject.replicateStatus(): String =
     this["status"]?.jsonPrimitive?.contentOrNull ?: throw AiSdkException("Replicate prediction response is missing status")
 
-private suspend fun HttpResponse.parseReplicateJson(): ReplicateJsonResponse {
-    val raw = bodyAsText()
-    if (status.value !in 200..299) {
-        throw AiSdkException("Replicate request failed (${status.value}): ${replicateErrorMessage(raw)}")
-    }
-    return ReplicateJsonResponse(
-        value = if (raw.isBlank()) JsonObject(emptyMap()) else aiSdkJson.parseToJsonElement(raw),
-        headers = headers.entries().associate { it.key to it.value.joinToString(",") },
-    )
-}
-
 private fun replicateVideoProviderMetadata(prediction: JsonObject, videoUrl: String): JsonElement = buildJsonObject {
     put("videos", JsonArray(listOf(buildJsonObject {
         put("url", JsonPrimitive(videoUrl))
@@ -435,11 +421,12 @@ private fun replicateHeaders(
 private fun replicateOptions(providerOptions: Map<String, JsonElement>): JsonObject =
     providerOptions["replicate"] as? JsonObject ?: JsonObject(emptyMap())
 
-private fun replicateErrorMessage(raw: String): String {
-    val obj = runCatching { aiSdkJson.parseToJsonElement(raw).jsonObject }.getOrNull() ?: return raw.ifBlank { "request failed" }
-    return obj["detail"]?.jsonPrimitive?.contentOrNull
-        ?: obj["error"]?.jsonPrimitive?.contentOrNull
+private fun replicateErrorMessage(statusCode: Int, parsed: JsonElement?, raw: String): String {
+    val obj = parsed as? JsonObject
+    val detail = obj?.get("detail")?.jsonPrimitive?.contentOrNull
+        ?: obj?.get("error")?.jsonPrimitive?.contentOrNull
         ?: raw.ifBlank { "request failed" }
+    return "Replicate request failed ($statusCode): $detail"
 }
 
 private fun JsonObjectBuilder.putIfPresent(key: String, value: JsonElement?) {

@@ -1,23 +1,13 @@
 package ai.torad.aisdk
 
 import io.ktor.client.HttpClient
-import io.ktor.client.request.header
-import io.ktor.client.request.request
-import io.ktor.client.request.setBody
-import io.ktor.client.statement.HttpResponse
-import io.ktor.client.statement.bodyAsText
-import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpMethod
-import io.ktor.http.contentType
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
-import kotlinx.serialization.json.JsonObjectBuilder
 import kotlinx.serialization.json.JsonPrimitive
-import kotlinx.serialization.json.booleanOrNull
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.floatOrNull
@@ -100,18 +90,19 @@ private class VoyageEmbeddingModel(
                 "embedding model voyage:$modelId supports at most $VOYAGE_MAX_EMBEDDINGS_PER_CALL values per call",
             )
         }
+        val body = buildJsonObject {
+            put("model", JsonPrimitive(modelId))
+            put("input", JsonArray(params.values.map(::JsonPrimitive)))
+            val options = voyageOptions(params.providerOptions)
+            options["inputType"]?.let { put("input_type", it) }
+            (options["truncation"] ?: params.truncate?.let(::JsonPrimitive))?.let { put("truncation", it) }
+            options["outputDimension"]?.let { put("output_dimension", it) }
+            options["outputDtype"]?.let { put("output_dtype", it) }
+        }
         val response = voyagePostJson(
             client = client,
             url = "${settings.baseURL.trimEnd('/')}/embeddings",
-            body = buildJsonObject {
-                put("model", JsonPrimitive(modelId))
-                put("input", JsonArray(params.values.map(::JsonPrimitive)))
-                val options = voyageOptions(params.providerOptions)
-                options["inputType"]?.let { put("input_type", it) }
-                (options["truncation"] ?: params.truncate?.let(::JsonPrimitive))?.let { put("truncation", it) }
-                options["outputDimension"]?.let { put("output_dimension", it) }
-                options["outputDtype"]?.let { put("output_dtype", it) }
-            },
+            body = body,
             headers = voyageHeaders(settings, params.headers),
         )
         val value = response.value.jsonObject
@@ -123,7 +114,7 @@ private class VoyageEmbeddingModel(
                 tokens = value["usage"]?.jsonObject?.get("total_tokens")?.jsonPrimitive?.intOrNull ?: 0,
                 raw = value["usage"],
             ),
-            request = LanguageModelRequestMetadata(body = response.requestBody),
+            request = LanguageModelRequestMetadata(body = body),
             response = LanguageModelResponseMetadata(headers = response.headers, body = response.value),
         )
     }
@@ -172,38 +163,21 @@ private class VoyageRerankingModel(
 private const val VOYAGE_MAX_EMBEDDINGS_PER_CALL: Int = 128
 
 
-private data class VoyageJsonResponse(
-    val value: JsonElement,
-    val headers: Map<String, String>,
-    val requestBody: JsonObject,
-)
-
 private suspend fun voyagePostJson(
     client: HttpClient,
     url: String,
     body: JsonObject,
     headers: Map<String, String>,
-): VoyageJsonResponse {
-    val response = client.request(url) {
-        method = HttpMethod.Post
-        contentType(ContentType.Application.Json)
-        headers.forEach { (name, value) -> header(name, value) }
-        setBody(aiSdkJson.encodeToString(JsonElement.serializer(), body))
-    }
-    return response.parseVoyageJson(body)
-}
-
-private suspend fun HttpResponse.parseVoyageJson(requestBody: JsonObject): VoyageJsonResponse {
-    val raw = bodyAsText()
-    if (status.value !in 200..299) {
-        throw AiSdkException("Voyage request failed (${status.value}): ${voyageErrorMessage(raw)}")
-    }
-    return VoyageJsonResponse(
-        value = if (raw.isBlank()) JsonObject(emptyMap()) else aiSdkJson.parseToJsonElement(raw),
-        headers = headers.entries().associate { it.key to it.value.joinToString(",") },
-        requestBody = requestBody,
+): HttpJsonResponse =
+    requestJson(
+        client = client,
+        url = url,
+        method = HttpMethod.Post,
+        headers = headers,
+        body = body,
+        requestBodyValues = body,
+        errorMessage = ::voyageErrorMessage,
     )
-}
 
 private fun voyageHeaders(settings: VoyageProviderSettings, callHeaders: Map<String, String>): Map<String, String> {
     val base = linkedMapOf<String, String>()
@@ -216,11 +190,12 @@ private fun voyageHeaders(settings: VoyageProviderSettings, callHeaders: Map<Str
 private fun voyageOptions(providerOptions: Map<String, JsonElement>): JsonObject =
     providerOptions["voyage"] as? JsonObject ?: JsonObject(emptyMap())
 
-private fun voyageErrorMessage(raw: String): String {
-    val obj = runCatching { aiSdkJson.parseToJsonElement(raw).jsonObject }.getOrNull() ?: return raw.ifBlank { "request failed" }
-    val message = obj["message"]?.jsonPrimitive?.contentOrNull
-        ?: obj["detail"]?.jsonPrimitive?.contentOrNull
-        ?: obj["error"]?.jsonObject?.get("message")?.jsonPrimitive?.contentOrNull
-        ?: obj["error"]?.jsonPrimitive?.contentOrNull
-    return message ?: raw.ifBlank { "request failed" }
+private fun voyageErrorMessage(statusCode: Int, parsed: JsonElement?, raw: String): String {
+    val obj = parsed as? JsonObject
+    val message = obj?.get("message")?.jsonPrimitive?.contentOrNull
+        ?: obj?.get("detail")?.jsonPrimitive?.contentOrNull
+        ?: obj?.get("error")?.jsonObject?.get("message")?.jsonPrimitive?.contentOrNull
+        ?: obj?.get("error")?.jsonPrimitive?.contentOrNull
+        ?: raw.ifBlank { "request failed" }
+    return "Voyage request failed ($statusCode): $message"
 }

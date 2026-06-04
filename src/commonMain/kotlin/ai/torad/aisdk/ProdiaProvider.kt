@@ -336,7 +336,7 @@ private suspend fun prodiaPostJsonForMultipart(
         headers.forEach { (name, value) -> header(name, value) }
         setBody(aiSdkJson.encodeToString(JsonElement.serializer(), body))
     }
-    return response.parseProdiaMultipart()
+    return response.parseProdiaMultipart(url)
 }
 
 private suspend fun prodiaPostMultipart(
@@ -373,15 +373,22 @@ private suspend fun prodiaPostMultipart(
             ),
         )
     }
-    return response.parseProdiaMultipart()
+    return response.parseProdiaMultipart(url)
 }
 
-private suspend fun HttpResponse.parseProdiaMultipart(): ProdiaMultipartResult {
-    val responseHeaders = headers.entries().associate { it.key to it.value.joinToString(",") }
+private suspend fun HttpResponse.parseProdiaMultipart(url: String): ProdiaMultipartResult {
+    val responseHeaders = flattenedHeaders()
     val rawContentType = headers[HttpHeaders.ContentType].orEmpty()
     val bytes = bodyAsBytes()
     if (status.value !in 200..299) {
-        throw AiSdkException("Prodia request failed (${status.value}): ${prodiaErrorMessage(bytes.decodeToString())}")
+        val raw = bytes.decodeToString()
+        throw apiCallError(
+            url = url,
+            statusCode = status.value,
+            rawBody = raw,
+            headers = responseHeaders,
+            message = "Prodia request failed (${status.value}): ${prodiaErrorMessage(raw)}",
+        )
     }
     val boundary = Regex("""boundary=([^;\s]+)""").find(rawContentType)?.groupValues?.get(1)
         ?: throw AiSdkException("Prodia response missing multipart boundary in content-type: $rawContentType")
