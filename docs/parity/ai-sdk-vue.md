@@ -3,7 +3,7 @@
 - Version: 3.0.195
 - Upstream path: `.reference/vercel-ai-sdk-ai-6.0.195/packages/vue`
 - Target Kotlin module: `:aisdk-ui`
-- Current parity status: ported-as-kmp-facade: Vue Chat/useCompletion/useObject concepts are represented by package-named Kotlin facades in `ai.torad.aisdk.vue`, backed by the shared KMP Chat, completion, structured-object, UI message, stream, transport, and typed tool-part primitives. The facade exports `Chat`, `useCompletion`, `experimental_useObject`, helper/state types, and the shared `UIMessage` shape for Kotlin UI hosts.
+- Current parity status: ported-as-kmp-ui: Vue Chat/useCompletion/useObject concepts are represented by the framework-neutral Kotlin ui package: Chat, ChatTransport, TextStreamChatTransport, UIMessage/UIMessagePart, streamToUiMessages, convertToModelMessages, stream responses, and typed tool-part handler registry; Vue refs/components are intentionally not emitted in the Kotlin runtime module
 
 ## Entrypoints
 

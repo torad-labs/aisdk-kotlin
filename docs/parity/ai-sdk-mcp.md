@@ -3,7 +3,7 @@
 - Version: 1.0.45
 - Upstream path: `.reference/vercel-ai-sdk-ai-6.0.195/packages/mcp`
 - Target Kotlin module: `:aisdk-mcp`
-- Current parity status: ported: MCP JSON-RPC contracts, client handshake, capability-gated APIs, dynamic tool conversion, resources, prompts, elicitation, OAuth type surface, streamable HTTP transport, legacy SSE transport, and process-backed stdio transport for JVM/Android are represented as Kotlin facades folded into the root module; iOS exposes the same API boundary and uses HTTP/SSE/custom transports because iOS app sandboxes cannot launch arbitrary stdio child processes; VERSION is exposed as MCP_PACKAGE_VERSION until package modules are split
+- Current parity status: ported: MCP JSON-RPC contracts, client handshake, capability-gated APIs, dynamic tool conversion, resources, prompts, elicitation, OAuth type surface, streamable HTTP transport, legacy SSE transport, and process-backed stdio transport for JVM/Android are represented as Kotlin facades folded into the root module; iOS stdio is an explicit unsupported platform boundary; VERSION is exposed as MCP_PACKAGE_VERSION until package modules are split
 
 ## Entrypoints
 

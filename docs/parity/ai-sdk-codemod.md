@@ -3,7 +3,7 @@
 - Version: 3.0.6
 - Upstream path: `.reference/vercel-ai-sdk-ai-6.0.195/packages/codemod`
 - Target Kotlin module: `:aisdk-codemod`
-- Current parity status: ported-as-kmp-tooling: upstream exposes a JavaScript codemod CLI with no runtime exports; AISDK Kotlin ships deterministic migration helpers in `ai.torad.aisdk.codemod` for the load-bearing v5→v6 rewrites that matter to Kotlin hosts: data-stream to UI-message-stream helper names, v5 `useChat` input helper removal, and framework package import mapping to Kotlin facade packages.
+- Current parity status: not-applicable-runtime: upstream package exposes only the JavaScript codemod CLI and no public runtime library exports; Kotlin migration tooling is not shipped as part of the KMP runtime artifact
 
 ## Entrypoints
 

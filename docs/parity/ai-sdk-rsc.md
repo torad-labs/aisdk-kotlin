@@ -3,7 +3,7 @@
 - Version: 2.0.195
 - Upstream path: `.reference/vercel-ai-sdk-ai-6.0.195/packages/rsc`
 - Target Kotlin module: `:aisdk-server`
-- Current parity status: ported-as-kmp-facade: RSC streamable-value/UI concepts are represented by package-named Kotlin facades in `ai.torad.aisdk.rsc`, backed by Kotlin server/UI stream primitives: `createStreamableValue`, `readStreamableValue`, `createStreamableUI`, `streamUI`, `createAI`, AI/UI state helpers, `createAIUIStreamResponse`, `createUiMessageStream`, `UIMessageStreamWriter`, `Flow`, `ChatTransport`, and UI message conversion.
+- Current parity status: ported-as-kmp-server: RSC streamable-value/UI concepts are represented by Kotlin server/ui stream primitives: createTextStreamResponse, pipeTextStreamToResponse, createUiMessageStreamResponse, pipeUiMessageStreamToResponse, createUiMessageStream, UIMessageStreamWriter, read/merge/error stream handling via Flow, ChatTransport, and UIMessage state conversion; React Server Components runtime bindings and JSX UI streaming are intentionally not emitted in the Kotlin runtime module
 
 ## Entrypoints
 
