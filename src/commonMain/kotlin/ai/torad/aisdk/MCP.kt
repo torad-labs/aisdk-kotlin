@@ -15,6 +15,8 @@ import io.ktor.http.HttpMethod
 import io.ktor.http.contentType
 import io.ktor.utils.io.ByteReadChannel
 import io.ktor.utils.io.readLine
+import kotlin.coroutines.CoroutineContext
+import kotlin.coroutines.cancellation.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.CompletableDeferred
@@ -694,6 +696,7 @@ private class DefaultMCPClient(config: MCPClientConfig) : MCPClient {
                 )
             }
         } catch (error: Throwable) {
+            if (error is CancellationException) throw error
             onError(error)
         }
     }
@@ -742,6 +745,7 @@ private class DefaultMCPClient(config: MCPClientConfig) : MCPClient {
                 ),
             )
         } catch (error: Throwable) {
+            if (error is CancellationException) throw error
             transport.send(
                 JSONRPCError(
                     id = request.id,
@@ -998,13 +1002,17 @@ suspend fun auth(
         return AuthResult.AUTHORIZED
     }
     val resourceMetadata = options.client?.let { client ->
-        runCatching {
+        try {
             discoverOAuthProtectedResourceMetadata(
                 client = client,
                 serverUrl = options.serverUrl,
                 resourceMetadataUrl = options.resourceMetadataUrl,
             )
-        }.getOrNull()
+        } catch (error: CancellationException) {
+            throw error
+        } catch (_: Throwable) {
+            null
+        }
     }
     val authorizationServerUrl = resourceMetadata?.authorizationServers?.firstOrNull() ?: options.serverUrl
     val resource = provider.validateResourceURL(options.serverUrl, resourceMetadata?.resource)
@@ -1513,12 +1521,15 @@ data class MCPTransportConfig(
     val url: String,
     val headers: Map<String, String> = emptyMap(),
     val authProvider: OAuthClientProvider? = null,
+    val engineContext: CoroutineContext = Dispatchers.Default,
 )
 
 fun createMcpTransport(client: HttpClient, config: MCPTransportConfig): MCPTransport =
     when (config.type) {
-        MCPTransportKind.Http -> HttpMCPTransport(client, config.url, config.headers, config.authProvider)
-        MCPTransportKind.Sse -> SseMCPTransport(client, config.url, config.headers, config.authProvider)
+        MCPTransportKind.Http ->
+            HttpMCPTransport(client, config.url, config.headers, config.authProvider, config.engineContext)
+        MCPTransportKind.Sse ->
+            SseMCPTransport(client, config.url, config.headers, config.authProvider, config.engineContext)
     }
 
 class HttpMCPTransport(
@@ -1526,6 +1537,7 @@ class HttpMCPTransport(
     private val url: String,
     private val headers: Map<String, String> = emptyMap(),
     private val authProvider: OAuthClientProvider? = null,
+    private val engineContext: CoroutineContext = Dispatchers.Default,
 ) : MCPTransport {
     override var onClose: (() -> Unit)? = null
     override var onError: ((Throwable) -> Unit)? = null
@@ -1542,7 +1554,7 @@ class HttpMCPTransport(
     override suspend fun start() {
         if (!closed) throw MCPClientError("MCP HTTP Transport Error: Transport already started.")
         closed = false
-        scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+        scope = CoroutineScope(SupervisorJob() + engineContext)
         ensureInboundSse()
     }
 
@@ -1553,7 +1565,7 @@ class HttpMCPTransport(
 
     override suspend fun close() {
         if (closed) return
-        runCatching {
+        try {
             sessionId?.let { session ->
                 client.request(url) {
                     method = HttpMethod.Delete
@@ -1561,6 +1573,10 @@ class HttpMCPTransport(
                     header("mcp-session-id", session)
                 }
             }
+        } catch (error: CancellationException) {
+            throw error
+        } catch (_: Throwable) {
+            // Best-effort session teardown; ignore transport errors on close.
         }
         closed = true
         inboundJob?.cancel()
@@ -1653,6 +1669,7 @@ class HttpMCPTransport(
                 }
             }
         } catch (error: Throwable) {
+            if (error is CancellationException) throw error
             if (!closed) onError?.invoke(error)
         } finally {
             var restart = false
@@ -1685,6 +1702,7 @@ class SseMCPTransport(
     private val url: String,
     private val headers: Map<String, String> = emptyMap(),
     private val authProvider: OAuthClientProvider? = null,
+    private val engineContext: CoroutineContext = Dispatchers.Default,
 ) : MCPTransport {
     override var onClose: (() -> Unit)? = null
     override var onError: ((Throwable) -> Unit)? = null
@@ -1698,7 +1716,7 @@ class SseMCPTransport(
 
     override suspend fun start() {
         if (connected) return
-        val connectionScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+        val connectionScope = CoroutineScope(SupervisorJob() + engineContext)
         scope = connectionScope
         val ready = CompletableDeferred<Unit>()
         readerJob = connectionScope.launch {
@@ -1727,6 +1745,7 @@ class SseMCPTransport(
                 }
             } catch (error: Throwable) {
                 if (!ready.isCompleted) ready.completeExceptionally(error)
+                if (error is CancellationException) throw error
                 if (connected) onError?.invoke(error)
             }
         }
@@ -1862,6 +1881,7 @@ internal expect fun createMCPStdioProcess(config: StdioConfig): MCPStdioProcess
 
 class Experimental_StdioMCPTransport(
     val config: StdioConfig,
+    private val engineContext: CoroutineContext = Dispatchers.Default,
 ) : MCPTransport {
     override var onClose: (() -> Unit)? = null
     override var onError: ((Throwable) -> Unit)? = null
@@ -1876,7 +1896,7 @@ class Experimental_StdioMCPTransport(
         if (process != null) throw MCPClientError("StdioMCPTransport already started.")
         val started = createMCPStdioProcess(config)
         process = started
-        val readerScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+        val readerScope = CoroutineScope(SupervisorJob() + engineContext)
         scope = readerScope
         readJob = readerScope.launch {
             try {
@@ -1885,10 +1905,12 @@ class Experimental_StdioMCPTransport(
                     try {
                         onMessage?.invoke(parseJSONRPCMessage(line))
                     } catch (error: Throwable) {
+                        if (error is CancellationException) throw error
                         onError?.invoke(error)
                     }
                 }
             } catch (error: Throwable) {
+                if (error is CancellationException) throw error
                 onError?.invoke(error)
             } finally {
                 onClose?.invoke()
