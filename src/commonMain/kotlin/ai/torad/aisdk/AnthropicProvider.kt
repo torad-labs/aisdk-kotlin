@@ -12,7 +12,6 @@ import io.ktor.http.HttpMethod
 import io.ktor.http.contentType
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
-import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
@@ -22,14 +21,11 @@ import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonObjectBuilder
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.booleanOrNull
-import kotlinx.serialization.json.buildJsonArray
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.intOrNull
-import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
-import kotlinx.serialization.json.longOrNull
 
 const val ANTHROPIC_VERSION: String = "3.0.81"
 
@@ -481,15 +477,11 @@ private fun anthropicAssistantPart(part: ContentPart, sendReasoning: Boolean): J
         put("type", JsonPrimitive("text"))
         put("text", JsonPrimitive(part.text))
     }
-    is ContentPart.Reasoning -> if (sendReasoning) {
-        buildJsonObject {
-            val metadata = part.providerMetadata?.get("anthropic") as? JsonObject
-            put("type", JsonPrimitive("thinking"))
-            put("thinking", JsonPrimitive(part.text))
-            metadata?.get("signature")?.let { put("signature", it) }
-        }
-    } else {
-        null
+    is ContentPart.Reasoning if sendReasoning -> buildJsonObject {
+        val metadata = part.providerMetadata?.get("anthropic") as? JsonObject
+        put("type", JsonPrimitive("thinking"))
+        put("thinking", JsonPrimitive(part.text))
+        metadata?.get("signature")?.let { put("signature", it) }
     }
     is ContentPart.ToolCall -> buildJsonObject {
         put("type", JsonPrimitive("tool_use"))

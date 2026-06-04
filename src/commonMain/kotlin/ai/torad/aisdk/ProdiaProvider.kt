@@ -8,7 +8,6 @@ import io.ktor.client.request.request
 import io.ktor.client.request.setBody
 import io.ktor.client.statement.HttpResponse
 import io.ktor.client.statement.bodyAsBytes
-import io.ktor.client.statement.bodyAsText
 import io.ktor.http.ContentDisposition
 import io.ktor.http.ContentType
 import io.ktor.http.Headers
@@ -28,7 +27,6 @@ import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.doubleOrNull
-import kotlinx.serialization.json.floatOrNull
 import kotlinx.serialization.json.intOrNull
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
@@ -305,11 +303,8 @@ private fun prodiaLanguageImage(messages: List<ModelMessage>): ProdiaInputFile? 
     messages.asReversed().firstOrNull { it.role == MessageRole.User }?.content?.firstNotNullOfOrNull { part ->
         when (part) {
             is ContentPart.Image -> ProdiaInputFile(part.mediaType, convertBase64ToByteArray(part.base64))
-            is ContentPart.File -> if (part.mediaType.startsWith("image/")) {
+            is ContentPart.File if part.mediaType.startsWith("image/") ->
                 ProdiaInputFile(part.mediaType, convertBase64ToByteArray(part.base64), part.filename)
-            } else {
-                null
-            }
             else -> null
         }
     }
