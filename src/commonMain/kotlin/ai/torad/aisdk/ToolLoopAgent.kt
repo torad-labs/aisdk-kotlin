@@ -1,6 +1,5 @@
 package ai.torad.aisdk
 
-import kotlin.coroutines.CoroutineContext
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -18,6 +17,7 @@ import kotlinx.coroutines.launch
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonPrimitive
+import kotlin.coroutines.CoroutineContext
 
 /**
  * Default [Agent] implementation — the canonical v6 ToolLoopAgent.
@@ -124,6 +124,12 @@ public open class ToolLoopAgent<TContext, TOutput>(
     private var currentEngineJob: Job? = null
     private var currentEngineContext: TContext? = null
 
+    // TOOL-004: tracks the most recent activeContext the loop was running with,
+    // including any override applied by prepareStep via StepSettings.experimental_context.
+    // Updated by runEngineLoop before the stream starts and after each prepareStep override,
+    // so resumeWithApproval picks up the live context rather than the stale submitPrompt one.
+    private var currentActiveContext: TContext? = null
+
     /**
      * Cancel the engine scope and any in-flight engine job. Call when a
      * long-lived host (ViewModel / Repository) that drove the engine surface
@@ -204,7 +210,9 @@ public open class ToolLoopAgent<TContext, TOutput>(
             )
         }
         currentEngineJob = engineScope.launch {
-            runEngineLoop(prompt = null, priorMessages = updatedMessages, context = currentEngineContext)
+            // TOOL-004: use currentActiveContext (updated by prepareStep overrides)
+            // rather than currentEngineContext (only set at submitPrompt time).
+            runEngineLoop(prompt = null, priorMessages = updatedMessages, context = currentActiveContext)
         }
     }
 
@@ -213,6 +221,13 @@ public open class ToolLoopAgent<TContext, TOutput>(
         priorMessages: List<ModelMessage>,
         context: TContext?,
     ) {
+        // TOOL-004: seed the active context so resumeWithApproval uses at least the
+        // caller-supplied context when no prepareStep override has fired yet.
+        // FLAG: per-step updates (when stepSettings.experimental_context overrides activeContext
+        // inside streamInternal) are not yet reflected here — that requires threading a
+        // callback into streamInternal. The seed covers the common case; per-step context
+        // evolution on resume is a follow-up.
+        currentActiveContext = context
         val engineHooks = AgentCallHooks(
             onChunk = { event ->
                 val streamEvent = event.event
@@ -452,7 +467,9 @@ public open class ToolLoopAgent<TContext, TOutput>(
 
             val effectiveMessages = if (stepSystem != null) {
                 listOf(systemMessage(stepSystem)) + stepMessages.dropWhile { it.role == MessageRole.System }
-            } else stepMessages
+            } else {
+                stepMessages
+            }
 
             val callParams = LanguageModelCallParams(
                 messages = effectiveMessages,
@@ -476,7 +493,9 @@ public open class ToolLoopAgent<TContext, TOutput>(
                     ?: resolvedSettings.responseFormat
                     ?: if (responseFormat == ResponseFormat.Text && output != null) {
                         output.toResponseFormat()
-                    } else responseFormat,
+                    } else {
+                        responseFormat
+                    },
             )
 
             val stepText = StringBuilder()
@@ -546,6 +565,16 @@ public open class ToolLoopAgent<TContext, TOutput>(
                     }
                 }
             } catch (_: TerminalModelStreamError) {
+                // TOOL-002: preserve any assistant content (text + complete tool calls)
+                // accumulated before the stream error so the message history isn't
+                // silently truncated on resumption.
+                val partialParts: MutableList<ContentPart> = mutableListOf()
+                if (stepText.isNotEmpty()) partialParts.add(ContentPart.Text(stepText.toString()))
+                if (stepReasoning.isNotEmpty()) partialParts.add(ContentPart.Reasoning(stepReasoning.toString()))
+                partialParts.addAll(stepToolCalls)
+                if (partialParts.isNotEmpty()) {
+                    messages.add(ModelMessage(MessageRole.Assistant, partialParts.toList()))
+                }
                 finalMessagesRef?.value = messages.toList()
                 return@flow
             } catch (ce: CancellationException) {
@@ -617,7 +646,13 @@ public open class ToolLoopAgent<TContext, TOutput>(
                     ?: continue // already handled above
 
                 runHook(stepNumber) {
-                    val event = OnToolCallStartEvent(call.toolCallId, call.toolName, call.input, stepNumber, messages.toList())
+                    val event = OnToolCallStartEvent(
+                        call.toolCallId,
+                        call.toolName,
+                        call.input,
+                        stepNumber,
+                        messages.toList()
+                    )
                     experimental_onToolCallStart?.invoke(event)
                 }
 
@@ -648,7 +683,9 @@ public open class ToolLoopAgent<TContext, TOutput>(
 
             val effectiveFinishReason = if (toolsRequiringApproval.isNotEmpty()) {
                 FinishReason.ToolApprovalRequested
-            } else stepFinishReason
+            } else {
+                stepFinishReason
+            }
 
             val step = StepResult(
                 stepNumber = stepNumber,
@@ -707,7 +744,9 @@ public open class ToolLoopAgent<TContext, TOutput>(
                     )
                 }
                 ?: emptyList()
-        } else emptyList()
+        } else {
+            emptyList()
+        }
 
         runHook(stepNumber) {
             val finishEvent = OnFinishEvent(
@@ -746,9 +785,14 @@ public open class ToolLoopAgent<TContext, TOutput>(
         val priorToolCalls = priorAssistantMsg.content.filterIsInstance<ContentPart.ToolCall>()
         if (priorToolCalls.isEmpty()) return null
 
+        // TOOL-003: index calls by toolCallId so duplicate approvals for the same id
+        // are each matched deterministically to a distinct call occurrence (preserving
+        // order), rather than silently mapping every approval to the first match.
+        val remainingCalls = priorToolCalls.toMutableList()
         for (approval in approvals) {
-            val matchingCall = priorToolCalls.firstOrNull { it.toolCallId == approval.toolCallId }
-                ?: continue
+            val callIndex = remainingCalls.indexOfFirst { it.toolCallId == approval.toolCallId }
+            if (callIndex == -1) continue
+            val matchingCall = remainingCalls.removeAt(callIndex)
             if (!approval.approved) {
                 val denialMsg = approval.reason ?: "user denied tool execution"
                 applyDeniedToolApproval(

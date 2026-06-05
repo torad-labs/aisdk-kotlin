@@ -11,6 +11,7 @@ import io.ktor.client.statement.bodyAsText
 import io.ktor.http.ContentType
 import io.ktor.http.HttpMethod
 import io.ktor.http.contentType
+import io.ktor.utils.io.readAvailable
 import io.ktor.utils.io.readLine
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.FlowCollector
@@ -18,6 +19,12 @@ import kotlinx.coroutines.flow.channelFlow
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
+
+/** Maximum response body size for non-streaming requests (50 MB). */
+internal const val MAX_RESPONSE_BODY_BYTES: Long = 50L * 1024 * 1024
+
+/** Chunk size used when reading a response body with a cap check. */
+private const val BODY_READ_CHUNK_SIZE: Int = 8192
 
 /** HTTP 2xx success range — the contract for "the request succeeded". */
 private val successStatusRange = 200..299
@@ -120,6 +127,46 @@ internal suspend fun requestJson(
 }
 
 /**
+ * Reads the response body up to [maxBytes], throwing an [APICallError] if the
+ * body exceeds that limit rather than buffering the whole thing. The limit
+ * defends against hostile or misconfigured endpoints on non-streaming paths.
+ *
+ * Uses [bodyAsChannel] + [readAvailable] in 8 KiB chunks, so in the common
+ * case (small JSON bodies) no large allocation happens at all.
+ */
+private suspend fun HttpResponse.bodyAsTextCapped(
+    url: String,
+    maxBytes: Long = MAX_RESPONSE_BODY_BYTES,
+): String {
+    val channel = bodyAsChannel()
+    val chunk = ByteArray(BODY_READ_CHUNK_SIZE)
+    val acc = ArrayList<ByteArray>()
+    var totalRead = 0L
+    while (true) {
+        val n = channel.readAvailable(chunk, 0, BODY_READ_CHUNK_SIZE)
+        if (n <= 0) break
+        totalRead += n
+        if (totalRead > maxBytes) {
+            throw APICallError(
+                message = "Response body exceeded $maxBytes bytes limit from $url",
+                url = url,
+                statusCode = status.value,
+                responseHeaders = flattenedHeaders(),
+                isRetryable = false,
+            )
+        }
+        acc.add(chunk.copyOf(n))
+    }
+    val full = ByteArray(totalRead.toInt())
+    var pos = 0
+    for (slice in acc) {
+        slice.copyInto(full, pos)
+        pos += slice.size
+    }
+    return full.decodeToString()
+}
+
+/**
  * Applies the shared read→status-check→parse pipeline to a response the caller
  * already obtained (multipart bodies, abort-signal-wrapped requests, …). Throws
  * a rich [APICallError] on a non-2xx status.
@@ -132,7 +179,7 @@ internal suspend fun HttpResponse.toJsonResponse(
     errorMessage: ErrorMessageExtractor = ::defaultErrorMessage,
     errorFromResponse: ResponseErrorFactory? = null,
 ): HttpJsonResponse {
-    val raw = bodyAsText()
+    val raw = bodyAsTextCapped(url)
     val flattened = flattenedHeaders()
     if (status.value !in successStatusRange) {
         val parsed = runCatching { json.parseToJsonElement(raw) }.getOrNull()
@@ -219,9 +266,17 @@ internal fun streamSse(
         }
         onResponse(flattened)
         val channel = response.bodyAsChannel()
-        while (true) {
-            val line = channel.readLine() ?: break
-            send(line + "\n")
+        try {
+            while (true) {
+                val line = channel.readLine() ?: break
+                send(line + "\n")
+            }
+        } finally {
+            // Defensive: cancel the channel on any exit path (normal EOF,
+            // upstream error, or collector cancellation). On some Ktor engines
+            // the connection may not close until the channel is explicitly
+            // cancelled; this ensures no leaked connection in all cases.
+            channel.cancel(null)
         }
     }
 }
