@@ -2,13 +2,13 @@ package ai.torad.aisdk.ui
 
 import ai.torad.aisdk.StreamEvent
 import ai.torad.aisdk.ToolResultOutput
+import ai.torad.aisdk.aiSdkJson
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
-import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
-import kotlinx.serialization.json.contentOrNull
 
 /**
  * Convert a raw agent [StreamEvent] flow into a flow of growing
@@ -43,7 +43,6 @@ public fun streamToUiMessages(
     val toolByCallId = mutableMapOf<String, Int>()
     val toolInputBufById = mutableMapOf<String, StringBuilder>()
     val toolNameByInputId = mutableMapOf<String, String>()
-    val codec = Json { ignoreUnknownKeys = true }
 
     fun snapshot() = UIMessage(
         id = assistantMessageId,
@@ -207,7 +206,7 @@ public fun streamToUiMessages(
             is StreamEvent.ToolInputDelta -> {
                 val buf = toolInputBufById.getOrPut(event.id) { StringBuilder() }
                 buf.append(event.delta)
-                val partial = runCatching { codec.parseToJsonElement(buf.toString()) }.getOrNull()
+                val partial = runCatching { aiSdkJson.parseToJsonElement(buf.toString()) }.getOrNull()
                 val toolName = toolNameByInputId[event.id] ?: return@collect
                 upsertTool(
                     toolCallId = event.id,

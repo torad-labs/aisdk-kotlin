@@ -1,6 +1,5 @@
 package ai.torad.aisdk
 
-import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonElement
 
 /**
@@ -59,11 +58,6 @@ public fun <TContext> modelRepromptRepair(
     }
 }
 
-private val repairCodec = Json {
-    ignoreUnknownKeys = true
-    isLenient = true
-}
-
 /** Inputs for a single repair re-prompt — bundled so the call doesn't
  *  trip the long-parameter-list rule. The repair fn is the only caller. */
 private data class RepairRequest(
@@ -90,7 +84,7 @@ private suspend fun repromptForJson(
         ),
     )
     val text = stripCodeFences(result.text.trim())
-    return runCatching { repairCodec.parseToJsonElement(text) }.getOrNull()
+    return runCatching { aiSdkJson.parseToJsonElement(text) }.getOrNull()
 }
 
 private fun buildRepairPrompt(request: RepairRequest): String = """

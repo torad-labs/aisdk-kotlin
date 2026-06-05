@@ -211,7 +211,7 @@ private class OpenResponsesLanguageModel(
         val raw = response.bodyAsText()
         val headers = response.headers.entries().associate { it.key to it.value.joinToString(",") }
         if (response.status.value !in 200..299) {
-            throw openResponsesErrorFromResponse(raw)
+            throw openResponsesErrorFromResponse(response, raw, headers)
         }
         return OpenResponsesHttpResponse(
             value = if (parseJson && raw.isNotBlank()) json.parseToJsonElement(raw) else JsonObject(emptyMap()),
@@ -1012,12 +1012,22 @@ private fun parseToolInput(arguments: String?, json: Json): JsonElement =
         runCatching { json.parseToJsonElement(arguments) }.getOrElse { JsonPrimitive(arguments) }
     }
 
-private fun openResponsesErrorFromResponse(raw: String): AiSdkException {
+private fun openResponsesErrorFromResponse(
+    response: HttpResponse,
+    raw: String,
+    headers: Map<String, String>,
+): APICallError {
     val message = runCatching {
         val obj = openResponsesJson.parseToJsonElement(raw).jsonObject
         obj["error"]?.jsonObject?.get("message")?.jsonPrimitive?.contentOrNull
     }.getOrNull()
-    return AiSdkException(message ?: raw.ifBlank { "Open Responses request failed" })
+    return apiCallError(
+        url = response.call.request.url.toString(),
+        statusCode = response.status.value,
+        rawBody = raw,
+        headers = headers,
+        message = message ?: raw.ifBlank { "Open Responses request failed" },
+    )
 }
 
 private val openResponsesJson: Json = Json {
