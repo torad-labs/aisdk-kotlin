@@ -14,6 +14,8 @@ import io.ktor.http.content.OutgoingContent
 import io.ktor.utils.io.ByteChannel
 import io.ktor.utils.io.ByteReadChannel
 import io.ktor.utils.io.writeStringUtf8
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
@@ -150,6 +152,11 @@ class TestServer internal constructor(
     private var started: Boolean = false
     private val recordedCalls = mutableListOf<TestServerCall>()
 
+    // Concurrent requests (e.g. an MCP handshake) hit handle() from multiple
+    // coroutines; on a multi-threaded Kotlin/Native dispatcher (linuxX64) an
+    // unguarded ArrayList.add races. Guard the record critical section.
+    private val recordMutex = Mutex()
+
     val calls: List<TestServerCall>
         get() = recordedCalls.toList()
 
@@ -171,8 +178,7 @@ class TestServer internal constructor(
     suspend fun handle(request: TestServerHttpRequest): TestServerHttpResponse {
         check(started) { "Test server must be started before handling requests." }
 
-        val callNumber = recordedCalls.size
-        recordedCalls += TestServerCall(
+        val call = TestServerCall(
             requestBodyText = request.body,
             requestCredentials = request.credentials,
             requestHeaders = request.headers.filterKeys { !it.equals(HttpHeaders.UserAgent, ignoreCase = true) },
@@ -182,6 +188,11 @@ class TestServer internal constructor(
             requestMethod = request.method,
             json = json,
         )
+        val callNumber = recordMutex.withLock {
+            val index = recordedCalls.size
+            recordedCalls += call
+            index
+        }
 
         val response = urls[request.url]?.response?.responseFor(callNumber, request)
             ?: Url(request.url).let { parsedUrl ->

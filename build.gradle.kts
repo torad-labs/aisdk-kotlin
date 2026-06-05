@@ -96,6 +96,15 @@ kotlin {
         }
     }
 
+    // Linux/Native target. Apple targets need macOS only to LINK+RUN their
+    // SDK/simulator binaries (an Apple-tooling constraint); the Kotlin/Native
+    // *runtime* (coroutines, Flow emission-context rules, the shared
+    // kotlinx/ktor code) is identical across Native targets. linuxX64 compiles
+    // AND runs on a Linux host, so Native-general behaviour is verified in the
+    // cheap `check` leg, not only the macOS one — and ships a Linux/Native
+    // artifact for server-side Kotlin/Native and CLI consumers.
+    linuxX64()
+
     sourceSets {
         commonMain.dependencies {
             api(libs.kotlinx.coroutines.core)
@@ -125,7 +134,7 @@ detekt {
         "src/commonMain/kotlin",
         "src/jvmMain/kotlin",
         "src/androidMain/kotlin",
-        "src/iosMain/kotlin",
+        "src/nativeMain/kotlin",
         "src/commonTest/kotlin",
     )
 }

@@ -1,21 +1,17 @@
 package ai.torad.aisdk
 
-import kotlin.test.Test
-import kotlin.test.assertEquals
-import kotlin.test.assertFailsWith
-import kotlin.test.assertIs
-import kotlin.test.assertNotNull
-import kotlin.test.assertTrue
+import io.ktor.http.HttpHeaders
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.toList
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeout
-import io.ktor.http.HttpHeaders
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
@@ -26,6 +22,12 @@ import kotlinx.serialization.json.encodeToJsonElement
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
+import kotlin.test.assertIs
+import kotlin.test.assertNotNull
+import kotlin.test.assertTrue
 
 class MCPClientTest {
 
@@ -952,12 +954,17 @@ class MCPClientTest {
         override var onMessage: (suspend (JSONRPCMessage) -> Unit)? = null
         override var protocolVersion: String? = null
 
+        // Concurrent client requests hit send() from multiple coroutines; on a
+        // multi-threaded Kotlin/Native dispatcher (linuxX64) an unguarded
+        // ArrayList.add races, so serialize the recording.
+        private val sentMutex = Mutex()
+
         override suspend fun start() {
             startCount += 1
         }
 
         override suspend fun send(message: JSONRPCMessage) {
-            sent += message
+            sentMutex.withLock { sent += message }
             handler(message)
         }
 
