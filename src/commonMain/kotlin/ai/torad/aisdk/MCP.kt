@@ -26,7 +26,6 @@ import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
-import kotlinx.coroutines.withTimeout
 import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
@@ -51,6 +50,7 @@ import kotlin.concurrent.atomics.AtomicReference
 import kotlin.concurrent.atomics.ExperimentalAtomicApi
 import kotlin.coroutines.CoroutineContext
 import kotlin.coroutines.cancellation.CancellationException
+import kotlin.coroutines.coroutineContext
 
 public const val MCP_PACKAGE_VERSION: String = "1.0.46"
 public const val LATEST_PROTOCOL_VERSION: String = "2025-11-25"
@@ -66,6 +66,9 @@ private const val JSONRPC_VERSION = "2.0"
 private const val DEFAULT_MCP_CLIENT_NAME = "ai-sdk-mcp-client"
 private const val DEFAULT_MCP_CLIENT_VERSION = "1.0.0"
 private const val MCP_SSE_MAX_DATA_LINES = 1_000
+
+/** Default ceiling for the MCP connect handshake (initialize round-trip, SSE endpoint event). */
+private const val MCP_DEFAULT_HANDSHAKE_TIMEOUT_MS = 30_000L
 
 /** Best-effort timeout for the session-cleanup DELETE on HTTP transport close. */
 private const val MCP_CLOSE_DELETE_TIMEOUT_MS = 5_000L
@@ -491,6 +494,7 @@ private class DefaultMCPClient(config: MCPClientConfig) : MCPClient {
                     put("clientInfo", mcpJson.encodeToJsonElement(Configuration.serializer(), clientInfo))
                 },
                 serializer = InitializeResult.serializer(),
+                options = MCPRequestOptions(timeoutMillis = MCP_DEFAULT_HANDSHAKE_TIMEOUT_MS),
             )
 
             if (result.protocolVersion !in SUPPORTED_PROTOCOL_VERSIONS) {
@@ -644,7 +648,10 @@ private class DefaultMCPClient(config: MCPClientConfig) : MCPClient {
     ): T {
         val timeout = options?.timeoutMillis ?: options?.maxTotalTimeoutMillis
         return if (timeout != null) {
-            withTimeout(timeout) { requestWithoutTimeout(method, params, serializer, options) }
+            // Real-time so a JSON-RPC response that never correlates back (server
+            // ACKed the POST but never answers) can't hang the caller forever, and
+            // so the bound doesn't spuriously fire under runTest's virtual clock.
+            withRealTimeout(timeout) { requestWithoutTimeout(method, params, serializer, options) }
         } else {
             requestWithoutTimeout(method, params, serializer, options)
         }
@@ -1679,6 +1686,18 @@ internal class McpConnectionLifecycle {
     }
 }
 
+/**
+ * Cancel [job] and wait for it to finish — UNLESS the current coroutine *is*
+ * [job] (e.g. a user `onMessage`/`onClose` handler that calls `transport.close()`
+ * runs inside the reader coroutine). Joining yourself never completes, so in that
+ * case cancel without joining. Preserves the "reader is fully torn down before
+ * close returns" guarantee on the normal (external) close path.
+ */
+internal suspend fun cancelAndJoinUnlessSelf(job: Job?) {
+    if (job == null) return
+    if (job === coroutineContext[Job]) job.cancel() else job.cancelAndJoin()
+}
+
 public class HttpMCPTransport(
     private val client: HttpClient,
     private val url: String,
@@ -1735,7 +1754,7 @@ public class HttpMCPTransport(
             inboundJob.also { inboundJob = null }
         }
         connectionScope.cancel()
-        job?.cancelAndJoin()
+        cancelAndJoinUnlessSelf(job)
         onClose?.invoke()
     }
 
@@ -1929,10 +1948,13 @@ public class SseMCPTransport(
         }
         lifecycle.setReader(reader)
         try {
-            ready.await()
+            // Bound the handshake (wait for the SSE `endpoint` event) in real time
+            // so an unresponsive server can't hang start() forever; runTest-safe.
+            withRealTimeout(MCP_DEFAULT_HANDSHAKE_TIMEOUT_MS) { ready.await() }
         } catch (error: Throwable) {
-            // Pre-handshake failure: the reader's finally returns the lifecycle to
-            // Idle (startable again); join it so cleanup completes, then rethrow.
+            // Pre-handshake failure (incl. handshake timeout): the reader's finally
+            // returns the lifecycle to Idle (startable again); join it so cleanup
+            // completes, then rethrow.
             reader.cancelAndJoin()
             throw error
         }
@@ -1988,7 +2010,7 @@ public class SseMCPTransport(
         // died (Idle) this is a no-op and the reader fired onClose.
         val (scope, reader) = lifecycle.close() ?: return
         scope.cancel()
-        reader?.cancelAndJoin()
+        cancelAndJoinUnlessSelf(reader)
         onClose?.invoke()
     }
 
@@ -2156,7 +2178,7 @@ public class Experimental_StdioMCPTransport(
         // join — the ordering that prevents close() hanging on the blocking read.
         scope.cancel()
         p?.close()
-        reader?.cancelAndJoin()
+        cancelAndJoinUnlessSelf(reader)
         onClose?.invoke()
     }
 }
