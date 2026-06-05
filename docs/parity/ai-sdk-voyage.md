@@ -1,7 +1,7 @@
 # @ai-sdk/voyage
 
 - Version: 1.0.4
-- Upstream path: `.reference/vercel-ai-sdk-ai-6.0.196/packages/voyage`
+- Upstream path: `.reference/vercel-ai-sdk-ai-6.0.197/packages/voyage`
 - Target Kotlin module: `:aisdk-provider-voyage`
 - Current parity status: ported: createVoyage/voyage, VoyageProviderSettings, embedding/reranking option surfaces, embedding routing, reranking routing, usage parsing, and embedding input limits are represented as a Kotlin facade folded into the root module; VERSION is exposed as VOYAGE_VERSION until package modules are split
 
@@ -9,7 +9,7 @@
 
 | Subpath | Source | Export count |
 |---|---|---:|
-| `.` | `.reference/vercel-ai-sdk-ai-6.0.196/packages/voyage/src/index.ts` | 7 |
+| `.` | `.reference/vercel-ai-sdk-ai-6.0.197/packages/voyage/src/index.ts` | 7 |
 
 ## Public Exports
 

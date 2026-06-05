@@ -1,7 +1,20 @@
 package ai.torad.aisdk
-
+import ai.torad.aisdk.providers.AMAZON_BEDROCK_VERSION
+import ai.torad.aisdk.providers.AmazonBedrockProviderSettings
+import ai.torad.aisdk.providers.BedrockMantleProviderSettings
+import ai.torad.aisdk.providers.bedrock
+import ai.torad.aisdk.providers.createAmazonBedrock
+import ai.torad.aisdk.providers.createBedrockMantle
 import ai.torad.aisdk.testing.drainAllItems
+import io.ktor.client.HttpClient
+import io.ktor.client.engine.mock.MockEngine
+import io.ktor.client.engine.mock.respond
 import io.ktor.http.HttpHeaders
+import io.ktor.http.headersOf
+import io.ktor.utils.io.ByteChannel
+import io.ktor.utils.io.writeFully
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
@@ -18,6 +31,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertIs
+import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
 class AmazonBedrockProviderTest {
@@ -256,6 +270,50 @@ class AmazonBedrockProviderTest {
     }
 
     @Test
+    fun `chat stream decodes binary frames delivered across split reads`() = runTest {
+        // The binary frame reader must reassemble a frame across multiple channel
+        // reads. Deliver the bytes in two halves with the collector running in
+        // between: a busy-spin reader or a buffer-the-whole-body reader would
+        // hang here (the second half is written only after runCurrent()).
+        val frames = bedrockSmithyEventStream(
+            "messageStart" to """{"role":"assistant"}""",
+            "contentBlockDelta" to """{"contentBlockIndex":0,"delta":{"text":"split"}}""",
+            "contentBlockStop" to """{"contentBlockIndex":0}""",
+            "messageStop" to """{"stopReason":"end_turn"}""",
+        )
+        val body = ByteChannel(autoFlush = true)
+        val client = HttpClient(
+            MockEngine {
+                respond(
+                    content = body,
+                    headers = headersOf(HttpHeaders.ContentType, "application/vnd.amazon.eventstream"),
+                )
+            },
+        )
+        val provider = createAmazonBedrock(
+            client,
+            AmazonBedrockProviderSettings(apiKey = "key", baseURL = "https://bedrock.test"),
+        )
+
+        val deltas = mutableListOf<String>()
+        val collector = launch {
+            provider.languageModel("amazon.nova-lite-v1:0")
+                .stream(LanguageModelCallParams(messages = listOf(userMessage("hi"))))
+                .collect { if (it is StreamEvent.TextDelta) deltas += it.text }
+        }
+
+        // writeFully takes (startIndex, endIndex) — kotlinx-io convention.
+        val mid = frames.size / 2
+        body.writeFully(frames, 0, mid)
+        runCurrent()
+        body.writeFully(frames, mid, frames.size)
+        body.flushAndClose()
+        collector.join()
+
+        assertEquals(listOf("split"), deltas)
+    }
+
+    @Test
     fun `embedding image and reranking models map Bedrock runtime payloads`() = runTest {
         val fixture = createTestServer(
             mutableMapOf(
@@ -431,7 +489,7 @@ class AmazonBedrockProviderTest {
             ),
         )
 
-        val error = assertFailsWith<AiSdkException> {
+        val error = assertFailsWith<APICallError> {
             provider.languageModel("amazon.nova-lite-v1:0").generate(
                 LanguageModelCallParams(messages = listOf(userMessage("hi"))),
             )
@@ -439,6 +497,10 @@ class AmazonBedrockProviderTest {
 
         assertTrue(error.message.orEmpty().contains("local clock appears to be skewed"))
         assertTrue(error.message.orEmpty().contains("Signature expired"))
+        // Rich APICallError fields populated by the shared transport helper.
+        assertEquals(403, error.statusCode)
+        assertNotNull(error.responseBody)
+        assertTrue(error.responseBody.orEmpty().contains("RequestTimeTooSkewed"))
     }
 
     private fun objectSchema(vararg required: String): JsonObject = buildJsonObject {

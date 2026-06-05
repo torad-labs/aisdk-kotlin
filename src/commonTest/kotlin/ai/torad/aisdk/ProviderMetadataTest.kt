@@ -1,4 +1,6 @@
 package ai.torad.aisdk
+import ai.torad.aisdk.providers.anthropic
+import ai.torad.aisdk.providers.openai
 
 import kotlin.test.Test
 import kotlin.test.assertEquals

@@ -1,5 +1,7 @@
 package ai.torad.aisdk
-
+import ai.torad.aisdk.providers.OpenAICompatibleProviderSettings
+import ai.torad.aisdk.providers.createOpenAICompatible
+import ai.torad.aisdk.providers.openai
 import ai.torad.aisdk.testing.drainAllItems
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.mock.MockEngine
@@ -9,6 +11,10 @@ import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.content.OutgoingContent
 import io.ktor.http.headersOf
+import io.ktor.utils.io.ByteChannel
+import io.ktor.utils.io.writeStringUtf8
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
@@ -205,6 +211,56 @@ class OpenAICompatibleProviderTest {
         assertEquals(FinishReason.ToolCalls, finish.finishReason)
         assertEquals(1, finish.usage.promptTokens)
         assertEquals(2, finish.usage.completionTokens)
+    }
+
+    @Test
+    fun `chat model emits deltas incrementally as SSE chunks arrive rather than in one end burst`() = runTest {
+        // The response body is a half-open channel we feed one SSE event at a
+        // time. A buffered reader (bodyAsText) would block until the channel
+        // CLOSES before emitting anything — so the firstDelta.await() below
+        // would hang and fail this test. Incremental reading completes it.
+        val body = ByteChannel(autoFlush = true)
+        val client = HttpClient(
+            MockEngine {
+                respond(
+                    content = body,
+                    status = HttpStatusCode.OK,
+                    headers = headersOf(HttpHeaders.ContentType, "text/event-stream"),
+                )
+            },
+        )
+        val provider = createOpenAICompatible(
+            client,
+            OpenAICompatibleProviderSettings(name = "openai", baseUrl = "https://api.test/v1", includeUsage = true),
+        )
+
+        val deltas = mutableListOf<String>()
+        val firstDelta = CompletableDeferred<Unit>()
+        val collector = launch {
+            provider.languageModel("gpt-test")
+                .stream(LanguageModelCallParams(listOf(userMessage("hi"))))
+                .collect { event ->
+                    if (event is StreamEvent.TextDelta) {
+                        deltas += event.text
+                        if (deltas.size == 1) firstDelta.complete(Unit)
+                    }
+                }
+        }
+
+        // Write ONLY the first event, then prove its delta surfaces before the
+        // rest of the body is ever written — the regression lock against
+        // re-buffering the whole stream.
+        body.writeStringUtf8("data: {\"choices\":[{\"delta\":{\"content\":\"hello\"}}]}\n\n")
+        firstDelta.await()
+        assertEquals(listOf("hello"), deltas)
+
+        body.writeStringUtf8("data: {\"choices\":[{\"delta\":{\"content\":\" world\"}}]}\n\n")
+        body.writeStringUtf8("data: {\"choices\":[{\"finish_reason\":\"stop\"}]}\n\n")
+        body.writeStringUtf8("data: [DONE]\n\n")
+        body.flushAndClose()
+        collector.join()
+
+        assertEquals(listOf("hello", " world"), deltas)
     }
 
     @Test
@@ -423,13 +479,21 @@ class OpenAICompatibleProviderTest {
         )
         val provider = createOpenAICompatible(client, OpenAICompatibleProviderSettings("openai", "https://api.test/v1"))
 
-        val error = assertFailsWith<AiSdkException> {
+        val error = assertFailsWith<APICallError> {
             generateText(provider.languageModel("gpt-test"), prompt = "hi")
         }
 
+        // APICallError is an AiSdkException, so existing catch(AiSdkException) still catches it.
+        assertIs<AiSdkException>(error)
         assertNotNull(error.message)
         assertTrue(error.message.orEmpty().contains("401"))
         assertTrue(error.message.orEmpty().contains("bad key"))
+        // Rich fields: callers/retry layers can now branch on status/retryability/body.
+        assertEquals(401, error.statusCode)
+        assertEquals(false, error.isRetryable)
+        assertNotNull(error.responseBody)
+        assertTrue(error.responseBody.orEmpty().contains("bad key"))
+        assertNotNull(error.responseHeaders)
     }
 
     private fun requestBodyText(request: HttpRequestData): String =

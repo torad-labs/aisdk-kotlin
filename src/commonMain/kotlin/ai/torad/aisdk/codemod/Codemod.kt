@@ -1,20 +1,25 @@
 package ai.torad.aisdk.codemod
 
-data class CodemodRule(
+import ai.torad.aisdk.ExperimentalAiSdkApi
+
+@ExperimentalAiSdkApi
+public data class CodemodRule(
     val id: String,
     val description: String,
     val apply: (String) -> String,
 )
 
-data class CodemodResult(
+@ExperimentalAiSdkApi
+public data class CodemodResult(
     val output: String,
     val appliedRules: List<String>,
 ) {
     val changed: Boolean get() = appliedRules.isNotEmpty()
 }
 
-object AiSdkCodemods {
-    val replaceDataStreamWithUiMessageStream = CodemodRule(
+@ExperimentalAiSdkApi
+public object AiSdkCodemods {
+    public val replaceDataStreamWithUiMessageStream: CodemodRule = CodemodRule(
         id = "replace-datastream-to-uimessagestream",
         description = "Rename v5 data-stream helpers to v6 UI message stream helpers.",
     ) { source ->
@@ -25,7 +30,7 @@ object AiSdkCodemods {
             .replace("data stream", "UI message stream")
     }
 
-    val replaceUseChatInputWithState = CodemodRule(
+    public val replaceUseChatInputWithState: CodemodRule = CodemodRule(
         id = "replace-usechat-input-with-state",
         description = "Remove v5 useChat input helpers from destructuring so hosts manage input state explicitly.",
     ) { source ->
@@ -35,7 +40,7 @@ object AiSdkCodemods {
             .replace("input, handleInputChange, handleSubmit", "")
     }
 
-    val rewriteFrameworkImports = CodemodRule(
+    public val rewriteFrameworkImports: CodemodRule = CodemodRule(
         id = "rewrite-framework-imports",
         description = "Rewrite upstream framework package imports to AISDK Kotlin facade package comments for migration notes.",
     ) { source ->
@@ -47,14 +52,15 @@ object AiSdkCodemods {
             .replace("@ai-sdk/rsc", "ai.torad.aisdk.rsc")
     }
 
-    val all: List<CodemodRule> = listOf(
+    public val all: List<CodemodRule> = listOf(
         replaceDataStreamWithUiMessageStream,
         replaceUseChatInputWithState,
         rewriteFrameworkImports,
     )
 }
 
-fun applyAiSdkCodemods(
+@ExperimentalAiSdkApi
+public fun applyAiSdkCodemods(
     source: String,
     rules: List<CodemodRule> = AiSdkCodemods.all,
 ): CodemodResult {

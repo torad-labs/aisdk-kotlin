@@ -1,4 +1,8 @@
 package ai.torad.aisdk
+import ai.torad.aisdk.providers.ELEVENLABS_VERSION
+import ai.torad.aisdk.providers.ElevenLabsProviderSettings
+import ai.torad.aisdk.providers.createElevenLabs
+import ai.torad.aisdk.providers.elevenlabs
 
 import io.ktor.http.HttpHeaders
 import kotlinx.coroutines.test.runTest

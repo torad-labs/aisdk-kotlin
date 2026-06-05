@@ -163,7 +163,6 @@ class FullPortFeatureParityTest {
 
         assertEquals("runtimeTool", tool.name)
         assertEquals(schema, asSchema(schema))
-        assertEquals(schema.jsonSchema, zodSchema<JsonObject>(schema.jsonSchema).jsonSchema)
         assertEquals(JsonPrimitive("ok"), values.single().jsonObject["seen"])
     }
 

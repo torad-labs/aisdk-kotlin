@@ -45,11 +45,11 @@ import kotlinx.serialization.json.JsonElement
  * ```
  */
 @Serializable
-sealed interface StreamEvent {
+public sealed interface StreamEvent {
 
     /** Stream began. Emitted exactly once at the very top. */
     @Serializable
-    data class StreamStart(
+    public data class StreamStart(
         val warnings: List<CallWarning> = emptyList(),
     ) : StreamEvent
 
@@ -60,7 +60,7 @@ sealed interface StreamEvent {
      * model IDs, headers, and retained response bodies.
      */
     @Serializable
-    data class ResponseMetadata(
+    public data class ResponseMetadata(
         val id: String? = null,
         val timestampMillis: Long? = null,
         val modelId: String? = null,
@@ -70,52 +70,52 @@ sealed interface StreamEvent {
 
     /** New step (one LLM call) began. Emitted at the start of every loop iteration. */
     @Serializable
-    data class StepStart(
+    public data class StepStart(
         val stepNumber: Int,
         val providerMetadata: Map<String, JsonElement>? = null,
     ) : StreamEvent
 
     @Serializable
-    data class TextStart(
+    public data class TextStart(
         val id: String,
         val providerMetadata: Map<String, JsonElement>? = null,
     ) : StreamEvent
 
     @Serializable
-    data class TextDelta(
-        val id: String,
-        val text: String,
-        val providerMetadata: Map<String, JsonElement>? = null,
-    ) : StreamEvent
-
-    @Serializable
-    data class TextEnd(
-        val id: String,
-        val providerMetadata: Map<String, JsonElement>? = null,
-    ) : StreamEvent
-
-    @Serializable
-    data class ReasoningStart(
-        val id: String,
-        val providerMetadata: Map<String, JsonElement>? = null,
-    ) : StreamEvent
-
-    @Serializable
-    data class ReasoningDelta(
+    public data class TextDelta(
         val id: String,
         val text: String,
         val providerMetadata: Map<String, JsonElement>? = null,
     ) : StreamEvent
 
     @Serializable
-    data class ReasoningEnd(
+    public data class TextEnd(
+        val id: String,
+        val providerMetadata: Map<String, JsonElement>? = null,
+    ) : StreamEvent
+
+    @Serializable
+    public data class ReasoningStart(
+        val id: String,
+        val providerMetadata: Map<String, JsonElement>? = null,
+    ) : StreamEvent
+
+    @Serializable
+    public data class ReasoningDelta(
+        val id: String,
+        val text: String,
+        val providerMetadata: Map<String, JsonElement>? = null,
+    ) : StreamEvent
+
+    @Serializable
+    public data class ReasoningEnd(
         val id: String,
         val providerMetadata: Map<String, JsonElement>? = null,
     ) : StreamEvent
 
     /** Citation / web grounding source. */
     @Serializable
-    data class SourcePart(
+    public data class SourcePart(
         val id: String,
         val sourceType: SourceType,
         val url: String? = null,
@@ -124,12 +124,12 @@ sealed interface StreamEvent {
         val providerMetadata: Map<String, JsonElement>? = null,
     ) : StreamEvent {
         @Serializable
-        enum class SourceType { Url, Document }
+        public enum class SourceType { Url, Document }
     }
 
     /** Generated file (image, audio, etc.). */
     @Serializable
-    data class FilePart(
+    public data class FilePart(
         val id: String,
         val mediaType: String,
         /** Base64-encoded contents — keep small, large files should stream via providerMetadata URLs. */
@@ -139,7 +139,7 @@ sealed interface StreamEvent {
 
     /** Tool input streaming opens — the model has decided which tool to call. */
     @Serializable
-    data class ToolInputStart(
+    public data class ToolInputStart(
         val id: String,
         val toolName: String,
         val providerMetadata: Map<String, JsonElement>? = null,
@@ -147,7 +147,7 @@ sealed interface StreamEvent {
 
     /** Incremental input bytes for the in-flight tool call. */
     @Serializable
-    data class ToolInputDelta(
+    public data class ToolInputDelta(
         val id: String,
         val delta: String,
         val providerMetadata: Map<String, JsonElement>? = null,
@@ -155,14 +155,14 @@ sealed interface StreamEvent {
 
     /** Tool input streaming ends — full JSON has been received. */
     @Serializable
-    data class ToolInputEnd(
+    public data class ToolInputEnd(
         val id: String,
         val providerMetadata: Map<String, JsonElement>? = null,
     ) : StreamEvent
 
     /** Final, parsed tool call envelope. Emitted once `ToolInputEnd` fires and JSON parses. */
     @Serializable
-    data class ToolCall(
+    public data class ToolCall(
         val toolCallId: String,
         val toolName: String,
         val inputJson: JsonElement,
@@ -183,7 +183,7 @@ sealed interface StreamEvent {
      * value once the Flow completes.
      */
     @Serializable
-    data class ToolResult(
+    public data class ToolResult(
         val toolCallId: String,
         val toolName: String,
         val outputJson: JsonElement,
@@ -205,7 +205,7 @@ sealed interface StreamEvent {
      * wire-stable rendering and stays the single source of display text.
      */
     @Serializable
-    data class ToolError(
+    public data class ToolError(
         val toolCallId: String,
         val toolName: String,
         val message: String,
@@ -221,7 +221,7 @@ sealed interface StreamEvent {
      * [ai.torad.aisdk.ContentPart.ToolApprovalResponse] to resume.
      */
     @Serializable
-    data class ToolApprovalRequest(
+    public data class ToolApprovalRequest(
         val toolCallId: String,
         val toolName: String,
         val inputJson: JsonElement,
@@ -243,7 +243,7 @@ sealed interface StreamEvent {
      * [ai.torad.aisdk.ui.ToolCallState.OutputDenied].
      */
     @Serializable
-    data class ToolOutputDenied(
+    public data class ToolOutputDenied(
         val toolCallId: String,
         val toolName: String,
         val approvalId: String,
@@ -257,7 +257,7 @@ sealed interface StreamEvent {
      *  hints, OpenAI reasoning trace tokens, etc.) so consumers can
      *  measure cache-hit rate per step without parsing raw streams. */
     @Serializable
-    data class StepFinish(
+    public data class StepFinish(
         val stepNumber: Int,
         val finishReason: FinishReason,
         val usage: Usage,
@@ -268,7 +268,7 @@ sealed interface StreamEvent {
 
     /** Loop ended — final aggregated finish reason + usage. */
     @Serializable
-    data class Finish(
+    public data class Finish(
         val totalSteps: Int,
         val finishReason: FinishReason,
         val usage: Usage,
@@ -280,11 +280,15 @@ sealed interface StreamEvent {
 
     /** Generation aborted via [AbortSignal]. Loop unwinds. */
     @Serializable
-    data object Abort : StreamEvent
+    public data object Abort : StreamEvent
 
     /** Terminal error. Loop unwinds. */
     @Serializable
-    data class Error(val message: String) : StreamEvent
+    public data class Error(
+        val message: String,
+        /** Typed cause when available, preserved to the boundary; not serialized. */
+        @Transient val cause: Throwable? = null,
+    ) : StreamEvent
 
     /**
      * Unprocessed provider-specific chunk. Escape hatch for cutting-edge
@@ -293,5 +297,5 @@ sealed interface StreamEvent {
      * IS the provider payload, so no separate `providerMetadata` slot.
      */
     @Serializable
-    data class Raw(val rawValue: JsonElement) : StreamEvent
+    public data class Raw(val rawValue: JsonElement) : StreamEvent
 }

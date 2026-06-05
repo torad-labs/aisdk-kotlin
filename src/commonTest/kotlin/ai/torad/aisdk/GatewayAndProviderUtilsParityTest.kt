@@ -6,6 +6,7 @@ import ai.torad.aisdk.providers.MockSpeechModel
 import ai.torad.aisdk.providers.MockTranscriptionModel
 import ai.torad.aisdk.providers.MockVideoModel
 import ai.torad.aisdk.providers.mockAudioSource
+import ai.torad.aisdk.providers.xai
 import ai.torad.aisdk.ui.SafeValidateUIMessagesResult
 import ai.torad.aisdk.ui.TextUIPartState
 import ai.torad.aisdk.ui.UIMessage

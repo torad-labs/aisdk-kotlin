@@ -8,6 +8,11 @@ import java.io.OutputStreamWriter
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
+// NOTE: this is byte-for-byte identical to MCPStdioProcess.android.kt (modulo the class name).
+// Both are JVM-backed (java.io / ProcessBuilder). A shared `jvmAndAndroid` intermediate
+// source set via applyDefaultHierarchyTemplate() + a manual `dependsOn` would collapse the
+// two actuals into one source of truth — deferred as build-structural. Keep the two bodies
+// in lockstep until then.
 internal actual fun createMCPStdioProcess(config: StdioConfig): MCPStdioProcess =
     JvmMCPStdioProcess(config)
 

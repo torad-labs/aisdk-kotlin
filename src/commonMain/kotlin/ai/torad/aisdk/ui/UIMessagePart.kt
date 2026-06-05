@@ -42,16 +42,16 @@ import kotlinx.serialization.serializer
  * `ReasoningDelta` and flips to [Done] on the matching `*End`.
  */
 @Serializable
-enum class TextUIPartState {
+public enum class TextUIPartState {
     Streaming,
     Done,
 }
 
 @Serializable
-sealed interface UIMessagePart {
+public sealed interface UIMessagePart {
 
     @Serializable
-    data class Text(
+    public data class Text(
         val text: String,
         val state: TextUIPartState = TextUIPartState.Done,
         val providerMetadata: Map<String, JsonElement>? = null,
@@ -69,7 +69,7 @@ sealed interface UIMessagePart {
      * site since Kotlin lacks TypeScript's literal-type narrowing.
      */
     @Serializable
-    data class ToolUI(
+    public data class ToolUI(
         val toolCallId: String,
         val toolName: String,
         val state: ToolCallState,
@@ -90,7 +90,7 @@ sealed interface UIMessagePart {
     ) : UIMessagePart
 
     @Serializable
-    data class Reasoning(
+    public data class Reasoning(
         val text: String,
         val state: TextUIPartState = TextUIPartState.Done,
         val providerMetadata: Map<String, JsonElement>? = null,
@@ -105,7 +105,7 @@ sealed interface UIMessagePart {
      * repeated mentions across multiple parts can be deduped.
      */
     @Serializable
-    data class SourceUrl(
+    public data class SourceUrl(
         val sourceId: String,
         val url: String,
         val title: String? = null,
@@ -120,7 +120,7 @@ sealed interface UIMessagePart {
      * not a file the model produced.
      */
     @Serializable
-    data class SourceDocument(
+    public data class SourceDocument(
         val sourceId: String,
         val mediaType: String,
         val title: String,
@@ -130,21 +130,21 @@ sealed interface UIMessagePart {
 
     /** Generated file (image, audio, etc.). */
     @Serializable
-    data class File(
+    public data class File(
         val mediaType: String,
         val base64: String,
         val providerMetadata: Map<String, JsonElement>? = null,
     ) : UIMessagePart
 
     @Serializable
-    data class Error(val message: String) : UIMessagePart
+    public data class Error(val message: String) : UIMessagePart
 
     /**
      * Typed custom data part. Mirrors v6 `data-*` UI parts while using
      * an explicit [type] string instead of TypeScript literal keys.
      */
     @Serializable
-    data class Data(
+    public data class Data(
         val type: String,
         val data: JsonElement,
         val providerMetadata: Map<String, JsonElement>? = null,
@@ -158,7 +158,7 @@ sealed interface UIMessagePart {
      * divider in the chat list. Per AISDK_PORT_GAPS.md gap #8.
      */
     @Serializable
-    data class StepStart(val stepNumber: Int) : UIMessagePart
+    public data class StepStart(val stepNumber: Int) : UIMessagePart
 
     /**
      * Runtime-typed tool invocation — same lifecycle shape as
@@ -170,7 +170,7 @@ sealed interface UIMessagePart {
      * Per AISDK_PORT_GAPS.md gap #9.
      */
     @Serializable
-    data class DynamicToolUI(
+    public data class DynamicToolUI(
         val toolCallId: String,
         val toolName: String,
         val state: ToolCallState,
@@ -189,35 +189,35 @@ sealed interface UIMessagePart {
  *
  * Call as `outputAs(part, serializer<Result>())`.
  */
-fun <TOutput> outputAs(part: UIMessagePart.ToolUI, serializer: KSerializer<TOutput>): TOutput? {
+public fun <TOutput> outputAs(part: UIMessagePart.ToolUI, serializer: KSerializer<TOutput>): TOutput? {
     if (part.state != ToolCallState.OutputAvailable) return null
     val raw = part.output ?: return null
     return raw.decodeAs(serializer)
 }
 
-inline fun <reified TOutput> UIMessagePart.ToolUI.outputAs(): TOutput? =
+public inline fun <reified TOutput> UIMessagePart.ToolUI.outputAs(): TOutput? =
     outputAs(this, serializer())
 
 /**
  * Type-safe extraction of input args while the tool is mid-flight or
  * complete. Returns `null` if input isn't yet available.
  */
-fun <TInput> inputAs(part: UIMessagePart.ToolUI, serializer: KSerializer<TInput>): TInput? {
+public fun <TInput> inputAs(part: UIMessagePart.ToolUI, serializer: KSerializer<TInput>): TInput? {
     if (part.state == ToolCallState.InputStreaming) return null
     val raw = part.input ?: return null
     return raw.decodeAs(serializer)
 }
 
-inline fun <reified TInput> UIMessagePart.ToolUI.inputAs(): TInput? =
+public inline fun <reified TInput> UIMessagePart.ToolUI.inputAs(): TInput? =
     inputAs(this, serializer())
 
-fun <TData> dataAs(part: UIMessagePart.Data, serializer: KSerializer<TData>): TData =
+public fun <TData> dataAs(part: UIMessagePart.Data, serializer: KSerializer<TData>): TData =
     part.data.decodeAs(serializer)
 
-inline fun <reified TData> UIMessagePart.Data.dataAs(): TData =
+public inline fun <reified TData> UIMessagePart.Data.dataAs(): TData =
     dataAs(this, serializer())
 
-fun <TOutput> dynamicOutputAs(
+public fun <TOutput> dynamicOutputAs(
     part: UIMessagePart.DynamicToolUI,
     serializer: KSerializer<TOutput>,
 ): TOutput? {
@@ -226,10 +226,10 @@ fun <TOutput> dynamicOutputAs(
     return raw.decodeAs(serializer)
 }
 
-inline fun <reified TOutput> UIMessagePart.DynamicToolUI.outputAs(): TOutput? =
+public inline fun <reified TOutput> UIMessagePart.DynamicToolUI.outputAs(): TOutput? =
     dynamicOutputAs(this, serializer())
 
-fun <TInput> dynamicInputAs(
+public fun <TInput> dynamicInputAs(
     part: UIMessagePart.DynamicToolUI,
     serializer: KSerializer<TInput>,
 ): TInput? {
@@ -238,5 +238,5 @@ fun <TInput> dynamicInputAs(
     return raw.decodeAs(serializer)
 }
 
-inline fun <reified TInput> UIMessagePart.DynamicToolUI.inputAs(): TInput? =
+public inline fun <reified TInput> UIMessagePart.DynamicToolUI.inputAs(): TInput? =
     dynamicInputAs(this, serializer())

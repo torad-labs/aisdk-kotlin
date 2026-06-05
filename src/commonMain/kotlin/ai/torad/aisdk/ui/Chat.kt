@@ -1,30 +1,34 @@
 package ai.torad.aisdk.ui
 
+import kotlin.concurrent.Volatile
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.flow.updateAndGet
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonPrimitive
 
-data class ChatRequest(
+public data class ChatRequest(
     val messages: List<UIMessage>,
     val body: Map<String, JsonElement> = emptyMap(),
     val headers: Map<String, String> = emptyMap(),
 )
 
-interface ChatTransport {
-    fun sendMessages(request: ChatRequest): Flow<UIMessage>
+public interface ChatTransport {
+    public fun sendMessages(request: ChatRequest): Flow<UIMessage>
 
-    fun reconnectToStream(chatId: String, headers: Map<String, String> = emptyMap()): Flow<UIMessage>? = null
+    public fun reconnectToStream(chatId: String, headers: Map<String, String> = emptyMap()): Flow<UIMessage>? = null
 }
 
-class DirectChatTransport(
+public class DirectChatTransport(
     private val handler: (ChatRequest) -> Flow<UIMessage>,
 ) : ChatTransport {
     override fun sendMessages(request: ChatRequest): Flow<UIMessage> = handler(request)
 }
 
-class DefaultChatTransport(
+public class DefaultChatTransport(
     private val delegate: ChatTransport,
 ) : ChatTransport {
     override fun sendMessages(request: ChatRequest): Flow<UIMessage> =
@@ -34,7 +38,7 @@ class DefaultChatTransport(
         delegate.reconnectToStream(chatId, headers)
 }
 
-class TextStreamChatTransport(
+public class TextStreamChatTransport(
     private val handler: (ChatRequest) -> Flow<String>,
     private val assistantMessageId: (ChatRequest) -> String = { request ->
         getResponseUiMessageId(request.messages)
@@ -44,49 +48,72 @@ class TextStreamChatTransport(
         transformTextToUiMessageStream(handler(request), assistantMessageId(request))
 }
 
-enum class ChatStatus {
+public enum class ChatStatus {
     Ready,
     Submitted,
     Streaming,
     Error,
 }
 
-class Chat(
-    val id: String = "chat",
+public class Chat(
+    public val id: String = "chat",
     initialMessages: List<UIMessage> = emptyList(),
     private val transport: ChatTransport,
 ) {
-    private val mutableMessages: MutableList<UIMessage> = initialMessages.toMutableList()
-    private var nextToolApprovalResponseIndex: Int = nextApprovalIndexAfter(initialMessages)
+    // All chat state — messages, status, error, and the approval-id cursor —
+    // lives in a single atomic holder. Every read-modify-write goes through
+    // [MutableStateFlow.update], so concurrent appends, upserts, and status
+    // transitions never interleave into a torn state (a plain MutableList +
+    // loose `var`s would race, and a racy MutableList is UB on Native).
+    private val internalState = MutableStateFlow(
+        InternalState(
+            messages = initialMessages.toList(),
+            nextApprovalIndex = nextApprovalIndexAfter(initialMessages),
+        ),
+    )
 
-    var status: ChatStatus = ChatStatus.Ready
-        private set
+    // @Volatile for cross-thread visibility: an in-flight sendMessage/regenerate
+    // collector reads this to decide whether it is still the active operation
+    // before writing state. A newer sendMessage or a stop() supersedes the
+    // prior op so its trailing terminal writes (Ready/Error) cannot clobber the
+    // newer op's state — mirroring AgentSession's `currentJob` identity guard.
+    @Volatile
+    private var currentOp: Any? = null
 
-    var error: Throwable? = null
-        private set
+    public val status: ChatStatus
+        get() = internalState.value.status
 
-    val messages: List<UIMessage>
-        get() = mutableMessages.toList()
+    public val error: Throwable?
+        get() = internalState.value.error
 
-    fun setMessages(messages: List<UIMessage>) {
+    public val messages: List<UIMessage>
+        get() = internalState.value.messages
+
+    public fun setMessages(messages: List<UIMessage>) {
         validateUiMessages(messages)
-        mutableMessages.clear()
-        mutableMessages.addAll(messages)
-        nextToolApprovalResponseIndex = nextApprovalIndexAfter(messages)
+        internalState.update {
+            it.copy(
+                messages = messages.toList(),
+                nextApprovalIndex = nextApprovalIndexAfter(messages),
+            )
+        }
     }
 
-    fun clearError() {
-        error = null
-        if (status == ChatStatus.Error) status = ChatStatus.Ready
+    public fun clearError() {
+        internalState.update {
+            it.copy(
+                error = null,
+                status = if (it.status == ChatStatus.Error) ChatStatus.Ready else it.status,
+            )
+        }
     }
 
-    fun addToolApprovalResponse(
+    public fun addToolApprovalResponse(
         toolCallId: String,
         approved: Boolean,
         reason: String? = null,
         approvalId: String? = null,
     ) {
-        val responseId = nextToolApprovalResponseId()
         val responsePart = UIMessagePart.ToolUI(
             toolCallId = toolCallId,
             toolName = "approval",
@@ -94,88 +121,122 @@ class Chat(
             output = JsonPrimitive(approvalId ?: toolCallId),
             error = reason,
         )
-        mutableMessages += UIMessage(
-            id = responseId,
-            role = UIMessageRole.User,
-            parts = listOf(responsePart),
-        )
+        appendToolMessage(responsePart)
     }
 
-    fun addToolOutput(
+    public fun addToolOutput(
         toolCallId: String,
         output: JsonElement,
         toolName: String = "tool",
     ) {
-        mutableMessages += UIMessage(
-            id = nextToolApprovalResponseId(),
-            role = UIMessageRole.User,
-            parts = listOf(
-                UIMessagePart.ToolUI(
-                    toolCallId = toolCallId,
-                    toolName = toolName,
-                    state = ToolCallState.OutputAvailable,
-                    output = output,
-                ),
+        appendToolMessage(
+            UIMessagePart.ToolUI(
+                toolCallId = toolCallId,
+                toolName = toolName,
+                state = ToolCallState.OutputAvailable,
+                output = output,
             ),
         )
     }
 
     @Deprecated("Use addToolOutput instead.")
-    fun addToolResult(
+    public fun addToolResult(
         toolCallId: String,
         output: JsonElement,
         toolName: String = "tool",
-    ) = addToolOutput(toolCallId, output, toolName)
+    ): Unit = addToolOutput(toolCallId, output, toolName)
 
-    fun sendMessage(message: UIMessage, body: Map<String, JsonElement> = emptyMap()): Flow<UIMessage> = flow {
-        mutableMessages += message
-        val request = ChatRequest(messages = mutableMessages.toList(), body = body)
-        status = ChatStatus.Submitted
-        error = null
+    public fun sendMessage(message: UIMessage, body: Map<String, JsonElement> = emptyMap()): Flow<UIMessage> = flow {
+        // The optimistic append stays inside the flow body to preserve the cold
+        // contract: collecting starts the turn; merely calling sendMessage does
+        // not mutate state. (See the L-3 note in ChatSession for why eager
+        // append belongs at the session layer, not here.) The token claims this
+        // op as the active one so a superseded collector can't write back.
+        val op = Any()
+        currentOp = op
+        val request = internalState.updateAndGet {
+            it.copy(
+                messages = it.messages + message,
+                status = ChatStatus.Submitted,
+                error = null,
+            )
+        }.let { ChatRequest(messages = it.messages, body = body) }
         try {
             transport.sendMessages(request).collect { response ->
-                status = ChatStatus.Streaming
-                upsertMessage(response)
+                if (currentOp === op) {
+                    internalState.update { it.copy(status = ChatStatus.Streaming).withUpsert(response) }
+                }
                 emit(response)
             }
-            status = ChatStatus.Ready
+            if (currentOp === op) {
+                internalState.update { it.copy(status = ChatStatus.Ready) }
+            }
         } catch (t: Throwable) {
-            error = t
-            status = ChatStatus.Error
+            if (currentOp === op) {
+                internalState.update { it.copy(error = t, status = ChatStatus.Error) }
+            }
             throw t
         }
     }
 
-    fun regenerate(body: Map<String, JsonElement> = emptyMap()): Flow<UIMessage> {
-        val lastUser = mutableMessages.lastOrNull { it.role == UIMessageRole.User }
+    public fun regenerate(body: Map<String, JsonElement> = emptyMap()): Flow<UIMessage> {
+        val lastUser = internalState.value.messages.lastOrNull { it.role == UIMessageRole.User }
             ?: return emptyFlow()
         return sendMessage(lastUser, body)
     }
 
-    fun stop() {
-        status = ChatStatus.Ready
+    public fun stop() {
+        // Supersede any in-flight op so its trailing terminal writes are ignored,
+        // then settle to Ready atomically.
+        currentOp = null
+        internalState.update { it.copy(status = ChatStatus.Ready) }
     }
 
-    fun reconnectToStream(headers: Map<String, String> = emptyMap()): Flow<UIMessage>? =
+    public fun reconnectToStream(headers: Map<String, String> = emptyMap()): Flow<UIMessage>? =
         transport.reconnectToStream(id, headers)
 
-    fun resumeStream(headers: Map<String, String> = emptyMap()): Flow<UIMessage> =
+    public fun resumeStream(headers: Map<String, String> = emptyMap()): Flow<UIMessage> =
         reconnectToStream(headers) ?: emptyFlow()
 
-    private fun upsertMessage(message: UIMessage) {
-        val index = mutableMessages.indexOfFirst { it.id == message.id }
-        if (index >= 0) {
-            mutableMessages[index] = message
-        } else {
-            mutableMessages += message
+    private fun appendToolMessage(part: UIMessagePart.ToolUI) {
+        // Allocate the id and append in one atomic update so two concurrent
+        // tool responses can't claim the same approval index.
+        internalState.update { current ->
+            val (id, nextIndex) = current.nextApprovalResponseId()
+            current.copy(
+                messages = current.messages + UIMessage(
+                    id = id,
+                    role = UIMessageRole.User,
+                    parts = listOf(part),
+                ),
+                nextApprovalIndex = nextIndex,
+            )
         }
     }
 
-    private fun nextToolApprovalResponseId(): String {
-        val existingIds = mutableMessages.map { it.id }.toSet()
-        while (true) {
-            val candidate = "$TOOL_APPROVAL_RESPONSE_ID_PREFIX${nextToolApprovalResponseIndex++}"
-            if (candidate !in existingIds) return candidate
+    private data class InternalState(
+        val messages: List<UIMessage> = emptyList(),
+        val status: ChatStatus = ChatStatus.Ready,
+        val error: Throwable? = null,
+        val nextApprovalIndex: Int = 1,
+    ) {
+        fun withUpsert(message: UIMessage): InternalState {
+            val index = messages.indexOfFirst { it.id == message.id }
+            val nextMessages = if (index >= 0) {
+                messages.toMutableList().also { it[index] = message }
+            } else {
+                messages + message
+            }
+            return copy(messages = nextMessages)
+        }
+
+        fun nextApprovalResponseId(): Pair<String, Int> {
+            val existingIds = messages.mapTo(mutableSetOf()) { it.id }
+            var index = nextApprovalIndex
+            while (true) {
+                val candidate = "$TOOL_APPROVAL_RESPONSE_ID_PREFIX${index++}"
+                if (candidate !in existingIds) return candidate to index
+            }
         }
     }
 

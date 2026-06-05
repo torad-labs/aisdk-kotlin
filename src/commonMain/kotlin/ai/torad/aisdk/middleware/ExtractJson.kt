@@ -37,7 +37,7 @@ import kotlinx.coroutines.flow.flow
  * streaming text is buffered until `TextEnd`, matching v6 because an
  * arbitrary transform cannot be applied incrementally.
  */
-fun extractJsonMiddleware(
+public fun extractJsonMiddleware(
     transform: ((String) -> String)? = null,
 ): LanguageModelMiddleware = object : LanguageModelMiddleware {
 

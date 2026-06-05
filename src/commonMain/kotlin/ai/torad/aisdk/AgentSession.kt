@@ -1,15 +1,19 @@
 package ai.torad.aisdk
 
+import kotlin.concurrent.Volatile
+import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
-enum class AgentSessionStatus {
+public enum class AgentSessionStatus {
     Ready,
     Running,
     AwaitingApproval,
@@ -17,7 +21,7 @@ enum class AgentSessionStatus {
     Error,
 }
 
-data class AgentSessionState<TOutput>(
+public data class AgentSessionState<TOutput>(
     val messages: List<ModelMessage> = emptyList(),
     val status: AgentSessionStatus = AgentSessionStatus.Ready,
     val text: String = "",
@@ -30,17 +34,21 @@ data class AgentSessionState<TOutput>(
         get() = status == AgentSessionStatus.Running
 }
 
-class AgentSession<TContext, TOutput>(
+public class AgentSession<TContext, TOutput>(
     private val scope: CoroutineScope,
     private val agent: Agent<TContext, TOutput>,
     initialMessages: List<ModelMessage> = emptyList(),
 ) {
     private val mutableState = MutableStateFlow(AgentSessionState<TOutput>(messages = initialMessages))
+
+    // @Volatile for cross-thread visibility: a launched job reads this to
+    // decide whether it is still the active job before writing state.
+    @Volatile
     private var currentJob: Job? = null
 
-    val state: StateFlow<AgentSessionState<TOutput>> = mutableState.asStateFlow()
+    public val state: StateFlow<AgentSessionState<TOutput>> = mutableState.asStateFlow()
 
-    fun submit(
+    public fun submit(
         prompt: String? = null,
         messages: List<ModelMessage> = state.value.messages,
         options: TContext? = null,
@@ -49,17 +57,19 @@ class AgentSession<TContext, TOutput>(
     ): Job {
         currentJob?.cancel()
         val visibleMessages = visibleMessages(messages, prompt)
-        mutableState.value = state.value.copy(
-            messages = visibleMessages,
-            status = AgentSessionStatus.Running,
-            error = null,
-            pendingApprovals = emptyList(),
-            text = "",
-            output = null,
-            lastResult = null,
-        )
+        mutableState.update {
+            it.copy(
+                messages = visibleMessages,
+                status = AgentSessionStatus.Running,
+                error = null,
+                pendingApprovals = emptyList(),
+                text = "",
+                output = null,
+                lastResult = null,
+            )
+        }
 
-        return launchSession(abortSignal) { effectiveAbortSignal ->
+        return launchSession(abortSignal) { effectiveAbortSignal, active ->
             val result = agent.generate(
                 prompt = prompt,
                 messages = messages,
@@ -67,22 +77,24 @@ class AgentSession<TContext, TOutput>(
                 abortSignal = effectiveAbortSignal,
                 hooks = hooks,
             )
-            mutableState.value = AgentSessionState(
-                messages = result.messages,
-                status = if (result.pendingApprovals.isEmpty()) {
-                    AgentSessionStatus.Ready
-                } else {
-                    AgentSessionStatus.AwaitingApproval
-                },
-                text = result.text,
-                output = result.output,
-                pendingApprovals = result.pendingApprovals,
-                lastResult = result,
-            )
+            if (active()) {
+                mutableState.value = AgentSessionState(
+                    messages = result.messages,
+                    status = if (result.pendingApprovals.isEmpty()) {
+                        AgentSessionStatus.Ready
+                    } else {
+                        AgentSessionStatus.AwaitingApproval
+                    },
+                    text = result.text,
+                    output = result.output,
+                    pendingApprovals = result.pendingApprovals,
+                    lastResult = result,
+                )
+            }
         }
     }
 
-    fun submitStreaming(
+    public fun submitStreaming(
         prompt: String? = null,
         messages: List<ModelMessage> = state.value.messages,
         options: TContext? = null,
@@ -91,19 +103,45 @@ class AgentSession<TContext, TOutput>(
     ): Job {
         currentJob?.cancel()
         val visibleMessages = visibleMessages(messages, prompt)
-        mutableState.value = state.value.copy(
-            messages = visibleMessages,
-            status = AgentSessionStatus.Running,
-            error = null,
-            pendingApprovals = emptyList(),
-            text = "",
-            output = null,
-            lastResult = null,
-        )
+        mutableState.update {
+            it.copy(
+                messages = visibleMessages,
+                status = AgentSessionStatus.Running,
+                error = null,
+                pendingApprovals = emptyList(),
+                text = "",
+                output = null,
+                lastResult = null,
+            )
+        }
 
-        return launchSession(abortSignal) { effectiveAbortSignal ->
+        return launchSession(abortSignal) { effectiveAbortSignal, active ->
             val text = StringBuilder()
+            // Keyed by toolCallId so a streamed tool's final result replaces
+            // its preliminary chunks and order is preserved. These were
+            // previously dropped (else -> Unit), truncating the message log.
+            val toolCalls = linkedMapOf<String, ContentPart.ToolCall>()
+            val toolResults = linkedMapOf<String, ContentPart.ToolResult>()
             val pendingApprovals = mutableListOf<PendingApproval>()
+
+            fun render(newStatus: AgentSessionStatus) {
+                if (!active()) return
+                mutableState.update {
+                    it.copy(
+                        status = newStatus,
+                        text = text.toString(),
+                        pendingApprovals = pendingApprovals.toList(),
+                        messages = streamingMessages(
+                            messages = visibleMessages,
+                            text = text.toString(),
+                            toolCalls = toolCalls.values.toList(),
+                            toolResults = toolResults.values.toList(),
+                            pendingApprovals = pendingApprovals,
+                        ),
+                    )
+                }
+            }
+
             agent.stream(
                 prompt = prompt,
                 messages = messages,
@@ -114,10 +152,43 @@ class AgentSession<TContext, TOutput>(
                 when (event) {
                     is StreamEvent.TextDelta -> {
                         text.append(event.text)
-                        mutableState.value = state.value.copy(
-                            text = text.toString(),
-                            messages = streamingMessages(visibleMessages, text.toString(), pendingApprovals),
+                        render(AgentSessionStatus.Running)
+                    }
+                    is StreamEvent.ToolCall -> {
+                        toolCalls[event.toolCallId] = ContentPart.ToolCall(
+                            toolCallId = event.toolCallId,
+                            toolName = event.toolName,
+                            input = event.inputJson,
+                            providerMetadata = event.providerMetadata,
                         )
+                        render(AgentSessionStatus.Running)
+                    }
+                    is StreamEvent.ToolResult -> {
+                        if (!event.preliminary) {
+                            toolResults[event.toolCallId] = ContentPart.ToolResult(
+                                toolCallId = event.toolCallId,
+                                toolName = event.toolName,
+                                output = event.outputJson,
+                                isError = event.isError,
+                                // Carry the tool's model-facing summary (toModelOutput)
+                                // so a resumed turn doesn't re-feed the full payload.
+                                modelVisible = event.modelOutput.toJsonElement(),
+                                providerMetadata = event.providerMetadata,
+                            )
+                            render(AgentSessionStatus.Running)
+                        }
+                    }
+                    is StreamEvent.ToolError -> {
+                        // Mirror the agent's own log shape: a failed tool is an
+                        // error-flagged tool result carrying the message.
+                        toolResults[event.toolCallId] = ContentPart.ToolResult(
+                            toolCallId = event.toolCallId,
+                            toolName = event.toolName,
+                            output = JsonPrimitive(event.message),
+                            isError = true,
+                            providerMetadata = event.providerMetadata,
+                        )
+                        render(AgentSessionStatus.Running)
                     }
                     is StreamEvent.ToolApprovalRequest -> {
                         pendingApprovals += PendingApproval(
@@ -126,68 +197,67 @@ class AgentSession<TContext, TOutput>(
                             input = event.inputJson,
                             approvalId = event.approvalId,
                         )
-                        mutableState.value = state.value.copy(
-                            status = AgentSessionStatus.AwaitingApproval,
-                            pendingApprovals = pendingApprovals.toList(),
-                            messages = streamingMessages(visibleMessages, text.toString(), pendingApprovals),
-                        )
+                        render(AgentSessionStatus.AwaitingApproval)
                     }
                     is StreamEvent.Finish -> {
-                        mutableState.value = state.value.copy(
-                            status = if (pendingApprovals.isEmpty()) {
+                        render(
+                            if (pendingApprovals.isEmpty()) {
                                 AgentSessionStatus.Ready
                             } else {
                                 AgentSessionStatus.AwaitingApproval
                             },
-                            pendingApprovals = pendingApprovals.toList(),
-                            messages = streamingMessages(visibleMessages, text.toString(), pendingApprovals),
                         )
                     }
                     StreamEvent.Abort -> {
-                        mutableState.value = state.value.copy(status = AgentSessionStatus.Cancelled)
+                        if (active()) {
+                            mutableState.update { it.copy(status = AgentSessionStatus.Cancelled) }
+                        }
                     }
                     is StreamEvent.Error -> {
-                        mutableState.value = state.value.copy(
-                            status = AgentSessionStatus.Error,
-                            error = AiSdkException(event.message),
-                        )
+                        if (active()) {
+                            mutableState.update {
+                                it.copy(
+                                    status = AgentSessionStatus.Error,
+                                    error = AiSdkException(event.message),
+                                )
+                            }
+                        }
                     }
                     else -> Unit
                 }
             }
-            if (state.value.status == AgentSessionStatus.Running) {
-                mutableState.value = state.value.copy(
-                    status = if (pendingApprovals.isEmpty()) {
+            // Settle if the stream ended without an explicit Finish/Abort/Error.
+            if (active() && state.value.status == AgentSessionStatus.Running) {
+                render(
+                    if (pendingApprovals.isEmpty()) {
                         AgentSessionStatus.Ready
                     } else {
                         AgentSessionStatus.AwaitingApproval
                     },
-                    pendingApprovals = pendingApprovals.toList(),
-                    messages = streamingMessages(visibleMessages, text.toString(), pendingApprovals),
                 )
             }
         }
     }
 
-    fun approve(
+    public fun approve(
         approval: PendingApproval,
         options: TContext? = null,
         reason: String? = null,
     ): Job = resumeApproval(approval, approved = true, options = options, reason = reason)
 
-    fun deny(
+    public fun deny(
         approval: PendingApproval,
         options: TContext? = null,
         reason: String? = null,
     ): Job = resumeApproval(approval, approved = false, options = options, reason = reason)
 
-    fun cancel() {
+    public fun cancel() {
         currentJob?.cancel()
         currentJob = null
-        mutableState.value = state.value.copy(status = AgentSessionStatus.Cancelled)
+        mutableState.update { it.copy(status = AgentSessionStatus.Cancelled) }
     }
 
-    fun reset(messages: List<ModelMessage> = emptyList()) {
+    public fun reset(messages: List<ModelMessage> = emptyList()) {
         currentJob?.cancel()
         currentJob = null
         mutableState.value = AgentSessionState(messages = messages)
@@ -213,28 +283,36 @@ class AgentSession<TContext, TOutput>(
 
     private fun launchSession(
         abortSignal: AbortSignal,
-        block: suspend (AbortSignal) -> Unit,
+        block: suspend (effectiveAbortSignal: AbortSignal, active: () -> Boolean) -> Unit,
     ): Job {
         val controller = AbortController()
         val externalRegistration = abortSignal.register { controller.abort() }
-        val job = scope.launch {
+        lateinit var job: Job
+        // The `active` guard stops a job that has been superseded by a newer
+        // submit() (which reassigned currentJob) from clobbering the new
+        // job's state — including from its own cancellation/error handler.
+        job = scope.launch(start = CoroutineStart.LAZY) {
             try {
-                block(controller.signal)
+                block(controller.signal) { job === currentJob }
             } catch (error: CancellationException) {
-                mutableState.value = state.value.copy(status = AgentSessionStatus.Cancelled)
+                if (job === currentJob) {
+                    mutableState.update { it.copy(status = AgentSessionStatus.Cancelled) }
+                }
                 throw error
             } catch (error: Throwable) {
-                mutableState.value = state.value.copy(
-                    status = AgentSessionStatus.Error,
-                    error = error,
-                )
+                if (job === currentJob) {
+                    mutableState.update { it.copy(status = AgentSessionStatus.Error, error = error) }
+                }
             }
         }
         job.invokeOnCompletion {
             externalRegistration.cancel()
             controller.abort()
         }
+        // Claim ownership before starting the body so the `active` check inside
+        // the coroutine always observes the assignment.
         currentJob = job
+        job.start()
         return job
     }
 
@@ -244,11 +322,14 @@ class AgentSession<TContext, TOutput>(
     private fun streamingMessages(
         messages: List<ModelMessage>,
         text: String,
+        toolCalls: List<ContentPart.ToolCall>,
+        toolResults: List<ContentPart.ToolResult>,
         pendingApprovals: List<PendingApproval>,
     ): List<ModelMessage> = buildList {
         addAll(messages)
         val assistantParts = buildList {
             if (text.isNotEmpty()) add(ContentPart.Text(text))
+            addAll(toolCalls)
             pendingApprovals.forEach { approval ->
                 add(
                     ContentPart.ToolApprovalRequest(
@@ -263,10 +344,15 @@ class AgentSession<TContext, TOutput>(
         if (assistantParts.isNotEmpty()) {
             add(ModelMessage(MessageRole.Assistant, assistantParts))
         }
+        // Tool results ride on their own Tool-role message (v6 shape), so a
+        // streamed tool round-trip is fully represented in the message log.
+        if (toolResults.isNotEmpty()) {
+            add(ModelMessage(MessageRole.Tool, toolResults))
+        }
     }
 }
 
-fun <TContext, TOutput> Agent<TContext, TOutput>.session(
+public fun <TContext, TOutput> Agent<TContext, TOutput>.session(
     scope: CoroutineScope,
     initialMessages: List<ModelMessage> = emptyList(),
 ): AgentSession<TContext, TOutput> = AgentSession(

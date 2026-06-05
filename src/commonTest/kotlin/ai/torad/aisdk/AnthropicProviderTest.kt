@@ -1,4 +1,9 @@
 package ai.torad.aisdk
+import ai.torad.aisdk.providers.ANTHROPIC_VERSION
+import ai.torad.aisdk.providers.AnthropicProviderSettings
+import ai.torad.aisdk.providers.anthropic
+import ai.torad.aisdk.providers.createAnthropic
+import ai.torad.aisdk.providers.forwardAnthropicContainerIdFromLastStep
 
 import ai.torad.aisdk.testing.drainAllItems
 import io.ktor.http.HttpHeaders

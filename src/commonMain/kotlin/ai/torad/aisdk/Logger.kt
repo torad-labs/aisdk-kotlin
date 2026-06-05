@@ -25,15 +25,15 @@ package ai.torad.aisdk
  * [StreamEvent.Error] / `OnErrorEvent`, which is the typed channel
  * consumers should listen on.
  */
-interface Logger {
-    fun warn(message: String, throwable: Throwable? = null)
-    fun info(message: String)
-    fun debug(message: String)
+public interface Logger {
+    public fun warn(message: String, throwable: Throwable? = null)
+    public fun info(message: String)
+    public fun debug(message: String)
 }
 
 /** Drop-everything logger. Default when no DI-injected impl is wired. */
-object NoopLogger : Logger {
-    override fun warn(message: String, throwable: Throwable?) = Unit
-    override fun info(message: String) = Unit
-    override fun debug(message: String) = Unit
+public data object NoopLogger : Logger {
+    override fun warn(message: String, throwable: Throwable?): Unit = Unit
+    override fun info(message: String): Unit = Unit
+    override fun debug(message: String): Unit = Unit
 }

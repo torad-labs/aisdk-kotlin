@@ -5,6 +5,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
+@OptIn(ExperimentalAiSdkApi::class)
 class CodemodParityTest {
     @Test
     fun `codemods rewrite stream helper names framework imports and v5 useChat input helpers`() {

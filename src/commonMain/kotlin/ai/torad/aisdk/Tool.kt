@@ -22,7 +22,7 @@ import kotlinx.serialization.json.jsonPrimitive
  * A tool the LLM can call — application code constructs these via the
  * top-level [tool] (single-value) or [streamingTool] (Flow) factories.
  *
- * Per invariant I-2, tools use [inputSchema] (v6) — never `parameters`
+ * Per invariant I-2, tools use `inputSchema` (v6) — never `parameters`
  * (v5, removed). Per I-8 tools are stateless: inputs in, outputs out, no
  * shared mutable state.
  *
@@ -46,19 +46,19 @@ import kotlinx.serialization.json.jsonPrimitive
  * `StreamEvent.ToolResult(preliminary = true)`, the last emission is
  * the final result that lands in the model's message log.
  */
-class Tool<TInput, TOutput, TContext>(
-    val name: String,
-    val description: String,
-    val inputSerializer: KSerializer<TInput>,
-    val outputSerializer: KSerializer<TOutput>,
-    val executor: ToolExecutionContext<TContext>.(TInput) -> Flow<TOutput>,
+public class Tool<TInput, TOutput, TContext>(
+    public val name: String,
+    public val description: String,
+    public val inputSerializer: KSerializer<TInput>,
+    public val outputSerializer: KSerializer<TOutput>,
+    public val executor: ToolExecutionContext<TContext>.(TInput) -> Flow<TOutput>,
     /**
      * Approval gate. Per AISDK_PORT_GAPS.md gap #17, the predicate
      * receives [ToolPredicateOptions] (toolCallId + messages +
      * experimental_context) — not just `context`. Lets the gate
      * decide based on conversation history or call identity.
      */
-    val needsApproval: (suspend (input: TInput, options: ToolPredicateOptions<TContext>) -> Boolean)? = null,
+    public val needsApproval: (suspend (input: TInput, options: ToolPredicateOptions<TContext>) -> Boolean)? = null,
     /**
      * Model-visible summary. Per AISDK_PORT_GAPS.md gaps #17 + #14,
      * the callback receives both the typed output AND
@@ -67,13 +67,13 @@ class Tool<TInput, TOutput, TContext>(
      * `String`. The agent loop bridges each variant to the
      * wire-format `ContentPart.ToolResult.modelVisible` (+ `isError`).
      */
-    val toModelOutput: ((TOutput, ToolPredicateOptions<TContext>) -> ToolResultOutput)? = null,
+    public val toModelOutput: ((TOutput, ToolPredicateOptions<TContext>) -> ToolResultOutput)? = null,
     /**
      * Per best practice #9: strict JSON schema enforcement is opt-in per
      * tool, not global. Some providers reject schemas with format/regex
      * constraints under strict mode; mark such tools `strict = false`.
      */
-    val strict: Boolean = true,
+    public val strict: Boolean = true,
     /**
      * Few-shot example inputs encoded as JSON strings. Mirrors v6's
      * `tool.inputExamples` (per AISDK_PORT_GAPS.md gap #19). Disproportionate
@@ -82,26 +82,26 @@ class Tool<TInput, TOutput, TContext>(
      * inlines these into the description as `Example: <json>` so every
      * provider sees them (most don't expose a separate examples field).
      */
-    val inputExamples: List<String> = emptyList(),
+    public val inputExamples: List<String> = emptyList(),
     /**
      * Lifecycle hook — fired when the model commits to calling this
      * tool (StreamEvent.ToolInputStart arrives). Mirrors v6's
      * `tool.onInputStart` (per AISDK_PORT_GAPS.md gap #18). Lets a
      * tool pre-warm: UI spinner, cache priming, etc.
      */
-    val onInputStart: (suspend (streamingId: String) -> Unit)? = null,
+    public val onInputStart: (suspend (streamingId: String) -> Unit)? = null,
     /**
      * Lifecycle hook — fired as the model streams the tool's input
      * JSON token-by-token (StreamEvent.ToolInputDelta). The accumulated
      * input isn't yet valid JSON; this is for raw-character pre-warm.
      */
-    val onInputDelta: (suspend (streamingId: String, delta: String) -> Unit)? = null,
+    public val onInputDelta: (suspend (streamingId: String, delta: String) -> Unit)? = null,
     /**
      * Lifecycle hook — fired after the streamed JSON has parsed
      * successfully into the typed [TInput], just before [executor]
      * runs. Mirrors v6's `tool.onInputAvailable`.
      */
-    val onInputAvailable: (suspend (toolCallId: String, input: TInput) -> Unit)? = null,
+    public val onInputAvailable: (suspend (toolCallId: String, input: TInput) -> Unit)? = null,
     /**
      * Application-defined metadata bag. Mirrors v6's `tool.metadata`
      * (per AISDK_PORT_GAPS.md gap #34). Opaque to the loop —
@@ -109,8 +109,8 @@ class Tool<TInput, TOutput, TContext>(
      * read it via [ToolSet.byName]. Examples: feature-flag key,
      * billing tier, owning team. Empty by default.
      */
-    val metadata: Map<String, JsonElement> = emptyMap(),
-    val providerExecuted: Boolean = false,
+    public val metadata: Map<String, JsonElement> = emptyMap(),
+    public val providerExecuted: Boolean = false,
 )
 
 /**
@@ -134,7 +134,7 @@ class Tool<TInput, TOutput, TContext>(
  * snapshots before the final value.
  */
 @Suppress("LongParameterList")
-fun <TInput, TOutput, TContext> tool(
+public fun <TInput, TOutput, TContext> tool(
     name: String,
     description: String,
     inputSerializer: KSerializer<TInput>,
@@ -199,7 +199,7 @@ fun <TInput, TOutput, TContext> tool(
  * (the agent emits `StreamEvent.ToolError`).
  */
 @Suppress("LongParameterList")
-fun <TInput, TOutput, TContext> streamingTool(
+public fun <TInput, TOutput, TContext> streamingTool(
     name: String,
     description: String,
     inputSerializer: KSerializer<TInput>,
@@ -239,10 +239,10 @@ fun <TInput, TOutput, TContext> streamingTool(
  * holds tools with different `TInput`/`TOutput` types. Type recovery
  * happens at the dispatch site via the tool's own serializers.
  */
-class ToolSet<TContext>(
-    val byName: Map<String, Tool<*, *, TContext>>,
+public class ToolSet<TContext>(
+    public val byName: Map<String, Tool<*, *, TContext>>,
 ) {
-    val descriptors: List<LanguageModelTool> by lazy {
+    public val descriptors: List<LanguageModelTool> by lazy {
         byName.values.map { tool ->
             LanguageModelTool(
                 name = tool.name,
@@ -255,13 +255,18 @@ class ToolSet<TContext>(
         }
     }
 
-    fun find(toolName: String): Tool<*, *, TContext>? = byName[toolName]
+    public fun find(toolName: String): Tool<*, *, TContext>? = byName[toolName]
 
     /** Registered tool names — for [AgentError.NoSuchTool] diagnostics. */
-    fun names(): List<String> = byName.keys.toList()
+    public fun names(): List<String> = byName.keys.toList()
 
-    operator fun plus(other: ToolSet<TContext>): ToolSet<TContext> =
-        ToolSet(byName + other.byName)
+    public operator fun plus(other: ToolSet<TContext>): ToolSet<TContext> {
+        val overlap = byName.keys intersect other.byName.keys
+        require(overlap.isEmpty()) {
+            "Duplicate tool name(s) when combining tool sets: ${overlap.joinToString()}."
+        }
+        return ToolSet(byName + other.byName)
+    }
 }
 
 /** Inline `tool.inputExamples` into the description so every provider
@@ -275,20 +280,37 @@ private fun descriptionWithExamples(tool: Tool<*, *, *>): String {
     return "${tool.description}\n\n$appendix"
 }
 
-/** Construct a [ToolSet] from individual tools. */
-fun <TContext> toolSetOf(vararg tools: Tool<*, *, TContext>): ToolSet<TContext> =
-    ToolSet(tools.associateBy { it.name })
+/**
+ * Build the name→tool map, rejecting duplicates. A silent last-wins
+ * `associateBy` drops a tool the caller registered; every tool-set
+ * construction path funnels through here so the policy is uniform (H-8).
+ */
+internal fun <TContext> requireUniqueToolNames(
+    tools: List<Tool<*, *, TContext>>,
+): Map<String, Tool<*, *, TContext>> {
+    val byName = linkedMapOf<String, Tool<*, *, TContext>>()
+    for (tool in tools) {
+        require(tool.name !in byName) { "Duplicate tool name `${tool.name}`." }
+        byName[tool.name] = tool
+    }
+    return byName
+}
 
-class ToolSetBuilder<TContext> internal constructor() {
+/** Construct a [ToolSet] from individual tools. Throws on duplicate names. */
+public fun <TContext> toolSetOf(vararg tools: Tool<*, *, TContext>): ToolSet<TContext> =
+    ToolSet(requireUniqueToolNames(tools.toList()))
+
+@AiSdkDsl
+public class ToolSetBuilder<TContext> internal constructor() {
     private val tools = linkedMapOf<String, Tool<*, *, TContext>>()
 
-    fun add(tool: Tool<*, *, TContext>) {
+    public fun add(tool: Tool<*, *, TContext>) {
         require(tool.name !in tools) { "Duplicate tool name `${tool.name}`." }
         tools[tool.name] = tool
     }
 
     @Suppress("LongParameterList")
-    inline fun <reified TInput, reified TOutput> tool(
+    public inline fun <reified TInput, reified TOutput> tool(
         name: String,
         description: String,
         noinline needsApproval: (suspend (input: TInput, options: ToolPredicateOptions<TContext>) -> Boolean)? = null,
@@ -320,7 +342,7 @@ class ToolSetBuilder<TContext> internal constructor() {
         ).also(::add)
 
     @Suppress("LongParameterList")
-    inline fun <reified TInput, reified TOutput> streamingTool(
+    public inline fun <reified TInput, reified TOutput> streamingTool(
         name: String,
         description: String,
         noinline needsApproval: (suspend (input: TInput, options: ToolPredicateOptions<TContext>) -> Boolean)? = null,
@@ -354,11 +376,11 @@ class ToolSetBuilder<TContext> internal constructor() {
     internal fun build(): ToolSet<TContext> = ToolSet(tools.toMap())
 }
 
-fun <TContext> toolSet(block: ToolSetBuilder<TContext>.() -> Unit): ToolSet<TContext> =
+public fun <TContext> toolSet(block: ToolSetBuilder<TContext>.() -> Unit): ToolSet<TContext> =
     ToolSetBuilder<TContext>().apply(block).build()
 
 @Suppress("LongParameterList")
-inline fun <reified TInput, reified TOutput, TContext> tool(
+public inline fun <reified TInput, reified TOutput, TContext> tool(
     name: String,
     description: String,
     noinline needsApproval: (suspend (input: TInput, options: ToolPredicateOptions<TContext>) -> Boolean)? = null,
@@ -389,7 +411,7 @@ inline fun <reified TInput, reified TOutput, TContext> tool(
 )
 
 @Suppress("LongParameterList")
-inline fun <reified TInput, reified TOutput, TContext> streamingTool(
+public inline fun <reified TInput, reified TOutput, TContext> streamingTool(
     name: String,
     description: String,
     noinline needsApproval: (suspend (input: TInput, options: ToolPredicateOptions<TContext>) -> Boolean)? = null,
@@ -424,7 +446,7 @@ inline fun <reified TInput, reified TOutput, TContext> streamingTool(
  * outputs are raw [JsonElement] values, so the tool can be registered
  * from external manifests or MCP-style runtime catalogs.
  */
-fun <TContext> dynamicTool(
+public fun <TContext> dynamicTool(
     name: String,
     description: String,
     inputSchemaJson: String = "{}",
@@ -441,7 +463,7 @@ fun <TContext> dynamicTool(
     executor = executor,
 )
 
-fun <TInput, TOutput, TContext> providerExecutedTool(
+public fun <TInput, TOutput, TContext> providerExecutedTool(
     name: String,
     description: String,
     inputSerializer: KSerializer<TInput>,
@@ -458,49 +480,49 @@ fun <TInput, TOutput, TContext> providerExecutedTool(
     flow { throw AgentError.ToolExecution(name, toolCallId, UnsupportedOperationException("provider-executed tool has no local executor")) }
 }
 
-data class Schema<T>(
+public data class Schema<T>(
     val jsonSchema: JsonElement,
     val validate: ((JsonElement) -> T)? = null,
 )
 
-class LazySchema<T>(
+public class LazySchema<T>(
     private val createSchema: () -> Schema<T>,
 ) {
     private var cached: Schema<T>? = null
 
-    operator fun invoke(): Schema<T> =
+    public operator fun invoke(): Schema<T> =
         cached ?: createSchema().also { cached = it }
 }
 
-fun <T> lazySchema(createSchema: () -> Schema<T>): LazySchema<T> =
+public fun <T> lazySchema(createSchema: () -> Schema<T>): LazySchema<T> =
     LazySchema(createSchema)
 
-fun <T> jsonSchema(
+public fun <T> jsonSchema(
     schema: JsonElement,
     validate: ((JsonElement) -> T)? = null,
 ): Schema<T> = Schema(schema, validate)
 
-fun <T> asSchema(schema: Schema<T>?): Schema<T> =
+public fun <T> asSchema(schema: Schema<T>?): Schema<T> =
     schema ?: jsonSchema(buildJsonObject {
         put("properties", JsonObject(emptyMap()))
         put("additionalProperties", JsonPrimitive(false))
     })
 
-fun <T> asSchema(schema: LazySchema<T>): Schema<T> = schema()
+public fun <T> asSchema(schema: LazySchema<T>): Schema<T> = schema()
 
-sealed interface ValidationResult<out T> {
-    data class Success<T>(
+public sealed interface ValidationResult<out T> {
+    public data class Success<T>(
         val value: T,
         val rawValue: JsonElement,
     ) : ValidationResult<T>
 
-    data class Failure(
+    public data class Failure(
         val error: TypeValidationError,
         val rawValue: JsonElement,
     ) : ValidationResult<Nothing>
 }
 
-fun <T> safeValidateTypes(
+public fun <T> safeValidateTypes(
     value: JsonElement,
     schema: Schema<T>,
     context: TypeValidationContext? = null,
@@ -534,13 +556,13 @@ private fun schemaFallbackValue(value: JsonElement, schema: JsonElement): Any? {
 private fun JsonPrimitive.isJsonString(): Boolean =
     toString().startsWith("\"")
 
-fun <T> safeValidateTypes(
+public fun <T> safeValidateTypes(
     value: JsonElement,
     schema: LazySchema<T>,
     context: TypeValidationContext? = null,
 ): ValidationResult<T> = safeValidateTypes(value, schema(), context)
 
-fun <T> validateTypes(
+public fun <T> validateTypes(
     value: JsonElement,
     schema: Schema<T>,
     context: TypeValidationContext? = null,
@@ -549,13 +571,13 @@ fun <T> validateTypes(
     is ValidationResult.Failure -> throw result.error
 }
 
-fun <T> validateTypes(
+public fun <T> validateTypes(
     value: JsonElement,
     schema: LazySchema<T>,
     context: TypeValidationContext? = null,
 ): T = validateTypes(value, schema(), context)
 
-fun <T> parseProviderOptions(
+public fun <T> parseProviderOptions(
     provider: String,
     providerOptions: Map<String, JsonElement>,
     schema: Schema<T>,
@@ -571,24 +593,12 @@ fun <T> parseProviderOptions(
     }
 }
 
-fun <T> zodSchema(
-    schema: JsonElement,
-    validate: ((JsonElement) -> T)? = null,
-): Schema<T> = Schema(schema, validate)
-
-fun <T> valibotSchema(
-    schema: JsonElement,
-    validate: ((JsonElement) -> T)? = null,
-): Schema<T> = jsonSchema(schema, validate)
-
-fun <T> valibotSchema(schema: Schema<T>): Schema<T> = schema
-
-sealed interface ExecuteToolResult<out TOutput> {
-    data class Preliminary<TOutput>(val output: TOutput) : ExecuteToolResult<TOutput>
-    data class Final<TOutput>(val output: TOutput) : ExecuteToolResult<TOutput>
+public sealed interface ExecuteToolResult<out TOutput> {
+    public data class Preliminary<TOutput>(val output: TOutput) : ExecuteToolResult<TOutput>
+    public data class Final<TOutput>(val output: TOutput) : ExecuteToolResult<TOutput>
 }
 
-fun <TInput, TOutput, TContext> executeTool(
+public fun <TInput, TOutput, TContext> executeTool(
     tool: Tool<TInput, TOutput, TContext>,
     input: TInput,
     options: ToolExecutionContext<TContext>,
@@ -604,18 +614,18 @@ fun <TInput, TOutput, TContext> executeTool(
     emit(ExecuteToolResult.Final(outputs.last()))
 }
 
-data class ToolNameMapping(
+public data class ToolNameMapping(
     private val customToolNameToProviderToolName: Map<String, String>,
     private val providerToolNameToCustomToolName: Map<String, String>,
 ) {
-    fun toProviderToolName(customToolName: String): String =
+    public fun toProviderToolName(customToolName: String): String =
         customToolNameToProviderToolName[customToolName] ?: customToolName
 
-    fun toCustomToolName(providerToolName: String): String =
+    public fun toCustomToolName(providerToolName: String): String =
         providerToolNameToCustomToolName[providerToolName] ?: providerToolName
 }
 
-fun createToolNameMapping(
+public fun createToolNameMapping(
     tools: List<LanguageModelTool> = emptyList(),
     providerToolNames: Map<String, String>,
     resolveProviderToolName: ((LanguageModelTool) -> String?)? = null,
@@ -631,7 +641,7 @@ fun createToolNameMapping(
     return ToolNameMapping(customToProvider, providerToCustom)
 }
 
-data class ProviderToolFactoryOptions<TInput, TOutput, TContext>(
+public data class ProviderToolFactoryOptions<TInput, TOutput, TContext>(
     val outputSerializer: KSerializer<TOutput>,
     val outputSchema: Schema<TOutput>? = null,
     val args: Map<String, JsonElement> = emptyMap(),
@@ -646,17 +656,17 @@ data class ProviderToolFactoryOptions<TInput, TOutput, TContext>(
     val onInputAvailable: (suspend (toolCallId: String, input: TInput) -> Unit)? = null,
 )
 
-class ProviderToolFactory<TInput, TContext>(
+public class ProviderToolFactory<TInput, TContext>(
     private val id: String,
     private val inputSerializer: KSerializer<TInput>,
     private val inputSchema: Schema<TInput>,
     private val defaultDescription: String = "Provider tool $id",
 ) {
-    operator fun <TOutput> invoke(
+    public operator fun <TOutput> invoke(
         options: ProviderToolFactoryOptions<TInput, TOutput, TContext>,
     ): Tool<TInput, TOutput, TContext> = create(options)
 
-    fun <TOutput> create(
+    public fun <TOutput> create(
         options: ProviderToolFactoryOptions<TInput, TOutput, TContext>,
     ): Tool<TInput, TOutput, TContext> = providerTool(
         id = id,
@@ -668,7 +678,7 @@ class ProviderToolFactory<TInput, TContext>(
     )
 }
 
-class ProviderToolFactoryWithOutputSchema<TInput, TOutput, TContext>(
+public class ProviderToolFactoryWithOutputSchema<TInput, TOutput, TContext>(
     private val id: String,
     private val inputSerializer: KSerializer<TInput>,
     private val inputSchema: Schema<TInput>,
@@ -677,12 +687,12 @@ class ProviderToolFactoryWithOutputSchema<TInput, TOutput, TContext>(
     private val supportsDeferredResults: Boolean = false,
     private val defaultDescription: String = "Provider tool $id",
 ) {
-    operator fun invoke(
+    public operator fun invoke(
         options: ProviderToolFactoryOptions<TInput, TOutput, TContext> =
             ProviderToolFactoryOptions(outputSerializer = outputSerializer, outputSchema = outputSchema),
     ): Tool<TInput, TOutput, TContext> = create(options)
 
-    fun create(
+    public fun create(
         options: ProviderToolFactoryOptions<TInput, TOutput, TContext> =
             ProviderToolFactoryOptions(outputSerializer = outputSerializer, outputSchema = outputSchema),
     ): Tool<TInput, TOutput, TContext> = providerTool(
@@ -695,7 +705,7 @@ class ProviderToolFactoryWithOutputSchema<TInput, TOutput, TContext>(
     )
 }
 
-fun <TInput, TContext> createProviderToolFactory(
+public fun <TInput, TContext> createProviderToolFactory(
     id: String,
     inputSerializer: KSerializer<TInput>,
     inputSchema: Schema<TInput>,
@@ -703,7 +713,7 @@ fun <TInput, TContext> createProviderToolFactory(
 ): ProviderToolFactory<TInput, TContext> =
     ProviderToolFactory(id, inputSerializer, inputSchema, description)
 
-fun <TInput, TOutput, TContext> createProviderToolFactoryWithOutputSchema(
+public fun <TInput, TOutput, TContext> createProviderToolFactoryWithOutputSchema(
     id: String,
     inputSerializer: KSerializer<TInput>,
     inputSchema: Schema<TInput>,
@@ -791,7 +801,7 @@ internal fun jsonSchemaFor(tool: Tool<*, *, *>): String {
  * downstream consumers:
  *  - Cloud providers (OpenAI / Anthropic / Gemini) that expect a strict
  *    OpenAPI-flavoured schema on `tools[].function.parameters`.
- *  - On-device providers (LiteRT-LM via [Tool.OpenApiTool]) whose
+ *  - On-device providers (LiteRT-LM) whose
  *    chat-template renders the schema into Gemma 4 / FunctionGemma
  *    native `<|tool>declaration:...<tool|>` blocks. Without proper
  *    `properties` + `required` + `type` fields the model has no signal
@@ -974,11 +984,11 @@ private fun jsonObj(
 
 /** Whether the LLM should call a tool, no tool, a specific tool, etc. */
 @kotlinx.serialization.Serializable
-sealed interface ToolChoice {
-    @kotlinx.serialization.Serializable data object Auto : ToolChoice
-    @kotlinx.serialization.Serializable data object None : ToolChoice
-    @kotlinx.serialization.Serializable data object Required : ToolChoice
-    @kotlinx.serialization.Serializable data class Specific(val toolName: String) : ToolChoice
+public sealed interface ToolChoice {
+    @kotlinx.serialization.Serializable public data object Auto : ToolChoice
+    @kotlinx.serialization.Serializable public data object None : ToolChoice
+    @kotlinx.serialization.Serializable public data object Required : ToolChoice
+    @kotlinx.serialization.Serializable public data class Specific(val toolName: String) : ToolChoice
 }
 
 /**
@@ -994,12 +1004,12 @@ sealed interface ToolChoice {
  * consumer that wants custom data intercepts the `Flow<StreamEvent>`
  * before UI conversion.
  */
-interface ToolStreamWriter {
+public interface ToolStreamWriter {
     /** Emit any event into the agent's output stream. */
-    suspend fun write(event: StreamEvent)
+    public suspend fun write(event: StreamEvent)
 
     /** Convenience: emit [value] as a [StreamEvent.Raw] custom-data chunk. */
-    suspend fun writeData(value: JsonElement)
+    public suspend fun writeData(value: JsonElement)
 }
 
 /**
@@ -1007,9 +1017,9 @@ interface ToolStreamWriter {
  * constructed outside the loop (test fixtures, the approval-resume path
  * before the loop wires a real writer). Drops every write.
  */
-object NoopToolStreamWriter : ToolStreamWriter {
-    override suspend fun write(event: StreamEvent) = Unit
-    override suspend fun writeData(value: JsonElement) = Unit
+public data object NoopToolStreamWriter : ToolStreamWriter {
+    override suspend fun write(event: StreamEvent): Unit = Unit
+    override suspend fun writeData(value: JsonElement): Unit = Unit
 }
 
 /**
@@ -1018,24 +1028,24 @@ object NoopToolStreamWriter : ToolStreamWriter {
  * (invariant I-10: subagent tool handlers MUST forward this), the current
  * step number, and the running message list.
  */
-class ToolExecutionContext<TContext>(
-    val context: TContext?,
-    val abortSignal: AbortSignal,
-    val stepNumber: Int,
-    val messages: List<ModelMessage>,
+public class ToolExecutionContext<TContext>(
+    public val context: TContext?,
+    public val abortSignal: AbortSignal,
+    public val stepNumber: Int,
+    public val messages: List<ModelMessage>,
     /**
      * The current tool call's id. Mirrors v6's
      * `ToolExecutionOptions.toolCallId`. Lets a tool self-identify for tracing, telemetry, or
      * streaming-progress writes (paired with [writer]).
      */
-    val toolCallId: String,
+    public val toolCallId: String,
     /**
      * Writes custom events into the agent's active output stream
      * (gap #21). The loop supplies a real writer bound to the output
      * flow; defaults to [NoopToolStreamWriter] when a context is
      * constructed outside the loop.
      */
-    val writer: ToolStreamWriter = NoopToolStreamWriter,
+    public val writer: ToolStreamWriter = NoopToolStreamWriter,
 )
 
 /**
@@ -1049,7 +1059,7 @@ class ToolExecutionContext<TContext>(
  * READ-ONLY metadata about the call, no abort signal because
  * predicates run synchronously before / after the executor.
  */
-data class ToolPredicateOptions<TContext>(
+public data class ToolPredicateOptions<TContext>(
     val toolCallId: String,
     val messages: List<ModelMessage>,
     val experimental_context: TContext? = null,
@@ -1069,32 +1079,32 @@ data class ToolPredicateOptions<TContext>(
  * - [Error] → `JsonPrimitive("Error: $message")`, `isError = true`.
  */
 @Serializable
-sealed class ToolResultOutput {
+public sealed class ToolResultOutput {
     @Serializable
-    data class Text(val text: String) : ToolResultOutput()
+    public data class Text(val text: String) : ToolResultOutput()
     @Serializable
-    data class Json(val json: JsonElement) : ToolResultOutput()
+    public data class Json(val json: JsonElement) : ToolResultOutput()
     @Serializable
-    data class Error(val message: String) : ToolResultOutput()
+    public data class Error(val message: String) : ToolResultOutput()
     @Serializable
-    data class ErrorJson(val json: JsonElement) : ToolResultOutput()
+    public data class ErrorJson(val json: JsonElement) : ToolResultOutput()
     @Serializable
-    data class ExecutionDenied(val reason: String? = null) : ToolResultOutput()
+    public data class ExecutionDenied(val reason: String? = null) : ToolResultOutput()
     @Serializable
-    data class Content(
+    public data class Content(
         val value: List<JsonElement>,
         val isError: Boolean = false,
     ) : ToolResultOutput()
 }
 
-fun toolResultOutputFromJson(json: JsonElement): ToolResultOutput =
+internal fun toolResultOutputFromJson(json: JsonElement): ToolResultOutput =
     if (json is JsonPrimitive && json.isString) {
         ToolResultOutput.Text(json.contentOrNull.orEmpty())
     } else {
         ToolResultOutput.Json(json)
     }
 
-fun toolResultOutputFromWire(json: JsonElement): ToolResultOutput {
+internal fun toolResultOutputFromWire(json: JsonElement): ToolResultOutput {
     val obj = json as? JsonObject ?: return toolResultOutputFromJson(json)
     val type = WireDecoder.optionalString(obj, "type", "tool", "tool-result output")
         ?: return toolResultOutputFromJson(json)
@@ -1122,7 +1132,7 @@ fun toolResultOutputFromWire(json: JsonElement): ToolResultOutput {
     }
 }
 
-fun ToolResultOutput.isToolResultError(): Boolean = when (this) {
+public fun ToolResultOutput.isToolResultError(): Boolean = when (this) {
     is ToolResultOutput.Error,
     is ToolResultOutput.ErrorJson,
     is ToolResultOutput.ExecutionDenied -> true
@@ -1131,7 +1141,7 @@ fun ToolResultOutput.isToolResultError(): Boolean = when (this) {
     is ToolResultOutput.Json -> false
 }
 
-fun ToolResultOutput.toJsonElement(): JsonElement = when (this) {
+public fun ToolResultOutput.toJsonElement(): JsonElement = when (this) {
     is ToolResultOutput.Text -> JsonPrimitive(text)
     is ToolResultOutput.Json -> json
     is ToolResultOutput.Error -> JsonPrimitive("Error: $message")
@@ -1164,7 +1174,7 @@ fun ToolResultOutput.toJsonElement(): JsonElement = when (this) {
  * single repair attempt per call (no recursive repair) to keep loops
  * bounded.
  */
-typealias ToolCallRepairFunction<TContext> = suspend (
+public typealias ToolCallRepairFunction<TContext> = suspend (
     failedCall: ContentPart.ToolCall,
     error: Throwable,
     messages: List<ModelMessage>,

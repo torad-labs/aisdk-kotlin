@@ -58,7 +58,7 @@ private fun isLiteralPrefix(partial: String): Boolean =
  * `-`). See [parsePartialJson] for the parse wrapper.
  */
 @Suppress("CyclomaticComplexMethod", "LongMethod")
-fun fixJson(input: String): String {
+public fun fixJson(input: String): String {
     val stack = ArrayDeque<FixJsonState>().apply { addLast(FixJsonState.ROOT) }
     var lastValidIndex = -1
     var literalStart: Int? = null
@@ -158,7 +158,8 @@ fun fixJson(input: String): String {
     }
 
     fun processLiteral(char: Char, i: Int) {
-        val partialLiteral = input.substring(literalStart!!, i + 1)
+        val start = requireNotNull(literalStart) { "literalStart must be set in INSIDE_LITERAL state" }
+        val partialLiteral = input.substring(start, i + 1)
         if (isLiteralPrefix(partialLiteral)) {
             lastValidIndex = i
             return
@@ -279,9 +280,13 @@ private fun drainClose(state: FixJsonState, input: String, literalStart: Int?): 
     FixJsonState.INSIDE_ARRAY_AFTER_COMMA,
     FixJsonState.INSIDE_ARRAY_AFTER_VALUE,
     -> "]"
-    FixJsonState.INSIDE_LITERAL -> literalTail(input.substring(literalStart!!, input.length))
-    // ROOT, FINISH, INSIDE_STRING_ESCAPE, INSIDE_NUMBER -> nothing.
-    else -> ""
+    FixJsonState.INSIDE_LITERAL -> literalTail(input.substring(requireNotNull(literalStart), input.length))
+    // Exhaustive (no else): a future FixJsonState variant is a compile error here.
+    FixJsonState.ROOT,
+    FixJsonState.FINISH,
+    FixJsonState.INSIDE_STRING_ESCAPE,
+    FixJsonState.INSIDE_NUMBER,
+    -> ""
 }
 
 private fun literalTail(partial: String): String = when {
@@ -292,11 +297,11 @@ private fun literalTail(partial: String): String = when {
 }
 
 /** Outcome of [parsePartialJson], mirroring v6's four state strings. */
-enum class PartialJsonState { UndefinedInput, SuccessfulParse, RepairedParse, FailedParse }
+public enum class PartialJsonState { UndefinedInput, SuccessfulParse, RepairedParse, FailedParse }
 
 /** Result of [parsePartialJson]: [value] is non-null only on the two
  *  success states. */
-data class PartialJsonResult(val value: JsonElement?, val state: PartialJsonState)
+public data class PartialJsonResult(val value: JsonElement?, val state: PartialJsonState)
 
 private val partialJsonCodec: Json = Json { ignoreUnknownKeys = true }
 
@@ -334,7 +339,7 @@ private fun isStrictJsonValue(element: JsonElement): Boolean = when (element) {
  *
  * The repair runs on the ORIGINAL raw text, not on intermediate output.
  */
-fun parsePartialJson(jsonText: String?): PartialJsonResult {
+public fun parsePartialJson(jsonText: String?): PartialJsonResult {
     if (jsonText == null) return PartialJsonResult(null, PartialJsonState.UndefinedInput)
     tryParseJson(jsonText)?.let { return PartialJsonResult(it, PartialJsonState.SuccessfulParse) }
     val repaired = tryParseJson(fixJson(jsonText))

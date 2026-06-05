@@ -2,7 +2,7 @@ package ai.torad.aisdk
 
 import kotlinx.serialization.json.JsonElement
 
-data class GeneratedFile(
+public data class GeneratedFile(
     val mediaType: String,
     val base64: String,
     val filename: String? = null,
@@ -10,22 +10,22 @@ data class GeneratedFile(
     val url: String? = null,
 )
 
-sealed interface FileData {
-    val mediaType: String?
-    val filename: String?
+public sealed interface FileData {
+    public val mediaType: String?
+    public val filename: String?
 
-    data class Base64(
+    public data class Base64(
         val value: String,
         override val mediaType: String? = null,
         override val filename: String? = null,
     ) : FileData
 
-    class Bytes(
+    public class Bytes(
         bytes: ByteArray,
         override val mediaType: String? = null,
         override val filename: String? = null,
     ) : FileData {
-        val bytes: ByteArray = bytes.copyOf()
+        public val bytes: ByteArray = bytes.copyOf()
 
         override fun equals(other: Any?): Boolean =
             other is Bytes &&
@@ -44,14 +44,14 @@ sealed interface FileData {
             "Bytes(size=${bytes.size}, mediaType=$mediaType, filename=$filename)"
     }
 
-    data class Url(
+    public data class Url(
         val value: String,
         override val mediaType: String? = null,
         override val filename: String? = null,
     ) : FileData
 }
 
-fun generatedFile(
+public fun generatedFile(
     data: FileData,
     mediaType: String = data.mediaType ?: "application/octet-stream",
     filename: String? = data.filename,
@@ -78,7 +78,7 @@ fun generatedFile(
     )
 }
 
-fun imageGenerationFile(data: FileData): ImageGenerationFile = when (data) {
+public fun imageGenerationFile(data: FileData): ImageGenerationFile = when (data) {
     is FileData.Base64 -> ImageGenerationFile(
         mediaType = data.mediaType,
         base64 = data.value,
@@ -96,35 +96,56 @@ fun imageGenerationFile(data: FileData): ImageGenerationFile = when (data) {
     )
 }
 
-fun GeneratedFile.fileData(): FileData =
+public fun GeneratedFile.fileData(): FileData =
     url?.let { FileData.Url(it, mediaType = mediaType, filename = filename) }
         ?: FileData.Base64(base64, mediaType = mediaType, filename = filename)
 
-fun GeneratedFile.bytes(): ByteArray = convertBase64ToByteArray(base64)
+/**
+ * Decode the inline base64 payload to bytes.
+ *
+ * @throws IllegalStateException when this file is URL-backed (no inline
+ * bytes) — fetch [GeneratedFile.url] to obtain the data. Without this guard a
+ * URL-backed file (whose `base64` is `""`) silently decoded to an empty
+ * `ByteArray`, a wrong answer indistinguishable from a genuinely empty file.
+ */
+public fun GeneratedFile.bytes(): ByteArray {
+    if (base64.isEmpty()) {
+        check(url == null) {
+            "GeneratedFile is URL-backed (mediaType=$mediaType); it has no inline bytes. " +
+                "Fetch `url` to obtain the data, or use bytesOrNull()."
+        }
+        return ByteArray(0)
+    }
+    return convertBase64ToByteArray(base64)
+}
 
-typealias GeneratedAudioFile = GeneratedFile
-typealias Experimental_GeneratedImage = GeneratedFile
-typealias Experimental_GenerateImageResult = GenerateImageResult
-typealias Experimental_SpeechResult = GenerateSpeechResult
-typealias Experimental_TranscriptionResult = TranscribeResult
+/** Like [bytes] but returns null for a URL-backed file instead of throwing. */
+public fun GeneratedFile.bytesOrNull(): ByteArray? =
+    if (base64.isEmpty() && url != null) null else bytes()
 
-class DefaultGeneratedFile {
+public typealias GeneratedAudioFile = GeneratedFile
+public typealias Experimental_GeneratedImage = GeneratedFile
+public typealias Experimental_GenerateImageResult = GenerateImageResult
+public typealias Experimental_SpeechResult = GenerateSpeechResult
+public typealias Experimental_TranscriptionResult = TranscribeResult
+
+public class DefaultGeneratedFile {
     private var base64Data: String? = null
     private var byteArrayData: ByteArray? = null
 
-    val mediaType: String
+    public val mediaType: String
 
-    constructor(data: String, mediaType: String) {
+    public constructor(data: String, mediaType: String) {
         this.base64Data = data
         this.mediaType = mediaType
     }
 
-    constructor(data: ByteArray, mediaType: String) {
+    public constructor(data: ByteArray, mediaType: String) {
         this.byteArrayData = data
         this.mediaType = mediaType
     }
 
-    val base64: String
+    public val base64: String
         get() {
             if (base64Data == null) {
                 base64Data = convertByteArrayToBase64(byteArrayData ?: ByteArray(0))
@@ -132,7 +153,7 @@ class DefaultGeneratedFile {
             return base64Data.orEmpty()
         }
 
-    val byteArray: ByteArray
+    public val byteArray: ByteArray
         get() {
             if (byteArrayData == null) {
                 byteArrayData = convertBase64ToByteArray(base64Data.orEmpty())
@@ -140,19 +161,19 @@ class DefaultGeneratedFile {
             return byteArrayData ?: ByteArray(0)
         }
 
-    fun toGeneratedFile(filename: String? = null, providerMetadata: Map<String, JsonElement> = emptyMap()): GeneratedFile =
+    public fun toGeneratedFile(filename: String? = null, providerMetadata: Map<String, JsonElement> = emptyMap()): GeneratedFile =
         GeneratedFile(mediaType = mediaType, base64 = base64, filename = filename, providerMetadata = providerMetadata)
 }
 
-interface ImageModel {
-    val modelId: String
-    val provider: String
+public interface ImageModel {
+    public val modelId: String
+    public val provider: String
         get() = "unknown"
 
-    suspend fun generate(params: ImageGenerationParams): ImageModelResult
+    public suspend fun generate(params: ImageGenerationParams): ImageModelResult
 }
 
-data class ImageGenerationParams(
+public data class ImageGenerationParams(
     val prompt: String,
     val n: Int = 1,
     val size: String? = null,
@@ -165,21 +186,21 @@ data class ImageGenerationParams(
     val mask: ImageGenerationFile? = null,
 )
 
-data class ImageGenerationFile(
+public data class ImageGenerationFile(
     val mediaType: String? = null,
     val base64: String? = null,
     val url: String? = null,
     val filename: String? = null,
 )
 
-data class ImageModelResult(
+public data class ImageModelResult(
     val images: List<GeneratedFile>,
     val warnings: List<CallWarning> = emptyList(),
     val response: LanguageModelResponseMetadata = LanguageModelResponseMetadata(),
     val providerMetadata: Map<String, JsonElement> = emptyMap(),
 )
 
-data class GenerateImageResult(
+public data class GenerateImageResult(
     val images: List<GeneratedFile>,
     val warnings: List<CallWarning> = emptyList(),
     val response: LanguageModelResponseMetadata = LanguageModelResponseMetadata(),
@@ -188,7 +209,7 @@ data class GenerateImageResult(
     val image: GeneratedFile get() = images.firstOrNull() ?: throw NoImageGeneratedError()
 }
 
-suspend fun generateImage(
+public suspend fun generateImage(
     model: ImageModel,
     prompt: String,
     n: Int = 1,
@@ -210,7 +231,7 @@ suspend fun generateImage(
     return GenerateImageResult(result.images, result.warnings, result.response, result.providerMetadata)
 }
 
-suspend fun experimental_generateImage(
+public suspend fun experimental_generateImage(
     model: ImageModel,
     prompt: String,
     n: Int = 1,
@@ -236,18 +257,18 @@ suspend fun experimental_generateImage(
     mask = mask,
 )
 
-interface ImageModelMiddleware {
-    suspend fun wrapGenerate(context: ImageMiddlewareCallContext): ImageModelResult =
+public interface ImageModelMiddleware {
+    public suspend fun wrapGenerate(context: ImageMiddlewareCallContext): ImageModelResult =
         context.doGenerate(context.params)
 }
 
-data class ImageMiddlewareCallContext(
+public data class ImageMiddlewareCallContext(
     val params: ImageGenerationParams,
     val model: ImageModel,
     val doGenerate: suspend (ImageGenerationParams) -> ImageModelResult,
 )
 
-fun wrapImageModel(
+public fun wrapImageModel(
     model: ImageModel,
     middlewares: List<ImageModelMiddleware>,
 ): ImageModel {
@@ -284,15 +305,15 @@ private class WrappedImageModel(
         chainGenerate(params)
 }
 
-interface SpeechModel {
-    val modelId: String
-    val provider: String
+public interface SpeechModel {
+    public val modelId: String
+    public val provider: String
         get() = "unknown"
 
-    suspend fun generate(params: SpeechGenerationParams): SpeechModelResult
+    public suspend fun generate(params: SpeechGenerationParams): SpeechModelResult
 }
 
-data class SpeechGenerationParams(
+public data class SpeechGenerationParams(
     val text: String,
     val voice: String? = null,
     val instructions: String? = null,
@@ -303,21 +324,21 @@ data class SpeechGenerationParams(
     val abortSignal: AbortSignal = AbortSignalNever,
 )
 
-data class SpeechModelResult(
+public data class SpeechModelResult(
     val audio: GeneratedFile?,
     val warnings: List<CallWarning> = emptyList(),
     val response: LanguageModelResponseMetadata = LanguageModelResponseMetadata(),
     val providerMetadata: Map<String, JsonElement> = emptyMap(),
 )
 
-data class GenerateSpeechResult(
+public data class GenerateSpeechResult(
     val audio: GeneratedFile,
     val warnings: List<CallWarning> = emptyList(),
     val response: LanguageModelResponseMetadata = LanguageModelResponseMetadata(),
     val providerMetadata: Map<String, JsonElement> = emptyMap(),
 )
 
-suspend fun generateSpeech(
+public suspend fun generateSpeech(
     model: SpeechModel,
     text: String,
     voice: String? = null,
@@ -340,7 +361,7 @@ suspend fun generateSpeech(
     )
 }
 
-suspend fun experimental_generateSpeech(
+public suspend fun experimental_generateSpeech(
     model: SpeechModel,
     text: String,
     voice: String? = null,
@@ -362,21 +383,21 @@ suspend fun experimental_generateSpeech(
     abortSignal = abortSignal,
 )
 
-interface TranscriptionModel {
-    val modelId: String
-    val provider: String
+public interface TranscriptionModel {
+    public val modelId: String
+    public val provider: String
         get() = "unknown"
 
-    suspend fun transcribe(params: TranscriptionParams): TranscriptionModelResult
+    public suspend fun transcribe(params: TranscriptionParams): TranscriptionModelResult
 }
 
-data class AudioSource(
+public data class AudioSource(
     val mediaType: String,
     val base64: String,
     val filename: String? = null,
 )
 
-data class TranscriptionParams(
+public data class TranscriptionParams(
     val audio: AudioSource,
     val language: String? = null,
     val prompt: String? = null,
@@ -385,13 +406,13 @@ data class TranscriptionParams(
     val abortSignal: AbortSignal = AbortSignalNever,
 )
 
-data class TranscriptSegment(
+public data class TranscriptSegment(
     val text: String,
     val startSeconds: Float? = null,
     val endSeconds: Float? = null,
 )
 
-data class TranscriptionModelResult(
+public data class TranscriptionModelResult(
     val text: String?,
     val segments: List<TranscriptSegment> = emptyList(),
     val warnings: List<CallWarning> = emptyList(),
@@ -399,7 +420,7 @@ data class TranscriptionModelResult(
     val providerMetadata: Map<String, JsonElement> = emptyMap(),
 )
 
-data class TranscribeResult(
+public data class TranscribeResult(
     val text: String,
     val segments: List<TranscriptSegment> = emptyList(),
     val warnings: List<CallWarning> = emptyList(),
@@ -407,7 +428,7 @@ data class TranscribeResult(
     val providerMetadata: Map<String, JsonElement> = emptyMap(),
 )
 
-suspend fun transcribe(
+public suspend fun transcribe(
     model: TranscriptionModel,
     audio: AudioSource,
     language: String? = null,
@@ -429,7 +450,7 @@ suspend fun transcribe(
     )
 }
 
-suspend fun experimental_transcribe(
+public suspend fun experimental_transcribe(
     model: TranscriptionModel,
     audio: AudioSource,
     language: String? = null,
@@ -447,15 +468,15 @@ suspend fun experimental_transcribe(
     abortSignal = abortSignal,
 )
 
-interface VideoModel {
-    val modelId: String
-    val provider: String
+public interface VideoModel {
+    public val modelId: String
+    public val provider: String
         get() = "unknown"
 
-    suspend fun generate(params: VideoGenerationParams): VideoModelResult
+    public suspend fun generate(params: VideoGenerationParams): VideoModelResult
 }
 
-data class VideoGenerationParams(
+public data class VideoGenerationParams(
     val prompt: String,
     val n: Int = 1,
     val image: GeneratedFile? = null,
@@ -470,14 +491,14 @@ data class VideoGenerationParams(
     val resolution: String? = null,
 )
 
-data class VideoModelResult(
+public data class VideoModelResult(
     val videos: List<GeneratedFile>,
     val warnings: List<CallWarning> = emptyList(),
     val response: LanguageModelResponseMetadata = LanguageModelResponseMetadata(),
     val providerMetadata: Map<String, JsonElement> = emptyMap(),
 )
 
-data class GenerateVideoResult(
+public data class GenerateVideoResult(
     val videos: List<GeneratedFile>,
     val warnings: List<CallWarning> = emptyList(),
     val response: LanguageModelResponseMetadata = LanguageModelResponseMetadata(),
@@ -486,7 +507,7 @@ data class GenerateVideoResult(
     val video: GeneratedFile get() = videos.firstOrNull() ?: throw NoVideoGeneratedError()
 }
 
-suspend fun generateVideo(
+public suspend fun generateVideo(
     model: VideoModel,
     prompt: String,
     n: Int = 1,
@@ -523,7 +544,7 @@ suspend fun generateVideo(
     return GenerateVideoResult(result.videos, result.warnings, result.response, result.providerMetadata)
 }
 
-suspend fun experimental_generateVideo(
+public suspend fun experimental_generateVideo(
     model: VideoModel,
     prompt: String,
     n: Int = 1,

@@ -1,7 +1,7 @@
 # @ai-sdk/google
 
 - Version: 3.0.80
-- Upstream path: `.reference/vercel-ai-sdk-ai-6.0.196/packages/google`
+- Upstream path: `.reference/vercel-ai-sdk-ai-6.0.197/packages/google`
 - Target Kotlin module: `:aisdk-provider-google`
 - Current parity status: ported: createGoogleGenerativeAI/google, GoogleGenerativeAIProviderSettings, Google model/option/metadata aliases, Google hosted tool descriptors, Gemini generateContent/streamGenerateContent request conversion, system/user/assistant/tool multimodal prompt mapping, function/provider tool mapping, JSON response format and generationConfig mapping, Gemini response text/reasoning/file/tool/source parsing, usage/provider metadata, SSE stream mapping, embedding single/batch payload mapping, Imagen and Gemini image generation, Veo long-running video polling, Interactions model/agent request mapping, Interactions response/step parsing, Interactions usage/provider metadata, Interactions SSE and background-agent stream synthesis, auth/user-agent behavior, and unsupported/error handling are represented as a Kotlin facade folded into the root module; VERSION is exposed as GOOGLE_VERSION until package modules are split
 
@@ -9,8 +9,8 @@
 
 | Subpath | Source | Export count |
 |---|---|---:|
-| `.` | `.reference/vercel-ai-sdk-ai-6.0.196/packages/google/src/index.ts` | 20 |
-| `./internal` | `.reference/vercel-ai-sdk-ai-6.0.196/packages/google/src/internal/index.ts` | 10 |
+| `.` | `.reference/vercel-ai-sdk-ai-6.0.197/packages/google/src/index.ts` | 20 |
+| `./internal` | `.reference/vercel-ai-sdk-ai-6.0.197/packages/google/src/internal/index.ts` | 10 |
 
 ## Public Exports
 

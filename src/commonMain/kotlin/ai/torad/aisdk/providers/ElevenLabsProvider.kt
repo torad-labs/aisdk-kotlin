@@ -1,0 +1,304 @@
+package ai.torad.aisdk.providers
+
+import ai.torad.aisdk.*
+import io.ktor.client.HttpClient
+import io.ktor.client.request.forms.MultiPartFormDataContent
+import io.ktor.client.request.forms.formData
+import io.ktor.client.request.header
+import io.ktor.client.request.request
+import io.ktor.client.request.setBody
+import io.ktor.client.statement.HttpResponse
+import io.ktor.client.statement.bodyAsBytes
+import io.ktor.http.ContentDisposition
+import io.ktor.http.ContentType
+import io.ktor.http.Headers
+import io.ktor.http.HttpHeaders
+import io.ktor.http.HttpMethod
+import io.ktor.http.contentType
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.buildJsonArray
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.contentOrNull
+import kotlinx.serialization.json.floatOrNull
+import kotlinx.serialization.json.intOrNull
+import kotlinx.serialization.json.jsonArray
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
+
+public const val ELEVENLABS_VERSION: String = "2.0.33"
+
+public typealias ElevenLabsSpeechModelId = String
+public typealias ElevenLabsSpeechVoiceId = String
+public typealias ElevenLabsTranscriptionModelId = String
+
+@Serializable
+public data class ElevenLabsSpeechModelOptions(
+    val languageCode: String? = null,
+    val voiceSettings: JsonObject? = null,
+    val pronunciationDictionaryLocators: List<JsonObject>? = null,
+    val seed: Int? = null,
+    val previousText: String? = null,
+    val nextText: String? = null,
+    val previousRequestIds: List<String>? = null,
+    val nextRequestIds: List<String>? = null,
+    val applyTextNormalization: String? = null,
+    val applyLanguageTextNormalization: Boolean? = null,
+    val enableLogging: Boolean? = null,
+)
+
+@Serializable
+public data class ElevenLabsTranscriptionModelOptions(
+    val languageCode: String? = null,
+    val tagAudioEvents: Boolean? = null,
+    val numSpeakers: Int? = null,
+    val timestampsGranularity: String? = null,
+    val diarize: Boolean? = null,
+    val fileFormat: String? = null,
+)
+
+@Serializable
+public data class ElevenLabsProviderSettings(
+    val apiKey: String? = null,
+    val headers: Map<String, String> = emptyMap(),
+)
+
+public interface ElevenLabsProvider : Provider {
+    public operator fun invoke(modelId: ElevenLabsTranscriptionModelId = "scribe_v1"): TranscriptionModel = transcription(modelId)
+    public fun transcription(modelId: ElevenLabsTranscriptionModelId): TranscriptionModel
+    public fun speech(modelId: ElevenLabsSpeechModelId): SpeechModel
+    public fun textEmbeddingModel(modelId: String): Nothing = throw NoSuchModelError(providerId, "embeddingModel", modelId)
+
+    override fun transcriptionModel(modelId: String): TranscriptionModel = transcription(modelId)
+    override fun speechModel(modelId: String): SpeechModel = speech(modelId)
+}
+
+public fun createElevenLabs(
+    client: HttpClient,
+    settings: ElevenLabsProviderSettings = ElevenLabsProviderSettings(),
+): ElevenLabsProvider = DefaultElevenLabsProvider(client, settings)
+
+public val elevenlabs: ElevenLabsProvider = object : ElevenLabsProvider {
+    override val providerId: String = "elevenlabs"
+    override fun transcription(modelId: String): TranscriptionModel =
+        throw AiSdkException("ElevenLabs provider is not configured. Use createElevenLabs(client, settings).")
+    override fun speech(modelId: String): SpeechModel =
+        throw AiSdkException("ElevenLabs provider is not configured. Use createElevenLabs(client, settings).")
+}
+
+private class DefaultElevenLabsProvider(
+    private val client: HttpClient,
+    private val settings: ElevenLabsProviderSettings,
+) : ElevenLabsProvider {
+    override val providerId: String = "elevenlabs"
+    override fun transcription(modelId: String): TranscriptionModel = ElevenLabsTranscriptionModel(client, settings, modelId)
+    override fun speech(modelId: String): SpeechModel = ElevenLabsSpeechModel(client, settings, modelId)
+    override fun languageModel(modelId: String): LanguageModel = throw NoSuchModelError(providerId, "languageModel", modelId)
+    override fun embeddingModel(modelId: String): EmbeddingModel = throw NoSuchModelError(providerId, "embeddingModel", modelId)
+    override fun imageModel(modelId: String): ImageModel = throw NoSuchModelError(providerId, "imageModel", modelId)
+}
+
+private class ElevenLabsSpeechModel(
+    private val client: HttpClient,
+    private val settings: ElevenLabsProviderSettings,
+    override val modelId: String,
+) : SpeechModel {
+    override val provider: String = "elevenlabs.speech"
+
+    override suspend fun generate(params: SpeechGenerationParams): SpeechModelResult {
+        val warnings = mutableListOf<CallWarning>()
+        if (params.instructions != null) {
+            warnings += CallWarning("unsupported", "ElevenLabs speech models do not support instructions. Instructions parameter was ignored.")
+        }
+        val options = elevenLabsOptions(params.providerOptions)
+        val queryParams = linkedMapOf(
+            "output_format" to elevenLabsOutputFormat(params.responseFormat ?: "mp3_44100_128"),
+        )
+        options["enableLogging"]?.jsonPrimitive?.contentOrNull?.let { queryParams["enable_logging"] = it }
+        val body = buildJsonObject {
+            put("text", JsonPrimitive(params.text))
+            put("model_id", JsonPrimitive(modelId))
+            (options["languageCode"]?.jsonPrimitive?.contentOrNull)?.let { put("language_code", JsonPrimitive(it)) }
+            val voiceSettings = buildJsonObject {
+                params.speed?.let { put("speed", JsonPrimitive(it)) }
+                (options["voiceSettings"] as? JsonObject)?.let { settings ->
+                    settings["stability"]?.let { put("stability", it) }
+                    settings["similarityBoost"]?.let { put("similarity_boost", it) }
+                    settings["style"]?.let { put("style", it) }
+                    settings["useSpeakerBoost"]?.let { put("use_speaker_boost", it) }
+                }
+            }
+            if (voiceSettings.isNotEmpty()) put("voice_settings", voiceSettings)
+            options["pronunciationDictionaryLocators"]?.jsonArray?.let { locators ->
+                put(
+                    "pronunciation_dictionary_locators",
+                    JsonArray(
+                        locators.map { locator ->
+                            val obj = locator.jsonObject
+                            buildJsonObject {
+                                obj["pronunciationDictionaryId"]?.let { put("pronunciation_dictionary_id", it) }
+                                obj["versionId"]?.let { put("version_id", it) }
+                            }
+                        },
+                    ),
+                )
+            }
+            options["seed"]?.let { put("seed", it) }
+            options["previousText"]?.let { put("previous_text", it) }
+            options["nextText"]?.let { put("next_text", it) }
+            options["previousRequestIds"]?.let { put("previous_request_ids", it) }
+            options["nextRequestIds"]?.let { put("next_request_ids", it) }
+            options["applyTextNormalization"]?.let { put("apply_text_normalization", it) }
+            options["applyLanguageTextNormalization"]?.let { put("apply_language_text_normalization", it) }
+        }
+        val url =
+            "https://api.elevenlabs.io/v1/text-to-speech/${params.voice ?: ELEVENLABS_DEFAULT_VOICE_ID}?${queryParams.toQueryString()}"
+        val response = client.request(url) {
+            method = HttpMethod.Post
+            contentType(ContentType.Application.Json)
+            elevenLabsHeaders(settings, params.headers).forEach { (name, value) -> header(name, value) }
+            setBody(aiSdkJson.encodeToString(JsonElement.serializer(), body))
+        }.parseElevenLabsBinary(url, queryParams["output_format"].orEmpty())
+        return SpeechModelResult(
+            audio = GeneratedFile(
+                mediaType = response.mediaType,
+                base64 = convertByteArrayToBase64(response.bytes),
+            ),
+            warnings = warnings,
+            response = LanguageModelResponseMetadata(modelId = modelId, headers = response.headers),
+        )
+    }
+}
+
+private class ElevenLabsTranscriptionModel(
+    private val client: HttpClient,
+    private val settings: ElevenLabsProviderSettings,
+    override val modelId: String,
+) : TranscriptionModel {
+    override val provider: String = "elevenlabs.transcription"
+
+    override suspend fun transcribe(params: TranscriptionParams): TranscriptionModelResult {
+        val options = elevenLabsOptions(params.providerOptions)
+        val response = client.request("https://api.elevenlabs.io/v1/speech-to-text") {
+            method = HttpMethod.Post
+            elevenLabsHeaders(settings, params.headers).forEach { (name, value) -> header(name, value) }
+            setBody(
+                MultiPartFormDataContent(
+                    formData {
+                        append("model_id", modelId)
+                        append("diarize", options["diarize"]?.jsonPrimitive?.contentOrNull ?: "true")
+                        (options["languageCode"]?.jsonPrimitive?.contentOrNull ?: params.language)?.let { append("language_code", it) }
+                        options["tagAudioEvents"]?.jsonPrimitive?.contentOrNull?.let { append("tag_audio_events", it) }
+                        options["numSpeakers"]?.jsonPrimitive?.contentOrNull?.let { append("num_speakers", it) }
+                        options["timestampsGranularity"]?.jsonPrimitive?.contentOrNull?.let { append("timestamps_granularity", it) }
+                        options["fileFormat"]?.jsonPrimitive?.contentOrNull?.let { append("file_format", it) }
+                        append(
+                            "file",
+                            convertBase64ToByteArray(params.audio.base64),
+                            Headers.build {
+                                append(HttpHeaders.ContentType, params.audio.mediaType)
+                                append(
+                                    HttpHeaders.ContentDisposition,
+                                    "${ContentDisposition.File}; filename=\"${params.audio.filename ?: "audio"}\"",
+                                )
+                            },
+                        )
+                    },
+                ),
+            )
+        }.toJsonResponse(url = "https://api.elevenlabs.io/v1/speech-to-text", errorMessage = ::elevenLabsErrorMessage)
+        val value = response.value.jsonObject
+        val words = value["words"]?.jsonArray.orEmpty()
+        return TranscriptionModelResult(
+            text = value["text"]?.jsonPrimitive?.contentOrNull,
+            segments = words.map { word ->
+                val obj = word.jsonObject
+                TranscriptSegment(
+                    text = obj["text"]?.jsonPrimitive?.contentOrNull.orEmpty(),
+                    startSeconds = obj["start"]?.jsonPrimitive?.floatOrNull,
+                    endSeconds = obj["end"]?.jsonPrimitive?.floatOrNull,
+                )
+            },
+            response = LanguageModelResponseMetadata(modelId = modelId, headers = response.headers, body = response.value),
+        )
+    }
+}
+
+private const val ELEVENLABS_DEFAULT_VOICE_ID: String = "21m00Tcm4TlvDq8ikWAM"
+
+
+private data class ElevenLabsBinaryResponse(
+    val bytes: ByteArray,
+    val mediaType: String,
+    val headers: Map<String, String>,
+)
+
+private suspend fun HttpResponse.parseElevenLabsBinary(url: String, outputFormat: String): ElevenLabsBinaryResponse {
+    val bytes = bodyAsBytes()
+    val headers = flattenedHeaders()
+    if (status.value !in 200..299) {
+        val raw = bytes.decodeToString()
+        throw apiCallError(
+            url = url,
+            statusCode = status.value,
+            rawBody = raw,
+            headers = headers,
+            message = "ElevenLabs request failed (${status.value}): ${raw.ifBlank { "request failed" }}",
+        )
+    }
+    return ElevenLabsBinaryResponse(
+        bytes = bytes,
+        mediaType = headers.headerValue(HttpHeaders.ContentType) ?: elevenLabsMediaType(outputFormat),
+        headers = headers,
+    )
+}
+
+private fun elevenLabsErrorMessage(statusCode: Int, parsed: JsonElement?, raw: String): String {
+    val obj = parsed as? JsonObject
+    val detail = obj?.get("detail")?.jsonObject?.get("message")?.jsonPrimitive?.contentOrNull
+        ?: obj?.get("detail")?.jsonPrimitive?.contentOrNull
+        ?: obj?.get("message")?.jsonPrimitive?.contentOrNull
+        ?: raw.ifBlank { "request failed" }
+    return "ElevenLabs request failed ($statusCode): $detail"
+}
+
+private fun elevenLabsHeaders(settings: ElevenLabsProviderSettings, callHeaders: Map<String, String>): Map<String, String> {
+    val base = linkedMapOf<String, String>()
+    settings.apiKey?.takeIf { it.isNotBlank() }?.let { base["xi-api-key"] = it }
+    base.putAll(settings.headers)
+    base.putAll(callHeaders)
+    return withUserAgentSuffix(base, "ai-sdk/elevenlabs/$ELEVENLABS_VERSION")
+}
+
+private fun elevenLabsOptions(providerOptions: Map<String, JsonElement>): JsonObject =
+    providerOptions["elevenlabs"] as? JsonObject ?: JsonObject(emptyMap())
+
+private fun elevenLabsOutputFormat(format: String): String =
+    when (format) {
+        "mp3" -> "mp3_44100_128"
+        "mp3_32" -> "mp3_44100_32"
+        "mp3_64" -> "mp3_44100_64"
+        "mp3_96" -> "mp3_44100_96"
+        "mp3_128" -> "mp3_44100_128"
+        "mp3_192" -> "mp3_44100_192"
+        "pcm" -> "pcm_44100"
+        "ulaw" -> "ulaw_8000"
+        else -> format
+    }
+
+private fun elevenLabsMediaType(format: String): String =
+    when {
+        format.startsWith("pcm") || format.startsWith("ulaw") -> "application/octet-stream"
+        else -> "audio/mpeg"
+    }
+
+private fun Map<String, String>.toQueryString(): String =
+    entries.joinToString("&") { (key, value) -> "${urlEncode(key)}=${urlEncode(value)}" }
+
+
+private fun Map<String, String>.headerValue(name: String): String? =
+    entries.firstOrNull { it.key.equals(name, ignoreCase = true) }?.value

@@ -10,8 +10,8 @@ permissions:
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
-  AI_SDK_REFERENCE_VERSION: 6.0.196
-  AI_SDK_REFERENCE_COMMIT: 00ca39c3cdf47f528d427f4d6c43a1ecaeac53d8
+  AI_SDK_REFERENCE_VERSION: 6.0.197
+  AI_SDK_REFERENCE_COMMIT: de852ab79aac88345c8a9ae54003fb206e1a64b4
 
 jobs:
   verify:
@@ -24,6 +24,16 @@ jobs:
           java-version: "21"
       - uses: android-actions/setup-android@v4.0.1
       - uses: gradle/actions/setup-gradle@v6.1.0
+      # `check` cross-compiles the iOS klibs on Linux, which downloads the
+      # Kotlin/Native toolchain + dependencies into ~/.konan. setup-gradle only
+      # caches ~/.gradle, so cache ~/.konan separately (keyed on the version
+      # catalog so a Kotlin bump invalidates it). JetBrains-recommended.
+      - name: Cache Kotlin/Native toolchain (~/.konan)
+        uses: actions/cache@v5.0.5
+        with:
+          path: ~/.konan
+          key: konan-${{ runner.os }}-${{ hashFiles('gradle/libs.versions.toml') }}
+          restore-keys: konan-${{ runner.os }}-
       - name: Fetch Vercel AI SDK v6 reference
         run: |
           mkdir -p .reference
@@ -34,7 +44,31 @@ jobs:
         run: node tools/check-ai-sdk-reference.mjs
       - name: Verify parity ledgers
         run: node tools/generate-parity-ledger.mjs --check
-      - name: Verify tests
-        run: ./gradlew allTests
+      - name: Verify (tests + detekt + ABI + coverage)
+        run: ./gradlew check
       - name: Verify publication metadata
         run: ./gradlew publishToMavenLocal
+
+  # Apple targets cannot build on Linux; without this leg the published iOS
+  # frameworks were compiled/tested nowhere (kotlin.native.ignoreDisabledTargets
+  # silenced the gap on the ubuntu job).
+  verify-apple:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v6.0.3
+      - uses: actions/setup-java@v5.2.0
+        with:
+          distribution: temurin
+          java-version: "21"
+      - uses: gradle/actions/setup-gradle@v6.1.0
+      # The Apple leg compiles/links three iOS targets — the heaviest
+      # Kotlin/Native work in CI. Caching ~/.konan (compiler + platform libs +
+      # klib caches) avoids re-downloading and re-warming it on every run.
+      - name: Cache Kotlin/Native toolchain (~/.konan)
+        uses: actions/cache@v5.0.5
+        with:
+          path: ~/.konan
+          key: konan-${{ runner.os }}-${{ hashFiles('gradle/libs.versions.toml') }}
+          restore-keys: konan-${{ runner.os }}-
+      - name: Verify Apple targets (compile all, test simulator)
+        run: ./gradlew iosSimulatorArm64Test compileKotlinIosArm64 compileKotlinIosX64

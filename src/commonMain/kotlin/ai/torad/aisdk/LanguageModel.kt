@@ -7,7 +7,7 @@ import kotlinx.serialization.json.JsonElement
 /**
  * Provider-neutral model surface. Per invariant I-4 / I-9, application code
  * never depends on a specific provider — it depends on this interface, and
- * provider-specific differences live in middleware (see [Middleware]).
+ * provider-specific differences live in middleware (see [LanguageModelMiddleware]).
  *
  * Two operations: `generate` for one-shot completions, `stream` for
  * incremental events. Both accept the same [LanguageModelCallParams].
@@ -20,9 +20,9 @@ import kotlinx.serialization.json.JsonElement
  * This module ships only [ai.torad.aisdk.providers.MockLanguageModel] for
  * tests — real providers are out of scope here.
  */
-interface LanguageModel {
+public interface LanguageModel {
     /** Stable identifier for telemetry / routing (`"litertlm/gemma-3-1b"`, `"openai/gpt-5"`). */
-    val modelId: String
+    public val modelId: String
 
     /**
      * Provider tag for the model — `"openai"`, `"anthropic"`,
@@ -33,7 +33,7 @@ interface LanguageModel {
      *
      * Default `"unknown"` — every real provider should override.
      */
-    val provider: String
+    public val provider: String
         get() = "unknown"
 
     /**
@@ -43,22 +43,24 @@ interface LanguageModel {
      * `LanguageModelV3.supportedUrls`. Empty default — most on-device
      * providers don't accept URLs and fall back to base64.
      */
-    val supportedUrls: Map<String, List<String>>
+    public val supportedUrls: Map<String, List<String>>
         get() = emptyMap()
 
     /** One-shot completion. */
-    suspend fun generate(params: LanguageModelCallParams): LanguageModelResult
+    public suspend fun generate(params: LanguageModelCallParams): LanguageModelResult
 
-    /** Streaming completion. Hot until collected, then drives one upstream call. */
-    fun stream(params: LanguageModelCallParams): Flow<StreamEvent>
+    /** Streaming completion. Cold until collected, then drives one upstream call per collection. */
+    public fun stream(params: LanguageModelCallParams): Flow<StreamEvent>
 
     /**
      * Streaming completion plus metadata available before stream
-     * collection. Implementations must keep the returned stream cold.
+     * collection. Implementations must keep the returned stream cold, and
+     * must not `flowOn`/emit from a foreign context — the collection context
+     * is the caller's choice.
      * Providers can override this to expose request bodies and response
      * headers while preserving the v6 `doStream` result shape.
      */
-    fun streamResult(params: LanguageModelCallParams): LanguageModelStreamResult =
+    public fun streamResult(params: LanguageModelCallParams): LanguageModelStreamResult =
         LanguageModelStreamResult(stream = stream(params))
 }
 
@@ -67,7 +69,7 @@ interface LanguageModel {
  * can wrap both the same way and `wrapLanguageModel` only needs one
  * pass-through shape.
  */
-data class LanguageModelCallParams(
+public data class LanguageModelCallParams(
     val messages: List<ModelMessage>,
     val tools: List<LanguageModelTool> = emptyList(),
     val toolChoice: ToolChoice = ToolChoice.Auto,
@@ -106,7 +108,7 @@ data class LanguageModelCallParams(
  * provider needs. Distinct from the application-side [Tool] which carries
  * a Kotlin executor; this is the wire shape that crosses into a provider.
  */
-data class LanguageModelTool(
+public data class LanguageModelTool(
     val name: String,
     val description: String,
     val parametersSchemaJson: String,
@@ -114,12 +116,12 @@ data class LanguageModelTool(
     val metadata: Map<String, JsonElement> = emptyMap(),
     val strict: Boolean = true,
 ) {
-    val parametersSchema: JsonElement
-        get() = aiSdkJson.parseToJsonElement(parametersSchemaJson)
+    /** Parsed once and cached — not a constructor arg, so not serialized. */
+    val parametersSchema: JsonElement by lazy { aiSdkJson.parseToJsonElement(parametersSchemaJson) }
 }
 
 /** One-shot generate result. */
-data class LanguageModelResult(
+public data class LanguageModelResult(
     val text: String,
     val toolCalls: List<ContentPart.ToolCall> = emptyList(),
     val finishReason: FinishReason,
@@ -136,7 +138,7 @@ data class LanguageModelResult(
 )
 
 /** Provider stream plus request/response metadata known before collection. */
-data class LanguageModelStreamResult(
+public data class LanguageModelStreamResult(
     val stream: Flow<StreamEvent>,
     val request: LanguageModelRequestMetadata = LanguageModelRequestMetadata(),
     val response: LanguageModelResponseMetadata = LanguageModelResponseMetadata(),
@@ -148,19 +150,19 @@ data class LanguageModelStreamResult(
  * into common code.
  */
 @Serializable
-data class CallWarning(
+public data class CallWarning(
     val type: String,
     val message: String? = null,
     val details: JsonElement? = null,
 )
 
 /** Request metadata recorded by HTTP-backed or gateway providers. */
-data class LanguageModelRequestMetadata(
+public data class LanguageModelRequestMetadata(
     val body: JsonElement? = null,
 )
 
 /** Response metadata recorded by HTTP-backed or gateway providers. */
-data class LanguageModelResponseMetadata(
+public data class LanguageModelResponseMetadata(
     val id: String? = null,
     val timestampMillis: Long? = null,
     val modelId: String? = null,

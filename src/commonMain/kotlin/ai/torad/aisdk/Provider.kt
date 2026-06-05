@@ -1,31 +1,31 @@
 package ai.torad.aisdk
 
-interface Provider {
-    val providerId: String
+public interface Provider {
+    public val providerId: String
 
-    fun languageModel(modelId: String): LanguageModel =
+    public fun languageModel(modelId: String): LanguageModel =
         throw NoSuchModelError(providerId, "language", modelId)
 
-    fun embeddingModel(modelId: String): EmbeddingModel =
+    public fun embeddingModel(modelId: String): EmbeddingModel =
         throw NoSuchModelError(providerId, "embedding", modelId)
 
-    fun imageModel(modelId: String): ImageModel =
+    public fun imageModel(modelId: String): ImageModel =
         throw NoSuchModelError(providerId, "image", modelId)
 
-    fun speechModel(modelId: String): SpeechModel =
+    public fun speechModel(modelId: String): SpeechModel =
         throw NoSuchModelError(providerId, "speech", modelId)
 
-    fun transcriptionModel(modelId: String): TranscriptionModel =
+    public fun transcriptionModel(modelId: String): TranscriptionModel =
         throw NoSuchModelError(providerId, "transcription", modelId)
 
-    fun rerankingModel(modelId: String): RerankingModel =
+    public fun rerankingModel(modelId: String): RerankingModel =
         throw NoSuchModelError(providerId, "reranking", modelId)
 
-    fun videoModel(modelId: String): VideoModel =
+    public fun videoModel(modelId: String): VideoModel =
         throw NoSuchModelError(providerId, "video", modelId)
 }
 
-data class CustomProvider(
+public data class CustomProvider(
     override val providerId: String,
     private val languageModels: Map<String, LanguageModel> = emptyMap(),
     private val embeddingModels: Map<String, EmbeddingModel> = emptyMap(),
@@ -57,7 +57,7 @@ data class CustomProvider(
         videoModels[modelId] ?: super.videoModel(modelId)
 }
 
-fun customProvider(
+public fun customProvider(
     providerId: String,
     languageModels: Map<String, LanguageModel> = emptyMap(),
     embeddingModels: Map<String, EmbeddingModel> = emptyMap(),
@@ -77,13 +77,13 @@ fun customProvider(
     videoModels = videoModels,
 )
 
-class ProviderRegistry(
+public class ProviderRegistry(
     private val providers: Map<String, Provider>,
     private val defaultProviderId: String? = null,
 ) : Provider {
     override val providerId: String = "registry"
 
-    fun provider(providerId: String): Provider =
+    public fun provider(providerId: String): Provider =
         providers[providerId] ?: throw NoSuchProviderError(providerId)
 
     override fun languageModel(modelId: String): LanguageModel =
@@ -119,29 +119,29 @@ class ProviderRegistry(
     }
 }
 
-fun createProviderRegistry(
+public fun createProviderRegistry(
     providers: Map<String, Provider>,
     defaultProviderId: String? = null,
 ): ProviderRegistry = ProviderRegistry(providers, defaultProviderId)
 
-fun createProviderRegistry(
+public fun createProviderRegistry(
     vararg providers: Pair<String, Provider>,
     defaultProviderId: String? = null,
 ): ProviderRegistry = ProviderRegistry(providers.toMap(), defaultProviderId)
 
-fun splitProviderModelId(modelId: String): Pair<String?, String> {
+public fun splitProviderModelId(modelId: String): Pair<String?, String> {
     val colon = modelId.indexOf(':')
     if (colon <= 0) return null to modelId
     return modelId.substring(0, colon) to modelId.substring(colon + 1)
 }
 
-data class ProviderMiddleware(
+public data class ProviderMiddleware(
     val languageModelMiddlewares: List<LanguageModelMiddleware> = emptyList(),
     val embeddingModelMiddlewares: List<EmbeddingModelMiddleware> = emptyList(),
     val imageModelMiddlewares: List<ImageModelMiddleware> = emptyList(),
 )
 
-fun wrapProvider(provider: Provider, middleware: ProviderMiddleware): Provider =
+public fun wrapProvider(provider: Provider, middleware: ProviderMiddleware): Provider =
     object : Provider {
         override val providerId: String = provider.providerId
 

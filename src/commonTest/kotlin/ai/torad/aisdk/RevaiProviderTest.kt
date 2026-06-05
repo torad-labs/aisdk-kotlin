@@ -1,4 +1,8 @@
 package ai.torad.aisdk
+import ai.torad.aisdk.providers.REVAI_VERSION
+import ai.torad.aisdk.providers.revai
+import ai.torad.aisdk.providers.RevaiProviderSettings
+import ai.torad.aisdk.providers.createRevai
 
 import io.ktor.http.HttpHeaders
 import kotlinx.coroutines.test.runTest
