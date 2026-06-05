@@ -16,9 +16,9 @@ import io.ktor.http.contentType
 import io.ktor.utils.io.ByteReadChannel
 import io.ktor.utils.io.readAvailable
 import io.ktor.utils.io.readLine
+import kotlinx.coroutines.channels.ProducerScope
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.FlowCollector
-import kotlinx.coroutines.flow.emitAll
+import kotlinx.coroutines.flow.channelFlow
 import kotlinx.coroutines.flow.flow
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
@@ -232,6 +232,7 @@ private class BedrockChatLanguageModel(
         val prepared = bedrockChatRequestBody(modelId, params)
         emit(StreamEvent.StreamStart(prepared.warnings))
         val state = BedrockStreamState(settings.generateId, prepared.usesJsonResponseTool)
+        var sseHeaders: Map<String, String> = emptyMap()
         val payloads = bedrockStreamPayloads(
             client = client,
             url = "${bedrockRuntimeBaseURL(settings)}/model/${bedrockEncodeModelId(modelId)}/converse-stream",
@@ -239,16 +240,24 @@ private class BedrockChatLanguageModel(
             settings = settings,
             extraHeaders = params.headers + (HttpHeaders.Accept to "application/vnd.amazon.eventstream"),
             abortSignal = params.abortSignal,
-        ) { responseHeaders ->
-            emit(
-                StreamEvent.ResponseMetadata(
-                    id = responseHeaders.headerValue("x-amzn-requestid"),
-                    modelId = modelId,
-                    headers = responseHeaders,
-                ),
-            )
+        ) { sseHeaders = it }
+        // Emit ResponseMetadata in this collector's coroutine (never from the
+        // channelFlow producer's onResponse) — once, before the first payload.
+        var metadataEmitted = false
+        suspend fun emitMetadataOnce() {
+            if (!metadataEmitted) {
+                emit(
+                    StreamEvent.ResponseMetadata(
+                        id = sseHeaders.headerValue("x-amzn-requestid"),
+                        modelId = modelId,
+                        headers = sseHeaders,
+                    ),
+                )
+                metadataEmitted = true
+            }
         }
         payloads.collect { rawLine ->
+            emitMetadataOnce()
             val line = rawLine.trim()
             if (line.isNotEmpty()) {
                 val parsed = runCatching { aiSdkJson.parseToJsonElement(line).jsonObject }.getOrNull()
@@ -259,6 +268,7 @@ private class BedrockChatLanguageModel(
                 }
             }
         }
+        emitMetadataOnce()
         state.finish().forEach { emit(it) }
     }
 
@@ -1165,7 +1175,10 @@ private fun bedrockStreamPayloads(
     extraHeaders: Map<String, String>,
     abortSignal: AbortSignal,
     onResponse: suspend (Map<String, String>) -> Unit,
-): Flow<String> = flow {
+): Flow<String> = channelFlow {
+    // channelFlow (not flow): execute{} and the channel reads may run in a
+    // different coroutine than the collector on Kotlin/Native; `send` is safe
+    // across that boundary where `emit` would throw "Flow invariant is violated".
     abortSignal.throwIfAborted()
     val encodedBody = aiSdkJson.encodeToString(JsonElement.serializer(), body)
     val headers = bedrockHeaders(settings, extraHeaders, url, encodedBody, "bedrock")
@@ -1193,26 +1206,26 @@ private fun bedrockStreamPayloads(
         val channel = response.bodyAsChannel()
         val contentType = flattened.headerValue(HttpHeaders.ContentType).orEmpty()
         if (contentType.contains("application/vnd.amazon.eventstream", ignoreCase = true)) {
-            emitBedrockEventStreamFrames(channel)
+            sendBedrockEventStreamFrames(channel)
         } else {
             while (true) {
                 val line = channel.readLine() ?: break
-                emit(line)
+                send(line)
             }
         }
     }
 }
 
 /** Read and decode Smithy binary event-stream frames off [channel] one at a
- *  time, emitting each reshaped payload as it arrives. */
-private suspend fun FlowCollector<String>.emitBedrockEventStreamFrames(channel: ByteReadChannel) {
+ *  time, sending each reshaped payload as it arrives. */
+private suspend fun ProducerScope<String>.sendBedrockEventStreamFrames(channel: ByteReadChannel) {
     while (true) {
         val prelude = channel.readBedrockFrame(4) ?: break
         val totalLength = prelude.readInt32BE(0)
         if (totalLength < 16) break
         val rest = channel.readBedrockFrame(totalLength - 4) ?: break
         for (message in decodeBedrockEventStream(prelude + rest)) {
-            emit(bedrockMessagePayload(message))
+            send(bedrockMessagePayload(message))
         }
     }
 }

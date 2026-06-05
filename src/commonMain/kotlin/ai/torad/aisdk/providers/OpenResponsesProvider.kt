@@ -145,17 +145,14 @@ private class OpenResponsesLanguageModel(
         )
         emit(StreamEvent.StreamStart(prepared.warnings))
         val state = OpenResponsesStreamState(json)
-        val rawLines = streamResponsesSse(prepared.body, params.headers) { responseHeaders ->
-            emit(StreamEvent.ResponseMetadata(headers = responseHeaders))
-        }
-        parseJsonEventStream(rawLines, jsonSchema<JsonElement>(JsonObject(emptyMap())), json).collect { event ->
-            when (event) {
-                is ParseResult.Success -> state.accept(event.value).forEach { emit(it) }
-                is ParseResult.Failure -> emit(
-                    StreamEvent.Error("Failed to parse Open Responses stream event: ${event.error.message}"),
-                )
-            }
-        }
+        var sseHeaders: Map<String, String> = emptyMap()
+        val rawLines = streamResponsesSse(prepared.body, params.headers) { sseHeaders = it }
+        forwardSseEvents(
+            events = parseJsonEventStream(rawLines, jsonSchema<JsonElement>(JsonObject(emptyMap())), json),
+            capturedHeaders = { sseHeaders },
+            parseErrorPrefix = "Failed to parse Open Responses stream event",
+            onEvent = { state.accept(it).forEach { e -> emit(e) } },
+        )
         state.finish().forEach { emit(it) }
     }
 

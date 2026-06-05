@@ -13,7 +13,8 @@ import io.ktor.http.HttpMethod
 import io.ktor.http.contentType
 import io.ktor.utils.io.readLine
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.FlowCollector
+import kotlinx.coroutines.flow.channelFlow
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
@@ -187,7 +188,12 @@ internal fun streamSse(
     errorMessage: ErrorMessageExtractor = ::defaultErrorMessage,
     errorFromResponse: ResponseErrorFactory? = null,
     onResponse: suspend (Map<String, String>) -> Unit = {},
-): Flow<String> = flow {
+): Flow<String> = channelFlow {
+    // channelFlow (not flow): `execute {}` may run its body — and the channel
+    // reads/sends — in a different coroutine/context than the collector
+    // (notably on Kotlin/Native engines). A plain `flow { emit() }` enforces
+    // same-context emission and throws "Flow invariant is violated" there;
+    // `channelFlow { send() }` is concurrency-safe across that boundary.
     val statement = client.prepareRequest(url) {
         this.method = method
         if (body != null) {
@@ -215,9 +221,43 @@ internal fun streamSse(
         val channel = response.bodyAsChannel()
         while (true) {
             val line = channel.readLine() ?: break
-            emit(line + "\n")
+            send(line + "\n")
         }
     }
+}
+
+/**
+ * Drive an SSE provider stream into a `Flow<StreamEvent>` the Kotlin/Native-safe
+ * way. The transport's `onResponse` callback runs in the [streamSse]
+ * `channelFlow` *producer* coroutine, so emitting a `StreamEvent` from inside it
+ * violates Flow's emission-context invariant (it throws on Native). Instead the
+ * provider stores the headers from `onResponse` and passes a reader as
+ * [capturedHeaders]; this helper emits the leading [StreamEvent.ResponseMetadata]
+ * **in the collector's own coroutine** — once, before the first event (or on
+ * completion if the stream was empty so the metadata is never dropped).
+ *
+ * [events] is the already-parsed event flow (`parseJsonEventStream(rawLines,
+ * …)`). Each [ParseResult.Success] is handed to [onEvent]; each failure becomes a
+ * wire [StreamEvent.Error] prefixed with [parseErrorPrefix].
+ */
+internal suspend fun FlowCollector<StreamEvent>.forwardSseEvents(
+    events: Flow<ParseResult<JsonElement>>,
+    capturedHeaders: () -> Map<String, String>,
+    parseErrorPrefix: String,
+    onEvent: suspend FlowCollector<StreamEvent>.(JsonElement) -> Unit,
+) {
+    var metadataEmitted = false
+    events.collect { result ->
+        if (!metadataEmitted) {
+            emit(StreamEvent.ResponseMetadata(headers = capturedHeaders()))
+            metadataEmitted = true
+        }
+        when (result) {
+            is ParseResult.Success -> onEvent(result.value)
+            is ParseResult.Failure -> emit(StreamEvent.Error("$parseErrorPrefix: ${result.error.message}"))
+        }
+    }
+    if (!metadataEmitted) emit(StreamEvent.ResponseMetadata(headers = capturedHeaders()))
 }
 
 /**

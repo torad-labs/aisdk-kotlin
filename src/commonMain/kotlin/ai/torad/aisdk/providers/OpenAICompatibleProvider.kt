@@ -249,18 +249,19 @@ private class OpenAICompatibleChatLanguageModel(
         val prepared = chatRequestBody(params, stream = true)
         emit(StreamEvent.StreamStart(prepared.warnings))
         val state = OpenAIChatStreamState(provider = providerName, providerKey = providerOptionsKey(), convertUsage = settings.convertUsage)
+        var sseHeaders: Map<String, String> = emptyMap()
         val rawLines = postSse(
             path = "/chat/completions",
             body = prepared.body,
             headers = params.headers + mapOf(HttpHeaders.Accept to "text/event-stream"),
-            onResponse = { responseHeaders -> emit(StreamEvent.ResponseMetadata(headers = responseHeaders)) },
+            onResponse = { sseHeaders = it },
         )
-        parseJsonEventStream(rawLines, jsonSchema<JsonElement>(JsonObject(emptyMap())), json).collect { event ->
-            when (event) {
-                is ParseResult.Success -> state.accept(event.value).forEach { emit(it) }
-                is ParseResult.Failure -> emit(StreamEvent.Error("Failed to parse OpenAI-compatible stream event: ${event.error.message}"))
-            }
-        }
+        forwardSseEvents(
+            events = parseJsonEventStream(rawLines, jsonSchema<JsonElement>(JsonObject(emptyMap())), json),
+            capturedHeaders = { sseHeaders },
+            parseErrorPrefix = "Failed to parse OpenAI-compatible stream event",
+            onEvent = { state.accept(it).forEach { e -> emit(e) } },
+        )
         state.finish().forEach { emit(it) }
     }
 
@@ -337,13 +338,19 @@ private class OpenAICompatibleCompletionLanguageModel(
         var finish = FinishReason.Other
         var usage = Usage()
         var emittedResponseMetadata = false
+        var sseHeaders: Map<String, String> = emptyMap()
+        var headerMetaEmitted = false
         val rawLines = postSse(
             path = "/completions",
             body = prepared.body,
             headers = params.headers + mapOf(HttpHeaders.Accept to "text/event-stream"),
-            onResponse = { responseHeaders -> emit(StreamEvent.ResponseMetadata(headers = responseHeaders)) },
+            onResponse = { sseHeaders = it },
         )
         parseJsonEventStream(rawLines, jsonSchema<JsonElement>(JsonObject(emptyMap())), json).collect { event ->
+            if (!headerMetaEmitted) {
+                emit(StreamEvent.ResponseMetadata(headers = sseHeaders))
+                headerMetaEmitted = true
+            }
             when (event) {
                 is ParseResult.Failure -> emit(StreamEvent.Error("Failed to parse OpenAI-compatible completion stream event: ${event.error.message}"))
                 is ParseResult.Success -> {
@@ -368,6 +375,7 @@ private class OpenAICompatibleCompletionLanguageModel(
                 }
             }
         }
+        if (!headerMetaEmitted) emit(StreamEvent.ResponseMetadata(headers = sseHeaders))
         if (activeText) emit(StreamEvent.TextEnd("txt-0"))
         emit(StreamEvent.Finish(totalSteps = 1, finishReason = finish, usage = usage))
     }

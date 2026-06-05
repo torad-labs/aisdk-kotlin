@@ -122,15 +122,14 @@ public class AnthropicMessagesLanguageModel(
         val prepared = anthropicRequestBody(settings, modelId, params, stream = true)
         emit(StreamEvent.StreamStart(prepared.warnings))
         val state = AnthropicStreamState(settings, aiSdkJson)
-        val rawLines = anthropicStreamSse(prepared.body, prepared.betas, params.headers) { responseHeaders ->
-            emit(StreamEvent.ResponseMetadata(headers = responseHeaders))
-        }
-        parseJsonEventStream(rawLines, jsonSchema<JsonElement>(JsonObject(emptyMap())), aiSdkJson).collect { event ->
-            when (event) {
-                is ParseResult.Success -> state.accept(event.value).forEach { emit(it) }
-                is ParseResult.Failure -> emit(StreamEvent.Error("Failed to parse Anthropic stream event: ${event.error.message}"))
-            }
-        }
+        var sseHeaders: Map<String, String> = emptyMap()
+        val rawLines = anthropicStreamSse(prepared.body, prepared.betas, params.headers) { sseHeaders = it }
+        forwardSseEvents(
+            events = parseJsonEventStream(rawLines, jsonSchema<JsonElement>(JsonObject(emptyMap())), aiSdkJson),
+            capturedHeaders = { sseHeaders },
+            parseErrorPrefix = "Failed to parse Anthropic stream event",
+            onEvent = { state.accept(it).forEach { e -> emit(e) } },
+        )
         state.finish().forEach { emit(it) }
     }
 
