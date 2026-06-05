@@ -24,6 +24,16 @@ jobs:
           java-version: "21"
       - uses: android-actions/setup-android@v4.0.1
       - uses: gradle/actions/setup-gradle@v6.1.0
+      # `check` cross-compiles the iOS klibs on Linux, which downloads the
+      # Kotlin/Native toolchain + dependencies into ~/.konan. setup-gradle only
+      # caches ~/.gradle, so cache ~/.konan separately (keyed on the version
+      # catalog so a Kotlin bump invalidates it). JetBrains-recommended.
+      - name: Cache Kotlin/Native toolchain (~/.konan)
+        uses: actions/cache@v5.0.5
+        with:
+          path: ~/.konan
+          key: konan-${{ runner.os }}-${{ hashFiles('gradle/libs.versions.toml') }}
+          restore-keys: konan-${{ runner.os }}-
       - name: Fetch Vercel AI SDK v6 reference
         run: |
           mkdir -p .reference
@@ -51,5 +61,14 @@ jobs:
           distribution: temurin
           java-version: "21"
       - uses: gradle/actions/setup-gradle@v6.1.0
+      # The Apple leg compiles/links three iOS targets — the heaviest
+      # Kotlin/Native work in CI. Caching ~/.konan (compiler + platform libs +
+      # klib caches) avoids re-downloading and re-warming it on every run.
+      - name: Cache Kotlin/Native toolchain (~/.konan)
+        uses: actions/cache@v5.0.5
+        with:
+          path: ~/.konan
+          key: konan-${{ runner.os }}-${{ hashFiles('gradle/libs.versions.toml') }}
+          restore-keys: konan-${{ runner.os }}-
       - name: Verify Apple targets (compile all, test simulator)
         run: ./gradlew iosSimulatorArm64Test compileKotlinIosArm64 compileKotlinIosX64
