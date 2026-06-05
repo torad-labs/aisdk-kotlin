@@ -5,7 +5,6 @@ import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.flow
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.serializer
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
@@ -17,6 +16,7 @@ import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.doubleOrNull
 import kotlinx.serialization.json.intOrNull
 import kotlinx.serialization.json.jsonPrimitive
+import kotlinx.serialization.serializer
 
 /**
  * A tool the LLM can call — application code constructs these via the
@@ -458,7 +458,17 @@ public fun <TContext> dynamicTool(
     description = description,
     inputSerializer = JsonElement.serializer(),
     outputSerializer = JsonElement.serializer(),
-    metadata = metadata + ("inputSchema" to Json.parseToJsonElement(inputSchemaJson)),
+    metadata = metadata + (
+        "inputSchema" to try {
+            Json.parseToJsonElement(inputSchemaJson)
+        } catch (e: kotlinx.serialization.SerializationException) {
+            throw InvalidArgumentError(
+                "inputSchemaJson",
+                "dynamicTool `$name`: inputSchemaJson is not valid JSON — ${e.message}",
+                e,
+            )
+        }
+        ),
     toModelOutput = toModelOutput,
     executor = executor,
 )
@@ -477,7 +487,13 @@ public fun <TInput, TOutput, TContext> providerExecutedTool(
     metadata = metadata,
     providerExecuted = true,
 ) {
-    flow { throw AgentError.ToolExecution(name, toolCallId, UnsupportedOperationException("provider-executed tool has no local executor")) }
+    flow {
+        throw AgentError.ToolExecution(
+            name,
+            toolCallId,
+            UnsupportedOperationException("provider-executed tool has no local executor")
+        )
+    }
 }
 
 public data class Schema<T>(
@@ -503,10 +519,12 @@ public fun <T> jsonSchema(
 ): Schema<T> = Schema(schema, validate)
 
 public fun <T> asSchema(schema: Schema<T>?): Schema<T> =
-    schema ?: jsonSchema(buildJsonObject {
-        put("properties", JsonObject(emptyMap()))
-        put("additionalProperties", JsonPrimitive(false))
-    })
+    schema ?: jsonSchema(
+        buildJsonObject {
+            put("properties", JsonObject(emptyMap()))
+            put("additionalProperties", JsonPrimitive(false))
+        }
+    )
 
 public fun <T> asSchema(schema: LazySchema<T>): Schema<T> = schema()
 
@@ -608,7 +626,11 @@ public fun <TInput, TOutput, TContext> executeTool(
         outputs += output
     }
     if (outputs.isEmpty()) {
-        throw AgentError.ToolExecution(tool.name, options.toolCallId, NoOutputGeneratedError("Tool ${tool.name} produced no output"))
+        throw AgentError.ToolExecution(
+            tool.name,
+            options.toolCallId,
+            NoOutputGeneratedError("Tool ${tool.name} produced no output")
+        )
     }
     outputs.dropLast(1).forEach { emit(ExecuteToolResult.Preliminary(it)) }
     emit(ExecuteToolResult.Final(outputs.last()))
@@ -934,8 +956,10 @@ private fun mapSchema(
     val valueDescriptor = if (descriptor.elementsCount > 1) descriptor.getElementDescriptor(1) else null
     return jsonObj(
         SCHEMA_TYPE_KEY to kotlinx.serialization.json.JsonPrimitive(SCHEMA_OBJECT),
-        "additionalProperties" to (valueDescriptor?.let { descriptorToJsonSchema(it, seen) }
-            ?: kotlinx.serialization.json.JsonPrimitive(true)),
+        "additionalProperties" to (
+            valueDescriptor?.let { descriptorToJsonSchema(it, seen) }
+                ?: kotlinx.serialization.json.JsonPrimitive(true)
+            ),
     )
 }
 
@@ -986,8 +1010,11 @@ private fun jsonObj(
 @kotlinx.serialization.Serializable
 public sealed interface ToolChoice {
     @kotlinx.serialization.Serializable public data object Auto : ToolChoice
+
     @kotlinx.serialization.Serializable public data object None : ToolChoice
+
     @kotlinx.serialization.Serializable public data object Required : ToolChoice
+
     @kotlinx.serialization.Serializable public data class Specific(val toolName: String) : ToolChoice
 }
 
@@ -1082,14 +1109,19 @@ public data class ToolPredicateOptions<TContext>(
 public sealed class ToolResultOutput {
     @Serializable
     public data class Text(val text: String) : ToolResultOutput()
+
     @Serializable
     public data class Json(val json: JsonElement) : ToolResultOutput()
+
     @Serializable
     public data class Error(val message: String) : ToolResultOutput()
+
     @Serializable
     public data class ErrorJson(val json: JsonElement) : ToolResultOutput()
+
     @Serializable
     public data class ExecutionDenied(val reason: String? = null) : ToolResultOutput()
+
     @Serializable
     public data class Content(
         val value: List<JsonElement>,
@@ -1099,7 +1131,11 @@ public sealed class ToolResultOutput {
 
 internal fun toolResultOutputFromJson(json: JsonElement): ToolResultOutput =
     if (json is JsonPrimitive && json.isString) {
-        ToolResultOutput.Text(json.contentOrNull.orEmpty())
+        // contentOrNull is null only when the primitive is JSON null (JsonNull),
+        // which cannot reach this branch because isString is false for JsonNull.
+        // Use content (non-null) to preserve the actual string value exactly,
+        // including an explicit empty string, instead of silently coercing null→"".
+        ToolResultOutput.Text(json.content)
     } else {
         ToolResultOutput.Json(json)
     }

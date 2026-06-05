@@ -1,8 +1,5 @@
 package ai.torad.aisdk
 
-import kotlin.math.sqrt
-import kotlin.io.encoding.Base64
-import kotlin.random.Random
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -20,6 +17,9 @@ import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.booleanOrNull
 import kotlinx.serialization.json.doubleOrNull
 import kotlinx.serialization.json.jsonPrimitive
+import kotlin.io.encoding.Base64
+import kotlin.math.sqrt
+import kotlin.random.Random
 
 internal fun <T> asArray(value: T): List<T> = listOf(value)
 public fun <T> asArray(value: Iterable<T>): List<T> = value.toList()
@@ -140,11 +140,44 @@ public suspend fun <T> retryWithExponentialBackoff(
             throw ce
         } catch (t: Throwable) {
             if (attempt >= policy.maxRetries || !shouldRetry(t)) throw t
-            if (nextDelay > 0) delay(nextDelay)
+            // Honor Retry-After / retry-after-ms when the server supplies it.
+            val serverFloorMs = retryAfterDelayMs(t)
+            val actualDelay = if (serverFloorMs != null) {
+                serverFloorMs.coerceAtMost(policy.maxDelayMs)
+            } else {
+                nextDelay
+            }
+            if (actualDelay > 0) delay(actualDelay)
             nextDelay = (nextDelay * 2).coerceAtMost(policy.maxDelayMs)
             attempt += 1
         }
     }
+}
+
+/** Milliseconds per second, used for Retry-After delta-seconds → ms conversion. */
+private const val MILLIS_PER_SECOND: Long = 1_000L
+
+/**
+ * Extracts the server-requested retry delay from [APICallError.responseHeaders].
+ *
+ * Supports:
+ * - `retry-after-ms`: milliseconds integer (non-standard but widely used)
+ * - `retry-after`: delta-seconds integer per RFC 7231 §7.1.3
+ *
+ * HTTP-date form of `Retry-After` is not supported (kotlinx-datetime is not
+ * a declared dependency); it falls back to null so jittered backoff applies.
+ *
+ * Returns null when the error is not an [APICallError] or no usable header is
+ * present.
+ */
+private fun retryAfterDelayMs(t: Throwable): Long? {
+    val headers = (t as? APICallError)?.responseHeaders ?: return null
+    // Canonical header names after normalization in flattenedHeaders().
+    val delayMs = headers["retry-after-ms"]?.toLongOrNull()?.takeIf { it > 0 }
+        ?: headers["retry-after"]?.trim()?.toLongOrNull()?.takeIf { it >= 0 }
+            ?.let { it * MILLIS_PER_SECOND }
+    // HTTP-date form of retry-after is not parseable without kotlinx-datetime; falls through to null.
+    return delayMs
 }
 
 internal class SerialJobExecutor {
@@ -522,7 +555,6 @@ internal fun convertUint8ArrayToBase64(array: Uint8Array): String =
 internal fun convertToBase64(value: String): String = value
 
 public fun convertToBase64(value: ByteArray): String = convertByteArrayToBase64(value)
-
 
 /**
  * RFC-3986 percent-encoding (unreserved chars kept). Shared by providers that

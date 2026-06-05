@@ -1,5 +1,6 @@
 package ai.torad.aisdk
 
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.buffer
@@ -50,6 +51,10 @@ private val WORD_REGEX = Regex(
 )
 private val LINE_REGEX = Regex("""[^\n]*\n""", RegexOption.MULTILINE)
 
+// Catches Throwable intentionally: any upstream failure must still flush the
+// partial text/reasoning buffers before propagating (CancellationException is
+// rethrown first, above), so dropping to a narrower type would lose data.
+@Suppress("TooGenericExceptionCaught", "CyclomaticComplexMethod")
 public fun smoothStream(
     upstream: Flow<StreamEvent>,
     delayMs: Long = 10L,
@@ -105,30 +110,42 @@ public fun smoothStream(
     // delay()s in flushText/flushReasoning: without it, the delay back-pressures the
     // provider while we collect. The default (suspending, unbounded-ish) buffer means
     // no token loss — fast on-device models keep producing while we pace the UI.
-    upstream.buffer().collect { event ->
-        when (event) {
-            is StreamEvent.TextDelta -> {
-                textBuffers.getOrPut(event.id) { StringBuilder() }.append(event.text)
-                flushText(event.id)
+    var upstreamError: Throwable? = null
+    try {
+        upstream.buffer().collect { event ->
+            when (event) {
+                is StreamEvent.TextDelta -> {
+                    textBuffers.getOrPut(event.id) { StringBuilder() }.append(event.text)
+                    flushText(event.id)
+                }
+                is StreamEvent.TextEnd -> {
+                    flushText(event.id, all = true)
+                    textBuffers.remove(event.id)
+                    emit(event)
+                }
+                is StreamEvent.ReasoningDelta -> {
+                    reasoningBuffers.getOrPut(event.id) { StringBuilder() }.append(event.text)
+                    flushReasoning(event.id)
+                }
+                is StreamEvent.ReasoningEnd -> {
+                    flushReasoning(event.id, all = true)
+                    reasoningBuffers.remove(event.id)
+                    emit(event)
+                }
+                else -> emit(event)
             }
-            is StreamEvent.TextEnd -> {
-                flushText(event.id, all = true)
-                textBuffers.remove(event.id)
-                emit(event)
-            }
-            is StreamEvent.ReasoningDelta -> {
-                reasoningBuffers.getOrPut(event.id) { StringBuilder() }.append(event.text)
-                flushReasoning(event.id)
-            }
-            is StreamEvent.ReasoningEnd -> {
-                flushReasoning(event.id, all = true)
-                reasoningBuffers.remove(event.id)
-                emit(event)
-            }
-            else -> emit(event)
         }
+    } catch (ce: CancellationException) {
+        // Re-throw immediately — the scope is already cancelled, so the
+        // flush delays below would throw again anyway. Partial buffers are
+        // intentionally not emitted under cancellation.
+        throw ce
+    } catch (t: Throwable) {
+        upstreamError = t
     }
-    // Flush any remaining buffers on stream end.
+    // Flush any remaining partial buffers on error or normal completion so
+    // partial tokens accumulated before the failure are not silently dropped.
     for (id in textBuffers.keys.toList()) flushText(id, all = true)
     for (id in reasoningBuffers.keys.toList()) flushReasoning(id, all = true)
+    upstreamError?.let { throw it }
 }

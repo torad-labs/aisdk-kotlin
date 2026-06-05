@@ -203,7 +203,9 @@ public fun fixJson(input: String): String {
             stack.removeLast()
             return
         }
-        lastValidIndex = i
+        // Do NOT advance lastValidIndex here for chars that processValueStart
+        // treats as incomplete (e.g. '-') — let processValueStart decide.
+        // Mirrors processObjectStart which never speculatively advances it.
         processValueStart(char, i, FixJsonState.INSIDE_ARRAY_AFTER_VALUE)
     }
 
@@ -260,7 +262,19 @@ public fun fixJson(input: String): String {
 
     // Stack-drain: close innermost frame first (walk top -> bottom).
     for (idx in stack.indices.reversed()) {
-        result += drainClose(stack[idx], input, literalStart)
+        val state = stack[idx]
+        // SER-003: when the scan consumed both the '\' and its escaped char
+        // (e.g. input ends with `\"`), the escape state was already popped but
+        // `result` ends with `\<char>` — an incomplete escape sequence.  Closing
+        // the string at that position produces `\""` (escaped-quote + close),
+        // which is malformed JSON.  Drop the dangling `\<char>` pair so the
+        // string closes cleanly at the last valid content character.
+        if (state == FixJsonState.INSIDE_STRING && result.length >= 2 &&
+            result[result.length - 2] == '\\'
+        ) {
+            result = result.dropLast(2)
+        }
+        result += drainClose(state, input, literalStart)
     }
 
     return result
