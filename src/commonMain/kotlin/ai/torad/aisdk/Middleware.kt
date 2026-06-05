@@ -20,13 +20,13 @@ import kotlinx.coroutines.flow.Flow
  * couldn't do under the prior `(params, next)` shape that only exposed
  * the same-direction call).
  */
-interface LanguageModelMiddleware {
+public interface LanguageModelMiddleware {
     /** Wrap the one-shot generate call. Default: pass through. */
-    suspend fun wrapGenerate(context: MiddlewareCallContext): LanguageModelResult =
+    public suspend fun wrapGenerate(context: MiddlewareCallContext): LanguageModelResult =
         context.doGenerate(context.params)
 
     /** Wrap the streaming call. Default: pass through. */
-    fun wrapStream(context: MiddlewareCallContext): Flow<StreamEvent> =
+    public fun wrapStream(context: MiddlewareCallContext): Flow<StreamEvent> =
         context.doStream(context.params)
 }
 
@@ -53,7 +53,7 @@ interface LanguageModelMiddleware {
  * generate path. This is the load-bearing property that lets
  * `simulateStreamingMiddleware` work.
  */
-data class MiddlewareCallContext(
+public data class MiddlewareCallContext(
     val params: LanguageModelCallParams,
     val model: LanguageModel,
     val doGenerate: suspend (LanguageModelCallParams) -> LanguageModelResult,
@@ -66,7 +66,7 @@ data class MiddlewareCallContext(
  * runs first on the way in, last on the way out (innermost in the
  * call stack, like Express middleware).
  */
-fun wrapLanguageModel(
+public fun wrapLanguageModel(
     model: LanguageModel,
     middlewares: List<LanguageModelMiddleware>,
 ): LanguageModel {

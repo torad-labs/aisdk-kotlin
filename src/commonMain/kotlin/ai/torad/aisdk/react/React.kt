@@ -1,7 +1,7 @@
 package ai.torad.aisdk.react
 
 import ai.torad.aisdk.Completion
-import ai.torad.aisdk.CompletionRequestOptions
+import ai.torad.aisdk.ExperimentalAiSdkApi
 import ai.torad.aisdk.StructuredObject
 import ai.torad.aisdk.StructuredObjectOptions
 import ai.torad.aisdk.UseCompletionOptions
@@ -14,12 +14,20 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.serialization.json.JsonElement
 
-typealias UIMessage = ai.torad.aisdk.ui.UIMessage
-typealias UseCompletionOptions = ai.torad.aisdk.UseCompletionOptions
-typealias CompletionRequestOptions = ai.torad.aisdk.CompletionRequestOptions
-typealias Experimental_UseObjectOptions<RESULT, INPUT> = StructuredObjectOptions<RESULT, INPUT>
+@ExperimentalAiSdkApi
+public typealias UIMessage = ai.torad.aisdk.ui.UIMessage
 
-data class UseChatOptions(
+@ExperimentalAiSdkApi
+public typealias UseCompletionOptions = ai.torad.aisdk.UseCompletionOptions
+
+@ExperimentalAiSdkApi
+public typealias CompletionRequestOptions = ai.torad.aisdk.CompletionRequestOptions
+
+@ExperimentalAiSdkApi
+public typealias Experimental_UseObjectOptions<RESULT, INPUT> = StructuredObjectOptions<RESULT, INPUT>
+
+@ExperimentalAiSdkApi
+public data class UseChatOptions(
     val chat: Chat? = null,
     val id: String = "chat",
     val initialMessages: List<UIMessage> = emptyList(),
@@ -27,42 +35,44 @@ data class UseChatOptions(
     val resume: Boolean = false,
 )
 
-class UseChatHelpers internal constructor(
+@ExperimentalAiSdkApi
+public class UseChatHelpers internal constructor(
     private val chat: Chat,
 ) {
-    val id: String get() = chat.id
-    val messages: List<UIMessage> get() = chat.messages
-    val status: ChatStatus get() = chat.status
-    val error: Throwable? get() = chat.error
+    public val id: String get() = chat.id
+    public val messages: List<UIMessage> get() = chat.messages
+    public val status: ChatStatus get() = chat.status
+    public val error: Throwable? get() = chat.error
 
-    fun setMessages(messages: List<UIMessage>) = chat.setMessages(messages)
+    public fun setMessages(messages: List<UIMessage>): Unit = chat.setMessages(messages)
 
-    fun sendMessage(message: UIMessage, body: Map<String, JsonElement> = emptyMap()): Flow<UIMessage> =
+    public fun sendMessage(message: UIMessage, body: Map<String, JsonElement> = emptyMap()): Flow<UIMessage> =
         chat.sendMessage(message, body)
 
-    fun regenerate(body: Map<String, JsonElement> = emptyMap()): Flow<UIMessage> =
+    public fun regenerate(body: Map<String, JsonElement> = emptyMap()): Flow<UIMessage> =
         chat.regenerate(body)
 
-    fun stop() = chat.stop()
-    fun resumeStream(): Flow<UIMessage> = chat.resumeStream()
-    fun clearError() = chat.clearError()
+    public fun stop(): Unit = chat.stop()
+    public fun resumeStream(): Flow<UIMessage> = chat.resumeStream()
+    public fun clearError(): Unit = chat.clearError()
 
-    fun addToolOutput(toolCallId: String, output: JsonElement, toolName: String = "tool") =
+    public fun addToolOutput(toolCallId: String, output: JsonElement, toolName: String = "tool"): Unit =
         chat.addToolOutput(toolCallId, output, toolName)
 
     @Deprecated("Use addToolOutput instead.")
-    fun addToolResult(toolCallId: String, output: JsonElement, toolName: String = "tool") =
+    public fun addToolResult(toolCallId: String, output: JsonElement, toolName: String = "tool"): Unit =
         chat.addToolOutput(toolCallId, output, toolName)
 
-    fun addToolApprovalResponse(
+    public fun addToolApprovalResponse(
         toolCallId: String,
         approved: Boolean,
         reason: String? = null,
         approvalId: String? = null,
-    ) = chat.addToolApprovalResponse(toolCallId, approved, reason, approvalId)
+    ): Unit = chat.addToolApprovalResponse(toolCallId, approved, reason, approvalId)
 }
 
-fun useChat(options: UseChatOptions = UseChatOptions()): UseChatHelpers {
+@ExperimentalAiSdkApi
+public fun useChat(options: UseChatOptions = UseChatOptions()): UseChatHelpers {
     val chat = options.chat ?: Chat(
         id = options.id,
         initialMessages = options.initialMessages,
@@ -71,43 +81,47 @@ fun useChat(options: UseChatOptions = UseChatOptions()): UseChatHelpers {
     return UseChatHelpers(chat)
 }
 
-class UseCompletionHelpers internal constructor(
+@ExperimentalAiSdkApi
+public class UseCompletionHelpers internal constructor(
     private val completionState: Completion,
 ) {
-    val completion: String get() = completionState.completion
-    val error: Throwable? get() = completionState.error
-    val input: String get() = completionState.input
-    val isLoading: Boolean get() = completionState.loading
+    public val completion: String get() = completionState.completion
+    public val error: Throwable? get() = completionState.error
+    public val input: String get() = completionState.input
+    public val isLoading: Boolean get() = completionState.loading
 
-    suspend fun complete(prompt: String, options: CompletionRequestOptions = CompletionRequestOptions()): String? =
+    public suspend fun complete(prompt: String, options: CompletionRequestOptions = CompletionRequestOptions()): String? =
         completionState.complete(prompt, options)
 
-    fun stop() = completionState.stop()
-    fun setCompletion(completion: String) = completionState.setCompletion(completion)
-    fun setInput(input: String) {
+    public fun stop(): Unit = completionState.stop()
+    public fun setCompletion(completion: String): Unit = completionState.setCompletion(completion)
+    public fun setInput(input: String) {
         completionState.input = input
     }
 
-    suspend fun handleSubmit(): String? = completionState.handleSubmit()
+    public suspend fun handleSubmit(): String? = completionState.handleSubmit()
 }
 
-fun useCompletion(options: UseCompletionOptions = UseCompletionOptions()): UseCompletionHelpers =
+@ExperimentalAiSdkApi
+public fun useCompletion(options: UseCompletionOptions = UseCompletionOptions()): UseCompletionHelpers =
     UseCompletionHelpers(Completion(options))
 
-class Experimental_UseObjectHelpers<RESULT, INPUT> internal constructor(
+@ExperimentalAiSdkApi
+public class Experimental_UseObjectHelpers<RESULT, INPUT> internal constructor(
     private val structuredObject: StructuredObject<RESULT, INPUT>,
 ) {
-    val value: RESULT? get() = structuredObject.value
-    val rawValue: JsonElement? get() = structuredObject.rawValue
-    val error: Throwable? get() = structuredObject.error
-    val isLoading: Boolean get() = structuredObject.loading
+    public val value: RESULT? get() = structuredObject.value
+    public val rawValue: JsonElement? get() = structuredObject.rawValue
+    public val error: Throwable? get() = structuredObject.error
+    public val isLoading: Boolean get() = structuredObject.loading
 
-    suspend fun submit(input: INPUT) = structuredObject.submit(input)
-    fun stop() = structuredObject.stop()
-    fun clear() = structuredObject.clear()
+    public suspend fun submit(input: INPUT): Unit = structuredObject.submit(input)
+    public fun stop(): Unit = structuredObject.stop()
+    public fun clear(): Unit = structuredObject.clear()
 }
 
-fun <RESULT, INPUT> experimental_useObject(
+@ExperimentalAiSdkApi
+public fun <RESULT, INPUT> experimental_useObject(
     options: StructuredObjectOptions<RESULT, INPUT>,
 ): Experimental_UseObjectHelpers<RESULT, INPUT> =
     Experimental_UseObjectHelpers(StructuredObject(options))

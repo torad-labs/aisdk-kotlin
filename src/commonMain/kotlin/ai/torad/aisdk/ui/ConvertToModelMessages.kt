@@ -47,13 +47,14 @@ import kotlinx.serialization.json.JsonNull
  *     tool call is seen — these usually indicate corrupted history.
  */
 @Suppress("CyclomaticComplexMethod", "LongMethod")
-fun convertToModelMessages(
+public fun convertToModelMessages(
     messages: List<UIMessage>,
     ignoreIncompleteToolCalls: Boolean = false,
 ): List<ModelMessage> {
     val result = mutableListOf<ModelMessage>()
     for (uiMsg in messages) {
-        approvalResponseMessage(uiMsg)?.let { approvalResponse ->
+        val approvalResponse = approvalResponseMessage(uiMsg)
+        if (approvalResponse != null) {
             result.add(approvalResponse)
             continue
         }

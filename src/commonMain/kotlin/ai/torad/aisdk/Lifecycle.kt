@@ -11,7 +11,7 @@ import kotlinx.serialization.json.JsonElement
  * [OnErrorEvent]. Tool and prepareStep failures DO crash the loop (those
  * are real errors).
  */
-data class OnStartEvent(
+public data class OnStartEvent(
     val prompt: String?,
     val priorMessages: List<ModelMessage>,
     val options: Any?,
@@ -32,7 +32,7 @@ data class OnStartEvent(
  * working unchanged. Loop-side population is staged in as a follow-up;
  * the type surface is in place now.
  */
-data class OnStepStartEvent(
+public data class OnStepStartEvent(
     val stepNumber: Int,
     val messages: List<ModelMessage>,
     /**
@@ -48,12 +48,12 @@ data class OnStepStartEvent(
     val priorSteps: List<StepResult> = emptyList(),
 )
 
-data class OnStepFinishEvent(
+public data class OnStepFinishEvent(
     val stepNumber: Int,
     val step: StepResult,
 )
 
-data class OnFinishEvent(
+public data class OnFinishEvent(
     val finalOutput: Any?,
     val totalSteps: Int,
     val usage: Usage,
@@ -77,16 +77,16 @@ data class OnFinishEvent(
     val experimental_context: Any? = null,
 )
 
-data class OnErrorEvent(
+public data class OnErrorEvent(
     val error: Throwable,
     val stepNumber: Int,
     val source: ErrorSource,
 ) {
-    enum class ErrorSource { Hook, Tool, PrepareStep, PrepareCall, Model, Unknown }
+    public enum class ErrorSource { Hook, Tool, PrepareStep, PrepareCall, Model, Unknown }
 }
 
 /** Each individual stream chunk, alongside the step it belongs to. */
-data class OnChunkEvent(
+public data class OnChunkEvent(
     val event: StreamEvent,
     val stepNumber: Int,
 )
@@ -96,7 +96,7 @@ data class OnChunkEvent(
  * tool call envelope and the messages-list snapshot so observers can
  * record context (e.g. for tracing).
  */
-data class OnToolCallStartEvent(
+public data class OnToolCallStartEvent(
     val toolCallId: String,
     val toolName: String,
     val input: JsonElement,
@@ -108,7 +108,7 @@ data class OnToolCallStartEvent(
  * Fired immediately after a tool's executor returns or throws. Exactly
  * one of [outputJson] or [errorMessage] is non-null.
  */
-data class OnToolCallFinishEvent(
+public data class OnToolCallFinishEvent(
     val toolCallId: String,
     val toolName: String,
     val outputJson: JsonElement?,
@@ -120,7 +120,7 @@ data class OnToolCallFinishEvent(
  * Snapshot of one completed loop step — surfaced to [OnStepFinishEvent]
  * and accumulated in the loop state for [PrepareStepScope.steps].
  */
-data class StepResult(
+public data class StepResult(
     val stepNumber: Int,
     val text: String,
     val reasoning: String,

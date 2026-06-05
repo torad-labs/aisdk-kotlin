@@ -1,4 +1,7 @@
 package ai.torad.aisdk
+import ai.torad.aisdk.providers.byteDance
+import ai.torad.aisdk.providers.ByteDanceProviderSettings
+import ai.torad.aisdk.providers.createByteDance
 
 import io.ktor.http.HttpHeaders
 import kotlinx.coroutines.test.runTest

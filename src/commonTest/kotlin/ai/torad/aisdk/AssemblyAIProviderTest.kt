@@ -1,4 +1,8 @@
 package ai.torad.aisdk
+import ai.torad.aisdk.providers.ASSEMBLYAI_VERSION
+import ai.torad.aisdk.providers.AssemblyAIProviderSettings
+import ai.torad.aisdk.providers.assemblyai
+import ai.torad.aisdk.providers.createAssemblyAI
 
 import io.ktor.http.HttpHeaders
 import kotlinx.coroutines.test.runTest

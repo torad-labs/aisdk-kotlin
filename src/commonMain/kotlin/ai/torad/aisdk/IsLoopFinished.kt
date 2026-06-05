@@ -15,7 +15,7 @@ package ai.torad.aisdk
  *   - The last step's finish reason is `Length` / `ContentFilter`
  *     (provider terminated, can't continue)
  */
-suspend fun isLoopFinished(
+public suspend fun isLoopFinished(
     state: LoopState,
     stopWhen: StopCondition,
 ): Boolean {

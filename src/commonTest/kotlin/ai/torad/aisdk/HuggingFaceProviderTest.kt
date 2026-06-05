@@ -1,4 +1,7 @@
 package ai.torad.aisdk
+import ai.torad.aisdk.providers.HuggingFaceProviderSettings
+import ai.torad.aisdk.providers.createHuggingFace
+import ai.torad.aisdk.providers.huggingface
 
 import ai.torad.aisdk.testing.drainAllItems
 import io.ktor.http.HttpHeaders

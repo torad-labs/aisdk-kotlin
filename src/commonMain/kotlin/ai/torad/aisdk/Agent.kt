@@ -37,7 +37,7 @@ import kotlinx.coroutines.flow.Flow
  *                 it's `String`; for structured-output agents (with
  *                 [Output] set) it's the typed shape.
  */
-interface Agent<TContext, TOutput> {
+public interface Agent<TContext, TOutput> {
 
     /**
      * Stable identifier for the agent, useful for telemetry, log
@@ -47,7 +47,7 @@ interface Agent<TContext, TOutput> {
      * member to set a more specific tag (`"chat-agent"`,
      * `"lineup-subagent"`, etc.).
      */
-    val id: String
+    public val id: String
         get() = "agent"
 
     /**
@@ -55,7 +55,7 @@ interface Agent<TContext, TOutput> {
      * across an app build. Null = unversioned. Lets telemetry pin
      * issues to a specific agent revision.
      */
-    val version: String?
+    public val version: String?
         get() = null
 
     /**
@@ -63,7 +63,7 @@ interface Agent<TContext, TOutput> {
      * so consumers can inspect / dispatch without casting to
      * [ToolLoopAgent].
      */
-    val tools: ToolSet<TContext>
+    public val tools: ToolSet<TContext>
 
     /**
      * One-shot generation. Either [prompt] or [messages] (or both) must
@@ -72,7 +72,7 @@ interface Agent<TContext, TOutput> {
      *
      * @param hooks per-call lifecycle observation; see [AgentCallHooks].
      */
-    suspend fun generate(
+    public suspend fun generate(
         prompt: String? = null,
         messages: List<ModelMessage> = emptyList(),
         options: TContext? = null,
@@ -81,7 +81,7 @@ interface Agent<TContext, TOutput> {
     ): GenerateResult<TOutput>
 
     /** Streaming generation. Cold flow — starts when collected. */
-    fun stream(
+    public fun stream(
         prompt: String? = null,
         messages: List<ModelMessage> = emptyList(),
         options: TContext? = null,
@@ -95,7 +95,7 @@ interface Agent<TContext, TOutput> {
  * the loop paused on tool approval — call [Agent.generate] again with
  * [messages] plus tool-approval-response messages to resume.
  */
-data class GenerateResult<TOutput>(
+public data class GenerateResult<TOutput>(
     val output: TOutput,
     val text: String,
     val steps: List<StepResult>,
@@ -116,7 +116,7 @@ data class GenerateResult<TOutput>(
  * Both call-site hooks and constructor-site hooks fire (constructor
  * first, then call-site) — neither replaces the other.
  */
-data class AgentCallHooks(
+public data class AgentCallHooks(
     val onStart: (suspend (OnStartEvent) -> Unit)? = null,
     val onStepStart: (suspend (OnStepStartEvent) -> Unit)? = null,
     val onStepFinish: (suspend (OnStepFinishEvent) -> Unit)? = null,

@@ -12,7 +12,7 @@ import kotlinx.coroutines.flow.flow
  *
  * Mirrors v6's `simulateReadableStream`.
  */
-fun simulateReadableStream(
+public fun simulateReadableStream(
     events: List<StreamEvent>,
     initialDelayMs: Long = 0L,
     chunkDelayMs: Long = 10L,

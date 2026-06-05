@@ -1,4 +1,8 @@
 package ai.torad.aisdk
+import ai.torad.aisdk.providers.REPLICATE_VERSION
+import ai.torad.aisdk.providers.ReplicateProviderSettings
+import ai.torad.aisdk.providers.createReplicate
+import ai.torad.aisdk.providers.replicate
 
 import io.ktor.http.HttpHeaders
 import kotlinx.coroutines.test.runTest

@@ -2,6 +2,7 @@ package ai.torad.aisdk
 
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.buffer
 import kotlinx.coroutines.flow.flow
 
 /**
@@ -21,10 +22,10 @@ import kotlinx.coroutines.flow.flow
  * Non-text events (tool calls, step-finish, etc.) pass through immediately
  * without delay so the loop logic isn't slowed down.
  */
-sealed interface ChunkBy {
-    data object Word : ChunkBy
-    data object Line : ChunkBy
-    data class Pattern(val regex: Regex) : ChunkBy
+public sealed interface ChunkBy {
+    public data object Word : ChunkBy
+    public data object Line : ChunkBy
+    public data class Pattern(val regex: Regex) : ChunkBy
 }
 
 // Word-boundary regex with CJK awareness (per AISDK_PORT_GAPS.md gap #32).
@@ -49,7 +50,7 @@ private val WORD_REGEX = Regex(
 )
 private val LINE_REGEX = Regex("""[^\n]*\n""", RegexOption.MULTILINE)
 
-fun smoothStream(
+public fun smoothStream(
     upstream: Flow<StreamEvent>,
     delayMs: Long = 10L,
     chunkBy: ChunkBy = ChunkBy.Word,
@@ -100,7 +101,11 @@ fun smoothStream(
         }
     }
 
-    upstream.collect { event ->
+    // .buffer() decouples upstream token production from the artificial UI-pacing
+    // delay()s in flushText/flushReasoning: without it, the delay back-pressures the
+    // provider while we collect. The default (suspending, unbounded-ish) buffer means
+    // no token loss — fast on-device models keep producing while we pace the UI.
+    upstream.buffer().collect { event ->
         when (event) {
             is StreamEvent.TextDelta -> {
                 textBuffers.getOrPut(event.id) { StringBuilder() }.append(event.text)

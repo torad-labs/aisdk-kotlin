@@ -1,6 +1,9 @@
 package ai.torad.aisdk
 
-data class ProviderId(val value: String) {
+import kotlin.jvm.JvmInline
+
+@JvmInline
+public value class ProviderId(public val value: String) {
     init {
         require(value.isNotBlank()) { "ProviderId must not be blank." }
         require(':' !in value) { "ProviderId must not contain `:`." }
@@ -9,7 +12,8 @@ data class ProviderId(val value: String) {
     override fun toString(): String = value
 }
 
-data class ModelId(val value: String) {
+@JvmInline
+public value class ModelId(public val value: String) {
     init {
         require(value.isNotBlank()) { "ModelId must not be blank." }
     }
@@ -17,7 +21,7 @@ data class ModelId(val value: String) {
     override fun toString(): String = value
 }
 
-data class ModelRef(
+public data class ModelRef(
     val modelId: ModelId,
     val providerId: ProviderId? = null,
 ) {
@@ -26,8 +30,8 @@ data class ModelRef(
 
     override fun toString(): String = qualifiedName
 
-    companion object {
-        fun parse(value: String): ModelRef {
+    public companion object {
+        public fun parse(value: String): ModelRef {
             val (providerId, modelId) = splitProviderModelId(value)
             return ModelRef(
                 modelId = ModelId(modelId),
@@ -37,64 +41,64 @@ data class ModelRef(
     }
 }
 
-fun providerId(value: String): ProviderId = ProviderId(value)
+public fun providerId(value: String): ProviderId = ProviderId(value)
 
-fun modelId(value: String): ModelId = ModelId(value)
+public fun modelId(value: String): ModelId = ModelId(value)
 
-fun modelRef(value: String): ModelRef = ModelRef.parse(value)
+public fun modelRef(value: String): ModelRef = ModelRef.parse(value)
 
-fun modelRef(providerId: ProviderId, modelId: ModelId): ModelRef =
+public fun modelRef(providerId: ProviderId, modelId: ModelId): ModelRef =
     ModelRef(modelId = modelId, providerId = providerId)
 
-fun modelRef(providerId: String, modelId: String): ModelRef =
+public fun modelRef(providerId: String, modelId: String): ModelRef =
     modelRef(ProviderId(providerId), ModelId(modelId))
 
-fun Provider.provider(providerId: ProviderId): Provider =
+public fun Provider.provider(providerId: ProviderId): Provider =
     when (this) {
         is ProviderRegistry -> provider(providerId.value)
         else -> if (this.providerId == providerId.value) this else throw NoSuchProviderError(providerId.value)
     }
 
-fun Provider.languageModel(modelId: ModelId): LanguageModel =
+public fun Provider.languageModel(modelId: ModelId): LanguageModel =
     languageModel(modelId.value)
 
-fun Provider.embeddingModel(modelId: ModelId): EmbeddingModel =
+public fun Provider.embeddingModel(modelId: ModelId): EmbeddingModel =
     embeddingModel(modelId.value)
 
-fun Provider.imageModel(modelId: ModelId): ImageModel =
+public fun Provider.imageModel(modelId: ModelId): ImageModel =
     imageModel(modelId.value)
 
-fun Provider.speechModel(modelId: ModelId): SpeechModel =
+public fun Provider.speechModel(modelId: ModelId): SpeechModel =
     speechModel(modelId.value)
 
-fun Provider.transcriptionModel(modelId: ModelId): TranscriptionModel =
+public fun Provider.transcriptionModel(modelId: ModelId): TranscriptionModel =
     transcriptionModel(modelId.value)
 
-fun Provider.rerankingModel(modelId: ModelId): RerankingModel =
+public fun Provider.rerankingModel(modelId: ModelId): RerankingModel =
     rerankingModel(modelId.value)
 
-fun Provider.videoModel(modelId: ModelId): VideoModel =
+public fun Provider.videoModel(modelId: ModelId): VideoModel =
     videoModel(modelId.value)
 
-fun Provider.languageModel(ref: ModelRef): LanguageModel =
+public fun Provider.languageModel(ref: ModelRef): LanguageModel =
     resolve(ref) { languageModel(it) }
 
-fun Provider.embeddingModel(ref: ModelRef): EmbeddingModel =
+public fun Provider.embeddingModel(ref: ModelRef): EmbeddingModel =
     resolve(ref) { embeddingModel(it) }
 
-fun Provider.imageModel(ref: ModelRef): ImageModel =
+public fun Provider.imageModel(ref: ModelRef): ImageModel =
     resolve(ref) { imageModel(it) }
 
-fun Provider.speechModel(ref: ModelRef): SpeechModel =
+public fun Provider.speechModel(ref: ModelRef): SpeechModel =
     resolve(ref) { speechModel(it) }
 
-fun Provider.transcriptionModel(ref: ModelRef): TranscriptionModel =
+public fun Provider.transcriptionModel(ref: ModelRef): TranscriptionModel =
     resolve(ref) { transcriptionModel(it) }
 
-fun Provider.rerankingModel(ref: ModelRef): RerankingModel =
+public fun Provider.rerankingModel(ref: ModelRef): RerankingModel =
     resolve(ref) { rerankingModel(it) }
 
-fun Provider.videoModel(ref: ModelRef): VideoModel =
+public fun Provider.videoModel(ref: ModelRef): VideoModel =
     resolve(ref) { videoModel(it) }
 
 private inline fun <T> Provider.resolve(ref: ModelRef, getter: Provider.(String) -> T): T =

@@ -28,7 +28,7 @@ import kotlinx.serialization.Serializable
  *   ```
  */
 @Serializable
-enum class ToolCallState {
+public enum class ToolCallState {
     InputStreaming,
     InputAvailable,
     ApprovalRequested,

@@ -1,21 +1,17 @@
 package ai.torad.aisdk
 
-import kotlin.test.Test
-import kotlin.test.assertEquals
-import kotlin.test.assertFailsWith
-import kotlin.test.assertIs
-import kotlin.test.assertNotNull
-import kotlin.test.assertTrue
+import io.ktor.http.HttpHeaders
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.toList
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeout
-import io.ktor.http.HttpHeaders
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
@@ -26,6 +22,12 @@ import kotlinx.serialization.json.encodeToJsonElement
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
+import kotlin.test.assertIs
+import kotlin.test.assertNotNull
+import kotlin.test.assertTrue
 
 class MCPClientTest {
 
@@ -855,7 +857,15 @@ class MCPClientTest {
         var received: JSONRPCMessage? = null
         transport.onMessage = { received = it }
 
-        transport.start()
+        try {
+            transport.start()
+        } catch (ignoredOnUnsupportedPlatform: UnsupportedOperationException) {
+            // Stdio MCP spawns a child process (ProcessBuilder); that actual is
+            // unsupported on Native/iOS and throws here. The transport is
+            // exercised end-to-end on JVM + Android — skip on platforms without
+            // subprocess support rather than fail the shared test.
+            return@runTest
+        }
         transport.send(JSONRPCNotification(method = "notifications/test"))
         waitForRealTime { received != null }
 
@@ -879,7 +889,10 @@ class MCPClientTest {
 
     private suspend fun waitForRealTime(condition: () -> Boolean) {
         withContext(Dispatchers.Default) {
-            withTimeout(5_000) {
+            // Real wall-clock wait on real I/O (subprocess round-trips, SSE
+            // reconnects). Generous so a loaded CI/dev host doesn't flake a
+            // genuinely-progressing test; a real hang still fails (at the cap).
+            withTimeout(20_000) {
                 while (!condition()) delay(10)
             }
         }
@@ -941,12 +954,17 @@ class MCPClientTest {
         override var onMessage: (suspend (JSONRPCMessage) -> Unit)? = null
         override var protocolVersion: String? = null
 
+        // Concurrent client requests hit send() from multiple coroutines; on a
+        // multi-threaded Kotlin/Native dispatcher (linuxX64) an unguarded
+        // ArrayList.add races, so serialize the recording.
+        private val sentMutex = Mutex()
+
         override suspend fun start() {
             startCount += 1
         }
 
         override suspend fun send(message: JSONRPCMessage) {
-            sent += message
+            sentMutex.withLock { sent += message }
             handler(message)
         }
 

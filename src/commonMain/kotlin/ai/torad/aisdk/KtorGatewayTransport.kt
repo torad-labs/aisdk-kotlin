@@ -1,19 +1,10 @@
 package ai.torad.aisdk
 
 import io.ktor.client.HttpClient
-import io.ktor.client.request.header
-import io.ktor.client.request.headers
-import io.ktor.client.request.request
-import io.ktor.client.request.setBody
-import io.ktor.client.statement.HttpResponse
-import io.ktor.client.statement.bodyAsText
-import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpMethod
-import io.ktor.http.contentType
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
-import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
@@ -31,17 +22,17 @@ import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.longOrNull
 
-fun createGatewayHttpProvider(
+public fun createGatewayHttpProvider(
     client: HttpClient,
     settings: GatewayProviderSettings = GatewayProviderSettings(),
-    json: Json = gatewayJson,
+    json: Json = aiSdkJson,
 ): GatewayProvider = createGatewayProvider(
     settings.copy(transport = KtorGatewayTransport(client, json)),
 )
 
-class KtorGatewayTransport(
+public class KtorGatewayTransport(
     private val client: HttpClient,
-    private val json: Json = gatewayJson,
+    private val json: Json = aiSdkJson,
 ) : GatewayTransport {
     override suspend fun generateText(
         context: GatewayRequestContext,
@@ -384,42 +375,30 @@ class KtorGatewayTransport(
         body: JsonElement,
         headers: Map<String, String> = emptyMap(),
         parseJson: Boolean = true,
-    ): GatewayHttpJsonResponse {
-        val response = client.request(context.baseUrl.trimEnd('/') + path) {
-            method = HttpMethod.Post
-            contentType(ContentType.Application.Json)
-            context.headers.forEach { (name, value) -> header(name, value) }
-            headers.forEach { (name, value) -> header(name, value) }
-            setBody(json.encodeToString(JsonElement.serializer(), body))
-        }
-        return parseResponse(response, parseJson)
-    }
+    ): HttpJsonResponse =
+        requestJson(
+            client = client,
+            url = context.baseUrl.trimEnd('/') + path,
+            method = HttpMethod.Post,
+            headers = context.headers + headers,
+            body = body,
+            json = json,
+            parseJson = parseJson,
+            errorFromResponse = gatewayError,
+        )
 
     private suspend fun getJson(
         context: GatewayRequestContext,
         path: String,
-    ): GatewayHttpJsonResponse {
-        val response = client.request(context.baseUrl.trimEnd('/') + path) {
-            method = HttpMethod.Get
-            headers {
-                context.headers.forEach { (name, value) -> append(name, value) }
-            }
-        }
-        return parseResponse(response, parseJson = true)
-    }
-
-    private suspend fun parseResponse(response: HttpResponse, parseJson: Boolean): GatewayHttpJsonResponse {
-        val raw = response.bodyAsText()
-        val headers = response.headers.entries().associate { it.key to it.value.joinToString(",") }
-        if (response.status.value !in 200..299) {
-            throw gatewayErrorFromResponse(response.status.value, raw)
-        }
-        return GatewayHttpJsonResponse(
-            value = if (parseJson && raw.isNotBlank()) json.parseToJsonElement(raw) else JsonObject(emptyMap()),
-            rawText = raw,
-            headers = headers,
+    ): HttpJsonResponse =
+        requestJson(
+            client = client,
+            url = context.baseUrl.trimEnd('/') + path,
+            method = HttpMethod.Get,
+            headers = context.headers,
+            json = json,
+            errorFromResponse = gatewayError,
         )
-    }
 
     private fun languageModelRequestBody(params: LanguageModelCallParams): JsonObject = buildJsonObject {
         put("prompt", JsonArray(params.messages.map(::modelMessageJson)))
@@ -473,17 +452,7 @@ class KtorGatewayTransport(
     }
 }
 
-private data class GatewayHttpJsonResponse(
-    val value: JsonElement,
-    val rawText: String,
-    val headers: Map<String, String>,
-)
 
-private val gatewayJson = Json {
-    ignoreUnknownKeys = true
-    isLenient = true
-    explicitNulls = false
-}
 
 private fun modelMessageJson(message: ModelMessage): JsonObject = buildJsonObject {
     put("role", JsonPrimitive(message.role.name.lowercase()))
@@ -562,7 +531,7 @@ private fun providerMetadata(part: ContentPart): Map<String, JsonElement>? = whe
 private fun languageModelToolJson(tool: LanguageModelTool): JsonObject = buildJsonObject {
     put("name", JsonPrimitive(tool.name))
     put("description", JsonPrimitive(tool.description))
-    put("parameters", gatewayJson.parseToJsonElement(tool.parametersSchemaJson))
+    put("parameters", aiSdkJson.parseToJsonElement(tool.parametersSchemaJson))
     put("strict", JsonPrimitive(tool.strict))
     if (tool.providerExecuted) put("providerExecuted", JsonPrimitive(true))
 }
@@ -767,8 +736,13 @@ private fun gatewayCredentialType(value: String?): GatewayCredentialType? = when
 private fun gatewayOrigin(baseUrl: String): String =
     Regex("^(https?://[^/]+)").find(baseUrl)?.groupValues?.get(1) ?: baseUrl.trimEnd('/')
 
+/** Adapter for the shared transport's `errorFromResponse` hook — keeps the rich [GatewayError] hierarchy. */
+private val gatewayError: ResponseErrorFactory = { statusCode, _, raw, _ ->
+    gatewayErrorFromResponse(statusCode, raw)
+}
+
 private fun gatewayErrorFromResponse(statusCode: Int, raw: String): GatewayError {
-    val parsed = runCatching { gatewayJson.parseToJsonElement(raw).jsonObject }.getOrNull()
+    val parsed = runCatching { aiSdkJson.parseToJsonElement(raw).jsonObject }.getOrNull()
     val error = parsed?.get("error")?.jsonObject
     val type = error?.get("type")?.jsonPrimitive?.contentOrNull
     val message = error?.get("message")?.jsonPrimitive?.contentOrNull ?: raw.ifBlank { "Gateway request failed" }
@@ -795,16 +769,3 @@ private fun jsonInt(obj: JsonObject, vararg names: String): Int =
 private fun jsonIntOrNull(obj: JsonObject, vararg names: String): Int? =
     names.firstNotNullOfOrNull { name -> obj[name]?.jsonPrimitive?.intOrNull }
 
-private fun urlEncode(value: String): String =
-    buildString {
-        value.encodeToByteArray().forEach { byte ->
-            val unsigned = byte.toInt() and 0xff
-            val char = unsigned.toChar()
-            if (char.isLetterOrDigit() || char in setOf('-', '_', '.', '~')) {
-                append(char)
-            } else {
-                append('%')
-                append(unsigned.toString(16).uppercase().padStart(2, '0'))
-            }
-        }
-    }

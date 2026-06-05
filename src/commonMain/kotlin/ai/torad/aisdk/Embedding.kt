@@ -2,15 +2,15 @@ package ai.torad.aisdk
 
 import kotlinx.serialization.json.JsonElement
 
-interface EmbeddingModel {
-    val modelId: String
-    val provider: String
+public interface EmbeddingModel {
+    public val modelId: String
+    public val provider: String
         get() = "unknown"
 
-    suspend fun embed(params: EmbeddingModelCallParams): EmbeddingModelResult
+    public suspend fun embed(params: EmbeddingModelCallParams): EmbeddingModelResult
 }
 
-data class EmbeddingModelCallParams(
+public data class EmbeddingModelCallParams(
     val values: List<String>,
     val maxEmbeddingsPerCall: Int? = null,
     val truncate: Boolean? = null,
@@ -19,7 +19,7 @@ data class EmbeddingModelCallParams(
     val headers: Map<String, String> = emptyMap(),
 )
 
-data class EmbeddingModelResult(
+public data class EmbeddingModelResult(
     val embeddings: List<List<Float>>,
     val usage: EmbeddingUsage = EmbeddingUsage(),
     val warnings: List<CallWarning> = emptyList(),
@@ -28,12 +28,12 @@ data class EmbeddingModelResult(
     val providerMetadata: Map<String, JsonElement> = emptyMap(),
 )
 
-data class EmbeddingUsage(
+public data class EmbeddingUsage(
     val tokens: Int = 0,
     val raw: JsonElement? = null,
 )
 
-data class EmbedResult<TValue>(
+public data class EmbedResult<TValue>(
     val value: TValue,
     val embedding: List<Float>,
     val usage: EmbeddingUsage,
@@ -43,7 +43,7 @@ data class EmbedResult<TValue>(
     val providerMetadata: Map<String, JsonElement> = emptyMap(),
 )
 
-data class EmbedManyResult<TValue>(
+public data class EmbedManyResult<TValue>(
     val values: List<TValue>,
     val embeddings: List<List<Float>>,
     val usage: EmbeddingUsage,
@@ -53,7 +53,7 @@ data class EmbedManyResult<TValue>(
     val providerMetadata: Map<String, JsonElement> = emptyMap(),
 )
 
-suspend fun embed(
+public suspend fun embed(
     model: EmbeddingModel,
     value: String,
     providerOptions: Map<String, JsonElement> = emptyMap(),
@@ -81,7 +81,7 @@ suspend fun embed(
     )
 }
 
-suspend fun embedMany(
+public suspend fun embedMany(
     model: EmbeddingModel,
     values: List<String>,
     maxEmbeddingsPerCall: Int? = null,
@@ -121,18 +121,18 @@ suspend fun embedMany(
     return EmbedManyResult(values, allEmbeddings, usage, warnings, request, response, metadata)
 }
 
-interface EmbeddingModelMiddleware {
-    suspend fun wrapEmbed(context: EmbeddingMiddlewareCallContext): EmbeddingModelResult =
+public interface EmbeddingModelMiddleware {
+    public suspend fun wrapEmbed(context: EmbeddingMiddlewareCallContext): EmbeddingModelResult =
         context.doEmbed(context.params)
 }
 
-data class EmbeddingMiddlewareCallContext(
+public data class EmbeddingMiddlewareCallContext(
     val params: EmbeddingModelCallParams,
     val model: EmbeddingModel,
     val doEmbed: suspend (EmbeddingModelCallParams) -> EmbeddingModelResult,
 )
 
-fun wrapEmbeddingModel(
+public fun wrapEmbeddingModel(
     model: EmbeddingModel,
     middlewares: List<EmbeddingModelMiddleware>,
 ): EmbeddingModel {
@@ -140,7 +140,7 @@ fun wrapEmbeddingModel(
     return WrappedEmbeddingModel(model, middlewares)
 }
 
-fun defaultEmbeddingSettingsMiddleware(
+public fun defaultEmbeddingSettingsMiddleware(
     maxEmbeddingsPerCall: Int? = null,
     truncate: Boolean? = null,
     providerOptions: Map<String, JsonElement> = emptyMap(),

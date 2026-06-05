@@ -17,7 +17,7 @@ import kotlinx.coroutines.flow.Flow
  * → list of example input JSON strings. Examples are appended in
  * "Example: <json>" form below the existing description.
  */
-fun addToolInputExamplesMiddleware(
+public fun addToolInputExamplesMiddleware(
     examplesByTool: Map<String, List<String>>,
 ): LanguageModelMiddleware = object : LanguageModelMiddleware {
     override suspend fun wrapGenerate(context: MiddlewareCallContext): LanguageModelResult =

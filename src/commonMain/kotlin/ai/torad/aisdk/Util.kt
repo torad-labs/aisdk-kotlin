@@ -2,7 +2,6 @@ package ai.torad.aisdk
 
 import kotlin.math.sqrt
 import kotlin.io.encoding.Base64
-import kotlin.io.encoding.ExperimentalEncodingApi
 import kotlin.random.Random
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
@@ -22,15 +21,15 @@ import kotlinx.serialization.json.booleanOrNull
 import kotlinx.serialization.json.doubleOrNull
 import kotlinx.serialization.json.jsonPrimitive
 
-fun <T> asArray(value: T): List<T> = listOf(value)
-fun <T> asArray(value: Iterable<T>): List<T> = value.toList()
+internal fun <T> asArray(value: T): List<T> = listOf(value)
+public fun <T> asArray(value: Iterable<T>): List<T> = value.toList()
 
-fun <T> splitArray(values: List<T>, chunkSize: Int): List<List<T>> {
+internal fun <T> splitArray(values: List<T>, chunkSize: Int): List<List<T>> {
     require(chunkSize > 0) { "chunkSize must be > 0" }
     return values.chunked(chunkSize)
 }
 
-fun cosineSimilarity(left: List<Float>, right: List<Float>): Float {
+public fun cosineSimilarity(left: List<Float>, right: List<Float>): Float {
     require(left.size == right.size) { "Embedding vectors must have the same dimension" }
     require(left.isNotEmpty()) { "Embedding vectors must not be empty" }
     var dot = 0.0
@@ -50,7 +49,7 @@ fun cosineSimilarity(left: List<Float>, right: List<Float>): Float {
 internal fun embeddingFloat(value: JsonElement, provider: String): Float =
     WireDecoder.embeddingFloat(value, provider)
 
-fun isDeepEqualData(left: JsonElement?, right: JsonElement?): Boolean = when {
+internal fun isDeepEqualData(left: JsonElement?, right: JsonElement?): Boolean = when {
     left === right -> true
     left == null || right == null -> false
     left is JsonNull && right is JsonNull -> true
@@ -62,7 +61,7 @@ fun isDeepEqualData(left: JsonElement?, right: JsonElement?): Boolean = when {
     else -> false
 }
 
-fun mergeJsonObjects(vararg objects: JsonObject): JsonObject {
+internal fun mergeJsonObjects(vararg objects: JsonObject): JsonObject {
     val merged = linkedMapOf<String, JsonElement>()
     for (obj in objects) {
         for ((key, value) in obj) {
@@ -77,12 +76,12 @@ fun mergeJsonObjects(vararg objects: JsonObject): JsonObject {
     return JsonObject(merged)
 }
 
-data class DataUrl(
+public data class DataUrl(
     val mediaType: String,
     val base64: String,
 )
 
-fun splitDataUrl(dataUrl: String): DataUrl {
+public fun splitDataUrl(dataUrl: String): DataUrl {
     require(dataUrl.startsWith("data:")) { "Not a data URL" }
     val comma = dataUrl.indexOf(',')
     require(comma >= 0) { "Data URL is missing comma separator" }
@@ -95,7 +94,7 @@ fun splitDataUrl(dataUrl: String): DataUrl {
     )
 }
 
-fun detectMediaType(filename: String? = null, dataUrl: String? = null, explicit: String? = null): String? {
+public fun detectMediaType(filename: String? = null, dataUrl: String? = null, explicit: String? = null): String? {
     explicit?.let { return it }
     dataUrl?.takeIf { it.startsWith("data:") }?.let { return splitDataUrl(it).mediaType }
     val ext = filename?.substringAfterLast('.', missingDelimiterValue = "")?.lowercase()
@@ -116,18 +115,18 @@ fun detectMediaType(filename: String? = null, dataUrl: String? = null, explicit:
     }
 }
 
-fun prepareHeaders(
+internal fun prepareHeaders(
     defaultHeaders: Map<String, String> = emptyMap(),
     headers: Map<String, String>? = null,
 ): Map<String, String> = defaultHeaders + (headers ?: emptyMap())
 
-data class RetryPolicy(
+public data class RetryPolicy(
     val maxRetries: Int = 2,
     val baseDelayMs: Long = 100L,
     val maxDelayMs: Long = 2_000L,
 )
 
-suspend fun <T> retryWithExponentialBackoff(
+public suspend fun <T> retryWithExponentialBackoff(
     policy: RetryPolicy = RetryPolicy(),
     shouldRetry: (Throwable) -> Boolean = { true },
     block: suspend (attempt: Int) -> T,
@@ -148,19 +147,20 @@ suspend fun <T> retryWithExponentialBackoff(
     }
 }
 
-class SerialJobExecutor {
+internal class SerialJobExecutor {
     private val mutex = Mutex()
 
     suspend fun <T> run(block: suspend () -> T): T = mutex.withLock { block() }
 }
 
-data class IdGenerator(
+public data class IdGenerator(
     val prefix: String? = null,
     val size: Int = 16,
     val alphabet: String = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz",
     val separator: String = "-",
+    val random: Random = Random.Default,
 ) {
-    fun generate(): String {
+    public fun generate(): String {
         require(size > 0) { "size must be > 0" }
         require(alphabet.isNotEmpty()) { "alphabet must not be empty" }
         require(separator !in alphabet) {
@@ -168,23 +168,25 @@ data class IdGenerator(
         }
         val suffix = buildString {
             repeat(size) {
-                append(alphabet[Random.nextInt(alphabet.length)])
+                append(alphabet[random.nextInt(alphabet.length)])
             }
         }
         return prefix?.let { "$it$separator$suffix" } ?: suffix
     }
 }
 
-fun createIdGenerator(
+public fun createIdGenerator(
     prefix: String? = null,
     size: Int = 16,
     alphabet: String = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz",
     separator: String = "-",
-): IdGenerator = IdGenerator(prefix, size, alphabet, separator)
+    random: Random = Random.Default,
+): IdGenerator = IdGenerator(prefix, size, alphabet, separator, random)
 
-fun generateId(prefix: String? = null): String = createIdGenerator(prefix = prefix).generate()
+public fun generateId(prefix: String? = null, random: Random = Random.Default): String =
+    createIdGenerator(prefix = prefix, random = random).generate()
 
-fun mergeAbortSignals(vararg signals: AbortSignal): AbortSignal {
+public fun mergeAbortSignals(vararg signals: AbortSignal): AbortSignal {
     if (signals.isEmpty()) return AbortSignalNever
     return object : AbortSignal {
         override val isAborted: Boolean
@@ -205,7 +207,7 @@ fun mergeAbortSignals(vararg signals: AbortSignal): AbortSignal {
     }
 }
 
-fun abortSignalFromJobs(vararg jobs: Job): AbortSignal =
+public fun abortSignalFromJobs(vararg jobs: Job): AbortSignal =
     mergeAbortSignals(*jobs.map { abortSignalFromJob(it) }.toTypedArray())
 
 private fun primitiveEquals(left: JsonPrimitive, right: JsonPrimitive): Boolean {
@@ -220,19 +222,19 @@ private fun primitiveEquals(left: JsonPrimitive, right: JsonPrimitive): Boolean 
     }
 }
 
-fun combineHeaders(vararg headers: Map<String, String?>?): Map<String, String?> =
+internal fun combineHeaders(vararg headers: Map<String, String?>?): Map<String, String?> =
     headers.fold(linkedMapOf()) { acc, current ->
         current?.let { acc.putAll(it) }
         acc
     }
 
-fun normalizeHeaders(headers: Map<String, String?>?): Map<String, String> =
+internal fun normalizeHeaders(headers: Map<String, String?>?): Map<String, String> =
     headers.orEmpty()
         .filterValues { it != null }
         .mapKeys { it.key.lowercase() }
         .mapValues { it.value.orEmpty() }
 
-fun withUserAgentSuffix(
+internal fun withUserAgentSuffix(
     headers: Map<String, String?>?,
     vararg userAgentSuffixParts: String,
 ): Map<String, String> {
@@ -243,21 +245,42 @@ fun withUserAgentSuffix(
     return normalized
 }
 
-fun withoutTrailingSlash(url: String?): String? = url?.removeSuffix("/")
+/**
+ * Shared provider-header builder: applies the provider-specific [auth] scheme,
+ * then layers static [settingsHeaders] and per-call [callHeaders], and finally
+ * appends [userAgentSuffix] to the User-Agent (or just normalizes when null).
+ * Only the auth scheme varies between providers, so it is passed as a lambda.
+ */
+internal fun buildProviderHeaders(
+    settingsHeaders: Map<String, String>,
+    callHeaders: Map<String, String>,
+    userAgentSuffix: String?,
+    auth: (MutableMap<String, String?>) -> Unit,
+): Map<String, String> {
+    val base = linkedMapOf<String, String?>()
+    auth(base)
+    base.putAll(settingsHeaders)
+    base.putAll(callHeaders)
+    return userAgentSuffix
+        ?.let { withUserAgentSuffix(base, it) }
+        ?: normalizeHeaders(base)
+}
 
-fun removeUndefinedEntries(values: Map<String, JsonElement?>): Map<String, JsonElement> =
+internal fun withoutTrailingSlash(url: String?): String? = url?.removeSuffix("/")
+
+internal fun removeUndefinedEntries(values: Map<String, JsonElement?>): Map<String, JsonElement> =
     values.filterValues { it != null }.mapValues { it.value ?: JsonNull }
 
-fun getErrorMessage(error: Throwable?): String = error?.message ?: "unknown error"
+internal fun getErrorMessage(error: Throwable?): String = error?.message ?: "unknown error"
 
-fun getErrorMessage(error: Any?): String = when (error) {
+internal fun getErrorMessage(error: Any?): String = when (error) {
     null -> "unknown error"
     is String -> error
     is Throwable -> getErrorMessage(error)
     else -> error.toString()
 }
 
-fun loadApiKey(
+internal fun loadApiKey(
     apiKey: String?,
     environmentVariableName: String,
     apiKeyParameterName: String = "apiKey",
@@ -271,7 +294,7 @@ fun loadApiKey(
                 "or provide $environmentVariableName through the host environment map.",
         )
 
-fun loadSetting(
+internal fun loadSetting(
     settingValue: String?,
     environmentVariableName: String,
     settingName: String,
@@ -285,14 +308,14 @@ fun loadSetting(
                 "or provide $environmentVariableName through the host environment map.",
         )
 
-fun loadOptionalSetting(
+internal fun loadOptionalSetting(
     settingValue: String?,
     environmentVariableName: String,
     environment: Map<String, String> = emptyMap(),
 ): String? =
     settingValue ?: environment[environmentVariableName]
 
-fun mediaTypeToExtension(mediaType: String): String {
+internal fun mediaTypeToExtension(mediaType: String): String {
     val subtype = mediaType.lowercase().substringAfter('/', missingDelimiterValue = "")
     return when (subtype) {
         "mpeg" -> "mp3"
@@ -304,10 +327,10 @@ fun mediaTypeToExtension(mediaType: String): String {
     }
 }
 
-fun stripFileExtension(filename: String): String =
+internal fun stripFileExtension(filename: String): String =
     filename.substringBefore('.', filename)
 
-fun isUrlSupported(
+public fun isUrlSupported(
     mediaType: String,
     url: String,
     supportedUrls: Map<String, List<Regex>>,
@@ -327,13 +350,13 @@ fun isUrlSupported(
         .any { regex -> regex.containsMatchIn(lowerUrl) }
 }
 
-class DownloadError(
-    val url: String,
+public class DownloadError(
+    public val url: String,
     message: String,
     cause: Throwable? = null,
 ) : AiSdkException(message, cause)
 
-fun validateDownloadUrl(url: String) {
+public fun validateDownloadUrl(url: String) {
     val parsed = parseUrl(url) ?: throw DownloadError(url, "Invalid URL: $url")
     if (parsed.scheme == "data") return
     if (parsed.scheme != "http" && parsed.scheme != "https") {
@@ -403,12 +426,12 @@ private fun isPrivateIPv6(ip: String): Boolean {
     return false
 }
 
-sealed interface ParseResult<out T> {
-    data class Success<T>(val value: T) : ParseResult<T>
-    data class Failure(val error: Throwable, val text: String) : ParseResult<Nothing>
+public sealed interface ParseResult<out T> {
+    public data class Success<T>(val value: T) : ParseResult<T>
+    public data class Failure(val error: Throwable, val text: String) : ParseResult<Nothing>
 }
 
-fun <T> parseJsonEventStream(
+internal fun <T> parseJsonEventStream(
     text: String,
     schema: Schema<T>,
     json: Json = Json,
@@ -417,7 +440,7 @@ fun <T> parseJsonEventStream(
         if (data == "[DONE]") null else safeParseJson(data, schema, json)
     }
 
-fun <T> parseJsonEventStream(
+public fun <T> parseJsonEventStream(
     chunks: Flow<String>,
     schema: Schema<T>,
     json: Json = Json,
@@ -482,22 +505,39 @@ private fun <T> safeParseJson(text: String, schema: Schema<T>, json: Json): Pars
         ParseResult.Failure(error, text)
     }
 
-@OptIn(ExperimentalEncodingApi::class)
-fun convertBase64ToByteArray(base64String: String): ByteArray =
+public fun convertBase64ToByteArray(base64String: String): ByteArray =
     Base64.Default.decode(base64String.replace('-', '+').replace('_', '/'))
 
-@OptIn(ExperimentalEncodingApi::class)
-fun convertByteArrayToBase64(array: ByteArray): String =
+public fun convertByteArrayToBase64(array: ByteArray): String =
     Base64.Default.encode(array)
 
-typealias Uint8Array = ByteArray
+internal typealias Uint8Array = ByteArray
 
-fun convertBase64ToUint8Array(base64String: String): Uint8Array =
+internal fun convertBase64ToUint8Array(base64String: String): Uint8Array =
     convertBase64ToByteArray(base64String)
 
-fun convertUint8ArrayToBase64(array: Uint8Array): String =
+internal fun convertUint8ArrayToBase64(array: Uint8Array): String =
     convertByteArrayToBase64(array)
 
-fun convertToBase64(value: String): String = value
+internal fun convertToBase64(value: String): String = value
 
-fun convertToBase64(value: ByteArray): String = convertByteArrayToBase64(value)
+public fun convertToBase64(value: ByteArray): String = convertByteArrayToBase64(value)
+
+
+/**
+ * RFC-3986 percent-encoding (unreserved chars kept). Shared by providers that
+ * build query/path segments; AwsSigV4 keeps its stricter signing variant.
+ */
+internal fun urlEncode(value: String): String =
+    buildString {
+        value.encodeToByteArray().forEach { byte ->
+            val unsigned = byte.toInt() and 0xff
+            val char = unsigned.toChar()
+            if (char.isLetterOrDigit() || char in setOf('-', '_', '.', '~')) {
+                append(char)
+            } else {
+                append('%')
+                append(unsigned.toString(16).uppercase().padStart(2, '0'))
+            }
+        }
+    }

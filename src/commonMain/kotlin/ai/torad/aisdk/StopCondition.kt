@@ -15,12 +15,12 @@ package ai.torad.aisdk
  * Custom: implement [StopCondition] directly. Receives a snapshot of the
  * loop state on every check.
  */
-fun interface StopCondition {
+public fun interface StopCondition {
     /** True if the loop should stop after the just-completed step. */
-    suspend fun shouldStop(state: LoopState): Boolean
+    public suspend fun shouldStop(state: LoopState): Boolean
 }
 
-data class LoopState(
+public data class LoopState(
     val stepNumber: Int,
     val totalSteps: Int,
     val lastFinishReason: FinishReason,
@@ -38,20 +38,20 @@ data class LoopState(
 )
 
 /** Stop after [n] completed steps. v6's default is 20 if `stopWhen` omitted. */
-fun stepCountIs(n: Int): StopCondition = StopCondition { state -> state.totalSteps >= n }
+public fun stepCountIs(n: Int): StopCondition = StopCondition { state -> state.totalSteps >= n }
 
 /** Stop the moment the named tool is called in any step. */
-fun hasToolCall(toolName: String): StopCondition = StopCondition { state ->
+public fun hasToolCall(toolName: String): StopCondition = StopCondition { state ->
     state.toolCallsAllSteps.any { it.toolName == toolName }
 }
 
 /** Stop when any of [conditions] reports done. v6's array-of-conditions shape. */
-fun anyOf(vararg conditions: StopCondition): StopCondition = StopCondition { state ->
+public fun anyOf(vararg conditions: StopCondition): StopCondition = StopCondition { state ->
     conditions.any { it.shouldStop(state) }
 }
 
 /** Stop only when all [conditions] report done. */
-fun allOf(vararg conditions: StopCondition): StopCondition = StopCondition { state ->
+public fun allOf(vararg conditions: StopCondition): StopCondition = StopCondition { state ->
     conditions.all { it.shouldStop(state) }
 }
 
@@ -67,7 +67,7 @@ fun allOf(vararg conditions: StopCondition): StopCondition = StopCondition { sta
  * tool per step in practice); per-step JSON identity uses the raw
  * `input` JsonElement's stringified form so identical args match.
  */
-fun repeatedToolCallLoop(n: Int): StopCondition = StopCondition { state ->
+public fun repeatedToolCallLoop(n: Int): StopCondition = StopCondition { state ->
     if (n < 2 || state.steps.size < n) return@StopCondition false
     val recent = state.steps.takeLast(n).map { it.toolCalls.firstOrNull() }
     val first = recent.first() ?: return@StopCondition false

@@ -1,0 +1,39 @@
+# detekt configuration overlay (merged on top of detekt's default config via
+# `buildUponDefaultConfig = true`). Only rules we deliberately tune live here.
+#
+# Cancellation-rethrow intent: the flagship anti-pattern this SDK guards against
+# is a `runCatching { someSuspendCall() }` (or broad catch) that captures
+# CancellationException into a Result and never rethrows it, breaking structured
+# concurrency. detekt's built-in `SuspendFunSwallowedCancellation` (coroutines
+# rule set, shipped in 1.23.0, PR #5666) detects exactly this — but ONLY via
+# type resolution (a classpath-aware run).
+#
+# IMPORTANT — this rule is currently INERT in this repo. Our detekt runs
+# classpath-less (a single `detekt` task over the raw KMP source dirs, because
+# detekt 1.23.x cannot type-resolve KMP non-JVM source sets — detekt#5961), so
+# `SuspendFunSwallowedCancellation` matches nothing here even though it is
+# `active: true`. We keep it on so it fires for free the day a typed
+# (classpath-aware) detekt task is wired — that wiring is the open task; see
+# §7.4 / Non-Goals in docs/KOTLIN_SDK_BEST_PRACTICES.md.
+#
+# Until then the suspend-cancellation guard that DOES run is: `SwallowedException`
+# below (with CancellationException deliberately NOT in `ignoredExceptionTypes`,
+# catching synchronous swallows) + the `runTest` cancellation tests + review.
+# This is itself the worked example of the doc's thesis: an enabled rule that
+# doesn't run is a comment, not a gate.
+coroutines:
+  SuspendFunSwallowedCancellation:
+    active: true
+exceptions:
+  SwallowedException:
+    active: true
+    # CancellationException intentionally NOT listed here: swallowing it breaks
+    # structured-concurrency cancellation, so detekt should flag it.
+    ignoredExceptionTypes:
+      - 'InterruptedException'
+      - 'MalformedURLException'
+      - 'NumberFormatException'
+      - 'ParseException'
+    allowedExceptionNameRegex: '_|(ignore|expected).*'
+  ThrowingExceptionsWithoutMessageOrCause:
+    active: true

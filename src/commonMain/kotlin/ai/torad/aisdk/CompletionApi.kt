@@ -4,17 +4,17 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.serialization.json.JsonElement
 
-enum class CompletionStreamProtocol(val wireValue: String) {
+public enum class CompletionStreamProtocol(public val wireValue: String) {
     Data("data"),
     Text("text"),
 }
 
-data class CompletionRequestOptions(
+public data class CompletionRequestOptions(
     val headers: Map<String, String> = emptyMap(),
     val body: Map<String, JsonElement> = emptyMap(),
 )
 
-data class CompletionRequest(
+public data class CompletionRequest(
     val api: String,
     val id: String,
     val prompt: String,
@@ -24,17 +24,17 @@ data class CompletionRequest(
     val abortSignal: AbortSignal = AbortSignalNever,
 )
 
-interface CompletionTransport {
-    fun complete(request: CompletionRequest): Flow<String>
+public interface CompletionTransport {
+    public fun complete(request: CompletionRequest): Flow<String>
 }
 
-class DirectCompletionTransport(
+public class DirectCompletionTransport(
     private val handler: (CompletionRequest) -> Flow<String>,
 ) : CompletionTransport {
     override fun complete(request: CompletionRequest): Flow<String> = handler(request)
 }
 
-data class UseCompletionOptions(
+public data class UseCompletionOptions(
     val api: String = "/api/completion",
     val id: String = generateId("completion"),
     val initialCompletion: String = "",
@@ -47,7 +47,7 @@ data class UseCompletionOptions(
     val onError: suspend (Throwable) -> Unit = {},
 )
 
-data class CallCompletionApiOptions(
+public data class CallCompletionApiOptions(
     val api: String = "/api/completion",
     val id: String = generateId("completion"),
     val prompt: String,
@@ -63,7 +63,7 @@ data class CallCompletionApiOptions(
     val onError: suspend (Throwable) -> Unit = {},
 )
 
-suspend fun callCompletionApi(options: CallCompletionApiOptions): String? {
+public suspend fun callCompletionApi(options: CallCompletionApiOptions): String? {
     val request = CompletionRequest(
         api = options.api,
         id = options.id,
@@ -96,31 +96,31 @@ suspend fun callCompletionApi(options: CallCompletionApiOptions): String? {
     }
 }
 
-class Completion(
+public class Completion(
     private val options: UseCompletionOptions = UseCompletionOptions(),
 ) {
-    val id: String = options.id
-    val api: String = options.api
-    val streamProtocol: CompletionStreamProtocol = options.streamProtocol
+    public val id: String = options.id
+    public val api: String = options.api
+    public val streamProtocol: CompletionStreamProtocol = options.streamProtocol
 
-    var completion: String = options.initialCompletion
+    public var completion: String = options.initialCompletion
         private set
 
-    var input: String = options.initialInput
+    public var input: String = options.initialInput
 
-    var error: Throwable? = null
+    public var error: Throwable? = null
         private set
 
-    var loading: Boolean = false
+    public var loading: Boolean = false
         private set
 
     private var abortController: AbortController? = null
 
-    fun setCompletion(completion: String) {
+    public fun setCompletion(completion: String) {
         this.completion = completion
     }
 
-    suspend fun complete(
+    public suspend fun complete(
         prompt: String,
         requestOptions: CompletionRequestOptions = CompletionRequestOptions(),
     ): String? {
@@ -147,10 +147,10 @@ class Completion(
         }
     }
 
-    suspend fun handleSubmit(): String? =
+    public suspend fun handleSubmit(): String? =
         input.takeIf { it.isNotEmpty() }?.let { complete(it) }
 
-    fun stop() {
+    public fun stop() {
         abortController?.abort()
         abortController = null
         loading = false

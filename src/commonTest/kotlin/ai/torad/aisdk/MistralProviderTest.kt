@@ -1,4 +1,8 @@
 package ai.torad.aisdk
+import ai.torad.aisdk.providers.MISTRAL_VERSION
+import ai.torad.aisdk.providers.MistralProviderSettings
+import ai.torad.aisdk.providers.createMistral
+import ai.torad.aisdk.providers.mistral
 
 import io.ktor.http.HttpHeaders
 import kotlinx.coroutines.test.runTest

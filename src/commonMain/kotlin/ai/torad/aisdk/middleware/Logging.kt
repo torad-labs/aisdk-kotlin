@@ -31,7 +31,7 @@ import kotlinx.coroutines.flow.onEach
  * `wrapGenerate` logs a one-line completion summary; the streaming path
  * (the chat surface) carries the per-event detail.
  */
-fun loggingMiddleware(
+public fun loggingMiddleware(
     logger: Logger,
     tag: String = "agent",
 ): LanguageModelMiddleware = object : LanguageModelMiddleware {

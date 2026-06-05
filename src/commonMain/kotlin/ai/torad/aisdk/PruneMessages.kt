@@ -1,36 +1,36 @@
 package ai.torad.aisdk
 
-enum class PruneReasoning {
+public enum class PruneReasoning {
     All,
     BeforeLastMessage,
     None,
 }
 
-enum class PruneEmptyMessages {
+public enum class PruneEmptyMessages {
     Keep,
     Remove,
 }
 
-sealed class PruneToolCalls {
-    data object None : PruneToolCalls()
-    data object All : PruneToolCalls()
-    data object BeforeLastMessage : PruneToolCalls()
-    data class BeforeLastMessages(val count: Int) : PruneToolCalls()
-    data class Rules(val rules: List<PruneToolCallRule>) : PruneToolCalls()
+public sealed class PruneToolCalls {
+    public data object None : PruneToolCalls()
+    public data object All : PruneToolCalls()
+    public data object BeforeLastMessage : PruneToolCalls()
+    public data class BeforeLastMessages(val count: Int) : PruneToolCalls()
+    public data class Rules(val rules: List<PruneToolCallRule>) : PruneToolCalls()
 }
 
-data class PruneToolCallRule(
+public data class PruneToolCallRule(
     val type: PruneToolCallRuleType,
     val tools: Set<String>? = null,
 )
 
-sealed class PruneToolCallRuleType {
-    data object All : PruneToolCallRuleType()
-    data object BeforeLastMessage : PruneToolCallRuleType()
-    data class BeforeLastMessages(val count: Int) : PruneToolCallRuleType()
+public sealed class PruneToolCallRuleType {
+    public data object All : PruneToolCallRuleType()
+    public data object BeforeLastMessage : PruneToolCallRuleType()
+    public data class BeforeLastMessages(val count: Int) : PruneToolCallRuleType()
 }
 
-fun pruneMessages(
+public fun pruneMessages(
     messages: List<ModelMessage>,
     reasoning: PruneReasoning = PruneReasoning.None,
     toolCalls: PruneToolCalls = PruneToolCalls.None,

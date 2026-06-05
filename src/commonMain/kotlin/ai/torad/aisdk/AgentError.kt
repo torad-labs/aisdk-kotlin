@@ -40,12 +40,12 @@ package ai.torad.aisdk
  * additive — the taxonomy is in place; downstream call sites adopt it
  * incrementally.
  */
-sealed class AgentError(
+public sealed class AgentError(
     message: String,
     cause: Throwable? = null,
 ) : RuntimeException(message, cause) {
 
-    data class NoSuchTool(
+    public data class NoSuchTool(
         val toolName: String,
         val availableTools: List<String>,
     ) : AgentError(
@@ -53,7 +53,7 @@ sealed class AgentError(
             "(available: ${availableTools.joinToString().ifBlank { "<none>" }})",
     )
 
-    data class InvalidToolInput(
+    public data class InvalidToolInput(
         val toolName: String,
         val rawArgs: String,
         val parseError: Throwable,
@@ -62,7 +62,7 @@ sealed class AgentError(
         cause = parseError,
     )
 
-    data class ToolExecution(
+    public data class ToolExecution(
         val toolName: String,
         val toolCallId: String,
         val executorError: Throwable,
@@ -71,7 +71,7 @@ sealed class AgentError(
         cause = executorError,
     )
 
-    data class ToolCallRepairFailed(
+    public data class ToolCallRepairFailed(
         val toolName: String,
         val originalError: Throwable,
         val repairError: Throwable?,
@@ -82,7 +82,7 @@ sealed class AgentError(
         cause = repairError ?: originalError,
     )
 
-    data class InvalidApprovalResponse(
+    public data class InvalidApprovalResponse(
         val toolCallId: String,
         val knownPendingIds: List<String>,
     ) : AgentError(
@@ -90,14 +90,14 @@ sealed class AgentError(
             "(pending: ${knownPendingIds.joinToString().ifBlank { "<none>" }})",
     )
 
-    data class InvalidCallOptions(
+    public data class InvalidCallOptions(
         val validationError: Throwable,
     ) : AgentError(
         "Type validation failed for options: ${validationError.message ?: "<no message>"}",
         cause = validationError,
     )
 
-    data class MaxStepsReached(
+    public data class MaxStepsReached(
         val stepCount: Int,
     ) : AgentError(
         "Agent loop hit stop condition after $stepCount step(s) without a terminal finish reason",

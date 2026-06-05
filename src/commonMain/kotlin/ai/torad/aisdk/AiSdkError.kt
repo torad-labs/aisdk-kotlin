@@ -1,81 +1,81 @@
 package ai.torad.aisdk
 
-open class AiSdkException(
+public open class AiSdkException(
     message: String,
     cause: Throwable? = null,
 ) : RuntimeException(message, cause)
 
-typealias AISDKError = AiSdkException
+public typealias AISDKError = AiSdkException
 
-class InvalidArgumentError(
-    val argument: String,
+public class InvalidArgumentError(
+    public val argument: String,
     reason: String,
     cause: Throwable? = null,
 ) : AiSdkException("Invalid argument `$argument`: $reason", cause)
 
-class APICallError(
+public class APICallError(
     message: String,
-    val url: String,
-    val requestBodyValues: Any? = null,
-    val statusCode: Int? = null,
-    val responseHeaders: Map<String, String>? = null,
-    val responseBody: String? = null,
+    public val url: String,
+    public val requestBodyValues: Any? = null,
+    public val statusCode: Int? = null,
+    public val responseHeaders: Map<String, String>? = null,
+    public val responseBody: String? = null,
     cause: Throwable? = null,
-    val isRetryable: Boolean = statusCode == 408 || statusCode == 409 || statusCode == 429 || (statusCode ?: 0) >= 500,
-    val data: Any? = null,
+    public val isRetryable: Boolean = statusCode == 408 || statusCode == 409 || statusCode == 429 || (statusCode ?: 0) >= 500,
+    public val data: Any? = null,
 ) : AiSdkException(message, cause)
 
-class EmptyResponseBodyError(message: String = "Empty response body") : AiSdkException(message)
+public class EmptyResponseBodyError(message: String = "Empty response body") : AiSdkException(message)
 
-class InvalidPromptError(
-    val prompt: Any?,
+public class InvalidPromptError(
+    public val prompt: Any?,
     message: String,
     cause: Throwable? = null,
 ) : AiSdkException("Invalid prompt: $message", cause)
 
-class InvalidResponseDataError(
-    val data: Any?,
+public class InvalidResponseDataError(
+    public val data: Any?,
     message: String = "Invalid response data: $data.",
 ) : AiSdkException(message)
 
-class JSONParseError(
-    val text: String,
+public class JSONParseError(
+    public val text: String,
     cause: Throwable,
 ) : AiSdkException(
     "JSON parsing failed: Text: $text.\nError message: ${getErrorMessage(cause)}",
     cause,
 )
 
-class LoadAPIKeyError(message: String) : AiSdkException(message)
+public class LoadAPIKeyError(message: String) : AiSdkException(message)
 
-class LoadSettingError(message: String) : AiSdkException(message)
+public class LoadSettingError(message: String) : AiSdkException(message)
 
-class NoContentGeneratedError(message: String = "No content generated.") : AiSdkException(message)
+public class NoContentGeneratedError(message: String = "No content generated.") : AiSdkException(message)
 
-class TooManyEmbeddingValuesForCallError(
-    val provider: String,
-    val modelId: String,
-    val maxEmbeddingsPerCall: Int,
-    val values: List<Any?>,
+public class TooManyEmbeddingValuesForCallError(
+    public val provider: String,
+    public val modelId: String,
+    public val maxEmbeddingsPerCall: Int,
+    public val values: List<Any?>,
 ) : AiSdkException(
     "Too many values for a single embedding call. " +
         "The $provider model \"$modelId\" can only embed up to " +
         "$maxEmbeddingsPerCall values per call, but ${values.size} values were provided.",
 )
 
-data class TypeValidationContext(
+public data class TypeValidationContext(
     val field: String? = null,
     val entityName: String? = null,
     val entityId: String? = null,
 )
 
-class TypeValidationError(
-    val value: Any?,
+public class TypeValidationError(
+    public val value: Any?,
     cause: Throwable,
-    val context: TypeValidationContext? = null,
+    public val context: TypeValidationContext? = null,
 ) : AiSdkException(typeValidationMessage(value, cause, context), cause) {
-    companion object {
-        fun wrap(
+    public companion object {
+        public fun wrap(
             value: Any?,
             cause: Throwable,
             context: TypeValidationContext? = null,
@@ -88,8 +88,8 @@ class TypeValidationError(
     }
 }
 
-class UnsupportedFunctionalityError(
-    val functionality: String,
+public class UnsupportedFunctionalityError(
+    public val functionality: String,
     message: String = "'$functionality' functionality not supported.",
 ) : AiSdkException(message)
 
@@ -110,15 +110,15 @@ private fun typeValidationMessage(
     return "$prefix: Value: $value.\nError message: ${getErrorMessage(cause)}"
 }
 
-class UnsupportedModelVersionError(
+public class UnsupportedModelVersionError(
     modelId: String,
     version: String,
 ) : AiSdkException("Unsupported model version `$version` for `$modelId`")
 
-class NoSuchProviderError(providerId: String) :
+public class NoSuchProviderError(providerId: String) :
     AiSdkException("No provider registered for `$providerId`")
 
-class NoSuchModelError(
+public class NoSuchModelError(
     providerId: String?,
     modelType: String,
     modelId: String,
@@ -134,48 +134,48 @@ class NoSuchModelError(
     message,
 )
 
-class NoOutputGeneratedError(message: String = "No output generated") : AiSdkException(message)
-class NoObjectGeneratedError(message: String = "No object generated") : AiSdkException(message)
-class NoImageGeneratedError(message: String = "No image generated") : AiSdkException(message)
-class NoSpeechGeneratedError(message: String = "No speech generated") : AiSdkException(message)
-class NoTranscriptGeneratedError(message: String = "No transcript generated") : AiSdkException(message)
-class NoVideoGeneratedError(message: String = "No video generated") : AiSdkException(message)
-class UiMessageStreamError(message: String, cause: Throwable? = null) : AiSdkException(message, cause)
+public class NoOutputGeneratedError(message: String = "No output generated") : AiSdkException(message)
+public class NoObjectGeneratedError(message: String = "No object generated") : AiSdkException(message)
+public class NoImageGeneratedError(message: String = "No image generated") : AiSdkException(message)
+public class NoSpeechGeneratedError(message: String = "No speech generated") : AiSdkException(message)
+public class NoTranscriptGeneratedError(message: String = "No transcript generated") : AiSdkException(message)
+public class NoVideoGeneratedError(message: String = "No video generated") : AiSdkException(message)
+public class UiMessageStreamError(message: String, cause: Throwable? = null) : AiSdkException(message, cause)
 
-class InvalidStreamPartError(
-    val chunk: Any?,
+public class InvalidStreamPartError(
+    public val chunk: Any?,
     message: String,
 ) : AiSdkException(message)
 
-class InvalidToolApprovalError(
-    val approvalId: String,
+public class InvalidToolApprovalError(
+    public val approvalId: String,
 ) : AiSdkException(
     "Tool approval response references unknown approvalId: \"$approvalId\". " +
         "No matching tool-approval-request found in message history.",
 )
 
-class InvalidToolInputError(
-    val toolInput: String,
-    val toolName: String,
+public class InvalidToolInputError(
+    public val toolInput: String,
+    public val toolName: String,
     cause: Throwable,
     message: String = "Invalid input for tool $toolName: ${getErrorMessage(cause)}",
 ) : AiSdkException(message, cause)
 
-class ToolCallNotFoundForApprovalError(
-    val toolCallId: String,
-    val approvalId: String,
+public class ToolCallNotFoundForApprovalError(
+    public val toolCallId: String,
+    public val approvalId: String,
 ) : AiSdkException("Tool call \"$toolCallId\" not found for approval request \"$approvalId\".")
 
-class MissingToolResultsError(
-    val toolCallIds: List<String>,
+public class MissingToolResultsError(
+    public val toolCallIds: List<String>,
 ) : AiSdkException(
     "Tool result${if (toolCallIds.size > 1) "s are" else " is"} missing for " +
         "tool call${if (toolCallIds.size > 1) "s" else ""} ${toolCallIds.joinToString(", ")}.",
 )
 
-class NoSuchToolError(
-    val toolName: String,
-    val availableTools: List<String>? = null,
+public class NoSuchToolError(
+    public val toolName: String,
+    public val availableTools: List<String>? = null,
     message: String = "Model tried to call unavailable tool '$toolName'. " +
         if (availableTools == null) {
             "No tools are available."
@@ -184,39 +184,39 @@ class NoSuchToolError(
         },
 ) : AiSdkException(message)
 
-class ToolCallRepairError(
-    val originalError: Throwable,
+public class ToolCallRepairError(
+    public val originalError: Throwable,
     cause: Throwable,
     message: String = "Error repairing tool call: ${getErrorMessage(cause)}",
 ) : AiSdkException(message, cause)
 
-class InvalidDataContentError(
-    val content: Any?,
+public class InvalidDataContentError(
+    public val content: Any?,
     cause: Throwable? = null,
     message: String = "Invalid data content. Expected a base64 string, ByteArray, or platform byte buffer, " +
         "but got ${content?.let { it::class.simpleName } ?: "null"}.",
 ) : AiSdkException(message, cause)
 
-class InvalidMessageRoleError(
-    val role: String,
+public class InvalidMessageRoleError(
+    public val role: String,
     message: String = "Invalid message role: '$role'. Must be one of: \"system\", \"user\", \"assistant\", \"tool\".",
 ) : AiSdkException(message)
 
-class MessageConversionError(
-    val originalMessage: Any?,
+public class MessageConversionError(
+    public val originalMessage: Any?,
     message: String,
 ) : AiSdkException(message)
 
-enum class RetryErrorReason {
+public enum class RetryErrorReason {
     MaxRetriesExceeded,
     ErrorNotRetryable,
     Abort,
 }
 
-class RetryError(
+public class RetryError(
     message: String,
-    val reason: RetryErrorReason,
-    val errors: List<Throwable>,
+    public val reason: RetryErrorReason,
+    public val errors: List<Throwable>,
 ) : AiSdkException(message, errors.lastOrNull()) {
-    val lastError: Throwable? = errors.lastOrNull()
+    public val lastError: Throwable? = errors.lastOrNull()
 }

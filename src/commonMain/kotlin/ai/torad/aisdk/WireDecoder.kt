@@ -15,12 +15,12 @@ import kotlinx.serialization.json.intOrNull
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 
-class WireDecodeException(
-    val provider: String,
-    val operation: String,
-    val path: String,
+public class WireDecodeException(
+    public val provider: String,
+    public val operation: String,
+    public val path: String,
     message: String,
-    val value: JsonElement? = null,
+    public val value: JsonElement? = null,
     cause: Throwable? = null,
 ) : AiSdkException(
     "Invalid $provider wire data for $operation at $path: $message" +

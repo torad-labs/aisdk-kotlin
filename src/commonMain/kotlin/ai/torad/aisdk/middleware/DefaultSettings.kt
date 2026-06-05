@@ -18,7 +18,7 @@ import kotlinx.serialization.json.JsonElement
  *   - app-wide `maxOutputTokens = 1000`
  *   - default `providerOptions` like `{ openai: { reasoningEffort: "high" } }`
  */
-fun defaultSettingsMiddleware(
+public fun defaultSettingsMiddleware(
     temperature: Float? = null,
     topP: Float? = null,
     topK: Int? = null,

@@ -20,3 +20,9 @@ local.properties
 *.onnx
 *.tflite
 *.litertlm
+
+# Claude Code: ignore local session state (directives, plans, todos),
+# but DO track committed skills under .claude/skills/.
+.claude/**
+!.claude/skills/
+!.claude/skills/**

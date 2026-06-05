@@ -25,12 +25,12 @@ import ai.torad.aisdk.VideoGenerationParams
 import ai.torad.aisdk.VideoModel
 import ai.torad.aisdk.VideoModelResult
 
-class MockEmbeddingModel(
+public class MockEmbeddingModel(
     override val modelId: String = "mock/embedding",
     override val provider: String = "mock",
     private val dimensions: Int = 3,
 ) : EmbeddingModel {
-    var captured: EmbeddingModelCallParams? = null
+    public var captured: EmbeddingModelCallParams? = null
 
     override suspend fun embed(params: EmbeddingModelCallParams): EmbeddingModelResult {
         captured = params
@@ -43,12 +43,12 @@ class MockEmbeddingModel(
     }
 }
 
-class MockImageModel(
+public class MockImageModel(
     override val modelId: String = "mock/image",
     override val provider: String = "mock",
     private val image: GeneratedFile = GeneratedFile("image/png", "iVBORw0KGgo=", "image.png"),
 ) : ImageModel {
-    var captured: ImageGenerationParams? = null
+    public var captured: ImageGenerationParams? = null
 
     override suspend fun generate(params: ImageGenerationParams): ImageModelResult {
         captured = params
@@ -56,12 +56,12 @@ class MockImageModel(
     }
 }
 
-class MockSpeechModel(
+public class MockSpeechModel(
     override val modelId: String = "mock/speech",
     override val provider: String = "mock",
     private val audio: GeneratedFile = GeneratedFile("audio/mpeg", "SUQz", "speech.mp3"),
 ) : SpeechModel {
-    var captured: SpeechGenerationParams? = null
+    public var captured: SpeechGenerationParams? = null
 
     override suspend fun generate(params: SpeechGenerationParams): SpeechModelResult {
         captured = params
@@ -69,12 +69,12 @@ class MockSpeechModel(
     }
 }
 
-class MockTranscriptionModel(
+public class MockTranscriptionModel(
     override val modelId: String = "mock/transcription",
     override val provider: String = "mock",
     private val transcript: String = "hello world",
 ) : TranscriptionModel {
-    var captured: TranscriptionParams? = null
+    public var captured: TranscriptionParams? = null
 
     override suspend fun transcribe(params: TranscriptionParams): TranscriptionModelResult {
         captured = params
@@ -85,12 +85,12 @@ class MockTranscriptionModel(
     }
 }
 
-class MockVideoModel(
+public class MockVideoModel(
     override val modelId: String = "mock/video",
     override val provider: String = "mock",
     private val video: GeneratedFile = GeneratedFile("video/mp4", "AAAA", "video.mp4"),
 ) : VideoModel {
-    var captured: VideoGenerationParams? = null
+    public var captured: VideoGenerationParams? = null
 
     override suspend fun generate(params: VideoGenerationParams): VideoModelResult {
         captured = params
@@ -98,11 +98,11 @@ class MockVideoModel(
     }
 }
 
-class MockRerankingModel(
+public class MockRerankingModel(
     override val modelId: String = "mock/rerank",
     override val provider: String = "mock",
 ) : RerankingModel {
-    var captured: RerankingParams? = null
+    public var captured: RerankingParams? = null
 
     override suspend fun rerank(params: RerankingParams): RerankingModelResult {
         captured = params
@@ -114,4 +114,4 @@ class MockRerankingModel(
     }
 }
 
-fun mockAudioSource(): AudioSource = AudioSource(mediaType = "audio/mpeg", base64 = "SUQz", filename = "audio.mp3")
+public fun mockAudioSource(): AudioSource = AudioSource(mediaType = "audio/mpeg", base64 = "SUQz", filename = "audio.mp3")

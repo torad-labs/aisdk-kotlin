@@ -11,7 +11,7 @@ import kotlinx.serialization.json.JsonElement
  * The v6 strategy for such providers is to splice a textual schema
  * instruction into the system prompt and then repair the model's
  * partial output with [fixJson] / [parsePartialJson]. This file ports
- * the splice half; [FixJson] ports the repair half.
+ * the splice half; `FixJson` ports the repair half.
  *
  * The three default strings are reproduced verbatim from upstream so a
  * prompt built here is byte-identical to one built by the JS SDK —
@@ -53,7 +53,7 @@ private const val DEFAULT_GENERIC_SUFFIX = "You MUST answer with JSON."
  * @param schemaSuffix closing instruction. Defaults to the
  *   schema-aware suffix when a schema is present, else the generic one.
  */
-fun injectJsonInstruction(
+public fun injectJsonInstruction(
     prompt: String? = null,
     schema: JsonElement? = null,
     schemaPrefix: String? = if (schema != null) DEFAULT_SCHEMA_PREFIX else null,
@@ -78,7 +78,7 @@ fun injectJsonInstruction(
  * call before generation when the caller requested structured output
  * but the engine has no native JSON mode.
  */
-fun injectJsonInstructionIntoMessages(
+public fun injectJsonInstructionIntoMessages(
     messages: List<ModelMessage>,
     schema: JsonElement? = null,
     schemaPrefix: String? = if (schema != null) DEFAULT_SCHEMA_PREFIX else null,

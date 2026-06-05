@@ -24,10 +24,10 @@ import kotlinx.serialization.json.JsonElement
  * Sealed interface form is the port-idiomatic shape.
  */
 @Serializable
-sealed interface ResponseFormat {
+public sealed interface ResponseFormat {
 
     @Serializable
-    data object Text : ResponseFormat
+    public data object Text : ResponseFormat
 
     /**
      * JSON-shaped response. [schemaJson] is the JSON-Schema constraint
@@ -43,7 +43,7 @@ sealed interface ResponseFormat {
      * the response text.
      */
     @Serializable
-    data class Json(
+    public data class Json(
         val schemaName: String? = null,
         val schemaDescription: String? = null,
         val schemaJson: JsonElement? = null,

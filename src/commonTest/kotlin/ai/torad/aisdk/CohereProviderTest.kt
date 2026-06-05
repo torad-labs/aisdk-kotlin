@@ -1,4 +1,8 @@
 package ai.torad.aisdk
+import ai.torad.aisdk.providers.COHERE_VERSION
+import ai.torad.aisdk.providers.CohereProviderSettings
+import ai.torad.aisdk.providers.cohere
+import ai.torad.aisdk.providers.createCohere
 
 import io.ktor.http.HttpHeaders
 import kotlinx.coroutines.flow.toList

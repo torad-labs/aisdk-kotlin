@@ -1,4 +1,8 @@
 package ai.torad.aisdk
+import ai.torad.aisdk.providers.GOOGLE_VERSION
+import ai.torad.aisdk.providers.GoogleGenerativeAIProviderSettings
+import ai.torad.aisdk.providers.createGoogleGenerativeAI
+import ai.torad.aisdk.providers.google
 
 import ai.torad.aisdk.testing.drainAllItems
 import io.ktor.http.HttpHeaders

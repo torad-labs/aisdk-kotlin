@@ -29,7 +29,7 @@ import kotlinx.serialization.json.jsonPrimitive
 import kotlin.jvm.JvmName
 
 @Serializable
-enum class LangChainMessageRole {
+public enum class LangChainMessageRole {
     System,
     Human,
     AI,
@@ -37,14 +37,14 @@ enum class LangChainMessageRole {
 }
 
 @Serializable
-data class LangChainToolCall(
+public data class LangChainToolCall(
     val id: String,
     val name: String,
     val input: JsonElement = JsonObject(emptyMap()),
 )
 
 @Serializable
-data class LangChainBaseMessage(
+public data class LangChainBaseMessage(
     val role: LangChainMessageRole,
     val content: JsonElement = JsonPrimitive(""),
     val id: String? = null,
@@ -53,22 +53,22 @@ data class LangChainBaseMessage(
     val additionalKwargs: Map<String, JsonElement> = emptyMap(),
 )
 
-sealed interface LangChainStreamItem {
-    data class ModelChunk(
+public sealed interface LangChainStreamItem {
+    public data class ModelChunk(
         val id: String? = null,
         val text: String = "",
         val reasoning: String = "",
         val toolCalls: List<LangChainToolCall> = emptyList(),
     ) : LangChainStreamItem
 
-    data class StreamEventsEvent(
+    public data class StreamEventsEvent(
         val event: String,
         val data: JsonObject? = null,
         val runId: String? = null,
         val name: String? = null,
     ) : LangChainStreamItem
 
-    data class LangGraphEvent(
+    public data class LangGraphEvent(
         val type: String,
         val data: JsonElement = JsonNull,
         val message: ModelChunk? = null,
@@ -76,20 +76,20 @@ sealed interface LangChainStreamItem {
     ) : LangChainStreamItem
 }
 
-data class LangSmithDeploymentTransportOptions(
+public data class LangSmithDeploymentTransportOptions(
     val url: String,
     val apiKey: String? = null,
     val graphId: String = "agent",
     val headers: Map<String, String> = emptyMap(),
 )
 
-typealias LangSmithGraphStream =
+public typealias LangSmithGraphStream =
     suspend (messages: List<LangChainBaseMessage>, options: LangSmithDeploymentTransportOptions) -> Flow<LangChainStreamItem>
 
-fun toBaseMessages(messages: List<UIMessage>): List<LangChainBaseMessage> =
+public fun toBaseMessages(messages: List<UIMessage>): List<LangChainBaseMessage> =
     convertModelMessages(convertToModelMessages(messages))
 
-fun convertModelMessages(modelMessages: List<ModelMessage>): List<LangChainBaseMessage> =
+public fun convertModelMessages(modelMessages: List<ModelMessage>): List<LangChainBaseMessage> =
     buildList {
         for (message in modelMessages) {
             when (message.role) {
@@ -136,13 +136,13 @@ fun convertModelMessages(modelMessages: List<ModelMessage>): List<LangChainBaseM
     }
 
 @JvmName("langChainToUIMessageStreamExport")
-fun toUIMessageStream(
+public fun toUIMessageStream(
     stream: Flow<LangChainStreamItem>,
     callbacks: StreamCallbacks? = null,
     assistantMessageId: String = "langchain-msg-1",
 ): Flow<UIMessage> = langChainToUIMessageStream(stream, callbacks, assistantMessageId)
 
-fun langChainToUIMessageStream(
+public fun langChainToUIMessageStream(
     stream: Flow<LangChainStreamItem>,
     callbacks: StreamCallbacks? = null,
     assistantMessageId: String = "langchain-msg-1",
@@ -264,7 +264,7 @@ fun langChainToUIMessageStream(
     }
 }
 
-class LangSmithDeploymentTransport(
+public class LangSmithDeploymentTransport(
     private val options: LangSmithDeploymentTransportOptions,
     private val graphStream: LangSmithGraphStream = { _, _ ->
         throw UnsupportedOperationException(

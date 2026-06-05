@@ -1,10 +1,12 @@
 package ai.torad.aisdk
 
+import kotlin.coroutines.CoroutineContext
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.FlowCollector
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -14,7 +16,6 @@ import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.serialization.KSerializer
-import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonPrimitive
 
@@ -47,49 +48,54 @@ import kotlinx.serialization.json.JsonPrimitive
  * Generation isn't kept "in flight" while the user decides — host can
  * serialize, persist, transport, then resume.
  */
-open class ToolLoopAgent<TContext, TOutput>(
-    val model: LanguageModel,
-    val instructions: String,
+public open class ToolLoopAgent<TContext, TOutput>(
+    public val model: LanguageModel,
+    public val instructions: String,
     override val tools: ToolSet<TContext>,
-    val activeTools: List<String>? = null,
-    val output: Output<TOutput>? = null,
-    val stopWhen: StopCondition = stepCountIs(20),
-    val prepareCall: (suspend PrepareCallScope<TContext>.() -> AgentSettings<TContext>)? = null,
-    val prepareStep: (suspend PrepareStepScope<TContext>.() -> StepSettings<TContext>)? = null,
-    val callOptionsSchema: KSerializer<TContext>? = null,
+    public val activeTools: List<String>? = null,
+    public val output: Output<TOutput>? = null,
+    public val stopWhen: StopCondition = stepCountIs(20),
+    public val prepareCall: (suspend PrepareCallScope<TContext>.() -> AgentSettings<TContext>)? = null,
+    public val prepareStep: (suspend PrepareStepScope<TContext>.() -> StepSettings<TContext>)? = null,
+    public val callOptionsSchema: KSerializer<TContext>? = null,
     // Sampler-param defaults set at agent construction. Mirror v6's
     // `CallSettings` (tool-loop-agent-settings.ts:145-194). Resolution
     // chain inside the loop is `StepSettings ?: AgentSettings ?: these
     // constructor defaults ?: null` (null = provider's own default).
-    val temperature: Float? = null,
-    val topP: Float? = null,
-    val topK: Int? = null,
-    val maxOutputTokens: Int? = null,
-    val stopSequences: List<String>? = null,
-    val seed: Int? = null,
+    public val temperature: Float? = null,
+    public val topP: Float? = null,
+    public val topK: Int? = null,
+    public val maxOutputTokens: Int? = null,
+    public val stopSequences: List<String>? = null,
+    public val seed: Int? = null,
     /** v6 `CallSettings.presencePenalty` agent-default. */
-    val presencePenalty: Float? = null,
+    public val presencePenalty: Float? = null,
     /** v6 `CallSettings.frequencyPenalty` agent-default. */
-    val frequencyPenalty: Float? = null,
+    public val frequencyPenalty: Float? = null,
     /** Wire-level response constraint for providers that support it. */
-    val responseFormat: ResponseFormat = ResponseFormat.Text,
-    val onStart: (suspend OnStartEvent.() -> Unit)? = null,
-    val onStepStart: (suspend OnStepStartEvent.() -> Unit)? = null,
-    val onStepFinish: (suspend OnStepFinishEvent.() -> Unit)? = null,
-    val onFinish: (suspend OnFinishEvent.() -> Unit)? = null,
-    val onError: (suspend OnErrorEvent.() -> Unit)? = null,
-    val onChunk: (suspend OnChunkEvent.() -> Unit)? = null,
-    val experimental_onToolCallStart: (suspend OnToolCallStartEvent.() -> Unit)? = null,
-    val experimental_onToolCallFinish: (suspend OnToolCallFinishEvent.() -> Unit)? = null,
+    public val responseFormat: ResponseFormat = ResponseFormat.Text,
+    public val onStart: (suspend OnStartEvent.() -> Unit)? = null,
+    public val onStepStart: (suspend OnStepStartEvent.() -> Unit)? = null,
+    public val onStepFinish: (suspend OnStepFinishEvent.() -> Unit)? = null,
+    public val onFinish: (suspend OnFinishEvent.() -> Unit)? = null,
+    public val onError: (suspend OnErrorEvent.() -> Unit)? = null,
+    public val onChunk: (suspend OnChunkEvent.() -> Unit)? = null,
+    public val experimental_onToolCallStart: (suspend OnToolCallStartEvent.() -> Unit)? = null,
+    public val experimental_onToolCallFinish: (suspend OnToolCallFinishEvent.() -> Unit)? = null,
     /**
      * Self-healing callback fired when a tool call's arguments fail to
      * decode. Return a corrected call to retry, or null to surface
      * `StreamEvent.ToolError`. See [ToolCallRepairFunction].
      */
-    val experimental_repairToolCall: ToolCallRepairFunction<TContext>? = null,
+    public val experimental_repairToolCall: ToolCallRepairFunction<TContext>? = null,
+    /**
+     * Coroutine context for the engine-surface scope (the long-lived
+     * StateFlow-driven surface). Defaults to [Dispatchers.Default]; inject a
+     * test dispatcher or a host-controlled one for deterministic scheduling.
+     * The per-call generate()/stream() API is unaffected.
+     */
+    engineContext: CoroutineContext = Dispatchers.Default,
 ) : Agent<TContext, TOutput> {
-
-    private val jsonCodec = Json { ignoreUnknownKeys = true; encodeDefaults = true }
 
     // ─── ENGINE-SHAPE STATE-HOLDER SURFACE ───────────────────────────────
     //
@@ -112,11 +118,22 @@ open class ToolLoopAgent<TContext, TOutput>(
      * Renamed from `state` so subclasses can declare their own `state`
      * member without member-hiding clashes.
      */
-    val engineState: StateFlow<ToolLoopAgentState> = mutableEngineState.asStateFlow()
+    public val engineState: StateFlow<ToolLoopAgentState> = mutableEngineState.asStateFlow()
 
-    private val engineScope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+    private val engineScope: CoroutineScope = CoroutineScope(SupervisorJob() + engineContext)
     private var currentEngineJob: Job? = null
     private var currentEngineContext: TContext? = null
+
+    /**
+     * Cancel the engine scope and any in-flight engine job. Call when a
+     * long-lived host (ViewModel / Repository) that drove the engine surface
+     * is disposed. The per-call generate()/stream() API needs no close().
+     */
+    public fun close() {
+        currentEngineJob?.cancel()
+        currentEngineJob = null
+        engineScope.cancel()
+    }
 
     /**
      * Drive the engine. Each action either advances [engineState] or
@@ -129,7 +146,7 @@ open class ToolLoopAgent<TContext, TOutput>(
      * action dispatch lives here; subclasses layer their own onAction
      * with different action types on top.
      */
-    fun dispatchEngineAction(action: ToolLoopAgentAction<TContext>) {
+    public fun dispatchEngineAction(action: ToolLoopAgentAction<TContext>) {
         when (action) {
             is ToolLoopAgentAction.UserSubmitPrompt<TContext> ->
                 submitPrompt(action.text, action.context)
@@ -289,7 +306,7 @@ open class ToolLoopAgent<TContext, TOutput>(
                         ),
                     )
                 }
-                is StreamEvent.Error -> throw RuntimeException(event.message)
+                is StreamEvent.Error -> throw AiSdkException(event.message, event.cause)
                 else -> Unit
             }
         }
@@ -348,7 +365,7 @@ open class ToolLoopAgent<TContext, TOutput>(
                 throw ce
             } catch (t: Throwable) {
                 emitError(t, 0, OnErrorEvent.ErrorSource.PrepareCall, hooks)
-                emit(StreamEvent.Error(t.message ?: "prepareCall failed"))
+                emit(StreamEvent.Error(t.message ?: "prepareCall failed", cause = t))
                 finalMessagesRef?.value = priorMessages
                 return@flow
             }
@@ -412,7 +429,7 @@ open class ToolLoopAgent<TContext, TOutput>(
                     throw ce
                 } catch (t: Throwable) {
                     emitError(t, stepNumber, OnErrorEvent.ErrorSource.PrepareStep, hooks)
-                    emit(StreamEvent.Error(t.message ?: "prepareStep failed"))
+                    emit(StreamEvent.Error(t.message ?: "prepareStep failed", cause = t))
                     finalMessagesRef?.value = messages.toList()
                     return@flow
                 }
@@ -535,7 +552,7 @@ open class ToolLoopAgent<TContext, TOutput>(
                 throw ce
             } catch (t: Throwable) {
                 emitError(t, stepNumber, OnErrorEvent.ErrorSource.Model, hooks)
-                emit(StreamEvent.Error(t.message ?: "model failed"))
+                emit(StreamEvent.Error(t.message ?: "model failed", cause = t))
                 finalMessagesRef?.value = messages.toList()
                 return@flow
             }
@@ -1121,14 +1138,14 @@ open class ToolLoopAgent<TContext, TOutput>(
     @Suppress("UNCHECKED_CAST")
     private fun encodeToolOutput(tool: Tool<*, *, *>, output: Any?): JsonElement {
         val ser = tool.outputSerializer as KSerializer<Any?>
-        return jsonCodec.encodeToJsonElement(ser, output)
+        return aiSdkOutputJson.encodeToJsonElement(ser, output)
     }
 
     private fun validateCallOptions(options: TContext?): TContext? {
         val serializer = callOptionsSchema ?: return options
         if (options == null) return null
         return try {
-            jsonCodec.decodeFromJsonElement(serializer, jsonCodec.encodeToJsonElement(serializer, options))
+            aiSdkOutputJson.decodeFromJsonElement(serializer, aiSdkOutputJson.encodeToJsonElement(serializer, options))
         } catch (error: Exception) {
             throw AgentError.InvalidCallOptions(error)
         }

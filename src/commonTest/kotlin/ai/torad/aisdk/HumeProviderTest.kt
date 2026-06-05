@@ -1,4 +1,8 @@
 package ai.torad.aisdk
+import ai.torad.aisdk.providers.HUME_VERSION
+import ai.torad.aisdk.providers.HumeProviderSettings
+import ai.torad.aisdk.providers.createHume
+import ai.torad.aisdk.providers.hume
 
 import io.ktor.http.HttpHeaders
 import kotlinx.coroutines.test.runTest
