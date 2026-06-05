@@ -34,8 +34,8 @@ jobs:
         run: node tools/check-ai-sdk-reference.mjs
       - name: Verify parity ledgers
         run: node tools/generate-parity-ledger.mjs --check
-      - name: Verify tests
-        run: ./gradlew allTests
+      - name: Verify (tests + detekt + ABI + coverage)
+        run: ./gradlew check
       - name: Verify publication metadata
         run: ./gradlew publishToMavenLocal
 

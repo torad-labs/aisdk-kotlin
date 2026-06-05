@@ -2709,7 +2709,6 @@
     <ID>NoUnusedImports:PrepareStepTest.kt$ai.torad.aisdk.PrepareStepTest.kt</ID>
     <ID>NoUnusedImports:ReplicateProvider.kt$ai.torad.aisdk.providers.ReplicateProvider.kt</ID>
     <ID>NoUnusedImports:RevaiProviderTest.kt$ai.torad.aisdk.RevaiProviderTest.kt</ID>
-    <ID>NoUnusedImports:Rsc.kt$ai.torad.aisdk.rsc.Rsc.kt</ID>
     <ID>NoUnusedImports:SubagentTest.kt$ai.torad.aisdk.SubagentTest.kt</ID>
     <ID>NoUnusedImports:ToolApprovalTest.kt$ai.torad.aisdk.ToolApprovalTest.kt</ID>
     <ID>NoUnusedImports:ToolLoopAgentTest.kt$ai.torad.aisdk.ToolLoopAgentTest.kt</ID>

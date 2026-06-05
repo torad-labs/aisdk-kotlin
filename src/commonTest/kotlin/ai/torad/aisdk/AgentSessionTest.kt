@@ -3,6 +3,7 @@ package ai.torad.aisdk
 import ai.torad.aisdk.providers.mockLanguageModelToolThenText
 import ai.torad.aisdk.providers.mockToolInput
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.test.advanceUntilIdle
@@ -15,6 +16,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertNotEquals
 import kotlin.test.assertTrue
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class AgentSessionTest {
 
     @Serializable
@@ -60,7 +62,7 @@ class AgentSessionTest {
     }
 
     @Test
-    fun `streaming preserves the tool's model-visible summary, not the full output`() = runTest {
+    fun `streaming preserves the tool's model-visible summary rather than the full output`() = runTest {
         val tools = toolSet<Unit> {
             tool<WeatherInput, WeatherOutput>(
                 name = "weather",
