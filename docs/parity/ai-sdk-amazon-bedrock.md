@@ -1,7 +1,7 @@
 # @ai-sdk/amazon-bedrock
 
-- Version: 4.0.112
-- Upstream path: `.reference/vercel-ai-sdk-ai-6.0.196/packages/amazon-bedrock`
+- Version: 4.0.113
+- Upstream path: `.reference/vercel-ai-sdk-ai-6.0.197/packages/amazon-bedrock`
 - Target Kotlin module: `:aisdk-provider-amazon-bedrock`
 - Current parity status: ported: createAmazonBedrock/bedrock, createBedrockAnthropic/bedrockAnthropic, createBedrockMantle/bedrockMantle, AmazonBedrockProviderSettings, Bedrock credentials/settings aliases, native SigV4 signing, Converse chat request/response mapping, multimodal message conversion, Bedrock toolConfig/tool-choice mapping, reasoning/service-tier/additionalModelRequestFields mapping, JSON and binary Smithy event-stream decoding, embedding/image/reranking runtime adapters, Mantle OpenAI-compatible chat routing, bearer-token auth, usage/provider metadata, and unsupported/default provider errors are represented as a Kotlin facade folded into the root module; VERSION is exposed as AMAZON_BEDROCK_VERSION until package modules are split
 
@@ -9,9 +9,9 @@
 
 | Subpath | Source | Export count |
 |---|---|---:|
-| `.` | `.reference/vercel-ai-sdk-ai-6.0.196/packages/amazon-bedrock/src/index.ts` | 11 |
-| `./anthropic` | `.reference/vercel-ai-sdk-ai-6.0.196/packages/amazon-bedrock/src/anthropic/index.ts` | 5 |
-| `./mantle` | `.reference/vercel-ai-sdk-ai-6.0.196/packages/amazon-bedrock/src/mantle/index.ts` | 5 |
+| `.` | `.reference/vercel-ai-sdk-ai-6.0.197/packages/amazon-bedrock/src/index.ts` | 11 |
+| `./anthropic` | `.reference/vercel-ai-sdk-ai-6.0.197/packages/amazon-bedrock/src/anthropic/index.ts` | 5 |
+| `./mantle` | `.reference/vercel-ai-sdk-ai-6.0.197/packages/amazon-bedrock/src/mantle/index.ts` | 5 |
 
 ## Public Exports
 
