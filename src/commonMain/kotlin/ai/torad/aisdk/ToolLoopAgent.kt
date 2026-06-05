@@ -543,6 +543,9 @@ public open class ToolLoopAgent<TContext, TOutput>(
                             emit(event)
                         }
                         is StreamEvent.ToolCall -> {
+                            // gap #18: input stream for this id is complete; remove so a
+                            // reused id in a later ToolInputStart doesn't misroute deltas.
+                            toolInputNames.remove(event.toolCallId)
                             val call = ContentPart.ToolCall(event.toolCallId, event.toolName, event.inputJson)
                             stepToolCalls.add(call)
                             toolCallsAllSteps.add(call)
@@ -1202,8 +1205,8 @@ public open class ToolLoopAgent<TContext, TOutput>(
         hooks: AgentCallHooks?,
     ) {
         val event = OnErrorEvent(t, stepNumber, source)
-        runCatching { onError?.invoke(event) }
-        runCatching { hooks?.onError?.invoke(event) }
+        try { onError?.invoke(event) } catch (ce: CancellationException) { throw ce } catch (_: Throwable) {}
+        try { hooks?.onError?.invoke(event) } catch (ce: CancellationException) { throw ce } catch (_: Throwable) {}
     }
 
     /** Single source for the 3 tool-error sites: emit a typed
@@ -1235,7 +1238,13 @@ public open class ToolLoopAgent<TContext, TOutput>(
         } catch (ce: CancellationException) {
             throw ce
         } catch (t: Throwable) {
-            runCatching { onError?.invoke(OnErrorEvent(t, stepNumber, OnErrorEvent.ErrorSource.Hook)) }
+            try {
+                onError?.invoke(OnErrorEvent(t, stepNumber, OnErrorEvent.ErrorSource.Hook))
+            } catch (ce: CancellationException) {
+                throw ce
+            } catch (_: Throwable) {
+                // reporting hook's own failure is best-effort
+            }
         }
     }
 

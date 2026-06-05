@@ -7,7 +7,6 @@ import io.ktor.client.request.request
 import io.ktor.client.request.setBody
 import io.ktor.client.statement.HttpResponse
 import io.ktor.client.statement.bodyAsChannel
-import io.ktor.client.statement.bodyAsText
 import io.ktor.http.ContentType
 import io.ktor.http.HttpMethod
 import io.ktor.http.contentType
@@ -252,7 +251,7 @@ internal fun streamSse(
     statement.execute { response ->
         val flattened = response.flattenedHeaders()
         if (response.status.value !in successStatusRange) {
-            val raw = response.bodyAsText()
+            val raw = response.bodyAsTextCapped(url)
             val parsed = runCatching { json.parseToJsonElement(raw) }.getOrNull()
             errorFromResponse?.invoke(response.status.value, parsed, raw, flattened)?.let { throw it }
             throw apiCallError(

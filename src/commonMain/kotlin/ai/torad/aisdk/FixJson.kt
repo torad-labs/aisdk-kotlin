@@ -203,7 +203,9 @@ public fun fixJson(input: String): String {
             stack.removeLast()
             return
         }
-        lastValidIndex = i
+        // Do NOT advance lastValidIndex here for chars that processValueStart
+        // treats as incomplete (e.g. '-') — let processValueStart decide.
+        // Mirrors processObjectStart which never speculatively advances it.
         processValueStart(char, i, FixJsonState.INSIDE_ARRAY_AFTER_VALUE)
     }
 

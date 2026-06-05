@@ -65,6 +65,7 @@ public class KtorGatewayTransport(
             mapOf(HttpHeaders.Accept to "text/event-stream")
         // Route through the incremental streamSse() helper so SSE events are
         // emitted as they arrive instead of buffering the whole body first.
+        var sseHeaders: Map<String, String> = emptyMap()
         val rawLines = streamSse(
             client = client,
             url = url,
@@ -72,19 +73,16 @@ public class KtorGatewayTransport(
             body = body,
             json = json,
             errorFromResponse = gatewayError,
+            onResponse = { sseHeaders = it },
         )
         val events = parseJsonEventStream(rawLines, jsonSchema<JsonElement>(JsonObject(emptyMap())), json)
         return flow {
-            events.collect { event ->
-                when (event) {
-                    is ParseResult.Success -> emit(streamEventFromJson(event.value))
-                    is ParseResult.Failure -> throw GatewayResponseError(
-                        message = "Failed to parse gateway stream event: ${event.error.message}",
-                        response = JsonPrimitive(event.text),
-                        cause = event.error,
-                    )
-                }
-            }
+            forwardSseEvents(
+                events = events,
+                capturedHeaders = { sseHeaders },
+                parseErrorPrefix = "Failed to parse gateway stream event",
+                onEvent = { emit(streamEventFromJson(it)) },
+            )
         }
     }
 

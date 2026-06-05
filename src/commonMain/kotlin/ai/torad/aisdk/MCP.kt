@@ -27,6 +27,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withTimeout
+import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -64,6 +65,9 @@ private const val JSONRPC_VERSION = "2.0"
 private const val DEFAULT_MCP_CLIENT_NAME = "ai-sdk-mcp-client"
 private const val DEFAULT_MCP_CLIENT_VERSION = "1.0.0"
 private const val MCP_SSE_MAX_DATA_LINES = 1_000
+
+/** Best-effort timeout for the session-cleanup DELETE on HTTP transport close. */
+private const val MCP_CLOSE_DELETE_TIMEOUT_MS = 5_000L
 
 internal val mcpJson: Json = Json {
     ignoreUnknownKeys = true
@@ -443,6 +447,7 @@ public suspend fun createMCPClient(config: MCPClientConfig): MCPClient =
 public suspend fun experimental_createMCPClient(config: MCPClientConfig): MCPClient =
     createMCPClient(config)
 
+@OptIn(ExperimentalAtomicApi::class)
 private class DefaultMCPClient(config: MCPClientConfig) : MCPClient {
     private val transport: MCPTransport = config.transport
     private val onUncaughtError = config.onUncaughtError
@@ -454,7 +459,7 @@ private class DefaultMCPClient(config: MCPClientConfig) : MCPClient {
     private val responseHandlers = mutableMapOf<String, CompletableDeferred<JsonElement>>()
     private val responseHandlersMutex = Mutex()
     private var requestMessageId: Long = 0
-    private var isClosed = true
+    private val isClosed = AtomicBoolean(true)
     private var serverCapabilities = MCPServerCapabilities()
     private var elicitationRequestHandler: (suspend (ElicitationRequest) -> ElicitResult)? = null
     private var _serverInfo = Configuration(name = "", version = "")
@@ -472,7 +477,7 @@ private class DefaultMCPClient(config: MCPClientConfig) : MCPClient {
     suspend fun init() {
         try {
             transport.start()
-            isClosed = false
+            isClosed.store(false)
 
             val result = request(
                 method = "initialize",
@@ -504,7 +509,7 @@ private class DefaultMCPClient(config: MCPClientConfig) : MCPClient {
     }
 
     override suspend fun close() {
-        if (isClosed) return
+        if (isClosed.load()) return
         transport.close()
         onClose()
     }
@@ -650,7 +655,7 @@ private class DefaultMCPClient(config: MCPClientConfig) : MCPClient {
         serializer: KSerializer<T>,
         options: MCPRequestOptions?,
     ): T {
-        if (isClosed) {
+        if (isClosed.load()) {
             throw MCPClientError("Attempted to send a request from a closed client")
         }
         assertCapability(method)
@@ -799,11 +804,20 @@ private class DefaultMCPClient(config: MCPClientConfig) : MCPClient {
     }
 
     private fun onClose() {
-        if (isClosed) return
-        isClosed = true
+        if (!isClosed.compareAndSet(expectedValue = false, newValue = true)) return
         val error = MCPClientError("Connection closed")
-        responseHandlers.values.forEach { it.completeExceptionally(error) }
-        responseHandlers.clear()
+        // onClose is () -> Unit (non-suspend), so we can't call responseHandlersMutex.withLock
+        // directly. Use GlobalScope to run the drain+clear atomically under the mutex.
+        // The coroutine does no I/O and completes in microseconds; its lifetime is bounded.
+        @OptIn(kotlinx.coroutines.DelicateCoroutinesApi::class)
+        kotlinx.coroutines.GlobalScope.launch {
+            val snapshot = responseHandlersMutex.withLock {
+                val copy = responseHandlers.values.toList()
+                responseHandlers.clear()
+                copy
+            }
+            snapshot.forEach { it.completeExceptionally(error) }
+        }
     }
 
     private fun onError(error: Throwable) {
@@ -1619,10 +1633,12 @@ public class HttpMCPTransport(
         if (closed) return
         try {
             sessionId?.let { session ->
-                client.request(url) {
-                    method = HttpMethod.Delete
-                    mcpCommonHeaders(emptyMap()).forEach { (name, value) -> header(name, value) }
-                    header("mcp-session-id", session)
+                withTimeoutOrNull(MCP_CLOSE_DELETE_TIMEOUT_MS) {
+                    client.request(url) {
+                        method = HttpMethod.Delete
+                        mcpCommonHeaders(emptyMap()).forEach { (name, value) -> header(name, value) }
+                        header("mcp-session-id", session)
+                    }
                 }
             }
         } catch (error: CancellationException) {
@@ -1630,10 +1646,11 @@ public class HttpMCPTransport(
         } catch (_: Throwable) {
             // Best-effort session teardown; ignore transport errors on close.
         }
-        closed = true
-        inboundRetryRequested = false
-        val job = inboundJob
-        inboundJob = null
+        val job = inboundMutex.withLock {
+            closed = true
+            inboundRetryRequested = false
+            inboundJob.also { inboundJob = null }
+        }
         scope?.cancel()
         scope = null
         job?.cancelAndJoin()
@@ -1777,8 +1794,15 @@ public class SseMCPTransport(
     private var readerJob: Job? = null
     private val connected = AtomicBoolean(false)
 
+    // CAS guard: only the caller that flips starting from false→true proceeds to launch a reader.
+    private val starting = AtomicBoolean(false)
+
+    // Concurrent-start guard + SSE handshake + per-event handling + teardown; the
+    // branchiness is inherent to a transport's start path.
+    @Suppress("CyclomaticComplexMethod")
     override suspend fun start() {
         if (connected.load()) return
+        if (!starting.compareAndSet(expectedValue = false, newValue = true)) return
         val connectionScope = CoroutineScope(SupervisorJob() + engineContext)
         scope = connectionScope
         val ready = CompletableDeferred<Unit>()
@@ -1820,11 +1844,13 @@ public class SseMCPTransport(
         }
     }
 
-    private fun teardownReader() {
-        readerJob?.cancel()
-        scope?.cancel()
+    private suspend fun teardownReader() {
+        val job = readerJob
         readerJob = null
+        scope?.cancel()
         scope = null
+        starting.store(false)
+        job?.cancelAndJoin()
     }
 
     private suspend fun openSseConnection(triedAuth: Boolean): HttpResponse {
@@ -1873,6 +1899,7 @@ public class SseMCPTransport(
 
     override suspend fun close() {
         connected.store(false)
+        starting.store(false)
         val job = readerJob
         readerJob = null
         scope?.cancel()
