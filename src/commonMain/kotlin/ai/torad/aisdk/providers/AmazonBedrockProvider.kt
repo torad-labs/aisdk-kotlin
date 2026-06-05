@@ -451,7 +451,6 @@ private data class BedrockPreparedImageRequest(
 
 private data class BedrockHttpResponse(
     val value: JsonElement,
-    val rawText: String,
     val headers: Map<String, String>,
 )
 
@@ -1146,7 +1145,6 @@ private suspend fun bedrockPostJson(
     }
     return BedrockHttpResponse(
         value = if (parseJson && raw.isNotBlank()) aiSdkJson.parseToJsonElement(raw) else JsonObject(emptyMap()),
-        rawText = raw,
         headers = responseHeaders,
     )
 }
@@ -1242,7 +1240,15 @@ private suspend fun ByteReadChannel.readBedrockFrame(count: Int): ByteArray? {
     var read = 0
     while (read < count) {
         val n = readAvailable(out, read, count - read)
-        if (n < 0) return null
+        if (n < 0) {
+            // A clean EOF at a frame boundary (read == 0) is the normal end of
+            // the stream. EOF after a partial read means the server cut a frame
+            // mid-flight — surface it instead of silently returning a truncated
+            // generation. (readAvailable suspends via awaitContent when the
+            // buffer is momentarily empty, so this never busy-spins.)
+            if (read == 0) return null
+            throw AiSdkException("Bedrock event stream truncated: got $read of $count frame bytes before EOF")
+        }
         read += n
     }
     return out
