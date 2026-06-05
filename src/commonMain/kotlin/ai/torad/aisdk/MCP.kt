@@ -47,6 +47,7 @@ import kotlinx.serialization.json.encodeToJsonElement
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlin.concurrent.atomics.AtomicBoolean
+import kotlin.concurrent.atomics.AtomicReference
 import kotlin.concurrent.atomics.ExperimentalAtomicApi
 import kotlin.coroutines.CoroutineContext
 import kotlin.coroutines.cancellation.CancellationException
@@ -1591,6 +1592,93 @@ public fun createMcpTransport(client: HttpClient, config: MCPTransportConfig): M
             SseMCPTransport(client, config.url, config.headers, config.authProvider, config.engineContext)
     }
 
+/**
+ * Single owner of an MCP transport's connection lifecycle. The connection state
+ * and its [CoroutineScope] + reader [Job] move together through one atomic
+ * reference, so a lifecycle flag can never drift from the job's actual existence
+ * — the structural fix for the recurring transport start/close/reader-teardown
+ * races (a flag set without the job, a job left running after a flag flip, a
+ * guard flag stuck after the reader died). Each transport keeps its own protocol
+ * logic (handshake, retry, subprocess) and delegates only scope/reader ownership
+ * here. The five-state contract is: Idle → Active(scope, reader?) → Idle (reader
+ * died, reconnectable) or → Closed (permanent).
+ */
+@OptIn(ExperimentalAtomicApi::class)
+internal class McpConnectionLifecycle {
+    private sealed interface State {
+        data object Idle : State
+        class Active(val scope: CoroutineScope, val reader: Job?) : State
+        data object Closed : State
+    }
+
+    private val state = AtomicReference<State>(State.Idle)
+
+    /** True only while a connection is live (between a winning [begin] and a [close]/[onReaderExited]). */
+    val isActive: Boolean get() = state.load() is State.Active
+
+    /**
+     * Attempt Idle → Active. The single caller that wins gets the freshly built
+     * [CoroutineScope]; any caller that finds the lifecycle already Active or
+     * Closed gets null. This is the concurrent-start / already-started guard.
+     * The scope is built by [scopeFactory] only after the transition is claimed,
+     * and cancelled if a CAS race is lost.
+     */
+    fun begin(scopeFactory: () -> CoroutineScope): CoroutineScope? {
+        val current = state.load()
+        if (current !is State.Idle) return null
+        val scope = scopeFactory()
+        return if (state.compareAndSet(current, State.Active(scope, reader = null))) {
+            scope
+        } else {
+            scope.cancel()
+            null
+        }
+    }
+
+    /** Publish (or replace, e.g. on an inbound retry) the reader job while Active; no-op otherwise. */
+    fun setReader(job: Job?) {
+        while (true) {
+            val current = state.load() as? State.Active ?: return
+            if (state.compareAndSet(current, State.Active(current.scope, job))) return
+        }
+    }
+
+    /** The live scope while Active, else null. */
+    fun scopeOrNull(): CoroutineScope? = (state.load() as? State.Active)?.scope
+
+    /**
+     * Signal that the reader exited on its own (connection dropped). Active → Idle
+     * so a fresh [begin] can reconnect, returning the now-defunct scope for the
+     * caller to cancel. Returns null (no-op) once [close] has won — close stays
+     * authoritative. Mutual exclusion with [close] is what makes onClose fire
+     * exactly once.
+     */
+    fun onReaderExited(): CoroutineScope? {
+        while (true) {
+            val current = state.load()
+            if (current !is State.Active) return null
+            if (state.compareAndSet(current, State.Idle)) return current.scope
+        }
+    }
+
+    /**
+     * Active → Closed (permanent), handing back (scope, reader) for the caller to
+     * cancel and join exactly once. Idempotent: returns null if not Active (a
+     * never-started lifecycle still transitions Idle → Closed). When this returns
+     * non-null the caller owns firing onClose; when it returns null either the
+     * reader already cleaned up (and fired onClose) or close already ran.
+     */
+    fun close(): Pair<CoroutineScope, Job?>? {
+        while (true) {
+            val current = state.load()
+            if (current is State.Closed) return null
+            if (state.compareAndSet(current, State.Closed)) {
+                return (current as? State.Active)?.let { it.scope to it.reader }
+            }
+        }
+    }
+}
+
 public class HttpMCPTransport(
     private val client: HttpClient,
     private val url: String,
@@ -1603,34 +1691,30 @@ public class HttpMCPTransport(
     override var onMessage: (suspend (JSONRPCMessage) -> Unit)? = null
     override var protocolVersion: String? = null
 
+    private val lifecycle = McpConnectionLifecycle()
     private var sessionId: String? = null
-    private var scope: CoroutineScope? = null
     private var inboundJob: Job? = null
     private var inboundRetryRequested: Boolean = false
     private val inboundMutex = Mutex()
-    private var closed = true
 
     override suspend fun start() {
-        val newScope = inboundMutex.withLock {
-            if (!closed) throw MCPClientError("MCP HTTP Transport Error: Transport already started.")
-            closed = false
-            CoroutineScope(SupervisorJob() + engineContext).also { scope = it }
-        }
-        // If close() raced and already cancelled us, tear down and throw.
-        if (closed) {
-            newScope.cancel()
-            throw MCPClientError("MCP HTTP Transport Error: Transport was closed before start() completed")
-        }
+        // begin() atomically claims Idle→Active and is the already-started guard.
+        // A racing close() either hasn't run (we win) or transitions straight to
+        // Closed, in which case ensureInboundSse() sees a null scope and no-ops.
+        lifecycle.begin { CoroutineScope(SupervisorJob() + engineContext) }
+            ?: throw MCPClientError("MCP HTTP Transport Error: Transport already started.")
         ensureInboundSse()
     }
 
     override suspend fun send(message: JSONRPCMessage) {
-        if (closed) throw MCPClientError("MCP HTTP Transport Error: Not connected")
+        if (!lifecycle.isActive) throw MCPClientError("MCP HTTP Transport Error: Not connected")
         postMessage(message, triedAuth = false)
     }
 
     override suspend fun close() {
-        if (closed) return
+        // Atomically claim the close (idempotent; no double-close TOCTOU) — only
+        // the winning caller runs the teardown below.
+        val (connectionScope, _) = lifecycle.close() ?: return
         try {
             sessionId?.let { session ->
                 withTimeoutOrNull(MCP_CLOSE_DELETE_TIMEOUT_MS) {
@@ -1647,12 +1731,10 @@ public class HttpMCPTransport(
             // Best-effort session teardown; ignore transport errors on close.
         }
         val job = inboundMutex.withLock {
-            closed = true
             inboundRetryRequested = false
             inboundJob.also { inboundJob = null }
         }
-        scope?.cancel()
-        scope = null
+        connectionScope.cancel()
         job?.cancelAndJoin()
         onClose?.invoke()
     }
@@ -1709,7 +1791,7 @@ public class HttpMCPTransport(
     }
 
     private suspend fun ensureInboundSse() {
-        val activeScope = scope ?: return
+        val activeScope = lifecycle.scopeOrNull() ?: return
         inboundMutex.withLock {
             val current = inboundJob
             if (current == null || current.isCompleted) {
@@ -1747,12 +1829,12 @@ public class HttpMCPTransport(
             }
         } catch (error: Throwable) {
             if (error is CancellationException) throw error
-            if (!closed) onError?.invoke(error)
+            if (lifecycle.isActive) onError?.invoke(error)
         } finally {
             var restart = false
             inboundMutex.withLock {
                 inboundJob = null
-                if (!closed && inboundRetryRequested) {
+                if (lifecycle.isActive && inboundRetryRequested) {
                     inboundRetryRequested = false
                     restart = true
                 }
@@ -1776,7 +1858,6 @@ public class HttpMCPTransport(
     }
 }
 
-@OptIn(ExperimentalAtomicApi::class)
 public class SseMCPTransport(
     private val client: HttpClient,
     private val url: String,
@@ -1789,28 +1870,28 @@ public class SseMCPTransport(
     override var onMessage: (suspend (JSONRPCMessage) -> Unit)? = null
     override var protocolVersion: String? = null
 
+    private val lifecycle = McpConnectionLifecycle()
     private var endpoint: String? = null
-    private var scope: CoroutineScope? = null
-    private var readerJob: Job? = null
-    private val connected = AtomicBoolean(false)
 
-    // CAS guard: only the caller that flips starting from false→true proceeds to launch a reader.
-    private val starting = AtomicBoolean(false)
-
-    // Concurrent-start guard + SSE handshake + per-event handling + teardown; the
-    // branchiness is inherent to a transport's start path.
+    // SSE handshake + per-event dispatch + reader teardown; the branchiness is
+    // inherent to a transport's start path.
     @Suppress("CyclomaticComplexMethod")
     override suspend fun start() {
-        if (connected.load()) return
-        if (!starting.compareAndSet(expectedValue = false, newValue = true)) return
-        val connectionScope = CoroutineScope(SupervisorJob() + engineContext)
-        scope = connectionScope
+        // begin() is the concurrent-start / already-connected guard: exactly one
+        // caller wins Idle→Active and receives the scope; others get null and return.
+        val connectionScope = lifecycle.begin { CoroutineScope(SupervisorJob() + engineContext) } ?: return
         val ready = CompletableDeferred<Unit>()
-        readerJob = connectionScope.launch {
+        val reader = connectionScope.launch {
+            // Single-coroutine local: the handshake completed at least once. Drives
+            // both the onError and onClose "was it ever connected?" decisions
+            // (replacing the old `connected` flag) without an experimental API.
+            var established = false
             try {
                 val response = openSseConnection(triedAuth = false)
                 if (response.status.value !in 200..299) {
-                    throw MCPClientError("MCP SSE Transport Error: ${response.status.value} ${response.status.description}")
+                    throw MCPClientError(
+                        "MCP SSE Transport Error: ${response.status.value} ${response.status.description}",
+                    )
                 }
                 processMcpSse(response.bodyAsChannel()) { event ->
                     when (event.event) {
@@ -1820,42 +1901,41 @@ public class SseMCPTransport(
                                     throw MCPClientError("MCP SSE Transport Error: Endpoint origin does not match connection origin: ${mcpOrigin(resolved)}")
                                 }
                             }
-                            connected.store(true)
+                            established = true
                             if (!ready.isCompleted) ready.complete(Unit)
                         }
                         "message" -> onMessage?.invoke(parseJSONRPCMessage(event.data))
                     }
                 }
-                if (connected.load()) {
-                    connected.store(false)
-                    onClose?.invoke()
-                }
             } catch (error: Throwable) {
                 if (!ready.isCompleted) ready.completeExceptionally(error)
                 if (error is CancellationException) throw error
-                if (connected.load()) onError?.invoke(error)
+                if (established) onError?.invoke(error)
+            } finally {
+                // Reader exited. Release the lifecycle (Active→Idle) so a later
+                // start() can reconnect, and cancel the defunct scope. Fire onClose
+                // only if the connection had been established (matching the prior
+                // "if connected" contract); a pre-handshake failure surfaces via the
+                // thrown start(). If close() already won the transition this is a
+                // no-op and close() owns onClose — so it fires exactly once.
+                // `endpoint` is intentionally NOT cleared here: the discovered
+                // endpoint stays usable for outbound POSTs after the inbound SSE
+                // stream ends (it is cleared only on close()).
+                lifecycle.onReaderExited()?.let { deadScope ->
+                    deadScope.cancel()
+                    if (established) onClose?.invoke()
+                }
             }
         }
+        lifecycle.setReader(reader)
         try {
             ready.await()
         } catch (error: Throwable) {
-            teardownReader()
+            // Pre-handshake failure: the reader's finally returns the lifecycle to
+            // Idle (startable again); join it so cleanup completes, then rethrow.
+            reader.cancelAndJoin()
             throw error
         }
-        // Start committed successfully. Release the guard so a later reader
-        // death (which resets `connected`) doesn't leave `starting` stuck true
-        // and permanently block a fresh start(); the connected-check at the top
-        // handles the "already running" case while the reader is alive.
-        starting.store(false)
-    }
-
-    private suspend fun teardownReader() {
-        val job = readerJob
-        readerJob = null
-        scope?.cancel()
-        scope = null
-        starting.store(false)
-        job?.cancelAndJoin()
     }
 
     private suspend fun openSseConnection(triedAuth: Boolean): HttpResponse {
@@ -1903,13 +1983,12 @@ public class SseMCPTransport(
     }
 
     override suspend fun close() {
-        connected.store(false)
-        starting.store(false)
-        val job = readerJob
-        readerJob = null
-        scope?.cancel()
-        scope = null
-        job?.cancelAndJoin()
+        endpoint = null
+        // close() wins Active→Closed and owns the teardown; if the reader already
+        // died (Idle) this is a no-op and the reader fired onClose.
+        val (scope, reader) = lifecycle.close() ?: return
+        scope.cancel()
+        reader?.cancelAndJoin()
         onClose?.invoke()
     }
 
@@ -2017,34 +2096,39 @@ public class Experimental_StdioMCPTransport(
     override var onMessage: (suspend (JSONRPCMessage) -> Unit)? = null
     override var protocolVersion: String? = null
 
+    private val lifecycle = McpConnectionLifecycle()
     private var process: MCPStdioProcess? = null
-    private var scope: CoroutineScope? = null
-    private var readJob: Job? = null
 
     override suspend fun start() {
-        if (process != null) throw MCPClientError("StdioMCPTransport already started.")
+        val readerScope = lifecycle.begin { CoroutineScope(SupervisorJob() + engineContext) }
+            ?: throw MCPClientError("StdioMCPTransport already started.")
         val started = createMCPStdioProcess(config)
         process = started
-        val readerScope = CoroutineScope(SupervisorJob() + engineContext)
-        scope = readerScope
-        readJob = readerScope.launch {
-            try {
-                while (true) {
-                    val line = started.readLine() ?: break
-                    try {
-                        onMessage?.invoke(parseJSONRPCMessage(line))
-                    } catch (error: Throwable) {
-                        if (error is CancellationException) throw error
-                        onError?.invoke(error)
+        lifecycle.setReader(
+            readerScope.launch {
+                try {
+                    while (true) {
+                        val line = started.readLine() ?: break
+                        try {
+                            onMessage?.invoke(parseJSONRPCMessage(line))
+                        } catch (error: Throwable) {
+                            if (error is CancellationException) throw error
+                            onError?.invoke(error)
+                        }
+                    }
+                } catch (error: Throwable) {
+                    if (error is CancellationException) throw error
+                    onError?.invoke(error)
+                } finally {
+                    // Reader/process exited. Release the lifecycle and fire onClose
+                    // unless close() already won the transition (it then owns onClose).
+                    lifecycle.onReaderExited()?.let { deadScope ->
+                        deadScope.cancel()
+                        onClose?.invoke()
                     }
                 }
-            } catch (error: Throwable) {
-                if (error is CancellationException) throw error
-                onError?.invoke(error)
-            } finally {
-                onClose?.invoke()
-            }
-        }
+            },
+        )
     }
 
     override suspend fun send(message: JSONRPCMessage) {
@@ -2059,14 +2143,20 @@ public class Experimental_StdioMCPTransport(
     }
 
     override suspend fun close() {
-        val job = readJob
-        readJob = null
-        scope?.cancel()
-        scope = null
+        val handback = lifecycle.close()
         val p = process
         process = null
+        if (handback == null) {
+            // Reader already exited (or never started): just release the process.
+            p?.close()
+            return
+        }
+        val (scope, reader) = handback
+        // Cancel the scope, close the process to unblock a parked readLine, then
+        // join — the ordering that prevents close() hanging on the blocking read.
+        scope.cancel()
         p?.close()
-        job?.cancelAndJoin()
+        reader?.cancelAndJoin()
         onClose?.invoke()
     }
 }
