@@ -4,6 +4,7 @@ import io.ktor.client.HttpClient
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpMethod
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.flow
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
@@ -11,7 +12,6 @@ import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.booleanOrNull
-import kotlinx.serialization.json.buildJsonArray
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.doubleOrNull
@@ -58,25 +58,32 @@ public class KtorGatewayTransport(
         context: GatewayRequestContext,
         modelId: GatewayModelId,
         params: LanguageModelCallParams,
-    ): Flow<StreamEvent> = flow {
+    ): Flow<StreamEvent> {
         val body = languageModelRequestBody(params)
-        val response = postJson(
-            context = context,
-            path = "/language-model",
+        val url = context.baseUrl.trimEnd('/') + "/language-model"
+        val headers = context.headers +
+            languageModelHeaders(modelId, streaming = true) +
+            mapOf(HttpHeaders.Accept to "text/event-stream")
+        // Route through the incremental streamSse() helper so SSE events are
+        // emitted as they arrive instead of buffering the whole body first.
+        var sseHeaders: Map<String, String> = emptyMap()
+        val rawLines = streamSse(
+            client = client,
+            url = url,
+            headers = headers,
             body = body,
-            headers = languageModelHeaders(modelId, streaming = true) + mapOf(HttpHeaders.Accept to "text/event-stream"),
-            parseJson = false,
+            json = json,
+            errorFromResponse = gatewayError,
+            onResponse = { sseHeaders = it },
         )
-        val events = parseJsonEventStream(response.rawText, jsonSchema<JsonElement>(JsonObject(emptyMap())), json)
-        for (event in events) {
-            when (event) {
-                is ParseResult.Success -> emit(streamEventFromJson(event.value))
-                is ParseResult.Failure -> throw GatewayResponseError(
-                    message = "Failed to parse gateway stream event: ${event.error.message}",
-                    response = JsonPrimitive(event.text),
-                    cause = event.error,
-                )
-            }
+        val events = parseJsonEventStream(rawLines, jsonSchema<JsonElement>(JsonObject(emptyMap())), json)
+        return flow {
+            forwardSseEvents(
+                events = events,
+                capturedHeaders = { sseHeaders },
+                parseErrorPrefix = "Failed to parse gateway stream event",
+                onEvent = { emit(streamEventFromJson(it)) },
+            )
         }
     }
 
@@ -136,7 +143,11 @@ public class KtorGatewayTransport(
                 GeneratedFile(mediaType = "image/png", base64 = it.jsonPrimitive.content)
             },
             warnings = callWarnings(value["warnings"]),
-            response = LanguageModelResponseMetadata(modelId = modelId, headers = response.headers, body = response.value),
+            response = LanguageModelResponseMetadata(
+                modelId = modelId,
+                headers = response.headers,
+                body = response.value
+            ),
             providerMetadata = jsonObjectMap(value["providerMetadata"]),
         )
     }
@@ -172,28 +183,35 @@ public class KtorGatewayTransport(
                 )
             }
         }
-        val response = postJson(
-            context = context,
-            path = "/video-model",
-            body = body,
-            headers = mapOf(
+        // Consume the SSE response incrementally via streamSse() and stop at the
+        // first data event — firstOrNull() cancels the upstream, whose finally
+        // releases the connection — instead of buffering the whole body first.
+        var sseHeaders: Map<String, String> = emptyMap()
+        val rawLines = streamSse(
+            client = client,
+            url = context.baseUrl.trimEnd('/') + "/video-model",
+            headers = context.headers + mapOf(
                 "ai-video-model-specification-version" to "3",
                 "ai-model-id" to modelId,
                 HttpHeaders.Accept to "text/event-stream",
             ) + params.headers,
-            parseJson = false,
+            body = body,
+            json = json,
+            errorFromResponse = gatewayError,
+            onResponse = { sseHeaders = it },
         )
-        val event = parseJsonEventStream(response.rawText, jsonSchema<JsonElement>(JsonObject(emptyMap())), json)
-            .firstNotNullOfOrNull { result ->
-                when (result) {
-                    is ParseResult.Success -> result.value.jsonObject
-                    is ParseResult.Failure -> throw GatewayResponseError(
-                        message = "Failed to parse gateway video event: ${result.error.message}",
-                        response = JsonPrimitive(result.text),
-                        cause = result.error,
-                    )
-                }
-            } ?: throw GatewayResponseError("SSE stream ended without a data event")
+        val event = when (
+            val first = parseJsonEventStream(rawLines, jsonSchema<JsonElement>(JsonObject(emptyMap())), json)
+                .firstOrNull()
+        ) {
+            is ParseResult.Success -> first.value.jsonObject
+            is ParseResult.Failure -> throw GatewayResponseError(
+                message = "Failed to parse gateway video event: ${first.error.message}",
+                response = JsonPrimitive(first.text),
+                cause = first.error,
+            )
+            null -> throw GatewayResponseError("SSE stream ended without a data event")
+        }
         if (event["type"]?.jsonPrimitive?.contentOrNull == "error") {
             throw GatewayResponseError(
                 message = event["message"]?.jsonPrimitive?.contentOrNull ?: "Gateway video generation failed",
@@ -210,7 +228,7 @@ public class KtorGatewayTransport(
                 )
             },
             warnings = callWarnings(event["warnings"]),
-            response = LanguageModelResponseMetadata(modelId = modelId, headers = response.headers),
+            response = LanguageModelResponseMetadata(modelId = modelId, headers = sseHeaders),
             providerMetadata = jsonObjectMap(event["providerMetadata"]),
         )
     }
@@ -326,7 +344,11 @@ public class KtorGatewayTransport(
                     inputTokens = jsonIntOrNull(obj, "input_tokens", "inputTokens"),
                     outputTokens = jsonIntOrNull(obj, "output_tokens", "outputTokens"),
                     cachedInputTokens = jsonIntOrNull(obj, "cached_input_tokens", "cachedInputTokens"),
-                    cacheCreationInputTokens = jsonIntOrNull(obj, "cache_creation_input_tokens", "cacheCreationInputTokens"),
+                    cacheCreationInputTokens = jsonIntOrNull(
+                        obj,
+                        "cache_creation_input_tokens",
+                        "cacheCreationInputTokens"
+                    ),
                     reasoningTokens = jsonIntOrNull(obj, "reasoning_tokens", "reasoningTokens"),
                     requestCount = jsonIntOrNull(obj, "request_count", "requestCount"),
                 )
@@ -452,8 +474,6 @@ public class KtorGatewayTransport(
     }
 }
 
-
-
 private fun modelMessageJson(message: ModelMessage): JsonObject = buildJsonObject {
     put("role", JsonPrimitive(message.role.name.lowercase()))
     put("content", JsonArray(message.content.map(::contentPartJson)))
@@ -497,7 +517,9 @@ private fun contentPartJson(part: ContentPart): JsonObject = buildJsonObject {
             part.approvalId?.let { put("approvalId", JsonPrimitive(it)) }
         }
         is ContentPart.Source -> {
-            put("type", JsonPrimitive(if (part.sourceType == StreamEvent.SourcePart.SourceType.Url) "source-url" else "source-document"))
+            val sourceType =
+                if (part.sourceType == StreamEvent.SourcePart.SourceType.Url) "source-url" else "source-document"
+            put("type", JsonPrimitive(sourceType))
             part.url?.let { put("url", JsonPrimitive(it)) }
             part.title?.let { put("title", JsonPrimitive(it)) }
         }
@@ -611,18 +633,24 @@ private fun streamEventFromJson(value: JsonElement): StreamEvent {
             headers = (obj["headers"] as? JsonObject)?.mapValues { it.value.jsonPrimitive.content }.orEmpty(),
             body = obj["body"],
         )
-        "text-start" -> StreamEvent.TextStart(WireDecoder.optionalString(obj, "id", "gateway", "stream event") ?: "text")
+        "text-start" -> StreamEvent.TextStart(
+            WireDecoder.optionalString(obj, "id", "gateway", "stream event") ?: "text"
+        )
         "text-delta" -> StreamEvent.TextDelta(
             id = WireDecoder.optionalString(obj, "id", "gateway", "stream event") ?: "text",
             text = requiredOneOfString(obj, "gateway", "stream event", "delta", "text"),
         )
         "text-end" -> StreamEvent.TextEnd(WireDecoder.optionalString(obj, "id", "gateway", "stream event") ?: "text")
-        "reasoning-start" -> StreamEvent.ReasoningStart(WireDecoder.optionalString(obj, "id", "gateway", "stream event") ?: "reasoning")
+        "reasoning-start" -> StreamEvent.ReasoningStart(
+            WireDecoder.optionalString(obj, "id", "gateway", "stream event") ?: "reasoning"
+        )
         "reasoning-delta" -> StreamEvent.ReasoningDelta(
             id = WireDecoder.optionalString(obj, "id", "gateway", "stream event") ?: "reasoning",
             text = requiredOneOfString(obj, "gateway", "stream event", "delta", "text"),
         )
-        "reasoning-end" -> StreamEvent.ReasoningEnd(WireDecoder.optionalString(obj, "id", "gateway", "stream event") ?: "reasoning")
+        "reasoning-end" -> StreamEvent.ReasoningEnd(
+            WireDecoder.optionalString(obj, "id", "gateway", "stream event") ?: "reasoning"
+        )
         "tool-input-start" -> StreamEvent.ToolInputStart(
             id = requiredOneOfString(obj, "gateway", "stream event", "id", "toolCallId"),
             toolName = WireDecoder.requiredString(obj, "toolName", "gateway", "stream event"),
@@ -662,10 +690,12 @@ private fun streamEventFromJson(value: JsonElement): StreamEvent {
         )
         "error" -> StreamEvent.Error(WireDecoder.requiredString(obj, "message", "gateway", "stream event"))
         "raw" -> StreamEvent.Raw(obj["rawValue"] ?: value)
-        else -> StreamEvent.Raw(buildJsonObject {
-            put("type", JsonPrimitive(type))
-            put("data", value)
-        })
+        else -> StreamEvent.Raw(
+            buildJsonObject {
+                put("type", JsonPrimitive(type))
+                put("data", value)
+            }
+        )
     }
 }
 
@@ -753,7 +783,12 @@ private fun gatewayErrorFromResponse(statusCode: Int, raw: String): GatewayError
         "rate_limit_exceeded" -> GatewayRateLimitError(message, statusCode, generationId)
         "model_not_found" -> GatewayModelNotFoundError(message, statusCode, generationId = generationId)
         "internal_server_error" -> GatewayInternalServerError(message, statusCode, generationId)
-        else -> GatewayResponseError(message = message, statusCode = statusCode, response = parsed, generationId = generationId)
+        else -> GatewayResponseError(
+            message = message,
+            statusCode = statusCode,
+            response = parsed,
+            generationId = generationId
+        )
     }
 }
 
@@ -768,4 +803,3 @@ private fun jsonInt(obj: JsonObject, vararg names: String): Int =
 
 private fun jsonIntOrNull(obj: JsonObject, vararg names: String): Int? =
     names.firstNotNullOfOrNull { name -> obj[name]?.jsonPrimitive?.intOrNull }
-

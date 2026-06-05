@@ -7,17 +7,47 @@ import io.ktor.client.request.request
 import io.ktor.client.request.setBody
 import io.ktor.client.statement.HttpResponse
 import io.ktor.client.statement.bodyAsChannel
-import io.ktor.client.statement.bodyAsText
 import io.ktor.http.ContentType
 import io.ktor.http.HttpMethod
 import io.ktor.http.contentType
+import io.ktor.utils.io.readAvailable
 import io.ktor.utils.io.readLine
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.FlowCollector
 import kotlinx.coroutines.flow.channelFlow
+import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeout
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
+
+/** Maximum response body size for non-streaming requests (50 MB). */
+internal const val MAX_RESPONSE_BODY_BYTES: Long = 50L * 1024 * 1024
+
+/**
+ * Default ceiling for a single non-streaming HTTP round-trip (connect + send +
+ * read the full body). Generous so it never trips a healthy slow endpoint; it
+ * exists to stop a stalled server from hanging the caller forever. Streaming
+ * (`streamSse`) is intentionally NOT bounded by this — a long-lived stream is
+ * not a stalled request.
+ */
+internal const val DEFAULT_REQUEST_TIMEOUT_MS: Long = 120_000L
+
+/**
+ * Run [block] under a **real-time** timeout, regardless of the caller's
+ * dispatcher. `withTimeout` alone measures the test scheduler's *virtual* clock
+ * under `runTest`, so a real network call (which completes on a real dispatcher)
+ * loses the race to a virtual deadline that fires instantly. Hopping to
+ * [Dispatchers.Default] gives `withTimeout` a real `Delay`, so the timeout means
+ * wall-clock seconds in production and never spuriously fires in tests whose
+ * mocks respond promptly. Used for non-streaming requests and MCP handshakes.
+ */
+internal suspend fun <T> withRealTimeout(timeoutMs: Long, block: suspend () -> T): T =
+    withContext(Dispatchers.Default) { withTimeout(timeoutMs) { block() } }
+
+/** Chunk size used when reading a response body with a cap check. */
+private const val BODY_READ_CHUNK_SIZE: Int = 8192
 
 /** HTTP 2xx success range — the contract for "the request succeeded". */
 private val successStatusRange = 200..299
@@ -100,23 +130,67 @@ internal suspend fun requestJson(
     requestBodyValues: Any? = body,
     errorMessage: ErrorMessageExtractor = ::defaultErrorMessage,
     errorFromResponse: ResponseErrorFactory? = null,
-): HttpJsonResponse {
-    val response = client.request(url) {
-        this.method = method
-        if (body != null) {
-            contentType(ContentType.Application.Json)
-            setBody(json.encodeToString(JsonElement.serializer(), body))
+): HttpJsonResponse =
+    // Bound the whole non-streaming round-trip (connect + send + read body) so a
+    // stalled server can't hang the caller forever. Real-time so runTest mocks,
+    // which respond promptly, never trip it.
+    withRealTimeout(DEFAULT_REQUEST_TIMEOUT_MS) {
+        val response = client.request(url) {
+            this.method = method
+            if (body != null) {
+                contentType(ContentType.Application.Json)
+                setBody(json.encodeToString(JsonElement.serializer(), body))
+            }
+            headers.forEach { (name, value) -> header(name, value) }
         }
-        headers.forEach { (name, value) -> header(name, value) }
+        response.toJsonResponse(
+            url = url,
+            json = json,
+            parseJson = parseJson,
+            requestBodyValues = requestBodyValues,
+            errorMessage = errorMessage,
+            errorFromResponse = errorFromResponse,
+        )
     }
-    return response.toJsonResponse(
-        url = url,
-        json = json,
-        parseJson = parseJson,
-        requestBodyValues = requestBodyValues,
-        errorMessage = errorMessage,
-        errorFromResponse = errorFromResponse,
-    )
+
+/**
+ * Reads the response body up to [maxBytes], throwing an [APICallError] if the
+ * body exceeds that limit rather than buffering the whole thing. The limit
+ * defends against hostile or misconfigured endpoints on non-streaming paths.
+ *
+ * Uses [bodyAsChannel] + [readAvailable] in 8 KiB chunks, so in the common
+ * case (small JSON bodies) no large allocation happens at all.
+ */
+private suspend fun HttpResponse.bodyAsTextCapped(
+    url: String,
+    maxBytes: Long = MAX_RESPONSE_BODY_BYTES,
+): String {
+    val channel = bodyAsChannel()
+    val chunk = ByteArray(BODY_READ_CHUNK_SIZE)
+    val acc = ArrayList<ByteArray>()
+    var totalRead = 0L
+    while (true) {
+        val n = channel.readAvailable(chunk, 0, BODY_READ_CHUNK_SIZE)
+        if (n <= 0) break
+        totalRead += n
+        if (totalRead > maxBytes) {
+            throw APICallError(
+                message = "Response body exceeded $maxBytes bytes limit from $url",
+                url = url,
+                statusCode = status.value,
+                responseHeaders = flattenedHeaders(),
+                isRetryable = false,
+            )
+        }
+        acc.add(chunk.copyOf(n))
+    }
+    val full = ByteArray(totalRead.toInt())
+    var pos = 0
+    for (slice in acc) {
+        slice.copyInto(full, pos)
+        pos += slice.size
+    }
+    return full.decodeToString()
 }
 
 /**
@@ -132,7 +206,7 @@ internal suspend fun HttpResponse.toJsonResponse(
     errorMessage: ErrorMessageExtractor = ::defaultErrorMessage,
     errorFromResponse: ResponseErrorFactory? = null,
 ): HttpJsonResponse {
-    val raw = bodyAsText()
+    val raw = bodyAsTextCapped(url)
     val flattened = flattenedHeaders()
     if (status.value !in successStatusRange) {
         val parsed = runCatching { json.parseToJsonElement(raw) }.getOrNull()
@@ -205,7 +279,7 @@ internal fun streamSse(
     statement.execute { response ->
         val flattened = response.flattenedHeaders()
         if (response.status.value !in successStatusRange) {
-            val raw = response.bodyAsText()
+            val raw = response.bodyAsTextCapped(url)
             val parsed = runCatching { json.parseToJsonElement(raw) }.getOrNull()
             errorFromResponse?.invoke(response.status.value, parsed, raw, flattened)?.let { throw it }
             throw apiCallError(
@@ -219,9 +293,17 @@ internal fun streamSse(
         }
         onResponse(flattened)
         val channel = response.bodyAsChannel()
-        while (true) {
-            val line = channel.readLine() ?: break
-            send(line + "\n")
+        try {
+            while (true) {
+                val line = channel.readLine() ?: break
+                send(line + "\n")
+            }
+        } finally {
+            // Defensive: cancel the channel on any exit path (normal EOF,
+            // upstream error, or collector cancellation). On some Ktor engines
+            // the connection may not close until the channel is explicitly
+            // cancelled; this ensures no leaked connection in all cases.
+            channel.cancel(null)
         }
     }
 }
