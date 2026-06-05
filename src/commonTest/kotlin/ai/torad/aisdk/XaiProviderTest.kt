@@ -1,4 +1,8 @@
 package ai.torad.aisdk
+import ai.torad.aisdk.providers.XAI_VERSION
+import ai.torad.aisdk.providers.XaiProviderSettings
+import ai.torad.aisdk.providers.createXai
+import ai.torad.aisdk.providers.xai
 
 import io.ktor.http.HttpHeaders
 import kotlinx.coroutines.test.runTest

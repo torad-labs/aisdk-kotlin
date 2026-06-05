@@ -1,5 +1,6 @@
-package ai.torad.aisdk
+package ai.torad.aisdk.providers
 
+import ai.torad.aisdk.*
 import io.ktor.client.HttpClient
 import io.ktor.client.request.forms.MultiPartFormDataContent
 import io.ktor.client.request.forms.formData

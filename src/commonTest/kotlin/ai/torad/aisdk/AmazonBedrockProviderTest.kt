@@ -1,4 +1,10 @@
 package ai.torad.aisdk
+import ai.torad.aisdk.providers.AMAZON_BEDROCK_VERSION
+import ai.torad.aisdk.providers.AmazonBedrockProviderSettings
+import ai.torad.aisdk.providers.bedrock
+import ai.torad.aisdk.providers.createAmazonBedrock
+import ai.torad.aisdk.providers.BedrockMantleProviderSettings
+import ai.torad.aisdk.providers.createBedrockMantle
 
 import ai.torad.aisdk.testing.drainAllItems
 import io.ktor.http.HttpHeaders

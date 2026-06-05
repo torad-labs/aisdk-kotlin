@@ -1,4 +1,8 @@
 package ai.torad.aisdk
+import ai.torad.aisdk.providers.ALIBABA_VERSION
+import ai.torad.aisdk.providers.AlibabaProviderSettings
+import ai.torad.aisdk.providers.alibaba
+import ai.torad.aisdk.providers.createAlibaba
 
 import io.ktor.http.HttpHeaders
 import kotlinx.coroutines.test.runTest

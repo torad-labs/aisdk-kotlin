@@ -1,4 +1,8 @@
 package ai.torad.aisdk
+import ai.torad.aisdk.providers.DEEPGRAM_VERSION
+import ai.torad.aisdk.providers.DeepgramProviderSettings
+import ai.torad.aisdk.providers.createDeepgram
+import ai.torad.aisdk.providers.deepgram
 
 import io.ktor.http.HttpHeaders
 import kotlinx.coroutines.test.runTest

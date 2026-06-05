@@ -1,4 +1,8 @@
 package ai.torad.aisdk
+import ai.torad.aisdk.providers.FAL_VERSION
+import ai.torad.aisdk.providers.FalProviderSettings
+import ai.torad.aisdk.providers.createFal
+import ai.torad.aisdk.providers.fal
 
 import io.ktor.http.HttpHeaders
 import kotlinx.coroutines.test.runTest
