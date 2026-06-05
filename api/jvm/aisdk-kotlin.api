@@ -81,7 +81,6 @@ public final class ai/torad/aisdk/AgentCallHooks {
 }
 
 public abstract class ai/torad/aisdk/AgentError : java/lang/RuntimeException {
-	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/Throwable;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/Throwable;Lkotlin/jvm/internal/DefaultConstructorMarker;)V
 }
 
@@ -12539,7 +12538,6 @@ public final class ai/torad/aisdk/svelte/SvelteKt {
 }
 
 public final class ai/torad/aisdk/ui/Chat {
-	public static final field TOOL_APPROVAL_RESPONSE_ID_PREFIX Ljava/lang/String;
 	public fun <init> (Ljava/lang/String;Ljava/util/List;Lai/torad/aisdk/ui/ChatTransport;)V
 	public synthetic fun <init> (Ljava/lang/String;Ljava/util/List;Lai/torad/aisdk/ui/ChatTransport;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun addToolApprovalResponse (Ljava/lang/String;ZLjava/lang/String;Ljava/lang/String;)V

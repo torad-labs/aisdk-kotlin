@@ -40,7 +40,7 @@ kotlin {
     // `updateKotlinAbi` regenerates the dump after an intentional change. (The
     // `*LegacyAbi` task aliases work too but are deprecated in 2.3.x.)
     //
-    // The DSL is Experimental in 2.3.x, hence the opt-in. `klib.keepUnsupportedTargets`
+    // The DSL is Experimental, hence the opt-in. `keepLocallyUnsupportedTargets`
     // lets a host without the Apple toolchain (Linux CI) infer the iOS klib ABI
     // from the dump instead of failing, so the check is reproducible everywhere.
     //
@@ -52,8 +52,13 @@ kotlin {
     // forward-looking guard rather than an active exclusion.)
     @OptIn(ExperimentalAbiValidation::class)
     abiValidation {
-        enabled.set(true)
-        klib.keepUnsupportedTargets.set(true)
+        // Kotlin 2.4.0 streamlined this DSL: applying the `abiValidation {}` block
+        // enables validation (the redundant `enabled` flag was removed), the
+        // `klib {}` wrapper was removed (klib dumps are now always generated), and
+        // `klib.keepUnsupportedTargets` was renamed to the top-level
+        // `keepLocallyUnsupportedTargets`. `true` lets a host without the Apple
+        // toolchain (Linux CI) infer the iOS klib ABI from the committed dump.
+        keepLocallyUnsupportedTargets.set(true)
         filters.exclude.annotatedWith.add("ai.torad.aisdk.InternalAiSdkApi")
     }
 
