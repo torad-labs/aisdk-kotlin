@@ -53,7 +53,8 @@ public fun convertToModelMessages(
 ): List<ModelMessage> {
     val result = mutableListOf<ModelMessage>()
     for (uiMsg in messages) {
-        approvalResponseMessage(uiMsg)?.let { approvalResponse ->
+        val approvalResponse = approvalResponseMessage(uiMsg)
+        if (approvalResponse != null) {
             result.add(approvalResponse)
             continue
         }
