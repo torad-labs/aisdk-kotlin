@@ -4,7 +4,7 @@ package ai.torad.aisdk
  * Shared, dependency-free SHA-256 and HMAC-SHA256 primitives.
  *
  * Used by AWS SigV4 request signing ([awsSigV4SignedHeaders]) and KlingAI JWT
- * signing ([generateKlingAIAuthToken]). Both call sites require byte-identical
+ * signing (`generateKlingAIAuthToken`). Both call sites require byte-identical
  * output, so this is the single source of truth — a fix here reaches every
  * consumer.
  */

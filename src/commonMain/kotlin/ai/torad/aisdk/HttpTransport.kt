@@ -35,7 +35,7 @@ internal fun HttpResponse.flattenedHeaders(): Map<String, String> =
 /**
  * Extracts a human-readable error message from a non-2xx response body. The
  * wire shape varies per provider (`error.message`, `message`, `detail[]`, …),
- * so each call site supplies its own extractor; the [raw] body is the fallback.
+ * so each call site supplies its own extractor; the `raw` body is the fallback.
  */
 internal typealias ErrorMessageExtractor = (statusCode: Int, parsed: JsonElement?, raw: String) -> String
 

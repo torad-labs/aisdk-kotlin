@@ -105,7 +105,7 @@ public fun GeneratedFile.fileData(): FileData =
  *
  * @throws IllegalStateException when this file is URL-backed (no inline
  * bytes) — fetch [GeneratedFile.url] to obtain the data. Without this guard a
- * URL-backed file (whose [base64] is `""`) silently decoded to an empty
+ * URL-backed file (whose `base64` is `""`) silently decoded to an empty
  * `ByteArray`, a wrong answer indistinguishable from a genuinely empty file.
  */
 public fun GeneratedFile.bytes(): ByteArray {

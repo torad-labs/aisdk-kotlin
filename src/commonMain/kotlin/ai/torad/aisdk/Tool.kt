@@ -22,7 +22,7 @@ import kotlinx.serialization.json.jsonPrimitive
  * A tool the LLM can call — application code constructs these via the
  * top-level [tool] (single-value) or [streamingTool] (Flow) factories.
  *
- * Per invariant I-2, tools use [inputSchema] (v6) — never `parameters`
+ * Per invariant I-2, tools use `inputSchema` (v6) — never `parameters`
  * (v5, removed). Per I-8 tools are stateless: inputs in, outputs out, no
  * shared mutable state.
  *
@@ -801,7 +801,7 @@ internal fun jsonSchemaFor(tool: Tool<*, *, *>): String {
  * downstream consumers:
  *  - Cloud providers (OpenAI / Anthropic / Gemini) that expect a strict
  *    OpenAPI-flavoured schema on `tools[].function.parameters`.
- *  - On-device providers (LiteRT-LM via [Tool.OpenApiTool]) whose
+ *  - On-device providers (LiteRT-LM) whose
  *    chat-template renders the schema into Gemma 4 / FunctionGemma
  *    native `<|tool>declaration:...<tool|>` blocks. Without proper
  *    `properties` + `required` + `type` fields the model has no signal

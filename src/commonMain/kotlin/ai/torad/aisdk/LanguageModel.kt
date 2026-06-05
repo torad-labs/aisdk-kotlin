@@ -7,7 +7,7 @@ import kotlinx.serialization.json.JsonElement
 /**
  * Provider-neutral model surface. Per invariant I-4 / I-9, application code
  * never depends on a specific provider — it depends on this interface, and
- * provider-specific differences live in middleware (see [Middleware]).
+ * provider-specific differences live in middleware (see [LanguageModelMiddleware]).
  *
  * Two operations: `generate` for one-shot completions, `stream` for
  * incremental events. Both accept the same [LanguageModelCallParams].
