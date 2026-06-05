@@ -12,6 +12,7 @@ import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpMethod
 import io.ktor.http.contentType
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.emitAll
 import kotlinx.coroutines.flow.flow
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
@@ -142,12 +143,12 @@ private class OpenResponsesLanguageModel(
             json,
             settings.fileIdPrefixes,
         )
-        val response = postJson(prepared.body, acceptEventStream = true, parseJson = false, headers = params.headers)
         emit(StreamEvent.StreamStart(prepared.warnings))
-        emit(StreamEvent.ResponseMetadata(headers = response.headers, body = JsonPrimitive(response.rawText)))
-
         val state = OpenResponsesStreamState(json)
-        for (event in parseJsonEventStream(response.rawText, jsonSchema<JsonElement>(JsonObject(emptyMap())), json)) {
+        val rawLines = streamResponsesSse(prepared.body, params.headers) { responseHeaders ->
+            emit(StreamEvent.ResponseMetadata(headers = responseHeaders))
+        }
+        parseJsonEventStream(rawLines, jsonSchema<JsonElement>(JsonObject(emptyMap())), json).collect { event ->
             when (event) {
                 is ParseResult.Success -> state.accept(event.value).forEach { emit(it) }
                 is ParseResult.Failure -> emit(
@@ -187,6 +188,31 @@ private class OpenResponsesLanguageModel(
             setBody(json.encodeToString(JsonElement.serializer(), body))
         }
         return parseResponse(response, parseJson)
+    }
+
+    /** Streaming counterpart of [postJson]: reads the SSE body incrementally,
+     *  surfacing non-2xx as the same rich [APICallError] as [parseResponse]. */
+    private fun streamResponsesSse(
+        body: JsonElement,
+        headers: Map<String, String>,
+        onResponse: suspend (Map<String, String>) -> Unit,
+    ): Flow<String> = flow {
+        emitAll(
+            streamSse(
+                client = client,
+                url = settings.url,
+                method = HttpMethod.Post,
+                headers = requestHeaders(headers) + (HttpHeaders.Accept to "text/event-stream"),
+                body = body,
+                json = json,
+                requestBodyValues = body,
+                errorMessage = { _, parsed, raw ->
+                    (parsed as? JsonObject)?.get("error")?.jsonObject?.get("message")?.jsonPrimitive?.contentOrNull
+                        ?: raw.ifBlank { "Open Responses request failed" }
+                },
+                onResponse = onResponse,
+            ),
+        )
     }
 
     private suspend fun requestHeaders(extra: Map<String, String>): Map<String, String> {

@@ -12,6 +12,7 @@ import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpMethod
 import io.ktor.http.contentType
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.emitAll
 import kotlinx.coroutines.flow.flow
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
@@ -109,12 +110,12 @@ private class HuggingFaceResponsesLanguageModel(
 
     override fun stream(params: LanguageModelCallParams): Flow<StreamEvent> = flow {
         val prepared = huggingFaceResponsesRequestBody(modelId, params, stream = true)
-        val response = postJson(prepared.body, acceptEventStream = true, parseJson = false, headers = params.headers)
         emit(StreamEvent.StreamStart(prepared.warnings))
-        emit(StreamEvent.ResponseMetadata(headers = response.headers, body = JsonPrimitive(response.rawText)))
-
         val state = HuggingFaceResponsesStreamState(settings, aiSdkJson)
-        for (event in parseJsonEventStream(response.rawText, jsonSchema<JsonElement>(JsonObject(emptyMap())), aiSdkJson)) {
+        val rawLines = streamResponsesSse(prepared.body, params.headers) { responseHeaders ->
+            emit(StreamEvent.ResponseMetadata(headers = responseHeaders))
+        }
+        parseJsonEventStream(rawLines, jsonSchema<JsonElement>(JsonObject(emptyMap())), aiSdkJson).collect { event ->
             when (event) {
                 is ParseResult.Success -> state.accept(event.value).forEach { emit(it) }
                 is ParseResult.Failure -> emit(
@@ -147,6 +148,30 @@ private class HuggingFaceResponsesLanguageModel(
             setBody(aiSdkJson.encodeToString(JsonElement.serializer(), body))
         }
         return huggingFaceParseResponse(response, parseJson)
+    }
+
+    /** Streaming counterpart of [postJson]: reads the SSE body incrementally,
+     *  preserving the bare [AiSdkException] error contract of [huggingFaceParseResponse]. */
+    private fun streamResponsesSse(
+        body: JsonElement,
+        headers: Map<String, String>,
+        onResponse: suspend (Map<String, String>) -> Unit,
+    ): Flow<String> = flow {
+        emitAll(
+            streamSse(
+                client = client,
+                url = "${settings.baseURL.trimEnd('/')}/responses",
+                method = HttpMethod.Post,
+                headers = huggingFaceHeaders(settings, headers) + (HttpHeaders.Accept to "text/event-stream"),
+                body = body,
+                json = aiSdkJson,
+                requestBodyValues = body,
+                errorFromResponse = { _, parsed, raw, _ ->
+                    AiSdkException("Hugging Face API error: ${parsed?.let(::huggingFaceErrorMessage) ?: raw}")
+                },
+                onResponse = onResponse,
+            ),
+        )
     }
 }
 

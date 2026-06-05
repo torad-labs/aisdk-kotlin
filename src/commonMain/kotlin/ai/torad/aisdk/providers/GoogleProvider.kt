@@ -13,6 +13,8 @@ import io.ktor.http.HttpMethod
 import io.ktor.http.contentType
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.FlowCollector
+import kotlinx.coroutines.flow.emitAll
 import kotlinx.coroutines.flow.flow
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
@@ -194,17 +196,16 @@ private class GoogleGenerativeAILanguageModel(
 
     override fun stream(params: LanguageModelCallParams): Flow<StreamEvent> = flow {
         val prepared = googleGenerateContentBody(modelId, settings, params, stream = true)
-        val response = googlePostJson(
+        emit(StreamEvent.StreamStart(prepared.warnings))
+        val state = GoogleStreamState(settings.generateId)
+        val rawLines = googleStreamSse(
             client = client,
             url = "${settings.baseURL.trimEnd('/')}/models/$modelId:streamGenerateContent?alt=sse",
             body = prepared.body,
             headers = googleHeaders(settings, params.headers) + (HttpHeaders.Accept to "text/event-stream"),
             abortSignal = params.abortSignal,
-            parseJson = false,
         )
-        emit(StreamEvent.StreamStart(prepared.warnings))
-        val state = GoogleStreamState(settings.generateId)
-        for (event in parseJsonEventStream(response.rawText, jsonSchema<JsonElement>(JsonObject(emptyMap())), aiSdkJson)) {
+        parseJsonEventStream(rawLines, jsonSchema<JsonElement>(JsonObject(emptyMap())), aiSdkJson).collect { event ->
             when (event) {
                 is ParseResult.Success -> state.accept(event.value.jsonObject).forEach { emit(it) }
                 is ParseResult.Failure -> emit(StreamEvent.Error("Failed to parse Google stream event: ${event.error.message}"))
@@ -492,35 +493,23 @@ private class GoogleInteractionsLanguageModel(
             } else {
                 val interactionId = postBody["id"]?.jsonPrimitive?.contentOrNull
                     ?: throw AiSdkException("google.interactions: background response did not include an interaction id.")
-                val response = googleGetJson(
+                val rawLines = googleStreamSseGet(
                     client = client,
                     url = "${settings.baseURL.trimEnd('/')}/interactions/$interactionId?stream=true",
                     headers = googleInteractionsHeaders(settings, params.headers) + (HttpHeaders.Accept to "text/event-stream"),
                     abortSignal = params.abortSignal,
-                    parseJson = false,
                 )
-                for (event in parseJsonEventStream(response.rawText, jsonSchema<JsonElement>(JsonObject(emptyMap())), aiSdkJson)) {
-                    when (event) {
-                        is ParseResult.Success -> state.accept(event.value.jsonObject).forEach { emit(it) }
-                        is ParseResult.Failure -> emit(StreamEvent.Error("Failed to parse Google Interactions stream event: ${event.error.message}"))
-                    }
-                }
+                collectGoogleInteractions(rawLines, state)
             }
         } else {
-            val response = googlePostJson(
+            val rawLines = googleStreamSse(
                 client = client,
                 url = "${settings.baseURL.trimEnd('/')}/interactions",
                 body = prepared.body,
                 headers = googleInteractionsHeaders(settings, params.headers) + (HttpHeaders.Accept to "text/event-stream"),
                 abortSignal = params.abortSignal,
-                parseJson = false,
             )
-            for (event in parseJsonEventStream(response.rawText, jsonSchema<JsonElement>(JsonObject(emptyMap())), aiSdkJson)) {
-                when (event) {
-                    is ParseResult.Success -> state.accept(event.value.jsonObject).forEach { emit(it) }
-                    is ParseResult.Failure -> emit(StreamEvent.Error("Failed to parse Google Interactions stream event: ${event.error.message}"))
-                }
-            }
+            collectGoogleInteractions(rawLines, state)
         }
         state.finishIfNeeded().forEach { emit(it) }
     }
@@ -1745,6 +1734,66 @@ private suspend fun googlePostJson(
         setBody(aiSdkJson.encodeToString(JsonElement.serializer(), body))
     }
     return response.parseGoogleResponse(url, parseJson, requestBodyValues = body)
+}
+
+/** Streaming counterpart of [googlePostJson]: reads the SSE body incrementally. */
+private fun googleStreamSse(
+    client: HttpClient,
+    url: String,
+    body: JsonElement,
+    headers: Map<String, String>,
+    abortSignal: AbortSignal,
+): Flow<String> = flow {
+    abortSignal.throwIfAborted()
+    emitAll(
+        streamSse(
+            client = client,
+            url = url,
+            method = HttpMethod.Post,
+            headers = headers,
+            body = body,
+            json = aiSdkJson,
+            requestBodyValues = body,
+            errorMessage = googleErrorExtractor,
+        ),
+    )
+}
+
+/** Streaming counterpart of [googleGetJson] (background-interaction polling). */
+private fun googleStreamSseGet(
+    client: HttpClient,
+    url: String,
+    headers: Map<String, String>,
+    abortSignal: AbortSignal,
+): Flow<String> = flow {
+    abortSignal.throwIfAborted()
+    emitAll(
+        streamSse(
+            client = client,
+            url = url,
+            method = HttpMethod.Get,
+            headers = headers,
+            body = null,
+            json = aiSdkJson,
+            errorMessage = googleErrorExtractor,
+        ),
+    )
+}
+
+/** Parse the interactions SSE [rawLines] and feed each event to [state],
+ *  emitting its produced [StreamEvent]s (shared by both stream branches). */
+private suspend fun FlowCollector<StreamEvent>.collectGoogleInteractions(
+    rawLines: Flow<String>,
+    state: GoogleInteractionsStreamState,
+) {
+    parseJsonEventStream(rawLines, jsonSchema<JsonElement>(JsonObject(emptyMap())), aiSdkJson).collect { event ->
+        when (event) {
+            is ParseResult.Success -> state.accept(event.value.jsonObject).forEach { emit(it) }
+            is ParseResult.Failure -> emit(
+                StreamEvent.Error("Failed to parse Google Interactions stream event: ${event.error.message}"),
+            )
+        }
+    }
 }
 
 private suspend fun googleGetJson(

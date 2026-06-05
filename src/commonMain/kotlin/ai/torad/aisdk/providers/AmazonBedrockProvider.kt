@@ -3,15 +3,22 @@ package ai.torad.aisdk.providers
 import ai.torad.aisdk.*
 import io.ktor.client.HttpClient
 import io.ktor.client.request.header
+import io.ktor.client.request.prepareRequest
 import io.ktor.client.request.request
 import io.ktor.client.request.setBody
 import io.ktor.client.statement.HttpResponse
 import io.ktor.client.statement.bodyAsBytes
+import io.ktor.client.statement.bodyAsChannel
 import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpMethod
 import io.ktor.http.contentType
+import io.ktor.utils.io.ByteReadChannel
+import io.ktor.utils.io.readAvailable
+import io.ktor.utils.io.readLine
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.FlowCollector
+import kotlinx.coroutines.flow.emitAll
 import kotlinx.coroutines.flow.flow
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
@@ -223,24 +230,33 @@ private class BedrockChatLanguageModel(
 
     override fun stream(params: LanguageModelCallParams): Flow<StreamEvent> = flow {
         val prepared = bedrockChatRequestBody(modelId, params)
-        val response = bedrockPostJson(
+        emit(StreamEvent.StreamStart(prepared.warnings))
+        val state = BedrockStreamState(settings.generateId, prepared.usesJsonResponseTool)
+        val payloads = bedrockStreamPayloads(
             client = client,
             url = "${bedrockRuntimeBaseURL(settings)}/model/${bedrockEncodeModelId(modelId)}/converse-stream",
             body = prepared.body,
             settings = settings,
             extraHeaders = params.headers + (HttpHeaders.Accept to "application/vnd.amazon.eventstream"),
             abortSignal = params.abortSignal,
-            parseJson = false,
-        )
-        emit(StreamEvent.StreamStart(prepared.warnings))
-        emit(StreamEvent.ResponseMetadata(id = response.headers.headerValue("x-amzn-requestid"), modelId = modelId, headers = response.headers))
-        val state = BedrockStreamState(settings.generateId, prepared.usesJsonResponseTool)
-        for (line in bedrockStreamPayloads(response).map { it.trim() }.filter { it.isNotEmpty() }) {
-            val parsed = runCatching { aiSdkJson.parseToJsonElement(line).jsonObject }.getOrNull()
-            if (parsed == null) {
-                emit(StreamEvent.Error("Failed to parse Bedrock stream event: $line"))
-            } else {
-                state.accept(parsed).forEach { emit(it) }
+        ) { responseHeaders ->
+            emit(
+                StreamEvent.ResponseMetadata(
+                    id = responseHeaders.headerValue("x-amzn-requestid"),
+                    modelId = modelId,
+                    headers = responseHeaders,
+                ),
+            )
+        }
+        payloads.collect { rawLine ->
+            val line = rawLine.trim()
+            if (line.isNotEmpty()) {
+                val parsed = runCatching { aiSdkJson.parseToJsonElement(line).jsonObject }.getOrNull()
+                if (parsed == null) {
+                    emit(StreamEvent.Error("Failed to parse Bedrock stream event: $line"))
+                } else {
+                    state.accept(parsed).forEach { emit(it) }
+                }
             }
         }
         state.finish().forEach { emit(it) }
@@ -436,7 +452,6 @@ private data class BedrockPreparedImageRequest(
 private data class BedrockHttpResponse(
     val value: JsonElement,
     val rawText: String,
-    val rawBytes: ByteArray,
     val headers: Map<String, String>,
 )
 
@@ -1116,8 +1131,7 @@ private suspend fun bedrockPostJson(
         headers.forEach { (name, value) -> header(name, value) }
         setBody(encodedBody)
     }
-    val rawBytes = response.bodyAsBytes()
-    val raw = rawBytes.decodeToString()
+    val raw = response.bodyAsBytes().decodeToString()
     val responseHeaders = response.flattenedHeaders()
     if (response.status.value !in 200..299) {
         val parsed = runCatching { aiSdkJson.parseToJsonElement(raw) }.getOrNull()
@@ -1133,29 +1147,105 @@ private suspend fun bedrockPostJson(
     return BedrockHttpResponse(
         value = if (parseJson && raw.isNotBlank()) aiSdkJson.parseToJsonElement(raw) else JsonObject(emptyMap()),
         rawText = raw,
-        rawBytes = rawBytes,
         headers = responseHeaders,
     )
 }
 
-private fun bedrockStreamPayloads(response: BedrockHttpResponse): List<String> {
-    val contentType = response.headers.headerValue(HttpHeaders.ContentType).orEmpty()
-    if (!contentType.contains("application/vnd.amazon.eventstream", ignoreCase = true)) {
-        return response.rawText.lineSequence().toList()
+/**
+ * Streams Bedrock converse-stream payloads incrementally off the response
+ * channel. For `application/vnd.amazon.eventstream` (the live wire format) it
+ * reads one Smithy binary frame at a time — the 4-byte total-length prelude,
+ * then the remaining bytes — and decodes each as it arrives. For any other
+ * content type it falls back to line framing. Non-2xx surfaces the rich
+ * [APICallError] via [bedrockErrorMessage], matching [bedrockPostJson].
+ */
+private fun bedrockStreamPayloads(
+    client: HttpClient,
+    url: String,
+    body: JsonElement,
+    settings: AmazonBedrockProviderSettings,
+    extraHeaders: Map<String, String>,
+    abortSignal: AbortSignal,
+    onResponse: suspend (Map<String, String>) -> Unit,
+): Flow<String> = flow {
+    abortSignal.throwIfAborted()
+    val encodedBody = aiSdkJson.encodeToString(JsonElement.serializer(), body)
+    val headers = bedrockHeaders(settings, extraHeaders, url, encodedBody, "bedrock")
+    val statement = client.prepareRequest(url) {
+        method = HttpMethod.Post
+        contentType(ContentType.Application.Json)
+        headers.forEach { (name, value) -> header(name, value) }
+        setBody(encodedBody)
     }
-    return decodeBedrockEventStream(response.rawBytes).map { message ->
-        val payload = runCatching { aiSdkJson.parseToJsonElement(message.payloadText) }.getOrNull()
-        val eventType = message.eventType
-        if (eventType.isBlank()) {
-            message.payloadText
-        } else if (payload is JsonObject && payload.size == 1 && payload[eventType] != null) {
-            message.payloadText
+    statement.execute { response ->
+        val flattened = response.flattenedHeaders()
+        if (response.status.value !in 200..299) {
+            val raw = response.bodyAsBytes().decodeToString()
+            val parsed = runCatching { aiSdkJson.parseToJsonElement(raw) }.getOrNull()
+            throw apiCallError(
+                url = url,
+                statusCode = response.status.value,
+                rawBody = raw,
+                headers = flattened,
+                message = bedrockErrorMessage(parsed, raw),
+                requestBodyValues = body,
+            )
+        }
+        onResponse(flattened)
+        val channel = response.bodyAsChannel()
+        val contentType = flattened.headerValue(HttpHeaders.ContentType).orEmpty()
+        if (contentType.contains("application/vnd.amazon.eventstream", ignoreCase = true)) {
+            emitBedrockEventStreamFrames(channel)
         } else {
-            buildJsonObject {
-                put(eventType, payload ?: JsonPrimitive(message.payloadText))
-            }.toString()
+            while (true) {
+                val line = channel.readLine() ?: break
+                emit(line)
+            }
         }
     }
+}
+
+/** Read and decode Smithy binary event-stream frames off [channel] one at a
+ *  time, emitting each reshaped payload as it arrives. */
+private suspend fun FlowCollector<String>.emitBedrockEventStreamFrames(channel: ByteReadChannel) {
+    while (true) {
+        val prelude = channel.readBedrockFrame(4) ?: break
+        val totalLength = prelude.readInt32BE(0)
+        if (totalLength < 16) break
+        val rest = channel.readBedrockFrame(totalLength - 4) ?: break
+        for (message in decodeBedrockEventStream(prelude + rest)) {
+            emit(bedrockMessagePayload(message))
+        }
+    }
+}
+
+/** Reshape one decoded event-stream message into the JSON-line payload the
+ *  [BedrockStreamState] consumes (mirrors the v6 `:event-type` wrapping). */
+private fun bedrockMessagePayload(message: BedrockEventStreamMessage): String {
+    val payload = runCatching { aiSdkJson.parseToJsonElement(message.payloadText) }.getOrNull()
+    val eventType = message.eventType
+    return if (eventType.isBlank()) {
+        message.payloadText
+    } else if (payload is JsonObject && payload.size == 1 && payload[eventType] != null) {
+        message.payloadText
+    } else {
+        buildJsonObject {
+            put(eventType, payload ?: JsonPrimitive(message.payloadText))
+        }.toString()
+    }
+}
+
+/** Read exactly [count] bytes off the channel, or null at a clean EOF (the
+ *  buffered decoder likewise stops on an incomplete trailing frame). */
+private suspend fun ByteReadChannel.readBedrockFrame(count: Int): ByteArray? {
+    val out = ByteArray(count)
+    var read = 0
+    while (read < count) {
+        val n = readAvailable(out, read, count - read)
+        if (n < 0) return null
+        read += n
+    }
+    return out
 }
 
 private data class BedrockEventStreamMessage(

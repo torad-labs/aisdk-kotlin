@@ -14,6 +14,7 @@ import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpMethod
 import io.ktor.http.contentType
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.emitAll
 import kotlinx.coroutines.flow.flow
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.encodeToString
@@ -148,6 +149,31 @@ private abstract class OpenAICompatibleHttpModel(
             errorMessage = ::openAICompatibleErrorMessage,
         )
 
+    /**
+     * Streaming counterpart of [postJson]: opens an SSE request and yields raw
+     * response lines incrementally (see [streamSse]). The auth/common headers
+     * are resolved inside the flow because [commonHeaders] is `suspend`.
+     */
+    protected fun postSse(
+        path: String,
+        body: JsonElement,
+        headers: Map<String, String> = emptyMap(),
+        onResponse: suspend (Map<String, String>) -> Unit = {},
+    ): Flow<String> = flow {
+        emitAll(
+            streamSse(
+                client = client,
+                url = url(path),
+                method = HttpMethod.Post,
+                headers = commonHeaders(headers),
+                body = body,
+                json = json,
+                errorMessage = ::openAICompatibleErrorMessage,
+                onResponse = onResponse,
+            ),
+        )
+    }
+
     protected suspend fun postMultipart(
         path: String,
         body: MultiPartFormDataContent,
@@ -221,16 +247,15 @@ private class OpenAICompatibleChatLanguageModel(
 
     override fun stream(params: LanguageModelCallParams): Flow<StreamEvent> = flow {
         val prepared = chatRequestBody(params, stream = true)
-        val response = postJson(
+        emit(StreamEvent.StreamStart(prepared.warnings))
+        val state = OpenAIChatStreamState(provider = providerName, providerKey = providerOptionsKey(), convertUsage = settings.convertUsage)
+        val rawLines = postSse(
             path = "/chat/completions",
             body = prepared.body,
             headers = params.headers + mapOf(HttpHeaders.Accept to "text/event-stream"),
-            parseJson = false,
+            onResponse = { responseHeaders -> emit(StreamEvent.ResponseMetadata(headers = responseHeaders)) },
         )
-        emit(StreamEvent.StreamStart(prepared.warnings))
-        emit(StreamEvent.ResponseMetadata(headers = response.headers, body = JsonPrimitive(response.rawText)))
-        val state = OpenAIChatStreamState(provider = providerName, providerKey = providerOptionsKey(), convertUsage = settings.convertUsage)
-        for (event in parseJsonEventStream(response.rawText, jsonSchema<JsonElement>(JsonObject(emptyMap())), json)) {
+        parseJsonEventStream(rawLines, jsonSchema<JsonElement>(JsonObject(emptyMap())), json).collect { event ->
             when (event) {
                 is ParseResult.Success -> state.accept(event.value).forEach { emit(it) }
                 is ParseResult.Failure -> emit(StreamEvent.Error("Failed to parse OpenAI-compatible stream event: ${event.error.message}"))
@@ -307,19 +332,18 @@ private class OpenAICompatibleCompletionLanguageModel(
 
     override fun stream(params: LanguageModelCallParams): Flow<StreamEvent> = flow {
         val prepared = completionRequestBody(params, stream = true)
-        val response = postJson(
-            path = "/completions",
-            body = prepared.body,
-            headers = params.headers + mapOf(HttpHeaders.Accept to "text/event-stream"),
-            parseJson = false,
-        )
         emit(StreamEvent.StreamStart(prepared.warnings))
-        emit(StreamEvent.ResponseMetadata(headers = response.headers, body = JsonPrimitive(response.rawText)))
         var activeText = false
         var finish = FinishReason.Other
         var usage = Usage()
         var emittedResponseMetadata = false
-        for (event in parseJsonEventStream(response.rawText, jsonSchema<JsonElement>(JsonObject(emptyMap())), json)) {
+        val rawLines = postSse(
+            path = "/completions",
+            body = prepared.body,
+            headers = params.headers + mapOf(HttpHeaders.Accept to "text/event-stream"),
+            onResponse = { responseHeaders -> emit(StreamEvent.ResponseMetadata(headers = responseHeaders)) },
+        )
+        parseJsonEventStream(rawLines, jsonSchema<JsonElement>(JsonObject(emptyMap())), json).collect { event ->
             when (event) {
                 is ParseResult.Failure -> emit(StreamEvent.Error("Failed to parse OpenAI-compatible completion stream event: ${event.error.message}"))
                 is ParseResult.Success -> {

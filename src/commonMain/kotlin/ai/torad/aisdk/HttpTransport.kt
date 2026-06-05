@@ -2,13 +2,18 @@ package ai.torad.aisdk
 
 import io.ktor.client.HttpClient
 import io.ktor.client.request.header
+import io.ktor.client.request.prepareRequest
 import io.ktor.client.request.request
 import io.ktor.client.request.setBody
 import io.ktor.client.statement.HttpResponse
+import io.ktor.client.statement.bodyAsChannel
 import io.ktor.client.statement.bodyAsText
 import io.ktor.http.ContentType
 import io.ktor.http.HttpMethod
 import io.ktor.http.contentType
+import io.ktor.utils.io.readLine
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flow
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
@@ -145,6 +150,74 @@ internal suspend fun HttpResponse.toJsonResponse(
         rawText = raw,
         headers = flattened,
     )
+}
+
+/**
+ * Streaming sibling of [requestJson]. Opens the request with
+ * `prepareRequest{}.execute{}` so the response body stays a **live channel**,
+ * then emits each raw SSE text line *as it arrives off the wire* — the flow
+ * yields incrementally, long before the full body is received (unlike
+ * [bodyAsText], which suspends until the whole body lands). Pipe the result
+ * through the [parseJsonEventStream] `Flow<String>` overload to recover JSON
+ * events. Mirrors the incremental channel read already used by the MCP SSE
+ * transport (`processMcpSse`).
+ *
+ * Each emission is one wire line with its terminator re-appended, so the
+ * downstream parser sees the same `data:` / blank-line framing it would from a
+ * buffered body. Cancelling the collector cancels the suspended `readLine`,
+ * which unwinds through `execute {}` and aborts the request (structured
+ * concurrency — no leaked connection).
+ *
+ * On a non-2xx status this preserves the exact [requestJson] error contract:
+ * read the body, run [errorFromResponse] (if any), then throw the rich
+ * [apiCallError].
+ *
+ * @param onResponse invoked once with the flattened response headers as soon as
+ *   the 2xx response head arrives, before any body line — lets callers emit a
+ *   `ResponseMetadata` event without buffering the body.
+ */
+internal fun streamSse(
+    client: HttpClient,
+    url: String,
+    method: HttpMethod = HttpMethod.Post,
+    headers: Map<String, String> = emptyMap(),
+    body: JsonElement? = null,
+    json: Json = aiSdkJson,
+    requestBodyValues: Any? = body,
+    errorMessage: ErrorMessageExtractor = ::defaultErrorMessage,
+    errorFromResponse: ResponseErrorFactory? = null,
+    onResponse: suspend (Map<String, String>) -> Unit = {},
+): Flow<String> = flow {
+    val statement = client.prepareRequest(url) {
+        this.method = method
+        if (body != null) {
+            contentType(ContentType.Application.Json)
+            setBody(json.encodeToString(JsonElement.serializer(), body))
+        }
+        headers.forEach { (name, value) -> header(name, value) }
+    }
+    statement.execute { response ->
+        val flattened = response.flattenedHeaders()
+        if (response.status.value !in successStatusRange) {
+            val raw = response.bodyAsText()
+            val parsed = runCatching { json.parseToJsonElement(raw) }.getOrNull()
+            errorFromResponse?.invoke(response.status.value, parsed, raw, flattened)?.let { throw it }
+            throw apiCallError(
+                url = url,
+                statusCode = response.status.value,
+                rawBody = raw,
+                headers = flattened,
+                message = errorMessage(response.status.value, parsed, raw),
+                requestBodyValues = requestBodyValues,
+            )
+        }
+        onResponse(flattened)
+        val channel = response.bodyAsChannel()
+        while (true) {
+            val line = channel.readLine() ?: break
+            emit(line + "\n")
+        }
+    }
 }
 
 /**

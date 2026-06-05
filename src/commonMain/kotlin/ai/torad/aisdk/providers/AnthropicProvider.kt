@@ -10,6 +10,7 @@ import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpMethod
 import io.ktor.http.contentType
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.emitAll
 import kotlinx.coroutines.flow.flow
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
@@ -119,11 +120,12 @@ public class AnthropicMessagesLanguageModel(
 
     override fun stream(params: LanguageModelCallParams): Flow<StreamEvent> = flow {
         val prepared = anthropicRequestBody(settings, modelId, params, stream = true)
-        val response = anthropicPost(prepared.body, prepared.betas, params.headers, acceptEventStream = true, parseJson = false)
         emit(StreamEvent.StreamStart(prepared.warnings))
-        emit(StreamEvent.ResponseMetadata(headers = response.headers, body = JsonPrimitive(response.rawText)))
         val state = AnthropicStreamState(settings, aiSdkJson)
-        for (event in parseJsonEventStream(response.rawText, jsonSchema<JsonElement>(JsonObject(emptyMap())), aiSdkJson)) {
+        val rawLines = anthropicStreamSse(prepared.body, prepared.betas, params.headers) { responseHeaders ->
+            emit(StreamEvent.ResponseMetadata(headers = responseHeaders))
+        }
+        parseJsonEventStream(rawLines, jsonSchema<JsonElement>(JsonObject(emptyMap())), aiSdkJson).collect { event ->
             when (event) {
                 is ParseResult.Success -> state.accept(event.value).forEach { emit(it) }
                 is ParseResult.Failure -> emit(StreamEvent.Error("Failed to parse Anthropic stream event: ${event.error.message}"))
@@ -162,6 +164,35 @@ public class AnthropicMessagesLanguageModel(
             parseJson = parseJson,
             requestBodyValues = requestBody,
             errorMessage = { _, parsed, raw -> anthropicErrorMessage(parsed, raw) },
+        )
+    }
+
+    /** Streaming counterpart of [anthropicPost]: same URL/header/transform path,
+     *  but reads the SSE body incrementally off the wire (see [streamSse]). */
+    private fun anthropicStreamSse(
+        body: JsonObject,
+        betas: Set<String>,
+        extraHeaders: Map<String, String>,
+        onResponse: suspend (Map<String, String>) -> Unit,
+    ): Flow<String> = flow {
+        val baseURL = settings.baseURL.trimEnd('/')
+        val url = settings.buildRequestUrl?.invoke(baseURL, modelId, true) ?: "$baseURL/messages"
+        val requestBody = settings.transformRequestBody?.invoke(modelId, body, true) ?: body
+        val encodedBody = aiSdkJson.encodeToString(JsonElement.serializer(), requestBody)
+        val baseHeaders = anthropicHeaders(settings, extraHeaders, betas)
+        val requestHeaders = settings.requestHeadersProvider?.invoke(url, encodedBody, baseHeaders) ?: baseHeaders
+        emitAll(
+            streamSse(
+                client = client,
+                url = url,
+                method = HttpMethod.Post,
+                headers = requestHeaders + (HttpHeaders.Accept to "text/event-stream"),
+                body = requestBody,
+                json = aiSdkJson,
+                requestBodyValues = requestBody,
+                errorMessage = { _, parsed, raw -> anthropicErrorMessage(parsed, raw) },
+                onResponse = onResponse,
+            ),
         )
     }
 }
