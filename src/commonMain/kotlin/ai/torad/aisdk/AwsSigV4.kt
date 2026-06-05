@@ -75,8 +75,8 @@ private data class AwsParsedUrl(
     val query: String,
 )
 
-private fun currentAwsAmzDate(): String {
-    val instant = Clock.System.now().toString()
+internal fun currentAwsAmzDate(clock: Clock = Clock.System): String {
+    val instant = clock.now().toString()
     val date = instant.substring(0, 10).filter { it != '-' }
     val time = instant.substring(11, 19).filter { it != ':' }
     return "${date}T${time}Z"

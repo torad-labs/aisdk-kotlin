@@ -2239,18 +2239,20 @@ public final class ai/torad/aisdk/HttpMCPTransport : ai/torad/aisdk/MCPTransport
 
 public final class ai/torad/aisdk/IdGenerator {
 	public fun <init> ()V
-	public fun <init> (Ljava/lang/String;ILjava/lang/String;Ljava/lang/String;)V
-	public synthetic fun <init> (Ljava/lang/String;ILjava/lang/String;Ljava/lang/String;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun <init> (Ljava/lang/String;ILjava/lang/String;Ljava/lang/String;Lkotlin/random/Random;)V
+	public synthetic fun <init> (Ljava/lang/String;ILjava/lang/String;Ljava/lang/String;Lkotlin/random/Random;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun component1 ()Ljava/lang/String;
 	public final fun component2 ()I
 	public final fun component3 ()Ljava/lang/String;
 	public final fun component4 ()Ljava/lang/String;
-	public final fun copy (Ljava/lang/String;ILjava/lang/String;Ljava/lang/String;)Lai/torad/aisdk/IdGenerator;
-	public static synthetic fun copy$default (Lai/torad/aisdk/IdGenerator;Ljava/lang/String;ILjava/lang/String;Ljava/lang/String;ILjava/lang/Object;)Lai/torad/aisdk/IdGenerator;
+	public final fun component5 ()Lkotlin/random/Random;
+	public final fun copy (Ljava/lang/String;ILjava/lang/String;Ljava/lang/String;Lkotlin/random/Random;)Lai/torad/aisdk/IdGenerator;
+	public static synthetic fun copy$default (Lai/torad/aisdk/IdGenerator;Ljava/lang/String;ILjava/lang/String;Ljava/lang/String;Lkotlin/random/Random;ILjava/lang/Object;)Lai/torad/aisdk/IdGenerator;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun generate ()Ljava/lang/String;
 	public final fun getAlphabet ()Ljava/lang/String;
 	public final fun getPrefix ()Ljava/lang/String;
+	public final fun getRandom ()Lkotlin/random/Random;
 	public final fun getSeparator ()Ljava/lang/String;
 	public final fun getSize ()I
 	public fun hashCode ()I
@@ -7055,12 +7057,12 @@ public final class ai/torad/aisdk/UtilKt {
 	public static final fun convertByteArrayToBase64 ([B)Ljava/lang/String;
 	public static final fun convertToBase64 ([B)Ljava/lang/String;
 	public static final fun cosineSimilarity (Ljava/util/List;Ljava/util/List;)F
-	public static final fun createIdGenerator (Ljava/lang/String;ILjava/lang/String;Ljava/lang/String;)Lai/torad/aisdk/IdGenerator;
-	public static synthetic fun createIdGenerator$default (Ljava/lang/String;ILjava/lang/String;Ljava/lang/String;ILjava/lang/Object;)Lai/torad/aisdk/IdGenerator;
+	public static final fun createIdGenerator (Ljava/lang/String;ILjava/lang/String;Ljava/lang/String;Lkotlin/random/Random;)Lai/torad/aisdk/IdGenerator;
+	public static synthetic fun createIdGenerator$default (Ljava/lang/String;ILjava/lang/String;Ljava/lang/String;Lkotlin/random/Random;ILjava/lang/Object;)Lai/torad/aisdk/IdGenerator;
 	public static final fun detectMediaType (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;
 	public static synthetic fun detectMediaType$default (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ILjava/lang/Object;)Ljava/lang/String;
-	public static final fun generateId (Ljava/lang/String;)Ljava/lang/String;
-	public static synthetic fun generateId$default (Ljava/lang/String;ILjava/lang/Object;)Ljava/lang/String;
+	public static final fun generateId (Ljava/lang/String;Lkotlin/random/Random;)Ljava/lang/String;
+	public static synthetic fun generateId$default (Ljava/lang/String;Lkotlin/random/Random;ILjava/lang/Object;)Ljava/lang/String;
 	public static final fun isUrlSupported (Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;)Z
 	public static final fun mergeAbortSignals ([Lai/torad/aisdk/AbortSignal;)Lai/torad/aisdk/AbortSignal;
 	public static final fun parseJsonEventStream (Lkotlinx/coroutines/flow/Flow;Lai/torad/aisdk/Schema;Lkotlinx/serialization/json/Json;)Lkotlinx/coroutines/flow/Flow;

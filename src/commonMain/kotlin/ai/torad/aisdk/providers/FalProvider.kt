@@ -599,13 +599,10 @@ private suspend fun falGetBinary(
     )
 }
 
-private fun falHeaders(settings: FalProviderSettings, extra: Map<String, String>): Map<String, String> {
-    val headers = linkedMapOf<String, String?>()
-    settings.apiKey?.takeIf { it.isNotBlank() }?.let { headers[HttpHeaders.Authorization] = "Key $it" }
-    headers.putAll(settings.headers)
-    headers.putAll(extra)
-    return withUserAgentSuffix(headers, "ai-sdk/fal/$FAL_VERSION")
-}
+private fun falHeaders(settings: FalProviderSettings, extra: Map<String, String>): Map<String, String> =
+    buildProviderHeaders(settings.headers, extra, "ai-sdk/fal/$FAL_VERSION") { headers ->
+        settings.apiKey?.takeIf { it.isNotBlank() }?.let { headers[HttpHeaders.Authorization] = "Key $it" }
+    }
 
 private fun falResponseImages(value: JsonObject): List<JsonObject> {
     (value["images"] as? JsonArray)?.let { images -> return images.map { it.jsonObject } }

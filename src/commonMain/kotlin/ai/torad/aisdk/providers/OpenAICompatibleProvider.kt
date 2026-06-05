@@ -121,18 +121,14 @@ private abstract class OpenAICompatibleHttpModel(
     }
 
     protected suspend fun commonHeaders(extra: Map<String, String> = emptyMap()): Map<String, String> {
-        val base = linkedMapOf<String, String>()
         val dynamicAuthHeaders = settings.authHeadersProvider?.invoke()
-        if (dynamicAuthHeaders != null) {
-            base.putAll(dynamicAuthHeaders)
-        } else {
-            settings.apiKey?.takeIf { it.isNotBlank() }?.let { base[HttpHeaders.Authorization] = "Bearer $it" }
+        return buildProviderHeaders(settings.headers, extra, settings.userAgentSuffix) { base ->
+            if (dynamicAuthHeaders != null) {
+                base.putAll(dynamicAuthHeaders)
+            } else {
+                settings.apiKey?.takeIf { it.isNotBlank() }?.let { base[HttpHeaders.Authorization] = "Bearer $it" }
+            }
         }
-        base.putAll(settings.headers)
-        base.putAll(extra)
-        return settings.userAgentSuffix
-            ?.let { withUserAgentSuffix(base, it) }
-            ?: normalizeHeaders(base)
     }
 
     protected suspend fun postJson(

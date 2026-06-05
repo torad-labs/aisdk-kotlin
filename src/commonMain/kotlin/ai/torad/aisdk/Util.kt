@@ -2,7 +2,6 @@ package ai.torad.aisdk
 
 import kotlin.math.sqrt
 import kotlin.io.encoding.Base64
-import kotlin.io.encoding.ExperimentalEncodingApi
 import kotlin.random.Random
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
@@ -159,6 +158,7 @@ public data class IdGenerator(
     val size: Int = 16,
     val alphabet: String = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz",
     val separator: String = "-",
+    val random: Random = Random.Default,
 ) {
     public fun generate(): String {
         require(size > 0) { "size must be > 0" }
@@ -168,7 +168,7 @@ public data class IdGenerator(
         }
         val suffix = buildString {
             repeat(size) {
-                append(alphabet[Random.nextInt(alphabet.length)])
+                append(alphabet[random.nextInt(alphabet.length)])
             }
         }
         return prefix?.let { "$it$separator$suffix" } ?: suffix
@@ -180,9 +180,11 @@ public fun createIdGenerator(
     size: Int = 16,
     alphabet: String = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz",
     separator: String = "-",
-): IdGenerator = IdGenerator(prefix, size, alphabet, separator)
+    random: Random = Random.Default,
+): IdGenerator = IdGenerator(prefix, size, alphabet, separator, random)
 
-public fun generateId(prefix: String? = null): String = createIdGenerator(prefix = prefix).generate()
+public fun generateId(prefix: String? = null, random: Random = Random.Default): String =
+    createIdGenerator(prefix = prefix, random = random).generate()
 
 public fun mergeAbortSignals(vararg signals: AbortSignal): AbortSignal {
     if (signals.isEmpty()) return AbortSignalNever
@@ -241,6 +243,27 @@ internal fun withUserAgentSuffix(
     normalized["user-agent"] = (listOfNotNull(normalized["user-agent"]?.takeIf { it.isNotBlank() }) + suffix)
         .joinToString(" ")
     return normalized
+}
+
+/**
+ * Shared provider-header builder: applies the provider-specific [auth] scheme,
+ * then layers static [settingsHeaders] and per-call [callHeaders], and finally
+ * appends [userAgentSuffix] to the User-Agent (or just normalizes when null).
+ * Only the auth scheme varies between providers, so it is passed as a lambda.
+ */
+internal fun buildProviderHeaders(
+    settingsHeaders: Map<String, String>,
+    callHeaders: Map<String, String>,
+    userAgentSuffix: String?,
+    auth: (MutableMap<String, String?>) -> Unit,
+): Map<String, String> {
+    val base = linkedMapOf<String, String?>()
+    auth(base)
+    base.putAll(settingsHeaders)
+    base.putAll(callHeaders)
+    return userAgentSuffix
+        ?.let { withUserAgentSuffix(base, it) }
+        ?: normalizeHeaders(base)
 }
 
 internal fun withoutTrailingSlash(url: String?): String? = url?.removeSuffix("/")
@@ -482,11 +505,9 @@ private fun <T> safeParseJson(text: String, schema: Schema<T>, json: Json): Pars
         ParseResult.Failure(error, text)
     }
 
-@OptIn(ExperimentalEncodingApi::class)
 public fun convertBase64ToByteArray(base64String: String): ByteArray =
     Base64.Default.decode(base64String.replace('-', '+').replace('_', '/'))
 
-@OptIn(ExperimentalEncodingApi::class)
 public fun convertByteArrayToBase64(array: ByteArray): String =
     Base64.Default.encode(array)
 

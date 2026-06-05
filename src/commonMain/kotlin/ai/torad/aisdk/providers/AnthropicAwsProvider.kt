@@ -120,6 +120,7 @@ internal suspend fun anthropicAwsSigV4Headers(
     url: String,
     body: String,
     headers: Map<String, String>,
+    amzDate: String = currentAwsAmzDate(),
 ): Map<String, String> {
     val credentials = settings.credentialProvider?.invoke()
         ?: AnthropicAwsCredentials(
@@ -143,5 +144,6 @@ internal suspend fun anthropicAwsSigV4Headers(
             secretAccessKey = credentials.secretAccessKey,
             sessionToken = credentials.sessionToken,
         ),
+        amzDate = amzDate,
     )
 }

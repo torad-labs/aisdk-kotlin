@@ -119,6 +119,7 @@ kotlin {
 detekt {
     buildUponDefaultConfig = true
     parallel = true
+    config.setFrom(file("$projectDir/detekt.yml"))
     baseline = file("$projectDir/detekt-baseline.xml")
     source.setFrom(
         "src/commonMain/kotlin",

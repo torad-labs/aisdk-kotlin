@@ -128,6 +128,7 @@ private class AlibabaVideoModel(
     private val client: HttpClient,
     private val settings: AlibabaProviderSettings,
     override val modelId: String,
+    private val clock: Clock = Clock.System,
 ) : VideoModel {
     override val provider: String = "alibaba.video"
 
@@ -152,12 +153,12 @@ private class AlibabaVideoModel(
 
         val pollIntervalMs = options["pollIntervalMs"]?.jsonPrimitive?.contentOrNull?.toLongOrNull() ?: 5_000L
         val pollTimeoutMs = options["pollTimeoutMs"]?.jsonPrimitive?.contentOrNull?.toLongOrNull() ?: 600_000L
-        val started = Clock.System.now().toEpochMilliseconds()
+        val started = clock.now().toEpochMilliseconds()
         var headers = create.headers
         while (true) {
             params.abortSignal.throwIfAborted()
             if (pollIntervalMs > 0) delay(pollIntervalMs)
-            if (Clock.System.now().toEpochMilliseconds() - started > pollTimeoutMs) {
+            if (clock.now().toEpochMilliseconds() - started > pollTimeoutMs) {
                 throw AiSdkException("Video generation timed out after ${pollTimeoutMs}ms")
             }
             val status = alibabaGetJson(
@@ -335,13 +336,10 @@ private suspend fun alibabaGetJson(
         errorMessage = ::alibabaErrorMessage,
     )
 
-private fun alibabaHeaders(settings: AlibabaProviderSettings, callHeaders: Map<String, String>): Map<String, String> {
-    val base = linkedMapOf<String, String?>()
-    settings.apiKey?.takeIf { it.isNotBlank() }?.let { base[HttpHeaders.Authorization] = "Bearer $it" }
-    settings.headers.forEach { (key, value) -> base[key] = value }
-    callHeaders.forEach { (key, value) -> base[key] = value }
-    return withUserAgentSuffix(base, "ai-sdk/alibaba/$ALIBABA_VERSION")
-}
+private fun alibabaHeaders(settings: AlibabaProviderSettings, callHeaders: Map<String, String>): Map<String, String> =
+    buildProviderHeaders(settings.headers, callHeaders, "ai-sdk/alibaba/$ALIBABA_VERSION") { base ->
+        settings.apiKey?.takeIf { it.isNotBlank() }?.let { base[HttpHeaders.Authorization] = "Bearer $it" }
+    }
 
 private fun alibabaOptions(providerOptions: Map<String, JsonElement>): JsonObject =
     providerOptions["alibaba"] as? JsonObject ?: JsonObject(emptyMap())

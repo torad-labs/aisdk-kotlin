@@ -3,6 +3,7 @@ package ai.torad.aisdk.rsc
 import ai.torad.aisdk.ExperimentalAiSdkApi
 import ai.torad.aisdk.ui.UIMessage
 import ai.torad.aisdk.ui.createUiMessageStream
+import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.flowOf
@@ -16,11 +17,20 @@ public class StreamableValue<T> internal constructor(
 public class StreamableValueController<T>(
     initialValue: T? = null,
 ) {
-    private val updates = MutableSharedFlow<T>(replay = 64)
+    // replay = 64 lets late subscribers replay recent values (bounded memory:
+    // up to 64 retained T). DROP_OLDEST + extraBufferCapacity keeps emit() from
+    // suspending on a stalled subscriber — the producer never blocks.
+    private val updates = MutableSharedFlow<T>(
+        replay = 64,
+        extraBufferCapacity = 64,
+        onBufferOverflow = BufferOverflow.DROP_OLDEST,
+    )
     public val value: StreamableValue<T> = StreamableValue(updates)
 
     init {
-        initialValue?.let { updates.tryEmit(it) }
+        // tryEmit is non-suspending and always succeeds here (DROP_OLDEST never
+        // rejects); the boolean is intentionally ignored.
+        if (initialValue != null) updates.tryEmit(initialValue)
     }
 
     public suspend fun update(value: T) {
@@ -50,11 +60,20 @@ public class StreamableUI internal constructor(
 
 @ExperimentalAiSdkApi
 public class StreamableUIController(initialValue: UIMessage? = null) {
-    private val updates = MutableSharedFlow<UIMessage>(replay = 64)
+    // replay = 64 lets late subscribers replay recent values (bounded memory:
+    // up to 64 retained UIMessage). DROP_OLDEST + extraBufferCapacity keeps
+    // emit() from suspending on a stalled subscriber — the producer never blocks.
+    private val updates = MutableSharedFlow<UIMessage>(
+        replay = 64,
+        extraBufferCapacity = 64,
+        onBufferOverflow = BufferOverflow.DROP_OLDEST,
+    )
     public val value: StreamableUI = StreamableUI(updates)
 
     init {
-        initialValue?.let { updates.tryEmit(it) }
+        // tryEmit is non-suspending and always succeeds here (DROP_OLDEST never
+        // rejects); the boolean is intentionally ignored.
+        if (initialValue != null) updates.tryEmit(initialValue)
     }
 
     public suspend fun update(value: UIMessage) {

@@ -1236,6 +1236,7 @@ private suspend fun bedrockHeaders(
     url: String,
     body: String,
     service: String,
+    amzDate: String = currentAwsAmzDate(),
 ): Map<String, String> {
     val headers = linkedMapOf<String, String?>()
     headers[HttpHeaders.ContentType] = ContentType.Application.Json.toString()
@@ -1269,6 +1270,7 @@ private suspend fun bedrockHeaders(
             secretAccessKey = credentials.secretAccessKey,
             sessionToken = credentials.sessionToken,
         ),
+        amzDate = amzDate,
     )
 }
 

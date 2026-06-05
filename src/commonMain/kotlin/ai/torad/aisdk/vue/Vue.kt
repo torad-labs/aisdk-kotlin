@@ -1,7 +1,6 @@
 package ai.torad.aisdk.vue
 
 import ai.torad.aisdk.Completion
-import ai.torad.aisdk.CompletionRequestOptions
 import ai.torad.aisdk.ExperimentalAiSdkApi
 import ai.torad.aisdk.StructuredObject
 import ai.torad.aisdk.StructuredObjectOptions

@@ -85,6 +85,7 @@ private class KlingAIVideoModel(
     private val client: HttpClient,
     private val settings: KlingAIProviderSettings,
     override val modelId: String,
+    private val clock: Clock = Clock.System,
 ) : VideoModel {
     override val provider: String = "klingai.video"
 
@@ -109,7 +110,7 @@ private class KlingAIVideoModel(
             client = client,
             method = HttpMethod.Post,
             url = "${settings.baseURL.trimEnd('/')}$endpoint",
-            headers = klingAIHeaders(settings, params.headers),
+            headers = klingAIHeaders(settings, params.headers, clock),
             body = body,
         )
         val taskId = create.value.jsonObject["data"]?.jsonObject?.get("task_id")?.jsonPrimitive?.contentOrNull
@@ -117,19 +118,19 @@ private class KlingAIVideoModel(
 
         val pollIntervalMs = options["pollIntervalMs"]?.jsonPrimitive?.contentOrNull?.toLongOrNull() ?: 5_000L
         val pollTimeoutMs = options["pollTimeoutMs"]?.jsonPrimitive?.contentOrNull?.toLongOrNull() ?: 600_000L
-        val started = Clock.System.now().toEpochMilliseconds()
+        val started = clock.now().toEpochMilliseconds()
         var headers = create.headers
         while (true) {
             params.abortSignal.throwIfAborted()
             if (pollIntervalMs > 0) delay(pollIntervalMs)
-            if (Clock.System.now().toEpochMilliseconds() - started > pollTimeoutMs) {
+            if (clock.now().toEpochMilliseconds() - started > pollTimeoutMs) {
                 throw AiSdkException("Video generation timed out after ${pollTimeoutMs}ms")
             }
             val status = klingAIRequestJson(
                 client = client,
                 method = HttpMethod.Get,
                 url = "${settings.baseURL.trimEnd('/')}$endpoint/$taskId",
-                headers = klingAIHeaders(settings, params.headers),
+                headers = klingAIHeaders(settings, params.headers, clock),
             )
             headers = status.headers
             val data = status.value.jsonObject["data"]?.jsonObject ?: JsonObject(emptyMap())
@@ -339,16 +340,19 @@ private suspend fun klingAIRequestJson(
         errorMessage = ::klingAIErrorMessage,
     )
 
-private fun klingAIHeaders(settings: KlingAIProviderSettings, callHeaders: Map<String, String>): Map<String, String> {
+private fun klingAIHeaders(
+    settings: KlingAIProviderSettings,
+    callHeaders: Map<String, String>,
+    clock: Clock = Clock.System,
+): Map<String, String> {
     val token = generateKlingAIAuthToken(
         accessKey = settings.accessKey ?: throw AiSdkException("KlingAI access key is required."),
         secretKey = settings.secretKey ?: throw AiSdkException("KlingAI secret key is required."),
+        clock = clock,
     )
-    val base = linkedMapOf<String, String?>()
-    base[HttpHeaders.Authorization] = "Bearer $token"
-    settings.headers.forEach { (key, value) -> base[key] = value }
-    callHeaders.forEach { (key, value) -> base[key] = value }
-    return withUserAgentSuffix(base, "ai-sdk/klingai/$KLINGAI_VERSION")
+    return buildProviderHeaders(settings.headers, callHeaders, "ai-sdk/klingai/$KLINGAI_VERSION") { base ->
+        base[HttpHeaders.Authorization] = "Bearer $token"
+    }
 }
 
 private fun klingAIOptions(providerOptions: Map<String, JsonElement>): JsonObject =
@@ -367,8 +371,8 @@ private fun klingAIErrorMessage(statusCode: Int, parsed: JsonElement?, raw: Stri
     return "KlingAI request failed ($statusCode): $detail"
 }
 
-private fun generateKlingAIAuthToken(accessKey: String, secretKey: String): String {
-    val now = Clock.System.now().epochSeconds
+private fun generateKlingAIAuthToken(accessKey: String, secretKey: String, clock: Clock = Clock.System): String {
+    val now = clock.now().epochSeconds
     val header = buildJsonObject {
         put("alg", JsonPrimitive("HS256"))
         put("typ", JsonPrimitive("JWT"))

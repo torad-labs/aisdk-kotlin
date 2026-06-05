@@ -281,8 +281,12 @@ private fun drainClose(state: FixJsonState, input: String, literalStart: Int?): 
     FixJsonState.INSIDE_ARRAY_AFTER_VALUE,
     -> "]"
     FixJsonState.INSIDE_LITERAL -> literalTail(input.substring(requireNotNull(literalStart), input.length))
-    // ROOT, FINISH, INSIDE_STRING_ESCAPE, INSIDE_NUMBER -> nothing.
-    else -> ""
+    // Exhaustive (no else): a future FixJsonState variant is a compile error here.
+    FixJsonState.ROOT,
+    FixJsonState.FINISH,
+    FixJsonState.INSIDE_STRING_ESCAPE,
+    FixJsonState.INSIDE_NUMBER,
+    -> ""
 }
 
 private fun literalTail(partial: String): String = when {

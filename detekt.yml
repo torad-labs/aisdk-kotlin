@@ -1,0 +1,23 @@
+# detekt configuration overlay (merged on top of detekt's default config via
+# `buildUponDefaultConfig = true`). Only rules we deliberately tune live here.
+#
+# Cancellation-rethrow intent: detekt 1.23.x has no built-in rule that asserts
+# "a catch(Throwable)/runCatching that does not rethrow CancellationException".
+# A fully cancellation-specific check would require a custom rule-set module
+# (out of scope for a config-only change). The closest robust built-ins are
+# SwallowedException + ThrowingExceptionsWithoutMessageOrCause, pinned active
+# here. Crucially, CancellationException is left OUT of `ignoredExceptionTypes`
+# so swallowing it (catching without rethrow/use) is flagged rather than ignored.
+exceptions:
+  SwallowedException:
+    active: true
+    # CancellationException intentionally NOT listed here: swallowing it breaks
+    # structured-concurrency cancellation, so detekt should flag it.
+    ignoredExceptionTypes:
+      - 'InterruptedException'
+      - 'MalformedURLException'
+      - 'NumberFormatException'
+      - 'ParseException'
+    allowedExceptionNameRegex: '_|(ignore|expected).*'
+  ThrowingExceptionsWithoutMessageOrCause:
+    active: true

@@ -1,5 +1,6 @@
 package ai.torad.aisdk.ui
 
+import ai.torad.aisdk.AiSdkDsl
 import ai.torad.aisdk.Tool
 
 /**
@@ -71,6 +72,7 @@ public class ToolPartHandlerRegistry<TRenderResult> internal constructor(
     public fun render(part: UIMessagePart.ToolUI): TRenderResult =
         handlers[part.toolName]?.invoke(part) ?: fallback(part)
 
+    @AiSdkDsl
     public class Builder<TRenderResult> internal constructor() {
         internal val handlers: MutableMap<String, (UIMessagePart.ToolUI) -> TRenderResult> = mutableMapOf()
 
