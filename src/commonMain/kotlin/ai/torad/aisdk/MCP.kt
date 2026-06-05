@@ -1842,6 +1842,11 @@ public class SseMCPTransport(
             teardownReader()
             throw error
         }
+        // Start committed successfully. Release the guard so a later reader
+        // death (which resets `connected`) doesn't leave `starting` stuck true
+        // and permanently block a fresh start(); the connected-check at the top
+        // handles the "already running" case while the reader is alive.
+        starting.store(false)
     }
 
     private suspend fun teardownReader() {
