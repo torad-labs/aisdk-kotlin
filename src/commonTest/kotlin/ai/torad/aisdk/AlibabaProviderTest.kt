@@ -219,11 +219,75 @@ class AlibabaProviderTest {
     }
 
     @Test
+    fun `embedding model posts DashScope native request and maps sorted embeddings and usage`() = runTest {
+        val fixture = createTestServer(
+            mutableMapOf(
+                "https://alibaba.test/api/v1/services/embeddings/text-embedding/text-embedding" to UrlHandler(
+                    UrlResponse.JsonValue(
+                        Json.parseToJsonElement(
+                            """
+                            {
+                              "output":{
+                                "embeddings":[
+                                  {"text_index":1,"embedding":[0.4,0.5]},
+                                  {"text_index":0,"embedding":[0.1,0.2,0.3]}
+                                ]
+                              },
+                              "usage":{"total_tokens":7}
+                            }
+                            """.trimIndent(),
+                        ),
+                    ),
+                ),
+            ),
+        )
+        fixture.server.start()
+        val provider = createAlibaba(
+            fixture.httpClient(),
+            AlibabaProviderSettings(apiKey = "key", embeddingBaseURL = "https://alibaba.test/api/v1"),
+        )
+
+        val result = provider.embeddingModel("text-embedding-v4").embed(
+            EmbeddingModelCallParams(
+                values = listOf("hello", "world"),
+                providerOptions = mapOf(
+                    "alibaba" to buildJsonObject {
+                        put("textType", JsonPrimitive("query"))
+                        put("dimension", JsonPrimitive(2))
+                    },
+                ),
+            ),
+        )
+
+        // Reordered by text_index: index 0 (3-dim) first, then index 1 (2-dim).
+        assertEquals(listOf(listOf(0.1f, 0.2f, 0.3f), listOf(0.4f, 0.5f)), result.embeddings)
+        assertEquals(7, result.usage.tokens)
+    }
+
+    @Test
+    fun `embedding model rejects sparse output and over-limit batches`() = runTest {
+        val provider = createAlibaba(createTestServer(mutableMapOf()).httpClient(), AlibabaProviderSettings(apiKey = "key"))
+        val model = provider.embeddingModel("text-embedding-v4")
+        assertFailsWith<UnsupportedFunctionalityError> {
+            model.embed(
+                EmbeddingModelCallParams(
+                    values = listOf("x"),
+                    providerOptions = mapOf(
+                        "alibaba" to buildJsonObject { put("outputType", JsonPrimitive("sparse")) },
+                    ),
+                ),
+            )
+        }
+        assertFailsWith<TooManyEmbeddingValuesForCallError> {
+            model.embed(EmbeddingModelCallParams(values = List(11) { "v$it" }))
+        }
+    }
+
+    @Test
     fun `unsupported Alibaba surfaces and unconfigured singleton fail explicitly`() {
         val provider = createAlibaba(createTestServer(mutableMapOf()).httpClient(), AlibabaProviderSettings(apiKey = "key"))
 
         assertFailsWith<NoSuchModelError> { provider.imageModel("image") }
-        assertFailsWith<NoSuchModelError> { provider.embeddingModel("embed") }
         assertTrue(assertFailsWith<AiSdkException> { alibaba("qwen-plus") }.message.orEmpty().contains("createAlibaba"))
         assertTrue(assertFailsWith<AiSdkException> { alibaba.video("wan2.6-t2v") }.message.orEmpty().contains("createAlibaba"))
     }

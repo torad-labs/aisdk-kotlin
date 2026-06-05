@@ -7243,6 +7243,39 @@ public final class ai/torad/aisdk/middleware/SimulateStreamingKt {
 	public static final fun simulateStreamingMiddleware ()Lai/torad/aisdk/LanguageModelMiddleware;
 }
 
+public final class ai/torad/aisdk/providers/AlibabaEmbeddingModelOptions {
+	public static final field Companion Lai/torad/aisdk/providers/AlibabaEmbeddingModelOptions$Companion;
+	public fun <init> ()V
+	public fun <init> (Ljava/lang/String;Ljava/lang/Integer;Ljava/lang/String;)V
+	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/Integer;Ljava/lang/String;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()Ljava/lang/Integer;
+	public final fun component3 ()Ljava/lang/String;
+	public final fun copy (Ljava/lang/String;Ljava/lang/Integer;Ljava/lang/String;)Lai/torad/aisdk/providers/AlibabaEmbeddingModelOptions;
+	public static synthetic fun copy$default (Lai/torad/aisdk/providers/AlibabaEmbeddingModelOptions;Ljava/lang/String;Ljava/lang/Integer;Ljava/lang/String;ILjava/lang/Object;)Lai/torad/aisdk/providers/AlibabaEmbeddingModelOptions;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getDimension ()Ljava/lang/Integer;
+	public final fun getOutputType ()Ljava/lang/String;
+	public final fun getTextType ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final synthetic class ai/torad/aisdk/providers/AlibabaEmbeddingModelOptions$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
+	public static final field INSTANCE Lai/torad/aisdk/providers/AlibabaEmbeddingModelOptions$$serializer;
+	public final fun childSerializers ()[Lkotlinx/serialization/KSerializer;
+	public final fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Lai/torad/aisdk/providers/AlibabaEmbeddingModelOptions;
+	public synthetic fun deserialize (Lkotlinx/serialization/encoding/Decoder;)Ljava/lang/Object;
+	public final fun getDescriptor ()Lkotlinx/serialization/descriptors/SerialDescriptor;
+	public final fun serialize (Lkotlinx/serialization/encoding/Encoder;Lai/torad/aisdk/providers/AlibabaEmbeddingModelOptions;)V
+	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
+	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
+}
+
+public final class ai/torad/aisdk/providers/AlibabaEmbeddingModelOptions$Companion {
+	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
 public final class ai/torad/aisdk/providers/AlibabaLanguageModelOptions {
 	public static final field Companion Lai/torad/aisdk/providers/AlibabaLanguageModelOptions$Companion;
 	public fun <init> ()V
@@ -7305,18 +7338,20 @@ public final class ai/torad/aisdk/providers/AlibabaProviderKt {
 public final class ai/torad/aisdk/providers/AlibabaProviderSettings {
 	public static final field Companion Lai/torad/aisdk/providers/AlibabaProviderSettings$Companion;
 	public fun <init> ()V
-	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;Z)V
-	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;ZILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;Z)V
+	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;ZILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun component1 ()Ljava/lang/String;
 	public final fun component2 ()Ljava/lang/String;
 	public final fun component3 ()Ljava/lang/String;
-	public final fun component4 ()Ljava/util/Map;
-	public final fun component5 ()Z
-	public final fun copy (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;Z)Lai/torad/aisdk/providers/AlibabaProviderSettings;
-	public static synthetic fun copy$default (Lai/torad/aisdk/providers/AlibabaProviderSettings;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;ZILjava/lang/Object;)Lai/torad/aisdk/providers/AlibabaProviderSettings;
+	public final fun component4 ()Ljava/lang/String;
+	public final fun component5 ()Ljava/util/Map;
+	public final fun component6 ()Z
+	public final fun copy (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;Z)Lai/torad/aisdk/providers/AlibabaProviderSettings;
+	public static synthetic fun copy$default (Lai/torad/aisdk/providers/AlibabaProviderSettings;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;ZILjava/lang/Object;)Lai/torad/aisdk/providers/AlibabaProviderSettings;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getApiKey ()Ljava/lang/String;
 	public final fun getBaseURL ()Ljava/lang/String;
+	public final fun getEmbeddingBaseURL ()Ljava/lang/String;
 	public final fun getHeaders ()Ljava/util/Map;
 	public final fun getIncludeUsage ()Z
 	public final fun getVideoBaseURL ()Ljava/lang/String;

@@ -4,7 +4,6 @@ import ai.torad.aisdk.*
 import io.ktor.client.HttpClient
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpMethod
-import kotlin.time.Clock
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.collect
@@ -17,12 +16,14 @@ import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.booleanOrNull
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.contentOrNull
+import kotlinx.serialization.json.floatOrNull
 import kotlinx.serialization.json.intOrNull
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
+import kotlin.time.Clock
 
-public const val ALIBABA_VERSION: String = "1.0.25"
+public const val ALIBABA_VERSION: String = "1.0.26"
 
 public typealias AlibabaChatModelId = String
 public typealias AlibabaVideoModelId = String
@@ -35,9 +36,25 @@ public typealias AlibabaCacheControl = JsonObject
 public data class AlibabaProviderSettings(
     val baseURL: String = "https://dashscope-intl.aliyuncs.com/compatible-mode/v1",
     val videoBaseURL: String = "https://dashscope-intl.aliyuncs.com",
+    // The embedding API uses the DashScope native endpoint, not the
+    // OpenAI-compatible one (`compatible-mode/v1`).
+    val embeddingBaseURL: String = "https://dashscope-intl.aliyuncs.com/api/v1",
     val apiKey: String? = null,
     val headers: Map<String, String> = emptyMap(),
     val includeUsage: Boolean = true,
+)
+
+/** Provider options for [AlibabaProvider.embeddingModel] — pass under the
+ *  `"alibaba"` key in [EmbeddingModelCallParams.providerOptions]. */
+@Serializable
+public data class AlibabaEmbeddingModelOptions(
+    /** `"query"` or `"document"` (asymmetric retrieval); defaults to `document`. */
+    val textType: String? = null,
+    /** Output vector dimension; defaults to 1024 (`text-embedding-v4` also allows 1536/2048). */
+    val dimension: Int? = null,
+    /** `"dense"` (default), `"sparse"`, or `"dense&sparse"`. `sparse` is rejected —
+     *  the embedding interface requires dense float arrays. */
+    val outputType: String? = null,
 )
 
 @Serializable
@@ -102,7 +119,7 @@ private class DefaultAlibabaProvider(
     override fun languageModel(modelId: String): LanguageModel = AlibabaChatLanguageModel(chatProvider.chatModel(modelId))
     override fun videoModel(modelId: String): VideoModel = AlibabaVideoModel(client, settings, modelId)
     override fun imageModel(modelId: String): ImageModel = throw NoSuchModelError(providerId, "imageModel", modelId)
-    override fun embeddingModel(modelId: String): EmbeddingModel = throw NoSuchModelError(providerId, "embeddingModel", modelId)
+    override fun embeddingModel(modelId: String): EmbeddingModel = AlibabaEmbeddingModel(client, settings, modelId)
 }
 
 private class AlibabaChatLanguageModel(
@@ -304,6 +321,69 @@ private fun alibabaVideoMetadata(taskId: String, videoUrl: String, value: JsonOb
             usage["SR"]?.let { put("resolution", it) }
             usage["size"]?.let { put("size", it) }
         })
+    }
+}
+
+private const val ALIBABA_MAX_EMBEDDINGS_PER_CALL = 10
+
+/** DashScope text-embedding (text-embedding-v3/v4) model. Routes to the native
+ *  DashScope endpoint (`embeddingBaseURL`), not the OpenAI-compatible chat base. */
+private class AlibabaEmbeddingModel(
+    private val client: HttpClient,
+    private val settings: AlibabaProviderSettings,
+    override val modelId: String,
+) : EmbeddingModel {
+    override val provider: String = "alibaba.embedding"
+
+    override suspend fun embed(params: EmbeddingModelCallParams): EmbeddingModelResult {
+        if (params.values.size > ALIBABA_MAX_EMBEDDINGS_PER_CALL) {
+            throw TooManyEmbeddingValuesForCallError(
+                provider = provider,
+                modelId = modelId,
+                maxEmbeddingsPerCall = ALIBABA_MAX_EMBEDDINGS_PER_CALL,
+                values = params.values,
+            )
+        }
+        val options = alibabaOptions(params.providerOptions)
+        if (options["outputType"]?.jsonPrimitive?.contentOrNull == "sparse") {
+            throw UnsupportedFunctionalityError(
+                "Alibaba embedding outputType 'sparse'",
+                "Alibaba embedding outputType 'sparse' is not supported because embeddings require " +
+                    "dense number arrays. Use 'dense' or 'dense&sparse' instead.",
+            )
+        }
+        val body = buildJsonObject {
+            put("model", JsonPrimitive(modelId))
+            put("input", buildJsonObject { put("texts", JsonArray(params.values.map(::JsonPrimitive))) })
+            put(
+                "parameters",
+                buildJsonObject {
+                    options["textType"]?.let { put("text_type", it) }
+                    options["dimension"]?.let { put("dimension", it) }
+                    options["outputType"]?.let { put("output_type", it) }
+                },
+            )
+        }
+        val response = alibabaPostJson(
+            client = client,
+            url = "${settings.embeddingBaseURL.trimEnd('/')}/services/embeddings/text-embedding/text-embedding",
+            body = body,
+            headers = alibabaHeaders(settings, params.headers),
+        )
+        val value = response.value.jsonObject
+        val items = value["output"]?.jsonObject?.get("embeddings")?.jsonArray.orEmpty()
+            .sortedBy { it.jsonObject["text_index"]?.jsonPrimitive?.intOrNull ?: Int.MAX_VALUE }
+        return EmbeddingModelResult(
+            embeddings = items.map { item ->
+                item.jsonObject["embedding"]?.jsonArray.orEmpty().map { it.jsonPrimitive.floatOrNull ?: 0f }
+            },
+            usage = EmbeddingUsage(
+                tokens = value["usage"]?.jsonObject?.get("total_tokens")?.jsonPrimitive?.intOrNull ?: 0,
+                raw = value["usage"],
+            ),
+            request = LanguageModelRequestMetadata(body = body),
+            response = LanguageModelResponseMetadata(headers = response.headers, body = response.value),
+        )
     }
 }
 

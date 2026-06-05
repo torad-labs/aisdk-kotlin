@@ -10,7 +10,6 @@
     <ID>ArgumentListWrapping:AlibabaProvider.kt$AlibabaVideoModel$(modelId = modelId, headers = headers, body = status.value)</ID>
     <ID>ArgumentListWrapping:AlibabaProvider.kt$DefaultAlibabaProvider$(chatProvider.chatModel(modelId))</ID>
     <ID>ArgumentListWrapping:AlibabaProvider.kt$DefaultAlibabaProvider$(modelId)</ID>
-    <ID>ArgumentListWrapping:AlibabaProvider.kt$DefaultAlibabaProvider$(providerId, "embeddingModel", modelId)</ID>
     <ID>ArgumentListWrapping:AlibabaProviderTest.kt$AlibabaProviderTest$("I checked the cached context.", result.content.filterIsInstance&lt;ContentPart.Reasoning>().single().text)</ID>
     <ID>ArgumentListWrapping:AlibabaProviderTest.kt$AlibabaProviderTest$("createAlibaba")</ID>
     <ID>ArgumentListWrapping:AlibabaProviderTest.kt$AlibabaProviderTest$("function")</ID>
@@ -122,8 +121,6 @@
     <ID>ArgumentListWrapping:AnthropicProvider.kt$(::JsonPrimitive)</ID>
     <ID>ArgumentListWrapping:AnthropicProvider.kt$(params.stopSequences.map(::JsonPrimitive))</ID>
     <ID>ArgumentListWrapping:AnthropicProvider.kt$&lt;no name provided>$(providerId, "embeddingModel", modelId)</ID>
-    <ID>ArgumentListWrapping:AnthropicProvider.kt$AnthropicMessagesLanguageModel$("Failed to parse Anthropic stream event: ${event.error.message}")</ID>
-    <ID>ArgumentListWrapping:AnthropicProvider.kt$AnthropicMessagesLanguageModel$(StreamEvent.Error("Failed to parse Anthropic stream event: ${event.error.message}"))</ID>
     <ID>ArgumentListWrapping:AnthropicProvider.kt$AnthropicMessagesLanguageModel$(prepared.body, prepared.betas, params.headers, acceptEventStream = false, parseJson = true)</ID>
     <ID>ArgumentListWrapping:AnthropicProvider.kt$AnthropicProvider$(providerId, "embeddingModel", modelId)</ID>
     <ID>ArgumentListWrapping:AnthropicProvider.kt$AnthropicStreamState$("Anthropic stream protocol error: content_block_delta missing delta.type.")</ID>
@@ -657,8 +654,6 @@
     <ID>ArgumentListWrapping:OpenAICompatibleProvider.kt$OpenAIChatStreamState$(delta, "tool_calls", provider, "chat stream event", "$.choices[0].delta")</ID>
     <ID>ArgumentListWrapping:OpenAICompatibleProvider.kt$OpenAIChatStreamState$(existing.id, delta, providerMetadata = existing.providerMetadata)</ID>
     <ID>ArgumentListWrapping:OpenAICompatibleProvider.kt$OpenAIChatStreamState$(function, "arguments", provider, "chat stream tool call", "$.function")</ID>
-    <ID>ArgumentListWrapping:OpenAICompatibleProvider.kt$OpenAICompatibleChatLanguageModel$("Failed to parse OpenAI-compatible stream event: ${event.error.message}")</ID>
-    <ID>ArgumentListWrapping:OpenAICompatibleProvider.kt$OpenAICompatibleChatLanguageModel$(StreamEvent.Error("Failed to parse OpenAI-compatible stream event: ${event.error.message}"))</ID>
     <ID>ArgumentListWrapping:OpenAICompatibleProvider.kt$OpenAICompatibleChatLanguageModel$(provider = providerName, providerKey = providerOptionsKey(), convertUsage = settings.convertUsage)</ID>
     <ID>ArgumentListWrapping:OpenAICompatibleProvider.kt$OpenAICompatibleCompletionLanguageModel$("Failed to parse OpenAI-compatible completion stream event: ${event.error.message}")</ID>
     <ID>ArgumentListWrapping:OpenAICompatibleProvider.kt$OpenAICompatibleCompletionLanguageModel$(StreamEvent.Error("Failed to parse OpenAI-compatible completion stream event: ${event.error.message}"))</ID>
@@ -1072,7 +1067,6 @@
     <ID>ImportOrdering:AbortSignal.kt$import kotlin.concurrent.atomics.AtomicReference import kotlin.concurrent.atomics.ExperimentalAtomicApi import kotlinx.coroutines.CompletableJob import kotlinx.coroutines.CoroutineScope import kotlinx.coroutines.Job import kotlinx.coroutines.SupervisorJob</ID>
     <ID>ImportOrdering:AgentInterfaceTest.kt$import kotlin.test.Test import kotlin.test.assertEquals import kotlin.test.assertTrue import kotlinx.coroutines.flow.Flow import kotlinx.coroutines.flow.flowOf import kotlinx.coroutines.test.runTest</ID>
     <ID>ImportOrdering:AgentSession.kt$import kotlin.concurrent.Volatile import kotlinx.serialization.json.JsonPrimitive import kotlinx.coroutines.CancellationException import kotlinx.coroutines.CoroutineScope import kotlinx.coroutines.CoroutineStart import kotlinx.coroutines.Job import kotlinx.coroutines.flow.MutableStateFlow import kotlinx.coroutines.flow.StateFlow import kotlinx.coroutines.flow.asStateFlow import kotlinx.coroutines.flow.collect import kotlinx.coroutines.flow.update import kotlinx.coroutines.launch</ID>
-    <ID>ImportOrdering:AlibabaProvider.kt$import ai.torad.aisdk.* import io.ktor.client.HttpClient import io.ktor.http.HttpHeaders import io.ktor.http.HttpMethod import kotlin.time.Clock import kotlinx.coroutines.delay import kotlinx.coroutines.flow.Flow import kotlinx.coroutines.flow.collect import kotlinx.coroutines.flow.flow import kotlinx.serialization.Serializable import kotlinx.serialization.json.JsonArray import kotlinx.serialization.json.JsonElement import kotlinx.serialization.json.JsonObject import kotlinx.serialization.json.JsonPrimitive import kotlinx.serialization.json.booleanOrNull import kotlinx.serialization.json.buildJsonObject import kotlinx.serialization.json.contentOrNull import kotlinx.serialization.json.intOrNull import kotlinx.serialization.json.jsonArray import kotlinx.serialization.json.jsonObject import kotlinx.serialization.json.jsonPrimitive</ID>
     <ID>ImportOrdering:AlibabaProviderTest.kt$import ai.torad.aisdk.providers.ALIBABA_VERSION import ai.torad.aisdk.providers.AlibabaProviderSettings import ai.torad.aisdk.providers.alibaba import ai.torad.aisdk.providers.createAlibaba import io.ktor.http.HttpHeaders import kotlinx.coroutines.test.runTest import kotlinx.serialization.json.Json import kotlinx.serialization.json.JsonPrimitive import kotlinx.serialization.json.buildJsonObject import kotlinx.serialization.json.booleanOrNull import kotlinx.serialization.json.contentOrNull import kotlinx.serialization.json.floatOrNull import kotlinx.serialization.json.intOrNull import kotlinx.serialization.json.jsonArray import kotlinx.serialization.json.jsonObject import kotlinx.serialization.json.jsonPrimitive import kotlin.test.Test import kotlin.test.assertEquals import kotlin.test.assertFailsWith import kotlin.test.assertTrue</ID>
     <ID>ImportOrdering:AnthropicAwsProviderTest.kt$import ai.torad.aisdk.providers.ANTHROPIC_AWS_VERSION import ai.torad.aisdk.providers.ANTHROPIC_VERSION import ai.torad.aisdk.providers.AnthropicAwsProviderSettings import ai.torad.aisdk.providers.anthropic import ai.torad.aisdk.providers.createAnthropicAws import ai.torad.aisdk.testing.drainAllItems import io.ktor.http.HttpHeaders import kotlinx.coroutines.test.runTest import kotlinx.serialization.json.Json import kotlinx.serialization.json.contentOrNull import kotlinx.serialization.json.jsonObject import kotlinx.serialization.json.jsonPrimitive import kotlin.test.Test import kotlin.test.assertEquals import kotlin.test.assertFailsWith import kotlin.test.assertIs import kotlin.test.assertTrue</ID>
     <ID>ImportOrdering:AnthropicProviderTest.kt$import ai.torad.aisdk.providers.ANTHROPIC_VERSION import ai.torad.aisdk.providers.AnthropicProviderSettings import ai.torad.aisdk.providers.anthropic import ai.torad.aisdk.providers.createAnthropic import ai.torad.aisdk.providers.forwardAnthropicContainerIdFromLastStep import ai.torad.aisdk.testing.drainAllItems import io.ktor.http.HttpHeaders import kotlinx.coroutines.test.runTest import kotlinx.serialization.json.Json import kotlinx.serialization.json.JsonArray import kotlinx.serialization.json.JsonObject import kotlinx.serialization.json.JsonPrimitive import kotlinx.serialization.json.buildJsonObject import kotlinx.serialization.json.booleanOrNull import kotlinx.serialization.json.contentOrNull import kotlinx.serialization.json.intOrNull import kotlinx.serialization.json.jsonArray import kotlinx.serialization.json.jsonObject import kotlinx.serialization.json.jsonPrimitive import kotlin.test.Test import kotlin.test.assertEquals import kotlin.test.assertFailsWith import kotlin.test.assertIs import kotlin.test.assertTrue</ID>
@@ -1570,7 +1564,6 @@
     <ID>MaxLineLength:AlibabaProvider.kt$AlibabaVideoModel$"Video generation ${taskStatus.lowercase()}. Task ID: $taskId. ${output["message"]?.jsonPrimitive?.contentOrNull.orEmpty()}"</ID>
     <ID>MaxLineLength:AlibabaProvider.kt$AlibabaVideoModel$providerMetadata = mapOf("alibaba" to alibabaVideoMetadata(taskId, videoUrl, status.value.jsonObject))</ID>
     <ID>MaxLineLength:AlibabaProvider.kt$AlibabaVideoModel$response = LanguageModelResponseMetadata(modelId = modelId, headers = headers, body = status.value)</ID>
-    <ID>MaxLineLength:AlibabaProvider.kt$DefaultAlibabaProvider$override fun embeddingModel(modelId: String): EmbeddingModel</ID>
     <ID>MaxLineLength:AlibabaProvider.kt$DefaultAlibabaProvider$override fun languageModel(modelId: String): LanguageModel</ID>
     <ID>MaxLineLength:AlibabaProvider.kt$if (params.aspectRatio != null) warnings += CallWarning("unsupported", "Alibaba video models use explicit size/resolution dimensions. Use the resolution option or providerOptions.alibaba for size control.")</ID>
     <ID>MaxLineLength:AlibabaProvider.kt$if (params.n > 1) warnings += CallWarning("unsupported", "Alibaba video models only support generating 1 video per call.")</ID>
@@ -1638,7 +1631,6 @@
     <ID>MaxLineLength:AnthropicProvider.kt$"tool_search_tool_bm25" -> buildJsonObject { put("type", JsonPrimitive("tool_search_tool_bm25_20251119")); put("name", JsonPrimitive("tool_search_tool_bm25")) }</ID>
     <ID>MaxLineLength:AnthropicProvider.kt$"tool_search_tool_regex" -> buildJsonObject { put("type", JsonPrimitive("tool_search_tool_regex_20251119")); put("name", JsonPrimitive("tool_search_tool_regex")) }</ID>
     <ID>MaxLineLength:AnthropicProvider.kt$&lt;no name provided>$override fun embeddingModel(modelId: String): EmbeddingModel</ID>
-    <ID>MaxLineLength:AnthropicProvider.kt$AnthropicMessagesLanguageModel$is ParseResult.Failure -> emit(StreamEvent.Error("Failed to parse Anthropic stream event: ${event.error.message}"))</ID>
     <ID>MaxLineLength:AnthropicProvider.kt$AnthropicMessagesLanguageModel$val response = anthropicPost(prepared.body, prepared.betas, params.headers, acceptEventStream = false, parseJson = true)</ID>
     <ID>MaxLineLength:AnthropicProvider.kt$AnthropicProvider$public fun textEmbeddingModel(modelId: String): Nothing</ID>
     <ID>MaxLineLength:AnthropicProvider.kt$AnthropicProviderSettings$val requestHeadersProvider: (suspend (url: String, body: String, headers: Map&lt;String, String>) -> Map&lt;String, String>)? = null</ID>
@@ -2117,7 +2109,6 @@
     <ID>MaxLineLength:OpenAICompatibleProvider.kt$OpenAIChatStreamState$if (delta.isNotEmpty()) add(StreamEvent.ToolInputDelta(existing.id, delta, providerMetadata = existing.providerMetadata))</ID>
     <ID>MaxLineLength:OpenAICompatibleProvider.kt$OpenAIChatStreamState$val arguments = WireDecoder.optionalString(function, "arguments", provider, "chat stream tool call", "$.function").orEmpty()</ID>
     <ID>MaxLineLength:OpenAICompatibleProvider.kt$OpenAIChatStreamState$val calls = WireDecoder.optionalArray(delta, "tool_calls", provider, "chat stream event", "$.choices[0].delta").orEmpty()</ID>
-    <ID>MaxLineLength:OpenAICompatibleProvider.kt$OpenAICompatibleChatLanguageModel$is ParseResult.Failure -> emit(StreamEvent.Error("Failed to parse OpenAI-compatible stream event: ${event.error.message}"))</ID>
     <ID>MaxLineLength:OpenAICompatibleProvider.kt$OpenAICompatibleChatLanguageModel$val state = OpenAIChatStreamState(provider = providerName, providerKey = providerOptionsKey(), convertUsage = settings.convertUsage)</ID>
     <ID>MaxLineLength:OpenAICompatibleProvider.kt$OpenAICompatibleCompletionLanguageModel$if (params.tools.isNotEmpty()) warnings += CallWarning("unsupported", "tools are not supported by completion models")</ID>
     <ID>MaxLineLength:OpenAICompatibleProvider.kt$OpenAICompatibleCompletionLanguageModel$is ParseResult.Failure -> emit(StreamEvent.Error("Failed to parse OpenAI-compatible completion stream event: ${event.error.message}"))</ID>
@@ -2719,7 +2710,6 @@
     <ID>NoWildcardImports:VoyageProvider.kt$import ai.torad.aisdk.*</ID>
     <ID>NoWildcardImports:XaiProvider.kt$import ai.torad.aisdk.*</ID>
     <ID>ParameterListWrapping:AbortSignal.kt$AbortError$(message: String = "operation aborted")</ID>
-    <ID>ParameterListWrapping:AlibabaProvider.kt$DefaultAlibabaProvider$(modelId: String)</ID>
     <ID>ParameterListWrapping:AmazonBedrockProvider.kt$BedrockAnthropicProvider$(modelId: String)</ID>
     <ID>ParameterListWrapping:AmazonBedrockProvider.kt$BedrockMantleProvider$(modelId: String)</ID>
     <ID>ParameterListWrapping:AmazonBedrockProvider.kt$BedrockStreamBlock.Tool$(val id: String, val name: String, var input: String, val isJsonResponseTool: Boolean)</ID>

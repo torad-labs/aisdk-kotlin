@@ -3921,6 +3921,38 @@ final class ai.torad.aisdk.codemod/CodemodRule { // ai.torad.aisdk.codemod/Codem
     final fun toString(): kotlin/String // ai.torad.aisdk.codemod/CodemodRule.toString|toString(){}[0]
 }
 
+final class ai.torad.aisdk.providers/AlibabaEmbeddingModelOptions { // ai.torad.aisdk.providers/AlibabaEmbeddingModelOptions|null[0]
+    constructor <init>(kotlin/String? = ..., kotlin/Int? = ..., kotlin/String? = ...) // ai.torad.aisdk.providers/AlibabaEmbeddingModelOptions.<init>|<init>(kotlin.String?;kotlin.Int?;kotlin.String?){}[0]
+
+    final val dimension // ai.torad.aisdk.providers/AlibabaEmbeddingModelOptions.dimension|{}dimension[0]
+        final fun <get-dimension>(): kotlin/Int? // ai.torad.aisdk.providers/AlibabaEmbeddingModelOptions.dimension.<get-dimension>|<get-dimension>(){}[0]
+    final val outputType // ai.torad.aisdk.providers/AlibabaEmbeddingModelOptions.outputType|{}outputType[0]
+        final fun <get-outputType>(): kotlin/String? // ai.torad.aisdk.providers/AlibabaEmbeddingModelOptions.outputType.<get-outputType>|<get-outputType>(){}[0]
+    final val textType // ai.torad.aisdk.providers/AlibabaEmbeddingModelOptions.textType|{}textType[0]
+        final fun <get-textType>(): kotlin/String? // ai.torad.aisdk.providers/AlibabaEmbeddingModelOptions.textType.<get-textType>|<get-textType>(){}[0]
+
+    final fun component1(): kotlin/String? // ai.torad.aisdk.providers/AlibabaEmbeddingModelOptions.component1|component1(){}[0]
+    final fun component2(): kotlin/Int? // ai.torad.aisdk.providers/AlibabaEmbeddingModelOptions.component2|component2(){}[0]
+    final fun component3(): kotlin/String? // ai.torad.aisdk.providers/AlibabaEmbeddingModelOptions.component3|component3(){}[0]
+    final fun copy(kotlin/String? = ..., kotlin/Int? = ..., kotlin/String? = ...): ai.torad.aisdk.providers/AlibabaEmbeddingModelOptions // ai.torad.aisdk.providers/AlibabaEmbeddingModelOptions.copy|copy(kotlin.String?;kotlin.Int?;kotlin.String?){}[0]
+    final fun equals(kotlin/Any?): kotlin/Boolean // ai.torad.aisdk.providers/AlibabaEmbeddingModelOptions.equals|equals(kotlin.Any?){}[0]
+    final fun hashCode(): kotlin/Int // ai.torad.aisdk.providers/AlibabaEmbeddingModelOptions.hashCode|hashCode(){}[0]
+    final fun toString(): kotlin/String // ai.torad.aisdk.providers/AlibabaEmbeddingModelOptions.toString|toString(){}[0]
+
+    final object $serializer : kotlinx.serialization.internal/GeneratedSerializer<ai.torad.aisdk.providers/AlibabaEmbeddingModelOptions> { // ai.torad.aisdk.providers/AlibabaEmbeddingModelOptions.$serializer|null[0]
+        final val descriptor // ai.torad.aisdk.providers/AlibabaEmbeddingModelOptions.$serializer.descriptor|{}descriptor[0]
+            final fun <get-descriptor>(): kotlinx.serialization.descriptors/SerialDescriptor // ai.torad.aisdk.providers/AlibabaEmbeddingModelOptions.$serializer.descriptor.<get-descriptor>|<get-descriptor>(){}[0]
+
+        final fun childSerializers(): kotlin/Array<kotlinx.serialization/KSerializer<*>> // ai.torad.aisdk.providers/AlibabaEmbeddingModelOptions.$serializer.childSerializers|childSerializers(){}[0]
+        final fun deserialize(kotlinx.serialization.encoding/Decoder): ai.torad.aisdk.providers/AlibabaEmbeddingModelOptions // ai.torad.aisdk.providers/AlibabaEmbeddingModelOptions.$serializer.deserialize|deserialize(kotlinx.serialization.encoding.Decoder){}[0]
+        final fun serialize(kotlinx.serialization.encoding/Encoder, ai.torad.aisdk.providers/AlibabaEmbeddingModelOptions) // ai.torad.aisdk.providers/AlibabaEmbeddingModelOptions.$serializer.serialize|serialize(kotlinx.serialization.encoding.Encoder;ai.torad.aisdk.providers.AlibabaEmbeddingModelOptions){}[0]
+    }
+
+    final object Companion { // ai.torad.aisdk.providers/AlibabaEmbeddingModelOptions.Companion|null[0]
+        final fun serializer(): kotlinx.serialization/KSerializer<ai.torad.aisdk.providers/AlibabaEmbeddingModelOptions> // ai.torad.aisdk.providers/AlibabaEmbeddingModelOptions.Companion.serializer|serializer(){}[0]
+    }
+}
+
 final class ai.torad.aisdk.providers/AlibabaLanguageModelOptions { // ai.torad.aisdk.providers/AlibabaLanguageModelOptions|null[0]
     constructor <init>(kotlin/Boolean? = ..., kotlin/Int? = ..., kotlin/Boolean? = ...) // ai.torad.aisdk.providers/AlibabaLanguageModelOptions.<init>|<init>(kotlin.Boolean?;kotlin.Int?;kotlin.Boolean?){}[0]
 
@@ -3954,12 +3986,14 @@ final class ai.torad.aisdk.providers/AlibabaLanguageModelOptions { // ai.torad.a
 }
 
 final class ai.torad.aisdk.providers/AlibabaProviderSettings { // ai.torad.aisdk.providers/AlibabaProviderSettings|null[0]
-    constructor <init>(kotlin/String = ..., kotlin/String = ..., kotlin/String? = ..., kotlin.collections/Map<kotlin/String, kotlin/String> = ..., kotlin/Boolean = ...) // ai.torad.aisdk.providers/AlibabaProviderSettings.<init>|<init>(kotlin.String;kotlin.String;kotlin.String?;kotlin.collections.Map<kotlin.String,kotlin.String>;kotlin.Boolean){}[0]
+    constructor <init>(kotlin/String = ..., kotlin/String = ..., kotlin/String = ..., kotlin/String? = ..., kotlin.collections/Map<kotlin/String, kotlin/String> = ..., kotlin/Boolean = ...) // ai.torad.aisdk.providers/AlibabaProviderSettings.<init>|<init>(kotlin.String;kotlin.String;kotlin.String;kotlin.String?;kotlin.collections.Map<kotlin.String,kotlin.String>;kotlin.Boolean){}[0]
 
     final val apiKey // ai.torad.aisdk.providers/AlibabaProviderSettings.apiKey|{}apiKey[0]
         final fun <get-apiKey>(): kotlin/String? // ai.torad.aisdk.providers/AlibabaProviderSettings.apiKey.<get-apiKey>|<get-apiKey>(){}[0]
     final val baseURL // ai.torad.aisdk.providers/AlibabaProviderSettings.baseURL|{}baseURL[0]
         final fun <get-baseURL>(): kotlin/String // ai.torad.aisdk.providers/AlibabaProviderSettings.baseURL.<get-baseURL>|<get-baseURL>(){}[0]
+    final val embeddingBaseURL // ai.torad.aisdk.providers/AlibabaProviderSettings.embeddingBaseURL|{}embeddingBaseURL[0]
+        final fun <get-embeddingBaseURL>(): kotlin/String // ai.torad.aisdk.providers/AlibabaProviderSettings.embeddingBaseURL.<get-embeddingBaseURL>|<get-embeddingBaseURL>(){}[0]
     final val headers // ai.torad.aisdk.providers/AlibabaProviderSettings.headers|{}headers[0]
         final fun <get-headers>(): kotlin.collections/Map<kotlin/String, kotlin/String> // ai.torad.aisdk.providers/AlibabaProviderSettings.headers.<get-headers>|<get-headers>(){}[0]
     final val includeUsage // ai.torad.aisdk.providers/AlibabaProviderSettings.includeUsage|{}includeUsage[0]
@@ -3969,10 +4003,11 @@ final class ai.torad.aisdk.providers/AlibabaProviderSettings { // ai.torad.aisdk
 
     final fun component1(): kotlin/String // ai.torad.aisdk.providers/AlibabaProviderSettings.component1|component1(){}[0]
     final fun component2(): kotlin/String // ai.torad.aisdk.providers/AlibabaProviderSettings.component2|component2(){}[0]
-    final fun component3(): kotlin/String? // ai.torad.aisdk.providers/AlibabaProviderSettings.component3|component3(){}[0]
-    final fun component4(): kotlin.collections/Map<kotlin/String, kotlin/String> // ai.torad.aisdk.providers/AlibabaProviderSettings.component4|component4(){}[0]
-    final fun component5(): kotlin/Boolean // ai.torad.aisdk.providers/AlibabaProviderSettings.component5|component5(){}[0]
-    final fun copy(kotlin/String = ..., kotlin/String = ..., kotlin/String? = ..., kotlin.collections/Map<kotlin/String, kotlin/String> = ..., kotlin/Boolean = ...): ai.torad.aisdk.providers/AlibabaProviderSettings // ai.torad.aisdk.providers/AlibabaProviderSettings.copy|copy(kotlin.String;kotlin.String;kotlin.String?;kotlin.collections.Map<kotlin.String,kotlin.String>;kotlin.Boolean){}[0]
+    final fun component3(): kotlin/String // ai.torad.aisdk.providers/AlibabaProviderSettings.component3|component3(){}[0]
+    final fun component4(): kotlin/String? // ai.torad.aisdk.providers/AlibabaProviderSettings.component4|component4(){}[0]
+    final fun component5(): kotlin.collections/Map<kotlin/String, kotlin/String> // ai.torad.aisdk.providers/AlibabaProviderSettings.component5|component5(){}[0]
+    final fun component6(): kotlin/Boolean // ai.torad.aisdk.providers/AlibabaProviderSettings.component6|component6(){}[0]
+    final fun copy(kotlin/String = ..., kotlin/String = ..., kotlin/String = ..., kotlin/String? = ..., kotlin.collections/Map<kotlin/String, kotlin/String> = ..., kotlin/Boolean = ...): ai.torad.aisdk.providers/AlibabaProviderSettings // ai.torad.aisdk.providers/AlibabaProviderSettings.copy|copy(kotlin.String;kotlin.String;kotlin.String;kotlin.String?;kotlin.collections.Map<kotlin.String,kotlin.String>;kotlin.Boolean){}[0]
     final fun equals(kotlin/Any?): kotlin/Boolean // ai.torad.aisdk.providers/AlibabaProviderSettings.equals|equals(kotlin.Any?){}[0]
     final fun hashCode(): kotlin/Int // ai.torad.aisdk.providers/AlibabaProviderSettings.hashCode|hashCode(){}[0]
     final fun toString(): kotlin/String // ai.torad.aisdk.providers/AlibabaProviderSettings.toString|toString(){}[0]
