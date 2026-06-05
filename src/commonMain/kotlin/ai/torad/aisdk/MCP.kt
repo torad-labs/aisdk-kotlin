@@ -464,6 +464,11 @@ private class DefaultMCPClient(config: MCPClientConfig) : MCPClient {
     private val responseHandlersMutex = Mutex()
     private var requestMessageId: Long = 0
     private val isClosed = AtomicBoolean(true)
+
+    // Structured scope the client owns, so the non-suspend transport onClose
+    // callback can drain pending requests without resorting to GlobalScope.
+    // Cancelled by close() once the synchronous drain has run.
+    private val clientScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     private var serverCapabilities = MCPServerCapabilities()
     private var elicitationRequestHandler: (suspend (ElicitationRequest) -> ElicitResult)? = null
     private var _serverInfo = Configuration(name = "", version = "")
@@ -514,9 +519,27 @@ private class DefaultMCPClient(config: MCPClientConfig) : MCPClient {
     }
 
     override suspend fun close() {
-        if (isClosed.load()) return
+        isClosed.store(true)
         transport.close()
-        onClose()
+        // Authoritative synchronous drain: when close() returns, every pending
+        // request is settled. Idempotent (clears the map), so it composes with a
+        // drain the transport's onClose callback may already have launched.
+        failAllPendingRequests()
+        clientScope.cancel()
+    }
+
+    /**
+     * Complete every in-flight request exceptionally and clear the table, all
+     * under [responseHandlersMutex] so it can't race a concurrent registration
+     * in [requestWithoutTimeout] (which checks `isClosed` and inserts under the
+     * same lock). Idempotent: a second call drains an already-empty table.
+     */
+    private suspend fun failAllPendingRequests() {
+        val error = MCPClientError("Connection closed")
+        val pending = responseHandlersMutex.withLock {
+            responseHandlers.values.toList().also { responseHandlers.clear() }
+        }
+        pending.forEach { it.completeExceptionally(error) }
     }
 
     override suspend fun <TContext> tools(schemas: MCPToolSchemas?): ToolSet<TContext> =
@@ -663,14 +686,17 @@ private class DefaultMCPClient(config: MCPClientConfig) : MCPClient {
         serializer: KSerializer<T>,
         options: MCPRequestOptions?,
     ): T {
-        if (isClosed.load()) {
-            throw MCPClientError("Attempted to send a request from a closed client")
-        }
         assertCapability(method)
         options?.signal?.throwIfAborted()
 
         val deferred = CompletableDeferred<JsonElement>()
+        // Check isClosed under the same lock the drain uses, so a close()/onClose
+        // draining concurrently can't run between the check and the insert and leave
+        // this handler stranded (awaiting a response that will never come).
         val id = responseHandlersMutex.withLock {
+            if (isClosed.load()) {
+                throw MCPClientError("Attempted to send a request from a closed client")
+            }
             JsonPrimitive(requestMessageId++).also { responseHandlers[it.rpcIdKey()] = deferred }
         }
         try {
@@ -813,19 +839,11 @@ private class DefaultMCPClient(config: MCPClientConfig) : MCPClient {
 
     private fun onClose() {
         if (!isClosed.compareAndSet(expectedValue = false, newValue = true)) return
-        val error = MCPClientError("Connection closed")
-        // onClose is () -> Unit (non-suspend), so we can't call responseHandlersMutex.withLock
-        // directly. Use GlobalScope to run the drain+clear atomically under the mutex.
-        // The coroutine does no I/O and completes in microseconds; its lifetime is bounded.
-        @OptIn(kotlinx.coroutines.DelicateCoroutinesApi::class)
-        kotlinx.coroutines.GlobalScope.launch {
-            val snapshot = responseHandlersMutex.withLock {
-                val copy = responseHandlers.values.toList()
-                responseHandlers.clear()
-                copy
-            }
-            snapshot.forEach { it.completeExceptionally(error) }
-        }
+        // Natural connection drop (the transport's reader exited and no explicit
+        // close() ran). onClose is () -> Unit, so drain on the client's own
+        // structured scope rather than GlobalScope; an explicit close() would
+        // drain synchronously and cancel this scope.
+        clientScope.launch { failAllPendingRequests() }
     }
 
     private fun onError(error: Throwable) {

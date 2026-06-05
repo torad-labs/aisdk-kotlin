@@ -4,6 +4,7 @@ import io.ktor.client.HttpClient
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpMethod
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.flow
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
@@ -182,28 +183,35 @@ public class KtorGatewayTransport(
                 )
             }
         }
-        val response = postJson(
-            context = context,
-            path = "/video-model",
-            body = body,
-            headers = mapOf(
+        // Consume the SSE response incrementally via streamSse() and stop at the
+        // first data event — firstOrNull() cancels the upstream, whose finally
+        // releases the connection — instead of buffering the whole body first.
+        var sseHeaders: Map<String, String> = emptyMap()
+        val rawLines = streamSse(
+            client = client,
+            url = context.baseUrl.trimEnd('/') + "/video-model",
+            headers = context.headers + mapOf(
                 "ai-video-model-specification-version" to "3",
                 "ai-model-id" to modelId,
                 HttpHeaders.Accept to "text/event-stream",
             ) + params.headers,
-            parseJson = false,
+            body = body,
+            json = json,
+            errorFromResponse = gatewayError,
+            onResponse = { sseHeaders = it },
         )
-        val event = parseJsonEventStream(response.rawText, jsonSchema<JsonElement>(JsonObject(emptyMap())), json)
-            .firstNotNullOfOrNull { result ->
-                when (result) {
-                    is ParseResult.Success -> result.value.jsonObject
-                    is ParseResult.Failure -> throw GatewayResponseError(
-                        message = "Failed to parse gateway video event: ${result.error.message}",
-                        response = JsonPrimitive(result.text),
-                        cause = result.error,
-                    )
-                }
-            } ?: throw GatewayResponseError("SSE stream ended without a data event")
+        val event = when (
+            val first = parseJsonEventStream(rawLines, jsonSchema<JsonElement>(JsonObject(emptyMap())), json)
+                .firstOrNull()
+        ) {
+            is ParseResult.Success -> first.value.jsonObject
+            is ParseResult.Failure -> throw GatewayResponseError(
+                message = "Failed to parse gateway video event: ${first.error.message}",
+                response = JsonPrimitive(first.text),
+                cause = first.error,
+            )
+            null -> throw GatewayResponseError("SSE stream ended without a data event")
+        }
         if (event["type"]?.jsonPrimitive?.contentOrNull == "error") {
             throw GatewayResponseError(
                 message = event["message"]?.jsonPrimitive?.contentOrNull ?: "Gateway video generation failed",
@@ -220,7 +228,7 @@ public class KtorGatewayTransport(
                 )
             },
             warnings = callWarnings(event["warnings"]),
-            response = LanguageModelResponseMetadata(modelId = modelId, headers = response.headers),
+            response = LanguageModelResponseMetadata(modelId = modelId, headers = sseHeaders),
             providerMetadata = jsonObjectMap(event["providerMetadata"]),
         )
     }
