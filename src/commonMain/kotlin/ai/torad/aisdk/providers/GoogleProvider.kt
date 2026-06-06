@@ -1325,9 +1325,17 @@ private fun googleMessages(messages: List<ModelMessage>): GoogleConvertedMessage
                 put("role", JsonPrimitive("model"))
                 put("parts", JsonArray(message.content.mapNotNull(::googleAssistantPart)))
             }
-            MessageRole.Tool -> contents += buildJsonObject {
-                put("role", JsonPrimitive("function"))
-                put("parts", JsonArray(message.content.mapNotNull(::googleToolPart)))
+            MessageRole.Tool -> {
+                // Approval bookkeeping (ToolApprovalResponse) is SDK-internal and never reaches the wire;
+                // a Tool message that maps to no real parts produces NO content entry at all (an empty
+                // `parts` array is itself invalid to Google).
+                val parts = message.content.mapNotNull(::googleToolPart)
+                if (parts.isNotEmpty()) {
+                    contents += buildJsonObject {
+                        put("role", JsonPrimitive("function"))
+                        put("parts", JsonArray(parts))
+                    }
+                }
             }
         }
     }
@@ -1379,22 +1387,15 @@ private fun googleAssistantPart(part: ContentPart): JsonElement? = when (part) {
     else -> null
 }
 
+// ToolApprovalResponse is deliberately NOT serialized (falls to the null arm): tool approvals are an
+// SDK-internal gate with no Google wire concept — serializing one produced a functionResponse whose `name`
+// was the call id (not a declared function), which the API rejects. The wire sees only real results.
 private fun googleToolPart(part: ContentPart): JsonElement? = when (part) {
     is ContentPart.ToolResult -> buildJsonObject {
         put("functionResponse", buildJsonObject {
             put("id", JsonPrimitive(part.toolCallId))
             put("name", JsonPrimitive(part.toolName))
             put("response", part.modelVisible)
-        })
-    }
-    is ContentPart.ToolApprovalResponse -> buildJsonObject {
-        put("functionResponse", buildJsonObject {
-            put("id", JsonPrimitive(part.toolCallId))
-            put("name", JsonPrimitive(part.toolCallId))
-            put("response", buildJsonObject {
-                put("approved", JsonPrimitive(part.approved))
-                part.reason?.let { put("reason", JsonPrimitive(it)) }
-            })
         })
     }
     else -> null

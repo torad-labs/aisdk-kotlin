@@ -283,7 +283,7 @@ private class OpenAICompatibleChatLanguageModel(
         val strictJsonSchema = options["strictJsonSchema"]?.jsonPrimitive?.booleanOrNull ?: true
         val body = buildJsonObject {
             put("model", JsonPrimitive(modelId))
-            put("messages", JsonArray(params.messages.map(::openAIChatMessageJson)))
+            put("messages", JsonArray(params.messages.mapNotNull(::openAIChatMessageJson)))
             params.maxOutputTokens?.let { put(settings.chatMaxOutputTokensKey, JsonPrimitive(it)) }
             params.temperature?.let { put("temperature", JsonPrimitive(it)) }
             params.topP?.let { put("top_p", JsonPrimitive(it)) }
@@ -844,52 +844,64 @@ private data class StreamingToolCall(
     var finished: Boolean = false,
 )
 
-private fun openAIChatMessageJson(message: ModelMessage): JsonObject = buildJsonObject {
-    when (message.role) {
-        MessageRole.System -> {
-            put("role", JsonPrimitive("system"))
-            put("content", JsonPrimitive(message.content.filterIsInstance<ContentPart.Text>().joinToString("") { it.text }))
+/**
+ * One message as OpenAI chat-format JSON — or null when the message is SDK-internal bookkeeping that must
+ * NOT reach the wire. OpenAI-format providers have no tool-approval concept: a Tool-role message carrying
+ * only a [ContentPart.ToolApprovalResponse] (appended by the approval-resume cycle) used to serialize as
+ * `{role:"tool", tool_call_id:"", content:""}`, which strict shims reject (Gemini:
+ * `function_response.name: Name cannot be empty`). The wire sees the assistant's `tool_calls` entry and
+ * the eventual real [ContentPart.ToolResult] — a consistent OpenAI conversation; approvals stay internal.
+ */
+private fun openAIChatMessageJson(message: ModelMessage): JsonObject? = when (message.role) {
+    MessageRole.System -> buildJsonObject {
+        put("role", JsonPrimitive("system"))
+        put("content", JsonPrimitive(message.content.filterIsInstance<ContentPart.Text>().joinToString("") { it.text }))
+    }
+    MessageRole.User -> buildJsonObject {
+        put("role", JsonPrimitive("user"))
+        if (message.content.size == 1 && message.content.single() is ContentPart.Text) {
+            put("content", JsonPrimitive((message.content.single() as ContentPart.Text).text))
+        } else {
+            put("content", JsonArray(message.content.mapNotNull(::openAIUserContentPartJson)))
         }
-        MessageRole.User -> {
-            put("role", JsonPrimitive("user"))
-            if (message.content.size == 1 && message.content.single() is ContentPart.Text) {
-                put("content", JsonPrimitive((message.content.single() as ContentPart.Text).text))
-            } else {
-                put("content", JsonArray(message.content.mapNotNull(::openAIUserContentPartJson)))
-            }
+    }
+    MessageRole.Assistant -> buildJsonObject {
+        put("role", JsonPrimitive("assistant"))
+        val text = message.content.filterIsInstance<ContentPart.Text>().joinToString("") { it.text }
+        val reasoning = message.content.filterIsInstance<ContentPart.Reasoning>().joinToString("") { it.text }
+        val toolCalls = message.content.filterIsInstance<ContentPart.ToolCall>()
+        put("content", if (toolCalls.isEmpty()) JsonPrimitive(text) else JsonPrimitive(text.takeIf { it.isNotEmpty() }))
+        if (reasoning.isNotEmpty()) put("reasoning_content", JsonPrimitive(reasoning))
+        if (toolCalls.isNotEmpty()) {
+            put(
+                "tool_calls",
+                JsonArray(toolCalls.map { part ->
+                    buildJsonObject {
+                        put("id", JsonPrimitive(part.toolCallId))
+                        put("type", JsonPrimitive("function"))
+                        put(
+                            "function",
+                            buildJsonObject {
+                                put("name", JsonPrimitive(part.toolName))
+                                put("arguments", JsonPrimitive(part.input.toString()))
+                            },
+                        )
+                    }
+                }),
+            )
         }
-        MessageRole.Assistant -> {
-            put("role", JsonPrimitive("assistant"))
-            val text = message.content.filterIsInstance<ContentPart.Text>().joinToString("") { it.text }
-            val reasoning = message.content.filterIsInstance<ContentPart.Reasoning>().joinToString("") { it.text }
-            val toolCalls = message.content.filterIsInstance<ContentPart.ToolCall>()
-            put("content", if (toolCalls.isEmpty()) JsonPrimitive(text) else JsonPrimitive(text.takeIf { it.isNotEmpty() }))
-            if (reasoning.isNotEmpty()) put("reasoning_content", JsonPrimitive(reasoning))
-            if (toolCalls.isNotEmpty()) {
-                put(
-                    "tool_calls",
-                    JsonArray(toolCalls.map { part ->
-                        buildJsonObject {
-                            put("id", JsonPrimitive(part.toolCallId))
-                            put("type", JsonPrimitive("function"))
-                            put(
-                                "function",
-                                buildJsonObject {
-                                    put("name", JsonPrimitive(part.toolName))
-                                    put("arguments", JsonPrimitive(part.input.toString()))
-                                },
-                            )
-                        }
-                    }),
-                )
-            }
-        }
-        MessageRole.Tool -> {
-            val result = message.content.filterIsInstance<ContentPart.ToolResult>().firstOrNull()
-            put("role", JsonPrimitive("tool"))
-            put("tool_call_id", JsonPrimitive(result?.toolCallId.orEmpty()))
-            put("content", JsonPrimitive(result?.modelVisible?.let(::openAIContentString).orEmpty()))
-        }
+    }
+    MessageRole.Tool -> openAIToolMessageJson(message)
+}
+
+/** A Tool-role message: serialized only when it carries a real [ContentPart.ToolResult]; approval
+ *  bookkeeping (no result part) returns null and never reaches the wire. */
+private fun openAIToolMessageJson(message: ModelMessage): JsonObject? {
+    val result = message.content.filterIsInstance<ContentPart.ToolResult>().firstOrNull() ?: return null
+    return buildJsonObject {
+        put("role", JsonPrimitive("tool"))
+        put("tool_call_id", JsonPrimitive(result.toolCallId))
+        put("content", JsonPrimitive(openAIContentString(result.modelVisible)))
     }
 }
 
