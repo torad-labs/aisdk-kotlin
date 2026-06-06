@@ -166,6 +166,7 @@ public data class GenerateTextResult<TOutput>(
         if (text.isNotEmpty()) add(ContentPart.Text(text))
         addAll(toolCalls)
     },
+    val toolResults: List<ContentPart.ToolResult> = content.filterIsInstance<ContentPart.ToolResult>(),
     val reasoning: List<ContentPart.Reasoning> = content.filterIsInstance<ContentPart.Reasoning>(),
     val reasoningText: String? = reasoning.takeIf { it.isNotEmpty() }?.joinToString("") { it.text },
     val files: List<ContentPart.File> = content.filterIsInstance<ContentPart.File>(),
@@ -177,7 +178,15 @@ public data class GenerateTextResult<TOutput>(
     val providerMetadata: Map<String, JsonElement> = emptyMap(),
     val steps: List<StepResult> = emptyList(),
     val rawFinishReason: String? = null,
-)
+) {
+    /** Tool calls/results against statically-typed tools (`tool(...)`), matching upstream's split. */
+    val staticToolCalls: List<ContentPart.ToolCall> get() = toolCalls.filter { !it.dynamic }
+
+    /** Tool calls/results against dynamic (runtime-typed) tools (`dynamicTool(...)`). */
+    val dynamicToolCalls: List<ContentPart.ToolCall> get() = toolCalls.filter { it.dynamic }
+    val staticToolResults: List<ContentPart.ToolResult> get() = toolResults.filter { !it.dynamic }
+    val dynamicToolResults: List<ContentPart.ToolResult> get() = toolResults.filter { it.dynamic }
+}
 
 /**
  * Streaming generation — invariant I-3. Returns a cold Flow that drives

@@ -129,4 +129,18 @@ public data class StepResult(
     val toolApprovalRequests: List<ContentPart.ToolApprovalRequest>,
     val finishReason: FinishReason,
     val usage: Usage,
-)
+    val warnings: List<CallWarning> = emptyList(),
+    val request: LanguageModelRequestMetadata = LanguageModelRequestMetadata(),
+    val response: LanguageModelResponseMetadata = LanguageModelResponseMetadata(),
+    val providerMetadata: Map<String, JsonElement> = emptyMap(),
+    val rawFinishReason: String? = null,
+) {
+    /** The non-empty reasoning text for this step, or null — mirrors upstream's `reasoningText`. */
+    val reasoningText: String? get() = reasoning.takeIf { it.isNotEmpty() }
+
+    /** Tool calls/results split by static (`tool(...)`) vs dynamic (`dynamicTool(...)`), per upstream. */
+    val staticToolCalls: List<ContentPart.ToolCall> get() = toolCalls.filter { !it.dynamic }
+    val dynamicToolCalls: List<ContentPart.ToolCall> get() = toolCalls.filter { it.dynamic }
+    val staticToolResults: List<ContentPart.ToolResult> get() = toolResults.filter { !it.dynamic }
+    val dynamicToolResults: List<ContentPart.ToolResult> get() = toolResults.filter { it.dynamic }
+}
