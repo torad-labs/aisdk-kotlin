@@ -506,8 +506,10 @@ class OpenAICompatibleProviderTest {
         val client = HttpClient(
             MockEngine { request ->
                 seenBodies += Json.parseToJsonElement(requestBodyText(request)).jsonObject
+                val responseBody = """{"id":"c1","created":1,"model":"m","choices":[""" +
+                    """{"message":{"role":"assistant","content":"ok"},"finish_reason":"stop"}]}"""
                 respond(
-                    content = """{"id":"c1","created":1,"model":"m","choices":[{"message":{"role":"assistant","content":"ok"},"finish_reason":"stop"}]}""",
+                    content = responseBody,
                     status = HttpStatusCode.OK,
                     headers = headersOf(HttpHeaders.ContentType, "application/json"),
                 )

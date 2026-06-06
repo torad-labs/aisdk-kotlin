@@ -2,6 +2,7 @@ package ai.torad.aisdk
 
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
@@ -17,7 +18,9 @@ import kotlinx.coroutines.launch
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonPrimitive
+import kotlin.concurrent.Volatile
 import kotlin.coroutines.CoroutineContext
+import kotlin.coroutines.coroutineContext
 
 /**
  * Default [Agent] implementation — the canonical v6 ToolLoopAgent.
@@ -121,13 +124,23 @@ public open class ToolLoopAgent<TContext, TOutput>(
     public val engineState: StateFlow<ToolLoopAgentState> = mutableEngineState.asStateFlow()
 
     private val engineScope: CoroutineScope = CoroutineScope(SupervisorJob() + engineContext)
+
+    // @Volatile for cross-thread visibility: these are written from host-thread
+    // entry points (dispatchEngineAction/submitPrompt/resumeWithApproval/close) and
+    // read from engine jobs running on a multi-threaded dispatcher (Dispatchers.Default,
+    // i.e. Native). A plain var here is a data race the single-threaded test scheduler
+    // hides. currentEngineJob also backs the supersession guard (see runEngineLoop).
+    @Volatile
     private var currentEngineJob: Job? = null
+
+    @Volatile
     private var currentEngineContext: TContext? = null
 
     // TOOL-004: tracks the most recent activeContext the loop was running with,
     // including any override applied by prepareStep via StepSettings.experimental_context.
     // Updated by runEngineLoop before the stream starts and after each prepareStep override,
     // so resumeWithApproval picks up the live context rather than the stale submitPrompt one.
+    @Volatile
     private var currentActiveContext: TContext? = null
 
     /**
@@ -186,9 +199,15 @@ public open class ToolLoopAgent<TContext, TOutput>(
                 error = null,
             )
         }
-        currentEngineJob = engineScope.launch {
+        // Lazy-start so currentEngineJob is published BEFORE the loop body runs (build →
+        // assign → start). The body's supersession guard (runEngineLoop) compares its own
+        // job to this field; an eager launch could begin writing state before the
+        // assignment lands, making the new job's own early writes fail the guard.
+        val job = engineScope.launch(start = CoroutineStart.LAZY) {
             runEngineLoop(prompt = text, priorMessages = priorMessages, context = context)
         }
+        currentEngineJob = job
+        job.start()
     }
 
     private fun resumeWithApproval(toolCallId: String, approved: Boolean, reason: String?) {
@@ -209,11 +228,14 @@ public open class ToolLoopAgent<TContext, TOutput>(
                 error = null,
             )
         }
-        currentEngineJob = engineScope.launch {
+        // Build → assign → start (see submitPrompt) so the guard sees this job published.
+        val job = engineScope.launch(start = CoroutineStart.LAZY) {
             // TOOL-004: use currentActiveContext (updated by prepareStep overrides)
             // rather than currentEngineContext (only set at submitPrompt time).
             runEngineLoop(prompt = null, priorMessages = updatedMessages, context = currentActiveContext)
         }
+        currentEngineJob = job
+        job.start()
     }
 
     private suspend fun runEngineLoop(
@@ -221,6 +243,11 @@ public open class ToolLoopAgent<TContext, TOutput>(
         priorMessages: List<ModelMessage>,
         context: TContext?,
     ) {
+        // This loop's own job. Every state write below is gated on it still being the
+        // current engine job, so a superseded-but-cooperatively-unwinding old loop can't
+        // clobber a newer submit's state (the stale-write race AgentSession's active()
+        // guard prevents). currentEngineJob was published before start() (see callers).
+        val ownJob = coroutineContext[Job]
         // TOOL-004: seed the active context so resumeWithApproval uses at least the
         // caller-supplied context when no prepareStep override has fired yet.
         // FLAG: per-step updates (when stepSettings.experimental_context overrides activeContext
@@ -232,13 +259,13 @@ public open class ToolLoopAgent<TContext, TOutput>(
             onChunk = { event ->
                 val streamEvent = event.event
                 if (streamEvent is StreamEvent.TextDelta) {
-                    mutableEngineState.update { current ->
+                    updateEngineStateIfCurrent(ownJob) { current ->
                         current.copy(streamingAssistantText = current.streamingAssistantText + streamEvent.text)
                     }
                 }
             },
             onStepFinish = { _ ->
-                mutableEngineState.update {
+                updateEngineStateIfCurrent(ownJob) {
                     it.copy(
                         streamingAssistantText = "",
                         currentToolCalls = emptyList(),
@@ -247,7 +274,7 @@ public open class ToolLoopAgent<TContext, TOutput>(
                 }
             },
             onFinish = { event ->
-                mutableEngineState.update {
+                updateEngineStateIfCurrent(ownJob) {
                     it.copy(
                         messages = event.messages,
                         streamingAssistantText = "",
@@ -266,13 +293,13 @@ public open class ToolLoopAgent<TContext, TOutput>(
                 hooks = engineHooks,
             ).collect { event ->
                 when (event) {
-                    is StreamEvent.ToolCall -> mutableEngineState.update { current ->
+                    is StreamEvent.ToolCall -> updateEngineStateIfCurrent(ownJob) { current ->
                         current.copy(
                             currentToolCalls = current.currentToolCalls +
                                 ContentPart.ToolCall(event.toolCallId, event.toolName, event.inputJson),
                         )
                     }
-                    is StreamEvent.Error -> mutableEngineState.update {
+                    is StreamEvent.Error -> updateEngineStateIfCurrent(ownJob) {
                         it.copy(isStreaming = false, error = event.message)
                     }
                     else -> Unit
@@ -281,8 +308,22 @@ public open class ToolLoopAgent<TContext, TOutput>(
         } catch (t: CancellationException) {
             throw t
         } catch (t: Throwable) {
-            mutableEngineState.update { it.copy(isStreaming = false, error = t.message ?: "agent failed") }
+            updateEngineStateIfCurrent(ownJob) { it.copy(isStreaming = false, error = t.message ?: "agent failed") }
         }
+    }
+
+    /**
+     * Apply a state transition only if [ownerJob] is still the current engine job.
+     * Gates every [runEngineLoop] write so a superseded job (cancelled by a newer
+     * submit/resume but still unwinding on a multi-threaded dispatcher) cannot
+     * overwrite the new job's state. Mirrors [AgentSession]'s `active()` guard.
+     */
+    private inline fun updateEngineStateIfCurrent(
+        ownerJob: Job?,
+        block: (ToolLoopAgentState) -> ToolLoopAgentState,
+    ) {
+        if (currentEngineJob !== ownerJob) return
+        mutableEngineState.update(block)
     }
     // ──────────────────────────────────────────────────────────────────────
 

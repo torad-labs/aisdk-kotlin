@@ -2258,12 +2258,14 @@ sealed interface ai.torad.aisdk/StreamEvent { // ai.torad.aisdk/StreamEvent|null
     }
 
     final class Finish : ai.torad.aisdk/StreamEvent { // ai.torad.aisdk/StreamEvent.Finish|null[0]
-        constructor <init>(kotlin/Int, ai.torad.aisdk/FinishReason, ai.torad.aisdk/Usage, kotlin.collections/Map<kotlin/String, kotlinx.serialization.json/JsonElement>? = ...) // ai.torad.aisdk/StreamEvent.Finish.<init>|<init>(kotlin.Int;ai.torad.aisdk.FinishReason;ai.torad.aisdk.Usage;kotlin.collections.Map<kotlin.String,kotlinx.serialization.json.JsonElement>?){}[0]
+        constructor <init>(kotlin/Int, ai.torad.aisdk/FinishReason, ai.torad.aisdk/Usage, kotlin.collections/Map<kotlin/String, kotlinx.serialization.json/JsonElement>? = ..., kotlin/String? = ...) // ai.torad.aisdk/StreamEvent.Finish.<init>|<init>(kotlin.Int;ai.torad.aisdk.FinishReason;ai.torad.aisdk.Usage;kotlin.collections.Map<kotlin.String,kotlinx.serialization.json.JsonElement>?;kotlin.String?){}[0]
 
         final val finishReason // ai.torad.aisdk/StreamEvent.Finish.finishReason|{}finishReason[0]
             final fun <get-finishReason>(): ai.torad.aisdk/FinishReason // ai.torad.aisdk/StreamEvent.Finish.finishReason.<get-finishReason>|<get-finishReason>(){}[0]
         final val providerMetadata // ai.torad.aisdk/StreamEvent.Finish.providerMetadata|{}providerMetadata[0]
             final fun <get-providerMetadata>(): kotlin.collections/Map<kotlin/String, kotlinx.serialization.json/JsonElement>? // ai.torad.aisdk/StreamEvent.Finish.providerMetadata.<get-providerMetadata>|<get-providerMetadata>(){}[0]
+        final val rawFinishReason // ai.torad.aisdk/StreamEvent.Finish.rawFinishReason|{}rawFinishReason[0]
+            final fun <get-rawFinishReason>(): kotlin/String? // ai.torad.aisdk/StreamEvent.Finish.rawFinishReason.<get-rawFinishReason>|<get-rawFinishReason>(){}[0]
         final val totalSteps // ai.torad.aisdk/StreamEvent.Finish.totalSteps|{}totalSteps[0]
             final fun <get-totalSteps>(): kotlin/Int // ai.torad.aisdk/StreamEvent.Finish.totalSteps.<get-totalSteps>|<get-totalSteps>(){}[0]
         final val usage // ai.torad.aisdk/StreamEvent.Finish.usage|{}usage[0]
@@ -2273,7 +2275,8 @@ sealed interface ai.torad.aisdk/StreamEvent { // ai.torad.aisdk/StreamEvent|null
         final fun component2(): ai.torad.aisdk/FinishReason // ai.torad.aisdk/StreamEvent.Finish.component2|component2(){}[0]
         final fun component3(): ai.torad.aisdk/Usage // ai.torad.aisdk/StreamEvent.Finish.component3|component3(){}[0]
         final fun component4(): kotlin.collections/Map<kotlin/String, kotlinx.serialization.json/JsonElement>? // ai.torad.aisdk/StreamEvent.Finish.component4|component4(){}[0]
-        final fun copy(kotlin/Int = ..., ai.torad.aisdk/FinishReason = ..., ai.torad.aisdk/Usage = ..., kotlin.collections/Map<kotlin/String, kotlinx.serialization.json/JsonElement>? = ...): ai.torad.aisdk/StreamEvent.Finish // ai.torad.aisdk/StreamEvent.Finish.copy|copy(kotlin.Int;ai.torad.aisdk.FinishReason;ai.torad.aisdk.Usage;kotlin.collections.Map<kotlin.String,kotlinx.serialization.json.JsonElement>?){}[0]
+        final fun component5(): kotlin/String? // ai.torad.aisdk/StreamEvent.Finish.component5|component5(){}[0]
+        final fun copy(kotlin/Int = ..., ai.torad.aisdk/FinishReason = ..., ai.torad.aisdk/Usage = ..., kotlin.collections/Map<kotlin/String, kotlinx.serialization.json/JsonElement>? = ..., kotlin/String? = ...): ai.torad.aisdk/StreamEvent.Finish // ai.torad.aisdk/StreamEvent.Finish.copy|copy(kotlin.Int;ai.torad.aisdk.FinishReason;ai.torad.aisdk.Usage;kotlin.collections.Map<kotlin.String,kotlinx.serialization.json.JsonElement>?;kotlin.String?){}[0]
         final fun equals(kotlin/Any?): kotlin/Boolean // ai.torad.aisdk/StreamEvent.Finish.equals|equals(kotlin.Any?){}[0]
         final fun hashCode(): kotlin/Int // ai.torad.aisdk/StreamEvent.Finish.hashCode|hashCode(){}[0]
         final fun toString(): kotlin/String // ai.torad.aisdk/StreamEvent.Finish.toString|toString(){}[0]
