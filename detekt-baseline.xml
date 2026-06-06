@@ -560,13 +560,6 @@
     <ID>ArgumentListWrapping:KotlinApi.kt$(model = model, output = output, request = request.copy(settings = settings.merge(request.settings)))</ID>
     <ID>ArgumentListWrapping:KotlinApi.kt$(request.settings)</ID>
     <ID>ArgumentListWrapping:KotlinApi.kt$(settings = settings.merge(request.settings))</ID>
-    <ID>ArgumentListWrapping:KtorGatewayTransport.kt$("type", JsonPrimitive(if (part.sourceType == StreamEvent.SourcePart.SourceType.Url) "source-url" else "source-document"))</ID>
-    <ID>ArgumentListWrapping:KtorGatewayTransport.kt$(WireDecoder.optionalString(obj, "id", "gateway", "stream event") ?: "reasoning")</ID>
-    <ID>ArgumentListWrapping:KtorGatewayTransport.kt$(WireDecoder.optionalString(obj, "id", "gateway", "stream event") ?: "text")</ID>
-    <ID>ArgumentListWrapping:KtorGatewayTransport.kt$(if (part.sourceType == StreamEvent.SourcePart.SourceType.Url) "source-url" else "source-document")</ID>
-    <ID>ArgumentListWrapping:KtorGatewayTransport.kt$(message = message, statusCode = statusCode, response = parsed, generationId = generationId)</ID>
-    <ID>ArgumentListWrapping:KtorGatewayTransport.kt$KtorGatewayTransport$(modelId = modelId, headers = response.headers, body = response.value)</ID>
-    <ID>ArgumentListWrapping:KtorGatewayTransport.kt$KtorGatewayTransport$(obj, "cache_creation_input_tokens", "cacheCreationInputTokens")</ID>
     <ID>ArgumentListWrapping:LMNTProvider.kt$DefaultLMNTProvider$(providerId, "embeddingModel", modelId)</ID>
     <ID>ArgumentListWrapping:LMNTProvider.kt$DefaultLMNTProvider$(providerId, "languageModel", modelId)</ID>
     <ID>ArgumentListWrapping:LMNTProviderTest.kt$LMNTProviderTest$("mp3", fixture.calls.single().requestBodyJson.jsonObject["response_format"]?.jsonPrimitive?.contentOrNull)</ID>
@@ -589,27 +582,6 @@
     <ID>ArgumentListWrapping:LumaProviderTest.kt$LumaProviderTest$(prompt = "x", files = listOf(ImageGenerationFile(mediaType = "image/png", base64 = "abc")))</ID>
     <ID>ArgumentListWrapping:LumaProviderTest.kt$LumaProviderTest$(prompt = "x", mask = ImageGenerationFile(url = "https://example.com/mask.png"))</ID>
     <ID>ArgumentListWrapping:LumaProviderTest.kt$LumaProviderTest$(url = "https://example.com/mask.png")</ID>
-    <ID>ArgumentListWrapping:MCP.kt$("HTTP ${response.status.value} trying to load well-known OAuth protected resource metadata.")</ID>
-    <ID>ArgumentListWrapping:MCP.kt$("Incompatible auth server: does not support code challenge method $codeChallengeMethod")</ID>
-    <ID>ArgumentListWrapping:MCP.kt$('?')</ID>
-    <ID>ArgumentListWrapping:MCP.kt$(JSONRPCNotification.serializer(), obj, "mcp", "json-rpc notification")</ID>
-    <ID>ArgumentListWrapping:MCP.kt$(JSONRPCRequest.serializer(), obj, "mcp", "json-rpc request")</ID>
-    <ID>ArgumentListWrapping:MCP.kt$(JSONRPCResponse.serializer(), obj, "mcp", "json-rpc response")</ID>
-    <ID>ArgumentListWrapping:MCP.kt$(headers, params, authorizationServerUrl, metadata, clientInformation, addClientAuthentication)</ID>
-    <ID>ArgumentListWrapping:MCP.kt$(pathStart)</ID>
-    <ID>ArgumentListWrapping:MCP.kt$DefaultMCPClient$("capabilities", mcpJson.encodeToJsonElement(MCPClientCapabilities.serializer(), clientCapabilities))</ID>
-    <ID>ArgumentListWrapping:MCP.kt$DefaultMCPClient$(MCPClientCapabilities.serializer(), clientCapabilities)</ID>
-    <ID>ArgumentListWrapping:MCP.kt$HttpMCPTransport$("MCP HTTP Transport Error: GET SSE failed: ${response.status.value} ${response.status.description}")</ID>
-    <ID>ArgumentListWrapping:MCP.kt$HttpMCPTransport$("MCP HTTP Transport Error: POSTing to endpoint (HTTP ${response.status.value}): $text")</ID>
-    <ID>ArgumentListWrapping:MCP.kt$HttpMCPTransport$(HttpHeaders.Accept to "text/event-stream")</ID>
-    <ID>ArgumentListWrapping:MCP.kt$HttpMCPTransport$(mapOf(HttpHeaders.Accept to "text/event-stream"))</ID>
-    <ID>ArgumentListWrapping:MCP.kt$HttpMCPTransport$(name, value)</ID>
-    <ID>ArgumentListWrapping:MCP.kt$SseMCPTransport$("MCP SSE Transport Error: POSTing to endpoint (HTTP ${response.status.value}): ${response.bodyAsText()}")</ID>
-    <ID>ArgumentListWrapping:MCP.kt$SseMCPTransport$(HttpHeaders.Accept to "text/event-stream")</ID>
-    <ID>ArgumentListWrapping:MCP.kt$SseMCPTransport$(HttpHeaders.ContentType to ContentType.Application.Json.toString())</ID>
-    <ID>ArgumentListWrapping:MCP.kt$SseMCPTransport$(mapOf(HttpHeaders.Accept to "text/event-stream"))</ID>
-    <ID>ArgumentListWrapping:MCP.kt$SseMCPTransport$(mapOf(HttpHeaders.ContentType to ContentType.Application.Json.toString()))</ID>
-    <ID>ArgumentListWrapping:MCP.kt$SseMCPTransport$(name, value)</ID>
     <ID>ArgumentListWrapping:MCPClientTest.kt$MCPClientTest$("\"method\":\"notifications/initialized\"")</ID>
     <ID>ArgumentListWrapping:MCPClientTest.kt$MCPClientTest$(AuthResult.AUTHORIZED, auth(provider, AuthOptions(serverUrl = "https://auth.example.com", client = fixture.httpClient())))</ID>
     <ID>ArgumentListWrapping:MCPClientTest.kt$MCPClientTest$(AuthResult.REDIRECT, auth(redirect, AuthOptions(serverUrl = "https://mcp.example.com", scope = "tools")))</ID>
@@ -888,11 +860,6 @@
     <ID>ArgumentListWrapping:TestServer.kt$UrlResponseParameter.RequestFactory$(callNumber)</ID>
     <ID>ArgumentListWrapping:TestServer.kt$UrlResponseParameter.RequestFactory$(request, TestServerCallOptions(callNumber))</ID>
     <ID>ArgumentListWrapping:TestServer.kt$UrlResponseParameter.Sequence$(callNumber)</ID>
-    <ID>ArgumentListWrapping:Tool.kt$("Tool ${tool.name} produced no output")</ID>
-    <ID>ArgumentListWrapping:Tool.kt$("provider-executed tool has no local executor")</ID>
-    <ID>ArgumentListWrapping:Tool.kt$(name, toolCallId, UnsupportedOperationException("provider-executed tool has no local executor"))</ID>
-    <ID>ArgumentListWrapping:Tool.kt$(tool.name, options.toolCallId, NoOutputGeneratedError("Tool ${tool.name} produced no output"))</ID>
-    <ID>ArgumentListWrapping:ToolLoopAgent.kt$ToolLoopAgent$(call.toolCallId, call.toolName, call.input, stepNumber, messages.toList())</ID>
     <ID>ArgumentListWrapping:ToolTest.kt$ToolTest$( name = "a", description = "alpha", inputSerializer = serializer(), outputSerializer = serializer(), )</ID>
     <ID>ArgumentListWrapping:ToolTest.kt$ToolTest$( name = "b", description = "beta", inputSerializer = serializer(), outputSerializer = serializer(), )</ID>
     <ID>ArgumentListWrapping:ToolTest.kt$ToolTest$("additionalProperties")</ID>
@@ -1048,7 +1015,6 @@
     <ID>CyclomaticComplexMethod:OpenResponsesProvider.kt$private fun openResponsesToolOutput( output: ToolResultOutput, warnings: MutableList&lt;CallWarning>, ): JsonElement</ID>
     <ID>CyclomaticComplexMethod:ProdiaProvider.kt$private fun parseProdiaMultipart(data: ByteArray, boundary: String): List&lt;ProdiaMultipartPart></ID>
     <ID>CyclomaticComplexMethod:PruneMessages.kt$private fun pruneToolCalls(messages: List&lt;ModelMessage>, rule: PruneToolCallRule): List&lt;ModelMessage></ID>
-    <ID>CyclomaticComplexMethod:SmoothStream.kt$public fun smoothStream( upstream: Flow&lt;StreamEvent>, delayMs: Long = 10L, chunkBy: ChunkBy = ChunkBy.Word, ): Flow&lt;StreamEvent></ID>
     <ID>CyclomaticComplexMethod:Tool.kt$private fun schemaFallbackValue(value: JsonElement, schema: JsonElement): Any?</ID>
     <ID>CyclomaticComplexMethod:ToolLoopAgent.kt$ToolLoopAgent$private fun streamInternal( prompt: String?, priorMessages: List&lt;ModelMessage>, options: TContext?, abortSignal: AbortSignal, hooks: AgentCallHooks?, finalMessagesRef: MessageHolder?, stepsCapture: StepsHolder?, ): Flow&lt;StreamEvent></ID>
     <ID>CyclomaticComplexMethod:ToolLoopAgent.kt$ToolLoopAgent$private suspend fun applyToolApprovalResponses( out: FlowCollector&lt;StreamEvent>, messages: MutableList&lt;ModelMessage>, tools: ToolSet&lt;TContext>, options: TContext?, abortSignal: AbortSignal, hooks: AgentCallHooks?, ): Unit?</ID>
@@ -1108,7 +1074,6 @@
     <ID>ImportOrdering:LifecycleHooksTest.kt$import ai.torad.aisdk.providers.MockLanguageModel import ai.torad.aisdk.providers.mockLanguageModelTextOnly import kotlin.test.Test import kotlin.test.assertEquals import kotlin.test.assertTrue import kotlinx.coroutines.test.runTest</ID>
     <ID>ImportOrdering:LlamaIndexAdapterTest.kt$import ai.torad.aisdk.ui.TextUIPartState import ai.torad.aisdk.ui.UIMessagePart import kotlin.test.Test import kotlin.test.assertEquals import kotlinx.coroutines.flow.flowOf import kotlinx.coroutines.flow.toList import kotlinx.coroutines.test.runTest</ID>
     <ID>ImportOrdering:LumaProviderTest.kt$import ai.torad.aisdk.providers.LUMA_VERSION import ai.torad.aisdk.providers.LumaProviderSettings import ai.torad.aisdk.providers.createLuma import ai.torad.aisdk.providers.luma import io.ktor.http.HttpHeaders import kotlinx.coroutines.test.runTest import kotlinx.serialization.json.Json import kotlinx.serialization.json.JsonPrimitive import kotlinx.serialization.json.buildJsonArray import kotlinx.serialization.json.buildJsonObject import kotlinx.serialization.json.contentOrNull import kotlinx.serialization.json.floatOrNull import kotlinx.serialization.json.jsonArray import kotlinx.serialization.json.jsonObject import kotlinx.serialization.json.jsonPrimitive import kotlin.test.Test import kotlin.test.assertEquals import kotlin.test.assertFailsWith import kotlin.test.assertTrue</ID>
-    <ID>ImportOrdering:MCP.kt$import io.ktor.client.HttpClient import io.ktor.client.request.header import io.ktor.client.request.request import io.ktor.client.request.setBody import io.ktor.client.statement.HttpResponse import io.ktor.client.statement.bodyAsChannel import io.ktor.client.statement.bodyAsText import io.ktor.http.ContentType import io.ktor.http.HttpHeaders import io.ktor.http.HttpMethod import io.ktor.http.contentType import io.ktor.utils.io.ByteReadChannel import io.ktor.utils.io.readLine import kotlin.coroutines.CoroutineContext import kotlin.coroutines.cancellation.CancellationException import kotlinx.coroutines.CoroutineScope import kotlinx.coroutines.CoroutineStart import kotlinx.coroutines.CompletableDeferred import kotlinx.coroutines.Dispatchers import kotlinx.coroutines.Job import kotlinx.coroutines.SupervisorJob import kotlinx.coroutines.cancel import kotlinx.coroutines.launch import kotlinx.coroutines.sync.Mutex import kotlinx.coroutines.sync.withLock import kotlinx.coroutines.withTimeout import kotlinx.serialization.KSerializer import kotlinx.serialization.SerialName import kotlinx.serialization.Serializable import kotlinx.serialization.decodeFromString import kotlinx.serialization.encodeToString import kotlinx.serialization.json.Json import kotlinx.serialization.json.JsonArray import kotlinx.serialization.json.JsonElement import kotlinx.serialization.json.JsonNull import kotlinx.serialization.json.JsonObject import kotlinx.serialization.json.JsonPrimitive import kotlinx.serialization.json.booleanOrNull import kotlinx.serialization.json.buildJsonObject import kotlinx.serialization.json.contentOrNull import kotlinx.serialization.json.decodeFromJsonElement import kotlinx.serialization.json.encodeToJsonElement import kotlinx.serialization.json.jsonArray import kotlinx.serialization.json.jsonObject import kotlinx.serialization.json.jsonPrimitive</ID>
     <ID>ImportOrdering:MCPStdioProcess.android.kt$import java.io.BufferedReader import java.io.BufferedWriter import java.io.File import java.io.InputStreamReader import java.io.OutputStreamWriter import kotlinx.coroutines.Dispatchers import kotlinx.coroutines.withContext</ID>
     <ID>ImportOrdering:MCPStdioProcess.jvm.kt$import java.io.BufferedReader import java.io.BufferedWriter import java.io.File import java.io.InputStreamReader import java.io.OutputStreamWriter import kotlinx.coroutines.Dispatchers import kotlinx.coroutines.withContext</ID>
     <ID>ImportOrdering:MessagePartsTest.kt$import ai.torad.aisdk.testing.drainAllItems import ai.torad.aisdk.ui.TextUIPartState import ai.torad.aisdk.ui.ToolCallState import ai.torad.aisdk.ui.UIMessagePart import ai.torad.aisdk.ui.streamToUiMessages import ai.torad.aisdk.ui.transformTextToUiMessageStream import kotlin.test.Test import kotlin.test.assertEquals import kotlin.test.assertTrue import kotlinx.coroutines.flow.emptyFlow import kotlinx.coroutines.flow.flow import kotlinx.coroutines.test.runTest import kotlinx.serialization.json.JsonObject import kotlinx.serialization.json.JsonPrimitive</ID>
@@ -1135,12 +1100,10 @@
     <ID>ImportOrdering:SmoothStreamTest.kt$import ai.torad.aisdk.testing.drainAllItems import kotlin.test.Test import kotlin.test.assertEquals import kotlin.test.assertTrue import kotlinx.coroutines.flow.flow import kotlinx.coroutines.test.runTest</ID>
     <ID>ImportOrdering:SubagentTest.kt$import ai.torad.aisdk.providers.MockLanguageModel import ai.torad.aisdk.providers.mockLanguageModelToolThenText import ai.torad.aisdk.providers.mockToolInput import kotlin.test.Test import kotlin.test.assertEquals import kotlin.test.assertTrue import kotlin.test.fail import kotlinx.coroutines.test.runTest import kotlinx.serialization.Serializable import kotlinx.serialization.serializer</ID>
     <ID>ImportOrdering:TextUIPartStateTest.kt$import ai.torad.aisdk.testing.drainAllItems import ai.torad.aisdk.ui.TextUIPartState import ai.torad.aisdk.ui.UIMessagePart import ai.torad.aisdk.ui.streamToUiMessages import kotlin.test.Test import kotlin.test.assertEquals import kotlin.test.assertTrue import kotlinx.coroutines.flow.flowOf import kotlinx.coroutines.test.runTest</ID>
-    <ID>ImportOrdering:Tool.kt$import kotlinx.coroutines.flow.Flow import kotlinx.coroutines.flow.collect import kotlinx.coroutines.flow.flow import kotlinx.serialization.KSerializer import kotlinx.serialization.Serializable import kotlinx.serialization.serializer import kotlinx.serialization.json.Json import kotlinx.serialization.json.JsonArray import kotlinx.serialization.json.JsonElement import kotlinx.serialization.json.JsonObject import kotlinx.serialization.json.JsonPrimitive import kotlinx.serialization.json.booleanOrNull import kotlinx.serialization.json.buildJsonObject import kotlinx.serialization.json.contentOrNull import kotlinx.serialization.json.doubleOrNull import kotlinx.serialization.json.intOrNull import kotlinx.serialization.json.jsonPrimitive</ID>
     <ID>ImportOrdering:ToolApprovalDenialTest.kt$import ai.torad.aisdk.providers.mockLanguageModelToolThenText import ai.torad.aisdk.providers.mockToolInput import ai.torad.aisdk.testing.drainAllItems import ai.torad.aisdk.ui.ToolCallState import ai.torad.aisdk.ui.UIMessagePart import ai.torad.aisdk.ui.streamToUiMessages import kotlin.test.Test import kotlin.test.assertEquals import kotlin.test.assertFalse import kotlin.test.assertTrue import kotlinx.coroutines.flow.asFlow import kotlinx.coroutines.test.runTest import kotlinx.serialization.Serializable import kotlinx.serialization.serializer</ID>
     <ID>ImportOrdering:ToolApprovalTest.kt$import ai.torad.aisdk.providers.MockLanguageModel import ai.torad.aisdk.providers.mockLanguageModelToolThenText import ai.torad.aisdk.providers.mockToolInput import kotlin.test.Test import kotlin.test.assertEquals import kotlin.test.assertIs import kotlin.test.assertTrue import kotlinx.coroutines.delay import kotlinx.coroutines.Dispatchers import kotlinx.coroutines.flow.toList import kotlinx.coroutines.test.runTest import kotlinx.coroutines.withContext import kotlinx.coroutines.withTimeout import kotlinx.serialization.Serializable import kotlinx.serialization.json.JsonObject import kotlinx.serialization.serializer</ID>
     <ID>ImportOrdering:ToolCallRepairTest.kt$import ai.torad.aisdk.providers.mockLanguageModelToolThenText import kotlin.test.Test import kotlin.test.assertEquals import kotlin.test.assertTrue import kotlinx.coroutines.test.runTest import kotlinx.serialization.Serializable import kotlinx.serialization.json.JsonObject import kotlinx.serialization.json.JsonPrimitive import kotlinx.serialization.json.buildJsonObject import kotlinx.serialization.json.jsonObject import kotlinx.serialization.json.jsonPrimitive import kotlinx.serialization.serializer</ID>
     <ID>ImportOrdering:ToolFlowTest.kt$import ai.torad.aisdk.providers.mockLanguageModelToolThenText import ai.torad.aisdk.providers.mockToolInput import kotlin.test.Test import kotlin.test.assertEquals import kotlin.test.assertFailsWith import kotlin.test.assertIs import kotlin.test.assertTrue import kotlinx.coroutines.flow.flow import kotlinx.coroutines.test.runTest import kotlinx.serialization.Serializable import kotlinx.serialization.json.JsonNull import kotlinx.serialization.json.JsonPrimitive import kotlinx.serialization.json.buildJsonObject import kotlinx.serialization.serializer</ID>
-    <ID>ImportOrdering:ToolLoopAgent.kt$import kotlin.coroutines.CoroutineContext import kotlinx.coroutines.CancellationException import kotlinx.coroutines.CoroutineScope import kotlinx.coroutines.Dispatchers import kotlinx.coroutines.Job import kotlinx.coroutines.SupervisorJob import kotlinx.coroutines.cancel import kotlinx.coroutines.flow.Flow import kotlinx.coroutines.flow.FlowCollector import kotlinx.coroutines.flow.MutableStateFlow import kotlinx.coroutines.flow.StateFlow import kotlinx.coroutines.flow.asStateFlow import kotlinx.coroutines.flow.flow import kotlinx.coroutines.flow.update import kotlinx.coroutines.launch import kotlinx.serialization.KSerializer import kotlinx.serialization.json.JsonElement import kotlinx.serialization.json.JsonPrimitive</ID>
     <ID>ImportOrdering:ToolLoopAgentStreamErrorTest.kt$import ai.torad.aisdk.testing.drainAllItems import kotlin.test.Test import kotlin.test.assertFalse import kotlin.test.assertTrue import kotlinx.coroutines.flow.Flow import kotlinx.coroutines.flow.flow import kotlinx.coroutines.test.runTest</ID>
     <ID>ImportOrdering:ToolLoopAgentTerminalSemanticsTest.kt$import ai.torad.aisdk.testing.drainAllItems import kotlin.test.Test import kotlin.test.assertEquals import kotlinx.coroutines.flow.Flow import kotlinx.coroutines.flow.flow import kotlinx.coroutines.test.runTest</ID>
     <ID>ImportOrdering:ToolLoopAgentTest.kt$import ai.torad.aisdk.providers.MockLanguageModel import ai.torad.aisdk.providers.mockLanguageModelTextOnly import ai.torad.aisdk.providers.mockLanguageModelToolThenText import ai.torad.aisdk.providers.mockToolInput import kotlin.test.Test import kotlin.test.assertEquals import kotlin.test.assertTrue import kotlinx.coroutines.test.runTest import kotlinx.serialization.Serializable import kotlinx.serialization.serializer</ID>
@@ -1150,7 +1113,6 @@
     <ID>ImportOrdering:UIMessage.kt$import ai.torad.aisdk.decodeValue import kotlinx.serialization.Serializable import kotlinx.serialization.KSerializer import kotlinx.serialization.json.JsonElement import kotlinx.serialization.serializer</ID>
     <ID>ImportOrdering:UIMessageShapeTest.kt$import ai.torad.aisdk.testing.drainAllItems import ai.torad.aisdk.ui.ToolCallState import ai.torad.aisdk.ui.UIMessage import ai.torad.aisdk.ui.UIMessagePart import ai.torad.aisdk.ui.UIMessageRole import ai.torad.aisdk.ui.streamToUiMessages import kotlin.test.Test import kotlin.test.assertEquals import kotlin.test.assertNotNull import kotlin.test.assertNull import kotlin.test.assertTrue import kotlinx.coroutines.flow.flowOf import kotlinx.coroutines.test.runTest import kotlinx.serialization.json.JsonPrimitive</ID>
     <ID>ImportOrdering:UsageRichTreeTest.kt$import kotlin.test.Test import kotlin.test.assertEquals import kotlin.test.assertFailsWith import kotlin.test.assertNull import kotlin.test.assertTrue import kotlinx.serialization.json.Json import kotlinx.serialization.json.JsonPrimitive import kotlinx.serialization.json.buildJsonObject</ID>
-    <ID>ImportOrdering:Util.kt$import kotlin.math.sqrt import kotlin.io.encoding.Base64 import kotlin.random.Random import kotlinx.coroutines.CancellationException import kotlinx.coroutines.Job import kotlinx.coroutines.delay import kotlinx.coroutines.flow.Flow import kotlinx.coroutines.flow.flow import kotlinx.coroutines.sync.Mutex import kotlinx.coroutines.sync.withLock import kotlinx.serialization.SerializationException import kotlinx.serialization.json.Json import kotlinx.serialization.json.JsonArray import kotlinx.serialization.json.JsonElement import kotlinx.serialization.json.JsonNull import kotlinx.serialization.json.JsonObject import kotlinx.serialization.json.JsonPrimitive import kotlinx.serialization.json.booleanOrNull import kotlinx.serialization.json.doubleOrNull import kotlinx.serialization.json.jsonPrimitive</ID>
     <ID>ImportOrdering:VoyageProviderTest.kt$import ai.torad.aisdk.providers.VOYAGE_VERSION import ai.torad.aisdk.providers.VoyageProviderSettings import ai.torad.aisdk.providers.createVoyage import ai.torad.aisdk.providers.voyage import io.ktor.http.HttpHeaders import kotlinx.coroutines.test.runTest import kotlinx.serialization.json.Json import kotlinx.serialization.json.JsonPrimitive import kotlinx.serialization.json.buildJsonObject import kotlinx.serialization.json.booleanOrNull import kotlinx.serialization.json.contentOrNull import kotlinx.serialization.json.intOrNull import kotlinx.serialization.json.jsonArray import kotlinx.serialization.json.jsonObject import kotlinx.serialization.json.jsonPrimitive import kotlin.test.Test import kotlin.test.assertEquals import kotlin.test.assertFailsWith import kotlin.test.assertTrue</ID>
     <ID>ImportOrdering:WireDecoderTest.kt$import kotlin.test.Test import kotlin.test.assertEquals import kotlin.test.assertFailsWith import kotlinx.serialization.Serializable import kotlinx.serialization.json.JsonPrimitive import kotlinx.serialization.json.buildJsonObject</ID>
     <ID>ImportOrdering:XaiProviderTest.kt$import ai.torad.aisdk.providers.XAI_VERSION import ai.torad.aisdk.providers.XaiProviderSettings import ai.torad.aisdk.providers.createXai import ai.torad.aisdk.providers.xai import io.ktor.http.HttpHeaders import kotlinx.coroutines.test.runTest import kotlinx.serialization.json.Json import kotlinx.serialization.json.JsonElement import kotlinx.serialization.json.JsonPrimitive import kotlinx.serialization.json.buildJsonArray import kotlinx.serialization.json.buildJsonObject import kotlinx.serialization.json.booleanOrNull import kotlinx.serialization.json.contentOrNull import kotlinx.serialization.json.intOrNull import kotlinx.serialization.json.jsonArray import kotlinx.serialization.json.jsonObject import kotlinx.serialization.json.jsonPrimitive import kotlin.test.Test import kotlin.test.assertEquals import kotlin.test.assertFailsWith import kotlin.test.assertIs import kotlin.test.assertNotNull import kotlin.test.assertTrue</ID>
@@ -1246,7 +1208,8 @@
     <ID>LongParameterList:BlackForestLabsProvider.kt$( client: HttpClient, pollingUrl: String, headers: Map&lt;String, String>, abortSignal: AbortSignal, pollIntervalMillis: Long, pollTimeoutMillis: Long, )</ID>
     <ID>LongParameterList:ByteDanceProvider.kt$( client: HttpClient, settings: ByteDanceProviderSettings, taskId: String, callHeaders: Map&lt;String, String>, abortSignal: AbortSignal, pollIntervalMs: Long, pollTimeoutMs: Long, )</ID>
     <ID>LongParameterList:DefaultSettings.kt$( temperature: Float? = null, topP: Float? = null, topK: Int? = null, maxOutputTokens: Int? = null, stopSequences: List&lt;String> = emptyList(), seed: Int? = null, providerOptions: Map&lt;String, JsonElement> = emptyMap(), presencePenalty: Float? = null, frequencyPenalty: Float? = null, responseFormat: ResponseFormat = ResponseFormat.Text, )</ID>
-    <ID>LongParameterList:Embedding.kt$( model: EmbeddingModel, values: List&lt;String>, maxEmbeddingsPerCall: Int? = null, providerOptions: Map&lt;String, JsonElement> = emptyMap(), abortSignal: AbortSignal = AbortSignalNever, headers: Map&lt;String, String> = emptyMap(), )</ID>
+    <ID>LongParameterList:Embedding.kt$( model: EmbeddingModel, value: String, providerOptions: Map&lt;String, JsonElement> = emptyMap(), abortSignal: AbortSignal = AbortSignalNever, headers: Map&lt;String, String> = emptyMap(), maxRetries: Int = 2, )</ID>
+    <ID>LongParameterList:Embedding.kt$( model: EmbeddingModel, values: List&lt;String>, maxEmbeddingsPerCall: Int? = null, maxParallelCalls: Int = Int.MAX_VALUE, providerOptions: Map&lt;String, JsonElement> = emptyMap(), abortSignal: AbortSignal = AbortSignalNever, headers: Map&lt;String, String> = emptyMap(), maxRetries: Int = 2, )</ID>
     <ID>LongParameterList:FalProvider.kt$( client: HttpClient, url: String, headers: Map&lt;String, String>, abortSignal: AbortSignal, pollIntervalMillis: Long, maxPollAttempts: Int, timeoutMessage: String, )</ID>
     <ID>LongParameterList:Generate.kt$( model: LanguageModel, output: Output&lt;TOutput>, prompt: String? = null, messages: List&lt;ModelMessage> = emptyList(), system: String? = null, temperature: Float? = null, topP: Float? = null, topK: Int? = null, maxOutputTokens: Int? = null, stopSequences: List&lt;String> = emptyList(), seed: Int? = null, providerOptions: Map&lt;String, JsonElement> = emptyMap(), abortSignal: AbortSignal = AbortSignalNever, presencePenalty: Float? = null, frequencyPenalty: Float? = null, responseFormat: ResponseFormat = ResponseFormat.Text, )</ID>
     <ID>LongParameterList:Generate.kt$( model: LanguageModel, prompt: String? = null, messages: List&lt;ModelMessage> = emptyList(), system: String? = null, output: Output&lt;TOutput>, temperature: Float? = null, topP: Float? = null, topK: Int? = null, maxOutputTokens: Int? = null, stopSequences: List&lt;String> = emptyList(), seed: Int? = null, providerOptions: Map&lt;String, JsonElement> = emptyMap(), abortSignal: AbortSignal = AbortSignalNever, presencePenalty: Float? = null, frequencyPenalty: Float? = null, responseFormat: ResponseFormat = ResponseFormat.Text, )</ID>
@@ -1281,7 +1244,7 @@
     <ID>LongParameterList:OpenResponsesProvider.kt$( response: JsonObject, requestBody: JsonElement, responseHeaders: Map&lt;String, String>, responseBody: JsonElement, warnings: List&lt;CallWarning>, json: Json, providerMetadataKey: String, )</ID>
     <ID>LongParameterList:ProdiaProvider.kt$( client: HttpClient, url: String, body: JsonObject, input: ProdiaInputFile?, accept: String, headers: Map&lt;String, String>, )</ID>
     <ID>LongParameterList:Provider.kt$( providerId: String, languageModels: Map&lt;String, LanguageModel> = emptyMap(), embeddingModels: Map&lt;String, EmbeddingModel> = emptyMap(), imageModels: Map&lt;String, ImageModel> = emptyMap(), speechModels: Map&lt;String, SpeechModel> = emptyMap(), transcriptionModels: Map&lt;String, TranscriptionModel> = emptyMap(), rerankingModels: Map&lt;String, RerankingModel> = emptyMap(), videoModels: Map&lt;String, VideoModel> = emptyMap(), )</ID>
-    <ID>LongParameterList:Rerank.kt$( model: RerankingModel, query: String, documents: List&lt;String>, topN: Int? = null, providerOptions: Map&lt;String, JsonElement> = emptyMap(), headers: Map&lt;String, String> = emptyMap(), abortSignal: AbortSignal = AbortSignalNever, )</ID>
+    <ID>LongParameterList:Rerank.kt$( model: RerankingModel, query: String, documents: List&lt;String>, topN: Int? = null, providerOptions: Map&lt;String, JsonElement> = emptyMap(), headers: Map&lt;String, String> = emptyMap(), abortSignal: AbortSignal = AbortSignalNever, maxRetries: Int = 2, )</ID>
     <ID>LongParameterList:Tool.kt$( id: String, inputSerializer: KSerializer&lt;TInput>, inputSchema: Schema&lt;TInput>, defaultDescription: String, supportsDeferredResults: Boolean, options: ProviderToolFactoryOptions&lt;TInput, TOutput, TContext>, )</ID>
     <ID>LongParameterList:Tool.kt$( id: String, inputSerializer: KSerializer&lt;TInput>, inputSchema: Schema&lt;TInput>, outputSerializer: KSerializer&lt;TOutput>, outputSchema: Schema&lt;TOutput>, supportsDeferredResults: Boolean = false, description: String = "Provider tool $id", )</ID>
     <ID>LongParameterList:Tool.kt$( name: String, description: String, inputSchemaJson: String = "{}", metadata: Map&lt;String, JsonElement> = emptyMap(), toModelOutput: ((JsonElement, ToolPredicateOptions&lt;TContext>) -> ToolResultOutput)? = null, executor: suspend ToolExecutionContext&lt;TContext>.(JsonElement) -> JsonElement, )</ID>
@@ -1586,7 +1549,6 @@
     <ID>MaxLineLength:AmazonBedrockProvider.kt$BedrockRerankingModel$response = LanguageModelResponseMetadata(modelId = modelId, headers = response.headers, body = response.value)</ID>
     <ID>MaxLineLength:AmazonBedrockProvider.kt$BedrockStreamBlock$Tool : BedrockStreamBlock</ID>
     <ID>MaxLineLength:AmazonBedrockProvider.kt$BedrockStreamState$events += StreamEvent.ReasoningDelta(index.toString(), reasoning["text"]?.jsonPrimitive?.contentOrNull.orEmpty(), metadata)</ID>
-    <ID>MaxLineLength:AmazonBedrockProvider.kt$BedrockStreamState$finishReason = mapBedrockFinishReason(stop["stopReason"]?.jsonPrimitive?.contentOrNull, isJsonResponseFromTool)</ID>
     <ID>MaxLineLength:AmazonBedrockProvider.kt$BedrockStreamState$inputJson = runCatching { aiSdkJson.parseToJsonElement(block.input.ifBlank { "{}" }) }.getOrElse { JsonPrimitive(block.input) }</ID>
     <ID>MaxLineLength:AmazonBedrockProvider.kt$BedrockStreamState$stopSequence = stop["additionalModelResponseFields"]?.jsonObject?.get("delta")?.jsonObject?.get("stop_sequence")</ID>
     <ID>MaxLineLength:AmazonBedrockProvider.kt$BedrockStreamState$val error = value["internalServerException"] ?: value["modelStreamErrorException"] ?: value["throttlingException"] ?: value["validationException"]</ID>
@@ -1877,10 +1839,8 @@
     <ID>MaxLineLength:GoogleProvider.kt$GoogleInteractionsStreamState$WireDecoder.requiredString(block, "data", "google", "interactions stream step", "$.content[$index]")</ID>
     <ID>MaxLineLength:GoogleProvider.kt$GoogleInteractionsStreamState$WireDecoder.requiredString(block, "text", "google", "interactions stream step", "$.content[$index]")</ID>
     <ID>MaxLineLength:GoogleProvider.kt$GoogleInteractionsStreamState$else -> return listOf(StreamEvent.Error("Google stream protocol error: unsupported model_output content block type `$blockType`."))</ID>
-    <ID>MaxLineLength:GoogleProvider.kt$GoogleInteractionsStreamState$events += StreamEvent.Finish(1, finishReason, usage, googleInteractionsMetadata(interactionId = interactionId))</ID>
     <ID>MaxLineLength:GoogleProvider.kt$GoogleInteractionsStreamState$events += StreamEvent.TextDelta(id, text, googleInteractionsMetadata(interactionId = interactionId))</ID>
     <ID>MaxLineLength:GoogleProvider.kt$GoogleInteractionsStreamState$events += StreamEvent.TextStart(it, googleInteractionsMetadata(interactionId = interactionId))</ID>
-    <ID>MaxLineLength:GoogleProvider.kt$GoogleInteractionsStreamState$finishReason = googleInteractionsFinishReason(interaction["status"]?.jsonPrimitive?.contentOrNull, hasFunctionCall)</ID>
     <ID>MaxLineLength:GoogleProvider.kt$GoogleInteractionsStreamState$null -> return listOf(StreamEvent.Error("Google stream protocol error: model_output content block missing type."))</ID>
     <ID>MaxLineLength:GoogleProvider.kt$GoogleInteractionsStreamState$when</ID>
     <ID>MaxLineLength:GoogleProvider.kt$GoogleStreamState$WireDecoder.objectValue(callElement, "google", "generateContent stream part", "$.candidates[0].content.parts[$index].functionCall")</ID>
@@ -1889,7 +1849,6 @@
     <ID>MaxLineLength:GoogleProvider.kt$GoogleStreamState$WireDecoder.optionalString(obj, "text", "google", "generateContent stream part", "$.candidates[0].content.parts[$index]")</ID>
     <ID>MaxLineLength:GoogleProvider.kt$GoogleStreamState$WireDecoder.requiredString(call, "name", "google", "generateContent stream part", "$.candidates[0].content.parts[$index].functionCall")</ID>
     <ID>MaxLineLength:GoogleProvider.kt$GoogleStreamState$WireDecoder.requiredString(data, "data", "google", "generateContent stream part", "$.candidates[0].content.parts[$index].inlineData")</ID>
-    <ID>MaxLineLength:GoogleProvider.kt$GoogleStreamState$candidate["finishReason"]?.jsonPrimitive?.contentOrNull?.let { finishReason = mapGoogleFinishReason(it, hasToolCalls) }</ID>
     <ID>MaxLineLength:GoogleProvider.kt$GoogleStreamState$id = source.providerMetadata?.get("google")?.jsonObject?.get("id")?.jsonPrimitive?.contentOrNull ?: generateId()</ID>
     <ID>MaxLineLength:GoogleProvider.kt$GoogleTools$googleProviderTool("enterprise_web_search", "google.enterprise_web_search", "Ground responses with Enterprise Web Search.")</ID>
     <ID>MaxLineLength:GoogleProvider.kt$content += ContentPart.ToolResult(lastCodeExecutionId ?: settings.generateId(), "code_execution", result, providerMetadata = mapOf("google" to buildJsonObject { put("providerExecuted", JsonPrimitive(true)) }))</ID>
@@ -2032,15 +1991,7 @@
     <ID>MaxLineLength:KlingAIProviderTest.kt$KlingAIProviderTest$val createResponse = """{"code":0,"message":"success","request_id":"req-1","data":{"task_id":"task-1","task_status":"submitted"}}"""</ID>
     <ID>MaxLineLength:KlingAIProviderTest.kt$KlingAIProviderTest$val videoMetadata = result.providerMetadata["klingai"]?.jsonObject?.get("videos")?.jsonArray?.single()?.jsonObject</ID>
     <ID>MaxLineLength:KotlinApi.kt$return generateText(model = model, output = output, request = request.copy(settings = settings.merge(request.settings)))</ID>
-    <ID>MaxLineLength:KtorGatewayTransport.kt$"reasoning-end" -> StreamEvent.ReasoningEnd(WireDecoder.optionalString(obj, "id", "gateway", "stream event") ?: "reasoning")</ID>
-    <ID>MaxLineLength:KtorGatewayTransport.kt$"reasoning-start" -> StreamEvent.ReasoningStart(WireDecoder.optionalString(obj, "id", "gateway", "stream event") ?: "reasoning")</ID>
-    <ID>MaxLineLength:KtorGatewayTransport.kt$"text-start" -> StreamEvent.TextStart(WireDecoder.optionalString(obj, "id", "gateway", "stream event") ?: "text")</ID>
-    <ID>MaxLineLength:KtorGatewayTransport.kt$KtorGatewayTransport$cacheCreationInputTokens = jsonIntOrNull(obj, "cache_creation_input_tokens", "cacheCreationInputTokens")</ID>
-    <ID>MaxLineLength:KtorGatewayTransport.kt$KtorGatewayTransport$headers = languageModelHeaders(modelId, streaming = true) + mapOf(HttpHeaders.Accept to "text/event-stream")</ID>
-    <ID>MaxLineLength:KtorGatewayTransport.kt$KtorGatewayTransport$response = LanguageModelResponseMetadata(modelId = modelId, headers = response.headers, body = response.value)</ID>
-    <ID>MaxLineLength:KtorGatewayTransport.kt$else -> GatewayResponseError(message = message, statusCode = statusCode, response = parsed, generationId = generationId)</ID>
     <ID>MaxLineLength:KtorGatewayTransport.kt$mediaType = WireDecoder.optionalString(obj, "mediaType", "gateway", "content part") ?: "application/octet-stream"</ID>
-    <ID>MaxLineLength:KtorGatewayTransport.kt$put("type", JsonPrimitive(if (part.sourceType == StreamEvent.SourcePart.SourceType.Url) "source-url" else "source-document"))</ID>
     <ID>MaxLineLength:LMNTProvider.kt$DefaultLMNTProvider$override fun embeddingModel(modelId: String): EmbeddingModel</ID>
     <ID>MaxLineLength:LMNTProvider.kt$DefaultLMNTProvider$override fun languageModel(modelId: String): LanguageModel</ID>
     <ID>MaxLineLength:LMNTProviderTest.kt$LMNTProviderTest$assertEquals("mp3", fixture.calls.single().requestBodyJson.jsonObject["response_format"]?.jsonPrimitive?.contentOrNull)</ID>
@@ -2061,27 +2012,10 @@
     <ID>MaxLineLength:LumaProviderTest.kt$LumaProviderTest$model.generate(ImageGenerationParams(prompt = "x", mask = ImageGenerationFile(url = "https://example.com/mask.png")))</ID>
     <ID>MaxLineLength:LumaProviderTest.kt$LumaProviderTest$val character = fixture.calls.first().requestBodyJson.jsonObject["character"]?.jsonObject?.get("hero")?.jsonObject</ID>
     <ID>MaxLineLength:MCP.kt$DefaultMCPClient$?:</ID>
-    <ID>MaxLineLength:MCP.kt$DefaultMCPClient$put("capabilities", mcpJson.encodeToJsonElement(MCPClientCapabilities.serializer(), clientCapabilities))</ID>
     <ID>MaxLineLength:MCP.kt$DefaultMCPClient$val inputSchema = selectedSchema?.inputSchema ?: schemaWithClosedAdditionalProperties(definition.inputSchema)</ID>
-    <ID>MaxLineLength:MCP.kt$HttpMCPTransport$authProvider?.tokens()?.accessToken?.takeIf { it.isNotBlank() }?.let { values[HttpHeaders.Authorization] = "Bearer $it" }</ID>
-    <ID>MaxLineLength:MCP.kt$HttpMCPTransport$mcpCommonHeaders(mapOf(HttpHeaders.Accept to "text/event-stream")).forEach { (name, value) -> header(name, value) }</ID>
-    <ID>MaxLineLength:MCP.kt$HttpMCPTransport$val error = MCPClientError("MCP HTTP Transport Error: GET SSE failed: ${response.status.value} ${response.status.description}")</ID>
-    <ID>MaxLineLength:MCP.kt$HttpMCPTransport$val error = MCPClientError("MCP HTTP Transport Error: POSTing to endpoint (HTTP ${response.status.value}): $text")</ID>
-    <ID>MaxLineLength:MCP.kt$SseMCPTransport$authProvider?.tokens()?.accessToken?.takeIf { it.isNotBlank() }?.let { values[HttpHeaders.Authorization] = "Bearer $it" }</ID>
-    <ID>MaxLineLength:MCP.kt$SseMCPTransport$mcpCommonHeaders(mapOf(HttpHeaders.Accept to "text/event-stream")).forEach { (name, value) -> header(name, value) }</ID>
-    <ID>MaxLineLength:MCP.kt$SseMCPTransport$mcpCommonHeaders(mapOf(HttpHeaders.ContentType to ContentType.Application.Json.toString())).forEach { (name, value) -> header(name, value) }</ID>
-    <ID>MaxLineLength:MCP.kt$SseMCPTransport$throw MCPClientError("MCP SSE Transport Error: ${response.status.value} ${response.status.description}")</ID>
     <ID>MaxLineLength:MCP.kt$SseMCPTransport$throw MCPClientError("MCP SSE Transport Error: Endpoint origin does not match connection origin: ${mcpOrigin(resolved)}")</ID>
-    <ID>MaxLineLength:MCP.kt$SseMCPTransport$val error = MCPClientError("MCP SSE Transport Error: POSTing to endpoint (HTTP ${response.status.value}): ${response.bodyAsText()}")</ID>
-    <ID>MaxLineLength:MCP.kt$applyOAuthClientAuthentication(headers, params, authorizationServerUrl, metadata, clientInformation, addClientAuthentication)</ID>
-    <ID>MaxLineLength:MCP.kt$envelope.method != null &amp;&amp; hasId -> WireDecoder.decode(JSONRPCRequest.serializer(), obj, "mcp", "json-rpc request")</ID>
-    <ID>MaxLineLength:MCP.kt$envelope.method != null -> WireDecoder.decode(JSONRPCNotification.serializer(), obj, "mcp", "json-rpc notification")</ID>
-    <ID>MaxLineLength:MCP.kt$envelope.result != null &amp;&amp; hasId -> WireDecoder.decode(JSONRPCResponse.serializer(), obj, "mcp", "json-rpc response")</ID>
     <ID>MaxLineLength:MCP.kt$headers[HttpHeaders.Authorization] = "Basic ${convertByteArrayToBase64("${clientInformation.clientId}:$secret".encodeToByteArray())}"</ID>
     <ID>MaxLineLength:MCP.kt$if</ID>
-    <ID>MaxLineLength:MCP.kt$throw MCPClientError("HTTP ${response.status.value} trying to load well-known OAuth protected resource metadata.")</ID>
-    <ID>MaxLineLength:MCP.kt$throw MCPClientError("Incompatible auth server: does not support code challenge method $codeChallengeMethod")</ID>
-    <ID>MaxLineLength:MCP.kt$val rawPath = if (pathStart == -1) "/" else withoutFragment.substring(pathStart).substringBefore('?').ifBlank { "/" }</ID>
     <ID>MaxLineLength:MCPClientTest.kt$MCPClientTest$"""{"access_token":"access-token","token_type":"Bearer","refresh_token":"refresh-token"}"""</ID>
     <ID>MaxLineLength:MCPClientTest.kt$MCPClientTest$"""{"access_token":"async-token","token_type":"Bearer","refresh_token":"refresh-token"}"""</ID>
     <ID>MaxLineLength:MCPClientTest.kt$MCPClientTest$"""{"resource":"https://api.example.com/mcp-server","authorization_servers":["https://auth.example.com"]}"""</ID>
@@ -2300,13 +2234,10 @@
     <ID>MaxLineLength:TestServer.kt$UrlResponseParameter.RequestFactory$class</ID>
     <ID>MaxLineLength:TestServer.kt$UrlResponseParameter.RequestFactory$override fun responseFor(callNumber: Int, request: TestServerHttpRequest): UrlResponse?</ID>
     <ID>MaxLineLength:TestServer.kt$UrlResponseParameter.Sequence$override fun responseFor(callNumber: Int, request: TestServerHttpRequest): UrlResponse?</ID>
-    <ID>MaxLineLength:Tool.kt$flow { throw AgentError.ToolExecution(name, toolCallId, UnsupportedOperationException("provider-executed tool has no local executor")) }</ID>
-    <ID>MaxLineLength:Tool.kt$throw AgentError.ToolExecution(tool.name, options.toolCallId, NoOutputGeneratedError("Tool ${tool.name} produced no output"))</ID>
     <ID>MaxLineLength:Tool.kt$val providerName = resolveProviderToolName?.invoke(tool) ?: providerToolNames[providerToolId.contentOrNull] ?: continue</ID>
     <ID>MaxLineLength:ToolErrorWiringTest.kt$ToolErrorWiringTest$fun</ID>
     <ID>MaxLineLength:ToolLoopAgent.kt$ToolLoopAgent$PrepareStepScope(stepNumber, resolvedModel, completedSteps.toList(), messages.toList(), activeContext).hook()</ID>
     <ID>MaxLineLength:ToolLoopAgent.kt$ToolLoopAgent$throw AgentError.ToolCallRepairFailed(call.toolName, originalError = originalError, repairError = repairError)</ID>
-    <ID>MaxLineLength:ToolLoopAgent.kt$ToolLoopAgent$val event = OnToolCallStartEvent(call.toolCallId, call.toolName, call.input, stepNumber, messages.toList())</ID>
     <ID>MaxLineLength:ToolTest.kt$ToolTest$assertEquals("string", properties["tags"]?.jsonObject?.get("items")?.jsonObject?.get("type")?.jsonPrimitive?.content)</ID>
     <ID>MaxLineLength:ToolTest.kt$ToolTest$assertEquals(setOf("location", "days", "threshold", "includeAlerts", "tags", "weights", "note", "window"), required)</ID>
     <ID>MaxLineLength:ToolTest.kt$ToolTest$assertEquals(setOf("startHour", "endHour"), window["required"]!!.jsonArray.map { it.jsonPrimitive.content }.toSet())</ID>
@@ -2470,7 +2401,6 @@
     <ID>MaximumLineLength:KlingAIProviderTest.kt$KlingAIProviderTest$ </ID>
     <ID>MaximumLineLength:KotlinApi.kt$ </ID>
     <ID>MaximumLineLength:KtorGatewayTransport.kt$ </ID>
-    <ID>MaximumLineLength:KtorGatewayTransport.kt$KtorGatewayTransport$ </ID>
     <ID>MaximumLineLength:LMNTProvider.kt$DefaultLMNTProvider$ </ID>
     <ID>MaximumLineLength:LMNTProviderTest.kt$LMNTProviderTest$ </ID>
     <ID>MaximumLineLength:LangChain.kt$ </ID>
@@ -2482,7 +2412,6 @@
     <ID>MaximumLineLength:LumaProviderTest.kt$LumaProviderTest$ </ID>
     <ID>MaximumLineLength:MCP.kt$ </ID>
     <ID>MaximumLineLength:MCP.kt$DefaultMCPClient$ </ID>
-    <ID>MaximumLineLength:MCP.kt$HttpMCPTransport$ </ID>
     <ID>MaximumLineLength:MCP.kt$SseMCPTransport$ </ID>
     <ID>MaximumLineLength:MCPClientTest.kt$MCPClientTest$ </ID>
     <ID>MaximumLineLength:MediaModels.kt$DefaultGeneratedFile$ </ID>
@@ -2582,10 +2511,6 @@
     <ID>MultiLineIfElse:CohereProvider.kt$JsonObject(emptyMap())</ID>
     <ID>MultiLineIfElse:CohereProvider.kt$runCatching { aiSdkJson.parseToJsonElement(normalized) }.getOrElse { JsonPrimitive(normalized) }</ID>
     <ID>MultiLineIfElse:GoogleProvider.kt$steps += buildJsonObject { put("type", JsonPrimitive("user_input")) put("content", JsonArray(content)) }</ID>
-    <ID>MultiLineIfElse:ToolLoopAgent.kt$ToolLoopAgent$emptyList()</ID>
-    <ID>MultiLineIfElse:ToolLoopAgent.kt$ToolLoopAgent$responseFormat</ID>
-    <ID>MultiLineIfElse:ToolLoopAgent.kt$ToolLoopAgent$stepFinishReason</ID>
-    <ID>MultiLineIfElse:ToolLoopAgent.kt$ToolLoopAgent$stepMessages</ID>
     <ID>NestedBlockDepth:AmazonBedrockProvider.kt$private fun bedrockMessages(messages: List&lt;ModelMessage>): BedrockConvertedMessages</ID>
     <ID>NestedBlockDepth:AnthropicProvider.kt$private fun anthropicGenerateResult( response: JsonObject, requestBody: JsonElement, responseHeaders: Map&lt;String, String>, responseBody: JsonElement, warnings: List&lt;CallWarning>, settings: AnthropicProviderSettings, json: Json, ): LanguageModelResult</ID>
     <ID>NestedBlockDepth:DeepgramProvider.kt$private fun applyDeepgramSpeechOptions( options: JsonObject, queryParams: LinkedHashMap&lt;String, String>, warnings: MutableList&lt;CallWarning>, )</ID>
@@ -2614,7 +2539,6 @@
     <ID>NoConsecutiveBlankLines:HuggingFaceProvider.kt$ </ID>
     <ID>NoConsecutiveBlankLines:HumeProvider.kt$ </ID>
     <ID>NoConsecutiveBlankLines:KlingAIProvider.kt$ </ID>
-    <ID>NoConsecutiveBlankLines:KtorGatewayTransport.kt$ </ID>
     <ID>NoConsecutiveBlankLines:LMNTProvider.kt$ </ID>
     <ID>NoConsecutiveBlankLines:LumaProvider.kt$ </ID>
     <ID>NoConsecutiveBlankLines:OpenAICompatibleProvider.kt$ </ID>
@@ -2623,7 +2547,6 @@
     <ID>NoConsecutiveBlankLines:ProdiaProvider.kt$ </ID>
     <ID>NoConsecutiveBlankLines:QuiverAIProvider.kt$ </ID>
     <ID>NoConsecutiveBlankLines:RevaiProvider.kt$ </ID>
-    <ID>NoConsecutiveBlankLines:Util.kt$ </ID>
     <ID>NoConsecutiveBlankLines:VoyageProvider.kt$ </ID>
     <ID>NoConsecutiveBlankLines:XaiProvider.kt$ </ID>
     <ID>NoMultipleSpaces:LanguageModel.kt$LanguageModelCallParams$ </ID>
@@ -2652,13 +2575,11 @@
     <ID>NoUnusedImports:HuggingFaceProviderTest.kt$ai.torad.aisdk.HuggingFaceProviderTest.kt</ID>
     <ID>NoUnusedImports:HumeProvider.kt$ai.torad.aisdk.providers.HumeProvider.kt</ID>
     <ID>NoUnusedImports:HumeProviderTest.kt$ai.torad.aisdk.HumeProviderTest.kt</ID>
-    <ID>NoUnusedImports:KtorGatewayTransport.kt$ai.torad.aisdk.KtorGatewayTransport.kt</ID>
     <ID>NoUnusedImports:LMNTProvider.kt$ai.torad.aisdk.providers.LMNTProvider.kt</ID>
     <ID>NoUnusedImports:LMNTProviderTest.kt$ai.torad.aisdk.LMNTProviderTest.kt</ID>
     <ID>NoUnusedImports:LangChain.kt$ai.torad.aisdk.LangChain.kt</ID>
     <ID>NoUnusedImports:LifecycleHooksTest.kt$ai.torad.aisdk.LifecycleHooksTest.kt</ID>
     <ID>NoUnusedImports:LumaProvider.kt$ai.torad.aisdk.providers.LumaProvider.kt</ID>
-    <ID>NoUnusedImports:MCP.kt$ai.torad.aisdk.MCP.kt</ID>
     <ID>NoUnusedImports:MCPClientTest.kt$ai.torad.aisdk.MCPClientTest.kt</ID>
     <ID>NoUnusedImports:OpenAICompatibleProvider.kt$ai.torad.aisdk.providers.OpenAICompatibleProvider.kt</ID>
     <ID>NoUnusedImports:OpenAICompatibleProviderFacades.kt$ai.torad.aisdk.providers.OpenAICompatibleProviderFacades.kt</ID>
@@ -2783,9 +2704,6 @@
     <ID>PropertyWrapping:GoogleProvider.kt$var current = googleGetJson(client, "${settings.baseURL.trimEnd('/')}/interactions/$interactionId", headers, abortSignal)</ID>
     <ID>PropertyWrapping:HuggingFaceProviderTest.kt$HuggingFaceProviderTest$val events = drainAllItems(provider.responses("meta-llama/Llama-3.1-8B-Instruct").stream(LanguageModelCallParams(messages = listOf(userMessage("hi")))))</ID>
     <ID>PropertyWrapping:HuggingFaceProviderTest.kt$HuggingFaceProviderTest$val provider = createHuggingFace(fixture.httpClient(), HuggingFaceProviderSettings(baseURL = "https://hf.test/v1"))</ID>
-    <ID>PropertyWrapping:MCP.kt$HttpMCPTransport$val error = MCPClientError("MCP HTTP Transport Error: GET SSE failed: ${response.status.value} ${response.status.description}")</ID>
-    <ID>PropertyWrapping:MCP.kt$HttpMCPTransport$val error = MCPClientError("MCP HTTP Transport Error: POSTing to endpoint (HTTP ${response.status.value}): $text")</ID>
-    <ID>PropertyWrapping:MCP.kt$SseMCPTransport$val error = MCPClientError("MCP SSE Transport Error: POSTing to endpoint (HTTP ${response.status.value}): ${response.bodyAsText()}")</ID>
     <ID>PropertyWrapping:MistralProviderTest.kt$MistralProviderTest$val provider = createMistral(createTestServer(mutableMapOf()).httpClient(), MistralProviderSettings(apiKey = "key"))</ID>
     <ID>PropertyWrapping:OpenAICompatibleProvider.kt$OpenAICompatibleChatLanguageModel$val state = OpenAIChatStreamState(provider = providerName, providerKey = providerOptionsKey(), convertUsage = settings.convertUsage)</ID>
     <ID>PropertyWrapping:OpenAICompatibleProviderTest.kt$OpenAICompatibleProviderTest$val events = drainAllItems(provider.languageModel("gpt-test").stream(LanguageModelCallParams(listOf(userMessage("hi")))))</ID>
@@ -2793,7 +2711,6 @@
     <ID>PropertyWrapping:OpenResponsesProviderTest.kt$OpenResponsesProviderTest$val events = drainAllItems(provider.languageModel("gpt-resp").stream(LanguageModelCallParams(listOf(userMessage("hi")))))</ID>
     <ID>PropertyWrapping:OpenResponsesProviderTest.kt$OpenResponsesProviderTest$val provider = createOpenResponses(client, OpenResponsesProviderSettings("https://api.test/v1/responses", "openresponses"))</ID>
     <ID>PropertyWrapping:ProdiaProviderTest.kt$ProdiaProviderTest$val provider = createProdia(createTestServer(mutableMapOf()).httpClient(), ProdiaProviderSettings(apiKey = "token"))</ID>
-    <ID>PropertyWrapping:ToolLoopAgent.kt$ToolLoopAgent$val event = OnToolCallStartEvent(call.toolCallId, call.toolName, call.input, stepNumber, messages.toList())</ID>
     <ID>PropertyWrapping:XaiProviderTest.kt$XaiProviderTest$val provider = createXai(fixture.httpClient(), XaiProviderSettings(baseURL = "https://xai.test/v1", apiKey = "key"))</ID>
     <ID>ReturnCount:AbortSignal.kt$public fun combineAbortSignals(vararg signals: AbortSignal): AbortSignal</ID>
     <ID>ReturnCount:AmazonBedrockProvider.kt$private fun bedrockEmbeddingVector(response: JsonObject): List&lt;Float></ID>
@@ -2840,14 +2757,6 @@
     <ID>ReturnCount:Util.kt$private fun parseUrl(url: String): ParsedUrl?</ID>
     <ID>ReturnCount:Util.kt$public fun detectMediaType(filename: String? = null, dataUrl: String? = null, explicit: String? = null): String?</ID>
     <ID>ReturnCount:XaiProvider.kt$private fun xaiVideoMode(options: JsonObject): String?</ID>
-    <ID>SpacingBetweenDeclarationsWithAnnotations:Tool.kt$ToolChoice$None : ToolChoice</ID>
-    <ID>SpacingBetweenDeclarationsWithAnnotations:Tool.kt$ToolChoice$Required : ToolChoice</ID>
-    <ID>SpacingBetweenDeclarationsWithAnnotations:Tool.kt$ToolChoice$Specific : ToolChoice</ID>
-    <ID>SpacingBetweenDeclarationsWithAnnotations:Tool.kt$ToolResultOutput$Content : ToolResultOutput</ID>
-    <ID>SpacingBetweenDeclarationsWithAnnotations:Tool.kt$ToolResultOutput$Error : ToolResultOutput</ID>
-    <ID>SpacingBetweenDeclarationsWithAnnotations:Tool.kt$ToolResultOutput$ErrorJson : ToolResultOutput</ID>
-    <ID>SpacingBetweenDeclarationsWithAnnotations:Tool.kt$ToolResultOutput$ExecutionDenied : ToolResultOutput</ID>
-    <ID>SpacingBetweenDeclarationsWithAnnotations:Tool.kt$ToolResultOutput$Json : ToolResultOutput</ID>
     <ID>SpacingBetweenDeclarationsWithAnnotations:ToolApprovalTest.kt$ToolApprovalTest$SendResult</ID>
     <ID>SpacingBetweenDeclarationsWithAnnotations:ToolTest.kt$ToolTest$ForecastInput</ID>
     <ID>SpacingBetweenDeclarationsWithAnnotations:ToolTest.kt$ToolTest$UnitSystem</ID>
@@ -3043,11 +2952,9 @@
     <ID>Wrapping:GoogleProvider.kt$(</ID>
     <ID>Wrapping:GoogleProvider.kt$("content", buildJsonObject { put("role", JsonPrimitive("user")) put("parts", JsonArray(listOf(buildJsonObject { put("text", JsonPrimitive(value)) }))) })</ID>
     <ID>Wrapping:GoogleProvider.kt$("functionCall", buildJsonObject { put("id", JsonPrimitive(part.toolCallId)) put("name", JsonPrimitive(part.toolName)) put("args", part.input) })</ID>
-    <ID>Wrapping:GoogleProvider.kt$("functionResponse", buildJsonObject { put("id", JsonPrimitive(part.toolCallId)) put("name", JsonPrimitive(part.toolCallId)) put("response", buildJsonObject { put("approved", JsonPrimitive(part.approved)) part.reason?.let { put("reason", JsonPrimitive(it)) } }) })</ID>
     <ID>Wrapping:GoogleProvider.kt$("functionResponse", buildJsonObject { put("id", JsonPrimitive(part.toolCallId)) put("name", JsonPrimitive(part.toolName)) put("response", part.modelVisible) })</ID>
     <ID>Wrapping:GoogleProvider.kt$("inlineData", buildJsonObject { put("mimeType", JsonPrimitive(image.mediaType)) put("data", JsonPrimitive(image.base64)) })</ID>
     <ID>Wrapping:GoogleProvider.kt$("inlineData", buildJsonObject { put("mimeType", JsonPrimitive(part.mediaType)) put("data", JsonPrimitive(part.base64)) })</ID>
-    <ID>Wrapping:GoogleProvider.kt$("response", buildJsonObject { put("approved", JsonPrimitive(part.approved)) part.reason?.let { put("reason", JsonPrimitive(it)) } })</ID>
     <ID>Wrapping:GoogleProvider.kt$GoogleGenerativeAIEmbeddingModel$embeddingFloat(it, provider)</ID>
     <ID>Wrapping:GoogleProvider.kt$GoogleGenerativeAIImageModel$GeneratedFile(mediaType = it.mediaType, base64 = it.base64, filename = it.filename, providerMetadata = it.providerMetadata.orEmpty())</ID>
     <ID>Wrapping:GoogleProvider.kt$GoogleGenerativeAIVideoModel$throw AiSdkException("Google video generation failed: ${it["message"]?.jsonPrimitive?.contentOrNull ?: it}")</ID>
@@ -3068,7 +2975,6 @@
     <ID>Wrapping:KlingAIProviderTest.kt$KlingAIProviderTest$("trajectories", buildJsonArray { add(buildJsonObject { put("x", JsonPrimitive(1)) put("y", JsonPrimitive(2)) }) })</ID>
     <ID>Wrapping:KlingAIProviderTest.kt$KlingAIProviderTest$("voiceList", buildJsonArray { add(buildJsonObject { put("voice_id", JsonPrimitive("voice_1")) }) })</ID>
     <ID>Wrapping:KlingAIProviderTest.kt$KlingAIProviderTest$klingai.video("kling-v2.6-t2v")</ID>
-    <ID>Wrapping:KtorGatewayTransport.kt$(</ID>
     <ID>Wrapping:LumaProvider.kt$(</ID>
     <ID>Wrapping:LumaProvider.kt$("character", buildJsonObject { identities.forEach { (id, images) -> put(id, buildJsonObject { put("images", JsonArray(images.map(::JsonPrimitive))) }) } })</ID>
     <ID>Wrapping:LumaProvider.kt$("image", JsonArray(params.files.mapIndexed { index, file -> buildJsonObject { put("url", JsonPrimitive(file.url.orEmpty())) put("weight", imageConfigs.getOrNull(index)?.get("weight") ?: JsonPrimitive(0.85f)) } }))</ID>
@@ -3078,10 +2984,6 @@
     <ID>Wrapping:LumaProviderTest.kt$LumaProviderTest$(</ID>
     <ID>Wrapping:LumaProviderTest.kt$LumaProviderTest$("images", buildJsonArray { add(buildJsonObject { put("id", JsonPrimitive("hero")) }) add(buildJsonObject { put("id", JsonPrimitive("hero")) }) })</ID>
     <ID>Wrapping:LumaProviderTest.kt$LumaProviderTest$("images", buildJsonArray { add(buildJsonObject { put("weight", JsonPrimitive(0.9f)) }) add(buildJsonObject { put("weight", JsonPrimitive(0.5f)) }) })</ID>
-    <ID>Wrapping:MCP.kt$HttpMCPTransport$it.isNotBlank()</ID>
-    <ID>Wrapping:MCP.kt$HttpMCPTransport$values[HttpHeaders.Authorization] = "Bearer $it"</ID>
-    <ID>Wrapping:MCP.kt$SseMCPTransport$it.isNotBlank()</ID>
-    <ID>Wrapping:MCP.kt$SseMCPTransport$values[HttpHeaders.Authorization] = "Bearer $it"</ID>
     <ID>Wrapping:MCPClientTest.kt$MCPClientTest.MemoryOAuthProvider$(</ID>
     <ID>Wrapping:MessageStreamReader.kt$-></ID>
     <ID>Wrapping:OpenAICompatibleProvider.kt$(</ID>
@@ -3114,8 +3016,6 @@
     <ID>Wrapping:RevaiProviderTest.kt$RevaiProviderTest$("target_languages", buildJsonArray { add(buildJsonObject { put("language", JsonPrimitive("es")) }) })</ID>
     <ID>Wrapping:Streams.kt$"msg_${messages.size + 1}"</ID>
     <ID>Wrapping:TestServer.kt$TestServer$(</ID>
-    <ID>Wrapping:Tool.kt$(</ID>
-    <ID>Wrapping:Tool.kt$throw AgentError.ToolExecution(name, toolCallId, UnsupportedOperationException("provider-executed tool has no local executor"))</ID>
     <ID>Wrapping:ToolApprovalDenialTest.kt$ToolApprovalDenialTest$(</ID>
     <ID>Wrapping:XaiProvider.kt$XaiImageModel$(</ID>
     <ID>Wrapping:XaiProvider.kt$XaiImageModel$("images", JsonArray(data.map { image -> val revisedPrompt = image.jsonObject["revised_prompt"]?.jsonPrimitive?.contentOrNull buildJsonObject { if (revisedPrompt != null) put("revisedPrompt", JsonPrimitive(revisedPrompt)) } }))</ID>

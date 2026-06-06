@@ -1,11 +1,32 @@
 package ai.torad.aisdk
 
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.sync.Semaphore
+import kotlinx.coroutines.sync.withPermit
 import kotlinx.serialization.json.JsonElement
 
 public interface EmbeddingModel {
     public val modelId: String
     public val provider: String
         get() = "unknown"
+
+    /**
+     * How many values this model accepts in a single call, if limited.
+     * [embedMany] consults this to auto-split large requests into batches when the
+     * caller doesn't pass an explicit `maxEmbeddingsPerCall`. Null = no limit.
+     */
+    public val maxEmbeddingsPerCall: Int?
+        get() = null
+
+    /**
+     * Whether the model permits its embedding batches to run concurrently.
+     * When true, [embedMany] fans batches out (bounded by `maxParallelCalls`)
+     * instead of running them serially.
+     */
+    public val supportsParallelCalls: Boolean
+        get() = false
 
     public suspend fun embed(params: EmbeddingModelCallParams): EmbeddingModelResult
 }
@@ -50,8 +71,13 @@ public data class EmbedManyResult<TValue>(
     val warnings: List<CallWarning> = emptyList(),
     val request: LanguageModelRequestMetadata = LanguageModelRequestMetadata(),
     val response: LanguageModelResponseMetadata = LanguageModelResponseMetadata(),
+    /** Per-batch response metadata, in batch order — one entry per underlying model call. */
+    val responses: List<LanguageModelResponseMetadata> = emptyList(),
     val providerMetadata: Map<String, JsonElement> = emptyMap(),
 )
+
+/** Only retryable [APICallError]s are retried (matching upstream); other errors fail fast. */
+internal val retryableApiError: (Throwable) -> Boolean = { (it as? APICallError)?.isRetryable == true }
 
 public suspend fun embed(
     model: EmbeddingModel,
@@ -59,15 +85,18 @@ public suspend fun embed(
     providerOptions: Map<String, JsonElement> = emptyMap(),
     abortSignal: AbortSignal = AbortSignalNever,
     headers: Map<String, String> = emptyMap(),
+    maxRetries: Int = 2,
 ): EmbedResult<String> {
-    val result = model.embed(
-        EmbeddingModelCallParams(
-            values = listOf(value),
-            providerOptions = providerOptions,
-            abortSignal = abortSignal,
-            headers = headers,
-        ),
-    )
+    val result = retryWithExponentialBackoff(RetryPolicy(maxRetries = maxRetries), retryableApiError) {
+        model.embed(
+            EmbeddingModelCallParams(
+                values = listOf(value),
+                providerOptions = providerOptions,
+                abortSignal = abortSignal,
+                headers = headers,
+            ),
+        )
+    }
     val embedding = result.embeddings.singleOrNull()
         ?: throw NoOutputGeneratedError("Embedding model returned ${result.embeddings.size} embeddings for one value")
     return EmbedResult(
@@ -85,40 +114,62 @@ public suspend fun embedMany(
     model: EmbeddingModel,
     values: List<String>,
     maxEmbeddingsPerCall: Int? = null,
+    maxParallelCalls: Int = Int.MAX_VALUE,
     providerOptions: Map<String, JsonElement> = emptyMap(),
     abortSignal: AbortSignal = AbortSignalNever,
     headers: Map<String, String> = emptyMap(),
+    maxRetries: Int = 2,
 ): EmbedManyResult<String> {
     require(values.isNotEmpty()) { "embedMany: values must not be empty" }
-    val batches = maxEmbeddingsPerCall?.let { splitArray(values, it) } ?: listOf(values)
-    val allEmbeddings = mutableListOf<List<Float>>()
-    var usage = EmbeddingUsage()
-    val warnings = mutableListOf<CallWarning>()
-    var request = LanguageModelRequestMetadata()
-    var response = LanguageModelResponseMetadata()
-    var metadata = emptyMap<String, JsonElement>()
-    for (batch in batches) {
+    // Batch size: explicit arg wins, else the model's own per-call limit, else one batch.
+    val batchSize = maxEmbeddingsPerCall ?: model.maxEmbeddingsPerCall
+    val batches = batchSize?.let { splitArray(values, it) } ?: listOf(values)
+
+    suspend fun embedBatch(batch: List<String>): EmbeddingModelResult {
         abortSignal.throwIfAborted()
-        val result = model.embed(
-            EmbeddingModelCallParams(
-                values = batch,
-                maxEmbeddingsPerCall = maxEmbeddingsPerCall,
-                providerOptions = providerOptions,
-                abortSignal = abortSignal,
-                headers = headers,
-            ),
-        )
+        val result = retryWithExponentialBackoff(RetryPolicy(maxRetries = maxRetries), retryableApiError) {
+            model.embed(
+                EmbeddingModelCallParams(
+                    values = batch,
+                    maxEmbeddingsPerCall = maxEmbeddingsPerCall,
+                    providerOptions = providerOptions,
+                    abortSignal = abortSignal,
+                    headers = headers,
+                ),
+            )
+        }
         require(result.embeddings.size == batch.size) {
             "Embedding model returned ${result.embeddings.size} embeddings for ${batch.size} values"
         }
-        allEmbeddings += result.embeddings
-        usage = EmbeddingUsage(tokens = usage.tokens + result.usage.tokens, raw = result.usage.raw ?: usage.raw)
-        warnings += result.warnings
-        request = result.request
-        response = result.response
-        metadata = result.providerMetadata.ifEmpty { metadata }
+        return result
     }
-    return EmbedManyResult(values, allEmbeddings, usage, warnings, request, response, metadata)
+
+    // Run batches concurrently (bounded) when the model allows it; else serially.
+    // awaitAll preserves batch order, so embeddings line up with the input values.
+    val results: List<EmbeddingModelResult> = if (model.supportsParallelCalls && batches.size > 1) {
+        val permits = Semaphore(maxParallelCalls.coerceAtLeast(1))
+        coroutineScope {
+            batches.map { batch -> async { permits.withPermit { embedBatch(batch) } } }.awaitAll()
+        }
+    } else {
+        batches.map { embedBatch(it) }
+    }
+
+    val allEmbeddings = results.flatMap { it.embeddings }
+    val usage = EmbeddingUsage(
+        tokens = results.sumOf { it.usage.tokens },
+        raw = results.firstNotNullOfOrNull { it.usage.raw },
+    )
+    return EmbedManyResult(
+        values = values,
+        embeddings = allEmbeddings,
+        usage = usage,
+        warnings = results.flatMap { it.warnings },
+        request = results.firstOrNull()?.request ?: LanguageModelRequestMetadata(),
+        response = results.lastOrNull()?.response ?: LanguageModelResponseMetadata(),
+        responses = results.map { it.response },
+        providerMetadata = results.firstNotNullOfOrNull { it.providerMetadata.ifEmpty { null } } ?: emptyMap(),
+    )
 }
 
 public interface EmbeddingModelMiddleware {
