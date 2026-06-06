@@ -80,6 +80,7 @@ public fun customProvider(
 public class ProviderRegistry(
     private val providers: Map<String, Provider>,
     private val defaultProviderId: String? = null,
+    private val separator: String = ":",
 ) : Provider {
     override val providerId: String = "registry"
 
@@ -109,7 +110,7 @@ public class ProviderRegistry(
         resolve(modelId) { provider, localId -> provider.videoModel(localId) }
 
     private fun <T> resolve(modelId: String, getter: (Provider, String) -> T): T {
-        val (providerId, localModelId) = splitProviderModelId(modelId)
+        val (providerId, localModelId) = splitProviderModelId(modelId, separator)
         val resolvedProviderId = providerId ?: defaultProviderId ?: singleProviderId()
         return getter(provider(resolvedProviderId), localModelId)
     }
@@ -123,17 +124,19 @@ public class ProviderRegistry(
 public fun createProviderRegistry(
     providers: Map<String, Provider>,
     defaultProviderId: String? = null,
-): ProviderRegistry = ProviderRegistry(providers, defaultProviderId)
+    separator: String = ":",
+): ProviderRegistry = ProviderRegistry(providers, defaultProviderId, separator)
 
 public fun createProviderRegistry(
     vararg providers: Pair<String, Provider>,
     defaultProviderId: String? = null,
-): ProviderRegistry = ProviderRegistry(providers.toMap(), defaultProviderId)
+    separator: String = ":",
+): ProviderRegistry = ProviderRegistry(providers.toMap(), defaultProviderId, separator)
 
-public fun splitProviderModelId(modelId: String): Pair<String?, String> {
-    val colon = modelId.indexOf(':')
+public fun splitProviderModelId(modelId: String, separator: String = ":"): Pair<String?, String> {
+    val colon = modelId.indexOf(separator)
     if (colon <= 0) return null to modelId
-    return modelId.substring(0, colon) to modelId.substring(colon + 1)
+    return modelId.substring(0, colon) to modelId.substring(colon + separator.length)
 }
 
 public data class ProviderMiddleware(

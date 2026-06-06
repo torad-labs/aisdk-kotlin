@@ -34,6 +34,12 @@ public data class GatewayProviderSettings(
     val metadataCacheRefreshMillis: Long = 5 * 60 * 1000L,
     val nowMillis: () -> Long = { Clock.System.now().toEpochMilliseconds() },
     val authTokenProvider: (suspend () -> GatewayAuthToken?)? = null,
+    /**
+     * Host-supplied environment. When [apiKey] is null, `AI_GATEWAY_API_KEY` here
+     * is used — the KMP-idiomatic equivalent of upstream's process.env lookup
+     * (commonMain has no platform `getenv`; the host passes the map).
+     */
+    val environment: Map<String, String> = emptyMap(),
 )
 
 public data class GatewayRequestContext(
@@ -375,8 +381,10 @@ public data class GatewayTools(
     ),
 )
 
-internal suspend fun getGatewayAuthToken(settings: GatewayProviderSettings): GatewayAuthToken? =
-    settings.apiKey?.let { GatewayAuthToken(it, GatewayAuthMethod.ApiKey) } ?: settings.authTokenProvider?.invoke()
+internal suspend fun getGatewayAuthToken(settings: GatewayProviderSettings): GatewayAuthToken? {
+    val key = settings.apiKey ?: settings.environment["AI_GATEWAY_API_KEY"]
+    return key?.let { GatewayAuthToken(it, GatewayAuthMethod.ApiKey) } ?: settings.authTokenProvider?.invoke()
+}
 
 internal suspend fun gatewayHeaders(settings: GatewayProviderSettings): Map<String, String> {
     val auth = getGatewayAuthToken(settings)
