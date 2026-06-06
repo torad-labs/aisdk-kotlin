@@ -261,6 +261,17 @@ final enum class ai.torad.aisdk/MessageRole : kotlin/Enum<ai.torad.aisdk/Message
     }
 }
 
+final enum class ai.torad.aisdk/MiddlewareOperation : kotlin/Enum<ai.torad.aisdk/MiddlewareOperation> { // ai.torad.aisdk/MiddlewareOperation|null[0]
+    enum entry Generate // ai.torad.aisdk/MiddlewareOperation.Generate|null[0]
+    enum entry Stream // ai.torad.aisdk/MiddlewareOperation.Stream|null[0]
+
+    final val entries // ai.torad.aisdk/MiddlewareOperation.entries|#static{}entries[0]
+        final fun <get-entries>(): kotlin.enums/EnumEntries<ai.torad.aisdk/MiddlewareOperation> // ai.torad.aisdk/MiddlewareOperation.entries.<get-entries>|<get-entries>#static(){}[0]
+
+    final fun valueOf(kotlin/String): ai.torad.aisdk/MiddlewareOperation // ai.torad.aisdk/MiddlewareOperation.valueOf|valueOf#static(kotlin.String){}[0]
+    final fun values(): kotlin/Array<ai.torad.aisdk/MiddlewareOperation> // ai.torad.aisdk/MiddlewareOperation.values|values#static(){}[0]
+}
+
 final enum class ai.torad.aisdk/PartialJsonState : kotlin/Enum<ai.torad.aisdk/PartialJsonState> { // ai.torad.aisdk/PartialJsonState|null[0]
     enum entry FailedParse // ai.torad.aisdk/PartialJsonState.FailedParse|null[0]
     enum entry RepairedParse // ai.torad.aisdk/PartialJsonState.RepairedParse|null[0]
@@ -884,7 +895,11 @@ abstract interface ai.torad.aisdk/LanguageModel { // ai.torad.aisdk/LanguageMode
 }
 
 abstract interface ai.torad.aisdk/LanguageModelMiddleware { // ai.torad.aisdk/LanguageModelMiddleware|null[0]
+    open fun overrideModelId(ai.torad.aisdk/LanguageModel): kotlin/String? // ai.torad.aisdk/LanguageModelMiddleware.overrideModelId|overrideModelId(ai.torad.aisdk.LanguageModel){}[0]
+    open fun overrideProvider(ai.torad.aisdk/LanguageModel): kotlin/String? // ai.torad.aisdk/LanguageModelMiddleware.overrideProvider|overrideProvider(ai.torad.aisdk.LanguageModel){}[0]
+    open fun overrideSupportedUrls(ai.torad.aisdk/LanguageModel): kotlin.collections/Map<kotlin/String, kotlin.collections/List<kotlin/String>>? // ai.torad.aisdk/LanguageModelMiddleware.overrideSupportedUrls|overrideSupportedUrls(ai.torad.aisdk.LanguageModel){}[0]
     open fun wrapStream(ai.torad.aisdk/MiddlewareCallContext): kotlinx.coroutines.flow/Flow<ai.torad.aisdk/StreamEvent> // ai.torad.aisdk/LanguageModelMiddleware.wrapStream|wrapStream(ai.torad.aisdk.MiddlewareCallContext){}[0]
+    open suspend fun transformParams(ai.torad.aisdk/MiddlewareOperation, ai.torad.aisdk/LanguageModelCallParams, ai.torad.aisdk/LanguageModel): ai.torad.aisdk/LanguageModelCallParams // ai.torad.aisdk/LanguageModelMiddleware.transformParams|transformParams(ai.torad.aisdk.MiddlewareOperation;ai.torad.aisdk.LanguageModelCallParams;ai.torad.aisdk.LanguageModel){}[0]
     open suspend fun wrapGenerate(ai.torad.aisdk/MiddlewareCallContext): ai.torad.aisdk/LanguageModelResult // ai.torad.aisdk/LanguageModelMiddleware.wrapGenerate|wrapGenerate(ai.torad.aisdk.MiddlewareCallContext){}[0]
 }
 
@@ -13690,9 +13705,9 @@ final fun <#A: kotlin/Any?> ai.torad.aisdk/validateTypes(kotlinx.serialization.j
 final fun <#A: kotlin/Any?> ai.torad.aisdk/validateTypes(kotlinx.serialization.json/JsonElement, ai.torad.aisdk/Schema<#A>, ai.torad.aisdk/TypeValidationContext? = ...): #A // ai.torad.aisdk/validateTypes|validateTypes(kotlinx.serialization.json.JsonElement;ai.torad.aisdk.Schema<0:0>;ai.torad.aisdk.TypeValidationContext?){0§<kotlin.Any?>}[0]
 final fun ai.torad.aisdk.codemod/applyAiSdkCodemods(kotlin/String, kotlin.collections/List<ai.torad.aisdk.codemod/CodemodRule> = ...): ai.torad.aisdk.codemod/CodemodResult // ai.torad.aisdk.codemod/applyAiSdkCodemods|applyAiSdkCodemods(kotlin.String;kotlin.collections.List<ai.torad.aisdk.codemod.CodemodRule>){}[0]
 final fun ai.torad.aisdk.middleware/addToolInputExamplesMiddleware(kotlin.collections/Map<kotlin/String, kotlin.collections/List<kotlin/String>>): ai.torad.aisdk/LanguageModelMiddleware // ai.torad.aisdk.middleware/addToolInputExamplesMiddleware|addToolInputExamplesMiddleware(kotlin.collections.Map<kotlin.String,kotlin.collections.List<kotlin.String>>){}[0]
-final fun ai.torad.aisdk.middleware/defaultSettingsMiddleware(kotlin/Float? = ..., kotlin/Float? = ..., kotlin/Int? = ..., kotlin/Int? = ..., kotlin.collections/List<kotlin/String> = ..., kotlin/Int? = ..., kotlin.collections/Map<kotlin/String, kotlinx.serialization.json/JsonElement> = ..., kotlin/Float? = ..., kotlin/Float? = ..., ai.torad.aisdk/ResponseFormat = ...): ai.torad.aisdk/LanguageModelMiddleware // ai.torad.aisdk.middleware/defaultSettingsMiddleware|defaultSettingsMiddleware(kotlin.Float?;kotlin.Float?;kotlin.Int?;kotlin.Int?;kotlin.collections.List<kotlin.String>;kotlin.Int?;kotlin.collections.Map<kotlin.String,kotlinx.serialization.json.JsonElement>;kotlin.Float?;kotlin.Float?;ai.torad.aisdk.ResponseFormat){}[0]
+final fun ai.torad.aisdk.middleware/defaultSettingsMiddleware(kotlin/Float? = ..., kotlin/Float? = ..., kotlin/Int? = ..., kotlin/Int? = ..., kotlin.collections/List<kotlin/String> = ..., kotlin/Int? = ..., kotlin.collections/List<ai.torad.aisdk/LanguageModelTool> = ..., ai.torad.aisdk/ToolChoice? = ..., kotlin.collections/Map<kotlin/String, kotlin/String> = ..., kotlin.collections/Map<kotlin/String, kotlinx.serialization.json/JsonElement> = ..., kotlin/Float? = ..., kotlin/Float? = ..., ai.torad.aisdk/ResponseFormat = ...): ai.torad.aisdk/LanguageModelMiddleware // ai.torad.aisdk.middleware/defaultSettingsMiddleware|defaultSettingsMiddleware(kotlin.Float?;kotlin.Float?;kotlin.Int?;kotlin.Int?;kotlin.collections.List<kotlin.String>;kotlin.Int?;kotlin.collections.List<ai.torad.aisdk.LanguageModelTool>;ai.torad.aisdk.ToolChoice?;kotlin.collections.Map<kotlin.String,kotlin.String>;kotlin.collections.Map<kotlin.String,kotlinx.serialization.json.JsonElement>;kotlin.Float?;kotlin.Float?;ai.torad.aisdk.ResponseFormat){}[0]
 final fun ai.torad.aisdk.middleware/extractJsonMiddleware(kotlin/Function1<kotlin/String, kotlin/String>? = ...): ai.torad.aisdk/LanguageModelMiddleware // ai.torad.aisdk.middleware/extractJsonMiddleware|extractJsonMiddleware(kotlin.Function1<kotlin.String,kotlin.String>?){}[0]
-final fun ai.torad.aisdk.middleware/extractReasoningMiddleware(kotlin/String = ..., kotlin/String = ...): ai.torad.aisdk/LanguageModelMiddleware // ai.torad.aisdk.middleware/extractReasoningMiddleware|extractReasoningMiddleware(kotlin.String;kotlin.String){}[0]
+final fun ai.torad.aisdk.middleware/extractReasoningMiddleware(kotlin/String = ..., kotlin/String = ..., kotlin/Boolean = ...): ai.torad.aisdk/LanguageModelMiddleware // ai.torad.aisdk.middleware/extractReasoningMiddleware|extractReasoningMiddleware(kotlin.String;kotlin.String;kotlin.Boolean){}[0]
 final fun ai.torad.aisdk.middleware/loggingMiddleware(ai.torad.aisdk/Logger, kotlin/String = ...): ai.torad.aisdk/LanguageModelMiddleware // ai.torad.aisdk.middleware/loggingMiddleware|loggingMiddleware(ai.torad.aisdk.Logger;kotlin.String){}[0]
 final fun ai.torad.aisdk.middleware/simulateStreamingMiddleware(): ai.torad.aisdk/LanguageModelMiddleware // ai.torad.aisdk.middleware/simulateStreamingMiddleware|simulateStreamingMiddleware(){}[0]
 final fun ai.torad.aisdk.providers/codeExecution(kotlinx.serialization.json/JsonElement = ...): ai.torad.aisdk/Tool<kotlinx.serialization.json/JsonElement, kotlinx.serialization.json/JsonElement, kotlin/Any?> // ai.torad.aisdk.providers/codeExecution|codeExecution(kotlinx.serialization.json.JsonElement){}[0]

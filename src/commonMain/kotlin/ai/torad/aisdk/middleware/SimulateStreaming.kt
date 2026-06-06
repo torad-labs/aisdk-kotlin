@@ -1,5 +1,6 @@
 package ai.torad.aisdk.middleware
 
+import ai.torad.aisdk.ContentPart
 import ai.torad.aisdk.LanguageModelMiddleware
 import ai.torad.aisdk.MiddlewareCallContext
 import ai.torad.aisdk.StreamEvent
@@ -28,6 +29,25 @@ public fun simulateStreamingMiddleware(): LanguageModelMiddleware = object : Lan
         // which forced this to consume the (broken) stream — see the
         // pre-refactor file history.
         val result = context.doGenerate(context.params)
+        // Mirror v6: lead with stream-start (carrying warnings) and response
+        // metadata, then replay reasoning blocks from the result content, then
+        // text + tool calls. The prior version dropped warnings, response
+        // metadata, and reasoning entirely.
+        emit(StreamEvent.StreamStart(result.warnings))
+        emit(
+            StreamEvent.ResponseMetadata(
+                id = result.response.id,
+                modelId = result.response.modelId,
+                headers = result.response.headers,
+                body = result.response.body,
+            ),
+        )
+        result.content.filterIsInstance<ContentPart.Reasoning>().forEachIndexed { i, reasoning ->
+            val rid = "sim_reasoning_$i"
+            emit(StreamEvent.ReasoningStart(rid, reasoning.providerMetadata))
+            emit(StreamEvent.ReasoningDelta(rid, reasoning.text, reasoning.providerMetadata))
+            emit(StreamEvent.ReasoningEnd(rid, reasoning.providerMetadata))
+        }
         val textId = SIMULATED_TEXT_ID
         if (result.text.isNotEmpty()) {
             emit(StreamEvent.TextStart(textId))

@@ -22,13 +22,17 @@ import kotlinx.coroutines.flow.flow
 public fun extractReasoningMiddleware(
     tagName: String = "reasoning",
     separator: String = "\n",
+    startWithReasoning: Boolean = false,
 ): LanguageModelMiddleware = object : LanguageModelMiddleware {
     private val openTag = "<$tagName>"
     private val closeTag = "</$tagName>"
 
     override suspend fun wrapGenerate(context: MiddlewareCallContext): LanguageModelResult {
         val raw = context.doGenerate(context.params)
-        val (cleanText, _) = extractReasoning(raw.text)
+        // startWithReasoning: the model emits raw reasoning before any open tag, so
+        // prepend one to make extractReasoning treat the leading text as reasoning.
+        val text = if (startWithReasoning) "$openTag${raw.text}" else raw.text
+        val (cleanText, _) = extractReasoning(text)
         return raw.copy(text = cleanText)
     }
 
@@ -38,6 +42,15 @@ public fun extractReasoningMiddleware(
         var reasoningId: String? = null
         var nextReasoningIdx = 0
         var lastTextId: String? = null
+
+        // startWithReasoning: begin already inside a reasoning section (the model
+        // streams reasoning tokens before any open tag), looking for the close tag.
+        if (startWithReasoning) {
+            val rid = "reasoning_${++nextReasoningIdx}"
+            reasoningId = rid
+            inReasoning = true
+            emit(StreamEvent.ReasoningStart(rid))
+        }
 
         suspend fun emitBufferedText(id: String?) {
             if (buffer.isEmpty()) return

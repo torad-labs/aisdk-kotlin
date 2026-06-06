@@ -2938,11 +2938,19 @@ public final class ai/torad/aisdk/LanguageModelCallParams {
 }
 
 public abstract interface class ai/torad/aisdk/LanguageModelMiddleware {
+	public fun overrideModelId (Lai/torad/aisdk/LanguageModel;)Ljava/lang/String;
+	public fun overrideProvider (Lai/torad/aisdk/LanguageModel;)Ljava/lang/String;
+	public fun overrideSupportedUrls (Lai/torad/aisdk/LanguageModel;)Ljava/util/Map;
+	public fun transformParams (Lai/torad/aisdk/MiddlewareOperation;Lai/torad/aisdk/LanguageModelCallParams;Lai/torad/aisdk/LanguageModel;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public fun wrapGenerate (Lai/torad/aisdk/MiddlewareCallContext;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public fun wrapStream (Lai/torad/aisdk/MiddlewareCallContext;)Lkotlinx/coroutines/flow/Flow;
 }
 
 public final class ai/torad/aisdk/LanguageModelMiddleware$DefaultImpls {
+	public static fun overrideModelId (Lai/torad/aisdk/LanguageModelMiddleware;Lai/torad/aisdk/LanguageModel;)Ljava/lang/String;
+	public static fun overrideProvider (Lai/torad/aisdk/LanguageModelMiddleware;Lai/torad/aisdk/LanguageModel;)Ljava/lang/String;
+	public static fun overrideSupportedUrls (Lai/torad/aisdk/LanguageModelMiddleware;Lai/torad/aisdk/LanguageModel;)Ljava/util/Map;
+	public static fun transformParams (Lai/torad/aisdk/LanguageModelMiddleware;Lai/torad/aisdk/MiddlewareOperation;Lai/torad/aisdk/LanguageModelCallParams;Lai/torad/aisdk/LanguageModel;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public static fun wrapGenerate (Lai/torad/aisdk/LanguageModelMiddleware;Lai/torad/aisdk/MiddlewareCallContext;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public static fun wrapStream (Lai/torad/aisdk/LanguageModelMiddleware;Lai/torad/aisdk/MiddlewareCallContext;)Lkotlinx/coroutines/flow/Flow;
 }
@@ -3778,6 +3786,14 @@ public final class ai/torad/aisdk/MiddlewareCallContext {
 
 public final class ai/torad/aisdk/MiddlewareKt {
 	public static final fun wrapLanguageModel (Lai/torad/aisdk/LanguageModel;Ljava/util/List;)Lai/torad/aisdk/LanguageModel;
+}
+
+public final class ai/torad/aisdk/MiddlewareOperation : java/lang/Enum {
+	public static final field Generate Lai/torad/aisdk/MiddlewareOperation;
+	public static final field Stream Lai/torad/aisdk/MiddlewareOperation;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
+	public static fun valueOf (Ljava/lang/String;)Lai/torad/aisdk/MiddlewareOperation;
+	public static fun values ()[Lai/torad/aisdk/MiddlewareOperation;
 }
 
 public final class ai/torad/aisdk/MissingToolResultsError : ai/torad/aisdk/AiSdkException {
@@ -7268,8 +7284,8 @@ public final class ai/torad/aisdk/middleware/AddToolInputExamplesKt {
 }
 
 public final class ai/torad/aisdk/middleware/DefaultSettingsKt {
-	public static final fun defaultSettingsMiddleware (Ljava/lang/Float;Ljava/lang/Float;Ljava/lang/Integer;Ljava/lang/Integer;Ljava/util/List;Ljava/lang/Integer;Ljava/util/Map;Ljava/lang/Float;Ljava/lang/Float;Lai/torad/aisdk/ResponseFormat;)Lai/torad/aisdk/LanguageModelMiddleware;
-	public static synthetic fun defaultSettingsMiddleware$default (Ljava/lang/Float;Ljava/lang/Float;Ljava/lang/Integer;Ljava/lang/Integer;Ljava/util/List;Ljava/lang/Integer;Ljava/util/Map;Ljava/lang/Float;Ljava/lang/Float;Lai/torad/aisdk/ResponseFormat;ILjava/lang/Object;)Lai/torad/aisdk/LanguageModelMiddleware;
+	public static final fun defaultSettingsMiddleware (Ljava/lang/Float;Ljava/lang/Float;Ljava/lang/Integer;Ljava/lang/Integer;Ljava/util/List;Ljava/lang/Integer;Ljava/util/List;Lai/torad/aisdk/ToolChoice;Ljava/util/Map;Ljava/util/Map;Ljava/lang/Float;Ljava/lang/Float;Lai/torad/aisdk/ResponseFormat;)Lai/torad/aisdk/LanguageModelMiddleware;
+	public static synthetic fun defaultSettingsMiddleware$default (Ljava/lang/Float;Ljava/lang/Float;Ljava/lang/Integer;Ljava/lang/Integer;Ljava/util/List;Ljava/lang/Integer;Ljava/util/List;Lai/torad/aisdk/ToolChoice;Ljava/util/Map;Ljava/util/Map;Ljava/lang/Float;Ljava/lang/Float;Lai/torad/aisdk/ResponseFormat;ILjava/lang/Object;)Lai/torad/aisdk/LanguageModelMiddleware;
 }
 
 public final class ai/torad/aisdk/middleware/ExtractJsonKt {
@@ -7278,8 +7294,8 @@ public final class ai/torad/aisdk/middleware/ExtractJsonKt {
 }
 
 public final class ai/torad/aisdk/middleware/ExtractReasoningKt {
-	public static final fun extractReasoningMiddleware (Ljava/lang/String;Ljava/lang/String;)Lai/torad/aisdk/LanguageModelMiddleware;
-	public static synthetic fun extractReasoningMiddleware$default (Ljava/lang/String;Ljava/lang/String;ILjava/lang/Object;)Lai/torad/aisdk/LanguageModelMiddleware;
+	public static final fun extractReasoningMiddleware (Ljava/lang/String;Ljava/lang/String;Z)Lai/torad/aisdk/LanguageModelMiddleware;
+	public static synthetic fun extractReasoningMiddleware$default (Ljava/lang/String;Ljava/lang/String;ZILjava/lang/Object;)Lai/torad/aisdk/LanguageModelMiddleware;
 }
 
 public final class ai/torad/aisdk/middleware/LoggingKt {
