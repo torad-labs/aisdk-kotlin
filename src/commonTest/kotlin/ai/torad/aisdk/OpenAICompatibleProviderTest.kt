@@ -496,6 +496,56 @@ class OpenAICompatibleProviderTest {
         assertNotNull(error.responseHeaders)
     }
 
+    @Test
+    fun `approval bookkeeping messages never reach the OpenAI wire`() = runTest {
+        // The approval-resume cycle appends a Tool-role ToolApprovalResponse message. OpenAI-format has no
+        // approval concept — serializing it produced {role:"tool", tool_call_id:"", content:""}, which strict
+        // shims reject (Gemini 400: function_response.name cannot be empty). The wire must see the assistant's
+        // tool_calls entry plus exactly ONE tool message: the real result.
+        val seenBodies = mutableListOf<JsonObject>()
+        val client = HttpClient(
+            MockEngine { request ->
+                seenBodies += Json.parseToJsonElement(requestBodyText(request)).jsonObject
+                respond(
+                    content = """{"id":"c1","created":1,"model":"m","choices":[{"message":{"role":"assistant","content":"ok"},"finish_reason":"stop"}]}""",
+                    status = HttpStatusCode.OK,
+                    headers = headersOf(HttpHeaders.ContentType, "application/json"),
+                )
+            },
+        )
+        val model = createOpenAICompatible(
+            client,
+            OpenAICompatibleProviderSettings(name = "test", baseUrl = "https://api.test/v1", apiKey = "k"),
+        ).languageModel("m")
+        val gatedInput = JsonObject(mapOf("configPath" to JsonPrimitive("run.yaml")))
+        val messages = listOf(
+            ModelMessage(MessageRole.User, listOf(ContentPart.Text("launch it"))),
+            ModelMessage(
+                MessageRole.Assistant,
+                listOf(
+                    ContentPart.ToolCall("call_gated", "rlLaunch", gatedInput),
+                    ContentPart.ToolApprovalRequest("call_gated", "rlLaunch", gatedInput),
+                ),
+            ),
+            ModelMessage(MessageRole.Tool, listOf(ContentPart.ToolApprovalResponse("call_gated", approved = true))),
+            ModelMessage(
+                MessageRole.Tool,
+                listOf(ContentPart.ToolResult("call_gated", "rlLaunch", JsonPrimitive("launched"))),
+            ),
+        )
+
+        model.generate(LanguageModelCallParams(messages = messages))
+
+        val wireMessages = seenBodies.single()["messages"]!!.jsonArray.map { it.jsonObject }
+        val toolMessages = wireMessages.filter { it["role"]?.jsonPrimitive?.content == "tool" }
+        assertEquals(1, toolMessages.size, "only the real result is a wire tool message — approvals stay internal")
+        assertEquals("call_gated", toolMessages.single()["tool_call_id"]?.jsonPrimitive?.content)
+        assertTrue(
+            wireMessages.none { it["tool_call_id"]?.jsonPrimitive?.contentOrNull == "" },
+            "no message carries an empty tool_call_id",
+        )
+    }
+
     private fun requestBodyText(request: HttpRequestData): String =
         when (val body = request.body) {
             is OutgoingContent.ByteArrayContent -> body.bytes().decodeToString()
