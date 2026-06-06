@@ -1682,7 +1682,7 @@ sealed interface ai.torad.aisdk/ChunkBy { // ai.torad.aisdk/ChunkBy|null[0]
 
 sealed interface ai.torad.aisdk/ContentPart { // ai.torad.aisdk/ContentPart|null[0]
     final class File : ai.torad.aisdk/ContentPart { // ai.torad.aisdk/ContentPart.File|null[0]
-        constructor <init>(kotlin/String, kotlin/String, kotlin/String? = ..., kotlin.collections/Map<kotlin/String, kotlinx.serialization.json/JsonElement>? = ...) // ai.torad.aisdk/ContentPart.File.<init>|<init>(kotlin.String;kotlin.String;kotlin.String?;kotlin.collections.Map<kotlin.String,kotlinx.serialization.json.JsonElement>?){}[0]
+        constructor <init>(kotlin/String, kotlin/String = ..., kotlin/String? = ..., kotlin.collections/Map<kotlin/String, kotlinx.serialization.json/JsonElement>? = ..., kotlin/String? = ...) // ai.torad.aisdk/ContentPart.File.<init>|<init>(kotlin.String;kotlin.String;kotlin.String?;kotlin.collections.Map<kotlin.String,kotlinx.serialization.json.JsonElement>?;kotlin.String?){}[0]
 
         final val base64 // ai.torad.aisdk/ContentPart.File.base64|{}base64[0]
             final fun <get-base64>(): kotlin/String // ai.torad.aisdk/ContentPart.File.base64.<get-base64>|<get-base64>(){}[0]
@@ -1692,12 +1692,15 @@ sealed interface ai.torad.aisdk/ContentPart { // ai.torad.aisdk/ContentPart|null
             final fun <get-mediaType>(): kotlin/String // ai.torad.aisdk/ContentPart.File.mediaType.<get-mediaType>|<get-mediaType>(){}[0]
         final val providerMetadata // ai.torad.aisdk/ContentPart.File.providerMetadata|{}providerMetadata[0]
             final fun <get-providerMetadata>(): kotlin.collections/Map<kotlin/String, kotlinx.serialization.json/JsonElement>? // ai.torad.aisdk/ContentPart.File.providerMetadata.<get-providerMetadata>|<get-providerMetadata>(){}[0]
+        final val url // ai.torad.aisdk/ContentPart.File.url|{}url[0]
+            final fun <get-url>(): kotlin/String? // ai.torad.aisdk/ContentPart.File.url.<get-url>|<get-url>(){}[0]
 
         final fun component1(): kotlin/String // ai.torad.aisdk/ContentPart.File.component1|component1(){}[0]
         final fun component2(): kotlin/String // ai.torad.aisdk/ContentPart.File.component2|component2(){}[0]
         final fun component3(): kotlin/String? // ai.torad.aisdk/ContentPart.File.component3|component3(){}[0]
         final fun component4(): kotlin.collections/Map<kotlin/String, kotlinx.serialization.json/JsonElement>? // ai.torad.aisdk/ContentPart.File.component4|component4(){}[0]
-        final fun copy(kotlin/String = ..., kotlin/String = ..., kotlin/String? = ..., kotlin.collections/Map<kotlin/String, kotlinx.serialization.json/JsonElement>? = ...): ai.torad.aisdk/ContentPart.File // ai.torad.aisdk/ContentPart.File.copy|copy(kotlin.String;kotlin.String;kotlin.String?;kotlin.collections.Map<kotlin.String,kotlinx.serialization.json.JsonElement>?){}[0]
+        final fun component5(): kotlin/String? // ai.torad.aisdk/ContentPart.File.component5|component5(){}[0]
+        final fun copy(kotlin/String = ..., kotlin/String = ..., kotlin/String? = ..., kotlin.collections/Map<kotlin/String, kotlinx.serialization.json/JsonElement>? = ..., kotlin/String? = ...): ai.torad.aisdk/ContentPart.File // ai.torad.aisdk/ContentPart.File.copy|copy(kotlin.String;kotlin.String;kotlin.String?;kotlin.collections.Map<kotlin.String,kotlinx.serialization.json.JsonElement>?;kotlin.String?){}[0]
         final fun equals(kotlin/Any?): kotlin/Boolean // ai.torad.aisdk/ContentPart.File.equals|equals(kotlin.Any?){}[0]
         final fun hashCode(): kotlin/Int // ai.torad.aisdk/ContentPart.File.hashCode|hashCode(){}[0]
         final fun toString(): kotlin/String // ai.torad.aisdk/ContentPart.File.toString|toString(){}[0]
@@ -1719,7 +1722,7 @@ sealed interface ai.torad.aisdk/ContentPart { // ai.torad.aisdk/ContentPart|null
     }
 
     final class Image : ai.torad.aisdk/ContentPart { // ai.torad.aisdk/ContentPart.Image|null[0]
-        constructor <init>(kotlin/String, kotlin/String, kotlin.collections/Map<kotlin/String, kotlinx.serialization.json/JsonElement>? = ...) // ai.torad.aisdk/ContentPart.Image.<init>|<init>(kotlin.String;kotlin.String;kotlin.collections.Map<kotlin.String,kotlinx.serialization.json.JsonElement>?){}[0]
+        constructor <init>(kotlin/String, kotlin/String = ..., kotlin.collections/Map<kotlin/String, kotlinx.serialization.json/JsonElement>? = ..., kotlin/String? = ...) // ai.torad.aisdk/ContentPart.Image.<init>|<init>(kotlin.String;kotlin.String;kotlin.collections.Map<kotlin.String,kotlinx.serialization.json.JsonElement>?;kotlin.String?){}[0]
 
         final val base64 // ai.torad.aisdk/ContentPart.Image.base64|{}base64[0]
             final fun <get-base64>(): kotlin/String // ai.torad.aisdk/ContentPart.Image.base64.<get-base64>|<get-base64>(){}[0]
@@ -1727,11 +1730,14 @@ sealed interface ai.torad.aisdk/ContentPart { // ai.torad.aisdk/ContentPart|null
             final fun <get-mediaType>(): kotlin/String // ai.torad.aisdk/ContentPart.Image.mediaType.<get-mediaType>|<get-mediaType>(){}[0]
         final val providerMetadata // ai.torad.aisdk/ContentPart.Image.providerMetadata|{}providerMetadata[0]
             final fun <get-providerMetadata>(): kotlin.collections/Map<kotlin/String, kotlinx.serialization.json/JsonElement>? // ai.torad.aisdk/ContentPart.Image.providerMetadata.<get-providerMetadata>|<get-providerMetadata>(){}[0]
+        final val url // ai.torad.aisdk/ContentPart.Image.url|{}url[0]
+            final fun <get-url>(): kotlin/String? // ai.torad.aisdk/ContentPart.Image.url.<get-url>|<get-url>(){}[0]
 
         final fun component1(): kotlin/String // ai.torad.aisdk/ContentPart.Image.component1|component1(){}[0]
         final fun component2(): kotlin/String // ai.torad.aisdk/ContentPart.Image.component2|component2(){}[0]
         final fun component3(): kotlin.collections/Map<kotlin/String, kotlinx.serialization.json/JsonElement>? // ai.torad.aisdk/ContentPart.Image.component3|component3(){}[0]
-        final fun copy(kotlin/String = ..., kotlin/String = ..., kotlin.collections/Map<kotlin/String, kotlinx.serialization.json/JsonElement>? = ...): ai.torad.aisdk/ContentPart.Image // ai.torad.aisdk/ContentPart.Image.copy|copy(kotlin.String;kotlin.String;kotlin.collections.Map<kotlin.String,kotlinx.serialization.json.JsonElement>?){}[0]
+        final fun component4(): kotlin/String? // ai.torad.aisdk/ContentPart.Image.component4|component4(){}[0]
+        final fun copy(kotlin/String = ..., kotlin/String = ..., kotlin.collections/Map<kotlin/String, kotlinx.serialization.json/JsonElement>? = ..., kotlin/String? = ...): ai.torad.aisdk/ContentPart.Image // ai.torad.aisdk/ContentPart.Image.copy|copy(kotlin.String;kotlin.String;kotlin.collections.Map<kotlin.String,kotlinx.serialization.json.JsonElement>?;kotlin.String?){}[0]
         final fun equals(kotlin/Any?): kotlin/Boolean // ai.torad.aisdk/ContentPart.Image.equals|equals(kotlin.Any?){}[0]
         final fun hashCode(): kotlin/Int // ai.torad.aisdk/ContentPart.Image.hashCode|hashCode(){}[0]
         final fun toString(): kotlin/String // ai.torad.aisdk/ContentPart.Image.toString|toString(){}[0]
@@ -9095,6 +9101,22 @@ final class ai.torad.aisdk/DownloadError : ai.torad.aisdk/AiSdkException { // ai
         final fun <get-url>(): kotlin/String // ai.torad.aisdk/DownloadError.url.<get-url>|<get-url>(){}[0]
 }
 
+final class ai.torad.aisdk/DownloadedAsset { // ai.torad.aisdk/DownloadedAsset|null[0]
+    constructor <init>(kotlin/String, kotlin/String?) // ai.torad.aisdk/DownloadedAsset.<init>|<init>(kotlin.String;kotlin.String?){}[0]
+
+    final val base64 // ai.torad.aisdk/DownloadedAsset.base64|{}base64[0]
+        final fun <get-base64>(): kotlin/String // ai.torad.aisdk/DownloadedAsset.base64.<get-base64>|<get-base64>(){}[0]
+    final val mediaType // ai.torad.aisdk/DownloadedAsset.mediaType|{}mediaType[0]
+        final fun <get-mediaType>(): kotlin/String? // ai.torad.aisdk/DownloadedAsset.mediaType.<get-mediaType>|<get-mediaType>(){}[0]
+
+    final fun component1(): kotlin/String // ai.torad.aisdk/DownloadedAsset.component1|component1(){}[0]
+    final fun component2(): kotlin/String? // ai.torad.aisdk/DownloadedAsset.component2|component2(){}[0]
+    final fun copy(kotlin/String = ..., kotlin/String? = ...): ai.torad.aisdk/DownloadedAsset // ai.torad.aisdk/DownloadedAsset.copy|copy(kotlin.String;kotlin.String?){}[0]
+    final fun equals(kotlin/Any?): kotlin/Boolean // ai.torad.aisdk/DownloadedAsset.equals|equals(kotlin.Any?){}[0]
+    final fun hashCode(): kotlin/Int // ai.torad.aisdk/DownloadedAsset.hashCode|hashCode(){}[0]
+    final fun toString(): kotlin/String // ai.torad.aisdk/DownloadedAsset.toString|toString(){}[0]
+}
+
 final class ai.torad.aisdk/ElicitResult { // ai.torad.aisdk/ElicitResult|null[0]
     constructor <init>(kotlin/String, kotlinx.serialization.json/JsonObject? = ..., kotlinx.serialization.json/JsonObject? = ...) // ai.torad.aisdk/ElicitResult.<init>|<init>(kotlin.String;kotlinx.serialization.json.JsonObject?;kotlinx.serialization.json.JsonObject?){}[0]
 
@@ -13915,6 +13937,7 @@ final suspend fun <#A: kotlin/Any?> ai.torad.aisdk/retryWithExponentialBackoff(a
 final suspend fun ai.torad.aisdk.ui/pipeTextStreamToResponse(kotlinx.coroutines.flow/Flow<kotlin/String>, ai.torad.aisdk.ui/ServerResponseWriter, kotlin/Int = ..., kotlin.collections/Map<kotlin/String, kotlin/String> = ...) // ai.torad.aisdk.ui/pipeTextStreamToResponse|pipeTextStreamToResponse(kotlinx.coroutines.flow.Flow<kotlin.String>;ai.torad.aisdk.ui.ServerResponseWriter;kotlin.Int;kotlin.collections.Map<kotlin.String,kotlin.String>){}[0]
 final suspend fun ai.torad.aisdk.ui/pipeUiMessageStreamToResponse(kotlinx.coroutines.flow/Flow<ai.torad.aisdk.ui/UIMessage>, ai.torad.aisdk.ui/ServerResponseWriter, kotlin/Function1<ai.torad.aisdk.ui/UIMessage, kotlin/String> = ..., kotlin/Int = ..., kotlin.collections/Map<kotlin/String, kotlin/String> = ...) // ai.torad.aisdk.ui/pipeUiMessageStreamToResponse|pipeUiMessageStreamToResponse(kotlinx.coroutines.flow.Flow<ai.torad.aisdk.ui.UIMessage>;ai.torad.aisdk.ui.ServerResponseWriter;kotlin.Function1<ai.torad.aisdk.ui.UIMessage,kotlin.String>;kotlin.Int;kotlin.collections.Map<kotlin.String,kotlin.String>){}[0]
 final suspend fun ai.torad.aisdk/callCompletionApi(ai.torad.aisdk/CallCompletionApiOptions): kotlin/String? // ai.torad.aisdk/callCompletionApi|callCompletionApi(ai.torad.aisdk.CallCompletionApiOptions){}[0]
+final suspend fun ai.torad.aisdk/convertToLanguageModelPrompt(kotlin.collections/List<ai.torad.aisdk/ModelMessage>, kotlin.collections/Map<kotlin/String, kotlin.collections/List<kotlin/String>> = ..., kotlin.coroutines/SuspendFunction1<kotlin/String, ai.torad.aisdk/DownloadedAsset>? = ...): kotlin.collections/List<ai.torad.aisdk/ModelMessage> // ai.torad.aisdk/convertToLanguageModelPrompt|convertToLanguageModelPrompt(kotlin.collections.List<ai.torad.aisdk.ModelMessage>;kotlin.collections.Map<kotlin.String,kotlin.collections.List<kotlin.String>>;kotlin.coroutines.SuspendFunction1<kotlin.String,ai.torad.aisdk.DownloadedAsset>?){}[0]
 final suspend fun ai.torad.aisdk/createMCPClient(ai.torad.aisdk/MCPClientConfig): ai.torad.aisdk/MCPClient // ai.torad.aisdk/createMCPClient|createMCPClient(ai.torad.aisdk.MCPClientConfig){}[0]
 final suspend fun ai.torad.aisdk/embed(ai.torad.aisdk/EmbeddingModel, kotlin/String, kotlin.collections/Map<kotlin/String, kotlinx.serialization.json/JsonElement> = ..., ai.torad.aisdk/AbortSignal = ..., kotlin.collections/Map<kotlin/String, kotlin/String> = ..., kotlin/Int = ...): ai.torad.aisdk/EmbedResult<kotlin/String> // ai.torad.aisdk/embed|embed(ai.torad.aisdk.EmbeddingModel;kotlin.String;kotlin.collections.Map<kotlin.String,kotlinx.serialization.json.JsonElement>;ai.torad.aisdk.AbortSignal;kotlin.collections.Map<kotlin.String,kotlin.String>;kotlin.Int){}[0]
 final suspend fun ai.torad.aisdk/embedMany(ai.torad.aisdk/EmbeddingModel, kotlin.collections/List<kotlin/String>, kotlin/Int? = ..., kotlin/Int = ..., kotlin.collections/Map<kotlin/String, kotlinx.serialization.json/JsonElement> = ..., ai.torad.aisdk/AbortSignal = ..., kotlin.collections/Map<kotlin/String, kotlin/String> = ..., kotlin/Int = ...): ai.torad.aisdk/EmbedManyResult<kotlin/String> // ai.torad.aisdk/embedMany|embedMany(ai.torad.aisdk.EmbeddingModel;kotlin.collections.List<kotlin.String>;kotlin.Int?;kotlin.Int;kotlin.collections.Map<kotlin.String,kotlinx.serialization.json.JsonElement>;ai.torad.aisdk.AbortSignal;kotlin.collections.Map<kotlin.String,kotlin.String>;kotlin.Int){}[0]

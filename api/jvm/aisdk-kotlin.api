@@ -682,19 +682,21 @@ public final class ai/torad/aisdk/ContentPart$Companion {
 
 public final class ai/torad/aisdk/ContentPart$File : ai/torad/aisdk/ContentPart {
 	public static final field Companion Lai/torad/aisdk/ContentPart$File$Companion;
-	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;)V
-	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;Ljava/lang/String;)V
+	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;Ljava/lang/String;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun component1 ()Ljava/lang/String;
 	public final fun component2 ()Ljava/lang/String;
 	public final fun component3 ()Ljava/lang/String;
 	public final fun component4 ()Ljava/util/Map;
-	public final fun copy (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;)Lai/torad/aisdk/ContentPart$File;
-	public static synthetic fun copy$default (Lai/torad/aisdk/ContentPart$File;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;ILjava/lang/Object;)Lai/torad/aisdk/ContentPart$File;
+	public final fun component5 ()Ljava/lang/String;
+	public final fun copy (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;Ljava/lang/String;)Lai/torad/aisdk/ContentPart$File;
+	public static synthetic fun copy$default (Lai/torad/aisdk/ContentPart$File;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;Ljava/lang/String;ILjava/lang/Object;)Lai/torad/aisdk/ContentPart$File;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getBase64 ()Ljava/lang/String;
 	public final fun getFilename ()Ljava/lang/String;
 	public final fun getMediaType ()Ljava/lang/String;
 	public final fun getProviderMetadata ()Ljava/util/Map;
+	public final fun getUrl ()Ljava/lang/String;
 	public fun hashCode ()I
 	public fun toString ()Ljava/lang/String;
 }
@@ -716,17 +718,19 @@ public final class ai/torad/aisdk/ContentPart$File$Companion {
 
 public final class ai/torad/aisdk/ContentPart$Image : ai/torad/aisdk/ContentPart {
 	public static final field Companion Lai/torad/aisdk/ContentPart$Image$Companion;
-	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;)V
-	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;Ljava/lang/String;)V
+	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;Ljava/lang/String;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun component1 ()Ljava/lang/String;
 	public final fun component2 ()Ljava/lang/String;
 	public final fun component3 ()Ljava/util/Map;
-	public final fun copy (Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;)Lai/torad/aisdk/ContentPart$Image;
-	public static synthetic fun copy$default (Lai/torad/aisdk/ContentPart$Image;Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;ILjava/lang/Object;)Lai/torad/aisdk/ContentPart$Image;
+	public final fun component4 ()Ljava/lang/String;
+	public final fun copy (Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;Ljava/lang/String;)Lai/torad/aisdk/ContentPart$Image;
+	public static synthetic fun copy$default (Lai/torad/aisdk/ContentPart$Image;Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;Ljava/lang/String;ILjava/lang/Object;)Lai/torad/aisdk/ContentPart$Image;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getBase64 ()Ljava/lang/String;
 	public final fun getMediaType ()Ljava/lang/String;
 	public final fun getProviderMetadata ()Ljava/util/Map;
+	public final fun getUrl ()Ljava/lang/String;
 	public fun hashCode ()I
 	public fun toString ()Ljava/lang/String;
 }
@@ -992,6 +996,11 @@ public final class ai/torad/aisdk/ContentPart$ToolResult$Companion {
 	public final fun serializer ()Lkotlinx/serialization/KSerializer;
 }
 
+public final class ai/torad/aisdk/ConvertToLanguageModelPromptKt {
+	public static final fun convertToLanguageModelPrompt (Ljava/util/List;Ljava/util/Map;Lkotlin/jvm/functions/Function2;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public static synthetic fun convertToLanguageModelPrompt$default (Ljava/util/List;Ljava/util/Map;Lkotlin/jvm/functions/Function2;Lkotlin/coroutines/Continuation;ILjava/lang/Object;)Ljava/lang/Object;
+}
+
 public final class ai/torad/aisdk/CustomProvider : ai/torad/aisdk/Provider {
 	public fun <init> (Ljava/lang/String;Ljava/util/Map;Ljava/util/Map;Ljava/util/Map;Ljava/util/Map;Ljava/util/Map;Ljava/util/Map;Ljava/util/Map;)V
 	public synthetic fun <init> (Ljava/lang/String;Ljava/util/Map;Ljava/util/Map;Ljava/util/Map;Ljava/util/Map;Ljava/util/Map;Ljava/util/Map;Ljava/util/Map;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
@@ -1121,6 +1130,19 @@ public final class ai/torad/aisdk/DownloadError : ai/torad/aisdk/AiSdkException 
 	public final fun getStatusCode ()Ljava/lang/Integer;
 	public final fun getStatusText ()Ljava/lang/String;
 	public final fun getUrl ()Ljava/lang/String;
+}
+
+public final class ai/torad/aisdk/DownloadedAsset {
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()Ljava/lang/String;
+	public final fun copy (Ljava/lang/String;Ljava/lang/String;)Lai/torad/aisdk/DownloadedAsset;
+	public static synthetic fun copy$default (Lai/torad/aisdk/DownloadedAsset;Ljava/lang/String;Ljava/lang/String;ILjava/lang/Object;)Lai/torad/aisdk/DownloadedAsset;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getBase64 ()Ljava/lang/String;
+	public final fun getMediaType ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
 }
 
 public final class ai/torad/aisdk/ElicitResult {
