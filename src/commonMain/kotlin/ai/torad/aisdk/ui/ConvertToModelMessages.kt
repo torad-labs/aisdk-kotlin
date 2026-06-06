@@ -3,9 +3,10 @@ package ai.torad.aisdk.ui
 import ai.torad.aisdk.ContentPart
 import ai.torad.aisdk.MessageRole
 import ai.torad.aisdk.ModelMessage
+import ai.torad.aisdk.StreamEvent
+import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.contentOrNull
-import kotlinx.serialization.json.JsonNull
 
 /**
  * Convert a list of UI-shape [UIMessage]s back into the model-shape
@@ -153,10 +154,32 @@ private fun convertPart(
             onDeferredToolResult = onDeferredToolResult,
             contextHint = contextHint,
         )
+        // User-attached files and model sources DO carry to the model (they were
+        // previously dropped, losing attachments and source provenance).
+        is UIMessagePart.File -> onContentPart(
+            ContentPart.File(
+                mediaType = part.mediaType,
+                base64 = part.base64,
+                providerMetadata = part.providerMetadata,
+            ),
+        )
+        is UIMessagePart.SourceUrl -> onContentPart(
+            ContentPart.Source(
+                sourceType = StreamEvent.SourcePart.SourceType.Url,
+                url = part.url,
+                title = part.title,
+                providerMetadata = part.providerMetadata,
+            ),
+        )
+        is UIMessagePart.SourceDocument -> onContentPart(
+            ContentPart.Source(
+                sourceType = StreamEvent.SourcePart.SourceType.Document,
+                title = part.title,
+                providerMetadata = part.providerMetadata,
+            ),
+        )
+        // StepStart is a UI boundary marker; Data/Error are UI-only — not model content.
         is UIMessagePart.StepStart,
-        is UIMessagePart.SourceUrl,
-        is UIMessagePart.SourceDocument,
-        is UIMessagePart.File,
         is UIMessagePart.Data,
         is UIMessagePart.Error,
         -> Unit
