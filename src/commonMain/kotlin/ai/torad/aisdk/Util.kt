@@ -456,6 +456,8 @@ public fun isUrlSupported(
 public class DownloadError(
     public val url: String,
     message: String,
+    public val statusCode: Int? = null,
+    public val statusText: String? = null,
     cause: Throwable? = null,
 ) : AiSdkException(message, cause)
 

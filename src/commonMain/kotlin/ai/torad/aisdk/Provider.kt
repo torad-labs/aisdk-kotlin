@@ -84,7 +84,8 @@ public class ProviderRegistry(
     override val providerId: String = "registry"
 
     public fun provider(providerId: String): Provider =
-        providers[providerId] ?: throw NoSuchProviderError(providerId)
+        providers[providerId]
+            ?: throw NoSuchProviderError(providerId, availableProviders = providers.keys.sorted())
 
     override fun languageModel(modelId: String): LanguageModel =
         resolve(modelId) { provider, localId -> provider.languageModel(localId) }

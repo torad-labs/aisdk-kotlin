@@ -1116,8 +1116,10 @@ public final class ai/torad/aisdk/DirectStructuredObjectTransport : ai/torad/ais
 }
 
 public final class ai/torad/aisdk/DownloadError : ai/torad/aisdk/AiSdkException {
-	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/Throwable;)V
-	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/Throwable;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/Integer;Ljava/lang/String;Ljava/lang/Throwable;)V
+	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/Integer;Ljava/lang/String;Ljava/lang/Throwable;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun getStatusCode ()Ljava/lang/Integer;
+	public final fun getStatusText ()Ljava/lang/String;
 	public final fun getUrl ()Ljava/lang/String;
 }
 
@@ -3889,14 +3891,19 @@ public final class ai/torad/aisdk/NoContentGeneratedError : ai/torad/aisdk/AiSdk
 
 public final class ai/torad/aisdk/NoImageGeneratedError : ai/torad/aisdk/AiSdkException {
 	public fun <init> ()V
-	public fun <init> (Ljava/lang/String;)V
-	public synthetic fun <init> (Ljava/lang/String;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun <init> (Ljava/lang/String;Ljava/util/List;Ljava/lang/Throwable;)V
+	public synthetic fun <init> (Ljava/lang/String;Ljava/util/List;Ljava/lang/Throwable;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun getResponses ()Ljava/util/List;
 }
 
 public final class ai/torad/aisdk/NoObjectGeneratedError : ai/torad/aisdk/AiSdkException {
 	public fun <init> ()V
-	public fun <init> (Ljava/lang/String;)V
-	public synthetic fun <init> (Ljava/lang/String;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;Lai/torad/aisdk/LanguageModelResponseMetadata;Lai/torad/aisdk/Usage;Lai/torad/aisdk/FinishReason;Ljava/lang/Throwable;)V
+	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;Lai/torad/aisdk/LanguageModelResponseMetadata;Lai/torad/aisdk/Usage;Lai/torad/aisdk/FinishReason;Ljava/lang/Throwable;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun getFinishReason ()Lai/torad/aisdk/FinishReason;
+	public final fun getResponse ()Lai/torad/aisdk/LanguageModelResponseMetadata;
+	public final fun getText ()Ljava/lang/String;
+	public final fun getUsage ()Lai/torad/aisdk/Usage;
 }
 
 public final class ai/torad/aisdk/NoOutputGeneratedError : ai/torad/aisdk/AiSdkException {
@@ -3907,8 +3914,9 @@ public final class ai/torad/aisdk/NoOutputGeneratedError : ai/torad/aisdk/AiSdkE
 
 public final class ai/torad/aisdk/NoSpeechGeneratedError : ai/torad/aisdk/AiSdkException {
 	public fun <init> ()V
-	public fun <init> (Ljava/lang/String;)V
-	public synthetic fun <init> (Ljava/lang/String;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun <init> (Ljava/lang/String;Ljava/util/List;Ljava/lang/Throwable;)V
+	public synthetic fun <init> (Ljava/lang/String;Ljava/util/List;Ljava/lang/Throwable;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun getResponses ()Ljava/util/List;
 }
 
 public final class ai/torad/aisdk/NoSuchModelError : ai/torad/aisdk/AiSdkException {
@@ -3917,7 +3925,10 @@ public final class ai/torad/aisdk/NoSuchModelError : ai/torad/aisdk/AiSdkExcepti
 }
 
 public final class ai/torad/aisdk/NoSuchProviderError : ai/torad/aisdk/AiSdkException {
-	public fun <init> (Ljava/lang/String;)V
+	public fun <init> (Ljava/lang/String;Ljava/util/List;)V
+	public synthetic fun <init> (Ljava/lang/String;Ljava/util/List;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun getAvailableProviders ()Ljava/util/List;
+	public final fun getProviderId ()Ljava/lang/String;
 }
 
 public final class ai/torad/aisdk/NoSuchToolError : ai/torad/aisdk/AiSdkException {
@@ -3929,14 +3940,16 @@ public final class ai/torad/aisdk/NoSuchToolError : ai/torad/aisdk/AiSdkExceptio
 
 public final class ai/torad/aisdk/NoTranscriptGeneratedError : ai/torad/aisdk/AiSdkException {
 	public fun <init> ()V
-	public fun <init> (Ljava/lang/String;)V
-	public synthetic fun <init> (Ljava/lang/String;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun <init> (Ljava/lang/String;Ljava/util/List;Ljava/lang/Throwable;)V
+	public synthetic fun <init> (Ljava/lang/String;Ljava/util/List;Ljava/lang/Throwable;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun getResponses ()Ljava/util/List;
 }
 
 public final class ai/torad/aisdk/NoVideoGeneratedError : ai/torad/aisdk/AiSdkException {
 	public fun <init> ()V
-	public fun <init> (Ljava/lang/String;)V
-	public synthetic fun <init> (Ljava/lang/String;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun <init> (Ljava/lang/String;Ljava/util/List;Ljava/lang/Throwable;)V
+	public synthetic fun <init> (Ljava/lang/String;Ljava/util/List;Ljava/lang/Throwable;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun getResponses ()Ljava/util/List;
 }
 
 public final class ai/torad/aisdk/NoopLogger : ai/torad/aisdk/Logger {
