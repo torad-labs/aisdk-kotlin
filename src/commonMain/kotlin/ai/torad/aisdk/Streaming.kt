@@ -276,6 +276,10 @@ public sealed interface StreamEvent {
          *  AISDK_PORT_GAPS.md gap #18 slice). Routing layers measure
          *  end-to-end cache rate here without parsing each step. */
         val providerMetadata: Map<String, JsonElement>? = null,
+        /** The provider's OWN finish-reason string, before mapping. The mapped [finishReason] collapses
+         *  unknown values to [FinishReason.Other] — but for diagnosing a provider-side abort (Gemini's
+         *  RECITATION, OTHER, MALFORMED_FUNCTION_CALL…) the raw string is the evidence; never discard it. */
+        val rawFinishReason: String? = null,
     ) : StreamEvent
 
     /** Generation aborted via [AbortSignal]. Loop unwinds. */

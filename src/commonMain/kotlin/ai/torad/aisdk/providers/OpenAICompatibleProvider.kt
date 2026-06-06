@@ -336,6 +336,7 @@ private class OpenAICompatibleCompletionLanguageModel(
         emit(StreamEvent.StreamStart(prepared.warnings))
         var activeText = false
         var finish = FinishReason.Other
+        var rawFinish: String? = null
         var usage = Usage()
         var emittedResponseMetadata = false
         var sseHeaders: Map<String, String> = emptyMap()
@@ -371,13 +372,16 @@ private class OpenAICompatibleCompletionLanguageModel(
                         }
                         emit(StreamEvent.TextDelta("txt-0", text))
                     }
-                    choice?.get("finish_reason")?.jsonPrimitive?.contentOrNull?.let { finish = openAIFinishReason(it) }
+                    choice?.get("finish_reason")?.jsonPrimitive?.contentOrNull?.let {
+                        finish = openAIFinishReason(it)
+                        rawFinish = it
+                    }
                 }
             }
         }
         if (!headerMetaEmitted) emit(StreamEvent.ResponseMetadata(headers = sseHeaders))
         if (activeText) emit(StreamEvent.TextEnd("txt-0"))
-        emit(StreamEvent.Finish(totalSteps = 1, finishReason = finish, usage = usage))
+        emit(StreamEvent.Finish(totalSteps = 1, finishReason = finish, usage = usage, rawFinishReason = rawFinish))
     }
 
     private fun completionRequestBody(params: LanguageModelCallParams, stream: Boolean): PreparedOpenAIRequest {
@@ -702,6 +706,7 @@ private class OpenAIChatStreamState(
 ) {
     private val toolCalls = linkedMapOf<Int, StreamingToolCall>()
     private var finishReason = FinishReason.Other
+    private var rawFinishReason: String? = null
     private var usage = Usage()
     private var activeReasoning = false
     private var activeText = false
@@ -727,7 +732,10 @@ private class OpenAIChatStreamState(
         }
         obj["usage"]?.let { usage = (convertUsage ?: ::openAIUsage).invoke(it) }
         val choice = obj["choices"]?.jsonArray?.firstOrNull()?.jsonObject ?: return events
-        choice["finish_reason"]?.jsonPrimitive?.contentOrNull?.let { finishReason = openAIFinishReason(it) }
+        choice["finish_reason"]?.jsonPrimitive?.contentOrNull?.let {
+            finishReason = openAIFinishReason(it)
+            rawFinishReason = it
+        }
         val delta = choice["delta"]?.jsonObject ?: return events
         val reasoning = delta["reasoning_content"]?.jsonPrimitive?.contentOrNull
             ?: delta["reasoning"]?.jsonPrimitive?.contentOrNull
@@ -776,7 +784,14 @@ private class OpenAIChatStreamState(
             )
             toolCall.finished = true
         }
-        add(StreamEvent.Finish(totalSteps = 1, finishReason = finishReason, usage = usage))
+        add(
+            StreamEvent.Finish(
+                totalSteps = 1,
+                finishReason = finishReason,
+                usage = usage,
+                rawFinishReason = rawFinishReason,
+            ),
+        )
     }
 
     private fun acceptToolCallDelta(value: JsonElement): List<StreamEvent> {
