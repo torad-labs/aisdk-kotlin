@@ -145,7 +145,14 @@ private class CohereChatLanguageModel(
             emit(StreamEvent.ToolInputEnd(it.toolCallId, it.providerMetadata))
             emit(StreamEvent.ToolCall(it.toolCallId, it.toolName, it.input, it.providerMetadata))
         }
-        emit(StreamEvent.Finish(totalSteps = 1, finishReason = result.finishReason, usage = result.usage))
+        emit(
+            StreamEvent.Finish(
+                totalSteps = 1,
+                finishReason = result.finishReason,
+                usage = result.usage,
+                rawFinishReason = result.rawFinishReason,
+            ),
+        )
     }
 }
 

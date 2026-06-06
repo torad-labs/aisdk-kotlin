@@ -1044,6 +1044,7 @@ private class GoogleInteractionsStreamState(
     private var textCounter = 0
     private var usage = Usage()
     private var finishReason = FinishReason.Other
+    private var rawFinishReason: String? = null
     private var hasFunctionCall = false
     private var finished = false
 
@@ -1064,9 +1065,16 @@ private class GoogleInteractionsStreamState(
         }
         if (event["type"]?.jsonPrimitive?.contentOrNull == "interaction.complete" && interaction != null) {
             usage = googleInteractionsUsage(interaction["usage"])
-            finishReason = googleInteractionsFinishReason(interaction["status"]?.jsonPrimitive?.contentOrNull, hasFunctionCall)
+            rawFinishReason = interaction["status"]?.jsonPrimitive?.contentOrNull
+            finishReason = googleInteractionsFinishReason(rawFinishReason, hasFunctionCall)
             events += closeText()
-            events += StreamEvent.Finish(1, finishReason, usage, googleInteractionsMetadata(interactionId = interactionId))
+            events += StreamEvent.Finish(
+                1,
+                finishReason,
+                usage,
+                googleInteractionsMetadata(interactionId = interactionId),
+                rawFinishReason = rawFinishReason,
+            )
             finished = true
         }
         return events
@@ -1084,9 +1092,16 @@ private class GoogleInteractionsStreamState(
             events += acceptStep(step.jsonObject, interactionId)
         }
         usage = googleInteractionsUsage(response["usage"])
-        finishReason = googleInteractionsFinishReason(response["status"]?.jsonPrimitive?.contentOrNull, hasFunctionCall)
+        rawFinishReason = response["status"]?.jsonPrimitive?.contentOrNull
+        finishReason = googleInteractionsFinishReason(rawFinishReason, hasFunctionCall)
         events += closeText()
-        events += StreamEvent.Finish(1, finishReason, usage, googleInteractionsMetadata(interactionId = interactionId))
+        events += StreamEvent.Finish(
+            1,
+            finishReason,
+            usage,
+            googleInteractionsMetadata(interactionId = interactionId),
+            rawFinishReason = rawFinishReason,
+        )
         finished = true
         return events
     }
@@ -1183,7 +1198,11 @@ private class GoogleInteractionsStreamState(
     }
 
     fun finishIfNeeded(): List<StreamEvent> =
-        if (finished) emptyList() else closeText() + StreamEvent.Finish(1, finishReason, usage)
+        if (finished) {
+            emptyList()
+        } else {
+            closeText() + StreamEvent.Finish(1, finishReason, usage, rawFinishReason = rawFinishReason)
+        }
 
     private fun closeText(): List<StreamEvent> =
         textId?.let {
@@ -1538,6 +1557,7 @@ private class GoogleStreamState(
     private val generateId: () -> String,
 ) {
     private var finishReason = FinishReason.Other
+    private var rawFinishReason: String? = null
     private var usage = Usage()
     private var textId: String? = null
     private var reasoningId: String? = null
@@ -1629,7 +1649,10 @@ private class GoogleStreamState(
                 providerMetadata = source.providerMetadata,
             )
         }
-        candidate["finishReason"]?.jsonPrimitive?.contentOrNull?.let { finishReason = mapGoogleFinishReason(it, hasToolCalls) }
+        candidate["finishReason"]?.jsonPrimitive?.contentOrNull?.let {
+            rawFinishReason = it
+            finishReason = mapGoogleFinishReason(it, hasToolCalls)
+        }
         return events
     }
 
@@ -1637,7 +1660,7 @@ private class GoogleStreamState(
         val events = mutableListOf<StreamEvent>()
         textId?.let { events += StreamEvent.TextEnd(it) }
         reasoningId?.let { events += StreamEvent.ReasoningEnd(it) }
-        events += StreamEvent.Finish(1, finishReason, usage)
+        events += StreamEvent.Finish(1, finishReason, usage, rawFinishReason = rawFinishReason)
         return events
     }
 }

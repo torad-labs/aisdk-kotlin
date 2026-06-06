@@ -548,6 +548,65 @@ class OpenAICompatibleProviderTest {
         )
     }
 
+    @Test
+    fun `a Tool message with multiple results serializes one wire tool message per result`() = runTest {
+        // Upstream (convert-to-openai-compatible-chat-messages) loops over every tool-result part and
+        // emits one {role:"tool", tool_call_id, content} per result; OpenAI requires one tool message per
+        // tool_call_id. A single SDK Tool-role ModelMessage can batch multiple results (e.g. AgentSession's
+        // streaming state), so the serializer must expand them — not keep only the first.
+        val seenBodies = mutableListOf<JsonObject>()
+        val client = HttpClient(
+            MockEngine { request ->
+                seenBodies += Json.parseToJsonElement(requestBodyText(request)).jsonObject
+                val responseBody = """{"id":"c1","created":1,"model":"m","choices":[""" +
+                    """{"message":{"role":"assistant","content":"ok"},"finish_reason":"stop"}]}"""
+                respond(
+                    content = responseBody,
+                    status = HttpStatusCode.OK,
+                    headers = headersOf(HttpHeaders.ContentType, "application/json"),
+                )
+            },
+        )
+        val model = createOpenAICompatible(
+            client,
+            OpenAICompatibleProviderSettings(name = "test", baseUrl = "https://api.test/v1", apiKey = "k"),
+        ).languageModel("m")
+        val messages = listOf(
+            ModelMessage(MessageRole.User, listOf(ContentPart.Text("run both"))),
+            ModelMessage(
+                MessageRole.Assistant,
+                listOf(
+                    ContentPart.ToolCall("call_a", "alpha", JsonObject(emptyMap())),
+                    ContentPart.ToolCall("call_b", "beta", JsonObject(emptyMap())),
+                ),
+            ),
+            // One Tool-role message batching two results (the AgentSession streaming shape).
+            ModelMessage(
+                MessageRole.Tool,
+                listOf(
+                    ContentPart.ToolResult("call_a", "alpha", JsonPrimitive("ra")),
+                    ContentPart.ToolResult("call_b", "beta", JsonPrimitive("rb")),
+                ),
+            ),
+        )
+
+        model.generate(LanguageModelCallParams(messages = messages))
+
+        val wireMessages = seenBodies.single()["messages"]!!.jsonArray.map { it.jsonObject }
+        val toolMessages = wireMessages.filter { it["role"]?.jsonPrimitive?.content == "tool" }
+        assertEquals(2, toolMessages.size, "each result becomes its own wire tool message")
+        assertEquals(
+            listOf("call_a", "call_b"),
+            toolMessages.map { it["tool_call_id"]?.jsonPrimitive?.content },
+            "tool_call_ids preserved in order",
+        )
+        assertEquals(
+            listOf("ra", "rb"),
+            toolMessages.map { it["content"]?.jsonPrimitive?.content },
+            "no result is dropped",
+        )
+    }
+
     private fun requestBodyText(request: HttpRequestData): String =
         when (val body = request.body) {
             is OutgoingContent.ByteArrayContent -> body.bytes().decodeToString()

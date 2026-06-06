@@ -317,6 +317,11 @@ public open class ToolLoopAgent<TContext, TOutput>(
      * Gates every [runEngineLoop] write so a superseded job (cancelled by a newer
      * submit/resume but still unwinding on a multi-threaded dispatcher) cannot
      * overwrite the new job's state. Mirrors [AgentSession]'s `active()` guard.
+     *
+     * The check→write is not atomic against a concurrent [close] that nulls
+     * currentEngineJob between the two: such a write lands on an agent that is
+     * already disposing (engineScope is being cancelled) and on a StateFlow no
+     * live host is observing, so it is benign — a tighter lock would buy nothing.
      */
     private inline fun updateEngineStateIfCurrent(
         ownerJob: Job?,
@@ -462,6 +467,7 @@ public open class ToolLoopAgent<TContext, TOutput>(
         var totalUsage = Usage()
         var stepNumber = 0
         var lastFinishReason = FinishReason.Other
+        var lastRawFinishReason: String? = null
         var pendingApprovalEmitted = false
         // gap #16: running typed context. A prepareStep may override it via
         // StepSettings.experimental_context to evolve context mid-loop (e.g.
@@ -600,6 +606,7 @@ public open class ToolLoopAgent<TContext, TOutput>(
                         is StreamEvent.Finish -> {
                             stepFinishReason = event.finishReason
                             stepUsage = event.usage
+                            lastRawFinishReason = event.rawFinishReason
                         }
                         is StreamEvent.Error -> {
                             emit(event)
@@ -772,7 +779,7 @@ public open class ToolLoopAgent<TContext, TOutput>(
             }
         }
 
-        emit(StreamEvent.Finish(stepNumber, lastFinishReason, totalUsage))
+        emit(StreamEvent.Finish(stepNumber, lastFinishReason, totalUsage, rawFinishReason = lastRawFinishReason))
         finalMessagesRef?.value = messages.toList()
 
         val pendingApprovals = if (pendingApprovalEmitted) {

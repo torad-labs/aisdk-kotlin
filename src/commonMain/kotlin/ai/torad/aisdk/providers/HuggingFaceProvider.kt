@@ -497,6 +497,7 @@ private class HuggingFaceResponsesStreamState(
     private val json: Json,
 ) {
     private var finishReason = FinishReason.Other
+    private var rawFinishReason: String? = null
     private var usage = Usage()
     private var responseId: String? = null
     private val openReasoningIds = mutableSetOf<String>()
@@ -624,6 +625,7 @@ private class HuggingFaceResponsesStreamState(
                 val response = obj["response"]?.jsonObject ?: JsonObject(emptyMap())
                 responseId = response["id"]?.jsonPrimitive?.contentOrNull ?: responseId
                 val reason = response["incomplete_details"]?.jsonObject?.get("reason")?.jsonPrimitive?.contentOrNull ?: "stop"
+                rawFinishReason = reason
                 finishReason = mapHuggingFaceFinishReason(reason)
                 usage = huggingFaceUsage(response["usage"])
             }
@@ -650,6 +652,7 @@ private class HuggingFaceResponsesStreamState(
                 providerMetadata = responseId?.let {
                     mapOf("huggingface" to buildJsonObject { put("responseId", JsonPrimitive(it)) })
                 },
+                rawFinishReason = rawFinishReason,
             ),
         )
     }

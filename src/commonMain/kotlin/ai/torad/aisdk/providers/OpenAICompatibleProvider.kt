@@ -283,7 +283,7 @@ private class OpenAICompatibleChatLanguageModel(
         val strictJsonSchema = options["strictJsonSchema"]?.jsonPrimitive?.booleanOrNull ?: true
         val body = buildJsonObject {
             put("model", JsonPrimitive(modelId))
-            put("messages", JsonArray(params.messages.mapNotNull(::openAIChatMessageJson)))
+            put("messages", JsonArray(params.messages.flatMap(::openAIChatMessagesJson)))
             params.maxOutputTokens?.let { put(settings.chatMaxOutputTokensKey, JsonPrimitive(it)) }
             params.temperature?.let { put("temperature", JsonPrimitive(it)) }
             params.topP?.let { put("top_p", JsonPrimitive(it)) }
@@ -867,58 +867,68 @@ private data class StreamingToolCall(
  * `function_response.name: Name cannot be empty`). The wire sees the assistant's `tool_calls` entry and
  * the eventual real [ContentPart.ToolResult] — a consistent OpenAI conversation; approvals stay internal.
  */
-private fun openAIChatMessageJson(message: ModelMessage): JsonObject? = when (message.role) {
-    MessageRole.System -> buildJsonObject {
-        put("role", JsonPrimitive("system"))
-        put("content", JsonPrimitive(message.content.filterIsInstance<ContentPart.Text>().joinToString("") { it.text }))
-    }
-    MessageRole.User -> buildJsonObject {
-        put("role", JsonPrimitive("user"))
-        if (message.content.size == 1 && message.content.single() is ContentPart.Text) {
-            put("content", JsonPrimitive((message.content.single() as ContentPart.Text).text))
-        } else {
-            put("content", JsonArray(message.content.mapNotNull(::openAIUserContentPartJson)))
-        }
-    }
-    MessageRole.Assistant -> buildJsonObject {
-        put("role", JsonPrimitive("assistant"))
-        val text = message.content.filterIsInstance<ContentPart.Text>().joinToString("") { it.text }
-        val reasoning = message.content.filterIsInstance<ContentPart.Reasoning>().joinToString("") { it.text }
-        val toolCalls = message.content.filterIsInstance<ContentPart.ToolCall>()
-        put("content", if (toolCalls.isEmpty()) JsonPrimitive(text) else JsonPrimitive(text.takeIf { it.isNotEmpty() }))
-        if (reasoning.isNotEmpty()) put("reasoning_content", JsonPrimitive(reasoning))
-        if (toolCalls.isNotEmpty()) {
-            put(
-                "tool_calls",
-                JsonArray(toolCalls.map { part ->
-                    buildJsonObject {
-                        put("id", JsonPrimitive(part.toolCallId))
-                        put("type", JsonPrimitive("function"))
-                        put(
-                            "function",
-                            buildJsonObject {
-                                put("name", JsonPrimitive(part.toolName))
-                                put("arguments", JsonPrimitive(part.input.toString()))
-                            },
-                        )
-                    }
-                }),
-            )
-        }
-    }
-    MessageRole.Tool -> openAIToolMessageJson(message)
+private fun openAIChatMessagesJson(message: ModelMessage): List<JsonObject> = when (message.role) {
+    MessageRole.System -> listOf(
+        buildJsonObject {
+            put("role", JsonPrimitive("system"))
+            put("content", JsonPrimitive(message.content.filterIsInstance<ContentPart.Text>().joinToString("") { it.text }))
+        },
+    )
+    MessageRole.User -> listOf(
+        buildJsonObject {
+            put("role", JsonPrimitive("user"))
+            if (message.content.size == 1 && message.content.single() is ContentPart.Text) {
+                put("content", JsonPrimitive((message.content.single() as ContentPart.Text).text))
+            } else {
+                put("content", JsonArray(message.content.mapNotNull(::openAIUserContentPartJson)))
+            }
+        },
+    )
+    MessageRole.Assistant -> listOf(
+        buildJsonObject {
+            put("role", JsonPrimitive("assistant"))
+            val text = message.content.filterIsInstance<ContentPart.Text>().joinToString("") { it.text }
+            val reasoning = message.content.filterIsInstance<ContentPart.Reasoning>().joinToString("") { it.text }
+            val toolCalls = message.content.filterIsInstance<ContentPart.ToolCall>()
+            put("content", if (toolCalls.isEmpty()) JsonPrimitive(text) else JsonPrimitive(text.takeIf { it.isNotEmpty() }))
+            if (reasoning.isNotEmpty()) put("reasoning_content", JsonPrimitive(reasoning))
+            if (toolCalls.isNotEmpty()) {
+                put(
+                    "tool_calls",
+                    JsonArray(toolCalls.map { part ->
+                        buildJsonObject {
+                            put("id", JsonPrimitive(part.toolCallId))
+                            put("type", JsonPrimitive("function"))
+                            put(
+                                "function",
+                                buildJsonObject {
+                                    put("name", JsonPrimitive(part.toolName))
+                                    put("arguments", JsonPrimitive(part.input.toString()))
+                                },
+                            )
+                        }
+                    }),
+                )
+            }
+        },
+    )
+    MessageRole.Tool -> openAIToolMessagesJson(message)
 }
 
-/** A Tool-role message: serialized only when it carries a real [ContentPart.ToolResult]; approval
- *  bookkeeping (no result part) returns null and never reaches the wire. */
-private fun openAIToolMessageJson(message: ModelMessage): JsonObject? {
-    val result = message.content.filterIsInstance<ContentPart.ToolResult>().firstOrNull() ?: return null
-    return buildJsonObject {
-        put("role", JsonPrimitive("tool"))
-        put("tool_call_id", JsonPrimitive(result.toolCallId))
-        put("content", JsonPrimitive(openAIContentString(result.modelVisible)))
+/**
+ * A Tool-role message expands to one wire `tool` message per real [ContentPart.ToolResult] — matching
+ * upstream's per-result loop (OpenAI requires one `tool` message per `tool_call_id`). Approval-response
+ * parts carry no wire concept, so a message with no [ContentPart.ToolResult] (approval bookkeeping)
+ * produces no wire messages and never reaches the wire.
+ */
+private fun openAIToolMessagesJson(message: ModelMessage): List<JsonObject> =
+    message.content.filterIsInstance<ContentPart.ToolResult>().map { result ->
+        buildJsonObject {
+            put("role", JsonPrimitive("tool"))
+            put("tool_call_id", JsonPrimitive(result.toolCallId))
+            put("content", JsonPrimitive(openAIContentString(result.modelVisible)))
+        }
     }
-}
 
 private fun openAIUserContentPartJson(part: ContentPart): JsonObject? = when (part) {
     is ContentPart.Text -> buildJsonObject {

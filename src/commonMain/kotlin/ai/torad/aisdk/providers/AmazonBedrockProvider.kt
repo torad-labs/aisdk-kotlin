@@ -444,7 +444,15 @@ private class BedrockMantleChatLanguageModel(
             emit(StreamEvent.TextDelta("0", result.text))
             emit(StreamEvent.TextEnd("0"))
         }
-        emit(StreamEvent.Finish(1, result.finishReason, result.usage, result.providerMetadata))
+        emit(
+            StreamEvent.Finish(
+                1,
+                result.finishReason,
+                result.usage,
+                result.providerMetadata,
+                rawFinishReason = result.rawFinishReason,
+            ),
+        )
     }
 }
 
@@ -1010,6 +1018,7 @@ private class BedrockStreamState(
 ) {
     private val blocks = mutableMapOf<Int, BedrockStreamBlock>()
     private var finishReason = FinishReason.Other
+    private var rawStopReason: String? = null
     private var usage = Usage()
     private var providerMetadata: JsonObject? = null
     private var isJsonResponseFromTool = false
@@ -1024,7 +1033,8 @@ private class BedrockStreamState(
             return events
         }
         (value["messageStop"] as? JsonObject)?.let { stop ->
-            finishReason = mapBedrockFinishReason(stop["stopReason"]?.jsonPrimitive?.contentOrNull, isJsonResponseFromTool)
+            rawStopReason = stop["stopReason"]?.jsonPrimitive?.contentOrNull
+            finishReason = mapBedrockFinishReason(rawStopReason, isJsonResponseFromTool)
             stopSequence = stop["additionalModelResponseFields"]?.jsonObject?.get("delta")?.jsonObject?.get("stop_sequence")
         }
         (value["metadata"] as? JsonObject)?.let { metadata ->
@@ -1110,6 +1120,7 @@ private class BedrockStreamState(
                 finishReason = finishReason,
                 usage = usage,
                 providerMetadata = if (metadata.isNotEmpty()) mapOf("bedrock" to metadata) else null,
+                rawFinishReason = rawStopReason,
             ),
         )
     }

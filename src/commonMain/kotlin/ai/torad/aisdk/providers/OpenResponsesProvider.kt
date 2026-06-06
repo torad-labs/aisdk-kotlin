@@ -987,7 +987,14 @@ private class OpenResponsesStreamState(
 
     fun finish(): List<StreamEvent> = buildList {
         activeReasoningId?.let { add(StreamEvent.ReasoningEnd(it)) }
-        add(StreamEvent.Finish(totalSteps = 1, finishReason = finishReason, usage = usage))
+        add(
+            StreamEvent.Finish(
+                totalSteps = 1,
+                finishReason = finishReason,
+                usage = usage,
+                rawFinishReason = rawFinishReason,
+            ),
+        )
     }
 }
 

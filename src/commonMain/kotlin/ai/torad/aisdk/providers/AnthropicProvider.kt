@@ -780,6 +780,7 @@ private class AnthropicStreamState(
 ) {
     private val blocks = mutableMapOf<Int, AnthropicStreamBlock>()
     private var finishReason = FinishReason.Other
+    private var rawStopReason: String? = null
     private var usage = Usage()
     private var responseId: String? = null
     private var modelId: String? = null
@@ -892,7 +893,8 @@ private class AnthropicStreamState(
             }
             "message_delta" -> {
                 val delta = obj["delta"]?.jsonObject ?: JsonObject(emptyMap())
-                finishReason = mapAnthropicStopReason(delta["stop_reason"]?.jsonPrimitive?.contentOrNull)
+                rawStopReason = delta["stop_reason"]?.jsonPrimitive?.contentOrNull
+                finishReason = mapAnthropicStopReason(rawStopReason)
                 usage = anthropicUsage(obj["usage"])
             }
             "error" -> events += StreamEvent.Error(anthropicErrorMessage(obj["error"] ?: obj, obj.toString()))
@@ -908,6 +910,7 @@ private class AnthropicStreamState(
             providerMetadata = mapOf("anthropic" to buildJsonObject {
                 responseId?.let { put("responseId", JsonPrimitive(it)) }
             }),
+            rawFinishReason = rawStopReason,
         ),
     )
 }

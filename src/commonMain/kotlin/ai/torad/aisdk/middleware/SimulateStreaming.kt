@@ -55,6 +55,7 @@ public fun simulateStreamingMiddleware(): LanguageModelMiddleware = object : Lan
                 totalSteps = 1,
                 finishReason = result.finishReason,
                 usage = result.usage,
+                rawFinishReason = result.rawFinishReason,
             ),
         )
     }
