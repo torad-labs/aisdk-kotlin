@@ -59,4 +59,25 @@ class ConvertFidelityR4Test {
         val file = convertToModelMessages(ui).single().content.single() as ContentPart.File
         assertEquals("report.pdf", file.filename)
     }
+
+    @Test
+    fun `a SourceDocument carries its mediaType and filename to the model`() {
+        val ui = listOf(
+            UIMessage(
+                id = "a1",
+                role = UIMessageRole.Assistant,
+                parts = listOf(
+                    UIMessagePart.SourceDocument(
+                        sourceId = "s1",
+                        mediaType = "application/pdf",
+                        title = "Spec",
+                        filename = "spec.pdf",
+                    ),
+                ),
+            ),
+        )
+        val source = convertToModelMessages(ui).single().content.single() as ContentPart.Source
+        assertEquals("application/pdf", source.mediaType)
+        assertEquals("spec.pdf", source.filename)
+    }
 }

@@ -793,6 +793,8 @@ public open class ToolLoopAgent<TContext, TOutput>(
                 response = stepResponse,
                 providerMetadata = stepProviderMetadata,
                 rawFinishReason = stepRawFinishReason,
+                model = stepModel.modelId,
+                experimentalContext = activeContext,
             )
             completedSteps.add(step)
             stepsCapture?.steps?.add(step)

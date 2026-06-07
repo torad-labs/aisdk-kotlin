@@ -134,6 +134,10 @@ public data class StepResult(
     val response: LanguageModelResponseMetadata = LanguageModelResponseMetadata(),
     val providerMetadata: Map<String, JsonElement> = emptyMap(),
     val rawFinishReason: String? = null,
+    /** The model id that produced this step (upstream's `model.modelId`). */
+    val model: String? = null,
+    /** The evolving agent context live for this step (upstream's `experimental_context`). */
+    val experimentalContext: Any? = null,
 ) {
     /** The non-empty reasoning text for this step, or null — mirrors upstream's `reasoningText`. */
     val reasoningText: String? get() = reasoning.takeIf { it.isNotEmpty() }

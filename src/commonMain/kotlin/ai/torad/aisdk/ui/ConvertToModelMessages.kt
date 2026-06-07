@@ -178,35 +178,40 @@ private fun convertPart(
         )
         // User-attached files and model sources DO carry to the model (they were
         // previously dropped, losing attachments and source provenance).
-        is UIMessagePart.File -> onContentPart(
-            ContentPart.File(
-                mediaType = part.mediaType,
-                base64 = part.base64,
-                filename = part.filename,
-                providerMetadata = part.providerMetadata,
-            ),
-        )
-        is UIMessagePart.SourceUrl -> onContentPart(
-            ContentPart.Source(
-                sourceType = StreamEvent.SourcePart.SourceType.Url,
-                url = part.url,
-                title = part.title,
-                providerMetadata = part.providerMetadata,
-            ),
-        )
-        is UIMessagePart.SourceDocument -> onContentPart(
-            ContentPart.Source(
-                sourceType = StreamEvent.SourcePart.SourceType.Document,
-                title = part.title,
-                providerMetadata = part.providerMetadata,
-            ),
-        )
+        is UIMessagePart.File,
+        is UIMessagePart.SourceUrl,
+        is UIMessagePart.SourceDocument,
+        -> mediaOrSourcePart(part)?.let(onContentPart)
         // StepStart is a UI boundary marker; Data/Error are UI-only — not model content.
         is UIMessagePart.StepStart,
         is UIMessagePart.Data,
         is UIMessagePart.Error,
         -> Unit
     }
+}
+
+/** Converts a File / SourceUrl / SourceDocument UI part to its model content part. */
+private fun mediaOrSourcePart(part: UIMessagePart): ContentPart? = when (part) {
+    is UIMessagePart.File -> ContentPart.File(
+        mediaType = part.mediaType,
+        base64 = part.base64,
+        filename = part.filename,
+        providerMetadata = part.providerMetadata,
+    )
+    is UIMessagePart.SourceUrl -> ContentPart.Source(
+        sourceType = StreamEvent.SourcePart.SourceType.Url,
+        url = part.url,
+        title = part.title,
+        providerMetadata = part.providerMetadata,
+    )
+    is UIMessagePart.SourceDocument -> ContentPart.Source(
+        sourceType = StreamEvent.SourcePart.SourceType.Document,
+        title = part.title,
+        providerMetadata = part.providerMetadata,
+        mediaType = part.mediaType,
+        filename = part.filename,
+    )
+    else -> null
 }
 
 @Suppress("LongParameterList", "CyclomaticComplexMethod")

@@ -158,6 +158,10 @@ public sealed interface ContentPart {
         val url: String? = null,
         val title: String? = null,
         val providerMetadata: Map<String, JsonElement>? = null,
+        /** Media type of a document source (e.g. application/pdf). */
+        val mediaType: String? = null,
+        /** Optional display name of a document source. */
+        val filename: String? = null,
     ) : ContentPart
 
     /**

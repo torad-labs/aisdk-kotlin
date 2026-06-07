@@ -48,6 +48,8 @@ class AgentStepResultParityTest {
         assertEquals("resp_1", step.response.id)
         assertEquals("stop_sequence", step.rawFinishReason)
         assertTrue(step.providerMetadata.containsKey("p"), "per-step providerMetadata captured")
+        assertEquals("m", step.model, "step records the model id")
+        assertEquals(Unit, step.experimentalContext, "step records the live agent context")
     }
 
     @Test
