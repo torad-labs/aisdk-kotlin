@@ -383,7 +383,11 @@ public data class GatewayTools(
 
 internal suspend fun getGatewayAuthToken(settings: GatewayProviderSettings): GatewayAuthToken? {
     val key = settings.apiKey ?: settings.environment["AI_GATEWAY_API_KEY"]
-    return key?.let { GatewayAuthToken(it, GatewayAuthMethod.ApiKey) } ?: settings.authTokenProvider?.invoke()
+    if (key != null) return GatewayAuthToken(key, GatewayAuthMethod.ApiKey)
+    // Then a custom token provider, else the OIDC fallback: VERCEL_OIDC_TOKEN from the
+    // host environment (the KMP-idiomatic equivalent of upstream's getVercelOidcToken()).
+    return settings.authTokenProvider?.invoke()
+        ?: settings.environment["VERCEL_OIDC_TOKEN"]?.let { GatewayAuthToken(it, GatewayAuthMethod.Oidc) }
 }
 
 internal suspend fun gatewayHeaders(settings: GatewayProviderSettings): Map<String, String> {

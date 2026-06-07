@@ -12905,6 +12905,10 @@ public final class ai/torad/aisdk/ui/TextUIPartState$Companion {
 	public final fun serializer ()Lkotlinx/serialization/KSerializer;
 }
 
+public final class ai/torad/aisdk/ui/ToUIMessageStreamKt {
+	public static final fun toUIMessageStream (Lkotlinx/coroutines/flow/Flow;)Lkotlinx/coroutines/flow/Flow;
+}
+
 public final class ai/torad/aisdk/ui/ToolCallState : java/lang/Enum {
 	public static final field ApprovalRequested Lai/torad/aisdk/ui/ToolCallState;
 	public static final field ApprovalResponded Lai/torad/aisdk/ui/ToolCallState;
