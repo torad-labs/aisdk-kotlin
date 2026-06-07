@@ -551,9 +551,13 @@ private fun providerMetadata(part: ContentPart): Map<String, JsonElement>? = whe
 }
 
 private fun languageModelToolJson(tool: LanguageModelTool): JsonObject = buildJsonObject {
+    // The gateway forwards LanguageModelV3CallOptions verbatim, so tools must use the
+    // v3 FunctionTool wire shape: `type: "function"` + `inputSchema` (was emitting
+    // `parameters` with no type, which the gateway/downstream provider doesn't read).
+    put("type", JsonPrimitive("function"))
     put("name", JsonPrimitive(tool.name))
     put("description", JsonPrimitive(tool.description))
-    put("parameters", aiSdkJson.parseToJsonElement(tool.parametersSchemaJson))
+    put("inputSchema", aiSdkJson.parseToJsonElement(tool.parametersSchemaJson))
     put("strict", JsonPrimitive(tool.strict))
     if (tool.providerExecuted) put("providerExecuted", JsonPrimitive(true))
 }
