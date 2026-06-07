@@ -571,10 +571,11 @@ private fun cohereUsage(value: JsonObject?): Usage {
 }
 
 private fun cohereFinishReason(value: String?): FinishReason = when (value) {
-    "COMPLETE", "stop" -> FinishReason.Stop
+    // Upstream maps both COMPLETE and STOP_SEQUENCE to stop; ERROR_TOXIC has no dedicated
+    // case and falls through to `other`, not content-filter.
+    "COMPLETE", "STOP_SEQUENCE", "stop" -> FinishReason.Stop
     "MAX_TOKENS" -> FinishReason.Length
     "TOOL_CALL" -> FinishReason.ToolCalls
-    "ERROR_TOXIC" -> FinishReason.ContentFilter
     "ERROR" -> FinishReason.Error
     else -> FinishReason.Other
 }

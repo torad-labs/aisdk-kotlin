@@ -239,7 +239,10 @@ private fun googleVertexPublisherBaseURL(settings: GoogleVertexProviderSettings)
         ?: if (!settings.apiKey.isNullOrBlank() && settings.project.isNullOrBlank()) {
             "https://aiplatform.googleapis.com/v1/publishers/google"
         } else {
-            "https://${googleVertexApiHost(settings.location)}/v1/projects/${googleVertexProject(settings)}/locations/${settings.location}/publishers/google"
+            // Project-scoped Vertex publisher generateContent is served under v1beta1
+            // (the generateContent surface is not on v1 for project paths).
+            "https://${googleVertexApiHost(settings.location)}/v1beta1/projects/" +
+                "${googleVertexProject(settings)}/locations/${settings.location}/publishers/google"
         }
 
 private fun googleVertexOpenAIBaseURL(settings: GoogleVertexProviderSettings): String =

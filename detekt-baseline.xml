@@ -23,7 +23,6 @@
     <ID>ArgumentListWrapping:AlibabaProviderTest.kt$AlibabaProviderTest$(mutableMapOf())</ID>
     <ID>ArgumentListWrapping:AmazonBedrockProvider.kt$("backgroundRemovalParams", buildJsonObject { put("image", JsonPrimitive(bedrockImageFileBase64(params.files.first()))) })</ID>
     <ID>ArgumentListWrapping:AmazonBedrockProvider.kt$("bedrock")</ID>
-    <ID>ArgumentListWrapping:AmazonBedrockProvider.kt$("content", JsonArray(listOf(buildJsonObject { put("text", JsonPrimitive(part.reason ?: "Tool execution ${if (part.approved) "approved" else "denied"}.")) })))</ID>
     <ID>ArgumentListWrapping:AmazonBedrockProvider.kt$("delta")</ID>
     <ID>ArgumentListWrapping:AmazonBedrockProvider.kt$("image", JsonPrimitive(bedrockImageFileBase64(params.files.first())))</ID>
     <ID>ArgumentListWrapping:AmazonBedrockProvider.kt$("inputSchema", buildJsonObject { put("json", aiSdkJson.parseToJsonElement(tool.parametersSchemaJson)) })</ID>
@@ -34,16 +33,12 @@
     <ID>ArgumentListWrapping:AmazonBedrockProvider.kt$("stopSequence", it)</ID>
     <ID>ArgumentListWrapping:AmazonBedrockProvider.kt$("stopSequences", JsonArray(params.stopSequences.map(::JsonPrimitive)))</ID>
     <ID>ArgumentListWrapping:AmazonBedrockProvider.kt$("stop_sequence")</ID>
-    <ID>ArgumentListWrapping:AmazonBedrockProvider.kt$("text", JsonPrimitive(part.reason ?: "Tool execution ${if (part.approved) "approved" else "denied"}."))</ID>
     <ID>ArgumentListWrapping:AmazonBedrockProvider.kt$("tool", buildJsonObject { put("name", JsonPrimitive(choice.toolName)) })</ID>
     <ID>ArgumentListWrapping:AmazonBedrockProvider.kt$(::JsonPrimitive)</ID>
     <ID>ArgumentListWrapping:AmazonBedrockProvider.kt$(bedrockImageFileBase64(params.files.first()))</ID>
-    <ID>ArgumentListWrapping:AmazonBedrockProvider.kt$(buildJsonObject { put("text", JsonPrimitive(part.reason ?: "Tool execution ${if (part.approved) "approved" else "denied"}.")) })</ID>
     <ID>ArgumentListWrapping:AmazonBedrockProvider.kt$(choice.toolName)</ID>
-    <ID>ArgumentListWrapping:AmazonBedrockProvider.kt$(listOf(buildJsonObject { put("text", JsonPrimitive(part.reason ?: "Tool execution ${if (part.approved) "approved" else "denied"}.")) }))</ID>
     <ID>ArgumentListWrapping:AmazonBedrockProvider.kt$(params.files.first())</ID>
     <ID>ArgumentListWrapping:AmazonBedrockProvider.kt$(params.stopSequences.map(::JsonPrimitive))</ID>
-    <ID>ArgumentListWrapping:AmazonBedrockProvider.kt$(part.reason ?: "Tool execution ${if (part.approved) "approved" else "denied"}.")</ID>
     <ID>ArgumentListWrapping:AmazonBedrockProvider.kt$(tool.parametersSchemaJson)</ID>
     <ID>ArgumentListWrapping:AmazonBedrockProvider.kt$&lt;no name provided>$("Bedrock Anthropic provider is not configured. Use createBedrockAnthropic(client, settings).")</ID>
     <ID>ArgumentListWrapping:AmazonBedrockProvider.kt$BedrockAnthropicProvider$(providerId, "embeddingModel", modelId)</ID>
@@ -1555,7 +1550,6 @@
     <ID>MaxLineLength:AmazonBedrockProvider.kt$providerMetadata = mapOf("bedrock" to buildJsonObject { it["data"]?.let { data -> put("redactedData", data) } })</ID>
     <ID>MaxLineLength:AmazonBedrockProvider.kt$providerMetadata = mapOf("bedrock" to buildJsonObject { it["signature"]?.let { signature -> put("signature", signature) } })</ID>
     <ID>MaxLineLength:AmazonBedrockProvider.kt$put("backgroundRemovalParams", buildJsonObject { put("image", JsonPrimitive(bedrockImageFileBase64(params.files.first()))) })</ID>
-    <ID>MaxLineLength:AmazonBedrockProvider.kt$put("content", JsonArray(listOf(buildJsonObject { put("text", JsonPrimitive(part.reason ?: "Tool execution ${if (part.approved) "approved" else "denied"}.")) })))</ID>
     <ID>MaxLineLength:AmazonBedrockProvider.kt$put("inputSchema", buildJsonObject { put("json", aiSdkJson.parseToJsonElement(tool.parametersSchemaJson)) })</ID>
     <ID>MaxLineLength:AmazonBedrockProvider.kt$response["additionalModelResponseFields"]?.jsonObject?.get("delta")?.jsonObject?.get("stop_sequence")?.let { put("stopSequence", it) }</ID>
     <ID>MaxLineLength:AmazonBedrockProvider.kt$val</ID>
@@ -1900,7 +1894,6 @@
     <ID>MaxLineLength:GoogleProviderTest.kt$GoogleProviderTest$assertEquals(256, embeddingBody["requests"]?.jsonArray?.first()?.jsonObject?.get("outputDimensionality")?.jsonPrimitive?.intOrNull)</ID>
     <ID>MaxLineLength:GoogleProviderTest.kt$GoogleProviderTest$provider.interactions("gemini-2.5-flash").stream(LanguageModelCallParams(messages = listOf(userMessage("hi"))))</ID>
     <ID>MaxLineLength:GoogleProviderTest.kt$GoogleProviderTest$providerOptions = mapOf("google" to buildJsonObject { put("personGeneration", JsonPrimitive("dont_allow")) })</ID>
-    <ID>MaxLineLength:GoogleVertexProvider.kt$"https://${googleVertexApiHost(settings.location)}/v1/projects/${googleVertexProject(settings)}/locations/${settings.location}/publishers/google"</ID>
     <ID>MaxLineLength:GoogleVertexProvider.kt$&lt;no name provided>$throw AiSdkException("Google Vertex Anthropic provider is not configured. Use createVertexAnthropic(client, settings).")</ID>
     <ID>MaxLineLength:GoogleVertexProvider.kt$&lt;no name provided>$throw AiSdkException("Google Vertex xAI provider is not configured. Use createGoogleVertexXai(client, settings).")</ID>
     <ID>MaxLineLength:GoogleVertexProvider.kt$?:</ID>
@@ -1911,13 +1904,13 @@
     <ID>MaxLineLength:GoogleVertexProvider.kt$val</ID>
     <ID>MaxLineLength:GoogleVertexProviderTest.kt$GoogleVertexProviderTest$"https://aiplatform.eu.rep.googleapis.com/v1/projects/project-1/locations/eu/endpoints/openapi/chat/completions"</ID>
     <ID>MaxLineLength:GoogleVertexProviderTest.kt$GoogleVertexProviderTest$"https://aiplatform.eu.rep.googleapis.com/v1/projects/project-1/locations/eu/publishers/anthropic/models/claude-sonnet-4:rawPredict"</ID>
-    <ID>MaxLineLength:GoogleVertexProviderTest.kt$GoogleVertexProviderTest$"https://aiplatform.eu.rep.googleapis.com/v1/projects/project-1/locations/eu/publishers/google/models/gemini-2.5-flash:generateContent"</ID>
+    <ID>MaxLineLength:GoogleVertexProviderTest.kt$GoogleVertexProviderTest$"https://aiplatform.eu.rep.googleapis.com/v1beta1/projects/project-1/locations/eu/publishers/google/models/gemini-2.5-flash:generateContent"</ID>
     <ID>MaxLineLength:GoogleVertexProviderTest.kt$GoogleVertexProviderTest$"https://aiplatform.googleapis.com/v1/projects/project-1/locations/global/endpoints/openapi/chat/completions"</ID>
     <ID>MaxLineLength:GoogleVertexProviderTest.kt$GoogleVertexProviderTest$"https://aiplatform.us.rep.googleapis.com/v1/projects/project-1/locations/us/publishers/anthropic/models/claude-sonnet-4:rawPredict"</ID>
-    <ID>MaxLineLength:GoogleVertexProviderTest.kt$GoogleVertexProviderTest$"https://aiplatform.us.rep.googleapis.com/v1/projects/project-1/locations/us/publishers/google/models/gemini-2.5-flash:generateContent"</ID>
+    <ID>MaxLineLength:GoogleVertexProviderTest.kt$GoogleVertexProviderTest$"https://aiplatform.us.rep.googleapis.com/v1beta1/projects/project-1/locations/us/publishers/google/models/gemini-2.5-flash:generateContent"</ID>
     <ID>MaxLineLength:GoogleVertexProviderTest.kt$GoogleVertexProviderTest$"https://us-central1-aiplatform.googleapis.com/v1/projects/project-1/locations/us-central1/endpoints/openapi/chat/completions"</ID>
     <ID>MaxLineLength:GoogleVertexProviderTest.kt$GoogleVertexProviderTest$"https://us-central1-aiplatform.googleapis.com/v1/projects/project-1/locations/us-central1/publishers/anthropic/models/claude-sonnet-4:rawPredict"</ID>
-    <ID>MaxLineLength:GoogleVertexProviderTest.kt$GoogleVertexProviderTest$"https://us-central1-aiplatform.googleapis.com/v1/projects/project-1/locations/us-central1/publishers/google/models/gemini-2.5-flash:generateContent"</ID>
+    <ID>MaxLineLength:GoogleVertexProviderTest.kt$GoogleVertexProviderTest$"https://us-central1-aiplatform.googleapis.com/v1beta1/projects/project-1/locations/us-central1/publishers/google/models/gemini-2.5-flash:generateContent"</ID>
     <ID>MaxLineLength:GoogleVertexProviderTest.kt$GoogleVertexProviderTest$Json.parseToJsonElement("""{"id":"eu","model":"llama","choices":[{"message":{"content":"eu"},"finish_reason":"stop"}]}""")</ID>
     <ID>MaxLineLength:GoogleVertexProviderTest.kt$GoogleVertexProviderTest$Json.parseToJsonElement("""{"id":"global","model":"llama","choices":[{"message":{"content":"global"},"finish_reason":"stop"}]}""")</ID>
     <ID>MaxLineLength:GoogleVertexProviderTest.kt$GoogleVertexProviderTest$Json.parseToJsonElement("""{"id":"regional","model":"llama","choices":[{"message":{"content":"regional"},"finish_reason":"stop"}]}""")</ID>
@@ -2885,7 +2878,6 @@
     <ID>Wrapping:AmazonBedrockProvider.kt$put("image", JsonPrimitive(bedrockImageFileBase64(params.files.first())))</ID>
     <ID>Wrapping:AmazonBedrockProvider.kt$put("name", JsonPrimitive(choice.toolName))</ID>
     <ID>Wrapping:AmazonBedrockProvider.kt$put("stopSequence", it)</ID>
-    <ID>Wrapping:AmazonBedrockProvider.kt$put("text", JsonPrimitive(part.reason ?: "Tool execution ${if (part.approved) "approved" else "denied"}."))</ID>
     <ID>Wrapping:AmazonBedrockProvider.kt$put("tool", buildJsonObject { put("name", JsonPrimitive(choice.toolName)) })</ID>
     <ID>Wrapping:AnthropicProvider.kt$(</ID>
     <ID>Wrapping:AnthropicProvider.kt$("source", buildJsonObject { put("type", JsonPrimitive("text")) put("media_type", JsonPrimitive("text/plain")) put("data", JsonPrimitive(convertBase64ToByteArray(part.base64).decodeToString())) })</ID>

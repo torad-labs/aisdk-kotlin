@@ -33,7 +33,7 @@ class GoogleVertexProviderTest {
     fun `vertex core provider maps publisher base url auth and Gemini body`() = runTest {
         val fixture = createTestServer(
             mutableMapOf(
-                "https://us-central1-aiplatform.googleapis.com/v1/projects/project-1/locations/us-central1/publishers/google/models/gemini-2.5-flash:generateContent" to UrlHandler(
+                "https://us-central1-aiplatform.googleapis.com/v1beta1/projects/project-1/locations/us-central1/publishers/google/models/gemini-2.5-flash:generateContent" to UrlHandler(
                     UrlResponse.JsonValue(
                         Json.parseToJsonElement(
                             """
@@ -87,7 +87,7 @@ class GoogleVertexProviderTest {
     fun `vertex core provider uses multi-region REP host for eu and us`() = runTest {
         val fixture = createTestServer(
             mutableMapOf(
-                "https://aiplatform.eu.rep.googleapis.com/v1/projects/project-1/locations/eu/publishers/google/models/gemini-2.5-flash:generateContent" to UrlHandler(
+                "https://aiplatform.eu.rep.googleapis.com/v1beta1/projects/project-1/locations/eu/publishers/google/models/gemini-2.5-flash:generateContent" to UrlHandler(
                     UrlResponse.JsonValue(
                         Json.parseToJsonElement(
                             """
@@ -99,7 +99,7 @@ class GoogleVertexProviderTest {
                         ),
                     ),
                 ),
-                "https://aiplatform.us.rep.googleapis.com/v1/projects/project-1/locations/us/publishers/google/models/gemini-2.5-flash:generateContent" to UrlHandler(
+                "https://aiplatform.us.rep.googleapis.com/v1beta1/projects/project-1/locations/us/publishers/google/models/gemini-2.5-flash:generateContent" to UrlHandler(
                     UrlResponse.JsonValue(
                         Json.parseToJsonElement(
                             """
@@ -128,8 +128,8 @@ class GoogleVertexProviderTest {
         assertEquals("us", us.chat("gemini-2.5-flash").generate(LanguageModelCallParams(messages = listOf(userMessage("hi")))).text)
         assertEquals(
             listOf(
-                "https://aiplatform.eu.rep.googleapis.com/v1/projects/project-1/locations/eu/publishers/google/models/gemini-2.5-flash:generateContent",
-                "https://aiplatform.us.rep.googleapis.com/v1/projects/project-1/locations/us/publishers/google/models/gemini-2.5-flash:generateContent",
+                "https://aiplatform.eu.rep.googleapis.com/v1beta1/projects/project-1/locations/eu/publishers/google/models/gemini-2.5-flash:generateContent",
+                "https://aiplatform.us.rep.googleapis.com/v1beta1/projects/project-1/locations/us/publishers/google/models/gemini-2.5-flash:generateContent",
             ),
             fixture.calls.map { it.requestUrl },
         )
