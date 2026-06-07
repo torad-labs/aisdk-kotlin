@@ -44,6 +44,22 @@ class MiddlewareBugfixTest {
     }
 
     @Test
+    fun `extractReasoning strips empty reasoning tags from visible text`() = runTest {
+        val inner = model(
+            LanguageModelResult(
+                text = "before<reasoning></reasoning>after",
+                finishReason = FinishReason.Stop,
+                usage = Usage(),
+            ),
+        )
+        val wrapped = wrapLanguageModel(inner, listOf(extractReasoningMiddleware()))
+        val result = wrapped.generate(LanguageModelCallParams(messages = listOf(userMessage("hi"))))
+        // Empty tags must still be stripped — no literal <reasoning> in visible text.
+        assertEquals("beforeafter", result.text)
+        assertTrue(result.content.filterIsInstance<ContentPart.Text>().none { "<reasoning>" in it.text })
+    }
+
+    @Test
     fun `defaultSettingsMiddleware deep-merges providerOptions per provider key`() = runTest {
         // default sets openai.reasoningEffort; per-call sets openai.user — both must survive.
         val defaults = mapOf(

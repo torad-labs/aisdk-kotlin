@@ -87,9 +87,10 @@ private fun StreamEvent.toUIMessageChunk(): JsonObject? = when (this) {
         put("toolCallId", toolCallId)
         put("errorText", message)
     }
+    // The v6 tool-output-denied chunk is a strict object of {type, toolCallId} only —
+    // the denial reason is NOT part of the wire schema (a strict client rejects extras).
     is StreamEvent.ToolOutputDenied -> jsonChunk("tool-output-denied") {
         put("toolCallId", toolCallId)
-        reason?.let { put("errorText", it) }
     }
     is StreamEvent.StepFinish -> jsonChunk("finish-step")
     is StreamEvent.Finish -> jsonChunk("finish") { put("finishReason", finishReason.toWireValue()) }

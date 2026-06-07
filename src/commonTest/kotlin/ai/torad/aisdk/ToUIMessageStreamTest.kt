@@ -40,6 +40,16 @@ class ToUIMessageStreamTest {
     }
 
     @Test
+    fun `tool-output-denied chunk carries only type and toolCallId without errorText`() = runTest {
+        val chunk = toUIMessageStream(
+            flowOf(StreamEvent.ToolOutputDenied("c1", "t", approvalId = "a1", reason = "nope")),
+        ).toList().single()
+        assertEquals("tool-output-denied", chunk["type"]?.jsonPrimitive?.content)
+        assertEquals("c1", chunk["toolCallId"]?.jsonPrimitive?.content)
+        assertEquals(null, chunk["errorText"], "reason is NOT part of the strict wire schema")
+    }
+
+    @Test
     fun `maps a tool round-trip and drops events with no wire counterpart`() = runTest {
         val chunks = toUIMessageStream(
             flowOf(

@@ -145,6 +145,17 @@ class ConvertToLanguageModelPromptTest {
     }
 
     @Test
+    fun `a File part is NOT media-type-sniffed even if its bytes look like an image`() = runTest {
+        // "BM" (0x42 0x4D) is the BMP signature, but this is a declared text file.
+        val bmBase64 = "Qk1oello" // base64 starting with "BM..."
+        val messages = listOf(
+            ModelMessage(MessageRole.User, listOf(ContentPart.File(mediaType = "text/plain", base64 = bmBase64))),
+        )
+        val file = convertToLanguageModelPrompt(messages).single().content.single() as ContentPart.File
+        assertEquals("text/plain", file.mediaType, "File media type must NOT be overridden by byte-sniffing")
+    }
+
+    @Test
     fun `a non-base64 data URL is left untouched rather than crashing`() = runTest {
         val messages = listOf(imageMessage("data:text/plain,Hello", mediaType = "text/plain"))
         // splitDataUrl would throw on this; the resolver must leave it for the provider.

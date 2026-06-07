@@ -67,46 +67,36 @@ private suspend fun resolveAssetPart(
     supportedUrls: Map<String, List<String>>,
     download: DownloadFunction?,
 ): ContentPart = when (part) {
+    // Byte-signature media-type detection runs ONLY for Image parts (upstream does the
+    // same) — a non-image File whose bytes happen to start with e.g. "BM" must keep its
+    // declared type.
     is ContentPart.Image ->
-        resolveMedia(part.url, part.base64, part.mediaType, supportedUrls, download)?.let {
+        resolveMedia(part.url, part.base64, part.mediaType, supportedUrls, download, detectImage = true)?.let {
             part.copy(base64 = it.base64, mediaType = it.mediaType, url = if (it.clearUrl) null else part.url)
         } ?: part
     is ContentPart.File ->
-        resolveMedia(part.url, part.base64, part.mediaType, supportedUrls, download)?.let {
+        resolveMedia(part.url, part.base64, part.mediaType, supportedUrls, download, detectImage = false)?.let {
             part.copy(base64 = it.base64, mediaType = it.mediaType, url = if (it.clearUrl) null else part.url)
         } ?: part
     // A tool result returning a `content` output may embed image-url/file-url items;
     // inline them so a URL-rejecting provider sees data (upstream parity).
     is ContentPart.ToolResult ->
-        if (download == null) part else inlineToolResultUrls(part, download)
+        if (download == null) part else inlineToolResultUrls(part, supportedUrls, download)
     else -> part
 }
 
-private suspend fun inlineToolResultUrls(part: ContentPart.ToolResult, download: DownloadFunction): ContentPart {
+private suspend fun inlineToolResultUrls(
+    part: ContentPart.ToolResult,
+    supportedUrls: Map<String, List<String>>,
+    download: DownloadFunction,
+): ContentPart {
     val obj = part.output as? JsonObject
     val items = obj?.takeIf { (it["type"] as? JsonPrimitive)?.content == "content" }
         ?.get("value") as? JsonArray ?: return part
 
-    // Rewrites one image-url/file-url content item to image-data/file-data, or null.
-    suspend fun inlineItem(sub: JsonObject?): JsonObject? {
-        val target = when ((sub?.get("type") as? JsonPrimitive)?.content) {
-            "image-url" -> "image-data"
-            "file-url" -> "file-data"
-            else -> null
-        }
-        val url = (sub?.get("url") as? JsonPrimitive)?.content
-        if (target == null || url == null) return null
-        val asset = download(url)
-        return buildJsonObject {
-            put("type", JsonPrimitive(target))
-            put("data", JsonPrimitive(asset.base64))
-            put("mediaType", JsonPrimitive(asset.mediaType ?: "application/octet-stream"))
-        }
-    }
-
     var changed = false
     val rewritten = items.map { item ->
-        val inlined = inlineItem(item as? JsonObject)
+        val inlined = inlineToolResultItem(item as? JsonObject, supportedUrls, download)
         if (inlined != null) changed = true
         inlined ?: item
     }
@@ -122,6 +112,35 @@ private suspend fun inlineToolResultUrls(part: ContentPart.ToolResult, download:
     }
 }
 
+/**
+ * Rewrites one image-url/file-url tool-result content item to image-data/file-data,
+ * or null when it isn't a URL item or the model already supports the URL (left for
+ * the provider). Preserves any per-item providerOptions.
+ */
+private suspend fun inlineToolResultItem(
+    sub: JsonObject?,
+    supportedUrls: Map<String, List<String>>,
+    download: DownloadFunction,
+): JsonObject? {
+    val type = (sub?.get("type") as? JsonPrimitive)?.content
+    val target = when (type) {
+        "image-url" -> "image-data"
+        "file-url" -> "file-data"
+        else -> null
+    }
+    val url = (sub?.get("url") as? JsonPrimitive)?.content
+    val itemMediaType = (sub?.get("mediaType") as? JsonPrimitive)?.content
+        ?: if (type == "image-url") "image/*" else "application/octet-stream"
+    if (target == null || url == null || isUrlSupported(url, itemMediaType, supportedUrls)) return null
+    val asset = download(url)
+    return buildJsonObject {
+        put("type", JsonPrimitive(target))
+        put("data", JsonPrimitive(asset.base64))
+        put("mediaType", JsonPrimitive(asset.mediaType ?: itemMediaType))
+        sub["providerOptions"]?.let { put("providerOptions", it) }
+    }
+}
+
 private data class ResolvedMedia(val base64: String, val mediaType: String, val clearUrl: Boolean)
 
 /**
@@ -129,16 +148,19 @@ private data class ResolvedMedia(val base64: String, val mediaType: String, val 
  * and correct the media type from the actual bytes (a PNG mislabeled image/jpeg, or
  * a wildcard image type, is fixed for the provider). Returns null when nothing changed.
  */
+@Suppress("LongParameterList") // a cohesive resolver; bundling the args adds indirection
 private suspend fun resolveMedia(
     url: String?,
     base64In: String,
     mediaTypeIn: String,
     supportedUrls: Map<String, List<String>>,
     download: DownloadFunction?,
+    detectImage: Boolean,
 ): ResolvedMedia? {
     val resolved = resolveUrl(url, mediaTypeIn, supportedUrls, download)
     val base64 = resolved?.base64 ?: base64In
-    val mediaType = detectImageMediaType(base64) ?: resolved?.mediaType ?: mediaTypeIn
+    val sniffed = if (detectImage) detectImageMediaType(base64) else null
+    val mediaType = sniffed ?: resolved?.mediaType ?: mediaTypeIn
     return if (resolved == null && mediaType == mediaTypeIn) {
         null
     } else {

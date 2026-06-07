@@ -44,7 +44,11 @@ public fun extractReasoningMiddleware(
             // startWithReasoning: the model emits raw reasoning before any open tag.
             val text = if (startWithReasoning) "$openTag${part.text}" else part.text
             val (clean, reasoning) = extractReasoning(text)
-            if (reasoning.isEmpty()) {
+            // Key off whether tags were actually stripped (clean != text), NOT whether
+            // the reasoning text is non-empty — an empty <reasoning></reasoning> must
+            // still be stripped (matching upstream's match-found check), else the literal
+            // tags leak into visible text.
+            if (clean == text) {
                 rebuilt += part
                 cleanedText.append(part.text)
             } else {
