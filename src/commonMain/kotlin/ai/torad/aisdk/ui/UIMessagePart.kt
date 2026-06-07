@@ -148,6 +148,17 @@ public sealed interface UIMessagePart {
         val type: String,
         val data: JsonElement,
         val providerMetadata: Map<String, JsonElement>? = null,
+        /**
+         * Optional stable id. Streaming data parts that share an id replace the
+         * prior one in place (e.g. a progress indicator that updates) rather than
+         * appending a duplicate — matching v6's keyed data parts.
+         */
+        val id: String? = null,
+        /**
+         * Transient parts are shown live but not meant to be persisted in stored
+         * message history. Mirrors v6's `transient` data-chunk flag.
+         */
+        val transient: Boolean = false,
     ) : UIMessagePart
 
     /**

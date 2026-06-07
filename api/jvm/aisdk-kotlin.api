@@ -12980,16 +12980,20 @@ public final class ai/torad/aisdk/ui/UIMessagePart$Companion {
 
 public final class ai/torad/aisdk/ui/UIMessagePart$Data : ai/torad/aisdk/ui/UIMessagePart {
 	public static final field Companion Lai/torad/aisdk/ui/UIMessagePart$Data$Companion;
-	public fun <init> (Ljava/lang/String;Lkotlinx/serialization/json/JsonElement;Ljava/util/Map;)V
-	public synthetic fun <init> (Ljava/lang/String;Lkotlinx/serialization/json/JsonElement;Ljava/util/Map;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun <init> (Ljava/lang/String;Lkotlinx/serialization/json/JsonElement;Ljava/util/Map;Ljava/lang/String;Z)V
+	public synthetic fun <init> (Ljava/lang/String;Lkotlinx/serialization/json/JsonElement;Ljava/util/Map;Ljava/lang/String;ZILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun component1 ()Ljava/lang/String;
 	public final fun component2 ()Lkotlinx/serialization/json/JsonElement;
 	public final fun component3 ()Ljava/util/Map;
-	public final fun copy (Ljava/lang/String;Lkotlinx/serialization/json/JsonElement;Ljava/util/Map;)Lai/torad/aisdk/ui/UIMessagePart$Data;
-	public static synthetic fun copy$default (Lai/torad/aisdk/ui/UIMessagePart$Data;Ljava/lang/String;Lkotlinx/serialization/json/JsonElement;Ljava/util/Map;ILjava/lang/Object;)Lai/torad/aisdk/ui/UIMessagePart$Data;
+	public final fun component4 ()Ljava/lang/String;
+	public final fun component5 ()Z
+	public final fun copy (Ljava/lang/String;Lkotlinx/serialization/json/JsonElement;Ljava/util/Map;Ljava/lang/String;Z)Lai/torad/aisdk/ui/UIMessagePart$Data;
+	public static synthetic fun copy$default (Lai/torad/aisdk/ui/UIMessagePart$Data;Ljava/lang/String;Lkotlinx/serialization/json/JsonElement;Ljava/util/Map;Ljava/lang/String;ZILjava/lang/Object;)Lai/torad/aisdk/ui/UIMessagePart$Data;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getData ()Lkotlinx/serialization/json/JsonElement;
+	public final fun getId ()Ljava/lang/String;
 	public final fun getProviderMetadata ()Ljava/util/Map;
+	public final fun getTransient ()Z
 	public final fun getType ()Ljava/lang/String;
 	public fun hashCode ()I
 	public fun toString ()Ljava/lang/String;
