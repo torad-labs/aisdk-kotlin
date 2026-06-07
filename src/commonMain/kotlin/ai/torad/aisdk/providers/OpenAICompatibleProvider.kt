@@ -994,6 +994,8 @@ private fun openAIToolJson(tool: LanguageModelTool): JsonObject = buildJsonObjec
             put("strict", JsonPrimitive(tool.strict))
         },
     )
+    // Per-tool provider config (e.g. cache_control), merged at the top level.
+    tool.providerOptions.forEach { (key, value) -> put(key, value) }
 }
 
 private fun openAIToolChoiceJson(choice: ToolChoice): JsonElement? = when (choice) {

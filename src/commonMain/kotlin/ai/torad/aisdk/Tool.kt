@@ -111,6 +111,12 @@ public class Tool<TInput, TOutput, TContext>(
      */
     public val metadata: Map<String, JsonElement> = emptyMap(),
     public val providerExecuted: Boolean = false,
+    /**
+     * Provider-specific config for this tool, sent to the model on the wire
+     * (e.g. Anthropic `cache_control`). Distinct from [metadata], which is
+     * host-side only. Mirrors v6's `tool.providerOptions`. Empty by default.
+     */
+    public val providerOptions: Map<String, JsonElement> = emptyMap(),
 )
 
 /**
@@ -148,6 +154,7 @@ public fun <TInput, TOutput, TContext> tool(
     onInputAvailable: (suspend (toolCallId: String, input: TInput) -> Unit)? = null,
     metadata: Map<String, JsonElement> = emptyMap(),
     providerExecuted: Boolean = false,
+    providerOptions: Map<String, JsonElement> = emptyMap(),
     executor: suspend ToolExecutionContext<TContext>.(TInput) -> TOutput,
 ): Tool<TInput, TOutput, TContext> = Tool(
     name = name,
@@ -167,6 +174,7 @@ public fun <TInput, TOutput, TContext> tool(
     onInputAvailable = onInputAvailable,
     metadata = metadata,
     providerExecuted = providerExecuted,
+    providerOptions = providerOptions,
 )
 
 /**
@@ -251,6 +259,7 @@ public class ToolSet<TContext>(
                 strict = tool.strict,
                 providerExecuted = tool.providerExecuted,
                 metadata = tool.metadata,
+                providerOptions = tool.providerOptions,
             )
         }
     }

@@ -115,6 +115,8 @@ public data class LanguageModelTool(
     val providerExecuted: Boolean = false,
     val metadata: Map<String, JsonElement> = emptyMap(),
     val strict: Boolean = true,
+    /** Provider-specific config sent to the model for this tool (upstream's `tool.providerOptions`). */
+    val providerOptions: Map<String, JsonElement> = emptyMap(),
 ) {
     /** Parsed once and cached — not a constructor arg, so not serialized. */
     val parametersSchema: JsonElement by lazy { aiSdkJson.parseToJsonElement(parametersSchemaJson) }

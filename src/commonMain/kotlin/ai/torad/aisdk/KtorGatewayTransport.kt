@@ -560,6 +560,7 @@ private fun languageModelToolJson(tool: LanguageModelTool): JsonObject = buildJs
     put("inputSchema", aiSdkJson.parseToJsonElement(tool.parametersSchemaJson))
     put("strict", JsonPrimitive(tool.strict))
     if (tool.providerExecuted) put("providerExecuted", JsonPrimitive(true))
+    if (tool.providerOptions.isNotEmpty()) put("providerOptions", JsonObject(tool.providerOptions))
 }
 
 private fun toolChoiceJson(choice: ToolChoice): JsonElement = when (choice) {
