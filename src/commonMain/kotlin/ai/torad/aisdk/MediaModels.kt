@@ -205,11 +205,19 @@ public data class ImageGenerationFile(
     val filename: String? = null,
 )
 
+/** Token usage reported by an image model, when available. Mirrors v6's `ImageModelUsage`. */
+public data class ImageModelUsage(
+    val inputTokens: Int? = null,
+    val outputTokens: Int? = null,
+    val totalTokens: Int? = null,
+)
+
 public data class ImageModelResult(
     val images: List<GeneratedFile>,
     val warnings: List<CallWarning> = emptyList(),
     val response: LanguageModelResponseMetadata = LanguageModelResponseMetadata(),
     val providerMetadata: Map<String, JsonElement> = emptyMap(),
+    val usage: ImageModelUsage = ImageModelUsage(),
 )
 
 public data class GenerateImageResult(
@@ -219,6 +227,7 @@ public data class GenerateImageResult(
     val providerMetadata: Map<String, JsonElement> = emptyMap(),
     /** Per-call response metadata, one entry per underlying model call (n-batching). */
     val responses: List<LanguageModelResponseMetadata> = listOf(response),
+    val usage: ImageModelUsage = ImageModelUsage(),
 ) {
     val image: GeneratedFile get() = images.firstOrNull() ?: throw NoImageGeneratedError()
 }
@@ -235,6 +244,7 @@ public suspend fun generateImage(
     abortSignal: AbortSignal = AbortSignalNever,
     files: List<ImageGenerationFile> = emptyList(),
     mask: ImageGenerationFile? = null,
+    logger: Logger = NoopLogger,
 ): GenerateImageResult {
     require(prompt.isNotBlank()) { "generateImage: prompt must not be blank" }
     require(n > 0) { "generateImage: n must be > 0" }
@@ -252,14 +262,27 @@ public suspend fun generateImage(
     }
     val images = results.flatMap { it.images }
     if (images.isEmpty()) throw NoImageGeneratedError(responses = results.map { it.response })
+    results.flatMap { it.warnings }.forEach { logger.warn(formatCallWarning(it)) }
     return GenerateImageResult(
         images = images,
         warnings = results.flatMap { it.warnings },
         response = results.first().response,
         providerMetadata = results.firstNotNullOfOrNull { it.providerMetadata.ifEmpty { null } } ?: emptyMap(),
         responses = results.map { it.response },
+        usage = sumImageUsage(results.map { it.usage }),
     )
 }
+
+/** Sum image usage across n-batched calls; a field stays null only if every call left it null. */
+internal fun sumImageUsage(usages: List<ImageModelUsage>): ImageModelUsage {
+    fun sum(selector: (ImageModelUsage) -> Int?): Int? =
+        usages.mapNotNull(selector).takeIf { it.isNotEmpty() }?.sum()
+    return ImageModelUsage(sum { it.inputTokens }, sum { it.outputTokens }, sum { it.totalTokens })
+}
+
+/** Render a CallWarning for the logger seam (upstream's logWarnings). */
+internal fun formatCallWarning(warning: CallWarning): String =
+    "AI SDK Warning [${warning.type}]: ${warning.message ?: warning.details?.toString() ?: ""}"
 
 /** Split [total] into chunks of at most [perChunk] — e.g. (5, 2) → [2, 2, 1]. */
 internal fun splitCount(total: Int, perChunk: Int): List<Int> {
@@ -357,6 +380,8 @@ public data class SpeechGenerationParams(
     val instructions: String? = null,
     val speed: Float? = null,
     val responseFormat: String? = null,
+    /** ISO 639-1 language code (e.g. "en") or "auto". Mirrors upstream's `language`. */
+    val language: String? = null,
     val providerOptions: Map<String, JsonElement> = emptyMap(),
     val headers: Map<String, String> = emptyMap(),
     val abortSignal: AbortSignal = AbortSignalNever,
@@ -374,6 +399,7 @@ public data class GenerateSpeechResult(
     val warnings: List<CallWarning> = emptyList(),
     val response: LanguageModelResponseMetadata = LanguageModelResponseMetadata(),
     val providerMetadata: Map<String, JsonElement> = emptyMap(),
+    val responses: List<LanguageModelResponseMetadata> = listOf(response),
 )
 
 public suspend fun generateSpeech(
@@ -383,19 +409,25 @@ public suspend fun generateSpeech(
     instructions: String? = null,
     speed: Float? = null,
     responseFormat: String? = null,
+    language: String? = null,
     providerOptions: Map<String, JsonElement> = emptyMap(),
     headers: Map<String, String> = emptyMap(),
     abortSignal: AbortSignal = AbortSignalNever,
+    logger: Logger = NoopLogger,
 ): GenerateSpeechResult {
     require(text.isNotBlank()) { "generateSpeech: text must not be blank" }
     val result = model.generate(
-        SpeechGenerationParams(text, voice, instructions, speed, responseFormat, providerOptions, headers, abortSignal),
+        SpeechGenerationParams(
+            text, voice, instructions, speed, responseFormat, language, providerOptions, headers, abortSignal,
+        ),
     )
+    result.warnings.forEach { logger.warn(formatCallWarning(it)) }
     return GenerateSpeechResult(
         audio = result.audio ?: throw NoSpeechGeneratedError(),
         warnings = result.warnings,
         response = result.response,
         providerMetadata = result.providerMetadata,
+        responses = listOf(result.response),
     )
 }
 
@@ -456,6 +488,10 @@ public data class TranscriptionModelResult(
     val warnings: List<CallWarning> = emptyList(),
     val response: LanguageModelResponseMetadata = LanguageModelResponseMetadata(),
     val providerMetadata: Map<String, JsonElement> = emptyMap(),
+    /** Detected language as an ISO-639-1 code, or null if undetermined. */
+    val language: String? = null,
+    /** Total audio duration in seconds, or null if undetermined. */
+    val durationInSeconds: Float? = null,
 )
 
 public data class TranscribeResult(
@@ -464,6 +500,11 @@ public data class TranscribeResult(
     val warnings: List<CallWarning> = emptyList(),
     val response: LanguageModelResponseMetadata = LanguageModelResponseMetadata(),
     val providerMetadata: Map<String, JsonElement> = emptyMap(),
+    val responses: List<LanguageModelResponseMetadata> = listOf(response),
+    /** Detected language as an ISO-639-1 code, or null if undetermined. */
+    val language: String? = null,
+    /** Total audio duration in seconds, or null if undetermined. */
+    val durationInSeconds: Float? = null,
 )
 
 public suspend fun transcribe(
@@ -474,17 +515,22 @@ public suspend fun transcribe(
     providerOptions: Map<String, JsonElement> = emptyMap(),
     headers: Map<String, String> = emptyMap(),
     abortSignal: AbortSignal = AbortSignalNever,
+    logger: Logger = NoopLogger,
 ): TranscribeResult {
     require(audio.base64.isNotBlank()) { "transcribe: audio base64 must not be blank" }
     val result = model.transcribe(
         TranscriptionParams(audio, language, prompt, providerOptions, headers, abortSignal),
     )
+    result.warnings.forEach { logger.warn(formatCallWarning(it)) }
     return TranscribeResult(
         text = result.text ?: throw NoTranscriptGeneratedError(),
         segments = result.segments,
         warnings = result.warnings,
         response = result.response,
         providerMetadata = result.providerMetadata,
+        responses = listOf(result.response),
+        language = result.language,
+        durationInSeconds = result.durationInSeconds,
     )
 }
 
@@ -545,6 +591,8 @@ public data class GenerateVideoResult(
     val warnings: List<CallWarning> = emptyList(),
     val response: LanguageModelResponseMetadata = LanguageModelResponseMetadata(),
     val providerMetadata: Map<String, JsonElement> = emptyMap(),
+    /** Per-call response metadata, one entry per underlying model call (n-batching). */
+    val responses: List<LanguageModelResponseMetadata> = listOf(response),
 ) {
     val video: GeneratedFile get() = videos.firstOrNull() ?: throw NoVideoGeneratedError()
 }
@@ -563,6 +611,7 @@ public suspend fun generateVideo(
     seed: Int? = null,
     fps: Int? = null,
     resolution: String? = null,
+    logger: Logger = NoopLogger,
 ): GenerateVideoResult {
     require(prompt.isNotBlank()) { "generateVideo: prompt must not be blank" }
     require(n > 0) { "generateVideo: n must be > 0" }
@@ -589,11 +638,13 @@ public suspend fun generateVideo(
     }
     val videos = results.flatMap { it.videos }
     if (videos.isEmpty()) throw NoVideoGeneratedError(responses = results.map { it.response })
+    results.flatMap { it.warnings }.forEach { logger.warn(formatCallWarning(it)) }
     return GenerateVideoResult(
         videos = videos,
         warnings = results.flatMap { it.warnings },
         response = results.first().response,
         providerMetadata = results.firstNotNullOfOrNull { it.providerMetadata.ifEmpty { null } } ?: emptyMap(),
+        responses = results.map { it.response },
     )
 }
 

@@ -176,6 +176,8 @@ private class DeepgramTranscriptionModel(
                 body = response.value,
             ),
             providerMetadata = mapOf("deepgram" to response.value),
+            language = firstAlternative?.get("detected_language")?.jsonPrimitive?.contentOrNull,
+            durationInSeconds = value["metadata"]?.jsonObject?.get("duration")?.jsonPrimitive?.floatOrNull,
         )
     }
 }

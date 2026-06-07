@@ -522,6 +522,7 @@ private class OpenAICompatibleSpeechModel(
             params.voice?.let { put("voice", JsonPrimitive(it)) }
             params.instructions?.let { put("instructions", JsonPrimitive(it)) }
             params.speed?.let { put("speed", JsonPrimitive(it)) }
+            params.language?.let { put("language", JsonPrimitive(it)) }
             put("response_format", JsonPrimitive(format))
             putProviderOptions(options, setOf("response_format"))
         }
@@ -583,6 +584,9 @@ private class OpenAICompatibleTranscriptionModel(
             },
             response = LanguageModelResponseMetadata(modelId = modelId, headers = response.headers, body = response.value),
             providerMetadata = openAIProviderMetadata(value["providerMetadata"], settings.name),
+            // verbose_json responses carry the detected language + audio duration.
+            language = WireDecoder.optionalString(value, "language", providerName, "transcription response"),
+            durationInSeconds = WireDecoder.optionalFloat(value, "duration", providerName, "transcription response"),
         )
     }
 }
