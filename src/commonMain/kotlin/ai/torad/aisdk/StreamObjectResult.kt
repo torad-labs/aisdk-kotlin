@@ -80,15 +80,46 @@ public class StreamObjectResult<TOutput> internal constructor(
     }
 
     /**
-     * Collect to completion and return the final typed object. The complete text is
-     * decoded once at the end; if that fails and a [repairText] hook is set, the
-     * repaired text is retried. Throws [NoObjectGeneratedError] (carrying the raw
-     * text) if neither yields a valid object.
+     * Collect to completion and return the final typed object plus the call's
+     * terminal metadata (usage, finishReason, warnings, response) — the awaitable
+     * side of the v6 `StreamObjectResult`. The complete text is decoded once at the
+     * end; if that fails and a [repairText] hook is set, the repaired text is retried.
+     * Throws [NoObjectGeneratedError] (carrying the raw text) if neither parses.
      */
-    public suspend fun objectValue(): TOutput {
+    public suspend fun finish(): StreamObjectFinish<TOutput> {
         val accumulated = StringBuilder()
-        events.collect { event -> if (event is StreamEvent.TextDelta) accumulated.append(event.text) }
-        val text = accumulated.toString()
+        var usage = Usage()
+        var finishReason = FinishReason.Stop
+        var warnings: List<CallWarning> = emptyList()
+        var response = LanguageModelResponseMetadata()
+        events.collect { event ->
+            when (event) {
+                is StreamEvent.TextDelta -> accumulated.append(event.text)
+                is StreamEvent.StreamStart -> warnings = event.warnings
+                is StreamEvent.ResponseMetadata -> response = LanguageModelResponseMetadata(
+                    id = event.id,
+                    timestampMillis = event.timestampMillis,
+                    modelId = event.modelId,
+                    headers = event.headers,
+                    body = event.body,
+                )
+                is StreamEvent.Finish -> {
+                    usage = event.usage
+                    finishReason = event.finishReason
+                }
+                else -> Unit
+            }
+        }
+        return StreamObjectFinish(decodeOrThrow(accumulated.toString()), usage, finishReason, warnings, response)
+    }
+
+    /**
+     * Collect to completion and return just the final typed object (see [finish] for
+     * the call's usage / finishReason / warnings / response).
+     */
+    public suspend fun objectValue(): TOutput = finish().value
+
+    private fun decodeOrThrow(text: String): TOutput {
         runCatching { output.decode(text) }.getOrNull()?.let { return it }
         repairText?.invoke(text)?.let { repaired ->
             runCatching { output.decode(repaired) }.getOrNull()?.let { return it }
@@ -96,6 +127,15 @@ public class StreamObjectResult<TOutput> internal constructor(
         throw NoObjectGeneratedError("Object stream produced no parseable object", text = text)
     }
 }
+
+/** The final object plus terminal metadata of a [StreamObjectResult.finish]. */
+public data class StreamObjectFinish<TOutput>(
+    val value: TOutput,
+    val usage: Usage,
+    val finishReason: FinishReason,
+    val warnings: List<CallWarning>,
+    val response: LanguageModelResponseMetadata,
+)
 
 /**
  * Stream a structured object, returning a typed [StreamObjectResult] — the v6

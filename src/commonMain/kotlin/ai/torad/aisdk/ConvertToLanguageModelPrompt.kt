@@ -158,12 +158,12 @@ private fun isUrlSupported(url: String, mediaType: String, supportedUrls: Map<St
             urlPatterns.any { runCatching { Regex(it).containsMatchIn(url) }.getOrDefault(false) }
     }
 
-// Glob match for media-type patterns: a bare "*" (or wildcard) matches anything;
-// an "image/*"-style pattern matches by type prefix; otherwise an exact match.
-private fun mediaTypeMatches(pattern: String, mediaType: String): Boolean = when {
-    pattern == "*" || pattern == "*/*" -> true
-    pattern.endsWith("/*") -> mediaType.startsWith(pattern.removeSuffix("/*") + "/")
-    else -> pattern.equals(mediaType, ignoreCase = true)
+// Glob match for media-type patterns, unified with Util.isUrlSupported: strip all
+// `*` to a prefix ("*"/"*​/*" → "", "image/*" → "image/") and prefix-match. (Was an
+// exact match on non-wildcard keys, which diverged from the public helper.)
+private fun mediaTypeMatches(pattern: String, mediaType: String): Boolean {
+    val prefix = if (pattern == "*" || pattern == "*/*") "" else pattern.replace("*", "")
+    return mediaType.startsWith(prefix, ignoreCase = true)
 }
 
 /**

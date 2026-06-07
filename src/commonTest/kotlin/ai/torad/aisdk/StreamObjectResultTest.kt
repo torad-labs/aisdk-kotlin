@@ -68,6 +68,24 @@ class StreamObjectResultTest {
     }
 
     @Test
+    fun `finish returns the object plus terminal usage and finishReason`() = runTest {
+        val model = object : LanguageModel {
+            override val modelId = "test/obj"
+            override suspend fun generate(params: LanguageModelCallParams) =
+                LanguageModelResult(text = "{}", finishReason = FinishReason.Stop, usage = Usage())
+            override fun stream(params: LanguageModelCallParams): Flow<StreamEvent> = flow {
+                emit(StreamEvent.TextStart("t"))
+                emit(StreamEvent.TextDelta("t", """{"name":"Zed","age":5}"""))
+                emit(StreamEvent.TextEnd("t"))
+                emit(StreamEvent.Finish(1, FinishReason.ToolCalls, Usage(), rawFinishReason = "stop"))
+            }
+        }
+        val finish = streamObjectResult(model, Output.obj(serializer<Person>()), prompt = "go").finish()
+        assertEquals(Person("Zed", 5), finish.value)
+        assertEquals(FinishReason.ToolCalls, finish.finishReason)
+    }
+
+    @Test
     fun `elementStream emits each array element as it completes`() = runTest {
         val arrayOutput = Output.Arr(serializer<Person>())
         val result = streamObjectResult(

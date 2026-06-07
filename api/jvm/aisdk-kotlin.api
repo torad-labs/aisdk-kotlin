@@ -6066,8 +6066,28 @@ public final class ai/torad/aisdk/StreamEvent$ToolResult$Companion {
 	public final fun serializer ()Lkotlinx/serialization/KSerializer;
 }
 
+public final class ai/torad/aisdk/StreamObjectFinish {
+	public fun <init> (Ljava/lang/Object;Lai/torad/aisdk/Usage;Lai/torad/aisdk/FinishReason;Ljava/util/List;Lai/torad/aisdk/LanguageModelResponseMetadata;)V
+	public final fun component1 ()Ljava/lang/Object;
+	public final fun component2 ()Lai/torad/aisdk/Usage;
+	public final fun component3 ()Lai/torad/aisdk/FinishReason;
+	public final fun component4 ()Ljava/util/List;
+	public final fun component5 ()Lai/torad/aisdk/LanguageModelResponseMetadata;
+	public final fun copy (Ljava/lang/Object;Lai/torad/aisdk/Usage;Lai/torad/aisdk/FinishReason;Ljava/util/List;Lai/torad/aisdk/LanguageModelResponseMetadata;)Lai/torad/aisdk/StreamObjectFinish;
+	public static synthetic fun copy$default (Lai/torad/aisdk/StreamObjectFinish;Ljava/lang/Object;Lai/torad/aisdk/Usage;Lai/torad/aisdk/FinishReason;Ljava/util/List;Lai/torad/aisdk/LanguageModelResponseMetadata;ILjava/lang/Object;)Lai/torad/aisdk/StreamObjectFinish;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getFinishReason ()Lai/torad/aisdk/FinishReason;
+	public final fun getResponse ()Lai/torad/aisdk/LanguageModelResponseMetadata;
+	public final fun getUsage ()Lai/torad/aisdk/Usage;
+	public final fun getValue ()Ljava/lang/Object;
+	public final fun getWarnings ()Ljava/util/List;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
 public final class ai/torad/aisdk/StreamObjectResult {
 	public final fun elementStream (Lai/torad/aisdk/Output$Arr;)Lkotlinx/coroutines/flow/Flow;
+	public final fun finish (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public final fun getPartialObjectStream ()Lkotlinx/coroutines/flow/Flow;
 	public final fun getTextStream ()Lkotlinx/coroutines/flow/Flow;
 	public final fun objectValue (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;

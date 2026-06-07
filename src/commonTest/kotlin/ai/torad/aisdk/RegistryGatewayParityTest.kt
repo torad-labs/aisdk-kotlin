@@ -66,4 +66,15 @@ class RegistryGatewayParityTest {
         assertEquals("k", token?.token)
         assertEquals(GatewayAuthMethod.ApiKey, token?.authMethod)
     }
+
+    @Test
+    fun `gateway emits ai-o11y headers from the VERCEL environment`() = runTest {
+        val headers = gatewayHeaders(
+            GatewayProviderSettings(
+                environment = mapOf("VERCEL_ENV" to "production", "VERCEL_REGION" to "iad1"),
+            ),
+        )
+        assertEquals("production", headers["ai-o11y-environment"])
+        assertEquals("iad1", headers["ai-o11y-region"])
+    }
 }

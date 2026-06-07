@@ -398,6 +398,17 @@ internal suspend fun gatewayHeaders(settings: GatewayProviderSettings): Map<Stri
         base[GATEWAY_AUTH_METHOD_HEADER] = it.authMethod.wireValue
     }
     base["ai-gateway-protocol-version"] = AI_GATEWAY_PROTOCOL_VERSION
+    // Observability headers from the host environment (the KMP equivalent of
+    // upstream's getVercelObservabilityHeaders). request-id is runtime-only and omitted.
+    val o11y = mapOf(
+        "ai-o11y-deployment-id" to "VERCEL_DEPLOYMENT_ID",
+        "ai-o11y-environment" to "VERCEL_ENV",
+        "ai-o11y-region" to "VERCEL_REGION",
+        "ai-o11y-project-id" to "VERCEL_PROJECT_ID",
+    )
+    for ((header, envVar) in o11y) {
+        settings.environment[envVar]?.let { base[header] = it }
+    }
     base.putAll(settings.headers)
     return withUserAgentSuffix(base, "ai-sdk/gateway-kotlin")
 }

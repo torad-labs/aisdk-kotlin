@@ -3844,6 +3844,31 @@ final class <#A: kotlin/Any?> ai.torad.aisdk/StepSettings { // ai.torad.aisdk/St
     final fun toString(): kotlin/String // ai.torad.aisdk/StepSettings.toString|toString(){}[0]
 }
 
+final class <#A: kotlin/Any?> ai.torad.aisdk/StreamObjectFinish { // ai.torad.aisdk/StreamObjectFinish|null[0]
+    constructor <init>(#A, ai.torad.aisdk/Usage, ai.torad.aisdk/FinishReason, kotlin.collections/List<ai.torad.aisdk/CallWarning>, ai.torad.aisdk/LanguageModelResponseMetadata) // ai.torad.aisdk/StreamObjectFinish.<init>|<init>(1:0;ai.torad.aisdk.Usage;ai.torad.aisdk.FinishReason;kotlin.collections.List<ai.torad.aisdk.CallWarning>;ai.torad.aisdk.LanguageModelResponseMetadata){}[0]
+
+    final val finishReason // ai.torad.aisdk/StreamObjectFinish.finishReason|{}finishReason[0]
+        final fun <get-finishReason>(): ai.torad.aisdk/FinishReason // ai.torad.aisdk/StreamObjectFinish.finishReason.<get-finishReason>|<get-finishReason>(){}[0]
+    final val response // ai.torad.aisdk/StreamObjectFinish.response|{}response[0]
+        final fun <get-response>(): ai.torad.aisdk/LanguageModelResponseMetadata // ai.torad.aisdk/StreamObjectFinish.response.<get-response>|<get-response>(){}[0]
+    final val usage // ai.torad.aisdk/StreamObjectFinish.usage|{}usage[0]
+        final fun <get-usage>(): ai.torad.aisdk/Usage // ai.torad.aisdk/StreamObjectFinish.usage.<get-usage>|<get-usage>(){}[0]
+    final val value // ai.torad.aisdk/StreamObjectFinish.value|{}value[0]
+        final fun <get-value>(): #A // ai.torad.aisdk/StreamObjectFinish.value.<get-value>|<get-value>(){}[0]
+    final val warnings // ai.torad.aisdk/StreamObjectFinish.warnings|{}warnings[0]
+        final fun <get-warnings>(): kotlin.collections/List<ai.torad.aisdk/CallWarning> // ai.torad.aisdk/StreamObjectFinish.warnings.<get-warnings>|<get-warnings>(){}[0]
+
+    final fun component1(): #A // ai.torad.aisdk/StreamObjectFinish.component1|component1(){}[0]
+    final fun component2(): ai.torad.aisdk/Usage // ai.torad.aisdk/StreamObjectFinish.component2|component2(){}[0]
+    final fun component3(): ai.torad.aisdk/FinishReason // ai.torad.aisdk/StreamObjectFinish.component3|component3(){}[0]
+    final fun component4(): kotlin.collections/List<ai.torad.aisdk/CallWarning> // ai.torad.aisdk/StreamObjectFinish.component4|component4(){}[0]
+    final fun component5(): ai.torad.aisdk/LanguageModelResponseMetadata // ai.torad.aisdk/StreamObjectFinish.component5|component5(){}[0]
+    final fun copy(#A = ..., ai.torad.aisdk/Usage = ..., ai.torad.aisdk/FinishReason = ..., kotlin.collections/List<ai.torad.aisdk/CallWarning> = ..., ai.torad.aisdk/LanguageModelResponseMetadata = ...): ai.torad.aisdk/StreamObjectFinish<#A> // ai.torad.aisdk/StreamObjectFinish.copy|copy(1:0;ai.torad.aisdk.Usage;ai.torad.aisdk.FinishReason;kotlin.collections.List<ai.torad.aisdk.CallWarning>;ai.torad.aisdk.LanguageModelResponseMetadata){}[0]
+    final fun equals(kotlin/Any?): kotlin/Boolean // ai.torad.aisdk/StreamObjectFinish.equals|equals(kotlin.Any?){}[0]
+    final fun hashCode(): kotlin/Int // ai.torad.aisdk/StreamObjectFinish.hashCode|hashCode(){}[0]
+    final fun toString(): kotlin/String // ai.torad.aisdk/StreamObjectFinish.toString|toString(){}[0]
+}
+
 final class <#A: kotlin/Any?> ai.torad.aisdk/StreamObjectResult { // ai.torad.aisdk/StreamObjectResult|null[0]
     final val partialObjectStream // ai.torad.aisdk/StreamObjectResult.partialObjectStream|{}partialObjectStream[0]
         final fun <get-partialObjectStream>(): kotlinx.coroutines.flow/Flow<#A> // ai.torad.aisdk/StreamObjectResult.partialObjectStream.<get-partialObjectStream>|<get-partialObjectStream>(){}[0]
@@ -3851,6 +3876,7 @@ final class <#A: kotlin/Any?> ai.torad.aisdk/StreamObjectResult { // ai.torad.ai
         final fun <get-textStream>(): kotlinx.coroutines.flow/Flow<kotlin/String> // ai.torad.aisdk/StreamObjectResult.textStream.<get-textStream>|<get-textStream>(){}[0]
 
     final fun <#A1: kotlin/Any?> elementStream(ai.torad.aisdk/Output.Arr<#A1>): kotlinx.coroutines.flow/Flow<#A1> // ai.torad.aisdk/StreamObjectResult.elementStream|elementStream(ai.torad.aisdk.Output.Arr<0:0>){0§<kotlin.Any?>}[0]
+    final suspend fun finish(): ai.torad.aisdk/StreamObjectFinish<#A> // ai.torad.aisdk/StreamObjectResult.finish|finish(){}[0]
     final suspend fun objectValue(): #A // ai.torad.aisdk/StreamObjectResult.objectValue|objectValue(){}[0]
 }
 
