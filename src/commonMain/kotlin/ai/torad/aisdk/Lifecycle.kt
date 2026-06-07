@@ -92,6 +92,14 @@ public data class OnChunkEvent(
 )
 
 /**
+ * Fired when generation is aborted via [AbortSignal] before it finishes.
+ * Carries the steps completed up to the abort. Mirrors upstream's `onAbort({ steps })`.
+ */
+public data class OnAbortEvent(
+    val steps: List<StepResult>,
+)
+
+/**
  * Fired immediately before a tool's executor runs. Carries the parsed
  * tool call envelope and the messages-list snapshot so observers can
  * record context (e.g. for tracing).

@@ -83,6 +83,7 @@ public open class ToolLoopAgent<TContext, TOutput>(
     public val onFinish: (suspend OnFinishEvent.() -> Unit)? = null,
     public val onError: (suspend OnErrorEvent.() -> Unit)? = null,
     public val onChunk: (suspend OnChunkEvent.() -> Unit)? = null,
+    public val onAbort: (suspend OnAbortEvent.() -> Unit)? = null,
     public val experimental_onToolCallStart: (suspend OnToolCallStartEvent.() -> Unit)? = null,
     public val experimental_onToolCallFinish: (suspend OnToolCallFinishEvent.() -> Unit)? = null,
     /**
@@ -417,6 +418,9 @@ public open class ToolLoopAgent<TContext, TOutput>(
         hooks: AgentCallHooks?,
     ): Flow<StreamEvent> = streamInternal(prompt, messages, options, abortSignal, hooks, null, null)
 
+    // SwallowedException: the AbortError catch intentionally consumes the abort — it is a
+    // terminal user signal surfaced as StreamEvent.Abort, not an error to propagate.
+    @Suppress("SwallowedException")
     private fun streamInternal(
         prompt: String?,
         priorMessages: List<ModelMessage>,
@@ -493,9 +497,26 @@ public open class ToolLoopAgent<TContext, TOutput>(
         // and every subsequent step then see the new value.
         var activeContext: TContext? = validatedOptions
 
+        // Fire the onAbort hooks + persist the messages collected so far. The caller emits
+        // StreamEvent.Abort and returns; this only does the side effects (it isn't the
+        // FlowCollector, so it can't emit itself).
+        suspend fun fireAbort() {
+            runHook(stepNumber) {
+                onAbort?.invoke(OnAbortEvent(completedSteps.toList()))
+                hooks?.onAbort?.invoke(OnAbortEvent(completedSteps.toList()))
+            }
+            finalMessagesRef?.value = messages.toList()
+        }
+
         loopFinished@ while (true) {
             stepNumber += 1
-            abortSignal.throwIfAborted()
+            // Poll abort at each step boundary: emit a terminal Abort event + fire onAbort,
+            // then end the stream cleanly (was: throwIfAborted unwinding with no Abort event).
+            if (abortSignal.isAborted) {
+                emit(StreamEvent.Abort)
+                fireAbort()
+                return@flow
+            }
             emit(StreamEvent.StepStart(stepNumber))
             runHook(stepNumber) {
                 onStepStart?.invoke(OnStepStartEvent(stepNumber, messages.toList()))
@@ -669,7 +690,15 @@ public open class ToolLoopAgent<TContext, TOutput>(
                 }
                 finalMessagesRef?.value = messages.toList()
                 return@flow
+            } catch (abort: AbortError) {
+                // A user-initiated abort (abortSignal.throwIfAborted), caught BEFORE the
+                // generic CancellationException clause: surface it as a terminal Abort event
+                // + onAbort and end cleanly.
+                emit(StreamEvent.Abort)
+                fireAbort()
+                return@flow
             } catch (ce: CancellationException) {
+                // A genuine coroutine cancellation must re-throw untouched (Tier-0 coroutines).
                 throw ce
             } catch (t: Throwable) {
                 emitError(t, stepNumber, OnErrorEvent.ErrorSource.Model, hooks)

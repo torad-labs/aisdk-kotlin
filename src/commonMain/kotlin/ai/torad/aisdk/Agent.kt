@@ -126,4 +126,5 @@ public data class AgentCallHooks(
     val onFinish: (suspend (OnFinishEvent) -> Unit)? = null,
     val onError: (suspend (OnErrorEvent) -> Unit)? = null,
     val onChunk: (suspend (OnChunkEvent) -> Unit)? = null,
+    val onAbort: (suspend (OnAbortEvent) -> Unit)? = null,
 )
