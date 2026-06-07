@@ -416,7 +416,14 @@ private fun anthropicPrompt(
                 put("content", JsonArray(message.content.mapNotNull { anthropicUserPart(it, betas) }))
             }
             MessageRole.Assistant -> {
-                val content = message.content.mapNotNull { anthropicAssistantPart(it, sendReasoning) }
+                // Anthropic rejects trailing whitespace in a pre-filled assistant turn, so
+                // trim the LAST text part of the LAST message (the pre-fill), per upstream.
+                val isLastMessage = message === messages.last()
+                val lastTextIndex =
+                    if (isLastMessage) message.content.indexOfLast { it is ContentPart.Text } else -1
+                val content = message.content.mapIndexedNotNull { index, part ->
+                    anthropicAssistantPart(part, sendReasoning, trimText = index == lastTextIndex)
+                }
                 if (content.isNotEmpty()) {
                     apiMessages += buildJsonObject {
                         put("role", JsonPrimitive("assistant"))
@@ -505,10 +512,14 @@ private fun anthropicMediaSource(url: String?, mediaType: String, base64: String
     }
 }
 
-private fun anthropicAssistantPart(part: ContentPart, sendReasoning: Boolean): JsonElement? = when (part) {
+private fun anthropicAssistantPart(
+    part: ContentPart,
+    sendReasoning: Boolean,
+    trimText: Boolean = false,
+): JsonElement? = when (part) {
     is ContentPart.Text -> buildJsonObject {
         put("type", JsonPrimitive("text"))
-        put("text", JsonPrimitive(part.text))
+        put("text", JsonPrimitive(if (trimText) part.text.trim() else part.text))
     }
     is ContentPart.Reasoning if sendReasoning -> buildJsonObject {
         val metadata = part.providerMetadata?.get("anthropic") as? JsonObject
