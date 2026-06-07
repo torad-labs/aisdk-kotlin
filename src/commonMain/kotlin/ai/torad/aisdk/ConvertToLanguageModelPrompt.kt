@@ -1,8 +1,14 @@
 // File named for its primary entry point, convertToLanguageModelPrompt; the
-// DownloadedAsset/DownloadFunction types are supporting declarations.
-@file:Suppress("MatchingDeclarationName")
+// DownloadedAsset/DownloadFunction types are supporting declarations. TooManyFunctions
+// is expected — this is one cohesive resolver split into small private helpers.
+@file:Suppress("MatchingDeclarationName", "TooManyFunctions")
 
 package ai.torad.aisdk
+
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.buildJsonObject
 
 /** The base64 bytes + media type of a downloaded asset. */
 public data class DownloadedAsset(val base64: String, val mediaType: String?)
@@ -69,7 +75,51 @@ private suspend fun resolveAssetPart(
         resolveMedia(part.url, part.base64, part.mediaType, supportedUrls, download)?.let {
             part.copy(base64 = it.base64, mediaType = it.mediaType, url = if (it.clearUrl) null else part.url)
         } ?: part
+    // A tool result returning a `content` output may embed image-url/file-url items;
+    // inline them so a URL-rejecting provider sees data (upstream parity).
+    is ContentPart.ToolResult ->
+        if (download == null) part else inlineToolResultUrls(part, download)
     else -> part
+}
+
+private suspend fun inlineToolResultUrls(part: ContentPart.ToolResult, download: DownloadFunction): ContentPart {
+    val obj = part.output as? JsonObject
+    val items = obj?.takeIf { (it["type"] as? JsonPrimitive)?.content == "content" }
+        ?.get("value") as? JsonArray ?: return part
+
+    // Rewrites one image-url/file-url content item to image-data/file-data, or null.
+    suspend fun inlineItem(sub: JsonObject?): JsonObject? {
+        val target = when ((sub?.get("type") as? JsonPrimitive)?.content) {
+            "image-url" -> "image-data"
+            "file-url" -> "file-data"
+            else -> null
+        }
+        val url = (sub?.get("url") as? JsonPrimitive)?.content
+        if (target == null || url == null) return null
+        val asset = download(url)
+        return buildJsonObject {
+            put("type", JsonPrimitive(target))
+            put("data", JsonPrimitive(asset.base64))
+            put("mediaType", JsonPrimitive(asset.mediaType ?: "application/octet-stream"))
+        }
+    }
+
+    var changed = false
+    val rewritten = items.map { item ->
+        val inlined = inlineItem(item as? JsonObject)
+        if (inlined != null) changed = true
+        inlined ?: item
+    }
+    return if (!changed) {
+        part
+    } else {
+        part.copy(
+            output = buildJsonObject {
+                obj.forEach { (k, v) -> if (k != "value") put(k, v) }
+                put("value", JsonArray(rewritten))
+            },
+        )
+    }
 }
 
 private data class ResolvedMedia(val base64: String, val mediaType: String, val clearUrl: Boolean)

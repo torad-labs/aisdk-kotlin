@@ -114,6 +114,37 @@ class ConvertToLanguageModelPromptTest {
     }
 
     @Test
+    fun `an image-url inside a tool result content output is downloaded and inlined`() = runTest {
+        val output = kotlinx.serialization.json.buildJsonObject {
+            put("type", JsonPrimitive("content"))
+            put(
+                "value",
+                kotlinx.serialization.json.buildJsonArray {
+                    add(
+                        kotlinx.serialization.json.buildJsonObject {
+                            put("type", JsonPrimitive("image-url"))
+                            put("url", JsonPrimitive("https://img.test/a.png"))
+                        },
+                    )
+                },
+            )
+        }
+        val messages = listOf(
+            ModelMessage(MessageRole.Tool, listOf(ContentPart.ToolResult("c1", "t", output))),
+        )
+        val converted = convertToLanguageModelPrompt(
+            messages,
+            download = { DownloadedAsset("Ym9keQ==", "image/png") },
+        )
+        val result = converted.single().content.single() as ContentPart.ToolResult
+        val outputObj = result.output as kotlinx.serialization.json.JsonObject
+        val valueArray = outputObj["value"] as kotlinx.serialization.json.JsonArray
+        val item = valueArray.single() as kotlinx.serialization.json.JsonObject
+        assertEquals("image-data", (item["type"] as JsonPrimitive).content, "image-url rewritten to image-data")
+        assertEquals("Ym9keQ==", (item["data"] as JsonPrimitive).content)
+    }
+
+    @Test
     fun `a non-base64 data URL is left untouched rather than crashing`() = runTest {
         val messages = listOf(imageMessage("data:text/plain,Hello", mediaType = "text/plain"))
         // splitDataUrl would throw on this; the resolver must leave it for the provider.
