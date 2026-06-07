@@ -379,17 +379,35 @@ public open class ToolLoopAgent<TContext, TOutput>(
             }
         collectedMessages = finalMessagesRef.value
         val text = accumulator.toString()
-        val typed = output?.decode(text) ?: (text as TOutput)
+        val steps = collectedSteps.toList()
         return GenerateResult(
-            output = typed,
+            output = decodeFinalOutput(output, text, finishReason),
             text = text,
-            steps = collectedSteps.toList(),
+            steps = steps,
             finishReason = finishReason,
-            usage = totalUsage,
+            // upstream parity: usage = final step's usage, totalUsage = sum across steps.
+            usage = steps.lastOrNull()?.usage ?: totalUsage,
+            totalUsage = totalUsage,
             pendingApprovals = collectedApprovals.toList(),
             messages = collectedMessages,
         )
     }
+
+    /**
+     * Resolve the final typed output. Matching upstream, structured output is only
+     * parsed when the model actually stopped (finishReason == stop); ending on
+     * length / step-cap / non-stop yields no parseable object, surfaced as
+     * [NoOutputGeneratedError] rather than a confusing decode error.
+     */
+    private fun decodeFinalOutput(output: Output<TOutput>?, text: String, finishReason: FinishReason): TOutput =
+        if (output == null) {
+            @Suppress("UNCHECKED_CAST")
+            (text as TOutput)
+        } else if (finishReason == FinishReason.Stop) {
+            output.decode(text)
+        } else {
+            throw NoOutputGeneratedError("No object generated: the model finished with `$finishReason`, not `stop`.")
+        }
 
     override fun stream(
         prompt: String?,
@@ -552,6 +570,12 @@ public open class ToolLoopAgent<TContext, TOutput>(
             val stepApprovalRequests = mutableListOf<ContentPart.ToolApprovalRequest>()
             var stepFinishReason = FinishReason.Stop
             var stepUsage = Usage()
+            // Per-step metadata, captured from the stream and surfaced on StepResult
+            // (parity with upstream — the loop previously dropped all four).
+            var stepWarnings: List<CallWarning> = emptyList()
+            var stepProviderMetadata: Map<String, JsonElement> = emptyMap()
+            var stepResponse = LanguageModelResponseMetadata()
+            var stepRawFinishReason: String? = null
             // gap #18: a streaming tool-input id -> toolName, so ToolInputDelta
             // (which carries only the streaming id) can route to the right
             // tool's onInputDelta hook.
@@ -601,12 +625,29 @@ public open class ToolLoopAgent<TContext, TOutput>(
                         is StreamEvent.StepFinish -> {
                             stepFinishReason = event.finishReason
                             stepUsage = event.usage
+                            event.providerMetadata?.let { stepProviderMetadata = it }
                             // Don't forward — we emit our own StepFinish below post-tool-execution.
                         }
                         is StreamEvent.Finish -> {
                             stepFinishReason = event.finishReason
                             stepUsage = event.usage
                             lastRawFinishReason = event.rawFinishReason
+                            stepRawFinishReason = event.rawFinishReason
+                            event.providerMetadata?.let { stepProviderMetadata = it }
+                        }
+                        is StreamEvent.StreamStart -> {
+                            stepWarnings = event.warnings
+                            emit(event)
+                        }
+                        is StreamEvent.ResponseMetadata -> {
+                            stepResponse = LanguageModelResponseMetadata(
+                                id = event.id,
+                                timestampMillis = event.timestampMillis,
+                                modelId = event.modelId,
+                                headers = event.headers,
+                                body = event.body,
+                            )
+                            emit(event)
                         }
                         is StreamEvent.Error -> {
                             emit(event)
@@ -747,6 +788,11 @@ public open class ToolLoopAgent<TContext, TOutput>(
                 toolApprovalRequests = stepApprovalRequests.toList(),
                 finishReason = effectiveFinishReason,
                 usage = stepUsage,
+                warnings = stepWarnings,
+                request = LanguageModelRequestMetadata(),
+                response = stepResponse,
+                providerMetadata = stepProviderMetadata,
+                rawFinishReason = stepRawFinishReason,
             )
             completedSteps.add(step)
             stepsCapture?.steps?.add(step)

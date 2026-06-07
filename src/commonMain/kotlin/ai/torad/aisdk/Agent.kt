@@ -100,7 +100,10 @@ public data class GenerateResult<TOutput>(
     val text: String,
     val steps: List<StepResult>,
     val finishReason: FinishReason,
+    /** Token usage of the FINAL step (matching upstream's `usage`); for the sum see [totalUsage]. */
     val usage: Usage,
+    /** Combined token usage across every step of this call (matching upstream's `totalUsage`). */
+    val totalUsage: Usage = usage,
     /** Tool calls awaiting host decision. Empty when generation finished naturally. */
     val pendingApprovals: List<PendingApproval> = emptyList(),
     /** Full message log including all assistant + tool messages from this call. */

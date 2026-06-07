@@ -3579,7 +3579,7 @@ final class <#A: kotlin/Any?> ai.torad.aisdk/GenerateObjectResult { // ai.torad.
 }
 
 final class <#A: kotlin/Any?> ai.torad.aisdk/GenerateResult { // ai.torad.aisdk/GenerateResult|null[0]
-    constructor <init>(#A, kotlin/String, kotlin.collections/List<ai.torad.aisdk/StepResult>, ai.torad.aisdk/FinishReason, ai.torad.aisdk/Usage, kotlin.collections/List<ai.torad.aisdk/PendingApproval> = ..., kotlin.collections/List<ai.torad.aisdk/ModelMessage> = ...) // ai.torad.aisdk/GenerateResult.<init>|<init>(1:0;kotlin.String;kotlin.collections.List<ai.torad.aisdk.StepResult>;ai.torad.aisdk.FinishReason;ai.torad.aisdk.Usage;kotlin.collections.List<ai.torad.aisdk.PendingApproval>;kotlin.collections.List<ai.torad.aisdk.ModelMessage>){}[0]
+    constructor <init>(#A, kotlin/String, kotlin.collections/List<ai.torad.aisdk/StepResult>, ai.torad.aisdk/FinishReason, ai.torad.aisdk/Usage, ai.torad.aisdk/Usage = ..., kotlin.collections/List<ai.torad.aisdk/PendingApproval> = ..., kotlin.collections/List<ai.torad.aisdk/ModelMessage> = ...) // ai.torad.aisdk/GenerateResult.<init>|<init>(1:0;kotlin.String;kotlin.collections.List<ai.torad.aisdk.StepResult>;ai.torad.aisdk.FinishReason;ai.torad.aisdk.Usage;ai.torad.aisdk.Usage;kotlin.collections.List<ai.torad.aisdk.PendingApproval>;kotlin.collections.List<ai.torad.aisdk.ModelMessage>){}[0]
 
     final val finishReason // ai.torad.aisdk/GenerateResult.finishReason|{}finishReason[0]
         final fun <get-finishReason>(): ai.torad.aisdk/FinishReason // ai.torad.aisdk/GenerateResult.finishReason.<get-finishReason>|<get-finishReason>(){}[0]
@@ -3593,6 +3593,8 @@ final class <#A: kotlin/Any?> ai.torad.aisdk/GenerateResult { // ai.torad.aisdk/
         final fun <get-steps>(): kotlin.collections/List<ai.torad.aisdk/StepResult> // ai.torad.aisdk/GenerateResult.steps.<get-steps>|<get-steps>(){}[0]
     final val text // ai.torad.aisdk/GenerateResult.text|{}text[0]
         final fun <get-text>(): kotlin/String // ai.torad.aisdk/GenerateResult.text.<get-text>|<get-text>(){}[0]
+    final val totalUsage // ai.torad.aisdk/GenerateResult.totalUsage|{}totalUsage[0]
+        final fun <get-totalUsage>(): ai.torad.aisdk/Usage // ai.torad.aisdk/GenerateResult.totalUsage.<get-totalUsage>|<get-totalUsage>(){}[0]
     final val usage // ai.torad.aisdk/GenerateResult.usage|{}usage[0]
         final fun <get-usage>(): ai.torad.aisdk/Usage // ai.torad.aisdk/GenerateResult.usage.<get-usage>|<get-usage>(){}[0]
 
@@ -3601,9 +3603,10 @@ final class <#A: kotlin/Any?> ai.torad.aisdk/GenerateResult { // ai.torad.aisdk/
     final fun component3(): kotlin.collections/List<ai.torad.aisdk/StepResult> // ai.torad.aisdk/GenerateResult.component3|component3(){}[0]
     final fun component4(): ai.torad.aisdk/FinishReason // ai.torad.aisdk/GenerateResult.component4|component4(){}[0]
     final fun component5(): ai.torad.aisdk/Usage // ai.torad.aisdk/GenerateResult.component5|component5(){}[0]
-    final fun component6(): kotlin.collections/List<ai.torad.aisdk/PendingApproval> // ai.torad.aisdk/GenerateResult.component6|component6(){}[0]
-    final fun component7(): kotlin.collections/List<ai.torad.aisdk/ModelMessage> // ai.torad.aisdk/GenerateResult.component7|component7(){}[0]
-    final fun copy(#A = ..., kotlin/String = ..., kotlin.collections/List<ai.torad.aisdk/StepResult> = ..., ai.torad.aisdk/FinishReason = ..., ai.torad.aisdk/Usage = ..., kotlin.collections/List<ai.torad.aisdk/PendingApproval> = ..., kotlin.collections/List<ai.torad.aisdk/ModelMessage> = ...): ai.torad.aisdk/GenerateResult<#A> // ai.torad.aisdk/GenerateResult.copy|copy(1:0;kotlin.String;kotlin.collections.List<ai.torad.aisdk.StepResult>;ai.torad.aisdk.FinishReason;ai.torad.aisdk.Usage;kotlin.collections.List<ai.torad.aisdk.PendingApproval>;kotlin.collections.List<ai.torad.aisdk.ModelMessage>){}[0]
+    final fun component6(): ai.torad.aisdk/Usage // ai.torad.aisdk/GenerateResult.component6|component6(){}[0]
+    final fun component7(): kotlin.collections/List<ai.torad.aisdk/PendingApproval> // ai.torad.aisdk/GenerateResult.component7|component7(){}[0]
+    final fun component8(): kotlin.collections/List<ai.torad.aisdk/ModelMessage> // ai.torad.aisdk/GenerateResult.component8|component8(){}[0]
+    final fun copy(#A = ..., kotlin/String = ..., kotlin.collections/List<ai.torad.aisdk/StepResult> = ..., ai.torad.aisdk/FinishReason = ..., ai.torad.aisdk/Usage = ..., ai.torad.aisdk/Usage = ..., kotlin.collections/List<ai.torad.aisdk/PendingApproval> = ..., kotlin.collections/List<ai.torad.aisdk/ModelMessage> = ...): ai.torad.aisdk/GenerateResult<#A> // ai.torad.aisdk/GenerateResult.copy|copy(1:0;kotlin.String;kotlin.collections.List<ai.torad.aisdk.StepResult>;ai.torad.aisdk.FinishReason;ai.torad.aisdk.Usage;ai.torad.aisdk.Usage;kotlin.collections.List<ai.torad.aisdk.PendingApproval>;kotlin.collections.List<ai.torad.aisdk.ModelMessage>){}[0]
     final fun equals(kotlin/Any?): kotlin/Boolean // ai.torad.aisdk/GenerateResult.equals|equals(kotlin.Any?){}[0]
     final fun hashCode(): kotlin/Int // ai.torad.aisdk/GenerateResult.hashCode|hashCode(){}[0]
     final fun toString(): kotlin/String // ai.torad.aisdk/GenerateResult.toString|toString(){}[0]
