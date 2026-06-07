@@ -302,6 +302,11 @@ private class OpenAICompatibleChatLanguageModel(
                     put("stream_options", buildJsonObject { put("include_usage", JsonPrimitive(true)) })
                 }
             }
+            // Canonical OpenAI options are reserved (so putProviderOptions skips their
+            // camelCase forms), but must still be emitted under their snake_case wire keys.
+            options["user"]?.takeIf { it !is JsonNull }?.let { put("user", it) }
+            options["reasoningEffort"]?.takeIf { it !is JsonNull }?.let { put("reasoning_effort", it) }
+            options["textVerbosity"]?.takeIf { it !is JsonNull }?.let { put("verbosity", it) }
             putProviderOptions(options, openAIChatReservedOptions)
         }
         return PreparedOpenAIRequest(settings.transformChatRequestBody?.invoke(body) ?: body, warnings)

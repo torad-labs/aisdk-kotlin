@@ -95,6 +95,8 @@ class OpenAICompatibleProviderTest {
                 "openai" to JsonObject(
                     mapOf(
                         "user" to JsonPrimitive("user_1"),
+                        "reasoningEffort" to JsonPrimitive("high"),
+                        "textVerbosity" to JsonPrimitive("low"),
                         "parallel_tool_calls" to JsonPrimitive(false),
                     ),
                 ),
@@ -108,6 +110,10 @@ class OpenAICompatibleProviderTest {
         assertEquals("hi", body["messages"]?.jsonArray?.single()?.jsonObject?.get("content")?.jsonPrimitive?.content)
         assertEquals("json_schema", body["response_format"]?.jsonObject?.get("type")?.jsonPrimitive?.content)
         assertEquals(false, body["parallel_tool_calls"]?.jsonPrimitive?.booleanOrNull)
+        // Canonical options must reach the wire under their snake_case keys.
+        assertEquals("user_1", body["user"]?.jsonPrimitive?.content)
+        assertEquals("high", body["reasoning_effort"]?.jsonPrimitive?.content)
+        assertEquals("low", body["verbosity"]?.jsonPrimitive?.content)
         assertEquals("hello", result.text)
         assertEquals("because", result.reasoningText)
         assertEquals(FinishReason.ToolCalls, result.finishReason)
