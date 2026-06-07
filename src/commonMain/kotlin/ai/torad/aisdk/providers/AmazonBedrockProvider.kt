@@ -91,6 +91,9 @@ public interface AmazonBedrockProvider : Provider {
     override fun rerankingModel(modelId: String): RerankingModel = reranking(modelId)
 }
 
+/** Default Bedrock output budget added to the thinking budget when maxOutputTokens is unset. */
+private const val DEFAULT_BEDROCK_MAX_TOKENS: Int = 4096
+
 public fun createAmazonBedrock(
     client: HttpClient,
     settings: AmazonBedrockProviderSettings = AmazonBedrockProviderSettings(),
@@ -482,11 +485,30 @@ private fun bedrockChatRequestBody(
     params.presencePenalty?.let { warnings += CallWarning("unsupported", "presencePenalty") }
     params.seed?.let { warnings += CallWarning("unsupported", "seed") }
     val options = params.providerOptions["bedrock"] as? JsonObject ?: JsonObject(emptyMap())
+    // Anthropic thinking changes inferenceConfig: the thinking budget is added to maxTokens
+    // (Bedrock counts it against the output budget) and Bedrock rejects temperature/topP/topK
+    // for thinking-enabled Anthropic calls, so they're stripped (matching upstream).
+    val reasoningConfig = options["reasoningConfig"] as? JsonObject
+    val isAnthropicThinking = modelId.contains("anthropic") &&
+        reasoningConfig?.get("type")?.jsonPrimitive?.contentOrNull in setOf("enabled", "adaptive")
+    val thinkingBudget = reasoningConfig?.get("budgetTokens")?.jsonPrimitive?.intOrNull
+    val hasSamplingParams = params.temperature != null || params.topP != null || params.topK != null
+    if (isAnthropicThinking && hasSamplingParams) {
+        warnings += CallWarning("unsupported", "temperature/topP/topK are not supported with Anthropic thinking")
+    }
     val inferenceConfig = buildJsonObject {
-        params.maxOutputTokens?.let { put("maxTokens", JsonPrimitive(it)) }
-        params.temperature?.coerceIn(0f, 1f)?.let { put("temperature", JsonPrimitive(it)) }
-        params.topP?.let { put("topP", JsonPrimitive(it)) }
-        params.topK?.let { put("topK", JsonPrimitive(it)) }
+        val baseMaxTokens = params.maxOutputTokens
+        val resolvedMaxTokens = when {
+            !isAnthropicThinking || thinkingBudget == null -> baseMaxTokens
+            baseMaxTokens != null -> baseMaxTokens + thinkingBudget
+            else -> thinkingBudget + DEFAULT_BEDROCK_MAX_TOKENS
+        }
+        resolvedMaxTokens?.let { put("maxTokens", JsonPrimitive(it)) }
+        if (!isAnthropicThinking) {
+            params.temperature?.coerceIn(0f, 1f)?.let { put("temperature", JsonPrimitive(it)) }
+            params.topP?.let { put("topP", JsonPrimitive(it)) }
+            params.topK?.let { put("topK", JsonPrimitive(it)) }
+        }
         if (params.stopSequences.isNotEmpty()) put("stopSequences", JsonArray(params.stopSequences.map(::JsonPrimitive)))
     }
     val converted = bedrockMessages(params.messages)
@@ -622,13 +644,15 @@ private fun bedrockAssistantPart(part: ContentPart): JsonElement? = when (part) 
 }
 
 private fun bedrockToolResultPart(part: ContentPart): JsonElement? = when (part) {
+    // Bedrock's toolResult has NO `status` field, and content blocks may only be
+    // text/image/document — never `{json}` (a non-string output is JSON-stringified into a
+    // text block, matching upstream).
     is ContentPart.ToolResult -> buildJsonObject {
         put(
             "toolResult",
             buildJsonObject {
                 put("toolUseId", JsonPrimitive(part.toolCallId))
                 put("content", JsonArray(listOf(bedrockToolResultContent(part.modelVisible))))
-                if (part.isError) put("status", JsonPrimitive("error"))
             },
         )
     }
@@ -637,17 +661,18 @@ private fun bedrockToolResultPart(part: ContentPart): JsonElement? = when (part)
             "toolResult",
             buildJsonObject {
                 put("toolUseId", JsonPrimitive(part.toolCallId))
-                put("content", JsonArray(listOf(buildJsonObject { put("text", JsonPrimitive(part.reason ?: "Tool execution ${if (part.approved) "approved" else "denied"}.")) })))
-                if (!part.approved) put("status", JsonPrimitive("error"))
+                val text = part.reason ?: "Tool execution ${if (part.approved) "approved" else "denied"}."
+                put("content", JsonArray(listOf(buildJsonObject { put("text", JsonPrimitive(text)) })))
             },
         )
     }
     else -> null
 }
 
-private fun bedrockToolResultContent(output: JsonElement): JsonObject = when (output) {
-    is JsonPrimitive -> buildJsonObject { put("text", JsonPrimitive(output.contentOrNull ?: output.toString())) }
-    else -> buildJsonObject { put("json", output) }
+private fun bedrockToolResultContent(output: JsonElement): JsonObject = when {
+    output is JsonPrimitive && output.isString -> buildJsonObject { put("text", JsonPrimitive(output.content)) }
+    // Any non-string output becomes a JSON-stringified text block (Bedrock rejects a `json` block).
+    else -> buildJsonObject { put("text", JsonPrimitive(output.toString())) }
 }
 
 private data class BedrockPreparedTools(
