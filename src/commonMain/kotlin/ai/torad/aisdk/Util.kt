@@ -645,3 +645,42 @@ internal fun urlEncode(value: String): String =
             }
         }
     }
+
+/**
+ * Recursively merge two JSON objects: keys present in both whose values are both
+ * objects are merged depth-first; otherwise the override value wins. Used to merge
+ * default provider options with per-call ones without clobbering sibling keys.
+ */
+internal fun deepMergeJsonObjects(base: JsonObject, override: JsonObject): JsonObject {
+    val merged = base.toMutableMap()
+    for ((key, value) in override) {
+        val existing = merged[key]
+        merged[key] = if (existing is JsonObject && value is JsonObject) {
+            deepMergeJsonObjects(existing, value)
+        } else {
+            value
+        }
+    }
+    return JsonObject(merged)
+}
+
+/**
+ * Merge per-provider option maps: where the same provider key holds an object in
+ * both, the inner objects are deep-merged (so default and per-call options for one
+ * provider don't clobber each other); otherwise the [overrides] value wins.
+ */
+internal fun mergeProviderOptions(
+    defaults: Map<String, JsonElement>,
+    overrides: Map<String, JsonElement>,
+): Map<String, JsonElement> {
+    val merged = defaults.toMutableMap()
+    for ((key, value) in overrides) {
+        val existing = merged[key]
+        merged[key] = if (existing is JsonObject && value is JsonObject) {
+            deepMergeJsonObjects(existing, value)
+        } else {
+            value
+        }
+    }
+    return merged
+}

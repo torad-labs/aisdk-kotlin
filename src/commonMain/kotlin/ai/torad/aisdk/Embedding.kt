@@ -202,7 +202,7 @@ public fun defaultEmbeddingSettingsMiddleware(
             context.params.copy(
                 maxEmbeddingsPerCall = context.params.maxEmbeddingsPerCall ?: maxEmbeddingsPerCall,
                 truncate = context.params.truncate ?: truncate,
-                providerOptions = providerOptions + context.params.providerOptions,
+                providerOptions = mergeProviderOptions(providerOptions, context.params.providerOptions),
                 headers = headers + context.params.headers,
             ),
         )
