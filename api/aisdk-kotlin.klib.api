@@ -1400,10 +1400,12 @@ sealed interface ai.torad.aisdk.ui/UIMessagePart { // ai.torad.aisdk.ui/UIMessag
     }
 
     final class File : ai.torad.aisdk.ui/UIMessagePart { // ai.torad.aisdk.ui/UIMessagePart.File|null[0]
-        constructor <init>(kotlin/String, kotlin/String, kotlin.collections/Map<kotlin/String, kotlinx.serialization.json/JsonElement>? = ...) // ai.torad.aisdk.ui/UIMessagePart.File.<init>|<init>(kotlin.String;kotlin.String;kotlin.collections.Map<kotlin.String,kotlinx.serialization.json.JsonElement>?){}[0]
+        constructor <init>(kotlin/String, kotlin/String, kotlin/String? = ..., kotlin.collections/Map<kotlin/String, kotlinx.serialization.json/JsonElement>? = ...) // ai.torad.aisdk.ui/UIMessagePart.File.<init>|<init>(kotlin.String;kotlin.String;kotlin.String?;kotlin.collections.Map<kotlin.String,kotlinx.serialization.json.JsonElement>?){}[0]
 
         final val base64 // ai.torad.aisdk.ui/UIMessagePart.File.base64|{}base64[0]
             final fun <get-base64>(): kotlin/String // ai.torad.aisdk.ui/UIMessagePart.File.base64.<get-base64>|<get-base64>(){}[0]
+        final val filename // ai.torad.aisdk.ui/UIMessagePart.File.filename|{}filename[0]
+            final fun <get-filename>(): kotlin/String? // ai.torad.aisdk.ui/UIMessagePart.File.filename.<get-filename>|<get-filename>(){}[0]
         final val mediaType // ai.torad.aisdk.ui/UIMessagePart.File.mediaType|{}mediaType[0]
             final fun <get-mediaType>(): kotlin/String // ai.torad.aisdk.ui/UIMessagePart.File.mediaType.<get-mediaType>|<get-mediaType>(){}[0]
         final val providerMetadata // ai.torad.aisdk.ui/UIMessagePart.File.providerMetadata|{}providerMetadata[0]
@@ -1411,8 +1413,9 @@ sealed interface ai.torad.aisdk.ui/UIMessagePart { // ai.torad.aisdk.ui/UIMessag
 
         final fun component1(): kotlin/String // ai.torad.aisdk.ui/UIMessagePart.File.component1|component1(){}[0]
         final fun component2(): kotlin/String // ai.torad.aisdk.ui/UIMessagePart.File.component2|component2(){}[0]
-        final fun component3(): kotlin.collections/Map<kotlin/String, kotlinx.serialization.json/JsonElement>? // ai.torad.aisdk.ui/UIMessagePart.File.component3|component3(){}[0]
-        final fun copy(kotlin/String = ..., kotlin/String = ..., kotlin.collections/Map<kotlin/String, kotlinx.serialization.json/JsonElement>? = ...): ai.torad.aisdk.ui/UIMessagePart.File // ai.torad.aisdk.ui/UIMessagePart.File.copy|copy(kotlin.String;kotlin.String;kotlin.collections.Map<kotlin.String,kotlinx.serialization.json.JsonElement>?){}[0]
+        final fun component3(): kotlin/String? // ai.torad.aisdk.ui/UIMessagePart.File.component3|component3(){}[0]
+        final fun component4(): kotlin.collections/Map<kotlin/String, kotlinx.serialization.json/JsonElement>? // ai.torad.aisdk.ui/UIMessagePart.File.component4|component4(){}[0]
+        final fun copy(kotlin/String = ..., kotlin/String = ..., kotlin/String? = ..., kotlin.collections/Map<kotlin/String, kotlinx.serialization.json/JsonElement>? = ...): ai.torad.aisdk.ui/UIMessagePart.File // ai.torad.aisdk.ui/UIMessagePart.File.copy|copy(kotlin.String;kotlin.String;kotlin.String?;kotlin.collections.Map<kotlin.String,kotlinx.serialization.json.JsonElement>?){}[0]
         final fun equals(kotlin/Any?): kotlin/Boolean // ai.torad.aisdk.ui/UIMessagePart.File.equals|equals(kotlin.Any?){}[0]
         final fun hashCode(): kotlin/Int // ai.torad.aisdk.ui/UIMessagePart.File.hashCode|hashCode(){}[0]
         final fun toString(): kotlin/String // ai.torad.aisdk.ui/UIMessagePart.File.toString|toString(){}[0]

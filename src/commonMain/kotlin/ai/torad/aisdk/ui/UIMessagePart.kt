@@ -133,6 +133,8 @@ public sealed interface UIMessagePart {
     public data class File(
         val mediaType: String,
         val base64: String,
+        /** Optional display name (v6's `filename`), carried through to the model. */
+        val filename: String? = null,
         val providerMetadata: Map<String, JsonElement>? = null,
     ) : UIMessagePart
 

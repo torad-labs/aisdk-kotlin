@@ -64,25 +64,46 @@ public fun convertToModelMessages(
             UIMessageRole.User -> MessageRole.User
             UIMessageRole.Assistant -> MessageRole.Assistant
         }
-        val parts = mutableListOf<ContentPart>()
-        val deferredToolResults = mutableListOf<ContentPart.ToolResult>()
-        for (part in uiMsg.parts) {
-            convertPart(
-                part = part,
-                ignoreIncompleteToolCalls = ignoreIncompleteToolCalls,
-                onContentPart = parts::add,
-                onDeferredToolResult = deferredToolResults::add,
-                contextHint = "UIMessage(id=${uiMsg.id})",
-            )
-        }
-        if (parts.isNotEmpty()) {
-            result.add(ModelMessage(role = role, content = parts.toList()))
-        }
-        for (toolResult in deferredToolResults) {
-            result.add(ModelMessage(role = MessageRole.Tool, content = listOf(toolResult)))
+        // An assistant turn spanning multiple steps (tool round-trips) replays as
+        // an interleaved assistant/tool/assistant sequence — one message group per
+        // step-start boundary — rather than a single merged message (upstream parity).
+        val groups = if (role == MessageRole.Assistant) splitAtStepBoundaries(uiMsg.parts) else listOf(uiMsg.parts)
+        for (group in groups) {
+            val parts = mutableListOf<ContentPart>()
+            val deferredToolResults = mutableListOf<ContentPart.ToolResult>()
+            for (part in group) {
+                convertPart(
+                    part = part,
+                    ignoreIncompleteToolCalls = ignoreIncompleteToolCalls,
+                    onContentPart = parts::add,
+                    onDeferredToolResult = deferredToolResults::add,
+                    contextHint = "UIMessage(id=${uiMsg.id})",
+                )
+            }
+            if (parts.isNotEmpty()) {
+                result.add(ModelMessage(role = role, content = parts.toList()))
+            }
+            for (toolResult in deferredToolResults) {
+                result.add(ModelMessage(role = MessageRole.Tool, content = listOf(toolResult)))
+            }
         }
     }
     return result
+}
+
+/** Partition parts into step groups at each [UIMessagePart.StepStart] boundary. */
+private fun splitAtStepBoundaries(parts: List<UIMessagePart>): List<List<UIMessagePart>> {
+    val groups = mutableListOf<List<UIMessagePart>>()
+    var current = mutableListOf<UIMessagePart>()
+    for (part in parts) {
+        if (part is UIMessagePart.StepStart && current.isNotEmpty()) {
+            groups.add(current)
+            current = mutableListOf()
+        }
+        current.add(part)
+    }
+    if (current.isNotEmpty()) groups.add(current)
+    return groups.ifEmpty { listOf(emptyList()) }
 }
 
 private fun approvalResponseMessage(uiMsg: UIMessage): ModelMessage? {
@@ -128,8 +149,9 @@ private fun convertPart(
     contextHint: String,
 ) {
     when (part) {
-        is UIMessagePart.Text -> onContentPart(ContentPart.Text(part.text))
-        is UIMessagePart.Reasoning -> onContentPart(ContentPart.Reasoning(part.text))
+        is UIMessagePart.Text -> onContentPart(ContentPart.Text(part.text, providerMetadata = part.providerMetadata))
+        is UIMessagePart.Reasoning ->
+            onContentPart(ContentPart.Reasoning(part.text, providerMetadata = part.providerMetadata))
         is UIMessagePart.ToolUI -> convertToolCall(
             toolCallId = part.toolCallId,
             toolName = part.toolName,
@@ -160,6 +182,7 @@ private fun convertPart(
             ContentPart.File(
                 mediaType = part.mediaType,
                 base64 = part.base64,
+                filename = part.filename,
                 providerMetadata = part.providerMetadata,
             ),
         )

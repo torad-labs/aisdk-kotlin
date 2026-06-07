@@ -458,30 +458,18 @@ private fun anthropicUserPart(part: ContentPart, betas: MutableSet<String>): Jso
     }
     is ContentPart.Image -> buildJsonObject {
         put("type", JsonPrimitive("image"))
-        put("source", buildJsonObject {
-            put("type", JsonPrimitive("base64"))
-            put("media_type", JsonPrimitive(if (part.mediaType == "image/*") "image/jpeg" else part.mediaType))
-            put("data", JsonPrimitive(part.base64))
-        })
+        put("source", anthropicMediaSource(part.url, part.mediaType, part.base64))
     }
     is ContentPart.File -> when {
         part.mediaType.startsWith("image/") -> buildJsonObject {
             put("type", JsonPrimitive("image"))
-            put("source", buildJsonObject {
-                put("type", JsonPrimitive("base64"))
-                put("media_type", JsonPrimitive(if (part.mediaType == "image/*") "image/jpeg" else part.mediaType))
-                put("data", JsonPrimitive(part.base64))
-            })
+            put("source", anthropicMediaSource(part.url, part.mediaType, part.base64))
         }
         part.mediaType == "application/pdf" -> {
             betas += "pdfs-2024-09-25"
             buildJsonObject {
                 put("type", JsonPrimitive("document"))
-                put("source", buildJsonObject {
-                    put("type", JsonPrimitive("base64"))
-                    put("media_type", JsonPrimitive("application/pdf"))
-                    put("data", JsonPrimitive(part.base64))
-                })
+                put("source", anthropicMediaSource(part.url, "application/pdf", part.base64))
                 part.filename?.let { put("title", JsonPrimitive(it)) }
                 anthropicFileOptions(part.providerMetadata)?.let { putJsonObjectFields(it) }
             }
@@ -499,6 +487,22 @@ private fun anthropicUserPart(part: ContentPart, betas: MutableSet<String>): Jso
         else -> throw AiSdkException("Unsupported Anthropic file media type: ${part.mediaType}")
     }
     else -> null
+}
+
+/**
+ * Anthropic media source: a remote [url] is sent as a `url` source (Anthropic
+ * fetches it); otherwise the inline [base64] bytes are sent. Closes the gap where
+ * a ContentPart carrying only a `url` was previously serialized with empty data.
+ */
+private fun anthropicMediaSource(url: String?, mediaType: String, base64: String): JsonObject = buildJsonObject {
+    if (url != null) {
+        put("type", JsonPrimitive("url"))
+        put("url", JsonPrimitive(url))
+    } else {
+        put("type", JsonPrimitive("base64"))
+        put("media_type", JsonPrimitive(if (mediaType == "image/*") "image/jpeg" else mediaType))
+        put("data", JsonPrimitive(base64))
+    }
 }
 
 private fun anthropicAssistantPart(part: ContentPart, sendReasoning: Boolean): JsonElement? = when (part) {

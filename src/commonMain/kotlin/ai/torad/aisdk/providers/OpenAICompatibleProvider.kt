@@ -937,12 +937,14 @@ private fun openAIUserContentPartJson(part: ContentPart): JsonObject? = when (pa
     }
     is ContentPart.Image -> buildJsonObject {
         put("type", JsonPrimitive("image_url"))
-        put("image_url", buildJsonObject { put("url", JsonPrimitive("data:${part.mediaType};base64,${part.base64}")) })
+        val src = openAiImageUrl(part.url, part.mediaType, part.base64)
+        put("image_url", buildJsonObject { put("url", JsonPrimitive(src)) })
     }
     is ContentPart.File -> when {
         part.mediaType.startsWith("image/") -> buildJsonObject {
             put("type", JsonPrimitive("image_url"))
-            put("image_url", buildJsonObject { put("url", JsonPrimitive("data:${part.mediaType};base64,${part.base64}")) })
+            val src = openAiImageUrl(part.url, part.mediaType, part.base64)
+            put("image_url", buildJsonObject { put("url", JsonPrimitive(src)) })
         }
         part.mediaType.startsWith("audio/") -> buildJsonObject {
             put("type", JsonPrimitive("input_audio"))
@@ -972,6 +974,14 @@ private fun openAIUserContentPartJson(part: ContentPart): JsonObject? = when (pa
     }
     else -> null
 }
+
+/**
+ * The `image_url.url` value: a remote [url] is passed through directly (OpenAI
+ * fetches it); otherwise the inline [base64] is wrapped as a data URL. Closes the
+ * gap where a ContentPart carrying only a `url` produced `data:...;base64,` (empty).
+ */
+private fun openAiImageUrl(url: String?, mediaType: String, base64: String): String =
+    url ?: "data:$mediaType;base64,$base64"
 
 private fun openAIToolJson(tool: LanguageModelTool): JsonObject = buildJsonObject {
     put("type", JsonPrimitive("function"))
