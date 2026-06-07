@@ -1,5 +1,6 @@
 package ai.torad.aisdk.ui
 
+import ai.torad.aisdk.FinishReason
 import ai.torad.aisdk.StreamEvent
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.mapNotNull
@@ -91,9 +92,19 @@ private fun StreamEvent.toUIMessageChunk(): JsonObject? = when (this) {
         reason?.let { put("errorText", it) }
     }
     is StreamEvent.StepFinish -> jsonChunk("finish-step")
-    is StreamEvent.Finish -> jsonChunk("finish")
+    is StreamEvent.Finish -> jsonChunk("finish") { put("finishReason", finishReason.toWireValue()) }
     is StreamEvent.Error -> jsonChunk("error") { put("errorText", message) }
     is StreamEvent.Abort -> jsonChunk("abort")
     // No wire counterpart.
     is StreamEvent.ResponseMetadata, is StreamEvent.ToolInputEnd, is StreamEvent.Raw -> null
+}
+
+/** Maps our [FinishReason] to the v6 wire string a `useChat` client expects. */
+private fun FinishReason.toWireValue(): String = when (this) {
+    FinishReason.Stop -> "stop"
+    FinishReason.Length -> "length"
+    FinishReason.ToolCalls, FinishReason.ToolApprovalRequested -> "tool-calls"
+    FinishReason.ContentFilter -> "content-filter"
+    FinishReason.Error -> "error"
+    FinishReason.Other -> "other"
 }

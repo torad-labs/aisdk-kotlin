@@ -29,6 +29,14 @@ class ToUIMessageStreamTest {
         val delta = chunks[2]
         assertEquals("t1", delta["id"]?.jsonPrimitive?.content)
         assertEquals("hi", delta["delta"]?.jsonPrimitive?.content)
+        // finish chunk carries the wire finishReason (was dropped).
+        assertEquals("stop", chunks.last()["finishReason"]?.jsonPrimitive?.content)
+    }
+
+    @Test
+    fun `finish chunk maps tool-calls finishReason to its wire value`() = runTest {
+        val chunk = toUIMessageStream(flowOf(StreamEvent.Finish(1, FinishReason.ToolCalls, Usage()))).toList().single()
+        assertEquals("tool-calls", chunk["finishReason"]?.jsonPrimitive?.content)
     }
 
     @Test

@@ -63,11 +63,14 @@ private suspend fun resolveUrl(
 ): ResolvedAsset? {
     if (url == null) return null
     return when {
-        // data: URLs are decoded directly.
-        url.startsWith("data:") -> {
+        // base64 data: URLs are decoded directly. Non-base64 data URLs
+        // (e.g. data:text/plain,Hello) aren't representable as our base64 part, so
+        // they're left untouched for the provider rather than crashing splitDataUrl.
+        url.startsWith("data:") && ";base64," in url -> {
             val data = splitDataUrl(url)
             ResolvedAsset(data.base64, mediaType.ifEmpty { data.mediaType })
         }
+        url.startsWith("data:") -> null
         // Provider accepts the URL, or no downloader supplied — leave the part as-is.
         isUrlSupported(url, mediaType, supportedUrls) || download == null -> null
         // Otherwise fetch and inline.
@@ -99,23 +102,40 @@ private fun mediaTypeMatches(pattern: String, mediaType: String): Boolean = when
  * Every assistant tool call must be answered by a tool result before the next
  * user/system turn or the end of the prompt; otherwise providers reject it.
  */
+/**
+ * Tool calls exempt from needing a tool result: those awaiting approval (an
+ * approval request exists) or already approved (a response exists, correlated by
+ * approvalId or directly by toolCallId) — they are answered after approval, not by
+ * a tool result. Mirrors upstream's approvalId→toolCallId correlation.
+ */
+private fun approvalExemptCallIds(messages: List<ModelMessage>): Set<String> {
+    val approvalIdToToolCallId = mutableMapOf<String, String>()
+    val exempt = mutableSetOf<String>()
+    val parts = messages.flatMap { it.content }
+    parts.filterIsInstance<ContentPart.ToolApprovalRequest>().forEach {
+        it.approvalId?.let { id -> approvalIdToToolCallId[id] = it.toolCallId }
+        exempt += it.toolCallId
+    }
+    parts.filterIsInstance<ContentPart.ToolApprovalResponse>().forEach {
+        exempt += it.toolCallId
+        it.approvalId?.let { id -> approvalIdToToolCallId[id]?.let { call -> exempt += call } }
+    }
+    return exempt
+}
+
 private fun validateNoDanglingToolCalls(messages: List<ModelMessage>) {
+    val exempt = approvalExemptCallIds(messages)
     val pending = linkedSetOf<String>()
     fun flush() {
         if (pending.isNotEmpty()) throw MissingToolResultsError(pending.toList())
     }
     for (message in messages) {
         when (message.role) {
-            MessageRole.Assistant -> {
-                // Provider-executed tools are answered server-side, and calls paired
-                // with an in-flight approval request are answered after approval —
-                // neither needs a client tool result, so they aren't "dangling".
-                val approvalPending = message.content
-                    .filterIsInstance<ContentPart.ToolApprovalRequest>().map { it.toolCallId }.toSet()
+            MessageRole.Assistant ->
+                // Provider-executed and approval-exempt calls are answered elsewhere.
                 message.content.filterIsInstance<ContentPart.ToolCall>()
-                    .filter { !it.providerExecuted && it.toolCallId !in approvalPending }
+                    .filter { !it.providerExecuted && it.toolCallId !in exempt }
                     .forEach { pending += it.toolCallId }
-            }
             MessageRole.Tool ->
                 message.content.filterIsInstance<ContentPart.ToolResult>().forEach { pending -= it.toolCallId }
             MessageRole.User, MessageRole.System -> flush() // a new turn must not leave calls unanswered

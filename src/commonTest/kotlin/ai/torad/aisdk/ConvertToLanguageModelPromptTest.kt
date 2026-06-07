@@ -83,4 +83,30 @@ class ConvertToLanguageModelPromptTest {
         // does not throw
         assertEquals(2, convertToLanguageModelPrompt(messages).size)
     }
+
+    @Test
+    fun `an approved tool call awaiting execution is not dangling`() = runTest {
+        // The approval-resume path: a tool call, then a tool-approval-response (no
+        // tool result yet), then the conversation continues — must NOT throw.
+        val messages = listOf(
+            ModelMessage(
+                MessageRole.Assistant,
+                listOf(ContentPart.ToolApprovalRequest("call_1", "t", JsonObject(emptyMap()), approvalId = "ap_1")),
+            ),
+            ModelMessage(
+                MessageRole.Tool,
+                listOf(ContentPart.ToolApprovalResponse("call_1", approved = true, approvalId = "ap_1")),
+            ),
+            ModelMessage(MessageRole.User, listOf(ContentPart.Text("ok go"))),
+        )
+        assertEquals(3, convertToLanguageModelPrompt(messages).size)
+    }
+
+    @Test
+    fun `a non-base64 data URL is left untouched rather than crashing`() = runTest {
+        val messages = listOf(imageMessage("data:text/plain,Hello", mediaType = "text/plain"))
+        // splitDataUrl would throw on this; the resolver must leave it for the provider.
+        val img = convertToLanguageModelPrompt(messages).single().content.single() as ContentPart.Image
+        assertEquals("data:text/plain,Hello", img.url, "non-base64 data URL preserved, not crashed")
+    }
 }
