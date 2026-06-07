@@ -32,10 +32,28 @@ public suspend fun convertToLanguageModelPrompt(
     download: DownloadFunction? = null,
 ): List<ModelMessage> {
     validateNoDanglingToolCalls(messages)
-    return messages.map { message ->
+    val resolved = messages.map { message ->
         val converted = message.content.map { part -> resolveAssetPart(part, supportedUrls, download) }
         if (converted == message.content) message else message.copy(content = converted)
     }
+    return combineConsecutiveToolMessages(resolved)
+}
+
+/**
+ * Merge adjacent `role: tool` messages into a single tool message (upstream
+ * parity) — providers that expect one combined tool turn reject a split one.
+ */
+private fun combineConsecutiveToolMessages(messages: List<ModelMessage>): List<ModelMessage> {
+    val result = mutableListOf<ModelMessage>()
+    for (message in messages) {
+        val last = result.lastOrNull()
+        if (message.role == MessageRole.Tool && last?.role == MessageRole.Tool) {
+            result[result.size - 1] = last.copy(content = last.content + message.content)
+        } else {
+            result += message
+        }
+    }
+    return result
 }
 
 private suspend fun resolveAssetPart(

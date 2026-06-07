@@ -610,9 +610,6 @@
     <ID>ArgumentListWrapping:OpenAICompatibleProvider.kt$("")</ID>
     <ID>ArgumentListWrapping:OpenAICompatibleProvider.kt$("content", JsonPrimitive(message.content.filterIsInstance&lt;ContentPart.Text>().joinToString("") { it.text }))</ID>
     <ID>ArgumentListWrapping:OpenAICompatibleProvider.kt$("content", if (toolCalls.isEmpty()) JsonPrimitive(text) else JsonPrimitive(text.takeIf { it.isNotEmpty() }))</ID>
-    <ID>ArgumentListWrapping:OpenAICompatibleProvider.kt$("data:${part.mediaType};base64,${part.base64}")</ID>
-    <ID>ArgumentListWrapping:OpenAICompatibleProvider.kt$("image_url", buildJsonObject { put("url", JsonPrimitive("data:${part.mediaType};base64,${part.base64}")) })</ID>
-    <ID>ArgumentListWrapping:OpenAICompatibleProvider.kt$("url", JsonPrimitive("data:${part.mediaType};base64,${part.base64}"))</ID>
     <ID>ArgumentListWrapping:OpenAICompatibleProvider.kt$(WireDecoder.requiredString(function, "arguments", provider, "chat completion response", "$.choices[0].message.tool_calls[$index].function"))</ID>
     <ID>ArgumentListWrapping:OpenAICompatibleProvider.kt$(call, provider, "chat completion response", "$.choices[0].message.tool_calls[$index]")</ID>
     <ID>ArgumentListWrapping:OpenAICompatibleProvider.kt$(callObj, "function", provider, "chat completion response", "$.choices[0].message.tool_calls[$index]")</ID>
@@ -981,7 +978,6 @@
     <ID>CyclomaticComplexMethod:AnthropicProvider.kt$private fun anthropicGenerateResult( response: JsonObject, requestBody: JsonElement, responseHeaders: Map&lt;String, String>, responseBody: JsonElement, warnings: List&lt;CallWarning>, settings: AnthropicProviderSettings, json: Json, ): LanguageModelResult</ID>
     <ID>CyclomaticComplexMethod:AnthropicProvider.kt$private fun anthropicPrepareTools( tools: List&lt;LanguageModelTool>, choice: ToolChoice, options: JsonObject, responseFormat: ResponseFormat, ): PreparedAnthropicTools</ID>
     <ID>CyclomaticComplexMethod:AnthropicProvider.kt$private fun anthropicRequestBody( settings: AnthropicProviderSettings, modelId: String, params: LanguageModelCallParams, stream: Boolean, ): PreparedAnthropicRequest</ID>
-    <ID>CyclomaticComplexMethod:AnthropicProvider.kt$private fun anthropicUserPart(part: ContentPart, betas: MutableSet&lt;String>): JsonElement?</ID>
     <ID>CyclomaticComplexMethod:CohereProvider.kt$private fun cohereChatRequest(modelId: String, params: LanguageModelCallParams): CohereChatRequest</ID>
     <ID>CyclomaticComplexMethod:DeepgramProvider.kt$private fun applyDeepgramSpeechOptions( options: JsonObject, queryParams: LinkedHashMap&lt;String, String>, warnings: MutableList&lt;CallWarning>, )</ID>
     <ID>CyclomaticComplexMethod:ElevenLabsProvider.kt$ElevenLabsSpeechModel$override suspend fun generate(params: SpeechGenerationParams): SpeechModelResult</ID>
@@ -1242,7 +1238,7 @@
     <ID>LongParameterList:OpenResponsesProvider.kt$( params: LanguageModelCallParams, stream: Boolean, providerOptionsName: String, modelId: String, json: Json, fileIdPrefixes: List&lt;String> = emptyList(), )</ID>
     <ID>LongParameterList:OpenResponsesProvider.kt$( response: JsonObject, requestBody: JsonElement, responseHeaders: Map&lt;String, String>, responseBody: JsonElement, warnings: List&lt;CallWarning>, json: Json, providerMetadataKey: String, )</ID>
     <ID>LongParameterList:ProdiaProvider.kt$( client: HttpClient, url: String, body: JsonObject, input: ProdiaInputFile?, accept: String, headers: Map&lt;String, String>, )</ID>
-    <ID>LongParameterList:Provider.kt$( providerId: String, languageModels: Map&lt;String, LanguageModel> = emptyMap(), embeddingModels: Map&lt;String, EmbeddingModel> = emptyMap(), imageModels: Map&lt;String, ImageModel> = emptyMap(), speechModels: Map&lt;String, SpeechModel> = emptyMap(), transcriptionModels: Map&lt;String, TranscriptionModel> = emptyMap(), rerankingModels: Map&lt;String, RerankingModel> = emptyMap(), videoModels: Map&lt;String, VideoModel> = emptyMap(), )</ID>
+    <ID>LongParameterList:Provider.kt$( providerId: String, languageModels: Map&lt;String, LanguageModel> = emptyMap(), embeddingModels: Map&lt;String, EmbeddingModel> = emptyMap(), imageModels: Map&lt;String, ImageModel> = emptyMap(), speechModels: Map&lt;String, SpeechModel> = emptyMap(), transcriptionModels: Map&lt;String, TranscriptionModel> = emptyMap(), rerankingModels: Map&lt;String, RerankingModel> = emptyMap(), videoModels: Map&lt;String, VideoModel> = emptyMap(), fallbackProvider: Provider? = null, )</ID>
     <ID>LongParameterList:Rerank.kt$( model: RerankingModel, query: String, documents: List&lt;String>, topN: Int? = null, providerOptions: Map&lt;String, JsonElement> = emptyMap(), headers: Map&lt;String, String> = emptyMap(), abortSignal: AbortSignal = AbortSignalNever, maxRetries: Int = 2, )</ID>
     <ID>LongParameterList:StreamObjectResult.kt$( model: LanguageModel, output: Output&lt;TOutput>, prompt: String? = null, messages: List&lt;ModelMessage> = emptyList(), system: String? = null, temperature: Float? = null, topP: Float? = null, topK: Int? = null, maxOutputTokens: Int? = null, stopSequences: List&lt;String> = emptyList(), seed: Int? = null, providerOptions: Map&lt;String, JsonElement> = emptyMap(), abortSignal: AbortSignal = AbortSignalNever, presencePenalty: Float? = null, frequencyPenalty: Float? = null, responseFormat: ResponseFormat = ResponseFormat.Text, repairText: ((String) -> String?)? = null, )</ID>
     <ID>LongParameterList:Tool.kt$( id: String, inputSerializer: KSerializer&lt;TInput>, inputSchema: Schema&lt;TInput>, defaultDescription: String, supportsDeferredResults: Boolean, options: ProviderToolFactoryOptions&lt;TInput, TOutput, TContext>, )</ID>
@@ -2059,7 +2055,6 @@
     <ID>MaxLineLength:OpenAICompatibleProvider.kt$input = parseOpenAIToolInput(WireDecoder.requiredString(function, "arguments", provider, "chat completion response", "$.choices[0].message.tool_calls[$index].function"))</ID>
     <ID>MaxLineLength:OpenAICompatibleProvider.kt$put("content", JsonPrimitive(message.content.filterIsInstance&lt;ContentPart.Text>().joinToString("") { it.text }))</ID>
     <ID>MaxLineLength:OpenAICompatibleProvider.kt$put("content", if (toolCalls.isEmpty()) JsonPrimitive(text) else JsonPrimitive(text.takeIf { it.isNotEmpty() }))</ID>
-    <ID>MaxLineLength:OpenAICompatibleProvider.kt$put("image_url", buildJsonObject { put("url", JsonPrimitive("data:${part.mediaType};base64,${part.base64}")) })</ID>
     <ID>MaxLineLength:OpenAICompatibleProvider.kt$toolName = WireDecoder.requiredString(function, "name", provider, "chat completion response", "$.choices[0].message.tool_calls[$index].function")</ID>
     <ID>MaxLineLength:OpenAICompatibleProvider.kt$val</ID>
     <ID>MaxLineLength:OpenAICompatibleProvider.kt$val callObj = WireDecoder.objectValue(call, provider, "chat completion response", "$.choices[0].message.tool_calls[$index]")</ID>
@@ -2895,8 +2890,6 @@
     <ID>Wrapping:AmazonBedrockProvider.kt$put("text", JsonPrimitive(part.reason ?: "Tool execution ${if (part.approved) "approved" else "denied"}."))</ID>
     <ID>Wrapping:AmazonBedrockProvider.kt$put("tool", buildJsonObject { put("name", JsonPrimitive(choice.toolName)) })</ID>
     <ID>Wrapping:AnthropicProvider.kt$(</ID>
-    <ID>Wrapping:AnthropicProvider.kt$("source", buildJsonObject { put("type", JsonPrimitive("base64")) put("media_type", JsonPrimitive("application/pdf")) put("data", JsonPrimitive(part.base64)) })</ID>
-    <ID>Wrapping:AnthropicProvider.kt$("source", buildJsonObject { put("type", JsonPrimitive("base64")) put("media_type", JsonPrimitive(if (part.mediaType == "image/*") "image/jpeg" else part.mediaType)) put("data", JsonPrimitive(part.base64)) })</ID>
     <ID>Wrapping:AnthropicProvider.kt$("source", buildJsonObject { put("type", JsonPrimitive("text")) put("media_type", JsonPrimitive("text/plain")) put("data", JsonPrimitive(convertBase64ToByteArray(part.base64).decodeToString())) })</ID>
     <ID>Wrapping:AnthropicProvider.kt$;</ID>
     <ID>Wrapping:AnthropicProvider.kt$AnthropicStreamState$(</ID>

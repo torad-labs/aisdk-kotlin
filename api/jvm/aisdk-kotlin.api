@@ -1002,11 +1002,11 @@ public final class ai/torad/aisdk/ConvertToLanguageModelPromptKt {
 }
 
 public final class ai/torad/aisdk/CustomProvider : ai/torad/aisdk/Provider {
-	public fun <init> (Ljava/lang/String;Ljava/util/Map;Ljava/util/Map;Ljava/util/Map;Ljava/util/Map;Ljava/util/Map;Ljava/util/Map;Ljava/util/Map;)V
-	public synthetic fun <init> (Ljava/lang/String;Ljava/util/Map;Ljava/util/Map;Ljava/util/Map;Ljava/util/Map;Ljava/util/Map;Ljava/util/Map;Ljava/util/Map;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun <init> (Ljava/lang/String;Ljava/util/Map;Ljava/util/Map;Ljava/util/Map;Ljava/util/Map;Ljava/util/Map;Ljava/util/Map;Ljava/util/Map;Lai/torad/aisdk/Provider;)V
+	public synthetic fun <init> (Ljava/lang/String;Ljava/util/Map;Ljava/util/Map;Ljava/util/Map;Ljava/util/Map;Ljava/util/Map;Ljava/util/Map;Ljava/util/Map;Lai/torad/aisdk/Provider;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun component1 ()Ljava/lang/String;
-	public final fun copy (Ljava/lang/String;Ljava/util/Map;Ljava/util/Map;Ljava/util/Map;Ljava/util/Map;Ljava/util/Map;Ljava/util/Map;Ljava/util/Map;)Lai/torad/aisdk/CustomProvider;
-	public static synthetic fun copy$default (Lai/torad/aisdk/CustomProvider;Ljava/lang/String;Ljava/util/Map;Ljava/util/Map;Ljava/util/Map;Ljava/util/Map;Ljava/util/Map;Ljava/util/Map;Ljava/util/Map;ILjava/lang/Object;)Lai/torad/aisdk/CustomProvider;
+	public final fun copy (Ljava/lang/String;Ljava/util/Map;Ljava/util/Map;Ljava/util/Map;Ljava/util/Map;Ljava/util/Map;Ljava/util/Map;Ljava/util/Map;Lai/torad/aisdk/Provider;)Lai/torad/aisdk/CustomProvider;
+	public static synthetic fun copy$default (Lai/torad/aisdk/CustomProvider;Ljava/lang/String;Ljava/util/Map;Ljava/util/Map;Ljava/util/Map;Ljava/util/Map;Ljava/util/Map;Ljava/util/Map;Ljava/util/Map;Lai/torad/aisdk/Provider;ILjava/lang/Object;)Lai/torad/aisdk/CustomProvider;
 	public fun embeddingModel (Ljava/lang/String;)Lai/torad/aisdk/EmbeddingModel;
 	public fun equals (Ljava/lang/Object;)Z
 	public fun getProviderId ()Ljava/lang/String;
@@ -4614,12 +4614,12 @@ public final class ai/torad/aisdk/ProviderId {
 }
 
 public final class ai/torad/aisdk/ProviderKt {
-	public static final fun createProviderRegistry (Ljava/util/Map;Ljava/lang/String;Ljava/lang/String;)Lai/torad/aisdk/ProviderRegistry;
-	public static final fun createProviderRegistry ([Lkotlin/Pair;Ljava/lang/String;Ljava/lang/String;)Lai/torad/aisdk/ProviderRegistry;
-	public static synthetic fun createProviderRegistry$default (Ljava/util/Map;Ljava/lang/String;Ljava/lang/String;ILjava/lang/Object;)Lai/torad/aisdk/ProviderRegistry;
-	public static synthetic fun createProviderRegistry$default ([Lkotlin/Pair;Ljava/lang/String;Ljava/lang/String;ILjava/lang/Object;)Lai/torad/aisdk/ProviderRegistry;
-	public static final fun customProvider (Ljava/lang/String;Ljava/util/Map;Ljava/util/Map;Ljava/util/Map;Ljava/util/Map;Ljava/util/Map;Ljava/util/Map;Ljava/util/Map;)Lai/torad/aisdk/Provider;
-	public static synthetic fun customProvider$default (Ljava/lang/String;Ljava/util/Map;Ljava/util/Map;Ljava/util/Map;Ljava/util/Map;Ljava/util/Map;Ljava/util/Map;Ljava/util/Map;ILjava/lang/Object;)Lai/torad/aisdk/Provider;
+	public static final fun createProviderRegistry (Ljava/util/Map;Ljava/lang/String;Ljava/lang/String;Ljava/util/List;)Lai/torad/aisdk/ProviderRegistry;
+	public static final fun createProviderRegistry ([Lkotlin/Pair;Ljava/lang/String;Ljava/lang/String;Ljava/util/List;)Lai/torad/aisdk/ProviderRegistry;
+	public static synthetic fun createProviderRegistry$default (Ljava/util/Map;Ljava/lang/String;Ljava/lang/String;Ljava/util/List;ILjava/lang/Object;)Lai/torad/aisdk/ProviderRegistry;
+	public static synthetic fun createProviderRegistry$default ([Lkotlin/Pair;Ljava/lang/String;Ljava/lang/String;Ljava/util/List;ILjava/lang/Object;)Lai/torad/aisdk/ProviderRegistry;
+	public static final fun customProvider (Ljava/lang/String;Ljava/util/Map;Ljava/util/Map;Ljava/util/Map;Ljava/util/Map;Ljava/util/Map;Ljava/util/Map;Ljava/util/Map;Lai/torad/aisdk/Provider;)Lai/torad/aisdk/Provider;
+	public static synthetic fun customProvider$default (Ljava/lang/String;Ljava/util/Map;Ljava/util/Map;Ljava/util/Map;Ljava/util/Map;Ljava/util/Map;Ljava/util/Map;Ljava/util/Map;Lai/torad/aisdk/Provider;ILjava/lang/Object;)Lai/torad/aisdk/Provider;
 	public static final fun splitProviderModelId (Ljava/lang/String;Ljava/lang/String;)Lkotlin/Pair;
 	public static synthetic fun splitProviderModelId$default (Ljava/lang/String;Ljava/lang/String;ILjava/lang/Object;)Lkotlin/Pair;
 	public static final fun wrapProvider (Lai/torad/aisdk/Provider;Lai/torad/aisdk/ProviderMiddleware;)Lai/torad/aisdk/Provider;
@@ -4651,8 +4651,8 @@ public final class ai/torad/aisdk/ProviderOptionsBuilder {
 }
 
 public final class ai/torad/aisdk/ProviderRegistry : ai/torad/aisdk/Provider {
-	public fun <init> (Ljava/util/Map;Ljava/lang/String;Ljava/lang/String;)V
-	public synthetic fun <init> (Ljava/util/Map;Ljava/lang/String;Ljava/lang/String;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun <init> (Ljava/util/Map;Ljava/lang/String;Ljava/lang/String;Ljava/util/List;)V
+	public synthetic fun <init> (Ljava/util/Map;Ljava/lang/String;Ljava/lang/String;Ljava/util/List;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public fun embeddingModel (Ljava/lang/String;)Lai/torad/aisdk/EmbeddingModel;
 	public fun getProviderId ()Ljava/lang/String;
 	public fun imageModel (Ljava/lang/String;)Lai/torad/aisdk/ImageModel;
