@@ -168,7 +168,9 @@ public suspend fun embedMany(
         request = results.firstOrNull()?.request ?: LanguageModelRequestMetadata(),
         response = results.lastOrNull()?.response ?: LanguageModelResponseMetadata(),
         responses = results.map { it.response },
-        providerMetadata = results.firstNotNullOfOrNull { it.providerMetadata.ifEmpty { null } } ?: emptyMap(),
+        // Accumulate provider metadata across ALL batches (deep-merging per provider
+        // key), not just the first non-empty one — matching upstream.
+        providerMetadata = results.fold(emptyMap()) { acc, r -> mergeProviderOptions(acc, r.providerMetadata) },
     )
 }
 

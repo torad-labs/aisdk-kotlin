@@ -1,5 +1,8 @@
 package ai.torad.aisdk
 
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 import kotlinx.serialization.json.JsonElement
 
 public data class GeneratedFile(
@@ -170,6 +173,15 @@ public interface ImageModel {
     public val provider: String
         get() = "unknown"
 
+    /**
+     * How many images this model produces per call, if limited. [generateImage]
+     * splits a request for more than this into ceil(n / limit) concurrent calls
+     * (was: passing n straight through, so a model capped at 1 returned 1 of n).
+     * Null = no limit.
+     */
+    public val maxImagesPerCall: Int?
+        get() = null
+
     public suspend fun generate(params: ImageGenerationParams): ImageModelResult
 }
 
@@ -205,6 +217,8 @@ public data class GenerateImageResult(
     val warnings: List<CallWarning> = emptyList(),
     val response: LanguageModelResponseMetadata = LanguageModelResponseMetadata(),
     val providerMetadata: Map<String, JsonElement> = emptyMap(),
+    /** Per-call response metadata, one entry per underlying model call (n-batching). */
+    val responses: List<LanguageModelResponseMetadata> = listOf(response),
 ) {
     val image: GeneratedFile get() = images.firstOrNull() ?: throw NoImageGeneratedError()
 }
@@ -224,11 +238,35 @@ public suspend fun generateImage(
 ): GenerateImageResult {
     require(prompt.isNotBlank()) { "generateImage: prompt must not be blank" }
     require(n > 0) { "generateImage: n must be > 0" }
-    val result = model.generate(
-        ImageGenerationParams(prompt, n, size, aspectRatio, seed, providerOptions, headers, abortSignal, files, mask),
+    // Split into ceil(n / maxImagesPerCall) calls when the model is limited, so a
+    // request for n images from a model capped at < n returns all n (was returning
+    // only one call's worth). Calls run concurrently and results are aggregated.
+    fun paramsFor(count: Int) = ImageGenerationParams(
+        prompt, count, size, aspectRatio, seed, providerOptions, headers, abortSignal, files, mask,
     )
-    if (result.images.isEmpty()) throw NoImageGeneratedError()
-    return GenerateImageResult(result.images, result.warnings, result.response, result.providerMetadata)
+    val counts = splitCount(n, model.maxImagesPerCall?.coerceAtLeast(1) ?: n)
+    val results = if (counts.size == 1) {
+        listOf(model.generate(paramsFor(n)))
+    } else {
+        coroutineScope { counts.map { async { model.generate(paramsFor(it)) } }.awaitAll() }
+    }
+    val images = results.flatMap { it.images }
+    if (images.isEmpty()) throw NoImageGeneratedError(responses = results.map { it.response })
+    return GenerateImageResult(
+        images = images,
+        warnings = results.flatMap { it.warnings },
+        response = results.first().response,
+        providerMetadata = results.firstNotNullOfOrNull { it.providerMetadata.ifEmpty { null } } ?: emptyMap(),
+        responses = results.map { it.response },
+    )
+}
+
+/** Split [total] into chunks of at most [perChunk] — e.g. (5, 2) → [2, 2, 1]. */
+internal fun splitCount(total: Int, perChunk: Int): List<Int> {
+    if (perChunk <= 0 || total <= perChunk) return listOf(total)
+    val full = total / perChunk
+    val remainder = total % perChunk
+    return List(full) { perChunk } + if (remainder > 0) listOf(remainder) else emptyList()
 }
 
 public suspend fun experimental_generateImage(
@@ -473,6 +511,10 @@ public interface VideoModel {
     public val provider: String
         get() = "unknown"
 
+    /** How many videos this model produces per call, if limited (see [ImageModel.maxImagesPerCall]). */
+    public val maxVideosPerCall: Int?
+        get() = null
+
     public suspend fun generate(params: VideoGenerationParams): VideoModelResult
 }
 
@@ -524,24 +566,35 @@ public suspend fun generateVideo(
 ): GenerateVideoResult {
     require(prompt.isNotBlank()) { "generateVideo: prompt must not be blank" }
     require(n > 0) { "generateVideo: n must be > 0" }
-    val result = model.generate(
-        VideoGenerationParams(
-            prompt = prompt,
-            n = n,
-            image = image,
-            durationSeconds = durationSeconds,
-            size = size,
-            aspectRatio = aspectRatio,
-            providerOptions = providerOptions,
-            headers = headers,
-            abortSignal = abortSignal,
-            seed = seed,
-            fps = fps,
-            resolution = resolution,
-        ),
+    fun paramsFor(count: Int) = VideoGenerationParams(
+        prompt = prompt,
+        n = count,
+        image = image,
+        durationSeconds = durationSeconds,
+        size = size,
+        aspectRatio = aspectRatio,
+        providerOptions = providerOptions,
+        headers = headers,
+        abortSignal = abortSignal,
+        seed = seed,
+        fps = fps,
+        resolution = resolution,
     )
-    if (result.videos.isEmpty()) throw NoVideoGeneratedError()
-    return GenerateVideoResult(result.videos, result.warnings, result.response, result.providerMetadata)
+    // Split into ceil(n / maxVideosPerCall) concurrent calls when the model is limited.
+    val counts = splitCount(n, model.maxVideosPerCall?.coerceAtLeast(1) ?: n)
+    val results = if (counts.size == 1) {
+        listOf(model.generate(paramsFor(n)))
+    } else {
+        coroutineScope { counts.map { async { model.generate(paramsFor(it)) } }.awaitAll() }
+    }
+    val videos = results.flatMap { it.videos }
+    if (videos.isEmpty()) throw NoVideoGeneratedError(responses = results.map { it.response })
+    return GenerateVideoResult(
+        videos = videos,
+        warnings = results.flatMap { it.warnings },
+        response = results.first().response,
+        providerMetadata = results.firstNotNullOfOrNull { it.providerMetadata.ifEmpty { null } } ?: emptyMap(),
+    )
 }
 
 public suspend fun experimental_generateVideo(
