@@ -625,12 +625,17 @@ private fun openResponsesText(
 
 private fun openResponsesTextFormat(format: ResponseFormat, strict: Boolean): JsonElement? = when (format) {
     ResponseFormat.Text -> null
-    is ResponseFormat.Json -> buildJsonObject {
-        put("type", JsonPrimitive("json_schema"))
-        format.schemaName?.let { put("name", JsonPrimitive(it)) } ?: put("name", JsonPrimitive("response"))
-        format.schemaDescription?.let { put("description", JsonPrimitive(it)) }
-        format.schemaJson?.let { put("schema", it) }
-        put("strict", JsonPrimitive(strict))
+    // No schema → plain json_object mode. A json_schema format with no `schema` key is malformed.
+    is ResponseFormat.Json -> if (format.schemaJson == null) {
+        buildJsonObject { put("type", JsonPrimitive("json_object")) }
+    } else {
+        buildJsonObject {
+            put("type", JsonPrimitive("json_schema"))
+            put("name", JsonPrimitive(format.schemaName ?: "response"))
+            format.schemaDescription?.let { put("description", JsonPrimitive(it)) }
+            put("schema", format.schemaJson)
+            put("strict", JsonPrimitive(strict))
+        }
     }
 }
 
@@ -958,10 +963,13 @@ private class OpenResponsesStreamState(
                     "message" -> events += StreamEvent.TextEnd(itemId)
                 }
             }
-            "response.reasoning_text.delta" -> events += StreamEvent.ReasoningDelta(
-                id = obj["item_id"]?.jsonPrimitive?.contentOrNull ?: activeReasoningId ?: "reasoning-0",
-                text = obj["delta"]?.jsonPrimitive?.contentOrNull.orEmpty(),
-            )
+            // OpenAI emits reasoning deltas as `response.reasoning_summary_text.delta`
+            // (the `reasoning_text` variant is never sent), so all streamed reasoning was lost.
+            "response.reasoning_summary_text.delta", "response.reasoning_text.delta" ->
+                events += StreamEvent.ReasoningDelta(
+                    id = obj["item_id"]?.jsonPrimitive?.contentOrNull ?: activeReasoningId ?: "reasoning-0",
+                    text = obj["delta"]?.jsonPrimitive?.contentOrNull.orEmpty(),
+                )
             "response.output_text.delta" -> events += StreamEvent.TextDelta(
                 id = obj["item_id"]?.jsonPrimitive?.contentOrNull.orEmpty(),
                 text = obj["delta"]?.jsonPrimitive?.contentOrNull.orEmpty(),

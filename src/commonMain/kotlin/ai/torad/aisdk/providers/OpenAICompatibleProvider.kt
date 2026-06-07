@@ -293,9 +293,12 @@ private class OpenAICompatibleChatLanguageModel(
             params.seed?.let { put(settings.chatSeedKey, JsonPrimitive(it)) }
             val responseFormat = openAIResponseFormat(params.responseFormat, strictJsonSchema)
             if (responseFormat != null) put("response_format", responseFormat)
-            if (params.tools.isNotEmpty()) put("tools", JsonArray(params.tools.map(::openAIToolJson)))
-            val choice = openAIToolChoiceJson(params.toolChoice)
-            if (choice != null) put("tool_choice", choice)
+            if (params.tools.isNotEmpty()) {
+                put("tools", JsonArray(params.tools.map(::openAIToolJson)))
+                // tool_choice is only valid alongside tools — emitting "auto" on a tool-less
+                // request makes strict OpenAI-compatible servers reject it.
+                openAIToolChoiceJson(params.toolChoice)?.let { put("tool_choice", it) }
+            }
             if (stream) {
                 put("stream", JsonPrimitive(true))
                 if (settings.includeUsage) {

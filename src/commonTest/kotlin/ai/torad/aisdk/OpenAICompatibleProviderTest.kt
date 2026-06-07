@@ -173,6 +173,31 @@ class OpenAICompatibleProviderTest {
     }
 
     @Test
+    fun `chat model omits tool_choice when no tools are sent`() = runTest {
+        val seenBodies = mutableListOf<JsonObject>()
+        val client = HttpClient(
+            MockEngine { request ->
+                seenBodies += Json.parseToJsonElement(requestBodyText(request)).jsonObject
+                respond(
+                    content = "{\"id\":\"c\",\"choices\":[{\"message\":" +
+                        "{\"role\":\"assistant\",\"content\":\"ok\"},\"finish_reason\":\"stop\"}]}",
+                    status = HttpStatusCode.OK,
+                    headers = headersOf(HttpHeaders.ContentType, "application/json"),
+                )
+            },
+        )
+        val provider = createOpenAICompatible(
+            client,
+            OpenAICompatibleProviderSettings(name = "openai", baseUrl = "https://api.test/v1", apiKey = "secret"),
+        )
+        provider.languageModel("gpt-test").generate(LanguageModelCallParams(messages = listOf(userMessage("hi"))))
+        // No tools → neither tools nor tool_choice in the body (strict servers reject lone tool_choice).
+        val body = seenBodies.single()
+        assertEquals(null, body["tool_choice"], "tool_choice omitted without tools")
+        assertEquals(null, body["tools"])
+    }
+
+    @Test
     fun `chat model streams text reasoning tool calls and finish usage`() = runTest {
         val client = HttpClient(
             MockEngine { request ->
