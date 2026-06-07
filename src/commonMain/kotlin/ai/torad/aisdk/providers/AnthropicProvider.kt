@@ -302,7 +302,7 @@ private fun anthropicRequestBody(
     val thinkingType = thinking?.get("type")?.jsonPrimitive?.contentOrNull
     val isThinking = thinkingType == "enabled" || thinkingType == "adaptive"
     var thinkingBudget = thinking?.get("budgetTokens")?.jsonPrimitive?.intOrNull
-    val maxTokensBase = params.maxOutputTokens ?: 4096
+    val maxTokensBase = params.maxOutputTokens ?: anthropicMaxOutputTokensForModel(modelId)
     val maxTokens = if (isThinking && thinkingType == "enabled") {
         if (thinkingBudget == null) {
             thinkingBudget = 1024
@@ -899,7 +899,8 @@ private class AnthropicStreamState(
                 val delta = obj["delta"]?.jsonObject ?: JsonObject(emptyMap())
                 rawStopReason = delta["stop_reason"]?.jsonPrimitive?.contentOrNull
                 finishReason = mapAnthropicStopReason(rawStopReason)
-                usage = anthropicUsage(obj["usage"])
+                // Merge onto the message_start usage (delta usually has only output_tokens).
+                usage = anthropicMergeUsage(usage, obj["usage"])
             }
             "error" -> events += StreamEvent.Error(anthropicErrorMessage(obj["error"] ?: obj, obj.toString()))
         }
@@ -948,6 +949,23 @@ private fun anthropicHeaders(
     return withUserAgentSuffix(headers, "ai-sdk/anthropic/$ANTHROPIC_VERSION")
 }
 
+/**
+ * The default `max_tokens` for a Claude model when the caller omits maxOutputTokens.
+ * Ports upstream's getModelCapabilities table — hardcoding 4096 truncated output on
+ * every modern Claude model.
+ */
+@Suppress("MagicNumber") // the values ARE the per-model max-output-token limits
+private fun anthropicMaxOutputTokensForModel(modelId: String): Int = when {
+    modelId.contains("claude-opus-4-8") || modelId.contains("claude-opus-4-7") -> 128_000
+    modelId.contains("claude-sonnet-4-6") || modelId.contains("claude-opus-4-6") -> 128_000
+    modelId.contains("claude-sonnet-4-5") || modelId.contains("claude-opus-4-5") ||
+        modelId.contains("claude-haiku-4-5") -> 64_000
+    modelId.contains("claude-opus-4-1") -> 32_000
+    modelId.contains("claude-sonnet-4-") -> 64_000
+    modelId.contains("claude-opus-4-") -> 32_000
+    else -> 4_096
+}
+
 private fun anthropicUsage(element: JsonElement?): Usage {
     val obj = element as? JsonObject ?: return Usage()
     val baseInput = obj["input_tokens"]?.jsonPrimitive?.intOrNull ?: 0
@@ -976,6 +994,35 @@ private fun anthropicUsage(element: JsonElement?): Usage {
         ),
         outputTokens = Usage.OutputTokenBreakdown(total = output),
         raw = element,
+    )
+}
+
+/**
+ * Merge a streaming `message_delta` usage object onto the usage captured at
+ * `message_start`. Anthropic's message_delta usually carries only output_tokens, so a
+ * full replace (the prior behavior) dropped the input/cache counts to 0 — upstream
+ * mutates in place: keep prior input/cache when the delta omits them, update what it
+ * provides.
+ */
+private fun anthropicMergeUsage(existing: Usage, deltaElement: JsonElement?): Usage {
+    val obj = deltaElement as? JsonObject ?: return existing
+    val deltaInput = obj["input_tokens"]?.jsonPrimitive?.intOrNull
+    val deltaOutput = obj["output_tokens"]?.jsonPrimitive?.intOrNull
+    val deltaCacheRead = obj["cache_read_input_tokens"]?.jsonPrimitive?.intOrNull
+    val deltaCacheWrite = obj["cache_creation_input_tokens"]?.jsonPrimitive?.intOrNull
+    val input = deltaInput ?: existing.inputTokens.noCache
+    val cacheRead = deltaCacheRead ?: existing.inputTokens.cacheRead
+    val cacheWrite = deltaCacheWrite ?: existing.inputTokens.cacheWrite
+    val output = deltaOutput ?: existing.outputTokens.total
+    return Usage(
+        inputTokens = Usage.InputTokenBreakdown(
+            total = input + cacheWrite + cacheRead,
+            noCache = input,
+            cacheRead = cacheRead,
+            cacheWrite = cacheWrite,
+        ),
+        outputTokens = Usage.OutputTokenBreakdown(total = output),
+        raw = deltaElement,
     )
 }
 
