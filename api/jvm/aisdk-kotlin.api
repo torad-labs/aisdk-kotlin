@@ -6064,6 +6064,17 @@ public final class ai/torad/aisdk/StreamEvent$ToolResult$Companion {
 	public final fun serializer ()Lkotlinx/serialization/KSerializer;
 }
 
+public final class ai/torad/aisdk/StreamObjectResult {
+	public final fun getPartialObjectStream ()Lkotlinx/coroutines/flow/Flow;
+	public final fun getTextStream ()Lkotlinx/coroutines/flow/Flow;
+	public final fun objectValue (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+}
+
+public final class ai/torad/aisdk/StreamObjectResultKt {
+	public static final fun streamObjectResult (Lai/torad/aisdk/LanguageModel;Lai/torad/aisdk/Output;Ljava/lang/String;Ljava/util/List;Ljava/lang/String;Ljava/lang/Float;Ljava/lang/Float;Ljava/lang/Integer;Ljava/lang/Integer;Ljava/util/List;Ljava/lang/Integer;Ljava/util/Map;Lai/torad/aisdk/AbortSignal;Ljava/lang/Float;Ljava/lang/Float;Lai/torad/aisdk/ResponseFormat;)Lai/torad/aisdk/StreamObjectResult;
+	public static synthetic fun streamObjectResult$default (Lai/torad/aisdk/LanguageModel;Lai/torad/aisdk/Output;Ljava/lang/String;Ljava/util/List;Ljava/lang/String;Ljava/lang/Float;Ljava/lang/Float;Ljava/lang/Integer;Ljava/lang/Integer;Ljava/util/List;Ljava/lang/Integer;Ljava/util/Map;Lai/torad/aisdk/AbortSignal;Ljava/lang/Float;Ljava/lang/Float;Lai/torad/aisdk/ResponseFormat;ILjava/lang/Object;)Lai/torad/aisdk/StreamObjectResult;
+}
+
 public final class ai/torad/aisdk/StreamTextResult {
 	public fun <init> (Lkotlinx/coroutines/flow/Flow;Lai/torad/aisdk/LanguageModelRequestMetadata;Lai/torad/aisdk/LanguageModelResponseMetadata;)V
 	public synthetic fun <init> (Lkotlinx/coroutines/flow/Flow;Lai/torad/aisdk/LanguageModelRequestMetadata;Lai/torad/aisdk/LanguageModelResponseMetadata;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
