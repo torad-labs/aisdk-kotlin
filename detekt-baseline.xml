@@ -376,7 +376,6 @@
     <ID>ArgumentListWrapping:GoogleProvider.kt$("systemInstruction", it)</ID>
     <ID>ArgumentListWrapping:GoogleProvider.kt$("text", JsonPrimitive(value))</ID>
     <ID>ArgumentListWrapping:GoogleProvider.kt$('/')</ID>
-    <ID>ArgumentListWrapping:GoogleProvider.kt$(0)</ID>
     <ID>ArgumentListWrapping:GoogleProvider.kt$(1L)</ID>
     <ID>ArgumentListWrapping:GoogleProvider.kt$(::JsonPrimitive)</ID>
     <ID>ArgumentListWrapping:GoogleProvider.kt$(buildJsonObject { put("text", JsonPrimitive(value)) })</ID>
@@ -386,7 +385,6 @@
     <ID>ArgumentListWrapping:GoogleProvider.kt$(params.stopSequences.map(::JsonPrimitive))</ID>
     <ID>ArgumentListWrapping:GoogleProvider.kt$(part.mediaType, part.base64, mediaResolution)</ID>
     <ID>ArgumentListWrapping:GoogleProvider.kt$(systemParts)</ID>
-    <ID>ArgumentListWrapping:GoogleProvider.kt$(total = candidates, reasoning = thoughts, text = (candidates - thoughts).coerceAtLeast(0))</ID>
     <ID>ArgumentListWrapping:GoogleProvider.kt$(value)</ID>
     <ID>ArgumentListWrapping:GoogleProvider.kt$&lt;no name provided>$("Google Generative AI provider is not configured. Use createGoogleGenerativeAI(client, settings).")</ID>
     <ID>ArgumentListWrapping:GoogleProvider.kt$GoogleGenerativeAIEmbeddingModel$("Google embedding models support at most 2048 values per call.")</ID>
@@ -450,7 +448,6 @@
     <ID>ArgumentListWrapping:GoogleProviderTest.kt$GoogleProviderTest$("interactionId")</ID>
     <ID>ArgumentListWrapping:GoogleProviderTest.kt$GoogleProviderTest$("lookup", body["toolConfig"]?.jsonObject?.get("functionCallingConfig")?.jsonObject?.get("allowedFunctionNames")?.jsonArray?.single()?.jsonPrimitive?.contentOrNull)</ID>
     <ID>ArgumentListWrapping:GoogleProviderTest.kt$GoogleProviderTest$("lookup", body["tools"]?.jsonArray?.single()?.jsonObject?.get("name")?.jsonPrimitive?.contentOrNull)</ID>
-    <ID>ArgumentListWrapping:GoogleProviderTest.kt$GoogleProviderTest$("lookup", tools[0].jsonObject["functionDeclarations"]?.jsonArray?.single()?.jsonObject?.get("name")?.jsonPrimitive?.contentOrNull)</ID>
     <ID>ArgumentListWrapping:GoogleProviderTest.kt$GoogleProviderTest$("mime_type")</ID>
     <ID>ArgumentListWrapping:GoogleProviderTest.kt$GoogleProviderTest$("name")</ID>
     <ID>ArgumentListWrapping:GoogleProviderTest.kt$GoogleProviderTest$("outputDimensionality")</ID>
@@ -1280,7 +1277,6 @@
     <ID>MagicNumber:AmazonBedrockProvider.kt$8</ID>
     <ID>MagicNumber:AmazonBedrockProvider.kt$9</ID>
     <ID>MagicNumber:AnthropicProvider.kt$1024</ID>
-    <ID>MagicNumber:AnthropicProvider.kt$4096</ID>
     <ID>MagicNumber:AwsSigV4.kt$0xff</ID>
     <ID>MagicNumber:AwsSigV4.kt$10</ID>
     <ID>MagicNumber:AwsSigV4.kt$11</ID>
@@ -1862,7 +1858,6 @@
     <ID>MaxLineLength:GoogleProvider.kt$is ContentPart.Image -> googleInteractionsFileContent(part.mediaType, part.base64, mediaResolution)</ID>
     <ID>MaxLineLength:GoogleProvider.kt$is ContentPart.Image -> pending += googleInteractionsFileContent(part.mediaType, part.base64, mediaResolution)</ID>
     <ID>MaxLineLength:GoogleProvider.kt$listOf(CallWarning("other", "streamFunctionCallArguments is only supported on Vertex AI and is ignored by the Gemini API facade."))</ID>
-    <ID>MaxLineLength:GoogleProvider.kt$outputTokens = Usage.OutputTokenBreakdown(total = candidates, reasoning = thoughts, text = (candidates - thoughts).coerceAtLeast(0))</ID>
     <ID>MaxLineLength:GoogleProvider.kt$private</ID>
     <ID>MaxLineLength:GoogleProvider.kt$providerMetadata = mapOf("google" to buildJsonObject { put("providerExecuted", JsonPrimitive(true)) })</ID>
     <ID>MaxLineLength:GoogleProvider.kt$providerMetadata = metadata ?: mapOf("google" to buildJsonObject { put("id", JsonPrimitive(generateId())) })</ID>
@@ -1896,7 +1891,6 @@
     <ID>MaxLineLength:GoogleProviderTest.kt$GoogleProviderTest$assertEquals("interaction-1", result.providerMetadata["google"]?.jsonObject?.get("interactionId")?.jsonPrimitive?.contentOrNull)</ID>
     <ID>MaxLineLength:GoogleProviderTest.kt$GoogleProviderTest$assertEquals("lookup", body["toolConfig"]?.jsonObject?.get("functionCallingConfig")?.jsonObject?.get("allowedFunctionNames")?.jsonArray?.single()?.jsonPrimitive?.contentOrNull)</ID>
     <ID>MaxLineLength:GoogleProviderTest.kt$GoogleProviderTest$assertEquals("lookup", body["tools"]?.jsonArray?.single()?.jsonObject?.get("name")?.jsonPrimitive?.contentOrNull)</ID>
-    <ID>MaxLineLength:GoogleProviderTest.kt$GoogleProviderTest$assertEquals("lookup", tools[0].jsonObject["functionDeclarations"]?.jsonArray?.single()?.jsonObject?.get("name")?.jsonPrimitive?.contentOrNull)</ID>
     <ID>MaxLineLength:GoogleProviderTest.kt$GoogleProviderTest$assertEquals("priority", result.providerMetadata["google"]?.jsonObject?.get("serviceTier")?.jsonPrimitive?.contentOrNull)</ID>
     <ID>MaxLineLength:GoogleProviderTest.kt$GoogleProviderTest$assertEquals(128, body["generationConfig"]?.jsonObject?.get("thinkingConfig")?.jsonObject?.get("thinkingBudget")?.jsonPrimitive?.intOrNull)</ID>
     <ID>MaxLineLength:GoogleProviderTest.kt$GoogleProviderTest$assertEquals(256, embeddingBody["requests"]?.jsonArray?.first()?.jsonObject?.get("outputDimensionality")?.jsonPrimitive?.intOrNull)</ID>
@@ -2945,7 +2939,7 @@
     <ID>Wrapping:GoogleProvider.kt$(</ID>
     <ID>Wrapping:GoogleProvider.kt$("content", buildJsonObject { put("role", JsonPrimitive("user")) put("parts", JsonArray(listOf(buildJsonObject { put("text", JsonPrimitive(value)) }))) })</ID>
     <ID>Wrapping:GoogleProvider.kt$("functionCall", buildJsonObject { put("id", JsonPrimitive(part.toolCallId)) put("name", JsonPrimitive(part.toolName)) put("args", part.input) })</ID>
-    <ID>Wrapping:GoogleProvider.kt$("functionResponse", buildJsonObject { put("id", JsonPrimitive(part.toolCallId)) put("name", JsonPrimitive(part.toolName)) put("response", part.modelVisible) })</ID>
+    <ID>Wrapping:GoogleProvider.kt$("functionResponse", buildJsonObject { put("id", JsonPrimitive(part.toolCallId)) put("name", JsonPrimitive(part.toolName)) put("response", response) })</ID>
     <ID>Wrapping:GoogleProvider.kt$("inlineData", buildJsonObject { put("mimeType", JsonPrimitive(image.mediaType)) put("data", JsonPrimitive(image.base64)) })</ID>
     <ID>Wrapping:GoogleProvider.kt$("inlineData", buildJsonObject { put("mimeType", JsonPrimitive(part.mediaType)) put("data", JsonPrimitive(part.base64)) })</ID>
     <ID>Wrapping:GoogleProvider.kt$GoogleGenerativeAIEmbeddingModel$embeddingFloat(it, provider)</ID>

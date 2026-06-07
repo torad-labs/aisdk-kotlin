@@ -1287,7 +1287,7 @@ private fun googleGenerateContentBody(
 ): GooglePreparedRequest {
     val warnings = mutableListOf<CallWarning>()
     val options = params.providerOptions["google"] as? JsonObject ?: JsonObject(emptyMap())
-    val converted = googleMessages(params.messages)
+    val converted = googleMessages(params.messages, isGemini3 = modelId.contains("gemini-3"))
     warnings += converted.warnings
     val tools = googleToolsJson(params.tools, params.toolChoice, options)
     val generationConfig = buildJsonObject {
@@ -1301,7 +1301,7 @@ private fun googleGenerateContentBody(
         params.seed?.let { put("seed", JsonPrimitive(it)) }
         if (params.responseFormat is ResponseFormat.Json) {
             put("responseMimeType", JsonPrimitive("application/json"))
-            params.responseFormat.schemaJson?.let { put("responseSchema", it) }
+            params.responseFormat.schemaJson?.let { put("responseSchema", googleSchema(it)) }
         }
         options["responseModalities"]?.let { put("responseModalities", it) }
         options["thinkingConfig"]?.let { put("thinkingConfig", it) }
@@ -1329,7 +1329,7 @@ private fun googleGenerateContentBody(
     )
 }
 
-private fun googleMessages(messages: List<ModelMessage>): GoogleConvertedMessages {
+private fun googleMessages(messages: List<ModelMessage>, isGemini3: Boolean = false): GoogleConvertedMessages {
     val contents = mutableListOf<JsonElement>()
     val systemParts = mutableListOf<JsonElement>()
     val warnings = mutableListOf<CallWarning>()
@@ -1342,7 +1342,7 @@ private fun googleMessages(messages: List<ModelMessage>): GoogleConvertedMessage
             }
             MessageRole.Assistant -> contents += buildJsonObject {
                 put("role", JsonPrimitive("model"))
-                put("parts", JsonArray(message.content.mapNotNull(::googleAssistantPart)))
+                put("parts", JsonArray(message.content.mapNotNull { googleAssistantPart(it, isGemini3) }))
             }
             MessageRole.Tool -> {
                 // Approval bookkeeping (ToolApprovalResponse) is SDK-internal and never reaches the wire;
@@ -1385,7 +1385,9 @@ private fun googleContentPart(part: ContentPart): JsonElement? = when (part) {
     else -> null
 }
 
-private fun googleAssistantPart(part: ContentPart): JsonElement? = when (part) {
+private const val GOOGLE_SKIP_THOUGHT_SIGNATURE = "skip_thought_signature_validator"
+
+private fun googleAssistantPart(part: ContentPart, isGemini3: Boolean = false): JsonElement? = when (part) {
     is ContentPart.Text -> buildJsonObject {
         put("text", JsonPrimitive(part.text))
         googleThoughtMetadata(part.providerMetadata)?.let { putJsonObjectFields(it) }
@@ -1402,6 +1404,13 @@ private fun googleAssistantPart(part: ContentPart): JsonElement? = when (part) {
             put("name", JsonPrimitive(part.toolName))
             put("args", part.input)
         })
+        // Gemini 3 rejects (HTTP 400) a replayed functionCall lacking a thoughtSignature.
+        // Use the captured signature, else inject the documented sentinel for Gemini 3.
+        val sig = (part.providerMetadata?.get("google") as? JsonObject)?.get("thoughtSignature")
+        when {
+            sig != null -> put("thoughtSignature", sig)
+            isGemini3 -> put("thoughtSignature", JsonPrimitive(GOOGLE_SKIP_THOUGHT_SIGNATURE))
+        }
     }
     else -> null
 }
@@ -1411,10 +1420,16 @@ private fun googleAssistantPart(part: ContentPart): JsonElement? = when (part) {
 // was the call id (not a declared function), which the API rejects. The wire sees only real results.
 private fun googleToolPart(part: ContentPart): JsonElement? = when (part) {
     is ContentPart.ToolResult -> buildJsonObject {
+        // Google requires response to be a Struct of {name, content} — emitting the
+        // bare output (esp. a primitive) is rejected.
+        val response = buildJsonObject {
+            put("name", JsonPrimitive(part.toolName))
+            put("content", part.modelVisible)
+        }
         put("functionResponse", buildJsonObject {
             put("id", JsonPrimitive(part.toolCallId))
             put("name", JsonPrimitive(part.toolName))
-            put("response", part.modelVisible)
+            put("response", response)
         })
     }
     else -> null
@@ -1431,7 +1446,7 @@ private fun googleToolsJson(
         buildJsonObject {
             put("name", JsonPrimitive(tool.name))
             if (tool.description.isNotBlank()) put("description", JsonPrimitive(tool.description))
-            put("parameters", aiSdkJson.parseToJsonElement(tool.parametersSchemaJson))
+            put("parameters", googleSchema(aiSdkJson.parseToJsonElement(tool.parametersSchemaJson)))
         }
     }
     if (functionDeclarations.isNotEmpty()) {
@@ -1876,13 +1891,72 @@ private fun googleUsage(element: JsonElement?): Usage {
     val obj = element as? JsonObject ?: return Usage()
     val prompt = obj["promptTokenCount"]?.jsonPrimitive?.intOrNull ?: 0
     val candidates = obj["candidatesTokenCount"]?.jsonPrimitive?.intOrNull ?: 0
-    val thoughts = (obj["thoughtsTokenCount"]?.jsonPrimitive?.intOrNull ?: 0).coerceIn(0, candidates)
+    val thoughts = obj["thoughtsTokenCount"]?.jsonPrimitive?.intOrNull ?: 0
+    val cached = obj["cachedContentTokenCount"]?.jsonPrimitive?.intOrNull ?: 0
+    // Match upstream: output total = candidates + thoughts (not clamped); cached input
+    // tokens map to cacheRead with noCache = prompt - cached.
     return Usage(
-        inputTokens = Usage.InputTokenBreakdown(total = prompt),
-        outputTokens = Usage.OutputTokenBreakdown(total = candidates, reasoning = thoughts, text = (candidates - thoughts).coerceAtLeast(0)),
+        inputTokens = Usage.InputTokenBreakdown(
+            total = prompt,
+            noCache = prompt - cached,
+            cacheRead = cached,
+        ),
+        outputTokens = Usage.OutputTokenBreakdown(
+            total = candidates + thoughts,
+            reasoning = thoughts,
+            text = candidates,
+        ),
         raw = element,
     )
 }
+
+/**
+ * Convert a JSON Schema (draft-07) to the OpenAPI 3.0 subset Google's GenAI API
+ * accepts. Ports upstream's convertJSONSchemaToOpenAPISchema: rebuilds keeping only
+ * OpenAPI-compatible keys (dropping `$schema`, `additionalProperties`, `title`),
+ * recurses into properties/items/allOf/anyOf/oneOf, and maps a nullable type array
+ * (`["string","null"]`) to `nullable: true`. Without this, our schemas (which carry
+ * `$schema`/`additionalProperties`/`title`) are rejected, breaking structured output
+ * and tool calling.
+ */
+private fun googleSchema(element: JsonElement): JsonElement {
+    val obj = element as? JsonObject ?: return element
+    return buildJsonObject {
+        for (key in GOOGLE_SCHEMA_PASSTHROUGH) {
+            obj[key]?.let { put(key, it) }
+        }
+        googleSchemaType(obj)?.let { (typeEl, nullable) ->
+            typeEl?.let { put("type", it) }
+            if (nullable) put("nullable", JsonPrimitive(true))
+        }
+        (obj["properties"] as? JsonObject)?.let { props ->
+            put("properties", buildJsonObject { props.forEach { (k, v) -> put(k, googleSchema(v)) } })
+        }
+        obj["items"]?.let { put("items", googleSchema(it)) }
+        for (combiner in listOf("allOf", "anyOf", "oneOf")) {
+            (obj[combiner] as? JsonArray)?.let { arr ->
+                put(combiner, JsonArray(arr.map { googleSchema(it) }))
+            }
+        }
+    }
+}
+
+/** Resolves the OpenAPI `type` + nullable flag from a JSON Schema `type` (which may be an array incl. "null"). */
+private fun googleSchemaType(obj: JsonObject): Pair<JsonElement?, Boolean>? {
+    val type = obj["type"] ?: return null
+    return if (type is JsonArray) {
+        val nonNull = type.filter { (it as? JsonPrimitive)?.content != "null" }
+        val hasNull = type.size != nonNull.size
+        (if (nonNull.size == 1) nonNull.single() else JsonArray(nonNull)) to hasNull
+    } else {
+        type to false
+    }
+}
+
+private val GOOGLE_SCHEMA_PASSTHROUGH = listOf(
+    "description", "required", "format", "enum", "const",
+    "minLength", "maxLength", "minItems", "maxItems", "minimum", "maximum",
+)
 
 private fun mapGoogleFinishReason(reason: String?, hasToolCalls: Boolean): FinishReason =
     if (hasToolCalls) {

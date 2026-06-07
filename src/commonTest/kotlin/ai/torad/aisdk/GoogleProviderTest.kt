@@ -117,7 +117,9 @@ class GoogleProviderTest {
         assertEquals("image/png", result.content.filterIsInstance<ContentPart.File>().single().mediaType)
         assertEquals("https://example.com", result.content.filterIsInstance<ContentPart.Source>().single().url)
         assertEquals(3, result.usage.promptTokens)
-        assertEquals(5, result.usage.completionTokens)
+        // outputTokens.total = candidatesTokenCount(5) + thoughtsTokenCount(2) (upstream parity)
+        assertEquals(7, result.usage.completionTokens)
+        assertEquals(5, result.usage.outputTokens.text)
         assertEquals(2, result.usage.outputTokens.reasoning)
         assertEquals("BLOCK_REASON_UNSPECIFIED", result.providerMetadata["google"]?.jsonObject?.get("promptFeedback")?.jsonObject?.get("blockReason")?.jsonPrimitive?.contentOrNull)
 
@@ -133,7 +135,13 @@ class GoogleProviderTest {
         assertEquals(128, body["generationConfig"]?.jsonObject?.get("thinkingConfig")?.jsonObject?.get("thinkingBudget")?.jsonPrimitive?.intOrNull)
         assertEquals("priority", body["serviceTier"]?.jsonPrimitive?.contentOrNull)
         val tools = body["tools"]?.jsonArray.orEmpty()
-        assertEquals("lookup", tools[0].jsonObject["functionDeclarations"]?.jsonArray?.single()?.jsonObject?.get("name")?.jsonPrimitive?.contentOrNull)
+        val decl = tools[0].jsonObject["functionDeclarations"]?.jsonArray?.single()?.jsonObject
+        assertEquals("lookup", decl?.get("name")?.jsonPrimitive?.contentOrNull)
+        // The tool parameters schema must be stripped of JSON-Schema keys Google rejects.
+        val params = decl?.get("parameters")?.jsonObject
+        assertTrue(params != null && "\$schema" !in params, "\$schema stripped from tool schema")
+        assertTrue("additionalProperties" !in params!!, "additionalProperties stripped from tool schema")
+        assertTrue("title" !in params, "title stripped from tool schema")
         assertEquals("lookup", body["toolConfig"]?.jsonObject?.get("functionCallingConfig")?.jsonObject?.get("allowedFunctionNames")?.jsonArray?.single()?.jsonPrimitive?.contentOrNull)
     }
 
