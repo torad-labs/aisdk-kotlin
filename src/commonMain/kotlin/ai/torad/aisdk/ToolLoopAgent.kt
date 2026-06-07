@@ -884,14 +884,27 @@ public open class ToolLoopAgent<TContext, TOutput>(
         val priorToolCalls = priorAssistantMsg.content.filterIsInstance<ContentPart.ToolCall>()
         if (priorToolCalls.isEmpty()) return null
 
+        // Correlate response.approvalId -> request.toolCallId (the approval response may
+        // reference the request by a distinct approvalId), matching upstream.
+        val approvalIdToCallId = priorAssistantMsg.content
+            .filterIsInstance<ContentPart.ToolApprovalRequest>()
+            .mapNotNull { req -> req.approvalId?.let { it to req.toolCallId } }
+            .toMap()
+        // Idempotency: a call already answered by a tool result must NOT re-execute.
+        val alreadyResolved = resolvedToolCallIds(messages)
+
         // TOOL-003: index calls by toolCallId so duplicate approvals for the same id
         // are each matched deterministically to a distinct call occurrence (preserving
         // order), rather than silently mapping every approval to the first match.
         val remainingCalls = priorToolCalls.toMutableList()
         for (approval in approvals) {
-            val callIndex = remainingCalls.indexOfFirst { it.toolCallId == approval.toolCallId }
+            // Resolve the target call via approvalId correlation, falling back to toolCallId.
+            val targetCallId = approval.approvalId?.let { approvalIdToCallId[it] } ?: approval.toolCallId
+            if (targetCallId in alreadyResolved) continue // already executed/denied — skip
+            val callIndex = remainingCalls.indexOfFirst { it.toolCallId == targetCallId }
             if (callIndex == -1) continue
             val matchingCall = remainingCalls.removeAt(callIndex)
+            alreadyResolved += matchingCall.toolCallId
             if (!approval.approved) {
                 val denialMsg = approval.reason ?: "user denied tool execution"
                 applyDeniedToolApproval(
@@ -927,6 +940,15 @@ public open class ToolLoopAgent<TContext, TOutput>(
         }
         return Unit
     }
+
+    /** Tool-call ids already answered by a tool result anywhere in the message log. */
+    private fun resolvedToolCallIds(messages: List<ModelMessage>): MutableSet<String> =
+        messages.asSequence()
+            .filter { it.role == MessageRole.Tool }
+            .flatMap { it.content.asSequence() }
+            .filterIsInstance<ContentPart.ToolResult>()
+            .map { it.toolCallId }
+            .toMutableSet()
 
     private suspend fun callNeedsApproval(
         toolDef: Tool<*, *, TContext>,
