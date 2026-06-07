@@ -103,6 +103,17 @@ class ConvertToLanguageModelPromptTest {
     }
 
     @Test
+    fun `image media type is corrected from the actual bytes`() = runTest {
+        // PNG magic bytes (89 50 4E 47 0D 0A 1A 0A) base64-encoded, but mislabeled jpeg.
+        val pngBase64 = "iVBORw0KGgo="
+        val messages = listOf(
+            ModelMessage(MessageRole.User, listOf(ContentPart.Image(mediaType = "image/jpeg", base64 = pngBase64))),
+        )
+        val img = convertToLanguageModelPrompt(messages).single().content.single() as ContentPart.Image
+        assertEquals("image/png", img.mediaType, "media type sniffed from bytes overrides the wrong label")
+    }
+
+    @Test
     fun `a non-base64 data URL is left untouched rather than crashing`() = runTest {
         val messages = listOf(imageMessage("data:text/plain,Hello", mediaType = "text/plain"))
         // splitDataUrl would throw on this; the resolver must leave it for the provider.

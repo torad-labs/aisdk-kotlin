@@ -61,15 +61,65 @@ private suspend fun resolveAssetPart(
     supportedUrls: Map<String, List<String>>,
     download: DownloadFunction?,
 ): ContentPart = when (part) {
-    is ContentPart.Image -> {
-        val resolved = resolveUrl(part.url, part.mediaType, supportedUrls, download)
-        if (resolved == null) part else part.copy(base64 = resolved.base64, mediaType = resolved.mediaType, url = null)
-    }
-    is ContentPart.File -> {
-        val resolved = resolveUrl(part.url, part.mediaType, supportedUrls, download)
-        if (resolved == null) part else part.copy(base64 = resolved.base64, mediaType = resolved.mediaType, url = null)
-    }
+    is ContentPart.Image ->
+        resolveMedia(part.url, part.base64, part.mediaType, supportedUrls, download)?.let {
+            part.copy(base64 = it.base64, mediaType = it.mediaType, url = if (it.clearUrl) null else part.url)
+        } ?: part
+    is ContentPart.File ->
+        resolveMedia(part.url, part.base64, part.mediaType, supportedUrls, download)?.let {
+            part.copy(base64 = it.base64, mediaType = it.mediaType, url = if (it.clearUrl) null else part.url)
+        } ?: part
     else -> part
+}
+
+private data class ResolvedMedia(val base64: String, val mediaType: String, val clearUrl: Boolean)
+
+/**
+ * Resolve an image/file part's data + media type: inline its URL (when applicable)
+ * and correct the media type from the actual bytes (a PNG mislabeled image/jpeg, or
+ * a wildcard image type, is fixed for the provider). Returns null when nothing changed.
+ */
+private suspend fun resolveMedia(
+    url: String?,
+    base64In: String,
+    mediaTypeIn: String,
+    supportedUrls: Map<String, List<String>>,
+    download: DownloadFunction?,
+): ResolvedMedia? {
+    val resolved = resolveUrl(url, mediaTypeIn, supportedUrls, download)
+    val base64 = resolved?.base64 ?: base64In
+    val mediaType = detectImageMediaType(base64) ?: resolved?.mediaType ?: mediaTypeIn
+    return if (resolved == null && mediaType == mediaTypeIn) {
+        null
+    } else {
+        ResolvedMedia(base64, mediaType, clearUrl = resolved != null)
+    }
+}
+
+/**
+ * Detect a common image media type from the leading magic bytes of [base64], or
+ * null if it isn't a recognized image (so non-image content is left untouched).
+ * Ports upstream's `imageMediaTypeSignatures`. Offset-based formats (avif/heic)
+ * are not detected.
+ */
+@Suppress("MagicNumber") // the hex literals ARE the file-format magic-byte signatures
+private fun detectImageMediaType(base64: String): String? {
+    val bytes = runCatching {
+        if (base64.isEmpty()) null else convertBase64ToByteArray(base64)
+    }.getOrNull() ?: return null
+    fun hasPrefix(sig: List<Int>, offset: Int = 0): Boolean =
+        bytes.size >= offset + sig.size && sig.withIndex().all { (i, b) -> (bytes[offset + i].toInt() and 0xFF) == b }
+    val prefixSignatures = listOf(
+        listOf(0x89, 0x50, 0x4E, 0x47) to "image/png",
+        listOf(0xFF, 0xD8) to "image/jpeg",
+        listOf(0x47, 0x49, 0x46) to "image/gif",
+        listOf(0x42, 0x4D) to "image/bmp",
+        listOf(0x49, 0x49, 0x2A, 0x00) to "image/tiff",
+        listOf(0x4D, 0x4D, 0x00, 0x2A) to "image/tiff",
+    )
+    val byPrefix = prefixSignatures.firstOrNull { hasPrefix(it.first) }?.second
+    val isWebp = hasPrefix(listOf(0x52, 0x49, 0x46, 0x46)) && hasPrefix(listOf(0x57, 0x45, 0x42, 0x50), offset = 8)
+    return byPrefix ?: if (isWebp) "image/webp" else null
 }
 
 /** Returns the inlined bytes when [url] must be resolved, or null to leave the part as-is. */
