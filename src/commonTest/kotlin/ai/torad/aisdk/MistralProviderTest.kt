@@ -130,6 +130,57 @@ class MistralProviderTest {
     }
 
     @Test
+    fun `chat body uses Mistral wire shape - any toolChoice + tool name + prefix`() = runTest {
+        val fixture = createTestServer(
+            mutableMapOf(
+                "https://api.mistral.ai/v1/chat/completions" to UrlHandler(
+                    UrlResponse.JsonValue(
+                        Json.parseToJsonElement(
+                            "{\"id\":\"c\",\"model\":\"m\",\"choices\":[{\"message\":" +
+                                "{\"role\":\"assistant\",\"content\":\"ok\"},\"finish_reason\":\"stop\"}]," +
+                                "\"usage\":{\"prompt_tokens\":1,\"completion_tokens\":1,\"total_tokens\":2}}",
+                        ),
+                    ),
+                ),
+            ),
+        )
+        fixture.server.start()
+        val provider = createMistral(fixture.httpClient(), MistralProviderSettings(apiKey = "key"))
+        provider.chat("mistral-small-latest").generate(
+            LanguageModelCallParams(
+                messages = listOf(
+                    userMessage("go"),
+                    ModelMessage(
+                        MessageRole.Assistant,
+                        listOf(ContentPart.ToolCall("t1", "lookup", buildJsonObject {})),
+                    ),
+                    ModelMessage(
+                        MessageRole.Tool,
+                        listOf(ContentPart.ToolResult("t1", "lookup", JsonPrimitive("done"))),
+                    ),
+                ),
+                tools = listOf(
+                    LanguageModelTool("lookup", "d", "{\"type\":\"object\"}"),
+                    LanguageModelTool("other", "d", "{\"type\":\"object\"}"),
+                ),
+                toolChoice = ToolChoice.Specific("lookup"),
+            ),
+        )
+        val body = fixture.calls.single().requestBodyJson.jsonObject
+        // tool_choice "any" + tools filtered to the named one.
+        assertEquals("any", body["tool_choice"]?.jsonPrimitive?.contentOrNull)
+        assertEquals(1, body["tools"]?.jsonArray?.size, "tools filtered to the named tool")
+        val msgs = body["messages"]!!.jsonArray
+        fun role(m: kotlinx.serialization.json.JsonElement) = m.jsonObject["role"]?.jsonPrimitive?.contentOrNull
+        // The tool-result message carries the tool name.
+        val toolMsg = msgs.first { role(it) == "tool" }.jsonObject
+        assertEquals("lookup", toolMsg["name"]?.jsonPrimitive?.contentOrNull)
+        // The final assistant message gets prefix:true.
+        val asstMsg = msgs.last { role(it) == "assistant" }.jsonObject
+        assertEquals(true, asstMsg["prefix"]?.jsonPrimitive?.booleanOrNull)
+    }
+
+    @Test
     fun `unsupported model families and unconfigured singleton fail explicitly`() {
         val provider = createMistral(createTestServer(mutableMapOf()).httpClient(), MistralProviderSettings(apiKey = "key"))
 
