@@ -4,7 +4,9 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.filterIsInstance
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
+import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonObject
 
 /**
  * A typed streaming-object result — the v6 `StreamObjectResult` surface. Wraps the
@@ -18,6 +20,7 @@ import kotlinx.serialization.json.JsonElement
 public class StreamObjectResult<TOutput> internal constructor(
     private val events: Flow<StreamEvent>,
     private val output: Output<TOutput>,
+    private val repairText: ((String) -> String?)? = null,
 ) {
     /**
      * The object as it builds: each emission is the best-effort decode of the text
@@ -44,19 +47,53 @@ public class StreamObjectResult<TOutput> internal constructor(
         events.filterIsInstance<StreamEvent.TextDelta>().map { it.text }
 
     /**
-     * Collect to completion and return the final typed object, or throw
-     * [NoObjectGeneratedError] if the model produced nothing parseable.
+     * For an array [output] (built via `Output.array`), emit each element as soon as
+     * it is complete (all elements but the in-flight last, then the last when the
+     * stream ends) — the v6 `elementStream`. Pass the same array output you streamed.
+     */
+    public fun <E> elementStream(arrayOutput: Output.Arr<E>): Flow<E> = flow {
+        val accumulated = StringBuilder()
+        var emitted = 0
+
+        // Returns the elements newly ready since the last call. The in-flight last
+        // element is held back until the stream completes.
+        fun ready(complete: Boolean): List<E> {
+            val elements = (parsePartialJson(accumulated.toString()).value as? JsonObject)
+                ?.get("elements") as? JsonArray ?: return emptyList()
+            val readyCount = if (complete) elements.size else (elements.size - 1).coerceAtLeast(0)
+            val out = mutableListOf<E>()
+            while (emitted < readyCount) {
+                runCatching {
+                    aiSdkOutputJson.decodeFromJsonElement(arrayOutput.elementSerializer, elements[emitted])
+                }.getOrNull()?.let { out.add(it) }
+                emitted++
+            }
+            return out
+        }
+
+        events.collect { event ->
+            if (event !is StreamEvent.TextDelta) return@collect
+            accumulated.append(event.text)
+            ready(complete = false).forEach { emit(it) }
+        }
+        ready(complete = true).forEach { emit(it) }
+    }
+
+    /**
+     * Collect to completion and return the final typed object. The complete text is
+     * decoded once at the end; if that fails and a [repairText] hook is set, the
+     * repaired text is retried. Throws [NoObjectGeneratedError] (carrying the raw
+     * text) if neither yields a valid object.
      */
     public suspend fun objectValue(): TOutput {
-        var last: TOutput? = null
-        var produced = false
-        partialObjectStream.collect {
-            last = it
-            produced = true
+        val accumulated = StringBuilder()
+        events.collect { event -> if (event is StreamEvent.TextDelta) accumulated.append(event.text) }
+        val text = accumulated.toString()
+        runCatching { output.decode(text) }.getOrNull()?.let { return it }
+        repairText?.invoke(text)?.let { repaired ->
+            runCatching { output.decode(repaired) }.getOrNull()?.let { return it }
         }
-        if (!produced) throw NoObjectGeneratedError("Object stream produced no parseable object")
-        @Suppress("UNCHECKED_CAST")
-        return last as TOutput
+        throw NoObjectGeneratedError("Object stream produced no parseable object", text = text)
     }
 }
 
@@ -83,6 +120,7 @@ public fun <TOutput> streamObjectResult(
     presencePenalty: Float? = null,
     frequencyPenalty: Float? = null,
     responseFormat: ResponseFormat = ResponseFormat.Text,
+    repairText: ((String) -> String?)? = null,
 ): StreamObjectResult<TOutput> = StreamObjectResult(
     events = streamText(
         model = model,
@@ -103,4 +141,5 @@ public fun <TOutput> streamObjectResult(
         responseFormat = responseFormat,
     ),
     output = output,
+    repairText = repairText,
 )
