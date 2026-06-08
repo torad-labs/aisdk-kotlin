@@ -3,6 +3,7 @@ import ai.torad.aisdk.providers.MISTRAL_VERSION
 import ai.torad.aisdk.providers.MistralProviderSettings
 import ai.torad.aisdk.providers.createMistral
 import ai.torad.aisdk.providers.mistral
+import ai.torad.aisdk.testing.drainAllItems
 
 import io.ktor.http.HttpHeaders
 import kotlinx.coroutines.test.runTest
@@ -178,6 +179,66 @@ class MistralProviderTest {
         // The final assistant message gets prefix:true.
         val asstMsg = msgs.last { role(it) == "assistant" }.jsonObject
         assertEquals(true, asstMsg["prefix"]?.jsonPrimitive?.booleanOrNull)
+    }
+
+    @Test
+    fun `chat response maps Mistral thinking content for generate and stream`() = runTest {
+        val fixture = createTestServer(
+            mutableMapOf(
+                "https://api.mistral.ai/v1/chat/completions" to UrlHandler(
+                    listOf(
+                        UrlResponse.JsonValue(
+                            Json.parseToJsonElement(
+                                """
+                                {
+                                  "id":"chat-2",
+                                  "model":"magistral-small-2507",
+                                  "choices":[
+                                    {
+                                      "message":{
+                                        "role":"assistant",
+                                        "content":[
+                                          {"type":"thinking","thinking":[{"type":"text","text":"First thought."}]},
+                                          {"type":"text","text":"Final answer."}
+                                        ]
+                                      },
+                                      "finish_reason":"stop"
+                                    }
+                                  ],
+                                  "usage":{"prompt_tokens":1,"completion_tokens":2,"total_tokens":3}
+                                }
+                                """.trimIndent(),
+                            ),
+                        ),
+                        UrlResponse.StreamChunks(
+                            listOf(
+                                """
+                                data: {"id":"chat-stream-2","model":"magistral-small-2507","choices":[{"delta":{"role":"assistant","content":[{"type":"thinking","thinking":[{"type":"text","text":"Stream thought."}]}]},"finish_reason":null}]}
+
+                                data: {"id":"chat-stream-2","model":"magistral-small-2507","choices":[{"delta":{"role":"assistant","content":[{"type":"text","text":"Stream answer."}]},"finish_reason":null}]}
+
+                                data: {"id":"chat-stream-2","model":"magistral-small-2507","choices":[{"delta":{"content":""},"finish_reason":"stop"}],"usage":{"prompt_tokens":1,"completion_tokens":2,"total_tokens":3}}
+
+                                data: [DONE]
+
+                                """.trimIndent(),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+        fixture.server.start()
+        val provider = createMistral(fixture.httpClient(), MistralProviderSettings(apiKey = "key"))
+
+        val generated = provider.chat("magistral-small-2507").generate(LanguageModelCallParams(messages = listOf(userMessage("hi"))))
+        val events = drainAllItems(provider.chat("magistral-small-2507").stream(LanguageModelCallParams(messages = listOf(userMessage("hi")))))
+
+        assertEquals("Final answer.", generated.text)
+        assertEquals("First thought.", generated.content.filterIsInstance<ContentPart.Reasoning>().single().text)
+        assertTrue(events.any { it is StreamEvent.ReasoningDelta && it.text == "Stream thought." })
+        assertTrue(events.any { it is StreamEvent.TextDelta && it.text == "Stream answer." })
+        assertEquals(FinishReason.Stop, events.filterIsInstance<StreamEvent.Finish>().single().finishReason)
     }
 
     @Test

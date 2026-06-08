@@ -218,6 +218,37 @@ class XaiProviderTest {
     }
 
     @Test
+    fun `chat throws APICallError when xAI returns 200 error body`() = runTest {
+        val fixture = createTestServer(
+            mutableMapOf(
+                "https://api.x.ai/v1/chat/completions" to UrlHandler(
+                    UrlResponse.JsonValue(
+                        Json.parseToJsonElement(
+                            """
+                            {
+                              "code":"The service is currently unavailable",
+                              "error":"Timed out waiting for first token"
+                            }
+                            """.trimIndent(),
+                        ),
+                    ),
+                ),
+            ),
+        )
+        fixture.server.start()
+        val provider = createXai(fixture.httpClient(), XaiProviderSettings(apiKey = "key"))
+
+        val error = assertFailsWith<APICallError> {
+            provider.chat("grok-3").generate(LanguageModelCallParams(messages = listOf(userMessage("hi"))))
+        }
+
+        assertEquals("Timed out waiting for first token", error.message)
+        assertEquals(200, error.statusCode)
+        assertEquals(true, error.isRetryable)
+        assertTrue(error.responseBody.orEmpty().contains("Timed out waiting for first token"))
+    }
+
+    @Test
     fun `image model supports generation edits options metadata and warnings`() = runTest {
         val fixture = createTestServer(
             mutableMapOf(
