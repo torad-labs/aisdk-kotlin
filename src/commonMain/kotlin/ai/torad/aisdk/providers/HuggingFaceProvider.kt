@@ -497,6 +497,7 @@ private class HuggingFaceResponsesStreamState(
     private val json: Json,
 ) {
     private var finishReason = FinishReason.Other
+    private var rawFinishReason: String? = null
     private var usage = Usage()
     private var responseId: String? = null
     private val openReasoningIds = mutableSetOf<String>()
@@ -597,7 +598,7 @@ private class HuggingFaceResponsesStreamState(
                     }
                 }
             }
-            "response.reasoning_text.delta" -> {
+            "response.reasoning_summary_text.delta", "response.reasoning_text.delta" -> {
                 val itemId = obj["item_id"]?.jsonPrimitive?.contentOrNull.orEmpty()
                 events += StreamEvent.ReasoningDelta(
                     id = itemId,
@@ -605,7 +606,7 @@ private class HuggingFaceResponsesStreamState(
                     providerMetadata = huggingFaceItemMetadata(itemId),
                 )
             }
-            "response.reasoning_text.done" -> {
+            "response.reasoning_summary_text.done", "response.reasoning_text.done" -> {
                 val itemId = obj["item_id"]?.jsonPrimitive?.contentOrNull.orEmpty()
                 openReasoningIds.remove(itemId)
                 events += StreamEvent.ReasoningEnd(itemId, huggingFaceItemMetadata(itemId))
@@ -624,6 +625,7 @@ private class HuggingFaceResponsesStreamState(
                 val response = obj["response"]?.jsonObject ?: JsonObject(emptyMap())
                 responseId = response["id"]?.jsonPrimitive?.contentOrNull ?: responseId
                 val reason = response["incomplete_details"]?.jsonObject?.get("reason")?.jsonPrimitive?.contentOrNull ?: "stop"
+                rawFinishReason = reason
                 finishReason = mapHuggingFaceFinishReason(reason)
                 usage = huggingFaceUsage(response["usage"])
             }
@@ -650,6 +652,7 @@ private class HuggingFaceResponsesStreamState(
                 providerMetadata = responseId?.let {
                     mapOf("huggingface" to buildJsonObject { put("responseId", JsonPrimitive(it)) })
                 },
+                rawFinishReason = rawFinishReason,
             ),
         )
     }

@@ -38,6 +38,7 @@ class LMNTProviderTest {
                 text = "hello",
                 voice = "ava",
                 responseFormat = "wav",
+                language = "fr",
                 speed = 1.1f,
                 providerOptions = mapOf(
                     "lmnt" to buildJsonObject {
@@ -63,6 +64,7 @@ class LMNTProviderTest {
         assertEquals("hello", body["text"]?.jsonPrimitive?.contentOrNull)
         assertEquals("ava", body["voice"]?.jsonPrimitive?.contentOrNull)
         assertEquals("wav", body["response_format"]?.jsonPrimitive?.contentOrNull)
+        assertEquals("fr", body["language"]?.jsonPrimitive?.contentOrNull)
         assertEquals(1.1f, body["speed"]?.jsonPrimitive?.floatOrNull)
         assertEquals(123, body["seed"]?.jsonPrimitive?.intOrNull)
         assertEquals(24000, body["sample_rate"]?.jsonPrimitive?.intOrNull)

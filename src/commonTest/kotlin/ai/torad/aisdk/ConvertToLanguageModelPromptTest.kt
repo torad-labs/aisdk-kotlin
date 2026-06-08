@@ -1,0 +1,165 @@
+package ai.torad.aisdk
+
+import kotlinx.coroutines.test.runTest
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
+import kotlin.test.assertNull
+
+class ConvertToLanguageModelPromptTest {
+    private fun imageMessage(url: String, mediaType: String = "image/png") = ModelMessage(
+        MessageRole.User,
+        listOf(ContentPart.Image(mediaType = mediaType, url = url)),
+    )
+
+    @Test
+    fun `a data URL image is decoded inline regardless of supportedUrls`() = runTest {
+        val converted = convertToLanguageModelPrompt(
+            listOf(imageMessage("data:image/png;base64,aW1n")),
+        )
+        val img = converted.single().content.single() as ContentPart.Image
+        assertEquals("aW1n", img.base64)
+        assertNull(img.url, "url cleared once inlined")
+    }
+
+    @Test
+    fun `a supported remote URL passes through untouched`() = runTest {
+        var downloaded = false
+        val converted = convertToLanguageModelPrompt(
+            listOf(imageMessage("https://cdn.test/a.png")),
+            supportedUrls = mapOf("image/*" to listOf("^https://cdn\\.test/")),
+            download = {
+                downloaded = true
+                DownloadedAsset("X", "image/png")
+            },
+        )
+        val img = converted.single().content.single() as ContentPart.Image
+        assertEquals("https://cdn.test/a.png", img.url, "supported URL not rewritten")
+        assertEquals(false, downloaded, "supported URL not downloaded")
+    }
+
+    @Test
+    fun `an unsupported remote URL is downloaded and inlined`() = runTest {
+        val converted = convertToLanguageModelPrompt(
+            listOf(imageMessage("https://other.test/a", mediaType = "")),
+            supportedUrls = mapOf("image/*" to listOf("^https://cdn\\.test/")),
+            download = { DownloadedAsset("ZGF0YQ==", "image/jpeg") },
+        )
+        val img = converted.single().content.single() as ContentPart.Image
+        assertEquals("ZGF0YQ==", img.base64)
+        assertEquals("image/jpeg", img.mediaType, "media type filled from the download")
+        assertNull(img.url)
+    }
+
+    @Test
+    fun `a dangling tool call before a new user turn throws MissingToolResultsError`() = runTest {
+        val messages = listOf(
+            ModelMessage(MessageRole.User, listOf(ContentPart.Text("go"))),
+            ModelMessage(
+                MessageRole.Assistant,
+                listOf(ContentPart.ToolCall("call_1", "t", JsonObject(emptyMap()))),
+            ),
+            // no Tool result before the next user turn
+            ModelMessage(MessageRole.User, listOf(ContentPart.Text("again"))),
+        )
+        val e = assertFailsWith<MissingToolResultsError> { convertToLanguageModelPrompt(messages) }
+        assertEquals(listOf("call_1"), e.toolCallIds)
+    }
+
+    @Test
+    fun `a tool call answered by a tool result is not dangling`() = runTest {
+        val messages = listOf(
+            ModelMessage(
+                MessageRole.Assistant,
+                listOf(ContentPart.ToolCall("call_1", "t", JsonObject(emptyMap()))),
+            ),
+            ModelMessage(
+                MessageRole.Tool,
+                listOf(ContentPart.ToolResult("call_1", "t", JsonPrimitive("ok"))),
+            ),
+        )
+        // does not throw
+        assertEquals(2, convertToLanguageModelPrompt(messages).size)
+    }
+
+    @Test
+    fun `an approved tool call awaiting execution is not dangling`() = runTest {
+        // The approval-resume path: a tool call, then a tool-approval-response (no
+        // tool result yet), then the conversation continues — must NOT throw.
+        val messages = listOf(
+            ModelMessage(
+                MessageRole.Assistant,
+                listOf(ContentPart.ToolApprovalRequest("call_1", "t", JsonObject(emptyMap()), approvalId = "ap_1")),
+            ),
+            ModelMessage(
+                MessageRole.Tool,
+                listOf(ContentPart.ToolApprovalResponse("call_1", approved = true, approvalId = "ap_1")),
+            ),
+            ModelMessage(MessageRole.User, listOf(ContentPart.Text("ok go"))),
+        )
+        assertEquals(3, convertToLanguageModelPrompt(messages).size)
+    }
+
+    @Test
+    fun `image media type is corrected from the actual bytes`() = runTest {
+        // PNG magic bytes (89 50 4E 47 0D 0A 1A 0A) base64-encoded, but mislabeled jpeg.
+        val pngBase64 = "iVBORw0KGgo="
+        val messages = listOf(
+            ModelMessage(MessageRole.User, listOf(ContentPart.Image(mediaType = "image/jpeg", base64 = pngBase64))),
+        )
+        val img = convertToLanguageModelPrompt(messages).single().content.single() as ContentPart.Image
+        assertEquals("image/png", img.mediaType, "media type sniffed from bytes overrides the wrong label")
+    }
+
+    @Test
+    fun `an image-url inside a tool result content output is downloaded and inlined`() = runTest {
+        val output = kotlinx.serialization.json.buildJsonObject {
+            put("type", JsonPrimitive("content"))
+            put(
+                "value",
+                kotlinx.serialization.json.buildJsonArray {
+                    add(
+                        kotlinx.serialization.json.buildJsonObject {
+                            put("type", JsonPrimitive("image-url"))
+                            put("url", JsonPrimitive("https://img.test/a.png"))
+                        },
+                    )
+                },
+            )
+        }
+        val messages = listOf(
+            ModelMessage(MessageRole.Tool, listOf(ContentPart.ToolResult("c1", "t", output))),
+        )
+        val converted = convertToLanguageModelPrompt(
+            messages,
+            download = { DownloadedAsset("Ym9keQ==", "image/png") },
+        )
+        val result = converted.single().content.single() as ContentPart.ToolResult
+        val outputObj = result.output as kotlinx.serialization.json.JsonObject
+        val valueArray = outputObj["value"] as kotlinx.serialization.json.JsonArray
+        val item = valueArray.single() as kotlinx.serialization.json.JsonObject
+        assertEquals("image-data", (item["type"] as JsonPrimitive).content, "image-url rewritten to image-data")
+        assertEquals("Ym9keQ==", (item["data"] as JsonPrimitive).content)
+    }
+
+    @Test
+    fun `a File part is NOT media-type-sniffed even if its bytes look like an image`() = runTest {
+        // "BM" (0x42 0x4D) is the BMP signature, but this is a declared text file.
+        val bmBase64 = "Qk1oello" // base64 starting with "BM..."
+        val messages = listOf(
+            ModelMessage(MessageRole.User, listOf(ContentPart.File(mediaType = "text/plain", base64 = bmBase64))),
+        )
+        val file = convertToLanguageModelPrompt(messages).single().content.single() as ContentPart.File
+        assertEquals("text/plain", file.mediaType, "File media type must NOT be overridden by byte-sniffing")
+    }
+
+    @Test
+    fun `a non-base64 data URL is left untouched rather than crashing`() = runTest {
+        val messages = listOf(imageMessage("data:text/plain,Hello", mediaType = "text/plain"))
+        // splitDataUrl would throw on this; the resolver must leave it for the provider.
+        val img = convertToLanguageModelPrompt(messages).single().content.single() as ContentPart.Image
+        assertEquals("data:text/plain,Hello", img.url, "non-base64 data URL preserved, not crashed")
+    }
+}

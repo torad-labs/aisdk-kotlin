@@ -17,6 +17,7 @@ import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.booleanOrNull
@@ -31,6 +32,7 @@ import kotlin.test.assertIs
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
+@Suppress("LargeClass")
 class OpenAICompatibleProviderTest {
     @Test
     fun `chat model posts OpenAI-compatible request and maps response content`() = runTest {
@@ -95,6 +97,8 @@ class OpenAICompatibleProviderTest {
                 "openai" to JsonObject(
                     mapOf(
                         "user" to JsonPrimitive("user_1"),
+                        "reasoningEffort" to JsonPrimitive("high"),
+                        "textVerbosity" to JsonPrimitive("low"),
                         "parallel_tool_calls" to JsonPrimitive(false),
                     ),
                 ),
@@ -108,6 +112,10 @@ class OpenAICompatibleProviderTest {
         assertEquals("hi", body["messages"]?.jsonArray?.single()?.jsonObject?.get("content")?.jsonPrimitive?.content)
         assertEquals("json_schema", body["response_format"]?.jsonObject?.get("type")?.jsonPrimitive?.content)
         assertEquals(false, body["parallel_tool_calls"]?.jsonPrimitive?.booleanOrNull)
+        // Canonical options must reach the wire under their snake_case keys.
+        assertEquals("user_1", body["user"]?.jsonPrimitive?.content)
+        assertEquals("high", body["reasoning_effort"]?.jsonPrimitive?.content)
+        assertEquals("low", body["verbosity"]?.jsonPrimitive?.content)
         assertEquals("hello", result.text)
         assertEquals("because", result.reasoningText)
         assertEquals(FinishReason.ToolCalls, result.finishReason)
@@ -167,6 +175,31 @@ class OpenAICompatibleProviderTest {
     }
 
     @Test
+    fun `chat model omits tool_choice when no tools are sent`() = runTest {
+        val seenBodies = mutableListOf<JsonObject>()
+        val client = HttpClient(
+            MockEngine { request ->
+                seenBodies += Json.parseToJsonElement(requestBodyText(request)).jsonObject
+                respond(
+                    content = "{\"id\":\"c\",\"choices\":[{\"message\":" +
+                        "{\"role\":\"assistant\",\"content\":\"ok\"},\"finish_reason\":\"stop\"}]}",
+                    status = HttpStatusCode.OK,
+                    headers = headersOf(HttpHeaders.ContentType, "application/json"),
+                )
+            },
+        )
+        val provider = createOpenAICompatible(
+            client,
+            OpenAICompatibleProviderSettings(name = "openai", baseUrl = "https://api.test/v1", apiKey = "secret"),
+        )
+        provider.languageModel("gpt-test").generate(LanguageModelCallParams(messages = listOf(userMessage("hi"))))
+        // No tools → neither tools nor tool_choice in the body (strict servers reject lone tool_choice).
+        val body = seenBodies.single()
+        assertEquals(null, body["tool_choice"], "tool_choice omitted without tools")
+        assertEquals(null, body["tools"])
+    }
+
+    @Test
     fun `chat model streams text reasoning tool calls and finish usage`() = runTest {
         val client = HttpClient(
             MockEngine { request ->
@@ -211,6 +244,54 @@ class OpenAICompatibleProviderTest {
         assertEquals(FinishReason.ToolCalls, finish.finishReason)
         assertEquals(1, finish.usage.promptTokens)
         assertEquals(2, finish.usage.completionTokens)
+    }
+
+    @Test
+    fun `chat response transform applies to generate and stream events`() = runTest {
+        val client = HttpClient(
+            MockEngine { request ->
+                val body = Json.parseToJsonElement(requestBodyText(request)).jsonObject
+                if (body["stream"]?.jsonPrimitive?.booleanOrNull == true) {
+                    respond(
+                        content = """
+                            data: {"id":"stream-1","choices":[{"delta":{"wire_content":"streamed"}}]}
+
+                            data: {"id":"stream-1","choices":[{"finish_reason":"stop"}]}
+
+                        """.trimIndent(),
+                        status = HttpStatusCode.OK,
+                        headers = headersOf(HttpHeaders.ContentType, "text/event-stream"),
+                    )
+                } else {
+                    respond(
+                        content = """
+                            {"id":"generate-1","choices":[{"message":{"role":"assistant","wire_content":"generated"},"finish_reason":"stop"}]}
+                        """.trimIndent(),
+                        status = HttpStatusCode.OK,
+                        headers = headersOf(HttpHeaders.ContentType, "application/json"),
+                    )
+                }
+            },
+        )
+        val provider = createOpenAICompatible(
+            client,
+            OpenAICompatibleProviderSettings(
+                name = "openai",
+                baseUrl = "https://api.test/v1",
+                transformChatResponse = ::rewriteWireContentResponse,
+            ),
+        )
+
+        val generated = provider.languageModel("gpt-test").generate(
+            LanguageModelCallParams(messages = listOf(userMessage("hi"))),
+        )
+        val events = drainAllItems(
+            provider.languageModel("gpt-test").stream(LanguageModelCallParams(messages = listOf(userMessage("hi")))),
+        )
+
+        assertEquals("generated", generated.text)
+        assertTrue(events.any { it is StreamEvent.TextDelta && it.text == "streamed" })
+        assertEquals(FinishReason.Stop, events.filterIsInstance<StreamEvent.Finish>().single().finishReason)
     }
 
     @Test
@@ -323,6 +404,7 @@ class OpenAICompatibleProviderTest {
     }
 
     @Test
+    @Suppress("LongMethod")
     fun `embedding image speech and transcription models map native endpoints`() = runTest {
         val seenPaths = mutableListOf<String>()
         val seenContentTypes = mutableListOf<String?>()
@@ -337,7 +419,12 @@ class OpenAICompatibleProviderTest {
                         headersOf(HttpHeaders.ContentType, "application/json"),
                     )
                     "/v1/images/generations" -> respond(
-                        """{"data":[{"b64_json":"iVBORw0="}]}""",
+                        """
+                        {
+                          "data":[{"b64_json":"iVBORw0="}],
+                          "usage":{"input_tokens":12,"output_tokens":9,"total_tokens":21}
+                        }
+                        """.trimIndent(),
                         HttpStatusCode.OK,
                         headersOf(HttpHeaders.ContentType, "application/json"),
                     )
@@ -365,9 +452,13 @@ class OpenAICompatibleProviderTest {
             AudioSource(mediaType = "audio/mpeg", base64 = convertByteArrayToBase64("abc".encodeToByteArray())),
         )
 
-        assertEquals(listOf(listOf(1f, 2f), listOf(3f, 4f)), embedding.embeddings)
+        assertEquals(2048, provider.embeddingModel("embed").maxEmbeddingsPerCall)
+        assertEquals(true, provider.embeddingModel("embed").supportsParallelCalls)
+        assertEquals(listOf(listOf(3f, 4f), listOf(1f, 2f)), embedding.embeddings)
         assertEquals(9, embedding.usage.tokens)
+        assertEquals(10, provider.imageModel("image").maxImagesPerCall)
         assertEquals("iVBORw0=", image.image.base64)
+        assertEquals(ImageModelUsage(inputTokens = 12, outputTokens = 9, totalTokens = 21), image.usage)
         assertEquals(2, image.warnings.size)
         assertEquals("YWJj", speech.audio.base64)
         assertEquals("audio/mpeg", speech.audio.mediaType)
@@ -378,6 +469,35 @@ class OpenAICompatibleProviderTest {
             seenPaths,
         )
         assertTrue(seenContentTypes.last()?.startsWith("multipart/form-data") == true)
+    }
+
+    @Test
+    fun `image edits use multipart edits endpoint when files are present`() = runTest {
+        var seenPath: String? = null
+        var seenContentType: String? = null
+        val client = HttpClient(
+            MockEngine { request ->
+                seenPath = request.url.encodedPath
+                seenContentType = request.headers[HttpHeaders.ContentType] ?: request.body.contentType?.toString()
+                respond(
+                    """{"data":[{"b64_json":"ZWRpdA=="}]}""",
+                    HttpStatusCode.OK,
+                    headersOf(HttpHeaders.ContentType, "application/json"),
+                )
+            },
+        )
+        val provider = createOpenAICompatible(client, OpenAICompatibleProviderSettings("openai", "https://api.test/v1"))
+
+        val image = generateImage(
+            model = provider.imageModel("image"),
+            prompt = "edit",
+            files = listOf(ImageGenerationFile(mediaType = "image/png", base64 = "aW1n", filename = "input.png")),
+            mask = ImageGenerationFile(mediaType = "image/png", base64 = "bWFzaw==", filename = "mask.png"),
+        )
+
+        assertEquals("/v1/images/edits", seenPath)
+        assertTrue(seenContentType?.startsWith("multipart/form-data") == true)
+        assertEquals("ZWRpdA==", image.image.base64)
     }
 
     @Test
@@ -548,12 +668,98 @@ class OpenAICompatibleProviderTest {
         )
     }
 
+    @Test
+    fun `a Tool message with multiple results serializes one wire tool message per result`() = runTest {
+        // Upstream (convert-to-openai-compatible-chat-messages) loops over every tool-result part and
+        // emits one {role:"tool", tool_call_id, content} per result; OpenAI requires one tool message per
+        // tool_call_id. A single SDK Tool-role ModelMessage can batch multiple results (e.g. AgentSession's
+        // streaming state), so the serializer must expand them — not keep only the first.
+        val seenBodies = mutableListOf<JsonObject>()
+        val client = HttpClient(
+            MockEngine { request ->
+                seenBodies += Json.parseToJsonElement(requestBodyText(request)).jsonObject
+                val responseBody = """{"id":"c1","created":1,"model":"m","choices":[""" +
+                    """{"message":{"role":"assistant","content":"ok"},"finish_reason":"stop"}]}"""
+                respond(
+                    content = responseBody,
+                    status = HttpStatusCode.OK,
+                    headers = headersOf(HttpHeaders.ContentType, "application/json"),
+                )
+            },
+        )
+        val model = createOpenAICompatible(
+            client,
+            OpenAICompatibleProviderSettings(name = "test", baseUrl = "https://api.test/v1", apiKey = "k"),
+        ).languageModel("m")
+        val messages = listOf(
+            ModelMessage(MessageRole.User, listOf(ContentPart.Text("run both"))),
+            ModelMessage(
+                MessageRole.Assistant,
+                listOf(
+                    ContentPart.ToolCall("call_a", "alpha", JsonObject(emptyMap())),
+                    ContentPart.ToolCall("call_b", "beta", JsonObject(emptyMap())),
+                ),
+            ),
+            // One Tool-role message batching two results (the AgentSession streaming shape).
+            ModelMessage(
+                MessageRole.Tool,
+                listOf(
+                    ContentPart.ToolResult("call_a", "alpha", JsonPrimitive("ra")),
+                    ContentPart.ToolResult("call_b", "beta", JsonPrimitive("rb")),
+                ),
+            ),
+        )
+
+        model.generate(LanguageModelCallParams(messages = messages))
+
+        val wireMessages = seenBodies.single()["messages"]!!.jsonArray.map { it.jsonObject }
+        val toolMessages = wireMessages.filter { it["role"]?.jsonPrimitive?.content == "tool" }
+        assertEquals(2, toolMessages.size, "each result becomes its own wire tool message")
+        assertEquals(
+            listOf("call_a", "call_b"),
+            toolMessages.map { it["tool_call_id"]?.jsonPrimitive?.content },
+            "tool_call_ids preserved in order",
+        )
+        assertEquals(
+            listOf("ra", "rb"),
+            toolMessages.map { it["content"]?.jsonPrimitive?.content },
+            "no result is dropped",
+        )
+    }
+
     private fun requestBodyText(request: HttpRequestData): String =
         when (val body = request.body) {
             is OutgoingContent.ByteArrayContent -> body.bytes().decodeToString()
             is OutgoingContent.NoContent -> ""
             else -> body.toString()
         }
+
+    private fun rewriteWireContentResponse(value: JsonObject): JsonObject {
+        val choices = value["choices"]?.jsonArray ?: return value
+        return JsonObject(
+            value + (
+                "choices" to JsonArray(
+                    choices.map { choice ->
+                        val choiceObj = choice.jsonObject
+                        val message = (choiceObj["message"] as? JsonObject)?.let(::rewriteWireContentPart)
+                        val delta = (choiceObj["delta"] as? JsonObject)?.let(::rewriteWireContentPart)
+                        JsonObject(
+                            choiceObj +
+                                listOfNotNull(
+                                    message?.let { "message" to it },
+                                    delta?.let { "delta" to it },
+                                ).toMap(),
+                        )
+                    },
+                )
+                )
+        )
+    }
+
+    private fun rewriteWireContentPart(value: JsonObject): JsonObject {
+        val content = value["wire_content"] ?: return value
+        return JsonObject(value - "wire_content" + ("content" to content))
+    }
 
     private fun Map<String, List<String>>.headerValue(name: String): String? =
         entries.firstOrNull { it.key.equals(name, ignoreCase = true) }?.value?.singleOrNull()

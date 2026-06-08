@@ -79,6 +79,7 @@ class ByteDanceProviderTest {
         )
 
         assertEquals("bytedance.video", model.provider)
+        assertEquals(1, model.maxVideosPerCall)
         assertEquals("https://cdn.example/video.mp4", result.videos.single().url)
         assertEquals("video/mp4", result.videos.single().mediaType)
         assertEquals(2, result.warnings.size)

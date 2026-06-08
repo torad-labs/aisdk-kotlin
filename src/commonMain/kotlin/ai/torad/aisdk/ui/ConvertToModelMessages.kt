@@ -3,9 +3,10 @@ package ai.torad.aisdk.ui
 import ai.torad.aisdk.ContentPart
 import ai.torad.aisdk.MessageRole
 import ai.torad.aisdk.ModelMessage
+import ai.torad.aisdk.StreamEvent
+import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.contentOrNull
-import kotlinx.serialization.json.JsonNull
 
 /**
  * Convert a list of UI-shape [UIMessage]s back into the model-shape
@@ -63,25 +64,46 @@ public fun convertToModelMessages(
             UIMessageRole.User -> MessageRole.User
             UIMessageRole.Assistant -> MessageRole.Assistant
         }
-        val parts = mutableListOf<ContentPart>()
-        val deferredToolResults = mutableListOf<ContentPart.ToolResult>()
-        for (part in uiMsg.parts) {
-            convertPart(
-                part = part,
-                ignoreIncompleteToolCalls = ignoreIncompleteToolCalls,
-                onContentPart = parts::add,
-                onDeferredToolResult = deferredToolResults::add,
-                contextHint = "UIMessage(id=${uiMsg.id})",
-            )
-        }
-        if (parts.isNotEmpty()) {
-            result.add(ModelMessage(role = role, content = parts.toList()))
-        }
-        for (toolResult in deferredToolResults) {
-            result.add(ModelMessage(role = MessageRole.Tool, content = listOf(toolResult)))
+        // An assistant turn spanning multiple steps (tool round-trips) replays as
+        // an interleaved assistant/tool/assistant sequence — one message group per
+        // step-start boundary — rather than a single merged message (upstream parity).
+        val groups = if (role == MessageRole.Assistant) splitAtStepBoundaries(uiMsg.parts) else listOf(uiMsg.parts)
+        for (group in groups) {
+            val parts = mutableListOf<ContentPart>()
+            val deferredToolResults = mutableListOf<ContentPart.ToolResult>()
+            for (part in group) {
+                convertPart(
+                    part = part,
+                    ignoreIncompleteToolCalls = ignoreIncompleteToolCalls,
+                    onContentPart = parts::add,
+                    onDeferredToolResult = deferredToolResults::add,
+                    contextHint = "UIMessage(id=${uiMsg.id})",
+                )
+            }
+            if (parts.isNotEmpty()) {
+                result.add(ModelMessage(role = role, content = parts.toList()))
+            }
+            for (toolResult in deferredToolResults) {
+                result.add(ModelMessage(role = MessageRole.Tool, content = listOf(toolResult)))
+            }
         }
     }
     return result
+}
+
+/** Partition parts into step groups at each [UIMessagePart.StepStart] boundary. */
+private fun splitAtStepBoundaries(parts: List<UIMessagePart>): List<List<UIMessagePart>> {
+    val groups = mutableListOf<List<UIMessagePart>>()
+    var current = mutableListOf<UIMessagePart>()
+    for (part in parts) {
+        if (part is UIMessagePart.StepStart && current.isNotEmpty()) {
+            groups.add(current)
+            current = mutableListOf()
+        }
+        current.add(part)
+    }
+    if (current.isNotEmpty()) groups.add(current)
+    return groups.ifEmpty { listOf(emptyList()) }
 }
 
 private fun approvalResponseMessage(uiMsg: UIMessage): ModelMessage? {
@@ -127,8 +149,9 @@ private fun convertPart(
     contextHint: String,
 ) {
     when (part) {
-        is UIMessagePart.Text -> onContentPart(ContentPart.Text(part.text))
-        is UIMessagePart.Reasoning -> onContentPart(ContentPart.Reasoning(part.text))
+        is UIMessagePart.Text -> onContentPart(ContentPart.Text(part.text, providerMetadata = part.providerMetadata))
+        is UIMessagePart.Reasoning ->
+            onContentPart(ContentPart.Reasoning(part.text, providerMetadata = part.providerMetadata))
         is UIMessagePart.ToolUI -> convertToolCall(
             toolCallId = part.toolCallId,
             toolName = part.toolName,
@@ -153,14 +176,42 @@ private fun convertPart(
             onDeferredToolResult = onDeferredToolResult,
             contextHint = contextHint,
         )
-        is UIMessagePart.StepStart,
+        // User-attached files and model sources DO carry to the model (they were
+        // previously dropped, losing attachments and source provenance).
+        is UIMessagePart.File,
         is UIMessagePart.SourceUrl,
         is UIMessagePart.SourceDocument,
-        is UIMessagePart.File,
+        -> mediaOrSourcePart(part)?.let(onContentPart)
+        // StepStart is a UI boundary marker; Data/Error are UI-only — not model content.
+        is UIMessagePart.StepStart,
         is UIMessagePart.Data,
         is UIMessagePart.Error,
         -> Unit
     }
+}
+
+/** Converts a File / SourceUrl / SourceDocument UI part to its model content part. */
+private fun mediaOrSourcePart(part: UIMessagePart): ContentPart? = when (part) {
+    is UIMessagePart.File -> ContentPart.File(
+        mediaType = part.mediaType,
+        base64 = part.base64,
+        filename = part.filename,
+        providerMetadata = part.providerMetadata,
+    )
+    is UIMessagePart.SourceUrl -> ContentPart.Source(
+        sourceType = StreamEvent.SourcePart.SourceType.Url,
+        url = part.url,
+        title = part.title,
+        providerMetadata = part.providerMetadata,
+    )
+    is UIMessagePart.SourceDocument -> ContentPart.Source(
+        sourceType = StreamEvent.SourcePart.SourceType.Document,
+        title = part.title,
+        providerMetadata = part.providerMetadata,
+        mediaType = part.mediaType,
+        filename = part.filename,
+    )
+    else -> null
 }
 
 @Suppress("LongParameterList", "CyclomaticComplexMethod")

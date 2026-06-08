@@ -88,6 +88,7 @@ private class KlingAIVideoModel(
     private val clock: Clock = Clock.System,
 ) : VideoModel {
     override val provider: String = "klingai.video"
+    override val maxVideosPerCall: Int = 1
 
     override suspend fun generate(params: VideoGenerationParams): VideoModelResult {
         params.abortSignal.throwIfAborted()
@@ -236,7 +237,7 @@ private fun klingAIT2VBody(
     options["mode"]?.let { put("mode", it) }
     options["cameraControl"]?.let { put("camera_control", it) }
     params.aspectRatio?.let { put("aspect_ratio", JsonPrimitive(it)) }
-    params.durationSeconds?.let { put("duration", JsonPrimitive(it.toString())) }
+    params.durationSeconds?.let { put("duration", JsonPrimitive(klingAIDuration(it))) }
     options["multiShot"]?.let { put("multi_shot", it) }
     options["shotType"]?.let { put("shot_type", it) }
     options["multiPrompt"]?.let { put("multi_prompt", it) }
@@ -271,7 +272,7 @@ private fun klingAII2VBody(
     options["elementList"]?.let { put("element_list", it) }
     options["voiceList"]?.let { put("voice_list", it) }
     options["watermarkEnabled"]?.jsonPrimitive?.booleanOrNull?.let { put("watermark_info", buildJsonObject { put("enabled", JsonPrimitive(it)) }) }
-    params.durationSeconds?.let { put("duration", JsonPrimitive(it.toString())) }
+    params.durationSeconds?.let { put("duration", JsonPrimitive(klingAIDuration(it))) }
     if (params.aspectRatio != null) {
         warnings += CallWarning("unsupported", "KlingAI image-to-video does not support aspectRatio. The output dimensions are determined by the input image.")
     }
@@ -363,6 +364,11 @@ private fun klingAIVideoMetadata(value: JsonObject): JsonObject = buildJsonObjec
     value["url"]?.jsonPrimitive?.contentOrNull?.let { put("url", JsonPrimitive(it)) }
     value["watermark_url"]?.jsonPrimitive?.contentOrNull?.let { put("watermarkUrl", JsonPrimitive(it)) }
     value["duration"]?.jsonPrimitive?.contentOrNull?.let { put("duration", JsonPrimitive(it)) }
+}
+
+private fun klingAIDuration(value: Float): String {
+    val wholeSeconds = value.toInt()
+    return if (value == wholeSeconds.toFloat()) wholeSeconds.toString() else value.toString()
 }
 
 private fun klingAIErrorMessage(statusCode: Int, parsed: JsonElement?, raw: String): String {

@@ -85,6 +85,8 @@ class AssemblyAIProviderTest {
         assertEquals("hello", result.segments.first().text)
         assertEquals(0.1f, result.segments.first().startSeconds)
         assertEquals(0.8f, result.segments.last().endSeconds)
+        assertEquals("en", result.language)
+        assertEquals(4.2f, result.durationInSeconds)
         assertEquals("true", result.response.headers["x-final"])
         assertEquals("completed", result.response.body?.jsonObject?.get("status")?.jsonPrimitive?.contentOrNull)
         assertEquals("completed", result.providerMetadata["assemblyai"]?.jsonObject?.get("status")?.jsonPrimitive?.contentOrNull)

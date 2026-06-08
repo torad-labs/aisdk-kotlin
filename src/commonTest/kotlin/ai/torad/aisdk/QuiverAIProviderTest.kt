@@ -22,6 +22,7 @@ import kotlin.test.assertTrue
 
 class QuiverAIProviderTest {
     @Test
+    @Suppress("LongMethod")
     fun `generate creates svg images with references options auth and metadata`() = runTest {
         val fixture = createTestServer(
             mutableMapOf(
@@ -60,6 +61,7 @@ class QuiverAIProviderTest {
         )
 
         assertEquals("quiverai.image", model.provider)
+        assertEquals(16, model.maxImagesPerCall)
         assertEquals("image/svg+xml", result.images.single().mediaType)
         assertEquals("<svg><rect/></svg>", convertBase64ToByteArray(result.images.single().base64).decodeToString())
         assertEquals("svg_1", result.response.id)
@@ -84,6 +86,7 @@ class QuiverAIProviderTest {
         val metadata = result.providerMetadata["quiverai"]?.jsonObject
         assertEquals("image/svg+xml", metadata?.get("images")?.jsonArray?.single()?.jsonObject?.get("mimeType")?.jsonPrimitive?.contentOrNull)
         assertEquals(21, metadata?.get("usage")?.jsonObject?.get("total_tokens")?.jsonPrimitive?.intOrNull)
+        assertEquals(ImageModelUsage(inputTokens = 12, outputTokens = 9, totalTokens = 21), result.usage)
     }
 
     @Test

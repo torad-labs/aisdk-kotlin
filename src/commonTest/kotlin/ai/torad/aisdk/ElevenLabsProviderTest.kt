@@ -39,12 +39,14 @@ class ElevenLabsProviderTest {
                 text = "hello",
                 voice = "voice-1",
                 responseFormat = "mp3_192",
+                language = "es",
                 speed = 1.2f,
                 instructions = "ignore",
                 providerOptions = mapOf(
                     "elevenlabs" to buildJsonObject {
-                        put("languageCode", JsonPrimitive("en"))
                         put("seed", JsonPrimitive(123))
+                        // languageCode is set too, but params.language ("es") must win (upstream order).
+                        put("languageCode", JsonPrimitive("fr"))
                         put("enableLogging", JsonPrimitive(false))
                         put(
                             "voiceSettings",
@@ -67,7 +69,7 @@ class ElevenLabsProviderTest {
         val body = request.requestBodyJson.jsonObject
         assertEquals("hello", body["text"]?.jsonPrimitive?.contentOrNull)
         assertEquals("eleven_multilingual_v2", body["model_id"]?.jsonPrimitive?.contentOrNull)
-        assertEquals("en", body["language_code"]?.jsonPrimitive?.contentOrNull)
+        assertEquals("es", body["language_code"]?.jsonPrimitive?.contentOrNull)
         assertEquals(123, body["seed"]?.jsonPrimitive?.intOrNull)
         assertEquals(1.2f, body["voice_settings"]?.jsonObject?.get("speed")?.jsonPrimitive?.floatOrNull)
         assertEquals(0.7f, body["voice_settings"]?.jsonObject?.get("similarity_boost")?.jsonPrimitive?.floatOrNull)
@@ -116,6 +118,8 @@ class ElevenLabsProviderTest {
         assertEquals("hello world", result.text)
         assertEquals(2, result.segments.size)
         assertEquals(0.1f, result.segments.first().startSeconds)
+        assertEquals("en", result.language)
+        assertEquals(0.8f, result.durationInSeconds)
         val request = fixture.calls.single()
         assertEquals("key", request.requestHeaders.headerValue("xi-api-key"))
         assertTrue(request.requestUserAgent.orEmpty().contains("ai-sdk/elevenlabs/$ELEVENLABS_VERSION"))

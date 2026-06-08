@@ -1,6 +1,8 @@
 package ai.torad.aisdk
 
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.emitAll
+import kotlinx.coroutines.flow.flow
 
 /**
  * Provider middleware. Per invariants I-9 and R-11, provider differences
@@ -21,6 +23,19 @@ import kotlinx.coroutines.flow.Flow
  * the same-direction call).
  */
 public interface LanguageModelMiddleware {
+    /**
+     * Transform the call params before [wrapGenerate]/[wrapStream] run, for the
+     * given [operation]. The transformed params flow into both the wrap hooks and
+     * the downstream call. This is the params-only seam — a middleware can implement
+     * just this (e.g. [ai.torad.aisdk.middleware.defaultSettingsMiddleware]).
+     * Default: pass through. Mirrors v6's `transformParams({ type, params, model })`.
+     */
+    public suspend fun transformParams(
+        operation: MiddlewareOperation,
+        params: LanguageModelCallParams,
+        model: LanguageModel,
+    ): LanguageModelCallParams = params
+
     /** Wrap the one-shot generate call. Default: pass through. */
     public suspend fun wrapGenerate(context: MiddlewareCallContext): LanguageModelResult =
         context.doGenerate(context.params)
@@ -28,7 +43,19 @@ public interface LanguageModelMiddleware {
     /** Wrap the streaming call. Default: pass through. */
     public fun wrapStream(context: MiddlewareCallContext): Flow<StreamEvent> =
         context.doStream(context.params)
+
+    /** Override the model id the wrapper presents (null = keep the wrapped model's). */
+    public fun overrideModelId(model: LanguageModel): String? = null
+
+    /** Override the provider name the wrapper presents (null = keep the wrapped model's). */
+    public fun overrideProvider(model: LanguageModel): String? = null
+
+    /** Override the supported-URL patterns the wrapper presents (null = keep the wrapped model's). */
+    public fun overrideSupportedUrls(model: LanguageModel): Map<String, List<String>>? = null
 }
+
+/** Which operation a [LanguageModelMiddleware.transformParams] call is transforming. */
+public enum class MiddlewareOperation { Generate, Stream }
 
 /**
  * What a middleware receives. Contains:
@@ -78,9 +105,11 @@ private class WrappedLanguageModel(
     private val inner: LanguageModel,
     middlewares: List<LanguageModelMiddleware>,
 ) : LanguageModel {
-    override val modelId: String = inner.modelId
-    override val provider: String = inner.provider
-    override val supportedUrls: Map<String, List<String>> = inner.supportedUrls
+    // Identity overrides: the first middleware (outermost) that supplies one wins.
+    override val modelId: String = middlewares.firstNotNullOfOrNull { it.overrideModelId(inner) } ?: inner.modelId
+    override val provider: String = middlewares.firstNotNullOfOrNull { it.overrideProvider(inner) } ?: inner.provider
+    override val supportedUrls: Map<String, List<String>> =
+        middlewares.firstNotNullOfOrNull { it.overrideSupportedUrls(inner) } ?: inner.supportedUrls
 
     private val chainGenerate: suspend (LanguageModelCallParams) -> LanguageModelResult
     private val chainStream: (LanguageModelCallParams) -> Flow<StreamEvent>
@@ -88,16 +117,18 @@ private class WrappedLanguageModel(
     init {
         // Build both chains bottom-up so each middleware sees `doGenerate`
         // and `doStream` pointing at the rest of the chain past itself
-        // (not at this middleware's own wrappers).
+        // (not at this middleware's own wrappers). Each middleware's
+        // transformParams runs first (for its axis), then its wrap hook.
         var doGenerate: suspend (LanguageModelCallParams) -> LanguageModelResult = inner::generate
         var doStream: (LanguageModelCallParams) -> Flow<StreamEvent> = inner::stream
         for (mw in middlewares.asReversed()) {
             val downstreamGen = doGenerate
             val downstreamStream = doStream
             val outerGen: suspend (LanguageModelCallParams) -> LanguageModelResult = { p ->
+                val tp = mw.transformParams(MiddlewareOperation.Generate, p, this)
                 mw.wrapGenerate(
                     MiddlewareCallContext(
-                        params = p,
+                        params = tp,
                         model = this,
                         doGenerate = downstreamGen,
                         doStream = downstreamStream,
@@ -105,14 +136,21 @@ private class WrappedLanguageModel(
                 )
             }
             val outerStream: (LanguageModelCallParams) -> Flow<StreamEvent> = { p ->
-                mw.wrapStream(
-                    MiddlewareCallContext(
-                        params = p,
-                        model = this,
-                        doGenerate = downstreamGen,
-                        doStream = downstreamStream,
-                    ),
-                )
+                // transformParams is suspend; run it inside the cold flow the
+                // wrapper returns, before delegating (keeps wrapStream non-suspend).
+                flow {
+                    val tp = mw.transformParams(MiddlewareOperation.Stream, p, this@WrappedLanguageModel)
+                    emitAll(
+                        mw.wrapStream(
+                            MiddlewareCallContext(
+                                params = tp,
+                                model = this@WrappedLanguageModel,
+                                doGenerate = downstreamGen,
+                                doStream = downstreamStream,
+                            ),
+                        ),
+                    )
+                }
             }
             doGenerate = outerGen
             doStream = outerStream

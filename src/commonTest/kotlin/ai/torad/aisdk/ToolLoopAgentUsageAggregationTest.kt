@@ -78,13 +78,16 @@ class ToolLoopAgentUsageAggregationTest {
 
         val result = agent.generate(prompt = "run", options = Unit)
 
-        assertEquals(30, result.usage.inputTokens.total)
-        assertEquals(12, result.usage.inputTokens.noCache)
-        assertEquals(14, result.usage.inputTokens.cacheRead)
-        assertEquals(4, result.usage.inputTokens.cacheWrite)
-        assertEquals(18, result.usage.outputTokens.total)
-        assertEquals(9, result.usage.outputTokens.text)
-        assertEquals(9, result.usage.outputTokens.reasoning)
-        assertEquals(secondUsage.raw, result.usage.raw)
+        // totalUsage is the sum across both steps (upstream parity).
+        assertEquals(30, result.totalUsage.inputTokens.total)
+        assertEquals(12, result.totalUsage.inputTokens.noCache)
+        assertEquals(14, result.totalUsage.inputTokens.cacheRead)
+        assertEquals(4, result.totalUsage.inputTokens.cacheWrite)
+        assertEquals(18, result.totalUsage.outputTokens.total)
+        assertEquals(9, result.totalUsage.outputTokens.text)
+        assertEquals(9, result.totalUsage.outputTokens.reasoning)
+        assertEquals(secondUsage.raw, result.totalUsage.raw)
+        // usage is the FINAL step's usage (upstream parity), not the sum.
+        assertEquals(secondUsage, result.usage)
     }
 }

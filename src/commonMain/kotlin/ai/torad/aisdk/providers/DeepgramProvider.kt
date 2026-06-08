@@ -155,8 +155,9 @@ private class DeepgramTranscriptionModel(
             headers = deepgramHeaders(settings, params.headers),
         )
         val value = response.value.jsonObject
-        val firstAlternative = value["results"]?.jsonObject
+        val firstChannel = value["results"]?.jsonObject
             ?.get("channels")?.jsonArray?.firstOrNull()?.jsonObject
+        val firstAlternative = firstChannel
             ?.get("alternatives")?.jsonArray?.firstOrNull()?.jsonObject
         val words = firstAlternative?.get("words")?.jsonArray.orEmpty()
         return TranscriptionModelResult(
@@ -176,6 +177,8 @@ private class DeepgramTranscriptionModel(
                 body = response.value,
             ),
             providerMetadata = mapOf("deepgram" to response.value),
+            language = firstChannel?.get("detected_language")?.jsonPrimitive?.contentOrNull,
+            durationInSeconds = value["metadata"]?.jsonObject?.get("duration")?.jsonPrimitive?.floatOrNull,
         )
     }
 }

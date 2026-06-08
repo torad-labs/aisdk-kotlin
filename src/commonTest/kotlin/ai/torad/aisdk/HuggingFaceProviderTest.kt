@@ -251,9 +251,9 @@ class HuggingFaceProviderTest {
 
                             data: {"type":"response.output_item.added","output_index":0,"item":{"type":"reasoning","id":"rsn-1"},"sequence_number":1}
 
-                            data: {"type":"response.reasoning_text.delta","item_id":"rsn-1","output_index":0,"content_index":0,"delta":"thinking","sequence_number":2}
+                            data: {"type":"response.reasoning_summary_text.delta","item_id":"rsn-1","output_index":0,"content_index":0,"delta":"thinking","sequence_number":2}
 
-                            data: {"type":"response.reasoning_text.done","item_id":"rsn-1","output_index":0,"content_index":0,"text":"thinking","sequence_number":3}
+                            data: {"type":"response.reasoning_summary_text.done","item_id":"rsn-1","output_index":0,"content_index":0,"text":"thinking","sequence_number":3}
 
                             data: {"type":"response.output_item.added","output_index":1,"item":{"type":"message","id":"msg-1","role":"assistant"},"sequence_number":4}
 

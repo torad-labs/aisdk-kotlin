@@ -134,6 +134,7 @@ private class FalImageModel(
     override val modelId: String,
 ) : ImageModel {
     override val provider: String = "fal.image"
+    override val maxImagesPerCall: Int = 1
 
     override suspend fun generate(params: ImageGenerationParams): ImageModelResult {
         params.abortSignal.throwIfAborted()
@@ -255,6 +256,7 @@ private class FalVideoModel(
     override val modelId: String,
 ) : VideoModel {
     override val provider: String = "fal.video"
+    override val maxVideosPerCall: Int = 1
 
     override suspend fun generate(params: VideoGenerationParams): VideoModelResult {
         params.abortSignal.throwIfAborted()
@@ -268,15 +270,16 @@ private class FalVideoModel(
         )
         val responseUrl = queue.value.jsonObject["response_url"]?.jsonPrimitive?.contentOrNull
             ?: throw AiSdkException("No response URL returned from queue endpoint")
+        val pollIntervalMillis = options["pollIntervalMs"]?.jsonPrimitive?.contentOrNull?.toLongOrNull()
+            ?: settings.videoPollIntervalMillis
         val result = falPollJson(
             client = client,
             url = responseUrl,
             headers = falHeaders(settings, params.headers),
             abortSignal = params.abortSignal,
-            pollIntervalMillis = options["pollIntervalMs"]?.jsonPrimitive?.contentOrNull?.toLongOrNull()
-                ?: settings.videoPollIntervalMillis,
+            pollIntervalMillis = pollIntervalMillis,
             maxPollAttempts = options["pollTimeoutMs"]?.jsonPrimitive?.contentOrNull?.toLongOrNull()
-                ?.let { timeout -> (timeout / settings.videoPollIntervalMillis.coerceAtLeast(1)).toInt().coerceAtLeast(1) }
+                ?.let { timeout -> (timeout / pollIntervalMillis.coerceAtLeast(1)).toInt().coerceAtLeast(1) }
                 ?: settings.videoMaxPollAttempts,
             timeoutMessage = "Video generation request timed out",
         )

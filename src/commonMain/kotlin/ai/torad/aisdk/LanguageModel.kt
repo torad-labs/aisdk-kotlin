@@ -115,6 +115,8 @@ public data class LanguageModelTool(
     val providerExecuted: Boolean = false,
     val metadata: Map<String, JsonElement> = emptyMap(),
     val strict: Boolean = true,
+    /** Provider-specific config sent to the model for this tool (upstream's `tool.providerOptions`). */
+    val providerOptions: Map<String, JsonElement> = emptyMap(),
 ) {
     /** Parsed once and cached — not a constructor arg, so not serialized. */
     val parametersSchema: JsonElement by lazy { aiSdkJson.parseToJsonElement(parametersSchemaJson) }
@@ -168,4 +170,10 @@ public data class LanguageModelResponseMetadata(
     val modelId: String? = null,
     val headers: Map<String, String> = emptyMap(),
     val body: JsonElement? = null,
+    /**
+     * The messages produced by this response (assistant + tool messages), for
+     * multi-turn persistence without holding the full conversation list. Empty
+     * unless the caller/provider populates it. Mirrors upstream `response.messages`.
+     */
+    val messages: List<ModelMessage> = emptyList(),
 )

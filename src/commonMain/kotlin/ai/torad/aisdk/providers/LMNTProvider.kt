@@ -90,6 +90,7 @@ private class LMNTSpeechModel(
             put("text", JsonPrimitive(params.text))
             put("voice", JsonPrimitive(params.voice ?: "ava"))
             put("response_format", JsonPrimitive(responseFormat))
+            params.language?.let { put("language", JsonPrimitive(it)) }
             params.speed?.let { put("speed", JsonPrimitive(it)) }
             val options = lmntOptions(params.providerOptions)
             options["conversational"]?.let { put("conversational", it) }

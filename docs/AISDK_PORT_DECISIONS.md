@@ -169,3 +169,43 @@ able to express these same concepts with `@Serializable` data classes,
 **Guardrail.** New provider features may enter through raw `JsonElement`
 escape hatches, but stable surfaces should graduate to typed DSLs or
 extension helpers once the shape is understood.
+
+## Decision 12 — Provider schema cleanup is opt-in per provider
+
+**Choice.** The shared schema cleanup helper is used only at provider
+boundaries that are verified to reject generated schema metadata. It
+always removes `$schema` and `title`, and it removes
+`additionalProperties` only when the provider requires that.
+
+**Rationale.** The upstream AI SDK passes tool input schemas through
+verbatim for OpenAI-compatible providers. OpenAI strict tool mode requires
+`additionalProperties:false`, so blanket removal would break a valid
+strict-mode path. Google already has a provider-specific OpenAPI
+conversion path. xAI rejects the generated metadata and therefore uses
+`stripUnsupportedSchemaKeys(..., dropAdditionalProperties = true)`.
+
+**Current policy.** xAI strips `$schema`, `title`, and
+`additionalProperties`; Google converts through `googleSchema`. OpenAI,
+OpenAI-compatible facades, OpenResponses, Bedrock, Cohere, and
+HuggingFace intentionally keep generated tool schemas unless provider
+docs or regression tests prove rejection. If another provider starts
+rejecting these keys, wire the shared helper at that provider edge and add
+a wire-shape test.
+
+## Decision 13 — Audit fixes may land as consolidated class batches
+
+**Choice.** The class-driven robustness sweep may land a consolidated
+audit batch when the verified fixes share one behavioral class and are
+validated together. The media, embedding, and rerank audit sweep landed
+this way in `f794e23`.
+
+**Rationale.** The original plan preferred paced modality commits, but
+Phase 4 findings crossed helper and provider boundaries: embedding caps,
+rerank ordering, media batching caps, image edit routing, and
+transcription fields. A single reviewed batch made the cross-cutting
+contract changes and tests easier to keep coherent.
+
+**Guardrail.** Consolidate only when the batch is still reviewable, has
+focused regression tests, and passes `./gradlew check` plus PR checks. Use
+smaller provider commits when the changes do not share a helper or
+contract.

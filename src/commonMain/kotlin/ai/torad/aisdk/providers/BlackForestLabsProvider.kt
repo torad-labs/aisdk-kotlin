@@ -101,6 +101,7 @@ private class BlackForestLabsImageModel(
     override val modelId: String,
 ) : ImageModel {
     override val provider: String = "black-forest-labs.image"
+    override val maxImagesPerCall: Int = 1
 
     override suspend fun generate(params: ImageGenerationParams): ImageModelResult {
         params.abortSignal.throwIfAborted()

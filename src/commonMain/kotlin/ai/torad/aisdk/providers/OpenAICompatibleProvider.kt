@@ -16,6 +16,7 @@ import io.ktor.http.contentType
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emitAll
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.map
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
@@ -54,7 +55,10 @@ public data class OpenAICompatibleProviderSettings(
     val chatSeedKey: String = "seed",
     val transformChatRequestBody: ((JsonObject) -> JsonObject)? = null,
     val convertUsage: ((JsonElement?) -> Usage)? = null,
+    val transformChatResponse: ((JsonObject) -> JsonObject)? = null,
 )
+
+private const val OPENAI_COMPATIBLE_MAX_IMAGES_PER_CALL: Int = 10
 
 public interface OpenAICompatibleProvider : Provider {
     public fun chatModel(modelId: String): LanguageModel
@@ -234,8 +238,17 @@ private class OpenAICompatibleChatLanguageModel(
     override suspend fun generate(params: LanguageModelCallParams): LanguageModelResult {
         val prepared = chatRequestBody(params, stream = false)
         val response = postJson("/chat/completions", prepared.body, params.headers)
+        val transformed = settings.applyChatResponseTransform(response.value)
+        openAICompatibleInBandError(transformed)?.let { error ->
+            throw error.toApiCallError(
+                url = url("/chat/completions"),
+                requestBody = prepared.body,
+                responseBody = response.rawText,
+                responseHeaders = response.headers,
+            )
+        }
         return chatResultFromJson(
-            response.value,
+            transformed,
             provider = providerName,
             requestBody = prepared.body,
             responseHeaders = response.headers,
@@ -257,7 +270,8 @@ private class OpenAICompatibleChatLanguageModel(
             onResponse = { sseHeaders = it },
         )
         forwardSseEvents(
-            events = parseJsonEventStream(rawLines, jsonSchema<JsonElement>(JsonObject(emptyMap())), json),
+            events = parseJsonEventStream(rawLines, jsonSchema<JsonElement>(JsonObject(emptyMap())), json)
+                .map { it.transformChatStreamEvent(prepared.body) { sseHeaders } },
             capturedHeaders = { sseHeaders },
             parseErrorPrefix = "Failed to parse OpenAI-compatible stream event",
             onEvent = { state.accept(it).forEach { e -> emit(e) } },
@@ -283,7 +297,7 @@ private class OpenAICompatibleChatLanguageModel(
         val strictJsonSchema = options["strictJsonSchema"]?.jsonPrimitive?.booleanOrNull ?: true
         val body = buildJsonObject {
             put("model", JsonPrimitive(modelId))
-            put("messages", JsonArray(params.messages.mapNotNull(::openAIChatMessageJson)))
+            put("messages", JsonArray(params.messages.flatMap(::openAIChatMessagesJson)))
             params.maxOutputTokens?.let { put(settings.chatMaxOutputTokensKey, JsonPrimitive(it)) }
             params.temperature?.let { put("temperature", JsonPrimitive(it)) }
             params.topP?.let { put("top_p", JsonPrimitive(it)) }
@@ -293,15 +307,23 @@ private class OpenAICompatibleChatLanguageModel(
             params.seed?.let { put(settings.chatSeedKey, JsonPrimitive(it)) }
             val responseFormat = openAIResponseFormat(params.responseFormat, strictJsonSchema)
             if (responseFormat != null) put("response_format", responseFormat)
-            if (params.tools.isNotEmpty()) put("tools", JsonArray(params.tools.map(::openAIToolJson)))
-            val choice = openAIToolChoiceJson(params.toolChoice)
-            if (choice != null) put("tool_choice", choice)
+            if (params.tools.isNotEmpty()) {
+                put("tools", JsonArray(params.tools.map(::openAIToolJson)))
+                // tool_choice is only valid alongside tools — emitting "auto" on a tool-less
+                // request makes strict OpenAI-compatible servers reject it.
+                openAIToolChoiceJson(params.toolChoice)?.let { put("tool_choice", it) }
+            }
             if (stream) {
                 put("stream", JsonPrimitive(true))
                 if (settings.includeUsage) {
                     put("stream_options", buildJsonObject { put("include_usage", JsonPrimitive(true)) })
                 }
             }
+            // Canonical OpenAI options are reserved (so putProviderOptions skips their
+            // camelCase forms), but must still be emitted under their snake_case wire keys.
+            options["user"]?.takeIf { it !is JsonNull }?.let { put("user", it) }
+            options["reasoningEffort"]?.takeIf { it !is JsonNull }?.let { put("reasoning_effort", it) }
+            options["textVerbosity"]?.takeIf { it !is JsonNull }?.let { put("verbosity", it) }
             putProviderOptions(options, openAIChatReservedOptions)
         }
         return PreparedOpenAIRequest(settings.transformChatRequestBody?.invoke(body) ?: body, warnings)
@@ -314,6 +336,25 @@ private class OpenAICompatibleChatLanguageModel(
         providerOptionsName().substringBefore('.').trim().ifBlank { "openaiCompatible" }
 
     private fun providerOptionsName(): String = settings.providerOptionsName ?: settings.name
+
+    private fun ParseResult<JsonElement>.transformChatStreamEvent(
+        requestBody: JsonObject,
+        responseHeaders: () -> Map<String, String>,
+    ): ParseResult<JsonElement> = when (this) {
+        is ParseResult.Failure -> this
+        is ParseResult.Success -> {
+            val transformed = settings.applyChatResponseTransform(value)
+            openAICompatibleInBandError(transformed)?.let { error ->
+                throw error.toApiCallError(
+                    url = url("/chat/completions"),
+                    requestBody = requestBody,
+                    responseBody = transformed.toString(),
+                    responseHeaders = responseHeaders(),
+                )
+            }
+            ParseResult.Success(transformed)
+        }
+    }
 }
 
 private class OpenAICompatibleCompletionLanguageModel(
@@ -419,6 +460,8 @@ private class OpenAICompatibleEmbeddingModel(
 ) : OpenAICompatibleHttpModel(client, settings, json, modelId, "embedding"), EmbeddingModel {
     override val provider: String
         get() = providerName
+    override val maxEmbeddingsPerCall: Int = settings.maxEmbeddingsPerCall
+    override val supportsParallelCalls: Boolean = true
 
     override suspend fun embed(params: EmbeddingModelCallParams): EmbeddingModelResult {
         val max = params.maxEmbeddingsPerCall ?: settings.maxEmbeddingsPerCall
@@ -438,7 +481,6 @@ private class OpenAICompatibleEmbeddingModel(
         val value = response.value.jsonObject
         return EmbeddingModelResult(
             embeddings = value["data"]?.jsonArray.orEmpty()
-                .sortedBy { it.jsonObject["index"]?.jsonPrimitive?.intOrNull ?: Int.MAX_VALUE }
                 .map { item -> item.jsonObject["embedding"]?.jsonArray.orEmpty().map { embeddingFloat(it, provider) } },
             usage = EmbeddingUsage(
                 tokens = value["usage"]?.jsonObject?.get("prompt_tokens")?.jsonPrimitive?.intOrNull ?: 0,
@@ -460,6 +502,7 @@ private class OpenAICompatibleImageModel(
 ) : OpenAICompatibleHttpModel(client, settings, json, modelId, "image"), ImageModel {
     override val provider: String
         get() = providerName
+    override val maxImagesPerCall: Int = OPENAI_COMPATIBLE_MAX_IMAGES_PER_CALL
 
     override suspend fun generate(params: ImageGenerationParams): ImageModelResult {
         val warnings = mutableListOf<CallWarning>()
@@ -470,15 +513,7 @@ private class OpenAICompatibleImageModel(
             warnings += CallWarning("unsupported", "seed is not supported by OpenAI-compatible image generation")
         }
         val options = openAIProviderOptions(params.providerOptions, settings.providerOptionsName ?: settings.name)
-        val body = buildJsonObject {
-            put("model", JsonPrimitive(modelId))
-            put("prompt", JsonPrimitive(params.prompt))
-            put("n", JsonPrimitive(params.n))
-            params.size?.let { put("size", JsonPrimitive(it)) }
-            put("response_format", JsonPrimitive("b64_json"))
-            putProviderOptions(options, emptySet())
-        }
-        val response = postJson("/images/generations", body, params.headers)
+        val response = openAICompatibleImageResponse(params, options)
         val responseObject = WireDecoder.objectValue(response.value, providerName, "image generation response")
         val data = WireDecoder.requiredArray(responseObject, "data", providerName, "image generation response")
         if (data.isEmpty()) throw NoImageGeneratedError("OpenAI-compatible image response contained no data.")
@@ -495,8 +530,68 @@ private class OpenAICompatibleImageModel(
             warnings = warnings,
             response = LanguageModelResponseMetadata(modelId = modelId, headers = response.headers, body = response.value),
             providerMetadata = openAIProviderMetadata(responseObject["providerMetadata"], settings.name),
+            usage = openAICompatibleImageUsage(responseObject["usage"]),
         )
     }
+
+    private suspend fun openAICompatibleImageResponse(
+        params: ImageGenerationParams,
+        options: JsonObject,
+    ): HttpJsonResponse =
+        if (params.files.isNotEmpty()) {
+            postMultipart("/images/edits", openAICompatibleImageEditMultipart(params, options), params.headers)
+        } else {
+            postJson("/images/generations", openAICompatibleImageGenerationBody(params, options), params.headers)
+        }
+
+    private fun openAICompatibleImageGenerationBody(
+        params: ImageGenerationParams,
+        options: JsonObject,
+    ): JsonObject = buildJsonObject {
+        put("model", JsonPrimitive(modelId))
+        put("prompt", JsonPrimitive(params.prompt))
+        put("n", JsonPrimitive(params.n))
+        params.size?.let { put("size", JsonPrimitive(it)) }
+        put("response_format", JsonPrimitive("b64_json"))
+        putProviderOptions(options, emptySet())
+    }
+
+    private suspend fun openAICompatibleImageEditMultipart(
+        params: ImageGenerationParams,
+        options: JsonObject,
+    ): MultiPartFormDataContent = MultiPartFormDataContent(
+        formData {
+            append("model", modelId)
+            append("prompt", params.prompt)
+            append("n", params.n.toString())
+            params.size?.let { append("size", it) }
+            for ((key, value) in options) {
+                if (key !in openAICompatibleImageEditReservedOptions) append(key, openAIFormValue(value))
+            }
+            params.files.forEachIndexed { index, file ->
+                append("image", openAICompatibleImageFileBytes(file), openAICompatibleImageFileHeaders(file, index))
+            }
+            params.mask?.let { mask ->
+                append("mask", openAICompatibleImageFileBytes(mask), openAICompatibleImageFileHeaders(mask, 0))
+            }
+        },
+    )
+
+    private suspend fun openAICompatibleImageFileBytes(file: ImageGenerationFile): ByteArray = when {
+        file.base64 != null -> convertBase64ToByteArray(file.base64)
+        file.url != null -> client.request(file.url).bodyAsBytes()
+        else -> throw InvalidArgumentError("files", "OpenAI-compatible image edits require file data or URL.")
+    }
+
+    private fun openAICompatibleImageFileHeaders(file: ImageGenerationFile, index: Int): Headers =
+        Headers.build {
+            val mediaType = file.mediaType ?: "image/png"
+            append(HttpHeaders.ContentType, mediaType)
+            append(
+                HttpHeaders.ContentDisposition,
+                "filename=\"${file.filename ?: "image-$index.${mediaTypeToExtension(mediaType)}"}\"",
+            )
+        }
 }
 
 private class OpenAICompatibleSpeechModel(
@@ -517,6 +612,7 @@ private class OpenAICompatibleSpeechModel(
             params.voice?.let { put("voice", JsonPrimitive(it)) }
             params.instructions?.let { put("instructions", JsonPrimitive(it)) }
             params.speed?.let { put("speed", JsonPrimitive(it)) }
+            params.language?.let { put("language", JsonPrimitive(it)) }
             put("response_format", JsonPrimitive(format))
             putProviderOptions(options, setOf("response_format"))
         }
@@ -578,6 +674,9 @@ private class OpenAICompatibleTranscriptionModel(
             },
             response = LanguageModelResponseMetadata(modelId = modelId, headers = response.headers, body = response.value),
             providerMetadata = openAIProviderMetadata(value["providerMetadata"], settings.name),
+            // verbose_json responses carry the detected language + audio duration.
+            language = WireDecoder.optionalString(value, "language", providerName, "transcription response"),
+            durationInSeconds = WireDecoder.optionalFloat(value, "duration", providerName, "transcription response"),
         )
     }
 }
@@ -592,6 +691,52 @@ private data class OpenAIBytesResponse(
     val headers: Map<String, String>,
 )
 
+private data class OpenAICompatibleInBandError(
+    val message: String,
+    val isRetryable: Boolean,
+)
+
+private fun OpenAICompatibleProviderSettings.applyChatResponseTransform(value: JsonElement): JsonElement =
+    (value as? JsonObject)?.let { transformChatResponse?.invoke(it) ?: it } ?: value
+
+private fun openAICompatibleInBandError(value: JsonElement): OpenAICompatibleInBandError? {
+    val obj = value as? JsonObject
+    val error = obj?.get("error")
+    return if (obj == null || error == null) {
+        null
+    } else {
+        val errorObj = error as? JsonObject
+        val code = obj.jsonStringOrNull("code") ?: errorObj?.jsonStringOrNull("code")
+        val message = when (error) {
+            is JsonPrimitive -> error.contentOrNull ?: error.content
+            is JsonObject -> error.jsonStringOrNull("message") ?: error.jsonStringOrNull("type")
+            else -> null
+        } ?: obj.jsonStringOrNull("message") ?: error.toString()
+        OpenAICompatibleInBandError(
+            message = message,
+            isRetryable = code == "The service is currently unavailable",
+        )
+    }
+}
+
+private fun OpenAICompatibleInBandError.toApiCallError(
+    url: String,
+    requestBody: JsonElement,
+    responseBody: String,
+    responseHeaders: Map<String, String>,
+): APICallError = APICallError(
+    message = message,
+    url = url,
+    requestBodyValues = requestBody,
+    statusCode = 200,
+    responseHeaders = responseHeaders,
+    responseBody = responseBody,
+    isRetryable = isRetryable,
+)
+
+private fun JsonObject.jsonStringOrNull(key: String): String? =
+    (this[key] as? JsonPrimitive)?.contentOrNull
+
 
 private val openAIChatReservedOptions = setOf(
     "user",
@@ -602,6 +747,15 @@ private val openAIChatReservedOptions = setOf(
 
 private val openAICompletionReservedOptions = setOf(
     "user",
+)
+
+private val openAICompatibleImageEditReservedOptions = setOf(
+    "model",
+    "prompt",
+    "image",
+    "mask",
+    "n",
+    "size",
 )
 
 private fun chatResultFromJson(
@@ -867,58 +1021,68 @@ private data class StreamingToolCall(
  * `function_response.name: Name cannot be empty`). The wire sees the assistant's `tool_calls` entry and
  * the eventual real [ContentPart.ToolResult] — a consistent OpenAI conversation; approvals stay internal.
  */
-private fun openAIChatMessageJson(message: ModelMessage): JsonObject? = when (message.role) {
-    MessageRole.System -> buildJsonObject {
-        put("role", JsonPrimitive("system"))
-        put("content", JsonPrimitive(message.content.filterIsInstance<ContentPart.Text>().joinToString("") { it.text }))
-    }
-    MessageRole.User -> buildJsonObject {
-        put("role", JsonPrimitive("user"))
-        if (message.content.size == 1 && message.content.single() is ContentPart.Text) {
-            put("content", JsonPrimitive((message.content.single() as ContentPart.Text).text))
-        } else {
-            put("content", JsonArray(message.content.mapNotNull(::openAIUserContentPartJson)))
-        }
-    }
-    MessageRole.Assistant -> buildJsonObject {
-        put("role", JsonPrimitive("assistant"))
-        val text = message.content.filterIsInstance<ContentPart.Text>().joinToString("") { it.text }
-        val reasoning = message.content.filterIsInstance<ContentPart.Reasoning>().joinToString("") { it.text }
-        val toolCalls = message.content.filterIsInstance<ContentPart.ToolCall>()
-        put("content", if (toolCalls.isEmpty()) JsonPrimitive(text) else JsonPrimitive(text.takeIf { it.isNotEmpty() }))
-        if (reasoning.isNotEmpty()) put("reasoning_content", JsonPrimitive(reasoning))
-        if (toolCalls.isNotEmpty()) {
-            put(
-                "tool_calls",
-                JsonArray(toolCalls.map { part ->
-                    buildJsonObject {
-                        put("id", JsonPrimitive(part.toolCallId))
-                        put("type", JsonPrimitive("function"))
-                        put(
-                            "function",
-                            buildJsonObject {
-                                put("name", JsonPrimitive(part.toolName))
-                                put("arguments", JsonPrimitive(part.input.toString()))
-                            },
-                        )
-                    }
-                }),
-            )
-        }
-    }
-    MessageRole.Tool -> openAIToolMessageJson(message)
+private fun openAIChatMessagesJson(message: ModelMessage): List<JsonObject> = when (message.role) {
+    MessageRole.System -> listOf(
+        buildJsonObject {
+            put("role", JsonPrimitive("system"))
+            put("content", JsonPrimitive(message.content.filterIsInstance<ContentPart.Text>().joinToString("") { it.text }))
+        },
+    )
+    MessageRole.User -> listOf(
+        buildJsonObject {
+            put("role", JsonPrimitive("user"))
+            if (message.content.size == 1 && message.content.single() is ContentPart.Text) {
+                put("content", JsonPrimitive((message.content.single() as ContentPart.Text).text))
+            } else {
+                put("content", JsonArray(message.content.mapNotNull(::openAIUserContentPartJson)))
+            }
+        },
+    )
+    MessageRole.Assistant -> listOf(
+        buildJsonObject {
+            put("role", JsonPrimitive("assistant"))
+            val text = message.content.filterIsInstance<ContentPart.Text>().joinToString("") { it.text }
+            val reasoning = message.content.filterIsInstance<ContentPart.Reasoning>().joinToString("") { it.text }
+            val toolCalls = message.content.filterIsInstance<ContentPart.ToolCall>()
+            put("content", if (toolCalls.isEmpty()) JsonPrimitive(text) else JsonPrimitive(text.takeIf { it.isNotEmpty() }))
+            if (reasoning.isNotEmpty()) put("reasoning_content", JsonPrimitive(reasoning))
+            if (toolCalls.isNotEmpty()) {
+                put(
+                    "tool_calls",
+                    JsonArray(toolCalls.map { part ->
+                        buildJsonObject {
+                            put("id", JsonPrimitive(part.toolCallId))
+                            put("type", JsonPrimitive("function"))
+                            put(
+                                "function",
+                                buildJsonObject {
+                                    put("name", JsonPrimitive(part.toolName))
+                                    put("arguments", JsonPrimitive(part.input.toString()))
+                                },
+                            )
+                        }
+                    }),
+                )
+            }
+        },
+    )
+    MessageRole.Tool -> openAIToolMessagesJson(message)
 }
 
-/** A Tool-role message: serialized only when it carries a real [ContentPart.ToolResult]; approval
- *  bookkeeping (no result part) returns null and never reaches the wire. */
-private fun openAIToolMessageJson(message: ModelMessage): JsonObject? {
-    val result = message.content.filterIsInstance<ContentPart.ToolResult>().firstOrNull() ?: return null
-    return buildJsonObject {
-        put("role", JsonPrimitive("tool"))
-        put("tool_call_id", JsonPrimitive(result.toolCallId))
-        put("content", JsonPrimitive(openAIContentString(result.modelVisible)))
+/**
+ * A Tool-role message expands to one wire `tool` message per real [ContentPart.ToolResult] — matching
+ * upstream's per-result loop (OpenAI requires one `tool` message per `tool_call_id`). Approval-response
+ * parts carry no wire concept, so a message with no [ContentPart.ToolResult] (approval bookkeeping)
+ * produces no wire messages and never reaches the wire.
+ */
+private fun openAIToolMessagesJson(message: ModelMessage): List<JsonObject> =
+    message.content.filterIsInstance<ContentPart.ToolResult>().map { result ->
+        buildJsonObject {
+            put("role", JsonPrimitive("tool"))
+            put("tool_call_id", JsonPrimitive(result.toolCallId))
+            put("content", JsonPrimitive(openAIContentString(result.modelVisible)))
+        }
     }
-}
 
 private fun openAIUserContentPartJson(part: ContentPart): JsonObject? = when (part) {
     is ContentPart.Text -> buildJsonObject {
@@ -927,12 +1091,14 @@ private fun openAIUserContentPartJson(part: ContentPart): JsonObject? = when (pa
     }
     is ContentPart.Image -> buildJsonObject {
         put("type", JsonPrimitive("image_url"))
-        put("image_url", buildJsonObject { put("url", JsonPrimitive("data:${part.mediaType};base64,${part.base64}")) })
+        val src = openAiImageUrl(part.url, part.mediaType, part.base64)
+        put("image_url", buildJsonObject { put("url", JsonPrimitive(src)) })
     }
     is ContentPart.File -> when {
         part.mediaType.startsWith("image/") -> buildJsonObject {
             put("type", JsonPrimitive("image_url"))
-            put("image_url", buildJsonObject { put("url", JsonPrimitive("data:${part.mediaType};base64,${part.base64}")) })
+            val src = openAiImageUrl(part.url, part.mediaType, part.base64)
+            put("image_url", buildJsonObject { put("url", JsonPrimitive(src)) })
         }
         part.mediaType.startsWith("audio/") -> buildJsonObject {
             put("type", JsonPrimitive("input_audio"))
@@ -963,6 +1129,14 @@ private fun openAIUserContentPartJson(part: ContentPart): JsonObject? = when (pa
     else -> null
 }
 
+/**
+ * The `image_url.url` value: a remote [url] is passed through directly (OpenAI
+ * fetches it); otherwise the inline [base64] is wrapped as a data URL. Closes the
+ * gap where a ContentPart carrying only a `url` produced `data:...;base64,` (empty).
+ */
+private fun openAiImageUrl(url: String?, mediaType: String, base64: String): String =
+    url ?: "data:$mediaType;base64,$base64"
+
 private fun openAIToolJson(tool: LanguageModelTool): JsonObject = buildJsonObject {
     put("type", JsonPrimitive("function"))
     put(
@@ -974,6 +1148,8 @@ private fun openAIToolJson(tool: LanguageModelTool): JsonObject = buildJsonObjec
             put("strict", JsonPrimitive(tool.strict))
         },
     )
+    // Per-tool provider config (e.g. cache_control), merged at the top level.
+    tool.providerOptions.forEach { (key, value) -> put(key, value) }
 }
 
 private fun openAIToolChoiceJson(choice: ToolChoice): JsonElement? = when (choice) {
@@ -1066,6 +1242,15 @@ private fun openAIUsage(value: JsonElement?): Usage {
     )
 }
 
+private fun openAICompatibleImageUsage(value: JsonElement?): ImageModelUsage {
+    val obj = value as? JsonObject ?: return ImageModelUsage()
+    return ImageModelUsage(
+        inputTokens = obj["input_tokens"]?.jsonPrimitive?.intOrNull,
+        outputTokens = obj["output_tokens"]?.jsonPrimitive?.intOrNull,
+        totalTokens = obj["total_tokens"]?.jsonPrimitive?.intOrNull,
+    )
+}
+
 private fun openAIFinishReason(value: String?): FinishReason = when (value) {
     "stop" -> FinishReason.Stop
     "length" -> FinishReason.Length
@@ -1138,4 +1323,3 @@ private fun toOpenAICamelCase(value: String): String =
         .filter { it.isNotBlank() }
         .mapIndexed { index, part -> if (index == 0) part.lowercase() else part.replaceFirstChar { it.uppercase() } }
         .joinToString("")
-

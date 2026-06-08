@@ -334,6 +334,8 @@ private class AlibabaEmbeddingModel(
     override val modelId: String,
 ) : EmbeddingModel {
     override val provider: String = "alibaba.embedding"
+    override val maxEmbeddingsPerCall: Int = ALIBABA_MAX_EMBEDDINGS_PER_CALL
+    override val supportsParallelCalls: Boolean = false
 
     override suspend fun embed(params: EmbeddingModelCallParams): EmbeddingModelResult {
         if (params.values.size > ALIBABA_MAX_EMBEDDINGS_PER_CALL) {

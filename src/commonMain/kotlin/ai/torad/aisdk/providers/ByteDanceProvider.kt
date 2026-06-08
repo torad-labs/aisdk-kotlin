@@ -80,6 +80,7 @@ private class ByteDanceVideoModel(
     override val modelId: String,
 ) : VideoModel {
     override val provider: String = "bytedance.video"
+    override val maxVideosPerCall: Int = 1
 
     override suspend fun generate(params: VideoGenerationParams): VideoModelResult {
         params.abortSignal.throwIfAborted()

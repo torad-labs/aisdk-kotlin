@@ -158,6 +158,10 @@ public sealed interface ContentPart {
         val url: String? = null,
         val title: String? = null,
         val providerMetadata: Map<String, JsonElement>? = null,
+        /** Media type of a document source (e.g. application/pdf). */
+        val mediaType: String? = null,
+        /** Optional display name of a document source. */
+        val filename: String? = null,
     ) : ContentPart
 
     /**
@@ -172,10 +176,16 @@ public sealed interface ContentPart {
     @SerialName("file")
     public data class File(
         val mediaType: String,
-        val base64: String,
+        val base64: String = "",
         /** Optional display name. v6 calls this `filename`. */
         val filename: String? = null,
         val providerMetadata: Map<String, JsonElement>? = null,
+        /**
+         * Remote (or data) URL for the file content, when not provided inline as
+         * [base64]. Mirrors v6's `data: DataContent | URL`. Resolve with
+         * [convertToLanguageModelPrompt] for providers that don't accept URLs.
+         */
+        val url: String? = null,
     ) : ContentPart
 
     /**
@@ -194,8 +204,14 @@ public sealed interface ContentPart {
     @SerialName("image")
     public data class Image(
         val mediaType: String,
-        val base64: String,
+        val base64: String = "",
         val providerMetadata: Map<String, JsonElement>? = null,
+        /**
+         * Remote (or data) URL for the image, when not provided inline as
+         * [base64]. Mirrors v6's `image: DataContent | URL`. Resolve with
+         * [convertToLanguageModelPrompt] for providers that don't accept URLs.
+         */
+        val url: String? = null,
     ) : ContentPart
 }
 

@@ -115,8 +115,13 @@ public class UnsupportedModelVersionError(
     version: String,
 ) : AiSdkException("Unsupported model version `$version` for `$modelId`")
 
-public class NoSuchProviderError(providerId: String) :
-    AiSdkException("No provider registered for `$providerId`")
+public class NoSuchProviderError(
+    public val providerId: String,
+    public val availableProviders: List<String> = emptyList(),
+) : AiSdkException(
+    "No provider registered for `$providerId`" +
+        if (availableProviders.isEmpty()) "" else " (available: ${availableProviders.joinToString(", ")})",
+)
 
 public class NoSuchModelError(
     providerId: String?,
@@ -135,11 +140,45 @@ public class NoSuchModelError(
 )
 
 public class NoOutputGeneratedError(message: String = "No output generated") : AiSdkException(message)
-public class NoObjectGeneratedError(message: String = "No object generated") : AiSdkException(message)
-public class NoImageGeneratedError(message: String = "No image generated") : AiSdkException(message)
-public class NoSpeechGeneratedError(message: String = "No speech generated") : AiSdkException(message)
-public class NoTranscriptGeneratedError(message: String = "No transcript generated") : AiSdkException(message)
-public class NoVideoGeneratedError(message: String = "No video generated") : AiSdkException(message)
+
+/**
+ * Thrown when no object could be generated (the model failed, or its output could
+ * not be parsed/validated). Carries the diagnostic context upstream's
+ * `NoObjectGeneratedError` exposes so callers can inspect the raw text, the
+ * response metadata, the token usage, and the finish reason of the failed call.
+ */
+public class NoObjectGeneratedError(
+    message: String = "No object generated",
+    public val text: String? = null,
+    public val response: LanguageModelResponseMetadata? = null,
+    public val usage: Usage? = null,
+    public val finishReason: FinishReason? = null,
+    cause: Throwable? = null,
+) : AiSdkException(message, cause)
+
+public class NoImageGeneratedError(
+    message: String = "No image generated",
+    public val responses: List<LanguageModelResponseMetadata> = emptyList(),
+    cause: Throwable? = null,
+) : AiSdkException(message, cause)
+
+public class NoSpeechGeneratedError(
+    message: String = "No speech generated",
+    public val responses: List<LanguageModelResponseMetadata> = emptyList(),
+    cause: Throwable? = null,
+) : AiSdkException(message, cause)
+
+public class NoTranscriptGeneratedError(
+    message: String = "No transcript generated",
+    public val responses: List<LanguageModelResponseMetadata> = emptyList(),
+    cause: Throwable? = null,
+) : AiSdkException(message, cause)
+
+public class NoVideoGeneratedError(
+    message: String = "No video generated",
+    public val responses: List<LanguageModelResponseMetadata> = emptyList(),
+    cause: Throwable? = null,
+) : AiSdkException(message, cause)
 public class UiMessageStreamError(message: String, cause: Throwable? = null) : AiSdkException(message, cause)
 
 public class InvalidStreamPartError(

@@ -159,6 +159,11 @@ private class GladiaTranscriptionModel(
                 body = result.value,
             ),
             providerMetadata = mapOf("gladia" to result.value),
+            language = transcript["languages"]?.jsonArray?.firstOrNull()?.jsonPrimitive?.contentOrNull,
+            durationInSeconds = responseBody["result"]?.jsonObject
+                ?.get("metadata")?.jsonObject
+                ?.get("audio_duration")?.jsonPrimitive
+                ?.floatOrNull,
         )
     }
 }

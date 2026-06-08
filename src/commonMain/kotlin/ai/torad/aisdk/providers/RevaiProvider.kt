@@ -157,6 +157,8 @@ private class RevaiTranscriptionModel(
                 body = transcript.value,
             ),
             providerMetadata = mapOf("revai" to transcript.value),
+            language = job["language"]?.jsonPrimitive?.contentOrNull,
+            durationInSeconds = mapped.durationInSeconds,
         )
     }
 }
@@ -167,6 +169,7 @@ private const val REVAI_BASE_URL: String = "https://api.rev.ai"
 private data class RevaiTranscriptMapping(
     val text: String,
     val segments: List<TranscriptSegment>,
+    val durationInSeconds: Float,
 )
 
 private suspend fun revaiPostMultipart(
@@ -299,7 +302,7 @@ private fun mapRevaiTranscript(value: JsonElement): RevaiTranscriptMapping {
             segments += TranscriptSegment(text = text, startSeconds = segmentStart, endSeconds = end)
         }
     }
-    return RevaiTranscriptMapping(text = text, segments = segments)
+    return RevaiTranscriptMapping(text = text, segments = segments, durationInSeconds = durationInSeconds)
 }
 
 private fun revaiHeaders(settings: RevaiProviderSettings, callHeaders: Map<String, String>): Map<String, String> {

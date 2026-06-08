@@ -63,6 +63,8 @@ public val SUPPORTED_PROTOCOL_VERSIONS: List<String> = listOf(
 )
 
 private const val JSONRPC_VERSION = "2.0"
+private const val HTTP_NOT_FOUND = 404
+private const val HTTP_METHOD_NOT_ALLOWED = 405
 private const val DEFAULT_MCP_CLIENT_NAME = "ai-sdk-mcp-client"
 private const val DEFAULT_MCP_CLIENT_VERSION = "1.0.0"
 private const val MCP_SSE_MAX_DATA_LINES = 1_000
@@ -1802,8 +1804,15 @@ public class HttpMCPTransport(
         }
         if (response.status.value !in 200..299) {
             val text = response.bodyAsText()
+            val hint = if (response.status.value == HTTP_NOT_FOUND) {
+                ". This server does not support HTTP transport. Try using `sse` transport instead"
+            } else {
+                ""
+            }
             val error =
-                MCPClientError("MCP HTTP Transport Error: POSTing to endpoint (HTTP ${response.status.value}): $text")
+                MCPClientError(
+                    "MCP HTTP Transport Error: POSTing to endpoint (HTTP ${response.status.value})$hint: $text",
+                )
             onError?.invoke(error)
             throw error
         }
@@ -1926,8 +1935,13 @@ public class SseMCPTransport(
             try {
                 val response = openSseConnection(triedAuth = false)
                 if (response.status.value !in 200..299) {
+                    val hint = if (response.status.value == HTTP_METHOD_NOT_ALLOWED) {
+                        ". This server does not support SSE transport. Try using `http` transport instead"
+                    } else {
+                        ""
+                    }
                     throw MCPClientError(
-                        "MCP SSE Transport Error: ${response.status.value} ${response.status.description}",
+                        "MCP SSE Transport Error: ${response.status.value} ${response.status.description}$hint",
                     )
                 }
                 processMcpSse(response.bodyAsChannel()) { event ->
@@ -1994,7 +2008,12 @@ public class SseMCPTransport(
         return response
     }
 
-    override suspend fun send(message: JSONRPCMessage) {
+    override suspend fun send(message: JSONRPCMessage): Unit = sendInternal(message, triedAuth = false)
+
+    // triedAuth guards the 401 re-auth retry to a SINGLE attempt — a server that keeps
+    // returning 401 after a successful auth() must not recurse until stack overflow.
+    @Suppress("ThrowsCount")
+    private suspend fun sendInternal(message: JSONRPCMessage, triedAuth: Boolean) {
         val destination = endpoint ?: throw MCPClientError("MCP SSE Transport Error: Not connected")
         val response = client.request(destination) {
             method = HttpMethod.Post
@@ -2004,11 +2023,11 @@ public class SseMCPTransport(
             ).forEach { (name, value) -> header(name, value) }
             setBody(message.toJsonString())
         }
-        if (response.status.value == 401 && authProvider != null) {
+        if (response.status.value == 401 && authProvider != null && !triedAuth) {
             if (auth(authProvider, AuthOptions(serverUrl = url, client = client)) != AuthResult.AUTHORIZED) {
                 throw UnauthorizedError()
             }
-            send(message)
+            sendInternal(message, triedAuth = true)
             return
         }
         if (response.status.value !in 200..299) {

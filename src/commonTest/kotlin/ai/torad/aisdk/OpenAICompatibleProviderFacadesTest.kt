@@ -1,22 +1,32 @@
 package ai.torad.aisdk
 import ai.torad.aisdk.providers.CEREBRAS_VERSION
+import ai.torad.aisdk.providers.CerebrasProviderSettings
 import ai.torad.aisdk.providers.DEEPINFRA_VERSION
 import ai.torad.aisdk.providers.DEEPSEEK_VERSION
 import ai.torad.aisdk.providers.DeepInfraProviderSettings
+import ai.torad.aisdk.providers.DeepSeekProviderSettings
 import ai.torad.aisdk.providers.FIREWORKS_VERSION
 import ai.torad.aisdk.providers.FireworksProviderSettings
 import ai.torad.aisdk.providers.GROQ_VERSION
 import ai.torad.aisdk.providers.GroqProviderSettings
 import ai.torad.aisdk.providers.MOONSHOTAI_VERSION
+import ai.torad.aisdk.providers.MoonshotAIProviderSettings
 import ai.torad.aisdk.providers.PERPLEXITY_VERSION
+import ai.torad.aisdk.providers.PerplexityProviderSettings
 import ai.torad.aisdk.providers.TOGETHERAI_VERSION
+import ai.torad.aisdk.providers.TogetherAIProviderSettings
 import ai.torad.aisdk.providers.VERCEL_VERSION
 import ai.torad.aisdk.providers.VercelProviderSettings
 import ai.torad.aisdk.providers.browserSearch
 import ai.torad.aisdk.providers.cerebras
+import ai.torad.aisdk.providers.createCerebras
 import ai.torad.aisdk.providers.createDeepInfra
+import ai.torad.aisdk.providers.createDeepSeek
 import ai.torad.aisdk.providers.createFireworks
 import ai.torad.aisdk.providers.createGroq
+import ai.torad.aisdk.providers.createMoonshotAI
+import ai.torad.aisdk.providers.createPerplexity
+import ai.torad.aisdk.providers.createTogetherAI
 import ai.torad.aisdk.providers.createVercel
 import ai.torad.aisdk.providers.deepinfra
 import ai.torad.aisdk.providers.deepseek
@@ -26,17 +36,6 @@ import ai.torad.aisdk.providers.moonshotai
 import ai.torad.aisdk.providers.perplexity
 import ai.torad.aisdk.providers.togetherai
 import ai.torad.aisdk.providers.vercel
-import ai.torad.aisdk.providers.CerebrasProviderSettings
-import ai.torad.aisdk.providers.DeepSeekProviderSettings
-import ai.torad.aisdk.providers.MoonshotAIProviderSettings
-import ai.torad.aisdk.providers.PerplexityProviderSettings
-import ai.torad.aisdk.providers.TogetherAIProviderSettings
-import ai.torad.aisdk.providers.createCerebras
-import ai.torad.aisdk.providers.createDeepSeek
-import ai.torad.aisdk.providers.createMoonshotAI
-import ai.torad.aisdk.providers.createPerplexity
-import ai.torad.aisdk.providers.createTogetherAI
-
 import io.ktor.http.HttpHeaders
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.Json
@@ -142,6 +141,269 @@ class OpenAICompatibleProviderFacadesTest {
             assertTrue(request.requestUserAgent.orEmpty().contains(case.expectedUserAgent))
             assertEquals("model", request.requestBodyJson.jsonObject["model"]?.jsonPrimitive?.contentOrNull)
         }
+    }
+
+    @Test
+    @Suppress("LongMethod")
+    fun `deepseek injects json schema system message coerces user content and maps usage`() = runTest {
+        val fixture = createTestServer(
+            mutableMapOf(
+                "https://deepseek.test/chat/completions" to UrlHandler(
+                    UrlResponse.JsonValue(
+                        Json.parseToJsonElement(
+                            """
+                            {
+                              "id":"chat_1",
+                              "model":"deepseek-chat",
+                              "choices":[{"message":{"role":"assistant","content":"{\"ok\":true}"},"finish_reason":"stop"}],
+                              "usage":{
+                                "prompt_tokens":10,
+                                "completion_tokens":5,
+                                "prompt_cache_hit_tokens":4,
+                                "completion_tokens_details":{"reasoning_tokens":3}
+                              }
+                            }
+                            """.trimIndent(),
+                        ),
+                    ),
+                ),
+            ),
+        )
+        fixture.server.start()
+        val provider = createDeepSeek(
+            fixture.httpClient(),
+            DeepSeekProviderSettings(apiKey = "key", baseURL = "https://deepseek.test"),
+        )
+
+        val result = provider.chat("deepseek-chat").generate(
+            LanguageModelCallParams(
+                messages = listOf(
+                    ModelMessage(
+                        MessageRole.User,
+                        listOf(
+                            ContentPart.Text("Return an object."),
+                            ContentPart.Image("image/png", "aW1n"),
+                        ),
+                    ),
+                ),
+                seed = 7,
+                responseFormat = ResponseFormat.Json(
+                    schemaJson = buildJsonObject { put("type", JsonPrimitive("object")) },
+                ),
+            ),
+        )
+
+        val body = fixture.calls.single().requestBodyJson.jsonObject
+        assertEquals(null, body["seed"])
+        assertEquals("json_object", body["response_format"]?.jsonObject?.get("type")?.jsonPrimitive?.contentOrNull)
+        val messages = body["messages"]!!.jsonArray
+        assertTrue(
+            messages.first()
+                .jsonObject["content"]
+                ?.jsonPrimitive
+                ?.contentOrNull
+                .orEmpty()
+                .contains("Return JSON that conforms"),
+        )
+        assertEquals("Return an object.", messages.last().jsonObject["content"]?.jsonPrimitive?.contentOrNull)
+        assertEquals(4, result.usage.inputTokens.cacheRead)
+        assertEquals(6, result.usage.inputTokens.noCache)
+        assertEquals(3, result.usage.outputTokens.reasoning)
+        assertEquals(2, result.usage.outputTokens.text)
+    }
+
+    @Test
+    @Suppress("LongMethod")
+    fun `perplexity drops unsupported tool wire fields coerces text arrays and maps reasoning usage`() = runTest {
+        val fixture = createTestServer(
+            mutableMapOf(
+                "https://perplexity.test/chat/completions" to UrlHandler(
+                    UrlResponse.JsonValue(
+                        Json.parseToJsonElement(
+                            """
+                            {
+                              "id":"ppl_1",
+                              "model":"sonar",
+                              "choices":[{"message":{"role":"assistant","content":"answer"},"finish_reason":"stop"}],
+                              "usage":{"prompt_tokens":8,"completion_tokens":6,"reasoning_tokens":2}
+                            }
+                            """.trimIndent(),
+                        ),
+                    ),
+                ),
+            ),
+        )
+        fixture.server.start()
+        val provider = createPerplexity(
+            fixture.httpClient(),
+            PerplexityProviderSettings(apiKey = "key", baseURL = "https://perplexity.test"),
+        )
+
+        val result = provider.languageModel("sonar").generate(
+            LanguageModelCallParams(
+                messages = listOf(
+                    ModelMessage(
+                        MessageRole.User,
+                        listOf(ContentPart.Text("A"), ContentPart.Text("B")),
+                    ),
+                    ModelMessage(
+                        MessageRole.Assistant,
+                        listOf(ContentPart.ToolCall("call_1", "lookup", buildJsonObject {})),
+                    ),
+                    ModelMessage(
+                        MessageRole.Tool,
+                        listOf(ContentPart.ToolResult("call_1", "lookup", JsonPrimitive("done"))),
+                    ),
+                ),
+                tools = listOf(
+                    LanguageModelTool("lookup", "Lookup.", """{"type":"object"}"""),
+                ),
+                toolChoice = ToolChoice.Required,
+                stopSequences = listOf("END"),
+                seed = 12,
+            ),
+        )
+
+        val body = fixture.calls.single().requestBodyJson.jsonObject
+        assertEquals(null, body["tools"])
+        assertEquals(null, body["tool_choice"])
+        assertEquals(null, body["stop"])
+        assertEquals(null, body["seed"])
+        val messages = body["messages"]!!.jsonArray.map { it.jsonObject }
+        assertEquals(listOf("user", "assistant"), messages.map { it["role"]?.jsonPrimitive?.contentOrNull })
+        assertEquals("AB", messages.first()["content"]?.jsonPrimitive?.contentOrNull)
+        assertEquals(null, messages.last()["tool_calls"])
+        assertEquals("", messages.last()["content"]?.jsonPrimitive?.contentOrNull)
+        assertEquals(2, result.usage.outputTokens.reasoning)
+        assertEquals(4, result.usage.outputTokens.text)
+    }
+
+    @Test
+    fun `moonshot maps top level cached tokens and reasoning usage`() = runTest {
+        val fixture = createTestServer(
+            mutableMapOf(
+                "https://moonshot.test/v1/chat/completions" to UrlHandler(
+                    UrlResponse.JsonValue(
+                        Json.parseToJsonElement(
+                            """
+                            {
+                              "id":"moon_1",
+                              "model":"kimi",
+                              "choices":[{"message":{"role":"assistant","content":"ok"},"finish_reason":"stop"}],
+                              "usage":{
+                                "prompt_tokens":9,
+                                "completion_tokens":5,
+                                "cached_tokens":3,
+                                "completion_tokens_details":{"reasoning_tokens":2}
+                              }
+                            }
+                            """.trimIndent(),
+                        ),
+                    ),
+                ),
+            ),
+        )
+        fixture.server.start()
+        val provider = createMoonshotAI(
+            fixture.httpClient(),
+            MoonshotAIProviderSettings(apiKey = "key", baseURL = "https://moonshot.test/v1"),
+        )
+
+        val result = provider.chatModel("kimi").generate(LanguageModelCallParams(listOf(userMessage("hi"))))
+
+        assertEquals(3, result.usage.inputTokens.cacheRead)
+        assertEquals(6, result.usage.inputTokens.noCache)
+        assertEquals(2, result.usage.outputTokens.reasoning)
+        assertEquals(3, result.usage.outputTokens.text)
+    }
+
+    @Test
+    fun `groq maps browser search tool assistant reasoning and x_groq usage`() = runTest {
+        val fixture = createTestServer(
+            mutableMapOf(
+                "https://groq.test/openai/v1/chat/completions" to UrlHandler(
+                    UrlResponse.JsonValue(
+                        Json.parseToJsonElement(
+                            """
+                            {
+                              "id":"groq_1",
+                              "model":"llama",
+                              "choices":[{"message":{"role":"assistant","content":"ok"},"finish_reason":"stop"}],
+                              "x_groq":{"usage":{"prompt_tokens":7,"completion_tokens":4,"completion_tokens_details":{"reasoning_tokens":1}}}
+                            }
+                            """.trimIndent(),
+                        ),
+                    ),
+                ),
+            ),
+        )
+        fixture.server.start()
+        val provider = createGroq(
+            fixture.httpClient(),
+            GroqProviderSettings(apiKey = "key", baseURL = "https://groq.test/openai/v1"),
+        )
+
+        // browser_search is only valid on the gpt-oss models, so use a supported one here.
+        val result = provider.chat("openai/gpt-oss-20b").generate(
+            LanguageModelCallParams(
+                messages = listOf(
+                    userMessage("hi"),
+                    ModelMessage(MessageRole.Assistant, listOf(ContentPart.Reasoning("prior thought"))),
+                ),
+                tools = listOf(
+                    LanguageModelTool(
+                        "browserSearch",
+                        "Search.",
+                        """{"type":"object"}""",
+                        providerExecuted = true,
+                    ),
+                ),
+            ),
+        )
+
+        val body = fixture.calls.single().requestBodyJson.jsonObject
+        val assistant = body["messages"]!!.jsonArray.last().jsonObject
+        assertEquals("prior thought", assistant["reasoning"]?.jsonPrimitive?.contentOrNull)
+        assertEquals(null, assistant["reasoning_content"])
+        assertEquals(
+            "browser_search",
+            body["tools"]?.jsonArray?.single()?.jsonObject?.get("type")?.jsonPrimitive?.contentOrNull,
+        )
+        assertEquals(1, result.usage.outputTokens.reasoning)
+        assertEquals(3, result.usage.outputTokens.text)
+    }
+
+    @Test
+    fun `groq drops the browser_search tool on a model that does not support it`() = runTest {
+        val fixture = createTestServer(
+            mutableMapOf(
+                "https://groq.test/openai/v1/chat/completions" to UrlHandler(
+                    UrlResponse.JsonValue(
+                        Json.parseToJsonElement(
+                            "{\"id\":\"g\",\"model\":\"llama\",\"choices\":[{\"message\":" +
+                                "{\"role\":\"assistant\",\"content\":\"ok\"},\"finish_reason\":\"stop\"}]," +
+                                "\"usage\":{\"prompt_tokens\":1,\"completion_tokens\":1,\"total_tokens\":2}}",
+                        ),
+                    ),
+                ),
+            ),
+        )
+        fixture.server.start()
+        val provider = createGroq(
+            fixture.httpClient(),
+            GroqProviderSettings(apiKey = "key", baseURL = "https://groq.test/openai/v1"),
+        )
+        provider.chat("llama").generate(
+            LanguageModelCallParams(
+                messages = listOf(userMessage("hi")),
+                tools = listOf(
+                    LanguageModelTool("browserSearch", "Search.", """{"type":"object"}""", providerExecuted = true),
+                ),
+            ),
+        )
+        // browser_search was the only tool and is unsupported on llama → tools key omitted entirely.
+        val body = fixture.calls.single().requestBodyJson.jsonObject
+        assertEquals(null, body["tools"], "unsupported browser_search dropped; empty tools key omitted")
     }
 
     @Test

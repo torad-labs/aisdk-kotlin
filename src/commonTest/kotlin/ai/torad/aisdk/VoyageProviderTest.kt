@@ -55,7 +55,9 @@ class VoyageProviderTest {
         )
 
         assertEquals("voyage.embedding", model.provider)
-        assertEquals(listOf(listOf(0.3f, 0.4f), listOf(0.1f, 0.2f)), result.embeddings)
+        assertEquals(128, model.maxEmbeddingsPerCall)
+        assertEquals(true, model.supportsParallelCalls)
+        assertEquals(listOf(listOf(0.1f, 0.2f), listOf(0.3f, 0.4f)), result.embeddings)
         assertEquals(7, result.usage.tokens)
         val request = fixture.calls.single()
         assertEquals("POST", request.requestMethod)

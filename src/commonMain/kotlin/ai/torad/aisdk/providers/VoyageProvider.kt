@@ -83,6 +83,8 @@ private class VoyageEmbeddingModel(
     override val modelId: String,
 ) : EmbeddingModel {
     override val provider: String = "voyage.embedding"
+    override val maxEmbeddingsPerCall: Int = VOYAGE_MAX_EMBEDDINGS_PER_CALL
+    override val supportsParallelCalls: Boolean = true
 
     override suspend fun embed(params: EmbeddingModelCallParams): EmbeddingModelResult {
         if (params.values.size > VOYAGE_MAX_EMBEDDINGS_PER_CALL) {
@@ -109,7 +111,6 @@ private class VoyageEmbeddingModel(
         val value = response.value.jsonObject
         return EmbeddingModelResult(
             embeddings = value["data"]?.jsonArray.orEmpty()
-                .sortedBy { it.jsonObject["index"]?.jsonPrimitive?.intOrNull ?: Int.MAX_VALUE }
                 .map { item -> item.jsonObject["embedding"]?.jsonArray.orEmpty().map { embeddingFloat(it, provider) } },
             usage = EmbeddingUsage(
                 tokens = value["usage"]?.jsonObject?.get("total_tokens")?.jsonPrimitive?.intOrNull ?: 0,

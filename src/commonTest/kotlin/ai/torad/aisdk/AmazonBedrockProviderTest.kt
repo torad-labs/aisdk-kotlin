@@ -164,8 +164,13 @@ class AmazonBedrockProviderTest {
         val body = request.requestBodyJson.jsonObject
         assertEquals("Follow policy.", body["system"]?.jsonArray?.single()?.jsonObject?.get("text")?.jsonPrimitive?.contentOrNull)
         assertEquals("priority", body["serviceTier"]?.jsonObject?.get("type")?.jsonPrimitive?.contentOrNull)
-        assertEquals(1.0f, body["inferenceConfig"]?.jsonObject?.get("temperature")?.jsonPrimitive?.floatOrNull)
-        assertEquals(64, body["inferenceConfig"]?.jsonObject?.get("maxTokens")?.jsonPrimitive?.intOrNull)
+        // Anthropic thinking is enabled, so Bedrock rejects sampling params — they're stripped,
+        // and the thinking budget (32) is added to maxTokens (64 + 32 = 96).
+        val inference = body["inferenceConfig"]?.jsonObject
+        assertEquals(null, inference?.get("temperature"), "temperature stripped with thinking")
+        assertEquals(null, inference?.get("topP"), "topP stripped with thinking")
+        assertEquals(null, inference?.get("topK"), "topK stripped with thinking")
+        assertEquals(96, inference?.get("maxTokens")?.jsonPrimitive?.intOrNull)
         assertEquals("high", body["additionalModelRequestFields"]?.jsonObject?.get("output_config")?.jsonObject?.get("effort")?.jsonPrimitive?.contentOrNull)
         assertEquals("enabled", body["additionalModelRequestFields"]?.jsonObject?.get("thinking")?.jsonObject?.get("type")?.jsonPrimitive?.contentOrNull)
         assertEquals("beta-1", body["additionalModelRequestFields"]?.jsonObject?.get("anthropic_beta")?.jsonArray?.single()?.jsonPrimitive?.contentOrNull)
@@ -175,6 +180,57 @@ class AmazonBedrockProviderTest {
         assertEquals("pdf", userContent[2].jsonObject["document"]?.jsonObject?.get("format")?.jsonPrimitive?.contentOrNull)
         assertEquals(true, userContent[2].jsonObject["document"]?.jsonObject?.get("citations")?.jsonObject?.get("enabled")?.jsonPrimitive?.booleanOrNull)
         assertEquals("lookup", body["toolConfig"]?.jsonObject?.get("toolChoice")?.jsonObject?.get("tool")?.jsonObject?.get("name")?.jsonPrimitive?.contentOrNull)
+    }
+
+    @Test
+    fun `tool result serializes as a text block with no status field`() = runTest {
+        val fixture = createTestServer(
+            mutableMapOf(
+                "https://bedrock.test/model/anthropic.claude-3-7-sonnet-20250219-v1%3A0/converse" to UrlHandler(
+                    UrlResponse.JsonValue(
+                        Json.parseToJsonElement(
+                            """{"output":{"message":{"role":"assistant","content":[{"text":"ok"}]}},
+                               "stopReason":"end_turn","usage":{"inputTokens":1,"outputTokens":1,"totalTokens":2}}""",
+                        ),
+                    ),
+                ),
+            ),
+        )
+        fixture.server.start()
+        val provider = createAmazonBedrock(
+            fixture.httpClient(),
+            AmazonBedrockProviderSettings(apiKey = "key", baseURL = "https://bedrock.test"),
+        )
+        provider("anthropic.claude-3-7-sonnet-20250219-v1:0").generate(
+            LanguageModelCallParams(
+                messages = listOf(
+                    ModelMessage(MessageRole.User, listOf(ContentPart.Text("go"))),
+                    ModelMessage(
+                        MessageRole.Assistant,
+                        listOf(ContentPart.ToolCall("t1", "lookup", JsonObject(emptyMap()))),
+                    ),
+                    ModelMessage(
+                        MessageRole.Tool,
+                        // A JSON (non-string) tool result + isError — must become a text block, no status.
+                        listOf(
+                            ContentPart.ToolResult(
+                                "t1",
+                                "lookup",
+                                Json.parseToJsonElement("""{"temp":20}"""),
+                                isError = true,
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+        val messages = fixture.calls.single().requestBodyJson.jsonObject["messages"]!!.jsonArray
+        val lastContent = messages.last().jsonObject["content"]!!.jsonArray.single().jsonObject
+        val toolResult = lastContent["toolResult"]!!.jsonObject
+        val block = toolResult["content"]!!.jsonArray.single().jsonObject
+        assertEquals("""{"temp":20}""", block["text"]?.jsonPrimitive?.contentOrNull, "non-string output → text block")
+        assertEquals(null, block["json"], "no json block (Bedrock rejects it)")
+        assertEquals(null, toolResult["status"], "Bedrock toolResult has no status field")
     }
 
     @Test
@@ -372,6 +428,8 @@ class AmazonBedrockProviderTest {
         )
 
         assertEquals(listOf(1.0f, 2.0f), embedding.embeddings.single())
+        assertEquals(1, provider.embedding("amazon.titan-embed-text-v2:0").maxEmbeddingsPerCall)
+        assertEquals(true, provider.embedding("amazon.titan-embed-text-v2:0").supportsParallelCalls)
         assertEquals(7, embedding.usage.tokens)
         assertEquals("image", convertBase64ToByteArray(image.images.single().base64).decodeToString())
         assertEquals("second", rerank.results.first().value)
