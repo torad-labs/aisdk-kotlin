@@ -2,22 +2,35 @@
 
 The UI layer is framework-neutral. Instead of React, Vue, Svelte, or RSC
 runtime bindings, AI SDK Kotlin exposes message and stream contracts that can
-be rendered by Compose, SwiftUI, terminal UIs, web servers, or test hosts.
+be rendered by Compose, SwiftUI, terminal UIs, servers, or tests.
+
+## Concepts
+
+Use this order when building a chat UI:
+
+1. Run an agent or model and get `StreamEvent` values.
+2. Convert events into `UIMessage` snapshots.
+3. Render `UIMessagePart` variants.
+4. Persist validated messages.
+5. Convert persisted UI messages back to `ModelMessage` when resuming.
 
 ## Stream Events
 
-`Flow<StreamEvent>` is the low-level runtime stream. It carries text deltas,
-reasoning, tool calls, tool results, tool approval requests, errors, source
-parts, file parts, step boundaries, and finish metadata.
+`Flow<StreamEvent>` is the low-level stream. It carries text, reasoning,
+sources, files, tool input, tool calls, tool results, approval requests,
+errors, metadata, step boundaries, and finish events.
 
-Use it when the host needs full control over incremental behavior:
+For stream adapter, cancellation, server response, and error-handling examples,
+see [Streaming](streaming.md).
+
+Use it when the host needs full control:
 
 ```kotlin
-agent.stream(prompt = prompt, options = options).collect { event ->
+agent.stream(prompt = prompt, options = context).collect { event ->
     when (event) {
         is StreamEvent.TextDelta -> appendText(event.text)
-        is StreamEvent.ToolCall -> showToolCall(event.toolName, event.inputJson)
-        is StreamEvent.ToolResult -> showToolResult(event.toolName, event.outputJson)
+        is StreamEvent.ToolCall -> showTool(event.toolName)
+        is StreamEvent.ToolResult -> updateTool(event.toolName)
         is StreamEvent.ToolApprovalRequest -> askForApproval(event)
         is StreamEvent.Finish -> finish(event.finishReason)
         else -> Unit
@@ -28,33 +41,60 @@ agent.stream(prompt = prompt, options = options).collect { event ->
 ## UI Messages
 
 `UIMessage` is the high-level render contract. It groups stream events into
-assistant/user messages and typed message parts.
+message snapshots and typed parts.
 
 ```kotlin
 val messages = streamToUiMessages(
-    events = agent.stream(prompt = prompt, options = options),
-    assistantMessageId = "assistant-${turnId}",
+    events = agent.stream(prompt = prompt, options = context),
+    assistantMessageId = "assistant-$turnId",
 )
 ```
 
-Renderers can switch on `UIMessagePart`:
+Renderers switch on `UIMessagePart`:
 
 ```kotlin
 fun render(part: UIMessagePart) {
     when (part) {
-        is UIMessagePart.Text -> renderText(part.text)
+        is UIMessagePart.Text -> renderText(part.text, part.state)
+        is UIMessagePart.Reasoning -> renderReasoning(part.text, part.state)
         is UIMessagePart.ToolUI -> renderTool(part.toolName, part.state)
-        is UIMessagePart.Reasoning -> renderReasoning(part.text)
+        is UIMessagePart.DynamicToolUI -> renderDynamicTool(part.toolName)
+        is UIMessagePart.SourceUrl -> renderSource(part.url, part.title)
+        is UIMessagePart.SourceDocument -> renderDocument(part.title)
+        is UIMessagePart.File -> renderFile(part.mediaType, part.filename)
+        is UIMessagePart.Data -> renderData(part.type, part.data)
+        is UIMessagePart.StepStart -> renderStep(part.stepNumber)
         is UIMessagePart.Error -> renderError(part.message)
-        else -> Unit
     }
 }
 ```
 
+Text and reasoning parts carry `Streaming` or `Done` state. Tool parts carry
+tool-call lifecycle state and can mark preliminary output from `streamingTool`.
+
+## Typed Tool UI
+
+For small apps, switch on `toolName`. For larger apps, register handlers.
+
+```kotlin
+val handlers = buildToolPartHandlerRegistry<RenderNode>(
+    fallback = { part -> UnknownToolNode(part.toolName) },
+) {
+    register(searchDocsTool) { invocation ->
+        SearchResultsNode(invocation.output.orEmpty(), invocation.state)
+    }
+}
+```
+
+You can also decode directly at render time:
+
+```kotlin
+val result: SearchResult? = part.outputAs<SearchResult>()
+```
+
 ## Chat
 
-`Chat` stores an in-memory message list and delegates sending to a
-`ChatTransport`.
+`Chat` stores in-memory UI messages and delegates sending to a `ChatTransport`.
 
 ```kotlin
 val chat = Chat(
@@ -71,24 +111,130 @@ val chat = Chat(
 )
 ```
 
-For server or mobile apps, build platform-specific transports around the same
-`ChatRequest` and `UIMessage` contracts.
+`TextStreamChatTransport` adapts plain text streams into assistant messages.
+`DefaultChatTransport` delegates to another transport and keeps the same API
+shape as upstream transport-based chat.
+
+For text stream versus UI message stream protocols, custom UI streams,
+message ids, metadata, and host writers, see [UI Stream Protocols](ui-stream-protocols.md).
+
+## ChatSession
+
+Use `ChatSession` when a UI wants a `StateFlow<ChatState>`.
+
+```kotlin
+val session = chatSession(
+    id = "support",
+    transport = transport,
+)
+
+session.sendMessage(
+    UIMessage(
+        id = "user-1",
+        role = UIMessageRole.User,
+        parts = listOf(UIMessagePart.Text("Hello")),
+    ),
+).collect()
+
+session.state.collect { state ->
+    renderMessages(state.messages)
+    renderLoading(state.isStreaming)
+}
+```
+
+`ChatSession` supports setting messages, clearing errors, tool outputs,
+approval responses, regeneration, stop, and resume.
+
+## AgentSession
+
+Use `AgentSession` when you want agent state rather than UI-message state.
+
+```kotlin
+val session = agent.session(viewModelScope)
+
+session.submitStreaming(prompt = "Find the docs.", options = context)
+
+session.state.collect { state ->
+    renderText(state.text)
+    renderApprovals(state.pendingApprovals)
+}
+```
+
+`AgentSession` is useful for ViewModels, repositories, and services that want
+messages, text, output, status, approvals, result, and errors in one place.
 
 ## Stream Responses
 
-The library includes value objects and writer helpers for text streams and UI
-message streams. Server frameworks should adapt those to Ktor, Spring, Javalin,
-http4k, Swift server runtimes, or Android local services as needed.
+Servers can return value objects and adapt them to their framework:
 
-## Tool UI
+```kotlin
+val result = streamTextResult(model = model, prompt = prompt)
+val response = result.toTextStreamResponse()
+```
 
-For string-based dispatch, switch on `toolName`.
+For UI-message streams:
 
-For typed dispatch, register handlers with `ToolPartHandlerRegistry` and reuse
-the same serializers used by the tool definitions.
+```kotlin
+val response = result.toUiMessageStreamResponse(
+    assistantMessageId = "assistant-1",
+)
+```
+
+Use `pipeTextStreamToResponse` and `pipeUiMessageStreamToResponse` with a
+host-provided `ServerResponseWriter`.
 
 ## Persistence
 
-Persist `UIMessage` lists or lower-level `ModelMessage` lists in the host app.
-On reload, validate messages with `validateUiMessages` or
-`safeValidateUIMessages`, then pass them back to `Chat` or `Agent`.
+Validate before storing or replaying UI messages:
+
+```kotlin
+when (val checked = safeValidateUIMessages(messages)) {
+    is SafeValidateUIMessagesResult.Success -> save(checked.messages)
+    is SafeValidateUIMessagesResult.Failure -> report(checked.error)
+}
+```
+
+Convert UI messages back to model messages when resuming:
+
+```kotlin
+val modelMessages = convertToModelMessages(
+    messages = savedMessages,
+    ignoreIncompleteToolCalls = false,
+)
+```
+
+Files and sources are preserved when they have model-side representations.
+Incomplete tool calls throw by default because they usually indicate corrupted
+history.
+
+## Completion And Object Helpers
+
+The framework facades include Kotlin equivalents of completion and object UI
+helpers:
+
+- `Completion`, `UseCompletionOptions`, `CompletionTransport`
+- `StructuredObject`, `StructuredObjectOptions`, `StructuredObjectTransport`
+
+These are transport-driven state holders. They are useful when a host wants
+the shape of upstream UI hooks without depending on a web framework.
+
+For examples, see [Completion And Object UI](completion-and-object-ui.md).
+
+## Framework Facades
+
+The `react`, `vue`, `svelte`, `angular`, and `rsc` packages expose aliases and
+adapters for upstream package parity. They do not ship actual framework
+components. Compose, SwiftUI, and server renderers belong in host apps.
+
+For the exact facade surfaces and when to use them, see [Framework Facades](framework-facades.md).
+
+## Related
+
+- [Streaming](streaming.md)
+- [UI Stream Protocols](ui-stream-protocols.md)
+- [Chatbots](chatbots.md)
+- [Completion And Object UI](completion-and-object-ui.md)
+- [Framework Facades](framework-facades.md)
+- [Prompts And Messages](prompts-and-messages.md)
+- [Tools](tools.md)
+- [Agents](agents.md)

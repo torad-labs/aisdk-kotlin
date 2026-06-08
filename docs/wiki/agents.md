@@ -1,98 +1,157 @@
 # Agents
 
-Agents own multi-step interaction. Application code should depend on
-`Agent<TContext, TOutput>` and construct `ToolLoopAgent` only at the boundary
-where the concrete orchestration strategy is chosen.
+Agents are models plus tools plus a loop. Use them when the model needs to
+decide which actions to take, run tools, see results, and continue.
+
+For direct one-step calls, use `generateText` or `streamText`. For multi-step
+tool work, use `ToolLoopAgent`.
 
 ## Agent Contract
 
-`Agent` supports:
+Application code should depend on `Agent<TContext, TOutput>`.
 
-- `generate(...)` for one complete interaction.
-- `stream(...)` for a `Flow<StreamEvent>`.
-- `tools` for introspection and UI rendering.
+```kotlin
+public interface Agent<TContext, TOutput> {
+    public val id: String
+    public val version: String?
+    public val tools: ToolSet<TContext>
+}
+```
 
-The host owns persistence, user identity, credentials, network clients, and UI.
-The agent owns prompt assembly, model calls, tool execution, stop conditions,
-and lifecycle callbacks.
+The contract supports:
+
+- `generate(...)` for a complete interaction.
+- `stream(...)` for `Flow<StreamEvent>`.
+- `tools` for inspection and UI dispatch.
+
+`TContext` is typed application context such as user id, workspace id,
+entitlements, retrieval state, or request metadata. `TOutput` is usually
+`String`, but can be structured when the agent is configured with `Output`.
 
 ## ToolLoopAgent
 
-`ToolLoopAgent` is the canonical loop implementation. It continues until:
-
-- The model finishes with a non-tool-call finish reason.
-- A tool call cannot be executed.
-- A tool call needs approval.
-- A stop condition returns true.
-
-Always set a domain-specific stop condition even though the default
-`stepCountIs(20)` is present:
+`ToolLoopAgent` owns the loop. It continues until the model finishes, a tool
+cannot run, a tool needs approval, or a stop condition is met.
 
 ```kotlin
 val agent = ToolLoopAgent<AppContext, String>(
     model = model,
-    instructions = "Answer using the project tools.",
+    instructions = "Answer using project tools when needed.",
     tools = toolSetOf(searchDocs, createTicket),
     stopWhen = anyOf(
         stepCountIs(8),
         hasToolCall("finalizeAnswer"),
     ),
+    callOptionsSchema = serializer<AppContext>(),
 )
 ```
 
-## Context And Call Options
+The default stop condition is `stepCountIs(20)`. Set a domain-specific stop
+condition anyway so the loop shape is obvious at the call site.
 
-Use `TContext` for application context that tools need:
+## Tools
+
+Tools are stateless actions. They have a name, description, input serializer,
+output serializer, and executor.
 
 ```kotlin
-@Serializable
-data class AppContext(
-    val userId: String,
-    val workspaceId: String,
-)
+val searchDocs = tool<SearchInput, List<SearchResult>, AppContext>(
+    name = "searchDocs",
+    description = "Search product documentation.",
+    inputSerializer = serializer(),
+    outputSerializer = serializer(),
+) { input ->
+    docs.search(input.query)
+}
 ```
 
-Pass it at call time:
+Use `dynamicTool` only when the schema or result type is not known at compile
+time. Use `providerExecuted = true` for tools run by the provider instead of
+the local executor.
+
+Tools can also carry:
+
+- `needsApproval` for host approval.
+- `toModelOutput` for a shorter model-visible summary.
+- `metadata` for host-only information.
+- `providerOptions` for provider-specific tool config.
+- `inputExamples` to improve tool-call quality.
+- input lifecycle hooks for streamed tool input.
+
+For complete tool examples, approval patterns, streaming tools, dynamic tools,
+and provider-executed tools, see [Tools](tools.md).
+
+## Streaming Tools
+
+Use `streamingTool` when a tool can produce useful preliminary results before
+its final value.
 
 ```kotlin
-agent.generate(
-    prompt = "Find docs for stream resume.",
-    options = AppContext(userId = "u_123", workspaceId = "w_456"),
+val lookup = streamingTool<Query, LookupResult, AppContext>(
+    name = "lookup",
+    description = "Search records and stream progress.",
+    inputSerializer = serializer(),
+    outputSerializer = serializer(),
+) { query ->
+    flow {
+        emit(records.fastSummary(query))
+        emit(records.fullResult(query))
+    }
+}
+```
+
+Preliminary emissions appear in the stream/UI with `preliminary = true`. The
+last emission is the final tool result that is added to the model message log.
+
+## Loop Control
+
+Stop conditions compose:
+
+```kotlin
+stopWhen = anyOf(
+    stepCountIs(8),
+    repeatedToolCallLoop(3),
 )
 ```
 
-If you expose agent calls over an API boundary, provide `callOptionsSchema` so
-incoming options can be validated.
+Use `activeTools` to restrict the available tool set. Use `maxParallelToolCalls`
+to bound concurrent tool execution within one step.
 
-## prepareCall And prepareStep
+## Call And Step Preparation
 
-Use `prepareCall` for per-request setup such as RAG, entitlements, or
-workspace-specific defaults.
+Use `prepareCall` once per invocation for request-specific setup.
 
-Use `prepareStep` for per-step routing such as active tool gating, model
-selection, or changing provider options after a classification step.
+```kotlin
+prepareCall = {
+    AgentSettings(
+        instructions = instructions + "\nUse workspace ${options?.workspaceId}.",
+        providerOptions = buildProviderOptions {
+            provider("openai") {
+                put("reasoningEffort", JsonPrimitive("medium"))
+            }
+        },
+    )
+}
+```
 
-Keep call sites boring: `prompt`, `options`, and `abortSignal` should be the
-normal inputs. Do not move model-selection branching into UI or handler code.
+Use `prepareStep` before every model step for routing, tool gating, message
+compression, or evolving context.
 
-## Lifecycle Hooks
+```kotlin
+prepareStep = {
+    StepSettings(
+        model = if (stepNumber == 1) cheapModel else strongModel,
+        activeTools = if (stepNumber == 1) listOf("classify") else null,
+    )
+}
+```
 
-Lifecycle hooks let hosts observe the loop without owning the loop:
+If behavior should change, use `prepareCall` or `prepareStep`, not lifecycle
+hooks.
 
-- `onStart`
-- `onStepStart`
-- `onStepFinish`
-- `onFinish`
-- `onError`
-- `onChunk`
-- experimental tool-call start/finish hooks
+## Approval
 
-Use hooks for logging, metrics, tracing, audit events, and step-level debug
-output.
-
-## Tool Approval
-
-Tools that touch external state should define `needsApproval`.
+Use `needsApproval` for tools that affect external state or other users.
 
 ```kotlin
 val sendMessage = tool<SendInput, SendResult, AppContext>(
@@ -100,29 +159,113 @@ val sendMessage = tool<SendInput, SendResult, AppContext>(
     description = "Send a message to a user.",
     inputSerializer = serializer(),
     outputSerializer = serializer(),
-    needsApproval = { input, context ->
-        input.body.length > 100 || context?.workspaceId == null
+    needsApproval = { input, options ->
+        input.text.length > 100 || options.experimental_context?.workspaceId == null
     },
 ) { input ->
-    messaging.send(input.recipientId, input.body)
+    messaging.send(input.recipientId, input.text)
     SendResult(sent = true)
 }
 ```
 
-When approval is required, the loop returns. Persist or render
-`pendingApprovals`, then resume with `toolApprovalResponseMessage`.
+When approval is required, the loop returns with `pendingApprovals`. Resume by
+adding approval response messages:
+
+```kotlin
+val first = agent.generate(prompt = prompt, options = context)
+
+val responses = first.pendingApprovals.map { pending ->
+    toolApprovalResponseMessage(
+        toolCallId = pending.toolCallId,
+        approved = approvalUi.ask(pending.toolName, pending.input),
+        approvalId = pending.approvalId,
+    )
+}
+
+val resumed = agent.generate(
+    messages = first.messages + responses,
+    options = context,
+)
+```
+
+Approval state lives in the message log. Persist the messages, not a hidden
+agent process.
+
+## Lifecycle Hooks
+
+Constructor hooks and per-call hooks observe the loop:
+
+- `onStart`
+- `onStepStart`
+- `onStepFinish`
+- `onFinish`
+- `onError`
+- `onChunk`
+- `onAbort`
+- experimental tool-call start/finish hooks
+
+Hook failures do not crash generation. Tool execution, model calls,
+`prepareCall`, and `prepareStep` failures do.
+
+## Sessions
+
+Use `AgentSession` when a UI or service wants state over time.
+
+```kotlin
+val session = agent.session(viewModelScope)
+
+session.submitStreaming(
+    prompt = "Find docs for streaming.",
+    options = context,
+)
+
+session.state.collect { state ->
+    renderText(state.text)
+    renderApprovals(state.pendingApprovals)
+}
+```
+
+`AgentSession` tracks messages, status, text, output, pending approvals,
+last result, and errors. It supports `submit`, `submitStreaming`, `approve`,
+`deny`, `cancel`, and `reset`.
+
+`ToolLoopAgent` also exposes an engine-state surface for long-lived hosts that
+prefer actions and `StateFlow`: `dispatchEngineAction`, `engineState`, and
+`close`.
 
 ## Subagents
 
-Use subagents only when a task has a real internal loop, policy, or tool set of
-its own. A subagent is normally exposed as a tool that calls another
-`Agent`.
+Use a subagent when a subtask has its own loop, policy, or tool set. Expose it
+as a tool and forward context and cancellation.
 
-Forward `abortSignal` and context into subagents so cancellation and
-authorization stay hierarchical.
+```kotlin
+val researchTool = tool<ResearchInput, String, AppContext>(
+    name = "deepResearch",
+    description = "Run a focused research agent.",
+    inputSerializer = serializer(),
+    outputSerializer = serializer(),
+) { input ->
+    researchAgent.generate(
+        prompt = input.prompt,
+        options = context,
+        abortSignal = abortSignal,
+    ).text
+}
+```
 
-## Memory Boundary
+## Memory
 
-The core agent does not own durable memory. Store messages, summaries,
-retrieval state, and user profile data in the host app. Feed selected memory
-back through `messages`, `instructions`, `prepareCall`, or retrieval tools.
+The SDK does not own durable memory. Store messages, summaries, retrieval
+state, user profile data, and approval decisions in the host app. Feed selected
+memory back through `messages`, `instructions`, `prepareCall`, or tools.
+
+## Related
+
+- [Tools](tools.md)
+- [Workflow Patterns](workflow-patterns.md)
+- [Application Patterns](application-patterns.md)
+- [Memory](memory.md)
+- [Chatbots](chatbots.md)
+- [Lifecycle And Events](lifecycle-and-events.md)
+- [Structured Output](structured-output.md)
+- [Middleware And Telemetry](middleware-and-telemetry.md)

@@ -1,0 +1,151 @@
+# Streaming
+
+Streaming is the path for interactive output. It carries text, reasoning,
+tool-call state, sources, files, errors, metadata, and finish events through
+`Flow<StreamEvent>`.
+
+## Basic Text Stream
+
+```kotlin
+streamText(
+    model = model,
+    prompt = "Write a short migration checklist.",
+).collect { event ->
+    when (event) {
+        is StreamEvent.TextDelta -> print(event.text)
+        is StreamEvent.Finish -> println("\n${event.finishReason}")
+        else -> Unit
+    }
+}
+```
+
+The top-level `streamText` flow is cold. Each collection starts a new provider
+call. Use `streamTextResult` when you need a result object and adapters.
+
+## Stream Result Adapters
+
+```kotlin
+val result = streamTextResult(
+    model = model,
+    prompt = "Explain UI message streams.",
+)
+
+result.textStream.collect { delta ->
+    print(delta)
+}
+
+val response = result.toUiMessageStreamResponse(
+    assistantMessageId = "assistant-42",
+)
+```
+
+`StreamTextResult.fullStream` collects once and replays captured events to
+later collectors after successful completion. This is useful for tests and
+framework adapters.
+
+## Stream Events To UI Messages
+
+```kotlin
+val uiMessages = streamToUiMessages(
+    events = agent.stream(prompt = prompt, options = context),
+    assistantMessageId = "assistant-${turn.id}",
+)
+
+uiMessages.collect { message ->
+    render(message.parts)
+}
+```
+
+Use UI messages when the host wants stable render state instead of raw deltas.
+
+## Server Responses
+
+Host frameworks can adapt SDK response values:
+
+```kotlin
+val result = streamTextResult(model = model, prompt = prompt)
+
+return result.toTextStreamResponse()
+```
+
+For rich chat streams:
+
+```kotlin
+return result.toUiMessageStreamResponse(
+    assistantMessageId = "assistant-${turn.id}",
+)
+```
+
+Use `pipeTextStreamToResponse` and `pipeUiMessageStreamToResponse` when the
+host framework exposes a writer instead of a returnable response object.
+
+## Streaming Tools
+
+Streaming tools emit preliminary results and then a final result:
+
+```kotlin
+agent.stream(prompt = "Research the issue.", options = context)
+    .collect { event ->
+        when (event) {
+            is StreamEvent.ToolResult ->
+                renderTool(event.toolName, event.output, event.preliminary)
+            is StreamEvent.ToolError ->
+                renderToolError(event.toolName, event.error)
+            else -> Unit
+        }
+    }
+```
+
+Use preliminary results for progress cards, not for durable model context. The
+final tool result is what the loop adds to model messages.
+
+## Cancellation
+
+Pass an `AbortSignal` from your host when users can stop a request:
+
+```kotlin
+val controller = AbortController()
+
+val job = launch {
+    streamText(
+        model = model,
+        prompt = prompt,
+        abortSignal = controller.signal,
+    ).collect(::handleEvent)
+}
+
+controller.abort()
+job.cancel()
+```
+
+Tool executors receive the same cancellation path through their execution
+context.
+
+## Error Handling
+
+Non-streaming generation throws errors before returning. Streaming can surface
+errors as stream events depending on where the failure occurs. Always handle:
+
+- `StreamEvent.Error`
+- `StreamEvent.ToolError`
+- collector cancellation
+- host writer failures
+
+For typed errors, retries, and UI validation failures, see [Error Handling](error-handling.md).
+
+## Tips
+
+- Collect a stream once unless you intentionally want another provider call.
+- Prefer `streamTextResult` for framework adapters and tests.
+- Store completed UI messages, not raw deltas.
+- Render tool and reasoning parts independently from text parts.
+
+## Related
+
+- [Core](core.md)
+- [Advanced Streaming](advanced-streaming.md)
+- [UI And Streams](ui-and-streams.md)
+- [UI Stream Protocols](ui-stream-protocols.md)
+- [Chatbots](chatbots.md)
+- [Error Handling](error-handling.md)
+- [Testing And Release](testing-and-release.md)
