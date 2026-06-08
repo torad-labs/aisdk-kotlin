@@ -644,19 +644,23 @@ private fun OpenAICompatibleProviderSettings.applyChatResponseTransform(value: J
     (value as? JsonObject)?.let { transformChatResponse?.invoke(it) ?: it } ?: value
 
 private fun openAICompatibleInBandError(value: JsonElement): OpenAICompatibleInBandError? {
-    val obj = value as? JsonObject ?: return null
-    val error = obj["error"] ?: return null
-    val errorObj = error as? JsonObject
-    val code = obj.jsonStringOrNull("code") ?: errorObj?.jsonStringOrNull("code")
-    val message = when (error) {
-        is JsonPrimitive -> error.contentOrNull ?: error.content
-        is JsonObject -> error.jsonStringOrNull("message") ?: error.jsonStringOrNull("type")
-        else -> null
-    } ?: obj.jsonStringOrNull("message") ?: error.toString()
-    return OpenAICompatibleInBandError(
-        message = message,
-        isRetryable = code == "The service is currently unavailable",
-    )
+    val obj = value as? JsonObject
+    val error = obj?.get("error")
+    return if (obj == null || error == null) {
+        null
+    } else {
+        val errorObj = error as? JsonObject
+        val code = obj.jsonStringOrNull("code") ?: errorObj?.jsonStringOrNull("code")
+        val message = when (error) {
+            is JsonPrimitive -> error.contentOrNull ?: error.content
+            is JsonObject -> error.jsonStringOrNull("message") ?: error.jsonStringOrNull("type")
+            else -> null
+        } ?: obj.jsonStringOrNull("message") ?: error.toString()
+        OpenAICompatibleInBandError(
+            message = message,
+            isRetryable = code == "The service is currently unavailable",
+        )
+    }
 }
 
 private fun OpenAICompatibleInBandError.toApiCallError(

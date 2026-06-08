@@ -1,22 +1,32 @@
 package ai.torad.aisdk
 import ai.torad.aisdk.providers.CEREBRAS_VERSION
+import ai.torad.aisdk.providers.CerebrasProviderSettings
 import ai.torad.aisdk.providers.DEEPINFRA_VERSION
 import ai.torad.aisdk.providers.DEEPSEEK_VERSION
 import ai.torad.aisdk.providers.DeepInfraProviderSettings
+import ai.torad.aisdk.providers.DeepSeekProviderSettings
 import ai.torad.aisdk.providers.FIREWORKS_VERSION
 import ai.torad.aisdk.providers.FireworksProviderSettings
 import ai.torad.aisdk.providers.GROQ_VERSION
 import ai.torad.aisdk.providers.GroqProviderSettings
 import ai.torad.aisdk.providers.MOONSHOTAI_VERSION
+import ai.torad.aisdk.providers.MoonshotAIProviderSettings
 import ai.torad.aisdk.providers.PERPLEXITY_VERSION
+import ai.torad.aisdk.providers.PerplexityProviderSettings
 import ai.torad.aisdk.providers.TOGETHERAI_VERSION
+import ai.torad.aisdk.providers.TogetherAIProviderSettings
 import ai.torad.aisdk.providers.VERCEL_VERSION
 import ai.torad.aisdk.providers.VercelProviderSettings
 import ai.torad.aisdk.providers.browserSearch
 import ai.torad.aisdk.providers.cerebras
+import ai.torad.aisdk.providers.createCerebras
 import ai.torad.aisdk.providers.createDeepInfra
+import ai.torad.aisdk.providers.createDeepSeek
 import ai.torad.aisdk.providers.createFireworks
 import ai.torad.aisdk.providers.createGroq
+import ai.torad.aisdk.providers.createMoonshotAI
+import ai.torad.aisdk.providers.createPerplexity
+import ai.torad.aisdk.providers.createTogetherAI
 import ai.torad.aisdk.providers.createVercel
 import ai.torad.aisdk.providers.deepinfra
 import ai.torad.aisdk.providers.deepseek
@@ -26,17 +36,6 @@ import ai.torad.aisdk.providers.moonshotai
 import ai.torad.aisdk.providers.perplexity
 import ai.torad.aisdk.providers.togetherai
 import ai.torad.aisdk.providers.vercel
-import ai.torad.aisdk.providers.CerebrasProviderSettings
-import ai.torad.aisdk.providers.DeepSeekProviderSettings
-import ai.torad.aisdk.providers.MoonshotAIProviderSettings
-import ai.torad.aisdk.providers.PerplexityProviderSettings
-import ai.torad.aisdk.providers.TogetherAIProviderSettings
-import ai.torad.aisdk.providers.createCerebras
-import ai.torad.aisdk.providers.createDeepSeek
-import ai.torad.aisdk.providers.createMoonshotAI
-import ai.torad.aisdk.providers.createPerplexity
-import ai.torad.aisdk.providers.createTogetherAI
-
 import io.ktor.http.HttpHeaders
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.Json
@@ -145,6 +144,7 @@ class OpenAICompatibleProviderFacadesTest {
     }
 
     @Test
+    @Suppress("LongMethod")
     fun `deepseek injects json schema system message coerces user content and maps usage`() = runTest {
         val fixture = createTestServer(
             mutableMapOf(
@@ -170,7 +170,10 @@ class OpenAICompatibleProviderFacadesTest {
             ),
         )
         fixture.server.start()
-        val provider = createDeepSeek(fixture.httpClient(), DeepSeekProviderSettings(apiKey = "key", baseURL = "https://deepseek.test"))
+        val provider = createDeepSeek(
+            fixture.httpClient(),
+            DeepSeekProviderSettings(apiKey = "key", baseURL = "https://deepseek.test"),
+        )
 
         val result = provider.chat("deepseek-chat").generate(
             LanguageModelCallParams(
@@ -184,7 +187,9 @@ class OpenAICompatibleProviderFacadesTest {
                     ),
                 ),
                 seed = 7,
-                responseFormat = ResponseFormat.Json(schemaJson = buildJsonObject { put("type", JsonPrimitive("object")) }),
+                responseFormat = ResponseFormat.Json(
+                    schemaJson = buildJsonObject { put("type", JsonPrimitive("object")) },
+                ),
             ),
         )
 
@@ -192,7 +197,14 @@ class OpenAICompatibleProviderFacadesTest {
         assertEquals(null, body["seed"])
         assertEquals("json_object", body["response_format"]?.jsonObject?.get("type")?.jsonPrimitive?.contentOrNull)
         val messages = body["messages"]!!.jsonArray
-        assertTrue(messages.first().jsonObject["content"]?.jsonPrimitive?.contentOrNull.orEmpty().contains("Return JSON that conforms"))
+        assertTrue(
+            messages.first()
+                .jsonObject["content"]
+                ?.jsonPrimitive
+                ?.contentOrNull
+                .orEmpty()
+                .contains("Return JSON that conforms"),
+        )
         assertEquals("Return an object.", messages.last().jsonObject["content"]?.jsonPrimitive?.contentOrNull)
         assertEquals(4, result.usage.inputTokens.cacheRead)
         assertEquals(6, result.usage.inputTokens.noCache)
@@ -201,6 +213,7 @@ class OpenAICompatibleProviderFacadesTest {
     }
 
     @Test
+    @Suppress("LongMethod")
     fun `perplexity drops unsupported tool wire fields coerces text arrays and maps reasoning usage`() = runTest {
         val fixture = createTestServer(
             mutableMapOf(
@@ -221,16 +234,30 @@ class OpenAICompatibleProviderFacadesTest {
             ),
         )
         fixture.server.start()
-        val provider = createPerplexity(fixture.httpClient(), PerplexityProviderSettings(apiKey = "key", baseURL = "https://perplexity.test"))
+        val provider = createPerplexity(
+            fixture.httpClient(),
+            PerplexityProviderSettings(apiKey = "key", baseURL = "https://perplexity.test"),
+        )
 
         val result = provider.languageModel("sonar").generate(
             LanguageModelCallParams(
                 messages = listOf(
-                    ModelMessage(MessageRole.User, listOf(ContentPart.Text("A"), ContentPart.Text("B"))),
-                    ModelMessage(MessageRole.Assistant, listOf(ContentPart.ToolCall("call_1", "lookup", buildJsonObject {}))),
-                    ModelMessage(MessageRole.Tool, listOf(ContentPart.ToolResult("call_1", "lookup", JsonPrimitive("done")))),
+                    ModelMessage(
+                        MessageRole.User,
+                        listOf(ContentPart.Text("A"), ContentPart.Text("B")),
+                    ),
+                    ModelMessage(
+                        MessageRole.Assistant,
+                        listOf(ContentPart.ToolCall("call_1", "lookup", buildJsonObject {})),
+                    ),
+                    ModelMessage(
+                        MessageRole.Tool,
+                        listOf(ContentPart.ToolResult("call_1", "lookup", JsonPrimitive("done"))),
+                    ),
                 ),
-                tools = listOf(LanguageModelTool("lookup", "Lookup.", """{"type":"object"}""")),
+                tools = listOf(
+                    LanguageModelTool("lookup", "Lookup.", """{"type":"object"}"""),
+                ),
                 toolChoice = ToolChoice.Required,
                 stopSequences = listOf("END"),
                 seed = 12,
@@ -277,7 +304,10 @@ class OpenAICompatibleProviderFacadesTest {
             ),
         )
         fixture.server.start()
-        val provider = createMoonshotAI(fixture.httpClient(), MoonshotAIProviderSettings(apiKey = "key", baseURL = "https://moonshot.test/v1"))
+        val provider = createMoonshotAI(
+            fixture.httpClient(),
+            MoonshotAIProviderSettings(apiKey = "key", baseURL = "https://moonshot.test/v1"),
+        )
 
         val result = provider.chatModel("kimi").generate(LanguageModelCallParams(listOf(userMessage("hi"))))
 
@@ -308,7 +338,10 @@ class OpenAICompatibleProviderFacadesTest {
             ),
         )
         fixture.server.start()
-        val provider = createGroq(fixture.httpClient(), GroqProviderSettings(apiKey = "key", baseURL = "https://groq.test/openai/v1"))
+        val provider = createGroq(
+            fixture.httpClient(),
+            GroqProviderSettings(apiKey = "key", baseURL = "https://groq.test/openai/v1"),
+        )
 
         val result = provider.chat("llama").generate(
             LanguageModelCallParams(
@@ -316,7 +349,14 @@ class OpenAICompatibleProviderFacadesTest {
                     userMessage("hi"),
                     ModelMessage(MessageRole.Assistant, listOf(ContentPart.Reasoning("prior thought"))),
                 ),
-                tools = listOf(LanguageModelTool("browserSearch", "Search.", """{"type":"object"}""", providerExecuted = true)),
+                tools = listOf(
+                    LanguageModelTool(
+                        "browserSearch",
+                        "Search.",
+                        """{"type":"object"}""",
+                        providerExecuted = true,
+                    ),
+                ),
             ),
         )
 
@@ -324,7 +364,10 @@ class OpenAICompatibleProviderFacadesTest {
         val assistant = body["messages"]!!.jsonArray.last().jsonObject
         assertEquals("prior thought", assistant["reasoning"]?.jsonPrimitive?.contentOrNull)
         assertEquals(null, assistant["reasoning_content"])
-        assertEquals("browser_search", body["tools"]?.jsonArray?.single()?.jsonObject?.get("type")?.jsonPrimitive?.contentOrNull)
+        assertEquals(
+            "browser_search",
+            body["tools"]?.jsonArray?.single()?.jsonObject?.get("type")?.jsonPrimitive?.contentOrNull,
+        )
         assertEquals(1, result.usage.outputTokens.reasoning)
         assertEquals(3, result.usage.outputTokens.text)
     }

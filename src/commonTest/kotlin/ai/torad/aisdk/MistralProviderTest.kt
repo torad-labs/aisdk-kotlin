@@ -4,13 +4,12 @@ import ai.torad.aisdk.providers.MistralProviderSettings
 import ai.torad.aisdk.providers.createMistral
 import ai.torad.aisdk.providers.mistral
 import ai.torad.aisdk.testing.drainAllItems
-
 import io.ktor.http.HttpHeaders
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonPrimitive
-import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.booleanOrNull
+import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.intOrNull
 import kotlinx.serialization.json.jsonArray
@@ -182,6 +181,7 @@ class MistralProviderTest {
     }
 
     @Test
+    @Suppress("LongMethod")
     fun `chat response maps Mistral thinking content for generate and stream`() = runTest {
         val fixture = createTestServer(
             mutableMapOf(
@@ -231,8 +231,12 @@ class MistralProviderTest {
         fixture.server.start()
         val provider = createMistral(fixture.httpClient(), MistralProviderSettings(apiKey = "key"))
 
-        val generated = provider.chat("magistral-small-2507").generate(LanguageModelCallParams(messages = listOf(userMessage("hi"))))
-        val events = drainAllItems(provider.chat("magistral-small-2507").stream(LanguageModelCallParams(messages = listOf(userMessage("hi")))))
+        val generated = provider.chat("magistral-small-2507").generate(
+            LanguageModelCallParams(messages = listOf(userMessage("hi"))),
+        )
+        val events = drainAllItems(
+            provider.chat("magistral-small-2507").stream(LanguageModelCallParams(messages = listOf(userMessage("hi")))),
+        )
 
         assertEquals("Final answer.", generated.text)
         assertEquals("First thought.", generated.content.filterIsInstance<ContentPart.Reasoning>().single().text)

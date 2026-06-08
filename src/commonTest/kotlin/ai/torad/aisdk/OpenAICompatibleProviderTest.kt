@@ -32,6 +32,7 @@ import kotlin.test.assertIs
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
+@Suppress("LargeClass")
 class OpenAICompatibleProviderTest {
     @Test
     fun `chat model posts OpenAI-compatible request and maps response content`() = runTest {
@@ -263,7 +264,9 @@ class OpenAICompatibleProviderTest {
                     )
                 } else {
                     respond(
-                        content = """{"id":"generate-1","choices":[{"message":{"role":"assistant","wire_content":"generated"},"finish_reason":"stop"}]}""",
+                        content = """
+                            {"id":"generate-1","choices":[{"message":{"role":"assistant","wire_content":"generated"},"finish_reason":"stop"}]}
+                        """.trimIndent(),
                         status = HttpStatusCode.OK,
                         headers = headersOf(HttpHeaders.ContentType, "application/json"),
                     )
@@ -279,8 +282,12 @@ class OpenAICompatibleProviderTest {
             ),
         )
 
-        val generated = provider.languageModel("gpt-test").generate(LanguageModelCallParams(messages = listOf(userMessage("hi"))))
-        val events = drainAllItems(provider.languageModel("gpt-test").stream(LanguageModelCallParams(messages = listOf(userMessage("hi")))))
+        val generated = provider.languageModel("gpt-test").generate(
+            LanguageModelCallParams(messages = listOf(userMessage("hi"))),
+        )
+        val events = drainAllItems(
+            provider.languageModel("gpt-test").stream(LanguageModelCallParams(messages = listOf(userMessage("hi")))),
+        )
 
         assertEquals("generated", generated.text)
         assertTrue(events.any { it is StreamEvent.TextDelta && it.text == "streamed" })

@@ -700,6 +700,7 @@ private fun BasetenProviderSettings.toCompatible(
 ): OpenAICompatibleProviderSettings =
     compatibleSettings(name, version, baseURL, apiKey, headers, includeUsage, supportsStructuredOutputs)
 
+@Suppress("LongParameterList")
 private fun compatibleSettings(
     name: String,
     version: String,
@@ -782,10 +783,13 @@ private fun deepSeekMessages(
 )
 
 private fun deepSeekMessage(message: JsonElement): JsonElement {
-    val obj = message as? JsonObject ?: return message
-    if (obj["role"]?.jsonPrimitive?.contentOrNull != "user") return obj
-    val content = obj["content"] as? JsonArray ?: return obj
-    return JsonObject(obj + ("content" to JsonPrimitive(textFromContentParts(content))))
+    val obj = message as? JsonObject
+    val content = obj?.get("content") as? JsonArray
+    return if (obj?.get("role")?.jsonPrimitive?.contentOrNull == "user" && content != null) {
+        JsonObject(obj + ("content" to JsonPrimitive(textFromContentParts(content))))
+    } else {
+        message
+    }
 }
 
 private fun perplexityTransformChatBody(body: JsonObject): JsonObject = buildJsonObject {
@@ -819,11 +823,15 @@ private fun perplexityAssistantMessage(message: JsonObject): JsonObject {
 }
 
 private fun perplexityTextMessage(message: JsonObject): JsonObject {
-    val content = message["content"] as? JsonArray ?: return message
-    if (content.all { (it as? JsonObject)?.get("type")?.jsonPrimitive?.contentOrNull == "text" }) {
-        return JsonObject(message + ("content" to JsonPrimitive(textFromContentParts(content))))
+    val content = message["content"] as? JsonArray
+    val textOnly = content?.all {
+        (it as? JsonObject)?.get("type")?.jsonPrimitive?.contentOrNull == "text"
+    } == true
+    return if (content != null && textOnly) {
+        JsonObject(message + ("content" to JsonPrimitive(textFromContentParts(content))))
+    } else {
+        message
     }
-    return message
 }
 
 private fun groqTransformChatBody(body: JsonObject): JsonObject = buildJsonObject {
@@ -862,9 +870,12 @@ private fun groqTools(tools: JsonArray?): JsonArray = JsonArray(
 )
 
 private fun groqTransformChatResponse(body: JsonObject): JsonObject {
-    if (body["usage"] != null) return body
-    val usage = (body["x_groq"] as? JsonObject)?.get("usage") ?: return body
-    return JsonObject(body + ("usage" to usage))
+    val usage = (body["x_groq"] as? JsonObject)?.get("usage")
+    return if (body["usage"] == null && usage != null) {
+        JsonObject(body + ("usage" to usage))
+    } else {
+        body
+    }
 }
 
 private fun textFromContentParts(content: JsonArray): String =

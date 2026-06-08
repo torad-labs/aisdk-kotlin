@@ -139,6 +139,7 @@ class XaiProviderTest {
     }
 
     @Test
+    @Suppress("LongMethod")
     fun `chat body drops stop and strips additionalProperties and maps xHandles alias`() = runTest {
         val fixture = createTestServer(
             mutableMapOf(
@@ -163,21 +164,7 @@ class XaiProviderTest {
                     LanguageModelTool(
                         "lookup",
                         "d",
-                        """
-                        {
-                          "${'$'}schema":"https://json-schema.org/draft/2020-12/schema",
-                          "title":"LookupInput",
-                          "type":"object",
-                          "additionalProperties":false,
-                          "properties":{
-                            "q":{
-                              "title":"Query",
-                              "type":"string",
-                              "additionalProperties":false
-                            }
-                          }
-                        }
-                        """.trimIndent(),
+                        xaiUnsupportedToolSchema(),
                     ),
                 ),
                 providerOptions = mapOf(
@@ -430,6 +417,22 @@ class XaiProviderTest {
         assertEquals(JsonPrimitive(providerToolId), tool.metadata["providerToolId"])
         assertIs<JsonElement>(tool.metadata["providerOptions"])
     }
+
+    private fun xaiUnsupportedToolSchema(): String = """
+        {
+          "${'$'}schema":"https://json-schema.org/draft/2020-12/schema",
+          "title":"LookupInput",
+          "type":"object",
+          "additionalProperties":false,
+          "properties":{
+            "q":{
+              "title":"Query",
+              "type":"string",
+              "additionalProperties":false
+            }
+          }
+        }
+    """.trimIndent()
 
     private fun Map<String, String>.headerValue(name: String): String? =
         entries.firstOrNull { it.key.equals(name, ignoreCase = true) }?.value

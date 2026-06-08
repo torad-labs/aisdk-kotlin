@@ -24,6 +24,7 @@ import kotlin.test.assertFailsWith
 import kotlin.test.assertIs
 import kotlin.test.assertTrue
 
+@Suppress("LargeClass")
 class GoogleProviderTest {
     @Test
     fun `language model maps Gemini request response tools sources and metadata`() = runTest {
@@ -239,7 +240,15 @@ class GoogleProviderTest {
         val fixture = createTestServer(
             mutableMapOf(
                 "https://google.test/v1beta/models/gemini-2.5-flash:generateContent" to UrlHandler(
-                    UrlResponse.JsonValue(Json.parseToJsonElement("""{"candidates":[{"content":{"role":"model","parts":[{"text":"ok"}]},"finishReason":"STOP"}]}""")),
+                    UrlResponse.JsonValue(
+                        Json.parseToJsonElement(
+                            """
+                            {
+                              "candidates":[{"content":{"role":"model","parts":[{"text":"ok"}]},"finishReason":"STOP"}]
+                            }
+                            """.trimIndent(),
+                        ),
+                    ),
                 ),
             ),
         )

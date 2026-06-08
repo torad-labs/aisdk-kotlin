@@ -10,7 +10,6 @@ import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
-import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.put
 
 public const val MISTRAL_VERSION: String = "3.0.37"
@@ -209,58 +208,6 @@ private fun mistralRewriteUserContent(message: JsonObject): JsonObject {
     }
     return JsonObject(message + ("content" to JsonArray(rewritten)))
 }
-
-private fun mistralTransformChatResponse(body: JsonObject): JsonObject {
-    val choices = body["choices"] as? JsonArray ?: return body
-    return JsonObject(body + ("choices" to JsonArray(choices.map(::mistralTransformResponseChoice))))
-}
-
-private fun mistralTransformResponseChoice(choice: JsonElement): JsonElement {
-    val obj = choice as? JsonObject ?: return choice
-    val message = (obj["message"] as? JsonObject)?.let(::mistralTransformResponseContent)
-    val delta = (obj["delta"] as? JsonObject)?.let(::mistralTransformResponseContent)
-    val updates = buildMap<String, JsonElement> {
-        message?.let { put("message", it) }
-        delta?.let { put("delta", it) }
-    }
-    return if (updates.isEmpty()) obj else JsonObject(obj + updates)
-}
-
-private fun mistralTransformResponseContent(value: JsonObject): JsonObject {
-    val content = value["content"] as? JsonArray ?: return value
-    val text = content.mapNotNull { part ->
-        val obj = part as? JsonObject ?: return@mapNotNull null
-        obj.takeIf { (it["type"] as? JsonPrimitive)?.contentOrNull == "text" }
-            ?.get("text")
-            ?.let { it as? JsonPrimitive }
-            ?.contentOrNull
-    }.joinToString("")
-    val reasoning = content.joinToString("") { part ->
-        val obj = part as? JsonObject ?: return@joinToString ""
-        if ((obj["type"] as? JsonPrimitive)?.contentOrNull == "thinking") {
-            mistralThinkingText(obj["thinking"])
-        } else {
-            ""
-        }
-    }
-    val transformed = value.toMutableMap()
-    if (text.isEmpty()) {
-        transformed.remove("content")
-    } else {
-        transformed["content"] = JsonPrimitive(text)
-    }
-    if (reasoning.isNotEmpty()) transformed["reasoning_content"] = JsonPrimitive(reasoning)
-    return JsonObject(transformed)
-}
-
-private fun mistralThinkingText(value: JsonElement?): String =
-    (value as? JsonArray).orEmpty().mapNotNull { chunk ->
-        val obj = chunk as? JsonObject ?: return@mapNotNull null
-        obj.takeIf { (it["type"] as? JsonPrimitive)?.contentOrNull == "text" }
-            ?.get("text")
-            ?.let { it as? JsonPrimitive }
-            ?.contentOrNull
-    }.joinToString("")
 
 private fun transformMistralProviderOptions(options: Map<String, JsonElement>): Map<String, JsonElement> {
     val mistral = options["mistral"] as? JsonObject ?: return options
