@@ -217,7 +217,7 @@ private fun xaiStripToolSchemas(tools: JsonElement): JsonElement {
             val obj = tool as? JsonObject ?: return@map tool
             val function = obj["function"] as? JsonObject ?: return@map tool
             val params = function["parameters"] as? JsonObject ?: return@map tool
-            val cleanedParams = JsonObject(params.filterKeys { it != "additionalProperties" })
+            val cleanedParams = stripUnsupportedSchemaKeys(params, dropAdditionalProperties = true)
             JsonObject(obj + ("function" to JsonObject(function + ("parameters" to cleanedParams))))
         },
     )

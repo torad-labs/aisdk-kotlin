@@ -160,7 +160,25 @@ class XaiProviderTest {
                 messages = listOf(userMessage("go")),
                 stopSequences = listOf("END"),
                 tools = listOf(
-                    LanguageModelTool("lookup", "d", "{\"type\":\"object\",\"additionalProperties\":false}"),
+                    LanguageModelTool(
+                        "lookup",
+                        "d",
+                        """
+                        {
+                          "${'$'}schema":"https://json-schema.org/draft/2020-12/schema",
+                          "title":"LookupInput",
+                          "type":"object",
+                          "additionalProperties":false,
+                          "properties":{
+                            "q":{
+                              "title":"Query",
+                              "type":"string",
+                              "additionalProperties":false
+                            }
+                          }
+                        }
+                        """.trimIndent(),
+                    ),
                 ),
                 providerOptions = mapOf(
                     "xai" to buildJsonObject {
@@ -189,6 +207,11 @@ class XaiProviderTest {
         val toolFn = body["tools"]?.jsonArray?.single()?.jsonObject?.get("function")?.jsonObject
         val toolParams = toolFn?.get("parameters")?.jsonObject
         assertEquals(null, toolParams?.get("additionalProperties"), "additionalProperties stripped from tool schema")
+        assertEquals(null, toolParams?.get("\$schema"), "\$schema stripped from tool schema")
+        assertEquals(null, toolParams?.get("title"), "title stripped from tool schema")
+        val nested = toolParams?.get("properties")?.jsonObject?.get("q")?.jsonObject
+        assertEquals(null, nested?.get("additionalProperties"), "nested additionalProperties stripped from tool schema")
+        assertEquals(null, nested?.get("title"), "nested title stripped from tool schema")
         val src = body["search_parameters"]?.jsonObject?.get("sources")?.jsonArray?.single()?.jsonObject
         assertEquals("grok", src?.get("included_x_handles")?.jsonArray?.single()?.jsonPrimitive?.contentOrNull)
         assertEquals(null, src?.get("x_handles"), "xHandles not naively snake-cased")
