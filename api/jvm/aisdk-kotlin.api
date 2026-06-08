@@ -11124,8 +11124,8 @@ public final class ai/torad/aisdk/providers/OpenAICompatibleProviderKt {
 }
 
 public final class ai/torad/aisdk/providers/OpenAICompatibleProviderSettings {
-	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;Ljava/util/Map;ZZLjava/util/Map;ILkotlin/jvm/functions/Function1;Lkotlin/jvm/functions/Function2;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lkotlin/jvm/functions/Function1;Lkotlin/jvm/functions/Function1;)V
-	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;Ljava/util/Map;ZZLjava/util/Map;ILkotlin/jvm/functions/Function1;Lkotlin/jvm/functions/Function2;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lkotlin/jvm/functions/Function1;Lkotlin/jvm/functions/Function1;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;Ljava/util/Map;ZZLjava/util/Map;ILkotlin/jvm/functions/Function1;Lkotlin/jvm/functions/Function2;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lkotlin/jvm/functions/Function1;Lkotlin/jvm/functions/Function1;Lkotlin/jvm/functions/Function1;)V
+	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;Ljava/util/Map;ZZLjava/util/Map;ILkotlin/jvm/functions/Function1;Lkotlin/jvm/functions/Function2;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lkotlin/jvm/functions/Function1;Lkotlin/jvm/functions/Function1;Lkotlin/jvm/functions/Function1;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun component1 ()Ljava/lang/String;
 	public final fun component10 ()Lkotlin/jvm/functions/Function1;
 	public final fun component11 ()Lkotlin/jvm/functions/Function2;
@@ -11135,6 +11135,7 @@ public final class ai/torad/aisdk/providers/OpenAICompatibleProviderSettings {
 	public final fun component15 ()Ljava/lang/String;
 	public final fun component16 ()Lkotlin/jvm/functions/Function1;
 	public final fun component17 ()Lkotlin/jvm/functions/Function1;
+	public final fun component18 ()Lkotlin/jvm/functions/Function1;
 	public final fun component2 ()Ljava/lang/String;
 	public final fun component3 ()Ljava/lang/String;
 	public final fun component4 ()Ljava/util/Map;
@@ -11143,8 +11144,8 @@ public final class ai/torad/aisdk/providers/OpenAICompatibleProviderSettings {
 	public final fun component7 ()Z
 	public final fun component8 ()Ljava/util/Map;
 	public final fun component9 ()I
-	public final fun copy (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;Ljava/util/Map;ZZLjava/util/Map;ILkotlin/jvm/functions/Function1;Lkotlin/jvm/functions/Function2;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lkotlin/jvm/functions/Function1;Lkotlin/jvm/functions/Function1;)Lai/torad/aisdk/providers/OpenAICompatibleProviderSettings;
-	public static synthetic fun copy$default (Lai/torad/aisdk/providers/OpenAICompatibleProviderSettings;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;Ljava/util/Map;ZZLjava/util/Map;ILkotlin/jvm/functions/Function1;Lkotlin/jvm/functions/Function2;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lkotlin/jvm/functions/Function1;Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Lai/torad/aisdk/providers/OpenAICompatibleProviderSettings;
+	public final fun copy (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;Ljava/util/Map;ZZLjava/util/Map;ILkotlin/jvm/functions/Function1;Lkotlin/jvm/functions/Function2;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lkotlin/jvm/functions/Function1;Lkotlin/jvm/functions/Function1;Lkotlin/jvm/functions/Function1;)Lai/torad/aisdk/providers/OpenAICompatibleProviderSettings;
+	public static synthetic fun copy$default (Lai/torad/aisdk/providers/OpenAICompatibleProviderSettings;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;Ljava/util/Map;ZZLjava/util/Map;ILkotlin/jvm/functions/Function1;Lkotlin/jvm/functions/Function2;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lkotlin/jvm/functions/Function1;Lkotlin/jvm/functions/Function1;Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Lai/torad/aisdk/providers/OpenAICompatibleProviderSettings;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getApiKey ()Ljava/lang/String;
 	public final fun getAuthHeadersProvider ()Lkotlin/jvm/functions/Function1;
@@ -11161,6 +11162,7 @@ public final class ai/torad/aisdk/providers/OpenAICompatibleProviderSettings {
 	public final fun getSupportedUrls ()Ljava/util/Map;
 	public final fun getSupportsStructuredOutputs ()Z
 	public final fun getTransformChatRequestBody ()Lkotlin/jvm/functions/Function1;
+	public final fun getTransformChatResponse ()Lkotlin/jvm/functions/Function1;
 	public final fun getUrlBuilder ()Lkotlin/jvm/functions/Function2;
 	public final fun getUserAgentSuffix ()Ljava/lang/String;
 	public fun hashCode ()I

@@ -16,6 +16,7 @@ import io.ktor.http.contentType
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emitAll
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.map
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
@@ -54,6 +55,7 @@ public data class OpenAICompatibleProviderSettings(
     val chatSeedKey: String = "seed",
     val transformChatRequestBody: ((JsonObject) -> JsonObject)? = null,
     val convertUsage: ((JsonElement?) -> Usage)? = null,
+    val transformChatResponse: ((JsonObject) -> JsonObject)? = null,
 )
 
 public interface OpenAICompatibleProvider : Provider {
@@ -234,8 +236,17 @@ private class OpenAICompatibleChatLanguageModel(
     override suspend fun generate(params: LanguageModelCallParams): LanguageModelResult {
         val prepared = chatRequestBody(params, stream = false)
         val response = postJson("/chat/completions", prepared.body, params.headers)
+        val transformed = settings.applyChatResponseTransform(response.value)
+        openAICompatibleInBandError(transformed)?.let { error ->
+            throw error.toApiCallError(
+                url = url("/chat/completions"),
+                requestBody = prepared.body,
+                responseBody = response.rawText,
+                responseHeaders = response.headers,
+            )
+        }
         return chatResultFromJson(
-            response.value,
+            transformed,
             provider = providerName,
             requestBody = prepared.body,
             responseHeaders = response.headers,
@@ -257,7 +268,8 @@ private class OpenAICompatibleChatLanguageModel(
             onResponse = { sseHeaders = it },
         )
         forwardSseEvents(
-            events = parseJsonEventStream(rawLines, jsonSchema<JsonElement>(JsonObject(emptyMap())), json),
+            events = parseJsonEventStream(rawLines, jsonSchema<JsonElement>(JsonObject(emptyMap())), json)
+                .map { it.transformChatStreamEvent(prepared.body) { sseHeaders } },
             capturedHeaders = { sseHeaders },
             parseErrorPrefix = "Failed to parse OpenAI-compatible stream event",
             onEvent = { state.accept(it).forEach { e -> emit(e) } },
@@ -322,6 +334,25 @@ private class OpenAICompatibleChatLanguageModel(
         providerOptionsName().substringBefore('.').trim().ifBlank { "openaiCompatible" }
 
     private fun providerOptionsName(): String = settings.providerOptionsName ?: settings.name
+
+    private fun ParseResult<JsonElement>.transformChatStreamEvent(
+        requestBody: JsonObject,
+        responseHeaders: () -> Map<String, String>,
+    ): ParseResult<JsonElement> = when (this) {
+        is ParseResult.Failure -> this
+        is ParseResult.Success -> {
+            val transformed = settings.applyChatResponseTransform(value)
+            openAICompatibleInBandError(transformed)?.let { error ->
+                throw error.toApiCallError(
+                    url = url("/chat/completions"),
+                    requestBody = requestBody,
+                    responseBody = transformed.toString(),
+                    responseHeaders = responseHeaders(),
+                )
+            }
+            ParseResult.Success(transformed)
+        }
+    }
 }
 
 private class OpenAICompatibleCompletionLanguageModel(
@@ -603,6 +634,48 @@ private data class OpenAIBytesResponse(
     val bytes: ByteArray,
     val headers: Map<String, String>,
 )
+
+private data class OpenAICompatibleInBandError(
+    val message: String,
+    val isRetryable: Boolean,
+)
+
+private fun OpenAICompatibleProviderSettings.applyChatResponseTransform(value: JsonElement): JsonElement =
+    (value as? JsonObject)?.let { transformChatResponse?.invoke(it) ?: it } ?: value
+
+private fun openAICompatibleInBandError(value: JsonElement): OpenAICompatibleInBandError? {
+    val obj = value as? JsonObject ?: return null
+    val error = obj["error"] ?: return null
+    val errorObj = error as? JsonObject
+    val code = obj.jsonStringOrNull("code") ?: errorObj?.jsonStringOrNull("code")
+    val message = when (error) {
+        is JsonPrimitive -> error.contentOrNull ?: error.content
+        is JsonObject -> error.jsonStringOrNull("message") ?: error.jsonStringOrNull("type")
+        else -> null
+    } ?: obj.jsonStringOrNull("message") ?: error.toString()
+    return OpenAICompatibleInBandError(
+        message = message,
+        isRetryable = code == "The service is currently unavailable",
+    )
+}
+
+private fun OpenAICompatibleInBandError.toApiCallError(
+    url: String,
+    requestBody: JsonElement,
+    responseBody: String,
+    responseHeaders: Map<String, String>,
+): APICallError = APICallError(
+    message = message,
+    url = url,
+    requestBodyValues = requestBody,
+    statusCode = 200,
+    responseHeaders = responseHeaders,
+    responseBody = responseBody,
+    isRetryable = isRetryable,
+)
+
+private fun JsonObject.jsonStringOrNull(key: String): String? =
+    (this[key] as? JsonPrimitive)?.contentOrNull
 
 
 private val openAIChatReservedOptions = setOf(
@@ -1172,4 +1245,3 @@ private fun toOpenAICamelCase(value: String): String =
         .filter { it.isNotBlank() }
         .mapIndexed { index, part -> if (index == 0) part.lowercase() else part.replaceFirstChar { it.uppercase() } }
         .joinToString("")
-

@@ -17,6 +17,7 @@ import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.booleanOrNull
@@ -242,6 +243,48 @@ class OpenAICompatibleProviderTest {
         assertEquals(FinishReason.ToolCalls, finish.finishReason)
         assertEquals(1, finish.usage.promptTokens)
         assertEquals(2, finish.usage.completionTokens)
+    }
+
+    @Test
+    fun `chat response transform applies to generate and stream events`() = runTest {
+        val client = HttpClient(
+            MockEngine { request ->
+                val body = Json.parseToJsonElement(requestBodyText(request)).jsonObject
+                if (body["stream"]?.jsonPrimitive?.booleanOrNull == true) {
+                    respond(
+                        content = """
+                            data: {"id":"stream-1","choices":[{"delta":{"wire_content":"streamed"}}]}
+
+                            data: {"id":"stream-1","choices":[{"finish_reason":"stop"}]}
+
+                        """.trimIndent(),
+                        status = HttpStatusCode.OK,
+                        headers = headersOf(HttpHeaders.ContentType, "text/event-stream"),
+                    )
+                } else {
+                    respond(
+                        content = """{"id":"generate-1","choices":[{"message":{"role":"assistant","wire_content":"generated"},"finish_reason":"stop"}]}""",
+                        status = HttpStatusCode.OK,
+                        headers = headersOf(HttpHeaders.ContentType, "application/json"),
+                    )
+                }
+            },
+        )
+        val provider = createOpenAICompatible(
+            client,
+            OpenAICompatibleProviderSettings(
+                name = "openai",
+                baseUrl = "https://api.test/v1",
+                transformChatResponse = ::rewriteWireContentResponse,
+            ),
+        )
+
+        val generated = provider.languageModel("gpt-test").generate(LanguageModelCallParams(messages = listOf(userMessage("hi"))))
+        val events = drainAllItems(provider.languageModel("gpt-test").stream(LanguageModelCallParams(messages = listOf(userMessage("hi")))))
+
+        assertEquals("generated", generated.text)
+        assertTrue(events.any { it is StreamEvent.TextDelta && it.text == "streamed" })
+        assertEquals(FinishReason.Stop, events.filterIsInstance<StreamEvent.Finish>().single().finishReason)
     }
 
     @Test
@@ -644,6 +687,33 @@ class OpenAICompatibleProviderTest {
             is OutgoingContent.NoContent -> ""
             else -> body.toString()
         }
+
+    private fun rewriteWireContentResponse(value: JsonObject): JsonObject {
+        val choices = value["choices"]?.jsonArray ?: return value
+        return JsonObject(
+            value + (
+                "choices" to JsonArray(
+                    choices.map { choice ->
+                        val choiceObj = choice.jsonObject
+                        val message = (choiceObj["message"] as? JsonObject)?.let(::rewriteWireContentPart)
+                        val delta = (choiceObj["delta"] as? JsonObject)?.let(::rewriteWireContentPart)
+                        JsonObject(
+                            choiceObj +
+                                listOfNotNull(
+                                    message?.let { "message" to it },
+                                    delta?.let { "delta" to it },
+                                ).toMap(),
+                        )
+                    },
+                )
+                )
+        )
+    }
+
+    private fun rewriteWireContentPart(value: JsonObject): JsonObject {
+        val content = value["wire_content"] ?: return value
+        return JsonObject(value - "wire_content" + ("content" to content))
+    }
 
     private fun Map<String, List<String>>.headerValue(name: String): String? =
         entries.firstOrNull { it.key.equals(name, ignoreCase = true) }?.value?.singleOrNull()
