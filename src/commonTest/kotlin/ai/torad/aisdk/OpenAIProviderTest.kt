@@ -120,6 +120,9 @@ class OpenAIProviderTest {
         assertEquals("from responses", responses.text)
         assertEquals("ok", directChat.text)
         assertEquals("done", completion.text)
+        assertEquals(10, provider.image("gpt-image-1").maxImagesPerCall)
+        assertEquals(1, provider.image("dall-e-3").maxImagesPerCall)
+        assertEquals(1, provider.image("custom-image").maxImagesPerCall)
         assertEquals(listOf("/v1/responses", "/v1/chat/completions", "/v1/completions"), seenPaths)
     }
 

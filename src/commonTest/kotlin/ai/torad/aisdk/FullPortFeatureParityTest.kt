@@ -104,16 +104,18 @@ class FullPortFeatureParityTest {
     }
 
     @Test
-    fun `rerank orders documents by score and preserves original indexes`() = runTest {
+    fun `rerank preserves provider ranking order and original indexes`() = runTest {
+        val model = MockRerankingModel()
         val result = rerank(
-            model = MockRerankingModel(),
+            model = model,
             query = "kotlin",
             documents = listOf("swift ui", "kotlin multiplatform", "java"),
             topN = 2,
         )
 
-        assertEquals(listOf("kotlin multiplatform", "swift ui"), result.results.map { it.value })
-        assertEquals(listOf(1, 0), result.results.map { it.index })
+        assertEquals(2, model.captured?.topN)
+        assertEquals(listOf("swift ui", "kotlin multiplatform", "java"), result.results.map { it.value })
+        assertEquals(listOf(0, 1, 2), result.results.map { it.index })
     }
 
     @Test

@@ -229,6 +229,8 @@ class CohereProviderTest {
         )
 
         assertEquals("cohere.textEmbedding", provider.embeddingModel("embed-v4.0").provider)
+        assertEquals(96, provider.embedding("embed-v4.0").maxEmbeddingsPerCall)
+        assertEquals(true, provider.embedding("embed-v4.0").supportsParallelCalls)
         assertEquals(provider.embedding("embed-v4.0").modelId, provider.textEmbedding("embed-v4.0").modelId)
         assertEquals(provider.embedding("embed-v4.0").modelId, provider.textEmbeddingModel("embed-v4.0").modelId)
         assertEquals(listOf(listOf(0.1f, 0.2f), listOf(0.3f, 0.4f)), result.embeddings)

@@ -428,6 +428,8 @@ class AmazonBedrockProviderTest {
         )
 
         assertEquals(listOf(1.0f, 2.0f), embedding.embeddings.single())
+        assertEquals(1, provider.embedding("amazon.titan-embed-text-v2:0").maxEmbeddingsPerCall)
+        assertEquals(true, provider.embedding("amazon.titan-embed-text-v2:0").supportsParallelCalls)
         assertEquals(7, embedding.usage.tokens)
         assertEquals("image", convertBase64ToByteArray(image.images.single().base64).decodeToString())
         assertEquals("second", rerank.results.first().value)

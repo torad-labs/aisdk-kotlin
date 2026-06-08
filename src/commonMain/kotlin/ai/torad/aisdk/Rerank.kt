@@ -67,10 +67,8 @@ public suspend fun rerank(
     val result = retryWithExponentialBackoff(RetryPolicy(maxRetries = maxRetries), retryableApiError) {
         model.rerank(RerankingParams(query, documents, topN, providerOptions, headers, abortSignal))
     }
-    val ordered = result.results.sortedByDescending { it.score }
-        .let { if (topN == null) it else it.take(topN) }
     return RerankResult(
-        results = ordered,
+        results = result.results,
         originalDocuments = documents,
         usage = result.usage,
         warnings = result.warnings,

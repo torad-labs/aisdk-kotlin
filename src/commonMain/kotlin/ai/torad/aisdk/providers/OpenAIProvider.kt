@@ -111,7 +111,7 @@ private class DefaultOpenAIProvider(
         compatible.embeddingModel(modelId)
 
     override fun image(modelId: String): ImageModel =
-        compatible.imageModel(modelId)
+        OpenAIImageModel(modelId, compatible.imageModel(modelId))
 
     override fun transcription(modelId: String): TranscriptionModel =
         compatible.transcriptionModel(modelId)
@@ -119,6 +119,26 @@ private class DefaultOpenAIProvider(
     override fun speech(modelId: String): SpeechModel =
         compatible.speechModel(modelId)
 }
+
+private class OpenAIImageModel(
+    override val modelId: String,
+    private val delegate: ImageModel,
+) : ImageModel by delegate {
+    override val maxImagesPerCall: Int = when (modelId) {
+        "dall-e-3" -> OPENAI_SINGLE_IMAGE_PER_CALL
+        "dall-e-2",
+        "gpt-image-1",
+        "gpt-image-1-mini",
+        "gpt-image-1.5",
+        "gpt-image-2",
+        "chatgpt-image-latest",
+        -> OPENAI_MULTI_IMAGE_PER_CALL
+        else -> OPENAI_SINGLE_IMAGE_PER_CALL
+    }
+}
+
+private const val OPENAI_SINGLE_IMAGE_PER_CALL: Int = 1
+private const val OPENAI_MULTI_IMAGE_PER_CALL: Int = 10
 
 public data class OpenAITools(
     val applyPatch: Tool<JsonElement, JsonElement, Any?> = openAIApplyPatch(),
@@ -207,4 +227,3 @@ private fun OpenAIProviderSettings.responsesUrl(): String {
         "${urlEncode(key)}=${urlEncode(value)}"
     }
 }
-

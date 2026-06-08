@@ -216,6 +216,8 @@ private class WrappedEmbeddingModel(
 ) : EmbeddingModel {
     override val modelId: String = inner.modelId
     override val provider: String = inner.provider
+    override val maxEmbeddingsPerCall: Int? = inner.maxEmbeddingsPerCall
+    override val supportsParallelCalls: Boolean = inner.supportsParallelCalls
     private val chainEmbed: suspend (EmbeddingModelCallParams) -> EmbeddingModelResult
 
     init {

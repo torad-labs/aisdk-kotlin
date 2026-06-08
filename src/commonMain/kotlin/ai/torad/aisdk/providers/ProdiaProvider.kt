@@ -168,6 +168,7 @@ private class ProdiaImageModel(
     override val modelId: String,
 ) : ImageModel {
     override val provider: String = "prodia.image"
+    override val maxImagesPerCall: Int = 1
 
     override suspend fun generate(params: ImageGenerationParams): ImageModelResult {
         val options = prodiaOptions(params.providerOptions)
@@ -215,6 +216,7 @@ private class ProdiaVideoModel(
     override val modelId: String,
 ) : VideoModel {
     override val provider: String = "prodia.video"
+    override val maxVideosPerCall: Int = 1
 
     override suspend fun generate(params: VideoGenerationParams): VideoModelResult {
         val options = prodiaOptions(params.providerOptions)
@@ -226,7 +228,7 @@ private class ProdiaVideoModel(
                 (options["resolution"] ?: params.resolution?.let(::JsonPrimitive))?.let { put("resolution", it) }
             })
         }
-        val input = params.image?.let { ProdiaInputFile(it.mediaType, convertBase64ToByteArray(it.base64), it.filename) }
+        val input = params.image?.let { prodiaInputFile(client, it) }
         val response = if (input == null) {
             prodiaPostJsonForMultipart(
                 client = client,
@@ -276,6 +278,13 @@ private data class ProdiaMultipartResult(
     val files: List<GeneratedFile>,
     val headers: Map<String, String>,
 )
+
+private suspend fun prodiaInputFile(client: HttpClient, file: GeneratedFile): ProdiaInputFile {
+    val bytes = file.url?.takeIf { it.isNotBlank() }
+        ?.let { client.request(it).bodyAsBytes() }
+        ?: convertBase64ToByteArray(file.base64)
+    return ProdiaInputFile(file.mediaType, bytes, file.filename)
+}
 
 
 private fun prodiaLanguageWarnings(params: LanguageModelCallParams): List<CallWarning> = buildList {

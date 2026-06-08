@@ -226,6 +226,8 @@ private class GoogleGenerativeAIEmbeddingModel(
     override val modelId: String,
 ) : EmbeddingModel {
     override val provider: String = settings.name
+    override val maxEmbeddingsPerCall: Int = 2048
+    override val supportsParallelCalls: Boolean = true
 
     override suspend fun embed(params: EmbeddingModelCallParams): EmbeddingModelResult {
         params.abortSignal.throwIfAborted()

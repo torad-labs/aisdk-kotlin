@@ -20,6 +20,7 @@ import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 
 public const val COHERE_VERSION: String = "3.0.36"
+private const val COHERE_MAX_EMBEDDINGS_PER_CALL: Int = 96
 
 public typealias CohereChatModelId = String
 public typealias CohereEmbeddingModelId = String
@@ -162,8 +163,18 @@ private class CohereEmbeddingModel(
     override val modelId: String,
 ) : EmbeddingModel {
     override val provider: String = "cohere.textEmbedding"
+    override val maxEmbeddingsPerCall: Int = COHERE_MAX_EMBEDDINGS_PER_CALL
+    override val supportsParallelCalls: Boolean = true
 
     override suspend fun embed(params: EmbeddingModelCallParams): EmbeddingModelResult {
+        if (params.values.size > COHERE_MAX_EMBEDDINGS_PER_CALL) {
+            throw TooManyEmbeddingValuesForCallError(
+                provider = provider,
+                modelId = modelId,
+                maxEmbeddingsPerCall = COHERE_MAX_EMBEDDINGS_PER_CALL,
+                values = params.values,
+            )
+        }
         val options = cohereOptions(params.providerOptions)
         val body = buildJsonObject {
             put("model", JsonPrimitive(modelId))

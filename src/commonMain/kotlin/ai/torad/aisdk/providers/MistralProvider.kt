@@ -13,6 +13,7 @@ import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 
 public const val MISTRAL_VERSION: String = "3.0.37"
+private const val MISTRAL_MAX_EMBEDDINGS_PER_CALL: Int = 32
 
 public typealias MistralChatModelId = String
 public typealias MistralEmbeddingModelId = String
@@ -75,7 +76,7 @@ private class DefaultMistralProvider(
         MistralChatLanguageModel(compatible.chatModel(modelId))
 
     override fun embedding(modelId: MistralEmbeddingModelId): EmbeddingModel =
-        compatible.embeddingModel(modelId)
+        MistralEmbeddingModel(compatible.embeddingModel(modelId))
 
     override fun imageModel(modelId: String): ImageModel =
         throw NoSuchModelError(providerId, "imageModel", modelId)
@@ -105,6 +106,7 @@ private fun MistralProviderSettings.toCompatible(): OpenAICompatibleProviderSett
         providerOptionsName = "mistral",
         supportsStructuredOutputs = true,
         chatSeedKey = "random_seed",
+        maxEmbeddingsPerCall = MISTRAL_MAX_EMBEDDINGS_PER_CALL,
         // Mistral accepts PDFs by URL (sent as document_url), so they pass through.
         supportedUrls = mapOf("application/pdf" to listOf("^https://.*$")),
         // Mistral's chat wire shape differs from OpenAI's; rewrite the OpenAI-shaped body
@@ -112,6 +114,13 @@ private fun MistralProviderSettings.toCompatible(): OpenAICompatibleProviderSett
         transformChatRequestBody = ::mistralTransformChatBody,
         transformChatResponse = ::mistralTransformChatResponse,
     )
+
+private class MistralEmbeddingModel(
+    private val delegate: EmbeddingModel,
+) : EmbeddingModel by delegate {
+    override val maxEmbeddingsPerCall: Int = MISTRAL_MAX_EMBEDDINGS_PER_CALL
+    override val supportsParallelCalls: Boolean = false
+}
 
 /**
  * Rewrites the OpenAI-compatible chat body into Mistral's wire shape:

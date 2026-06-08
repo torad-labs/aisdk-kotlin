@@ -64,6 +64,8 @@ class ReplicateProviderTest {
         )
 
         assertEquals("replicate", model.provider)
+        assertEquals(1, model.maxImagesPerCall)
+        assertEquals(8, createReplicate(fixture.httpClient()).image("black-forest-labs/flux-2-pro").maxImagesPerCall)
         assertEquals(listOf("image/png", "image/webp"), result.images.map { it.mediaType })
         assertEquals(convertByteArrayToBase64(byteArrayOf(1, 2)), result.images.first().base64)
 
@@ -171,6 +173,7 @@ class ReplicateProviderTest {
         )
 
         assertEquals("replicate.video", model.provider)
+        assertEquals(1, model.maxVideosPerCall)
         assertEquals("video/mp4", result.videos.single().mediaType)
         assertEquals("https://cdn.example/video.mp4", result.videos.single().url)
         val create = fixture.calls[0]

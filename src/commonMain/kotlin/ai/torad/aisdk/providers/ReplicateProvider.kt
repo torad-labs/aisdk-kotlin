@@ -25,6 +25,8 @@ import kotlinx.serialization.json.jsonPrimitive
 import kotlin.math.ceil
 
 public const val REPLICATE_VERSION: String = "2.0.33"
+private const val REPLICATE_DEFAULT_MAX_IMAGES_PER_CALL: Int = 1
+private const val REPLICATE_FLUX_2_MAX_IMAGES_PER_CALL: Int = 8
 
 public typealias ReplicateImageModelId = String
 public typealias ReplicateVideoModelId = String
@@ -103,6 +105,12 @@ private class ReplicateImageModel(
     override val modelId: String,
 ) : ImageModel {
     override val provider: String = "replicate"
+    override val maxImagesPerCall: Int
+        get() = if (modelId.startsWith("black-forest-labs/flux-2-")) {
+            REPLICATE_FLUX_2_MAX_IMAGES_PER_CALL
+        } else {
+            REPLICATE_DEFAULT_MAX_IMAGES_PER_CALL
+        }
 
     override suspend fun generate(params: ImageGenerationParams): ImageModelResult {
         params.abortSignal.throwIfAborted()
@@ -158,6 +166,7 @@ private class ReplicateVideoModel(
     override val modelId: String,
 ) : VideoModel {
     override val provider: String = "replicate.video"
+    override val maxVideosPerCall: Int = 1
 
     override suspend fun generate(params: VideoGenerationParams): VideoModelResult {
         params.abortSignal.throwIfAborted()

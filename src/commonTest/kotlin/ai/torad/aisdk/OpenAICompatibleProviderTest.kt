@@ -404,6 +404,7 @@ class OpenAICompatibleProviderTest {
     }
 
     @Test
+    @Suppress("LongMethod")
     fun `embedding image speech and transcription models map native endpoints`() = runTest {
         val seenPaths = mutableListOf<String>()
         val seenContentTypes = mutableListOf<String?>()
@@ -418,7 +419,12 @@ class OpenAICompatibleProviderTest {
                         headersOf(HttpHeaders.ContentType, "application/json"),
                     )
                     "/v1/images/generations" -> respond(
-                        """{"data":[{"b64_json":"iVBORw0="}]}""",
+                        """
+                        {
+                          "data":[{"b64_json":"iVBORw0="}],
+                          "usage":{"input_tokens":12,"output_tokens":9,"total_tokens":21}
+                        }
+                        """.trimIndent(),
                         HttpStatusCode.OK,
                         headersOf(HttpHeaders.ContentType, "application/json"),
                     )
@@ -446,9 +452,13 @@ class OpenAICompatibleProviderTest {
             AudioSource(mediaType = "audio/mpeg", base64 = convertByteArrayToBase64("abc".encodeToByteArray())),
         )
 
-        assertEquals(listOf(listOf(1f, 2f), listOf(3f, 4f)), embedding.embeddings)
+        assertEquals(2048, provider.embeddingModel("embed").maxEmbeddingsPerCall)
+        assertEquals(true, provider.embeddingModel("embed").supportsParallelCalls)
+        assertEquals(listOf(listOf(3f, 4f), listOf(1f, 2f)), embedding.embeddings)
         assertEquals(9, embedding.usage.tokens)
+        assertEquals(10, provider.imageModel("image").maxImagesPerCall)
         assertEquals("iVBORw0=", image.image.base64)
+        assertEquals(ImageModelUsage(inputTokens = 12, outputTokens = 9, totalTokens = 21), image.usage)
         assertEquals(2, image.warnings.size)
         assertEquals("YWJj", speech.audio.base64)
         assertEquals("audio/mpeg", speech.audio.mediaType)
@@ -459,6 +469,35 @@ class OpenAICompatibleProviderTest {
             seenPaths,
         )
         assertTrue(seenContentTypes.last()?.startsWith("multipart/form-data") == true)
+    }
+
+    @Test
+    fun `image edits use multipart edits endpoint when files are present`() = runTest {
+        var seenPath: String? = null
+        var seenContentType: String? = null
+        val client = HttpClient(
+            MockEngine { request ->
+                seenPath = request.url.encodedPath
+                seenContentType = request.headers[HttpHeaders.ContentType] ?: request.body.contentType?.toString()
+                respond(
+                    """{"data":[{"b64_json":"ZWRpdA=="}]}""",
+                    HttpStatusCode.OK,
+                    headersOf(HttpHeaders.ContentType, "application/json"),
+                )
+            },
+        )
+        val provider = createOpenAICompatible(client, OpenAICompatibleProviderSettings("openai", "https://api.test/v1"))
+
+        val image = generateImage(
+            model = provider.imageModel("image"),
+            prompt = "edit",
+            files = listOf(ImageGenerationFile(mediaType = "image/png", base64 = "aW1n", filename = "input.png")),
+            mask = ImageGenerationFile(mediaType = "image/png", base64 = "bWFzaw==", filename = "mask.png"),
+        )
+
+        assertEquals("/v1/images/edits", seenPath)
+        assertTrue(seenContentType?.startsWith("multipart/form-data") == true)
+        assertEquals("ZWRpdA==", image.image.base64)
     }
 
     @Test

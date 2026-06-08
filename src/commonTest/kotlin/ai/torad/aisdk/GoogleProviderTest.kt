@@ -378,6 +378,8 @@ class GoogleProviderTest {
         )
 
         assertEquals(listOf(1.0f, 2.0f), embeddings.embeddings.first())
+        assertEquals(2048, provider.embedding("text-embedding-004").maxEmbeddingsPerCall)
+        assertEquals(true, provider.embedding("text-embedding-004").supportsParallelCalls)
         assertEquals("image", convertBase64ToByteArray(image.images.single().base64).decodeToString())
         val generatedVideo = video.videos.single()
         assertEquals("https://videos.example/video.mp4", generatedVideo.url)

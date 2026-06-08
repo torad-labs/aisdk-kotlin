@@ -287,6 +287,8 @@ private class BedrockEmbeddingModel(
     override val modelId: String,
 ) : EmbeddingModel {
     override val provider: String = "amazon-bedrock.embedding"
+    override val maxEmbeddingsPerCall: Int = 1
+    override val supportsParallelCalls: Boolean = true
 
     override suspend fun embed(params: EmbeddingModelCallParams): EmbeddingModelResult {
         params.abortSignal.throwIfAborted()

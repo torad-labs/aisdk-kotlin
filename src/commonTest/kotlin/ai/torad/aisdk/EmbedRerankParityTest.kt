@@ -44,20 +44,25 @@ class EmbedRerankParityTest {
     }
 
     @Test
-    fun `rerank exposes originalDocuments and rerankedDocuments with topN trimming`() = runTest {
+    fun `rerank preserves provider ranking order and passes topN through`() = runTest {
+        var capturedTopN: Int? = null
         val model = object : RerankingModel {
             override val modelId = "test/rerank"
-            override suspend fun rerank(params: RerankingParams): RerankingModelResult =
-                RerankingModelResult(
-                    results = params.documents.mapIndexed { i, doc ->
-                        RerankedItem(doc, score = i.toFloat(), index = i)
-                    },
+            override suspend fun rerank(params: RerankingParams): RerankingModelResult {
+                capturedTopN = params.topN
+                return RerankingModelResult(
+                    results = listOf(
+                        RerankedItem("mid", score = 0.5f, index = 1),
+                        RerankedItem("low", score = 0.1f, index = 0),
+                        RerankedItem("high", score = 0.9f, index = 2),
+                    ),
                 )
+            }
         }
         val result = rerank(model, "q", listOf("low", "mid", "high"), topN = 2)
+        assertEquals(2, capturedTopN)
         assertEquals(listOf("low", "mid", "high"), result.originalDocuments)
-        // scores ascending by index → "high" (2) best, then "mid" (1); topN=2 trims "low".
-        assertEquals(listOf("high", "mid"), result.rerankedDocuments)
+        assertEquals(listOf("mid", "low", "high"), result.rerankedDocuments)
     }
 
     @Test

@@ -58,6 +58,8 @@ public data class OpenAICompatibleProviderSettings(
     val transformChatResponse: ((JsonObject) -> JsonObject)? = null,
 )
 
+private const val OPENAI_COMPATIBLE_MAX_IMAGES_PER_CALL: Int = 10
+
 public interface OpenAICompatibleProvider : Provider {
     public fun chatModel(modelId: String): LanguageModel
     public fun completionModel(modelId: String): LanguageModel
@@ -458,6 +460,8 @@ private class OpenAICompatibleEmbeddingModel(
 ) : OpenAICompatibleHttpModel(client, settings, json, modelId, "embedding"), EmbeddingModel {
     override val provider: String
         get() = providerName
+    override val maxEmbeddingsPerCall: Int = settings.maxEmbeddingsPerCall
+    override val supportsParallelCalls: Boolean = true
 
     override suspend fun embed(params: EmbeddingModelCallParams): EmbeddingModelResult {
         val max = params.maxEmbeddingsPerCall ?: settings.maxEmbeddingsPerCall
@@ -477,7 +481,6 @@ private class OpenAICompatibleEmbeddingModel(
         val value = response.value.jsonObject
         return EmbeddingModelResult(
             embeddings = value["data"]?.jsonArray.orEmpty()
-                .sortedBy { it.jsonObject["index"]?.jsonPrimitive?.intOrNull ?: Int.MAX_VALUE }
                 .map { item -> item.jsonObject["embedding"]?.jsonArray.orEmpty().map { embeddingFloat(it, provider) } },
             usage = EmbeddingUsage(
                 tokens = value["usage"]?.jsonObject?.get("prompt_tokens")?.jsonPrimitive?.intOrNull ?: 0,
@@ -499,6 +502,7 @@ private class OpenAICompatibleImageModel(
 ) : OpenAICompatibleHttpModel(client, settings, json, modelId, "image"), ImageModel {
     override val provider: String
         get() = providerName
+    override val maxImagesPerCall: Int = OPENAI_COMPATIBLE_MAX_IMAGES_PER_CALL
 
     override suspend fun generate(params: ImageGenerationParams): ImageModelResult {
         val warnings = mutableListOf<CallWarning>()
@@ -509,15 +513,7 @@ private class OpenAICompatibleImageModel(
             warnings += CallWarning("unsupported", "seed is not supported by OpenAI-compatible image generation")
         }
         val options = openAIProviderOptions(params.providerOptions, settings.providerOptionsName ?: settings.name)
-        val body = buildJsonObject {
-            put("model", JsonPrimitive(modelId))
-            put("prompt", JsonPrimitive(params.prompt))
-            put("n", JsonPrimitive(params.n))
-            params.size?.let { put("size", JsonPrimitive(it)) }
-            put("response_format", JsonPrimitive("b64_json"))
-            putProviderOptions(options, emptySet())
-        }
-        val response = postJson("/images/generations", body, params.headers)
+        val response = openAICompatibleImageResponse(params, options)
         val responseObject = WireDecoder.objectValue(response.value, providerName, "image generation response")
         val data = WireDecoder.requiredArray(responseObject, "data", providerName, "image generation response")
         if (data.isEmpty()) throw NoImageGeneratedError("OpenAI-compatible image response contained no data.")
@@ -534,8 +530,68 @@ private class OpenAICompatibleImageModel(
             warnings = warnings,
             response = LanguageModelResponseMetadata(modelId = modelId, headers = response.headers, body = response.value),
             providerMetadata = openAIProviderMetadata(responseObject["providerMetadata"], settings.name),
+            usage = openAICompatibleImageUsage(responseObject["usage"]),
         )
     }
+
+    private suspend fun openAICompatibleImageResponse(
+        params: ImageGenerationParams,
+        options: JsonObject,
+    ): HttpJsonResponse =
+        if (params.files.isNotEmpty()) {
+            postMultipart("/images/edits", openAICompatibleImageEditMultipart(params, options), params.headers)
+        } else {
+            postJson("/images/generations", openAICompatibleImageGenerationBody(params, options), params.headers)
+        }
+
+    private fun openAICompatibleImageGenerationBody(
+        params: ImageGenerationParams,
+        options: JsonObject,
+    ): JsonObject = buildJsonObject {
+        put("model", JsonPrimitive(modelId))
+        put("prompt", JsonPrimitive(params.prompt))
+        put("n", JsonPrimitive(params.n))
+        params.size?.let { put("size", JsonPrimitive(it)) }
+        put("response_format", JsonPrimitive("b64_json"))
+        putProviderOptions(options, emptySet())
+    }
+
+    private suspend fun openAICompatibleImageEditMultipart(
+        params: ImageGenerationParams,
+        options: JsonObject,
+    ): MultiPartFormDataContent = MultiPartFormDataContent(
+        formData {
+            append("model", modelId)
+            append("prompt", params.prompt)
+            append("n", params.n.toString())
+            params.size?.let { append("size", it) }
+            for ((key, value) in options) {
+                if (key !in openAICompatibleImageEditReservedOptions) append(key, openAIFormValue(value))
+            }
+            params.files.forEachIndexed { index, file ->
+                append("image", openAICompatibleImageFileBytes(file), openAICompatibleImageFileHeaders(file, index))
+            }
+            params.mask?.let { mask ->
+                append("mask", openAICompatibleImageFileBytes(mask), openAICompatibleImageFileHeaders(mask, 0))
+            }
+        },
+    )
+
+    private suspend fun openAICompatibleImageFileBytes(file: ImageGenerationFile): ByteArray = when {
+        file.base64 != null -> convertBase64ToByteArray(file.base64)
+        file.url != null -> client.request(file.url).bodyAsBytes()
+        else -> throw InvalidArgumentError("files", "OpenAI-compatible image edits require file data or URL.")
+    }
+
+    private fun openAICompatibleImageFileHeaders(file: ImageGenerationFile, index: Int): Headers =
+        Headers.build {
+            val mediaType = file.mediaType ?: "image/png"
+            append(HttpHeaders.ContentType, mediaType)
+            append(
+                HttpHeaders.ContentDisposition,
+                "filename=\"${file.filename ?: "image-$index.${mediaTypeToExtension(mediaType)}"}\"",
+            )
+        }
 }
 
 private class OpenAICompatibleSpeechModel(
@@ -691,6 +747,15 @@ private val openAIChatReservedOptions = setOf(
 
 private val openAICompletionReservedOptions = setOf(
     "user",
+)
+
+private val openAICompatibleImageEditReservedOptions = setOf(
+    "model",
+    "prompt",
+    "image",
+    "mask",
+    "n",
+    "size",
 )
 
 private fun chatResultFromJson(
@@ -1174,6 +1239,15 @@ private fun openAIUsage(value: JsonElement?): Usage {
             reasoning = reasoningTokens,
         ),
         raw = value,
+    )
+}
+
+private fun openAICompatibleImageUsage(value: JsonElement?): ImageModelUsage {
+    val obj = value as? JsonObject ?: return ImageModelUsage()
+    return ImageModelUsage(
+        inputTokens = obj["input_tokens"]?.jsonPrimitive?.intOrNull,
+        outputTokens = obj["output_tokens"]?.jsonPrimitive?.intOrNull,
+        totalTokens = obj["total_tokens"]?.jsonPrimitive?.intOrNull,
     )
 }
 
