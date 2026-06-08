@@ -145,6 +145,191 @@ class OpenAICompatibleProviderFacadesTest {
     }
 
     @Test
+    fun `deepseek injects json schema system message coerces user content and maps usage`() = runTest {
+        val fixture = createTestServer(
+            mutableMapOf(
+                "https://deepseek.test/chat/completions" to UrlHandler(
+                    UrlResponse.JsonValue(
+                        Json.parseToJsonElement(
+                            """
+                            {
+                              "id":"chat_1",
+                              "model":"deepseek-chat",
+                              "choices":[{"message":{"role":"assistant","content":"{\"ok\":true}"},"finish_reason":"stop"}],
+                              "usage":{
+                                "prompt_tokens":10,
+                                "completion_tokens":5,
+                                "prompt_cache_hit_tokens":4,
+                                "completion_tokens_details":{"reasoning_tokens":3}
+                              }
+                            }
+                            """.trimIndent(),
+                        ),
+                    ),
+                ),
+            ),
+        )
+        fixture.server.start()
+        val provider = createDeepSeek(fixture.httpClient(), DeepSeekProviderSettings(apiKey = "key", baseURL = "https://deepseek.test"))
+
+        val result = provider.chat("deepseek-chat").generate(
+            LanguageModelCallParams(
+                messages = listOf(
+                    ModelMessage(
+                        MessageRole.User,
+                        listOf(
+                            ContentPart.Text("Return an object."),
+                            ContentPart.Image("image/png", "aW1n"),
+                        ),
+                    ),
+                ),
+                seed = 7,
+                responseFormat = ResponseFormat.Json(schemaJson = buildJsonObject { put("type", JsonPrimitive("object")) }),
+            ),
+        )
+
+        val body = fixture.calls.single().requestBodyJson.jsonObject
+        assertEquals(null, body["seed"])
+        assertEquals("json_object", body["response_format"]?.jsonObject?.get("type")?.jsonPrimitive?.contentOrNull)
+        val messages = body["messages"]!!.jsonArray
+        assertTrue(messages.first().jsonObject["content"]?.jsonPrimitive?.contentOrNull.orEmpty().contains("Return JSON that conforms"))
+        assertEquals("Return an object.", messages.last().jsonObject["content"]?.jsonPrimitive?.contentOrNull)
+        assertEquals(4, result.usage.inputTokens.cacheRead)
+        assertEquals(6, result.usage.inputTokens.noCache)
+        assertEquals(3, result.usage.outputTokens.reasoning)
+        assertEquals(2, result.usage.outputTokens.text)
+    }
+
+    @Test
+    fun `perplexity drops unsupported tool wire fields coerces text arrays and maps reasoning usage`() = runTest {
+        val fixture = createTestServer(
+            mutableMapOf(
+                "https://perplexity.test/chat/completions" to UrlHandler(
+                    UrlResponse.JsonValue(
+                        Json.parseToJsonElement(
+                            """
+                            {
+                              "id":"ppl_1",
+                              "model":"sonar",
+                              "choices":[{"message":{"role":"assistant","content":"answer"},"finish_reason":"stop"}],
+                              "usage":{"prompt_tokens":8,"completion_tokens":6,"reasoning_tokens":2}
+                            }
+                            """.trimIndent(),
+                        ),
+                    ),
+                ),
+            ),
+        )
+        fixture.server.start()
+        val provider = createPerplexity(fixture.httpClient(), PerplexityProviderSettings(apiKey = "key", baseURL = "https://perplexity.test"))
+
+        val result = provider.languageModel("sonar").generate(
+            LanguageModelCallParams(
+                messages = listOf(
+                    ModelMessage(MessageRole.User, listOf(ContentPart.Text("A"), ContentPart.Text("B"))),
+                    ModelMessage(MessageRole.Assistant, listOf(ContentPart.ToolCall("call_1", "lookup", buildJsonObject {}))),
+                    ModelMessage(MessageRole.Tool, listOf(ContentPart.ToolResult("call_1", "lookup", JsonPrimitive("done")))),
+                ),
+                tools = listOf(LanguageModelTool("lookup", "Lookup.", """{"type":"object"}""")),
+                toolChoice = ToolChoice.Required,
+                stopSequences = listOf("END"),
+                seed = 12,
+            ),
+        )
+
+        val body = fixture.calls.single().requestBodyJson.jsonObject
+        assertEquals(null, body["tools"])
+        assertEquals(null, body["tool_choice"])
+        assertEquals(null, body["stop"])
+        assertEquals(null, body["seed"])
+        val messages = body["messages"]!!.jsonArray.map { it.jsonObject }
+        assertEquals(listOf("user", "assistant"), messages.map { it["role"]?.jsonPrimitive?.contentOrNull })
+        assertEquals("AB", messages.first()["content"]?.jsonPrimitive?.contentOrNull)
+        assertEquals(null, messages.last()["tool_calls"])
+        assertEquals("", messages.last()["content"]?.jsonPrimitive?.contentOrNull)
+        assertEquals(2, result.usage.outputTokens.reasoning)
+        assertEquals(4, result.usage.outputTokens.text)
+    }
+
+    @Test
+    fun `moonshot maps top level cached tokens and reasoning usage`() = runTest {
+        val fixture = createTestServer(
+            mutableMapOf(
+                "https://moonshot.test/v1/chat/completions" to UrlHandler(
+                    UrlResponse.JsonValue(
+                        Json.parseToJsonElement(
+                            """
+                            {
+                              "id":"moon_1",
+                              "model":"kimi",
+                              "choices":[{"message":{"role":"assistant","content":"ok"},"finish_reason":"stop"}],
+                              "usage":{
+                                "prompt_tokens":9,
+                                "completion_tokens":5,
+                                "cached_tokens":3,
+                                "completion_tokens_details":{"reasoning_tokens":2}
+                              }
+                            }
+                            """.trimIndent(),
+                        ),
+                    ),
+                ),
+            ),
+        )
+        fixture.server.start()
+        val provider = createMoonshotAI(fixture.httpClient(), MoonshotAIProviderSettings(apiKey = "key", baseURL = "https://moonshot.test/v1"))
+
+        val result = provider.chatModel("kimi").generate(LanguageModelCallParams(listOf(userMessage("hi"))))
+
+        assertEquals(3, result.usage.inputTokens.cacheRead)
+        assertEquals(6, result.usage.inputTokens.noCache)
+        assertEquals(2, result.usage.outputTokens.reasoning)
+        assertEquals(3, result.usage.outputTokens.text)
+    }
+
+    @Test
+    fun `groq maps browser search tool assistant reasoning and x_groq usage`() = runTest {
+        val fixture = createTestServer(
+            mutableMapOf(
+                "https://groq.test/openai/v1/chat/completions" to UrlHandler(
+                    UrlResponse.JsonValue(
+                        Json.parseToJsonElement(
+                            """
+                            {
+                              "id":"groq_1",
+                              "model":"llama",
+                              "choices":[{"message":{"role":"assistant","content":"ok"},"finish_reason":"stop"}],
+                              "x_groq":{"usage":{"prompt_tokens":7,"completion_tokens":4,"completion_tokens_details":{"reasoning_tokens":1}}}
+                            }
+                            """.trimIndent(),
+                        ),
+                    ),
+                ),
+            ),
+        )
+        fixture.server.start()
+        val provider = createGroq(fixture.httpClient(), GroqProviderSettings(apiKey = "key", baseURL = "https://groq.test/openai/v1"))
+
+        val result = provider.chat("llama").generate(
+            LanguageModelCallParams(
+                messages = listOf(
+                    userMessage("hi"),
+                    ModelMessage(MessageRole.Assistant, listOf(ContentPart.Reasoning("prior thought"))),
+                ),
+                tools = listOf(LanguageModelTool("browserSearch", "Search.", """{"type":"object"}""", providerExecuted = true)),
+            ),
+        )
+
+        val body = fixture.calls.single().requestBodyJson.jsonObject
+        val assistant = body["messages"]!!.jsonArray.last().jsonObject
+        assertEquals("prior thought", assistant["reasoning"]?.jsonPrimitive?.contentOrNull)
+        assertEquals(null, assistant["reasoning_content"])
+        assertEquals("browser_search", body["tools"]?.jsonArray?.single()?.jsonObject?.get("type")?.jsonPrimitive?.contentOrNull)
+        assertEquals(1, result.usage.outputTokens.reasoning)
+        assertEquals(3, result.usage.outputTokens.text)
+    }
+
+    @Test
     fun `deepinfra exposes completion embedding image and fixes broken reasoning usage`() = runTest {
         val fixture = createTestServer(
             mutableMapOf(

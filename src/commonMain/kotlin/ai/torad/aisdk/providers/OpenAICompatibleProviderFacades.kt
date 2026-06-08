@@ -408,7 +408,7 @@ private class DefaultDeepSeekProvider(
 ) : DeepSeekProvider {
     private val compatible = createOpenAICompatible(
         client,
-        settings.toCompatible("deepseek", DEEPSEEK_VERSION, supportsStructuredOutputs = false),
+        settings.toCompatible("deepseek", DEEPSEEK_VERSION, supportsStructuredOutputs = true),
     )
     override val providerId: String = "deepseek"
     override fun languageModel(modelId: String): LanguageModel = chat(modelId)
@@ -478,7 +478,7 @@ private class DefaultPerplexityProvider(
 ) : PerplexityProvider {
     private val compatible = createOpenAICompatible(
         client,
-        settings.toCompatible("perplexity", PERPLEXITY_VERSION, supportsStructuredOutputs = false),
+        settings.toCompatible("perplexity", PERPLEXITY_VERSION, supportsStructuredOutputs = true),
     )
     override val providerId: String = "perplexity"
     override fun languageModel(modelId: String): LanguageModel = compatible.chatModel(modelId)
@@ -593,7 +593,17 @@ private fun DeepSeekProviderSettings.toCompatible(
     includeUsage: Boolean = false,
     supportsStructuredOutputs: Boolean = false,
 ): OpenAICompatibleProviderSettings =
-    compatibleSettings(name, version, baseURL, apiKey, headers, includeUsage, supportsStructuredOutputs)
+    compatibleSettings(
+        name = name,
+        version = version,
+        baseURL = baseURL,
+        apiKey = apiKey,
+        headers = headers,
+        includeUsage = includeUsage,
+        supportsStructuredOutputs = supportsStructuredOutputs,
+        transformChatRequestBody = ::deepSeekTransformChatBody,
+        convertUsage = ::deepSeekUsage,
+    )
 
 private fun CerebrasProviderSettings.toCompatible(
     name: String,
@@ -617,7 +627,17 @@ private fun PerplexityProviderSettings.toCompatible(
     includeUsage: Boolean = false,
     supportsStructuredOutputs: Boolean = false,
 ): OpenAICompatibleProviderSettings =
-    compatibleSettings(name, version, baseURL, apiKey, headers, includeUsage, supportsStructuredOutputs)
+    compatibleSettings(
+        name = name,
+        version = version,
+        baseURL = baseURL,
+        apiKey = apiKey,
+        headers = headers,
+        includeUsage = includeUsage,
+        supportsStructuredOutputs = supportsStructuredOutputs,
+        transformChatRequestBody = ::perplexityTransformChatBody,
+        convertUsage = ::perplexityUsage,
+    )
 
 private fun MoonshotAIProviderSettings.toCompatible(
     name: String,
@@ -625,7 +645,16 @@ private fun MoonshotAIProviderSettings.toCompatible(
     includeUsage: Boolean = false,
     supportsStructuredOutputs: Boolean = false,
 ): OpenAICompatibleProviderSettings =
-    compatibleSettings(name, version, baseURL, apiKey, headers, includeUsage, supportsStructuredOutputs)
+    compatibleSettings(
+        name = name,
+        version = version,
+        baseURL = baseURL,
+        apiKey = apiKey,
+        headers = headers,
+        includeUsage = includeUsage,
+        supportsStructuredOutputs = supportsStructuredOutputs,
+        convertUsage = ::moonshotAIUsage,
+    )
 
 private fun GroqProviderSettings.toCompatible(
     name: String,
@@ -633,7 +662,18 @@ private fun GroqProviderSettings.toCompatible(
     includeUsage: Boolean = false,
     supportsStructuredOutputs: Boolean = false,
 ): OpenAICompatibleProviderSettings =
-    compatibleSettings(name, version, baseURL, apiKey, headers, includeUsage, supportsStructuredOutputs)
+    compatibleSettings(
+        name = name,
+        version = version,
+        baseURL = baseURL,
+        apiKey = apiKey,
+        headers = headers,
+        includeUsage = includeUsage,
+        supportsStructuredOutputs = supportsStructuredOutputs,
+        transformChatRequestBody = ::groqTransformChatBody,
+        transformChatResponse = ::groqTransformChatResponse,
+        convertUsage = ::groqUsage,
+    )
 
 private fun TogetherAIProviderSettings.toCompatible(
     name: String,
@@ -668,6 +708,9 @@ private fun compatibleSettings(
     headers: Map<String, String>,
     includeUsage: Boolean,
     supportsStructuredOutputs: Boolean,
+    transformChatRequestBody: ((JsonObject) -> JsonObject)? = null,
+    convertUsage: ((JsonElement?) -> Usage)? = null,
+    transformChatResponse: ((JsonObject) -> JsonObject)? = null,
 ): OpenAICompatibleProviderSettings =
     OpenAICompatibleProviderSettings(
         name = name,
@@ -676,7 +719,225 @@ private fun compatibleSettings(
         headers = withUserAgentSuffix(headers, "ai-sdk/$name/$version"),
         includeUsage = includeUsage,
         supportsStructuredOutputs = supportsStructuredOutputs,
+        transformChatRequestBody = transformChatRequestBody,
+        convertUsage = convertUsage,
+        transformChatResponse = transformChatResponse,
     )
+
+private fun deepSeekTransformChatBody(body: JsonObject): JsonObject {
+    val responseFormat = body["response_format"] as? JsonObject
+    val responseFormatType = responseFormat?.get("type")?.jsonPrimitive?.contentOrNull
+    val schema = (responseFormat?.get("json_schema") as? JsonObject)?.get("schema")
+    val jsonRequested = responseFormatType == "json_object" || responseFormatType == "json_schema"
+    return buildJsonObject {
+        for ((key, value) in body) {
+            when (key) {
+                "messages" -> put(
+                    "messages",
+                    deepSeekMessages(
+                        messages = value as? JsonArray,
+                        jsonRequested = jsonRequested,
+                        schema = schema,
+                    ),
+                )
+                "response_format" -> if (jsonRequested) {
+                    put("response_format", buildJsonObject { put("type", JsonPrimitive("json_object")) })
+                } else {
+                    put(key, value)
+                }
+                "seed" -> Unit
+                else -> put(key, value)
+            }
+        }
+    }
+}
+
+private fun deepSeekMessages(
+    messages: JsonArray?,
+    jsonRequested: Boolean,
+    schema: JsonElement?,
+): JsonArray = JsonArray(
+    buildList {
+        if (jsonRequested) {
+            add(
+                buildJsonObject {
+                    put("role", JsonPrimitive("system"))
+                    put(
+                        "content",
+                        JsonPrimitive(
+                            if (schema == null) {
+                                "Return JSON."
+                            } else {
+                                "Return JSON that conforms to the following schema: $schema"
+                            },
+                        ),
+                    )
+                },
+            )
+        }
+        messages.orEmpty().forEach { message ->
+            add(deepSeekMessage(message))
+        }
+    },
+)
+
+private fun deepSeekMessage(message: JsonElement): JsonElement {
+    val obj = message as? JsonObject ?: return message
+    if (obj["role"]?.jsonPrimitive?.contentOrNull != "user") return obj
+    val content = obj["content"] as? JsonArray ?: return obj
+    return JsonObject(obj + ("content" to JsonPrimitive(textFromContentParts(content))))
+}
+
+private fun perplexityTransformChatBody(body: JsonObject): JsonObject = buildJsonObject {
+    for ((key, value) in body) {
+        when (key) {
+            "messages" -> put("messages", perplexityMessages(value as? JsonArray))
+            "stop", "seed", "tools", "tool_choice" -> Unit
+            else -> put(key, value)
+        }
+    }
+}
+
+private fun perplexityMessages(messages: JsonArray?): JsonArray = JsonArray(
+    messages.orEmpty().mapNotNull { message ->
+        val obj = message as? JsonObject ?: return@mapNotNull message
+        when (obj["role"]?.jsonPrimitive?.contentOrNull) {
+            "tool" -> null
+            "assistant" -> perplexityAssistantMessage(obj)
+            "user" -> perplexityTextMessage(obj)
+            else -> obj
+        }
+    },
+)
+
+private fun perplexityAssistantMessage(message: JsonObject): JsonObject {
+    val transformed = perplexityTextMessage(message).toMutableMap()
+    transformed.remove("tool_calls")
+    transformed.remove("reasoning_content")
+    transformed["content"] = JsonPrimitive((transformed["content"] as? JsonPrimitive)?.contentOrNull.orEmpty())
+    return JsonObject(transformed)
+}
+
+private fun perplexityTextMessage(message: JsonObject): JsonObject {
+    val content = message["content"] as? JsonArray ?: return message
+    if (content.all { (it as? JsonObject)?.get("type")?.jsonPrimitive?.contentOrNull == "text" }) {
+        return JsonObject(message + ("content" to JsonPrimitive(textFromContentParts(content))))
+    }
+    return message
+}
+
+private fun groqTransformChatBody(body: JsonObject): JsonObject = buildJsonObject {
+    for ((key, value) in body) {
+        when (key) {
+            "messages" -> put("messages", groqMessages(value as? JsonArray))
+            "tools" -> put("tools", groqTools(value as? JsonArray))
+            else -> put(key, value)
+        }
+    }
+}
+
+private fun groqMessages(messages: JsonArray?): JsonArray = JsonArray(
+    messages.orEmpty().map { message ->
+        val obj = message as? JsonObject ?: return@map message
+        if (obj["role"]?.jsonPrimitive?.contentOrNull != "assistant") return@map obj
+        val reasoning = obj["reasoning_content"] ?: return@map obj
+        val transformed = obj.toMutableMap()
+        transformed.remove("reasoning_content")
+        transformed["reasoning"] = reasoning
+        JsonObject(transformed)
+    },
+)
+
+private fun groqTools(tools: JsonArray?): JsonArray = JsonArray(
+    tools.orEmpty().map { tool ->
+        val obj = tool as? JsonObject ?: return@map tool
+        val function = obj["function"] as? JsonObject ?: return@map tool
+        val name = function["name"]?.jsonPrimitive?.contentOrNull
+        if (name == "browserSearch" || name == "browser_search") {
+            buildJsonObject { put("type", JsonPrimitive("browser_search")) }
+        } else {
+            tool
+        }
+    },
+)
+
+private fun groqTransformChatResponse(body: JsonObject): JsonObject {
+    if (body["usage"] != null) return body
+    val usage = (body["x_groq"] as? JsonObject)?.get("usage") ?: return body
+    return JsonObject(body + ("usage" to usage))
+}
+
+private fun textFromContentParts(content: JsonArray): String =
+    content.mapNotNull { part ->
+        val obj = part as? JsonObject ?: return@mapNotNull null
+        obj.takeIf { it["type"]?.jsonPrimitive?.contentOrNull == "text" }
+            ?.get("text")
+            ?.jsonPrimitive
+            ?.contentOrNull
+    }.joinToString("")
+
+private fun deepSeekUsage(value: JsonElement?): Usage {
+    val obj = value as? JsonObject ?: return Usage(raw = value)
+    val promptTokens = obj.intField("prompt_tokens")
+    val completionTokens = obj.intField("completion_tokens")
+    val cacheRead = obj.intField("prompt_cache_hit_tokens").coerceAtMost(promptTokens)
+    val reasoning = obj.nestedIntField("completion_tokens_details", "reasoning_tokens").coerceAtMost(completionTokens)
+    return usageFromParts(promptTokens, completionTokens, cacheRead, reasoning, obj)
+}
+
+private fun perplexityUsage(value: JsonElement?): Usage {
+    val obj = value as? JsonObject ?: return Usage(raw = value)
+    val promptTokens = obj.intField("prompt_tokens")
+    val completionTokens = obj.intField("completion_tokens")
+    val reasoning = obj.intField("reasoning_tokens").coerceAtMost(completionTokens)
+    return usageFromParts(promptTokens, completionTokens, cacheRead = 0, reasoningTokens = reasoning, raw = obj)
+}
+
+private fun moonshotAIUsage(value: JsonElement?): Usage {
+    val obj = value as? JsonObject ?: return Usage(raw = value)
+    val promptTokens = obj.intField("prompt_tokens")
+    val completionTokens = obj.intField("completion_tokens")
+    val cacheRead = (
+        obj["cached_tokens"]?.jsonPrimitive?.intOrNull
+            ?: obj.nestedIntField("prompt_tokens_details", "cached_tokens")
+        ).coerceAtMost(promptTokens)
+    val reasoning = obj.nestedIntField("completion_tokens_details", "reasoning_tokens").coerceAtMost(completionTokens)
+    return usageFromParts(promptTokens, completionTokens, cacheRead, reasoning, obj)
+}
+
+private fun groqUsage(value: JsonElement?): Usage {
+    val obj = value as? JsonObject ?: return Usage(raw = value)
+    val promptTokens = obj.intField("prompt_tokens")
+    val completionTokens = obj.intField("completion_tokens")
+    val reasoning = obj.nestedIntField("completion_tokens_details", "reasoning_tokens").coerceAtMost(completionTokens)
+    return usageFromParts(promptTokens, completionTokens, cacheRead = 0, reasoningTokens = reasoning, raw = obj)
+}
+
+private fun usageFromParts(
+    promptTokens: Int,
+    completionTokens: Int,
+    cacheRead: Int,
+    reasoningTokens: Int,
+    raw: JsonElement?,
+): Usage = Usage(
+    inputTokens = Usage.InputTokenBreakdown(
+        total = promptTokens,
+        noCache = promptTokens - cacheRead,
+        cacheRead = cacheRead,
+    ),
+    outputTokens = Usage.OutputTokenBreakdown(
+        total = completionTokens,
+        text = completionTokens - reasoningTokens,
+        reasoning = reasoningTokens,
+    ),
+    raw = raw,
+)
+
+private fun JsonObject.intField(name: String): Int =
+    this[name]?.jsonPrimitive?.intOrNull ?: 0
+
+private fun JsonObject.nestedIntField(objectName: String, fieldName: String): Int =
+    (this[objectName] as? JsonObject)?.intField(fieldName) ?: 0
 
 private inline fun <reified T : Provider> providerNotConfigured(
     providerName: String,
