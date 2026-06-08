@@ -72,6 +72,11 @@ class GoogleVertexProviderTest {
         )
 
         assertEquals("google.vertex", provider.languageModel("gemini-2.5-flash").provider)
+        // Vertex advertises http(s) + gs:// supported URLs, not the generative-AI files/YouTube set.
+        assertEquals(
+            mapOf("*" to listOf("^https?://.*$", "^gs://.*$")),
+            provider.languageModel("gemini-2.5-flash").supportedUrls,
+        )
         assertEquals("Vertex hello", result.text)
         assertEquals(FinishReason.Stop, result.finishReason)
         val request = fixture.calls.single()

@@ -91,10 +91,21 @@ private class DefaultGoogleVertexProvider(
         ),
     )
 
-    override fun languageModel(modelId: String): LanguageModel = delegate.languageModel(modelId)
+    // Vertex serves files by HTTP(S) and Google Cloud Storage (gs://) — NOT the
+    // generative-AI files-API/YouTube set the underlying Google model advertises.
+    override fun languageModel(modelId: String): LanguageModel =
+        VertexSupportedUrlsModel(delegate.languageModel(modelId))
     override fun embedding(modelId: String): EmbeddingModel = delegate.embeddingModel(modelId)
     override fun image(modelId: String): ImageModel = delegate.imageModel(modelId)
     override fun video(modelId: String): VideoModel = delegate.videoModel(modelId)
+}
+
+/** Overrides supportedUrls to the Vertex set (http(s) + gs://), delegating everything else. */
+private class VertexSupportedUrlsModel(
+    delegate: LanguageModel,
+) : LanguageModel by delegate {
+    override val supportedUrls: Map<String, List<String>> =
+        mapOf("*" to listOf("^https?://.*$", "^gs://.*$"))
 }
 
 public typealias GoogleVertexAnthropicProviderSettings = GoogleVertexProviderSettings
