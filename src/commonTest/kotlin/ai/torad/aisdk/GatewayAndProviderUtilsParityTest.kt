@@ -64,7 +64,7 @@ class GatewayAndProviderUtilsParityTest {
         assertEquals("image-model", image.image.filename)
         assertEquals("video-model", video.video.filename)
         assertEquals("xai/grok-imagine-video-1.5-preview", previewVideo.video.filename)
-        assertEquals("bb", reranked.results.first().value)
+        assertEquals("a", reranked.results.first().value)
         assertEquals("gateway", provider.languageModel("x").provider)
         assertEquals("gateway", provider.textEmbeddingModel("x").provider)
         assertEquals("https://gateway.test/v3/ai", transport.contexts.first().baseUrl)

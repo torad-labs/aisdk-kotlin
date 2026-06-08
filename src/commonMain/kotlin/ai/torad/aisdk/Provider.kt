@@ -34,27 +34,30 @@ public data class CustomProvider(
     private val transcriptionModels: Map<String, TranscriptionModel> = emptyMap(),
     private val rerankingModels: Map<String, RerankingModel> = emptyMap(),
     private val videoModels: Map<String, VideoModel> = emptyMap(),
+    /** Resolved for any model id not in this provider's maps, before failing (v6 parity). */
+    private val fallbackProvider: Provider? = null,
 ) : Provider {
     override fun languageModel(modelId: String): LanguageModel =
-        languageModels[modelId] ?: super.languageModel(modelId)
+        languageModels[modelId] ?: fallbackProvider?.languageModel(modelId) ?: super.languageModel(modelId)
 
     override fun embeddingModel(modelId: String): EmbeddingModel =
-        embeddingModels[modelId] ?: super.embeddingModel(modelId)
+        embeddingModels[modelId] ?: fallbackProvider?.embeddingModel(modelId) ?: super.embeddingModel(modelId)
 
     override fun imageModel(modelId: String): ImageModel =
-        imageModels[modelId] ?: super.imageModel(modelId)
+        imageModels[modelId] ?: fallbackProvider?.imageModel(modelId) ?: super.imageModel(modelId)
 
     override fun speechModel(modelId: String): SpeechModel =
-        speechModels[modelId] ?: super.speechModel(modelId)
+        speechModels[modelId] ?: fallbackProvider?.speechModel(modelId) ?: super.speechModel(modelId)
 
     override fun transcriptionModel(modelId: String): TranscriptionModel =
-        transcriptionModels[modelId] ?: super.transcriptionModel(modelId)
+        transcriptionModels[modelId] ?: fallbackProvider?.transcriptionModel(modelId)
+            ?: super.transcriptionModel(modelId)
 
     override fun rerankingModel(modelId: String): RerankingModel =
-        rerankingModels[modelId] ?: super.rerankingModel(modelId)
+        rerankingModels[modelId] ?: fallbackProvider?.rerankingModel(modelId) ?: super.rerankingModel(modelId)
 
     override fun videoModel(modelId: String): VideoModel =
-        videoModels[modelId] ?: super.videoModel(modelId)
+        videoModels[modelId] ?: fallbackProvider?.videoModel(modelId) ?: super.videoModel(modelId)
 }
 
 public fun customProvider(
@@ -66,6 +69,7 @@ public fun customProvider(
     transcriptionModels: Map<String, TranscriptionModel> = emptyMap(),
     rerankingModels: Map<String, RerankingModel> = emptyMap(),
     videoModels: Map<String, VideoModel> = emptyMap(),
+    fallbackProvider: Provider? = null,
 ): Provider = CustomProvider(
     providerId = providerId,
     languageModels = languageModels,
@@ -75,19 +79,27 @@ public fun customProvider(
     transcriptionModels = transcriptionModels,
     rerankingModels = rerankingModels,
     videoModels = videoModels,
+    fallbackProvider = fallbackProvider,
 )
 
 public class ProviderRegistry(
     private val providers: Map<String, Provider>,
     private val defaultProviderId: String? = null,
+    private val separator: String = ":",
+    /** Middleware applied to every language model resolved through this registry (v6 parity). */
+    private val languageModelMiddleware: List<LanguageModelMiddleware> = emptyList(),
 ) : Provider {
     override val providerId: String = "registry"
 
     public fun provider(providerId: String): Provider =
-        providers[providerId] ?: throw NoSuchProviderError(providerId)
+        providers[providerId]
+            ?: throw NoSuchProviderError(providerId, availableProviders = providers.keys.sorted())
 
     override fun languageModel(modelId: String): LanguageModel =
-        resolve(modelId) { provider, localId -> provider.languageModel(localId) }
+        wrapLanguageModel(
+            resolve(modelId) { provider, localId -> provider.languageModel(localId) },
+            languageModelMiddleware,
+        )
 
     override fun embeddingModel(modelId: String): EmbeddingModel =
         resolve(modelId) { provider, localId -> provider.embeddingModel(localId) }
@@ -108,7 +120,7 @@ public class ProviderRegistry(
         resolve(modelId) { provider, localId -> provider.videoModel(localId) }
 
     private fun <T> resolve(modelId: String, getter: (Provider, String) -> T): T {
-        val (providerId, localModelId) = splitProviderModelId(modelId)
+        val (providerId, localModelId) = splitProviderModelId(modelId, separator)
         val resolvedProviderId = providerId ?: defaultProviderId ?: singleProviderId()
         return getter(provider(resolvedProviderId), localModelId)
     }
@@ -122,17 +134,21 @@ public class ProviderRegistry(
 public fun createProviderRegistry(
     providers: Map<String, Provider>,
     defaultProviderId: String? = null,
-): ProviderRegistry = ProviderRegistry(providers, defaultProviderId)
+    separator: String = ":",
+    languageModelMiddleware: List<LanguageModelMiddleware> = emptyList(),
+): ProviderRegistry = ProviderRegistry(providers, defaultProviderId, separator, languageModelMiddleware)
 
 public fun createProviderRegistry(
     vararg providers: Pair<String, Provider>,
     defaultProviderId: String? = null,
-): ProviderRegistry = ProviderRegistry(providers.toMap(), defaultProviderId)
+    separator: String = ":",
+    languageModelMiddleware: List<LanguageModelMiddleware> = emptyList(),
+): ProviderRegistry = ProviderRegistry(providers.toMap(), defaultProviderId, separator, languageModelMiddleware)
 
-public fun splitProviderModelId(modelId: String): Pair<String?, String> {
-    val colon = modelId.indexOf(':')
+public fun splitProviderModelId(modelId: String, separator: String = ":"): Pair<String?, String> {
+    val colon = modelId.indexOf(separator)
     if (colon <= 0) return null to modelId
-    return modelId.substring(0, colon) to modelId.substring(colon + 1)
+    return modelId.substring(0, colon) to modelId.substring(colon + separator.length)
 }
 
 public data class ProviderMiddleware(

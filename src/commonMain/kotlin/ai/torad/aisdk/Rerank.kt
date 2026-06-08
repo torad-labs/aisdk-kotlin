@@ -35,11 +35,20 @@ public data class RerankingModelResult(
 
 public data class RerankResult<T>(
     val results: List<RerankedItem<T>>,
+    /** The documents that were submitted for reranking, in their original order. */
+    val originalDocuments: List<T> = emptyList(),
     val usage: Usage = Usage(),
     val warnings: List<CallWarning> = emptyList(),
     val response: LanguageModelResponseMetadata = LanguageModelResponseMetadata(),
     val providerMetadata: Map<String, JsonElement> = emptyMap(),
-)
+) {
+    /**
+     * The reranked documents in descending relevance order (fewer than
+     * [originalDocuments] when a `topN` limit was applied). Convenience accessor
+     * over [results]'s values — matches upstream's `rerankedDocuments`.
+     */
+    val rerankedDocuments: List<T> get() = results.map { it.value }
+}
 
 public suspend fun rerank(
     model: RerankingModel,
@@ -49,14 +58,21 @@ public suspend fun rerank(
     providerOptions: Map<String, JsonElement> = emptyMap(),
     headers: Map<String, String> = emptyMap(),
     abortSignal: AbortSignal = AbortSignalNever,
+    maxRetries: Int = 2,
 ): RerankResult<String> {
     require(query.isNotBlank()) { "rerank: query must not be blank" }
-    require(documents.isNotEmpty()) { "rerank: documents must not be empty" }
     topN?.let { require(it > 0) { "rerank: topN must be > 0" } }
-    val result = model.rerank(
-        RerankingParams(query, documents, topN, providerOptions, headers, abortSignal),
+    // Empty documents is a valid no-op (matching upstream), not an error.
+    if (documents.isEmpty()) return RerankResult(results = emptyList(), originalDocuments = emptyList())
+    val result = retryWithExponentialBackoff(RetryPolicy(maxRetries = maxRetries), retryableApiError) {
+        model.rerank(RerankingParams(query, documents, topN, providerOptions, headers, abortSignal))
+    }
+    return RerankResult(
+        results = result.results,
+        originalDocuments = documents,
+        usage = result.usage,
+        warnings = result.warnings,
+        response = result.response,
+        providerMetadata = result.providerMetadata,
     )
-    val ordered = result.results.sortedByDescending { it.score }
-        .let { if (topN == null) it else it.take(topN) }
-    return RerankResult(ordered, result.usage, result.warnings, result.response, result.providerMetadata)
 }

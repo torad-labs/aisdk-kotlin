@@ -135,6 +135,8 @@ class DeepgramProviderTest {
         assertEquals(2, result.segments.size)
         assertEquals(0.1f, result.segments.first().startSeconds)
         assertEquals(0.8f, result.segments.last().endSeconds)
+        assertEquals("en", result.language)
+        assertEquals(3.5f, result.durationInSeconds)
         assertEquals("hello world", result.response.body?.jsonObject
             ?.get("results")?.jsonObject
             ?.get("channels")?.jsonArray?.first()?.jsonObject

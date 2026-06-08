@@ -365,6 +365,91 @@ class AnthropicProviderTest {
     }
 
     @Test
+    fun `stream usage merges message_delta onto message_start preserving input tokens`() = runTest {
+        // The real-world case: message_delta carries ONLY output_tokens. The final usage
+        // must keep the input_tokens captured at message_start (was collapsing to 0).
+        val fixture = createTestServer(
+            mutableMapOf(
+                "https://anthropic.test/v1/messages" to UrlHandler(
+                    UrlResponse.StreamChunks(
+                        listOf(
+                            """
+                            data: {"type":"message_start","message":{"id":"m","model":"claude-sonnet-4-5","usage":{"input_tokens":42,"output_tokens":0}}}
+
+                            data: {"type":"message_delta","delta":{"stop_reason":"end_turn"},"usage":{"output_tokens":7}}
+
+                            data: {"type":"message_stop"}
+
+                            """.trimIndent(),
+                        ),
+                    ),
+                ),
+            ),
+        )
+        fixture.server.start()
+        val provider = createAnthropic(fixture.httpClient(), AnthropicProviderSettings(baseURL = "https://anthropic.test/v1"))
+        val events = drainAllItems(
+            provider.messages("claude-sonnet-4-5").stream(
+                LanguageModelCallParams(messages = listOf(userMessage("hi"))),
+            ),
+        )
+        val finish = events.filterIsInstance<StreamEvent.Finish>().single()
+        assertEquals(42, finish.usage.promptTokens, "input tokens preserved from message_start")
+        assertEquals(7, finish.usage.completionTokens, "output tokens updated from message_delta")
+    }
+
+    @Test
+    fun `max_tokens defaults to the per-model limit when caller omits maxOutputTokens`() = runTest {
+        val fixture = createTestServer(
+            mutableMapOf(
+                "https://anthropic.test/v1/messages" to UrlHandler(
+                    UrlResponse.JsonValue(
+                        Json.parseToJsonElement(
+                            """{"id":"m","model":"claude-opus-4-8","stop_reason":"end_turn",
+                               "content":[{"type":"text","text":"hi"}],
+                               "usage":{"input_tokens":1,"output_tokens":1}}""",
+                        ),
+                    ),
+                ),
+            ),
+        )
+        fixture.server.start()
+        val provider = createAnthropic(fixture.httpClient(), AnthropicProviderSettings(baseURL = "https://anthropic.test/v1"))
+        provider.messages("claude-opus-4-8").generate(
+            LanguageModelCallParams(messages = listOf(userMessage("hi"))),
+        )
+        val body = fixture.calls.single().requestBodyJson.jsonObject
+        // claude-opus-4-8 → 128000, not the old hardcoded 4096.
+        assertEquals(128_000, body["max_tokens"]?.jsonPrimitive?.intOrNull)
+    }
+
+    @Test
+    fun `final assistant text is trimmed of trailing whitespace in a pre-fill`() = runTest {
+        val fixture = createTestServer(
+            mutableMapOf(
+                "https://anthropic.test/v1/messages" to UrlHandler(
+                    UrlResponse.JsonValue(
+                        Json.parseToJsonElement(
+                            """{"id":"m","model":"claude-sonnet-4-5","stop_reason":"end_turn",
+                               "content":[{"type":"text","text":"ok"}],"usage":{"input_tokens":1,"output_tokens":1}}""",
+                        ),
+                    ),
+                ),
+            ),
+        )
+        fixture.server.start()
+        val provider = createAnthropic(fixture.httpClient(), AnthropicProviderSettings(baseURL = "https://anthropic.test/v1"))
+        // The last message is a pre-filled assistant turn with trailing whitespace.
+        provider.messages("claude-sonnet-4-5").generate(
+            LanguageModelCallParams(messages = listOf(userMessage("hi"), assistantMessage("The answer is  \n  "))),
+        )
+        val body = fixture.calls.single().requestBodyJson.jsonObject
+        val assistantText = body["messages"]?.jsonArray?.last()?.jsonObject
+            ?.get("content")?.jsonArray?.last()?.jsonObject?.get("text")?.jsonPrimitive?.contentOrNull
+        assertEquals("The answer is", assistantText, "trailing whitespace trimmed on the pre-fill")
+    }
+
+    @Test
     fun `stream surfaces Anthropic deltas for unknown content blocks as errors`() = runTest {
         val fixture = createTestServer(
             mutableMapOf(

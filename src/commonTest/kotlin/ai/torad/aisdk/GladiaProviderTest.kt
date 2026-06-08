@@ -123,6 +123,8 @@ class GladiaProviderTest {
         assertEquals(2, result.segments.size)
         assertEquals(0.1f, result.segments.first().startSeconds)
         assertEquals(0.8f, result.segments.last().endSeconds)
+        assertEquals("en", result.language)
+        assertEquals(3.5f, result.durationInSeconds)
         assertEquals("true", result.response.headers["x-final"])
         assertEquals("done", result.providerMetadata["gladia"]?.jsonObject?.get("status")?.jsonPrimitive?.contentOrNull)
 

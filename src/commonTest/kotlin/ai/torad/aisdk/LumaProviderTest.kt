@@ -65,6 +65,7 @@ class LumaProviderTest {
         )
 
         assertEquals("luma.image", model.provider)
+        assertEquals(1, model.maxImagesPerCall)
         assertEquals("image/png", result.images.single().mediaType)
         assertEquals(convertByteArrayToBase64(byteArrayOf(1, 2, 3)), result.images.single().base64)
         assertEquals(2, result.warnings.size)

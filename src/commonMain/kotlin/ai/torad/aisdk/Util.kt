@@ -126,36 +126,106 @@ public data class RetryPolicy(
     val maxDelayMs: Long = 2_000L,
 )
 
+/**
+ * Retry [block] with exponential backoff, honoring server `Retry-After` headers,
+ * and surfacing the full attempt history as a [RetryError] on exhaustion — the
+ * contract upstream's `retryWithExponentialBackoff` exposes.
+ *
+ * Terminal outcomes (mirroring upstream's four throw paths):
+ * - retries disabled (`maxRetries == 0`) → the bare original error, unwrapped;
+ * - a non-retryable error on the *first* attempt → the bare error, unwrapped;
+ * - a non-retryable error on a *later* attempt → [RetryError] (`ErrorNotRetryable`)
+ *   carrying every collected error;
+ * - retries exhausted → [RetryError] (`MaxRetriesExceeded`) carrying every error.
+ *
+ * `CancellationException` is always rethrown first; the [delay] between attempts
+ * is coroutine-cancellable, so a cancelled caller stops waiting immediately
+ * (the structured-concurrency equivalent of upstream's `abortSignal`).
+ */
 public suspend fun <T> retryWithExponentialBackoff(
     policy: RetryPolicy = RetryPolicy(),
     shouldRetry: (Throwable) -> Boolean = { true },
     block: suspend (attempt: Int) -> T,
 ): T {
-    var attempt = 0
+    val errors = mutableListOf<Throwable>()
     var nextDelay = policy.baseDelayMs
     while (true) {
-        try {
-            return block(attempt)
+        // The caught failure is not swallowed: a retryable error is retained in
+        // `errors` (and resurfaced via RetryError on exhaustion); a terminal error
+        // is rethrown by classifyRetryFailure. The retry-and-continue path here is
+        // the only one that returns rather than throws.
+        @Suppress("SwallowedException")
+        val waitMs = try {
+            return block(errors.size)
         } catch (ce: CancellationException) {
             throw ce
         } catch (t: Throwable) {
-            if (attempt >= policy.maxRetries || !shouldRetry(t)) throw t
-            // Honor Retry-After / retry-after-ms when the server supplies it.
-            val serverFloorMs = retryAfterDelayMs(t)
-            val actualDelay = if (serverFloorMs != null) {
-                serverFloorMs.coerceAtMost(policy.maxDelayMs)
-            } else {
-                nextDelay
-            }
-            if (actualDelay > 0) delay(actualDelay)
-            nextDelay = (nextDelay * 2).coerceAtMost(policy.maxDelayMs)
-            attempt += 1
+            classifyRetryFailure(t, policy, shouldRetry, errors, nextDelay)
         }
+        if (waitMs > 0) delay(waitMs)
+        nextDelay = (nextDelay * 2).coerceAtMost(policy.maxDelayMs)
     }
+}
+
+/**
+ * Decide what to do with a failed attempt: either return the delay before the
+ * next retry, or throw a terminal error. Mirrors upstream's four throw paths
+ * (see [retryWithExponentialBackoff] KDoc). Mutates [errors] by appending [t].
+ */
+@Suppress("ThrowsCount") // The terminal throws ARE the retry contract; collapsing them would obscure it.
+private fun classifyRetryFailure(
+    t: Throwable,
+    policy: RetryPolicy,
+    shouldRetry: (Throwable) -> Boolean,
+    errors: MutableList<Throwable>,
+    exponentialBackoffDelay: Long,
+): Long {
+    if (policy.maxRetries == 0) throw t // retries disabled: never wrap
+    errors += t
+    val tryNumber = errors.size // 1 = first failure
+    if (tryNumber > policy.maxRetries) {
+        throw RetryError(
+            "Failed after $tryNumber attempts. Last error: ${t.message}",
+            RetryErrorReason.MaxRetriesExceeded,
+            errors.toList(),
+        )
+    }
+    if (!shouldRetry(t)) {
+        if (tryNumber == 1) throw t // first-try non-retryable: unwrapped
+        throw RetryError(
+            "Failed after $tryNumber attempts with non-retryable error: '${t.message}'",
+            RetryErrorReason.ErrorNotRetryable,
+            errors.toList(),
+        )
+    }
+    return retryDelayMs(t, exponentialBackoffDelay)
 }
 
 /** Milliseconds per second, used for Retry-After delta-seconds → ms conversion. */
 private const val MILLIS_PER_SECOND: Long = 1_000L
+
+/**
+ * Upper bound (60 s) on a server-supplied `Retry-After` delay we'll honor as-is —
+ * matching upstream's `getRetryDelayInMs`. A larger value is only honored if it's
+ * still below the current exponential delay; otherwise we fall back to backoff.
+ * (The previous code clamped this to `maxDelayMs`=2 s, so a `Retry-After: 30`
+ * collapsed to 2 s and immediately re-tripped the rate limit — a retry storm.)
+ */
+private const val MAX_RETRY_AFTER_MS: Long = 60L * 1000L
+
+/**
+ * The delay before the next attempt: the server's `Retry-After` when present and
+ * reasonable (0 ≤ ms < 60 s, or below the exponential delay), else the
+ * [exponentialBackoffDelay]. Mirrors upstream `getRetryDelayInMs`.
+ */
+private fun retryDelayMs(t: Throwable, exponentialBackoffDelay: Long): Long {
+    val serverMs = retryAfterDelayMs(t) ?: return exponentialBackoffDelay
+    return if (serverMs in 0 until MAX_RETRY_AFTER_MS || serverMs < exponentialBackoffDelay) {
+        serverMs
+    } else {
+        exponentialBackoffDelay
+    }
+}
 
 /**
  * Extracts the server-requested retry delay from [APICallError.responseHeaders].
@@ -386,6 +456,8 @@ public fun isUrlSupported(
 public class DownloadError(
     public val url: String,
     message: String,
+    public val statusCode: Int? = null,
+    public val statusText: String? = null,
     cause: Throwable? = null,
 ) : AiSdkException(message, cause)
 
@@ -573,3 +645,42 @@ internal fun urlEncode(value: String): String =
             }
         }
     }
+
+/**
+ * Recursively merge two JSON objects: keys present in both whose values are both
+ * objects are merged depth-first; otherwise the override value wins. Used to merge
+ * default provider options with per-call ones without clobbering sibling keys.
+ */
+internal fun deepMergeJsonObjects(base: JsonObject, override: JsonObject): JsonObject {
+    val merged = base.toMutableMap()
+    for ((key, value) in override) {
+        val existing = merged[key]
+        merged[key] = if (existing is JsonObject && value is JsonObject) {
+            deepMergeJsonObjects(existing, value)
+        } else {
+            value
+        }
+    }
+    return JsonObject(merged)
+}
+
+/**
+ * Merge per-provider option maps: where the same provider key holds an object in
+ * both, the inner objects are deep-merged (so default and per-call options for one
+ * provider don't clobber each other); otherwise the [overrides] value wins.
+ */
+internal fun mergeProviderOptions(
+    defaults: Map<String, JsonElement>,
+    overrides: Map<String, JsonElement>,
+): Map<String, JsonElement> {
+    val merged = defaults.toMutableMap()
+    for ((key, value) in overrides) {
+        val existing = merged[key]
+        merged[key] = if (existing is JsonObject && value is JsonObject) {
+            deepMergeJsonObjects(existing, value)
+        } else {
+            value
+        }
+    }
+    return merged
+}

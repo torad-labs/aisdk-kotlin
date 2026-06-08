@@ -43,6 +43,7 @@ public fun streamToUiMessages(
     val toolByCallId = mutableMapOf<String, Int>()
     val toolInputBufById = mutableMapOf<String, StringBuilder>()
     val toolNameByInputId = mutableMapOf<String, String>()
+    val dataPartIndexById = mutableMapOf<String, Int>()
 
     fun snapshot() = UIMessage(
         id = assistantMessageId,
@@ -316,7 +317,17 @@ public fun streamToUiMessages(
                 val type = rawObject?.get("type")?.jsonPrimitive?.contentOrNull
                 val data = rawObject?.get("data")
                 if (type != null && data != null) {
-                    parts.add(UIMessagePart.Data(type = type, data = data))
+                    val dataId = rawObject["id"]?.jsonPrimitive?.contentOrNull
+                    val transient = rawObject["transient"]?.jsonPrimitive?.contentOrNull == "true"
+                    val part = UIMessagePart.Data(type = type, data = data, id = dataId, transient = transient)
+                    // Keyed data parts upsert in place; unkeyed ones append.
+                    val existingIdx = dataId?.let { dataPartIndexById[it] }
+                    if (existingIdx != null && existingIdx in parts.indices) {
+                        parts[existingIdx] = part
+                    } else {
+                        parts.add(part)
+                        if (dataId != null) dataPartIndexById[dataId] = parts.size - 1
+                    }
                     emit(snapshot())
                 }
             }

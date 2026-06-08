@@ -78,6 +78,7 @@ class KlingAIProviderTest {
         )
 
         assertEquals("klingai.video", model.provider)
+        assertEquals(1, model.maxVideosPerCall)
         assertEquals("video/mp4", result.videos.single().mediaType)
         assertEquals("https://cdn.kling.test/video.mp4", result.videos.single().url)
         assertEquals("task-1", result.providerMetadata["klingai"]?.jsonObject?.get("taskId")?.jsonPrimitive?.contentOrNull)
@@ -106,7 +107,7 @@ class KlingAIProviderTest {
         assertEquals("on", body["sound"]?.jsonPrimitive?.contentOrNull)
         assertEquals(0.7f, body["cfg_scale"]?.jsonPrimitive?.floatOrNull)
         assertEquals("16:9", body["aspect_ratio"]?.jsonPrimitive?.contentOrNull)
-        assertEquals("5.0", body["duration"]?.jsonPrimitive?.contentOrNull)
+        assertEquals("5", body["duration"]?.jsonPrimitive?.contentOrNull)
         assertEquals(true, body["multi_shot"]?.jsonPrimitive?.booleanOrNull)
         assertEquals("intelligence", body["shot_type"]?.jsonPrimitive?.contentOrNull)
         assertEquals("voice_1", body["voice_list"]?.jsonArray?.single()?.jsonObject?.get("voice_id")?.jsonPrimitive?.contentOrNull)
@@ -163,7 +164,7 @@ class KlingAIProviderTest {
         assertEquals("maskb64", body["static_mask"]?.jsonPrimitive?.contentOrNull)
         assertEquals("dynmask", body["dynamic_masks"]?.jsonArray?.single()?.jsonObject?.get("mask")?.jsonPrimitive?.contentOrNull)
         assertEquals(3, body["element_list"]?.jsonArray?.single()?.jsonObject?.get("element_id")?.jsonPrimitive?.contentOrNull?.toInt())
-        assertEquals("10.0", body["duration"]?.jsonPrimitive?.contentOrNull)
+        assertEquals("10", body["duration"]?.jsonPrimitive?.contentOrNull)
         assertEquals(true, body["watermark_info"]?.jsonObject?.get("enabled")?.jsonPrimitive?.booleanOrNull)
     }
 

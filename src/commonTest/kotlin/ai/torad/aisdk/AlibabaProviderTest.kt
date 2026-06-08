@@ -259,6 +259,8 @@ class AlibabaProviderTest {
             ),
         )
 
+        assertEquals(10, provider.embeddingModel("text-embedding-v4").maxEmbeddingsPerCall)
+        assertEquals(false, provider.embeddingModel("text-embedding-v4").supportsParallelCalls)
         // Reordered by text_index: index 0 (3-dim) first, then index 1 (2-dim).
         assertEquals(listOf(listOf(0.1f, 0.2f, 0.3f), listOf(0.4f, 0.5f)), result.embeddings)
         assertEquals(7, result.usage.tokens)

@@ -3,13 +3,13 @@ import ai.torad.aisdk.providers.MISTRAL_VERSION
 import ai.torad.aisdk.providers.MistralProviderSettings
 import ai.torad.aisdk.providers.createMistral
 import ai.torad.aisdk.providers.mistral
-
+import ai.torad.aisdk.testing.drainAllItems
 import io.ktor.http.HttpHeaders
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonPrimitive
-import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.booleanOrNull
+import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.intOrNull
 import kotlinx.serialization.json.jsonArray
@@ -118,7 +118,9 @@ class MistralProviderTest {
         assertEquals("mistral.embedding", provider.embeddingModel("mistral-embed").provider)
         assertEquals(provider.embedding("mistral-embed").modelId, provider.textEmbedding("mistral-embed").modelId)
         assertEquals(provider.embedding("mistral-embed").modelId, provider.textEmbeddingModel("mistral-embed").modelId)
-        assertEquals(listOf(listOf(1f, 2f), listOf(3f, 4f)), result.embeddings)
+        assertEquals(32, provider.embedding("mistral-embed").maxEmbeddingsPerCall)
+        assertEquals(false, provider.embedding("mistral-embed").supportsParallelCalls)
+        assertEquals(listOf(listOf(3f, 4f), listOf(1f, 2f)), result.embeddings)
         assertEquals(8, result.usage.tokens)
         val call = fixture.calls.single()
         assertEquals("Bearer key", call.requestHeaders.headerValue(HttpHeaders.Authorization))
@@ -127,6 +129,122 @@ class MistralProviderTest {
         assertEquals("mistral-embed", body["model"]?.jsonPrimitive?.contentOrNull)
         assertEquals("sunny day", body["input"]?.jsonArray?.first()?.jsonPrimitive?.contentOrNull)
         assertEquals("float", body["encoding_format"]?.jsonPrimitive?.contentOrNull)
+    }
+
+    @Test
+    fun `chat body uses Mistral wire shape - any toolChoice + tool name + prefix`() = runTest {
+        val fixture = createTestServer(
+            mutableMapOf(
+                "https://api.mistral.ai/v1/chat/completions" to UrlHandler(
+                    UrlResponse.JsonValue(
+                        Json.parseToJsonElement(
+                            "{\"id\":\"c\",\"model\":\"m\",\"choices\":[{\"message\":" +
+                                "{\"role\":\"assistant\",\"content\":\"ok\"},\"finish_reason\":\"stop\"}]," +
+                                "\"usage\":{\"prompt_tokens\":1,\"completion_tokens\":1,\"total_tokens\":2}}",
+                        ),
+                    ),
+                ),
+            ),
+        )
+        fixture.server.start()
+        val provider = createMistral(fixture.httpClient(), MistralProviderSettings(apiKey = "key"))
+        provider.chat("mistral-small-latest").generate(
+            LanguageModelCallParams(
+                messages = listOf(
+                    userMessage("go"),
+                    ModelMessage(
+                        MessageRole.Assistant,
+                        listOf(ContentPart.ToolCall("t1", "lookup", buildJsonObject {})),
+                    ),
+                    ModelMessage(
+                        MessageRole.Tool,
+                        listOf(ContentPart.ToolResult("t1", "lookup", JsonPrimitive("done"))),
+                    ),
+                ),
+                tools = listOf(
+                    LanguageModelTool("lookup", "d", "{\"type\":\"object\"}"),
+                    LanguageModelTool("other", "d", "{\"type\":\"object\"}"),
+                ),
+                toolChoice = ToolChoice.Specific("lookup"),
+            ),
+        )
+        val body = fixture.calls.single().requestBodyJson.jsonObject
+        // tool_choice "any" + tools filtered to the named one.
+        assertEquals("any", body["tool_choice"]?.jsonPrimitive?.contentOrNull)
+        assertEquals(1, body["tools"]?.jsonArray?.size, "tools filtered to the named tool")
+        val msgs = body["messages"]!!.jsonArray
+        fun role(m: kotlinx.serialization.json.JsonElement) = m.jsonObject["role"]?.jsonPrimitive?.contentOrNull
+        // The tool-result message carries the tool name.
+        val toolMsg = msgs.first { role(it) == "tool" }.jsonObject
+        assertEquals("lookup", toolMsg["name"]?.jsonPrimitive?.contentOrNull)
+        // The final assistant message gets prefix:true.
+        val asstMsg = msgs.last { role(it) == "assistant" }.jsonObject
+        assertEquals(true, asstMsg["prefix"]?.jsonPrimitive?.booleanOrNull)
+    }
+
+    @Test
+    @Suppress("LongMethod")
+    fun `chat response maps Mistral thinking content for generate and stream`() = runTest {
+        val fixture = createTestServer(
+            mutableMapOf(
+                "https://api.mistral.ai/v1/chat/completions" to UrlHandler(
+                    listOf(
+                        UrlResponse.JsonValue(
+                            Json.parseToJsonElement(
+                                """
+                                {
+                                  "id":"chat-2",
+                                  "model":"magistral-small-2507",
+                                  "choices":[
+                                    {
+                                      "message":{
+                                        "role":"assistant",
+                                        "content":[
+                                          {"type":"thinking","thinking":[{"type":"text","text":"First thought."}]},
+                                          {"type":"text","text":"Final answer."}
+                                        ]
+                                      },
+                                      "finish_reason":"stop"
+                                    }
+                                  ],
+                                  "usage":{"prompt_tokens":1,"completion_tokens":2,"total_tokens":3}
+                                }
+                                """.trimIndent(),
+                            ),
+                        ),
+                        UrlResponse.StreamChunks(
+                            listOf(
+                                """
+                                data: {"id":"chat-stream-2","model":"magistral-small-2507","choices":[{"delta":{"role":"assistant","content":[{"type":"thinking","thinking":[{"type":"text","text":"Stream thought."}]}]},"finish_reason":null}]}
+
+                                data: {"id":"chat-stream-2","model":"magistral-small-2507","choices":[{"delta":{"role":"assistant","content":[{"type":"text","text":"Stream answer."}]},"finish_reason":null}]}
+
+                                data: {"id":"chat-stream-2","model":"magistral-small-2507","choices":[{"delta":{"content":""},"finish_reason":"stop"}],"usage":{"prompt_tokens":1,"completion_tokens":2,"total_tokens":3}}
+
+                                data: [DONE]
+
+                                """.trimIndent(),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+        fixture.server.start()
+        val provider = createMistral(fixture.httpClient(), MistralProviderSettings(apiKey = "key"))
+
+        val generated = provider.chat("magistral-small-2507").generate(
+            LanguageModelCallParams(messages = listOf(userMessage("hi"))),
+        )
+        val events = drainAllItems(
+            provider.chat("magistral-small-2507").stream(LanguageModelCallParams(messages = listOf(userMessage("hi")))),
+        )
+
+        assertEquals("Final answer.", generated.text)
+        assertEquals("First thought.", generated.content.filterIsInstance<ContentPart.Reasoning>().single().text)
+        assertTrue(events.any { it is StreamEvent.ReasoningDelta && it.text == "Stream thought." })
+        assertTrue(events.any { it is StreamEvent.TextDelta && it.text == "Stream answer." })
+        assertEquals(FinishReason.Stop, events.filterIsInstance<StreamEvent.Finish>().single().finishReason)
     }
 
     @Test

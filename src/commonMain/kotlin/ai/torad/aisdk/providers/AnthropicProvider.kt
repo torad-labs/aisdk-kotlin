@@ -302,7 +302,7 @@ private fun anthropicRequestBody(
     val thinkingType = thinking?.get("type")?.jsonPrimitive?.contentOrNull
     val isThinking = thinkingType == "enabled" || thinkingType == "adaptive"
     var thinkingBudget = thinking?.get("budgetTokens")?.jsonPrimitive?.intOrNull
-    val maxTokensBase = params.maxOutputTokens ?: 4096
+    val maxTokensBase = params.maxOutputTokens ?: anthropicMaxOutputTokensForModel(modelId)
     val maxTokens = if (isThinking && thinkingType == "enabled") {
         if (thinkingBudget == null) {
             thinkingBudget = 1024
@@ -416,7 +416,14 @@ private fun anthropicPrompt(
                 put("content", JsonArray(message.content.mapNotNull { anthropicUserPart(it, betas) }))
             }
             MessageRole.Assistant -> {
-                val content = message.content.mapNotNull { anthropicAssistantPart(it, sendReasoning) }
+                // Anthropic rejects trailing whitespace in a pre-filled assistant turn, so
+                // trim the LAST text part of the LAST message (the pre-fill), per upstream.
+                val isLastMessage = message === messages.last()
+                val lastTextIndex =
+                    if (isLastMessage) message.content.indexOfLast { it is ContentPart.Text } else -1
+                val content = message.content.mapIndexedNotNull { index, part ->
+                    anthropicAssistantPart(part, sendReasoning, trimText = index == lastTextIndex)
+                }
                 if (content.isNotEmpty()) {
                     apiMessages += buildJsonObject {
                         put("role", JsonPrimitive("assistant"))
@@ -458,30 +465,18 @@ private fun anthropicUserPart(part: ContentPart, betas: MutableSet<String>): Jso
     }
     is ContentPart.Image -> buildJsonObject {
         put("type", JsonPrimitive("image"))
-        put("source", buildJsonObject {
-            put("type", JsonPrimitive("base64"))
-            put("media_type", JsonPrimitive(if (part.mediaType == "image/*") "image/jpeg" else part.mediaType))
-            put("data", JsonPrimitive(part.base64))
-        })
+        put("source", anthropicMediaSource(part.url, part.mediaType, part.base64))
     }
     is ContentPart.File -> when {
         part.mediaType.startsWith("image/") -> buildJsonObject {
             put("type", JsonPrimitive("image"))
-            put("source", buildJsonObject {
-                put("type", JsonPrimitive("base64"))
-                put("media_type", JsonPrimitive(if (part.mediaType == "image/*") "image/jpeg" else part.mediaType))
-                put("data", JsonPrimitive(part.base64))
-            })
+            put("source", anthropicMediaSource(part.url, part.mediaType, part.base64))
         }
         part.mediaType == "application/pdf" -> {
             betas += "pdfs-2024-09-25"
             buildJsonObject {
                 put("type", JsonPrimitive("document"))
-                put("source", buildJsonObject {
-                    put("type", JsonPrimitive("base64"))
-                    put("media_type", JsonPrimitive("application/pdf"))
-                    put("data", JsonPrimitive(part.base64))
-                })
+                put("source", anthropicMediaSource(part.url, "application/pdf", part.base64))
                 part.filename?.let { put("title", JsonPrimitive(it)) }
                 anthropicFileOptions(part.providerMetadata)?.let { putJsonObjectFields(it) }
             }
@@ -501,10 +496,30 @@ private fun anthropicUserPart(part: ContentPart, betas: MutableSet<String>): Jso
     else -> null
 }
 
-private fun anthropicAssistantPart(part: ContentPart, sendReasoning: Boolean): JsonElement? = when (part) {
+/**
+ * Anthropic media source: a remote [url] is sent as a `url` source (Anthropic
+ * fetches it); otherwise the inline [base64] bytes are sent. Closes the gap where
+ * a ContentPart carrying only a `url` was previously serialized with empty data.
+ */
+private fun anthropicMediaSource(url: String?, mediaType: String, base64: String): JsonObject = buildJsonObject {
+    if (url != null) {
+        put("type", JsonPrimitive("url"))
+        put("url", JsonPrimitive(url))
+    } else {
+        put("type", JsonPrimitive("base64"))
+        put("media_type", JsonPrimitive(if (mediaType == "image/*") "image/jpeg" else mediaType))
+        put("data", JsonPrimitive(base64))
+    }
+}
+
+private fun anthropicAssistantPart(
+    part: ContentPart,
+    sendReasoning: Boolean,
+    trimText: Boolean = false,
+): JsonElement? = when (part) {
     is ContentPart.Text -> buildJsonObject {
         put("type", JsonPrimitive("text"))
-        put("text", JsonPrimitive(part.text))
+        put("text", JsonPrimitive(if (trimText) part.text.trim() else part.text))
     }
     is ContentPart.Reasoning if sendReasoning -> buildJsonObject {
         val metadata = part.providerMetadata?.get("anthropic") as? JsonObject
@@ -780,6 +795,7 @@ private class AnthropicStreamState(
 ) {
     private val blocks = mutableMapOf<Int, AnthropicStreamBlock>()
     private var finishReason = FinishReason.Other
+    private var rawStopReason: String? = null
     private var usage = Usage()
     private var responseId: String? = null
     private var modelId: String? = null
@@ -892,8 +908,10 @@ private class AnthropicStreamState(
             }
             "message_delta" -> {
                 val delta = obj["delta"]?.jsonObject ?: JsonObject(emptyMap())
-                finishReason = mapAnthropicStopReason(delta["stop_reason"]?.jsonPrimitive?.contentOrNull)
-                usage = anthropicUsage(obj["usage"])
+                rawStopReason = delta["stop_reason"]?.jsonPrimitive?.contentOrNull
+                finishReason = mapAnthropicStopReason(rawStopReason)
+                // Merge onto the message_start usage (delta usually has only output_tokens).
+                usage = anthropicMergeUsage(usage, obj["usage"])
             }
             "error" -> events += StreamEvent.Error(anthropicErrorMessage(obj["error"] ?: obj, obj.toString()))
         }
@@ -908,6 +926,7 @@ private class AnthropicStreamState(
             providerMetadata = mapOf("anthropic" to buildJsonObject {
                 responseId?.let { put("responseId", JsonPrimitive(it)) }
             }),
+            rawFinishReason = rawStopReason,
         ),
     )
 }
@@ -941,6 +960,23 @@ private fun anthropicHeaders(
     return withUserAgentSuffix(headers, "ai-sdk/anthropic/$ANTHROPIC_VERSION")
 }
 
+/**
+ * The default `max_tokens` for a Claude model when the caller omits maxOutputTokens.
+ * Ports upstream's getModelCapabilities table — hardcoding 4096 truncated output on
+ * every modern Claude model.
+ */
+@Suppress("MagicNumber") // the values ARE the per-model max-output-token limits
+private fun anthropicMaxOutputTokensForModel(modelId: String): Int = when {
+    modelId.contains("claude-opus-4-8") || modelId.contains("claude-opus-4-7") -> 128_000
+    modelId.contains("claude-sonnet-4-6") || modelId.contains("claude-opus-4-6") -> 128_000
+    modelId.contains("claude-sonnet-4-5") || modelId.contains("claude-opus-4-5") ||
+        modelId.contains("claude-haiku-4-5") -> 64_000
+    modelId.contains("claude-opus-4-1") -> 32_000
+    modelId.contains("claude-sonnet-4-") -> 64_000
+    modelId.contains("claude-opus-4-") -> 32_000
+    else -> 4_096
+}
+
 private fun anthropicUsage(element: JsonElement?): Usage {
     val obj = element as? JsonObject ?: return Usage()
     val baseInput = obj["input_tokens"]?.jsonPrimitive?.intOrNull ?: 0
@@ -969,6 +1005,35 @@ private fun anthropicUsage(element: JsonElement?): Usage {
         ),
         outputTokens = Usage.OutputTokenBreakdown(total = output),
         raw = element,
+    )
+}
+
+/**
+ * Merge a streaming `message_delta` usage object onto the usage captured at
+ * `message_start`. Anthropic's message_delta usually carries only output_tokens, so a
+ * full replace (the prior behavior) dropped the input/cache counts to 0 — upstream
+ * mutates in place: keep prior input/cache when the delta omits them, update what it
+ * provides.
+ */
+private fun anthropicMergeUsage(existing: Usage, deltaElement: JsonElement?): Usage {
+    val obj = deltaElement as? JsonObject ?: return existing
+    val deltaInput = obj["input_tokens"]?.jsonPrimitive?.intOrNull
+    val deltaOutput = obj["output_tokens"]?.jsonPrimitive?.intOrNull
+    val deltaCacheRead = obj["cache_read_input_tokens"]?.jsonPrimitive?.intOrNull
+    val deltaCacheWrite = obj["cache_creation_input_tokens"]?.jsonPrimitive?.intOrNull
+    val input = deltaInput ?: existing.inputTokens.noCache
+    val cacheRead = deltaCacheRead ?: existing.inputTokens.cacheRead
+    val cacheWrite = deltaCacheWrite ?: existing.inputTokens.cacheWrite
+    val output = deltaOutput ?: existing.outputTokens.total
+    return Usage(
+        inputTokens = Usage.InputTokenBreakdown(
+            total = input + cacheWrite + cacheRead,
+            noCache = input,
+            cacheRead = cacheRead,
+            cacheWrite = cacheWrite,
+        ),
+        outputTokens = Usage.OutputTokenBreakdown(total = output),
+        raw = deltaElement,
     )
 }
 

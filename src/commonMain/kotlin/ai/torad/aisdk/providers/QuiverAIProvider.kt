@@ -21,6 +21,7 @@ import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 
 public const val QUIVERAI_VERSION: String = "1.0.0"
+private const val QUIVERAI_MAX_IMAGES_PER_CALL: Int = 16
 
 public typealias QuiverAIImageModelId = String
 public typealias QuiverAIOperation = String
@@ -77,6 +78,7 @@ private class QuiverAIImageModel(
     override val modelId: String,
 ) : ImageModel {
     override val provider: String = "quiverai.image"
+    override val maxImagesPerCall: Int = QUIVERAI_MAX_IMAGES_PER_CALL
 
     override suspend fun generate(params: ImageGenerationParams): ImageModelResult {
         params.abortSignal.throwIfAborted()
@@ -109,6 +111,7 @@ private class QuiverAIImageModel(
                 body = response.value,
             ),
             providerMetadata = mapOf("quiverai" to quiverAIProviderMetadata(root)),
+            usage = quiverAIUsage(root["usage"]),
         )
     }
 }
@@ -226,6 +229,15 @@ private fun quiverAIProviderMetadata(root: JsonObject): JsonElement = buildJsonO
     root["usage"]?.takeIf { it !is JsonNull }?.let { usage ->
         put("usage", usage)
     }
+}
+
+private fun quiverAIUsage(value: JsonElement?): ImageModelUsage {
+    val usage = value as? JsonObject ?: return ImageModelUsage()
+    return ImageModelUsage(
+        inputTokens = usage["input_tokens"]?.jsonPrimitive?.intOrNull,
+        outputTokens = usage["output_tokens"]?.jsonPrimitive?.intOrNull,
+        totalTokens = usage["total_tokens"]?.jsonPrimitive?.intOrNull,
+    )
 }
 
 private fun quiverAIHeaders(settings: QuiverAIProviderSettings, callHeaders: Map<String, String>): Map<String, String> {

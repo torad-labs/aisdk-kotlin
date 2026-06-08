@@ -93,6 +93,7 @@ class FalProviderTest {
         )
 
         assertEquals("fal.image", provider.imageModel("fal-ai/qwen-image").provider)
+        assertEquals(1, provider.imageModel("fal-ai/qwen-image").maxImagesPerCall)
         assertEquals("image/png", result.images.single().mediaType)
         assertEquals("image-bytes", convertBase64ToByteArray(result.images.single().base64).decodeToString())
         assertEquals("https://fal.media/files/image.png", result.images.single().url)
@@ -267,32 +268,43 @@ class FalProviderTest {
                         ),
                     ),
                 ),
-                "https://queue.fal.run/fal-ai/luma-dream-machine/requests/video-1" to UrlHandler(
-                    UrlResponse.JsonValue(
-                        Json.parseToJsonElement(
-                            """
-                            {
-                              "video":{
-                                "url":"https://fal.media/files/video.mp4",
-                                "width":1920,
-                                "height":1080,
-                                "duration":5.0,
-                                "fps":24,
-                                "content_type":"video/mp4"
-                              },
-                              "seed":42,
-                              "timings":{"inference":8.5},
-                              "has_nsfw_concepts":[false],
-                              "prompt":"Enhanced prompt"
-                            }
-                            """.trimIndent(),
-                        ),
-                    ),
-                ),
+                "https://queue.fal.run/fal-ai/luma-dream-machine/requests/video-1" to UrlHandler { options ->
+                    if (options.callNumber == 1) {
+                        UrlResponse.Error(
+                            status = 400,
+                            body = """{"detail":"Request is still in progress"}""",
+                            headers = mapOf(HttpHeaders.ContentType to "application/json"),
+                        )
+                    } else {
+                        UrlResponse.JsonValue(
+                            Json.parseToJsonElement(
+                                """
+                                {
+                                  "video":{
+                                    "url":"https://fal.media/files/video.mp4",
+                                    "width":1920,
+                                    "height":1080,
+                                    "duration":5.0,
+                                    "fps":24,
+                                    "content_type":"video/mp4"
+                                  },
+                                  "seed":42,
+                                  "timings":{"inference":8.5},
+                                  "has_nsfw_concepts":[false],
+                                  "prompt":"Enhanced prompt"
+                                }
+                                """.trimIndent(),
+                            ),
+                        )
+                    }
+                },
             ),
         )
         fixture.server.start()
-        val provider = createFal(fixture.httpClient(), FalProviderSettings(apiKey = "key", videoPollIntervalMillis = 0))
+        val provider = createFal(
+            fixture.httpClient(),
+            FalProviderSettings(apiKey = "key", videoPollIntervalMillis = 10),
+        )
 
         val result = provider.video("fal-ai/luma-dream-machine").generate(
             VideoGenerationParams(
@@ -303,6 +315,8 @@ class FalProviderTest {
                 seed = 42,
                 providerOptions = mapOf(
                     "fal" to buildJsonObject {
+                        put("pollIntervalMs", JsonPrimitive(1))
+                        put("pollTimeoutMs", JsonPrimitive(2))
                         put("motionStrength", JsonPrimitive(0.7f))
                         put("negativePrompt", JsonPrimitive("blur"))
                         put("promptOptimizer", JsonPrimitive(true))
@@ -314,6 +328,7 @@ class FalProviderTest {
         )
 
         assertEquals("fal.video", provider.videoModel("fal-ai/luma-dream-machine").provider)
+        assertEquals(1, provider.videoModel("fal-ai/luma-dream-machine").maxVideosPerCall)
         assertEquals("video/mp4", result.videos.single().mediaType)
         assertEquals("", result.videos.single().base64)
         assertEquals("https://fal.media/files/video.mp4", result.videos.single().url)

@@ -20,6 +20,7 @@ import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 
 public const val COHERE_VERSION: String = "3.0.36"
+private const val COHERE_MAX_EMBEDDINGS_PER_CALL: Int = 96
 
 public typealias CohereChatModelId = String
 public typealias CohereEmbeddingModelId = String
@@ -145,7 +146,14 @@ private class CohereChatLanguageModel(
             emit(StreamEvent.ToolInputEnd(it.toolCallId, it.providerMetadata))
             emit(StreamEvent.ToolCall(it.toolCallId, it.toolName, it.input, it.providerMetadata))
         }
-        emit(StreamEvent.Finish(totalSteps = 1, finishReason = result.finishReason, usage = result.usage))
+        emit(
+            StreamEvent.Finish(
+                totalSteps = 1,
+                finishReason = result.finishReason,
+                usage = result.usage,
+                rawFinishReason = result.rawFinishReason,
+            ),
+        )
     }
 }
 
@@ -155,8 +163,18 @@ private class CohereEmbeddingModel(
     override val modelId: String,
 ) : EmbeddingModel {
     override val provider: String = "cohere.textEmbedding"
+    override val maxEmbeddingsPerCall: Int = COHERE_MAX_EMBEDDINGS_PER_CALL
+    override val supportsParallelCalls: Boolean = true
 
     override suspend fun embed(params: EmbeddingModelCallParams): EmbeddingModelResult {
+        if (params.values.size > COHERE_MAX_EMBEDDINGS_PER_CALL) {
+            throw TooManyEmbeddingValuesForCallError(
+                provider = provider,
+                modelId = modelId,
+                maxEmbeddingsPerCall = COHERE_MAX_EMBEDDINGS_PER_CALL,
+                values = params.values,
+            )
+        }
         val options = cohereOptions(params.providerOptions)
         val body = buildJsonObject {
             put("model", JsonPrimitive(modelId))
@@ -564,10 +582,11 @@ private fun cohereUsage(value: JsonObject?): Usage {
 }
 
 private fun cohereFinishReason(value: String?): FinishReason = when (value) {
-    "COMPLETE", "stop" -> FinishReason.Stop
+    // Upstream maps both COMPLETE and STOP_SEQUENCE to stop; ERROR_TOXIC has no dedicated
+    // case and falls through to `other`, not content-filter.
+    "COMPLETE", "STOP_SEQUENCE", "stop" -> FinishReason.Stop
     "MAX_TOKENS" -> FinishReason.Length
     "TOOL_CALL" -> FinishReason.ToolCalls
-    "ERROR_TOXIC" -> FinishReason.ContentFilter
     "ERROR" -> FinishReason.Error
     else -> FinishReason.Other
 }

@@ -68,6 +68,7 @@ class ProdiaProviderTest {
         )
 
         assertEquals("prodia.image", model.provider)
+        assertEquals(1, model.maxImagesPerCall)
         assertEquals("image/png", result.images.single().mediaType)
         assertEquals(convertByteArrayToBase64(byteArrayOf(1, 2, 3)), result.images.single().base64)
         assertTrue(result.warnings.single().message.orEmpty().contains("one image"))
@@ -162,21 +163,29 @@ class ProdiaProviderTest {
     }
 
     @Test
+    @Suppress("LongMethod")
     fun `video model supports text and image job request paths`() = runTest {
         val fixture = createTestServer(
             mutableMapOf(
-                "https://prodia.test/v2/job?price=true" to UrlHandler(
-                    listOf(
+                "https://prodia.test/v2/job?price=true" to UrlHandler { options ->
+                    if (options.callNumber == 0) {
                         prodiaMultipartResponse(
                             jobJson = """{"id":"job-video-json","metrics":{"elapsed":2.0}}""",
                             outputMediaType = "video/mp4",
                             outputBytes = byteArrayOf(8, 9),
-                        ),
+                        )
+                    } else {
                         prodiaMultipartResponse(
                             jobJson = """{"id":"job-video-multipart","metrics":{"elapsed":3.0}}""",
                             outputMediaType = "video/mp4",
                             outputBytes = byteArrayOf(10, 11),
-                        ),
+                        )
+                    }
+                },
+                "https://example.com/input.png" to UrlHandler(
+                    UrlResponse.Binary(
+                        "url-bytes".encodeToByteArray(),
+                        headers = mapOf(HttpHeaders.ContentType to "image/png"),
                     ),
                 ),
             ),
@@ -197,12 +206,13 @@ class ProdiaProviderTest {
         val imageResult = model.generate(
             VideoGenerationParams(
                 prompt = "animate frame",
-                image = GeneratedFile(mediaType = "image/png", base64 = convertByteArrayToBase64(byteArrayOf(1, 2))),
+                image = GeneratedFile(mediaType = "image/png", base64 = "", url = "https://example.com/input.png"),
                 resolution = "480p",
             ),
         )
 
         assertEquals("prodia.video", model.provider)
+        assertEquals(1, model.maxVideosPerCall)
         assertEquals(convertByteArrayToBase64(byteArrayOf(8, 9)), textResult.videos.single().base64)
         assertEquals("job-video-json", textResult.providerMetadata["prodia"]?.jsonObject?.get("videos")?.jsonArray?.single()?.jsonObject?.get("jobId")?.jsonPrimitive?.contentOrNull)
         assertEquals(convertByteArrayToBase64(byteArrayOf(10, 11)), imageResult.videos.single().base64)
@@ -215,11 +225,13 @@ class ProdiaProviderTest {
         assertEquals("720p", jsonConfig?.get("resolution")?.jsonPrimitive?.contentOrNull)
         assertEquals("multipart/form-data; video/mp4", fixture.calls[0].requestHeaders.headerValue(HttpHeaders.Accept))
 
-        val multipart = fixture.calls[1].requestBodyMultipart
+        assertEquals("https://example.com/input.png", fixture.calls[1].requestUrl)
+        val multipart = fixture.calls[2].requestBodyMultipart
         assertNotNull(multipart)
         val imageJob = Json.parseToJsonElement(multipart["job"].orEmpty()).jsonObject
         assertEquals("480p", imageJob["config"]?.jsonObject?.get("resolution")?.jsonPrimitive?.contentOrNull)
         assertTrue(multipart.containsKey("input"))
+        assertEquals("url-bytes", multipart["input"])
     }
 
     @Test

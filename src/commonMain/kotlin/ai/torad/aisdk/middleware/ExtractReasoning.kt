@@ -1,5 +1,6 @@
 package ai.torad.aisdk.middleware
 
+import ai.torad.aisdk.ContentPart
 import ai.torad.aisdk.LanguageModelMiddleware
 import ai.torad.aisdk.LanguageModelResult
 import ai.torad.aisdk.MiddlewareCallContext
@@ -22,14 +23,41 @@ import kotlinx.coroutines.flow.flow
 public fun extractReasoningMiddleware(
     tagName: String = "reasoning",
     separator: String = "\n",
+    startWithReasoning: Boolean = false,
 ): LanguageModelMiddleware = object : LanguageModelMiddleware {
     private val openTag = "<$tagName>"
     private val closeTag = "</$tagName>"
 
     override suspend fun wrapGenerate(context: MiddlewareCallContext): LanguageModelResult {
         val raw = context.doGenerate(context.params)
-        val (cleanText, _) = extractReasoning(raw.text)
-        return raw.copy(text = cleanText)
+        // Rebuild content like upstream: each text part with a reasoning tag becomes
+        // a Reasoning part + a cleaned Text part; other parts pass through. The prior
+        // version only set text=cleanText, leaving the tagged text in content and
+        // dropping the reasoning entirely.
+        val rebuilt = mutableListOf<ContentPart>()
+        val cleanedText = StringBuilder()
+        for (part in raw.content) {
+            if (part !is ContentPart.Text) {
+                rebuilt += part
+                continue
+            }
+            // startWithReasoning: the model emits raw reasoning before any open tag.
+            val text = if (startWithReasoning) "$openTag${part.text}" else part.text
+            val (clean, reasoning) = extractReasoning(text)
+            // Key off whether tags were actually stripped (clean != text), NOT whether
+            // the reasoning text is non-empty — an empty <reasoning></reasoning> must
+            // still be stripped (matching upstream's match-found check), else the literal
+            // tags leak into visible text.
+            if (clean == text) {
+                rebuilt += part
+                cleanedText.append(part.text)
+            } else {
+                rebuilt += ContentPart.Reasoning(reasoning)
+                rebuilt += ContentPart.Text(clean)
+                cleanedText.append(clean)
+            }
+        }
+        return raw.copy(text = cleanedText.toString(), content = rebuilt)
     }
 
     override fun wrapStream(context: MiddlewareCallContext): Flow<StreamEvent> = flow {
@@ -38,6 +66,15 @@ public fun extractReasoningMiddleware(
         var reasoningId: String? = null
         var nextReasoningIdx = 0
         var lastTextId: String? = null
+
+        // startWithReasoning: begin already inside a reasoning section (the model
+        // streams reasoning tokens before any open tag), looking for the close tag.
+        if (startWithReasoning) {
+            val rid = "reasoning_${++nextReasoningIdx}"
+            reasoningId = rid
+            inReasoning = true
+            emit(StreamEvent.ReasoningStart(rid))
+        }
 
         suspend fun emitBufferedText(id: String?) {
             if (buffer.isEmpty()) return

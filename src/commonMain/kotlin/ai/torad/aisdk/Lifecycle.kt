@@ -92,6 +92,14 @@ public data class OnChunkEvent(
 )
 
 /**
+ * Fired when generation is aborted via [AbortSignal] before it finishes.
+ * Carries the steps completed up to the abort. Mirrors upstream's `onAbort({ steps })`.
+ */
+public data class OnAbortEvent(
+    val steps: List<StepResult>,
+)
+
+/**
  * Fired immediately before a tool's executor runs. Carries the parsed
  * tool call envelope and the messages-list snapshot so observers can
  * record context (e.g. for tracing).
@@ -129,4 +137,22 @@ public data class StepResult(
     val toolApprovalRequests: List<ContentPart.ToolApprovalRequest>,
     val finishReason: FinishReason,
     val usage: Usage,
-)
+    val warnings: List<CallWarning> = emptyList(),
+    val request: LanguageModelRequestMetadata = LanguageModelRequestMetadata(),
+    val response: LanguageModelResponseMetadata = LanguageModelResponseMetadata(),
+    val providerMetadata: Map<String, JsonElement> = emptyMap(),
+    val rawFinishReason: String? = null,
+    /** The model id that produced this step (upstream's `model.modelId`). */
+    val model: String? = null,
+    /** The evolving agent context live for this step (upstream's `experimental_context`). */
+    val experimentalContext: Any? = null,
+) {
+    /** The non-empty reasoning text for this step, or null — mirrors upstream's `reasoningText`. */
+    val reasoningText: String? get() = reasoning.takeIf { it.isNotEmpty() }
+
+    /** Tool calls/results split by static (`tool(...)`) vs dynamic (`dynamicTool(...)`), per upstream. */
+    val staticToolCalls: List<ContentPart.ToolCall> get() = toolCalls.filter { !it.dynamic }
+    val dynamicToolCalls: List<ContentPart.ToolCall> get() = toolCalls.filter { it.dynamic }
+    val staticToolResults: List<ContentPart.ToolResult> get() = toolResults.filter { !it.dynamic }
+    val dynamicToolResults: List<ContentPart.ToolResult> get() = toolResults.filter { it.dynamic }
+}

@@ -139,6 +139,103 @@ class XaiProviderTest {
     }
 
     @Test
+    @Suppress("LongMethod")
+    fun `chat body drops stop and strips additionalProperties and maps xHandles alias`() = runTest {
+        val fixture = createTestServer(
+            mutableMapOf(
+                "https://api.x.ai/v1/chat/completions" to UrlHandler(
+                    UrlResponse.JsonValue(
+                        Json.parseToJsonElement(
+                            "{\"id\":\"c\",\"choices\":[{\"message\":{\"role\":\"assistant\"," +
+                                "\"content\":\"ok\"},\"finish_reason\":\"stop\"}]," +
+                                "\"usage\":{\"prompt_tokens\":1,\"completion_tokens\":1,\"total_tokens\":2}}",
+                        ),
+                    ),
+                ),
+            ),
+        )
+        fixture.server.start()
+        val provider = createXai(fixture.httpClient(), XaiProviderSettings(apiKey = "key"))
+        provider.chat("grok-3").generate(
+            LanguageModelCallParams(
+                messages = listOf(userMessage("go")),
+                stopSequences = listOf("END"),
+                tools = listOf(
+                    LanguageModelTool(
+                        "lookup",
+                        "d",
+                        xaiUnsupportedToolSchema(),
+                    ),
+                ),
+                providerOptions = mapOf(
+                    "xai" to buildJsonObject {
+                        put(
+                            "searchParameters",
+                            buildJsonObject {
+                                put(
+                                    "sources",
+                                    buildJsonArray {
+                                        add(
+                                            buildJsonObject {
+                                                put("type", JsonPrimitive("x"))
+                                                put("xHandles", buildJsonArray { add(JsonPrimitive("grok")) })
+                                            },
+                                        )
+                                    },
+                                )
+                            },
+                        )
+                    },
+                ),
+            ),
+        )
+        val body = fixture.calls.single().requestBodyJson.jsonObject
+        assertEquals(null, body["stop"], "stop dropped (xAI unsupported)")
+        val toolFn = body["tools"]?.jsonArray?.single()?.jsonObject?.get("function")?.jsonObject
+        val toolParams = toolFn?.get("parameters")?.jsonObject
+        assertEquals(null, toolParams?.get("additionalProperties"), "additionalProperties stripped from tool schema")
+        assertEquals(null, toolParams?.get("\$schema"), "\$schema stripped from tool schema")
+        assertEquals(null, toolParams?.get("title"), "title stripped from tool schema")
+        val nested = toolParams?.get("properties")?.jsonObject?.get("q")?.jsonObject
+        assertEquals(null, nested?.get("additionalProperties"), "nested additionalProperties stripped from tool schema")
+        assertEquals(null, nested?.get("title"), "nested title stripped from tool schema")
+        val src = body["search_parameters"]?.jsonObject?.get("sources")?.jsonArray?.single()?.jsonObject
+        assertEquals("grok", src?.get("included_x_handles")?.jsonArray?.single()?.jsonPrimitive?.contentOrNull)
+        assertEquals(null, src?.get("x_handles"), "xHandles not naively snake-cased")
+    }
+
+    @Test
+    fun `chat throws APICallError when xAI returns 200 error body`() = runTest {
+        val fixture = createTestServer(
+            mutableMapOf(
+                "https://api.x.ai/v1/chat/completions" to UrlHandler(
+                    UrlResponse.JsonValue(
+                        Json.parseToJsonElement(
+                            """
+                            {
+                              "code":"The service is currently unavailable",
+                              "error":"Timed out waiting for first token"
+                            }
+                            """.trimIndent(),
+                        ),
+                    ),
+                ),
+            ),
+        )
+        fixture.server.start()
+        val provider = createXai(fixture.httpClient(), XaiProviderSettings(apiKey = "key"))
+
+        val error = assertFailsWith<APICallError> {
+            provider.chat("grok-3").generate(LanguageModelCallParams(messages = listOf(userMessage("hi"))))
+        }
+
+        assertEquals("Timed out waiting for first token", error.message)
+        assertEquals(200, error.statusCode)
+        assertEquals(true, error.isRetryable)
+        assertTrue(error.responseBody.orEmpty().contains("Timed out waiting for first token"))
+    }
+
+    @Test
     fun `image model supports generation edits options metadata and warnings`() = runTest {
         val fixture = createTestServer(
             mutableMapOf(
@@ -320,6 +417,22 @@ class XaiProviderTest {
         assertEquals(JsonPrimitive(providerToolId), tool.metadata["providerToolId"])
         assertIs<JsonElement>(tool.metadata["providerOptions"])
     }
+
+    private fun xaiUnsupportedToolSchema(): String = """
+        {
+          "${'$'}schema":"https://json-schema.org/draft/2020-12/schema",
+          "title":"LookupInput",
+          "type":"object",
+          "additionalProperties":false,
+          "properties":{
+            "q":{
+              "title":"Query",
+              "type":"string",
+              "additionalProperties":false
+            }
+          }
+        }
+    """.trimIndent()
 
     private fun Map<String, String>.headerValue(name: String): String? =
         entries.firstOrNull { it.key.equals(name, ignoreCase = true) }?.value

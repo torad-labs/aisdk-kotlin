@@ -34,6 +34,12 @@ public data class GatewayProviderSettings(
     val metadataCacheRefreshMillis: Long = 5 * 60 * 1000L,
     val nowMillis: () -> Long = { Clock.System.now().toEpochMilliseconds() },
     val authTokenProvider: (suspend () -> GatewayAuthToken?)? = null,
+    /**
+     * Host-supplied environment. When [apiKey] is null, `AI_GATEWAY_API_KEY` here
+     * is used — the KMP-idiomatic equivalent of upstream's process.env lookup
+     * (commonMain has no platform `getenv`; the host passes the map).
+     */
+    val environment: Map<String, String> = emptyMap(),
 )
 
 public data class GatewayRequestContext(
@@ -375,8 +381,14 @@ public data class GatewayTools(
     ),
 )
 
-internal suspend fun getGatewayAuthToken(settings: GatewayProviderSettings): GatewayAuthToken? =
-    settings.apiKey?.let { GatewayAuthToken(it, GatewayAuthMethod.ApiKey) } ?: settings.authTokenProvider?.invoke()
+internal suspend fun getGatewayAuthToken(settings: GatewayProviderSettings): GatewayAuthToken? {
+    val key = settings.apiKey ?: settings.environment["AI_GATEWAY_API_KEY"]
+    if (key != null) return GatewayAuthToken(key, GatewayAuthMethod.ApiKey)
+    // Then a custom token provider, else the OIDC fallback: VERCEL_OIDC_TOKEN from the
+    // host environment (the KMP-idiomatic equivalent of upstream's getVercelOidcToken()).
+    return settings.authTokenProvider?.invoke()
+        ?: settings.environment["VERCEL_OIDC_TOKEN"]?.let { GatewayAuthToken(it, GatewayAuthMethod.Oidc) }
+}
 
 internal suspend fun gatewayHeaders(settings: GatewayProviderSettings): Map<String, String> {
     val auth = getGatewayAuthToken(settings)
@@ -386,6 +398,17 @@ internal suspend fun gatewayHeaders(settings: GatewayProviderSettings): Map<Stri
         base[GATEWAY_AUTH_METHOD_HEADER] = it.authMethod.wireValue
     }
     base["ai-gateway-protocol-version"] = AI_GATEWAY_PROTOCOL_VERSION
+    // Observability headers from the host environment (the KMP equivalent of
+    // upstream's getVercelObservabilityHeaders). request-id is runtime-only and omitted.
+    val o11y = mapOf(
+        "ai-o11y-deployment-id" to "VERCEL_DEPLOYMENT_ID",
+        "ai-o11y-environment" to "VERCEL_ENV",
+        "ai-o11y-region" to "VERCEL_REGION",
+        "ai-o11y-project-id" to "VERCEL_PROJECT_ID",
+    )
+    for ((header, envVar) in o11y) {
+        settings.environment[envVar]?.let { base[header] = it }
+    }
     base.putAll(settings.headers)
     return withUserAgentSuffix(base, "ai-sdk/gateway-kotlin")
 }

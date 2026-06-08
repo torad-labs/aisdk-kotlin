@@ -242,7 +242,7 @@ class ConvertToModelMessagesTest {
     }
 
     @Test
-    fun `given dropped part types when converted then they vanish without affecting other parts`() {
+    fun `given UI-only part types when converted then StepStart Data and Error drop but Source carries`() {
         val ui = listOf(
             UIMessage(
                 id = "a1",
@@ -260,8 +260,28 @@ class ConvertToModelMessagesTest {
         )
         val result = convertToModelMessages(ui)
         assertEquals(1, result.size)
-        assertEquals(1, result[0].content.size, "only Text survives — StepStart/Source/Error drop")
-        assertTrue(result[0].content[0] is ContentPart.Text)
+        // StepStart + Error are UI-only and drop; Source now carries to the model.
+        assertEquals(2, result[0].content.size, "Source + Text survive; StepStart/Error drop")
+        assertTrue(result[0].content.any { it is ContentPart.Text })
+        assertTrue(result[0].content.any { it is ContentPart.Source })
+    }
+
+    @Test
+    fun `given a user File part when converted then it carries to the model as a File content part`() {
+        val ui = listOf(
+            UIMessage(
+                id = "u1",
+                role = UIMessageRole.User,
+                parts = listOf(
+                    UIMessagePart.Text("see attached"),
+                    UIMessagePart.File(mediaType = "image/png", base64 = "aW1n"),
+                ),
+            ),
+        )
+        val result = convertToModelMessages(ui)
+        val file = result.single().content.filterIsInstance<ContentPart.File>().single()
+        assertEquals("image/png", file.mediaType)
+        assertEquals("aW1n", file.base64)
     }
 
     @Test

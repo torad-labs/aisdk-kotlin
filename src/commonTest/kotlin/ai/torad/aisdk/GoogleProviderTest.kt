@@ -24,6 +24,7 @@ import kotlin.test.assertFailsWith
 import kotlin.test.assertIs
 import kotlin.test.assertTrue
 
+@Suppress("LargeClass")
 class GoogleProviderTest {
     @Test
     fun `language model maps Gemini request response tools sources and metadata`() = runTest {
@@ -117,7 +118,9 @@ class GoogleProviderTest {
         assertEquals("image/png", result.content.filterIsInstance<ContentPart.File>().single().mediaType)
         assertEquals("https://example.com", result.content.filterIsInstance<ContentPart.Source>().single().url)
         assertEquals(3, result.usage.promptTokens)
-        assertEquals(5, result.usage.completionTokens)
+        // outputTokens.total = candidatesTokenCount(5) + thoughtsTokenCount(2) (upstream parity)
+        assertEquals(7, result.usage.completionTokens)
+        assertEquals(5, result.usage.outputTokens.text)
         assertEquals(2, result.usage.outputTokens.reasoning)
         assertEquals("BLOCK_REASON_UNSPECIFIED", result.providerMetadata["google"]?.jsonObject?.get("promptFeedback")?.jsonObject?.get("blockReason")?.jsonPrimitive?.contentOrNull)
 
@@ -133,7 +136,13 @@ class GoogleProviderTest {
         assertEquals(128, body["generationConfig"]?.jsonObject?.get("thinkingConfig")?.jsonObject?.get("thinkingBudget")?.jsonPrimitive?.intOrNull)
         assertEquals("priority", body["serviceTier"]?.jsonPrimitive?.contentOrNull)
         val tools = body["tools"]?.jsonArray.orEmpty()
-        assertEquals("lookup", tools[0].jsonObject["functionDeclarations"]?.jsonArray?.single()?.jsonObject?.get("name")?.jsonPrimitive?.contentOrNull)
+        val decl = tools[0].jsonObject["functionDeclarations"]?.jsonArray?.single()?.jsonObject
+        assertEquals("lookup", decl?.get("name")?.jsonPrimitive?.contentOrNull)
+        // The tool parameters schema must be stripped of JSON-Schema keys Google rejects.
+        val params = decl?.get("parameters")?.jsonObject
+        assertTrue(params != null && "\$schema" !in params, "\$schema stripped from tool schema")
+        assertTrue("additionalProperties" !in params!!, "additionalProperties stripped from tool schema")
+        assertTrue("title" !in params, "title stripped from tool schema")
         assertEquals("lookup", body["toolConfig"]?.jsonObject?.get("functionCallingConfig")?.jsonObject?.get("allowedFunctionNames")?.jsonArray?.single()?.jsonPrimitive?.contentOrNull)
     }
 
@@ -174,6 +183,121 @@ class GoogleProviderTest {
         assertEquals(1, finish.usage.promptTokens)
         assertEquals(2, finish.usage.completionTokens)
         assertEquals("text/event-stream", fixture.calls.single().requestHeaders.headerValue(HttpHeaders.Accept))
+    }
+
+    @Test
+    fun `language model reports length when max tokens response contains tool calls`() = runTest {
+        val fixture = createTestServer(
+            mutableMapOf(
+                "https://google.test/v1beta/models/gemini-2.5-flash:generateContent" to UrlHandler(
+                    UrlResponse.JsonValue(
+                        Json.parseToJsonElement(
+                            """
+                            {
+                              "candidates":[
+                                {
+                                  "content":{
+                                    "role":"model",
+                                    "parts":[
+                                      {"functionCall":{"id":"call-1","name":"lookup","args":{"city":"Paris"}}}
+                                    ]
+                                  },
+                                  "finishReason":"MAX_TOKENS"
+                                }
+                              ],
+                              "usageMetadata":{
+                                "promptTokenCount":1,
+                                "candidatesTokenCount":2,
+                                "totalTokenCount":3
+                              }
+                            }
+                            """.trimIndent(),
+                        ),
+                    ),
+                ),
+            ),
+        )
+        fixture.server.start()
+        val provider = createGoogleGenerativeAI(
+            fixture.httpClient(),
+            GoogleGenerativeAIProviderSettings(apiKey = "key", baseURL = "https://google.test/v1beta"),
+        )
+
+        val result = provider("gemini-2.5-flash").generate(
+            LanguageModelCallParams(
+                messages = listOf(userMessage("hi")),
+                tools = listOf(LanguageModelTool("lookup", "Lookup.", objectSchema("city").toString())),
+            ),
+        )
+
+        assertEquals(FinishReason.Length, result.finishReason)
+        assertEquals("MAX_TOKENS", result.rawFinishReason)
+        assertEquals("lookup", result.toolCalls.single().toolName)
+    }
+
+    @Test
+    fun `language model maps MALFORMED_FUNCTION_CALL to error`() = runTest {
+        val fixture = createTestServer(
+            mutableMapOf(
+                "https://google.test/v1beta/models/gemini-2.5-flash:generateContent" to UrlHandler(
+                    UrlResponse.JsonValue(
+                        Json.parseToJsonElement(
+                            "{\"candidates\":[{\"content\":{\"role\":\"model\",\"parts\":[{\"text\":\"\"}]}," +
+                                "\"finishReason\":\"MALFORMED_FUNCTION_CALL\"}]," +
+                                "\"usageMetadata\":{\"promptTokenCount\":1,\"candidatesTokenCount\":0," +
+                                "\"totalTokenCount\":1}}",
+                        ),
+                    ),
+                ),
+            ),
+        )
+        fixture.server.start()
+        val provider = createGoogleGenerativeAI(
+            fixture.httpClient(),
+            GoogleGenerativeAIProviderSettings(apiKey = "key", baseURL = "https://google.test/v1beta"),
+        )
+        val result = provider("gemini-2.5-flash").generate(
+            LanguageModelCallParams(messages = listOf(userMessage("hi"))),
+        )
+        // Upstream maps MALFORMED_FUNCTION_CALL to error, not content-filter.
+        assertEquals(FinishReason.Error, result.finishReason)
+        assertEquals("MALFORMED_FUNCTION_CALL", result.rawFinishReason)
+    }
+
+    @Test
+    fun `language model omits toolConfig when there are no tools`() = runTest {
+        val fixture = createTestServer(
+            mutableMapOf(
+                "https://google.test/v1beta/models/gemini-2.5-flash:generateContent" to UrlHandler(
+                    UrlResponse.JsonValue(
+                        Json.parseToJsonElement(
+                            """
+                            {
+                              "candidates":[{"content":{"role":"model","parts":[{"text":"ok"}]},"finishReason":"STOP"}]
+                            }
+                            """.trimIndent(),
+                        ),
+                    ),
+                ),
+            ),
+        )
+        fixture.server.start()
+        val provider = createGoogleGenerativeAI(
+            fixture.httpClient(),
+            GoogleGenerativeAIProviderSettings(apiKey = "key", baseURL = "https://google.test/v1beta"),
+        )
+
+        val result = provider("gemini-2.5-flash").generate(
+            LanguageModelCallParams(
+                messages = listOf(userMessage("hi")),
+                toolChoice = ToolChoice.Required,
+            ),
+        )
+
+        assertEquals("ok", result.text)
+        val body = fixture.calls.single().requestBodyJson.jsonObject
+        assertTrue("tools" !in body)
+        assertTrue("toolConfig" !in body)
     }
 
     @Test
@@ -283,6 +407,8 @@ class GoogleProviderTest {
         )
 
         assertEquals(listOf(1.0f, 2.0f), embeddings.embeddings.first())
+        assertEquals(2048, provider.embedding("text-embedding-004").maxEmbeddingsPerCall)
+        assertEquals(true, provider.embedding("text-embedding-004").supportsParallelCalls)
         assertEquals("image", convertBase64ToByteArray(image.images.single().base64).decodeToString())
         val generatedVideo = video.videos.single()
         assertEquals("https://videos.example/video.mp4", generatedVideo.url)

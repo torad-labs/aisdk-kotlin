@@ -63,13 +63,20 @@ class SimulateStreamingTest {
                 wrapped.stream(LanguageModelCallParams(messages = listOf(userMessage("hi")))),
             )
 
-            // THEN
-            assertEquals(5, events.size, "expected TextStart / TextDelta / TextEnd / StepFinish / Finish")
-            val textStart = events[0] as StreamEvent.TextStart
-            val textDelta = events[1] as StreamEvent.TextDelta
-            val textEnd = events[2] as StreamEvent.TextEnd
-            val stepFinish = events[3] as StreamEvent.StepFinish
-            val finish = events[4] as StreamEvent.Finish
+            // THEN — leads with StreamStart + ResponseMetadata (v6 parity), then the
+            // synthesized text segment, then StepFinish / Finish.
+            assertEquals(
+                7,
+                events.size,
+                "expected StreamStart / ResponseMetadata / TextStart / TextDelta / TextEnd / StepFinish / Finish",
+            )
+            events[0] as StreamEvent.StreamStart
+            events[1] as StreamEvent.ResponseMetadata
+            val textStart = events[2] as StreamEvent.TextStart
+            val textDelta = events[3] as StreamEvent.TextDelta
+            val textEnd = events[4] as StreamEvent.TextEnd
+            val stepFinish = events[5] as StreamEvent.StepFinish
+            val finish = events[6] as StreamEvent.Finish
             assertEquals(textStart.id, textDelta.id, "all text events share one id")
             assertEquals(textDelta.id, textEnd.id, "all text events share one id")
             assertEquals("hello world", textDelta.text)

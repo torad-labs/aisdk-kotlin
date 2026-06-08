@@ -277,8 +277,16 @@ public sealed interface StreamEvent {
          *  end-to-end cache rate here without parsing each step. */
         val providerMetadata: Map<String, JsonElement>? = null,
         /** The provider's OWN finish-reason string, before mapping. The mapped [finishReason] collapses
-         *  unknown values to [FinishReason.Other] — but for diagnosing a provider-side abort (Gemini's
-         *  RECITATION, OTHER, MALFORMED_FUNCTION_CALL…) the raw string is the evidence; never discard it. */
+         *  unknown values to [FinishReason.Other] — but for diagnosing a provider-side abort the raw
+         *  string is the evidence; never discard it.
+         *
+         *  Populated by: Gemini (generateContent `finishReason`), Gemini Interactions (`status`),
+         *  Anthropic (`stop_reason`), OpenAI Responses (`incomplete_details.reason` / error code),
+         *  Cohere (from `LanguageModelResult.rawFinishReason`), Hugging Face Responses
+         *  (`incomplete_details.reason`), Amazon Bedrock (`stopReason`), and
+         *  [ai.torad.aisdk.middleware.simulateStreamingMiddleware] (propagated from the generate result).
+         *  Null when the provider does not send a finish-reason string (e.g. KtorGatewayTransport,
+         *  which receives an already-mapped enum value on the wire). */
         val rawFinishReason: String? = null,
     ) : StreamEvent
 
