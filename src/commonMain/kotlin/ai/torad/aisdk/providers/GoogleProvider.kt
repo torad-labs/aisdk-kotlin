@@ -1316,7 +1316,7 @@ private fun googleGenerateContentBody(
             if (!modelId.startsWith("gemma-", ignoreCase = true)) converted.systemInstruction?.let { put("systemInstruction", it) }
             options["safetySettings"]?.let { put("safetySettings", it) }
             if (tools.isNotEmpty()) put("tools", tools)
-            googleToolConfig(params.toolChoice, options)?.let { put("toolConfig", it) }
+            if (tools.isNotEmpty()) googleToolConfig(params.toolChoice, options)?.let { put("toolConfig", it) }
             options["cachedContent"]?.let { put("cachedContent", it) }
             options["labels"]?.let { put("labels", it) }
             options["serviceTier"]?.let { put("serviceTier", it) }
@@ -1959,13 +1959,15 @@ private val GOOGLE_SCHEMA_PASSTHROUGH = listOf(
 )
 
 private fun mapGoogleFinishReason(reason: String?, hasToolCalls: Boolean): FinishReason =
-    if (hasToolCalls) {
+    if (reason == "STOP" && hasToolCalls) {
         FinishReason.ToolCalls
     } else {
         when (reason) {
             "STOP" -> FinishReason.Stop
             "MAX_TOKENS" -> FinishReason.Length
-            "SAFETY", "RECITATION", "BLOCKLIST", "PROHIBITED_CONTENT", "SPII" -> FinishReason.ContentFilter
+            "SAFETY", "IMAGE_SAFETY", "RECITATION", "BLOCKLIST", "PROHIBITED_CONTENT", "SPII",
+            "MALFORMED_FUNCTION_CALL",
+            -> FinishReason.ContentFilter
             else -> FinishReason.Other
         }
     }

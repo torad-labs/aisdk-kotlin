@@ -185,6 +185,84 @@ class GoogleProviderTest {
     }
 
     @Test
+    fun `language model reports length when max tokens response contains tool calls`() = runTest {
+        val fixture = createTestServer(
+            mutableMapOf(
+                "https://google.test/v1beta/models/gemini-2.5-flash:generateContent" to UrlHandler(
+                    UrlResponse.JsonValue(
+                        Json.parseToJsonElement(
+                            """
+                            {
+                              "candidates":[
+                                {
+                                  "content":{
+                                    "role":"model",
+                                    "parts":[
+                                      {"functionCall":{"id":"call-1","name":"lookup","args":{"city":"Paris"}}}
+                                    ]
+                                  },
+                                  "finishReason":"MAX_TOKENS"
+                                }
+                              ],
+                              "usageMetadata":{
+                                "promptTokenCount":1,
+                                "candidatesTokenCount":2,
+                                "totalTokenCount":3
+                              }
+                            }
+                            """.trimIndent(),
+                        ),
+                    ),
+                ),
+            ),
+        )
+        fixture.server.start()
+        val provider = createGoogleGenerativeAI(
+            fixture.httpClient(),
+            GoogleGenerativeAIProviderSettings(apiKey = "key", baseURL = "https://google.test/v1beta"),
+        )
+
+        val result = provider("gemini-2.5-flash").generate(
+            LanguageModelCallParams(
+                messages = listOf(userMessage("hi")),
+                tools = listOf(LanguageModelTool("lookup", "Lookup.", objectSchema("city").toString())),
+            ),
+        )
+
+        assertEquals(FinishReason.Length, result.finishReason)
+        assertEquals("MAX_TOKENS", result.rawFinishReason)
+        assertEquals("lookup", result.toolCalls.single().toolName)
+    }
+
+    @Test
+    fun `language model omits toolConfig when there are no tools`() = runTest {
+        val fixture = createTestServer(
+            mutableMapOf(
+                "https://google.test/v1beta/models/gemini-2.5-flash:generateContent" to UrlHandler(
+                    UrlResponse.JsonValue(Json.parseToJsonElement("""{"candidates":[{"content":{"role":"model","parts":[{"text":"ok"}]},"finishReason":"STOP"}]}""")),
+                ),
+            ),
+        )
+        fixture.server.start()
+        val provider = createGoogleGenerativeAI(
+            fixture.httpClient(),
+            GoogleGenerativeAIProviderSettings(apiKey = "key", baseURL = "https://google.test/v1beta"),
+        )
+
+        val result = provider("gemini-2.5-flash").generate(
+            LanguageModelCallParams(
+                messages = listOf(userMessage("hi")),
+                toolChoice = ToolChoice.Required,
+            ),
+        )
+
+        assertEquals("ok", result.text)
+        val body = fixture.calls.single().requestBodyJson.jsonObject
+        assertTrue("tools" !in body)
+        assertTrue("toolConfig" !in body)
+    }
+
+    @Test
     fun `stream surfaces malformed Gemini function call as wire error event`() = runTest {
         val fixture = createTestServer(
             mutableMapOf(

@@ -598,7 +598,7 @@ private class HuggingFaceResponsesStreamState(
                     }
                 }
             }
-            "response.reasoning_text.delta" -> {
+            "response.reasoning_summary_text.delta", "response.reasoning_text.delta" -> {
                 val itemId = obj["item_id"]?.jsonPrimitive?.contentOrNull.orEmpty()
                 events += StreamEvent.ReasoningDelta(
                     id = itemId,
@@ -606,7 +606,7 @@ private class HuggingFaceResponsesStreamState(
                     providerMetadata = huggingFaceItemMetadata(itemId),
                 )
             }
-            "response.reasoning_text.done" -> {
+            "response.reasoning_summary_text.done", "response.reasoning_text.done" -> {
                 val itemId = obj["item_id"]?.jsonPrimitive?.contentOrNull.orEmpty()
                 openReasoningIds.remove(itemId)
                 events += StreamEvent.ReasoningEnd(itemId, huggingFaceItemMetadata(itemId))
