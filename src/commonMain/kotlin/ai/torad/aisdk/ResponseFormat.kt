@@ -6,7 +6,7 @@ import kotlinx.serialization.json.JsonElement
 /**
  * Wire-level constraint on what shape the model is allowed to emit.
  * Mirrors v6's `responseFormat` (per `call-settings.ts:103-128` →
- * AISDK_PORT_GAPS.md gap #20). Distinct from [Output] — Output is the
+ * historical parity gap #20). Distinct from [Output] — Output is the
  * post-decode wrapper that turns text into typed values; ResponseFormat
  * is what the *provider* sees at call time.
  *

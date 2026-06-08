@@ -21,7 +21,7 @@ public data class PendingApproval(
     val input: JsonElement,
     /**
      * Approval-identity key. Mirrors v6's `approvalId` (per
-     * AISDK_PORT_GAPS.md gap #7). Distinct from [toolCallId] because
+     * historical parity gap #7). Distinct from [toolCallId] because
      * multiple approvals can share a `toolCallId` (e.g., parallel
      * tool-call batches where the model emits one tool-call with the
      * SAME id twice and each side needs separate approval). When

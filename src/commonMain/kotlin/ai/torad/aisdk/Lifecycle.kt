@@ -18,10 +18,10 @@ public data class OnStartEvent(
 )
 
 /**
- * Fired before each loop step's model call. Per AISDK_PORT_GAPS.md
- * gap #35, the payload was extended from `(stepNumber, messages)` to
- * carry the full prepared [request] (post `prepareCall` + `prepareStep`
- * overrides) plus accumulated [priorSteps] so observers can:
+ * Fired before each loop step's model call. Per historical parity gap #35,
+ * the payload was extended from `(stepNumber, messages)` to carry the full
+ * prepared [request] (post `prepareCall` + `prepareStep` overrides) plus
+ * accumulated [priorSteps] so observers can:
  *
  * - Inspect the EXACT params being sent (system prompt, tool subset,
  *   sampler overrides) — useful for telemetry and reproduction.
@@ -69,7 +69,7 @@ public data class OnFinishEvent(
      * Final typed context after any `prepareStep.experimental_context`
      * overrides — the value `ToolExecutionContext.context` carried on
      * the last step. Mirrors v6's `OnFinishEvent.experimental_context`
-     * (per AISDK_PORT_GAPS.md gap #36). Null when no override
+     * (per historical parity gap #36). Null when no override
      * happened (the call started with `options = null`). Typed as
      * `Any?` at the erasure-friendly hook surface; consumers cast to
      * their `TContext` when they need it.

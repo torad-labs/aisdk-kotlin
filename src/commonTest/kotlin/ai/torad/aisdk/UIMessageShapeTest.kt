@@ -17,7 +17,7 @@ import kotlinx.serialization.json.JsonPrimitive
 
 /**
  * Validates the v6-aligned UIMessage shape additions from
- * AISDK_PORT_GAPS.md Phase 4A:
+ * historical parity work phase 4A:
  *
  * - gap #10: `UIMessage.metadata: Map<String, JsonElement>?` slot
  *   (monomorphic subagent-attribution channel; pragmatic alternative

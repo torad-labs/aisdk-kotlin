@@ -136,21 +136,21 @@ exercises both approve and deny paths.
 ergonomics. `obj` is short, unambiguous, and matches established Kotlin
 style for similar conflicts.
 
-## Decision 10 — Generic HTTP providers live here; provider-specific runtimes do not
+## Decision 10 — Provider facades are folded into the root artifact for now
 
 **Choice.** The module ships provider-neutral contracts, mock models,
-Ktor Gateway transport, and a generic OpenAI-compatible Ktor provider.
-Provider-specific runtimes such as MLX, LiteRT, Anthropic, Gemini, and
-other bespoke APIs live in `aisdk-provider-*` modules.
+Ktor Gateway transport, OpenAI-compatible transport, and the Vercel AI SDK
+provider-package facades in the root artifact.
 
-**Rationale.** Gateway and OpenAI-compatible HTTP are stable protocol
-adapters and work well as common KMP code over Ktor. Device runtimes and
-bespoke provider APIs need provider-specific runtime validation on actual
-devices or provider sandboxes.
+**Rationale.** Keeping the facades together avoids premature publication
+boundaries while the public contracts are still stabilizing. The parity
+ledgers still group features by upstream package so a future split can happen
+without changing the shared contracts.
 
-Applications use the built-in Ktor adapters where the protocol matches and
-wire provider-specific packages or host code for everything else; the SDK
-stays platform-agnostic.
+Applications can use the built-in facades where the protocol matches and
+inject host/platform transports where an environment-specific binding is
+needed. Future `aisdk-provider-*` artifacts may split the publication
+layout without changing the common runtime contracts.
 
 ## Decision 11 — Kotlin-first surfaces sit beside compatibility surfaces
 

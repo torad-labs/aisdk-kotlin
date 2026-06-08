@@ -2,7 +2,7 @@ package ai.torad.aisdk
 
 /**
  * Port-side log sink for non-fatal warnings and informational events.
- * Mirrors v6's `logger/log-warnings.ts` (per AISDK_PORT_GAPS.md gap #31)
+ * Mirrors v6's `logger/log-warnings.ts` (per historical parity gap #31)
  * — the agent loop, middleware, and tool dispatch surface warnings
  * here so consumers can route them to Logcat / Crashlytics / their own
  * telemetry without the port hard-coding a logging dependency.

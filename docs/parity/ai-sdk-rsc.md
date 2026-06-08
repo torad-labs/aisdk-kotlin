@@ -2,7 +2,7 @@
 
 - Version: 2.0.197
 - Upstream path: `.reference/vercel-ai-sdk-ai-6.0.197/packages/rsc`
-- Target Kotlin module: `:aisdk-server`
+- Kotlin parity area: `:aisdk-server`
 - Current parity status: ported-as-kmp-server: RSC streamable-value/UI concepts are represented by Kotlin server/ui stream primitives: createTextStreamResponse, pipeTextStreamToResponse, createUiMessageStreamResponse, pipeUiMessageStreamToResponse, createUiMessageStream, UIMessageStreamWriter, read/merge/error stream handling via Flow, ChatTransport, and UIMessage state conversion; React Server Components runtime bindings and JSX UI streaming are intentionally not emitted in the Kotlin runtime module
 
 ## Entrypoints

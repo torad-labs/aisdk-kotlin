@@ -21,12 +21,12 @@ model translated into the language Kotlin actually wants to use.
 | `useChat` React hook | ✅ Kotlin equivalent is `Chat` + `ChatTransport` + `Flow<UIMessage>` collection |
 | `DefaultChatTransport`, text/UI stream response helpers | ✅ ported as `ChatTransport`, `TextStreamResponse`, `UIMessageStreamResponse`, and `ServerResponseWriter` |
 | `@vercel/ai-elements` components | ❌ not ported — Compose, SwiftUI, and server renderers have different idioms |
-| RSC integration | ❌ not ported (irrelevant) |
+| RSC integration | ✅ ported as Kotlin server/UI stream primitives, without React Server Components runtime bindings |
 | Embeddings, reranking, image gen, speech, transcription, video | ✅ ported as provider-neutral model contracts + helpers |
 | Registry and provider routing | ✅ `Provider`, `customProvider`, `createProviderRegistry`, `wrapProvider` |
 | Telemetry | ✅ host-injected `TelemetryIntegration` primitives plus KMP tracer/span support |
 | Gateway/OpenAI-compatible HTTP providers | ✅ Ktor-backed common adapters |
-| Provider-specific implementations (Anthropic, MLX, LiteRT, Gemini, etc.) | provider modules implement this package's contracts |
+| Provider-specific facades (Anthropic, Google, Bedrock, etc.) | ✅ folded into the root artifact for now; future `aisdk-provider-*` artifacts can split publication boundaries |
 
 ## v5 → v6 deltas this port respects
 

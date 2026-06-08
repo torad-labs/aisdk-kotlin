@@ -2,7 +2,7 @@
 
 - Version: 2.0.33
 - Upstream path: `.reference/vercel-ai-sdk-ai-6.0.197/packages/hume`
-- Target Kotlin module: `:aisdk-provider-hume`
+- Kotlin parity area: `:aisdk-provider-hume`
 - Current parity status: ported: createHume/hume, HumeProviderSettings, HumeSpeechModelOptions, speech routing, utterance/context request mapping, binary audio response parsing, and output-format warnings are represented as a Kotlin facade folded into the root module; VERSION is exposed as HUME_VERSION until package modules are split
 
 ## Entrypoints

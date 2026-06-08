@@ -51,7 +51,7 @@ class SmoothStreamTest {
             // GIVEN — Mandarin / Japanese / Korean don't use whitespace
             // as word separators. The pre-#32 regex `\s*\S+\s+` never
             // matched and held the whole string in the buffer until
-            // TextEnd, freezing typing-cursor UX. Per AISDK_PORT_GAPS.md
+            // TextEnd, freezing typing-cursor UX. Per historical parity work
             // gap #32, the alternation in WORD_REGEX now treats each
             // CJK code point as a chunk boundary.
             val events = flow<StreamEvent> {

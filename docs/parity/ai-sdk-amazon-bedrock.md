@@ -2,7 +2,7 @@
 
 - Version: 4.0.113
 - Upstream path: `.reference/vercel-ai-sdk-ai-6.0.197/packages/amazon-bedrock`
-- Target Kotlin module: `:aisdk-provider-amazon-bedrock`
+- Kotlin parity area: `:aisdk-provider-amazon-bedrock`
 - Current parity status: ported: createAmazonBedrock/bedrock, createBedrockAnthropic/bedrockAnthropic, createBedrockMantle/bedrockMantle, AmazonBedrockProviderSettings, Bedrock credentials/settings aliases, native SigV4 signing, Converse chat request/response mapping, multimodal message conversion, Bedrock toolConfig/tool-choice mapping, reasoning/service-tier/additionalModelRequestFields mapping, JSON and binary Smithy event-stream decoding, embedding/image/reranking runtime adapters, Mantle OpenAI-compatible chat routing, bearer-token auth, usage/provider metadata, and unsupported/default provider errors are represented as a Kotlin facade folded into the root module; VERSION is exposed as AMAZON_BEDROCK_VERSION until package modules are split
 
 ## Entrypoints

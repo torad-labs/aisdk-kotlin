@@ -14,7 +14,7 @@ import kotlinx.serialization.json.JsonPrimitive
 
 /**
  * Validates `convertToModelMessages` (gap #5 from
- * `docs/AISDK_PORT_GAPS.md`). The converter is the inverse of
+ * historical parity work). The converter is the inverse of
  * `streamToUiMessages` — UI-shape history back to model-shape
  * history, so a persisted chat can resume the agent.
  */

@@ -2,7 +2,7 @@
 
 - Version: 1.0.31
 - Upstream path: `.reference/vercel-ai-sdk-ai-6.0.197/packages/prodia`
-- Target Kotlin module: `:aisdk-provider-prodia`
+- Kotlin parity area: `:aisdk-provider-prodia`
 - Current parity status: ported: createProdia/prodia, ProdiaProviderSettings, Prodia language/image/video model aliases, Prodia image provider option alias, JSON and multipart job request paths, multipart job/output response parsing, language text/image output mapping, image generation options, video generation options, provider metadata, Prodia auth/user-agent behavior, and unsupported embedding errors are represented as a Kotlin facade folded into the root module; VERSION is exposed as PRODIA_VERSION until package modules are split
 
 ## Entrypoints

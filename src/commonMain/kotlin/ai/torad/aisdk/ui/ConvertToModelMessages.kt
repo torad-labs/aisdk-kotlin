@@ -11,7 +11,7 @@ import kotlinx.serialization.json.contentOrNull
 /**
  * Convert a list of UI-shape [UIMessage]s back into the model-shape
  * [ModelMessage] list the LLM expects on the next turn. Mirrors v6's
- * `convertToModelMessages` (per AISDK_PORT_GAPS.md gap #5).
+ * `convertToModelMessages` (per historical parity gap #5).
  *
  * Required for any flow that PERSISTS the chat in its rendered form
  * and later wants to RESUME the agent: history replay, crash

@@ -2,7 +2,7 @@
 
 - Version: 1.0.50
 - Upstream path: `.reference/vercel-ai-sdk-ai-6.0.197/packages/huggingface`
-- Target Kotlin module: `:aisdk-provider-huggingface`
+- Kotlin parity area: `:aisdk-provider-huggingface`
 - Current parity status: ported: createHuggingFace/huggingface, HuggingFaceProviderSettings, HuggingFace Responses model aliases/options/error alias, Responses request mapping, provider-option metadata/instructions/strict-json/reasoning handling, JSON schema format mapping, function tool/tool-choice mapping, unsupported parameter warnings, message/image conversion, response text/reasoning/source/function/MCP tool parsing, SSE stream mapping, usage parsing, auth/header behavior, and unsupported embedding/image model guidance are represented as a Kotlin facade folded into the root module; VERSION is exposed as HUGGINGFACE_VERSION until package modules are split
 
 ## Entrypoints
