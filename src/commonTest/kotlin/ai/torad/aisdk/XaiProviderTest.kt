@@ -139,6 +139,62 @@ class XaiProviderTest {
     }
 
     @Test
+    fun `chat body drops stop and strips additionalProperties and maps xHandles alias`() = runTest {
+        val fixture = createTestServer(
+            mutableMapOf(
+                "https://api.x.ai/v1/chat/completions" to UrlHandler(
+                    UrlResponse.JsonValue(
+                        Json.parseToJsonElement(
+                            "{\"id\":\"c\",\"choices\":[{\"message\":{\"role\":\"assistant\"," +
+                                "\"content\":\"ok\"},\"finish_reason\":\"stop\"}]," +
+                                "\"usage\":{\"prompt_tokens\":1,\"completion_tokens\":1,\"total_tokens\":2}}",
+                        ),
+                    ),
+                ),
+            ),
+        )
+        fixture.server.start()
+        val provider = createXai(fixture.httpClient(), XaiProviderSettings(apiKey = "key"))
+        provider.chat("grok-3").generate(
+            LanguageModelCallParams(
+                messages = listOf(userMessage("go")),
+                stopSequences = listOf("END"),
+                tools = listOf(
+                    LanguageModelTool("lookup", "d", "{\"type\":\"object\",\"additionalProperties\":false}"),
+                ),
+                providerOptions = mapOf(
+                    "xai" to buildJsonObject {
+                        put(
+                            "searchParameters",
+                            buildJsonObject {
+                                put(
+                                    "sources",
+                                    buildJsonArray {
+                                        add(
+                                            buildJsonObject {
+                                                put("type", JsonPrimitive("x"))
+                                                put("xHandles", buildJsonArray { add(JsonPrimitive("grok")) })
+                                            },
+                                        )
+                                    },
+                                )
+                            },
+                        )
+                    },
+                ),
+            ),
+        )
+        val body = fixture.calls.single().requestBodyJson.jsonObject
+        assertEquals(null, body["stop"], "stop dropped (xAI unsupported)")
+        val toolFn = body["tools"]?.jsonArray?.single()?.jsonObject?.get("function")?.jsonObject
+        val toolParams = toolFn?.get("parameters")?.jsonObject
+        assertEquals(null, toolParams?.get("additionalProperties"), "additionalProperties stripped from tool schema")
+        val src = body["search_parameters"]?.jsonObject?.get("sources")?.jsonArray?.single()?.jsonObject
+        assertEquals("grok", src?.get("included_x_handles")?.jsonArray?.single()?.jsonPrimitive?.contentOrNull)
+        assertEquals(null, src?.get("x_handles"), "xHandles not naively snake-cased")
+    }
+
+    @Test
     fun `image model supports generation edits options metadata and warnings`() = runTest {
         val fixture = createTestServer(
             mutableMapOf(

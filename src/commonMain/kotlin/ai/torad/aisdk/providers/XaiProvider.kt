@@ -191,7 +191,36 @@ private class DefaultXaiProvider(
             providerOptionsName = "xai",
             chatMaxOutputTokensKey = "max_completion_tokens",
             supportedUrls = mapOf("image/*" to listOf("^https?://.*$")),
+            transformChatRequestBody = ::xaiTransformChatBody,
         )
+}
+
+/**
+ * Rewrites the OpenAI-shaped chat body into xAI's shape: drops `stop` (xAI does not
+ * support stop sequences and rejects the key) and strips `additionalProperties: false`
+ * from every tool's parameters schema (xAI structured-output requires it removed).
+ */
+private fun xaiTransformChatBody(body: JsonObject): JsonObject = buildJsonObject {
+    for ((key, value) in body) {
+        when (key) {
+            "stop" -> Unit // dropped — unsupported by xAI
+            "tools" -> put("tools", xaiStripToolSchemas(value))
+            else -> put(key, value)
+        }
+    }
+}
+
+private fun xaiStripToolSchemas(tools: JsonElement): JsonElement {
+    val arr = tools as? JsonArray ?: return tools
+    return JsonArray(
+        arr.map { tool ->
+            val obj = tool as? JsonObject ?: return@map tool
+            val function = obj["function"] as? JsonObject ?: return@map tool
+            val params = function["parameters"] as? JsonObject ?: return@map tool
+            val cleanedParams = JsonObject(params.filterKeys { it != "additionalProperties" })
+            JsonObject(obj + ("function" to JsonObject(function + ("parameters" to cleanedParams))))
+        },
+    )
 }
 
 private class XaiChatLanguageModel(
@@ -400,6 +429,15 @@ private fun xaiSnakeCaseJson(value: JsonElement): JsonElement =
     }
 
 private fun xaiSnakeCaseKey(value: String): String =
+    // The deprecated `xHandles` alias maps to `included_x_handles`, not the naive
+    // snake-case `x_handles` (an unknown key xAI ignores).
+    if (value == "xHandles") {
+        "included_x_handles"
+    } else {
+        xaiNaiveSnakeCaseKey(value)
+    }
+
+private fun xaiNaiveSnakeCaseKey(value: String): String =
     buildString {
         value.forEachIndexed { index, char ->
             if (char.isUpperCase()) {
