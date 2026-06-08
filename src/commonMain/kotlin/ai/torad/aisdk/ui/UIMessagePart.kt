@@ -30,7 +30,7 @@ import kotlinx.serialization.serializer
  */
 /**
  * Streaming-vs-final state for [UIMessagePart.Text] and
- * [UIMessagePart.Reasoning] (per AISDK_PORT_GAPS.md gap #30, mirrors
+ * [UIMessagePart.Reasoning] (per historical parity gap #30, mirrors
  * v6's `TextUIPart.state: 'streaming' | 'done'`). Renderers use this
  * to drive a typing cursor / fade animation while the model is still
  * producing the part, and to commit a final layout pass on `Done`.
@@ -98,7 +98,7 @@ public sealed interface UIMessagePart {
 
     /**
      * URL-shaped citation / web grounding source. Per
-     * AISDK_PORT_GAPS.md gap #29, this is the split from a single
+     * historical parity gap #29, this is the split from a single
      * unified `Source` variant — v6's `SourceUrlUIPart`.
      *
      * `sourceId` is the provider's stable handle for the source so
@@ -168,7 +168,7 @@ public sealed interface UIMessagePart {
      * when the agent does multi-step work (tool-call → tool-result →
      * next LLM call). Preserves the v6 `step-start` UI part so a
      * subagent handoff or multi-tool flow can render a visible
-     * divider in the chat list. Per AISDK_PORT_GAPS.md gap #8.
+     * divider in the chat list. Per historical parity gap #8.
      */
     @Serializable
     public data class StepStart(val stepNumber: Int) : UIMessagePart
@@ -180,7 +180,7 @@ public sealed interface UIMessagePart {
      * static `ToolPartHandlerRegistry` can't dispatch). Renderers
      * branch on `is DynamicToolUI` and fall back to a generic
      * "Calling [toolName]…" card with JSON-printed input / output.
-     * Per AISDK_PORT_GAPS.md gap #9.
+     * Per historical parity gap #9.
      */
     @Serializable
     public data class DynamicToolUI(

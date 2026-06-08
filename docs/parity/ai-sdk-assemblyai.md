@@ -2,7 +2,7 @@
 
 - Version: 2.0.33
 - Upstream path: `.reference/vercel-ai-sdk-ai-6.0.197/packages/assemblyai`
-- Target Kotlin module: `:aisdk-provider-assemblyai`
+- Kotlin parity area: `:aisdk-provider-assemblyai`
 - Current parity status: ported: createAssemblyAI/assemblyai, AssemblyAIProviderSettings, AssemblyAITranscriptionModelOptions, upload/submit/poll transcription flow, provider-option snake_case mapping, transcript status errors, response headers/body, and segment parsing are represented as a Kotlin facade folded into the root module; VERSION is exposed as ASSEMBLYAI_VERSION until package modules are split
 
 ## Entrypoints

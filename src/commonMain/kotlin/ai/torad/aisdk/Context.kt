@@ -48,7 +48,7 @@ public data class AgentSettings<TContext>(
     /**
      * Penalty for repeating already-emitted tokens (presence) and for
      * tokens proportional to their previous frequency (frequency).
-     * Mirrors v6's `CallSettings` (per AISDK_PORT_GAPS.md gap #3 +
+     * Mirrors v6's `CallSettings` (per historical parity gap #3 +
      * Phase 4C #21). Each provider applies them differently; some
      * accept both, some only one, some neither. Null = provider
      * default.
@@ -100,10 +100,10 @@ public data class StepSettings<TContext>(
     val responseFormat: ResponseFormat? = null,
     /**
      * Per-step typed-context override. Mirrors v6's
-     * `prepareStep.experimental_context` (per AISDK_PORT_GAPS.md
-     * gap #16). When set, subsequent steps see this value as their
-     * `ToolExecutionContext.context` — useful for mid-loop context
-     * evolution (e.g., RAG augmentation after a tool result).
+     * `prepareStep.experimental_context` (per historical parity gap #16).
+     * When set, subsequent steps see this value as their
+     * `ToolExecutionContext.context` — useful for mid-loop context evolution
+     * (e.g., RAG augmentation after a tool result).
      */
     val experimental_context: TContext? = null,
 )

@@ -132,7 +132,7 @@ public sealed interface ContentPart {
         val input: JsonElement,
         /**
          * Approval-identity key distinct from [toolCallId] per v6
-         * (gap #7 in AISDK_PORT_GAPS.md). Null defaults to
+         * (gap #7 in historical parity work). Null defaults to
          * [toolCallId] for the common single-approval case; explicit
          * value lets two approvals share a tool-call id without
          * correlation ambiguity.
@@ -166,7 +166,7 @@ public sealed interface ContentPart {
 
     /**
      * File content — payload data the model produced or that's
-     * attached to a turn. Per AISDK_PORT_GAPS.md gap #38, mirrors
+     * attached to a turn. Per historical parity gap #38, mirrors
      * v6's richer `FilePart.data`. Currently `base64` is the only
      * data shape; a URL-shaped variant lives in [Source]. `filename`
      * is the user-facing label (Anthropic models produce it for
@@ -191,7 +191,7 @@ public sealed interface ContentPart {
     /**
      * Image content — distinct from generic [File] so multimodal
      * models (vision providers, image-generation tools) get a typed
-     * variant. Per AISDK_PORT_GAPS.md gap #39, mirrors v6's
+     * variant. Per historical parity gap #39, mirrors v6's
      * `ImagePart`. `mediaType` is the MIME type (e.g. `image/png`);
      * `base64` is the raw image bytes encoded.
      *
@@ -217,7 +217,7 @@ public sealed interface ContentPart {
 
 /**
  * Token-usage tracking, surfaced on completed steps and final results.
- * Per AISDK_PORT_GAPS.md gap #19, the shape mirrors v6's rich tree —
+ * Per historical parity gap #19, the shape mirrors v6's rich tree —
  * input tokens split into `noCache / cacheRead / cacheWrite` and
  * output tokens split into `text / reasoning` plus a `raw` slot for
  * provider-specific payloads.

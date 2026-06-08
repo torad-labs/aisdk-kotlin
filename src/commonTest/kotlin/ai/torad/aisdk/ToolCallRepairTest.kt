@@ -15,7 +15,7 @@ import kotlinx.serialization.serializer
 
 /**
  * Validates `experimental_repairToolCall` (gap #4 from
- * `docs/AISDK_PORT_GAPS.md`). The repair function runs when a tool
+ * historical parity work). The repair function runs when a tool
  * call's args fail to decode against the tool's input schema —
  * targets Gemma 4 E2B's ~5% rate of malformed-args calls.
  *

@@ -42,7 +42,7 @@ public interface Agent<TContext, TOutput> {
     /**
      * Stable identifier for the agent, useful for telemetry, log
      * routing, and the `Agent.version / id / tools` accessors v6
-     * exposes (per AISDK_PORT_GAPS.md gap #33). Implementations
+     * exposes (per historical parity gap #33). Implementations
      * default to `"agent"`; override in the constructor or via class
      * member to set a more specific tag (`"chat-agent"`,
      * `"lineup-subagent"`, etc.).

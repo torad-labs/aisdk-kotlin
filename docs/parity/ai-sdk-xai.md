@@ -2,7 +2,7 @@
 
 - Version: 3.0.93
 - Upstream path: `.reference/vercel-ai-sdk-ai-6.0.197/packages/xai`
-- Target Kotlin module: `:aisdk-provider-xai`
+- Kotlin parity area: `:aisdk-provider-xai`
 - Current parity status: ported: createXai/xai, XaiProviderSettings, chat/responses/image/video model factories, hosted xAI tool descriptors, chat option snake_case mapping, citations, image generation/editing, image provider metadata, video generation/edit/extend/reference routing, video polling, warnings, URL video outputs, xAI auth/user-agent behavior, and unsupported embedding errors are represented as a Kotlin facade folded into the root module; VERSION is exposed as XAI_VERSION until package modules are split
 
 ## Entrypoints

@@ -13,7 +13,7 @@ import kotlinx.serialization.json.JsonPrimitive
 
 /**
  * Validates the v6-aligned approval-flow additions from
- * AISDK_PORT_GAPS.md Phase 4A items #6 + #7:
+ * historical parity work phase 4A items #6 + #7:
  *
  * - `approvalId` field on `ContentPart.ToolApprovalRequest`,
  *   `ContentPart.ToolApprovalResponse`, `StreamEvent.ToolApprovalRequest`,

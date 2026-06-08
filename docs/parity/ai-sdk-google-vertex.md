@@ -2,7 +2,7 @@
 
 - Version: 4.0.142
 - Upstream path: `.reference/vercel-ai-sdk-ai-6.0.197/packages/google-vertex`
-- Target Kotlin module: `:aisdk-provider-google-vertex`
+- Kotlin parity area: `:aisdk-provider-google-vertex`
 - Current parity status: ported: createVertex/vertex, createVertexAnthropic/vertexAnthropic, createVertexMaas/vertexMaas, createGoogleVertexXai/googleVertexXai, GoogleVertexProviderSettings and option aliases, Vertex publisher/express-mode base URL construction including global, regional, and eu/us REP hosts, Bearer/API-key/header auth behavior, Vertex Gemini language/embedding/image/video routing through the Google core adapter, Vertex hosted tool descriptors, Vertex Anthropic rawPredict/streamRawPredict routing with Vertex body/header transforms, Vertex MaAS OpenAI-compatible routing, Vertex xAI OpenAI-compatible routing with xAI request/usage transforms, unsupported model errors, and KMP host-injected credential boundaries are represented as Kotlin facades folded into the root module; VERSION is exposed as GOOGLE_VERTEX_VERSION until package modules are split
 
 ## Entrypoints

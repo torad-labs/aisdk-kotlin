@@ -14,7 +14,7 @@ import kotlinx.serialization.serializer
  *
  * The optional [metadata] slot is the Kotlin port's monomorphic
  * substitute for v6's `UIMessage<METADATA, DATA_PARTS, TOOLS>`
- * generics (per AISDK_PORT_GAPS.md gap #10). Subagents attach their
+ * generics (per historical parity gap #10). Subagents attach their
  * source-agent identity here; UI renderers can read it to chrome
  * "Agent X -> Agent Y" handoff banners. Arbitrary keys are allowed;
  * apps should prefix custom keys with their own namespace.

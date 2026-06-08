@@ -410,7 +410,7 @@ function renderIndex(packages) {
     `- Packages: ${packages.length}`,
     `- Public exports discovered: ${totalExports}`,
     '',
-    '| Package | Version | Target module | Upstream exports | Status |',
+    '| Package | Version | Parity area | Upstream exports | Status |',
     '|---|---:|---|---:|---|',
     ...packages.map(pkg => {
       const link = `${slugForPackage(pkg.name)}.md`;
@@ -426,7 +426,7 @@ function renderPackage(pkg) {
     '',
     `- Version: ${pkg.version}`,
     `- Upstream path: \`${relative(repoRoot, pkg.dir)}\``,
-    `- Target Kotlin module: \`${pkg.targetModule}\``,
+    `- Kotlin parity area: \`${pkg.targetModule}\``,
     `- Current parity status: ${pkg.status}`,
     '',
     '## Entrypoints',

@@ -29,7 +29,7 @@ public data class LoopState(
     /**
      * All completed steps so far, in order. Mirrors v6's
      * `{steps: StepResult[]}` parameter shape (per
-     * AISDK_PORT_GAPS.md gap #17). Lets custom stop conditions
+     * historical parity gap #17). Lets custom stop conditions
      * inspect per-step text / reasoning / usage instead of only
      * the synthesized aggregate fields above. Empty during the
      * pre-first-step check.

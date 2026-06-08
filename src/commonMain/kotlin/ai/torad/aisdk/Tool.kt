@@ -53,14 +53,14 @@ public class Tool<TInput, TOutput, TContext>(
     public val outputSerializer: KSerializer<TOutput>,
     public val executor: ToolExecutionContext<TContext>.(TInput) -> Flow<TOutput>,
     /**
-     * Approval gate. Per AISDK_PORT_GAPS.md gap #17, the predicate
+     * Approval gate. Per historical parity gap #17, the predicate
      * receives [ToolPredicateOptions] (toolCallId + messages +
      * experimental_context) — not just `context`. Lets the gate
      * decide based on conversation history or call identity.
      */
     public val needsApproval: (suspend (input: TInput, options: ToolPredicateOptions<TContext>) -> Boolean)? = null,
     /**
-     * Model-visible summary. Per AISDK_PORT_GAPS.md gaps #17 + #14,
+     * Model-visible summary. Per historical parity gaps #17 + #14,
      * the callback receives both the typed output AND
      * [ToolPredicateOptions]; returns a structured
      * [ToolResultOutput] (Text / Json / Error) instead of a bare
@@ -76,7 +76,7 @@ public class Tool<TInput, TOutput, TContext>(
     public val strict: Boolean = true,
     /**
      * Few-shot example inputs encoded as JSON strings. Mirrors v6's
-     * `tool.inputExamples` (per AISDK_PORT_GAPS.md gap #19). Disproportionate
+     * `tool.inputExamples` (per historical parity gap #19). Disproportionate
      * quality lift on small models — Gemma 4 E2B's tool-call accuracy
      * notably improves with 2-3 in-tool examples. [ToolSet.descriptors]
      * inlines these into the description as `Example: <json>` so every
@@ -86,7 +86,7 @@ public class Tool<TInput, TOutput, TContext>(
     /**
      * Lifecycle hook — fired when the model commits to calling this
      * tool (StreamEvent.ToolInputStart arrives). Mirrors v6's
-     * `tool.onInputStart` (per AISDK_PORT_GAPS.md gap #18). Lets a
+     * `tool.onInputStart` (per historical parity gap #18). Lets a
      * tool pre-warm: UI spinner, cache priming, etc.
      */
     public val onInputStart: (suspend (streamingId: String) -> Unit)? = null,
@@ -104,7 +104,7 @@ public class Tool<TInput, TOutput, TContext>(
     public val onInputAvailable: (suspend (toolCallId: String, input: TInput) -> Unit)? = null,
     /**
      * Application-defined metadata bag. Mirrors v6's `tool.metadata`
-     * (per AISDK_PORT_GAPS.md gap #34). Opaque to the loop —
+     * (per historical parity gap #34). Opaque to the loop —
      * consumers (logger middleware, telemetry, host-side gating) can
      * read it via [ToolSet.byName]. Examples: feature-flag key,
      * billing tier, owning team. Empty by default.
@@ -1030,7 +1030,7 @@ public sealed interface ToolChoice {
 /**
  * Lets a tool's executor write custom events into the agent's **active
  * output stream** — the port's equivalent of v6's `UIMessageStreamWriter`
- * (per AISDK_PORT_GAPS.md gap #21). Distinct from the `streamingTool`
+ * (per historical parity gap #21). Distinct from the `streamingTool`
  * mechanism (which surfaces progress as `ToolResult(preliminary = true)`):
  * the writer pushes ARBITRARY [StreamEvent]s — e.g. a transient status
  * line ([StreamEvent.TextDelta]) or a custom data payload
@@ -1087,9 +1087,9 @@ public class ToolExecutionContext<TContext>(
 /**
  * Options bag passed to predicate callbacks ([Tool.needsApproval],
  * [Tool.toModelOutput]). Mirrors v6's `{toolCallId, messages,
- * experimental_context}` argument shape (per AISDK_PORT_GAPS.md
- * gap #17). Lets a predicate decide based on the conversation
- * history or the current call's identity, not just the input.
+ * experimental_context}` argument shape (per historical parity gap #17). Lets
+ * a predicate decide based on the conversation history or the current call's
+ * identity, not just the input.
  *
  * Distinct from [ToolExecutionContext] — predicate options are
  * READ-ONLY metadata about the call, no abort signal because
@@ -1103,7 +1103,7 @@ public data class ToolPredicateOptions<TContext>(
 
 /**
  * Structured return type for [Tool.toModelOutput]. Replaces the
- * flat `String` return per AISDK_PORT_GAPS.md gap #14. Lets a tool
+ * flat `String` return per historical parity gap #14. Lets a tool
  * supply EITHER a short plain-text summary OR a structured JSON
  * payload OR a typed error to the model — the agent's loop bridges
  * each into the wire-format `ContentPart.ToolResult.modelVisible`

@@ -82,13 +82,8 @@ Provider facades for the AI SDK v6 package ecosystem are folded into this root a
 - [Interface contract](INTERFACE_CONTRACT.md)
 - [Port notes](docs/AISDK_PORT.md)
 - [Architecture decisions](docs/AISDK_PORT_DECISIONS.md)
-- [Closed port audit](docs/AISDK_PORT_GAPS.md)
-- [Complete v6 port plan](docs/COMPLETE_PORT_PLAN.md)
 - [Parity ledgers](docs/parity/README.md)
-- [Usage guide](docs/AISDK_USAGE.md)
-- [Best practices](docs/AISDK_BEST_PRACTICES.md)
-- [Functionality audit](docs/FUNCTIONALITY_AUDIT.md)
-- [Publishing](docs/PUBLISHING.md)
+- [Kotlin SDK engineering standard](docs/KOTLIN_SDK_BEST_PRACTICES.md)
 
 ## Build
 
@@ -96,7 +91,7 @@ Use JDK 21 to build the project. JVM and Android bytecode target JVM 17.
 
 ```sh
 ./gradlew jvmTest
-./gradlew publishToMavenLocal
+./gradlew check publishToMavenLocal
 ```
 
 Android publication requires an Android SDK with compile SDK 36 installed.

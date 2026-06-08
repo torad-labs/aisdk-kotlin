@@ -17,7 +17,7 @@ import kotlinx.serialization.serializer
 
 /**
  * Validates the v6-aligned `Flow<TOutput>` tool executor surface (gap #2
- * from `docs/AISDK_PORT_GAPS.md`). The agent loop's
+ * from historical parity work). The agent loop's
  * `executeTool` runs each tool's executor as a Flow with one-step
  * lookahead — emissions before the last become
  * `StreamEvent.ToolResult(preliminary = true)` (UI-only), the LAST

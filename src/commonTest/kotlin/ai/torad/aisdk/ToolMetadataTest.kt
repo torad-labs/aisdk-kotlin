@@ -9,7 +9,7 @@ import kotlinx.serialization.serializer
 
 /**
  * Validates Phase 4F #34 — opaque metadata bag on [Tool]. Per
- * AISDK_PORT_GAPS.md gap #34, this is the v6 `tool.metadata` slot
+ * historical parity gap #34, this is the v6 `tool.metadata` slot
  * that consumers (logger middleware, telemetry, host-side gating)
  * read via [ToolSet.byName] for tool-specific routing.
  *

@@ -15,7 +15,7 @@ import kotlinx.serialization.json.JsonElement
  * reasoning blocks, and tool calls without merging them. Each `*-start`
  * event opens a block by ID; `*-delta` events grow it; `*-end` closes it.
  *
- * **`providerMetadata`** (per AISDK_PORT_GAPS.md gap #11) rides on every
+ * **`providerMetadata`** (per historical parity gap #11) rides on every
  * content + tool-lifecycle variant — the `Map<String, JsonElement>?`
  * escape hatch v6 uses for provider-specific payloads (Anthropic
  * thinking signatures + `cache_control`, OpenAI reasoning effort /
@@ -237,7 +237,7 @@ public sealed interface StreamEvent {
 
     /**
      * The host denied a previously requested approval. v6's
-     * `tool-output-denied` (per AISDK_PORT_GAPS.md gaps #6 + #7).
+     * `tool-output-denied` (per historical parity gaps #6 + #7).
      * Distinct from [ToolError] — denial is a CHOICE, not a failure.
      * The matching UI part transitions through
      * [ai.torad.aisdk.ui.ToolCallState.OutputDenied].
@@ -252,7 +252,7 @@ public sealed interface StreamEvent {
     ) : StreamEvent
 
     /** Step ended — aggregated finish reason + usage for that one step.
-     *  Per AISDK_PORT_GAPS.md gap #18 (slice), [providerMetadata]
+     *  Per historical parity gap #18 (slice), [providerMetadata]
      *  carries provider-specific payloads (Anthropic prompt-cache
      *  hints, OpenAI reasoning trace tokens, etc.) so consumers can
      *  measure cache-hit rate per step without parsing raw streams. */
@@ -273,7 +273,7 @@ public sealed interface StreamEvent {
         val finishReason: FinishReason,
         val usage: Usage,
         /** Provider-specific summary payload on completion (per
-         *  AISDK_PORT_GAPS.md gap #18 slice). Routing layers measure
+         *  historical parity gap #18 slice). Routing layers measure
          *  end-to-end cache rate here without parsing each step. */
         val providerMetadata: Map<String, JsonElement>? = null,
         /** The provider's OWN finish-reason string, before mapping. The mapped [finishReason] collapses

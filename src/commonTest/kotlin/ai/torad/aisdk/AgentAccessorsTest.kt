@@ -9,7 +9,7 @@ import kotlin.test.assertTrue
 /**
  * Validates Phase 4F #33 + #40 — surface accessors on
  * [Agent] (`id`, `version`, `tools`) and [LanguageModel] (`provider`,
- * `supportedUrls`). Per AISDK_PORT_GAPS.md gaps #33 + #40.
+ * `supportedUrls`). Per historical parity gaps #33 + #40.
  *
  * These let consumers inspect the agent without casting to a concrete
  * [ToolLoopAgent] and let routing layers make provider-aware decisions

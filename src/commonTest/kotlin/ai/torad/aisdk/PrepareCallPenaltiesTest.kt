@@ -14,7 +14,7 @@ import kotlinx.serialization.serializer
 /**
  * Validates the v6-aligned `presencePenalty` + `frequencyPenalty`
  * fields wired into the prepareCall resolution chain (gap #3 in
- * `docs/AISDK_PORT_GAPS.md`). Same `Step ?: Agent ?: agent-default
+ * historical parity work). Same `Step ?: Agent ?: agent-default
  * ?: provider-default` resolution as the existing sampler params.
  */
 class PrepareCallPenaltiesTest {

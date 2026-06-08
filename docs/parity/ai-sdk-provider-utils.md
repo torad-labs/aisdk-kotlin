@@ -2,7 +2,7 @@
 
 - Version: 4.0.27
 - Upstream path: `.reference/vercel-ai-sdk-ai-6.0.197/packages/provider-utils`
-- Target Kotlin module: `:aisdk-provider-utils`
+- Kotlin parity area: `:aisdk-provider-utils`
 - Current parity status: ported: schema/asSchema/lazySchema/zodSchema/valibotSchema adapters, validation helpers, dynamicTool/tool/provider-executed tool factories, provider tool factories, executeTool, tool-name mapping, id generation, headers/user-agent helpers, parseJsonEventStream, base64/Uint8Array aliases, media/download URL validation, loadApiKey/loadSetting host-env helpers, provider option parsing, retry/delay-adjacent utilities, and test stream/mock helpers are represented as KMP utilities folded into the root module
 
 ## Entrypoints

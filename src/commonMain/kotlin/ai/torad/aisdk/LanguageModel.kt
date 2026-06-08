@@ -27,7 +27,7 @@ public interface LanguageModel {
     /**
      * Provider tag for the model — `"openai"`, `"anthropic"`,
      * `"litert-lm"`, etc. Mirrors v6's
-     * `LanguageModelV3.provider` (per AISDK_PORT_GAPS.md gap #40).
+     * `LanguageModelV3.provider` (per historical parity gap #40).
      * Lets routing layers (a fallback chain, a tier picker) make
      * provider-aware decisions without parsing [modelId].
      *
@@ -84,7 +84,7 @@ public data class LanguageModelCallParams(
     /**
      * Penalty for repeating tokens that already appeared in the
      * response, regardless of frequency. Mirrors v6's `CallSettings`
-     * (per AISDK_PORT_GAPS.md gap #3 closure). Null = provider default.
+     * (per historical parity gap #3 closure). Null = provider default.
      */
     val presencePenalty: Float? = null,
     /**
@@ -95,7 +95,7 @@ public data class LanguageModelCallParams(
     /**
      * Wire-level shape constraint. Mirrors v6's
      * `LanguageModelV3CallOptions.responseFormat` (per
-     * AISDK_PORT_GAPS.md gap #20). Providers that support constrained
+     * historical parity gap #20). Providers that support constrained
      * decoding honor it; others ignore. Default [ResponseFormat.Text]
      * = no constraint.
      */

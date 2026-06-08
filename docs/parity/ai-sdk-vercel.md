@@ -2,7 +2,7 @@
 
 - Version: 2.0.50
 - Upstream path: `.reference/vercel-ai-sdk-ai-6.0.197/packages/vercel`
-- Target Kotlin module: `:aisdk-provider-vercel`
+- Kotlin parity area: `:aisdk-provider-vercel`
 - Current parity status: ported: createVercel/vercel, VercelProviderSettings, VercelErrorData, and chat-only routing are represented as an OpenAI-compatible Kotlin facade folded into the root module; VERSION is exposed as VERCEL_VERSION until package modules are split
 
 ## Entrypoints

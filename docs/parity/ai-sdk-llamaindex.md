@@ -2,7 +2,7 @@
 
 - Version: 2.0.197
 - Upstream path: `.reference/vercel-ai-sdk-ai-6.0.197/packages/llamaindex`
-- Target Kotlin module: `:aisdk-llamaindex`
+- Kotlin parity area: `:aisdk-llamaindex`
 - Current parity status: ported: toUIMessageStream is represented as a Kotlin Flow adapter over LlamaIndexEngineResponse, with callback lifecycle support folded into the root module
 
 ## Entrypoints

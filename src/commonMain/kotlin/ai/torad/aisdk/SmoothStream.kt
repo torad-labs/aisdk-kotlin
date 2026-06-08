@@ -29,7 +29,7 @@ public sealed interface ChunkBy {
     public data class Pattern(val regex: Regex) : ChunkBy
 }
 
-// Word-boundary regex with CJK awareness (per AISDK_PORT_GAPS.md gap #32).
+// Word-boundary regex with CJK awareness (per historical parity gap #32).
 // v6 uses Intl.Segmenter to handle scripts without whitespace word separators
 // (Chinese, Japanese, Korean ideograms). Kotlin has no Segmenter equivalent
 // in commonMain — instead we EXCLUDE CJK from the latin-word path and add
