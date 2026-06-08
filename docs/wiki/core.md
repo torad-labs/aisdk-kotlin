@@ -1,12 +1,12 @@
 # Core
 
-Core is the provider-neutral layer for calling models. It contains text
-generation, streaming, structured output, tool contracts, model-family
-interfaces, middleware, telemetry, and the public error taxonomy.
+Core is the provider-neutral layer. It defines prompts, messages, model
+interfaces, generation functions, structured output, middleware, telemetry,
+errors, and helpers for non-text model families.
 
 ## Text Generation
 
-Use `generateText` for a single provider call without an agent loop:
+Use `generateText` for a one-shot model call.
 
 ```kotlin
 val result = generateText(
@@ -25,15 +25,18 @@ val result = generateText(
     model = model,
     messages = listOf(
         systemMessage("Answer with short bullets."),
-        userMessage("What changed in the last release?"),
+        userMessage("What changed in the latest release?"),
     ),
 )
 ```
 
+The result contains text, content parts, tool calls, finish reason, usage,
+warnings, request/response metadata, provider metadata, files, sources, and
+reasoning when the provider supplies them.
+
 ## Streaming
 
-`streamText` returns a cold `Flow<StreamEvent>`. The upstream call starts when
-the flow is collected.
+Use `streamText` for interactive output. It returns a cold `Flow`.
 
 ```kotlin
 streamText(model = model, prompt = "Write a haiku.").collect { event ->
@@ -45,12 +48,25 @@ streamText(model = model, prompt = "Write a haiku.").collect { event ->
 }
 ```
 
-If the host needs both text-only and full event streams, use
-`streamTextResult`.
+Use `streamTextResult` when you want stream adapters:
+
+```kotlin
+val result = streamTextResult(model = model, prompt = "Tell me a story.")
+
+result.textStream.collect { delta -> print(delta) }
+
+val response = result.toUiMessageStreamResponse(
+    assistantMessageId = "assistant-1",
+)
+```
+
+`StreamTextResult.fullStream` collects the upstream once and replays captured
+events to later collectors after a successful completion. The top-level
+`streamText` function starts a fresh call for each collection.
 
 ## Structured Output
 
-Structured output is exposed through `Output` and Kotlin serializers:
+Structured output is expressed with `Output`.
 
 ```kotlin
 @Serializable
@@ -65,38 +81,76 @@ val result = generateText(
 val label: Label = result.output
 ```
 
-Supported output helpers include object, array, choice, and raw JSON modes.
-Deprecated v6-compatible `generateObject` and `streamObject` shims route
-through the same structured-output path.
+Supported variants:
 
-## Tools
+- `Output.obj(serializer<T>())`
+- `Output.array(serializer<T>())`
+- `Output.choice("low", "medium", "high")`
+- `Output.json()`
 
-Tools are typed with serializers and can be composed into agents or executed
-through provider tool-call surfaces:
+Top-level Kotlin helpers are also available: `outputObj`, `outputArray`,
+`outputChoice`, and `outputJson`.
+
+`generateObject` and `streamObject` remain as compatibility shims. Prefer
+`generateText(output = ...)` and `streamText(output = ...)` for new code.
+Use `streamObjectResult(...)` when you need typed partial or final values from
+a structured stream.
+
+## Prompts And Messages
+
+Model calls use `ModelMessage` and sealed `ContentPart` values.
 
 ```kotlin
-@Serializable
-data class SearchInput(val query: String)
+val messages = listOf(
+    systemMessage("You are concise."),
+    userMessage("Explain streaming."),
+)
+```
 
-@Serializable
-data class SearchResult(val title: String, val url: String)
+Content parts include text, reasoning, tool calls, tool results, approval
+requests, approval responses, sources, files, and images. The sealed shape
+keeps rendering and conversion code exhaustive.
 
-val searchDocs = tool<SearchInput, List<SearchResult>, AppContext>(
-    name = "searchDocs",
-    description = "Search product documentation.",
-    inputSerializer = serializer(),
-    outputSerializer = serializer(),
-) { input ->
-    docs.search(input.query)
+## Settings
+
+Direct calls accept v6-shaped named arguments and Kotlin-first grouped
+settings:
+
+```kotlin
+val settings = callSettings {
+    temperature = 0.2f
+    maxOutputTokens = 600
+    stopSequence("</answer>")
+    providerOptions {
+        provider("openai", OpenAiTuning(reasoningEffort = "high"))
+    }
+}
+
+val result = generateText(model = model, settings = settings) {
+    system("Answer as a product engineer.")
+    prompt("How do provider options work?")
 }
 ```
 
-Use `dynamicTool` only when the schema or result type cannot be fixed at
-compile time.
+Provider options and provider metadata can stay typed at application
+boundaries:
+
+```kotlin
+@Serializable
+data class OpenAiTuning(val reasoningEffort: String)
+
+@Serializable
+data class OpenAiMetadata(val cacheHit: Boolean)
+
+val cacheHit = result.providerMetadataAs<OpenAiMetadata>("openai")?.cacheHit
+```
+
+For defaults, cancellation, provider-specific options, and dynamic agent
+settings, see [Settings And Provider Options](settings-and-provider-options.md).
 
 ## Model Families
 
-Core includes provider-neutral interfaces and helper functions for:
+Core includes provider-neutral model interfaces and helpers for:
 
 - Language models: `generateText`, `streamText`.
 - Embeddings: `embed`, `embedMany`.
@@ -106,44 +160,73 @@ Core includes provider-neutral interfaces and helper functions for:
 - Transcription: `transcribe`.
 - Video: `generateVideo`.
 
-Each model family returns provider metadata, warnings, request/response
-metadata, and usage when the provider supplies it.
+Embeddings can batch automatically through `maxEmbeddingsPerCall`. Image
+generation can split large `n` requests when a model has a per-call cap.
 
-## Middleware
-
-Use middleware to normalize provider behavior without branching inside agent
-or app code:
+For generated files, use `GeneratedFile` and `FileData`:
 
 ```kotlin
-val normalized = wrapLanguageModel(
-    model = rawModel,
-    middlewares = listOf(
-        loggingMiddleware(logger),
-        defaultSettingsMiddleware(temperature = 0.2f),
+val imageInput = imageGenerationFile(
+    FileData.Bytes(
+        bytes = editedImageBytes,
+        mediaType = "image/png",
+        filename = "mask.png",
     ),
 )
 ```
 
-Middleware can wrap generate and stream paths. Provider quirks, tracing,
-logging, synthetic streaming, reasoning extraction, and JSON extraction belong
-here.
+For complete examples across embeddings, reranking, image, speech,
+transcription, and video, see [Model Families](model-families.md).
+
+## Middleware
+
+Use middleware to normalize model behavior without branching in agent or app
+code.
+
+```kotlin
+val wrapped = wrapLanguageModel(
+    model = rawModel,
+    middlewares = listOf(
+        defaultSettingsMiddleware(temperature = 0.2f),
+        loggingMiddleware(logger),
+    ),
+)
+```
+
+Available middleware includes default settings, logging, reasoning extraction,
+JSON extraction, tool-input examples, and simulated streaming.
 
 ## Telemetry And DevTools
 
-The core telemetry API is host-injected and KMP-safe. It records spans,
-attributes, usage, and model metadata without depending on a concrete OpenTelemetry
-runtime. DevTools middleware records local runs and stream chunks for
-inspection; persistent storage and viewer UI are tooling responsibilities.
+Telemetry is host-injected and KMP-safe. Use telemetry integrations or a
+`TelemetryTracer` to record spans, attributes, usage, metadata, and errors
+without tying common code to one observability runtime.
+
+`devToolsMiddleware` records local runs and stream chunks through a
+`DevToolsRecorder`. The SDK provides an in-memory recorder; persistent storage
+and viewer UI belong to tooling or host apps.
 
 ## Errors
 
-Public errors mirror the v6 taxonomy where it applies in Kotlin:
+Public errors are typed. Catch the narrowest SDK error you can, then inspect
+request, response, usage, warnings, and provider metadata.
 
-- Provider/model lookup failures.
-- No-output failures for text, object, image, speech, transcription, video,
-  embedding, and reranking calls.
-- Tool input/output, approval, execution, and repair failures.
-- Gateway and provider-specific HTTP or protocol failures.
+Transport errors expose machine-readable status, headers, retryability, URL,
+and raw provider payload where available. Retry helpers only retry retryable
+API errors.
 
-Catch the narrowest project error you can, then inspect request/response
-metadata when the provider exposes it.
+For a full typed-error map and retry examples, see [Error Handling](error-handling.md).
+
+## Related
+
+- [Prompts And Messages](prompts-and-messages.md)
+- [Prompt Engineering](prompt-engineering.md)
+- [Settings And Provider Options](settings-and-provider-options.md)
+- [Structured Output](structured-output.md)
+- [Tools](tools.md)
+- [Streaming](streaming.md)
+- [Middleware And Telemetry](middleware-and-telemetry.md)
+- [DevTools](devtools.md)
+- [Utilities](utilities.md)
+- [Error Handling](error-handling.md)
+- [Model Families](model-families.md)

@@ -13,23 +13,70 @@ Primary package: ai.torad.aisdk
 
 - README.md: install, targets, included features, and quick start.
 - docs/wiki/README.md: human docs navigation.
+- docs/wiki/foundations.md: mental model, Kotlin differences, and reading
+  paths.
 - docs/wiki/getting-started.md: first agent and provider choices.
-- docs/wiki/core.md: generateText, streamText, Output, tools, model families,
-  middleware, telemetry, and errors.
+- docs/wiki/core.md: provider-neutral generation, settings, results, and
+  errors.
+- docs/wiki/prompts-and-messages.md: prompt shapes, ModelMessage,
+  ContentPart, tool results, approval responses, and UI conversion.
+- docs/wiki/prompt-engineering.md: system prompts, task prompts, retrieval
+  context, tool descriptions, and structured-output prompting.
+- docs/wiki/settings-and-provider-options.md: sampling, limits, cancellation,
+  provider-specific options, defaults, and dynamic agent settings.
+- docs/wiki/structured-output.md: Output.obj, arrays, choices, JSON trees,
+  streaming typed data, and object helper migration.
+- docs/wiki/tools.md: typed tools, streaming tools, approval, toModelOutput,
+  dynamic tools, provider-executed tools, and input hooks.
+- docs/wiki/streaming.md: Flow<StreamEvent>, streamTextResult, adapters,
+  server responses, cancellation, tool streams, and errors.
+- docs/wiki/advanced-streaming.md: stopping, resume tradeoffs, backpressure,
+  fanout, replay, caching, and cleanup.
+- docs/wiki/model-families.md: embeddings, reranking, image, speech,
+  transcription, video, and generated files.
+- docs/wiki/middleware-and-telemetry.md: language model middleware, default
+  settings, JSON extraction, simulated streaming, telemetry, and DevTools.
+- docs/wiki/error-handling.md: typed SDK errors, retry policy, streaming
+  failures, tool errors, and UI validation.
+- docs/wiki/lifecycle-and-events.md: agent hooks, stream events, tool input
+  hooks, telemetry events, and UI finish handling.
 - docs/wiki/agents.md: Agent, ToolLoopAgent, stop conditions, lifecycle hooks,
   tool approval, subagents, and memory boundaries.
 - docs/wiki/providers.md: gateway, OpenAI-compatible, dedicated facades,
   provider registry, and custom providers.
+- docs/wiki/provider-management.md: Gateway metadata, provider routing,
+  registries, middleware, and custom providers.
 - docs/wiki/ui-and-streams.md: Flow<StreamEvent>, UIMessage, Chat, transports,
   stream responses, and persistence.
+- docs/wiki/ui-stream-protocols.md: text streams, UI message streams, host
+  writers, custom UI streams, ids, metadata, and finish handling.
+- docs/wiki/chatbots.md: DirectChatTransport, ChatSession, persistence, tool
+  rendering, approvals, resume, and text-only transports.
+- docs/wiki/completion-and-object-ui.md: completion state, completion facades,
+  partial structured object state, and object facades.
+- docs/wiki/framework-facades.md: React, Vue, Svelte, Angular, and RSC-shaped
+  parity surfaces.
+- docs/wiki/mcp.md: MCP transports, tools, resources, prompts, elicitation,
+  and cleanup.
+- docs/wiki/application-patterns.md: tool organization, agent composition,
+  call configuration, approval, UI dispatch, and subagents.
+- docs/wiki/workflow-patterns.md: sequential calls, routing, parallel work,
+  evaluator-optimizer loops, agents as orchestrators, and manual loops.
+- docs/wiki/memory.md: conversation memory, summaries, retrieval memory,
+  memory tools, and context injection.
+- docs/wiki/cookbook.md: short examples for common SDK tasks.
+- docs/wiki/devtools.md: recorder-backed local inspection for generate and
+  stream calls.
+- docs/wiki/utilities.md: ids, stream smoothing, simulated streams, message
+  pruning, embeddings math, abort signals, and data URLs.
 - docs/wiki/coding-agents.md: source-of-truth map and commands for coding
   agents.
 - docs/wiki/testing-and-release.md: local checks, CI, parity, and release.
 - docs/wiki/troubleshooting.md: common failures.
 - docs/parity/README.md: generated Vercel AI SDK v6 package/export parity
   ledger.
-- docs/FUNCTIONALITY_AUDIT.md: verified feature surface and extension
-  boundaries.
+- docs/AISDK_PORT.md: Kotlin mapping for Vercel AI SDK v6 concepts.
+- docs/KOTLIN_SDK_BEST_PRACTICES.md: engineering standard for KMP SDK work.
 
 ## Core Runtime Concepts
 
@@ -55,8 +102,7 @@ Primary package: ai.torad.aisdk
 node tools/check-ai-sdk-reference.mjs
 node tools/generate-parity-ledger.mjs --check
 ./gradlew jvmTest
-./gradlew allTests
-./gradlew publishToMavenLocal
+./gradlew check publishToMavenLocal
 ```
 
 Use deterministic mock models, fake transports, and Ktor MockEngine in tests.
