@@ -236,6 +236,35 @@ class GoogleProviderTest {
     }
 
     @Test
+    fun `language model maps MALFORMED_FUNCTION_CALL to error`() = runTest {
+        val fixture = createTestServer(
+            mutableMapOf(
+                "https://google.test/v1beta/models/gemini-2.5-flash:generateContent" to UrlHandler(
+                    UrlResponse.JsonValue(
+                        Json.parseToJsonElement(
+                            "{\"candidates\":[{\"content\":{\"role\":\"model\",\"parts\":[{\"text\":\"\"}]}," +
+                                "\"finishReason\":\"MALFORMED_FUNCTION_CALL\"}]," +
+                                "\"usageMetadata\":{\"promptTokenCount\":1,\"candidatesTokenCount\":0," +
+                                "\"totalTokenCount\":1}}",
+                        ),
+                    ),
+                ),
+            ),
+        )
+        fixture.server.start()
+        val provider = createGoogleGenerativeAI(
+            fixture.httpClient(),
+            GoogleGenerativeAIProviderSettings(apiKey = "key", baseURL = "https://google.test/v1beta"),
+        )
+        val result = provider("gemini-2.5-flash").generate(
+            LanguageModelCallParams(messages = listOf(userMessage("hi"))),
+        )
+        // Upstream maps MALFORMED_FUNCTION_CALL to error, not content-filter.
+        assertEquals(FinishReason.Error, result.finishReason)
+        assertEquals("MALFORMED_FUNCTION_CALL", result.rawFinishReason)
+    }
+
+    @Test
     fun `language model omits toolConfig when there are no tools`() = runTest {
         val fixture = createTestServer(
             mutableMapOf(

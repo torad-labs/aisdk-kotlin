@@ -1968,8 +1968,9 @@ private fun mapGoogleFinishReason(reason: String?, hasToolCalls: Boolean): Finis
             "STOP" -> FinishReason.Stop
             "MAX_TOKENS" -> FinishReason.Length
             "SAFETY", "IMAGE_SAFETY", "RECITATION", "BLOCKLIST", "PROHIBITED_CONTENT", "SPII",
-            "MALFORMED_FUNCTION_CALL",
             -> FinishReason.ContentFilter
+            // Upstream maps MALFORMED_FUNCTION_CALL to 'error', not content-filter.
+            "MALFORMED_FUNCTION_CALL" -> FinishReason.Error
             else -> FinishReason.Other
         }
     }

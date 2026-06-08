@@ -834,12 +834,21 @@ private fun perplexityTextMessage(message: JsonObject): JsonObject {
     }
 }
 
-private fun groqTransformChatBody(body: JsonObject): JsonObject = buildJsonObject {
-    for ((key, value) in body) {
-        when (key) {
-            "messages" -> put("messages", groqMessages(value as? JsonArray))
-            "tools" -> put("tools", groqTools(value as? JsonArray))
-            else -> put(key, value)
+// Groq supports the browser_search tool only on these models; elsewhere it is dropped.
+private val GROQ_BROWSER_SEARCH_MODELS = setOf("openai/gpt-oss-20b", "openai/gpt-oss-120b")
+
+private fun groqTransformChatBody(body: JsonObject): JsonObject {
+    val modelId = body["model"]?.jsonPrimitive?.contentOrNull
+    val tools = groqTools(body["tools"] as? JsonArray, modelId)
+    return buildJsonObject {
+        for ((key, value) in body) {
+            when (key) {
+                "messages" -> put("messages", groqMessages(value as? JsonArray))
+                // browser_search may have been filtered out — drop the tools key if now empty
+                // (an empty tools array is invalid, same as sending tool_choice without tools).
+                "tools" -> if (tools.isNotEmpty()) put("tools", tools)
+                else -> put(key, value)
+            }
         }
     }
 }
@@ -856,13 +865,19 @@ private fun groqMessages(messages: JsonArray?): JsonArray = JsonArray(
     },
 )
 
-private fun groqTools(tools: JsonArray?): JsonArray = JsonArray(
-    tools.orEmpty().map { tool ->
-        val obj = tool as? JsonObject ?: return@map tool
-        val function = obj["function"] as? JsonObject ?: return@map tool
+private fun groqTools(tools: JsonArray?, modelId: String?): JsonArray = JsonArray(
+    tools.orEmpty().mapNotNull { tool ->
+        val obj = tool as? JsonObject ?: return@mapNotNull tool
+        val function = obj["function"] as? JsonObject ?: return@mapNotNull tool
         val name = function["name"]?.jsonPrimitive?.contentOrNull
         if (name == "browserSearch" || name == "browser_search") {
-            buildJsonObject { put("type", JsonPrimitive("browser_search")) }
+            // Gate the browser_search tool to the models that support it; drop it elsewhere
+            // (upstream emits an unsupported warning and omits the tool).
+            if (modelId in GROQ_BROWSER_SEARCH_MODELS) {
+                buildJsonObject { put("type", JsonPrimitive("browser_search")) }
+            } else {
+                null
+            }
         } else {
             tool
         }

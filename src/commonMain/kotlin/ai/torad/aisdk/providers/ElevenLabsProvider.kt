@@ -122,7 +122,8 @@ private class ElevenLabsSpeechModel(
         val body = buildJsonObject {
             put("text", JsonPrimitive(params.text))
             put("model_id", JsonPrimitive(modelId))
-            (options["languageCode"]?.jsonPrimitive?.contentOrNull ?: params.language)
+            // params.language wins; the languageCode provider-option is only a fallback (upstream order).
+            (params.language ?: options["languageCode"]?.jsonPrimitive?.contentOrNull)
                 ?.let { put("language_code", JsonPrimitive(it)) }
             val voiceSettings = buildJsonObject {
                 params.speed?.let { put("speed", JsonPrimitive(it)) }

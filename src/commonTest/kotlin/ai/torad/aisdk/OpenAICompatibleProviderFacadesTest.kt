@@ -343,7 +343,8 @@ class OpenAICompatibleProviderFacadesTest {
             GroqProviderSettings(apiKey = "key", baseURL = "https://groq.test/openai/v1"),
         )
 
-        val result = provider.chat("llama").generate(
+        // browser_search is only valid on the gpt-oss models, so use a supported one here.
+        val result = provider.chat("openai/gpt-oss-20b").generate(
             LanguageModelCallParams(
                 messages = listOf(
                     userMessage("hi"),
@@ -370,6 +371,39 @@ class OpenAICompatibleProviderFacadesTest {
         )
         assertEquals(1, result.usage.outputTokens.reasoning)
         assertEquals(3, result.usage.outputTokens.text)
+    }
+
+    @Test
+    fun `groq drops the browser_search tool on a model that does not support it`() = runTest {
+        val fixture = createTestServer(
+            mutableMapOf(
+                "https://groq.test/openai/v1/chat/completions" to UrlHandler(
+                    UrlResponse.JsonValue(
+                        Json.parseToJsonElement(
+                            "{\"id\":\"g\",\"model\":\"llama\",\"choices\":[{\"message\":" +
+                                "{\"role\":\"assistant\",\"content\":\"ok\"},\"finish_reason\":\"stop\"}]," +
+                                "\"usage\":{\"prompt_tokens\":1,\"completion_tokens\":1,\"total_tokens\":2}}",
+                        ),
+                    ),
+                ),
+            ),
+        )
+        fixture.server.start()
+        val provider = createGroq(
+            fixture.httpClient(),
+            GroqProviderSettings(apiKey = "key", baseURL = "https://groq.test/openai/v1"),
+        )
+        provider.chat("llama").generate(
+            LanguageModelCallParams(
+                messages = listOf(userMessage("hi")),
+                tools = listOf(
+                    LanguageModelTool("browserSearch", "Search.", """{"type":"object"}""", providerExecuted = true),
+                ),
+            ),
+        )
+        // browser_search was the only tool and is unsupported on llama → tools key omitted entirely.
+        val body = fixture.calls.single().requestBodyJson.jsonObject
+        assertEquals(null, body["tools"], "unsupported browser_search dropped; empty tools key omitted")
     }
 
     @Test

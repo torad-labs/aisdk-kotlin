@@ -45,6 +45,8 @@ class ElevenLabsProviderTest {
                 providerOptions = mapOf(
                     "elevenlabs" to buildJsonObject {
                         put("seed", JsonPrimitive(123))
+                        // languageCode is set too, but params.language ("es") must win (upstream order).
+                        put("languageCode", JsonPrimitive("fr"))
                         put("enableLogging", JsonPrimitive(false))
                         put(
                             "voiceSettings",
