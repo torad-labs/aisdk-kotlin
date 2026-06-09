@@ -21,7 +21,7 @@ class AgentAccessorsTest {
     fun `given a ToolLoopAgent when accessed via the Agent interface then tools accessor exposes the toolset`() {
         // GIVEN
         val tools = toolSetOf<Unit>()
-        val agent: Agent<Unit, String> = ToolLoopAgent(
+        val agent: Agent<Unit, String> = TestToolLoopAgent(
             model = MockLanguageModel(responses = emptyList()),
             instructions = "",
             tools = tools,
@@ -34,7 +34,7 @@ class AgentAccessorsTest {
     @Test
     fun `given a default-id agent when read then id is agent and version is null`() {
         // GIVEN — no explicit overrides.
-        val agent: Agent<Unit, String> = ToolLoopAgent(
+        val agent: Agent<Unit, String> = TestToolLoopAgent(
             model = MockLanguageModel(responses = emptyList()),
             instructions = "",
             tools = toolSetOf(),

@@ -52,7 +52,7 @@ class PrepareStepTest {
             inputSerializer = serializer(), outputSerializer = serializer(),
         ) { _ -> "pong" }
 
-        val agent = ToolLoopAgent<Unit, String>(
+        val agent = TestToolLoopAgent<Unit, String>(
             model = mockLanguageModelToolThenText(
                 toolName = "ping",
                 toolInput = mockToolInput("unused" to ""),
@@ -74,7 +74,7 @@ class PrepareStepTest {
     fun `agent activeTools limits tools advertised to the model`() = runTest {
         val capture = CapturingModel()
 
-        val agent = ToolLoopAgent<Unit, String>(
+        val agent = TestToolLoopAgent<Unit, String>(
             model = capture,
             instructions = "x",
             tools = toolSetOf(testTool("ping"), testTool("pong")),
@@ -90,7 +90,7 @@ class PrepareStepTest {
     fun `prepareCall activeTools overrides agent activeTools`() = runTest {
         val capture = CapturingModel()
 
-        val agent = ToolLoopAgent<Unit, String>(
+        val agent = TestToolLoopAgent<Unit, String>(
             model = capture,
             instructions = "x",
             tools = toolSetOf(testTool("ping"), testTool("pong")),
@@ -107,7 +107,7 @@ class PrepareStepTest {
     fun `prepareStep activeTools overrides prepareCall activeTools`() = runTest {
         val capture = CapturingModel()
 
-        val agent = ToolLoopAgent<Unit, String>(
+        val agent = TestToolLoopAgent<Unit, String>(
             model = capture,
             instructions = "x",
             tools = toolSetOf(testTool("ping"), testTool("pong")),

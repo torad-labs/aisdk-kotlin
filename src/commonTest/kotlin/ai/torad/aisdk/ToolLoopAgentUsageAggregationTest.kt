@@ -70,7 +70,7 @@ class ToolLoopAgentUsageAggregationTest {
         ) {
             ToolOutput(ok = true)
         }
-        val agent = ToolLoopAgent<Unit, String>(
+        val agent = TestToolLoopAgent<Unit, String>(
             model = model,
             instructions = "use tool",
             tools = toolSetOf(doneTool),

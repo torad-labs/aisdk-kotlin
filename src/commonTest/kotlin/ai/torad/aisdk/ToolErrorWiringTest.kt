@@ -43,7 +43,7 @@ class ToolErrorWiringTest {
     @Test
     fun `given the model calls a tool not in the set when run then ToolError carries a typed NoSuchTool`() = runTest {
         // GIVEN — the set has only "weather"; the model calls "ghost".
-        val agent = ToolLoopAgent<Unit, String>(
+        val agent = TestToolLoopAgent<Unit, String>(
             model = mockLanguageModelToolThenText(toolName = "ghost", toolInput = validInput, finalText = "done"),
             instructions = "",
             tools = toolSetOf(weatherTool { "sunny in ${it.city}" }),
@@ -61,7 +61,7 @@ class ToolErrorWiringTest {
     @Test
     fun `given a tool executor that throws when run then ToolError carries a typed ToolExecution`() = runTest {
         // GIVEN — the tool exists, but its executor blows up.
-        val agent = ToolLoopAgent<Unit, String>(
+        val agent = TestToolLoopAgent<Unit, String>(
             model = mockLanguageModelToolThenText(toolName = "weather", toolInput = validInput, finalText = "done"),
             instructions = "",
             tools = toolSetOf(weatherTool { error("db down") }),
@@ -80,7 +80,7 @@ class ToolErrorWiringTest {
     @Test
     fun `given malformed args and no repair when run then ToolError carries a typed InvalidToolInput`() = runTest {
         // GIVEN — model emits {location} for a tool wanting {city}; no repair fn.
-        val agent = ToolLoopAgent<Unit, String>(
+        val agent = TestToolLoopAgent<Unit, String>(
             model = mockLanguageModelToolThenText(toolName = "weather", toolInput = malformedInput, finalText = "done"),
             instructions = "",
             tools = toolSetOf(weatherTool { "sunny in ${it.city}" }),
@@ -100,7 +100,7 @@ class ToolErrorWiringTest {
     fun `given malformed args and a repair that gives up when run then ToolError carries a typed ToolCallRepairFailed`() =
         runTest {
             // GIVEN — decode fails, repair runs but returns null.
-            val agent = ToolLoopAgent<Unit, String>(
+            val agent = TestToolLoopAgent<Unit, String>(
                 model = mockLanguageModelToolThenText(
                     toolName = "weather",
                     toolInput = malformedInput,
@@ -127,7 +127,7 @@ class ToolErrorWiringTest {
             // GIVEN — decode fails, repair runs but the repair fn ITSELF throws
             // (e.g. the model re-prompt failed). The stock modelRepromptRepair
             // calls model.generate(), which can throw on a constrained device.
-            val agent = ToolLoopAgent<Unit, String>(
+            val agent = TestToolLoopAgent<Unit, String>(
                 model = mockLanguageModelToolThenText(
                     toolName = "weather",
                     toolInput = malformedInput,

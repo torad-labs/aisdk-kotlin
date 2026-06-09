@@ -36,7 +36,7 @@ class SubagentTest {
         }
 
         val controller = AbortController()
-        val agent = ToolLoopAgent<Unit, String>(
+        val agent = TestToolLoopAgent<Unit, String>(
             model = mockLanguageModelToolThenText(
                 toolName = "subagent",
                 toolInput = mockToolInput("text" to "hello"),

@@ -37,7 +37,7 @@ class AgentStepResultParityTest {
 
     @Test
     fun `StepResult is populated with warnings response providerMetadata and rawFinishReason`() = runTest {
-        val agent = ToolLoopAgent<Unit, String>(
+        val agent = TestToolLoopAgent<Unit, String>(
             model = richModel(FinishReason.Stop),
             instructions = "hi",
             tools = toolSetOf(),
@@ -55,7 +55,7 @@ class AgentStepResultParityTest {
     @Test
     fun `structured output is only decoded when the model finished with stop`() = runTest {
         // finishReason = Length → upstream yields no object; we must throw, not decode-error.
-        val agent = ToolLoopAgent<Unit, Holder>(
+        val agent = TestToolLoopAgent<Unit, Holder>(
             model = richModel(FinishReason.Length),
             instructions = "hi",
             tools = toolSetOf(),

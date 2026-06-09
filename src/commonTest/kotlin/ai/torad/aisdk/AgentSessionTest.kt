@@ -33,7 +33,7 @@ class AgentSessionTest {
                 description = "Get weather.",
             ) { input -> WeatherOutput(temperature = input.city.length) }
         }
-        val agent = ToolLoopAgent<Unit, String>(
+        val agent = TestToolLoopAgent<Unit, String>(
             model = mockLanguageModelToolThenText(
                 toolName = "weather",
                 toolInput = mockToolInput("city" to "Paris"),
@@ -70,7 +70,7 @@ class AgentSessionTest {
                 toModelOutput = { _, _ -> ToolResultOutput.Text("summary") },
             ) { input -> WeatherOutput(temperature = input.city.length) }
         }
-        val agent = ToolLoopAgent<Unit, String>(
+        val agent = TestToolLoopAgent<Unit, String>(
             model = mockLanguageModelToolThenText(
                 toolName = "weather",
                 toolInput = mockToolInput("city" to "Paris"),
@@ -119,7 +119,7 @@ class AgentSessionTest {
                 emit(StreamEvent.Finish(1, FinishReason.Stop, Usage(promptTokens = 1, completionTokens = 1)))
             }
         }
-        val agent = ToolLoopAgent<Unit, String>(
+        val agent = TestToolLoopAgent<Unit, String>(
             model = model,
             instructions = "Be brief.",
             tools = toolSet {},

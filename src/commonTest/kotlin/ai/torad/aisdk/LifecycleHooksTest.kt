@@ -16,7 +16,7 @@ class LifecycleHooksTest {
     @Test
     fun `hooks_fire_in_order_onStart_onStepFinish_onFinish`() = runTest {
         val seq = mutableListOf<String>()
-        val agent = ToolLoopAgent<Unit, String>(
+        val agent = TestToolLoopAgent<Unit, String>(
             model = mockLanguageModelTextOnly("answer"),
             instructions = "x",
             tools = toolSetOf(),
@@ -31,7 +31,7 @@ class LifecycleHooksTest {
     @Test
     fun `hook_failure_does_not_crash_the_loop`() = runTest {
         val errorsObserved = mutableListOf<OnErrorEvent.ErrorSource>()
-        val agent = ToolLoopAgent<Unit, String>(
+        val agent = TestToolLoopAgent<Unit, String>(
             model = mockLanguageModelTextOnly("ok"),
             instructions = "x",
             tools = toolSetOf(),

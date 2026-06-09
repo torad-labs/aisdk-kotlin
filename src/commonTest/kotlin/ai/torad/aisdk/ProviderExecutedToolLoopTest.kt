@@ -35,7 +35,7 @@ class ProviderExecutedToolLoopTest {
             inputSerializer = serializer(),
             outputSerializer = serializer(),
         )
-        val agent = ToolLoopAgent<Unit, String>(
+        val agent = TestToolLoopAgent<Unit, String>(
             model = model,
             instructions = "use hosted tools",
             tools = toolSetOf(hostedTool),

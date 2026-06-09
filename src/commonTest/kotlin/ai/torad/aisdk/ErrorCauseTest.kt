@@ -19,7 +19,7 @@ class ErrorCauseTest {
                 throw boom
             override fun stream(params: LanguageModelCallParams): Flow<StreamEvent> = flow { throw boom }
         }
-        val agent = ToolLoopAgent<Unit, String>(
+        val agent = TestToolLoopAgent<Unit, String>(
             model = model,
             instructions = "x",
             tools = toolSet {},

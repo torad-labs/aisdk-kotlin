@@ -31,7 +31,7 @@ class ToolLoopAgentTerminalSemanticsTest {
                     ),
                 ),
             )
-            val generateAgent = ToolLoopAgent<Unit, String>(
+            val generateAgent = TestToolLoopAgent<Unit, String>(
                 model = generateModel,
                 instructions = "finish once",
                 tools = toolSetOf(),
@@ -54,7 +54,7 @@ class ToolLoopAgentTerminalSemanticsTest {
                     ),
                 ),
             )
-            val streamAgent = ToolLoopAgent<Unit, String>(
+            val streamAgent = TestToolLoopAgent<Unit, String>(
                 model = streamModel,
                 instructions = "finish once",
                 tools = toolSetOf(),
