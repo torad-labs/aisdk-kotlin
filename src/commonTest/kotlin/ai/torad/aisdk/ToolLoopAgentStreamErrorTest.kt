@@ -25,7 +25,7 @@ class ToolLoopAgentStreamErrorTest {
                 emit(StreamEvent.Error("provider failed"))
             }
         }
-        val agent = ToolLoopAgent<Unit, String>(
+        val agent = TestToolLoopAgent<Unit, String>(
             model = model,
             instructions = "stream",
             tools = toolSetOf(),

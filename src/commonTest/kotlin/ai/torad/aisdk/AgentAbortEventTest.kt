@@ -26,7 +26,7 @@ class AgentAbortEventTest {
         val controller = AbortController()
         controller.abort()
         var onAbortFired = false
-        val agent = ToolLoopAgent<Unit, String>(
+        val agent = TestToolLoopAgent<Unit, String>(
             model = textModel("hi"),
             instructions = "x",
             tools = toolSetOf(),
@@ -45,7 +45,7 @@ class AgentAbortEventTest {
 
     @Test
     fun `a normal completion does not emit Abort`() = runTest {
-        val agent = ToolLoopAgent<Unit, String>(
+        val agent = TestToolLoopAgent<Unit, String>(
             model = textModel("hi"),
             instructions = "x",
             tools = toolSetOf(),

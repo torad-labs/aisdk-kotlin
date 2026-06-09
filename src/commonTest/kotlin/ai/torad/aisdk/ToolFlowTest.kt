@@ -64,7 +64,7 @@ class ToolFlowTest {
                 inputSerializer = serializer(),
                 outputSerializer = serializer(),
             ) { _ -> "pong" }
-            val streamAgent = ToolLoopAgent<Unit, String>(
+            val streamAgent = TestToolLoopAgent<Unit, String>(
                 model = mockLanguageModelToolThenText(
                     toolName = "ping",
                     toolInput = mockToolInput("unused" to ""),
@@ -101,7 +101,7 @@ class ToolFlowTest {
                     emit("v3")
                 }
             }
-            val streamAgent = ToolLoopAgent<Unit, String>(
+            val streamAgent = TestToolLoopAgent<Unit, String>(
                 model = mockLanguageModelToolThenText(
                     toolName = "streamer",
                     toolInput = mockToolInput("unused" to ""),
@@ -141,7 +141,7 @@ class ToolFlowTest {
                     ToolResultOutput.Text("summary:${options.toolCallId}:$output")
                 },
             ) { _ -> "pong" }
-            val streamAgent = ToolLoopAgent<Unit, String>(
+            val streamAgent = TestToolLoopAgent<Unit, String>(
                 model = mockLanguageModelToolThenText(
                     toolName = "ping",
                     toolInput = mockToolInput("unused" to ""),
@@ -160,7 +160,7 @@ class ToolFlowTest {
             assertEquals(ToolResultOutput.Text("summary:call_1:pong"), toolResult.modelOutput)
             assertEquals(false, toolResult.isError)
 
-            val generateAgent = ToolLoopAgent<Unit, String>(
+            val generateAgent = TestToolLoopAgent<Unit, String>(
                 model = mockLanguageModelToolThenText(
                     toolName = "ping",
                     toolInput = mockToolInput("unused" to ""),
@@ -186,7 +186,7 @@ class ToolFlowTest {
                 outputSerializer = serializer(),
                 toModelOutput = { _, _ -> ToolResultOutput.Error("redacted failure") },
             ) { _ -> "pong" }
-            val streamAgent = ToolLoopAgent<Unit, String>(
+            val streamAgent = TestToolLoopAgent<Unit, String>(
                 model = mockLanguageModelToolThenText(
                     toolName = "ping",
                     toolInput = mockToolInput("unused" to ""),
@@ -203,7 +203,7 @@ class ToolFlowTest {
             assertTrue(toolResult.isError)
             assertEquals(ToolResultOutput.Error("redacted failure"), toolResult.modelOutput)
 
-            val generateAgent = ToolLoopAgent<Unit, String>(
+            val generateAgent = TestToolLoopAgent<Unit, String>(
                 model = mockLanguageModelToolThenText(
                     toolName = "ping",
                     toolInput = mockToolInput("unused" to ""),
@@ -233,7 +233,7 @@ class ToolFlowTest {
                 inputSerializer = serializer(),
                 outputSerializer = serializer(),
             ) { _ -> flow { emit("only") } }
-            val agent = ToolLoopAgent<Unit, String>(
+            val agent = TestToolLoopAgent<Unit, String>(
                 model = mockLanguageModelToolThenText(
                     toolName = "streamer",
                     toolInput = mockToolInput("unused" to ""),
@@ -263,7 +263,7 @@ class ToolFlowTest {
                 inputSerializer = serializer(),
                 outputSerializer = serializer(),
             ) { _ -> flow { /* no emissions */ } }
-            val agent = ToolLoopAgent<Unit, String>(
+            val agent = TestToolLoopAgent<Unit, String>(
                 model = mockLanguageModelToolThenText(
                     toolName = "empty",
                     toolInput = mockToolInput("unused" to ""),

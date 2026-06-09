@@ -23,7 +23,7 @@ class ToolLoopAgentTest {
 
     @Test
     fun `text_only_round_trip`() = runTest {
-        val agent = ToolLoopAgent<Unit, String>(
+        val agent = TestToolLoopAgent<Unit, String>(
             model = mockLanguageModelTextOnly("hello, friend"),
             instructions = "be friendly",
             tools = toolSetOf(),
@@ -41,7 +41,7 @@ class ToolLoopAgentTest {
             inputSerializer = serializer(),
             outputSerializer = serializer(),
         ) { _ -> "pong" }
-        val agent = ToolLoopAgent<Unit, String>(
+        val agent = TestToolLoopAgent<Unit, String>(
             model = mockLanguageModelToolThenText(
                 toolName = "ping",
                 toolInput = mockToolInput("unused" to ""),

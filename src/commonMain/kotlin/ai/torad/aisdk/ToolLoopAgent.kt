@@ -28,7 +28,9 @@ import kotlin.coroutines.CoroutineContext
 import kotlin.coroutines.coroutineContext
 
 /**
- * Default [Agent] implementation — the canonical v6 ToolLoopAgent.
+ * Abstract base [Agent] implementation — the canonical v6 ToolLoopAgent. **Extend it; do not instantiate it.**
+ * A concrete agent subclasses this (e.g. `class MyAgent(...) : ToolLoopAgent<C, O>(...)`) so the agent's identity,
+ * tools, lifecycle overrides, and DI live in one named type — never a bare `ToolLoopAgent(...)` held as a field.
  *
  * Runs the model, executes tool calls, accumulates the message list,
  * checks [stopWhen] after each step, surfaces lifecycle events. Manages
@@ -56,7 +58,7 @@ import kotlin.coroutines.coroutineContext
  * Generation isn't kept "in flight" while the user decides — host can
  * serialize, persist, transport, then resume.
  */
-public open class ToolLoopAgent<TContext, TOutput>(
+public abstract class ToolLoopAgent<TContext, TOutput>(
     public val model: LanguageModel,
     public val instructions: String,
     override val tools: ToolSet<TContext>,

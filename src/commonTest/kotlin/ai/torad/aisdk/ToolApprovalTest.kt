@@ -46,7 +46,7 @@ class ToolApprovalTest {
             SendResult(sent = true)
         }
 
-        val agent = ToolLoopAgent<Unit, String>(
+        val agent = TestToolLoopAgent<Unit, String>(
             model = mockLanguageModelToolThenText(
                 toolName = "send",
                 toolInput = mockToolInput("message" to "hey friend"),
@@ -87,7 +87,7 @@ class ToolApprovalTest {
             SendResult(sent = true)
         }
 
-        val agent = ToolLoopAgent<Unit, String>(
+        val agent = TestToolLoopAgent<Unit, String>(
             model = mockLanguageModelToolThenText(
                 toolName = "send",
                 toolInput = mockToolInput("message" to "spam"),
@@ -122,7 +122,7 @@ class ToolApprovalTest {
             SendResult(sent = true)
         }
 
-        val agent = ToolLoopAgent<Unit, String>(
+        val agent = TestToolLoopAgent<Unit, String>(
             model = mockLanguageModelToolThenText(
                 toolName = "send",
                 toolInput = JsonObject(emptyMap()),
@@ -153,7 +153,7 @@ class ToolApprovalTest {
             SendResult(sent = true)
         }
 
-        val agent = ToolLoopAgent<String, String>(
+        val agent = TestToolLoopAgent<String, String>(
             model = mockLanguageModelToolThenText(
                 toolName = "send",
                 toolInput = mockToolInput("message" to "hey friend"),

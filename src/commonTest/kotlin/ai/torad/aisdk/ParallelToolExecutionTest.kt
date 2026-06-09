@@ -53,7 +53,7 @@ class ParallelToolExecutionTest {
             "$name-done"
         }
 
-        val agent = ToolLoopAgent<Unit, String>(
+        val agent = TestToolLoopAgent<Unit, String>(
             model = TwoToolThenText(),
             instructions = "x",
             tools = toolSetOf(gatedTool("toolA"), gatedTool("toolB")),
@@ -76,7 +76,7 @@ class ParallelToolExecutionTest {
             outputSerializer = serializer(),
         ) { _ -> "$name-out" }
 
-        val agent = ToolLoopAgent<Unit, String>(
+        val agent = TestToolLoopAgent<Unit, String>(
             model = TwoToolThenText(),
             instructions = "x",
             tools = toolSetOf(echoTool("toolA"), echoTool("toolB")),

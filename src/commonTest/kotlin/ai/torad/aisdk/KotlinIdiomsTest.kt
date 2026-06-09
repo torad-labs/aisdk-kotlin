@@ -139,7 +139,7 @@ class KotlinIdiomsTest {
 
     @Test
     fun `agent session uses caller scope and records generated state`() = runTest {
-        val agent = ToolLoopAgent<Unit, String>(
+        val agent = TestToolLoopAgent<Unit, String>(
             model = mockLanguageModelTextOnly("hello"),
             instructions = "Be brief.",
             tools = toolSet {},
@@ -158,7 +158,7 @@ class KotlinIdiomsTest {
 
     @Test
     fun `agent session can collect streaming state in caller scope`() = runTest {
-        val agent = ToolLoopAgent<Unit, String>(
+        val agent = TestToolLoopAgent<Unit, String>(
             model = mockLanguageModelTextOnly("hello"),
             instructions = "Be brief.",
             tools = toolSet {},

@@ -42,7 +42,7 @@ class ToolCallRepairTest {
                 outputSerializer = serializer(),
             ) { input -> "sunny in ${input.city}" }
             val malformed: JsonObject = buildJsonObject { put("location", JsonPrimitive("Paris")) }
-            val agent = ToolLoopAgent<Unit, String>(
+            val agent = TestToolLoopAgent<Unit, String>(
                 model = mockLanguageModelToolThenText(
                     toolName = "weather",
                     toolInput = malformed,
@@ -84,7 +84,7 @@ class ToolCallRepairTest {
                 outputSerializer = serializer(),
             ) { input -> "sunny in ${input.city}" }
             val malformed: JsonObject = buildJsonObject { put("location", JsonPrimitive("Paris")) }
-            val agent = ToolLoopAgent<Unit, String>(
+            val agent = TestToolLoopAgent<Unit, String>(
                 model = mockLanguageModelToolThenText(
                     toolName = "weather",
                     toolInput = malformed,
@@ -118,7 +118,7 @@ class ToolCallRepairTest {
             ) { input -> "sunny in ${input.city}" }
             val malformed: JsonObject = buildJsonObject { put("location", JsonPrimitive("Paris")) }
             var repairInvoked = false
-            val agent = ToolLoopAgent<Unit, String>(
+            val agent = TestToolLoopAgent<Unit, String>(
                 model = mockLanguageModelToolThenText(
                     toolName = "weather",
                     toolInput = malformed,

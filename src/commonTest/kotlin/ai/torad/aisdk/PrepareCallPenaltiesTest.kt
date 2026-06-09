@@ -49,7 +49,7 @@ class PrepareCallPenaltiesTest {
     fun `given agent penalty defaults when no prepareCall override then params carry the agent defaults`() = runTest {
         // GIVEN
         val capture = CapturingModel()
-        val agent = ToolLoopAgent<Unit, String>(
+        val agent = TestToolLoopAgent<Unit, String>(
             model = capture,
             instructions = "",
             tools = toolSetOf(),
@@ -69,7 +69,7 @@ class PrepareCallPenaltiesTest {
     fun `given prepareCall override when invoked then call-level penalties win over agent defaults`() = runTest {
         // GIVEN
         val capture = CapturingModel()
-        val agent = ToolLoopAgent<Unit, String>(
+        val agent = TestToolLoopAgent<Unit, String>(
             model = capture,
             instructions = "",
             tools = toolSetOf(),
@@ -95,7 +95,7 @@ class PrepareCallPenaltiesTest {
     fun `given prepareStep override when invoked then step-level penalties win over prepareCall`() = runTest {
         // GIVEN
         val capture = CapturingModel()
-        val agent = ToolLoopAgent<Unit, String>(
+        val agent = TestToolLoopAgent<Unit, String>(
             model = capture,
             instructions = "",
             tools = toolSetOf(),
@@ -115,7 +115,7 @@ class PrepareCallPenaltiesTest {
     fun `given agent structured output when invoked then call params carry JSON response format`() = runTest {
         // GIVEN
         val capture = CapturingModel("""{"value":"ok"}""")
-        val agent = ToolLoopAgent<Unit, StructuredAnswer>(
+        val agent = TestToolLoopAgent<Unit, StructuredAnswer>(
             model = capture,
             instructions = "",
             tools = toolSetOf(),
@@ -138,7 +138,7 @@ class PrepareCallPenaltiesTest {
         val capture = CapturingModel()
         val callFormat = ResponseFormat.Json(schemaName = "Call")
         val stepFormat = ResponseFormat.Json(schemaName = "Step")
-        val agent = ToolLoopAgent<Unit, String>(
+        val agent = TestToolLoopAgent<Unit, String>(
             model = capture,
             instructions = "",
             tools = toolSetOf(),
@@ -157,7 +157,7 @@ class PrepareCallPenaltiesTest {
     fun `given provider options from prepareCall and prepareStep when invoked then maps are merged`() = runTest {
         // GIVEN
         val capture = CapturingModel()
-        val agent = ToolLoopAgent<Unit, String>(
+        val agent = TestToolLoopAgent<Unit, String>(
             model = capture,
             instructions = "",
             tools = toolSetOf(),

@@ -81,7 +81,7 @@ class PrepareCallTest {
     @Test
     fun `prepareCall_runs_once_and_overrides_instructions`() = runTest {
         var callCount = 0
-        val agent = ToolLoopAgent<String, String>(
+        val agent = TestToolLoopAgent<String, String>(
             model = mockLanguageModelTextOnly("done"),
             instructions = "default instructions",
             tools = toolSetOf(),
@@ -97,7 +97,7 @@ class PrepareCallTest {
     @Test
     fun `prepareCall_can_provide_typed_context`() = runTest {
         var observedContext: String? = null
-        val agent = ToolLoopAgent<String, String>(
+        val agent = TestToolLoopAgent<String, String>(
             model = mockLanguageModelTextOnly("done"),
             instructions = "x",
             tools = toolSetOf(),
@@ -114,7 +114,7 @@ class PrepareCallTest {
     @Test
     fun `callOptionsSchema rejects invalid options before invoking the model`() = runTest {
         val model = CountingModel()
-        val agent = ToolLoopAgent<TopicOptions, String>(
+        val agent = TestToolLoopAgent<TopicOptions, String>(
             model = model,
             instructions = "x",
             tools = toolSetOf(),
@@ -133,7 +133,7 @@ class PrepareCallTest {
     fun `callOptionsSchema passes valid options into prepareCall`() = runTest {
         val model = CountingModel()
         var observed: TopicOptions? = null
-        val agent = ToolLoopAgent<TopicOptions, String>(
+        val agent = TestToolLoopAgent<TopicOptions, String>(
             model = model,
             instructions = "x",
             tools = toolSetOf(),

@@ -36,7 +36,7 @@ class ToolApprovalDenialTest {
             executed = true
             SendResult(sent = true)
         }
-        val agent = ToolLoopAgent<Unit, String>(
+        val agent = TestToolLoopAgent<Unit, String>(
             model = mockLanguageModelToolThenText(
                 toolName = "send",
                 toolInput = mockToolInput("message" to "spam"),

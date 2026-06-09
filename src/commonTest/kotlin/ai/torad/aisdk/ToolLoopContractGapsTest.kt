@@ -36,7 +36,7 @@ class ToolLoopContractGapsTest {
             seen.add(this.context)
             "ok"
         }
-        val agent = ToolLoopAgent<String, String>(
+        val agent = TestToolLoopAgent<String, String>(
             model = mockLanguageModelToolThenText("probe", mockToolInput("unused" to ""), "done"),
             instructions = "run probe",
             tools = toolSetOf(probe),
@@ -63,7 +63,7 @@ class ToolLoopContractGapsTest {
             seen.add(this.context)
             "ok"
         }
-        val agent = ToolLoopAgent<String, String>(
+        val agent = TestToolLoopAgent<String, String>(
             model = mockLanguageModelToolThenText("probe", mockToolInput("unused" to ""), "done"),
             instructions = "run probe",
             tools = toolSetOf(probe),
@@ -95,7 +95,7 @@ class ToolLoopContractGapsTest {
             onInputDelta = { id, _ -> deltas.add(id) },
             onInputAvailable = { callId, _ -> avails.add(callId) },
         ) { _ -> "ok" }
-        val agent = ToolLoopAgent<Unit, String>(
+        val agent = TestToolLoopAgent<Unit, String>(
             model = mockLanguageModelToolThenText("probe", mockToolInput("unused" to ""), "done"),
             instructions = "run probe",
             tools = toolSetOf(probe),
@@ -120,7 +120,7 @@ class ToolLoopContractGapsTest {
             outputSerializer = serializer(),
             onInputStart = { error("pre-warm boom") },
         ) { _ -> "ok" }
-        val agent = ToolLoopAgent<Unit, String>(
+        val agent = TestToolLoopAgent<Unit, String>(
             model = mockLanguageModelToolThenText("probe", mockToolInput("unused" to ""), "done"),
             instructions = "run probe",
             tools = toolSetOf(probe),
@@ -149,7 +149,7 @@ class ToolLoopContractGapsTest {
             writer.writeData(JsonPrimitive("step-1-done"))
             "final"
         }
-        val agent = ToolLoopAgent<Unit, String>(
+        val agent = TestToolLoopAgent<Unit, String>(
             model = mockLanguageModelToolThenText("progressing", mockToolInput("unused" to ""), "done"),
             instructions = "run it",
             tools = toolSetOf(writerTool),
