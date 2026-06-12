@@ -39,6 +39,8 @@ internal class TestToolLoopAgent<TContext, TOutput>(
     experimental_onToolCallStart: (suspend OnToolCallStartEvent.() -> Unit)? = null,
     experimental_onToolCallFinish: (suspend OnToolCallFinishEvent.() -> Unit)? = null,
     experimental_repairToolCall: ToolCallRepairFunction<TContext>? = null,
+    telemetry: TelemetrySettings? = null,
+    logger: Logger = NoopLogger,
     engineContext: CoroutineContext = Dispatchers.Default,
 ) : ToolLoopAgent<TContext, TOutput>(
     model = model,
@@ -70,5 +72,7 @@ internal class TestToolLoopAgent<TContext, TOutput>(
     experimental_onToolCallStart = experimental_onToolCallStart,
     experimental_onToolCallFinish = experimental_onToolCallFinish,
     experimental_repairToolCall = experimental_repairToolCall,
+    telemetry = telemetry,
+    logger = logger,
     engineContext = engineContext,
 )
