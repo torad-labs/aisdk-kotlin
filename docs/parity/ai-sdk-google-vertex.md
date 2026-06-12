@@ -1,7 +1,7 @@
 # @ai-sdk/google-vertex
 
-- Version: 4.0.142
-- Upstream path: `.reference/vercel-ai-sdk-ai-6.0.197/packages/google-vertex`
+- Version: 4.0.144
+- Upstream path: `.reference/vercel-ai-sdk-ai-6.0.202/packages/google-vertex`
 - Kotlin parity area: `:aisdk-provider-google-vertex`
 - Current parity status: ported: createVertex/vertex, createVertexAnthropic/vertexAnthropic, createVertexMaas/vertexMaas, createGoogleVertexXai/googleVertexXai, GoogleVertexProviderSettings and option aliases, Vertex publisher/express-mode base URL construction including global, regional, and eu/us REP hosts, Bearer/API-key/header auth behavior, Vertex Gemini language/embedding/image/video routing through the Google core adapter, Vertex hosted tool descriptors, Vertex Anthropic rawPredict/streamRawPredict routing with Vertex body/header transforms, Vertex MaAS OpenAI-compatible routing, Vertex xAI OpenAI-compatible routing with xAI request/usage transforms, unsupported model errors, and KMP host-injected credential boundaries are represented as Kotlin facades folded into the root module; VERSION is exposed as GOOGLE_VERTEX_VERSION until package modules are split
 
@@ -9,14 +9,14 @@
 
 | Subpath | Source | Export count |
 |---|---|---:|
-| `.` | `.reference/vercel-ai-sdk-ai-6.0.197/packages/google-vertex/src/index.ts` | 11 |
-| `./edge` | `.reference/vercel-ai-sdk-ai-6.0.197/packages/google-vertex/src/edge/index.ts` | 4 |
-| `./anthropic` | `.reference/vercel-ai-sdk-ai-6.0.197/packages/google-vertex/src/anthropic/index.ts` | 4 |
-| `./anthropic/edge` | `.reference/vercel-ai-sdk-ai-6.0.197/packages/google-vertex/src/anthropic/edge/index.ts` | 4 |
-| `./maas` | `.reference/vercel-ai-sdk-ai-6.0.197/packages/google-vertex/src/maas/index.ts` | 5 |
-| `./maas/edge` | `.reference/vercel-ai-sdk-ai-6.0.197/packages/google-vertex/src/maas/edge/index.ts` | 5 |
-| `./xai` | `.reference/vercel-ai-sdk-ai-6.0.197/packages/google-vertex/src/xai/index.ts` | 5 |
-| `./xai/edge` | `.reference/vercel-ai-sdk-ai-6.0.197/packages/google-vertex/src/xai/edge/index.ts` | 5 |
+| `.` | `.reference/vercel-ai-sdk-ai-6.0.202/packages/google-vertex/src/index.ts` | 11 |
+| `./edge` | `.reference/vercel-ai-sdk-ai-6.0.202/packages/google-vertex/src/edge/index.ts` | 4 |
+| `./anthropic` | `.reference/vercel-ai-sdk-ai-6.0.202/packages/google-vertex/src/anthropic/index.ts` | 4 |
+| `./anthropic/edge` | `.reference/vercel-ai-sdk-ai-6.0.202/packages/google-vertex/src/anthropic/edge/index.ts` | 4 |
+| `./maas` | `.reference/vercel-ai-sdk-ai-6.0.202/packages/google-vertex/src/maas/index.ts` | 5 |
+| `./maas/edge` | `.reference/vercel-ai-sdk-ai-6.0.202/packages/google-vertex/src/maas/edge/index.ts` | 5 |
+| `./xai` | `.reference/vercel-ai-sdk-ai-6.0.202/packages/google-vertex/src/xai/index.ts` | 5 |
+| `./xai/edge` | `.reference/vercel-ai-sdk-ai-6.0.202/packages/google-vertex/src/xai/edge/index.ts` | 5 |
 
 ## Public Exports
 

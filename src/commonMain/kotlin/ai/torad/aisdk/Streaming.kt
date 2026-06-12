@@ -232,6 +232,8 @@ public sealed interface StreamEvent {
          * tool-call id and need separate correlation.
          */
         val approvalId: String? = null,
+        /** HMAC-SHA256 approval signature (v6.0.202) — set only when the agent holds an approval secret. */
+        val signature: String? = null,
         val providerMetadata: Map<String, JsonElement>? = null,
     ) : StreamEvent
 

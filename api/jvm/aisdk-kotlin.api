@@ -114,6 +114,21 @@ public final class ai/torad/aisdk/AgentError$InvalidCallOptions : ai/torad/aisdk
 	public fun toString ()Ljava/lang/String;
 }
 
+public final class ai/torad/aisdk/AgentError$InvalidToolApprovalSignature : ai/torad/aisdk/AgentError {
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()Ljava/lang/String;
+	public final fun component3 ()Ljava/lang/String;
+	public final fun copy (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)Lai/torad/aisdk/AgentError$InvalidToolApprovalSignature;
+	public static synthetic fun copy$default (Lai/torad/aisdk/AgentError$InvalidToolApprovalSignature;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ILjava/lang/Object;)Lai/torad/aisdk/AgentError$InvalidToolApprovalSignature;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getApprovalId ()Ljava/lang/String;
+	public final fun getReason ()Ljava/lang/String;
+	public final fun getToolCallId ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
 public final class ai/torad/aisdk/AgentError$InvalidToolInput : ai/torad/aisdk/AgentError {
 	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/Throwable;)V
 	public final fun component1 ()Ljava/lang/String;
@@ -856,19 +871,21 @@ public final class ai/torad/aisdk/ContentPart$Text$Companion {
 
 public final class ai/torad/aisdk/ContentPart$ToolApprovalRequest : ai/torad/aisdk/ContentPart {
 	public static final field Companion Lai/torad/aisdk/ContentPart$ToolApprovalRequest$Companion;
-	public fun <init> (Ljava/lang/String;Ljava/lang/String;Lkotlinx/serialization/json/JsonElement;Ljava/lang/String;Ljava/util/Map;)V
-	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;Lkotlinx/serialization/json/JsonElement;Ljava/lang/String;Ljava/util/Map;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;Lkotlinx/serialization/json/JsonElement;Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;)V
+	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;Lkotlinx/serialization/json/JsonElement;Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun component1 ()Ljava/lang/String;
 	public final fun component2 ()Ljava/lang/String;
 	public final fun component3 ()Lkotlinx/serialization/json/JsonElement;
 	public final fun component4 ()Ljava/lang/String;
-	public final fun component5 ()Ljava/util/Map;
-	public final fun copy (Ljava/lang/String;Ljava/lang/String;Lkotlinx/serialization/json/JsonElement;Ljava/lang/String;Ljava/util/Map;)Lai/torad/aisdk/ContentPart$ToolApprovalRequest;
-	public static synthetic fun copy$default (Lai/torad/aisdk/ContentPart$ToolApprovalRequest;Ljava/lang/String;Ljava/lang/String;Lkotlinx/serialization/json/JsonElement;Ljava/lang/String;Ljava/util/Map;ILjava/lang/Object;)Lai/torad/aisdk/ContentPart$ToolApprovalRequest;
+	public final fun component5 ()Ljava/lang/String;
+	public final fun component6 ()Ljava/util/Map;
+	public final fun copy (Ljava/lang/String;Ljava/lang/String;Lkotlinx/serialization/json/JsonElement;Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;)Lai/torad/aisdk/ContentPart$ToolApprovalRequest;
+	public static synthetic fun copy$default (Lai/torad/aisdk/ContentPart$ToolApprovalRequest;Ljava/lang/String;Ljava/lang/String;Lkotlinx/serialization/json/JsonElement;Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;ILjava/lang/Object;)Lai/torad/aisdk/ContentPart$ToolApprovalRequest;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getApprovalId ()Ljava/lang/String;
 	public final fun getInput ()Lkotlinx/serialization/json/JsonElement;
 	public final fun getProviderMetadata ()Ljava/util/Map;
+	public final fun getSignature ()Ljava/lang/String;
 	public final fun getToolCallId ()Ljava/lang/String;
 	public final fun getToolName ()Ljava/lang/String;
 	public fun hashCode ()I
@@ -4566,17 +4583,19 @@ public final class ai/torad/aisdk/PartialJsonState : java/lang/Enum {
 
 public final class ai/torad/aisdk/PendingApproval {
 	public static final field Companion Lai/torad/aisdk/PendingApproval$Companion;
-	public fun <init> (Ljava/lang/String;Ljava/lang/String;Lkotlinx/serialization/json/JsonElement;Ljava/lang/String;)V
-	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;Lkotlinx/serialization/json/JsonElement;Ljava/lang/String;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;Lkotlinx/serialization/json/JsonElement;Ljava/lang/String;Ljava/lang/String;)V
+	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;Lkotlinx/serialization/json/JsonElement;Ljava/lang/String;Ljava/lang/String;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun component1 ()Ljava/lang/String;
 	public final fun component2 ()Ljava/lang/String;
 	public final fun component3 ()Lkotlinx/serialization/json/JsonElement;
 	public final fun component4 ()Ljava/lang/String;
-	public final fun copy (Ljava/lang/String;Ljava/lang/String;Lkotlinx/serialization/json/JsonElement;Ljava/lang/String;)Lai/torad/aisdk/PendingApproval;
-	public static synthetic fun copy$default (Lai/torad/aisdk/PendingApproval;Ljava/lang/String;Ljava/lang/String;Lkotlinx/serialization/json/JsonElement;Ljava/lang/String;ILjava/lang/Object;)Lai/torad/aisdk/PendingApproval;
+	public final fun component5 ()Ljava/lang/String;
+	public final fun copy (Ljava/lang/String;Ljava/lang/String;Lkotlinx/serialization/json/JsonElement;Ljava/lang/String;Ljava/lang/String;)Lai/torad/aisdk/PendingApproval;
+	public static synthetic fun copy$default (Lai/torad/aisdk/PendingApproval;Ljava/lang/String;Ljava/lang/String;Lkotlinx/serialization/json/JsonElement;Ljava/lang/String;Ljava/lang/String;ILjava/lang/Object;)Lai/torad/aisdk/PendingApproval;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getApprovalId ()Ljava/lang/String;
 	public final fun getInput ()Lkotlinx/serialization/json/JsonElement;
+	public final fun getSignature ()Ljava/lang/String;
 	public final fun getToolCallId ()Ljava/lang/String;
 	public final fun getToolName ()Ljava/lang/String;
 	public fun hashCode ()I
@@ -5833,19 +5852,21 @@ public final class ai/torad/aisdk/StreamEvent$TextStart$Companion {
 
 public final class ai/torad/aisdk/StreamEvent$ToolApprovalRequest : ai/torad/aisdk/StreamEvent {
 	public static final field Companion Lai/torad/aisdk/StreamEvent$ToolApprovalRequest$Companion;
-	public fun <init> (Ljava/lang/String;Ljava/lang/String;Lkotlinx/serialization/json/JsonElement;Ljava/lang/String;Ljava/util/Map;)V
-	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;Lkotlinx/serialization/json/JsonElement;Ljava/lang/String;Ljava/util/Map;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;Lkotlinx/serialization/json/JsonElement;Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;)V
+	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;Lkotlinx/serialization/json/JsonElement;Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun component1 ()Ljava/lang/String;
 	public final fun component2 ()Ljava/lang/String;
 	public final fun component3 ()Lkotlinx/serialization/json/JsonElement;
 	public final fun component4 ()Ljava/lang/String;
-	public final fun component5 ()Ljava/util/Map;
-	public final fun copy (Ljava/lang/String;Ljava/lang/String;Lkotlinx/serialization/json/JsonElement;Ljava/lang/String;Ljava/util/Map;)Lai/torad/aisdk/StreamEvent$ToolApprovalRequest;
-	public static synthetic fun copy$default (Lai/torad/aisdk/StreamEvent$ToolApprovalRequest;Ljava/lang/String;Ljava/lang/String;Lkotlinx/serialization/json/JsonElement;Ljava/lang/String;Ljava/util/Map;ILjava/lang/Object;)Lai/torad/aisdk/StreamEvent$ToolApprovalRequest;
+	public final fun component5 ()Ljava/lang/String;
+	public final fun component6 ()Ljava/util/Map;
+	public final fun copy (Ljava/lang/String;Ljava/lang/String;Lkotlinx/serialization/json/JsonElement;Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;)Lai/torad/aisdk/StreamEvent$ToolApprovalRequest;
+	public static synthetic fun copy$default (Lai/torad/aisdk/StreamEvent$ToolApprovalRequest;Ljava/lang/String;Ljava/lang/String;Lkotlinx/serialization/json/JsonElement;Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;ILjava/lang/Object;)Lai/torad/aisdk/StreamEvent$ToolApprovalRequest;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getApprovalId ()Ljava/lang/String;
 	public final fun getInputJson ()Lkotlinx/serialization/json/JsonElement;
 	public final fun getProviderMetadata ()Ljava/util/Map;
+	public final fun getSignature ()Ljava/lang/String;
 	public final fun getToolCallId ()Ljava/lang/String;
 	public final fun getToolName ()Ljava/lang/String;
 	public fun hashCode ()I
@@ -6489,6 +6510,12 @@ public final class ai/torad/aisdk/ToolApprovalKt {
 	public static final fun effectiveApprovalId (Lai/torad/aisdk/PendingApproval;)Ljava/lang/String;
 }
 
+public final class ai/torad/aisdk/ToolApprovalSignatureKt {
+	public static final fun maybeSignToolApproval ([BLjava/lang/String;Ljava/lang/String;Ljava/lang/String;Lkotlinx/serialization/json/JsonElement;)Ljava/lang/String;
+	public static final fun signToolApproval ([BLjava/lang/String;Ljava/lang/String;Ljava/lang/String;Lkotlinx/serialization/json/JsonElement;)Ljava/lang/String;
+	public static final fun verifyToolApprovalSignature ([BLjava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lkotlinx/serialization/json/JsonElement;)Z
+}
+
 public final class ai/torad/aisdk/ToolCallNotFoundForApprovalError : ai/torad/aisdk/AiSdkException {
 	public fun <init> (Ljava/lang/String;Ljava/lang/String;)V
 	public final fun getApprovalId ()Ljava/lang/String;
@@ -6612,8 +6639,8 @@ public final class ai/torad/aisdk/ToolKt {
 }
 
 public abstract class ai/torad/aisdk/ToolLoopAgent : ai/torad/aisdk/Agent {
-	public fun <init> (Lai/torad/aisdk/LanguageModel;Ljava/lang/String;Lai/torad/aisdk/ToolSet;Ljava/util/List;Lai/torad/aisdk/Output;Lai/torad/aisdk/StopCondition;Lkotlin/jvm/functions/Function2;Lkotlin/jvm/functions/Function2;Lkotlinx/serialization/KSerializer;Ljava/lang/Float;Ljava/lang/Float;Ljava/lang/Integer;Ljava/lang/Integer;Ljava/util/List;Ljava/lang/Integer;Ljava/lang/Float;Ljava/lang/Float;Lai/torad/aisdk/ResponseFormat;ILkotlin/jvm/functions/Function2;Lkotlin/jvm/functions/Function2;Lkotlin/jvm/functions/Function2;Lkotlin/jvm/functions/Function2;Lkotlin/jvm/functions/Function2;Lkotlin/jvm/functions/Function2;Lkotlin/jvm/functions/Function2;Lkotlin/jvm/functions/Function2;Lkotlin/jvm/functions/Function2;Lkotlin/jvm/functions/Function5;Lai/torad/aisdk/TelemetrySettings;Lai/torad/aisdk/Logger;Lkotlin/coroutines/CoroutineContext;)V
-	public synthetic fun <init> (Lai/torad/aisdk/LanguageModel;Ljava/lang/String;Lai/torad/aisdk/ToolSet;Ljava/util/List;Lai/torad/aisdk/Output;Lai/torad/aisdk/StopCondition;Lkotlin/jvm/functions/Function2;Lkotlin/jvm/functions/Function2;Lkotlinx/serialization/KSerializer;Ljava/lang/Float;Ljava/lang/Float;Ljava/lang/Integer;Ljava/lang/Integer;Ljava/util/List;Ljava/lang/Integer;Ljava/lang/Float;Ljava/lang/Float;Lai/torad/aisdk/ResponseFormat;ILkotlin/jvm/functions/Function2;Lkotlin/jvm/functions/Function2;Lkotlin/jvm/functions/Function2;Lkotlin/jvm/functions/Function2;Lkotlin/jvm/functions/Function2;Lkotlin/jvm/functions/Function2;Lkotlin/jvm/functions/Function2;Lkotlin/jvm/functions/Function2;Lkotlin/jvm/functions/Function2;Lkotlin/jvm/functions/Function5;Lai/torad/aisdk/TelemetrySettings;Lai/torad/aisdk/Logger;Lkotlin/coroutines/CoroutineContext;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun <init> (Lai/torad/aisdk/LanguageModel;Ljava/lang/String;Lai/torad/aisdk/ToolSet;Ljava/util/List;Lai/torad/aisdk/Output;Lai/torad/aisdk/StopCondition;Lkotlin/jvm/functions/Function2;Lkotlin/jvm/functions/Function2;Lkotlinx/serialization/KSerializer;Ljava/lang/Float;Ljava/lang/Float;Ljava/lang/Integer;Ljava/lang/Integer;Ljava/util/List;Ljava/lang/Integer;Ljava/lang/Float;Ljava/lang/Float;Lai/torad/aisdk/ResponseFormat;ILkotlin/jvm/functions/Function2;Lkotlin/jvm/functions/Function2;Lkotlin/jvm/functions/Function2;Lkotlin/jvm/functions/Function2;Lkotlin/jvm/functions/Function2;Lkotlin/jvm/functions/Function2;Lkotlin/jvm/functions/Function2;Lkotlin/jvm/functions/Function2;Lkotlin/jvm/functions/Function2;Lkotlin/jvm/functions/Function5;[BLai/torad/aisdk/TelemetrySettings;Lai/torad/aisdk/Logger;Lkotlin/coroutines/CoroutineContext;)V
+	public synthetic fun <init> (Lai/torad/aisdk/LanguageModel;Ljava/lang/String;Lai/torad/aisdk/ToolSet;Ljava/util/List;Lai/torad/aisdk/Output;Lai/torad/aisdk/StopCondition;Lkotlin/jvm/functions/Function2;Lkotlin/jvm/functions/Function2;Lkotlinx/serialization/KSerializer;Ljava/lang/Float;Ljava/lang/Float;Ljava/lang/Integer;Ljava/lang/Integer;Ljava/util/List;Ljava/lang/Integer;Ljava/lang/Float;Ljava/lang/Float;Lai/torad/aisdk/ResponseFormat;ILkotlin/jvm/functions/Function2;Lkotlin/jvm/functions/Function2;Lkotlin/jvm/functions/Function2;Lkotlin/jvm/functions/Function2;Lkotlin/jvm/functions/Function2;Lkotlin/jvm/functions/Function2;Lkotlin/jvm/functions/Function2;Lkotlin/jvm/functions/Function2;Lkotlin/jvm/functions/Function2;Lkotlin/jvm/functions/Function5;[BLai/torad/aisdk/TelemetrySettings;Lai/torad/aisdk/Logger;Lkotlin/coroutines/CoroutineContext;IILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun close ()V
 	public final fun dispatchEngineAction (Lai/torad/aisdk/ToolLoopAgentAction;)V
 	public fun generate (Ljava/lang/String;Ljava/util/List;Ljava/lang/Object;Lai/torad/aisdk/AbortSignal;Lai/torad/aisdk/AgentCallHooks;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
@@ -6623,6 +6650,7 @@ public abstract class ai/torad/aisdk/ToolLoopAgent : ai/torad/aisdk/Agent {
 	public final fun getExperimental_onToolCallFinish ()Lkotlin/jvm/functions/Function2;
 	public final fun getExperimental_onToolCallStart ()Lkotlin/jvm/functions/Function2;
 	public final fun getExperimental_repairToolCall ()Lkotlin/jvm/functions/Function5;
+	public final fun getExperimental_toolApprovalSecret ()[B
 	public final fun getFrequencyPenalty ()Ljava/lang/Float;
 	public fun getId ()Ljava/lang/String;
 	public final fun getInstructions ()Ljava/lang/String;
@@ -13405,24 +13433,28 @@ public final class ai/torad/aisdk/ui/UIMessagePart$Text$Companion {
 
 public final class ai/torad/aisdk/ui/UIMessagePart$ToolUI : ai/torad/aisdk/ui/UIMessagePart {
 	public static final field Companion Lai/torad/aisdk/ui/UIMessagePart$ToolUI$Companion;
-	public fun <init> (Ljava/lang/String;Ljava/lang/String;Lai/torad/aisdk/ui/ToolCallState;Lkotlinx/serialization/json/JsonElement;Lkotlinx/serialization/json/JsonElement;Ljava/lang/String;ZLjava/util/Map;)V
-	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;Lai/torad/aisdk/ui/ToolCallState;Lkotlinx/serialization/json/JsonElement;Lkotlinx/serialization/json/JsonElement;Ljava/lang/String;ZLjava/util/Map;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;Lai/torad/aisdk/ui/ToolCallState;Lkotlinx/serialization/json/JsonElement;Lkotlinx/serialization/json/JsonElement;Ljava/lang/String;ZLjava/lang/String;Ljava/lang/String;Ljava/util/Map;)V
+	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;Lai/torad/aisdk/ui/ToolCallState;Lkotlinx/serialization/json/JsonElement;Lkotlinx/serialization/json/JsonElement;Ljava/lang/String;ZLjava/lang/String;Ljava/lang/String;Ljava/util/Map;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun component1 ()Ljava/lang/String;
+	public final fun component10 ()Ljava/util/Map;
 	public final fun component2 ()Ljava/lang/String;
 	public final fun component3 ()Lai/torad/aisdk/ui/ToolCallState;
 	public final fun component4 ()Lkotlinx/serialization/json/JsonElement;
 	public final fun component5 ()Lkotlinx/serialization/json/JsonElement;
 	public final fun component6 ()Ljava/lang/String;
 	public final fun component7 ()Z
-	public final fun component8 ()Ljava/util/Map;
-	public final fun copy (Ljava/lang/String;Ljava/lang/String;Lai/torad/aisdk/ui/ToolCallState;Lkotlinx/serialization/json/JsonElement;Lkotlinx/serialization/json/JsonElement;Ljava/lang/String;ZLjava/util/Map;)Lai/torad/aisdk/ui/UIMessagePart$ToolUI;
-	public static synthetic fun copy$default (Lai/torad/aisdk/ui/UIMessagePart$ToolUI;Ljava/lang/String;Ljava/lang/String;Lai/torad/aisdk/ui/ToolCallState;Lkotlinx/serialization/json/JsonElement;Lkotlinx/serialization/json/JsonElement;Ljava/lang/String;ZLjava/util/Map;ILjava/lang/Object;)Lai/torad/aisdk/ui/UIMessagePart$ToolUI;
+	public final fun component8 ()Ljava/lang/String;
+	public final fun component9 ()Ljava/lang/String;
+	public final fun copy (Ljava/lang/String;Ljava/lang/String;Lai/torad/aisdk/ui/ToolCallState;Lkotlinx/serialization/json/JsonElement;Lkotlinx/serialization/json/JsonElement;Ljava/lang/String;ZLjava/lang/String;Ljava/lang/String;Ljava/util/Map;)Lai/torad/aisdk/ui/UIMessagePart$ToolUI;
+	public static synthetic fun copy$default (Lai/torad/aisdk/ui/UIMessagePart$ToolUI;Ljava/lang/String;Ljava/lang/String;Lai/torad/aisdk/ui/ToolCallState;Lkotlinx/serialization/json/JsonElement;Lkotlinx/serialization/json/JsonElement;Ljava/lang/String;ZLjava/lang/String;Ljava/lang/String;Ljava/util/Map;ILjava/lang/Object;)Lai/torad/aisdk/ui/UIMessagePart$ToolUI;
 	public fun equals (Ljava/lang/Object;)Z
+	public final fun getApprovalId ()Ljava/lang/String;
 	public final fun getError ()Ljava/lang/String;
 	public final fun getInput ()Lkotlinx/serialization/json/JsonElement;
 	public final fun getOutput ()Lkotlinx/serialization/json/JsonElement;
 	public final fun getPreliminary ()Z
 	public final fun getProviderMetadata ()Ljava/util/Map;
+	public final fun getSignature ()Ljava/lang/String;
 	public final fun getState ()Lai/torad/aisdk/ui/ToolCallState;
 	public final fun getToolCallId ()Ljava/lang/String;
 	public final fun getToolName ()Ljava/lang/String;

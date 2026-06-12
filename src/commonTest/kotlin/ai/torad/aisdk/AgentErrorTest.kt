@@ -78,6 +78,7 @@ class AgentErrorTest {
             AgentError.ToolExecution("w", "id", RuntimeException("x")),
             AgentError.ToolCallRepairFailed("w", RuntimeException("orig"), null),
             AgentError.InvalidApprovalResponse("id", emptyList()),
+            AgentError.InvalidToolApprovalSignature("appr_1", "id", "invalid signature"),
             AgentError.InvalidCallOptions(RuntimeException("bad options")),
             AgentError.MaxStepsReached(20),
         )
@@ -91,6 +92,7 @@ class AgentErrorTest {
                 is AgentError.ToolExecution -> "ToolExecution"
                 is AgentError.ToolCallRepairFailed -> "ToolCallRepairFailed"
                 is AgentError.InvalidApprovalResponse -> "InvalidApprovalResponse"
+                is AgentError.InvalidToolApprovalSignature -> "InvalidToolApprovalSignature"
                 is AgentError.InvalidCallOptions -> "InvalidCallOptions"
                 is AgentError.MaxStepsReached -> "MaxStepsReached"
             }

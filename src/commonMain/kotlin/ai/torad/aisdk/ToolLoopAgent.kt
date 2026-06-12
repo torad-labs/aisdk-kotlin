@@ -106,6 +106,18 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
      */
     public val experimental_repairToolCall: ToolCallRepairFunction<TContext>? = null,
     /**
+     * Secret for HMAC-signing tool-approval requests (upstream v6.0.202
+     * `experimental_toolApprovalSecret`). When set, every approval request the
+     * loop issues carries a signature over `(approvalId, toolCallId, toolName,
+     * input)`, and a replayed approval is re-validated FAIL-CLOSED before the
+     * tool executes: missing/invalid signature throws
+     * [AgentError.InvalidToolApprovalSignature], the input is re-validated
+     * against the tool's schema, and a tool that no longer requires approval
+     * is denied rather than run — so a client cannot forge, re-target, or
+     * input-swap an approval. Experimental upstream (can break in patches).
+     */
+    public val experimental_toolApprovalSecret: ByteArray? = null,
+    /**
      * Telemetry for this agent's invocations (upstream v7 `telemetry`).
      * [Telemetry] integrations registered globally via [registerTelemetry]
      * observe every generate/stream call automatically; this setting adds
@@ -396,6 +408,7 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
                             toolName = event.toolName,
                             input = event.inputJson,
                             approvalId = event.approvalId,
+                            signature = event.signature,
                         ),
                     )
                 }
@@ -832,9 +845,30 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
             val hasLocalToolWork = toolsRequiringApproval.isNotEmpty() || toolsToExecute.isNotEmpty()
 
             // Emit approval requests + add to assistant content. Loop ends after this step.
+            // With an approval secret configured, each request is signed at issuance over its
+            // EFFECTIVE approval id (explicit approvalId ?: toolCallId — here the default).
             for (call in toolsRequiringApproval) {
-                emit(StreamEvent.ToolApprovalRequest(call.toolCallId, call.toolName, call.input))
-                val request = ContentPart.ToolApprovalRequest(call.toolCallId, call.toolName, call.input)
+                val signature = maybeSignToolApproval(
+                    secret = experimental_toolApprovalSecret,
+                    approvalId = call.toolCallId,
+                    toolCallId = call.toolCallId,
+                    toolName = call.toolName,
+                    input = call.input,
+                )
+                emit(
+                    StreamEvent.ToolApprovalRequest(
+                        call.toolCallId,
+                        call.toolName,
+                        call.input,
+                        signature = signature,
+                    ),
+                )
+                val request = ContentPart.ToolApprovalRequest(
+                    call.toolCallId,
+                    call.toolName,
+                    call.input,
+                    signature = signature,
+                )
                 assistantParts.add(request)
                 stepApprovalRequests.add(request)
                 pendingApprovalEmitted = true
@@ -975,6 +1009,7 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
                         toolName = it.toolName,
                         input = it.input,
                         approvalId = it.approvalId,
+                        signature = it.signature,
                     )
                 }
                 ?: emptyList()
@@ -1024,10 +1059,13 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
 
         // Correlate response.approvalId -> request.toolCallId (the approval response may
         // reference the request by a distinct approvalId), matching upstream.
-        val approvalIdToCallId = priorAssistantMsg.content
-            .filterIsInstance<ContentPart.ToolApprovalRequest>()
+        val approvalRequests = priorAssistantMsg.content.filterIsInstance<ContentPart.ToolApprovalRequest>()
+        val approvalIdToCallId = approvalRequests
             .mapNotNull { req -> req.approvalId?.let { it to req.toolCallId } }
             .toMap()
+        // The issued request per EFFECTIVE approval id — carries the signature the
+        // v6.0.202 fail-closed re-validation checks before an approved tool executes.
+        val requestsByApprovalId = approvalRequests.associateBy { it.approvalId ?: it.toolCallId }
         // Idempotency: a call already answered by a tool result must NOT re-execute.
         val alreadyResolved = resolvedToolCallIds(messages)
 
@@ -1054,7 +1092,31 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
                 )
                 continue
             }
-            val toolDef = tools.find(matchingCall.toolName) ?: continue
+            // v6.0.202 fail-closed re-validation of the client-replayed approval, in upstream
+            // order: HMAC signature (with a configured secret), input schema, then a fresh
+            // needsApproval resolution. A tool that vanished from the surface or no longer
+            // requires approval could never have been issued this request — denied, not run.
+            val effectiveApprovalKey = approval.approvalId ?: matchingCall.toolCallId
+            verifyReplayedApprovalSignature(
+                request = requestsByApprovalId[effectiveApprovalKey],
+                approvalKey = effectiveApprovalKey,
+                call = matchingCall,
+            )
+            val toolDef = tools.find(matchingCall.toolName)
+            if (toolDef != null) revalidateApprovedInput(toolDef, matchingCall)
+            val stillNeedsApproval = toolDef != null &&
+                callNeedsApproval(toolDef, matchingCall, options, messages.toList())
+            if (toolDef == null || !stillNeedsApproval) {
+                applyDeniedToolApproval(
+                    out = out,
+                    call = matchingCall,
+                    approvalId = effectiveApprovalKey,
+                    reason = approval.reason
+                        ?: "Tool \"${matchingCall.toolName}\" does not require approval",
+                    messages = messages,
+                )
+                continue
+            }
             val approvedResult = executeTool(
                 out = out,
                 toolDef = toolDef,
@@ -1078,6 +1140,46 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
             }
         }
         return Unit
+    }
+
+    /**
+     * Fail-closed HMAC check for one replayed approval (v6.0.202): with no configured
+     * secret this is a no-op; with one, a missing or invalid signature throws
+     * [AgentError.InvalidToolApprovalSignature] — the tool never executes. Verified over
+     * the ASSISTANT tool-call's input (what would execute), not the response's claim.
+     */
+    private fun verifyReplayedApprovalSignature(
+        request: ContentPart.ToolApprovalRequest?,
+        approvalKey: String,
+        call: ContentPart.ToolCall,
+    ) {
+        val secret = experimental_toolApprovalSecret ?: return
+        val signature = request?.signature
+            ?: throw AgentError.InvalidToolApprovalSignature(approvalKey, call.toolCallId, "missing signature")
+        val valid = verifyToolApprovalSignature(
+            secret = secret,
+            signature = signature,
+            approvalId = approvalKey,
+            toolCallId = call.toolCallId,
+            toolName = call.toolName,
+            input = call.input,
+        )
+        if (!valid) {
+            throw AgentError.InvalidToolApprovalSignature(approvalKey, call.toolCallId, "invalid signature")
+        }
+    }
+
+    /** Fail-closed schema re-validation of a replayed approval's input (v6.0.202): the
+     *  client supplied this history, so the input is re-decoded against the tool's schema
+     *  BEFORE execution; a mismatch throws [AgentError.InvalidToolInput]. */
+    private fun revalidateApprovedInput(toolDef: Tool<*, *, TContext>, call: ContentPart.ToolCall) {
+        try {
+            decodeToolInput(toolDef, call.input)
+        } catch (ce: CancellationException) {
+            throw ce
+        } catch (t: Throwable) {
+            throw t as? AgentError ?: AgentError.InvalidToolInput(call.toolName, call.input.toString(), t)
+        }
     }
 
     /** Tool-call ids already answered by a tool result anywhere in the message log. */

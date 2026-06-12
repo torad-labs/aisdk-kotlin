@@ -1,7 +1,7 @@
 # @ai-sdk/langchain
 
-- Version: 2.0.204
-- Upstream path: `.reference/vercel-ai-sdk-ai-6.0.197/packages/langchain`
+- Version: 2.0.209
+- Upstream path: `.reference/vercel-ai-sdk-ai-6.0.202/packages/langchain`
 - Kotlin parity area: `:aisdk-langchain`
 - Current parity status: ported: toBaseMessages, convertModelMessages, toUIMessageStream, StreamCallbacks, and LangSmithDeploymentTransport are represented as Kotlin-native UI/Flow adapters folded into the root module
 
@@ -9,7 +9,7 @@
 
 | Subpath | Source | Export count |
 |---|---|---:|
-| `.` | `.reference/vercel-ai-sdk-ai-6.0.197/packages/langchain/src/index.ts` | 6 |
+| `.` | `.reference/vercel-ai-sdk-ai-6.0.202/packages/langchain/src/index.ts` | 6 |
 
 ## Public Exports
 

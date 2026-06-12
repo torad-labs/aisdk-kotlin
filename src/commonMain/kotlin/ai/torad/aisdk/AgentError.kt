@@ -90,6 +90,17 @@ public sealed class AgentError(
             "(pending: ${knownPendingIds.joinToString().ifBlank { "<none>" }})",
     )
 
+    /** A replayed tool approval failed HMAC verification — fail-closed, the tool never executes
+     *  (upstream v6.0.202 `InvalidToolApprovalSignatureError`). */
+    public data class InvalidToolApprovalSignature(
+        val approvalId: String,
+        val toolCallId: String,
+        val reason: String,
+    ) : AgentError(
+        "Tool approval signature verification failed for approval '$approvalId' " +
+            "(tool call '$toolCallId'): $reason",
+    )
+
     public data class InvalidCallOptions(
         val validationError: Throwable,
     ) : AgentError(

@@ -126,9 +126,9 @@ public data class AgentCallHooks(
     val onFinish: (suspend (OnFinishEvent) -> Unit)? = null,
     val onError: (suspend (OnErrorEvent) -> Unit)? = null,
     val onChunk: (suspend (OnChunkEvent) -> Unit)? = null,
-    val onAbort: (suspend (OnAbortEvent) -> Unit)? = null, // lambda-ok: AgentCallHooks is a data class of raw fn-type hook fields (the established SDK style)
-    /** Per-call mirror of the constructor's `experimental_onToolCallStart` — fired before a (non-gated) tool executes. */
-    val experimental_onToolCallStart: (suspend (OnToolCallStartEvent) -> Unit)? = null, // lambda-ok: matches the surrounding fn-type hook fields
-    /** Per-call mirror of the constructor's `experimental_onToolCallFinish` — fired after a tool returns or throws. */
-    val experimental_onToolCallFinish: (suspend (OnToolCallFinishEvent) -> Unit)? = null, // lambda-ok: matches the surrounding fn-type hook fields
+    val onAbort: (suspend (OnAbortEvent) -> Unit)? = null,
+    /** Per-call mirror of the constructor hook — fired before a (non-gated) tool executes. */
+    val experimental_onToolCallStart: (suspend (OnToolCallStartEvent) -> Unit)? = null,
+    /** Per-call mirror of the constructor hook — fired after a tool returns or throws. */
+    val experimental_onToolCallFinish: (suspend (OnToolCallFinishEvent) -> Unit)? = null,
 )

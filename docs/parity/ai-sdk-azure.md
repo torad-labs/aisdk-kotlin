@@ -1,7 +1,7 @@
 # @ai-sdk/azure
 
-- Version: 3.0.70
-- Upstream path: `.reference/vercel-ai-sdk-ai-6.0.197/packages/azure`
+- Version: 3.0.73
+- Upstream path: `.reference/vercel-ai-sdk-ai-6.0.202/packages/azure`
 - Kotlin parity area: `:aisdk-provider-azure`
 - Current parity status: ported: createAzure/azure, AzureOpenAIProviderSettings, Azure OpenAI model aliases, responses/chat/completion/embedding/image/transcription/speech routing, api-key and tokenProvider authentication, v1 and deployment URL formats, api-version handling, Azure hosted OpenAI tools, per-call language headers, and OpenAI provider-option forwarding are represented as a Kotlin facade folded into the root module; VERSION is exposed as AZURE_VERSION until package modules are split
 
@@ -9,13 +9,15 @@
 
 | Subpath | Source | Export count |
 |---|---|---:|
-| `.` | `.reference/vercel-ai-sdk-ai-6.0.197/packages/azure/src/index.ts` | 13 |
+| `.` | `.reference/vercel-ai-sdk-ai-6.0.202/packages/azure/src/index.ts` | 15 |
 
 ## Public Exports
 
 | Export | Kind | Source | Entrypoints |
 |---|---|---|---|
 | `azure` | value | `src/azure-openai-provider.ts` | `.` |
+| `AzureDeepSeekChatOptions` | type | `src/index.ts` | `.` |
+| `AzureDeepSeekLanguageModelOptions` | type | `src/index.ts` | `.` |
 | `AzureOpenAIProvider` | type | `src/azure-openai-provider.ts` | `.` |
 | `AzureOpenAIProviderSettings` | type | `src/azure-openai-provider.ts` | `.` |
 | `AzureResponsesProviderMetadata` | type | `src/azure-openai-provider-metadata.ts` | `.` |

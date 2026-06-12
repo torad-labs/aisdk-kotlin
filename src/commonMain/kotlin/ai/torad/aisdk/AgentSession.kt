@@ -306,7 +306,12 @@ public class AgentSession<TContext, TOutput>(
         val resumeMessages = state.value.messages + response
         val resumeOptions = options ?: lastOptions
         return if (lastStreaming) {
-            submitStreaming(messages = resumeMessages, options = resumeOptions, abortSignal = lastAbortSignal, hooks = lastHooks)
+            submitStreaming(
+                messages = resumeMessages,
+                options = resumeOptions,
+                abortSignal = lastAbortSignal,
+                hooks = lastHooks,
+            )
         } else {
             submit(messages = resumeMessages, options = resumeOptions, abortSignal = lastAbortSignal, hooks = lastHooks)
         }

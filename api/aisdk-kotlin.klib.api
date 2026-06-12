@@ -1615,8 +1615,10 @@ sealed interface ai.torad.aisdk.ui/UIMessagePart { // ai.torad.aisdk.ui/UIMessag
     }
 
     final class ToolUI : ai.torad.aisdk.ui/UIMessagePart { // ai.torad.aisdk.ui/UIMessagePart.ToolUI|null[0]
-        constructor <init>(kotlin/String, kotlin/String, ai.torad.aisdk.ui/ToolCallState, kotlinx.serialization.json/JsonElement? = ..., kotlinx.serialization.json/JsonElement? = ..., kotlin/String? = ..., kotlin/Boolean = ..., kotlin.collections/Map<kotlin/String, kotlinx.serialization.json/JsonElement>? = ...) // ai.torad.aisdk.ui/UIMessagePart.ToolUI.<init>|<init>(kotlin.String;kotlin.String;ai.torad.aisdk.ui.ToolCallState;kotlinx.serialization.json.JsonElement?;kotlinx.serialization.json.JsonElement?;kotlin.String?;kotlin.Boolean;kotlin.collections.Map<kotlin.String,kotlinx.serialization.json.JsonElement>?){}[0]
+        constructor <init>(kotlin/String, kotlin/String, ai.torad.aisdk.ui/ToolCallState, kotlinx.serialization.json/JsonElement? = ..., kotlinx.serialization.json/JsonElement? = ..., kotlin/String? = ..., kotlin/Boolean = ..., kotlin/String? = ..., kotlin/String? = ..., kotlin.collections/Map<kotlin/String, kotlinx.serialization.json/JsonElement>? = ...) // ai.torad.aisdk.ui/UIMessagePart.ToolUI.<init>|<init>(kotlin.String;kotlin.String;ai.torad.aisdk.ui.ToolCallState;kotlinx.serialization.json.JsonElement?;kotlinx.serialization.json.JsonElement?;kotlin.String?;kotlin.Boolean;kotlin.String?;kotlin.String?;kotlin.collections.Map<kotlin.String,kotlinx.serialization.json.JsonElement>?){}[0]
 
+        final val approvalId // ai.torad.aisdk.ui/UIMessagePart.ToolUI.approvalId|{}approvalId[0]
+            final fun <get-approvalId>(): kotlin/String? // ai.torad.aisdk.ui/UIMessagePart.ToolUI.approvalId.<get-approvalId>|<get-approvalId>(){}[0]
         final val error // ai.torad.aisdk.ui/UIMessagePart.ToolUI.error|{}error[0]
             final fun <get-error>(): kotlin/String? // ai.torad.aisdk.ui/UIMessagePart.ToolUI.error.<get-error>|<get-error>(){}[0]
         final val input // ai.torad.aisdk.ui/UIMessagePart.ToolUI.input|{}input[0]
@@ -1627,6 +1629,8 @@ sealed interface ai.torad.aisdk.ui/UIMessagePart { // ai.torad.aisdk.ui/UIMessag
             final fun <get-preliminary>(): kotlin/Boolean // ai.torad.aisdk.ui/UIMessagePart.ToolUI.preliminary.<get-preliminary>|<get-preliminary>(){}[0]
         final val providerMetadata // ai.torad.aisdk.ui/UIMessagePart.ToolUI.providerMetadata|{}providerMetadata[0]
             final fun <get-providerMetadata>(): kotlin.collections/Map<kotlin/String, kotlinx.serialization.json/JsonElement>? // ai.torad.aisdk.ui/UIMessagePart.ToolUI.providerMetadata.<get-providerMetadata>|<get-providerMetadata>(){}[0]
+        final val signature // ai.torad.aisdk.ui/UIMessagePart.ToolUI.signature|{}signature[0]
+            final fun <get-signature>(): kotlin/String? // ai.torad.aisdk.ui/UIMessagePart.ToolUI.signature.<get-signature>|<get-signature>(){}[0]
         final val state // ai.torad.aisdk.ui/UIMessagePart.ToolUI.state|{}state[0]
             final fun <get-state>(): ai.torad.aisdk.ui/ToolCallState // ai.torad.aisdk.ui/UIMessagePart.ToolUI.state.<get-state>|<get-state>(){}[0]
         final val toolCallId // ai.torad.aisdk.ui/UIMessagePart.ToolUI.toolCallId|{}toolCallId[0]
@@ -1635,14 +1639,16 @@ sealed interface ai.torad.aisdk.ui/UIMessagePart { // ai.torad.aisdk.ui/UIMessag
             final fun <get-toolName>(): kotlin/String // ai.torad.aisdk.ui/UIMessagePart.ToolUI.toolName.<get-toolName>|<get-toolName>(){}[0]
 
         final fun component1(): kotlin/String // ai.torad.aisdk.ui/UIMessagePart.ToolUI.component1|component1(){}[0]
+        final fun component10(): kotlin.collections/Map<kotlin/String, kotlinx.serialization.json/JsonElement>? // ai.torad.aisdk.ui/UIMessagePart.ToolUI.component10|component10(){}[0]
         final fun component2(): kotlin/String // ai.torad.aisdk.ui/UIMessagePart.ToolUI.component2|component2(){}[0]
         final fun component3(): ai.torad.aisdk.ui/ToolCallState // ai.torad.aisdk.ui/UIMessagePart.ToolUI.component3|component3(){}[0]
         final fun component4(): kotlinx.serialization.json/JsonElement? // ai.torad.aisdk.ui/UIMessagePart.ToolUI.component4|component4(){}[0]
         final fun component5(): kotlinx.serialization.json/JsonElement? // ai.torad.aisdk.ui/UIMessagePart.ToolUI.component5|component5(){}[0]
         final fun component6(): kotlin/String? // ai.torad.aisdk.ui/UIMessagePart.ToolUI.component6|component6(){}[0]
         final fun component7(): kotlin/Boolean // ai.torad.aisdk.ui/UIMessagePart.ToolUI.component7|component7(){}[0]
-        final fun component8(): kotlin.collections/Map<kotlin/String, kotlinx.serialization.json/JsonElement>? // ai.torad.aisdk.ui/UIMessagePart.ToolUI.component8|component8(){}[0]
-        final fun copy(kotlin/String = ..., kotlin/String = ..., ai.torad.aisdk.ui/ToolCallState = ..., kotlinx.serialization.json/JsonElement? = ..., kotlinx.serialization.json/JsonElement? = ..., kotlin/String? = ..., kotlin/Boolean = ..., kotlin.collections/Map<kotlin/String, kotlinx.serialization.json/JsonElement>? = ...): ai.torad.aisdk.ui/UIMessagePart.ToolUI // ai.torad.aisdk.ui/UIMessagePart.ToolUI.copy|copy(kotlin.String;kotlin.String;ai.torad.aisdk.ui.ToolCallState;kotlinx.serialization.json.JsonElement?;kotlinx.serialization.json.JsonElement?;kotlin.String?;kotlin.Boolean;kotlin.collections.Map<kotlin.String,kotlinx.serialization.json.JsonElement>?){}[0]
+        final fun component8(): kotlin/String? // ai.torad.aisdk.ui/UIMessagePart.ToolUI.component8|component8(){}[0]
+        final fun component9(): kotlin/String? // ai.torad.aisdk.ui/UIMessagePart.ToolUI.component9|component9(){}[0]
+        final fun copy(kotlin/String = ..., kotlin/String = ..., ai.torad.aisdk.ui/ToolCallState = ..., kotlinx.serialization.json/JsonElement? = ..., kotlinx.serialization.json/JsonElement? = ..., kotlin/String? = ..., kotlin/Boolean = ..., kotlin/String? = ..., kotlin/String? = ..., kotlin.collections/Map<kotlin/String, kotlinx.serialization.json/JsonElement>? = ...): ai.torad.aisdk.ui/UIMessagePart.ToolUI // ai.torad.aisdk.ui/UIMessagePart.ToolUI.copy|copy(kotlin.String;kotlin.String;ai.torad.aisdk.ui.ToolCallState;kotlinx.serialization.json.JsonElement?;kotlinx.serialization.json.JsonElement?;kotlin.String?;kotlin.Boolean;kotlin.String?;kotlin.String?;kotlin.collections.Map<kotlin.String,kotlinx.serialization.json.JsonElement>?){}[0]
         final fun equals(kotlin/Any?): kotlin/Boolean // ai.torad.aisdk.ui/UIMessagePart.ToolUI.equals|equals(kotlin.Any?){}[0]
         final fun hashCode(): kotlin/Int // ai.torad.aisdk.ui/UIMessagePart.ToolUI.hashCode|hashCode(){}[0]
         final fun toString(): kotlin/String // ai.torad.aisdk.ui/UIMessagePart.ToolUI.toString|toString(){}[0]
@@ -1880,7 +1886,7 @@ sealed interface ai.torad.aisdk/ContentPart { // ai.torad.aisdk/ContentPart|null
     }
 
     final class ToolApprovalRequest : ai.torad.aisdk/ContentPart { // ai.torad.aisdk/ContentPart.ToolApprovalRequest|null[0]
-        constructor <init>(kotlin/String, kotlin/String, kotlinx.serialization.json/JsonElement, kotlin/String? = ..., kotlin.collections/Map<kotlin/String, kotlinx.serialization.json/JsonElement>? = ...) // ai.torad.aisdk/ContentPart.ToolApprovalRequest.<init>|<init>(kotlin.String;kotlin.String;kotlinx.serialization.json.JsonElement;kotlin.String?;kotlin.collections.Map<kotlin.String,kotlinx.serialization.json.JsonElement>?){}[0]
+        constructor <init>(kotlin/String, kotlin/String, kotlinx.serialization.json/JsonElement, kotlin/String? = ..., kotlin/String? = ..., kotlin.collections/Map<kotlin/String, kotlinx.serialization.json/JsonElement>? = ...) // ai.torad.aisdk/ContentPart.ToolApprovalRequest.<init>|<init>(kotlin.String;kotlin.String;kotlinx.serialization.json.JsonElement;kotlin.String?;kotlin.String?;kotlin.collections.Map<kotlin.String,kotlinx.serialization.json.JsonElement>?){}[0]
 
         final val approvalId // ai.torad.aisdk/ContentPart.ToolApprovalRequest.approvalId|{}approvalId[0]
             final fun <get-approvalId>(): kotlin/String? // ai.torad.aisdk/ContentPart.ToolApprovalRequest.approvalId.<get-approvalId>|<get-approvalId>(){}[0]
@@ -1888,6 +1894,8 @@ sealed interface ai.torad.aisdk/ContentPart { // ai.torad.aisdk/ContentPart|null
             final fun <get-input>(): kotlinx.serialization.json/JsonElement // ai.torad.aisdk/ContentPart.ToolApprovalRequest.input.<get-input>|<get-input>(){}[0]
         final val providerMetadata // ai.torad.aisdk/ContentPart.ToolApprovalRequest.providerMetadata|{}providerMetadata[0]
             final fun <get-providerMetadata>(): kotlin.collections/Map<kotlin/String, kotlinx.serialization.json/JsonElement>? // ai.torad.aisdk/ContentPart.ToolApprovalRequest.providerMetadata.<get-providerMetadata>|<get-providerMetadata>(){}[0]
+        final val signature // ai.torad.aisdk/ContentPart.ToolApprovalRequest.signature|{}signature[0]
+            final fun <get-signature>(): kotlin/String? // ai.torad.aisdk/ContentPart.ToolApprovalRequest.signature.<get-signature>|<get-signature>(){}[0]
         final val toolCallId // ai.torad.aisdk/ContentPart.ToolApprovalRequest.toolCallId|{}toolCallId[0]
             final fun <get-toolCallId>(): kotlin/String // ai.torad.aisdk/ContentPart.ToolApprovalRequest.toolCallId.<get-toolCallId>|<get-toolCallId>(){}[0]
         final val toolName // ai.torad.aisdk/ContentPart.ToolApprovalRequest.toolName|{}toolName[0]
@@ -1897,8 +1905,9 @@ sealed interface ai.torad.aisdk/ContentPart { // ai.torad.aisdk/ContentPart|null
         final fun component2(): kotlin/String // ai.torad.aisdk/ContentPart.ToolApprovalRequest.component2|component2(){}[0]
         final fun component3(): kotlinx.serialization.json/JsonElement // ai.torad.aisdk/ContentPart.ToolApprovalRequest.component3|component3(){}[0]
         final fun component4(): kotlin/String? // ai.torad.aisdk/ContentPart.ToolApprovalRequest.component4|component4(){}[0]
-        final fun component5(): kotlin.collections/Map<kotlin/String, kotlinx.serialization.json/JsonElement>? // ai.torad.aisdk/ContentPart.ToolApprovalRequest.component5|component5(){}[0]
-        final fun copy(kotlin/String = ..., kotlin/String = ..., kotlinx.serialization.json/JsonElement = ..., kotlin/String? = ..., kotlin.collections/Map<kotlin/String, kotlinx.serialization.json/JsonElement>? = ...): ai.torad.aisdk/ContentPart.ToolApprovalRequest // ai.torad.aisdk/ContentPart.ToolApprovalRequest.copy|copy(kotlin.String;kotlin.String;kotlinx.serialization.json.JsonElement;kotlin.String?;kotlin.collections.Map<kotlin.String,kotlinx.serialization.json.JsonElement>?){}[0]
+        final fun component5(): kotlin/String? // ai.torad.aisdk/ContentPart.ToolApprovalRequest.component5|component5(){}[0]
+        final fun component6(): kotlin.collections/Map<kotlin/String, kotlinx.serialization.json/JsonElement>? // ai.torad.aisdk/ContentPart.ToolApprovalRequest.component6|component6(){}[0]
+        final fun copy(kotlin/String = ..., kotlin/String = ..., kotlinx.serialization.json/JsonElement = ..., kotlin/String? = ..., kotlin/String? = ..., kotlin.collections/Map<kotlin/String, kotlinx.serialization.json/JsonElement>? = ...): ai.torad.aisdk/ContentPart.ToolApprovalRequest // ai.torad.aisdk/ContentPart.ToolApprovalRequest.copy|copy(kotlin.String;kotlin.String;kotlinx.serialization.json.JsonElement;kotlin.String?;kotlin.String?;kotlin.collections.Map<kotlin.String,kotlinx.serialization.json.JsonElement>?){}[0]
         final fun equals(kotlin/Any?): kotlin/Boolean // ai.torad.aisdk/ContentPart.ToolApprovalRequest.equals|equals(kotlin.Any?){}[0]
         final fun hashCode(): kotlin/Int // ai.torad.aisdk/ContentPart.ToolApprovalRequest.hashCode|hashCode(){}[0]
         final fun toString(): kotlin/String // ai.torad.aisdk/ContentPart.ToolApprovalRequest.toString|toString(){}[0]
@@ -2758,7 +2767,7 @@ sealed interface ai.torad.aisdk/StreamEvent { // ai.torad.aisdk/StreamEvent|null
     }
 
     final class ToolApprovalRequest : ai.torad.aisdk/StreamEvent { // ai.torad.aisdk/StreamEvent.ToolApprovalRequest|null[0]
-        constructor <init>(kotlin/String, kotlin/String, kotlinx.serialization.json/JsonElement, kotlin/String? = ..., kotlin.collections/Map<kotlin/String, kotlinx.serialization.json/JsonElement>? = ...) // ai.torad.aisdk/StreamEvent.ToolApprovalRequest.<init>|<init>(kotlin.String;kotlin.String;kotlinx.serialization.json.JsonElement;kotlin.String?;kotlin.collections.Map<kotlin.String,kotlinx.serialization.json.JsonElement>?){}[0]
+        constructor <init>(kotlin/String, kotlin/String, kotlinx.serialization.json/JsonElement, kotlin/String? = ..., kotlin/String? = ..., kotlin.collections/Map<kotlin/String, kotlinx.serialization.json/JsonElement>? = ...) // ai.torad.aisdk/StreamEvent.ToolApprovalRequest.<init>|<init>(kotlin.String;kotlin.String;kotlinx.serialization.json.JsonElement;kotlin.String?;kotlin.String?;kotlin.collections.Map<kotlin.String,kotlinx.serialization.json.JsonElement>?){}[0]
 
         final val approvalId // ai.torad.aisdk/StreamEvent.ToolApprovalRequest.approvalId|{}approvalId[0]
             final fun <get-approvalId>(): kotlin/String? // ai.torad.aisdk/StreamEvent.ToolApprovalRequest.approvalId.<get-approvalId>|<get-approvalId>(){}[0]
@@ -2766,6 +2775,8 @@ sealed interface ai.torad.aisdk/StreamEvent { // ai.torad.aisdk/StreamEvent|null
             final fun <get-inputJson>(): kotlinx.serialization.json/JsonElement // ai.torad.aisdk/StreamEvent.ToolApprovalRequest.inputJson.<get-inputJson>|<get-inputJson>(){}[0]
         final val providerMetadata // ai.torad.aisdk/StreamEvent.ToolApprovalRequest.providerMetadata|{}providerMetadata[0]
             final fun <get-providerMetadata>(): kotlin.collections/Map<kotlin/String, kotlinx.serialization.json/JsonElement>? // ai.torad.aisdk/StreamEvent.ToolApprovalRequest.providerMetadata.<get-providerMetadata>|<get-providerMetadata>(){}[0]
+        final val signature // ai.torad.aisdk/StreamEvent.ToolApprovalRequest.signature|{}signature[0]
+            final fun <get-signature>(): kotlin/String? // ai.torad.aisdk/StreamEvent.ToolApprovalRequest.signature.<get-signature>|<get-signature>(){}[0]
         final val toolCallId // ai.torad.aisdk/StreamEvent.ToolApprovalRequest.toolCallId|{}toolCallId[0]
             final fun <get-toolCallId>(): kotlin/String // ai.torad.aisdk/StreamEvent.ToolApprovalRequest.toolCallId.<get-toolCallId>|<get-toolCallId>(){}[0]
         final val toolName // ai.torad.aisdk/StreamEvent.ToolApprovalRequest.toolName|{}toolName[0]
@@ -2775,8 +2786,9 @@ sealed interface ai.torad.aisdk/StreamEvent { // ai.torad.aisdk/StreamEvent|null
         final fun component2(): kotlin/String // ai.torad.aisdk/StreamEvent.ToolApprovalRequest.component2|component2(){}[0]
         final fun component3(): kotlinx.serialization.json/JsonElement // ai.torad.aisdk/StreamEvent.ToolApprovalRequest.component3|component3(){}[0]
         final fun component4(): kotlin/String? // ai.torad.aisdk/StreamEvent.ToolApprovalRequest.component4|component4(){}[0]
-        final fun component5(): kotlin.collections/Map<kotlin/String, kotlinx.serialization.json/JsonElement>? // ai.torad.aisdk/StreamEvent.ToolApprovalRequest.component5|component5(){}[0]
-        final fun copy(kotlin/String = ..., kotlin/String = ..., kotlinx.serialization.json/JsonElement = ..., kotlin/String? = ..., kotlin.collections/Map<kotlin/String, kotlinx.serialization.json/JsonElement>? = ...): ai.torad.aisdk/StreamEvent.ToolApprovalRequest // ai.torad.aisdk/StreamEvent.ToolApprovalRequest.copy|copy(kotlin.String;kotlin.String;kotlinx.serialization.json.JsonElement;kotlin.String?;kotlin.collections.Map<kotlin.String,kotlinx.serialization.json.JsonElement>?){}[0]
+        final fun component5(): kotlin/String? // ai.torad.aisdk/StreamEvent.ToolApprovalRequest.component5|component5(){}[0]
+        final fun component6(): kotlin.collections/Map<kotlin/String, kotlinx.serialization.json/JsonElement>? // ai.torad.aisdk/StreamEvent.ToolApprovalRequest.component6|component6(){}[0]
+        final fun copy(kotlin/String = ..., kotlin/String = ..., kotlinx.serialization.json/JsonElement = ..., kotlin/String? = ..., kotlin/String? = ..., kotlin.collections/Map<kotlin/String, kotlinx.serialization.json/JsonElement>? = ...): ai.torad.aisdk/StreamEvent.ToolApprovalRequest // ai.torad.aisdk/StreamEvent.ToolApprovalRequest.copy|copy(kotlin.String;kotlin.String;kotlinx.serialization.json.JsonElement;kotlin.String?;kotlin.String?;kotlin.collections.Map<kotlin.String,kotlinx.serialization.json.JsonElement>?){}[0]
         final fun equals(kotlin/Any?): kotlin/Boolean // ai.torad.aisdk/StreamEvent.ToolApprovalRequest.equals|equals(kotlin.Any?){}[0]
         final fun hashCode(): kotlin/Int // ai.torad.aisdk/StreamEvent.ToolApprovalRequest.hashCode|hashCode(){}[0]
         final fun toString(): kotlin/String // ai.torad.aisdk/StreamEvent.ToolApprovalRequest.toString|toString(){}[0]
@@ -3155,7 +3167,7 @@ sealed interface ai.torad.aisdk/ToolChoice { // ai.torad.aisdk/ToolChoice|null[0
 }
 
 abstract class <#A: kotlin/Any?, #B: kotlin/Any?> ai.torad.aisdk/ToolLoopAgent : ai.torad.aisdk/Agent<#A, #B> { // ai.torad.aisdk/ToolLoopAgent|null[0]
-    constructor <init>(ai.torad.aisdk/LanguageModel, kotlin/String, ai.torad.aisdk/ToolSet<#A>, kotlin.collections/List<kotlin/String>? = ..., ai.torad.aisdk/Output<#B>? = ..., ai.torad.aisdk/StopCondition = ..., kotlin.coroutines/SuspendFunction1<ai.torad.aisdk/PrepareCallScope<#A>, ai.torad.aisdk/AgentSettings<#A>>? = ..., kotlin.coroutines/SuspendFunction1<ai.torad.aisdk/PrepareStepScope<#A>, ai.torad.aisdk/StepSettings<#A>>? = ..., kotlinx.serialization/KSerializer<#A>? = ..., kotlin/Float? = ..., kotlin/Float? = ..., kotlin/Int? = ..., kotlin/Int? = ..., kotlin.collections/List<kotlin/String>? = ..., kotlin/Int? = ..., kotlin/Float? = ..., kotlin/Float? = ..., ai.torad.aisdk/ResponseFormat = ..., kotlin/Int = ..., kotlin.coroutines/SuspendFunction1<ai.torad.aisdk/OnStartEvent, kotlin/Unit>? = ..., kotlin.coroutines/SuspendFunction1<ai.torad.aisdk/OnStepStartEvent, kotlin/Unit>? = ..., kotlin.coroutines/SuspendFunction1<ai.torad.aisdk/OnStepFinishEvent, kotlin/Unit>? = ..., kotlin.coroutines/SuspendFunction1<ai.torad.aisdk/OnFinishEvent, kotlin/Unit>? = ..., kotlin.coroutines/SuspendFunction1<ai.torad.aisdk/OnErrorEvent, kotlin/Unit>? = ..., kotlin.coroutines/SuspendFunction1<ai.torad.aisdk/OnChunkEvent, kotlin/Unit>? = ..., kotlin.coroutines/SuspendFunction1<ai.torad.aisdk/OnAbortEvent, kotlin/Unit>? = ..., kotlin.coroutines/SuspendFunction1<ai.torad.aisdk/OnToolCallStartEvent, kotlin/Unit>? = ..., kotlin.coroutines/SuspendFunction1<ai.torad.aisdk/OnToolCallFinishEvent, kotlin/Unit>? = ..., kotlin.coroutines/SuspendFunction4<ai.torad.aisdk/ContentPart.ToolCall, kotlin/Throwable, kotlin.collections/List<ai.torad.aisdk/ModelMessage>, ai.torad.aisdk/ToolSet<#A>, ai.torad.aisdk/ContentPart.ToolCall?>? = ..., ai.torad.aisdk/TelemetrySettings? = ..., ai.torad.aisdk/Logger = ..., kotlin.coroutines/CoroutineContext = ...) // ai.torad.aisdk/ToolLoopAgent.<init>|<init>(ai.torad.aisdk.LanguageModel;kotlin.String;ai.torad.aisdk.ToolSet<1:0>;kotlin.collections.List<kotlin.String>?;ai.torad.aisdk.Output<1:1>?;ai.torad.aisdk.StopCondition;kotlin.coroutines.SuspendFunction1<ai.torad.aisdk.PrepareCallScope<1:0>,ai.torad.aisdk.AgentSettings<1:0>>?;kotlin.coroutines.SuspendFunction1<ai.torad.aisdk.PrepareStepScope<1:0>,ai.torad.aisdk.StepSettings<1:0>>?;kotlinx.serialization.KSerializer<1:0>?;kotlin.Float?;kotlin.Float?;kotlin.Int?;kotlin.Int?;kotlin.collections.List<kotlin.String>?;kotlin.Int?;kotlin.Float?;kotlin.Float?;ai.torad.aisdk.ResponseFormat;kotlin.Int;kotlin.coroutines.SuspendFunction1<ai.torad.aisdk.OnStartEvent,kotlin.Unit>?;kotlin.coroutines.SuspendFunction1<ai.torad.aisdk.OnStepStartEvent,kotlin.Unit>?;kotlin.coroutines.SuspendFunction1<ai.torad.aisdk.OnStepFinishEvent,kotlin.Unit>?;kotlin.coroutines.SuspendFunction1<ai.torad.aisdk.OnFinishEvent,kotlin.Unit>?;kotlin.coroutines.SuspendFunction1<ai.torad.aisdk.OnErrorEvent,kotlin.Unit>?;kotlin.coroutines.SuspendFunction1<ai.torad.aisdk.OnChunkEvent,kotlin.Unit>?;kotlin.coroutines.SuspendFunction1<ai.torad.aisdk.OnAbortEvent,kotlin.Unit>?;kotlin.coroutines.SuspendFunction1<ai.torad.aisdk.OnToolCallStartEvent,kotlin.Unit>?;kotlin.coroutines.SuspendFunction1<ai.torad.aisdk.OnToolCallFinishEvent,kotlin.Unit>?;kotlin.coroutines.SuspendFunction4<ai.torad.aisdk.ContentPart.ToolCall,kotlin.Throwable,kotlin.collections.List<ai.torad.aisdk.ModelMessage>,ai.torad.aisdk.ToolSet<1:0>,ai.torad.aisdk.ContentPart.ToolCall?>?;ai.torad.aisdk.TelemetrySettings?;ai.torad.aisdk.Logger;kotlin.coroutines.CoroutineContext){}[0]
+    constructor <init>(ai.torad.aisdk/LanguageModel, kotlin/String, ai.torad.aisdk/ToolSet<#A>, kotlin.collections/List<kotlin/String>? = ..., ai.torad.aisdk/Output<#B>? = ..., ai.torad.aisdk/StopCondition = ..., kotlin.coroutines/SuspendFunction1<ai.torad.aisdk/PrepareCallScope<#A>, ai.torad.aisdk/AgentSettings<#A>>? = ..., kotlin.coroutines/SuspendFunction1<ai.torad.aisdk/PrepareStepScope<#A>, ai.torad.aisdk/StepSettings<#A>>? = ..., kotlinx.serialization/KSerializer<#A>? = ..., kotlin/Float? = ..., kotlin/Float? = ..., kotlin/Int? = ..., kotlin/Int? = ..., kotlin.collections/List<kotlin/String>? = ..., kotlin/Int? = ..., kotlin/Float? = ..., kotlin/Float? = ..., ai.torad.aisdk/ResponseFormat = ..., kotlin/Int = ..., kotlin.coroutines/SuspendFunction1<ai.torad.aisdk/OnStartEvent, kotlin/Unit>? = ..., kotlin.coroutines/SuspendFunction1<ai.torad.aisdk/OnStepStartEvent, kotlin/Unit>? = ..., kotlin.coroutines/SuspendFunction1<ai.torad.aisdk/OnStepFinishEvent, kotlin/Unit>? = ..., kotlin.coroutines/SuspendFunction1<ai.torad.aisdk/OnFinishEvent, kotlin/Unit>? = ..., kotlin.coroutines/SuspendFunction1<ai.torad.aisdk/OnErrorEvent, kotlin/Unit>? = ..., kotlin.coroutines/SuspendFunction1<ai.torad.aisdk/OnChunkEvent, kotlin/Unit>? = ..., kotlin.coroutines/SuspendFunction1<ai.torad.aisdk/OnAbortEvent, kotlin/Unit>? = ..., kotlin.coroutines/SuspendFunction1<ai.torad.aisdk/OnToolCallStartEvent, kotlin/Unit>? = ..., kotlin.coroutines/SuspendFunction1<ai.torad.aisdk/OnToolCallFinishEvent, kotlin/Unit>? = ..., kotlin.coroutines/SuspendFunction4<ai.torad.aisdk/ContentPart.ToolCall, kotlin/Throwable, kotlin.collections/List<ai.torad.aisdk/ModelMessage>, ai.torad.aisdk/ToolSet<#A>, ai.torad.aisdk/ContentPart.ToolCall?>? = ..., kotlin/ByteArray? = ..., ai.torad.aisdk/TelemetrySettings? = ..., ai.torad.aisdk/Logger = ..., kotlin.coroutines/CoroutineContext = ...) // ai.torad.aisdk/ToolLoopAgent.<init>|<init>(ai.torad.aisdk.LanguageModel;kotlin.String;ai.torad.aisdk.ToolSet<1:0>;kotlin.collections.List<kotlin.String>?;ai.torad.aisdk.Output<1:1>?;ai.torad.aisdk.StopCondition;kotlin.coroutines.SuspendFunction1<ai.torad.aisdk.PrepareCallScope<1:0>,ai.torad.aisdk.AgentSettings<1:0>>?;kotlin.coroutines.SuspendFunction1<ai.torad.aisdk.PrepareStepScope<1:0>,ai.torad.aisdk.StepSettings<1:0>>?;kotlinx.serialization.KSerializer<1:0>?;kotlin.Float?;kotlin.Float?;kotlin.Int?;kotlin.Int?;kotlin.collections.List<kotlin.String>?;kotlin.Int?;kotlin.Float?;kotlin.Float?;ai.torad.aisdk.ResponseFormat;kotlin.Int;kotlin.coroutines.SuspendFunction1<ai.torad.aisdk.OnStartEvent,kotlin.Unit>?;kotlin.coroutines.SuspendFunction1<ai.torad.aisdk.OnStepStartEvent,kotlin.Unit>?;kotlin.coroutines.SuspendFunction1<ai.torad.aisdk.OnStepFinishEvent,kotlin.Unit>?;kotlin.coroutines.SuspendFunction1<ai.torad.aisdk.OnFinishEvent,kotlin.Unit>?;kotlin.coroutines.SuspendFunction1<ai.torad.aisdk.OnErrorEvent,kotlin.Unit>?;kotlin.coroutines.SuspendFunction1<ai.torad.aisdk.OnChunkEvent,kotlin.Unit>?;kotlin.coroutines.SuspendFunction1<ai.torad.aisdk.OnAbortEvent,kotlin.Unit>?;kotlin.coroutines.SuspendFunction1<ai.torad.aisdk.OnToolCallStartEvent,kotlin.Unit>?;kotlin.coroutines.SuspendFunction1<ai.torad.aisdk.OnToolCallFinishEvent,kotlin.Unit>?;kotlin.coroutines.SuspendFunction4<ai.torad.aisdk.ContentPart.ToolCall,kotlin.Throwable,kotlin.collections.List<ai.torad.aisdk.ModelMessage>,ai.torad.aisdk.ToolSet<1:0>,ai.torad.aisdk.ContentPart.ToolCall?>?;kotlin.ByteArray?;ai.torad.aisdk.TelemetrySettings?;ai.torad.aisdk.Logger;kotlin.coroutines.CoroutineContext){}[0]
 
     final val activeTools // ai.torad.aisdk/ToolLoopAgent.activeTools|{}activeTools[0]
         final fun <get-activeTools>(): kotlin.collections/List<kotlin/String>? // ai.torad.aisdk/ToolLoopAgent.activeTools.<get-activeTools>|<get-activeTools>(){}[0]
@@ -3169,6 +3181,8 @@ abstract class <#A: kotlin/Any?, #B: kotlin/Any?> ai.torad.aisdk/ToolLoopAgent :
         final fun <get-experimental_onToolCallStart>(): kotlin.coroutines/SuspendFunction1<ai.torad.aisdk/OnToolCallStartEvent, kotlin/Unit>? // ai.torad.aisdk/ToolLoopAgent.experimental_onToolCallStart.<get-experimental_onToolCallStart>|<get-experimental_onToolCallStart>(){}[0]
     final val experimental_repairToolCall // ai.torad.aisdk/ToolLoopAgent.experimental_repairToolCall|{}experimental_repairToolCall[0]
         final fun <get-experimental_repairToolCall>(): kotlin.coroutines/SuspendFunction4<ai.torad.aisdk/ContentPart.ToolCall, kotlin/Throwable, kotlin.collections/List<ai.torad.aisdk/ModelMessage>, ai.torad.aisdk/ToolSet<#A>, ai.torad.aisdk/ContentPart.ToolCall?>? // ai.torad.aisdk/ToolLoopAgent.experimental_repairToolCall.<get-experimental_repairToolCall>|<get-experimental_repairToolCall>(){}[0]
+    final val experimental_toolApprovalSecret // ai.torad.aisdk/ToolLoopAgent.experimental_toolApprovalSecret|{}experimental_toolApprovalSecret[0]
+        final fun <get-experimental_toolApprovalSecret>(): kotlin/ByteArray? // ai.torad.aisdk/ToolLoopAgent.experimental_toolApprovalSecret.<get-experimental_toolApprovalSecret>|<get-experimental_toolApprovalSecret>(){}[0]
     final val frequencyPenalty // ai.torad.aisdk/ToolLoopAgent.frequencyPenalty|{}frequencyPenalty[0]
         final fun <get-frequencyPenalty>(): kotlin/Float? // ai.torad.aisdk/ToolLoopAgent.frequencyPenalty.<get-frequencyPenalty>|<get-frequencyPenalty>(){}[0]
     final val instructions // ai.torad.aisdk/ToolLoopAgent.instructions|{}instructions[0]
@@ -12016,12 +12030,14 @@ final class ai.torad.aisdk/PartialJsonResult { // ai.torad.aisdk/PartialJsonResu
 }
 
 final class ai.torad.aisdk/PendingApproval { // ai.torad.aisdk/PendingApproval|null[0]
-    constructor <init>(kotlin/String, kotlin/String, kotlinx.serialization.json/JsonElement, kotlin/String? = ...) // ai.torad.aisdk/PendingApproval.<init>|<init>(kotlin.String;kotlin.String;kotlinx.serialization.json.JsonElement;kotlin.String?){}[0]
+    constructor <init>(kotlin/String, kotlin/String, kotlinx.serialization.json/JsonElement, kotlin/String? = ..., kotlin/String? = ...) // ai.torad.aisdk/PendingApproval.<init>|<init>(kotlin.String;kotlin.String;kotlinx.serialization.json.JsonElement;kotlin.String?;kotlin.String?){}[0]
 
     final val approvalId // ai.torad.aisdk/PendingApproval.approvalId|{}approvalId[0]
         final fun <get-approvalId>(): kotlin/String? // ai.torad.aisdk/PendingApproval.approvalId.<get-approvalId>|<get-approvalId>(){}[0]
     final val input // ai.torad.aisdk/PendingApproval.input|{}input[0]
         final fun <get-input>(): kotlinx.serialization.json/JsonElement // ai.torad.aisdk/PendingApproval.input.<get-input>|<get-input>(){}[0]
+    final val signature // ai.torad.aisdk/PendingApproval.signature|{}signature[0]
+        final fun <get-signature>(): kotlin/String? // ai.torad.aisdk/PendingApproval.signature.<get-signature>|<get-signature>(){}[0]
     final val toolCallId // ai.torad.aisdk/PendingApproval.toolCallId|{}toolCallId[0]
         final fun <get-toolCallId>(): kotlin/String // ai.torad.aisdk/PendingApproval.toolCallId.<get-toolCallId>|<get-toolCallId>(){}[0]
     final val toolName // ai.torad.aisdk/PendingApproval.toolName|{}toolName[0]
@@ -12031,7 +12047,8 @@ final class ai.torad.aisdk/PendingApproval { // ai.torad.aisdk/PendingApproval|n
     final fun component2(): kotlin/String // ai.torad.aisdk/PendingApproval.component2|component2(){}[0]
     final fun component3(): kotlinx.serialization.json/JsonElement // ai.torad.aisdk/PendingApproval.component3|component3(){}[0]
     final fun component4(): kotlin/String? // ai.torad.aisdk/PendingApproval.component4|component4(){}[0]
-    final fun copy(kotlin/String = ..., kotlin/String = ..., kotlinx.serialization.json/JsonElement = ..., kotlin/String? = ...): ai.torad.aisdk/PendingApproval // ai.torad.aisdk/PendingApproval.copy|copy(kotlin.String;kotlin.String;kotlinx.serialization.json.JsonElement;kotlin.String?){}[0]
+    final fun component5(): kotlin/String? // ai.torad.aisdk/PendingApproval.component5|component5(){}[0]
+    final fun copy(kotlin/String = ..., kotlin/String = ..., kotlinx.serialization.json/JsonElement = ..., kotlin/String? = ..., kotlin/String? = ...): ai.torad.aisdk/PendingApproval // ai.torad.aisdk/PendingApproval.copy|copy(kotlin.String;kotlin.String;kotlinx.serialization.json.JsonElement;kotlin.String?;kotlin.String?){}[0]
     final fun equals(kotlin/Any?): kotlin/Boolean // ai.torad.aisdk/PendingApproval.equals|equals(kotlin.Any?){}[0]
     final fun hashCode(): kotlin/Int // ai.torad.aisdk/PendingApproval.hashCode|hashCode(){}[0]
     final fun toString(): kotlin/String // ai.torad.aisdk/PendingApproval.toString|toString(){}[0]
@@ -13253,6 +13270,25 @@ sealed class ai.torad.aisdk/AgentError : kotlin/RuntimeException { // ai.torad.a
         final fun toString(): kotlin/String // ai.torad.aisdk/AgentError.InvalidCallOptions.toString|toString(){}[0]
     }
 
+    final class InvalidToolApprovalSignature : ai.torad.aisdk/AgentError { // ai.torad.aisdk/AgentError.InvalidToolApprovalSignature|null[0]
+        constructor <init>(kotlin/String, kotlin/String, kotlin/String) // ai.torad.aisdk/AgentError.InvalidToolApprovalSignature.<init>|<init>(kotlin.String;kotlin.String;kotlin.String){}[0]
+
+        final val approvalId // ai.torad.aisdk/AgentError.InvalidToolApprovalSignature.approvalId|{}approvalId[0]
+            final fun <get-approvalId>(): kotlin/String // ai.torad.aisdk/AgentError.InvalidToolApprovalSignature.approvalId.<get-approvalId>|<get-approvalId>(){}[0]
+        final val reason // ai.torad.aisdk/AgentError.InvalidToolApprovalSignature.reason|{}reason[0]
+            final fun <get-reason>(): kotlin/String // ai.torad.aisdk/AgentError.InvalidToolApprovalSignature.reason.<get-reason>|<get-reason>(){}[0]
+        final val toolCallId // ai.torad.aisdk/AgentError.InvalidToolApprovalSignature.toolCallId|{}toolCallId[0]
+            final fun <get-toolCallId>(): kotlin/String // ai.torad.aisdk/AgentError.InvalidToolApprovalSignature.toolCallId.<get-toolCallId>|<get-toolCallId>(){}[0]
+
+        final fun component1(): kotlin/String // ai.torad.aisdk/AgentError.InvalidToolApprovalSignature.component1|component1(){}[0]
+        final fun component2(): kotlin/String // ai.torad.aisdk/AgentError.InvalidToolApprovalSignature.component2|component2(){}[0]
+        final fun component3(): kotlin/String // ai.torad.aisdk/AgentError.InvalidToolApprovalSignature.component3|component3(){}[0]
+        final fun copy(kotlin/String = ..., kotlin/String = ..., kotlin/String = ...): ai.torad.aisdk/AgentError.InvalidToolApprovalSignature // ai.torad.aisdk/AgentError.InvalidToolApprovalSignature.copy|copy(kotlin.String;kotlin.String;kotlin.String){}[0]
+        final fun equals(kotlin/Any?): kotlin/Boolean // ai.torad.aisdk/AgentError.InvalidToolApprovalSignature.equals|equals(kotlin.Any?){}[0]
+        final fun hashCode(): kotlin/Int // ai.torad.aisdk/AgentError.InvalidToolApprovalSignature.hashCode|hashCode(){}[0]
+        final fun toString(): kotlin/String // ai.torad.aisdk/AgentError.InvalidToolApprovalSignature.toString|toString(){}[0]
+    }
+
     final class InvalidToolInput : ai.torad.aisdk/AgentError { // ai.torad.aisdk/AgentError.InvalidToolInput|null[0]
         constructor <init>(kotlin/String, kotlin/String, kotlin/Throwable) // ai.torad.aisdk/AgentError.InvalidToolInput.<init>|<init>(kotlin.String;kotlin.String;kotlin.Throwable){}[0]
 
@@ -14056,6 +14092,7 @@ final fun ai.torad.aisdk/injectJsonInstructionIntoMessages(kotlin.collections/Li
 final fun ai.torad.aisdk/isUrlSupported(kotlin/String, kotlin/String, kotlin.collections/Map<kotlin/String, kotlin.collections/List<kotlin.text/Regex>>): kotlin/Boolean // ai.torad.aisdk/isUrlSupported|isUrlSupported(kotlin.String;kotlin.String;kotlin.collections.Map<kotlin.String,kotlin.collections.List<kotlin.text.Regex>>){}[0]
 final fun ai.torad.aisdk/langChainToUIMessageStream(kotlinx.coroutines.flow/Flow<ai.torad.aisdk/LangChainStreamItem>, ai.torad.aisdk/StreamCallbacks? = ..., kotlin/String = ...): kotlinx.coroutines.flow/Flow<ai.torad.aisdk.ui/UIMessage> // ai.torad.aisdk/langChainToUIMessageStream|langChainToUIMessageStream(kotlinx.coroutines.flow.Flow<ai.torad.aisdk.LangChainStreamItem>;ai.torad.aisdk.StreamCallbacks?;kotlin.String){}[0]
 final fun ai.torad.aisdk/llamaIndexToUIMessageStream(kotlinx.coroutines.flow/Flow<ai.torad.aisdk/LlamaIndexEngineResponse>, ai.torad.aisdk/StreamCallbacks? = ..., kotlin/String = ...): kotlinx.coroutines.flow/Flow<ai.torad.aisdk.ui/UIMessage> // ai.torad.aisdk/llamaIndexToUIMessageStream|llamaIndexToUIMessageStream(kotlinx.coroutines.flow.Flow<ai.torad.aisdk.LlamaIndexEngineResponse>;ai.torad.aisdk.StreamCallbacks?;kotlin.String){}[0]
+final fun ai.torad.aisdk/maybeSignToolApproval(kotlin/ByteArray?, kotlin/String, kotlin/String, kotlin/String, kotlinx.serialization.json/JsonElement): kotlin/String? // ai.torad.aisdk/maybeSignToolApproval|maybeSignToolApproval(kotlin.ByteArray?;kotlin.String;kotlin.String;kotlin.String;kotlinx.serialization.json.JsonElement){}[0]
 final fun ai.torad.aisdk/mergeAbortSignals(kotlin/Array<out ai.torad.aisdk/AbortSignal>...): ai.torad.aisdk/AbortSignal // ai.torad.aisdk/mergeAbortSignals|mergeAbortSignals(kotlin.Array<out|ai.torad.aisdk.AbortSignal>...){}[0]
 final fun ai.torad.aisdk/modelId(kotlin/String): ai.torad.aisdk/ModelId // ai.torad.aisdk/modelId|modelId(kotlin.String){}[0]
 final fun ai.torad.aisdk/modelRef(ai.torad.aisdk/ProviderId, ai.torad.aisdk/ModelId): ai.torad.aisdk/ModelRef // ai.torad.aisdk/modelRef|modelRef(ai.torad.aisdk.ProviderId;ai.torad.aisdk.ModelId){}[0]
@@ -14069,6 +14106,7 @@ final fun ai.torad.aisdk/providerId(kotlin/String): ai.torad.aisdk/ProviderId //
 final fun ai.torad.aisdk/pruneMessages(kotlin.collections/List<ai.torad.aisdk/ModelMessage>, ai.torad.aisdk/PruneReasoning = ..., ai.torad.aisdk/PruneToolCalls = ..., ai.torad.aisdk/PruneEmptyMessages = ...): kotlin.collections/List<ai.torad.aisdk/ModelMessage> // ai.torad.aisdk/pruneMessages|pruneMessages(kotlin.collections.List<ai.torad.aisdk.ModelMessage>;ai.torad.aisdk.PruneReasoning;ai.torad.aisdk.PruneToolCalls;ai.torad.aisdk.PruneEmptyMessages){}[0]
 final fun ai.torad.aisdk/registerTelemetry(ai.torad.aisdk/Telemetry) // ai.torad.aisdk/registerTelemetry|registerTelemetry(ai.torad.aisdk.Telemetry){}[0]
 final fun ai.torad.aisdk/repeatedToolCallLoop(kotlin/Int): ai.torad.aisdk/StopCondition // ai.torad.aisdk/repeatedToolCallLoop|repeatedToolCallLoop(kotlin.Int){}[0]
+final fun ai.torad.aisdk/signToolApproval(kotlin/ByteArray, kotlin/String, kotlin/String, kotlin/String, kotlinx.serialization.json/JsonElement): kotlin/String // ai.torad.aisdk/signToolApproval|signToolApproval(kotlin.ByteArray;kotlin.String;kotlin.String;kotlin.String;kotlinx.serialization.json.JsonElement){}[0]
 final fun ai.torad.aisdk/simulateReadableStream(kotlin.collections/List<ai.torad.aisdk/StreamEvent>, kotlin/Long = ..., kotlin/Long = ...): kotlinx.coroutines.flow/Flow<ai.torad.aisdk/StreamEvent> // ai.torad.aisdk/simulateReadableStream|simulateReadableStream(kotlin.collections.List<ai.torad.aisdk.StreamEvent>;kotlin.Long;kotlin.Long){}[0]
 final fun ai.torad.aisdk/smoothStream(kotlinx.coroutines.flow/Flow<ai.torad.aisdk/StreamEvent>, kotlin/Long = ..., ai.torad.aisdk/ChunkBy = ...): kotlinx.coroutines.flow/Flow<ai.torad.aisdk/StreamEvent> // ai.torad.aisdk/smoothStream|smoothStream(kotlinx.coroutines.flow.Flow<ai.torad.aisdk.StreamEvent>;kotlin.Long;ai.torad.aisdk.ChunkBy){}[0]
 final fun ai.torad.aisdk/splitDataUrl(kotlin/String): ai.torad.aisdk/DataUrl // ai.torad.aisdk/splitDataUrl|splitDataUrl(kotlin.String){}[0]
@@ -14090,6 +14128,7 @@ final fun ai.torad.aisdk/toolApprovalResponseMessage(kotlin/String, kotlin/Boole
 final fun ai.torad.aisdk/toolMessage(kotlin/String, kotlin/String, kotlinx.serialization.json/JsonElement): ai.torad.aisdk/ModelMessage // ai.torad.aisdk/toolMessage|toolMessage(kotlin.String;kotlin.String;kotlinx.serialization.json.JsonElement){}[0]
 final fun ai.torad.aisdk/userMessage(kotlin/String): ai.torad.aisdk/ModelMessage // ai.torad.aisdk/userMessage|userMessage(kotlin.String){}[0]
 final fun ai.torad.aisdk/validateDownloadUrl(kotlin/String) // ai.torad.aisdk/validateDownloadUrl|validateDownloadUrl(kotlin.String){}[0]
+final fun ai.torad.aisdk/verifyToolApprovalSignature(kotlin/ByteArray, kotlin/String, kotlin/String, kotlin/String, kotlin/String, kotlinx.serialization.json/JsonElement): kotlin/Boolean // ai.torad.aisdk/verifyToolApprovalSignature|verifyToolApprovalSignature(kotlin.ByteArray;kotlin.String;kotlin.String;kotlin.String;kotlin.String;kotlinx.serialization.json.JsonElement){}[0]
 final fun ai.torad.aisdk/wrapEmbeddingModel(ai.torad.aisdk/EmbeddingModel, kotlin.collections/List<ai.torad.aisdk/EmbeddingModelMiddleware>): ai.torad.aisdk/EmbeddingModel // ai.torad.aisdk/wrapEmbeddingModel|wrapEmbeddingModel(ai.torad.aisdk.EmbeddingModel;kotlin.collections.List<ai.torad.aisdk.EmbeddingModelMiddleware>){}[0]
 final fun ai.torad.aisdk/wrapImageModel(ai.torad.aisdk/ImageModel, kotlin.collections/List<ai.torad.aisdk/ImageModelMiddleware>): ai.torad.aisdk/ImageModel // ai.torad.aisdk/wrapImageModel|wrapImageModel(ai.torad.aisdk.ImageModel;kotlin.collections.List<ai.torad.aisdk.ImageModelMiddleware>){}[0]
 final fun ai.torad.aisdk/wrapLanguageModel(ai.torad.aisdk/LanguageModel, kotlin.collections/List<ai.torad.aisdk/LanguageModelMiddleware>): ai.torad.aisdk/LanguageModel // ai.torad.aisdk/wrapLanguageModel|wrapLanguageModel(ai.torad.aisdk.LanguageModel;kotlin.collections.List<ai.torad.aisdk.LanguageModelMiddleware>){}[0]
