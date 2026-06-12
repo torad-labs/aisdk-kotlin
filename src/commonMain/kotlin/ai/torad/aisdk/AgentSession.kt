@@ -46,7 +46,30 @@ public class AgentSession<TContext, TOutput>(
     @Volatile
     private var currentJob: Job? = null
 
+    // The last submit's call configuration, remembered so a resume (approve/deny) re-runs with the SAME
+    // hooks / options / abort-signal / streaming-mode. This mirrors upstream Vercel AI SDK v6, where the host
+    // re-passes its call settings on every resume generate()/stream(); without it a streamed, hook-observed
+    // turn would go dark (no onStepFinish/onChunk, non-streaming) the moment it crossed a tool approval.
+    @Volatile
+    private var lastOptions: TContext? = null // var-ok: per-turn call-continuation state (mirrors currentJob)
+
+    @Volatile
+    private var lastAbortSignal: AbortSignal = AbortSignalNever // var-ok: per-turn call-continuation state
+
+    @Volatile
+    private var lastHooks: AgentCallHooks? = null // var-ok: per-turn call-continuation state
+
+    @Volatile
+    private var lastStreaming: Boolean = false // var-ok: per-turn call-continuation state (resume in same mode)
+
     public val state: StateFlow<AgentSessionState<TOutput>> = mutableState.asStateFlow()
+
+    private fun rememberCall(options: TContext?, abortSignal: AbortSignal, hooks: AgentCallHooks?, streaming: Boolean) {
+        lastOptions = options
+        lastAbortSignal = abortSignal
+        lastHooks = hooks
+        lastStreaming = streaming
+    }
 
     public fun submit(
         prompt: String? = null,
@@ -56,6 +79,7 @@ public class AgentSession<TContext, TOutput>(
         hooks: AgentCallHooks? = null,
     ): Job {
         currentJob?.cancel()
+        rememberCall(options, abortSignal, hooks, streaming = false)
         val visibleMessages = visibleMessages(messages, prompt)
         mutableState.update {
             it.copy(
@@ -102,6 +126,7 @@ public class AgentSession<TContext, TOutput>(
         hooks: AgentCallHooks? = null,
     ): Job {
         currentJob?.cancel()
+        rememberCall(options, abortSignal, hooks, streaming = true)
         val visibleMessages = visibleMessages(messages, prompt)
         mutableState.update {
             it.copy(
@@ -275,10 +300,16 @@ public class AgentSession<TContext, TOutput>(
             reason = reason,
             approvalId = approval.approvalId,
         )
-        return submit(
-            messages = state.value.messages + response,
-            options = options,
-        )
+        // Resume with the SAME call config the paused turn ran under (upstream v6 re-passes settings on every
+        // resume call): the remembered hooks + abort-signal + streaming mode, so a streamed/observed turn keeps
+        // streaming and firing its callbacks across the approval. An explicit [options] still overrides.
+        val resumeMessages = state.value.messages + response
+        val resumeOptions = options ?: lastOptions
+        return if (lastStreaming) {
+            submitStreaming(messages = resumeMessages, options = resumeOptions, abortSignal = lastAbortSignal, hooks = lastHooks)
+        } else {
+            submit(messages = resumeMessages, options = resumeOptions, abortSignal = lastAbortSignal, hooks = lastHooks)
+        }
     }
 
     private fun launchSession(

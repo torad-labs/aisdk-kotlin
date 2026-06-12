@@ -11,6 +11,7 @@ import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.serializer
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotEquals
@@ -24,6 +25,48 @@ class AgentSessionTest {
 
     @Serializable
     data class WeatherOutput(val temperature: Int)
+
+    @Serializable
+    data class SendInput(val message: String)
+
+    @Serializable
+    data class SendResult(val sent: Boolean)
+
+    @Test
+    fun `approve re-fires the call hooks on the resumed segment`() = runTest {
+        val sendTool = tool<SendInput, SendResult, Unit>(
+            name = "send",
+            description = "send message",
+            inputSerializer = serializer(),
+            outputSerializer = serializer(),
+            needsApproval = { _, _ -> true },
+        ) { SendResult(sent = true) }
+        val agent = TestToolLoopAgent<Unit, String>(
+            model = mockLanguageModelToolThenText(
+                toolName = "send",
+                toolInput = mockToolInput("message" to "hi"),
+                finalText = "sent",
+            ),
+            instructions = "use send",
+            tools = toolSetOf(sendTool),
+        )
+        val session = agent.session(this)
+        var steps = 0 // var-ok: test step counter
+        val hooks = AgentCallHooks(onStepFinish = { steps++ })
+
+        session.submit(prompt = "trigger", hooks = hooks).join()
+        assertEquals(AgentSessionStatus.AwaitingApproval, session.state.value.status)
+        val afterSubmit = steps
+
+        val pending = session.state.value.pendingApprovals.single()
+        session.approve(pending).join()
+
+        assertEquals(AgentSessionStatus.Ready, session.state.value.status)
+        assertEquals("sent", session.state.value.text)
+        // Before the fix, resumeApproval re-submitted with NO hooks, so the resumed segment went dark — no
+        // onStepFinish, no streaming. Upstream v6 re-passes settings on every resume; this asserts the port does too.
+        assertTrue(steps > afterSubmit, "the resumed segment must re-fire the call hooks (it went dark before the fix)")
+    }
 
     @Test
     fun `streaming session records tool-call and tool-result parts in the message log`() = runTest {
