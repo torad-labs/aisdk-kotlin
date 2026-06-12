@@ -1,7 +1,7 @@
 # @ai-sdk/gateway
 
-- Version: 3.0.125
-- Upstream path: `.reference/vercel-ai-sdk-ai-6.0.197/packages/gateway`
+- Version: 3.0.128
+- Upstream path: `.reference/vercel-ai-sdk-ai-6.0.202/packages/gateway`
 - Kotlin parity area: `:aisdk-gateway`
 - Current parity status: ported: createGateway/createGatewayProvider/gateway, GatewayProviderSettings, model aliases, gateway hosted tools, auth headers/API-key/OIDC method propagation, metadata caching, credits/spend/generation endpoints, Gateway error classes, and Ktor HTTP transport for language/embedding/image/video/reranking calls and SSE streams are represented as Kotlin facades folded into the root module
 
@@ -9,7 +9,7 @@
 
 | Subpath | Source | Export count |
 |---|---|---:|
-| `.` | `.reference/vercel-ai-sdk-ai-6.0.197/packages/gateway/src/index.ts` | 27 |
+| `.` | `.reference/vercel-ai-sdk-ai-6.0.202/packages/gateway/src/index.ts` | 28 |
 
 ## Public Exports
 
@@ -22,6 +22,7 @@
 | `GatewayCreditsResponse` | type | `src/gateway-fetch-metadata.ts` | `.` |
 | `GatewayError` | value | `src/errors/index.ts` | `.` |
 | `GatewayErrorResponse` | type | `src/errors/index.ts` | `.` |
+| `GatewayFailedDependencyError` | value | `src/errors/index.ts` | `.` |
 | `GatewayGenerationInfo` | type | `src/gateway-generation-info.ts` | `.` |
 | `GatewayGenerationInfoParams` | type | `src/gateway-generation-info.ts` | `.` |
 | `GatewayInternalServerError` | value | `src/errors/index.ts` | `.` |
