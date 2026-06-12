@@ -890,6 +890,8 @@
     <ID>ComplexCondition:BlackForestLabsProvider.kt$width == null || height == null || width &lt;= 0 || height &lt;= 0</ID>
     <ID>ComplexCondition:ProdiaProvider.kt$this[index] == '\r'.code.toByte() &amp;&amp; this[index + 1] == '\n'.code.toByte() &amp;&amp; this[index + 2] == '\r'.code.toByte() &amp;&amp; this[index + 3] == '\n'.code.toByte()</ID>
     <ID>ComplexCondition:PruneMessages.kt$(message.role != MessageRole.Assistant &amp;&amp; message.role != MessageRole.Tool) || (keepLastMessagesCount != null &amp;&amp; index >= messages.size - keepLastMessagesCount)</ID>
+    <ID>ConstructorParameterNaming:Agent.kt$AgentCallHooks$/** Per-call mirror of the constructor hook — fired after a tool returns or throws. */ val experimental_onToolCallFinish: (suspend (OnToolCallFinishEvent) -> Unit)? = null</ID>
+    <ID>ConstructorParameterNaming:Agent.kt$AgentCallHooks$/** Per-call mirror of the constructor hook — fired before a (non-gated) tool executes. */ val experimental_onToolCallStart: (suspend (OnToolCallStartEvent) -> Unit)? = null</ID>
     <ID>ConstructorParameterNaming:AnthropicProvider.kt$AnthropicTools$val advisor_20260301: Tool&lt;JsonElement, JsonElement, Any?> = anthropicProviderTool("advisor", "anthropic.advisor_20260301", "Consult an Anthropic advisor model during generation.")</ID>
     <ID>ConstructorParameterNaming:AnthropicProvider.kt$AnthropicTools$val bash_20241022: Tool&lt;JsonElement, JsonElement, Any?> = anthropicProviderTool("bash", "anthropic.bash_20241022", "Use Anthropic's hosted Bash tool.")</ID>
     <ID>ConstructorParameterNaming:AnthropicProvider.kt$AnthropicTools$val bash_20250124: Tool&lt;JsonElement, JsonElement, Any?> = anthropicProviderTool("bash", "anthropic.bash_20250124", "Use Anthropic's hosted Bash tool.")</ID>
@@ -2796,6 +2798,7 @@
     <ID>TooGenericExceptionCaught:ToolLoopAgent.kt$ToolLoopAgent$error: Exception</ID>
     <ID>TooGenericExceptionCaught:ToolLoopAgent.kt$ToolLoopAgent$t: Throwable</ID>
     <ID>TooGenericExceptionCaught:Util.kt$t: Throwable</ID>
+    <ID>TooManyFunctions:AgentSession.kt$AgentSession&lt;TContext, TOutput></ID>
     <ID>TooManyFunctions:AlibabaProvider.kt$ai.torad.aisdk.providers.AlibabaProvider.kt</ID>
     <ID>TooManyFunctions:AmazonBedrockProvider.kt$ai.torad.aisdk.providers.AmazonBedrockProvider.kt</ID>
     <ID>TooManyFunctions:AnthropicProvider.kt$ai.torad.aisdk.providers.AnthropicProvider.kt</ID>
