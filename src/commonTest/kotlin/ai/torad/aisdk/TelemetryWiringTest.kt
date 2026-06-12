@@ -145,6 +145,29 @@ class TelemetryWiringTest {
     }
 
     @Test
+    fun `a swallowed integration throw leaves a logger warn tell`() = runTest {
+        val warns = mutableListOf<String>()
+        val tellLogger = object : Logger {
+            override fun warn(message: String, throwable: Throwable?) {
+                warns += message
+            }
+            override fun info(message: String): Unit = Unit
+            override fun debug(message: String): Unit = Unit
+        }
+        val agent = TestToolLoopAgent<Unit, String>(
+            model = mockLanguageModelTextOnly("hi"),
+            instructions = "x",
+            tools = toolSetOf(),
+            telemetry = TelemetrySettings(integrations = listOf(ExplodingTelemetry())),
+            logger = tellLogger,
+        )
+        val result = agent.generate(prompt = "go")
+        assertEquals("hi", result.text, "the loop is unaffected")
+        assertTrue(warns.isNotEmpty(), "a broken integration must be discoverable")
+        assertTrue(warns.first().contains("exploding"), "the warn names the failing integration: ${warns.first()}")
+    }
+
+    @Test
     fun `a globally registered integration observes with no constructor wiring`() = runTest {
         val rec = RecordingTelemetry()
         registerTelemetry(rec)

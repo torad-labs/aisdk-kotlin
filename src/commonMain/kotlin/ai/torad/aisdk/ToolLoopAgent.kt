@@ -117,6 +117,13 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
      */
     public val telemetry: TelemetrySettings? = null,
     /**
+     * Port-side log sink for non-fatal warnings (see [Logger]). The loop warns here
+     * when a [Telemetry] integration throws and the event is dropped — the swallow
+     * contract keeps telemetry from altering the loop, and the warn keeps a broken
+     * integration DISCOVERABLE instead of perfectly silent.
+     */
+    public val logger: Logger = NoopLogger,
+    /**
      * Coroutine context for the engine-surface scope (the long-lived
      * StateFlow-driven surface). Defaults to [Dispatchers.Default]; inject a
      * test dispatcher or a host-controlled one for deterministic scheduling.
@@ -460,7 +467,7 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
         val validatedOptions = validateCallOptions(options)
         // v7 telemetry: resolve the effective integration once per invocation and
         // stamp every event of this call with one TelemetryCall envelope.
-        val feed = resolveTelemetry(telemetry)?.let { tele ->
+        val feed = resolveTelemetry(telemetry, logger)?.let { tele ->
             TelemetryFeed(
                 tele = tele,
                 call = TelemetryCall(
@@ -1502,8 +1509,9 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
             feed.tele.block(feed.call)
         } catch (ce: CancellationException) {
             throw ce
-        } catch (_: Throwable) {
-            // Telemetry failures never reach the loop.
+        } catch (t: Throwable) {
+            // Telemetry failures never reach the loop — but they leave a tell.
+            logger.warn("telemetry integration '${feed.tele.name}' threw — event dropped", t)
         }
     }
 

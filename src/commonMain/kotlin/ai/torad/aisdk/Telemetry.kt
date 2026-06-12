@@ -2,8 +2,6 @@ package ai.torad.aisdk
 
 import kotlinx.coroutines.CancellationException
 import kotlinx.serialization.json.JsonElement
-import kotlinx.serialization.json.JsonObject
-import kotlinx.serialization.json.JsonPrimitive
 import kotlin.concurrent.atomics.AtomicReference
 import kotlin.concurrent.atomics.ExperimentalAtomicApi
 import kotlin.concurrent.atomics.update
@@ -160,15 +158,17 @@ public fun clearGlobalTelemetry() {
  * entirely (upstream "opt out of a specific call"); otherwise per-call
  * [TelemetrySettings.integrations] REPLACE the global registrations when non-empty
  * (upstream per-call semantics); null when nothing is registered (zero-overhead path).
+ * [logger] receives one warn per swallowed integration throw — a dead integration is
+ * discoverable, never perfectly silent.
  */
-internal fun resolveTelemetry(settings: TelemetrySettings?): Telemetry? {
+internal fun resolveTelemetry(settings: TelemetrySettings?, logger: Logger = NoopLogger): Telemetry? {
     if (settings?.isEnabled == false) return null
     val perCall = settings?.integrations.orEmpty()
     val effective = perCall.ifEmpty { globalTelemetry.list() }
     return when {
         effective.isEmpty() -> null
         effective.size == 1 -> effective.single()
-        else -> CompositeTelemetry(effective)
+        else -> CompositeTelemetry(effective, logger)
     }
 }
 
@@ -177,16 +177,18 @@ private fun interface TelemetryNotify {
     public suspend fun notify(integration: Telemetry)
 }
 
-/** Guarded fan-out: one integration's failure never starves the rest (cancellation still propagates). */
+/** Guarded fan-out: one integration's failure never starves the rest (cancellation still
+ *  propagates), and each swallow leaves a [Logger.warn] tell so a broken integration is
+ *  discoverable. */
 private object TelemetryBroadcast {
-    suspend fun run(integrations: List<Telemetry>, listener: TelemetryNotify) {
+    suspend fun run(integrations: List<Telemetry>, logger: Logger, listener: TelemetryNotify) {
         for (integration in integrations) {
             try {
                 listener.notify(integration)
             } catch (ce: CancellationException) {
                 throw ce
-            } catch (_: Throwable) {
-                // One integration's failure never starves the rest.
+            } catch (t: Throwable) {
+                logger.warn("telemetry integration '${integration.name}' threw — event dropped for it", t)
             }
         }
     }
@@ -195,250 +197,47 @@ private object TelemetryBroadcast {
 /** Broadcasts each event to every integration via [TelemetryBroadcast]. */
 private class CompositeTelemetry(
     private val integrations: List<Telemetry>,
+    private val logger: Logger,
 ) : Telemetry {
     override val name: String = "composite"
 
     override suspend fun onAgentStart(call: TelemetryCall, event: OnStartEvent) {
-        TelemetryBroadcast.run(integrations) { it.onAgentStart(call, event) }
+        TelemetryBroadcast.run(integrations, logger) { it.onAgentStart(call, event) }
     }
 
     override suspend fun onStepStart(call: TelemetryCall, event: OnStepStartEvent) {
-        TelemetryBroadcast.run(integrations) { it.onStepStart(call, event) }
+        TelemetryBroadcast.run(integrations, logger) { it.onStepStart(call, event) }
     }
 
     override suspend fun onModelCallStart(call: TelemetryCall, event: TelemetryModelCallEvent) {
-        TelemetryBroadcast.run(integrations) { it.onModelCallStart(call, event) }
+        TelemetryBroadcast.run(integrations, logger) { it.onModelCallStart(call, event) }
     }
 
     override suspend fun onModelCallFinish(call: TelemetryCall, event: TelemetryModelCallResultEvent) {
-        TelemetryBroadcast.run(integrations) { it.onModelCallFinish(call, event) }
+        TelemetryBroadcast.run(integrations, logger) { it.onModelCallFinish(call, event) }
     }
 
     override suspend fun onToolCallStart(call: TelemetryCall, event: OnToolCallStartEvent) {
-        TelemetryBroadcast.run(integrations) { it.onToolCallStart(call, event) }
+        TelemetryBroadcast.run(integrations, logger) { it.onToolCallStart(call, event) }
     }
 
     override suspend fun onToolCallFinish(call: TelemetryCall, event: OnToolCallFinishEvent) {
-        TelemetryBroadcast.run(integrations) { it.onToolCallFinish(call, event) }
+        TelemetryBroadcast.run(integrations, logger) { it.onToolCallFinish(call, event) }
     }
 
     override suspend fun onStepFinish(call: TelemetryCall, event: OnStepFinishEvent) {
-        TelemetryBroadcast.run(integrations) { it.onStepFinish(call, event) }
+        TelemetryBroadcast.run(integrations, logger) { it.onStepFinish(call, event) }
     }
 
     override suspend fun onError(call: TelemetryCall, event: OnErrorEvent) {
-        TelemetryBroadcast.run(integrations) { it.onError(call, event) }
+        TelemetryBroadcast.run(integrations, logger) { it.onError(call, event) }
     }
 
     override suspend fun onAbort(call: TelemetryCall, event: OnAbortEvent) {
-        TelemetryBroadcast.run(integrations) { it.onAbort(call, event) }
+        TelemetryBroadcast.run(integrations, logger) { it.onAbort(call, event) }
     }
 
     override suspend fun onAgentFinish(call: TelemetryCall, event: OnFinishEvent) {
-        TelemetryBroadcast.run(integrations) { it.onAgentFinish(call, event) }
-    }
-}
-
-internal fun assembleOperationName(
-    operationId: String,
-    telemetry: TelemetrySettings = TelemetrySettings(),
-): String = telemetry.functionId?.let { "$it.$operationId" } ?: operationId
-
-internal fun assembleOperationNameAttributes(
-    operationId: String,
-    telemetry: TelemetrySettings = TelemetrySettings(),
-): Map<String, JsonElement> = buildMap {
-    put("operation.name", JsonPrimitive(operationId + telemetry.functionId?.let { " $it" }.orEmpty()))
-    telemetry.functionId?.let { put("resource.name", JsonPrimitive(it)) }
-    put("ai.operationId", JsonPrimitive(operationId))
-    telemetry.functionId?.let { put("ai.telemetry.functionId", JsonPrimitive(it)) }
-}
-
-internal suspend fun <T> recordSpan(
-    name: String,
-    tracer: TelemetryTracer,
-    attributes: Map<String, JsonElement> = emptyMap(),
-    endWhenDone: Boolean = true,
-    block: suspend (TelemetryActiveSpan) -> T,
-): T = tracer.startActiveSpan(name, attributes) { span ->
-    try {
-        val result = block(span)
-        if (endWhenDone) span.end()
-        result
-    } catch (error: Throwable) {
-        try {
-            recordErrorOnSpan(span, error)
-        } finally {
-            span.end()
-        }
-        throw error
-    }
-}
-
-internal fun recordErrorOnSpan(span: TelemetryActiveSpan, error: Throwable) {
-    span.recordException(error)
-    span.status = TelemetrySpanStatus.Error(error.message)
-}
-
-internal fun getTracer(
-    isEnabled: Boolean = false,
-    tracer: TelemetryTracer? = null,
-): TelemetryTracer =
-    if (!isEnabled) NoopTelemetryTracer else tracer ?: NoopTelemetryTracer
-
-internal fun selectTelemetryAttributes(
-    telemetry: TelemetrySettings,
-    input: JsonElement? = null,
-    output: JsonElement? = null,
-    providerMetadata: Map<String, JsonElement> = emptyMap(),
-): Map<String, JsonElement> = buildMap {
-    // Legacy span path: stays opt-IN (only an explicit `isEnabled = true` selects attributes).
-    if (telemetry.isEnabled != true) return@buildMap
-    putAll(telemetry.metadata)
-    if (telemetry.recordInputs && input != null) put("ai.input", input)
-    if (telemetry.recordOutputs && output != null) put("ai.output", output)
-    if (providerMetadata.isNotEmpty()) {
-        put("ai.providerMetadata", JsonObject(providerMetadata))
-    }
-}
-
-internal suspend fun selectTelemetryAttributes(
-    telemetry: TelemetrySettings,
-    attributes: Map<String, TelemetryAttribute>,
-): Map<String, JsonElement> {
-    // Legacy span path: stays opt-IN (only an explicit `isEnabled = true` selects attributes).
-    if (telemetry.isEnabled != true) return emptyMap()
-    val selected = linkedMapOf<String, JsonElement>()
-    for ((key, value) in attributes) {
-        when (value) {
-            is TelemetryAttribute.Value -> selected[key] = value.value
-            is TelemetryAttribute.Input -> {
-                if (telemetry.recordInputs) value.resolve()?.let { selected[key] = it }
-            }
-            is TelemetryAttribute.Output -> {
-                if (telemetry.recordOutputs) value.resolve()?.let { selected[key] = it }
-            }
-        }
-    }
-    return selected
-}
-
-internal fun stringifyForTelemetry(value: JsonElement?): String? = when (value) {
-    null -> null
-    is JsonPrimitive -> value.content
-    else -> value.toString()
-}
-
-internal sealed interface TelemetryAttribute {
-    data class Value(val value: JsonElement) : TelemetryAttribute
-    data class Input(val resolve: suspend () -> JsonElement?) : TelemetryAttribute
-    data class Output(val resolve: suspend () -> JsonElement?) : TelemetryAttribute
-}
-
-internal fun telemetryAttribute(value: JsonElement): TelemetryAttribute = TelemetryAttribute.Value(value)
-internal fun telemetryInput(resolve: suspend () -> JsonElement?): TelemetryAttribute = TelemetryAttribute.Input(resolve)
-internal fun telemetryOutput(resolve: suspend () -> JsonElement?): TelemetryAttribute = TelemetryAttribute.Output(resolve)
-
-public sealed interface TelemetrySpanStatus {
-    public data object Ok : TelemetrySpanStatus
-    public data class Error(val message: String? = null) : TelemetrySpanStatus
-}
-
-public data class TelemetrySpanEvent(
-    val name: String,
-    val attributes: Map<String, JsonElement> = emptyMap(),
-)
-
-public interface TelemetryActiveSpan {
-    public val name: String
-    public val attributes: Map<String, JsonElement>
-    public var status: TelemetrySpanStatus
-    public val events: List<TelemetrySpanEvent>
-    public var hasEnded: Boolean
-
-    public fun setAttribute(key: String, value: JsonElement)
-    public fun addEvent(name: String, attributes: Map<String, JsonElement> = emptyMap())
-    public fun recordException(error: Throwable)
-    public fun end()
-}
-
-public interface TelemetryTracer {
-    public suspend fun <T> startActiveSpan(
-        name: String,
-        attributes: Map<String, JsonElement> = emptyMap(),
-        block: suspend (TelemetryActiveSpan) -> T,
-    ): T
-}
-
-public data object NoopTelemetryTracer : TelemetryTracer {
-    override suspend fun <T> startActiveSpan(
-        name: String,
-        attributes: Map<String, JsonElement>,
-        block: suspend (TelemetryActiveSpan) -> T,
-    ): T = block(NoopTelemetryActiveSpan(name, attributes))
-}
-
-public class InMemoryTelemetryTracer : TelemetryTracer {
-    public val spans: MutableList<MutableTelemetrySpan> = mutableListOf()
-
-    override suspend fun <T> startActiveSpan(
-        name: String,
-        attributes: Map<String, JsonElement>,
-        block: suspend (TelemetryActiveSpan) -> T,
-    ): T {
-        val span = MutableTelemetrySpan(name, attributes.toMutableMap())
-        spans += span
-        return block(span)
-    }
-}
-
-public class MutableTelemetrySpan(
-    override val name: String,
-    private val mutableAttributes: MutableMap<String, JsonElement> = linkedMapOf(),
-) : TelemetryActiveSpan {
-    override val attributes: Map<String, JsonElement>
-        get() = mutableAttributes.toMap()
-    override var status: TelemetrySpanStatus = TelemetrySpanStatus.Ok
-    private val mutableEvents: MutableList<TelemetrySpanEvent> = mutableListOf()
-    override val events: List<TelemetrySpanEvent>
-        get() = mutableEvents.toList()
-    override var hasEnded: Boolean = false
-
-    override fun setAttribute(key: String, value: JsonElement) {
-        mutableAttributes[key] = value
-    }
-
-    override fun addEvent(name: String, attributes: Map<String, JsonElement>) {
-        mutableEvents += TelemetrySpanEvent(name, attributes)
-    }
-
-    override fun recordException(error: Throwable) {
-        addEvent(
-            "exception",
-            buildMap {
-                put("exception.type", JsonPrimitive(error::class.simpleName ?: "Throwable"))
-                error.message?.let { put("exception.message", JsonPrimitive(it)) }
-                error.stackTraceToString().takeIf { it.isNotBlank() }?.let { put("exception.stacktrace", JsonPrimitive(it)) }
-            },
-        )
-    }
-
-    override fun end() {
-        hasEnded = true
-    }
-}
-
-private class NoopTelemetryActiveSpan(
-    override val name: String,
-    override val attributes: Map<String, JsonElement>,
-) : TelemetryActiveSpan {
-    override var status: TelemetrySpanStatus = TelemetrySpanStatus.Ok
-    override val events: List<TelemetrySpanEvent> = emptyList()
-    override var hasEnded: Boolean = false
-    override fun setAttribute(key: String, value: JsonElement) {}
-    override fun addEvent(name: String, attributes: Map<String, JsonElement>) {}
-    override fun recordException(error: Throwable) {}
-    override fun end() {
-        hasEnded = true
+        TelemetryBroadcast.run(integrations, logger) { it.onAgentFinish(call, event) }
     }
 }
