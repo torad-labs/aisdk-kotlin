@@ -205,14 +205,7 @@ class FullPortFeatureParityTest {
 
     @Test
     fun `telemetry helpers assemble names select attributes and record spans`() = runTest {
-        val recorded = mutableListOf<TelemetrySpan>()
-        val integration = object : TelemetryIntegration {
-            override val name: String = "test"
-            override suspend fun record(span: TelemetrySpan, block: suspend () -> Unit) {
-                recorded += span
-                block()
-            }
-        }
+        val tracer = InMemoryTelemetryTracer()
 
         val settings = TelemetrySettings(
             isEnabled = true,
@@ -225,11 +218,11 @@ class FullPortFeatureParityTest {
             output = JsonPrimitive("out"),
             providerMetadata = mapOf("mock" to buildJsonObject { put("id", JsonPrimitive("1")) }),
         )
-        recordSpan(integration, assembleOperationName("generateText", settings), attributes) {}
+        recordSpan(assembleOperationName("generateText", settings), tracer, attributes) {}
 
-        assertEquals("chat.generateText", recorded.single().operationName)
-        assertEquals(JsonPrimitive("in"), recorded.single().attributes["ai.input"])
-        assertTrue(recorded.single().attributes["ai.providerMetadata"] is JsonObject)
+        assertEquals("chat.generateText", tracer.spans.single().name)
+        assertEquals(JsonPrimitive("in"), tracer.spans.single().attributes["ai.input"])
+        assertTrue(tracer.spans.single().attributes["ai.providerMetadata"] is JsonObject)
         assertEquals("out", stringifyForTelemetry(JsonPrimitive("out")))
     }
 

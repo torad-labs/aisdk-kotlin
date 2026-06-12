@@ -21,6 +21,7 @@
     <ID>ArgumentListWrapping:AlibabaProviderTest.kt$AlibabaProviderTest$(assertFailsWith&lt;AiSdkException> { alibaba.video("wan2.6-t2v") }.message.orEmpty().contains("createAlibaba"))</ID>
     <ID>ArgumentListWrapping:AlibabaProviderTest.kt$AlibabaProviderTest$(createTestServer(mutableMapOf()).httpClient(), AlibabaProviderSettings(apiKey = "key"))</ID>
     <ID>ArgumentListWrapping:AlibabaProviderTest.kt$AlibabaProviderTest$(mutableMapOf())</ID>
+    <ID>ArgumentListWrapping:AmazonBedrockProvider.kt$&lt;no name provided>$("Bedrock Anthropic provider is not configured. Use createBedrockAnthropic(client, settings).")</ID>
     <ID>ArgumentListWrapping:AmazonBedrockProvider.kt$("backgroundRemovalParams", buildJsonObject { put("image", JsonPrimitive(bedrockImageFileBase64(params.files.first()))) })</ID>
     <ID>ArgumentListWrapping:AmazonBedrockProvider.kt$("bedrock")</ID>
     <ID>ArgumentListWrapping:AmazonBedrockProvider.kt$("delta")</ID>
@@ -40,7 +41,6 @@
     <ID>ArgumentListWrapping:AmazonBedrockProvider.kt$(params.files.first())</ID>
     <ID>ArgumentListWrapping:AmazonBedrockProvider.kt$(params.stopSequences.map(::JsonPrimitive))</ID>
     <ID>ArgumentListWrapping:AmazonBedrockProvider.kt$(tool.parametersSchemaJson)</ID>
-    <ID>ArgumentListWrapping:AmazonBedrockProvider.kt$&lt;no name provided>$("Bedrock Anthropic provider is not configured. Use createBedrockAnthropic(client, settings).")</ID>
     <ID>ArgumentListWrapping:AmazonBedrockProvider.kt$BedrockAnthropicProvider$(providerId, "embeddingModel", modelId)</ID>
     <ID>ArgumentListWrapping:AmazonBedrockProvider.kt$BedrockEmbeddingModel$("Amazon Bedrock embedding models support maxEmbeddingsPerCall=1. Received ${params.values.size} values.")</ID>
     <ID>ArgumentListWrapping:AmazonBedrockProvider.kt$BedrockEmbeddingModel$(modelId = modelId, headers = response.headers, body = response.value)</ID>
@@ -49,8 +49,8 @@
     <ID>ArgumentListWrapping:AmazonBedrockProvider.kt$BedrockMantleChatLanguageModel$(result.response.id, result.response.timestampMillis, result.response.modelId, result.response.headers, result.response.body)</ID>
     <ID>ArgumentListWrapping:AmazonBedrockProvider.kt$BedrockMantleProvider$(providerId, "embeddingModel", modelId)</ID>
     <ID>ArgumentListWrapping:AmazonBedrockProvider.kt$BedrockRerankingModel$(modelId = modelId, headers = response.headers, body = response.value)</ID>
-    <ID>ArgumentListWrapping:AmazonBedrockProviderTest.kt$AmazonBedrockProviderTest$("/bedrock/aws4_request")</ID>
     <ID>ArgumentListWrapping:AmazonBedrockProviderTest.kt$AmazonBedrockProviderTest$("&lt;/done>", result.providerMetadata["bedrock"]?.jsonObject?.get("stopSequence")?.jsonPrimitive?.contentOrNull)</ID>
+    <ID>ArgumentListWrapping:AmazonBedrockProviderTest.kt$AmazonBedrockProviderTest$("/bedrock/aws4_request")</ID>
     <ID>ArgumentListWrapping:AmazonBedrockProviderTest.kt$AmazonBedrockProviderTest$("AWS4-HMAC-SHA256")</ID>
     <ID>ArgumentListWrapping:AmazonBedrockProviderTest.kt$AmazonBedrockProviderTest$("Credential=id/")</ID>
     <ID>ArgumentListWrapping:AmazonBedrockProviderTest.kt$AmazonBedrockProviderTest$("Follow policy.", body["system"]?.jsonArray?.single()?.jsonObject?.get("text")?.jsonPrimitive?.contentOrNull)</ID>
@@ -99,6 +99,7 @@
     <ID>ArgumentListWrapping:AnthropicAwsProviderTest.kt$AnthropicAwsProviderTest$(messages = listOf(userMessage("hi")))</ID>
     <ID>ArgumentListWrapping:AnthropicAwsProviderTest.kt$AnthropicAwsProviderTest$(request.requestHeaders.headerValue(HttpHeaders.Authorization).orEmpty().contains("/aws-external-anthropic/aws4_request"))</ID>
     <ID>ArgumentListWrapping:AnthropicAwsProviderTest.kt$AnthropicAwsProviderTest$(userMessage("hi"))</ID>
+    <ID>ArgumentListWrapping:AnthropicProvider.kt$&lt;no name provided>$(providerId, "embeddingModel", modelId)</ID>
     <ID>ArgumentListWrapping:AnthropicProvider.kt$("apiKey/authToken", "Both apiKey and authToken were provided. Please use only one authentication method.")</ID>
     <ID>ArgumentListWrapping:AnthropicProvider.kt$("code_execution")</ID>
     <ID>ArgumentListWrapping:AnthropicProvider.kt$("code_execution_20260120")</ID>
@@ -115,7 +116,6 @@
     <ID>ArgumentListWrapping:AnthropicProvider.kt$("type", JsonPrimitive("tool_search_tool_regex_20251119"))</ID>
     <ID>ArgumentListWrapping:AnthropicProvider.kt$(::JsonPrimitive)</ID>
     <ID>ArgumentListWrapping:AnthropicProvider.kt$(params.stopSequences.map(::JsonPrimitive))</ID>
-    <ID>ArgumentListWrapping:AnthropicProvider.kt$&lt;no name provided>$(providerId, "embeddingModel", modelId)</ID>
     <ID>ArgumentListWrapping:AnthropicProvider.kt$AnthropicMessagesLanguageModel$(prepared.body, prepared.betas, params.headers, acceptEventStream = false, parseJson = true)</ID>
     <ID>ArgumentListWrapping:AnthropicProvider.kt$AnthropicProvider$(providerId, "embeddingModel", modelId)</ID>
     <ID>ArgumentListWrapping:AnthropicProvider.kt$AnthropicStreamState$("Anthropic stream protocol error: content_block_delta missing delta.type.")</ID>
@@ -205,11 +205,11 @@
     <ID>ArgumentListWrapping:BasetenProviderTest.kt$BasetenProviderTest$(LanguageModelCallParams(listOf(userMessage("hi"))))</ID>
     <ID>ArgumentListWrapping:BasetenProviderTest.kt$BasetenProviderTest$(listOf(userMessage("hi")))</ID>
     <ID>ArgumentListWrapping:BasetenProviderTest.kt$BasetenProviderTest$(userMessage("hi"))</ID>
+    <ID>ArgumentListWrapping:BlackForestLabsProvider.kt$&lt;no name provided>$("Black Forest Labs provider is not configured. Use createBlackForestLabs(client, settings).")</ID>
     <ID>ArgumentListWrapping:BlackForestLabsProvider.kt$('&amp;')</ID>
     <ID>ArgumentListWrapping:BlackForestLabsProvider.kt$('?', missingDelimiterValue = "")</ID>
     <ID>ArgumentListWrapping:BlackForestLabsProvider.kt$(1)</ID>
     <ID>ArgumentListWrapping:BlackForestLabsProvider.kt$(pollTimeoutMillis.coerceAtLeast(1L).toDouble() / interval.toDouble())</ID>
-    <ID>ArgumentListWrapping:BlackForestLabsProvider.kt$&lt;no name provided>$("Black Forest Labs provider is not configured. Use createBlackForestLabs(client, settings).")</ID>
     <ID>ArgumentListWrapping:BlackForestLabsProvider.kt$BlackForestLabsProvider$(providerId, "embeddingModel", modelId)</ID>
     <ID>ArgumentListWrapping:BlackForestLabsProvider.kt$DefaultBlackForestLabsProvider$(providerId, "embeddingModel", modelId)</ID>
     <ID>ArgumentListWrapping:BlackForestLabsProvider.kt$DefaultBlackForestLabsProvider$(providerId, "languageModel", modelId)</ID>
@@ -360,6 +360,7 @@
     <ID>ArgumentListWrapping:GladiaProviderTest.kt$GladiaProviderTest$(TranscriptionParams(audio = AudioSource("audio/wav", convertByteArrayToBase64(byteArrayOf(1)))))</ID>
     <ID>ArgumentListWrapping:GladiaProviderTest.kt$GladiaProviderTest$(audio = AudioSource("audio/wav", convertByteArrayToBase64(byteArrayOf(1))))</ID>
     <ID>ArgumentListWrapping:GladiaProviderTest.kt$GladiaProviderTest$(byteArrayOf(1))</ID>
+    <ID>ArgumentListWrapping:GoogleProvider.kt$&lt;no name provided>$("Google Generative AI provider is not configured. Use createGoogleGenerativeAI(client, settings).")</ID>
     <ID>ArgumentListWrapping:GoogleProvider.kt$("content", buildJsonObject { put("parts", JsonArray(listOf(buildJsonObject { put("text", JsonPrimitive(value)) }))) })</ID>
     <ID>ArgumentListWrapping:GoogleProvider.kt$("gemma-", ignoreCase = true)</ID>
     <ID>ArgumentListWrapping:GoogleProvider.kt$("google" to buildJsonObject { put("providerExecuted", JsonPrimitive(true)) })</ID>
@@ -381,7 +382,6 @@
     <ID>ArgumentListWrapping:GoogleProvider.kt$(part.mediaType, part.base64, mediaResolution)</ID>
     <ID>ArgumentListWrapping:GoogleProvider.kt$(systemParts)</ID>
     <ID>ArgumentListWrapping:GoogleProvider.kt$(value)</ID>
-    <ID>ArgumentListWrapping:GoogleProvider.kt$&lt;no name provided>$("Google Generative AI provider is not configured. Use createGoogleGenerativeAI(client, settings).")</ID>
     <ID>ArgumentListWrapping:GoogleProvider.kt$GoogleGenerativeAIEmbeddingModel$("Google embedding models support at most 2048 values per call.")</ID>
     <ID>ArgumentListWrapping:GoogleProvider.kt$GoogleGenerativeAIEmbeddingModel$("values")</ID>
     <ID>ArgumentListWrapping:GoogleProvider.kt$GoogleGenerativeAIEmbeddingModel$('/')</ID>
@@ -489,8 +489,8 @@
     <ID>ArgumentListWrapping:GoogleVertexProviderTest.kt$GoogleVertexProviderTest$(LanguageModelCallParams(messages = listOf(userMessage("hi"))))</ID>
     <ID>ArgumentListWrapping:GoogleVertexProviderTest.kt$GoogleVertexProviderTest$(messages = listOf(userMessage("hi")))</ID>
     <ID>ArgumentListWrapping:GoogleVertexProviderTest.kt$GoogleVertexProviderTest$(userMessage("hi"))</ID>
-    <ID>ArgumentListWrapping:HuggingFaceProvider.kt$("huggingface" to buildJsonObject { put("responseId", JsonPrimitive(it)) })</ID>
     <ID>ArgumentListWrapping:HuggingFaceProvider.kt$&lt;no name provided>$(providerId, modelId)</ID>
+    <ID>ArgumentListWrapping:HuggingFaceProvider.kt$("huggingface" to buildJsonObject { put("responseId", JsonPrimitive(it)) })</ID>
     <ID>ArgumentListWrapping:HuggingFaceProvider.kt$DefaultHuggingFaceProvider$(providerId, modelId)</ID>
     <ID>ArgumentListWrapping:HuggingFaceProviderTest.kt$HuggingFaceProviderTest$("Previous answer.", input[2].jsonObject["content"]?.jsonArray?.single()?.jsonObject?.get("text")?.jsonPrimitive?.contentOrNull)</ID>
     <ID>ArgumentListWrapping:HuggingFaceProviderTest.kt$HuggingFaceProviderTest$("Previous reasoning.", input[3].jsonObject["content"]?.jsonArray?.single()?.jsonObject?.get("text")?.jsonPrimitive?.contentOrNull)</ID>
@@ -839,9 +839,9 @@
     <ID>ArgumentListWrapping:RevaiProviderTest.kt$RevaiProviderTest$(byteArrayOf(1))</ID>
     <ID>ArgumentListWrapping:StructuredObjectApi.kt$StructuredObject$("Structured object response did not contain JSON")</ID>
     <ID>ArgumentListWrapping:StructuredObjectApi.kt$StructuredObject$(null, IllegalArgumentException("Structured object response did not contain JSON"))</ID>
-    <ID>ArgumentListWrapping:Telemetry.kt$(resolve)</ID>
-    <ID>ArgumentListWrapping:Telemetry.kt$MutableTelemetrySpan$("exception.stacktrace", JsonPrimitive(it))</ID>
-    <ID>ArgumentListWrapping:Telemetry.kt$MutableTelemetrySpan$(it)</ID>
+    <ID>ArgumentListWrapping:TelemetryTracing.kt$(resolve)</ID>
+    <ID>ArgumentListWrapping:TelemetryTracing.kt$MutableTelemetrySpan$("exception.stacktrace", JsonPrimitive(it))</ID>
+    <ID>ArgumentListWrapping:TelemetryTracing.kt$MutableTelemetrySpan$(it)</ID>
     <ID>ArgumentListWrapping:TestServer.kt$UrlHandler$(UrlResponseParameter.RequestFactory(factory))</ID>
     <ID>ArgumentListWrapping:TestServer.kt$UrlHandler$(factory)</ID>
     <ID>ArgumentListWrapping:TestServer.kt$UrlResponseParameter.Factory$(TestServerCallOptions(callNumber))</ID>
@@ -950,6 +950,9 @@
     <ID>ConstructorParameterNaming:RevaiProvider.kt$RevaiTranscriptionModelOptions$val summarization_config: JsonObject? = null</ID>
     <ID>ConstructorParameterNaming:RevaiProvider.kt$RevaiTranscriptionModelOptions$val test_mode: Boolean? = null</ID>
     <ID>ConstructorParameterNaming:RevaiProvider.kt$RevaiTranscriptionModelOptions$val translation_config: JsonObject? = null</ID>
+    <ID>ConstructorParameterNaming:TestToolLoopAgent.kt$TestToolLoopAgent$experimental_onToolCallFinish: (suspend OnToolCallFinishEvent.() -> Unit)? = null</ID>
+    <ID>ConstructorParameterNaming:TestToolLoopAgent.kt$TestToolLoopAgent$experimental_onToolCallStart: (suspend OnToolCallStartEvent.() -> Unit)? = null</ID>
+    <ID>ConstructorParameterNaming:TestToolLoopAgent.kt$TestToolLoopAgent$experimental_repairToolCall: ToolCallRepairFunction&lt;TContext>? = null</ID>
     <ID>ConstructorParameterNaming:Tool.kt$ToolPredicateOptions$val experimental_context: TContext? = null</ID>
     <ID>ConstructorParameterNaming:ToolLoopAgent.kt$ToolLoopAgent$/** * Self-healing callback fired when a tool call's arguments fail to * decode. Return a corrected call to retry, or null to surface * `StreamEvent.ToolError`. See [ToolCallRepairFunction]. */ public val experimental_repairToolCall: ToolCallRepairFunction&lt;TContext>? = null</ID>
     <ID>ConstructorParameterNaming:ToolLoopAgent.kt$ToolLoopAgent$public val experimental_onToolCallFinish: (suspend OnToolCallFinishEvent.() -> Unit)? = null</ID>
@@ -1004,13 +1007,13 @@
     <ID>CyclomaticComplexMethod:ProdiaProvider.kt$private fun parseProdiaMultipart(data: ByteArray, boundary: String): List&lt;ProdiaMultipartPart></ID>
     <ID>CyclomaticComplexMethod:PruneMessages.kt$private fun pruneToolCalls(messages: List&lt;ModelMessage>, rule: PruneToolCallRule): List&lt;ModelMessage></ID>
     <ID>CyclomaticComplexMethod:Tool.kt$private fun schemaFallbackValue(value: JsonElement, schema: JsonElement): Any?</ID>
+    <ID>CyclomaticComplexMethod:ToolLoopAgent.kt$ToolLoopAgent$@Suppress("LongParameterList") private suspend fun applyToolApprovalResponses( out: FlowCollector&lt;StreamEvent>, messages: MutableList&lt;ModelMessage>, tools: ToolSet&lt;TContext>, options: TContext?, abortSignal: AbortSignal, hooks: AgentCallHooks?, feed: TelemetryFeed? = null, ): Unit?</ID>
     <ID>CyclomaticComplexMethod:ToolLoopAgent.kt$ToolLoopAgent$@Suppress("SwallowedException") private fun streamInternal( prompt: String?, priorMessages: List&lt;ModelMessage>, options: TContext?, abortSignal: AbortSignal, hooks: AgentCallHooks?, finalMessagesRef: MessageHolder?, stepsCapture: StepsHolder?, ): Flow&lt;StreamEvent></ID>
-    <ID>CyclomaticComplexMethod:ToolLoopAgent.kt$ToolLoopAgent$private suspend fun applyToolApprovalResponses( out: FlowCollector&lt;StreamEvent>, messages: MutableList&lt;ModelMessage>, tools: ToolSet&lt;TContext>, options: TContext?, abortSignal: AbortSignal, hooks: AgentCallHooks?, ): Unit?</ID>
     <ID>CyclomaticComplexMethod:Util.kt$internal fun isDeepEqualData(left: JsonElement?, right: JsonElement?): Boolean</ID>
     <ID>CyclomaticComplexMethod:Util.kt$public fun detectMediaType(filename: String? = null, dataUrl: String? = null, explicit: String? = null): String?</ID>
     <ID>CyclomaticComplexMethod:XaiProvider.kt$private fun xaiVideoRequestBody( modelId: String, params: VideoGenerationParams, options: JsonObject, mode: String?, warnings: MutableList&lt;CallWarning>, ): JsonObject</ID>
     <ID>CyclomaticComplexMethod:XaiProvider.kt$private fun xaiVideoWarnings( params: VideoGenerationParams, options: JsonObject, mode: String?, ): MutableList&lt;CallWarning></ID>
-    <ID>EmptyFunctionBlock:Telemetry.kt$NoopTelemetryActiveSpan${}</ID>
+    <ID>EmptyFunctionBlock:TelemetryTracing.kt$NoopTelemetryActiveSpan${}</ID>
     <ID>Filename:Streaming.kt$ai.torad.aisdk.Streaming.kt</ID>
     <ID>FunctionNaming:MediaModels.kt$public suspend fun experimental_generateImage( model: ImageModel, prompt: String, n: Int = 1, size: String? = null, aspectRatio: String? = null, seed: Int? = null, providerOptions: Map&lt;String, JsonElement> = emptyMap(), headers: Map&lt;String, String> = emptyMap(), abortSignal: AbortSignal = AbortSignalNever, files: List&lt;ImageGenerationFile> = emptyList(), mask: ImageGenerationFile? = null, ): GenerateImageResult</ID>
     <ID>FunctionNaming:MediaModels.kt$public suspend fun experimental_generateSpeech( model: SpeechModel, text: String, voice: String? = null, instructions: String? = null, speed: Float? = null, responseFormat: String? = null, providerOptions: Map&lt;String, JsonElement> = emptyMap(), headers: Map&lt;String, String> = emptyMap(), abortSignal: AbortSignal = AbortSignalNever, ): GenerateSpeechResult</ID>
@@ -1237,14 +1240,14 @@
     <ID>LongParameterList:Provider.kt$( providerId: String, languageModels: Map&lt;String, LanguageModel> = emptyMap(), embeddingModels: Map&lt;String, EmbeddingModel> = emptyMap(), imageModels: Map&lt;String, ImageModel> = emptyMap(), speechModels: Map&lt;String, SpeechModel> = emptyMap(), transcriptionModels: Map&lt;String, TranscriptionModel> = emptyMap(), rerankingModels: Map&lt;String, RerankingModel> = emptyMap(), videoModels: Map&lt;String, VideoModel> = emptyMap(), fallbackProvider: Provider? = null, )</ID>
     <ID>LongParameterList:Rerank.kt$( model: RerankingModel, query: String, documents: List&lt;String>, topN: Int? = null, providerOptions: Map&lt;String, JsonElement> = emptyMap(), headers: Map&lt;String, String> = emptyMap(), abortSignal: AbortSignal = AbortSignalNever, maxRetries: Int = 2, )</ID>
     <ID>LongParameterList:StreamObjectResult.kt$( model: LanguageModel, output: Output&lt;TOutput>, prompt: String? = null, messages: List&lt;ModelMessage> = emptyList(), system: String? = null, temperature: Float? = null, topP: Float? = null, topK: Int? = null, maxOutputTokens: Int? = null, stopSequences: List&lt;String> = emptyList(), seed: Int? = null, providerOptions: Map&lt;String, JsonElement> = emptyMap(), abortSignal: AbortSignal = AbortSignalNever, presencePenalty: Float? = null, frequencyPenalty: Float? = null, responseFormat: ResponseFormat = ResponseFormat.Text, repairText: ((String) -> String?)? = null, )</ID>
+    <ID>LongParameterList:TestToolLoopAgent.kt$TestToolLoopAgent$( model: LanguageModel, instructions: String, tools: ToolSet&lt;TContext>, activeTools: List&lt;String>? = null, output: Output&lt;TOutput>? = null, stopWhen: StopCondition = stepCountIs(20), prepareCall: (suspend PrepareCallScope&lt;TContext>.() -> AgentSettings&lt;TContext>)? = null, prepareStep: (suspend PrepareStepScope&lt;TContext>.() -> StepSettings&lt;TContext>)? = null, callOptionsSchema: KSerializer&lt;TContext>? = null, temperature: Float? = null, topP: Float? = null, topK: Int? = null, maxOutputTokens: Int? = null, stopSequences: List&lt;String>? = null, seed: Int? = null, presencePenalty: Float? = null, frequencyPenalty: Float? = null, responseFormat: ResponseFormat = ResponseFormat.Text, maxParallelToolCalls: Int = Int.MAX_VALUE, onStart: (suspend OnStartEvent.() -> Unit)? = null, onStepStart: (suspend OnStepStartEvent.() -> Unit)? = null, onStepFinish: (suspend OnStepFinishEvent.() -> Unit)? = null, onFinish: (suspend OnFinishEvent.() -> Unit)? = null, onError: (suspend OnErrorEvent.() -> Unit)? = null, onChunk: (suspend OnChunkEvent.() -> Unit)? = null, onAbort: (suspend OnAbortEvent.() -> Unit)? = null, experimental_onToolCallStart: (suspend OnToolCallStartEvent.() -> Unit)? = null, experimental_onToolCallFinish: (suspend OnToolCallFinishEvent.() -> Unit)? = null, experimental_repairToolCall: ToolCallRepairFunction&lt;TContext>? = null, telemetry: TelemetrySettings? = null, logger: Logger = NoopLogger, engineContext: CoroutineContext = Dispatchers.Default, )</ID>
     <ID>LongParameterList:Tool.kt$( id: String, inputSerializer: KSerializer&lt;TInput>, inputSchema: Schema&lt;TInput>, defaultDescription: String, supportsDeferredResults: Boolean, options: ProviderToolFactoryOptions&lt;TInput, TOutput, TContext>, )</ID>
     <ID>LongParameterList:Tool.kt$( id: String, inputSerializer: KSerializer&lt;TInput>, inputSchema: Schema&lt;TInput>, outputSerializer: KSerializer&lt;TOutput>, outputSchema: Schema&lt;TOutput>, supportsDeferredResults: Boolean = false, description: String = "Provider tool $id", )</ID>
     <ID>LongParameterList:Tool.kt$( name: String, description: String, inputSchemaJson: String = "{}", metadata: Map&lt;String, JsonElement> = emptyMap(), toModelOutput: ((JsonElement, ToolPredicateOptions&lt;TContext>) -> ToolResultOutput)? = null, executor: suspend ToolExecutionContext&lt;TContext>.(JsonElement) -> JsonElement, )</ID>
     <ID>LongParameterList:Tool.kt$ProviderToolFactoryWithOutputSchema$( private val id: String, private val inputSerializer: KSerializer&lt;TInput>, private val inputSchema: Schema&lt;TInput>, private val outputSerializer: KSerializer&lt;TOutput>, private val outputSchema: Schema&lt;TOutput>, private val supportsDeferredResults: Boolean = false, private val defaultDescription: String = "Provider tool $id", )</ID>
     <ID>LongParameterList:Tool.kt$Tool$( public val name: String, public val description: String, public val inputSerializer: KSerializer&lt;TInput>, public val outputSerializer: KSerializer&lt;TOutput>, public val executor: ToolExecutionContext&lt;TContext>.(TInput) -> Flow&lt;TOutput>, /** * Approval gate. Per historical parity gap #17, the predicate * receives [ToolPredicateOptions] (toolCallId + messages + * experimental_context) — not just `context`. Lets the gate * decide based on conversation history or call identity. */ public val needsApproval: (suspend (input: TInput, options: ToolPredicateOptions&lt;TContext>) -> Boolean)? = null, /** * Model-visible summary. Per historical parity gaps #17 + #14, * the callback receives both the typed output AND * [ToolPredicateOptions]; returns a structured * [ToolResultOutput] (Text / Json / Error) instead of a bare * `String`. The agent loop bridges each variant to the * wire-format `ContentPart.ToolResult.modelVisible` (+ `isError`). */ public val toModelOutput: ((TOutput, ToolPredicateOptions&lt;TContext>) -> ToolResultOutput)? = null, /** * Per best practice #9: strict JSON schema enforcement is opt-in per * tool, not global. Some providers reject schemas with format/regex * constraints under strict mode; mark such tools `strict = false`. */ public val strict: Boolean = true, /** * Few-shot example inputs encoded as JSON strings. Mirrors v6's * `tool.inputExamples` (per historical parity gap #19). Disproportionate * quality lift on small models — Gemma 4 E2B's tool-call accuracy * notably improves with 2-3 in-tool examples. [ToolSet.descriptors] * inlines these into the description as `Example: &lt;json>` so every * provider sees them (most don't expose a separate examples field). */ public val inputExamples: List&lt;String> = emptyList(), /** * Lifecycle hook — fired when the model commits to calling this * tool (StreamEvent.ToolInputStart arrives). Mirrors v6's * `tool.onInputStart` (per historical parity gap #18). Lets a * tool pre-warm: UI spinner, cache priming, etc. */ public val onInputStart: (suspend (streamingId: String) -> Unit)? = null, /** * Lifecycle hook — fired as the model streams the tool's input * JSON token-by-token (StreamEvent.ToolInputDelta). The accumulated * input isn't yet valid JSON; this is for raw-character pre-warm. */ public val onInputDelta: (suspend (streamingId: String, delta: String) -> Unit)? = null, /** * Lifecycle hook — fired after the streamed JSON has parsed * successfully into the typed [TInput], just before [executor] * runs. Mirrors v6's `tool.onInputAvailable`. */ public val onInputAvailable: (suspend (toolCallId: String, input: TInput) -> Unit)? = null, /** * Application-defined metadata bag. Mirrors v6's `tool.metadata` * (per historical parity gap #34). Opaque to the loop — * consumers (logger middleware, telemetry, host-side gating) can * read it via [ToolSet.byName]. Examples: feature-flag key, * billing tier, owning team. Empty by default. */ public val metadata: Map&lt;String, JsonElement> = emptyMap(), public val providerExecuted: Boolean = false, /** * Provider-specific config for this tool, sent to the model on the wire * (e.g. Anthropic `cache_control`). Distinct from [metadata], which is * host-side only. Mirrors v6's `tool.providerOptions`. Empty by default. */ public val providerOptions: Map&lt;String, JsonElement> = emptyMap(), )</ID>
-    <ID>LongParameterList:ToolLoopAgent.kt$ToolLoopAgent$( out: FlowCollector&lt;StreamEvent>, messages: MutableList&lt;ModelMessage>, tools: ToolSet&lt;TContext>, options: TContext?, abortSignal: AbortSignal, hooks: AgentCallHooks?, )</ID>
     <ID>LongParameterList:ToolLoopAgent.kt$ToolLoopAgent$( prompt: String?, priorMessages: List&lt;ModelMessage>, options: TContext?, abortSignal: AbortSignal, hooks: AgentCallHooks?, finalMessagesRef: MessageHolder?, stepsCapture: StepsHolder?, )</ID>
-    <ID>LongParameterList:ToolLoopAgent.kt$ToolLoopAgent$( public val model: LanguageModel, public val instructions: String, override val tools: ToolSet&lt;TContext>, public val activeTools: List&lt;String>? = null, public val output: Output&lt;TOutput>? = null, public val stopWhen: StopCondition = stepCountIs(20), public val prepareCall: (suspend PrepareCallScope&lt;TContext>.() -> AgentSettings&lt;TContext>)? = null, public val prepareStep: (suspend PrepareStepScope&lt;TContext>.() -> StepSettings&lt;TContext>)? = null, public val callOptionsSchema: KSerializer&lt;TContext>? = null, // Sampler-param defaults set at agent construction. Mirror v6's // `CallSettings` (tool-loop-agent-settings.ts:145-194). Resolution // chain inside the loop is `StepSettings ?: AgentSettings ?: these // constructor defaults ?: null` (null = provider's own default). public val temperature: Float? = null, public val topP: Float? = null, public val topK: Int? = null, public val maxOutputTokens: Int? = null, public val stopSequences: List&lt;String>? = null, public val seed: Int? = null, /** v6 `CallSettings.presencePenalty` agent-default. */ public val presencePenalty: Float? = null, /** v6 `CallSettings.frequencyPenalty` agent-default. */ public val frequencyPenalty: Float? = null, /** Wire-level response constraint for providers that support it. */ public val responseFormat: ResponseFormat = ResponseFormat.Text, /** * Max tool calls executed concurrently within one step. Default unbounded — all of a * step's tool calls run at once (latency = slowest tool, not the sum). Results are * still applied to the message log in deterministic call order. */ public val maxParallelToolCalls: Int = Int.MAX_VALUE, public val onStart: (suspend OnStartEvent.() -> Unit)? = null, public val onStepStart: (suspend OnStepStartEvent.() -> Unit)? = null, public val onStepFinish: (suspend OnStepFinishEvent.() -> Unit)? = null, public val onFinish: (suspend OnFinishEvent.() -> Unit)? = null, public val onError: (suspend OnErrorEvent.() -> Unit)? = null, public val onChunk: (suspend OnChunkEvent.() -> Unit)? = null, public val onAbort: (suspend OnAbortEvent.() -> Unit)? = null, public val experimental_onToolCallStart: (suspend OnToolCallStartEvent.() -> Unit)? = null, public val experimental_onToolCallFinish: (suspend OnToolCallFinishEvent.() -> Unit)? = null, /** * Self-healing callback fired when a tool call's arguments fail to * decode. Return a corrected call to retry, or null to surface * `StreamEvent.ToolError`. See [ToolCallRepairFunction]. */ public val experimental_repairToolCall: ToolCallRepairFunction&lt;TContext>? = null, /** * Coroutine context for the engine-surface scope (the long-lived * StateFlow-driven surface). Defaults to [Dispatchers.Default]; inject a * test dispatcher or a host-controlled one for deterministic scheduling. * The per-call generate()/stream() API is unaffected. */ engineContext: CoroutineContext = Dispatchers.Default, )</ID>
+    <ID>LongParameterList:ToolLoopAgent.kt$ToolLoopAgent$( public val model: LanguageModel, public val instructions: String, override val tools: ToolSet&lt;TContext>, public val activeTools: List&lt;String>? = null, public val output: Output&lt;TOutput>? = null, public val stopWhen: StopCondition = stepCountIs(20), public val prepareCall: (suspend PrepareCallScope&lt;TContext>.() -> AgentSettings&lt;TContext>)? = null, public val prepareStep: (suspend PrepareStepScope&lt;TContext>.() -> StepSettings&lt;TContext>)? = null, public val callOptionsSchema: KSerializer&lt;TContext>? = null, // Sampler-param defaults set at agent construction. Mirror v6's // `CallSettings` (tool-loop-agent-settings.ts:145-194). Resolution // chain inside the loop is `StepSettings ?: AgentSettings ?: these // constructor defaults ?: null` (null = provider's own default). public val temperature: Float? = null, public val topP: Float? = null, public val topK: Int? = null, public val maxOutputTokens: Int? = null, public val stopSequences: List&lt;String>? = null, public val seed: Int? = null, /** v6 `CallSettings.presencePenalty` agent-default. */ public val presencePenalty: Float? = null, /** v6 `CallSettings.frequencyPenalty` agent-default. */ public val frequencyPenalty: Float? = null, /** Wire-level response constraint for providers that support it. */ public val responseFormat: ResponseFormat = ResponseFormat.Text, /** * Max tool calls executed concurrently within one step. Default unbounded — all of a * step's tool calls run at once (latency = slowest tool, not the sum). Results are * still applied to the message log in deterministic call order. */ public val maxParallelToolCalls: Int = Int.MAX_VALUE, public val onStart: (suspend OnStartEvent.() -> Unit)? = null, public val onStepStart: (suspend OnStepStartEvent.() -> Unit)? = null, public val onStepFinish: (suspend OnStepFinishEvent.() -> Unit)? = null, public val onFinish: (suspend OnFinishEvent.() -> Unit)? = null, public val onError: (suspend OnErrorEvent.() -> Unit)? = null, public val onChunk: (suspend OnChunkEvent.() -> Unit)? = null, public val onAbort: (suspend OnAbortEvent.() -> Unit)? = null, public val experimental_onToolCallStart: (suspend OnToolCallStartEvent.() -> Unit)? = null, public val experimental_onToolCallFinish: (suspend OnToolCallFinishEvent.() -> Unit)? = null, /** * Self-healing callback fired when a tool call's arguments fail to * decode. Return a corrected call to retry, or null to surface * `StreamEvent.ToolError`. See [ToolCallRepairFunction]. */ public val experimental_repairToolCall: ToolCallRepairFunction&lt;TContext>? = null, /** * Telemetry for this agent's invocations (upstream v7 `telemetry`). * [Telemetry] integrations registered globally via [registerTelemetry] * observe every generate/stream call automatically; this setting adds * call metadata ([TelemetrySettings.functionId]) or per-agent * [TelemetrySettings.integrations] — which, when non-empty, REPLACE the * global registrations for this agent's calls (upstream per-call * semantics). Telemetry observes — an integration throw never alters * loop behavior. */ public val telemetry: TelemetrySettings? = null, /** * Port-side log sink for non-fatal warnings (see [Logger]). The loop warns here * when a [Telemetry] integration throws and the event is dropped — the swallow * contract keeps telemetry from altering the loop, and the warn keeps a broken * integration DISCOVERABLE instead of perfectly silent. */ public val logger: Logger = NoopLogger, /** * Coroutine context for the engine-surface scope (the long-lived * StateFlow-driven surface). Defaults to [Dispatchers.Default]; inject a * test dispatcher or a host-controlled one for deterministic scheduling. * The per-call generate()/stream() API is unaffected. */ engineContext: CoroutineContext = Dispatchers.Default, )</ID>
     <ID>LongParameterList:WireDecoder.kt$WireDecoder$( provider: String, operation: String, path: String, message: String, value: JsonElement? = null, cause: Throwable? = null, )</ID>
     <ID>LongParameterList:XaiProvider.kt$( client: HttpClient, settings: XaiProviderSettings, requestId: String, callHeaders: Map&lt;String, String>, abortSignal: AbortSignal, pollIntervalMs: Long, pollTimeoutMs: Long, )</ID>
     <ID>LoopWithTooManyJumpStatements:AmazonBedrockProvider.kt$while</ID>
@@ -1528,8 +1531,8 @@
     <ID>MaxLineLength:AlibabaProviderTest.kt$AlibabaProviderTest$assertTrue(assertFailsWith&lt;AiSdkException> { alibaba.video("wan2.6-t2v") }.message.orEmpty().contains("createAlibaba"))</ID>
     <ID>MaxLineLength:AlibabaProviderTest.kt$AlibabaProviderTest$val provider = createAlibaba(createTestServer(mutableMapOf()).httpClient(), AlibabaProviderSettings(apiKey = "key"))</ID>
     <ID>MaxLineLength:AmazonBedrockProvider.kt$"Amazon Bedrock request failed because the local clock appears to be skewed. Sync the host clock and retry. Provider message: $message"</ID>
-    <ID>MaxLineLength:AmazonBedrockProvider.kt$(part.providerMetadata?.get("bedrock") as? JsonObject)?.get("signature")?.let { put("signature", it) }</ID>
     <ID>MaxLineLength:AmazonBedrockProvider.kt$&lt;no name provided>$throw AiSdkException("Bedrock Anthropic provider is not configured. Use createBedrockAnthropic(client, settings).")</ID>
+    <ID>MaxLineLength:AmazonBedrockProvider.kt$(part.providerMetadata?.get("bedrock") as? JsonObject)?.get("signature")?.let { put("signature", it) }</ID>
     <ID>MaxLineLength:AmazonBedrockProvider.kt$?:</ID>
     <ID>MaxLineLength:AmazonBedrockProvider.kt$BedrockAnthropicProvider$public fun textEmbeddingModel(modelId: String): Nothing</ID>
     <ID>MaxLineLength:AmazonBedrockProvider.kt$BedrockEmbeddingModel$response = LanguageModelResponseMetadata(modelId = modelId, headers = response.headers, body = response.value)</ID>
@@ -2211,8 +2214,8 @@
     <ID>MaxLineLength:SimulateStreamingTest.kt$SimulateStreamingTest$fun</ID>
     <ID>MaxLineLength:Streams.kt$public</ID>
     <ID>MaxLineLength:StructuredObjectApi.kt$StructuredObject$TypeValidationError.wrap(null, IllegalArgumentException("Structured object response did not contain JSON"))</ID>
-    <ID>MaxLineLength:Telemetry.kt$MutableTelemetrySpan$error.stackTraceToString().takeIf { it.isNotBlank() }?.let { put("exception.stacktrace", JsonPrimitive(it)) }</ID>
-    <ID>MaxLineLength:Telemetry.kt$internal fun telemetryOutput(resolve: suspend () -> JsonElement?): TelemetryAttribute</ID>
+    <ID>MaxLineLength:TelemetryTracing.kt$MutableTelemetrySpan$error.stackTraceToString().takeIf { it.isNotBlank() }?.let { put("exception.stacktrace", JsonPrimitive(it)) }</ID>
+    <ID>MaxLineLength:TelemetryTracing.kt$internal fun telemetryOutput(resolve: suspend () -> JsonElement?): TelemetryAttribute</ID>
     <ID>MaxLineLength:TestServer.kt$TestServer$body = ByteReadChannel(json.encodeToString(JsonObject(mapOf("error" to kotlinx.serialization.json.JsonPrimitive("Not Found")))))</ID>
     <ID>MaxLineLength:TestServer.kt$TestServerCall$get</ID>
     <ID>MaxLineLength:TestServer.kt$UrlHandler$constructor(factory: (TestServerHttpRequest, TestServerCallOptions) -> UrlResponse?) : this(UrlResponseParameter.RequestFactory(factory))</ID>
@@ -2463,8 +2466,8 @@
     <ID>MaximumLineLength:SimulateStreamingTest.kt$SimulateStreamingTest$ </ID>
     <ID>MaximumLineLength:Streams.kt$public</ID>
     <ID>MaximumLineLength:StructuredObjectApi.kt$StructuredObject$ </ID>
-    <ID>MaximumLineLength:Telemetry.kt$MutableTelemetrySpan$ </ID>
-    <ID>MaximumLineLength:Telemetry.kt$internal</ID>
+    <ID>MaximumLineLength:TelemetryTracing.kt$MutableTelemetrySpan$ </ID>
+    <ID>MaximumLineLength:TelemetryTracing.kt$internal</ID>
     <ID>MaximumLineLength:TestServer.kt$TestServer$ </ID>
     <ID>MaximumLineLength:TestServer.kt$TestServerCall$ </ID>
     <ID>MaximumLineLength:TestServer.kt$UrlHandler$ </ID>
@@ -2507,7 +2510,7 @@
     <ID>NestedBlockDepth:HuggingFaceProvider.kt$private fun huggingFaceResponsesResult( response: JsonObject, requestBody: JsonElement, responseHeaders: Map&lt;String, String>, responseBody: JsonElement, warnings: List&lt;CallWarning>, settings: HuggingFaceProviderSettings, json: Json, ): LanguageModelResult</ID>
     <ID>NestedBlockDepth:OpenResponsesProvider.kt$private fun openResponsesGenerateResult( response: JsonObject, requestBody: JsonElement, responseHeaders: Map&lt;String, String>, responseBody: JsonElement, warnings: List&lt;CallWarning>, json: Json, providerMetadataKey: String, ): LanguageModelResult</ID>
     <ID>NestedBlockDepth:RevaiProvider.kt$private fun mapRevaiTranscript(value: JsonElement): RevaiTranscriptMapping</ID>
-    <ID>NestedBlockDepth:Telemetry.kt$internal suspend fun selectTelemetryAttributes( telemetry: TelemetrySettings, attributes: Map&lt;String, TelemetryAttribute>, ): Map&lt;String, JsonElement></ID>
+    <ID>NestedBlockDepth:TelemetryTracing.kt$internal suspend fun selectTelemetryAttributes( telemetry: TelemetrySettings, attributes: Map&lt;String, TelemetryAttribute>, ): Map&lt;String, JsonElement></ID>
     <ID>NoBlankLineBeforeRbrace:Output.kt$Output$ </ID>
     <ID>NoConsecutiveBlankLines:AlibabaProvider.kt$ </ID>
     <ID>NoConsecutiveBlankLines:AmazonBedrockProvider.kt$ </ID>
@@ -2670,7 +2673,7 @@
     <ID>ParameterListWrapping:RevaiProvider.kt$RevaiProvider$(modelId: RevaiTranscriptionModelId = "machine")</ID>
     <ID>ParameterListWrapping:RevaiProvider.kt$RevaiProvider$(modelId: String)</ID>
     <ID>ParameterListWrapping:Rsc.kt$(provider: AIProvider&lt;AI_STATE, UI_STATE>)</ID>
-    <ID>ParameterListWrapping:Telemetry.kt$(resolve: suspend () -> JsonElement?)</ID>
+    <ID>ParameterListWrapping:TelemetryTracing.kt$(resolve: suspend () -> JsonElement?)</ID>
     <ID>ParameterListWrapping:TestServer.kt$UrlResponseParameter.Factory$(callNumber: Int, request: TestServerHttpRequest)</ID>
     <ID>ParameterListWrapping:TestServer.kt$UrlResponseParameter.RequestFactory$(callNumber: Int, request: TestServerHttpRequest)</ID>
     <ID>ParameterListWrapping:TestServer.kt$UrlResponseParameter.Sequence$(callNumber: Int, request: TestServerHttpRequest)</ID>
@@ -2732,8 +2735,8 @@
     <ID>ReturnCount:ProdiaProvider.kt$private fun ByteArray.indexOfBytes(needle: ByteArray, start: Int): Int</ID>
     <ID>ReturnCount:Tool.kt$@OptIn(kotlinx.serialization.ExperimentalSerializationApi::class) private fun descriptorToNonNullJsonSchema( descriptor: kotlinx.serialization.descriptors.SerialDescriptor, seen: Set&lt;String> = emptySet(), ): kotlinx.serialization.json.JsonElement</ID>
     <ID>ReturnCount:Tool.kt$internal fun toolResultOutputFromWire(json: JsonElement): ToolResultOutput</ID>
+    <ID>ReturnCount:ToolLoopAgent.kt$ToolLoopAgent$@Suppress("LongParameterList") private suspend fun applyToolApprovalResponses( out: FlowCollector&lt;StreamEvent>, messages: MutableList&lt;ModelMessage>, tools: ToolSet&lt;TContext>, options: TContext?, abortSignal: AbortSignal, hooks: AgentCallHooks?, feed: TelemetryFeed? = null, ): Unit?</ID>
     <ID>ReturnCount:ToolLoopAgent.kt$ToolLoopAgent$private fun validateCallOptions(options: TContext?): TContext?</ID>
-    <ID>ReturnCount:ToolLoopAgent.kt$ToolLoopAgent$private suspend fun applyToolApprovalResponses( out: FlowCollector&lt;StreamEvent>, messages: MutableList&lt;ModelMessage>, tools: ToolSet&lt;TContext>, options: TContext?, abortSignal: AbortSignal, hooks: AgentCallHooks?, ): Unit?</ID>
     <ID>ReturnCount:ToolLoopAgent.kt$ToolLoopAgent$private suspend fun tryRepairToolInput( originalToolDef: Tool&lt;*, *, TContext>, call: ContentPart.ToolCall, originalError: Throwable, messages: List&lt;ModelMessage>, ): Pair&lt;Tool&lt;*, *, TContext>, Any?>?</ID>
     <ID>ReturnCount:UIMessagePart.kt$public fun &lt;TInput> dynamicInputAs( part: UIMessagePart.DynamicToolUI, serializer: KSerializer&lt;TInput>, ): TInput?</ID>
     <ID>ReturnCount:UIMessagePart.kt$public fun &lt;TInput> inputAs(part: UIMessagePart.ToolUI, serializer: KSerializer&lt;TInput>): TInput?</ID>
@@ -2781,7 +2784,8 @@
     <ID>TooGenericExceptionCaught:MCP.kt$error: Throwable</ID>
     <ID>TooGenericExceptionCaught:Streams.kt$t: Throwable</ID>
     <ID>TooGenericExceptionCaught:StructuredObjectApi.kt$StructuredObject$t: Throwable</ID>
-    <ID>TooGenericExceptionCaught:Telemetry.kt$error: Throwable</ID>
+    <ID>TooGenericExceptionCaught:Telemetry.kt$TelemetryBroadcast$t: Throwable</ID>
+    <ID>TooGenericExceptionCaught:TelemetryTracing.kt$error: Throwable</ID>
     <ID>TooGenericExceptionCaught:Tool.kt$error: Throwable</ID>
     <ID>TooGenericExceptionCaught:ToolLoopAgent.kt$ToolLoopAgent$error: Exception</ID>
     <ID>TooGenericExceptionCaught:ToolLoopAgent.kt$ToolLoopAgent$t: Throwable</ID>
@@ -2824,7 +2828,6 @@
     <ID>TooManyFunctions:ReplicateProvider.kt$ai.torad.aisdk.providers.ReplicateProvider.kt</ID>
     <ID>TooManyFunctions:Rsc.kt$ai.torad.aisdk.rsc.Rsc.kt</ID>
     <ID>TooManyFunctions:Streams.kt$ai.torad.aisdk.ui.Streams.kt</ID>
-    <ID>TooManyFunctions:Telemetry.kt$ai.torad.aisdk.Telemetry.kt</ID>
     <ID>TooManyFunctions:Tool.kt$ai.torad.aisdk.Tool.kt</ID>
     <ID>TooManyFunctions:ToolLoopAgent.kt$ToolLoopAgent&lt;TContext, TOutput> : Agent</ID>
     <ID>TooManyFunctions:TypedJson.kt$ai.torad.aisdk.TypedJson.kt</ID>

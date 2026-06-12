@@ -12,7 +12,7 @@ import kotlin.test.assertTrue
 class TelemetryParityTest {
     @AfterTest
     fun clearTelemetry() {
-        clearGlobalTelemetryIntegrations()
+        clearGlobalTelemetry()
     }
 
     @Test
@@ -50,15 +50,18 @@ class TelemetryParityTest {
     }
 
     @Test
-    fun `global telemetry integration composes lifecycle listeners in registration order`() = runTest {
+    fun `global telemetry integrations broadcast in registration order`() = runTest {
         val calls = mutableListOf<String>()
-        registerTelemetryIntegration(lifecycleIntegration("global") { calls += it })
-        val composite = getGlobalTelemetryIntegration(lifecycleIntegration("local") { calls += it })
+        registerTelemetry(OrderedIntegration("first", calls))
+        registerTelemetry(OrderedIntegration("second", calls))
+        val composite = resolveTelemetry(null)
+        checkNotNull(composite)
+        val call = TelemetryCall(callId = "c1", agentId = "agent")
 
-        composite.onStart(TelemetryEvent("start"))
-        composite.onFinish(TelemetryEvent("finish"))
+        composite.onAgentStart(call, OnStartEvent(null, emptyList(), null))
+        composite.onAgentFinish(call, OnFinishEvent(null, 1, Usage()))
 
-        assertEquals(listOf("global:start", "local:start", "global:finish", "local:finish"), calls)
+        assertEquals(listOf("first:start", "second:start", "first:finish", "second:finish"), calls)
     }
 
     @Test
@@ -91,20 +94,16 @@ class TelemetryParityTest {
         assertEquals("exception", failed.events.single().name)
     }
 
-    private fun lifecycleIntegration(name: String, record: (String) -> Unit): TelemetryIntegration =
-        object : TelemetryIntegration {
-            override val name: String = name
-
-            override suspend fun record(span: TelemetrySpan, block: suspend () -> Unit) {
-                block()
-            }
-
-            override suspend fun onStart(event: TelemetryEvent) {
-                record("$name:${event.name}")
-            }
-
-            override suspend fun onFinish(event: TelemetryEvent) {
-                record("$name:${event.name}")
-            }
+    private class OrderedIntegration(
+        override val name: String,
+        private val calls: MutableList<String>,
+    ) : Telemetry {
+        override suspend fun onAgentStart(call: TelemetryCall, event: OnStartEvent) {
+            calls += "$name:start"
         }
+
+        override suspend fun onAgentFinish(call: TelemetryCall, event: OnFinishEvent) {
+            calls += "$name:finish"
+        }
+    }
 }
