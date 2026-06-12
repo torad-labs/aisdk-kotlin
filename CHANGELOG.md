@@ -18,6 +18,18 @@ This project follows Semantic Versioning once the first stable release is cut.
   emit events (v7 opt-out stance); per-call `TelemetrySettings.integrations` REPLACE the global
   set for that call. Integration failures are swallowed (telemetry observes, never alters the loop).
 - `ToolLoopAgent` gains a `telemetry: TelemetrySettings?` constructor parameter.
+- AI SDK reference refreshed 6.0.197 → 6.0.202; parity ledgers regenerated. The delta is
+  one feature: HMAC-signed tool approvals. `ToolLoopAgent` gains
+  `experimental_toolApprovalSecret: ByteArray?` — when set, every issued approval request is
+  signed over `(approvalId, toolCallId, toolName, canonicalJson(input))` (the signature rides
+  `ContentPart.ToolApprovalRequest`, `StreamEvent.ToolApprovalRequest`, `PendingApproval`, and
+  the UI round-trip via `UIMessagePart.ToolUI.approvalId/signature`), and a replayed approval
+  is re-validated FAIL-CLOSED before execution: missing/invalid signature throws the new
+  `AgentError.InvalidToolApprovalSignature`, the input is re-decoded against the tool's
+  schema, and a tool that vanished or no longer requires approval is denied rather than run.
+  Upstream's `createIdMap` prototype-pollution hardening is not applicable to Kotlin maps;
+  the stream-text empty-stream output classifier maps to the loop's existing finish-reason
+  defaults; the array output strategy already decoded fresh elements (no in-place cast).
 - Telemetry observability: the loop `Logger.warn`s when an integration throw is swallowed
   (named integration, throwable attached) — a broken integration is discoverable, never
   perfectly silent. `ToolLoopAgent` gains `logger: Logger = NoopLogger`.

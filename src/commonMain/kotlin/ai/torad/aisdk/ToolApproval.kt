@@ -29,6 +29,13 @@ public data class PendingApproval(
      * the common single-approval case.
      */
     val approvalId: String? = null,
+    /**
+     * HMAC-SHA256 signature binding this approval to its tool call
+     * (v6.0.202). Present only when the issuing agent holds an
+     * `experimental_toolApprovalSecret`; the host persists and replays
+     * it untouched — only the secret holder can mint or verify it.
+     */
+    val signature: String? = null,
 )
 
 /** The effective approval ID — explicit [PendingApproval.approvalId] or

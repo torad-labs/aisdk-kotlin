@@ -159,6 +159,8 @@ private fun convertPart(
             input = part.input,
             output = part.output,
             preliminary = part.preliminary,
+            approvalId = part.approvalId,
+            signature = part.signature,
             ignoreIncompleteToolCalls = ignoreIncompleteToolCalls,
             onContentPart = onContentPart,
             onDeferredToolResult = onDeferredToolResult,
@@ -171,6 +173,9 @@ private fun convertPart(
             input = part.input,
             output = part.output,
             preliminary = part.preliminary,
+            // Dynamic tool parts carry no approval identity (server-defined tools only).
+            approvalId = null,
+            signature = null,
             ignoreIncompleteToolCalls = ignoreIncompleteToolCalls,
             onContentPart = onContentPart,
             onDeferredToolResult = onDeferredToolResult,
@@ -222,6 +227,8 @@ private fun convertToolCall(
     input: kotlinx.serialization.json.JsonElement?,
     output: kotlinx.serialization.json.JsonElement?,
     preliminary: Boolean,
+    approvalId: String?,
+    signature: String?,
     ignoreIncompleteToolCalls: Boolean,
     onContentPart: (ContentPart) -> Unit,
     onDeferredToolResult: (ContentPart.ToolResult) -> Unit,
@@ -254,6 +261,10 @@ private fun convertToolCall(
                 toolCallId = toolCallId,
                 toolName = toolName,
                 input = input ?: JsonNull,
+                approvalId = approvalId,
+                // The v6.0.202 HMAC signature must survive the UI round-trip: with a
+                // configured approval secret, a replay without it is denied fail-closed.
+                signature = signature,
             ),
         )
         ToolCallState.InputStreaming, ToolCallState.InputAvailable -> if (!ignoreIncompleteToolCalls) {

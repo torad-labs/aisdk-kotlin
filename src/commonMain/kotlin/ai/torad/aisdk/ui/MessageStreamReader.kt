@@ -120,6 +120,8 @@ public fun streamToUiMessages(
         output: JsonElement? = null,
         error: String? = null,
         preliminary: Boolean = false,
+        approvalId: String? = null,
+        signature: String? = null,
     ) {
         val existingIndex = toolByCallId[toolCallId]
         val nextPart = UIMessagePart.ToolUI(
@@ -130,6 +132,8 @@ public fun streamToUiMessages(
             output = output,
             error = error,
             preliminary = preliminary,
+            approvalId = approvalId,
+            signature = signature,
         )
         if (existingIndex != null) {
             parts[existingIndex] = nextPart
@@ -253,6 +257,8 @@ public fun streamToUiMessages(
                     toolName = event.toolName,
                     state = ToolCallState.ApprovalRequested,
                     input = event.inputJson,
+                    approvalId = event.approvalId,
+                    signature = event.signature,
                 )
                 emit(snapshot())
             }

@@ -86,6 +86,19 @@ public sealed interface UIMessagePart {
          * `preliminary?: boolean` on `output-available`.
          */
         val preliminary: Boolean = false,
+        /**
+         * Approval identity for `ApprovalRequested`/`ApprovalResponded`
+         * states — carried so a UI round-trip (convert to model messages,
+         * resume) preserves the approval's correlation key. Null outside
+         * the approval states. Mirrors v6's `approval.id`.
+         */
+        val approvalId: String? = null,
+        /**
+         * HMAC-SHA256 approval signature (v6.0.202, `approval.signature`).
+         * Must survive the UI round-trip untouched: with a configured
+         * approval secret, a replay missing it is denied fail-closed.
+         */
+        val signature: String? = null,
         val providerMetadata: Map<String, JsonElement>? = null,
     ) : UIMessagePart
 

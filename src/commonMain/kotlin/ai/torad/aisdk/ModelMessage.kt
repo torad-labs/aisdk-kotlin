@@ -138,6 +138,13 @@ public sealed interface ContentPart {
          * correlation ambiguity.
          */
         val approvalId: String? = null,
+        /**
+         * HMAC-SHA256 signature binding this approval to its tool call
+         * (v6.0.202). Present only when the agent is configured with
+         * `experimental_toolApprovalSecret`; verified fail-closed when
+         * the approval is replayed.
+         */
+        val signature: String? = null,
         val providerMetadata: Map<String, JsonElement>? = null,
     ) : ContentPart
 

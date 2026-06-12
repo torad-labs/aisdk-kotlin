@@ -1,7 +1,7 @@
 # @ai-sdk/open-responses
 
-- Version: 1.0.16
-- Upstream path: `.reference/vercel-ai-sdk-ai-6.0.197/packages/open-responses`
+- Version: 1.0.17
+- Upstream path: `.reference/vercel-ai-sdk-ai-6.0.202/packages/open-responses`
 - Kotlin parity area: `:aisdk-open-responses`
 - Current parity status: ported: createOpenResponses, OpenResponsesOptions, generate/stream response mapping, supported URL metadata, request option mapping, and fake HTTP tests are folded into the root module; VERSION is exposed as OPEN_RESPONSES_VERSION until package modules are split
 
@@ -9,7 +9,7 @@
 
 | Subpath | Source | Export count |
 |---|---|---:|
-| `.` | `.reference/vercel-ai-sdk-ai-6.0.197/packages/open-responses/src/index.ts` | 3 |
+| `.` | `.reference/vercel-ai-sdk-ai-6.0.202/packages/open-responses/src/index.ts` | 3 |
 
 ## Public Exports
 

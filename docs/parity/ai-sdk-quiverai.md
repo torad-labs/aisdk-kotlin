@@ -1,7 +1,7 @@
 # @ai-sdk/quiverai
 
-- Version: 1.0.0
-- Upstream path: `.reference/vercel-ai-sdk-ai-6.0.197/packages/quiverai`
+- Version: 1.0.1
+- Upstream path: `.reference/vercel-ai-sdk-ai-6.0.202/packages/quiverai`
 - Kotlin parity area: `:aisdk-provider-quiverai`
 - Current parity status: ported: createQuiverAI/quiverai, QuiverAIProviderSettings, QuiverAIImageModelId, QuiverAIImageModelOptions, SVG generation, vectorization, reference image validation, option snake_case mapping, unsupported option warnings, SVG byte conversion, usage/provider metadata, and QuiverAI error parsing are represented as a Kotlin facade folded into the root module; VERSION is exposed as QUIVERAI_VERSION until package modules are split
 
@@ -9,7 +9,7 @@
 
 | Subpath | Source | Export count |
 |---|---|---:|
-| `.` | `.reference/vercel-ai-sdk-ai-6.0.197/packages/quiverai/src/index.ts` | 7 |
+| `.` | `.reference/vercel-ai-sdk-ai-6.0.202/packages/quiverai/src/index.ts` | 7 |
 
 ## Public Exports
 
