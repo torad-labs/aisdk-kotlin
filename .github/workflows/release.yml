@@ -44,6 +44,20 @@ jobs:
           SIGNING_KEY: ${{ secrets.SIGNING_KEY }}
           SIGNING_PASSWORD: ${{ secrets.SIGNING_PASSWORD }}
         run: ./gradlew publishAllPublicationsToGitHubPackagesRepository
+      - name: Publish to Maven Central
+        env:
+          SIGNING_KEY: ${{ secrets.SIGNING_KEY }}
+          SIGNING_PASSWORD: ${{ secrets.SIGNING_PASSWORD }}
+          SONATYPE_USERNAME: ${{ secrets.SONATYPE_USERNAME }}
+          SONATYPE_PASSWORD: ${{ secrets.SONATYPE_PASSWORD }}
+        run: |
+          ./gradlew publishAllPublicationsToLocalStagingRepository
+          cd build/staging-deploy && zip -r ../../bundle.zip . && cd ../..
+          token=$(printf '%s:%s' "${SONATYPE_USERNAME}" "${SONATYPE_PASSWORD}" | base64 -w 0)
+          curl --fail --silent --show-error --request POST \
+            --url 'https://central.sonatype.com/api/v1/publisher/upload?publishingType=AUTOMATIC' \
+            --header "Authorization: Bearer ${token}" \
+            --form 'bundle=@bundle.zip'
       - name: Verify published artifact resolves
         env:
           GITHUB_ACTOR: ${{ github.actor }}
@@ -64,7 +78,7 @@ jobs:
               mavenCentral()
           }
           configurations { create("smoke") }
-          dependencies { "smoke"("ai.torad:aisdk-kotlin:${version}") }
+          dependencies { "smoke"("ai.torad:torad-aisdk:${version}") }
           tasks.register("verifyPublishedArtifact") {
               doLast { configurations["smoke"].resolve().forEach { println(it.name) } }
           }
