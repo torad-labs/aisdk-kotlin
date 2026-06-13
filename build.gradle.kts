@@ -253,8 +253,8 @@ signing {
 }
 
 tasks.withType<PublishToMavenRepository>().configureEach {
-    val repoName = repository.name
     doFirst {
+        val repoName = repository.name
         require(!version.toString().endsWith("-SNAPSHOT")) {
             "Publication to $repoName requires a stable VERSION_NAME; refusing to publish SNAPSHOT version $version."
         }
