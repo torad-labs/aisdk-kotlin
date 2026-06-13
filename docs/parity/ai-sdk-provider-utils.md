@@ -1,16 +1,16 @@
 # @ai-sdk/provider-utils
 
-- Version: 4.0.28
-- Upstream path: `.reference/vercel-ai-sdk-ai-6.0.202/packages/provider-utils`
+- Version: 4.0.29
+- Upstream path: `.reference/vercel-ai-sdk-ai-6.0.204/packages/provider-utils`
 - Kotlin parity area: `:aisdk-provider-utils`
-- Current parity status: ported: schema/asSchema/lazySchema/zodSchema/valibotSchema adapters, validation helpers, dynamicTool/tool/provider-executed tool factories, provider tool factories, executeTool, tool-name mapping, id generation, headers/user-agent helpers, parseJsonEventStream, base64/Uint8Array aliases, media/download URL validation, loadApiKey/loadSetting host-env helpers, provider option parsing, retry/delay-adjacent utilities, and test stream/mock helpers are represented as KMP utilities folded into the root module
+- Current parity status: ported: schema/asSchema/lazySchema/zodSchema/valibotSchema adapters, validation helpers, dynamicTool/tool/provider-executed tool factories, provider tool factories, executeTool, tool-name mapping, id generation, headers/user-agent helpers, parseJsonEventStream, base64/Uint8Array aliases, media/download URL validation, loadApiKey/loadSetting host-env helpers, provider option parsing, retry/delay-adjacent utilities, and test stream/mock helpers are represented as KMP utilities folded into the root module; v6.0.204 adds the SSRF helpers fetchWithValidatedRedirects and isSameOrigin (download/redirect URL validation, adjacent to the existing validateDownloadUrl/isUrlSupported surface) plus isBrowserRuntime, a browser-JS runtime probe not applicable to the JVM/Android/Native/iOS targets
 
 ## Entrypoints
 
 | Subpath | Source | Export count |
 |---|---|---:|
-| `.` | `.reference/vercel-ai-sdk-ai-6.0.202/packages/provider-utils/src/index.ts` | 104 |
-| `./test` | `.reference/vercel-ai-sdk-ai-6.0.202/packages/provider-utils/src/test/index.ts` | 7 |
+| `.` | `.reference/vercel-ai-sdk-ai-6.0.204/packages/provider-utils/src/index.ts` | 107 |
+| `./test` | `.reference/vercel-ai-sdk-ai-6.0.204/packages/provider-utils/src/test/index.ts` | 7 |
 
 ## Public Exports
 
@@ -52,6 +52,7 @@
 | `executeTool` | value | `src/types/execute-tool.ts` | `.` |
 | `extractResponseHeaders` | value | `src/extract-response-headers.ts` | `.` |
 | `FetchFunction` | type | `src/fetch-function.ts` | `.` |
+| `fetchWithValidatedRedirects` | value | `src/fetch-with-validated-redirects.ts` | `.` |
 | `FilePart` | type | `src/types/content-part.ts` | `.` |
 | `FlexibleSchema` | type | `src/schema.ts` | `.` |
 | `generateId` | value | `src/generate-id.ts` | `.` |
@@ -65,9 +66,11 @@
 | `InferToolOutput` | type | `src/types/tool.ts` | `.` |
 | `injectJsonInstructionIntoMessages` | value | `src/inject-json-instruction.ts` | `.` |
 | `isAbortError` | value | `src/is-abort-error.ts` | `.` |
+| `isBrowserRuntime` | value | `src/is-browser-runtime.ts` | `.` |
 | `isNodeVersion` | value | `src/test/is-node-version.ts` | `./test` |
 | `isNonNullable` | value | `src/is-non-nullable.ts` | `.` |
 | `isParsableJson` | value | `src/parse-json.ts` | `.` |
+| `isSameOrigin` | value | `src/is-same-origin.ts` | `.` |
 | `isUrlSupported` | value | `src/is-url-supported.ts` | `.` |
 | `jsonSchema` | value | `src/schema.ts` | `.` |
 | `lazySchema` | value | `src/schema.ts` | `.` |
