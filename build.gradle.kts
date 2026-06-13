@@ -252,6 +252,13 @@ signing {
     sign(publishing.publications)
 }
 
+// KMP sign tasks for different platforms all write to the shared build/libs/ directory.
+// Without explicit ordering Gradle detects implicit cross-publication dependencies and fails.
+// mustRunAfter (not dependsOn) keeps sign tasks optional when not publishing.
+tasks.withType<PublishToMavenRepository>().configureEach {
+    mustRunAfter(tasks.withType<Sign>())
+}
+
 tasks.withType<PublishToMavenRepository>().configureEach {
     doFirst {
         val repoName = repository.name
