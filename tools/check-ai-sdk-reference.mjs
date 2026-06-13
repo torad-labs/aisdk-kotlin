@@ -5,7 +5,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 
 const repoRoot = resolve(new URL('..', import.meta.url).pathname);
-const expectedVersion = process.env.AI_SDK_REFERENCE_VERSION ?? '6.0.202';
+const expectedVersion = process.env.AI_SDK_REFERENCE_VERSION ?? '6.0.204';
 const referenceRoot = join(repoRoot, '.reference', `vercel-ai-sdk-ai-${expectedVersion}`);
 const packageJsonPath = join(referenceRoot, 'packages', 'ai', 'package.json');
 

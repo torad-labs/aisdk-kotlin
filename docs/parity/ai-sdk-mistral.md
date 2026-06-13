@@ -1,7 +1,7 @@
 # @ai-sdk/mistral
 
-- Version: 3.0.38
-- Upstream path: `.reference/vercel-ai-sdk-ai-6.0.202/packages/mistral`
+- Version: 3.0.39
+- Upstream path: `.reference/vercel-ai-sdk-ai-6.0.204/packages/mistral`
 - Kotlin parity area: `:aisdk-provider-mistral`
 - Current parity status: ported: createMistral/mistral, MistralProviderSettings, MistralLanguageModelOptions, chat and embedding aliases, Mistral auth/user-agent behavior, random_seed mapping, provider-option snake_case mapping, reasoning extraction, usage parsing, embedding ordering, and unsupported image model errors are represented as a Kotlin OpenAI-compatible facade folded into the root module; VERSION is exposed as MISTRAL_VERSION until package modules are split
 
@@ -9,7 +9,7 @@
 
 | Subpath | Source | Export count |
 |---|---|---:|
-| `.` | `.reference/vercel-ai-sdk-ai-6.0.202/packages/mistral/src/index.ts` | 6 |
+| `.` | `.reference/vercel-ai-sdk-ai-6.0.204/packages/mistral/src/index.ts` | 6 |
 
 ## Public Exports
 

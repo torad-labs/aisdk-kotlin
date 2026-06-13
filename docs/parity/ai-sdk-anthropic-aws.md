@@ -1,7 +1,7 @@
 # @ai-sdk/anthropic-aws
 
-- Version: 1.0.5
-- Upstream path: `.reference/vercel-ai-sdk-ai-6.0.202/packages/anthropic-aws`
+- Version: 1.0.6
+- Upstream path: `.reference/vercel-ai-sdk-ai-6.0.204/packages/anthropic-aws`
 - Kotlin parity area: `:aisdk-provider-anthropic-aws`
 - Current parity status: ported: createAnthropicAws/anthropicAws, AnthropicAwsProviderSettings, AnthropicAwsCredentials alias, AWS-hosted Anthropic base URL mapping, workspace header, API-key auth, native SigV4 signing, Anthropic Messages generate/stream reuse, Anthropic hosted tool descriptors, unsupported embedding/image errors, and user-agent behavior are represented as a Kotlin facade folded into the root module; VERSION is exposed as ANTHROPIC_AWS_VERSION until package modules are split
 
@@ -9,7 +9,7 @@
 
 | Subpath | Source | Export count |
 |---|---|---:|
-| `.` | `.reference/vercel-ai-sdk-ai-6.0.202/packages/anthropic-aws/src/index.ts` | 6 |
+| `.` | `.reference/vercel-ai-sdk-ai-6.0.204/packages/anthropic-aws/src/index.ts` | 6 |
 
 ## Public Exports
 

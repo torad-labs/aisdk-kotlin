@@ -1,7 +1,7 @@
 # @ai-sdk/provider
 
 - Version: 3.0.10
-- Upstream path: `.reference/vercel-ai-sdk-ai-6.0.202/packages/provider`
+- Upstream path: `.reference/vercel-ai-sdk-ai-6.0.204/packages/provider`
 - Kotlin parity area: `:aisdk-provider`
 - Current parity status: ported: provider contracts for language/embedding/image/speech/transcription/reranking/video models, provider metadata/options, warnings, usage, request/response metadata, provider interfaces, V2/V3-compatible folded type aliases, and public AI SDK error classes are represented as Kotlin contracts folded into the root module
 
@@ -9,7 +9,7 @@
 
 | Subpath | Source | Export count |
 |---|---|---:|
-| `.` | `.reference/vercel-ai-sdk-ai-6.0.202/packages/provider/src/index.ts` | 122 |
+| `.` | `.reference/vercel-ai-sdk-ai-6.0.204/packages/provider/src/index.ts` | 122 |
 
 ## Public Exports
 

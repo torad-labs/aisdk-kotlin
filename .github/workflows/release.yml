@@ -51,7 +51,11 @@ jobs:
           set -euo pipefail
           # Stage every KMP publication (jvm, android, ios*, linux, and the root
           # metadata module) into a local Maven-layout directory, signed.
-          ./gradlew publishAllPublicationsToLocalStagingRepository
+          # --no-configuration-cache: the build enables the configuration cache
+          # globally, but the signing plugin's tasks aren't config-cache compatible
+          # and PublishToMavenRepository captures Project references — both only
+          # surface during real (remote) publishing, which is CI-only anyway.
+          ./gradlew publishAllPublicationsToLocalStagingRepository --no-configuration-cache
           # A release bundle must contain only the versioned artifacts. The Portal
           # generates its own group-level metadata, and leaving version-listing
           # maven-metadata.xml in the zip can trip bundle validation.
@@ -100,7 +104,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SIGNING_KEY: ${{ secrets.SIGNING_KEY }}
           SIGNING_PASSWORD: ${{ secrets.SIGNING_PASSWORD }}
-        run: ./gradlew publishAllPublicationsToGitHubPackagesRepository
+        run: ./gradlew publishAllPublicationsToGitHubPackagesRepository --no-configuration-cache
       # Resolve the freshly published coordinates from GitHub Packages (immediate,
       # unlike Central which has propagation delay). This also exercises the KMP
       # module metadata. Best-effort: it depends on the mirror above.
