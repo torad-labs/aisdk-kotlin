@@ -197,6 +197,11 @@ publishing {
                 password = providers.environmentVariable("GITHUB_TOKEN").orNull
             }
         }
+        // Local staging directory: zipped and uploaded to the Central Portal API in CI.
+        maven {
+            name = "LocalStaging"
+            url = uri(layout.buildDirectory.dir("staging-deploy"))
+        }
     }
 
     publications.withType<MavenPublication>().configureEach {
@@ -248,18 +253,21 @@ signing {
 }
 
 tasks.withType<PublishToMavenRepository>().configureEach {
+    val repoName = repository.name
     doFirst {
         require(!version.toString().endsWith("-SNAPSHOT")) {
-            "Remote publication requires a stable VERSION_NAME; refusing to publish SNAPSHOT version $version."
+            "Publication to $repoName requires a stable VERSION_NAME; refusing to publish SNAPSHOT version $version."
         }
         require(signingKey.isPresent && signingPassword.isPresent) {
-            "Remote publication requires SIGNING_KEY and SIGNING_PASSWORD so artifacts cannot be published unsigned."
+            "Publication to $repoName requires SIGNING_KEY and SIGNING_PASSWORD so artifacts cannot be published unsigned."
         }
-        require(
-            providers.environmentVariable("GITHUB_ACTOR").isPresent &&
-                providers.environmentVariable("GITHUB_TOKEN").isPresent,
-        ) {
-            "Remote publication requires GITHUB_ACTOR and GITHUB_TOKEN for GitHub Packages credentials."
+        if (repoName == "GitHubPackages") {
+            require(
+                providers.environmentVariable("GITHUB_ACTOR").isPresent &&
+                    providers.environmentVariable("GITHUB_TOKEN").isPresent,
+            ) {
+                "Publication to GitHubPackages requires GITHUB_ACTOR and GITHUB_TOKEN credentials."
+            }
         }
     }
 }
