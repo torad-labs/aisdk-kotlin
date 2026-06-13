@@ -1,4 +1,4 @@
-rootProject.name = "aisdk-kotlin"
+rootProject.name = "torad-aisdk"
 
 pluginManagement {
     repositories {

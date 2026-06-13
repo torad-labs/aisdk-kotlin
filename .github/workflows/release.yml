@@ -38,12 +38,9 @@ jobs:
           git merge-base --is-ancestor "${GITHUB_SHA}" origin/main
       - name: Verify checks
         run: ./gradlew check
-      - name: Publish to GitHub Packages
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          SIGNING_KEY: ${{ secrets.SIGNING_KEY }}
-          SIGNING_PASSWORD: ${{ secrets.SIGNING_PASSWORD }}
-        run: ./gradlew publishAllPublicationsToGitHubPackagesRepository
+      # Maven Central is the release target. The Central Portal takes a single zip
+      # in Maven Repository Layout, validates it asynchronously, and (with
+      # publishingType=AUTOMATIC) syncs to Maven Central if validation passes.
       - name: Publish to Maven Central
         env:
           SIGNING_KEY: ${{ secrets.SIGNING_KEY }}
@@ -51,14 +48,64 @@ jobs:
           SONATYPE_USERNAME: ${{ secrets.SONATYPE_USERNAME }}
           SONATYPE_PASSWORD: ${{ secrets.SONATYPE_PASSWORD }}
         run: |
+          set -euo pipefail
+          # Stage every KMP publication (jvm, android, ios*, linux, and the root
+          # metadata module) into a local Maven-layout directory, signed.
           ./gradlew publishAllPublicationsToLocalStagingRepository
-          cd build/staging-deploy && zip -r ../../bundle.zip . && cd ../..
+          # A release bundle must contain only the versioned artifacts. The Portal
+          # generates its own group-level metadata, and leaving version-listing
+          # maven-metadata.xml in the zip can trip bundle validation.
+          find build/staging-deploy -name 'maven-metadata.xml*' -delete
+          ( cd build/staging-deploy && zip -q -r ../../bundle.zip . )
           token=$(printf '%s:%s' "${SONATYPE_USERNAME}" "${SONATYPE_PASSWORD}" | base64 -w 0)
-          curl --fail --silent --show-error --request POST \
-            --url 'https://central.sonatype.com/api/v1/publisher/upload?publishingType=AUTOMATIC' \
-            --header "Authorization: Bearer ${token}" \
-            --form 'bundle=@bundle.zip'
-      - name: Verify published artifact resolves
+          # Upload. The response body is the deployment id (a UUID).
+          if ! deployment_id=$(curl --fail-with-body --silent --show-error --request POST \
+              --url 'https://central.sonatype.com/api/v1/publisher/upload?publishingType=AUTOMATIC' \
+              --header "Authorization: Bearer ${token}" \
+              --form 'bundle=@bundle.zip'); then
+            echo "::error::Central Portal upload failed: ${deployment_id}" >&2
+            exit 1
+          fi
+          deployment_id=$(printf '%s' "${deployment_id}" | tr -d '[:space:]')
+          echo "Central Portal deployment id: ${deployment_id}"
+          # AUTOMATIC validates asynchronously: a malformed bundle still returns 201
+          # on upload but FAILS validation later. Poll the deployment so a broken
+          # release can never report success.
+          for attempt in $(seq 1 40); do
+            body=$(curl --fail-with-body --silent --show-error --request POST \
+              --url "https://central.sonatype.com/api/v1/publisher/status?id=${deployment_id}" \
+              --header "Authorization: Bearer ${token}") \
+              || { echo "[${attempt}] status poll errored, retrying"; sleep 15; continue; }
+            state=$(printf '%s' "${body}" | python3 -c "import sys,json; print(json.loads(sys.stdin.read().strip() or '{}').get('deploymentState',''))")
+            echo "[${attempt}] deploymentState=${state}"
+            case "${state}" in
+              PUBLISHED|PUBLISHING)
+                echo "Maven Central deployment validated; publishing to repo1."
+                exit 0 ;;
+              FAILED)
+                echo "::error::Central Portal validation failed:" >&2
+                printf '%s\n' "${body}" >&2
+                exit 1 ;;
+            esac
+            sleep 15
+          done
+          echo "::error::Timed out waiting for Central Portal deployment ${deployment_id}" >&2
+          exit 1
+      # GitHub Packages is a best-effort mirror; never let it block a Central
+      # release. Re-runs of the same version 409 (GitHub Packages is immutable),
+      # which is fine to ignore here.
+      - name: Publish to GitHub Packages (best effort)
+        continue-on-error: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SIGNING_KEY: ${{ secrets.SIGNING_KEY }}
+          SIGNING_PASSWORD: ${{ secrets.SIGNING_PASSWORD }}
+        run: ./gradlew publishAllPublicationsToGitHubPackagesRepository
+      # Resolve the freshly published coordinates from GitHub Packages (immediate,
+      # unlike Central which has propagation delay). This also exercises the KMP
+      # module metadata. Best-effort: it depends on the mirror above.
+      - name: Verify published artifact resolves (GitHub Packages)
+        continue-on-error: true
         env:
           GITHUB_ACTOR: ${{ github.actor }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
