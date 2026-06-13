@@ -5,7 +5,7 @@
 // - Show manifest properties: true
 // - Show declarations: true
 
-// Library unique name: <ai.torad:aisdk-kotlin>
+// Library unique name: <ai.torad:torad-aisdk>
 open annotation class ai.torad.aisdk/AiSdkDsl : kotlin/Annotation { // ai.torad.aisdk/AiSdkDsl|null[0]
     constructor <init>() // ai.torad.aisdk/AiSdkDsl.<init>|<init>(){}[0]
 }
