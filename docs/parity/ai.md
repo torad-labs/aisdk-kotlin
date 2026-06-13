@@ -1,7 +1,7 @@
 # ai
 
-- Version: 6.0.202
-- Upstream path: `.reference/vercel-ai-sdk-ai-6.0.202/packages/ai`
+- Version: 6.0.204
+- Upstream path: `.reference/vercel-ai-sdk-ai-6.0.204/packages/ai`
 - Kotlin parity area: `:aisdk-core`
 - Current parity status: ported: generateText/streamText, structured Output, deprecated generateObject/streamObject compatibility shims, embeddings, image/speech/transcription/video generation, reranking, tool-loop Agent/ToolLoopAgent, tool approvals incl. v6.0.202 HMAC-signed approval requests (experimental_toolApprovalSecret: signing at issuance, signature riding PendingApproval/the message log/the UI round-trip, and fail-closed signature+schema+needs-approval re-validation at replay; the stream-text empty-stream output classifier maps to the loop's existing finish-reason defaults, and createIdMap prototype-pollution hardening is not applicable to Kotlin maps), provider registry/customProvider, middleware, telemetry, prompt/message conversion, prune/fix-json/smooth/simulated streams, UI message/transport/response primitives, test mocks, gateway re-exports, provider/provider-utils re-exports, and KMP-safe server/UI stream concepts are represented in the root module; framework and browser-specific hooks are mapped to the framework-neutral Kotlin ui package
 
@@ -9,9 +9,9 @@
 
 | Subpath | Source | Export count |
 |---|---|---:|
-| `.` | `.reference/vercel-ai-sdk-ai-6.0.202/packages/ai/src/index.ts` | 310 |
-| `./internal` | `.reference/vercel-ai-sdk-ai-6.0.202/packages/ai/internal/index.ts` | 7 |
-| `./test` | `.reference/vercel-ai-sdk-ai-6.0.202/packages/ai/test/index.ts` | 13 |
+| `.` | `.reference/vercel-ai-sdk-ai-6.0.204/packages/ai/src/index.ts` | 310 |
+| `./internal` | `.reference/vercel-ai-sdk-ai-6.0.204/packages/ai/internal/index.ts` | 7 |
+| `./test` | `.reference/vercel-ai-sdk-ai-6.0.204/packages/ai/test/index.ts` | 13 |
 
 ## Public Exports
 

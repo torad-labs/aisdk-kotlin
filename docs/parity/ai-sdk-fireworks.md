@@ -1,7 +1,7 @@
 # @ai-sdk/fireworks
 
-- Version: 2.0.54
-- Upstream path: `.reference/vercel-ai-sdk-ai-6.0.202/packages/fireworks`
+- Version: 2.0.55
+- Upstream path: `.reference/vercel-ai-sdk-ai-6.0.204/packages/fireworks`
 - Kotlin parity area: `:aisdk-provider-fireworks`
 - Current parity status: ported: createFireworks/fireworks, provider settings, language/embedding option surfaces, FireworksErrorData, FireworksImageModel, chat/completion/embedding routing, and Fireworks image backend routing are represented as a Kotlin facade folded into the root module; VERSION is exposed as FIREWORKS_VERSION until package modules are split
 
@@ -9,7 +9,7 @@
 
 | Subpath | Source | Export count |
 |---|---|---:|
-| `.` | `.reference/vercel-ai-sdk-ai-6.0.202/packages/fireworks/src/index.ts` | 13 |
+| `.` | `.reference/vercel-ai-sdk-ai-6.0.204/packages/fireworks/src/index.ts` | 13 |
 
 ## Public Exports
 

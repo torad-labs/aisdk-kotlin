@@ -1,7 +1,7 @@
 # @ai-sdk/black-forest-labs
 
-- Version: 1.0.35
-- Upstream path: `.reference/vercel-ai-sdk-ai-6.0.202/packages/black-forest-labs`
+- Version: 1.0.36
+- Upstream path: `.reference/vercel-ai-sdk-ai-6.0.204/packages/black-forest-labs`
 - Kotlin parity area: `:aisdk-provider-black-forest-labs`
 - Current parity status: ported: createBlackForestLabs/blackForestLabs, BlackForestLabsProviderSettings, BlackForestLabsImageModelOptions/BlackForestLabsImageProviderOptions, async image submit/poll/download, x-key authentication, size-to-aspect-ratio warnings, input image and mask mapping, BFL provider-option snake_case mapping, poll timeout/interval controls, and provider metadata are represented as a Kotlin facade folded into the root module; VERSION is exposed as BLACK_FOREST_LABS_VERSION until package modules are split
 
@@ -9,7 +9,7 @@
 
 | Subpath | Source | Export count |
 |---|---|---:|
-| `.` | `.reference/vercel-ai-sdk-ai-6.0.202/packages/black-forest-labs/src/index.ts` | 9 |
+| `.` | `.reference/vercel-ai-sdk-ai-6.0.204/packages/black-forest-labs/src/index.ts` | 9 |
 
 ## Public Exports
 

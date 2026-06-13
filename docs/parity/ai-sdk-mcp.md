@@ -1,7 +1,7 @@
 # @ai-sdk/mcp
 
-- Version: 1.0.48
-- Upstream path: `.reference/vercel-ai-sdk-ai-6.0.202/packages/mcp`
+- Version: 1.0.50
+- Upstream path: `.reference/vercel-ai-sdk-ai-6.0.204/packages/mcp`
 - Kotlin parity area: `:aisdk-mcp`
 - Current parity status: ported: MCP JSON-RPC contracts, client handshake, capability-gated APIs, dynamic tool conversion, resources, prompts, elicitation, OAuth type surface plus authorization/protected-resource metadata discovery, resource validation/propagation, dynamic registration, PKCE authorization redirects, authorization-code exchange, refresh-token flow, awaited client authentication hooks, streamable HTTP transport, legacy SSE transport, and process-backed stdio transport for JVM/Android are represented as Kotlin facades folded into the root module; iOS stdio is an explicit unsupported platform boundary; VERSION is exposed as MCP_PACKAGE_VERSION until package modules are split
 
@@ -9,8 +9,8 @@
 
 | Subpath | Source | Export count |
 |---|---|---:|
-| `.` | `.reference/vercel-ai-sdk-ai-6.0.202/packages/mcp/src/index.ts` | 27 |
-| `./mcp-stdio` | `.reference/vercel-ai-sdk-ai-6.0.202/packages/mcp/src/tool/mcp-stdio/index.ts` | 2 |
+| `.` | `.reference/vercel-ai-sdk-ai-6.0.204/packages/mcp/src/index.ts` | 27 |
+| `./mcp-stdio` | `.reference/vercel-ai-sdk-ai-6.0.204/packages/mcp/src/tool/mcp-stdio/index.ts` | 2 |
 
 ## Public Exports
 
