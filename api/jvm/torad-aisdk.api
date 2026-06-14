@@ -6175,6 +6175,13 @@ public final class ai/torad/aisdk/StreamTextResult {
 	public final fun toUiMessageStreamResponse (Ljava/lang/String;)Lai/torad/aisdk/ui/UIMessageStreamResponse;
 }
 
+public abstract class ai/torad/aisdk/StreamingTool : ai/torad/aisdk/Tool {
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;Lkotlinx/serialization/KSerializer;Lkotlinx/serialization/KSerializer;ZLjava/util/List;Ljava/util/Map;ZLjava/util/Map;)V
+	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;Lkotlinx/serialization/KSerializer;Lkotlinx/serialization/KSerializer;ZLjava/util/List;Ljava/util/Map;ZLjava/util/Map;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun execute (Lai/torad/aisdk/ToolExecutionContext;Ljava/lang/Object;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public abstract fun executeStream (Lai/torad/aisdk/ToolExecutionContext;Ljava/lang/Object;)Lkotlinx/coroutines/flow/Flow;
+}
+
 public final class ai/torad/aisdk/StructuredObject {
 	public fun <init> (Lai/torad/aisdk/StructuredObjectOptions;)V
 	public final fun clear ()V
@@ -6486,24 +6493,24 @@ public final class ai/torad/aisdk/TooManyEmbeddingValuesForCallError : ai/torad/
 	public final fun getValues ()Ljava/util/List;
 }
 
-public final class ai/torad/aisdk/Tool {
-	public fun <init> (Ljava/lang/String;Ljava/lang/String;Lkotlinx/serialization/KSerializer;Lkotlinx/serialization/KSerializer;Lkotlin/jvm/functions/Function2;Lkotlin/jvm/functions/Function3;Lkotlin/jvm/functions/Function2;ZLjava/util/List;Lkotlin/jvm/functions/Function2;Lkotlin/jvm/functions/Function3;Lkotlin/jvm/functions/Function3;Ljava/util/Map;ZLjava/util/Map;)V
-	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;Lkotlinx/serialization/KSerializer;Lkotlinx/serialization/KSerializer;Lkotlin/jvm/functions/Function2;Lkotlin/jvm/functions/Function3;Lkotlin/jvm/functions/Function2;ZLjava/util/List;Lkotlin/jvm/functions/Function2;Lkotlin/jvm/functions/Function3;Lkotlin/jvm/functions/Function3;Ljava/util/Map;ZLjava/util/Map;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+public abstract class ai/torad/aisdk/Tool {
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;Lkotlinx/serialization/KSerializer;Lkotlinx/serialization/KSerializer;ZLjava/util/List;Ljava/util/Map;ZLjava/util/Map;)V
+	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;Lkotlinx/serialization/KSerializer;Lkotlinx/serialization/KSerializer;ZLjava/util/List;Ljava/util/Map;ZLjava/util/Map;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public abstract fun execute (Lai/torad/aisdk/ToolExecutionContext;Ljava/lang/Object;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public final fun getDescription ()Ljava/lang/String;
-	public final fun getExecutor ()Lkotlin/jvm/functions/Function2;
 	public final fun getInputExamples ()Ljava/util/List;
 	public final fun getInputSerializer ()Lkotlinx/serialization/KSerializer;
 	public final fun getMetadata ()Ljava/util/Map;
 	public final fun getName ()Ljava/lang/String;
-	public final fun getNeedsApproval ()Lkotlin/jvm/functions/Function3;
-	public final fun getOnInputAvailable ()Lkotlin/jvm/functions/Function3;
-	public final fun getOnInputDelta ()Lkotlin/jvm/functions/Function3;
-	public final fun getOnInputStart ()Lkotlin/jvm/functions/Function2;
 	public final fun getOutputSerializer ()Lkotlinx/serialization/KSerializer;
 	public final fun getProviderExecuted ()Z
 	public final fun getProviderOptions ()Ljava/util/Map;
 	public final fun getStrict ()Z
-	public final fun getToModelOutput ()Lkotlin/jvm/functions/Function2;
+	public fun needsApproval (Ljava/lang/Object;Lai/torad/aisdk/ToolPredicateOptions;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public fun onInputAvailable (Ljava/lang/String;Ljava/lang/Object;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public fun onInputDelta (Ljava/lang/String;Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public fun onInputStart (Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public fun toModelOutput (Ljava/lang/Object;Lai/torad/aisdk/ToolPredicateOptions;)Lai/torad/aisdk/ToolResultOutput;
 }
 
 public final class ai/torad/aisdk/ToolApprovalKt {
