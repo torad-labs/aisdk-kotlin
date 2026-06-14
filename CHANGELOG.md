@@ -4,7 +4,7 @@ All notable changes to this project will be documented here.
 
 This project follows Semantic Versioning once the first stable release is cut.
 
-## 0.2.0-SNAPSHOT
+## 0.3.0-alpha01
 
 - **Tools are now class-based and extensible (breaking ABI change).** `Tool` is an `abstract class`
   you can extend for reusable, dependency-injected tools — mirroring how a concrete agent extends
