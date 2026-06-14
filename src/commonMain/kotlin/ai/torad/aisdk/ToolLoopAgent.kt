@@ -712,15 +712,14 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
                             // pre-warm hook (UI spinner, cache priming). Guarded
                             // so a hook failure can't abort the inference stream.
                             toolInputNames[event.id] = event.toolName
-                            val onStart = stepTools.find(event.toolName)?.onInputStart
-                            runHook(stepNumber, feed) { onStart?.invoke(event.id) }
+                            val startedTool = stepTools.find(event.toolName)
+                            runHook(stepNumber, feed) { startedTool?.onInputStart(event.id) }
                             emit(event)
                         }
                         is StreamEvent.ToolInputDelta -> {
                             // gap #18: raw-character pre-warm as input streams in.
-                            val onDelta = toolInputNames[event.id]
-                                ?.let { stepTools.find(it)?.onInputDelta }
-                            runHook(stepNumber, feed) { onDelta?.invoke(event.id, event.delta) }
+                            val deltaTool = toolInputNames[event.id]?.let { stepTools.find(it) }
+                            runHook(stepNumber, feed) { deltaTool?.onInputDelta(event.id, event.delta) }
                             emit(event)
                         }
                         is StreamEvent.ToolCall -> {
@@ -809,9 +808,15 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
             if (stepReasoning.isNotEmpty()) assistantParts.add(ContentPart.Reasoning(stepReasoning.toString()))
             assistantParts.addAll(stepToolCalls)
 
-            // Process tool calls — for each, check if approval needed first.
+            // Process tool calls — resolve (decode + a single repair attempt) ONCE per call,
+            // then decide approval on the RESOLVED input. Resolving up front (instead of
+            // decoding inside callNeedsApproval and again inside executeTool) means
+            // experimental_repairToolCall now reaches EVERY tool — factory- or subclass-built —
+            // and removes the prior double-decode. The resolved (tool, input) is carried to the
+            // executor via resolvedForExecution so the repair attempt is not repeated.
             val toolsRequiringApproval = mutableListOf<ContentPart.ToolCall>()
             val toolsToExecute = mutableListOf<ContentPart.ToolCall>()
+            val resolvedForExecution = mutableMapOf<String, Pair<Tool<*, *, TContext>, Any?>>()
             for (call in stepToolCalls) {
                 val toolDef = stepTools.find(call.toolName)
                 if (toolDef == null) {
@@ -822,8 +827,27 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
                 if (toolDef.providerExecuted) {
                     continue
                 }
+                val (resolvedTool, resolvedInput, wasRepaired) = try {
+                    resolveCall(toolDef, call, messages.toList())
+                } catch (ce: CancellationException) {
+                    throw ce
+                } catch (@Suppress("TooGenericExceptionCaught") t: Throwable) {
+                    // Decode/repair failure. Fire onError + telemetry here so these failures stay on
+                    // the error-reporting surface — before input resolution was hoisted ahead of the
+                    // approval gate, a non-gated tool's decode failure happened inside executeTool,
+                    // which reported it; categorizing it here must report it too.
+                    emitError(t, stepNumber, OnErrorEvent.ErrorSource.Tool, hooks, feed)
+                    emitToolError(
+                        this,
+                        call.toolCallId,
+                        call.toolName,
+                        t as? AgentError ?: AgentError.ToolExecution(call.toolName, call.toolCallId, t),
+                        messages,
+                    )
+                    continue
+                }
                 val needsApproval = try {
-                    callNeedsApproval(toolDef, call, activeContext, messages.toList())
+                    callNeedsApproval(resolvedTool, call, resolvedInput, activeContext, messages.toList())
                 } catch (ce: CancellationException) {
                     throw ce
                 } catch (@Suppress("TooGenericExceptionCaught") t: Throwable) {
@@ -837,8 +861,31 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
                     continue
                 }
                 if (needsApproval) {
-                    toolsRequiringApproval.add(call)
+                    if (wasRepaired) {
+                        // A gated tool whose input only decoded after repair: reject rather than
+                        // request approval over a rewritten call. Approval requests + the resume
+                        // re-validation are keyed to the model's ORIGINAL input (and its signature),
+                        // so approve-over-repaired could not be honored on resume. Matches the
+                        // pre-resolve "gated tool + malformed input = error" behavior.
+                        emitToolError(
+                            this,
+                            call.toolCallId,
+                            call.toolName,
+                            AgentError.InvalidToolInput(
+                                call.toolName,
+                                call.input.toString(),
+                                IllegalStateException(
+                                    "approval-gated tool received input that only decoded after repair; " +
+                                        "gated tool calls are not auto-repaired",
+                                ),
+                            ),
+                            messages,
+                        )
+                    } else {
+                        toolsRequiringApproval.add(call)
+                    }
                 } else {
+                    resolvedForExecution[call.toolCallId] = resolvedTool to resolvedInput
                     toolsToExecute.add(call)
                 }
             }
@@ -917,6 +964,9 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
                                 messages = promptSnapshot,
                                 hooks = hooks,
                                 feed = feed,
+                                // Reuse the (tool, input) already resolved + repaired during the
+                                // approval-categorization pass — don't decode/repair a second time.
+                                preResolved = resolvedForExecution[call.toolCallId],
                             )
                         }
                         runHook(stepNumber, feed) {
@@ -1103,9 +1153,9 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
                 call = matchingCall,
             )
             val toolDef = tools.find(matchingCall.toolName)
-            if (toolDef != null) revalidateApprovedInput(toolDef, matchingCall)
+            val decodedInput: Any? = if (toolDef != null) revalidateApprovedInput(toolDef, matchingCall) else null
             val stillNeedsApproval = toolDef != null &&
-                callNeedsApproval(toolDef, matchingCall, options, messages.toList())
+                callNeedsApproval(toolDef, matchingCall, decodedInput, options, messages.toList())
             if (toolDef == null || !stillNeedsApproval) {
                 applyDeniedToolApproval(
                     out = out,
@@ -1127,6 +1177,8 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
                 messages = messages.toList(),
                 hooks = hooks,
                 feed = feed,
+                // Approval only ever fires for cleanly-decoded input — reuse it (no re-decode/repair).
+                preResolved = toolDef to decodedInput,
             )
             when (approvedResult) {
                 is ToolExecutionResult.Success -> applyApprovedToolSuccess(
@@ -1172,8 +1224,8 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
     /** Fail-closed schema re-validation of a replayed approval's input (v6.0.202): the
      *  client supplied this history, so the input is re-decoded against the tool's schema
      *  BEFORE execution; a mismatch throws [AgentError.InvalidToolInput]. */
-    private fun revalidateApprovedInput(toolDef: Tool<*, *, TContext>, call: ContentPart.ToolCall) {
-        try {
+    private fun revalidateApprovedInput(toolDef: Tool<*, *, TContext>, call: ContentPart.ToolCall): Any? {
+        return try {
             decodeToolInput(toolDef, call.input)
         } catch (ce: CancellationException) {
             throw ce
@@ -1191,30 +1243,28 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
             .map { it.toolCallId }
             .toMutableSet()
 
+    /**
+     * Evaluate a tool's approval gate on its ALREADY-resolved (decoded/repaired)
+     * input. Decode + repair happen once up front (see [resolveCall]); this only
+     * runs the predicate, so it is never the place a malformed input is rejected
+     * and never bypasses [ToolCallRepairFunction].
+     */
     private suspend fun callNeedsApproval(
         toolDef: Tool<*, *, TContext>,
         call: ContentPart.ToolCall,
+        typedInput: Any?,
         options: TContext?,
         messages: List<ModelMessage>,
     ): Boolean {
-        val gate = toolDef.needsApproval ?: return false
-
         @Suppress("UNCHECKED_CAST")
-        val approver = gate as suspend (input: Any?, opts: ToolPredicateOptions<TContext>) -> Boolean
-        val typedInput = try {
-            decodeToolInput(toolDef, call.input)
-        } catch (ce: CancellationException) {
-            throw ce
-        } catch (@Suppress("TooGenericExceptionCaught") t: Throwable) {
-            throw AgentError.InvalidToolInput(call.toolName, call.input.toString(), t)
-        }
+        val gated = toolDef as Tool<Any?, Any?, TContext>
         val predicateOptions = ToolPredicateOptions(
             toolCallId = call.toolCallId,
             messages = messages,
             experimental_context = options,
         )
         return try {
-            approver(typedInput, predicateOptions)
+            gated.needsApproval(typedInput, predicateOptions)
         } catch (ce: CancellationException) {
             throw ce
         } catch (@Suppress("TooGenericExceptionCaught") t: Throwable) {
@@ -1251,6 +1301,10 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
         messages: List<ModelMessage>,
         hooks: AgentCallHooks?,
         feed: TelemetryFeed? = null,
+        // Pre-resolved (tool, input) from the approval-categorization pass, so the
+        // step-loop path doesn't decode/repair twice. Null on the resume path, where
+        // executeTool resolves the approved call itself.
+        preResolved: Pair<Tool<*, *, TContext>, Any?>? = null,
     ): ToolExecutionResult {
         // Telemetry brackets the execution HERE (not at the dispatch site) so
         // both routes — the step loop AND the approval-resume path — emit.
@@ -1264,7 +1318,7 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
             // re-resolve the tool (a repaired call may re-route to a
             // different toolName), and retry decode ONCE. No recursive
             // repair — keeps the loop bounded.
-            val (resolvedTool, resolvedInput) = resolveToolInput(toolDef, call, messages)
+            val (resolvedTool, resolvedInput) = preResolved ?: resolveToolInput(toolDef, call, messages)
 
             @Suppress("UNCHECKED_CAST")
             val typedTool = resolvedTool as Tool<Any?, Any?, TContext>
@@ -1280,7 +1334,7 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
             // gap #18: typed input parsed — fire onInputAvailable just before
             // the executor runs (UI pre-warm). Guarded so a hook failure does
             // not fail the tool call itself.
-            runHook(stepNumber, feed) { typedTool.onInputAvailable?.invoke(call.toolCallId, input) }
+            runHook(stepNumber, feed) { typedTool.onInputAvailable(call.toolCallId, input) }
             val captured = collectFinalToolOutput(out, typedTool, ctx, call, input)
             if (!captured.hasOutput) {
                 toolFailure(call, IllegalStateException("tool emitted no values"))
@@ -1293,7 +1347,7 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
                     experimental_context = options,
                 )
                 val output = toolResultOutputFromJson(outputJson)
-                val modelOutput = typedTool.toModelOutput?.invoke(lastOutput, predicateOptions) ?: output
+                val modelOutput = typedTool.toModelOutput(lastOutput, predicateOptions) ?: output
                 ToolExecutionResult.Success(
                     outputJson = outputJson,
                     output = output,
@@ -1345,7 +1399,7 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
     ): ToolOutputCapture {
         var lastOutput: Any? = null
         var hasOutput = false
-        tool.executor.invoke(ctx, input).collect { output ->
+        tool.streamExecutor(ctx, input).collect { output ->
             if (hasOutput) {
                 val outputJson = encodeToolOutput(tool, lastOutput)
                 val output = toolResultOutputFromJson(outputJson)
@@ -1354,7 +1408,7 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
                     messages = ctx.messages,
                     experimental_context = ctx.context,
                 )
-                val modelOutput = tool.toModelOutput?.invoke(lastOutput, predicateOptions) ?: output
+                val modelOutput = tool.toModelOutput(lastOutput, predicateOptions) ?: output
                 out.emit(
                     StreamEvent.ToolResult(
                         toolCallId = call.toolCallId,
@@ -1508,18 +1562,40 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
         call: ContentPart.ToolCall,
         messages: List<ModelMessage>,
     ): Pair<Tool<*, *, TContext>, Any?> {
-        try {
-            return toolDef to decodeToolInput(toolDef, call.input)
+        val (tool, input, _) = resolveCall(toolDef, call, messages)
+        return tool to input
+    }
+
+    /**
+     * Resolve a call's input: a plain decode, then — on failure — a SINGLE repair
+     * attempt via [experimental_repairToolCall]. Returns the resolved (tool, typed
+     * input) plus whether repair was needed; throws a typed [AgentError]
+     * ([AgentError.ToolCallRepairFailed] / [AgentError.InvalidToolInput]) when the
+     * input cannot be decoded even after repair. A repaired call may re-route to a
+     * different tool, so the returned tool is not necessarily [toolDef]. This is the
+     * ONE place a tool call is decoded/repaired — both the approval-categorization
+     * pass and [executeTool] consume its result, so repair runs at most once per call.
+     */
+    private suspend fun resolveCall(
+        toolDef: Tool<*, *, TContext>,
+        call: ContentPart.ToolCall,
+        messages: List<ModelMessage>,
+    ): Triple<Tool<*, *, TContext>, Any?, Boolean> {
+        val plainError: Throwable = try {
+            return Triple(toolDef, decodeToolInput(toolDef, call.input), false)
         } catch (ce: CancellationException) {
             throw ce
         } catch (@Suppress("TooGenericExceptionCaught") e: Throwable) {
-            tryRepairToolInput(toolDef, call, e, messages)?.let { return it }
-            // Repair absent or exhausted — surface a typed decode failure.
-            throw if (experimental_repairToolCall != null) {
-                AgentError.ToolCallRepairFailed(call.toolName, originalError = e, repairError = null)
-            } else {
-                AgentError.InvalidToolInput(call.toolName, call.input.toString(), e)
-            }
+            e
+        }
+        tryRepairToolInput(toolDef, call, plainError, messages)?.let { (repairedTool, repairedInput) ->
+            return Triple(repairedTool, repairedInput, true)
+        }
+        // Repair absent or exhausted — surface a typed decode failure.
+        throw if (experimental_repairToolCall != null) {
+            AgentError.ToolCallRepairFailed(call.toolName, originalError = plainError, repairError = null)
+        } else {
+            AgentError.InvalidToolInput(call.toolName, call.input.toString(), plainError)
         }
     }
 

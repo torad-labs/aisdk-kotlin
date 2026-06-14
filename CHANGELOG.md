@@ -6,6 +6,41 @@ This project follows Semantic Versioning once the first stable release is cut.
 
 ## 0.2.0-SNAPSHOT
 
+- **Tools are now class-based and extensible (breaking ABI change).** `Tool` is an `abstract class`
+  you can extend for reusable, dependency-injected tools — mirroring how a concrete agent extends
+  `ToolLoopAgent`:
+  ```kotlin
+  class SearchDocsTool(private val repo: DocRepository) :
+      Tool<SearchInput, List<SearchResult>, AppContext>(
+          name = "searchDocs",
+          description = "Search the product documentation",
+          inputSerializer = serializer(),
+          outputSerializer = serializer(),
+      ) {
+      override suspend fun ToolExecutionContext<AppContext>.execute(input: SearchInput) =
+          repo.search(input.query)
+  }
+  // usage: toolSetOf(SearchDocsTool(repo))
+  ```
+  The executor and the optional callbacks (`needsApproval`, `toModelOutput`, `onInputStart`,
+  `onInputDelta`, `onInputAvailable`) are now overridable methods instead of constructor lambdas —
+  override only what you need. Tools that emit preliminary snapshots extend the new `StreamingTool`
+  base and override `executeStream`. The `tool { }` / `streamingTool { }` / `dynamicTool(...)` /
+  `providerExecutedTool(...)` factories keep their exact signatures for trivial inline tools; they
+  now build an internal `LambdaTool` / `LambdaStreamingTool` subclass.
+
+  Migration: the `Tool(...)` constructor is no longer invoked directly, and the public `Tool.executor`
+  / `Tool.needsApproval` / `Tool.toModelOutput` / `Tool.onInput*` *fields* are removed (they became
+  methods). Keep using the factories (unchanged), or extend `Tool` / `StreamingTool`. To drive a tool's
+  executor directly, prefer `executeTool(tool, input, ctx)` — it collects the Flow and works for any
+  tool; `with(tool) { ctx.execute(input) }` is only valid for a known plain `Tool` (it throws on a
+  `StreamingTool`, which produces values via `executeStream`).
+
+  Tool-call repair + approval: the loop now resolves a call's input (decode + a single
+  `experimental_repairToolCall` attempt) ONCE, before the approval gate, so repair reaches every tool —
+  factory- or subclass-built — and the prior double-decode is gone. An approval-gated tool is still
+  gated over its original, cleanly-decoded input: if a gated tool's input only decodes after repair,
+  the call is rejected rather than approved over a rewritten input.
 - Telemetry revamp (upstream v7 parity): the previously unwired `TelemetryIntegration` surface
   is replaced by a typed `Telemetry` interface that the agent loop now FEEDS AUTOMATICALLY —
   agent start/finish, step start/finish, model-call start/finish, tool-call start/finish

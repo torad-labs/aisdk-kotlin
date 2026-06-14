@@ -19,55 +19,59 @@ import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.serializer
 
 /**
- * A tool the LLM can call — application code constructs these via the
- * top-level [tool] (single-value) or [streamingTool] (Flow) factories.
+ * A tool the LLM can call. There are two idiomatic ways to define one:
+ *
+ * **1. Extend it** — for a reusable, dependency-injected tool that deserves a
+ * name (mirrors how a concrete agent extends [ToolLoopAgent]):
+ * ```
+ * class SearchDocsTool(private val repo: DocRepository) :
+ *     Tool<SearchInput, List<SearchResult>, AppContext>(
+ *         name = "searchDocs",
+ *         description = "Search the product documentation",
+ *         inputSerializer = serializer(),
+ *         outputSerializer = serializer(),
+ *     ) {
+ *     override suspend fun ToolExecutionContext<AppContext>.execute(input: SearchInput) =
+ *         repo.search(input.query)
+ * }
+ * // usage: toolSetOf(SearchDocsTool(repo))  — one class, many instances
+ * ```
+ * Override only the hooks you need ([needsApproval], [toModelOutput],
+ * [onInputStart], [onInputDelta], [onInputAvailable]); they no-op by default.
+ * For a tool that emits preliminary snapshots before its final value, extend
+ * [StreamingTool] and override [StreamingTool.executeStream] instead.
+ *
+ * **2. Use the [tool] / [streamingTool] factories** — for trivial inline tools
+ * where a named class is overkill. The factories build an anonymous subclass.
  *
  * Per invariant I-2, tools use `inputSchema` (v6) — never `parameters`
  * (v5, removed). Per I-8 tools are stateless: inputs in, outputs out, no
- * shared mutable state.
+ * shared mutable state — so a single instance is safely reused across agents.
  *
  * @param TInput  Application-defined input type, must be `@Serializable`.
  *                The model produces JSON matching its schema; the agent
- *                deserializes via [inputSerializer] before calling [executor].
+ *                deserializes via [inputSerializer] before calling [execute].
  * @param TOutput Application-defined output type, must be `@Serializable`.
  *                Serialized into the model's tool-result message via
  *                [outputSerializer], or summarized via [toModelOutput] if
  *                the raw output would be too verbose for the model.
  * @param TContext Caller-supplied typed context propagated through the
  *                whole loop (set via `callOptionsSchema`, accessed inside
- *                the executor as `this.context`).
+ *                [execute] as `this.context`).
  *
- * The internal [executor] always returns a [Flow] (the v6 alignment per
- * `tool.ts:68-71`'s `AsyncIterable<OUTPUT>` shape). Single-value tools
- * built via [tool] wrap their suspend `(TInput) -> TOutput` body in a
- * one-emission flow; streaming tools built via [streamingTool] pass
- * their Flow body straight through. The agent loop's tool dispatcher
- * collects with one-step lookahead — non-final emissions become
- * `StreamEvent.ToolResult(preliminary = true)`, the last emission is
- * the final result that lands in the model's message log.
+ * Internally the agent loop always drives a [Flow] (the v6 alignment per
+ * `tool.ts:68-71`'s `AsyncIterable<OUTPUT>` shape): a plain [Tool] wraps its
+ * single [execute] value in a one-emission flow; a [StreamingTool] passes its
+ * Flow straight through. The loop collects with one-step lookahead — non-final
+ * emissions become `StreamEvent.ToolResult(preliminary = true)`, the last
+ * emission is the final result that lands in the model's message log.
  */
-public class Tool<TInput, TOutput, TContext>(
+@Suppress("LongParameterList")
+public abstract class Tool<TInput, TOutput, TContext>(
     public val name: String,
     public val description: String,
     public val inputSerializer: KSerializer<TInput>,
     public val outputSerializer: KSerializer<TOutput>,
-    public val executor: ToolExecutionContext<TContext>.(TInput) -> Flow<TOutput>,
-    /**
-     * Approval gate. Per historical parity gap #17, the predicate
-     * receives [ToolPredicateOptions] (toolCallId + messages +
-     * experimental_context) — not just `context`. Lets the gate
-     * decide based on conversation history or call identity.
-     */
-    public val needsApproval: (suspend (input: TInput, options: ToolPredicateOptions<TContext>) -> Boolean)? = null,
-    /**
-     * Model-visible summary. Per historical parity gaps #17 + #14,
-     * the callback receives both the typed output AND
-     * [ToolPredicateOptions]; returns a structured
-     * [ToolResultOutput] (Text / Json / Error) instead of a bare
-     * `String`. The agent loop bridges each variant to the
-     * wire-format `ContentPart.ToolResult.modelVisible` (+ `isError`).
-     */
-    public val toModelOutput: ((TOutput, ToolPredicateOptions<TContext>) -> ToolResultOutput)? = null,
     /**
      * Per best practice #9: strict JSON schema enforcement is opt-in per
      * tool, not global. Some providers reject schemas with format/regex
@@ -84,25 +88,6 @@ public class Tool<TInput, TOutput, TContext>(
      */
     public val inputExamples: List<String> = emptyList(),
     /**
-     * Lifecycle hook — fired when the model commits to calling this
-     * tool (StreamEvent.ToolInputStart arrives). Mirrors v6's
-     * `tool.onInputStart` (per historical parity gap #18). Lets a
-     * tool pre-warm: UI spinner, cache priming, etc.
-     */
-    public val onInputStart: (suspend (streamingId: String) -> Unit)? = null,
-    /**
-     * Lifecycle hook — fired as the model streams the tool's input
-     * JSON token-by-token (StreamEvent.ToolInputDelta). The accumulated
-     * input isn't yet valid JSON; this is for raw-character pre-warm.
-     */
-    public val onInputDelta: (suspend (streamingId: String, delta: String) -> Unit)? = null,
-    /**
-     * Lifecycle hook — fired after the streamed JSON has parsed
-     * successfully into the typed [TInput], just before [executor]
-     * runs. Mirrors v6's `tool.onInputAvailable`.
-     */
-    public val onInputAvailable: (suspend (toolCallId: String, input: TInput) -> Unit)? = null,
-    /**
      * Application-defined metadata bag. Mirrors v6's `tool.metadata`
      * (per historical parity gap #34). Opaque to the loop —
      * consumers (logger middleware, telemetry, host-side gating) can
@@ -117,7 +102,233 @@ public class Tool<TInput, TOutput, TContext>(
      * host-side only. Mirrors v6's `tool.providerOptions`. Empty by default.
      */
     public val providerOptions: Map<String, JsonElement> = emptyMap(),
-)
+) {
+    /**
+     * Run the tool — the common single-value case. The model's JSON input has
+     * already been deserialized into [TInput]; return the typed output. `this`
+     * is the [ToolExecutionContext], so the typed `context`, `abortSignal`,
+     * `toolCallId`, `stepNumber`, `messages`, and `writer` are in scope.
+     *
+     * Override [StreamingTool.executeStream] instead to emit preliminary
+     * progress snapshots before the final value.
+     */
+    public abstract suspend fun ToolExecutionContext<TContext>.execute(input: TInput): TOutput
+
+    /**
+     * Approval gate (parity gap #17). Return true to require host approval
+     * before [execute] runs: the loop ends with the call surfaced in
+     * `GenerateResult.pendingApprovals` until the host resumes. The options
+     * carry `toolCallId` + `messages` + `experimental_context`, so the gate can
+     * decide from conversation history or call identity. Default: never gates.
+     */
+    public open suspend fun needsApproval(
+        input: TInput,
+        options: ToolPredicateOptions<TContext>,
+    ): Boolean = false
+
+    /**
+     * Model-visible summary (parity gaps #17 + #14). Return a structured
+     * [ToolResultOutput] (Text / Json / Error / …) to send the model a short
+     * summary in place of the full (possibly verbose) output; the loop bridges
+     * it to `ContentPart.ToolResult.modelVisible` (+ `isError`). Return null
+     * (default) to send the raw output as-is.
+     */
+    public open fun toModelOutput(
+        output: TOutput,
+        options: ToolPredicateOptions<TContext>,
+    ): ToolResultOutput? = null
+
+    /**
+     * Lifecycle hook (gap #18) — fired when the model commits to calling this
+     * tool (`StreamEvent.ToolInputStart`). Pre-warm here: UI spinner, cache
+     * priming, etc. No-op by default.
+     */
+    public open suspend fun onInputStart(streamingId: String) {}
+
+    /**
+     * Lifecycle hook (gap #18) — fired as the input JSON streams in
+     * token-by-token (`StreamEvent.ToolInputDelta`). The accumulated input
+     * isn't yet valid JSON; this is for raw-character pre-warm. No-op by default.
+     */
+    public open suspend fun onInputDelta(streamingId: String, delta: String) {}
+
+    /**
+     * Lifecycle hook — fired after the streamed JSON parses into the typed
+     * [TInput], just before [execute] runs. Mirrors v6's `tool.onInputAvailable`.
+     * No-op by default.
+     */
+    public open suspend fun onInputAvailable(toolCallId: String, input: TInput) {}
+
+    /**
+     * Canonical executor the agent loop drives: the full emission stream (last
+     * value = final result, earlier values = preliminary). A plain [Tool] wraps
+     * [execute] in one emission; [StreamingTool] passes its Flow through.
+     */
+    internal open fun streamExecutor(scope: ToolExecutionContext<TContext>, input: TInput): Flow<TOutput> {
+        val tool = this
+        return flow { emit(with(tool) { scope.execute(input) }) }
+    }
+}
+
+/**
+ * A [Tool] whose executor is a [Flow] — it can emit preliminary snapshots
+ * before the final value. The LAST emission is what feeds the model on
+ * subsequent turns; earlier emissions surface as
+ * `StreamEvent.ToolResult(preliminary = true)` for UI consumption only. Extend
+ * this (instead of [Tool]) when a tool can produce a useful early snapshot —
+ * a small summary, count, or status — before the full result is ready.
+ *
+ * ```
+ * class LineupTool(private val repo: LineupRepo) :
+ *     StreamingTool<LineupQuery, Lineup, AppContext>(
+ *         name = "getLineup",
+ *         description = "Get sets playing at a stage on a given day",
+ *         inputSerializer = serializer(),
+ *         outputSerializer = serializer(),
+ *     ) {
+ *     override fun ToolExecutionContext<AppContext>.executeStream(input: LineupQuery) = flow {
+ *         emit(repo.fastSummary(input))   // preliminary — UI renders immediately
+ *         emit(repo.fullDetails(input))   // final — feeds the model
+ *     }
+ * }
+ * ```
+ *
+ * If the Flow emits zero values, the tool is treated as failed (the agent
+ * emits `StreamEvent.ToolError`).
+ */
+@Suppress("LongParameterList")
+public abstract class StreamingTool<TInput, TOutput, TContext>(
+    name: String,
+    description: String,
+    inputSerializer: KSerializer<TInput>,
+    outputSerializer: KSerializer<TOutput>,
+    strict: Boolean = true,
+    inputExamples: List<String> = emptyList(),
+    metadata: Map<String, JsonElement> = emptyMap(),
+    providerExecuted: Boolean = false,
+    providerOptions: Map<String, JsonElement> = emptyMap(),
+) : Tool<TInput, TOutput, TContext>(
+    name = name,
+    description = description,
+    inputSerializer = inputSerializer,
+    outputSerializer = outputSerializer,
+    strict = strict,
+    inputExamples = inputExamples,
+    metadata = metadata,
+    providerExecuted = providerExecuted,
+    providerOptions = providerOptions,
+) {
+    /**
+     * Run the tool, emitting preliminary snapshots; the LAST emission is the
+     * final result. `this` is the [ToolExecutionContext].
+     */
+    public abstract fun ToolExecutionContext<TContext>.executeStream(input: TInput): Flow<TOutput>
+
+    // A StreamingTool produces values via executeStream(); the single-value
+    // execute() seam is sealed off and never reached (streamExecutor is final).
+    final override suspend fun ToolExecutionContext<TContext>.execute(input: TInput): TOutput =
+        error(
+            "StreamingTool '$name' produces values via executeStream(), not execute(). " +
+                "To drive it directly, use executeTool(tool, input, context).",
+        )
+
+    internal final override fun streamExecutor(
+        scope: ToolExecutionContext<TContext>,
+        input: TInput,
+    ): Flow<TOutput> {
+        val tool = this
+        return with(tool) { scope.executeStream(input) }
+    }
+}
+
+/**
+ * Internal [Tool] backing the [tool] factory: holds the executor and the
+ * optional callbacks as fields, so the factory (and the lifecycle hooks'
+ * absent-callback handling) lives in ONE place instead of being re-spelled at
+ * every factory call site. Not public — consumers extend [Tool] directly.
+ */
+@Suppress("LongParameterList")
+internal class LambdaTool<TInput, TOutput, TContext>(
+    name: String,
+    description: String,
+    inputSerializer: KSerializer<TInput>,
+    outputSerializer: KSerializer<TOutput>,
+    strict: Boolean,
+    inputExamples: List<String>,
+    metadata: Map<String, JsonElement>,
+    providerExecuted: Boolean,
+    providerOptions: Map<String, JsonElement>,
+    private val executeFn: suspend ToolExecutionContext<TContext>.(TInput) -> TOutput,
+    private val approvalFn: (suspend (TInput, ToolPredicateOptions<TContext>) -> Boolean)?,
+    private val modelOutputFn: ((TOutput, ToolPredicateOptions<TContext>) -> ToolResultOutput)?,
+    private val inputStartFn: (suspend (String) -> Unit)?,
+    private val inputDeltaFn: (suspend (String, String) -> Unit)?,
+    private val inputAvailableFn: (suspend (String, TInput) -> Unit)?,
+) : Tool<TInput, TOutput, TContext>(
+    name, description, inputSerializer, outputSerializer,
+    strict, inputExamples, metadata, providerExecuted, providerOptions,
+) {
+    override suspend fun ToolExecutionContext<TContext>.execute(input: TInput): TOutput = executeFn(input)
+    override suspend fun needsApproval(input: TInput, options: ToolPredicateOptions<TContext>): Boolean =
+        approvalFn?.invoke(input, options) ?: false
+    override fun toModelOutput(output: TOutput, options: ToolPredicateOptions<TContext>): ToolResultOutput? =
+        modelOutputFn?.invoke(output, options)
+    override suspend fun onInputStart(streamingId: String) {
+        inputStartFn?.invoke(streamingId)
+    }
+
+    override suspend fun onInputDelta(streamingId: String, delta: String) {
+        inputDeltaFn?.invoke(streamingId, delta)
+    }
+
+    override suspend fun onInputAvailable(toolCallId: String, input: TInput) {
+        inputAvailableFn?.invoke(toolCallId, input)
+    }
+}
+
+/**
+ * Internal [StreamingTool] backing the [streamingTool] factory and the
+ * provider-tool factories — same role as [LambdaTool] for the Flow-returning
+ * executor. Not public — consumers extend [StreamingTool] directly.
+ */
+@Suppress("LongParameterList")
+internal class LambdaStreamingTool<TInput, TOutput, TContext>(
+    name: String,
+    description: String,
+    inputSerializer: KSerializer<TInput>,
+    outputSerializer: KSerializer<TOutput>,
+    strict: Boolean,
+    inputExamples: List<String>,
+    metadata: Map<String, JsonElement>,
+    providerExecuted: Boolean,
+    providerOptions: Map<String, JsonElement>,
+    private val streamFn: ToolExecutionContext<TContext>.(TInput) -> Flow<TOutput>,
+    private val approvalFn: (suspend (TInput, ToolPredicateOptions<TContext>) -> Boolean)?,
+    private val modelOutputFn: ((TOutput, ToolPredicateOptions<TContext>) -> ToolResultOutput)?,
+    private val inputStartFn: (suspend (String) -> Unit)?,
+    private val inputDeltaFn: (suspend (String, String) -> Unit)?,
+    private val inputAvailableFn: (suspend (String, TInput) -> Unit)?,
+) : StreamingTool<TInput, TOutput, TContext>(
+    name, description, inputSerializer, outputSerializer,
+    strict, inputExamples, metadata, providerExecuted, providerOptions,
+) {
+    override fun ToolExecutionContext<TContext>.executeStream(input: TInput): Flow<TOutput> = streamFn(input)
+    override suspend fun needsApproval(input: TInput, options: ToolPredicateOptions<TContext>): Boolean =
+        approvalFn?.invoke(input, options) ?: false
+    override fun toModelOutput(output: TOutput, options: ToolPredicateOptions<TContext>): ToolResultOutput? =
+        modelOutputFn?.invoke(output, options)
+    override suspend fun onInputStart(streamingId: String) {
+        inputStartFn?.invoke(streamingId)
+    }
+
+    override suspend fun onInputDelta(streamingId: String, delta: String) {
+        inputDeltaFn?.invoke(streamingId, delta)
+    }
+
+    override suspend fun onInputAvailable(toolCallId: String, input: TInput) {
+        inputAvailableFn?.invoke(toolCallId, input)
+    }
+}
 
 /**
  * Top-level factory for [Tool] with a single-value executor. Mirrors v6's
@@ -156,26 +367,25 @@ public fun <TInput, TOutput, TContext> tool(
     providerExecuted: Boolean = false,
     providerOptions: Map<String, JsonElement> = emptyMap(),
     executor: suspend ToolExecutionContext<TContext>.(TInput) -> TOutput,
-): Tool<TInput, TOutput, TContext> = Tool(
-    name = name,
-    description = description,
-    inputSerializer = inputSerializer,
-    outputSerializer = outputSerializer,
-    executor = { input ->
-        val ctx = this
-        flow { emit(executor.invoke(ctx, input)) }
-    },
-    needsApproval = needsApproval,
-    toModelOutput = toModelOutput,
-    strict = strict,
-    inputExamples = inputExamples,
-    onInputStart = onInputStart,
-    onInputDelta = onInputDelta,
-    onInputAvailable = onInputAvailable,
-    metadata = metadata,
-    providerExecuted = providerExecuted,
-    providerOptions = providerOptions,
-)
+): Tool<TInput, TOutput, TContext> {
+    return LambdaTool(
+        name = name,
+        description = description,
+        inputSerializer = inputSerializer,
+        outputSerializer = outputSerializer,
+        strict = strict,
+        inputExamples = inputExamples,
+        metadata = metadata,
+        providerExecuted = providerExecuted,
+        providerOptions = providerOptions,
+        executeFn = executor,
+        approvalFn = needsApproval,
+        modelOutputFn = toModelOutput,
+        inputStartFn = onInputStart,
+        inputDeltaFn = onInputDelta,
+        inputAvailableFn = onInputAvailable,
+    )
+}
 
 /**
  * Top-level factory for [Tool] with a [Flow]-returning executor. Each
@@ -222,22 +432,25 @@ public fun <TInput, TOutput, TContext> streamingTool(
     metadata: Map<String, JsonElement> = emptyMap(),
     providerExecuted: Boolean = false,
     executor: ToolExecutionContext<TContext>.(TInput) -> Flow<TOutput>,
-): Tool<TInput, TOutput, TContext> = Tool(
-    name = name,
-    description = description,
-    inputSerializer = inputSerializer,
-    outputSerializer = outputSerializer,
-    executor = executor,
-    needsApproval = needsApproval,
-    toModelOutput = toModelOutput,
-    strict = strict,
-    inputExamples = inputExamples,
-    onInputStart = onInputStart,
-    onInputDelta = onInputDelta,
-    onInputAvailable = onInputAvailable,
-    metadata = metadata,
-    providerExecuted = providerExecuted,
-)
+): Tool<TInput, TOutput, TContext> {
+    return LambdaStreamingTool(
+        name = name,
+        description = description,
+        inputSerializer = inputSerializer,
+        outputSerializer = outputSerializer,
+        strict = strict,
+        inputExamples = inputExamples,
+        metadata = metadata,
+        providerExecuted = providerExecuted,
+        providerOptions = emptyMap(),
+        streamFn = executor,
+        approvalFn = needsApproval,
+        modelOutputFn = toModelOutput,
+        inputStartFn = onInputStart,
+        inputDeltaFn = onInputDelta,
+        inputAvailableFn = onInputAvailable,
+    )
+}
 
 /**
  * Erased map of tools indexed by name — what the agent loop actually
@@ -631,7 +844,7 @@ public fun <TInput, TOutput, TContext> executeTool(
     options: ToolExecutionContext<TContext>,
 ): Flow<ExecuteToolResult<TOutput>> = flow {
     val outputs = mutableListOf<TOutput>()
-    tool.executor.invoke(options, input).collect { output ->
+    tool.streamExecutor(options, input).collect { output ->
         outputs += output
     }
     if (outputs.isEmpty()) {
@@ -772,30 +985,14 @@ private fun <TInput, TOutput, TContext> providerTool(
     options: ProviderToolFactoryOptions<TInput, TOutput, TContext>,
 ): Tool<TInput, TOutput, TContext> {
     val execute = options.execute
-    return Tool(
-        name = options.name ?: id.substringAfter('.'),
+    val resolvedName = options.name ?: id.substringAfter('.')
+    return LambdaStreamingTool(
+        name = resolvedName,
         description = options.description ?: defaultDescription,
         inputSerializer = inputSerializer,
         outputSerializer = options.outputSerializer,
-        executor = { input ->
-            val context = this
-            flow {
-                if (execute == null) {
-                    throw AgentError.ToolExecution(
-                        options.name ?: id.substringAfter('.'),
-                        context.toolCallId,
-                        UnsupportedOperationException("provider-executed tool has no local executor"),
-                    )
-                }
-                emit(execute.invoke(context, input))
-            }
-        },
-        needsApproval = options.needsApproval,
-        toModelOutput = options.toModelOutput,
-        onInputStart = options.onInputStart,
-        onInputDelta = options.onInputDelta,
-        onInputAvailable = options.onInputAvailable,
-        providerExecuted = true,
+        strict = true,
+        inputExamples = emptyList(),
         metadata = options.metadata + providerToolMetadata(
             id = id,
             args = options.args,
@@ -803,6 +1000,26 @@ private fun <TInput, TOutput, TContext> providerTool(
             outputSchema = options.outputSchema,
             supportsDeferredResults = supportsDeferredResults,
         ),
+        providerExecuted = true,
+        providerOptions = emptyMap(),
+        streamFn = { input ->
+            val context = this
+            flow {
+                if (execute == null) {
+                    throw AgentError.ToolExecution(
+                        resolvedName,
+                        context.toolCallId,
+                        UnsupportedOperationException("provider-executed tool has no local executor"),
+                    )
+                }
+                emit(execute.invoke(context, input))
+            }
+        },
+        approvalFn = options.needsApproval,
+        modelOutputFn = options.toModelOutput,
+        inputStartFn = options.onInputStart,
+        inputDeltaFn = options.onInputDelta,
+        inputAvailableFn = options.onInputAvailable,
     )
 }
 
@@ -819,201 +1036,6 @@ private fun providerToolMetadata(
     outputSchema?.let { put("outputSchema", it.jsonSchema) }
     if (supportsDeferredResults) put("supportsDeferredResults", JsonPrimitive(true))
 }
-
-internal fun jsonSchemaFor(tool: Tool<*, *, *>): String {
-    tool.metadata["inputSchema"]?.let { return it.toString() }
-    val descriptor = tool.inputSerializer.descriptor
-    return descriptorToJsonSchema(descriptor).toString()
-}
-
-/**
- * Walk a kotlinx.serialization [kotlinx.serialization.descriptors.SerialDescriptor]
- * and produce a JSON Schema describing the shape. The output feeds two
- * downstream consumers:
- *  - Cloud providers (OpenAI / Anthropic / Gemini) that expect a strict
- *    OpenAPI-flavoured schema on `tools[].function.parameters`.
- *  - On-device providers (LiteRT-LM) whose
- *    chat-template renders the schema into Gemma 4 / FunctionGemma
- *    native `<|tool>declaration:...<tool|>` blocks. Without proper
- *    `properties` + `required` + `type` fields the model has no signal
- *    on what each tool expects, and routinely emits malformed calls or
- *    calls the wrong tool entirely.
- *
- * Handles the JSON-Schema subset every provider in the spec sheet
- * understands: string / integer / number / boolean primitives, nested
- * objects, arrays, and `required` lists. Pure function — no IO, no
- * side-effects — so it's testable and safe to call eagerly from tool
- * factories.
- */
-private const val SCHEMA_TYPE_KEY = "type"
-private const val SCHEMA_STRING = "string"
-private const val SCHEMA_INTEGER = "integer"
-private const val SCHEMA_NUMBER = "number"
-private const val SCHEMA_BOOLEAN = "boolean"
-private const val SCHEMA_OBJECT = "object"
-private const val SCHEMA_ARRAY = "array"
-
-private fun descriptorToJsonSchema(
-    descriptor: kotlinx.serialization.descriptors.SerialDescriptor,
-    seen: Set<String> = emptySet(),
-): kotlinx.serialization.json.JsonElement =
-    if (descriptor.isNullable) {
-        nullableSchema(descriptorToNonNullJsonSchema(descriptor, seen))
-    } else {
-        descriptorToNonNullJsonSchema(descriptor, seen)
-    }
-
-@OptIn(kotlinx.serialization.ExperimentalSerializationApi::class)
-private fun descriptorToNonNullJsonSchema(
-    descriptor: kotlinx.serialization.descriptors.SerialDescriptor,
-    seen: Set<String> = emptySet(),
-): kotlinx.serialization.json.JsonElement {
-    if (descriptor.serialName.startsWith("kotlinx.serialization.json.")) {
-        return openJsonObjectSchema()
-    }
-    if (descriptor.serialName in seen) {
-        return openJsonObjectSchema()
-    }
-    val nextSeen = seen + descriptor.serialName
-    if (descriptor.isInline && descriptor.elementsCount == 1) {
-        return descriptorToJsonSchema(descriptor.getElementDescriptor(0), nextSeen)
-    }
-    val kind = descriptor.kind
-    primitiveKindToType(kind)?.let { return typeOnlySchema(it) }
-    return when (kind) {
-        kotlinx.serialization.descriptors.StructureKind.CLASS,
-        kotlinx.serialization.descriptors.StructureKind.OBJECT,
-        -> objectSchema(descriptor, nextSeen)
-        kotlinx.serialization.descriptors.StructureKind.LIST -> listSchema(descriptor, nextSeen)
-        kotlinx.serialization.descriptors.StructureKind.MAP -> mapSchema(descriptor, nextSeen)
-        is kotlinx.serialization.descriptors.SerialKind.ENUM -> enumSchema(descriptor)
-        is kotlinx.serialization.descriptors.PolymorphicKind.SEALED -> sealedSchema(descriptor, nextSeen)
-        is kotlinx.serialization.descriptors.PolymorphicKind.OPEN -> jsonObj(
-            SCHEMA_TYPE_KEY to kotlinx.serialization.json.JsonPrimitive(SCHEMA_OBJECT),
-        )
-        else -> typeOnlySchema(SCHEMA_STRING)
-    }
-}
-
-/** Map a kotlinx.serialization primitive kind to its JSON Schema type
- *  name, or null if the kind is structural (object / list / map / enum). */
-private fun primitiveKindToType(
-    kind: kotlinx.serialization.descriptors.SerialKind,
-): String? = when (kind) {
-    kotlinx.serialization.descriptors.PrimitiveKind.STRING,
-    kotlinx.serialization.descriptors.PrimitiveKind.CHAR,
-    -> SCHEMA_STRING
-    kotlinx.serialization.descriptors.PrimitiveKind.BOOLEAN -> SCHEMA_BOOLEAN
-    kotlinx.serialization.descriptors.PrimitiveKind.BYTE,
-    kotlinx.serialization.descriptors.PrimitiveKind.SHORT,
-    kotlinx.serialization.descriptors.PrimitiveKind.INT,
-    kotlinx.serialization.descriptors.PrimitiveKind.LONG,
-    -> SCHEMA_INTEGER
-    kotlinx.serialization.descriptors.PrimitiveKind.FLOAT,
-    kotlinx.serialization.descriptors.PrimitiveKind.DOUBLE,
-    -> SCHEMA_NUMBER
-    else -> null
-}
-
-private fun typeOnlySchema(type: String): kotlinx.serialization.json.JsonObject = jsonObj(
-    SCHEMA_TYPE_KEY to kotlinx.serialization.json.JsonPrimitive(type),
-)
-
-private fun objectSchema(
-    descriptor: kotlinx.serialization.descriptors.SerialDescriptor,
-    seen: Set<String>,
-): kotlinx.serialization.json.JsonObject {
-    val properties = mutableMapOf<String, kotlinx.serialization.json.JsonElement>()
-    val required = mutableListOf<kotlinx.serialization.json.JsonElement>()
-    for (i in 0 until descriptor.elementsCount) {
-        val name = descriptor.getElementName(i)
-        properties[name] = descriptorToJsonSchema(descriptor.getElementDescriptor(i), seen)
-        if (!descriptor.isElementOptional(i)) {
-            required.add(kotlinx.serialization.json.JsonPrimitive(name))
-        }
-    }
-    val fields = mutableMapOf<String, kotlinx.serialization.json.JsonElement>(
-        SCHEMA_TYPE_KEY to kotlinx.serialization.json.JsonPrimitive(SCHEMA_OBJECT),
-        "properties" to kotlinx.serialization.json.JsonObject(properties),
-        "additionalProperties" to kotlinx.serialization.json.JsonPrimitive(false),
-    )
-    if (required.isNotEmpty()) {
-        fields["required"] = kotlinx.serialization.json.JsonArray(required)
-    }
-    return kotlinx.serialization.json.JsonObject(fields)
-}
-
-private fun listSchema(
-    descriptor: kotlinx.serialization.descriptors.SerialDescriptor,
-    seen: Set<String>,
-): kotlinx.serialization.json.JsonObject {
-    val items = if (descriptor.elementsCount > 0) {
-        descriptorToJsonSchema(descriptor.getElementDescriptor(0), seen)
-    } else {
-        typeOnlySchema(SCHEMA_STRING)
-    }
-    return jsonObj(
-        SCHEMA_TYPE_KEY to kotlinx.serialization.json.JsonPrimitive(SCHEMA_ARRAY),
-        "items" to items,
-    )
-}
-
-private fun mapSchema(
-    descriptor: kotlinx.serialization.descriptors.SerialDescriptor,
-    seen: Set<String>,
-): kotlinx.serialization.json.JsonObject {
-    val valueDescriptor = if (descriptor.elementsCount > 1) descriptor.getElementDescriptor(1) else null
-    return jsonObj(
-        SCHEMA_TYPE_KEY to kotlinx.serialization.json.JsonPrimitive(SCHEMA_OBJECT),
-        "additionalProperties" to (
-            valueDescriptor?.let { descriptorToJsonSchema(it, seen) }
-                ?: kotlinx.serialization.json.JsonPrimitive(true)
-            ),
-    )
-}
-
-private fun enumSchema(
-    descriptor: kotlinx.serialization.descriptors.SerialDescriptor,
-): kotlinx.serialization.json.JsonObject {
-    val values = (0 until descriptor.elementsCount).map {
-        kotlinx.serialization.json.JsonPrimitive(descriptor.getElementName(it))
-    }
-    return jsonObj(
-        SCHEMA_TYPE_KEY to kotlinx.serialization.json.JsonPrimitive(SCHEMA_STRING),
-        "enum" to kotlinx.serialization.json.JsonArray(values),
-    )
-}
-
-private fun sealedSchema(
-    descriptor: kotlinx.serialization.descriptors.SerialDescriptor,
-    seen: Set<String>,
-): kotlinx.serialization.json.JsonObject {
-    val variants = (0 until descriptor.elementsCount)
-        .map { descriptorToJsonSchema(descriptor.getElementDescriptor(it), seen) }
-    return jsonObj(
-        "oneOf" to kotlinx.serialization.json.JsonArray(variants),
-    )
-}
-
-private fun nullableSchema(
-    schema: kotlinx.serialization.json.JsonElement,
-): kotlinx.serialization.json.JsonObject = jsonObj(
-    "anyOf" to kotlinx.serialization.json.JsonArray(
-        listOf(
-            schema,
-            jsonObj(SCHEMA_TYPE_KEY to kotlinx.serialization.json.JsonPrimitive("null")),
-        ),
-    ),
-)
-
-private fun openJsonObjectSchema(): kotlinx.serialization.json.JsonObject = jsonObj(
-    SCHEMA_TYPE_KEY to kotlinx.serialization.json.JsonPrimitive(SCHEMA_OBJECT),
-    "additionalProperties" to kotlinx.serialization.json.JsonPrimitive(true),
-)
-
-private fun jsonObj(
-    vararg entries: Pair<String, kotlinx.serialization.json.JsonElement>,
-): kotlinx.serialization.json.JsonObject = kotlinx.serialization.json.JsonObject(entries.toMap())
 
 /** Whether the LLM should call a tool, no tool, a specific tool, etc. */
 @kotlinx.serialization.Serializable
@@ -1059,7 +1081,7 @@ public data object NoopToolStreamWriter : ToolStreamWriter {
 }
 
 /**
- * What [Tool.executor] sees as `this`. Holds the typed application context
+ * What [Tool.execute] sees as `this`. Holds the typed application context
  * (whatever the agent's `callOptionsSchema` says) plus the abort signal
  * (invariant I-10: subagent tool handlers MUST forward this), the current
  * step number, and the running message list.
