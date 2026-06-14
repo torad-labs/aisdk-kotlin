@@ -151,21 +151,18 @@ class FullPortFeatureParityTest {
             buildJsonObject { put("seen", input.jsonObject["value"] ?: JsonPrimitive("missing")) }
         }
 
-        val output = tool.executor.invoke(
-            ToolExecutionContext(
-                context = Unit,
-                abortSignal = AbortSignalNever,
-                stepNumber = 1,
-                messages = emptyList(),
-                toolCallId = "call_1",
-            ),
-            buildJsonObject { put("value", JsonPrimitive("ok")) },
+        val ctx = ToolExecutionContext(
+            context = Unit,
+            abortSignal = AbortSignalNever,
+            stepNumber = 1,
+            messages = emptyList(),
+            toolCallId = "call_1",
         )
-        val values = drainAllItems(output)
+        val value = with(tool) { ctx.execute(buildJsonObject { put("value", JsonPrimitive("ok")) }) }
 
         assertEquals("runtimeTool", tool.name)
         assertEquals(schema, asSchema(schema))
-        assertEquals(JsonPrimitive("ok"), values.single().jsonObject["seen"])
+        assertEquals(JsonPrimitive("ok"), value.jsonObject["seen"])
     }
 
     @Test

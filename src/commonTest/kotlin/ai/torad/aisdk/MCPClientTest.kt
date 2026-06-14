@@ -92,23 +92,21 @@ class MCPClientTest {
 
         val toolSet = client.tools<Unit>()
         val echoTool = toolSet.byName["echo"].asJsonTool()
-        val output = echoTool.executor(
-            ToolExecutionContext(
-                context = Unit,
-                abortSignal = AbortSignalNever,
-                stepNumber = 0,
-                messages = emptyList(),
-                toolCallId = "call_1",
-            ),
-            buildJsonObject { put("message", JsonPrimitive("hi")) },
-        ).toList().single()
+        val echoCtx = ToolExecutionContext(
+            context = Unit,
+            abortSignal = AbortSignalNever,
+            stepNumber = 0,
+            messages = emptyList(),
+            toolCallId = "call_1",
+        )
+        val output = with(echoTool) { echoCtx.execute(buildJsonObject { put("message", JsonPrimitive("hi")) }) }
 
         assertEquals("echo", echoTool.name)
         assertEquals("Echo a message", echoTool.description)
         val descriptorSchema = Json.parseToJsonElement(toolSet.descriptors.single().parametersSchemaJson).jsonObject
         assertEquals(JsonPrimitive(false), descriptorSchema["additionalProperties"])
 
-        val modelOutput = echoTool.toModelOutput!!.invoke(
+        val modelOutput = echoTool.toModelOutput(
             output,
             ToolPredicateOptions(toolCallId = "call_1", messages = emptyList(), experimental_context = Unit),
         )
@@ -162,10 +160,10 @@ class MCPClientTest {
 
         assertEquals(setOf("weather"), toolSet.byName.keys)
         val weather = toolSet.byName["weather"].asJsonTool()
-        val output = weather.executor(
-            ToolExecutionContext(Unit, AbortSignalNever, 0, emptyList(), "call_1"),
-            buildJsonObject { put("city", JsonPrimitive("Austin")) },
-        ).toList().single().jsonObject
+        val weatherCtx = ToolExecutionContext(Unit, AbortSignalNever, 0, emptyList(), "call_1")
+        val output = with(weather) {
+            weatherCtx.execute(buildJsonObject { put("city", JsonPrimitive("Austin")) })
+        }.jsonObject
 
         assertEquals(72, output["temperature"]!!.jsonPrimitive.content.toInt())
         assertTrue(
