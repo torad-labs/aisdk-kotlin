@@ -75,133 +75,93 @@ public data class AmazonBedrockProviderSettings(
     val generateId: () -> String = { IdGenerator.generate() },
 )
 
-public interface AmazonBedrockProvider : Provider {
-    public val settings: AmazonBedrockProviderSettings
-    public val tools: AnthropicTools
+/** Default Bedrock output budget added to the thinking budget when maxOutputTokens is unset. */
+private const val DEFAULT_BEDROCK_MAX_TOKENS: Int = 4096
+
+public class AmazonBedrockProvider(
+    private val client: HttpClient,
+    public val settings: AmazonBedrockProviderSettings,
+) : Provider {
+    override val providerId: String = "amazon-bedrock"
+    public val tools: AnthropicTools = anthropicTools
 
     public operator fun invoke(modelId: BedrockChatModelId): LanguageModel = languageModel(modelId)
-    public fun embedding(modelId: BedrockEmbeddingModelId): EmbeddingModel
+
+    override fun languageModel(modelId: String): LanguageModel =
+        BedrockChatLanguageModel(client, settings, modelId, "amazon-bedrock")
+
+    public fun embedding(modelId: BedrockEmbeddingModelId): EmbeddingModel =
+        BedrockEmbeddingModel(client, settings, modelId)
+
     public fun textEmbedding(modelId: BedrockEmbeddingModelId): EmbeddingModel = embedding(modelId)
     public fun textEmbeddingModel(modelId: BedrockEmbeddingModelId): EmbeddingModel = embedding(modelId)
-    public fun image(modelId: BedrockImageModelId): ImageModel
-    public fun reranking(modelId: BedrockRerankingModelId): RerankingModel
+
+    public fun image(modelId: BedrockImageModelId): ImageModel =
+        BedrockImageModel(client, settings, modelId)
+
+    public fun reranking(modelId: BedrockRerankingModelId): RerankingModel =
+        BedrockRerankingModel(client, settings, modelId)
 
     override fun embeddingModel(modelId: String): EmbeddingModel = embedding(modelId)
     override fun imageModel(modelId: String): ImageModel = image(modelId)
     override fun rerankingModel(modelId: String): RerankingModel = reranking(modelId)
 }
 
-/** Default Bedrock output budget added to the thinking budget when maxOutputTokens is unset. */
-private const val DEFAULT_BEDROCK_MAX_TOKENS: Int = 4096
-
-public fun createAmazonBedrock(
+/** PascalCase factory — mirrors the OpenAI(...) reference faux-constructor. */
+public fun AmazonBedrock(
     client: HttpClient,
     settings: AmazonBedrockProviderSettings = AmazonBedrockProviderSettings(),
-): AmazonBedrockProvider = DefaultAmazonBedrockProvider(client, settings)
-
-public val bedrock: AmazonBedrockProvider = object : AmazonBedrockProvider {
-    override val providerId: String = "amazon-bedrock"
-    override val settings: AmazonBedrockProviderSettings = AmazonBedrockProviderSettings()
-    override val tools: AnthropicTools = anthropicTools
-    override fun languageModel(modelId: String): LanguageModel =
-        throw AiSdkRuntimeException("Amazon Bedrock provider is not configured. Use createAmazonBedrock(client, settings).")
-    override fun embedding(modelId: String): EmbeddingModel =
-        throw AiSdkRuntimeException("Amazon Bedrock provider is not configured. Use createAmazonBedrock(client, settings).")
-    override fun image(modelId: String): ImageModel =
-        throw AiSdkRuntimeException("Amazon Bedrock provider is not configured. Use createAmazonBedrock(client, settings).")
-    override fun reranking(modelId: String): RerankingModel =
-        throw AiSdkRuntimeException("Amazon Bedrock provider is not configured. Use createAmazonBedrock(client, settings).")
-}
-
-private class DefaultAmazonBedrockProvider(
-    private val client: HttpClient,
-    override val settings: AmazonBedrockProviderSettings,
-) : AmazonBedrockProvider {
-    override val providerId: String = "amazon-bedrock"
-    override val tools: AnthropicTools = anthropicTools
-
-    override fun languageModel(modelId: String): LanguageModel =
-        BedrockChatLanguageModel(client, settings, modelId, "amazon-bedrock")
-
-    override fun embedding(modelId: String): EmbeddingModel =
-        BedrockEmbeddingModel(client, settings, modelId)
-
-    override fun image(modelId: String): ImageModel =
-        BedrockImageModel(client, settings, modelId)
-
-    override fun reranking(modelId: String): RerankingModel =
-        BedrockRerankingModel(client, settings, modelId)
-}
-
-public interface BedrockAnthropicProvider : Provider {
-    public val settings: AmazonBedrockProviderSettings
-    public val tools: AnthropicTools
-
-    public operator fun invoke(modelId: BedrockAnthropicModelId): LanguageModel = languageModel(modelId)
-    public fun textEmbeddingModel(modelId: String): Nothing = throw NoSuchModelError(providerId, "embeddingModel", modelId)
-}
+): AmazonBedrockProvider = AmazonBedrockProvider(client, settings)
 
 public typealias BedrockAnthropicProviderSettings = AmazonBedrockProviderSettings
 
-public fun createBedrockAnthropic(
-    client: HttpClient,
-    settings: BedrockAnthropicProviderSettings = BedrockAnthropicProviderSettings(),
-): BedrockAnthropicProvider = DefaultBedrockAnthropicProvider(client, settings)
-
-public val bedrockAnthropic: BedrockAnthropicProvider = object : BedrockAnthropicProvider {
-    override val providerId: String = "bedrock.anthropic"
-    override val settings: AmazonBedrockProviderSettings = AmazonBedrockProviderSettings()
-    override val tools: AnthropicTools = anthropicTools
-    override fun languageModel(modelId: String): LanguageModel =
-        throw AiSdkRuntimeException("Bedrock Anthropic provider is not configured. Use createBedrockAnthropic(client, settings).")
-}
-
-private class DefaultBedrockAnthropicProvider(
+public class BedrockAnthropicProvider(
     private val client: HttpClient,
-    override val settings: AmazonBedrockProviderSettings,
-) : BedrockAnthropicProvider {
+    public val settings: AmazonBedrockProviderSettings,
+) : Provider {
     override val providerId: String = "bedrock.anthropic"
-    override val tools: AnthropicTools = anthropicTools
+    public val tools: AnthropicTools = anthropicTools
+
+    public operator fun invoke(modelId: BedrockAnthropicModelId): LanguageModel = languageModel(modelId)
+
     override fun languageModel(modelId: String): LanguageModel =
         BedrockChatLanguageModel(client, settings, modelId, "bedrock.anthropic.messages")
-}
 
-public interface BedrockMantleProvider : Provider {
-    public val settings: AmazonBedrockProviderSettings
-
-    public operator fun invoke(modelId: BedrockMantleChatModelId): LanguageModel = chat(modelId)
-    public fun chat(modelId: BedrockMantleChatModelId): LanguageModel
-    public fun responses(modelId: BedrockMantleResponsesModelId): LanguageModel
     public fun textEmbeddingModel(modelId: String): Nothing = throw NoSuchModelError(providerId, "embeddingModel", modelId)
 }
 
+/** PascalCase factory — mirrors the OpenAI(...) reference faux-constructor. */
+public fun BedrockAnthropic(
+    client: HttpClient,
+    settings: BedrockAnthropicProviderSettings = BedrockAnthropicProviderSettings(),
+): BedrockAnthropicProvider = BedrockAnthropicProvider(client, settings)
+
 public typealias BedrockMantleProviderSettings = AmazonBedrockProviderSettings
 
-public fun createBedrockMantle(
+public class BedrockMantleProvider(
+    private val client: HttpClient,
+    public val settings: AmazonBedrockProviderSettings,
+) : Provider {
+    override val providerId: String = "bedrock-mantle"
+
+    public operator fun invoke(modelId: BedrockMantleChatModelId): LanguageModel = chat(modelId)
+
+    override fun languageModel(modelId: String): LanguageModel = chat(modelId)
+
+    public fun chat(modelId: BedrockMantleChatModelId): LanguageModel =
+        BedrockMantleChatLanguageModel(client, settings, modelId, "bedrock-mantle.chat", "/chat/completions")
+
+    public fun responses(modelId: BedrockMantleResponsesModelId): LanguageModel =
+        BedrockMantleChatLanguageModel(client, settings, modelId, "bedrock-mantle.responses", "/responses")
+
+    public fun textEmbeddingModel(modelId: String): Nothing = throw NoSuchModelError(providerId, "embeddingModel", modelId)
+}
+
+/** PascalCase factory — mirrors the OpenAI(...) reference faux-constructor. */
+public fun BedrockMantle(
     client: HttpClient,
     settings: BedrockMantleProviderSettings = BedrockMantleProviderSettings(),
-): BedrockMantleProvider = DefaultBedrockMantleProvider(client, settings)
-
-public val bedrockMantle: BedrockMantleProvider = object : BedrockMantleProvider {
-    override val providerId: String = "bedrock-mantle"
-    override val settings: AmazonBedrockProviderSettings = AmazonBedrockProviderSettings()
-    override fun languageModel(modelId: String): LanguageModel =
-        throw AiSdkRuntimeException("Bedrock Mantle provider is not configured. Use createBedrockMantle(client, settings).")
-    override fun chat(modelId: String): LanguageModel = languageModel(modelId)
-    override fun responses(modelId: String): LanguageModel = languageModel(modelId)
-}
-
-private class DefaultBedrockMantleProvider(
-    private val client: HttpClient,
-    override val settings: AmazonBedrockProviderSettings,
-) : BedrockMantleProvider {
-    override val providerId: String = "bedrock-mantle"
-    override fun languageModel(modelId: String): LanguageModel = chat(modelId)
-    override fun chat(modelId: String): LanguageModel =
-        BedrockMantleChatLanguageModel(client, settings, modelId, "bedrock-mantle.chat", "/chat/completions")
-    override fun responses(modelId: String): LanguageModel =
-        BedrockMantleChatLanguageModel(client, settings, modelId, "bedrock-mantle.responses", "/responses")
-}
+): BedrockMantleProvider = BedrockMantleProvider(client, settings)
 
 private class BedrockChatLanguageModel(
     private val client: HttpClient,
@@ -293,9 +253,10 @@ private class BedrockEmbeddingModel(
     override suspend fun embed(params: EmbeddingModelCallParams): EmbeddingModelResult {
         params.abortSignal.throwIfAborted()
         if (params.values.size > 1) {
-            throw AiSdkRuntimeException("Amazon Bedrock embedding models support maxEmbeddingsPerCall=1. Received ${params.values.size} values.")
+            throw TooManyEmbeddingValuesForCallError(provider, modelId, maxEmbeddingsPerCall, params.values)
         }
-        val value = params.values.singleOrNull() ?: throw AiSdkRuntimeException("Amazon Bedrock embedding requires one value.")
+        val value = params.values.singleOrNull()
+            ?: throw InvalidArgumentError("values", "Amazon Bedrock embedding requires one value.")
         val options = params.providerOptions["bedrock"] as? JsonObject ?: JsonObject(emptyMap())
         val body = bedrockEmbeddingBody(modelId, value, options)
         val response = bedrockPostJson(
@@ -338,7 +299,7 @@ private class BedrockImageModel(
         )
         val obj = response.value.jsonObject
         if (obj["status"]?.jsonPrimitive?.contentOrNull == "Request Moderated") {
-            throw AiSdkRuntimeException("Amazon Bedrock request was moderated: ${obj["details"] ?: "Unknown"}")
+            throw NoImageGeneratedError("Amazon Bedrock request was moderated: ${obj["details"] ?: "Unknown"}")
         }
         val images = (obj["images"] as? JsonArray).orEmpty().map {
             GeneratedFile(mediaType = "image/png", base64 = it.jsonPrimitive.content)

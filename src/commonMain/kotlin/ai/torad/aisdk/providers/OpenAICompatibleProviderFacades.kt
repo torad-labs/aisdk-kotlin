@@ -58,18 +58,33 @@ public data class DeepSeekLanguageModelOptions(
 public typealias DeepSeekChatOptions = DeepSeekLanguageModelOptions
 public typealias DeepSeekErrorData = JsonElement
 
-public interface DeepSeekProvider : Provider {
+public class DeepSeekProvider(
+    client: HttpClient,
+    settings: DeepSeekProviderSettings,
+) : Provider {
+    private val compatible = createOpenAICompatible(
+        client,
+        settings.toCompatible("deepseek", DEEPSEEK_VERSION, supportsStructuredOutputs = true),
+    )
+    override val providerId: String = "deepseek"
+
     public operator fun invoke(modelId: String): LanguageModel = languageModel(modelId)
-    public fun chat(modelId: String): LanguageModel
+    override fun languageModel(modelId: String): LanguageModel = chat(modelId)
+    public fun chat(modelId: String): LanguageModel = compatible.chatModel(modelId)
     public fun textEmbeddingModel(modelId: String): Nothing = throw NoSuchModelError(providerId, "embeddingModel", modelId)
+    override fun embeddingModel(modelId: String): EmbeddingModel = throw NoSuchModelError(providerId, "embeddingModel", modelId)
+    override fun imageModel(modelId: String): ImageModel = throw NoSuchModelError(providerId, "imageModel", modelId)
 }
+
+public fun DeepSeek(
+    client: HttpClient,
+    settings: DeepSeekProviderSettings = DeepSeekProviderSettings(),
+): DeepSeekProvider = DeepSeekProvider(client, settings)
 
 public fun createDeepSeek(
     client: HttpClient,
     settings: DeepSeekProviderSettings = DeepSeekProviderSettings(),
-): DeepSeekProvider = DefaultDeepSeekProvider(client, settings)
-
-public val deepseek: DeepSeekProvider = providerNotConfigured("DeepSeek", "deepseek")
+): DeepSeekProvider = DeepSeekProvider(client, settings)
 
 @Serializable
 public data class CerebrasProviderSettings(
@@ -86,18 +101,33 @@ public data class CerebrasErrorData(
     val code: String? = null,
 )
 
-public interface CerebrasProvider : Provider {
+public class CerebrasProvider(
+    client: HttpClient,
+    settings: CerebrasProviderSettings,
+) : Provider {
+    private val compatible = createOpenAICompatible(
+        client,
+        settings.toCompatible("cerebras", CEREBRAS_VERSION, supportsStructuredOutputs = true),
+    )
+    override val providerId: String = "cerebras"
+
     public operator fun invoke(modelId: String): LanguageModel = languageModel(modelId)
-    public fun chat(modelId: String): LanguageModel
+    override fun languageModel(modelId: String): LanguageModel = chat(modelId)
+    public fun chat(modelId: String): LanguageModel = compatible.chatModel(modelId)
     public fun textEmbeddingModel(modelId: String): Nothing = throw NoSuchModelError(providerId, "embeddingModel", modelId)
+    override fun embeddingModel(modelId: String): EmbeddingModel = throw NoSuchModelError(providerId, "embeddingModel", modelId)
+    override fun imageModel(modelId: String): ImageModel = throw NoSuchModelError(providerId, "imageModel", modelId)
 }
+
+public fun Cerebras(
+    client: HttpClient,
+    settings: CerebrasProviderSettings = CerebrasProviderSettings(),
+): CerebrasProvider = CerebrasProvider(client, settings)
 
 public fun createCerebras(
     client: HttpClient,
     settings: CerebrasProviderSettings = CerebrasProviderSettings(),
-): CerebrasProvider = DefaultCerebrasProvider(client, settings)
-
-public val cerebras: CerebrasProvider = providerNotConfigured("Cerebras", "cerebras")
+): CerebrasProvider = CerebrasProvider(client, settings)
 
 public typealias DeepInfraChatModelId = String
 public typealias DeepInfraCompletionModelId = String
@@ -112,20 +142,43 @@ public data class DeepInfraProviderSettings(
     val headers: Map<String, String> = emptyMap(),
 )
 
-public interface DeepInfraProvider : Provider {
+public class DeepInfraProvider(
+    private val client: HttpClient,
+    private val settings: DeepInfraProviderSettings,
+) : Provider {
+    private val compatible = createOpenAICompatible(
+        client,
+        compatibleSettings(
+            name = "deepinfra",
+            version = DEEPINFRA_VERSION,
+            baseURL = "${settings.baseURL.trimEnd('/')}/openai",
+            apiKey = settings.apiKey,
+            headers = settings.headers,
+            includeUsage = false,
+            supportsStructuredOutputs = false,
+        ),
+    )
+    override val providerId: String = "deepinfra"
+
     public operator fun invoke(modelId: DeepInfraChatModelId): LanguageModel = languageModel(modelId)
-    public fun chatModel(modelId: DeepInfraChatModelId): LanguageModel
-    public fun completionModel(modelId: DeepInfraCompletionModelId): LanguageModel
+    override fun languageModel(modelId: String): LanguageModel = chatModel(modelId)
+    public fun chatModel(modelId: DeepInfraChatModelId): LanguageModel = DeepInfraChatLanguageModel(compatible.chatModel(modelId))
+    public fun completionModel(modelId: DeepInfraCompletionModelId): LanguageModel = compatible.completionModel(modelId)
     public fun textEmbeddingModel(modelId: DeepInfraEmbeddingModelId): EmbeddingModel = embeddingModel(modelId)
     public fun image(modelId: DeepInfraImageModelId): ImageModel = imageModel(modelId)
+    override fun embeddingModel(modelId: String): EmbeddingModel = compatible.embeddingModel(modelId)
+    override fun imageModel(modelId: String): ImageModel = DeepInfraImageModel(client, settings, modelId)
 }
+
+public fun DeepInfra(
+    client: HttpClient,
+    settings: DeepInfraProviderSettings = DeepInfraProviderSettings(),
+): DeepInfraProvider = DeepInfraProvider(client, settings)
 
 public fun createDeepInfra(
     client: HttpClient,
     settings: DeepInfraProviderSettings = DeepInfraProviderSettings(),
-): DeepInfraProvider = DefaultDeepInfraProvider(client, settings)
-
-public val deepinfra: DeepInfraProvider = providerNotConfigured("DeepInfra", "deepinfra")
+): DeepInfraProvider = DeepInfraProvider(client, settings)
 
 public typealias FireworksChatModelId = String
 public typealias FireworksCompletionModelId = String
@@ -166,20 +219,35 @@ public data class FireworksProviderSettings(
     val headers: Map<String, String> = emptyMap(),
 )
 
-public interface FireworksProvider : Provider {
+public class FireworksProvider(
+    private val client: HttpClient,
+    private val settings: FireworksProviderSettings,
+) : Provider {
+    private val compatible = createOpenAICompatible(
+        client,
+        settings.toCompatible("fireworks", FIREWORKS_VERSION),
+    )
+    override val providerId: String = "fireworks"
+
     public operator fun invoke(modelId: FireworksChatModelId): LanguageModel = languageModel(modelId)
-    public fun chatModel(modelId: FireworksChatModelId): LanguageModel
-    public fun completionModel(modelId: FireworksCompletionModelId): LanguageModel
+    override fun languageModel(modelId: String): LanguageModel = chatModel(modelId)
+    public fun chatModel(modelId: FireworksChatModelId): LanguageModel = FireworksLanguageModel(compatible.chatModel(modelId))
+    public fun completionModel(modelId: FireworksCompletionModelId): LanguageModel = compatible.completionModel(modelId)
     public fun textEmbeddingModel(modelId: FireworksEmbeddingModelId): EmbeddingModel = embeddingModel(modelId)
     public fun image(modelId: FireworksImageModelId): ImageModel = imageModel(modelId)
+    override fun embeddingModel(modelId: String): EmbeddingModel = compatible.embeddingModel(modelId)
+    override fun imageModel(modelId: String): ImageModel = FireworksImageModel(client, settings, modelId)
 }
+
+public fun Fireworks(
+    client: HttpClient,
+    settings: FireworksProviderSettings = FireworksProviderSettings(),
+): FireworksProvider = FireworksProvider(client, settings)
 
 public fun createFireworks(
     client: HttpClient,
     settings: FireworksProviderSettings = FireworksProviderSettings(),
-): FireworksProvider = DefaultFireworksProvider(client, settings)
-
-public val fireworks: FireworksProvider = providerNotConfigured("Fireworks", "fireworks")
+): FireworksProvider = FireworksProvider(client, settings)
 
 @Serializable
 public data class PerplexityProviderSettings(
@@ -188,17 +256,32 @@ public data class PerplexityProviderSettings(
     val headers: Map<String, String> = emptyMap(),
 )
 
-public interface PerplexityProvider : Provider {
+public class PerplexityProvider(
+    client: HttpClient,
+    settings: PerplexityProviderSettings,
+) : Provider {
+    private val compatible = createOpenAICompatible(
+        client,
+        settings.toCompatible("perplexity", PERPLEXITY_VERSION, supportsStructuredOutputs = true),
+    )
+    override val providerId: String = "perplexity"
+
     public operator fun invoke(modelId: String): LanguageModel = languageModel(modelId)
+    override fun languageModel(modelId: String): LanguageModel = compatible.chatModel(modelId)
     public fun textEmbeddingModel(modelId: String): Nothing = throw NoSuchModelError(providerId, "embeddingModel", modelId)
+    override fun embeddingModel(modelId: String): EmbeddingModel = throw NoSuchModelError(providerId, "embeddingModel", modelId)
+    override fun imageModel(modelId: String): ImageModel = throw NoSuchModelError(providerId, "imageModel", modelId)
 }
+
+public fun Perplexity(
+    client: HttpClient,
+    settings: PerplexityProviderSettings = PerplexityProviderSettings(),
+): PerplexityProvider = PerplexityProvider(client, settings)
 
 public fun createPerplexity(
     client: HttpClient,
     settings: PerplexityProviderSettings = PerplexityProviderSettings(),
-): PerplexityProvider = DefaultPerplexityProvider(client, settings)
-
-public val perplexity: PerplexityProvider = providerNotConfigured("Perplexity", "perplexity")
+): PerplexityProvider = PerplexityProvider(client, settings)
 
 public typealias MoonshotAIChatModelId = String
 
@@ -216,17 +299,32 @@ public data class MoonshotAILanguageModelOptions(
 
 public typealias MoonshotAIProviderOptions = MoonshotAILanguageModelOptions
 
-public interface MoonshotAIProvider : Provider {
+public class MoonshotAIProvider(
+    client: HttpClient,
+    settings: MoonshotAIProviderSettings,
+) : Provider {
+    private val compatible = createOpenAICompatible(
+        client,
+        settings.toCompatible("moonshotai", MOONSHOTAI_VERSION, includeUsage = true),
+    )
+    override val providerId: String = "moonshotai"
+
     public operator fun invoke(modelId: MoonshotAIChatModelId): LanguageModel = languageModel(modelId)
-    public fun chatModel(modelId: MoonshotAIChatModelId): LanguageModel
+    override fun languageModel(modelId: String): LanguageModel = chatModel(modelId)
+    public fun chatModel(modelId: MoonshotAIChatModelId): LanguageModel = compatible.chatModel(modelId)
+    override fun embeddingModel(modelId: String): EmbeddingModel = throw NoSuchModelError(providerId, "embeddingModel", modelId)
+    override fun imageModel(modelId: String): ImageModel = throw NoSuchModelError(providerId, "imageModel", modelId)
 }
+
+public fun MoonshotAI(
+    client: HttpClient,
+    settings: MoonshotAIProviderSettings = MoonshotAIProviderSettings(),
+): MoonshotAIProvider = MoonshotAIProvider(client, settings)
 
 public fun createMoonshotAI(
     client: HttpClient,
     settings: MoonshotAIProviderSettings = MoonshotAIProviderSettings(),
-): MoonshotAIProvider = DefaultMoonshotAIProvider(client, settings)
-
-public val moonshotai: MoonshotAIProvider = providerNotConfigured("MoonshotAI", "moonshotai")
+): MoonshotAIProvider = MoonshotAIProvider(client, settings)
 
 @Serializable
 public data class GroqProviderSettings(
@@ -250,21 +348,36 @@ public data class GroqTranscriptionModelOptions(
     val responseFormat: String? = null,
 )
 
-public interface GroqProvider : Provider {
-    public val tools: GroqTools
+public class GroqProvider(
+    client: HttpClient,
+    settings: GroqProviderSettings,
+) : Provider {
+    private val compatible = createOpenAICompatible(
+        client,
+        settings.toCompatible("groq", GROQ_VERSION, includeUsage = true),
+    )
+    override val providerId: String = "groq"
+    public val tools: GroqTools = GroqTools()
 
     public operator fun invoke(modelId: String): LanguageModel = languageModel(modelId)
-    public fun chat(modelId: String): LanguageModel
-    public fun transcription(modelId: String): TranscriptionModel
+    override fun languageModel(modelId: String): LanguageModel = chat(modelId)
+    public fun chat(modelId: String): LanguageModel = compatible.chatModel(modelId)
+    public fun transcription(modelId: String): TranscriptionModel = compatible.transcriptionModel(modelId)
     public fun textEmbeddingModel(modelId: String): Nothing = throw NoSuchModelError(providerId, "embeddingModel", modelId)
-
     override fun transcriptionModel(modelId: String): TranscriptionModel = transcription(modelId)
+    override fun embeddingModel(modelId: String): EmbeddingModel = throw NoSuchModelError(providerId, "embeddingModel", modelId)
+    override fun imageModel(modelId: String): ImageModel = throw NoSuchModelError(providerId, "imageModel", modelId)
 }
+
+public fun Groq(
+    client: HttpClient,
+    settings: GroqProviderSettings = GroqProviderSettings(),
+): GroqProvider = GroqProvider(client, settings)
 
 public fun createGroq(
     client: HttpClient,
     settings: GroqProviderSettings = GroqProviderSettings(),
-): GroqProvider = DefaultGroqProvider(client, settings)
+): GroqProvider = GroqProvider(client, settings)
 
 private val groqBrowserSearchTool: Tool<JsonElement, JsonElement, Any?> = ProviderExecutedTool(
     name = "browserSearch",
@@ -279,8 +392,6 @@ public data class GroqTools(
 )
 
 public val browserSearch: Tool<JsonElement, JsonElement, Any?> = groqBrowserSearchTool
-
-public val groq: GroqProvider = providerNotConfigured("Groq", "groq")
 
 public typealias TogetherAIChatModelId = String
 public typealias TogetherAICompletionModelId = String
@@ -314,21 +425,37 @@ public data class TogetherAIProviderSettings(
     val headers: Map<String, String> = emptyMap(),
 )
 
-public interface TogetherAIProvider : Provider {
+public class TogetherAIProvider(
+    private val client: HttpClient,
+    private val settings: TogetherAIProviderSettings,
+) : Provider {
+    private val compatible = createOpenAICompatible(
+        client,
+        settings.toCompatible("togetherai", TOGETHERAI_VERSION),
+    )
+    override val providerId: String = "togetherai"
+
     public operator fun invoke(modelId: TogetherAIChatModelId): LanguageModel = languageModel(modelId)
-    public fun chatModel(modelId: TogetherAIChatModelId): LanguageModel
-    public fun completionModel(modelId: TogetherAICompletionModelId): LanguageModel
+    override fun languageModel(modelId: String): LanguageModel = chatModel(modelId)
+    public fun chatModel(modelId: TogetherAIChatModelId): LanguageModel = compatible.chatModel(modelId)
+    public fun completionModel(modelId: TogetherAICompletionModelId): LanguageModel = compatible.completionModel(modelId)
     public fun textEmbeddingModel(modelId: TogetherAIEmbeddingModelId): EmbeddingModel = embeddingModel(modelId)
     public fun image(modelId: TogetherAIImageModelId): ImageModel = imageModel(modelId)
     public fun reranking(modelId: TogetherAIRerankingModelId): RerankingModel = rerankingModel(modelId)
+    override fun embeddingModel(modelId: String): EmbeddingModel = compatible.embeddingModel(modelId)
+    override fun imageModel(modelId: String): ImageModel = TogetherAIImageModel(client, settings, modelId)
+    override fun rerankingModel(modelId: String): RerankingModel = TogetherAIRerankingModel(client, settings, modelId)
 }
+
+public fun TogetherAI(
+    client: HttpClient,
+    settings: TogetherAIProviderSettings = TogetherAIProviderSettings(),
+): TogetherAIProvider = TogetherAIProvider(client, settings)
 
 public fun createTogetherAI(
     client: HttpClient,
     settings: TogetherAIProviderSettings = TogetherAIProviderSettings(),
-): TogetherAIProvider = DefaultTogetherAIProvider(client, settings)
-
-public val togetherai: TogetherAIProvider = providerNotConfigured("TogetherAI", "togetherai")
+): TogetherAIProvider = TogetherAIProvider(client, settings)
 
 public typealias VercelChatModelId = String
 public typealias VercelErrorData = JsonElement
@@ -340,17 +467,32 @@ public data class VercelProviderSettings(
     val headers: Map<String, String> = emptyMap(),
 )
 
-public interface VercelProvider : Provider {
+public class VercelProvider(
+    client: HttpClient,
+    settings: VercelProviderSettings,
+) : Provider {
+    private val compatible = createOpenAICompatible(
+        client,
+        settings.toCompatible("vercel", VERCEL_VERSION),
+    )
+    override val providerId: String = "vercel"
+
     public operator fun invoke(modelId: VercelChatModelId): LanguageModel = languageModel(modelId)
+    override fun languageModel(modelId: String): LanguageModel = compatible.chatModel(modelId)
     public fun textEmbeddingModel(modelId: String): Nothing = throw NoSuchModelError(providerId, "embeddingModel", modelId)
+    override fun embeddingModel(modelId: String): EmbeddingModel = throw NoSuchModelError(providerId, "embeddingModel", modelId)
+    override fun imageModel(modelId: String): ImageModel = throw NoSuchModelError(providerId, "imageModel", modelId)
 }
+
+public fun Vercel(
+    client: HttpClient,
+    settings: VercelProviderSettings = VercelProviderSettings(),
+): VercelProvider = VercelProvider(client, settings)
 
 public fun createVercel(
     client: HttpClient,
     settings: VercelProviderSettings = VercelProviderSettings(),
-): VercelProvider = DefaultVercelProvider(client, settings)
-
-public val vercel: VercelProvider = providerNotConfigured("Vercel", "vercel")
+): VercelProvider = VercelProvider(client, settings)
 
 public typealias BasetenChatModelId = String
 public typealias BasetenEmbeddingModelId = String
@@ -373,199 +515,32 @@ public data class BasetenProviderSettings(
     val headers: Map<String, String> = emptyMap(),
 )
 
-public interface BasetenProvider : Provider {
-    public operator fun invoke(): LanguageModel = chatModel()
-    public operator fun invoke(modelId: BasetenChatModelId): LanguageModel = chatModel(modelId)
-    public fun chatModel(): LanguageModel
-    public fun chatModel(modelId: BasetenChatModelId): LanguageModel
-    public fun languageModel(): LanguageModel = chatModel()
-    override fun languageModel(modelId: String): LanguageModel = chatModel(modelId)
-    public fun embeddingModel(): EmbeddingModel
-    override fun embeddingModel(modelId: String): EmbeddingModel
-    public fun textEmbeddingModel(): EmbeddingModel = embeddingModel()
-    public fun textEmbeddingModel(modelId: BasetenEmbeddingModelId): EmbeddingModel = embeddingModel(modelId)
-}
-
-public fun createBaseten(
-    client: HttpClient,
-    settings: BasetenProviderSettings = BasetenProviderSettings(),
-): BasetenProvider = DefaultBasetenProvider(client, settings)
-
-public val baseten: BasetenProvider = object : BasetenProvider {
-    override val providerId: String = "baseten"
-    override fun chatModel(): LanguageModel =
-        throw AiSdkRuntimeException("Baseten provider is not configured. Use createBaseten(client, settings).")
-    override fun chatModel(modelId: String): LanguageModel = chatModel()
-    override fun embeddingModel(): EmbeddingModel =
-        throw AiSdkRuntimeException("Baseten provider is not configured. Use createBaseten(client, settings).")
-    override fun embeddingModel(modelId: String): EmbeddingModel = embeddingModel()
-    override fun imageModel(modelId: String): ImageModel = throw NoSuchModelError(providerId, "imageModel", modelId)
-}
-
-private class DefaultDeepSeekProvider(
-    client: HttpClient,
-    private val settings: DeepSeekProviderSettings,
-) : DeepSeekProvider {
-    private val compatible = createOpenAICompatible(
-        client,
-        settings.toCompatible("deepseek", DEEPSEEK_VERSION, supportsStructuredOutputs = true),
-    )
-    override val providerId: String = "deepseek"
-    override fun languageModel(modelId: String): LanguageModel = chat(modelId)
-    override fun chat(modelId: String): LanguageModel = compatible.chatModel(modelId)
-    override fun embeddingModel(modelId: String): EmbeddingModel = throw NoSuchModelError(providerId, "embeddingModel", modelId)
-    override fun imageModel(modelId: String): ImageModel = throw NoSuchModelError(providerId, "imageModel", modelId)
-}
-
-private class DefaultCerebrasProvider(
-    client: HttpClient,
-    private val settings: CerebrasProviderSettings,
-) : CerebrasProvider {
-    private val compatible = createOpenAICompatible(
-        client,
-        settings.toCompatible("cerebras", CEREBRAS_VERSION, supportsStructuredOutputs = true),
-    )
-    override val providerId: String = "cerebras"
-    override fun languageModel(modelId: String): LanguageModel = chat(modelId)
-    override fun chat(modelId: String): LanguageModel = compatible.chatModel(modelId)
-    override fun embeddingModel(modelId: String): EmbeddingModel = throw NoSuchModelError(providerId, "embeddingModel", modelId)
-    override fun imageModel(modelId: String): ImageModel = throw NoSuchModelError(providerId, "imageModel", modelId)
-}
-
-private class DefaultDeepInfraProvider(
-    private val client: HttpClient,
-    private val settings: DeepInfraProviderSettings,
-) : DeepInfraProvider {
-    private val compatible = createOpenAICompatible(
-        client,
-        compatibleSettings(
-            name = "deepinfra",
-            version = DEEPINFRA_VERSION,
-            baseURL = "${settings.baseURL.trimEnd('/')}/openai",
-            apiKey = settings.apiKey,
-            headers = settings.headers,
-            includeUsage = false,
-            supportsStructuredOutputs = false,
-        ),
-    )
-    override val providerId: String = "deepinfra"
-    override fun languageModel(modelId: String): LanguageModel = chatModel(modelId)
-    override fun chatModel(modelId: String): LanguageModel = DeepInfraChatLanguageModel(compatible.chatModel(modelId))
-    override fun completionModel(modelId: String): LanguageModel = compatible.completionModel(modelId)
-    override fun embeddingModel(modelId: String): EmbeddingModel = compatible.embeddingModel(modelId)
-    override fun imageModel(modelId: String): ImageModel = DeepInfraImageModel(client, settings, modelId)
-}
-
-private class DefaultFireworksProvider(
-    private val client: HttpClient,
-    private val settings: FireworksProviderSettings,
-) : FireworksProvider {
-    private val compatible = createOpenAICompatible(
-        client,
-        settings.toCompatible("fireworks", FIREWORKS_VERSION),
-    )
-    override val providerId: String = "fireworks"
-    override fun languageModel(modelId: String): LanguageModel = chatModel(modelId)
-    override fun chatModel(modelId: String): LanguageModel = FireworksLanguageModel(compatible.chatModel(modelId))
-    override fun completionModel(modelId: String): LanguageModel = compatible.completionModel(modelId)
-    override fun embeddingModel(modelId: String): EmbeddingModel = compatible.embeddingModel(modelId)
-    override fun imageModel(modelId: String): ImageModel = FireworksImageModel(client, settings, modelId)
-}
-
-private class DefaultPerplexityProvider(
-    client: HttpClient,
-    private val settings: PerplexityProviderSettings,
-) : PerplexityProvider {
-    private val compatible = createOpenAICompatible(
-        client,
-        settings.toCompatible("perplexity", PERPLEXITY_VERSION, supportsStructuredOutputs = true),
-    )
-    override val providerId: String = "perplexity"
-    override fun languageModel(modelId: String): LanguageModel = compatible.chatModel(modelId)
-    override fun embeddingModel(modelId: String): EmbeddingModel = throw NoSuchModelError(providerId, "embeddingModel", modelId)
-    override fun imageModel(modelId: String): ImageModel = throw NoSuchModelError(providerId, "imageModel", modelId)
-}
-
-private class DefaultMoonshotAIProvider(
-    client: HttpClient,
-    private val settings: MoonshotAIProviderSettings,
-) : MoonshotAIProvider {
-    private val compatible = createOpenAICompatible(
-        client,
-        settings.toCompatible("moonshotai", MOONSHOTAI_VERSION, includeUsage = true),
-    )
-    override val providerId: String = "moonshotai"
-    override fun languageModel(modelId: String): LanguageModel = chatModel(modelId)
-    override fun chatModel(modelId: String): LanguageModel = compatible.chatModel(modelId)
-    override fun embeddingModel(modelId: String): EmbeddingModel = throw NoSuchModelError(providerId, "embeddingModel", modelId)
-    override fun imageModel(modelId: String): ImageModel = throw NoSuchModelError(providerId, "imageModel", modelId)
-}
-
-private class DefaultGroqProvider(
-    client: HttpClient,
-    private val settings: GroqProviderSettings,
-) : GroqProvider {
-    private val compatible = createOpenAICompatible(
-        client,
-        settings.toCompatible("groq", GROQ_VERSION, includeUsage = true),
-    )
-    override val providerId: String = "groq"
-    override val tools: GroqTools = GroqTools()
-    override fun languageModel(modelId: String): LanguageModel = chat(modelId)
-    override fun chat(modelId: String): LanguageModel = compatible.chatModel(modelId)
-    override fun transcription(modelId: String): TranscriptionModel = compatible.transcriptionModel(modelId)
-    override fun embeddingModel(modelId: String): EmbeddingModel = throw NoSuchModelError(providerId, "embeddingModel", modelId)
-    override fun imageModel(modelId: String): ImageModel = throw NoSuchModelError(providerId, "imageModel", modelId)
-}
-
-private class DefaultTogetherAIProvider(
-    private val client: HttpClient,
-    private val settings: TogetherAIProviderSettings,
-) : TogetherAIProvider {
-    private val compatible = createOpenAICompatible(
-        client,
-        settings.toCompatible("togetherai", TOGETHERAI_VERSION),
-    )
-    override val providerId: String = "togetherai"
-    override fun languageModel(modelId: String): LanguageModel = chatModel(modelId)
-    override fun chatModel(modelId: String): LanguageModel = compatible.chatModel(modelId)
-    override fun completionModel(modelId: String): LanguageModel = compatible.completionModel(modelId)
-    override fun embeddingModel(modelId: String): EmbeddingModel = compatible.embeddingModel(modelId)
-    override fun imageModel(modelId: String): ImageModel = TogetherAIImageModel(client, settings, modelId)
-    override fun rerankingModel(modelId: String): RerankingModel = TogetherAIRerankingModel(client, settings, modelId)
-}
-
-private class DefaultVercelProvider(
-    client: HttpClient,
-    private val settings: VercelProviderSettings,
-) : VercelProvider {
-    private val compatible = createOpenAICompatible(
-        client,
-        settings.toCompatible("vercel", VERCEL_VERSION),
-    )
-    override val providerId: String = "vercel"
-    override fun languageModel(modelId: String): LanguageModel = compatible.chatModel(modelId)
-    override fun embeddingModel(modelId: String): EmbeddingModel = throw NoSuchModelError(providerId, "embeddingModel", modelId)
-    override fun imageModel(modelId: String): ImageModel = throw NoSuchModelError(providerId, "imageModel", modelId)
-}
-
-private class DefaultBasetenProvider(
+public class BasetenProvider(
     private val client: HttpClient,
     private val settings: BasetenProviderSettings,
-) : BasetenProvider {
+) : Provider {
     override val providerId: String = "baseten"
 
-    override fun chatModel(): LanguageModel = createChatModel(null)
-    override fun chatModel(modelId: String): LanguageModel = createChatModel(modelId)
-    override fun embeddingModel(): EmbeddingModel = createEmbeddingModel(null)
+    public operator fun invoke(): LanguageModel = chatModel()
+    public operator fun invoke(modelId: BasetenChatModelId): LanguageModel = chatModel(modelId)
+    public fun chatModel(): LanguageModel = createChatModel(null)
+    public fun chatModel(modelId: BasetenChatModelId): LanguageModel = createChatModel(modelId)
+    public fun languageModel(): LanguageModel = chatModel()
+    override fun languageModel(modelId: String): LanguageModel = chatModel(modelId)
+    public fun embeddingModel(): EmbeddingModel = createEmbeddingModel(null)
     override fun embeddingModel(modelId: String): EmbeddingModel = createEmbeddingModel(modelId)
+    public fun textEmbeddingModel(): EmbeddingModel = embeddingModel()
+    public fun textEmbeddingModel(modelId: BasetenEmbeddingModelId): EmbeddingModel = embeddingModel(modelId)
     override fun imageModel(modelId: String): ImageModel = throw NoSuchModelError(providerId, "imageModel", modelId)
 
     private fun createChatModel(modelId: String?): LanguageModel {
         val customURL = settings.modelURL?.trimEnd('/')
         val baseURL = when {
             customURL?.contains("/sync/v1") == true -> customURL
-            customURL?.contains("/predict") == true -> throw AiSdkRuntimeException("Not supported. You must use a /sync/v1 endpoint for chat models.")
+            customURL?.contains("/predict") == true -> throw UnsupportedFunctionalityError(
+                "baseten.chatModel",
+                "Not supported. You must use a /sync/v1 endpoint for chat models.",
+            )
             else -> settings.baseURL.trimEnd('/')
         }
         val resolvedModelId = if (customURL?.contains("/sync/v1") == true) {
@@ -578,14 +553,30 @@ private class DefaultBasetenProvider(
 
     private fun createEmbeddingModel(modelId: String?): EmbeddingModel {
         val customURL = settings.modelURL?.trimEnd('/')
-            ?: throw AiSdkRuntimeException("No model URL provided for embeddings. Please set modelURL option for embeddings.")
+            ?: throw InvalidArgumentError(
+                "modelURL",
+                "No model URL provided for embeddings. Please set modelURL option for embeddings.",
+            )
         if (!customURL.contains("/sync")) {
-            throw AiSdkRuntimeException("Not supported. You must use a /sync or /sync/v1 endpoint for embeddings.")
+            throw UnsupportedFunctionalityError(
+                "baseten.embeddingModel",
+                "Not supported. You must use a /sync or /sync/v1 endpoint for embeddings.",
+            )
         }
         val baseURL = if (customURL.contains("/sync/v1")) customURL else "$customURL/v1"
         return createOpenAICompatible(client, settings.toCompatible("baseten", BASETEN_VERSION, baseURL)).embeddingModel(modelId ?: "embeddings")
     }
 }
+
+public fun Baseten(
+    client: HttpClient,
+    settings: BasetenProviderSettings = BasetenProviderSettings(),
+): BasetenProvider = BasetenProvider(client, settings)
+
+public fun createBaseten(
+    client: HttpClient,
+    settings: BasetenProviderSettings = BasetenProviderSettings(),
+): BasetenProvider = BasetenProvider(client, settings)
 
 private fun DeepSeekProviderSettings.toCompatible(
     name: String,
@@ -965,59 +956,6 @@ private fun JsonObject.intField(name: String): Int =
 private fun JsonObject.nestedIntField(objectName: String, fieldName: String): Int =
     (this[objectName] as? JsonObject)?.intField(fieldName) ?: 0
 
-private inline fun <reified T : Provider> providerNotConfigured(
-    providerName: String,
-    providerId: String,
-): T {
-    val error = object : Provider {
-        override val providerId: String = providerId
-        override fun languageModel(modelId: String): LanguageModel =
-            throw AiSdkRuntimeException("$providerName provider is not configured. Use create$providerName(client, settings).")
-    }
-    @Suppress("UNCHECKED_CAST")
-    return when (T::class) {
-        DeepSeekProvider::class -> object : DeepSeekProvider, Provider by error {
-            override fun chat(modelId: String): LanguageModel = error.languageModel(modelId)
-        } as T
-        CerebrasProvider::class -> object : CerebrasProvider, Provider by error {
-            override fun chat(modelId: String): LanguageModel = error.languageModel(modelId)
-        } as T
-        DeepInfraProvider::class -> object : DeepInfraProvider, Provider by error {
-            override fun chatModel(modelId: String): LanguageModel = error.languageModel(modelId)
-            override fun completionModel(modelId: String): LanguageModel = error.languageModel(modelId)
-            override fun image(modelId: String): ImageModel =
-                throw AiSdkRuntimeException("$providerName provider is not configured. Use create$providerName(client, settings).")
-        } as T
-        FireworksProvider::class -> object : FireworksProvider, Provider by error {
-            override fun chatModel(modelId: String): LanguageModel = error.languageModel(modelId)
-            override fun completionModel(modelId: String): LanguageModel = error.languageModel(modelId)
-            override fun image(modelId: String): ImageModel =
-                throw AiSdkRuntimeException("$providerName provider is not configured. Use create$providerName(client, settings).")
-        } as T
-        PerplexityProvider::class -> object : PerplexityProvider, Provider by error {} as T
-        MoonshotAIProvider::class -> object : MoonshotAIProvider, Provider by error {
-            override fun chatModel(modelId: String): LanguageModel = error.languageModel(modelId)
-        } as T
-        GroqProvider::class -> object : GroqProvider, Provider by error {
-            override val tools: GroqTools = GroqTools()
-            override fun chat(modelId: String): LanguageModel = error.languageModel(modelId)
-            override fun transcription(modelId: String): TranscriptionModel =
-                throw AiSdkRuntimeException("$providerName provider is not configured. Use create$providerName(client, settings).")
-            override fun transcriptionModel(modelId: String): TranscriptionModel = transcription(modelId)
-        } as T
-        TogetherAIProvider::class -> object : TogetherAIProvider, Provider by error {
-            override fun chatModel(modelId: String): LanguageModel = error.languageModel(modelId)
-            override fun completionModel(modelId: String): LanguageModel = error.languageModel(modelId)
-            override fun image(modelId: String): ImageModel =
-                throw AiSdkRuntimeException("$providerName provider is not configured. Use create$providerName(client, settings).")
-            override fun reranking(modelId: String): RerankingModel =
-                throw AiSdkRuntimeException("$providerName provider is not configured. Use create$providerName(client, settings).")
-        } as T
-        VercelProvider::class -> object : VercelProvider, Provider by error {} as T
-        else -> error("Unsupported provider facade type: ${T::class}")
-    }
-}
-
 private class DeepInfraChatLanguageModel(
     private val delegate: LanguageModel,
 ) : LanguageModel by delegate {
@@ -1200,7 +1138,10 @@ public class FireworksImageModel(
             headers = requestHeaders,
         )
         val requestId = submitResponse.value.jsonObject["request_id"]?.jsonPrimitive?.contentOrNull
-            ?: throw AiSdkRuntimeException("Fireworks image generation response is missing request_id")
+            ?: throw InvalidResponseDataError(
+                submitResponse.value,
+                "Fireworks image generation response is missing request_id",
+            )
         val imageUrl = pollForImageUrl(requestId, requestHeaders)
         val imageResponse = getFacadeBinary(client, imageUrl, requestHeaders)
         return ImageModelResult(
@@ -1226,12 +1167,21 @@ public class FireworksImageModel(
                     ?.get("sample")
                     ?.jsonPrimitive
                     ?.contentOrNull
-                    ?: throw AiSdkRuntimeException("Fireworks poll response is Ready but missing result.sample")
-                "Error", "Failed" -> throw AiSdkRuntimeException("Fireworks image generation failed with status: $status")
+                    ?: throw InvalidResponseDataError(
+                        response.value,
+                        "Fireworks poll response is Ready but missing result.sample",
+                    )
+                "Error", "Failed" -> throw APICallError(
+                    message = "Fireworks image generation failed with status: $status",
+                    url = pollUrl,
+                )
             }
             if (attempt < FIREWORKS_MAX_POLL_ATTEMPTS - 1) delay(FIREWORKS_POLL_INTERVAL_MILLIS)
         }
-        throw AiSdkRuntimeException("Fireworks image generation timed out after polling")
+        throw APICallError(
+            message = "Fireworks image generation timed out after polling",
+            url = pollUrl,
+        )
     }
 }
 

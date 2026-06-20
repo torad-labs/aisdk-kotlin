@@ -59,53 +59,38 @@ public data class CohereRerankingModelOptions(
     val priority: Int? = null,
 )
 
-public interface CohereProvider : Provider {
-    public val settings: CohereProviderSettings
+public class CohereProvider(
+    private val client: HttpClient,
+    public val settings: CohereProviderSettings,
+) : Provider {
+    override val providerId: String = "cohere"
 
     public operator fun invoke(modelId: CohereChatModelId): LanguageModel = languageModel(modelId)
-    public fun embedding(modelId: CohereEmbeddingModelId): EmbeddingModel
-    public fun textEmbedding(modelId: CohereEmbeddingModelId): EmbeddingModel = embedding(modelId)
-    public fun textEmbeddingModel(modelId: CohereEmbeddingModelId): EmbeddingModel = embedding(modelId)
-    public fun reranking(modelId: CohereRerankingModelId): RerankingModel
-
-    override fun embeddingModel(modelId: String): EmbeddingModel = embedding(modelId)
-    override fun rerankingModel(modelId: String): RerankingModel = reranking(modelId)
-}
-
-public fun createCohere(
-    client: HttpClient,
-    settings: CohereProviderSettings = CohereProviderSettings(),
-): CohereProvider = DefaultCohereProvider(client, settings)
-
-public val cohere: CohereProvider = object : CohereProvider {
-    override val providerId: String = "cohere"
-    override val settings: CohereProviderSettings = CohereProviderSettings()
-    override fun languageModel(modelId: String): LanguageModel =
-        throw AiSdkRuntimeException("Cohere provider is not configured. Use createCohere(client, settings).")
-    override fun embedding(modelId: String): EmbeddingModel =
-        throw AiSdkRuntimeException("Cohere provider is not configured. Use createCohere(client, settings).")
-    override fun reranking(modelId: String): RerankingModel =
-        throw AiSdkRuntimeException("Cohere provider is not configured. Use createCohere(client, settings).")
-}
-
-private class DefaultCohereProvider(
-    private val client: HttpClient,
-    override val settings: CohereProviderSettings,
-) : CohereProvider {
-    override val providerId: String = "cohere"
 
     override fun languageModel(modelId: String): LanguageModel =
         CohereChatLanguageModel(client, settings, modelId)
 
-    override fun embedding(modelId: String): EmbeddingModel =
+    public fun embedding(modelId: CohereEmbeddingModelId): EmbeddingModel =
         CohereEmbeddingModel(client, settings, modelId)
 
-    override fun reranking(modelId: String): RerankingModel =
+    public fun textEmbedding(modelId: CohereEmbeddingModelId): EmbeddingModel = embedding(modelId)
+    public fun textEmbeddingModel(modelId: CohereEmbeddingModelId): EmbeddingModel = embedding(modelId)
+
+    public fun reranking(modelId: CohereRerankingModelId): RerankingModel =
         CohereRerankingModel(client, settings, modelId)
+
+    override fun embeddingModel(modelId: String): EmbeddingModel = embedding(modelId)
+    override fun rerankingModel(modelId: String): RerankingModel = reranking(modelId)
 
     override fun imageModel(modelId: String): ImageModel =
         throw NoSuchModelError(providerId, "imageModel", modelId)
 }
+
+/** PascalCase factory — mirrors the OpenAI(...) reference pattern. */
+public fun Cohere(
+    client: HttpClient,
+    settings: CohereProviderSettings = CohereProviderSettings(),
+): CohereProvider = CohereProvider(client, settings)
 
 private class CohereChatLanguageModel(
     private val client: HttpClient,

@@ -1,9 +1,7 @@
 package ai.torad.aisdk
 import ai.torad.aisdk.providers.BASETEN_VERSION
 import ai.torad.aisdk.providers.BasetenProviderSettings
-import ai.torad.aisdk.providers.baseten
 import ai.torad.aisdk.providers.createBaseten
-import ai.torad.aisdk.providers.deepseek
 
 import io.ktor.http.HttpHeaders
 import kotlinx.coroutines.test.runTest
@@ -126,7 +124,6 @@ class BasetenProviderTest {
 
         val provider = createBaseten(fixture.httpClient(), BasetenProviderSettings(apiKey = "key"))
         assertFailsWith<NoSuchModelError> { provider.imageModel("image") }
-        assertFailsWith<AiSdkException> { baseten.chatModel("model") }
     }
 
     private fun Map<String, String>.headerValue(name: String): String? =

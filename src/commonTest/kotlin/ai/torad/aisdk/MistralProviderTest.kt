@@ -1,8 +1,6 @@
 package ai.torad.aisdk
 import ai.torad.aisdk.providers.MISTRAL_VERSION
 import ai.torad.aisdk.providers.MistralProviderSettings
-import ai.torad.aisdk.providers.createMistral
-import ai.torad.aisdk.providers.mistral
 import ai.torad.aisdk.testing.drainAllItems
 import io.ktor.http.HttpHeaders
 import kotlinx.coroutines.test.runTest
@@ -20,6 +18,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
+import ai.torad.aisdk.providers.Mistral
 
 class MistralProviderTest {
     @Test
@@ -44,7 +43,7 @@ class MistralProviderTest {
             ),
         )
         fixture.server.start()
-        val provider = createMistral(
+        val provider = Mistral(
             fixture.httpClient(),
             MistralProviderSettings(apiKey = "key", headers = mapOf("X-Provider" to "provider")),
         )
@@ -103,7 +102,7 @@ class MistralProviderTest {
             ),
         )
         fixture.server.start()
-        val provider = createMistral(
+        val provider = Mistral(
             fixture.httpClient(),
             MistralProviderSettings(baseURL = "https://mistral.test/v1", apiKey = "key"),
         )
@@ -147,7 +146,7 @@ class MistralProviderTest {
             ),
         )
         fixture.server.start()
-        val provider = createMistral(fixture.httpClient(), MistralProviderSettings(apiKey = "key"))
+        val provider = Mistral(fixture.httpClient(), MistralProviderSettings(apiKey = "key"))
         provider.chat("mistral-small-latest").generate(
             LanguageModelCallParams(
                 messages = listOf(
@@ -231,7 +230,7 @@ class MistralProviderTest {
             ),
         )
         fixture.server.start()
-        val provider = createMistral(fixture.httpClient(), MistralProviderSettings(apiKey = "key"))
+        val provider = Mistral(fixture.httpClient(), MistralProviderSettings(apiKey = "key"))
 
         val generated = provider.chat("magistral-small-2507").generate(
             LanguageModelCallParams(messages = listOf(userMessage("hi"))),
@@ -249,14 +248,9 @@ class MistralProviderTest {
 
     @Test
     fun `unsupported model families and unconfigured singleton fail explicitly`() {
-        val provider = createMistral(createTestServer(mutableMapOf()).httpClient(), MistralProviderSettings(apiKey = "key"))
+        val provider = Mistral(createTestServer(mutableMapOf()).httpClient(), MistralProviderSettings(apiKey = "key"))
 
         assertFailsWith<NoSuchModelError> { provider.imageModel("pixtral") }
-        val chatError = assertFailsWith<AiSdkException> { mistral.chat("mistral-small-latest") }
-        val embeddingError = assertFailsWith<AiSdkException> { mistral.embedding("mistral-embed") }
-        assertNotNull(chatError.message)
-        assertTrue(chatError.message.orEmpty().contains("createMistral"))
-        assertTrue(embeddingError.message.orEmpty().contains("createMistral"))
     }
 
     private fun Map<String, String>.headerValue(name: String): String? =

@@ -1,8 +1,6 @@
 package ai.torad.aisdk
 import ai.torad.aisdk.providers.LUMA_VERSION
 import ai.torad.aisdk.providers.LumaProviderSettings
-import ai.torad.aisdk.providers.createLuma
-import ai.torad.aisdk.providers.luma
 
 import io.ktor.http.HttpHeaders
 import kotlinx.coroutines.test.runTest
@@ -19,6 +17,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertTrue
+import ai.torad.aisdk.providers.Luma
 
 class LumaProviderTest {
     @Test
@@ -37,7 +36,7 @@ class LumaProviderTest {
             ),
         )
         fixture.server.start()
-        val model = createLuma(fixture.httpClient(), LumaProviderSettings(apiKey = "key")).image("photon-1")
+        val model = Luma(fixture.httpClient(), LumaProviderSettings(apiKey = "key")).image("photon-1")
 
         val result = model.generate(
             ImageGenerationParams(
@@ -99,7 +98,7 @@ class LumaProviderTest {
             ),
         )
         fixture.server.start()
-        val model = createLuma(fixture.httpClient(), LumaProviderSettings(apiKey = "key")).image("photon-flash-1")
+        val model = Luma(fixture.httpClient(), LumaProviderSettings(apiKey = "key")).image("photon-flash-1")
 
         model.generate(
             ImageGenerationParams(
@@ -130,7 +129,7 @@ class LumaProviderTest {
     @Test
     fun `image model rejects base64 reference files and masks`() = runTest {
         val fixture = createTestServer(mutableMapOf())
-        val model = createLuma(fixture.httpClient(), LumaProviderSettings(apiKey = "key")).image("photon-1")
+        val model = Luma(fixture.httpClient(), LumaProviderSettings(apiKey = "key")).image("photon-1")
 
         assertFailsWith<AiSdkException> {
             model.generate(ImageGenerationParams(prompt = "x", files = listOf(ImageGenerationFile(mediaType = "image/png", base64 = "abc"))))
@@ -143,11 +142,10 @@ class LumaProviderTest {
     @Test
     fun `default provider and unsupported model families fail explicitly`() {
         val fixture = createTestServer(mutableMapOf())
-        val provider = createLuma(fixture.httpClient(), LumaProviderSettings(apiKey = "key"))
+        val provider = Luma(fixture.httpClient(), LumaProviderSettings(apiKey = "key"))
 
         assertFailsWith<NoSuchModelError> { provider.languageModel("model") }
         assertFailsWith<NoSuchModelError> { provider.embeddingModel("embed") }
-        assertFailsWith<AiSdkException> { luma.image("photon-1") }
     }
 
     private fun Map<String, String>.headerValue(name: String): String? =

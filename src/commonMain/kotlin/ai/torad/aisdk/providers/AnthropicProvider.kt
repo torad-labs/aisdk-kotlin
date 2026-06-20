@@ -49,49 +49,36 @@ public data class AnthropicProviderSettings(
     val name: String = "anthropic.messages",
 )
 
-public interface AnthropicProvider : Provider {
-    public val settings: AnthropicProviderSettings
-    public val tools: AnthropicTools
+public class AnthropicProvider(
+    private val client: HttpClient,
+    public val settings: AnthropicProviderSettings = AnthropicProviderSettings(),
+) : Provider {
+    init {
+        if (!settings.apiKey.isNullOrBlank() && !settings.authToken.isNullOrBlank()) {
+            throw InvalidArgumentError("apiKey/authToken", "Both apiKey and authToken were provided. Please use only one authentication method.")
+        }
+    }
+
+    override val providerId: String = "anthropic"
+    public val tools: AnthropicTools = anthropicTools
 
     public operator fun invoke(modelId: AnthropicMessagesModelId): LanguageModel = languageModel(modelId)
     public fun chat(modelId: AnthropicMessagesModelId): LanguageModel = languageModel(modelId)
     public fun messages(modelId: AnthropicMessagesModelId): LanguageModel = languageModel(modelId)
-    public fun textEmbeddingModel(modelId: String): Nothing = throw NoSuchModelError(providerId, "embeddingModel", modelId)
-}
-
-public fun createAnthropic(
-    client: HttpClient,
-    settings: AnthropicProviderSettings = AnthropicProviderSettings(),
-): AnthropicProvider {
-    if (!settings.apiKey.isNullOrBlank() && !settings.authToken.isNullOrBlank()) {
-        throw InvalidArgumentError("apiKey/authToken", "Both apiKey and authToken were provided. Please use only one authentication method.")
-    }
-    return DefaultAnthropicProvider(client, settings)
-}
-
-public val anthropic: AnthropicProvider = object : AnthropicProvider {
-    override val providerId: String = "anthropic"
-    override val settings: AnthropicProviderSettings = AnthropicProviderSettings()
-    override val tools: AnthropicTools = AnthropicTools()
-    override fun languageModel(modelId: String): LanguageModel =
-        throw AiSdkRuntimeException("Anthropic provider is not configured. Use createAnthropic(client, settings).")
-    override fun embeddingModel(modelId: String): EmbeddingModel = throw NoSuchModelError(providerId, "embeddingModel", modelId)
-    override fun imageModel(modelId: String): ImageModel = throw NoSuchModelError(providerId, "imageModel", modelId)
-}
-
-private class DefaultAnthropicProvider(
-    private val client: HttpClient,
-    override val settings: AnthropicProviderSettings,
-) : AnthropicProvider {
-    override val providerId: String = "anthropic"
-    override val tools: AnthropicTools = anthropicTools
 
     override fun languageModel(modelId: String): LanguageModel =
         AnthropicMessagesLanguageModel(client, settings, modelId)
 
     override fun embeddingModel(modelId: String): EmbeddingModel = throw NoSuchModelError(providerId, "embeddingModel", modelId)
     override fun imageModel(modelId: String): ImageModel = throw NoSuchModelError(providerId, "imageModel", modelId)
+    public fun textEmbeddingModel(modelId: String): Nothing = throw NoSuchModelError(providerId, "embeddingModel", modelId)
 }
+
+/** PascalCase factory — mirrors the reference `OpenAI(...)` faux-constructor. */
+public fun Anthropic(
+    client: HttpClient,
+    settings: AnthropicProviderSettings = AnthropicProviderSettings(),
+): AnthropicProvider = AnthropicProvider(client, settings)
 
 public class AnthropicMessagesLanguageModel(
     private val client: HttpClient,

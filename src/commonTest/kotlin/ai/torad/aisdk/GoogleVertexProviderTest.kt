@@ -4,15 +4,7 @@ import ai.torad.aisdk.providers.GOOGLE_VERTEX_VERSION
 import ai.torad.aisdk.providers.GoogleVertexAnthropicProviderSettings
 import ai.torad.aisdk.providers.GoogleVertexMaasProviderSettings
 import ai.torad.aisdk.providers.GoogleVertexProviderSettings
-import ai.torad.aisdk.providers.anthropic
-import ai.torad.aisdk.providers.createVertex
-import ai.torad.aisdk.providers.createVertexAnthropic
-import ai.torad.aisdk.providers.createVertexMaas
-import ai.torad.aisdk.providers.google
-import ai.torad.aisdk.providers.vertex
-import ai.torad.aisdk.providers.xai
 import ai.torad.aisdk.providers.GoogleVertexXaiProviderSettings
-import ai.torad.aisdk.providers.createGoogleVertexXai
 
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.Json
@@ -27,6 +19,10 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertTrue
+import ai.torad.aisdk.providers.GoogleVertex
+import ai.torad.aisdk.providers.GoogleVertexAnthropic
+import ai.torad.aisdk.providers.GoogleVertexMaas
+import ai.torad.aisdk.providers.GoogleVertexXai
 
 class GoogleVertexProviderTest {
     @Test
@@ -48,7 +44,7 @@ class GoogleVertexProviderTest {
             ),
         )
         fixture.server.start()
-        val provider = createVertex(
+        val provider = GoogleVertex(
             fixture.httpClient(),
             GoogleVertexProviderSettings(
                 project = "project-1",
@@ -120,11 +116,11 @@ class GoogleVertexProviderTest {
         )
         fixture.server.start()
 
-        val eu = createVertex(
+        val eu = GoogleVertex(
             fixture.httpClient(),
             GoogleVertexProviderSettings(project = "project-1", location = "eu", accessToken = "token"),
         )
-        val us = createVertex(
+        val us = GoogleVertex(
             fixture.httpClient(),
             GoogleVertexProviderSettings(project = "project-1", location = "us", accessToken = "token"),
         )
@@ -161,7 +157,7 @@ class GoogleVertexProviderTest {
             ),
         )
         fixture.server.start()
-        val provider = createVertexMaas(
+        val provider = GoogleVertexMaas(
             fixture.httpClient(),
             GoogleVertexMaasProviderSettings(baseURL = "https://vertex-openai.test/v1", accessToken = "token"),
         )
@@ -198,15 +194,15 @@ class GoogleVertexProviderTest {
         )
         fixture.server.start()
 
-        val global = createVertexMaas(
+        val global = GoogleVertexMaas(
             fixture.httpClient(),
             GoogleVertexMaasProviderSettings(project = "project-1", location = "global", accessToken = "token"),
         )
-        val regional = createVertexMaas(
+        val regional = GoogleVertexMaas(
             fixture.httpClient(),
             GoogleVertexMaasProviderSettings(project = "project-1", location = "us-central1", accessToken = "token"),
         )
-        val eu = createVertexMaas(
+        val eu = GoogleVertexMaas(
             fixture.httpClient(),
             GoogleVertexMaasProviderSettings(project = "project-1", location = "eu", accessToken = "token"),
         )
@@ -248,11 +244,11 @@ class GoogleVertexProviderTest {
         )
         fixture.server.start()
         val missingProject = assertFailsWith<AiSdkException> {
-            createVertex(fixture.httpClient(), GoogleVertexProviderSettings(accessToken = "token"))
+            GoogleVertex(fixture.httpClient(), GoogleVertexProviderSettings(accessToken = "token"))
         }
         assertTrue(missingProject.message.orEmpty().contains("project is required"))
 
-        val anthropic = createVertexAnthropic(
+        val anthropic = GoogleVertexAnthropic(
             fixture.httpClient(),
             GoogleVertexAnthropicProviderSettings(project = "project-1", accessToken = "token"),
         )
@@ -320,11 +316,11 @@ class GoogleVertexProviderTest {
         )
         fixture.server.start()
 
-        val eu = createVertexAnthropic(
+        val eu = GoogleVertexAnthropic(
             fixture.httpClient(),
             GoogleVertexAnthropicProviderSettings(project = "project-1", location = "eu", accessToken = "token"),
         )
-        val us = createVertexAnthropic(
+        val us = GoogleVertexAnthropic(
             fixture.httpClient(),
             GoogleVertexAnthropicProviderSettings(project = "project-1", location = "us", accessToken = "token"),
         )
@@ -366,7 +362,7 @@ class GoogleVertexProviderTest {
             ),
         )
         fixture.server.start()
-        val provider = createGoogleVertexXai(
+        val provider = GoogleVertexXai(
             fixture.httpClient(),
             GoogleVertexXaiProviderSettings(project = "project-1", location = "global", accessToken = "token"),
         )

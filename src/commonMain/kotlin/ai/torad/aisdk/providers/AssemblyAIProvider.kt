@@ -78,35 +78,30 @@ public data class AssemblyAIProviderSettings(
     val pollingIntervalMillis: Long = 3_000L,
 )
 
-public interface AssemblyAIProvider : Provider {
+public class AssemblyAIProvider(
+    private val client: HttpClient,
+    public val settings: AssemblyAIProviderSettings,
+) : Provider {
+    override val providerId: String = "assemblyai"
+
     public operator fun invoke(modelId: AssemblyAITranscriptionModelId = "best"): TranscriptionModel = transcription(modelId)
-    public fun transcription(modelId: AssemblyAITranscriptionModelId): TranscriptionModel
+
+    public fun transcription(modelId: AssemblyAITranscriptionModelId): TranscriptionModel =
+        AssemblyAITranscriptionModel(client, settings, modelId)
+
     public fun textEmbeddingModel(modelId: String): Nothing = throw NoSuchModelError(providerId, "embeddingModel", modelId)
 
     override fun transcriptionModel(modelId: String): TranscriptionModel = transcription(modelId)
-}
-
-public fun createAssemblyAI(
-    client: HttpClient,
-    settings: AssemblyAIProviderSettings = AssemblyAIProviderSettings(),
-): AssemblyAIProvider = DefaultAssemblyAIProvider(client, settings)
-
-public val assemblyai: AssemblyAIProvider = object : AssemblyAIProvider {
-    override val providerId: String = "assemblyai"
-    override fun transcription(modelId: String): TranscriptionModel =
-        throw AiSdkRuntimeException("AssemblyAI provider is not configured. Use createAssemblyAI(client, settings).")
-}
-
-private class DefaultAssemblyAIProvider(
-    private val client: HttpClient,
-    private val settings: AssemblyAIProviderSettings,
-) : AssemblyAIProvider {
-    override val providerId: String = "assemblyai"
-    override fun transcription(modelId: String): TranscriptionModel = AssemblyAITranscriptionModel(client, settings, modelId)
     override fun languageModel(modelId: String): LanguageModel = throw NoSuchModelError(providerId, "languageModel", modelId)
     override fun embeddingModel(modelId: String): EmbeddingModel = throw NoSuchModelError(providerId, "embeddingModel", modelId)
     override fun imageModel(modelId: String): ImageModel = throw NoSuchModelError(providerId, "imageModel", modelId)
 }
+
+/** PascalCase factory — mirrors the OpenAI reference pattern. */
+public fun AssemblyAI(
+    client: HttpClient,
+    settings: AssemblyAIProviderSettings = AssemblyAIProviderSettings(),
+): AssemblyAIProvider = AssemblyAIProvider(client, settings)
 
 private class AssemblyAITranscriptionModel(
     private val client: HttpClient,
@@ -124,7 +119,7 @@ private class AssemblyAITranscriptionModel(
             headers = assemblyAIHeaders(settings, params.headers),
         )
         val uploadUrl = upload.value.jsonObject["upload_url"]?.jsonPrimitive?.contentOrNull
-            ?: throw AiSdkRuntimeException("AssemblyAI upload response is missing upload_url")
+            ?: throw InvalidResponseDataError(upload.value, "AssemblyAI upload response is missing upload_url")
 
         params.abortSignal.throwIfAborted()
         val submitBody = assemblyAISubmitBody(
@@ -139,7 +134,7 @@ private class AssemblyAITranscriptionModel(
             headers = assemblyAIHeaders(settings, params.headers),
         )
         val transcriptId = submit.value.jsonObject["id"]?.jsonPrimitive?.contentOrNull
-            ?: throw AiSdkRuntimeException("AssemblyAI transcript submit response is missing id")
+            ?: throw InvalidResponseDataError(submit.value, "AssemblyAI transcript submit response is missing id")
 
         val transcript = assemblyAIPollTranscript(
             client = client,

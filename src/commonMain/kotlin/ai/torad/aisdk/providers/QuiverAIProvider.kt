@@ -45,32 +45,24 @@ public data class QuiverAIProviderSettings(
     val headers: Map<String, String> = emptyMap(),
 )
 
-public interface QuiverAIProvider : Provider {
-    public fun image(modelId: QuiverAIImageModelId): ImageModel
+public class QuiverAIProvider(
+    private val client: HttpClient,
+    public val settings: QuiverAIProviderSettings,
+) : Provider {
+    override val providerId: String = "quiverai"
+
+    public fun image(modelId: QuiverAIImageModelId): ImageModel = QuiverAIImageModel(client, settings, modelId)
     override fun imageModel(modelId: String): ImageModel = image(modelId)
+    override fun languageModel(modelId: String): LanguageModel = throw NoSuchModelError(providerId, "languageModel", modelId)
+    override fun embeddingModel(modelId: String): EmbeddingModel = throw NoSuchModelError(providerId, "embeddingModel", modelId)
     public fun textEmbeddingModel(modelId: String): Nothing = throw NoSuchModelError(providerId, "embeddingModel", modelId)
 }
 
-public fun createQuiverAI(
+/** PascalCase factory — mirrors `OpenAI(...)`. */
+public fun QuiverAI(
     client: HttpClient,
     settings: QuiverAIProviderSettings = QuiverAIProviderSettings(),
-): QuiverAIProvider = DefaultQuiverAIProvider(client, settings)
-
-public val quiverai: QuiverAIProvider = object : QuiverAIProvider {
-    override val providerId: String = "quiverai"
-    override fun image(modelId: String): ImageModel =
-        throw AiSdkRuntimeException("QuiverAI provider is not configured. Use createQuiverAI(client, settings).")
-}
-
-private class DefaultQuiverAIProvider(
-    private val client: HttpClient,
-    private val settings: QuiverAIProviderSettings,
-) : QuiverAIProvider {
-    override val providerId: String = "quiverai"
-    override fun image(modelId: String): ImageModel = QuiverAIImageModel(client, settings, modelId)
-    override fun languageModel(modelId: String): LanguageModel = throw NoSuchModelError(providerId, "languageModel", modelId)
-    override fun embeddingModel(modelId: String): EmbeddingModel = throw NoSuchModelError(providerId, "embeddingModel", modelId)
-}
+): QuiverAIProvider = QuiverAIProvider(client, settings)
 
 private class QuiverAIImageModel(
     private val client: HttpClient,
@@ -92,11 +84,11 @@ private class QuiverAIImageModel(
             headers = quiverAIHeaders(settings, params.headers),
         )
         val root = response.value.jsonObject
-        val data = root["data"]?.jsonArray ?: throw AiSdkRuntimeException("QuiverAI response is missing data")
+        val data = root["data"]?.jsonArray ?: throw InvalidResponseDataError(response.value, "QuiverAI response is missing data")
         return ImageModelResult(
             images = data.map { item ->
                 val obj = item.jsonObject
-                val svg = obj["svg"]?.jsonPrimitive?.contentOrNull ?: throw AiSdkRuntimeException("QuiverAI image item is missing svg")
+                val svg = obj["svg"]?.jsonPrimitive?.contentOrNull ?: throw InvalidResponseDataError(item, "QuiverAI image item is missing svg")
                 GeneratedFile(
                     mediaType = obj["mime_type"]?.jsonPrimitive?.contentOrNull ?: "image/svg+xml",
                     base64 = Base64Codec.encode(svg.encodeToByteArray()),

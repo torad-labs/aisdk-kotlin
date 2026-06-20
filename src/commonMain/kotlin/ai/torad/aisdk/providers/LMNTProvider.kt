@@ -47,33 +47,27 @@ public data class LMNTProviderSettings(
     val headers: Map<String, String> = emptyMap(),
 )
 
-public interface LMNTProvider : Provider {
-    public operator fun invoke(modelId: LMNTSpeechModelId = "aurora"): SpeechModel = speech(modelId)
-    public fun speech(modelId: LMNTSpeechModelId): SpeechModel
-    override fun speechModel(modelId: String): SpeechModel = speech(modelId)
-}
-
-public fun createLMNT(
-    client: HttpClient,
-    settings: LMNTProviderSettings = LMNTProviderSettings(),
-): LMNTProvider = DefaultLMNTProvider(client, settings)
-
-public val lmnt: LMNTProvider = object : LMNTProvider {
-    override val providerId: String = "lmnt"
-    override fun speech(modelId: String): SpeechModel =
-        throw AiSdkRuntimeException("LMNT provider is not configured. Use createLMNT(client, settings).")
-}
-
-private class DefaultLMNTProvider(
+public class LMNTProvider(
     private val client: HttpClient,
-    private val settings: LMNTProviderSettings,
-) : LMNTProvider {
+    public val settings: LMNTProviderSettings,
+) : Provider {
     override val providerId: String = "lmnt"
-    override fun speech(modelId: String): SpeechModel = LMNTSpeechModel(client, settings, modelId)
+
+    public operator fun invoke(modelId: LMNTSpeechModelId = "aurora"): SpeechModel = speech(modelId)
+
+    public fun speech(modelId: LMNTSpeechModelId): SpeechModel = LMNTSpeechModel(client, settings, modelId)
+
+    override fun speechModel(modelId: String): SpeechModel = speech(modelId)
     override fun languageModel(modelId: String): LanguageModel = throw NoSuchModelError(providerId, "languageModel", modelId)
     override fun embeddingModel(modelId: String): EmbeddingModel = throw NoSuchModelError(providerId, "embeddingModel", modelId)
     override fun imageModel(modelId: String): ImageModel = throw NoSuchModelError(providerId, "imageModel", modelId)
 }
+
+/** PascalCase factory — mirrors the OpenAI(...) reference pattern. */
+public fun LMNT(
+    client: HttpClient,
+    settings: LMNTProviderSettings = LMNTProviderSettings(),
+): LMNTProvider = LMNTProvider(client, settings)
 
 private class LMNTSpeechModel(
     private val client: HttpClient,

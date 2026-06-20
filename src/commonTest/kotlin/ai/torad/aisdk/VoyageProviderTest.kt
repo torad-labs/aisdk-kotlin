@@ -1,8 +1,6 @@
 package ai.torad.aisdk
 import ai.torad.aisdk.providers.VOYAGE_VERSION
 import ai.torad.aisdk.providers.VoyageProviderSettings
-import ai.torad.aisdk.providers.createVoyage
-import ai.torad.aisdk.providers.voyage
 
 import io.ktor.http.HttpHeaders
 import kotlinx.coroutines.test.runTest
@@ -19,6 +17,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertTrue
+import ai.torad.aisdk.providers.Voyage
 
 class VoyageProviderTest {
     @Test
@@ -35,7 +34,7 @@ class VoyageProviderTest {
             ),
         )
         fixture.server.start()
-        val model = createVoyage(
+        val model = Voyage(
             fixture.httpClient(),
             VoyageProviderSettings(apiKey = "key", baseURL = "https://voyage.test/v1"),
         ).embedding("voyage-4")
@@ -87,7 +86,7 @@ class VoyageProviderTest {
             ),
         )
         fixture.server.start()
-        val model = createVoyage(
+        val model = Voyage(
             fixture.httpClient(),
             VoyageProviderSettings(apiKey = "key", baseURL = "https://voyage.test/v1"),
         ).reranking("rerank-2.5")
@@ -121,7 +120,7 @@ class VoyageProviderTest {
 
     @Test
     fun `embedding model enforces voyage max values per call`() = runTest {
-        val model = createVoyage(
+        val model = Voyage(
             TestServer(mutableMapOf()).httpClient(),
             VoyageProviderSettings(baseURL = "https://voyage.test/v1"),
         ).embedding("voyage-4")

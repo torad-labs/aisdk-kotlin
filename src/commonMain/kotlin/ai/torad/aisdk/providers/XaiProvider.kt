@@ -81,20 +81,55 @@ public data class XaiVideoModelOptions(
     val resolution: String? = null,
 )
 
-public interface XaiProvider : Provider {
-    public val settings: XaiProviderSettings
-    public val tools: XaiTools
+public class XaiProvider(
+    private val client: HttpClient,
+    public val settings: XaiProviderSettings,
+) : Provider {
+    private val compatible = createOpenAICompatible(client, xaiCompatibleSettings())
+
+    override val providerId: String = "xai"
+    public val tools: XaiTools = xaiTools
 
     public operator fun invoke(modelId: XaiChatModelId): LanguageModel = chat(modelId)
-    public fun chat(modelId: XaiChatModelId): LanguageModel
-    public fun responses(modelId: XaiResponsesModelId): LanguageModel
-    public fun image(modelId: XaiImageModelId): ImageModel
-    public fun video(modelId: XaiVideoModelId): VideoModel
+
+    public fun chat(modelId: XaiChatModelId): LanguageModel =
+        XaiChatLanguageModel(compatible.chatModel(modelId))
+
+    public fun responses(modelId: XaiResponsesModelId): LanguageModel =
+        createOpenResponses(
+            client,
+            OpenResponsesProviderSettings(
+                url = "${settings.baseURL.trimEnd('/')}/responses",
+                name = "xai",
+                authHeadersProvider = { xaiHeaders(settings) },
+                userAgentSuffix = null,
+            ),
+        ).responses(modelId)
+
+    public fun image(modelId: XaiImageModelId): ImageModel =
+        XaiImageModel(client, settings, modelId)
+
+    public fun video(modelId: XaiVideoModelId): VideoModel =
+        XaiVideoModel(client, settings, modelId)
 
     override fun languageModel(modelId: String): LanguageModel = chat(modelId)
     override fun imageModel(modelId: String): ImageModel = image(modelId)
     override fun videoModel(modelId: String): VideoModel = video(modelId)
+    override fun embeddingModel(modelId: String): EmbeddingModel =
+        throw NoSuchModelError(providerId, "embeddingModel", modelId)
     public fun textEmbeddingModel(modelId: String): Nothing = throw NoSuchModelError(providerId, "embeddingModel", modelId)
+
+    private fun xaiCompatibleSettings(): OpenAICompatibleProviderSettings =
+        OpenAICompatibleProviderSettings(
+            name = "xai",
+            baseUrl = settings.baseURL.trimEnd('/'),
+            authHeadersProvider = { xaiHeaders(settings) },
+            userAgentSuffix = null,
+            providerOptionsName = "xai",
+            chatMaxOutputTokensKey = "max_completion_tokens",
+            supportedUrls = mapOf("image/*" to listOf("^https?://.*$")),
+            transformChatRequestBody = ::xaiTransformChatBody,
+        )
 }
 
 public data class XaiTools(
@@ -130,70 +165,11 @@ public fun webSearch(args: JsonElement = JsonObject(emptyMap())): Tool<JsonEleme
 public fun xSearch(args: JsonElement = JsonObject(emptyMap())): Tool<JsonElement, JsonElement, Any?> =
     xaiProviderTool("x_search", "Search X posts through xAI.", args)
 
-public fun createXai(
+/** PascalCase factory — mirrors `OpenAI(...)`. */
+public fun Xai(
     client: HttpClient,
     settings: XaiProviderSettings = XaiProviderSettings(),
-): XaiProvider = DefaultXaiProvider(client, settings)
-
-public val xai: XaiProvider = XaiProviderNotConfigured
-
-private object XaiProviderNotConfigured : XaiProvider {
-    override val settings: XaiProviderSettings = XaiProviderSettings()
-    override val providerId: String = "xai"
-    override val tools: XaiTools = xaiTools
-
-    override fun chat(modelId: XaiChatModelId): LanguageModel = missing()
-    override fun responses(modelId: XaiResponsesModelId): LanguageModel = missing()
-    override fun image(modelId: XaiImageModelId): ImageModel = missing()
-    override fun video(modelId: XaiVideoModelId): VideoModel = missing()
-
-    private fun missing(): Nothing = throw AiSdkRuntimeException("xAI provider is not configured. Use createXai(client, settings).")
-}
-
-private class DefaultXaiProvider(
-    private val client: HttpClient,
-    override val settings: XaiProviderSettings,
-) : XaiProvider {
-    private val compatible = createOpenAICompatible(client, xaiCompatibleSettings())
-
-    override val providerId: String = "xai"
-    override val tools: XaiTools = xaiTools
-
-    override fun chat(modelId: XaiChatModelId): LanguageModel =
-        XaiChatLanguageModel(compatible.chatModel(modelId))
-
-    override fun responses(modelId: XaiResponsesModelId): LanguageModel =
-        createOpenResponses(
-            client,
-            OpenResponsesProviderSettings(
-                url = "${settings.baseURL.trimEnd('/')}/responses",
-                name = "xai",
-                authHeadersProvider = { xaiHeaders(settings) },
-                userAgentSuffix = null,
-            ),
-        ).responses(modelId)
-
-    override fun image(modelId: XaiImageModelId): ImageModel =
-        XaiImageModel(client, settings, modelId)
-
-    override fun video(modelId: XaiVideoModelId): VideoModel =
-        XaiVideoModel(client, settings, modelId)
-
-    override fun embeddingModel(modelId: String): EmbeddingModel =
-        throw NoSuchModelError(providerId, "embeddingModel", modelId)
-
-    private fun xaiCompatibleSettings(): OpenAICompatibleProviderSettings =
-        OpenAICompatibleProviderSettings(
-            name = "xai",
-            baseUrl = settings.baseURL.trimEnd('/'),
-            authHeadersProvider = { xaiHeaders(settings) },
-            userAgentSuffix = null,
-            providerOptionsName = "xai",
-            chatMaxOutputTokensKey = "max_completion_tokens",
-            supportedUrls = mapOf("image/*" to listOf("^https?://.*$")),
-            transformChatRequestBody = ::xaiTransformChatBody,
-        )
-}
+): XaiProvider = XaiProvider(client, settings)
 
 /**
  * Rewrites the OpenAI-shaped chat body into xAI's shape: drops `stop` (xAI does not
@@ -300,7 +276,7 @@ private class XaiImageModel(
                 GeneratedFile(mediaType = "image/png", base64 = base64)
             } else {
                 val url = obj["url"]?.jsonPrimitive?.contentOrNull
-                    ?: throw AiSdkRuntimeException("xAI image response is missing b64_json and url")
+                    ?: throw NoImageGeneratedError("xAI image response is missing b64_json and url")
                 xaiDownloadImage(client, url, params.abortSignal)
             }
         }
@@ -346,7 +322,7 @@ private class XaiVideoModel(
             headers = xaiHeaders(settings, params.headers),
         )
         val requestId = create.value.jsonObject["request_id"]?.jsonPrimitive?.contentOrNull
-            ?: throw AiSdkRuntimeException("No request_id returned from xAI video API")
+            ?: throw NoVideoGeneratedError("No request_id returned from xAI video API")
         val status = xaiPollVideo(
             client = client,
             settings = settings,
@@ -359,10 +335,10 @@ private class XaiVideoModel(
         val statusObj = status.value.jsonObject
         val video = statusObj["video"]?.jsonObject ?: JsonObject(emptyMap())
         if (video["respect_moderation"]?.jsonPrimitive?.booleanOrNull == false) {
-            throw AiSdkRuntimeException("xAI video generation was blocked due to a content policy violation.")
+            throw NoVideoGeneratedError("xAI video generation was blocked due to a content policy violation.")
         }
         val videoUrl = video["url"]?.jsonPrimitive?.contentOrNull
-            ?: throw AiSdkRuntimeException("xAI video generation completed but no video URL was returned.")
+            ?: throw NoVideoGeneratedError("xAI video generation completed but no video URL was returned.")
         return VideoModelResult(
             videos = listOf(GeneratedFile(mediaType = "video/mp4", base64 = "", url = videoUrl)),
             warnings = warnings,

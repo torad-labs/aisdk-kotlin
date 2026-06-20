@@ -1,8 +1,6 @@
 package ai.torad.aisdk
 import ai.torad.aisdk.providers.COHERE_VERSION
 import ai.torad.aisdk.providers.CohereProviderSettings
-import ai.torad.aisdk.providers.cohere
-import ai.torad.aisdk.providers.createCohere
 
 import io.ktor.http.HttpHeaders
 import kotlinx.coroutines.flow.toList
@@ -20,6 +18,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertTrue
+import ai.torad.aisdk.providers.Cohere
 
 class CohereProviderTest {
     @Test
@@ -69,7 +68,7 @@ class CohereProviderTest {
             ),
         )
         fixture.server.start()
-        val provider = createCohere(
+        val provider = Cohere(
             fixture.httpClient(),
             CohereProviderSettings(
                 apiKey = "key",
@@ -208,7 +207,7 @@ class CohereProviderTest {
             ),
         )
         fixture.server.start()
-        val provider = createCohere(
+        val provider = Cohere(
             fixture.httpClient(),
             CohereProviderSettings(apiKey = "key", baseURL = "https://cohere.test/v2"),
         )
@@ -271,7 +270,7 @@ class CohereProviderTest {
             ),
         )
         fixture.server.start()
-        val model = createCohere(
+        val model = Cohere(
             fixture.httpClient(),
             CohereProviderSettings(apiKey = "key", baseURL = "https://cohere.test/v2"),
         ).reranking("rerank-v3.5")
@@ -338,7 +337,7 @@ class CohereProviderTest {
             ),
         )
         fixture.server.start()
-        val model = createCohere(
+        val model = Cohere(
             fixture.httpClient(),
             CohereProviderSettings(apiKey = "key", baseURL = "https://cohere.test/v2"),
         ).languageModel("command-r-plus")
@@ -379,15 +378,9 @@ class CohereProviderTest {
 
     @Test
     fun `unsupported Cohere surfaces and unconfigured singleton fail explicitly`() = runTest {
-        val provider = createCohere(createTestServer(mutableMapOf()).httpClient(), CohereProviderSettings(apiKey = "key"))
+        val provider = Cohere(createTestServer(mutableMapOf()).httpClient(), CohereProviderSettings(apiKey = "key"))
 
         assertFailsWith<NoSuchModelError> { provider.imageModel("image") }
-        val chatError = assertFailsWith<AiSdkException> { cohere("command-r") }
-        val embeddingError = assertFailsWith<AiSdkException> { cohere.embedding("embed-v4.0") }
-        val rerankingError = assertFailsWith<AiSdkException> { cohere.reranking("rerank-v3.5") }
-        assertTrue(chatError.message.orEmpty().contains("createCohere"))
-        assertTrue(embeddingError.message.orEmpty().contains("createCohere"))
-        assertTrue(rerankingError.message.orEmpty().contains("createCohere"))
 
         val unsupportedFile = assertFailsWith<InvalidArgumentError> {
             provider("command-r").generate(

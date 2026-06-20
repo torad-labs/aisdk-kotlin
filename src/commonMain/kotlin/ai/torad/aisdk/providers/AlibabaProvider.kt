@@ -77,29 +77,10 @@ public data class AlibabaVideoModelOptions(
     val pollTimeoutMs: Long? = null,
 )
 
-public interface AlibabaProvider : Provider {
-    public operator fun invoke(modelId: AlibabaChatModelId): LanguageModel = languageModel(modelId)
-    public fun chatModel(modelId: AlibabaChatModelId): LanguageModel = languageModel(modelId)
-    public fun video(modelId: AlibabaVideoModelId): VideoModel = videoModel(modelId)
-}
-
-public fun createAlibaba(
-    client: HttpClient,
-    settings: AlibabaProviderSettings = AlibabaProviderSettings(),
-): AlibabaProvider = DefaultAlibabaProvider(client, settings)
-
-public val alibaba: AlibabaProvider = object : AlibabaProvider {
-    override val providerId: String = "alibaba"
-    override fun languageModel(modelId: String): LanguageModel =
-        throw AiSdkRuntimeException("Alibaba provider is not configured. Use createAlibaba(client, settings).")
-    override fun videoModel(modelId: String): VideoModel =
-        throw AiSdkRuntimeException("Alibaba provider is not configured. Use createAlibaba(client, settings).")
-}
-
-private class DefaultAlibabaProvider(
+public class AlibabaProvider(
     private val client: HttpClient,
-    private val settings: AlibabaProviderSettings,
-) : AlibabaProvider {
+    public val settings: AlibabaProviderSettings,
+) : Provider {
     override val providerId: String = "alibaba"
     private val chatProvider: OpenAICompatibleProvider =
         createOpenAICompatible(
@@ -116,11 +97,21 @@ private class DefaultAlibabaProvider(
             ),
         )
 
+    public operator fun invoke(modelId: AlibabaChatModelId): LanguageModel = languageModel(modelId)
+    public fun chatModel(modelId: AlibabaChatModelId): LanguageModel = languageModel(modelId)
+    public fun video(modelId: AlibabaVideoModelId): VideoModel = videoModel(modelId)
+
     override fun languageModel(modelId: String): LanguageModel = AlibabaChatLanguageModel(chatProvider.chatModel(modelId))
     override fun videoModel(modelId: String): VideoModel = AlibabaVideoModel(client, settings, modelId)
     override fun imageModel(modelId: String): ImageModel = throw NoSuchModelError(providerId, "imageModel", modelId)
     override fun embeddingModel(modelId: String): EmbeddingModel = AlibabaEmbeddingModel(client, settings, modelId)
 }
+
+/** PascalCase factory — mirrors `OpenAI(client, settings)`. */
+public fun Alibaba(
+    client: HttpClient,
+    settings: AlibabaProviderSettings = AlibabaProviderSettings(),
+): AlibabaProvider = AlibabaProvider(client, settings)
 
 private class AlibabaChatLanguageModel(
     private val delegate: LanguageModel,
@@ -166,7 +157,7 @@ private class AlibabaVideoModel(
             headers = alibabaHeaders(settings, params.headers + mapOf("X-DashScope-Async" to "enable")),
         )
         val taskId = create.value.jsonObject["output"]?.jsonObject?.get("task_id")?.jsonPrimitive?.contentOrNull
-            ?: throw AiSdkRuntimeException("No task_id returned from Alibaba API. Response: ${create.value}")
+            ?: throw NoVideoGeneratedError("No task_id returned from Alibaba API. Response: ${create.value}")
 
         val pollIntervalMs = options["pollIntervalMs"]?.jsonPrimitive?.contentOrNull?.toLongOrNull() ?: 5_000L
         val pollTimeoutMs = options["pollTimeoutMs"]?.jsonPrimitive?.contentOrNull?.toLongOrNull() ?: 600_000L
@@ -176,7 +167,7 @@ private class AlibabaVideoModel(
             params.abortSignal.throwIfAborted()
             if (pollIntervalMs > 0) delay(pollIntervalMs)
             if (clock.now().toEpochMilliseconds() - started > pollTimeoutMs) {
-                throw AiSdkRuntimeException("Video generation timed out after ${pollTimeoutMs}ms")
+                throw NoVideoGeneratedError("Video generation timed out after ${pollTimeoutMs}ms")
             }
             val status = alibabaGetJson(
                 client = client,
@@ -196,9 +187,9 @@ private class AlibabaVideoModel(
                         providerMetadata = mapOf("alibaba" to alibabaVideoMetadata(taskId, videoUrl, status.value.jsonObject)),
                     )
                 }
-                "FAILED", "CANCELED" -> throw AiSdkRuntimeException("Video generation ${taskStatus.lowercase()}. Task ID: $taskId. ${output["message"]?.jsonPrimitive?.contentOrNull.orEmpty()}",)
+                "FAILED", "CANCELED" -> throw NoVideoGeneratedError("Video generation ${taskStatus.lowercase()}. Task ID: $taskId. ${output["message"]?.jsonPrimitive?.contentOrNull.orEmpty()}")
                 "PENDING", "RUNNING", "UNKNOWN", null -> Unit
-                else -> throw AiSdkRuntimeException("Unknown Alibaba task status: $taskStatus")
+                else -> throw NoVideoGeneratedError("Unknown Alibaba task status: $taskStatus")
             }
         }
     }

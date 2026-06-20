@@ -1,8 +1,6 @@
 package ai.torad.aisdk
 import ai.torad.aisdk.providers.REVAI_VERSION
-import ai.torad.aisdk.providers.revai
 import ai.torad.aisdk.providers.RevaiProviderSettings
-import ai.torad.aisdk.providers.createRevai
 
 import io.ktor.http.HttpHeaders
 import kotlinx.coroutines.test.runTest
@@ -19,6 +17,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertTrue
+import ai.torad.aisdk.providers.Revai
 
 class RevaiProviderTest {
     @Test
@@ -42,7 +41,7 @@ class RevaiProviderTest {
             ),
         )
         fixture.server.start()
-        val model = createRevai(
+        val model = Revai(
             fixture.httpClient(),
             RevaiProviderSettings(apiKey = "key", pollingIntervalMillis = 0),
         ).transcription("machine")
@@ -142,7 +141,7 @@ class RevaiProviderTest {
             ),
         )
         fixture.server.start()
-        val model = createRevai(
+        val model = Revai(
             fixture.httpClient(),
             RevaiProviderSettings(apiKey = "key", pollingIntervalMillis = 0),
         ).transcription("machine")
@@ -156,11 +155,10 @@ class RevaiProviderTest {
     @Test
     fun `default provider and unsupported model families fail explicitly`() {
         val fixture = createTestServer(mutableMapOf())
-        val provider = createRevai(fixture.httpClient(), RevaiProviderSettings(apiKey = "key"))
+        val provider = Revai(fixture.httpClient(), RevaiProviderSettings(apiKey = "key"))
 
         assertFailsWith<NoSuchModelError> { provider.languageModel("model") }
         assertFailsWith<NoSuchModelError> { provider.embeddingModel("embed") }
-        assertFailsWith<AiSdkException> { revai.transcription("machine") }
     }
 
     private fun Map<String, String>.headerValue(name: String): String? =

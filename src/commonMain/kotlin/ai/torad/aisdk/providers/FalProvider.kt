@@ -81,52 +81,31 @@ public data class FalVideoModelOptions(
     val promptOptimizer: Boolean? = null,
 )
 
-public interface FalProvider : Provider {
-    public val settings: FalProviderSettings
+public class FalProvider(
+    private val client: HttpClient,
+    public val settings: FalProviderSettings,
+) : Provider {
+    override val providerId: String = "fal"
 
-    public fun image(modelId: FalImageModelId): ImageModel
-    public fun speech(modelId: FalSpeechModelId): SpeechModel
-    public fun transcription(modelId: FalTranscriptionModelId): TranscriptionModel
-    public fun video(modelId: FalVideoModelId): VideoModel
+    public fun image(modelId: FalImageModelId): ImageModel = FalImageModel(client, settings, modelId)
+    public fun speech(modelId: FalSpeechModelId): SpeechModel = FalSpeechModel(client, settings, modelId)
+    public fun transcription(modelId: FalTranscriptionModelId): TranscriptionModel = FalTranscriptionModel(client, settings, modelId)
+    public fun video(modelId: FalVideoModelId): VideoModel = FalVideoModel(client, settings, modelId)
     public fun textEmbeddingModel(modelId: String): Nothing = throw NoSuchModelError(providerId, "embeddingModel", modelId)
 
     override fun imageModel(modelId: String): ImageModel = image(modelId)
     override fun speechModel(modelId: String): SpeechModel = speech(modelId)
     override fun transcriptionModel(modelId: String): TranscriptionModel = transcription(modelId)
     override fun videoModel(modelId: String): VideoModel = video(modelId)
-}
-
-public fun createFal(
-    client: HttpClient,
-    settings: FalProviderSettings = FalProviderSettings(),
-): FalProvider = DefaultFalProvider(client, settings)
-
-public val fal: FalProvider = object : FalProvider {
-    override val providerId: String = "fal"
-    override val settings: FalProviderSettings = FalProviderSettings()
-    override fun image(modelId: String): ImageModel =
-        throw AiSdkRuntimeException("fal.ai provider is not configured. Use createFal(client, settings).")
-    override fun speech(modelId: String): SpeechModel =
-        throw AiSdkRuntimeException("fal.ai provider is not configured. Use createFal(client, settings).")
-    override fun transcription(modelId: String): TranscriptionModel =
-        throw AiSdkRuntimeException("fal.ai provider is not configured. Use createFal(client, settings).")
-    override fun video(modelId: String): VideoModel =
-        throw AiSdkRuntimeException("fal.ai provider is not configured. Use createFal(client, settings).")
-}
-
-private class DefaultFalProvider(
-    private val client: HttpClient,
-    override val settings: FalProviderSettings,
-) : FalProvider {
-    override val providerId: String = "fal"
-
-    override fun image(modelId: String): ImageModel = FalImageModel(client, settings, modelId)
-    override fun speech(modelId: String): SpeechModel = FalSpeechModel(client, settings, modelId)
-    override fun transcription(modelId: String): TranscriptionModel = FalTranscriptionModel(client, settings, modelId)
-    override fun video(modelId: String): VideoModel = FalVideoModel(client, settings, modelId)
     override fun languageModel(modelId: String): LanguageModel = throw NoSuchModelError(providerId, "languageModel", modelId)
     override fun embeddingModel(modelId: String): EmbeddingModel = throw NoSuchModelError(providerId, "embeddingModel", modelId)
 }
+
+/** PascalCase factory — mirrors `OpenAI(...)`, the Layer-3 reference pattern. */
+public fun Fal(
+    client: HttpClient,
+    settings: FalProviderSettings = FalProviderSettings(),
+): FalProvider = FalProvider(client, settings)
 
 private class FalImageModel(
     private val client: HttpClient,
@@ -221,7 +200,7 @@ private class FalTranscriptionModel(
             headers = falHeaders(settings, params.headers),
         )
         val requestId = queue.value.jsonObject["request_id"]?.jsonPrimitive?.contentOrNull
-            ?: throw AiSdkRuntimeException("fal transcription queue response is missing request_id")
+            ?: throw InvalidResponseDataError(queue.value, "fal transcription queue response is missing request_id")
         val result = falPollJson(
             client = client,
             url = "https://queue.fal.run/fal-ai/$modelId/requests/$requestId",
@@ -269,7 +248,7 @@ private class FalVideoModel(
             headers = falHeaders(settings, params.headers),
         )
         val responseUrl = queue.value.jsonObject["response_url"]?.jsonPrimitive?.contentOrNull
-            ?: throw AiSdkRuntimeException("No response URL returned from queue endpoint")
+            ?: throw InvalidResponseDataError(queue.value, "No response URL returned from queue endpoint")
         val pollIntervalMillis = options["pollIntervalMs"]?.jsonPrimitive?.contentOrNull?.toLongOrNull()
             ?: settings.videoPollIntervalMillis
         val result = falPollJson(

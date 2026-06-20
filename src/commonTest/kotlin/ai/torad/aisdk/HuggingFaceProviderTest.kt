@@ -1,7 +1,5 @@
 package ai.torad.aisdk
 import ai.torad.aisdk.providers.HuggingFaceProviderSettings
-import ai.torad.aisdk.providers.createHuggingFace
-import ai.torad.aisdk.providers.huggingface
 
 import ai.torad.aisdk.testing.drainAllItems
 import io.ktor.http.HttpHeaders
@@ -23,6 +21,7 @@ import kotlin.test.assertFailsWith
 import kotlin.test.assertIs
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
+import ai.torad.aisdk.providers.HuggingFace
 
 class HuggingFaceProviderTest {
     @Test
@@ -104,7 +103,7 @@ class HuggingFaceProviderTest {
             ),
         )
         fixture.server.start()
-        val provider = createHuggingFace(
+        val provider = HuggingFace(
             fixture.httpClient(),
             HuggingFaceProviderSettings(
                 apiKey = "key",
@@ -274,7 +273,7 @@ class HuggingFaceProviderTest {
             ),
         )
         fixture.server.start()
-        val provider = createHuggingFace(
+        val provider = HuggingFace(
             fixture.httpClient(),
             HuggingFaceProviderSettings(baseURL = "https://hf.test/v1"),
         )
@@ -320,7 +319,7 @@ class HuggingFaceProviderTest {
             ),
         )
         fixture.server.start()
-        val provider = createHuggingFace(fixture.httpClient(), HuggingFaceProviderSettings(baseURL = "https://hf.test/v1"))
+        val provider = HuggingFace(fixture.httpClient(), HuggingFaceProviderSettings(baseURL = "https://hf.test/v1"))
 
         val events = drainAllItems(provider.responses("meta-llama/Llama-3.1-8B-Instruct").stream(LanguageModelCallParams(messages = listOf(userMessage("hi")))))
 
@@ -331,7 +330,7 @@ class HuggingFaceProviderTest {
     @Test
     fun `unsupported embedding and image factories match upstream guidance`() {
         val fixture = createTestServer(mutableMapOf())
-        val provider = createHuggingFace(fixture.httpClient())
+        val provider = HuggingFace(fixture.httpClient())
 
         val embedding = assertFailsWith<NoSuchModelError> {
             provider.embeddingModel("embed")
@@ -380,7 +379,7 @@ class HuggingFaceProviderTest {
             ),
         )
         fixture.server.start()
-        val provider = createHuggingFace(
+        val provider = HuggingFace(
             fixture.httpClient(),
             HuggingFaceProviderSettings(baseURL = "https://hf.test/v1"),
         )

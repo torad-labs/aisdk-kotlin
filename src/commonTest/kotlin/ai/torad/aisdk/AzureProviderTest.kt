@@ -1,8 +1,6 @@
 package ai.torad.aisdk
 import ai.torad.aisdk.providers.AZURE_VERSION
 import ai.torad.aisdk.providers.AzureOpenAIProviderSettings
-import ai.torad.aisdk.providers.azure
-import ai.torad.aisdk.providers.createAzure
 
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.mock.MockEngine
@@ -26,6 +24,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
+import ai.torad.aisdk.providers.AzureOpenAI
 
 class AzureProviderTest {
     @Test
@@ -43,7 +42,7 @@ class AzureProviderTest {
                 )
             },
         )
-        val provider = createAzure(
+        val provider = AzureOpenAI(
             client,
             AzureOpenAIProviderSettings(
                 resourceName = "test-resource",
@@ -100,7 +99,7 @@ class AzureProviderTest {
                 )
             },
         )
-        val provider = createAzure(
+        val provider = AzureOpenAI(
             client,
             AzureOpenAIProviderSettings(
                 resourceName = "test-resource",
@@ -145,7 +144,7 @@ class AzureProviderTest {
                 }
             },
         )
-        val provider = createAzure(
+        val provider = AzureOpenAI(
             client,
             AzureOpenAIProviderSettings(
                 baseURL = "https://proxy.example/openai/",
@@ -193,7 +192,7 @@ class AzureProviderTest {
 
     @Test
     fun `tools mirror Azure OpenAI hosted tool subset`() {
-        val tools = createAzure(
+        val tools = AzureOpenAI(
             HttpClient(MockEngine { respond("{}") }),
             AzureOpenAIProviderSettings(resourceName = "test-resource", apiKey = "test-api-key"),
         ).tools
@@ -208,7 +207,7 @@ class AzureProviderTest {
     @Test
     fun `rejects conflicting Azure auth settings and unconfigured singleton fails explicitly`() {
         val error = assertFailsWith<InvalidArgumentError> {
-            createAzure(
+            AzureOpenAI(
                 HttpClient(MockEngine { respond("{}") }),
                 AzureOpenAIProviderSettings(
                     resourceName = "test-resource",
@@ -219,11 +218,6 @@ class AzureProviderTest {
         }
         assertTrue(error.message.orEmpty().contains("Both apiKey and tokenProvider were provided"))
 
-        val singletonError = assertFailsWith<AiSdkException> {
-            azure.chat("model")
-        }
-        assertNotNull(singletonError.message)
-        assertTrue(singletonError.message.orEmpty().contains("createAzure"))
     }
 
     private fun azureResponsesJson(text: String): String =

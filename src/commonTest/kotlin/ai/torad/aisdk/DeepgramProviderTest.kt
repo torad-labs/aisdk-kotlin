@@ -1,8 +1,6 @@
 package ai.torad.aisdk
 import ai.torad.aisdk.providers.DEEPGRAM_VERSION
 import ai.torad.aisdk.providers.DeepgramProviderSettings
-import ai.torad.aisdk.providers.createDeepgram
-import ai.torad.aisdk.providers.deepgram
 
 import io.ktor.http.HttpHeaders
 import kotlinx.coroutines.test.runTest
@@ -19,6 +17,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertTrue
+import ai.torad.aisdk.providers.Deepgram
 
 class DeepgramProviderTest {
     @Test
@@ -32,7 +31,7 @@ class DeepgramProviderTest {
             ),
         )
         fixture.server.start()
-        val model = createDeepgram(
+        val model = Deepgram(
             fixture.httpClient(),
             DeepgramProviderSettings(apiKey = "key"),
         ).speech("aura-2-helena-en")
@@ -91,7 +90,7 @@ class DeepgramProviderTest {
             ),
         )
         fixture.server.start()
-        val model = createDeepgram(
+        val model = Deepgram(
             fixture.httpClient(),
             DeepgramProviderSettings(apiKey = "key"),
         ).transcription("nova-3")
@@ -161,7 +160,7 @@ class DeepgramProviderTest {
             ),
         )
         fixture.server.start()
-        val model = createDeepgram(
+        val model = Deepgram(
             fixture.httpClient(),
             DeepgramProviderSettings(apiKey = "key"),
         ).transcription("nova-3")
@@ -179,12 +178,10 @@ class DeepgramProviderTest {
     @Test
     fun `default provider and unsupported model families fail explicitly`() {
         val fixture = createTestServer(mutableMapOf())
-        val provider = createDeepgram(fixture.httpClient(), DeepgramProviderSettings(apiKey = "key"))
+        val provider = Deepgram(fixture.httpClient(), DeepgramProviderSettings(apiKey = "key"))
 
         assertFailsWith<NoSuchModelError> { provider.languageModel("model") }
         assertFailsWith<NoSuchModelError> { provider.embeddingModel("embed") }
-        assertFailsWith<AiSdkException> { deepgram.speech("aura-2-helena-en") }
-        assertFailsWith<AiSdkException> { deepgram.transcription("nova-3") }
     }
 
     private fun Map<String, String>.headerValue(name: String): String? =

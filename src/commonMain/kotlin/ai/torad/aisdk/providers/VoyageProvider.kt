@@ -43,39 +43,26 @@ public data class VoyageProviderSettings(
     val headers: Map<String, String> = emptyMap(),
 )
 
-public interface VoyageProvider : Provider {
-    public fun embedding(modelId: VoyageEmbeddingModelId): EmbeddingModel
+public class VoyageProvider(
+    private val client: HttpClient,
+    public val settings: VoyageProviderSettings,
+) : Provider {
+    override val providerId: String = "voyage"
+
+    public fun embedding(modelId: VoyageEmbeddingModelId): EmbeddingModel = VoyageEmbeddingModel(client, settings, modelId)
     public fun textEmbedding(modelId: VoyageEmbeddingModelId): EmbeddingModel = embedding(modelId)
     public fun textEmbeddingModel(modelId: VoyageEmbeddingModelId): EmbeddingModel = embedding(modelId)
-    public fun reranking(modelId: VoyageRerankingModelId): RerankingModel
+    public fun reranking(modelId: VoyageRerankingModelId): RerankingModel = VoyageRerankingModel(client, settings, modelId)
 
     override fun embeddingModel(modelId: String): EmbeddingModel = embedding(modelId)
     override fun rerankingModel(modelId: String): RerankingModel = reranking(modelId)
 }
 
-public fun createVoyage(
+/** PascalCase factory — mirrors the OpenAI reference pattern. */
+public fun Voyage(
     client: HttpClient,
     settings: VoyageProviderSettings = VoyageProviderSettings(),
-): VoyageProvider = DefaultVoyageProvider(client, settings)
-
-public val voyage: VoyageProvider = object : VoyageProvider {
-    override val providerId: String = "voyage"
-    override fun embedding(modelId: String): EmbeddingModel =
-        throw AiSdkRuntimeException("Voyage provider is not configured. Use createVoyage(client, settings).")
-    override fun reranking(modelId: String): RerankingModel =
-        throw AiSdkRuntimeException("Voyage provider is not configured. Use createVoyage(client, settings).")
-}
-
-private class DefaultVoyageProvider(
-    private val client: HttpClient,
-    private val settings: VoyageProviderSettings,
-) : VoyageProvider {
-    override val providerId: String = "voyage"
-    override fun embedding(modelId: String): EmbeddingModel = VoyageEmbeddingModel(client, settings, modelId)
-    override fun reranking(modelId: String): RerankingModel = VoyageRerankingModel(client, settings, modelId)
-    override fun languageModel(modelId: String): LanguageModel = throw NoSuchModelError(providerId, "languageModel", modelId)
-    override fun imageModel(modelId: String): ImageModel = throw NoSuchModelError(providerId, "imageModel", modelId)
-}
+): VoyageProvider = VoyageProvider(client, settings)
 
 private class VoyageEmbeddingModel(
     private val client: HttpClient,

@@ -1,8 +1,6 @@
 package ai.torad.aisdk
 import ai.torad.aisdk.providers.QUIVERAI_VERSION
 import ai.torad.aisdk.providers.QuiverAIProviderSettings
-import ai.torad.aisdk.providers.createQuiverAI
-import ai.torad.aisdk.providers.quiverai
 
 import io.ktor.http.HttpHeaders
 import kotlinx.coroutines.test.runTest
@@ -19,6 +17,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertTrue
+import ai.torad.aisdk.providers.QuiverAI
 
 class QuiverAIProviderTest {
     @Test
@@ -36,7 +35,7 @@ class QuiverAIProviderTest {
             ),
         )
         fixture.server.start()
-        val model = createQuiverAI(
+        val model = QuiverAI(
             fixture.httpClient(),
             QuiverAIProviderSettings(apiKey = "key", headers = mapOf("X-Test" to "1")),
         ).image("arrow-1")
@@ -103,7 +102,7 @@ class QuiverAIProviderTest {
             ),
         )
         fixture.server.start()
-        val model = createQuiverAI(fixture.httpClient(), QuiverAIProviderSettings(apiKey = "key")).image("arrow-1")
+        val model = QuiverAI(fixture.httpClient(), QuiverAIProviderSettings(apiKey = "key")).image("arrow-1")
 
         model.generate(
             ImageGenerationParams(
@@ -142,7 +141,7 @@ class QuiverAIProviderTest {
             ),
         )
         fixture.server.start()
-        val provider = createQuiverAI(fixture.httpClient(), QuiverAIProviderSettings(apiKey = "key"))
+        val provider = QuiverAI(fixture.httpClient(), QuiverAIProviderSettings(apiKey = "key"))
 
         assertFailsWith<InvalidArgumentError> {
             provider.image("arrow-1").generate(
@@ -191,11 +190,10 @@ class QuiverAIProviderTest {
     @Test
     fun `default provider and unsupported model families fail explicitly`() {
         val fixture = createTestServer(mutableMapOf())
-        val provider = createQuiverAI(fixture.httpClient(), QuiverAIProviderSettings(apiKey = "key"))
+        val provider = QuiverAI(fixture.httpClient(), QuiverAIProviderSettings(apiKey = "key"))
 
         assertFailsWith<NoSuchModelError> { provider.languageModel("model") }
         assertFailsWith<NoSuchModelError> { provider.embeddingModel("embed") }
-        assertFailsWith<AiSdkException> { quiverai.image("arrow-1") }
     }
 
     private fun Map<String, String>.headerValue(name: String): String? =

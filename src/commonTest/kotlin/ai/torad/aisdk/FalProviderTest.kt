@@ -1,8 +1,6 @@
 package ai.torad.aisdk
 import ai.torad.aisdk.providers.FAL_VERSION
 import ai.torad.aisdk.providers.FalProviderSettings
-import ai.torad.aisdk.providers.createFal
-import ai.torad.aisdk.providers.fal
 
 import io.ktor.http.HttpHeaders
 import kotlinx.coroutines.test.runTest
@@ -20,6 +18,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertTrue
+import ai.torad.aisdk.providers.Fal
 
 class FalProviderTest {
     @Test
@@ -60,7 +59,7 @@ class FalProviderTest {
             ),
         )
         fixture.server.start()
-        val provider = createFal(
+        val provider = Fal(
             fixture.httpClient(),
             FalProviderSettings(
                 apiKey = "key",
@@ -151,7 +150,7 @@ class FalProviderTest {
             ),
         )
         fixture.server.start()
-        val provider = createFal(fixture.httpClient(), FalProviderSettings(apiKey = "key"))
+        val provider = Fal(fixture.httpClient(), FalProviderSettings(apiKey = "key"))
 
         val result = provider.speech("fal-ai/minimax/speech-02-hd").generate(
             SpeechGenerationParams(
@@ -217,7 +216,7 @@ class FalProviderTest {
             ),
         )
         fixture.server.start()
-        val provider = createFal(
+        val provider = Fal(
             fixture.httpClient(),
             FalProviderSettings(apiKey = "key", transcriptionPollIntervalMillis = 0),
         )
@@ -301,7 +300,7 @@ class FalProviderTest {
             ),
         )
         fixture.server.start()
-        val provider = createFal(
+        val provider = Fal(
             fixture.httpClient(),
             FalProviderSettings(apiKey = "key", videoPollIntervalMillis = 10),
         )
@@ -353,12 +352,11 @@ class FalProviderTest {
 
     @Test
     fun `unsupported language and embedding models throw no such model errors`() {
-        val provider = createFal(createTestServer(mutableMapOf()).httpClient())
+        val provider = Fal(createTestServer(mutableMapOf()).httpClient())
 
         assertFailsWith<NoSuchModelError> { provider.languageModel("model") }
         assertFailsWith<NoSuchModelError> { provider.embeddingModel("model") }
         assertFailsWith<NoSuchModelError> { provider.textEmbeddingModel("model") }
-        assertFailsWith<AiSdkException> { fal.image("model") }
     }
 
     private fun Map<String, String>.headerValue(name: String): String? =

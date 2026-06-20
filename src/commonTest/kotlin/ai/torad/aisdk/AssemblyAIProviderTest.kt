@@ -1,8 +1,6 @@
 package ai.torad.aisdk
 import ai.torad.aisdk.providers.ASSEMBLYAI_VERSION
 import ai.torad.aisdk.providers.AssemblyAIProviderSettings
-import ai.torad.aisdk.providers.assemblyai
-import ai.torad.aisdk.providers.createAssemblyAI
 
 import io.ktor.http.HttpHeaders
 import kotlinx.coroutines.test.runTest
@@ -20,6 +18,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertTrue
+import ai.torad.aisdk.providers.AssemblyAI
 
 class AssemblyAIProviderTest {
     @Test
@@ -43,7 +42,7 @@ class AssemblyAIProviderTest {
             ),
         )
         fixture.server.start()
-        val model = createAssemblyAI(
+        val model = AssemblyAI(
             fixture.httpClient(),
             AssemblyAIProviderSettings(apiKey = "key"),
         ).transcription("best")
@@ -134,7 +133,7 @@ class AssemblyAIProviderTest {
             ),
         )
         fixture.server.start()
-        val model = createAssemblyAI(
+        val model = AssemblyAI(
             fixture.httpClient(),
             AssemblyAIProviderSettings(apiKey = "key"),
         ).transcription("nano")
@@ -165,7 +164,7 @@ class AssemblyAIProviderTest {
             ),
         )
         fixture.server.start()
-        val model = createAssemblyAI(
+        val model = AssemblyAI(
             fixture.httpClient(),
             AssemblyAIProviderSettings(apiKey = "key", pollingIntervalMillis = 0),
         ).transcription("best")
@@ -179,11 +178,10 @@ class AssemblyAIProviderTest {
     @Test
     fun `default provider and unsupported model families fail explicitly`() {
         val fixture = createTestServer(mutableMapOf())
-        val provider = createAssemblyAI(fixture.httpClient(), AssemblyAIProviderSettings(apiKey = "key"))
+        val provider = AssemblyAI(fixture.httpClient(), AssemblyAIProviderSettings(apiKey = "key"))
 
         assertFailsWith<NoSuchModelError> { provider.languageModel("model") }
         assertFailsWith<NoSuchModelError> { provider.embeddingModel("embed") }
-        assertFailsWith<AiSdkException> { assemblyai.transcription("best") }
     }
 
     private fun Map<String, String>.headerValue(name: String): String? =

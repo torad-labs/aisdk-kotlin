@@ -55,31 +55,25 @@ public data class KlingAIVideoModelOptions(
     val keepOriginalSound: String? = null,
 )
 
-public interface KlingAIProvider : Provider {
-    public fun video(modelId: KlingAIVideoModelId): VideoModel = videoModel(modelId)
-}
-
-public fun createKlingAI(
-    client: HttpClient,
-    settings: KlingAIProviderSettings = KlingAIProviderSettings(),
-): KlingAIProvider = DefaultKlingAIProvider(client, settings)
-
-public val klingai: KlingAIProvider = object : KlingAIProvider {
-    override val providerId: String = "klingai"
-    override fun videoModel(modelId: String): VideoModel =
-        throw AiSdkRuntimeException("KlingAI provider is not configured. Use createKlingAI(client, settings).")
-}
-
-private class DefaultKlingAIProvider(
+public class KlingAIProvider(
     private val client: HttpClient,
-    private val settings: KlingAIProviderSettings,
-) : KlingAIProvider {
+    public val settings: KlingAIProviderSettings,
+) : Provider {
     override val providerId: String = "klingai"
+
+    public fun video(modelId: KlingAIVideoModelId): VideoModel = videoModel(modelId)
+
     override fun videoModel(modelId: String): VideoModel = KlingAIVideoModel(client, settings, modelId)
     override fun languageModel(modelId: String): LanguageModel = throw NoSuchModelError(providerId, "languageModel", modelId)
     override fun embeddingModel(modelId: String): EmbeddingModel = throw NoSuchModelError(providerId, "embeddingModel", modelId)
     override fun imageModel(modelId: String): ImageModel = throw NoSuchModelError(providerId, "imageModel", modelId)
 }
+
+/** PascalCase factory — mirrors the OpenAI(...) reference pattern. */
+public fun KlingAI(
+    client: HttpClient,
+    settings: KlingAIProviderSettings = KlingAIProviderSettings(),
+): KlingAIProvider = KlingAIProvider(client, settings)
 
 private class KlingAIVideoModel(
     private val client: HttpClient,
@@ -115,7 +109,7 @@ private class KlingAIVideoModel(
             body = body,
         )
         val taskId = create.value.jsonObject["data"]?.jsonObject?.get("task_id")?.jsonPrimitive?.contentOrNull
-            ?: throw AiSdkRuntimeException("No task_id returned from KlingAI API. Response: ${create.value}")
+            ?: throw InvalidResponseDataError(create.value, "No task_id returned from KlingAI API. Response: ${create.value}")
 
         val pollIntervalMs = options["pollIntervalMs"]?.jsonPrimitive?.contentOrNull?.toLongOrNull() ?: 5_000L
         val pollTimeoutMs = options["pollTimeoutMs"]?.jsonPrimitive?.contentOrNull?.toLongOrNull() ?: 600_000L
@@ -125,7 +119,7 @@ private class KlingAIVideoModel(
             params.abortSignal.throwIfAborted()
             if (pollIntervalMs > 0) delay(pollIntervalMs)
             if (clock.now().toEpochMilliseconds() - started > pollTimeoutMs) {
-                throw AiSdkRuntimeException("Video generation timed out after ${pollTimeoutMs}ms")
+                throw NoVideoGeneratedError("Video generation timed out after ${pollTimeoutMs}ms")
             }
             val status = klingAIRequestJson(
                 client = client,
@@ -137,9 +131,9 @@ private class KlingAIVideoModel(
             val data = status.value.jsonObject["data"]?.jsonObject ?: JsonObject(emptyMap())
             when (val taskStatus = data["task_status"]?.jsonPrimitive?.contentOrNull) {
                 "succeed" -> return klingAISuccessResult(taskId, data, headers, warnings)
-                "failed" -> throw AiSdkRuntimeException("Video generation failed: ${data["task_status_msg"]?.jsonPrimitive?.contentOrNull ?: "Unknown error"}")
+                "failed" -> throw NoVideoGeneratedError("Video generation failed: ${data["task_status_msg"]?.jsonPrimitive?.contentOrNull ?: "Unknown error"}")
                 "submitted", "processing", null -> Unit
-                else -> throw AiSdkRuntimeException("Unknown KlingAI task status: $taskStatus")
+                else -> throw InvalidResponseDataError(data, "Unknown KlingAI task status: $taskStatus")
             }
         }
     }
