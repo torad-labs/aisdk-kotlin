@@ -112,7 +112,7 @@ class BlackForestLabsProviderTest {
         assertEquals("https://api.bfl.ai/v1/get_result?id=req1", fixture.calls[1].requestUrl)
         assertEquals("bfl-key", fixture.calls[2].requestHeaders.headerValue("x-key"))
 
-        val providerMetadata = result.providerMetadata["blackForestLabs"]?.jsonObject
+        val providerMetadata = result.providerMetadata.toMap()["blackForestLabs"]?.jsonObject
         val imageMetadata = providerMetadata?.get("images")?.jsonArray?.single()?.jsonObject
         assertEquals(123, imageMetadata?.get("seed")?.jsonPrimitive?.intOrNull)
         assertEquals(2.5, imageMetadata?.get("duration")?.jsonPrimitive?.doubleOrNull)

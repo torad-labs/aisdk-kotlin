@@ -175,7 +175,7 @@ private class GladiaTranscriptionModel(
                 headers = result.headers,
                 body = result.value,
             ),
-            providerMetadata = mapOf("gladia" to result.value),
+            providerMetadata = ProviderMetadata.Raw(JsonObject(mapOf("gladia" to result.value))),
             language = transcript["languages"]?.jsonArray?.firstOrNull()?.jsonPrimitive?.contentOrNull,
             durationInSeconds = responseBody["result"]?.jsonObject
                 ?.get("metadata")?.jsonObject

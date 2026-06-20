@@ -1,6 +1,7 @@
 package ai.torad.aisdk.providers
 
 import ai.torad.aisdk.*
+import ai.torad.aisdk.ProviderMetadata
 import io.ktor.client.HttpClient
 import io.ktor.client.request.request
 import io.ktor.client.statement.bodyAsBytes
@@ -284,7 +285,7 @@ private class XaiImageModel(
             images = images,
             warnings = warnings,
             response = LanguageModelResponseMetadata(modelId = modelId, headers = response.headers, body = response.value),
-            providerMetadata = mapOf("xai" to buildJsonObject {
+            providerMetadata = ProviderMetadata.Raw(JsonObject(mapOf("xai" to buildJsonObject {
                 put("images", JsonArray(data.map { image ->
                     val revisedPrompt = image.jsonObject["revised_prompt"]?.jsonPrimitive?.contentOrNull
                     buildJsonObject {
@@ -292,7 +293,7 @@ private class XaiImageModel(
                     }
                 }))
                 responseObj["usage"]?.jsonObject?.get("cost_in_usd_ticks")?.let { put("costInUsdTicks", it) }
-            }),
+            }))),
         )
     }
 }
@@ -343,13 +344,13 @@ private class XaiVideoModel(
             videos = listOf(GeneratedFile(mediaType = "video/mp4", base64 = "", url = videoUrl)),
             warnings = warnings,
             response = LanguageModelResponseMetadata(modelId = modelId, headers = status.headers, body = status.value),
-            providerMetadata = mapOf("xai" to buildJsonObject {
+            providerMetadata = ProviderMetadata.Raw(JsonObject(mapOf("xai" to buildJsonObject {
                 put("requestId", JsonPrimitive(requestId))
                 put("videoUrl", JsonPrimitive(videoUrl))
                 video["duration"]?.let { put("duration", it) }
                 statusObj["usage"]?.jsonObject?.get("cost_in_usd_ticks")?.let { put("costInUsdTicks", it) }
                 statusObj["progress"]?.let { put("progress", it) }
-            }),
+            }))),
         )
     }
 }

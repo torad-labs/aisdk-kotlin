@@ -187,12 +187,12 @@ class HuggingFaceProviderTest {
         assertEquals("resp-1", result.response.id)
         assertEquals(1_780_000_000_000, result.response.timestampMillis)
         assertEquals("Qwen/Qwen3-32B", result.response.modelId)
-        assertEquals("resp-1", result.providerMetadata["huggingface"]?.jsonObject?.get("responseId")?.jsonPrimitive?.contentOrNull)
+        assertEquals("resp-1", result.providerMetadata.toMap()["huggingface"]?.jsonObject?.get("responseId")?.jsonPrimitive?.contentOrNull)
         assertEquals("Use the cached city context.", result.content.filterIsInstance<ContentPart.Reasoning>().single().text)
         assertEquals("Paris", result.content.filterIsInstance<ContentPart.Source>().single().title)
         assertEquals(listOf("lookup", "remoteLookup", "list_tools"), result.toolCalls.map { it.toolName })
         assertEquals("Paris", result.toolCalls[0].input.jsonObject["city"]?.jsonPrimitive?.contentOrNull)
-        assertEquals(true, result.toolCalls[1].providerMetadata?.get("huggingface")?.jsonObject?.get("providerExecuted")?.jsonPrimitive?.booleanOrNull)
+        assertEquals(true, result.toolCalls[1].providerMetadata.toMap()["huggingface"]?.jsonObject?.get("providerExecuted")?.jsonPrimitive?.booleanOrNull)
         assertEquals("docs", result.toolCalls[2].input.jsonObject["server_label"]?.jsonPrimitive?.contentOrNull)
         assertEquals(3, result.content.filterIsInstance<ContentPart.ToolResult>().size)
         assertEquals(
@@ -301,7 +301,7 @@ class HuggingFaceProviderTest {
         assertEquals(FinishReason.Stop, finish.finishReason)
         assertEquals(1, finish.usage.promptTokens)
         assertEquals(1, finish.usage.outputTokens.reasoning)
-        assertEquals("resp-stream", finish.providerMetadata?.get("huggingface")?.jsonObject?.get("responseId")?.jsonPrimitive?.contentOrNull)
+        assertEquals("resp-stream", finish.providerMetadata.toMap()["huggingface"]?.jsonObject?.get("responseId")?.jsonPrimitive?.contentOrNull)
 
         val request = fixture.calls.single()
         assertEquals(true, request.requestBodyJson.jsonObject["stream"]?.jsonPrimitive?.booleanOrNull)

@@ -1,6 +1,11 @@
+@file:OptIn(ExperimentalSerializationApi::class)
+
 package ai.torad.aisdk.ui
 
+import ai.torad.aisdk.ProviderMetadata
 import ai.torad.aisdk.decodeAs
+import kotlinx.serialization.EncodeDefault
+import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonElement
@@ -54,7 +59,8 @@ public sealed interface UIMessagePart {
     public data class Text(
         val text: String,
         val state: TextUIPartState = TextUIPartState.Done,
-        val providerMetadata: Map<String, JsonElement>? = null,
+        @EncodeDefault(EncodeDefault.Mode.NEVER)
+        val providerMetadata: ProviderMetadata = ProviderMetadata.None,
     ) : UIMessagePart
 
     /**
@@ -99,14 +105,16 @@ public sealed interface UIMessagePart {
          * approval secret, a replay missing it is denied fail-closed.
          */
         val signature: String? = null,
-        val providerMetadata: Map<String, JsonElement>? = null,
+        @EncodeDefault(EncodeDefault.Mode.NEVER)
+        val providerMetadata: ProviderMetadata = ProviderMetadata.None,
     ) : UIMessagePart
 
     @Serializable
     public data class Reasoning(
         val text: String,
         val state: TextUIPartState = TextUIPartState.Done,
-        val providerMetadata: Map<String, JsonElement>? = null,
+        @EncodeDefault(EncodeDefault.Mode.NEVER)
+        val providerMetadata: ProviderMetadata = ProviderMetadata.None,
     ) : UIMessagePart
 
     /**
@@ -122,7 +130,8 @@ public sealed interface UIMessagePart {
         val sourceId: String,
         val url: String,
         val title: String? = null,
-        val providerMetadata: Map<String, JsonElement>? = null,
+        @EncodeDefault(EncodeDefault.Mode.NEVER)
+        val providerMetadata: ProviderMetadata = ProviderMetadata.None,
     ) : UIMessagePart
 
     /**
@@ -138,7 +147,8 @@ public sealed interface UIMessagePart {
         val mediaType: String,
         val title: String,
         val filename: String? = null,
-        val providerMetadata: Map<String, JsonElement>? = null,
+        @EncodeDefault(EncodeDefault.Mode.NEVER)
+        val providerMetadata: ProviderMetadata = ProviderMetadata.None,
     ) : UIMessagePart
 
     /** Generated file (image, audio, etc.). */
@@ -148,7 +158,8 @@ public sealed interface UIMessagePart {
         val base64: String,
         /** Optional display name (v6's `filename`), carried through to the model. */
         val filename: String? = null,
-        val providerMetadata: Map<String, JsonElement>? = null,
+        @EncodeDefault(EncodeDefault.Mode.NEVER)
+        val providerMetadata: ProviderMetadata = ProviderMetadata.None,
     ) : UIMessagePart
 
     @Serializable
@@ -162,7 +173,8 @@ public sealed interface UIMessagePart {
     public data class Data(
         val type: String,
         val data: JsonElement,
-        val providerMetadata: Map<String, JsonElement>? = null,
+        @EncodeDefault(EncodeDefault.Mode.NEVER)
+        val providerMetadata: ProviderMetadata = ProviderMetadata.None,
         /**
          * Optional stable id. Streaming data parts that share an id replace the
          * prior one in place (e.g. a progress indicator that updates) rather than
@@ -204,7 +216,8 @@ public sealed interface UIMessagePart {
         val output: JsonElement? = null,
         val error: String? = null,
         val preliminary: Boolean = false,
-        val providerMetadata: Map<String, JsonElement>? = null,
+        @EncodeDefault(EncodeDefault.Mode.NEVER)
+        val providerMetadata: ProviderMetadata = ProviderMetadata.None,
     ) : UIMessagePart
 }
 

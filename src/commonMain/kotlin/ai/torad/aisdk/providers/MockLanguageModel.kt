@@ -1,13 +1,14 @@
 package ai.torad.aisdk.providers
 
+import ai.torad.aisdk.CallWarning
 import ai.torad.aisdk.ContentPart
 import ai.torad.aisdk.FinishReason
 import ai.torad.aisdk.LanguageModel
 import ai.torad.aisdk.LanguageModelCallParams
-import ai.torad.aisdk.LanguageModelResult
-import ai.torad.aisdk.CallWarning
 import ai.torad.aisdk.LanguageModelRequestMetadata
 import ai.torad.aisdk.LanguageModelResponseMetadata
+import ai.torad.aisdk.LanguageModelResult
+import ai.torad.aisdk.ProviderMetadata
 import ai.torad.aisdk.StreamEvent
 import ai.torad.aisdk.Usage
 import kotlinx.coroutines.flow.Flow
@@ -80,7 +81,7 @@ public class MockLanguageModel(
                 stepNumber = callIndex,
                 finishReason = response.finishReason,
                 usage = response.usage,
-                providerMetadata = response.providerMetadata.takeIf { it.isNotEmpty() },
+                providerMetadata = response.providerMetadata,
             )
         )
     }
@@ -156,7 +157,7 @@ public data class ScriptedResponse(
     val events: List<StreamEvent>,
     val finishReason: FinishReason = FinishReason.Stop,
     val usage: Usage = Usage(promptTokens = 1, completionTokens = 1),
-    val providerMetadata: Map<String, kotlinx.serialization.json.JsonElement> = emptyMap(),
+    val providerMetadata: ProviderMetadata = ProviderMetadata.None,
     val rawFinishReason: String? = null,
     val warnings: List<CallWarning> = emptyList(),
     val request: LanguageModelRequestMetadata = LanguageModelRequestMetadata(),

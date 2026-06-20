@@ -107,7 +107,7 @@ class ByteDanceProviderTest {
         assertEquals("reference_video", content[4].jsonObject["role"]?.jsonPrimitive?.contentOrNull)
         assertEquals("reference_audio", content[5].jsonObject["role"]?.jsonPrimitive?.contentOrNull)
 
-        val metadata = result.providerMetadata["bytedance"]?.jsonObject
+        val metadata = result.providerMetadata.toMap()["bytedance"]?.jsonObject
         assertEquals("task-1", metadata?.get("taskId")?.jsonPrimitive?.contentOrNull)
         assertEquals(100, metadata?.get("usage")?.jsonObject?.get("completion_tokens")?.jsonPrimitive?.intOrNull)
     }

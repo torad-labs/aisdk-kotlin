@@ -1,6 +1,5 @@
 package ai.torad.aisdk
 
-import kotlinx.serialization.json.JsonElement
 
 public interface RerankingModel {
     public val modelId: String
@@ -30,7 +29,7 @@ public data class RerankingModelResult(
     val usage: Usage = Usage(),
     val warnings: List<CallWarning> = emptyList(),
     val response: LanguageModelResponseMetadata = LanguageModelResponseMetadata(),
-    val providerMetadata: Map<String, JsonElement> = emptyMap(),
+    val providerMetadata: ProviderMetadata = ProviderMetadata.None,
 )
 
 public data class RerankResult<T>(
@@ -40,7 +39,7 @@ public data class RerankResult<T>(
     val usage: Usage = Usage(),
     val warnings: List<CallWarning> = emptyList(),
     val response: LanguageModelResponseMetadata = LanguageModelResponseMetadata(),
-    val providerMetadata: Map<String, JsonElement> = emptyMap(),
+    val providerMetadata: ProviderMetadata = ProviderMetadata.None,
 ) {
     /**
      * The reranked documents in descending relevance order (fewer than

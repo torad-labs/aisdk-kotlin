@@ -111,23 +111,23 @@ class AnthropicProviderTest {
                         listOf(
                             ContentPart.Text(
                                 "Where is Paris?",
-                                providerMetadata = mapOf(
+                                providerMetadata = ProviderMetadata.Raw(JsonObject(mapOf(
                                     "anthropic" to buildJsonObject {
                                         put("cacheControl", buildJsonObject { put("type", JsonPrimitive("ephemeral")) })
                                     },
-                                ),
+                                ))),
                             ),
                             ContentPart.Image("image/png", "aW1hZ2U="),
                             ContentPart.File(
                                 mediaType = "application/pdf",
                                 base64 = pdf,
                                 filename = "brief.pdf",
-                                providerMetadata = mapOf(
+                                providerMetadata = ProviderMetadata.Raw(JsonObject(mapOf(
                                     "anthropic" to buildJsonObject {
                                         put("citations", buildJsonObject { put("enabled", JsonPrimitive(true)) })
                                         put("context", JsonPrimitive("project brief"))
                                     },
-                                ),
+                                ))),
                             ),
                             ContentPart.File("text/plain", textDoc, "notes.txt"),
                         ),
@@ -138,9 +138,9 @@ class AnthropicProviderTest {
                             ContentPart.Text("Previous"),
                             ContentPart.Reasoning(
                                 "Prior reasoning",
-                                providerMetadata = mapOf(
+                                providerMetadata = ProviderMetadata.Raw(JsonObject(mapOf(
                                     "anthropic" to buildJsonObject { put("signature", JsonPrimitive("sig-old")) },
-                                ),
+                                ))),
                             ),
                             ContentPart.ToolCall(
                                 toolCallId = "toolu_old",
@@ -227,11 +227,11 @@ class AnthropicProviderTest {
         assertEquals(3, result.usage.inputTokens.cacheRead)
         assertEquals(2, result.usage.inputTokens.cacheWrite)
         assertEquals(6, result.usage.completionTokens)
-        assertEquals("sig-1", result.content.filterIsInstance<ContentPart.Reasoning>().single().providerMetadata?.get("anthropic")?.jsonObject?.get("signature")?.jsonPrimitive?.contentOrNull)
+        assertEquals("sig-1", result.content.filterIsInstance<ContentPart.Reasoning>().single().providerMetadata.toMap()["anthropic"]?.jsonObject?.get("signature")?.jsonPrimitive?.contentOrNull)
         assertEquals("Example", result.content.filterIsInstance<ContentPart.Source>().single().title)
         assertEquals(listOf("lookup", "web_search"), result.toolCalls.map { it.toolName })
-        assertEquals(true, result.toolCalls[1].providerMetadata?.get("anthropic")?.jsonObject?.get("providerExecuted")?.jsonPrimitive?.booleanOrNull)
-        assertEquals("container-1", result.providerMetadata["anthropic"]?.jsonObject?.get("container")?.jsonObject?.get("id")?.jsonPrimitive?.contentOrNull)
+        assertEquals(true, result.toolCalls[1].providerMetadata.toMap()["anthropic"]?.jsonObject?.get("providerExecuted")?.jsonPrimitive?.booleanOrNull)
+        assertEquals("container-1", result.providerMetadata.toMap()["anthropic"]?.jsonObject?.get("container")?.jsonObject?.get("id")?.jsonPrimitive?.contentOrNull)
         assertEquals(setOf("frequencyPenalty", "presencePenalty", "seed", "temperature", "topP", "topK"), result.warnings.mapNotNull { it.message }.toSet())
 
         val request = fixture.calls.single()

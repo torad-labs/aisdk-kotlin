@@ -190,7 +190,7 @@ class ReplicateProviderTest {
         assertEquals("kept", input?.get("custom_video_option")?.jsonPrimitive?.contentOrNull)
         assertNull(input?.get("pollIntervalMs"))
 
-        val metadata = result.providerMetadata["replicate"]?.jsonObject
+        val metadata = result.providerMetadata.toMap()["replicate"]?.jsonObject
         assertEquals("pred1", metadata?.get("predictionId")?.jsonPrimitive?.contentOrNull)
         assertEquals(
             "https://cdn.example/video.mp4",

@@ -89,7 +89,7 @@ class AssemblyAIProviderTest {
         assertEquals(4.2f, result.durationInSeconds)
         assertEquals("true", result.response.headers["x-final"])
         assertEquals("completed", result.response.body?.jsonObject?.get("status")?.jsonPrimitive?.contentOrNull)
-        assertEquals("completed", result.providerMetadata["assemblyai"]?.jsonObject?.get("status")?.jsonPrimitive?.contentOrNull)
+        assertEquals("completed", result.providerMetadata.toMap()["assemblyai"]?.jsonObject?.get("status")?.jsonPrimitive?.contentOrNull)
 
         val upload = fixture.calls[0]
         assertEquals("POST", upload.requestMethod)

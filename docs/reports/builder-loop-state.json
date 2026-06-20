@@ -10,7 +10,7 @@
   },
   "ownership": "builder owns src/ edits; orchestrator owns .claude/ + validation; parallel work only on distinct files",
   "spec": "docs/reports/target-architecture.md",
-  "current_status": "Layers 1-8 VALIDATED. L8 (providers, 67c4f85): all 25 providers class-based + PascalCase factories, throwing singletons + camelCase create* removed, 0 NotConfigured stubs, tests migrated, green (-448 lines, 55 files). Mid-L8 fixed a real hook bug (3ddbcfd, signature-keyed diff). Now LAYER 9 (finalize) in committed sub-steps: 9a delete TS residue (react/rsc/svelte/vue/angular/codemod + LangChain/LlamaIndex); 9b providerOptions Map->ProviderOptions cascade (cross-cutting, ProviderOptions.Raw default keeps compiling); 9c finalize (bridge throws->typed leaves + delete AiSdkRuntimeException bridge, drop any residual createX, regenerate ABI via apiDump, full green incl apiCheck). 9a DONE (57105d6). 9b DONE (74f6e98): providerOptions Map->ProviderOptions cascade complete, 0 raw-map decls remain, 80 files, green. 9c CODE DONE (uncommitted): AiSdkRuntimeException bridge DELETED (0 refs, fully sealed errors), compileKotlinJvm + jvmTest green. Builder stalled on ABI step because my apiDump/apiCheck instruction was WRONG — project uses KGP built-in ABI: updateKotlinAbi (regen dumps) + checkKotlinAbi (validate, under check). Re-engaged with correct tasks; awaiting updateKotlinAbi + checkKotlinAbi green + rewrite(layer-9c) commit. This is the final step.",
+  "current_status": "CONTINUING (user: keep going). Layers 1-9 COMPLETE + green (rewrite done, HEAD 238990d). FOLLOW-UP layers: 10 providerMetadata Map->ProviderMetadata cascade (coherent, builder; mirror of 9b; ~60 decls); 11 god-file splits (MCP 2221/GoogleProvider 2027/ToolLoopAgent 1879/AmazonBedrock 1544 -> cohesive same-package files, PARALLEL workflow over distinct files); 12 warn-level polish (residual typealiases->value classes, sentinels->typed). current_layer=10. ABI tasks: updateKotlinAbi (regen) + checkKotlinAbi (validate) \u2014 NOT apiCheck.",
   "hard_rules": "no camelCase top-level fns (only PascalCase factories); logic on types/in units; Flow over suspend; sealed CLASS not interface; no public/top-level/companion mutable var; no secondary ctor/lateinit/!!; sealed errors; typed over Map<String,JsonElement>/Any?",
   "layers": [
     {
@@ -68,7 +68,8 @@
       "status": "pending"
     }
   ],
-  "current_layer": "COMPLETE",
+  "current_layer": 10,
+  "layer10_status": "IN PROGRESS: ProviderMetadata sealed type created; MAIN now green (149->0 over 2 stall-cycles). 96 test-fixture errors remain (Map/JsonObject -> ProviderMetadata.Raw/None + accessor reads) -> re-engaged with wrap pattern. Awaiting updateKotlinAbi + jvmTest + checkKotlinAbi green + rewrite(layer-10) commit.",
   "completed_layers": [
     {
       "n": 1,
@@ -78,5 +79,22 @@
       "note": "open AiSdkRuntimeException bridge covers 167 provider throw-sites \u2014 eliminate in provider layers"
     }
   ],
-  "superseded": "the prior 45-task parity queue (audit-data.json) is SUPERSEDED by this big-bang; its findings still inform what's wrong, but tasks fold into the layers above"
+  "superseded": "the prior 45-task parity queue (audit-data.json) is SUPERSEDED by this big-bang; its findings still inform what's wrong, but tasks fold into the layers above",
+  "followup_layers": [
+    {
+      "n": 10,
+      "name": "provider-metadata-cascade",
+      "what": "providerMetadata Map<String,JsonElement> -> sealed ProviderMetadata (None + Raw(JsonObject)) across results/responses/provider parsing; default None; regen ABI"
+    },
+    {
+      "n": 11,
+      "name": "god-file-splits",
+      "what": "split MCP.kt/GoogleProvider.kt/ToolLoopAgent.kt/AmazonBedrockProvider.kt into cohesive same-package files preserving public API; PARALLEL workflow"
+    },
+    {
+      "n": 12,
+      "name": "warn-polish",
+      "what": "residual warn-rule hits: typealias=String/primitive -> value class; ?: JsonNull / ?: \"\" sentinels -> typed; providerOptions as? JsonObject casts -> typed decode"
+    }
+  ]
 }

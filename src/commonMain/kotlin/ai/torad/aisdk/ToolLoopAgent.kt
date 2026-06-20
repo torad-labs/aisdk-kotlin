@@ -657,7 +657,7 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
             // Per-step metadata, captured from the stream and surfaced on StepResult
             // (parity with upstream — the loop previously dropped all four).
             var stepWarnings: List<CallWarning> = emptyList()
-            var stepProviderMetadata: Map<String, JsonElement> = emptyMap()
+            var stepProviderMetadata: ProviderMetadata = ProviderMetadata.None
             var stepResponse = LanguageModelResponseMetadata()
             var stepRawFinishReason: String? = null
             // gap #18: a streaming tool-input id -> toolName, so ToolInputDelta
@@ -731,7 +731,7 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
                         is StreamEvent.StepFinish -> {
                             stepFinishReason = event.finishReason
                             stepUsage = event.usage
-                            event.providerMetadata?.let { stepProviderMetadata = it }
+                            stepProviderMetadata = event.providerMetadata
                             // Don't forward — we emit our own StepFinish below post-tool-execution.
                         }
                         is StreamEvent.Finish -> {
@@ -739,7 +739,7 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
                             stepUsage = event.usage
                             lastRawFinishReason = event.rawFinishReason
                             stepRawFinishReason = event.rawFinishReason
-                            event.providerMetadata?.let { stepProviderMetadata = it }
+                            stepProviderMetadata = event.providerMetadata
                         }
                         is StreamEvent.StreamStart -> {
                             stepWarnings = event.warnings

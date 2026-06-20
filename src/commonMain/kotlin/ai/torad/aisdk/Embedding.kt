@@ -47,7 +47,7 @@ public data class EmbeddingModelResult(
     val warnings: List<CallWarning> = emptyList(),
     val request: LanguageModelRequestMetadata = LanguageModelRequestMetadata(),
     val response: LanguageModelResponseMetadata = LanguageModelResponseMetadata(),
-    val providerMetadata: Map<String, JsonElement> = emptyMap(),
+    val providerMetadata: ProviderMetadata = ProviderMetadata.None,
 )
 
 public data class EmbeddingUsage(
@@ -62,7 +62,7 @@ public data class EmbedResult<TValue>(
     val warnings: List<CallWarning> = emptyList(),
     val request: LanguageModelRequestMetadata = LanguageModelRequestMetadata(),
     val response: LanguageModelResponseMetadata = LanguageModelResponseMetadata(),
-    val providerMetadata: Map<String, JsonElement> = emptyMap(),
+    val providerMetadata: ProviderMetadata = ProviderMetadata.None,
 )
 
 public data class EmbedManyResult<TValue>(
@@ -74,7 +74,7 @@ public data class EmbedManyResult<TValue>(
     val response: LanguageModelResponseMetadata = LanguageModelResponseMetadata(),
     /** Per-batch response metadata, in batch order — one entry per underlying model call. */
     val responses: List<LanguageModelResponseMetadata> = emptyList(),
-    val providerMetadata: Map<String, JsonElement> = emptyMap(),
+    val providerMetadata: ProviderMetadata = ProviderMetadata.None,
 )
 
 internal val retryableApiError: (Throwable) -> Boolean = { (it as? APICallError)?.isRetryable == true }
@@ -167,7 +167,7 @@ public object Embedding {
             request = results.firstOrNull()?.request ?: LanguageModelRequestMetadata(),
             response = results.lastOrNull()?.response ?: LanguageModelResponseMetadata(),
             responses = results.map { it.response },
-            providerMetadata = results.fold(emptyMap()) { acc, r -> JsonOps.mergeProviderOptions(acc, r.providerMetadata) },
+            providerMetadata = results.fold<EmbeddingModelResult, ProviderMetadata>(ProviderMetadata.None) { acc, r -> acc + r.providerMetadata },
         )
     }
 }

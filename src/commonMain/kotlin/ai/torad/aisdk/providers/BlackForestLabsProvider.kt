@@ -136,9 +136,9 @@ private class BlackForestLabsImageModel(
             images = listOf(downloaded.file),
             warnings = args.warnings,
             response = LanguageModelResponseMetadata(modelId = modelId, headers = downloaded.headers),
-            providerMetadata = mapOf(
+            providerMetadata = ProviderMetadata.Raw(JsonObject(mapOf(
                 "blackForestLabs" to bflProviderMetadata(submitBody, pollResult.result),
-            ),
+            ))),
         )
     }
 }

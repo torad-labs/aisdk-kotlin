@@ -109,7 +109,7 @@ class RevaiProviderTest {
         assertEquals("en", result.language)
         assertEquals(0.8f, result.durationInSeconds)
         assertEquals("true", result.response.headers["x-final"])
-        assertEquals("Hello", result.providerMetadata["revai"]?.jsonObject
+        assertEquals("Hello", result.providerMetadata.toMap()["revai"]?.jsonObject
             ?.get("monologues")?.jsonArray?.first()?.jsonObject
             ?.get("elements")?.jsonArray?.first()?.jsonObject
             ?.get("value")?.jsonPrimitive?.contentOrNull)

@@ -112,7 +112,7 @@ public class KtorGatewayTransport(
             },
             usage = EmbeddingUsage(tokens = value["usage"]?.jsonObject?.get("tokens")?.jsonPrimitive?.intOrNull ?: 0),
             response = LanguageModelResponseMetadata(headers = response.headers, body = response.value),
-            providerMetadata = jsonObjectMap(value["providerMetadata"]),
+            providerMetadata = value["providerMetadata"].let { if (it is JsonObject) ProviderMetadata.Raw(it) else ProviderMetadata.None },
         )
     }
 
@@ -148,7 +148,7 @@ public class KtorGatewayTransport(
                 headers = response.headers,
                 body = response.value
             ),
-            providerMetadata = jsonObjectMap(value["providerMetadata"]),
+            providerMetadata = value["providerMetadata"].let { if (it is JsonObject) ProviderMetadata.Raw(it) else ProviderMetadata.None },
         )
     }
 
@@ -229,7 +229,7 @@ public class KtorGatewayTransport(
             },
             warnings = callWarnings(event["warnings"]),
             response = LanguageModelResponseMetadata(modelId = modelId, headers = sseHeaders),
-            providerMetadata = jsonObjectMap(event["providerMetadata"]),
+            providerMetadata = event["providerMetadata"].let { if (it is JsonObject) ProviderMetadata.Raw(it) else ProviderMetadata.None },
         )
     }
 
@@ -265,7 +265,7 @@ public class KtorGatewayTransport(
                 )
             },
             response = LanguageModelResponseMetadata(headers = response.headers, body = response.value),
-            providerMetadata = jsonObjectMap(value["providerMetadata"]),
+            providerMetadata = value["providerMetadata"].let { if (it is JsonObject) ProviderMetadata.Raw(it) else ProviderMetadata.None },
         )
     }
 
@@ -464,7 +464,7 @@ public class KtorGatewayTransport(
             toolCalls = content.filterIsInstance<ContentPart.ToolCall>(),
             finishReason = finishReason(obj["finishReason"]?.jsonPrimitive?.contentOrNull),
             usage = usageFromJson(obj["usage"]),
-            providerMetadata = jsonObjectMap(obj["providerMetadata"]),
+            providerMetadata = obj["providerMetadata"].let { if (it is JsonObject) ProviderMetadata.Raw(it) else ProviderMetadata.None },
             content = content.ifEmpty { if (text.isNotEmpty()) listOf(ContentPart.Text(text)) else emptyList() },
             rawFinishReason = obj["finishReason"]?.jsonPrimitive?.contentOrNull,
             warnings = callWarnings(obj["warnings"]),
@@ -535,19 +535,8 @@ private fun contentPartJson(part: ContentPart): JsonObject = buildJsonObject {
             put("data", JsonPrimitive(part.base64))
         }
     }
-    providerMetadata(part)?.let { put("providerMetadata", JsonObject(it)) }
-}
-
-private fun providerMetadata(part: ContentPart): Map<String, JsonElement>? = when (part) {
-    is ContentPart.Text -> part.providerMetadata
-    is ContentPart.Reasoning -> part.providerMetadata
-    is ContentPart.ToolCall -> part.providerMetadata
-    is ContentPart.ToolResult -> part.providerMetadata
-    is ContentPart.ToolApprovalRequest -> part.providerMetadata
-    is ContentPart.Source -> part.providerMetadata
-    is ContentPart.File -> part.providerMetadata
-    is ContentPart.Image -> part.providerMetadata
-    is ContentPart.ToolApprovalResponse -> null
+    val pm = part.metadata
+    if (pm is ProviderMetadata.Raw) put("providerMetadata", pm.metadata)
 }
 
 private fun languageModelToolJson(tool: LanguageModelTool): JsonObject = buildJsonObject {
@@ -591,36 +580,36 @@ private fun contentPartFromJson(value: JsonElement): ContentPart? {
     return when (WireDecoder.requiredString(obj, "type", "gateway", "content part")) {
         "text" -> ContentPart.Text(
             text = WireDecoder.requiredString(obj, "text", "gateway", "content part"),
-            providerMetadata = jsonObjectMapOrNull(obj["providerMetadata"]),
+            providerMetadata = obj["providerMetadata"].let { if (it is JsonObject) ProviderMetadata.Raw(it) else ProviderMetadata.None },
         )
         "reasoning" -> ContentPart.Reasoning(
             text = WireDecoder.requiredString(obj, "text", "gateway", "content part"),
-            providerMetadata = jsonObjectMapOrNull(obj["providerMetadata"]),
+            providerMetadata = obj["providerMetadata"].let { if (it is JsonObject) ProviderMetadata.Raw(it) else ProviderMetadata.None },
         )
         "tool-call" -> ContentPart.ToolCall(
             toolCallId = WireDecoder.requiredString(obj, "toolCallId", "gateway", "content part"),
             toolName = WireDecoder.requiredString(obj, "toolName", "gateway", "content part"),
             input = WireDecoder.required(obj, "input", "gateway", "content part"),
-            providerMetadata = jsonObjectMapOrNull(obj["providerMetadata"]),
+            providerMetadata = obj["providerMetadata"].let { if (it is JsonObject) ProviderMetadata.Raw(it) else ProviderMetadata.None },
         )
         "tool-result" -> ContentPart.ToolResult(
             toolCallId = WireDecoder.requiredString(obj, "toolCallId", "gateway", "content part"),
             toolName = WireDecoder.requiredString(obj, "toolName", "gateway", "content part"),
             output = WireDecoder.required(obj, "output", "gateway", "content part"),
             isError = WireDecoder.optionalBoolean(obj, "isError", "gateway", "content part") ?: false,
-            providerMetadata = jsonObjectMapOrNull(obj["providerMetadata"]),
+            providerMetadata = obj["providerMetadata"].let { if (it is JsonObject) ProviderMetadata.Raw(it) else ProviderMetadata.None },
         )
         "source-url" -> ContentPart.Source(
             sourceType = StreamEvent.SourcePart.SourceType.Url,
             url = WireDecoder.requiredString(obj, "url", "gateway", "content part"),
             title = WireDecoder.optionalString(obj, "title", "gateway", "content part"),
-            providerMetadata = jsonObjectMapOrNull(obj["providerMetadata"]),
+            providerMetadata = obj["providerMetadata"].let { if (it is JsonObject) ProviderMetadata.Raw(it) else ProviderMetadata.None },
         )
         "file" -> ContentPart.File(
             mediaType = WireDecoder.optionalString(obj, "mediaType", "gateway", "content part") ?: "application/octet-stream",
             base64 = requiredOneOfString(obj, "gateway", "content part", "data", "base64"),
             filename = WireDecoder.optionalString(obj, "filename", "gateway", "content part"),
-            providerMetadata = jsonObjectMapOrNull(obj["providerMetadata"]),
+            providerMetadata = obj["providerMetadata"].let { if (it is JsonObject) ProviderMetadata.Raw(it) else ProviderMetadata.None },
         )
         else -> null
     }
@@ -746,12 +735,6 @@ private fun callWarnings(value: JsonElement?): List<CallWarning> =
             details = warning,
         )
     }
-
-private fun jsonObjectMap(value: JsonElement?): Map<String, JsonElement> =
-    jsonObjectMapOrNull(value).orEmpty()
-
-private fun jsonObjectMapOrNull(value: JsonElement?): Map<String, JsonElement>? =
-    (value as? JsonObject)?.toMap()
 
 private fun gatewayModelType(value: String?): GatewayModelType? = when (value) {
     "embedding" -> GatewayModelType.Embedding

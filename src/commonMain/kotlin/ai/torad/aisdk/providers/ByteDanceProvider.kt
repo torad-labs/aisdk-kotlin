@@ -122,10 +122,10 @@ private class ByteDanceVideoModel(
             ),
             warnings = warnings,
             response = LanguageModelResponseMetadata(modelId = modelId, headers = status.headers, body = status.value),
-            providerMetadata = mapOf("bytedance" to buildJsonObject {
+            providerMetadata = ProviderMetadata.Raw(JsonObject(mapOf("bytedance" to buildJsonObject {
                 put("taskId", JsonPrimitive(taskId))
                 statusBody["usage"]?.takeIf { it !is JsonNull }?.let { put("usage", it) }
-            }),
+            }))),
         )
     }
 }

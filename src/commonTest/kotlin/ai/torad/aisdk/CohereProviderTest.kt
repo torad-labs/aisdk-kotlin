@@ -91,7 +91,7 @@ class CohereProviderTest {
                             ContentPart.Image(
                                 mediaType = "image/png",
                                 base64 = "iVBORw0=",
-                                providerMetadata = mapOf("cohere" to buildJsonObject { put("detail", JsonPrimitive("high")) }),
+                                providerMetadata = ProviderMetadata.Raw(JsonObject(mapOf("cohere" to buildJsonObject { put("detail", JsonPrimitive("high")) }))),
                             ),
                         ),
                     ),

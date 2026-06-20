@@ -309,7 +309,7 @@ private class BedrockImageModel(
             images = images,
             warnings = prepared.warnings,
             response = LanguageModelResponseMetadata(modelId = modelId, headers = response.headers, body = response.value),
-            providerMetadata = mapOf("bedrock" to response.value),
+            providerMetadata = ProviderMetadata.Raw(JsonObject(mapOf("bedrock" to response.value))),
         )
     }
 }
@@ -348,7 +348,7 @@ private class BedrockRerankingModel(
         return RerankingModelResult(
             results = results,
             response = LanguageModelResponseMetadata(modelId = modelId, headers = response.headers, body = response.value),
-            providerMetadata = mapOf("bedrock" to response.value),
+            providerMetadata = ProviderMetadata.Raw(JsonObject(mapOf("bedrock" to response.value))),
         )
     }
 }
@@ -516,7 +516,7 @@ private fun bedrockMessages(messages: List<ModelMessage>): BedrockConvertedMessa
                 if (part is ContentPart.Text) {
                     system += buildJsonObject {
                         put("text", JsonPrimitive(part.text))
-                        bedrockCachePoint(part.providerMetadata)?.let { put("cachePoint", it) }
+                        bedrockCachePoint(part.providerMetadata.toMap())?.let { put("cachePoint", it) }
                     }
                 }
             }
@@ -540,7 +540,7 @@ private fun bedrockMessages(messages: List<ModelMessage>): BedrockConvertedMessa
 private fun bedrockUserPart(part: ContentPart): JsonElement? = when (part) {
     is ContentPart.Text -> buildJsonObject {
         put("text", JsonPrimitive(part.text))
-        bedrockCachePoint(part.providerMetadata)?.let { put("cachePoint", it) }
+        bedrockCachePoint(part.providerMetadata.toMap())?.let { put("cachePoint", it) }
     }
     is ContentPart.Image -> buildJsonObject {
         put(
@@ -567,7 +567,7 @@ private fun bedrockUserPart(part: ContentPart): JsonElement? = when (part) {
                     put("format", JsonPrimitive(bedrockDocumentFormat(part.mediaType)))
                     put("name", JsonPrimitive(part.filename?.substringBeforeLast('.') ?: "document"))
                     put("source", buildJsonObject { put("bytes", JsonPrimitive(part.base64)) })
-                    if (bedrockCitationsEnabled(part.providerMetadata)) {
+                    if (bedrockCitationsEnabled(part.providerMetadata.toMap())) {
                         put("citations", buildJsonObject { put("enabled", JsonPrimitive(true)) })
                     }
                 },
@@ -587,7 +587,7 @@ private fun bedrockAssistantPart(part: ContentPart): JsonElement? = when (part) 
                     "reasoningText",
                     buildJsonObject {
                         put("text", JsonPrimitive(part.text))
-                        (part.providerMetadata?.get("bedrock") as? JsonObject)?.get("signature")?.let { put("signature", it) }
+                        (part.providerMetadata.toMap()["bedrock"] as? JsonObject)?.get("signature")?.let { put("signature", it) }
                     },
                 )
             },
@@ -945,13 +945,13 @@ private fun bedrockChatGenerateResult(
             reasoning["reasoningText"]?.jsonObject?.let {
                 content += ContentPart.Reasoning(
                     text = it["text"]?.jsonPrimitive?.contentOrNull.orEmpty(),
-                    providerMetadata = mapOf("bedrock" to buildJsonObject { it["signature"]?.let { signature -> put("signature", signature) } }),
+                    providerMetadata = ProviderMetadata.Raw(JsonObject(mapOf("bedrock" to buildJsonObject { it["signature"]?.let { signature -> put("signature", signature) } }))),
                 )
             }
             reasoning["redactedReasoning"]?.jsonObject?.let {
                 content += ContentPart.Reasoning(
                     text = "",
-                    providerMetadata = mapOf("bedrock" to buildJsonObject { it["data"]?.let { data -> put("redactedData", data) } }),
+                    providerMetadata = ProviderMetadata.Raw(JsonObject(mapOf("bedrock" to buildJsonObject { it["data"]?.let { data -> put("redactedData", data) } }))),
                 )
             }
         }
@@ -986,7 +986,7 @@ private fun bedrockChatGenerateResult(
         toolCalls = toolCalls,
         finishReason = mapBedrockFinishReason(stopReason, isJsonResponseFromTool),
         usage = bedrockUsage(response["usage"]),
-        providerMetadata = if (metadata.isNotEmpty()) mapOf("bedrock" to metadata) else emptyMap(),
+        providerMetadata = if (metadata.isNotEmpty()) ProviderMetadata.Raw(JsonObject(mapOf("bedrock" to metadata))) else ProviderMetadata.None,
         content = content,
         rawFinishReason = stopReason,
         warnings = warnings,
@@ -1061,7 +1061,7 @@ private class BedrockStreamState(
                 val metadata = buildJsonObject {
                     reasoning["signature"]?.let { put("signature", it) }
                     reasoning["data"]?.let { put("redactedData", it) }
-                }.takeIf { it.isNotEmpty() }?.let { mapOf("bedrock" to it) }
+                }.takeIf { it.isNotEmpty() }?.let { ProviderMetadata.Raw(JsonObject(mapOf("bedrock" to it))) } ?: ProviderMetadata.None
                 events += StreamEvent.ReasoningDelta(index.toString(), reasoning["text"]?.jsonPrimitive?.contentOrNull.orEmpty(), metadata)
             }
             (delta["toolUse"] as? JsonObject)?.get("input")?.jsonPrimitive?.contentOrNull?.let { inputDelta ->
@@ -1107,7 +1107,7 @@ private class BedrockStreamState(
                 totalSteps = 1,
                 finishReason = finishReason,
                 usage = usage,
-                providerMetadata = if (metadata.isNotEmpty()) mapOf("bedrock" to metadata) else null,
+                providerMetadata = if (metadata.isNotEmpty()) ProviderMetadata.Raw(JsonObject(mapOf("bedrock" to metadata))) else ProviderMetadata.None,
                 rawFinishReason = rawStopReason,
             ),
         )

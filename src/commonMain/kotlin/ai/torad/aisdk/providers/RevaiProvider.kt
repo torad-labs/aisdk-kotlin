@@ -1,6 +1,7 @@
 package ai.torad.aisdk.providers
 
 import ai.torad.aisdk.*
+import ai.torad.aisdk.ProviderMetadata
 import io.ktor.client.HttpClient
 import io.ktor.client.request.forms.MultiPartFormDataContent
 import io.ktor.client.request.forms.formData
@@ -151,7 +152,7 @@ private class RevaiTranscriptionModel(
                 headers = transcript.headers,
                 body = transcript.value,
             ),
-            providerMetadata = mapOf("revai" to transcript.value),
+            providerMetadata = ProviderMetadata.Raw(JsonObject(mapOf("revai" to transcript.value))),
             language = job["language"]?.jsonPrimitive?.contentOrNull,
             durationInSeconds = mapped.durationInSeconds,
         )

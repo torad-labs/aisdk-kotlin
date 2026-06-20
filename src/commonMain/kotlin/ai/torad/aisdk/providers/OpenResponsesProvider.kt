@@ -421,7 +421,7 @@ private fun openResponsesUserContentPart(
     }
     is ContentPart.Image -> buildJsonObject {
         put("type", JsonPrimitive("input_image"))
-        val fileId = openResponsesFileId(part.base64, fileIdPrefixes, part.providerMetadata)
+        val fileId = openResponsesFileId(part.base64, fileIdPrefixes, part.providerMetadata.toMap())
         if (fileId != null) {
             put("file_id", JsonPrimitive(fileId))
         } else {
@@ -431,7 +431,7 @@ private fun openResponsesUserContentPart(
     is ContentPart.File -> if (part.mediaType.startsWith("image/")) {
         buildJsonObject {
             put("type", JsonPrimitive("input_image"))
-            val fileId = openResponsesFileId(part.base64, fileIdPrefixes, part.providerMetadata)
+            val fileId = openResponsesFileId(part.base64, fileIdPrefixes, part.providerMetadata.toMap())
             if (fileId != null) {
                 put("file_id", JsonPrimitive(fileId))
             } else {
@@ -442,7 +442,7 @@ private fun openResponsesUserContentPart(
         buildJsonObject {
             put("type", JsonPrimitive("input_file"))
             put("filename", JsonPrimitive(part.filename ?: "data"))
-            val fileId = openResponsesFileId(part.base64, fileIdPrefixes, part.providerMetadata)
+            val fileId = openResponsesFileId(part.base64, fileIdPrefixes, part.providerMetadata.toMap())
             if (fileId != null) {
                 put("file_id", JsonPrimitive(fileId))
             } else {
@@ -802,26 +802,28 @@ private fun openResponsesResultProviderMetadata(
     response: JsonObject,
     providerMetadataKey: String,
     logprobs: List<JsonElement>,
-): Map<String, JsonElement> {
+): ProviderMetadata {
     val metadata = buildJsonObject {
         response["id"]?.jsonPrimitive?.contentOrNull?.let { put("responseId", JsonPrimitive(it)) }
         if (logprobs.isNotEmpty()) put("logprobs", JsonArray(logprobs))
     }
-    return metadata.takeIf { it.isNotEmpty() }?.let { mapOf(providerMetadataKey to it) }.orEmpty()
+    return if (metadata.isEmpty()) ProviderMetadata.None
+    else ProviderMetadata.Raw(JsonObject(mapOf(providerMetadataKey to metadata)))
 }
 
 private fun openResponsesPartMetadata(
     providerMetadataKey: String,
     itemId: String?,
     obj: JsonObject,
-): Map<String, JsonElement>? {
+): ProviderMetadata {
     val metadata = buildJsonObject {
         itemId?.let { put("itemId", JsonPrimitive(it)) }
         (obj["annotations"] as? JsonArray)?.takeIf { it.isNotEmpty() }?.let { put("annotations", it) }
         obj["logprobs"]?.let { put("logprobs", it) }
         obj["encrypted_content"]?.let { put("encryptedContent", it) }
     }
-    return metadata.takeIf { it.isNotEmpty() }?.let { mapOf(providerMetadataKey to it) }
+    return if (metadata.isEmpty()) ProviderMetadata.None
+    else ProviderMetadata.Raw(JsonObject(mapOf(providerMetadataKey to metadata)))
 }
 
 private fun openResponsesGenerateResult(

@@ -530,7 +530,7 @@ class GatewayAndProviderUtilsParityTest {
         val streamed = drainAllItems(provider.languageModel("gpt-test").stream(LanguageModelCallParams(listOf(userMessage("hi")))))
 
         assertEquals("hello", generated.text)
-        assertEquals(JsonPrimitive("gen_1"), generated.providerMetadata["gateway"]?.jsonObject?.get("id"))
+        assertEquals(JsonPrimitive("gen_1"), generated.providerMetadata.toMap()["gateway"]?.jsonObject?.get("id"))
         assertTrue(streamed.any { it is StreamEvent.TextDelta && it.text == "hello" })
         assertTrue(streamed.any { it is StreamEvent.Finish })
         assertEquals(listOf("/v3/ai/language-model", "/v3/ai/language-model"), seenPaths)

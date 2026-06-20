@@ -290,7 +290,7 @@ class XaiProviderTest {
         assertTrue(generated.warnings.any { it.message.orEmpty().contains("size") })
         assertTrue(generated.warnings.any { it.message.orEmpty().contains("seed") })
         assertTrue(edited.warnings.any { it.message.orEmpty().contains("mask") })
-        val metadata = generated.providerMetadata["xai"]?.jsonObject
+        val metadata = generated.providerMetadata.toMap()["xai"]?.jsonObject
         assertEquals("revised", metadata?.get("images")?.jsonArray?.single()?.jsonObject?.get("revisedPrompt")?.jsonPrimitive?.contentOrNull)
         assertEquals(12, metadata?.get("costInUsdTicks")?.jsonPrimitive?.intOrNull)
 
@@ -386,8 +386,8 @@ class XaiProviderTest {
         assertEquals("https://example.com/source.mp4", editBody["video"]?.jsonObject?.get("url")?.jsonPrimitive?.contentOrNull)
         assertEquals(null, editBody["duration"])
         assertEquals(null, editBody["aspect_ratio"])
-        assertEquals("req-1", generated.providerMetadata["xai"]?.jsonObject?.get("requestId")?.jsonPrimitive?.contentOrNull)
-        assertEquals(9, generated.providerMetadata["xai"]?.jsonObject?.get("costInUsdTicks")?.jsonPrimitive?.intOrNull)
+        assertEquals("req-1", generated.providerMetadata.toMap()["xai"]?.jsonObject?.get("requestId")?.jsonPrimitive?.contentOrNull)
+        assertEquals(9, generated.providerMetadata.toMap()["xai"]?.jsonObject?.get("costInUsdTicks")?.jsonPrimitive?.intOrNull)
     }
 
     @Test

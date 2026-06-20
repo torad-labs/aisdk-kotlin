@@ -160,7 +160,7 @@ private class AssemblyAITranscriptionModel(
                 headers = transcript.headers,
                 body = transcript.value,
             ),
-            providerMetadata = mapOf("assemblyai" to transcript.value),
+            providerMetadata = ProviderMetadata.Raw(JsonObject(mapOf("assemblyai" to transcript.value))),
             language = body["language_code"]?.jsonPrimitive?.contentOrNull,
             durationInSeconds = body["audio_duration"]?.jsonPrimitive?.floatOrNull,
         )

@@ -477,11 +477,11 @@ class OpenAIProviderTest {
 
         val result = provider.responses("gpt-4o").generate(LanguageModelCallParams(messages = listOf(userMessage("hi"))))
 
-        val topLevel = result.providerMetadata["openai"]!!.jsonObject
+        val topLevel = result.providerMetadata.toMap()["openai"]?.jsonObject ?: error("missing openai metadata")
         assertEquals("resp_1", topLevel["responseId"]?.jsonPrimitive?.content)
         assertEquals("answer", topLevel["logprobs"]!!.jsonArray.single().jsonArray.single().jsonObject["token"]?.jsonPrimitive?.content)
         val text = result.content.filterIsInstance<ContentPart.Text>().single()
-        val textMetadata = text.providerMetadata!!["openai"]!!.jsonObject
+        val textMetadata = text.providerMetadata.toMap()["openai"]?.jsonObject ?: error("missing openai text metadata")
         assertEquals("msg_1", textMetadata["itemId"]?.jsonPrimitive?.content)
         assertEquals("https://example.com", textMetadata["annotations"]!!.jsonArray.single().jsonObject["url"]?.jsonPrimitive?.content)
         assertEquals("answer", textMetadata["logprobs"]!!.jsonArray.single().jsonObject["token"]?.jsonPrimitive?.content)

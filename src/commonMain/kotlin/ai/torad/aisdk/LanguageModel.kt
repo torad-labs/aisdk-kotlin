@@ -128,7 +128,7 @@ public data class LanguageModelResult(
     val toolCalls: List<ContentPart.ToolCall> = emptyList(),
     val finishReason: FinishReason,
     val usage: Usage,
-    val providerMetadata: Map<String, JsonElement> = emptyMap(),
+    val providerMetadata: ProviderMetadata = ProviderMetadata.None,
     val content: List<ContentPart> = buildList {
         if (text.isNotEmpty()) add(ContentPart.Text(text))
         addAll(toolCalls)

@@ -81,8 +81,8 @@ class KlingAIProviderTest {
         assertEquals(1, model.maxVideosPerCall)
         assertEquals("video/mp4", result.videos.single().mediaType)
         assertEquals("https://cdn.kling.test/video.mp4", result.videos.single().url)
-        assertEquals("task-1", result.providerMetadata["klingai"]?.jsonObject?.get("taskId")?.jsonPrimitive?.contentOrNull)
-        val videoMetadata = result.providerMetadata["klingai"]?.jsonObject?.get("videos")?.jsonArray?.single()?.jsonObject
+        assertEquals("task-1", result.providerMetadata.toMap()["klingai"]?.jsonObject?.get("taskId")?.jsonPrimitive?.contentOrNull)
+        val videoMetadata = result.providerMetadata.toMap()["klingai"]?.jsonObject?.get("videos")?.jsonArray?.single()?.jsonObject
         assertEquals("video-1", videoMetadata?.get("id")?.jsonPrimitive?.contentOrNull)
         assertEquals("https://cdn.kling.test/video-watermark.mp4", videoMetadata?.get("watermarkUrl")?.jsonPrimitive?.contentOrNull)
         assertEquals("5.0", videoMetadata?.get("duration")?.jsonPrimitive?.contentOrNull)
