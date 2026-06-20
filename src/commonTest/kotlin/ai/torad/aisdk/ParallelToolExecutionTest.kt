@@ -1,15 +1,22 @@
 package ai.torad.aisdk
 
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.withTimeout
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.serializer
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class ParallelToolExecutionTest {
     @Serializable
     private data class Empty(val unused: String = "")
@@ -84,5 +91,102 @@ class ParallelToolExecutionTest {
         )
         val result = agent.generate(prompt = "go")
         assertEquals(listOf("c_a", "c_b"), result.steps.first().toolResults.map { it.toolCallId })
+    }
+
+    @Test
+    fun `streaming tool preliminary result emits before slower sibling finishes`() = runTest {
+        val slowStarted = CompletableDeferred<Unit>()
+        val slowRelease = CompletableDeferred<Unit>()
+        val preliminarySeen = CompletableDeferred<StreamEvent.ToolResult>()
+        val fastTool = streamingTool<Empty, String, Unit>(
+            name = "toolA",
+            description = "fast streaming tool",
+            inputSerializer = serializer(),
+            outputSerializer = serializer(),
+        ) { _ ->
+            flow {
+                emit("fast-preliminary")
+                emit("fast-final")
+            }
+        }
+        val slowTool = tool<Empty, String, Unit>(
+            name = "toolB",
+            description = "blocked sibling",
+            inputSerializer = serializer(),
+            outputSerializer = serializer(),
+        ) { _ ->
+            slowStarted.complete(Unit)
+            slowRelease.await()
+            "slow-final"
+        }
+
+        val agent = TestToolLoopAgent<Unit, String>(
+            model = TwoToolThenText(),
+            instructions = "x",
+            tools = toolSetOf(fastTool, slowTool),
+        )
+        val job = launch {
+            agent.stream(prompt = "go").collect { event ->
+                if (
+                    event is StreamEvent.ToolResult &&
+                    event.toolCallId == "c_a" &&
+                    event.preliminary
+                ) {
+                    preliminarySeen.complete(event)
+                }
+            }
+        }
+
+        slowStarted.await()
+        val preliminary = withTimeout(1_000) { preliminarySeen.await() }
+
+        assertEquals("c_a", preliminary.toolCallId)
+        assertEquals(true, preliminary.preliminary)
+        assertEquals(JsonPrimitive("fast-preliminary"), preliminary.outputJson)
+        assertFalse(slowRelease.isCompleted)
+
+        slowRelease.complete(Unit)
+        job.join()
+    }
+
+    @Test
+    fun `maxParallelToolCalls one gates start hooks behind first tool completion`() = runTest {
+        val firstStarted = CompletableDeferred<Unit>()
+        val firstRelease = CompletableDeferred<Unit>()
+        val startOrder = mutableListOf<String>()
+        fun gatedTool(name: String) = tool<Empty, String, Unit>(
+            name = name,
+            description = name,
+            inputSerializer = serializer(),
+            outputSerializer = serializer(),
+        ) { _ ->
+            if (name == "toolA") {
+                firstStarted.complete(Unit)
+                firstRelease.await()
+            }
+            "$name-done"
+        }
+
+        val agent = TestToolLoopAgent<Unit, String>(
+            model = TwoToolThenText(),
+            instructions = "x",
+            tools = toolSetOf(gatedTool("toolA"), gatedTool("toolB")),
+            maxParallelToolCalls = 1,
+            experimental_onToolCallStart = {
+                startOrder += toolName
+            },
+        )
+        val job = launch {
+            agent.stream(prompt = "go").collect { }
+        }
+
+        firstStarted.await()
+        runCurrent()
+        assertEquals(listOf("toolA"), startOrder)
+
+        firstRelease.complete(Unit)
+        job.join()
+
+        assertEquals(listOf("toolA", "toolB"), startOrder)
     }
 }

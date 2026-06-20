@@ -1,0 +1,8 @@
+id: no-sealed-interface
+language: kotlin
+severity: error
+rule:
+  any:
+    - pattern: sealed interface $NAME
+    - pattern: public sealed interface $NAME
+    - pattern: internal sealed interface $NAME

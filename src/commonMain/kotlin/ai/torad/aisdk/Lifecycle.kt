@@ -113,16 +113,20 @@ public data class OnToolCallStartEvent(
 )
 
 /**
- * Fired immediately after a tool's executor returns or throws. Exactly
- * one of [outputJson] or [errorMessage] is non-null.
+ * Fired immediately after a tool's executor returns or throws. Carries
+ * an owned typed [outcome] instead of paired nullable success/error fields.
  */
 public data class OnToolCallFinishEvent(
     val toolCallId: String,
     val toolName: String,
-    val outputJson: JsonElement?,
-    val errorMessage: String?,
+    val outcome: Outcome,
     val stepNumber: Int,
-)
+) {
+    public sealed interface Outcome {
+        public data class Success(val outputJson: JsonElement) : Outcome
+        public data class Failure(val errorMessage: String) : Outcome
+    }
+}
 
 /**
  * Snapshot of one completed loop step — surfaced to [OnStepFinishEvent]

@@ -1,0 +1,5 @@
+id: no-empty-string-sentinel
+language: kotlin
+severity: warning
+rule:
+  pattern: '$X ?: ""'

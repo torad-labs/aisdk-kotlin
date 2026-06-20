@@ -122,12 +122,95 @@ public class ProviderOptionsBuilder internal constructor() {
 public fun buildProviderOptions(block: ProviderOptionsBuilder.() -> Unit): Map<String, JsonElement> =
     ProviderOptionsBuilder().apply(block).build()
 
-public data class TextGenerationRequest(
+public data class TextGenerationRequest public constructor(
     val prompt: String? = null,
     val messages: List<ModelMessage> = emptyList(),
     val system: String? = null,
     val settings: CallSettings = CallSettings(),
-)
+) {
+    public constructor(
+        input: Input,
+        system: String? = null,
+        settings: CallSettings = CallSettings(),
+    ) : this(
+        prompt = input.prompt,
+        messages = input.messages,
+        system = system,
+        settings = settings,
+    )
+
+    public val input: Input
+        get() = Input.from(prompt = prompt, messages = messages)
+
+    public class NonEmptyMessages private constructor(
+        public val values: List<ModelMessage>,
+    ) {
+        public companion object {
+            public fun of(first: ModelMessage, vararg rest: ModelMessage): NonEmptyMessages =
+                NonEmptyMessages(listOf(first) + rest)
+
+            public fun from(messages: Iterable<ModelMessage>): NonEmptyMessages {
+                val values = messages.toList()
+                require(values.isNotEmpty()) { "messages must contain at least one message" }
+                return NonEmptyMessages(values)
+            }
+        }
+    }
+
+    public sealed interface Input {
+        public val prompt: String?
+        public val messages: List<ModelMessage>
+
+        public data class PromptText(
+            public val text: String,
+        ) : Input {
+            override val prompt: String get() = text
+            override val messages: List<ModelMessage> get() = emptyList()
+        }
+
+        public data class MessageHistory(
+            public val history: NonEmptyMessages,
+        ) : Input {
+            override val prompt: String? get() = null
+            override val messages: List<ModelMessage> get() = history.values
+        }
+
+        public data class MessageHistoryWithPrompt(
+            public val history: NonEmptyMessages,
+            override val prompt: String,
+        ) : Input {
+            override val messages: List<ModelMessage> get() = history.values
+        }
+
+        public companion object {
+            public fun prompt(text: String): Input = PromptText(text)
+
+            public fun messages(first: ModelMessage, vararg rest: ModelMessage): Input =
+                MessageHistory(NonEmptyMessages.of(first, *rest))
+
+            public fun messages(history: NonEmptyMessages): Input = MessageHistory(history)
+
+            public fun messagesWithPrompt(
+                history: NonEmptyMessages,
+                prompt: String,
+            ): Input = MessageHistoryWithPrompt(history = history, prompt = prompt)
+
+            internal fun from(
+                prompt: String?,
+                messages: List<ModelMessage>,
+            ): Input =
+                when {
+                    prompt != null && messages.isNotEmpty() ->
+                        MessageHistoryWithPrompt(NonEmptyMessages.from(messages), prompt)
+                    prompt != null -> PromptText(prompt)
+                    messages.isNotEmpty() -> MessageHistory(NonEmptyMessages.from(messages))
+                    else -> throw IllegalArgumentException(
+                        "TextGenerationRequest requires prompt text or non-empty messages"
+                    )
+                }
+        }
+    }
+}
 
 @AiSdkDsl
 public class TextGenerationRequestBuilder internal constructor() {
@@ -177,8 +260,8 @@ public suspend fun generateText(
     request: TextGenerationRequest,
 ): GenerateTextResult<String> = generateText(
     model = model,
-    prompt = request.prompt,
-    messages = request.messages,
+    prompt = request.input.prompt,
+    messages = request.input.messages,
     system = request.system,
     settings = request.settings,
 )
@@ -198,8 +281,8 @@ public suspend fun <TOutput> generateText(
     request: TextGenerationRequest,
 ): GenerateTextResult<TOutput> = generateText(
     model = model,
-    prompt = request.prompt,
-    messages = request.messages,
+    prompt = request.input.prompt,
+    messages = request.input.messages,
     system = request.system,
     output = output,
     settings = request.settings,
@@ -284,8 +367,8 @@ public fun streamTextResult(
     request: TextGenerationRequest,
 ): StreamTextResult = streamTextResult(
     model = model,
-    prompt = request.prompt,
-    messages = request.messages,
+    prompt = request.input.prompt,
+    messages = request.input.messages,
     system = request.system,
     settings = request.settings,
 )

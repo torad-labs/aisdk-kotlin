@@ -1,6 +1,7 @@
 package ai.torad.aisdk.ui
 
 import kotlin.concurrent.Volatile
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.emptyFlow
@@ -171,6 +172,11 @@ public class Chat(
             if (currentOp === op) {
                 internalState.update { it.copy(status = ChatStatus.Ready) }
             }
+        } catch (t: CancellationException) {
+            if (currentOp === op) {
+                internalState.update { it.copy(error = null, status = ChatStatus.Ready) }
+            }
+            throw t
         } catch (t: Throwable) {
             if (currentOp === op) {
                 internalState.update { it.copy(error = t, status = ChatStatus.Error) }

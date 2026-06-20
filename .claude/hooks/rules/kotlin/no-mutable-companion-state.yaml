@@ -1,0 +1,8 @@
+id: no-mutable-companion-state
+language: kotlin
+severity: error
+rule:
+  all:
+    - kind: property_declaration
+    - has: { kind: binding_pattern_kind, regex: "^var$" }
+    - inside: { kind: companion_object, stopBy: end }

@@ -4409,20 +4409,43 @@ public final class ai/torad/aisdk/OnStepStartEvent {
 }
 
 public final class ai/torad/aisdk/OnToolCallFinishEvent {
-	public fun <init> (Ljava/lang/String;Ljava/lang/String;Lkotlinx/serialization/json/JsonElement;Ljava/lang/String;I)V
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;Lai/torad/aisdk/OnToolCallFinishEvent$Outcome;I)V
 	public final fun component1 ()Ljava/lang/String;
 	public final fun component2 ()Ljava/lang/String;
-	public final fun component3 ()Lkotlinx/serialization/json/JsonElement;
-	public final fun component4 ()Ljava/lang/String;
-	public final fun component5 ()I
-	public final fun copy (Ljava/lang/String;Ljava/lang/String;Lkotlinx/serialization/json/JsonElement;Ljava/lang/String;I)Lai/torad/aisdk/OnToolCallFinishEvent;
-	public static synthetic fun copy$default (Lai/torad/aisdk/OnToolCallFinishEvent;Ljava/lang/String;Ljava/lang/String;Lkotlinx/serialization/json/JsonElement;Ljava/lang/String;IILjava/lang/Object;)Lai/torad/aisdk/OnToolCallFinishEvent;
+	public final fun component3 ()Lai/torad/aisdk/OnToolCallFinishEvent$Outcome;
+	public final fun component4 ()I
+	public final fun copy (Ljava/lang/String;Ljava/lang/String;Lai/torad/aisdk/OnToolCallFinishEvent$Outcome;I)Lai/torad/aisdk/OnToolCallFinishEvent;
+	public static synthetic fun copy$default (Lai/torad/aisdk/OnToolCallFinishEvent;Ljava/lang/String;Ljava/lang/String;Lai/torad/aisdk/OnToolCallFinishEvent$Outcome;IILjava/lang/Object;)Lai/torad/aisdk/OnToolCallFinishEvent;
 	public fun equals (Ljava/lang/Object;)Z
-	public final fun getErrorMessage ()Ljava/lang/String;
-	public final fun getOutputJson ()Lkotlinx/serialization/json/JsonElement;
+	public final fun getOutcome ()Lai/torad/aisdk/OnToolCallFinishEvent$Outcome;
 	public final fun getStepNumber ()I
 	public final fun getToolCallId ()Ljava/lang/String;
 	public final fun getToolName ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public abstract interface class ai/torad/aisdk/OnToolCallFinishEvent$Outcome {
+}
+
+public final class ai/torad/aisdk/OnToolCallFinishEvent$Outcome$Failure : ai/torad/aisdk/OnToolCallFinishEvent$Outcome {
+	public fun <init> (Ljava/lang/String;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun copy (Ljava/lang/String;)Lai/torad/aisdk/OnToolCallFinishEvent$Outcome$Failure;
+	public static synthetic fun copy$default (Lai/torad/aisdk/OnToolCallFinishEvent$Outcome$Failure;Ljava/lang/String;ILjava/lang/Object;)Lai/torad/aisdk/OnToolCallFinishEvent$Outcome$Failure;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getErrorMessage ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class ai/torad/aisdk/OnToolCallFinishEvent$Outcome$Success : ai/torad/aisdk/OnToolCallFinishEvent$Outcome {
+	public fun <init> (Lkotlinx/serialization/json/JsonElement;)V
+	public final fun component1 ()Lkotlinx/serialization/json/JsonElement;
+	public final fun copy (Lkotlinx/serialization/json/JsonElement;)Lai/torad/aisdk/OnToolCallFinishEvent$Outcome$Success;
+	public static synthetic fun copy$default (Lai/torad/aisdk/OnToolCallFinishEvent$Outcome$Success;Lkotlinx/serialization/json/JsonElement;ILjava/lang/Object;)Lai/torad/aisdk/OnToolCallFinishEvent$Outcome$Success;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getOutputJson ()Lkotlinx/serialization/json/JsonElement;
 	public fun hashCode ()I
 	public fun toString ()Ljava/lang/String;
 }
@@ -6453,6 +6476,8 @@ public final class ai/torad/aisdk/TelemetryTracer$DefaultImpls {
 
 public final class ai/torad/aisdk/TextGenerationRequest {
 	public fun <init> ()V
+	public fun <init> (Lai/torad/aisdk/TextGenerationRequest$Input;Ljava/lang/String;Lai/torad/aisdk/CallSettings;)V
+	public synthetic fun <init> (Lai/torad/aisdk/TextGenerationRequest$Input;Ljava/lang/String;Lai/torad/aisdk/CallSettings;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public fun <init> (Ljava/lang/String;Ljava/util/List;Ljava/lang/String;Lai/torad/aisdk/CallSettings;)V
 	public synthetic fun <init> (Ljava/lang/String;Ljava/util/List;Ljava/lang/String;Lai/torad/aisdk/CallSettings;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun component1 ()Ljava/lang/String;
@@ -6462,12 +6487,76 @@ public final class ai/torad/aisdk/TextGenerationRequest {
 	public final fun copy (Ljava/lang/String;Ljava/util/List;Ljava/lang/String;Lai/torad/aisdk/CallSettings;)Lai/torad/aisdk/TextGenerationRequest;
 	public static synthetic fun copy$default (Lai/torad/aisdk/TextGenerationRequest;Ljava/lang/String;Ljava/util/List;Ljava/lang/String;Lai/torad/aisdk/CallSettings;ILjava/lang/Object;)Lai/torad/aisdk/TextGenerationRequest;
 	public fun equals (Ljava/lang/Object;)Z
+	public final fun getInput ()Lai/torad/aisdk/TextGenerationRequest$Input;
 	public final fun getMessages ()Ljava/util/List;
 	public final fun getPrompt ()Ljava/lang/String;
 	public final fun getSettings ()Lai/torad/aisdk/CallSettings;
 	public final fun getSystem ()Ljava/lang/String;
 	public fun hashCode ()I
 	public fun toString ()Ljava/lang/String;
+}
+
+public abstract interface class ai/torad/aisdk/TextGenerationRequest$Input {
+	public static final field Companion Lai/torad/aisdk/TextGenerationRequest$Input$Companion;
+	public abstract fun getMessages ()Ljava/util/List;
+	public abstract fun getPrompt ()Ljava/lang/String;
+}
+
+public final class ai/torad/aisdk/TextGenerationRequest$Input$Companion {
+	public final fun messages (Lai/torad/aisdk/ModelMessage;[Lai/torad/aisdk/ModelMessage;)Lai/torad/aisdk/TextGenerationRequest$Input;
+	public final fun messages (Lai/torad/aisdk/TextGenerationRequest$NonEmptyMessages;)Lai/torad/aisdk/TextGenerationRequest$Input;
+	public final fun messagesWithPrompt (Lai/torad/aisdk/TextGenerationRequest$NonEmptyMessages;Ljava/lang/String;)Lai/torad/aisdk/TextGenerationRequest$Input;
+	public final fun prompt (Ljava/lang/String;)Lai/torad/aisdk/TextGenerationRequest$Input;
+}
+
+public final class ai/torad/aisdk/TextGenerationRequest$Input$MessageHistory : ai/torad/aisdk/TextGenerationRequest$Input {
+	public fun <init> (Lai/torad/aisdk/TextGenerationRequest$NonEmptyMessages;)V
+	public final fun component1 ()Lai/torad/aisdk/TextGenerationRequest$NonEmptyMessages;
+	public final fun copy (Lai/torad/aisdk/TextGenerationRequest$NonEmptyMessages;)Lai/torad/aisdk/TextGenerationRequest$Input$MessageHistory;
+	public static synthetic fun copy$default (Lai/torad/aisdk/TextGenerationRequest$Input$MessageHistory;Lai/torad/aisdk/TextGenerationRequest$NonEmptyMessages;ILjava/lang/Object;)Lai/torad/aisdk/TextGenerationRequest$Input$MessageHistory;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getHistory ()Lai/torad/aisdk/TextGenerationRequest$NonEmptyMessages;
+	public fun getMessages ()Ljava/util/List;
+	public fun getPrompt ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class ai/torad/aisdk/TextGenerationRequest$Input$MessageHistoryWithPrompt : ai/torad/aisdk/TextGenerationRequest$Input {
+	public fun <init> (Lai/torad/aisdk/TextGenerationRequest$NonEmptyMessages;Ljava/lang/String;)V
+	public final fun component1 ()Lai/torad/aisdk/TextGenerationRequest$NonEmptyMessages;
+	public final fun component2 ()Ljava/lang/String;
+	public final fun copy (Lai/torad/aisdk/TextGenerationRequest$NonEmptyMessages;Ljava/lang/String;)Lai/torad/aisdk/TextGenerationRequest$Input$MessageHistoryWithPrompt;
+	public static synthetic fun copy$default (Lai/torad/aisdk/TextGenerationRequest$Input$MessageHistoryWithPrompt;Lai/torad/aisdk/TextGenerationRequest$NonEmptyMessages;Ljava/lang/String;ILjava/lang/Object;)Lai/torad/aisdk/TextGenerationRequest$Input$MessageHistoryWithPrompt;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getHistory ()Lai/torad/aisdk/TextGenerationRequest$NonEmptyMessages;
+	public fun getMessages ()Ljava/util/List;
+	public fun getPrompt ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class ai/torad/aisdk/TextGenerationRequest$Input$PromptText : ai/torad/aisdk/TextGenerationRequest$Input {
+	public fun <init> (Ljava/lang/String;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun copy (Ljava/lang/String;)Lai/torad/aisdk/TextGenerationRequest$Input$PromptText;
+	public static synthetic fun copy$default (Lai/torad/aisdk/TextGenerationRequest$Input$PromptText;Ljava/lang/String;ILjava/lang/Object;)Lai/torad/aisdk/TextGenerationRequest$Input$PromptText;
+	public fun equals (Ljava/lang/Object;)Z
+	public fun getMessages ()Ljava/util/List;
+	public fun getPrompt ()Ljava/lang/String;
+	public final fun getText ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class ai/torad/aisdk/TextGenerationRequest$NonEmptyMessages {
+	public static final field Companion Lai/torad/aisdk/TextGenerationRequest$NonEmptyMessages$Companion;
+	public final fun getValues ()Ljava/util/List;
+}
+
+public final class ai/torad/aisdk/TextGenerationRequest$NonEmptyMessages$Companion {
+	public final fun from (Ljava/lang/Iterable;)Lai/torad/aisdk/TextGenerationRequest$NonEmptyMessages;
+	public final fun of (Lai/torad/aisdk/ModelMessage;[Lai/torad/aisdk/ModelMessage;)Lai/torad/aisdk/TextGenerationRequest$NonEmptyMessages;
 }
 
 public final class ai/torad/aisdk/TextGenerationRequestBuilder {

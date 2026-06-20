@@ -1,5 +1,6 @@
 package ai.torad.aisdk
 
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.serialization.json.JsonElement
@@ -87,6 +88,8 @@ public suspend fun callCompletionApi(options: CallCompletionApiOptions): String?
         completion
     } catch (abort: AbortError) {
         builder.toString().ifEmpty { null }
+    } catch (t: CancellationException) {
+        throw t
     } catch (t: Throwable) {
         options.setError(t)
         options.onError(t)

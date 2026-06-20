@@ -1,0 +1,7 @@
+id: no-lateinit-var
+language: kotlin
+severity: error
+rule:
+  all:
+    - kind: property_declaration
+    - has: { kind: member_modifier, regex: "^lateinit$", stopBy: end }

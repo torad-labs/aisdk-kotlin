@@ -7,7 +7,9 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertIs
 import kotlin.test.assertTrue
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonNull
@@ -29,6 +31,56 @@ import kotlinx.serialization.serializer
 class ToolFlowTest {
 
     @Serializable data class Empty(val unused: String = "")
+
+    @Test
+    fun `executeTool emits preliminary output before upstream completes`() = runTest {
+        val secondEmissionReached = CompletableDeferred<Unit>()
+        val completionGate = CompletableDeferred<Unit>()
+        val preliminarySeen = CompletableDeferred<ExecuteToolResult.Preliminary<String>>()
+        val streamerTool = streamingTool<Empty, String, Unit>(
+            name = "streamer",
+            description = "emits before completion",
+            inputSerializer = serializer(),
+            outputSerializer = serializer(),
+        ) { _ ->
+            flow {
+                emit("v1")
+                emit("v2")
+                secondEmissionReached.complete(Unit)
+                completionGate.await()
+            }
+        }
+        val context = ToolExecutionContext(
+            context = Unit,
+            abortSignal = AbortSignalNever,
+            stepNumber = 1,
+            messages = emptyList(),
+            toolCallId = "call_1",
+        )
+        val results = mutableListOf<ExecuteToolResult<String>>()
+        val job = launch {
+            executeTool(streamerTool, Empty(), context).collect { result ->
+                results += result
+                if (result is ExecuteToolResult.Preliminary) {
+                    preliminarySeen.complete(result)
+                }
+            }
+        }
+
+        secondEmissionReached.await()
+        val preliminary = preliminarySeen.await()
+
+        assertEquals("v1", preliminary.output)
+        assertEquals(listOf<ExecuteToolResult<String>>(ExecuteToolResult.Preliminary("v1")), results)
+
+        completionGate.complete(Unit)
+        job.join()
+
+        assertEquals(
+            listOf<ExecuteToolResult<String>>(ExecuteToolResult.Preliminary("v1"), ExecuteToolResult.Final("v2")),
+            results,
+        )
+    }
 
     @Test
     fun `tool content result rejects malformed isError flag`() {

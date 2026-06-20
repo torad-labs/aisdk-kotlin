@@ -843,19 +843,17 @@ public fun <TInput, TOutput, TContext> executeTool(
     input: TInput,
     options: ToolExecutionContext<TContext>,
 ): Flow<ExecuteToolResult<TOutput>> = flow {
-    val outputs = mutableListOf<TOutput>()
+    var pendingFinal: ExecuteToolResult.Final<TOutput>? = null
     tool.streamExecutor(options, input).collect { output ->
-        outputs += output
+        pendingFinal?.let { emit(ExecuteToolResult.Preliminary(it.output)) }
+        pendingFinal = ExecuteToolResult.Final(output)
     }
-    if (outputs.isEmpty()) {
-        throw AgentError.ToolExecution(
-            tool.name,
-            options.toolCallId,
-            NoOutputGeneratedError("Tool ${tool.name} produced no output")
-        )
-    }
-    outputs.dropLast(1).forEach { emit(ExecuteToolResult.Preliminary(it)) }
-    emit(ExecuteToolResult.Final(outputs.last()))
+    val final = pendingFinal ?: throw AgentError.ToolExecution(
+        tool.name,
+        options.toolCallId,
+        NoOutputGeneratedError("Tool ${tool.name} produced no output")
+    )
+    emit(final)
 }
 
 public data class ToolNameMapping(

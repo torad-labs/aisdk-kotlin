@@ -1,0 +1,7 @@
+id: no-typealias-string
+language: kotlin
+severity: warning
+rule:
+  any:
+    - pattern: public typealias $NAME = String
+    - pattern: typealias $NAME = String

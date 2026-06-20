@@ -3,6 +3,7 @@ package ai.torad.aisdk
 import ai.torad.aisdk.testing.drainAllItems
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertIs
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
@@ -53,9 +54,11 @@ class KotlinApiTest {
         val providerOptions = mapOf("openai" to buildJsonObject { put("reasoningEffort", JsonPrimitive("high")) })
         val model = CapturingModel()
         val request = TextGenerationRequest(
+            input = TextGenerationRequest.Input.messagesWithPrompt(
+                history = TextGenerationRequest.NonEmptyMessages.of(userMessage("history")),
+                prompt = "answer",
+            ),
             system = "be concise",
-            messages = listOf(userMessage("history")),
-            prompt = "answer",
             settings = CallSettings(
                 temperature = 0.1f,
                 topP = 0.2f,
@@ -83,6 +86,65 @@ class KotlinApiTest {
         assertEquals(providerOptions, params.providerOptions)
         assertEquals(0.4f, params.presencePenalty)
         assertEquals(0.5f, params.frequencyPenalty)
+    }
+
+    @Test
+    fun `compat request constructor derives owned typed input and still executes`() = runTest {
+        val model = CapturingModel()
+        val request = TextGenerationRequest(
+            messages = listOf(userMessage("history")),
+            prompt = "answer",
+        )
+
+        val input = assertIs<TextGenerationRequest.Input.MessageHistoryWithPrompt>(request.input)
+
+        assertEquals(listOf(userMessage("history")), input.messages)
+        assertEquals("answer", input.prompt)
+
+        generateText(model = model, request = request)
+
+        val params = assertNotNull(model.generateParams)
+        assertEquals(listOf(MessageRole.User, MessageRole.User), params.messages.map { it.role })
+    }
+
+    @Test
+    fun `empty message history is rejected by owned request input`() {
+        assertFailsWith<IllegalArgumentException> {
+            TextGenerationRequest.NonEmptyMessages.from(emptyList())
+        }
+    }
+
+    @Test
+    fun `builder creates request with owned typed input`() {
+        val request = textGenerationRequest {
+            prompt("answer")
+        }
+
+        val input = assertIs<TextGenerationRequest.Input.PromptText>(request.input)
+
+        assertEquals("answer", input.text)
+    }
+
+    @Test
+    fun `empty builder preserves construction compatibility and fails at execution boundary`() = runTest {
+        val model = CapturingModel()
+        val request = textGenerationRequest { }
+
+        assertEquals(null, request.prompt)
+        assertEquals(emptyList(), request.messages)
+        assertFailsWith<IllegalArgumentException> {
+            generateText(model = model, request = request)
+        }
+    }
+
+    @Test
+    fun `empty compat request fails at execution boundary`() = runTest {
+        val model = CapturingModel()
+        val request = TextGenerationRequest()
+
+        assertFailsWith<IllegalArgumentException> {
+            generateText(model = model, request = request)
+        }
     }
 
     @Test
