@@ -157,7 +157,7 @@ private class FalImageModel(
                 mediaType = image["content_type"]?.jsonPrimitive?.contentOrNull
                     ?: bytes.headers.headerValue(HttpHeaders.ContentType)
                     ?: "image/png",
-                base64 = convertByteArrayToBase64(bytes.bytes),
+                base64 = Base64Codec.encode(bytes.bytes),
                 filename = image["file_name"]?.jsonPrimitive?.contentOrNull,
                 providerMetadata = mapOf("fal" to falImageMetadata(image)),
                 url = url,
@@ -195,7 +195,7 @@ private class FalSpeechModel(
         return SpeechModelResult(
             audio = GeneratedFile(
                 mediaType = audio.headers.headerValue(HttpHeaders.ContentType) ?: "audio/mpeg",
-                base64 = convertByteArrayToBase64(audio.bytes),
+                base64 = Base64Codec.encode(audio.bytes),
                 url = audioUrl,
             ),
             warnings = prepared.warnings,
@@ -603,7 +603,7 @@ private suspend fun falGetBinary(
 }
 
 private fun falHeaders(settings: FalProviderSettings, extra: Map<String, String>): Map<String, String> =
-    buildProviderHeaders(settings.headers, extra, "ai-sdk/fal/$FAL_VERSION") { headers ->
+    ProviderHeaders.build(settings.headers, extra, "ai-sdk/fal/$FAL_VERSION") { headers ->
         settings.apiKey?.takeIf { it.isNotBlank() }?.let { headers[HttpHeaders.Authorization] = "Key $it" }
     }
 

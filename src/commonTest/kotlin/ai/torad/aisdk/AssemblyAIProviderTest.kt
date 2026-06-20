@@ -52,7 +52,7 @@ class AssemblyAIProviderTest {
             TranscriptionParams(
                 audio = AudioSource(
                     mediaType = "audio/mpeg",
-                    base64 = convertByteArrayToBase64("abc".encodeToByteArray()),
+                    base64 = Base64Codec.encode("abc".encodeToByteArray()),
                     filename = "clip.mp3",
                 ),
                 language = "en_us",
@@ -141,7 +141,7 @@ class AssemblyAIProviderTest {
 
         model.transcribe(
             TranscriptionParams(
-                audio = AudioSource("audio/wav", convertByteArrayToBase64(byteArrayOf(1))),
+                audio = AudioSource("audio/wav", Base64Codec.encode(byteArrayOf(1))),
                 language = "pt",
             ),
         )
@@ -171,7 +171,7 @@ class AssemblyAIProviderTest {
         ).transcription("best")
 
         val error = assertFailsWith<AiSdkException> {
-            model.transcribe(TranscriptionParams(audio = AudioSource("audio/wav", convertByteArrayToBase64(byteArrayOf(1)))))
+            model.transcribe(TranscriptionParams(audio = AudioSource("audio/wav", Base64Codec.encode(byteArrayOf(1)))))
         }
         assertTrue(error.message.orEmpty().contains("bad audio"))
     }

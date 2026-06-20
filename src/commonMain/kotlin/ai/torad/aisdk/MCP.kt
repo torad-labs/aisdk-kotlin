@@ -791,7 +791,7 @@ private class DefaultMCPClient(config: MCPClientConfig) : MCPClient {
                     id = request.id,
                     error = JSONRPCErrorData(
                         code = -32602,
-                        message = "Invalid elicitation request: ${getErrorMessage(error)}",
+                        message = "Invalid elicitation request: ${ErrorMessages.of(error)}",
                     ),
                 ),
             )
@@ -813,7 +813,7 @@ private class DefaultMCPClient(config: MCPClientConfig) : MCPClient {
                     id = request.id,
                     error = JSONRPCErrorData(
                         code = -32603,
-                        message = getErrorMessage(error),
+                        message = ErrorMessages.of(error),
                     ),
                 ),
             )
@@ -1142,9 +1142,9 @@ internal suspend fun auth(
         return AuthResult.AUTHORIZED
     }
 
-    val state = provider.state() ?: generateId(prefix = "mcp")
+    val state = provider.state() ?: IdGenerator.generate(prefix = "mcp")
     provider.saveState(state)
-    val codeVerifier = createIdGenerator(prefix = "mcp-verifier", size = 48).generate()
+    val codeVerifier = IdGenerator(prefix = "mcp-verifier", size = 48).generate()
     provider.saveCodeVerifier(codeVerifier)
 
     val authClientInformation = clientInformation
@@ -1364,7 +1364,7 @@ private fun urlComponent(value: String): String = buildString {
 }
 
 private fun pkceS256Challenge(codeVerifier: String): String =
-    convertByteArrayToBase64(mcpSha256(codeVerifier.encodeToByteArray()))
+    Base64Codec.encode(mcpSha256(codeVerifier.encodeToByteArray()))
         .replace('+', '-')
         .replace('/', '_')
         .trimEnd('=')
@@ -1470,7 +1470,7 @@ private suspend fun applyOAuthClientAuthentication(
         "client_secret_basic" -> {
             val secret = clientInformation.clientSecret
                 ?: throw MCPClientError("client_secret_basic authentication requires a client_secret")
-            headers[HttpHeaders.Authorization] = "Basic ${convertByteArrayToBase64("${clientInformation.clientId}:$secret".encodeToByteArray())}"
+            headers[HttpHeaders.Authorization] = "Basic ${Base64Codec.encode("${clientInformation.clientId}:$secret".encodeToByteArray())}"
         }
         "client_secret_post" -> {
             params["client_id"] = clientInformation.clientId
@@ -1900,7 +1900,7 @@ public class HttpMCPTransport(
         authProvider?.tokens()?.accessToken?.takeIf {
             it.isNotBlank()
         }?.let { values[HttpHeaders.Authorization] = "Bearer $it" }
-        return withUserAgentSuffix(values, "ai-sdk/mcp/$MCP_PACKAGE_VERSION")
+        return ProviderHeaders.withUserAgentSuffix(values, "ai-sdk/mcp/$MCP_PACKAGE_VERSION")
     }
 }
 
@@ -2059,7 +2059,7 @@ public class SseMCPTransport(
         authProvider?.tokens()?.accessToken?.takeIf {
             it.isNotBlank()
         }?.let { values[HttpHeaders.Authorization] = "Bearer $it" }
-        return withUserAgentSuffix(values, "ai-sdk/mcp/$MCP_PACKAGE_VERSION")
+        return ProviderHeaders.withUserAgentSuffix(values, "ai-sdk/mcp/$MCP_PACKAGE_VERSION")
     }
 }
 

@@ -33,7 +33,7 @@ public data class StructuredObjectFinish<RESULT>(
 public data class StructuredObjectOptions<RESULT, INPUT>(
     val api: String,
     val schema: Schema<RESULT>,
-    val id: String = generateId("object"),
+    val id: String = IdGenerator.generate("object"),
     val initialValue: RESULT? = null,
     val headers: Map<String, String> = emptyMap(),
     val transport: StructuredObjectTransport<INPUT> = DirectStructuredObjectTransport { emptyFlow() },
@@ -83,7 +83,7 @@ public class StructuredObject<RESULT, INPUT>(
                 controller.signal.throwIfAborted()
                 accumulated.append(chunk)
                 val parsed = parsePartialJson(accumulated.toString()).value ?: return@collect
-                if (!isDeepEqualData(latestRaw, parsed)) {
+                if (!JsonOps.isDeepEqual(latestRaw, parsed)) {
                     latestRaw = parsed
                     rawValue = parsed
                     when (val validated = safeValidateTypes(parsed, options.schema)) {

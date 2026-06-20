@@ -111,7 +111,7 @@ private class LMNTSpeechModel(
         return SpeechModelResult(
             audio = GeneratedFile(
                 mediaType = response.mediaType,
-                base64 = convertByteArrayToBase64(response.bytes),
+                base64 = Base64Codec.encode(response.bytes),
             ),
             warnings = warnings,
             response = LanguageModelResponseMetadata(modelId = modelId, headers = response.headers),
@@ -151,7 +151,7 @@ private fun lmntHeaders(settings: LMNTProviderSettings, callHeaders: Map<String,
     settings.apiKey?.takeIf { it.isNotBlank() }?.let { base["x-api-key"] = it }
     base.putAll(settings.headers)
     base.putAll(callHeaders)
-    return withUserAgentSuffix(base, "ai-sdk/lmnt/$LMNT_VERSION")
+    return ProviderHeaders.withUserAgentSuffix(base, "ai-sdk/lmnt/$LMNT_VERSION")
 }
 
 private fun lmntOptions(providerOptions: Map<String, JsonElement>): JsonObject =

@@ -276,7 +276,7 @@ class KlingAIProviderTest {
 
     private fun decodeBase64UrlPart(value: String): String {
         val padding = "=".repeat((4 - value.length % 4) % 4)
-        return convertBase64ToByteArray(value + padding).decodeToString()
+        return Base64Codec.decode(value + padding).decodeToString()
     }
 
     private fun Map<String, String>.headerValue(name: String): String? =

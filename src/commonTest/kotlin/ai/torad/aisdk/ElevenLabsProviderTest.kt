@@ -61,7 +61,7 @@ class ElevenLabsProviderTest {
         )
 
         assertEquals("elevenlabs.speech", model.provider)
-        assertEquals(convertByteArrayToBase64(byteArrayOf(1, 2, 3)), result.audio?.base64)
+        assertEquals(Base64Codec.encode(byteArrayOf(1, 2, 3)), result.audio?.base64)
         assertEquals("unsupported", result.warnings.single().type)
         val request = fixture.calls.single()
         assertEquals("key", request.requestHeaders.headerValue("xi-api-key"))
@@ -99,7 +99,7 @@ class ElevenLabsProviderTest {
             TranscriptionParams(
                 audio = AudioSource(
                     mediaType = "audio/mpeg",
-                    base64 = convertByteArrayToBase64(byteArrayOf(1, 2, 3)),
+                    base64 = Base64Codec.encode(byteArrayOf(1, 2, 3)),
                     filename = "clip.mp3",
                 ),
                 providerOptions = mapOf(

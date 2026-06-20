@@ -177,7 +177,7 @@ private suspend fun gladiaPostMultipart(
     params: TranscriptionParams,
     headers: Map<String, String>,
 ): HttpJsonResponse {
-    val filename = params.audio.filename ?: "audio.${mediaTypeToExtension(params.audio.mediaType)}"
+    val filename = params.audio.filename ?: "audio.${MediaTypes.toExtension(params.audio.mediaType)}"
     val response = client.request(url) {
         method = HttpMethod.Post
         headers.forEach { (name, value) -> header(name, value) }
@@ -186,7 +186,7 @@ private suspend fun gladiaPostMultipart(
                 formData {
                     append(
                         "audio",
-                        convertBase64ToByteArray(params.audio.base64),
+                        Base64Codec.decode(params.audio.base64),
                         Headers.build {
                             append(HttpHeaders.ContentType, params.audio.mediaType)
                             append(HttpHeaders.ContentDisposition, "${ContentDisposition.File}; filename=\"$filename\"")
@@ -363,7 +363,7 @@ private fun gladiaHeaders(settings: GladiaProviderSettings, callHeaders: Map<Str
     settings.apiKey?.takeIf { it.isNotBlank() }?.let { base["x-gladia-key"] = it }
     base.putAll(settings.headers)
     base.putAll(callHeaders)
-    return withUserAgentSuffix(base, "ai-sdk/gladia/$GLADIA_VERSION")
+    return ProviderHeaders.withUserAgentSuffix(base, "ai-sdk/gladia/$GLADIA_VERSION")
 }
 
 private fun gladiaOptions(providerOptions: Map<String, JsonElement>): JsonObject =

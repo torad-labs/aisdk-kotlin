@@ -70,7 +70,7 @@ class ProdiaProviderTest {
         assertEquals("prodia.image", model.provider)
         assertEquals(1, model.maxImagesPerCall)
         assertEquals("image/png", result.images.single().mediaType)
-        assertEquals(convertByteArrayToBase64(byteArrayOf(1, 2, 3)), result.images.single().base64)
+        assertEquals(Base64Codec.encode(byteArrayOf(1, 2, 3)), result.images.single().base64)
         assertTrue(result.warnings.single().message.orEmpty().contains("one image"))
         val metadata = result.providerMetadata["prodia"]?.jsonObject?.get("images")?.jsonArray?.single()?.jsonObject
         assertEquals("job-img", metadata?.get("jobId")?.jsonPrimitive?.contentOrNull)
@@ -143,7 +143,7 @@ class ProdiaProviderTest {
         assertEquals("answer text", result.text)
         assertEquals(FinishReason.Stop, result.finishReason)
         assertEquals("image/png", result.content.filterIsInstance<ContentPart.File>().single().mediaType)
-        assertEquals(convertByteArrayToBase64(byteArrayOf(4, 5)), result.content.filterIsInstance<ContentPart.File>().single().base64)
+        assertEquals(Base64Codec.encode(byteArrayOf(4, 5)), result.content.filterIsInstance<ContentPart.File>().single().base64)
         assertTrue(result.warnings.any { it.message.orEmpty().contains("temperature") })
         assertTrue(result.warnings.any { it.message.orEmpty().contains("tools") })
         assertTrue(result.warnings.any { it.message.orEmpty().contains("responseFormat") })
@@ -213,9 +213,9 @@ class ProdiaProviderTest {
 
         assertEquals("prodia.video", model.provider)
         assertEquals(1, model.maxVideosPerCall)
-        assertEquals(convertByteArrayToBase64(byteArrayOf(8, 9)), textResult.videos.single().base64)
+        assertEquals(Base64Codec.encode(byteArrayOf(8, 9)), textResult.videos.single().base64)
         assertEquals("job-video-json", textResult.providerMetadata["prodia"]?.jsonObject?.get("videos")?.jsonArray?.single()?.jsonObject?.get("jobId")?.jsonPrimitive?.contentOrNull)
-        assertEquals(convertByteArrayToBase64(byteArrayOf(10, 11)), imageResult.videos.single().base64)
+        assertEquals(Base64Codec.encode(byteArrayOf(10, 11)), imageResult.videos.single().base64)
         assertEquals("job-video-multipart", imageResult.providerMetadata["prodia"]?.jsonObject?.get("videos")?.jsonArray?.single()?.jsonObject?.get("jobId")?.jsonPrimitive?.contentOrNull)
 
         val jsonBody = fixture.calls[0].requestBodyJson.jsonObject

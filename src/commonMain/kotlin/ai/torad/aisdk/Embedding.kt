@@ -76,102 +76,99 @@ public data class EmbedManyResult<TValue>(
     val providerMetadata: Map<String, JsonElement> = emptyMap(),
 )
 
-/** Only retryable [APICallError]s are retried (matching upstream); other errors fail fast. */
 internal val retryableApiError: (Throwable) -> Boolean = { (it as? APICallError)?.isRetryable == true }
 
-public suspend fun embed(
-    model: EmbeddingModel,
-    value: String,
-    providerOptions: Map<String, JsonElement> = emptyMap(),
-    abortSignal: AbortSignal = AbortSignalNever,
-    headers: Map<String, String> = emptyMap(),
-    maxRetries: Int = 2,
-): EmbedResult<String> {
-    val result = retryWithExponentialBackoff(RetryPolicy(maxRetries = maxRetries), retryableApiError) {
-        model.embed(
-            EmbeddingModelCallParams(
-                values = listOf(value),
-                providerOptions = providerOptions,
-                abortSignal = abortSignal,
-                headers = headers,
-            ),
-        )
-    }
-    val embedding = result.embeddings.singleOrNull()
-        ?: throw NoOutputGeneratedError("Embedding model returned ${result.embeddings.size} embeddings for one value")
-    return EmbedResult(
-        value = value,
-        embedding = embedding,
-        usage = result.usage,
-        warnings = result.warnings,
-        request = result.request,
-        response = result.response,
-        providerMetadata = result.providerMetadata,
-    )
-}
+public object Embedding {
 
-public suspend fun embedMany(
-    model: EmbeddingModel,
-    values: List<String>,
-    maxEmbeddingsPerCall: Int? = null,
-    maxParallelCalls: Int = Int.MAX_VALUE,
-    providerOptions: Map<String, JsonElement> = emptyMap(),
-    abortSignal: AbortSignal = AbortSignalNever,
-    headers: Map<String, String> = emptyMap(),
-    maxRetries: Int = 2,
-): EmbedManyResult<String> {
-    require(values.isNotEmpty()) { "embedMany: values must not be empty" }
-    // Batch size: explicit arg wins, else the model's own per-call limit, else one batch.
-    val batchSize = maxEmbeddingsPerCall ?: model.maxEmbeddingsPerCall
-    val batches = batchSize?.let { splitArray(values, it) } ?: listOf(values)
-
-    suspend fun embedBatch(batch: List<String>): EmbeddingModelResult {
-        abortSignal.throwIfAborted()
-        val result = retryWithExponentialBackoff(RetryPolicy(maxRetries = maxRetries), retryableApiError) {
+    public suspend fun embed(
+        model: EmbeddingModel,
+        value: String,
+        providerOptions: Map<String, JsonElement> = emptyMap(),
+        abortSignal: AbortSignal = AbortSignalNever,
+        headers: Map<String, String> = emptyMap(),
+        maxRetries: Int = 2,
+    ): EmbedResult<String> {
+        val result = RetryPolicy(maxRetries = maxRetries).execute(retryableApiError) {
             model.embed(
                 EmbeddingModelCallParams(
-                    values = batch,
-                    maxEmbeddingsPerCall = maxEmbeddingsPerCall,
+                    values = listOf(value),
                     providerOptions = providerOptions,
                     abortSignal = abortSignal,
                     headers = headers,
                 ),
             )
         }
-        require(result.embeddings.size == batch.size) {
-            "Embedding model returned ${result.embeddings.size} embeddings for ${batch.size} values"
-        }
-        return result
+        val embedding = result.embeddings.singleOrNull()
+            ?: throw NoOutputGeneratedError("Embedding model returned ${result.embeddings.size} embeddings for one value")
+        return EmbedResult(
+            value = value,
+            embedding = embedding,
+            usage = result.usage,
+            warnings = result.warnings,
+            request = result.request,
+            response = result.response,
+            providerMetadata = result.providerMetadata,
+        )
     }
 
-    // Run batches concurrently (bounded) when the model allows it; else serially.
-    // awaitAll preserves batch order, so embeddings line up with the input values.
-    val results: List<EmbeddingModelResult> = if (model.supportsParallelCalls && batches.size > 1) {
-        val permits = Semaphore(maxParallelCalls.coerceAtLeast(1))
-        coroutineScope {
-            batches.map { batch -> async { permits.withPermit { embedBatch(batch) } } }.awaitAll()
-        }
-    } else {
-        batches.map { embedBatch(it) }
-    }
+    public suspend fun embedMany(
+        model: EmbeddingModel,
+        values: List<String>,
+        maxEmbeddingsPerCall: Int? = null,
+        maxParallelCalls: Int = Int.MAX_VALUE,
+        providerOptions: Map<String, JsonElement> = emptyMap(),
+        abortSignal: AbortSignal = AbortSignalNever,
+        headers: Map<String, String> = emptyMap(),
+        maxRetries: Int = 2,
+    ): EmbedManyResult<String> {
+        require(values.isNotEmpty()) { "embedMany: values must not be empty" }
+        val batchSize = maxEmbeddingsPerCall ?: model.maxEmbeddingsPerCall
+        val batches = batchSize?.let { CollectionOps.splitArray(values, it) } ?: listOf(values)
 
-    val allEmbeddings = results.flatMap { it.embeddings }
-    val usage = EmbeddingUsage(
-        tokens = results.sumOf { it.usage.tokens },
-        raw = results.firstNotNullOfOrNull { it.usage.raw },
-    )
-    return EmbedManyResult(
-        values = values,
-        embeddings = allEmbeddings,
-        usage = usage,
-        warnings = results.flatMap { it.warnings },
-        request = results.firstOrNull()?.request ?: LanguageModelRequestMetadata(),
-        response = results.lastOrNull()?.response ?: LanguageModelResponseMetadata(),
-        responses = results.map { it.response },
-        // Accumulate provider metadata across ALL batches (deep-merging per provider
-        // key), not just the first non-empty one — matching upstream.
-        providerMetadata = results.fold(emptyMap()) { acc, r -> mergeProviderOptions(acc, r.providerMetadata) },
-    )
+        suspend fun embedBatch(batch: List<String>): EmbeddingModelResult {
+            abortSignal.throwIfAborted()
+            val result = RetryPolicy(maxRetries = maxRetries).execute(retryableApiError) {
+                model.embed(
+                    EmbeddingModelCallParams(
+                        values = batch,
+                        maxEmbeddingsPerCall = maxEmbeddingsPerCall,
+                        providerOptions = providerOptions,
+                        abortSignal = abortSignal,
+                        headers = headers,
+                    ),
+                )
+            }
+            require(result.embeddings.size == batch.size) {
+                "Embedding model returned ${result.embeddings.size} embeddings for ${batch.size} values"
+            }
+            return result
+        }
+
+        val results: List<EmbeddingModelResult> = if (model.supportsParallelCalls && batches.size > 1) {
+            val permits = Semaphore(maxParallelCalls.coerceAtLeast(1))
+            coroutineScope {
+                batches.map { batch -> async { permits.withPermit { embedBatch(batch) } } }.awaitAll()
+            }
+        } else {
+            batches.map { embedBatch(it) }
+        }
+
+        val allEmbeddings = results.flatMap { it.embeddings }
+        val usage = EmbeddingUsage(
+            tokens = results.sumOf { it.usage.tokens },
+            raw = results.firstNotNullOfOrNull { it.usage.raw },
+        )
+        return EmbedManyResult(
+            values = values,
+            embeddings = allEmbeddings,
+            usage = usage,
+            warnings = results.flatMap { it.warnings },
+            request = results.firstOrNull()?.request ?: LanguageModelRequestMetadata(),
+            response = results.lastOrNull()?.response ?: LanguageModelResponseMetadata(),
+            responses = results.map { it.response },
+            providerMetadata = results.fold(emptyMap()) { acc, r -> JsonOps.mergeProviderOptions(acc, r.providerMetadata) },
+        )
+    }
 }
 
 public interface EmbeddingModelMiddleware {
@@ -204,7 +201,7 @@ public fun defaultEmbeddingSettingsMiddleware(
             context.params.copy(
                 maxEmbeddingsPerCall = context.params.maxEmbeddingsPerCall ?: maxEmbeddingsPerCall,
                 truncate = context.params.truncate ?: truncate,
-                providerOptions = mergeProviderOptions(providerOptions, context.params.providerOptions),
+                providerOptions = JsonOps.mergeProviderOptions(providerOptions, context.params.providerOptions),
                 headers = headers + context.params.headers,
             ),
         )

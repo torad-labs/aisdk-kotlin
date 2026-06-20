@@ -22,7 +22,7 @@ class RetryBackoffTest {
         // the server's Retry-After to that, so a `Retry-After: 30` would wait 2s. The
         // fix honors the full 30s (<60s ceiling) — the retry-storm bug.
         var attempt = 0
-        val result = retryWithExponentialBackoff<String>(RetryPolicy(maxRetries = 1)) {
+        val result = RetryPolicy(maxRetries = 1).execute<String> {
             if (attempt++ == 0) throw apiError("30")
             "ok"
         }
@@ -37,7 +37,7 @@ class RetryBackoffTest {
     @Test
     fun `exhausting retries throws RetryError carrying every attempt error`() = runTest {
         val failure = assertFailsWith<RetryError> {
-            retryWithExponentialBackoff<String>(RetryPolicy(maxRetries = 2, baseDelayMs = 0)) {
+            RetryPolicy(maxRetries = 2, baseDelayMs = 0).execute<String> {
                 error("boom")
             }
         }
@@ -51,8 +51,7 @@ class RetryBackoffTest {
     fun `a non-retryable error on a later attempt wraps as ErrorNotRetryable with history`() = runTest {
         var attempt = 0
         val failure = assertFailsWith<RetryError> {
-            retryWithExponentialBackoff<String>(
-                RetryPolicy(maxRetries = 3, baseDelayMs = 0),
+            RetryPolicy(maxRetries = 3, baseDelayMs = 0).execute<String>(
                 shouldRetry = { it.message != "fatal" },
             ) {
                 if (attempt++ == 0) error("transient")
@@ -66,8 +65,7 @@ class RetryBackoffTest {
     @Test
     fun `a non-retryable error on the first attempt is thrown unwrapped`() = runTest {
         assertFailsWith<IllegalStateException> {
-            retryWithExponentialBackoff<String>(
-                RetryPolicy(maxRetries = 3, baseDelayMs = 0),
+            RetryPolicy(maxRetries = 3, baseDelayMs = 0).execute<String>(
                 shouldRetry = { false },
             ) {
                 error("first-try fatal")
@@ -78,7 +76,7 @@ class RetryBackoffTest {
     @Test
     fun `maxRetries 0 throws the bare error unwrapped`() = runTest {
         assertFailsWith<IllegalStateException> {
-            retryWithExponentialBackoff<String>(RetryPolicy(maxRetries = 0)) {
+            RetryPolicy(maxRetries = 0).execute<String> {
                 error("no retries")
             }
         }

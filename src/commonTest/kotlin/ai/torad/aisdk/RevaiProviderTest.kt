@@ -51,7 +51,7 @@ class RevaiProviderTest {
             TranscriptionParams(
                 audio = AudioSource(
                     mediaType = "audio/wav",
-                    base64 = convertByteArrayToBase64("abc".encodeToByteArray()),
+                    base64 = Base64Codec.encode("abc".encodeToByteArray()),
                     filename = "clip.wav",
                 ),
                 language = "en",
@@ -148,7 +148,7 @@ class RevaiProviderTest {
         ).transcription("machine")
 
         val error = assertFailsWith<AiSdkException> {
-            model.transcribe(TranscriptionParams(audio = AudioSource("audio/wav", convertByteArrayToBase64(byteArrayOf(1)))))
+            model.transcribe(TranscriptionParams(audio = AudioSource("audio/wav", Base64Codec.encode(byteArrayOf(1)))))
         }
         assertTrue(error.message.orEmpty().contains("Failed to submit"))
     }

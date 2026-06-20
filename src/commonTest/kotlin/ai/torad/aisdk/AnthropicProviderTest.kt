@@ -101,8 +101,8 @@ class AnthropicProviderTest {
             ),
         )
 
-        val pdf = convertByteArrayToBase64("pdf".encodeToByteArray())
-        val textDoc = convertByteArrayToBase64("plain document".encodeToByteArray())
+        val pdf = Base64Codec.encode("pdf".encodeToByteArray())
+        val textDoc = Base64Codec.encode("plain document".encodeToByteArray())
         val result = provider.messages("claude-sonnet-4-5").generate(
             LanguageModelCallParams(
                 messages = listOf(

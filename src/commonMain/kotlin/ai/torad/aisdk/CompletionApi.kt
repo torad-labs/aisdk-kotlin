@@ -37,7 +37,7 @@ public class DirectCompletionTransport(
 
 public data class UseCompletionOptions(
     val api: String = "/api/completion",
-    val id: String = generateId("completion"),
+    val id: String = IdGenerator.generate("completion"),
     val initialCompletion: String = "",
     val initialInput: String = "",
     val headers: Map<String, String> = emptyMap(),
@@ -50,7 +50,7 @@ public data class UseCompletionOptions(
 
 public data class CallCompletionApiOptions(
     val api: String = "/api/completion",
-    val id: String = generateId("completion"),
+    val id: String = IdGenerator.generate("completion"),
     val prompt: String,
     val headers: Map<String, String> = emptyMap(),
     val body: Map<String, JsonElement> = emptyMap(),

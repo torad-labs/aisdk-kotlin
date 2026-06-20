@@ -417,7 +417,7 @@ private suspend fun alibabaGetJson(
     )
 
 private fun alibabaHeaders(settings: AlibabaProviderSettings, callHeaders: Map<String, String>): Map<String, String> =
-    buildProviderHeaders(settings.headers, callHeaders, "ai-sdk/alibaba/$ALIBABA_VERSION") { base ->
+    ProviderHeaders.build(settings.headers, callHeaders, "ai-sdk/alibaba/$ALIBABA_VERSION") { base ->
         settings.apiKey?.takeIf { it.isNotBlank() }?.let { base[HttpHeaders.Authorization] = "Bearer $it" }
     }
 

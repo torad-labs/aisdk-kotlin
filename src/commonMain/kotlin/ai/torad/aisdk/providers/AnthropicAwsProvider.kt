@@ -21,7 +21,7 @@ public data class AnthropicAwsProviderSettings(
     val baseURL: String? = null,
     val headers: Map<String, String> = emptyMap(),
     val credentialProvider: (suspend () -> AnthropicAwsCredentials)? = null,
-    val generateId: () -> String = { ai.torad.aisdk.generateId() },
+    val generateId: () -> String = { IdGenerator.generate() },
 )
 
 public interface AnthropicAwsProvider : Provider {

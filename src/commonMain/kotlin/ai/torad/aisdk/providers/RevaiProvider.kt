@@ -179,7 +179,7 @@ private suspend fun revaiPostMultipart(
     modelId: String,
     headers: Map<String, String>,
 ): HttpJsonResponse {
-    val filename = params.audio.filename ?: "audio.${mediaTypeToExtension(params.audio.mediaType)}"
+    val filename = params.audio.filename ?: "audio.${MediaTypes.toExtension(params.audio.mediaType)}"
     val config = revaiConfigBody(modelId, params)
     val response = client.request(url) {
         method = HttpMethod.Post
@@ -189,7 +189,7 @@ private suspend fun revaiPostMultipart(
                 formData {
                     append(
                         "media",
-                        convertBase64ToByteArray(params.audio.base64),
+                        Base64Codec.decode(params.audio.base64),
                         Headers.build {
                             append(HttpHeaders.ContentType, params.audio.mediaType)
                             append(HttpHeaders.ContentDisposition, "${ContentDisposition.File}; filename=\"$filename\"")
@@ -310,7 +310,7 @@ private fun revaiHeaders(settings: RevaiProviderSettings, callHeaders: Map<Strin
     settings.apiKey?.takeIf { it.isNotBlank() }?.let { base[HttpHeaders.Authorization] = "Bearer $it" }
     base.putAll(settings.headers)
     base.putAll(callHeaders)
-    return withUserAgentSuffix(base, "ai-sdk/revai/$REVAI_VERSION")
+    return ProviderHeaders.withUserAgentSuffix(base, "ai-sdk/revai/$REVAI_VERSION")
 }
 
 private fun revaiOptions(providerOptions: Map<String, JsonElement>): JsonObject =

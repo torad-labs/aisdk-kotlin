@@ -148,7 +148,7 @@ private class DefaultAzureOpenAIProvider(
             settings.apiKey?.takeIf { it.isNotBlank() }?.let { base["api-key"] = it }
         }
         base.putAll(settings.headers)
-        return withUserAgentSuffix(base, "ai-sdk/azure/$AZURE_VERSION")
+        return ProviderHeaders.withUserAgentSuffix(base, "ai-sdk/azure/$AZURE_VERSION")
     }
 
     private fun azureUrl(path: String, modelId: String): String {
@@ -161,7 +161,7 @@ private class DefaultAzureOpenAIProvider(
             "$baseUrlPrefix/v1$path"
         }
         val separator = if ('?' in endpoint) "&" else "?"
-        return "$endpoint${separator}api-version=${urlEncode(settings.apiVersion)}"
+        return "$endpoint${separator}api-version=${UrlOps.encode(settings.apiVersion)}"
     }
 }
 

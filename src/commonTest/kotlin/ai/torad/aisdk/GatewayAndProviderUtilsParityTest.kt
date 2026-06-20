@@ -54,11 +54,11 @@ class GatewayAndProviderUtilsParityTest {
 
         val text = generateText(provider("chat-model"), prompt = "hi")
         val chat = generateText(provider.chat("chat-model-2"), prompt = "hi")
-        val embedding = embed(provider.embedding("embed-model"), "hello")
+        val embedding = Embedding.embed(provider.embedding("embed-model"), "hello")
         val image = generateImage(provider.image("image-model"), "logo")
         val video = generateVideo(provider.video("video-model"), "clip")
         val previewVideo = generateVideo(provider.video("xai/grok-imagine-video-1.5-preview"), "clip")
-        val reranked = rerank(provider.reranking("rank-model"), "q", listOf("a", "bb"))
+        val reranked = Reranking.rerank(provider.reranking("rank-model"), "q", listOf("a", "bb"))
 
         assertEquals("gateway:chat-model", text.text)
         assertEquals("gateway:chat-model-2", chat.text)
@@ -183,14 +183,12 @@ class GatewayAndProviderUtilsParityTest {
 
         """.trimIndent()
 
-        val parsed = parseJsonEventStream(text, schema)
+        val parsed = EventStreamParser.parse(text, schema)
         val streamed = drainAllItems(
-            parseJsonEventStream(
-                flowOf("data: {\"type\":\"chunk\"", ",\"value\":3}\n\n", "data: [DONE]\n\n"),
-                schema,
-            ),
+            EventStreamParser.parse(flowOf("data: {\"type\":\"chunk\"", ",\"value\":3}\n\n", "data: [DONE]\n\n"),
+            schema,),
         )
-        val failed = parseJsonEventStream("data: {bad json}\n\n", schema)
+        val failed = EventStreamParser.parse("data: {bad json}\n\n", schema)
 
         assertEquals(listOf(1, 2), parsed.map { (it as ParseResult.Success).value["value"]?.let { value -> value as JsonPrimitive }?.content?.toInt() })
         assertEquals(JsonPrimitive(3), (streamed.single() as ParseResult.Success).value["value"])
@@ -199,51 +197,47 @@ class GatewayAndProviderUtilsParityTest {
 
     @Test
     fun `provider util helpers match v6 defaults`() {
-        val generated = generateId()
-        val prefixed = createIdGenerator(prefix = "msg", size = 4, alphabet = "ab", separator = "_").generate()
-        val headers = withUserAgentSuffix(
-            mapOf("User-Agent" to "app/1.0", "X-Empty" to null),
-            "ai-sdk/test",
-        )
+        val generated = IdGenerator.generate()
+        val prefixed = IdGenerator(prefix = "msg", size = 4, alphabet = "ab", separator = "_").generate()
+        val headers = ProviderHeaders.withUserAgentSuffix(mapOf("User-Agent" to "app/1.0", "X-Empty" to null),
+        "ai-sdk/test",)
 
         assertEquals(16, generated.length)
         assertTrue(prefixed.startsWith("msg_"))
         assertFailsWith<IllegalArgumentException> {
-            createIdGenerator(prefix = "bad", alphabet = "ab-", separator = "-").generate()
+            IdGenerator(prefix = "bad", alphabet = "ab-", separator = "-").generate()
         }
-        assertEquals(mapOf("a" to "1", "b" to null), combineHeaders(mapOf("a" to "0"), mapOf("a" to "1", "b" to null)))
-        assertEquals(mapOf("x-a" to "1"), normalizeHeaders(mapOf("X-A" to "1", "X-B" to null)))
+        assertEquals(mapOf("a" to "1", "b" to null), ProviderHeaders.combine(mapOf("a" to "0"), mapOf("a" to "1", "b" to null)))
+        assertEquals(mapOf("x-a" to "1"), ProviderHeaders.normalize(mapOf("X-A" to "1", "X-B" to null)))
         assertEquals("app/1.0 ai-sdk/test", headers["user-agent"])
-        assertEquals("mp3", mediaTypeToExtension("audio/mpeg"))
-        assertEquals("archive", stripFileExtension("archive.tar.gz"))
-        assertEquals("https://x.test/a", withoutTrailingSlash("https://x.test/a/"))
-        assertEquals(mapOf("a" to JsonPrimitive(1)), removeUndefinedEntries(mapOf("a" to JsonPrimitive(1), "b" to null)))
-        assertEquals("boom", getErrorMessage(IllegalStateException("boom")))
+        assertEquals("mp3", MediaTypes.toExtension("audio/mpeg"))
+        assertEquals("archive", MediaTypes.stripFileExtension("archive.tar.gz"))
+        assertEquals("https://x.test/a", UrlOps.withoutTrailingSlash("https://x.test/a/"))
+        assertEquals(mapOf("a" to JsonPrimitive(1)), JsonOps.removeUndefinedEntries(mapOf("a" to JsonPrimitive(1), "b" to null)))
+        assertEquals("boom", ErrorMessages.of(IllegalStateException("boom")))
     }
 
     @Test
     fun `binary url and media provider-utils are available in common code`() {
         val raw = byteArrayOf(1, 2, 3)
-        val encoded = convertByteArrayToBase64(raw)
+        val encoded = Base64Codec.encode(raw)
 
-        assertEquals(raw.toList(), convertBase64ToByteArray(encoded).toList())
-        assertEquals(raw.toList(), convertBase64ToUint8Array(encoded).toList())
-        assertEquals(encoded, convertUint8ArrayToBase64(raw))
-        assertEquals(byteArrayOf(0xfb.toByte(), 0xff.toByte()).toList(), convertBase64ToUint8Array("-_8=").toList())
-        assertEquals("already-base64", convertToBase64("already-base64"))
-        assertEquals(encoded, convertToBase64(raw))
+        assertEquals(raw.toList(), Base64Codec.decode(encoded).toList())
+        assertEquals(raw.toList(), Base64Codec.decodeToUint8Array(encoded).toList())
+        assertEquals(encoded, Base64Codec.encodeFromUint8Array(raw))
+        assertEquals(byteArrayOf(0xfb.toByte(), 0xff.toByte()).toList(), Base64Codec.decodeToUint8Array("-_8=").toList())
+        assertEquals("already-base64", Base64Codec.encodeString("already-base64"))
+        assertEquals(encoded, Base64Codec.encode(raw))
         assertTrue(
-            isUrlSupported(
-                mediaType = "image/png",
-                url = "https://cdn.example.com/image.png",
-                supportedUrls = mapOf("image/*" to listOf(Regex("cdn\\.example\\.com"))),
-            ),
+            UrlOps.isSupported(mediaType = "image/png",
+            url = "https://cdn.example.com/image.png",
+            supportedUrls = mapOf("image/*" to listOf(Regex("cdn\\.example\\.com"))),),
         )
-        validateDownloadUrl("https://example.com/file.png")
-        validateDownloadUrl("data:text/plain;base64,SGk=")
-        assertFailsWith<DownloadError> { validateDownloadUrl("http://localhost/file") }
-        assertFailsWith<DownloadError> { validateDownloadUrl("http://10.0.0.1/file") }
-        assertFailsWith<DownloadError> { validateDownloadUrl("file:///tmp/secret") }
+        UrlOps.validateDownload("https://example.com/file.png")
+        UrlOps.validateDownload("data:text/plain;base64,SGk=")
+        assertFailsWith<DownloadError> { UrlOps.validateDownload("http://localhost/file") }
+        assertFailsWith<DownloadError> { UrlOps.validateDownload("http://10.0.0.1/file") }
+        assertFailsWith<DownloadError> { UrlOps.validateDownload("file:///tmp/secret") }
     }
 
     @Test
@@ -273,12 +267,12 @@ class GatewayAndProviderUtilsParityTest {
             )
         }
 
-        assertEquals("explicit", loadApiKey("explicit", "TEST_API_KEY", description = "Test"))
-        assertEquals("from-env", loadApiKey(null, "TEST_API_KEY", description = "Test", environment = mapOf("TEST_API_KEY" to "from-env")))
-        assertEquals("setting", loadSetting(null, "TEST_SETTING", "setting", "Test", mapOf("TEST_SETTING" to "setting")))
-        assertEquals("optional", loadOptionalSetting(null, "TEST_OPTIONAL", mapOf("TEST_OPTIONAL" to "optional")))
-        assertFailsWith<LoadAPIKeyError> { loadApiKey(null, "MISSING_API_KEY", description = "Missing") }
-        assertFailsWith<LoadSettingError> { loadSetting(null, "MISSING_SETTING", "setting", "Missing") }
+        assertEquals("explicit", SettingsSource.loadApiKey("explicit", "TEST_API_KEY", description = "Test"))
+        assertEquals("from-env", SettingsSource.loadApiKey(null, "TEST_API_KEY", description = "Test", environment = mapOf("TEST_API_KEY" to "from-env")))
+        assertEquals("setting", SettingsSource.loadSetting(null, "TEST_SETTING", "setting", "Test", mapOf("TEST_SETTING" to "setting")))
+        assertEquals("optional", SettingsSource.loadOptional(null, "TEST_OPTIONAL", mapOf("TEST_OPTIONAL" to "optional")))
+        assertFailsWith<LoadAPIKeyError> { SettingsSource.loadApiKey(null, "MISSING_API_KEY", description = "Missing") }
+        assertFailsWith<LoadSettingError> { SettingsSource.loadSetting(null, "MISSING_SETTING", "setting", "Missing") }
     }
 
     @Test
@@ -636,10 +630,10 @@ class GatewayAndProviderUtilsParityTest {
             GatewayProviderSettings(baseUrl = "https://gateway.test/v3/ai", apiKey = "secret"),
         )
 
-        val embedding = embed(provider.embeddingModel("embed"), "abc")
+        val embedding = Embedding.embed(provider.embeddingModel("embed"), "abc")
         val image = generateImage(provider.imageModel("image"), "logo")
         val video = generateVideo(provider.videoModel("video"), "clip")
-        val ranked = rerank(provider.rerankingModel("rank"), "q", listOf("first", "second"))
+        val ranked = Reranking.rerank(provider.rerankingModel("rank"), "q", listOf("first", "second"))
 
         assertEquals(listOf(1f, 2f), embedding.embedding)
         assertEquals(3, embedding.usage.tokens)

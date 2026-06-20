@@ -45,7 +45,7 @@ public data class AnthropicProviderSettings(
     val buildRequestUrl: ((baseURL: String, modelId: String, isStreaming: Boolean) -> String)? = null,
     val transformRequestBody: ((modelId: String, body: JsonObject, isStreaming: Boolean) -> JsonObject)? = null,
     val supportedUrls: Map<String, List<String>>? = null,
-    val generateId: () -> String = { ai.torad.aisdk.generateId() },
+    val generateId: () -> String = { IdGenerator.generate() },
     val name: String = "anthropic.messages",
 )
 
@@ -125,7 +125,7 @@ public class AnthropicMessagesLanguageModel(
         var sseHeaders: Map<String, String> = emptyMap()
         val rawLines = anthropicStreamSse(prepared.body, prepared.betas, params.headers) { sseHeaders = it }
         forwardSseEvents(
-            events = parseJsonEventStream(rawLines, jsonSchema<JsonElement>(JsonObject(emptyMap())), aiSdkJson),
+            events = EventStreamParser.parse(rawLines, jsonSchema<JsonElement>(JsonObject(emptyMap())), aiSdkJson),
             capturedHeaders = { sseHeaders },
             parseErrorPrefix = "Failed to parse Anthropic stream event",
             onEvent = { state.accept(it).forEach { e -> emit(e) } },
@@ -486,7 +486,7 @@ private fun anthropicUserPart(part: ContentPart, betas: MutableSet<String>): Jso
             put("source", buildJsonObject {
                 put("type", JsonPrimitive("text"))
                 put("media_type", JsonPrimitive("text/plain"))
-                put("data", JsonPrimitive(convertBase64ToByteArray(part.base64).decodeToString()))
+                put("data", JsonPrimitive(Base64Codec.decode(part.base64).decodeToString()))
             })
             part.filename?.let { put("title", JsonPrimitive(it)) }
             anthropicFileOptions(part.providerMetadata)?.let { putJsonObjectFields(it) }
@@ -688,7 +688,7 @@ private fun anthropicOptions(providerOptions: Map<String, JsonElement>, provider
     val canonical = providerOptions["anthropic"] as? JsonObject ?: JsonObject(emptyMap())
     val customName = providerName.substringBefore('.')
     val custom = if (customName != "anthropic") providerOptions[customName] as? JsonObject else null
-    return mergeJsonObjects(canonical, custom ?: JsonObject(emptyMap()))
+    return JsonOps.merge(canonical, custom ?: JsonObject(emptyMap()))
 }
 
 private fun anthropicCacheControl(metadata: Map<String, JsonElement>?): JsonElement? =
@@ -1016,7 +1016,7 @@ private fun anthropicHeaders(
     headers.putAll(settings.headers)
     headers.putAll(extra)
     if (betas.isNotEmpty()) headers["anthropic-beta"] = betas.joinToString(",")
-    return withUserAgentSuffix(headers, "ai-sdk/anthropic/$ANTHROPIC_VERSION")
+    return ProviderHeaders.withUserAgentSuffix(headers, "ai-sdk/anthropic/$ANTHROPIC_VERSION")
 }
 
 /**

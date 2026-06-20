@@ -177,7 +177,7 @@ private suspend fun resolveMedia(
 @Suppress("MagicNumber") // the hex literals ARE the file-format magic-byte signatures
 private fun detectImageMediaType(base64: String): String? {
     val bytes = runCatching {
-        if (base64.isEmpty()) null else convertBase64ToByteArray(base64)
+        if (base64.isEmpty()) null else Base64Codec.decode(base64)
     }.getOrNull() ?: return null
     fun hasPrefix(sig: List<Int>, offset: Int = 0): Boolean =
         bytes.size >= offset + sig.size && sig.withIndex().all { (i, b) -> (bytes[offset + i].toInt() and 0xFF) == b }
@@ -207,7 +207,7 @@ private suspend fun resolveUrl(
         // (e.g. data:text/plain,Hello) aren't representable as our base64 part, so
         // they're left untouched for the provider rather than crashing splitDataUrl.
         url.startsWith("data:") && ";base64," in url -> {
-            val data = splitDataUrl(url)
+            val data = DataUrl.parse(url)
             ResolvedAsset(data.base64, mediaType.ifEmpty { data.mediaType })
         }
         url.startsWith("data:") -> null

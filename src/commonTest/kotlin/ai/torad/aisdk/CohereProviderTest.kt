@@ -77,7 +77,7 @@ class CohereProviderTest {
                 headers = mapOf("X-Provider" to "provider"),
             ),
         )
-        val documentBase64 = convertByteArrayToBase64("Paris document".encodeToByteArray())
+        val documentBase64 = Base64Codec.encode("Paris document".encodeToByteArray())
 
         val result = provider("command-r-plus").generate(
             LanguageModelCallParams(

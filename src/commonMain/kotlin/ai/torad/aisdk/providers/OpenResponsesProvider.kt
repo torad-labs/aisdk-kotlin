@@ -148,7 +148,7 @@ private class OpenResponsesLanguageModel(
         var sseHeaders: Map<String, String> = emptyMap()
         val rawLines = streamResponsesSse(prepared.body, params.headers) { sseHeaders = it }
         forwardSseEvents(
-            events = parseJsonEventStream(rawLines, jsonSchema<JsonElement>(JsonObject(emptyMap())), json),
+            events = EventStreamParser.parse(rawLines, jsonSchema<JsonElement>(JsonObject(emptyMap())), json),
             capturedHeaders = { sseHeaders },
             parseErrorPrefix = "Failed to parse Open Responses stream event",
             onEvent = { state.accept(it).forEach { e -> emit(e) } },
@@ -223,8 +223,8 @@ private class OpenResponsesLanguageModel(
         base.putAll(settings.headers)
         base.putAll(extra)
         return settings.userAgentSuffix
-            ?.let { withUserAgentSuffix(base, it) }
-            ?: normalizeHeaders(base)
+            ?.let { ProviderHeaders.withUserAgentSuffix(base, it) }
+            ?: ProviderHeaders.normalize(base)
     }
 
     private suspend fun parseResponse(
@@ -390,7 +390,7 @@ private fun isOpenResponsesFileId(value: String, prefixes: List<String>): Boolea
     prefixes.any { prefix -> prefix.isNotEmpty() && value.startsWith(prefix) } && !isOpenResponsesBase64Payload(value)
 
 private fun isOpenResponsesBase64Payload(value: String): Boolean =
-    runCatching { convertBase64ToByteArray(value) }.isSuccess
+    runCatching { Base64Codec.decode(value) }.isSuccess
 
 private fun openResponsesFileId(
     value: String,

@@ -300,7 +300,7 @@ private class DefaultGatewayProvider(
 
     private suspend fun requestContext(): GatewayRequestContext =
         GatewayRequestContext(
-            baseUrl = withoutTrailingSlash(settings.baseUrl) ?: AI_GATEWAY_DEFAULT_BASE_URL,
+            baseUrl = UrlOps.withoutTrailingSlash(settings.baseUrl) ?: AI_GATEWAY_DEFAULT_BASE_URL,
             headers = gatewayHeaders(settings),
         )
 }
@@ -408,7 +408,7 @@ internal suspend fun gatewayHeaders(settings: GatewayProviderSettings): Map<Stri
         settings.environment[envVar]?.let { base[header] = it }
     }
     base.putAll(settings.headers)
-    return withUserAgentSuffix(base, "ai-sdk/gateway-kotlin")
+    return ProviderHeaders.withUserAgentSuffix(base, "ai-sdk/gateway-kotlin")
 }
 
 internal fun parseGatewayAuthMethod(headers: Map<String, String?>): GatewayAuthMethod? =

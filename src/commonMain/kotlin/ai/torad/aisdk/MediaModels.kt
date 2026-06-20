@@ -68,7 +68,7 @@ public fun generatedFile(
     )
     is FileData.Bytes -> GeneratedFile(
         mediaType = mediaType,
-        base64 = convertByteArrayToBase64(data.bytes),
+        base64 = Base64Codec.encode(data.bytes),
         filename = filename,
         providerMetadata = providerMetadata,
     )
@@ -89,7 +89,7 @@ public fun imageGenerationFile(data: FileData): ImageGenerationFile = when (data
     )
     is FileData.Bytes -> ImageGenerationFile(
         mediaType = data.mediaType,
-        base64 = convertByteArrayToBase64(data.bytes),
+        base64 = Base64Codec.encode(data.bytes),
         filename = data.filename,
     )
     is FileData.Url -> ImageGenerationFile(
@@ -119,7 +119,7 @@ public fun GeneratedFile.bytes(): ByteArray {
         }
         return ByteArray(0)
     }
-    return convertBase64ToByteArray(base64)
+    return Base64Codec.decode(base64)
 }
 
 /** Like [bytes] but returns null for a URL-backed file instead of throwing. */
@@ -151,7 +151,7 @@ public class DefaultGeneratedFile {
     public val base64: String
         get() {
             if (base64Data == null) {
-                base64Data = convertByteArrayToBase64(byteArrayData ?: ByteArray(0))
+                base64Data = Base64Codec.encode(byteArrayData ?: ByteArray(0))
             }
             return base64Data.orEmpty()
         }
@@ -159,7 +159,7 @@ public class DefaultGeneratedFile {
     public val byteArray: ByteArray
         get() {
             if (byteArrayData == null) {
-                byteArrayData = convertBase64ToByteArray(base64Data.orEmpty())
+                byteArrayData = Base64Codec.decode(base64Data.orEmpty())
             }
             return byteArrayData ?: ByteArray(0)
         }

@@ -72,7 +72,7 @@ public data class AmazonBedrockProviderSettings(
     val baseURL: String? = null,
     val agentBaseURL: String? = null,
     val headers: Map<String, String> = emptyMap(),
-    val generateId: () -> String = { ai.torad.aisdk.generateId() },
+    val generateId: () -> String = { IdGenerator.generate() },
 )
 
 public interface AmazonBedrockProvider : Provider {
@@ -810,16 +810,16 @@ private fun bedrockEmbeddingBody(modelId: String, value: String, options: JsonOb
     }
 
 private fun bedrockEmbeddingVector(response: JsonObject): List<Float> {
-    response["embedding"]?.let { return it.jsonArray.map { item -> embeddingFloat(item, "amazon-bedrock.embedding") } }
+    response["embedding"]?.let { return it.jsonArray.map { item -> WireDecoder.embeddingFloat(item, "amazon-bedrock.embedding") } }
     val embeddings = response["embeddings"]
     if (embeddings is JsonArray) {
         val first = embeddings.firstOrNull() ?: return emptyList()
-        if (first is JsonArray) return first.map { embeddingFloat(it, "amazon-bedrock.embedding") }
+        if (first is JsonArray) return first.map { WireDecoder.embeddingFloat(it, "amazon-bedrock.embedding") }
         val obj = first.jsonObject
-        return obj["embedding"]?.jsonArray.orEmpty().map { embeddingFloat(it, "amazon-bedrock.embedding") }
+        return obj["embedding"]?.jsonArray.orEmpty().map { WireDecoder.embeddingFloat(it, "amazon-bedrock.embedding") }
     }
     val floatEmbeddings = embeddings?.jsonObject?.get("float")?.jsonArray?.firstOrNull()?.jsonArray
-    return floatEmbeddings.orEmpty().map { embeddingFloat(it, "amazon-bedrock.embedding") }
+    return floatEmbeddings.orEmpty().map { WireDecoder.embeddingFloat(it, "amazon-bedrock.embedding") }
 }
 
 private fun bedrockEmbeddingTokens(response: JsonObject): Int =
@@ -1001,7 +1001,7 @@ private fun bedrockChatGenerateResult(
                 content += ContentPart.Text((tool["input"] ?: JsonObject(emptyMap())).toString())
             } else {
                 val call = ContentPart.ToolCall(
-                    toolCallId = tool["toolUseId"]?.jsonPrimitive?.contentOrNull ?: generateId(),
+                    toolCallId = tool["toolUseId"]?.jsonPrimitive?.contentOrNull ?: IdGenerator.generate(),
                     toolName = name,
                     input = tool["input"] ?: JsonObject(emptyMap()),
                 )
@@ -1072,7 +1072,7 @@ private class BedrockStreamState(
             val index = start["contentBlockIndex"]?.jsonPrimitive?.intOrNull ?: return@let
             val toolUse = start["start"]?.jsonObject?.get("toolUse") as? JsonObject
             if (toolUse != null) {
-                val id = toolUse["toolUseId"]?.jsonPrimitive?.contentOrNull ?: generateId()
+                val id = toolUse["toolUseId"]?.jsonPrimitive?.contentOrNull ?: IdGenerator.generate()
                 val name = toolUse["name"]?.jsonPrimitive?.contentOrNull.orEmpty()
                 val isJsonTool = usesJsonResponseTool && name == "json"
                 blocks[index] = BedrockStreamBlock.Tool(id, name, "", isJsonTool)
@@ -1389,7 +1389,7 @@ private suspend fun bedrockHeaders(
     headers[HttpHeaders.ContentType] = ContentType.Application.Json.toString()
     settings.headers.forEach { (key, value) -> headers[key] = value }
     extra.forEach { (key, value) -> headers[key] = value }
-    val headersWithUserAgent = withUserAgentSuffix(headers, "ai-sdk/amazon-bedrock/$AMAZON_BEDROCK_VERSION")
+    val headersWithUserAgent = ProviderHeaders.withUserAgentSuffix(headers, "ai-sdk/amazon-bedrock/$AMAZON_BEDROCK_VERSION")
     val apiKey = settings.apiKey?.trim()?.takeIf { it.isNotEmpty() }
     if (apiKey != null) {
         return headersWithUserAgent + (HttpHeaders.Authorization to "Bearer $apiKey")

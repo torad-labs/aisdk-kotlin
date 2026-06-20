@@ -192,7 +192,7 @@ private class CohereEmbeddingModel(
         )
         val value = response.value.jsonObject
         val embeddings = value["embeddings"]?.jsonObject?.get("float")?.jsonArray.orEmpty()
-            .map { row -> row.jsonArray.map { embeddingFloat(it, provider) } }
+            .map { row -> row.jsonArray.map { WireDecoder.embeddingFloat(it, provider) } }
         val usage = value["meta"]?.jsonObject
             ?.get("billed_units")?.jsonObject
             ?.get("input_tokens")?.jsonPrimitive?.intOrNull ?: 0
@@ -424,7 +424,7 @@ private fun cohereDocumentPart(part: ContentPart.File): JsonObject = buildJsonOb
         put(
             "text",
             JsonPrimitive(
-                runCatching { convertBase64ToByteArray(part.base64).decodeToString() }.getOrElse {
+                runCatching { Base64Codec.decode(part.base64).decodeToString() }.getOrElse {
                     throw InvalidArgumentError("messages", "Cohere document file content must be valid base64.")
                 },
             ),
@@ -527,7 +527,7 @@ private fun cohereChatResult(
         val obj = call.jsonObject
         val function = obj["function"]?.jsonObject ?: JsonObject(emptyMap())
         ContentPart.ToolCall(
-            toolCallId = obj["id"]?.jsonPrimitive?.contentOrNull ?: generateId("call"),
+            toolCallId = obj["id"]?.jsonPrimitive?.contentOrNull ?: IdGenerator.generate("call"),
             toolName = function["name"]?.jsonPrimitive?.contentOrNull.orEmpty(),
             input = cohereToolInput(function["arguments"]?.jsonPrimitive?.contentOrNull),
         )
@@ -612,7 +612,7 @@ private fun cohereHeaders(settings: CohereProviderSettings, callHeaders: Map<Str
     settings.apiKey?.takeIf { it.isNotBlank() }?.let { base[HttpHeaders.Authorization] = "Bearer $it" }
     settings.headers.forEach { (key, value) -> base[key] = value }
     callHeaders.forEach { (key, value) -> base[key] = value }
-    return withUserAgentSuffix(base, "ai-sdk/cohere/$COHERE_VERSION")
+    return ProviderHeaders.withUserAgentSuffix(base, "ai-sdk/cohere/$COHERE_VERSION")
 }
 
 private fun cohereOptions(providerOptions: Map<String, JsonElement>): JsonObject =

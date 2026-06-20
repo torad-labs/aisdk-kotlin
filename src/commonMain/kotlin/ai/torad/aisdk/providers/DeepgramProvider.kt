@@ -126,7 +126,7 @@ public class DeepgramSpeechModel(
         return SpeechModelResult(
             audio = GeneratedFile(
                 mediaType = response.headers.headerValue(HttpHeaders.ContentType) ?: deepgramSpeechMediaType(prepared.queryParams),
-                base64 = convertByteArrayToBase64(response.bytes),
+                base64 = Base64Codec.encode(response.bytes),
             ),
             warnings = prepared.warnings,
             response = LanguageModelResponseMetadata(
@@ -150,7 +150,7 @@ private class DeepgramTranscriptionModel(
         val response = deepgramPostBinaryJson(
             client = client,
             url = "$DEEPGRAM_BASE_URL/v1/listen?${prepared.queryParams.toQueryString()}",
-            bytes = convertBase64ToByteArray(params.audio.base64),
+            bytes = Base64Codec.decode(params.audio.base64),
             mediaType = params.audio.mediaType,
             headers = deepgramHeaders(settings, params.headers),
         )
@@ -490,7 +490,7 @@ private fun deepgramHeaders(settings: DeepgramProviderSettings, callHeaders: Map
     settings.apiKey?.takeIf { it.isNotBlank() }?.let { base[HttpHeaders.Authorization] = "Token $it" }
     base.putAll(settings.headers)
     base.putAll(callHeaders)
-    return withUserAgentSuffix(base, "ai-sdk/deepgram/$DEEPGRAM_VERSION")
+    return ProviderHeaders.withUserAgentSuffix(base, "ai-sdk/deepgram/$DEEPGRAM_VERSION")
 }
 
 private fun deepgramOptions(providerOptions: Map<String, JsonElement>): JsonObject =
@@ -529,7 +529,7 @@ private fun deepgramQueryValue(value: JsonElement): String =
     }
 
 private fun Map<String, String>.toQueryString(): String =
-    entries.joinToString("&") { (key, value) -> "${urlEncode(key)}=${urlEncode(value)}" }
+    entries.joinToString("&") { (key, value) -> "${UrlOps.encode(key)}=${UrlOps.encode(value)}" }
 
 
 private fun Map<String, String>.headerValue(name: String): String? =

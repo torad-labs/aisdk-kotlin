@@ -48,8 +48,8 @@ class FullPortFeatureParityTest {
     fun `embed and embedMany call embedding models and preserve batching settings`() = runTest {
         val model = MockEmbeddingModel(dimensions = 2)
 
-        val single = embed(model, "hello")
-        val many = embedMany(model, listOf("a", "bb", "ccc"), maxEmbeddingsPerCall = 2)
+        val single = Embedding.embed(model, "hello")
+        val many = Embedding.embedMany(model, listOf("a", "bb", "ccc"), maxEmbeddingsPerCall = 2)
 
         assertEquals(listOf(5f, 6f), single.embedding)
         assertEquals(3, many.embeddings.size)
@@ -106,7 +106,7 @@ class FullPortFeatureParityTest {
     @Test
     fun `rerank preserves provider ranking order and original indexes`() = runTest {
         val model = MockRerankingModel()
-        val result = rerank(
+        val result = Reranking.rerank(
             model = model,
             query = "kotlin",
             documents = listOf("swift ui", "kotlin multiplatform", "java"),
@@ -226,22 +226,22 @@ class FullPortFeatureParityTest {
     @Test
     fun `utility helpers cover ids media data urls retries and JSON equality`() = runTest {
         var attempts = 0
-        val retried = retryWithExponentialBackoff(RetryPolicy(maxRetries = 1, baseDelayMs = 0)) { attempt ->
+        val retried = RetryPolicy(maxRetries = 1, baseDelayMs = 0).execute { attempt ->
             attempts += 1
             if (attempt == 0) error("retry")
             "ok"
         }
 
-        val dataUrl = splitDataUrl("data:text/plain;base64,SGk=")
+        val dataUrl = DataUrl.parse("data:text/plain;base64,SGk=")
 
         assertEquals("ok", retried)
         assertEquals(2, attempts)
         assertEquals("text/plain", dataUrl.mediaType)
-        assertEquals("image/png", detectMediaType(filename = "a.png"))
-        assertTrue(generateId("test").startsWith("test-"))
-        assertTrue(isDeepEqualData(JsonPrimitive(1), JsonPrimitive(1.0)))
-        assertFalse(isDeepEqualData(JsonPrimitive(1), JsonPrimitive(2)))
-        assertEquals(listOf(listOf(1, 2), listOf(3)), splitArray(listOf(1, 2, 3), 2))
+        assertEquals("image/png", MediaTypes.detect(filename = "a.png"))
+        assertTrue(IdGenerator.generate("test").startsWith("test-"))
+        assertTrue(JsonOps.isDeepEqual(JsonPrimitive(1), JsonPrimitive(1.0)))
+        assertFalse(JsonOps.isDeepEqual(JsonPrimitive(1), JsonPrimitive(2)))
+        assertEquals(listOf(listOf(1, 2), listOf(3)), CollectionOps.splitArray(listOf(1, 2, 3), 2))
     }
 
     @Test

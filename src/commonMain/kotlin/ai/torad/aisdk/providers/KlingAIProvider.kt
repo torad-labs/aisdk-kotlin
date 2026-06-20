@@ -351,7 +351,7 @@ private fun klingAIHeaders(
         secretKey = settings.secretKey ?: throw AiSdkRuntimeException("KlingAI secret key is required."),
         clock = clock,
     )
-    return buildProviderHeaders(settings.headers, callHeaders, "ai-sdk/klingai/$KLINGAI_VERSION") { base ->
+    return ProviderHeaders.build(settings.headers, callHeaders, "ai-sdk/klingai/$KLINGAI_VERSION") { base ->
         base[HttpHeaders.Authorization] = "Bearer $token"
     }
 }
@@ -395,4 +395,4 @@ private fun generateKlingAIAuthToken(accessKey: String, secretKey: String, clock
 }
 
 private fun base64Url(bytes: ByteArray): String =
-    convertByteArrayToBase64(bytes).replace('+', '-').replace('/', '_').trimEnd('=')
+    Base64Codec.encode(bytes).replace('+', '-').replace('/', '_').trimEnd('=')

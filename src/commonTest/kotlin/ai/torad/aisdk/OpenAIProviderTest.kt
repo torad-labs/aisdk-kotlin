@@ -67,7 +67,7 @@ class OpenAIProviderTest {
             ),
         )
 
-        val result = embed(provider.embedding("text-embedding-3-small"), "hello")
+        val result = Embedding.embed(provider.embedding("text-embedding-3-small"), "hello")
 
         val request = seenRequests.single()
         assertEquals("https://api.openai.com/v1/embeddings", request.url.toString())

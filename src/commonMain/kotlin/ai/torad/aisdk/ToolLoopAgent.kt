@@ -483,7 +483,7 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
             TelemetryFeed(
                 tele = tele,
                 call = TelemetryCall(
-                    callId = generateId("call"),
+                    callId = IdGenerator.generate("call"),
                     agentId = id,
                     agentVersion = version,
                     modelId = model.modelId,
