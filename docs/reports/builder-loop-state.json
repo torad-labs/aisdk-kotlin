@@ -10,7 +10,7 @@
   },
   "ownership": "builder owns src/ edits; orchestrator owns .claude/ + validation; parallel work only on distinct files",
   "spec": "docs/reports/target-architecture.md",
-  "current_status": "Layers 1-5 VALIDATED. L5 (tools, 05b470a): sealed Tool<TInput,TOutput,TContext> (schema+execute, #741) + PascalCase faux-constructors Tool()/StreamingTool()/DynamicTool()/ProviderExecutedTool()/ExecuteTool(); all 6 providers+MCP+Gateway+28 tests migrated; green (-384 lines). L5 took 2 stalls on the 21-file test migration; broke it with a bulk ast-grep rewrite. Now on Layer 6 (agent): ToolLoopAgent Flow-first, keep channel-parallel-exec + sealed Outcome. DEFERRED to L8/9: providerOptions Map->ProviderOptions cascade; full AiSdkRuntimeException bridge removal.",
+  "current_status": "Layers 1-6 VALIDATED. L6 (agent, ed7da10): Agent.generate Flow-first (suspend removed), ToolLoopAgentState flags->sealed Phase (#20), channel-parallel-exec + sealed Outcome PRESERVED, 17 tests migrated, green. Now on Layer 7 (ui): Chat/Completion/StructuredObject -> StateFlow over sealed phase (#748/FIX-009). Remaining after L7: L8 providers-fanout (PARALLEL workflow over 34 providers — also lands the deferred providerOptions Map->ProviderOptions cascade + retires AiSdkRuntimeException bridge), L9 wire-finalize (delete react/rsc/svelte/vue/angular/codemod/langchain/llamaindex residue + regenerate ABI). Builder needs a nudge to start each layer (turn ends at boundary).",
   "hard_rules": "no camelCase top-level fns (only PascalCase factories); logic on types/in units; Flow over suspend; sealed CLASS not interface; no public/top-level/companion mutable var; no secondary ctor/lateinit/!!; sealed errors; typed over Map<String,JsonElement>/Any?",
   "layers": [
     {
@@ -68,7 +68,7 @@
       "status": "pending"
     }
   ],
-  "current_layer": 6,
+  "current_layer": 7,
   "completed_layers": [
     {
       "n": 1,

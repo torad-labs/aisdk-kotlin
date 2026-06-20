@@ -96,7 +96,7 @@ public class UseCompletionHelpers internal constructor(
     public fun stop(): Unit = completionState.stop()
     public fun setCompletion(completion: String): Unit = completionState.setCompletion(completion)
     public fun setInput(input: String) {
-        completionState.input = input
+        completionState.setInput(input)
     }
 
     public suspend fun handleSubmit(): String? = completionState.handleSubmit()
