@@ -68,8 +68,8 @@
       "status": "pending"
     }
   ],
-  "current_layer": 11,
-  "layer10_done": "VALIDATED (0d3bf77): providerMetadata Map->ProviderMetadata cascade, 60->4 raw-map decls (4 internal residuals for L12 sweep), ABI regenerated, full gate green. Took ~3 stall-cycles (cascade is big).",
+  "current_layer": "COMPLETE",
+  "layer11_done": "VALIDATED (god-file splits, parallel workflow): Google 2027->162, Bedrock 1544->402, MCP 2221->1491, ToolLoopAgent 1879->1806 (abstract-class floor), 16 new same-package files, ABI-neutral, combined gate green. ToolLoopAgent deeper decomposition (Approval/Repair/Telemetry collaborators) is an optional further follow-up.",
   "completed_layers": [
     {
       "n": 1,
