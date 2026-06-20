@@ -5,6 +5,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 
 class ToolLoopAgentTerminalSemanticsTest {
@@ -36,7 +37,7 @@ class ToolLoopAgentTerminalSemanticsTest {
                 instructions = "finish once",
                 tools = toolSetOf(),
             )
-            val result = generateAgent.generate(prompt = "run", options = Unit)
+            val result = generateAgent.generate(prompt = "run", options = Unit).first()
 
             assertEquals(reason, result.finishReason)
             assertEquals(1, result.steps.size, "$reason should produce one step")

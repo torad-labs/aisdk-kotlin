@@ -4,6 +4,7 @@ import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
@@ -65,7 +66,7 @@ class ParallelToolExecutionTest {
             instructions = "x",
             tools = toolSetOf(gatedTool("toolA"), gatedTool("toolB")),
         )
-        val result = agent.generate(prompt = "go")
+        val result = agent.generate(prompt = "go").first()
 
         // Both tools completed (proves concurrency), and the step records both results in
         // the deterministic call order toolA, toolB.
@@ -89,7 +90,7 @@ class ParallelToolExecutionTest {
             tools = toolSetOf(echoTool("toolA"), echoTool("toolB")),
             maxParallelToolCalls = 1,
         )
-        val result = agent.generate(prompt = "go")
+        val result = agent.generate(prompt = "go").first()
         assertEquals(listOf("c_a", "c_b"), result.steps.first().toolResults.map { it.toolCallId })
     }
 

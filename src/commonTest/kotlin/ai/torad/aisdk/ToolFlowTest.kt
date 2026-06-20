@@ -9,6 +9,7 @@ import kotlin.test.assertIs
 import kotlin.test.assertTrue
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.Serializable
@@ -221,7 +222,7 @@ class ToolFlowTest {
                 instructions = "use ping",
                 tools = toolSetOf(pingTool),
             )
-            val result = generateAgent.generate(prompt = "go")
+            val result = generateAgent.generate(prompt = "go").first()
             val toolMessage = result.messages.filter { it.role == MessageRole.Tool }.last()
             val toolPart = toolMessage.content.single()
             assertIs<ContentPart.ToolResult>(toolPart)
@@ -264,7 +265,7 @@ class ToolFlowTest {
                 instructions = "use ping",
                 tools = toolSetOf(pingTool),
             )
-            val result = generateAgent.generate(prompt = "go")
+            val result = generateAgent.generate(prompt = "go").first()
             val toolPart = result.messages
                 .filter { it.role == MessageRole.Tool }
                 .last()

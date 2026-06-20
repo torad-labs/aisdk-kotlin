@@ -11,6 +11,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 import kotlinx.coroutines.flow.asFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.serializer
@@ -45,7 +46,7 @@ class ToolApprovalDenialTest {
             instructions = "use send",
             tools = toolSetOf(sendTool),
         )
-        val first = agent.generate(prompt = "trigger", options = Unit)
+        val first = agent.generate(prompt = "trigger", options = Unit).first()
         val pending = first.pendingApprovals.single()
         val denial = toolApprovalResponseMessage(
             toolCallId = pending.toolCallId,

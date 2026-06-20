@@ -2,6 +2,7 @@ package ai.torad.aisdk
 
 import ai.torad.aisdk.providers.mockLanguageModelTextOnly
 import ai.torad.aisdk.providers.mockLanguageModelToolThenText
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.buildJsonObject
@@ -60,7 +61,7 @@ class ToolApprovalSignatureWiringTest {
     @Test
     fun `with a secret the issued approval carries a verifiable signature`() = runTest {
         val state = GateState()
-        val first = gatedAgent(state, secret).generate(prompt = "go")
+        val first = gatedAgent(state, secret).generate(prompt = "go").first()
         val pending = first.pendingApprovals.single()
         val signature = assertNotNull(pending.signature, "issuance must sign when a secret is configured")
         assertTrue(
@@ -85,12 +86,12 @@ class ToolApprovalSignatureWiringTest {
     fun `without a secret nothing is signed and the flow is unchanged`() = runTest {
         val state = GateState()
         val agent = gatedAgent(state, secret = null)
-        val first = agent.generate(prompt = "go")
+        val first = agent.generate(prompt = "go").first()
         val pending = first.pendingApprovals.single()
         assertNull(pending.signature)
 
         val approval = toolApprovalResponseMessage(pending.toolCallId, approved = true, approvalId = pending.approvalId)
-        agent.generate(messages = first.messages + approval)
+        agent.generate(messages = first.messages + approval).first()
         assertEquals(listOf("hello"), state.executed)
     }
 
@@ -98,11 +99,11 @@ class ToolApprovalSignatureWiringTest {
     fun `a signed approval replays and executes`() = runTest {
         val state = GateState()
         val agent = gatedAgent(state, secret)
-        val first = agent.generate(prompt = "go")
+        val first = agent.generate(prompt = "go").first()
         val pending = first.pendingApprovals.single()
 
         val approval = toolApprovalResponseMessage(pending.toolCallId, approved = true, approvalId = pending.approvalId)
-        val second = agent.generate(messages = first.messages + approval)
+        val second = agent.generate(messages = first.messages + approval).first()
         assertEquals(listOf("hello"), state.executed)
         assertEquals("sent", second.text)
     }
@@ -111,7 +112,7 @@ class ToolApprovalSignatureWiringTest {
     fun `tampering with the replayed input fails closed`() = runTest {
         val state = GateState()
         val agent = gatedAgent(state, secret)
-        val first = agent.generate(prompt = "go")
+        val first = agent.generate(prompt = "go").first()
         val pending = first.pendingApprovals.single()
 
         // The "client" rewrites the tool call's input in the replayed history.
@@ -128,7 +129,7 @@ class ToolApprovalSignatureWiringTest {
         }
         val approval = toolApprovalResponseMessage(pending.toolCallId, approved = true, approvalId = pending.approvalId)
         val failure = assertFailsWith<AgentError.InvalidToolApprovalSignature> {
-            agent.generate(messages = tamperedHistory + approval)
+            agent.generate(messages = tamperedHistory + approval).first()
         }
         assertEquals(pending.toolCallId, failure.toolCallId)
         assertTrue(state.executed.isEmpty(), "the tampered call must never execute")
@@ -138,13 +139,13 @@ class ToolApprovalSignatureWiringTest {
     fun `a replay missing its signature fails closed when a secret is configured`() = runTest {
         val state = GateState()
         // History minted WITHOUT a secret (no signature on the request part)...
-        val unsigned = gatedAgent(state, secret = null).generate(prompt = "go")
+        val unsigned = gatedAgent(state, secret = null).generate(prompt = "go").first()
         val pending = unsigned.pendingApprovals.single()
         val approval = toolApprovalResponseMessage(pending.toolCallId, approved = true, approvalId = pending.approvalId)
 
         // ...replayed against an agent that REQUIRES signatures.
         val failure = assertFailsWith<AgentError.InvalidToolApprovalSignature> {
-            gatedAgent(GateState(), secret).generate(messages = unsigned.messages + approval)
+            gatedAgent(GateState(), secret).generate(messages = unsigned.messages + approval).first()
         }
         assertTrue(failure.reason.contains("missing"), "got: ${failure.reason}")
         assertTrue(state.executed.isEmpty())
@@ -153,7 +154,7 @@ class ToolApprovalSignatureWiringTest {
     @Test
     fun `an approval for a tool that no longer requires approval is denied not run`() = runTest {
         val state = GateState()
-        val first = gatedAgent(state, secret).generate(prompt = "go")
+        val first = gatedAgent(state, secret).generate(prompt = "go").first()
         val pending = first.pendingApprovals.single()
         val approval = toolApprovalResponseMessage(pending.toolCallId, approved = true, approvalId = pending.approvalId)
 
@@ -177,7 +178,7 @@ class ToolApprovalSignatureWiringTest {
             ),
             experimental_toolApprovalSecret = secret,
         )
-        val second = replayAgent.generate(messages = first.messages + approval)
+        val second = replayAgent.generate(messages = first.messages + approval).first()
         assertTrue(state.executed.isEmpty(), "a no-longer-gated tool must not run off a stale approval")
         val denial = second.messages
             .flatMap { it.content }

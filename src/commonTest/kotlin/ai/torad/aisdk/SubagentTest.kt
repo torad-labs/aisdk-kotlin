@@ -7,6 +7,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 import kotlin.test.fail
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.serializer
@@ -46,7 +47,7 @@ class SubagentTest {
             tools = toolSetOf(subagentTool),
         )
 
-        agent.generate("go", abortSignal = controller.signal)
+        agent.generate("go", abortSignal = controller.signal).first()
 
         assertTrue(observedSignal != null, "subagent received an abort signal")
         assertEquals(controller.signal, observedSignal, "exact same signal object — propagation, not copy")

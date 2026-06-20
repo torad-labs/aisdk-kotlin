@@ -5,6 +5,7 @@ import ai.torad.aisdk.providers.mockLanguageModelToolThenText
 import ai.torad.aisdk.providers.mockToolInput
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.first
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -65,7 +66,7 @@ class PrepareStepTest {
                 StepSettings(activeTools = listOf("ping"))
             },
         )
-        agent.generate("go")
+        agent.generate("go").first()
         assertTrue(recordedStepNumbers.size >= 2, "prepareStep ran at least twice — once per step")
         assertEquals(listOf(1, 2), recordedStepNumbers.take(2))
     }
@@ -81,7 +82,7 @@ class PrepareStepTest {
             activeTools = listOf("ping"),
         )
 
-        agent.generate("go")
+        agent.generate("go").first()
 
         assertEquals(listOf(listOf("ping")), capture.observedToolNames)
     }
@@ -98,7 +99,7 @@ class PrepareStepTest {
             prepareCall = { AgentSettings(activeTools = listOf("pong")) },
         )
 
-        agent.generate("go")
+        agent.generate("go").first()
 
         assertEquals(listOf(listOf("pong")), capture.observedToolNames)
     }
@@ -116,7 +117,7 @@ class PrepareStepTest {
             prepareStep = { StepSettings(activeTools = listOf("ping")) },
         )
 
-        agent.generate("go")
+        agent.generate("go").first()
 
         assertEquals(listOf(listOf("ping")), capture.observedToolNames)
     }

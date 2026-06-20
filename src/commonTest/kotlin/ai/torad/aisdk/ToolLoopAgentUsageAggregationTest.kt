@@ -2,6 +2,7 @@ package ai.torad.aisdk
 
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonPrimitive
@@ -76,7 +77,7 @@ class ToolLoopAgentUsageAggregationTest {
             tools = toolSetOf(doneTool),
         )
 
-        val result = agent.generate(prompt = "run", options = Unit)
+        val result = agent.generate(prompt = "run", options = Unit).first()
 
         // totalUsage is the sum across both steps (upstream parity).
         assertEquals(30, result.totalUsage.inputTokens.total)

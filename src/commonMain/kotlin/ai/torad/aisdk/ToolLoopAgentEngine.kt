@@ -25,17 +25,20 @@ public data class ToolLoopAgentState(
     val currentToolCalls: List<ContentPart.ToolCall> = emptyList(),
     /** Tool calls awaiting user approval — non-empty pauses the loop. */
     val pendingApprovals: List<PendingApproval> = emptyList(),
-    /** True while a step is actively prefilling/decoding/executing tools. */
-    val isStreaming: Boolean = false,
-    /** True during the engine's first cold load (model init, weights fault-in). */
-    val isModelLoading: Boolean = false,
-    /** Set on the most recent error, cleared at the start of the next action. */
-    val error: String? = null,
+    /** Current lifecycle phase of the engine. */
+    val phase: Phase = Phase.Idle,
     /** Total step count across all actions for this agent's lifetime. */
     val totalSteps: Int = 0,
     /** Finish reason of the most recent completed loop. */
     val lastFinishReason: FinishReason? = null,
-)
+) {
+    public sealed class Phase {
+        public data object Idle : Phase()
+        public data object Streaming : Phase()
+        public data object ModelLoading : Phase()
+        public data class Error(val message: String) : Phase()
+    }
+}
 
 /**
  * Actions the host dispatches to drive the agent. Mirrors the

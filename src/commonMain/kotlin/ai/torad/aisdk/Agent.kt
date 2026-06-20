@@ -72,13 +72,13 @@ public interface Agent<TContext, TOutput> {
      *
      * @param hooks per-call lifecycle observation; see [AgentCallHooks].
      */
-    public suspend fun generate(
+    public fun generate(
         prompt: String? = null,
         messages: List<ModelMessage> = emptyList(),
         options: TContext? = null,
         abortSignal: AbortSignal = AbortSignalNever,
         hooks: AgentCallHooks? = null,
-    ): GenerateResult<TOutput>
+    ): Flow<GenerateResult<TOutput>>
 
     /** Streaming generation. Cold flow — starts when collected. */
     public fun stream(

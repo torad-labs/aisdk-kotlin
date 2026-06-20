@@ -7,6 +7,7 @@ import ai.torad.aisdk.providers.mockToolInput
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.serializer
@@ -28,7 +29,7 @@ class ToolLoopAgentTest {
             instructions = "be friendly",
             tools = toolSetOf(),
         )
-        val result = agent.generate(prompt = "hi")
+        val result = agent.generate(prompt = "hi").first()
         assertEquals("hello, friend", result.text)
         assertEquals(FinishReason.Stop, result.finishReason)
     }
