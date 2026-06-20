@@ -162,7 +162,7 @@ private fun openAIProviderTool(
     description: String,
     args: JsonElement = JsonObject(emptyMap()),
 ): Tool<JsonElement, JsonElement, Any?> =
-    providerExecutedTool(
+    ProviderExecutedTool(
         name = id.substringAfter("openai."),
         description = description,
         inputSerializer = JsonElement.serializer(),

@@ -29,7 +29,7 @@ class ProviderExecutedToolLoopTest {
                 ),
             ),
         )
-        val hostedTool = providerExecutedTool<JsonElement, JsonElement, Unit>(
+        val hostedTool = ProviderExecutedTool<JsonElement, JsonElement, Unit>(
             name = "web_search",
             description = "Provider-hosted web search.",
             inputSerializer = serializer(),

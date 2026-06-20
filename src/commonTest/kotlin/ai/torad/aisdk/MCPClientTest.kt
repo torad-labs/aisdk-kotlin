@@ -6,6 +6,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -99,7 +100,7 @@ class MCPClientTest {
             messages = emptyList(),
             toolCallId = "call_1",
         )
-        val output = with(echoTool) { echoCtx.execute(buildJsonObject { put("message", JsonPrimitive("hi")) }) }
+        val output = (echoTool.execute(buildJsonObject { put("message", JsonPrimitive("hi")) }, echoCtx).first() as ToolResult.Success).value
 
         assertEquals("echo", echoTool.name)
         assertEquals("Echo a message", echoTool.description)
@@ -161,9 +162,7 @@ class MCPClientTest {
         assertEquals(setOf("weather"), toolSet.byName.keys)
         val weather = toolSet.byName["weather"].asJsonTool()
         val weatherCtx = ToolExecutionContext(Unit, AbortSignalNever, 0, emptyList(), "call_1")
-        val output = with(weather) {
-            weatherCtx.execute(buildJsonObject { put("city", JsonPrimitive("Austin")) })
-        }.jsonObject
+        val output = (weather.execute(buildJsonObject { put("city", JsonPrimitive("Austin")) }, weatherCtx).first() as ToolResult.Success).value.jsonObject
 
         assertEquals(72, output["temperature"]!!.jsonPrimitive.content.toInt())
         assertTrue(

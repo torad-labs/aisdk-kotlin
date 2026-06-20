@@ -11,7 +11,7 @@ class ToolSetDuplicateTest {
     data class In(val x: String = "")
 
     private fun dummy(name: String): Tool<In, String, Unit> =
-        tool(name = name, description = "d") { "ok" }
+        Tool<In, String, Unit>(name = name, description = "d") { "ok" }
 
     @Test
     fun `toolSetOf throws on duplicate tool names`() {

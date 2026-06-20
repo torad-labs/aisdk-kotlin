@@ -1151,7 +1151,7 @@ private fun anthropicProviderTool(
     id: String,
     description: String,
 ): Tool<JsonElement, JsonElement, Any?> =
-    providerExecutedTool(
+    ProviderExecutedTool(
         name = name,
         description = description,
         inputSerializer = JsonElement.serializer(),

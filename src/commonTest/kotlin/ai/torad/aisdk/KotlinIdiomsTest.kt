@@ -98,24 +98,20 @@ class KotlinIdiomsTest {
 
     @Test
     fun `tool set builder infers serializers and rejects duplicate tool names`() {
-        val tools = toolSet<Unit> {
-            tool<WeatherInput, WeatherOutput>(
-                name = "weather",
-                description = "Get weather.",
-            ) { input ->
-                WeatherOutput(temperature = input.city.length)
-            }
-        }
+        val tools = toolSetOf(Tool<WeatherInput, WeatherOutput, Unit>(
+            name = "weather",
+            description = "Get weather.",
+        ) { input ->
+            WeatherOutput(temperature = input.city.length)
+        })
 
         val descriptor = tools.descriptors.single()
         assertEquals("weather", descriptor.name)
         assertEquals("object", descriptor.parametersSchema.jsonObject["type"]?.jsonPrimitive?.content)
 
         assertFailsWith<IllegalArgumentException> {
-            toolSet<Unit> {
-                add(tools.find("weather") ?: error("missing tool"))
-                add(tools.find("weather") ?: error("missing tool"))
-            }
+            val t = tools.find("weather") ?: error("missing tool")
+            toolSetOf(t, t)
         }
     }
 
@@ -141,7 +137,7 @@ class KotlinIdiomsTest {
         val agent = TestToolLoopAgent<Unit, String>(
             model = mockLanguageModelTextOnly("hello"),
             instructions = "Be brief.",
-            tools = toolSet {},
+            tools = toolSetOf<Unit>(),
         )
         val session = agent.session(this)
 
@@ -160,7 +156,7 @@ class KotlinIdiomsTest {
         val agent = TestToolLoopAgent<Unit, String>(
             model = mockLanguageModelTextOnly("hello"),
             instructions = "Be brief.",
-            tools = toolSet {},
+            tools = toolSetOf<Unit>(),
         )
         val session = agent.session(this)
 

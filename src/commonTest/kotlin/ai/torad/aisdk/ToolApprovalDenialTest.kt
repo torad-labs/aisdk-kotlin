@@ -26,7 +26,7 @@ class ToolApprovalDenialTest {
     @Test
     fun `approval denial emits ToolOutputDenied instead of ToolError`() = runTest {
         var executed = false
-        val sendTool = tool<SendInput, SendResult, Unit>(
+        val sendTool = Tool<SendInput, SendResult, Unit>(
             name = "send",
             description = "send message",
             inputSerializer = serializer(),

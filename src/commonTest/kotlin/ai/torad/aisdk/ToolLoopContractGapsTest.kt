@@ -27,7 +27,7 @@ class ToolLoopContractGapsTest {
     fun `given no prepareStep override when a tool runs then it sees the original call context`() = runTest {
         // GIVEN a probe tool that records the context it executed with.
         val seen = mutableListOf<String?>()
-        val probe = tool<Empty, String, String>(
+        val probe = Tool<Empty, String, String>(
             name = "probe",
             description = "records its context",
             inputSerializer = serializer(),
@@ -54,7 +54,7 @@ class ToolLoopContractGapsTest {
     fun `given a prepareStep that sets experimental_context when a tool runs then it sees the override`() = runTest {
         // GIVEN a prepareStep that evolves the context to "augmented".
         val seen = mutableListOf<String?>()
-        val probe = tool<Empty, String, String>(
+        val probe = Tool<Empty, String, String>(
             name = "probe",
             description = "records its context",
             inputSerializer = serializer(),
@@ -86,7 +86,7 @@ class ToolLoopContractGapsTest {
         val starts = mutableListOf<String>()
         val deltas = mutableListOf<String>()
         val avails = mutableListOf<String>()
-        val probe = tool<Empty, String, Unit>(
+        val probe = Tool<Empty, String, Unit>(
             name = "probe",
             description = "lifecycle probe",
             inputSerializer = serializer(),
@@ -113,7 +113,7 @@ class ToolLoopContractGapsTest {
     @Test
     fun `given an onInputStart that throws when the tool streams then the run still completes`() = runTest {
         // GIVEN a pre-warm hook that fails — it must not abort inference.
-        val probe = tool<Empty, String, Unit>(
+        val probe = Tool<Empty, String, Unit>(
             name = "probe",
             description = "throwing pre-warm",
             inputSerializer = serializer(),
@@ -140,7 +140,7 @@ class ToolLoopContractGapsTest {
     @Test
     fun `given a tool that writes custom data when it runs then a Raw event appears in the stream`() = runTest {
         // GIVEN a tool that pushes a progress payload via the writer.
-        val writerTool = tool<Empty, String, Unit>(
+        val writerTool = Tool<Empty, String, Unit>(
             name = "progressing",
             description = "writes back into the stream",
             inputSerializer = serializer(),

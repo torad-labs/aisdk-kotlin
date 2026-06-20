@@ -24,7 +24,7 @@ class SubagentTest {
     fun `subagent_tool_receives_parent_abortSignal`() = runTest {
         var observedSignal: AbortSignal? = null
 
-        val subagentTool = tool<SubInput, String, Unit>(
+        val subagentTool = Tool<SubInput, String, Unit>(
             name = "subagent",
             description = "delegates to a subagent",
             inputSerializer = serializer(),

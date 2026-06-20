@@ -62,7 +62,7 @@ class ToolLoopAgentUsageAggregationTest {
                 ),
             ),
         )
-        val doneTool = tool<EmptyInput, ToolOutput, Unit>(
+        val doneTool = Tool<EmptyInput, ToolOutput, Unit>(
             name = "done",
             description = "complete",
             inputSerializer = serializer(),

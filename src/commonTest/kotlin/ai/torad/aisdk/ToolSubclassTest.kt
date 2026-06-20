@@ -3,6 +3,7 @@ package ai.torad.aisdk
 import ai.torad.aisdk.providers.mockLanguageModelToolThenText
 import ai.torad.aisdk.providers.mockToolInput
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.test.runTest
@@ -21,8 +22,7 @@ import kotlin.test.assertTrue
 /**
  * The class-based extend path for tools (mirrors how a concrete agent extends
  * [ToolLoopAgent]): a named [Tool] / [StreamingTool] subclass with constructor
- * dependency injection, reused across instances. Complements [ToolTest], which
- * covers the `tool { }` factory path that builds an anonymous subclass.
+ * dependency injection, reused across instances.
  */
 class ToolSubclassTest {
 
@@ -39,15 +39,13 @@ class ToolSubclassTest {
     )
 
     /** Reusable, dependency-injected single-value tool. */
-    private class PrefixTool(private val prefix: String) :
-        Tool<Query, Answer, Unit>(
-            name = "prefix",
-            description = "Prefixes the query",
-            inputSerializer = serializer(),
-            outputSerializer = serializer(),
-        ) {
-        override suspend fun ToolExecutionContext<Unit>.execute(input: Query): Answer =
-            Answer("$prefix:${input.q}")
+    private class PrefixTool(private val prefix: String) : StreamingTool<Query, Answer, Unit>() {
+        override val schema = ToolSchema("prefix", "Prefixes the query")
+        override val inputSerializer = serializer<Query>()
+        override val outputSerializer = serializer<Answer>()
+        override fun ToolExecutionContext<Unit>.executeStream(input: Query): Flow<Answer> = flow {
+            emit(Answer("$prefix:${input.q}"))
+        }
     }
 
     @Test
@@ -55,8 +53,10 @@ class ToolSubclassTest {
         val a = PrefixTool("A")
         val b = PrefixTool("B")
 
-        assertEquals(Answer("A:hi"), with(a) { ctx().execute(Query("hi")) })
-        assertEquals(Answer("B:hi"), with(b) { ctx().execute(Query("hi")) })
+        val aResult = (a.execute(Query("hi"), ctx()).first() as ToolResult.Success).value
+        val bResult = (b.execute(Query("hi"), ctx()).first() as ToolResult.Success).value
+        assertEquals(Answer("A:hi"), aResult)
+        assertEquals(Answer("B:hi"), bResult)
 
         // Stateless (I-8): one instance is safely reused across tool sets.
         assertEquals("prefix", toolSetOf(a).names().single())
@@ -65,19 +65,16 @@ class ToolSubclassTest {
 
     @Test
     fun `subclassed Tool drives the canonical executor as a single final emission`() = runTest {
-        val results = executeTool(PrefixTool("X"), Query("hi"), ctx()).toList()
+        val results = ExecuteTool(PrefixTool("X"), Query("hi"), ctx()).toList()
         val final = assertIs<ExecuteToolResult.Final<Answer>>(results.single())
         assertEquals(Answer("X:hi"), final.output)
     }
 
     /** Reusable streaming tool: a preliminary snapshot, then the final answer. */
-    private class ProgressTool :
-        StreamingTool<Query, Answer, Unit>(
-            name = "progress",
-            description = "Emits a preliminary snapshot then the final answer",
-            inputSerializer = serializer(),
-            outputSerializer = serializer(),
-        ) {
+    private class ProgressTool : StreamingTool<Query, Answer, Unit>() {
+        override val schema = ToolSchema("progress", "Emits a preliminary snapshot then the final answer")
+        override val inputSerializer = serializer<Query>()
+        override val outputSerializer = serializer<Answer>()
         override fun ToolExecutionContext<Unit>.executeStream(input: Query): Flow<Answer> = flow {
             emit(Answer("partial"))
             emit(Answer("final:${input.q}"))
@@ -86,22 +83,20 @@ class ToolSubclassTest {
 
     @Test
     fun `subclassed StreamingTool surfaces preliminary then final`() = runTest {
-        val results = executeTool(ProgressTool(), Query("hi"), ctx()).toList()
+        val results = ExecuteTool(ProgressTool(), Query("hi"), ctx()).toList()
         assertEquals(2, results.size)
         assertEquals(Answer("partial"), assertIs<ExecuteToolResult.Preliminary<Answer>>(results[0]).output)
         assertEquals(Answer("final:hi"), assertIs<ExecuteToolResult.Final<Answer>>(results[1]).output)
     }
 
     /** Subclass overriding the optional approval hook. */
-    private class GatedTool :
-        Tool<Query, Answer, Unit>(
-            name = "gated",
-            description = "Requires approval when the query mentions 'danger'",
-            inputSerializer = serializer(),
-            outputSerializer = serializer(),
-        ) {
-        override suspend fun ToolExecutionContext<Unit>.execute(input: Query): Answer = Answer("done")
-
+    private class GatedTool : StreamingTool<Query, Answer, Unit>() {
+        override val schema = ToolSchema("gated", "Requires approval when the query mentions 'danger'")
+        override val inputSerializer = serializer<Query>()
+        override val outputSerializer = serializer<Answer>()
+        override fun ToolExecutionContext<Unit>.executeStream(input: Query): Flow<Answer> = flow {
+            emit(Answer("done"))
+        }
         override suspend fun needsApproval(input: Query, options: ToolPredicateOptions<Unit>): Boolean =
             "danger" in input.q
     }
@@ -125,18 +120,14 @@ class ToolSubclassTest {
     @Serializable data class SendResult(val sent: Boolean)
 
     /** Gated subclass — overrides both [execute] and [needsApproval]. */
-    private class SendTool(private val onSend: () -> Unit) :
-        Tool<SendInput, SendResult, Unit>(
-            name = "send",
-            description = "Send a message",
-            inputSerializer = serializer(),
-            outputSerializer = serializer(),
-        ) {
-        override suspend fun ToolExecutionContext<Unit>.execute(input: SendInput): SendResult {
+    private class SendTool(private val onSend: () -> Unit) : StreamingTool<SendInput, SendResult, Unit>() {
+        override val schema = ToolSchema("send", "Send a message")
+        override val inputSerializer = serializer<SendInput>()
+        override val outputSerializer = serializer<SendResult>()
+        override fun ToolExecutionContext<Unit>.executeStream(input: SendInput): Flow<SendResult> = flow {
             onSend()
-            return SendResult(sent = true)
+            emit(SendResult(sent = true))
         }
-
         override suspend fun needsApproval(input: SendInput, options: ToolPredicateOptions<Unit>): Boolean = true
     }
 
@@ -172,13 +163,13 @@ class ToolSubclassTest {
     @Serializable data class CityInput(val city: String)
 
     /** Non-gated subclass — only overrides [execute]. */
-    private class CityTool : Tool<CityInput, String, Unit>(
-        name = "weather",
-        description = "Get weather for a city",
-        inputSerializer = serializer(),
-        outputSerializer = serializer(),
-    ) {
-        override suspend fun ToolExecutionContext<Unit>.execute(input: CityInput): String = "sunny in ${input.city}"
+    private class CityTool : StreamingTool<CityInput, String, Unit>() {
+        override val schema = ToolSchema("weather", "Get weather for a city")
+        override val inputSerializer = serializer<CityInput>()
+        override val outputSerializer = serializer<String>()
+        override fun ToolExecutionContext<Unit>.executeStream(input: CityInput): Flow<String> = flow {
+            emit("sunny in ${input.city}")
+        }
     }
 
     @Test

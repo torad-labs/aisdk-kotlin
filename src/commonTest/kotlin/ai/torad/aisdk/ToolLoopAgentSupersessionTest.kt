@@ -49,7 +49,7 @@ class ToolLoopAgentSupersessionTest {
         val agent = TestToolLoopAgent<Unit, String>(
             model = model,
             instructions = "Be brief.",
-            tools = toolSet {},
+            tools = toolSetOf<Unit>(),
             engineContext = StandardTestDispatcher(testScheduler),
         )
 

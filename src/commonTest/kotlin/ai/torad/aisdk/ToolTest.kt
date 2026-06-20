@@ -39,7 +39,7 @@ class ToolTest {
 
     @Test
     fun `tool_factory_carries_input_and_output_serializers`() {
-        val weather = tool<WeatherInput, WeatherOutput, Unit>(
+        val weather = Tool<WeatherInput, WeatherOutput, Unit>(
             name = "weather",
             description = "Get weather",
             inputSerializer = serializer(),
@@ -52,7 +52,7 @@ class ToolTest {
 
     @Test
     fun `toolSet_finds_by_name_and_misses_return_null`() {
-        val a = tool<WeatherInput, String, Unit>(
+        val a = Tool<WeatherInput, String, Unit>(
             name = "a",
             description = "",
             inputSerializer = serializer(),
@@ -65,11 +65,11 @@ class ToolTest {
 
     @Test
     fun `toolSet_descriptors_carry_each_tool`() {
-        val a = tool<WeatherInput, String, Unit>(
+        val a = Tool<WeatherInput, String, Unit>(
             name = "a", description = "alpha",
             inputSerializer = serializer(), outputSerializer = serializer(),
         ) { "" }
-        val b = tool<WeatherInput, String, Unit>(
+        val b = Tool<WeatherInput, String, Unit>(
             name = "b", description = "beta",
             inputSerializer = serializer(), outputSerializer = serializer(),
         ) { "" }
@@ -80,7 +80,7 @@ class ToolTest {
 
     @Test
     fun `toolSet descriptors preserve per-tool strict flag`() {
-        val loose = tool<WeatherInput, WeatherOutput, Unit>(
+        val loose = Tool<WeatherInput, WeatherOutput, Unit>(
             name = "loose",
             description = "Non-strict schema tool",
             inputSerializer = serializer(),
@@ -93,7 +93,7 @@ class ToolTest {
 
     @Test
     fun `toolSet_descriptors_derive_strict_json_schema_from_serializers`() {
-        val forecast = tool<ForecastInput, WeatherOutput, Unit>(
+        val forecast = Tool<ForecastInput, WeatherOutput, Unit>(
             name = "forecast",
             description = "Get forecast",
             inputSerializer = serializer(),
@@ -141,7 +141,7 @@ class ToolTest {
                 },
             )
         }
-        val runtime = dynamicTool<Unit>(
+        val runtime = DynamicTool<Unit>(
             name = "runtime",
             description = "runtime schema",
             inputSchemaJson = explicit.toString(),

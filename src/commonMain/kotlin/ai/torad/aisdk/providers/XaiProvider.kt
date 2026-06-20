@@ -387,7 +387,7 @@ private fun xaiProviderTool(
     description: String,
     args: JsonElement,
 ): Tool<JsonElement, JsonElement, Any?> =
-    providerExecutedTool(
+    ProviderExecutedTool(
         name = name,
         description = description,
         inputSerializer = JsonElement.serializer(),

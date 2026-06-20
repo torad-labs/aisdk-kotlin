@@ -41,7 +41,7 @@ class ToolApprovalSignatureWiringTest {
         ),
         instructions = "use send",
         tools = toolSetOf(
-            tool<SendInput, String, Unit>(
+            Tool<SendInput, String, Unit>(
                 name = "send",
                 description = "send a message",
                 inputSerializer = serializer(),
@@ -164,7 +164,7 @@ class ToolApprovalSignatureWiringTest {
             model = mockLanguageModelTextOnly("ok"),
             instructions = "use send",
             tools = toolSetOf(
-                tool<SendInput, String, Unit>(
+                Tool<SendInput, String, Unit>(
                     name = "send",
                     description = "send a message",
                     inputSerializer = serializer(),
