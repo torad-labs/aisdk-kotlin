@@ -68,8 +68,8 @@
       "status": "pending"
     }
   ],
-  "current_layer": 10,
-  "layer10_status": "IN PROGRESS: ProviderMetadata sealed type created; MAIN now green (149->0 over 2 stall-cycles). 96 test-fixture errors remain (Map/JsonObject -> ProviderMetadata.Raw/None + accessor reads) -> re-engaged with wrap pattern. Awaiting updateKotlinAbi + jvmTest + checkKotlinAbi green + rewrite(layer-10) commit.",
+  "current_layer": 11,
+  "layer10_done": "VALIDATED (0d3bf77): providerMetadata Map->ProviderMetadata cascade, 60->4 raw-map decls (4 internal residuals for L12 sweep), ABI regenerated, full gate green. Took ~3 stall-cycles (cascade is big).",
   "completed_layers": [
     {
       "n": 1,
