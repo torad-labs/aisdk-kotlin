@@ -62,10 +62,8 @@ public fun devToolsMiddleware(
     idGenerator: () -> String = { generateId(prefix = "step") },
 ): LanguageModelMiddleware {
     if (environment == "production") {
-        throw AiSdkException(
-            "@ai-sdk/devtools should not be used in production. " +
-                "Remove devToolsMiddleware from your model configuration for production builds.",
-        )
+        throw AiSdkRuntimeException("@ai-sdk/devtools should not be used in production. " +
+            "Remove devToolsMiddleware from your model configuration for production builds.",)
     }
 
     return object : LanguageModelMiddleware {

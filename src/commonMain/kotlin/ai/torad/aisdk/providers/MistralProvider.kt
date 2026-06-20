@@ -59,9 +59,9 @@ public val mistral: MistralProvider = object : MistralProvider {
     override val providerId: String = "mistral"
     override val settings: MistralProviderSettings = MistralProviderSettings()
     override fun chat(modelId: String): LanguageModel =
-        throw AiSdkException("Mistral provider is not configured. Use createMistral(client, settings).")
+        throw AiSdkRuntimeException("Mistral provider is not configured. Use createMistral(client, settings).")
     override fun embedding(modelId: String): EmbeddingModel =
-        throw AiSdkException("Mistral provider is not configured. Use createMistral(client, settings).")
+        throw AiSdkRuntimeException("Mistral provider is not configured. Use createMistral(client, settings).")
 }
 
 private class DefaultMistralProvider(

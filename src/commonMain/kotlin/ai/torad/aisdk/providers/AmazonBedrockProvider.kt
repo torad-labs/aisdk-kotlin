@@ -104,13 +104,13 @@ public val bedrock: AmazonBedrockProvider = object : AmazonBedrockProvider {
     override val settings: AmazonBedrockProviderSettings = AmazonBedrockProviderSettings()
     override val tools: AnthropicTools = anthropicTools
     override fun languageModel(modelId: String): LanguageModel =
-        throw AiSdkException("Amazon Bedrock provider is not configured. Use createAmazonBedrock(client, settings).")
+        throw AiSdkRuntimeException("Amazon Bedrock provider is not configured. Use createAmazonBedrock(client, settings).")
     override fun embedding(modelId: String): EmbeddingModel =
-        throw AiSdkException("Amazon Bedrock provider is not configured. Use createAmazonBedrock(client, settings).")
+        throw AiSdkRuntimeException("Amazon Bedrock provider is not configured. Use createAmazonBedrock(client, settings).")
     override fun image(modelId: String): ImageModel =
-        throw AiSdkException("Amazon Bedrock provider is not configured. Use createAmazonBedrock(client, settings).")
+        throw AiSdkRuntimeException("Amazon Bedrock provider is not configured. Use createAmazonBedrock(client, settings).")
     override fun reranking(modelId: String): RerankingModel =
-        throw AiSdkException("Amazon Bedrock provider is not configured. Use createAmazonBedrock(client, settings).")
+        throw AiSdkRuntimeException("Amazon Bedrock provider is not configured. Use createAmazonBedrock(client, settings).")
 }
 
 private class DefaultAmazonBedrockProvider(
@@ -153,7 +153,7 @@ public val bedrockAnthropic: BedrockAnthropicProvider = object : BedrockAnthropi
     override val settings: AmazonBedrockProviderSettings = AmazonBedrockProviderSettings()
     override val tools: AnthropicTools = anthropicTools
     override fun languageModel(modelId: String): LanguageModel =
-        throw AiSdkException("Bedrock Anthropic provider is not configured. Use createBedrockAnthropic(client, settings).")
+        throw AiSdkRuntimeException("Bedrock Anthropic provider is not configured. Use createBedrockAnthropic(client, settings).")
 }
 
 private class DefaultBedrockAnthropicProvider(
@@ -186,7 +186,7 @@ public val bedrockMantle: BedrockMantleProvider = object : BedrockMantleProvider
     override val providerId: String = "bedrock-mantle"
     override val settings: AmazonBedrockProviderSettings = AmazonBedrockProviderSettings()
     override fun languageModel(modelId: String): LanguageModel =
-        throw AiSdkException("Bedrock Mantle provider is not configured. Use createBedrockMantle(client, settings).")
+        throw AiSdkRuntimeException("Bedrock Mantle provider is not configured. Use createBedrockMantle(client, settings).")
     override fun chat(modelId: String): LanguageModel = languageModel(modelId)
     override fun responses(modelId: String): LanguageModel = languageModel(modelId)
 }
@@ -293,9 +293,9 @@ private class BedrockEmbeddingModel(
     override suspend fun embed(params: EmbeddingModelCallParams): EmbeddingModelResult {
         params.abortSignal.throwIfAborted()
         if (params.values.size > 1) {
-            throw AiSdkException("Amazon Bedrock embedding models support maxEmbeddingsPerCall=1. Received ${params.values.size} values.")
+            throw AiSdkRuntimeException("Amazon Bedrock embedding models support maxEmbeddingsPerCall=1. Received ${params.values.size} values.")
         }
-        val value = params.values.singleOrNull() ?: throw AiSdkException("Amazon Bedrock embedding requires one value.")
+        val value = params.values.singleOrNull() ?: throw AiSdkRuntimeException("Amazon Bedrock embedding requires one value.")
         val options = params.providerOptions["bedrock"] as? JsonObject ?: JsonObject(emptyMap())
         val body = bedrockEmbeddingBody(modelId, value, options)
         val response = bedrockPostJson(
@@ -338,7 +338,7 @@ private class BedrockImageModel(
         )
         val obj = response.value.jsonObject
         if (obj["status"]?.jsonPrimitive?.contentOrNull == "Request Moderated") {
-            throw AiSdkException("Amazon Bedrock request was moderated: ${obj["details"] ?: "Unknown"}")
+            throw AiSdkRuntimeException("Amazon Bedrock request was moderated: ${obj["details"] ?: "Unknown"}")
         }
         val images = (obj["images"] as? JsonArray).orEmpty().map {
             GeneratedFile(mediaType = "image/png", base64 = it.jsonPrimitive.content)
@@ -1298,7 +1298,7 @@ private suspend fun ByteReadChannel.readBedrockFrame(count: Int): ByteArray? {
             // generation. (readAvailable suspends via awaitContent when the
             // buffer is momentarily empty, so this never busy-spins.)
             if (read == 0) return null
-            throw AiSdkException("Bedrock event stream truncated: got $read of $count frame bytes before EOF")
+            throw AiSdkRuntimeException("Bedrock event stream truncated: got $read of $count frame bytes before EOF")
         }
         read += n
     }
@@ -1398,7 +1398,7 @@ private suspend fun bedrockHeaders(
         val credentials = settings.credentialProvider?.invoke()
             ?: BedrockCredentials(settings.accessKeyId.orEmpty(), settings.secretAccessKey.orEmpty(), settings.sessionToken, settings.region)
         if (credentials.accessKeyId.isBlank() || credentials.secretAccessKey.isBlank()) {
-            throw AiSdkException("AWS SigV4 authentication requires both accessKeyId and secretAccessKey.")
+            throw AiSdkRuntimeException("AWS SigV4 authentication requires both accessKeyId and secretAccessKey.")
         }
         credentials
     } else {
@@ -1515,7 +1515,7 @@ private fun bedrockMantleTool(tool: LanguageModelTool): JsonObject = buildJsonOb
 }
 
 private fun bedrockImageFileBase64(file: ImageGenerationFile): String =
-    file.base64 ?: throw AiSdkException("URL-based images are not supported for Amazon Bedrock image editing. Provide base64 data directly.")
+    file.base64 ?: throw AiSdkRuntimeException("URL-based images are not supported for Amazon Bedrock image editing. Provide base64 data directly.")
 
 private fun bedrockImageFormat(mediaType: String): String =
     mediaType.substringAfter("image/", "png").substringBefore("+").substringBefore(";")

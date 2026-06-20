@@ -50,7 +50,7 @@ public fun createHume(
 public val hume: HumeProvider = object : HumeProvider {
     override val providerId: String = "hume"
     override fun speech(): SpeechModel =
-        throw AiSdkException("Hume provider is not configured. Use createHume(client, settings).")
+        throw AiSdkRuntimeException("Hume provider is not configured. Use createHume(client, settings).")
 }
 
 private class DefaultHumeProvider(

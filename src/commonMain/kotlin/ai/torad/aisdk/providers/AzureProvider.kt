@@ -84,7 +84,7 @@ private object AzureOpenAIProviderNotConfigured : AzureOpenAIProvider {
     override fun transcription(deploymentId: AzureOpenAITranscriptionModelId): TranscriptionModel = missing()
     override fun speech(deploymentId: AzureOpenAISpeechModelId): SpeechModel = missing()
 
-    private fun missing(): Nothing = throw AiSdkException("Azure OpenAI provider is not configured. Use createAzure(client, settings).")
+    private fun missing(): Nothing = throw AiSdkRuntimeException("Azure OpenAI provider is not configured. Use createAzure(client, settings).")
 }
 
 private class DefaultAzureOpenAIProvider(

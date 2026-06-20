@@ -67,7 +67,7 @@ public val huggingface: HuggingFaceProvider = object : HuggingFaceProvider {
     override val providerId: String = "huggingface"
     override val settings: HuggingFaceProviderSettings = HuggingFaceProviderSettings()
     override fun languageModel(modelId: String): LanguageModel =
-        throw AiSdkException("Hugging Face provider is not configured. Use createHuggingFace(client, settings).")
+        throw AiSdkRuntimeException("Hugging Face provider is not configured. Use createHuggingFace(client, settings).")
     override fun embeddingModel(modelId: String): EmbeddingModel = throw huggingFaceNoEmbeddingModel(providerId, modelId)
     override fun imageModel(modelId: String): ImageModel = throw huggingFaceNoImageModel(providerId, modelId)
 }
@@ -164,7 +164,7 @@ private class HuggingFaceResponsesLanguageModel(
                 json = aiSdkJson,
                 requestBodyValues = body,
                 errorFromResponse = { _, parsed, raw, _ ->
-                    AiSdkException("Hugging Face API error: ${parsed?.let(::huggingFaceErrorMessage) ?: raw}")
+                    AiSdkRuntimeException("Hugging Face API error: ${parsed?.let(::huggingFaceErrorMessage) ?: raw}")
                 },
                 onResponse = onResponse,
             ),
@@ -301,7 +301,7 @@ private fun huggingFaceUserContentPart(part: ContentPart): JsonElement? = when (
     }
     is ContentPart.File -> {
         if (!part.mediaType.startsWith("image/")) {
-            throw AiSdkException("Hugging Face Responses API does not support file part media type ${part.mediaType}.")
+            throw AiSdkRuntimeException("Hugging Face Responses API does not support file part media type ${part.mediaType}.")
         }
         buildJsonObject {
             put("type", JsonPrimitive("input_image"))
@@ -380,7 +380,7 @@ private fun huggingFaceResponsesResult(
     json: Json,
 ): LanguageModelResult {
     response["error"]?.takeIf { it !is JsonNull }?.let { error ->
-        throw AiSdkException("Hugging Face API error: ${huggingFaceErrorMessage(error)}")
+        throw AiSdkRuntimeException("Hugging Face API error: ${huggingFaceErrorMessage(error)}")
     }
 
     val content = mutableListOf<ContentPart>()
@@ -666,7 +666,7 @@ private suspend fun huggingFaceParseResponse(
     val headers = response.headers.entries().associate { it.key to it.value.joinToString(",") }
     if (response.status.value !in 200..299) {
         val error = runCatching { aiSdkJson.parseToJsonElement(raw) }.getOrNull()
-        throw AiSdkException("Hugging Face API error: ${error?.let(::huggingFaceErrorMessage) ?: raw}")
+        throw AiSdkRuntimeException("Hugging Face API error: ${error?.let(::huggingFaceErrorMessage) ?: raw}")
     }
     return HuggingFaceHttpResponse(
         value = if (parseJson && raw.isNotBlank()) aiSdkJson.parseToJsonElement(raw) else JsonObject(emptyMap()),

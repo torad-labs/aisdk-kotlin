@@ -61,7 +61,7 @@ public fun createLMNT(
 public val lmnt: LMNTProvider = object : LMNTProvider {
     override val providerId: String = "lmnt"
     override fun speech(modelId: String): SpeechModel =
-        throw AiSdkException("LMNT provider is not configured. Use createLMNT(client, settings).")
+        throw AiSdkRuntimeException("LMNT provider is not configured. Use createLMNT(client, settings).")
 }
 
 private class DefaultLMNTProvider(

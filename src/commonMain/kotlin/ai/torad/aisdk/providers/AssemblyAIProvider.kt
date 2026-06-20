@@ -94,7 +94,7 @@ public fun createAssemblyAI(
 public val assemblyai: AssemblyAIProvider = object : AssemblyAIProvider {
     override val providerId: String = "assemblyai"
     override fun transcription(modelId: String): TranscriptionModel =
-        throw AiSdkException("AssemblyAI provider is not configured. Use createAssemblyAI(client, settings).")
+        throw AiSdkRuntimeException("AssemblyAI provider is not configured. Use createAssemblyAI(client, settings).")
 }
 
 private class DefaultAssemblyAIProvider(
@@ -124,7 +124,7 @@ private class AssemblyAITranscriptionModel(
             headers = assemblyAIHeaders(settings, params.headers),
         )
         val uploadUrl = upload.value.jsonObject["upload_url"]?.jsonPrimitive?.contentOrNull
-            ?: throw AiSdkException("AssemblyAI upload response is missing upload_url")
+            ?: throw AiSdkRuntimeException("AssemblyAI upload response is missing upload_url")
 
         params.abortSignal.throwIfAborted()
         val submitBody = assemblyAISubmitBody(
@@ -139,7 +139,7 @@ private class AssemblyAITranscriptionModel(
             headers = assemblyAIHeaders(settings, params.headers),
         )
         val transcriptId = submit.value.jsonObject["id"]?.jsonPrimitive?.contentOrNull
-            ?: throw AiSdkException("AssemblyAI transcript submit response is missing id")
+            ?: throw AiSdkRuntimeException("AssemblyAI transcript submit response is missing id")
 
         val transcript = assemblyAIPollTranscript(
             client = client,
@@ -236,9 +236,9 @@ private suspend fun assemblyAIPollTranscript(
         val body = response.value.jsonObject
         when (body["status"]?.jsonPrimitive?.contentOrNull) {
             "completed" -> return response
-            "error" -> throw AiSdkException("Transcription failed: ${body["error"]?.jsonPrimitive?.contentOrNull ?: "Unknown error"}")
+            "error" -> throw AiSdkRuntimeException("Transcription failed: ${body["error"]?.jsonPrimitive?.contentOrNull ?: "Unknown error"}")
             "queued", "processing" -> if (settings.pollingIntervalMillis > 0) delay(settings.pollingIntervalMillis)
-            else -> throw AiSdkException("AssemblyAI transcript response has unsupported status")
+            else -> throw AiSdkRuntimeException("AssemblyAI transcript response has unsupported status")
         }
     }
 }

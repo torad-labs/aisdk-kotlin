@@ -1,11 +1,11 @@
 package ai.torad.aisdk
 
-public open class AiSdkException(
-    message: String,
+import kotlinx.serialization.json.JsonElement
+
+public sealed class AiSdkException(
+    message: String?,
     cause: Throwable? = null,
 ) : RuntimeException(message, cause)
-
-public typealias AISDKError = AiSdkException
 
 public class InvalidArgumentError(
     public val argument: String,
@@ -22,19 +22,18 @@ public class APICallError(
     public val responseBody: String? = null,
     cause: Throwable? = null,
     public val isRetryable: Boolean = statusCode == 408 || statusCode == 409 || statusCode == 429 || (statusCode ?: 0) >= 500,
-    public val data: Any? = null,
 ) : AiSdkException(message, cause)
 
 public class EmptyResponseBodyError(message: String = "Empty response body") : AiSdkException(message)
 
 public class InvalidPromptError(
-    public val prompt: Any?,
+    public val prompt: String?,
     message: String,
     cause: Throwable? = null,
 ) : AiSdkException("Invalid prompt: $message", cause)
 
 public class InvalidResponseDataError(
-    public val data: Any?,
+    public val data: JsonElement?,
     message: String = "Invalid response data: $data.",
 ) : AiSdkException(message)
 
@@ -70,13 +69,13 @@ public data class TypeValidationContext(
 )
 
 public class TypeValidationError(
-    public val value: Any?,
+    public val value: JsonElement?,
     cause: Throwable,
     public val context: TypeValidationContext? = null,
-) : AiSdkException(typeValidationMessage(value, cause, context), cause) {
+) : AiSdkException(buildTypeValidationMessage(value, cause, context), cause) {
     public companion object {
         public fun wrap(
-            value: Any?,
+            value: JsonElement?,
             cause: Throwable,
             context: TypeValidationContext? = null,
         ): TypeValidationError =
@@ -85,6 +84,19 @@ public class TypeValidationError(
             } else {
                 TypeValidationError(value, cause, context)
             }
+
+        internal fun buildTypeValidationMessage(
+            value: JsonElement?,
+            cause: Throwable,
+            context: TypeValidationContext?,
+        ): String {
+            val entityQualifier = buildList {
+                context?.entityName?.let { add(it) }
+                context?.entityId?.let { add("id: \"$it\"") }
+            }.takeIf { it.isNotEmpty() }?.joinToString(", ")?.let { " ($it)" } ?: ""
+            val fieldQualifier = context?.field?.let { " for $it" } ?: ""
+            return "Type validation failed$fieldQualifier$entityQualifier: Value: $value.\nError message: ${getErrorMessage(cause)}"
+        }
     }
 }
 
@@ -92,23 +104,6 @@ public class UnsupportedFunctionalityError(
     public val functionality: String,
     message: String = "'$functionality' functionality not supported.",
 ) : AiSdkException(message)
-
-private fun typeValidationMessage(
-    value: Any?,
-    cause: Throwable,
-    context: TypeValidationContext?,
-): String {
-    var prefix = "Type validation failed"
-    context?.field?.let { prefix += " for $it" }
-    if (context?.entityName != null || context?.entityId != null) {
-        val parts = buildList {
-            context.entityName?.let { add(it) }
-            context.entityId?.let { add("id: \"$it\"") }
-        }
-        prefix += " (${parts.joinToString(", ")})"
-    }
-    return "$prefix: Value: $value.\nError message: ${getErrorMessage(cause)}"
-}
 
 public class UnsupportedModelVersionError(
     modelId: String,
@@ -135,18 +130,10 @@ public class NoSuchModelError(
         append(modelId)
         append("`")
     },
-) : AiSdkException(
-    message,
-)
+) : AiSdkException(message)
 
 public class NoOutputGeneratedError(message: String = "No output generated") : AiSdkException(message)
 
-/**
- * Thrown when no object could be generated (the model failed, or its output could
- * not be parsed/validated). Carries the diagnostic context upstream's
- * `NoObjectGeneratedError` exposes so callers can inspect the raw text, the
- * response metadata, the token usage, and the finish reason of the failed call.
- */
 public class NoObjectGeneratedError(
     message: String = "No object generated",
     public val text: String? = null,
@@ -179,10 +166,11 @@ public class NoVideoGeneratedError(
     public val responses: List<LanguageModelResponseMetadata> = emptyList(),
     cause: Throwable? = null,
 ) : AiSdkException(message, cause)
+
 public class UiMessageStreamError(message: String, cause: Throwable? = null) : AiSdkException(message, cause)
 
 public class InvalidStreamPartError(
-    public val chunk: Any?,
+    public val chunk: String?,
     message: String,
 ) : AiSdkException(message)
 
@@ -230,10 +218,10 @@ public class ToolCallRepairError(
 ) : AiSdkException(message, cause)
 
 public class InvalidDataContentError(
-    public val content: Any?,
+    public val content: String?,
     cause: Throwable? = null,
     message: String = "Invalid data content. Expected a base64 string, ByteArray, or platform byte buffer, " +
-        "but got ${content?.let { it::class.simpleName } ?: "null"}.",
+        "but got ${content ?: "null"}.",
 ) : AiSdkException(message, cause)
 
 public class InvalidMessageRoleError(
@@ -242,7 +230,7 @@ public class InvalidMessageRoleError(
 ) : AiSdkException(message)
 
 public class MessageConversionError(
-    public val originalMessage: Any?,
+    public val originalMessage: String?,
     message: String,
 ) : AiSdkException(message)
 
@@ -259,3 +247,11 @@ public class RetryError(
 ) : AiSdkException(message, errors.lastOrNull()) {
     public val lastError: Throwable? = errors.lastOrNull()
 }
+
+/** Unclassified provider/core error — replaces bare `throw AiSdkException(...)` at sites that
+ *  haven't yet been migrated to a typed leaf. open so provider packages can subclass while in
+ *  migration. Layer-8 providers will eliminate these. */
+public open class AiSdkRuntimeException(
+    message: String,
+    cause: Throwable? = null,
+) : AiSdkException(message, cause)

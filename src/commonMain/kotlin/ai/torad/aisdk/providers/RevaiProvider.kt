@@ -81,7 +81,7 @@ public fun createRevai(
 public val revai: RevaiProvider = object : RevaiProvider {
     override val providerId: String = "revai"
     override fun transcription(modelId: String): TranscriptionModel =
-        throw AiSdkException("Rev.ai provider is not configured. Use createRevai(client, settings).")
+        throw AiSdkRuntimeException("Rev.ai provider is not configured. Use createRevai(client, settings).")
 }
 
 private class DefaultRevaiProvider(
@@ -113,10 +113,10 @@ private class RevaiTranscriptionModel(
         )
         var job = submit.value.jsonObject
         if (job["status"]?.jsonPrimitive?.contentOrNull == "failed") {
-            throw AiSdkException("Failed to submit transcription job to Rev.ai")
+            throw AiSdkRuntimeException("Failed to submit transcription job to Rev.ai")
         }
         val jobId = job["id"]?.jsonPrimitive?.contentOrNull
-            ?: throw AiSdkException("Rev.ai transcription job response is missing id")
+            ?: throw AiSdkRuntimeException("Rev.ai transcription job response is missing id")
 
         repeat(settings.maxPollAttempts.coerceAtLeast(1)) { attempt ->
             params.abortSignal.throwIfAborted()
@@ -131,7 +131,7 @@ private class RevaiTranscriptionModel(
                 job = poll.value.jsonObject
                 when (job["status"]?.jsonPrimitive?.contentOrNull) {
                     "transcribed" -> return@repeat
-                    "failed" -> throw AiSdkException("Transcription job failed")
+                    "failed" -> throw AiSdkRuntimeException("Transcription job failed")
                 }
             }
             if (job["status"]?.jsonPrimitive?.contentOrNull != "transcribed" && settings.pollingIntervalMillis > 0 && attempt < settings.maxPollAttempts - 1) {
@@ -139,7 +139,7 @@ private class RevaiTranscriptionModel(
             }
         }
         if (job["status"]?.jsonPrimitive?.contentOrNull != "transcribed") {
-            throw AiSdkException("Transcription job polling timed out")
+            throw AiSdkRuntimeException("Transcription job polling timed out")
         }
 
         val transcript = revaiGetJson(

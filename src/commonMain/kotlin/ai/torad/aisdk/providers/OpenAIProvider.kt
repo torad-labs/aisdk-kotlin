@@ -56,7 +56,7 @@ public fun createOpenAIProvider(
 public val openai: OpenAIProvider = OpenAIProviderNotConfigured
 
 public class OpenAIProviderNotConfiguredError :
-    AiSdkException("OpenAI provider is not configured. Use createOpenAI(client, settings).")
+    AiSdkRuntimeException("OpenAI provider is not configured. Use createOpenAI(client, settings).")
 
 private object OpenAIProviderNotConfigured : OpenAIProvider {
     override val settings: OpenAIProviderSettings = OpenAIProviderSettings()

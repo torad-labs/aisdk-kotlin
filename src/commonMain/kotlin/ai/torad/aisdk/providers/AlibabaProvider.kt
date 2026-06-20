@@ -91,9 +91,9 @@ public fun createAlibaba(
 public val alibaba: AlibabaProvider = object : AlibabaProvider {
     override val providerId: String = "alibaba"
     override fun languageModel(modelId: String): LanguageModel =
-        throw AiSdkException("Alibaba provider is not configured. Use createAlibaba(client, settings).")
+        throw AiSdkRuntimeException("Alibaba provider is not configured. Use createAlibaba(client, settings).")
     override fun videoModel(modelId: String): VideoModel =
-        throw AiSdkException("Alibaba provider is not configured. Use createAlibaba(client, settings).")
+        throw AiSdkRuntimeException("Alibaba provider is not configured. Use createAlibaba(client, settings).")
 }
 
 private class DefaultAlibabaProvider(
@@ -166,7 +166,7 @@ private class AlibabaVideoModel(
             headers = alibabaHeaders(settings, params.headers + mapOf("X-DashScope-Async" to "enable")),
         )
         val taskId = create.value.jsonObject["output"]?.jsonObject?.get("task_id")?.jsonPrimitive?.contentOrNull
-            ?: throw AiSdkException("No task_id returned from Alibaba API. Response: ${create.value}")
+            ?: throw AiSdkRuntimeException("No task_id returned from Alibaba API. Response: ${create.value}")
 
         val pollIntervalMs = options["pollIntervalMs"]?.jsonPrimitive?.contentOrNull?.toLongOrNull() ?: 5_000L
         val pollTimeoutMs = options["pollTimeoutMs"]?.jsonPrimitive?.contentOrNull?.toLongOrNull() ?: 600_000L
@@ -176,7 +176,7 @@ private class AlibabaVideoModel(
             params.abortSignal.throwIfAborted()
             if (pollIntervalMs > 0) delay(pollIntervalMs)
             if (clock.now().toEpochMilliseconds() - started > pollTimeoutMs) {
-                throw AiSdkException("Video generation timed out after ${pollTimeoutMs}ms")
+                throw AiSdkRuntimeException("Video generation timed out after ${pollTimeoutMs}ms")
             }
             val status = alibabaGetJson(
                 client = client,
@@ -196,11 +196,9 @@ private class AlibabaVideoModel(
                         providerMetadata = mapOf("alibaba" to alibabaVideoMetadata(taskId, videoUrl, status.value.jsonObject)),
                     )
                 }
-                "FAILED", "CANCELED" -> throw AiSdkException(
-                    "Video generation ${taskStatus.lowercase()}. Task ID: $taskId. ${output["message"]?.jsonPrimitive?.contentOrNull.orEmpty()}",
-                )
+                "FAILED", "CANCELED" -> throw AiSdkRuntimeException("Video generation ${taskStatus.lowercase()}. Task ID: $taskId. ${output["message"]?.jsonPrimitive?.contentOrNull.orEmpty()}",)
                 "PENDING", "RUNNING", "UNKNOWN", null -> Unit
-                else -> throw AiSdkException("Unknown Alibaba task status: $taskStatus")
+                else -> throw AiSdkRuntimeException("Unknown Alibaba task status: $taskStatus")
             }
         }
     }

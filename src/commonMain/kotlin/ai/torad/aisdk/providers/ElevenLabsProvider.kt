@@ -85,9 +85,9 @@ public fun createElevenLabs(
 public val elevenlabs: ElevenLabsProvider = object : ElevenLabsProvider {
     override val providerId: String = "elevenlabs"
     override fun transcription(modelId: String): TranscriptionModel =
-        throw AiSdkException("ElevenLabs provider is not configured. Use createElevenLabs(client, settings).")
+        throw AiSdkRuntimeException("ElevenLabs provider is not configured. Use createElevenLabs(client, settings).")
     override fun speech(modelId: String): SpeechModel =
-        throw AiSdkException("ElevenLabs provider is not configured. Use createElevenLabs(client, settings).")
+        throw AiSdkRuntimeException("ElevenLabs provider is not configured. Use createElevenLabs(client, settings).")
 }
 
 private class DefaultElevenLabsProvider(

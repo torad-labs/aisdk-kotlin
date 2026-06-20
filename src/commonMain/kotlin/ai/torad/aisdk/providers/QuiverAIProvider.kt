@@ -59,7 +59,7 @@ public fun createQuiverAI(
 public val quiverai: QuiverAIProvider = object : QuiverAIProvider {
     override val providerId: String = "quiverai"
     override fun image(modelId: String): ImageModel =
-        throw AiSdkException("QuiverAI provider is not configured. Use createQuiverAI(client, settings).")
+        throw AiSdkRuntimeException("QuiverAI provider is not configured. Use createQuiverAI(client, settings).")
 }
 
 private class DefaultQuiverAIProvider(
@@ -92,11 +92,11 @@ private class QuiverAIImageModel(
             headers = quiverAIHeaders(settings, params.headers),
         )
         val root = response.value.jsonObject
-        val data = root["data"]?.jsonArray ?: throw AiSdkException("QuiverAI response is missing data")
+        val data = root["data"]?.jsonArray ?: throw AiSdkRuntimeException("QuiverAI response is missing data")
         return ImageModelResult(
             images = data.map { item ->
                 val obj = item.jsonObject
-                val svg = obj["svg"]?.jsonPrimitive?.contentOrNull ?: throw AiSdkException("QuiverAI image item is missing svg")
+                val svg = obj["svg"]?.jsonPrimitive?.contentOrNull ?: throw AiSdkRuntimeException("QuiverAI image item is missing svg")
                 GeneratedFile(
                     mediaType = obj["mime_type"]?.jsonPrimitive?.contentOrNull ?: "image/svg+xml",
                     base64 = convertByteArrayToBase64(svg.encodeToByteArray()),

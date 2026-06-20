@@ -61,9 +61,9 @@ public fun createVoyage(
 public val voyage: VoyageProvider = object : VoyageProvider {
     override val providerId: String = "voyage"
     override fun embedding(modelId: String): EmbeddingModel =
-        throw AiSdkException("Voyage provider is not configured. Use createVoyage(client, settings).")
+        throw AiSdkRuntimeException("Voyage provider is not configured. Use createVoyage(client, settings).")
     override fun reranking(modelId: String): RerankingModel =
-        throw AiSdkException("Voyage provider is not configured. Use createVoyage(client, settings).")
+        throw AiSdkRuntimeException("Voyage provider is not configured. Use createVoyage(client, settings).")
 }
 
 private class DefaultVoyageProvider(
