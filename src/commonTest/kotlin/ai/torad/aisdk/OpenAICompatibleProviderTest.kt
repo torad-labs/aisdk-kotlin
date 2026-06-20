@@ -14,6 +14,7 @@ import io.ktor.utils.io.ByteChannel
 import io.ktor.utils.io.writeStringUtf8
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
@@ -85,24 +86,25 @@ class OpenAICompatibleProviderTest {
             ),
         )
 
-        val result = generateText(
-            model = provider.languageModel("gpt-test"),
-            prompt = "hi",
-            responseFormat = ResponseFormat.Json(
-                schemaName = "Answer",
-                schemaJson = JsonObject(mapOf("type" to JsonPrimitive("object"))),
-            ),
-            providerOptions = mapOf(
-                "openai" to JsonObject(
-                    mapOf(
-                        "user" to JsonPrimitive("user_1"),
-                        "reasoningEffort" to JsonPrimitive("high"),
-                        "textVerbosity" to JsonPrimitive("low"),
-                        "parallel_tool_calls" to JsonPrimitive(false),
+        val result = TextGenerator(
+            provider.languageModel("gpt-test"),
+            CallConfig(
+                responseFormat = ResponseFormat.Json(
+                    schemaName = "Answer",
+                    schemaJson = JsonObject(mapOf("type" to JsonPrimitive("object"))),
+                ),
+                providerOptions = mapOf(
+                    "openai" to JsonObject(
+                        mapOf(
+                            "user" to JsonPrimitive("user_1"),
+                            "reasoningEffort" to JsonPrimitive("high"),
+                            "textVerbosity" to JsonPrimitive("low"),
+                            "parallel_tool_calls" to JsonPrimitive(false),
+                        ),
                     ),
                 ),
             ),
-        )
+        ).generate(GenerationInput.Prompt("hi")).first()
 
         val body = seenBodies.single()
         assertEquals("Bearer secret", seenHeaders.single().headerValue("Authorization"))
@@ -372,7 +374,7 @@ class OpenAICompatibleProviderTest {
         )
         val provider = createOpenAICompatible(client, OpenAICompatibleProviderSettings("openai", "https://api.test/v1"))
 
-        val generated = generateText(provider.completionModel("davinci"), prompt = "complete")
+        val generated = TextGenerator(provider.completionModel("davinci")).generate(GenerationInput.Prompt("complete")).first()
         val streamed = drainAllItems(provider.completionModel("davinci").stream(LanguageModelCallParams(listOf(userMessage("hi")))))
 
         assertEquals("done", generated.text)
@@ -534,7 +536,7 @@ class OpenAICompatibleProviderTest {
         val provider = createOpenAICompatible(client, OpenAICompatibleProviderSettings("openai", "https://api.test/v1"))
 
         val error = assertFailsWith<WireDecodeException> {
-            generateText(provider.languageModel("gpt-test"), prompt = "hi")
+            TextGenerator(provider.languageModel("gpt-test")).generate(GenerationInput.Prompt("hi")).first()
         }
 
         assertEquals("openai.chat", error.provider)
@@ -568,7 +570,7 @@ class OpenAICompatibleProviderTest {
         val provider = createOpenAICompatible(client, OpenAICompatibleProviderSettings("openai", "https://api.test/v1"))
 
         val completionError = assertFailsWith<WireDecodeException> {
-            generateText(provider.completionModel("davinci"), prompt = "complete")
+            TextGenerator(provider.completionModel("davinci")).generate(GenerationInput.Prompt("complete")).first()
         }
         val imageError = assertFailsWith<WireDecodeException> {
             generateImage(provider.imageModel("image"), prompt = "logo")
@@ -599,7 +601,7 @@ class OpenAICompatibleProviderTest {
         val provider = createOpenAICompatible(client, OpenAICompatibleProviderSettings("openai", "https://api.test/v1"))
 
         val error = assertFailsWith<APICallError> {
-            generateText(provider.languageModel("gpt-test"), prompt = "hi")
+            TextGenerator(provider.languageModel("gpt-test")).generate(GenerationInput.Prompt("hi")).first()
         }
 
         // APICallError is an AiSdkException, so existing catch(AiSdkException) still catches it.

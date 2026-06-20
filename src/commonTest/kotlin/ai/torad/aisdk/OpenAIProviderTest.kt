@@ -16,6 +16,7 @@ import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.content.OutgoingContent
 import io.ktor.http.headersOf
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
@@ -111,9 +112,9 @@ class OpenAIProviderTest {
             ),
         )
 
-        val responses = generateText(provider("gpt-5"), prompt = "hi")
-        val directChat = generateText(provider.chat("gpt-5"), prompt = "hi")
-        val completion = generateText(provider.completion("davinci"), prompt = "hi")
+        val responses = TextGenerator(provider("gpt-5")).generate(GenerationInput.Prompt("hi")).first()
+        val directChat = TextGenerator(provider.chat("gpt-5")).generate(GenerationInput.Prompt("hi")).first()
+        val completion = TextGenerator(provider.completion("davinci")).generate(GenerationInput.Prompt("hi")).first()
 
         assertEquals("from responses", responses.text)
         assertEquals("ok", directChat.text)
@@ -149,15 +150,16 @@ class OpenAIProviderTest {
         )
         val provider = createOpenAI(client, OpenAIProviderSettings(apiKey = "test-api-key"))
 
-        generateText(
-            model = provider.chat("gpt-5"),
-            prompt = "hi",
-            providerOptions = mapOf(
-                "openai" to JsonObject(
-                    mapOf("parallel_tool_calls" to JsonPrimitive(false)),
+        TextGenerator(
+            provider.chat("gpt-5"),
+            CallConfig(
+                providerOptions = mapOf(
+                    "openai" to JsonObject(
+                        mapOf("parallel_tool_calls" to JsonPrimitive(false)),
+                    ),
                 ),
             ),
-        )
+        ).generate(GenerationInput.Prompt("hi")).first()
 
         assertEquals(JsonPrimitive(false), seenBody.single()["parallel_tool_calls"])
     }
@@ -191,35 +193,36 @@ class OpenAIProviderTest {
         )
 
         val model = provider.responses("gpt-5")
-        val result = generateText(
-            model = model,
-            prompt = "hi",
-            providerOptions = mapOf(
-                "openai" to buildJsonObject {
-                    put("conversation", JsonPrimitive("conv_123"))
-                    put("include", JsonArray(listOf(JsonPrimitive("file_search_call.results"))))
-                    put("instructions", JsonPrimitive("continue carefully"))
-                    put("logprobs", JsonPrimitive(true))
-                    put("maxToolCalls", JsonPrimitive(4))
-                    put("metadata", buildJsonObject { put("trace", JsonPrimitive("abc")) })
-                    put("parallelToolCalls", JsonPrimitive(false))
-                    put("previousResponseId", JsonPrimitive("resp_prev"))
-                    put("promptCacheKey", JsonPrimitive("cache-key"))
-                    put("promptCacheRetention", JsonPrimitive("24h"))
-                    put("reasoningEffort", JsonPrimitive("low"))
-                    put("reasoningSummary", JsonPrimitive("concise"))
-                    put("safetyIdentifier", JsonPrimitive("user-safe"))
-                    put("serviceTier", JsonPrimitive("priority"))
-                    put("store", JsonPrimitive(false))
-                    put("strictJsonSchema", JsonPrimitive(false))
-                    put("textVerbosity", JsonPrimitive("low"))
-                    put("truncation", JsonPrimitive("disabled"))
-                    put("user", JsonPrimitive("user_123"))
-                    put("forceReasoning", JsonPrimitive(true))
-                },
+        val result = TextGenerator(
+            model,
+            CallConfig(
+                providerOptions = mapOf(
+                    "openai" to buildJsonObject {
+                        put("conversation", JsonPrimitive("conv_123"))
+                        put("include", JsonArray(listOf(JsonPrimitive("file_search_call.results"))))
+                        put("instructions", JsonPrimitive("continue carefully"))
+                        put("logprobs", JsonPrimitive(true))
+                        put("maxToolCalls", JsonPrimitive(4))
+                        put("metadata", buildJsonObject { put("trace", JsonPrimitive("abc")) })
+                        put("parallelToolCalls", JsonPrimitive(false))
+                        put("previousResponseId", JsonPrimitive("resp_prev"))
+                        put("promptCacheKey", JsonPrimitive("cache-key"))
+                        put("promptCacheRetention", JsonPrimitive("24h"))
+                        put("reasoningEffort", JsonPrimitive("low"))
+                        put("reasoningSummary", JsonPrimitive("concise"))
+                        put("safetyIdentifier", JsonPrimitive("user-safe"))
+                        put("serviceTier", JsonPrimitive("priority"))
+                        put("store", JsonPrimitive(false))
+                        put("strictJsonSchema", JsonPrimitive(false))
+                        put("textVerbosity", JsonPrimitive("low"))
+                        put("truncation", JsonPrimitive("disabled"))
+                        put("user", JsonPrimitive("user_123"))
+                        put("forceReasoning", JsonPrimitive(true))
+                    },
+                ),
+                responseFormat = ResponseFormat.Json(schemaName = "Answer", schemaJson = JsonObject(emptyMap())),
             ),
-            responseFormat = ResponseFormat.Json(schemaName = "Answer", schemaJson = JsonObject(emptyMap())),
-        )
+        ).generate(GenerationInput.Prompt("hi")).first()
 
         val request = seenRequests.single()
         val body = seenBody.single()

@@ -290,7 +290,7 @@ class FullPortFeatureParityTest {
 
     @Test
     fun `streamTextResult exposes text and UI response facades`() = runTest {
-        val result = streamTextResult(model = mockLanguageModelTextOnly("hello"), prompt = "hi")
+        val result = TextGenerator(mockLanguageModelTextOnly("hello")).streamResult(GenerationInput.Prompt("hi"))
         val text = drainAllItems(result.textStream)
         val ui = drainAllItems(result.toUiMessageStream("a1"))
 

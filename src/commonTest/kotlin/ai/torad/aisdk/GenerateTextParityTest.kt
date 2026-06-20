@@ -7,6 +7,7 @@ import kotlin.test.assertIs
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.Serializable
@@ -63,7 +64,7 @@ class GenerateTextParityTest {
     }
 
     @Test
-    fun `generateText forwards v6 call settings and auto derives JSON response format from output`() = runTest {
+    fun `generate forwards call settings and auto derives JSON response format from output`() = runTest {
         // GIVEN
         val providerOptions = mapOf("openai" to buildJsonObject { put("reasoningEffort", JsonPrimitive("high")) })
         val model = CapturingModel(
@@ -73,24 +74,29 @@ class GenerateTextParityTest {
                 usage = Usage(promptTokens = 3, completionTokens = 4),
             ),
         )
+        val output = Output.obj(serializer<Recipe>(), name = "Recipe")
 
         // WHEN
-        val result = generateText(
-            model = model,
-            system = "be structured",
-            messages = listOf(userMessage("history")),
-            prompt = "recipe",
-            output = Output.obj(serializer<Recipe>(), name = "Recipe"),
-            temperature = 0.1f,
-            topP = 0.2f,
-            topK = 3,
-            maxOutputTokens = 200,
-            stopSequences = listOf("</json>"),
-            seed = 42,
-            providerOptions = providerOptions,
-            presencePenalty = 0.4f,
-            frequencyPenalty = 0.5f,
-        )
+        val result = TextGenerator(
+            model,
+            CallConfig(
+                temperature = 0.1f,
+                topP = 0.2f,
+                topK = 3,
+                maxOutputTokens = 200,
+                stopSequences = listOf("</json>"),
+                seed = 42,
+                providerOptions = providerOptions,
+                presencePenalty = 0.4f,
+                frequencyPenalty = 0.5f,
+            ),
+        ).generate(
+            GenerationInput.from(
+                prompt = "recipe",
+                messages = listOf(systemMessage("be structured"), userMessage("history")),
+            ),
+            output,
+        ).first()
 
         // THEN
         assertEquals("cake", result.output.name)
@@ -111,7 +117,7 @@ class GenerateTextParityTest {
     }
 
     @Test
-    fun `generateText keeps explicit response format when output is also supplied`() = runTest {
+    fun `generate keeps explicit response format when output is also supplied`() = runTest {
         // GIVEN
         val model = CapturingModel(
             generateResult = LanguageModelResult(
@@ -123,19 +129,17 @@ class GenerateTextParityTest {
         val explicit = ResponseFormat.Json(schemaName = "Explicit")
 
         // WHEN
-        generateText(
-            model = model,
-            prompt = "recipe",
-            output = outputObj<Recipe>(serializer()),
-            responseFormat = explicit,
-        )
+        TextGenerator(
+            model,
+            CallConfig(responseFormat = explicit),
+        ).generate(GenerationInput.Prompt("recipe"), outputObj<Recipe>(serializer())).first()
 
         // THEN
         assertEquals(explicit, model.generateParams?.responseFormat)
     }
 
     @Test
-    fun `generateText exposes rich provider result metadata`() = runTest {
+    fun `generate exposes rich provider result metadata`() = runTest {
         // GIVEN
         val warning = CallWarning(type = "unsupported-setting", message = "topK ignored")
         val toolCall = ContentPart.ToolCall(
@@ -173,7 +177,7 @@ class GenerateTextParityTest {
         )
 
         // WHEN
-        val result = generateText(model = model, prompt = "hi")
+        val result = TextGenerator(model).generate(GenerationInput.Prompt("hi")).first()
 
         // THEN
         assertEquals("answer", result.output)
@@ -188,19 +192,21 @@ class GenerateTextParityTest {
     }
 
     @Test
-    fun `streamText is cold and forwards output response format plus penalties`() = runTest {
+    fun `stream is cold and forwards output response format plus penalties`() = runTest {
         // GIVEN
         val model = CapturingModel()
-        val flow = streamText(
-            model = model,
-            prompt = "recipe",
-            output = outputObj<Recipe>(serializer(), name = "Recipe"),
-            presencePenalty = 0.7f,
-            frequencyPenalty = 0.8f,
-        )
+        val output = outputObj<Recipe>(serializer(), name = "Recipe")
+        val flow = TextGenerator(
+            model,
+            CallConfig(
+                presencePenalty = 0.7f,
+                frequencyPenalty = 0.8f,
+                responseFormat = output.toResponseFormat(),
+            ),
+        ).stream(GenerationInput.Prompt("recipe"))
 
         // WHEN
-        assertNull(model.streamParams, "streamText must not call the model before collection")
+        assertNull(model.streamParams, "stream must not call the model before collection")
         val events = drainAllItems(flow)
 
         // THEN
@@ -213,7 +219,7 @@ class GenerateTextParityTest {
     }
 
     @Test
-    fun `streamTextResult exposes request warnings and response metadata`() = runTest {
+    fun `streamResult exposes request warnings and response metadata`() = runTest {
         // GIVEN
         val warning = CallWarning("unsupported-setting", "topK ignored")
         val request = LanguageModelRequestMetadata(
@@ -239,7 +245,7 @@ class GenerateTextParityTest {
         )
 
         // WHEN
-        val result = streamTextResult(model = model, prompt = "hi")
+        val result = TextGenerator(model).streamResult(GenerationInput.Prompt("hi"))
         val warnings = drainAllItems(result.warnings)
         val responses = drainAllItems(result.response)
 
@@ -255,7 +261,7 @@ class GenerateTextParityTest {
     }
 
     @Test
-    fun `streamTextResult metadata accessors do not recollect provider stream`() = runTest {
+    fun `streamResult metadata accessors do not recollect provider stream`() = runTest {
         // GIVEN
         val warning = CallWarning("mock-warning")
         val model = CapturingModel(
@@ -271,7 +277,7 @@ class GenerateTextParityTest {
         )
 
         // WHEN
-        val result = streamTextResult(model = model, prompt = "hi")
+        val result = TextGenerator(model).streamResult(GenerationInput.Prompt("hi"))
         assertEquals(listOf("ok"), drainAllItems(result.textStream))
         assertEquals(listOf(listOf(warning)), drainAllItems(result.warnings))
         val response = drainAllItems(result.response).single()
@@ -282,9 +288,8 @@ class GenerateTextParityTest {
         assertEquals(mapOf("x-request-id" to "req_1", "x-stream-id" to "stream_1"), response.headers)
     }
 
-    @Suppress("DEPRECATION")
     @Test
-    fun `generateObject delegates to generateText and returns the typed value`() = runTest {
+    fun `generate with output returns the typed value`() = runTest {
         // GIVEN
         val model = CapturingModel(
             generateResult = LanguageModelResult(
@@ -296,33 +301,29 @@ class GenerateTextParityTest {
         )
 
         // WHEN
-        val result = generateObject(
-            model = model,
-            output = outputObj<Recipe>(serializer(), name = "Recipe"),
-            prompt = "recipe",
-        )
+        val result = TextGenerator(model).generate(
+            GenerationInput.Prompt("recipe"),
+            outputObj<Recipe>(serializer(), name = "Recipe"),
+        ).first()
 
         // THEN
-        assertEquals("cake", result.value.name)
-        assertEquals(result.value, result.output)
-        assertEquals(result.value, result.generatedObject)
+        assertEquals("cake", result.output.name)
         assertEquals(listOf(CallWarning("mock-warning")), result.warnings)
         assertEquals("Recipe", assertIs<ResponseFormat.Json>(model.generateParams?.responseFormat).schemaName)
     }
 
-    @Suppress("DEPRECATION")
     @Test
-    fun `streamObject delegates to streamText with the supplied output`() = runTest {
+    fun `stream with output-derived response format passes correct schema`() = runTest {
         // GIVEN
         val model = CapturingModel()
+        val output = outputChoice("yes", "no")
 
         // WHEN
         drainAllItems(
-            streamObject(
-                model = model,
-                output = outputChoice("yes", "no"),
-                prompt = "choose",
-            ),
+            TextGenerator(
+                model,
+                CallConfig(responseFormat = output.toResponseFormat()),
+            ).stream(GenerationInput.Prompt("choose")),
         )
 
         // THEN
