@@ -10,7 +10,7 @@
   },
   "ownership": "builder owns src/ edits; orchestrator owns .claude/ + validation; parallel work only on distinct files",
   "spec": "docs/reports/target-architecture.md",
-  "current_status": "POLISH loop (user: do all remaining polish). Layers 1-13 done+green. L13 (OpenAICompatible splits, workflow): OpenAICompatibleProvider 1325->68 (+4 files), Facades 1505->deleted (+11 per-provider facade files); ABI changed BENIGNLY (top-level factories split into per-provider files renamed JVM facade classes OpenAICompatibleProviderFacadesKt -> *FacadeKt; no public-symbol loss) -> updateKotlinAbi regenerated, full gate green. Now current_layer=14: migrate 85 String typealiases -> value classes / generic ModelId (builder cascade). Then 15: ToolLoopAgent decomposition (Approval/Repair/Telemetry collaborators).",
+  "current_status": "ALL 15 LAYERS COMPLETE + green. 9 rewrite (foundations->wire-finalize) + 6 polish (metadata cascade, god-file splits, OpenAICompatible splits, typealias->ModelId, ToolLoopAgent decomposition). Branch refactor/ts-residue-cleanup, full gate (compileKotlinJvm+jvmTest+checkKotlinAbi) green at HEAD.",
   "hard_rules": "no camelCase top-level fns (only PascalCase factories); logic on types/in units; Flow over suspend; sealed CLASS not interface; no public/top-level/companion mutable var; no secondary ctor/lateinit/!!; sealed errors; typed over Map<String,JsonElement>/Any?",
   "layers": [
     {
@@ -68,8 +68,9 @@
       "status": "pending"
     }
   ],
-  "current_layer": 14,
-  "layer14_status": "IN PROGRESS: all 85 String typealiases DELETED. 101 main errors = ModelId<->String boundary mismatches (public params now ModelId, internal wire still String). Re-engaged: unwrap modelId.value at wire boundary, wrap ModelId() where public type expected; bulk-rewrite to green + updateKotlinAbi + commit.",
+  "current_layer": "COMPLETE",
+  "layer15_status": "IN PROGRESS: 3 collaborators created (AgentTelemetryDispatcher/ToolApprovalCoordinator/ToolCallRepairer) but ToolLoopAgent call sites not rewired -> 81 unresolved-ref errors (runHook/fireTelemetry/emitError) + cascade suspension errors. Re-engaged: construct+hold collaborators, delegate every moved call to the instance. Awaiting green + commit.",
+  "layer14_done": "VALIDATED (6227a39): all 85 String typealiases eliminated -> generic ModelId value class; ModelId<->String boundary unwrapped at wire; 65 files, ABI regenerated, full gate green.",
   "layer11_done": "VALIDATED (god-file splits, parallel workflow): Google 2027->162, Bedrock 1544->402, MCP 2221->1491, ToolLoopAgent 1879->1806 (abstract-class floor), 16 new same-package files, ABI-neutral, combined gate green. ToolLoopAgent deeper decomposition (Approval/Repair/Telemetry collaborators) is an optional further follow-up.",
   "completed_layers": [
     {
