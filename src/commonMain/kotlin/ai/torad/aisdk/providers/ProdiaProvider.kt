@@ -35,9 +35,6 @@ import kotlinx.serialization.json.jsonPrimitive
 
 public const val PRODIA_VERSION: String = "1.0.31"
 
-public typealias ProdiaLanguageModelId = String
-public typealias ProdiaImageModelId = String
-public typealias ProdiaVideoModelId = String
 public typealias ProdiaImageProviderOptions = ProdiaImageModelOptions
 
 @Serializable
@@ -73,9 +70,9 @@ public class ProdiaProvider(
 ) : Provider {
     override val providerId: String = "prodia"
 
-    public operator fun invoke(modelId: ProdiaLanguageModelId): LanguageModel = languageModel(modelId)
-    public fun image(modelId: ProdiaImageModelId): ImageModel = imageModel(modelId)
-    public fun video(modelId: ProdiaVideoModelId): VideoModel = videoModel(modelId)
+    public operator fun invoke(modelId: ModelId): LanguageModel = languageModel(modelId)
+    public fun image(modelId: ModelId): ImageModel = imageModel(modelId)
+    public fun video(modelId: ModelId): VideoModel = videoModel(modelId)
     public fun textEmbeddingModel(modelId: String): Nothing = throw NoSuchModelError(providerId, "embeddingModel", modelId)
 
     override fun languageModel(modelId: String): LanguageModel = ProdiaLanguageModel(client, settings, modelId)

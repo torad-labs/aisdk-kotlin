@@ -33,7 +33,6 @@ import kotlinx.serialization.json.longOrNull
 
 public const val HUGGINGFACE_VERSION: String = "1.0.50"
 
-public typealias HuggingFaceResponsesModelId = String
 public typealias HuggingFaceErrorData = JsonObject
 
 public data class HuggingFaceProviderSettings(
@@ -57,9 +56,9 @@ public class HuggingFaceProvider(
 ) : Provider {
     override val providerId: String = "huggingface"
 
-    public operator fun invoke(modelId: HuggingFaceResponsesModelId): LanguageModel = languageModel(modelId)
+    public operator fun invoke(modelId: ModelId): LanguageModel = languageModel(modelId)
 
-    public fun responses(modelId: HuggingFaceResponsesModelId): LanguageModel = languageModel(modelId)
+    public fun responses(modelId: ModelId): LanguageModel = languageModel(modelId)
 
     public fun textEmbeddingModel(modelId: String): Nothing = throw huggingFaceNoEmbeddingModel(providerId, modelId)
 

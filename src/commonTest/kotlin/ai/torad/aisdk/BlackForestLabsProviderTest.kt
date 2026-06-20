@@ -49,7 +49,7 @@ class BlackForestLabsProviderTest {
         val model = BlackForestLabs(
             fixture.httpClient(),
             BlackForestLabsProviderSettings(apiKey = "bfl-key"),
-        ).image("flux-pro-1.1")
+        ).image(ModelId("flux-pro-1.1"))
 
         val result = model.generate(
             ImageGenerationParams(
@@ -137,7 +137,7 @@ class BlackForestLabsProviderTest {
         val model = BlackForestLabs(
             fixture.httpClient(),
             BlackForestLabsProviderSettings(apiKey = "key"),
-        ).image("flux-pro-1.0-fill")
+        ).image(ModelId("flux-pro-1.0-fill"))
 
         val result = model.generate(
             ImageGenerationParams(
@@ -182,7 +182,7 @@ class BlackForestLabsProviderTest {
         val model = BlackForestLabs(
             fixture.httpClient(),
             BlackForestLabsProviderSettings(apiKey = "key"),
-        ).image("flux-pro-1.1")
+        ).image(ModelId("flux-pro-1.1"))
 
         assertFailsWith<AiSdkException> {
             model.generate(
@@ -213,7 +213,7 @@ class BlackForestLabsProviderTest {
 
         assertFailsWith<NoSuchModelError> { provider.languageModel("model") }
         assertFailsWith<NoSuchModelError> { provider.embeddingModel("embed") }
-        assertFailsWith<AiSdkException> { blackForestLabs.image("flux-pro-1.1") }
+        assertFailsWith<AiSdkException> { blackForestLabs.image(ModelId("flux-pro-1.1")) }
     }
 
     private fun Map<String, String>.headerValue(name: String): String? =

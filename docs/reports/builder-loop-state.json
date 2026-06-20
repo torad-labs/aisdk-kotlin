@@ -69,6 +69,7 @@
     }
   ],
   "current_layer": 14,
+  "layer14_status": "IN PROGRESS: all 85 String typealiases DELETED. 101 main errors = ModelId<->String boundary mismatches (public params now ModelId, internal wire still String). Re-engaged: unwrap modelId.value at wire boundary, wrap ModelId() where public type expected; bulk-rewrite to green + updateKotlinAbi + commit.",
   "layer11_done": "VALIDATED (god-file splits, parallel workflow): Google 2027->162, Bedrock 1544->402, MCP 2221->1491, ToolLoopAgent 1879->1806 (abstract-class floor), 16 new same-package files, ABI-neutral, combined gate green. ToolLoopAgent deeper decomposition (Approval/Repair/Telemetry collaborators) is an optional further follow-up.",
   "completed_layers": [
     {

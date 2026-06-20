@@ -39,7 +39,7 @@ class QuiverAIProviderTest {
         val model = QuiverAI(
             fixture.httpClient(),
             QuiverAIProviderSettings(apiKey = "key", headers = mapOf("X-Test" to "1")),
-        ).image("arrow-1")
+        ).image(ModelId("arrow-1"))
 
         val result = model.generate(
             ImageGenerationParams(
@@ -103,7 +103,7 @@ class QuiverAIProviderTest {
             ),
         )
         fixture.server.start()
-        val model = QuiverAI(fixture.httpClient(), QuiverAIProviderSettings(apiKey = "key")).image("arrow-1")
+        val model = QuiverAI(fixture.httpClient(), QuiverAIProviderSettings(apiKey = "key")).image(ModelId("arrow-1"))
 
         model.generate(
             ImageGenerationParams(
@@ -145,7 +145,7 @@ class QuiverAIProviderTest {
         val provider = QuiverAI(fixture.httpClient(), QuiverAIProviderSettings(apiKey = "key"))
 
         assertFailsWith<InvalidArgumentError> {
-            provider.image("arrow-1").generate(
+            provider.image(ModelId("arrow-1")).generate(
                 ImageGenerationParams(
                     prompt = "x",
                     files = List(5) { ImageGenerationFile(url = "https://example.com/$it.png") },
@@ -153,7 +153,7 @@ class QuiverAIProviderTest {
             )
         }
         assertFailsWith<InvalidArgumentError> {
-            provider.image("arrow-1").generate(
+            provider.image(ModelId("arrow-1")).generate(
                 ImageGenerationParams(
                     prompt = "",
                     providerOptions = ProviderOptions.Raw(JsonObject(mapOf("quiverai" to buildJsonObject { put("operation", JsonPrimitive("vectorize")) }))),
@@ -161,7 +161,7 @@ class QuiverAIProviderTest {
             )
         }
         assertFailsWith<InvalidArgumentError> {
-            provider.image("arrow-1").generate(
+            provider.image(ModelId("arrow-1")).generate(
                 ImageGenerationParams(
                     prompt = "",
                     files = listOf(ImageGenerationFile(url = "a"), ImageGenerationFile(url = "b")),
@@ -170,7 +170,7 @@ class QuiverAIProviderTest {
             )
         }
 
-        val result = provider.image("arrow-1.1-max").generate(
+        val result = provider.image(ModelId("arrow-1.1-max")).generate(
             ImageGenerationParams(
                 prompt = "x",
                 files = List(16) { ImageGenerationFile(url = "https://example.com/$it.png") },

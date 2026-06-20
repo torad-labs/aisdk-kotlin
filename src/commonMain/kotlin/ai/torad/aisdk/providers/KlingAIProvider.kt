@@ -22,7 +22,6 @@ import kotlinx.serialization.json.jsonPrimitive
 
 public const val KLINGAI_VERSION: String = "3.0.18"
 
-public typealias KlingAIVideoModelId = String
 public typealias KlingAIVideoProviderOptions = KlingAIVideoModelOptions
 
 @Serializable
@@ -62,7 +61,7 @@ public class KlingAIProvider(
 ) : Provider {
     override val providerId: String = "klingai"
 
-    public fun video(modelId: KlingAIVideoModelId): VideoModel = videoModel(modelId)
+    public fun video(modelId: ModelId): VideoModel = videoModel(modelId)
 
     override fun videoModel(modelId: String): VideoModel = KlingAIVideoModel(client, settings, modelId)
     override fun languageModel(modelId: String): LanguageModel = throw NoSuchModelError(providerId, "languageModel", modelId)

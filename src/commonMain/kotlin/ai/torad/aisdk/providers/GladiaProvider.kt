@@ -27,7 +27,6 @@ import kotlinx.serialization.json.jsonPrimitive
 
 public const val GLADIA_VERSION: String = "2.0.33"
 
-public typealias GladiaTranscriptionModelId = String
 
 @Serializable
 public data class GladiaTranscriptionModelOptions(

@@ -75,7 +75,7 @@ class AlibabaProviderTest {
             ),
         )
 
-        val result = provider.chatModel("qwen-plus").generate(
+        val result = provider.chatModel(ModelId("qwen-plus")).generate(
             LanguageModelCallParams(
                 messages = listOf(userMessage("Hello")),
                 tools = listOf(
@@ -93,7 +93,7 @@ class AlibabaProviderTest {
             ),
         )
 
-        assertEquals("alibaba.chat", provider("qwen-plus").provider)
+        assertEquals("alibaba.chat", provider(ModelId("qwen-plus")).provider)
         assertEquals("The answer is Paris.", result.text)
         assertEquals(FinishReason.ToolCalls, result.finishReason)
         assertEquals("I checked the cached context.", result.content.filterIsInstance<ContentPart.Reasoning>().single().text)
@@ -152,7 +152,7 @@ class AlibabaProviderTest {
         val model = Alibaba(
             fixture.httpClient(),
             AlibabaProviderSettings(apiKey = "key", videoBaseURL = "https://dash.test"),
-        ).video("wan2.6-i2v")
+        ).video(ModelId("wan2.6-i2v"))
 
         val result = model.generate(
             VideoGenerationParams(

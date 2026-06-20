@@ -25,11 +25,6 @@ import kotlinx.serialization.json.jsonPrimitive
 
 public const val TOGETHERAI_VERSION: String = "2.0.53"
 
-public typealias TogetherAIChatModelId = String
-public typealias TogetherAICompletionModelId = String
-public typealias TogetherAIEmbeddingModelId = String
-public typealias TogetherAIImageModelId = String
-public typealias TogetherAIRerankingModelId = String
 public typealias TogetherAIErrorData = JsonElement
 
 @Serializable
@@ -67,13 +62,13 @@ public class TogetherAIProvider(
     )
     override val providerId: String = "togetherai"
 
-    public operator fun invoke(modelId: TogetherAIChatModelId): LanguageModel = languageModel(modelId)
-    override fun languageModel(modelId: String): LanguageModel = chatModel(modelId)
-    public fun chatModel(modelId: TogetherAIChatModelId): LanguageModel = compatible.chatModel(modelId)
-    public fun completionModel(modelId: TogetherAICompletionModelId): LanguageModel = compatible.completionModel(modelId)
-    public fun textEmbeddingModel(modelId: TogetherAIEmbeddingModelId): EmbeddingModel = embeddingModel(modelId)
-    public fun image(modelId: TogetherAIImageModelId): ImageModel = imageModel(modelId)
-    public fun reranking(modelId: TogetherAIRerankingModelId): RerankingModel = rerankingModel(modelId)
+    public operator fun invoke(modelId: ModelId): LanguageModel = languageModel(modelId)
+    override fun languageModel(modelId: String): LanguageModel = chatModel(ModelId(modelId))
+    public fun chatModel(modelId: ModelId): LanguageModel = compatible.chatModel(modelId.value)
+    public fun completionModel(modelId: ModelId): LanguageModel = compatible.completionModel(modelId.value)
+    public fun textEmbeddingModel(modelId: ModelId): EmbeddingModel = embeddingModel(modelId)
+    public fun image(modelId: ModelId): ImageModel = imageModel(modelId)
+    public fun reranking(modelId: ModelId): RerankingModel = rerankingModel(modelId)
     override fun embeddingModel(modelId: String): EmbeddingModel = compatible.embeddingModel(modelId)
     override fun imageModel(modelId: String): ImageModel = TogetherAIImageModel(client, settings, modelId)
     override fun rerankingModel(modelId: String): RerankingModel = TogetherAIRerankingModel(client, settings, modelId)
@@ -87,7 +82,7 @@ public fun TogetherAI(
 private class TogetherAIImageModel(
     private val client: HttpClient,
     private val settings: TogetherAIProviderSettings,
-    override val modelId: TogetherAIImageModelId,
+    override val modelId: String,
 ) : ImageModel {
     override val provider: String = "togetherai.image"
 
@@ -136,7 +131,7 @@ private class TogetherAIImageModel(
 public class TogetherAIRerankingModel(
     private val client: HttpClient,
     private val settings: TogetherAIProviderSettings,
-    override val modelId: TogetherAIRerankingModelId,
+    override val modelId: String,
 ) : RerankingModel {
     override val provider: String = "togetherai.reranking"
 

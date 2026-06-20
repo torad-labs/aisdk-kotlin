@@ -31,7 +31,7 @@ class LMNTProviderTest {
         val model = LMNT(
             fixture.httpClient(),
             LMNTProviderSettings(apiKey = "key"),
-        ).speech("aurora")
+        ).speech(ModelId("aurora"))
 
         val result = model.generate(
             SpeechGenerationParams(
@@ -85,7 +85,7 @@ class LMNTProviderTest {
         val model = LMNT(
             fixture.httpClient(),
             LMNTProviderSettings(apiKey = "key"),
-        ).speech("aurora")
+        ).speech(ModelId("aurora"))
 
         val result = model.generate(
             SpeechGenerationParams(text = "hello", responseFormat = "flac"),

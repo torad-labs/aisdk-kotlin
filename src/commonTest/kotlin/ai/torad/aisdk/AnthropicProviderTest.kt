@@ -102,7 +102,7 @@ class AnthropicProviderTest {
 
         val pdf = Base64Codec.encode("pdf".encodeToByteArray())
         val textDoc = Base64Codec.encode("plain document".encodeToByteArray())
-        val result = provider.messages("claude-sonnet-4-5").generate(
+        val result = provider.messages(ModelId("claude-sonnet-4-5")).generate(
             LanguageModelCallParams(
                 messages = listOf(
                     systemMessage("Follow policy."),
@@ -219,7 +219,7 @@ class AnthropicProviderTest {
             ),
         )
 
-        assertEquals("anthropic.messages", provider("claude-sonnet-4-5").provider)
+        assertEquals("anthropic.messages", provider(ModelId("claude-sonnet-4-5")).provider)
         assertEquals("I will use a tool.", result.text)
         assertEquals(FinishReason.ToolCalls, result.finishReason)
         assertEquals(16, result.usage.promptTokens)
@@ -301,7 +301,7 @@ class AnthropicProviderTest {
         val provider = Anthropic(fixture.httpClient(), AnthropicProviderSettings(baseURL = "https://anthropic.test/v1"))
 
         val error = assertFailsWith<WireDecodeException> {
-            provider.messages("claude-sonnet-4-5").generate(LanguageModelCallParams(messages = listOf(userMessage("hi"))))
+            provider.messages(ModelId("claude-sonnet-4-5")).generate(LanguageModelCallParams(messages = listOf(userMessage("hi"))))
         }
 
         val message = error.message.orEmpty()
@@ -337,7 +337,7 @@ class AnthropicProviderTest {
         val provider = Anthropic(fixture.httpClient(), AnthropicProviderSettings(baseURL = "https://anthropic.test/v1"))
 
         val error = assertFailsWith<WireDecodeException> {
-            provider.messages("claude-sonnet-4-5").generate(LanguageModelCallParams(messages = listOf(userMessage("hi"))))
+            provider.messages(ModelId("claude-sonnet-4-5")).generate(LanguageModelCallParams(messages = listOf(userMessage("hi"))))
         }
 
         val message = error.message.orEmpty()
@@ -373,7 +373,7 @@ class AnthropicProviderTest {
         val provider = Anthropic(fixture.httpClient(), AnthropicProviderSettings(baseURL = "https://anthropic.test/v1"))
 
         val error = assertFailsWith<WireDecodeException> {
-            provider.messages("claude-sonnet-4-5").generate(LanguageModelCallParams(messages = listOf(userMessage("hi"))))
+            provider.messages(ModelId("claude-sonnet-4-5")).generate(LanguageModelCallParams(messages = listOf(userMessage("hi"))))
         }
 
         val message = error.message.orEmpty()
@@ -410,7 +410,7 @@ class AnthropicProviderTest {
         val provider = Anthropic(fixture.httpClient(), AnthropicProviderSettings(baseURL = "https://anthropic.test/v1"))
 
         val error = assertFailsWith<WireDecodeException> {
-            provider.messages("claude-sonnet-4-5").generate(LanguageModelCallParams(messages = listOf(userMessage("hi"))))
+            provider.messages(ModelId("claude-sonnet-4-5")).generate(LanguageModelCallParams(messages = listOf(userMessage("hi"))))
         }
 
         val message = error.message.orEmpty()
@@ -439,7 +439,7 @@ class AnthropicProviderTest {
         )
 
         val events = drainAllItems(
-            provider.messages("claude-sonnet-4-5").stream(LanguageModelCallParams(messages = listOf(userMessage("hi")))),
+            provider.messages(ModelId("claude-sonnet-4-5")).stream(LanguageModelCallParams(messages = listOf(userMessage("hi")))),
         )
 
         val error = events.filterIsInstance<StreamEvent.Error>().single()
@@ -488,7 +488,7 @@ class AnthropicProviderTest {
         val provider = Anthropic(fixture.httpClient(), AnthropicProviderSettings(baseURL = "https://anthropic.test/v1"))
 
         val events = drainAllItems(
-            provider.messages("claude-sonnet-4-5").stream(
+            provider.messages(ModelId("claude-sonnet-4-5")).stream(
                 LanguageModelCallParams(messages = listOf(userMessage("hi"))),
             ),
         )
@@ -531,7 +531,7 @@ class AnthropicProviderTest {
         fixture.server.start()
         val provider = Anthropic(fixture.httpClient(), AnthropicProviderSettings(baseURL = "https://anthropic.test/v1"))
 
-        val events = drainAllItems(provider.messages("claude-sonnet-4-5").stream(LanguageModelCallParams(messages = listOf(userMessage("hi")))))
+        val events = drainAllItems(provider.messages(ModelId("claude-sonnet-4-5")).stream(LanguageModelCallParams(messages = listOf(userMessage("hi")))))
 
         val errors = events.filterIsInstance<StreamEvent.Error>()
         assertEquals(2, errors.size)
@@ -565,7 +565,7 @@ class AnthropicProviderTest {
         fixture.server.start()
         val provider = Anthropic(fixture.httpClient(), AnthropicProviderSettings(baseURL = "https://anthropic.test/v1"))
         val events = drainAllItems(
-            provider.messages("claude-sonnet-4-5").stream(
+            provider.messages(ModelId("claude-sonnet-4-5")).stream(
                 LanguageModelCallParams(messages = listOf(userMessage("hi"))),
             ),
         )
@@ -591,7 +591,7 @@ class AnthropicProviderTest {
         )
         fixture.server.start()
         val provider = Anthropic(fixture.httpClient(), AnthropicProviderSettings(baseURL = "https://anthropic.test/v1"))
-        provider.messages("claude-opus-4-8").generate(
+        provider.messages(ModelId("claude-opus-4-8")).generate(
             LanguageModelCallParams(messages = listOf(userMessage("hi"))),
         )
         val body = fixture.calls.single().requestBodyJson.jsonObject
@@ -616,7 +616,7 @@ class AnthropicProviderTest {
         fixture.server.start()
         val provider = Anthropic(fixture.httpClient(), AnthropicProviderSettings(baseURL = "https://anthropic.test/v1"))
         // The last message is a pre-filled assistant turn with trailing whitespace.
-        provider.messages("claude-sonnet-4-5").generate(
+        provider.messages(ModelId("claude-sonnet-4-5")).generate(
             LanguageModelCallParams(messages = listOf(userMessage("hi"), assistantMessage("The answer is  \n  "))),
         )
         val body = fixture.calls.single().requestBodyJson.jsonObject
@@ -646,7 +646,7 @@ class AnthropicProviderTest {
         fixture.server.start()
         val provider = Anthropic(fixture.httpClient(), AnthropicProviderSettings(baseURL = "https://anthropic.test/v1"))
 
-        val events = drainAllItems(provider.messages("claude-sonnet-4-5").stream(LanguageModelCallParams(messages = listOf(userMessage("hi")))))
+        val events = drainAllItems(provider.messages(ModelId("claude-sonnet-4-5")).stream(LanguageModelCallParams(messages = listOf(userMessage("hi")))))
 
         val error = events.filterIsInstance<StreamEvent.Error>().single()
         assertTrue(error.message.contains("unknown block index 4"))
@@ -677,7 +677,7 @@ class AnthropicProviderTest {
         fixture.server.start()
         val provider = Anthropic(fixture.httpClient(), AnthropicProviderSettings(baseURL = "https://anthropic.test/v1"))
 
-        val events = drainAllItems(provider.messages("claude-sonnet-4-5").stream(LanguageModelCallParams(messages = listOf(userMessage("hi")))))
+        val events = drainAllItems(provider.messages(ModelId("claude-sonnet-4-5")).stream(LanguageModelCallParams(messages = listOf(userMessage("hi")))))
 
         assertTrue(events.filterIsInstance<StreamEvent.ToolCall>().isEmpty())
         val error = events.filterIsInstance<StreamEvent.Error>().single()

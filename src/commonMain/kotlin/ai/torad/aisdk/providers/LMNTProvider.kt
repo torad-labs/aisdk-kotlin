@@ -26,7 +26,6 @@ import kotlinx.serialization.json.jsonPrimitive
 
 public const val LMNT_VERSION: String = "2.0.33"
 
-public typealias LMNTSpeechModelId = String
 
 @Serializable
 public data class LMNTSpeechModelOptions(
@@ -53,11 +52,11 @@ public class LMNTProvider(
 ) : Provider {
     override val providerId: String = "lmnt"
 
-    public operator fun invoke(modelId: LMNTSpeechModelId = "aurora"): SpeechModel = speech(modelId)
+    public operator fun invoke(modelId: ModelId = ModelId("aurora")): SpeechModel = speech(modelId)
 
-    public fun speech(modelId: LMNTSpeechModelId): SpeechModel = LMNTSpeechModel(client, settings, modelId)
+    public fun speech(modelId: ModelId): SpeechModel = LMNTSpeechModel(client, settings, modelId.value)
 
-    override fun speechModel(modelId: String): SpeechModel = speech(modelId)
+    override fun speechModel(modelId: String): SpeechModel = speech(ModelId(modelId))
     override fun languageModel(modelId: String): LanguageModel = throw NoSuchModelError(providerId, "languageModel", modelId)
     override fun embeddingModel(modelId: String): EmbeddingModel = throw NoSuchModelError(providerId, "embeddingModel", modelId)
     override fun imageModel(modelId: String): ImageModel = throw NoSuchModelError(providerId, "imageModel", modelId)

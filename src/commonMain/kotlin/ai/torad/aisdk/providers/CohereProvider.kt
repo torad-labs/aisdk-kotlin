@@ -22,9 +22,6 @@ import kotlinx.serialization.json.jsonPrimitive
 public const val COHERE_VERSION: String = "3.0.36"
 private const val COHERE_MAX_EMBEDDINGS_PER_CALL: Int = 96
 
-public typealias CohereChatModelId = String
-public typealias CohereEmbeddingModelId = String
-public typealias CohereRerankingModelId = String
 public typealias CohereChatModelOptions = CohereLanguageModelOptions
 public typealias CohereRerankingOptions = CohereRerankingModelOptions
 
@@ -65,22 +62,22 @@ public class CohereProvider(
 ) : Provider {
     override val providerId: String = "cohere"
 
-    public operator fun invoke(modelId: CohereChatModelId): LanguageModel = languageModel(modelId)
+    public operator fun invoke(modelId: ModelId): LanguageModel = languageModel(modelId)
 
     override fun languageModel(modelId: String): LanguageModel =
         CohereChatLanguageModel(client, settings, modelId)
 
-    public fun embedding(modelId: CohereEmbeddingModelId): EmbeddingModel =
-        CohereEmbeddingModel(client, settings, modelId)
+    public fun embedding(modelId: ModelId): EmbeddingModel =
+        CohereEmbeddingModel(client, settings, modelId.value)
 
-    public fun textEmbedding(modelId: CohereEmbeddingModelId): EmbeddingModel = embedding(modelId)
-    public fun textEmbeddingModel(modelId: CohereEmbeddingModelId): EmbeddingModel = embedding(modelId)
+    public fun textEmbedding(modelId: ModelId): EmbeddingModel = embedding(modelId)
+    public fun textEmbeddingModel(modelId: ModelId): EmbeddingModel = embedding(modelId)
 
-    public fun reranking(modelId: CohereRerankingModelId): RerankingModel =
-        CohereRerankingModel(client, settings, modelId)
+    public fun reranking(modelId: ModelId): RerankingModel =
+        CohereRerankingModel(client, settings, modelId.value)
 
-    override fun embeddingModel(modelId: String): EmbeddingModel = embedding(modelId)
-    override fun rerankingModel(modelId: String): RerankingModel = reranking(modelId)
+    override fun embeddingModel(modelId: String): EmbeddingModel = embedding(ModelId(modelId))
+    override fun rerankingModel(modelId: String): RerankingModel = reranking(ModelId(modelId))
 
     override fun imageModel(modelId: String): ImageModel =
         throw NoSuchModelError(providerId, "imageModel", modelId)

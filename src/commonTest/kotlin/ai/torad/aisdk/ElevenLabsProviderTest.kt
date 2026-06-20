@@ -32,7 +32,7 @@ class ElevenLabsProviderTest {
         val model = ElevenLabs(
             fixture.httpClient(),
             ElevenLabsProviderSettings(apiKey = "key"),
-        ).speech("eleven_multilingual_v2")
+        ).speech(ModelId("eleven_multilingual_v2"))
 
         val result = model.generate(
             SpeechGenerationParams(
@@ -93,7 +93,7 @@ class ElevenLabsProviderTest {
         val model = ElevenLabs(
             fixture.httpClient(),
             ElevenLabsProviderSettings(apiKey = "key"),
-        ).transcription("scribe_v1")
+        ).transcription(ModelId("scribe_v1"))
 
         val result = model.transcribe(
             TranscriptionParams(

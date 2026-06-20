@@ -50,7 +50,7 @@ class AnthropicAwsProviderTest {
             ),
         )
 
-        val result = provider("claude-sonnet-4-6").generate(
+        val result = provider(ModelId("claude-sonnet-4-6")).generate(
             LanguageModelCallParams(
                 messages = listOf(userMessage("Hello")),
                 headers = mapOf("X-Request" to "request"),
@@ -105,7 +105,7 @@ class AnthropicAwsProviderTest {
         )
 
         val events = drainAllItems(
-            provider.messages("claude-sonnet-4-6").stream(LanguageModelCallParams(messages = listOf(userMessage("hi")))),
+            provider.messages(ModelId("claude-sonnet-4-6")).stream(LanguageModelCallParams(messages = listOf(userMessage("hi")))),
         )
 
         assertIs<StreamEvent.StreamStart>(events.first())

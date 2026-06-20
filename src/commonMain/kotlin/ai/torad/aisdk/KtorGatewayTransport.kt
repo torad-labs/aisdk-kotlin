@@ -36,7 +36,7 @@ public class KtorGatewayTransport(
 ) : GatewayTransport {
     override suspend fun generateText(
         context: GatewayRequestContext,
-        modelId: GatewayModelId,
+        modelId: ModelId,
         params: LanguageModelCallParams,
     ): LanguageModelResult {
         val body = languageModelRequestBody(params)
@@ -44,7 +44,7 @@ public class KtorGatewayTransport(
             context = context,
             path = "/language-model",
             body = body,
-            headers = languageModelHeaders(modelId, streaming = false),
+            headers = languageModelHeaders(modelId.value, streaming = false),
         )
         return languageModelResultFromJson(
             value = response.value,
@@ -56,13 +56,13 @@ public class KtorGatewayTransport(
 
     override fun streamText(
         context: GatewayRequestContext,
-        modelId: GatewayModelId,
+        modelId: ModelId,
         params: LanguageModelCallParams,
     ): Flow<StreamEvent> {
         val body = languageModelRequestBody(params)
         val url = context.baseUrl.trimEnd('/') + "/language-model"
         val headers = context.headers +
-            languageModelHeaders(modelId, streaming = true) +
+            languageModelHeaders(modelId.value, streaming = true) +
             mapOf(HttpHeaders.Accept to "text/event-stream")
         // Route through the incremental streamSse() helper so SSE events are
         // emitted as they arrive instead of buffering the whole body first.
@@ -89,7 +89,7 @@ public class KtorGatewayTransport(
 
     override suspend fun embed(
         context: GatewayRequestContext,
-        modelId: GatewayEmbeddingModelId,
+        modelId: ModelId,
         params: EmbeddingModelCallParams,
     ): EmbeddingModelResult {
         val body = buildJsonObject {
@@ -102,7 +102,7 @@ public class KtorGatewayTransport(
             body = body,
             headers = mapOf(
                 "ai-embedding-model-specification-version" to "3",
-                "ai-model-id" to modelId,
+                "ai-model-id" to modelId.value,
             ) + params.headers,
         )
         val value = response.value.jsonObject
@@ -118,7 +118,7 @@ public class KtorGatewayTransport(
 
     override suspend fun generateImage(
         context: GatewayRequestContext,
-        modelId: GatewayImageModelId,
+        modelId: ModelId,
         params: ImageGenerationParams,
     ): ImageModelResult {
         val body = buildJsonObject {
@@ -134,7 +134,7 @@ public class KtorGatewayTransport(
             body = body,
             headers = mapOf(
                 "ai-image-model-specification-version" to "3",
-                "ai-model-id" to modelId,
+                "ai-model-id" to modelId.value,
             ) + params.headers,
         )
         val value = response.value.jsonObject
@@ -144,7 +144,7 @@ public class KtorGatewayTransport(
             },
             warnings = callWarnings(value["warnings"]),
             response = LanguageModelResponseMetadata(
-                modelId = modelId,
+                modelId = modelId.value,
                 headers = response.headers,
                 body = response.value
             ),
@@ -154,7 +154,7 @@ public class KtorGatewayTransport(
 
     override suspend fun generateVideo(
         context: GatewayRequestContext,
-        modelId: GatewayVideoModelId,
+        modelId: ModelId,
         params: VideoGenerationParams,
     ): VideoModelResult {
         val body = buildJsonObject {
@@ -192,7 +192,7 @@ public class KtorGatewayTransport(
             url = context.baseUrl.trimEnd('/') + "/video-model",
             headers = context.headers + mapOf(
                 "ai-video-model-specification-version" to "3",
-                "ai-model-id" to modelId,
+                "ai-model-id" to modelId.value,
                 HttpHeaders.Accept to "text/event-stream",
             ) + params.headers,
             body = body,
@@ -228,14 +228,14 @@ public class KtorGatewayTransport(
                 )
             },
             warnings = callWarnings(event["warnings"]),
-            response = LanguageModelResponseMetadata(modelId = modelId, headers = sseHeaders),
+            response = LanguageModelResponseMetadata(modelId = modelId.value, headers = sseHeaders),
             providerMetadata = event["providerMetadata"].let { if (it is JsonObject) ProviderMetadata.Raw(it) else ProviderMetadata.None },
         )
     }
 
     override suspend fun rerank(
         context: GatewayRequestContext,
-        modelId: GatewayRerankingModelId,
+        modelId: ModelId,
         params: RerankingParams,
     ): RerankingModelResult {
         val body = buildJsonObject {
@@ -250,7 +250,7 @@ public class KtorGatewayTransport(
             body = body,
             headers = mapOf(
                 "ai-reranking-model-specification-version" to "3",
-                "ai-model-id" to modelId,
+                "ai-model-id" to modelId.value,
             ) + params.headers,
         )
         val value = response.value.jsonObject

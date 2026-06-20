@@ -28,7 +28,6 @@ import kotlinx.serialization.json.jsonPrimitive
 
 public const val REVAI_VERSION: String = "2.0.33"
 
-public typealias RevaiTranscriptionModelId = String
 
 @Serializable
 public data class RevaiTranscriptionModelOptions(
@@ -72,14 +71,14 @@ public class RevaiProvider(
 ) : Provider {
     override val providerId: String = "revai"
 
-    public operator fun invoke(modelId: RevaiTranscriptionModelId = "machine"): TranscriptionModel = transcription(modelId)
+    public operator fun invoke(modelId: ModelId = ModelId("machine")): TranscriptionModel = transcription(modelId)
 
-    public fun transcription(modelId: RevaiTranscriptionModelId): TranscriptionModel =
-        RevaiTranscriptionModel(client, settings, modelId)
+    public fun transcription(modelId: ModelId): TranscriptionModel =
+        RevaiTranscriptionModel(client, settings, modelId.value)
 
     public fun textEmbeddingModel(modelId: String): Nothing = throw NoSuchModelError(providerId, "embeddingModel", modelId)
 
-    override fun transcriptionModel(modelId: String): TranscriptionModel = transcription(modelId)
+    override fun transcriptionModel(modelId: String): TranscriptionModel = transcription(ModelId(modelId))
     override fun languageModel(modelId: String): LanguageModel = throw NoSuchModelError(providerId, "languageModel", modelId)
     override fun embeddingModel(modelId: String): EmbeddingModel = throw NoSuchModelError(providerId, "embeddingModel", modelId)
     override fun imageModel(modelId: String): ImageModel = throw NoSuchModelError(providerId, "imageModel", modelId)

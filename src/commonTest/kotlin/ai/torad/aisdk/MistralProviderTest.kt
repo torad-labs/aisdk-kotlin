@@ -49,7 +49,7 @@ class MistralProviderTest {
             MistralProviderSettings(apiKey = "key", headers = mapOf("X-Provider" to "provider")),
         )
 
-        val result = provider.chat("mistral-small-latest").generate(
+        val result = provider.chat(ModelId("mistral-small-latest")).generate(
             LanguageModelCallParams(
                 messages = listOf(userMessage("Hello")),
                 maxOutputTokens = 256,
@@ -68,7 +68,7 @@ class MistralProviderTest {
             ),
         )
 
-        assertEquals("mistral.chat", provider("mistral-small-latest").provider)
+        assertEquals("mistral.chat", provider(ModelId("mistral-small-latest")).provider)
         assertEquals("bonjour", result.text)
         assertEquals("thinking", result.content.filterIsInstance<ContentPart.Reasoning>().single().text)
         assertEquals(13, result.usage.promptTokens)
@@ -108,7 +108,7 @@ class MistralProviderTest {
             MistralProviderSettings(baseURL = "https://mistral.test/v1", apiKey = "key"),
         )
 
-        val result = provider.embedding("mistral-embed").embed(
+        val result = provider.embedding(ModelId("mistral-embed")).embed(
             EmbeddingModelCallParams(
                 values = listOf("sunny day", "rainy city"),
                 headers = mapOf("X-Request" to "request"),
@@ -116,10 +116,10 @@ class MistralProviderTest {
         )
 
         assertEquals("mistral.embedding", provider.embeddingModel("mistral-embed").provider)
-        assertEquals(provider.embedding("mistral-embed").modelId, provider.textEmbedding("mistral-embed").modelId)
-        assertEquals(provider.embedding("mistral-embed").modelId, provider.textEmbeddingModel("mistral-embed").modelId)
-        assertEquals(32, provider.embedding("mistral-embed").maxEmbeddingsPerCall)
-        assertEquals(false, provider.embedding("mistral-embed").supportsParallelCalls)
+        assertEquals(provider.embedding(ModelId("mistral-embed")).modelId, provider.textEmbedding(ModelId("mistral-embed")).modelId)
+        assertEquals(provider.embedding(ModelId("mistral-embed")).modelId, provider.textEmbeddingModel(ModelId("mistral-embed")).modelId)
+        assertEquals(32, provider.embedding(ModelId("mistral-embed")).maxEmbeddingsPerCall)
+        assertEquals(false, provider.embedding(ModelId("mistral-embed")).supportsParallelCalls)
         assertEquals(listOf(listOf(3f, 4f), listOf(1f, 2f)), result.embeddings)
         assertEquals(8, result.usage.tokens)
         val call = fixture.calls.single()
@@ -148,7 +148,7 @@ class MistralProviderTest {
         )
         fixture.server.start()
         val provider = Mistral(fixture.httpClient(), MistralProviderSettings(apiKey = "key"))
-        provider.chat("mistral-small-latest").generate(
+        provider.chat(ModelId("mistral-small-latest")).generate(
             LanguageModelCallParams(
                 messages = listOf(
                     userMessage("go"),
@@ -233,11 +233,11 @@ class MistralProviderTest {
         fixture.server.start()
         val provider = Mistral(fixture.httpClient(), MistralProviderSettings(apiKey = "key"))
 
-        val generated = provider.chat("magistral-small-2507").generate(
+        val generated = provider.chat(ModelId("magistral-small-2507")).generate(
             LanguageModelCallParams(messages = listOf(userMessage("hi"))),
         )
         val events = drainAllItems(
-            provider.chat("magistral-small-2507").stream(LanguageModelCallParams(messages = listOf(userMessage("hi")))),
+            provider.chat(ModelId("magistral-small-2507")).stream(LanguageModelCallParams(messages = listOf(userMessage("hi")))),
         )
 
         assertEquals("Final answer.", generated.text)

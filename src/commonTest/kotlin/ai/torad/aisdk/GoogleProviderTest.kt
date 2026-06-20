@@ -76,7 +76,7 @@ class GoogleProviderTest {
             ),
         )
 
-        val result = provider("gemini-2.5-flash").generate(
+        val result = provider(ModelId("gemini-2.5-flash")).generate(
             LanguageModelCallParams(
                 messages = listOf(
                     systemMessage("Follow policy."),
@@ -167,7 +167,7 @@ class GoogleProviderTest {
         )
 
         val events = drainAllItems(
-            provider.chat("gemini-2.5-flash").stream(LanguageModelCallParams(messages = listOf(userMessage("hi")))),
+            provider.chat(ModelId("gemini-2.5-flash")).stream(LanguageModelCallParams(messages = listOf(userMessage("hi")))),
         )
 
         assertIs<StreamEvent.StreamStart>(events.first())
@@ -222,7 +222,7 @@ class GoogleProviderTest {
             GoogleGenerativeAIProviderSettings(apiKey = "key", baseURL = "https://google.test/v1beta"),
         )
 
-        val result = provider("gemini-2.5-flash").generate(
+        val result = provider(ModelId("gemini-2.5-flash")).generate(
             LanguageModelCallParams(
                 messages = listOf(userMessage("hi")),
                 tools = listOf(LanguageModelTool("lookup", "Lookup.", objectSchema("city").toString())),
@@ -255,7 +255,7 @@ class GoogleProviderTest {
             fixture.httpClient(),
             GoogleGenerativeAIProviderSettings(apiKey = "key", baseURL = "https://google.test/v1beta"),
         )
-        val result = provider("gemini-2.5-flash").generate(
+        val result = provider(ModelId("gemini-2.5-flash")).generate(
             LanguageModelCallParams(messages = listOf(userMessage("hi"))),
         )
         // Upstream maps MALFORMED_FUNCTION_CALL to error, not content-filter.
@@ -286,7 +286,7 @@ class GoogleProviderTest {
             GoogleGenerativeAIProviderSettings(apiKey = "key", baseURL = "https://google.test/v1beta"),
         )
 
-        val result = provider("gemini-2.5-flash").generate(
+        val result = provider(ModelId("gemini-2.5-flash")).generate(
             LanguageModelCallParams(
                 messages = listOf(userMessage("hi")),
                 toolChoice = ToolChoice.Required,
@@ -319,7 +319,7 @@ class GoogleProviderTest {
         )
 
         val events = drainAllItems(
-            provider.chat("gemini-2.5-flash").stream(LanguageModelCallParams(messages = listOf(userMessage("hi")))),
+            provider.chat(ModelId("gemini-2.5-flash")).stream(LanguageModelCallParams(messages = listOf(userMessage("hi")))),
         )
 
         val error = events.filterIsInstance<StreamEvent.Error>().single()
@@ -375,7 +375,7 @@ class GoogleProviderTest {
             ),
         )
 
-        val embeddings = provider.embedding("text-embedding-004").embed(
+        val embeddings = provider.embedding(ModelId("text-embedding-004")).embed(
             EmbeddingModelCallParams(
                 values = listOf("one", "two"),
                 providerOptions = ProviderOptions.Raw(JsonObject(mapOf(
@@ -386,7 +386,7 @@ class GoogleProviderTest {
                 ))),
             ),
         )
-        val image = provider.image("imagen-4.0-generate-001").generate(
+        val image = provider.image(ModelId("imagen-4.0-generate-001")).generate(
             ImageGenerationParams(
                 prompt = "A product render",
                 n = 1,
@@ -394,7 +394,7 @@ class GoogleProviderTest {
                 providerOptions = ProviderOptions.Raw(JsonObject(mapOf("google" to buildJsonObject { put("personGeneration", JsonPrimitive("dont_allow")) }))),
             ),
         )
-        val video = provider.video("veo-3.1-generate-preview").generate(
+        val video = provider.video(ModelId("veo-3.1-generate-preview")).generate(
             VideoGenerationParams(
                 prompt = "A clean motion shot",
                 n = 1,
@@ -406,8 +406,8 @@ class GoogleProviderTest {
         )
 
         assertEquals(listOf(1.0f, 2.0f), embeddings.embeddings.first())
-        assertEquals(2048, provider.embedding("text-embedding-004").maxEmbeddingsPerCall)
-        assertEquals(true, provider.embedding("text-embedding-004").supportsParallelCalls)
+        assertEquals(2048, provider.embedding(ModelId("text-embedding-004")).maxEmbeddingsPerCall)
+        assertEquals(true, provider.embedding(ModelId("text-embedding-004")).supportsParallelCalls)
         assertEquals("image", Base64Codec.decode(image.images.single().base64).decodeToString())
         val generatedVideo = video.videos.single()
         assertEquals("https://videos.example/video.mp4", generatedVideo.url)
@@ -461,10 +461,10 @@ class GoogleProviderTest {
         )
 
         val imageError = assertFailsWith<WireDecodeException> {
-            provider.image("imagen-4.0-generate-001").generate(ImageGenerationParams(prompt = "x"))
+            provider.image(ModelId("imagen-4.0-generate-001")).generate(ImageGenerationParams(prompt = "x"))
         }
         val videoError = assertFailsWith<WireDecodeException> {
-            provider.video("veo-3.1-generate-preview").generate(VideoGenerationParams(prompt = "x"))
+            provider.video(ModelId("veo-3.1-generate-preview")).generate(VideoGenerationParams(prompt = "x"))
         }
 
         assertTrue(imageError.message.orEmpty().contains("bytesBase64Encoded"))
@@ -534,7 +534,7 @@ class GoogleProviderTest {
             ),
         )
 
-        val result = provider.interactions("gemini-2.5-flash").generate(
+        val result = provider.interactions(ModelId("gemini-2.5-flash")).generate(
             LanguageModelCallParams(
                 messages = listOf(
                     systemMessage("Follow policy."),
@@ -635,7 +635,7 @@ class GoogleProviderTest {
         )
 
         val events = drainAllItems(
-            provider.interactions("gemini-2.5-flash").stream(LanguageModelCallParams(messages = listOf(userMessage("hi")))),
+            provider.interactions(ModelId("gemini-2.5-flash")).stream(LanguageModelCallParams(messages = listOf(userMessage("hi")))),
         )
 
         assertIs<StreamEvent.StreamStart>(events.first())

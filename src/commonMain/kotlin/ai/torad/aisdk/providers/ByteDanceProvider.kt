@@ -22,7 +22,6 @@ import kotlin.math.ceil
 
 public const val BYTEDANCE_VERSION: String = "1.0.15"
 
-public typealias ByteDanceVideoModelId = String
 
 @Serializable
 public data class ByteDanceVideoProviderOptions(
@@ -48,8 +47,8 @@ public data class ByteDanceProviderSettings(
 )
 
 public interface ByteDanceProvider : Provider {
-    public fun video(modelId: ByteDanceVideoModelId): VideoModel
-    override fun videoModel(modelId: String): VideoModel = video(modelId)
+    public fun video(modelId: ModelId): VideoModel
+    override fun videoModel(modelId: String): VideoModel = video(ModelId(modelId))
 }
 
 public fun ByteDance(
@@ -59,7 +58,7 @@ public fun ByteDance(
 
 public val byteDance: ByteDanceProvider = object : ByteDanceProvider {
     override val providerId: String = "bytedance"
-    override fun video(modelId: String): VideoModel =
+    override fun video(modelId: ModelId): VideoModel =
         throw UnsupportedFunctionalityError("bytedance", "ByteDance provider is not configured. Use ByteDance(client, settings).")
 }
 
@@ -68,7 +67,7 @@ private class DefaultByteDanceProvider(
     private val settings: ByteDanceProviderSettings,
 ) : ByteDanceProvider {
     override val providerId: String = "bytedance"
-    override fun video(modelId: String): VideoModel = ByteDanceVideoModel(client, settings, modelId)
+    override fun video(modelId: ModelId): VideoModel = ByteDanceVideoModel(client, settings, modelId.value)
     override fun languageModel(modelId: String): LanguageModel = throw NoSuchModelError(providerId, "languageModel", modelId)
     override fun embeddingModel(modelId: String): EmbeddingModel = throw NoSuchModelError(providerId, "embeddingModel", modelId)
     override fun imageModel(modelId: String): ImageModel = throw NoSuchModelError(providerId, "imageModel", modelId)

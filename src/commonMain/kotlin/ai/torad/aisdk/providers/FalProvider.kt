@@ -28,10 +28,6 @@ import kotlinx.serialization.json.jsonPrimitive
 
 public const val FAL_VERSION: String = "2.0.34"
 
-public typealias FalImageModelId = String
-public typealias FalSpeechModelId = String
-public typealias FalTranscriptionModelId = String
-public typealias FalVideoModelId = String
 public typealias FalImageProviderOptions = FalImageModelOptions
 public typealias FalVideoProviderOptions = FalVideoModelOptions
 public typealias FalErrorData = JsonObject
@@ -87,16 +83,16 @@ public class FalProvider(
 ) : Provider {
     override val providerId: String = "fal"
 
-    public fun image(modelId: FalImageModelId): ImageModel = FalImageModel(client, settings, modelId)
-    public fun speech(modelId: FalSpeechModelId): SpeechModel = FalSpeechModel(client, settings, modelId)
-    public fun transcription(modelId: FalTranscriptionModelId): TranscriptionModel = FalTranscriptionModel(client, settings, modelId)
-    public fun video(modelId: FalVideoModelId): VideoModel = FalVideoModel(client, settings, modelId)
+    public fun image(modelId: ModelId): ImageModel = FalImageModel(client, settings, modelId.value)
+    public fun speech(modelId: ModelId): SpeechModel = FalSpeechModel(client, settings, modelId.value)
+    public fun transcription(modelId: ModelId): TranscriptionModel = FalTranscriptionModel(client, settings, modelId.value)
+    public fun video(modelId: ModelId): VideoModel = FalVideoModel(client, settings, modelId.value)
     public fun textEmbeddingModel(modelId: String): Nothing = throw NoSuchModelError(providerId, "embeddingModel", modelId)
 
-    override fun imageModel(modelId: String): ImageModel = image(modelId)
-    override fun speechModel(modelId: String): SpeechModel = speech(modelId)
-    override fun transcriptionModel(modelId: String): TranscriptionModel = transcription(modelId)
-    override fun videoModel(modelId: String): VideoModel = video(modelId)
+    override fun imageModel(modelId: String): ImageModel = image(ModelId(modelId))
+    override fun speechModel(modelId: String): SpeechModel = speech(ModelId(modelId))
+    override fun transcriptionModel(modelId: String): TranscriptionModel = transcription(ModelId(modelId))
+    override fun videoModel(modelId: String): VideoModel = video(ModelId(modelId))
     override fun languageModel(modelId: String): LanguageModel = throw NoSuchModelError(providerId, "languageModel", modelId)
     override fun embeddingModel(modelId: String): EmbeddingModel = throw NoSuchModelError(providerId, "embeddingModel", modelId)
 }

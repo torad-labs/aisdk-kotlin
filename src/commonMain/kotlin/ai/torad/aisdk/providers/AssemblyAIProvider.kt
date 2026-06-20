@@ -25,7 +25,6 @@ import kotlinx.serialization.json.jsonPrimitive
 
 public const val ASSEMBLYAI_VERSION: String = "2.0.33"
 
-public typealias AssemblyAITranscriptionModelId = String
 
 @Serializable
 public data class AssemblyAICustomSpelling(
@@ -84,14 +83,14 @@ public class AssemblyAIProvider(
 ) : Provider {
     override val providerId: String = "assemblyai"
 
-    public operator fun invoke(modelId: AssemblyAITranscriptionModelId = "best"): TranscriptionModel = transcription(modelId)
+    public operator fun invoke(modelId: ModelId = ModelId("best")): TranscriptionModel = transcription(modelId)
 
-    public fun transcription(modelId: AssemblyAITranscriptionModelId): TranscriptionModel =
-        AssemblyAITranscriptionModel(client, settings, modelId)
+    public fun transcription(modelId: ModelId): TranscriptionModel =
+        AssemblyAITranscriptionModel(client, settings, modelId.value)
 
     public fun textEmbeddingModel(modelId: String): Nothing = throw NoSuchModelError(providerId, "embeddingModel", modelId)
 
-    override fun transcriptionModel(modelId: String): TranscriptionModel = transcription(modelId)
+    override fun transcriptionModel(modelId: String): TranscriptionModel = transcription(ModelId(modelId))
     override fun languageModel(modelId: String): LanguageModel = throw NoSuchModelError(providerId, "languageModel", modelId)
     override fun embeddingModel(modelId: String): EmbeddingModel = throw NoSuchModelError(providerId, "embeddingModel", modelId)
     override fun imageModel(modelId: String): ImageModel = throw NoSuchModelError(providerId, "imageModel", modelId)

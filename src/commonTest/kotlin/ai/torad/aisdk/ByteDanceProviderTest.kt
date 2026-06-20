@@ -41,7 +41,7 @@ class ByteDanceProviderTest {
         val model = ByteDance(
             fixture.httpClient(),
             ByteDanceProviderSettings(apiKey = "key", baseURL = "https://ark.test/api/v3", headers = mapOf("X-Test" to "1")),
-        ).video("seedance-1-0-pro-250528")
+        ).video(ModelId("seedance-1-0-pro-250528"))
 
         val result = model.generate(
             VideoGenerationParams(
@@ -128,7 +128,7 @@ class ByteDanceProviderTest {
         val provider = ByteDance(fixture.httpClient(), ByteDanceProviderSettings(apiKey = "key", baseURL = "https://ark.test/api/v3"))
 
         assertFailsWith<AiSdkException> {
-            provider.video("seedance").generate(
+            provider.video(ModelId("seedance")).generate(
                 VideoGenerationParams(
                     prompt = "x",
                     providerOptions = ProviderOptions.Raw(JsonObject(mapOf("bytedance" to buildJsonObject {
@@ -141,7 +141,7 @@ class ByteDanceProviderTest {
         assertFailsWith<NoSuchModelError> { provider.languageModel("model") }
         assertFailsWith<NoSuchModelError> { provider.embeddingModel("embed") }
         assertFailsWith<NoSuchModelError> { provider.imageModel("image") }
-        assertFailsWith<AiSdkException> { byteDance.video("seedance") }
+        assertFailsWith<AiSdkException> { byteDance.video(ModelId("seedance")) }
     }
 
     private fun Map<String, String>.headerValue(name: String): String? =

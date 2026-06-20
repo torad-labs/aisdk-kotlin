@@ -328,20 +328,20 @@ abstract interface ai.torad.aisdk.providers/AnthropicAwsProvider : ai.torad.aisd
     abstract val tools // ai.torad.aisdk.providers/AnthropicAwsProvider.tools|{}tools[0]
         abstract fun <get-tools>(): ai.torad.aisdk.providers/AnthropicTools // ai.torad.aisdk.providers/AnthropicAwsProvider.tools.<get-tools>|<get-tools>(){}[0]
 
-    open fun chat(kotlin/String): ai.torad.aisdk/LanguageModel // ai.torad.aisdk.providers/AnthropicAwsProvider.chat|chat(kotlin.String){}[0]
-    open fun invoke(kotlin/String): ai.torad.aisdk/LanguageModel // ai.torad.aisdk.providers/AnthropicAwsProvider.invoke|invoke(kotlin.String){}[0]
-    open fun messages(kotlin/String): ai.torad.aisdk/LanguageModel // ai.torad.aisdk.providers/AnthropicAwsProvider.messages|messages(kotlin.String){}[0]
+    open fun chat(ai.torad.aisdk/ModelId): ai.torad.aisdk/LanguageModel // ai.torad.aisdk.providers/AnthropicAwsProvider.chat|chat(ai.torad.aisdk.ModelId){}[0]
+    open fun invoke(ai.torad.aisdk/ModelId): ai.torad.aisdk/LanguageModel // ai.torad.aisdk.providers/AnthropicAwsProvider.invoke|invoke(ai.torad.aisdk.ModelId){}[0]
+    open fun messages(ai.torad.aisdk/ModelId): ai.torad.aisdk/LanguageModel // ai.torad.aisdk.providers/AnthropicAwsProvider.messages|messages(ai.torad.aisdk.ModelId){}[0]
     open fun textEmbeddingModel(kotlin/String): kotlin/Nothing // ai.torad.aisdk.providers/AnthropicAwsProvider.textEmbeddingModel|textEmbeddingModel(kotlin.String){}[0]
 }
 
 abstract interface ai.torad.aisdk.providers/BlackForestLabsProvider : ai.torad.aisdk/Provider { // ai.torad.aisdk.providers/BlackForestLabsProvider|null[0]
-    abstract fun image(kotlin/String): ai.torad.aisdk/ImageModel // ai.torad.aisdk.providers/BlackForestLabsProvider.image|image(kotlin.String){}[0]
+    abstract fun image(ai.torad.aisdk/ModelId): ai.torad.aisdk/ImageModel // ai.torad.aisdk.providers/BlackForestLabsProvider.image|image(ai.torad.aisdk.ModelId){}[0]
     open fun imageModel(kotlin/String): ai.torad.aisdk/ImageModel // ai.torad.aisdk.providers/BlackForestLabsProvider.imageModel|imageModel(kotlin.String){}[0]
     open fun textEmbeddingModel(kotlin/String): kotlin/Nothing // ai.torad.aisdk.providers/BlackForestLabsProvider.textEmbeddingModel|textEmbeddingModel(kotlin.String){}[0]
 }
 
 abstract interface ai.torad.aisdk.providers/ByteDanceProvider : ai.torad.aisdk/Provider { // ai.torad.aisdk.providers/ByteDanceProvider|null[0]
-    abstract fun video(kotlin/String): ai.torad.aisdk/VideoModel // ai.torad.aisdk.providers/ByteDanceProvider.video|video(kotlin.String){}[0]
+    abstract fun video(ai.torad.aisdk/ModelId): ai.torad.aisdk/VideoModel // ai.torad.aisdk.providers/ByteDanceProvider.video|video(ai.torad.aisdk.ModelId){}[0]
     open fun videoModel(kotlin/String): ai.torad.aisdk/VideoModel // ai.torad.aisdk.providers/ByteDanceProvider.videoModel|videoModel(kotlin.String){}[0]
 }
 
@@ -422,26 +422,26 @@ abstract interface ai.torad.aisdk/GatewayProvider : ai.torad.aisdk/Provider { //
     abstract suspend fun getCredits(): ai.torad.aisdk/GatewayCreditsResponse // ai.torad.aisdk/GatewayProvider.getCredits|getCredits(){}[0]
     abstract suspend fun getGenerationInfo(ai.torad.aisdk/GatewayGenerationInfoParams): ai.torad.aisdk/GatewayGenerationInfo // ai.torad.aisdk/GatewayProvider.getGenerationInfo|getGenerationInfo(ai.torad.aisdk.GatewayGenerationInfoParams){}[0]
     abstract suspend fun getSpendReport(ai.torad.aisdk/GatewaySpendReportParams): ai.torad.aisdk/GatewaySpendReportResponse // ai.torad.aisdk/GatewayProvider.getSpendReport|getSpendReport(ai.torad.aisdk.GatewaySpendReportParams){}[0]
-    open fun chat(kotlin/String): ai.torad.aisdk/LanguageModel // ai.torad.aisdk/GatewayProvider.chat|chat(kotlin.String){}[0]
-    open fun embedding(kotlin/String): ai.torad.aisdk/EmbeddingModel // ai.torad.aisdk/GatewayProvider.embedding|embedding(kotlin.String){}[0]
-    open fun image(kotlin/String): ai.torad.aisdk/ImageModel // ai.torad.aisdk/GatewayProvider.image|image(kotlin.String){}[0]
-    open fun invoke(kotlin/String): ai.torad.aisdk/LanguageModel // ai.torad.aisdk/GatewayProvider.invoke|invoke(kotlin.String){}[0]
-    open fun reranking(kotlin/String): ai.torad.aisdk/RerankingModel // ai.torad.aisdk/GatewayProvider.reranking|reranking(kotlin.String){}[0]
-    open fun textEmbeddingModel(kotlin/String): ai.torad.aisdk/EmbeddingModel // ai.torad.aisdk/GatewayProvider.textEmbeddingModel|textEmbeddingModel(kotlin.String){}[0]
-    open fun video(kotlin/String): ai.torad.aisdk/VideoModel // ai.torad.aisdk/GatewayProvider.video|video(kotlin.String){}[0]
+    open fun chat(ai.torad.aisdk/ModelId): ai.torad.aisdk/LanguageModel // ai.torad.aisdk/GatewayProvider.chat|chat(ai.torad.aisdk.ModelId){}[0]
+    open fun embedding(ai.torad.aisdk/ModelId): ai.torad.aisdk/EmbeddingModel // ai.torad.aisdk/GatewayProvider.embedding|embedding(ai.torad.aisdk.ModelId){}[0]
+    open fun image(ai.torad.aisdk/ModelId): ai.torad.aisdk/ImageModel // ai.torad.aisdk/GatewayProvider.image|image(ai.torad.aisdk.ModelId){}[0]
+    open fun invoke(ai.torad.aisdk/ModelId): ai.torad.aisdk/LanguageModel // ai.torad.aisdk/GatewayProvider.invoke|invoke(ai.torad.aisdk.ModelId){}[0]
+    open fun reranking(ai.torad.aisdk/ModelId): ai.torad.aisdk/RerankingModel // ai.torad.aisdk/GatewayProvider.reranking|reranking(ai.torad.aisdk.ModelId){}[0]
+    open fun textEmbeddingModel(ai.torad.aisdk/ModelId): ai.torad.aisdk/EmbeddingModel // ai.torad.aisdk/GatewayProvider.textEmbeddingModel|textEmbeddingModel(ai.torad.aisdk.ModelId){}[0]
+    open fun video(ai.torad.aisdk/ModelId): ai.torad.aisdk/VideoModel // ai.torad.aisdk/GatewayProvider.video|video(ai.torad.aisdk.ModelId){}[0]
 }
 
 abstract interface ai.torad.aisdk/GatewayTransport { // ai.torad.aisdk/GatewayTransport|null[0]
-    open fun streamText(ai.torad.aisdk/GatewayRequestContext, kotlin/String, ai.torad.aisdk/LanguageModelCallParams): kotlinx.coroutines.flow/Flow<ai.torad.aisdk/StreamEvent> // ai.torad.aisdk/GatewayTransport.streamText|streamText(ai.torad.aisdk.GatewayRequestContext;kotlin.String;ai.torad.aisdk.LanguageModelCallParams){}[0]
-    open suspend fun embed(ai.torad.aisdk/GatewayRequestContext, kotlin/String, ai.torad.aisdk/EmbeddingModelCallParams): ai.torad.aisdk/EmbeddingModelResult // ai.torad.aisdk/GatewayTransport.embed|embed(ai.torad.aisdk.GatewayRequestContext;kotlin.String;ai.torad.aisdk.EmbeddingModelCallParams){}[0]
-    open suspend fun generateImage(ai.torad.aisdk/GatewayRequestContext, kotlin/String, ai.torad.aisdk/ImageGenerationParams): ai.torad.aisdk/ImageModelResult // ai.torad.aisdk/GatewayTransport.generateImage|generateImage(ai.torad.aisdk.GatewayRequestContext;kotlin.String;ai.torad.aisdk.ImageGenerationParams){}[0]
-    open suspend fun generateText(ai.torad.aisdk/GatewayRequestContext, kotlin/String, ai.torad.aisdk/LanguageModelCallParams): ai.torad.aisdk/LanguageModelResult // ai.torad.aisdk/GatewayTransport.generateText|generateText(ai.torad.aisdk.GatewayRequestContext;kotlin.String;ai.torad.aisdk.LanguageModelCallParams){}[0]
-    open suspend fun generateVideo(ai.torad.aisdk/GatewayRequestContext, kotlin/String, ai.torad.aisdk/VideoGenerationParams): ai.torad.aisdk/VideoModelResult // ai.torad.aisdk/GatewayTransport.generateVideo|generateVideo(ai.torad.aisdk.GatewayRequestContext;kotlin.String;ai.torad.aisdk.VideoGenerationParams){}[0]
+    open fun streamText(ai.torad.aisdk/GatewayRequestContext, ai.torad.aisdk/ModelId, ai.torad.aisdk/LanguageModelCallParams): kotlinx.coroutines.flow/Flow<ai.torad.aisdk/StreamEvent> // ai.torad.aisdk/GatewayTransport.streamText|streamText(ai.torad.aisdk.GatewayRequestContext;ai.torad.aisdk.ModelId;ai.torad.aisdk.LanguageModelCallParams){}[0]
+    open suspend fun embed(ai.torad.aisdk/GatewayRequestContext, ai.torad.aisdk/ModelId, ai.torad.aisdk/EmbeddingModelCallParams): ai.torad.aisdk/EmbeddingModelResult // ai.torad.aisdk/GatewayTransport.embed|embed(ai.torad.aisdk.GatewayRequestContext;ai.torad.aisdk.ModelId;ai.torad.aisdk.EmbeddingModelCallParams){}[0]
+    open suspend fun generateImage(ai.torad.aisdk/GatewayRequestContext, ai.torad.aisdk/ModelId, ai.torad.aisdk/ImageGenerationParams): ai.torad.aisdk/ImageModelResult // ai.torad.aisdk/GatewayTransport.generateImage|generateImage(ai.torad.aisdk.GatewayRequestContext;ai.torad.aisdk.ModelId;ai.torad.aisdk.ImageGenerationParams){}[0]
+    open suspend fun generateText(ai.torad.aisdk/GatewayRequestContext, ai.torad.aisdk/ModelId, ai.torad.aisdk/LanguageModelCallParams): ai.torad.aisdk/LanguageModelResult // ai.torad.aisdk/GatewayTransport.generateText|generateText(ai.torad.aisdk.GatewayRequestContext;ai.torad.aisdk.ModelId;ai.torad.aisdk.LanguageModelCallParams){}[0]
+    open suspend fun generateVideo(ai.torad.aisdk/GatewayRequestContext, ai.torad.aisdk/ModelId, ai.torad.aisdk/VideoGenerationParams): ai.torad.aisdk/VideoModelResult // ai.torad.aisdk/GatewayTransport.generateVideo|generateVideo(ai.torad.aisdk.GatewayRequestContext;ai.torad.aisdk.ModelId;ai.torad.aisdk.VideoGenerationParams){}[0]
     open suspend fun getAvailableModels(ai.torad.aisdk/GatewayRequestContext): ai.torad.aisdk/GatewayFetchMetadataResponse // ai.torad.aisdk/GatewayTransport.getAvailableModels|getAvailableModels(ai.torad.aisdk.GatewayRequestContext){}[0]
     open suspend fun getCredits(ai.torad.aisdk/GatewayRequestContext): ai.torad.aisdk/GatewayCreditsResponse // ai.torad.aisdk/GatewayTransport.getCredits|getCredits(ai.torad.aisdk.GatewayRequestContext){}[0]
     open suspend fun getGenerationInfo(ai.torad.aisdk/GatewayRequestContext, ai.torad.aisdk/GatewayGenerationInfoParams): ai.torad.aisdk/GatewayGenerationInfo // ai.torad.aisdk/GatewayTransport.getGenerationInfo|getGenerationInfo(ai.torad.aisdk.GatewayRequestContext;ai.torad.aisdk.GatewayGenerationInfoParams){}[0]
     open suspend fun getSpendReport(ai.torad.aisdk/GatewayRequestContext, ai.torad.aisdk/GatewaySpendReportParams): ai.torad.aisdk/GatewaySpendReportResponse // ai.torad.aisdk/GatewayTransport.getSpendReport|getSpendReport(ai.torad.aisdk.GatewayRequestContext;ai.torad.aisdk.GatewaySpendReportParams){}[0]
-    open suspend fun rerank(ai.torad.aisdk/GatewayRequestContext, kotlin/String, ai.torad.aisdk/RerankingParams): ai.torad.aisdk/RerankingModelResult // ai.torad.aisdk/GatewayTransport.rerank|rerank(ai.torad.aisdk.GatewayRequestContext;kotlin.String;ai.torad.aisdk.RerankingParams){}[0]
+    open suspend fun rerank(ai.torad.aisdk/GatewayRequestContext, ai.torad.aisdk/ModelId, ai.torad.aisdk/RerankingParams): ai.torad.aisdk/RerankingModelResult // ai.torad.aisdk/GatewayTransport.rerank|rerank(ai.torad.aisdk.GatewayRequestContext;ai.torad.aisdk.ModelId;ai.torad.aisdk.RerankingParams){}[0]
 }
 
 abstract interface ai.torad.aisdk/ImageModel { // ai.torad.aisdk/ImageModel|null[0]
@@ -3510,12 +3510,12 @@ final class ai.torad.aisdk.providers/AlibabaProvider : ai.torad.aisdk/Provider {
     final val settings // ai.torad.aisdk.providers/AlibabaProvider.settings|{}settings[0]
         final fun <get-settings>(): ai.torad.aisdk.providers/AlibabaProviderSettings // ai.torad.aisdk.providers/AlibabaProvider.settings.<get-settings>|<get-settings>(){}[0]
 
-    final fun chatModel(kotlin/String): ai.torad.aisdk/LanguageModel // ai.torad.aisdk.providers/AlibabaProvider.chatModel|chatModel(kotlin.String){}[0]
+    final fun chatModel(ai.torad.aisdk/ModelId): ai.torad.aisdk/LanguageModel // ai.torad.aisdk.providers/AlibabaProvider.chatModel|chatModel(ai.torad.aisdk.ModelId){}[0]
     final fun embeddingModel(kotlin/String): ai.torad.aisdk/EmbeddingModel // ai.torad.aisdk.providers/AlibabaProvider.embeddingModel|embeddingModel(kotlin.String){}[0]
     final fun imageModel(kotlin/String): ai.torad.aisdk/ImageModel // ai.torad.aisdk.providers/AlibabaProvider.imageModel|imageModel(kotlin.String){}[0]
-    final fun invoke(kotlin/String): ai.torad.aisdk/LanguageModel // ai.torad.aisdk.providers/AlibabaProvider.invoke|invoke(kotlin.String){}[0]
+    final fun invoke(ai.torad.aisdk/ModelId): ai.torad.aisdk/LanguageModel // ai.torad.aisdk.providers/AlibabaProvider.invoke|invoke(ai.torad.aisdk.ModelId){}[0]
     final fun languageModel(kotlin/String): ai.torad.aisdk/LanguageModel // ai.torad.aisdk.providers/AlibabaProvider.languageModel|languageModel(kotlin.String){}[0]
-    final fun video(kotlin/String): ai.torad.aisdk/VideoModel // ai.torad.aisdk.providers/AlibabaProvider.video|video(kotlin.String){}[0]
+    final fun video(ai.torad.aisdk/ModelId): ai.torad.aisdk/VideoModel // ai.torad.aisdk.providers/AlibabaProvider.video|video(ai.torad.aisdk.ModelId){}[0]
     final fun videoModel(kotlin/String): ai.torad.aisdk/VideoModel // ai.torad.aisdk.providers/AlibabaProvider.videoModel|videoModel(kotlin.String){}[0]
 }
 
@@ -3624,16 +3624,16 @@ final class ai.torad.aisdk.providers/AmazonBedrockProvider : ai.torad.aisdk/Prov
     final val tools // ai.torad.aisdk.providers/AmazonBedrockProvider.tools|{}tools[0]
         final fun <get-tools>(): ai.torad.aisdk.providers/AnthropicTools // ai.torad.aisdk.providers/AmazonBedrockProvider.tools.<get-tools>|<get-tools>(){}[0]
 
-    final fun embedding(kotlin/String): ai.torad.aisdk/EmbeddingModel // ai.torad.aisdk.providers/AmazonBedrockProvider.embedding|embedding(kotlin.String){}[0]
+    final fun embedding(ai.torad.aisdk/ModelId): ai.torad.aisdk/EmbeddingModel // ai.torad.aisdk.providers/AmazonBedrockProvider.embedding|embedding(ai.torad.aisdk.ModelId){}[0]
     final fun embeddingModel(kotlin/String): ai.torad.aisdk/EmbeddingModel // ai.torad.aisdk.providers/AmazonBedrockProvider.embeddingModel|embeddingModel(kotlin.String){}[0]
-    final fun image(kotlin/String): ai.torad.aisdk/ImageModel // ai.torad.aisdk.providers/AmazonBedrockProvider.image|image(kotlin.String){}[0]
+    final fun image(ai.torad.aisdk/ModelId): ai.torad.aisdk/ImageModel // ai.torad.aisdk.providers/AmazonBedrockProvider.image|image(ai.torad.aisdk.ModelId){}[0]
     final fun imageModel(kotlin/String): ai.torad.aisdk/ImageModel // ai.torad.aisdk.providers/AmazonBedrockProvider.imageModel|imageModel(kotlin.String){}[0]
-    final fun invoke(kotlin/String): ai.torad.aisdk/LanguageModel // ai.torad.aisdk.providers/AmazonBedrockProvider.invoke|invoke(kotlin.String){}[0]
+    final fun invoke(ai.torad.aisdk/ModelId): ai.torad.aisdk/LanguageModel // ai.torad.aisdk.providers/AmazonBedrockProvider.invoke|invoke(ai.torad.aisdk.ModelId){}[0]
     final fun languageModel(kotlin/String): ai.torad.aisdk/LanguageModel // ai.torad.aisdk.providers/AmazonBedrockProvider.languageModel|languageModel(kotlin.String){}[0]
-    final fun reranking(kotlin/String): ai.torad.aisdk/RerankingModel // ai.torad.aisdk.providers/AmazonBedrockProvider.reranking|reranking(kotlin.String){}[0]
+    final fun reranking(ai.torad.aisdk/ModelId): ai.torad.aisdk/RerankingModel // ai.torad.aisdk.providers/AmazonBedrockProvider.reranking|reranking(ai.torad.aisdk.ModelId){}[0]
     final fun rerankingModel(kotlin/String): ai.torad.aisdk/RerankingModel // ai.torad.aisdk.providers/AmazonBedrockProvider.rerankingModel|rerankingModel(kotlin.String){}[0]
-    final fun textEmbedding(kotlin/String): ai.torad.aisdk/EmbeddingModel // ai.torad.aisdk.providers/AmazonBedrockProvider.textEmbedding|textEmbedding(kotlin.String){}[0]
-    final fun textEmbeddingModel(kotlin/String): ai.torad.aisdk/EmbeddingModel // ai.torad.aisdk.providers/AmazonBedrockProvider.textEmbeddingModel|textEmbeddingModel(kotlin.String){}[0]
+    final fun textEmbedding(ai.torad.aisdk/ModelId): ai.torad.aisdk/EmbeddingModel // ai.torad.aisdk.providers/AmazonBedrockProvider.textEmbedding|textEmbedding(ai.torad.aisdk.ModelId){}[0]
+    final fun textEmbeddingModel(ai.torad.aisdk/ModelId): ai.torad.aisdk/EmbeddingModel // ai.torad.aisdk.providers/AmazonBedrockProvider.textEmbeddingModel|textEmbeddingModel(ai.torad.aisdk.ModelId){}[0]
 }
 
 final class ai.torad.aisdk.providers/AmazonBedrockProviderSettings { // ai.torad.aisdk.providers/AmazonBedrockProviderSettings|null[0]
@@ -3756,12 +3756,12 @@ final class ai.torad.aisdk.providers/AnthropicProvider : ai.torad.aisdk/Provider
     final val tools // ai.torad.aisdk.providers/AnthropicProvider.tools|{}tools[0]
         final fun <get-tools>(): ai.torad.aisdk.providers/AnthropicTools // ai.torad.aisdk.providers/AnthropicProvider.tools.<get-tools>|<get-tools>(){}[0]
 
-    final fun chat(kotlin/String): ai.torad.aisdk/LanguageModel // ai.torad.aisdk.providers/AnthropicProvider.chat|chat(kotlin.String){}[0]
+    final fun chat(ai.torad.aisdk/ModelId): ai.torad.aisdk/LanguageModel // ai.torad.aisdk.providers/AnthropicProvider.chat|chat(ai.torad.aisdk.ModelId){}[0]
     final fun embeddingModel(kotlin/String): ai.torad.aisdk/EmbeddingModel // ai.torad.aisdk.providers/AnthropicProvider.embeddingModel|embeddingModel(kotlin.String){}[0]
     final fun imageModel(kotlin/String): ai.torad.aisdk/ImageModel // ai.torad.aisdk.providers/AnthropicProvider.imageModel|imageModel(kotlin.String){}[0]
-    final fun invoke(kotlin/String): ai.torad.aisdk/LanguageModel // ai.torad.aisdk.providers/AnthropicProvider.invoke|invoke(kotlin.String){}[0]
+    final fun invoke(ai.torad.aisdk/ModelId): ai.torad.aisdk/LanguageModel // ai.torad.aisdk.providers/AnthropicProvider.invoke|invoke(ai.torad.aisdk.ModelId){}[0]
     final fun languageModel(kotlin/String): ai.torad.aisdk/LanguageModel // ai.torad.aisdk.providers/AnthropicProvider.languageModel|languageModel(kotlin.String){}[0]
-    final fun messages(kotlin/String): ai.torad.aisdk/LanguageModel // ai.torad.aisdk.providers/AnthropicProvider.messages|messages(kotlin.String){}[0]
+    final fun messages(ai.torad.aisdk/ModelId): ai.torad.aisdk/LanguageModel // ai.torad.aisdk.providers/AnthropicProvider.messages|messages(ai.torad.aisdk.ModelId){}[0]
     final fun textEmbeddingModel(kotlin/String): kotlin/Nothing // ai.torad.aisdk.providers/AnthropicProvider.textEmbeddingModel|textEmbeddingModel(kotlin.String){}[0]
 }
 
@@ -3916,10 +3916,10 @@ final class ai.torad.aisdk.providers/AssemblyAIProvider : ai.torad.aisdk/Provide
 
     final fun embeddingModel(kotlin/String): ai.torad.aisdk/EmbeddingModel // ai.torad.aisdk.providers/AssemblyAIProvider.embeddingModel|embeddingModel(kotlin.String){}[0]
     final fun imageModel(kotlin/String): ai.torad.aisdk/ImageModel // ai.torad.aisdk.providers/AssemblyAIProvider.imageModel|imageModel(kotlin.String){}[0]
-    final fun invoke(kotlin/String = ...): ai.torad.aisdk/TranscriptionModel // ai.torad.aisdk.providers/AssemblyAIProvider.invoke|invoke(kotlin.String){}[0]
+    final fun invoke(ai.torad.aisdk/ModelId = ...): ai.torad.aisdk/TranscriptionModel // ai.torad.aisdk.providers/AssemblyAIProvider.invoke|invoke(ai.torad.aisdk.ModelId){}[0]
     final fun languageModel(kotlin/String): ai.torad.aisdk/LanguageModel // ai.torad.aisdk.providers/AssemblyAIProvider.languageModel|languageModel(kotlin.String){}[0]
     final fun textEmbeddingModel(kotlin/String): kotlin/Nothing // ai.torad.aisdk.providers/AssemblyAIProvider.textEmbeddingModel|textEmbeddingModel(kotlin.String){}[0]
-    final fun transcription(kotlin/String): ai.torad.aisdk/TranscriptionModel // ai.torad.aisdk.providers/AssemblyAIProvider.transcription|transcription(kotlin.String){}[0]
+    final fun transcription(ai.torad.aisdk/ModelId): ai.torad.aisdk/TranscriptionModel // ai.torad.aisdk.providers/AssemblyAIProvider.transcription|transcription(ai.torad.aisdk.ModelId){}[0]
     final fun transcriptionModel(kotlin/String): ai.torad.aisdk/TranscriptionModel // ai.torad.aisdk.providers/AssemblyAIProvider.transcriptionModel|transcriptionModel(kotlin.String){}[0]
 }
 
@@ -4094,20 +4094,20 @@ final class ai.torad.aisdk.providers/AzureOpenAIProvider : ai.torad.aisdk/Provid
     final val tools // ai.torad.aisdk.providers/AzureOpenAIProvider.tools|{}tools[0]
         final fun <get-tools>(): ai.torad.aisdk.providers/AzureOpenAITools // ai.torad.aisdk.providers/AzureOpenAIProvider.tools.<get-tools>|<get-tools>(){}[0]
 
-    final fun chat(kotlin/String): ai.torad.aisdk/LanguageModel // ai.torad.aisdk.providers/AzureOpenAIProvider.chat|chat(kotlin.String){}[0]
-    final fun completion(kotlin/String): ai.torad.aisdk/LanguageModel // ai.torad.aisdk.providers/AzureOpenAIProvider.completion|completion(kotlin.String){}[0]
-    final fun embedding(kotlin/String): ai.torad.aisdk/EmbeddingModel // ai.torad.aisdk.providers/AzureOpenAIProvider.embedding|embedding(kotlin.String){}[0]
+    final fun chat(ai.torad.aisdk/ModelId): ai.torad.aisdk/LanguageModel // ai.torad.aisdk.providers/AzureOpenAIProvider.chat|chat(ai.torad.aisdk.ModelId){}[0]
+    final fun completion(ai.torad.aisdk/ModelId): ai.torad.aisdk/LanguageModel // ai.torad.aisdk.providers/AzureOpenAIProvider.completion|completion(ai.torad.aisdk.ModelId){}[0]
+    final fun embedding(ai.torad.aisdk/ModelId): ai.torad.aisdk/EmbeddingModel // ai.torad.aisdk.providers/AzureOpenAIProvider.embedding|embedding(ai.torad.aisdk.ModelId){}[0]
     final fun embeddingModel(kotlin/String): ai.torad.aisdk/EmbeddingModel // ai.torad.aisdk.providers/AzureOpenAIProvider.embeddingModel|embeddingModel(kotlin.String){}[0]
-    final fun image(kotlin/String): ai.torad.aisdk/ImageModel // ai.torad.aisdk.providers/AzureOpenAIProvider.image|image(kotlin.String){}[0]
+    final fun image(ai.torad.aisdk/ModelId): ai.torad.aisdk/ImageModel // ai.torad.aisdk.providers/AzureOpenAIProvider.image|image(ai.torad.aisdk.ModelId){}[0]
     final fun imageModel(kotlin/String): ai.torad.aisdk/ImageModel // ai.torad.aisdk.providers/AzureOpenAIProvider.imageModel|imageModel(kotlin.String){}[0]
     final fun invoke(kotlin/String): ai.torad.aisdk/LanguageModel // ai.torad.aisdk.providers/AzureOpenAIProvider.invoke|invoke(kotlin.String){}[0]
     final fun languageModel(kotlin/String): ai.torad.aisdk/LanguageModel // ai.torad.aisdk.providers/AzureOpenAIProvider.languageModel|languageModel(kotlin.String){}[0]
     final fun responses(kotlin/String): ai.torad.aisdk/LanguageModel // ai.torad.aisdk.providers/AzureOpenAIProvider.responses|responses(kotlin.String){}[0]
-    final fun speech(kotlin/String): ai.torad.aisdk/SpeechModel // ai.torad.aisdk.providers/AzureOpenAIProvider.speech|speech(kotlin.String){}[0]
+    final fun speech(ai.torad.aisdk/ModelId): ai.torad.aisdk/SpeechModel // ai.torad.aisdk.providers/AzureOpenAIProvider.speech|speech(ai.torad.aisdk.ModelId){}[0]
     final fun speechModel(kotlin/String): ai.torad.aisdk/SpeechModel // ai.torad.aisdk.providers/AzureOpenAIProvider.speechModel|speechModel(kotlin.String){}[0]
-    final fun textEmbedding(kotlin/String): ai.torad.aisdk/EmbeddingModel // ai.torad.aisdk.providers/AzureOpenAIProvider.textEmbedding|textEmbedding(kotlin.String){}[0]
-    final fun textEmbeddingModel(kotlin/String): ai.torad.aisdk/EmbeddingModel // ai.torad.aisdk.providers/AzureOpenAIProvider.textEmbeddingModel|textEmbeddingModel(kotlin.String){}[0]
-    final fun transcription(kotlin/String): ai.torad.aisdk/TranscriptionModel // ai.torad.aisdk.providers/AzureOpenAIProvider.transcription|transcription(kotlin.String){}[0]
+    final fun textEmbedding(ai.torad.aisdk/ModelId): ai.torad.aisdk/EmbeddingModel // ai.torad.aisdk.providers/AzureOpenAIProvider.textEmbedding|textEmbedding(ai.torad.aisdk.ModelId){}[0]
+    final fun textEmbeddingModel(ai.torad.aisdk/ModelId): ai.torad.aisdk/EmbeddingModel // ai.torad.aisdk.providers/AzureOpenAIProvider.textEmbeddingModel|textEmbeddingModel(ai.torad.aisdk.ModelId){}[0]
+    final fun transcription(ai.torad.aisdk/ModelId): ai.torad.aisdk/TranscriptionModel // ai.torad.aisdk.providers/AzureOpenAIProvider.transcription|transcription(ai.torad.aisdk.ModelId){}[0]
     final fun transcriptionModel(kotlin/String): ai.torad.aisdk/TranscriptionModel // ai.torad.aisdk.providers/AzureOpenAIProvider.transcriptionModel|transcriptionModel(kotlin.String){}[0]
 }
 
@@ -4228,16 +4228,16 @@ final class ai.torad.aisdk.providers/BasetenProvider : ai.torad.aisdk/Provider {
         final fun <get-providerId>(): kotlin/String // ai.torad.aisdk.providers/BasetenProvider.providerId.<get-providerId>|<get-providerId>(){}[0]
 
     final fun chatModel(): ai.torad.aisdk/LanguageModel // ai.torad.aisdk.providers/BasetenProvider.chatModel|chatModel(){}[0]
-    final fun chatModel(kotlin/String): ai.torad.aisdk/LanguageModel // ai.torad.aisdk.providers/BasetenProvider.chatModel|chatModel(kotlin.String){}[0]
+    final fun chatModel(ai.torad.aisdk/ModelId): ai.torad.aisdk/LanguageModel // ai.torad.aisdk.providers/BasetenProvider.chatModel|chatModel(ai.torad.aisdk.ModelId){}[0]
     final fun embeddingModel(): ai.torad.aisdk/EmbeddingModel // ai.torad.aisdk.providers/BasetenProvider.embeddingModel|embeddingModel(){}[0]
     final fun embeddingModel(kotlin/String): ai.torad.aisdk/EmbeddingModel // ai.torad.aisdk.providers/BasetenProvider.embeddingModel|embeddingModel(kotlin.String){}[0]
     final fun imageModel(kotlin/String): ai.torad.aisdk/ImageModel // ai.torad.aisdk.providers/BasetenProvider.imageModel|imageModel(kotlin.String){}[0]
     final fun invoke(): ai.torad.aisdk/LanguageModel // ai.torad.aisdk.providers/BasetenProvider.invoke|invoke(){}[0]
-    final fun invoke(kotlin/String): ai.torad.aisdk/LanguageModel // ai.torad.aisdk.providers/BasetenProvider.invoke|invoke(kotlin.String){}[0]
+    final fun invoke(ai.torad.aisdk/ModelId): ai.torad.aisdk/LanguageModel // ai.torad.aisdk.providers/BasetenProvider.invoke|invoke(ai.torad.aisdk.ModelId){}[0]
     final fun languageModel(): ai.torad.aisdk/LanguageModel // ai.torad.aisdk.providers/BasetenProvider.languageModel|languageModel(){}[0]
     final fun languageModel(kotlin/String): ai.torad.aisdk/LanguageModel // ai.torad.aisdk.providers/BasetenProvider.languageModel|languageModel(kotlin.String){}[0]
     final fun textEmbeddingModel(): ai.torad.aisdk/EmbeddingModel // ai.torad.aisdk.providers/BasetenProvider.textEmbeddingModel|textEmbeddingModel(){}[0]
-    final fun textEmbeddingModel(kotlin/String): ai.torad.aisdk/EmbeddingModel // ai.torad.aisdk.providers/BasetenProvider.textEmbeddingModel|textEmbeddingModel(kotlin.String){}[0]
+    final fun textEmbeddingModel(ai.torad.aisdk/ModelId): ai.torad.aisdk/EmbeddingModel // ai.torad.aisdk.providers/BasetenProvider.textEmbeddingModel|textEmbeddingModel(ai.torad.aisdk.ModelId){}[0]
 }
 
 final class ai.torad.aisdk.providers/BasetenProviderSettings { // ai.torad.aisdk.providers/BasetenProviderSettings|null[0]
@@ -4287,7 +4287,7 @@ final class ai.torad.aisdk.providers/BedrockAnthropicProvider : ai.torad.aisdk/P
     final val tools // ai.torad.aisdk.providers/BedrockAnthropicProvider.tools|{}tools[0]
         final fun <get-tools>(): ai.torad.aisdk.providers/AnthropicTools // ai.torad.aisdk.providers/BedrockAnthropicProvider.tools.<get-tools>|<get-tools>(){}[0]
 
-    final fun invoke(kotlin/String): ai.torad.aisdk/LanguageModel // ai.torad.aisdk.providers/BedrockAnthropicProvider.invoke|invoke(kotlin.String){}[0]
+    final fun invoke(ai.torad.aisdk/ModelId): ai.torad.aisdk/LanguageModel // ai.torad.aisdk.providers/BedrockAnthropicProvider.invoke|invoke(ai.torad.aisdk.ModelId){}[0]
     final fun languageModel(kotlin/String): ai.torad.aisdk/LanguageModel // ai.torad.aisdk.providers/BedrockAnthropicProvider.languageModel|languageModel(kotlin.String){}[0]
     final fun textEmbeddingModel(kotlin/String): kotlin/Nothing // ai.torad.aisdk.providers/BedrockAnthropicProvider.textEmbeddingModel|textEmbeddingModel(kotlin.String){}[0]
 }
@@ -4335,10 +4335,10 @@ final class ai.torad.aisdk.providers/BedrockMantleProvider : ai.torad.aisdk/Prov
     final val settings // ai.torad.aisdk.providers/BedrockMantleProvider.settings|{}settings[0]
         final fun <get-settings>(): ai.torad.aisdk.providers/AmazonBedrockProviderSettings // ai.torad.aisdk.providers/BedrockMantleProvider.settings.<get-settings>|<get-settings>(){}[0]
 
-    final fun chat(kotlin/String): ai.torad.aisdk/LanguageModel // ai.torad.aisdk.providers/BedrockMantleProvider.chat|chat(kotlin.String){}[0]
-    final fun invoke(kotlin/String): ai.torad.aisdk/LanguageModel // ai.torad.aisdk.providers/BedrockMantleProvider.invoke|invoke(kotlin.String){}[0]
+    final fun chat(ai.torad.aisdk/ModelId): ai.torad.aisdk/LanguageModel // ai.torad.aisdk.providers/BedrockMantleProvider.chat|chat(ai.torad.aisdk.ModelId){}[0]
+    final fun invoke(ai.torad.aisdk/ModelId): ai.torad.aisdk/LanguageModel // ai.torad.aisdk.providers/BedrockMantleProvider.invoke|invoke(ai.torad.aisdk.ModelId){}[0]
     final fun languageModel(kotlin/String): ai.torad.aisdk/LanguageModel // ai.torad.aisdk.providers/BedrockMantleProvider.languageModel|languageModel(kotlin.String){}[0]
-    final fun responses(kotlin/String): ai.torad.aisdk/LanguageModel // ai.torad.aisdk.providers/BedrockMantleProvider.responses|responses(kotlin.String){}[0]
+    final fun responses(ai.torad.aisdk/ModelId): ai.torad.aisdk/LanguageModel // ai.torad.aisdk.providers/BedrockMantleProvider.responses|responses(ai.torad.aisdk.ModelId){}[0]
     final fun textEmbeddingModel(kotlin/String): kotlin/Nothing // ai.torad.aisdk.providers/BedrockMantleProvider.textEmbeddingModel|textEmbeddingModel(kotlin.String){}[0]
 }
 
@@ -4721,15 +4721,15 @@ final class ai.torad.aisdk.providers/CohereProvider : ai.torad.aisdk/Provider { 
     final val settings // ai.torad.aisdk.providers/CohereProvider.settings|{}settings[0]
         final fun <get-settings>(): ai.torad.aisdk.providers/CohereProviderSettings // ai.torad.aisdk.providers/CohereProvider.settings.<get-settings>|<get-settings>(){}[0]
 
-    final fun embedding(kotlin/String): ai.torad.aisdk/EmbeddingModel // ai.torad.aisdk.providers/CohereProvider.embedding|embedding(kotlin.String){}[0]
+    final fun embedding(ai.torad.aisdk/ModelId): ai.torad.aisdk/EmbeddingModel // ai.torad.aisdk.providers/CohereProvider.embedding|embedding(ai.torad.aisdk.ModelId){}[0]
     final fun embeddingModel(kotlin/String): ai.torad.aisdk/EmbeddingModel // ai.torad.aisdk.providers/CohereProvider.embeddingModel|embeddingModel(kotlin.String){}[0]
     final fun imageModel(kotlin/String): ai.torad.aisdk/ImageModel // ai.torad.aisdk.providers/CohereProvider.imageModel|imageModel(kotlin.String){}[0]
-    final fun invoke(kotlin/String): ai.torad.aisdk/LanguageModel // ai.torad.aisdk.providers/CohereProvider.invoke|invoke(kotlin.String){}[0]
+    final fun invoke(ai.torad.aisdk/ModelId): ai.torad.aisdk/LanguageModel // ai.torad.aisdk.providers/CohereProvider.invoke|invoke(ai.torad.aisdk.ModelId){}[0]
     final fun languageModel(kotlin/String): ai.torad.aisdk/LanguageModel // ai.torad.aisdk.providers/CohereProvider.languageModel|languageModel(kotlin.String){}[0]
-    final fun reranking(kotlin/String): ai.torad.aisdk/RerankingModel // ai.torad.aisdk.providers/CohereProvider.reranking|reranking(kotlin.String){}[0]
+    final fun reranking(ai.torad.aisdk/ModelId): ai.torad.aisdk/RerankingModel // ai.torad.aisdk.providers/CohereProvider.reranking|reranking(ai.torad.aisdk.ModelId){}[0]
     final fun rerankingModel(kotlin/String): ai.torad.aisdk/RerankingModel // ai.torad.aisdk.providers/CohereProvider.rerankingModel|rerankingModel(kotlin.String){}[0]
-    final fun textEmbedding(kotlin/String): ai.torad.aisdk/EmbeddingModel // ai.torad.aisdk.providers/CohereProvider.textEmbedding|textEmbedding(kotlin.String){}[0]
-    final fun textEmbeddingModel(kotlin/String): ai.torad.aisdk/EmbeddingModel // ai.torad.aisdk.providers/CohereProvider.textEmbeddingModel|textEmbeddingModel(kotlin.String){}[0]
+    final fun textEmbedding(ai.torad.aisdk/ModelId): ai.torad.aisdk/EmbeddingModel // ai.torad.aisdk.providers/CohereProvider.textEmbedding|textEmbedding(ai.torad.aisdk.ModelId){}[0]
+    final fun textEmbeddingModel(ai.torad.aisdk/ModelId): ai.torad.aisdk/EmbeddingModel // ai.torad.aisdk.providers/CohereProvider.textEmbeddingModel|textEmbeddingModel(ai.torad.aisdk.ModelId){}[0]
 }
 
 final class ai.torad.aisdk.providers/CohereProviderSettings { // ai.torad.aisdk.providers/CohereProviderSettings|null[0]
@@ -4830,14 +4830,14 @@ final class ai.torad.aisdk.providers/DeepInfraProvider : ai.torad.aisdk/Provider
     final val providerId // ai.torad.aisdk.providers/DeepInfraProvider.providerId|{}providerId[0]
         final fun <get-providerId>(): kotlin/String // ai.torad.aisdk.providers/DeepInfraProvider.providerId.<get-providerId>|<get-providerId>(){}[0]
 
-    final fun chatModel(kotlin/String): ai.torad.aisdk/LanguageModel // ai.torad.aisdk.providers/DeepInfraProvider.chatModel|chatModel(kotlin.String){}[0]
-    final fun completionModel(kotlin/String): ai.torad.aisdk/LanguageModel // ai.torad.aisdk.providers/DeepInfraProvider.completionModel|completionModel(kotlin.String){}[0]
+    final fun chatModel(ai.torad.aisdk/ModelId): ai.torad.aisdk/LanguageModel // ai.torad.aisdk.providers/DeepInfraProvider.chatModel|chatModel(ai.torad.aisdk.ModelId){}[0]
+    final fun completionModel(ai.torad.aisdk/ModelId): ai.torad.aisdk/LanguageModel // ai.torad.aisdk.providers/DeepInfraProvider.completionModel|completionModel(ai.torad.aisdk.ModelId){}[0]
     final fun embeddingModel(kotlin/String): ai.torad.aisdk/EmbeddingModel // ai.torad.aisdk.providers/DeepInfraProvider.embeddingModel|embeddingModel(kotlin.String){}[0]
-    final fun image(kotlin/String): ai.torad.aisdk/ImageModel // ai.torad.aisdk.providers/DeepInfraProvider.image|image(kotlin.String){}[0]
+    final fun image(ai.torad.aisdk/ModelId): ai.torad.aisdk/ImageModel // ai.torad.aisdk.providers/DeepInfraProvider.image|image(ai.torad.aisdk.ModelId){}[0]
     final fun imageModel(kotlin/String): ai.torad.aisdk/ImageModel // ai.torad.aisdk.providers/DeepInfraProvider.imageModel|imageModel(kotlin.String){}[0]
-    final fun invoke(kotlin/String): ai.torad.aisdk/LanguageModel // ai.torad.aisdk.providers/DeepInfraProvider.invoke|invoke(kotlin.String){}[0]
+    final fun invoke(ai.torad.aisdk/ModelId): ai.torad.aisdk/LanguageModel // ai.torad.aisdk.providers/DeepInfraProvider.invoke|invoke(ai.torad.aisdk.ModelId){}[0]
     final fun languageModel(kotlin/String): ai.torad.aisdk/LanguageModel // ai.torad.aisdk.providers/DeepInfraProvider.languageModel|languageModel(kotlin.String){}[0]
-    final fun textEmbeddingModel(kotlin/String): ai.torad.aisdk/EmbeddingModel // ai.torad.aisdk.providers/DeepInfraProvider.textEmbeddingModel|textEmbeddingModel(kotlin.String){}[0]
+    final fun textEmbeddingModel(ai.torad.aisdk/ModelId): ai.torad.aisdk/EmbeddingModel // ai.torad.aisdk.providers/DeepInfraProvider.textEmbeddingModel|textEmbeddingModel(ai.torad.aisdk.ModelId){}[0]
 }
 
 final class ai.torad.aisdk.providers/DeepInfraProviderSettings { // ai.torad.aisdk.providers/DeepInfraProviderSettings|null[0]
@@ -4960,12 +4960,12 @@ final class ai.torad.aisdk.providers/DeepgramProvider : ai.torad.aisdk/Provider 
 
     final fun embeddingModel(kotlin/String): ai.torad.aisdk/EmbeddingModel // ai.torad.aisdk.providers/DeepgramProvider.embeddingModel|embeddingModel(kotlin.String){}[0]
     final fun imageModel(kotlin/String): ai.torad.aisdk/ImageModel // ai.torad.aisdk.providers/DeepgramProvider.imageModel|imageModel(kotlin.String){}[0]
-    final fun invoke(kotlin/String = ...): ai.torad.aisdk/TranscriptionModel // ai.torad.aisdk.providers/DeepgramProvider.invoke|invoke(kotlin.String){}[0]
+    final fun invoke(ai.torad.aisdk/ModelId = ...): ai.torad.aisdk/TranscriptionModel // ai.torad.aisdk.providers/DeepgramProvider.invoke|invoke(ai.torad.aisdk.ModelId){}[0]
     final fun languageModel(kotlin/String): ai.torad.aisdk/LanguageModel // ai.torad.aisdk.providers/DeepgramProvider.languageModel|languageModel(kotlin.String){}[0]
-    final fun speech(kotlin/String): ai.torad.aisdk/SpeechModel // ai.torad.aisdk.providers/DeepgramProvider.speech|speech(kotlin.String){}[0]
+    final fun speech(ai.torad.aisdk/ModelId): ai.torad.aisdk/SpeechModel // ai.torad.aisdk.providers/DeepgramProvider.speech|speech(ai.torad.aisdk.ModelId){}[0]
     final fun speechModel(kotlin/String): ai.torad.aisdk/SpeechModel // ai.torad.aisdk.providers/DeepgramProvider.speechModel|speechModel(kotlin.String){}[0]
     final fun textEmbeddingModel(kotlin/String): kotlin/Nothing // ai.torad.aisdk.providers/DeepgramProvider.textEmbeddingModel|textEmbeddingModel(kotlin.String){}[0]
-    final fun transcription(kotlin/String): ai.torad.aisdk/TranscriptionModel // ai.torad.aisdk.providers/DeepgramProvider.transcription|transcription(kotlin.String){}[0]
+    final fun transcription(ai.torad.aisdk/ModelId): ai.torad.aisdk/TranscriptionModel // ai.torad.aisdk.providers/DeepgramProvider.transcription|transcription(ai.torad.aisdk.ModelId){}[0]
     final fun transcriptionModel(kotlin/String): ai.torad.aisdk/TranscriptionModel // ai.torad.aisdk.providers/DeepgramProvider.transcriptionModel|transcriptionModel(kotlin.String){}[0]
 }
 
@@ -5143,11 +5143,11 @@ final class ai.torad.aisdk.providers/ElevenLabsProvider : ai.torad.aisdk/Provide
     final val settings // ai.torad.aisdk.providers/ElevenLabsProvider.settings|{}settings[0]
         final fun <get-settings>(): ai.torad.aisdk.providers/ElevenLabsProviderSettings // ai.torad.aisdk.providers/ElevenLabsProvider.settings.<get-settings>|<get-settings>(){}[0]
 
-    final fun invoke(kotlin/String = ...): ai.torad.aisdk/TranscriptionModel // ai.torad.aisdk.providers/ElevenLabsProvider.invoke|invoke(kotlin.String){}[0]
-    final fun speech(kotlin/String): ai.torad.aisdk/SpeechModel // ai.torad.aisdk.providers/ElevenLabsProvider.speech|speech(kotlin.String){}[0]
+    final fun invoke(ai.torad.aisdk/ModelId = ...): ai.torad.aisdk/TranscriptionModel // ai.torad.aisdk.providers/ElevenLabsProvider.invoke|invoke(ai.torad.aisdk.ModelId){}[0]
+    final fun speech(ai.torad.aisdk/ModelId): ai.torad.aisdk/SpeechModel // ai.torad.aisdk.providers/ElevenLabsProvider.speech|speech(ai.torad.aisdk.ModelId){}[0]
     final fun speechModel(kotlin/String): ai.torad.aisdk/SpeechModel // ai.torad.aisdk.providers/ElevenLabsProvider.speechModel|speechModel(kotlin.String){}[0]
     final fun textEmbeddingModel(kotlin/String): kotlin/Nothing // ai.torad.aisdk.providers/ElevenLabsProvider.textEmbeddingModel|textEmbeddingModel(kotlin.String){}[0]
-    final fun transcription(kotlin/String): ai.torad.aisdk/TranscriptionModel // ai.torad.aisdk.providers/ElevenLabsProvider.transcription|transcription(kotlin.String){}[0]
+    final fun transcription(ai.torad.aisdk/ModelId): ai.torad.aisdk/TranscriptionModel // ai.torad.aisdk.providers/ElevenLabsProvider.transcription|transcription(ai.torad.aisdk.ModelId){}[0]
     final fun transcriptionModel(kotlin/String): ai.torad.aisdk/TranscriptionModel // ai.torad.aisdk.providers/ElevenLabsProvider.transcriptionModel|transcriptionModel(kotlin.String){}[0]
 }
 
@@ -5316,15 +5316,15 @@ final class ai.torad.aisdk.providers/FalProvider : ai.torad.aisdk/Provider { // 
         final fun <get-settings>(): ai.torad.aisdk.providers/FalProviderSettings // ai.torad.aisdk.providers/FalProvider.settings.<get-settings>|<get-settings>(){}[0]
 
     final fun embeddingModel(kotlin/String): ai.torad.aisdk/EmbeddingModel // ai.torad.aisdk.providers/FalProvider.embeddingModel|embeddingModel(kotlin.String){}[0]
-    final fun image(kotlin/String): ai.torad.aisdk/ImageModel // ai.torad.aisdk.providers/FalProvider.image|image(kotlin.String){}[0]
+    final fun image(ai.torad.aisdk/ModelId): ai.torad.aisdk/ImageModel // ai.torad.aisdk.providers/FalProvider.image|image(ai.torad.aisdk.ModelId){}[0]
     final fun imageModel(kotlin/String): ai.torad.aisdk/ImageModel // ai.torad.aisdk.providers/FalProvider.imageModel|imageModel(kotlin.String){}[0]
     final fun languageModel(kotlin/String): ai.torad.aisdk/LanguageModel // ai.torad.aisdk.providers/FalProvider.languageModel|languageModel(kotlin.String){}[0]
-    final fun speech(kotlin/String): ai.torad.aisdk/SpeechModel // ai.torad.aisdk.providers/FalProvider.speech|speech(kotlin.String){}[0]
+    final fun speech(ai.torad.aisdk/ModelId): ai.torad.aisdk/SpeechModel // ai.torad.aisdk.providers/FalProvider.speech|speech(ai.torad.aisdk.ModelId){}[0]
     final fun speechModel(kotlin/String): ai.torad.aisdk/SpeechModel // ai.torad.aisdk.providers/FalProvider.speechModel|speechModel(kotlin.String){}[0]
     final fun textEmbeddingModel(kotlin/String): kotlin/Nothing // ai.torad.aisdk.providers/FalProvider.textEmbeddingModel|textEmbeddingModel(kotlin.String){}[0]
-    final fun transcription(kotlin/String): ai.torad.aisdk/TranscriptionModel // ai.torad.aisdk.providers/FalProvider.transcription|transcription(kotlin.String){}[0]
+    final fun transcription(ai.torad.aisdk/ModelId): ai.torad.aisdk/TranscriptionModel // ai.torad.aisdk.providers/FalProvider.transcription|transcription(ai.torad.aisdk.ModelId){}[0]
     final fun transcriptionModel(kotlin/String): ai.torad.aisdk/TranscriptionModel // ai.torad.aisdk.providers/FalProvider.transcriptionModel|transcriptionModel(kotlin.String){}[0]
-    final fun video(kotlin/String): ai.torad.aisdk/VideoModel // ai.torad.aisdk.providers/FalProvider.video|video(kotlin.String){}[0]
+    final fun video(ai.torad.aisdk/ModelId): ai.torad.aisdk/VideoModel // ai.torad.aisdk.providers/FalProvider.video|video(ai.torad.aisdk.ModelId){}[0]
     final fun videoModel(kotlin/String): ai.torad.aisdk/VideoModel // ai.torad.aisdk.providers/FalProvider.videoModel|videoModel(kotlin.String){}[0]
 }
 
@@ -5599,14 +5599,14 @@ final class ai.torad.aisdk.providers/FireworksProvider : ai.torad.aisdk/Provider
     final val providerId // ai.torad.aisdk.providers/FireworksProvider.providerId|{}providerId[0]
         final fun <get-providerId>(): kotlin/String // ai.torad.aisdk.providers/FireworksProvider.providerId.<get-providerId>|<get-providerId>(){}[0]
 
-    final fun chatModel(kotlin/String): ai.torad.aisdk/LanguageModel // ai.torad.aisdk.providers/FireworksProvider.chatModel|chatModel(kotlin.String){}[0]
-    final fun completionModel(kotlin/String): ai.torad.aisdk/LanguageModel // ai.torad.aisdk.providers/FireworksProvider.completionModel|completionModel(kotlin.String){}[0]
+    final fun chatModel(ai.torad.aisdk/ModelId): ai.torad.aisdk/LanguageModel // ai.torad.aisdk.providers/FireworksProvider.chatModel|chatModel(ai.torad.aisdk.ModelId){}[0]
+    final fun completionModel(ai.torad.aisdk/ModelId): ai.torad.aisdk/LanguageModel // ai.torad.aisdk.providers/FireworksProvider.completionModel|completionModel(ai.torad.aisdk.ModelId){}[0]
     final fun embeddingModel(kotlin/String): ai.torad.aisdk/EmbeddingModel // ai.torad.aisdk.providers/FireworksProvider.embeddingModel|embeddingModel(kotlin.String){}[0]
-    final fun image(kotlin/String): ai.torad.aisdk/ImageModel // ai.torad.aisdk.providers/FireworksProvider.image|image(kotlin.String){}[0]
+    final fun image(ai.torad.aisdk/ModelId): ai.torad.aisdk/ImageModel // ai.torad.aisdk.providers/FireworksProvider.image|image(ai.torad.aisdk.ModelId){}[0]
     final fun imageModel(kotlin/String): ai.torad.aisdk/ImageModel // ai.torad.aisdk.providers/FireworksProvider.imageModel|imageModel(kotlin.String){}[0]
-    final fun invoke(kotlin/String): ai.torad.aisdk/LanguageModel // ai.torad.aisdk.providers/FireworksProvider.invoke|invoke(kotlin.String){}[0]
+    final fun invoke(ai.torad.aisdk/ModelId): ai.torad.aisdk/LanguageModel // ai.torad.aisdk.providers/FireworksProvider.invoke|invoke(ai.torad.aisdk.ModelId){}[0]
     final fun languageModel(kotlin/String): ai.torad.aisdk/LanguageModel // ai.torad.aisdk.providers/FireworksProvider.languageModel|languageModel(kotlin.String){}[0]
-    final fun textEmbeddingModel(kotlin/String): ai.torad.aisdk/EmbeddingModel // ai.torad.aisdk.providers/FireworksProvider.textEmbeddingModel|textEmbeddingModel(kotlin.String){}[0]
+    final fun textEmbeddingModel(ai.torad.aisdk/ModelId): ai.torad.aisdk/EmbeddingModel // ai.torad.aisdk.providers/FireworksProvider.textEmbeddingModel|textEmbeddingModel(ai.torad.aisdk.ModelId){}[0]
 }
 
 final class ai.torad.aisdk.providers/FireworksProviderSettings { // ai.torad.aisdk.providers/FireworksProviderSettings|null[0]
@@ -5851,20 +5851,20 @@ final class ai.torad.aisdk.providers/GoogleGenerativeAIProvider : ai.torad.aisdk
         final fun <get-tools>(): ai.torad.aisdk.providers/GoogleTools // ai.torad.aisdk.providers/GoogleGenerativeAIProvider.tools.<get-tools>|<get-tools>(){}[0]
 
     final fun agentInteraction(kotlin/String): ai.torad.aisdk/LanguageModel // ai.torad.aisdk.providers/GoogleGenerativeAIProvider.agentInteraction|agentInteraction(kotlin.String){}[0]
-    final fun chat(kotlin/String): ai.torad.aisdk/LanguageModel // ai.torad.aisdk.providers/GoogleGenerativeAIProvider.chat|chat(kotlin.String){}[0]
-    final fun embedding(kotlin/String): ai.torad.aisdk/EmbeddingModel // ai.torad.aisdk.providers/GoogleGenerativeAIProvider.embedding|embedding(kotlin.String){}[0]
+    final fun chat(ai.torad.aisdk/ModelId): ai.torad.aisdk/LanguageModel // ai.torad.aisdk.providers/GoogleGenerativeAIProvider.chat|chat(ai.torad.aisdk.ModelId){}[0]
+    final fun embedding(ai.torad.aisdk/ModelId): ai.torad.aisdk/EmbeddingModel // ai.torad.aisdk.providers/GoogleGenerativeAIProvider.embedding|embedding(ai.torad.aisdk.ModelId){}[0]
     final fun embeddingModel(kotlin/String): ai.torad.aisdk/EmbeddingModel // ai.torad.aisdk.providers/GoogleGenerativeAIProvider.embeddingModel|embeddingModel(kotlin.String){}[0]
-    final fun generativeAI(kotlin/String): ai.torad.aisdk/LanguageModel // ai.torad.aisdk.providers/GoogleGenerativeAIProvider.generativeAI|generativeAI(kotlin.String){}[0]
-    final fun image(kotlin/String): ai.torad.aisdk/ImageModel // ai.torad.aisdk.providers/GoogleGenerativeAIProvider.image|image(kotlin.String){}[0]
+    final fun generativeAI(ai.torad.aisdk/ModelId): ai.torad.aisdk/LanguageModel // ai.torad.aisdk.providers/GoogleGenerativeAIProvider.generativeAI|generativeAI(ai.torad.aisdk.ModelId){}[0]
+    final fun image(ai.torad.aisdk/ModelId): ai.torad.aisdk/ImageModel // ai.torad.aisdk.providers/GoogleGenerativeAIProvider.image|image(ai.torad.aisdk.ModelId){}[0]
     final fun imageModel(kotlin/String): ai.torad.aisdk/ImageModel // ai.torad.aisdk.providers/GoogleGenerativeAIProvider.imageModel|imageModel(kotlin.String){}[0]
     final fun interactions(ai.torad.aisdk.providers/GoogleInteractionsModelInput): ai.torad.aisdk/LanguageModel // ai.torad.aisdk.providers/GoogleGenerativeAIProvider.interactions|interactions(ai.torad.aisdk.providers.GoogleInteractionsModelInput){}[0]
-    final fun interactions(kotlin/String): ai.torad.aisdk/LanguageModel // ai.torad.aisdk.providers/GoogleGenerativeAIProvider.interactions|interactions(kotlin.String){}[0]
-    final fun invoke(kotlin/String): ai.torad.aisdk/LanguageModel // ai.torad.aisdk.providers/GoogleGenerativeAIProvider.invoke|invoke(kotlin.String){}[0]
+    final fun interactions(ai.torad.aisdk/ModelId): ai.torad.aisdk/LanguageModel // ai.torad.aisdk.providers/GoogleGenerativeAIProvider.interactions|interactions(ai.torad.aisdk.ModelId){}[0]
+    final fun invoke(ai.torad.aisdk/ModelId): ai.torad.aisdk/LanguageModel // ai.torad.aisdk.providers/GoogleGenerativeAIProvider.invoke|invoke(ai.torad.aisdk.ModelId){}[0]
     final fun languageModel(kotlin/String): ai.torad.aisdk/LanguageModel // ai.torad.aisdk.providers/GoogleGenerativeAIProvider.languageModel|languageModel(kotlin.String){}[0]
     final fun managedAgentInteraction(kotlin/String): ai.torad.aisdk/LanguageModel // ai.torad.aisdk.providers/GoogleGenerativeAIProvider.managedAgentInteraction|managedAgentInteraction(kotlin.String){}[0]
-    final fun textEmbedding(kotlin/String): ai.torad.aisdk/EmbeddingModel // ai.torad.aisdk.providers/GoogleGenerativeAIProvider.textEmbedding|textEmbedding(kotlin.String){}[0]
-    final fun textEmbeddingModel(kotlin/String): ai.torad.aisdk/EmbeddingModel // ai.torad.aisdk.providers/GoogleGenerativeAIProvider.textEmbeddingModel|textEmbeddingModel(kotlin.String){}[0]
-    final fun video(kotlin/String): ai.torad.aisdk/VideoModel // ai.torad.aisdk.providers/GoogleGenerativeAIProvider.video|video(kotlin.String){}[0]
+    final fun textEmbedding(ai.torad.aisdk/ModelId): ai.torad.aisdk/EmbeddingModel // ai.torad.aisdk.providers/GoogleGenerativeAIProvider.textEmbedding|textEmbedding(ai.torad.aisdk.ModelId){}[0]
+    final fun textEmbeddingModel(ai.torad.aisdk/ModelId): ai.torad.aisdk/EmbeddingModel // ai.torad.aisdk.providers/GoogleGenerativeAIProvider.textEmbeddingModel|textEmbeddingModel(ai.torad.aisdk.ModelId){}[0]
+    final fun video(ai.torad.aisdk/ModelId): ai.torad.aisdk/VideoModel // ai.torad.aisdk.providers/GoogleGenerativeAIProvider.video|video(ai.torad.aisdk.ModelId){}[0]
     final fun videoModel(kotlin/String): ai.torad.aisdk/VideoModel // ai.torad.aisdk.providers/GoogleGenerativeAIProvider.videoModel|videoModel(kotlin.String){}[0]
 }
 
@@ -5955,12 +5955,12 @@ final class ai.torad.aisdk.providers/GoogleVertexAnthropicProvider : ai.torad.ai
     final val tools // ai.torad.aisdk.providers/GoogleVertexAnthropicProvider.tools|{}tools[0]
         final fun <get-tools>(): ai.torad.aisdk.providers/AnthropicTools // ai.torad.aisdk.providers/GoogleVertexAnthropicProvider.tools.<get-tools>|<get-tools>(){}[0]
 
-    final fun chat(kotlin/String): ai.torad.aisdk/LanguageModel // ai.torad.aisdk.providers/GoogleVertexAnthropicProvider.chat|chat(kotlin.String){}[0]
+    final fun chat(ai.torad.aisdk/ModelId): ai.torad.aisdk/LanguageModel // ai.torad.aisdk.providers/GoogleVertexAnthropicProvider.chat|chat(ai.torad.aisdk.ModelId){}[0]
     final fun embeddingModel(kotlin/String): ai.torad.aisdk/EmbeddingModel // ai.torad.aisdk.providers/GoogleVertexAnthropicProvider.embeddingModel|embeddingModel(kotlin.String){}[0]
     final fun imageModel(kotlin/String): ai.torad.aisdk/ImageModel // ai.torad.aisdk.providers/GoogleVertexAnthropicProvider.imageModel|imageModel(kotlin.String){}[0]
-    final fun invoke(kotlin/String): ai.torad.aisdk/LanguageModel // ai.torad.aisdk.providers/GoogleVertexAnthropicProvider.invoke|invoke(kotlin.String){}[0]
+    final fun invoke(ai.torad.aisdk/ModelId): ai.torad.aisdk/LanguageModel // ai.torad.aisdk.providers/GoogleVertexAnthropicProvider.invoke|invoke(ai.torad.aisdk.ModelId){}[0]
     final fun languageModel(kotlin/String): ai.torad.aisdk/LanguageModel // ai.torad.aisdk.providers/GoogleVertexAnthropicProvider.languageModel|languageModel(kotlin.String){}[0]
-    final fun messages(kotlin/String): ai.torad.aisdk/LanguageModel // ai.torad.aisdk.providers/GoogleVertexAnthropicProvider.messages|messages(kotlin.String){}[0]
+    final fun messages(ai.torad.aisdk/ModelId): ai.torad.aisdk/LanguageModel // ai.torad.aisdk.providers/GoogleVertexAnthropicProvider.messages|messages(ai.torad.aisdk.ModelId){}[0]
     final fun textEmbeddingModel(kotlin/String): kotlin/Nothing // ai.torad.aisdk.providers/GoogleVertexAnthropicProvider.textEmbeddingModel|textEmbeddingModel(kotlin.String){}[0]
 }
 
@@ -5972,8 +5972,8 @@ final class ai.torad.aisdk.providers/GoogleVertexMaasProvider : ai.torad.aisdk/P
     final val settings // ai.torad.aisdk.providers/GoogleVertexMaasProvider.settings|{}settings[0]
         final fun <get-settings>(): ai.torad.aisdk.providers/GoogleVertexProviderSettings // ai.torad.aisdk.providers/GoogleVertexMaasProvider.settings.<get-settings>|<get-settings>(){}[0]
 
-    final fun chat(kotlin/String): ai.torad.aisdk/LanguageModel // ai.torad.aisdk.providers/GoogleVertexMaasProvider.chat|chat(kotlin.String){}[0]
-    final fun invoke(kotlin/String): ai.torad.aisdk/LanguageModel // ai.torad.aisdk.providers/GoogleVertexMaasProvider.invoke|invoke(kotlin.String){}[0]
+    final fun chat(ai.torad.aisdk/ModelId): ai.torad.aisdk/LanguageModel // ai.torad.aisdk.providers/GoogleVertexMaasProvider.chat|chat(ai.torad.aisdk.ModelId){}[0]
+    final fun invoke(ai.torad.aisdk/ModelId): ai.torad.aisdk/LanguageModel // ai.torad.aisdk.providers/GoogleVertexMaasProvider.invoke|invoke(ai.torad.aisdk.ModelId){}[0]
     final fun languageModel(kotlin/String): ai.torad.aisdk/LanguageModel // ai.torad.aisdk.providers/GoogleVertexMaasProvider.languageModel|languageModel(kotlin.String){}[0]
 }
 
@@ -5987,17 +5987,17 @@ final class ai.torad.aisdk.providers/GoogleVertexProvider : ai.torad.aisdk/Provi
     final val tools // ai.torad.aisdk.providers/GoogleVertexProvider.tools|{}tools[0]
         final fun <get-tools>(): ai.torad.aisdk.providers/GoogleTools // ai.torad.aisdk.providers/GoogleVertexProvider.tools.<get-tools>|<get-tools>(){}[0]
 
-    final fun chat(kotlin/String): ai.torad.aisdk/LanguageModel // ai.torad.aisdk.providers/GoogleVertexProvider.chat|chat(kotlin.String){}[0]
-    final fun embedding(kotlin/String): ai.torad.aisdk/EmbeddingModel // ai.torad.aisdk.providers/GoogleVertexProvider.embedding|embedding(kotlin.String){}[0]
+    final fun chat(ai.torad.aisdk/ModelId): ai.torad.aisdk/LanguageModel // ai.torad.aisdk.providers/GoogleVertexProvider.chat|chat(ai.torad.aisdk.ModelId){}[0]
+    final fun embedding(ai.torad.aisdk/ModelId): ai.torad.aisdk/EmbeddingModel // ai.torad.aisdk.providers/GoogleVertexProvider.embedding|embedding(ai.torad.aisdk.ModelId){}[0]
     final fun embeddingModel(kotlin/String): ai.torad.aisdk/EmbeddingModel // ai.torad.aisdk.providers/GoogleVertexProvider.embeddingModel|embeddingModel(kotlin.String){}[0]
-    final fun generativeAI(kotlin/String): ai.torad.aisdk/LanguageModel // ai.torad.aisdk.providers/GoogleVertexProvider.generativeAI|generativeAI(kotlin.String){}[0]
-    final fun image(kotlin/String): ai.torad.aisdk/ImageModel // ai.torad.aisdk.providers/GoogleVertexProvider.image|image(kotlin.String){}[0]
+    final fun generativeAI(ai.torad.aisdk/ModelId): ai.torad.aisdk/LanguageModel // ai.torad.aisdk.providers/GoogleVertexProvider.generativeAI|generativeAI(ai.torad.aisdk.ModelId){}[0]
+    final fun image(ai.torad.aisdk/ModelId): ai.torad.aisdk/ImageModel // ai.torad.aisdk.providers/GoogleVertexProvider.image|image(ai.torad.aisdk.ModelId){}[0]
     final fun imageModel(kotlin/String): ai.torad.aisdk/ImageModel // ai.torad.aisdk.providers/GoogleVertexProvider.imageModel|imageModel(kotlin.String){}[0]
-    final fun invoke(kotlin/String): ai.torad.aisdk/LanguageModel // ai.torad.aisdk.providers/GoogleVertexProvider.invoke|invoke(kotlin.String){}[0]
+    final fun invoke(ai.torad.aisdk/ModelId): ai.torad.aisdk/LanguageModel // ai.torad.aisdk.providers/GoogleVertexProvider.invoke|invoke(ai.torad.aisdk.ModelId){}[0]
     final fun languageModel(kotlin/String): ai.torad.aisdk/LanguageModel // ai.torad.aisdk.providers/GoogleVertexProvider.languageModel|languageModel(kotlin.String){}[0]
-    final fun textEmbedding(kotlin/String): ai.torad.aisdk/EmbeddingModel // ai.torad.aisdk.providers/GoogleVertexProvider.textEmbedding|textEmbedding(kotlin.String){}[0]
-    final fun textEmbeddingModel(kotlin/String): ai.torad.aisdk/EmbeddingModel // ai.torad.aisdk.providers/GoogleVertexProvider.textEmbeddingModel|textEmbeddingModel(kotlin.String){}[0]
-    final fun video(kotlin/String): ai.torad.aisdk/VideoModel // ai.torad.aisdk.providers/GoogleVertexProvider.video|video(kotlin.String){}[0]
+    final fun textEmbedding(ai.torad.aisdk/ModelId): ai.torad.aisdk/EmbeddingModel // ai.torad.aisdk.providers/GoogleVertexProvider.textEmbedding|textEmbedding(ai.torad.aisdk.ModelId){}[0]
+    final fun textEmbeddingModel(ai.torad.aisdk/ModelId): ai.torad.aisdk/EmbeddingModel // ai.torad.aisdk.providers/GoogleVertexProvider.textEmbeddingModel|textEmbeddingModel(ai.torad.aisdk.ModelId){}[0]
+    final fun video(ai.torad.aisdk/ModelId): ai.torad.aisdk/VideoModel // ai.torad.aisdk.providers/GoogleVertexProvider.video|video(ai.torad.aisdk.ModelId){}[0]
     final fun videoModel(kotlin/String): ai.torad.aisdk/VideoModel // ai.torad.aisdk.providers/GoogleVertexProvider.videoModel|videoModel(kotlin.String){}[0]
 }
 
@@ -6055,11 +6055,11 @@ final class ai.torad.aisdk.providers/GoogleVertexXaiProvider : ai.torad.aisdk/Pr
     final val settings // ai.torad.aisdk.providers/GoogleVertexXaiProvider.settings|{}settings[0]
         final fun <get-settings>(): ai.torad.aisdk.providers/GoogleVertexProviderSettings // ai.torad.aisdk.providers/GoogleVertexXaiProvider.settings.<get-settings>|<get-settings>(){}[0]
 
-    final fun chat(kotlin/String): ai.torad.aisdk/LanguageModel // ai.torad.aisdk.providers/GoogleVertexXaiProvider.chat|chat(kotlin.String){}[0]
-    final fun chatModel(kotlin/String): ai.torad.aisdk/LanguageModel // ai.torad.aisdk.providers/GoogleVertexXaiProvider.chatModel|chatModel(kotlin.String){}[0]
+    final fun chat(ai.torad.aisdk/ModelId): ai.torad.aisdk/LanguageModel // ai.torad.aisdk.providers/GoogleVertexXaiProvider.chat|chat(ai.torad.aisdk.ModelId){}[0]
+    final fun chatModel(ai.torad.aisdk/ModelId): ai.torad.aisdk/LanguageModel // ai.torad.aisdk.providers/GoogleVertexXaiProvider.chatModel|chatModel(ai.torad.aisdk.ModelId){}[0]
     final fun embeddingModel(kotlin/String): ai.torad.aisdk/EmbeddingModel // ai.torad.aisdk.providers/GoogleVertexXaiProvider.embeddingModel|embeddingModel(kotlin.String){}[0]
     final fun imageModel(kotlin/String): ai.torad.aisdk/ImageModel // ai.torad.aisdk.providers/GoogleVertexXaiProvider.imageModel|imageModel(kotlin.String){}[0]
-    final fun invoke(kotlin/String): ai.torad.aisdk/LanguageModel // ai.torad.aisdk.providers/GoogleVertexXaiProvider.invoke|invoke(kotlin.String){}[0]
+    final fun invoke(ai.torad.aisdk/ModelId): ai.torad.aisdk/LanguageModel // ai.torad.aisdk.providers/GoogleVertexXaiProvider.invoke|invoke(ai.torad.aisdk.ModelId){}[0]
     final fun languageModel(kotlin/String): ai.torad.aisdk/LanguageModel // ai.torad.aisdk.providers/GoogleVertexXaiProvider.languageModel|languageModel(kotlin.String){}[0]
     final fun textEmbeddingModel(kotlin/String): kotlin/Nothing // ai.torad.aisdk.providers/GoogleVertexXaiProvider.textEmbeddingModel|textEmbeddingModel(kotlin.String){}[0]
 }
@@ -6202,9 +6202,9 @@ final class ai.torad.aisdk.providers/HuggingFaceProvider : ai.torad.aisdk/Provid
 
     final fun embeddingModel(kotlin/String): ai.torad.aisdk/EmbeddingModel // ai.torad.aisdk.providers/HuggingFaceProvider.embeddingModel|embeddingModel(kotlin.String){}[0]
     final fun imageModel(kotlin/String): ai.torad.aisdk/ImageModel // ai.torad.aisdk.providers/HuggingFaceProvider.imageModel|imageModel(kotlin.String){}[0]
-    final fun invoke(kotlin/String): ai.torad.aisdk/LanguageModel // ai.torad.aisdk.providers/HuggingFaceProvider.invoke|invoke(kotlin.String){}[0]
+    final fun invoke(ai.torad.aisdk/ModelId): ai.torad.aisdk/LanguageModel // ai.torad.aisdk.providers/HuggingFaceProvider.invoke|invoke(ai.torad.aisdk.ModelId){}[0]
     final fun languageModel(kotlin/String): ai.torad.aisdk/LanguageModel // ai.torad.aisdk.providers/HuggingFaceProvider.languageModel|languageModel(kotlin.String){}[0]
-    final fun responses(kotlin/String): ai.torad.aisdk/LanguageModel // ai.torad.aisdk.providers/HuggingFaceProvider.responses|responses(kotlin.String){}[0]
+    final fun responses(ai.torad.aisdk/ModelId): ai.torad.aisdk/LanguageModel // ai.torad.aisdk.providers/HuggingFaceProvider.responses|responses(ai.torad.aisdk.ModelId){}[0]
     final fun textEmbeddingModel(kotlin/String): kotlin/Nothing // ai.torad.aisdk.providers/HuggingFaceProvider.textEmbeddingModel|textEmbeddingModel(kotlin.String){}[0]
 }
 
@@ -6351,7 +6351,7 @@ final class ai.torad.aisdk.providers/KlingAIProvider : ai.torad.aisdk/Provider {
     final fun embeddingModel(kotlin/String): ai.torad.aisdk/EmbeddingModel // ai.torad.aisdk.providers/KlingAIProvider.embeddingModel|embeddingModel(kotlin.String){}[0]
     final fun imageModel(kotlin/String): ai.torad.aisdk/ImageModel // ai.torad.aisdk.providers/KlingAIProvider.imageModel|imageModel(kotlin.String){}[0]
     final fun languageModel(kotlin/String): ai.torad.aisdk/LanguageModel // ai.torad.aisdk.providers/KlingAIProvider.languageModel|languageModel(kotlin.String){}[0]
-    final fun video(kotlin/String): ai.torad.aisdk/VideoModel // ai.torad.aisdk.providers/KlingAIProvider.video|video(kotlin.String){}[0]
+    final fun video(ai.torad.aisdk/ModelId): ai.torad.aisdk/VideoModel // ai.torad.aisdk.providers/KlingAIProvider.video|video(ai.torad.aisdk.ModelId){}[0]
     final fun videoModel(kotlin/String): ai.torad.aisdk/VideoModel // ai.torad.aisdk.providers/KlingAIProvider.videoModel|videoModel(kotlin.String){}[0]
 }
 
@@ -6482,9 +6482,9 @@ final class ai.torad.aisdk.providers/LMNTProvider : ai.torad.aisdk/Provider { //
 
     final fun embeddingModel(kotlin/String): ai.torad.aisdk/EmbeddingModel // ai.torad.aisdk.providers/LMNTProvider.embeddingModel|embeddingModel(kotlin.String){}[0]
     final fun imageModel(kotlin/String): ai.torad.aisdk/ImageModel // ai.torad.aisdk.providers/LMNTProvider.imageModel|imageModel(kotlin.String){}[0]
-    final fun invoke(kotlin/String = ...): ai.torad.aisdk/SpeechModel // ai.torad.aisdk.providers/LMNTProvider.invoke|invoke(kotlin.String){}[0]
+    final fun invoke(ai.torad.aisdk/ModelId = ...): ai.torad.aisdk/SpeechModel // ai.torad.aisdk.providers/LMNTProvider.invoke|invoke(ai.torad.aisdk.ModelId){}[0]
     final fun languageModel(kotlin/String): ai.torad.aisdk/LanguageModel // ai.torad.aisdk.providers/LMNTProvider.languageModel|languageModel(kotlin.String){}[0]
-    final fun speech(kotlin/String): ai.torad.aisdk/SpeechModel // ai.torad.aisdk.providers/LMNTProvider.speech|speech(kotlin.String){}[0]
+    final fun speech(ai.torad.aisdk/ModelId): ai.torad.aisdk/SpeechModel // ai.torad.aisdk.providers/LMNTProvider.speech|speech(ai.torad.aisdk.ModelId){}[0]
     final fun speechModel(kotlin/String): ai.torad.aisdk/SpeechModel // ai.torad.aisdk.providers/LMNTProvider.speechModel|speechModel(kotlin.String){}[0]
 }
 
@@ -6613,7 +6613,7 @@ final class ai.torad.aisdk.providers/LumaProvider : ai.torad.aisdk/Provider { //
         final fun <get-settings>(): ai.torad.aisdk.providers/LumaProviderSettings // ai.torad.aisdk.providers/LumaProvider.settings.<get-settings>|<get-settings>(){}[0]
 
     final fun embeddingModel(kotlin/String): ai.torad.aisdk/EmbeddingModel // ai.torad.aisdk.providers/LumaProvider.embeddingModel|embeddingModel(kotlin.String){}[0]
-    final fun image(kotlin/String): ai.torad.aisdk/ImageModel // ai.torad.aisdk.providers/LumaProvider.image|image(kotlin.String){}[0]
+    final fun image(ai.torad.aisdk/ModelId): ai.torad.aisdk/ImageModel // ai.torad.aisdk.providers/LumaProvider.image|image(ai.torad.aisdk.ModelId){}[0]
     final fun imageModel(kotlin/String): ai.torad.aisdk/ImageModel // ai.torad.aisdk.providers/LumaProvider.imageModel|imageModel(kotlin.String){}[0]
     final fun languageModel(kotlin/String): ai.torad.aisdk/LanguageModel // ai.torad.aisdk.providers/LumaProvider.languageModel|languageModel(kotlin.String){}[0]
     final fun textEmbeddingModel(kotlin/String): ai.torad.aisdk/EmbeddingModel // ai.torad.aisdk.providers/LumaProvider.textEmbeddingModel|textEmbeddingModel(kotlin.String){}[0]
@@ -6705,14 +6705,14 @@ final class ai.torad.aisdk.providers/MistralProvider : ai.torad.aisdk/Provider {
     final val settings // ai.torad.aisdk.providers/MistralProvider.settings|{}settings[0]
         final fun <get-settings>(): ai.torad.aisdk.providers/MistralProviderSettings // ai.torad.aisdk.providers/MistralProvider.settings.<get-settings>|<get-settings>(){}[0]
 
-    final fun chat(kotlin/String): ai.torad.aisdk/LanguageModel // ai.torad.aisdk.providers/MistralProvider.chat|chat(kotlin.String){}[0]
-    final fun embedding(kotlin/String): ai.torad.aisdk/EmbeddingModel // ai.torad.aisdk.providers/MistralProvider.embedding|embedding(kotlin.String){}[0]
+    final fun chat(ai.torad.aisdk/ModelId): ai.torad.aisdk/LanguageModel // ai.torad.aisdk.providers/MistralProvider.chat|chat(ai.torad.aisdk.ModelId){}[0]
+    final fun embedding(ai.torad.aisdk/ModelId): ai.torad.aisdk/EmbeddingModel // ai.torad.aisdk.providers/MistralProvider.embedding|embedding(ai.torad.aisdk.ModelId){}[0]
     final fun embeddingModel(kotlin/String): ai.torad.aisdk/EmbeddingModel // ai.torad.aisdk.providers/MistralProvider.embeddingModel|embeddingModel(kotlin.String){}[0]
     final fun imageModel(kotlin/String): ai.torad.aisdk/ImageModel // ai.torad.aisdk.providers/MistralProvider.imageModel|imageModel(kotlin.String){}[0]
-    final fun invoke(kotlin/String): ai.torad.aisdk/LanguageModel // ai.torad.aisdk.providers/MistralProvider.invoke|invoke(kotlin.String){}[0]
+    final fun invoke(ai.torad.aisdk/ModelId): ai.torad.aisdk/LanguageModel // ai.torad.aisdk.providers/MistralProvider.invoke|invoke(ai.torad.aisdk.ModelId){}[0]
     final fun languageModel(kotlin/String): ai.torad.aisdk/LanguageModel // ai.torad.aisdk.providers/MistralProvider.languageModel|languageModel(kotlin.String){}[0]
-    final fun textEmbedding(kotlin/String): ai.torad.aisdk/EmbeddingModel // ai.torad.aisdk.providers/MistralProvider.textEmbedding|textEmbedding(kotlin.String){}[0]
-    final fun textEmbeddingModel(kotlin/String): ai.torad.aisdk/EmbeddingModel // ai.torad.aisdk.providers/MistralProvider.textEmbeddingModel|textEmbeddingModel(kotlin.String){}[0]
+    final fun textEmbedding(ai.torad.aisdk/ModelId): ai.torad.aisdk/EmbeddingModel // ai.torad.aisdk.providers/MistralProvider.textEmbedding|textEmbedding(ai.torad.aisdk.ModelId){}[0]
+    final fun textEmbeddingModel(ai.torad.aisdk/ModelId): ai.torad.aisdk/EmbeddingModel // ai.torad.aisdk.providers/MistralProvider.textEmbeddingModel|textEmbeddingModel(ai.torad.aisdk.ModelId){}[0]
 }
 
 final class ai.torad.aisdk.providers/MistralProviderSettings { // ai.torad.aisdk.providers/MistralProviderSettings|null[0]
@@ -6885,10 +6885,10 @@ final class ai.torad.aisdk.providers/MoonshotAIProvider : ai.torad.aisdk/Provide
     final val providerId // ai.torad.aisdk.providers/MoonshotAIProvider.providerId|{}providerId[0]
         final fun <get-providerId>(): kotlin/String // ai.torad.aisdk.providers/MoonshotAIProvider.providerId.<get-providerId>|<get-providerId>(){}[0]
 
-    final fun chatModel(kotlin/String): ai.torad.aisdk/LanguageModel // ai.torad.aisdk.providers/MoonshotAIProvider.chatModel|chatModel(kotlin.String){}[0]
+    final fun chatModel(ai.torad.aisdk/ModelId): ai.torad.aisdk/LanguageModel // ai.torad.aisdk.providers/MoonshotAIProvider.chatModel|chatModel(ai.torad.aisdk.ModelId){}[0]
     final fun embeddingModel(kotlin/String): ai.torad.aisdk/EmbeddingModel // ai.torad.aisdk.providers/MoonshotAIProvider.embeddingModel|embeddingModel(kotlin.String){}[0]
     final fun imageModel(kotlin/String): ai.torad.aisdk/ImageModel // ai.torad.aisdk.providers/MoonshotAIProvider.imageModel|imageModel(kotlin.String){}[0]
-    final fun invoke(kotlin/String): ai.torad.aisdk/LanguageModel // ai.torad.aisdk.providers/MoonshotAIProvider.invoke|invoke(kotlin.String){}[0]
+    final fun invoke(ai.torad.aisdk/ModelId): ai.torad.aisdk/LanguageModel // ai.torad.aisdk.providers/MoonshotAIProvider.invoke|invoke(ai.torad.aisdk.ModelId){}[0]
     final fun languageModel(kotlin/String): ai.torad.aisdk/LanguageModel // ai.torad.aisdk.providers/MoonshotAIProvider.languageModel|languageModel(kotlin.String){}[0]
 }
 
@@ -7378,12 +7378,12 @@ final class ai.torad.aisdk.providers/ProdiaProvider : ai.torad.aisdk/Provider { 
         final fun <get-settings>(): ai.torad.aisdk.providers/ProdiaProviderSettings // ai.torad.aisdk.providers/ProdiaProvider.settings.<get-settings>|<get-settings>(){}[0]
 
     final fun embeddingModel(kotlin/String): ai.torad.aisdk/EmbeddingModel // ai.torad.aisdk.providers/ProdiaProvider.embeddingModel|embeddingModel(kotlin.String){}[0]
-    final fun image(kotlin/String): ai.torad.aisdk/ImageModel // ai.torad.aisdk.providers/ProdiaProvider.image|image(kotlin.String){}[0]
+    final fun image(ai.torad.aisdk/ModelId): ai.torad.aisdk/ImageModel // ai.torad.aisdk.providers/ProdiaProvider.image|image(ai.torad.aisdk.ModelId){}[0]
     final fun imageModel(kotlin/String): ai.torad.aisdk/ImageModel // ai.torad.aisdk.providers/ProdiaProvider.imageModel|imageModel(kotlin.String){}[0]
-    final fun invoke(kotlin/String): ai.torad.aisdk/LanguageModel // ai.torad.aisdk.providers/ProdiaProvider.invoke|invoke(kotlin.String){}[0]
+    final fun invoke(ai.torad.aisdk/ModelId): ai.torad.aisdk/LanguageModel // ai.torad.aisdk.providers/ProdiaProvider.invoke|invoke(ai.torad.aisdk.ModelId){}[0]
     final fun languageModel(kotlin/String): ai.torad.aisdk/LanguageModel // ai.torad.aisdk.providers/ProdiaProvider.languageModel|languageModel(kotlin.String){}[0]
     final fun textEmbeddingModel(kotlin/String): kotlin/Nothing // ai.torad.aisdk.providers/ProdiaProvider.textEmbeddingModel|textEmbeddingModel(kotlin.String){}[0]
-    final fun video(kotlin/String): ai.torad.aisdk/VideoModel // ai.torad.aisdk.providers/ProdiaProvider.video|video(kotlin.String){}[0]
+    final fun video(ai.torad.aisdk/ModelId): ai.torad.aisdk/VideoModel // ai.torad.aisdk.providers/ProdiaProvider.video|video(ai.torad.aisdk.ModelId){}[0]
     final fun videoModel(kotlin/String): ai.torad.aisdk/VideoModel // ai.torad.aisdk.providers/ProdiaProvider.videoModel|videoModel(kotlin.String){}[0]
 }
 
@@ -7503,7 +7503,7 @@ final class ai.torad.aisdk.providers/QuiverAIProvider : ai.torad.aisdk/Provider 
         final fun <get-settings>(): ai.torad.aisdk.providers/QuiverAIProviderSettings // ai.torad.aisdk.providers/QuiverAIProvider.settings.<get-settings>|<get-settings>(){}[0]
 
     final fun embeddingModel(kotlin/String): ai.torad.aisdk/EmbeddingModel // ai.torad.aisdk.providers/QuiverAIProvider.embeddingModel|embeddingModel(kotlin.String){}[0]
-    final fun image(kotlin/String): ai.torad.aisdk/ImageModel // ai.torad.aisdk.providers/QuiverAIProvider.image|image(kotlin.String){}[0]
+    final fun image(ai.torad.aisdk/ModelId): ai.torad.aisdk/ImageModel // ai.torad.aisdk.providers/QuiverAIProvider.image|image(ai.torad.aisdk.ModelId){}[0]
     final fun imageModel(kotlin/String): ai.torad.aisdk/ImageModel // ai.torad.aisdk.providers/QuiverAIProvider.imageModel|imageModel(kotlin.String){}[0]
     final fun languageModel(kotlin/String): ai.torad.aisdk/LanguageModel // ai.torad.aisdk.providers/QuiverAIProvider.languageModel|languageModel(kotlin.String){}[0]
     final fun textEmbeddingModel(kotlin/String): kotlin/Nothing // ai.torad.aisdk.providers/QuiverAIProvider.textEmbeddingModel|textEmbeddingModel(kotlin.String){}[0]
@@ -7594,11 +7594,11 @@ final class ai.torad.aisdk.providers/ReplicateProvider : ai.torad.aisdk/Provider
         final fun <get-providerId>(): kotlin/String // ai.torad.aisdk.providers/ReplicateProvider.providerId.<get-providerId>|<get-providerId>(){}[0]
 
     final fun embeddingModel(kotlin/String): ai.torad.aisdk/EmbeddingModel // ai.torad.aisdk.providers/ReplicateProvider.embeddingModel|embeddingModel(kotlin.String){}[0]
-    final fun image(kotlin/String): ai.torad.aisdk/ImageModel // ai.torad.aisdk.providers/ReplicateProvider.image|image(kotlin.String){}[0]
+    final fun image(ai.torad.aisdk/ModelId): ai.torad.aisdk/ImageModel // ai.torad.aisdk.providers/ReplicateProvider.image|image(ai.torad.aisdk.ModelId){}[0]
     final fun imageModel(kotlin/String): ai.torad.aisdk/ImageModel // ai.torad.aisdk.providers/ReplicateProvider.imageModel|imageModel(kotlin.String){}[0]
     final fun languageModel(kotlin/String): ai.torad.aisdk/LanguageModel // ai.torad.aisdk.providers/ReplicateProvider.languageModel|languageModel(kotlin.String){}[0]
     final fun textEmbeddingModel(kotlin/String): kotlin/Nothing // ai.torad.aisdk.providers/ReplicateProvider.textEmbeddingModel|textEmbeddingModel(kotlin.String){}[0]
-    final fun video(kotlin/String): ai.torad.aisdk/VideoModel // ai.torad.aisdk.providers/ReplicateProvider.video|video(kotlin.String){}[0]
+    final fun video(ai.torad.aisdk/ModelId): ai.torad.aisdk/VideoModel // ai.torad.aisdk.providers/ReplicateProvider.video|video(ai.torad.aisdk.ModelId){}[0]
     final fun videoModel(kotlin/String): ai.torad.aisdk/VideoModel // ai.torad.aisdk.providers/ReplicateProvider.videoModel|videoModel(kotlin.String){}[0]
 }
 
@@ -7705,10 +7705,10 @@ final class ai.torad.aisdk.providers/RevaiProvider : ai.torad.aisdk/Provider { /
 
     final fun embeddingModel(kotlin/String): ai.torad.aisdk/EmbeddingModel // ai.torad.aisdk.providers/RevaiProvider.embeddingModel|embeddingModel(kotlin.String){}[0]
     final fun imageModel(kotlin/String): ai.torad.aisdk/ImageModel // ai.torad.aisdk.providers/RevaiProvider.imageModel|imageModel(kotlin.String){}[0]
-    final fun invoke(kotlin/String = ...): ai.torad.aisdk/TranscriptionModel // ai.torad.aisdk.providers/RevaiProvider.invoke|invoke(kotlin.String){}[0]
+    final fun invoke(ai.torad.aisdk/ModelId = ...): ai.torad.aisdk/TranscriptionModel // ai.torad.aisdk.providers/RevaiProvider.invoke|invoke(ai.torad.aisdk.ModelId){}[0]
     final fun languageModel(kotlin/String): ai.torad.aisdk/LanguageModel // ai.torad.aisdk.providers/RevaiProvider.languageModel|languageModel(kotlin.String){}[0]
     final fun textEmbeddingModel(kotlin/String): kotlin/Nothing // ai.torad.aisdk.providers/RevaiProvider.textEmbeddingModel|textEmbeddingModel(kotlin.String){}[0]
-    final fun transcription(kotlin/String): ai.torad.aisdk/TranscriptionModel // ai.torad.aisdk.providers/RevaiProvider.transcription|transcription(kotlin.String){}[0]
+    final fun transcription(ai.torad.aisdk/ModelId): ai.torad.aisdk/TranscriptionModel // ai.torad.aisdk.providers/RevaiProvider.transcription|transcription(ai.torad.aisdk.ModelId){}[0]
     final fun transcriptionModel(kotlin/String): ai.torad.aisdk/TranscriptionModel // ai.torad.aisdk.providers/RevaiProvider.transcriptionModel|transcriptionModel(kotlin.String){}[0]
 }
 
@@ -7924,16 +7924,16 @@ final class ai.torad.aisdk.providers/TogetherAIProvider : ai.torad.aisdk/Provide
     final val providerId // ai.torad.aisdk.providers/TogetherAIProvider.providerId|{}providerId[0]
         final fun <get-providerId>(): kotlin/String // ai.torad.aisdk.providers/TogetherAIProvider.providerId.<get-providerId>|<get-providerId>(){}[0]
 
-    final fun chatModel(kotlin/String): ai.torad.aisdk/LanguageModel // ai.torad.aisdk.providers/TogetherAIProvider.chatModel|chatModel(kotlin.String){}[0]
-    final fun completionModel(kotlin/String): ai.torad.aisdk/LanguageModel // ai.torad.aisdk.providers/TogetherAIProvider.completionModel|completionModel(kotlin.String){}[0]
+    final fun chatModel(ai.torad.aisdk/ModelId): ai.torad.aisdk/LanguageModel // ai.torad.aisdk.providers/TogetherAIProvider.chatModel|chatModel(ai.torad.aisdk.ModelId){}[0]
+    final fun completionModel(ai.torad.aisdk/ModelId): ai.torad.aisdk/LanguageModel // ai.torad.aisdk.providers/TogetherAIProvider.completionModel|completionModel(ai.torad.aisdk.ModelId){}[0]
     final fun embeddingModel(kotlin/String): ai.torad.aisdk/EmbeddingModel // ai.torad.aisdk.providers/TogetherAIProvider.embeddingModel|embeddingModel(kotlin.String){}[0]
-    final fun image(kotlin/String): ai.torad.aisdk/ImageModel // ai.torad.aisdk.providers/TogetherAIProvider.image|image(kotlin.String){}[0]
+    final fun image(ai.torad.aisdk/ModelId): ai.torad.aisdk/ImageModel // ai.torad.aisdk.providers/TogetherAIProvider.image|image(ai.torad.aisdk.ModelId){}[0]
     final fun imageModel(kotlin/String): ai.torad.aisdk/ImageModel // ai.torad.aisdk.providers/TogetherAIProvider.imageModel|imageModel(kotlin.String){}[0]
-    final fun invoke(kotlin/String): ai.torad.aisdk/LanguageModel // ai.torad.aisdk.providers/TogetherAIProvider.invoke|invoke(kotlin.String){}[0]
+    final fun invoke(ai.torad.aisdk/ModelId): ai.torad.aisdk/LanguageModel // ai.torad.aisdk.providers/TogetherAIProvider.invoke|invoke(ai.torad.aisdk.ModelId){}[0]
     final fun languageModel(kotlin/String): ai.torad.aisdk/LanguageModel // ai.torad.aisdk.providers/TogetherAIProvider.languageModel|languageModel(kotlin.String){}[0]
-    final fun reranking(kotlin/String): ai.torad.aisdk/RerankingModel // ai.torad.aisdk.providers/TogetherAIProvider.reranking|reranking(kotlin.String){}[0]
+    final fun reranking(ai.torad.aisdk/ModelId): ai.torad.aisdk/RerankingModel // ai.torad.aisdk.providers/TogetherAIProvider.reranking|reranking(ai.torad.aisdk.ModelId){}[0]
     final fun rerankingModel(kotlin/String): ai.torad.aisdk/RerankingModel // ai.torad.aisdk.providers/TogetherAIProvider.rerankingModel|rerankingModel(kotlin.String){}[0]
-    final fun textEmbeddingModel(kotlin/String): ai.torad.aisdk/EmbeddingModel // ai.torad.aisdk.providers/TogetherAIProvider.textEmbeddingModel|textEmbeddingModel(kotlin.String){}[0]
+    final fun textEmbeddingModel(ai.torad.aisdk/ModelId): ai.torad.aisdk/EmbeddingModel // ai.torad.aisdk.providers/TogetherAIProvider.textEmbeddingModel|textEmbeddingModel(ai.torad.aisdk.ModelId){}[0]
 }
 
 final class ai.torad.aisdk.providers/TogetherAIProviderSettings { // ai.torad.aisdk.providers/TogetherAIProviderSettings|null[0]
@@ -8017,7 +8017,7 @@ final class ai.torad.aisdk.providers/VercelProvider : ai.torad.aisdk/Provider { 
 
     final fun embeddingModel(kotlin/String): ai.torad.aisdk/EmbeddingModel // ai.torad.aisdk.providers/VercelProvider.embeddingModel|embeddingModel(kotlin.String){}[0]
     final fun imageModel(kotlin/String): ai.torad.aisdk/ImageModel // ai.torad.aisdk.providers/VercelProvider.imageModel|imageModel(kotlin.String){}[0]
-    final fun invoke(kotlin/String): ai.torad.aisdk/LanguageModel // ai.torad.aisdk.providers/VercelProvider.invoke|invoke(kotlin.String){}[0]
+    final fun invoke(ai.torad.aisdk/ModelId): ai.torad.aisdk/LanguageModel // ai.torad.aisdk.providers/VercelProvider.invoke|invoke(ai.torad.aisdk.ModelId){}[0]
     final fun languageModel(kotlin/String): ai.torad.aisdk/LanguageModel // ai.torad.aisdk.providers/VercelProvider.languageModel|languageModel(kotlin.String){}[0]
     final fun textEmbeddingModel(kotlin/String): kotlin/Nothing // ai.torad.aisdk.providers/VercelProvider.textEmbeddingModel|textEmbeddingModel(kotlin.String){}[0]
 }
@@ -8099,12 +8099,12 @@ final class ai.torad.aisdk.providers/VoyageProvider : ai.torad.aisdk/Provider { 
     final val settings // ai.torad.aisdk.providers/VoyageProvider.settings|{}settings[0]
         final fun <get-settings>(): ai.torad.aisdk.providers/VoyageProviderSettings // ai.torad.aisdk.providers/VoyageProvider.settings.<get-settings>|<get-settings>(){}[0]
 
-    final fun embedding(kotlin/String): ai.torad.aisdk/EmbeddingModel // ai.torad.aisdk.providers/VoyageProvider.embedding|embedding(kotlin.String){}[0]
+    final fun embedding(ai.torad.aisdk/ModelId): ai.torad.aisdk/EmbeddingModel // ai.torad.aisdk.providers/VoyageProvider.embedding|embedding(ai.torad.aisdk.ModelId){}[0]
     final fun embeddingModel(kotlin/String): ai.torad.aisdk/EmbeddingModel // ai.torad.aisdk.providers/VoyageProvider.embeddingModel|embeddingModel(kotlin.String){}[0]
-    final fun reranking(kotlin/String): ai.torad.aisdk/RerankingModel // ai.torad.aisdk.providers/VoyageProvider.reranking|reranking(kotlin.String){}[0]
+    final fun reranking(ai.torad.aisdk/ModelId): ai.torad.aisdk/RerankingModel // ai.torad.aisdk.providers/VoyageProvider.reranking|reranking(ai.torad.aisdk.ModelId){}[0]
     final fun rerankingModel(kotlin/String): ai.torad.aisdk/RerankingModel // ai.torad.aisdk.providers/VoyageProvider.rerankingModel|rerankingModel(kotlin.String){}[0]
-    final fun textEmbedding(kotlin/String): ai.torad.aisdk/EmbeddingModel // ai.torad.aisdk.providers/VoyageProvider.textEmbedding|textEmbedding(kotlin.String){}[0]
-    final fun textEmbeddingModel(kotlin/String): ai.torad.aisdk/EmbeddingModel // ai.torad.aisdk.providers/VoyageProvider.textEmbeddingModel|textEmbeddingModel(kotlin.String){}[0]
+    final fun textEmbedding(ai.torad.aisdk/ModelId): ai.torad.aisdk/EmbeddingModel // ai.torad.aisdk.providers/VoyageProvider.textEmbedding|textEmbedding(ai.torad.aisdk.ModelId){}[0]
+    final fun textEmbeddingModel(ai.torad.aisdk/ModelId): ai.torad.aisdk/EmbeddingModel // ai.torad.aisdk.providers/VoyageProvider.textEmbeddingModel|textEmbeddingModel(ai.torad.aisdk.ModelId){}[0]
 }
 
 final class ai.torad.aisdk.providers/VoyageProviderSettings { // ai.torad.aisdk.providers/VoyageProviderSettings|null[0]
@@ -8288,15 +8288,15 @@ final class ai.torad.aisdk.providers/XaiProvider : ai.torad.aisdk/Provider { // 
     final val tools // ai.torad.aisdk.providers/XaiProvider.tools|{}tools[0]
         final fun <get-tools>(): ai.torad.aisdk.providers/XaiTools // ai.torad.aisdk.providers/XaiProvider.tools.<get-tools>|<get-tools>(){}[0]
 
-    final fun chat(kotlin/String): ai.torad.aisdk/LanguageModel // ai.torad.aisdk.providers/XaiProvider.chat|chat(kotlin.String){}[0]
+    final fun chat(ai.torad.aisdk/ModelId): ai.torad.aisdk/LanguageModel // ai.torad.aisdk.providers/XaiProvider.chat|chat(ai.torad.aisdk.ModelId){}[0]
     final fun embeddingModel(kotlin/String): ai.torad.aisdk/EmbeddingModel // ai.torad.aisdk.providers/XaiProvider.embeddingModel|embeddingModel(kotlin.String){}[0]
-    final fun image(kotlin/String): ai.torad.aisdk/ImageModel // ai.torad.aisdk.providers/XaiProvider.image|image(kotlin.String){}[0]
+    final fun image(ai.torad.aisdk/ModelId): ai.torad.aisdk/ImageModel // ai.torad.aisdk.providers/XaiProvider.image|image(ai.torad.aisdk.ModelId){}[0]
     final fun imageModel(kotlin/String): ai.torad.aisdk/ImageModel // ai.torad.aisdk.providers/XaiProvider.imageModel|imageModel(kotlin.String){}[0]
-    final fun invoke(kotlin/String): ai.torad.aisdk/LanguageModel // ai.torad.aisdk.providers/XaiProvider.invoke|invoke(kotlin.String){}[0]
+    final fun invoke(ai.torad.aisdk/ModelId): ai.torad.aisdk/LanguageModel // ai.torad.aisdk.providers/XaiProvider.invoke|invoke(ai.torad.aisdk.ModelId){}[0]
     final fun languageModel(kotlin/String): ai.torad.aisdk/LanguageModel // ai.torad.aisdk.providers/XaiProvider.languageModel|languageModel(kotlin.String){}[0]
-    final fun responses(kotlin/String): ai.torad.aisdk/LanguageModel // ai.torad.aisdk.providers/XaiProvider.responses|responses(kotlin.String){}[0]
+    final fun responses(ai.torad.aisdk/ModelId): ai.torad.aisdk/LanguageModel // ai.torad.aisdk.providers/XaiProvider.responses|responses(ai.torad.aisdk.ModelId){}[0]
     final fun textEmbeddingModel(kotlin/String): kotlin/Nothing // ai.torad.aisdk.providers/XaiProvider.textEmbeddingModel|textEmbeddingModel(kotlin.String){}[0]
-    final fun video(kotlin/String): ai.torad.aisdk/VideoModel // ai.torad.aisdk.providers/XaiProvider.video|video(kotlin.String){}[0]
+    final fun video(ai.torad.aisdk/ModelId): ai.torad.aisdk/VideoModel // ai.torad.aisdk.providers/XaiProvider.video|video(ai.torad.aisdk.ModelId){}[0]
     final fun videoModel(kotlin/String): ai.torad.aisdk/VideoModel // ai.torad.aisdk.providers/XaiProvider.videoModel|videoModel(kotlin.String){}[0]
 }
 
@@ -10528,16 +10528,16 @@ final class ai.torad.aisdk/JSONRPCResponse : ai.torad.aisdk/JSONRPCMessage { // 
 final class ai.torad.aisdk/KtorGatewayTransport : ai.torad.aisdk/GatewayTransport { // ai.torad.aisdk/KtorGatewayTransport|null[0]
     constructor <init>(io.ktor.client/HttpClient, kotlinx.serialization.json/Json = ...) // ai.torad.aisdk/KtorGatewayTransport.<init>|<init>(io.ktor.client.HttpClient;kotlinx.serialization.json.Json){}[0]
 
-    final fun streamText(ai.torad.aisdk/GatewayRequestContext, kotlin/String, ai.torad.aisdk/LanguageModelCallParams): kotlinx.coroutines.flow/Flow<ai.torad.aisdk/StreamEvent> // ai.torad.aisdk/KtorGatewayTransport.streamText|streamText(ai.torad.aisdk.GatewayRequestContext;kotlin.String;ai.torad.aisdk.LanguageModelCallParams){}[0]
-    final suspend fun embed(ai.torad.aisdk/GatewayRequestContext, kotlin/String, ai.torad.aisdk/EmbeddingModelCallParams): ai.torad.aisdk/EmbeddingModelResult // ai.torad.aisdk/KtorGatewayTransport.embed|embed(ai.torad.aisdk.GatewayRequestContext;kotlin.String;ai.torad.aisdk.EmbeddingModelCallParams){}[0]
-    final suspend fun generateImage(ai.torad.aisdk/GatewayRequestContext, kotlin/String, ai.torad.aisdk/ImageGenerationParams): ai.torad.aisdk/ImageModelResult // ai.torad.aisdk/KtorGatewayTransport.generateImage|generateImage(ai.torad.aisdk.GatewayRequestContext;kotlin.String;ai.torad.aisdk.ImageGenerationParams){}[0]
-    final suspend fun generateText(ai.torad.aisdk/GatewayRequestContext, kotlin/String, ai.torad.aisdk/LanguageModelCallParams): ai.torad.aisdk/LanguageModelResult // ai.torad.aisdk/KtorGatewayTransport.generateText|generateText(ai.torad.aisdk.GatewayRequestContext;kotlin.String;ai.torad.aisdk.LanguageModelCallParams){}[0]
-    final suspend fun generateVideo(ai.torad.aisdk/GatewayRequestContext, kotlin/String, ai.torad.aisdk/VideoGenerationParams): ai.torad.aisdk/VideoModelResult // ai.torad.aisdk/KtorGatewayTransport.generateVideo|generateVideo(ai.torad.aisdk.GatewayRequestContext;kotlin.String;ai.torad.aisdk.VideoGenerationParams){}[0]
+    final fun streamText(ai.torad.aisdk/GatewayRequestContext, ai.torad.aisdk/ModelId, ai.torad.aisdk/LanguageModelCallParams): kotlinx.coroutines.flow/Flow<ai.torad.aisdk/StreamEvent> // ai.torad.aisdk/KtorGatewayTransport.streamText|streamText(ai.torad.aisdk.GatewayRequestContext;ai.torad.aisdk.ModelId;ai.torad.aisdk.LanguageModelCallParams){}[0]
+    final suspend fun embed(ai.torad.aisdk/GatewayRequestContext, ai.torad.aisdk/ModelId, ai.torad.aisdk/EmbeddingModelCallParams): ai.torad.aisdk/EmbeddingModelResult // ai.torad.aisdk/KtorGatewayTransport.embed|embed(ai.torad.aisdk.GatewayRequestContext;ai.torad.aisdk.ModelId;ai.torad.aisdk.EmbeddingModelCallParams){}[0]
+    final suspend fun generateImage(ai.torad.aisdk/GatewayRequestContext, ai.torad.aisdk/ModelId, ai.torad.aisdk/ImageGenerationParams): ai.torad.aisdk/ImageModelResult // ai.torad.aisdk/KtorGatewayTransport.generateImage|generateImage(ai.torad.aisdk.GatewayRequestContext;ai.torad.aisdk.ModelId;ai.torad.aisdk.ImageGenerationParams){}[0]
+    final suspend fun generateText(ai.torad.aisdk/GatewayRequestContext, ai.torad.aisdk/ModelId, ai.torad.aisdk/LanguageModelCallParams): ai.torad.aisdk/LanguageModelResult // ai.torad.aisdk/KtorGatewayTransport.generateText|generateText(ai.torad.aisdk.GatewayRequestContext;ai.torad.aisdk.ModelId;ai.torad.aisdk.LanguageModelCallParams){}[0]
+    final suspend fun generateVideo(ai.torad.aisdk/GatewayRequestContext, ai.torad.aisdk/ModelId, ai.torad.aisdk/VideoGenerationParams): ai.torad.aisdk/VideoModelResult // ai.torad.aisdk/KtorGatewayTransport.generateVideo|generateVideo(ai.torad.aisdk.GatewayRequestContext;ai.torad.aisdk.ModelId;ai.torad.aisdk.VideoGenerationParams){}[0]
     final suspend fun getAvailableModels(ai.torad.aisdk/GatewayRequestContext): ai.torad.aisdk/GatewayFetchMetadataResponse // ai.torad.aisdk/KtorGatewayTransport.getAvailableModels|getAvailableModels(ai.torad.aisdk.GatewayRequestContext){}[0]
     final suspend fun getCredits(ai.torad.aisdk/GatewayRequestContext): ai.torad.aisdk/GatewayCreditsResponse // ai.torad.aisdk/KtorGatewayTransport.getCredits|getCredits(ai.torad.aisdk.GatewayRequestContext){}[0]
     final suspend fun getGenerationInfo(ai.torad.aisdk/GatewayRequestContext, ai.torad.aisdk/GatewayGenerationInfoParams): ai.torad.aisdk/GatewayGenerationInfo // ai.torad.aisdk/KtorGatewayTransport.getGenerationInfo|getGenerationInfo(ai.torad.aisdk.GatewayRequestContext;ai.torad.aisdk.GatewayGenerationInfoParams){}[0]
     final suspend fun getSpendReport(ai.torad.aisdk/GatewayRequestContext, ai.torad.aisdk/GatewaySpendReportParams): ai.torad.aisdk/GatewaySpendReportResponse // ai.torad.aisdk/KtorGatewayTransport.getSpendReport|getSpendReport(ai.torad.aisdk.GatewayRequestContext;ai.torad.aisdk.GatewaySpendReportParams){}[0]
-    final suspend fun rerank(ai.torad.aisdk/GatewayRequestContext, kotlin/String, ai.torad.aisdk/RerankingParams): ai.torad.aisdk/RerankingModelResult // ai.torad.aisdk/KtorGatewayTransport.rerank|rerank(ai.torad.aisdk.GatewayRequestContext;kotlin.String;ai.torad.aisdk.RerankingParams){}[0]
+    final suspend fun rerank(ai.torad.aisdk/GatewayRequestContext, ai.torad.aisdk/ModelId, ai.torad.aisdk/RerankingParams): ai.torad.aisdk/RerankingModelResult // ai.torad.aisdk/KtorGatewayTransport.rerank|rerank(ai.torad.aisdk.GatewayRequestContext;ai.torad.aisdk.ModelId;ai.torad.aisdk.RerankingParams){}[0]
 }
 
 final class ai.torad.aisdk/LanguageModelCallParams { // ai.torad.aisdk/LanguageModelCallParams|null[0]

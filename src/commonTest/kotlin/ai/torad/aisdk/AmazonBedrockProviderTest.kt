@@ -92,7 +92,7 @@ class AmazonBedrockProviderTest {
             ),
         )
 
-        val result = provider("anthropic.claude-3-7-sonnet-20250219-v1:0").generate(
+        val result = provider(ModelId("anthropic.claude-3-7-sonnet-20250219-v1:0")).generate(
             LanguageModelCallParams(
                 messages = listOf(
                     ModelMessage(
@@ -200,7 +200,7 @@ class AmazonBedrockProviderTest {
             fixture.httpClient(),
             AmazonBedrockProviderSettings(apiKey = "key", baseURL = "https://bedrock.test"),
         )
-        provider("anthropic.claude-3-7-sonnet-20250219-v1:0").generate(
+        provider(ModelId("anthropic.claude-3-7-sonnet-20250219-v1:0")).generate(
             LanguageModelCallParams(
                 messages = listOf(
                     ModelMessage(MessageRole.User, listOf(ContentPart.Text("go"))),
@@ -400,7 +400,7 @@ class AmazonBedrockProviderTest {
             ),
         )
 
-        val embedding = provider.embedding("amazon.titan-embed-text-v2:0").embed(
+        val embedding = provider.embedding(ModelId("amazon.titan-embed-text-v2:0")).embed(
             EmbeddingModelCallParams(
                 values = listOf("embed me"),
                 providerOptions = ProviderOptions.Raw(JsonObject(mapOf(
@@ -411,7 +411,7 @@ class AmazonBedrockProviderTest {
                 ))),
             ),
         )
-        val image = provider.image("amazon.titan-image-generator-v2:0").generate(
+        val image = provider.image(ModelId("amazon.titan-image-generator-v2:0")).generate(
             ImageGenerationParams(
                 prompt = "A product render",
                 n = 2,
@@ -422,13 +422,13 @@ class AmazonBedrockProviderTest {
                 ))),
             ),
         )
-        val rerank = provider.reranking("amazon.rerank-v1:0").rerank(
+        val rerank = provider.reranking(ModelId("amazon.rerank-v1:0")).rerank(
             RerankingParams(query = "best", documents = listOf("first", "second"), topN = 2),
         )
 
         assertEquals(listOf(1.0f, 2.0f), embedding.embeddings.single())
-        assertEquals(1, provider.embedding("amazon.titan-embed-text-v2:0").maxEmbeddingsPerCall)
-        assertEquals(true, provider.embedding("amazon.titan-embed-text-v2:0").supportsParallelCalls)
+        assertEquals(1, provider.embedding(ModelId("amazon.titan-embed-text-v2:0")).maxEmbeddingsPerCall)
+        assertEquals(true, provider.embedding(ModelId("amazon.titan-embed-text-v2:0")).supportsParallelCalls)
         assertEquals(7, embedding.usage.tokens)
         assertEquals("image", Base64Codec.decode(image.images.single().base64).decodeToString())
         assertEquals("second", rerank.results.first().value)
@@ -487,7 +487,7 @@ class AmazonBedrockProviderTest {
             BedrockMantleProviderSettings(apiKey = "key", baseURL = "https://mantle.test/v1"),
         )
 
-        val result = provider.chat("openai.gpt-oss-20b-1:0").generate(
+        val result = provider.chat(ModelId("openai.gpt-oss-20b-1:0")).generate(
             LanguageModelCallParams(messages = listOf(userMessage("hi"))),
         )
 

@@ -36,12 +36,6 @@ import kotlinx.serialization.json.jsonPrimitive
 
 public const val GOOGLE_VERSION: String = "3.0.80"
 
-public typealias GoogleGenerativeAIModelId = String
-public typealias GoogleGenerativeAIEmbeddingModelId = String
-public typealias GoogleGenerativeAIImageModelId = String
-public typealias GoogleGenerativeAIVideoModelId = String
-public typealias GoogleInteractionsModelId = String
-public typealias GoogleInteractionsAgentName = String
 public typealias GoogleLanguageModelOptions = JsonObject
 public typealias GoogleGenerativeAIProviderOptions = JsonObject
 public typealias GoogleEmbeddingModelOptions = JsonObject
@@ -86,37 +80,37 @@ public class GoogleGenerativeAIProvider(
     override val providerId: String = "google"
     public val tools: GoogleTools = GoogleTools()
 
-    public operator fun invoke(modelId: GoogleGenerativeAIModelId): LanguageModel = languageModel(modelId)
+    public operator fun invoke(modelId: ModelId): LanguageModel = languageModel(modelId)
 
     override fun languageModel(modelId: String): LanguageModel =
         GoogleGenerativeAILanguageModel(client, settings, modelId)
 
-    public fun chat(modelId: GoogleGenerativeAIModelId): LanguageModel = languageModel(modelId)
-    public fun generativeAI(modelId: GoogleGenerativeAIModelId): LanguageModel = languageModel(modelId)
+    public fun chat(modelId: ModelId): LanguageModel = languageModel(modelId)
+    public fun generativeAI(modelId: ModelId): LanguageModel = languageModel(modelId)
 
-    public fun embedding(modelId: GoogleGenerativeAIEmbeddingModelId): EmbeddingModel =
-        GoogleGenerativeAIEmbeddingModel(client, settings, modelId)
-    public fun textEmbedding(modelId: GoogleGenerativeAIEmbeddingModelId): EmbeddingModel = embedding(modelId)
-    public fun textEmbeddingModel(modelId: GoogleGenerativeAIEmbeddingModelId): EmbeddingModel = embedding(modelId)
+    public fun embedding(modelId: ModelId): EmbeddingModel =
+        GoogleGenerativeAIEmbeddingModel(client, settings, modelId.value)
+    public fun textEmbedding(modelId: ModelId): EmbeddingModel = embedding(modelId)
+    public fun textEmbeddingModel(modelId: ModelId): EmbeddingModel = embedding(modelId)
 
-    public fun image(modelId: GoogleGenerativeAIImageModelId): ImageModel =
-        GoogleGenerativeAIImageModel(client, settings, modelId)
+    public fun image(modelId: ModelId): ImageModel =
+        GoogleGenerativeAIImageModel(client, settings, modelId.value)
 
-    public fun video(modelId: GoogleGenerativeAIVideoModelId): VideoModel =
-        GoogleGenerativeAIVideoModel(client, settings, modelId)
+    public fun video(modelId: ModelId): VideoModel =
+        GoogleGenerativeAIVideoModel(client, settings, modelId.value)
 
-    public fun interactions(modelIdOrAgent: GoogleInteractionsModelId): LanguageModel =
-        interactions(GoogleInteractionsModelInput.Model(modelIdOrAgent))
+    public fun interactions(modelIdOrAgent: ModelId): LanguageModel =
+        interactions(GoogleInteractionsModelInput.Model(modelIdOrAgent.value))
     public fun interactions(modelIdOrAgent: GoogleInteractionsModelInput): LanguageModel =
         GoogleInteractionsLanguageModel(client, settings, modelIdOrAgent)
-    public fun agentInteraction(agentName: GoogleInteractionsAgentName): LanguageModel =
+    public fun agentInteraction(agentName: String): LanguageModel =
         interactions(GoogleInteractionsModelInput.Agent(agentName))
     public fun managedAgentInteraction(agentName: String): LanguageModel =
         interactions(GoogleInteractionsModelInput.ManagedAgent(agentName))
 
-    override fun embeddingModel(modelId: String): EmbeddingModel = embedding(modelId)
-    override fun imageModel(modelId: String): ImageModel = image(modelId)
-    override fun videoModel(modelId: String): VideoModel = video(modelId)
+    override fun embeddingModel(modelId: String): EmbeddingModel = embedding(ModelId(modelId))
+    override fun imageModel(modelId: String): ImageModel = image(ModelId(modelId))
+    override fun videoModel(modelId: String): VideoModel = video(ModelId(modelId))
 }
 
 // Source/binary-compat alias for the factory below — the constructor now lives on the merged class.

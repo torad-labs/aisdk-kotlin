@@ -52,13 +52,13 @@ class GatewayAndProviderUtilsParityTest {
             ),
         )
 
-        val text = TextGenerator(provider("chat-model")).generate(GenerationInput.Prompt("hi")).single()
-        val chat = TextGenerator(provider.chat("chat-model-2")).generate(GenerationInput.Prompt("hi")).single()
-        val embedding = Embedding.embed(provider.embedding("embed-model"), "hello")
-        val image = generateImage(provider.image("image-model"), "logo")
-        val video = generateVideo(provider.video("video-model"), "clip")
-        val previewVideo = generateVideo(provider.video("xai/grok-imagine-video-1.5-preview"), "clip")
-        val reranked = Reranking.rerank(provider.reranking("rank-model"), "q", listOf("a", "bb"))
+        val text = TextGenerator(provider(ModelId("chat-model"))).generate(GenerationInput.Prompt("hi")).single()
+        val chat = TextGenerator(provider.chat(ModelId("chat-model-2"))).generate(GenerationInput.Prompt("hi")).single()
+        val embedding = Embedding.embed(provider.embedding(ModelId("embed-model")), "hello")
+        val image = generateImage(provider.image(ModelId("image-model")), "logo")
+        val video = generateVideo(provider.video(ModelId("video-model")), "clip")
+        val previewVideo = generateVideo(provider.video(ModelId("xai/grok-imagine-video-1.5-preview")), "clip")
+        val reranked = Reranking.rerank(provider.reranking(ModelId("rank-model")), "q", listOf("a", "bb"))
 
         assertEquals("gateway:chat-model", text.text)
         assertEquals("gateway:chat-model-2", chat.text)
@@ -68,7 +68,7 @@ class GatewayAndProviderUtilsParityTest {
         assertEquals("xai/grok-imagine-video-1.5-preview", previewVideo.video.filename)
         assertEquals("a", reranked.results.first().value)
         assertEquals("gateway", provider.languageModel("x").provider)
-        assertEquals("gateway", provider.textEmbeddingModel("x").provider)
+        assertEquals("gateway", provider.textEmbeddingModel(ModelId("x")).provider)
         assertEquals("https://gateway.test/v3/ai", transport.contexts.first().baseUrl)
         assertEquals("Bearer secret", transport.contexts.first().headers["authorization"])
         assertEquals("api-key", transport.contexts.first().headers[GATEWAY_AUTH_METHOD_HEADER])
@@ -668,7 +668,7 @@ class GatewayAndProviderUtilsParityTest {
 
         override suspend fun generateText(
             context: GatewayRequestContext,
-            modelId: GatewayModelId,
+            modelId: ModelId,
             params: LanguageModelCallParams,
         ): LanguageModelResult {
             contexts += context
@@ -681,7 +681,7 @@ class GatewayAndProviderUtilsParityTest {
 
         override fun streamText(
             context: GatewayRequestContext,
-            modelId: GatewayModelId,
+            modelId: ModelId,
             params: LanguageModelCallParams,
         ): Flow<StreamEvent> {
             contexts += context
@@ -690,7 +690,7 @@ class GatewayAndProviderUtilsParityTest {
 
         override suspend fun embed(
             context: GatewayRequestContext,
-            modelId: GatewayEmbeddingModelId,
+            modelId: ModelId,
             params: EmbeddingModelCallParams,
         ): EmbeddingModelResult {
             contexts += context
@@ -702,33 +702,33 @@ class GatewayAndProviderUtilsParityTest {
 
         override suspend fun generateImage(
             context: GatewayRequestContext,
-            modelId: GatewayImageModelId,
+            modelId: ModelId,
             params: ImageGenerationParams,
         ): ImageModelResult {
             contexts += context
             return ImageModelResult(
                 images = List(params.n) {
-                    GeneratedFile(mediaType = "image/png", base64 = "iVBORw0=", filename = modelId)
+                    GeneratedFile(mediaType = "image/png", base64 = "iVBORw0=", filename = modelId.value)
                 },
             )
         }
 
         override suspend fun generateVideo(
             context: GatewayRequestContext,
-            modelId: GatewayVideoModelId,
+            modelId: ModelId,
             params: VideoGenerationParams,
         ): VideoModelResult {
             contexts += context
             return VideoModelResult(
                 videos = List(params.n) {
-                    GeneratedFile(mediaType = "video/mp4", base64 = "AAAA", filename = modelId)
+                    GeneratedFile(mediaType = "video/mp4", base64 = "AAAA", filename = modelId.value)
                 },
             )
         }
 
         override suspend fun rerank(
             context: GatewayRequestContext,
-            modelId: GatewayRerankingModelId,
+            modelId: ModelId,
             params: RerankingParams,
         ): RerankingModelResult {
             contexts += context

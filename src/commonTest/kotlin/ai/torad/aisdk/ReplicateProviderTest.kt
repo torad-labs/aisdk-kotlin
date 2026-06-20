@@ -41,7 +41,7 @@ class ReplicateProviderTest {
         val model = Replicate(
             fixture.httpClient(),
             ReplicateProviderSettings(apiToken = "token"),
-        ).image("owner/model:version-123")
+        ).image(ModelId("owner/model:version-123"))
 
         val result = model.generate(
             ImageGenerationParams(
@@ -65,7 +65,7 @@ class ReplicateProviderTest {
 
         assertEquals("replicate", model.provider)
         assertEquals(1, model.maxImagesPerCall)
-        assertEquals(8, Replicate(fixture.httpClient()).image("black-forest-labs/flux-2-pro").maxImagesPerCall)
+        assertEquals(8, Replicate(fixture.httpClient()).image(ModelId("black-forest-labs/flux-2-pro")).maxImagesPerCall)
         assertEquals(listOf("image/png", "image/webp"), result.images.map { it.mediaType })
         assertEquals(Base64Codec.encode(byteArrayOf(1, 2)), result.images.first().base64)
 
@@ -104,7 +104,7 @@ class ReplicateProviderTest {
         val model = Replicate(
             fixture.httpClient(),
             ReplicateProviderSettings(apiToken = "token"),
-        ).image("black-forest-labs/flux-2-pro")
+        ).image(ModelId("black-forest-labs/flux-2-pro"))
 
         val result = model.generate(
             ImageGenerationParams(
@@ -148,7 +148,7 @@ class ReplicateProviderTest {
         val model = Replicate(
             fixture.httpClient(),
             ReplicateProviderSettings(apiToken = "token"),
-        ).video("minimax/video-01")
+        ).video(ModelId("minimax/video-01"))
 
         val result = model.generate(
             VideoGenerationParams(
@@ -216,7 +216,7 @@ class ReplicateProviderTest {
         val provider = Replicate(fixture.httpClient(), ReplicateProviderSettings(apiToken = "token"))
 
         assertFailsWith<AiSdkException> {
-            provider.video("minimax/video-01").generate(VideoGenerationParams(prompt = "x"))
+            provider.video(ModelId("minimax/video-01")).generate(VideoGenerationParams(prompt = "x"))
         }
         assertFailsWith<NoSuchModelError> { provider.languageModel("model") }
         assertFailsWith<NoSuchModelError> { provider.embeddingModel("embed") }

@@ -28,9 +28,9 @@ public interface AnthropicAwsProvider : Provider {
     public val settings: AnthropicAwsProviderSettings
     public val tools: AnthropicTools
 
-    public operator fun invoke(modelId: AnthropicMessagesModelId): LanguageModel = languageModel(modelId)
-    public fun chat(modelId: AnthropicMessagesModelId): LanguageModel = languageModel(modelId)
-    public fun messages(modelId: AnthropicMessagesModelId): LanguageModel = languageModel(modelId)
+    public operator fun invoke(modelId: ModelId): LanguageModel = languageModel(modelId)
+    public fun chat(modelId: ModelId): LanguageModel = languageModel(modelId)
+    public fun messages(modelId: ModelId): LanguageModel = languageModel(modelId)
     public fun textEmbeddingModel(modelId: String): Nothing = throw NoSuchModelError(providerId, "embeddingModel", modelId)
 }
 

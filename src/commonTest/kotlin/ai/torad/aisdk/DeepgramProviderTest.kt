@@ -35,7 +35,7 @@ class DeepgramProviderTest {
         val model = Deepgram(
             fixture.httpClient(),
             DeepgramProviderSettings(apiKey = "key"),
-        ).speech("aura-2-helena-en")
+        ).speech(ModelId("aura-2-helena-en"))
 
         val result = model.generate(
             SpeechGenerationParams(
@@ -94,7 +94,7 @@ class DeepgramProviderTest {
         val model = Deepgram(
             fixture.httpClient(),
             DeepgramProviderSettings(apiKey = "key"),
-        ).transcription("nova-3")
+        ).transcription(ModelId("nova-3"))
 
         val result = model.transcribe(
             TranscriptionParams(
@@ -164,7 +164,7 @@ class DeepgramProviderTest {
         val model = Deepgram(
             fixture.httpClient(),
             DeepgramProviderSettings(apiKey = "key"),
-        ).transcription("nova-3")
+        ).transcription(ModelId("nova-3"))
 
         val result = model.transcribe(
             TranscriptionParams(

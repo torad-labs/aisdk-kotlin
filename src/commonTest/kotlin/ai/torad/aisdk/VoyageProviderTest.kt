@@ -38,7 +38,7 @@ class VoyageProviderTest {
         val model = Voyage(
             fixture.httpClient(),
             VoyageProviderSettings(apiKey = "key", baseURL = "https://voyage.test/v1"),
-        ).embedding("voyage-4")
+        ).embedding(ModelId("voyage-4"))
 
         val result = model.embed(
             EmbeddingModelCallParams(
@@ -90,7 +90,7 @@ class VoyageProviderTest {
         val model = Voyage(
             fixture.httpClient(),
             VoyageProviderSettings(apiKey = "key", baseURL = "https://voyage.test/v1"),
-        ).reranking("rerank-2.5")
+        ).reranking(ModelId("rerank-2.5"))
 
         val result = model.rerank(
             RerankingParams(
@@ -124,7 +124,7 @@ class VoyageProviderTest {
         val model = Voyage(
             TestServer(mutableMapOf()).httpClient(),
             VoyageProviderSettings(baseURL = "https://voyage.test/v1"),
-        ).embedding("voyage-4")
+        ).embedding(ModelId("voyage-4"))
 
         val error = assertFailsWith<InvalidArgumentError> {
             model.embed(EmbeddingModelCallParams(values = List(129) { "value-$it" }))

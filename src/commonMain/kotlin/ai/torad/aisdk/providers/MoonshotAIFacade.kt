@@ -15,7 +15,6 @@ import kotlinx.serialization.json.jsonPrimitive
 
 public const val MOONSHOTAI_VERSION: String = "2.0.23"
 
-public typealias MoonshotAIChatModelId = String
 
 @Serializable
 public data class MoonshotAIProviderSettings(
@@ -41,9 +40,9 @@ public class MoonshotAIProvider(
     )
     override val providerId: String = "moonshotai"
 
-    public operator fun invoke(modelId: MoonshotAIChatModelId): LanguageModel = languageModel(modelId)
-    override fun languageModel(modelId: String): LanguageModel = chatModel(modelId)
-    public fun chatModel(modelId: MoonshotAIChatModelId): LanguageModel = compatible.chatModel(modelId)
+    public operator fun invoke(modelId: ModelId): LanguageModel = languageModel(modelId)
+    override fun languageModel(modelId: String): LanguageModel = chatModel(ModelId(modelId))
+    public fun chatModel(modelId: ModelId): LanguageModel = compatible.chatModel(modelId.value)
     override fun embeddingModel(modelId: String): EmbeddingModel = throw NoSuchModelError(providerId, "embeddingModel", modelId)
     override fun imageModel(modelId: String): ImageModel = throw NoSuchModelError(providerId, "imageModel", modelId)
 }

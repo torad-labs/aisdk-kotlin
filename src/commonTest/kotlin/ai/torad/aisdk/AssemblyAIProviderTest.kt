@@ -46,7 +46,7 @@ class AssemblyAIProviderTest {
         val model = AssemblyAI(
             fixture.httpClient(),
             AssemblyAIProviderSettings(apiKey = "key"),
-        ).transcription("best")
+        ).transcription(ModelId("best"))
 
         val result = model.transcribe(
             TranscriptionParams(
@@ -137,7 +137,7 @@ class AssemblyAIProviderTest {
         val model = AssemblyAI(
             fixture.httpClient(),
             AssemblyAIProviderSettings(apiKey = "key"),
-        ).transcription("nano")
+        ).transcription(ModelId("nano"))
 
         model.transcribe(
             TranscriptionParams(
@@ -168,7 +168,7 @@ class AssemblyAIProviderTest {
         val model = AssemblyAI(
             fixture.httpClient(),
             AssemblyAIProviderSettings(apiKey = "key", pollingIntervalMillis = 0),
-        ).transcription("best")
+        ).transcription(ModelId("best"))
 
         val error = assertFailsWith<AiSdkException> {
             model.transcribe(TranscriptionParams(audio = AudioSource("audio/wav", Base64Codec.encode(byteArrayOf(1)))))
