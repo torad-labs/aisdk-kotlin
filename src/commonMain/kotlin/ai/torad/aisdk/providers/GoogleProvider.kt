@@ -219,7 +219,7 @@ private class GoogleGenerativeAIEmbeddingModel(
         if (params.values.size > maxEmbeddingsPerCall) {
             throw TooManyEmbeddingValuesForCallError(provider, modelId, maxEmbeddingsPerCall, params.values)
         }
-        val options = params.providerOptions["google"] as? JsonObject ?: JsonObject(emptyMap())
+        val options = params.providerOptions.toMap()["google"] as? JsonObject ?: JsonObject(emptyMap())
         val single = params.values.size == 1
         val body = if (single) {
             googleSingleEmbeddingBody(modelId, params.values.single(), options)
@@ -272,7 +272,7 @@ private class GoogleGenerativeAIImageModel(
         val warnings = mutableListOf<CallWarning>()
         if (params.size != null) warnings += CallWarning("unsupported", "size")
         if (params.seed != null) warnings += CallWarning("unsupported", "seed")
-        val options = params.providerOptions["google"] as? JsonObject ?: JsonObject(emptyMap())
+        val options = params.providerOptions.toMap()["google"] as? JsonObject ?: JsonObject(emptyMap())
         val body = buildJsonObject {
             put("instances", JsonArray(listOf(buildJsonObject { put("prompt", JsonPrimitive(params.prompt)) })))
             put(
@@ -321,7 +321,7 @@ private class GoogleGenerativeAIImageModel(
             LanguageModelCallParams(
                 messages = listOf(message),
                 seed = params.seed,
-                providerOptions = mapOf(
+                providerOptions = ProviderOptions.ofPairs(
                     "google" to buildJsonObject {
                         put("responseModalities", JsonArray(listOf(JsonPrimitive("IMAGE"))))
                         params.aspectRatio?.let {
@@ -349,7 +349,7 @@ private class GoogleGenerativeAIVideoModel(
 
     override suspend fun generate(params: VideoGenerationParams): VideoModelResult {
         params.abortSignal.throwIfAborted()
-        val options = params.providerOptions["google"] as? JsonObject ?: JsonObject(emptyMap())
+        val options = params.providerOptions.toMap()["google"] as? JsonObject ?: JsonObject(emptyMap())
         val body = googleVideoRequestBody(params, options)
         val operation = googlePostJson(
             client = client,
@@ -534,7 +534,7 @@ private fun googleInteractionsRequestBody(
     stream: Boolean,
 ): GoogleInteractionsPreparedRequest {
     val warnings = mutableListOf<CallWarning>()
-    val options = params.providerOptions["google"] as? JsonObject ?: JsonObject(emptyMap())
+    val options = params.providerOptions.toMap()["google"] as? JsonObject ?: JsonObject(emptyMap())
     val isAgent = input !is GoogleInteractionsModelInput.Model
     val isBackground = options["background"]?.jsonPrimitive?.booleanOrNull == true
     val converted = googleInteractionsInput(
@@ -1275,7 +1275,7 @@ private fun googleGenerateContentBody(
     stream: Boolean,
 ): GooglePreparedRequest {
     val warnings = mutableListOf<CallWarning>()
-    val options = params.providerOptions["google"] as? JsonObject ?: JsonObject(emptyMap())
+    val options = params.providerOptions.toMap()["google"] as? JsonObject ?: JsonObject(emptyMap())
     val converted = googleMessages(params.messages, isGemini3 = modelId.contains("gemini-3"))
     warnings += converted.warnings
     val tools = googleToolsJson(params.tools, params.toolChoice, options)

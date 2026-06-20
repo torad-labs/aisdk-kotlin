@@ -27,7 +27,7 @@ public data class ToolSchema(
     val inputExamples: List<String> = emptyList(),
     val metadata: Map<String, JsonElement> = emptyMap(),
     val providerExecuted: Boolean = false,
-    val providerOptions: Map<String, JsonElement> = emptyMap(),
+    val providerOptions: ProviderOptions = ProviderOptions.None,
 )
 
 /** Wrapper emitted by [Tool.execute] — currently only [Success]; sealed for future variants. */
@@ -71,7 +71,7 @@ public sealed class Tool<TInput, TOutput, TContext> {
     public val inputExamples: List<String> get() = schema.inputExamples
     public val metadata: Map<String, JsonElement> get() = schema.metadata
     public val providerExecuted: Boolean get() = schema.providerExecuted
-    public val providerOptions: Map<String, JsonElement> get() = schema.providerOptions
+    public val providerOptions: ProviderOptions get() = schema.providerOptions
 
     /** Approval gate — return true to pause the loop for host approval. Default: never gates. */
     public open suspend fun needsApproval(input: TInput, options: ToolPredicateOptions<TContext>): Boolean = false
@@ -247,7 +247,7 @@ public fun <TInput, TOutput, TContext> Tool(
     onInputAvailable: (suspend (toolCallId: String, input: TInput) -> Unit)? = null,
     metadata: Map<String, JsonElement> = emptyMap(),
     providerExecuted: Boolean = false,
-    providerOptions: Map<String, JsonElement> = emptyMap(),
+    providerOptions: ProviderOptions = ProviderOptions.None,
     executor: suspend ToolExecutionContext<TContext>.(TInput) -> TOutput,
 ): Tool<TInput, TOutput, TContext> = LambdaTool(
     schema = ToolSchema(name, description, strict, inputExamples, metadata, providerExecuted, providerOptions),
@@ -275,7 +275,7 @@ public inline fun <reified TInput, reified TOutput, TContext> Tool(
     noinline onInputAvailable: (suspend (toolCallId: String, input: TInput) -> Unit)? = null,
     metadata: Map<String, JsonElement> = emptyMap(),
     providerExecuted: Boolean = false,
-    providerOptions: Map<String, JsonElement> = emptyMap(),
+    providerOptions: ProviderOptions = ProviderOptions.None,
     noinline executor: suspend ToolExecutionContext<TContext>.(TInput) -> TOutput,
 ): Tool<TInput, TOutput, TContext> = Tool(
     name = name,
@@ -311,7 +311,7 @@ public fun <TInput, TOutput, TContext> StreamingTool(
     onInputAvailable: (suspend (toolCallId: String, input: TInput) -> Unit)? = null,
     metadata: Map<String, JsonElement> = emptyMap(),
     providerExecuted: Boolean = false,
-    providerOptions: Map<String, JsonElement> = emptyMap(),
+    providerOptions: ProviderOptions = ProviderOptions.None,
     executor: ToolExecutionContext<TContext>.(TInput) -> Flow<TOutput>,
 ): Tool<TInput, TOutput, TContext> = LambdaStreamingTool(
     schema = ToolSchema(name, description, strict, inputExamples, metadata, providerExecuted, providerOptions),
@@ -339,7 +339,7 @@ public inline fun <reified TInput, reified TOutput, TContext> StreamingTool(
     noinline onInputAvailable: (suspend (toolCallId: String, input: TInput) -> Unit)? = null,
     metadata: Map<String, JsonElement> = emptyMap(),
     providerExecuted: Boolean = false,
-    providerOptions: Map<String, JsonElement> = emptyMap(),
+    providerOptions: ProviderOptions = ProviderOptions.None,
     noinline executor: ToolExecutionContext<TContext>.(TInput) -> Flow<TOutput>,
 ): Tool<TInput, TOutput, TContext> = StreamingTool(
     name = name,
@@ -534,10 +534,10 @@ public fun <T> validateTypes(
 
 public fun <T> parseProviderOptions(
     provider: String,
-    providerOptions: Map<String, JsonElement>,
+    providerOptions: ProviderOptions,
     schema: Schema<T>,
 ): T? {
-    val value = providerOptions[provider] ?: return null
+    val value = providerOptions.toMap()[provider] ?: return null
     return when (val result = safeValidateTypes(value, schema)) {
         is ValidationResult.Success -> result.value
         is ValidationResult.Failure -> throw InvalidArgumentError(
@@ -695,7 +695,7 @@ private fun <TInput, TOutput, TContext> buildProviderTool(
                 supportsDeferredResults = supportsDeferredResults,
             ),
             providerExecuted = true,
-            providerOptions = emptyMap(),
+            providerOptions = ProviderOptions.None,
         ),
         inputSerializer = inputSerializer,
         outputSerializer = options.outputSerializer,

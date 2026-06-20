@@ -19,6 +19,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertTrue
 import ai.torad.aisdk.providers.Fal
+import kotlinx.serialization.json.JsonObject
 
 class FalProviderTest {
     @Test
@@ -79,14 +80,14 @@ class FalProviderTest {
                     ImageGenerationFile(url = "https://example.com/second.png"),
                 ),
                 mask = ImageGenerationFile(mediaType = "image/png", base64 = "bWFzaw=="),
-                providerOptions = mapOf(
+                providerOptions = ProviderOptions.Raw(JsonObject(mapOf(
                     "fal" to buildJsonObject {
                         put("guidanceScale", JsonPrimitive(7.5f))
                         put("num_inference_steps", JsonPrimitive(30))
                         put("enableSafetyChecker", JsonPrimitive(false))
                         put("extra_param", JsonPrimitive("extra"))
                     },
-                ),
+                ))),
                 headers = mapOf("X-Request" to "request"),
             ),
         )
@@ -159,14 +160,14 @@ class FalProviderTest {
                 instructions = "Speak softly.",
                 speed = 1.2f,
                 responseFormat = "wav",
-                providerOptions = mapOf(
+                providerOptions = ProviderOptions.Raw(JsonObject(mapOf(
                     "fal" to buildJsonObject {
                         put(
                             "voice_setting",
                             buildJsonObject { put("emotion", JsonPrimitive("happy")) },
                         )
                     },
-                ),
+                ))),
                 headers = mapOf("X-Request" to "request"),
             ),
         )
@@ -225,14 +226,14 @@ class FalProviderTest {
             TranscriptionParams(
                 audio = AudioSource("audio/wav", "YXVkaW8=", "clip.wav"),
                 language = "pt",
-                providerOptions = mapOf(
+                providerOptions = ProviderOptions.Raw(JsonObject(mapOf(
                     "fal" to buildJsonObject {
                         put("diarize", JsonPrimitive(false))
                         put("chunkLevel", JsonPrimitive("segment"))
                         put("batchSize", JsonPrimitive(16))
                         put("numSpeakers", JsonPrimitive(2))
                     },
-                ),
+                ))),
                 headers = mapOf("X-Request" to "request"),
             ),
         )
@@ -312,7 +313,7 @@ class FalProviderTest {
                 durationSeconds = 5f,
                 aspectRatio = "16:9",
                 seed = 42,
-                providerOptions = mapOf(
+                providerOptions = ProviderOptions.Raw(JsonObject(mapOf(
                     "fal" to buildJsonObject {
                         put("pollIntervalMs", JsonPrimitive(1))
                         put("pollTimeoutMs", JsonPrimitive(2))
@@ -321,7 +322,7 @@ class FalProviderTest {
                         put("promptOptimizer", JsonPrimitive(true))
                         put("customFlag", JsonPrimitive("custom"))
                     },
-                ),
+                ))),
                 headers = mapOf("X-Request" to "request"),
             ),
         )

@@ -350,8 +350,8 @@ private fun klingAIHeaders(
     }
 }
 
-private fun klingAIOptions(providerOptions: Map<String, JsonElement>): JsonObject =
-    providerOptions["klingai"] as? JsonObject ?: JsonObject(emptyMap())
+private fun klingAIOptions(providerOptions: ProviderOptions): JsonObject =
+    providerOptions.toMap()["klingai"] as? JsonObject ?: JsonObject(emptyMap())
 
 private fun klingAIVideoMetadata(value: JsonObject): JsonObject = buildJsonObject {
     value["id"]?.jsonPrimitive?.contentOrNull?.let { put("id", JsonPrimitive(it)) }

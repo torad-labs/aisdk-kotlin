@@ -204,8 +204,9 @@ private fun mistralRewriteUserContent(message: JsonObject): JsonObject {
     return JsonObject(message + ("content" to JsonArray(rewritten)))
 }
 
-private fun transformMistralProviderOptions(options: Map<String, JsonElement>): Map<String, JsonElement> {
-    val mistral = options["mistral"] as? JsonObject ?: return options
+private fun transformMistralProviderOptions(options: ProviderOptions): ProviderOptions {
+    val map = options.toMap()
+    val mistral = map["mistral"] as? JsonObject ?: return options
     val transformed = buildJsonObject {
         for ((key, value) in mistral) {
             when (key) {
@@ -219,5 +220,5 @@ private fun transformMistralProviderOptions(options: Map<String, JsonElement>): 
             }
         }
     }
-    return options + ("mistral" to transformed)
+    return ProviderOptions.Raw(JsonObject(map + ("mistral" to (transformed as JsonElement))))
 }

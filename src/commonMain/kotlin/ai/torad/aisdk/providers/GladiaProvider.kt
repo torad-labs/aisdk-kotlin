@@ -346,8 +346,8 @@ private class GladiaTranscriptionModel(
         return ProviderHeaders.withUserAgentSuffix(base, "ai-sdk/gladia/$GLADIA_VERSION")
     }
 
-    private fun options(providerOptions: Map<String, JsonElement>): JsonObject =
-        providerOptions["gladia"] as? JsonObject ?: JsonObject(emptyMap())
+    private fun options(providerOptions: ProviderOptions): JsonObject =
+        providerOptions.toMap()["gladia"] as? JsonObject ?: JsonObject(emptyMap())
 
     private fun JsonElement.jsonObjectOrNull(): JsonObject? = this as? JsonObject
 

@@ -19,6 +19,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertTrue
 import ai.torad.aisdk.providers.Alibaba
+import kotlinx.serialization.json.JsonObject
 
 class AlibabaProviderTest {
     @Test
@@ -81,13 +82,13 @@ class AlibabaProviderTest {
                     LanguageModelTool("lookup", "Lookup city details.", """{"type":"object","properties":{"city":{"type":"string"}}}"""),
                 ),
                 toolChoice = ToolChoice.Required,
-                providerOptions = mapOf(
+                providerOptions = ProviderOptions.Raw(JsonObject(mapOf(
                     "alibaba" to buildJsonObject {
                         put("enableThinking", JsonPrimitive(true))
                         put("thinkingBudget", JsonPrimitive(2048))
                         put("parallelToolCalls", JsonPrimitive(false))
                     },
-                ),
+                ))),
                 headers = mapOf("X-Request" to "request"),
             ),
         )
@@ -163,7 +164,7 @@ class AlibabaProviderTest {
                 aspectRatio = "16:9",
                 fps = 24,
                 n = 2,
-                providerOptions = mapOf(
+                providerOptions = ProviderOptions.Raw(JsonObject(mapOf(
                     "alibaba" to buildJsonObject {
                         put("pollIntervalMs", JsonPrimitive(0))
                         put("pollTimeoutMs", JsonPrimitive(1_000))
@@ -175,7 +176,7 @@ class AlibabaProviderTest {
                         put("audio", JsonPrimitive(true))
                         put("custom_parameter", JsonPrimitive("kept"))
                     },
-                ),
+                ))),
                 headers = mapOf("X-Request" to "request"),
             ),
         )
@@ -249,12 +250,12 @@ class AlibabaProviderTest {
         val result = provider.embeddingModel("text-embedding-v4").embed(
             EmbeddingModelCallParams(
                 values = listOf("hello", "world"),
-                providerOptions = mapOf(
+                providerOptions = ProviderOptions.Raw(JsonObject(mapOf(
                     "alibaba" to buildJsonObject {
                         put("textType", JsonPrimitive("query"))
                         put("dimension", JsonPrimitive(2))
                     },
-                ),
+                ))),
             ),
         )
 
@@ -273,9 +274,9 @@ class AlibabaProviderTest {
             model.embed(
                 EmbeddingModelCallParams(
                     values = listOf("x"),
-                    providerOptions = mapOf(
+                    providerOptions = ProviderOptions.Raw(JsonObject(mapOf(
                         "alibaba" to buildJsonObject { put("outputType", JsonPrimitive("sparse")) },
-                    ),
+                    ))),
                 ),
             )
         }

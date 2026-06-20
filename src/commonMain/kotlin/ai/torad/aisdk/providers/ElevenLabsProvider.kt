@@ -270,8 +270,8 @@ private fun elevenLabsHeaders(settings: ElevenLabsProviderSettings, callHeaders:
     return ProviderHeaders.withUserAgentSuffix(base, "ai-sdk/elevenlabs/$ELEVENLABS_VERSION")
 }
 
-private fun elevenLabsOptions(providerOptions: Map<String, JsonElement>): JsonObject =
-    providerOptions["elevenlabs"] as? JsonObject ?: JsonObject(emptyMap())
+private fun elevenLabsOptions(providerOptions: ProviderOptions): JsonObject =
+    providerOptions.toMap()["elevenlabs"] as? JsonObject ?: JsonObject(emptyMap())
 
 private fun elevenLabsOutputFormat(format: String): String =
     when (format) {

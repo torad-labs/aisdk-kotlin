@@ -55,14 +55,14 @@ class AzureProviderTest {
             LanguageModelCallParams(
                 messages = listOf(userMessage("Hello")),
                 maxOutputTokens = 64,
-                providerOptions = mapOf(
+                providerOptions = ProviderOptions.Raw(JsonObject(mapOf(
                     "openai" to JsonObject(
                         mapOf(
                             "reasoningEffort" to JsonPrimitive("low"),
                             "reasoningSummary" to JsonPrimitive("concise"),
                         ),
                     ),
-                ),
+                ))),
                 headers = mapOf("Custom-Request-Header" to "request-header-value"),
             ),
         )
@@ -158,7 +158,7 @@ class AzureProviderTest {
                 prompt = "A cute baby sea otter",
                 n = 2,
                 size = "1024x1024",
-                providerOptions = mapOf("openai" to JsonObject(mapOf("style" to JsonPrimitive("natural")))),
+                providerOptions = ProviderOptions.Raw(JsonObject(mapOf("openai" to JsonObject(mapOf("style" to JsonPrimitive("natural")))))),
             ),
         )
         val transcript = provider.transcription("whisper-1").transcribe(

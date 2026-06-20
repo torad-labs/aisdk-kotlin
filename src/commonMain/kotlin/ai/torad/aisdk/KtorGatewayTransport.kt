@@ -94,7 +94,7 @@ public class KtorGatewayTransport(
     ): EmbeddingModelResult {
         val body = buildJsonObject {
             put("values", JsonArray(params.values.map(::JsonPrimitive)))
-            if (params.providerOptions.isNotEmpty()) put("providerOptions", JsonObject(params.providerOptions))
+            if (params.providerOptions.toMap().isNotEmpty()) put("providerOptions", JsonObject(params.providerOptions.toMap()))
         }
         val response = postJson(
             context = context,
@@ -126,7 +126,7 @@ public class KtorGatewayTransport(
             put("n", JsonPrimitive(params.n))
             params.size?.let { put("size", JsonPrimitive(it)) }
             params.aspectRatio?.let { put("aspectRatio", JsonPrimitive(it)) }
-            if (params.providerOptions.isNotEmpty()) put("providerOptions", JsonObject(params.providerOptions))
+            if (params.providerOptions.toMap().isNotEmpty()) put("providerOptions", JsonObject(params.providerOptions.toMap()))
         }
         val response = postJson(
             context = context,
@@ -166,7 +166,7 @@ public class KtorGatewayTransport(
             params.fps?.let { put("fps", JsonPrimitive(it)) }
             params.resolution?.let { put("resolution", JsonPrimitive(it)) }
             params.size?.let { put("size", JsonPrimitive(it)) }
-            if (params.providerOptions.isNotEmpty()) put("providerOptions", JsonObject(params.providerOptions))
+            if (params.providerOptions.toMap().isNotEmpty()) put("providerOptions", JsonObject(params.providerOptions.toMap()))
             params.image?.let { image ->
                 put(
                     "image",
@@ -242,7 +242,7 @@ public class KtorGatewayTransport(
             put("documents", JsonArray(params.documents.map(::JsonPrimitive)))
             put("query", JsonPrimitive(params.query))
             params.topN?.let { put("topN", JsonPrimitive(it)) }
-            if (params.providerOptions.isNotEmpty()) put("providerOptions", JsonObject(params.providerOptions))
+            if (params.providerOptions.toMap().isNotEmpty()) put("providerOptions", JsonObject(params.providerOptions.toMap()))
         }
         val response = postJson(
             context = context,
@@ -438,7 +438,7 @@ public class KtorGatewayTransport(
         params.seed?.let { put("seed", JsonPrimitive(it)) }
         params.presencePenalty?.let { put("presencePenalty", JsonPrimitive(it)) }
         params.frequencyPenalty?.let { put("frequencyPenalty", JsonPrimitive(it)) }
-        if (params.providerOptions.isNotEmpty()) put("providerOptions", JsonObject(params.providerOptions))
+        if (params.providerOptions.toMap().isNotEmpty()) put("providerOptions", JsonObject(params.providerOptions.toMap()))
         put("responseFormat", responseFormatJson(params.responseFormat))
     }
 
@@ -560,7 +560,7 @@ private fun languageModelToolJson(tool: LanguageModelTool): JsonObject = buildJs
     put("inputSchema", aiSdkJson.parseToJsonElement(tool.parametersSchemaJson))
     put("strict", JsonPrimitive(tool.strict))
     if (tool.providerExecuted) put("providerExecuted", JsonPrimitive(true))
-    if (tool.providerOptions.isNotEmpty()) put("providerOptions", JsonObject(tool.providerOptions))
+    if (tool.providerOptions.toMap().isNotEmpty()) put("providerOptions", JsonObject(tool.providerOptions.toMap()))
 }
 
 private fun toolChoiceJson(choice: ToolChoice): JsonElement = when (choice) {

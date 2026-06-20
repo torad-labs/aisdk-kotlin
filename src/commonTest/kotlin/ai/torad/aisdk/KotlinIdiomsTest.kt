@@ -51,8 +51,8 @@ class KotlinIdiomsTest {
             }
         }
 
-        assertEquals("enabled", settings.providerOptions["trace"]?.jsonPrimitive?.content)
-        val openai = assertIs<JsonObject>(settings.providerOptions["openai"])
+        assertEquals("enabled", settings.providerOptions.toMap()["trace"]?.jsonPrimitive?.content)
+        val openai = assertIs<JsonObject>(settings.providerOptions.toMap()["openai"])
         assertEquals("high", openai["reasoningEffort"]?.jsonPrimitive?.content)
     }
 
@@ -68,9 +68,9 @@ class KotlinIdiomsTest {
             }
         }
 
-        assertEquals("high", settings.providerOptions.decodeProviderMetadata<ProviderTuning>("openai")?.reasoningEffort)
-        assertEquals("sampled", settings.providerOptions.decodeValue<ProviderTuning>("trace")?.reasoningEffort)
-        val anthropic = assertIs<JsonObject>(settings.providerOptions["anthropic"])
+        assertEquals("high", settings.providerOptions.toMap().decodeProviderMetadata<ProviderTuning>("openai")?.reasoningEffort)
+        assertEquals("sampled", settings.providerOptions.toMap().decodeValue<ProviderTuning>("trace")?.reasoningEffort)
+        val anthropic = assertIs<JsonObject>(settings.providerOptions.toMap()["anthropic"])
         assertEquals("read-write", anthropic["cache"]?.decodeAs<ProviderTuning>()?.reasoningEffort)
     }
 

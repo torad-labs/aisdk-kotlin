@@ -94,12 +94,12 @@ class OpenResponsesProviderTest {
                     schemaName = "Answer",
                     schemaJson = objectSchema("answer"),
                 ),
-                providerOptions = mapOf(
+                providerOptions = ProviderOptions.Raw(JsonObject(mapOf(
                     "openresponses" to buildJsonObject {
                         put("reasoningEffort", JsonPrimitive("low"))
                         put("reasoningSummary", JsonPrimitive("concise"))
                     },
-                ),
+                ))),
             ),
         )
 

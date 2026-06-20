@@ -18,6 +18,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertTrue
 import ai.torad.aisdk.providers.QuiverAI
+import kotlinx.serialization.json.JsonObject
 
 class QuiverAIProviderTest {
     @Test
@@ -47,7 +48,7 @@ class QuiverAIProviderTest {
                     ImageGenerationFile(url = "https://example.com/ref.png"),
                     ImageGenerationFile(mediaType = "image/png", base64 = "BAUG"),
                 ),
-                providerOptions = mapOf(
+                providerOptions = ProviderOptions.Raw(JsonObject(mapOf(
                     "quiverai" to buildJsonObject {
                         put("instructions", JsonPrimitive("Use clean geometry."))
                         put("temperature", JsonPrimitive(0.4))
@@ -55,7 +56,7 @@ class QuiverAIProviderTest {
                         put("presencePenalty", JsonPrimitive(0.2))
                         put("maxOutputTokens", JsonPrimitive(4096))
                     },
-                ),
+                ))),
             ),
         )
 
@@ -109,7 +110,7 @@ class QuiverAIProviderTest {
                 prompt = "",
                 n = 2,
                 files = listOf(ImageGenerationFile(url = "https://example.com/logo.png")),
-                providerOptions = mapOf(
+                providerOptions = ProviderOptions.Raw(JsonObject(mapOf(
                     "quiverai" to buildJsonObject {
                         put("operation", JsonPrimitive("vectorize"))
                         put("temperature", JsonPrimitive(0.3))
@@ -117,7 +118,7 @@ class QuiverAIProviderTest {
                         put("autoCrop", JsonPrimitive(true))
                         put("targetSize", JsonPrimitive(1024))
                     },
-                ),
+                ))),
             ),
         )
 
@@ -155,7 +156,7 @@ class QuiverAIProviderTest {
             provider.image("arrow-1").generate(
                 ImageGenerationParams(
                     prompt = "",
-                    providerOptions = mapOf("quiverai" to buildJsonObject { put("operation", JsonPrimitive("vectorize")) }),
+                    providerOptions = ProviderOptions.Raw(JsonObject(mapOf("quiverai" to buildJsonObject { put("operation", JsonPrimitive("vectorize")) }))),
                 ),
             )
         }
@@ -164,7 +165,7 @@ class QuiverAIProviderTest {
                 ImageGenerationParams(
                     prompt = "",
                     files = listOf(ImageGenerationFile(url = "a"), ImageGenerationFile(url = "b")),
-                    providerOptions = mapOf("quiverai" to buildJsonObject { put("operation", JsonPrimitive("vectorize")) }),
+                    providerOptions = ProviderOptions.Raw(JsonObject(mapOf("quiverai" to buildJsonObject { put("operation", JsonPrimitive("vectorize")) }))),
                 ),
             )
         }

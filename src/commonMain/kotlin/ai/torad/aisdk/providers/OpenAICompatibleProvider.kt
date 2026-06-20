@@ -293,7 +293,7 @@ private class OpenAICompatibleChatLanguageModel(
                 "JSON response schema is only sent when supportsStructuredOutputs is true",
             )
         }
-        val options = providerOptions(params.providerOptions)
+        val options = providerOptions(params.providerOptions.toMap())
         val strictJsonSchema = options["strictJsonSchema"]?.jsonPrimitive?.booleanOrNull ?: true
         val body = buildJsonObject {
             put("model", JsonPrimitive(modelId))
@@ -429,7 +429,7 @@ private class OpenAICompatibleCompletionLanguageModel(
         val warnings = mutableListOf<CallWarning>()
         if (params.tools.isNotEmpty()) warnings += CallWarning("unsupported", "tools are not supported by completion models")
         if (params.topK != null) warnings += CallWarning("unsupported", "topK is not supported by completion models")
-        val options = openAIProviderOptions(params.providerOptions, settings.providerOptionsName ?: settings.name)
+        val options = openAIProviderOptions(params.providerOptions.toMap(), settings.providerOptionsName ?: settings.name)
         val body = buildJsonObject {
             put("model", JsonPrimitive(modelId))
             put("prompt", JsonPrimitive(openAICompletionPrompt(params.messages)))
@@ -468,7 +468,7 @@ private class OpenAICompatibleEmbeddingModel(
         if (params.values.size > max) {
             throw InvalidArgumentError("values", "embedding model ${settings.name}:$modelId supports at most $max values per call")
         }
-        val options = openAIProviderOptions(params.providerOptions, settings.providerOptionsName ?: settings.name)
+        val options = openAIProviderOptions(params.providerOptions.toMap(), settings.providerOptionsName ?: settings.name)
         val body = buildJsonObject {
             put("model", JsonPrimitive(modelId))
             put("input", JsonArray(params.values.map(::JsonPrimitive)))
@@ -512,7 +512,7 @@ private class OpenAICompatibleImageModel(
         if (params.seed != null) {
             warnings += CallWarning("unsupported", "seed is not supported by OpenAI-compatible image generation")
         }
-        val options = openAIProviderOptions(params.providerOptions, settings.providerOptionsName ?: settings.name)
+        val options = openAIProviderOptions(params.providerOptions.toMap(), settings.providerOptionsName ?: settings.name)
         val response = openAICompatibleImageResponse(params, options)
         val responseObject = WireDecoder.objectValue(response.value, providerName, "image generation response")
         val data = WireDecoder.requiredArray(responseObject, "data", providerName, "image generation response")
@@ -604,7 +604,7 @@ private class OpenAICompatibleSpeechModel(
         get() = providerName
 
     override suspend fun generate(params: SpeechGenerationParams): SpeechModelResult {
-        val options = openAIProviderOptions(params.providerOptions, settings.providerOptionsName ?: settings.name)
+        val options = openAIProviderOptions(params.providerOptions.toMap(), settings.providerOptionsName ?: settings.name)
         val format = params.responseFormat ?: options["response_format"]?.jsonPrimitive?.contentOrNull ?: "mp3"
         val body = buildJsonObject {
             put("model", JsonPrimitive(modelId))
@@ -637,7 +637,7 @@ private class OpenAICompatibleTranscriptionModel(
         get() = providerName
 
     override suspend fun transcribe(params: TranscriptionParams): TranscriptionModelResult {
-        val options = openAIProviderOptions(params.providerOptions, settings.providerOptionsName ?: settings.name)
+        val options = openAIProviderOptions(params.providerOptions.toMap(), settings.providerOptionsName ?: settings.name)
         val multipart = MultiPartFormDataContent(
             formData {
                 append("model", modelId)
@@ -1149,7 +1149,7 @@ private fun openAIToolJson(tool: LanguageModelTool): JsonObject = buildJsonObjec
         },
     )
     // Per-tool provider config (e.g. cache_control), merged at the top level.
-    tool.providerOptions.forEach { (key, value) -> put(key, value) }
+    tool.providerOptions.toMap().forEach { (key, value) -> put(key, value) }
 }
 
 private fun openAIToolChoiceJson(choice: ToolChoice): JsonElement? = when (choice) {

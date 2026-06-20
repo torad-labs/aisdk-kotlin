@@ -509,8 +509,8 @@ private fun prodiaHeaders(settings: ProdiaProviderSettings, callHeaders: Map<Str
     return ProviderHeaders.withUserAgentSuffix(base, "ai-sdk/prodia/$PRODIA_VERSION")
 }
 
-private fun prodiaOptions(providerOptions: Map<String, JsonElement>): JsonObject =
-    providerOptions["prodia"] as? JsonObject ?: JsonObject(emptyMap())
+private fun prodiaOptions(providerOptions: ProviderOptions): JsonObject =
+    providerOptions.toMap()["prodia"] as? JsonObject ?: JsonObject(emptyMap())
 
 private fun prodiaJobMetadata(job: JsonObject): JsonObject = buildJsonObject {
     job["id"]?.jsonPrimitive?.contentOrNull?.let { put("jobId", JsonPrimitive(it)) }

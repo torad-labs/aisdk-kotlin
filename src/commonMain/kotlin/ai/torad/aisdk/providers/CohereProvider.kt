@@ -600,8 +600,8 @@ private fun cohereHeaders(settings: CohereProviderSettings, callHeaders: Map<Str
     return ProviderHeaders.withUserAgentSuffix(base, "ai-sdk/cohere/$COHERE_VERSION")
 }
 
-private fun cohereOptions(providerOptions: Map<String, JsonElement>): JsonObject =
-    providerOptions["cohere"] as? JsonObject ?: JsonObject(emptyMap())
+private fun cohereOptions(providerOptions: ProviderOptions): JsonObject =
+    providerOptions.toMap()["cohere"] as? JsonObject ?: JsonObject(emptyMap())
 
 private fun cohereErrorMessage(statusCode: Int, parsed: JsonElement?, raw: String): String {
     val obj = parsed as? JsonObject

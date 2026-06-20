@@ -19,6 +19,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertTrue
 import ai.torad.aisdk.providers.Cohere
+import kotlinx.serialization.json.JsonObject
 
 class CohereProviderTest {
     @Test
@@ -123,11 +124,11 @@ class CohereProviderTest {
                         put("additionalProperties", JsonPrimitive(false))
                     },
                 ),
-                providerOptions = mapOf(
+                providerOptions = ProviderOptions.Raw(JsonObject(mapOf(
                     "cohere" to buildJsonObject {
                         put("thinking", buildJsonObject { put("tokenBudget", JsonPrimitive(128)) })
                     },
-                ),
+                ))),
                 headers = mapOf("X-Request" to "request"),
             ),
         )
@@ -216,13 +217,13 @@ class CohereProviderTest {
             EmbeddingModelCallParams(
                 values = listOf("alpha", "beta"),
                 truncate = false,
-                providerOptions = mapOf(
+                providerOptions = ProviderOptions.Raw(JsonObject(mapOf(
                     "cohere" to buildJsonObject {
                         put("inputType", JsonPrimitive("classification"))
                         put("truncate", JsonPrimitive("START"))
                         put("outputDimension", JsonPrimitive(512))
                     },
-                ),
+                ))),
                 headers = mapOf("X-Request" to "request"),
             ),
         )
@@ -280,12 +281,12 @@ class CohereProviderTest {
                 query = "capital",
                 documents = listOf("Berlin", "Paris"),
                 topN = 1,
-                providerOptions = mapOf(
+                providerOptions = ProviderOptions.Raw(JsonObject(mapOf(
                     "cohere" to buildJsonObject {
                         put("maxTokensPerDoc", JsonPrimitive(64))
                         put("priority", JsonPrimitive(1))
                     },
-                ),
+                ))),
                 headers = mapOf("X-Request" to "request"),
             ),
         )

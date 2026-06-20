@@ -6,6 +6,7 @@ import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
 import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonObject
 
 public interface EmbeddingModel {
     public val modelId: String
@@ -35,7 +36,7 @@ public data class EmbeddingModelCallParams(
     val values: List<String>,
     val maxEmbeddingsPerCall: Int? = null,
     val truncate: Boolean? = null,
-    val providerOptions: Map<String, JsonElement> = emptyMap(),
+    val providerOptions: ProviderOptions = ProviderOptions.None,
     val abortSignal: AbortSignal = AbortSignalNever,
     val headers: Map<String, String> = emptyMap(),
 )
@@ -83,7 +84,7 @@ public object Embedding {
     public suspend fun embed(
         model: EmbeddingModel,
         value: String,
-        providerOptions: Map<String, JsonElement> = emptyMap(),
+        providerOptions: ProviderOptions = ProviderOptions.None,
         abortSignal: AbortSignal = AbortSignalNever,
         headers: Map<String, String> = emptyMap(),
         maxRetries: Int = 2,
@@ -116,7 +117,7 @@ public object Embedding {
         values: List<String>,
         maxEmbeddingsPerCall: Int? = null,
         maxParallelCalls: Int = Int.MAX_VALUE,
-        providerOptions: Map<String, JsonElement> = emptyMap(),
+        providerOptions: ProviderOptions = ProviderOptions.None,
         abortSignal: AbortSignal = AbortSignalNever,
         headers: Map<String, String> = emptyMap(),
         maxRetries: Int = 2,
@@ -193,7 +194,7 @@ public fun wrapEmbeddingModel(
 public fun defaultEmbeddingSettingsMiddleware(
     maxEmbeddingsPerCall: Int? = null,
     truncate: Boolean? = null,
-    providerOptions: Map<String, JsonElement> = emptyMap(),
+    providerOptions: ProviderOptions = ProviderOptions.None,
     headers: Map<String, String> = emptyMap(),
 ): EmbeddingModelMiddleware = object : EmbeddingModelMiddleware {
     override suspend fun wrapEmbed(context: EmbeddingMiddlewareCallContext): EmbeddingModelResult =
@@ -201,7 +202,7 @@ public fun defaultEmbeddingSettingsMiddleware(
             context.params.copy(
                 maxEmbeddingsPerCall = context.params.maxEmbeddingsPerCall ?: maxEmbeddingsPerCall,
                 truncate = context.params.truncate ?: truncate,
-                providerOptions = JsonOps.mergeProviderOptions(providerOptions, context.params.providerOptions),
+                providerOptions = ProviderOptions.Raw(JsonObject(JsonOps.mergeProviderOptions(providerOptions.toMap(), context.params.providerOptions.toMap()))),
                 headers = headers + context.params.headers,
             ),
         )

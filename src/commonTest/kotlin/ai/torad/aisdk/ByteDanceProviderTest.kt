@@ -18,6 +18,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertTrue
+import kotlinx.serialization.json.JsonObject
 
 class ByteDanceProviderTest {
     @Test
@@ -52,7 +53,7 @@ class ByteDanceProviderTest {
                 resolution = "1920x1080",
                 seed = 42,
                 fps = 30,
-                providerOptions = mapOf(
+                providerOptions = ProviderOptions.Raw(JsonObject(mapOf(
                     "bytedance" to buildJsonObject {
                         put("watermark", JsonPrimitive(true))
                         put("generateAudio", JsonPrimitive(false))
@@ -74,7 +75,7 @@ class ByteDanceProviderTest {
                         put("pollTimeoutMs", JsonPrimitive(1))
                         put("custom_option", JsonPrimitive("kept"))
                     },
-                ),
+                ))),
             ),
         )
 
@@ -130,10 +131,10 @@ class ByteDanceProviderTest {
             provider.video("seedance").generate(
                 VideoGenerationParams(
                     prompt = "x",
-                    providerOptions = mapOf("bytedance" to buildJsonObject {
+                    providerOptions = ProviderOptions.Raw(JsonObject(mapOf("bytedance" to buildJsonObject {
                         put("pollIntervalMs", JsonPrimitive(0))
                         put("pollTimeoutMs", JsonPrimitive(1))
-                    }),
+                    }))),
                 ),
             )
         }

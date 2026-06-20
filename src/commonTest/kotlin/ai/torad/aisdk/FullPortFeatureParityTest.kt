@@ -67,7 +67,7 @@ class FullPortFeatureParityTest {
                 defaultEmbeddingSettingsMiddleware(
                     maxEmbeddingsPerCall = 4,
                     truncate = true,
-                    providerOptions = mapOf("mock" to JsonPrimitive("default")),
+                    providerOptions = ProviderOptions.Raw(JsonObject(mapOf("mock" to JsonPrimitive("default")))),
                     headers = mapOf("x-default" to "yes"),
                 ),
             ),
@@ -77,15 +77,15 @@ class FullPortFeatureParityTest {
             EmbeddingModelCallParams(
                 values = listOf("x"),
                 truncate = false,
-                providerOptions = mapOf("explicit" to JsonPrimitive(1)),
+                providerOptions = ProviderOptions.Raw(JsonObject(mapOf("explicit" to JsonPrimitive(1)))),
             ),
         )
 
         val captured = assertNotNull(model.captured)
         assertEquals(4, captured.maxEmbeddingsPerCall)
         assertEquals(false, captured.truncate)
-        assertEquals(JsonPrimitive("default"), captured.providerOptions["mock"])
-        assertEquals(JsonPrimitive(1), captured.providerOptions["explicit"])
+        assertEquals(JsonPrimitive("default"), captured.providerOptions.toMap()["mock"])
+        assertEquals(JsonPrimitive(1), captured.providerOptions.toMap()["explicit"])
         assertEquals("yes", captured.headers["x-default"])
     }
 
@@ -189,7 +189,7 @@ class FullPortFeatureParityTest {
                     override suspend fun wrapGenerate(context: ImageMiddlewareCallContext): ImageModelResult =
                         context.doGenerate(
                             context.params.copy(
-                                providerOptions = context.params.providerOptions + ("wrapped" to JsonPrimitive(true)),
+                                providerOptions = context.params.providerOptions + ProviderOptions.Raw(JsonObject(mapOf("wrapped" to JsonPrimitive(true) as JsonElement))),
                             ),
                         )
                 },
@@ -198,7 +198,7 @@ class FullPortFeatureParityTest {
 
         generateImage(wrapped, "wrapped")
 
-        assertEquals(JsonPrimitive(true), model.captured?.providerOptions?.get("wrapped"))
+        assertEquals(JsonPrimitive(true), model.captured?.providerOptions?.toMap()?.get("wrapped"))
     }
 
     @Test

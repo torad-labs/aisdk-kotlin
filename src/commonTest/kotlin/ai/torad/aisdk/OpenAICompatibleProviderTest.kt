@@ -93,7 +93,7 @@ class OpenAICompatibleProviderTest {
                     schemaName = "Answer",
                     schemaJson = JsonObject(mapOf("type" to JsonPrimitive("object"))),
                 ),
-                providerOptions = mapOf(
+                providerOptions = ProviderOptions.Raw(JsonObject(mapOf(
                     "openai" to JsonObject(
                         mapOf(
                             "user" to JsonPrimitive("user_1"),
@@ -102,7 +102,7 @@ class OpenAICompatibleProviderTest {
                             "parallel_tool_calls" to JsonPrimitive(false),
                         ),
                     ),
-                ),
+                ))),
             ),
         ).generate(GenerationInput.Prompt("hi")).first()
 

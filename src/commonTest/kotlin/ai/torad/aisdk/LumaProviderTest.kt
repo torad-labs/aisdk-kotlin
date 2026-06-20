@@ -18,6 +18,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertTrue
 import ai.torad.aisdk.providers.Luma
+import kotlinx.serialization.json.JsonObject
 
 class LumaProviderTest {
     @Test
@@ -48,7 +49,7 @@ class LumaProviderTest {
                     ImageGenerationFile(url = "https://example.com/ref-a.png"),
                     ImageGenerationFile(url = "https://example.com/ref-b.png"),
                 ),
-                providerOptions = mapOf(
+                providerOptions = ProviderOptions.Raw(JsonObject(mapOf(
                     "luma" to buildJsonObject {
                         put("pollIntervalMillis", JsonPrimitive(0))
                         put("maxPollAttempts", JsonPrimitive(1))
@@ -59,7 +60,7 @@ class LumaProviderTest {
                         })
                         put("style", JsonPrimitive("cinematic"))
                     },
-                ),
+                ))),
             ),
         )
 
@@ -107,7 +108,7 @@ class LumaProviderTest {
                     ImageGenerationFile(url = "https://example.com/a.png"),
                     ImageGenerationFile(url = "https://example.com/b.png"),
                 ),
-                providerOptions = mapOf(
+                providerOptions = ProviderOptions.Raw(JsonObject(mapOf(
                     "luma" to buildJsonObject {
                         put("pollIntervalMillis", JsonPrimitive(0))
                         put("maxPollAttempts", JsonPrimitive(1))
@@ -117,7 +118,7 @@ class LumaProviderTest {
                             add(buildJsonObject { put("id", JsonPrimitive("hero")) })
                         })
                     },
-                ),
+                ))),
             ),
         )
 

@@ -198,8 +198,9 @@ private class AlibabaVideoModel(
 private enum class AlibabaVideoMode { TextToVideo, ImageToVideo, ReferenceToVideo }
 
 
-private fun transformAlibabaChatOptions(providerOptions: Map<String, JsonElement>): Map<String, JsonElement> {
-    val options = providerOptions["alibaba"] as? JsonObject ?: return providerOptions
+private fun transformAlibabaChatOptions(providerOptions: ProviderOptions): ProviderOptions {
+    val map = providerOptions.toMap()
+    val options = map["alibaba"] as? JsonObject ?: return providerOptions
     val transformed = buildJsonObject {
         options["enableThinking"]?.let { put("enable_thinking", it) }
         options["thinkingBudget"]?.let { put("thinking_budget", it) }
@@ -208,7 +209,7 @@ private fun transformAlibabaChatOptions(providerOptions: Map<String, JsonElement
             if (key !in setOf("enableThinking", "thinkingBudget", "parallelToolCalls")) put(key, value)
         }
     }
-    return providerOptions + ("alibaba" to transformed)
+    return ProviderOptions.Raw(JsonObject(map + ("alibaba" to (transformed as JsonElement))))
 }
 
 private fun alibabaUsage(usage: Usage): Usage {
@@ -412,8 +413,8 @@ private fun alibabaHeaders(settings: AlibabaProviderSettings, callHeaders: Map<S
         settings.apiKey?.takeIf { it.isNotBlank() }?.let { base[HttpHeaders.Authorization] = "Bearer $it" }
     }
 
-private fun alibabaOptions(providerOptions: Map<String, JsonElement>): JsonObject =
-    providerOptions["alibaba"] as? JsonObject ?: JsonObject(emptyMap())
+private fun alibabaOptions(providerOptions: ProviderOptions): JsonObject =
+    providerOptions.toMap()["alibaba"] as? JsonObject ?: JsonObject(emptyMap())
 
 private fun alibabaErrorMessage(statusCode: Int, parsed: JsonElement?, raw: String): String {
     val obj = parsed as? JsonObject

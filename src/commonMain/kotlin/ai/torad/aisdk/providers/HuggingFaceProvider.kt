@@ -503,8 +503,8 @@ private fun huggingFaceTextFormat(
     }
 }
 
-private fun huggingFaceProviderOptions(providerOptions: Map<String, JsonElement>): HuggingFaceResponsesSettings? {
-    val element = providerOptions["huggingface"] ?: providerOptions["hugging-face"] ?: return null
+private fun huggingFaceProviderOptions(providerOptions: ProviderOptions): HuggingFaceResponsesSettings? {
+    val element = providerOptions.toMap()["huggingface"] ?: providerOptions.toMap()["hugging-face"] ?: return null
     return runCatching { aiSdkJson.decodeFromJsonElement(HuggingFaceResponsesSettings.serializer(), element) }
         .getOrNull()
 }

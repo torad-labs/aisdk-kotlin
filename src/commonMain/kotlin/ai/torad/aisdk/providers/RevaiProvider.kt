@@ -308,8 +308,8 @@ private fun revaiHeaders(settings: RevaiProviderSettings, callHeaders: Map<Strin
     return ProviderHeaders.withUserAgentSuffix(base, "ai-sdk/revai/$REVAI_VERSION")
 }
 
-private fun revaiOptions(providerOptions: Map<String, JsonElement>): JsonObject =
-    providerOptions["revai"] as? JsonObject ?: JsonObject(emptyMap())
+private fun revaiOptions(providerOptions: ProviderOptions): JsonObject =
+    providerOptions.toMap()["revai"] as? JsonObject ?: JsonObject(emptyMap())
 
 private fun revaiErrorMessage(statusCode: Int, parsed: JsonElement?, raw: String): String {
     val obj = parsed as? JsonObject

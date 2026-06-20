@@ -447,8 +447,8 @@ private fun falImageOptions(
     return JsonObject(result)
 }
 
-private fun falOptions(providerOptions: Map<String, JsonElement>): JsonObject =
-    providerOptions["fal"] as? JsonObject ?: JsonObject(emptyMap())
+private fun falOptions(providerOptions: ProviderOptions): JsonObject =
+    providerOptions.toMap()["fal"] as? JsonObject ?: JsonObject(emptyMap())
 
 private fun falImageSize(size: String?, aspectRatio: String?): JsonElement? {
     if (size != null) {

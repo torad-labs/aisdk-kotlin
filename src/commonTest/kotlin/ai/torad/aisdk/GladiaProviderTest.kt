@@ -19,6 +19,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertTrue
 import ai.torad.aisdk.providers.Gladia
+import kotlinx.serialization.json.JsonObject
 
 class GladiaProviderTest {
     @Test
@@ -55,7 +56,7 @@ class GladiaProviderTest {
                     filename = "clip.mp3",
                 ),
                 language = "en",
-                providerOptions = mapOf(
+                providerOptions = ProviderOptions.Raw(JsonObject(mapOf(
                     "gladia" to buildJsonObject {
                         put("contextPrompt", JsonPrimitive("domain words"))
                         put("customVocabulary", buildJsonArray { add(JsonPrimitive("Kotlin")) })
@@ -113,7 +114,7 @@ class GladiaProviderTest {
                             },
                         )
                     },
-                ),
+                ))),
             ),
         )
 

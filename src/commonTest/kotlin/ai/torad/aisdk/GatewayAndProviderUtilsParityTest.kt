@@ -257,12 +257,12 @@ class GatewayAndProviderUtilsParityTest {
         assertEquals(1, created)
         assertEquals(lazy(), asSchema(lazy))
         assertEquals(1, created)
-        assertNull(parseProviderOptions("missing", emptyMap(), lazy()))
-        assertEquals(JsonPrimitive("ok"), parseProviderOptions("test", mapOf("test" to value), lazy())?.get("name"))
+        assertNull(parseProviderOptions("missing", ProviderOptions.None, lazy()))
+        assertEquals(JsonPrimitive("ok"), parseProviderOptions("test", ProviderOptions.Raw(JsonObject(mapOf("test" to value))), lazy())?.get("name"))
         assertFailsWith<InvalidArgumentError> {
             parseProviderOptions(
                 "test",
-                mapOf("test" to value),
+                ProviderOptions.Raw(JsonObject(mapOf("test" to value))),
                 jsonSchema<JsonObject>(JsonObject(emptyMap())) { throw IllegalStateException("bad") },
             )
         }

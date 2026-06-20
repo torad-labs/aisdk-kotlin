@@ -784,11 +784,12 @@ private fun isOpenResponsesReasoningModel(modelId: String, options: OpenResponse
         modelId.startsWith("gpt-5_")
 
 private fun openResponsesProviderOptions(
-    providerOptions: Map<String, JsonElement>,
+    providerOptions: ProviderOptions,
     providerOptionsName: String,
     json: Json,
 ): OpenResponsesOptions? {
-    val element = providerOptions[providerOptionsName] ?: providerOptions["open-responses"] ?: return null
+    val poMap = providerOptions.toMap()
+    val element = poMap[providerOptionsName] ?: poMap["open-responses"] ?: return null
     return runCatching { json.decodeFromJsonElement(OpenResponsesOptions.serializer(), element) }.getOrNull()
 }
 

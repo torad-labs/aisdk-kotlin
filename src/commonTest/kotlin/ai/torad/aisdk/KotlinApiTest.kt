@@ -17,6 +17,7 @@ import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.serializer
+import kotlinx.serialization.json.JsonObject
 
 class KotlinApiTest {
 
@@ -52,7 +53,7 @@ class KotlinApiTest {
 
     @Test
     fun `text generation request forwards grouped settings`() = runTest {
-        val providerOptions = mapOf("openai" to buildJsonObject { put("reasoningEffort", JsonPrimitive("high")) })
+        val providerOptions = ProviderOptions.Raw(JsonObject(mapOf("openai" to buildJsonObject { put("reasoningEffort", JsonPrimitive("high")) })))
         val model = CapturingModel()
         val request = TextGenerationRequest(
             input = TextGenerationRequest.Input.messagesWithPrompt(
@@ -185,18 +186,18 @@ class KotlinApiTest {
             CallConfig(
                 temperature = 0.9f,
                 topP = 0.3f,
-                providerOptions = mapOf(
+                providerOptions = ProviderOptions.Raw(JsonObject(mapOf(
                     "base" to JsonPrimitive("yes"),
                     "call" to JsonPrimitive("yes"),
-                ),
+                ))),
             ),
         ).generate(GenerationInput.Prompt("answer")).first()
 
         val params = assertNotNull(model.generateParams)
         assertEquals(0.9f, params.temperature)
         assertEquals(0.3f, params.topP)
-        assertEquals("yes", params.providerOptions["base"]?.jsonPrimitive?.content)
-        assertEquals("yes", params.providerOptions["call"]?.jsonPrimitive?.content)
+        assertEquals("yes", params.providerOptions.toMap()["base"]?.jsonPrimitive?.content)
+        assertEquals("yes", params.providerOptions.toMap()["call"]?.jsonPrimitive?.content)
     }
 
     @Test

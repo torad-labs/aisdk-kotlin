@@ -115,7 +115,7 @@ public fun <TOutput> streamObjectResult(
     maxOutputTokens: Int? = null,
     stopSequences: List<String> = emptyList(),
     seed: Int? = null,
-    providerOptions: Map<String, JsonElement> = emptyMap(),
+    providerOptions: ProviderOptions = ProviderOptions.None,
     abortSignal: AbortSignal = AbortSignalNever,
     presencePenalty: Float? = null,
     frequencyPenalty: Float? = null,

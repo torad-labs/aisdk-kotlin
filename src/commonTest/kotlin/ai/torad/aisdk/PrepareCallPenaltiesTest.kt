@@ -11,6 +11,7 @@ import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.serializer
+import kotlinx.serialization.json.JsonObject
 
 /**
  * Validates the v6-aligned `presencePenalty` + `frequencyPenalty`
@@ -163,10 +164,10 @@ class PrepareCallPenaltiesTest {
             instructions = "",
             tools = toolSetOf(),
             prepareCall = {
-                AgentSettings(providerOptions = mapOf("common" to JsonPrimitive("call"), "callOnly" to JsonPrimitive(true)))
+                AgentSettings(providerOptions = ProviderOptions.Raw(JsonObject(mapOf("common" to JsonPrimitive("call"), "callOnly" to JsonPrimitive(true)))))
             },
             prepareStep = {
-                StepSettings(providerOptions = mapOf("common" to JsonPrimitive("step"), "stepOnly" to JsonPrimitive(1)))
+                StepSettings(providerOptions = ProviderOptions.Raw(JsonObject(mapOf("common" to JsonPrimitive("step"), "stepOnly" to JsonPrimitive(1)))))
             },
         )
 
@@ -174,8 +175,8 @@ class PrepareCallPenaltiesTest {
         agent.generate(prompt = "hi").first()
 
         // THEN
-        assertEquals(JsonPrimitive("step"), capture.captured?.providerOptions?.get("common"))
-        assertEquals(JsonPrimitive(true), capture.captured?.providerOptions?.get("callOnly"))
-        assertEquals(JsonPrimitive(1), capture.captured?.providerOptions?.get("stepOnly"))
+        assertEquals(JsonPrimitive("step"), capture.captured?.providerOptions?.toMap()?.get("common"))
+        assertEquals(JsonPrimitive(true), capture.captured?.providerOptions?.toMap()?.get("callOnly"))
+        assertEquals(JsonPrimitive(1), capture.captured?.providerOptions?.toMap()?.get("stepOnly"))
     }
 }
