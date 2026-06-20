@@ -31,6 +31,7 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.single
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
@@ -52,8 +53,8 @@ class GatewayAndProviderUtilsParityTest {
             ),
         )
 
-        val text = generateText(provider("chat-model"), prompt = "hi")
-        val chat = generateText(provider.chat("chat-model-2"), prompt = "hi")
+        val text = TextGenerator(provider("chat-model")).generate(GenerationInput.Prompt("hi")).single()
+        val chat = TextGenerator(provider.chat("chat-model-2")).generate(GenerationInput.Prompt("hi")).single()
         val embedding = Embedding.embed(provider.embedding("embed-model"), "hello")
         val image = generateImage(provider.image("image-model"), "logo")
         val video = generateVideo(provider.video("video-model"), "clip")
@@ -526,7 +527,7 @@ class GatewayAndProviderUtilsParityTest {
             GatewayProviderSettings(baseUrl = "https://gateway.test/v3/ai", apiKey = "secret"),
         )
 
-        val generated = generateText(provider.languageModel("gpt-test"), prompt = "hi")
+        val generated = TextGenerator(provider.languageModel("gpt-test")).generate(GenerationInput.Prompt("hi")).single()
         val streamed = drainAllItems(provider.languageModel("gpt-test").stream(LanguageModelCallParams(listOf(userMessage("hi")))))
 
         assertEquals("hello", generated.text)

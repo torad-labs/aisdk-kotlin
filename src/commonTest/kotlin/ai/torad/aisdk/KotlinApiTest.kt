@@ -8,6 +8,7 @@ import kotlin.test.assertIs
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.Serializable
@@ -71,8 +72,26 @@ class KotlinApiTest {
                 frequencyPenalty = 0.5f,
             ),
         )
-
-        val result = generateText(model = model, request = request)
+        val msgs = buildList<ModelMessage> {
+            if (request.system != null) add(systemMessage(request.system))
+            addAll(request.messages)
+        }
+        val s = request.settings
+        val result = TextGenerator(
+            model,
+            CallConfig(
+                temperature = s.temperature,
+                topP = s.topP,
+                topK = s.topK,
+                maxOutputTokens = s.maxOutputTokens,
+                stopSequences = s.stopSequences ?: emptyList(),
+                seed = s.seed,
+                providerOptions = s.providerOptions,
+                presencePenalty = s.presencePenalty,
+                frequencyPenalty = s.frequencyPenalty,
+                responseFormat = s.responseFormat ?: ResponseFormat.Text,
+            ),
+        ).generate(GenerationInput.from(prompt = request.prompt, messages = msgs)).first()
 
         assertEquals("ok", result.text)
         val params = assertNotNull(model.generateParams)
@@ -101,7 +120,11 @@ class KotlinApiTest {
         assertEquals(listOf(userMessage("history")), input.messages)
         assertEquals("answer", input.prompt)
 
-        generateText(model = model, request = request)
+        val msgs = buildList<ModelMessage> {
+            if (request.system != null) add(systemMessage(request.system))
+            addAll(request.messages)
+        }
+        TextGenerator(model).generate(GenerationInput.from(prompt = request.prompt, messages = msgs)).first()
 
         val params = assertNotNull(model.generateParams)
         assertEquals(listOf(MessageRole.User, MessageRole.User), params.messages.map { it.role })
@@ -127,42 +150,47 @@ class KotlinApiTest {
 
     @Test
     fun `empty builder preserves construction compatibility and fails at execution boundary`() = runTest {
-        val model = CapturingModel()
         val request = textGenerationRequest { }
 
         assertEquals(null, request.prompt)
         assertEquals(emptyList(), request.messages)
         assertFailsWith<IllegalArgumentException> {
-            generateText(model = model, request = request)
+            val msgs = buildList<ModelMessage> {
+                if (request.system != null) add(systemMessage(request.system))
+                addAll(request.messages)
+            }
+            GenerationInput.from(prompt = request.prompt, messages = msgs)
         }
     }
 
     @Test
     fun `empty compat request fails at execution boundary`() = runTest {
-        val model = CapturingModel()
         val request = TextGenerationRequest()
 
         assertFailsWith<IllegalArgumentException> {
-            generateText(model = model, request = request)
+            val msgs = buildList<ModelMessage> {
+                if (request.system != null) add(systemMessage(request.system))
+                addAll(request.messages)
+            }
+            GenerationInput.from(prompt = request.prompt, messages = msgs)
         }
     }
 
     @Test
-    fun `builder settings override base settings and merge provider options`() = runTest {
+    fun `callConfig forwards settings to model`() = runTest {
         val model = CapturingModel()
-        val base = CallSettings(
-            temperature = 0.2f,
-            topP = 0.3f,
-            providerOptions = mapOf("base" to JsonPrimitive("yes")),
-        )
 
-        generateText(model = model, settings = base) {
-            prompt("answer")
-            settings {
-                temperature = 0.9f
-                providerOption("call", JsonPrimitive("yes"))
-            }
-        }
+        TextGenerator(
+            model,
+            CallConfig(
+                temperature = 0.9f,
+                topP = 0.3f,
+                providerOptions = mapOf(
+                    "base" to JsonPrimitive("yes"),
+                    "call" to JsonPrimitive("yes"),
+                ),
+            ),
+        ).generate(GenerationInput.Prompt("answer")).first()
 
         val params = assertNotNull(model.generateParams)
         assertEquals(0.9f, params.temperature)
@@ -172,7 +200,7 @@ class KotlinApiTest {
     }
 
     @Test
-    fun `structured builder derives response format from output`() = runTest {
+    fun `generate with output derives response format from output`() = runTest {
         val model = CapturingModel(
             generateResult = LanguageModelResult(
                 text = """{"name":"cake"}""",
@@ -180,10 +208,9 @@ class KotlinApiTest {
                 usage = Usage(promptTokens = 1, completionTokens = 1),
             ),
         )
+        val output = outputObj<Recipe>(serializer(), name = "Recipe")
 
-        val result = generateText(model = model, output = outputObj<Recipe>(serializer(), name = "Recipe")) {
-            prompt("recipe")
-        }
+        val result = TextGenerator(model).generate(GenerationInput.Prompt("recipe"), output).first()
 
         assertEquals("cake", result.output.name)
         val responseFormat = assertIs<ResponseFormat.Json>(model.generateParams?.responseFormat)
@@ -192,15 +219,12 @@ class KotlinApiTest {
     }
 
     @Test
-    fun `stream builder remains cold and forwards settings`() = runTest {
+    fun `stream remains cold and forwards settings`() = runTest {
         val model = CapturingModel()
-        val events = streamText(model = model) {
-            prompt("answer")
-            settings {
-                presencePenalty = 0.7f
-                frequencyPenalty = 0.8f
-            }
-        }
+        val events = TextGenerator(
+            model,
+            CallConfig(presencePenalty = 0.7f, frequencyPenalty = 0.8f),
+        ).stream(GenerationInput.Prompt("answer"))
 
         assertNull(model.streamParams)
         assertEquals(4, drainAllItems(events).size)

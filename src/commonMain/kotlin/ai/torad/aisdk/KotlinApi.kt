@@ -1,20 +1,12 @@
 package ai.torad.aisdk
 
-import kotlinx.coroutines.flow.Flow
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObjectBuilder
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.serializer
 
-/**
- * Kotlin-first call settings shared by text generation entry points.
- *
- * The original v6-shaped functions keep their named parameters for parity.
- * Native Kotlin callers can use this grouped settings object to avoid
- * long nullable argument lists at call sites.
- */
-/** Marks AI SDK builder receivers so nested DSL blocks don't leak outer scopes. */
+/** Marks AI SDK builder receivers so nested DSL blocks do not leak outer scopes. */
 @DslMarker
 public annotation class AiSdkDsl
 
@@ -23,9 +15,6 @@ public data class CallSettings(
     val topP: Float? = null,
     val topK: Int? = null,
     val maxOutputTokens: Int? = null,
-    // Null = unset. Sentinel defaults (emptyList / AbortSignalNever /
-    // ResponseFormat.Text) could not be distinguished from an explicit
-    // same-value override during merge, so these are nullable instead (§2.3).
     val stopSequences: List<String>? = null,
     val seed: Int? = null,
     val providerOptions: Map<String, JsonElement> = emptyMap(),
@@ -254,168 +243,3 @@ public class TextGenerationRequestBuilder internal constructor() {
 
 public fun textGenerationRequest(block: TextGenerationRequestBuilder.() -> Unit): TextGenerationRequest =
     TextGenerationRequestBuilder().apply(block).build()
-
-public suspend fun generateText(
-    model: LanguageModel,
-    request: TextGenerationRequest,
-): GenerateTextResult<String> = generateText(
-    model = model,
-    prompt = request.input.prompt,
-    messages = request.input.messages,
-    system = request.system,
-    settings = request.settings,
-)
-
-public suspend fun generateText(
-    model: LanguageModel,
-    settings: CallSettings = CallSettings(),
-    block: TextGenerationRequestBuilder.() -> Unit,
-): GenerateTextResult<String> {
-    val request = textGenerationRequest(block)
-    return generateText(model = model, request = request.copy(settings = settings.merge(request.settings)))
-}
-
-public suspend fun <TOutput> generateText(
-    model: LanguageModel,
-    output: Output<TOutput>,
-    request: TextGenerationRequest,
-): GenerateTextResult<TOutput> = generateText(
-    model = model,
-    prompt = request.input.prompt,
-    messages = request.input.messages,
-    system = request.system,
-    output = output,
-    settings = request.settings,
-)
-
-public suspend fun <TOutput> generateText(
-    model: LanguageModel,
-    output: Output<TOutput>,
-    settings: CallSettings = CallSettings(),
-    block: TextGenerationRequestBuilder.() -> Unit,
-): GenerateTextResult<TOutput> {
-    val request = textGenerationRequest(block)
-    return generateText(model = model, output = output, request = request.copy(settings = settings.merge(request.settings)))
-}
-
-public suspend fun generateText(
-    model: LanguageModel,
-    prompt: String? = null,
-    messages: List<ModelMessage> = emptyList(),
-    system: String? = null,
-    settings: CallSettings,
-): GenerateTextResult<String> = generateText(
-    model = model,
-    prompt = prompt,
-    messages = messages,
-    system = system,
-    temperature = settings.temperature,
-    topP = settings.topP,
-    topK = settings.topK,
-    maxOutputTokens = settings.maxOutputTokens,
-    stopSequences = settings.stopSequences ?: emptyList(),
-    seed = settings.seed,
-    providerOptions = settings.providerOptions,
-    abortSignal = settings.abortSignal ?: AbortSignalNever,
-    presencePenalty = settings.presencePenalty,
-    frequencyPenalty = settings.frequencyPenalty,
-    responseFormat = settings.responseFormat ?: ResponseFormat.Text,
-)
-
-public suspend fun <TOutput> generateText(
-    model: LanguageModel,
-    prompt: String? = null,
-    messages: List<ModelMessage> = emptyList(),
-    system: String? = null,
-    output: Output<TOutput>,
-    settings: CallSettings,
-): GenerateTextResult<TOutput> = generateText(
-    model = model,
-    prompt = prompt,
-    messages = messages,
-    system = system,
-    output = output,
-    temperature = settings.temperature,
-    topP = settings.topP,
-    topK = settings.topK,
-    maxOutputTokens = settings.maxOutputTokens,
-    stopSequences = settings.stopSequences ?: emptyList(),
-    seed = settings.seed,
-    providerOptions = settings.providerOptions,
-    abortSignal = settings.abortSignal ?: AbortSignalNever,
-    presencePenalty = settings.presencePenalty,
-    frequencyPenalty = settings.frequencyPenalty,
-    responseFormat = settings.responseFormat ?: ResponseFormat.Text,
-)
-
-public fun streamText(
-    model: LanguageModel,
-    request: TextGenerationRequest,
-): Flow<StreamEvent> = streamTextResult(model = model, request = request).fullStream
-
-public fun streamText(
-    model: LanguageModel,
-    settings: CallSettings = CallSettings(),
-    block: TextGenerationRequestBuilder.() -> Unit,
-): Flow<StreamEvent> {
-    val request = textGenerationRequest(block)
-    return streamText(model = model, request = request.copy(settings = settings.merge(request.settings)))
-}
-
-public fun streamTextResult(
-    model: LanguageModel,
-    request: TextGenerationRequest,
-): StreamTextResult = streamTextResult(
-    model = model,
-    prompt = request.input.prompt,
-    messages = request.input.messages,
-    system = request.system,
-    settings = request.settings,
-)
-
-public fun streamTextResult(
-    model: LanguageModel,
-    settings: CallSettings = CallSettings(),
-    block: TextGenerationRequestBuilder.() -> Unit,
-): StreamTextResult {
-    val request = textGenerationRequest(block)
-    return streamTextResult(model = model, request = request.copy(settings = settings.merge(request.settings)))
-}
-
-public fun streamTextResult(
-    model: LanguageModel,
-    prompt: String? = null,
-    messages: List<ModelMessage> = emptyList(),
-    system: String? = null,
-    settings: CallSettings,
-): StreamTextResult = streamTextResult(
-    model = model,
-    prompt = prompt,
-    messages = messages,
-    system = system,
-    temperature = settings.temperature,
-    topP = settings.topP,
-    topK = settings.topK,
-    maxOutputTokens = settings.maxOutputTokens,
-    stopSequences = settings.stopSequences ?: emptyList(),
-    seed = settings.seed,
-    providerOptions = settings.providerOptions,
-    abortSignal = settings.abortSignal ?: AbortSignalNever,
-    presencePenalty = settings.presencePenalty,
-    frequencyPenalty = settings.frequencyPenalty,
-    responseFormat = settings.responseFormat ?: ResponseFormat.Text,
-)
-
-private fun CallSettings.merge(other: CallSettings): CallSettings = copy(
-    temperature = other.temperature ?: temperature,
-    topP = other.topP ?: topP,
-    topK = other.topK ?: topK,
-    maxOutputTokens = other.maxOutputTokens ?: maxOutputTokens,
-    stopSequences = other.stopSequences ?: stopSequences,
-    seed = other.seed ?: seed,
-    providerOptions = providerOptions + other.providerOptions,
-    abortSignal = other.abortSignal ?: abortSignal,
-    presencePenalty = other.presencePenalty ?: presencePenalty,
-    frequencyPenalty = other.frequencyPenalty ?: frequencyPenalty,
-    responseFormat = other.responseFormat ?: responseFormat,
-)
