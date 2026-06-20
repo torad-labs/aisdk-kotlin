@@ -1787,68 +1787,11 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
     private fun hasSystemMessage(messages: List<ModelMessage>): Boolean =
         messages.any { it.role == MessageRole.System }
 
-    private sealed interface ParallelToolSignal {
-        class Progress(val event: StreamEvent) : ParallelToolSignal
-        class Completed(val completion: OrderedToolCompletion) : ParallelToolSignal
-    }
-
-    private sealed interface OrderedToolCompletion {
-        val index: Int
-
-        class Executed(
-            override val index: Int,
-            val call: ContentPart.ToolCall,
-            val result: ToolExecutionResult,
-        ) : OrderedToolCompletion
-
-        class Skipped(override val index: Int) : OrderedToolCompletion
-    }
-
-    private class ChannelToolEventCollector(
-        private val signals: Channel<ParallelToolSignal>,
-    ) : FlowCollector<StreamEvent> {
-        override suspend fun emit(value: StreamEvent) {
-            signals.send(ParallelToolSignal.Progress(value))
-        }
-    }
-
-    private sealed interface ToolExecutionResult {
-        /**
-         * [outputJson] is the full typed payload that drives the UI's
-         * per-tool renderer pipeline. [modelVisible] is what the agent
-         * feeds back to the model in its `toolMessage(...)` — by
-         * default the same as [outputJson], but tools can override via
-         * `toModelOutput` to send the model a token-cheap summary
-         * (e.g. "lineup: 2127 artists across 9 stages") while the UI
-         * still gets the full thing. Without this split, rich tools
-         * blow the model's context window every call.
-         */
-        data class Success(
-            val outputJson: JsonElement,
-            val output: ToolResultOutput = toolResultOutputFromJson(outputJson),
-            val modelOutput: ToolResultOutput = output,
-            val modelVisible: JsonElement = outputJson,
-        ) : ToolExecutionResult {
-            val isError: Boolean = modelOutput.isToolResultError()
-        }
-        data class Failure(val error: AgentError) : ToolExecutionResult
-    }
-
-    private class MessageHolder(var value: List<ModelMessage> = emptyList())
-    private class StepsHolder(val steps: MutableList<StepResult>)
-
-    /**
-     * Tiny adapter that captures stream events into a side-effecting
-     * collector while leaving the upstream Flow uncollected from the
-     * caller's perspective. Used by [generate] to drain its own stream
-     * and tally aggregates.
-     */
-    private class StreamCapture(private val onEach: suspend (StreamEvent) -> Unit) {
-        suspend fun consume(event: StreamEvent) = onEach(event)
-    }
-
-    /** Result of draining a tool executor Flow — see [collectFinalToolOutput]. */
-    private data class ToolOutputCapture(val hasOutput: Boolean, val value: Any?)
+    // The parallel-tool channel signals (ParallelToolSignal / OrderedToolCompletion /
+    // ChannelToolEventCollector), the tool-execution result types (ToolExecutionResult /
+    // ToolOutputCapture), and the loop's plumbing carriers (MessageHolder / StepsHolder /
+    // StreamCapture) live in same-package files: ToolLoopParallelExecution.kt,
+    // ToolExecutionResult.kt, ToolLoopAgentInternals.kt.
 
     /**
      * Resolve `stopSequences` along the `Step ?: Agent ?: agent-default`
@@ -1861,19 +1804,3 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
         agent: AgentSettings<TContext>,
     ): List<String> = step.stopSequences ?: agent.stopSequences ?: stopSequences ?: emptyList()
 }
-
-/**
- * [ToolStreamWriter] bound to the agent loop's output [FlowCollector].
- * Supplied to every [ToolExecutionContext] so a tool executor can write
- * custom events into the same stream the loop emits on (gap #21). Safe
- * because tool execution runs sequentially inside the loop's `flow { }`
- * collector — there's no concurrent emission to race with.
- */
-private class FlowToolStreamWriter(
-    private val out: FlowCollector<StreamEvent>,
-) : ToolStreamWriter {
-    override suspend fun write(event: StreamEvent) = out.emit(event)
-    override suspend fun writeData(value: JsonElement) = out.emit(StreamEvent.Raw(value))
-}
-
-private class TerminalModelStreamError : RuntimeException()

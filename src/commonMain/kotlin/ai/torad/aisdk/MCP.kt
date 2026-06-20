@@ -28,10 +28,7 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.serialization.KSerializer
-import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.decodeFromString
-import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
@@ -62,7 +59,6 @@ public val SUPPORTED_PROTOCOL_VERSIONS: List<String> = listOf(
     "2024-11-05",
 )
 
-private const val JSONRPC_VERSION = "2.0"
 private const val HTTP_NOT_FOUND = 404
 private const val HTTP_METHOD_NOT_ALLOWED = 405
 private const val DEFAULT_MCP_CLIENT_NAME = "ai-sdk-mcp-client"
@@ -90,42 +86,6 @@ public class MCPClientError(
 
 @Serializable
 public sealed interface JSONRPCMessage
-
-@Serializable
-public data class JSONRPCRequest(
-    val id: JsonElement,
-    val method: String,
-    val params: JsonObject? = null,
-    val jsonrpc: String = JSONRPC_VERSION,
-) : JSONRPCMessage
-
-@Serializable
-public data class JSONRPCNotification(
-    val method: String,
-    val params: JsonObject? = null,
-    val jsonrpc: String = JSONRPC_VERSION,
-) : JSONRPCMessage
-
-@Serializable
-public data class JSONRPCResponse(
-    val id: JsonElement,
-    val result: JsonElement = JsonObject(emptyMap()),
-    val jsonrpc: String = JSONRPC_VERSION,
-) : JSONRPCMessage
-
-@Serializable
-public data class JSONRPCError(
-    val id: JsonElement,
-    val error: JSONRPCErrorData,
-    val jsonrpc: String = JSONRPC_VERSION,
-) : JSONRPCMessage
-
-@Serializable
-public data class JSONRPCErrorData(
-    val code: Int,
-    val message: String,
-    val data: JsonElement? = null,
-)
 
 @Serializable
 private data class JSONRPCEnvelope(
@@ -202,188 +162,6 @@ public interface MCPTransport {
     public suspend fun send(message: JSONRPCMessage)
     public suspend fun close()
 }
-
-public data class MCPRequestOptions(
-    val signal: AbortSignal? = null,
-    val timeoutMillis: Long? = null,
-    val maxTotalTimeoutMillis: Long? = null,
-)
-
-@Serializable
-public data class Configuration(
-    val name: String,
-    val version: String,
-    val title: String? = null,
-)
-
-@Serializable
-public data class ElicitationCapability(
-    val applyDefaults: Boolean? = null,
-)
-
-@Serializable
-public data class MCPClientCapabilities(
-    val elicitation: ElicitationCapability? = null,
-    val experimental: JsonObject? = null,
-)
-
-public typealias experimental_MCPClientCapabilities = MCPClientCapabilities
-
-@Serializable
-public data class MCPServerCapabilities(
-    val experimental: JsonObject? = null,
-    val logging: JsonObject? = null,
-    val prompts: JsonObject? = null,
-    val resources: JsonObject? = null,
-    val tools: JsonObject? = null,
-    val elicitation: ElicitationCapability? = null,
-)
-
-@Serializable
-public data class MCPBaseParams(
-    @SerialName("_meta") val meta: JsonObject? = null,
-)
-
-@Serializable
-public data class InitializeResult(
-    val protocolVersion: String,
-    val capabilities: MCPServerCapabilities = MCPServerCapabilities(),
-    val serverInfo: Configuration,
-    val instructions: String? = null,
-    @SerialName("_meta") val meta: JsonObject? = null,
-)
-
-@Serializable
-public data class MCPToolDefinition(
-    val name: String,
-    val title: String? = null,
-    val description: String? = null,
-    val inputSchema: JsonObject = JsonObject(mapOf("type" to JsonPrimitive("object"))),
-    val outputSchema: JsonObject? = null,
-    val annotations: JsonObject? = null,
-    @SerialName("_meta") val meta: JsonObject? = null,
-)
-
-@Serializable
-public data class ListToolsResult(
-    val tools: List<MCPToolDefinition>,
-    val nextCursor: String? = null,
-    @SerialName("_meta") val meta: JsonObject? = null,
-)
-
-@Serializable
-public data class MCPToolSchema(
-    val inputSchema: JsonElement,
-    val outputSchema: JsonElement? = null,
-)
-
-public typealias MCPToolSchemas = Map<String, MCPToolSchema>
-
-@Serializable
-public data class CallToolResult(
-    val content: List<JsonObject> = emptyList(),
-    val structuredContent: JsonElement? = null,
-    val isError: Boolean = false,
-    val toolResult: JsonElement? = null,
-    @SerialName("_meta") val meta: JsonObject? = null,
-)
-
-@Serializable
-public data class MCPResource(
-    val uri: String,
-    val name: String,
-    val title: String? = null,
-    val description: String? = null,
-    val mimeType: String? = null,
-    val size: Long? = null,
-)
-
-@Serializable
-public data class ListResourcesResult(
-    val resources: List<MCPResource>,
-    val nextCursor: String? = null,
-    @SerialName("_meta") val meta: JsonObject? = null,
-)
-
-@Serializable
-public data class MCPResourceTemplate(
-    val uriTemplate: String,
-    val name: String,
-    val title: String? = null,
-    val description: String? = null,
-    val mimeType: String? = null,
-)
-
-@Serializable
-public data class ListResourceTemplatesResult(
-    val resourceTemplates: List<MCPResourceTemplate>,
-    val nextCursor: String? = null,
-    @SerialName("_meta") val meta: JsonObject? = null,
-)
-
-@Serializable
-public data class ReadResourceResult(
-    val contents: List<JsonObject>,
-    @SerialName("_meta") val meta: JsonObject? = null,
-)
-
-@Serializable
-public data class MCPPromptArgument(
-    val name: String,
-    val description: String? = null,
-    val required: Boolean? = null,
-)
-
-@Serializable
-public data class MCPPrompt(
-    val name: String,
-    val title: String? = null,
-    val description: String? = null,
-    val arguments: List<MCPPromptArgument>? = null,
-)
-
-@Serializable
-public data class ListPromptsResult(
-    val prompts: List<MCPPrompt>,
-    val nextCursor: String? = null,
-    @SerialName("_meta") val meta: JsonObject? = null,
-)
-
-@Serializable
-public data class MCPPromptMessage(
-    val role: String,
-    val content: JsonObject,
-)
-
-@Serializable
-public data class GetPromptResult(
-    val messages: List<MCPPromptMessage>,
-    val description: String? = null,
-    @SerialName("_meta") val meta: JsonObject? = null,
-)
-
-public object ElicitationRequestSchema
-public object ElicitResultSchema
-
-@Serializable
-public data class ElicitationRequestParams(
-    val message: String,
-    val requestedSchema: JsonElement,
-    @SerialName("_meta") val meta: JsonObject? = null,
-)
-
-@Serializable
-public data class ElicitationRequest(
-    val params: ElicitationRequestParams,
-    val method: String = "elicitation/create",
-)
-
-@Serializable
-public data class ElicitResult(
-    val action: String,
-    val content: JsonObject? = null,
-    @SerialName("_meta") val meta: JsonObject? = null,
-)
 
 public data class MCPClientConfig(
     val transport: MCPTransport,
@@ -945,66 +723,6 @@ private fun JsonElement.rpcIdKey(): String {
     }
 }
 
-@Serializable
-public data class OAuthTokens(
-    @SerialName("access_token") val accessToken: String,
-    @SerialName("token_type") val tokenType: String,
-    @SerialName("id_token") val idToken: String? = null,
-    @SerialName("expires_in") val expiresIn: Long? = null,
-    val scope: String? = null,
-    @SerialName("refresh_token") val refreshToken: String? = null,
-)
-
-@Serializable
-public data class OAuthClientInformation(
-    @SerialName("client_id") val clientId: String,
-    @SerialName("client_secret") val clientSecret: String? = null,
-    @SerialName("client_id_issued_at") val clientIdIssuedAt: Long? = null,
-    @SerialName("client_secret_expires_at") val clientSecretExpiresAt: Long? = null,
-)
-
-@Serializable
-public data class OAuthClientMetadata(
-    @SerialName("redirect_uris") val redirectUris: List<String>,
-    @SerialName("token_endpoint_auth_method") val tokenEndpointAuthMethod: String? = null,
-    @SerialName("grant_types") val grantTypes: List<String>? = null,
-    @SerialName("response_types") val responseTypes: List<String>? = null,
-    @SerialName("client_name") val clientName: String? = null,
-    @SerialName("client_uri") val clientUri: String? = null,
-    @SerialName("logo_uri") val logoUri: String? = null,
-    val scope: String? = null,
-    val contacts: List<String>? = null,
-    @SerialName("tos_uri") val tosUri: String? = null,
-    @SerialName("policy_uri") val policyUri: String? = null,
-    @SerialName("jwks_uri") val jwksUri: String? = null,
-    val jwks: JsonElement? = null,
-    @SerialName("software_id") val softwareId: String? = null,
-    @SerialName("software_version") val softwareVersion: String? = null,
-    @SerialName("software_statement") val softwareStatement: String? = null,
-)
-
-@Serializable
-public data class AuthorizationServerMetadata(
-    val issuer: String? = null,
-    @SerialName("authorization_endpoint") val authorizationEndpoint: String? = null,
-    @SerialName("token_endpoint") val tokenEndpoint: String? = null,
-    @SerialName("registration_endpoint") val registrationEndpoint: String? = null,
-    @SerialName("response_types_supported") val responseTypesSupported: List<String>? = null,
-    @SerialName("grant_types_supported") val grantTypesSupported: List<String>? = null,
-    @SerialName("token_endpoint_auth_methods_supported") val tokenEndpointAuthMethodsSupported: List<String>? = null,
-    @SerialName("code_challenge_methods_supported") val codeChallengeMethodsSupported: List<String>? = null,
-)
-
-@Serializable
-public data class OAuthProtectedResourceMetadata(
-    val resource: String,
-    @SerialName("authorization_servers") val authorizationServers: List<String>? = null,
-    @SerialName("jwks_uri") val jwksUri: String? = null,
-    @SerialName("scopes_supported") val scopesSupported: List<String>? = null,
-    @SerialName("bearer_methods_supported") val bearerMethodsSupported: List<String>? = null,
-    @SerialName("resource_name") val resourceName: String? = null,
-)
-
 public interface OAuthClientProvider {
     public val redirectUrl: String
     public val clientMetadata: OAuthClientMetadata
@@ -1023,11 +741,11 @@ public interface OAuthClientProvider {
     public suspend fun storedState(): String? = null
     public suspend fun validateResourceURL(serverUrl: String, resource: String?): String? {
         if (resource == null) return null
-        val requestedResource = resourceUrlFromServerUrl(serverUrl)
-        if (!checkResourceAllowed(requestedResource, resource)) {
+        val requestedResource = McpResourceUrl.fromServerUrl(serverUrl)
+        if (!McpResourceUrl.checkAllowed(requestedResource, resource)) {
             throw MCPClientError("Protected resource $resource does not match expected $requestedResource (or origin)")
         }
-        return resourceUrlStripSlash(resource)
+        return McpResourceUrl.stripSlash(resource)
     }
     public suspend fun addClientAuthentication(
         headers: MutableMap<String, String>,
@@ -1036,22 +754,6 @@ public interface OAuthClientProvider {
         metadata: AuthorizationServerMetadata?,
     ): Unit = Unit
 }
-
-public class UnauthorizedError(message: String = "Unauthorized") : AiSdkException(message)
-
-public enum class AuthResult {
-    AUTHORIZED,
-    REDIRECT,
-}
-
-public data class AuthOptions(
-    val serverUrl: String,
-    val authorizationCode: String? = null,
-    val callbackState: String? = null,
-    val scope: String? = null,
-    val resourceMetadataUrl: String? = null,
-    val client: HttpClient? = null,
-)
 
 internal suspend fun auth(
     provider: OAuthClientProvider,
@@ -1066,7 +768,7 @@ internal suspend fun auth(
     }
     val resourceMetadata = options.client?.let { client ->
         try {
-            discoverOAuthProtectedResourceMetadata(
+            McpOAuthFlow.discoverOAuthProtectedResourceMetadata(
                 client = client,
                 serverUrl = options.serverUrl,
                 resourceMetadataUrl = options.resourceMetadataUrl,
@@ -1079,7 +781,7 @@ internal suspend fun auth(
     }
     val authorizationServerUrl = resourceMetadata?.authorizationServers?.firstOrNull() ?: options.serverUrl
     val resource = provider.validateResourceURL(options.serverUrl, resourceMetadata?.resource)
-    val metadata = options.client?.let { discoverAuthorizationServerMetadata(it, authorizationServerUrl) }
+    val metadata = options.client?.let { McpOAuthFlow.discoverAuthorizationServerMetadata(it, authorizationServerUrl) }
     var clientInformation = provider.clientInformation()
     if (clientInformation == null) {
         if (options.authorizationCode != null) {
@@ -1088,7 +790,7 @@ internal suspend fun auth(
             )
         }
         if (options.client != null) {
-            clientInformation = registerClient(
+            clientInformation = McpOAuthFlow.registerClient(
                 client = options.client,
                 authorizationServerUrl = authorizationServerUrl,
                 metadata = metadata,
@@ -1109,7 +811,7 @@ internal suspend fun auth(
                 throw MCPClientError("OAuth state parameter mismatch - possible CSRF attack.")
             }
         }
-        val tokens = exchangeAuthorization(
+        val tokens = McpOAuthFlow.exchangeAuthorization(
             client = client,
             authorizationServerUrl = authorizationServerUrl,
             metadata = metadata,
@@ -1125,7 +827,7 @@ internal suspend fun auth(
     }
 
     if (currentTokens?.refreshToken?.isNotBlank() == true && options.client != null && clientInformation != null) {
-        val tokens = refreshAuthorization(
+        val tokens = McpOAuthFlow.refreshAuthorization(
             client = options.client,
             authorizationServerUrl = authorizationServerUrl,
             metadata = metadata,
@@ -1149,7 +851,7 @@ internal suspend fun auth(
 
     val authClientInformation = clientInformation
         ?: OAuthClientInformation(clientId = provider.clientMetadata.clientName ?: DEFAULT_MCP_CLIENT_NAME)
-    val authorizationUrl = startAuthorization(
+    val authorizationUrl = McpOAuthFlow.startAuthorization(
         serverUrl = options.serverUrl,
         metadata = metadata,
         clientInformation = authClientInformation,
@@ -1162,441 +864,6 @@ internal suspend fun auth(
     provider.redirectToAuthorization(authorizationUrl)
     return AuthResult.REDIRECT
 }
-
-internal suspend fun discoverAuthorizationServerMetadata(
-    client: HttpClient,
-    authorizationServerUrl: String,
-): AuthorizationServerMetadata? {
-    val urls = authorizationDiscoveryUrls(authorizationServerUrl)
-    for (url in urls) {
-        val response = client.request(url) {
-            method = HttpMethod.Get
-            header("MCP-Protocol-Version", LATEST_PROTOCOL_VERSION)
-        }
-        if (response.status.value in 400..499) continue
-        if (response.status.value !in 200..299) {
-            throw MCPClientError("HTTP ${response.status.value} trying to load OAuth metadata from $url")
-        }
-        return mcpJson.decodeFromString<AuthorizationServerMetadata>(response.bodyAsText())
-    }
-    return null
-}
-
-internal suspend fun discoverOAuthProtectedResourceMetadata(
-    client: HttpClient,
-    serverUrl: String,
-    resourceMetadataUrl: String? = null,
-): OAuthProtectedResourceMetadata {
-    val urls = protectedResourceDiscoveryUrls(serverUrl, resourceMetadataUrl)
-    for (url in urls) {
-        val response = client.request(url) {
-            method = HttpMethod.Get
-            header("MCP-Protocol-Version", LATEST_PROTOCOL_VERSION)
-        }
-        if (response.status.value == 404) continue
-        if (response.status.value in 400..499 && resourceMetadataUrl == null) continue
-        if (response.status.value !in 200..299) {
-            throw MCPClientError(
-                "HTTP ${response.status.value} trying to load well-known OAuth protected resource metadata."
-            )
-        }
-        return mcpJson.decodeFromString<OAuthProtectedResourceMetadata>(response.bodyAsText())
-    }
-    throw MCPClientError("Resource server does not implement OAuth 2.0 Protected Resource Metadata.")
-}
-
-internal suspend fun registerClient(
-    client: HttpClient,
-    authorizationServerUrl: String,
-    metadata: AuthorizationServerMetadata?,
-    clientMetadata: OAuthClientMetadata,
-): OAuthClientInformation {
-    val registrationUrl = metadata?.registrationEndpoint ?: "${authorizationServerUrl.trimEnd('/')}/register"
-    val response = client.request(registrationUrl) {
-        method = HttpMethod.Post
-        contentType(ContentType.Application.Json)
-        setBody(mcpJson.encodeToString(clientMetadata))
-    }
-    if (response.status.value !in 200..299) {
-        throw MCPClientError("OAuth client registration failed (${response.status.value}): ${response.bodyAsText()}")
-    }
-    return mcpJson.decodeFromString(response.bodyAsText())
-}
-
-internal suspend fun exchangeAuthorization(
-    client: HttpClient,
-    authorizationServerUrl: String,
-    metadata: AuthorizationServerMetadata?,
-    clientInformation: OAuthClientInformation,
-    authorizationCode: String,
-    codeVerifier: String,
-    redirectUri: String,
-    resource: String? = null,
-    addClientAuthentication: suspend (
-        MutableMap<String, String>,
-        MutableMap<String, String>,
-        String,
-        AuthorizationServerMetadata?,
-    ) -> Unit = { _, _, _, _ -> },
-): OAuthTokens {
-    val grantType = "authorization_code"
-    if (metadata?.grantTypesSupported != null && grantType !in metadata.grantTypesSupported) {
-        throw MCPClientError("Incompatible auth server: does not support grant type $grantType")
-    }
-    val tokenUrl = metadata?.tokenEndpoint ?: "${authorizationServerUrl.trimEnd('/')}/token"
-    val headers = linkedMapOf(
-        HttpHeaders.ContentType to "application/x-www-form-urlencoded",
-        HttpHeaders.Accept to "application/json",
-    )
-    val params = linkedMapOf(
-        "grant_type" to grantType,
-        "code" to authorizationCode,
-        "code_verifier" to codeVerifier,
-        "redirect_uri" to redirectUri,
-    )
-    resource?.let { params["resource"] = it }
-    applyOAuthClientAuthentication(
-        headers,
-        params,
-        authorizationServerUrl,
-        metadata,
-        clientInformation,
-        addClientAuthentication
-    )
-    return postOAuthTokenRequest(client, tokenUrl, headers, params)
-}
-
-internal suspend fun refreshAuthorization(
-    client: HttpClient,
-    authorizationServerUrl: String,
-    metadata: AuthorizationServerMetadata?,
-    clientInformation: OAuthClientInformation,
-    refreshToken: String,
-    resource: String? = null,
-    addClientAuthentication: suspend (
-        MutableMap<String, String>,
-        MutableMap<String, String>,
-        String,
-        AuthorizationServerMetadata?,
-    ) -> Unit = { _, _, _, _ -> },
-): OAuthTokens {
-    val grantType = "refresh_token"
-    if (metadata?.grantTypesSupported != null && grantType !in metadata.grantTypesSupported) {
-        throw MCPClientError("Incompatible auth server: does not support grant type $grantType")
-    }
-    val tokenUrl = metadata?.tokenEndpoint ?: "${authorizationServerUrl.trimEnd('/')}/token"
-    val headers = linkedMapOf(
-        HttpHeaders.ContentType to "application/x-www-form-urlencoded",
-        HttpHeaders.Accept to "application/json",
-    )
-    val params = linkedMapOf(
-        "grant_type" to grantType,
-        "refresh_token" to refreshToken,
-    )
-    resource?.let { params["resource"] = it }
-    applyOAuthClientAuthentication(
-        headers,
-        params,
-        authorizationServerUrl,
-        metadata,
-        clientInformation,
-        addClientAuthentication
-    )
-    val tokens = postOAuthTokenRequest(client, tokenUrl, headers, params)
-    return if (tokens.refreshToken.isNullOrBlank()) tokens.copy(refreshToken = refreshToken) else tokens
-}
-
-private fun startAuthorization(
-    serverUrl: String,
-    metadata: AuthorizationServerMetadata?,
-    clientInformation: OAuthClientInformation,
-    redirectUrl: String,
-    scope: String?,
-    state: String,
-    codeVerifier: String,
-    resource: String?,
-): String {
-    val responseType = "code"
-    val codeChallengeMethod = "S256"
-    val authorizationEndpoint = if (metadata != null) {
-        if (metadata.responseTypesSupported != null && responseType !in metadata.responseTypesSupported) {
-            throw MCPClientError("Incompatible auth server: does not support response type $responseType")
-        }
-        if (metadata.codeChallengeMethodsSupported != null && codeChallengeMethod !in metadata.codeChallengeMethodsSupported) {
-            throw MCPClientError(
-                "Incompatible auth server: does not support code challenge method $codeChallengeMethod"
-            )
-        }
-        metadata.authorizationEndpoint ?: throw MCPClientError("OAuth metadata is missing authorization_endpoint.")
-    } else {
-        serverUrl.trimEnd('/') + "/authorize"
-    }
-    val codeChallenge = pkceS256Challenge(codeVerifier)
-    val params = listOfNotNull(
-        "response_type=$responseType",
-        "client_id=${urlComponent(clientInformation.clientId)}",
-        "code_challenge=${urlComponent(codeChallenge)}",
-        "code_challenge_method=$codeChallengeMethod",
-        "redirect_uri=${urlComponent(redirectUrl)}",
-        scope?.let { "scope=${urlComponent(it)}" },
-        "state=${urlComponent(state)}",
-        if (scope?.split(' ')?.contains("offline_access") == true) "prompt=consent" else null,
-        resource?.let { "resource=${urlComponent(it)}" },
-    )
-    return "$authorizationEndpoint?${params.joinToString("&")}"
-}
-
-private fun urlComponent(value: String): String = buildString {
-    for (char in value) {
-        when (char) {
-            ' ' -> append("%20")
-            ':' -> append("%3A")
-            '/' -> append("%2F")
-            '?' -> append("%3F")
-            '&' -> append("%26")
-            '=' -> append("%3D")
-            '+' -> append("%2B")
-            '#' -> append("%23")
-            '%' -> append("%25")
-            else -> append(char)
-        }
-    }
-}
-
-private fun pkceS256Challenge(codeVerifier: String): String =
-    Base64Codec.encode(mcpSha256(codeVerifier.encodeToByteArray()))
-        .replace('+', '-')
-        .replace('/', '_')
-        .trimEnd('=')
-
-private fun authorizationDiscoveryUrls(authorizationServerUrl: String): List<String> {
-    val trimmed = authorizationServerUrl.trimEnd('/')
-    val origin = mcpOrigin(trimmed)
-    val path = trimmed.removePrefix(origin).ifBlank { "/" }.trimEnd('/')
-    return if (path == "/") {
-        listOf(
-            "$origin/.well-known/oauth-authorization-server",
-            "$origin/.well-known/openid-configuration",
-        )
-    } else {
-        listOf(
-            "$origin/.well-known/oauth-authorization-server$path",
-            "$origin/.well-known/oauth-authorization-server",
-            "$origin/.well-known/openid-configuration$path",
-            "$trimmed/.well-known/openid-configuration",
-        )
-    }
-}
-
-private fun protectedResourceDiscoveryUrls(serverUrl: String, resourceMetadataUrl: String?): List<String> {
-    if (resourceMetadataUrl != null) return listOf(resourceMetadataUrl)
-    val trimmed = serverUrl.trimEnd('/')
-    val origin = mcpOrigin(trimmed)
-    val path = trimmed.removePrefix(origin).ifBlank { "/" }.trimEnd('/')
-    return if (path == "/") {
-        listOf("$origin/.well-known/oauth-protected-resource")
-    } else {
-        listOf(
-            "$origin/.well-known/oauth-protected-resource$path",
-            "$origin/.well-known/oauth-protected-resource",
-        )
-    }
-}
-
-private fun resourceUrlFromServerUrl(serverUrl: String): String {
-    val noFragment = serverUrl.substringBefore('#')
-    return resourceUrlStripSlash(noFragment)
-}
-
-private fun resourceUrlStripSlash(resource: String): String =
-    if (resource.endsWith("/") && resource.removeSuffix("/").count { it == '/' } == 2) {
-        resource.removeSuffix("/")
-    } else {
-        resource
-    }
-
-private fun checkResourceAllowed(requestedResource: String, configuredResource: String): Boolean {
-    val requested = parsedResourceUrl(requestedResource) ?: return false
-    val configured = parsedResourceUrl(configuredResource) ?: return false
-    if (requested.origin != configured.origin) return false
-    val requestedPath = requested.path.ensureTrailingSlash()
-    val configuredPath = configured.path.ensureTrailingSlash()
-    return requestedPath.startsWith(configuredPath)
-}
-
-private data class ParsedResourceUrl(
-    val origin: String,
-    val path: String,
-)
-
-private fun parsedResourceUrl(value: String): ParsedResourceUrl? {
-    val withoutFragment = value.substringBefore('#')
-    val schemeEnd = withoutFragment.indexOf("://")
-    if (schemeEnd <= 0) return null
-    val authorityStart = schemeEnd + 3
-    val pathStart = withoutFragment.indexOf('/', authorityStart)
-    val origin = if (pathStart == -1) withoutFragment else withoutFragment.substring(0, pathStart)
-    val rawPath = if (pathStart == -1) {
-        "/"
-    } else {
-        withoutFragment.substring(
-            pathStart
-        ).substringBefore('?').ifBlank { "/" }
-    }
-    return ParsedResourceUrl(origin = origin, path = rawPath)
-}
-
-private fun String.ensureTrailingSlash(): String =
-    if (endsWith('/')) this else "$this/"
-
-private suspend fun applyOAuthClientAuthentication(
-    headers: MutableMap<String, String>,
-    params: MutableMap<String, String>,
-    tokenUrl: String,
-    metadata: AuthorizationServerMetadata?,
-    clientInformation: OAuthClientInformation,
-    addClientAuthentication: suspend (
-        MutableMap<String, String>,
-        MutableMap<String, String>,
-        String,
-        AuthorizationServerMetadata?,
-    ) -> Unit,
-) {
-    addClientAuthentication(headers, params, tokenUrl, metadata)
-    if ("client_id" in params || headers.keys.any { it.equals(HttpHeaders.Authorization, ignoreCase = true) }) {
-        return
-    }
-    when (selectOAuthClientAuthMethod(clientInformation, metadata?.tokenEndpointAuthMethodsSupported.orEmpty())) {
-        "client_secret_basic" -> {
-            val secret = clientInformation.clientSecret
-                ?: throw MCPClientError("client_secret_basic authentication requires a client_secret")
-            headers[HttpHeaders.Authorization] = "Basic ${Base64Codec.encode("${clientInformation.clientId}:$secret".encodeToByteArray())}"
-        }
-        "client_secret_post" -> {
-            params["client_id"] = clientInformation.clientId
-            clientInformation.clientSecret?.let { params["client_secret"] = it }
-        }
-        else -> params["client_id"] = clientInformation.clientId
-    }
-}
-
-private fun selectOAuthClientAuthMethod(
-    clientInformation: OAuthClientInformation,
-    supportedMethods: List<String>,
-): String {
-    val hasSecret = !clientInformation.clientSecret.isNullOrBlank()
-    if (supportedMethods.isEmpty()) return if (hasSecret) "client_secret_post" else "none"
-    if (hasSecret && "client_secret_basic" in supportedMethods) return "client_secret_basic"
-    if (hasSecret && "client_secret_post" in supportedMethods) return "client_secret_post"
-    return if ("none" in supportedMethods) "none" else if (hasSecret) "client_secret_post" else "none"
-}
-
-private suspend fun postOAuthTokenRequest(
-    client: HttpClient,
-    tokenUrl: String,
-    headers: Map<String, String>,
-    params: Map<String, String>,
-): OAuthTokens {
-    val response = client.request(tokenUrl) {
-        method = HttpMethod.Post
-        headers.forEach { (name, value) -> header(name, value) }
-        setBody(params.oauthFormBody())
-    }
-    if (response.status.value !in 200..299) {
-        throw MCPClientError("OAuth token request failed (${response.status.value}): ${response.bodyAsText()}")
-    }
-    return mcpJson.decodeFromString(response.bodyAsText())
-}
-
-private fun Map<String, String>.oauthFormBody(): String =
-    entries.joinToString("&") { (key, value) -> "${urlComponent(key)}=${urlComponent(value)}" }
-
-private val mcpSha256K = intArrayOf(
-    0x428a2f98, 0x71374491, -0x4a3f0431, -0x164a245b, 0x3956c25b, 0x59f111f1, -0x6dc07d5c, -0x54e3a12b,
-    -0x27f85568, 0x12835b01, 0x243185be, 0x550c7dc3, 0x72be5d74, -0x7f214e02, -0x6423f959, -0x3e640e8c,
-    -0x1b64963f, -0x1041b87a, 0x0fc19dc6, 0x240ca1cc, 0x2de92c6f, 0x4a7484aa, 0x5cb0a9dc, 0x76f988da,
-    -0x67c1aeae, -0x57ce3993, -0x4ffcd838, -0x40a68039, -0x391ff40d, -0x2a586eb9, 0x06ca6351, 0x14292967,
-    0x27b70a85, 0x2e1b2138, 0x4d2c6dfc, 0x53380d13, 0x650a7354, 0x766a0abb, -0x7e3d36d2, -0x6d8dd37b,
-    -0x5d40175f, -0x57e599b5, -0x3db47490, -0x3893ae5d, -0x2e6d17e7, -0x2966f9dc, -0xbf1ca7b, 0x106aa070,
-    0x19a4c116, 0x1e376c08, 0x2748774c, 0x34b0bcb5, 0x391c0cb3, 0x4ed8aa4a, 0x5b9cca4f, 0x682e6ff3,
-    0x748f82ee, 0x78a5636f, -0x7b3787ec, -0x7338fdf8, -0x6f410006, -0x5baf9315, -0x41065c09, -0x398e870e,
-)
-
-private fun mcpSha256(input: ByteArray): ByteArray {
-    var h0 = 0x6a09e667
-    var h1 = -0x4498517b
-    var h2 = 0x3c6ef372
-    var h3 = -0x5ab00ac6
-    var h4 = 0x510e527f
-    var h5 = -0x64fa9774
-    var h6 = 0x1f83d9ab
-    var h7 = 0x5be0cd19
-    val bitLength = input.size.toLong() * 8L
-    val paddingLength = ((56 - (input.size + 1) % 64) + 64) % 64
-    val padded = ByteArray(input.size + 1 + paddingLength + 8)
-    input.copyInto(padded)
-    padded[input.size] = 0x80.toByte()
-    for (index in 0 until 8) {
-        padded[padded.size - 1 - index] = (bitLength ushr (index * 8)).toByte()
-    }
-    val w = IntArray(64)
-    for (chunkStart in padded.indices step 64) {
-        for (index in 0 until 16) {
-            val offset = chunkStart + index * 4
-            w[index] = ((padded[offset].toInt() and 0xff) shl 24) or
-                ((padded[offset + 1].toInt() and 0xff) shl 16) or
-                ((padded[offset + 2].toInt() and 0xff) shl 8) or
-                (padded[offset + 3].toInt() and 0xff)
-        }
-        for (index in 16 until 64) {
-            val s0 = mcpRotr(w[index - 15], 7) xor mcpRotr(w[index - 15], 18) xor (w[index - 15] ushr 3)
-            val s1 = mcpRotr(w[index - 2], 17) xor mcpRotr(w[index - 2], 19) xor (w[index - 2] ushr 10)
-            w[index] = w[index - 16] + s0 + w[index - 7] + s1
-        }
-        var a = h0
-        var b = h1
-        var c = h2
-        var d = h3
-        var e = h4
-        var f = h5
-        var g = h6
-        var h = h7
-        for (index in 0 until 64) {
-            val s1 = mcpRotr(e, 6) xor mcpRotr(e, 11) xor mcpRotr(e, 25)
-            val ch = (e and f) xor (e.inv() and g)
-            val temp1 = h + s1 + ch + mcpSha256K[index] + w[index]
-            val s0 = mcpRotr(a, 2) xor mcpRotr(a, 13) xor mcpRotr(a, 22)
-            val maj = (a and b) xor (a and c) xor (b and c)
-            val temp2 = s0 + maj
-            h = g
-            g = f
-            f = e
-            e = d + temp1
-            d = c
-            c = b
-            b = a
-            a = temp1 + temp2
-        }
-        h0 += a
-        h1 += b
-        h2 += c
-        h3 += d
-        h4 += e
-        h5 += f
-        h6 += g
-        h7 += h
-    }
-    val out = ByteArray(32)
-    intArrayOf(h0, h1, h2, h3, h4, h5, h6, h7).forEachIndexed { index, value ->
-        out[index * 4] = (value ushr 24).toByte()
-        out[index * 4 + 1] = (value ushr 16).toByte()
-        out[index * 4 + 2] = (value ushr 8).toByte()
-        out[index * 4 + 3] = value.toByte()
-    }
-    return out
-}
-
-private fun mcpRotr(value: Int, bits: Int): Int = (value ushr bits) or (value shl (32 - bits))
 
 public enum class MCPTransportKind {
     Http,
@@ -1947,9 +1214,9 @@ public class SseMCPTransport(
                 processMcpSse(response.bodyAsChannel()) { event ->
                     when (event.event) {
                         "endpoint" -> {
-                            endpoint = resolveMcpUrl(event.data, url).also { resolved ->
-                                if (mcpOrigin(resolved) != mcpOrigin(url)) {
-                                    throw MCPClientError("MCP SSE Transport Error: Endpoint origin does not match connection origin: ${mcpOrigin(resolved)}")
+                            endpoint = McpUrl.resolve(event.data, url).also { resolved ->
+                                if (McpUrl.origin(resolved) != McpUrl.origin(url)) {
+                                    throw MCPClientError("MCP SSE Transport Error: Endpoint origin does not match connection origin: ${McpUrl.origin(resolved)}")
                                 }
                             }
                             established = true
@@ -2116,18 +1383,21 @@ private fun String.mcpJsonRpcMessages(): List<JSONRPCMessage> {
 private fun HttpResponse.mcpSessionId(): String? =
     headers["mcp-session-id"]?.takeIf { it.isNotBlank() }
 
-private fun resolveMcpUrl(value: String, base: String): String {
-    if (value.startsWith("http://") || value.startsWith("https://")) return value
-    val origin = mcpOrigin(base)
-    if (value.startsWith("/")) return origin + value
-    return base.substringBeforeLast('/', missingDelimiterValue = origin).trimEnd('/') + "/" + value
-}
+/** URL origin/relative-resolution helpers shared by the SSE transport and the OAuth flow. */
+internal object McpUrl {
+    fun resolve(value: String, base: String): String {
+        if (value.startsWith("http://") || value.startsWith("https://")) return value
+        val origin = origin(base)
+        if (value.startsWith("/")) return origin + value
+        return base.substringBeforeLast('/', missingDelimiterValue = origin).trimEnd('/') + "/" + value
+    }
 
-private fun mcpOrigin(url: String): String {
-    val schemeEnd = url.indexOf("://")
-    val authorityStart = if (schemeEnd >= 0) schemeEnd + 3 else 0
-    val authorityEnd = url.indexOf('/', authorityStart).takeIf { it >= 0 } ?: url.length
-    return url.substring(0, authorityEnd)
+    fun origin(url: String): String {
+        val schemeEnd = url.indexOf("://")
+        val authorityStart = if (schemeEnd >= 0) schemeEnd + 3 else 0
+        val authorityEnd = url.indexOf('/', authorityStart).takeIf { it >= 0 } ?: url.length
+        return url.substring(0, authorityEnd)
+    }
 }
 
 @Serializable
