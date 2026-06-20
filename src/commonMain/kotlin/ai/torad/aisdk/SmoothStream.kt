@@ -23,10 +23,10 @@ import kotlinx.coroutines.flow.flow
  * Non-text events (tool calls, step-finish, etc.) pass through immediately
  * without delay so the loop logic isn't slowed down.
  */
-public sealed interface ChunkBy {
-    public data object Word : ChunkBy
-    public data object Line : ChunkBy
-    public data class Pattern(val regex: Regex) : ChunkBy
+public sealed class ChunkBy {
+    public data object Word : ChunkBy()
+    public data object Line : ChunkBy()
+    public data class Pattern(val regex: Regex) : ChunkBy()
 }
 
 // Word-boundary regex with CJK awareness (per historical parity gap #32).

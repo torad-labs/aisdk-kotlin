@@ -248,13 +248,13 @@ private class ProdiaVideoModel(
     }
 }
 
-private data class ProdiaInputFile(
+private class ProdiaInputFile(
     val mediaType: String,
     val bytes: ByteArray,
     val filename: String? = null,
 )
 
-private data class ProdiaMultipartPart(
+private class ProdiaMultipartPart(
     val headers: Map<String, String>,
     val body: ByteArray,
 )

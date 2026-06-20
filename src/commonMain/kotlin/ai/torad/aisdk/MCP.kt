@@ -153,10 +153,10 @@ internal fun parseJSONRPCMessage(text: String): JSONRPCMessage {
  * Streamable HTTP, SSE, WebSockets, or a test fixture.
  */
 public interface MCPTransport {
-    public var onClose: (() -> Unit)?
-    public var onError: ((Throwable) -> Unit)?
-    public var onMessage: (suspend (JSONRPCMessage) -> Unit)?
-    public var protocolVersion: String?
+    public fun setOnClose(handler: (() -> Unit)?)
+    public fun setOnError(handler: ((Throwable) -> Unit)?)
+    public fun setOnMessage(handler: (suspend (JSONRPCMessage) -> Unit)?)
+    public fun setProtocolVersion(version: String?)
 
     public suspend fun start()
     public suspend fun send(message: JSONRPCMessage)
@@ -258,9 +258,9 @@ private class DefaultMCPClient(config: MCPClientConfig) : MCPClient {
     override val instructions: String? get() = _instructions
 
     init {
-        transport.onClose = { onClose() }
-        transport.onError = { onError(it) }
-        transport.onMessage = { message -> onMessage(message) }
+        transport.setOnClose { onClose() }
+        transport.setOnError { onError(it) }
+        transport.setOnMessage { message -> onMessage(message) }
     }
 
     suspend fun init() {
@@ -289,7 +289,7 @@ private class DefaultMCPClient(config: MCPClientConfig) : MCPClient {
             serverCapabilities = result.capabilities
             _serverInfo = result.serverInfo
             _instructions = result.instructions
-            transport.protocolVersion = result.protocolVersion
+            transport.setProtocolVersion(result.protocolVersion)
 
             notification(method = "notifications/initialized")
         } catch (error: Throwable) {
@@ -723,6 +723,11 @@ private fun JsonElement.rpcIdKey(): String {
     }
 }
 
+public class ClientAuthResult(
+    public val additionalHeaders: Map<String, String> = emptyMap(),
+    public val additionalParams: Map<String, String> = emptyMap(),
+)
+
 public interface OAuthClientProvider {
     public val redirectUrl: String
     public val clientMetadata: OAuthClientMetadata
@@ -748,11 +753,11 @@ public interface OAuthClientProvider {
         return McpResourceUrl.stripSlash(resource)
     }
     public suspend fun addClientAuthentication(
-        headers: MutableMap<String, String>,
-        params: MutableMap<String, String>,
+        headers: Map<String, String>,
+        params: Map<String, String>,
         url: String,
         metadata: AuthorizationServerMetadata?,
-    ): Unit = Unit
+    ): ClientAuthResult = ClientAuthResult()
 }
 
 internal suspend fun auth(
@@ -820,7 +825,11 @@ internal suspend fun auth(
             codeVerifier = provider.codeVerifier(),
             redirectUri = provider.redirectUrl,
             resource = resource,
-            addClientAuthentication = provider::addClientAuthentication,
+            addClientAuthentication = { headers, params, url, metadata ->
+                val result = provider.addClientAuthentication(headers, params, url, metadata)
+                headers.putAll(result.additionalHeaders)
+                params.putAll(result.additionalParams)
+            },
         )
         provider.saveTokens(tokens)
         return AuthResult.AUTHORIZED
@@ -834,7 +843,11 @@ internal suspend fun auth(
             clientInformation = clientInformation,
             refreshToken = currentTokens.refreshToken,
             resource = resource,
-            addClientAuthentication = provider::addClientAuthentication,
+            addClientAuthentication = { headers, params, url, metadata ->
+                val result = provider.addClientAuthentication(headers, params, url, metadata)
+                headers.putAll(result.additionalHeaders)
+                params.putAll(result.additionalParams)
+            },
         )
         provider.saveTokens(tokens)
         return AuthResult.AUTHORIZED
@@ -992,10 +1005,15 @@ public class HttpMCPTransport(
     private val authProvider: OAuthClientProvider? = null,
     private val engineContext: CoroutineContext = Dispatchers.Default,
 ) : MCPTransport {
-    override var onClose: (() -> Unit)? = null
-    override var onError: ((Throwable) -> Unit)? = null
-    override var onMessage: (suspend (JSONRPCMessage) -> Unit)? = null
-    override var protocolVersion: String? = null
+    private var onClose: (() -> Unit)? = null
+    private var onError: ((Throwable) -> Unit)? = null
+    private var onMessage: (suspend (JSONRPCMessage) -> Unit)? = null
+    private var protocolVersion: String? = null
+
+    override fun setOnClose(handler: (() -> Unit)?) { onClose = handler }
+    override fun setOnError(handler: ((Throwable) -> Unit)?) { onError = handler }
+    override fun setOnMessage(handler: (suspend (JSONRPCMessage) -> Unit)?) { onMessage = handler }
+    override fun setProtocolVersion(version: String?) { protocolVersion = version }
 
     private val lifecycle = McpConnectionLifecycle()
     private var sessionId: String? = null
@@ -1178,10 +1196,15 @@ public class SseMCPTransport(
     private val authProvider: OAuthClientProvider? = null,
     private val engineContext: CoroutineContext = Dispatchers.Default,
 ) : MCPTransport {
-    override var onClose: (() -> Unit)? = null
-    override var onError: ((Throwable) -> Unit)? = null
-    override var onMessage: (suspend (JSONRPCMessage) -> Unit)? = null
-    override var protocolVersion: String? = null
+    private var onClose: (() -> Unit)? = null
+    private var onError: ((Throwable) -> Unit)? = null
+    private var onMessage: (suspend (JSONRPCMessage) -> Unit)? = null
+    private var protocolVersion: String? = null
+
+    override fun setOnClose(handler: (() -> Unit)?) { onClose = handler }
+    override fun setOnError(handler: ((Throwable) -> Unit)?) { onError = handler }
+    override fun setOnMessage(handler: (suspend (JSONRPCMessage) -> Unit)?) { onMessage = handler }
+    override fun setProtocolVersion(version: String?) { protocolVersion = version }
 
     private val lifecycle = McpConnectionLifecycle()
     private var endpoint: String? = null
@@ -1420,10 +1443,15 @@ public class Experimental_StdioMCPTransport(
     public val config: StdioConfig,
     private val engineContext: CoroutineContext = Dispatchers.Default,
 ) : MCPTransport {
-    override var onClose: (() -> Unit)? = null
-    override var onError: ((Throwable) -> Unit)? = null
-    override var onMessage: (suspend (JSONRPCMessage) -> Unit)? = null
-    override var protocolVersion: String? = null
+    private var onClose: (() -> Unit)? = null
+    private var onError: ((Throwable) -> Unit)? = null
+    private var onMessage: (suspend (JSONRPCMessage) -> Unit)? = null
+    private var protocolVersion: String? = null
+
+    override fun setOnClose(handler: (() -> Unit)?) { onClose = handler }
+    override fun setOnError(handler: ((Throwable) -> Unit)?) { onError = handler }
+    override fun setOnMessage(handler: (suspend (JSONRPCMessage) -> Unit)?) { onMessage = handler }
+    override fun setProtocolVersion(version: String?) { protocolVersion = version }
 
     private val lifecycle = McpConnectionLifecycle()
     private var process: MCPStdioProcess? = null

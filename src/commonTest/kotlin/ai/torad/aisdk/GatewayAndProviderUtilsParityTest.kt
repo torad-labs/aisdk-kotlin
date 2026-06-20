@@ -366,8 +366,8 @@ class GatewayAndProviderUtilsParityTest {
 
     @Test
     fun `generated file and experimental media aliases preserve v6 compatibility`() = runTest {
-        val fileFromBytes = DefaultGeneratedFile(byteArrayOf(1, 2, 3), "application/octet-stream")
-        val fileFromBase64 = DefaultGeneratedFile(fileFromBytes.base64, "application/octet-stream")
+        val fileFromBytes = DefaultGeneratedFile.fromBytes(byteArrayOf(1, 2, 3), "application/octet-stream")
+        val fileFromBase64 = DefaultGeneratedFile.fromBase64(fileFromBytes.base64, "application/octet-stream")
         val image: Experimental_GenerateImageResult = experimental_generateImage(MockImageModel(), "logo")
         val speech: Experimental_SpeechResult = experimental_generateSpeech(MockSpeechModel(), "hello")
         val transcript: Experimental_TranscriptionResult =
@@ -675,7 +675,7 @@ class GatewayAndProviderUtilsParityTest {
             return LanguageModelResult(
                 text = "gateway:$modelId",
                 finishReason = FinishReason.Stop,
-                usage = Usage(promptTokens = params.messages.size, completionTokens = 1),
+                usage = Usage.of(promptTokens = params.messages.size, completionTokens = 1),
             )
         }
 

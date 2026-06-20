@@ -30,7 +30,7 @@ class ExtractJsonTest {
     private fun genContext(rawText: String) = MiddlewareCallContext(
         params = LanguageModelCallParams(messages = listOf(userMessage("x"))),
         model = mockLanguageModelTextOnly("x"),
-        doGenerate = { LanguageModelResult(rawText, emptyList(), FinishReason.Stop, Usage(1, 1)) },
+        doGenerate = { LanguageModelResult(rawText, emptyList(), FinishReason.Stop, Usage.of(1, 1)) },
         doStream = { flowOf() },
     )
 
@@ -111,13 +111,13 @@ class ExtractJsonTest {
         val ctx = MiddlewareCallContext(
             params = LanguageModelCallParams(messages = listOf(userMessage("x"))),
             model = mockLanguageModelTextOnly("x"),
-            doGenerate = { LanguageModelResult("x", emptyList(), FinishReason.Stop, Usage(1, 1)) },
+            doGenerate = { LanguageModelResult("x", emptyList(), FinishReason.Stop, Usage.of(1, 1)) },
             doStream = {
                 flowOf(
                     StreamEvent.TextStart("t1"),
                     StreamEvent.TextDelta("t1", "result: {\"a\":1"),
                     StreamEvent.TextEnd("t1"),
-                    StreamEvent.StepFinish(0, FinishReason.Stop, Usage(1, 1)),
+                    StreamEvent.StepFinish(0, FinishReason.Stop, Usage.of(1, 1)),
                 )
             },
         )
@@ -140,7 +140,7 @@ class ExtractJsonTest {
         val ctx = MiddlewareCallContext(
             params = LanguageModelCallParams(messages = listOf(userMessage("x"))),
             model = mockLanguageModelTextOnly("x"),
-            doGenerate = { LanguageModelResult("x", emptyList(), FinishReason.Stop, Usage(1, 1)) },
+            doGenerate = { LanguageModelResult("x", emptyList(), FinishReason.Stop, Usage.of(1, 1)) },
             doStream = {
                 flowOf(
                     StreamEvent.TextStart("t1"),
@@ -169,7 +169,7 @@ class ExtractJsonTest {
         val ctx = MiddlewareCallContext(
             params = LanguageModelCallParams(messages = listOf(userMessage("x"))),
             model = mockLanguageModelTextOnly("x"),
-            doGenerate = { LanguageModelResult("x", emptyList(), FinishReason.Stop, Usage(1, 1)) },
+            doGenerate = { LanguageModelResult("x", emptyList(), FinishReason.Stop, Usage.of(1, 1)) },
             doStream = {
                 flowOf(
                     StreamEvent.TextStart("t1"),
@@ -195,7 +195,7 @@ class ExtractJsonTest {
         val ctx = MiddlewareCallContext(
             params = LanguageModelCallParams(messages = listOf(userMessage("x"))),
             model = mockLanguageModelTextOnly("x"),
-            doGenerate = { LanguageModelResult("x", emptyList(), FinishReason.Stop, Usage(1, 1)) },
+            doGenerate = { LanguageModelResult("x", emptyList(), FinishReason.Stop, Usage.of(1, 1)) },
             doStream = {
                 flowOf(
                     StreamEvent.TextStart("t1"),

@@ -115,7 +115,7 @@ private class HumeSpeechModel(
 private const val HUME_DEFAULT_VOICE_ID: String = "d8ab67c6-953d-4bd8-9370-8fa53a0f1453"
 
 
-private data class HumeBinaryResponse(
+private class HumeBinaryResponse(
     val bytes: ByteArray,
     val mediaType: String,
     val headers: Map<String, String>,

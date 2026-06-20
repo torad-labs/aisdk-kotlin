@@ -54,12 +54,12 @@ public typealias UsageMetadataSchema = JsonObject
 public typealias SafetyRatingSchema = JsonObject
 public typealias PromptFeedbackSchema = JsonObject
 
-public sealed interface GoogleInteractionsModelInput {
-    public val name: String
+public sealed class GoogleInteractionsModelInput {
+    public abstract val name: String
 
-    public data class Model(override val name: String) : GoogleInteractionsModelInput
-    public data class Agent(override val name: String) : GoogleInteractionsModelInput
-    public data class ManagedAgent(override val name: String) : GoogleInteractionsModelInput
+    public data class Model(override val name: String) : GoogleInteractionsModelInput()
+    public data class Agent(override val name: String) : GoogleInteractionsModelInput()
+    public data class ManagedAgent(override val name: String) : GoogleInteractionsModelInput()
 }
 
 @Serializable

@@ -138,9 +138,9 @@ public fun validateUiMessages(messages: List<UIMessage>) {
     }
 }
 
-public sealed interface SafeValidateUIMessagesResult {
-    public data class Success(val messages: List<UIMessage>) : SafeValidateUIMessagesResult
-    public data class Failure(val error: Throwable) : SafeValidateUIMessagesResult
+public sealed class SafeValidateUIMessagesResult {
+    public data class Success(val messages: List<UIMessage>) : SafeValidateUIMessagesResult()
+    public data class Failure(val error: Throwable) : SafeValidateUIMessagesResult()
 }
 
 public fun validateUIMessages(messages: List<UIMessage>): Unit = validateUiMessages(messages)

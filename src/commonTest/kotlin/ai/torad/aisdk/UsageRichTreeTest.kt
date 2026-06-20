@@ -31,7 +31,7 @@ class UsageRichTreeTest {
     @Test
     fun `given legacy flat constructor Usage promptTokens completionTokens when read via legacy accessors then values match`() {
         // GIVEN — old-style construction used in tests + ToolLoopAgent.
-        val u = Usage(promptTokens = 12, completionTokens = 34)
+        val u = Usage.of(promptTokens = 12, completionTokens = 34)
 
         // WHEN/THEN
         assertEquals(12, u.promptTokens, "legacy accessor reads inputTokens.total")

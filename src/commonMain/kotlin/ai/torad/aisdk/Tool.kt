@@ -465,16 +465,16 @@ public fun <T> asSchema(schema: Schema<T>?): Schema<T> =
 
 public fun <T> asSchema(schema: LazySchema<T>): Schema<T> = schema()
 
-public sealed interface ValidationResult<out T> {
+public sealed class ValidationResult<out T> {
     public data class Success<T>(
         val value: T,
         val rawValue: JsonElement,
-    ) : ValidationResult<T>
+    ) : ValidationResult<T>()
 
     public data class Failure(
         val error: TypeValidationError,
         val rawValue: JsonElement,
-    ) : ValidationResult<Nothing>
+    ) : ValidationResult<Nothing>()
 }
 
 public fun <T> safeValidateTypes(
@@ -548,9 +548,9 @@ public fun <T> parseProviderOptions(
     }
 }
 
-public sealed interface ExecuteToolResult<out TOutput> {
-    public data class Preliminary<TOutput>(val output: TOutput) : ExecuteToolResult<TOutput>
-    public data class Final<TOutput>(val output: TOutput) : ExecuteToolResult<TOutput>
+public sealed class ExecuteToolResult<out TOutput> {
+    public data class Preliminary<TOutput>(val output: TOutput) : ExecuteToolResult<TOutput>()
+    public data class Final<TOutput>(val output: TOutput) : ExecuteToolResult<TOutput>()
 }
 
 public data class ToolNameMapping(

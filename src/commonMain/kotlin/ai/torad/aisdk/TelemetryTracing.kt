@@ -48,7 +48,7 @@ internal suspend fun <T> recordSpan(
 
 internal fun recordErrorOnSpan(span: TelemetryActiveSpan, error: Throwable) {
     span.recordException(error)
-    span.status = TelemetrySpanStatus.Error(error.message)
+    span.setStatus(TelemetrySpanStatus.Error(error.message))
 }
 
 internal fun selectTelemetryAttributes(
@@ -95,19 +95,19 @@ internal fun stringifyForTelemetry(value: JsonElement?): String? = when (value) 
     else -> value.toString()
 }
 
-internal sealed interface TelemetryAttribute {
-    data class Value(val value: JsonElement) : TelemetryAttribute
-    data class Input(val resolve: suspend () -> JsonElement?) : TelemetryAttribute
-    data class Output(val resolve: suspend () -> JsonElement?) : TelemetryAttribute
+internal sealed class TelemetryAttribute {
+    data class Value(val value: JsonElement) : TelemetryAttribute()
+    data class Input(val resolve: suspend () -> JsonElement?) : TelemetryAttribute()
+    data class Output(val resolve: suspend () -> JsonElement?) : TelemetryAttribute()
 }
 
 internal fun telemetryAttribute(value: JsonElement): TelemetryAttribute = TelemetryAttribute.Value(value)
 internal fun telemetryInput(resolve: suspend () -> JsonElement?): TelemetryAttribute = TelemetryAttribute.Input(resolve)
 internal fun telemetryOutput(resolve: suspend () -> JsonElement?): TelemetryAttribute = TelemetryAttribute.Output(resolve)
 
-public sealed interface TelemetrySpanStatus {
-    public data object Ok : TelemetrySpanStatus
-    public data class Error(val message: String? = null) : TelemetrySpanStatus
+public sealed class TelemetrySpanStatus {
+    public data object Ok : TelemetrySpanStatus()
+    public data class Error(val message: String? = null) : TelemetrySpanStatus()
 }
 
 public data class TelemetrySpanEvent(
@@ -118,13 +118,14 @@ public data class TelemetrySpanEvent(
 public interface TelemetryActiveSpan {
     public val name: String
     public val attributes: Map<String, JsonElement>
-    public var status: TelemetrySpanStatus
+    public val status: TelemetrySpanStatus
     public val events: List<TelemetrySpanEvent>
-    public var hasEnded: Boolean
+    public val hasEnded: Boolean
 
     public fun setAttribute(key: String, value: JsonElement)
     public fun addEvent(name: String, attributes: Map<String, JsonElement> = emptyMap())
     public fun recordException(error: Throwable)
+    public fun setStatus(status: TelemetrySpanStatus)
     public fun end()
 }
 
@@ -164,11 +165,14 @@ public class MutableTelemetrySpan(
 ) : TelemetryActiveSpan {
     override val attributes: Map<String, JsonElement>
         get() = mutableAttributes.toMap()
-    override var status: TelemetrySpanStatus = TelemetrySpanStatus.Ok
+    private var _status: TelemetrySpanStatus = TelemetrySpanStatus.Ok
+    override val status: TelemetrySpanStatus get() = _status
+    override fun setStatus(status: TelemetrySpanStatus) { _status = status }
     private val mutableEvents: MutableList<TelemetrySpanEvent> = mutableListOf()
     override val events: List<TelemetrySpanEvent>
         get() = mutableEvents.toList()
-    override var hasEnded: Boolean = false
+    private var _hasEnded: Boolean = false
+    override val hasEnded: Boolean get() = _hasEnded
 
     override fun setAttribute(key: String, value: JsonElement) {
         mutableAttributes[key] = value
@@ -190,7 +194,7 @@ public class MutableTelemetrySpan(
     }
 
     override fun end() {
-        hasEnded = true
+        _hasEnded = true
     }
 }
 
@@ -198,13 +202,16 @@ private class NoopTelemetryActiveSpan(
     override val name: String,
     override val attributes: Map<String, JsonElement>,
 ) : TelemetryActiveSpan {
-    override var status: TelemetrySpanStatus = TelemetrySpanStatus.Ok
+    private var _status: TelemetrySpanStatus = TelemetrySpanStatus.Ok
+    override val status: TelemetrySpanStatus get() = _status
+    override fun setStatus(status: TelemetrySpanStatus) { _status = status }
     override val events: List<TelemetrySpanEvent> = emptyList()
-    override var hasEnded: Boolean = false
+    private var _hasEnded: Boolean = false
+    override val hasEnded: Boolean get() = _hasEnded
     override fun setAttribute(key: String, value: JsonElement) {}
     override fun addEvent(name: String, attributes: Map<String, JsonElement>) {}
     override fun recordException(error: Throwable) {}
     override fun end() {
-        hasEnded = true
+        _hasEnded = true
     }
 }
