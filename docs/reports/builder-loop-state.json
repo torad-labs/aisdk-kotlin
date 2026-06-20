@@ -10,7 +10,7 @@
   },
   "ownership": "builder owns src/ edits; orchestrator owns .claude/ + validation; parallel work only on distinct files",
   "spec": "docs/reports/target-architecture.md",
-  "current_status": "Layers 1-6 VALIDATED. L6 (agent, ed7da10): Agent.generate Flow-first (suspend removed), ToolLoopAgentState flags->sealed Phase (#20), channel-parallel-exec + sealed Outcome PRESERVED, 17 tests migrated, green. Now on Layer 7 (ui): Chat/Completion/StructuredObject -> StateFlow over sealed phase (#748/FIX-009). Remaining after L7: L8 providers-fanout (PARALLEL workflow over 34 providers — also lands the deferred providerOptions Map->ProviderOptions cascade + retires AiSdkRuntimeException bridge), L9 wire-finalize (delete react/rsc/svelte/vue/angular/codemod/langchain/llamaindex residue + regenerate ABI). Builder needs a nudge to start each layer (turn ends at boundary).",
+  "current_status": "Layers 1-8 VALIDATED. L8 (providers, 67c4f85): all 25 providers class-based + PascalCase factories, throwing singletons + camelCase create* removed, 0 NotConfigured stubs, tests migrated, green (-448 lines, 55 files). Mid-L8 fixed a real hook bug (3ddbcfd, signature-keyed diff). Now LAYER 9 (finalize) in committed sub-steps: 9a delete TS residue (react/rsc/svelte/vue/angular/codemod + LangChain/LlamaIndex); 9b providerOptions Map->ProviderOptions cascade (cross-cutting, ProviderOptions.Raw default keeps compiling); 9c finalize (bridge throws->typed leaves + delete AiSdkRuntimeException bridge, drop any residual createX, regenerate ABI via apiDump, full green incl apiCheck). 9a DONE (57105d6). 9b DONE (74f6e98): providerOptions Map->ProviderOptions cascade complete, 0 raw-map decls remain, 80 files, green. 9c CODE DONE (uncommitted): AiSdkRuntimeException bridge DELETED (0 refs, fully sealed errors), compileKotlinJvm + jvmTest green. Builder stalled on ABI step because my apiDump/apiCheck instruction was WRONG — project uses KGP built-in ABI: updateKotlinAbi (regen dumps) + checkKotlinAbi (validate, under check). Re-engaged with correct tasks; awaiting updateKotlinAbi + checkKotlinAbi green + rewrite(layer-9c) commit. This is the final step.",
   "hard_rules": "no camelCase top-level fns (only PascalCase factories); logic on types/in units; Flow over suspend; sealed CLASS not interface; no public/top-level/companion mutable var; no secondary ctor/lateinit/!!; sealed errors; typed over Map<String,JsonElement>/Any?",
   "layers": [
     {
@@ -68,7 +68,7 @@
       "status": "pending"
     }
   ],
-  "current_layer": 7,
+  "current_layer": "COMPLETE",
   "completed_layers": [
     {
       "n": 1,
