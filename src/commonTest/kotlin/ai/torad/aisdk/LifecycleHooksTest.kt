@@ -8,6 +8,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
 import kotlin.test.assertTrue
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonPrimitive
@@ -32,7 +33,7 @@ class LifecycleHooksTest {
             onStepFinish = { seq.add("step:$stepNumber") },
             onFinish = { seq.add("finish") },
         )
-        agent.generate("go")
+        agent.generate("go").first()
         assertEquals(listOf("start", "step:1", "finish"), seq)
     }
 
@@ -46,7 +47,7 @@ class LifecycleHooksTest {
             onStart = { error("boom from hook") },
             onError = { errorsObserved.add(source) },
         )
-        val result = agent.generate("go")
+        val result = agent.generate("go").first()
         assertEquals("ok", result.text, "loop completed despite hook failure")
         assertTrue(errorsObserved.contains(OnErrorEvent.ErrorSource.Hook), "Hook source surfaced via onError")
     }
@@ -100,7 +101,7 @@ class LifecycleHooksTest {
             },
         )
 
-        agent.generate("go")
+        agent.generate("go").first()
 
         val outcome = assertIs<OnToolCallFinishEvent.Outcome.Success>(observed)
         assertEquals(JsonPrimitive("pong"), outcome.outputJson)

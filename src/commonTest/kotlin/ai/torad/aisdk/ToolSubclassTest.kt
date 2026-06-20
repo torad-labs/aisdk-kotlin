@@ -144,7 +144,7 @@ class ToolSubclassTest {
             tools = toolSetOf(SendTool { executed = true }),
         )
 
-        val first = agent.generate(prompt = "trigger")
+        val first = agent.generate(prompt = "trigger").first()
         assertEquals(FinishReason.ToolApprovalRequested, first.finishReason)
         assertEquals("send", first.pendingApprovals.single().toolName)
         assertFalse(executed, "gated subclass must not execute before approval")
@@ -154,7 +154,7 @@ class ToolSubclassTest {
                 toolCallId = first.pendingApprovals.single().toolCallId,
                 approved = true,
             ),
-        )
+        ).first()
         assertTrue(executed, "gated subclass executes after approval")
         assertEquals("sent", resumed.text)
         assertEquals(FinishReason.Stop, resumed.finishReason)

@@ -218,7 +218,7 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
                 resumeWithApproval(action.toolCallId, approved = false, reason = action.reason)
             ToolLoopAgentAction.Cancel -> {
                 currentEngineJob?.cancel()
-                mutableEngineState.update { it.copy(isStreaming = false) }
+                mutableEngineState.update { it.copy(phase = ToolLoopAgentState.Phase.Idle) }
             }
             ToolLoopAgentAction.Reset -> {
                 currentEngineJob?.cancel()
@@ -238,8 +238,7 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
                 streamingAssistantText = "",
                 currentToolCalls = emptyList(),
                 pendingApprovals = emptyList(),
-                isStreaming = true,
-                error = null,
+                phase = ToolLoopAgentState.Phase.Streaming,
             )
         }
         // Lazy-start so currentEngineJob is published BEFORE the loop body runs (build →
@@ -267,8 +266,7 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
                 streamingAssistantText = "",
                 currentToolCalls = emptyList(),
                 pendingApprovals = emptyList(),
-                isStreaming = true,
-                error = null,
+                phase = ToolLoopAgentState.Phase.Streaming,
             )
         }
         // Build → assign → start (see submitPrompt) so the guard sees this job published.
@@ -323,7 +321,7 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
                         streamingAssistantText = "",
                         currentToolCalls = emptyList(),
                         pendingApprovals = event.pendingApprovals,
-                        isStreaming = false,
+                        phase = ToolLoopAgentState.Phase.Idle,
                     )
                 }
             },
@@ -343,7 +341,7 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
                         )
                     }
                     is StreamEvent.Error -> updateEngineStateIfCurrent(ownJob) {
-                        it.copy(isStreaming = false, error = event.message)
+                        it.copy(phase = ToolLoopAgentState.Phase.Error(event.message))
                     }
                     else -> Unit
                 }
@@ -351,7 +349,7 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
         } catch (t: CancellationException) {
             throw t
         } catch (t: Throwable) {
-            updateEngineStateIfCurrent(ownJob) { it.copy(isStreaming = false, error = t.message ?: "agent failed") }
+            updateEngineStateIfCurrent(ownJob) { it.copy(phase = ToolLoopAgentState.Phase.Error(t.message ?: "agent failed")) }
         }
     }
 
@@ -376,13 +374,13 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
     // ──────────────────────────────────────────────────────────────────────
 
     @Suppress("UNCHECKED_CAST")
-    override suspend fun generate(
+    override fun generate(
         prompt: String?,
         messages: List<ModelMessage>,
         options: TContext?,
         abortSignal: AbortSignal,
         hooks: AgentCallHooks?,
-    ): GenerateResult<TOutput> {
+    ): Flow<GenerateResult<TOutput>> = flow {
         val accumulator = StringBuilder()
         val collectedSteps = mutableListOf<StepResult>()
         val collectedApprovals = mutableListOf<PendingApproval>()
@@ -424,7 +422,7 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
         collectedMessages = finalMessagesRef.value
         val text = accumulator.toString()
         val steps = collectedSteps.toList()
-        return GenerateResult(
+        emit(GenerateResult(
             output = decodeFinalOutput(output, text, finishReason),
             text = text,
             steps = steps,
@@ -434,7 +432,7 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
             totalUsage = totalUsage,
             pendingApprovals = collectedApprovals.toList(),
             messages = collectedMessages,
-        )
+        ))
     }
 
     /**

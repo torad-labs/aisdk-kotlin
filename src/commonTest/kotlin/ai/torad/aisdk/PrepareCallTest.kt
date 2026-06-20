@@ -4,6 +4,7 @@ import ai.torad.aisdk.providers.MockLanguageModel
 import ai.torad.aisdk.providers.mockLanguageModelTextOnly
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.first
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.Serializable
@@ -90,7 +91,7 @@ class PrepareCallTest {
                 AgentSettings(instructions = "overridden for ${options ?: "no-context"}")
             },
         )
-        agent.generate("hello", options = "marcos")
+        agent.generate("hello", options = "marcos").first()
         assertEquals(1, callCount, "prepareCall ran exactly once")
     }
 
@@ -106,7 +107,7 @@ class PrepareCallTest {
                 AgentSettings()
             },
         )
-        agent.generate("hi", options = "example-context")
+        agent.generate("hi", options = "example-context").first()
         assertNotNull(observedContext)
         assertEquals("example-context", observedContext)
     }
@@ -122,7 +123,7 @@ class PrepareCallTest {
         )
 
         val error = assertFailsWith<AgentError.InvalidCallOptions> {
-            agent.generate("hi", options = TopicOptions("evil"))
+            agent.generate("hi", options = TopicOptions("evil")).first()
         }
 
         assertTrue(error.message.orEmpty().contains("Type validation failed for options"))
@@ -144,7 +145,7 @@ class PrepareCallTest {
             },
         )
 
-        val result = agent.generate("hi", options = TopicOptions("legal"))
+        val result = agent.generate("hi", options = TopicOptions("legal")).first()
 
         assertEquals("reply", result.text)
         assertTrue(model.called)

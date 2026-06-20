@@ -10,6 +10,7 @@ import kotlin.test.assertTrue
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.toList
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeout
@@ -56,7 +57,7 @@ class ToolApprovalTest {
             tools = toolSetOf(sendTool),
         )
 
-        val first = agent.generate(prompt = "trigger")
+        val first = agent.generate(prompt = "trigger").first()
         assertEquals(FinishReason.ToolApprovalRequested, first.finishReason)
         assertEquals(1, first.pendingApprovals.size, "one pending approval")
         assertEquals("send", first.pendingApprovals[0].toolName)
@@ -66,7 +67,7 @@ class ToolApprovalTest {
             toolCallId = first.pendingApprovals[0].toolCallId,
             approved = true,
         )
-        val resumed = agent.generate(messages = first.messages + approval)
+        val resumed = agent.generate(messages = first.messages + approval).first()
         assertEquals(true, executed, "tool executed after approval")
         assertEquals("sent", resumed.text)
         assertEquals(FinishReason.Stop, resumed.finishReason)
@@ -97,7 +98,7 @@ class ToolApprovalTest {
             tools = toolSetOf(sendTool),
         )
 
-        val first = agent.generate(prompt = "trigger")
+        val first = agent.generate(prompt = "trigger").first()
         assertEquals(1, first.pendingApprovals.size)
 
         val denial = toolApprovalResponseMessage(
@@ -105,7 +106,7 @@ class ToolApprovalTest {
             approved = false,
             reason = "user said no",
         )
-        val resumed = agent.generate(messages = first.messages + denial)
+        val resumed = agent.generate(messages = first.messages + denial).first()
         assertEquals(false, executed, "tool NOT executed after denial")
         assertEquals("ok skipped", resumed.text)
     }
@@ -174,7 +175,7 @@ class ToolApprovalTest {
         agent.dispatchEngineAction(ToolLoopAgentAction.ApproveToolCall(pending.toolCallId))
         withContext(Dispatchers.Default) {
             withTimeout(1_000) {
-                while (seenContexts.isEmpty() || agent.engineState.value.isStreaming) delay(10)
+                while (seenContexts.isEmpty() || agent.engineState.value.phase == ToolLoopAgentState.Phase.Streaming) delay(10)
             }
         }
 

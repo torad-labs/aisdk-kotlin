@@ -70,9 +70,9 @@ class ToolLoopAgentSupersessionTest {
             .flatMap { it.content }
             .filterIsInstance<ContentPart.Text>()
             .map { it.text }
-        assertFalse(agent.engineState.value.isStreaming, "must not be stuck streaming")
+        assertEquals(ToolLoopAgentState.Phase.Idle, agent.engineState.value.phase, "must not be stuck streaming")
         assertTrue(texts.none { it.contains("call1") }, "stale superseded result must not appear: $texts")
         assertTrue(texts.any { it == "call2" }, "must converge to the latest submission: $texts")
-        assertEquals(null, agent.engineState.value.error)
+        assertFalse(agent.engineState.value.phase is ToolLoopAgentState.Phase.Error, "engine must finish without error")
     }
 }

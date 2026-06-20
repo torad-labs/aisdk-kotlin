@@ -10,13 +10,14 @@
   },
   "ownership": "builder owns src/ edits; orchestrator owns .claude/ + validation; parallel work only on distinct files",
   "spec": "docs/reports/target-architecture.md",
+  "current_status": "Layers 1-5 VALIDATED. L5 (tools, 05b470a): sealed Tool<TInput,TOutput,TContext> (schema+execute, #741) + PascalCase faux-constructors Tool()/StreamingTool()/DynamicTool()/ProviderExecutedTool()/ExecuteTool(); all 6 providers+MCP+Gateway+28 tests migrated; green (-384 lines). L5 took 2 stalls on the 21-file test migration; broke it with a bulk ast-grep rewrite. Now on Layer 6 (agent): ToolLoopAgent Flow-first, keep channel-parallel-exec + sealed Outcome. DEFERRED to L8/9: providerOptions Map->ProviderOptions cascade; full AiSdkRuntimeException bridge removal.",
   "hard_rules": "no camelCase top-level fns (only PascalCase factories); logic on types/in units; Flow over suspend; sealed CLASS not interface; no public/top-level/companion mutable var; no secondary ctor/lateinit/!!; sealed errors; typed over Map<String,JsonElement>/Any?",
   "layers": [
     {
       "n": 1,
       "name": "foundations",
       "what": "sealed AiSdkException hierarchy; @JvmInline value classes for ids (ModelId/ProviderId/ToolCallId/ToolName/ApprovalId); GenerationInput sealed class + toMessages(system); CallConfig type (replaces flattened param lists); content/message sealed cleanup",
-      "status": "pending"
+      "status": "completed"
     },
     {
       "n": 2,
@@ -67,7 +68,15 @@
       "status": "pending"
     }
   ],
-  "current_layer": 1,
-  "completed_layers": [],
+  "current_layer": 6,
+  "completed_layers": [
+    {
+      "n": 1,
+      "name": "foundations",
+      "commit": "27cec9e",
+      "validated": "compile+jvmTest green",
+      "note": "open AiSdkRuntimeException bridge covers 167 provider throw-sites \u2014 eliminate in provider layers"
+    }
+  ],
   "superseded": "the prior 45-task parity queue (audit-data.json) is SUPERSEDED by this big-bang; its findings still inform what's wrong, but tasks fold into the layers above"
 }

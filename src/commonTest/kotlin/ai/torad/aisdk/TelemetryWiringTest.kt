@@ -6,6 +6,7 @@ import ai.torad.aisdk.testing.drainAllItems
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.buildJsonObject
@@ -106,7 +107,7 @@ class TelemetryWiringTest {
     @Test
     fun `the loop feeds an integration every lifecycle event under one callId`() = runTest {
         val rec = RecordingTelemetry()
-        val result = toolThenTextAgent(rec).generate(prompt = "go")
+        val result = toolThenTextAgent(rec).generate(prompt = "go").first()
 
         assertEquals("done", result.text)
         assertEquals(
@@ -140,14 +141,14 @@ class TelemetryWiringTest {
             tools = toolSetOf(),
             telemetry = TelemetrySettings(integrations = listOf(rec)),
         )
-        agent.generate(prompt = "one")
-        agent.generate(prompt = "two")
+        agent.generate(prompt = "one").first()
+        agent.generate(prompt = "two").first()
         assertEquals(2, rec.callIds.size)
     }
 
     @Test
     fun `a throwing integration never alters the loop`() = runTest {
-        val result = toolThenTextAgent(ExplodingTelemetry()).generate(prompt = "go")
+        val result = toolThenTextAgent(ExplodingTelemetry()).generate(prompt = "go").first()
         assertEquals("done", result.text)
         assertEquals(2, result.steps.size)
     }
@@ -169,7 +170,7 @@ class TelemetryWiringTest {
             telemetry = TelemetrySettings(integrations = listOf(ExplodingTelemetry())),
             logger = tellLogger,
         )
-        val result = agent.generate(prompt = "go")
+        val result = agent.generate(prompt = "go").first()
         assertEquals("hi", result.text, "the loop is unaffected")
         assertTrue(warns.isNotEmpty(), "a broken integration must be discoverable")
         assertTrue(warns.first().contains("exploding"), "the warn names the failing integration: ${warns.first()}")
@@ -185,7 +186,7 @@ class TelemetryWiringTest {
                 instructions = "x",
                 tools = toolSetOf(),
             )
-            agent.generate(prompt = "go")
+            agent.generate(prompt = "go").first()
         } finally {
             clearGlobalTelemetry()
         }
@@ -206,7 +207,7 @@ class TelemetryWiringTest {
                 tools = toolSetOf(),
                 telemetry = TelemetrySettings(integrations = listOf(local)),
             )
-            agent.generate(prompt = "go")
+            agent.generate(prompt = "go").first()
         } finally {
             clearGlobalTelemetry()
         }
@@ -231,7 +232,7 @@ class TelemetryWiringTest {
             tools = toolSetOf(),
             telemetry = TelemetrySettings(integrations = listOf(rec)),
         )
-        assertFailsWith<AiSdkException> { agent.generate(prompt = "go") }
+        assertFailsWith<AiSdkException> { agent.generate(prompt = "go").first() }
         assertTrue(rec.events.contains("error:Model"), "got: ${rec.events}")
     }
 
@@ -263,7 +264,7 @@ class TelemetryWiringTest {
                 tools = toolSetOf(),
                 telemetry = TelemetrySettings(isEnabled = false),
             )
-            agent.generate(prompt = "go")
+            agent.generate(prompt = "go").first()
         } finally {
             clearGlobalTelemetry()
         }
@@ -284,7 +285,7 @@ class TelemetryWiringTest {
             tools = toolSetOf(),
             telemetry = TelemetrySettings(integrations = listOf(cancelling)),
         )
-        assertFailsWith<CancellationException> { agent.generate(prompt = "go") }
+        assertFailsWith<CancellationException> { agent.generate(prompt = "go").first() }
     }
 
     @Test
@@ -304,7 +305,7 @@ class TelemetryWiringTest {
             // still let cancellation through (and stop the remaining integrations).
             telemetry = TelemetrySettings(integrations = listOf(cancelling, survivor)),
         )
-        assertFailsWith<CancellationException> { agent.generate(prompt = "go") }
+        assertFailsWith<CancellationException> { agent.generate(prompt = "go").first() }
         assertTrue(survivor.events.isEmpty(), "cancellation stops the broadcast, not just the member")
     }
 
@@ -353,7 +354,7 @@ class TelemetryWiringTest {
             tools = toolSetOf(failingTool),
             telemetry = TelemetrySettings(integrations = listOf(rec)),
         )
-        agent.generate(prompt = "go")
+        agent.generate(prompt = "go").first()
         assertTrue(rec.events.contains("toolCallFinish:echo:err"), "got: ${rec.events}")
         assertTrue(rec.events.contains("error:Tool"), "got: ${rec.events}")
     }
@@ -378,13 +379,13 @@ class TelemetryWiringTest {
             tools = toolSetOf(gated),
             telemetry = TelemetrySettings(integrations = listOf(rec)),
         )
-        val first = agent.generate(prompt = "go")
+        val first = agent.generate(prompt = "go").first()
         val pending = first.pendingApprovals.single()
         assertTrue(rec.events.none { it.startsWith("toolCallStart") }, "gated tool must not run before approval")
 
         rec.events.clear()
         val approval = toolApprovalResponseMessage(pending.toolCallId, approved = true, approvalId = pending.approvalId)
-        agent.generate(messages = first.messages + approval)
+        agent.generate(messages = first.messages + approval).first()
 
         // The approval-resume path runs the tool through executeTool — the telemetry bracket
         // is the stated reason it lives THERE, not at the step-loop dispatch site.

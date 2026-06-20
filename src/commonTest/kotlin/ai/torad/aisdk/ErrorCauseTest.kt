@@ -2,6 +2,7 @@ package ai.torad.aisdk
 
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -25,7 +26,7 @@ class ErrorCauseTest {
             tools = toolSetOf<Unit>(),
         )
 
-        val thrown = assertFailsWith<AiSdkException> { agent.generate(prompt = "hi") }
+        val thrown = assertFailsWith<AiSdkException> { agent.generate(prompt = "hi").first() }
         assertEquals(boom, thrown.cause)
     }
 }

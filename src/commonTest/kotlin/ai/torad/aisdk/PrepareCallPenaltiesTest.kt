@@ -4,6 +4,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonPrimitive
@@ -58,7 +59,7 @@ class PrepareCallPenaltiesTest {
         )
 
         // WHEN
-        agent.generate(prompt = "hi")
+        agent.generate(prompt = "hi").first()
 
         // THEN
         assertEquals(0.2f, capture.captured?.presencePenalty)
@@ -84,7 +85,7 @@ class PrepareCallPenaltiesTest {
         )
 
         // WHEN
-        agent.generate(prompt = "hi")
+        agent.generate(prompt = "hi").first()
 
         // THEN
         assertEquals(0.7f, capture.captured?.presencePenalty, "prepareCall wins over agent default")
@@ -105,7 +106,7 @@ class PrepareCallPenaltiesTest {
         )
 
         // WHEN
-        agent.generate(prompt = "hi")
+        agent.generate(prompt = "hi").first()
 
         // THEN
         assertEquals(0.9f, capture.captured?.presencePenalty, "prepareStep wins over prepareCall + agent default")
@@ -123,7 +124,7 @@ class PrepareCallPenaltiesTest {
         )
 
         // WHEN
-        agent.generate(prompt = "hi")
+        agent.generate(prompt = "hi").first()
 
         // THEN
         val responseFormat = capture.captured?.responseFormat
@@ -147,7 +148,7 @@ class PrepareCallPenaltiesTest {
         )
 
         // WHEN
-        agent.generate(prompt = "hi")
+        agent.generate(prompt = "hi").first()
 
         // THEN
         assertEquals(stepFormat, capture.captured?.responseFormat)
@@ -170,7 +171,7 @@ class PrepareCallPenaltiesTest {
         )
 
         // WHEN
-        agent.generate(prompt = "hi")
+        agent.generate(prompt = "hi").first()
 
         // THEN
         assertEquals(JsonPrimitive("step"), capture.captured?.providerOptions?.get("common"))

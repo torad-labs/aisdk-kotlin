@@ -2,6 +2,7 @@ package ai.torad.aisdk
 
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
@@ -42,7 +43,7 @@ class AgentStepResultParityTest {
             instructions = "hi",
             tools = toolSetOf(),
         )
-        val result = agent.generate(prompt = "go", options = Unit)
+        val result = agent.generate(prompt = "go", options = Unit).first()
         val step = result.steps.single()
         assertEquals("heads up", step.warnings.single().message)
         assertEquals("resp_1", step.response.id)
@@ -61,7 +62,7 @@ class AgentStepResultParityTest {
             tools = toolSetOf(),
             output = Output.obj(kotlinx.serialization.serializer<Holder>()),
         )
-        assertFailsWith<NoOutputGeneratedError> { agent.generate(prompt = "go", options = Unit) }
+        assertFailsWith<NoOutputGeneratedError> { agent.generate(prompt = "go", options = Unit).first() }
     }
 
     @kotlinx.serialization.Serializable

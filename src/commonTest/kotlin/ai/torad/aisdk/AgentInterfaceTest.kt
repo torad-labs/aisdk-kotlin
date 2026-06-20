@@ -5,6 +5,8 @@ import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.test.runTest
 
 /**
@@ -17,21 +19,21 @@ class AgentInterfaceTest {
     private class FakeAgent : Agent<Unit, String> {
         override val tools: ToolSet<Unit> = toolSetOf()
         var generatedPrompt: String? = null
-        override suspend fun generate(
+        override fun generate(
             prompt: String?,
             messages: List<ModelMessage>,
             options: Unit?,
             abortSignal: AbortSignal,
             hooks: AgentCallHooks?,
-        ): GenerateResult<String> {
+        ): Flow<GenerateResult<String>> = flow {
             generatedPrompt = prompt
-            return GenerateResult(
+            emit(GenerateResult(
                 output = "fake-output",
                 text = "fake-output",
                 steps = emptyList(),
                 finishReason = FinishReason.Stop,
                 usage = Usage(),
-            )
+            ))
         }
         override fun stream(
             prompt: String?,
@@ -50,7 +52,7 @@ class AgentInterfaceTest {
     @Test
     fun `fake_agent_satisfies_Agent_contract`() = runTest {
         val agent: Agent<Unit, String> = FakeAgent()
-        val result = agent.generate("hello")
+        val result = agent.generate("hello").first()
         assertEquals("fake-output", result.output)
         assertEquals(FinishReason.Stop, result.finishReason)
     }
@@ -71,7 +73,7 @@ class AgentInterfaceTest {
         agent.generate(
             prompt = "go",
             hooks = AgentCallHooks(onStart = { callSiteOnStartFired = true }),
-        )
+        ).first()
         // FakeAgent doesn't fire hooks, but the contract should accept the parameter.
         assertEquals(false, callSiteOnStartFired, "FakeAgent does not invoke the hooks; contract just accepts them")
     }
