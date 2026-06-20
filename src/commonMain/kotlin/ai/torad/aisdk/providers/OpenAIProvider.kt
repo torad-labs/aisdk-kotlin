@@ -28,7 +28,7 @@ public class OpenAIProvider(
     private val client: HttpClient,
     public val settings: OpenAIProviderSettings,
 ) : Provider {
-    private val compatible = createOpenAICompatible(client, settings.toCompatibleSettings())
+    private val compatible = OpenAICompatible(client, settings.toCompatibleSettings())
 
     override val providerId: String = settings.name
     public val tools: OpenAITools = OpenAITools()
@@ -41,7 +41,7 @@ public class OpenAIProvider(
         compatible.chatModel(modelId)
 
     public fun responses(modelId: String): LanguageModel =
-        createOpenResponses(
+        OpenResponses(
             client,
             OpenResponsesProviderSettings(
                 url = settings.responsesUrl(),
@@ -84,15 +84,6 @@ public fun OpenAI(
     settings: OpenAISettings = OpenAISettings(),
 ): OpenAIProvider = OpenAIProvider(client, settings)
 
-public fun createOpenAI(
-    client: HttpClient,
-    settings: OpenAIProviderSettings = OpenAIProviderSettings(),
-): OpenAIProvider = OpenAIProvider(client, settings)
-
-public fun createOpenAIProvider(
-    client: HttpClient,
-    settings: OpenAIProviderSettings = OpenAIProviderSettings(),
-): OpenAIProvider = OpenAIProvider(client, settings)
 
 private class OpenAIImageModel(
     override val modelId: String,

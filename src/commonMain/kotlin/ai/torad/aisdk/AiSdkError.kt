@@ -247,11 +247,3 @@ public class RetryError(
 ) : AiSdkException(message, errors.lastOrNull()) {
     public val lastError: Throwable? = errors.lastOrNull()
 }
-
-/** Unclassified provider/core error — replaces bare `throw AiSdkException(...)` at sites that
- *  haven't yet been migrated to a typed leaf. open so provider packages can subclass while in
- *  migration. Layer-8 providers will eliminate these. */
-public open class AiSdkRuntimeException(
-    message: String,
-    cause: Throwable? = null,
-) : AiSdkException(message, cause)

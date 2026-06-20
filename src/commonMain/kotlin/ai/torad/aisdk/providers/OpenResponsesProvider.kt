@@ -87,7 +87,7 @@ public interface OpenResponsesProvider : Provider {
     public fun responses(modelId: String): LanguageModel = languageModel(modelId)
 }
 
-public fun createOpenResponses(
+public fun OpenResponses(
     client: HttpClient,
     settings: OpenResponsesProviderSettings,
     json: Json = openResponsesJson,

@@ -409,7 +409,7 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
                         ),
                     )
                 }
-                is StreamEvent.Error -> throw AiSdkRuntimeException(event.message, event.cause)
+                is StreamEvent.Error -> throw UiMessageStreamError(event.message, event.cause)
                 else -> Unit
             }
         }

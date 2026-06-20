@@ -44,7 +44,7 @@ public class GoogleVertexProvider(
     override val providerId: String = "google-vertex"
     public val tools: GoogleTools = googleTools
 
-    private val delegate: GoogleGenerativeAIProvider = createGoogleGenerativeAI(
+    private val delegate: GoogleGenerativeAIProvider = GoogleGenerativeAI(
         client,
         GoogleGenerativeAIProviderSettings(
             baseURL = googleVertexPublisherBaseURL(settings),
@@ -131,7 +131,7 @@ public class GoogleVertexMaasProvider(
 ) : Provider {
     override val providerId: String = "google-vertex-maas"
 
-    private val delegate = createOpenAICompatible(
+    private val delegate = OpenAICompatible(
         client,
         OpenAICompatibleProviderSettings(
             name = "google-vertex-maas",
@@ -153,7 +153,7 @@ public class GoogleVertexXaiProvider(
 ) : Provider {
     override val providerId: String = "google-vertex-xai"
 
-    private val delegate = createOpenAICompatible(
+    private val delegate = OpenAICompatible(
         client,
         OpenAICompatibleProviderSettings(
             name = "googleVertex.xai",
@@ -218,7 +218,7 @@ private fun googleVertexAnthropicBaseURL(settings: GoogleVertexProviderSettings)
         ?: "https://${googleVertexApiHost(settings.location)}/v1/projects/${googleVertexProject(settings)}/locations/${settings.location}/publishers/anthropic/models"
 
 private fun googleVertexProject(settings: GoogleVertexProviderSettings): String =
-    settings.project ?: throw AiSdkRuntimeException("Google Vertex project is required.")
+    settings.project ?: throw LoadSettingError("Google Vertex project is required.")
 
 private fun googleVertexApiHost(location: String): String =
     when (location) {

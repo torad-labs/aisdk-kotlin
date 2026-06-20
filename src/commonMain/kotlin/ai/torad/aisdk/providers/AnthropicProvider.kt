@@ -478,7 +478,7 @@ private fun anthropicUserPart(part: ContentPart, betas: MutableSet<String>): Jso
             part.filename?.let { put("title", JsonPrimitive(it)) }
             anthropicFileOptions(part.providerMetadata)?.let { putJsonObjectFields(it) }
         }
-        else -> throw AiSdkRuntimeException("Unsupported Anthropic file media type: ${part.mediaType}")
+        else -> throw UnsupportedFunctionalityError("file media type ${part.mediaType}", "Unsupported Anthropic file media type: ${part.mediaType}")
     }
     else -> null
 }

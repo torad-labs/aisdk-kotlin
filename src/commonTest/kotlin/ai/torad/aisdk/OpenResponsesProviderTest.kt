@@ -1,6 +1,6 @@
 package ai.torad.aisdk
 import ai.torad.aisdk.providers.OpenResponsesProviderSettings
-import ai.torad.aisdk.providers.createOpenResponses
+import ai.torad.aisdk.providers.OpenResponses
 
 import ai.torad.aisdk.testing.drainAllItems
 import io.ktor.client.HttpClient
@@ -65,7 +65,7 @@ class OpenResponsesProviderTest {
                 )
             },
         )
-        val provider = createOpenResponses(
+        val provider = OpenResponses(
             client,
             OpenResponsesProviderSettings(
                 url = "https://api.test/v1/responses",
@@ -148,7 +148,7 @@ class OpenResponsesProviderTest {
                 )
             },
         )
-        val provider = createOpenResponses(client, OpenResponsesProviderSettings("https://api.test/v1/responses", "openresponses"))
+        val provider = OpenResponses(client, OpenResponsesProviderSettings("https://api.test/v1/responses", "openresponses"))
 
         val error = assertFailsWith<WireDecodeException> {
             provider.responses("gpt-resp").generate(LanguageModelCallParams(listOf(userMessage("hi"))))
@@ -178,7 +178,7 @@ class OpenResponsesProviderTest {
                 )
             },
         )
-        val provider = createOpenResponses(client, OpenResponsesProviderSettings("https://api.test/v1/responses", "openresponses"))
+        val provider = OpenResponses(client, OpenResponsesProviderSettings("https://api.test/v1/responses", "openresponses"))
 
         val error = assertFailsWith<WireDecodeException> {
             provider.responses("gpt-resp").generate(LanguageModelCallParams(listOf(userMessage("hi"))))
@@ -228,7 +228,7 @@ class OpenResponsesProviderTest {
                 )
             },
         )
-        val provider = createOpenResponses(client, OpenResponsesProviderSettings("https://api.test/v1/responses", "openresponses"))
+        val provider = OpenResponses(client, OpenResponsesProviderSettings("https://api.test/v1/responses", "openresponses"))
 
         val events = drainAllItems(provider.languageModel("gpt-resp").stream(LanguageModelCallParams(listOf(userMessage("hi")))))
 
@@ -261,7 +261,7 @@ class OpenResponsesProviderTest {
                 )
             },
         )
-        val provider = createOpenResponses(client, OpenResponsesProviderSettings("https://api.test/v1/responses", "openresponses"))
+        val provider = OpenResponses(client, OpenResponsesProviderSettings("https://api.test/v1/responses", "openresponses"))
 
         val events = drainAllItems(provider.languageModel("gpt-resp").stream(LanguageModelCallParams(listOf(userMessage("hi")))))
 
@@ -286,7 +286,7 @@ class OpenResponsesProviderTest {
                 )
             },
         )
-        val provider = createOpenResponses(client, OpenResponsesProviderSettings("https://api.test/v1/responses", "openresponses"))
+        val provider = OpenResponses(client, OpenResponsesProviderSettings("https://api.test/v1/responses", "openresponses"))
 
         val events = drainAllItems(provider.languageModel("gpt-resp").stream(LanguageModelCallParams(listOf(userMessage("hi")))))
 
@@ -308,7 +308,7 @@ class OpenResponsesProviderTest {
                 )
             },
         )
-        val provider = createOpenResponses(client, OpenResponsesProviderSettings("https://api.test/v1/responses", "openresponses"))
+        val provider = OpenResponses(client, OpenResponsesProviderSettings("https://api.test/v1/responses", "openresponses"))
 
         val events = drainAllItems(provider.languageModel("gpt-resp").stream(LanguageModelCallParams(listOf(userMessage("hi")))))
 
@@ -329,7 +329,7 @@ class OpenResponsesProviderTest {
                 )
             },
         )
-        val provider = createOpenResponses(client, OpenResponsesProviderSettings("https://api.test/v1/responses", "openresponses"))
+        val provider = OpenResponses(client, OpenResponsesProviderSettings("https://api.test/v1/responses", "openresponses"))
 
         val modelVisible = ToolResultOutput.Content(
             value = listOf(
@@ -395,7 +395,7 @@ class OpenResponsesProviderTest {
                 )
             },
         )
-        val provider = createOpenResponses(
+        val provider = OpenResponses(
             client,
             OpenResponsesProviderSettings(
                 url = "https://api.test/v1/responses",

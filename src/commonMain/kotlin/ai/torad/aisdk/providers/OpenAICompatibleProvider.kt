@@ -66,17 +66,11 @@ public interface OpenAICompatibleProvider : Provider {
     public fun textEmbeddingModel(modelId: String): EmbeddingModel = embeddingModel(modelId)
 }
 
-public fun createOpenAICompatible(
+public fun OpenAICompatible(
     client: HttpClient,
     settings: OpenAICompatibleProviderSettings,
     json: Json = aiSdkJson,
 ): OpenAICompatibleProvider = KtorOpenAICompatibleProvider(client, settings, json)
-
-public fun createOpenAICompatibleProvider(
-    client: HttpClient,
-    settings: OpenAICompatibleProviderSettings,
-    json: Json = aiSdkJson,
-): OpenAICompatibleProvider = createOpenAICompatible(client, settings, json)
 
 private class KtorOpenAICompatibleProvider(
     private val client: HttpClient,

@@ -41,7 +41,7 @@ public class MistralProvider(
     client: HttpClient,
     public val settings: MistralProviderSettings,
 ) : Provider {
-    private val compatible = createOpenAICompatible(client, settings.toCompatible())
+    private val compatible = OpenAICompatible(client, settings.toCompatible())
 
     override val providerId: String = "mistral"
 

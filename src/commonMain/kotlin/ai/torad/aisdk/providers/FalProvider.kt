@@ -528,7 +528,7 @@ private suspend fun falGetJson(
  */
 private val falInProgressSignal: ResponseErrorFactory = { _, parsed, _, _ ->
     val detail = (parsed as? JsonObject)?.get("detail")?.jsonPrimitive?.contentOrNull
-    if (detail == "Request is still in progress") AiSdkRuntimeException(detail) else null
+    if (detail == "Request is still in progress") InvalidResponseDataError(null, detail.orEmpty()) else null
 }
 
 private suspend fun falPollJson(
@@ -549,7 +549,7 @@ private suspend fun falPollJson(
         if (response != null) return response
         if (pollIntervalMillis > 0 && attempt < maxPollAttempts - 1) delay(pollIntervalMillis)
     }
-    throw AiSdkRuntimeException(timeoutMessage)
+    throw NoVideoGeneratedError(timeoutMessage)
 }
 
 private suspend fun falGetBinary(

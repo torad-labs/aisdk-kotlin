@@ -2,7 +2,7 @@ package ai.torad.aisdk
 import ai.torad.aisdk.providers.ANTHROPIC_AWS_VERSION
 import ai.torad.aisdk.providers.ANTHROPIC_VERSION
 import ai.torad.aisdk.providers.AnthropicAwsProviderSettings
-import ai.torad.aisdk.providers.createAnthropicAws
+import ai.torad.aisdk.providers.AnthropicAws
 
 import ai.torad.aisdk.testing.drainAllItems
 import io.ktor.http.HttpHeaders
@@ -40,7 +40,7 @@ class AnthropicAwsProviderTest {
             ),
         )
         fixture.server.start()
-        val provider = createAnthropicAws(
+        val provider = AnthropicAws(
             fixture.httpClient(),
             AnthropicAwsProviderSettings(
                 apiKey = "aws-key",
@@ -99,7 +99,7 @@ class AnthropicAwsProviderTest {
             ),
         )
         fixture.server.start()
-        val provider = createAnthropicAws(
+        val provider = AnthropicAws(
             fixture.httpClient(),
             AnthropicAwsProviderSettings(apiKey = "key", workspaceId = "wrkspc_123", region = "us-east-1"),
         )
@@ -140,7 +140,7 @@ class AnthropicAwsProviderTest {
             ),
         )
         fixture.server.start()
-        val provider = createAnthropicAws(
+        val provider = AnthropicAws(
             fixture.httpClient(),
             AnthropicAwsProviderSettings(
                 workspaceId = "wrkspc_123",

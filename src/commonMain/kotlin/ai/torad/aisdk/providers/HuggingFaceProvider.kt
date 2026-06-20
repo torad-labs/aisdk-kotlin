@@ -440,7 +440,7 @@ private fun huggingFaceUserContentPart(part: ContentPart): JsonElement? = when (
     }
     is ContentPart.File -> {
         if (!part.mediaType.startsWith("image/")) {
-            throw AiSdkRuntimeException("Hugging Face Responses API does not support file part media type ${part.mediaType}.")
+            throw UnsupportedFunctionalityError("file part media type ${part.mediaType}", "Hugging Face Responses API does not support file part media type ${part.mediaType}.")
         }
         buildJsonObject {
             put("type", JsonPrimitive("input_image"))

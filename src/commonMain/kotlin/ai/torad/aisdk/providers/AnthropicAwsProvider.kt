@@ -34,7 +34,7 @@ public interface AnthropicAwsProvider : Provider {
     public fun textEmbeddingModel(modelId: String): Nothing = throw NoSuchModelError(providerId, "embeddingModel", modelId)
 }
 
-public fun createAnthropicAws(
+public fun AnthropicAws(
     client: HttpClient,
     settings: AnthropicAwsProviderSettings = AnthropicAwsProviderSettings(),
 ): AnthropicAwsProvider = DefaultAnthropicAwsProvider(client, settings)
@@ -44,7 +44,7 @@ public val anthropicAws: AnthropicAwsProvider = object : AnthropicAwsProvider {
     override val settings: AnthropicAwsProviderSettings = AnthropicAwsProviderSettings()
     override val tools: AnthropicTools = anthropicTools
     override fun languageModel(modelId: String): LanguageModel =
-        throw AiSdkRuntimeException("Anthropic AWS provider is not configured. Use createAnthropicAws(client, settings).")
+        throw UnsupportedFunctionalityError("anthropic-aws", "Anthropic AWS provider is not configured. Use AnthropicAws(client, settings).")
     override fun embeddingModel(modelId: String): EmbeddingModel = throw NoSuchModelError(providerId, "embeddingModel", modelId)
     override fun imageModel(modelId: String): ImageModel = throw NoSuchModelError(providerId, "imageModel", modelId)
 }
@@ -107,7 +107,7 @@ private fun anthropicAwsBaseURL(settings: AnthropicAwsProviderSettings): String 
 
 private fun anthropicAwsHeaders(settings: AnthropicAwsProviderSettings): Map<String, String> {
     val workspaceId = settings.workspaceId
-        ?: throw AiSdkRuntimeException("Anthropic AWS workspaceId is required. Provide workspaceId or ANTHROPIC_AWS_WORKSPACE_ID-style configuration.")
+        ?: throw LoadSettingError("Anthropic AWS workspaceId is required. Provide workspaceId or ANTHROPIC_AWS_WORKSPACE_ID-style configuration.")
     return linkedMapOf<String, String>().apply {
         put("anthropic-workspace-id", workspaceId)
         put(HttpHeaders.UserAgent, "ai-sdk/anthropic-aws/$ANTHROPIC_AWS_VERSION")
@@ -130,7 +130,7 @@ internal suspend fun anthropicAwsSigV4Headers(
             region = settings.region,
         )
     if (credentials.accessKeyId.isBlank() || credentials.secretAccessKey.isBlank()) {
-        throw AiSdkRuntimeException("AWS SigV4 authentication requires both accessKeyId and secretAccessKey.")
+        throw LoadAPIKeyError("AWS SigV4 authentication requires both accessKeyId and secretAccessKey.")
     }
     return awsSigV4SignedHeaders(
         method = "POST",

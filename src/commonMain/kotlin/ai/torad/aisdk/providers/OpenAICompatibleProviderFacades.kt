@@ -62,7 +62,7 @@ public class DeepSeekProvider(
     client: HttpClient,
     settings: DeepSeekProviderSettings,
 ) : Provider {
-    private val compatible = createOpenAICompatible(
+    private val compatible = OpenAICompatible(
         client,
         settings.toCompatible("deepseek", DEEPSEEK_VERSION, supportsStructuredOutputs = true),
     )
@@ -81,10 +81,6 @@ public fun DeepSeek(
     settings: DeepSeekProviderSettings = DeepSeekProviderSettings(),
 ): DeepSeekProvider = DeepSeekProvider(client, settings)
 
-public fun createDeepSeek(
-    client: HttpClient,
-    settings: DeepSeekProviderSettings = DeepSeekProviderSettings(),
-): DeepSeekProvider = DeepSeekProvider(client, settings)
 
 @Serializable
 public data class CerebrasProviderSettings(
@@ -105,7 +101,7 @@ public class CerebrasProvider(
     client: HttpClient,
     settings: CerebrasProviderSettings,
 ) : Provider {
-    private val compatible = createOpenAICompatible(
+    private val compatible = OpenAICompatible(
         client,
         settings.toCompatible("cerebras", CEREBRAS_VERSION, supportsStructuredOutputs = true),
     )
@@ -124,10 +120,6 @@ public fun Cerebras(
     settings: CerebrasProviderSettings = CerebrasProviderSettings(),
 ): CerebrasProvider = CerebrasProvider(client, settings)
 
-public fun createCerebras(
-    client: HttpClient,
-    settings: CerebrasProviderSettings = CerebrasProviderSettings(),
-): CerebrasProvider = CerebrasProvider(client, settings)
 
 public typealias DeepInfraChatModelId = String
 public typealias DeepInfraCompletionModelId = String
@@ -146,7 +138,7 @@ public class DeepInfraProvider(
     private val client: HttpClient,
     private val settings: DeepInfraProviderSettings,
 ) : Provider {
-    private val compatible = createOpenAICompatible(
+    private val compatible = OpenAICompatible(
         client,
         compatibleSettings(
             name = "deepinfra",
@@ -175,10 +167,6 @@ public fun DeepInfra(
     settings: DeepInfraProviderSettings = DeepInfraProviderSettings(),
 ): DeepInfraProvider = DeepInfraProvider(client, settings)
 
-public fun createDeepInfra(
-    client: HttpClient,
-    settings: DeepInfraProviderSettings = DeepInfraProviderSettings(),
-): DeepInfraProvider = DeepInfraProvider(client, settings)
 
 public typealias FireworksChatModelId = String
 public typealias FireworksCompletionModelId = String
@@ -223,7 +211,7 @@ public class FireworksProvider(
     private val client: HttpClient,
     private val settings: FireworksProviderSettings,
 ) : Provider {
-    private val compatible = createOpenAICompatible(
+    private val compatible = OpenAICompatible(
         client,
         settings.toCompatible("fireworks", FIREWORKS_VERSION),
     )
@@ -244,10 +232,6 @@ public fun Fireworks(
     settings: FireworksProviderSettings = FireworksProviderSettings(),
 ): FireworksProvider = FireworksProvider(client, settings)
 
-public fun createFireworks(
-    client: HttpClient,
-    settings: FireworksProviderSettings = FireworksProviderSettings(),
-): FireworksProvider = FireworksProvider(client, settings)
 
 @Serializable
 public data class PerplexityProviderSettings(
@@ -260,7 +244,7 @@ public class PerplexityProvider(
     client: HttpClient,
     settings: PerplexityProviderSettings,
 ) : Provider {
-    private val compatible = createOpenAICompatible(
+    private val compatible = OpenAICompatible(
         client,
         settings.toCompatible("perplexity", PERPLEXITY_VERSION, supportsStructuredOutputs = true),
     )
@@ -278,10 +262,6 @@ public fun Perplexity(
     settings: PerplexityProviderSettings = PerplexityProviderSettings(),
 ): PerplexityProvider = PerplexityProvider(client, settings)
 
-public fun createPerplexity(
-    client: HttpClient,
-    settings: PerplexityProviderSettings = PerplexityProviderSettings(),
-): PerplexityProvider = PerplexityProvider(client, settings)
 
 public typealias MoonshotAIChatModelId = String
 
@@ -303,7 +283,7 @@ public class MoonshotAIProvider(
     client: HttpClient,
     settings: MoonshotAIProviderSettings,
 ) : Provider {
-    private val compatible = createOpenAICompatible(
+    private val compatible = OpenAICompatible(
         client,
         settings.toCompatible("moonshotai", MOONSHOTAI_VERSION, includeUsage = true),
     )
@@ -321,10 +301,6 @@ public fun MoonshotAI(
     settings: MoonshotAIProviderSettings = MoonshotAIProviderSettings(),
 ): MoonshotAIProvider = MoonshotAIProvider(client, settings)
 
-public fun createMoonshotAI(
-    client: HttpClient,
-    settings: MoonshotAIProviderSettings = MoonshotAIProviderSettings(),
-): MoonshotAIProvider = MoonshotAIProvider(client, settings)
 
 @Serializable
 public data class GroqProviderSettings(
@@ -352,7 +328,7 @@ public class GroqProvider(
     client: HttpClient,
     settings: GroqProviderSettings,
 ) : Provider {
-    private val compatible = createOpenAICompatible(
+    private val compatible = OpenAICompatible(
         client,
         settings.toCompatible("groq", GROQ_VERSION, includeUsage = true),
     )
@@ -374,10 +350,6 @@ public fun Groq(
     settings: GroqProviderSettings = GroqProviderSettings(),
 ): GroqProvider = GroqProvider(client, settings)
 
-public fun createGroq(
-    client: HttpClient,
-    settings: GroqProviderSettings = GroqProviderSettings(),
-): GroqProvider = GroqProvider(client, settings)
 
 private val groqBrowserSearchTool: Tool<JsonElement, JsonElement, Any?> = ProviderExecutedTool(
     name = "browserSearch",
@@ -429,7 +401,7 @@ public class TogetherAIProvider(
     private val client: HttpClient,
     private val settings: TogetherAIProviderSettings,
 ) : Provider {
-    private val compatible = createOpenAICompatible(
+    private val compatible = OpenAICompatible(
         client,
         settings.toCompatible("togetherai", TOGETHERAI_VERSION),
     )
@@ -452,10 +424,6 @@ public fun TogetherAI(
     settings: TogetherAIProviderSettings = TogetherAIProviderSettings(),
 ): TogetherAIProvider = TogetherAIProvider(client, settings)
 
-public fun createTogetherAI(
-    client: HttpClient,
-    settings: TogetherAIProviderSettings = TogetherAIProviderSettings(),
-): TogetherAIProvider = TogetherAIProvider(client, settings)
 
 public typealias VercelChatModelId = String
 public typealias VercelErrorData = JsonElement
@@ -471,7 +439,7 @@ public class VercelProvider(
     client: HttpClient,
     settings: VercelProviderSettings,
 ) : Provider {
-    private val compatible = createOpenAICompatible(
+    private val compatible = OpenAICompatible(
         client,
         settings.toCompatible("vercel", VERCEL_VERSION),
     )
@@ -489,10 +457,6 @@ public fun Vercel(
     settings: VercelProviderSettings = VercelProviderSettings(),
 ): VercelProvider = VercelProvider(client, settings)
 
-public fun createVercel(
-    client: HttpClient,
-    settings: VercelProviderSettings = VercelProviderSettings(),
-): VercelProvider = VercelProvider(client, settings)
 
 public typealias BasetenChatModelId = String
 public typealias BasetenEmbeddingModelId = String
@@ -548,7 +512,7 @@ public class BasetenProvider(
         } else {
             modelId ?: "chat"
         }
-        return createOpenAICompatible(client, settings.toCompatible("baseten", BASETEN_VERSION, baseURL)).chatModel(resolvedModelId)
+        return OpenAICompatible(client, settings.toCompatible("baseten", BASETEN_VERSION, baseURL)).chatModel(resolvedModelId)
     }
 
     private fun createEmbeddingModel(modelId: String?): EmbeddingModel {
@@ -564,7 +528,7 @@ public class BasetenProvider(
             )
         }
         val baseURL = if (customURL.contains("/sync/v1")) customURL else "$customURL/v1"
-        return createOpenAICompatible(client, settings.toCompatible("baseten", BASETEN_VERSION, baseURL)).embeddingModel(modelId ?: "embeddings")
+        return OpenAICompatible(client, settings.toCompatible("baseten", BASETEN_VERSION, baseURL)).embeddingModel(modelId ?: "embeddings")
     }
 }
 
@@ -573,10 +537,6 @@ public fun Baseten(
     settings: BasetenProviderSettings = BasetenProviderSettings(),
 ): BasetenProvider = BasetenProvider(client, settings)
 
-public fun createBaseten(
-    client: HttpClient,
-    settings: BasetenProviderSettings = BasetenProviderSettings(),
-): BasetenProvider = BasetenProvider(client, settings)
 
 private fun DeepSeekProviderSettings.toCompatible(
     name: String,

@@ -2,7 +2,7 @@ package ai.torad.aisdk
 import ai.torad.aisdk.providers.BLACK_FOREST_LABS_VERSION
 import ai.torad.aisdk.providers.BlackForestLabsProviderSettings
 import ai.torad.aisdk.providers.blackForestLabs
-import ai.torad.aisdk.providers.createBlackForestLabs
+import ai.torad.aisdk.providers.BlackForestLabs
 
 import io.ktor.http.HttpHeaders
 import kotlinx.coroutines.test.runTest
@@ -46,7 +46,7 @@ class BlackForestLabsProviderTest {
             ),
         )
         fixture.server.start()
-        val model = createBlackForestLabs(
+        val model = BlackForestLabs(
             fixture.httpClient(),
             BlackForestLabsProviderSettings(apiKey = "bfl-key"),
         ).image("flux-pro-1.1")
@@ -134,7 +134,7 @@ class BlackForestLabsProviderTest {
             ),
         )
         fixture.server.start()
-        val model = createBlackForestLabs(
+        val model = BlackForestLabs(
             fixture.httpClient(),
             BlackForestLabsProviderSettings(apiKey = "key"),
         ).image("flux-pro-1.0-fill")
@@ -179,7 +179,7 @@ class BlackForestLabsProviderTest {
             ),
         )
         fixture.server.start()
-        val model = createBlackForestLabs(
+        val model = BlackForestLabs(
             fixture.httpClient(),
             BlackForestLabsProviderSettings(apiKey = "key"),
         ).image("flux-pro-1.1")
@@ -209,7 +209,7 @@ class BlackForestLabsProviderTest {
     @Test
     fun `default provider and unsupported model families fail explicitly`() {
         val fixture = createTestServer(mutableMapOf())
-        val provider = createBlackForestLabs(fixture.httpClient(), BlackForestLabsProviderSettings(apiKey = "key"))
+        val provider = BlackForestLabs(fixture.httpClient(), BlackForestLabsProviderSettings(apiKey = "key"))
 
         assertFailsWith<NoSuchModelError> { provider.languageModel("model") }
         assertFailsWith<NoSuchModelError> { provider.embeddingModel("embed") }

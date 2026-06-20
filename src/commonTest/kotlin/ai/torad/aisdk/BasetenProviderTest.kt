@@ -1,7 +1,7 @@
 package ai.torad.aisdk
 import ai.torad.aisdk.providers.BASETEN_VERSION
 import ai.torad.aisdk.providers.BasetenProviderSettings
-import ai.torad.aisdk.providers.createBaseten
+import ai.torad.aisdk.providers.Baseten
 
 import io.ktor.http.HttpHeaders
 import kotlinx.coroutines.test.runTest
@@ -32,7 +32,7 @@ class BasetenProviderTest {
             ),
         )
         fixture.server.start()
-        val provider = createBaseten(fixture.httpClient(), BasetenProviderSettings(apiKey = "key"))
+        val provider = Baseten(fixture.httpClient(), BasetenProviderSettings(apiKey = "key"))
 
         val result = provider.chatModel("deepseek-ai/DeepSeek-V3-0324").generate(LanguageModelCallParams(listOf(userMessage("hi"))))
 
@@ -59,7 +59,7 @@ class BasetenProviderTest {
             ),
         )
         fixture.server.start()
-        val provider = createBaseten(fixture.httpClient(), BasetenProviderSettings(apiKey = "key", modelURL = modelURL))
+        val provider = Baseten(fixture.httpClient(), BasetenProviderSettings(apiKey = "key", modelURL = modelURL))
 
         val result = provider.chatModel().generate(LanguageModelCallParams(listOf(userMessage("hi"))))
 
@@ -70,7 +70,7 @@ class BasetenProviderTest {
     @Test
     fun `chat rejects custom predict endpoints`() {
         val fixture = createTestServer(mutableMapOf())
-        val provider = createBaseten(
+        val provider = Baseten(
             fixture.httpClient(),
             BasetenProviderSettings(
                 apiKey = "key",
@@ -96,7 +96,7 @@ class BasetenProviderTest {
             ),
         )
         fixture.server.start()
-        val provider = createBaseten(fixture.httpClient(), BasetenProviderSettings(apiKey = "key", modelURL = modelURL))
+        val provider = Baseten(fixture.httpClient(), BasetenProviderSettings(apiKey = "key", modelURL = modelURL))
 
         val result = provider.embeddingModel().embed(EmbeddingModelCallParams(listOf("hello")))
 
@@ -113,16 +113,16 @@ class BasetenProviderTest {
         val fixture = createTestServer(mutableMapOf())
 
         assertFailsWith<AiSdkException> {
-            createBaseten(fixture.httpClient(), BasetenProviderSettings(apiKey = "key")).embeddingModel()
+            Baseten(fixture.httpClient(), BasetenProviderSettings(apiKey = "key")).embeddingModel()
         }
         assertFailsWith<AiSdkException> {
-            createBaseten(
+            Baseten(
                 fixture.httpClient(),
                 BasetenProviderSettings(apiKey = "key", modelURL = "https://model.example/predict"),
             ).embeddingModel()
         }
 
-        val provider = createBaseten(fixture.httpClient(), BasetenProviderSettings(apiKey = "key"))
+        val provider = Baseten(fixture.httpClient(), BasetenProviderSettings(apiKey = "key"))
         assertFailsWith<NoSuchModelError> { provider.imageModel("image") }
     }
 

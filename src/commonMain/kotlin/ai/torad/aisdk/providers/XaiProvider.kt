@@ -85,7 +85,7 @@ public class XaiProvider(
     private val client: HttpClient,
     public val settings: XaiProviderSettings,
 ) : Provider {
-    private val compatible = createOpenAICompatible(client, xaiCompatibleSettings())
+    private val compatible = OpenAICompatible(client, xaiCompatibleSettings())
 
     override val providerId: String = "xai"
     public val tools: XaiTools = xaiTools
@@ -96,7 +96,7 @@ public class XaiProvider(
         XaiChatLanguageModel(compatible.chatModel(modelId))
 
     public fun responses(modelId: XaiResponsesModelId): LanguageModel =
-        createOpenResponses(
+        OpenResponses(
             client,
             OpenResponsesProviderSettings(
                 url = "${settings.baseURL.trimEnd('/')}/responses",
@@ -444,7 +444,7 @@ private fun ImageGenerationFile.xaiDataUri(): String {
     url?.takeIf { it.isNotBlank() }?.let { return it }
     val mediaType = mediaType ?: "application/octet-stream"
     val data = base64?.takeIf { it.isNotBlank() }
-        ?: throw AiSdkRuntimeException("xAI image file must include either url or base64 data.")
+        ?: throw InvalidArgumentError("file", "xAI image file must include either url or base64 data.")
     return "data:$mediaType;base64,$data"
 }
 
@@ -610,9 +610,9 @@ private suspend fun xaiPollVideo(
         val statusValue = body["status"]?.jsonPrimitive?.contentOrNull
         val hasVideoUrl = body["video"]?.jsonObject?.get("url")?.jsonPrimitive?.contentOrNull != null
         if (statusValue == "done" || (statusValue == null && hasVideoUrl)) return status
-        if (statusValue in setOf("failed", "error")) throw AiSdkRuntimeException("xAI video generation failed: $body")
+        if (statusValue in setOf("failed", "error")) throw NoVideoGeneratedError("xAI video generation failed: $body")
     }
-    throw AiSdkRuntimeException("xAI video generation timed out after ${pollTimeoutMs}ms")
+    throw NoVideoGeneratedError("xAI video generation timed out after ${pollTimeoutMs}ms")
 }
 
 private fun xaiHeaders(settings: XaiProviderSettings, callHeaders: Map<String, String> = emptyMap()): Map<String, String> {

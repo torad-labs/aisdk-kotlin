@@ -231,9 +231,9 @@ private suspend fun assemblyAIPollTranscript(
         val body = response.value.jsonObject
         when (body["status"]?.jsonPrimitive?.contentOrNull) {
             "completed" -> return response
-            "error" -> throw AiSdkRuntimeException("Transcription failed: ${body["error"]?.jsonPrimitive?.contentOrNull ?: "Unknown error"}")
+            "error" -> throw NoTranscriptGeneratedError("Transcription failed: ${body["error"]?.jsonPrimitive?.contentOrNull ?: "Unknown error"}")
             "queued", "processing" -> if (settings.pollingIntervalMillis > 0) delay(settings.pollingIntervalMillis)
-            else -> throw AiSdkRuntimeException("AssemblyAI transcript response has unsupported status")
+            else -> throw InvalidResponseDataError(null, "AssemblyAI transcript response has unsupported status")
         }
     }
 }
