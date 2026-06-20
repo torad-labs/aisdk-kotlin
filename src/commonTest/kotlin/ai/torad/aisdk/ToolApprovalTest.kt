@@ -35,7 +35,7 @@ class ToolApprovalTest {
     @Test
     fun `needsApproval_returns_pending_then_resumes_on_approval_response`() = runTest {
         var executed = false
-        val sendTool = tool<SendInput, SendResult, Unit>(
+        val sendTool = Tool<SendInput, SendResult, Unit>(
             name = "send",
             description = "send message",
             inputSerializer = serializer(),
@@ -76,7 +76,7 @@ class ToolApprovalTest {
     @Test
     fun `needsApproval_denial_records_denial_in_message_log`() = runTest {
         var executed = false
-        val sendTool = tool<SendInput, SendResult, Unit>(
+        val sendTool = Tool<SendInput, SendResult, Unit>(
             name = "send",
             description = "send message",
             inputSerializer = serializer(),
@@ -112,7 +112,7 @@ class ToolApprovalTest {
 
     @Test
     fun `approval gate malformed input emits structured tool error`() = runTest {
-        val sendTool = tool<SendInput, SendResult, Unit>(
+        val sendTool = Tool<SendInput, SendResult, Unit>(
             name = "send",
             description = "send message",
             inputSerializer = serializer(),
@@ -142,7 +142,7 @@ class ToolApprovalTest {
     @Test
     fun `engine approval resume preserves original context for approved tool`() = runTest {
         val seenContexts = mutableListOf<String?>()
-        val sendTool = tool<SendInput, SendResult, String>(
+        val sendTool = Tool<SendInput, SendResult, String>(
             name = "send",
             description = "send message",
             inputSerializer = serializer(),

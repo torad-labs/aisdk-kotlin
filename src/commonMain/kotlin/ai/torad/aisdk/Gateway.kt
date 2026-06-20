@@ -365,13 +365,13 @@ private class GatewayRerankingModel(
 }
 
 public data class GatewayTools(
-    val parallelSearch: Tool<JsonElement, JsonElement, Any?> = providerExecutedTool(
+    val parallelSearch: Tool<JsonElement, JsonElement, Any?> = ProviderExecutedTool(
         name = "parallelSearch",
         description = "Search the web using Parallel AI's Search API for LLM-optimized excerpts.",
         inputSerializer = JsonElement.serializer(),
         outputSerializer = JsonElement.serializer(),
     ),
-    val perplexitySearch: Tool<JsonElement, JsonElement, Any?> = providerExecutedTool(
+    val perplexitySearch: Tool<JsonElement, JsonElement, Any?> = ProviderExecutedTool(
         name = "perplexitySearch",
         description = "Search the web using Perplexity's Search API for real-time information.",
         inputSerializer = JsonElement.serializer(),

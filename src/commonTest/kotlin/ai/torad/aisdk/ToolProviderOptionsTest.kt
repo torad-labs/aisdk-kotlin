@@ -15,7 +15,7 @@ class ToolProviderOptionsTest {
         val cacheControl: kotlinx.serialization.json.JsonElement =
             buildJsonObject { put("cacheControl", JsonPrimitive(true)) }
         val opts = mapOf("anthropic" to cacheControl)
-        val t = tool<Q, String, Unit>(
+        val t = Tool<Q, String, Unit>(
             name = "search",
             description = "d",
             inputSerializer = serializer(),

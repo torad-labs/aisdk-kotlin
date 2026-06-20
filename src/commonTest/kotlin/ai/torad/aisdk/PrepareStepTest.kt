@@ -47,7 +47,7 @@ class PrepareStepTest {
         val recordedStepNumbers = mutableListOf<Int>()
         val recordedActiveSubsets = mutableListOf<List<String>?>()
 
-        val ping = tool<Empty, String, Unit>(
+        val ping = Tool<Empty, String, Unit>(
             name = "ping", description = "",
             inputSerializer = serializer(), outputSerializer = serializer(),
         ) { _ -> "pong" }
@@ -121,7 +121,7 @@ class PrepareStepTest {
         assertEquals(listOf(listOf("ping")), capture.observedToolNames)
     }
 
-    private fun testTool(name: String): Tool<Empty, String, Unit> = tool(
+    private fun testTool(name: String): Tool<Empty, String, Unit> = Tool<Empty, String, Unit>(
         name = name,
         description = "",
         inputSerializer = serializer(),

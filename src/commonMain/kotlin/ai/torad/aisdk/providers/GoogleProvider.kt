@@ -2028,7 +2028,7 @@ private fun googleProviderTool(
     id: String,
     description: String,
 ): Tool<JsonElement, JsonElement, Any?> =
-    providerExecutedTool(
+    ProviderExecutedTool(
         name = name,
         description = description,
         inputSerializer = JsonElement.serializer(),

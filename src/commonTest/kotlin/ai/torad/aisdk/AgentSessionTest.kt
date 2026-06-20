@@ -34,7 +34,7 @@ class AgentSessionTest {
 
     @Test
     fun `approve re-fires the call hooks on the resumed segment`() = runTest {
-        val sendTool = tool<SendInput, SendResult, Unit>(
+        val sendTool = Tool<SendInput, SendResult, Unit>(
             name = "send",
             description = "send message",
             inputSerializer = serializer(),
@@ -70,12 +70,10 @@ class AgentSessionTest {
 
     @Test
     fun `streaming session records tool-call and tool-result parts in the message log`() = runTest {
-        val tools = toolSet<Unit> {
-            tool<WeatherInput, WeatherOutput>(
-                name = "weather",
-                description = "Get weather.",
-            ) { input -> WeatherOutput(temperature = input.city.length) }
-        }
+        val tools = toolSetOf(Tool<WeatherInput, WeatherOutput, Unit>(
+            name = "weather",
+            description = "Get weather.",
+        ) { input -> WeatherOutput(temperature = input.city.length) })
         val agent = TestToolLoopAgent<Unit, String>(
             model = mockLanguageModelToolThenText(
                 toolName = "weather",
@@ -106,13 +104,11 @@ class AgentSessionTest {
 
     @Test
     fun `streaming preserves the tool's model-visible summary rather than the full output`() = runTest {
-        val tools = toolSet<Unit> {
-            tool<WeatherInput, WeatherOutput>(
-                name = "weather",
-                description = "Get weather.",
-                toModelOutput = { _, _ -> ToolResultOutput.Text("summary") },
-            ) { input -> WeatherOutput(temperature = input.city.length) }
-        }
+        val tools = toolSetOf(Tool<WeatherInput, WeatherOutput, Unit>(
+            name = "weather",
+            description = "Get weather.",
+            toModelOutput = { _, _ -> ToolResultOutput.Text("summary") },
+        ) { input -> WeatherOutput(temperature = input.city.length) })
         val agent = TestToolLoopAgent<Unit, String>(
             model = mockLanguageModelToolThenText(
                 toolName = "weather",
@@ -165,7 +161,7 @@ class AgentSessionTest {
         val agent = TestToolLoopAgent<Unit, String>(
             model = model,
             instructions = "Be brief.",
-            tools = toolSet {},
+            tools = toolSetOf<Unit>(),
         )
         val session = agent.session(this)
 

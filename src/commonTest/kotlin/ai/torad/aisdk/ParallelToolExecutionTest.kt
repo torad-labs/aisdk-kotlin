@@ -49,7 +49,7 @@ class ParallelToolExecutionTest {
         // completing at all proves the two tools ran concurrently.
         var started = 0
         val bothStarted = CompletableDeferred<Unit>()
-        fun gatedTool(name: String) = tool<Empty, String, Unit>(
+        fun gatedTool(name: String) = Tool<Empty, String, Unit>(
             name = name,
             description = name,
             inputSerializer = serializer(),
@@ -76,7 +76,7 @@ class ParallelToolExecutionTest {
 
     @Test
     fun `maxParallelToolCalls = 1 keeps results in call order`() = runTest {
-        fun echoTool(name: String) = tool<Empty, String, Unit>(
+        fun echoTool(name: String) = Tool<Empty, String, Unit>(
             name = name,
             description = name,
             inputSerializer = serializer(),
@@ -98,7 +98,7 @@ class ParallelToolExecutionTest {
         val slowStarted = CompletableDeferred<Unit>()
         val slowRelease = CompletableDeferred<Unit>()
         val preliminarySeen = CompletableDeferred<StreamEvent.ToolResult>()
-        val fastTool = streamingTool<Empty, String, Unit>(
+        val fastTool = StreamingTool<Empty, String, Unit>(
             name = "toolA",
             description = "fast streaming tool",
             inputSerializer = serializer(),
@@ -109,7 +109,7 @@ class ParallelToolExecutionTest {
                 emit("fast-final")
             }
         }
-        val slowTool = tool<Empty, String, Unit>(
+        val slowTool = Tool<Empty, String, Unit>(
             name = "toolB",
             description = "blocked sibling",
             inputSerializer = serializer(),
@@ -154,7 +154,7 @@ class ParallelToolExecutionTest {
         val firstStarted = CompletableDeferred<Unit>()
         val firstRelease = CompletableDeferred<Unit>()
         val startOrder = mutableListOf<String>()
-        fun gatedTool(name: String) = tool<Empty, String, Unit>(
+        fun gatedTool(name: String) = Tool<Empty, String, Unit>(
             name = name,
             description = name,
             inputSerializer = serializer(),

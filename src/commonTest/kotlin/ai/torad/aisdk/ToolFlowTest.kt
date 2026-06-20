@@ -24,7 +24,7 @@ import kotlinx.serialization.serializer
  * lookahead — emissions before the last become
  * `StreamEvent.ToolResult(preliminary = true)` (UI-only), the LAST
  * emission becomes the final `ToolResult` that feeds the model on
- * subsequent turns. Single-value tools built via the `tool(...)`
+ * subsequent turns. Single-value tools built via the `Tool(...)`
  * factory keep their existing one-shot ergonomics (the factory wraps
  * the body in a one-emission flow internally).
  */
@@ -37,7 +37,7 @@ class ToolFlowTest {
         val secondEmissionReached = CompletableDeferred<Unit>()
         val completionGate = CompletableDeferred<Unit>()
         val preliminarySeen = CompletableDeferred<ExecuteToolResult.Preliminary<String>>()
-        val streamerTool = streamingTool<Empty, String, Unit>(
+        val streamerTool = StreamingTool<Empty, String, Unit>(
             name = "streamer",
             description = "emits before completion",
             inputSerializer = serializer(),
@@ -59,7 +59,7 @@ class ToolFlowTest {
         )
         val results = mutableListOf<ExecuteToolResult<String>>()
         val job = launch {
-            executeTool(streamerTool, Empty(), context).collect { result ->
+            ExecuteTool(streamerTool, Empty(), context).collect { result ->
                 results += result
                 if (result is ExecuteToolResult.Preliminary) {
                     preliminarySeen.complete(result)
@@ -110,7 +110,7 @@ class ToolFlowTest {
     fun `given a single-value tool when invoked then it emits exactly one final ToolResult with preliminary false`() =
         runTest {
             // GIVEN
-            val pingTool = tool<Empty, String, Unit>(
+            val pingTool = Tool<Empty, String, Unit>(
                 name = "ping",
                 description = "respond with pong",
                 inputSerializer = serializer(),
@@ -141,7 +141,7 @@ class ToolFlowTest {
     fun `given a streamingTool emitting three values when invoked then first two are preliminary and last is final`() =
         runTest {
             // GIVEN
-            val streamerTool = streamingTool<Empty, String, Unit>(
+            val streamerTool = StreamingTool<Empty, String, Unit>(
                 name = "streamer",
                 description = "emits 3 values",
                 inputSerializer = serializer(),
@@ -184,7 +184,7 @@ class ToolFlowTest {
     @Test
     fun `given toModelOutput when tool completes then stream carries full and model-visible output shapes`() =
         runTest {
-            val pingTool = tool<Empty, String, Unit>(
+            val pingTool = Tool<Empty, String, Unit>(
                 name = "ping",
                 description = "respond with pong",
                 inputSerializer = serializer(),
@@ -231,7 +231,7 @@ class ToolFlowTest {
     @Test
     fun `given toModelOutput error when tool completes then stream and message mark the result as error`() =
         runTest {
-            val pingTool = tool<Empty, String, Unit>(
+            val pingTool = Tool<Empty, String, Unit>(
                 name = "ping",
                 description = "respond with pong",
                 inputSerializer = serializer(),
@@ -279,7 +279,7 @@ class ToolFlowTest {
     fun `given a streamingTool emitting one value when invoked then a single final ToolResult emits`() =
         runTest {
             // GIVEN
-            val streamerTool = streamingTool<Empty, String, Unit>(
+            val streamerTool = StreamingTool<Empty, String, Unit>(
                 name = "streamer",
                 description = "one value",
                 inputSerializer = serializer(),
@@ -309,7 +309,7 @@ class ToolFlowTest {
     fun `given a streamingTool emitting zero values when invoked then ToolError fires with empty-emission message`() =
         runTest {
             // GIVEN
-            val emptyTool = streamingTool<Empty, String, Unit>(
+            val emptyTool = StreamingTool<Empty, String, Unit>(
                 name = "empty",
                 description = "emits nothing",
                 inputSerializer = serializer(),

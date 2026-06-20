@@ -35,7 +35,7 @@ class ToolLoopAgentTest {
 
     @Test
     fun `tool_call_then_final_text`() = runTest {
-        val pingTool = tool<Empty, String, Unit>(
+        val pingTool = Tool<Empty, String, Unit>(
             name = "ping",
             description = "respond with pong",
             inputSerializer = serializer(),

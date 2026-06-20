@@ -333,7 +333,7 @@ class GatewayAndProviderUtilsParityTest {
         )
 
         val executed = drainAllItems(
-            executeTool(
+            ExecuteTool(
                 executable,
                 buildJsonObject { put("query", JsonPrimitive("kmp")) },
                 ToolExecutionContext(

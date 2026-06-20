@@ -24,7 +24,7 @@ class ToolErrorWiringTest {
     @Serializable
     data class WeatherIn(val city: String)
 
-    private fun weatherTool(body: (WeatherIn) -> String) = tool<WeatherIn, String, Unit>(
+    private fun weatherTool(body: (WeatherIn) -> String) = Tool<WeatherIn, String, Unit>(
         name = "weather",
         description = "Get weather",
         inputSerializer = serializer(),

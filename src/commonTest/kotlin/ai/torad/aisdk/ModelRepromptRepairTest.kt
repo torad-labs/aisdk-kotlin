@@ -28,7 +28,7 @@ class ModelRepromptRepairTest {
 
     @Serializable data class WeatherIn(val city: String)
 
-    private val weatherTool = tool<WeatherIn, String, Unit>(
+    private val weatherTool = Tool<WeatherIn, String, Unit>(
         name = "weather",
         description = "Get weather",
         inputSerializer = serializer(),

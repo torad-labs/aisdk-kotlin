@@ -564,7 +564,7 @@ private class DefaultMCPClient(config: MCPClientConfig) : MCPClient {
             val inputSchema = selectedSchema?.inputSchema ?: schemaWithClosedAdditionalProperties(definition.inputSchema)
             val outputSchema = selectedSchema?.outputSchema
             val description = definition.description ?: definition.title ?: definition.name
-            dynamicTool<TContext>(
+            DynamicTool<TContext>(
                 name = definition.name,
                 description = description,
                 inputSchemaJson = inputSchema.toString(),

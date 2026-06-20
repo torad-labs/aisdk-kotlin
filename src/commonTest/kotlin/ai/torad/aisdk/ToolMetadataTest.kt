@@ -21,7 +21,7 @@ class ToolMetadataTest {
 
     @Test
     fun `given a tool constructed without metadata when read then metadata is empty`() {
-        val t = tool<Input, String, Unit>(
+        val t = Tool<Input, String, Unit>(
             name = "noMeta",
             description = "",
             inputSerializer = serializer(),
@@ -33,7 +33,7 @@ class ToolMetadataTest {
     @Test
     fun `given a tool constructed with metadata when read then values survive`() {
         // GIVEN — a metadata bag with arbitrary application-defined keys.
-        val t = tool<Input, String, Unit>(
+        val t = Tool<Input, String, Unit>(
             name = "tier",
             description = "",
             inputSerializer = serializer(),
@@ -52,7 +52,7 @@ class ToolMetadataTest {
     @Test
     fun `given a tool in a toolset when looked up by name then metadata flows through unchanged`() {
         // GIVEN
-        val t = tool<Input, String, Unit>(
+        val t = Tool<Input, String, Unit>(
             name = "telemetry",
             description = "",
             inputSerializer = serializer(),

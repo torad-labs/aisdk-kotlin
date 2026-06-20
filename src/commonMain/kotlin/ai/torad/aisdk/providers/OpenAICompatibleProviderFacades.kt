@@ -266,7 +266,7 @@ public fun createGroq(
     settings: GroqProviderSettings = GroqProviderSettings(),
 ): GroqProvider = DefaultGroqProvider(client, settings)
 
-private val groqBrowserSearchTool: Tool<JsonElement, JsonElement, Any?> = providerExecutedTool(
+private val groqBrowserSearchTool: Tool<JsonElement, JsonElement, Any?> = ProviderExecutedTool(
     name = "browserSearch",
     description = "Browser search tool for Groq models.",
     inputSerializer = JsonElement.serializer(),

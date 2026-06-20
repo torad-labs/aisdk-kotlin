@@ -81,7 +81,7 @@ class LifecycleHooksTest {
     @Test
     fun `tool finish hook observes typed outcome`() = runTest {
         var observed: OnToolCallFinishEvent.Outcome? = null
-        val pingTool = tool<Empty, String, Unit>(
+        val pingTool = Tool<Empty, String, Unit>(
             name = "ping",
             description = "respond with pong",
             inputSerializer = serializer(),

@@ -28,7 +28,7 @@ class TelemetryWiringTest {
     @Serializable
     private data class EchoInput(val q: String)
 
-    private fun echoTool() = tool<EchoInput, String, Unit>(
+    private fun echoTool() = Tool<EchoInput, String, Unit>(
         name = "echo",
         description = "echoes",
         inputSerializer = serializer(),
@@ -337,7 +337,7 @@ class TelemetryWiringTest {
     @Test
     fun `a failing tool reaches onToolCallFinish with an error and onError with source Tool`() = runTest {
         val rec = RecordingTelemetry()
-        val failingTool = tool<EchoInput, String, Unit>(
+        val failingTool = Tool<EchoInput, String, Unit>(
             name = "echo",
             description = "always fails",
             inputSerializer = serializer(),
@@ -361,7 +361,7 @@ class TelemetryWiringTest {
     @Test
     fun `an approval-resumed tool execution emits tool telemetry under the resumed call`() = runTest {
         val rec = RecordingTelemetry()
-        val gated = tool<EchoInput, String, Unit>(
+        val gated = Tool<EchoInput, String, Unit>(
             name = "echo",
             description = "gated echo",
             inputSerializer = serializer(),

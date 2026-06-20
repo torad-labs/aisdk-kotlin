@@ -34,6 +34,7 @@ import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.JsonObject
@@ -143,7 +144,7 @@ class FullPortFeatureParityTest {
     @Test
     fun `dynamic tools and schema wrappers expose provider-utils parity`() = runTest {
         val schema = jsonSchema<JsonObject>(buildJsonObject { put("type", JsonPrimitive("object")) })
-        val tool = dynamicTool<Unit>(
+        val tool = DynamicTool<Unit>(
             name = "runtimeTool",
             description = "runtime registered",
             inputSchemaJson = schema.jsonSchema.toString(),
@@ -158,7 +159,7 @@ class FullPortFeatureParityTest {
             messages = emptyList(),
             toolCallId = "call_1",
         )
-        val value = with(tool) { ctx.execute(buildJsonObject { put("value", JsonPrimitive("ok")) }) }
+        val value = (tool.execute(buildJsonObject { put("value", JsonPrimitive("ok")) }, ctx).first() as ToolResult.Success).value
 
         assertEquals("runtimeTool", tool.name)
         assertEquals(schema, asSchema(schema))
@@ -167,7 +168,7 @@ class FullPortFeatureParityTest {
 
     @Test
     fun `provider executed tools advertise provider execution in model descriptors`() {
-        val tool = providerExecutedTool<JsonElement, JsonElement, Unit>(
+        val tool = ProviderExecutedTool<JsonElement, JsonElement, Unit>(
             name = "webSearch",
             description = "Hosted web search",
             inputSerializer = JsonElement.serializer(),

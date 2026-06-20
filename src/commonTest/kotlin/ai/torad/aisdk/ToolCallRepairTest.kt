@@ -35,7 +35,7 @@ class ToolCallRepairTest {
         runTest {
             // GIVEN: a tool requiring `{city: String}`; the model emits
             // `{location: String}` instead.
-            val weatherTool = tool<WeatherIn, String, Unit>(
+            val weatherTool = Tool<WeatherIn, String, Unit>(
                 name = "weather",
                 description = "Get weather",
                 inputSerializer = serializer(),
@@ -77,7 +77,7 @@ class ToolCallRepairTest {
     fun `given malformed args and no repair function when invoked then the loop emits ToolError`() =
         runTest {
             // GIVEN
-            val weatherTool = tool<WeatherIn, String, Unit>(
+            val weatherTool = Tool<WeatherIn, String, Unit>(
                 name = "weather",
                 description = "Get weather",
                 inputSerializer = serializer(),
@@ -110,7 +110,7 @@ class ToolCallRepairTest {
     fun `given malformed args and a repair function returning null when invoked then the loop emits ToolError`() =
         runTest {
             // GIVEN
-            val weatherTool = tool<WeatherIn, String, Unit>(
+            val weatherTool = Tool<WeatherIn, String, Unit>(
                 name = "weather",
                 description = "Get weather",
                 inputSerializer = serializer(),
