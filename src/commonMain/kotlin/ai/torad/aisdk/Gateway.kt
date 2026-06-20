@@ -3,6 +3,8 @@ package ai.torad.aisdk
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emitAll
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.serialization.json.JsonElement
 import kotlin.time.Clock
 
@@ -258,8 +260,11 @@ private class DefaultGatewayProvider(
 ) : GatewayProvider {
     override val providerId: String = "gateway"
     override val tools: GatewayTools = GatewayTools()
-    private var pendingMetadata: GatewayFetchMetadataResponse? = null
-    private var lastFetchTime: Long = Long.MIN_VALUE
+
+    private data class MetadataCache(val response: GatewayFetchMetadataResponse, val fetchedAtMillis: Long)
+
+    private val metadataMutex = Mutex()
+    private var metadataCache: MetadataCache? = null
 
     override fun languageModel(modelId: String): LanguageModel =
         GatewayLanguageModel(modelId, settings.transport, ::requestContext)
@@ -276,19 +281,12 @@ private class DefaultGatewayProvider(
     override fun rerankingModel(modelId: String): RerankingModel =
         GatewayRerankingModel(modelId, settings.transport, ::requestContext)
 
-    override suspend fun getAvailableModels(): GatewayFetchMetadataResponse {
+    override suspend fun getAvailableModels(): GatewayFetchMetadataResponse = metadataMutex.withLock {
         val now = settings.nowMillis()
-        val cached = pendingMetadata
-        if (cached != null &&
-            settings.metadataCacheRefreshMillis > 0 &&
-            now - lastFetchTime <= settings.metadataCacheRefreshMillis
-        ) {
-            return cached
-        }
-        return settings.transport.getAvailableModels(requestContext()).also {
-            pendingMetadata = it
-            lastFetchTime = now
-        }
+        metadataCache
+            ?.takeIf { settings.metadataCacheRefreshMillis > 0 && now - it.fetchedAtMillis <= settings.metadataCacheRefreshMillis }
+            ?.response
+            ?: settings.transport.getAvailableModels(requestContext()).also { metadataCache = MetadataCache(it, now) }
     }
 
     override suspend fun getCredits(): GatewayCreditsResponse =
