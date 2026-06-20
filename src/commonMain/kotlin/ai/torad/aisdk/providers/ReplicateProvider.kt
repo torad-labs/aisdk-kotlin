@@ -29,8 +29,6 @@ public const val REPLICATE_VERSION: String = "2.0.33"
 private const val REPLICATE_DEFAULT_MAX_IMAGES_PER_CALL: Int = 1
 private const val REPLICATE_FLUX_2_MAX_IMAGES_PER_CALL: Int = 8
 
-public typealias ReplicateImageModelId = String
-public typealias ReplicateVideoModelId = String
 public typealias ReplicateImageProviderOptions = ReplicateImageModelOptions
 public typealias ReplicateVideoProviderOptions = ReplicateVideoModelOptions
 
@@ -74,11 +72,11 @@ public class ReplicateProvider(
 ) : Provider {
     override val providerId: String = "replicate"
 
-    public fun image(modelId: ReplicateImageModelId): ImageModel = ReplicateImageModel(client, settings, modelId)
-    override fun imageModel(modelId: String): ImageModel = image(modelId)
+    public fun image(modelId: ModelId): ImageModel = ReplicateImageModel(client, settings, modelId.value)
+    override fun imageModel(modelId: String): ImageModel = image(ModelId(modelId))
 
-    public fun video(modelId: ReplicateVideoModelId): VideoModel = ReplicateVideoModel(client, settings, modelId)
-    override fun videoModel(modelId: String): VideoModel = video(modelId)
+    public fun video(modelId: ModelId): VideoModel = ReplicateVideoModel(client, settings, modelId.value)
+    override fun videoModel(modelId: String): VideoModel = video(ModelId(modelId))
 
     public fun textEmbeddingModel(modelId: String): Nothing = throw NoSuchModelError(providerId, "embeddingModel", modelId)
 

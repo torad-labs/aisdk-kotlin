@@ -24,8 +24,6 @@ import kotlinx.serialization.json.jsonPrimitive
 public const val QUIVERAI_VERSION: String = "1.0.0"
 private const val QUIVERAI_MAX_IMAGES_PER_CALL: Int = 16
 
-public typealias QuiverAIImageModelId = String
-public typealias QuiverAIOperation = String
 
 @Serializable
 public data class QuiverAIImageModelOptions(
@@ -52,8 +50,8 @@ public class QuiverAIProvider(
 ) : Provider {
     override val providerId: String = "quiverai"
 
-    public fun image(modelId: QuiverAIImageModelId): ImageModel = QuiverAIImageModel(client, settings, modelId)
-    override fun imageModel(modelId: String): ImageModel = image(modelId)
+    public fun image(modelId: ModelId): ImageModel = QuiverAIImageModel(client, settings, modelId.value)
+    override fun imageModel(modelId: String): ImageModel = image(ModelId(modelId))
     override fun languageModel(modelId: String): LanguageModel = throw NoSuchModelError(providerId, "languageModel", modelId)
     override fun embeddingModel(modelId: String): EmbeddingModel = throw NoSuchModelError(providerId, "embeddingModel", modelId)
     public fun textEmbeddingModel(modelId: String): Nothing = throw NoSuchModelError(providerId, "embeddingModel", modelId)

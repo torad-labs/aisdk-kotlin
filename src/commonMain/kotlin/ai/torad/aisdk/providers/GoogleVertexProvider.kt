@@ -20,11 +20,8 @@ public const val GOOGLE_VERTEX_VERSION: String = "4.0.142"
 public typealias GoogleVertexEmbeddingModelOptions = JsonObject
 public typealias GoogleVertexImageModelOptions = JsonObject
 public typealias GoogleVertexImageProviderOptions = JsonObject
-public typealias GoogleVertexVideoModelId = String
 public typealias GoogleVertexVideoModelOptions = JsonObject
 public typealias GoogleVertexVideoProviderOptions = JsonObject
-public typealias GoogleVertexMaasModelId = String
-public typealias GoogleVertexXaiModelId = String
 
 @Serializable
 public data class GoogleVertexProviderSettings(
@@ -55,23 +52,23 @@ public class GoogleVertexProvider(
         ),
     )
 
-    public operator fun invoke(modelId: GoogleGenerativeAIModelId): LanguageModel = languageModel(modelId)
-    public fun chat(modelId: GoogleGenerativeAIModelId): LanguageModel = languageModel(modelId)
-    public fun generativeAI(modelId: GoogleGenerativeAIModelId): LanguageModel = languageModel(modelId)
+    public operator fun invoke(modelId: ModelId): LanguageModel = languageModel(modelId)
+    public fun chat(modelId: ModelId): LanguageModel = languageModel(modelId)
+    public fun generativeAI(modelId: ModelId): LanguageModel = languageModel(modelId)
 
-    public fun embedding(modelId: GoogleGenerativeAIEmbeddingModelId): EmbeddingModel = delegate.embeddingModel(modelId)
-    public fun textEmbedding(modelId: GoogleGenerativeAIEmbeddingModelId): EmbeddingModel = embedding(modelId)
-    public fun textEmbeddingModel(modelId: GoogleGenerativeAIEmbeddingModelId): EmbeddingModel = embedding(modelId)
-    public fun image(modelId: GoogleGenerativeAIImageModelId): ImageModel = delegate.imageModel(modelId)
-    public fun video(modelId: GoogleVertexVideoModelId): VideoModel = delegate.videoModel(modelId)
+    public fun embedding(modelId: ModelId): EmbeddingModel = delegate.embedding(modelId)
+    public fun textEmbedding(modelId: ModelId): EmbeddingModel = embedding(modelId)
+    public fun textEmbeddingModel(modelId: ModelId): EmbeddingModel = embedding(modelId)
+    public fun image(modelId: ModelId): ImageModel = delegate.image(modelId)
+    public fun video(modelId: ModelId): VideoModel = delegate.video(modelId)
 
     // Vertex serves files by HTTP(S) and Google Cloud Storage (gs://) — NOT the
     // generative-AI files-API/YouTube set the underlying Google model advertises.
     override fun languageModel(modelId: String): LanguageModel =
         VertexSupportedUrlsModel(delegate.languageModel(modelId))
-    override fun embeddingModel(modelId: String): EmbeddingModel = embedding(modelId)
-    override fun imageModel(modelId: String): ImageModel = image(modelId)
-    override fun videoModel(modelId: String): VideoModel = video(modelId)
+    override fun embeddingModel(modelId: String): EmbeddingModel = embedding(ModelId(modelId))
+    override fun imageModel(modelId: String): ImageModel = image(ModelId(modelId))
+    override fun videoModel(modelId: String): VideoModel = video(ModelId(modelId))
 }
 
 /** PascalCase factory — mirrors the OpenAI(...) reference pattern. */
@@ -115,9 +112,9 @@ public class GoogleVertexAnthropicProvider(
         ),
     )
 
-    public operator fun invoke(modelId: AnthropicMessagesModelId): LanguageModel = languageModel(modelId)
-    public fun chat(modelId: AnthropicMessagesModelId): LanguageModel = languageModel(modelId)
-    public fun messages(modelId: AnthropicMessagesModelId): LanguageModel = languageModel(modelId)
+    public operator fun invoke(modelId: ModelId): LanguageModel = languageModel(modelId)
+    public fun chat(modelId: ModelId): LanguageModel = languageModel(modelId)
+    public fun messages(modelId: ModelId): LanguageModel = languageModel(modelId)
     public fun textEmbeddingModel(modelId: String): Nothing = throw NoSuchModelError(providerId, "embeddingModel", modelId)
 
     override fun languageModel(modelId: String): LanguageModel = delegate.languageModel(modelId)
@@ -141,8 +138,8 @@ public class GoogleVertexMaasProvider(
         ),
     )
 
-    public operator fun invoke(modelId: GoogleVertexMaasModelId): LanguageModel = languageModel(modelId)
-    public fun chat(modelId: GoogleVertexMaasModelId): LanguageModel = languageModel(modelId)
+    public operator fun invoke(modelId: ModelId): LanguageModel = languageModel(modelId)
+    public fun chat(modelId: ModelId): LanguageModel = languageModel(modelId)
 
     override fun languageModel(modelId: String): LanguageModel = delegate.languageModel(modelId)
 }
@@ -169,9 +166,9 @@ public class GoogleVertexXaiProvider(
         ),
     )
 
-    public operator fun invoke(modelId: GoogleVertexXaiModelId): LanguageModel = languageModel(modelId)
-    public fun chat(modelId: GoogleVertexXaiModelId): LanguageModel = languageModel(modelId)
-    public fun chatModel(modelId: GoogleVertexXaiModelId): LanguageModel = languageModel(modelId)
+    public operator fun invoke(modelId: ModelId): LanguageModel = languageModel(modelId)
+    public fun chat(modelId: ModelId): LanguageModel = languageModel(modelId)
+    public fun chatModel(modelId: ModelId): LanguageModel = languageModel(modelId)
     public fun textEmbeddingModel(modelId: String): Nothing = throw NoSuchModelError(providerId, "embeddingModel", modelId)
 
     override fun languageModel(modelId: String): LanguageModel =

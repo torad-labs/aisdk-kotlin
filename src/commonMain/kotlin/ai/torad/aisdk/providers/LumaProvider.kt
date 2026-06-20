@@ -25,7 +25,6 @@ import kotlinx.serialization.json.jsonPrimitive
 
 public const val LUMA_VERSION: String = "2.0.33"
 
-public typealias LumaImageModelId = String
 public typealias LumaImageProviderOptions = LumaImageModelOptions
 
 @Serializable
@@ -49,9 +48,9 @@ public class LumaProvider(
 ) : Provider {
     override val providerId: String = "luma"
 
-    public fun image(modelId: LumaImageModelId): ImageModel = LumaImageModel(client, settings, modelId)
+    public fun image(modelId: ModelId): ImageModel = LumaImageModel(client, settings, modelId.value)
 
-    override fun imageModel(modelId: String): ImageModel = image(modelId)
+    override fun imageModel(modelId: String): ImageModel = image(ModelId(modelId))
 
     override fun languageModel(modelId: String): LanguageModel =
         throw NoSuchModelError(providerId, "language", modelId)

@@ -37,7 +37,7 @@ class LumaProviderTest {
             ),
         )
         fixture.server.start()
-        val model = Luma(fixture.httpClient(), LumaProviderSettings(apiKey = "key")).image("photon-1")
+        val model = Luma(fixture.httpClient(), LumaProviderSettings(apiKey = "key")).image(ModelId("photon-1"))
 
         val result = model.generate(
             ImageGenerationParams(
@@ -99,7 +99,7 @@ class LumaProviderTest {
             ),
         )
         fixture.server.start()
-        val model = Luma(fixture.httpClient(), LumaProviderSettings(apiKey = "key")).image("photon-flash-1")
+        val model = Luma(fixture.httpClient(), LumaProviderSettings(apiKey = "key")).image(ModelId("photon-flash-1"))
 
         model.generate(
             ImageGenerationParams(
@@ -130,7 +130,7 @@ class LumaProviderTest {
     @Test
     fun `image model rejects base64 reference files and masks`() = runTest {
         val fixture = createTestServer(mutableMapOf())
-        val model = Luma(fixture.httpClient(), LumaProviderSettings(apiKey = "key")).image("photon-1")
+        val model = Luma(fixture.httpClient(), LumaProviderSettings(apiKey = "key")).image(ModelId("photon-1"))
 
         assertFailsWith<AiSdkException> {
             model.generate(ImageGenerationParams(prompt = "x", files = listOf(ImageGenerationFile(mediaType = "image/png", base64 = "abc"))))

@@ -33,7 +33,7 @@ class KlingAIProviderTest {
                 baseURL = KLING_TEST_BASE_URL,
                 headers = mapOf("X-Provider" to "provider"),
             ),
-        ).video("kling-v2.6-t2v")
+        ).video(ModelId("kling-v2.6-t2v"))
 
         val result = model.generate(
             VideoGenerationParams(
@@ -123,7 +123,7 @@ class KlingAIProviderTest {
         val model = KlingAI(
             fixture.httpClient(),
             KlingAIProviderSettings(accessKey = "access-key", secretKey = "secret-key", baseURL = KLING_TEST_BASE_URL),
-        ).video("kling-v3.0-i2v")
+        ).video(ModelId("kling-v3.0-i2v"))
 
         model.generate(
             VideoGenerationParams(
@@ -174,7 +174,7 @@ class KlingAIProviderTest {
         val model = KlingAI(
             fixture.httpClient(),
             KlingAIProviderSettings(accessKey = "access-key", secretKey = "secret-key", baseURL = KLING_TEST_BASE_URL),
-        ).video("kling-v2.6-motion-control")
+        ).video(ModelId("kling-v2.6-motion-control"))
 
         val missing = assertFailsWith<AiSdkException> {
             model.generate(VideoGenerationParams(prompt = "missing options"))
@@ -224,7 +224,7 @@ class KlingAIProviderTest {
         assertFailsWith<NoSuchModelError> { provider.languageModel("model") }
         assertFailsWith<NoSuchModelError> { provider.embeddingModel("embed") }
         assertFailsWith<NoSuchModelError> { provider.imageModel("image") }
-        assertFailsWith<NoSuchModelError> { provider.video("unknown-model").generate(VideoGenerationParams(prompt = "x")) }
+        assertFailsWith<NoSuchModelError> { provider.video(ModelId("unknown-model")).generate(VideoGenerationParams(prompt = "x")) }
     }
 
     private fun createKlingAIFixture(endpoint: String): CreatedTestServer {

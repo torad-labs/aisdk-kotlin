@@ -30,10 +30,6 @@ import kotlin.math.ceil
 
 public const val XAI_VERSION: String = "3.0.93"
 
-public typealias XaiChatModelId = String
-public typealias XaiResponsesModelId = String
-public typealias XaiImageModelId = String
-public typealias XaiVideoModelId = String
 public typealias XaiProviderOptions = XaiLanguageModelChatOptions
 public typealias XaiResponsesProviderOptions = XaiLanguageModelResponsesOptions
 public typealias XaiImageProviderOptions = XaiImageModelOptions
@@ -91,12 +87,12 @@ public class XaiProvider(
     override val providerId: String = "xai"
     public val tools: XaiTools = xaiTools
 
-    public operator fun invoke(modelId: XaiChatModelId): LanguageModel = chat(modelId)
+    public operator fun invoke(modelId: ModelId): LanguageModel = chat(modelId)
 
-    public fun chat(modelId: XaiChatModelId): LanguageModel =
-        XaiChatLanguageModel(compatible.chatModel(modelId))
+    public fun chat(modelId: ModelId): LanguageModel =
+        XaiChatLanguageModel(compatible.chatModel(modelId.value))
 
-    public fun responses(modelId: XaiResponsesModelId): LanguageModel =
+    public fun responses(modelId: ModelId): LanguageModel =
         OpenResponses(
             client,
             OpenResponsesProviderSettings(
@@ -105,17 +101,17 @@ public class XaiProvider(
                 authHeadersProvider = { xaiHeaders(settings) },
                 userAgentSuffix = null,
             ),
-        ).responses(modelId)
+        ).responses(modelId.value)
 
-    public fun image(modelId: XaiImageModelId): ImageModel =
-        XaiImageModel(client, settings, modelId)
+    public fun image(modelId: ModelId): ImageModel =
+        XaiImageModel(client, settings, modelId.value)
 
-    public fun video(modelId: XaiVideoModelId): VideoModel =
-        XaiVideoModel(client, settings, modelId)
+    public fun video(modelId: ModelId): VideoModel =
+        XaiVideoModel(client, settings, modelId.value)
 
-    override fun languageModel(modelId: String): LanguageModel = chat(modelId)
-    override fun imageModel(modelId: String): ImageModel = image(modelId)
-    override fun videoModel(modelId: String): VideoModel = video(modelId)
+    override fun languageModel(modelId: String): LanguageModel = chat(ModelId(modelId))
+    override fun imageModel(modelId: String): ImageModel = image(ModelId(modelId))
+    override fun videoModel(modelId: String): VideoModel = video(ModelId(modelId))
     override fun embeddingModel(modelId: String): EmbeddingModel =
         throw NoSuchModelError(providerId, "embeddingModel", modelId)
     public fun textEmbeddingModel(modelId: String): Nothing = throw NoSuchModelError(providerId, "embeddingModel", modelId)

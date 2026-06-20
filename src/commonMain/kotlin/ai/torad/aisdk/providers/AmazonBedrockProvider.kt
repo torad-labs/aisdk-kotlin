@@ -19,19 +19,11 @@ import kotlinx.serialization.json.jsonPrimitive
 
 public const val AMAZON_BEDROCK_VERSION: String = "4.0.112"
 
-public typealias BedrockChatModelId = String
-public typealias BedrockEmbeddingModelId = String
-public typealias BedrockImageModelId = String
-public typealias BedrockRerankingModelId = String
 public typealias BedrockProviderOptions = JsonObject
 public typealias AmazonBedrockLanguageModelOptions = JsonObject
 public typealias AmazonBedrockEmbeddingModelOptions = JsonObject
 public typealias AmazonBedrockRerankingModelOptions = JsonObject
 public typealias BedrockRerankingOptions = JsonObject
-public typealias BedrockAnthropicModelId = String
-public typealias BedrockMantleModelId = String
-public typealias BedrockMantleChatModelId = String
-public typealias BedrockMantleResponsesModelId = String
 
 @Serializable
 public data class BedrockCredentials(
@@ -61,26 +53,26 @@ public class AmazonBedrockProvider(
     override val providerId: String = "amazon-bedrock"
     public val tools: AnthropicTools = anthropicTools
 
-    public operator fun invoke(modelId: BedrockChatModelId): LanguageModel = languageModel(modelId)
+    public operator fun invoke(modelId: ModelId): LanguageModel = languageModel(modelId)
 
     override fun languageModel(modelId: String): LanguageModel =
         BedrockChatLanguageModel(client, settings, modelId, "amazon-bedrock")
 
-    public fun embedding(modelId: BedrockEmbeddingModelId): EmbeddingModel =
-        BedrockEmbeddingModel(client, settings, modelId)
+    public fun embedding(modelId: ModelId): EmbeddingModel =
+        BedrockEmbeddingModel(client, settings, modelId.value)
 
-    public fun textEmbedding(modelId: BedrockEmbeddingModelId): EmbeddingModel = embedding(modelId)
-    public fun textEmbeddingModel(modelId: BedrockEmbeddingModelId): EmbeddingModel = embedding(modelId)
+    public fun textEmbedding(modelId: ModelId): EmbeddingModel = embedding(modelId)
+    public fun textEmbeddingModel(modelId: ModelId): EmbeddingModel = embedding(modelId)
 
-    public fun image(modelId: BedrockImageModelId): ImageModel =
-        BedrockImageModel(client, settings, modelId)
+    public fun image(modelId: ModelId): ImageModel =
+        BedrockImageModel(client, settings, modelId.value)
 
-    public fun reranking(modelId: BedrockRerankingModelId): RerankingModel =
-        BedrockRerankingModel(client, settings, modelId)
+    public fun reranking(modelId: ModelId): RerankingModel =
+        BedrockRerankingModel(client, settings, modelId.value)
 
-    override fun embeddingModel(modelId: String): EmbeddingModel = embedding(modelId)
-    override fun imageModel(modelId: String): ImageModel = image(modelId)
-    override fun rerankingModel(modelId: String): RerankingModel = reranking(modelId)
+    override fun embeddingModel(modelId: String): EmbeddingModel = embedding(ModelId(modelId))
+    override fun imageModel(modelId: String): ImageModel = image(ModelId(modelId))
+    override fun rerankingModel(modelId: String): RerankingModel = reranking(ModelId(modelId))
 }
 
 /** PascalCase factory — mirrors the OpenAI(...) reference faux-constructor. */
@@ -98,7 +90,7 @@ public class BedrockAnthropicProvider(
     override val providerId: String = "bedrock.anthropic"
     public val tools: AnthropicTools = anthropicTools
 
-    public operator fun invoke(modelId: BedrockAnthropicModelId): LanguageModel = languageModel(modelId)
+    public operator fun invoke(modelId: ModelId): LanguageModel = languageModel(modelId)
 
     override fun languageModel(modelId: String): LanguageModel =
         BedrockChatLanguageModel(client, settings, modelId, "bedrock.anthropic.messages")
@@ -120,15 +112,15 @@ public class BedrockMantleProvider(
 ) : Provider {
     override val providerId: String = "bedrock-mantle"
 
-    public operator fun invoke(modelId: BedrockMantleChatModelId): LanguageModel = chat(modelId)
+    public operator fun invoke(modelId: ModelId): LanguageModel = chat(modelId)
 
-    override fun languageModel(modelId: String): LanguageModel = chat(modelId)
+    override fun languageModel(modelId: String): LanguageModel = chat(ModelId(modelId))
 
-    public fun chat(modelId: BedrockMantleChatModelId): LanguageModel =
-        BedrockMantleChatLanguageModel(client, settings, modelId, "bedrock-mantle.chat", "/chat/completions")
+    public fun chat(modelId: ModelId): LanguageModel =
+        BedrockMantleChatLanguageModel(client, settings, modelId.value, "bedrock-mantle.chat", "/chat/completions")
 
-    public fun responses(modelId: BedrockMantleResponsesModelId): LanguageModel =
-        BedrockMantleChatLanguageModel(client, settings, modelId, "bedrock-mantle.responses", "/responses")
+    public fun responses(modelId: ModelId): LanguageModel =
+        BedrockMantleChatLanguageModel(client, settings, modelId.value, "bedrock-mantle.responses", "/responses")
 
     public fun textEmbeddingModel(modelId: String): Nothing = throw NoSuchModelError(providerId, "embeddingModel", modelId)
 }

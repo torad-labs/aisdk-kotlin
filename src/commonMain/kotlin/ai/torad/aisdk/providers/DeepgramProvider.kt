@@ -28,8 +28,6 @@ import kotlinx.serialization.json.jsonPrimitive
 
 public const val DEEPGRAM_VERSION: String = "2.0.33"
 
-public typealias DeepgramSpeechModelId = String
-public typealias DeepgramTranscriptionModelId = String
 public typealias DeepgramSpeechCallOptions = DeepgramSpeechModelOptions
 
 @Serializable
@@ -78,21 +76,21 @@ public class DeepgramProvider(
 ) : Provider {
     override val providerId: String = "deepgram"
 
-    public operator fun invoke(modelId: DeepgramTranscriptionModelId = "nova-3"): TranscriptionModel = transcription(modelId)
+    public operator fun invoke(modelId: ModelId = ModelId("nova-3")): TranscriptionModel = transcription(modelId)
 
-    public fun transcription(modelId: DeepgramTranscriptionModelId): TranscriptionModel =
-        DeepgramTranscriptionModel(client, settings, modelId)
+    public fun transcription(modelId: ModelId): TranscriptionModel =
+        DeepgramTranscriptionModel(client, settings, modelId.value)
 
-    public fun speech(modelId: DeepgramSpeechModelId): SpeechModel =
-        DeepgramSpeechModel(client, settings, modelId)
+    public fun speech(modelId: ModelId): SpeechModel =
+        DeepgramSpeechModel(client, settings, modelId.value)
 
     public fun textEmbeddingModel(modelId: String): Nothing = throw NoSuchModelError(providerId, "embeddingModel", modelId)
 
     override fun languageModel(modelId: String): LanguageModel = throw NoSuchModelError(providerId, "languageModel", modelId)
     override fun embeddingModel(modelId: String): EmbeddingModel = throw NoSuchModelError(providerId, "embeddingModel", modelId)
     override fun imageModel(modelId: String): ImageModel = throw NoSuchModelError(providerId, "imageModel", modelId)
-    override fun transcriptionModel(modelId: String): TranscriptionModel = transcription(modelId)
-    override fun speechModel(modelId: String): SpeechModel = speech(modelId)
+    override fun transcriptionModel(modelId: String): TranscriptionModel = transcription(ModelId(modelId))
+    override fun speechModel(modelId: String): SpeechModel = speech(ModelId(modelId))
 }
 
 /** PascalCase factory — mirrors the OpenAI(...) reference pattern. */

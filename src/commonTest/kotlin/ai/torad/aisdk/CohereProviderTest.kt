@@ -79,7 +79,7 @@ class CohereProviderTest {
         )
         val documentBase64 = Base64Codec.encode("Paris document".encodeToByteArray())
 
-        val result = provider("command-r-plus").generate(
+        val result = provider(ModelId("command-r-plus")).generate(
             LanguageModelCallParams(
                 messages = listOf(
                     systemMessage("Use documents when available."),
@@ -133,7 +133,7 @@ class CohereProviderTest {
             ),
         )
 
-        assertEquals("cohere.chat", provider("command-r-plus").provider)
+        assertEquals("cohere.chat", provider(ModelId("command-r-plus")).provider)
         assertEquals("Use the lookup tool.", result.text)
         assertEquals(FinishReason.ToolCalls, result.finishReason)
         assertEquals("TOOL_CALL", result.rawFinishReason)
@@ -213,7 +213,7 @@ class CohereProviderTest {
             CohereProviderSettings(apiKey = "key", baseURL = "https://cohere.test/v2"),
         )
 
-        val result = provider.embedding("embed-v4.0").embed(
+        val result = provider.embedding(ModelId("embed-v4.0")).embed(
             EmbeddingModelCallParams(
                 values = listOf("alpha", "beta"),
                 truncate = false,
@@ -229,10 +229,10 @@ class CohereProviderTest {
         )
 
         assertEquals("cohere.textEmbedding", provider.embeddingModel("embed-v4.0").provider)
-        assertEquals(96, provider.embedding("embed-v4.0").maxEmbeddingsPerCall)
-        assertEquals(true, provider.embedding("embed-v4.0").supportsParallelCalls)
-        assertEquals(provider.embedding("embed-v4.0").modelId, provider.textEmbedding("embed-v4.0").modelId)
-        assertEquals(provider.embedding("embed-v4.0").modelId, provider.textEmbeddingModel("embed-v4.0").modelId)
+        assertEquals(96, provider.embedding(ModelId("embed-v4.0")).maxEmbeddingsPerCall)
+        assertEquals(true, provider.embedding(ModelId("embed-v4.0")).supportsParallelCalls)
+        assertEquals(provider.embedding(ModelId("embed-v4.0")).modelId, provider.textEmbedding(ModelId("embed-v4.0")).modelId)
+        assertEquals(provider.embedding(ModelId("embed-v4.0")).modelId, provider.textEmbeddingModel(ModelId("embed-v4.0")).modelId)
         assertEquals(listOf(listOf(0.1f, 0.2f), listOf(0.3f, 0.4f)), result.embeddings)
         assertEquals(10, result.usage.tokens)
         assertEquals("embed-1", result.response.id)
@@ -274,7 +274,7 @@ class CohereProviderTest {
         val model = Cohere(
             fixture.httpClient(),
             CohereProviderSettings(apiKey = "key", baseURL = "https://cohere.test/v2"),
-        ).reranking("rerank-v3.5")
+        ).reranking(ModelId("rerank-v3.5"))
 
         val result = model.rerank(
             RerankingParams(
@@ -384,7 +384,7 @@ class CohereProviderTest {
         assertFailsWith<NoSuchModelError> { provider.imageModel("image") }
 
         val unsupportedFile = assertFailsWith<InvalidArgumentError> {
-            provider("command-r").generate(
+            provider(ModelId("command-r")).generate(
                 LanguageModelCallParams(
                     messages = listOf(
                         ModelMessage(

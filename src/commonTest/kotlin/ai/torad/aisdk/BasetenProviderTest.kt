@@ -34,10 +34,10 @@ class BasetenProviderTest {
         fixture.server.start()
         val provider = Baseten(fixture.httpClient(), BasetenProviderSettings(apiKey = "key"))
 
-        val result = provider.chatModel("deepseek-ai/DeepSeek-V3-0324").generate(LanguageModelCallParams(listOf(userMessage("hi"))))
+        val result = provider.chatModel(ModelId("deepseek-ai/DeepSeek-V3-0324")).generate(LanguageModelCallParams(listOf(userMessage("hi"))))
 
         assertEquals("ok", result.text)
-        assertEquals("baseten.chat", provider.chatModel("deepseek-ai/DeepSeek-V3-0324").provider)
+        assertEquals("baseten.chat", provider.chatModel(ModelId("deepseek-ai/DeepSeek-V3-0324")).provider)
         val call = fixture.calls.single()
         assertEquals("Bearer key", call.requestHeaders.headerValue(HttpHeaders.Authorization))
         assertTrue(call.requestUserAgent.orEmpty().contains("ai-sdk/baseten/$BASETEN_VERSION"))

@@ -69,7 +69,7 @@ class FalProviderTest {
             ),
         )
 
-        val result = provider.image("fal-ai/qwen-image").generate(
+        val result = provider.image(ModelId("fal-ai/qwen-image")).generate(
             ImageGenerationParams(
                 prompt = "A clean product render",
                 n = 1,
@@ -153,7 +153,7 @@ class FalProviderTest {
         fixture.server.start()
         val provider = Fal(fixture.httpClient(), FalProviderSettings(apiKey = "key"))
 
-        val result = provider.speech("fal-ai/minimax/speech-02-hd").generate(
+        val result = provider.speech(ModelId("fal-ai/minimax/speech-02-hd")).generate(
             SpeechGenerationParams(
                 text = "Hello from the AI SDK!",
                 voice = "voice-1",
@@ -222,7 +222,7 @@ class FalProviderTest {
             FalProviderSettings(apiKey = "key", transcriptionPollIntervalMillis = 0),
         )
 
-        val result = provider.transcription("wizper").transcribe(
+        val result = provider.transcription(ModelId("wizper")).transcribe(
             TranscriptionParams(
                 audio = AudioSource("audio/wav", "YXVkaW8=", "clip.wav"),
                 language = "pt",
@@ -306,7 +306,7 @@ class FalProviderTest {
             FalProviderSettings(apiKey = "key", videoPollIntervalMillis = 10),
         )
 
-        val result = provider.video("fal-ai/luma-dream-machine").generate(
+        val result = provider.video(ModelId("fal-ai/luma-dream-machine")).generate(
             VideoGenerationParams(
                 prompt = "A futuristic city",
                 image = GeneratedFile("image/png", "aW1hZ2U="),

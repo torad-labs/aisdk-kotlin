@@ -1898,35 +1898,35 @@ public final class ai/torad/aisdk/GatewayPricing {
 }
 
 public abstract interface class ai/torad/aisdk/GatewayProvider : ai/torad/aisdk/Provider {
-	public fun chat (Ljava/lang/String;)Lai/torad/aisdk/LanguageModel;
-	public fun embedding (Ljava/lang/String;)Lai/torad/aisdk/EmbeddingModel;
+	public fun chat-tDyRgq0 (Ljava/lang/String;)Lai/torad/aisdk/LanguageModel;
+	public fun embedding-tDyRgq0 (Ljava/lang/String;)Lai/torad/aisdk/EmbeddingModel;
 	public abstract fun getAvailableModels (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public abstract fun getCredits (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public abstract fun getGenerationInfo (Lai/torad/aisdk/GatewayGenerationInfoParams;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public abstract fun getSettings ()Lai/torad/aisdk/GatewayProviderSettings;
 	public abstract fun getSpendReport (Lai/torad/aisdk/GatewaySpendReportParams;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public abstract fun getTools ()Lai/torad/aisdk/GatewayTools;
-	public fun image (Ljava/lang/String;)Lai/torad/aisdk/ImageModel;
-	public fun invoke (Ljava/lang/String;)Lai/torad/aisdk/LanguageModel;
-	public fun reranking (Ljava/lang/String;)Lai/torad/aisdk/RerankingModel;
-	public fun textEmbeddingModel (Ljava/lang/String;)Lai/torad/aisdk/EmbeddingModel;
-	public fun video (Ljava/lang/String;)Lai/torad/aisdk/VideoModel;
+	public fun image-tDyRgq0 (Ljava/lang/String;)Lai/torad/aisdk/ImageModel;
+	public fun invoke-tDyRgq0 (Ljava/lang/String;)Lai/torad/aisdk/LanguageModel;
+	public fun reranking-tDyRgq0 (Ljava/lang/String;)Lai/torad/aisdk/RerankingModel;
+	public fun textEmbeddingModel-tDyRgq0 (Ljava/lang/String;)Lai/torad/aisdk/EmbeddingModel;
+	public fun video-tDyRgq0 (Ljava/lang/String;)Lai/torad/aisdk/VideoModel;
 }
 
 public final class ai/torad/aisdk/GatewayProvider$DefaultImpls {
-	public static fun chat (Lai/torad/aisdk/GatewayProvider;Ljava/lang/String;)Lai/torad/aisdk/LanguageModel;
-	public static fun embedding (Lai/torad/aisdk/GatewayProvider;Ljava/lang/String;)Lai/torad/aisdk/EmbeddingModel;
+	public static fun chat-tDyRgq0 (Lai/torad/aisdk/GatewayProvider;Ljava/lang/String;)Lai/torad/aisdk/LanguageModel;
+	public static fun embedding-tDyRgq0 (Lai/torad/aisdk/GatewayProvider;Ljava/lang/String;)Lai/torad/aisdk/EmbeddingModel;
 	public static fun embeddingModel (Lai/torad/aisdk/GatewayProvider;Ljava/lang/String;)Lai/torad/aisdk/EmbeddingModel;
-	public static fun image (Lai/torad/aisdk/GatewayProvider;Ljava/lang/String;)Lai/torad/aisdk/ImageModel;
+	public static fun image-tDyRgq0 (Lai/torad/aisdk/GatewayProvider;Ljava/lang/String;)Lai/torad/aisdk/ImageModel;
 	public static fun imageModel (Lai/torad/aisdk/GatewayProvider;Ljava/lang/String;)Lai/torad/aisdk/ImageModel;
-	public static fun invoke (Lai/torad/aisdk/GatewayProvider;Ljava/lang/String;)Lai/torad/aisdk/LanguageModel;
+	public static fun invoke-tDyRgq0 (Lai/torad/aisdk/GatewayProvider;Ljava/lang/String;)Lai/torad/aisdk/LanguageModel;
 	public static fun languageModel (Lai/torad/aisdk/GatewayProvider;Ljava/lang/String;)Lai/torad/aisdk/LanguageModel;
-	public static fun reranking (Lai/torad/aisdk/GatewayProvider;Ljava/lang/String;)Lai/torad/aisdk/RerankingModel;
+	public static fun reranking-tDyRgq0 (Lai/torad/aisdk/GatewayProvider;Ljava/lang/String;)Lai/torad/aisdk/RerankingModel;
 	public static fun rerankingModel (Lai/torad/aisdk/GatewayProvider;Ljava/lang/String;)Lai/torad/aisdk/RerankingModel;
 	public static fun speechModel (Lai/torad/aisdk/GatewayProvider;Ljava/lang/String;)Lai/torad/aisdk/SpeechModel;
-	public static fun textEmbeddingModel (Lai/torad/aisdk/GatewayProvider;Ljava/lang/String;)Lai/torad/aisdk/EmbeddingModel;
+	public static fun textEmbeddingModel-tDyRgq0 (Lai/torad/aisdk/GatewayProvider;Ljava/lang/String;)Lai/torad/aisdk/EmbeddingModel;
 	public static fun transcriptionModel (Lai/torad/aisdk/GatewayProvider;Ljava/lang/String;)Lai/torad/aisdk/TranscriptionModel;
-	public static fun video (Lai/torad/aisdk/GatewayProvider;Ljava/lang/String;)Lai/torad/aisdk/VideoModel;
+	public static fun video-tDyRgq0 (Lai/torad/aisdk/GatewayProvider;Ljava/lang/String;)Lai/torad/aisdk/VideoModel;
 	public static fun videoModel (Lai/torad/aisdk/GatewayProvider;Ljava/lang/String;)Lai/torad/aisdk/VideoModel;
 }
 
@@ -2106,45 +2106,45 @@ public final class ai/torad/aisdk/GatewayTools {
 }
 
 public abstract interface class ai/torad/aisdk/GatewayTransport {
-	public fun embed (Lai/torad/aisdk/GatewayRequestContext;Ljava/lang/String;Lai/torad/aisdk/EmbeddingModelCallParams;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
-	public fun generateImage (Lai/torad/aisdk/GatewayRequestContext;Ljava/lang/String;Lai/torad/aisdk/ImageGenerationParams;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
-	public fun generateText (Lai/torad/aisdk/GatewayRequestContext;Ljava/lang/String;Lai/torad/aisdk/LanguageModelCallParams;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
-	public fun generateVideo (Lai/torad/aisdk/GatewayRequestContext;Ljava/lang/String;Lai/torad/aisdk/VideoGenerationParams;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public fun embed-vGZ__7U (Lai/torad/aisdk/GatewayRequestContext;Ljava/lang/String;Lai/torad/aisdk/EmbeddingModelCallParams;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public fun generateImage-vGZ__7U (Lai/torad/aisdk/GatewayRequestContext;Ljava/lang/String;Lai/torad/aisdk/ImageGenerationParams;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public fun generateText-vGZ__7U (Lai/torad/aisdk/GatewayRequestContext;Ljava/lang/String;Lai/torad/aisdk/LanguageModelCallParams;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public fun generateVideo-vGZ__7U (Lai/torad/aisdk/GatewayRequestContext;Ljava/lang/String;Lai/torad/aisdk/VideoGenerationParams;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public fun getAvailableModels (Lai/torad/aisdk/GatewayRequestContext;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public fun getCredits (Lai/torad/aisdk/GatewayRequestContext;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public fun getGenerationInfo (Lai/torad/aisdk/GatewayRequestContext;Lai/torad/aisdk/GatewayGenerationInfoParams;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public fun getSpendReport (Lai/torad/aisdk/GatewayRequestContext;Lai/torad/aisdk/GatewaySpendReportParams;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
-	public fun rerank (Lai/torad/aisdk/GatewayRequestContext;Ljava/lang/String;Lai/torad/aisdk/RerankingParams;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
-	public fun streamText (Lai/torad/aisdk/GatewayRequestContext;Ljava/lang/String;Lai/torad/aisdk/LanguageModelCallParams;)Lkotlinx/coroutines/flow/Flow;
+	public fun rerank-vGZ__7U (Lai/torad/aisdk/GatewayRequestContext;Ljava/lang/String;Lai/torad/aisdk/RerankingParams;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public fun streamText-7ta_rok (Lai/torad/aisdk/GatewayRequestContext;Ljava/lang/String;Lai/torad/aisdk/LanguageModelCallParams;)Lkotlinx/coroutines/flow/Flow;
 }
 
 public final class ai/torad/aisdk/GatewayTransport$DefaultImpls {
-	public static fun embed (Lai/torad/aisdk/GatewayTransport;Lai/torad/aisdk/GatewayRequestContext;Ljava/lang/String;Lai/torad/aisdk/EmbeddingModelCallParams;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
-	public static fun generateImage (Lai/torad/aisdk/GatewayTransport;Lai/torad/aisdk/GatewayRequestContext;Ljava/lang/String;Lai/torad/aisdk/ImageGenerationParams;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
-	public static fun generateText (Lai/torad/aisdk/GatewayTransport;Lai/torad/aisdk/GatewayRequestContext;Ljava/lang/String;Lai/torad/aisdk/LanguageModelCallParams;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
-	public static fun generateVideo (Lai/torad/aisdk/GatewayTransport;Lai/torad/aisdk/GatewayRequestContext;Ljava/lang/String;Lai/torad/aisdk/VideoGenerationParams;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public static fun embed-vGZ__7U (Lai/torad/aisdk/GatewayTransport;Lai/torad/aisdk/GatewayRequestContext;Ljava/lang/String;Lai/torad/aisdk/EmbeddingModelCallParams;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public static fun generateImage-vGZ__7U (Lai/torad/aisdk/GatewayTransport;Lai/torad/aisdk/GatewayRequestContext;Ljava/lang/String;Lai/torad/aisdk/ImageGenerationParams;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public static fun generateText-vGZ__7U (Lai/torad/aisdk/GatewayTransport;Lai/torad/aisdk/GatewayRequestContext;Ljava/lang/String;Lai/torad/aisdk/LanguageModelCallParams;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public static fun generateVideo-vGZ__7U (Lai/torad/aisdk/GatewayTransport;Lai/torad/aisdk/GatewayRequestContext;Ljava/lang/String;Lai/torad/aisdk/VideoGenerationParams;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public static fun getAvailableModels (Lai/torad/aisdk/GatewayTransport;Lai/torad/aisdk/GatewayRequestContext;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public static fun getCredits (Lai/torad/aisdk/GatewayTransport;Lai/torad/aisdk/GatewayRequestContext;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public static fun getGenerationInfo (Lai/torad/aisdk/GatewayTransport;Lai/torad/aisdk/GatewayRequestContext;Lai/torad/aisdk/GatewayGenerationInfoParams;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public static fun getSpendReport (Lai/torad/aisdk/GatewayTransport;Lai/torad/aisdk/GatewayRequestContext;Lai/torad/aisdk/GatewaySpendReportParams;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
-	public static fun rerank (Lai/torad/aisdk/GatewayTransport;Lai/torad/aisdk/GatewayRequestContext;Ljava/lang/String;Lai/torad/aisdk/RerankingParams;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
-	public static fun streamText (Lai/torad/aisdk/GatewayTransport;Lai/torad/aisdk/GatewayRequestContext;Ljava/lang/String;Lai/torad/aisdk/LanguageModelCallParams;)Lkotlinx/coroutines/flow/Flow;
+	public static fun rerank-vGZ__7U (Lai/torad/aisdk/GatewayTransport;Lai/torad/aisdk/GatewayRequestContext;Ljava/lang/String;Lai/torad/aisdk/RerankingParams;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public static fun streamText-7ta_rok (Lai/torad/aisdk/GatewayTransport;Lai/torad/aisdk/GatewayRequestContext;Ljava/lang/String;Lai/torad/aisdk/LanguageModelCallParams;)Lkotlinx/coroutines/flow/Flow;
 }
 
 public final class ai/torad/aisdk/GatewayTransportNotConfigured : ai/torad/aisdk/GatewayTransport {
 	public static final field INSTANCE Lai/torad/aisdk/GatewayTransportNotConfigured;
-	public fun embed (Lai/torad/aisdk/GatewayRequestContext;Ljava/lang/String;Lai/torad/aisdk/EmbeddingModelCallParams;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public fun embed-vGZ__7U (Lai/torad/aisdk/GatewayRequestContext;Ljava/lang/String;Lai/torad/aisdk/EmbeddingModelCallParams;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public fun equals (Ljava/lang/Object;)Z
-	public fun generateImage (Lai/torad/aisdk/GatewayRequestContext;Ljava/lang/String;Lai/torad/aisdk/ImageGenerationParams;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
-	public fun generateText (Lai/torad/aisdk/GatewayRequestContext;Ljava/lang/String;Lai/torad/aisdk/LanguageModelCallParams;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
-	public fun generateVideo (Lai/torad/aisdk/GatewayRequestContext;Ljava/lang/String;Lai/torad/aisdk/VideoGenerationParams;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public fun generateImage-vGZ__7U (Lai/torad/aisdk/GatewayRequestContext;Ljava/lang/String;Lai/torad/aisdk/ImageGenerationParams;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public fun generateText-vGZ__7U (Lai/torad/aisdk/GatewayRequestContext;Ljava/lang/String;Lai/torad/aisdk/LanguageModelCallParams;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public fun generateVideo-vGZ__7U (Lai/torad/aisdk/GatewayRequestContext;Ljava/lang/String;Lai/torad/aisdk/VideoGenerationParams;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public fun getAvailableModels (Lai/torad/aisdk/GatewayRequestContext;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public fun getCredits (Lai/torad/aisdk/GatewayRequestContext;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public fun getGenerationInfo (Lai/torad/aisdk/GatewayRequestContext;Lai/torad/aisdk/GatewayGenerationInfoParams;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public fun getSpendReport (Lai/torad/aisdk/GatewayRequestContext;Lai/torad/aisdk/GatewaySpendReportParams;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public fun hashCode ()I
-	public fun rerank (Lai/torad/aisdk/GatewayRequestContext;Ljava/lang/String;Lai/torad/aisdk/RerankingParams;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
-	public fun streamText (Lai/torad/aisdk/GatewayRequestContext;Ljava/lang/String;Lai/torad/aisdk/LanguageModelCallParams;)Lkotlinx/coroutines/flow/Flow;
+	public fun rerank-vGZ__7U (Lai/torad/aisdk/GatewayRequestContext;Ljava/lang/String;Lai/torad/aisdk/RerankingParams;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public fun streamText-7ta_rok (Lai/torad/aisdk/GatewayRequestContext;Ljava/lang/String;Lai/torad/aisdk/LanguageModelCallParams;)Lkotlinx/coroutines/flow/Flow;
 	public fun toString ()Ljava/lang/String;
 }
 
@@ -2889,16 +2889,16 @@ public final class ai/torad/aisdk/KotlinApiKt {
 public final class ai/torad/aisdk/KtorGatewayTransport : ai/torad/aisdk/GatewayTransport {
 	public fun <init> (Lio/ktor/client/HttpClient;Lkotlinx/serialization/json/Json;)V
 	public synthetic fun <init> (Lio/ktor/client/HttpClient;Lkotlinx/serialization/json/Json;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public fun embed (Lai/torad/aisdk/GatewayRequestContext;Ljava/lang/String;Lai/torad/aisdk/EmbeddingModelCallParams;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
-	public fun generateImage (Lai/torad/aisdk/GatewayRequestContext;Ljava/lang/String;Lai/torad/aisdk/ImageGenerationParams;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
-	public fun generateText (Lai/torad/aisdk/GatewayRequestContext;Ljava/lang/String;Lai/torad/aisdk/LanguageModelCallParams;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
-	public fun generateVideo (Lai/torad/aisdk/GatewayRequestContext;Ljava/lang/String;Lai/torad/aisdk/VideoGenerationParams;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public fun embed-vGZ__7U (Lai/torad/aisdk/GatewayRequestContext;Ljava/lang/String;Lai/torad/aisdk/EmbeddingModelCallParams;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public fun generateImage-vGZ__7U (Lai/torad/aisdk/GatewayRequestContext;Ljava/lang/String;Lai/torad/aisdk/ImageGenerationParams;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public fun generateText-vGZ__7U (Lai/torad/aisdk/GatewayRequestContext;Ljava/lang/String;Lai/torad/aisdk/LanguageModelCallParams;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public fun generateVideo-vGZ__7U (Lai/torad/aisdk/GatewayRequestContext;Ljava/lang/String;Lai/torad/aisdk/VideoGenerationParams;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public fun getAvailableModels (Lai/torad/aisdk/GatewayRequestContext;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public fun getCredits (Lai/torad/aisdk/GatewayRequestContext;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public fun getGenerationInfo (Lai/torad/aisdk/GatewayRequestContext;Lai/torad/aisdk/GatewayGenerationInfoParams;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public fun getSpendReport (Lai/torad/aisdk/GatewayRequestContext;Lai/torad/aisdk/GatewaySpendReportParams;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
-	public fun rerank (Lai/torad/aisdk/GatewayRequestContext;Ljava/lang/String;Lai/torad/aisdk/RerankingParams;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
-	public fun streamText (Lai/torad/aisdk/GatewayRequestContext;Ljava/lang/String;Lai/torad/aisdk/LanguageModelCallParams;)Lkotlinx/coroutines/flow/Flow;
+	public fun rerank-vGZ__7U (Lai/torad/aisdk/GatewayRequestContext;Ljava/lang/String;Lai/torad/aisdk/RerankingParams;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public fun streamText-7ta_rok (Lai/torad/aisdk/GatewayRequestContext;Ljava/lang/String;Lai/torad/aisdk/LanguageModelCallParams;)Lkotlinx/coroutines/flow/Flow;
 }
 
 public final class ai/torad/aisdk/KtorGatewayTransportKt {
@@ -7715,17 +7715,17 @@ public final class ai/torad/aisdk/providers/AlibabaLanguageModelOptions$Companio
 
 public final class ai/torad/aisdk/providers/AlibabaProvider : ai/torad/aisdk/Provider {
 	public fun <init> (Lio/ktor/client/HttpClient;Lai/torad/aisdk/providers/AlibabaProviderSettings;)V
-	public final fun chatModel (Ljava/lang/String;)Lai/torad/aisdk/LanguageModel;
+	public final fun chatModel-tDyRgq0 (Ljava/lang/String;)Lai/torad/aisdk/LanguageModel;
 	public fun embeddingModel (Ljava/lang/String;)Lai/torad/aisdk/EmbeddingModel;
 	public fun getProviderId ()Ljava/lang/String;
 	public final fun getSettings ()Lai/torad/aisdk/providers/AlibabaProviderSettings;
 	public fun imageModel (Ljava/lang/String;)Lai/torad/aisdk/ImageModel;
-	public final fun invoke (Ljava/lang/String;)Lai/torad/aisdk/LanguageModel;
+	public final fun invoke-tDyRgq0 (Ljava/lang/String;)Lai/torad/aisdk/LanguageModel;
 	public fun languageModel (Ljava/lang/String;)Lai/torad/aisdk/LanguageModel;
 	public fun rerankingModel (Ljava/lang/String;)Lai/torad/aisdk/RerankingModel;
 	public fun speechModel (Ljava/lang/String;)Lai/torad/aisdk/SpeechModel;
 	public fun transcriptionModel (Ljava/lang/String;)Lai/torad/aisdk/TranscriptionModel;
-	public final fun video (Ljava/lang/String;)Lai/torad/aisdk/VideoModel;
+	public final fun video-tDyRgq0 (Ljava/lang/String;)Lai/torad/aisdk/VideoModel;
 	public fun videoModel (Ljava/lang/String;)Lai/torad/aisdk/VideoModel;
 }
 
@@ -7821,20 +7821,20 @@ public final class ai/torad/aisdk/providers/AlibabaVideoModelOptions$Companion {
 
 public final class ai/torad/aisdk/providers/AmazonBedrockProvider : ai/torad/aisdk/Provider {
 	public fun <init> (Lio/ktor/client/HttpClient;Lai/torad/aisdk/providers/AmazonBedrockProviderSettings;)V
-	public final fun embedding (Ljava/lang/String;)Lai/torad/aisdk/EmbeddingModel;
+	public final fun embedding-tDyRgq0 (Ljava/lang/String;)Lai/torad/aisdk/EmbeddingModel;
 	public fun embeddingModel (Ljava/lang/String;)Lai/torad/aisdk/EmbeddingModel;
 	public fun getProviderId ()Ljava/lang/String;
 	public final fun getSettings ()Lai/torad/aisdk/providers/AmazonBedrockProviderSettings;
 	public final fun getTools ()Lai/torad/aisdk/providers/AnthropicTools;
-	public final fun image (Ljava/lang/String;)Lai/torad/aisdk/ImageModel;
+	public final fun image-tDyRgq0 (Ljava/lang/String;)Lai/torad/aisdk/ImageModel;
 	public fun imageModel (Ljava/lang/String;)Lai/torad/aisdk/ImageModel;
-	public final fun invoke (Ljava/lang/String;)Lai/torad/aisdk/LanguageModel;
+	public final fun invoke-tDyRgq0 (Ljava/lang/String;)Lai/torad/aisdk/LanguageModel;
 	public fun languageModel (Ljava/lang/String;)Lai/torad/aisdk/LanguageModel;
-	public final fun reranking (Ljava/lang/String;)Lai/torad/aisdk/RerankingModel;
+	public final fun reranking-tDyRgq0 (Ljava/lang/String;)Lai/torad/aisdk/RerankingModel;
 	public fun rerankingModel (Ljava/lang/String;)Lai/torad/aisdk/RerankingModel;
 	public fun speechModel (Ljava/lang/String;)Lai/torad/aisdk/SpeechModel;
-	public final fun textEmbedding (Ljava/lang/String;)Lai/torad/aisdk/EmbeddingModel;
-	public final fun textEmbeddingModel (Ljava/lang/String;)Lai/torad/aisdk/EmbeddingModel;
+	public final fun textEmbedding-tDyRgq0 (Ljava/lang/String;)Lai/torad/aisdk/EmbeddingModel;
+	public final fun textEmbeddingModel-tDyRgq0 (Ljava/lang/String;)Lai/torad/aisdk/EmbeddingModel;
 	public fun transcriptionModel (Ljava/lang/String;)Lai/torad/aisdk/TranscriptionModel;
 	public fun videoModel (Ljava/lang/String;)Lai/torad/aisdk/VideoModel;
 }
@@ -7881,21 +7881,21 @@ public final class ai/torad/aisdk/providers/AmazonBedrockProviderSettings {
 }
 
 public abstract interface class ai/torad/aisdk/providers/AnthropicAwsProvider : ai/torad/aisdk/Provider {
-	public fun chat (Ljava/lang/String;)Lai/torad/aisdk/LanguageModel;
+	public fun chat-tDyRgq0 (Ljava/lang/String;)Lai/torad/aisdk/LanguageModel;
 	public abstract fun getSettings ()Lai/torad/aisdk/providers/AnthropicAwsProviderSettings;
 	public abstract fun getTools ()Lai/torad/aisdk/providers/AnthropicTools;
-	public fun invoke (Ljava/lang/String;)Lai/torad/aisdk/LanguageModel;
-	public fun messages (Ljava/lang/String;)Lai/torad/aisdk/LanguageModel;
+	public fun invoke-tDyRgq0 (Ljava/lang/String;)Lai/torad/aisdk/LanguageModel;
+	public fun messages-tDyRgq0 (Ljava/lang/String;)Lai/torad/aisdk/LanguageModel;
 	public fun textEmbeddingModel (Ljava/lang/String;)Ljava/lang/Void;
 }
 
 public final class ai/torad/aisdk/providers/AnthropicAwsProvider$DefaultImpls {
-	public static fun chat (Lai/torad/aisdk/providers/AnthropicAwsProvider;Ljava/lang/String;)Lai/torad/aisdk/LanguageModel;
+	public static fun chat-tDyRgq0 (Lai/torad/aisdk/providers/AnthropicAwsProvider;Ljava/lang/String;)Lai/torad/aisdk/LanguageModel;
 	public static fun embeddingModel (Lai/torad/aisdk/providers/AnthropicAwsProvider;Ljava/lang/String;)Lai/torad/aisdk/EmbeddingModel;
 	public static fun imageModel (Lai/torad/aisdk/providers/AnthropicAwsProvider;Ljava/lang/String;)Lai/torad/aisdk/ImageModel;
-	public static fun invoke (Lai/torad/aisdk/providers/AnthropicAwsProvider;Ljava/lang/String;)Lai/torad/aisdk/LanguageModel;
+	public static fun invoke-tDyRgq0 (Lai/torad/aisdk/providers/AnthropicAwsProvider;Ljava/lang/String;)Lai/torad/aisdk/LanguageModel;
 	public static fun languageModel (Lai/torad/aisdk/providers/AnthropicAwsProvider;Ljava/lang/String;)Lai/torad/aisdk/LanguageModel;
-	public static fun messages (Lai/torad/aisdk/providers/AnthropicAwsProvider;Ljava/lang/String;)Lai/torad/aisdk/LanguageModel;
+	public static fun messages-tDyRgq0 (Lai/torad/aisdk/providers/AnthropicAwsProvider;Ljava/lang/String;)Lai/torad/aisdk/LanguageModel;
 	public static fun rerankingModel (Lai/torad/aisdk/providers/AnthropicAwsProvider;Ljava/lang/String;)Lai/torad/aisdk/RerankingModel;
 	public static fun speechModel (Lai/torad/aisdk/providers/AnthropicAwsProvider;Ljava/lang/String;)Lai/torad/aisdk/SpeechModel;
 	public static fun textEmbeddingModel (Lai/torad/aisdk/providers/AnthropicAwsProvider;Ljava/lang/String;)Ljava/lang/Void;
@@ -7970,15 +7970,15 @@ public final class ai/torad/aisdk/providers/AnthropicMessagesLanguageModel : ai/
 public final class ai/torad/aisdk/providers/AnthropicProvider : ai/torad/aisdk/Provider {
 	public fun <init> (Lio/ktor/client/HttpClient;Lai/torad/aisdk/providers/AnthropicProviderSettings;)V
 	public synthetic fun <init> (Lio/ktor/client/HttpClient;Lai/torad/aisdk/providers/AnthropicProviderSettings;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public final fun chat (Ljava/lang/String;)Lai/torad/aisdk/LanguageModel;
+	public final fun chat-tDyRgq0 (Ljava/lang/String;)Lai/torad/aisdk/LanguageModel;
 	public fun embeddingModel (Ljava/lang/String;)Lai/torad/aisdk/EmbeddingModel;
 	public fun getProviderId ()Ljava/lang/String;
 	public final fun getSettings ()Lai/torad/aisdk/providers/AnthropicProviderSettings;
 	public final fun getTools ()Lai/torad/aisdk/providers/AnthropicTools;
 	public fun imageModel (Ljava/lang/String;)Lai/torad/aisdk/ImageModel;
-	public final fun invoke (Ljava/lang/String;)Lai/torad/aisdk/LanguageModel;
+	public final fun invoke-tDyRgq0 (Ljava/lang/String;)Lai/torad/aisdk/LanguageModel;
 	public fun languageModel (Ljava/lang/String;)Lai/torad/aisdk/LanguageModel;
-	public final fun messages (Ljava/lang/String;)Lai/torad/aisdk/LanguageModel;
+	public final fun messages-tDyRgq0 (Ljava/lang/String;)Lai/torad/aisdk/LanguageModel;
 	public fun rerankingModel (Ljava/lang/String;)Lai/torad/aisdk/RerankingModel;
 	public fun speechModel (Ljava/lang/String;)Lai/torad/aisdk/SpeechModel;
 	public final fun textEmbeddingModel (Ljava/lang/String;)Ljava/lang/Void;
@@ -8111,13 +8111,13 @@ public final class ai/torad/aisdk/providers/AssemblyAIProvider : ai/torad/aisdk/
 	public fun getProviderId ()Ljava/lang/String;
 	public final fun getSettings ()Lai/torad/aisdk/providers/AssemblyAIProviderSettings;
 	public fun imageModel (Ljava/lang/String;)Lai/torad/aisdk/ImageModel;
-	public final fun invoke (Ljava/lang/String;)Lai/torad/aisdk/TranscriptionModel;
-	public static synthetic fun invoke$default (Lai/torad/aisdk/providers/AssemblyAIProvider;Ljava/lang/String;ILjava/lang/Object;)Lai/torad/aisdk/TranscriptionModel;
+	public final fun invoke-tDyRgq0 (Ljava/lang/String;)Lai/torad/aisdk/TranscriptionModel;
+	public static synthetic fun invoke-tDyRgq0$default (Lai/torad/aisdk/providers/AssemblyAIProvider;Ljava/lang/String;ILjava/lang/Object;)Lai/torad/aisdk/TranscriptionModel;
 	public fun languageModel (Ljava/lang/String;)Lai/torad/aisdk/LanguageModel;
 	public fun rerankingModel (Ljava/lang/String;)Lai/torad/aisdk/RerankingModel;
 	public fun speechModel (Ljava/lang/String;)Lai/torad/aisdk/SpeechModel;
 	public final fun textEmbeddingModel (Ljava/lang/String;)Ljava/lang/Void;
-	public final fun transcription (Ljava/lang/String;)Lai/torad/aisdk/TranscriptionModel;
+	public final fun transcription-tDyRgq0 (Ljava/lang/String;)Lai/torad/aisdk/TranscriptionModel;
 	public fun transcriptionModel (Ljava/lang/String;)Lai/torad/aisdk/TranscriptionModel;
 	public fun videoModel (Ljava/lang/String;)Lai/torad/aisdk/VideoModel;
 }
@@ -8258,24 +8258,24 @@ public final class ai/torad/aisdk/providers/AssemblyAITranscriptionModelOptions$
 
 public final class ai/torad/aisdk/providers/AzureOpenAIProvider : ai/torad/aisdk/Provider {
 	public fun <init> (Lio/ktor/client/HttpClient;Lai/torad/aisdk/providers/AzureOpenAIProviderSettings;)V
-	public final fun chat (Ljava/lang/String;)Lai/torad/aisdk/LanguageModel;
-	public final fun completion (Ljava/lang/String;)Lai/torad/aisdk/LanguageModel;
-	public final fun embedding (Ljava/lang/String;)Lai/torad/aisdk/EmbeddingModel;
+	public final fun chat-tDyRgq0 (Ljava/lang/String;)Lai/torad/aisdk/LanguageModel;
+	public final fun completion-tDyRgq0 (Ljava/lang/String;)Lai/torad/aisdk/LanguageModel;
+	public final fun embedding-tDyRgq0 (Ljava/lang/String;)Lai/torad/aisdk/EmbeddingModel;
 	public fun embeddingModel (Ljava/lang/String;)Lai/torad/aisdk/EmbeddingModel;
 	public fun getProviderId ()Ljava/lang/String;
 	public final fun getSettings ()Lai/torad/aisdk/providers/AzureOpenAIProviderSettings;
 	public final fun getTools ()Lai/torad/aisdk/providers/AzureOpenAITools;
-	public final fun image (Ljava/lang/String;)Lai/torad/aisdk/ImageModel;
+	public final fun image-tDyRgq0 (Ljava/lang/String;)Lai/torad/aisdk/ImageModel;
 	public fun imageModel (Ljava/lang/String;)Lai/torad/aisdk/ImageModel;
 	public final fun invoke (Ljava/lang/String;)Lai/torad/aisdk/LanguageModel;
 	public fun languageModel (Ljava/lang/String;)Lai/torad/aisdk/LanguageModel;
 	public fun rerankingModel (Ljava/lang/String;)Lai/torad/aisdk/RerankingModel;
 	public final fun responses (Ljava/lang/String;)Lai/torad/aisdk/LanguageModel;
-	public final fun speech (Ljava/lang/String;)Lai/torad/aisdk/SpeechModel;
+	public final fun speech-tDyRgq0 (Ljava/lang/String;)Lai/torad/aisdk/SpeechModel;
 	public fun speechModel (Ljava/lang/String;)Lai/torad/aisdk/SpeechModel;
-	public final fun textEmbedding (Ljava/lang/String;)Lai/torad/aisdk/EmbeddingModel;
-	public final fun textEmbeddingModel (Ljava/lang/String;)Lai/torad/aisdk/EmbeddingModel;
-	public final fun transcription (Ljava/lang/String;)Lai/torad/aisdk/TranscriptionModel;
+	public final fun textEmbedding-tDyRgq0 (Ljava/lang/String;)Lai/torad/aisdk/EmbeddingModel;
+	public final fun textEmbeddingModel-tDyRgq0 (Ljava/lang/String;)Lai/torad/aisdk/EmbeddingModel;
+	public final fun transcription-tDyRgq0 (Ljava/lang/String;)Lai/torad/aisdk/TranscriptionModel;
 	public fun transcriptionModel (Ljava/lang/String;)Lai/torad/aisdk/TranscriptionModel;
 	public fun videoModel (Ljava/lang/String;)Lai/torad/aisdk/VideoModel;
 }
@@ -8398,19 +8398,19 @@ public final class ai/torad/aisdk/providers/BasetenFacadeKt {
 public final class ai/torad/aisdk/providers/BasetenProvider : ai/torad/aisdk/Provider {
 	public fun <init> (Lio/ktor/client/HttpClient;Lai/torad/aisdk/providers/BasetenProviderSettings;)V
 	public final fun chatModel ()Lai/torad/aisdk/LanguageModel;
-	public final fun chatModel (Ljava/lang/String;)Lai/torad/aisdk/LanguageModel;
+	public final fun chatModel-tDyRgq0 (Ljava/lang/String;)Lai/torad/aisdk/LanguageModel;
 	public final fun embeddingModel ()Lai/torad/aisdk/EmbeddingModel;
 	public fun embeddingModel (Ljava/lang/String;)Lai/torad/aisdk/EmbeddingModel;
 	public fun getProviderId ()Ljava/lang/String;
 	public fun imageModel (Ljava/lang/String;)Lai/torad/aisdk/ImageModel;
 	public final fun invoke ()Lai/torad/aisdk/LanguageModel;
-	public final fun invoke (Ljava/lang/String;)Lai/torad/aisdk/LanguageModel;
+	public final fun invoke-tDyRgq0 (Ljava/lang/String;)Lai/torad/aisdk/LanguageModel;
 	public final fun languageModel ()Lai/torad/aisdk/LanguageModel;
 	public fun languageModel (Ljava/lang/String;)Lai/torad/aisdk/LanguageModel;
 	public fun rerankingModel (Ljava/lang/String;)Lai/torad/aisdk/RerankingModel;
 	public fun speechModel (Ljava/lang/String;)Lai/torad/aisdk/SpeechModel;
 	public final fun textEmbeddingModel ()Lai/torad/aisdk/EmbeddingModel;
-	public final fun textEmbeddingModel (Ljava/lang/String;)Lai/torad/aisdk/EmbeddingModel;
+	public final fun textEmbeddingModel-tDyRgq0 (Ljava/lang/String;)Lai/torad/aisdk/EmbeddingModel;
 	public fun transcriptionModel (Ljava/lang/String;)Lai/torad/aisdk/TranscriptionModel;
 	public fun videoModel (Ljava/lang/String;)Lai/torad/aisdk/VideoModel;
 }
@@ -8457,7 +8457,7 @@ public final class ai/torad/aisdk/providers/BedrockAnthropicProvider : ai/torad/
 	public final fun getSettings ()Lai/torad/aisdk/providers/AmazonBedrockProviderSettings;
 	public final fun getTools ()Lai/torad/aisdk/providers/AnthropicTools;
 	public fun imageModel (Ljava/lang/String;)Lai/torad/aisdk/ImageModel;
-	public final fun invoke (Ljava/lang/String;)Lai/torad/aisdk/LanguageModel;
+	public final fun invoke-tDyRgq0 (Ljava/lang/String;)Lai/torad/aisdk/LanguageModel;
 	public fun languageModel (Ljava/lang/String;)Lai/torad/aisdk/LanguageModel;
 	public fun rerankingModel (Ljava/lang/String;)Lai/torad/aisdk/RerankingModel;
 	public fun speechModel (Ljava/lang/String;)Lai/torad/aisdk/SpeechModel;
@@ -8502,15 +8502,15 @@ public final class ai/torad/aisdk/providers/BedrockCredentials$Companion {
 
 public final class ai/torad/aisdk/providers/BedrockMantleProvider : ai/torad/aisdk/Provider {
 	public fun <init> (Lio/ktor/client/HttpClient;Lai/torad/aisdk/providers/AmazonBedrockProviderSettings;)V
-	public final fun chat (Ljava/lang/String;)Lai/torad/aisdk/LanguageModel;
+	public final fun chat-tDyRgq0 (Ljava/lang/String;)Lai/torad/aisdk/LanguageModel;
 	public fun embeddingModel (Ljava/lang/String;)Lai/torad/aisdk/EmbeddingModel;
 	public fun getProviderId ()Ljava/lang/String;
 	public final fun getSettings ()Lai/torad/aisdk/providers/AmazonBedrockProviderSettings;
 	public fun imageModel (Ljava/lang/String;)Lai/torad/aisdk/ImageModel;
-	public final fun invoke (Ljava/lang/String;)Lai/torad/aisdk/LanguageModel;
+	public final fun invoke-tDyRgq0 (Ljava/lang/String;)Lai/torad/aisdk/LanguageModel;
 	public fun languageModel (Ljava/lang/String;)Lai/torad/aisdk/LanguageModel;
 	public fun rerankingModel (Ljava/lang/String;)Lai/torad/aisdk/RerankingModel;
-	public final fun responses (Ljava/lang/String;)Lai/torad/aisdk/LanguageModel;
+	public final fun responses-tDyRgq0 (Ljava/lang/String;)Lai/torad/aisdk/LanguageModel;
 	public fun speechModel (Ljava/lang/String;)Lai/torad/aisdk/SpeechModel;
 	public final fun textEmbeddingModel (Ljava/lang/String;)Ljava/lang/Void;
 	public fun transcriptionModel (Ljava/lang/String;)Lai/torad/aisdk/TranscriptionModel;
@@ -8593,7 +8593,7 @@ public final class ai/torad/aisdk/providers/BlackForestLabsImageModelOptions$Com
 }
 
 public abstract interface class ai/torad/aisdk/providers/BlackForestLabsProvider : ai/torad/aisdk/Provider {
-	public abstract fun image (Ljava/lang/String;)Lai/torad/aisdk/ImageModel;
+	public abstract fun image-tDyRgq0 (Ljava/lang/String;)Lai/torad/aisdk/ImageModel;
 	public fun imageModel (Ljava/lang/String;)Lai/torad/aisdk/ImageModel;
 	public fun textEmbeddingModel (Ljava/lang/String;)Ljava/lang/Void;
 }
@@ -8654,7 +8654,7 @@ public final class ai/torad/aisdk/providers/BlackForestLabsProviderSettings$Comp
 }
 
 public abstract interface class ai/torad/aisdk/providers/ByteDanceProvider : ai/torad/aisdk/Provider {
-	public abstract fun video (Ljava/lang/String;)Lai/torad/aisdk/VideoModel;
+	public abstract fun video-tDyRgq0 (Ljava/lang/String;)Lai/torad/aisdk/VideoModel;
 	public fun videoModel (Ljava/lang/String;)Lai/torad/aisdk/VideoModel;
 }
 
@@ -8911,18 +8911,18 @@ public final class ai/torad/aisdk/providers/CohereLanguageModelOptions$Companion
 
 public final class ai/torad/aisdk/providers/CohereProvider : ai/torad/aisdk/Provider {
 	public fun <init> (Lio/ktor/client/HttpClient;Lai/torad/aisdk/providers/CohereProviderSettings;)V
-	public final fun embedding (Ljava/lang/String;)Lai/torad/aisdk/EmbeddingModel;
+	public final fun embedding-tDyRgq0 (Ljava/lang/String;)Lai/torad/aisdk/EmbeddingModel;
 	public fun embeddingModel (Ljava/lang/String;)Lai/torad/aisdk/EmbeddingModel;
 	public fun getProviderId ()Ljava/lang/String;
 	public final fun getSettings ()Lai/torad/aisdk/providers/CohereProviderSettings;
 	public fun imageModel (Ljava/lang/String;)Lai/torad/aisdk/ImageModel;
-	public final fun invoke (Ljava/lang/String;)Lai/torad/aisdk/LanguageModel;
+	public final fun invoke-tDyRgq0 (Ljava/lang/String;)Lai/torad/aisdk/LanguageModel;
 	public fun languageModel (Ljava/lang/String;)Lai/torad/aisdk/LanguageModel;
-	public final fun reranking (Ljava/lang/String;)Lai/torad/aisdk/RerankingModel;
+	public final fun reranking-tDyRgq0 (Ljava/lang/String;)Lai/torad/aisdk/RerankingModel;
 	public fun rerankingModel (Ljava/lang/String;)Lai/torad/aisdk/RerankingModel;
 	public fun speechModel (Ljava/lang/String;)Lai/torad/aisdk/SpeechModel;
-	public final fun textEmbedding (Ljava/lang/String;)Lai/torad/aisdk/EmbeddingModel;
-	public final fun textEmbeddingModel (Ljava/lang/String;)Lai/torad/aisdk/EmbeddingModel;
+	public final fun textEmbedding-tDyRgq0 (Ljava/lang/String;)Lai/torad/aisdk/EmbeddingModel;
+	public final fun textEmbeddingModel-tDyRgq0 (Ljava/lang/String;)Lai/torad/aisdk/EmbeddingModel;
 	public fun transcriptionModel (Ljava/lang/String;)Lai/torad/aisdk/TranscriptionModel;
 	public fun videoModel (Ljava/lang/String;)Lai/torad/aisdk/VideoModel;
 }
@@ -9036,17 +9036,17 @@ public final class ai/torad/aisdk/providers/DeepInfraFacadeKt {
 
 public final class ai/torad/aisdk/providers/DeepInfraProvider : ai/torad/aisdk/Provider {
 	public fun <init> (Lio/ktor/client/HttpClient;Lai/torad/aisdk/providers/DeepInfraProviderSettings;)V
-	public final fun chatModel (Ljava/lang/String;)Lai/torad/aisdk/LanguageModel;
-	public final fun completionModel (Ljava/lang/String;)Lai/torad/aisdk/LanguageModel;
+	public final fun chatModel-tDyRgq0 (Ljava/lang/String;)Lai/torad/aisdk/LanguageModel;
+	public final fun completionModel-tDyRgq0 (Ljava/lang/String;)Lai/torad/aisdk/LanguageModel;
 	public fun embeddingModel (Ljava/lang/String;)Lai/torad/aisdk/EmbeddingModel;
 	public fun getProviderId ()Ljava/lang/String;
-	public final fun image (Ljava/lang/String;)Lai/torad/aisdk/ImageModel;
+	public final fun image-tDyRgq0 (Ljava/lang/String;)Lai/torad/aisdk/ImageModel;
 	public fun imageModel (Ljava/lang/String;)Lai/torad/aisdk/ImageModel;
-	public final fun invoke (Ljava/lang/String;)Lai/torad/aisdk/LanguageModel;
+	public final fun invoke-tDyRgq0 (Ljava/lang/String;)Lai/torad/aisdk/LanguageModel;
 	public fun languageModel (Ljava/lang/String;)Lai/torad/aisdk/LanguageModel;
 	public fun rerankingModel (Ljava/lang/String;)Lai/torad/aisdk/RerankingModel;
 	public fun speechModel (Ljava/lang/String;)Lai/torad/aisdk/SpeechModel;
-	public final fun textEmbeddingModel (Ljava/lang/String;)Lai/torad/aisdk/EmbeddingModel;
+	public final fun textEmbeddingModel-tDyRgq0 (Ljava/lang/String;)Lai/torad/aisdk/EmbeddingModel;
 	public fun transcriptionModel (Ljava/lang/String;)Lai/torad/aisdk/TranscriptionModel;
 	public fun videoModel (Ljava/lang/String;)Lai/torad/aisdk/VideoModel;
 }
@@ -9173,14 +9173,14 @@ public final class ai/torad/aisdk/providers/DeepgramProvider : ai/torad/aisdk/Pr
 	public fun getProviderId ()Ljava/lang/String;
 	public final fun getSettings ()Lai/torad/aisdk/providers/DeepgramProviderSettings;
 	public fun imageModel (Ljava/lang/String;)Lai/torad/aisdk/ImageModel;
-	public final fun invoke (Ljava/lang/String;)Lai/torad/aisdk/TranscriptionModel;
-	public static synthetic fun invoke$default (Lai/torad/aisdk/providers/DeepgramProvider;Ljava/lang/String;ILjava/lang/Object;)Lai/torad/aisdk/TranscriptionModel;
+	public final fun invoke-tDyRgq0 (Ljava/lang/String;)Lai/torad/aisdk/TranscriptionModel;
+	public static synthetic fun invoke-tDyRgq0$default (Lai/torad/aisdk/providers/DeepgramProvider;Ljava/lang/String;ILjava/lang/Object;)Lai/torad/aisdk/TranscriptionModel;
 	public fun languageModel (Ljava/lang/String;)Lai/torad/aisdk/LanguageModel;
 	public fun rerankingModel (Ljava/lang/String;)Lai/torad/aisdk/RerankingModel;
-	public final fun speech (Ljava/lang/String;)Lai/torad/aisdk/SpeechModel;
+	public final fun speech-tDyRgq0 (Ljava/lang/String;)Lai/torad/aisdk/SpeechModel;
 	public fun speechModel (Ljava/lang/String;)Lai/torad/aisdk/SpeechModel;
 	public final fun textEmbeddingModel (Ljava/lang/String;)Ljava/lang/Void;
-	public final fun transcription (Ljava/lang/String;)Lai/torad/aisdk/TranscriptionModel;
+	public final fun transcription-tDyRgq0 (Ljava/lang/String;)Lai/torad/aisdk/TranscriptionModel;
 	public fun transcriptionModel (Ljava/lang/String;)Lai/torad/aisdk/TranscriptionModel;
 	public fun videoModel (Ljava/lang/String;)Lai/torad/aisdk/VideoModel;
 }
@@ -9341,14 +9341,14 @@ public final class ai/torad/aisdk/providers/ElevenLabsProvider : ai/torad/aisdk/
 	public fun getProviderId ()Ljava/lang/String;
 	public final fun getSettings ()Lai/torad/aisdk/providers/ElevenLabsProviderSettings;
 	public fun imageModel (Ljava/lang/String;)Lai/torad/aisdk/ImageModel;
-	public final fun invoke (Ljava/lang/String;)Lai/torad/aisdk/TranscriptionModel;
-	public static synthetic fun invoke$default (Lai/torad/aisdk/providers/ElevenLabsProvider;Ljava/lang/String;ILjava/lang/Object;)Lai/torad/aisdk/TranscriptionModel;
+	public final fun invoke-tDyRgq0 (Ljava/lang/String;)Lai/torad/aisdk/TranscriptionModel;
+	public static synthetic fun invoke-tDyRgq0$default (Lai/torad/aisdk/providers/ElevenLabsProvider;Ljava/lang/String;ILjava/lang/Object;)Lai/torad/aisdk/TranscriptionModel;
 	public fun languageModel (Ljava/lang/String;)Lai/torad/aisdk/LanguageModel;
 	public fun rerankingModel (Ljava/lang/String;)Lai/torad/aisdk/RerankingModel;
-	public final fun speech (Ljava/lang/String;)Lai/torad/aisdk/SpeechModel;
+	public final fun speech-tDyRgq0 (Ljava/lang/String;)Lai/torad/aisdk/SpeechModel;
 	public fun speechModel (Ljava/lang/String;)Lai/torad/aisdk/SpeechModel;
 	public final fun textEmbeddingModel (Ljava/lang/String;)Ljava/lang/Void;
-	public final fun transcription (Ljava/lang/String;)Lai/torad/aisdk/TranscriptionModel;
+	public final fun transcription-tDyRgq0 (Ljava/lang/String;)Lai/torad/aisdk/TranscriptionModel;
 	public fun transcriptionModel (Ljava/lang/String;)Lai/torad/aisdk/TranscriptionModel;
 	public fun videoModel (Ljava/lang/String;)Lai/torad/aisdk/VideoModel;
 }
@@ -9512,16 +9512,16 @@ public final class ai/torad/aisdk/providers/FalProvider : ai/torad/aisdk/Provide
 	public fun embeddingModel (Ljava/lang/String;)Lai/torad/aisdk/EmbeddingModel;
 	public fun getProviderId ()Ljava/lang/String;
 	public final fun getSettings ()Lai/torad/aisdk/providers/FalProviderSettings;
-	public final fun image (Ljava/lang/String;)Lai/torad/aisdk/ImageModel;
+	public final fun image-tDyRgq0 (Ljava/lang/String;)Lai/torad/aisdk/ImageModel;
 	public fun imageModel (Ljava/lang/String;)Lai/torad/aisdk/ImageModel;
 	public fun languageModel (Ljava/lang/String;)Lai/torad/aisdk/LanguageModel;
 	public fun rerankingModel (Ljava/lang/String;)Lai/torad/aisdk/RerankingModel;
-	public final fun speech (Ljava/lang/String;)Lai/torad/aisdk/SpeechModel;
+	public final fun speech-tDyRgq0 (Ljava/lang/String;)Lai/torad/aisdk/SpeechModel;
 	public fun speechModel (Ljava/lang/String;)Lai/torad/aisdk/SpeechModel;
 	public final fun textEmbeddingModel (Ljava/lang/String;)Ljava/lang/Void;
-	public final fun transcription (Ljava/lang/String;)Lai/torad/aisdk/TranscriptionModel;
+	public final fun transcription-tDyRgq0 (Ljava/lang/String;)Lai/torad/aisdk/TranscriptionModel;
 	public fun transcriptionModel (Ljava/lang/String;)Lai/torad/aisdk/TranscriptionModel;
-	public final fun video (Ljava/lang/String;)Lai/torad/aisdk/VideoModel;
+	public final fun video-tDyRgq0 (Ljava/lang/String;)Lai/torad/aisdk/VideoModel;
 	public fun videoModel (Ljava/lang/String;)Lai/torad/aisdk/VideoModel;
 }
 
@@ -9792,17 +9792,17 @@ public final class ai/torad/aisdk/providers/FireworksLanguageModelOptions$Compan
 
 public final class ai/torad/aisdk/providers/FireworksProvider : ai/torad/aisdk/Provider {
 	public fun <init> (Lio/ktor/client/HttpClient;Lai/torad/aisdk/providers/FireworksProviderSettings;)V
-	public final fun chatModel (Ljava/lang/String;)Lai/torad/aisdk/LanguageModel;
-	public final fun completionModel (Ljava/lang/String;)Lai/torad/aisdk/LanguageModel;
+	public final fun chatModel-tDyRgq0 (Ljava/lang/String;)Lai/torad/aisdk/LanguageModel;
+	public final fun completionModel-tDyRgq0 (Ljava/lang/String;)Lai/torad/aisdk/LanguageModel;
 	public fun embeddingModel (Ljava/lang/String;)Lai/torad/aisdk/EmbeddingModel;
 	public fun getProviderId ()Ljava/lang/String;
-	public final fun image (Ljava/lang/String;)Lai/torad/aisdk/ImageModel;
+	public final fun image-tDyRgq0 (Ljava/lang/String;)Lai/torad/aisdk/ImageModel;
 	public fun imageModel (Ljava/lang/String;)Lai/torad/aisdk/ImageModel;
-	public final fun invoke (Ljava/lang/String;)Lai/torad/aisdk/LanguageModel;
+	public final fun invoke-tDyRgq0 (Ljava/lang/String;)Lai/torad/aisdk/LanguageModel;
 	public fun languageModel (Ljava/lang/String;)Lai/torad/aisdk/LanguageModel;
 	public fun rerankingModel (Ljava/lang/String;)Lai/torad/aisdk/RerankingModel;
 	public fun speechModel (Ljava/lang/String;)Lai/torad/aisdk/SpeechModel;
-	public final fun textEmbeddingModel (Ljava/lang/String;)Lai/torad/aisdk/EmbeddingModel;
+	public final fun textEmbeddingModel-tDyRgq0 (Ljava/lang/String;)Lai/torad/aisdk/EmbeddingModel;
 	public fun transcriptionModel (Ljava/lang/String;)Lai/torad/aisdk/TranscriptionModel;
 	public fun videoModel (Ljava/lang/String;)Lai/torad/aisdk/VideoModel;
 }
@@ -10022,26 +10022,26 @@ public final class ai/torad/aisdk/providers/GoogleGenerativeAIProvider : ai/tora
 	public fun <init> (Lio/ktor/client/HttpClient;Lai/torad/aisdk/providers/GoogleGenerativeAIProviderSettings;)V
 	public synthetic fun <init> (Lio/ktor/client/HttpClient;Lai/torad/aisdk/providers/GoogleGenerativeAIProviderSettings;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun agentInteraction (Ljava/lang/String;)Lai/torad/aisdk/LanguageModel;
-	public final fun chat (Ljava/lang/String;)Lai/torad/aisdk/LanguageModel;
-	public final fun embedding (Ljava/lang/String;)Lai/torad/aisdk/EmbeddingModel;
+	public final fun chat-tDyRgq0 (Ljava/lang/String;)Lai/torad/aisdk/LanguageModel;
+	public final fun embedding-tDyRgq0 (Ljava/lang/String;)Lai/torad/aisdk/EmbeddingModel;
 	public fun embeddingModel (Ljava/lang/String;)Lai/torad/aisdk/EmbeddingModel;
-	public final fun generativeAI (Ljava/lang/String;)Lai/torad/aisdk/LanguageModel;
+	public final fun generativeAI-tDyRgq0 (Ljava/lang/String;)Lai/torad/aisdk/LanguageModel;
 	public fun getProviderId ()Ljava/lang/String;
 	public final fun getSettings ()Lai/torad/aisdk/providers/GoogleGenerativeAIProviderSettings;
 	public final fun getTools ()Lai/torad/aisdk/providers/GoogleTools;
-	public final fun image (Ljava/lang/String;)Lai/torad/aisdk/ImageModel;
+	public final fun image-tDyRgq0 (Ljava/lang/String;)Lai/torad/aisdk/ImageModel;
 	public fun imageModel (Ljava/lang/String;)Lai/torad/aisdk/ImageModel;
 	public final fun interactions (Lai/torad/aisdk/providers/GoogleInteractionsModelInput;)Lai/torad/aisdk/LanguageModel;
-	public final fun interactions (Ljava/lang/String;)Lai/torad/aisdk/LanguageModel;
-	public final fun invoke (Ljava/lang/String;)Lai/torad/aisdk/LanguageModel;
+	public final fun interactions-tDyRgq0 (Ljava/lang/String;)Lai/torad/aisdk/LanguageModel;
+	public final fun invoke-tDyRgq0 (Ljava/lang/String;)Lai/torad/aisdk/LanguageModel;
 	public fun languageModel (Ljava/lang/String;)Lai/torad/aisdk/LanguageModel;
 	public final fun managedAgentInteraction (Ljava/lang/String;)Lai/torad/aisdk/LanguageModel;
 	public fun rerankingModel (Ljava/lang/String;)Lai/torad/aisdk/RerankingModel;
 	public fun speechModel (Ljava/lang/String;)Lai/torad/aisdk/SpeechModel;
-	public final fun textEmbedding (Ljava/lang/String;)Lai/torad/aisdk/EmbeddingModel;
-	public final fun textEmbeddingModel (Ljava/lang/String;)Lai/torad/aisdk/EmbeddingModel;
+	public final fun textEmbedding-tDyRgq0 (Ljava/lang/String;)Lai/torad/aisdk/EmbeddingModel;
+	public final fun textEmbeddingModel-tDyRgq0 (Ljava/lang/String;)Lai/torad/aisdk/EmbeddingModel;
 	public fun transcriptionModel (Ljava/lang/String;)Lai/torad/aisdk/TranscriptionModel;
-	public final fun video (Ljava/lang/String;)Lai/torad/aisdk/VideoModel;
+	public final fun video-tDyRgq0 (Ljava/lang/String;)Lai/torad/aisdk/VideoModel;
 	public fun videoModel (Ljava/lang/String;)Lai/torad/aisdk/VideoModel;
 }
 
@@ -10157,15 +10157,15 @@ public final class ai/torad/aisdk/providers/GoogleTools {
 
 public final class ai/torad/aisdk/providers/GoogleVertexAnthropicProvider : ai/torad/aisdk/Provider {
 	public fun <init> (Lio/ktor/client/HttpClient;Lai/torad/aisdk/providers/GoogleVertexProviderSettings;)V
-	public final fun chat (Ljava/lang/String;)Lai/torad/aisdk/LanguageModel;
+	public final fun chat-tDyRgq0 (Ljava/lang/String;)Lai/torad/aisdk/LanguageModel;
 	public fun embeddingModel (Ljava/lang/String;)Lai/torad/aisdk/EmbeddingModel;
 	public fun getProviderId ()Ljava/lang/String;
 	public final fun getSettings ()Lai/torad/aisdk/providers/GoogleVertexProviderSettings;
 	public final fun getTools ()Lai/torad/aisdk/providers/AnthropicTools;
 	public fun imageModel (Ljava/lang/String;)Lai/torad/aisdk/ImageModel;
-	public final fun invoke (Ljava/lang/String;)Lai/torad/aisdk/LanguageModel;
+	public final fun invoke-tDyRgq0 (Ljava/lang/String;)Lai/torad/aisdk/LanguageModel;
 	public fun languageModel (Ljava/lang/String;)Lai/torad/aisdk/LanguageModel;
-	public final fun messages (Ljava/lang/String;)Lai/torad/aisdk/LanguageModel;
+	public final fun messages-tDyRgq0 (Ljava/lang/String;)Lai/torad/aisdk/LanguageModel;
 	public fun rerankingModel (Ljava/lang/String;)Lai/torad/aisdk/RerankingModel;
 	public fun speechModel (Ljava/lang/String;)Lai/torad/aisdk/SpeechModel;
 	public final fun textEmbeddingModel (Ljava/lang/String;)Ljava/lang/Void;
@@ -10175,12 +10175,12 @@ public final class ai/torad/aisdk/providers/GoogleVertexAnthropicProvider : ai/t
 
 public final class ai/torad/aisdk/providers/GoogleVertexMaasProvider : ai/torad/aisdk/Provider {
 	public fun <init> (Lio/ktor/client/HttpClient;Lai/torad/aisdk/providers/GoogleVertexProviderSettings;)V
-	public final fun chat (Ljava/lang/String;)Lai/torad/aisdk/LanguageModel;
+	public final fun chat-tDyRgq0 (Ljava/lang/String;)Lai/torad/aisdk/LanguageModel;
 	public fun embeddingModel (Ljava/lang/String;)Lai/torad/aisdk/EmbeddingModel;
 	public fun getProviderId ()Ljava/lang/String;
 	public final fun getSettings ()Lai/torad/aisdk/providers/GoogleVertexProviderSettings;
 	public fun imageModel (Ljava/lang/String;)Lai/torad/aisdk/ImageModel;
-	public final fun invoke (Ljava/lang/String;)Lai/torad/aisdk/LanguageModel;
+	public final fun invoke-tDyRgq0 (Ljava/lang/String;)Lai/torad/aisdk/LanguageModel;
 	public fun languageModel (Ljava/lang/String;)Lai/torad/aisdk/LanguageModel;
 	public fun rerankingModel (Ljava/lang/String;)Lai/torad/aisdk/RerankingModel;
 	public fun speechModel (Ljava/lang/String;)Lai/torad/aisdk/SpeechModel;
@@ -10190,23 +10190,23 @@ public final class ai/torad/aisdk/providers/GoogleVertexMaasProvider : ai/torad/
 
 public final class ai/torad/aisdk/providers/GoogleVertexProvider : ai/torad/aisdk/Provider {
 	public fun <init> (Lio/ktor/client/HttpClient;Lai/torad/aisdk/providers/GoogleVertexProviderSettings;)V
-	public final fun chat (Ljava/lang/String;)Lai/torad/aisdk/LanguageModel;
-	public final fun embedding (Ljava/lang/String;)Lai/torad/aisdk/EmbeddingModel;
+	public final fun chat-tDyRgq0 (Ljava/lang/String;)Lai/torad/aisdk/LanguageModel;
+	public final fun embedding-tDyRgq0 (Ljava/lang/String;)Lai/torad/aisdk/EmbeddingModel;
 	public fun embeddingModel (Ljava/lang/String;)Lai/torad/aisdk/EmbeddingModel;
-	public final fun generativeAI (Ljava/lang/String;)Lai/torad/aisdk/LanguageModel;
+	public final fun generativeAI-tDyRgq0 (Ljava/lang/String;)Lai/torad/aisdk/LanguageModel;
 	public fun getProviderId ()Ljava/lang/String;
 	public final fun getSettings ()Lai/torad/aisdk/providers/GoogleVertexProviderSettings;
 	public final fun getTools ()Lai/torad/aisdk/providers/GoogleTools;
-	public final fun image (Ljava/lang/String;)Lai/torad/aisdk/ImageModel;
+	public final fun image-tDyRgq0 (Ljava/lang/String;)Lai/torad/aisdk/ImageModel;
 	public fun imageModel (Ljava/lang/String;)Lai/torad/aisdk/ImageModel;
-	public final fun invoke (Ljava/lang/String;)Lai/torad/aisdk/LanguageModel;
+	public final fun invoke-tDyRgq0 (Ljava/lang/String;)Lai/torad/aisdk/LanguageModel;
 	public fun languageModel (Ljava/lang/String;)Lai/torad/aisdk/LanguageModel;
 	public fun rerankingModel (Ljava/lang/String;)Lai/torad/aisdk/RerankingModel;
 	public fun speechModel (Ljava/lang/String;)Lai/torad/aisdk/SpeechModel;
-	public final fun textEmbedding (Ljava/lang/String;)Lai/torad/aisdk/EmbeddingModel;
-	public final fun textEmbeddingModel (Ljava/lang/String;)Lai/torad/aisdk/EmbeddingModel;
+	public final fun textEmbedding-tDyRgq0 (Ljava/lang/String;)Lai/torad/aisdk/EmbeddingModel;
+	public final fun textEmbeddingModel-tDyRgq0 (Ljava/lang/String;)Lai/torad/aisdk/EmbeddingModel;
 	public fun transcriptionModel (Ljava/lang/String;)Lai/torad/aisdk/TranscriptionModel;
-	public final fun video (Ljava/lang/String;)Lai/torad/aisdk/VideoModel;
+	public final fun video-tDyRgq0 (Ljava/lang/String;)Lai/torad/aisdk/VideoModel;
 	public fun videoModel (Ljava/lang/String;)Lai/torad/aisdk/VideoModel;
 }
 
@@ -10265,13 +10265,13 @@ public final class ai/torad/aisdk/providers/GoogleVertexProviderSettings$Compani
 
 public final class ai/torad/aisdk/providers/GoogleVertexXaiProvider : ai/torad/aisdk/Provider {
 	public fun <init> (Lio/ktor/client/HttpClient;Lai/torad/aisdk/providers/GoogleVertexProviderSettings;)V
-	public final fun chat (Ljava/lang/String;)Lai/torad/aisdk/LanguageModel;
-	public final fun chatModel (Ljava/lang/String;)Lai/torad/aisdk/LanguageModel;
+	public final fun chat-tDyRgq0 (Ljava/lang/String;)Lai/torad/aisdk/LanguageModel;
+	public final fun chatModel-tDyRgq0 (Ljava/lang/String;)Lai/torad/aisdk/LanguageModel;
 	public fun embeddingModel (Ljava/lang/String;)Lai/torad/aisdk/EmbeddingModel;
 	public fun getProviderId ()Ljava/lang/String;
 	public final fun getSettings ()Lai/torad/aisdk/providers/GoogleVertexProviderSettings;
 	public fun imageModel (Ljava/lang/String;)Lai/torad/aisdk/ImageModel;
-	public final fun invoke (Ljava/lang/String;)Lai/torad/aisdk/LanguageModel;
+	public final fun invoke-tDyRgq0 (Ljava/lang/String;)Lai/torad/aisdk/LanguageModel;
 	public fun languageModel (Ljava/lang/String;)Lai/torad/aisdk/LanguageModel;
 	public fun rerankingModel (Ljava/lang/String;)Lai/torad/aisdk/RerankingModel;
 	public fun speechModel (Ljava/lang/String;)Lai/torad/aisdk/SpeechModel;
@@ -10420,10 +10420,10 @@ public final class ai/torad/aisdk/providers/HuggingFaceProvider : ai/torad/aisdk
 	public fun getProviderId ()Ljava/lang/String;
 	public final fun getSettings ()Lai/torad/aisdk/providers/HuggingFaceProviderSettings;
 	public fun imageModel (Ljava/lang/String;)Lai/torad/aisdk/ImageModel;
-	public final fun invoke (Ljava/lang/String;)Lai/torad/aisdk/LanguageModel;
+	public final fun invoke-tDyRgq0 (Ljava/lang/String;)Lai/torad/aisdk/LanguageModel;
 	public fun languageModel (Ljava/lang/String;)Lai/torad/aisdk/LanguageModel;
 	public fun rerankingModel (Ljava/lang/String;)Lai/torad/aisdk/RerankingModel;
-	public final fun responses (Ljava/lang/String;)Lai/torad/aisdk/LanguageModel;
+	public final fun responses-tDyRgq0 (Ljava/lang/String;)Lai/torad/aisdk/LanguageModel;
 	public fun speechModel (Ljava/lang/String;)Lai/torad/aisdk/SpeechModel;
 	public final fun textEmbeddingModel (Ljava/lang/String;)Ljava/lang/Void;
 	public fun transcriptionModel (Ljava/lang/String;)Lai/torad/aisdk/TranscriptionModel;
@@ -10581,7 +10581,7 @@ public final class ai/torad/aisdk/providers/KlingAIProvider : ai/torad/aisdk/Pro
 	public fun rerankingModel (Ljava/lang/String;)Lai/torad/aisdk/RerankingModel;
 	public fun speechModel (Ljava/lang/String;)Lai/torad/aisdk/SpeechModel;
 	public fun transcriptionModel (Ljava/lang/String;)Lai/torad/aisdk/TranscriptionModel;
-	public final fun video (Ljava/lang/String;)Lai/torad/aisdk/VideoModel;
+	public final fun video-tDyRgq0 (Ljava/lang/String;)Lai/torad/aisdk/VideoModel;
 	public fun videoModel (Ljava/lang/String;)Lai/torad/aisdk/VideoModel;
 }
 
@@ -10697,11 +10697,11 @@ public final class ai/torad/aisdk/providers/LMNTProvider : ai/torad/aisdk/Provid
 	public fun getProviderId ()Ljava/lang/String;
 	public final fun getSettings ()Lai/torad/aisdk/providers/LMNTProviderSettings;
 	public fun imageModel (Ljava/lang/String;)Lai/torad/aisdk/ImageModel;
-	public final fun invoke (Ljava/lang/String;)Lai/torad/aisdk/SpeechModel;
-	public static synthetic fun invoke$default (Lai/torad/aisdk/providers/LMNTProvider;Ljava/lang/String;ILjava/lang/Object;)Lai/torad/aisdk/SpeechModel;
+	public final fun invoke-tDyRgq0 (Ljava/lang/String;)Lai/torad/aisdk/SpeechModel;
+	public static synthetic fun invoke-tDyRgq0$default (Lai/torad/aisdk/providers/LMNTProvider;Ljava/lang/String;ILjava/lang/Object;)Lai/torad/aisdk/SpeechModel;
 	public fun languageModel (Ljava/lang/String;)Lai/torad/aisdk/LanguageModel;
 	public fun rerankingModel (Ljava/lang/String;)Lai/torad/aisdk/RerankingModel;
-	public final fun speech (Ljava/lang/String;)Lai/torad/aisdk/SpeechModel;
+	public final fun speech-tDyRgq0 (Ljava/lang/String;)Lai/torad/aisdk/SpeechModel;
 	public fun speechModel (Ljava/lang/String;)Lai/torad/aisdk/SpeechModel;
 	public fun transcriptionModel (Ljava/lang/String;)Lai/torad/aisdk/TranscriptionModel;
 	public fun videoModel (Ljava/lang/String;)Lai/torad/aisdk/VideoModel;
@@ -10830,7 +10830,7 @@ public final class ai/torad/aisdk/providers/LumaProvider : ai/torad/aisdk/Provid
 	public fun embeddingModel (Ljava/lang/String;)Lai/torad/aisdk/EmbeddingModel;
 	public fun getProviderId ()Ljava/lang/String;
 	public final fun getSettings ()Lai/torad/aisdk/providers/LumaProviderSettings;
-	public final fun image (Ljava/lang/String;)Lai/torad/aisdk/ImageModel;
+	public final fun image-tDyRgq0 (Ljava/lang/String;)Lai/torad/aisdk/ImageModel;
 	public fun imageModel (Ljava/lang/String;)Lai/torad/aisdk/ImageModel;
 	public fun languageModel (Ljava/lang/String;)Lai/torad/aisdk/LanguageModel;
 	public fun rerankingModel (Ljava/lang/String;)Lai/torad/aisdk/RerankingModel;
@@ -10922,18 +10922,18 @@ public final class ai/torad/aisdk/providers/MistralLanguageModelOptions$Companio
 
 public final class ai/torad/aisdk/providers/MistralProvider : ai/torad/aisdk/Provider {
 	public fun <init> (Lio/ktor/client/HttpClient;Lai/torad/aisdk/providers/MistralProviderSettings;)V
-	public final fun chat (Ljava/lang/String;)Lai/torad/aisdk/LanguageModel;
-	public final fun embedding (Ljava/lang/String;)Lai/torad/aisdk/EmbeddingModel;
+	public final fun chat-tDyRgq0 (Ljava/lang/String;)Lai/torad/aisdk/LanguageModel;
+	public final fun embedding-tDyRgq0 (Ljava/lang/String;)Lai/torad/aisdk/EmbeddingModel;
 	public fun embeddingModel (Ljava/lang/String;)Lai/torad/aisdk/EmbeddingModel;
 	public fun getProviderId ()Ljava/lang/String;
 	public final fun getSettings ()Lai/torad/aisdk/providers/MistralProviderSettings;
 	public fun imageModel (Ljava/lang/String;)Lai/torad/aisdk/ImageModel;
-	public final fun invoke (Ljava/lang/String;)Lai/torad/aisdk/LanguageModel;
+	public final fun invoke-tDyRgq0 (Ljava/lang/String;)Lai/torad/aisdk/LanguageModel;
 	public fun languageModel (Ljava/lang/String;)Lai/torad/aisdk/LanguageModel;
 	public fun rerankingModel (Ljava/lang/String;)Lai/torad/aisdk/RerankingModel;
 	public fun speechModel (Ljava/lang/String;)Lai/torad/aisdk/SpeechModel;
-	public final fun textEmbedding (Ljava/lang/String;)Lai/torad/aisdk/EmbeddingModel;
-	public final fun textEmbeddingModel (Ljava/lang/String;)Lai/torad/aisdk/EmbeddingModel;
+	public final fun textEmbedding-tDyRgq0 (Ljava/lang/String;)Lai/torad/aisdk/EmbeddingModel;
+	public final fun textEmbeddingModel-tDyRgq0 (Ljava/lang/String;)Lai/torad/aisdk/EmbeddingModel;
 	public fun transcriptionModel (Ljava/lang/String;)Lai/torad/aisdk/TranscriptionModel;
 	public fun videoModel (Ljava/lang/String;)Lai/torad/aisdk/VideoModel;
 }
@@ -11106,11 +11106,11 @@ public final class ai/torad/aisdk/providers/MoonshotAILanguageModelOptions$Compa
 
 public final class ai/torad/aisdk/providers/MoonshotAIProvider : ai/torad/aisdk/Provider {
 	public fun <init> (Lio/ktor/client/HttpClient;Lai/torad/aisdk/providers/MoonshotAIProviderSettings;)V
-	public final fun chatModel (Ljava/lang/String;)Lai/torad/aisdk/LanguageModel;
+	public final fun chatModel-tDyRgq0 (Ljava/lang/String;)Lai/torad/aisdk/LanguageModel;
 	public fun embeddingModel (Ljava/lang/String;)Lai/torad/aisdk/EmbeddingModel;
 	public fun getProviderId ()Ljava/lang/String;
 	public fun imageModel (Ljava/lang/String;)Lai/torad/aisdk/ImageModel;
-	public final fun invoke (Ljava/lang/String;)Lai/torad/aisdk/LanguageModel;
+	public final fun invoke-tDyRgq0 (Ljava/lang/String;)Lai/torad/aisdk/LanguageModel;
 	public fun languageModel (Ljava/lang/String;)Lai/torad/aisdk/LanguageModel;
 	public fun rerankingModel (Ljava/lang/String;)Lai/torad/aisdk/RerankingModel;
 	public fun speechModel (Ljava/lang/String;)Lai/torad/aisdk/SpeechModel;
@@ -11610,15 +11610,15 @@ public final class ai/torad/aisdk/providers/ProdiaProvider : ai/torad/aisdk/Prov
 	public fun embeddingModel (Ljava/lang/String;)Lai/torad/aisdk/EmbeddingModel;
 	public fun getProviderId ()Ljava/lang/String;
 	public final fun getSettings ()Lai/torad/aisdk/providers/ProdiaProviderSettings;
-	public final fun image (Ljava/lang/String;)Lai/torad/aisdk/ImageModel;
+	public final fun image-tDyRgq0 (Ljava/lang/String;)Lai/torad/aisdk/ImageModel;
 	public fun imageModel (Ljava/lang/String;)Lai/torad/aisdk/ImageModel;
-	public final fun invoke (Ljava/lang/String;)Lai/torad/aisdk/LanguageModel;
+	public final fun invoke-tDyRgq0 (Ljava/lang/String;)Lai/torad/aisdk/LanguageModel;
 	public fun languageModel (Ljava/lang/String;)Lai/torad/aisdk/LanguageModel;
 	public fun rerankingModel (Ljava/lang/String;)Lai/torad/aisdk/RerankingModel;
 	public fun speechModel (Ljava/lang/String;)Lai/torad/aisdk/SpeechModel;
 	public final fun textEmbeddingModel (Ljava/lang/String;)Ljava/lang/Void;
 	public fun transcriptionModel (Ljava/lang/String;)Lai/torad/aisdk/TranscriptionModel;
-	public final fun video (Ljava/lang/String;)Lai/torad/aisdk/VideoModel;
+	public final fun video-tDyRgq0 (Ljava/lang/String;)Lai/torad/aisdk/VideoModel;
 	public fun videoModel (Ljava/lang/String;)Lai/torad/aisdk/VideoModel;
 }
 
@@ -11738,7 +11738,7 @@ public final class ai/torad/aisdk/providers/QuiverAIProvider : ai/torad/aisdk/Pr
 	public fun embeddingModel (Ljava/lang/String;)Lai/torad/aisdk/EmbeddingModel;
 	public fun getProviderId ()Ljava/lang/String;
 	public final fun getSettings ()Lai/torad/aisdk/providers/QuiverAIProviderSettings;
-	public final fun image (Ljava/lang/String;)Lai/torad/aisdk/ImageModel;
+	public final fun image-tDyRgq0 (Ljava/lang/String;)Lai/torad/aisdk/ImageModel;
 	public fun imageModel (Ljava/lang/String;)Lai/torad/aisdk/ImageModel;
 	public fun languageModel (Ljava/lang/String;)Lai/torad/aisdk/LanguageModel;
 	public fun rerankingModel (Ljava/lang/String;)Lai/torad/aisdk/RerankingModel;
@@ -11832,14 +11832,14 @@ public final class ai/torad/aisdk/providers/ReplicateProvider : ai/torad/aisdk/P
 	public fun <init> (Lio/ktor/client/HttpClient;Lai/torad/aisdk/providers/ReplicateProviderSettings;)V
 	public fun embeddingModel (Ljava/lang/String;)Lai/torad/aisdk/EmbeddingModel;
 	public fun getProviderId ()Ljava/lang/String;
-	public final fun image (Ljava/lang/String;)Lai/torad/aisdk/ImageModel;
+	public final fun image-tDyRgq0 (Ljava/lang/String;)Lai/torad/aisdk/ImageModel;
 	public fun imageModel (Ljava/lang/String;)Lai/torad/aisdk/ImageModel;
 	public fun languageModel (Ljava/lang/String;)Lai/torad/aisdk/LanguageModel;
 	public fun rerankingModel (Ljava/lang/String;)Lai/torad/aisdk/RerankingModel;
 	public fun speechModel (Ljava/lang/String;)Lai/torad/aisdk/SpeechModel;
 	public final fun textEmbeddingModel (Ljava/lang/String;)Ljava/lang/Void;
 	public fun transcriptionModel (Ljava/lang/String;)Lai/torad/aisdk/TranscriptionModel;
-	public final fun video (Ljava/lang/String;)Lai/torad/aisdk/VideoModel;
+	public final fun video-tDyRgq0 (Ljava/lang/String;)Lai/torad/aisdk/VideoModel;
 	public fun videoModel (Ljava/lang/String;)Lai/torad/aisdk/VideoModel;
 }
 
@@ -11939,13 +11939,13 @@ public final class ai/torad/aisdk/providers/RevaiProvider : ai/torad/aisdk/Provi
 	public fun getProviderId ()Ljava/lang/String;
 	public final fun getSettings ()Lai/torad/aisdk/providers/RevaiProviderSettings;
 	public fun imageModel (Ljava/lang/String;)Lai/torad/aisdk/ImageModel;
-	public final fun invoke (Ljava/lang/String;)Lai/torad/aisdk/TranscriptionModel;
-	public static synthetic fun invoke$default (Lai/torad/aisdk/providers/RevaiProvider;Ljava/lang/String;ILjava/lang/Object;)Lai/torad/aisdk/TranscriptionModel;
+	public final fun invoke-tDyRgq0 (Ljava/lang/String;)Lai/torad/aisdk/TranscriptionModel;
+	public static synthetic fun invoke-tDyRgq0$default (Lai/torad/aisdk/providers/RevaiProvider;Ljava/lang/String;ILjava/lang/Object;)Lai/torad/aisdk/TranscriptionModel;
 	public fun languageModel (Ljava/lang/String;)Lai/torad/aisdk/LanguageModel;
 	public fun rerankingModel (Ljava/lang/String;)Lai/torad/aisdk/RerankingModel;
 	public fun speechModel (Ljava/lang/String;)Lai/torad/aisdk/SpeechModel;
 	public final fun textEmbeddingModel (Ljava/lang/String;)Ljava/lang/Void;
-	public final fun transcription (Ljava/lang/String;)Lai/torad/aisdk/TranscriptionModel;
+	public final fun transcription-tDyRgq0 (Ljava/lang/String;)Lai/torad/aisdk/TranscriptionModel;
 	public fun transcriptionModel (Ljava/lang/String;)Lai/torad/aisdk/TranscriptionModel;
 	public fun videoModel (Ljava/lang/String;)Lai/torad/aisdk/VideoModel;
 }
@@ -12137,18 +12137,18 @@ public final class ai/torad/aisdk/providers/TogetherAIImageModelOptions$Companio
 
 public final class ai/torad/aisdk/providers/TogetherAIProvider : ai/torad/aisdk/Provider {
 	public fun <init> (Lio/ktor/client/HttpClient;Lai/torad/aisdk/providers/TogetherAIProviderSettings;)V
-	public final fun chatModel (Ljava/lang/String;)Lai/torad/aisdk/LanguageModel;
-	public final fun completionModel (Ljava/lang/String;)Lai/torad/aisdk/LanguageModel;
+	public final fun chatModel-tDyRgq0 (Ljava/lang/String;)Lai/torad/aisdk/LanguageModel;
+	public final fun completionModel-tDyRgq0 (Ljava/lang/String;)Lai/torad/aisdk/LanguageModel;
 	public fun embeddingModel (Ljava/lang/String;)Lai/torad/aisdk/EmbeddingModel;
 	public fun getProviderId ()Ljava/lang/String;
-	public final fun image (Ljava/lang/String;)Lai/torad/aisdk/ImageModel;
+	public final fun image-tDyRgq0 (Ljava/lang/String;)Lai/torad/aisdk/ImageModel;
 	public fun imageModel (Ljava/lang/String;)Lai/torad/aisdk/ImageModel;
-	public final fun invoke (Ljava/lang/String;)Lai/torad/aisdk/LanguageModel;
+	public final fun invoke-tDyRgq0 (Ljava/lang/String;)Lai/torad/aisdk/LanguageModel;
 	public fun languageModel (Ljava/lang/String;)Lai/torad/aisdk/LanguageModel;
-	public final fun reranking (Ljava/lang/String;)Lai/torad/aisdk/RerankingModel;
+	public final fun reranking-tDyRgq0 (Ljava/lang/String;)Lai/torad/aisdk/RerankingModel;
 	public fun rerankingModel (Ljava/lang/String;)Lai/torad/aisdk/RerankingModel;
 	public fun speechModel (Ljava/lang/String;)Lai/torad/aisdk/SpeechModel;
-	public final fun textEmbeddingModel (Ljava/lang/String;)Lai/torad/aisdk/EmbeddingModel;
+	public final fun textEmbeddingModel-tDyRgq0 (Ljava/lang/String;)Lai/torad/aisdk/EmbeddingModel;
 	public fun transcriptionModel (Ljava/lang/String;)Lai/torad/aisdk/TranscriptionModel;
 	public fun videoModel (Ljava/lang/String;)Lai/torad/aisdk/VideoModel;
 }
@@ -12233,7 +12233,7 @@ public final class ai/torad/aisdk/providers/VercelProvider : ai/torad/aisdk/Prov
 	public fun embeddingModel (Ljava/lang/String;)Lai/torad/aisdk/EmbeddingModel;
 	public fun getProviderId ()Ljava/lang/String;
 	public fun imageModel (Ljava/lang/String;)Lai/torad/aisdk/ImageModel;
-	public final fun invoke (Ljava/lang/String;)Lai/torad/aisdk/LanguageModel;
+	public final fun invoke-tDyRgq0 (Ljava/lang/String;)Lai/torad/aisdk/LanguageModel;
 	public fun languageModel (Ljava/lang/String;)Lai/torad/aisdk/LanguageModel;
 	public fun rerankingModel (Ljava/lang/String;)Lai/torad/aisdk/RerankingModel;
 	public fun speechModel (Ljava/lang/String;)Lai/torad/aisdk/SpeechModel;
@@ -12312,17 +12312,17 @@ public final class ai/torad/aisdk/providers/VoyageEmbeddingModelOptions$Companio
 
 public final class ai/torad/aisdk/providers/VoyageProvider : ai/torad/aisdk/Provider {
 	public fun <init> (Lio/ktor/client/HttpClient;Lai/torad/aisdk/providers/VoyageProviderSettings;)V
-	public final fun embedding (Ljava/lang/String;)Lai/torad/aisdk/EmbeddingModel;
+	public final fun embedding-tDyRgq0 (Ljava/lang/String;)Lai/torad/aisdk/EmbeddingModel;
 	public fun embeddingModel (Ljava/lang/String;)Lai/torad/aisdk/EmbeddingModel;
 	public fun getProviderId ()Ljava/lang/String;
 	public final fun getSettings ()Lai/torad/aisdk/providers/VoyageProviderSettings;
 	public fun imageModel (Ljava/lang/String;)Lai/torad/aisdk/ImageModel;
 	public fun languageModel (Ljava/lang/String;)Lai/torad/aisdk/LanguageModel;
-	public final fun reranking (Ljava/lang/String;)Lai/torad/aisdk/RerankingModel;
+	public final fun reranking-tDyRgq0 (Ljava/lang/String;)Lai/torad/aisdk/RerankingModel;
 	public fun rerankingModel (Ljava/lang/String;)Lai/torad/aisdk/RerankingModel;
 	public fun speechModel (Ljava/lang/String;)Lai/torad/aisdk/SpeechModel;
-	public final fun textEmbedding (Ljava/lang/String;)Lai/torad/aisdk/EmbeddingModel;
-	public final fun textEmbeddingModel (Ljava/lang/String;)Lai/torad/aisdk/EmbeddingModel;
+	public final fun textEmbedding-tDyRgq0 (Ljava/lang/String;)Lai/torad/aisdk/EmbeddingModel;
+	public final fun textEmbeddingModel-tDyRgq0 (Ljava/lang/String;)Lai/torad/aisdk/EmbeddingModel;
 	public fun transcriptionModel (Ljava/lang/String;)Lai/torad/aisdk/TranscriptionModel;
 	public fun videoModel (Ljava/lang/String;)Lai/torad/aisdk/VideoModel;
 }
@@ -12506,21 +12506,21 @@ public final class ai/torad/aisdk/providers/XaiLanguageModelResponsesOptions$Com
 
 public final class ai/torad/aisdk/providers/XaiProvider : ai/torad/aisdk/Provider {
 	public fun <init> (Lio/ktor/client/HttpClient;Lai/torad/aisdk/providers/XaiProviderSettings;)V
-	public final fun chat (Ljava/lang/String;)Lai/torad/aisdk/LanguageModel;
+	public final fun chat-tDyRgq0 (Ljava/lang/String;)Lai/torad/aisdk/LanguageModel;
 	public fun embeddingModel (Ljava/lang/String;)Lai/torad/aisdk/EmbeddingModel;
 	public fun getProviderId ()Ljava/lang/String;
 	public final fun getSettings ()Lai/torad/aisdk/providers/XaiProviderSettings;
 	public final fun getTools ()Lai/torad/aisdk/providers/XaiTools;
-	public final fun image (Ljava/lang/String;)Lai/torad/aisdk/ImageModel;
+	public final fun image-tDyRgq0 (Ljava/lang/String;)Lai/torad/aisdk/ImageModel;
 	public fun imageModel (Ljava/lang/String;)Lai/torad/aisdk/ImageModel;
-	public final fun invoke (Ljava/lang/String;)Lai/torad/aisdk/LanguageModel;
+	public final fun invoke-tDyRgq0 (Ljava/lang/String;)Lai/torad/aisdk/LanguageModel;
 	public fun languageModel (Ljava/lang/String;)Lai/torad/aisdk/LanguageModel;
 	public fun rerankingModel (Ljava/lang/String;)Lai/torad/aisdk/RerankingModel;
-	public final fun responses (Ljava/lang/String;)Lai/torad/aisdk/LanguageModel;
+	public final fun responses-tDyRgq0 (Ljava/lang/String;)Lai/torad/aisdk/LanguageModel;
 	public fun speechModel (Ljava/lang/String;)Lai/torad/aisdk/SpeechModel;
 	public final fun textEmbeddingModel (Ljava/lang/String;)Ljava/lang/Void;
 	public fun transcriptionModel (Ljava/lang/String;)Lai/torad/aisdk/TranscriptionModel;
-	public final fun video (Ljava/lang/String;)Lai/torad/aisdk/VideoModel;
+	public final fun video-tDyRgq0 (Ljava/lang/String;)Lai/torad/aisdk/VideoModel;
 	public fun videoModel (Ljava/lang/String;)Lai/torad/aisdk/VideoModel;
 }
 

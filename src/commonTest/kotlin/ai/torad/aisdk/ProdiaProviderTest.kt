@@ -44,7 +44,7 @@ class ProdiaProviderTest {
                 baseURL = "https://prodia.test/v2",
                 headers = mapOf("X-Provider" to "provider"),
             ),
-        ).image("sdxl")
+        ).image(ModelId("sdxl"))
 
         val result = model.generate(
             ImageGenerationParams(
@@ -194,7 +194,7 @@ class ProdiaProviderTest {
         val model = Prodia(
             fixture.httpClient(),
             ProdiaProviderSettings(apiKey = "token", baseURL = "https://prodia.test/v2"),
-        ).video("minimax/video")
+        ).video(ModelId("minimax/video"))
 
         val textResult = model.generate(
             VideoGenerationParams(

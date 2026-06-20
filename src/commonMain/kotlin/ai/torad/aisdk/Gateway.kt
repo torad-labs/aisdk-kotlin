@@ -8,11 +8,6 @@ import kotlinx.coroutines.sync.withLock
 import kotlinx.serialization.json.JsonElement
 import kotlin.time.Clock
 
-public typealias GatewayModelId = String
-public typealias GatewayEmbeddingModelId = String
-public typealias GatewayImageModelId = String
-public typealias GatewayRerankingModelId = String
-public typealias GatewayVideoModelId = String
 
 public const val AI_GATEWAY_PROTOCOL_VERSION: String = "0.0.1"
 public const val AI_GATEWAY_DEFAULT_BASE_URL: String = "https://ai-gateway.vercel.sh/v3/ai"
@@ -171,37 +166,37 @@ public data class GatewayGenerationInfo(
 public interface GatewayTransport {
     public suspend fun generateText(
         context: GatewayRequestContext,
-        modelId: GatewayModelId,
+        modelId: ModelId,
         params: LanguageModelCallParams,
     ): LanguageModelResult = gatewayTransportMissing()
 
     public fun streamText(
         context: GatewayRequestContext,
-        modelId: GatewayModelId,
+        modelId: ModelId,
         params: LanguageModelCallParams,
     ): Flow<StreamEvent> = flow { throw GatewayTransportNotConfiguredError() }
 
     public suspend fun embed(
         context: GatewayRequestContext,
-        modelId: GatewayEmbeddingModelId,
+        modelId: ModelId,
         params: EmbeddingModelCallParams,
     ): EmbeddingModelResult = gatewayTransportMissing()
 
     public suspend fun generateImage(
         context: GatewayRequestContext,
-        modelId: GatewayImageModelId,
+        modelId: ModelId,
         params: ImageGenerationParams,
     ): ImageModelResult = gatewayTransportMissing()
 
     public suspend fun generateVideo(
         context: GatewayRequestContext,
-        modelId: GatewayVideoModelId,
+        modelId: ModelId,
         params: VideoGenerationParams,
     ): VideoModelResult = gatewayTransportMissing()
 
     public suspend fun rerank(
         context: GatewayRequestContext,
-        modelId: GatewayRerankingModelId,
+        modelId: ModelId,
         params: RerankingParams,
     ): RerankingModelResult = gatewayTransportMissing()
 
@@ -233,13 +228,13 @@ public interface GatewayProvider : Provider {
     public val settings: GatewayProviderSettings
     public val tools: GatewayTools
 
-    public operator fun invoke(modelId: GatewayModelId): LanguageModel = languageModel(modelId)
-    public fun chat(modelId: GatewayModelId): LanguageModel = languageModel(modelId)
-    public fun embedding(modelId: GatewayEmbeddingModelId): EmbeddingModel = embeddingModel(modelId)
-    public fun image(modelId: GatewayImageModelId): ImageModel = imageModel(modelId)
-    public fun video(modelId: GatewayVideoModelId): VideoModel = videoModel(modelId)
-    public fun reranking(modelId: GatewayRerankingModelId): RerankingModel = rerankingModel(modelId)
-    public fun textEmbeddingModel(modelId: GatewayEmbeddingModelId): EmbeddingModel = embeddingModel(modelId)
+    public operator fun invoke(modelId: ModelId): LanguageModel = languageModel(modelId)
+    public fun chat(modelId: ModelId): LanguageModel = languageModel(modelId)
+    public fun embedding(modelId: ModelId): EmbeddingModel = embeddingModel(modelId)
+    public fun image(modelId: ModelId): ImageModel = imageModel(modelId)
+    public fun video(modelId: ModelId): VideoModel = videoModel(modelId)
+    public fun reranking(modelId: ModelId): RerankingModel = rerankingModel(modelId)
+    public fun textEmbeddingModel(modelId: ModelId): EmbeddingModel = embeddingModel(modelId)
 
     public suspend fun getAvailableModels(): GatewayFetchMetadataResponse
     public suspend fun getCredits(): GatewayCreditsResponse
@@ -306,62 +301,62 @@ private class DefaultGatewayProvider(
 }
 
 private class GatewayLanguageModel(
-    override val modelId: GatewayModelId,
+    override val modelId: String,
     private val transport: GatewayTransport,
     private val context: suspend () -> GatewayRequestContext,
 ) : LanguageModel {
     override val provider: String = "gateway"
 
     override suspend fun generate(params: LanguageModelCallParams): LanguageModelResult =
-        transport.generateText(context(), modelId, params)
+        transport.generateText(context(), ModelId(modelId), params)
 
     override fun stream(params: LanguageModelCallParams): Flow<StreamEvent> = flow {
-        emitAll(transport.streamText(context(), modelId, params))
+        emitAll(transport.streamText(context(), ModelId(modelId), params))
     }
 }
 
 private class GatewayEmbeddingModel(
-    override val modelId: GatewayEmbeddingModelId,
+    override val modelId: String,
     private val transport: GatewayTransport,
     private val context: suspend () -> GatewayRequestContext,
 ) : EmbeddingModel {
     override val provider: String = "gateway"
 
     override suspend fun embed(params: EmbeddingModelCallParams): EmbeddingModelResult =
-        transport.embed(context(), modelId, params)
+        transport.embed(context(), ModelId(modelId), params)
 }
 
 private class GatewayImageModel(
-    override val modelId: GatewayImageModelId,
+    override val modelId: String,
     private val transport: GatewayTransport,
     private val context: suspend () -> GatewayRequestContext,
 ) : ImageModel {
     override val provider: String = "gateway"
 
     override suspend fun generate(params: ImageGenerationParams): ImageModelResult =
-        transport.generateImage(context(), modelId, params)
+        transport.generateImage(context(), ModelId(modelId), params)
 }
 
 private class GatewayVideoModel(
-    override val modelId: GatewayVideoModelId,
+    override val modelId: String,
     private val transport: GatewayTransport,
     private val context: suspend () -> GatewayRequestContext,
 ) : VideoModel {
     override val provider: String = "gateway"
 
     override suspend fun generate(params: VideoGenerationParams): VideoModelResult =
-        transport.generateVideo(context(), modelId, params)
+        transport.generateVideo(context(), ModelId(modelId), params)
 }
 
 private class GatewayRerankingModel(
-    override val modelId: GatewayRerankingModelId,
+    override val modelId: String,
     private val transport: GatewayTransport,
     private val context: suspend () -> GatewayRequestContext,
 ) : RerankingModel {
     override val provider: String = "gateway"
 
     override suspend fun rerank(params: RerankingParams): RerankingModelResult =
-        transport.rerank(context(), modelId, params)
+        transport.rerank(context(), ModelId(modelId), params)
 }
 
 public data class GatewayTools(

@@ -75,7 +75,7 @@ class XaiProviderTest {
             XaiProviderSettings(apiKey = "key", headers = mapOf("X-Provider" to "provider")),
         )
 
-        val chat = provider.chat("grok-3").generate(
+        val chat = provider.chat(ModelId("grok-3")).generate(
             LanguageModelCallParams(
                 messages = listOf(userMessage("Hello")),
                 maxOutputTokens = 128,
@@ -107,7 +107,7 @@ class XaiProviderTest {
                 headers = mapOf("X-Request" to "request"),
             ),
         )
-        val responses = provider.responses("grok-4").generate(
+        val responses = provider.responses(ModelId("grok-4")).generate(
             LanguageModelCallParams(
                 messages = listOf(userMessage("Hi")),
                 providerOptions = ProviderOptions.Raw(JsonObject(mapOf("xai" to buildJsonObject { put("reasoningEffort", JsonPrimitive("low")) }))),
@@ -116,9 +116,9 @@ class XaiProviderTest {
 
         assertEquals("answer", chat.text)
         assertEquals("response text", responses.text)
-        assertEquals("xai.chat", provider("grok-3").provider)
-        assertEquals("xai.responses", provider.responses("grok-4").provider)
-        assertEquals(mapOf("image/*" to listOf("^https?://.*$")), provider.chat("grok-3").supportedUrls)
+        assertEquals("xai.chat", provider(ModelId("grok-3")).provider)
+        assertEquals("xai.responses", provider.responses(ModelId("grok-4")).provider)
+        assertEquals(mapOf("image/*" to listOf("^https?://.*$")), provider.chat(ModelId("grok-3")).supportedUrls)
         assertEquals(2, chat.content.filterIsInstance<ContentPart.Source>().size)
         assertEquals(3, chat.usage.outputTokens.reasoning)
 
@@ -156,7 +156,7 @@ class XaiProviderTest {
         )
         fixture.server.start()
         val provider = Xai(fixture.httpClient(), XaiProviderSettings(apiKey = "key"))
-        provider.chat("grok-3").generate(
+        provider.chat(ModelId("grok-3")).generate(
             LanguageModelCallParams(
                 messages = listOf(userMessage("go")),
                 stopSequences = listOf("END"),
@@ -226,7 +226,7 @@ class XaiProviderTest {
         val provider = Xai(fixture.httpClient(), XaiProviderSettings(apiKey = "key"))
 
         val error = assertFailsWith<APICallError> {
-            provider.chat("grok-3").generate(LanguageModelCallParams(messages = listOf(userMessage("hi"))))
+            provider.chat(ModelId("grok-3")).generate(LanguageModelCallParams(messages = listOf(userMessage("hi"))))
         }
 
         assertEquals("Timed out waiting for first token", error.message)
@@ -253,7 +253,7 @@ class XaiProviderTest {
         )
         fixture.server.start()
         val provider = Xai(fixture.httpClient(), XaiProviderSettings(baseURL = "https://xai.test/v1", apiKey = "key"))
-        val model = provider.image("grok-imagine-image")
+        val model = provider.image(ModelId("grok-imagine-image"))
 
         val generated = model.generate(
             ImageGenerationParams(
@@ -336,7 +336,7 @@ class XaiProviderTest {
         )
         fixture.server.start()
         val provider = Xai(fixture.httpClient(), XaiProviderSettings(baseURL = "https://xai.test/v1", apiKey = "key"))
-        val model = provider.video("grok-imagine-video")
+        val model = provider.video(ModelId("grok-imagine-video"))
 
         val generated = model.generate(
             VideoGenerationParams(

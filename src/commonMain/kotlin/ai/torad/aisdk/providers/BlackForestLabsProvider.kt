@@ -27,8 +27,6 @@ import kotlin.math.ceil
 
 public const val BLACK_FOREST_LABS_VERSION: String = "1.0.34"
 
-public typealias BlackForestLabsImageModelId = String
-public typealias BlackForestLabsAspectRatio = String
 public typealias BlackForestLabsImageProviderOptions = BlackForestLabsImageModelOptions
 
 @Serializable
@@ -69,8 +67,8 @@ public data class BlackForestLabsProviderSettings(
 )
 
 public interface BlackForestLabsProvider : Provider {
-    public fun image(modelId: BlackForestLabsImageModelId): ImageModel
-    override fun imageModel(modelId: String): ImageModel = image(modelId)
+    public fun image(modelId: ModelId): ImageModel
+    override fun imageModel(modelId: String): ImageModel = image(ModelId(modelId))
     public fun textEmbeddingModel(modelId: String): Nothing = throw NoSuchModelError(providerId, "embeddingModel", modelId)
 }
 
@@ -81,7 +79,7 @@ public fun BlackForestLabs(
 
 public val blackForestLabs: BlackForestLabsProvider = object : BlackForestLabsProvider {
     override val providerId: String = "black-forest-labs"
-    override fun image(modelId: String): ImageModel =
+    override fun image(modelId: ModelId): ImageModel =
         throw UnsupportedFunctionalityError("black-forest-labs", "Black Forest Labs provider is not configured. Use BlackForestLabs(client, settings).")
 }
 
@@ -90,7 +88,7 @@ private class DefaultBlackForestLabsProvider(
     private val settings: BlackForestLabsProviderSettings,
 ) : BlackForestLabsProvider {
     override val providerId: String = "black-forest-labs"
-    override fun image(modelId: String): ImageModel = BlackForestLabsImageModel(client, settings, modelId)
+    override fun image(modelId: ModelId): ImageModel = BlackForestLabsImageModel(client, settings, modelId.value)
     override fun languageModel(modelId: String): LanguageModel = throw NoSuchModelError(providerId, "languageModel", modelId)
     override fun embeddingModel(modelId: String): EmbeddingModel = throw NoSuchModelError(providerId, "embeddingModel", modelId)
 }

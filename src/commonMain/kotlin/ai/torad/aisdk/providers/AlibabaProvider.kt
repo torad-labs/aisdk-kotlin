@@ -25,8 +25,6 @@ import kotlin.time.Clock
 
 public const val ALIBABA_VERSION: String = "1.0.26"
 
-public typealias AlibabaChatModelId = String
-public typealias AlibabaVideoModelId = String
 public typealias AlibabaProviderOptions = AlibabaLanguageModelOptions
 public typealias AlibabaVideoProviderOptions = AlibabaVideoModelOptions
 public typealias AlibabaUsage = Usage
@@ -97,9 +95,9 @@ public class AlibabaProvider(
             ),
         )
 
-    public operator fun invoke(modelId: AlibabaChatModelId): LanguageModel = languageModel(modelId)
-    public fun chatModel(modelId: AlibabaChatModelId): LanguageModel = languageModel(modelId)
-    public fun video(modelId: AlibabaVideoModelId): VideoModel = videoModel(modelId)
+    public operator fun invoke(modelId: ModelId): LanguageModel = languageModel(modelId)
+    public fun chatModel(modelId: ModelId): LanguageModel = languageModel(modelId)
+    public fun video(modelId: ModelId): VideoModel = videoModel(modelId)
 
     override fun languageModel(modelId: String): LanguageModel = AlibabaChatLanguageModel(chatProvider.chatModel(modelId))
     override fun videoModel(modelId: String): VideoModel = AlibabaVideoModel(client, settings, modelId)

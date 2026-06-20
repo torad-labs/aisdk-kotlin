@@ -24,10 +24,6 @@ import kotlinx.serialization.json.jsonPrimitive
 
 public const val DEEPINFRA_VERSION: String = "2.0.52"
 
-public typealias DeepInfraChatModelId = String
-public typealias DeepInfraCompletionModelId = String
-public typealias DeepInfraEmbeddingModelId = String
-public typealias DeepInfraImageModelId = String
 public typealias DeepInfraErrorData = JsonElement
 
 @Serializable
@@ -55,12 +51,12 @@ public class DeepInfraProvider(
     )
     override val providerId: String = "deepinfra"
 
-    public operator fun invoke(modelId: DeepInfraChatModelId): LanguageModel = languageModel(modelId)
-    override fun languageModel(modelId: String): LanguageModel = chatModel(modelId)
-    public fun chatModel(modelId: DeepInfraChatModelId): LanguageModel = DeepInfraChatLanguageModel(compatible.chatModel(modelId))
-    public fun completionModel(modelId: DeepInfraCompletionModelId): LanguageModel = compatible.completionModel(modelId)
-    public fun textEmbeddingModel(modelId: DeepInfraEmbeddingModelId): EmbeddingModel = embeddingModel(modelId)
-    public fun image(modelId: DeepInfraImageModelId): ImageModel = imageModel(modelId)
+    public operator fun invoke(modelId: ModelId): LanguageModel = languageModel(modelId)
+    override fun languageModel(modelId: String): LanguageModel = chatModel(ModelId(modelId))
+    public fun chatModel(modelId: ModelId): LanguageModel = DeepInfraChatLanguageModel(compatible.chatModel(modelId.value))
+    public fun completionModel(modelId: ModelId): LanguageModel = compatible.completionModel(modelId.value)
+    public fun textEmbeddingModel(modelId: ModelId): EmbeddingModel = embeddingModel(modelId)
+    public fun image(modelId: ModelId): ImageModel = imageModel(modelId)
     override fun embeddingModel(modelId: String): EmbeddingModel = compatible.embeddingModel(modelId)
     override fun imageModel(modelId: String): ImageModel = DeepInfraImageModel(client, settings, modelId)
 }

@@ -26,10 +26,6 @@ import kotlinx.serialization.json.jsonPrimitive
 
 public const val FIREWORKS_VERSION: String = "2.0.53"
 
-public typealias FireworksChatModelId = String
-public typealias FireworksCompletionModelId = String
-public typealias FireworksEmbeddingModelId = String
-public typealias FireworksImageModelId = String
 
 @Serializable
 public data class FireworksThinkingOptions(
@@ -75,12 +71,12 @@ public class FireworksProvider(
     )
     override val providerId: String = "fireworks"
 
-    public operator fun invoke(modelId: FireworksChatModelId): LanguageModel = languageModel(modelId)
-    override fun languageModel(modelId: String): LanguageModel = chatModel(modelId)
-    public fun chatModel(modelId: FireworksChatModelId): LanguageModel = FireworksLanguageModel(compatible.chatModel(modelId))
-    public fun completionModel(modelId: FireworksCompletionModelId): LanguageModel = compatible.completionModel(modelId)
-    public fun textEmbeddingModel(modelId: FireworksEmbeddingModelId): EmbeddingModel = embeddingModel(modelId)
-    public fun image(modelId: FireworksImageModelId): ImageModel = imageModel(modelId)
+    public operator fun invoke(modelId: ModelId): LanguageModel = languageModel(modelId)
+    override fun languageModel(modelId: String): LanguageModel = chatModel(ModelId(modelId))
+    public fun chatModel(modelId: ModelId): LanguageModel = FireworksLanguageModel(compatible.chatModel(modelId.value))
+    public fun completionModel(modelId: ModelId): LanguageModel = compatible.completionModel(modelId.value)
+    public fun textEmbeddingModel(modelId: ModelId): EmbeddingModel = embeddingModel(modelId)
+    public fun image(modelId: ModelId): ImageModel = imageModel(modelId)
     override fun embeddingModel(modelId: String): EmbeddingModel = compatible.embeddingModel(modelId)
     override fun imageModel(modelId: String): ImageModel = FireworksImageModel(client, settings, modelId)
 }
@@ -106,7 +102,7 @@ private class FireworksLanguageModel(
 public class FireworksImageModel(
     private val client: HttpClient,
     private val settings: FireworksProviderSettings,
-    override val modelId: FireworksImageModelId,
+    override val modelId: String,
 ) : ImageModel {
     override val provider: String = "fireworks.image"
 

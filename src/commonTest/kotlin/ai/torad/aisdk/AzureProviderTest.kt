@@ -108,8 +108,8 @@ class AzureProviderTest {
             ),
         )
 
-        provider.chat("test-deployment").generate(LanguageModelCallParams(listOf(userMessage("Hi"))))
-        provider.chat("test-deployment").generate(LanguageModelCallParams(listOf(userMessage("Hi again"))))
+        provider.chat(ModelId("test-deployment")).generate(LanguageModelCallParams(listOf(userMessage("Hi"))))
+        provider.chat(ModelId("test-deployment")).generate(LanguageModelCallParams(listOf(userMessage("Hi again"))))
 
         assertEquals(2, tokenCount)
         assertEquals(
@@ -161,7 +161,7 @@ class AzureProviderTest {
                 providerOptions = ProviderOptions.Raw(JsonObject(mapOf("openai" to JsonObject(mapOf("style" to JsonPrimitive("natural")))))),
             ),
         )
-        val transcript = provider.transcription("whisper-1").transcribe(
+        val transcript = provider.transcription(ModelId("whisper-1")).transcribe(
             TranscriptionParams(
                 audio = AudioSource(
                     mediaType = "audio/wav",
@@ -181,13 +181,13 @@ class AzureProviderTest {
             seenRequests[1].url.toString(),
         )
         assertEquals("natural", seenBodies.single()["style"]?.jsonPrimitive?.contentOrNull)
-        assertEquals("azure.chat", provider.chat("chat-deployment").provider)
-        assertEquals("azure.completion", provider.completion("completion-deployment").provider)
-        assertEquals("azure.embeddings", provider.embedding("embedding-deployment").provider)
-        assertEquals("azure.image", provider.image("image-deployment").provider)
+        assertEquals("azure.chat", provider.chat(ModelId("chat-deployment")).provider)
+        assertEquals("azure.completion", provider.completion(ModelId("completion-deployment")).provider)
+        assertEquals("azure.embeddings", provider.embedding(ModelId("embedding-deployment")).provider)
+        assertEquals("azure.image", provider.image(ModelId("image-deployment")).provider)
         assertEquals("azure.transcription", provider.transcriptionModel("whisper-1").provider)
-        assertEquals("azure.speech", provider.speech("tts-1").provider)
-        assertEquals(provider.embedding("embedding-deployment").modelId, provider.textEmbeddingModel("embedding-deployment").modelId)
+        assertEquals("azure.speech", provider.speech(ModelId("tts-1")).provider)
+        assertEquals(provider.embedding(ModelId("embedding-deployment")).modelId, provider.textEmbeddingModel(ModelId("embedding-deployment")).modelId)
     }
 
     @Test

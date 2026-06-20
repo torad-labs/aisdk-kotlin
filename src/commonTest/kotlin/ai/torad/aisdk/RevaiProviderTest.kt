@@ -45,7 +45,7 @@ class RevaiProviderTest {
         val model = Revai(
             fixture.httpClient(),
             RevaiProviderSettings(apiKey = "key", pollingIntervalMillis = 0),
-        ).transcription("machine")
+        ).transcription(ModelId("machine"))
 
         val result = model.transcribe(
             TranscriptionParams(
@@ -145,7 +145,7 @@ class RevaiProviderTest {
         val model = Revai(
             fixture.httpClient(),
             RevaiProviderSettings(apiKey = "key", pollingIntervalMillis = 0),
-        ).transcription("machine")
+        ).transcription(ModelId("machine"))
 
         val error = assertFailsWith<AiSdkException> {
             model.transcribe(TranscriptionParams(audio = AudioSource("audio/wav", Base64Codec.encode(byteArrayOf(1)))))

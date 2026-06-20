@@ -9,8 +9,6 @@ import kotlinx.serialization.json.JsonElement
 
 public const val BASETEN_VERSION: String = "1.0.51"
 
-public typealias BasetenChatModelId = String
-public typealias BasetenEmbeddingModelId = String
 
 @Serializable
 public data class BasetenEmbeddingModelOptions(
@@ -37,15 +35,15 @@ public class BasetenProvider(
     override val providerId: String = "baseten"
 
     public operator fun invoke(): LanguageModel = chatModel()
-    public operator fun invoke(modelId: BasetenChatModelId): LanguageModel = chatModel(modelId)
+    public operator fun invoke(modelId: ModelId): LanguageModel = chatModel(modelId)
     public fun chatModel(): LanguageModel = createChatModel(null)
-    public fun chatModel(modelId: BasetenChatModelId): LanguageModel = createChatModel(modelId)
+    public fun chatModel(modelId: ModelId): LanguageModel = createChatModel(modelId.value)
     public fun languageModel(): LanguageModel = chatModel()
-    override fun languageModel(modelId: String): LanguageModel = chatModel(modelId)
+    override fun languageModel(modelId: String): LanguageModel = chatModel(ModelId(modelId))
     public fun embeddingModel(): EmbeddingModel = createEmbeddingModel(null)
     override fun embeddingModel(modelId: String): EmbeddingModel = createEmbeddingModel(modelId)
     public fun textEmbeddingModel(): EmbeddingModel = embeddingModel()
-    public fun textEmbeddingModel(modelId: BasetenEmbeddingModelId): EmbeddingModel = embeddingModel(modelId)
+    public fun textEmbeddingModel(modelId: ModelId): EmbeddingModel = embeddingModel(modelId)
     override fun imageModel(modelId: String): ImageModel = throw NoSuchModelError(providerId, "imageModel", modelId)
 
     private fun createChatModel(modelId: String?): LanguageModel {

@@ -19,8 +19,6 @@ import kotlinx.serialization.json.jsonPrimitive
 
 public const val VOYAGE_VERSION: String = "1.0.4"
 
-public typealias VoyageEmbeddingModelId = String
-public typealias VoyageRerankingModelId = String
 
 @Serializable
 public data class VoyageEmbeddingModelOptions(
@@ -49,13 +47,13 @@ public class VoyageProvider(
 ) : Provider {
     override val providerId: String = "voyage"
 
-    public fun embedding(modelId: VoyageEmbeddingModelId): EmbeddingModel = VoyageEmbeddingModel(client, settings, modelId)
-    public fun textEmbedding(modelId: VoyageEmbeddingModelId): EmbeddingModel = embedding(modelId)
-    public fun textEmbeddingModel(modelId: VoyageEmbeddingModelId): EmbeddingModel = embedding(modelId)
-    public fun reranking(modelId: VoyageRerankingModelId): RerankingModel = VoyageRerankingModel(client, settings, modelId)
+    public fun embedding(modelId: ModelId): EmbeddingModel = VoyageEmbeddingModel(client, settings, modelId.value)
+    public fun textEmbedding(modelId: ModelId): EmbeddingModel = embedding(modelId)
+    public fun textEmbeddingModel(modelId: ModelId): EmbeddingModel = embedding(modelId)
+    public fun reranking(modelId: ModelId): RerankingModel = VoyageRerankingModel(client, settings, modelId.value)
 
-    override fun embeddingModel(modelId: String): EmbeddingModel = embedding(modelId)
-    override fun rerankingModel(modelId: String): RerankingModel = reranking(modelId)
+    override fun embeddingModel(modelId: String): EmbeddingModel = embedding(ModelId(modelId))
+    override fun rerankingModel(modelId: String): RerankingModel = reranking(ModelId(modelId))
 }
 
 /** PascalCase factory — mirrors the OpenAI reference pattern. */

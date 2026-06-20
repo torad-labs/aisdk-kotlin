@@ -15,8 +15,6 @@ import kotlinx.serialization.json.put
 public const val MISTRAL_VERSION: String = "3.0.37"
 private const val MISTRAL_MAX_EMBEDDINGS_PER_CALL: Int = 32
 
-public typealias MistralChatModelId = String
-public typealias MistralEmbeddingModelId = String
 public typealias MistralProviderOptions = MistralLanguageModelOptions
 
 @Serializable
@@ -45,18 +43,18 @@ public class MistralProvider(
 
     override val providerId: String = "mistral"
 
-    public operator fun invoke(modelId: MistralChatModelId): LanguageModel = chat(modelId)
+    public operator fun invoke(modelId: ModelId): LanguageModel = chat(modelId)
 
-    public fun chat(modelId: MistralChatModelId): LanguageModel =
-        MistralChatLanguageModel(compatible.chatModel(modelId))
+    public fun chat(modelId: ModelId): LanguageModel =
+        MistralChatLanguageModel(compatible.chatModel(modelId.value))
 
-    public fun embedding(modelId: MistralEmbeddingModelId): EmbeddingModel =
-        MistralEmbeddingModel(compatible.embeddingModel(modelId))
+    public fun embedding(modelId: ModelId): EmbeddingModel =
+        MistralEmbeddingModel(compatible.embeddingModel(modelId.value))
 
-    override fun languageModel(modelId: String): LanguageModel = chat(modelId)
-    override fun embeddingModel(modelId: String): EmbeddingModel = embedding(modelId)
-    public fun textEmbedding(modelId: MistralEmbeddingModelId): EmbeddingModel = embedding(modelId)
-    public fun textEmbeddingModel(modelId: MistralEmbeddingModelId): EmbeddingModel = embedding(modelId)
+    override fun languageModel(modelId: String): LanguageModel = chat(ModelId(modelId))
+    override fun embeddingModel(modelId: String): EmbeddingModel = embedding(ModelId(modelId))
+    public fun textEmbedding(modelId: ModelId): EmbeddingModel = embedding(modelId)
+    public fun textEmbeddingModel(modelId: ModelId): EmbeddingModel = embedding(modelId)
 
     override fun imageModel(modelId: String): ImageModel =
         throw NoSuchModelError(providerId, "imageModel", modelId)

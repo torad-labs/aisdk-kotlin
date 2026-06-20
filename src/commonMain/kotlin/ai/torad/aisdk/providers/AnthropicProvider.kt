@@ -29,7 +29,6 @@ import kotlinx.serialization.json.jsonPrimitive
 
 public const val ANTHROPIC_VERSION: String = "3.0.81"
 
-public typealias AnthropicMessagesModelId = String
 public typealias AnthropicLanguageModelOptions = JsonObject
 public typealias AnthropicProviderOptions = AnthropicLanguageModelOptions
 public typealias AnthropicToolOptions = JsonObject
@@ -62,9 +61,9 @@ public class AnthropicProvider(
     override val providerId: String = "anthropic"
     public val tools: AnthropicTools = anthropicTools
 
-    public operator fun invoke(modelId: AnthropicMessagesModelId): LanguageModel = languageModel(modelId)
-    public fun chat(modelId: AnthropicMessagesModelId): LanguageModel = languageModel(modelId)
-    public fun messages(modelId: AnthropicMessagesModelId): LanguageModel = languageModel(modelId)
+    public operator fun invoke(modelId: ModelId): LanguageModel = languageModel(modelId)
+    public fun chat(modelId: ModelId): LanguageModel = languageModel(modelId)
+    public fun messages(modelId: ModelId): LanguageModel = languageModel(modelId)
 
     override fun languageModel(modelId: String): LanguageModel =
         AnthropicMessagesLanguageModel(client, settings, modelId)

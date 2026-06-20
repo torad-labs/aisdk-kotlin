@@ -71,7 +71,7 @@ class OpenAICompatibleProviderFacadesTest {
                 name = "fireworks",
                 expectedChatUrl = "https://fireworks.test/inference/v1/chat/completions",
                 expectedUserAgent = "ai-sdk/fireworks/$FIREWORKS_VERSION",
-                create = { client -> Fireworks(client, FireworksProviderSettings(apiKey = "key", baseURL = "https://fireworks.test/inference/v1")).chatModel("model") },
+                create = { client -> Fireworks(client, FireworksProviderSettings(apiKey = "key", baseURL = "https://fireworks.test/inference/v1")).chatModel(ModelId("model")) },
             ),
             ProviderCase(
                 name = "perplexity",
@@ -83,7 +83,7 @@ class OpenAICompatibleProviderFacadesTest {
                 name = "moonshotai",
                 expectedChatUrl = "https://moonshot.test/v1/chat/completions",
                 expectedUserAgent = "ai-sdk/moonshotai/$MOONSHOTAI_VERSION",
-                create = { client -> MoonshotAI(client, MoonshotAIProviderSettings(apiKey = "key", baseURL = "https://moonshot.test/v1")).chatModel("model") },
+                create = { client -> MoonshotAI(client, MoonshotAIProviderSettings(apiKey = "key", baseURL = "https://moonshot.test/v1")).chatModel(ModelId("model")) },
             ),
             ProviderCase(
                 name = "groq",
@@ -95,7 +95,7 @@ class OpenAICompatibleProviderFacadesTest {
                 name = "togetherai",
                 expectedChatUrl = "https://together.test/v1/chat/completions",
                 expectedUserAgent = "ai-sdk/togetherai/$TOGETHERAI_VERSION",
-                create = { client -> TogetherAI(client, TogetherAIProviderSettings(apiKey = "key", baseURL = "https://together.test/v1")).chatModel("model") },
+                create = { client -> TogetherAI(client, TogetherAIProviderSettings(apiKey = "key", baseURL = "https://together.test/v1")).chatModel(ModelId("model")) },
             ),
             ProviderCase(
                 name = "vercel",
@@ -301,7 +301,7 @@ class OpenAICompatibleProviderFacadesTest {
             MoonshotAIProviderSettings(apiKey = "key", baseURL = "https://moonshot.test/v1"),
         )
 
-        val result = provider.chatModel("kimi").generate(LanguageModelCallParams(listOf(userMessage("hi"))))
+        val result = provider.chatModel(ModelId("kimi")).generate(LanguageModelCallParams(listOf(userMessage("hi"))))
 
         assertEquals(3, result.usage.inputTokens.cacheRead)
         assertEquals(6, result.usage.inputTokens.noCache)
@@ -430,10 +430,10 @@ class OpenAICompatibleProviderFacadesTest {
             DeepInfraProviderSettings(apiKey = "key", baseURL = "https://deepinfra.test/v1"),
         )
 
-        val chat = provider.chatModel("model").generate(LanguageModelCallParams(listOf(userMessage("hi"))))
-        val completion = provider.completionModel("model").generate(LanguageModelCallParams(listOf(userMessage("hi"))))
-        val embedding = provider.textEmbeddingModel("embed").embed(EmbeddingModelCallParams(listOf("hello")))
-        val image = provider.image("black-forest-labs/FLUX-1-schnell").generate(
+        val chat = provider.chatModel(ModelId("model")).generate(LanguageModelCallParams(listOf(userMessage("hi"))))
+        val completion = provider.completionModel(ModelId("model")).generate(LanguageModelCallParams(listOf(userMessage("hi"))))
+        val embedding = provider.textEmbeddingModel(ModelId("embed")).embed(EmbeddingModelCallParams(listOf("hello")))
+        val image = provider.image(ModelId("black-forest-labs/FLUX-1-schnell")).generate(
             ImageGenerationParams(
                 prompt = "mountain",
                 n = 2,
@@ -482,7 +482,7 @@ class OpenAICompatibleProviderFacadesTest {
             FireworksProviderSettings(apiKey = "key", baseURL = "https://fireworks.test/inference/v1"),
         )
 
-        provider.chatModel("model").generate(
+        provider.chatModel(ModelId("model")).generate(
             LanguageModelCallParams(
                 messages = listOf(userMessage("hi")),
                 providerOptions = ProviderOptions.Raw(JsonObject(mapOf(
@@ -503,10 +503,10 @@ class OpenAICompatibleProviderFacadesTest {
         assertEquals(2048, chatBody["thinking"]?.jsonObject?.get("budget_tokens")?.jsonPrimitive?.intOrNull)
         assertEquals("preserved", chatBody["reasoning_history"]?.jsonPrimitive?.contentOrNull)
 
-        val workflowImage = provider.image("accounts/fireworks/models/flux-1-dev-fp8").generate(
+        val workflowImage = provider.image(ModelId("accounts/fireworks/models/flux-1-dev-fp8")).generate(
             ImageGenerationParams(prompt = "cat", n = 1, size = "512x512", aspectRatio = "1:1"),
         )
-        val imageGenerationImage = provider.image("accounts/fireworks/models/SSD-1B").generate(
+        val imageGenerationImage = provider.image(ModelId("accounts/fireworks/models/SSD-1B")).generate(
             ImageGenerationParams(prompt = "dog", n = 1, size = "768x512", aspectRatio = "16:9"),
         )
 
@@ -542,7 +542,7 @@ class OpenAICompatibleProviderFacadesTest {
             FireworksProviderSettings(apiKey = "key", baseURL = "https://fireworks.test/inference/v1"),
         )
 
-        val image = provider.image("accounts/fireworks/models/flux-kontext-pro").generate(ImageGenerationParams(prompt = "edit"))
+        val image = provider.image(ModelId("accounts/fireworks/models/flux-kontext-pro")).generate(ImageGenerationParams(prompt = "edit"))
 
         assertEquals(Base64Codec.encode(byteArrayOf(9, 8, 7)), image.images.single().base64)
         assertEquals(
@@ -585,9 +585,9 @@ class OpenAICompatibleProviderFacadesTest {
             TogetherAIProviderSettings(apiKey = "key", baseURL = "https://together.test/v1"),
         )
 
-        assertEquals("done", provider.completionModel("model").generate(LanguageModelCallParams(listOf(userMessage("hi")))).text)
+        assertEquals("done", provider.completionModel(ModelId("model")).generate(LanguageModelCallParams(listOf(userMessage("hi")))).text)
         assertEquals(listOf(0.3f, 0.4f), provider.embeddingModel("embed").embed(EmbeddingModelCallParams(listOf("hello"))).embeddings.single())
-        val image = provider.image("black-forest-labs/FLUX.1-dev").generate(
+        val image = provider.image(ModelId("black-forest-labs/FLUX.1-dev")).generate(
             ImageGenerationParams(
                 prompt = "house",
                 n = 2,
@@ -601,7 +601,7 @@ class OpenAICompatibleProviderFacadesTest {
                 ))),
             ),
         )
-        val ranking = provider.reranking("ranker").rerank(
+        val ranking = provider.reranking(ModelId("ranker")).rerank(
             RerankingParams(
                 query = "best",
                 documents = listOf("alpha", "beta"),

@@ -32,9 +32,6 @@ import kotlinx.serialization.json.jsonPrimitive
 
 public const val ELEVENLABS_VERSION: String = "2.0.33"
 
-public typealias ElevenLabsSpeechModelId = String
-public typealias ElevenLabsSpeechVoiceId = String
-public typealias ElevenLabsTranscriptionModelId = String
 
 @Serializable
 public data class ElevenLabsSpeechModelOptions(
@@ -73,19 +70,19 @@ public class ElevenLabsProvider(
 ) : Provider {
     override val providerId: String = "elevenlabs"
 
-    public operator fun invoke(modelId: ElevenLabsTranscriptionModelId = "scribe_v1"): TranscriptionModel = transcription(modelId)
+    public operator fun invoke(modelId: ModelId = ModelId("scribe_v1")): TranscriptionModel = transcription(modelId)
 
-    public fun transcription(modelId: ElevenLabsTranscriptionModelId): TranscriptionModel =
-        ElevenLabsTranscriptionModel(client, settings, modelId)
+    public fun transcription(modelId: ModelId): TranscriptionModel =
+        ElevenLabsTranscriptionModel(client, settings, modelId.value)
 
-    public fun speech(modelId: ElevenLabsSpeechModelId): SpeechModel =
-        ElevenLabsSpeechModel(client, settings, modelId)
+    public fun speech(modelId: ModelId): SpeechModel =
+        ElevenLabsSpeechModel(client, settings, modelId.value)
 
     public fun textEmbeddingModel(modelId: String): Nothing =
         throw NoSuchModelError(providerId, "embeddingModel", modelId)
 
-    override fun transcriptionModel(modelId: String): TranscriptionModel = transcription(modelId)
-    override fun speechModel(modelId: String): SpeechModel = speech(modelId)
+    override fun transcriptionModel(modelId: String): TranscriptionModel = transcription(ModelId(modelId))
+    override fun speechModel(modelId: String): SpeechModel = speech(ModelId(modelId))
 }
 
 /** PascalCase factory — mirrors `OpenAI(...)`. */

@@ -7,12 +7,6 @@ import kotlinx.serialization.json.JsonElement
 
 public const val AZURE_VERSION: String = "3.0.69"
 
-public typealias AzureOpenAIChatModelId = String
-public typealias AzureOpenAICompletionModelId = String
-public typealias AzureOpenAIEmbeddingModelId = String
-public typealias AzureOpenAIImageModelId = String
-public typealias AzureOpenAITranscriptionModelId = String
-public typealias AzureOpenAISpeechModelId = String
 
 public data class AzureOpenAIProviderSettings(
     val resourceName: String? = null,
@@ -58,31 +52,31 @@ public class AzureOpenAIProvider(
             ),
         ).responses(deploymentId)
 
-    public fun chat(deploymentId: AzureOpenAIChatModelId): LanguageModel =
-        compatible.chatModel(deploymentId)
+    public fun chat(deploymentId: ModelId): LanguageModel =
+        compatible.chatModel(deploymentId.value)
 
-    public fun completion(deploymentId: AzureOpenAICompletionModelId): LanguageModel =
-        compatible.completionModel(deploymentId)
+    public fun completion(deploymentId: ModelId): LanguageModel =
+        compatible.completionModel(deploymentId.value)
 
-    public fun embedding(deploymentId: AzureOpenAIEmbeddingModelId): EmbeddingModel =
+    public fun embedding(deploymentId: ModelId): EmbeddingModel =
         AzureOpenAIEmbeddingModel(compatible.embeddingModel(deploymentId))
 
-    public fun image(deploymentId: AzureOpenAIImageModelId): ImageModel =
+    public fun image(deploymentId: ModelId): ImageModel =
         compatible.imageModel(deploymentId)
 
-    public fun transcription(deploymentId: AzureOpenAITranscriptionModelId): TranscriptionModel =
+    public fun transcription(deploymentId: ModelId): TranscriptionModel =
         compatible.transcriptionModel(deploymentId)
 
-    public fun speech(deploymentId: AzureOpenAISpeechModelId): SpeechModel =
+    public fun speech(deploymentId: ModelId): SpeechModel =
         compatible.speechModel(deploymentId)
 
     override fun languageModel(modelId: String): LanguageModel = responses(modelId)
-    override fun embeddingModel(modelId: String): EmbeddingModel = embedding(modelId)
-    public fun textEmbedding(deploymentId: AzureOpenAIEmbeddingModelId): EmbeddingModel = embedding(deploymentId)
-    public fun textEmbeddingModel(deploymentId: AzureOpenAIEmbeddingModelId): EmbeddingModel = embedding(deploymentId)
-    override fun imageModel(modelId: String): ImageModel = image(modelId)
-    override fun transcriptionModel(modelId: String): TranscriptionModel = transcription(modelId)
-    override fun speechModel(modelId: String): SpeechModel = speech(modelId)
+    override fun embeddingModel(modelId: String): EmbeddingModel = embedding(ModelId(modelId))
+    public fun textEmbedding(deploymentId: ModelId): EmbeddingModel = embedding(deploymentId)
+    public fun textEmbeddingModel(deploymentId: ModelId): EmbeddingModel = embedding(deploymentId)
+    override fun imageModel(modelId: String): ImageModel = image(ModelId(modelId))
+    override fun transcriptionModel(modelId: String): TranscriptionModel = transcription(ModelId(modelId))
+    override fun speechModel(modelId: String): SpeechModel = speech(ModelId(modelId))
 
     private fun compatibleSettings(): OpenAICompatibleProviderSettings =
         OpenAICompatibleProviderSettings(

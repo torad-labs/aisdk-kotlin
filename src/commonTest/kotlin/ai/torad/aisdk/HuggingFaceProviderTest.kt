@@ -113,7 +113,7 @@ class HuggingFaceProviderTest {
             ),
         )
 
-        val result = provider.responses("Qwen/Qwen3-32B").generate(
+        val result = provider.responses(ModelId("Qwen/Qwen3-32B")).generate(
             LanguageModelCallParams(
                 messages = listOf(
                     systemMessage("System rules."),
@@ -174,7 +174,7 @@ class HuggingFaceProviderTest {
             ),
         )
 
-        assertEquals("huggingface.responses", provider("Qwen/Qwen3-32B").provider)
+        assertEquals("huggingface.responses", provider(ModelId("Qwen/Qwen3-32B")).provider)
         assertEquals("Paris is in France.", result.text)
         assertEquals(FinishReason.ToolCalls, result.finishReason)
         assertEquals("tool_calls", result.rawFinishReason)
@@ -279,7 +279,7 @@ class HuggingFaceProviderTest {
         )
 
         val events = drainAllItems(
-            provider.responses("meta-llama/Llama-3.1-8B-Instruct").stream(
+            provider.responses(ModelId("meta-llama/Llama-3.1-8B-Instruct")).stream(
                 LanguageModelCallParams(
                     messages = listOf(userMessage("hi")),
                     tools = listOf(LanguageModelTool("lookup", "Lookup.", objectSchema("city").toString())),
@@ -321,7 +321,7 @@ class HuggingFaceProviderTest {
         fixture.server.start()
         val provider = HuggingFace(fixture.httpClient(), HuggingFaceProviderSettings(baseURL = "https://hf.test/v1"))
 
-        val events = drainAllItems(provider.responses("meta-llama/Llama-3.1-8B-Instruct").stream(LanguageModelCallParams(messages = listOf(userMessage("hi")))))
+        val events = drainAllItems(provider.responses(ModelId("meta-llama/Llama-3.1-8B-Instruct")).stream(LanguageModelCallParams(messages = listOf(userMessage("hi")))))
 
         val error = events.filterIsInstance<StreamEvent.Error>().single()
         assertTrue(error.message.contains("missing item"))
@@ -384,7 +384,7 @@ class HuggingFaceProviderTest {
             HuggingFaceProviderSettings(baseURL = "https://hf.test/v1"),
         )
 
-        val result = provider("model").generate(
+        val result = provider(ModelId("model")).generate(
             LanguageModelCallParams(
                 messages = listOf(userMessage("hi")),
                 tools = listOf(LanguageModelTool("lookup", "Lookup.", objectSchema("q").toString())),
@@ -397,7 +397,7 @@ class HuggingFaceProviderTest {
         assertTrue("tool_choice" !in fixture.calls.single().requestBodyJson.jsonObject)
 
         val error = assertFailsWith<AiSdkException> {
-            provider("model").generate(
+            provider(ModelId("model")).generate(
                 LanguageModelCallParams(
                     messages = listOf(
                         ModelMessage(
