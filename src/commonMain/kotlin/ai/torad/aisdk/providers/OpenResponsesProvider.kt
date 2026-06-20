@@ -395,9 +395,9 @@ private fun isOpenResponsesBase64Payload(value: String): Boolean =
 private fun openResponsesFileId(
     value: String,
     prefixes: List<String>,
-    providerMetadata: Map<String, JsonElement>?,
+    providerMetadata: ProviderMetadata,
 ): String? =
-    explicitOpenResponsesFileId(providerMetadata)
+    explicitOpenResponsesFileId(providerMetadata.toMap())
         ?: value.takeIf { isOpenResponsesFileId(it, prefixes) }
 
 private fun explicitOpenResponsesFileId(providerMetadata: Map<String, JsonElement>?): String? {
@@ -421,7 +421,7 @@ private fun openResponsesUserContentPart(
     }
     is ContentPart.Image -> buildJsonObject {
         put("type", JsonPrimitive("input_image"))
-        val fileId = openResponsesFileId(part.base64, fileIdPrefixes, part.providerMetadata.toMap())
+        val fileId = openResponsesFileId(part.base64, fileIdPrefixes, part.providerMetadata)
         if (fileId != null) {
             put("file_id", JsonPrimitive(fileId))
         } else {
@@ -431,7 +431,7 @@ private fun openResponsesUserContentPart(
     is ContentPart.File -> if (part.mediaType.startsWith("image/")) {
         buildJsonObject {
             put("type", JsonPrimitive("input_image"))
-            val fileId = openResponsesFileId(part.base64, fileIdPrefixes, part.providerMetadata.toMap())
+            val fileId = openResponsesFileId(part.base64, fileIdPrefixes, part.providerMetadata)
             if (fileId != null) {
                 put("file_id", JsonPrimitive(fileId))
             } else {
@@ -442,7 +442,7 @@ private fun openResponsesUserContentPart(
         buildJsonObject {
             put("type", JsonPrimitive("input_file"))
             put("filename", JsonPrimitive(part.filename ?: "data"))
-            val fileId = openResponsesFileId(part.base64, fileIdPrefixes, part.providerMetadata.toMap())
+            val fileId = openResponsesFileId(part.base64, fileIdPrefixes, part.providerMetadata)
             if (fileId != null) {
                 put("file_id", JsonPrimitive(fileId))
             } else {
