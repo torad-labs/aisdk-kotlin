@@ -6,9 +6,8 @@ import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.async
-import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.FlowCollector
@@ -925,37 +924,42 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
                 messages.add(ModelMessage(MessageRole.Assistant, assistantParts.toList()))
             }
 
-            // Execute non-approval-gated tools.
-            // Execute the step's tools CONCURRENTLY (bounded by maxParallelToolCalls),
-            // each buffering its stream events into its own BufferingCollector; then replay
-            // the buffers + apply results SERIALLY in call order on the collector coroutine.
-            // This overlaps the slow tool compute (latency = slowest, not the sum) while
-            // preserving deterministic message ordering and the Flow single-collector
-            // invariant (all real emits happen on this coroutine, never from an async child).
+            // Execute non-approval-gated tools concurrently (bounded by
+            // maxParallelToolCalls). Child coroutines send progress to a parent-owned
+            // channel; only this collector coroutine performs real Flow emits. Final
+            // durable tool results are applied incrementally in original call order.
             // All tools see the SAME prompt snapshot (they were requested in one assistant
             // turn) — more correct than the prior serial leak of one tool's result into the
             // next tool's messages view.
             val promptSnapshot = messages.toList()
             val permits = Semaphore(maxParallelToolCalls.coerceAtLeast(1))
-            val executed = coroutineScope {
-                toolsToExecute.map { call ->
-                    async {
-                        val toolDef = stepTools.find(call.toolName) ?: return@async null
-                        runHook(stepNumber, feed) {
-                            val startEvent = OnToolCallStartEvent(
-                                call.toolCallId,
-                                call.toolName,
-                                call.input,
-                                stepNumber,
-                                promptSnapshot,
+            val parentOut: FlowCollector<StreamEvent> = this
+            coroutineScope {
+                val signals = Channel<ParallelToolSignal>(Channel.BUFFERED)
+                toolsToExecute.forEachIndexed { index, call ->
+                    launch {
+                        val toolDef = stepTools.find(call.toolName)
+                        if (toolDef == null) {
+                            signals.send(
+                                ParallelToolSignal.Completed(OrderedToolCompletion.Skipped(index)),
                             )
-                            experimental_onToolCallStart?.invoke(startEvent)
-                            hooks?.experimental_onToolCallStart?.invoke(startEvent)
+                            return@launch
                         }
-                        val buffer = BufferingCollector()
-                        val result = permits.withPermit {
-                            executeTool(
-                                out = buffer,
+                        permits.withPermit {
+                            val progressOut = ChannelToolEventCollector(signals)
+                            runHook(stepNumber, feed) {
+                                val startEvent = OnToolCallStartEvent(
+                                    call.toolCallId,
+                                    call.toolName,
+                                    call.input,
+                                    stepNumber,
+                                    promptSnapshot,
+                                )
+                                experimental_onToolCallStart?.invoke(startEvent)
+                                hooks?.experimental_onToolCallStart?.invoke(startEvent)
+                            }
+                            val result = executeTool(
+                                out = progressOut,
                                 toolDef = toolDef,
                                 call = call,
                                 options = activeContext,
@@ -968,26 +972,59 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
                                 // approval-categorization pass — don't decode/repair a second time.
                                 preResolved = resolvedForExecution[call.toolCallId],
                             )
-                        }
-                        runHook(stepNumber, feed) {
-                            val finishEvent = OnToolCallFinishEvent(
-                                toolCallId = call.toolCallId,
-                                toolName = call.toolName,
-                                outputJson = (result as? ToolExecutionResult.Success)?.outputJson,
-                                errorMessage = (result as? ToolExecutionResult.Failure)?.error?.message,
-                                stepNumber = stepNumber,
+                            runHook(stepNumber, feed) {
+                                val finishEvent = OnToolCallFinishEvent(
+                                    toolCallId = call.toolCallId,
+                                    toolName = call.toolName,
+                                    outcome = when (result) {
+                                        is ToolExecutionResult.Success ->
+                                            OnToolCallFinishEvent.Outcome.Success(result.outputJson)
+                                        is ToolExecutionResult.Failure ->
+                                            OnToolCallFinishEvent.Outcome.Failure(
+                                                result.error.message ?: "tool failed",
+                                            )
+                                    },
+                                    stepNumber = stepNumber,
+                                )
+                                experimental_onToolCallFinish?.invoke(finishEvent)
+                                hooks?.experimental_onToolCallFinish?.invoke(finishEvent)
+                            }
+                            signals.send(
+                                ParallelToolSignal.Completed(
+                                    OrderedToolCompletion.Executed(index, call, result),
+                                ),
                             )
-                            experimental_onToolCallFinish?.invoke(finishEvent)
-                            hooks?.experimental_onToolCallFinish?.invoke(finishEvent)
                         }
-                        ExecutedTool(call, buffer.events, result)
                     }
-                }.awaitAll()
-            }
-            for (entry in executed) {
-                if (entry == null) continue
-                entry.events.forEach { emit(it) }
-                applyToolResult(this, entry.call, entry.result, messages, stepToolResults)
+                }
+
+                val completions = mutableMapOf<Int, OrderedToolCompletion>()
+                var completedChildren = 0
+                var nextToApply = 0
+                while (completedChildren < toolsToExecute.size) {
+                    when (val signal = signals.receive()) {
+                        is ParallelToolSignal.Progress -> parentOut.emit(signal.event)
+                        is ParallelToolSignal.Completed -> {
+                            completedChildren += 1
+                            completions[signal.completion.index] = signal.completion
+                            while (true) {
+                                val completion = completions.remove(nextToApply) ?: break
+                                when (completion) {
+                                    is OrderedToolCompletion.Executed ->
+                                        applyToolResult(
+                                            parentOut,
+                                            completion.call,
+                                            completion.result,
+                                            messages,
+                                            stepToolResults,
+                                        )
+                                    is OrderedToolCompletion.Skipped -> Unit
+                                }
+                                nextToApply += 1
+                            }
+                        }
+                    }
+                }
             }
 
             val effectiveFinishReason = if (toolsRequiringApproval.isNotEmpty()) {
@@ -1372,8 +1409,14 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
                 OnToolCallFinishEvent(
                     toolCallId = call.toolCallId,
                     toolName = call.toolName,
-                    outputJson = (result as? ToolExecutionResult.Success)?.outputJson,
-                    errorMessage = (result as? ToolExecutionResult.Failure)?.error?.message,
+                    outcome = when (result) {
+                        is ToolExecutionResult.Success ->
+                            OnToolCallFinishEvent.Outcome.Success(result.outputJson)
+                        is ToolExecutionResult.Failure ->
+                            OnToolCallFinishEvent.Outcome.Failure(
+                                result.error.message ?: "tool failed",
+                            )
+                    },
                     stepNumber = stepNumber,
                 ),
             )
@@ -1746,12 +1789,30 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
     private fun hasSystemMessage(messages: List<ModelMessage>): Boolean =
         messages.any { it.role == MessageRole.System }
 
-    /** One tool's concurrently-computed outcome: the call, its buffered events, and its result. */
-    private class ExecutedTool(
-        val call: ContentPart.ToolCall,
-        val events: List<StreamEvent>,
-        val result: ToolExecutionResult,
-    )
+    private sealed interface ParallelToolSignal {
+        class Progress(val event: StreamEvent) : ParallelToolSignal
+        class Completed(val completion: OrderedToolCompletion) : ParallelToolSignal
+    }
+
+    private sealed interface OrderedToolCompletion {
+        val index: Int
+
+        class Executed(
+            override val index: Int,
+            val call: ContentPart.ToolCall,
+            val result: ToolExecutionResult,
+        ) : OrderedToolCompletion
+
+        class Skipped(override val index: Int) : OrderedToolCompletion
+    }
+
+    private class ChannelToolEventCollector(
+        private val signals: Channel<ParallelToolSignal>,
+    ) : FlowCollector<StreamEvent> {
+        override suspend fun emit(value: StreamEvent) {
+            signals.send(ParallelToolSignal.Progress(value))
+        }
+    }
 
     private sealed interface ToolExecutionResult {
         /**
@@ -1815,19 +1876,6 @@ private class FlowToolStreamWriter(
 ) : ToolStreamWriter {
     override suspend fun write(event: StreamEvent) = out.emit(event)
     override suspend fun writeData(value: JsonElement) = out.emit(StreamEvent.Raw(value))
-}
-
-/**
- * A [FlowCollector] that buffers events into a list instead of emitting them, so a tool
- * can run on a concurrent child coroutine (its writes never touch the shared collector).
- * The loop replays [events] onto the real collector serially, in deterministic order.
- * Each instance is used by exactly one tool's coroutine, so the list is single-threaded.
- */
-private class BufferingCollector : FlowCollector<StreamEvent> {
-    val events: MutableList<StreamEvent> = mutableListOf()
-    override suspend fun emit(value: StreamEvent) {
-        events.add(value)
-    }
 }
 
 private class TerminalModelStreamError : RuntimeException()

@@ -1,0 +1,7 @@
+id: no-provideroptions-jsonobject-cast
+language: kotlin
+severity: warning
+rule:
+  any:
+    - pattern: providerOptions[$KEY] as? JsonObject
+    - pattern: providerOptions[$KEY] as JsonObject

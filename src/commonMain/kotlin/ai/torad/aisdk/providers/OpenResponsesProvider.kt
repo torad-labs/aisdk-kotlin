@@ -837,9 +837,10 @@ private fun openResponsesGenerateResult(
     val logprobs = mutableListOf<JsonElement>()
     var hasToolCalls = false
 
-    for (part in response["output"]?.jsonArray.orEmpty()) {
+    response["output"]?.jsonArray.orEmpty().forEachIndexed { index, part ->
         val obj = part.jsonObject
         val itemId = obj["id"]?.jsonPrimitive?.contentOrNull
+        val path = "$.output[$index]"
         when (obj["type"]?.jsonPrimitive?.contentOrNull) {
             "reasoning" -> {
                 val reasoningParts = (obj["content"] as? JsonArray) ?: (obj["summary"] as? JsonArray) ?: JsonArray(emptyList())
@@ -863,9 +864,29 @@ private fun openResponsesGenerateResult(
             }
             "function_call" -> {
                 hasToolCalls = true
+                val toolCallId = WireDecoder.requiredString(obj, "call_id", "Open Responses", "response output", path)
+                if (toolCallId.isBlank()) {
+                    WireDecoder.fail(
+                        "Open Responses",
+                        "response output",
+                        WireDecoder.child(path, "call_id"),
+                        "expected non-blank string",
+                        obj["call_id"],
+                    )
+                }
+                val toolName = WireDecoder.requiredString(obj, "name", "Open Responses", "response output", path)
+                if (toolName.isBlank()) {
+                    WireDecoder.fail(
+                        "Open Responses",
+                        "response output",
+                        WireDecoder.child(path, "name"),
+                        "expected non-blank string",
+                        obj["name"],
+                    )
+                }
                 val toolCall = ContentPart.ToolCall(
-                    toolCallId = obj["call_id"]?.jsonPrimitive?.contentOrNull ?: generateId(prefix = "call"),
-                    toolName = obj["name"]?.jsonPrimitive?.contentOrNull.orEmpty(),
+                    toolCallId = toolCallId,
+                    toolName = toolName,
                     input = parseToolInput(obj["arguments"]?.jsonPrimitive?.contentOrNull, json),
                     providerMetadata = openResponsesPartMetadata(providerMetadataKey, itemId, obj),
                 )
@@ -916,9 +937,9 @@ private class OpenResponsesStreamState(
                 val item = obj["item"] as? JsonObject
                     ?: return listOf(StreamEvent.Error("Open Responses stream protocol error: response.output_item.added missing item."))
                 val itemType = item["type"]?.jsonPrimitive?.contentOrNull
-                val itemId = item["id"]?.jsonPrimitive?.contentOrNull ?: obj["item_id"]?.jsonPrimitive?.contentOrNull.orEmpty()
                 when (itemType) {
                     "function_call" -> {
+                        val itemId = itemIdFromItem(item, obj) ?: return listOf(missingIdentityError(type, "item_id"))
                         toolCallsByItemId[itemId] = PendingOpenResponsesToolCall(
                             toolName = item["name"]?.jsonPrimitive?.contentOrNull,
                             toolCallId = item["call_id"]?.jsonPrimitive?.contentOrNull,
@@ -926,19 +947,23 @@ private class OpenResponsesStreamState(
                         )
                     }
                     "reasoning" -> {
+                        val itemId = item["id"]?.jsonPrimitive?.contentOrNull ?: obj["item_id"]?.jsonPrimitive?.contentOrNull.orEmpty()
                         activeReasoningId = itemId
                         events += StreamEvent.ReasoningStart(itemId)
                     }
-                    "message" -> events += StreamEvent.TextStart(itemId)
+                    "message" -> {
+                        val itemId = item["id"]?.jsonPrimitive?.contentOrNull ?: obj["item_id"]?.jsonPrimitive?.contentOrNull.orEmpty()
+                        events += StreamEvent.TextStart(itemId)
+                    }
                 }
             }
             "response.function_call_arguments.delta" -> {
-                val itemId = obj["item_id"]?.jsonPrimitive?.contentOrNull.orEmpty()
+                val itemId = itemIdFromEvent(obj) ?: return listOf(missingIdentityError(type, "item_id"))
                 val pending = toolCallsByItemId.getOrPut(itemId) { PendingOpenResponsesToolCall() }
                 pending.arguments = (pending.arguments ?: "") + obj["delta"]?.jsonPrimitive?.contentOrNull.orEmpty()
             }
             "response.function_call_arguments.done" -> {
-                val itemId = obj["item_id"]?.jsonPrimitive?.contentOrNull.orEmpty()
+                val itemId = itemIdFromEvent(obj) ?: return listOf(missingIdentityError(type, "item_id"))
                 val pending = toolCallsByItemId.getOrPut(itemId) { PendingOpenResponsesToolCall() }
                 pending.arguments = obj["arguments"]?.jsonPrimitive?.contentOrNull
             }
@@ -946,21 +971,29 @@ private class OpenResponsesStreamState(
                 val item = obj["item"] as? JsonObject
                     ?: return listOf(StreamEvent.Error("Open Responses stream protocol error: response.output_item.done missing item."))
                 val itemType = item["type"]?.jsonPrimitive?.contentOrNull
-                val itemId = item["id"]?.jsonPrimitive?.contentOrNull ?: obj["item_id"]?.jsonPrimitive?.contentOrNull.orEmpty()
                 when (itemType) {
                     "function_call" -> {
+                        val itemId = itemIdFromItem(item, obj) ?: return listOf(missingIdentityError(type, "item_id"))
                         val pending = toolCallsByItemId.remove(itemId)
-                        val toolName = pending?.toolName ?: item["name"]?.jsonPrimitive?.contentOrNull.orEmpty()
-                        val toolCallId = pending?.toolCallId ?: item["call_id"]?.jsonPrimitive?.contentOrNull ?: generateId(prefix = "call")
+                        val toolName = pending?.toolName?.takeIf { it.isNotBlank() }
+                            ?: item["name"]?.jsonPrimitive?.contentOrNull?.takeIf { it.isNotBlank() }
+                            ?: return listOf(missingIdentityError(type, "name"))
+                        val toolCallId = pending?.toolCallId?.takeIf { it.isNotBlank() }
+                            ?: item["call_id"]?.jsonPrimitive?.contentOrNull?.takeIf { it.isNotBlank() }
+                            ?: return listOf(missingIdentityError(type, "call_id"))
                         val arguments = pending?.arguments ?: item["arguments"]?.jsonPrimitive?.contentOrNull
                         events += StreamEvent.ToolCall(toolCallId, toolName, parseToolInput(arguments, json))
                         hasToolCalls = true
                     }
                     "reasoning" -> {
+                        val itemId = item["id"]?.jsonPrimitive?.contentOrNull ?: obj["item_id"]?.jsonPrimitive?.contentOrNull.orEmpty()
                         events += StreamEvent.ReasoningEnd(itemId)
                         activeReasoningId = null
                     }
-                    "message" -> events += StreamEvent.TextEnd(itemId)
+                    "message" -> {
+                        val itemId = item["id"]?.jsonPrimitive?.contentOrNull ?: obj["item_id"]?.jsonPrimitive?.contentOrNull.orEmpty()
+                        events += StreamEvent.TextEnd(itemId)
+                    }
                 }
             }
             // OpenAI emits reasoning deltas as `response.reasoning_summary_text.delta`
@@ -992,6 +1025,16 @@ private class OpenResponsesStreamState(
         }
         return events
     }
+
+    private fun itemIdFromItem(item: JsonObject, event: JsonObject): String? =
+        item["id"]?.jsonPrimitive?.contentOrNull?.takeIf { it.isNotBlank() }
+            ?: itemIdFromEvent(event)
+
+    private fun itemIdFromEvent(event: JsonObject): String? =
+        event["item_id"]?.jsonPrimitive?.contentOrNull?.takeIf { it.isNotBlank() }
+
+    private fun missingIdentityError(eventType: String, field: String): StreamEvent.Error =
+        StreamEvent.Error("Open Responses stream protocol error: $eventType missing required $field.")
 
     fun finish(): List<StreamEvent> = buildList {
         activeReasoningId?.let { add(StreamEvent.ReasoningEnd(it)) }

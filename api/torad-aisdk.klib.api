@@ -11966,12 +11966,10 @@ final class ai.torad.aisdk/OnStepStartEvent { // ai.torad.aisdk/OnStepStartEvent
 }
 
 final class ai.torad.aisdk/OnToolCallFinishEvent { // ai.torad.aisdk/OnToolCallFinishEvent|null[0]
-    constructor <init>(kotlin/String, kotlin/String, kotlinx.serialization.json/JsonElement?, kotlin/String?, kotlin/Int) // ai.torad.aisdk/OnToolCallFinishEvent.<init>|<init>(kotlin.String;kotlin.String;kotlinx.serialization.json.JsonElement?;kotlin.String?;kotlin.Int){}[0]
+    constructor <init>(kotlin/String, kotlin/String, ai.torad.aisdk/OnToolCallFinishEvent.Outcome, kotlin/Int) // ai.torad.aisdk/OnToolCallFinishEvent.<init>|<init>(kotlin.String;kotlin.String;ai.torad.aisdk.OnToolCallFinishEvent.Outcome;kotlin.Int){}[0]
 
-    final val errorMessage // ai.torad.aisdk/OnToolCallFinishEvent.errorMessage|{}errorMessage[0]
-        final fun <get-errorMessage>(): kotlin/String? // ai.torad.aisdk/OnToolCallFinishEvent.errorMessage.<get-errorMessage>|<get-errorMessage>(){}[0]
-    final val outputJson // ai.torad.aisdk/OnToolCallFinishEvent.outputJson|{}outputJson[0]
-        final fun <get-outputJson>(): kotlinx.serialization.json/JsonElement? // ai.torad.aisdk/OnToolCallFinishEvent.outputJson.<get-outputJson>|<get-outputJson>(){}[0]
+    final val outcome // ai.torad.aisdk/OnToolCallFinishEvent.outcome|{}outcome[0]
+        final fun <get-outcome>(): ai.torad.aisdk/OnToolCallFinishEvent.Outcome // ai.torad.aisdk/OnToolCallFinishEvent.outcome.<get-outcome>|<get-outcome>(){}[0]
     final val stepNumber // ai.torad.aisdk/OnToolCallFinishEvent.stepNumber|{}stepNumber[0]
         final fun <get-stepNumber>(): kotlin/Int // ai.torad.aisdk/OnToolCallFinishEvent.stepNumber.<get-stepNumber>|<get-stepNumber>(){}[0]
     final val toolCallId // ai.torad.aisdk/OnToolCallFinishEvent.toolCallId|{}toolCallId[0]
@@ -11981,13 +11979,40 @@ final class ai.torad.aisdk/OnToolCallFinishEvent { // ai.torad.aisdk/OnToolCallF
 
     final fun component1(): kotlin/String // ai.torad.aisdk/OnToolCallFinishEvent.component1|component1(){}[0]
     final fun component2(): kotlin/String // ai.torad.aisdk/OnToolCallFinishEvent.component2|component2(){}[0]
-    final fun component3(): kotlinx.serialization.json/JsonElement? // ai.torad.aisdk/OnToolCallFinishEvent.component3|component3(){}[0]
-    final fun component4(): kotlin/String? // ai.torad.aisdk/OnToolCallFinishEvent.component4|component4(){}[0]
-    final fun component5(): kotlin/Int // ai.torad.aisdk/OnToolCallFinishEvent.component5|component5(){}[0]
-    final fun copy(kotlin/String = ..., kotlin/String = ..., kotlinx.serialization.json/JsonElement? = ..., kotlin/String? = ..., kotlin/Int = ...): ai.torad.aisdk/OnToolCallFinishEvent // ai.torad.aisdk/OnToolCallFinishEvent.copy|copy(kotlin.String;kotlin.String;kotlinx.serialization.json.JsonElement?;kotlin.String?;kotlin.Int){}[0]
+    final fun component3(): ai.torad.aisdk/OnToolCallFinishEvent.Outcome // ai.torad.aisdk/OnToolCallFinishEvent.component3|component3(){}[0]
+    final fun component4(): kotlin/Int // ai.torad.aisdk/OnToolCallFinishEvent.component4|component4(){}[0]
+    final fun copy(kotlin/String = ..., kotlin/String = ..., ai.torad.aisdk/OnToolCallFinishEvent.Outcome = ..., kotlin/Int = ...): ai.torad.aisdk/OnToolCallFinishEvent // ai.torad.aisdk/OnToolCallFinishEvent.copy|copy(kotlin.String;kotlin.String;ai.torad.aisdk.OnToolCallFinishEvent.Outcome;kotlin.Int){}[0]
     final fun equals(kotlin/Any?): kotlin/Boolean // ai.torad.aisdk/OnToolCallFinishEvent.equals|equals(kotlin.Any?){}[0]
     final fun hashCode(): kotlin/Int // ai.torad.aisdk/OnToolCallFinishEvent.hashCode|hashCode(){}[0]
     final fun toString(): kotlin/String // ai.torad.aisdk/OnToolCallFinishEvent.toString|toString(){}[0]
+
+    sealed interface Outcome { // ai.torad.aisdk/OnToolCallFinishEvent.Outcome|null[0]
+        final class Failure : ai.torad.aisdk/OnToolCallFinishEvent.Outcome { // ai.torad.aisdk/OnToolCallFinishEvent.Outcome.Failure|null[0]
+            constructor <init>(kotlin/String) // ai.torad.aisdk/OnToolCallFinishEvent.Outcome.Failure.<init>|<init>(kotlin.String){}[0]
+
+            final val errorMessage // ai.torad.aisdk/OnToolCallFinishEvent.Outcome.Failure.errorMessage|{}errorMessage[0]
+                final fun <get-errorMessage>(): kotlin/String // ai.torad.aisdk/OnToolCallFinishEvent.Outcome.Failure.errorMessage.<get-errorMessage>|<get-errorMessage>(){}[0]
+
+            final fun component1(): kotlin/String // ai.torad.aisdk/OnToolCallFinishEvent.Outcome.Failure.component1|component1(){}[0]
+            final fun copy(kotlin/String = ...): ai.torad.aisdk/OnToolCallFinishEvent.Outcome.Failure // ai.torad.aisdk/OnToolCallFinishEvent.Outcome.Failure.copy|copy(kotlin.String){}[0]
+            final fun equals(kotlin/Any?): kotlin/Boolean // ai.torad.aisdk/OnToolCallFinishEvent.Outcome.Failure.equals|equals(kotlin.Any?){}[0]
+            final fun hashCode(): kotlin/Int // ai.torad.aisdk/OnToolCallFinishEvent.Outcome.Failure.hashCode|hashCode(){}[0]
+            final fun toString(): kotlin/String // ai.torad.aisdk/OnToolCallFinishEvent.Outcome.Failure.toString|toString(){}[0]
+        }
+
+        final class Success : ai.torad.aisdk/OnToolCallFinishEvent.Outcome { // ai.torad.aisdk/OnToolCallFinishEvent.Outcome.Success|null[0]
+            constructor <init>(kotlinx.serialization.json/JsonElement) // ai.torad.aisdk/OnToolCallFinishEvent.Outcome.Success.<init>|<init>(kotlinx.serialization.json.JsonElement){}[0]
+
+            final val outputJson // ai.torad.aisdk/OnToolCallFinishEvent.Outcome.Success.outputJson|{}outputJson[0]
+                final fun <get-outputJson>(): kotlinx.serialization.json/JsonElement // ai.torad.aisdk/OnToolCallFinishEvent.Outcome.Success.outputJson.<get-outputJson>|<get-outputJson>(){}[0]
+
+            final fun component1(): kotlinx.serialization.json/JsonElement // ai.torad.aisdk/OnToolCallFinishEvent.Outcome.Success.component1|component1(){}[0]
+            final fun copy(kotlinx.serialization.json/JsonElement = ...): ai.torad.aisdk/OnToolCallFinishEvent.Outcome.Success // ai.torad.aisdk/OnToolCallFinishEvent.Outcome.Success.copy|copy(kotlinx.serialization.json.JsonElement){}[0]
+            final fun equals(kotlin/Any?): kotlin/Boolean // ai.torad.aisdk/OnToolCallFinishEvent.Outcome.Success.equals|equals(kotlin.Any?){}[0]
+            final fun hashCode(): kotlin/Int // ai.torad.aisdk/OnToolCallFinishEvent.Outcome.Success.hashCode|hashCode(){}[0]
+            final fun toString(): kotlin/String // ai.torad.aisdk/OnToolCallFinishEvent.Outcome.Success.toString|toString(){}[0]
+        }
+    }
 }
 
 final class ai.torad.aisdk/OnToolCallStartEvent { // ai.torad.aisdk/OnToolCallStartEvent|null[0]
@@ -12605,8 +12630,11 @@ final class ai.torad.aisdk/TelemetrySpanEvent { // ai.torad.aisdk/TelemetrySpanE
 }
 
 final class ai.torad.aisdk/TextGenerationRequest { // ai.torad.aisdk/TextGenerationRequest|null[0]
+    constructor <init>(ai.torad.aisdk/TextGenerationRequest.Input, kotlin/String? = ..., ai.torad.aisdk/CallSettings = ...) // ai.torad.aisdk/TextGenerationRequest.<init>|<init>(ai.torad.aisdk.TextGenerationRequest.Input;kotlin.String?;ai.torad.aisdk.CallSettings){}[0]
     constructor <init>(kotlin/String? = ..., kotlin.collections/List<ai.torad.aisdk/ModelMessage> = ..., kotlin/String? = ..., ai.torad.aisdk/CallSettings = ...) // ai.torad.aisdk/TextGenerationRequest.<init>|<init>(kotlin.String?;kotlin.collections.List<ai.torad.aisdk.ModelMessage>;kotlin.String?;ai.torad.aisdk.CallSettings){}[0]
 
+    final val input // ai.torad.aisdk/TextGenerationRequest.input|{}input[0]
+        final fun <get-input>(): ai.torad.aisdk/TextGenerationRequest.Input // ai.torad.aisdk/TextGenerationRequest.input.<get-input>|<get-input>(){}[0]
     final val messages // ai.torad.aisdk/TextGenerationRequest.messages|{}messages[0]
         final fun <get-messages>(): kotlin.collections/List<ai.torad.aisdk/ModelMessage> // ai.torad.aisdk/TextGenerationRequest.messages.<get-messages>|<get-messages>(){}[0]
     final val prompt // ai.torad.aisdk/TextGenerationRequest.prompt|{}prompt[0]
@@ -12624,6 +12652,82 @@ final class ai.torad.aisdk/TextGenerationRequest { // ai.torad.aisdk/TextGenerat
     final fun equals(kotlin/Any?): kotlin/Boolean // ai.torad.aisdk/TextGenerationRequest.equals|equals(kotlin.Any?){}[0]
     final fun hashCode(): kotlin/Int // ai.torad.aisdk/TextGenerationRequest.hashCode|hashCode(){}[0]
     final fun toString(): kotlin/String // ai.torad.aisdk/TextGenerationRequest.toString|toString(){}[0]
+
+    sealed interface Input { // ai.torad.aisdk/TextGenerationRequest.Input|null[0]
+        abstract val messages // ai.torad.aisdk/TextGenerationRequest.Input.messages|{}messages[0]
+            abstract fun <get-messages>(): kotlin.collections/List<ai.torad.aisdk/ModelMessage> // ai.torad.aisdk/TextGenerationRequest.Input.messages.<get-messages>|<get-messages>(){}[0]
+        abstract val prompt // ai.torad.aisdk/TextGenerationRequest.Input.prompt|{}prompt[0]
+            abstract fun <get-prompt>(): kotlin/String? // ai.torad.aisdk/TextGenerationRequest.Input.prompt.<get-prompt>|<get-prompt>(){}[0]
+
+        final class MessageHistory : ai.torad.aisdk/TextGenerationRequest.Input { // ai.torad.aisdk/TextGenerationRequest.Input.MessageHistory|null[0]
+            constructor <init>(ai.torad.aisdk/TextGenerationRequest.NonEmptyMessages) // ai.torad.aisdk/TextGenerationRequest.Input.MessageHistory.<init>|<init>(ai.torad.aisdk.TextGenerationRequest.NonEmptyMessages){}[0]
+
+            final val history // ai.torad.aisdk/TextGenerationRequest.Input.MessageHistory.history|{}history[0]
+                final fun <get-history>(): ai.torad.aisdk/TextGenerationRequest.NonEmptyMessages // ai.torad.aisdk/TextGenerationRequest.Input.MessageHistory.history.<get-history>|<get-history>(){}[0]
+            final val messages // ai.torad.aisdk/TextGenerationRequest.Input.MessageHistory.messages|{}messages[0]
+                final fun <get-messages>(): kotlin.collections/List<ai.torad.aisdk/ModelMessage> // ai.torad.aisdk/TextGenerationRequest.Input.MessageHistory.messages.<get-messages>|<get-messages>(){}[0]
+            final val prompt // ai.torad.aisdk/TextGenerationRequest.Input.MessageHistory.prompt|{}prompt[0]
+                final fun <get-prompt>(): kotlin/String? // ai.torad.aisdk/TextGenerationRequest.Input.MessageHistory.prompt.<get-prompt>|<get-prompt>(){}[0]
+
+            final fun component1(): ai.torad.aisdk/TextGenerationRequest.NonEmptyMessages // ai.torad.aisdk/TextGenerationRequest.Input.MessageHistory.component1|component1(){}[0]
+            final fun copy(ai.torad.aisdk/TextGenerationRequest.NonEmptyMessages = ...): ai.torad.aisdk/TextGenerationRequest.Input.MessageHistory // ai.torad.aisdk/TextGenerationRequest.Input.MessageHistory.copy|copy(ai.torad.aisdk.TextGenerationRequest.NonEmptyMessages){}[0]
+            final fun equals(kotlin/Any?): kotlin/Boolean // ai.torad.aisdk/TextGenerationRequest.Input.MessageHistory.equals|equals(kotlin.Any?){}[0]
+            final fun hashCode(): kotlin/Int // ai.torad.aisdk/TextGenerationRequest.Input.MessageHistory.hashCode|hashCode(){}[0]
+            final fun toString(): kotlin/String // ai.torad.aisdk/TextGenerationRequest.Input.MessageHistory.toString|toString(){}[0]
+        }
+
+        final class MessageHistoryWithPrompt : ai.torad.aisdk/TextGenerationRequest.Input { // ai.torad.aisdk/TextGenerationRequest.Input.MessageHistoryWithPrompt|null[0]
+            constructor <init>(ai.torad.aisdk/TextGenerationRequest.NonEmptyMessages, kotlin/String) // ai.torad.aisdk/TextGenerationRequest.Input.MessageHistoryWithPrompt.<init>|<init>(ai.torad.aisdk.TextGenerationRequest.NonEmptyMessages;kotlin.String){}[0]
+
+            final val history // ai.torad.aisdk/TextGenerationRequest.Input.MessageHistoryWithPrompt.history|{}history[0]
+                final fun <get-history>(): ai.torad.aisdk/TextGenerationRequest.NonEmptyMessages // ai.torad.aisdk/TextGenerationRequest.Input.MessageHistoryWithPrompt.history.<get-history>|<get-history>(){}[0]
+            final val messages // ai.torad.aisdk/TextGenerationRequest.Input.MessageHistoryWithPrompt.messages|{}messages[0]
+                final fun <get-messages>(): kotlin.collections/List<ai.torad.aisdk/ModelMessage> // ai.torad.aisdk/TextGenerationRequest.Input.MessageHistoryWithPrompt.messages.<get-messages>|<get-messages>(){}[0]
+            final val prompt // ai.torad.aisdk/TextGenerationRequest.Input.MessageHistoryWithPrompt.prompt|{}prompt[0]
+                final fun <get-prompt>(): kotlin/String // ai.torad.aisdk/TextGenerationRequest.Input.MessageHistoryWithPrompt.prompt.<get-prompt>|<get-prompt>(){}[0]
+
+            final fun component1(): ai.torad.aisdk/TextGenerationRequest.NonEmptyMessages // ai.torad.aisdk/TextGenerationRequest.Input.MessageHistoryWithPrompt.component1|component1(){}[0]
+            final fun component2(): kotlin/String // ai.torad.aisdk/TextGenerationRequest.Input.MessageHistoryWithPrompt.component2|component2(){}[0]
+            final fun copy(ai.torad.aisdk/TextGenerationRequest.NonEmptyMessages = ..., kotlin/String = ...): ai.torad.aisdk/TextGenerationRequest.Input.MessageHistoryWithPrompt // ai.torad.aisdk/TextGenerationRequest.Input.MessageHistoryWithPrompt.copy|copy(ai.torad.aisdk.TextGenerationRequest.NonEmptyMessages;kotlin.String){}[0]
+            final fun equals(kotlin/Any?): kotlin/Boolean // ai.torad.aisdk/TextGenerationRequest.Input.MessageHistoryWithPrompt.equals|equals(kotlin.Any?){}[0]
+            final fun hashCode(): kotlin/Int // ai.torad.aisdk/TextGenerationRequest.Input.MessageHistoryWithPrompt.hashCode|hashCode(){}[0]
+            final fun toString(): kotlin/String // ai.torad.aisdk/TextGenerationRequest.Input.MessageHistoryWithPrompt.toString|toString(){}[0]
+        }
+
+        final class PromptText : ai.torad.aisdk/TextGenerationRequest.Input { // ai.torad.aisdk/TextGenerationRequest.Input.PromptText|null[0]
+            constructor <init>(kotlin/String) // ai.torad.aisdk/TextGenerationRequest.Input.PromptText.<init>|<init>(kotlin.String){}[0]
+
+            final val messages // ai.torad.aisdk/TextGenerationRequest.Input.PromptText.messages|{}messages[0]
+                final fun <get-messages>(): kotlin.collections/List<ai.torad.aisdk/ModelMessage> // ai.torad.aisdk/TextGenerationRequest.Input.PromptText.messages.<get-messages>|<get-messages>(){}[0]
+            final val prompt // ai.torad.aisdk/TextGenerationRequest.Input.PromptText.prompt|{}prompt[0]
+                final fun <get-prompt>(): kotlin/String // ai.torad.aisdk/TextGenerationRequest.Input.PromptText.prompt.<get-prompt>|<get-prompt>(){}[0]
+            final val text // ai.torad.aisdk/TextGenerationRequest.Input.PromptText.text|{}text[0]
+                final fun <get-text>(): kotlin/String // ai.torad.aisdk/TextGenerationRequest.Input.PromptText.text.<get-text>|<get-text>(){}[0]
+
+            final fun component1(): kotlin/String // ai.torad.aisdk/TextGenerationRequest.Input.PromptText.component1|component1(){}[0]
+            final fun copy(kotlin/String = ...): ai.torad.aisdk/TextGenerationRequest.Input.PromptText // ai.torad.aisdk/TextGenerationRequest.Input.PromptText.copy|copy(kotlin.String){}[0]
+            final fun equals(kotlin/Any?): kotlin/Boolean // ai.torad.aisdk/TextGenerationRequest.Input.PromptText.equals|equals(kotlin.Any?){}[0]
+            final fun hashCode(): kotlin/Int // ai.torad.aisdk/TextGenerationRequest.Input.PromptText.hashCode|hashCode(){}[0]
+            final fun toString(): kotlin/String // ai.torad.aisdk/TextGenerationRequest.Input.PromptText.toString|toString(){}[0]
+        }
+
+        final object Companion { // ai.torad.aisdk/TextGenerationRequest.Input.Companion|null[0]
+            final fun messages(ai.torad.aisdk/ModelMessage, kotlin/Array<out ai.torad.aisdk/ModelMessage>...): ai.torad.aisdk/TextGenerationRequest.Input // ai.torad.aisdk/TextGenerationRequest.Input.Companion.messages|messages(ai.torad.aisdk.ModelMessage;kotlin.Array<out|ai.torad.aisdk.ModelMessage>...){}[0]
+            final fun messages(ai.torad.aisdk/TextGenerationRequest.NonEmptyMessages): ai.torad.aisdk/TextGenerationRequest.Input // ai.torad.aisdk/TextGenerationRequest.Input.Companion.messages|messages(ai.torad.aisdk.TextGenerationRequest.NonEmptyMessages){}[0]
+            final fun messagesWithPrompt(ai.torad.aisdk/TextGenerationRequest.NonEmptyMessages, kotlin/String): ai.torad.aisdk/TextGenerationRequest.Input // ai.torad.aisdk/TextGenerationRequest.Input.Companion.messagesWithPrompt|messagesWithPrompt(ai.torad.aisdk.TextGenerationRequest.NonEmptyMessages;kotlin.String){}[0]
+            final fun prompt(kotlin/String): ai.torad.aisdk/TextGenerationRequest.Input // ai.torad.aisdk/TextGenerationRequest.Input.Companion.prompt|prompt(kotlin.String){}[0]
+        }
+    }
+
+    final class NonEmptyMessages { // ai.torad.aisdk/TextGenerationRequest.NonEmptyMessages|null[0]
+        final val values // ai.torad.aisdk/TextGenerationRequest.NonEmptyMessages.values|{}values[0]
+            final fun <get-values>(): kotlin.collections/List<ai.torad.aisdk/ModelMessage> // ai.torad.aisdk/TextGenerationRequest.NonEmptyMessages.values.<get-values>|<get-values>(){}[0]
+
+        final object Companion { // ai.torad.aisdk/TextGenerationRequest.NonEmptyMessages.Companion|null[0]
+            final fun from(kotlin.collections/Iterable<ai.torad.aisdk/ModelMessage>): ai.torad.aisdk/TextGenerationRequest.NonEmptyMessages // ai.torad.aisdk/TextGenerationRequest.NonEmptyMessages.Companion.from|from(kotlin.collections.Iterable<ai.torad.aisdk.ModelMessage>){}[0]
+            final fun of(ai.torad.aisdk/ModelMessage, kotlin/Array<out ai.torad.aisdk/ModelMessage>...): ai.torad.aisdk/TextGenerationRequest.NonEmptyMessages // ai.torad.aisdk/TextGenerationRequest.NonEmptyMessages.Companion.of|of(ai.torad.aisdk.ModelMessage;kotlin.Array<out|ai.torad.aisdk.ModelMessage>...){}[0]
+        }
+    }
 }
 
 final class ai.torad.aisdk/TextGenerationRequestBuilder { // ai.torad.aisdk/TextGenerationRequestBuilder|null[0]

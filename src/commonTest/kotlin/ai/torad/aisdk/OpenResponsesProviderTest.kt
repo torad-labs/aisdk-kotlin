@@ -14,6 +14,7 @@ import io.ktor.http.content.OutgoingContent
 import io.ktor.http.headersOf
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertIs
 import kotlin.test.assertTrue
 import kotlinx.coroutines.test.runTest
@@ -131,6 +132,66 @@ class OpenResponsesProviderTest {
     }
 
     @Test
+    fun `generate rejects function call missing call id`() = runTest {
+        val client = HttpClient(
+            MockEngine {
+                respond(
+                    content = """
+                        {
+                          "id":"resp_missing_call",
+                          "created_at":1780000000,
+                          "model":"gpt-resp",
+                          "output":[{"type":"function_call","id":"fc_1","name":"search","arguments":"{}"}]
+                        }
+                    """.trimIndent(),
+                    status = HttpStatusCode.OK,
+                    headers = headersOf(HttpHeaders.ContentType, "application/json"),
+                )
+            },
+        )
+        val provider = createOpenResponses(client, OpenResponsesProviderSettings("https://api.test/v1/responses", "openresponses"))
+
+        val error = assertFailsWith<WireDecodeException> {
+            provider.responses("gpt-resp").generate(LanguageModelCallParams(listOf(userMessage("hi"))))
+        }
+
+        val message = error.message.orEmpty()
+        assertTrue(message.contains("Open Responses"), message)
+        assertTrue(message.contains("response output"), message)
+        assertTrue(message.contains("call_id"), message)
+    }
+
+    @Test
+    fun `generate rejects function call missing name`() = runTest {
+        val client = HttpClient(
+            MockEngine {
+                respond(
+                    content = """
+                        {
+                          "id":"resp_missing_name",
+                          "created_at":1780000000,
+                          "model":"gpt-resp",
+                          "output":[{"type":"function_call","id":"fc_1","call_id":"call_1","arguments":"{}"}]
+                        }
+                    """.trimIndent(),
+                    status = HttpStatusCode.OK,
+                    headers = headersOf(HttpHeaders.ContentType, "application/json"),
+                )
+            },
+        )
+        val provider = createOpenResponses(client, OpenResponsesProviderSettings("https://api.test/v1/responses", "openresponses"))
+
+        val error = assertFailsWith<WireDecodeException> {
+            provider.responses("gpt-resp").generate(LanguageModelCallParams(listOf(userMessage("hi"))))
+        }
+
+        val message = error.message.orEmpty()
+        assertTrue(message.contains("Open Responses"), message)
+        assertTrue(message.contains("response output"), message)
+        assertTrue(message.contains("name"), message)
+    }
+
+    @Test
     fun `stream maps Open Responses SSE text reasoning tool call finish and usage`() = runTest {
         val seenBodies = mutableListOf<JsonObject>()
         val client = HttpClient(
@@ -183,6 +244,58 @@ class OpenResponsesProviderTest {
         assertEquals(1, finish.usage.promptTokens)
         assertEquals(2, finish.usage.completionTokens)
         assertEquals("gpt-resp", seenBodies.single()["model"]!!.jsonPrimitive.content)
+    }
+
+    @Test
+    fun `stream rejects function call arguments delta missing item id`() = runTest {
+        val client = HttpClient(
+            MockEngine {
+                respond(
+                    content = """
+                        data: {"type":"response.output_item.added","item":{"type":"function_call","id":"fc_1","call_id":"call_1","name":"search","arguments":""}}
+
+                        data: {"type":"response.function_call_arguments.delta","delta":"{\"q\""}
+
+                    """.trimIndent(),
+                    status = HttpStatusCode.OK,
+                    headers = headersOf(HttpHeaders.ContentType, "text/event-stream"),
+                )
+            },
+        )
+        val provider = createOpenResponses(client, OpenResponsesProviderSettings("https://api.test/v1/responses", "openresponses"))
+
+        val events = drainAllItems(provider.languageModel("gpt-resp").stream(LanguageModelCallParams(listOf(userMessage("hi")))))
+
+        val error = events.filterIsInstance<StreamEvent.Error>().single()
+        assertTrue(error.message.contains("item_id"), error.message)
+        assertTrue(events.none { it is StreamEvent.ToolCall })
+    }
+
+    @Test
+    fun `stream rejects final function call missing name or call id`() = runTest {
+        val client = HttpClient(
+            MockEngine {
+                respond(
+                    content = """
+                        data: {"type":"response.output_item.done","item":{"type":"function_call","id":"fc_1","call_id":"call_1","arguments":"{}"}}
+
+                        data: {"type":"response.output_item.done","item":{"type":"function_call","id":"fc_2","name":"search","arguments":"{}"}}
+
+                    """.trimIndent(),
+                    status = HttpStatusCode.OK,
+                    headers = headersOf(HttpHeaders.ContentType, "text/event-stream"),
+                )
+            },
+        )
+        val provider = createOpenResponses(client, OpenResponsesProviderSettings("https://api.test/v1/responses", "openresponses"))
+
+        val events = drainAllItems(provider.languageModel("gpt-resp").stream(LanguageModelCallParams(listOf(userMessage("hi")))))
+
+        val errors = events.filterIsInstance<StreamEvent.Error>()
+        assertEquals(2, errors.size)
+        assertTrue(errors.any { it.message.contains("name") }, errors.toString())
+        assertTrue(errors.any { it.message.contains("call_id") }, errors.toString())
+        assertTrue(events.none { it is StreamEvent.ToolCall })
     }
 
     @Test

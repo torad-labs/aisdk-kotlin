@@ -7,6 +7,7 @@ import ai.torad.aisdk.ui.UIMessage
 import ai.torad.aisdk.ui.UIMessagePart
 import ai.torad.aisdk.ui.UIMessageRole
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.launch
@@ -14,6 +15,8 @@ import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
+import kotlin.test.assertNull
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class ChatConcurrencyTest {
@@ -92,5 +95,23 @@ class ChatConcurrencyTest {
         assertEquals(ChatStatus.Ready, chat.status)
         val texts = chat.messages.flatMap { it.parts }.filterIsInstance<UIMessagePart.Text>().map { it.text }
         assertEquals(listOf("ping"), texts)
+    }
+
+    @Test
+    fun `cancelled send rethrows cancellation without entering error state`() = runTest {
+        val chat = Chat(
+            transport = DirectChatTransport {
+                flow {
+                    throw CancellationException("cancelled")
+                }
+            },
+        )
+
+        assertFailsWith<CancellationException> {
+            chat.sendMessage(user("u1", "ping")).collect {}
+        }
+
+        assertEquals(ChatStatus.Ready, chat.status)
+        assertNull(chat.error)
     }
 }

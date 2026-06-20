@@ -1,0 +1,5 @@
+id: no-not-null-assertion
+language: kotlin
+severity: error
+rule:
+  pattern: '$X!!'

@@ -1,0 +1,706 @@
+{
+  "branch": "refactor/ts-residue-cleanup",
+  "builder_session": "aisdk-builder",
+  "current": null,
+  "completed": [],
+  "failed": [],
+  "protocol": "One task at a time. Send task -> builder implements with Edit (prefer Edit/MultiEdit over Write; the PreToolUse hook blocks Writes that introduce anti-patterns) -> builder runs ./gradlew compileKotlinJvm jvmTest, regenerates ABI dump (./gradlew apiDump) if breaksAbi, commits 'FIX-XXX: <title>' on branch, reports status. Orchestrator validates each (git show, compile, jvmTest, hook clean, acceptance + tenets) BEFORE sending next. Top-level helpers must be `internal` not `private` (hook blocks private top-level). No secondary constructors, no public mutable var, no sealed interface, no lateinit, no !!, no static mutable state.",
+  "queue": [
+    {
+      "taskId": "FIX-001",
+      "title": "Make gateway metadata cache concurrency-safe (Mutex + single-flight)",
+      "severity": "high",
+      "breaksAbi": false,
+      "effort": "S",
+      "files": [
+        "src/commonMain/kotlin/ai/torad/aisdk/Gateway.kt"
+      ],
+      "instruction": "In DefaultGatewayProvider replace the two plain vars `pendingMetadata`/`lastFetchTime` (Gateway.kt:261-262) with a single nullable `private data class MetadataCache(val response: GatewayFetchMetadataResponse, val fetchedAtMillis: Long)` field plus a `private val metadataMutex = Mutex()` (kotlinx.coroutines.sync). Rewrite `getAvailableModels()` (Gateway.kt:279-292) to run its read-check-fetch-store entirely inside `metadataMutex.withLock { }`, returning the cached response when `settings.metadataCacheRefreshMillis > 0 && now - fetchedAtMillis <= refresh`, else fetching via `settings.transport.getAvailableModels(requestContext())` and storing the new MetadataCache. This removes the data race AND de-dupes concurrent fetches (Mutex, not AtomicReference). Do NOT touch the public GatewayProvider interface or the throwing `gateway` singleton (that is FIX-010).",
+      "acceptance": "Compiles + jvmTest green; add a test launching N concurrent getAvailableModels() coroutines asserting the transport is hit at most once within the refresh window; no ABI change (internal private impl) so api dumps unchanged."
+    },
+    {
+      "taskId": "FIX-002",
+      "title": "Add GenerationInput-first overloads to generation entry points; deprecate the nullable pair",
+      "severity": "high",
+      "breaksAbi": false,
+      "effort": "L",
+      "files": [
+        "src/commonMain/kotlin/ai/torad/aisdk/KotlinApi.kt",
+        "src/commonMain/kotlin/ai/torad/aisdk/Generate.kt",
+        "src/commonMain/kotlin/ai/torad/aisdk/ToolLoopAgent.kt",
+        "api/jvm/torad-aisdk.api",
+        "api/torad-aisdk.klib.api"
+      ],
+      "instruction": "Promote KotlinApi's existing `sealed interface Input` (PromptText/MessageHistory/MessageHistoryWithPrompt + NonEmptyMessages + companion factories) to a top-level `public sealed class GenerationInput` at package level, keeping the three variants and NonEmptyMessages. Add new overloads of generateText (String and <TOutput> forms), streamText, streamTextResult, Agent.generate, Agent.stream taking `input: GenerationInput` as a NON-defaulted first parameter (before the optional params); their bodies build effectiveMessages via an exhaustive `when (input)` with NO require(). @Deprecated(level=WARNING, ReplaceWith) the existing nullable `prompt`/`messages` overloads, delegating to the new path via `GenerationInput.from(prompt, messages)`; keep the require()/IllegalArgumentException ONLY inside these shims and inside `from`. Add a compile test exercising both old (warns) and new shapes; verify no overload-resolution ambiguity for explicit `prompt =`/`messages =` callers.",
+      "acceptance": "Compiles + jvmTest green; ABI dumps regenerated and reviewed to confirm they ONLY GAIN symbols (new overloads + GenerationInput) with all deprecated symbols retained \u2192 breaksAbi=false holds."
+    },
+    {
+      "taskId": "FIX-004",
+      "title": "Deprecate throw-on-use provider singletons (Phase 1, ABI-safe)",
+      "severity": "high",
+      "breaksAbi": false,
+      "effort": "L",
+      "files": [
+        "src/commonMain/kotlin/ai/torad/aisdk/providers/OpenAIProvider.kt",
+        "src/commonMain/kotlin/ai/torad/aisdk/providers/OpenAICompatibleProviderFacades.kt"
+      ],
+      "instruction": "Annotate every top-level throwing provider/Tools val across providers/*.kt and OpenAICompatibleProviderFacades.kt (openai, anthropic, google, vertex*, bedrock*, mistral, cohere, fal, gladia, luma, klingai, deepgram, elevenlabs, assemblyai, replicate, prodia, voyage, hume, lmnt, huggingface, byteDance, quiverai, blackForestLabs, revai, alibaba, anthropicAws, azure, xai, and the deepseek/cerebras/deepinfra/fireworks/perplexity/moonshotai/groq/togetherai/vercel/baseten facades) with `@Deprecated(\"Provider singletons require an HttpClient and throw at first use. Construct explicitly with createX(client, settings).\", level = DeprecationLevel.WARNING)`. Use a message-only deprecation OR a ReplaceWith naming only the factory (e.g. createOpenAI) to avoid an unresolvable IDE rewrite. Do NOT delete the vals, the *NotConfigured objects, or the reflective providerNotConfigured factory in this task (that is FIX-010). Add a per-provider test asserting createX(client) returns a usable provider so the eventual removal cannot silently regress.",
+      "acceptance": "Compiles + jvmTest green (new createX tests pass); WARNING-level deprecation does not alter the ABI dump \u2192 api files unchanged; breaksAbi=false."
+    },
+    {
+      "taskId": "FIX-023",
+      "title": "Wire the dead typed *ModelOptions classes (stringly-typed JsonObject digging)",
+      "severity": "high",
+      "breaksAbi": false,
+      "effort": "L",
+      "files": [
+        "src/commonMain/kotlin/ai/torad/aisdk/providers/VoyageProvider.kt",
+        "src/commonMain/kotlin/ai/torad/aisdk/providers/ElevenLabsProvider.kt",
+        "src/commonMain/kotlin/ai/torad/aisdk/providers/DeepgramProvider.kt",
+        "src/commonMain/kotlin/ai/torad/aisdk/TypedJson.kt"
+      ],
+      "instruction": "Two committed stages. Stage 1 (additive, per provider, ~19 providers): for each, list every key read via options[\"...\"], confirm/add the matching field on the typed *ModelOptions/*ProviderOptions class (derive the real class name per file \u2014 several are *ProviderOptions) BEFORE swapping so no key is dropped; model coerced reads as their real type (e.g. Long?). Replace the private `xxxOptions(): JsonObject` helper with `params.providerOptions.decodeProviderMetadata<T>(\"<provider>\") ?: T()` (helpers already in TypedJson.kt) and build the wire body from typed fields. Separate client-side poll/control keys (pollIntervalMs/pollTimeoutMs) into a distinct typed control struct (T2). Add a per-provider round-trip test (typed option -> expected snake_case wire body) + a passthrough test for unmodeled keys. Stage 2 (additive + @Deprecated): expose the typed options as a first-class param channel; keep the Map path and @Deprecate it.",
+      "acceptance": "compiles + jvmTest green; each migrated provider has a round-trip wire test; Stage 1 ABI-neutral (apiCheck zero diff), Stage 2 additive (apiDump shows only additions)."
+    },
+    {
+      "taskId": "FIX-028",
+      "title": "Split MCP.kt (2221 lines, 5 concerns) into same-package files",
+      "severity": "high",
+      "breaksAbi": false,
+      "effort": "L",
+      "files": [
+        "src/commonMain/kotlin/ai/torad/aisdk/MCP.kt",
+        "api/jvm/torad-aisdk.api",
+        "api/torad-aisdk.klib.api"
+      ],
+      "instruction": "Move declarations VERBATIM (no signature edits) into a same-package mcp/ dir: MCPJsonRpc.kt (JSONRPCMessage hierarchy, envelope, parseJSONRPCMessage, MCPClientError), MCPModels.kt (Configuration, *Capabilities, tool/resource/prompt/elicitation types, MCPClient interface, config + experimental_ typealiases), MCPClientImpl.kt (DefaultMCPClient, createMCPClient, experimental_createMCPClient, mcp* helpers), MCPOAuth.kt, MCPCrypto.kt (mcpSha256K/mcpSha256/mcpRotr), MCPTransports.kt. Any file receiving previously-top-level publics (MCP_PACKAGE_VERSION, createMCPClient, experimental_createMCPClient, createMcpTransport; keep LATEST_PROTOCOL_VERSION/SUPPORTED_PROTOCOL_VERSIONS with them) MUST carry `@file:JvmName(\"MCPKt\") @file:JvmMultifileClass`; preserve the existing @file:Suppress. Out of scope: sealing JSONRPCMessage, replacing SHA-256.",
+      "acceptance": "compiles + jvmTest green + `./gradlew apiCheck` shows BOTH api dumps byte-identical (any diff means a missing JvmMultifileClass header or an edited declaration)."
+    },
+    {
+      "taskId": "FIX-029",
+      "title": "Decompose ToolLoopAgent.kt god class + 663-line private streamInternal",
+      "severity": "high",
+      "breaksAbi": false,
+      "effort": "L",
+      "files": [
+        "src/commonMain/kotlin/ai/torad/aisdk/ToolLoopAgent.kt",
+        "src/commonTest/kotlin/ai/torad/aisdk/ToolFlowTest.kt"
+      ],
+      "instruction": "Extract internal collaborators (no ABI change): ToolLoopExecutor.kt (resolveCall, tryRepairToolInput, decodeToolInput, executeTool, collectFinalToolOutput \u2014 constructed with immutable deps, returning a typed ResolvedCall instead of Triple/Pair so it is testable against a fake Tool with no model) and ToolLoopApproval.kt (callNeedsApproval, applyToolApprovalResponses receiving the FlowCollector + message list as params). ToolLoopAgent.kt keeps its public surface byte-identical, delegates, and decomposes streamInternal into small private suspend steps (runModelStep, dispatchTools, applyResults) threading loop state via a TurnState holder rather than captured closures. Keep all extracted symbols internal. Add commonTest units for tryRepairToolInput and callNeedsApproval.",
+      "acceptance": "compiles + jvmTest green (incl. new units for tryRepairToolInput/callNeedsApproval) + apiCheck zero diff; no extracted symbol is public."
+    },
+    {
+      "taskId": "FIX-037",
+      "title": "Deprecate or extract the non-functional LangChain/LlamaIndex adapters",
+      "severity": "high",
+      "breaksAbi": false,
+      "effort": "M",
+      "files": [
+        "src/commonMain/kotlin/ai/torad/aisdk/LangChain.kt",
+        "src/commonMain/kotlin/ai/torad/aisdk/LlamaIndex.kt",
+        "api/jvm/torad-aisdk.api",
+        "api/torad-aisdk.klib.api"
+      ],
+      "instruction": "Decide consistently across all framework adapters (this is the gating decision for FIX-038..041). Preferred: move react/svelte/vue/angular/langchain/llamaindex into an opt-in :interop artifact with a uniform deprecation cycle so the JSON surface never ships in core. If kept in core, fix defects instead of deprecating: LangChain.kt:280 reconnectToStream returns null (not throws), the graphStream throwing default (269-272) becomes a required ctor param, fabricated ids -> caller ids, StreamCallbacks -> Flow operators, JsonElement -> typed. If deprecating now, apply @Deprecated(WARNING) to the adapter entrypoints \u2014 WARNING-level changes no api dump. Record the decision so FIX-038..041 know whether they are subsumed.",
+      "acceptance": "compiles + jvmTest green; decision documented; if WARNING-deprecation path: apiCheck zero diff; if extraction/removal: api dumps regenerated and core artifact no longer exports the adapter symbols."
+    },
+    {
+      "taskId": "FIX-003",
+      "title": "Deprecate model-id String typealiases and String provider entrypoints; add ModelId overloads",
+      "severity": "medium",
+      "breaksAbi": false,
+      "effort": "M",
+      "files": [
+        "src/commonMain/kotlin/ai/torad/aisdk/Gateway.kt",
+        "src/commonMain/kotlin/ai/torad/aisdk/ModelRef.kt",
+        "src/commonMain/kotlin/ai/torad/aisdk/providers/AnthropicProvider.kt",
+        "api/jvm/torad-aisdk.api",
+        "api/torad-aisdk.klib.api"
+      ],
+      "instruction": "For every concrete provider declaring `public typealias <X>ModelId = String`, add `@Deprecated(\"Use ModelId\", ReplaceWith(\"ModelId\"))` to the alias AND add an `invoke(modelId: ModelId)` / `chat(ModelId)` / `languageModel(ModelId)` overload that delegates to the existing `languageModel(modelId.value)`, with the existing `invoke(String)` etc. marked `@Deprecated(ReplaceWith(\"invoke(ModelId(modelId))\"))`. The deprecation MUST sit on the String overload (bare-literal calls resolve there, never the alias). Open-valued aliases (ElevenLabsSpeechVoiceId, GoogleInteractionsAgentName, BlackForestLabsAspectRatio) become their own validated value classes (VoiceId/AgentName), not ModelId. Do NOT change any existing String parameter signature in place. Set a removal target in the deprecation message (e.g. removal in 0.5.0).",
+      "acceptance": "Compiles + jvmTest green; ABI dumps regenerated showing only ADDED ModelId overloads (typealiases are absent from the dumps); breaksAbi=false confirmed via apiCheck."
+    },
+    {
+      "taskId": "FIX-005",
+      "title": "Inject TelemetryRegistry; deprecate the process-global telemetry singletons",
+      "severity": "medium",
+      "breaksAbi": false,
+      "effort": "M",
+      "files": [
+        "src/commonMain/kotlin/ai/torad/aisdk/Telemetry.kt",
+        "src/commonMain/kotlin/ai/torad/aisdk/ToolLoopAgent.kt"
+      ],
+      "instruction": "Add an injected `TelemetryRegistry` parameter (defaulted for source-compat) to resolveTelemetry and the Agent construction path, so per-call/per-agent telemetry is passed explicitly rather than read from `globalTelemetry`. Keep the existing per-call `TelemetrySettings.integrations` seam as the primary injection point. @Deprecated(WARNING) `globalTelemetry`, `registerTelemetry`, and `clearGlobalTelemetry` directing callers to inject. Do NOT remove the globals in this task. Ensure resolveTelemetry falls back to the injected registry, not the process global, when integrations are empty.",
+      "acceptance": "Compiles + jvmTest green (telemetry wiring tests updated to inject); additive-only so api dumps unchanged; breaksAbi=false."
+    },
+    {
+      "taskId": "FIX-006",
+      "title": "Document CallSettings default-application contract (no Override here)",
+      "severity": "medium",
+      "breaksAbi": false,
+      "effort": "S",
+      "files": [
+        "src/commonMain/kotlin/ai/torad/aisdk/KotlinApi.kt",
+        "src/commonMain/kotlin/ai/torad/aisdk/Generate.kt"
+      ],
+      "instruction": "Replace the apologetic comment at KotlinApi.kt:26-28 with an intentional contract: null on a CallSettings field means 'use provider default'; there is intentionally NO clear semantics for a one-shot call; merge(other) is override-only. Add a one-line comment at the call boundary (KotlinApi.kt ~316/319/322) marking `?: AbortSignalNever`, `?: ResponseFormat.Text`, `?: emptyList()` as genuine SDK-wide defaults (default application, not T5 sentinel fabrication). Add KDoc to LanguageModelResponseMetadata.merge (Generate.kt:431-439) documenting last-write-wins accumulation. Do NOT introduce Override<T> and do NOT change providerOptions nullability here (deferred to FIX-013).",
+      "acceptance": "Compiles + jvmTest green; comment/KDoc only, no signature change; api dumps unchanged; breaksAbi=false."
+    },
+    {
+      "taskId": "FIX-027",
+      "title": "Rerank result: throw on missing index/score instead of fabricating sentinels",
+      "severity": "medium",
+      "breaksAbi": false,
+      "effort": "S",
+      "files": [
+        "src/commonMain/kotlin/ai/torad/aisdk/providers/VoyageProvider.kt",
+        "src/commonMain/kotlin/ai/torad/aisdk/providers/CohereProvider.kt",
+        "src/commonMain/kotlin/ai/torad/aisdk/KtorGatewayTransport.kt",
+        "src/commonMain/kotlin/ai/torad/aisdk/providers/OpenAICompatibleProviderFacades.kt",
+        "src/commonMain/kotlin/ai/torad/aisdk/providers/AmazonBedrockProvider.kt"
+      ],
+      "instruction": "In all 5 rerank parse paths (VoyageProvider.kt:150-153, CohereProvider.kt:234-239, KtorGatewayTransport.kt:260-264, OpenAICompatibleProviderFacades.kt:1317-1321, AmazonBedrockProvider.kt:378-384) throw APICallError when `index` or `relevance_score` is absent and when getOrNull(index) is out of range; remove the `getOrElse(index){\"\"}`, `?:0`, and `?:0f` defaults. Keep the manual-parse style (no new DTO); NoOutputGeneratedError is the wrong type (protocol violation). Add per-provider tests asserting a missing score / bad index throws rather than returning empty/0f. Public RerankedItem/RerankingModelResult unchanged.",
+      "acceptance": "compiles + jvmTest green; new tests prove missing-score/bad-index throw; ast-grep no-getorelse-empty-string-sentinel clean for rerank; no api regen (private classes)."
+    },
+    {
+      "taskId": "FIX-030",
+      "title": "Split OpenAICompatibleProviderFacades.kt (11 providers) per-provider",
+      "severity": "medium",
+      "breaksAbi": false,
+      "effort": "M",
+      "files": [
+        "src/commonMain/kotlin/ai/torad/aisdk/providers/OpenAICompatibleProviderFacades.kt",
+        "api/jvm/torad-aisdk.api",
+        "api/torad-aisdk.klib.api"
+      ],
+      "instruction": "Split into providers/openaicompat/ (package unchanged): DeepSeekFacade.kt, CerebrasFacade.kt, DeepInfraFacade.kt, FireworksFacade.kt, PerplexityFacade.kt, MoonshotAIFacade.kt, GroqFacade.kt, TogetherAIFacade.kt, VercelFacade.kt, BasetenFacade.kt, FacadeShared.kt. Each provider file carries verbatim its *ProviderSettings/*Options/*ErrorData, interface, createX, the `xxx` val, private toCompatible, and its provider-specific transform/messages/usage helpers. Move public model classes FireworksImageModel/TogetherAIRerankingModel into their facade files. PROMOTE the genuinely shared private helpers (compatibleSettings, usageFromParts, providerNotConfigured, postFacadeJson, postFacadeBinary, providerFacadeHeaders, intField/nestedIntField/textFromContentParts) to `internal` so they resolve across files. Add `@file:JvmName(\"OpenAICompatibleProviderFacadesKt\") @file:JvmMultifileClass` to every file containing former top-level public funcs/vals.",
+      "acceptance": "compiles + jvmTest green + apiCheck shows both dumps byte-identical (private->internal is excluded from the published surface; any diff = missing JvmMultifileClass header)."
+    },
+    {
+      "taskId": "FIX-031",
+      "title": "Split GoogleProvider.kt (two Google APIs + 5 model classes)",
+      "severity": "medium",
+      "breaksAbi": false,
+      "effort": "M",
+      "files": [
+        "src/commonMain/kotlin/ai/torad/aisdk/providers/GoogleProvider.kt",
+        "api/jvm/torad-aisdk.api",
+        "api/torad-aisdk.klib.api"
+      ],
+      "instruction": "Keep ABI-bearing surface in GoogleProvider.kt (GOOGLE_VERSION, typealiases, sealed GoogleInteractionsModelInput, GoogleGenerativeAIProviderSettings, the provider interface, createGoogleGenerativeAI, the `google` val, DefaultGoogleGenerativeAIProvider, GoogleTools + googleTools). Move ONLY private declarations: GoogleModels.kt (Embedding/Image/Video model classes + their request-body helpers), GoogleGenerateContent.kt (GoogleGenerativeAILanguageModel + googleGenerateContentBody..googleLanguageResult + GoogleStreamState), GoogleInteractions.kt (GoogleInteractionsLanguageModel + all googleInteractions* + GoogleInteractionsStreamState), GoogleShared.kt (googleHeaders/googlePostJson/parseGoogleResponse/googleStreamSse/googleUsage/googleSchema/mapGoogleFinishReason/googleSources/etc). All moved symbols are private \u2014 do NOT add @JvmMultifileClass (no-op). Carve GoogleInteractions.kt first.",
+      "acceptance": "compiles + jvmTest green + apiCheck zero diff on both dumps; existing Google provider tests pass."
+    },
+    {
+      "taskId": "FIX-032",
+      "title": "Extract Bedrock Smithy event-stream codec into a testable internal unit",
+      "severity": "medium",
+      "breaksAbi": false,
+      "effort": "M",
+      "files": [
+        "src/commonMain/kotlin/ai/torad/aisdk/providers/AmazonBedrockProvider.kt",
+        "src/commonTest/kotlin/ai/torad/aisdk/BedrockEventStreamTest.kt"
+      ],
+      "instruction": "Extract one same-package internal file BedrockEventStream.kt moving decodeBedrockEventStream, readSmithyHeaders, readInt32BE, readUInt16BE, BedrockEventStreamMessage, bedrockMessagePayload, readBedrockFrame, sendBedrockEventStreamFrames; flip these private->internal (confirmed absent from api dumps). Add commonTest golden-byte fixtures: header type tags 0-9, string-type 7 extraction, length-bound break, partial/truncated trailing frame; bedrockMessagePayload event-type wrap vs passthrough. Do NOT create BedrockSigning.kt \u2014 SigV4 is already in AwsSigV4.kt with AwsSigV4Test.kt; leave bedrockHeaders/baseURL/isBedrockClockSkewError in the provider. Optionally reconsider the .orEmpty() sentinels near former lines 1328-1330 (T5).",
+      "acceptance": "compiles + jvmTest green incl. new BedrockEventStream golden-byte tests + apiCheck zero diff (codec is internal)."
+    },
+    {
+      "taskId": "FIX-033",
+      "title": "Split Tool.kt (abstraction + schema/validation + provider-tool factory)",
+      "severity": "medium",
+      "breaksAbi": false,
+      "effort": "M",
+      "files": [
+        "src/commonMain/kotlin/ai/torad/aisdk/Tool.kt",
+        "api/jvm/torad-aisdk.api",
+        "api/torad-aisdk.klib.api"
+      ],
+      "instruction": "Split same-package: Tool.kt (Tool/StreamingTool/LambdaTool/LambdaStreamingTool, tool()/streamingTool()/dynamicTool, ToolExecutionContext, ToolPredicateOptions, ToolStreamWriter/NoopToolStreamWriter), ToolSet.kt (ToolSet/ToolSetBuilder/toolSetOf/toolSet/requireUniqueToolNames/descriptionWithExamples), Schema.kt (Schema/LazySchema/lazySchema/jsonSchema/asSchema/ValidationResult/safeValidateTypes/validateTypes/parseProviderOptions/schemaFallbackValue), ProviderToolFactory.kt (ProviderToolFactory*, createProviderToolFactory*, providerExecutedTool, providerTool, ToolNameMapping/createToolNameMapping/ProviderToolFactoryOptions, ExecuteToolResult/executeTool), ToolResult.kt (ToolChoice, ToolResultOutput hierarchy + converters). Apply `@file:JvmName(\"ToolKt\") @file:JvmMultifileClass` to EVERY split file incl. the trimmed Tool.kt. Do NOT convert ValidationResult/ToolChoice interface->class here (separate T1 finding).",
+      "acceptance": "compiles + jvmTest green + apiCheck shows both dumps byte-identical (all 33 static ToolKt entries preserved)."
+    },
+    {
+      "taskId": "FIX-034",
+      "title": "Replace cross-coroutine SSE header `var` with write-once CompletableDeferred (8 sites)",
+      "severity": "medium",
+      "breaksAbi": false,
+      "effort": "M",
+      "files": [
+        "src/commonMain/kotlin/ai/torad/aisdk/HttpTransport.kt",
+        "src/commonMain/kotlin/ai/torad/aisdk/providers/AnthropicProvider.kt",
+        "src/commonMain/kotlin/ai/torad/aisdk/providers/OpenResponsesProvider.kt",
+        "src/commonMain/kotlin/ai/torad/aisdk/providers/OpenAICompatibleProvider.kt",
+        "src/commonMain/kotlin/ai/torad/aisdk/providers/HuggingFaceProvider.kt",
+        "src/commonMain/kotlin/ai/torad/aisdk/providers/AmazonBedrockProvider.kt",
+        "src/commonMain/kotlin/ai/torad/aisdk/KtorGatewayTransport.kt"
+      ],
+      "instruction": "Replace the streamSse `onResponse` callback and every local `var sseHeaders: Map<String,String> = emptyMap()` (8 verified sites: HttpTransport streamSse, Anthropic:125, OpenResponses:148, OpenAICompatible:265 & 383, HuggingFace:115, KtorGatewayTransport:69 & 189, AmazonBedrock:238) with a write-once CompletableDeferred<Map<String,String>>: streamSse completes it once when the 2xx head arrives; forwardSseEvents.capturedHeaders becomes a suspend lambda that awaits it; Bedrock resolves once into a local val for its two reads. Ensure the error path never awaits (no hang) and the empty-stream case stays correct (complete runs before the producer ends). All wrappers are internal/private.",
+      "acceptance": "compiles + jvmTest green (streaming + concurrency tests) + apiCheck zero diff; ast-grep no-cross-coroutine-header-var reports zero matches."
+    },
+    {
+      "taskId": "FIX-035",
+      "title": "Fix pipeUiMessageStreamToResponse default encoder (toString -> JSON+SSE) and add chunk path",
+      "severity": "medium",
+      "breaksAbi": false,
+      "effort": "S",
+      "files": [
+        "src/commonMain/kotlin/ai/torad/aisdk/ui/Streams.kt",
+        "src/commonMain/kotlin/ai/torad/aisdk/ui/ToUIMessageStream.kt",
+        "src/commonTest/kotlin/ai/torad/aisdk/UIMessageShapeTest.kt"
+      ],
+      "instruction": "Change the Streams.kt:66 default encoder from `{ it.toString() }` to `{ \"data: \" + aiSdkJson.encodeToString(UIMessage.serializer(), it) + \"\\n\\n\" }` (framing in the encoder since the fn does none; aiSdkJson is in-module internal; UIMessage is @Serializable). Keep encoder overridable. Do NOT advertise as useChat-ready \u2014 it streams whole-UIMessage snapshots, not v6 UIMessageChunk frames; KDoc the snapshot variant accordingly. Add/keep a Flow<JsonObject> overload routed through toUIMessageStream(events) framing each chunk `data: {json}\\n\\n` terminated with the SSE [DONE] sentinel as the supported v6 wire input, with JSON+SSE framing as its default. Tests: snapshot encoder default emits `data: {json}\\n\\n` round-tripping to a UIMessage; chunk path each framed line parses to a JsonObject carrying a v6 `type`.",
+      "acceptance": "compiles + jvmTest green; default no longer emits Kotlin toString; both snapshot and chunk framing tests pass; apiCheck additive-only (new overload)."
+    },
+    {
+      "taskId": "FIX-039",
+      "title": "Replace fabricated default/sentinel ids in adapters with generateId",
+      "severity": "medium",
+      "breaksAbi": false,
+      "effort": "M",
+      "files": [
+        "src/commonMain/kotlin/ai/torad/aisdk/LangChain.kt",
+        "src/commonMain/kotlin/ai/torad/aisdk/LlamaIndex.kt"
+      ],
+      "instruction": "Gate on FIX-037 (subsumed if adapters are deleted). Change the two assistantMessageId defaults from constants to generateId-based: `assistantMessageId: String = generateId(\"msg\")` (LangChain.kt:142/148, LlamaIndex.kt:28/34) \u2014 keeps the `String = ...` signature so NO ABI break, removes cross-stream collision. Replace the constant tool-id/name fallbacks at LangChain.kt:183/202 (`?: \"tool-call\"`, `?: \"tool\"`) and 418-421 (`?: \"tool-call-$index\"`, `?: \"tool\"`) with per-call generateId(\"call\") so start/end and id/name stay correlated and unique; do not drop the tool part. Do NOT touch the derived ids at lines 228 and 259 (correct deterministic derivations of a real messageId).",
+      "acceptance": "compiles + jvmTest green; ast-grep no-fabricated-id-sentinel reports zero matches; apiCheck zero diff (signatures unchanged)."
+    },
+    {
+      "taskId": "FIX-045",
+      "title": "Typed slice accessors eliminate ~30 providerOptions as?JsonObject ?: empty extractions",
+      "severity": "medium",
+      "breaksAbi": false,
+      "effort": "M",
+      "files": [
+        "src/commonMain/kotlin/ai/torad/aisdk/TypedJson.kt",
+        "src/commonMain/kotlin/ai/torad/aisdk/providers/AnthropicProvider.kt",
+        "src/commonMain/kotlin/ai/torad/aisdk/providers/AmazonBedrockProvider.kt",
+        "src/commonMain/kotlin/ai/torad/aisdk/providers/HuggingFaceProvider.kt"
+      ],
+      "instruction": "Depends on FIX-043 (replaces the public Map field). Scope to the ~30 GENUINE option-slice reads (drop the inflated 119 \u2014 it conflates unrelated usage/tool/stream/response-body casts). Add on the FIX-042 type two accessors: `slice(id: ProviderId): JsonObject?` (single key; refactor downstream to accept null so the `?: JsonObject(emptyMap())` sentinel actually disappears, not relocates) for the ~28 single-key providers, and `sliceFallback(vararg ids): JsonObject?` (first-non-null) for HuggingFaceProvider.kt:368 (huggingface ?: hugging-face). For AnthropicProvider.kt:688-691 use an explicit `mergeJsonObjects(slice(anthropicId), slice(customId))` (a MERGE, not a fallback; the custom name is computed dynamically from providerName.substringBefore('.')).",
+      "acceptance": "compiles + jvmTest green; ast-grep no-provideroptions-jsonobject-cast and no-empty-jsonobject-sentinel report zero matches in migrated providers; apiCheck zero diff (accessors are on an already-public type; depends on FIX-043 having landed)."
+    },
+    {
+      "taskId": "FIX-007",
+      "title": "Delete QuiverAIOperation String typealias; add the enum",
+      "severity": "low",
+      "breaksAbi": false,
+      "effort": "S",
+      "files": [
+        "src/commonMain/kotlin/ai/torad/aisdk/providers/QuiverAIProvider.kt",
+        "api/jvm/torad-aisdk.api",
+        "api/torad-aisdk.klib.api"
+      ],
+      "instruction": "Delete `public typealias QuiverAIOperation = String` (line 27). Add `public enum class QuiverAIOperation(public val wireValue: String, internal val path: String) { Generate(\"generate\", \"/svgs/generations\"), Vectorize(\"vectorize\", \"/svgs/vectorizations\") }` with a companion `fromWire(value): QuiverAIOperation` that throws InvalidArgumentError on unknown. At line 86 parse `options[\"operation\"]?.jsonPrimitive?.contentOrNull?.let { QuiverAIOperation.fromWire(it) } ?: QuiverAIOperation.Generate`. Switch quiverAIRequestBody on the enum (exhaustive when); collapse quiverAIOperationPath to `operation.path`, removing the line-255 string compare and line-136 stringly else branch.",
+      "acceptance": "Compiles + jvmTest green; ABI dumps regenerated (new enum added, untracked alias removal has no dump impact); validate routing test for both operations."
+    },
+    {
+      "taskId": "FIX-022",
+      "title": "Remove the dead AISDKError typealias",
+      "severity": "low",
+      "breaksAbi": false,
+      "effort": "S",
+      "files": [
+        "src/commonMain/kotlin/ai/torad/aisdk/AiSdkError.kt"
+      ],
+      "instruction": "Delete AiSdkError.kt:8 `public typealias AISDKError = AiSdkException`. Confirmed absent from both api dumps (grep of api/ returns nothing) \u2014 source-only change, no api regen needed. Alpha needs no deprecation cycle.",
+      "acceptance": "compiles + jvmTest green + `./gradlew apiCheck` shows zero diff (typealias never tracked); no references to AISDKError remain."
+    },
+    {
+      "taskId": "FIX-036",
+      "title": "Correct SmoothStream .buffer() backpressure comment",
+      "severity": "low",
+      "breaksAbi": false,
+      "effort": "S",
+      "files": [
+        "src/commonMain/kotlin/ai/torad/aisdk/SmoothStream.kt"
+      ],
+      "instruction": "Replace the misleading comment at SmoothStream.kt:109-112 with accurate semantics: buffer() with no capacity = Channel.BUFFERED, a BOUNDED suspending buffer (default ~64 events, BufferOverflow.SUSPEND), so the producer is decoupled from UI pacing but still back-pressured once the UI falls ~64 events behind; no token loss because the producer SUSPENDS (does not drop); explicitly warn NOT to switch to Channel.UNLIMITED (reintroduces OOM risk). Behavior is already correct \u2014 no code change required. (Optional, additive: add `bufferCapacity: Int = 64` to smoothStream(...) and pass it to upstream.buffer(bufferCapacity).)",
+      "acceptance": "compiles + jvmTest green; comment accurately describes bounded suspending backpressure; apiCheck zero diff (no signature change unless the optional param is added, in which case additive-only)."
+    },
+    {
+      "taskId": "FIX-008",
+      "title": "Remove the TS framework packages (react/rsc/svelte/vue/angular) and their orphans",
+      "severity": "high",
+      "breaksAbi": true,
+      "effort": "M",
+      "files": [
+        "src/commonMain/kotlin/ai/torad/aisdk/react/React.kt",
+        "src/commonMain/kotlin/ai/torad/aisdk/rsc/Rsc.kt",
+        "src/commonMain/kotlin/ai/torad/aisdk/svelte/Svelte.kt",
+        "src/commonMain/kotlin/ai/torad/aisdk/vue/Vue.kt",
+        "src/commonMain/kotlin/ai/torad/aisdk/angular/Angular.kt",
+        "src/commonTest/kotlin/ai/torad/aisdk/FrameworkFacadeParityTest.kt",
+        "api/jvm/torad-aisdk.api",
+        "api/torad-aisdk.klib.api"
+      ],
+      "instruction": "Delete svelte/Svelte.kt, vue/Vue.kt, angular/Angular.kt wholesale. Delete the React hook free functions (useChat/useCompletion/experimental_useObject) and the UseChatHelpers/UseCompletionHelpers/Experimental_UseObjectHelpers wrappers (FW-1/FW-3/FW-6); do NOT migrate the never-shipped @Deprecated addToolResult alias. In rsc/Rsc.kt delete the RSC state vocabulary (AIProvider + createAI/getAIState/getMutableAIState/useAIState/useUIState/useActions/useSyncUIState, lines 111-163). If a real consumer needs the Flow-native streamable primitives (StreamableValueController/StreamableValue/createStreamableValue/readStreamableValue/StreamableUIController/createAgentUIStream), RELOCATE+RENAME them into ai.torad.aisdk.ui stripped of the rsc name (this also resolves FW-4 by deleting the broken error()); otherwise delete them. Delete FrameworkFacadeParityTest.kt. Find and delete the `rewriteFrameworkImports` CodemodRule (Codemod.kt:48-52) and remove it from CodemodRules.all. Remove any now-orphaned imports your deletions create.",
+      "acceptance": "Compiles + jvmTest green (parity test removed, no dangling references); ABI dumps regenerated confirming the react/rsc/svelte/vue/angular entries (api lines ~12781-12921, 13631) are gone; CHANGELOG notes the experimental-API removal sanctioned by @ExperimentalAiSdkApi."
+    },
+    {
+      "taskId": "FIX-010",
+      "title": "Remove throwing provider singletons and the reflective stub factory (Phase 2)",
+      "severity": "high",
+      "breaksAbi": true,
+      "effort": "L",
+      "files": [
+        "src/commonMain/kotlin/ai/torad/aisdk/providers/OpenAIProvider.kt",
+        "src/commonMain/kotlin/ai/torad/aisdk/providers/OpenAICompatibleProviderFacades.kt",
+        "src/commonMain/kotlin/ai/torad/aisdk/Gateway.kt",
+        "api/jvm/torad-aisdk.api",
+        "api/torad-aisdk.klib.api"
+      ],
+      "instruction": "After FIX-004 has shipped one cycle: delete every throwing top-level provider/Tools val, the per-provider *NotConfigured objects / anonymous throwing objects, the missing() helpers, the *NotConfiguredError classes, the throwing `gateway` singleton/GatewayTransportNotConfigured, and the reflective `providerNotConfigured` factory (the `when (T::class) \u2026 as T` typed-over-reflection violation). Leave only the createX(client, settings) factories and each Default*Provider impl. Remove orphaned imports.",
+      "acceptance": "Compiles + jvmTest green (createX construction tests from FIX-004 still pass); ABI dumps regenerated with the removed getters documented in the CHANGELOG; breaksAbi=true."
+    },
+    {
+      "taskId": "FIX-011",
+      "title": "Sealed-modeling batch: ToolUI State, ToolUI/DynamicToolUI unification, ToolLoopAgentState Phase, File/Image/Source data-shape, interface\u2192class",
+      "severity": "high",
+      "breaksAbi": true,
+      "effort": "L",
+      "files": [
+        "src/commonMain/kotlin/ai/torad/aisdk/ui/UIMessagePart.kt",
+        "src/commonMain/kotlin/ai/torad/aisdk/ui/ToolCallState.kt",
+        "src/commonMain/kotlin/ai/torad/aisdk/ui/ConvertToModelMessages.kt",
+        "src/commonMain/kotlin/ai/torad/aisdk/ModelMessage.kt",
+        "src/commonMain/kotlin/ai/torad/aisdk/Streaming.kt",
+        "src/commonMain/kotlin/ai/torad/aisdk/ToolLoopAgentEngine.kt",
+        "api/jvm/torad-aisdk.api",
+        "api/torad-aisdk.klib.api"
+      ],
+      "instruction": "As ONE ABI rebaseline: (SEAL-01) replace ToolUI's flat enum+nullable fields with a nested `sealed class State` mirroring OnToolCallFinishEvent.Outcome (variants 1:1 with the 7 ToolCallState values), make conversions exhaustive, and drop the JsonNull sentinels at ConvertToModelMessages.kt 244/251/263; add a custom KSerializer preserving the v6 flat wire shape (or document the wire break). (SEAL-05) merge ToolUI/DynamicToolUI into `sealed class ToolUI` with Static(\u2026, approvalId, signature) and Dynamic(\u2026) subclasses sharing the base payload; one pair of outputAs/inputAs on the base; delete dynamicOutputAs/dynamicInputAs. (SEAL-04) replace ToolLoopAgentState's isStreaming/isModelLoading booleans + nullable error with `sealed class Phase { Idle; Streaming; Paused; Completed; Failed(error) }`, drop the dead isModelLoading; convert ToolLoopAgentAction (line 45) to sealed class. (SEAL-06) model File/Image data-shape as nested `sealed class FileData { Inline(base64); Remote(url) }` and split Source into Url/Document subclasses (delete the sourceType enum; @SerialName carries the discriminator); ride StreamEvent.SourcePart along; keep @Deprecated computed base64/url shims + a @Deprecated secondary ctor one release and bump the wire version with a deserialization migration. (SEAL-03) convert ContentPart/StreamEvent/UIMessagePart `sealed interface`\u2192`sealed class` keeping all @SerialName/@JsonClassDiscriminator tags byte-stable; do NOT hoist providerMetadata (it is deliberately absent on control/terminal variants).",
+      "acceptance": "Compiles + jvmTest green; add round-trip serialization tests proving the wire format (or documented new version) for ToolUI, File/Image, Source; ABI dumps regenerated once with a CHANGELOG migration snippet (ToolUI(...)\u2192ToolUI.Static(...), DynamicToolUI(...)\u2192ToolUI.Dynamic(...)); breaksAbi=true."
+    },
+    {
+      "taskId": "FIX-012",
+      "title": "Primitive-obsession batch: value-class tool ids + ModelId/ProviderId on the core abstraction",
+      "severity": "high",
+      "breaksAbi": true,
+      "effort": "L",
+      "files": [
+        "src/commonMain/kotlin/ai/torad/aisdk/ModelMessage.kt",
+        "src/commonMain/kotlin/ai/torad/aisdk/Streaming.kt",
+        "src/commonMain/kotlin/ai/torad/aisdk/ui/UIMessagePart.kt",
+        "src/commonMain/kotlin/ai/torad/aisdk/Tool.kt",
+        "src/commonMain/kotlin/ai/torad/aisdk/ToolLoopAgent.kt",
+        "src/commonMain/kotlin/ai/torad/aisdk/LanguageModel.kt",
+        "src/commonMain/kotlin/ai/torad/aisdk/Provider.kt",
+        "src/commonMain/kotlin/ai/torad/aisdk/ModelRef.kt",
+        "api/jvm/torad-aisdk.api",
+        "api/torad-aisdk.klib.api"
+      ],
+      "instruction": "(PO-1) Introduce `@JvmInline @Serializable value class ToolCallId/ToolName/ApprovalId(value: String)` each with `init { require(value.isNotBlank()) }` and toString()=value; add @Serializable EXPLICITLY (these cross the wire \u2014 a serializable single-String value class encodes to a bare JSON string). Thread all three through every id site in one pass (ContentPart.{ToolCall,ToolResult,ToolApprovalRequest,ToolApprovalResponse}, StreamEvent.*, UIMessagePart.{ToolUI\u2026}, ToolLoopAgentAction.*, factories, and ToolExecutionContext.toolCallId at Tool.kt:1097). (PO-3) Make LanguageModel.modelId: ModelId, LanguageModel.provider: ProviderId (drop the \"unknown\" default \u2014 each impl declares its real id), Provider.providerId: ProviderId, and the 8 <kind>Model factories take ModelId with @Deprecated String shims delegating; prune ModelRef.kt overloads that only unwrapped .value; pass .value at NoSuchModelError throw sites.",
+      "acceptance": "Compiles + jvmTest green; add a round-trip test asserting Json.encodeToString(ToolResult(ToolCallId(\"c1\"), ToolName(\"search\"), \u2026)) still emits \"toolCallId\":\"c1\" as a bare string and decodes back; ABI dumps regenerated (expect mangled getters) with the break documented; breaksAbi=true."
+    },
+    {
+      "taskId": "FIX-013",
+      "title": "Finish the nullable-bag fixes: TextGenerationRequest Input source-of-truth, Override settings, providerOptions non-null",
+      "severity": "high",
+      "breaksAbi": true,
+      "effort": "L",
+      "files": [
+        "src/commonMain/kotlin/ai/torad/aisdk/KotlinApi.kt",
+        "src/commonMain/kotlin/ai/torad/aisdk/Context.kt",
+        "src/commonMain/kotlin/ai/torad/aisdk/ToolLoopAgent.kt",
+        "api/jvm/torad-aisdk.api",
+        "api/torad-aisdk.klib.api"
+      ],
+      "instruction": "(NOB-2) Make `input: Input` a STORED val and the canonical primary constructor of TextGenerationRequest (data class TextGenerationRequest(val input: Input, val system: String?=null, val settings: CallSettings=CallSettings())); promote Input to a sealed class; the builder.build() resolves exactly one Input via an explicit require() at the construction boundary (never a getter). @Deprecated(WARNING) the old nullable (prompt, messages, system, settings) ctor delegating to Input.from for one cycle; the else->throw branch dies with the nullable ctor. (NOB-3) Add an `Override` sealed class (Unchanged/Clear/Set(value)) ONLY on AgentSettings/StepSettings fields where forcing the provider default matters (e.g. temperature/topP); keep the rest nullable-means-inherit; replace the merge chains at ToolLoopAgent.kt:629-649 and 1861-1864 with exhaustive `when`. (NOB-4 item 2) Standardize providerOptions on non-null Map=emptyMap() and migrate Context.kt:41/:91 off Map?=null.",
+      "acceptance": "Compiles + jvmTest green; add tests proving (a) an empty TextGenerationRequest is no longer constructable / build() fails with a clear message and (b) Override.Clear forces temperature back to null at the provider boundary; ABI dumps regenerated; breaksAbi=true."
+    },
+    {
+      "taskId": "FIX-014",
+      "title": "Generify lifecycle hook event payloads off Any?",
+      "severity": "high",
+      "breaksAbi": true,
+      "effort": "L",
+      "files": [
+        "src/commonMain/kotlin/ai/torad/aisdk/Lifecycle.kt",
+        "src/commonMain/kotlin/ai/torad/aisdk/ToolLoopAgent.kt",
+        "api/jvm/torad-aisdk.api",
+        "api/torad-aisdk.klib.api"
+      ],
+      "instruction": "Replace the Any? erasure on lifecycle event/snapshot payloads (OnStartEvent.options, OnFinishEvent.finalOutput/experimental_context, StepResult.experimentalContext) with the Agent's already-present type parameters using `out` variance (e.g. OnFinishEvent<out TOutput, out TContext>). Keep the telemetry sink erased via star-projection (`*`) where it must remain type-agnostic. Remove the 'consumers cast to their TContext' comments. Wire the generic types through the Agent hook invocation sites in ToolLoopAgent.",
+      "acceptance": "Compiles + jvmTest green (lifecycle hook tests updated to read typed payloads without casts); ABI dumps regenerated; breaksAbi=true."
+    },
+    {
+      "taskId": "FIX-015",
+      "title": "Type provider tool config + ProviderToolInfo; remove metadata magic keys",
+      "severity": "high",
+      "breaksAbi": true,
+      "effort": "L",
+      "files": [
+        "src/commonMain/kotlin/ai/torad/aisdk/Tool.kt",
+        "src/commonMain/kotlin/ai/torad/aisdk/providers/OpenAIProvider.kt",
+        "src/commonMain/kotlin/ai/torad/aisdk/providers/XaiProvider.kt",
+        "src/commonMain/kotlin/ai/torad/aisdk/providers/AnthropicProvider.kt",
+        "src/commonMain/kotlin/ai/torad/aisdk/providers/OpenResponsesProvider.kt",
+        "src/commonMain/kotlin/ai/torad/aisdk/providers/GoogleProvider.kt",
+        "api/jvm/torad-aisdk.api",
+        "api/torad-aisdk.klib.api"
+      ],
+      "instruction": "(raw-json-03) Add a typed `ProviderToolInfo(providerToolId, args, inputSchema, outputSchema, supportsDeferredResults)` on both Tool and the wire LanguageModelTool (nullable, defaulted), map it through ToolSet.descriptors, and replace the string-literal reads at OpenResponsesProvider.kt:674-680 / GoogleProvider.kt:811 with providerTool.providerToolId/args; promote providerToolId/providerToolArgs to internal consts; keep old metadata reads as a @Deprecated fallback one release. (raw-json-02) Add config-typed factories for hosted tools (file_search vector_store_ids/max_num_results, web_search search_context_size/user_location, image_generation, computer) that keep TInput=JsonElement but serialize a typed @Serializable config into the providerToolArgs metadata slot (aiSdkJson.encodeToJsonElement(config)); add a rawProviderTool(args: JsonObject) escape hatch; @Deprecated(ReplaceWith) the JsonElement-arg factories; do NOT change the frozen descriptors.",
+      "acceptance": "Compiles + jvmTest green (add a test that a typed config serializes into the same wire slot the provider reads, producing identical request JSON); ABI dumps regenerated; additive where possible, breaksAbi=true for the new typed fields."
+    },
+    {
+      "taskId": "FIX-017",
+      "title": "Seal the AiSdkException root (open class with ~40 leaves)",
+      "severity": "high",
+      "breaksAbi": true,
+      "effort": "M",
+      "files": [
+        "src/commonMain/kotlin/ai/torad/aisdk/AiSdkError.kt",
+        "src/commonMain/kotlin/ai/torad/aisdk/Gateway.kt",
+        "src/commonMain/kotlin/ai/torad/aisdk/WireDecoder.kt",
+        "src/commonMain/kotlin/ai/torad/aisdk/providers/OpenAIProvider.kt",
+        "api/jvm/torad-aisdk.api",
+        "api/torad-aisdk.klib.api"
+      ],
+      "instruction": "Flip AiSdkError.kt:3 `public open class AiSdkException` to `sealed`. Prereqs: (1) add typed `ProviderNotConfiguredError(provider)` leaf and migrate the ~30 provider not-configured throws (OpenAIProvider.kt:58 already models its own); (2) map ad-hoc `throw AiSdkException(...)` sites (e.g. WireDecoder.kt:25) to existing typed leaves (APICallError/InvalidResponseDataError/UnsupportedFunctionalityError) or to ONE explicit concrete escape-hatch leaf `GenericAiSdkError(message, cause)` \u2014 do not leave the base instantiable; (3) keep (message,cause) as base payload; (4) seal GatewayError too (FIX-018) or its subtree stays non-exhaustive. Compile-gate on `./gradlew compileKotlinJvm` where ~171 sites surface. Breaking change for the alpha.",
+      "acceptance": "compiles + jvmTest green + ABI dumps regenerated (apiDump) and committed; `throw AiSdkException(...)` no longer used (base not instantiable); a representative catch site uses exhaustive `when` with no `else`."
+    },
+    {
+      "taskId": "FIX-018",
+      "title": "Seal GatewayError; drop stringly-typed `type` discriminator",
+      "severity": "high",
+      "breaksAbi": true,
+      "effort": "M",
+      "files": [
+        "src/commonMain/kotlin/ai/torad/aisdk/Gateway.kt",
+        "src/commonMain/kotlin/ai/torad/aisdk/KtorGatewayTransport.kt",
+        "api/jvm/torad-aisdk.api",
+        "api/torad-aisdk.klib.api"
+      ],
+      "instruction": "Change Gateway.kt:423 `public open class GatewayError` to `public sealed class GatewayError` (7 subtypes already in-file; transport's else-branch at KtorGatewayTransport.kt:791 is GatewayResponseError so behavior-safe). Remove the public `type: String` ctor param; keep the wire->subtype mapping solely in `KtorGatewayTransport.gatewayErrorFromResponse` (785-797) per T2. Keep statusCode/isRetryable/generationId as typed base fields. Leave GatewayTransportNotConfiguredError under AiSdkException. Do NOT couple to FIX-017 (sealable independently).",
+      "acceptance": "compiles + jvmTest green + ABI dumps regenerated; no public `type` param on GatewayError; gateway error mapping covered by an exhaustive `when`."
+    },
+    {
+      "taskId": "FIX-019",
+      "title": "Replace ~11 Any? error payload fields with real types",
+      "severity": "high",
+      "breaksAbi": true,
+      "effort": "L",
+      "files": [
+        "src/commonMain/kotlin/ai/torad/aisdk/AiSdkError.kt",
+        "src/commonMain/kotlin/ai/torad/aisdk/providers/AnthropicProvider.kt",
+        "src/commonMain/kotlin/ai/torad/aisdk/HttpTransport.kt",
+        "src/commonTest/kotlin/ai/torad/aisdk/GatewayAndProviderUtilsParityTest.kt",
+        "api/jvm/torad-aisdk.api",
+        "api/torad-aisdk.klib.api"
+      ],
+      "instruction": "Replace each Any? per its actual construction site (NOT blanket JsonElement?): APICallError.requestBodyValues/data -> JsonElement?; InvalidResponseDataError.data -> JsonElement?; TypeValidationError.value -> JsonElement? (NOT generic \u2014 would break non-generic ValidationResult.Failure at Tool.kt:758); TooManyEmbeddingValuesForCallError.values -> List<String>; MessageConversionError.originalMessage -> domain ModelMessage/UIMessage; InvalidStreamPartError.chunk -> JsonElement? or domain stream-part; InvalidPromptError.prompt -> domain prompt type; InvalidDataContentError.content -> ByteArray?/sealed DataContent (never JsonElement). Update provider construction sites and fix parity-test assertions passing raw Strings. Batch the api regen with FIX-017/018.",
+      "acceptance": "compiles + jvmTest green + ABI dumps regenerated; no `Any?` field remains on any AiSdkException leaf; parity test updated to typed payloads."
+    },
+    {
+      "taskId": "FIX-024",
+      "title": "GeneratedFile -> sealed Inline/Remote (kill base64=\"\" sentinel)",
+      "severity": "high",
+      "breaksAbi": true,
+      "effort": "M",
+      "files": [
+        "src/commonMain/kotlin/ai/torad/aisdk/MediaModels.kt",
+        "src/commonMain/kotlin/ai/torad/aisdk/providers/XaiProvider.kt",
+        "src/commonMain/kotlin/ai/torad/aisdk/providers/AlibabaProvider.kt",
+        "src/commonMain/kotlin/ai/torad/aisdk/providers/ProdiaProvider.kt",
+        "api/jvm/torad-aisdk.api",
+        "api/torad-aisdk.klib.api"
+      ],
+      "instruction": "Convert MediaModels.kt:8 GeneratedFile into a `sealed class` with shared mediaType/filename/providerMetadata on the base and two data-class leaves Inline(base64) and Remote(url). Add a deprecated `operator fun invoke(...)` companion shim (sealed class is abstract \u2014 not a secondary ctor) routing url!=null -> Remote else Inline, plus deprecated `base64`/`url` accessor extensions for one release. Rewrite bytes()/bytesOrNull()/fileData() (and generatedFile()/DefaultGeneratedFile.toGeneratedFile) as exhaustive `when`, deleting the runtime `check`. Migrate provider sentinel sites (XaiProvider.kt:367, AlibabaProvider.kt:193, ProdiaProvider) from `base64=\"\", url=...` to `GeneratedFile.Remote(url=...)`.",
+      "acceptance": "compiles + jvmTest green + ABI dumps regenerated; no `base64 = \"\"` sentinel in the codebase; bytes() has no runtime check."
+    },
+    {
+      "taskId": "FIX-038",
+      "title": "Delete the 7-lambda StreamCallbacks bag (Flow composition over callbacks)",
+      "severity": "high",
+      "breaksAbi": true,
+      "effort": "M",
+      "files": [
+        "src/commonMain/kotlin/ai/torad/aisdk/LlamaIndex.kt",
+        "src/commonMain/kotlin/ai/torad/aisdk/LangChain.kt",
+        "src/commonTest/kotlin/ai/torad/aisdk/AnthropicProviderTest.kt",
+        "api/jvm/torad-aisdk.api",
+        "api/torad-aisdk.klib.api"
+      ],
+      "instruction": "Gate on FIX-037 (skip if adapters are removed). Delete StreamCallbacks (LlamaIndex.kt:15) and the `callbacks: StreamCallbacks? = null` parameter from all four adapter functions; every lambda is redundant with a Flow operator on the Flow<UIMessage> they already return (onStart->onStart{}, onToken/onText->onEach{}, onFinal/onFinish->onCompletion{}, onError->catch{}, onAbort->cancellation). Model finalState as a typed terminal UIMessagePart sealed subtype (not a nullable side channel, T5/T1); keep the typed Error emission. Remove the scattered `callbacks?.onX?.invoke(...)` (LangChain.kt:150/165/177/237/247-256; LlamaIndex.kt:36/44-55). Rewrite adapter tests to assert via Flow operators.",
+      "acceptance": "compiles + jvmTest green + ABI dumps regenerated; StreamCallbacks no longer exists; ast-grep callback-bag pattern clean."
+    },
+    {
+      "taskId": "FIX-042",
+      "title": "EPIC seam: introduce typed ProviderOptions / ProviderMetadata value types",
+      "severity": "high",
+      "breaksAbi": true,
+      "effort": "L",
+      "files": [
+        "src/commonMain/kotlin/ai/torad/aisdk/TypedJson.kt",
+        "src/commonMain/kotlin/ai/torad/aisdk/ModelRef.kt",
+        "src/commonTest/kotlin/ai/torad/aisdk/KotlinApiTest.kt",
+        "api/jvm/torad-aisdk.api",
+        "api/torad-aisdk.klib.api"
+      ],
+      "instruction": "EPIC \u2014 sequences AFTER FIX-015/016 (which type the TEXT surface) and BEFORE FIX-043/044/045. Introduce the cross-surface type ONLY (no call-site migration here). Reuse the existing ProviderId value class (ModelRef.kt:6). Make ProviderOptions (inbound) and ProviderMetadata (outbound) `@JvmInline value class`es wrapping Map<ProviderId, JsonObject>, each @Serializable(with=...) routed through ONE internal `providerSliceMapSerializer` encoding the object-of-objects shape (ProviderId.value as string key). Deserializer lenient: skip non-JsonObject values (consistent with aiSdkJson ignoreUnknownKeys/isLenient). Expose slice(ProviderId): JsonObject?, decode<T>(ProviderId, KSerializer<T>) (+reified inline), raw: Map<String,JsonElement> getter, ofRaw/of(vararg)/Empty factories, and a builder reusing ProviderOptionsBuilder/putJson. Tests must assert wire round-trip equals the current Map<String,JsonElement> JSON exactly (encode-then-decode + legacy fixture decode), proving zero wire change.",
+      "acceptance": "compiles + jvmTest green incl. exact wire round-trip tests + ABI dumps regenerated (new types only; no call-site changes)."
+    },
+    {
+      "taskId": "FIX-043",
+      "title": "Migrate all INBOUND provider-config fields (40 sites) to ProviderOptions",
+      "severity": "high",
+      "breaksAbi": true,
+      "effort": "L",
+      "files": [
+        "src/commonMain/kotlin/ai/torad/aisdk/Embedding.kt",
+        "src/commonMain/kotlin/ai/torad/aisdk/Rerank.kt",
+        "src/commonMain/kotlin/ai/torad/aisdk/MediaModels.kt",
+        "src/commonMain/kotlin/ai/torad/aisdk/Tool.kt",
+        "src/commonMain/kotlin/ai/torad/aisdk/Context.kt",
+        "api/jvm/torad-aisdk.api",
+        "api/torad-aisdk.klib.api"
+      ],
+      "instruction": "Gate on FIX-016 (text) + FIX-042. Retype the 40 non-text inbound providerOptions fields from Map<String,JsonElement> to ProviderOptions: Embedding.kt:38/85/118/199, Rerank.kt:17/58, MediaModels.kt (13 sites), Tool.kt:104/209, LanguageModel.kt:119, Context.kt:41/91, DevTools.kt:21, middleware/DefaultSettings.kt:34. Provide deprecated raw-map overloads for source compat, and switch provider-side extraction to slice(...). Aligns the non-text surfaces with FIX-016's text treatment.",
+      "acceptance": "compiles + jvmTest green + ABI dumps regenerated (ProviderOptions fields + deprecated Map overloads); no inbound providerOptions field is raw Map except deprecated bridges."
+    },
+    {
+      "taskId": "FIX-044",
+      "title": "Migrate all OUTBOUND provider-metadata fields (56 sites) to ProviderMetadata",
+      "severity": "high",
+      "breaksAbi": true,
+      "effort": "L",
+      "files": [
+        "src/commonMain/kotlin/ai/torad/aisdk/Streaming.kt",
+        "src/commonMain/kotlin/ai/torad/aisdk/ModelMessage.kt",
+        "src/commonMain/kotlin/ai/torad/aisdk/ui/UIMessagePart.kt",
+        "src/commonMain/kotlin/ai/torad/aisdk/TypedJson.kt",
+        "api/jvm/torad-aisdk.api",
+        "api/torad-aisdk.klib.api"
+      ],
+      "instruction": "Fold FIX-015 into this change (one PR, one api regen, one ABI break). (1) Retype all 56 outbound domain providerMetadata sites to ProviderMetadata default Empty: Streaming.kt (21 StreamEvent subtypes), ModelMessage.kt (8 parts), ui/UIMessagePart.kt (8 parts), plus Embedding/Rerank/Media results, ContentPart, Lifecycle StepResult, LanguageModelResult; collapse nullable -> non-null Empty (T5). (2) Leave the ~4 provider/wire sites raw (T2). (3) Rewrite TypedJson.kt metadata getters to return ProviderMetadata (Empty where they returned null) and have providerMetadataAs delegate to ProviderMetadata.decode. (4) Update provider write sites to ProviderMetadata.of(...). (5) Migrate ProviderMetadataTest with round-trip assertions.",
+      "acceptance": "compiles + jvmTest green incl. round-trip metadata tests + ABI dumps regenerated; no outbound domain providerMetadata field is raw Map; nullable metadata collapsed to Empty."
+    },
+    {
+      "taskId": "FIX-009",
+      "title": "Expose ui.Chat / Completion / StructuredObject observable state as StateFlow",
+      "severity": "medium",
+      "breaksAbi": true,
+      "effort": "L",
+      "files": [
+        "src/commonMain/kotlin/ai/torad/aisdk/ui/Chat.kt",
+        "src/commonMain/kotlin/ai/torad/aisdk/CompletionApi.kt",
+        "src/commonMain/kotlin/ai/torad/aisdk/StructuredObjectApi.kt",
+        "api/jvm/torad-aisdk.api",
+        "api/torad-aisdk.klib.api"
+      ],
+      "instruction": "Replace the four independent vars on Completion/StructuredObject with one observable StateFlow over a sealed class phase. Define `sealed class CompletionState { Idle; Streaming(text); Done(text); Failed(text, cause) }`; add a private MutableStateFlow(Idle) + public StateFlow via asStateFlow. In callCompletionApi (CompletionApi.kt:81-85) emit Streaming(builder.toString()) per delta, Done on completion, Failed(buffer, t) on catch; `complete` still returns the final String. Apply the same to StructuredObject (state carries value + rawValue per phase). Expose ui.Chat state as StateFlow<List<UIMessage>>, StateFlow<ChatStatus>, StateFlow<Throwable?> so consumers collectAsState()/collectAsStateWithLifecycle(). These holders are STABLE: add the new state additively and keep the old loading/error/completion vars as @Deprecated computed shims reading the StateFlow value for one release.",
+      "acceptance": "Compiles + jvmTest green (add a test collecting the StateFlow observes Streaming\u2192Done and Failed transitions); ABI dumps regenerated; deprecated shims retained so the break is additive this cycle."
+    },
+    {
+      "taskId": "FIX-016",
+      "title": "Type provider options and provider metadata via per-provider serializers",
+      "severity": "medium",
+      "breaksAbi": true,
+      "effort": "L",
+      "files": [
+        "src/commonMain/kotlin/ai/torad/aisdk/KotlinApi.kt",
+        "src/commonMain/kotlin/ai/torad/aisdk/LanguageModel.kt",
+        "src/commonMain/kotlin/ai/torad/aisdk/Lifecycle.kt",
+        "src/commonMain/kotlin/ai/torad/aisdk/TypedJson.kt",
+        "src/commonMain/kotlin/ai/torad/aisdk/providers/AnthropicProvider.kt",
+        "api/jvm/torad-aisdk.api",
+        "api/torad-aisdk.klib.api"
+      ],
+      "instruction": "(raw-json-01) Keep providerOptions keyed by the dynamic provider name but type the value: each provider slice defines its own @Serializable \u2026ProviderOptions data class and decodes via json.decodeFromJsonElement(...) instead of `as? JsonObject` + string-literal keys; add provider-slice extension builders (ProviderOptionsBuilder.anthropic { \u2026 }) for compile-checked construction, writing additively into the existing map; keep the existing provider(name, JsonObject) raw escape hatch; @Deprecated the raw put. Do NOT model providers as a sealed class in core. (raw-json-04) Wrap providerMetadata read-back in a `@JvmInline value class ProviderMetadata(raw)` exposing decode(provider, serializer) (keep decodeProviderMetadata as the primitive); each provider slice owns its typed accessor (e.g. GenerateTextResult<*>.anthropicMetadata()); @Deprecated(WARNING) raw exposure one cycle. Run apiCheck to confirm the additive builder layer is ABI-safe; the property type swaps are the deliberate break.",
+      "acceptance": "Compiles + jvmTest green (round-trip test proving same wire JSON via the typed builder, and a typed accessor decodes provider metadata); ABI dumps regenerated; breaksAbi=true for the property type changes."
+    },
+    {
+      "taskId": "FIX-020",
+      "title": "Unify tool-error hierarchies: re-parent AgentError under AiSdkException",
+      "severity": "medium",
+      "breaksAbi": true,
+      "effort": "L",
+      "files": [
+        "src/commonMain/kotlin/ai/torad/aisdk/AgentError.kt",
+        "src/commonMain/kotlin/ai/torad/aisdk/AiSdkError.kt",
+        "src/commonTest/kotlin/ai/torad/aisdk/GatewayAndProviderUtilsParityTest.kt",
+        "api/jvm/torad-aisdk.api",
+        "api/torad-aisdk.klib.api"
+      ],
+      "instruction": "Change AgentError.kt:46 parent from `: RuntimeException(message, cause)` to `: AiSdkException(message, cause)` (AiSdkException already has the (String, Throwable?) ctor; subvariants compile unchanged). Add `@Deprecated(WARNING, ReplaceWith(...))` to the four flat dup leaves in AiSdkError.kt (NoSuchToolError->AgentError.NoSuchTool, InvalidToolInputError->AgentError.InvalidToolInput, ToolCallRepairError->AgentError.ToolCallRepairFailed, InvalidToolApprovalError->AgentError.InvalidApprovalResponse \u2014 document the imperfect approval mapping). Migrate the lone consumer GatewayAndProviderUtilsParityTest.kt:445-476. Add a test asserting `AgentError.NoSuchTool(...) is AiSdkException` and that `assertFailsWith<AiSdkException>` now catches AgentError. Does NOT seal AiSdkException.",
+      "acceptance": "compiles + jvmTest green + ABI dumps regenerated (supertype change + @Deprecated flags); new test locks `AgentError is AiSdkException`."
+    },
+    {
+      "taskId": "FIX-025",
+      "title": "Replace ImageGenerationFile bag with List<FileData>",
+      "severity": "medium",
+      "breaksAbi": true,
+      "effort": "M",
+      "files": [
+        "src/commonMain/kotlin/ai/torad/aisdk/MediaModels.kt",
+        "src/commonMain/kotlin/ai/torad/aisdk/providers/FalProvider.kt",
+        "src/commonMain/kotlin/ai/torad/aisdk/providers/LumaProvider.kt",
+        "src/commonMain/kotlin/ai/torad/aisdk/providers/BlackForestLabsProvider.kt",
+        "src/commonMain/kotlin/ai/torad/aisdk/providers/ReplicateProvider.kt",
+        "api/jvm/torad-aisdk.api",
+        "api/torad-aisdk.klib.api"
+      ],
+      "instruction": "Delete MediaModels.kt:201 ImageGenerationFile and the imageGenerationFile(FileData) downgrade converter (MediaModels.kt:84-100). Change ImageGenerationParams.files to List<FileData> and the mask to FileData? (lines 197-198, 245-246, 305-306). Rewrite each provider encoder as exhaustive `when(file){ is FileData.Base64 -> ...; is FileData.Bytes -> ...; is FileData.Url -> ... }` (Fal data-URI, Luma throws existing AiSdkException for non-Url, BlackForestLabs/Replicate/Xai/QuiverAI/OpenAICompatible/AmazonBedrock/Google handling Bytes by encoding) instead of ?:/orEmpty()/takeIf chains. Update all 7 provider test files constructing ImageGenerationFile to FileData.Url/FileData.Base64. No @Deprecated bridge at alpha.",
+      "acceptance": "compiles + jvmTest green + ABI dumps regenerated (ImageGenerationFile entries gone; ImageGenerationParams signatures changed); no .orEmpty()/?: invariant-resolution in image encoders."
+    },
+    {
+      "taskId": "FIX-026",
+      "title": "Remove provider=\"unknown\" sentinel on the 6 non-text models + LanguageModel",
+      "severity": "medium",
+      "breaksAbi": true,
+      "effort": "L",
+      "files": [
+        "src/commonMain/kotlin/ai/torad/aisdk/Embedding.kt",
+        "src/commonMain/kotlin/ai/torad/aisdk/Rerank.kt",
+        "src/commonMain/kotlin/ai/torad/aisdk/MediaModels.kt",
+        "src/commonMain/kotlin/ai/torad/aisdk/LanguageModel.kt",
+        "api/jvm/torad-aisdk.api",
+        "api/torad-aisdk.klib.api"
+      ],
+      "instruction": "Delete `get() = \"unknown\"` and make `provider` an ABSTRACT member on EmbeddingModel (Embedding.kt:12-13), RerankingModel (Rerank.kt:7-8), ImageModel (MediaModels.kt:173-174), SpeechModel (371-372), TranscriptionModel (458-459), VideoModel (557-558), AND LanguageModel (LanguageModel.kt:36-37) \u2014 else the primary surface keeps the bad pattern. All built-in providers already override; Wrapped*/Gateway delegate inner.provider (no change). Do NOT migrate provider:String -> ProviderId here (it is a granular telemetry tag like \"alibaba.embedding\", not the registry id) \u2014 track modelId->ModelId / a new ProviderTag as a separate cross-surface task.",
+      "acceptance": "compiles + jvmTest green + ABI dumps regenerated; no `get() = \"unknown\"` remains (ast-grep no-unknown-provider-sentinel clean)."
+    },
+    {
+      "taskId": "FIX-040",
+      "title": "Type the adapter domain types (remove raw provider JSON from public API)",
+      "severity": "medium",
+      "breaksAbi": true,
+      "effort": "L",
+      "files": [
+        "src/commonMain/kotlin/ai/torad/aisdk/LangChain.kt",
+        "src/commonMain/kotlin/ai/torad/aisdk/ModelMessage.kt",
+        "api/jvm/torad-aisdk.api",
+        "api/torad-aisdk.klib.api"
+      ],
+      "instruction": "Gate on FIX-037 \u2014 if adapters are removed/extracted, do nothing in core; if kept (ideally in :interop), redesign the three public types: (1) LangChainBaseMessage.content JsonElement -> List<ContentPart> (reuse the existing sealed ContentPart; convertModelMessages already has it); make toLangChainContent/toAssistantContent/textContent private wire encoders. (2) Drop additionalKwargs Map<String,JsonElement> -> explicit typed toolName: ToolName? / isError: Boolean on the Tool branch. (3) Align LangChainToolCall.input with ContentPart.ToolCall.input's representation. (4) Convert StreamEventsEvent and LangGraphEvent into a sealed hierarchy under LangChainStreamItem (T1, kills the JsonNull default and stringly discriminators). (5) Keep ONLY the opaque user-defined LangGraph final state as a documented JsonElement pass-through.",
+      "acceptance": "compiles + jvmTest green + ABI dumps regenerated; no public JsonElement/Map<String,JsonElement>/JsonObject? field remains on the adapter domain types except the documented LangGraph state pass-through."
+    },
+    {
+      "taskId": "FIX-021",
+      "title": "Drop `data` from the 8 AgentError leaves",
+      "severity": "low",
+      "breaksAbi": true,
+      "effort": "S",
+      "files": [
+        "src/commonMain/kotlin/ai/torad/aisdk/AgentError.kt",
+        "api/jvm/torad-aisdk.api",
+        "api/torad-aisdk.klib.api"
+      ],
+      "instruction": "Remove `data` from all 8 AgentError leaves (NoSuchTool, InvalidToolInput, ToolExecution, ToolCallRepairFailed, InvalidApprovalResponse, InvalidToolApprovalSignature, InvalidCallOptions, MaxStepsReached), making each a plain `public class` under the sealed parent; keep all fields as public val. This removes componentN/copy/equals/hashCode whose semantics are wrong for a Throwable. No test or commonMain changes needed (verified: only field access + is/assertIs, no ==/destructuring/.copy()). Leave StreamEvent.ToolError data class alone. Reasonable to bundle with FIX-020 (same file).",
+      "acceptance": "compiles + jvmTest green + ABI dumps regenerated (componentN/copy/equals/hashCode entries removed per leaf)."
+    },
+    {
+      "taskId": "FIX-041",
+      "title": "LangChainStreamItem sealed interface -> class; remove redundant toUIMessageStream overloads",
+      "severity": "low",
+      "breaksAbi": true,
+      "effort": "S",
+      "files": [
+        "src/commonMain/kotlin/ai/torad/aisdk/LangChain.kt",
+        "src/commonMain/kotlin/ai/torad/aisdk/LlamaIndex.kt",
+        "api/jvm/torad-aisdk.api",
+        "api/torad-aisdk.klib.api"
+      ],
+      "instruction": "Gate on FIX-037. Change `public sealed interface LangChainStreamItem` (LangChain.kt:56) to a `sealed class` (subtypes as data classes extending it; no shared payload needed). Delete the two redundant toUIMessageStream overloads (LangChain.kt:138 with its @JvmName(\"langChainToUIMessageStreamExport\") + import, LlamaIndex.kt:25), keeping only langChainToUIMessageStream / llamaIndexToUIMessageStream \u2014 this removes the JVM erasure clash. Update tests to the named functions. Leave StreamEventsEvent.event and LangGraphEvent.type as strings (LangChain wire protocol values, T2).",
+      "acceptance": "compiles + jvmTest green + ABI dumps regenerated; no @JvmName erasure-clash workaround remains; LangChainStreamItem is a sealed class."
+    }
+  ]
+}

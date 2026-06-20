@@ -2,6 +2,7 @@ package ai.torad.aisdk.ui
 
 import ai.torad.aisdk.StreamEvent
 import ai.torad.aisdk.UiMessageStreamError
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.channelFlow
 import kotlinx.coroutines.flow.filterIsInstance
@@ -108,6 +109,8 @@ public fun createUiMessageStream(
     }
     try {
         writer.execute()
+    } catch (t: CancellationException) {
+        throw t
     } catch (t: Throwable) {
         send(onError(t))
     }

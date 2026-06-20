@@ -714,8 +714,9 @@ private fun anthropicGenerateResult(
 ): LanguageModelResult {
     val content = mutableListOf<ContentPart>()
     val toolCalls = mutableListOf<ContentPart.ToolCall>()
-    for (part in (response["content"] as? JsonArray).orEmpty()) {
+    (response["content"] as? JsonArray).orEmpty().forEachIndexed { index, part ->
         val obj = part.jsonObject
+        val path = "$.content[$index]"
         when (obj["type"]?.jsonPrimitive?.contentOrNull) {
             "text" -> {
                 obj["text"]?.jsonPrimitive?.contentOrNull?.let { text -> content += ContentPart.Text(text) }
@@ -736,9 +737,29 @@ private fun anthropicGenerateResult(
                 }),
             )
             "tool_use", "server_tool_use", "mcp_tool_use" -> {
+                val toolCallId = WireDecoder.requiredString(obj, "id", "anthropic", "response content", path)
+                if (toolCallId.isBlank()) {
+                    WireDecoder.fail(
+                        "anthropic",
+                        "response content",
+                        WireDecoder.child(path, "id"),
+                        "expected non-blank string",
+                        obj["id"],
+                    )
+                }
+                val toolName = WireDecoder.requiredString(obj, "name", "anthropic", "response content", path)
+                if (toolName.isBlank()) {
+                    WireDecoder.fail(
+                        "anthropic",
+                        "response content",
+                        WireDecoder.child(path, "name"),
+                        "expected non-blank string",
+                        obj["name"],
+                    )
+                }
                 val toolCall = ContentPart.ToolCall(
-                    toolCallId = obj["id"]?.jsonPrimitive?.contentOrNull ?: settings.generateId(),
-                    toolName = obj["name"]?.jsonPrimitive?.contentOrNull.orEmpty(),
+                    toolCallId = toolCallId,
+                    toolName = toolName,
                     input = obj["input"] ?: JsonObject(emptyMap()),
                     providerMetadata = if (obj["type"]?.jsonPrimitive?.contentOrNull != "tool_use") {
                         mapOf("anthropic" to buildJsonObject { put("providerExecuted", JsonPrimitive(true)) })
@@ -750,9 +771,30 @@ private fun anthropicGenerateResult(
                 content += toolCall
             }
             "mcp_tool_result", "web_search_tool_result", "web_fetch_tool_result", "code_execution_tool_result" -> {
+                val toolCallId = WireDecoder.optionalString(obj, "tool_use_id", "anthropic", "response content", path)
+                    ?.takeIf { it.isNotBlank() }
+                    ?: WireDecoder.optionalString(obj, "id", "anthropic", "response content", path)
+                        ?.takeIf { it.isNotBlank() }
+                    ?: WireDecoder.fail(
+                        "anthropic",
+                        "response content",
+                        path,
+                        "missing non-blank required field: tool_use_id or id",
+                        obj,
+                    )
+                val toolName = WireDecoder.requiredString(obj, "name", "anthropic", "response content", path)
+                if (toolName.isBlank()) {
+                    WireDecoder.fail(
+                        "anthropic",
+                        "response content",
+                        WireDecoder.child(path, "name"),
+                        "expected non-blank string",
+                        obj["name"],
+                    )
+                }
                 content += ContentPart.ToolResult(
-                    toolCallId = obj["tool_use_id"]?.jsonPrimitive?.contentOrNull ?: obj["id"]?.jsonPrimitive?.contentOrNull ?: settings.generateId(),
-                    toolName = obj["name"]?.jsonPrimitive?.contentOrNull ?: obj["type"]?.jsonPrimitive?.contentOrNull.orEmpty(),
+                    toolCallId = toolCallId,
+                    toolName = toolName,
                     output = obj["content"] ?: obj,
                     providerMetadata = mapOf("anthropic" to obj),
                 )
@@ -840,13 +882,26 @@ private class AnthropicStreamState(
                 } catch (error: WireDecodeException) {
                     return listOf(StreamEvent.Error(error.message ?: "Anthropic stream protocol error"))
                 }
-                val id = block["id"]?.jsonPrimitive?.contentOrNull ?: "block-$index"
-                val toolName = block["name"]?.jsonPrimitive?.contentOrNull
+                val isToolBlock = blockType == "tool_use" || blockType == "server_tool_use" || blockType == "mcp_tool_use"
+                val id = if (isToolBlock) {
+                    block["id"]?.jsonPrimitive?.contentOrNull?.takeIf { it.isNotBlank() }
+                        ?: return listOf(missingToolIdentityError(type, "id"))
+                } else {
+                    block["id"]?.jsonPrimitive?.contentOrNull ?: "block-$index"
+                }
+                val toolName = if (isToolBlock) {
+                    block["name"]?.jsonPrimitive?.contentOrNull?.takeIf { it.isNotBlank() }
+                        ?: return listOf(missingToolIdentityError(type, "name"))
+                } else {
+                    block["name"]?.jsonPrimitive?.contentOrNull
+                }
                 blocks[index] = AnthropicStreamBlock(id, blockType, toolName, anthropicInitialStreamInput(block["input"]))
                 when (blockType) {
                     "text" -> events += StreamEvent.TextStart(id)
                     "thinking", "redacted_thinking" -> events += StreamEvent.ReasoningStart(id)
-                    "tool_use", "server_tool_use", "mcp_tool_use" -> events += StreamEvent.ToolInputStart(id, toolName.orEmpty())
+                    "tool_use", "server_tool_use", "mcp_tool_use" -> {
+                        events += StreamEvent.ToolInputStart(id, toolName ?: return listOf(missingToolIdentityError(type, "name")))
+                    }
                 }
             }
             "content_block_delta" -> {
@@ -889,17 +944,18 @@ private class AnthropicStreamState(
                     "thinking", "redacted_thinking" -> events += StreamEvent.ReasoningEnd(block.id)
                     "tool_use", "server_tool_use", "mcp_tool_use" -> {
                         events += StreamEvent.ToolInputEnd(block.id)
+                        val toolName = block.toolName ?: return listOf(missingToolIdentityError("content_block_stop", "name"))
                         val inputJson = if (block.input.isBlank()) {
                             JsonObject(emptyMap())
                         } else {
                             runCatching { json.parseToJsonElement(block.input) }.getOrElse {
-                                events += StreamEvent.Error("Anthropic stream protocol error: malformed tool input JSON for `${block.toolName.orEmpty()}`.")
+                                events += StreamEvent.Error("Anthropic stream protocol error: malformed tool input JSON for `$toolName`.")
                                 return events
                             }
                         }
                         events += StreamEvent.ToolCall(
                             toolCallId = block.id,
-                            toolName = block.toolName.orEmpty(),
+                            toolName = toolName,
                             inputJson = inputJson,
                             providerMetadata = if (block.type != "tool_use") mapOf("anthropic" to buildJsonObject { put("providerExecuted", JsonPrimitive(true)) }) else null,
                         )
@@ -917,6 +973,9 @@ private class AnthropicStreamState(
         }
         return events
     }
+
+    private fun missingToolIdentityError(eventType: String, field: String): StreamEvent.Error =
+        StreamEvent.Error("Anthropic stream protocol error: $eventType missing required $field.")
 
     fun finish(): List<StreamEvent> = listOf(
         StreamEvent.Finish(

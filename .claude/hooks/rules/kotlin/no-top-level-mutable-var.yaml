@@ -1,0 +1,8 @@
+id: no-top-level-mutable-var
+language: kotlin
+severity: error
+rule:
+  all:
+    - kind: property_declaration
+    - has: { kind: binding_pattern_kind, regex: "^var$" }
+    - inside: { kind: source_file }

@@ -58,7 +58,15 @@ class TelemetryWiringTest {
         override suspend fun onToolCallStart(call: TelemetryCall, event: OnToolCallStartEvent) =
             record(call, "toolCallStart:${event.toolName}")
         override suspend fun onToolCallFinish(call: TelemetryCall, event: OnToolCallFinishEvent) =
-            record(call, "toolCallFinish:${event.toolName}:${if (event.errorMessage == null) "ok" else "err"}")
+            record(
+                call,
+                "toolCallFinish:${event.toolName}:${
+                    when (event.outcome) {
+                        is OnToolCallFinishEvent.Outcome.Success -> "ok"
+                        is OnToolCallFinishEvent.Outcome.Failure -> "err"
+                    }
+                }",
+            )
         override suspend fun onStepFinish(call: TelemetryCall, event: OnStepFinishEvent) =
             record(call, "stepFinish:${event.stepNumber}")
         override suspend fun onError(call: TelemetryCall, event: OnErrorEvent) =

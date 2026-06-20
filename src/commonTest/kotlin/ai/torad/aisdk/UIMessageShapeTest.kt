@@ -5,13 +5,17 @@ import ai.torad.aisdk.ui.ToolCallState
 import ai.torad.aisdk.ui.UIMessage
 import ai.torad.aisdk.ui.UIMessagePart
 import ai.torad.aisdk.ui.UIMessageRole
+import ai.torad.aisdk.ui.createUiMessageStream
 import ai.torad.aisdk.ui.streamToUiMessages
+import kotlin.test.assertFailsWith
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.JsonPrimitive
 
@@ -129,5 +133,16 @@ class UIMessageShapeTest {
         val isDynamic = part is UIMessagePart.DynamicToolUI
         val isStatic = part is UIMessagePart.ToolUI
         assertTrue(isDynamic && !isStatic, "renderer can distinguish dynamic vs static tool parts")
+    }
+
+    @Test
+    fun `createUiMessageStream rethrows cancellation without emitting an error message`() = runTest {
+        val stream = createUiMessageStream {
+            throw CancellationException("cancelled")
+        }
+
+        assertFailsWith<CancellationException> {
+            stream.toList()
+        }
     }
 }
