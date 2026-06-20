@@ -1,7 +1,7 @@
 package ai.torad.aisdk
 import ai.torad.aisdk.providers.byteDance
 import ai.torad.aisdk.providers.ByteDanceProviderSettings
-import ai.torad.aisdk.providers.createByteDance
+import ai.torad.aisdk.providers.ByteDance
 
 import io.ktor.http.HttpHeaders
 import kotlinx.coroutines.test.runTest
@@ -38,7 +38,7 @@ class ByteDanceProviderTest {
             ),
         )
         fixture.server.start()
-        val model = createByteDance(
+        val model = ByteDance(
             fixture.httpClient(),
             ByteDanceProviderSettings(apiKey = "key", baseURL = "https://ark.test/api/v3", headers = mapOf("X-Test" to "1")),
         ).video("seedance-1-0-pro-250528")
@@ -125,7 +125,7 @@ class ByteDanceProviderTest {
             ),
         )
         fixture.server.start()
-        val provider = createByteDance(fixture.httpClient(), ByteDanceProviderSettings(apiKey = "key", baseURL = "https://ark.test/api/v3"))
+        val provider = ByteDance(fixture.httpClient(), ByteDanceProviderSettings(apiKey = "key", baseURL = "https://ark.test/api/v3"))
 
         assertFailsWith<AiSdkException> {
             provider.video("seedance").generate(

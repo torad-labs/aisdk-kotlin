@@ -83,7 +83,7 @@ public class AlibabaProvider(
 ) : Provider {
     override val providerId: String = "alibaba"
     private val chatProvider: OpenAICompatibleProvider =
-        createOpenAICompatible(
+        OpenAICompatible(
             client,
             OpenAICompatibleProviderSettings(
                 name = "alibaba",

@@ -18,15 +18,15 @@ import ai.torad.aisdk.providers.TogetherAIProviderSettings
 import ai.torad.aisdk.providers.VERCEL_VERSION
 import ai.torad.aisdk.providers.VercelProviderSettings
 import ai.torad.aisdk.providers.browserSearch
-import ai.torad.aisdk.providers.createCerebras
-import ai.torad.aisdk.providers.createDeepInfra
-import ai.torad.aisdk.providers.createDeepSeek
-import ai.torad.aisdk.providers.createFireworks
-import ai.torad.aisdk.providers.createGroq
-import ai.torad.aisdk.providers.createMoonshotAI
-import ai.torad.aisdk.providers.createPerplexity
-import ai.torad.aisdk.providers.createTogetherAI
-import ai.torad.aisdk.providers.createVercel
+import ai.torad.aisdk.providers.Cerebras
+import ai.torad.aisdk.providers.DeepInfra
+import ai.torad.aisdk.providers.DeepSeek
+import ai.torad.aisdk.providers.Fireworks
+import ai.torad.aisdk.providers.Groq
+import ai.torad.aisdk.providers.MoonshotAI
+import ai.torad.aisdk.providers.Perplexity
+import ai.torad.aisdk.providers.TogetherAI
+import ai.torad.aisdk.providers.Vercel
 import io.ktor.http.HttpHeaders
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.Json
@@ -53,55 +53,55 @@ class OpenAICompatibleProviderFacadesTest {
                 name = "deepseek",
                 expectedChatUrl = "https://deepseek.test/chat/completions",
                 expectedUserAgent = "ai-sdk/deepseek/$DEEPSEEK_VERSION",
-                create = { client -> createDeepSeek(client, DeepSeekProviderSettings(apiKey = "key", baseURL = "https://deepseek.test")).languageModel("model") },
+                create = { client -> DeepSeek(client, DeepSeekProviderSettings(apiKey = "key", baseURL = "https://deepseek.test")).languageModel("model") },
             ),
             ProviderCase(
                 name = "cerebras",
                 expectedChatUrl = "https://cerebras.test/v1/chat/completions",
                 expectedUserAgent = "ai-sdk/cerebras/$CEREBRAS_VERSION",
-                create = { client -> createCerebras(client, CerebrasProviderSettings(apiKey = "key", baseURL = "https://cerebras.test/v1")).languageModel("model") },
+                create = { client -> Cerebras(client, CerebrasProviderSettings(apiKey = "key", baseURL = "https://cerebras.test/v1")).languageModel("model") },
             ),
             ProviderCase(
                 name = "deepinfra",
                 expectedChatUrl = "https://deepinfra.test/v1/openai/chat/completions",
                 expectedUserAgent = "ai-sdk/deepinfra/$DEEPINFRA_VERSION",
-                create = { client -> createDeepInfra(client, DeepInfraProviderSettings(apiKey = "key", baseURL = "https://deepinfra.test/v1")).languageModel("model") },
+                create = { client -> DeepInfra(client, DeepInfraProviderSettings(apiKey = "key", baseURL = "https://deepinfra.test/v1")).languageModel("model") },
             ),
             ProviderCase(
                 name = "fireworks",
                 expectedChatUrl = "https://fireworks.test/inference/v1/chat/completions",
                 expectedUserAgent = "ai-sdk/fireworks/$FIREWORKS_VERSION",
-                create = { client -> createFireworks(client, FireworksProviderSettings(apiKey = "key", baseURL = "https://fireworks.test/inference/v1")).chatModel("model") },
+                create = { client -> Fireworks(client, FireworksProviderSettings(apiKey = "key", baseURL = "https://fireworks.test/inference/v1")).chatModel("model") },
             ),
             ProviderCase(
                 name = "perplexity",
                 expectedChatUrl = "https://perplexity.test/chat/completions",
                 expectedUserAgent = "ai-sdk/perplexity/$PERPLEXITY_VERSION",
-                create = { client -> createPerplexity(client, PerplexityProviderSettings(apiKey = "key", baseURL = "https://perplexity.test")).languageModel("model") },
+                create = { client -> Perplexity(client, PerplexityProviderSettings(apiKey = "key", baseURL = "https://perplexity.test")).languageModel("model") },
             ),
             ProviderCase(
                 name = "moonshotai",
                 expectedChatUrl = "https://moonshot.test/v1/chat/completions",
                 expectedUserAgent = "ai-sdk/moonshotai/$MOONSHOTAI_VERSION",
-                create = { client -> createMoonshotAI(client, MoonshotAIProviderSettings(apiKey = "key", baseURL = "https://moonshot.test/v1")).chatModel("model") },
+                create = { client -> MoonshotAI(client, MoonshotAIProviderSettings(apiKey = "key", baseURL = "https://moonshot.test/v1")).chatModel("model") },
             ),
             ProviderCase(
                 name = "groq",
                 expectedChatUrl = "https://groq.test/openai/v1/chat/completions",
                 expectedUserAgent = "ai-sdk/groq/$GROQ_VERSION",
-                create = { client -> createGroq(client, GroqProviderSettings(apiKey = "key", baseURL = "https://groq.test/openai/v1")).chat("model") },
+                create = { client -> Groq(client, GroqProviderSettings(apiKey = "key", baseURL = "https://groq.test/openai/v1")).chat("model") },
             ),
             ProviderCase(
                 name = "togetherai",
                 expectedChatUrl = "https://together.test/v1/chat/completions",
                 expectedUserAgent = "ai-sdk/togetherai/$TOGETHERAI_VERSION",
-                create = { client -> createTogetherAI(client, TogetherAIProviderSettings(apiKey = "key", baseURL = "https://together.test/v1")).chatModel("model") },
+                create = { client -> TogetherAI(client, TogetherAIProviderSettings(apiKey = "key", baseURL = "https://together.test/v1")).chatModel("model") },
             ),
             ProviderCase(
                 name = "vercel",
                 expectedChatUrl = "https://vercel.test/v1/chat/completions",
                 expectedUserAgent = "ai-sdk/vercel/$VERCEL_VERSION",
-                create = { client -> createVercel(client, VercelProviderSettings(apiKey = "key", baseURL = "https://vercel.test/v1")).languageModel("model") },
+                create = { client -> Vercel(client, VercelProviderSettings(apiKey = "key", baseURL = "https://vercel.test/v1")).languageModel("model") },
             ),
         )
 
@@ -162,7 +162,7 @@ class OpenAICompatibleProviderFacadesTest {
             ),
         )
         fixture.server.start()
-        val provider = createDeepSeek(
+        val provider = DeepSeek(
             fixture.httpClient(),
             DeepSeekProviderSettings(apiKey = "key", baseURL = "https://deepseek.test"),
         )
@@ -226,7 +226,7 @@ class OpenAICompatibleProviderFacadesTest {
             ),
         )
         fixture.server.start()
-        val provider = createPerplexity(
+        val provider = Perplexity(
             fixture.httpClient(),
             PerplexityProviderSettings(apiKey = "key", baseURL = "https://perplexity.test"),
         )
@@ -296,7 +296,7 @@ class OpenAICompatibleProviderFacadesTest {
             ),
         )
         fixture.server.start()
-        val provider = createMoonshotAI(
+        val provider = MoonshotAI(
             fixture.httpClient(),
             MoonshotAIProviderSettings(apiKey = "key", baseURL = "https://moonshot.test/v1"),
         )
@@ -330,7 +330,7 @@ class OpenAICompatibleProviderFacadesTest {
             ),
         )
         fixture.server.start()
-        val provider = createGroq(
+        val provider = Groq(
             fixture.httpClient(),
             GroqProviderSettings(apiKey = "key", baseURL = "https://groq.test/openai/v1"),
         )
@@ -381,7 +381,7 @@ class OpenAICompatibleProviderFacadesTest {
             ),
         )
         fixture.server.start()
-        val provider = createGroq(
+        val provider = Groq(
             fixture.httpClient(),
             GroqProviderSettings(apiKey = "key", baseURL = "https://groq.test/openai/v1"),
         )
@@ -425,7 +425,7 @@ class OpenAICompatibleProviderFacadesTest {
             ),
         )
         fixture.server.start()
-        val provider = createDeepInfra(
+        val provider = DeepInfra(
             fixture.httpClient(),
             DeepInfraProviderSettings(apiKey = "key", baseURL = "https://deepinfra.test/v1"),
         )
@@ -477,7 +477,7 @@ class OpenAICompatibleProviderFacadesTest {
             ),
         )
         fixture.server.start()
-        val provider = createFireworks(
+        val provider = Fireworks(
             fixture.httpClient(),
             FireworksProviderSettings(apiKey = "key", baseURL = "https://fireworks.test/inference/v1"),
         )
@@ -537,7 +537,7 @@ class OpenAICompatibleProviderFacadesTest {
             ),
         )
         fixture.server.start()
-        val provider = createFireworks(
+        val provider = Fireworks(
             fixture.httpClient(),
             FireworksProviderSettings(apiKey = "key", baseURL = "https://fireworks.test/inference/v1"),
         )
@@ -580,7 +580,7 @@ class OpenAICompatibleProviderFacadesTest {
             ),
         )
         fixture.server.start()
-        val provider = createTogetherAI(
+        val provider = TogetherAI(
             fixture.httpClient(),
             TogetherAIProviderSettings(apiKey = "key", baseURL = "https://together.test/v1"),
         )
@@ -639,7 +639,7 @@ class OpenAICompatibleProviderFacadesTest {
             ),
         )
         fixture.server.start()
-        val provider = createGroq(
+        val provider = Groq(
             fixture.httpClient(),
             GroqProviderSettings(apiKey = "key", baseURL = "https://groq.test/openai/v1"),
         )
@@ -657,7 +657,7 @@ class OpenAICompatibleProviderFacadesTest {
 
     @Test
     fun `unsupported model families throw provider specific NoSuchModelError`() {
-        val provider = createDeepSeek(
+        val provider = DeepSeek(
             TestServer(mutableMapOf()).httpClient(),
             DeepSeekProviderSettings(baseURL = "https://deepseek.test"),
         )
@@ -668,7 +668,7 @@ class OpenAICompatibleProviderFacadesTest {
 
         assertTrue(error.message.orEmpty().contains("deepseek"))
 
-        val vercel = createVercel(
+        val vercel = Vercel(
             TestServer(mutableMapOf()).httpClient(),
             VercelProviderSettings(baseURL = "https://vercel.test/v1"),
         )

@@ -1,7 +1,7 @@
 package ai.torad.aisdk
 import ai.torad.aisdk.providers.OpenAIProviderSettings
 import ai.torad.aisdk.providers.VERSION
-import ai.torad.aisdk.providers.createOpenAI
+import ai.torad.aisdk.providers.OpenAI
 import ai.torad.aisdk.providers.openAICodeInterpreter
 import ai.torad.aisdk.providers.openAIFileSearch
 import ai.torad.aisdk.providers.openAIImageGeneration
@@ -56,7 +56,7 @@ class OpenAIProviderTest {
             },
         )
 
-        val provider = createOpenAI(
+        val provider = OpenAI(
             client,
             OpenAIProviderSettings(
                 apiKey = "test-api-key",
@@ -104,7 +104,7 @@ class OpenAIProviderTest {
                 }
             },
         )
-        val provider = createOpenAI(
+        val provider = OpenAI(
             client,
             OpenAIProviderSettings(
                 baseURL = "https://proxy.openai.example/v1/",
@@ -127,7 +127,7 @@ class OpenAIProviderTest {
 
     @Test
     fun `OpenAI tools are provider-executed and expose provider tool ids`() {
-        val tools = createOpenAI(HttpClient(MockEngine { respond("{}") })).tools
+        val tools = OpenAI(HttpClient(MockEngine { respond("{}") })).tools
 
         assertProviderTool(tools.codeInterpreter, "code_interpreter", "openai.code_interpreter")
         assertProviderTool(tools.fileSearch, "file_search", "openai.file_search")
@@ -148,7 +148,7 @@ class OpenAIProviderTest {
                 )
             },
         )
-        val provider = createOpenAI(client, OpenAIProviderSettings(apiKey = "test-api-key"))
+        val provider = OpenAI(client, OpenAIProviderSettings(apiKey = "test-api-key"))
 
         TextGenerator(
             provider.chat("gpt-5"),
@@ -179,7 +179,7 @@ class OpenAIProviderTest {
                 )
             },
         )
-        val provider = createOpenAI(
+        val provider = OpenAI(
             client,
             OpenAIProviderSettings(
                 baseURL = "https://proxy.openai.example/v1/",
@@ -273,7 +273,7 @@ class OpenAIProviderTest {
                 )
             },
         )
-        val provider = createOpenAI(client, OpenAIProviderSettings(apiKey = "test-api-key"))
+        val provider = OpenAI(client, OpenAIProviderSettings(apiKey = "test-api-key"))
 
         provider.responses("gpt-5").generate(
             LanguageModelCallParams(
@@ -327,7 +327,7 @@ class OpenAIProviderTest {
                 )
             },
         )
-        val provider = createOpenAI(client, OpenAIProviderSettings(apiKey = "test-api-key"))
+        val provider = OpenAI(client, OpenAIProviderSettings(apiKey = "test-api-key"))
         val tools = toolSetOf<Any?>(
             openAIFileSearch(
                 buildJsonObject {
@@ -416,7 +416,7 @@ class OpenAIProviderTest {
                 )
             },
         )
-        val provider = createOpenAI(client, OpenAIProviderSettings(apiKey = "test-api-key"))
+        val provider = OpenAI(client, OpenAIProviderSettings(apiKey = "test-api-key"))
 
         provider.responses("gpt-4o").generate(
             LanguageModelCallParams(
@@ -473,7 +473,7 @@ class OpenAIProviderTest {
                 )
             },
         )
-        val provider = createOpenAI(client, OpenAIProviderSettings(apiKey = "test-api-key"))
+        val provider = OpenAI(client, OpenAIProviderSettings(apiKey = "test-api-key"))
 
         val result = provider.responses("gpt-4o").generate(LanguageModelCallParams(messages = listOf(userMessage("hi"))))
 

@@ -390,7 +390,7 @@ private suspend fun HttpResponse.parseProdiaMultipart(url: String): ProdiaMultip
         )
     }
     val boundary = Regex("""boundary=([^;\s]+)""").find(rawContentType)?.groupValues?.get(1)
-        ?: throw AiSdkRuntimeException("Prodia response missing multipart boundary in content-type: $rawContentType")
+        ?: throw InvalidResponseDataError(null, "Prodia response missing multipart boundary in content-type: $rawContentType")
     val parts = parseProdiaMultipart(bytes, boundary)
     var job: JsonObject? = null
     var text: String? = null
@@ -413,7 +413,7 @@ private suspend fun HttpResponse.parseProdiaMultipart(url: String): ProdiaMultip
         }
     }
     return ProdiaMultipartResult(
-        job = job ?: throw AiSdkRuntimeException("Prodia multipart response missing job part"),
+        job = job ?: throw InvalidResponseDataError(null, "Prodia multipart response missing job part"),
         text = text,
         files = files,
         headers = responseHeaders,

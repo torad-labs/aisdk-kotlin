@@ -37,7 +37,7 @@ public class AzureOpenAIProvider(
         }
     }
 
-    private val compatible = createOpenAICompatible(client, compatibleSettings())
+    private val compatible = OpenAICompatible(client, compatibleSettings())
 
     override val providerId: String = "azure"
     public val tools: AzureOpenAITools = azureOpenaiTools
@@ -45,7 +45,7 @@ public class AzureOpenAIProvider(
     public operator fun invoke(deploymentId: String): LanguageModel = responses(deploymentId)
 
     public fun responses(deploymentId: String): LanguageModel =
-        createOpenResponses(
+        OpenResponses(
             client,
             OpenResponsesProviderSettings(
                 url = azureUrl("/responses", deploymentId),

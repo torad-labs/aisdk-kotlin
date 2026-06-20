@@ -1,7 +1,7 @@
 package ai.torad.aisdk
 import ai.torad.aisdk.providers.GOOGLE_VERSION
 import ai.torad.aisdk.providers.GoogleGenerativeAIProviderSettings
-import ai.torad.aisdk.providers.createGoogleGenerativeAI
+import ai.torad.aisdk.providers.GoogleGenerativeAI
 
 import ai.torad.aisdk.testing.drainAllItems
 import io.ktor.http.HttpHeaders
@@ -67,7 +67,7 @@ class GoogleProviderTest {
             ),
         )
         fixture.server.start()
-        val provider = createGoogleGenerativeAI(
+        val provider = GoogleGenerativeAI(
             fixture.httpClient(),
             GoogleGenerativeAIProviderSettings(
                 apiKey = "key",
@@ -161,7 +161,7 @@ class GoogleProviderTest {
             ),
         )
         fixture.server.start()
-        val provider = createGoogleGenerativeAI(
+        val provider = GoogleGenerativeAI(
             fixture.httpClient(),
             GoogleGenerativeAIProviderSettings(apiKey = "key", baseURL = "https://google.test/v1beta"),
         )
@@ -217,7 +217,7 @@ class GoogleProviderTest {
             ),
         )
         fixture.server.start()
-        val provider = createGoogleGenerativeAI(
+        val provider = GoogleGenerativeAI(
             fixture.httpClient(),
             GoogleGenerativeAIProviderSettings(apiKey = "key", baseURL = "https://google.test/v1beta"),
         )
@@ -251,7 +251,7 @@ class GoogleProviderTest {
             ),
         )
         fixture.server.start()
-        val provider = createGoogleGenerativeAI(
+        val provider = GoogleGenerativeAI(
             fixture.httpClient(),
             GoogleGenerativeAIProviderSettings(apiKey = "key", baseURL = "https://google.test/v1beta"),
         )
@@ -281,7 +281,7 @@ class GoogleProviderTest {
             ),
         )
         fixture.server.start()
-        val provider = createGoogleGenerativeAI(
+        val provider = GoogleGenerativeAI(
             fixture.httpClient(),
             GoogleGenerativeAIProviderSettings(apiKey = "key", baseURL = "https://google.test/v1beta"),
         )
@@ -313,7 +313,7 @@ class GoogleProviderTest {
             ),
         )
         fixture.server.start()
-        val provider = createGoogleGenerativeAI(
+        val provider = GoogleGenerativeAI(
             fixture.httpClient(),
             GoogleGenerativeAIProviderSettings(apiKey = "key", baseURL = "https://google.test/v1beta"),
         )
@@ -366,7 +366,7 @@ class GoogleProviderTest {
             ),
         )
         fixture.server.start()
-        val provider = createGoogleGenerativeAI(
+        val provider = GoogleGenerativeAI(
             fixture.httpClient(),
             GoogleGenerativeAIProviderSettings(
                 apiKey = "key",
@@ -455,7 +455,7 @@ class GoogleProviderTest {
             ),
         )
         fixture.server.start()
-        val provider = createGoogleGenerativeAI(
+        val provider = GoogleGenerativeAI(
             fixture.httpClient(),
             GoogleGenerativeAIProviderSettings(apiKey = "key", baseURL = "https://google.test/v1beta", videoPollIntervalMillis = 0),
         )
@@ -525,7 +525,7 @@ class GoogleProviderTest {
             ),
         )
         fixture.server.start()
-        val provider = createGoogleGenerativeAI(
+        val provider = GoogleGenerativeAI(
             fixture.httpClient(),
             GoogleGenerativeAIProviderSettings(
                 apiKey = "key",
@@ -629,7 +629,7 @@ class GoogleProviderTest {
             ),
         )
         fixture.server.start()
-        val provider = createGoogleGenerativeAI(
+        val provider = GoogleGenerativeAI(
             fixture.httpClient(),
             GoogleGenerativeAIProviderSettings(apiKey = "key", baseURL = "https://google.test/v1beta"),
         )
@@ -677,7 +677,7 @@ class GoogleProviderTest {
             ),
         )
         fixture.server.start()
-        val provider = createGoogleGenerativeAI(
+        val provider = GoogleGenerativeAI(
             fixture.httpClient(),
             GoogleGenerativeAIProviderSettings(apiKey = "key", baseURL = "https://google.test/v1beta"),
         )

@@ -283,7 +283,7 @@ private fun klingAIMotionControlBody(
     val characterOrientation = options["characterOrientation"]?.jsonPrimitive?.contentOrNull
     val mode = options["mode"]?.jsonPrimitive?.contentOrNull
     if (videoUrl.isNullOrBlank() || characterOrientation.isNullOrBlank() || mode.isNullOrBlank()) {
-        throw AiSdkRuntimeException("KlingAI Motion Control requires providerOptions.klingai with videoUrl, characterOrientation, and mode.")
+        throw InvalidArgumentError("providerOptions", "KlingAI Motion Control requires providerOptions.klingai with videoUrl, characterOrientation, and mode.")
     }
     return buildJsonObject {
         put("model_name", JsonPrimitive(klingAIModelName(modelId, KlingAIVideoMode.MotionControl)))
@@ -341,8 +341,8 @@ private fun klingAIHeaders(
     clock: Clock = Clock.System,
 ): Map<String, String> {
     val token = generateKlingAIAuthToken(
-        accessKey = settings.accessKey ?: throw AiSdkRuntimeException("KlingAI access key is required."),
-        secretKey = settings.secretKey ?: throw AiSdkRuntimeException("KlingAI secret key is required."),
+        accessKey = settings.accessKey ?: throw LoadAPIKeyError("KlingAI access key is required."),
+        secretKey = settings.secretKey ?: throw LoadAPIKeyError("KlingAI secret key is required."),
         clock = clock,
     )
     return ProviderHeaders.build(settings.headers, callHeaders, "ai-sdk/klingai/$KLINGAI_VERSION") { base ->

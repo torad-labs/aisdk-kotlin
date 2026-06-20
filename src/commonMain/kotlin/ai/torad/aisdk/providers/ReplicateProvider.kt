@@ -280,7 +280,7 @@ private fun ImageGenerationFile.replicateDataUri(): String {
     url?.takeIf { it.isNotBlank() }?.let { return it }
     val mediaType = mediaType ?: "application/octet-stream"
     val data = base64?.takeIf { it.isNotBlank() }
-        ?: throw AiSdkRuntimeException("Replicate image file must include either url or base64 data.")
+        ?: throw InvalidArgumentError("file", "Replicate image file must include either url or base64 data.")
     return "data:$mediaType;base64,$data"
 }
 
@@ -375,12 +375,12 @@ private suspend fun replicatePollVideoPrediction(
     var attempts = 0
     while (prediction.replicateStatus() in setOf("starting", "processing")) {
         if (attempts >= maxPollAttempts) {
-            throw AiSdkRuntimeException("Video generation timed out after ${pollTimeoutMs}ms")
+            throw NoVideoGeneratedError("Video generation timed out after ${pollTimeoutMs}ms")
         }
         if (pollIntervalMs > 0) delay(pollIntervalMs)
         abortSignal.throwIfAborted()
         val pollUrl = prediction["urls"]?.jsonObject?.get("get")?.jsonPrimitive?.contentOrNull
-            ?: throw AiSdkRuntimeException("Replicate prediction response is missing urls.get")
+            ?: throw InvalidResponseDataError(null, "Replicate prediction response is missing urls.get")
         prediction = replicateGetJson(
             client = client,
             url = pollUrl,
@@ -390,14 +390,14 @@ private suspend fun replicatePollVideoPrediction(
         attempts++
     }
     when (prediction.replicateStatus()) {
-        "failed" -> throw AiSdkRuntimeException("Video generation failed: ${prediction["error"]?.jsonPrimitive?.contentOrNull ?: "Unknown error"}")
-        "canceled" -> throw AiSdkRuntimeException("Video generation was canceled")
+        "failed" -> throw NoVideoGeneratedError("Video generation failed: ${prediction["error"]?.jsonPrimitive?.contentOrNull ?: "Unknown error"}")
+        "canceled" -> throw NoVideoGeneratedError("Video generation was canceled")
     }
     return prediction
 }
 
 private fun JsonObject.replicateStatus(): String =
-    this["status"]?.jsonPrimitive?.contentOrNull ?: throw AiSdkRuntimeException("Replicate prediction response is missing status")
+    this["status"]?.jsonPrimitive?.contentOrNull ?: throw InvalidResponseDataError(null, "Replicate prediction response is missing status")
 
 private fun replicateVideoProviderMetadata(prediction: JsonObject, videoUrl: String): JsonElement = buildJsonObject {
     put("videos", JsonArray(listOf(buildJsonObject {

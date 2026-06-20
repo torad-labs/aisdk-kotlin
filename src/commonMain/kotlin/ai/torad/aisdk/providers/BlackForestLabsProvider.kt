@@ -74,7 +74,7 @@ public interface BlackForestLabsProvider : Provider {
     public fun textEmbeddingModel(modelId: String): Nothing = throw NoSuchModelError(providerId, "embeddingModel", modelId)
 }
 
-public fun createBlackForestLabs(
+public fun BlackForestLabs(
     client: HttpClient,
     settings: BlackForestLabsProviderSettings = BlackForestLabsProviderSettings(),
 ): BlackForestLabsProvider = DefaultBlackForestLabsProvider(client, settings)
@@ -82,7 +82,7 @@ public fun createBlackForestLabs(
 public val blackForestLabs: BlackForestLabsProvider = object : BlackForestLabsProvider {
     override val providerId: String = "black-forest-labs"
     override fun image(modelId: String): ImageModel =
-        throw AiSdkRuntimeException("Black Forest Labs provider is not configured. Use createBlackForestLabs(client, settings).")
+        throw UnsupportedFunctionalityError("black-forest-labs", "Black Forest Labs provider is not configured. Use BlackForestLabs(client, settings).")
 }
 
 private class DefaultBlackForestLabsProvider(
@@ -116,9 +116,9 @@ private class BlackForestLabsImageModel(
         )
         val submitBody = submit.value.jsonObject
         val requestId = submitBody["id"]?.jsonPrimitive?.contentOrNull
-            ?: throw AiSdkRuntimeException("Black Forest Labs submit response is missing id")
+            ?: throw InvalidResponseDataError(null, "Black Forest Labs submit response is missing id")
         val pollingUrl = submitBody["polling_url"]?.jsonPrimitive?.contentOrNull
-            ?: throw AiSdkRuntimeException("Black Forest Labs submit response is missing polling_url")
+            ?: throw InvalidResponseDataError(null, "Black Forest Labs submit response is missing polling_url")
         val pollResult = bflPollForImage(
             client = client,
             pollingUrl = bflPollUrl(pollingUrl, requestId),
@@ -208,7 +208,7 @@ private fun bflRequestBody(
 }
 
 private fun JsonObjectBuilder.putBflInputImages(modelId: String, files: List<ImageGenerationFile>) {
-    if (files.size > 10) throw AiSdkRuntimeException("Black Forest Labs supports up to 10 input images.")
+    if (files.size > 10) throw InvalidArgumentError("files", "Black Forest Labs supports up to 10 input images.")
     val inputImageField = if (modelId == "flux-pro-1.0-fill") "image" else "input_image"
     files.forEachIndexed { index, file ->
         val suffix = if (index == 0) "" else "_${index + 1}"
@@ -265,18 +265,18 @@ private suspend fun bflPollForImage(
         abortSignal.throwIfAborted()
         val poll = bflGetJson(client, pollingUrl, headers, abortSignal).value.jsonObject
         val status = poll["status"]?.jsonPrimitive?.contentOrNull ?: poll["state"]?.jsonPrimitive?.contentOrNull
-            ?: throw AiSdkRuntimeException("Missing status in Black Forest Labs poll response")
+            ?: throw InvalidResponseDataError(null, "Missing status in Black Forest Labs poll response")
         when (status) {
             "Ready" -> {
-                val result = poll["result"]?.jsonObject ?: throw AiSdkRuntimeException("Black Forest Labs poll response is Ready but missing result.sample",)
-                val imageUrl = result["sample"]?.jsonPrimitive?.contentOrNull ?: throw AiSdkRuntimeException("Black Forest Labs poll response is Ready but missing result.sample",)
+                val result = poll["result"]?.jsonObject ?: throw InvalidResponseDataError(null, "Black Forest Labs poll response is Ready but missing result.sample")
+                val imageUrl = result["sample"]?.jsonPrimitive?.contentOrNull ?: throw InvalidResponseDataError(null, "Black Forest Labs poll response is Ready but missing result.sample")
                 return BflPollResult(imageUrl = imageUrl, result = result)
             }
-            "Error", "Failed" -> throw AiSdkRuntimeException("Black Forest Labs generation failed.")
+            "Error", "Failed" -> throw NoImageGeneratedError("Black Forest Labs generation failed.")
         }
         if (pollIntervalMillis > 0 && attempt < maxPollAttempts - 1) delay(pollIntervalMillis)
     }
-    throw AiSdkRuntimeException("Black Forest Labs generation timed out.")
+    throw NoImageGeneratedError("Black Forest Labs generation timed out.")
 }
 
 private suspend fun bflDownloadImage(

@@ -52,7 +52,7 @@ public interface ByteDanceProvider : Provider {
     override fun videoModel(modelId: String): VideoModel = video(modelId)
 }
 
-public fun createByteDance(
+public fun ByteDance(
     client: HttpClient,
     settings: ByteDanceProviderSettings = ByteDanceProviderSettings(),
 ): ByteDanceProvider = DefaultByteDanceProvider(client, settings)
@@ -60,7 +60,7 @@ public fun createByteDance(
 public val byteDance: ByteDanceProvider = object : ByteDanceProvider {
     override val providerId: String = "bytedance"
     override fun video(modelId: String): VideoModel =
-        throw AiSdkRuntimeException("ByteDance provider is not configured. Use createByteDance(client, settings).")
+        throw UnsupportedFunctionalityError("bytedance", "ByteDance provider is not configured. Use ByteDance(client, settings).")
 }
 
 private class DefaultByteDanceProvider(
@@ -99,7 +99,7 @@ private class ByteDanceVideoModel(
             headers = byteDanceHeaders(settings, params.headers),
         )
         val taskId = create.value.jsonObject["id"]?.jsonPrimitive?.contentOrNull
-            ?: throw AiSdkRuntimeException("No task ID returned from ByteDance API")
+            ?: throw InvalidResponseDataError(null, "No task ID returned from ByteDance API")
         val status = byteDancePoll(
             client = client,
             settings = settings,
@@ -111,7 +111,7 @@ private class ByteDanceVideoModel(
         )
         val statusBody = status.value.jsonObject
         val videoUrl = statusBody["content"]?.jsonObject?.get("video_url")?.jsonPrimitive?.contentOrNull
-            ?: throw AiSdkRuntimeException("No video URL in ByteDance response")
+            ?: throw InvalidResponseDataError(null, "No video URL in ByteDance response")
         return VideoModelResult(
             videos = listOf(
                 GeneratedFile(
@@ -304,11 +304,11 @@ private suspend fun byteDancePoll(
         val statusBody = status.value.jsonObject
         when (statusBody["status"]?.jsonPrimitive?.contentOrNull) {
             "succeeded" -> return status
-            "failed" -> throw AiSdkRuntimeException("ByteDance video generation failed: $statusBody")
+            "failed" -> throw NoVideoGeneratedError("ByteDance video generation failed: $statusBody")
         }
         if (pollIntervalMs > 0 && attempt < maxPollAttempts - 1) delay(pollIntervalMs)
     }
-    throw AiSdkRuntimeException("ByteDance video generation timed out after ${pollTimeoutMs}ms")
+    throw NoVideoGeneratedError("ByteDance video generation timed out after ${pollTimeoutMs}ms")
 }
 
 private fun byteDanceHeaders(settings: ByteDanceProviderSettings, callHeaders: Map<String, String>): Map<String, String> {

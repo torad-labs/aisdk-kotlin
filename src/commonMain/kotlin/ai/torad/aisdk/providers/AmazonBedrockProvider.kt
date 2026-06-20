@@ -1259,7 +1259,7 @@ private suspend fun ByteReadChannel.readBedrockFrame(count: Int): ByteArray? {
             // generation. (readAvailable suspends via awaitContent when the
             // buffer is momentarily empty, so this never busy-spins.)
             if (read == 0) return null
-            throw AiSdkRuntimeException("Bedrock event stream truncated: got $read of $count frame bytes before EOF")
+            throw InvalidResponseDataError(null, "Bedrock event stream truncated: got $read of $count frame bytes before EOF")
         }
         read += n
     }
@@ -1359,7 +1359,7 @@ private suspend fun bedrockHeaders(
         val credentials = settings.credentialProvider?.invoke()
             ?: BedrockCredentials(settings.accessKeyId.orEmpty(), settings.secretAccessKey.orEmpty(), settings.sessionToken, settings.region)
         if (credentials.accessKeyId.isBlank() || credentials.secretAccessKey.isBlank()) {
-            throw AiSdkRuntimeException("AWS SigV4 authentication requires both accessKeyId and secretAccessKey.")
+            throw LoadAPIKeyError("AWS SigV4 authentication requires both accessKeyId and secretAccessKey.")
         }
         credentials
     } else {
@@ -1476,7 +1476,7 @@ private fun bedrockMantleTool(tool: LanguageModelTool): JsonObject = buildJsonOb
 }
 
 private fun bedrockImageFileBase64(file: ImageGenerationFile): String =
-    file.base64 ?: throw AiSdkRuntimeException("URL-based images are not supported for Amazon Bedrock image editing. Provide base64 data directly.")
+    file.base64 ?: throw UnsupportedFunctionalityError("url-based images", "URL-based images are not supported for Amazon Bedrock image editing. Provide base64 data directly.")
 
 private fun bedrockImageFormat(mediaType: String): String =
     mediaType.substringAfter("image/", "png").substringBefore("+").substringBefore(";")

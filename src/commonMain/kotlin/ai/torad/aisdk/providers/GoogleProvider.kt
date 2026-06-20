@@ -128,10 +128,6 @@ public fun GoogleGenerativeAI(
     settings: GoogleGenerativeAIProviderSettings = GoogleGenerativeAIProviderSettings(),
 ): GoogleGenerativeAIProvider = GoogleGenerativeAIProvider(client, settings)
 
-public fun createGoogleGenerativeAI(
-    client: HttpClient,
-    settings: GoogleGenerativeAIProviderSettings = GoogleGenerativeAIProviderSettings(),
-): GoogleGenerativeAIProvider = DefaultGoogleGenerativeAIProvider(client, settings)
 
 public data class GoogleTools(
     val googleSearch: Tool<JsonElement, JsonElement, Any?> =
@@ -378,9 +374,9 @@ private class GoogleGenerativeAIVideoModel(
             headers = poll.headers
         }
         if (current["done"]?.jsonPrimitive?.booleanOrNull != true) {
-            throw AiSdkRuntimeException("Google video generation timed out after $maxAttempts poll attempts.")
+            throw NoVideoGeneratedError("Google video generation timed out after $maxAttempts poll attempts.")
         }
-        current["error"]?.jsonObject?.let { throw AiSdkRuntimeException("Google video generation failed: ${it["message"]?.jsonPrimitive?.contentOrNull ?: it}") }
+        current["error"]?.jsonObject?.let { throw NoVideoGeneratedError("Google video generation failed: ${it["message"]?.jsonPrimitive?.contentOrNull ?: it}") }
         val responseObject = WireDecoder.objectValue(
             WireDecoder.required(current, "response", provider, "video poll response"),
             provider,
@@ -1248,7 +1244,7 @@ private suspend fun googlePollInteraction(
         if (settings.videoPollIntervalMillis > 0) delay(settings.videoPollIntervalMillis)
         current = googleGetJson(client, "${settings.baseURL.trimEnd('/')}/interactions/$interactionId", headers, abortSignal)
     }
-    throw AiSdkRuntimeException("google.interactions: polling timed out for interaction $interactionId.")
+    throw InvalidResponseDataError(null, "google.interactions: polling timed out for interaction $interactionId.")
 }
 
 private fun googleInteractionsMetadata(
