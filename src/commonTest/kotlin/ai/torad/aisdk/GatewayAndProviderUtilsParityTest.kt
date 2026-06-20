@@ -27,6 +27,8 @@ import kotlin.test.assertIs
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
@@ -645,6 +647,24 @@ class GatewayAndProviderUtilsParityTest {
         assertEquals("note", image.warnings.single().message)
         assertEquals("AAAA", video.video.base64)
         assertEquals("second", ranked.results.first().value)
+    }
+
+    @Test
+    fun `concurrent getAvailableModels within refresh window calls transport at most once`() = runTest {
+        val transport = CapturingGatewayTransport()
+        val provider = createGatewayProvider(
+            GatewayProviderSettings(
+                apiKey = "secret",
+                transport = transport,
+                metadataCacheRefreshMillis = 60_000L,
+                nowMillis = { 1_000L },
+            ),
+        )
+
+        val results = (1..10).map { async { provider.getAvailableModels() } }.awaitAll()
+
+        assertEquals(1, transport.metadataCalls)
+        assertTrue(results.all { it == results.first() })
     }
 
     private class CapturingGatewayTransport : GatewayTransport {

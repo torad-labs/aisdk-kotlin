@@ -1,7 +1,11 @@
 {
   "branch": "refactor/ts-residue-cleanup",
   "builder_session": "aisdk-builder",
-  "current": null,
+  "current": {
+    "taskId": "FIX-001",
+    "sentAt": "turn-start",
+    "status": "sent"
+  },
   "completed": [],
   "failed": [],
   "protocol": "One task at a time. Send task -> builder implements with Edit (prefer Edit/MultiEdit over Write; the PreToolUse hook blocks Writes that introduce anti-patterns) -> builder runs ./gradlew compileKotlinJvm jvmTest, regenerates ABI dump (./gradlew apiDump) if breaksAbi, commits 'FIX-XXX: <title>' on branch, reports status. Orchestrator validates each (git show, compile, jvmTest, hook clean, acceptance + tenets) BEFORE sending next. Top-level helpers must be `internal` not `private` (hook blocks private top-level). No secondary constructors, no public mutable var, no sealed interface, no lateinit, no !!, no static mutable state.",
