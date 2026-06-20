@@ -518,10 +518,10 @@ class OpenAICompatibleProviderFacadesTest {
             ImageGenerationParams(prompt = "dog", n = 1, size = "768x512", aspectRatio = "16:9"),
         )
 
-        assertEquals(convertByteArrayToBase64(byteArrayOf(1, 2, 3)), workflowImage.images.single().base64)
+        assertEquals(Base64Codec.encode(byteArrayOf(1, 2, 3)), workflowImage.images.single().base64)
         assertEquals("image/jpeg", workflowImage.images.single().mediaType)
         assertEquals("unsupported", workflowImage.warnings.single().type)
-        assertEquals(convertByteArrayToBase64(byteArrayOf(4, 5, 6)), imageGenerationImage.images.single().base64)
+        assertEquals(Base64Codec.encode(byteArrayOf(4, 5, 6)), imageGenerationImage.images.single().base64)
         assertEquals("unsupported", imageGenerationImage.warnings.single().type)
         val workflowBody = fixture.calls.first { it.requestUrl.contains("text_to_image") }.requestBodyJson.jsonObject
         assertEquals("cat", workflowBody["prompt"]?.jsonPrimitive?.contentOrNull)
@@ -552,7 +552,7 @@ class OpenAICompatibleProviderFacadesTest {
 
         val image = provider.image("accounts/fireworks/models/flux-kontext-pro").generate(ImageGenerationParams(prompt = "edit"))
 
-        assertEquals(convertByteArrayToBase64(byteArrayOf(9, 8, 7)), image.images.single().base64)
+        assertEquals(Base64Codec.encode(byteArrayOf(9, 8, 7)), image.images.single().base64)
         assertEquals(
             listOf(
                 "https://fireworks.test/inference/v1/workflows/accounts/fireworks/models/flux-kontext-pro",
@@ -654,7 +654,7 @@ class OpenAICompatibleProviderFacadesTest {
 
         val transcript = provider.transcription("whisper-large-v3").transcribe(
             TranscriptionParams(
-                audio = AudioSource(mediaType = "audio/mpeg", base64 = convertByteArrayToBase64(byteArrayOf(1, 2))),
+                audio = AudioSource(mediaType = "audio/mpeg", base64 = Base64Codec.encode(byteArrayOf(1, 2))),
             ),
         )
 

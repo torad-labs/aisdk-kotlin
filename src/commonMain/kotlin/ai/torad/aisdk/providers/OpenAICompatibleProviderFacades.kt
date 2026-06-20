@@ -717,7 +717,7 @@ private fun compatibleSettings(
         name = name,
         baseUrl = baseURL.trimEnd('/'),
         apiKey = apiKey,
-        headers = withUserAgentSuffix(headers, "ai-sdk/$name/$version"),
+        headers = ProviderHeaders.withUserAgentSuffix(headers, "ai-sdk/$name/$version"),
         includeUsage = includeUsage,
         supportsStructuredOutputs = supportsStructuredOutputs,
         transformChatRequestBody = transformChatRequestBody,
@@ -1389,7 +1389,7 @@ private data class ProviderFacadeBinaryResponse(
     fun toGeneratedFile(modelId: String): GeneratedFile =
         GeneratedFile(
             mediaType = headers.headerValue(HttpHeaders.ContentType) ?: "image/png",
-            base64 = convertByteArrayToBase64(bytes),
+            base64 = Base64Codec.encode(bytes),
             filename = "$modelId.png",
         )
 }
@@ -1464,7 +1464,7 @@ private fun providerFacadeHeaders(
     apiKey?.takeIf { it.isNotBlank() }?.let { base[HttpHeaders.Authorization] = "Bearer $it" }
     base.putAll(headers)
     base.putAll(callHeaders)
-    return withUserAgentSuffix(base, userAgent)
+    return ProviderHeaders.withUserAgentSuffix(base, userAgent)
 }
 
 private fun providerSpecificOptions(options: Map<String, JsonElement>, provider: String): JsonObject =

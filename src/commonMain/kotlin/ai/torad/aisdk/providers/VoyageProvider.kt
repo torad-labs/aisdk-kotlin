@@ -111,7 +111,7 @@ private class VoyageEmbeddingModel(
         val value = response.value.jsonObject
         return EmbeddingModelResult(
             embeddings = value["data"]?.jsonArray.orEmpty()
-                .map { item -> item.jsonObject["embedding"]?.jsonArray.orEmpty().map { embeddingFloat(it, provider) } },
+                .map { item -> item.jsonObject["embedding"]?.jsonArray.orEmpty().map { WireDecoder.embeddingFloat(it, provider) } },
             usage = EmbeddingUsage(
                 tokens = value["usage"]?.jsonObject?.get("total_tokens")?.jsonPrimitive?.intOrNull ?: 0,
                 raw = value["usage"],
@@ -186,7 +186,7 @@ private fun voyageHeaders(settings: VoyageProviderSettings, callHeaders: Map<Str
     settings.apiKey?.takeIf { it.isNotBlank() }?.let { base[HttpHeaders.Authorization] = "Bearer $it" }
     base.putAll(settings.headers)
     base.putAll(callHeaders)
-    return withUserAgentSuffix(base, "ai-sdk/voyage/$VOYAGE_VERSION")
+    return ProviderHeaders.withUserAgentSuffix(base, "ai-sdk/voyage/$VOYAGE_VERSION")
 }
 
 private fun voyageOptions(providerOptions: Map<String, JsonElement>): JsonObject =

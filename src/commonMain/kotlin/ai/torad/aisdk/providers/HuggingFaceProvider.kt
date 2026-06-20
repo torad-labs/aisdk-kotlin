@@ -39,7 +39,7 @@ public data class HuggingFaceProviderSettings(
     val apiKey: String? = null,
     val baseURL: String = "https://router.huggingface.co/v1",
     val headers: Map<String, String> = emptyMap(),
-    val generateId: () -> String = { ai.torad.aisdk.generateId() },
+    val generateId: () -> String = { IdGenerator.generate() },
 )
 
 @Serializable
@@ -115,7 +115,7 @@ private class HuggingFaceResponsesLanguageModel(
         var sseHeaders: Map<String, String> = emptyMap()
         val rawLines = streamResponsesSse(prepared.body, params.headers) { sseHeaders = it }
         forwardSseEvents(
-            events = parseJsonEventStream(rawLines, jsonSchema<JsonElement>(JsonObject(emptyMap())), aiSdkJson),
+            events = EventStreamParser.parse(rawLines, jsonSchema<JsonElement>(JsonObject(emptyMap())), aiSdkJson),
             capturedHeaders = { sseHeaders },
             parseErrorPrefix = "Failed to parse Hugging Face Responses stream event",
             onEvent = { state.accept(it).forEach { e -> emit(e) } },
@@ -680,7 +680,7 @@ private fun huggingFaceHeaders(settings: HuggingFaceProviderSettings, extra: Map
     settings.apiKey?.takeIf { it.isNotBlank() }?.let { headers[HttpHeaders.Authorization] = "Bearer $it" }
     headers.putAll(settings.headers)
     headers.putAll(extra)
-    return normalizeHeaders(headers)
+    return ProviderHeaders.normalize(headers)
 }
 
 private fun huggingFaceNoEmbeddingModel(providerId: String?, modelId: String): NoSuchModelError =

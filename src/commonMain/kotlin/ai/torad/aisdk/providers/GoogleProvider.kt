@@ -73,7 +73,7 @@ public data class GoogleGenerativeAIProviderSettings(
     val baseURL: String = "https://generativelanguage.googleapis.com/v1beta",
     val apiKey: String? = null,
     val headers: Map<String, String> = emptyMap(),
-    val generateId: () -> String = { ai.torad.aisdk.generateId() },
+    val generateId: () -> String = { IdGenerator.generate() },
     val name: String = "google.generative-ai",
     val videoPollIntervalMillis: Long = 1_000L,
     val videoMaxPollAttempts: Int = 120,
@@ -205,7 +205,7 @@ private class GoogleGenerativeAILanguageModel(
             headers = googleHeaders(settings, params.headers) + (HttpHeaders.Accept to "text/event-stream"),
             abortSignal = params.abortSignal,
         )
-        parseJsonEventStream(rawLines, jsonSchema<JsonElement>(JsonObject(emptyMap())), aiSdkJson).collect { event ->
+        EventStreamParser.parse(rawLines, jsonSchema<JsonElement>(JsonObject(emptyMap())), aiSdkJson).collect { event ->
             when (event) {
                 is ParseResult.Success -> state.accept(event.value.jsonObject).forEach { emit(it) }
                 is ParseResult.Failure -> emit(StreamEvent.Error("Failed to parse Google stream event: ${event.error.message}"))
@@ -248,10 +248,10 @@ private class GoogleGenerativeAIEmbeddingModel(
             parseJson = true,
         )
         val embeddings = if (single) {
-            listOf(response.value.jsonObject["embedding"]?.jsonObject?.get("values")?.jsonArray.orEmpty().map { embeddingFloat(it, provider) })
+            listOf(response.value.jsonObject["embedding"]?.jsonObject?.get("values")?.jsonArray.orEmpty().map { WireDecoder.embeddingFloat(it, provider) })
         } else {
             response.value.jsonObject["embeddings"]?.jsonArray.orEmpty().map { item ->
-                item.jsonObject["values"]?.jsonArray.orEmpty().map { embeddingFloat(it, provider) }
+                item.jsonObject["values"]?.jsonArray.orEmpty().map { WireDecoder.embeddingFloat(it, provider) }
             }
         }
         return EmbeddingModelResult(
@@ -971,7 +971,7 @@ private fun googleInteractionsContent(
             "function_call" -> {
                 hasFunctionCall = true
                 content += ContentPart.ToolCall(
-                    toolCallId = step["id"]?.jsonPrimitive?.contentOrNull ?: generateId(),
+                    toolCallId = step["id"]?.jsonPrimitive?.contentOrNull ?: IdGenerator.generate(),
                     toolName = step["name"]?.jsonPrimitive?.contentOrNull.orEmpty(),
                     input = step["arguments"] ?: JsonObject(emptyMap()),
                     providerMetadata = googleInteractionsMetadata(
@@ -984,7 +984,7 @@ private fun googleInteractionsContent(
                 if (type != null && type.endsWith("_call")) {
                     hasFunctionCall = true
                     content += ContentPart.ToolCall(
-                        toolCallId = step["id"]?.jsonPrimitive?.contentOrNull ?: generateId(),
+                        toolCallId = step["id"]?.jsonPrimitive?.contentOrNull ?: IdGenerator.generate(),
                         toolName = if (type == "mcp_server_tool_call") {
                             step["name"]?.jsonPrimitive?.contentOrNull ?: "mcp_server_tool"
                         } else {
@@ -995,7 +995,7 @@ private fun googleInteractionsContent(
                     )
                 } else if (type != null && type.endsWith("_result")) {
                     content += ContentPart.ToolResult(
-                        toolCallId = step["call_id"]?.jsonPrimitive?.contentOrNull ?: generateId(),
+                        toolCallId = step["call_id"]?.jsonPrimitive?.contentOrNull ?: IdGenerator.generate(),
                         toolName = if (type == "mcp_server_tool_result") {
                             step["name"]?.jsonPrimitive?.contentOrNull ?: "mcp_server_tool"
                         } else {
@@ -1027,13 +1027,13 @@ private fun googleInteractionsAnnotationSources(
             sourceType = StreamEvent.SourcePart.SourceType.Url,
             url = url,
             title = annotation["title"]?.jsonPrimitive?.contentOrNull ?: annotation["name"]?.jsonPrimitive?.contentOrNull,
-            providerMetadata = metadata ?: mapOf("google" to buildJsonObject { put("id", JsonPrimitive(generateId())) }),
+            providerMetadata = metadata ?: mapOf("google" to buildJsonObject { put("id", JsonPrimitive(IdGenerator.generate())) }),
         )
         "file_citation" -> ContentPart.Source(
             sourceType = StreamEvent.SourcePart.SourceType.Document,
             url = url,
             title = annotation["file_name"]?.jsonPrimitive?.contentOrNull,
-            providerMetadata = metadata ?: mapOf("google" to buildJsonObject { put("id", JsonPrimitive(generateId())) }),
+            providerMetadata = metadata ?: mapOf("google" to buildJsonObject { put("id", JsonPrimitive(IdGenerator.generate())) }),
         )
         else -> null
     }
@@ -1132,7 +1132,7 @@ private class GoogleInteractionsStreamState(
                             events += StreamEvent.TextDelta(id, text, googleInteractionsMetadata(interactionId = interactionId))
                         }
                         "image" -> events += StreamEvent.FilePart(
-                            id = generateId(),
+                            id = IdGenerator.generate(),
                             mediaType = block["mime_type"]?.jsonPrimitive?.contentOrNull ?: "image/png",
                             base64 = try {
                                 WireDecoder.requiredString(block, "data", "google", "interactions stream step", "$.content[$index]")
@@ -1147,7 +1147,7 @@ private class GoogleInteractionsStreamState(
                 }
             }
             "thought" -> {
-                val id = generateId()
+                val id = IdGenerator.generate()
                 val metadata = googleInteractionsMetadata(
                     signature = step["signature"]?.jsonPrimitive?.contentOrNull,
                     interactionId = interactionId,
@@ -1164,7 +1164,7 @@ private class GoogleInteractionsStreamState(
             }
             "function_call" -> {
                 hasFunctionCall = true
-                val id = step["id"]?.jsonPrimitive?.contentOrNull ?: generateId()
+                val id = step["id"]?.jsonPrimitive?.contentOrNull ?: IdGenerator.generate()
                 val name = try {
                     WireDecoder.requiredString(step, "name", "google", "interactions stream step")
                 } catch (error: WireDecodeException) {
@@ -1182,7 +1182,7 @@ private class GoogleInteractionsStreamState(
             }
             else -> if (type != null && type.endsWith("_call")) {
                 hasFunctionCall = true
-                val id = step["id"]?.jsonPrimitive?.contentOrNull ?: generateId()
+                val id = step["id"]?.jsonPrimitive?.contentOrNull ?: IdGenerator.generate()
                 val name = if (type == "mcp_server_tool_call") {
                     WireDecoder.optionalString(step, "name", "google", "interactions stream step") ?: "mcp_server_tool"
                 } else {
@@ -1626,7 +1626,7 @@ private class GoogleStreamState(
                 } catch (error: WireDecodeException) {
                     return listOf(StreamEvent.Error(error.message ?: "Google stream protocol error"))
                 }
-                val id = call["id"]?.jsonPrimitive?.contentOrNull ?: generateId()
+                val id = call["id"]?.jsonPrimitive?.contentOrNull ?: IdGenerator.generate()
                 val name = try {
                     WireDecoder.requiredString(call, "name", "google", "generateContent stream part", "$.candidates[0].content.parts[$index].functionCall")
                 } catch (error: WireDecodeException) {
@@ -1646,7 +1646,7 @@ private class GoogleStreamState(
                     return listOf(StreamEvent.Error(error.message ?: "Google stream protocol error"))
                 }
                 events += StreamEvent.FilePart(
-                    id = generateId(),
+                    id = IdGenerator.generate(),
                     mediaType = data["mimeType"]?.jsonPrimitive?.contentOrNull ?: "application/octet-stream",
                     base64 = try {
                         WireDecoder.requiredString(data, "data", "google", "generateContent stream part", "$.candidates[0].content.parts[$index].inlineData")
@@ -1659,7 +1659,7 @@ private class GoogleStreamState(
         }
         googleSources(candidate, generateId).forEach { source ->
             events += StreamEvent.SourcePart(
-                id = source.providerMetadata?.get("google")?.jsonObject?.get("id")?.jsonPrimitive?.contentOrNull ?: generateId(),
+                id = source.providerMetadata?.get("google")?.jsonObject?.get("id")?.jsonPrimitive?.contentOrNull ?: IdGenerator.generate(),
                 sourceType = source.sourceType,
                 url = source.url,
                 title = source.title,
@@ -1827,7 +1827,7 @@ private suspend fun FlowCollector<StreamEvent>.collectGoogleInteractions(
     rawLines: Flow<String>,
     state: GoogleInteractionsStreamState,
 ) {
-    parseJsonEventStream(rawLines, jsonSchema<JsonElement>(JsonObject(emptyMap())), aiSdkJson).collect { event ->
+    EventStreamParser.parse(rawLines, jsonSchema<JsonElement>(JsonObject(emptyMap())), aiSdkJson).collect { event ->
         when (event) {
             is ParseResult.Success -> state.accept(event.value.jsonObject).forEach { emit(it) }
             is ParseResult.Failure -> emit(
@@ -2000,7 +2000,7 @@ private fun googleSources(candidate: JsonObject, generateId: () -> String): List
             url = web["uri"]?.jsonPrimitive?.contentOrNull,
             title = web["title"]?.jsonPrimitive?.contentOrNull,
             providerMetadata = mapOf("google" to buildJsonObject {
-                put("id", JsonPrimitive(generateId()))
+                put("id", JsonPrimitive(IdGenerator.generate()))
                 put("groundingChunk", chunk)
             }),
         )

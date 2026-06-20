@@ -58,9 +58,9 @@ internal object WireDecoder {
         try {
             json.decodeFromJsonElement(serializer, value)
         } catch (error: SerializationException) {
-            fail(provider, operation, path, "schema decode failed: ${getErrorMessage(error)}", value, error)
+            fail(provider, operation, path, "schema decode failed: ${ErrorMessages.of(error)}", value, error)
         } catch (error: IllegalArgumentException) {
-            fail(provider, operation, path, "schema decode failed: ${getErrorMessage(error)}", value, error)
+            fail(provider, operation, path, "schema decode failed: ${ErrorMessages.of(error)}", value, error)
         }
 
     fun required(obj: JsonObject, key: String, provider: String, operation: String, path: String = "$"): JsonElement =
@@ -131,7 +131,7 @@ internal object WireDecoder {
 
     fun embeddingVector(value: JsonElement, provider: String, operation: String = "embedding response", path: String = "$"): List<Float> =
         arrayValue(value, provider, operation, path).mapIndexed { index, item ->
-            embeddingFloat(item, provider, operation, "$path[$index]")
+            WireDecoder.embeddingFloat(item, provider, operation, "$path[$index]")
         }
 
     fun child(path: String, key: String): String = if (path == "$") "$.$key" else "$path.$key"

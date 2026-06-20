@@ -102,7 +102,7 @@ private fun MistralProviderSettings.toCompatible(): OpenAICompatibleProviderSett
         name = "mistral",
         baseUrl = baseURL.trimEnd('/'),
         apiKey = apiKey,
-        headers = withUserAgentSuffix(headers, "ai-sdk/mistral/$MISTRAL_VERSION"),
+        headers = ProviderHeaders.withUserAgentSuffix(headers, "ai-sdk/mistral/$MISTRAL_VERSION"),
         providerOptionsName = "mistral",
         supportsStructuredOutputs = true,
         chatSeedKey = "random_seed",

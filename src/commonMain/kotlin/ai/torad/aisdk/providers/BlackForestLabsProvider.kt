@@ -306,7 +306,7 @@ private suspend fun bflDownloadImage(
     return BflDownloadedImage(
         file = GeneratedFile(
             mediaType = headersMap.bflHeaderValue(HttpHeaders.ContentType) ?: "image/png",
-            base64 = convertByteArrayToBase64(bytes),
+            base64 = Base64Codec.encode(bytes),
         ),
         headers = headersMap,
     )
@@ -329,7 +329,7 @@ private fun bflHeaders(settings: BlackForestLabsProviderSettings, callHeaders: M
     settings.apiKey?.takeIf { it.isNotBlank() }?.let { base["x-key"] = it }
     settings.headers.forEach { (key, value) -> base[key] = value }
     callHeaders.forEach { (key, value) -> base[key] = value }
-    return withUserAgentSuffix(base, "ai-sdk/black-forest-labs/$BLACK_FOREST_LABS_VERSION")
+    return ProviderHeaders.withUserAgentSuffix(base, "ai-sdk/black-forest-labs/$BLACK_FOREST_LABS_VERSION")
 }
 
 private fun bflOptions(providerOptions: Map<String, JsonElement>): JsonObject =

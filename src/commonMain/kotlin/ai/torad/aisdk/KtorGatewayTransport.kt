@@ -76,7 +76,7 @@ public class KtorGatewayTransport(
             errorFromResponse = gatewayError,
             onResponse = { sseHeaders = it },
         )
-        val events = parseJsonEventStream(rawLines, jsonSchema<JsonElement>(JsonObject(emptyMap())), json)
+        val events = EventStreamParser.parse(rawLines, jsonSchema<JsonElement>(JsonObject(emptyMap())), json)
         return flow {
             forwardSseEvents(
                 events = events,
@@ -108,7 +108,7 @@ public class KtorGatewayTransport(
         val value = response.value.jsonObject
         return EmbeddingModelResult(
             embeddings = value["embeddings"]?.jsonArray.orEmpty().map { row ->
-                row.jsonArray.map { embeddingFloat(it, "gateway.embedding") }
+                row.jsonArray.map { WireDecoder.embeddingFloat(it, "gateway.embedding") }
             },
             usage = EmbeddingUsage(tokens = value["usage"]?.jsonObject?.get("tokens")?.jsonPrimitive?.intOrNull ?: 0),
             response = LanguageModelResponseMetadata(headers = response.headers, body = response.value),
@@ -201,7 +201,7 @@ public class KtorGatewayTransport(
             onResponse = { sseHeaders = it },
         )
         val event = when (
-            val first = parseJsonEventStream(rawLines, jsonSchema<JsonElement>(JsonObject(emptyMap())), json)
+            val first = EventStreamParser.parse(rawLines, jsonSchema<JsonElement>(JsonObject(emptyMap())), json)
                 .firstOrNull()
         ) {
             is ParseResult.Success -> first.value.jsonObject
@@ -314,15 +314,15 @@ public class KtorGatewayTransport(
         params: GatewaySpendReportParams,
     ): GatewaySpendReportResponse {
         val query = buildList {
-            add("start_date=${urlEncode(params.startDate)}")
-            add("end_date=${urlEncode(params.endDate)}")
-            params.groupBy?.let { add("group_by=${urlEncode(it.wireValue)}") }
-            params.datePart?.let { add("date_part=${urlEncode(it.wireValue)}") }
-            params.userId?.let { add("user_id=${urlEncode(it)}") }
-            params.model?.let { add("model=${urlEncode(it)}") }
-            params.provider?.let { add("provider=${urlEncode(it)}") }
-            params.credentialType?.let { add("credential_type=${urlEncode(it.wireValue)}") }
-            if (params.tags.isNotEmpty()) add("tags=${urlEncode(params.tags.joinToString(","))}")
+            add("start_date=${UrlOps.encode(params.startDate)}")
+            add("end_date=${UrlOps.encode(params.endDate)}")
+            params.groupBy?.let { add("group_by=${UrlOps.encode(it.wireValue)}") }
+            params.datePart?.let { add("date_part=${UrlOps.encode(it.wireValue)}") }
+            params.userId?.let { add("user_id=${UrlOps.encode(it)}") }
+            params.model?.let { add("model=${UrlOps.encode(it)}") }
+            params.provider?.let { add("provider=${UrlOps.encode(it)}") }
+            params.credentialType?.let { add("credential_type=${UrlOps.encode(it.wireValue)}") }
+            if (params.tags.isNotEmpty()) add("tags=${UrlOps.encode(params.tags.joinToString(","))}")
         }.joinToString("&")
         val response = getJson(context.copy(baseUrl = gatewayOrigin(context.baseUrl)), "/v1/report?$query")
         return GatewaySpendReportResponse(
@@ -362,7 +362,7 @@ public class KtorGatewayTransport(
     ): GatewayGenerationInfo {
         val response = getJson(
             context.copy(baseUrl = gatewayOrigin(context.baseUrl)),
-            "/v1/generation?id=${urlEncode(params.id)}",
+            "/v1/generation?id=${UrlOps.encode(params.id)}",
         )
         val data = response.value.jsonObject["data"]?.jsonObject ?: response.value.jsonObject
         return GatewayGenerationInfo(

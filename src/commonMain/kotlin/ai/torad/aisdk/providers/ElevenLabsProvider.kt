@@ -168,7 +168,7 @@ private class ElevenLabsSpeechModel(
         return SpeechModelResult(
             audio = GeneratedFile(
                 mediaType = response.mediaType,
-                base64 = convertByteArrayToBase64(response.bytes),
+                base64 = Base64Codec.encode(response.bytes),
             ),
             warnings = warnings,
             response = LanguageModelResponseMetadata(modelId = modelId, headers = response.headers),
@@ -200,7 +200,7 @@ private class ElevenLabsTranscriptionModel(
                         options["fileFormat"]?.jsonPrimitive?.contentOrNull?.let { append("file_format", it) }
                         append(
                             "file",
-                            convertBase64ToByteArray(params.audio.base64),
+                            Base64Codec.decode(params.audio.base64),
                             Headers.build {
                                 append(HttpHeaders.ContentType, params.audio.mediaType)
                                 append(
@@ -275,7 +275,7 @@ private fun elevenLabsHeaders(settings: ElevenLabsProviderSettings, callHeaders:
     settings.apiKey?.takeIf { it.isNotBlank() }?.let { base["xi-api-key"] = it }
     base.putAll(settings.headers)
     base.putAll(callHeaders)
-    return withUserAgentSuffix(base, "ai-sdk/elevenlabs/$ELEVENLABS_VERSION")
+    return ProviderHeaders.withUserAgentSuffix(base, "ai-sdk/elevenlabs/$ELEVENLABS_VERSION")
 }
 
 private fun elevenLabsOptions(providerOptions: Map<String, JsonElement>): JsonObject =
@@ -301,7 +301,7 @@ private fun elevenLabsMediaType(format: String): String =
     }
 
 private fun Map<String, String>.toQueryString(): String =
-    entries.joinToString("&") { (key, value) -> "${urlEncode(key)}=${urlEncode(value)}" }
+    entries.joinToString("&") { (key, value) -> "${UrlOps.encode(key)}=${UrlOps.encode(value)}" }
 
 
 private fun Map<String, String>.headerValue(name: String): String? =

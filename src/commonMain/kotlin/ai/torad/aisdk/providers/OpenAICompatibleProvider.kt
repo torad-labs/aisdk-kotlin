@@ -121,13 +121,13 @@ private abstract class OpenAICompatibleHttpModel(
         val base = settings.baseUrl.trimEnd('/') + path
         if (settings.queryParams.isEmpty()) return base
         return base + "?" + settings.queryParams.entries.joinToString("&") { (key, value) ->
-            "${urlEncode(key)}=${urlEncode(value)}"
+            "${UrlOps.encode(key)}=${UrlOps.encode(value)}"
         }
     }
 
     protected suspend fun commonHeaders(extra: Map<String, String> = emptyMap()): Map<String, String> {
         val dynamicAuthHeaders = settings.authHeadersProvider?.invoke()
-        return buildProviderHeaders(settings.headers, extra, settings.userAgentSuffix) { base ->
+        return ProviderHeaders.build(settings.headers, extra, settings.userAgentSuffix) { base ->
             if (dynamicAuthHeaders != null) {
                 base.putAll(dynamicAuthHeaders)
             } else {
@@ -270,7 +270,7 @@ private class OpenAICompatibleChatLanguageModel(
             onResponse = { sseHeaders = it },
         )
         forwardSseEvents(
-            events = parseJsonEventStream(rawLines, jsonSchema<JsonElement>(JsonObject(emptyMap())), json)
+            events = EventStreamParser.parse(rawLines, jsonSchema<JsonElement>(JsonObject(emptyMap())), json)
                 .map { it.transformChatStreamEvent(prepared.body) { sseHeaders } },
             capturedHeaders = { sseHeaders },
             parseErrorPrefix = "Failed to parse OpenAI-compatible stream event",
@@ -388,7 +388,7 @@ private class OpenAICompatibleCompletionLanguageModel(
             headers = params.headers + mapOf(HttpHeaders.Accept to "text/event-stream"),
             onResponse = { sseHeaders = it },
         )
-        parseJsonEventStream(rawLines, jsonSchema<JsonElement>(JsonObject(emptyMap())), json).collect { event ->
+        EventStreamParser.parse(rawLines, jsonSchema<JsonElement>(JsonObject(emptyMap())), json).collect { event ->
             if (!headerMetaEmitted) {
                 emit(StreamEvent.ResponseMetadata(headers = sseHeaders))
                 headerMetaEmitted = true
@@ -481,7 +481,7 @@ private class OpenAICompatibleEmbeddingModel(
         val value = response.value.jsonObject
         return EmbeddingModelResult(
             embeddings = value["data"]?.jsonArray.orEmpty()
-                .map { item -> item.jsonObject["embedding"]?.jsonArray.orEmpty().map { embeddingFloat(it, provider) } },
+                .map { item -> item.jsonObject["embedding"]?.jsonArray.orEmpty().map { WireDecoder.embeddingFloat(it, provider) } },
             usage = EmbeddingUsage(
                 tokens = value["usage"]?.jsonObject?.get("prompt_tokens")?.jsonPrimitive?.intOrNull ?: 0,
                 raw = value["usage"],
@@ -578,7 +578,7 @@ private class OpenAICompatibleImageModel(
     )
 
     private suspend fun openAICompatibleImageFileBytes(file: ImageGenerationFile): ByteArray = when {
-        file.base64 != null -> convertBase64ToByteArray(file.base64)
+        file.base64 != null -> Base64Codec.decode(file.base64)
         file.url != null -> client.request(file.url).bodyAsBytes()
         else -> throw InvalidArgumentError("files", "OpenAI-compatible image edits require file data or URL.")
     }
@@ -589,7 +589,7 @@ private class OpenAICompatibleImageModel(
             append(HttpHeaders.ContentType, mediaType)
             append(
                 HttpHeaders.ContentDisposition,
-                "filename=\"${file.filename ?: "image-$index.${mediaTypeToExtension(mediaType)}"}\"",
+                "filename=\"${file.filename ?: "image-$index.${MediaTypes.toExtension(mediaType)}"}\"",
             )
         }
 }
@@ -620,7 +620,7 @@ private class OpenAICompatibleSpeechModel(
         return SpeechModelResult(
             audio = GeneratedFile(
                 mediaType = response.headers[HttpHeaders.ContentType] ?: audioMediaType(format),
-                base64 = convertByteArrayToBase64(response.bytes),
+                base64 = Base64Codec.encode(response.bytes),
             ),
             response = LanguageModelResponseMetadata(modelId = modelId, headers = response.headers),
         )
@@ -649,12 +649,12 @@ private class OpenAICompatibleTranscriptionModel(
                 }
                 append(
                     "file",
-                    convertBase64ToByteArray(params.audio.base64),
+                    Base64Codec.decode(params.audio.base64),
                     Headers.build {
                         append(HttpHeaders.ContentType, params.audio.mediaType)
                         append(
                             HttpHeaders.ContentDisposition,
-                            "filename=\"${params.audio.filename ?: "audio.${mediaTypeToExtension(params.audio.mediaType)}"}\"",
+                            "filename=\"${params.audio.filename ?: "audio.${MediaTypes.toExtension(params.audio.mediaType)}"}\"",
                         )
                     },
                 )
@@ -794,7 +794,7 @@ private fun chatResultFromJson(
             "$.choices[0].message.tool_calls[$index].function",
         )
         ContentPart.ToolCall(
-            toolCallId = callObj["id"]?.jsonPrimitive?.contentOrNull ?: generateId("call"),
+            toolCallId = callObj["id"]?.jsonPrimitive?.contentOrNull ?: IdGenerator.generate("call"),
             toolName = WireDecoder.requiredString(function, "name", provider, "chat completion response", "$.choices[0].message.tool_calls[$index].function"),
             input = parseOpenAIToolInput(WireDecoder.requiredString(function, "arguments", provider, "chat completion response", "$.choices[0].message.tool_calls[$index].function")),
             providerMetadata = thoughtSignatureMetadata(callObj),
@@ -956,7 +956,7 @@ private class OpenAIChatStreamState(
         } ?: JsonObject(emptyMap())
         val existing = toolCalls[index]
         if (existing == null) {
-            val id = obj["id"]?.jsonPrimitive?.contentOrNull ?: generateId("call")
+            val id = obj["id"]?.jsonPrimitive?.contentOrNull ?: IdGenerator.generate("call")
             val name = WireDecoder.requiredString(function, "name", provider, "chat stream tool call", "$.function")
             val arguments = WireDecoder.optionalString(function, "arguments", provider, "chat stream tool call", "$.function").orEmpty()
             val metadata = thoughtSignatureMetadata(obj)?.let { mapOf(providerKey to JsonObject(it)) }
@@ -1122,7 +1122,7 @@ private fun openAIUserContentPartJson(part: ContentPart): JsonObject? = when (pa
         }
         part.mediaType.startsWith("text/") -> buildJsonObject {
             put("type", JsonPrimitive("text"))
-            put("text", JsonPrimitive(convertBase64ToByteArray(part.base64).decodeToString()))
+            put("text", JsonPrimitive(Base64Codec.decode(part.base64).decodeToString()))
         }
         else -> null
     }
@@ -1281,7 +1281,7 @@ private fun openAIProviderOptions(options: Map<String, JsonElement>, providerNam
     var merged = JsonObject(emptyMap())
     for (key in keys.distinct()) {
         val obj = options[key] as? JsonObject ?: continue
-        merged = mergeJsonObjects(merged, obj)
+        merged = JsonOps.merge(merged, obj)
     }
     return merged
 }

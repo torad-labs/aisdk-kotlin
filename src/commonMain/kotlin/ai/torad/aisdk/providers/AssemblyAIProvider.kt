@@ -120,7 +120,7 @@ private class AssemblyAITranscriptionModel(
         val upload = assemblyAIPostBinary(
             client = client,
             url = "$ASSEMBLYAI_BASE_URL/v2/upload",
-            bytes = convertBase64ToByteArray(params.audio.base64),
+            bytes = Base64Codec.decode(params.audio.base64),
             headers = assemblyAIHeaders(settings, params.headers),
         )
         val uploadUrl = upload.value.jsonObject["upload_url"]?.jsonPrimitive?.contentOrNull
@@ -308,7 +308,7 @@ private fun assemblyAIHeaders(settings: AssemblyAIProviderSettings, callHeaders:
     settings.apiKey?.takeIf { it.isNotBlank() }?.let { base[HttpHeaders.Authorization] = it }
     base.putAll(settings.headers)
     base.putAll(callHeaders)
-    return withUserAgentSuffix(base, "ai-sdk/assemblyai/$ASSEMBLYAI_VERSION")
+    return ProviderHeaders.withUserAgentSuffix(base, "ai-sdk/assemblyai/$ASSEMBLYAI_VERSION")
 }
 
 private fun assemblyAIOptions(providerOptions: Map<String, JsonElement>): JsonObject =

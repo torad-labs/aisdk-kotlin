@@ -67,7 +67,7 @@ class ReplicateProviderTest {
         assertEquals(1, model.maxImagesPerCall)
         assertEquals(8, createReplicate(fixture.httpClient()).image("black-forest-labs/flux-2-pro").maxImagesPerCall)
         assertEquals(listOf("image/png", "image/webp"), result.images.map { it.mediaType })
-        assertEquals(convertByteArrayToBase64(byteArrayOf(1, 2)), result.images.first().base64)
+        assertEquals(Base64Codec.encode(byteArrayOf(1, 2)), result.images.first().base64)
 
         val create = fixture.calls[0]
         assertEquals("POST", create.requestMethod)

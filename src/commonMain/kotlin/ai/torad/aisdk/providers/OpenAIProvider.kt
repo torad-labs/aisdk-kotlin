@@ -200,7 +200,7 @@ private fun openAIProviderTool(
     )
 
 private fun OpenAIProviderSettings.toCompatibleSettings(): OpenAICompatibleProviderSettings {
-    val headersWithUserAgent = withUserAgentSuffix(openAIHeaders(), "ai-sdk/openai/$VERSION")
+    val headersWithUserAgent = ProviderHeaders.withUserAgentSuffix(openAIHeaders(), "ai-sdk/openai/$VERSION")
     return OpenAICompatibleProviderSettings(
         name = name,
         baseUrl = baseURL.trimEnd('/'),
@@ -224,6 +224,6 @@ private fun OpenAIProviderSettings.responsesUrl(): String {
     val endpoint = "${baseURL.trimEnd('/')}/responses"
     if (queryParams.isEmpty()) return endpoint
     return endpoint + "?" + queryParams.entries.joinToString("&") { (key, value) ->
-        "${urlEncode(key)}=${urlEncode(value)}"
+        "${UrlOps.encode(key)}=${UrlOps.encode(value)}"
     }
 }

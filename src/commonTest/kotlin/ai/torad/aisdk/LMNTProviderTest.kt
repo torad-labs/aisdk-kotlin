@@ -53,7 +53,7 @@ class LMNTProviderTest {
 
         assertEquals("lmnt.speech", model.provider)
         assertEquals("audio/wav", result.audio?.mediaType)
-        assertEquals(convertByteArrayToBase64(byteArrayOf(1, 2, 3)), result.audio?.base64)
+        assertEquals(Base64Codec.encode(byteArrayOf(1, 2, 3)), result.audio?.base64)
         val request = fixture.calls.single()
         assertEquals("POST", request.requestMethod)
         assertEquals("https://api.lmnt.com/v1/ai/speech/bytes", request.requestUrl)

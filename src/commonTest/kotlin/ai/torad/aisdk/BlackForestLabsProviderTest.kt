@@ -82,7 +82,7 @@ class BlackForestLabsProviderTest {
         assertEquals("black-forest-labs.image", model.provider)
         assertEquals(1, model.maxImagesPerCall)
         assertEquals("image/jpeg", result.images.single().mediaType)
-        assertEquals(convertByteArrayToBase64(byteArrayOf(4, 5, 6)), result.images.single().base64)
+        assertEquals(Base64Codec.encode(byteArrayOf(4, 5, 6)), result.images.single().base64)
         assertEquals(1, result.warnings.size)
         assertTrue(result.warnings.single().message.orEmpty().contains("Deriving aspect_ratio"))
 

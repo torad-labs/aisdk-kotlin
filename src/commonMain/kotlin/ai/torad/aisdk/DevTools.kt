@@ -58,8 +58,8 @@ public class InMemoryDevToolsRecorder : DevToolsRecorder {
 public fun devToolsMiddleware(
     recorder: DevToolsRecorder = InMemoryDevToolsRecorder(),
     environment: String = "development",
-    runId: String = generateId(prefix = "run"),
-    idGenerator: () -> String = { generateId(prefix = "step") },
+    runId: String = IdGenerator.generate(prefix = "run"),
+    idGenerator: () -> String = { IdGenerator.generate(prefix = "step") },
 ): LanguageModelMiddleware {
     if (environment == "production") {
         throw AiSdkRuntimeException("@ai-sdk/devtools should not be used in production. " +
@@ -96,7 +96,7 @@ public fun devToolsMiddleware(
                         durationMs = mark.elapsedNow().inWholeMilliseconds,
                         output = null,
                         usage = null,
-                        error = getErrorMessage(error),
+                        error = ErrorMessages.of(error),
                     ),
                 )
                 throw error
@@ -132,7 +132,7 @@ public fun devToolsMiddleware(
                         durationMs = mark.elapsedNow().inWholeMilliseconds,
                         output = collector.output(),
                         usage = collector.usage,
-                        error = getErrorMessage(error),
+                        error = ErrorMessages.of(error),
                         rawResponse = collector.fullStream(),
                         rawChunks = collector.rawChunks,
                     ),

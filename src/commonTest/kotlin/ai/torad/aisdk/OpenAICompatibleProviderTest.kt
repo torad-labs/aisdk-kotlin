@@ -444,12 +444,12 @@ class OpenAICompatibleProviderTest {
         )
         val provider = createOpenAICompatible(client, OpenAICompatibleProviderSettings("openai", "https://api.test/v1"))
 
-        val embedding = embedMany(provider.embeddingModel("embed"), listOf("a", "b"))
+        val embedding = Embedding.embedMany(provider.embeddingModel("embed"), listOf("a", "b"))
         val image = generateImage(provider.imageModel("image"), prompt = "logo", aspectRatio = "1:1", seed = 1)
         val speech = generateSpeech(provider.speechModel("tts"), text = "hello", voice = "alloy")
         val transcript = transcribe(
             provider.transcriptionModel("whisper"),
-            AudioSource(mediaType = "audio/mpeg", base64 = convertByteArrayToBase64("abc".encodeToByteArray())),
+            AudioSource(mediaType = "audio/mpeg", base64 = Base64Codec.encode("abc".encodeToByteArray())),
         )
 
         assertEquals(2048, provider.embeddingModel("embed").maxEmbeddingsPerCall)
@@ -514,7 +514,7 @@ class OpenAICompatibleProviderTest {
         val provider = createOpenAICompatible(client, OpenAICompatibleProviderSettings("openai", "https://api.test/v1"))
 
         val error = assertFailsWith<WireDecodeException> {
-            embed(provider.embeddingModel("embed"), "a")
+            Embedding.embed(provider.embeddingModel("embed"), "a")
         }
 
         assertEquals("openai.embedding", error.provider)
@@ -577,7 +577,7 @@ class OpenAICompatibleProviderTest {
         val transcriptError = assertFailsWith<WireDecodeException> {
             transcribe(
                 provider.transcriptionModel("whisper"),
-                AudioSource(mediaType = "audio/mpeg", base64 = convertByteArrayToBase64("abc".encodeToByteArray())),
+                AudioSource(mediaType = "audio/mpeg", base64 = Base64Codec.encode("abc".encodeToByteArray())),
             )
         }
 

@@ -99,7 +99,7 @@ private class QuiverAIImageModel(
                 val svg = obj["svg"]?.jsonPrimitive?.contentOrNull ?: throw AiSdkRuntimeException("QuiverAI image item is missing svg")
                 GeneratedFile(
                     mediaType = obj["mime_type"]?.jsonPrimitive?.contentOrNull ?: "image/svg+xml",
-                    base64 = convertByteArrayToBase64(svg.encodeToByteArray()),
+                    base64 = Base64Codec.encode(svg.encodeToByteArray()),
                 )
             },
             warnings = quiverAIWarnings(params),
@@ -245,7 +245,7 @@ private fun quiverAIHeaders(settings: QuiverAIProviderSettings, callHeaders: Map
     settings.apiKey?.takeIf { it.isNotBlank() }?.let { base[HttpHeaders.Authorization] = "Bearer $it" }
     settings.headers.forEach { (key, value) -> base[key] = value }
     callHeaders.forEach { (key, value) -> base[key] = value }
-    return withUserAgentSuffix(base, "ai-sdk/quiverai/$QUIVERAI_VERSION")
+    return ProviderHeaders.withUserAgentSuffix(base, "ai-sdk/quiverai/$QUIVERAI_VERSION")
 }
 
 private fun quiverAIOptions(providerOptions: Map<String, JsonElement>): JsonObject =

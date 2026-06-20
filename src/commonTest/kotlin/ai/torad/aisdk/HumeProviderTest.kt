@@ -65,7 +65,7 @@ class HumeProviderTest {
         )
 
         assertEquals("hume.speech", model.provider)
-        assertEquals(convertByteArrayToBase64(byteArrayOf(1, 2, 3)), result.audio?.base64)
+        assertEquals(Base64Codec.encode(byteArrayOf(1, 2, 3)), result.audio?.base64)
         val request = fixture.calls.single()
         assertEquals("key", request.requestHeaders.headerValue("X-Hume-Api-Key"))
         assertTrue(request.requestUserAgent.orEmpty().contains("ai-sdk/hume/$HUME_VERSION"))

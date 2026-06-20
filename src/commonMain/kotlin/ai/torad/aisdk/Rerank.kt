@@ -50,29 +50,31 @@ public data class RerankResult<T>(
     val rerankedDocuments: List<T> get() = results.map { it.value }
 }
 
-public suspend fun rerank(
-    model: RerankingModel,
-    query: String,
-    documents: List<String>,
-    topN: Int? = null,
-    providerOptions: Map<String, JsonElement> = emptyMap(),
-    headers: Map<String, String> = emptyMap(),
-    abortSignal: AbortSignal = AbortSignalNever,
-    maxRetries: Int = 2,
-): RerankResult<String> {
-    require(query.isNotBlank()) { "rerank: query must not be blank" }
-    topN?.let { require(it > 0) { "rerank: topN must be > 0" } }
-    // Empty documents is a valid no-op (matching upstream), not an error.
-    if (documents.isEmpty()) return RerankResult(results = emptyList(), originalDocuments = emptyList())
-    val result = retryWithExponentialBackoff(RetryPolicy(maxRetries = maxRetries), retryableApiError) {
-        model.rerank(RerankingParams(query, documents, topN, providerOptions, headers, abortSignal))
+public object Reranking {
+
+    public suspend fun rerank(
+        model: RerankingModel,
+        query: String,
+        documents: List<String>,
+        topN: Int? = null,
+        providerOptions: Map<String, JsonElement> = emptyMap(),
+        headers: Map<String, String> = emptyMap(),
+        abortSignal: AbortSignal = AbortSignalNever,
+        maxRetries: Int = 2,
+    ): RerankResult<String> {
+        require(query.isNotBlank()) { "rerank: query must not be blank" }
+        topN?.let { require(it > 0) { "rerank: topN must be > 0" } }
+        if (documents.isEmpty()) return RerankResult(results = emptyList(), originalDocuments = emptyList())
+        val result = RetryPolicy(maxRetries = maxRetries).execute(retryableApiError) {
+            model.rerank(RerankingParams(query, documents, topN, providerOptions, headers, abortSignal))
+        }
+        return RerankResult(
+            results = result.results,
+            originalDocuments = documents,
+            usage = result.usage,
+            warnings = result.warnings,
+            response = result.response,
+            providerMetadata = result.providerMetadata,
+        )
     }
-    return RerankResult(
-        results = result.results,
-        originalDocuments = documents,
-        usage = result.usage,
-        warnings = result.warnings,
-        response = result.response,
-        providerMetadata = result.providerMetadata,
-    )
 }

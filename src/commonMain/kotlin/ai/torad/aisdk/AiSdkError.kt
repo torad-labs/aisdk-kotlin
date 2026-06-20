@@ -41,7 +41,7 @@ public class JSONParseError(
     public val text: String,
     cause: Throwable,
 ) : AiSdkException(
-    "JSON parsing failed: Text: $text.\nError message: ${getErrorMessage(cause)}",
+    "JSON parsing failed: Text: $text.\nError message: ${ErrorMessages.of(cause)}",
     cause,
 )
 
@@ -95,7 +95,7 @@ public class TypeValidationError(
                 context?.entityId?.let { add("id: \"$it\"") }
             }.takeIf { it.isNotEmpty() }?.joinToString(", ")?.let { " ($it)" } ?: ""
             val fieldQualifier = context?.field?.let { " for $it" } ?: ""
-            return "Type validation failed$fieldQualifier$entityQualifier: Value: $value.\nError message: ${getErrorMessage(cause)}"
+            return "Type validation failed$fieldQualifier$entityQualifier: Value: $value.\nError message: ${ErrorMessages.of(cause)}"
         }
     }
 }
@@ -185,7 +185,7 @@ public class InvalidToolInputError(
     public val toolInput: String,
     public val toolName: String,
     cause: Throwable,
-    message: String = "Invalid input for tool $toolName: ${getErrorMessage(cause)}",
+    message: String = "Invalid input for tool $toolName: ${ErrorMessages.of(cause)}",
 ) : AiSdkException(message, cause)
 
 public class ToolCallNotFoundForApprovalError(
@@ -214,7 +214,7 @@ public class NoSuchToolError(
 public class ToolCallRepairError(
     public val originalError: Throwable,
     cause: Throwable,
-    message: String = "Error repairing tool call: ${getErrorMessage(cause)}",
+    message: String = "Error repairing tool call: ${ErrorMessages.of(cause)}",
 ) : AiSdkException(message, cause)
 
 public class InvalidDataContentError(

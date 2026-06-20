@@ -167,7 +167,7 @@ class AzureProviderTest {
             TranscriptionParams(
                 audio = AudioSource(
                     mediaType = "audio/wav",
-                    base64 = convertByteArrayToBase64(byteArrayOf(1, 2, 3)),
+                    base64 = Base64Codec.encode(byteArrayOf(1, 2, 3)),
                 ),
             ),
         )

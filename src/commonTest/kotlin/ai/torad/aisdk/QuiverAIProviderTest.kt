@@ -63,7 +63,7 @@ class QuiverAIProviderTest {
         assertEquals("quiverai.image", model.provider)
         assertEquals(16, model.maxImagesPerCall)
         assertEquals("image/svg+xml", result.images.single().mediaType)
-        assertEquals("<svg><rect/></svg>", convertBase64ToByteArray(result.images.single().base64).decodeToString())
+        assertEquals("<svg><rect/></svg>", Base64Codec.decode(result.images.single().base64).decodeToString())
         assertEquals("svg_1", result.response.id)
         assertEquals(1710000000000, result.response.timestampMillis)
 

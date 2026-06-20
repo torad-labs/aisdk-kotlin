@@ -271,7 +271,7 @@ private suspend fun lumaDownloadImage(
     }
     return GeneratedFile(
         mediaType = headers.headerValue(HttpHeaders.ContentType) ?: "image/png",
-        base64 = convertByteArrayToBase64(bytes),
+        base64 = Base64Codec.encode(bytes),
     )
 }
 
@@ -280,7 +280,7 @@ private fun lumaHeaders(settings: LumaProviderSettings, callHeaders: Map<String,
     settings.apiKey?.takeIf { it.isNotBlank() }?.let { base[HttpHeaders.Authorization] = "Bearer $it" }
     base.putAll(settings.headers)
     base.putAll(callHeaders)
-    return withUserAgentSuffix(base, "ai-sdk/luma/$LUMA_VERSION")
+    return ProviderHeaders.withUserAgentSuffix(base, "ai-sdk/luma/$LUMA_VERSION")
 }
 
 private fun lumaOptions(providerOptions: Map<String, JsonElement>): JsonObject =

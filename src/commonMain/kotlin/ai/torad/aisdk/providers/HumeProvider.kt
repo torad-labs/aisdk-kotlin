@@ -109,7 +109,7 @@ private class HumeSpeechModel(
         return SpeechModelResult(
             audio = GeneratedFile(
                 mediaType = response.mediaType,
-                base64 = convertByteArrayToBase64(response.bytes),
+                base64 = Base64Codec.encode(response.bytes),
             ),
             warnings = warnings,
             response = LanguageModelResponseMetadata(headers = response.headers),
@@ -151,7 +151,7 @@ private fun humeHeaders(settings: HumeProviderSettings, callHeaders: Map<String,
     settings.apiKey?.takeIf { it.isNotBlank() }?.let { base["X-Hume-Api-Key"] = it }
     base.putAll(settings.headers)
     base.putAll(callHeaders)
-    return withUserAgentSuffix(base, "ai-sdk/hume/$HUME_VERSION")
+    return ProviderHeaders.withUserAgentSuffix(base, "ai-sdk/hume/$HUME_VERSION")
 }
 
 private fun humeOptions(providerOptions: Map<String, JsonElement>): JsonObject =

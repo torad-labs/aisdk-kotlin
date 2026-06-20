@@ -606,7 +606,7 @@ private suspend fun xaiDownloadImage(
     }
     return GeneratedFile(
         mediaType = headers.xaiHeaderValue(HttpHeaders.ContentType) ?: "image/png",
-        base64 = convertByteArrayToBase64(bytes),
+        base64 = Base64Codec.encode(bytes),
     )
 }
 
@@ -643,7 +643,7 @@ private fun xaiHeaders(settings: XaiProviderSettings, callHeaders: Map<String, S
     settings.apiKey?.takeIf { it.isNotBlank() }?.let { base[HttpHeaders.Authorization] = "Bearer $it" }
     settings.headers.forEach { (key, value) -> base[key] = value }
     callHeaders.forEach { (key, value) -> base[key] = value }
-    return withUserAgentSuffix(base, "ai-sdk/xai/$XAI_VERSION")
+    return ProviderHeaders.withUserAgentSuffix(base, "ai-sdk/xai/$XAI_VERSION")
 }
 
 private fun xaiOptions(providerOptions: Map<String, JsonElement>): JsonObject =

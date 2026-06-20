@@ -282,7 +282,7 @@ private data class ProdiaMultipartResult(
 private suspend fun prodiaInputFile(client: HttpClient, file: GeneratedFile): ProdiaInputFile {
     val bytes = file.url?.takeIf { it.isNotBlank() }
         ?.let { client.request(it).bodyAsBytes() }
-        ?: convertBase64ToByteArray(file.base64)
+        ?: Base64Codec.decode(file.base64)
     return ProdiaInputFile(file.mediaType, bytes, file.filename)
 }
 
@@ -312,9 +312,9 @@ private fun prodiaLanguagePrompt(messages: List<ModelMessage>): String {
 private fun prodiaLanguageImage(messages: List<ModelMessage>): ProdiaInputFile? =
     messages.asReversed().firstOrNull { it.role == MessageRole.User }?.content?.firstNotNullOfOrNull { part ->
         when (part) {
-            is ContentPart.Image -> ProdiaInputFile(part.mediaType, convertBase64ToByteArray(part.base64))
+            is ContentPart.Image -> ProdiaInputFile(part.mediaType, Base64Codec.decode(part.base64))
             is ContentPart.File if part.mediaType.startsWith("image/") ->
-                ProdiaInputFile(part.mediaType, convertBase64ToByteArray(part.base64), part.filename)
+                ProdiaInputFile(part.mediaType, Base64Codec.decode(part.base64), part.filename)
             else -> null
         }
     }
@@ -375,7 +375,7 @@ private suspend fun prodiaPostMultipart(
                             file.bytes,
                             Headers.build {
                                 append(HttpHeaders.ContentType, file.mediaType)
-                                append(HttpHeaders.ContentDisposition, "${ContentDisposition.File}; filename=\"${file.filename ?: "input.${mediaTypeToExtension(file.mediaType)}"}\"")
+                                append(HttpHeaders.ContentDisposition, "${ContentDisposition.File}; filename=\"${file.filename ?: "input.${MediaTypes.toExtension(file.mediaType)}"}\"")
                             },
                         )
                     }
@@ -416,11 +416,11 @@ private suspend fun HttpResponse.parseProdiaMultipart(url: String): ProdiaMultip
                 contentType.startsWith("text/") || contentDisposition.contains(".txt") -> text = part.body.decodeToString()
                 contentType.startsWith("image/") || contentType.startsWith("video/") -> files += GeneratedFile(
                     mediaType = contentType,
-                    base64 = convertByteArrayToBase64(part.body),
+                    base64 = Base64Codec.encode(part.body),
                 )
             }
         } else if (contentType.startsWith("image/") || contentType.startsWith("video/")) {
-            files += GeneratedFile(mediaType = contentType, base64 = convertByteArrayToBase64(part.body))
+            files += GeneratedFile(mediaType = contentType, base64 = Base64Codec.encode(part.body))
         }
     }
     return ProdiaMultipartResult(
@@ -517,7 +517,7 @@ private fun prodiaHeaders(settings: ProdiaProviderSettings, callHeaders: Map<Str
     settings.apiKey?.takeIf { it.isNotBlank() }?.let { base[HttpHeaders.Authorization] = "Bearer $it" }
     settings.headers.forEach { (key, value) -> base[key] = value }
     callHeaders.forEach { (key, value) -> base[key] = value }
-    return withUserAgentSuffix(base, "ai-sdk/prodia/$PRODIA_VERSION")
+    return ProviderHeaders.withUserAgentSuffix(base, "ai-sdk/prodia/$PRODIA_VERSION")
 }
 
 private fun prodiaOptions(providerOptions: Map<String, JsonElement>): JsonObject =

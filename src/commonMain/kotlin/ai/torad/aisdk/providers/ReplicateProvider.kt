@@ -361,7 +361,7 @@ private suspend fun replicateDownloadImage(
     }
     return GeneratedFile(
         mediaType = headers.replicateHeaderValue(HttpHeaders.ContentType) ?: "image/png",
-        base64 = convertByteArrayToBase64(bytes),
+        base64 = Base64Codec.encode(bytes),
     )
 }
 
@@ -425,7 +425,7 @@ private fun replicateHeaders(
     settings.headers.forEach { (key, value) -> base[key] = value }
     callHeaders.forEach { (key, value) -> base[key] = value }
     extraHeaders.forEach { (key, value) -> base[key] = value }
-    return withUserAgentSuffix(base, "ai-sdk/replicate/$REPLICATE_VERSION")
+    return ProviderHeaders.withUserAgentSuffix(base, "ai-sdk/replicate/$REPLICATE_VERSION")
 }
 
 private fun replicateOptions(providerOptions: Map<String, JsonElement>): JsonObject =

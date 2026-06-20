@@ -95,7 +95,7 @@ class FalProviderTest {
         assertEquals("fal.image", provider.imageModel("fal-ai/qwen-image").provider)
         assertEquals(1, provider.imageModel("fal-ai/qwen-image").maxImagesPerCall)
         assertEquals("image/png", result.images.single().mediaType)
-        assertEquals("image-bytes", convertBase64ToByteArray(result.images.single().base64).decodeToString())
+        assertEquals("image-bytes", Base64Codec.decode(result.images.single().base64).decodeToString())
         assertEquals("https://fal.media/files/image.png", result.images.single().url)
         assertEquals("image.png", result.images.single().filename)
         assertEquals(false, result.providerMetadata["fal"]?.jsonObject?.get("images")?.jsonArray?.single()?.jsonObject?.get("nsfw")?.jsonPrimitive?.booleanOrNull)
@@ -174,7 +174,7 @@ class FalProviderTest {
 
         assertEquals("fal.speech", provider.speechModel("fal-ai/minimax/speech-02-hd").provider)
         assertEquals("audio/mp3", result.audio?.mediaType)
-        assertEquals("audio-bytes", convertBase64ToByteArray(result.audio?.base64.orEmpty()).decodeToString())
+        assertEquals("audio-bytes", Base64Codec.decode(result.audio?.base64.orEmpty()).decodeToString())
         assertTrue(result.warnings.any { it.message == "instructions" })
         assertTrue(result.warnings.any { it.message == "outputFormat" })
 

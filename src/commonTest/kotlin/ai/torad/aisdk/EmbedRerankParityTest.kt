@@ -34,7 +34,7 @@ class EmbedRerankParityTest {
     @Test
     fun `embedMany runs batches concurrently when the model supports it and preserves order`() = runTest {
         val model = ParallelEmbeddingModel()
-        val result = embedMany(model, listOf("a", "bb", "ccc"))
+        val result = Embedding.embedMany(model, listOf("a", "bb", "ccc"))
         // 3 values, maxEmbeddingsPerCall=1 → 3 batches; the gate only opens once all 3
         // are in flight, so completion proves they ran concurrently.
         assertEquals(3, model.maxInFlight, "all batches must be in flight at once")
@@ -59,7 +59,7 @@ class EmbedRerankParityTest {
                 )
             }
         }
-        val result = rerank(model, "q", listOf("low", "mid", "high"), topN = 2)
+        val result = Reranking.rerank(model, "q", listOf("low", "mid", "high"), topN = 2)
         assertEquals(2, capturedTopN)
         assertEquals(listOf("low", "mid", "high"), result.originalDocuments)
         assertEquals(listOf("mid", "low", "high"), result.rerankedDocuments)
@@ -72,7 +72,7 @@ class EmbedRerankParityTest {
             override suspend fun rerank(params: RerankingParams): RerankingModelResult =
                 error("must not be called for empty documents")
         }
-        val result = rerank(model, "q", emptyList())
+        val result = Reranking.rerank(model, "q", emptyList())
         assertTrue(result.results.isEmpty())
         assertTrue(result.rerankedDocuments.isEmpty())
     }

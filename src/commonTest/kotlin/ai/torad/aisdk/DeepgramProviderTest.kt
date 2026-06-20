@@ -62,7 +62,7 @@ class DeepgramProviderTest {
 
         assertEquals("deepgram.speech", model.provider)
         assertEquals("audio/ogg", result.audio?.mediaType)
-        assertEquals(convertByteArrayToBase64(byteArrayOf(1, 2, 3)), result.audio?.base64)
+        assertEquals(Base64Codec.encode(byteArrayOf(1, 2, 3)), result.audio?.base64)
         assertEquals(4, result.warnings.size)
         assertTrue(result.warnings.any { it.message.orEmpty().contains("sample_rate") })
         assertTrue(result.warnings.any { it.message.orEmpty().contains("voice parameter") })
@@ -100,7 +100,7 @@ class DeepgramProviderTest {
             TranscriptionParams(
                 audio = AudioSource(
                     mediaType = "audio/wav",
-                    base64 = convertByteArrayToBase64("abc".encodeToByteArray()),
+                    base64 = Base64Codec.encode("abc".encodeToByteArray()),
                     filename = "clip.wav",
                 ),
                 providerOptions = mapOf(
@@ -168,7 +168,7 @@ class DeepgramProviderTest {
 
         val result = model.transcribe(
             TranscriptionParams(
-                audio = AudioSource("audio/wav", convertByteArrayToBase64(byteArrayOf(1))),
+                audio = AudioSource("audio/wav", Base64Codec.encode(byteArrayOf(1))),
                 language = "pt",
             ),
         )
