@@ -259,6 +259,13 @@ tasks.withType<PublishToMavenRepository>().configureEach {
     mustRunAfter(tasks.withType<Sign>())
 }
 
+// checkKotlinAbi reads the dump files written by updateKotlinAbi; when both tasks are
+// requested in one invocation Gradle 9 flags the shared output as an implicit dependency.
+// mustRunAfter (not dependsOn) keeps checkKotlinAbi runnable on its own.
+tasks.named("checkKotlinAbi").configure {
+    mustRunAfter(tasks.named("updateKotlinAbi"))
+}
+
 tasks.withType<PublishToMavenRepository>().configureEach {
     doFirst {
         val repoName = repository.name
