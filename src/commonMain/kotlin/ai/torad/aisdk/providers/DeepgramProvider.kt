@@ -90,9 +90,9 @@ public fun createDeepgram(
 public val deepgram: DeepgramProvider = object : DeepgramProvider {
     override val providerId: String = "deepgram"
     override fun transcription(modelId: String): TranscriptionModel =
-        throw AiSdkException("Deepgram provider is not configured. Use createDeepgram(client, settings).")
+        throw AiSdkRuntimeException("Deepgram provider is not configured. Use createDeepgram(client, settings).")
     override fun speech(modelId: String): SpeechModel =
-        throw AiSdkException("Deepgram provider is not configured. Use createDeepgram(client, settings).")
+        throw AiSdkRuntimeException("Deepgram provider is not configured. Use createDeepgram(client, settings).")
 }
 
 private class DefaultDeepgramProvider(

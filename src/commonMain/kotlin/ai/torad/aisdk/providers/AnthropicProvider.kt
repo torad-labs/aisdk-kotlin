@@ -74,7 +74,7 @@ public val anthropic: AnthropicProvider = object : AnthropicProvider {
     override val settings: AnthropicProviderSettings = AnthropicProviderSettings()
     override val tools: AnthropicTools = AnthropicTools()
     override fun languageModel(modelId: String): LanguageModel =
-        throw AiSdkException("Anthropic provider is not configured. Use createAnthropic(client, settings).")
+        throw AiSdkRuntimeException("Anthropic provider is not configured. Use createAnthropic(client, settings).")
     override fun embeddingModel(modelId: String): EmbeddingModel = throw NoSuchModelError(providerId, "embeddingModel", modelId)
     override fun imageModel(modelId: String): ImageModel = throw NoSuchModelError(providerId, "imageModel", modelId)
 }
@@ -491,7 +491,7 @@ private fun anthropicUserPart(part: ContentPart, betas: MutableSet<String>): Jso
             part.filename?.let { put("title", JsonPrimitive(it)) }
             anthropicFileOptions(part.providerMetadata)?.let { putJsonObjectFields(it) }
         }
-        else -> throw AiSdkException("Unsupported Anthropic file media type: ${part.mediaType}")
+        else -> throw AiSdkRuntimeException("Unsupported Anthropic file media type: ${part.mediaType}")
     }
     else -> null
 }

@@ -89,7 +89,7 @@ public fun createGladia(
 public val gladia: GladiaProvider = object : GladiaProvider {
     override val providerId: String = "gladia"
     override fun transcription(): TranscriptionModel =
-        throw AiSdkException("Gladia provider is not configured. Use createGladia(client, settings).")
+        throw AiSdkRuntimeException("Gladia provider is not configured. Use createGladia(client, settings).")
 }
 
 private class DefaultGladiaProvider(
@@ -119,7 +119,7 @@ private class GladiaTranscriptionModel(
             headers = gladiaHeaders(settings, params.headers),
         )
         val audioUrl = upload.value.jsonObject["audio_url"]?.jsonPrimitive?.contentOrNull
-            ?: throw AiSdkException("Gladia upload response is missing audio_url")
+            ?: throw AiSdkRuntimeException("Gladia upload response is missing audio_url")
 
         params.abortSignal.throwIfAborted()
         val initBody = gladiaInitBody(audioUrl, params)
@@ -130,7 +130,7 @@ private class GladiaTranscriptionModel(
             headers = gladiaHeaders(settings, params.headers),
         )
         val resultUrl = init.value.jsonObject["result_url"]?.jsonPrimitive?.contentOrNull
-            ?: throw AiSdkException("Gladia transcription init response is missing result_url")
+            ?: throw AiSdkRuntimeException("Gladia transcription init response is missing result_url")
 
         val result = gladiaPollResult(
             client = client,
@@ -141,7 +141,7 @@ private class GladiaTranscriptionModel(
         )
         val responseBody = result.value.jsonObject
         val transcript = responseBody["result"]?.jsonObject?.get("transcription")?.jsonObject
-            ?: throw AiSdkException("Transcription result is empty")
+            ?: throw AiSdkRuntimeException("Transcription result is empty")
         val utterances = transcript["utterances"]?.jsonArray.orEmpty()
         return TranscriptionModelResult(
             text = transcript["full_transcript"]?.jsonPrimitive?.contentOrNull.orEmpty(),
@@ -244,14 +244,14 @@ private suspend fun gladiaPollResult(
         )
         when (response.value.jsonObject["status"]?.jsonPrimitive?.contentOrNull) {
             "done" -> return response
-            "error" -> throw AiSdkException("Transcription job failed")
+            "error" -> throw AiSdkRuntimeException("Transcription job failed")
             "queued", "processing" -> if (settings.pollingIntervalMillis > 0 && attempt < settings.maxPollAttempts - 1) {
                 delay(settings.pollingIntervalMillis)
             }
-            else -> throw AiSdkException("Gladia transcription response has unsupported status")
+            else -> throw AiSdkRuntimeException("Gladia transcription response has unsupported status")
         }
     }
-    throw AiSdkException("Transcription job polling timed out")
+    throw AiSdkRuntimeException("Transcription job polling timed out")
 }
 
 private fun gladiaInitBody(

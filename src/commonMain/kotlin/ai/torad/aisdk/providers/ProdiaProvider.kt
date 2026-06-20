@@ -81,11 +81,11 @@ public fun createProdia(
 public val prodia: ProdiaProvider = object : ProdiaProvider {
     override val providerId: String = "prodia"
     override fun languageModel(modelId: String): LanguageModel =
-        throw AiSdkException("Prodia provider is not configured. Use createProdia(client, settings).")
+        throw AiSdkRuntimeException("Prodia provider is not configured. Use createProdia(client, settings).")
     override fun imageModel(modelId: String): ImageModel =
-        throw AiSdkException("Prodia provider is not configured. Use createProdia(client, settings).")
+        throw AiSdkRuntimeException("Prodia provider is not configured. Use createProdia(client, settings).")
     override fun videoModel(modelId: String): VideoModel =
-        throw AiSdkException("Prodia provider is not configured. Use createProdia(client, settings).")
+        throw AiSdkRuntimeException("Prodia provider is not configured. Use createProdia(client, settings).")
 }
 
 private class DefaultProdiaProvider(
@@ -401,7 +401,7 @@ private suspend fun HttpResponse.parseProdiaMultipart(url: String): ProdiaMultip
         )
     }
     val boundary = Regex("""boundary=([^;\s]+)""").find(rawContentType)?.groupValues?.get(1)
-        ?: throw AiSdkException("Prodia response missing multipart boundary in content-type: $rawContentType")
+        ?: throw AiSdkRuntimeException("Prodia response missing multipart boundary in content-type: $rawContentType")
     val parts = parseProdiaMultipart(bytes, boundary)
     var job: JsonObject? = null
     var text: String? = null
@@ -424,7 +424,7 @@ private suspend fun HttpResponse.parseProdiaMultipart(url: String): ProdiaMultip
         }
     }
     return ProdiaMultipartResult(
-        job = job ?: throw AiSdkException("Prodia multipart response missing job part"),
+        job = job ?: throw AiSdkRuntimeException("Prodia multipart response missing job part"),
         text = text,
         files = files,
         headers = responseHeaders,

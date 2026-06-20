@@ -81,11 +81,11 @@ public val cohere: CohereProvider = object : CohereProvider {
     override val providerId: String = "cohere"
     override val settings: CohereProviderSettings = CohereProviderSettings()
     override fun languageModel(modelId: String): LanguageModel =
-        throw AiSdkException("Cohere provider is not configured. Use createCohere(client, settings).")
+        throw AiSdkRuntimeException("Cohere provider is not configured. Use createCohere(client, settings).")
     override fun embedding(modelId: String): EmbeddingModel =
-        throw AiSdkException("Cohere provider is not configured. Use createCohere(client, settings).")
+        throw AiSdkRuntimeException("Cohere provider is not configured. Use createCohere(client, settings).")
     override fun reranking(modelId: String): RerankingModel =
-        throw AiSdkException("Cohere provider is not configured. Use createCohere(client, settings).")
+        throw AiSdkRuntimeException("Cohere provider is not configured. Use createCohere(client, settings).")
 }
 
 private class DefaultCohereProvider(

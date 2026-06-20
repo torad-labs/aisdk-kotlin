@@ -243,7 +243,7 @@ public class AgentSession<TContext, TOutput>(
                             mutableState.update {
                                 it.copy(
                                     status = AgentSessionStatus.Error,
-                                    error = AiSdkException(event.message),
+                                    error = AiSdkRuntimeException(event.message),
                                 )
                             }
                         }

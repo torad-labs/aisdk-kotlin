@@ -67,7 +67,7 @@ public fun createKlingAI(
 public val klingai: KlingAIProvider = object : KlingAIProvider {
     override val providerId: String = "klingai"
     override fun videoModel(modelId: String): VideoModel =
-        throw AiSdkException("KlingAI provider is not configured. Use createKlingAI(client, settings).")
+        throw AiSdkRuntimeException("KlingAI provider is not configured. Use createKlingAI(client, settings).")
 }
 
 private class DefaultKlingAIProvider(
@@ -115,7 +115,7 @@ private class KlingAIVideoModel(
             body = body,
         )
         val taskId = create.value.jsonObject["data"]?.jsonObject?.get("task_id")?.jsonPrimitive?.contentOrNull
-            ?: throw AiSdkException("No task_id returned from KlingAI API. Response: ${create.value}")
+            ?: throw AiSdkRuntimeException("No task_id returned from KlingAI API. Response: ${create.value}")
 
         val pollIntervalMs = options["pollIntervalMs"]?.jsonPrimitive?.contentOrNull?.toLongOrNull() ?: 5_000L
         val pollTimeoutMs = options["pollTimeoutMs"]?.jsonPrimitive?.contentOrNull?.toLongOrNull() ?: 600_000L
@@ -125,7 +125,7 @@ private class KlingAIVideoModel(
             params.abortSignal.throwIfAborted()
             if (pollIntervalMs > 0) delay(pollIntervalMs)
             if (clock.now().toEpochMilliseconds() - started > pollTimeoutMs) {
-                throw AiSdkException("Video generation timed out after ${pollTimeoutMs}ms")
+                throw AiSdkRuntimeException("Video generation timed out after ${pollTimeoutMs}ms")
             }
             val status = klingAIRequestJson(
                 client = client,
@@ -137,9 +137,9 @@ private class KlingAIVideoModel(
             val data = status.value.jsonObject["data"]?.jsonObject ?: JsonObject(emptyMap())
             when (val taskStatus = data["task_status"]?.jsonPrimitive?.contentOrNull) {
                 "succeed" -> return klingAISuccessResult(taskId, data, headers, warnings)
-                "failed" -> throw AiSdkException("Video generation failed: ${data["task_status_msg"]?.jsonPrimitive?.contentOrNull ?: "Unknown error"}")
+                "failed" -> throw AiSdkRuntimeException("Video generation failed: ${data["task_status_msg"]?.jsonPrimitive?.contentOrNull ?: "Unknown error"}")
                 "submitted", "processing", null -> Unit
-                else -> throw AiSdkException("Unknown KlingAI task status: $taskStatus")
+                else -> throw AiSdkRuntimeException("Unknown KlingAI task status: $taskStatus")
             }
         }
     }
@@ -289,7 +289,7 @@ private fun klingAIMotionControlBody(
     val characterOrientation = options["characterOrientation"]?.jsonPrimitive?.contentOrNull
     val mode = options["mode"]?.jsonPrimitive?.contentOrNull
     if (videoUrl.isNullOrBlank() || characterOrientation.isNullOrBlank() || mode.isNullOrBlank()) {
-        throw AiSdkException("KlingAI Motion Control requires providerOptions.klingai with videoUrl, characterOrientation, and mode.")
+        throw AiSdkRuntimeException("KlingAI Motion Control requires providerOptions.klingai with videoUrl, characterOrientation, and mode.")
     }
     return buildJsonObject {
         put("model_name", JsonPrimitive(klingAIModelName(modelId, KlingAIVideoMode.MotionControl)))
@@ -347,8 +347,8 @@ private fun klingAIHeaders(
     clock: Clock = Clock.System,
 ): Map<String, String> {
     val token = generateKlingAIAuthToken(
-        accessKey = settings.accessKey ?: throw AiSdkException("KlingAI access key is required."),
-        secretKey = settings.secretKey ?: throw AiSdkException("KlingAI secret key is required."),
+        accessKey = settings.accessKey ?: throw AiSdkRuntimeException("KlingAI access key is required."),
+        secretKey = settings.secretKey ?: throw AiSdkRuntimeException("KlingAI secret key is required."),
         clock = clock,
     )
     return buildProviderHeaders(settings.headers, callHeaders, "ai-sdk/klingai/$KLINGAI_VERSION") { base ->

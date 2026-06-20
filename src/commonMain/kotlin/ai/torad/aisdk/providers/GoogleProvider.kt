@@ -114,15 +114,15 @@ public val google: GoogleGenerativeAIProvider = object : GoogleGenerativeAIProvi
     override val settings: GoogleGenerativeAIProviderSettings = GoogleGenerativeAIProviderSettings()
     override val tools: GoogleTools = GoogleTools()
     override fun languageModel(modelId: String): LanguageModel =
-        throw AiSdkException("Google Generative AI provider is not configured. Use createGoogleGenerativeAI(client, settings).")
+        throw AiSdkRuntimeException("Google Generative AI provider is not configured. Use createGoogleGenerativeAI(client, settings).")
     override fun embedding(modelId: String): EmbeddingModel =
-        throw AiSdkException("Google Generative AI provider is not configured. Use createGoogleGenerativeAI(client, settings).")
+        throw AiSdkRuntimeException("Google Generative AI provider is not configured. Use createGoogleGenerativeAI(client, settings).")
     override fun image(modelId: String): ImageModel =
-        throw AiSdkException("Google Generative AI provider is not configured. Use createGoogleGenerativeAI(client, settings).")
+        throw AiSdkRuntimeException("Google Generative AI provider is not configured. Use createGoogleGenerativeAI(client, settings).")
     override fun video(modelId: String): VideoModel =
-        throw AiSdkException("Google Generative AI provider is not configured. Use createGoogleGenerativeAI(client, settings).")
+        throw AiSdkRuntimeException("Google Generative AI provider is not configured. Use createGoogleGenerativeAI(client, settings).")
     override fun interactions(modelIdOrAgent: GoogleInteractionsModelInput): LanguageModel =
-        throw AiSdkException("Google Generative AI provider is not configured. Use createGoogleGenerativeAI(client, settings).")
+        throw AiSdkRuntimeException("Google Generative AI provider is not configured. Use createGoogleGenerativeAI(client, settings).")
 }
 
 private class DefaultGoogleGenerativeAIProvider(
@@ -231,7 +231,7 @@ private class GoogleGenerativeAIEmbeddingModel(
 
     override suspend fun embed(params: EmbeddingModelCallParams): EmbeddingModelResult {
         params.abortSignal.throwIfAborted()
-        if (params.values.size > 2048) throw AiSdkException("Google embedding models support at most 2048 values per call.")
+        if (params.values.size > 2048) throw AiSdkRuntimeException("Google embedding models support at most 2048 values per call.")
         val options = params.providerOptions["google"] as? JsonObject ?: JsonObject(emptyMap())
         val single = params.values.size == 1
         val body = if (single) {
@@ -280,8 +280,8 @@ private class GoogleGenerativeAIImageModel(
     }
 
     private suspend fun generateImagen(params: ImageGenerationParams): ImageModelResult {
-        if (params.files.isNotEmpty()) throw AiSdkException("Google Generative AI Imagen models do not support image editing. Use Google Vertex AI for image editing.")
-        if (params.mask != null) throw AiSdkException("Google Generative AI Imagen models do not support masks. Use Google Vertex AI for image editing.")
+        if (params.files.isNotEmpty()) throw AiSdkRuntimeException("Google Generative AI Imagen models do not support image editing. Use Google Vertex AI for image editing.")
+        if (params.mask != null) throw AiSdkRuntimeException("Google Generative AI Imagen models do not support masks. Use Google Vertex AI for image editing.")
         val warnings = mutableListOf<CallWarning>()
         if (params.size != null) warnings += CallWarning("unsupported", "size")
         if (params.seed != null) warnings += CallWarning("unsupported", "seed")
@@ -319,14 +319,14 @@ private class GoogleGenerativeAIImageModel(
     }
 
     private suspend fun generateGeminiImage(params: ImageGenerationParams): ImageModelResult {
-        if (params.n > 1) throw AiSdkException("Gemini image models do not support n > 1.")
-        if (params.mask != null) throw AiSdkException("Gemini image models do not support mask-based image editing.")
+        if (params.n > 1) throw AiSdkRuntimeException("Gemini image models do not support n > 1.")
+        if (params.mask != null) throw AiSdkRuntimeException("Gemini image models do not support mask-based image editing.")
         val message = ModelMessage(
             MessageRole.User,
             buildList {
                 add(ContentPart.Text(params.prompt))
                 params.files.forEach { file ->
-                    add(ContentPart.File(file.mediaType ?: "image/png", file.base64 ?: throw AiSdkException("Gemini image input URLs are not supported in this facade."), file.filename))
+                    add(ContentPart.File(file.mediaType ?: "image/png", file.base64 ?: throw AiSdkRuntimeException("Gemini image input URLs are not supported in this facade."), file.filename))
                 }
             },
         )
@@ -391,9 +391,9 @@ private class GoogleGenerativeAIVideoModel(
             headers = poll.headers
         }
         if (current["done"]?.jsonPrimitive?.booleanOrNull != true) {
-            throw AiSdkException("Google video generation timed out after $maxAttempts poll attempts.")
+            throw AiSdkRuntimeException("Google video generation timed out after $maxAttempts poll attempts.")
         }
-        current["error"]?.jsonObject?.let { throw AiSdkException("Google video generation failed: ${it["message"]?.jsonPrimitive?.contentOrNull ?: it}") }
+        current["error"]?.jsonObject?.let { throw AiSdkRuntimeException("Google video generation failed: ${it["message"]?.jsonPrimitive?.contentOrNull ?: it}") }
         val responseObject = WireDecoder.objectValue(
             WireDecoder.required(current, "response", provider, "video poll response"),
             provider,
@@ -467,7 +467,7 @@ private class GoogleInteractionsLanguageModel(
                 client = client,
                 settings = settings,
                 interactionId = body["id"]?.jsonPrimitive?.contentOrNull
-                    ?: throw AiSdkException("google.interactions: background response did not include an interaction id."),
+                    ?: throw AiSdkRuntimeException("google.interactions: background response did not include an interaction id."),
                 headers = googleInteractionsHeaders(settings, params.headers),
                 abortSignal = params.abortSignal,
                 timeoutMillis = prepared.pollingTimeoutMillis,
@@ -494,7 +494,7 @@ private class GoogleInteractionsLanguageModel(
                 state.synthesize(postBody).forEach { emit(it) }
             } else {
                 val interactionId = postBody["id"]?.jsonPrimitive?.contentOrNull
-                    ?: throw AiSdkException("google.interactions: background response did not include an interaction id.")
+                    ?: throw AiSdkRuntimeException("google.interactions: background response did not include an interaction id.")
                 val rawLines = googleStreamSseGet(
                     client = client,
                     url = "${settings.baseURL.trimEnd('/')}/interactions/$interactionId?stream=true",
@@ -1261,7 +1261,7 @@ private suspend fun googlePollInteraction(
         if (settings.videoPollIntervalMillis > 0) delay(settings.videoPollIntervalMillis)
         current = googleGetJson(client, "${settings.baseURL.trimEnd('/')}/interactions/$interactionId", headers, abortSignal)
     }
-    throw AiSdkException("google.interactions: polling timed out for interaction $interactionId.")
+    throw AiSdkRuntimeException("google.interactions: polling timed out for interaction $interactionId.")
 }
 
 private fun googleInteractionsMetadata(

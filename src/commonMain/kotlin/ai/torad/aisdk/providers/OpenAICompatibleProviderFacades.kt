@@ -394,10 +394,10 @@ public fun createBaseten(
 public val baseten: BasetenProvider = object : BasetenProvider {
     override val providerId: String = "baseten"
     override fun chatModel(): LanguageModel =
-        throw AiSdkException("Baseten provider is not configured. Use createBaseten(client, settings).")
+        throw AiSdkRuntimeException("Baseten provider is not configured. Use createBaseten(client, settings).")
     override fun chatModel(modelId: String): LanguageModel = chatModel()
     override fun embeddingModel(): EmbeddingModel =
-        throw AiSdkException("Baseten provider is not configured. Use createBaseten(client, settings).")
+        throw AiSdkRuntimeException("Baseten provider is not configured. Use createBaseten(client, settings).")
     override fun embeddingModel(modelId: String): EmbeddingModel = embeddingModel()
     override fun imageModel(modelId: String): ImageModel = throw NoSuchModelError(providerId, "imageModel", modelId)
 }
@@ -565,7 +565,7 @@ private class DefaultBasetenProvider(
         val customURL = settings.modelURL?.trimEnd('/')
         val baseURL = when {
             customURL?.contains("/sync/v1") == true -> customURL
-            customURL?.contains("/predict") == true -> throw AiSdkException("Not supported. You must use a /sync/v1 endpoint for chat models.")
+            customURL?.contains("/predict") == true -> throw AiSdkRuntimeException("Not supported. You must use a /sync/v1 endpoint for chat models.")
             else -> settings.baseURL.trimEnd('/')
         }
         val resolvedModelId = if (customURL?.contains("/sync/v1") == true) {
@@ -578,9 +578,9 @@ private class DefaultBasetenProvider(
 
     private fun createEmbeddingModel(modelId: String?): EmbeddingModel {
         val customURL = settings.modelURL?.trimEnd('/')
-            ?: throw AiSdkException("No model URL provided for embeddings. Please set modelURL option for embeddings.")
+            ?: throw AiSdkRuntimeException("No model URL provided for embeddings. Please set modelURL option for embeddings.")
         if (!customURL.contains("/sync")) {
-            throw AiSdkException("Not supported. You must use a /sync or /sync/v1 endpoint for embeddings.")
+            throw AiSdkRuntimeException("Not supported. You must use a /sync or /sync/v1 endpoint for embeddings.")
         }
         val baseURL = if (customURL.contains("/sync/v1")) customURL else "$customURL/v1"
         return createOpenAICompatible(client, settings.toCompatible("baseten", BASETEN_VERSION, baseURL)).embeddingModel(modelId ?: "embeddings")
@@ -972,7 +972,7 @@ private inline fun <reified T : Provider> providerNotConfigured(
     val error = object : Provider {
         override val providerId: String = providerId
         override fun languageModel(modelId: String): LanguageModel =
-            throw AiSdkException("$providerName provider is not configured. Use create$providerName(client, settings).")
+            throw AiSdkRuntimeException("$providerName provider is not configured. Use create$providerName(client, settings).")
     }
     @Suppress("UNCHECKED_CAST")
     return when (T::class) {
@@ -986,13 +986,13 @@ private inline fun <reified T : Provider> providerNotConfigured(
             override fun chatModel(modelId: String): LanguageModel = error.languageModel(modelId)
             override fun completionModel(modelId: String): LanguageModel = error.languageModel(modelId)
             override fun image(modelId: String): ImageModel =
-                throw AiSdkException("$providerName provider is not configured. Use create$providerName(client, settings).")
+                throw AiSdkRuntimeException("$providerName provider is not configured. Use create$providerName(client, settings).")
         } as T
         FireworksProvider::class -> object : FireworksProvider, Provider by error {
             override fun chatModel(modelId: String): LanguageModel = error.languageModel(modelId)
             override fun completionModel(modelId: String): LanguageModel = error.languageModel(modelId)
             override fun image(modelId: String): ImageModel =
-                throw AiSdkException("$providerName provider is not configured. Use create$providerName(client, settings).")
+                throw AiSdkRuntimeException("$providerName provider is not configured. Use create$providerName(client, settings).")
         } as T
         PerplexityProvider::class -> object : PerplexityProvider, Provider by error {} as T
         MoonshotAIProvider::class -> object : MoonshotAIProvider, Provider by error {
@@ -1002,16 +1002,16 @@ private inline fun <reified T : Provider> providerNotConfigured(
             override val tools: GroqTools = GroqTools()
             override fun chat(modelId: String): LanguageModel = error.languageModel(modelId)
             override fun transcription(modelId: String): TranscriptionModel =
-                throw AiSdkException("$providerName provider is not configured. Use create$providerName(client, settings).")
+                throw AiSdkRuntimeException("$providerName provider is not configured. Use create$providerName(client, settings).")
             override fun transcriptionModel(modelId: String): TranscriptionModel = transcription(modelId)
         } as T
         TogetherAIProvider::class -> object : TogetherAIProvider, Provider by error {
             override fun chatModel(modelId: String): LanguageModel = error.languageModel(modelId)
             override fun completionModel(modelId: String): LanguageModel = error.languageModel(modelId)
             override fun image(modelId: String): ImageModel =
-                throw AiSdkException("$providerName provider is not configured. Use create$providerName(client, settings).")
+                throw AiSdkRuntimeException("$providerName provider is not configured. Use create$providerName(client, settings).")
             override fun reranking(modelId: String): RerankingModel =
-                throw AiSdkException("$providerName provider is not configured. Use create$providerName(client, settings).")
+                throw AiSdkRuntimeException("$providerName provider is not configured. Use create$providerName(client, settings).")
         } as T
         VercelProvider::class -> object : VercelProvider, Provider by error {} as T
         else -> error("Unsupported provider facade type: ${T::class}")
@@ -1200,7 +1200,7 @@ public class FireworksImageModel(
             headers = requestHeaders,
         )
         val requestId = submitResponse.value.jsonObject["request_id"]?.jsonPrimitive?.contentOrNull
-            ?: throw AiSdkException("Fireworks image generation response is missing request_id")
+            ?: throw AiSdkRuntimeException("Fireworks image generation response is missing request_id")
         val imageUrl = pollForImageUrl(requestId, requestHeaders)
         val imageResponse = getFacadeBinary(client, imageUrl, requestHeaders)
         return ImageModelResult(
@@ -1226,12 +1226,12 @@ public class FireworksImageModel(
                     ?.get("sample")
                     ?.jsonPrimitive
                     ?.contentOrNull
-                    ?: throw AiSdkException("Fireworks poll response is Ready but missing result.sample")
-                "Error", "Failed" -> throw AiSdkException("Fireworks image generation failed with status: $status")
+                    ?: throw AiSdkRuntimeException("Fireworks poll response is Ready but missing result.sample")
+                "Error", "Failed" -> throw AiSdkRuntimeException("Fireworks image generation failed with status: $status")
             }
             if (attempt < FIREWORKS_MAX_POLL_ATTEMPTS - 1) delay(FIREWORKS_POLL_INTERVAL_MILLIS)
         }
-        throw AiSdkException("Fireworks image generation timed out after polling")
+        throw AiSdkRuntimeException("Fireworks image generation timed out after polling")
     }
 }
 

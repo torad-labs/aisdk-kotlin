@@ -105,13 +105,13 @@ public val fal: FalProvider = object : FalProvider {
     override val providerId: String = "fal"
     override val settings: FalProviderSettings = FalProviderSettings()
     override fun image(modelId: String): ImageModel =
-        throw AiSdkException("fal.ai provider is not configured. Use createFal(client, settings).")
+        throw AiSdkRuntimeException("fal.ai provider is not configured. Use createFal(client, settings).")
     override fun speech(modelId: String): SpeechModel =
-        throw AiSdkException("fal.ai provider is not configured. Use createFal(client, settings).")
+        throw AiSdkRuntimeException("fal.ai provider is not configured. Use createFal(client, settings).")
     override fun transcription(modelId: String): TranscriptionModel =
-        throw AiSdkException("fal.ai provider is not configured. Use createFal(client, settings).")
+        throw AiSdkRuntimeException("fal.ai provider is not configured. Use createFal(client, settings).")
     override fun video(modelId: String): VideoModel =
-        throw AiSdkException("fal.ai provider is not configured. Use createFal(client, settings).")
+        throw AiSdkRuntimeException("fal.ai provider is not configured. Use createFal(client, settings).")
 }
 
 private class DefaultFalProvider(
@@ -221,7 +221,7 @@ private class FalTranscriptionModel(
             headers = falHeaders(settings, params.headers),
         )
         val requestId = queue.value.jsonObject["request_id"]?.jsonPrimitive?.contentOrNull
-            ?: throw AiSdkException("fal transcription queue response is missing request_id")
+            ?: throw AiSdkRuntimeException("fal transcription queue response is missing request_id")
         val result = falPollJson(
             client = client,
             url = "https://queue.fal.run/fal-ai/$modelId/requests/$requestId",
@@ -269,7 +269,7 @@ private class FalVideoModel(
             headers = falHeaders(settings, params.headers),
         )
         val responseUrl = queue.value.jsonObject["response_url"]?.jsonPrimitive?.contentOrNull
-            ?: throw AiSdkException("No response URL returned from queue endpoint")
+            ?: throw AiSdkRuntimeException("No response URL returned from queue endpoint")
         val pollIntervalMillis = options["pollIntervalMs"]?.jsonPrimitive?.contentOrNull?.toLongOrNull()
             ?: settings.videoPollIntervalMillis
         val result = falPollJson(
@@ -549,7 +549,7 @@ private suspend fun falGetJson(
  */
 private val falInProgressSignal: ResponseErrorFactory = { _, parsed, _, _ ->
     val detail = (parsed as? JsonObject)?.get("detail")?.jsonPrimitive?.contentOrNull
-    if (detail == "Request is still in progress") AiSdkException(detail) else null
+    if (detail == "Request is still in progress") AiSdkRuntimeException(detail) else null
 }
 
 private suspend fun falPollJson(
@@ -570,7 +570,7 @@ private suspend fun falPollJson(
         if (response != null) return response
         if (pollIntervalMillis > 0 && attempt < maxPollAttempts - 1) delay(pollIntervalMillis)
     }
-    throw AiSdkException(timeoutMessage)
+    throw AiSdkRuntimeException(timeoutMessage)
 }
 
 private suspend fun falGetBinary(

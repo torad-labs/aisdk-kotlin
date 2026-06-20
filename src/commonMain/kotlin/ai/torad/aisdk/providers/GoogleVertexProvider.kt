@@ -65,13 +65,13 @@ public val vertex: GoogleVertexProvider = object : GoogleVertexProvider {
     override val settings: GoogleVertexProviderSettings = GoogleVertexProviderSettings()
     override val tools: GoogleTools = googleTools
     override fun languageModel(modelId: String): LanguageModel =
-        throw AiSdkException("Google Vertex provider is not configured. Use createVertex(client, settings).")
+        throw AiSdkRuntimeException("Google Vertex provider is not configured. Use createVertex(client, settings).")
     override fun embedding(modelId: String): EmbeddingModel =
-        throw AiSdkException("Google Vertex provider is not configured. Use createVertex(client, settings).")
+        throw AiSdkRuntimeException("Google Vertex provider is not configured. Use createVertex(client, settings).")
     override fun image(modelId: String): ImageModel =
-        throw AiSdkException("Google Vertex provider is not configured. Use createVertex(client, settings).")
+        throw AiSdkRuntimeException("Google Vertex provider is not configured. Use createVertex(client, settings).")
     override fun video(modelId: String): VideoModel =
-        throw AiSdkException("Google Vertex provider is not configured. Use createVertex(client, settings).")
+        throw AiSdkRuntimeException("Google Vertex provider is not configured. Use createVertex(client, settings).")
 }
 
 private class DefaultGoogleVertexProvider(
@@ -155,21 +155,21 @@ public val vertexAnthropic: GoogleVertexAnthropicProvider = object : GoogleVerte
     override val settings: GoogleVertexProviderSettings = GoogleVertexProviderSettings()
     override val tools: AnthropicTools = anthropicTools
     override fun languageModel(modelId: String): LanguageModel =
-        throw AiSdkException("Google Vertex Anthropic provider is not configured. Use createVertexAnthropic(client, settings).")
+        throw AiSdkRuntimeException("Google Vertex Anthropic provider is not configured. Use createVertexAnthropic(client, settings).")
 }
 
 public val vertexMaas: GoogleVertexMaasProvider = object : GoogleVertexMaasProvider {
     override val providerId: String = "google-vertex-maas"
     override val settings: GoogleVertexProviderSettings = GoogleVertexProviderSettings()
     override fun languageModel(modelId: String): LanguageModel =
-        throw AiSdkException("Google Vertex MaAS provider is not configured. Use createVertexMaas(client, settings).")
+        throw AiSdkRuntimeException("Google Vertex MaAS provider is not configured. Use createVertexMaas(client, settings).")
 }
 
 public val googleVertexXai: GoogleVertexXaiProvider = object : GoogleVertexXaiProvider {
     override val providerId: String = "google-vertex-xai"
     override val settings: GoogleVertexProviderSettings = GoogleVertexProviderSettings()
     override fun languageModel(modelId: String): LanguageModel =
-        throw AiSdkException("Google Vertex xAI provider is not configured. Use createGoogleVertexXai(client, settings).")
+        throw AiSdkRuntimeException("Google Vertex xAI provider is not configured. Use createGoogleVertexXai(client, settings).")
 }
 
 private class DefaultVertexAnthropicProvider(
@@ -265,7 +265,7 @@ private fun googleVertexAnthropicBaseURL(settings: GoogleVertexProviderSettings)
         ?: "https://${googleVertexApiHost(settings.location)}/v1/projects/${googleVertexProject(settings)}/locations/${settings.location}/publishers/anthropic/models"
 
 private fun googleVertexProject(settings: GoogleVertexProviderSettings): String =
-    settings.project ?: throw AiSdkException("Google Vertex project is required.")
+    settings.project ?: throw AiSdkRuntimeException("Google Vertex project is required.")
 
 private fun googleVertexApiHost(location: String): String =
     when (location) {

@@ -57,7 +57,7 @@ public fun createLuma(
 public val luma: LumaProvider = object : LumaProvider {
     override val providerId: String = "luma"
     override fun image(modelId: String): ImageModel =
-        throw AiSdkException("Luma provider is not configured. Use createLuma(client, settings).")
+        throw AiSdkRuntimeException("Luma provider is not configured. Use createLuma(client, settings).")
 }
 
 private class DefaultLumaProvider(
@@ -96,7 +96,7 @@ private class LumaImageModel(
             headers = lumaHeaders(settings, params.headers),
         )
         val generationId = create.value.jsonObject["id"]?.jsonPrimitive?.contentOrNull
-            ?: throw AiSdkException("Luma generation response is missing id")
+            ?: throw AiSdkRuntimeException("Luma generation response is missing id")
         val imageUrl = lumaPollImageUrl(
             client = client,
             baseURL = settings.baseURL.trimEnd('/'),
@@ -142,21 +142,19 @@ private fun JsonObjectBuilder.putLumaEditingOptions(
     options: JsonObject,
 ) {
     if (params.mask != null) {
-        throw AiSdkException(
-            "Luma AI does not support mask-based image editing. Use the prompt and reference images instead.",
-        )
+        throw AiSdkRuntimeException("Luma AI does not support mask-based image editing. Use the prompt and reference images instead.",)
     }
     if (params.files.isEmpty()) return
     val referenceType = options["referenceType"]?.jsonPrimitive?.contentOrNull ?: "image"
     val imageConfigs = options["images"]?.jsonArray.orEmpty().map { it.jsonObject }
     params.files.forEach { file ->
         if (file.url.isNullOrBlank()) {
-            throw AiSdkException("Luma AI only supports URL-based images. Base64 image data is not supported.")
+            throw AiSdkRuntimeException("Luma AI only supports URL-based images. Base64 image data is not supported.")
         }
     }
     when (referenceType) {
         "image" -> {
-            if (params.files.size > 4) throw AiSdkException("Luma AI image supports up to 4 reference images.")
+            if (params.files.size > 4) throw AiSdkRuntimeException("Luma AI image supports up to 4 reference images.")
             put("image", JsonArray(params.files.mapIndexed { index, file ->
                 buildJsonObject {
                     put("url", JsonPrimitive(file.url.orEmpty()))
@@ -177,7 +175,7 @@ private fun JsonObjectBuilder.putLumaEditingOptions(
                 identities.getOrPut(id) { mutableListOf() } += file.url.orEmpty()
             }
             identities.forEach { (id, images) ->
-                if (images.size > 4) throw AiSdkException("Luma AI character supports up to 4 images per identity. Identity '$id' has ${images.size} images.")
+                if (images.size > 4) throw AiSdkRuntimeException("Luma AI character supports up to 4 images per identity. Identity '$id' has ${images.size} images.")
             }
             put("character", buildJsonObject {
                 identities.forEach { (id, images) ->
@@ -188,13 +186,13 @@ private fun JsonObjectBuilder.putLumaEditingOptions(
             })
         }
         "modify_image" -> {
-            if (params.files.size > 1) throw AiSdkException("Luma AI modify_image only supports a single input image.")
+            if (params.files.size > 1) throw AiSdkRuntimeException("Luma AI modify_image only supports a single input image.")
             put("modify_image", buildJsonObject {
                 put("url", JsonPrimitive(params.files.single().url.orEmpty()))
                 put("weight", imageConfigs.firstOrNull()?.get("weight") ?: JsonPrimitive(1.0f))
             })
         }
-        else -> throw AiSdkException("Unsupported Luma referenceType: $referenceType")
+        else -> throw AiSdkRuntimeException("Unsupported Luma referenceType: $referenceType")
     }
 }
 
@@ -244,12 +242,12 @@ private suspend fun lumaPollImageUrl(
         val body = status.value.jsonObject
         when (body["state"]?.jsonPrimitive?.contentOrNull) {
             "completed" -> return body["assets"]?.jsonObject?.get("image")?.jsonPrimitive?.contentOrNull
-                ?: throw AiSdkException("Image generation completed but no image was found.")
-            "failed" -> throw AiSdkException("Image generation failed.")
+                ?: throw AiSdkRuntimeException("Image generation completed but no image was found.")
+            "failed" -> throw AiSdkRuntimeException("Image generation failed.")
         }
         if (pollIntervalMillis > 0 && attempt < maxPollAttempts - 1) delay(pollIntervalMillis)
     }
-    throw AiSdkException("Image generation timed out after $maxPollAttempts attempts.")
+    throw AiSdkRuntimeException("Image generation timed out after $maxPollAttempts attempts.")
 }
 
 private suspend fun lumaDownloadImage(

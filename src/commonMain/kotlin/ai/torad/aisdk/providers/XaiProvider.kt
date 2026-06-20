@@ -147,7 +147,7 @@ private object XaiProviderNotConfigured : XaiProvider {
     override fun image(modelId: XaiImageModelId): ImageModel = missing()
     override fun video(modelId: XaiVideoModelId): VideoModel = missing()
 
-    private fun missing(): Nothing = throw AiSdkException("xAI provider is not configured. Use createXai(client, settings).")
+    private fun missing(): Nothing = throw AiSdkRuntimeException("xAI provider is not configured. Use createXai(client, settings).")
 }
 
 private class DefaultXaiProvider(
@@ -300,7 +300,7 @@ private class XaiImageModel(
                 GeneratedFile(mediaType = "image/png", base64 = base64)
             } else {
                 val url = obj["url"]?.jsonPrimitive?.contentOrNull
-                    ?: throw AiSdkException("xAI image response is missing b64_json and url")
+                    ?: throw AiSdkRuntimeException("xAI image response is missing b64_json and url")
                 xaiDownloadImage(client, url, params.abortSignal)
             }
         }
@@ -346,7 +346,7 @@ private class XaiVideoModel(
             headers = xaiHeaders(settings, params.headers),
         )
         val requestId = create.value.jsonObject["request_id"]?.jsonPrimitive?.contentOrNull
-            ?: throw AiSdkException("No request_id returned from xAI video API")
+            ?: throw AiSdkRuntimeException("No request_id returned from xAI video API")
         val status = xaiPollVideo(
             client = client,
             settings = settings,
@@ -359,10 +359,10 @@ private class XaiVideoModel(
         val statusObj = status.value.jsonObject
         val video = statusObj["video"]?.jsonObject ?: JsonObject(emptyMap())
         if (video["respect_moderation"]?.jsonPrimitive?.booleanOrNull == false) {
-            throw AiSdkException("xAI video generation was blocked due to a content policy violation.")
+            throw AiSdkRuntimeException("xAI video generation was blocked due to a content policy violation.")
         }
         val videoUrl = video["url"]?.jsonPrimitive?.contentOrNull
-            ?: throw AiSdkException("xAI video generation completed but no video URL was returned.")
+            ?: throw AiSdkRuntimeException("xAI video generation completed but no video URL was returned.")
         return VideoModelResult(
             videos = listOf(GeneratedFile(mediaType = "video/mp4", base64 = "", url = videoUrl)),
             warnings = warnings,
@@ -467,7 +467,7 @@ private fun ImageGenerationFile.xaiDataUri(): String {
     url?.takeIf { it.isNotBlank() }?.let { return it }
     val mediaType = mediaType ?: "application/octet-stream"
     val data = base64?.takeIf { it.isNotBlank() }
-        ?: throw AiSdkException("xAI image file must include either url or base64 data.")
+        ?: throw AiSdkRuntimeException("xAI image file must include either url or base64 data.")
     return "data:$mediaType;base64,$data"
 }
 
@@ -633,9 +633,9 @@ private suspend fun xaiPollVideo(
         val statusValue = body["status"]?.jsonPrimitive?.contentOrNull
         val hasVideoUrl = body["video"]?.jsonObject?.get("url")?.jsonPrimitive?.contentOrNull != null
         if (statusValue == "done" || (statusValue == null && hasVideoUrl)) return status
-        if (statusValue in setOf("failed", "error")) throw AiSdkException("xAI video generation failed: $body")
+        if (statusValue in setOf("failed", "error")) throw AiSdkRuntimeException("xAI video generation failed: $body")
     }
-    throw AiSdkException("xAI video generation timed out after ${pollTimeoutMs}ms")
+    throw AiSdkRuntimeException("xAI video generation timed out after ${pollTimeoutMs}ms")
 }
 
 private fun xaiHeaders(settings: XaiProviderSettings, callHeaders: Map<String, String> = emptyMap()): Map<String, String> {
