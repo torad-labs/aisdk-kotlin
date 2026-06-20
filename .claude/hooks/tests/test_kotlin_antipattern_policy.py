@@ -1,5 +1,11 @@
 #!/usr/bin/env python3
-"""Tests for the repo-local Kotlin anti-pattern policy (14 catalog/tenet-derived ast-grep rules)."""
+"""Tests for the repo-local Kotlin anti-pattern policy.
+
+Target architecture = decision C (Kotlin-native, class-based). The defining rule is
+no-camelcase-top-level-function: logic lives on types / in cohesive units, so the ONLY
+legal top-level callable is a PascalCase factory faux-constructor. Carriers below are
+class members / factories so each case isolates the rule under test.
+"""
 from __future__ import annotations
 
 import importlib.util
@@ -50,40 +56,41 @@ with tempfile.TemporaryDirectory() as tmp:
     kt = str(Path(tmp) / "Sample.kt")
     P = "package x\n\n"
 
-    # === BLOCK (severity: error) ===
+    # === BLOCK (severity: error) — carriers isolate each rule ===
     blocks = {
-        "nullable prompt/messages bag": P + "public fun g(p: String?, m: List<Int>) {\n    require(p != null || m.isNotEmpty()) { \"x\" }\n}\n",
-        "throw-in-stream-error-fn": P + "public suspend fun error(t: Throwable) {\n    throw t\n}\n",
+        "camelCase top-level function (C)": P + "public fun generateText(): Unit = Unit\n",
+        "internal camelCase top-level function (C)": P + "internal fun helper(): Int = 1\n",
+        "camelCase top-level extension function (C)": P + "public fun String.titleCase(): String = this\n",
+        "nullable prompt/messages bag": P + "public class C {\n    fun chk(p: String?, m: List<Int>) {\n        require(p != null || m.isNotEmpty()) { \"x\" }\n    }\n}\n",
+        "throw-in-stream-error-fn": P + "public class C {\n    public suspend fun error(t: Throwable) {\n        throw t\n    }\n}\n",
         "secondary constructor": P + "public class C(val a: Int) {\n    constructor(b: String) : this(b.length)\n}\n",
         "implicitly-public mutable var": P + "public class C {\n    var loading: Boolean = false\n}\n",
         "top-level mutable var": P + "var counter: Int = 0\n",
         "mutable companion state": P + "public class C {\n    public companion object {\n        var cache: Int = 0\n    }\n}\n",
-        "private top-level function": P + "private fun helper(): Int = 1\n",
         "lateinit var": P + "public class C {\n    lateinit var late: String\n}\n",
         "sealed interface (bodied)": P + "public sealed interface Shape {\n    public val x: Int\n}\n",
         "sealed interface (bodyless)": P + "public sealed interface Marker\n",
-        "not-null assertion": P + "public fun f(s: String?): String = s!!\n",
+        "not-null assertion": P + "public class C {\n    fun f(s: String?): String = s!!\n}\n",
     }
     for name, content in blocks.items():
         check(f"BLOCK: {name}", kind_of(content, kt) == "block")
 
-    # === WARN (severity: warning) ===
+    # === WARN (severity: warning) — member carriers so camelCase rule doesn't preempt ===
     warns = {
         "String typealias": P + "public typealias FooId = String\n",
-        "JsonNull sentinel": P + "public fun f(i: JsonElement?): JsonElement = i ?: JsonNull\n",
-        "empty-string sentinel": P + "public fun f(s: String?): String = s ?: \"\"\n",
-        "providerOptions JsonObject cast": P + "public fun f(providerOptions: Map<String, JsonElement>) = providerOptions[\"k\"] as? JsonObject\n",
+        "JsonNull sentinel": P + "public class C {\n    fun f(i: JsonElement?): JsonElement = i ?: JsonNull\n}\n",
+        "empty-string sentinel": P + "public class C {\n    fun f(s: String?): String = s ?: \"\"\n}\n",
+        "providerOptions JsonObject cast": P + "public class C {\n    fun f(providerOptions: Map<String, JsonElement>) = providerOptions[\"k\"] as? JsonObject\n}\n",
     }
     for name, content in warns.items():
         check(f"WARN: {name}", kind_of(content, kt) == "warn")
 
-    # === PASS — legitimate code & regression guards ===
+    # === PASS — the C-world idioms ===
     passes = {
-        "public top-level function (functional API)": P + "public fun summarize(text: String): String = text.trim()\n",
-        "internal top-level function (testable helper)": P + "internal fun helper(): Int = 1\n",
-        "extension function": P + "public fun String.titleCase(): String = this\n",
+        "PascalCase factory faux-constructor": P + "public fun TextGenerator(model: String): String = model\n",
         "public member function": P + "public class C {\n    public fun m(): Int = 1\n}\n",
-        "private member function (testable via class)": P + "public class C {\n    private fun m(): Int = 1\n}\n",
+        "private member function": P + "public class C {\n    private fun m(): Int = 1\n}\n",
+        "member extension function": P + "public class C {\n    public fun String.ext(): String = this\n}\n",
         "private member var": P + "public class C {\n    private var secret: Int = 0\n}\n",
         "val property": P + "public class C {\n    val identity: String = \"x\"\n}\n",
         "non-sealed interface": P + "public interface Transport {\n    public fun send(): Int\n}\n",
@@ -93,7 +100,7 @@ with tempfile.TemporaryDirectory() as tmp:
         check(f"PASS: {name}", kind_of(content, kt) is None)
 
     # === incremental: pre-existing block pattern is grandfathered ===
-    legacy = P + "public fun g(p: String?, m: List<Int>) {\n    require(p != null || m.isNotEmpty()) { \"x\" }\n    val y = 1\n}\n"
+    legacy = P + "public class C {\n    fun chk(p: String?, m: List<Int>) {\n        require(p != null || m.isNotEmpty()) { \"x\" }\n        val y = 1\n    }\n}\n"
     Path(kt).write_text(legacy, encoding="utf-8")
     unrelated = policy.run({"tool_name": "Edit", "tool_input": {"file_path": kt, "old_string": "val y = 1", "new_string": "val y = 2"}})
     check("incremental: edit not touching pre-existing require-bag PASSES", unrelated is None)
@@ -111,15 +118,15 @@ def run_local_hook(payload: dict) -> subprocess.CompletedProcess[str]:
 
 blocked = run_local_hook({"tool_name": "Write", "tool_input": {
     "file_path": "/tmp/Sample.kt",
-    "content": "package x\n\npublic class C(val a: Int) {\n    constructor(b: String) : this(b.length)\n}\n",
+    "content": "package x\n\npublic fun generateText(): Unit = Unit\n",
 }})
-check("orchestrator BLOCKS a secondary constructor", '"decision": "block"' in blocked.stdout)
+check("orchestrator BLOCKS a camelCase top-level function", '"decision": "block"' in blocked.stdout)
 
 allowed = run_local_hook({"tool_name": "Write", "tool_input": {
     "file_path": "/tmp/Sample.kt",
-    "content": "package x\n\npublic fun topLevelApi(): Unit = Unit\n",
+    "content": "package x\n\npublic fun TextGenerator(model: String): String = model\n",
 }})
-check("orchestrator does NOT block a public top-level function", '"decision": "block"' not in allowed.stdout)
+check("orchestrator does NOT block a PascalCase factory", '"decision": "block"' not in allowed.stdout)
 
 
 if failures:

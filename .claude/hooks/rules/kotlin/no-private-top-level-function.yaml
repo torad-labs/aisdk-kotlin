@@ -1,8 +1,0 @@
-id: no-private-top-level-function
-language: kotlin
-severity: error
-rule:
-  all:
-    - kind: function_declaration
-    - inside: { kind: source_file }
-    - has: { kind: modifiers, has: { kind: visibility_modifier, regex: "^private$" } }
