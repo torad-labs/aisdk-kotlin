@@ -98,13 +98,13 @@ class GoogleProviderTest {
                 topK = 40,
                 maxOutputTokens = 64,
                 responseFormat = ResponseFormat.Json(schemaJson = objectSchema("answer")),
-                providerOptions = mapOf(
+                providerOptions = ProviderOptions.Raw(JsonObject(mapOf(
                     "google" to buildJsonObject {
                         put("responseModalities", Json.parseToJsonElement("""["TEXT"]"""))
                         put("thinkingConfig", buildJsonObject { put("thinkingBudget", JsonPrimitive(128)) })
                         put("serviceTier", JsonPrimitive("priority"))
                     },
-                ),
+                ))),
                 headers = mapOf("X-Request" to "request"),
             ),
         )
@@ -378,12 +378,12 @@ class GoogleProviderTest {
         val embeddings = provider.embedding("text-embedding-004").embed(
             EmbeddingModelCallParams(
                 values = listOf("one", "two"),
-                providerOptions = mapOf(
+                providerOptions = ProviderOptions.Raw(JsonObject(mapOf(
                     "google" to buildJsonObject {
                         put("taskType", JsonPrimitive("RETRIEVAL_QUERY"))
                         put("outputDimensionality", JsonPrimitive(256))
                     },
-                ),
+                ))),
             ),
         )
         val image = provider.image("imagen-4.0-generate-001").generate(
@@ -391,7 +391,7 @@ class GoogleProviderTest {
                 prompt = "A product render",
                 n = 1,
                 aspectRatio = "16:9",
-                providerOptions = mapOf("google" to buildJsonObject { put("personGeneration", JsonPrimitive("dont_allow")) }),
+                providerOptions = ProviderOptions.Raw(JsonObject(mapOf("google" to buildJsonObject { put("personGeneration", JsonPrimitive("dont_allow")) }))),
             ),
         )
         val video = provider.video("veo-3.1-generate-preview").generate(
@@ -401,7 +401,7 @@ class GoogleProviderTest {
                 aspectRatio = "16:9",
                 durationSeconds = 4f,
                 resolution = "1920x1080",
-                providerOptions = mapOf("google" to buildJsonObject { put("negativePrompt", JsonPrimitive("blur")) }),
+                providerOptions = ProviderOptions.Raw(JsonObject(mapOf("google" to buildJsonObject { put("negativePrompt", JsonPrimitive("blur")) }))),
             ),
         )
 
@@ -548,7 +548,7 @@ class GoogleProviderTest {
                 stopSequences = listOf("END"),
                 seed = 7,
                 responseFormat = ResponseFormat.Json(schemaJson = objectSchema("answer")),
-                providerOptions = mapOf(
+                providerOptions = ProviderOptions.Raw(JsonObject(mapOf(
                     "google" to buildJsonObject {
                         put("store", JsonPrimitive(true))
                         put("previousInteractionId", JsonPrimitive("prior-1"))
@@ -561,7 +561,7 @@ class GoogleProviderTest {
                         )
                         put("serviceTier", JsonPrimitive("priority"))
                     },
-                ),
+                ))),
                 headers = mapOf("X-Request" to "request"),
             ),
         )
@@ -688,7 +688,7 @@ class GoogleProviderTest {
                     messages = listOf(userMessage("research this")),
                     tools = listOf(LanguageModelTool("lookup", "Lookup.", objectSchema("q").toString())),
                     temperature = 0.1f,
-                    providerOptions = mapOf(
+                    providerOptions = ProviderOptions.Raw(JsonObject(mapOf(
                         "google" to buildJsonObject {
                             put("background", JsonPrimitive(true))
                             put(
@@ -700,7 +700,7 @@ class GoogleProviderTest {
                                 Json.parseToJsonElement("""{"type":"remote","sources":[{"type":"inline","content":"notes","target":"/tmp/notes.txt"}],"network":{"allowlist":[{"domain":"example.com"}]}}"""),
                             )
                         },
-                    ),
+                    ))),
                 ),
             ),
         )

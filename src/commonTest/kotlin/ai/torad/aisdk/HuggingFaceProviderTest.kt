@@ -159,7 +159,7 @@ class HuggingFaceProviderTest {
                     schemaDescription = "Structured answer.",
                     schemaJson = objectSchema("answer"),
                 ),
-                providerOptions = mapOf(
+                providerOptions = ProviderOptions.Raw(JsonObject(mapOf(
                     "huggingface" to buildJsonObject {
                         put(
                             "metadata",
@@ -169,7 +169,7 @@ class HuggingFaceProviderTest {
                         put("strictJsonSchema", JsonPrimitive(true))
                         put("reasoningEffort", JsonPrimitive("medium"))
                     },
-                ),
+                ))),
                 headers = mapOf("X-Request" to "request"),
             ),
         )

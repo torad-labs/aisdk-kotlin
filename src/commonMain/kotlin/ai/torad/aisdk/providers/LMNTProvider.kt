@@ -148,8 +148,8 @@ private fun lmntHeaders(settings: LMNTProviderSettings, callHeaders: Map<String,
     return ProviderHeaders.withUserAgentSuffix(base, "ai-sdk/lmnt/$LMNT_VERSION")
 }
 
-private fun lmntOptions(providerOptions: Map<String, JsonElement>): JsonObject =
-    providerOptions["lmnt"] as? JsonObject ?: JsonObject(emptyMap())
+private fun lmntOptions(providerOptions: ProviderOptions): JsonObject =
+    providerOptions.toMap()["lmnt"] as? JsonObject ?: JsonObject(emptyMap())
 
 private fun lmntResponseFormat(value: String?, warnings: MutableList<CallWarning>): String {
     val format = value ?: "mp3"

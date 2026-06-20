@@ -240,8 +240,8 @@ private fun quiverAIHeaders(settings: QuiverAIProviderSettings, callHeaders: Map
     return ProviderHeaders.withUserAgentSuffix(base, "ai-sdk/quiverai/$QUIVERAI_VERSION")
 }
 
-private fun quiverAIOptions(providerOptions: Map<String, JsonElement>): JsonObject =
-    providerOptions["quiverai"] as? JsonObject ?: JsonObject(emptyMap())
+private fun quiverAIOptions(providerOptions: ProviderOptions): JsonObject =
+    providerOptions.toMap()["quiverai"] as? JsonObject ?: JsonObject(emptyMap())
 
 private fun quiverAIOperationPath(operation: String): String =
     if (operation == "generate") "/svgs/generations" else "/svgs/vectorizations"

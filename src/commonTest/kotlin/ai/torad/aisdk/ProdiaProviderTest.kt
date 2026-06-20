@@ -20,6 +20,7 @@ import kotlin.test.assertFailsWith
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 import ai.torad.aisdk.providers.Prodia
+import kotlinx.serialization.json.JsonObject
 
 class ProdiaProviderTest {
     @Test
@@ -51,7 +52,7 @@ class ProdiaProviderTest {
                 n = 2,
                 size = "512x768",
                 seed = 9,
-                providerOptions = mapOf(
+                providerOptions = ProviderOptions.Raw(JsonObject(mapOf(
                     "prodia" to buildJsonObject {
                         put("width", JsonPrimitive(640))
                         put("steps", JsonPrimitive(4))
@@ -61,7 +62,7 @@ class ProdiaProviderTest {
                         })
                         put("progressive", JsonPrimitive(true))
                     },
-                ),
+                ))),
                 headers = mapOf("X-Request" to "request"),
             ),
         )
@@ -133,7 +134,7 @@ class ProdiaProviderTest {
                 temperature = 0.4f,
                 tools = listOf(LanguageModelTool("ignored", "ignored", """{"type":"object"}""")),
                 responseFormat = ResponseFormat.Json(),
-                providerOptions = mapOf("prodia" to buildJsonObject { put("aspectRatio", JsonPrimitive("16:9")) }),
+                providerOptions = ProviderOptions.Raw(JsonObject(mapOf("prodia" to buildJsonObject { put("aspectRatio", JsonPrimitive("16:9")) }))),
                 headers = mapOf("X-Request" to "request"),
             ),
         )
@@ -199,7 +200,7 @@ class ProdiaProviderTest {
             VideoGenerationParams(
                 prompt = "camera pan",
                 seed = 77,
-                providerOptions = mapOf("prodia" to buildJsonObject { put("resolution", JsonPrimitive("720p")) }),
+                providerOptions = ProviderOptions.Raw(JsonObject(mapOf("prodia" to buildJsonObject { put("resolution", JsonPrimitive("720p")) }))),
             ),
         )
         val imageResult = model.generate(

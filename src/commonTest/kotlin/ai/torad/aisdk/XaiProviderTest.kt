@@ -22,6 +22,7 @@ import kotlin.test.assertIs
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 import ai.torad.aisdk.providers.Xai
+import kotlinx.serialization.json.JsonObject
 
 class XaiProviderTest {
     @Test
@@ -78,7 +79,7 @@ class XaiProviderTest {
             LanguageModelCallParams(
                 messages = listOf(userMessage("Hello")),
                 maxOutputTokens = 128,
-                providerOptions = mapOf(
+                providerOptions = ProviderOptions.Raw(JsonObject(mapOf(
                     "xai" to buildJsonObject {
                         put("topLogprobs", JsonPrimitive(3))
                         put(
@@ -102,14 +103,14 @@ class XaiProviderTest {
                             },
                         )
                     },
-                ),
+                ))),
                 headers = mapOf("X-Request" to "request"),
             ),
         )
         val responses = provider.responses("grok-4").generate(
             LanguageModelCallParams(
                 messages = listOf(userMessage("Hi")),
-                providerOptions = mapOf("xai" to buildJsonObject { put("reasoningEffort", JsonPrimitive("low")) }),
+                providerOptions = ProviderOptions.Raw(JsonObject(mapOf("xai" to buildJsonObject { put("reasoningEffort", JsonPrimitive("low")) }))),
             ),
         )
 
@@ -166,7 +167,7 @@ class XaiProviderTest {
                         xaiUnsupportedToolSchema(),
                     ),
                 ),
-                providerOptions = mapOf(
+                providerOptions = ProviderOptions.Raw(JsonObject(mapOf(
                     "xai" to buildJsonObject {
                         put(
                             "searchParameters",
@@ -185,7 +186,7 @@ class XaiProviderTest {
                             },
                         )
                     },
-                ),
+                ))),
             ),
         )
         val body = fixture.calls.single().requestBodyJson.jsonObject
@@ -261,7 +262,7 @@ class XaiProviderTest {
                 size = "1024x1024",
                 seed = 42,
                 aspectRatio = "16:9",
-                providerOptions = mapOf(
+                providerOptions = ProviderOptions.Raw(JsonObject(mapOf(
                     "xai" to buildJsonObject {
                         put("output_format", JsonPrimitive("jpeg"))
                         put("sync_mode", JsonPrimitive(true))
@@ -269,7 +270,7 @@ class XaiProviderTest {
                         put("quality", JsonPrimitive("high"))
                         put("user", JsonPrimitive("user-1"))
                     },
-                ),
+                ))),
             ),
         )
         val edited = model.generate(
@@ -347,11 +348,11 @@ class XaiProviderTest {
                 resolution = "1280x720",
                 fps = 24,
                 seed = 7,
-                providerOptions = mapOf("xai" to buildJsonObject {
+                providerOptions = ProviderOptions.Raw(JsonObject(mapOf("xai" to buildJsonObject {
                     put("pollIntervalMs", JsonPrimitive(0))
                     put("pollTimeoutMs", JsonPrimitive(1))
                     put("custom_option", JsonPrimitive("kept"))
-                }),
+                }))),
             ),
         )
         val edited = model.generate(
@@ -360,12 +361,12 @@ class XaiProviderTest {
                 durationSeconds = 3f,
                 aspectRatio = "1:1",
                 resolution = "1280x720",
-                providerOptions = mapOf("xai" to buildJsonObject {
+                providerOptions = ProviderOptions.Raw(JsonObject(mapOf("xai" to buildJsonObject {
                     put("mode", JsonPrimitive("edit-video"))
                     put("videoUrl", JsonPrimitive("https://example.com/source.mp4"))
                     put("pollIntervalMs", JsonPrimitive(0))
                     put("pollTimeoutMs", JsonPrimitive(1))
-                }),
+                }))),
             ),
         )
 

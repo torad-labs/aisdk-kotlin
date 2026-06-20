@@ -306,8 +306,8 @@ private fun assemblyAIHeaders(settings: AssemblyAIProviderSettings, callHeaders:
     return ProviderHeaders.withUserAgentSuffix(base, "ai-sdk/assemblyai/$ASSEMBLYAI_VERSION")
 }
 
-private fun assemblyAIOptions(providerOptions: Map<String, JsonElement>): JsonObject =
-    providerOptions["assemblyai"] as? JsonObject ?: JsonObject(emptyMap())
+private fun assemblyAIOptions(providerOptions: ProviderOptions): JsonObject =
+    providerOptions.toMap()["assemblyai"] as? JsonObject ?: JsonObject(emptyMap())
 
 private fun assemblyAIErrorMessage(statusCode: Int, parsed: JsonElement?, raw: String): String {
     val obj = parsed as? JsonObject

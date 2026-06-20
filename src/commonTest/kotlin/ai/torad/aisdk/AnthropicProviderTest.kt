@@ -167,7 +167,7 @@ class AnthropicProviderTest {
                 presencePenalty = 0.2f,
                 seed = 7,
                 responseFormat = ResponseFormat.Json(schemaJson = objectSchema("answer")),
-                providerOptions = mapOf(
+                providerOptions = ProviderOptions.Raw(JsonObject(mapOf(
                     "anthropic" to buildJsonObject {
                         put("thinking", buildJsonObject {
                             put("type", JsonPrimitive("enabled"))
@@ -214,7 +214,7 @@ class AnthropicProviderTest {
                         })
                         put("anthropicBeta", JsonArray(listOf(JsonPrimitive("custom-beta"))))
                     },
-                ),
+                ))),
                 headers = mapOf("X-Request" to "request"),
             ),
         )

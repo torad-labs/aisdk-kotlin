@@ -19,6 +19,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertTrue
 import ai.torad.aisdk.providers.AssemblyAI
+import kotlinx.serialization.json.JsonObject
 
 class AssemblyAIProviderTest {
     @Test
@@ -55,7 +56,7 @@ class AssemblyAIProviderTest {
                     filename = "clip.mp3",
                 ),
                 language = "en_us",
-                providerOptions = mapOf(
+                providerOptions = ProviderOptions.Raw(JsonObject(mapOf(
                     "assemblyai" to buildJsonObject {
                         put("audioEndAt", JsonPrimitive(10))
                         put("autoChapters", JsonPrimitive(true))
@@ -74,7 +75,7 @@ class AssemblyAIProviderTest {
                         put("speechThreshold", JsonPrimitive(0.7f))
                         put("wordBoost", buildJsonArray { add(JsonPrimitive("Kotlin")) })
                     },
-                ),
+                ))),
             ),
         )
 

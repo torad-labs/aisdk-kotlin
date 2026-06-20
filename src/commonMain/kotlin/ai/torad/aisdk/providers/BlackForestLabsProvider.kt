@@ -332,8 +332,8 @@ private fun bflHeaders(settings: BlackForestLabsProviderSettings, callHeaders: M
     return ProviderHeaders.withUserAgentSuffix(base, "ai-sdk/black-forest-labs/$BLACK_FOREST_LABS_VERSION")
 }
 
-private fun bflOptions(providerOptions: Map<String, JsonElement>): JsonObject =
-    providerOptions["blackForestLabs"] as? JsonObject ?: JsonObject(emptyMap())
+private fun bflOptions(providerOptions: ProviderOptions): JsonObject =
+    providerOptions.toMap()["blackForestLabs"] as? JsonObject ?: JsonObject(emptyMap())
 
 private fun bflPollUrl(pollingUrl: String, requestId: String): String {
     val hasId = pollingUrl.substringAfter('?', missingDelimiterValue = "").split('&').any { it.substringBefore('=') == "id" }

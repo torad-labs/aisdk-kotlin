@@ -19,6 +19,7 @@ import kotlin.test.assertFailsWith
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 import ai.torad.aisdk.providers.Mistral
+import kotlinx.serialization.json.JsonObject
 
 class MistralProviderTest {
     @Test
@@ -53,7 +54,7 @@ class MistralProviderTest {
                 messages = listOf(userMessage("Hello")),
                 maxOutputTokens = 256,
                 seed = 77,
-                providerOptions = mapOf(
+                providerOptions = ProviderOptions.Raw(JsonObject(mapOf(
                     "mistral" to buildJsonObject {
                         put("safePrompt", JsonPrimitive(true))
                         put("documentImageLimit", JsonPrimitive(2))
@@ -62,7 +63,7 @@ class MistralProviderTest {
                         put("reasoningEffort", JsonPrimitive("high"))
                         put("strictJsonSchema", JsonPrimitive(false))
                     },
-                ),
+                ))),
                 headers = mapOf("X-Request" to "request"),
             ),
         )

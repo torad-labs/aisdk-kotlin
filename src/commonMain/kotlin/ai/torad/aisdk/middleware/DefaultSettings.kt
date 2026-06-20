@@ -8,6 +8,8 @@ import ai.torad.aisdk.MiddlewareOperation
 import ai.torad.aisdk.ResponseFormat
 import ai.torad.aisdk.ToolChoice
 import ai.torad.aisdk.JsonOps
+import ai.torad.aisdk.ProviderOptions
+import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonElement
 
 /**
@@ -31,7 +33,7 @@ public fun defaultSettingsMiddleware(
     tools: List<LanguageModelTool> = emptyList(),
     toolChoice: ToolChoice? = null,
     headers: Map<String, String> = emptyMap(),
-    providerOptions: Map<String, JsonElement> = emptyMap(),
+    providerOptions: ProviderOptions = ProviderOptions.None,
     presencePenalty: Float? = null,
     frequencyPenalty: Float? = null,
     responseFormat: ResponseFormat = ResponseFormat.Text,
@@ -50,7 +52,7 @@ public fun defaultSettingsMiddleware(
         tools = params.tools.ifEmpty { tools },
         toolChoice = if (params.toolChoice == ToolChoice.Auto && toolChoice != null) toolChoice else params.toolChoice,
         headers = headers + params.headers,
-        providerOptions = JsonOps.mergeProviderOptions(providerOptions, params.providerOptions),
+        providerOptions = ProviderOptions.Raw(JsonObject(JsonOps.mergeProviderOptions(providerOptions.toMap(), params.providerOptions.toMap()))),
         presencePenalty = params.presencePenalty ?: presencePenalty,
         frequencyPenalty = params.frequencyPenalty ?: frequencyPenalty,
         responseFormat = if (params.responseFormat == ResponseFormat.Text) responseFormat else params.responseFormat,

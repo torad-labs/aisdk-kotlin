@@ -257,7 +257,7 @@ private class BedrockEmbeddingModel(
         }
         val value = params.values.singleOrNull()
             ?: throw InvalidArgumentError("values", "Amazon Bedrock embedding requires one value.")
-        val options = params.providerOptions["bedrock"] as? JsonObject ?: JsonObject(emptyMap())
+        val options = params.providerOptions.toMap()["bedrock"] as? JsonObject ?: JsonObject(emptyMap())
         val body = bedrockEmbeddingBody(modelId, value, options)
         val response = bedrockPostJson(
             client = client,
@@ -323,7 +323,7 @@ private class BedrockRerankingModel(
 
     override suspend fun rerank(params: RerankingParams): RerankingModelResult {
         params.abortSignal.throwIfAborted()
-        val options = params.providerOptions["bedrock"] as? JsonObject ?: JsonObject(emptyMap())
+        val options = params.providerOptions.toMap()["bedrock"] as? JsonObject ?: JsonObject(emptyMap())
         val body = bedrockRerankBody(settings.region ?: "us-east-1", modelId, params, options)
         val response = bedrockPostJson(
             client = client,
@@ -447,7 +447,7 @@ private fun bedrockChatRequestBody(
     params.frequencyPenalty?.let { warnings += CallWarning("unsupported", "frequencyPenalty") }
     params.presencePenalty?.let { warnings += CallWarning("unsupported", "presencePenalty") }
     params.seed?.let { warnings += CallWarning("unsupported", "seed") }
-    val options = params.providerOptions["bedrock"] as? JsonObject ?: JsonObject(emptyMap())
+    val options = params.providerOptions.toMap()["bedrock"] as? JsonObject ?: JsonObject(emptyMap())
     // Anthropic thinking changes inferenceConfig: the thinking budget is added to maxTokens
     // (Bedrock counts it against the output budget) and Bedrock rejects temperature/topP/topK
     // for thinking-enabled Anthropic calls, so they're stripped (matching upstream).
@@ -791,7 +791,7 @@ private fun bedrockEmbeddingTokens(response: JsonObject): Int =
 private fun bedrockImageBody(params: ImageGenerationParams): BedrockPreparedImageRequest {
     val warnings = mutableListOf<CallWarning>()
     if (params.aspectRatio != null) warnings += CallWarning("unsupported", "aspectRatio")
-    val options = params.providerOptions["bedrock"] as? JsonObject ?: JsonObject(emptyMap())
+    val options = params.providerOptions.toMap()["bedrock"] as? JsonObject ?: JsonObject(emptyMap())
     val sizeParts = params.size?.split("x")?.mapNotNull { it.toIntOrNull() }.orEmpty()
     val imageGenerationConfig = buildJsonObject {
         sizeParts.getOrNull(0)?.let { put("width", JsonPrimitive(it)) }

@@ -18,6 +18,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertTrue
 import ai.torad.aisdk.providers.Revai
+import kotlinx.serialization.json.JsonObject
 
 class RevaiProviderTest {
     @Test
@@ -54,7 +55,7 @@ class RevaiProviderTest {
                     filename = "clip.wav",
                 ),
                 language = "en",
-                providerOptions = mapOf(
+                providerOptions = ProviderOptions.Raw(JsonObject(mapOf(
                     "revai" to buildJsonObject {
                         put("metadata", JsonPrimitive("job-metadata"))
                         put("rush", JsonPrimitive(true))
@@ -94,7 +95,7 @@ class RevaiProviderTest {
                             },
                         )
                     },
-                ),
+                ))),
             ),
         )
 

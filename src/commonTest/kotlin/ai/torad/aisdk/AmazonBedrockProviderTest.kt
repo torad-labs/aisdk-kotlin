@@ -124,7 +124,7 @@ class AmazonBedrockProviderTest {
                 topK = 10,
                 maxOutputTokens = 64,
                 responseFormat = ResponseFormat.Json(schemaJson = objectSchema("answer")),
-                providerOptions = mapOf(
+                providerOptions = ProviderOptions.Raw(JsonObject(mapOf(
                     "bedrock" to buildJsonObject {
                         put("serviceTier", JsonPrimitive("priority"))
                         put(
@@ -137,7 +137,7 @@ class AmazonBedrockProviderTest {
                         )
                         put("anthropicBeta", Json.parseToJsonElement("""["beta-1"]"""))
                     },
-                ),
+                ))),
                 headers = mapOf("X-Request" to "request"),
             ),
         )
@@ -403,12 +403,12 @@ class AmazonBedrockProviderTest {
         val embedding = provider.embedding("amazon.titan-embed-text-v2:0").embed(
             EmbeddingModelCallParams(
                 values = listOf("embed me"),
-                providerOptions = mapOf(
+                providerOptions = ProviderOptions.Raw(JsonObject(mapOf(
                     "bedrock" to buildJsonObject {
                         put("dimensions", JsonPrimitive(256))
                         put("normalize", JsonPrimitive(true))
                     },
-                ),
+                ))),
             ),
         )
         val image = provider.image("amazon.titan-image-generator-v2:0").generate(
@@ -417,9 +417,9 @@ class AmazonBedrockProviderTest {
                 n = 2,
                 size = "512x768",
                 seed = 42,
-                providerOptions = mapOf(
+                providerOptions = ProviderOptions.Raw(JsonObject(mapOf(
                     "bedrock" to buildJsonObject { put("negativeText", JsonPrimitive("blur")) },
-                ),
+                ))),
             ),
         )
         val rerank = provider.reranking("amazon.rerank-v1:0").rerank(

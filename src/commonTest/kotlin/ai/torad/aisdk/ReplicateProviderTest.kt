@@ -19,6 +19,7 @@ import kotlin.test.assertFailsWith
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 import ai.torad.aisdk.providers.Replicate
+import kotlinx.serialization.json.JsonObject
 
 class ReplicateProviderTest {
     @Test
@@ -51,14 +52,14 @@ class ReplicateProviderTest {
                 seed = 9,
                 files = listOf(ImageGenerationFile(mediaType = "image/png", base64 = "imgb64")),
                 mask = ImageGenerationFile(url = "https://example.com/mask.png"),
-                providerOptions = mapOf(
+                providerOptions = ProviderOptions.Raw(JsonObject(mapOf(
                     "replicate" to buildJsonObject {
                         put("maxWaitTimeInSeconds", JsonPrimitive(5))
                         put("guidance_scale", JsonPrimitive(3.5))
                         put("negative_prompt", JsonPrimitive("blur"))
                         put("custom_option", JsonPrimitive("kept"))
                     },
-                ),
+                ))),
             ),
         )
 
@@ -158,7 +159,7 @@ class ReplicateProviderTest {
                 seed = 77,
                 fps = 24,
                 resolution = "720p",
-                providerOptions = mapOf(
+                providerOptions = ProviderOptions.Raw(JsonObject(mapOf(
                     "replicate" to buildJsonObject {
                         put("maxWaitTimeInSeconds", JsonPrimitive(1))
                         put("pollIntervalMs", JsonPrimitive(0))
@@ -167,7 +168,7 @@ class ReplicateProviderTest {
                         put("prompt_optimizer", JsonPrimitive(true))
                         put("custom_video_option", JsonPrimitive("kept"))
                     },
-                ),
+                ))),
             ),
         )
 

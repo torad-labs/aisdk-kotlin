@@ -16,6 +16,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 import ai.torad.aisdk.providers.ElevenLabs
+import kotlinx.serialization.json.JsonObject
 
 class ElevenLabsProviderTest {
     @Test
@@ -41,7 +42,7 @@ class ElevenLabsProviderTest {
                 language = "es",
                 speed = 1.2f,
                 instructions = "ignore",
-                providerOptions = mapOf(
+                providerOptions = ProviderOptions.Raw(JsonObject(mapOf(
                     "elevenlabs" to buildJsonObject {
                         put("seed", JsonPrimitive(123))
                         // languageCode is set too, but params.language ("es") must win (upstream order).
@@ -55,7 +56,7 @@ class ElevenLabsProviderTest {
                             },
                         )
                     },
-                ),
+                ))),
             ),
         )
 
@@ -101,7 +102,7 @@ class ElevenLabsProviderTest {
                     base64 = Base64Codec.encode(byteArrayOf(1, 2, 3)),
                     filename = "clip.mp3",
                 ),
-                providerOptions = mapOf(
+                providerOptions = ProviderOptions.Raw(JsonObject(mapOf(
                     "elevenlabs" to buildJsonObject {
                         put("languageCode", JsonPrimitive("en"))
                         put("diarize", JsonPrimitive(false))
@@ -109,7 +110,7 @@ class ElevenLabsProviderTest {
                         put("timestampsGranularity", JsonPrimitive("word"))
                         put("fileFormat", JsonPrimitive("other"))
                     },
-                ),
+                ))),
             ),
         )
 

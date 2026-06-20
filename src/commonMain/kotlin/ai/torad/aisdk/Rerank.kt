@@ -14,7 +14,7 @@ public data class RerankingParams(
     val query: String,
     val documents: List<String>,
     val topN: Int? = null,
-    val providerOptions: Map<String, JsonElement> = emptyMap(),
+    val providerOptions: ProviderOptions = ProviderOptions.None,
     val headers: Map<String, String> = emptyMap(),
     val abortSignal: AbortSignal = AbortSignalNever,
 )
@@ -57,7 +57,7 @@ public object Reranking {
         query: String,
         documents: List<String>,
         topN: Int? = null,
-        providerOptions: Map<String, JsonElement> = emptyMap(),
+        providerOptions: ProviderOptions = ProviderOptions.None,
         headers: Map<String, String> = emptyMap(),
         abortSignal: AbortSignal = AbortSignalNever,
         maxRetries: Int = 2,

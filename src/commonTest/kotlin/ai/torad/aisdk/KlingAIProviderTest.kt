@@ -19,6 +19,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertTrue
 import ai.torad.aisdk.providers.KlingAI
+import kotlinx.serialization.json.JsonObject
 
 class KlingAIProviderTest {
     @Test
@@ -44,7 +45,7 @@ class KlingAIProviderTest {
                 seed = 9,
                 fps = 24,
                 resolution = "720p",
-                providerOptions = mapOf(
+                providerOptions = ProviderOptions.Raw(JsonObject(mapOf(
                     "klingai" to buildJsonObject {
                         put("mode", JsonPrimitive("pro"))
                         put("pollIntervalMs", JsonPrimitive(0))
@@ -71,7 +72,7 @@ class KlingAIProviderTest {
                         put("watermarkEnabled", JsonPrimitive(false))
                         put("custom_passthrough", JsonPrimitive("kept"))
                     },
-                ),
+                ))),
                 headers = mapOf("X-Request" to "request"),
             ),
         )
@@ -130,7 +131,7 @@ class KlingAIProviderTest {
                 image = GeneratedFile(mediaType = "image/png", base64 = "frameb64"),
                 durationSeconds = 10f,
                 aspectRatio = "1:1",
-                providerOptions = mapOf(
+                providerOptions = ProviderOptions.Raw(JsonObject(mapOf(
                     "klingai" to buildJsonObject {
                         put("mode", JsonPrimitive("std"))
                         put("pollIntervalMs", JsonPrimitive(0))
@@ -152,7 +153,7 @@ class KlingAIProviderTest {
                         })
                         put("watermarkEnabled", JsonPrimitive(true))
                     },
-                ),
+                ))),
             ),
         )
 
@@ -186,7 +187,7 @@ class KlingAIProviderTest {
                 image = GeneratedFile(mediaType = "image/png", base64 = "", url = "https://example.com/ref.png"),
                 durationSeconds = 5f,
                 aspectRatio = "16:9",
-                providerOptions = mapOf(
+                providerOptions = ProviderOptions.Raw(JsonObject(mapOf(
                     "klingai" to buildJsonObject {
                         put("pollIntervalMs", JsonPrimitive(0))
                         put("videoUrl", JsonPrimitive("https://example.com/ref.mp4"))
@@ -196,7 +197,7 @@ class KlingAIProviderTest {
                         put("watermarkEnabled", JsonPrimitive(false))
                         put("custom_motion", JsonPrimitive("kept"))
                     },
-                ),
+                ))),
             ),
         )
 

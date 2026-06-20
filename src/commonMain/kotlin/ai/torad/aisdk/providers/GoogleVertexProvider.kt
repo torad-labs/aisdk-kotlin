@@ -272,8 +272,9 @@ private class GoogleVertexXaiLanguageModel(
         delegate.streamResult(params.copy(providerOptions = googleVertexXaiProviderOptions(params.providerOptions)))
 }
 
-private fun googleVertexXaiProviderOptions(options: Map<String, JsonElement>): Map<String, JsonElement> {
-    val xai = options["xai"] as? JsonObject ?: return options
+private fun googleVertexXaiProviderOptions(options: ProviderOptions): ProviderOptions {
+    val map = options.toMap()
+    val xai = map["xai"] as? JsonObject ?: return options
     val transformed = buildJsonObject {
         for ((key, value) in xai) {
             when (key) {
@@ -287,7 +288,7 @@ private fun googleVertexXaiProviderOptions(options: Map<String, JsonElement>): M
             }
         }
     }
-    return options + ("xai" to transformed)
+    return ProviderOptions.Raw(JsonObject(map + ("xai" to (transformed as JsonElement))))
 }
 
 private fun googleVertexXaiRequestBody(body: JsonObject): JsonObject = buildJsonObject {

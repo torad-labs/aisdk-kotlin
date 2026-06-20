@@ -15,6 +15,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 import ai.torad.aisdk.providers.LMNT
+import kotlinx.serialization.json.JsonObject
 
 class LMNTProviderTest {
     @Test
@@ -39,14 +40,14 @@ class LMNTProviderTest {
                 responseFormat = "wav",
                 language = "fr",
                 speed = 1.1f,
-                providerOptions = mapOf(
+                providerOptions = ProviderOptions.Raw(JsonObject(mapOf(
                     "lmnt" to buildJsonObject {
                         put("seed", JsonPrimitive(123))
                         put("sampleRate", JsonPrimitive(24000))
                         put("topP", JsonPrimitive(0.9f))
                         put("temperature", JsonPrimitive(0.5f))
                     },
-                ),
+                ))),
             ),
         )
 

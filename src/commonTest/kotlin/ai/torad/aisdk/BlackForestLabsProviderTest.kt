@@ -19,6 +19,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertTrue
+import kotlinx.serialization.json.JsonObject
 
 class BlackForestLabsProviderTest {
     @Test
@@ -60,7 +61,7 @@ class BlackForestLabsProviderTest {
                     ImageGenerationFile(mediaType = "image/png", base64 = "abc123"),
                 ),
                 mask = ImageGenerationFile(mediaType = "image/png", base64 = "mask123"),
-                providerOptions = mapOf(
+                providerOptions = ProviderOptions.Raw(JsonObject(mapOf(
                     "blackForestLabs" to buildJsonObject {
                         put("steps", JsonPrimitive(4))
                         put("guidance", JsonPrimitive(2.5))
@@ -75,7 +76,7 @@ class BlackForestLabsProviderTest {
                         put("pollIntervalMillis", JsonPrimitive(1))
                         put("pollTimeoutMillis", JsonPrimitive(1))
                     },
-                ),
+                ))),
             ),
         )
 
@@ -147,12 +148,12 @@ class BlackForestLabsProviderTest {
                     ImageGenerationFile(url = "https://example.com/input.png"),
                     ImageGenerationFile(url = "https://example.com/second.png"),
                 ),
-                providerOptions = mapOf(
+                providerOptions = ProviderOptions.Raw(JsonObject(mapOf(
                     "blackForestLabs" to buildJsonObject {
                         put("width", JsonPrimitive(1280))
                         put("height", JsonPrimitive(720))
                     },
-                ),
+                ))),
             ),
         )
 
@@ -187,10 +188,10 @@ class BlackForestLabsProviderTest {
             model.generate(
                 ImageGenerationParams(
                     prompt = "x",
-                    providerOptions = mapOf("blackForestLabs" to buildJsonObject {
+                    providerOptions = ProviderOptions.Raw(JsonObject(mapOf("blackForestLabs" to buildJsonObject {
                         put("pollIntervalMillis", JsonPrimitive(1))
                         put("pollTimeoutMillis", JsonPrimitive(1))
-                    }),
+                    }))),
                 ),
             )
         }

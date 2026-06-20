@@ -487,8 +487,8 @@ private fun deepgramHeaders(settings: DeepgramProviderSettings, callHeaders: Map
     return ProviderHeaders.withUserAgentSuffix(base, "ai-sdk/deepgram/$DEEPGRAM_VERSION")
 }
 
-private fun deepgramOptions(providerOptions: Map<String, JsonElement>): JsonObject =
-    providerOptions["deepgram"] as? JsonObject ?: JsonObject(emptyMap())
+private fun deepgramOptions(providerOptions: ProviderOptions): JsonObject =
+    providerOptions.toMap()["deepgram"] as? JsonObject ?: JsonObject(emptyMap())
 
 private fun deepgramSampleRateAllowed(encoding: String, sampleRate: Int): Boolean =
     when (encoding) {

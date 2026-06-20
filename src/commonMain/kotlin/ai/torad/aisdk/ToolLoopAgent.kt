@@ -611,7 +611,7 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
             } ?: resolvedTools
             val stepToolChoice = stepSettings.toolChoice ?: ToolChoice.Auto
             val stepProviderOptions =
-                (resolvedSettings.providerOptions ?: emptyMap()) + (stepSettings.providerOptions ?: emptyMap())
+                resolvedSettings.providerOptions + stepSettings.providerOptions
             val stepSystem = stepSettings.system
 
             val effectiveMessages = if (stepSystem != null) {

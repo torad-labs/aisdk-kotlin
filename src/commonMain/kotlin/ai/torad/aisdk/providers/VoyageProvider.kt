@@ -176,8 +176,8 @@ private fun voyageHeaders(settings: VoyageProviderSettings, callHeaders: Map<Str
     return ProviderHeaders.withUserAgentSuffix(base, "ai-sdk/voyage/$VOYAGE_VERSION")
 }
 
-private fun voyageOptions(providerOptions: Map<String, JsonElement>): JsonObject =
-    providerOptions["voyage"] as? JsonObject ?: JsonObject(emptyMap())
+private fun voyageOptions(providerOptions: ProviderOptions): JsonObject =
+    providerOptions.toMap()["voyage"] as? JsonObject ?: JsonObject(emptyMap())
 
 private fun voyageErrorMessage(statusCode: Int, parsed: JsonElement?, raw: String): String {
     val obj = parsed as? JsonObject

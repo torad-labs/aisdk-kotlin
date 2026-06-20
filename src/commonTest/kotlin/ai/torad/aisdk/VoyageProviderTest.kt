@@ -18,6 +18,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertTrue
 import ai.torad.aisdk.providers.Voyage
+import kotlinx.serialization.json.JsonObject
 
 class VoyageProviderTest {
     @Test
@@ -42,14 +43,14 @@ class VoyageProviderTest {
         val result = model.embed(
             EmbeddingModelCallParams(
                 values = listOf("first", "second"),
-                providerOptions = mapOf(
+                providerOptions = ProviderOptions.Raw(JsonObject(mapOf(
                     "voyage" to buildJsonObject {
                         put("inputType", JsonPrimitive("document"))
                         put("truncation", JsonPrimitive(true))
                         put("outputDimension", JsonPrimitive(256))
                         put("outputDtype", JsonPrimitive("int8"))
                     },
-                ),
+                ))),
             ),
         )
 
@@ -96,12 +97,12 @@ class VoyageProviderTest {
                 query = "best",
                 documents = listOf("alpha", "beta"),
                 topN = 1,
-                providerOptions = mapOf(
+                providerOptions = ProviderOptions.Raw(JsonObject(mapOf(
                     "voyage" to buildJsonObject {
                         put("returnDocuments", JsonPrimitive(false))
                         put("truncation", JsonPrimitive(true))
                     },
-                ),
+                ))),
             ),
         )
 

@@ -6,33 +6,39 @@ import kotlinx.serialization.json.JsonObject
 /**
  * Typed provider-options boundary (tenet T2).
  *
- * Use [Raw] as the bridge until each provider grows its own typed slice in Layer 8.
- * Convert to the legacy map format via [ProviderOptions.toMap].
- *
- * Field-type replacement of `Map<String, JsonElement>` at `LanguageModelCallParams.providerOptions`
- * is deferred to the Layer-8 fan-out: every provider's private options-extractor uses map
- * subscript today, so changing the field type simultaneously across 25+ data classes (including
- * `CallSettings`, `MediaModels`, `RerankingParams`, `EmbeddingModelCallParams`, etc.) and all
- * test fixtures requires touching the full codebase at once — exactly what Layer 8 is for.
+ * The full options map is wrapped in [Raw] (key = provider name, value = provider JSON).
+ * Use [None] as the default when no options are supplied.
  */
 public sealed class ProviderOptions {
 
+    /** No provider-specific options — the neutral default. */
+    public object None : ProviderOptions()
+
     /**
-     * Untyped escape hatch — pass raw JSON for providers that don't yet have a typed slice.
-     * [provider] is the options-map key (e.g. `"openai"`, `"anthropic"`).
+     * Raw JSON options map.
+     * [options] keys are provider names (e.g. `"openai"`, `"anthropic"`);
+     * values are provider-specific JSON objects.
      */
-    public data class Raw(
-        val provider: String,
-        val json: JsonObject,
-    ) : ProviderOptions()
+    public data class Raw(val options: JsonObject) : ProviderOptions()
+
+    /** Convert to the `Map<String, JsonElement>` format used internally by providers. */
+    public fun toMap(): Map<String, JsonElement> = when (this) {
+        is None -> emptyMap()
+        is Raw -> options
+    }
+
+    /** Deep-merge [other] on top of these options ([other] wins on key conflicts). */
+    public operator fun plus(other: ProviderOptions): ProviderOptions = when {
+        other is None -> this
+        this is None -> other
+        this is Raw && other is Raw -> Raw(JsonObject(options + other.options))
+        else -> other
+    }
 
     public companion object {
-        /**
-         * Convert a list of [ProviderOptions] to the `Map<String, JsonElement>` format
-         * expected by [LanguageModelCallParams.providerOptions].
-         */
-        public fun toMap(options: List<ProviderOptions>): Map<String, JsonElement> =
-            options.filterIsInstance<Raw>()
-                .associate { it.provider to (it.json as JsonElement) }
+        /** Build [ProviderOptions] from provider-name / JSON-object pairs. */
+        public fun ofPairs(vararg pairs: Pair<String, JsonObject>): ProviderOptions =
+            if (pairs.isEmpty()) None
+            else Raw(JsonObject(pairs.associate { (k, v) -> k to (v as JsonElement) }))
     }
 }

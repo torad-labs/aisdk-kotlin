@@ -374,8 +374,9 @@ private fun xaiProviderTool(
         ),
     )
 
-private fun transformXaiChatProviderOptions(options: Map<String, JsonElement>): Map<String, JsonElement> {
-    val xai = options["xai"] as? JsonObject ?: return options
+private fun transformXaiChatProviderOptions(options: ProviderOptions): ProviderOptions {
+    val map = options.toMap()
+    val xai = map["xai"] as? JsonObject ?: return options
     val transformed = buildJsonObject {
         for ((key, value) in xai) {
             when (key) {
@@ -392,7 +393,7 @@ private fun transformXaiChatProviderOptions(options: Map<String, JsonElement>): 
             }
         }
     }
-    return options + ("xai" to transformed)
+    return ProviderOptions.Raw(JsonObject(map + ("xai" to (transformed as JsonElement))))
 }
 
 private fun xaiSnakeCaseJson(value: JsonElement): JsonElement =
@@ -622,8 +623,8 @@ private fun xaiHeaders(settings: XaiProviderSettings, callHeaders: Map<String, S
     return ProviderHeaders.withUserAgentSuffix(base, "ai-sdk/xai/$XAI_VERSION")
 }
 
-private fun xaiOptions(providerOptions: Map<String, JsonElement>): JsonObject =
-    providerOptions["xai"] as? JsonObject ?: JsonObject(emptyMap())
+private fun xaiOptions(providerOptions: ProviderOptions): JsonObject =
+    providerOptions.toMap()["xai"] as? JsonObject ?: JsonObject(emptyMap())
 
 private fun xaiErrorMessage(statusCode: Int, parsed: JsonElement?, raw: String): String {
     val obj = parsed as? JsonObject

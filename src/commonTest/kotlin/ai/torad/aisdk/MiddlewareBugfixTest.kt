@@ -62,20 +62,20 @@ class MiddlewareBugfixTest {
     @Test
     fun `defaultSettingsMiddleware deep-merges providerOptions per provider key`() = runTest {
         // default sets openai.reasoningEffort; per-call sets openai.user — both must survive.
-        val defaults = mapOf(
-            "openai" to buildJsonObject { put("reasoningEffort", JsonPrimitive("high")) } as JsonObject,
-        )
+        val defaults = ProviderOptions.Raw(JsonObject(mapOf(
+            "openai" to buildJsonObject { put("reasoningEffort", JsonPrimitive("high")) },
+        )))
         val inner = model(LanguageModelResult(text = "ok", finishReason = FinishReason.Stop, usage = Usage()))
         val wrapped = wrapLanguageModel(inner, listOf(defaultSettingsMiddleware(providerOptions = defaults)))
         wrapped.generate(
             LanguageModelCallParams(
                 messages = listOf(userMessage("hi")),
-                providerOptions = mapOf(
+                providerOptions = ProviderOptions.Raw(JsonObject(mapOf(
                     "openai" to buildJsonObject { put("user", JsonPrimitive("u1")) } as JsonObject,
-                ),
+                ))),
             ),
         )
-        val merged = inner.seen?.providerOptions?.get("openai")?.jsonObject
+        val merged = inner.seen?.providerOptions?.toMap()?.get("openai")?.jsonObject
         assertEquals("high", merged?.get("reasoningEffort")?.let { (it as JsonPrimitive).content }, "default key kept")
         assertEquals("u1", merged?.get("user")?.let { (it as JsonPrimitive).content }, "per-call key kept")
     }

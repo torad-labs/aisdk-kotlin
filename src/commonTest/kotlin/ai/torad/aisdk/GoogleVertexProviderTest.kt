@@ -23,6 +23,7 @@ import ai.torad.aisdk.providers.GoogleVertex
 import ai.torad.aisdk.providers.GoogleVertexAnthropic
 import ai.torad.aisdk.providers.GoogleVertexMaas
 import ai.torad.aisdk.providers.GoogleVertexXai
+import kotlinx.serialization.json.JsonObject
 
 class GoogleVertexProviderTest {
     @Test
@@ -57,12 +58,12 @@ class GoogleVertexProviderTest {
         val result = provider.chat("gemini-2.5-flash").generate(
             LanguageModelCallParams(
                 messages = listOf(userMessage("hi")),
-                providerOptions = mapOf(
+                providerOptions = ProviderOptions.Raw(JsonObject(mapOf(
                     "google" to buildJsonObject {
                         put("sharedRequestType", JsonPrimitive("priority"))
                         put("requestType", JsonPrimitive("shared"))
                     },
-                ),
+                ))),
                 headers = mapOf("X-Request" to "request"),
             ),
         )
@@ -370,12 +371,12 @@ class GoogleVertexProviderTest {
         val result = provider.chatModel("grok").generate(
             LanguageModelCallParams(
                 messages = listOf(userMessage("hi")),
-                providerOptions = mapOf(
+                providerOptions = ProviderOptions.Raw(JsonObject(mapOf(
                     "xai" to buildJsonObject {
                         put("reasoningEffort", JsonPrimitive("high"))
                         put("topLogprobs", JsonPrimitive(3))
                     },
-                ),
+                ))),
             ),
         )
 

@@ -16,6 +16,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 import ai.torad.aisdk.providers.Hume
+import kotlinx.serialization.json.JsonObject
 
 class HumeProviderTest {
     @Test
@@ -40,7 +41,7 @@ class HumeProviderTest {
                 instructions = "calm",
                 speed = 1.1f,
                 responseFormat = "wav",
-                providerOptions = mapOf(
+                providerOptions = ProviderOptions.Raw(JsonObject(mapOf(
                     "hume" to buildJsonObject {
                         put(
                             "context",
@@ -59,7 +60,7 @@ class HumeProviderTest {
                             },
                         )
                     },
-                ),
+                ))),
             ),
         )
 

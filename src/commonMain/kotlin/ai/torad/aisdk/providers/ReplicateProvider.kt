@@ -420,8 +420,8 @@ private fun replicateHeaders(
     return ProviderHeaders.withUserAgentSuffix(base, "ai-sdk/replicate/$REPLICATE_VERSION")
 }
 
-private fun replicateOptions(providerOptions: Map<String, JsonElement>): JsonObject =
-    providerOptions["replicate"] as? JsonObject ?: JsonObject(emptyMap())
+private fun replicateOptions(providerOptions: ProviderOptions): JsonObject =
+    providerOptions.toMap()["replicate"] as? JsonObject ?: JsonObject(emptyMap())
 
 private fun replicateErrorMessage(statusCode: Int, parsed: JsonElement?, raw: String): String {
     val obj = parsed as? JsonObject

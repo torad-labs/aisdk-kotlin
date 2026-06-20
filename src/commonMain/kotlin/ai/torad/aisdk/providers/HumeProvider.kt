@@ -149,8 +149,8 @@ private fun humeHeaders(settings: HumeProviderSettings, callHeaders: Map<String,
     return ProviderHeaders.withUserAgentSuffix(base, "ai-sdk/hume/$HUME_VERSION")
 }
 
-private fun humeOptions(providerOptions: Map<String, JsonElement>): JsonObject =
-    providerOptions["hume"] as? JsonObject ?: JsonObject(emptyMap())
+private fun humeOptions(providerOptions: ProviderOptions): JsonObject =
+    providerOptions.toMap()["hume"] as? JsonObject ?: JsonObject(emptyMap())
 
 private fun humeContext(context: JsonObject): JsonObject =
     when {

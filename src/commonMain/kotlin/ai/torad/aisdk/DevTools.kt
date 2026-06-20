@@ -18,7 +18,7 @@ public data class DevToolsStep(
     val modelId: String,
     val provider: String,
     val input: JsonElement,
-    val providerOptions: Map<String, JsonElement>,
+    val providerOptions: ProviderOptions,
 )
 
 public data class DevToolsStepResult(

@@ -2,6 +2,7 @@ package ai.torad.aisdk
 
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonObjectBuilder
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.serializer
@@ -17,7 +18,7 @@ public data class CallSettings(
     val maxOutputTokens: Int? = null,
     val stopSequences: List<String>? = null,
     val seed: Int? = null,
-    val providerOptions: Map<String, JsonElement> = emptyMap(),
+    val providerOptions: ProviderOptions = ProviderOptions.None,
     val abortSignal: AbortSignal? = null,
     val presencePenalty: Float? = null,
     val frequencyPenalty: Float? = null,
@@ -31,7 +32,7 @@ public class CallSettingsBuilder internal constructor() {
     public var topK: Int? = null
     public var maxOutputTokens: Int? = null
     public var seed: Int? = null
-    public var providerOptions: Map<String, JsonElement> = emptyMap()
+    public var providerOptions: ProviderOptions = ProviderOptions.None
     public var abortSignal: AbortSignal? = null
     public var presencePenalty: Float? = null
     public var frequencyPenalty: Float? = null
@@ -48,11 +49,11 @@ public class CallSettingsBuilder internal constructor() {
     }
 
     public fun providerOption(name: String, value: JsonElement) {
-        providerOptions = providerOptions + (name to value)
+        providerOptions = providerOptions + ProviderOptions.Raw(JsonObject(mapOf(name to value)))
     }
 
     public fun providerOptions(block: ProviderOptionsBuilder.() -> Unit) {
-        providerOptions = providerOptions + buildProviderOptions(block)
+        providerOptions = providerOptions + ProviderOptions.Raw(JsonObject(buildProviderOptions(block)))
     }
 
     internal fun build(): CallSettings = CallSettings(

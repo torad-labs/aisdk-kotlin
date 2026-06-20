@@ -281,8 +281,8 @@ private class LumaImageModel(
         return ProviderHeaders.withUserAgentSuffix(base, "ai-sdk/luma/$LUMA_VERSION")
     }
 
-    private fun lumaOptions(providerOptions: Map<String, JsonElement>): JsonObject =
-        providerOptions["luma"] as? JsonObject ?: JsonObject(emptyMap())
+    private fun lumaOptions(providerOptions: ProviderOptions): JsonObject =
+        providerOptions.toMap()["luma"] as? JsonObject ?: JsonObject(emptyMap())
 
     private fun Map<String, String>.headerValue(name: String): String? =
         entries.firstOrNull { it.key.equals(name, ignoreCase = true) }?.value

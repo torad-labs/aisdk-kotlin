@@ -320,8 +320,8 @@ private fun byteDanceHeaders(settings: ByteDanceProviderSettings, callHeaders: M
     return base
 }
 
-private fun byteDanceOptions(providerOptions: Map<String, JsonElement>): JsonObject =
-    providerOptions["bytedance"] as? JsonObject ?: JsonObject(emptyMap())
+private fun byteDanceOptions(providerOptions: ProviderOptions): JsonObject =
+    providerOptions.toMap()["bytedance"] as? JsonObject ?: JsonObject(emptyMap())
 
 private fun byteDanceErrorMessage(statusCode: Int, parsed: JsonElement?, raw: String): String {
     val obj = parsed as? JsonObject

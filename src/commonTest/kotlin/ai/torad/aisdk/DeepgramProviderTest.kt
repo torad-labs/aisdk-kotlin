@@ -18,6 +18,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertTrue
 import ai.torad.aisdk.providers.Deepgram
+import kotlinx.serialization.json.JsonObject
 
 class DeepgramProviderTest {
     @Test
@@ -43,7 +44,7 @@ class DeepgramProviderTest {
                 speed = 1.2f,
                 instructions = "soft",
                 responseFormat = "opus",
-                providerOptions = mapOf(
+                providerOptions = ProviderOptions.Raw(JsonObject(mapOf(
                     "deepgram" to buildJsonObject {
                         put("bitRate", JsonPrimitive(64000))
                         put("sampleRate", JsonPrimitive(16000))
@@ -55,7 +56,7 @@ class DeepgramProviderTest {
                             add(JsonPrimitive("beta"))
                         })
                     },
-                ),
+                ))),
             ),
         )
 
@@ -102,7 +103,7 @@ class DeepgramProviderTest {
                     base64 = Base64Codec.encode("abc".encodeToByteArray()),
                     filename = "clip.wav",
                 ),
-                providerOptions = mapOf(
+                providerOptions = ProviderOptions.Raw(JsonObject(mapOf(
                     "deepgram" to buildJsonObject {
                         put("diarize", JsonPrimitive(false))
                         put("detectLanguage", JsonPrimitive(true))
@@ -125,7 +126,7 @@ class DeepgramProviderTest {
                         put("replace", JsonPrimitive("redacted"))
                         put("keyterm", JsonPrimitive("sdk"))
                     },
-                ),
+                ))),
             ),
         )
 

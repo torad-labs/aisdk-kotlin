@@ -1017,8 +1017,9 @@ private class FireworksLanguageModel(
         delegate.streamResult(params.copy(providerOptions = transformFireworksProviderOptions(params.providerOptions)))
 }
 
-private fun transformFireworksProviderOptions(options: Map<String, JsonElement>): Map<String, JsonElement> {
-    val fireworksOptions = options["fireworks"] as? JsonObject ?: return options
+private fun transformFireworksProviderOptions(options: ProviderOptions): ProviderOptions {
+    val map = options.toMap()
+    val fireworksOptions = map["fireworks"] as? JsonObject ?: return options
     val transformed = buildJsonObject {
         for ((key, value) in fireworksOptions) {
             when (key) {
@@ -1028,7 +1029,7 @@ private fun transformFireworksProviderOptions(options: Map<String, JsonElement>)
             }
         }
     }
-    return options + ("fireworks" to transformed)
+    return ProviderOptions.Raw(JsonObject(map + ("fireworks" to (transformed as JsonElement))))
 }
 
 private fun transformFireworksThinking(value: JsonElement): JsonElement {
@@ -1063,7 +1064,7 @@ private class DeepInfraImageModel(
                     put("height", JsonPrimitive(parts[1]))
                 }
                 params.seed?.let { put("seed", JsonPrimitive(it)) }
-                putProviderSpecificOptions(params.providerOptions, "deepinfra")
+                putProviderSpecificOptions(params.providerOptions.toMap(), "deepinfra")
             },
             headers = providerFacadeHeaders(
                 apiKey = settings.apiKey,
@@ -1101,7 +1102,7 @@ public class FireworksImageModel(
                 put("width", JsonPrimitive(parts[0]))
                 put("height", JsonPrimitive(parts[1]))
             }
-            putProviderSpecificOptions(params.providerOptions, "fireworks")
+            putProviderSpecificOptions(params.providerOptions.toMap(), "fireworks")
         }
         val requestHeaders = providerFacadeHeaders(
             apiKey = settings.apiKey,
@@ -1211,7 +1212,7 @@ private class TogetherAIImageModel(
                     put("height", JsonPrimitive(parts[1].toInt()))
                 }
                 put("response_format", JsonPrimitive("base64"))
-                putProviderSpecificOptions(params.providerOptions, "togetherai")
+                putProviderSpecificOptions(params.providerOptions.toMap(), "togetherai")
             },
             headers = providerFacadeHeaders(
                 apiKey = settings.apiKey,
@@ -1242,7 +1243,7 @@ public class TogetherAIRerankingModel(
     override val provider: String = "togetherai.reranking"
 
     override suspend fun rerank(params: RerankingParams): RerankingModelResult {
-        val options = providerSpecificOptions(params.providerOptions, "togetherai")
+        val options = providerSpecificOptions(params.providerOptions.toMap(), "togetherai")
         val response = postFacadeJson(
             client = client,
             url = "${settings.baseURL.trimEnd('/')}/rerank",

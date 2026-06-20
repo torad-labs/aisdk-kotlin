@@ -671,10 +671,10 @@ private fun anthropicContainer(options: JsonObject): JsonElement? {
     }
 }
 
-private fun anthropicOptions(providerOptions: Map<String, JsonElement>, providerName: String): JsonObject {
-    val canonical = providerOptions["anthropic"] as? JsonObject ?: JsonObject(emptyMap())
+private fun anthropicOptions(providerOptions: ProviderOptions, providerName: String): JsonObject {
+    val canonical = providerOptions.toMap()["anthropic"] as? JsonObject ?: JsonObject(emptyMap())
     val customName = providerName.substringBefore('.')
-    val custom = if (customName != "anthropic") providerOptions[customName] as? JsonObject else null
+    val custom = if (customName != "anthropic") providerOptions.toMap()[customName] as? JsonObject else null
     return JsonOps.merge(canonical, custom ?: JsonObject(emptyMap()))
 }
 

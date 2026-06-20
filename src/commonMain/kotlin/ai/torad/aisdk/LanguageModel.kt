@@ -79,7 +79,7 @@ public data class LanguageModelCallParams(
     val maxOutputTokens: Int? = null,        // v6 name (was maxTokens)
     val stopSequences: List<String> = emptyList(),
     val seed: Int? = null,
-    val providerOptions: Map<String, JsonElement> = emptyMap(),
+    val providerOptions: ProviderOptions = ProviderOptions.None,
     val abortSignal: AbortSignal = AbortSignalNever,
     /**
      * Penalty for repeating tokens that already appeared in the
@@ -116,7 +116,7 @@ public data class LanguageModelTool(
     val metadata: Map<String, JsonElement> = emptyMap(),
     val strict: Boolean = true,
     /** Provider-specific config sent to the model for this tool (upstream's `tool.providerOptions`). */
-    val providerOptions: Map<String, JsonElement> = emptyMap(),
+    val providerOptions: ProviderOptions = ProviderOptions.None,
 ) {
     /** Parsed once and cached — not a constructor arg, so not serialized. */
     val parametersSchema: JsonElement by lazy { aiSdkJson.parseToJsonElement(parametersSchemaJson) }

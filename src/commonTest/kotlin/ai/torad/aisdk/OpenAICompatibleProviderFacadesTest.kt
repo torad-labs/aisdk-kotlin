@@ -43,6 +43,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertTrue
+import kotlinx.serialization.json.JsonObject
 
 class OpenAICompatibleProviderFacadesTest {
     @Test
@@ -439,7 +440,7 @@ class OpenAICompatibleProviderFacadesTest {
                 size = "512x768",
                 aspectRatio = "1:1",
                 seed = 7,
-                providerOptions = mapOf("deepinfra" to buildJsonObject { put("scheduler", JsonPrimitive("fast")) }),
+                providerOptions = ProviderOptions.Raw(JsonObject(mapOf("deepinfra" to buildJsonObject { put("scheduler", JsonPrimitive("fast")) }))),
             ),
         )
 
@@ -484,7 +485,7 @@ class OpenAICompatibleProviderFacadesTest {
         provider.chatModel("model").generate(
             LanguageModelCallParams(
                 messages = listOf(userMessage("hi")),
-                providerOptions = mapOf(
+                providerOptions = ProviderOptions.Raw(JsonObject(mapOf(
                     "fireworks" to buildJsonObject {
                         put(
                             "thinking",
@@ -495,7 +496,7 @@ class OpenAICompatibleProviderFacadesTest {
                         )
                         put("reasoningHistory", JsonPrimitive("preserved"))
                     },
-                ),
+                ))),
             ),
         )
         val chatBody = fixture.calls.single { it.requestUrl.endsWith("/chat/completions") }.requestBodyJson.jsonObject
@@ -592,12 +593,12 @@ class OpenAICompatibleProviderFacadesTest {
                 n = 2,
                 size = "1024x768",
                 seed = 12,
-                providerOptions = mapOf(
+                providerOptions = ProviderOptions.Raw(JsonObject(mapOf(
                     "togetherai" to buildJsonObject {
                         put("steps", JsonPrimitive(8))
                         put("disable_safety_checker", JsonPrimitive(true))
                     },
-                ),
+                ))),
             ),
         )
         val ranking = provider.reranking("ranker").rerank(
@@ -605,7 +606,7 @@ class OpenAICompatibleProviderFacadesTest {
                 query = "best",
                 documents = listOf("alpha", "beta"),
                 topN = 1,
-                providerOptions = mapOf("togetherai" to buildJsonObject { put("rankFields", JsonArray(listOf(JsonPrimitive("text")))) }),
+                providerOptions = ProviderOptions.Raw(JsonObject(mapOf("togetherai" to buildJsonObject { put("rankFields", JsonArray(listOf(JsonPrimitive("text")))) }))),
             ),
         )
 

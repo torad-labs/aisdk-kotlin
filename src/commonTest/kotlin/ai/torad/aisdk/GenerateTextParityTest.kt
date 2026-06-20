@@ -66,7 +66,7 @@ class GenerateTextParityTest {
     @Test
     fun `generate forwards call settings and auto derives JSON response format from output`() = runTest {
         // GIVEN
-        val providerOptions = mapOf("openai" to buildJsonObject { put("reasoningEffort", JsonPrimitive("high")) })
+        val providerOptions = ProviderOptions.Raw(JsonObject(mapOf("openai" to buildJsonObject { put("reasoningEffort", JsonPrimitive("high")) })))
         val model = CapturingModel(
             generateResult = LanguageModelResult(
                 text = """{"name":"cake","ingredients":[]}""",
