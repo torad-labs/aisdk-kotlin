@@ -483,7 +483,7 @@ private class OpenAICompatibleEmbeddingModel(
             warnings = emptyList(),
             request = LanguageModelRequestMetadata(body),
             response = LanguageModelResponseMetadata(headers = response.headers, body = response.value),
-            providerMetadata = openAIProviderMetadata(value["providerMetadata"], settings.name),
+            providerMetadata = openAIProviderMetadata(value["providerMetadata"], settings.name).let { m -> if (m.isEmpty()) ProviderMetadata.None else ProviderMetadata.Raw(JsonObject(m)) },
         )
     }
 }
@@ -523,7 +523,7 @@ private class OpenAICompatibleImageModel(
             },
             warnings = warnings,
             response = LanguageModelResponseMetadata(modelId = modelId, headers = response.headers, body = response.value),
-            providerMetadata = openAIProviderMetadata(responseObject["providerMetadata"], settings.name),
+            providerMetadata = openAIProviderMetadata(responseObject["providerMetadata"], settings.name).let { m -> if (m.isEmpty()) ProviderMetadata.None else ProviderMetadata.Raw(JsonObject(m)) },
             usage = openAICompatibleImageUsage(responseObject["usage"]),
         )
     }
@@ -667,7 +667,7 @@ private class OpenAICompatibleTranscriptionModel(
                 )
             },
             response = LanguageModelResponseMetadata(modelId = modelId, headers = response.headers, body = response.value),
-            providerMetadata = openAIProviderMetadata(value["providerMetadata"], settings.name),
+            providerMetadata = openAIProviderMetadata(value["providerMetadata"], settings.name).let { m -> if (m.isEmpty()) ProviderMetadata.None else ProviderMetadata.Raw(JsonObject(m)) },
             // verbose_json responses carry the detected language + audio duration.
             language = WireDecoder.optionalString(value, "language", providerName, "transcription response"),
             durationInSeconds = WireDecoder.optionalFloat(value, "duration", providerName, "transcription response"),
@@ -791,7 +791,7 @@ private fun chatResultFromJson(
             toolCallId = callObj["id"]?.jsonPrimitive?.contentOrNull ?: IdGenerator.generate("call"),
             toolName = WireDecoder.requiredString(function, "name", provider, "chat completion response", "$.choices[0].message.tool_calls[$index].function"),
             input = parseOpenAIToolInput(WireDecoder.requiredString(function, "arguments", provider, "chat completion response", "$.choices[0].message.tool_calls[$index].function")),
-            providerMetadata = thoughtSignatureMetadata(callObj),
+            providerMetadata = thoughtSignatureMetadata(callObj)?.let { ProviderMetadata.Raw(JsonObject(it)) } ?: ProviderMetadata.None,
         )
     }
     content += toolCalls
@@ -801,7 +801,7 @@ private fun chatResultFromJson(
         toolCalls = toolCalls,
         finishReason = finishReason,
         usage = (convertUsage ?: ::openAIUsage).invoke(obj["usage"]),
-        providerMetadata = openAIProviderMetadata(obj["providerMetadata"], "openaiCompatible"),
+        providerMetadata = openAIProviderMetadata(obj["providerMetadata"], "openaiCompatible").let { m -> if (m.isEmpty()) ProviderMetadata.None else ProviderMetadata.Raw(JsonObject(m)) },
         content = content,
         rawFinishReason = choice["finish_reason"]?.jsonPrimitive?.contentOrNull,
         warnings = warnings,
@@ -953,7 +953,7 @@ private class OpenAIChatStreamState(
             val id = obj["id"]?.jsonPrimitive?.contentOrNull ?: IdGenerator.generate("call")
             val name = WireDecoder.requiredString(function, "name", provider, "chat stream tool call", "$.function")
             val arguments = WireDecoder.optionalString(function, "arguments", provider, "chat stream tool call", "$.function").orEmpty()
-            val metadata = thoughtSignatureMetadata(obj)?.let { mapOf(providerKey to JsonObject(it)) }
+            val metadata = thoughtSignatureMetadata(obj)?.let { ProviderMetadata.Raw(JsonObject(mapOf(providerKey to JsonObject(it)))) } ?: ProviderMetadata.None
             val toolCall = StreamingToolCall(id, name, arguments, metadata)
             toolCalls[index] = toolCall
             return buildList {
@@ -1003,7 +1003,7 @@ private data class StreamingToolCall(
     val id: String,
     val name: String,
     var arguments: String,
-    val providerMetadata: Map<String, JsonElement>? = null,
+    val providerMetadata: ProviderMetadata = ProviderMetadata.None,
     var finished: Boolean = false,
 )
 

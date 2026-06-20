@@ -121,7 +121,7 @@ class GoogleProviderTest {
         assertEquals(7, result.usage.completionTokens)
         assertEquals(5, result.usage.outputTokens.text)
         assertEquals(2, result.usage.outputTokens.reasoning)
-        assertEquals("BLOCK_REASON_UNSPECIFIED", result.providerMetadata["google"]?.jsonObject?.get("promptFeedback")?.jsonObject?.get("blockReason")?.jsonPrimitive?.contentOrNull)
+        assertEquals("BLOCK_REASON_UNSPECIFIED", result.providerMetadata.toMap()["google"]?.jsonObject?.get("promptFeedback")?.jsonObject?.get("blockReason")?.jsonPrimitive?.contentOrNull)
 
         val request = fixture.calls.single()
         assertEquals("key", request.requestHeaders.headerValue("x-goog-api-key"))
@@ -411,7 +411,7 @@ class GoogleProviderTest {
         assertEquals("image", Base64Codec.decode(image.images.single().base64).decodeToString())
         val generatedVideo = video.videos.single()
         assertEquals("https://videos.example/video.mp4", generatedVideo.url)
-        val googleMetadata = generatedVideo.providerMetadata["google"]!!.jsonObject
+        val googleMetadata = generatedVideo.providerMetadata.toMap()["google"]?.jsonObject ?: error("missing google metadata")
         assertEquals("https://videos.example/video.mp4", googleMetadata["uri"]!!.jsonPrimitive.content)
         assertEquals(true, googleMetadata["requiresApiKey"]!!.jsonPrimitive.booleanOrNull)
 
@@ -579,8 +579,8 @@ class GoogleProviderTest {
         assertEquals(3, result.usage.outputTokens.reasoning)
         assertEquals("interaction-1", result.response.id)
         assertEquals("gemini-2.5-flash", result.response.modelId)
-        assertEquals("interaction-1", result.providerMetadata["google"]?.jsonObject?.get("interactionId")?.jsonPrimitive?.contentOrNull)
-        assertEquals("priority", result.providerMetadata["google"]?.jsonObject?.get("serviceTier")?.jsonPrimitive?.contentOrNull)
+        assertEquals("interaction-1", result.providerMetadata.toMap()["google"]?.jsonObject?.get("interactionId")?.jsonPrimitive?.contentOrNull)
+        assertEquals("priority", result.providerMetadata.toMap()["google"]?.jsonObject?.get("serviceTier")?.jsonPrimitive?.contentOrNull)
 
         val request = fixture.calls.single()
         assertEquals("key", request.requestHeaders.headerValue("x-goog-api-key"))

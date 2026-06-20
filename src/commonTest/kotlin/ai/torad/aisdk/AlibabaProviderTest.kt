@@ -187,7 +187,7 @@ class AlibabaProviderTest {
         assertTrue(result.warnings.any { it.message.orEmpty().contains("explicit size") })
         assertTrue(result.warnings.any { it.message.orEmpty().contains("FPS") })
         assertTrue(result.warnings.any { it.message.orEmpty().contains("1 video") })
-        val metadata = result.providerMetadata["alibaba"]?.jsonObject
+        val metadata = result.providerMetadata.toMap()["alibaba"]?.jsonObject
         assertEquals("task-1", metadata?.get("taskId")?.jsonPrimitive?.contentOrNull)
         assertEquals("expanded prompt", metadata?.get("actualPrompt")?.jsonPrimitive?.contentOrNull)
         assertEquals(4, metadata?.get("usage")?.jsonObject?.get("outputVideoDuration")?.jsonPrimitive?.intOrNull)

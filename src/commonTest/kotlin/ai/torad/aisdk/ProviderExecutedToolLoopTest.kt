@@ -7,6 +7,7 @@ import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.serializer
 
@@ -22,7 +23,7 @@ class ProviderExecutedToolLoopTest {
                             toolCallId = "call_provider",
                             toolName = "web_search",
                             inputJson = JsonPrimitive("query"),
-                            providerMetadata = mapOf("test" to JsonPrimitive("provider-executed")),
+                            providerMetadata = ProviderMetadata.Raw(JsonObject(mapOf("test" to JsonPrimitive("provider-executed")))),
                         ),
                     ),
                     finishReason = FinishReason.Stop,

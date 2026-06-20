@@ -69,46 +69,46 @@ public inline fun <reified T> Map<String, JsonElement>?.decodeProviderMetadata(p
     decodeProviderMetadata(provider, serializer())
 
 public fun <T> GenerateTextResult<*>.providerMetadataAs(provider: String, serializer: KSerializer<T>): T? =
-    providerMetadata.decodeProviderMetadata(provider, serializer)
+    providerMetadata.toMap().decodeProviderMetadata(provider, serializer)
 
 public inline fun <reified T> GenerateTextResult<*>.providerMetadataAs(provider: String): T? =
     providerMetadataAs(provider, serializer())
 
 public fun <T> GenerateObjectResult<*>.providerMetadataAs(provider: String, serializer: KSerializer<T>): T? =
-    providerMetadata.decodeProviderMetadata(provider, serializer)
+    providerMetadata.toMap().decodeProviderMetadata(provider, serializer)
 
 public inline fun <reified T> GenerateObjectResult<*>.providerMetadataAs(provider: String): T? =
     providerMetadataAs(provider, serializer())
 
 public fun <T> LanguageModelResult.providerMetadataAs(provider: String, serializer: KSerializer<T>): T? =
-    providerMetadata.decodeProviderMetadata(provider, serializer)
+    providerMetadata.toMap().decodeProviderMetadata(provider, serializer)
 
 public inline fun <reified T> LanguageModelResult.providerMetadataAs(provider: String): T? =
     providerMetadataAs(provider, serializer())
 
-public val ContentPart.metadata: Map<String, JsonElement>?
+public val ContentPart.metadata: ProviderMetadata
     get() = when (this) {
         is ContentPart.Text -> providerMetadata
         is ContentPart.Reasoning -> providerMetadata
         is ContentPart.ToolCall -> providerMetadata
         is ContentPart.ToolResult -> providerMetadata
         is ContentPart.ToolApprovalRequest -> providerMetadata
-        is ContentPart.ToolApprovalResponse -> null
+        is ContentPart.ToolApprovalResponse -> ProviderMetadata.None
         is ContentPart.Source -> providerMetadata
         is ContentPart.File -> providerMetadata
         is ContentPart.Image -> providerMetadata
     }
 
 public fun <T> ContentPart.providerMetadataAs(provider: String, serializer: KSerializer<T>): T? =
-    metadata.decodeProviderMetadata(provider, serializer)
+    metadata.toMap().decodeProviderMetadata(provider, serializer)
 
 public inline fun <reified T> ContentPart.providerMetadataAs(provider: String): T? =
     providerMetadataAs(provider, serializer())
 
-public val StreamEvent.metadata: Map<String, JsonElement>?
+public val StreamEvent.metadata: ProviderMetadata
     get() = when (this) {
-        is StreamEvent.StreamStart -> null
-        is StreamEvent.ResponseMetadata -> null
+        is StreamEvent.StreamStart -> ProviderMetadata.None
+        is StreamEvent.ResponseMetadata -> ProviderMetadata.None
         is StreamEvent.StepStart -> providerMetadata
         is StreamEvent.TextStart -> providerMetadata
         is StreamEvent.TextDelta -> providerMetadata
@@ -128,13 +128,13 @@ public val StreamEvent.metadata: Map<String, JsonElement>?
         is StreamEvent.ToolOutputDenied -> providerMetadata
         is StreamEvent.StepFinish -> providerMetadata
         is StreamEvent.Finish -> providerMetadata
-        StreamEvent.Abort -> null
-        is StreamEvent.Error -> null
-        is StreamEvent.Raw -> null
+        StreamEvent.Abort -> ProviderMetadata.None
+        is StreamEvent.Error -> ProviderMetadata.None
+        is StreamEvent.Raw -> ProviderMetadata.None
     }
 
 public fun <T> StreamEvent.providerMetadataAs(provider: String, serializer: KSerializer<T>): T? =
-    metadata.decodeProviderMetadata(provider, serializer)
+    metadata.toMap().decodeProviderMetadata(provider, serializer)
 
 public inline fun <reified T> StreamEvent.providerMetadataAs(provider: String): T? =
     providerMetadataAs(provider, serializer())

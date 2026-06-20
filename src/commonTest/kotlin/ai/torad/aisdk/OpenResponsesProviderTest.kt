@@ -419,11 +419,11 @@ class OpenResponsesProviderTest {
                                 mediaType = "application/pdf",
                                 base64 = "ignored",
                                 filename = "remote.pdf",
-                                providerMetadata = mapOf(
+                                providerMetadata = ProviderMetadata.Raw(JsonObject(mapOf(
                                     "openai" to buildJsonObject {
                                         put("file_id", JsonPrimitive("file-explicit"))
                                     },
-                                ),
+                                ))),
                             ),
                         ),
                     ),

@@ -319,7 +319,7 @@ private fun cohereUserMessage(
                 }
             }
             is ContentPart.File -> if (part.mediaType.isCohereImageMediaType()) {
-                parts += cohereImagePart(part.mediaType, part.base64, part.providerMetadata)
+                parts += cohereImagePart(part.mediaType, part.base64, part.providerMetadata.toMap())
             } else if (part.mediaType.isCohereDocumentMediaType()) {
                 documents += cohereDocumentPart(part)
             } else {
@@ -328,7 +328,7 @@ private fun cohereUserMessage(
                     "Cohere supports image files, text/* documents, and application/json documents; got ${part.mediaType}.",
                 )
             }
-            is ContentPart.Image -> parts += cohereImagePart(part.mediaType, part.base64, part.providerMetadata)
+            is ContentPart.Image -> parts += cohereImagePart(part.mediaType, part.base64, part.providerMetadata.toMap())
             is ContentPart.Source -> warnings += CallWarning(
                 type = "unsupported",
                 message = "Cohere chat prompt conversion ignores source content parts.",
@@ -525,7 +525,7 @@ private fun cohereChatResult(
             title = obj["sources"]?.jsonArray?.firstOrNull()?.jsonObject
                 ?.get("document")?.jsonObject
                 ?.get("title")?.jsonPrimitive?.contentOrNull ?: "Document",
-            providerMetadata = mapOf("cohere" to obj),
+            providerMetadata = ProviderMetadata.Raw(JsonObject(mapOf("cohere" to obj))),
         )
     }
     return LanguageModelResult(

@@ -1,5 +1,6 @@
 package ai.torad.aisdk
 
+import kotlinx.serialization.EncodeDefault
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -71,14 +72,16 @@ public sealed interface ContentPart {
     @SerialName("text")
     public data class Text(
         val text: String,
-        val providerMetadata: Map<String, JsonElement>? = null,
+        @EncodeDefault(EncodeDefault.Mode.NEVER)
+        val providerMetadata: ProviderMetadata = ProviderMetadata.None,
     ) : ContentPart
 
     @Serializable
     @SerialName("reasoning")
     public data class Reasoning(
         val text: String,
-        val providerMetadata: Map<String, JsonElement>? = null,
+        @EncodeDefault(EncodeDefault.Mode.NEVER)
+        val providerMetadata: ProviderMetadata = ProviderMetadata.None,
     ) : ContentPart
 
     @Serializable
@@ -93,7 +96,8 @@ public sealed interface ContentPart {
         val dynamic: Boolean = false,
         /** Model emitted a malformed/unrepairable tool call. v6 parity. */
         val invalid: Boolean = false,
-        val providerMetadata: Map<String, JsonElement>? = null,
+        @EncodeDefault(EncodeDefault.Mode.NEVER)
+        val providerMetadata: ProviderMetadata = ProviderMetadata.None,
     ) : ContentPart
 
     /**
@@ -120,7 +124,8 @@ public sealed interface ContentPart {
         val dynamic: Boolean = false,
         /** Tool was executed by the provider. v6 parity. */
         val providerExecuted: Boolean = false,
-        val providerMetadata: Map<String, JsonElement>? = null,
+        @EncodeDefault(EncodeDefault.Mode.NEVER)
+        val providerMetadata: ProviderMetadata = ProviderMetadata.None,
     ) : ContentPart
 
     /** Assistant content: the LLM called a tool that requires approval. */
@@ -145,7 +150,8 @@ public sealed interface ContentPart {
          * the approval is replayed.
          */
         val signature: String? = null,
-        val providerMetadata: Map<String, JsonElement>? = null,
+        @EncodeDefault(EncodeDefault.Mode.NEVER)
+        val providerMetadata: ProviderMetadata = ProviderMetadata.None,
     ) : ContentPart
 
     /** Tool content: the host's decision on a previously requested approval. */
@@ -164,7 +170,8 @@ public sealed interface ContentPart {
         val sourceType: StreamEvent.SourcePart.SourceType,
         val url: String? = null,
         val title: String? = null,
-        val providerMetadata: Map<String, JsonElement>? = null,
+        @EncodeDefault(EncodeDefault.Mode.NEVER)
+        val providerMetadata: ProviderMetadata = ProviderMetadata.None,
         /** Media type of a document source (e.g. application/pdf). */
         val mediaType: String? = null,
         /** Optional display name of a document source. */
@@ -186,7 +193,8 @@ public sealed interface ContentPart {
         val base64: String = "",
         /** Optional display name. v6 calls this `filename`. */
         val filename: String? = null,
-        val providerMetadata: Map<String, JsonElement>? = null,
+        @EncodeDefault(EncodeDefault.Mode.NEVER)
+        val providerMetadata: ProviderMetadata = ProviderMetadata.None,
         /**
          * Remote (or data) URL for the file content, when not provided inline as
          * [base64]. Mirrors v6's `data: DataContent | URL`. Resolve with
@@ -212,7 +220,8 @@ public sealed interface ContentPart {
     public data class Image(
         val mediaType: String,
         val base64: String = "",
-        val providerMetadata: Map<String, JsonElement>? = null,
+        @EncodeDefault(EncodeDefault.Mode.NEVER)
+        val providerMetadata: ProviderMetadata = ProviderMetadata.None,
         /**
          * Remote (or data) URL for the image, when not provided inline as
          * [base64]. Mirrors v6's `image: DataContent | URL`. Resolve with

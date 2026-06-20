@@ -1,6 +1,7 @@
 package ai.torad.aisdk.providers
 
 import ai.torad.aisdk.*
+import ai.torad.aisdk.ProviderMetadata
 import io.ktor.client.HttpClient
 import io.ktor.client.request.header
 import io.ktor.client.request.request
@@ -183,7 +184,7 @@ private class HuggingFaceResponsesLanguageModel(
         for (part in (response["output"] as? JsonArray).orEmpty()) {
             val obj = part.jsonObject
             val itemId = obj["id"]?.jsonPrimitive?.contentOrNull
-            val providerMetadata = itemId?.let(::huggingFaceItemMetadata)
+            val providerMetadata = itemId?.let(::huggingFaceItemMetadata) ?: ProviderMetadata.None
             when (obj["type"]?.jsonPrimitive?.contentOrNull) {
                 "message" -> {
                     for (messagePart in (obj["content"] as? JsonArray).orEmpty()) {
@@ -271,7 +272,7 @@ private class HuggingFaceResponsesLanguageModel(
             toolCalls = toolCalls,
             finishReason = mapHuggingFaceFinishReason(incompleteReason ?: "stop"),
             usage = huggingFaceUsage(response["usage"]),
-            providerMetadata = responseId?.let { mapOf("huggingface" to buildJsonObject { put("responseId", JsonPrimitive(it)) }) }.orEmpty(),
+            providerMetadata = responseId?.let { ProviderMetadata.Raw(JsonObject(mapOf("huggingface" to buildJsonObject { put("responseId", JsonPrimitive(it)) }))) } ?: ProviderMetadata.None,
             content = content,
             rawFinishReason = incompleteReason,
             warnings = warnings,
@@ -667,8 +668,8 @@ private class HuggingFaceResponsesStreamState(
                 finishReason = finishReason,
                 usage = usage,
                 providerMetadata = responseId?.let {
-                    mapOf("huggingface" to buildJsonObject { put("responseId", JsonPrimitive(it)) })
-                },
+                    ProviderMetadata.Raw(JsonObject(mapOf("huggingface" to buildJsonObject { put("responseId", JsonPrimitive(it)) })))
+                } ?: ProviderMetadata.None,
                 rawFinishReason = rawFinishReason,
             ),
         )
@@ -737,12 +738,12 @@ private fun mapHuggingFaceFinishReason(reason: String?): FinishReason = when (re
 private fun huggingFaceItemMetadata(
     itemId: String,
     providerExecuted: Boolean = false,
-): Map<String, JsonElement> = mapOf(
+): ProviderMetadata = ProviderMetadata.Raw(JsonObject(mapOf(
     "huggingface" to buildJsonObject {
         put("itemId", JsonPrimitive(itemId))
         if (providerExecuted) put("providerExecuted", JsonPrimitive(true))
     },
-)
+)))
 
 private fun huggingFaceParseToolInput(arguments: String?, json: Json): JsonElement =
     if (arguments.isNullOrBlank()) {

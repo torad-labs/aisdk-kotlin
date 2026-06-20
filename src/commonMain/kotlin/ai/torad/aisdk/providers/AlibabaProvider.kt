@@ -184,7 +184,7 @@ private class AlibabaVideoModel(
                         videos = listOf(GeneratedFile(mediaType = "video/mp4", base64 = "", url = videoUrl)),
                         warnings = warnings,
                         response = LanguageModelResponseMetadata(modelId = modelId, headers = headers, body = status.value),
-                        providerMetadata = mapOf("alibaba" to alibabaVideoMetadata(taskId, videoUrl, status.value.jsonObject)),
+                        providerMetadata = ProviderMetadata.Raw(JsonObject(mapOf("alibaba" to alibabaVideoMetadata(taskId, videoUrl, status.value.jsonObject)))),
                     )
                 }
                 "FAILED", "CANCELED" -> throw NoVideoGeneratedError("Video generation ${taskStatus.lowercase()}. Task ID: $taskId. ${output["message"]?.jsonPrimitive?.contentOrNull.orEmpty()}")

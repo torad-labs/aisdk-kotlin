@@ -155,7 +155,7 @@ class GenerateTextParityTest {
                 toolCalls = listOf(toolCall),
                 finishReason = FinishReason.Other,
                 usage = Usage(promptTokens = 10, completionTokens = 11),
-                providerMetadata = mapOf("mock" to buildJsonObject { put("trace", JsonPrimitive("abc")) }),
+                providerMetadata = ProviderMetadata.Raw(JsonObject(mapOf("mock" to buildJsonObject { put("trace", JsonPrimitive("abc")) }))),
                 content = listOf(
                     ContentPart.Text("answer"),
                     ContentPart.Reasoning("because"),
@@ -187,7 +187,7 @@ class GenerateTextParityTest {
         assertEquals(listOf(warning), result.warnings)
         assertEquals("resp_1", result.response.id)
         assertEquals("provider-stop-code", result.rawFinishReason)
-        assertEquals("abc", result.providerMetadata["mock"]?.jsonObject?.get("trace")?.jsonPrimitive?.content)
+        assertEquals("abc", result.providerMetadata.toMap()["mock"]?.jsonObject?.get("trace")?.jsonPrimitive?.content)
         assertEquals(21, result.totalUsage.totalTokens)
     }
 

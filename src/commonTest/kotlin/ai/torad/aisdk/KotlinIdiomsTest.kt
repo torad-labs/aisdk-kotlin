@@ -180,7 +180,7 @@ class KotlinIdiomsTest {
 
     @Test
     fun `metadata helpers decode provider payloads without raw json plumbing`() {
-        val metadata = mapOf("mock" to encodeJsonElement(ProviderTuning("cached")))
+        val metadata = ProviderMetadata.Raw(JsonObject(mapOf("mock" to encodeJsonElement(ProviderTuning("cached")))))
         val result = LanguageModelResult(
             text = "ok",
             finishReason = FinishReason.Stop,

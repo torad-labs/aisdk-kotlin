@@ -108,11 +108,11 @@ class AmazonBedrockProviderTest {
                                 mediaType = "application/pdf",
                                 base64 = "cGRm",
                                 filename = "brief.pdf",
-                                providerMetadata = mapOf(
+                                providerMetadata = ProviderMetadata.Raw(JsonObject(mapOf(
                                     "bedrock" to buildJsonObject {
                                         put("citations", buildJsonObject { put("enabled", JsonPrimitive(true)) })
                                     },
-                                ),
+                                ))),
                             ),
                         ),
                     ),
@@ -152,7 +152,7 @@ class AmazonBedrockProviderTest {
         assertEquals(2, result.usage.inputTokens.cacheRead)
         assertEquals(3, result.usage.inputTokens.cacheWrite)
         assertEquals("req-1", result.response.id)
-        assertEquals("</done>", result.providerMetadata["bedrock"]?.jsonObject?.get("stopSequence")?.jsonPrimitive?.contentOrNull)
+        assertEquals("</done>", result.providerMetadata.toMap()["bedrock"]?.jsonObject?.get("stopSequence")?.jsonPrimitive?.contentOrNull)
 
         val request = fixture.calls.single()
         assertEquals("POST", request.requestMethod)

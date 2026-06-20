@@ -126,7 +126,7 @@ class GladiaProviderTest {
         assertEquals("en", result.language)
         assertEquals(3.5f, result.durationInSeconds)
         assertEquals("true", result.response.headers["x-final"])
-        assertEquals("done", result.providerMetadata["gladia"]?.jsonObject?.get("status")?.jsonPrimitive?.contentOrNull)
+        assertEquals("done", result.providerMetadata.toMap()["gladia"]?.jsonObject?.get("status")?.jsonPrimitive?.contentOrNull)
 
         val upload = fixture.calls[0]
         assertEquals("POST", upload.requestMethod)

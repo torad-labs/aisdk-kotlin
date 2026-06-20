@@ -1,6 +1,7 @@
 package ai.torad.aisdk.providers
 
 import ai.torad.aisdk.*
+import ai.torad.aisdk.ProviderMetadata
 import io.ktor.client.HttpClient
 import io.ktor.client.request.forms.MultiPartFormDataContent
 import io.ktor.client.request.forms.formData
@@ -131,7 +132,7 @@ private class ProdiaLanguageModel(
             content = content,
             request = LanguageModelRequestMetadata(body),
             response = LanguageModelResponseMetadata(modelId = modelId, headers = response.headers),
-            providerMetadata = mapOf("prodia" to prodiaJobMetadata(response.job)),
+            providerMetadata = ProviderMetadata.Raw(JsonObject(mapOf("prodia" to prodiaJobMetadata(response.job)))),
         )
     }
 
@@ -190,11 +191,11 @@ private class ProdiaImageModel(
             images = listOf(image),
             warnings = warnings,
             response = LanguageModelResponseMetadata(modelId = modelId, headers = response.headers),
-            providerMetadata = mapOf(
+            providerMetadata = ProviderMetadata.Raw(JsonObject(mapOf(
                 "prodia" to buildJsonObject {
                     put("images", JsonArray(listOf(prodiaJobMetadata(response.job))))
                 },
-            ),
+            ))),
         )
     }
 }
@@ -241,11 +242,11 @@ private class ProdiaVideoModel(
         return VideoModelResult(
             videos = listOf(video),
             response = LanguageModelResponseMetadata(modelId = modelId, headers = response.headers),
-            providerMetadata = mapOf(
+            providerMetadata = ProviderMetadata.Raw(JsonObject(mapOf(
                 "prodia" to buildJsonObject {
                     put("videos", JsonArray(listOf(prodiaJobMetadata(response.job))))
                 },
-            ),
+            ))),
         )
     }
 }

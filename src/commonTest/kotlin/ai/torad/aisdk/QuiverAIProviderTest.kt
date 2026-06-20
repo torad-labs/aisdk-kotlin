@@ -83,7 +83,7 @@ class QuiverAIProviderTest {
         assertEquals("https://example.com/ref.png", body["references"]?.jsonArray?.first()?.jsonObject?.get("url")?.jsonPrimitive?.contentOrNull)
         assertEquals("BAUG", body["references"]?.jsonArray?.get(1)?.jsonObject?.get("base64")?.jsonPrimitive?.contentOrNull)
 
-        val metadata = result.providerMetadata["quiverai"]?.jsonObject
+        val metadata = result.providerMetadata.toMap()["quiverai"]?.jsonObject
         assertEquals("image/svg+xml", metadata?.get("images")?.jsonArray?.single()?.jsonObject?.get("mimeType")?.jsonPrimitive?.contentOrNull)
         assertEquals(21, metadata?.get("usage")?.jsonObject?.get("total_tokens")?.jsonPrimitive?.intOrNull)
         assertEquals(ImageModelUsage(inputTokens = 12, outputTokens = 9, totalTokens = 21), result.usage)

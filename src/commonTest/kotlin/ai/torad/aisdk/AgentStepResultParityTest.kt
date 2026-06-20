@@ -29,7 +29,7 @@ class AgentStepResultParityTest {
                     1,
                     finish,
                     Usage(),
-                    providerMetadata = buildJsonObject { put("p", JsonPrimitive(1)) },
+                    providerMetadata = ProviderMetadata.Raw(buildJsonObject { put("p", JsonPrimitive(1)) }),
                     rawFinishReason = "stop_sequence",
                 ),
             )
@@ -48,7 +48,7 @@ class AgentStepResultParityTest {
         assertEquals("heads up", step.warnings.single().message)
         assertEquals("resp_1", step.response.id)
         assertEquals("stop_sequence", step.rawFinishReason)
-        assertTrue(step.providerMetadata.containsKey("p"), "per-step providerMetadata captured")
+        assertTrue(step.providerMetadata.toMap().containsKey("p"), "per-step providerMetadata captured")
         assertEquals("m", step.model, "step records the model id")
         assertEquals(Unit, step.experimentalContext, "step records the live agent context")
     }

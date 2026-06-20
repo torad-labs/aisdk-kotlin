@@ -1,5 +1,7 @@
 package ai.torad.aisdk
 
+import kotlinx.serialization.EncodeDefault
+import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.Transient
 import kotlinx.serialization.json.JsonElement
@@ -44,6 +46,7 @@ import kotlinx.serialization.json.JsonElement
  * Abort | Error  — terminal alternatives
  * ```
  */
+@OptIn(ExperimentalSerializationApi::class)
 @Serializable
 public sealed interface StreamEvent {
 
@@ -72,45 +75,52 @@ public sealed interface StreamEvent {
     @Serializable
     public data class StepStart(
         val stepNumber: Int,
-        val providerMetadata: Map<String, JsonElement>? = null,
+        @EncodeDefault(EncodeDefault.Mode.NEVER)
+        val providerMetadata: ProviderMetadata = ProviderMetadata.None,
     ) : StreamEvent
 
     @Serializable
     public data class TextStart(
         val id: String,
-        val providerMetadata: Map<String, JsonElement>? = null,
+        @EncodeDefault(EncodeDefault.Mode.NEVER)
+        val providerMetadata: ProviderMetadata = ProviderMetadata.None,
     ) : StreamEvent
 
     @Serializable
     public data class TextDelta(
         val id: String,
         val text: String,
-        val providerMetadata: Map<String, JsonElement>? = null,
+        @EncodeDefault(EncodeDefault.Mode.NEVER)
+        val providerMetadata: ProviderMetadata = ProviderMetadata.None,
     ) : StreamEvent
 
     @Serializable
     public data class TextEnd(
         val id: String,
-        val providerMetadata: Map<String, JsonElement>? = null,
+        @EncodeDefault(EncodeDefault.Mode.NEVER)
+        val providerMetadata: ProviderMetadata = ProviderMetadata.None,
     ) : StreamEvent
 
     @Serializable
     public data class ReasoningStart(
         val id: String,
-        val providerMetadata: Map<String, JsonElement>? = null,
+        @EncodeDefault(EncodeDefault.Mode.NEVER)
+        val providerMetadata: ProviderMetadata = ProviderMetadata.None,
     ) : StreamEvent
 
     @Serializable
     public data class ReasoningDelta(
         val id: String,
         val text: String,
-        val providerMetadata: Map<String, JsonElement>? = null,
+        @EncodeDefault(EncodeDefault.Mode.NEVER)
+        val providerMetadata: ProviderMetadata = ProviderMetadata.None,
     ) : StreamEvent
 
     @Serializable
     public data class ReasoningEnd(
         val id: String,
-        val providerMetadata: Map<String, JsonElement>? = null,
+        @EncodeDefault(EncodeDefault.Mode.NEVER)
+        val providerMetadata: ProviderMetadata = ProviderMetadata.None,
     ) : StreamEvent
 
     /** Citation / web grounding source. */
@@ -121,7 +131,8 @@ public sealed interface StreamEvent {
         val url: String? = null,
         val title: String? = null,
         val mediaType: String? = null,
-        val providerMetadata: Map<String, JsonElement>? = null,
+        @EncodeDefault(EncodeDefault.Mode.NEVER)
+        val providerMetadata: ProviderMetadata = ProviderMetadata.None,
     ) : StreamEvent {
         @Serializable
         public enum class SourceType { Url, Document }
@@ -134,7 +145,8 @@ public sealed interface StreamEvent {
         val mediaType: String,
         /** Base64-encoded contents — keep small, large files should stream via providerMetadata URLs. */
         val base64: String,
-        val providerMetadata: Map<String, JsonElement>? = null,
+        @EncodeDefault(EncodeDefault.Mode.NEVER)
+        val providerMetadata: ProviderMetadata = ProviderMetadata.None,
     ) : StreamEvent
 
     /** Tool input streaming opens — the model has decided which tool to call. */
@@ -142,7 +154,8 @@ public sealed interface StreamEvent {
     public data class ToolInputStart(
         val id: String,
         val toolName: String,
-        val providerMetadata: Map<String, JsonElement>? = null,
+        @EncodeDefault(EncodeDefault.Mode.NEVER)
+        val providerMetadata: ProviderMetadata = ProviderMetadata.None,
     ) : StreamEvent
 
     /** Incremental input bytes for the in-flight tool call. */
@@ -150,14 +163,16 @@ public sealed interface StreamEvent {
     public data class ToolInputDelta(
         val id: String,
         val delta: String,
-        val providerMetadata: Map<String, JsonElement>? = null,
+        @EncodeDefault(EncodeDefault.Mode.NEVER)
+        val providerMetadata: ProviderMetadata = ProviderMetadata.None,
     ) : StreamEvent
 
     /** Tool input streaming ends — full JSON has been received. */
     @Serializable
     public data class ToolInputEnd(
         val id: String,
-        val providerMetadata: Map<String, JsonElement>? = null,
+        @EncodeDefault(EncodeDefault.Mode.NEVER)
+        val providerMetadata: ProviderMetadata = ProviderMetadata.None,
     ) : StreamEvent
 
     /** Final, parsed tool call envelope. Emitted once `ToolInputEnd` fires and JSON parses. */
@@ -166,7 +181,8 @@ public sealed interface StreamEvent {
         val toolCallId: String,
         val toolName: String,
         val inputJson: JsonElement,
-        val providerMetadata: Map<String, JsonElement>? = null,
+        @EncodeDefault(EncodeDefault.Mode.NEVER)
+        val providerMetadata: ProviderMetadata = ProviderMetadata.None,
     ) : StreamEvent
 
     /**
@@ -193,7 +209,8 @@ public sealed interface StreamEvent {
             modelOutput is ToolResultOutput.ErrorJson ||
             modelOutput is ToolResultOutput.ExecutionDenied,
         val preliminary: Boolean = false,
-        val providerMetadata: Map<String, JsonElement>? = null,
+        @EncodeDefault(EncodeDefault.Mode.NEVER)
+        val providerMetadata: ProviderMetadata = ProviderMetadata.None,
     ) : StreamEvent
 
     /**
@@ -210,7 +227,8 @@ public sealed interface StreamEvent {
         val toolName: String,
         val message: String,
         @Transient val error: AgentError? = null,
-        val providerMetadata: Map<String, JsonElement>? = null,
+        @EncodeDefault(EncodeDefault.Mode.NEVER)
+        val providerMetadata: ProviderMetadata = ProviderMetadata.None,
     ) : StreamEvent
 
     /**
@@ -234,7 +252,8 @@ public sealed interface StreamEvent {
         val approvalId: String? = null,
         /** HMAC-SHA256 approval signature (v6.0.202) — set only when the agent holds an approval secret. */
         val signature: String? = null,
-        val providerMetadata: Map<String, JsonElement>? = null,
+        @EncodeDefault(EncodeDefault.Mode.NEVER)
+        val providerMetadata: ProviderMetadata = ProviderMetadata.None,
     ) : StreamEvent
 
     /**
@@ -250,7 +269,8 @@ public sealed interface StreamEvent {
         val toolName: String,
         val approvalId: String,
         val reason: String? = null,
-        val providerMetadata: Map<String, JsonElement>? = null,
+        @EncodeDefault(EncodeDefault.Mode.NEVER)
+        val providerMetadata: ProviderMetadata = ProviderMetadata.None,
     ) : StreamEvent
 
     /** Step ended — aggregated finish reason + usage for that one step.
@@ -265,7 +285,8 @@ public sealed interface StreamEvent {
         val usage: Usage,
         /** Optional provider-specific payload; null on providers that
          *  don't expose it. Mirrors v6's `finishStep.providerMetadata`. */
-        val providerMetadata: Map<String, JsonElement>? = null,
+        @EncodeDefault(EncodeDefault.Mode.NEVER)
+        val providerMetadata: ProviderMetadata = ProviderMetadata.None,
     ) : StreamEvent
 
     /** Loop ended — final aggregated finish reason + usage. */
@@ -277,7 +298,8 @@ public sealed interface StreamEvent {
         /** Provider-specific summary payload on completion (per
          *  historical parity gap #18 slice). Routing layers measure
          *  end-to-end cache rate here without parsing each step. */
-        val providerMetadata: Map<String, JsonElement>? = null,
+        @EncodeDefault(EncodeDefault.Mode.NEVER)
+        val providerMetadata: ProviderMetadata = ProviderMetadata.None,
         /** The provider's OWN finish-reason string, before mapping. The mapped [finishReason] collapses
          *  unknown values to [FinishReason.Other] — but for diagnosing a provider-side abort the raw
          *  string is the evidence; never discard it.

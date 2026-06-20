@@ -144,7 +144,7 @@ public data class StepResult(
     val warnings: List<CallWarning> = emptyList(),
     val request: LanguageModelRequestMetadata = LanguageModelRequestMetadata(),
     val response: LanguageModelResponseMetadata = LanguageModelResponseMetadata(),
-    val providerMetadata: Map<String, JsonElement> = emptyMap(),
+    val providerMetadata: ProviderMetadata = ProviderMetadata.None,
     val rawFinishReason: String? = null,
     /** The model id that produced this step (upstream's `model.modelId`). */
     val model: String? = null,

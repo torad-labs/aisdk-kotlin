@@ -170,7 +170,7 @@ private class DeepgramTranscriptionModel(
                 headers = response.headers,
                 body = response.value,
             ),
-            providerMetadata = mapOf("deepgram" to response.value),
+            providerMetadata = ProviderMetadata.Raw(JsonObject(mapOf("deepgram" to response.value))),
             language = firstChannel?.get("detected_language")?.jsonPrimitive?.contentOrNull,
             durationInSeconds = value["metadata"]?.jsonObject?.get("duration")?.jsonPrimitive?.floatOrNull,
         )

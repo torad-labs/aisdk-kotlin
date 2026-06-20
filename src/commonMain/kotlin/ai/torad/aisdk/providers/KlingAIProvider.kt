@@ -1,6 +1,7 @@
 package ai.torad.aisdk.providers
 
 import ai.torad.aisdk.*
+import ai.torad.aisdk.ProviderMetadata
 import io.ktor.client.HttpClient
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpMethod
@@ -152,7 +153,7 @@ private class KlingAIVideoModel(
                 mediaType = "video/mp4",
                 base64 = "",
                 url = url,
-                providerMetadata = mapOf("klingai" to klingAIVideoMetadata(obj)),
+                providerMetadata = ProviderMetadata.Raw(JsonObject(mapOf("klingai" to klingAIVideoMetadata(obj)))),
             )
         }
         if (generated.isEmpty()) throw NoVideoGeneratedError("No valid video URLs in KlingAI response")
@@ -160,12 +161,12 @@ private class KlingAIVideoModel(
             videos = generated,
             warnings = warnings,
             response = LanguageModelResponseMetadata(modelId = modelId, headers = headers),
-            providerMetadata = mapOf(
+            providerMetadata = ProviderMetadata.Raw(JsonObject(mapOf(
                 "klingai" to buildJsonObject {
                     put("taskId", JsonPrimitive(taskId))
                     put("videos", JsonArray(videos.map { klingAIVideoMetadata(it.jsonObject) }))
                 },
-            ),
+            ))),
         )
     }
 }

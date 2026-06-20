@@ -394,7 +394,7 @@ private fun anthropicPrompt(
                     buildJsonObject {
                         put("type", JsonPrimitive("text"))
                         put("text", JsonPrimitive(it.text))
-                        anthropicCacheControl(it.providerMetadata)?.let { cache -> put("cache_control", cache) }
+                        anthropicCacheControl(it.providerMetadata.toMap())?.let { cache -> put("cache_control", cache) }
                     }
                 }
             }
@@ -448,7 +448,7 @@ private fun anthropicUserPart(part: ContentPart, betas: MutableSet<String>): Jso
     is ContentPart.Text -> buildJsonObject {
         put("type", JsonPrimitive("text"))
         put("text", JsonPrimitive(part.text))
-        anthropicCacheControl(part.providerMetadata)?.let { put("cache_control", it) }
+        anthropicCacheControl(part.providerMetadata.toMap())?.let { put("cache_control", it) }
     }
     is ContentPart.Image -> buildJsonObject {
         put("type", JsonPrimitive("image"))
@@ -465,7 +465,7 @@ private fun anthropicUserPart(part: ContentPart, betas: MutableSet<String>): Jso
                 put("type", JsonPrimitive("document"))
                 put("source", anthropicMediaSource(part.url, "application/pdf", part.base64))
                 part.filename?.let { put("title", JsonPrimitive(it)) }
-                anthropicFileOptions(part.providerMetadata)?.let { putJsonObjectFields(it) }
+                anthropicFileOptions(part.providerMetadata.toMap())?.let { putJsonObjectFields(it) }
             }
         }
         part.mediaType == "text/plain" -> buildJsonObject {
@@ -476,7 +476,7 @@ private fun anthropicUserPart(part: ContentPart, betas: MutableSet<String>): Jso
                 put("data", JsonPrimitive(Base64Codec.decode(part.base64).decodeToString()))
             })
             part.filename?.let { put("title", JsonPrimitive(it)) }
-            anthropicFileOptions(part.providerMetadata)?.let { putJsonObjectFields(it) }
+            anthropicFileOptions(part.providerMetadata.toMap())?.let { putJsonObjectFields(it) }
         }
         else -> throw UnsupportedFunctionalityError("file media type ${part.mediaType}", "Unsupported Anthropic file media type: ${part.mediaType}")
     }
@@ -509,7 +509,7 @@ private fun anthropicAssistantPart(
         put("text", JsonPrimitive(if (trimText) part.text.trim() else part.text))
     }
     is ContentPart.Reasoning if sendReasoning -> buildJsonObject {
-        val metadata = part.providerMetadata?.get("anthropic") as? JsonObject
+        val metadata = part.providerMetadata.toMap()["anthropic"] as? JsonObject
         put("type", JsonPrimitive("thinking"))
         put("thinking", JsonPrimitive(part.text))
         metadata?.get("signature")?.let { put("signature", it) }
@@ -713,15 +713,15 @@ private fun anthropicGenerateResult(
             }
             "thinking" -> content += ContentPart.Reasoning(
                 text = obj["thinking"]?.jsonPrimitive?.contentOrNull.orEmpty(),
-                providerMetadata = mapOf("anthropic" to buildJsonObject {
+                providerMetadata = ProviderMetadata.Raw(JsonObject(mapOf("anthropic" to buildJsonObject {
                     obj["signature"]?.let { put("signature", it) }
-                }),
+                }))),
             )
             "redacted_thinking" -> content += ContentPart.Reasoning(
                 text = "",
-                providerMetadata = mapOf("anthropic" to buildJsonObject {
+                providerMetadata = ProviderMetadata.Raw(JsonObject(mapOf("anthropic" to buildJsonObject {
                     obj["data"]?.let { put("redactedData", it) }
-                }),
+                }))),
             )
             "tool_use", "server_tool_use", "mcp_tool_use" -> {
                 val toolCallId = WireDecoder.requiredString(obj, "id", "anthropic", "response content", path)
@@ -749,9 +749,9 @@ private fun anthropicGenerateResult(
                     toolName = toolName,
                     input = obj["input"] ?: JsonObject(emptyMap()),
                     providerMetadata = if (obj["type"]?.jsonPrimitive?.contentOrNull != "tool_use") {
-                        mapOf("anthropic" to buildJsonObject { put("providerExecuted", JsonPrimitive(true)) })
+                        ProviderMetadata.Raw(JsonObject(mapOf("anthropic" to buildJsonObject { put("providerExecuted", JsonPrimitive(true)) })))
                     } else {
-                        null
+                        ProviderMetadata.None
                     },
                 )
                 toolCalls += toolCall
@@ -783,7 +783,7 @@ private fun anthropicGenerateResult(
                     toolCallId = toolCallId,
                     toolName = toolName,
                     output = obj["content"] ?: obj,
-                    providerMetadata = mapOf("anthropic" to obj),
+                    providerMetadata = ProviderMetadata.Raw(JsonObject(mapOf("anthropic" to obj))),
                 )
             }
         }
@@ -804,7 +804,7 @@ private fun anthropicGenerateResult(
         toolCalls = toolCalls,
         finishReason = mapAnthropicStopReason(stopReason),
         usage = usage,
-        providerMetadata = mapOf("anthropic" to metadata),
+        providerMetadata = ProviderMetadata.Raw(JsonObject(mapOf("anthropic" to metadata))),
         content = content,
         rawFinishReason = stopReason,
         warnings = warnings,
@@ -944,7 +944,7 @@ private class AnthropicStreamState(
                             toolCallId = block.id,
                             toolName = toolName,
                             inputJson = inputJson,
-                            providerMetadata = if (block.type != "tool_use") mapOf("anthropic" to buildJsonObject { put("providerExecuted", JsonPrimitive(true)) }) else null,
+                            providerMetadata = if (block.type != "tool_use") ProviderMetadata.Raw(JsonObject(mapOf("anthropic" to buildJsonObject { put("providerExecuted", JsonPrimitive(true)) }))) else ProviderMetadata.None,
                         )
                     }
                 }
@@ -969,9 +969,9 @@ private class AnthropicStreamState(
             totalSteps = 1,
             finishReason = finishReason,
             usage = usage,
-            providerMetadata = mapOf("anthropic" to buildJsonObject {
+            providerMetadata = ProviderMetadata.Raw(JsonObject(mapOf("anthropic" to buildJsonObject {
                 responseId?.let { put("responseId", JsonPrimitive(it)) }
-            }),
+            }))),
             rawFinishReason = rawStopReason,
         ),
     )
@@ -1097,16 +1097,16 @@ private fun anthropicCitationSource(citation: JsonObject, settings: AnthropicPro
             sourceType = StreamEvent.SourcePart.SourceType.Url,
             url = citation["url"]?.jsonPrimitive?.contentOrNull,
             title = citation["title"]?.jsonPrimitive?.contentOrNull,
-            providerMetadata = mapOf("anthropic" to buildJsonObject {
+            providerMetadata = ProviderMetadata.Raw(JsonObject(mapOf("anthropic" to buildJsonObject {
                 citation["cited_text"]?.let { put("citedText", it) }
                 citation["encrypted_index"]?.let { put("encryptedIndex", it) }
                 put("id", JsonPrimitive(settings.generateId()))
-            }),
+            }))),
         )
         "page_location", "char_location" -> ContentPart.Source(
             sourceType = StreamEvent.SourcePart.SourceType.Document,
             title = citation["document_title"]?.jsonPrimitive?.contentOrNull,
-            providerMetadata = mapOf("anthropic" to citation),
+            providerMetadata = ProviderMetadata.Raw(JsonObject(mapOf("anthropic" to citation))),
         )
         else -> null
     }

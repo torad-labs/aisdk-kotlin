@@ -1,6 +1,7 @@
 package ai.torad.aisdk.providers
 
 import ai.torad.aisdk.*
+import ai.torad.aisdk.ProviderMetadata
 import io.ktor.client.HttpClient
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpMethod
@@ -102,7 +103,7 @@ private class QuiverAIImageModel(
                 headers = response.headers,
                 body = response.value,
             ),
-            providerMetadata = mapOf("quiverai" to quiverAIProviderMetadata(root)),
+            providerMetadata = ProviderMetadata.Raw(JsonObject(mapOf("quiverai" to quiverAIProviderMetadata(root)))),
             usage = quiverAIUsage(root["usage"]),
         )
     }

@@ -138,7 +138,7 @@ private class FalImageModel(
                     ?: "image/png",
                 base64 = Base64Codec.encode(bytes.bytes),
                 filename = image["file_name"]?.jsonPrimitive?.contentOrNull,
-                providerMetadata = mapOf("fal" to falImageMetadata(image)),
+                providerMetadata = ProviderMetadata.Raw(JsonObject(mapOf("fal" to falImageMetadata(image)))),
                 url = url,
             )
         }
@@ -147,7 +147,7 @@ private class FalImageModel(
             images = downloaded,
             warnings = prepared.warnings,
             response = LanguageModelResponseMetadata(modelId = modelId, headers = response.headers, body = response.value),
-            providerMetadata = mapOf("fal" to falImageProviderMetadata(value, targetImages)),
+            providerMetadata = ProviderMetadata.Raw(JsonObject(mapOf("fal" to falImageProviderMetadata(value, targetImages)))),
         )
     }
 }
@@ -224,7 +224,7 @@ private class FalTranscriptionModel(
                 )
             },
             response = LanguageModelResponseMetadata(modelId = modelId, headers = result.headers, body = result.value),
-            providerMetadata = mapOf("fal" to result.value),
+            providerMetadata = ProviderMetadata.Raw(JsonObject(mapOf("fal" to result.value))),
         )
     }
 }
@@ -272,11 +272,11 @@ private class FalVideoModel(
                     mediaType = mediaType,
                     base64 = "",
                     url = videoUrl,
-                    providerMetadata = mapOf("fal" to falVideoMetadata(video)),
+                    providerMetadata = ProviderMetadata.Raw(JsonObject(mapOf("fal" to falVideoMetadata(video)))),
                 ),
             ),
             response = LanguageModelResponseMetadata(modelId = modelId, headers = result.headers, body = result.value),
-            providerMetadata = mapOf("fal" to falVideoProviderMetadata(value, video)),
+            providerMetadata = ProviderMetadata.Raw(JsonObject(mapOf("fal" to falVideoProviderMetadata(value, video)))),
         )
     }
 }

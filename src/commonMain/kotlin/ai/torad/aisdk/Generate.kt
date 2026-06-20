@@ -9,7 +9,6 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.filterIsInstance
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
-import kotlinx.serialization.json.JsonElement
 
 public data class GenerateTextResult<TOutput>(
     val output: TOutput,
@@ -30,7 +29,7 @@ public data class GenerateTextResult<TOutput>(
     val warnings: List<CallWarning> = emptyList(),
     val request: LanguageModelRequestMetadata = LanguageModelRequestMetadata(),
     val response: LanguageModelResponseMetadata = LanguageModelResponseMetadata(),
-    val providerMetadata: Map<String, JsonElement> = emptyMap(),
+    val providerMetadata: ProviderMetadata = ProviderMetadata.None,
     val steps: List<StepResult> = emptyList(),
     val rawFinishReason: String? = null,
 ) {
@@ -136,7 +135,7 @@ public data class GenerateObjectResult<TOutput>(
     val warnings: List<CallWarning> = emptyList(),
     val request: LanguageModelRequestMetadata = LanguageModelRequestMetadata(),
     val response: LanguageModelResponseMetadata = LanguageModelResponseMetadata(),
-    val providerMetadata: Map<String, JsonElement> = emptyMap(),
+    val providerMetadata: ProviderMetadata = ProviderMetadata.None,
 ) {
     val output: TOutput get() = value
     val generatedObject: TOutput get() = value

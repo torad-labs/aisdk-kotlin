@@ -3,13 +3,12 @@ package ai.torad.aisdk
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
-import kotlinx.serialization.json.JsonElement
 
 public data class GeneratedFile(
     val mediaType: String,
     val base64: String,
     val filename: String? = null,
-    val providerMetadata: Map<String, JsonElement> = emptyMap(),
+    val providerMetadata: ProviderMetadata = ProviderMetadata.None,
     val url: String? = null,
 )
 
@@ -58,7 +57,7 @@ public fun generatedFile(
     data: FileData,
     mediaType: String = data.mediaType ?: "application/octet-stream",
     filename: String? = data.filename,
-    providerMetadata: Map<String, JsonElement> = emptyMap(),
+    providerMetadata: ProviderMetadata = ProviderMetadata.None,
 ): GeneratedFile = when (data) {
     is FileData.Base64 -> GeneratedFile(
         mediaType = mediaType,
@@ -164,7 +163,7 @@ public class DefaultGeneratedFile {
             return byteArrayData ?: ByteArray(0)
         }
 
-    public fun toGeneratedFile(filename: String? = null, providerMetadata: Map<String, JsonElement> = emptyMap()): GeneratedFile =
+    public fun toGeneratedFile(filename: String? = null, providerMetadata: ProviderMetadata = ProviderMetadata.None): GeneratedFile =
         GeneratedFile(mediaType = mediaType, base64 = base64, filename = filename, providerMetadata = providerMetadata)
 }
 
@@ -216,7 +215,7 @@ public data class ImageModelResult(
     val images: List<GeneratedFile>,
     val warnings: List<CallWarning> = emptyList(),
     val response: LanguageModelResponseMetadata = LanguageModelResponseMetadata(),
-    val providerMetadata: Map<String, JsonElement> = emptyMap(),
+    val providerMetadata: ProviderMetadata = ProviderMetadata.None,
     val usage: ImageModelUsage = ImageModelUsage(),
 )
 
@@ -224,7 +223,7 @@ public data class GenerateImageResult(
     val images: List<GeneratedFile>,
     val warnings: List<CallWarning> = emptyList(),
     val response: LanguageModelResponseMetadata = LanguageModelResponseMetadata(),
-    val providerMetadata: Map<String, JsonElement> = emptyMap(),
+    val providerMetadata: ProviderMetadata = ProviderMetadata.None,
     /** Per-call response metadata, one entry per underlying model call (n-batching). */
     val responses: List<LanguageModelResponseMetadata> = listOf(response),
     val usage: ImageModelUsage = ImageModelUsage(),
@@ -267,7 +266,7 @@ public suspend fun generateImage(
         images = images,
         warnings = results.flatMap { it.warnings },
         response = results.first().response,
-        providerMetadata = results.firstNotNullOfOrNull { it.providerMetadata.ifEmpty { null } } ?: emptyMap(),
+        providerMetadata = results.firstNotNullOfOrNull { (it.providerMetadata as? ProviderMetadata.Raw) } ?: ProviderMetadata.None,
         responses = results.map { it.response },
         usage = sumImageUsage(results.map { it.usage }),
     )
@@ -391,14 +390,14 @@ public data class SpeechModelResult(
     val audio: GeneratedFile?,
     val warnings: List<CallWarning> = emptyList(),
     val response: LanguageModelResponseMetadata = LanguageModelResponseMetadata(),
-    val providerMetadata: Map<String, JsonElement> = emptyMap(),
+    val providerMetadata: ProviderMetadata = ProviderMetadata.None,
 )
 
 public data class GenerateSpeechResult(
     val audio: GeneratedFile,
     val warnings: List<CallWarning> = emptyList(),
     val response: LanguageModelResponseMetadata = LanguageModelResponseMetadata(),
-    val providerMetadata: Map<String, JsonElement> = emptyMap(),
+    val providerMetadata: ProviderMetadata = ProviderMetadata.None,
     val responses: List<LanguageModelResponseMetadata> = listOf(response),
 )
 
@@ -487,7 +486,7 @@ public data class TranscriptionModelResult(
     val segments: List<TranscriptSegment> = emptyList(),
     val warnings: List<CallWarning> = emptyList(),
     val response: LanguageModelResponseMetadata = LanguageModelResponseMetadata(),
-    val providerMetadata: Map<String, JsonElement> = emptyMap(),
+    val providerMetadata: ProviderMetadata = ProviderMetadata.None,
     /** Detected language as an ISO-639-1 code, or null if undetermined. */
     val language: String? = null,
     /** Total audio duration in seconds, or null if undetermined. */
@@ -499,7 +498,7 @@ public data class TranscribeResult(
     val segments: List<TranscriptSegment> = emptyList(),
     val warnings: List<CallWarning> = emptyList(),
     val response: LanguageModelResponseMetadata = LanguageModelResponseMetadata(),
-    val providerMetadata: Map<String, JsonElement> = emptyMap(),
+    val providerMetadata: ProviderMetadata = ProviderMetadata.None,
     val responses: List<LanguageModelResponseMetadata> = listOf(response),
     /** Detected language as an ISO-639-1 code, or null if undetermined. */
     val language: String? = null,
@@ -583,14 +582,14 @@ public data class VideoModelResult(
     val videos: List<GeneratedFile>,
     val warnings: List<CallWarning> = emptyList(),
     val response: LanguageModelResponseMetadata = LanguageModelResponseMetadata(),
-    val providerMetadata: Map<String, JsonElement> = emptyMap(),
+    val providerMetadata: ProviderMetadata = ProviderMetadata.None,
 )
 
 public data class GenerateVideoResult(
     val videos: List<GeneratedFile>,
     val warnings: List<CallWarning> = emptyList(),
     val response: LanguageModelResponseMetadata = LanguageModelResponseMetadata(),
-    val providerMetadata: Map<String, JsonElement> = emptyMap(),
+    val providerMetadata: ProviderMetadata = ProviderMetadata.None,
     /** Per-call response metadata, one entry per underlying model call (n-batching). */
     val responses: List<LanguageModelResponseMetadata> = listOf(response),
 ) {
@@ -643,7 +642,7 @@ public suspend fun generateVideo(
         videos = videos,
         warnings = results.flatMap { it.warnings },
         response = results.first().response,
-        providerMetadata = results.firstNotNullOfOrNull { it.providerMetadata.ifEmpty { null } } ?: emptyMap(),
+        providerMetadata = results.firstNotNullOfOrNull { (it.providerMetadata as? ProviderMetadata.Raw) } ?: ProviderMetadata.None,
         responses = results.map { it.response },
     )
 }

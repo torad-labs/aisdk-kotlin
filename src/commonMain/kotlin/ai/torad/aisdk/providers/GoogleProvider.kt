@@ -298,7 +298,7 @@ private class GoogleGenerativeAIImageModel(
             )
         }
         if (images.isEmpty()) throw NoImageGeneratedError("Google image response contained no predictions.")
-        return ImageModelResult(images, warnings, LanguageModelResponseMetadata(modelId = modelId, headers = response.headers, body = response.value), mapOf("google" to response.value))
+        return ImageModelResult(images, warnings, LanguageModelResponseMetadata(modelId = modelId, headers = response.headers, body = response.value), ProviderMetadata.Raw(JsonObject(mapOf("google" to response.value))))
     }
 
     private suspend fun generateGeminiImage(params: ImageGenerationParams): ImageModelResult {
@@ -330,7 +330,7 @@ private class GoogleGenerativeAIImageModel(
             ),
         )
         val images = result.content.filterIsInstance<ContentPart.File>()
-            .map { GeneratedFile(mediaType = it.mediaType, base64 = it.base64, filename = it.filename, providerMetadata = it.providerMetadata.orEmpty()) }
+            .map { GeneratedFile(mediaType = it.mediaType, base64 = it.base64, filename = it.filename, providerMetadata = it.providerMetadata) }
         if (images.isEmpty()) throw NoImageGeneratedError("Gemini image response contained no image file parts.")
         return ImageModelResult(images, result.warnings, result.response, result.providerMetadata)
     }
@@ -403,16 +403,16 @@ private class GoogleGenerativeAIVideoModel(
                 mediaType = "video/mp4",
                 base64 = "",
                 url = uri,
-                providerMetadata = mapOf(
+                providerMetadata = ProviderMetadata.Raw(JsonObject(mapOf(
                     "google" to buildJsonObject {
                         put("uri", JsonPrimitive(uri))
                         put("requiresApiKey", JsonPrimitive(settings.apiKey != null))
                     },
-                ),
+                ))),
             )
         }
         if (videos.isEmpty()) throw NoVideoGeneratedError("Google video response contained no videos.")
-        return VideoModelResult(videos = videos, response = LanguageModelResponseMetadata(modelId = modelId, headers = headers, body = current), providerMetadata = mapOf("google" to current))
+        return VideoModelResult(videos = videos, response = LanguageModelResponseMetadata(modelId = modelId, headers = headers, body = current), providerMetadata = ProviderMetadata.Raw(JsonObject(mapOf("google" to current))))
     }
 }
 
@@ -663,7 +663,7 @@ private fun googleInteractionsInput(
                             flush()
                             steps += buildJsonObject {
                                 put("type", JsonPrimitive("thought"))
-                                googleInteractionsSignature(part.providerMetadata)?.let { put("signature", JsonPrimitive(it)) }
+                                googleInteractionsSignature(part.providerMetadata.toMap())?.let { put("signature", JsonPrimitive(it)) }
                                 if (part.text.isNotBlank()) {
                                     put(
                                         "summary",
@@ -686,7 +686,7 @@ private fun googleInteractionsInput(
                                 put("id", JsonPrimitive(part.toolCallId))
                                 put("name", JsonPrimitive(part.toolName))
                                 put("arguments", part.input)
-                                googleInteractionsSignature(part.providerMetadata)?.let { put("signature", JsonPrimitive(it)) }
+                                googleInteractionsSignature(part.providerMetadata.toMap())?.let { put("signature", JsonPrimitive(it)) }
                             }
                         }
                         else -> warnings += CallWarning("other", "google.interactions: unsupported assistant content part; part dropped.")
@@ -702,7 +702,7 @@ private fun googleInteractionsInput(
                         put("name", JsonPrimitive(part.toolName))
                         put("result", part.modelVisible)
                         put("is_error", JsonPrimitive(part.isError))
-                        googleInteractionsSignature(part.providerMetadata)?.let { put("signature", JsonPrimitive(it)) }
+                        googleInteractionsSignature(part.providerMetadata.toMap())?.let { put("signature", JsonPrimitive(it)) }
                     }
                 }
                 if (content.isNotEmpty()) steps += buildJsonObject {
@@ -888,7 +888,7 @@ private fun googleInteractionsResult(
         toolCalls = parsed.content.filterIsInstance<ContentPart.ToolCall>(),
         finishReason = googleInteractionsFinishReason(status, parsed.hasFunctionCall),
         usage = googleInteractionsUsage(response["usage"]),
-        providerMetadata = if (providerMetadata.isEmpty()) emptyMap() else mapOf("google" to providerMetadata),
+        providerMetadata = if (providerMetadata.isEmpty()) ProviderMetadata.None else ProviderMetadata.Raw(JsonObject(mapOf("google" to providerMetadata))),
         content = parsed.content,
         rawFinishReason = status,
         warnings = warnings,
@@ -924,7 +924,7 @@ private fun googleInteractionsContent(
                         "text" -> {
                             val metadata = googleInteractionsMetadata(interactionId = interactionId)
                             content += ContentPart.Text(block["text"]?.jsonPrimitive?.contentOrNull.orEmpty(), metadata)
-                            content += googleInteractionsAnnotationSources(block["annotations"] as? JsonArray, generateId, metadata)
+                            content += googleInteractionsAnnotationSources(block["annotations"] as? JsonArray, generateId, metadata.toMap().ifEmpty { null })
                         }
                         "image" -> {
                             val metadata = googleInteractionsMetadata(
@@ -974,7 +974,7 @@ private fun googleInteractionsContent(
                             type.removeSuffix("_call")
                         },
                         input = step["arguments"] ?: JsonObject(emptyMap()),
-                        providerMetadata = mapOf("google" to buildJsonObject { put("providerExecuted", JsonPrimitive(true)) }),
+                        providerMetadata = ProviderMetadata.Raw(JsonObject(mapOf("google" to buildJsonObject { put("providerExecuted", JsonPrimitive(true)) }))),
                     )
                 } else if (type != null && type.endsWith("_result")) {
                     content += ContentPart.ToolResult(
@@ -986,7 +986,7 @@ private fun googleInteractionsContent(
                         },
                         output = step["result"] ?: JsonNull,
                         isError = step["is_error"]?.jsonPrimitive?.booleanOrNull == true,
-                        providerMetadata = mapOf("google" to buildJsonObject { put("providerExecuted", JsonPrimitive(true)) }),
+                        providerMetadata = ProviderMetadata.Raw(JsonObject(mapOf("google" to buildJsonObject { put("providerExecuted", JsonPrimitive(true)) }))),
                     )
                 }
             }
@@ -1010,13 +1010,13 @@ private fun googleInteractionsAnnotationSources(
             sourceType = StreamEvent.SourcePart.SourceType.Url,
             url = url,
             title = annotation["title"]?.jsonPrimitive?.contentOrNull ?: annotation["name"]?.jsonPrimitive?.contentOrNull,
-            providerMetadata = metadata ?: mapOf("google" to buildJsonObject { put("id", JsonPrimitive(IdGenerator.generate())) }),
+            providerMetadata = metadata?.let { ProviderMetadata.Raw(JsonObject(it)) } ?: ProviderMetadata.Raw(JsonObject(mapOf("google" to buildJsonObject { put("id", JsonPrimitive(IdGenerator.generate())) }))),
         )
         "file_citation" -> ContentPart.Source(
             sourceType = StreamEvent.SourcePart.SourceType.Document,
             url = url,
             title = annotation["file_name"]?.jsonPrimitive?.contentOrNull,
-            providerMetadata = metadata ?: mapOf("google" to buildJsonObject { put("id", JsonPrimitive(IdGenerator.generate())) }),
+            providerMetadata = metadata?.let { ProviderMetadata.Raw(JsonObject(it)) } ?: ProviderMetadata.Raw(JsonObject(mapOf("google" to buildJsonObject { put("id", JsonPrimitive(IdGenerator.generate())) }))),
         )
         else -> null
     }
@@ -1172,7 +1172,7 @@ private class GoogleInteractionsStreamState(
                     type.removeSuffix("_call")
                 }
                 val input = step["arguments"] ?: JsonObject(emptyMap())
-                val metadata = mapOf("google" to buildJsonObject { put("providerExecuted", JsonPrimitive(true)) })
+                val metadata = ProviderMetadata.Raw(JsonObject(mapOf("google" to buildJsonObject { put("providerExecuted", JsonPrimitive(true)) })))
                 events += StreamEvent.ToolInputStart(id, name, metadata)
                 events += StreamEvent.ToolInputDelta(id, input.toString(), metadata)
                 events += StreamEvent.ToolInputEnd(id, metadata)
@@ -1251,13 +1251,13 @@ private fun googleInteractionsMetadata(
     signature: String? = null,
     interactionId: String? = null,
     extra: Map<String, JsonElement> = emptyMap(),
-): Map<String, JsonElement>? {
+): ProviderMetadata {
     val google = buildJsonObject {
         signature?.let { put("signature", JsonPrimitive(it)) }
         interactionId?.let { put("interactionId", JsonPrimitive(it)) }
         extra.forEach { (key, value) -> put(key, value) }
     }
-    return if (google.isEmpty()) null else mapOf("google" to google)
+    return if (google.isEmpty()) ProviderMetadata.None else ProviderMetadata.Raw(JsonObject(mapOf("google" to google)))
 }
 
 private fun googleInteractionsSignature(metadata: Map<String, JsonElement>?): String? =
@@ -1353,7 +1353,7 @@ private fun googleMessages(messages: List<ModelMessage>, isGemini3: Boolean = fa
 private fun googleContentPart(part: ContentPart): JsonElement? = when (part) {
     is ContentPart.Text -> buildJsonObject {
         put("text", JsonPrimitive(part.text))
-        googleThoughtMetadata(part.providerMetadata)?.let { putJsonObjectFields(it) }
+        googleThoughtMetadata(part.providerMetadata.toMap())?.let { putJsonObjectFields(it) }
     }
     is ContentPart.File -> buildJsonObject {
         put("inlineData", buildJsonObject {
@@ -1375,12 +1375,12 @@ private const val GOOGLE_SKIP_THOUGHT_SIGNATURE = "skip_thought_signature_valida
 private fun googleAssistantPart(part: ContentPart, isGemini3: Boolean = false): JsonElement? = when (part) {
     is ContentPart.Text -> buildJsonObject {
         put("text", JsonPrimitive(part.text))
-        googleThoughtMetadata(part.providerMetadata)?.let { putJsonObjectFields(it) }
+        googleThoughtMetadata(part.providerMetadata.toMap())?.let { putJsonObjectFields(it) }
     }
     is ContentPart.Reasoning -> buildJsonObject {
         put("text", JsonPrimitive(part.text))
         put("thought", JsonPrimitive(true))
-        googleThoughtMetadata(part.providerMetadata)?.let { putJsonObjectFields(it) }
+        googleThoughtMetadata(part.providerMetadata.toMap())?.let { putJsonObjectFields(it) }
     }
     is ContentPart.File -> googleContentPart(part)
     is ContentPart.ToolCall -> buildJsonObject {
@@ -1391,7 +1391,7 @@ private fun googleAssistantPart(part: ContentPart, isGemini3: Boolean = false): 
         })
         // Gemini 3 rejects (HTTP 400) a replayed functionCall lacking a thoughtSignature.
         // Use the captured signature, else inject the documented sentinel for Gemini 3.
-        val sig = (part.providerMetadata?.get("google") as? JsonObject)?.get("thoughtSignature")
+        val sig = (part.providerMetadata.toMap()["google"] as? JsonObject)?.get("thoughtSignature")
         when {
             sig != null -> put("thoughtSignature", sig)
             isGemini3 -> put("thoughtSignature", JsonPrimitive(GOOGLE_SKIP_THOUGHT_SIGNATURE))
@@ -1494,16 +1494,16 @@ private fun googleLanguageResult(
         obj["executableCode"]?.jsonObject?.let { code ->
             val id = settings.generateId()
             lastCodeExecutionId = id
-            val call = ContentPart.ToolCall(id, "code_execution", code, providerMetadata = mapOf("google" to buildJsonObject { put("providerExecuted", JsonPrimitive(true)) }))
+            val call = ContentPart.ToolCall(id, "code_execution", code, providerMetadata = ProviderMetadata.Raw(JsonObject(mapOf("google" to buildJsonObject { put("providerExecuted", JsonPrimitive(true)) }))))
             content += call
             toolCalls += call
         }
         obj["codeExecutionResult"]?.jsonObject?.let { result ->
-            content += ContentPart.ToolResult(lastCodeExecutionId ?: settings.generateId(), "code_execution", result, providerMetadata = mapOf("google" to buildJsonObject { put("providerExecuted", JsonPrimitive(true)) }))
+            content += ContentPart.ToolResult(lastCodeExecutionId ?: settings.generateId(), "code_execution", result, providerMetadata = ProviderMetadata.Raw(JsonObject(mapOf("google" to buildJsonObject { put("providerExecuted", JsonPrimitive(true)) }))))
             lastCodeExecutionId = null
         }
         obj["text"]?.jsonPrimitive?.contentOrNull?.let { text ->
-            val metadata = googlePartMetadata(obj)
+            val metadata = googlePartMetadata(obj)?.let { ProviderMetadata.Raw(JsonObject(it)) } ?: ProviderMetadata.None
             content += if (obj["thought"]?.jsonPrimitive?.booleanOrNull == true) {
                 ContentPart.Reasoning(text, metadata)
             } else {
@@ -1515,7 +1515,7 @@ private fun googleLanguageResult(
                 toolCallId = callObj["id"]?.jsonPrimitive?.contentOrNull ?: settings.generateId(),
                 toolName = callObj["name"]?.jsonPrimitive?.contentOrNull.orEmpty(),
                 input = callObj["args"] ?: JsonObject(emptyMap()),
-                providerMetadata = googlePartMetadata(obj),
+                providerMetadata = googlePartMetadata(obj)?.let { ProviderMetadata.Raw(JsonObject(it)) } ?: ProviderMetadata.None,
             )
             content += call
             toolCalls += call
@@ -1524,7 +1524,7 @@ private fun googleLanguageResult(
             content += ContentPart.File(
                 mediaType = data["mimeType"]?.jsonPrimitive?.contentOrNull ?: "application/octet-stream",
                 base64 = data["data"]?.jsonPrimitive?.contentOrNull.orEmpty(),
-                providerMetadata = googlePartMetadata(obj),
+                providerMetadata = googlePartMetadata(obj)?.let { ProviderMetadata.Raw(JsonObject(it)) } ?: ProviderMetadata.None,
             )
         }
     }
@@ -1544,7 +1544,7 @@ private fun googleLanguageResult(
         toolCalls = toolCalls,
         finishReason = mapGoogleFinishReason(finish, toolCalls.isNotEmpty()),
         usage = googleUsage(response["usageMetadata"]),
-        providerMetadata = mapOf("google" to metadata),
+        providerMetadata = ProviderMetadata.Raw(JsonObject(mapOf("google" to metadata))),
         content = content,
         rawFinishReason = finish,
         warnings = warnings,
@@ -1588,9 +1588,9 @@ private class GoogleStreamState(
                     }
                     if (reasoningId == null) {
                         reasoningId = (blockCounter++).toString()
-                        events += StreamEvent.ReasoningStart(reasoningId.orEmpty(), googlePartMetadata(obj))
+                        events += StreamEvent.ReasoningStart(reasoningId.orEmpty(), googlePartMetadata(obj)?.let { pm -> ProviderMetadata.Raw(JsonObject(pm)) } ?: ProviderMetadata.None)
                     }
-                    events += StreamEvent.ReasoningDelta(reasoningId.orEmpty(), it, googlePartMetadata(obj))
+                    events += StreamEvent.ReasoningDelta(reasoningId.orEmpty(), it, googlePartMetadata(obj)?.let { pm -> ProviderMetadata.Raw(JsonObject(pm)) } ?: ProviderMetadata.None)
                 } else {
                     if (reasoningId != null) {
                         events += StreamEvent.ReasoningEnd(reasoningId.orEmpty())
@@ -1598,9 +1598,9 @@ private class GoogleStreamState(
                     }
                     if (textId == null) {
                         textId = (blockCounter++).toString()
-                        events += StreamEvent.TextStart(textId.orEmpty(), googlePartMetadata(obj))
+                        events += StreamEvent.TextStart(textId.orEmpty(), googlePartMetadata(obj)?.let { pm -> ProviderMetadata.Raw(JsonObject(pm)) } ?: ProviderMetadata.None)
                     }
-                    events += StreamEvent.TextDelta(textId.orEmpty(), it, googlePartMetadata(obj))
+                    events += StreamEvent.TextDelta(textId.orEmpty(), it, googlePartMetadata(obj)?.let { pm -> ProviderMetadata.Raw(JsonObject(pm)) } ?: ProviderMetadata.None)
                 }
             }
             obj["functionCall"]?.let { callElement ->
@@ -1617,10 +1617,11 @@ private class GoogleStreamState(
                 }
                 val input = call["args"] ?: JsonObject(emptyMap())
                 hasToolCalls = true
-                events += StreamEvent.ToolInputStart(id, name, googlePartMetadata(obj))
-                events += StreamEvent.ToolInputDelta(id, input.toString(), googlePartMetadata(obj))
-                events += StreamEvent.ToolInputEnd(id, googlePartMetadata(obj))
-                events += StreamEvent.ToolCall(id, name, input, googlePartMetadata(obj))
+                val partMetadata = googlePartMetadata(obj)?.let { ProviderMetadata.Raw(JsonObject(it)) } ?: ProviderMetadata.None
+                events += StreamEvent.ToolInputStart(id, name, partMetadata)
+                events += StreamEvent.ToolInputDelta(id, input.toString(), partMetadata)
+                events += StreamEvent.ToolInputEnd(id, partMetadata)
+                events += StreamEvent.ToolCall(id, name, input, partMetadata)
             }
             obj["inlineData"]?.let { dataElement ->
                 val data = try {
@@ -1636,13 +1637,13 @@ private class GoogleStreamState(
                     } catch (error: WireDecodeException) {
                         return listOf(StreamEvent.Error(error.message ?: "Google stream protocol error"))
                     },
-                    providerMetadata = googlePartMetadata(obj),
+                    providerMetadata = googlePartMetadata(obj)?.let { ProviderMetadata.Raw(JsonObject(it)) } ?: ProviderMetadata.None,
                 )
             }
         }
         googleSources(candidate, generateId).forEach { source ->
             events += StreamEvent.SourcePart(
-                id = source.providerMetadata?.get("google")?.jsonObject?.get("id")?.jsonPrimitive?.contentOrNull ?: IdGenerator.generate(),
+                id = source.providerMetadata.toMap()["google"]?.jsonObject?.get("id")?.jsonPrimitive?.contentOrNull ?: IdGenerator.generate(),
                 sourceType = source.sourceType,
                 url = source.url,
                 title = source.title,
@@ -1982,10 +1983,10 @@ private fun googleSources(candidate: JsonObject, generateId: () -> String): List
             sourceType = StreamEvent.SourcePart.SourceType.Url,
             url = web["uri"]?.jsonPrimitive?.contentOrNull,
             title = web["title"]?.jsonPrimitive?.contentOrNull,
-            providerMetadata = mapOf("google" to buildJsonObject {
+            providerMetadata = ProviderMetadata.Raw(JsonObject(mapOf("google" to buildJsonObject {
                 put("id", JsonPrimitive(IdGenerator.generate()))
                 put("groundingChunk", chunk)
-            }),
+            }))),
         )
     }
 }

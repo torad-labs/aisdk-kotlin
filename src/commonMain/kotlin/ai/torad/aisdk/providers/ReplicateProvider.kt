@@ -1,6 +1,7 @@
 package ai.torad.aisdk.providers
 
 import ai.torad.aisdk.*
+import ai.torad.aisdk.ProviderMetadata
 import io.ktor.client.HttpClient
 import io.ktor.client.request.request
 import io.ktor.client.statement.bodyAsBytes
@@ -206,11 +207,11 @@ private class ReplicateVideoModel(
                     mediaType = "video/mp4",
                     base64 = "",
                     url = videoUrl,
-                    providerMetadata = mapOf("url" to JsonPrimitive(videoUrl)),
+                    providerMetadata = ProviderMetadata.Raw(JsonObject(mapOf("url" to JsonPrimitive(videoUrl)))),
                 ),
             ),
             response = LanguageModelResponseMetadata(modelId = modelId, headers = submitted.headers),
-            providerMetadata = mapOf("replicate" to replicateVideoProviderMetadata(prediction, videoUrl)),
+            providerMetadata = ProviderMetadata.Raw(JsonObject(mapOf("replicate" to replicateVideoProviderMetadata(prediction, videoUrl)))),
         )
     }
 }
