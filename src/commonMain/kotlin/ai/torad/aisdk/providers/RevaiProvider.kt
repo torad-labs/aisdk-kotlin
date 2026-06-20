@@ -65,35 +65,30 @@ public data class RevaiProviderSettings(
     val maxPollAttempts: Int = 60,
 )
 
-public interface RevaiProvider : Provider {
+public class RevaiProvider(
+    private val client: HttpClient,
+    public val settings: RevaiProviderSettings,
+) : Provider {
+    override val providerId: String = "revai"
+
     public operator fun invoke(modelId: RevaiTranscriptionModelId = "machine"): TranscriptionModel = transcription(modelId)
-    public fun transcription(modelId: RevaiTranscriptionModelId): TranscriptionModel
+
+    public fun transcription(modelId: RevaiTranscriptionModelId): TranscriptionModel =
+        RevaiTranscriptionModel(client, settings, modelId)
+
     public fun textEmbeddingModel(modelId: String): Nothing = throw NoSuchModelError(providerId, "embeddingModel", modelId)
 
     override fun transcriptionModel(modelId: String): TranscriptionModel = transcription(modelId)
-}
-
-public fun createRevai(
-    client: HttpClient,
-    settings: RevaiProviderSettings = RevaiProviderSettings(),
-): RevaiProvider = DefaultRevaiProvider(client, settings)
-
-public val revai: RevaiProvider = object : RevaiProvider {
-    override val providerId: String = "revai"
-    override fun transcription(modelId: String): TranscriptionModel =
-        throw AiSdkRuntimeException("Rev.ai provider is not configured. Use createRevai(client, settings).")
-}
-
-private class DefaultRevaiProvider(
-    private val client: HttpClient,
-    private val settings: RevaiProviderSettings,
-) : RevaiProvider {
-    override val providerId: String = "revai"
-    override fun transcription(modelId: String): TranscriptionModel = RevaiTranscriptionModel(client, settings, modelId)
     override fun languageModel(modelId: String): LanguageModel = throw NoSuchModelError(providerId, "languageModel", modelId)
     override fun embeddingModel(modelId: String): EmbeddingModel = throw NoSuchModelError(providerId, "embeddingModel", modelId)
     override fun imageModel(modelId: String): ImageModel = throw NoSuchModelError(providerId, "imageModel", modelId)
 }
+
+/** PascalCase factory mirroring the OpenAI reference pattern. */
+public fun Revai(
+    client: HttpClient,
+    settings: RevaiProviderSettings = RevaiProviderSettings(),
+): RevaiProvider = RevaiProvider(client, settings)
 
 private class RevaiTranscriptionModel(
     private val client: HttpClient,
@@ -113,10 +108,10 @@ private class RevaiTranscriptionModel(
         )
         var job = submit.value.jsonObject
         if (job["status"]?.jsonPrimitive?.contentOrNull == "failed") {
-            throw AiSdkRuntimeException("Failed to submit transcription job to Rev.ai")
+            throw NoTranscriptGeneratedError("Failed to submit transcription job to Rev.ai")
         }
         val jobId = job["id"]?.jsonPrimitive?.contentOrNull
-            ?: throw AiSdkRuntimeException("Rev.ai transcription job response is missing id")
+            ?: throw InvalidResponseDataError(submit.value, "Rev.ai transcription job response is missing id")
 
         repeat(settings.maxPollAttempts.coerceAtLeast(1)) { attempt ->
             params.abortSignal.throwIfAborted()
@@ -131,7 +126,7 @@ private class RevaiTranscriptionModel(
                 job = poll.value.jsonObject
                 when (job["status"]?.jsonPrimitive?.contentOrNull) {
                     "transcribed" -> return@repeat
-                    "failed" -> throw AiSdkRuntimeException("Transcription job failed")
+                    "failed" -> throw NoTranscriptGeneratedError("Rev.ai transcription job failed")
                 }
             }
             if (job["status"]?.jsonPrimitive?.contentOrNull != "transcribed" && settings.pollingIntervalMillis > 0 && attempt < settings.maxPollAttempts - 1) {
@@ -139,7 +134,7 @@ private class RevaiTranscriptionModel(
             }
         }
         if (job["status"]?.jsonPrimitive?.contentOrNull != "transcribed") {
-            throw AiSdkRuntimeException("Transcription job polling timed out")
+            throw NoTranscriptGeneratedError("Rev.ai transcription job polling timed out")
         }
 
         val transcript = revaiGetJson(

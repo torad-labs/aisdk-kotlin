@@ -1,8 +1,6 @@
 package ai.torad.aisdk
 import ai.torad.aisdk.providers.ALIBABA_VERSION
 import ai.torad.aisdk.providers.AlibabaProviderSettings
-import ai.torad.aisdk.providers.alibaba
-import ai.torad.aisdk.providers.createAlibaba
 
 import io.ktor.http.HttpHeaders
 import kotlinx.coroutines.test.runTest
@@ -20,6 +18,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertTrue
+import ai.torad.aisdk.providers.Alibaba
 
 class AlibabaProviderTest {
     @Test
@@ -66,7 +65,7 @@ class AlibabaProviderTest {
             ),
         )
         fixture.server.start()
-        val provider = createAlibaba(
+        val provider = Alibaba(
             fixture.httpClient(),
             AlibabaProviderSettings(
                 apiKey = "key",
@@ -149,7 +148,7 @@ class AlibabaProviderTest {
             ),
         )
         fixture.server.start()
-        val model = createAlibaba(
+        val model = Alibaba(
             fixture.httpClient(),
             AlibabaProviderSettings(apiKey = "key", videoBaseURL = "https://dash.test"),
         ).video("wan2.6-i2v")
@@ -242,7 +241,7 @@ class AlibabaProviderTest {
             ),
         )
         fixture.server.start()
-        val provider = createAlibaba(
+        val provider = Alibaba(
             fixture.httpClient(),
             AlibabaProviderSettings(apiKey = "key", embeddingBaseURL = "https://alibaba.test/api/v1"),
         )
@@ -268,7 +267,7 @@ class AlibabaProviderTest {
 
     @Test
     fun `embedding model rejects sparse output and over-limit batches`() = runTest {
-        val provider = createAlibaba(createTestServer(mutableMapOf()).httpClient(), AlibabaProviderSettings(apiKey = "key"))
+        val provider = Alibaba(createTestServer(mutableMapOf()).httpClient(), AlibabaProviderSettings(apiKey = "key"))
         val model = provider.embeddingModel("text-embedding-v4")
         assertFailsWith<UnsupportedFunctionalityError> {
             model.embed(
@@ -287,11 +286,9 @@ class AlibabaProviderTest {
 
     @Test
     fun `unsupported Alibaba surfaces and unconfigured singleton fail explicitly`() {
-        val provider = createAlibaba(createTestServer(mutableMapOf()).httpClient(), AlibabaProviderSettings(apiKey = "key"))
+        val provider = Alibaba(createTestServer(mutableMapOf()).httpClient(), AlibabaProviderSettings(apiKey = "key"))
 
         assertFailsWith<NoSuchModelError> { provider.imageModel("image") }
-        assertTrue(assertFailsWith<AiSdkException> { alibaba("qwen-plus") }.message.orEmpty().contains("createAlibaba"))
-        assertTrue(assertFailsWith<AiSdkException> { alibaba.video("wan2.6-t2v") }.message.orEmpty().contains("createAlibaba"))
     }
 
     private fun Map<String, String>.headerValue(name: String): String? =

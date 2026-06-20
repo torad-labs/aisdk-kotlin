@@ -1,8 +1,6 @@
 package ai.torad.aisdk
 import ai.torad.aisdk.providers.REPLICATE_VERSION
 import ai.torad.aisdk.providers.ReplicateProviderSettings
-import ai.torad.aisdk.providers.createReplicate
-import ai.torad.aisdk.providers.replicate
 
 import io.ktor.http.HttpHeaders
 import kotlinx.coroutines.test.runTest
@@ -20,6 +18,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
+import ai.torad.aisdk.providers.Replicate
 
 class ReplicateProviderTest {
     @Test
@@ -38,7 +37,7 @@ class ReplicateProviderTest {
             ),
         )
         fixture.server.start()
-        val model = createReplicate(
+        val model = Replicate(
             fixture.httpClient(),
             ReplicateProviderSettings(apiToken = "token"),
         ).image("owner/model:version-123")
@@ -65,7 +64,7 @@ class ReplicateProviderTest {
 
         assertEquals("replicate", model.provider)
         assertEquals(1, model.maxImagesPerCall)
-        assertEquals(8, createReplicate(fixture.httpClient()).image("black-forest-labs/flux-2-pro").maxImagesPerCall)
+        assertEquals(8, Replicate(fixture.httpClient()).image("black-forest-labs/flux-2-pro").maxImagesPerCall)
         assertEquals(listOf("image/png", "image/webp"), result.images.map { it.mediaType })
         assertEquals(Base64Codec.encode(byteArrayOf(1, 2)), result.images.first().base64)
 
@@ -101,7 +100,7 @@ class ReplicateProviderTest {
             ),
         )
         fixture.server.start()
-        val model = createReplicate(
+        val model = Replicate(
             fixture.httpClient(),
             ReplicateProviderSettings(apiToken = "token"),
         ).image("black-forest-labs/flux-2-pro")
@@ -145,7 +144,7 @@ class ReplicateProviderTest {
             ),
         )
         fixture.server.start()
-        val model = createReplicate(
+        val model = Replicate(
             fixture.httpClient(),
             ReplicateProviderSettings(apiToken = "token"),
         ).video("minimax/video-01")
@@ -213,14 +212,13 @@ class ReplicateProviderTest {
             ),
         )
         fixture.server.start()
-        val provider = createReplicate(fixture.httpClient(), ReplicateProviderSettings(apiToken = "token"))
+        val provider = Replicate(fixture.httpClient(), ReplicateProviderSettings(apiToken = "token"))
 
         assertFailsWith<AiSdkException> {
             provider.video("minimax/video-01").generate(VideoGenerationParams(prompt = "x"))
         }
         assertFailsWith<NoSuchModelError> { provider.languageModel("model") }
         assertFailsWith<NoSuchModelError> { provider.embeddingModel("embed") }
-        assertFailsWith<AiSdkException> { replicate.image("black-forest-labs/flux-dev") }
     }
 
     private fun Map<String, String>.headerValue(name: String): String? =

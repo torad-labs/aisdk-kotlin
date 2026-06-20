@@ -37,50 +37,36 @@ public data class MistralLanguageModelOptions(
     val reasoningEffort: String? = null,
 )
 
-public interface MistralProvider : Provider {
-    public val settings: MistralProviderSettings
+public class MistralProvider(
+    client: HttpClient,
+    public val settings: MistralProviderSettings,
+) : Provider {
+    private val compatible = createOpenAICompatible(client, settings.toCompatible())
+
+    override val providerId: String = "mistral"
 
     public operator fun invoke(modelId: MistralChatModelId): LanguageModel = chat(modelId)
-    public fun chat(modelId: MistralChatModelId): LanguageModel
-    public fun embedding(modelId: MistralEmbeddingModelId): EmbeddingModel
+
+    public fun chat(modelId: MistralChatModelId): LanguageModel =
+        MistralChatLanguageModel(compatible.chatModel(modelId))
+
+    public fun embedding(modelId: MistralEmbeddingModelId): EmbeddingModel =
+        MistralEmbeddingModel(compatible.embeddingModel(modelId))
 
     override fun languageModel(modelId: String): LanguageModel = chat(modelId)
     override fun embeddingModel(modelId: String): EmbeddingModel = embedding(modelId)
     public fun textEmbedding(modelId: MistralEmbeddingModelId): EmbeddingModel = embedding(modelId)
     public fun textEmbeddingModel(modelId: MistralEmbeddingModelId): EmbeddingModel = embedding(modelId)
-}
-
-public fun createMistral(
-    client: HttpClient,
-    settings: MistralProviderSettings = MistralProviderSettings(),
-): MistralProvider = DefaultMistralProvider(client, settings)
-
-public val mistral: MistralProvider = object : MistralProvider {
-    override val providerId: String = "mistral"
-    override val settings: MistralProviderSettings = MistralProviderSettings()
-    override fun chat(modelId: String): LanguageModel =
-        throw AiSdkRuntimeException("Mistral provider is not configured. Use createMistral(client, settings).")
-    override fun embedding(modelId: String): EmbeddingModel =
-        throw AiSdkRuntimeException("Mistral provider is not configured. Use createMistral(client, settings).")
-}
-
-private class DefaultMistralProvider(
-    client: HttpClient,
-    override val settings: MistralProviderSettings,
-) : MistralProvider {
-    private val compatible = createOpenAICompatible(client, settings.toCompatible())
-
-    override val providerId: String = "mistral"
-
-    override fun chat(modelId: MistralChatModelId): LanguageModel =
-        MistralChatLanguageModel(compatible.chatModel(modelId))
-
-    override fun embedding(modelId: MistralEmbeddingModelId): EmbeddingModel =
-        MistralEmbeddingModel(compatible.embeddingModel(modelId))
 
     override fun imageModel(modelId: String): ImageModel =
         throw NoSuchModelError(providerId, "imageModel", modelId)
 }
+
+/** PascalCase factory mirroring [OpenAI]. */
+public fun Mistral(
+    client: HttpClient,
+    settings: MistralProviderSettings = MistralProviderSettings(),
+): MistralProvider = MistralProvider(client, settings)
 
 private class MistralChatLanguageModel(
     private val delegate: LanguageModel,

@@ -1,8 +1,6 @@
 package ai.torad.aisdk
 import ai.torad.aisdk.providers.HUME_VERSION
 import ai.torad.aisdk.providers.HumeProviderSettings
-import ai.torad.aisdk.providers.createHume
-import ai.torad.aisdk.providers.hume
 
 import io.ktor.http.HttpHeaders
 import kotlinx.coroutines.test.runTest
@@ -17,6 +15,7 @@ import kotlinx.serialization.json.jsonPrimitive
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
+import ai.torad.aisdk.providers.Hume
 
 class HumeProviderTest {
     @Test
@@ -29,7 +28,7 @@ class HumeProviderTest {
             ),
         )
         fixture.server.start()
-        val model = createHume(
+        val model = Hume(
             fixture.httpClient(),
             HumeProviderSettings(apiKey = "key"),
         ).speech()
@@ -91,7 +90,7 @@ class HumeProviderTest {
             ),
         )
         fixture.server.start()
-        val model = createHume(
+        val model = Hume(
             fixture.httpClient(),
             HumeProviderSettings(apiKey = "key"),
         ).speech()

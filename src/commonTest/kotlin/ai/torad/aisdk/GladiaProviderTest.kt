@@ -1,8 +1,6 @@
 package ai.torad.aisdk
 import ai.torad.aisdk.providers.GLADIA_VERSION
 import ai.torad.aisdk.providers.GladiaProviderSettings
-import ai.torad.aisdk.providers.createGladia
-import ai.torad.aisdk.providers.gladia
 
 import io.ktor.http.HttpHeaders
 import kotlinx.coroutines.test.runTest
@@ -20,6 +18,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertTrue
+import ai.torad.aisdk.providers.Gladia
 
 class GladiaProviderTest {
     @Test
@@ -43,7 +42,7 @@ class GladiaProviderTest {
             ),
         )
         fixture.server.start()
-        val model = createGladia(
+        val model = Gladia(
             fixture.httpClient(),
             GladiaProviderSettings(apiKey = "key", pollingIntervalMillis = 0),
         ).transcription()
@@ -175,7 +174,7 @@ class GladiaProviderTest {
             ),
         )
         fixture.server.start()
-        val model = createGladia(
+        val model = Gladia(
             fixture.httpClient(),
             GladiaProviderSettings(apiKey = "key", pollingIntervalMillis = 0),
         ).transcription()
@@ -189,11 +188,10 @@ class GladiaProviderTest {
     @Test
     fun `default provider and unsupported model families fail explicitly`() {
         val fixture = createTestServer(mutableMapOf())
-        val provider = createGladia(fixture.httpClient(), GladiaProviderSettings(apiKey = "key"))
+        val provider = Gladia(fixture.httpClient(), GladiaProviderSettings(apiKey = "key"))
 
         assertFailsWith<NoSuchModelError> { provider.languageModel("model") }
         assertFailsWith<NoSuchModelError> { provider.embeddingModel("embed") }
-        assertFailsWith<AiSdkException> { gladia.transcription() }
     }
 
     private fun Map<String, String>.headerValue(name: String): String? =

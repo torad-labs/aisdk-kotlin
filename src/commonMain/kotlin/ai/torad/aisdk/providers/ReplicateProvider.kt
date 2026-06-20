@@ -67,37 +67,29 @@ public data class ReplicateProviderSettings(
     val headers: Map<String, String> = emptyMap(),
 )
 
-public interface ReplicateProvider : Provider {
-    public fun image(modelId: ReplicateImageModelId): ImageModel
-    override fun imageModel(modelId: String): ImageModel = image(modelId)
-    public fun video(modelId: ReplicateVideoModelId): VideoModel
-    override fun videoModel(modelId: String): VideoModel = video(modelId)
-    public fun textEmbeddingModel(modelId: String): Nothing = throw NoSuchModelError(providerId, "embeddingModel", modelId)
-}
-
-public fun createReplicate(
-    client: HttpClient,
-    settings: ReplicateProviderSettings = ReplicateProviderSettings(),
-): ReplicateProvider = DefaultReplicateProvider(client, settings)
-
-public val replicate: ReplicateProvider = object : ReplicateProvider {
-    override val providerId: String = "replicate"
-    override fun image(modelId: String): ImageModel =
-        throw AiSdkRuntimeException("Replicate provider is not configured. Use createReplicate(client, settings).")
-    override fun video(modelId: String): VideoModel =
-        throw AiSdkRuntimeException("Replicate provider is not configured. Use createReplicate(client, settings).")
-}
-
-private class DefaultReplicateProvider(
+public class ReplicateProvider(
     private val client: HttpClient,
     private val settings: ReplicateProviderSettings,
-) : ReplicateProvider {
+) : Provider {
     override val providerId: String = "replicate"
-    override fun image(modelId: String): ImageModel = ReplicateImageModel(client, settings, modelId)
-    override fun video(modelId: String): VideoModel = ReplicateVideoModel(client, settings, modelId)
+
+    public fun image(modelId: ReplicateImageModelId): ImageModel = ReplicateImageModel(client, settings, modelId)
+    override fun imageModel(modelId: String): ImageModel = image(modelId)
+
+    public fun video(modelId: ReplicateVideoModelId): VideoModel = ReplicateVideoModel(client, settings, modelId)
+    override fun videoModel(modelId: String): VideoModel = video(modelId)
+
+    public fun textEmbeddingModel(modelId: String): Nothing = throw NoSuchModelError(providerId, "embeddingModel", modelId)
+
     override fun languageModel(modelId: String): LanguageModel = throw NoSuchModelError(providerId, "languageModel", modelId)
     override fun embeddingModel(modelId: String): EmbeddingModel = throw NoSuchModelError(providerId, "embeddingModel", modelId)
 }
+
+/** PascalCase factory — mirrors the OpenAI provider pattern. */
+public fun Replicate(
+    client: HttpClient,
+    settings: ReplicateProviderSettings = ReplicateProviderSettings(),
+): ReplicateProvider = ReplicateProvider(client, settings)
 
 private class ReplicateImageModel(
     private val client: HttpClient,
@@ -144,10 +136,10 @@ private class ReplicateImageModel(
             ),
         )
         val output = response.value.jsonObject["output"]
-            ?: throw AiSdkRuntimeException("Replicate image response is missing output")
+            ?: throw NoImageGeneratedError("Replicate image response is missing output")
         val imageUrls = when (output) {
-            is JsonArray -> output.map { it.jsonPrimitive.contentOrNull ?: throw AiSdkRuntimeException("Replicate image output contains a non-string URL") }
-            else -> listOf(output.jsonPrimitive.contentOrNull ?: throw AiSdkRuntimeException("Replicate image output is not a URL"))
+            is JsonArray -> output.map { it.jsonPrimitive.contentOrNull ?: throw InvalidResponseDataError(output, "Replicate image output contains a non-string URL") }
+            else -> listOf(output.jsonPrimitive.contentOrNull ?: throw InvalidResponseDataError(output, "Replicate image output is not a URL"))
         }
         val images = imageUrls.map { url ->
             replicateDownloadImage(client, url, params.abortSignal)
@@ -207,7 +199,7 @@ private class ReplicateVideoModel(
             abortSignal = params.abortSignal,
         )
         val videoUrl = prediction["output"]?.jsonPrimitive?.contentOrNull
-            ?: throw AiSdkRuntimeException("No video URL in Replicate response")
+            ?: throw NoVideoGeneratedError("No video URL in Replicate response")
         return VideoModelResult(
             videos = listOf(
                 GeneratedFile(

@@ -66,39 +66,28 @@ public data class ProdiaVideoModelOptions(
     val resolution: String? = null,
 )
 
-public interface ProdiaProvider : Provider {
+public class ProdiaProvider(
+    private val client: HttpClient,
+    public val settings: ProdiaProviderSettings,
+) : Provider {
+    override val providerId: String = "prodia"
+
     public operator fun invoke(modelId: ProdiaLanguageModelId): LanguageModel = languageModel(modelId)
     public fun image(modelId: ProdiaImageModelId): ImageModel = imageModel(modelId)
     public fun video(modelId: ProdiaVideoModelId): VideoModel = videoModel(modelId)
     public fun textEmbeddingModel(modelId: String): Nothing = throw NoSuchModelError(providerId, "embeddingModel", modelId)
-}
-
-public fun createProdia(
-    client: HttpClient,
-    settings: ProdiaProviderSettings = ProdiaProviderSettings(),
-): ProdiaProvider = DefaultProdiaProvider(client, settings)
-
-public val prodia: ProdiaProvider = object : ProdiaProvider {
-    override val providerId: String = "prodia"
-    override fun languageModel(modelId: String): LanguageModel =
-        throw AiSdkRuntimeException("Prodia provider is not configured. Use createProdia(client, settings).")
-    override fun imageModel(modelId: String): ImageModel =
-        throw AiSdkRuntimeException("Prodia provider is not configured. Use createProdia(client, settings).")
-    override fun videoModel(modelId: String): VideoModel =
-        throw AiSdkRuntimeException("Prodia provider is not configured. Use createProdia(client, settings).")
-}
-
-private class DefaultProdiaProvider(
-    private val client: HttpClient,
-    private val settings: ProdiaProviderSettings,
-) : ProdiaProvider {
-    override val providerId: String = "prodia"
 
     override fun languageModel(modelId: String): LanguageModel = ProdiaLanguageModel(client, settings, modelId)
     override fun imageModel(modelId: String): ImageModel = ProdiaImageModel(client, settings, modelId)
     override fun videoModel(modelId: String): VideoModel = ProdiaVideoModel(client, settings, modelId)
     override fun embeddingModel(modelId: String): EmbeddingModel = throw NoSuchModelError(providerId, "embeddingModel", modelId)
 }
+
+/** PascalCase factory — mirrors the reference `OpenAI(...)` faux-constructor. */
+public fun Prodia(
+    client: HttpClient,
+    settings: ProdiaProviderSettings = ProdiaProviderSettings(),
+): ProdiaProvider = ProdiaProvider(client, settings)
 
 private class ProdiaLanguageModel(
     private val client: HttpClient,

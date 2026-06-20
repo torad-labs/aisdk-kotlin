@@ -79,21 +79,36 @@ public data class GoogleGenerativeAIProviderSettings(
     val videoMaxPollAttempts: Int = 120,
 )
 
-public interface GoogleGenerativeAIProvider : Provider {
-    public val settings: GoogleGenerativeAIProviderSettings
-    public val tools: GoogleTools
+public class GoogleGenerativeAIProvider(
+    private val client: HttpClient,
+    public val settings: GoogleGenerativeAIProviderSettings = GoogleGenerativeAIProviderSettings(),
+) : Provider {
+    override val providerId: String = "google"
+    public val tools: GoogleTools = GoogleTools()
 
     public operator fun invoke(modelId: GoogleGenerativeAIModelId): LanguageModel = languageModel(modelId)
+
+    override fun languageModel(modelId: String): LanguageModel =
+        GoogleGenerativeAILanguageModel(client, settings, modelId)
+
     public fun chat(modelId: GoogleGenerativeAIModelId): LanguageModel = languageModel(modelId)
     public fun generativeAI(modelId: GoogleGenerativeAIModelId): LanguageModel = languageModel(modelId)
-    public fun embedding(modelId: GoogleGenerativeAIEmbeddingModelId): EmbeddingModel
+
+    public fun embedding(modelId: GoogleGenerativeAIEmbeddingModelId): EmbeddingModel =
+        GoogleGenerativeAIEmbeddingModel(client, settings, modelId)
     public fun textEmbedding(modelId: GoogleGenerativeAIEmbeddingModelId): EmbeddingModel = embedding(modelId)
     public fun textEmbeddingModel(modelId: GoogleGenerativeAIEmbeddingModelId): EmbeddingModel = embedding(modelId)
-    public fun image(modelId: GoogleGenerativeAIImageModelId): ImageModel
-    public fun video(modelId: GoogleGenerativeAIVideoModelId): VideoModel
+
+    public fun image(modelId: GoogleGenerativeAIImageModelId): ImageModel =
+        GoogleGenerativeAIImageModel(client, settings, modelId)
+
+    public fun video(modelId: GoogleGenerativeAIVideoModelId): VideoModel =
+        GoogleGenerativeAIVideoModel(client, settings, modelId)
+
     public fun interactions(modelIdOrAgent: GoogleInteractionsModelId): LanguageModel =
         interactions(GoogleInteractionsModelInput.Model(modelIdOrAgent))
-    public fun interactions(modelIdOrAgent: GoogleInteractionsModelInput): LanguageModel
+    public fun interactions(modelIdOrAgent: GoogleInteractionsModelInput): LanguageModel =
+        GoogleInteractionsLanguageModel(client, settings, modelIdOrAgent)
     public fun agentInteraction(agentName: GoogleInteractionsAgentName): LanguageModel =
         interactions(GoogleInteractionsModelInput.Agent(agentName))
     public fun managedAgentInteraction(agentName: String): LanguageModel =
@@ -104,49 +119,19 @@ public interface GoogleGenerativeAIProvider : Provider {
     override fun videoModel(modelId: String): VideoModel = video(modelId)
 }
 
+// Source/binary-compat alias for the factory below — the constructor now lives on the merged class.
+private typealias DefaultGoogleGenerativeAIProvider = GoogleGenerativeAIProvider
+
+/** PascalCase factory — mirrors the OpenAI(...) reference faux-constructor. */
+public fun GoogleGenerativeAI(
+    client: HttpClient,
+    settings: GoogleGenerativeAIProviderSettings = GoogleGenerativeAIProviderSettings(),
+): GoogleGenerativeAIProvider = GoogleGenerativeAIProvider(client, settings)
+
 public fun createGoogleGenerativeAI(
     client: HttpClient,
     settings: GoogleGenerativeAIProviderSettings = GoogleGenerativeAIProviderSettings(),
 ): GoogleGenerativeAIProvider = DefaultGoogleGenerativeAIProvider(client, settings)
-
-public val google: GoogleGenerativeAIProvider = object : GoogleGenerativeAIProvider {
-    override val providerId: String = "google"
-    override val settings: GoogleGenerativeAIProviderSettings = GoogleGenerativeAIProviderSettings()
-    override val tools: GoogleTools = GoogleTools()
-    override fun languageModel(modelId: String): LanguageModel =
-        throw AiSdkRuntimeException("Google Generative AI provider is not configured. Use createGoogleGenerativeAI(client, settings).")
-    override fun embedding(modelId: String): EmbeddingModel =
-        throw AiSdkRuntimeException("Google Generative AI provider is not configured. Use createGoogleGenerativeAI(client, settings).")
-    override fun image(modelId: String): ImageModel =
-        throw AiSdkRuntimeException("Google Generative AI provider is not configured. Use createGoogleGenerativeAI(client, settings).")
-    override fun video(modelId: String): VideoModel =
-        throw AiSdkRuntimeException("Google Generative AI provider is not configured. Use createGoogleGenerativeAI(client, settings).")
-    override fun interactions(modelIdOrAgent: GoogleInteractionsModelInput): LanguageModel =
-        throw AiSdkRuntimeException("Google Generative AI provider is not configured. Use createGoogleGenerativeAI(client, settings).")
-}
-
-private class DefaultGoogleGenerativeAIProvider(
-    private val client: HttpClient,
-    override val settings: GoogleGenerativeAIProviderSettings,
-) : GoogleGenerativeAIProvider {
-    override val providerId: String = "google"
-    override val tools: GoogleTools = googleTools
-
-    override fun languageModel(modelId: String): LanguageModel =
-        GoogleGenerativeAILanguageModel(client, settings, modelId)
-
-    override fun embedding(modelId: String): EmbeddingModel =
-        GoogleGenerativeAIEmbeddingModel(client, settings, modelId)
-
-    override fun image(modelId: String): ImageModel =
-        GoogleGenerativeAIImageModel(client, settings, modelId)
-
-    override fun video(modelId: String): VideoModel =
-        GoogleGenerativeAIVideoModel(client, settings, modelId)
-
-    override fun interactions(modelIdOrAgent: GoogleInteractionsModelInput): LanguageModel =
-        GoogleInteractionsLanguageModel(client, settings, modelIdOrAgent)
-}
 
 public data class GoogleTools(
     val googleSearch: Tool<JsonElement, JsonElement, Any?> =
@@ -231,7 +216,9 @@ private class GoogleGenerativeAIEmbeddingModel(
 
     override suspend fun embed(params: EmbeddingModelCallParams): EmbeddingModelResult {
         params.abortSignal.throwIfAborted()
-        if (params.values.size > 2048) throw AiSdkRuntimeException("Google embedding models support at most 2048 values per call.")
+        if (params.values.size > maxEmbeddingsPerCall) {
+            throw TooManyEmbeddingValuesForCallError(provider, modelId, maxEmbeddingsPerCall, params.values)
+        }
         val options = params.providerOptions["google"] as? JsonObject ?: JsonObject(emptyMap())
         val single = params.values.size == 1
         val body = if (single) {
@@ -280,8 +267,8 @@ private class GoogleGenerativeAIImageModel(
     }
 
     private suspend fun generateImagen(params: ImageGenerationParams): ImageModelResult {
-        if (params.files.isNotEmpty()) throw AiSdkRuntimeException("Google Generative AI Imagen models do not support image editing. Use Google Vertex AI for image editing.")
-        if (params.mask != null) throw AiSdkRuntimeException("Google Generative AI Imagen models do not support masks. Use Google Vertex AI for image editing.")
+        if (params.files.isNotEmpty()) throw UnsupportedFunctionalityError("imageEditing", "Google Generative AI Imagen models do not support image editing. Use Google Vertex AI for image editing.")
+        if (params.mask != null) throw UnsupportedFunctionalityError("imageMask", "Google Generative AI Imagen models do not support masks. Use Google Vertex AI for image editing.")
         val warnings = mutableListOf<CallWarning>()
         if (params.size != null) warnings += CallWarning("unsupported", "size")
         if (params.seed != null) warnings += CallWarning("unsupported", "seed")
@@ -319,14 +306,14 @@ private class GoogleGenerativeAIImageModel(
     }
 
     private suspend fun generateGeminiImage(params: ImageGenerationParams): ImageModelResult {
-        if (params.n > 1) throw AiSdkRuntimeException("Gemini image models do not support n > 1.")
-        if (params.mask != null) throw AiSdkRuntimeException("Gemini image models do not support mask-based image editing.")
+        if (params.n > 1) throw UnsupportedFunctionalityError("imageMultiSample", "Gemini image models do not support n > 1.")
+        if (params.mask != null) throw UnsupportedFunctionalityError("imageMask", "Gemini image models do not support mask-based image editing.")
         val message = ModelMessage(
             MessageRole.User,
             buildList {
                 add(ContentPart.Text(params.prompt))
                 params.files.forEach { file ->
-                    add(ContentPart.File(file.mediaType ?: "image/png", file.base64 ?: throw AiSdkRuntimeException("Gemini image input URLs are not supported in this facade."), file.filename))
+                    add(ContentPart.File(file.mediaType ?: "image/png", file.base64 ?: throw UnsupportedFunctionalityError("imageInputUrl", "Gemini image input URLs are not supported in this facade."), file.filename))
                 }
             },
         )
@@ -467,7 +454,7 @@ private class GoogleInteractionsLanguageModel(
                 client = client,
                 settings = settings,
                 interactionId = body["id"]?.jsonPrimitive?.contentOrNull
-                    ?: throw AiSdkRuntimeException("google.interactions: background response did not include an interaction id."),
+                    ?: throw InvalidResponseDataError(body, "google.interactions: background response did not include an interaction id."),
                 headers = googleInteractionsHeaders(settings, params.headers),
                 abortSignal = params.abortSignal,
                 timeoutMillis = prepared.pollingTimeoutMillis,
@@ -494,7 +481,7 @@ private class GoogleInteractionsLanguageModel(
                 state.synthesize(postBody).forEach { emit(it) }
             } else {
                 val interactionId = postBody["id"]?.jsonPrimitive?.contentOrNull
-                    ?: throw AiSdkRuntimeException("google.interactions: background response did not include an interaction id.")
+                    ?: throw InvalidResponseDataError(postBody, "google.interactions: background response did not include an interaction id.")
                 val rawLines = googleStreamSseGet(
                     client = client,
                     url = "${settings.baseURL.trimEnd('/')}/interactions/$interactionId?stream=true",

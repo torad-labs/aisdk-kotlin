@@ -18,7 +18,6 @@ import ai.torad.aisdk.providers.TogetherAIProviderSettings
 import ai.torad.aisdk.providers.VERCEL_VERSION
 import ai.torad.aisdk.providers.VercelProviderSettings
 import ai.torad.aisdk.providers.browserSearch
-import ai.torad.aisdk.providers.cerebras
 import ai.torad.aisdk.providers.createCerebras
 import ai.torad.aisdk.providers.createDeepInfra
 import ai.torad.aisdk.providers.createDeepSeek
@@ -28,14 +27,6 @@ import ai.torad.aisdk.providers.createMoonshotAI
 import ai.torad.aisdk.providers.createPerplexity
 import ai.torad.aisdk.providers.createTogetherAI
 import ai.torad.aisdk.providers.createVercel
-import ai.torad.aisdk.providers.deepinfra
-import ai.torad.aisdk.providers.deepseek
-import ai.torad.aisdk.providers.fireworks
-import ai.torad.aisdk.providers.groq
-import ai.torad.aisdk.providers.moonshotai
-import ai.torad.aisdk.providers.perplexity
-import ai.torad.aisdk.providers.togetherai
-import ai.torad.aisdk.providers.vercel
 import io.ktor.http.HttpHeaders
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.Json

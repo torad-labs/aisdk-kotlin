@@ -67,40 +67,32 @@ public data class ElevenLabsProviderSettings(
     val headers: Map<String, String> = emptyMap(),
 )
 
-public interface ElevenLabsProvider : Provider {
+public class ElevenLabsProvider(
+    private val client: HttpClient,
+    public val settings: ElevenLabsProviderSettings,
+) : Provider {
+    override val providerId: String = "elevenlabs"
+
     public operator fun invoke(modelId: ElevenLabsTranscriptionModelId = "scribe_v1"): TranscriptionModel = transcription(modelId)
-    public fun transcription(modelId: ElevenLabsTranscriptionModelId): TranscriptionModel
-    public fun speech(modelId: ElevenLabsSpeechModelId): SpeechModel
-    public fun textEmbeddingModel(modelId: String): Nothing = throw NoSuchModelError(providerId, "embeddingModel", modelId)
+
+    public fun transcription(modelId: ElevenLabsTranscriptionModelId): TranscriptionModel =
+        ElevenLabsTranscriptionModel(client, settings, modelId)
+
+    public fun speech(modelId: ElevenLabsSpeechModelId): SpeechModel =
+        ElevenLabsSpeechModel(client, settings, modelId)
+
+    public fun textEmbeddingModel(modelId: String): Nothing =
+        throw NoSuchModelError(providerId, "embeddingModel", modelId)
 
     override fun transcriptionModel(modelId: String): TranscriptionModel = transcription(modelId)
     override fun speechModel(modelId: String): SpeechModel = speech(modelId)
 }
 
-public fun createElevenLabs(
+/** PascalCase factory — mirrors `OpenAI(...)`. */
+public fun ElevenLabs(
     client: HttpClient,
     settings: ElevenLabsProviderSettings = ElevenLabsProviderSettings(),
-): ElevenLabsProvider = DefaultElevenLabsProvider(client, settings)
-
-public val elevenlabs: ElevenLabsProvider = object : ElevenLabsProvider {
-    override val providerId: String = "elevenlabs"
-    override fun transcription(modelId: String): TranscriptionModel =
-        throw AiSdkRuntimeException("ElevenLabs provider is not configured. Use createElevenLabs(client, settings).")
-    override fun speech(modelId: String): SpeechModel =
-        throw AiSdkRuntimeException("ElevenLabs provider is not configured. Use createElevenLabs(client, settings).")
-}
-
-private class DefaultElevenLabsProvider(
-    private val client: HttpClient,
-    private val settings: ElevenLabsProviderSettings,
-) : ElevenLabsProvider {
-    override val providerId: String = "elevenlabs"
-    override fun transcription(modelId: String): TranscriptionModel = ElevenLabsTranscriptionModel(client, settings, modelId)
-    override fun speech(modelId: String): SpeechModel = ElevenLabsSpeechModel(client, settings, modelId)
-    override fun languageModel(modelId: String): LanguageModel = throw NoSuchModelError(providerId, "languageModel", modelId)
-    override fun embeddingModel(modelId: String): EmbeddingModel = throw NoSuchModelError(providerId, "embeddingModel", modelId)
-    override fun imageModel(modelId: String): ImageModel = throw NoSuchModelError(providerId, "imageModel", modelId)
-}
+): ElevenLabsProvider = ElevenLabsProvider(client, settings)
 
 private class ElevenLabsSpeechModel(
     private val client: HttpClient,

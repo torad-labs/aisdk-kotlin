@@ -1,8 +1,6 @@
 package ai.torad.aisdk
 import ai.torad.aisdk.providers.LMNT_VERSION
-import ai.torad.aisdk.providers.lmnt
 import ai.torad.aisdk.providers.LMNTProviderSettings
-import ai.torad.aisdk.providers.createLMNT
 
 import io.ktor.http.HttpHeaders
 import kotlinx.coroutines.test.runTest
@@ -16,6 +14,7 @@ import kotlinx.serialization.json.jsonPrimitive
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
+import ai.torad.aisdk.providers.LMNT
 
 class LMNTProviderTest {
     @Test
@@ -28,7 +27,7 @@ class LMNTProviderTest {
             ),
         )
         fixture.server.start()
-        val model = createLMNT(
+        val model = LMNT(
             fixture.httpClient(),
             LMNTProviderSettings(apiKey = "key"),
         ).speech("aurora")
@@ -82,7 +81,7 @@ class LMNTProviderTest {
             ),
         )
         fixture.server.start()
-        val model = createLMNT(
+        val model = LMNT(
             fixture.httpClient(),
             LMNTProviderSettings(apiKey = "key"),
         ).speech("aurora")

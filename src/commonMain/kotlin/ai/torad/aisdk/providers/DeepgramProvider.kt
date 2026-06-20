@@ -72,40 +72,34 @@ public data class DeepgramProviderSettings(
     val headers: Map<String, String> = emptyMap(),
 )
 
-public interface DeepgramProvider : Provider {
+public class DeepgramProvider(
+    private val client: HttpClient,
+    public val settings: DeepgramProviderSettings,
+) : Provider {
+    override val providerId: String = "deepgram"
+
     public operator fun invoke(modelId: DeepgramTranscriptionModelId = "nova-3"): TranscriptionModel = transcription(modelId)
-    public fun transcription(modelId: DeepgramTranscriptionModelId): TranscriptionModel
-    public fun speech(modelId: DeepgramSpeechModelId): SpeechModel
+
+    public fun transcription(modelId: DeepgramTranscriptionModelId): TranscriptionModel =
+        DeepgramTranscriptionModel(client, settings, modelId)
+
+    public fun speech(modelId: DeepgramSpeechModelId): SpeechModel =
+        DeepgramSpeechModel(client, settings, modelId)
+
     public fun textEmbeddingModel(modelId: String): Nothing = throw NoSuchModelError(providerId, "embeddingModel", modelId)
 
+    override fun languageModel(modelId: String): LanguageModel = throw NoSuchModelError(providerId, "languageModel", modelId)
+    override fun embeddingModel(modelId: String): EmbeddingModel = throw NoSuchModelError(providerId, "embeddingModel", modelId)
+    override fun imageModel(modelId: String): ImageModel = throw NoSuchModelError(providerId, "imageModel", modelId)
     override fun transcriptionModel(modelId: String): TranscriptionModel = transcription(modelId)
     override fun speechModel(modelId: String): SpeechModel = speech(modelId)
 }
 
-public fun createDeepgram(
+/** PascalCase factory — mirrors the OpenAI(...) reference pattern. */
+public fun Deepgram(
     client: HttpClient,
     settings: DeepgramProviderSettings = DeepgramProviderSettings(),
-): DeepgramProvider = DefaultDeepgramProvider(client, settings)
-
-public val deepgram: DeepgramProvider = object : DeepgramProvider {
-    override val providerId: String = "deepgram"
-    override fun transcription(modelId: String): TranscriptionModel =
-        throw AiSdkRuntimeException("Deepgram provider is not configured. Use createDeepgram(client, settings).")
-    override fun speech(modelId: String): SpeechModel =
-        throw AiSdkRuntimeException("Deepgram provider is not configured. Use createDeepgram(client, settings).")
-}
-
-private class DefaultDeepgramProvider(
-    private val client: HttpClient,
-    private val settings: DeepgramProviderSettings,
-) : DeepgramProvider {
-    override val providerId: String = "deepgram"
-    override fun transcription(modelId: String): TranscriptionModel = DeepgramTranscriptionModel(client, settings, modelId)
-    override fun speech(modelId: String): SpeechModel = DeepgramSpeechModel(client, settings, modelId)
-    override fun languageModel(modelId: String): LanguageModel = throw NoSuchModelError(providerId, "languageModel", modelId)
-    override fun embeddingModel(modelId: String): EmbeddingModel = throw NoSuchModelError(providerId, "embeddingModel", modelId)
-    override fun imageModel(modelId: String): ImageModel = throw NoSuchModelError(providerId, "imageModel", modelId)
-}
+): DeepgramProvider = DeepgramProvider(client, settings)
 
 public class DeepgramSpeechModel(
     private val client: HttpClient,

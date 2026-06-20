@@ -1,8 +1,6 @@
 package ai.torad.aisdk
 import ai.torad.aisdk.providers.KLINGAI_VERSION
 import ai.torad.aisdk.providers.KlingAIProviderSettings
-import ai.torad.aisdk.providers.createKlingAI
-import ai.torad.aisdk.providers.klingai
 
 import io.ktor.http.HttpHeaders
 import kotlinx.coroutines.test.runTest
@@ -20,12 +18,13 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertTrue
+import ai.torad.aisdk.providers.KlingAI
 
 class KlingAIProviderTest {
     @Test
     fun `text to video sends KlingAI body polls and maps url video`() = runTest {
         val fixture = createKlingAIFixture("/v1/videos/text2video")
-        val model = createKlingAI(
+        val model = KlingAI(
             fixture.httpClient(),
             KlingAIProviderSettings(
                 accessKey = "access-key",
@@ -120,7 +119,7 @@ class KlingAIProviderTest {
     @Test
     fun `image to video maps image options and warnings`() = runTest {
         val fixture = createKlingAIFixture("/v1/videos/image2video")
-        val model = createKlingAI(
+        val model = KlingAI(
             fixture.httpClient(),
             KlingAIProviderSettings(accessKey = "access-key", secretKey = "secret-key", baseURL = KLING_TEST_BASE_URL),
         ).video("kling-v3.0-i2v")
@@ -171,7 +170,7 @@ class KlingAIProviderTest {
     @Test
     fun `motion control requires provider options and maps reference fields`() = runTest {
         val fixture = createKlingAIFixture("/v1/videos/motion-control")
-        val model = createKlingAI(
+        val model = KlingAI(
             fixture.httpClient(),
             KlingAIProviderSettings(accessKey = "access-key", secretKey = "secret-key", baseURL = KLING_TEST_BASE_URL),
         ).video("kling-v2.6-motion-control")
@@ -216,7 +215,7 @@ class KlingAIProviderTest {
 
     @Test
     fun `unsupported KlingAI surfaces and unconfigured singleton fail explicitly`() = runTest {
-        val provider = createKlingAI(
+        val provider = KlingAI(
             createTestServer(mutableMapOf()).httpClient(),
             KlingAIProviderSettings(accessKey = "access-key", secretKey = "secret-key"),
         )
@@ -225,7 +224,6 @@ class KlingAIProviderTest {
         assertFailsWith<NoSuchModelError> { provider.embeddingModel("embed") }
         assertFailsWith<NoSuchModelError> { provider.imageModel("image") }
         assertFailsWith<NoSuchModelError> { provider.video("unknown-model").generate(VideoGenerationParams(prompt = "x")) }
-        assertTrue(assertFailsWith<AiSdkException> { klingai.video("kling-v2.6-t2v") }.message.orEmpty().contains("createKlingAI"))
     }
 
     private fun createKlingAIFixture(endpoint: String): CreatedTestServer {

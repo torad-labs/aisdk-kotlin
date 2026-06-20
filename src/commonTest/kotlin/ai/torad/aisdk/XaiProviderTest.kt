@@ -1,8 +1,6 @@
 package ai.torad.aisdk
 import ai.torad.aisdk.providers.XAI_VERSION
 import ai.torad.aisdk.providers.XaiProviderSettings
-import ai.torad.aisdk.providers.createXai
-import ai.torad.aisdk.providers.xai
 
 import io.ktor.http.HttpHeaders
 import kotlinx.coroutines.test.runTest
@@ -23,6 +21,7 @@ import kotlin.test.assertFailsWith
 import kotlin.test.assertIs
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
+import ai.torad.aisdk.providers.Xai
 
 class XaiProviderTest {
     @Test
@@ -70,7 +69,7 @@ class XaiProviderTest {
             ),
         )
         fixture.server.start()
-        val provider = createXai(
+        val provider = Xai(
             fixture.httpClient(),
             XaiProviderSettings(apiKey = "key", headers = mapOf("X-Provider" to "provider")),
         )
@@ -155,7 +154,7 @@ class XaiProviderTest {
             ),
         )
         fixture.server.start()
-        val provider = createXai(fixture.httpClient(), XaiProviderSettings(apiKey = "key"))
+        val provider = Xai(fixture.httpClient(), XaiProviderSettings(apiKey = "key"))
         provider.chat("grok-3").generate(
             LanguageModelCallParams(
                 messages = listOf(userMessage("go")),
@@ -223,7 +222,7 @@ class XaiProviderTest {
             ),
         )
         fixture.server.start()
-        val provider = createXai(fixture.httpClient(), XaiProviderSettings(apiKey = "key"))
+        val provider = Xai(fixture.httpClient(), XaiProviderSettings(apiKey = "key"))
 
         val error = assertFailsWith<APICallError> {
             provider.chat("grok-3").generate(LanguageModelCallParams(messages = listOf(userMessage("hi"))))
@@ -252,7 +251,7 @@ class XaiProviderTest {
             ),
         )
         fixture.server.start()
-        val provider = createXai(fixture.httpClient(), XaiProviderSettings(baseURL = "https://xai.test/v1", apiKey = "key"))
+        val provider = Xai(fixture.httpClient(), XaiProviderSettings(baseURL = "https://xai.test/v1", apiKey = "key"))
         val model = provider.image("grok-imagine-image")
 
         val generated = model.generate(
@@ -335,7 +334,7 @@ class XaiProviderTest {
             ),
         )
         fixture.server.start()
-        val provider = createXai(fixture.httpClient(), XaiProviderSettings(baseURL = "https://xai.test/v1", apiKey = "key"))
+        val provider = Xai(fixture.httpClient(), XaiProviderSettings(baseURL = "https://xai.test/v1", apiKey = "key"))
         val model = provider.video("grok-imagine-video")
 
         val generated = model.generate(
@@ -392,7 +391,7 @@ class XaiProviderTest {
 
     @Test
     fun `tools unsupported embeddings and default singleton match provider surface`() {
-        val provider = createXai(
+        val provider = Xai(
             createTestServer(mutableMapOf()).httpClient(),
             XaiProviderSettings(apiKey = "key"),
         )
@@ -406,9 +405,6 @@ class XaiProviderTest {
         assertProviderTool(provider.tools.xSearch, "x_search", "xai.x_search")
         assertFailsWith<NoSuchModelError> { provider.embeddingModel("embed") }
         assertFailsWith<NoSuchModelError> { provider.textEmbeddingModel("embed") }
-        val error = assertFailsWith<AiSdkException> { xai.chat("grok-3") }
-        assertNotNull(error.message)
-        assertTrue(error.message.orEmpty().contains("createXai"))
     }
 
     private fun assertProviderTool(tool: Tool<JsonElement, JsonElement, Any?>, name: String, providerToolId: String) {

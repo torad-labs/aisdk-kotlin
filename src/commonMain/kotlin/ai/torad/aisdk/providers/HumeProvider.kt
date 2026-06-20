@@ -36,33 +36,28 @@ public data class HumeProviderSettings(
     val headers: Map<String, String> = emptyMap(),
 )
 
-public interface HumeProvider : Provider {
-    public operator fun invoke(): SpeechModel = speech()
-    public fun speech(): SpeechModel
-    override fun speechModel(modelId: String): SpeechModel = speech()
-}
-
-public fun createHume(
-    client: HttpClient,
-    settings: HumeProviderSettings = HumeProviderSettings(),
-): HumeProvider = DefaultHumeProvider(client, settings)
-
-public val hume: HumeProvider = object : HumeProvider {
-    override val providerId: String = "hume"
-    override fun speech(): SpeechModel =
-        throw AiSdkRuntimeException("Hume provider is not configured. Use createHume(client, settings).")
-}
-
-private class DefaultHumeProvider(
+public class HumeProvider(
     private val client: HttpClient,
-    private val settings: HumeProviderSettings,
-) : HumeProvider {
+    public val settings: HumeProviderSettings,
+) : Provider {
     override val providerId: String = "hume"
-    override fun speech(): SpeechModel = HumeSpeechModel(client, settings)
+
+    public operator fun invoke(): SpeechModel = speech()
+
+    public fun speech(): SpeechModel = HumeSpeechModel(client, settings)
+
+    override fun speechModel(modelId: String): SpeechModel = speech()
+
     override fun languageModel(modelId: String): LanguageModel = throw NoSuchModelError(providerId, "languageModel", modelId)
     override fun embeddingModel(modelId: String): EmbeddingModel = throw NoSuchModelError(providerId, "embeddingModel", modelId)
     override fun imageModel(modelId: String): ImageModel = throw NoSuchModelError(providerId, "imageModel", modelId)
 }
+
+/** PascalCase factory — mirrors the OpenAI reference pattern. */
+public fun Hume(
+    client: HttpClient,
+    settings: HumeProviderSettings = HumeProviderSettings(),
+): HumeProvider = HumeProvider(client, settings)
 
 private class HumeSpeechModel(
     private val client: HttpClient,

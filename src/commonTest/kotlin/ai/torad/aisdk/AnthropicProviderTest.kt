@@ -1,8 +1,6 @@
 package ai.torad.aisdk
 import ai.torad.aisdk.providers.ANTHROPIC_VERSION
 import ai.torad.aisdk.providers.AnthropicProviderSettings
-import ai.torad.aisdk.providers.anthropic
-import ai.torad.aisdk.providers.createAnthropic
 import ai.torad.aisdk.providers.forwardAnthropicContainerIdFromLastStep
 
 import ai.torad.aisdk.testing.drainAllItems
@@ -24,6 +22,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertIs
 import kotlin.test.assertTrue
+import ai.torad.aisdk.providers.Anthropic
 
 class AnthropicProviderTest {
     @Test
@@ -91,7 +90,7 @@ class AnthropicProviderTest {
             ),
         )
         fixture.server.start()
-        val provider = createAnthropic(
+        val provider = Anthropic(
             fixture.httpClient(),
             AnthropicProviderSettings(
                 apiKey = "key",
@@ -299,7 +298,7 @@ class AnthropicProviderTest {
             ),
         )
         fixture.server.start()
-        val provider = createAnthropic(fixture.httpClient(), AnthropicProviderSettings(baseURL = "https://anthropic.test/v1"))
+        val provider = Anthropic(fixture.httpClient(), AnthropicProviderSettings(baseURL = "https://anthropic.test/v1"))
 
         val error = assertFailsWith<WireDecodeException> {
             provider.messages("claude-sonnet-4-5").generate(LanguageModelCallParams(messages = listOf(userMessage("hi"))))
@@ -335,7 +334,7 @@ class AnthropicProviderTest {
             ),
         )
         fixture.server.start()
-        val provider = createAnthropic(fixture.httpClient(), AnthropicProviderSettings(baseURL = "https://anthropic.test/v1"))
+        val provider = Anthropic(fixture.httpClient(), AnthropicProviderSettings(baseURL = "https://anthropic.test/v1"))
 
         val error = assertFailsWith<WireDecodeException> {
             provider.messages("claude-sonnet-4-5").generate(LanguageModelCallParams(messages = listOf(userMessage("hi"))))
@@ -371,7 +370,7 @@ class AnthropicProviderTest {
             ),
         )
         fixture.server.start()
-        val provider = createAnthropic(fixture.httpClient(), AnthropicProviderSettings(baseURL = "https://anthropic.test/v1"))
+        val provider = Anthropic(fixture.httpClient(), AnthropicProviderSettings(baseURL = "https://anthropic.test/v1"))
 
         val error = assertFailsWith<WireDecodeException> {
             provider.messages("claude-sonnet-4-5").generate(LanguageModelCallParams(messages = listOf(userMessage("hi"))))
@@ -408,7 +407,7 @@ class AnthropicProviderTest {
             ),
         )
         fixture.server.start()
-        val provider = createAnthropic(fixture.httpClient(), AnthropicProviderSettings(baseURL = "https://anthropic.test/v1"))
+        val provider = Anthropic(fixture.httpClient(), AnthropicProviderSettings(baseURL = "https://anthropic.test/v1"))
 
         val error = assertFailsWith<WireDecodeException> {
             provider.messages("claude-sonnet-4-5").generate(LanguageModelCallParams(messages = listOf(userMessage("hi"))))
@@ -434,7 +433,7 @@ class AnthropicProviderTest {
             ),
         )
         fixture.server.start()
-        val provider = createAnthropic(
+        val provider = Anthropic(
             fixture.httpClient(),
             AnthropicProviderSettings(apiKey = "key", baseURL = "https://anthropic.test/v1"),
         )
@@ -486,7 +485,7 @@ class AnthropicProviderTest {
             ),
         )
         fixture.server.start()
-        val provider = createAnthropic(fixture.httpClient(), AnthropicProviderSettings(baseURL = "https://anthropic.test/v1"))
+        val provider = Anthropic(fixture.httpClient(), AnthropicProviderSettings(baseURL = "https://anthropic.test/v1"))
 
         val events = drainAllItems(
             provider.messages("claude-sonnet-4-5").stream(
@@ -530,7 +529,7 @@ class AnthropicProviderTest {
             ),
         )
         fixture.server.start()
-        val provider = createAnthropic(fixture.httpClient(), AnthropicProviderSettings(baseURL = "https://anthropic.test/v1"))
+        val provider = Anthropic(fixture.httpClient(), AnthropicProviderSettings(baseURL = "https://anthropic.test/v1"))
 
         val events = drainAllItems(provider.messages("claude-sonnet-4-5").stream(LanguageModelCallParams(messages = listOf(userMessage("hi")))))
 
@@ -564,7 +563,7 @@ class AnthropicProviderTest {
             ),
         )
         fixture.server.start()
-        val provider = createAnthropic(fixture.httpClient(), AnthropicProviderSettings(baseURL = "https://anthropic.test/v1"))
+        val provider = Anthropic(fixture.httpClient(), AnthropicProviderSettings(baseURL = "https://anthropic.test/v1"))
         val events = drainAllItems(
             provider.messages("claude-sonnet-4-5").stream(
                 LanguageModelCallParams(messages = listOf(userMessage("hi"))),
@@ -591,7 +590,7 @@ class AnthropicProviderTest {
             ),
         )
         fixture.server.start()
-        val provider = createAnthropic(fixture.httpClient(), AnthropicProviderSettings(baseURL = "https://anthropic.test/v1"))
+        val provider = Anthropic(fixture.httpClient(), AnthropicProviderSettings(baseURL = "https://anthropic.test/v1"))
         provider.messages("claude-opus-4-8").generate(
             LanguageModelCallParams(messages = listOf(userMessage("hi"))),
         )
@@ -615,7 +614,7 @@ class AnthropicProviderTest {
             ),
         )
         fixture.server.start()
-        val provider = createAnthropic(fixture.httpClient(), AnthropicProviderSettings(baseURL = "https://anthropic.test/v1"))
+        val provider = Anthropic(fixture.httpClient(), AnthropicProviderSettings(baseURL = "https://anthropic.test/v1"))
         // The last message is a pre-filled assistant turn with trailing whitespace.
         provider.messages("claude-sonnet-4-5").generate(
             LanguageModelCallParams(messages = listOf(userMessage("hi"), assistantMessage("The answer is  \n  "))),
@@ -645,7 +644,7 @@ class AnthropicProviderTest {
             ),
         )
         fixture.server.start()
-        val provider = createAnthropic(fixture.httpClient(), AnthropicProviderSettings(baseURL = "https://anthropic.test/v1"))
+        val provider = Anthropic(fixture.httpClient(), AnthropicProviderSettings(baseURL = "https://anthropic.test/v1"))
 
         val events = drainAllItems(provider.messages("claude-sonnet-4-5").stream(LanguageModelCallParams(messages = listOf(userMessage("hi")))))
 
@@ -676,7 +675,7 @@ class AnthropicProviderTest {
             ),
         )
         fixture.server.start()
-        val provider = createAnthropic(fixture.httpClient(), AnthropicProviderSettings(baseURL = "https://anthropic.test/v1"))
+        val provider = Anthropic(fixture.httpClient(), AnthropicProviderSettings(baseURL = "https://anthropic.test/v1"))
 
         val events = drainAllItems(provider.messages("claude-sonnet-4-5").stream(LanguageModelCallParams(messages = listOf(userMessage("hi")))))
 
@@ -688,7 +687,7 @@ class AnthropicProviderTest {
     @Test
     fun `auth conflict hosted tools and container forwarding are exposed`() {
         val fixture = createTestServer(mutableMapOf())
-        val provider = createAnthropic(
+        val provider = Anthropic(
             fixture.httpClient(),
             AnthropicProviderSettings(authToken = "token"),
         )
@@ -698,7 +697,7 @@ class AnthropicProviderTest {
         assertEquals(true, tool.providerExecuted)
         assertEquals("anthropic.web_search_20260209", tool.metadata["providerToolId"]?.jsonPrimitive?.contentOrNull)
         assertFailsWith<InvalidArgumentError> {
-            createAnthropic(
+            Anthropic(
                 fixture.httpClient(),
                 AnthropicProviderSettings(apiKey = "key", authToken = "token"),
             )
@@ -706,7 +705,6 @@ class AnthropicProviderTest {
         assertFailsWith<NoSuchModelError> { provider.embeddingModel("embed") }
         assertFailsWith<NoSuchModelError> { provider.textEmbeddingModel("embed") }
         assertFailsWith<NoSuchModelError> { provider.imageModel("image") }
-        assertFailsWith<AiSdkException> { anthropic.messages("model") }
 
         val forwarded = forwardAnthropicContainerIdFromLastStep(
             listOf(

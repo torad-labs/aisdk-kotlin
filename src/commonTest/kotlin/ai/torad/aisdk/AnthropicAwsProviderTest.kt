@@ -2,7 +2,6 @@ package ai.torad.aisdk
 import ai.torad.aisdk.providers.ANTHROPIC_AWS_VERSION
 import ai.torad.aisdk.providers.ANTHROPIC_VERSION
 import ai.torad.aisdk.providers.AnthropicAwsProviderSettings
-import ai.torad.aisdk.providers.anthropic
 import ai.torad.aisdk.providers.createAnthropicAws
 
 import ai.torad.aisdk.testing.drainAllItems

@@ -1,8 +1,6 @@
 package ai.torad.aisdk
 import ai.torad.aisdk.providers.PRODIA_VERSION
 import ai.torad.aisdk.providers.ProdiaProviderSettings
-import ai.torad.aisdk.providers.createProdia
-import ai.torad.aisdk.providers.prodia
 
 import io.ktor.http.HttpHeaders
 import kotlinx.coroutines.test.runTest
@@ -21,6 +19,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
+import ai.torad.aisdk.providers.Prodia
 
 class ProdiaProviderTest {
     @Test
@@ -37,7 +36,7 @@ class ProdiaProviderTest {
             ),
         )
         fixture.server.start()
-        val model = createProdia(
+        val model = Prodia(
             fixture.httpClient(),
             ProdiaProviderSettings(
                 apiKey = "token",
@@ -114,7 +113,7 @@ class ProdiaProviderTest {
             ),
         )
         fixture.server.start()
-        val model = createProdia(
+        val model = Prodia(
             fixture.httpClient(),
             ProdiaProviderSettings(apiKey = "token", baseURL = "https://prodia.test/v2"),
         ).languageModel("stabilityai/sdxl")
@@ -191,7 +190,7 @@ class ProdiaProviderTest {
             ),
         )
         fixture.server.start()
-        val model = createProdia(
+        val model = Prodia(
             fixture.httpClient(),
             ProdiaProviderSettings(apiKey = "token", baseURL = "https://prodia.test/v2"),
         ).video("minimax/video")
@@ -236,13 +235,10 @@ class ProdiaProviderTest {
 
     @Test
     fun `unsupported Prodia surfaces and unconfigured singleton fail explicitly`() {
-        val provider = createProdia(createTestServer(mutableMapOf()).httpClient(), ProdiaProviderSettings(apiKey = "token"))
+        val provider = Prodia(createTestServer(mutableMapOf()).httpClient(), ProdiaProviderSettings(apiKey = "token"))
 
         assertFailsWith<NoSuchModelError> { provider.embeddingModel("embed") }
         assertFailsWith<NoSuchModelError> { provider.textEmbeddingModel("embed") }
-        assertTrue(assertFailsWith<AiSdkException> { prodia.languageModel("model") }.message.orEmpty().contains("createProdia"))
-        assertTrue(assertFailsWith<AiSdkException> { prodia.image("model") }.message.orEmpty().contains("createProdia"))
-        assertTrue(assertFailsWith<AiSdkException> { prodia.video("model") }.message.orEmpty().contains("createProdia"))
     }
 
     private data class ProdiaOutputPart(

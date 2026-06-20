@@ -2,9 +2,6 @@ package ai.torad.aisdk
 import ai.torad.aisdk.providers.AMAZON_BEDROCK_VERSION
 import ai.torad.aisdk.providers.AmazonBedrockProviderSettings
 import ai.torad.aisdk.providers.BedrockMantleProviderSettings
-import ai.torad.aisdk.providers.bedrock
-import ai.torad.aisdk.providers.createAmazonBedrock
-import ai.torad.aisdk.providers.createBedrockMantle
 import ai.torad.aisdk.testing.drainAllItems
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.mock.MockEngine
@@ -33,6 +30,8 @@ import kotlin.test.assertFailsWith
 import kotlin.test.assertIs
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
+import ai.torad.aisdk.providers.AmazonBedrock
+import ai.torad.aisdk.providers.BedrockMantle
 
 class AmazonBedrockProviderTest {
     @Test
@@ -84,7 +83,7 @@ class AmazonBedrockProviderTest {
             ),
         )
         fixture.server.start()
-        val provider = createAmazonBedrock(
+        val provider = AmazonBedrock(
             fixture.httpClient(),
             AmazonBedrockProviderSettings(
                 apiKey = "key",
@@ -197,7 +196,7 @@ class AmazonBedrockProviderTest {
             ),
         )
         fixture.server.start()
-        val provider = createAmazonBedrock(
+        val provider = AmazonBedrock(
             fixture.httpClient(),
             AmazonBedrockProviderSettings(apiKey = "key", baseURL = "https://bedrock.test"),
         )
@@ -259,7 +258,7 @@ class AmazonBedrockProviderTest {
             ),
         )
         fixture.server.start()
-        val provider = createAmazonBedrock(
+        val provider = AmazonBedrock(
             fixture.httpClient(),
             AmazonBedrockProviderSettings(apiKey = "key", baseURL = "https://bedrock.test"),
         )
@@ -306,7 +305,7 @@ class AmazonBedrockProviderTest {
             ),
         )
         fixture.server.start()
-        val provider = createAmazonBedrock(
+        val provider = AmazonBedrock(
             fixture.httpClient(),
             AmazonBedrockProviderSettings(apiKey = "key", baseURL = "https://bedrock.test"),
         )
@@ -346,7 +345,7 @@ class AmazonBedrockProviderTest {
                 )
             },
         )
-        val provider = createAmazonBedrock(
+        val provider = AmazonBedrock(
             client,
             AmazonBedrockProviderSettings(apiKey = "key", baseURL = "https://bedrock.test"),
         )
@@ -391,7 +390,7 @@ class AmazonBedrockProviderTest {
             ),
         )
         fixture.server.start()
-        val provider = createAmazonBedrock(
+        val provider = AmazonBedrock(
             fixture.httpClient(),
             AmazonBedrockProviderSettings(
                 apiKey = "key",
@@ -483,7 +482,7 @@ class AmazonBedrockProviderTest {
             ),
         )
         fixture.server.start()
-        val provider = createBedrockMantle(
+        val provider = BedrockMantle(
             fixture.httpClient(),
             BedrockMantleProviderSettings(apiKey = "key", baseURL = "https://mantle.test/v1"),
         )
@@ -499,7 +498,7 @@ class AmazonBedrockProviderTest {
         assertEquals("Bearer key", fixture.calls.single().requestHeaders.headerValue(HttpHeaders.Authorization))
         assertEquals("openai.gpt-oss-20b-1:0", fixture.calls.single().requestBodyJson.jsonObject["model"]?.jsonPrimitive?.contentOrNull)
 
-        val sigV4Provider = createAmazonBedrock(
+        val sigV4Provider = AmazonBedrock(
             fixture.httpClient(),
             AmazonBedrockProviderSettings(
                 accessKeyId = "id",
@@ -538,7 +537,7 @@ class AmazonBedrockProviderTest {
             ),
         )
         fixture.server.start()
-        val provider = createAmazonBedrock(
+        val provider = AmazonBedrock(
             fixture.httpClient(),
             AmazonBedrockProviderSettings(
                 accessKeyId = "id",
