@@ -105,6 +105,15 @@ with tempfile.TemporaryDirectory() as tmp:
     unrelated = policy.run({"tool_name": "Edit", "tool_input": {"file_path": kt, "old_string": "val y = 1", "new_string": "val y = 2"}})
     check("incremental: edit not touching pre-existing require-bag PASSES", unrelated is None)
 
+    # === incremental: editing the BODY of a grandfathered loose top-level fn PASSES (signature-keyed diff) ===
+    legacy_fn = P + "internal fun helper(): Int {\n    return 1\n}\n"
+    Path(kt).write_text(legacy_fn, encoding="utf-8")
+    body_edit = policy.run({"tool_name": "Edit", "tool_input": {"file_path": kt, "old_string": "return 1", "new_string": "return 2"}})
+    check("incremental: body edit of grandfathered camelCase top-level fn PASSES", body_edit is None)
+    Path(kt).write_text(legacy_fn, encoding="utf-8")
+    add_fn = policy.run({"tool_name": "Edit", "tool_input": {"file_path": kt, "old_string": "internal fun helper(): Int {\n    return 1\n}\n", "new_string": "internal fun helper(): Int {\n    return 1\n}\n\ninternal fun helper2(): Int = 9\n"}})
+    check("incremental: ADDING a new camelCase top-level fn still BLOCKS", bool(add_fn and add_fn.kind == "block"))
+
 
 def run_local_hook(payload: dict) -> subprocess.CompletedProcess[str]:
     return subprocess.run(

@@ -151,15 +151,31 @@ def _introduced(
 ) -> list[Hit]:
     old_hits = _scan(binary, rule_files, severities, old_text)
     new_hits = _scan(binary, rule_files, severities, new_text)
-    old_counts = Counter((h.rule_id, h.text) for h in old_hits)
+    old_counts = Counter((h.rule_id, _identity(h.text)) for h in old_hits)
     seen: Counter = Counter()
     introduced: list[Hit] = []
     for hit in new_hits:
-        key = (hit.rule_id, hit.text)
+        key = (hit.rule_id, _identity(hit.text))
         seen[key] += 1
         if seen[key] > old_counts.get(key, 0):
             introduced.append(hit)
     return introduced
+
+
+def _identity(text: str) -> str:
+    """Stable identity of a match for incremental diffing.
+
+    Keys on the match's first non-blank line (the declaration/signature), NOT the
+    full text. Editing the BODY of a grandfathered match (e.g. a pre-existing loose
+    top-level function) keeps the same signature, so it stays grandfathered instead
+    of being mis-counted as a newly-introduced violation. Genuinely new declarations
+    (new signature) still register as introduced.
+    """
+    for line in text.splitlines():
+        stripped = line.strip()
+        if stripped:
+            return stripped
+    return text.strip()
 
 
 def _scan(binary: str, rule_files: list[Path], severities: dict[str, str], content: str) -> list[Hit]:
