@@ -1,0 +1,5 @@
+id: no-generate-id-sentinel
+language: kotlin
+severity: error
+rule:
+  pattern: "$X ?: generateId($$$ARGS)"

@@ -1,0 +1,10 @@
+id: no-uuid-id-sentinel
+language: kotlin
+severity: error
+rule:
+  any:
+    - pattern: "$X ?: Uuid.random()"
+    - pattern: "$X ?: Uuid.random().toString()"
+    - pattern: "$X ?: randomUUID()"
+    - pattern: "$X ?: $C.randomUUID()"
+    - pattern: "$X ?: $C.randomUUID().toString()"

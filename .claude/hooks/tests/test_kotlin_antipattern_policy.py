@@ -129,6 +129,22 @@ allowed = run_local_hook({"tool_name": "Write", "tool_input": {
 check("orchestrator does NOT block a PascalCase factory", '"decision": "block"' not in allowed.stdout)
 
 
+# === full rule set: parse gate + foundry semantic gate ===
+parse_gate = subprocess.run(
+    [sys.executable, str(HOOKS_ROOT / "rules" / "validate_rules.py")],
+    capture_output=True, text=True, timeout=120,
+)
+check("all installed rule files parse (validate_rules.py)", parse_gate.returncode == 0)
+
+manifest = HOOKS_ROOT / "rules" / "manifest.json"
+if manifest.exists():
+    sem_gate = subprocess.run(
+        [sys.executable, str(HOOKS_ROOT / "rules" / "validate_rules.py"), "--manifest", str(manifest)],
+        capture_output=True, text=True, timeout=180,
+    )
+    check("foundry rules pass semantic gate (match bad, skip good)", sem_gate.returncode == 0)
+
+
 if failures:
     print(f"FAILED {ran - len(failures)}/{ran}")
     for failure in failures:

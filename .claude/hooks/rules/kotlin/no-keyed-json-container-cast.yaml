@@ -1,0 +1,7 @@
+id: no-keyed-json-container-cast
+language: kotlin
+severity: warning
+rule:
+  any:
+    - pattern: $OBJ[$KEY] as? JsonObject
+    - pattern: $OBJ[$KEY] as? JsonArray

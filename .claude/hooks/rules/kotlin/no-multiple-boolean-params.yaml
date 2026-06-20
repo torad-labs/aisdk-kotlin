@@ -1,0 +1,14 @@
+id: no-multiple-boolean-params
+language: kotlin
+severity: warning
+rule:
+  kind: parameter
+  has:
+    kind: user_type
+    has: { kind: type_identifier, regex: '^Boolean$' }
+  follows:
+    kind: parameter
+    stopBy: end
+    has:
+      kind: user_type
+      has: { kind: type_identifier, regex: '^Boolean$' }

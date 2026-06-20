@@ -1,0 +1,39 @@
+id: no-any-typed-public-property
+language: kotlin
+severity: warning
+rule:
+  all:
+    - kind: type_identifier
+      regex: '^Any$'
+    - inside:
+        kind: user_type
+        inside:
+          any:
+            - kind: class_parameter
+            - kind: variable_declaration
+            - kind: nullable_type
+              inside:
+                any:
+                  - kind: class_parameter
+                  - kind: variable_declaration
+    - inside:
+        stopBy: end
+        any:
+          - kind: class_parameter
+            all:
+              - has: { kind: binding_pattern_kind }
+              - not: { has: { kind: modifiers, has: { kind: visibility_modifier, regex: 'private|internal|protected' } } }
+              - inside:
+                  kind: primary_constructor
+                  inside:
+                    kind: class_declaration
+                    not: { has: { kind: modifiers, has: { kind: visibility_modifier, regex: 'private|internal' } } }
+          - kind: property_declaration
+            all:
+              - has: { kind: binding_pattern_kind }
+              - not: { has: { kind: modifiers, has: { kind: visibility_modifier, regex: 'private|internal|protected' } } }
+              - inside:
+                  kind: class_body
+                  inside:
+                    kind: class_declaration
+                    not: { has: { kind: modifiers, has: { kind: visibility_modifier, regex: 'private|internal' } } }

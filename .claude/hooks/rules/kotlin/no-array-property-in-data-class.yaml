@@ -1,0 +1,24 @@
+id: no-array-property-in-data-class
+language: kotlin
+severity: error
+message: >-
+  data class with an Array<T> primary-constructor property has structurally
+  broken equals()/hashCode() (reference identity on the array). Use List<T>,
+  or drop `data` and hand-write equals/hashCode.
+rule:
+  kind: class_declaration
+  all:
+    - has:
+        kind: modifiers
+        has:
+          kind: class_modifier
+          regex: '^data$'
+    - has:
+        kind: primary_constructor
+        has:
+          kind: class_parameter
+          has:
+            kind: user_type
+            has:
+              kind: type_identifier
+              regex: '^Array$'

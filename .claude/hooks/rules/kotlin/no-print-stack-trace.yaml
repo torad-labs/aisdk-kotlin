@@ -1,0 +1,5 @@
+id: no-print-stack-trace
+language: kotlin
+severity: error
+rule:
+  pattern: $E.printStackTrace()

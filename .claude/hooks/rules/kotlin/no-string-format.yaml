@@ -1,0 +1,5 @@
+id: no-string-format
+language: kotlin
+severity: error
+rule:
+  pattern: String.format($$$)

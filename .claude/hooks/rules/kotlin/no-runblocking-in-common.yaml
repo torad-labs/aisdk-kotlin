@@ -1,0 +1,10 @@
+id: no-runblocking-in-common
+language: kotlin
+severity: error
+message: "runBlocking blocks the calling thread and is unavailable on JS/wasm targets — it does not belong in commonMain."
+note: "Expose a suspend function instead; let the caller bridge to blocking code at the platform edge."
+rule:
+  kind: call_expression
+  has:
+    kind: simple_identifier
+    regex: '^runBlocking$'
