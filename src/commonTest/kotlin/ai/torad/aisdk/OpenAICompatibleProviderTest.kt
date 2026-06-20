@@ -1,7 +1,6 @@
 package ai.torad.aisdk
 import ai.torad.aisdk.providers.OpenAICompatibleProviderSettings
 import ai.torad.aisdk.providers.createOpenAICompatible
-import ai.torad.aisdk.providers.openai
 import ai.torad.aisdk.testing.drainAllItems
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.mock.MockEngine

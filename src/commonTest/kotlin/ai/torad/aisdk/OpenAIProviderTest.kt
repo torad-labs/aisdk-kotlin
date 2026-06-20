@@ -1,5 +1,4 @@
 package ai.torad.aisdk
-import ai.torad.aisdk.providers.OpenAIProviderNotConfiguredError
 import ai.torad.aisdk.providers.OpenAIProviderSettings
 import ai.torad.aisdk.providers.VERSION
 import ai.torad.aisdk.providers.createOpenAI
@@ -8,7 +7,6 @@ import ai.torad.aisdk.providers.openAIFileSearch
 import ai.torad.aisdk.providers.openAIImageGeneration
 import ai.torad.aisdk.providers.openAIMcp
 import ai.torad.aisdk.providers.openAIWebSearch
-import ai.torad.aisdk.providers.openai
 
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.mock.MockEngine
@@ -134,16 +132,6 @@ class OpenAIProviderTest {
         assertProviderTool(tools.fileSearch, "file_search", "openai.file_search")
         assertProviderTool(tools.webSearch, "web_search", "openai.web_search")
         assertProviderTool(tools.toolSearch, "tool_search", "openai.tool_search")
-    }
-
-    @Test
-    fun `default openai singleton fails explicitly without a configured client`() {
-        val error = assertFailsWith<OpenAIProviderNotConfiguredError> {
-            openai.chat("gpt-5")
-        }
-
-        assertNotNull(error.message)
-        assertTrue(error.message.orEmpty().contains("createOpenAI"))
     }
 
     @Test
