@@ -1,0 +1,169 @@
+package ai.torad.aisdk.providers
+
+import ai.torad.aisdk.*
+import ai.torad.aisdk.providers.FacadeSupport.compatibleSettings
+import ai.torad.aisdk.providers.FacadeSupport.intField
+import ai.torad.aisdk.providers.FacadeSupport.nestedIntField
+import ai.torad.aisdk.providers.FacadeSupport.usageFromParts
+import ai.torad.aisdk.providers.GroqWire.toCompatible
+import io.ktor.client.HttpClient
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.contentOrNull
+import kotlinx.serialization.json.jsonPrimitive
+
+public const val GROQ_VERSION: String = "3.0.39"
+
+@Serializable
+public data class GroqProviderSettings(
+    val apiKey: String? = null,
+    val baseURL: String = "https://api.groq.com/openai/v1",
+    val headers: Map<String, String> = emptyMap(),
+)
+
+@Serializable
+public data class GroqLanguageModelOptions(
+    val raw: Map<String, JsonElement> = emptyMap(),
+)
+
+public typealias GroqProviderOptions = GroqLanguageModelOptions
+
+@Serializable
+public data class GroqTranscriptionModelOptions(
+    val language: String? = null,
+    val prompt: String? = null,
+    val temperature: Float? = null,
+    val responseFormat: String? = null,
+)
+
+public class GroqProvider(
+    client: HttpClient,
+    settings: GroqProviderSettings,
+) : Provider {
+    private val compatible = OpenAICompatible(
+        client,
+        settings.toCompatible("groq", GROQ_VERSION, includeUsage = true),
+    )
+    override val providerId: String = "groq"
+    public val tools: GroqTools = GroqTools()
+
+    public operator fun invoke(modelId: String): LanguageModel = languageModel(modelId)
+    override fun languageModel(modelId: String): LanguageModel = chat(modelId)
+    public fun chat(modelId: String): LanguageModel = compatible.chatModel(modelId)
+    public fun transcription(modelId: String): TranscriptionModel = compatible.transcriptionModel(modelId)
+    public fun textEmbeddingModel(modelId: String): Nothing = throw NoSuchModelError(providerId, "embeddingModel", modelId)
+    override fun transcriptionModel(modelId: String): TranscriptionModel = transcription(modelId)
+    override fun embeddingModel(modelId: String): EmbeddingModel = throw NoSuchModelError(providerId, "embeddingModel", modelId)
+    override fun imageModel(modelId: String): ImageModel = throw NoSuchModelError(providerId, "imageModel", modelId)
+}
+
+public fun Groq(
+    client: HttpClient,
+    settings: GroqProviderSettings = GroqProviderSettings(),
+): GroqProvider = GroqProvider(client, settings)
+
+private val groqBrowserSearchTool: Tool<JsonElement, JsonElement, Any?> = ProviderExecutedTool(
+    name = "browserSearch",
+    description = "Browser search tool for Groq models.",
+    inputSerializer = JsonElement.serializer(),
+    outputSerializer = JsonElement.serializer(),
+    metadata = mapOf("providerToolId" to JsonPrimitive("groq.browser_search")),
+)
+
+public data class GroqTools(
+    val browserSearch: Tool<JsonElement, JsonElement, Any?> = groqBrowserSearchTool,
+)
+
+public val browserSearch: Tool<JsonElement, JsonElement, Any?> = groqBrowserSearchTool
+
+internal object GroqWire {
+    // Groq supports the browser_search tool only on these models; elsewhere it is dropped.
+    private val GROQ_BROWSER_SEARCH_MODELS = setOf("openai/gpt-oss-20b", "openai/gpt-oss-120b")
+
+    fun GroqProviderSettings.toCompatible(
+        name: String,
+        version: String,
+        includeUsage: Boolean = false,
+        supportsStructuredOutputs: Boolean = false,
+    ): OpenAICompatibleProviderSettings =
+        compatibleSettings(
+            name = name,
+            version = version,
+            baseURL = baseURL,
+            apiKey = apiKey,
+            headers = headers,
+            includeUsage = includeUsage,
+            supportsStructuredOutputs = supportsStructuredOutputs,
+            transformChatRequestBody = ::groqTransformChatBody,
+            transformChatResponse = ::groqTransformChatResponse,
+            convertUsage = ::groqUsage,
+        )
+
+    fun groqTransformChatBody(body: JsonObject): JsonObject {
+        val modelId = body["model"]?.jsonPrimitive?.contentOrNull
+        val tools = groqTools(body["tools"] as? JsonArray, modelId)
+        return buildJsonObject {
+            for ((key, value) in body) {
+                when (key) {
+                    "messages" -> put("messages", groqMessages(value as? JsonArray))
+                    // browser_search may have been filtered out — drop the tools key if now empty
+                    // (an empty tools array is invalid, same as sending tool_choice without tools).
+                    "tools" -> if (tools.isNotEmpty()) put("tools", tools)
+                    else -> put(key, value)
+                }
+            }
+        }
+    }
+
+    fun groqMessages(messages: JsonArray?): JsonArray = JsonArray(
+        messages.orEmpty().map { message ->
+            val obj = message as? JsonObject ?: return@map message
+            if (obj["role"]?.jsonPrimitive?.contentOrNull != "assistant") return@map obj
+            val reasoning = obj["reasoning_content"] ?: return@map obj
+            val transformed = obj.toMutableMap()
+            transformed.remove("reasoning_content")
+            transformed["reasoning"] = reasoning
+            JsonObject(transformed)
+        },
+    )
+
+    fun groqTools(tools: JsonArray?, modelId: String?): JsonArray = JsonArray(
+        tools.orEmpty().mapNotNull { tool ->
+            val obj = tool as? JsonObject ?: return@mapNotNull tool
+            val function = obj["function"] as? JsonObject ?: return@mapNotNull tool
+            val name = function["name"]?.jsonPrimitive?.contentOrNull
+            if (name == "browserSearch" || name == "browser_search") {
+                // Gate the browser_search tool to the models that support it; drop it elsewhere
+                // (upstream emits an unsupported warning and omits the tool).
+                if (modelId in GROQ_BROWSER_SEARCH_MODELS) {
+                    buildJsonObject { put("type", JsonPrimitive("browser_search")) }
+                } else {
+                    null
+                }
+            } else {
+                tool
+            }
+        },
+    )
+
+    fun groqTransformChatResponse(body: JsonObject): JsonObject {
+        val usage = (body["x_groq"] as? JsonObject)?.get("usage")
+        return if (body["usage"] == null && usage != null) {
+            JsonObject(body + ("usage" to usage))
+        } else {
+            body
+        }
+    }
+
+    fun groqUsage(value: JsonElement?): Usage {
+        val obj = value as? JsonObject ?: return Usage(raw = value)
+        val promptTokens = obj.intField("prompt_tokens")
+        val completionTokens = obj.intField("completion_tokens")
+        val reasoning = obj.nestedIntField("completion_tokens_details", "reasoning_tokens").coerceAtMost(completionTokens)
+        return usageFromParts(promptTokens, completionTokens, cacheRead = 0, reasoningTokens = reasoning, raw = obj)
+    }
+}

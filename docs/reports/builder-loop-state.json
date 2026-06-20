@@ -10,7 +10,7 @@
   },
   "ownership": "builder owns src/ edits; orchestrator owns .claude/ + validation; parallel work only on distinct files",
   "spec": "docs/reports/target-architecture.md",
-  "current_status": "CONTINUING (user: keep going). Layers 1-9 COMPLETE + green (rewrite done, HEAD 238990d). FOLLOW-UP layers: 10 providerMetadata Map->ProviderMetadata cascade (coherent, builder; mirror of 9b; ~60 decls); 11 god-file splits (MCP 2221/GoogleProvider 2027/ToolLoopAgent 1879/AmazonBedrock 1544 -> cohesive same-package files, PARALLEL workflow over distinct files); 12 warn-level polish (residual typealiases->value classes, sentinels->typed). current_layer=10. ABI tasks: updateKotlinAbi (regen) + checkKotlinAbi (validate) \u2014 NOT apiCheck.",
+  "current_status": "POLISH loop (user: do all remaining polish). Layers 1-13 done+green. L13 (OpenAICompatible splits, workflow): OpenAICompatibleProvider 1325->68 (+4 files), Facades 1505->deleted (+11 per-provider facade files); ABI changed BENIGNLY (top-level factories split into per-provider files renamed JVM facade classes OpenAICompatibleProviderFacadesKt -> *FacadeKt; no public-symbol loss) -> updateKotlinAbi regenerated, full gate green. Now current_layer=14: migrate 85 String typealiases -> value classes / generic ModelId (builder cascade). Then 15: ToolLoopAgent decomposition (Approval/Repair/Telemetry collaborators).",
   "hard_rules": "no camelCase top-level fns (only PascalCase factories); logic on types/in units; Flow over suspend; sealed CLASS not interface; no public/top-level/companion mutable var; no secondary ctor/lateinit/!!; sealed errors; typed over Map<String,JsonElement>/Any?",
   "layers": [
     {
@@ -68,7 +68,7 @@
       "status": "pending"
     }
   ],
-  "current_layer": "COMPLETE",
+  "current_layer": 14,
   "layer11_done": "VALIDATED (god-file splits, parallel workflow): Google 2027->162, Bedrock 1544->402, MCP 2221->1491, ToolLoopAgent 1879->1806 (abstract-class floor), 16 new same-package files, ABI-neutral, combined gate green. ToolLoopAgent deeper decomposition (Approval/Repair/Telemetry collaborators) is an optional further follow-up.",
   "completed_layers": [
     {
@@ -95,6 +95,23 @@
       "n": 12,
       "name": "warn-polish",
       "what": "residual warn-rule hits: typealias=String/primitive -> value class; ?: JsonNull / ?: \"\" sentinels -> typed; providerOptions as? JsonObject casts -> typed decode"
+    }
+  ],
+  "polish_layers": [
+    {
+      "n": 13,
+      "name": "openai-compatible-splits",
+      "what": "split OpenAICompatibleProvider.kt + OpenAICompatibleProviderFacades.kt into cohesive same-package files (objects for loose helpers, ABI-neutral); PARALLEL workflow"
+    },
+    {
+      "n": 14,
+      "name": "typealias-value-classes",
+      "what": "85 typealias X=String -> @JvmInline value class (or the generic ModelId where a per-provider type adds nothing); migrate all usages + fixtures; regen ABI"
+    },
+    {
+      "n": 15,
+      "name": "toolloopagent-decomposition",
+      "what": "extract Approval/Repair/Telemetry concerns from ToolLoopAgent into collaborator classes it delegates to (composition, T7 testability); preserve channel-parallel-exec + sealed Outcome"
     }
   ]
 }
