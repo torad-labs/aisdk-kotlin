@@ -214,7 +214,7 @@ class FullPortFeatureParityTest {
             telemetry = settings,
             input = JsonPrimitive("in"),
             output = JsonPrimitive("out"),
-            providerMetadata = mapOf("mock" to buildJsonObject { put("id", JsonPrimitive("1")) }),
+            providerMetadata = ProviderMetadata.Raw(JsonObject(mapOf("mock" to buildJsonObject { put("id", JsonPrimitive("1")) }))),
         )
         recordSpan(assembleOperationName("generateText", settings), tracer, attributes) {}
 

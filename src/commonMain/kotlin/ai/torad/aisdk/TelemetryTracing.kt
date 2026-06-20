@@ -55,15 +55,16 @@ internal fun selectTelemetryAttributes(
     telemetry: TelemetrySettings,
     input: JsonElement? = null,
     output: JsonElement? = null,
-    providerMetadata: Map<String, JsonElement> = emptyMap(),
+    providerMetadata: ProviderMetadata = ProviderMetadata.None,
 ): Map<String, JsonElement> = buildMap {
     // Legacy span path: stays opt-IN (only an explicit `isEnabled = true` selects attributes).
     if (telemetry.isEnabled != true) return@buildMap
     putAll(telemetry.metadata)
     if (telemetry.recordInputs && input != null) put("ai.input", input)
     if (telemetry.recordOutputs && output != null) put("ai.output", output)
-    if (providerMetadata.isNotEmpty()) {
-        put("ai.providerMetadata", JsonObject(providerMetadata))
+    val pmMap = providerMetadata.toMap()
+    if (pmMap.isNotEmpty()) {
+        put("ai.providerMetadata", JsonObject(pmMap))
     }
 }
 
