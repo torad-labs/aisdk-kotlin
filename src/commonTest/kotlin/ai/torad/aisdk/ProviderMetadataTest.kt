@@ -75,7 +75,7 @@ class ProviderMetadataTest {
         val original = StreamEvent.Finish(
             totalSteps = 3,
             finishReason = FinishReason.Stop,
-            usage = Usage(promptTokens = 500, completionTokens = 200),
+            usage = Usage.of(promptTokens = 500, completionTokens = 200),
             providerMetadata = ProviderMetadata.Raw(JsonObject(mapOf(
                 "openai" to buildJsonObject {
                     put("reasoning_effort", JsonPrimitive("high"))

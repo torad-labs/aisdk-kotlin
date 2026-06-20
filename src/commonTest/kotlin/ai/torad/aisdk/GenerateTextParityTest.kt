@@ -27,14 +27,14 @@ class GenerateTextParityTest {
         private val generateResult: LanguageModelResult = LanguageModelResult(
             text = "ok",
             finishReason = FinishReason.Stop,
-            usage = Usage(promptTokens = 1, completionTokens = 1),
+            usage = Usage.of(promptTokens = 1, completionTokens = 1),
         ),
         private val streamEvents: List<StreamEvent> = listOf(
             StreamEvent.TextStart("t1"),
             StreamEvent.TextDelta("t1", "ok"),
             StreamEvent.TextEnd("t1"),
-            StreamEvent.StepFinish(1, FinishReason.Stop, Usage(promptTokens = 1, completionTokens = 1)),
-            StreamEvent.Finish(1, FinishReason.Stop, Usage(promptTokens = 1, completionTokens = 1)),
+            StreamEvent.StepFinish(1, FinishReason.Stop, Usage.of(promptTokens = 1, completionTokens = 1)),
+            StreamEvent.Finish(1, FinishReason.Stop, Usage.of(promptTokens = 1, completionTokens = 1)),
         ),
         private val streamRequest: LanguageModelRequestMetadata = LanguageModelRequestMetadata(),
         private val streamResponse: LanguageModelResponseMetadata = LanguageModelResponseMetadata(),
@@ -71,7 +71,7 @@ class GenerateTextParityTest {
             generateResult = LanguageModelResult(
                 text = """{"name":"cake","ingredients":[]}""",
                 finishReason = FinishReason.Stop,
-                usage = Usage(promptTokens = 3, completionTokens = 4),
+                usage = Usage.of(promptTokens = 3, completionTokens = 4),
             ),
         )
         val output = Output.obj(serializer<Recipe>(), name = "Recipe")
@@ -154,7 +154,7 @@ class GenerateTextParityTest {
                 text = "answer",
                 toolCalls = listOf(toolCall),
                 finishReason = FinishReason.Other,
-                usage = Usage(promptTokens = 10, completionTokens = 11),
+                usage = Usage.of(promptTokens = 10, completionTokens = 11),
                 providerMetadata = ProviderMetadata.Raw(JsonObject(mapOf("mock" to buildJsonObject { put("trace", JsonPrimitive("abc")) }))),
                 content = listOf(
                     ContentPart.Text("answer"),
@@ -238,7 +238,7 @@ class GenerateTextParityTest {
                 StreamEvent.TextStart("t1"),
                 StreamEvent.TextDelta("t1", "ok"),
                 StreamEvent.TextEnd("t1"),
-                StreamEvent.Finish(1, FinishReason.Stop, Usage(promptTokens = 1, completionTokens = 1)),
+                StreamEvent.Finish(1, FinishReason.Stop, Usage.of(promptTokens = 1, completionTokens = 1)),
             ),
             streamRequest = request,
             streamResponse = LanguageModelResponseMetadata(headers = mapOf("x-request-id" to "req_1")),
@@ -271,7 +271,7 @@ class GenerateTextParityTest {
                 StreamEvent.TextStart("t1"),
                 StreamEvent.TextDelta("t1", "ok"),
                 StreamEvent.TextEnd("t1"),
-                StreamEvent.Finish(1, FinishReason.Stop, Usage(promptTokens = 1, completionTokens = 1)),
+                StreamEvent.Finish(1, FinishReason.Stop, Usage.of(promptTokens = 1, completionTokens = 1)),
             ),
             streamResponse = LanguageModelResponseMetadata(headers = mapOf("x-request-id" to "req_1")),
         )
@@ -295,7 +295,7 @@ class GenerateTextParityTest {
             generateResult = LanguageModelResult(
                 text = """{"name":"cake","ingredients":["flour"]}""",
                 finishReason = FinishReason.Stop,
-                usage = Usage(promptTokens = 2, completionTokens = 3),
+                usage = Usage.of(promptTokens = 2, completionTokens = 3),
                 warnings = listOf(CallWarning("mock-warning")),
             ),
         )

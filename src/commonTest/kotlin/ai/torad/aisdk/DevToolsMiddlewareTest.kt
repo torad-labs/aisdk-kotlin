@@ -87,7 +87,7 @@ class DevToolsMiddlewareTest {
             LanguageModelResult(
                 text = "unused",
                 finishReason = FinishReason.Stop,
-                usage = Usage(promptTokens = 1, completionTokens = 1),
+                usage = Usage.of(promptTokens = 1, completionTokens = 1),
             )
 
         override fun stream(params: LanguageModelCallParams): Flow<StreamEvent> = flow {
@@ -99,7 +99,7 @@ class DevToolsMiddlewareTest {
             emit(StreamEvent.ReasoningEnd("r1"))
             emit(StreamEvent.ToolCall("call_1", "search", JsonObject(emptyMap())))
             emit(StreamEvent.Raw(JsonPrimitive("raw-provider-event")))
-            emit(StreamEvent.Finish(1, FinishReason.ToolCalls, Usage(promptTokens = 1, completionTokens = 2)))
+            emit(StreamEvent.Finish(1, FinishReason.ToolCalls, Usage.of(promptTokens = 1, completionTokens = 2)))
         }
     }
 }

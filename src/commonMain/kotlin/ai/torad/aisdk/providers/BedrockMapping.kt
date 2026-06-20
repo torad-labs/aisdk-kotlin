@@ -39,7 +39,7 @@ internal object BedrockMapping {
 
     fun bedrockOpenAILikeUsage(element: JsonElement?): Usage {
         val obj = element as? JsonObject ?: return Usage()
-        return Usage(
+        return Usage.of(
             promptTokens = obj["prompt_tokens"]?.jsonPrimitive?.intOrNull ?: 0,
             completionTokens = obj["completion_tokens"]?.jsonPrimitive?.intOrNull ?: 0,
         )

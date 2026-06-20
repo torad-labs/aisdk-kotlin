@@ -75,7 +75,7 @@ class ToolLoopAgentTerminalSemanticsTest {
 internal data class TestStreamResponse(
     val events: List<StreamEvent>,
     val finishReason: FinishReason = FinishReason.Stop,
-    val usage: Usage = Usage(promptTokens = 1, completionTokens = 1),
+    val usage: Usage = Usage.of(promptTokens = 1, completionTokens = 1),
 )
 
 internal class CountingStreamModel(

@@ -184,7 +184,7 @@ class KotlinIdiomsTest {
         val result = LanguageModelResult(
             text = "ok",
             finishReason = FinishReason.Stop,
-            usage = Usage(promptTokens = 1, completionTokens = 1),
+            usage = Usage.of(promptTokens = 1, completionTokens = 1),
             providerMetadata = metadata,
             content = listOf(ContentPart.Text("ok", providerMetadata = metadata)),
         )

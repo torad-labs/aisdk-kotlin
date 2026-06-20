@@ -189,7 +189,7 @@ internal object TogetherAIWire {
 
     fun togetherAIUsage(value: JsonElement?): Usage {
         val obj = value as? JsonObject ?: return Usage()
-        return Usage(
+        return Usage.of(
             promptTokens = obj["prompt_tokens"]?.jsonPrimitive?.intOrNull ?: 0,
             completionTokens = obj["completion_tokens"]?.jsonPrimitive?.intOrNull ?: 0,
         )

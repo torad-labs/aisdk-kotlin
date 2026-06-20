@@ -122,9 +122,6 @@ public fun <TOutput> streamObjectResult(
     responseFormat: ResponseFormat = ResponseFormat.Text,
     repairText: ((String) -> String?)? = null,
 ): StreamObjectResult<TOutput> {
-    require(prompt != null || messages.isNotEmpty()) {
-        "streamObjectResult: must provide prompt or messages"
-    }
     val effectiveResponseFormat =
         if (responseFormat == ResponseFormat.Text) output.toResponseFormat() else responseFormat
     val inputMessages = buildList {

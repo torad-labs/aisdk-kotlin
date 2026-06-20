@@ -28,7 +28,7 @@ class KotlinApiTest {
         private val generateResult: LanguageModelResult = LanguageModelResult(
             text = "ok",
             finishReason = FinishReason.Stop,
-            usage = Usage(promptTokens = 1, completionTokens = 1),
+            usage = Usage.of(promptTokens = 1, completionTokens = 1),
         ),
     ) : LanguageModel {
         override val modelId: String = "test/native"
@@ -47,7 +47,7 @@ class KotlinApiTest {
             emit(StreamEvent.TextStart("t1"))
             emit(StreamEvent.TextDelta("t1", "ok"))
             emit(StreamEvent.TextEnd("t1"))
-            emit(StreamEvent.Finish(1, FinishReason.Stop, Usage(promptTokens = 1, completionTokens = 1)))
+            emit(StreamEvent.Finish(1, FinishReason.Stop, Usage.of(promptTokens = 1, completionTokens = 1)))
         }
     }
 
@@ -55,7 +55,7 @@ class KotlinApiTest {
     fun `text generation request forwards grouped settings`() = runTest {
         val providerOptions = ProviderOptions.Raw(JsonObject(mapOf("openai" to buildJsonObject { put("reasoningEffort", JsonPrimitive("high")) })))
         val model = CapturingModel()
-        val request = TextGenerationRequest(
+        val request = TextGenerationRequest.of(
             input = TextGenerationRequest.Input.messagesWithPrompt(
                 history = TextGenerationRequest.NonEmptyMessages.of(userMessage("history")),
                 prompt = "answer",
@@ -206,7 +206,7 @@ class KotlinApiTest {
             generateResult = LanguageModelResult(
                 text = """{"name":"cake"}""",
                 finishReason = FinishReason.Stop,
-                usage = Usage(promptTokens = 1, completionTokens = 1),
+                usage = Usage.of(promptTokens = 1, completionTokens = 1),
             ),
         )
         val output = outputObj<Recipe>(serializer(), name = "Recipe")

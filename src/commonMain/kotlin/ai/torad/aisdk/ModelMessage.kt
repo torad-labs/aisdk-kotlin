@@ -66,7 +66,7 @@ public enum class MessageRole { System, User, Assistant, Tool }
 @OptIn(ExperimentalSerializationApi::class)
 @Serializable
 @JsonClassDiscriminator("type")
-public sealed interface ContentPart {
+public sealed class ContentPart {
 
     @Serializable
     @SerialName("text")
@@ -74,7 +74,7 @@ public sealed interface ContentPart {
         val text: String,
         @EncodeDefault(EncodeDefault.Mode.NEVER)
         val providerMetadata: ProviderMetadata = ProviderMetadata.None,
-    ) : ContentPart
+    ) : ContentPart()
 
     @Serializable
     @SerialName("reasoning")
@@ -82,7 +82,7 @@ public sealed interface ContentPart {
         val text: String,
         @EncodeDefault(EncodeDefault.Mode.NEVER)
         val providerMetadata: ProviderMetadata = ProviderMetadata.None,
-    ) : ContentPart
+    ) : ContentPart()
 
     @Serializable
     @SerialName("tool-call")
@@ -98,7 +98,7 @@ public sealed interface ContentPart {
         val invalid: Boolean = false,
         @EncodeDefault(EncodeDefault.Mode.NEVER)
         val providerMetadata: ProviderMetadata = ProviderMetadata.None,
-    ) : ContentPart
+    ) : ContentPart()
 
     /**
      * Tool execution result. [output] is the canonical FULL payload —
@@ -126,7 +126,7 @@ public sealed interface ContentPart {
         val providerExecuted: Boolean = false,
         @EncodeDefault(EncodeDefault.Mode.NEVER)
         val providerMetadata: ProviderMetadata = ProviderMetadata.None,
-    ) : ContentPart
+    ) : ContentPart()
 
     /** Assistant content: the LLM called a tool that requires approval. */
     @Serializable
@@ -152,7 +152,7 @@ public sealed interface ContentPart {
         val signature: String? = null,
         @EncodeDefault(EncodeDefault.Mode.NEVER)
         val providerMetadata: ProviderMetadata = ProviderMetadata.None,
-    ) : ContentPart
+    ) : ContentPart()
 
     /** Tool content: the host's decision on a previously requested approval. */
     @Serializable
@@ -162,7 +162,7 @@ public sealed interface ContentPart {
         val approved: Boolean,
         val reason: String? = null,
         val approvalId: String? = null,
-    ) : ContentPart
+    ) : ContentPart()
 
     @Serializable
     @SerialName("source")
@@ -176,7 +176,7 @@ public sealed interface ContentPart {
         val mediaType: String? = null,
         /** Optional display name of a document source. */
         val filename: String? = null,
-    ) : ContentPart
+    ) : ContentPart()
 
     /**
      * File content — payload data the model produced or that's
@@ -201,7 +201,7 @@ public sealed interface ContentPart {
          * [convertToLanguageModelPrompt] for providers that don't accept URLs.
          */
         val url: String? = null,
-    ) : ContentPart
+    ) : ContentPart()
 
     /**
      * Image content — distinct from generic [File] so multimodal
@@ -228,7 +228,7 @@ public sealed interface ContentPart {
          * [convertToLanguageModelPrompt] for providers that don't accept URLs.
          */
         val url: String? = null,
-    ) : ContentPart
+    ) : ContentPart()
 }
 
 /**
@@ -254,19 +254,18 @@ public data class Usage(
     val outputTokens: OutputTokenBreakdown = OutputTokenBreakdown(),
     val raw: JsonElement? = null,
 ) {
-    /**
-     * Legacy flat `(promptTokens, completionTokens)` constructor —
-     * unambiguous because BOTH params are required. The primary
-     * constructor's `Usage()` no-arg path goes through default
-     * `InputTokenBreakdown()` / `OutputTokenBreakdown()`.
-     */
-    public constructor(
-        promptTokens: Int,
-        completionTokens: Int,
-    ) : this(
-        inputTokens = InputTokenBreakdown(total = promptTokens),
-        outputTokens = OutputTokenBreakdown(total = completionTokens),
-    )
+    public companion object {
+        /**
+         * Legacy flat `(promptTokens, completionTokens)` factory —
+         * replaces the old secondary constructor. Unambiguous because
+         * BOTH params are required; the primary constructor's `Usage()`
+         * no-arg path goes through default breakdown defaults.
+         */
+        public fun of(promptTokens: Int, completionTokens: Int): Usage = Usage(
+            inputTokens = InputTokenBreakdown(total = promptTokens),
+            outputTokens = OutputTokenBreakdown(total = completionTokens),
+        )
+    }
 
     /** Legacy flat accessor — `inputTokens.total`. */
     val promptTokens: Int get() = inputTokens.total

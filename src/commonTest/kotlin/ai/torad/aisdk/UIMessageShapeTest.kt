@@ -85,13 +85,13 @@ class UIMessageShapeTest {
             StreamEvent.TextStart("t1"),
             StreamEvent.TextDelta("t1", "calling tool…"),
             StreamEvent.TextEnd("t1"),
-            StreamEvent.StepFinish(1, FinishReason.ToolCalls, Usage(1, 2)),
+            StreamEvent.StepFinish(1, FinishReason.ToolCalls, Usage.of(1, 2)),
             StreamEvent.StepStart(stepNumber = 2),
             StreamEvent.TextStart("t2"),
             StreamEvent.TextDelta("t2", "got result, here's the answer"),
             StreamEvent.TextEnd("t2"),
-            StreamEvent.StepFinish(2, FinishReason.Stop, Usage(3, 4)),
-            StreamEvent.Finish(totalSteps = 2, finishReason = FinishReason.Stop, usage = Usage(4, 6)),
+            StreamEvent.StepFinish(2, FinishReason.Stop, Usage.of(3, 4)),
+            StreamEvent.Finish(totalSteps = 2, finishReason = FinishReason.Stop, usage = Usage.of(4, 6)),
         )
 
         // WHEN

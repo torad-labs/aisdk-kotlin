@@ -224,7 +224,7 @@ private class ElevenLabsTranscriptionModel(
 private const val ELEVENLABS_DEFAULT_VOICE_ID: String = "21m00Tcm4TlvDq8ikWAM"
 
 
-private data class ElevenLabsBinaryResponse(
+private class ElevenLabsBinaryResponse(
     val bytes: ByteArray,
     val mediaType: String,
     val headers: Map<String, String>,

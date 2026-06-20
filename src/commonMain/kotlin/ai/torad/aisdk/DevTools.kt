@@ -172,8 +172,7 @@ private class DevToolsStreamCollector {
     private val toolCalls = mutableListOf<JsonElement>()
     private val streamEvents = mutableListOf<JsonElement>()
     val rawChunks = mutableListOf<JsonElement>()
-    var usage: Usage? = null
-        private set
+    internal var usage: Usage? = null
     private var finishReason: FinishReason? = null
 
     fun accept(event: StreamEvent) {

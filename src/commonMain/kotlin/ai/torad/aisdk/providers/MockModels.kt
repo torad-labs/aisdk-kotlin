@@ -30,10 +30,11 @@ public class MockEmbeddingModel(
     override val provider: String = "mock",
     private val dimensions: Int = 3,
 ) : EmbeddingModel {
-    public var captured: EmbeddingModelCallParams? = null
+    private var _captured: EmbeddingModelCallParams? = null
+    public val captured: EmbeddingModelCallParams? get() = _captured
 
     override suspend fun embed(params: EmbeddingModelCallParams): EmbeddingModelResult {
-        captured = params
+        _captured = params
         return EmbeddingModelResult(
             embeddings = params.values.map { value ->
                 List(dimensions) { index -> (value.length + index).toFloat() }
@@ -48,10 +49,11 @@ public class MockImageModel(
     override val provider: String = "mock",
     private val image: GeneratedFile = GeneratedFile("image/png", "iVBORw0KGgo=", "image.png"),
 ) : ImageModel {
-    public var captured: ImageGenerationParams? = null
+    private var _captured: ImageGenerationParams? = null
+    public val captured: ImageGenerationParams? get() = _captured
 
     override suspend fun generate(params: ImageGenerationParams): ImageModelResult {
-        captured = params
+        _captured = params
         return ImageModelResult(images = List(params.n) { image })
     }
 }
@@ -61,10 +63,11 @@ public class MockSpeechModel(
     override val provider: String = "mock",
     private val audio: GeneratedFile = GeneratedFile("audio/mpeg", "SUQz", "speech.mp3"),
 ) : SpeechModel {
-    public var captured: SpeechGenerationParams? = null
+    private var _captured: SpeechGenerationParams? = null
+    public val captured: SpeechGenerationParams? get() = _captured
 
     override suspend fun generate(params: SpeechGenerationParams): SpeechModelResult {
-        captured = params
+        _captured = params
         return SpeechModelResult(audio = audio)
     }
 }
@@ -74,10 +77,11 @@ public class MockTranscriptionModel(
     override val provider: String = "mock",
     private val transcript: String = "hello world",
 ) : TranscriptionModel {
-    public var captured: TranscriptionParams? = null
+    private var _captured: TranscriptionParams? = null
+    public val captured: TranscriptionParams? get() = _captured
 
     override suspend fun transcribe(params: TranscriptionParams): TranscriptionModelResult {
-        captured = params
+        _captured = params
         return TranscriptionModelResult(
             text = transcript,
             segments = listOf(TranscriptSegment(transcript, startSeconds = 0f, endSeconds = 1f)),
@@ -90,10 +94,11 @@ public class MockVideoModel(
     override val provider: String = "mock",
     private val video: GeneratedFile = GeneratedFile("video/mp4", "AAAA", "video.mp4"),
 ) : VideoModel {
-    public var captured: VideoGenerationParams? = null
+    private var _captured: VideoGenerationParams? = null
+    public val captured: VideoGenerationParams? get() = _captured
 
     override suspend fun generate(params: VideoGenerationParams): VideoModelResult {
-        captured = params
+        _captured = params
         return VideoModelResult(videos = List(params.n) { video })
     }
 }
@@ -102,15 +107,16 @@ public class MockRerankingModel(
     override val modelId: String = "mock/rerank",
     override val provider: String = "mock",
 ) : RerankingModel {
-    public var captured: RerankingParams? = null
+    private var _captured: RerankingParams? = null
+    public val captured: RerankingParams? get() = _captured
 
     override suspend fun rerank(params: RerankingParams): RerankingModelResult {
-        captured = params
+        _captured = params
         val results = params.documents.mapIndexed { index, document ->
             val score = if (document.contains(params.query, ignoreCase = true)) 1f else 0.1f / (index + 1)
             RerankedItem(document, score, index)
         }
-        return RerankingModelResult(results = results, usage = Usage(promptTokens = params.query.length, completionTokens = 0))
+        return RerankingModelResult(results = results, usage = Usage.of(promptTokens = params.query.length, completionTokens = 0))
     }
 }
 

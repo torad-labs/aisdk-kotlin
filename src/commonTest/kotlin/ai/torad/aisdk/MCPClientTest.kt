@@ -492,11 +492,13 @@ class MCPClientTest {
         val provider = MemoryOAuthProvider(
             tokens = null,
             clientInformation = OAuthClientInformation(clientId = "client-id", clientSecret = "client-secret"),
-            onAddClientAuthentication = { _, params, _, _ ->
+            onAddClientAuthentication = { _, _, _, _ ->
                 delay(5)
-                params["client_id"] = "set-by-async-provider"
-                params["client_secret"] = "secret-by-async-provider"
-                params["example_url"] = "https://auth.example.com"
+                ClientAuthResult(additionalParams = mapOf(
+                    "client_id" to "set-by-async-provider",
+                    "client_secret" to "secret-by-async-provider",
+                    "example_url" to "https://auth.example.com",
+                ))
             },
         )
         provider.saveState("state-1")
@@ -554,11 +556,13 @@ class MCPClientTest {
         val provider = MemoryOAuthProvider(
             tokens = OAuthTokens(accessToken = "old-token", tokenType = "Bearer", refreshToken = "old-refresh"),
             clientInformation = OAuthClientInformation(clientId = "client-id", clientSecret = "client-secret"),
-            onAddClientAuthentication = { _, params, _, _ ->
+            onAddClientAuthentication = { _, _, _, _ ->
                 delay(5)
-                params["client_id"] = "set-by-async-provider"
-                params["client_secret"] = "secret-by-async-provider"
-                params["example_url"] = "https://auth.example.com"
+                ClientAuthResult(additionalParams = mapOf(
+                    "client_id" to "set-by-async-provider",
+                    "client_secret" to "secret-by-async-provider",
+                    "example_url" to "https://auth.example.com",
+                ))
             },
         )
 
@@ -754,7 +758,7 @@ class MCPClientTest {
         fixture.server.start()
         val transport = SseMCPTransport(fixture.httpClient(), "https://mcp.test/sse")
         var received: JSONRPCMessage? = null
-        transport.onMessage = { received = it }
+        transport.setOnMessage { received = it }
 
         transport.start()
         waitForRealTime { received != null }
@@ -852,7 +856,7 @@ class MCPClientTest {
             ),
         )
         var received: JSONRPCMessage? = null
-        transport.onMessage = { received = it }
+        transport.setOnMessage { received = it }
 
         try {
             transport.start()
@@ -946,10 +950,16 @@ class MCPClientTest {
     ) : MCPTransport {
         val sent = mutableListOf<JSONRPCMessage>()
         var startCount = 0
-        override var onClose: (() -> Unit)? = null
-        override var onError: ((Throwable) -> Unit)? = null
-        override var onMessage: (suspend (JSONRPCMessage) -> Unit)? = null
-        override var protocolVersion: String? = null
+        private var onClose: (() -> Unit)? = null
+        private var onError: ((Throwable) -> Unit)? = null
+        private var onMessage: (suspend (JSONRPCMessage) -> Unit)? = null
+        private var _protocolVersion: String? = null
+        val protocolVersion: String? get() = _protocolVersion
+
+        override fun setOnClose(handler: (() -> Unit)?) { onClose = handler }
+        override fun setOnError(handler: ((Throwable) -> Unit)?) { onError = handler }
+        override fun setOnMessage(handler: (suspend (JSONRPCMessage) -> Unit)?) { onMessage = handler }
+        override fun setProtocolVersion(version: String?) { _protocolVersion = version }
 
         // Concurrent client requests hit send() from multiple coroutines; on a
         // multi-threaded Kotlin/Native dispatcher (linuxX64) an unguarded
@@ -986,11 +996,11 @@ class MCPClientTest {
         private var tokens: OAuthTokens?,
         private var clientInformation: OAuthClientInformation? = OAuthClientInformation(clientId = "client-id"),
         private val onAddClientAuthentication: (suspend (
-            headers: MutableMap<String, String>,
-            params: MutableMap<String, String>,
+            headers: Map<String, String>,
+            params: Map<String, String>,
             url: String,
             metadata: AuthorizationServerMetadata?,
-        ) -> Unit)? = null,
+        ) -> ClientAuthResult)? = null,
     ) : OAuthClientProvider {
         var lastAuthorizationUrl: String? = null
         var savedCodeVerifier: String = "verifier"
@@ -1028,13 +1038,11 @@ class MCPClientTest {
         override suspend fun storedState(): String? = savedState
 
         override suspend fun addClientAuthentication(
-            headers: MutableMap<String, String>,
-            params: MutableMap<String, String>,
+            headers: Map<String, String>,
+            params: Map<String, String>,
             url: String,
             metadata: AuthorizationServerMetadata?,
-        ) {
-            onAddClientAuthentication?.invoke(headers, params, url, metadata)
-        }
+        ): ClientAuthResult = onAddClientAuthentication?.invoke(headers, params, url, metadata) ?: ClientAuthResult()
     }
 
     private fun Map<String, String>.headerValue(name: String): String? =

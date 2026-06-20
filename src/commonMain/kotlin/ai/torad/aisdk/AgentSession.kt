@@ -324,11 +324,11 @@ public class AgentSession<TContext, TOutput>(
     ): Job {
         val controller = AbortController()
         val externalRegistration = abortSignal.register { controller.abort() }
-        lateinit var job: Job
+        var job: Job? = null
         // The `active` guard stops a job that has been superseded by a newer
         // submit() (which reassigned currentJob) from clobbering the new
         // job's state — including from its own cancellation/error handler.
-        job = scope.launch(start = CoroutineStart.LAZY) {
+        val launched = scope.launch(start = CoroutineStart.LAZY) {
             try {
                 block(controller.signal) { job === currentJob }
             } catch (error: CancellationException) {
@@ -342,15 +342,16 @@ public class AgentSession<TContext, TOutput>(
                 }
             }
         }
-        job.invokeOnCompletion {
+        job = launched
+        launched.invokeOnCompletion {
             externalRegistration.cancel()
             controller.abort()
         }
         // Claim ownership before starting the body so the `active` check inside
         // the coroutine always observes the assignment.
-        currentJob = job
-        job.start()
-        return job
+        currentJob = launched
+        launched.start()
+        return launched
     }
 
     private fun visibleMessages(messages: List<ModelMessage>, prompt: String?): List<ModelMessage> =

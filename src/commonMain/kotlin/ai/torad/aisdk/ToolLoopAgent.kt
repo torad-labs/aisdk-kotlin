@@ -475,9 +475,6 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
         finalMessagesRef: MessageHolder?,
         stepsCapture: StepsHolder?,
     ): Flow<StreamEvent> = flow {
-        require(prompt != null || priorMessages.isNotEmpty()) {
-            "Agent.generate/stream: must provide either `prompt` or `messages`"
-        }
         val validatedOptions = validateCallOptions(options)
         // v7 telemetry: resolve the effective integration once per invocation and
         // stamp every event of this call with one TelemetryCall envelope.

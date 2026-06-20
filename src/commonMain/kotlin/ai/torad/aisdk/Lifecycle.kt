@@ -122,9 +122,9 @@ public data class OnToolCallFinishEvent(
     val outcome: Outcome,
     val stepNumber: Int,
 ) {
-    public sealed interface Outcome {
-        public data class Success(val outputJson: JsonElement) : Outcome
-        public data class Failure(val errorMessage: String) : Outcome
+    public sealed class Outcome {
+        public data class Success(val outputJson: JsonElement) : Outcome()
+        public data class Failure(val errorMessage: String) : Outcome()
     }
 }
 

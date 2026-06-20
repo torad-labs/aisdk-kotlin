@@ -279,7 +279,7 @@ private class FalVideoModel(
 
 
 
-private data class FalBinaryResponse(
+private class FalBinaryResponse(
     val bytes: ByteArray,
     val headers: Map<String, String>,
 )

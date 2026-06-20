@@ -722,7 +722,7 @@ private fun usageFromJson(value: JsonElement?): Usage {
     val obj = value?.jsonObject ?: return Usage()
     val prompt = jsonIntOrNull(obj, "promptTokens") ?: jsonIntOrNull(obj, "inputTokens") ?: 0
     val completion = jsonIntOrNull(obj, "completionTokens") ?: jsonIntOrNull(obj, "outputTokens") ?: 0
-    return Usage(promptTokens = prompt, completionTokens = completion)
+    return Usage.of(promptTokens = prompt, completionTokens = completion)
 }
 
 private fun callWarnings(value: JsonElement?): List<CallWarning> =

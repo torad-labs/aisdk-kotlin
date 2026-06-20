@@ -225,7 +225,7 @@ private class CohereRerankingModel(
             ?.get("search_units")?.jsonPrimitive?.intOrNull ?: 0
         return RerankingModelResult(
             results = results,
-            usage = Usage(promptTokens = searchUnits, completionTokens = 0),
+            usage = Usage.of(promptTokens = searchUnits, completionTokens = 0),
             response = LanguageModelResponseMetadata(id = value["id"]?.jsonPrimitive?.contentOrNull, headers = response.headers, body = response.value),
         )
     }

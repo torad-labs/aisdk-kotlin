@@ -27,18 +27,29 @@ public data class CallSettings(
 
 @AiSdkDsl
 public class CallSettingsBuilder internal constructor() {
-    public var temperature: Float? = null
-    public var topP: Float? = null
-    public var topK: Int? = null
-    public var maxOutputTokens: Int? = null
-    public var seed: Int? = null
-    public var providerOptions: ProviderOptions = ProviderOptions.None
-    public var abortSignal: AbortSignal? = null
-    public var presencePenalty: Float? = null
-    public var frequencyPenalty: Float? = null
-    public var responseFormat: ResponseFormat? = null
+    private var temperature: Float? = null
+    private var topP: Float? = null
+    private var topK: Int? = null
+    private var maxOutputTokens: Int? = null
+    private var seed: Int? = null
+    private var providerOptions: ProviderOptions = ProviderOptions.None
+    private var abortSignal: AbortSignal? = null
+    private var presencePenalty: Float? = null
+    private var frequencyPenalty: Float? = null
+    private var responseFormat: ResponseFormat? = null
 
     private val stopSequences = mutableListOf<String>()
+
+    public fun temperature(value: Float?) { temperature = value }
+    public fun topP(value: Float?) { topP = value }
+    public fun topK(value: Int?) { topK = value }
+    public fun maxOutputTokens(value: Int?) { maxOutputTokens = value }
+    public fun seed(value: Int?) { seed = value }
+    public fun providerOptions(value: ProviderOptions) { providerOptions = value }
+    public fun abortSignal(value: AbortSignal?) { abortSignal = value }
+    public fun presencePenalty(value: Float?) { presencePenalty = value }
+    public fun frequencyPenalty(value: Float?) { frequencyPenalty = value }
+    public fun responseFormat(value: ResponseFormat?) { responseFormat = value }
 
     public fun stopSequence(value: String) {
         stopSequences += value
@@ -118,16 +129,18 @@ public data class TextGenerationRequest public constructor(
     val system: String? = null,
     val settings: CallSettings = CallSettings(),
 ) {
-    public constructor(
-        input: Input,
-        system: String? = null,
-        settings: CallSettings = CallSettings(),
-    ) : this(
-        prompt = input.prompt,
-        messages = input.messages,
-        system = system,
-        settings = settings,
-    )
+    public companion object {
+        public fun of(
+            input: Input,
+            system: String? = null,
+            settings: CallSettings = CallSettings(),
+        ): TextGenerationRequest = TextGenerationRequest(
+            prompt = input.prompt,
+            messages = input.messages,
+            system = system,
+            settings = settings,
+        )
+    }
 
     public val input: Input
         get() = Input.from(prompt = prompt, messages = messages)
@@ -147,20 +160,20 @@ public data class TextGenerationRequest public constructor(
         }
     }
 
-    public sealed interface Input {
-        public val prompt: String?
-        public val messages: List<ModelMessage>
+    public sealed class Input {
+        public abstract val prompt: String?
+        public abstract val messages: List<ModelMessage>
 
         public data class PromptText(
             public val text: String,
-        ) : Input {
+        ) : Input() {
             override val prompt: String get() = text
             override val messages: List<ModelMessage> get() = emptyList()
         }
 
         public data class MessageHistory(
             public val history: NonEmptyMessages,
-        ) : Input {
+        ) : Input() {
             override val prompt: String? get() = null
             override val messages: List<ModelMessage> get() = history.values
         }
@@ -168,7 +181,7 @@ public data class TextGenerationRequest public constructor(
         public data class MessageHistoryWithPrompt(
             public val history: NonEmptyMessages,
             override val prompt: String,
-        ) : Input {
+        ) : Input() {
             override val messages: List<ModelMessage> get() = history.values
         }
 
@@ -204,9 +217,9 @@ public data class TextGenerationRequest public constructor(
 
 @AiSdkDsl
 public class TextGenerationRequestBuilder internal constructor() {
-    public var prompt: String? = null
-    public var system: String? = null
-    public var settings: CallSettings = CallSettings()
+    private var prompt: String? = null
+    private var system: String? = null
+    private var settings: CallSettings = CallSettings()
 
     private val messages = mutableListOf<ModelMessage>()
 

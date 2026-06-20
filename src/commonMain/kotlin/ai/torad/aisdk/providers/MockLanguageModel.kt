@@ -105,7 +105,7 @@ public fun mockLanguageModelTextOnly(text: String): MockLanguageModel = MockLang
                 StreamEvent.TextEnd("t1"),
             ),
             finishReason = FinishReason.Stop,
-            usage = Usage(promptTokens = 1, completionTokens = text.length),
+            usage = Usage.of(promptTokens = 1, completionTokens = text.length),
         ),
     ),
 )
@@ -133,7 +133,7 @@ public fun mockLanguageModelToolThenText(
                 ),
             ),
             finishReason = FinishReason.ToolCalls,
-            usage = Usage(promptTokens = 5, completionTokens = 10),
+            usage = Usage.of(promptTokens = 5, completionTokens = 10),
         ),
         ScriptedResponse(
             events = listOf(
@@ -142,7 +142,7 @@ public fun mockLanguageModelToolThenText(
                 StreamEvent.TextEnd("t1"),
             ),
             finishReason = FinishReason.Stop,
-            usage = Usage(promptTokens = 8, completionTokens = finalText.length),
+            usage = Usage.of(promptTokens = 8, completionTokens = finalText.length),
         ),
     ),
 )
@@ -156,7 +156,7 @@ public fun mockToolInput(vararg pairs: Pair<String, String>): JsonObject = build
 public data class ScriptedResponse(
     val events: List<StreamEvent>,
     val finishReason: FinishReason = FinishReason.Stop,
-    val usage: Usage = Usage(promptTokens = 1, completionTokens = 1),
+    val usage: Usage = Usage.of(promptTokens = 1, completionTokens = 1),
     val providerMetadata: ProviderMetadata = ProviderMetadata.None,
     val rawFinishReason: String? = null,
     val warnings: List<CallWarning> = emptyList(),

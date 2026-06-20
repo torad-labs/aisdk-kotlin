@@ -20,7 +20,7 @@ class ExtractReasoningTest {
         val ctx = MiddlewareCallContext(
             params = LanguageModelCallParams(messages = listOf(userMessage("x"))),
             model = mockLanguageModelTextOnly("x"),
-            doGenerate = { LanguageModelResult("x", emptyList(), FinishReason.Stop, Usage(1, 1)) },
+            doGenerate = { LanguageModelResult("x", emptyList(), FinishReason.Stop, Usage.of(1, 1)) },
             doStream = {
                 flowOf(
                     StreamEvent.TextStart("t1"),

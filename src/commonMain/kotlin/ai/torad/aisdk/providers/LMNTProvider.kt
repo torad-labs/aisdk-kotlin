@@ -113,7 +113,7 @@ private class LMNTSpeechModel(
 }
 
 
-private data class LMNTBinaryResponse(
+private class LMNTBinaryResponse(
     val bytes: ByteArray,
     val mediaType: String,
     val headers: Map<String, String>,

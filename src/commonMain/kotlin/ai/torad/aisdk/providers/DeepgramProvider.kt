@@ -189,7 +189,7 @@ private data class DeepgramTranscriptionArgs(
     val warnings: List<CallWarning>,
 )
 
-private data class DeepgramBinaryResponse(
+private class DeepgramBinaryResponse(
     val bytes: ByteArray,
     val headers: Map<String, String>,
 )

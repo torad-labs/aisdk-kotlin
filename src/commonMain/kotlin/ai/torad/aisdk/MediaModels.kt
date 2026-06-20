@@ -12,21 +12,21 @@ public data class GeneratedFile(
     val url: String? = null,
 )
 
-public sealed interface FileData {
-    public val mediaType: String?
-    public val filename: String?
+public sealed class FileData {
+    public abstract val mediaType: String?
+    public abstract val filename: String?
 
     public data class Base64(
         val value: String,
         override val mediaType: String? = null,
         override val filename: String? = null,
-    ) : FileData
+    ) : FileData()
 
     public class Bytes(
         bytes: ByteArray,
         override val mediaType: String? = null,
         override val filename: String? = null,
-    ) : FileData {
+    ) : FileData() {
         public val bytes: ByteArray = bytes.copyOf()
 
         override fun equals(other: Any?): Boolean =
@@ -50,7 +50,7 @@ public sealed interface FileData {
         val value: String,
         override val mediaType: String? = null,
         override val filename: String? = null,
-    ) : FileData
+    ) : FileData()
 }
 
 public fun generatedFile(
@@ -131,20 +131,17 @@ public typealias Experimental_GenerateImageResult = GenerateImageResult
 public typealias Experimental_SpeechResult = GenerateSpeechResult
 public typealias Experimental_TranscriptionResult = TranscribeResult
 
-public class DefaultGeneratedFile {
-    private var base64Data: String? = null
-    private var byteArrayData: ByteArray? = null
+public class DefaultGeneratedFile private constructor(
+    private var base64Data: String?,
+    private var byteArrayData: ByteArray?,
+    public val mediaType: String,
+) {
+    public companion object {
+        public fun fromBase64(data: String, mediaType: String): DefaultGeneratedFile =
+            DefaultGeneratedFile(base64Data = data, byteArrayData = null, mediaType = mediaType)
 
-    public val mediaType: String
-
-    public constructor(data: String, mediaType: String) {
-        this.base64Data = data
-        this.mediaType = mediaType
-    }
-
-    public constructor(data: ByteArray, mediaType: String) {
-        this.byteArrayData = data
-        this.mediaType = mediaType
+        public fun fromBytes(data: ByteArray, mediaType: String): DefaultGeneratedFile =
+            DefaultGeneratedFile(base64Data = null, byteArrayData = data, mediaType = mediaType)
     }
 
     public val base64: String
