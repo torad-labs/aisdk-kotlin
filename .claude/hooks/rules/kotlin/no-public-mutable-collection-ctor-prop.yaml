@@ -1,0 +1,33 @@
+id: no-public-mutable-collection-ctor-prop
+language: kotlin
+severity: warning
+rule:
+  kind: class_parameter
+  all:
+    - has:
+        kind: binding_pattern_kind
+    - has:
+        kind: user_type
+        has:
+          kind: type_identifier
+          regex: '^(MutableList|MutableMap|MutableSet|MutableCollection|ArrayList|HashMap|LinkedHashMap|HashSet|LinkedHashSet)$'
+    - not:
+        has:
+          kind: visibility_modifier
+          regex: '^(private|internal|protected)$'
+          stopBy: end
+    - inside:
+        kind: primary_constructor
+    - not:
+        inside:
+          kind: class_declaration
+          stopBy: end
+          has:
+            kind: modifiers
+            has:
+              kind: visibility_modifier
+              regex: '^(private|internal)$'
+note: >-
+  Public constructor property of a public class exposes a mutable
+  collection. Take a read-only collection (List/Map/Set) in the
+  constructor and keep any mutable copy private to the class.

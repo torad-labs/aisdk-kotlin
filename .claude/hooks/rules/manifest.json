@@ -1,0 +1,338 @@
+[
+  {
+    "id": "no-public-mutable-collection-val",
+    "severity": "warn",
+    "yaml": "id: no-public-mutable-collection-val\nlanguage: kotlin\nseverity: warning\nrule:\n  kind: property_declaration\n  all:\n    - has:\n        kind: variable_declaration\n        has:\n          kind: user_type\n          has:\n            kind: type_identifier\n            regex: '^(MutableList|MutableMap|MutableSet|MutableCollection|ArrayList|HashMap|LinkedHashMap|HashSet|LinkedHashSet)$'\n    - not:\n        has:\n          kind: visibility_modifier\n          regex: '^(private|internal|protected)$'\n          stopBy: end\n    - inside:\n        kind: class_body\n    - not:\n        inside:\n          kind: class_declaration\n          stopBy: end\n          has:\n            kind: modifiers\n            has:\n              kind: visibility_modifier\n              regex: '^(private|internal)$'\nnote: >-\n  Public property exposes a mutable collection (MutableList/MutableMap/...).\n  Callers can mutate it behind your back. Expose the read-only interface\n  (List/Map/Set) via a public getter backed by a private mutable field.",
+    "badExample": "public class Recorder {\n    public val runs: MutableList<String> = mutableListOf()\n}",
+    "goodExample": "public class Recorder {\n    private val _runs: MutableList<String> = mutableListOf()\n    public val runs: List<String> get() = _runs\n}"
+  },
+  {
+    "id": "no-var-in-object-declaration",
+    "severity": "block",
+    "yaml": "id: no-var-in-object-declaration\nlanguage: kotlin\nseverity: error\nrule:\n  kind: property_declaration\n  all:\n    - has:\n        kind: binding_pattern_kind\n        regex: '^var$'\n    - inside:\n        kind: class_body\n        inside:\n          kind: object_declaration\nnote: >-\n  Mutable `var` inside a top-level/named `object` is process-wide shared\n  mutable singleton state \u2014 a data race and a hidden global. Model state\n  with a StateFlow/Mutex-guarded holder or pass it explicitly, not via a\n  mutable singleton field.",
+    "badExample": "object Counters {\n    var requestCount = 0\n}",
+    "goodExample": "object Counters {\n    private val _requestCount = MutableStateFlow(0)\n    val requestCount: StateFlow<Int> = _requestCount.asStateFlow()\n}"
+  },
+  {
+    "id": "no-volatile-var",
+    "severity": "warn",
+    "yaml": "id: no-volatile-var\nlanguage: kotlin\nseverity: warning\nrule:\n  kind: property_declaration\n  all:\n    - has:\n        kind: binding_pattern_kind\n        regex: '^var$'\n    - has:\n        kind: modifiers\n        has:\n          kind: annotation\n          has:\n            kind: user_type\n            has:\n              kind: type_identifier\n              regex: '^Volatile$'\nnote: >-\n  @Volatile var is hand-rolled cross-thread shared mutable state. Prefer a\n  StateFlow (for observable state) or a Mutex-guarded holder (for\n  invariants) so reads/writes compose and stay race-free. If @Volatile is\n  genuinely the right primitive, keep it private and document why.",
+    "badExample": "@Volatile\nprivate var currentJob: Job? = null",
+    "goodExample": "private val _currentJob = MutableStateFlow<Job?>(null)\nval currentJob: StateFlow<Job?> = _currentJob.asStateFlow()"
+  },
+  {
+    "id": "no-public-mutable-collection-ctor-prop",
+    "severity": "warn",
+    "yaml": "id: no-public-mutable-collection-ctor-prop\nlanguage: kotlin\nseverity: warning\nrule:\n  kind: class_parameter\n  all:\n    - has:\n        kind: binding_pattern_kind\n    - has:\n        kind: user_type\n        has:\n          kind: type_identifier\n          regex: '^(MutableList|MutableMap|MutableSet|MutableCollection|ArrayList|HashMap|LinkedHashMap|HashSet|LinkedHashSet)$'\n    - not:\n        has:\n          kind: visibility_modifier\n          regex: '^(private|internal|protected)$'\n          stopBy: end\n    - inside:\n        kind: primary_constructor\n    - not:\n        inside:\n          kind: class_declaration\n          stopBy: end\n          has:\n            kind: modifiers\n            has:\n              kind: visibility_modifier\n              regex: '^(private|internal)$'\nnote: >-\n  Public constructor property of a public class exposes a mutable\n  collection. Take a read-only collection (List/Map/Set) in the\n  constructor and keep any mutable copy private to the class.",
+    "badExample": "public class AIContext(\n    public val completions: MutableMap<String, Completion> = linkedMapOf(),\n)",
+    "goodExample": "public class AIContext(\n    completions: Map<String, Completion> = emptyMap(),\n) {\n    private val _completions = completions.toMutableMap()\n    public val completions: Map<String, Completion> get() = _completions\n}"
+  },
+  {
+    "id": "no-loop-in-init",
+    "severity": "warn",
+    "yaml": "id: no-loop-in-init\nlanguage: kotlin\nseverity: warning\nmessage: Imperative loop inside an init block. Move this construction logic into a factory function or compute it from typed members.\nnote: |\n  An init block with a for/while loop that reassigns a `var` is non-trivial\n  construction logic (here: building a middleware/decorator chain by mutating a\n  `var` in a loop). It is hard to test in isolation and hides construction behind\n  object creation. Prefer a private/companion factory function that returns the\n  built value, then assign it: `val chain = buildChain(inner, middlewares)`.\n  Tenet: explicit construction over magic; clean composable testable units.\n  (require()/check() validation init blocks \u2014 including per-element validation\n  loops that only call require/check \u2014 do NOT match this rule and are encouraged.)\nrule:\n  kind: anonymous_initializer\n  has:\n    stopBy: end\n    any:\n      - kind: for_statement\n      - kind: while_statement\n      - kind: do_while_statement\n    has:\n      stopBy: end\n      kind: assignment\n",
+    "badExample": "class WrappedModel(inner: Model, middlewares: List<MW>) {\n    private val chain: Fn\n    init {\n        var doEmit = inner::embed\n        for (mw in middlewares.asReversed()) { val d = doEmit; doEmit = { p -> mw.wrap(d, p) } }\n        chain = doEmit\n    }\n}",
+    "goodExample": "class WrappedModel(inner: Model, middlewares: List<MW>) {\n    private val chain: Fn = buildChain(inner, middlewares)\n}\n// where buildChain is a testable function\nprivate fun buildChain(inner: Model, middlewares: List<MW>): Fn { /* loop here */ }"
+  },
+  {
+    "id": "no-callback-wiring-in-init",
+    "severity": "warn",
+    "yaml": "id: no-callback-wiring-in-init\nlanguage: kotlin\nseverity: warning\nmessage: Registering a lambda on a collaborator inside init leaks `this` before construction completes.\nnote: |\n  Assigning a lambda to a property of a constructor-supplied collaborator during\n  init (e.g. `transport.onClose = { onMessage(it) }`) hands the still-constructing\n  object's behavior to another object before the constructor returns. If that\n  collaborator invokes the callback early (or on another thread), it observes a\n  half-initialized `this`. Move wiring into an explicit `start()`/`connect()`\n  method called after construction. Tenet: explicit construction over magic.\n  Note: `this.foo = { ... }` and bare `foo = { ... }` (own-field init) do NOT match.\n  Caveat: assigning a lambda to a property of a LOCAL object built inside init\n  (a builder pattern) is not a leak; treat such a warning as a false positive.\nrule:\n  kind: anonymous_initializer\n  has:\n    stopBy: end\n    kind: assignment\n    all:\n      - has:\n          kind: directly_assignable_expression\n          all:\n            - has:\n                kind: navigation_suffix\n            - not:\n                has:\n                  kind: this_expression\n      - has:\n          kind: lambda_literal\n",
+    "badExample": "class Client(private val transport: Transport) {\n    init {\n        transport.onClose = { onClose() }\n        transport.onMessage = { m -> onMessage(m) }\n    }\n}",
+    "goodExample": "class Client(private val transport: Transport) {\n    suspend fun start() {\n        transport.onClose = { onClose() }\n        transport.onMessage = { m -> onMessage(m) }\n        transport.start()\n    }\n}"
+  },
+  {
+    "id": "no-try-catch-in-init",
+    "severity": "warn",
+    "yaml": "id: no-try-catch-in-init\nlanguage: kotlin\nseverity: warning\nmessage: try/catch inside an init block performs fallible work during construction and tends to swallow failures.\nnote: |\n  A try/catch executed directly in init means the constructor is doing work that\n  can fail (I/O, parsing, decoding) and is deciding how to recover at construction\n  time \u2014 often by fabricating a fallback (`catch { \"\" }`), which violates the\n  no-sentinel rule. Construction should be total and cheap; move fallible work\n  into a suspend factory that can fail explicitly or return a typed result.\n  Tenet: explicit construction over magic; no sentinel fabrication.\n  (A try/catch inside a lambda/callback defined in init runs at call time, not\n  construction time, and is intentionally NOT matched.)\nrule:\n  kind: try_expression\n  inside:\n    kind: anonymous_initializer\n    stopBy: end\n  not:\n    inside:\n      any:\n        - kind: lambda_literal\n        - kind: anonymous_function\n      stopBy: end\n",
+    "badExample": "class Config(path: String) {\n    private val data: String\n    init {\n        data = try { readFile(path) } catch (e: Exception) { \"\" }\n    }\n}",
+    "goodExample": "class Config private constructor(val data: String)\nsuspend fun loadConfig(path: String): Config = Config(readFile(path)) // failure propagates"
+  },
+  {
+    "id": "no-any-typed-public-property",
+    "severity": "warn",
+    "yaml": "id: no-any-typed-public-property\nlanguage: kotlin\nseverity: warning\nrule:\n  all:\n    - kind: type_identifier\n      regex: '^Any$'\n    - inside:\n        kind: user_type\n        inside:\n          any:\n            - kind: class_parameter\n            - kind: variable_declaration\n            - kind: nullable_type\n              inside:\n                any:\n                  - kind: class_parameter\n                  - kind: variable_declaration\n    - inside:\n        stopBy: end\n        any:\n          - kind: class_parameter\n            all:\n              - has: { kind: binding_pattern_kind }\n              - not: { has: { kind: modifiers, has: { kind: visibility_modifier, regex: 'private|internal|protected' } } }\n              - inside:\n                  kind: primary_constructor\n                  inside:\n                    kind: class_declaration\n                    not: { has: { kind: modifiers, has: { kind: visibility_modifier, regex: 'private|internal' } } }\n          - kind: property_declaration\n            all:\n              - has: { kind: binding_pattern_kind }\n              - not: { has: { kind: modifiers, has: { kind: visibility_modifier, regex: 'private|internal|protected' } } }\n              - inside:\n                  kind: class_body\n                  inside:\n                    kind: class_declaration\n                    not: { has: { kind: modifiers, has: { kind: visibility_modifier, regex: 'private|internal' } } }",
+    "badExample": "public class APICallError(public val data: Any? = null)",
+    "goodExample": "public class APICallError(public val data: JsonElement? = null)"
+  },
+  {
+    "id": "no-mutable-var-in-enum",
+    "severity": "block",
+    "yaml": "id: no-mutable-var-in-enum\nlanguage: kotlin\nseverity: error\nrule:\n  kind: property_declaration\n  has:\n    kind: binding_pattern_kind\n    regex: '^var$'\n  inside:\n    kind: enum_class_body",
+    "badExample": "enum class Mode { A, B; var current: Int = 0 }",
+    "goodExample": "enum class Mode { A, B }  // carry mutable state outside the enum"
+  },
+  {
+    "id": "no-else-in-sealed-when",
+    "severity": "warn",
+    "yaml": "id: no-else-in-sealed-when\nlanguage: kotlin\nseverity: warning\nrule:\n  kind: when_expression\n  all:\n    - has: { kind: when_subject }\n    - has: { kind: when_entry, regex: '^else\\b' }\n    - has:\n        kind: when_entry\n        has:\n          kind: when_condition\n          has:\n            kind: type_test\n            has:\n              kind: user_type\n              regex: '^[A-Z][A-Za-z0-9_]*\\.[A-Z][A-Za-z0-9_]*$'",
+    "badExample": "when (event) { is StreamEvent.TextDelta -> a(); is StreamEvent.TextEnd -> b(); else -> Unit }",
+    "goodExample": "when (event) { is StreamEvent.TextDelta -> a(); is StreamEvent.TextEnd -> b(); is StreamEvent.StreamStart -> c() } // exhaustive, no else"
+  },
+  {
+    "id": "no-multiple-boolean-params",
+    "severity": "warn",
+    "yaml": "id: no-multiple-boolean-params\nlanguage: kotlin\nseverity: warning\nrule:\n  kind: parameter\n  has:\n    kind: user_type\n    has: { kind: type_identifier, regex: '^Boolean$' }\n  follows:\n    kind: parameter\n    stopBy: end\n    has:\n      kind: user_type\n      has: { kind: type_identifier, regex: '^Boolean$' }",
+    "badExample": "fun configure(includeUsage: Boolean, supportsStructuredOutputs: Boolean) {}",
+    "goodExample": "fun configure(options: Set<ConfigFlag>) {}  // or distinct enum/value-class params"
+  },
+  {
+    "id": "no-generate-id-sentinel",
+    "severity": "block",
+    "yaml": "id: no-generate-id-sentinel\nlanguage: kotlin\nseverity: error\nrule:\n  pattern: \"$X ?: generateId($$$ARGS)\"",
+    "badExample": "toolCallId = callObj[\"id\"]?.jsonPrimitive?.contentOrNull ?: generateId(\"call\")",
+    "goodExample": "toolCallId = WireDecoder.requiredString(callObj, \"id\", provider, \"chat completion response\", path)"
+  },
+  {
+    "id": "no-uuid-id-sentinel",
+    "severity": "block",
+    "yaml": "id: no-uuid-id-sentinel\nlanguage: kotlin\nseverity: error\nrule:\n  any:\n    - pattern: \"$X ?: Uuid.random()\"\n    - pattern: \"$X ?: Uuid.random().toString()\"\n    - pattern: \"$X ?: randomUUID()\"\n    - pattern: \"$X ?: $C.randomUUID()\"\n    - pattern: \"$X ?: $C.randomUUID().toString()\"",
+    "badExample": "val id = obj[\"id\"]?.jsonPrimitive?.contentOrNull ?: Uuid.random().toString()",
+    "goodExample": "val id = WireDecoder.requiredString(obj, \"id\", provider, operation, path)"
+  },
+  {
+    "id": "no-globalscope",
+    "severity": "block",
+    "yaml": "id: no-globalscope\nlanguage: kotlin\nseverity: error\nmessage: \"GlobalScope is unstructured concurrency \u2014 coroutines launched here outlive every caller and cannot be cancelled.\"\nnote: \"Inject a CoroutineScope (or use coroutineScope { }/supervisorScope { }) so work is bound to a lifecycle.\"\nrule:\n  kind: simple_identifier\n  regex: '^GlobalScope$'\n  not:\n    inside:\n      kind: import_header\n      stopBy: end\n",
+    "badExample": "GlobalScope.launch { drainPendingRequests() }",
+    "goodExample": "private val clientScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)\n// ...\nclientScope.launch { drainPendingRequests() }"
+  },
+  {
+    "id": "no-runblocking-in-common",
+    "severity": "block",
+    "yaml": "id: no-runblocking-in-common\nlanguage: kotlin\nseverity: error\nmessage: \"runBlocking blocks the calling thread and is unavailable on JS/wasm targets \u2014 it does not belong in commonMain.\"\nnote: \"Expose a suspend function instead; let the caller bridge to blocking code at the platform edge.\"\nrule:\n  kind: call_expression\n  has:\n    kind: simple_identifier\n    regex: '^runBlocking$'\n",
+    "badExample": "fun fetchSync(): Response = runBlocking { provider.complete(req) }",
+    "goodExample": "suspend fun fetch(): Response = provider.complete(req)"
+  },
+  {
+    "id": "no-inline-coroutinescope-launch",
+    "severity": "block",
+    "yaml": "id: no-inline-coroutinescope-launch\nlanguage: kotlin\nseverity: error\nmessage: \"Launching on a throwaway CoroutineScope(...) leaks the scope \u2014 there is no reference left to cancel it.\"\nnote: \"Hold the CoroutineScope as a field tied to a lifecycle (and cancel it), or use coroutineScope { }/supervisorScope { }.\"\nrule:\n  any:\n    - pattern: CoroutineScope($$$ARGS).launch\n    - pattern: CoroutineScope($$$ARGS).async\n",
+    "badExample": "CoroutineScope(Dispatchers.Default).launch { poll() }",
+    "goodExample": "private val scope = CoroutineScope(SupervisorJob() + engineContext)\nfun start() { scope.launch { poll() } }\nfun close() { scope.cancel() }"
+  },
+  {
+    "id": "no-suspend-fun-returning-flow",
+    "severity": "warn",
+    "yaml": "id: no-suspend-fun-returning-flow\nlanguage: kotlin\nseverity: warning\nmessage: \"A `suspend fun` returning a cold `Flow` is redundant and confusing; drop `suspend` (the Flow is already lazy) or return the value the caller actually needs.\"\nrule:\n  kind: function_declaration\n  all:\n    - has:\n        kind: modifiers\n        has:\n          kind: function_modifier\n          regex: '^suspend$'\n    - has:\n        kind: user_type\n        all:\n          - has:\n              kind: type_identifier\n              regex: '^Flow$'\n          - follows:\n              kind: function_value_parameters\n              stopBy: end",
+    "badExample": "suspend fun events(): Flow<Event> = flow { emitAll(source) }",
+    "goodExample": "fun events(): Flow<Event> = flow { emitAll(source) }"
+  },
+  {
+    "id": "no-channel-unlimited",
+    "severity": "warn",
+    "yaml": "id: no-channel-unlimited\nlanguage: kotlin\nseverity: warning\nmessage: \"`Channel.UNLIMITED` removes all backpressure; an unbounded buffer can grow without limit. Use a bounded capacity with an explicit `BufferOverflow` policy.\"\nrule:\n  kind: navigation_expression\n  pattern: Channel.UNLIMITED",
+    "badExample": "val ch = Channel<Event>(Channel.UNLIMITED)",
+    "goodExample": "val ch = Channel<Event>(capacity = 64, onBufferOverflow = BufferOverflow.SUSPEND)"
+  },
+  {
+    "id": "no-flowon-main",
+    "severity": "warn",
+    "yaml": "id: no-flowon-main\nlanguage: kotlin\nseverity: warning\nmessage: \"`flowOn(Dispatchers.Main)` forces the flow's upstream onto the UI thread inside library code. Let the collector choose the context, or inject a dispatcher.\"\nrule:\n  pattern: $X.flowOn(Dispatchers.Main)",
+    "badExample": "upstream.flowOn(Dispatchers.Main)",
+    "goodExample": "upstream // emit on the collector's context; let the caller choose"
+  },
+  {
+    "id": "no-hardcoded-dispatcher-in-builder",
+    "severity": "warn",
+    "yaml": "id: no-hardcoded-dispatcher-in-builder\nlanguage: kotlin\nseverity: warning\nmessage: \"Hardcoded Dispatchers in a coroutine builder; inject a `CoroutineContext` (e.g. `context: CoroutineContext = Dispatchers.Default`) and pass it here.\"\nrule:\n  any:\n    - pattern: withContext(Dispatchers.$D) { $$$BODY }\n    - pattern: launch(Dispatchers.$D) { $$$BODY }\n    - pattern: async(Dispatchers.$D) { $$$BODY }\n    - pattern: $RCV.launch(Dispatchers.$D) { $$$BODY }\n    - pattern: $RCV.async(Dispatchers.$D) { $$$BODY }",
+    "badExample": "withContext(Dispatchers.IO) { fetch() }",
+    "goodExample": "withContext(ioContext) { fetch() } // ioContext: CoroutineContext = Dispatchers.Default"
+  },
+  {
+    "id": "no-print-stack-trace",
+    "severity": "block",
+    "yaml": "id: no-print-stack-trace\nlanguage: kotlin\nseverity: error\nrule:\n  pattern: $E.printStackTrace()\n",
+    "badExample": "} catch (e: Throwable) {\n    e.printStackTrace()\n}",
+    "goodExample": "} catch (e: Throwable) {\n    logger.error(e) { \"tool execution failed\" }\n    throw AiSdkException(\"tool execution failed\", cause = e)\n}"
+  },
+  {
+    "id": "no-console-output-in-library",
+    "severity": "block",
+    "yaml": "id: no-console-output-in-library\nlanguage: kotlin\nseverity: error\nrule:\n  any:\n    - pattern: println($$$A)\n    - pattern: print($$$A)\n    - pattern: System.out\n    - pattern: System.err\n",
+    "badExample": "println(\"DEBUG: received chunk $chunk\")",
+    "goodExample": "logger.debug { \"received chunk $chunk\" }"
+  },
+  {
+    "id": "no-empty-catch-block",
+    "severity": "block",
+    "yaml": "id: no-empty-catch-block\nlanguage: kotlin\nseverity: error\nrule:\n  kind: catch_block\n  all:\n    - not: { has: { kind: statements } }\n    - not: { has: { kind: simple_identifier, regex: '^_$' } }\n    - not:\n        has:\n          any:\n            - { kind: line_comment }\n            - { kind: multiline_comment }\n",
+    "badExample": "try { risky() } catch (e: Exception) {}",
+    "goodExample": "try { risky() } catch (e: Exception) {\n    throw AiSdkException(\"risky() failed\", cause = e)\n}\n// or, for a deliberate best-effort callback:\ntry { onError(e) } catch (ce: CancellationException) { throw ce } catch (_: Throwable) {}"
+  },
+  {
+    "id": "prefer-typed-error-over-generic-throw",
+    "severity": "warn",
+    "yaml": "id: prefer-typed-error-over-generic-throw\nlanguage: kotlin\nseverity: warning\nrule:\n  any:\n    - pattern: throw Exception($$$A)\n    - pattern: throw RuntimeException($$$A)\n    - pattern: throw IllegalStateException($$$A)\n    - pattern: throw Error($$$A)\n",
+    "badExample": "throw IllegalStateException(\"model not configured\")",
+    "goodExample": "throw OpenAIProviderNotConfiguredError(\"model not configured\")"
+  },
+  {
+    "id": "avoid-broad-catch-exception",
+    "severity": "warn",
+    "yaml": "id: avoid-broad-catch-exception\nlanguage: kotlin\nseverity: warning\nrule:\n  kind: catch_block\n  has:\n    kind: user_type\n    has:\n      kind: type_identifier\n      regex: '^Exception$'\n",
+    "badExample": "return try { decode(options) } catch (e: Exception) {\n    throw AgentError.InvalidCallOptions(e)\n}",
+    "goodExample": "return try { decode(options) } catch (ce: CancellationException) {\n    throw ce\n} catch (e: SerializationException) {\n    throw AgentError.InvalidCallOptions(e)\n}"
+  },
+  {
+    "id": "no-todo-in-source",
+    "severity": "block",
+    "yaml": "id: no-todo-in-source\nlanguage: kotlin\nseverity: error\nrule:\n  any:\n    - pattern: TODO()\n    - pattern: TODO($MSG)",
+    "badExample": "fun decode(text: String): List<T> = TODO(\"wire this up\")",
+    "goodExample": "fun decode(text: String): List<T> = aiSdkOutputJson.decodeFromString(serializer, text)"
+  },
+  {
+    "id": "prefer-typed-error-over-error-call",
+    "severity": "warn",
+    "yaml": "id: prefer-typed-error-over-error-call\nlanguage: kotlin\nseverity: warning\nrule:\n  pattern: error($MSG)\nconstraints:\n  MSG:\n    has:\n      kind: string_literal",
+    "badExample": "return when (element) { is JsonObject -> element[\"result\"]?.jsonPrimitive?.contentOrNull; else -> null } ?: error(\"Expected a JSON object with a `result` string\")",
+    "goodExample": "return when (element) { is JsonObject -> element[\"result\"]?.jsonPrimitive?.contentOrNull; else -> null } ?: throw AiSdkException(\"Expected a JSON object with a `result` string\")"
+  },
+  {
+    "id": "prefer-typed-error-over-checknotnull",
+    "severity": "warn",
+    "yaml": "id: prefer-typed-error-over-checknotnull\nlanguage: kotlin\nseverity: warning\nrule:\n  pattern: checkNotNull($$$ARGS)",
+    "badExample": "val composite = registry.lookup(id); val tracer = checkNotNull(composite) { \"tracer missing\" }",
+    "goodExample": "val tracer = registry.lookup(id) ?: throw AiSdkException(\"no tracer registered for $id\")"
+  },
+  {
+    "id": "no-let-elvis-run-pyramid",
+    "severity": "warn",
+    "yaml": "id: no-let-elvis-run-pyramid\nlanguage: kotlin\nseverity: warning\nrule:\n  pattern: \"$RECV?.let { $$$THEN } ?: run { $$$ELSE }\"",
+    "badExample": "session?.let { resume(it) } ?: run { startFresh(); notifyMiss() }",
+    "goodExample": "if (session == null) { startFresh(); notifyMiss() } else { resume(session) }"
+  },
+  {
+    "id": "no-java-import",
+    "severity": "block",
+    "yaml": "id: no-java-import\nlanguage: kotlin\nseverity: error\nrule:\n  pattern: import java.$$$\n",
+    "badExample": "import java.util.UUID",
+    "goodExample": "// Use an expect/actual or a pure-Kotlin primitive (see Crypto.kt) instead of importing java.*"
+  },
+  {
+    "id": "no-thread-sleep",
+    "severity": "block",
+    "yaml": "id: no-thread-sleep\nlanguage: kotlin\nseverity: error\nrule:\n  pattern: Thread.sleep($$$)\n",
+    "badExample": "Thread.sleep(100)",
+    "goodExample": "delay(100) // kotlinx.coroutines.delay, suspending and multiplatform"
+  },
+  {
+    "id": "no-system-clock-env",
+    "severity": "block",
+    "yaml": "id: no-system-clock-env\nlanguage: kotlin\nseverity: error\nrule:\n  any:\n    - pattern: System.currentTimeMillis()\n    - pattern: System.nanoTime()\n    - pattern: System.getenv($$$)\n    - pattern: System.getProperty($$$)\n",
+    "badExample": "val t = System.currentTimeMillis()",
+    "goodExample": "val t = Clock.System.now().toEpochMilliseconds() // kotlinx.datetime"
+  },
+  {
+    "id": "no-fq-java-time-uuid-date",
+    "severity": "block",
+    "yaml": "id: no-fq-java-time-uuid-date\nlanguage: kotlin\nseverity: error\nrule:\n  any:\n    - pattern: java.util.UUID\n    - pattern: java.util.Date\n    - pattern: java.time.$$$\n",
+    "badExample": "val id = java.util.UUID.randomUUID().toString()",
+    "goodExample": "val id = randomUuidV4() // pure-Kotlin/expect-actual id generator"
+  },
+  {
+    "id": "no-string-format",
+    "severity": "block",
+    "yaml": "id: no-string-format\nlanguage: kotlin\nseverity: error\nrule:\n  pattern: String.format($$$)\n",
+    "badExample": "val s = String.format(\"%d items\", count)",
+    "goodExample": "val s = \"$count items\" // string template"
+  },
+  {
+    "id": "no-jvm-synchronized",
+    "severity": "block",
+    "yaml": "id: no-jvm-synchronized\nlanguage: kotlin\nseverity: error\nrule:\n  any:\n    - pattern: 'synchronized($LOCK) { $$$ }'\n    - kind: annotation\n      regex: '^@Synchronized$'\n",
+    "badExample": "synchronized(lock) { counter++ }",
+    "goodExample": "mutex.withLock { counter++ } // kotlinx.coroutines.sync.Mutex"
+  },
+  {
+    "id": "prefer-kotlin-math",
+    "severity": "warn",
+    "yaml": "id: prefer-kotlin-math\nlanguage: kotlin\nseverity: warning\nrule:\n  pattern: Math.$MEMBER\n",
+    "badExample": "val m = Math.max(a, b)",
+    "goodExample": "val m = max(a, b) // import kotlin.math.max"
+  },
+  {
+    "id": "no-inline-json-instance",
+    "severity": "warn",
+    "yaml": "id: no-inline-json-instance\nlanguage: kotlin\nseverity: warning\nrule:\n  kind: call_expression\n  all:\n    - has:\n        kind: simple_identifier\n        regex: '^Json$'\n    - has:\n        kind: call_suffix\n        has:\n          kind: annotated_lambda\n    - inside:\n        kind: function_body\n        stopBy: end\n",
+    "badExample": "fun decode(text: String): Foo {\n    val json = Json { ignoreUnknownKeys = true }\n    return json.decodeFromString(text)\n}",
+    "goodExample": "private val fooJson = Json { ignoreUnknownKeys = true }\n\nfun decode(text: String): Foo = fooJson.decodeFromString(text)"
+  },
+  {
+    "id": "no-open-serializable-polymorphic-base",
+    "severity": "warn",
+    "yaml": "id: no-open-serializable-polymorphic-base\nlanguage: kotlin\nseverity: warning\nrule:\n  kind: class_declaration\n  has:\n    kind: modifiers\n    all:\n      - has:\n          kind: inheritance_modifier\n          regex: '^open$'\n      - has:\n          kind: annotation\n          has:\n            kind: user_type\n            has:\n              kind: type_identifier\n              regex: '^Serializable$'\n            stopBy: end\n",
+    "badExample": "@Serializable\nopen class Event(val type: String)",
+    "goodExample": "@Serializable\nsealed class Event {\n    @Serializable @SerialName(\"start\") data class Start(val at: Long) : Event()\n    @Serializable @SerialName(\"stop\")  data class Stop(val at: Long) : Event()\n}"
+  },
+  {
+    "id": "no-mutable-collection-in-public-fun",
+    "severity": "block",
+    "yaml": "id: no-mutable-collection-in-public-fun\nlanguage: kotlin\nseverity: error\nrule:\n  kind: function_declaration\n  all:\n    - has:\n        kind: modifiers\n        has:\n          kind: visibility_modifier\n          regex: '^public$'\n    - any:\n        - has:\n            kind: user_type\n            all:\n              - has:\n                  kind: type_identifier\n                  regex: '^Mutable(List|Map|Set)$'\n                  stopBy: end\n              - not:\n                  precedes:\n                    regex: '^\\.$'\n        - has:\n            kind: function_value_parameters\n            has:\n              kind: parameter\n              has:\n                kind: user_type\n                has:\n                  kind: type_identifier\n                  regex: '^Mutable(List|Map|Set)$'\n                  stopBy: end",
+    "badExample": "public suspend fun addClientAuthentication(headers: MutableMap<String, String>, params: MutableMap<String, String>): Unit = Unit",
+    "goodExample": "public suspend fun addClientAuthentication(headers: Map<String, String>, params: Map<String, String>): Map<String, String> = headers + params"
+  },
+  {
+    "id": "prefer-list-over-array-return-in-public-fun",
+    "severity": "warn",
+    "yaml": "id: prefer-list-over-array-return-in-public-fun\nlanguage: kotlin\nseverity: warning\nrule:\n  kind: function_declaration\n  all:\n    - has:\n        kind: modifiers\n        has:\n          kind: visibility_modifier\n          regex: '^public$'\n    - has:\n        kind: user_type\n        all:\n          - has:\n              kind: type_identifier\n              regex: '^Array$'\n              stopBy: end\n          - not:\n              precedes:\n                regex: '^\\.$'",
+    "badExample": "public fun toolNames(): Array<String> = names.toTypedArray()",
+    "goodExample": "public fun toolNames(): List<String> = names.toList()"
+  },
+  {
+    "id": "prefer-value-class-over-typealias-primitive",
+    "severity": "warn",
+    "yaml": "id: prefer-value-class-over-typealias-primitive\nlanguage: kotlin\nseverity: warning\nrule:\n  kind: type_alias\n  has:\n    kind: user_type\n    has:\n      kind: type_identifier\n      regex: '^(Int|Long|Boolean|Double|Float|Char|Short|Byte|UInt|ULong|UShort|UByte)$'\nmessage: \"typealias to a primitive gives no type safety (every Int is assignable to it); prefer a value class (@JvmInline value class) to make illegal states unrepresentable.\"",
+    "badExample": "public typealias TokenCount = Int\ntypealias Millis = Long",
+    "goodExample": "@JvmInline public value class TokenCount(public val value: Int)\n@JvmInline public value class Millis(public val value: Long)"
+  },
+  {
+    "id": "no-json-container-force-cast",
+    "severity": "block",
+    "yaml": "id: no-json-container-force-cast\nlanguage: kotlin\nseverity: error\nrule:\n  any:\n    - pattern: $X as JsonObject\n    - pattern: $X as JsonArray\n",
+    "badExample": "val obj = response as JsonObject\nval items = response[\"data\"] as JsonArray",
+    "goodExample": "val obj = decoder.obj(response, provider, op, \"root\")\nval items = decoder.arr(obj[\"data\"], provider, op, \"data\")"
+  },
+  {
+    "id": "no-keyed-json-container-cast",
+    "severity": "warn",
+    "yaml": "id: no-keyed-json-container-cast\nlanguage: kotlin\nseverity: warning\nrule:\n  any:\n    - pattern: $OBJ[$KEY] as? JsonObject\n    - pattern: $OBJ[$KEY] as? JsonArray\n",
+    "badExample": "val messages = body[\"messages\"] as? JsonArray\nval fn = obj[\"function\"] as? JsonObject",
+    "goodExample": "val req: ChatRequest = json.decodeFromJsonElement(body)\nval messages = req.messages"
+  },
+  {
+    "id": "no-array-property-in-data-class",
+    "severity": "block",
+    "yaml": "id: no-array-property-in-data-class\nlanguage: kotlin\nseverity: error\nmessage: >-\n  data class with an Array<T> primary-constructor property has structurally\n  broken equals()/hashCode() (reference identity on the array). Use List<T>,\n  or drop `data` and hand-write equals/hashCode.\nrule:\n  kind: class_declaration\n  all:\n    - has:\n        kind: modifiers\n        has:\n          kind: class_modifier\n          regex: '^data$'\n    - has:\n        kind: primary_constructor\n        has:\n          kind: class_parameter\n          has:\n            kind: user_type\n            has:\n              kind: type_identifier\n              regex: '^Array$'\n",
+    "badExample": "data class Embedding(val vector: Array<Float>, val model: String)",
+    "goodExample": "data class Embedding(val vector: List<Float>, val model: String)"
+  },
+  {
+    "id": "no-primitive-array-property-in-data-class",
+    "severity": "block",
+    "yaml": "id: no-primitive-array-property-in-data-class\nlanguage: kotlin\nseverity: error\nmessage: >-\n  data class with a primitive-array property (ByteArray/IntArray/...) has\n  broken equals()/hashCode() (reference identity). Drop `data` and hand-write\n  equals/hashCode (contentEquals), or wrap in a value type.\nrule:\n  kind: class_declaration\n  all:\n    - has:\n        kind: modifiers\n        has:\n          kind: class_modifier\n          regex: '^data$'\n    - has:\n        kind: primary_constructor\n        has:\n          kind: class_parameter\n          has:\n            kind: user_type\n            has:\n              kind: type_identifier\n              regex: '^(ByteArray|IntArray|LongArray|ShortArray|CharArray|FloatArray|DoubleArray|BooleanArray)$'\n",
+    "badExample": "private data class FalBinaryResponse(val bytes: ByteArray, val headers: Map<String, String>)",
+    "goodExample": "private class FalBinaryResponse(val bytes: ByteArray, val headers: Map<String, String>)"
+  },
+  {
+    "id": "no-data-class-extending-throwable",
+    "severity": "block",
+    "yaml": "id: no-data-class-extending-throwable\nlanguage: kotlin\nseverity: error\nmessage: >-\n  Exceptions are identity objects, not value objects. A data class extending a\n  Throwable gets copy() (fabricates a new exception with a fake stack/cause)\n  and value equals(). Use a regular class; pattern-match on the sealed parent.\nrule:\n  kind: class_declaration\n  all:\n    - has:\n        kind: modifiers\n        has:\n          kind: class_modifier\n          regex: '^data$'\n    - has:\n        kind: delegation_specifier\n        has:\n          kind: constructor_invocation\n          has:\n            kind: user_type\n            has:\n              kind: type_identifier\n              regex: '(Exception$|^Throwable$|^Error$|^AgentError$|^GatewayError$)'\n",
+    "badExample": "public data class ToolExecution(val toolName: String, val cause: Throwable) : AgentError(\"...\", cause)",
+    "goodExample": "public class ToolExecution(public val toolName: String, cause: Throwable) : AgentError(\"...\", cause)"
+  },
+  {
+    "id": "prefer-sealed-exception-over-open-class",
+    "severity": "warn",
+    "yaml": "id: prefer-sealed-exception-over-open-class\nlanguage: kotlin\nseverity: warning\nmessage: >-\n  Prefer a sealed exception hierarchy over `open class : Exception/Throwable`.\n  Sealed enables exhaustive `when` at catch sites; an open base lets arbitrary\n  unknown subtypes escape the taxonomy. (Intentional extensibility? suppress.)\nrule:\n  kind: class_declaration\n  all:\n    - has:\n        kind: modifiers\n        has:\n          kind: inheritance_modifier\n          regex: '^open$'\n    - has:\n        kind: delegation_specifier\n        has:\n          kind: constructor_invocation\n          has:\n            kind: user_type\n            has:\n              kind: type_identifier\n              regex: '^(Throwable|Exception|RuntimeException|Error)$'\n",
+    "badExample": "public open class AiSdkException(message: String, cause: Throwable? = null) : RuntimeException(message, cause)",
+    "goodExample": "public sealed class AiSdkException(message: String, cause: Throwable? = null) : RuntimeException(message, cause)"
+  },
+  {
+    "id": "no-float-equality-comparison",
+    "severity": "warn",
+    "yaml": "id: no-float-equality-comparison\nlanguage: kotlin\nseverity: warning\nmessage: >-\n  ==/!= against a floating-point literal is fragile (rounding/representation\n  error). Compare with a tolerance (abs(a - b) < epsilon), or check a typed\n  range. (Exact 0.0 guard before division? acceptable \u2014 suppress locally.)\nrule:\n  kind: equality_expression\n  has:\n    kind: real_literal\n",
+    "badExample": "if (temperature == 1.0) { useDefault() }",
+    "goodExample": "if (abs(temperature - 1.0) < 1e-9) { useDefault() }"
+  }
+]

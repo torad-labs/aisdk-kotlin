@@ -1,0 +1,8 @@
+id: no-jvm-synchronized
+language: kotlin
+severity: error
+rule:
+  any:
+    - pattern: 'synchronized($LOCK) { $$$ }'
+    - kind: annotation
+      regex: '^@Synchronized$'

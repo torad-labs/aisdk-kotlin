@@ -1,0 +1,7 @@
+id: no-todo-in-source
+language: kotlin
+severity: error
+rule:
+  any:
+    - pattern: TODO()
+    - pattern: TODO($MSG)

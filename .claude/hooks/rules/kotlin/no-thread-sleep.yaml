@@ -1,0 +1,5 @@
+id: no-thread-sleep
+language: kotlin
+severity: error
+rule:
+  pattern: Thread.sleep($$$)

@@ -1,0 +1,21 @@
+id: no-suspend-fun-returning-flow
+language: kotlin
+severity: warning
+message: "A `suspend fun` returning a cold `Flow` is redundant and confusing; drop `suspend` (the Flow is already lazy) or return the value the caller actually needs."
+rule:
+  kind: function_declaration
+  all:
+    - has:
+        kind: modifiers
+        has:
+          kind: function_modifier
+          regex: '^suspend$'
+    - has:
+        kind: user_type
+        all:
+          - has:
+              kind: type_identifier
+              regex: '^Flow$'
+          - follows:
+              kind: function_value_parameters
+              stopBy: end

@@ -1,0 +1,13 @@
+id: no-empty-catch-block
+language: kotlin
+severity: error
+rule:
+  kind: catch_block
+  all:
+    - not: { has: { kind: statements } }
+    - not: { has: { kind: simple_identifier, regex: '^_$' } }
+    - not:
+        has:
+          any:
+            - { kind: line_comment }
+            - { kind: multiline_comment }

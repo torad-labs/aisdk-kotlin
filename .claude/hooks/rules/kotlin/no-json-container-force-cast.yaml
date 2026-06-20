@@ -1,0 +1,7 @@
+id: no-json-container-force-cast
+language: kotlin
+severity: error
+rule:
+  any:
+    - pattern: $X as JsonObject
+    - pattern: $X as JsonArray

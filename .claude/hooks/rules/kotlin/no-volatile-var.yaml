@@ -1,0 +1,23 @@
+id: no-volatile-var
+language: kotlin
+severity: warning
+rule:
+  kind: property_declaration
+  all:
+    - has:
+        kind: binding_pattern_kind
+        regex: '^var$'
+    - has:
+        kind: modifiers
+        has:
+          kind: annotation
+          has:
+            kind: user_type
+            has:
+              kind: type_identifier
+              regex: '^Volatile$'
+note: >-
+  @Volatile var is hand-rolled cross-thread shared mutable state. Prefer a
+  StateFlow (for observable state) or a Mutex-guarded holder (for
+  invariants) so reads/writes compose and stay race-free. If @Volatile is
+  genuinely the right primitive, keep it private and document why.

@@ -1,0 +1,9 @@
+id: no-console-output-in-library
+language: kotlin
+severity: error
+rule:
+  any:
+    - pattern: println($$$A)
+    - pattern: print($$$A)
+    - pattern: System.out
+    - pattern: System.err

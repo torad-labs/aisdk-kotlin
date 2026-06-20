@@ -1,0 +1,16 @@
+id: no-inline-json-instance
+language: kotlin
+severity: warning
+rule:
+  kind: call_expression
+  all:
+    - has:
+        kind: simple_identifier
+        regex: '^Json$'
+    - has:
+        kind: call_suffix
+        has:
+          kind: annotated_lambda
+    - inside:
+        kind: function_body
+        stopBy: end

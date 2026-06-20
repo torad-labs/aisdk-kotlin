@@ -1,0 +1,17 @@
+id: no-else-in-sealed-when
+language: kotlin
+severity: warning
+rule:
+  kind: when_expression
+  all:
+    - has: { kind: when_subject }
+    - has: { kind: when_entry, regex: '^else\b' }
+    - has:
+        kind: when_entry
+        has:
+          kind: when_condition
+          has:
+            kind: type_test
+            has:
+              kind: user_type
+              regex: '^[A-Z][A-Za-z0-9_]*\.[A-Z][A-Za-z0-9_]*$'

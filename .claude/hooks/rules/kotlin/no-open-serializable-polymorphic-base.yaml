@@ -1,0 +1,19 @@
+id: no-open-serializable-polymorphic-base
+language: kotlin
+severity: warning
+rule:
+  kind: class_declaration
+  has:
+    kind: modifiers
+    all:
+      - has:
+          kind: inheritance_modifier
+          regex: '^open$'
+      - has:
+          kind: annotation
+          has:
+            kind: user_type
+            has:
+              kind: type_identifier
+              regex: '^Serializable$'
+            stopBy: end

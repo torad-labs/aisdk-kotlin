@@ -1,0 +1,24 @@
+id: no-loop-in-init
+language: kotlin
+severity: warning
+message: Imperative loop inside an init block. Move this construction logic into a factory function or compute it from typed members.
+note: |
+  An init block with a for/while loop that reassigns a `var` is non-trivial
+  construction logic (here: building a middleware/decorator chain by mutating a
+  `var` in a loop). It is hard to test in isolation and hides construction behind
+  object creation. Prefer a private/companion factory function that returns the
+  built value, then assign it: `val chain = buildChain(inner, middlewares)`.
+  Tenet: explicit construction over magic; clean composable testable units.
+  (require()/check() validation init blocks — including per-element validation
+  loops that only call require/check — do NOT match this rule and are encouraged.)
+rule:
+  kind: anonymous_initializer
+  has:
+    stopBy: end
+    any:
+      - kind: for_statement
+      - kind: while_statement
+      - kind: do_while_statement
+    has:
+      stopBy: end
+      kind: assignment

@@ -1,0 +1,9 @@
+id: prefer-typed-error-over-generic-throw
+language: kotlin
+severity: warning
+rule:
+  any:
+    - pattern: throw Exception($$$A)
+    - pattern: throw RuntimeException($$$A)
+    - pattern: throw IllegalStateException($$$A)
+    - pattern: throw Error($$$A)

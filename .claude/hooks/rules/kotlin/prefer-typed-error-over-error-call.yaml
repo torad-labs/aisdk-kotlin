@@ -1,0 +1,9 @@
+id: prefer-typed-error-over-error-call
+language: kotlin
+severity: warning
+rule:
+  pattern: error($MSG)
+constraints:
+  MSG:
+    has:
+      kind: string_literal

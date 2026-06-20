@@ -1,0 +1,24 @@
+id: prefer-sealed-exception-over-open-class
+language: kotlin
+severity: warning
+message: >-
+  Prefer a sealed exception hierarchy over `open class : Exception/Throwable`.
+  Sealed enables exhaustive `when` at catch sites; an open base lets arbitrary
+  unknown subtypes escape the taxonomy. (Intentional extensibility? suppress.)
+rule:
+  kind: class_declaration
+  all:
+    - has:
+        kind: modifiers
+        has:
+          kind: inheritance_modifier
+          regex: '^open$'
+    - has:
+        kind: delegation_specifier
+        has:
+          kind: constructor_invocation
+          has:
+            kind: user_type
+            has:
+              kind: type_identifier
+              regex: '^(Throwable|Exception|RuntimeException|Error)$'
