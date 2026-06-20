@@ -4,6 +4,8 @@ import kotlin.concurrent.Volatile
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.update
@@ -63,9 +65,8 @@ public class Chat(
 ) {
     // All chat state — messages, status, error, and the approval-id cursor —
     // lives in a single atomic holder. Every read-modify-write goes through
-    // [MutableStateFlow.update], so concurrent appends, upserts, and status
-    // transitions never interleave into a torn state (a plain MutableList +
-    // loose `var`s would race, and a racy MutableList is UB on Native).
+    // [applyState], so concurrent appends, upserts, and status transitions
+    // never interleave into a torn state.
     private val internalState = MutableStateFlow(
         InternalState(
             messages = initialMessages.toList(),
@@ -73,11 +74,14 @@ public class Chat(
         ),
     )
 
+    // Observable state view — always reflects the latest InternalState.
+    private val _state = MutableStateFlow(internalState.value.toChatState())
+
+    public val state: StateFlow<ChatState> = _state.asStateFlow()
+
     // @Volatile for cross-thread visibility: an in-flight sendMessage/regenerate
     // collector reads this to decide whether it is still the active operation
-    // before writing state. A newer sendMessage or a stop() supersedes the
-    // prior op so its trailing terminal writes (Ready/Error) cannot clobber the
-    // newer op's state — mirroring AgentSession's `currentJob` identity guard.
+    // before writing state.
     @Volatile
     private var currentOp: Any? = null
 
@@ -90,10 +94,21 @@ public class Chat(
     public val messages: List<UIMessage>
         get() = internalState.value.messages
 
+    // Atomically updates internalState and syncs the public StateFlow.
+    private fun applyState(block: InternalState.() -> InternalState): InternalState =
+        internalState.updateAndGet(block).also { _state.value = it.toChatState() }
+
+    private fun InternalState.toChatState(): ChatState = ChatState(
+        id = this@Chat.id,
+        messages = messages,
+        status = status,
+        error = error,
+    )
+
     public fun setMessages(messages: List<UIMessage>) {
         validateUiMessages(messages)
-        internalState.update {
-            it.copy(
+        applyState {
+            copy(
                 messages = messages.toList(),
                 nextApprovalIndex = nextApprovalIndexAfter(messages),
             )
@@ -101,10 +116,10 @@ public class Chat(
     }
 
     public fun clearError() {
-        internalState.update {
-            it.copy(
+        applyState {
+            copy(
                 error = null,
-                status = if (it.status == ChatStatus.Error) ChatStatus.Ready else it.status,
+                status = if (status == ChatStatus.Error) ChatStatus.Ready else status,
             )
         }
     }
@@ -148,38 +163,29 @@ public class Chat(
     ): Unit = addToolOutput(toolCallId, output, toolName)
 
     public fun sendMessage(message: UIMessage, body: Map<String, JsonElement> = emptyMap()): Flow<UIMessage> = flow {
-        // The optimistic append stays inside the flow body to preserve the cold
-        // contract: collecting starts the turn; merely calling sendMessage does
-        // not mutate state. (See the L-3 note in ChatSession for why eager
-        // append belongs at the session layer, not here.) The token claims this
-        // op as the active one so a superseded collector can't write back.
         val op = Any()
         currentOp = op
-        val request = internalState.updateAndGet {
-            it.copy(
-                messages = it.messages + message,
-                status = ChatStatus.Submitted,
-                error = null,
-            )
+        val request = applyState {
+            copy(messages = messages + message, status = ChatStatus.Submitted, error = null)
         }.let { ChatRequest(messages = it.messages, body = body) }
         try {
             transport.sendMessages(request).collect { response ->
                 if (currentOp === op) {
-                    internalState.update { it.copy(status = ChatStatus.Streaming).withUpsert(response) }
+                    applyState { copy(status = ChatStatus.Streaming).withUpsert(response) }
                 }
                 emit(response)
             }
             if (currentOp === op) {
-                internalState.update { it.copy(status = ChatStatus.Ready) }
+                applyState { copy(status = ChatStatus.Ready) }
             }
         } catch (t: CancellationException) {
             if (currentOp === op) {
-                internalState.update { it.copy(error = null, status = ChatStatus.Ready) }
+                applyState { copy(error = null, status = ChatStatus.Ready) }
             }
             throw t
         } catch (t: Throwable) {
             if (currentOp === op) {
-                internalState.update { it.copy(error = t, status = ChatStatus.Error) }
+                applyState { copy(error = t, status = ChatStatus.Error) }
             }
             throw t
         }
@@ -192,10 +198,8 @@ public class Chat(
     }
 
     public fun stop() {
-        // Supersede any in-flight op so its trailing terminal writes are ignored,
-        // then settle to Ready atomically.
         currentOp = null
-        internalState.update { it.copy(status = ChatStatus.Ready) }
+        applyState { copy(status = ChatStatus.Ready) }
     }
 
     public fun reconnectToStream(headers: Map<String, String> = emptyMap()): Flow<UIMessage>? =
@@ -205,13 +209,11 @@ public class Chat(
         reconnectToStream(headers) ?: emptyFlow()
 
     private fun appendToolMessage(part: UIMessagePart.ToolUI) {
-        // Allocate the id and append in one atomic update so two concurrent
-        // tool responses can't claim the same approval index.
-        internalState.update { current ->
-            val (id, nextIndex) = current.nextApprovalResponseId()
-            current.copy(
-                messages = current.messages + UIMessage(
-                    id = id,
+        applyState {
+            val (msgId, nextIndex) = nextApprovalResponseId()
+            copy(
+                messages = messages + UIMessage(
+                    id = msgId,
                     role = UIMessageRole.User,
                     parts = listOf(part),
                 ),

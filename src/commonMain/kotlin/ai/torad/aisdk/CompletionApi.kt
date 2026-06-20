@@ -2,7 +2,11 @@ package ai.torad.aisdk
 
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.emptyFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.serialization.json.JsonElement
 
 public enum class CompletionStreamProtocol(public val wireValue: String) {
@@ -99,6 +103,30 @@ public suspend fun callCompletionApi(options: CallCompletionApiOptions): String?
     }
 }
 
+public sealed class CompletionPhase {
+    public data object Idle : CompletionPhase()
+    public data class Streaming(val text: String) : CompletionPhase()
+    public data class Done(val text: String) : CompletionPhase()
+    public data class Failed(val text: String, val cause: Throwable) : CompletionPhase()
+}
+
+public data class CompletionState(
+    val input: String = "",
+    val phase: CompletionPhase = CompletionPhase.Idle,
+) {
+    public val completion: String
+        get() = when (val p = phase) {
+            is CompletionPhase.Idle -> ""
+            is CompletionPhase.Streaming -> p.text
+            is CompletionPhase.Done -> p.text
+            is CompletionPhase.Failed -> p.text
+        }
+    public val error: Throwable?
+        get() = (phase as? CompletionPhase.Failed)?.cause
+    public val loading: Boolean
+        get() = phase is CompletionPhase.Streaming
+}
+
 public class Completion(
     private val options: UseCompletionOptions = UseCompletionOptions(),
 ) {
@@ -106,21 +134,32 @@ public class Completion(
     public val api: String = options.api
     public val streamProtocol: CompletionStreamProtocol = options.streamProtocol
 
-    public var completion: String = options.initialCompletion
-        private set
+    private val mutableState = MutableStateFlow(
+        CompletionState(
+            input = options.initialInput,
+            phase = if (options.initialCompletion.isEmpty()) {
+                CompletionPhase.Idle
+            } else {
+                CompletionPhase.Done(options.initialCompletion)
+            },
+        ),
+    )
 
-    public var input: String = options.initialInput
+    public val state: StateFlow<CompletionState> = mutableState.asStateFlow()
 
-    public var error: Throwable? = null
-        private set
-
-    public var loading: Boolean = false
-        private set
+    public val completion: String get() = mutableState.value.completion
+    public val input: String get() = mutableState.value.input
+    public val error: Throwable? get() = mutableState.value.error
+    public val loading: Boolean get() = mutableState.value.loading
 
     private var abortController: AbortController? = null
 
+    public fun setInput(input: String) {
+        mutableState.update { it.copy(input = input) }
+    }
+
     public fun setCompletion(completion: String) {
-        this.completion = completion
+        mutableState.update { it.copy(phase = CompletionPhase.Done(completion)) }
     }
 
     public suspend fun complete(
@@ -139,9 +178,31 @@ public class Completion(
                 streamProtocol = options.streamProtocol,
                 transport = options.transport,
                 abortSignal = controller.signal,
-                setCompletion = { completion = it },
-                setLoading = { loading = it },
-                setError = { error = it },
+                setCompletion = { text ->
+                    mutableState.update { it.copy(phase = CompletionPhase.Streaming(text)) }
+                },
+                setLoading = { isLoading ->
+                    mutableState.update { s ->
+                        if (isLoading) {
+                            s.copy(phase = CompletionPhase.Streaming(s.completion))
+                        } else {
+                            s.copy(
+                                phase = when (val p = s.phase) {
+                                    is CompletionPhase.Streaming -> CompletionPhase.Done(p.text)
+                                    is CompletionPhase.Failed -> p
+                                    else -> CompletionPhase.Idle
+                                },
+                            )
+                        }
+                    }
+                },
+                setError = { err ->
+                    if (err != null) {
+                        mutableState.update { s ->
+                            s.copy(phase = CompletionPhase.Failed(s.completion, err))
+                        }
+                    }
+                },
                 onFinish = options.onFinish,
                 onError = options.onError,
             ),
@@ -156,6 +217,13 @@ public class Completion(
     public fun stop() {
         abortController?.abort()
         abortController = null
-        loading = false
+        mutableState.update { s ->
+            s.copy(
+                phase = when (val p = s.phase) {
+                    is CompletionPhase.Streaming -> CompletionPhase.Done(p.text)
+                    else -> p
+                },
+            )
+        }
     }
 }

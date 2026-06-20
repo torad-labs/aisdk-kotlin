@@ -3319,18 +3319,19 @@ final class <#A: kotlin/Any?, #B: kotlin/Any?> ai.torad.aisdk/StructuredObject {
 
     final val api // ai.torad.aisdk/StructuredObject.api|{}api[0]
         final fun <get-api>(): kotlin/String // ai.torad.aisdk/StructuredObject.api.<get-api>|<get-api>(){}[0]
+    final val error // ai.torad.aisdk/StructuredObject.error|{}error[0]
+        final fun <get-error>(): kotlin/Throwable? // ai.torad.aisdk/StructuredObject.error.<get-error>|<get-error>(){}[0]
     final val id // ai.torad.aisdk/StructuredObject.id|{}id[0]
         final fun <get-id>(): kotlin/String // ai.torad.aisdk/StructuredObject.id.<get-id>|<get-id>(){}[0]
+    final val loading // ai.torad.aisdk/StructuredObject.loading|{}loading[0]
+        final fun <get-loading>(): kotlin/Boolean // ai.torad.aisdk/StructuredObject.loading.<get-loading>|<get-loading>(){}[0]
     final val objectValue // ai.torad.aisdk/StructuredObject.objectValue|{}objectValue[0]
         final fun <get-objectValue>(): #A? // ai.torad.aisdk/StructuredObject.objectValue.<get-objectValue>|<get-objectValue>(){}[0]
-
-    final var error // ai.torad.aisdk/StructuredObject.error|{}error[0]
-        final fun <get-error>(): kotlin/Throwable? // ai.torad.aisdk/StructuredObject.error.<get-error>|<get-error>(){}[0]
-    final var loading // ai.torad.aisdk/StructuredObject.loading|{}loading[0]
-        final fun <get-loading>(): kotlin/Boolean // ai.torad.aisdk/StructuredObject.loading.<get-loading>|<get-loading>(){}[0]
-    final var rawValue // ai.torad.aisdk/StructuredObject.rawValue|{}rawValue[0]
+    final val rawValue // ai.torad.aisdk/StructuredObject.rawValue|{}rawValue[0]
         final fun <get-rawValue>(): kotlinx.serialization.json/JsonElement? // ai.torad.aisdk/StructuredObject.rawValue.<get-rawValue>|<get-rawValue>(){}[0]
-    final var value // ai.torad.aisdk/StructuredObject.value|{}value[0]
+    final val state // ai.torad.aisdk/StructuredObject.state|{}state[0]
+        final fun <get-state>(): kotlinx.coroutines.flow/StateFlow<ai.torad.aisdk/StructuredObjectPhase<#A>> // ai.torad.aisdk/StructuredObject.state.<get-state>|<get-state>(){}[0]
+    final val value // ai.torad.aisdk/StructuredObject.value|{}value[0]
         final fun <get-value>(): #A? // ai.torad.aisdk/StructuredObject.value.<get-value>|<get-value>(){}[0]
 
     final fun clear() // ai.torad.aisdk/StructuredObject.clear|clear(){}[0]
@@ -8427,6 +8428,8 @@ final class ai.torad.aisdk.ui/Chat { // ai.torad.aisdk.ui/Chat|null[0]
         final fun <get-id>(): kotlin/String // ai.torad.aisdk.ui/Chat.id.<get-id>|<get-id>(){}[0]
     final val messages // ai.torad.aisdk.ui/Chat.messages|{}messages[0]
         final fun <get-messages>(): kotlin.collections/List<ai.torad.aisdk.ui/UIMessage> // ai.torad.aisdk.ui/Chat.messages.<get-messages>|<get-messages>(){}[0]
+    final val state // ai.torad.aisdk.ui/Chat.state|{}state[0]
+        final fun <get-state>(): kotlinx.coroutines.flow/StateFlow<ai.torad.aisdk.ui/ChatState> // ai.torad.aisdk.ui/Chat.state.<get-state>|<get-state>(){}[0]
     final val status // ai.torad.aisdk.ui/Chat.status|{}status[0]
         final fun <get-status>(): ai.torad.aisdk.ui/ChatStatus // ai.torad.aisdk.ui/Chat.status.<get-status>|<get-status>(){}[0]
 
@@ -9013,22 +9016,23 @@ final class ai.torad.aisdk/Completion { // ai.torad.aisdk/Completion|null[0]
 
     final val api // ai.torad.aisdk/Completion.api|{}api[0]
         final fun <get-api>(): kotlin/String // ai.torad.aisdk/Completion.api.<get-api>|<get-api>(){}[0]
+    final val completion // ai.torad.aisdk/Completion.completion|{}completion[0]
+        final fun <get-completion>(): kotlin/String // ai.torad.aisdk/Completion.completion.<get-completion>|<get-completion>(){}[0]
+    final val error // ai.torad.aisdk/Completion.error|{}error[0]
+        final fun <get-error>(): kotlin/Throwable? // ai.torad.aisdk/Completion.error.<get-error>|<get-error>(){}[0]
     final val id // ai.torad.aisdk/Completion.id|{}id[0]
         final fun <get-id>(): kotlin/String // ai.torad.aisdk/Completion.id.<get-id>|<get-id>(){}[0]
+    final val input // ai.torad.aisdk/Completion.input|{}input[0]
+        final fun <get-input>(): kotlin/String // ai.torad.aisdk/Completion.input.<get-input>|<get-input>(){}[0]
+    final val loading // ai.torad.aisdk/Completion.loading|{}loading[0]
+        final fun <get-loading>(): kotlin/Boolean // ai.torad.aisdk/Completion.loading.<get-loading>|<get-loading>(){}[0]
+    final val state // ai.torad.aisdk/Completion.state|{}state[0]
+        final fun <get-state>(): kotlinx.coroutines.flow/StateFlow<ai.torad.aisdk/CompletionState> // ai.torad.aisdk/Completion.state.<get-state>|<get-state>(){}[0]
     final val streamProtocol // ai.torad.aisdk/Completion.streamProtocol|{}streamProtocol[0]
         final fun <get-streamProtocol>(): ai.torad.aisdk/CompletionStreamProtocol // ai.torad.aisdk/Completion.streamProtocol.<get-streamProtocol>|<get-streamProtocol>(){}[0]
 
-    final var completion // ai.torad.aisdk/Completion.completion|{}completion[0]
-        final fun <get-completion>(): kotlin/String // ai.torad.aisdk/Completion.completion.<get-completion>|<get-completion>(){}[0]
-    final var error // ai.torad.aisdk/Completion.error|{}error[0]
-        final fun <get-error>(): kotlin/Throwable? // ai.torad.aisdk/Completion.error.<get-error>|<get-error>(){}[0]
-    final var input // ai.torad.aisdk/Completion.input|{}input[0]
-        final fun <get-input>(): kotlin/String // ai.torad.aisdk/Completion.input.<get-input>|<get-input>(){}[0]
-        final fun <set-input>(kotlin/String) // ai.torad.aisdk/Completion.input.<set-input>|<set-input>(kotlin.String){}[0]
-    final var loading // ai.torad.aisdk/Completion.loading|{}loading[0]
-        final fun <get-loading>(): kotlin/Boolean // ai.torad.aisdk/Completion.loading.<get-loading>|<get-loading>(){}[0]
-
     final fun setCompletion(kotlin/String) // ai.torad.aisdk/Completion.setCompletion|setCompletion(kotlin.String){}[0]
+    final fun setInput(kotlin/String) // ai.torad.aisdk/Completion.setInput|setInput(kotlin.String){}[0]
     final fun stop() // ai.torad.aisdk/Completion.stop|stop(){}[0]
     final suspend fun complete(kotlin/String, ai.torad.aisdk/CompletionRequestOptions = ...): kotlin/String? // ai.torad.aisdk/Completion.complete|complete(kotlin.String;ai.torad.aisdk.CompletionRequestOptions){}[0]
     final suspend fun handleSubmit(): kotlin/String? // ai.torad.aisdk/Completion.handleSubmit|handleSubmit(){}[0]
@@ -9079,6 +9083,28 @@ final class ai.torad.aisdk/CompletionRequestOptions { // ai.torad.aisdk/Completi
     final fun equals(kotlin/Any?): kotlin/Boolean // ai.torad.aisdk/CompletionRequestOptions.equals|equals(kotlin.Any?){}[0]
     final fun hashCode(): kotlin/Int // ai.torad.aisdk/CompletionRequestOptions.hashCode|hashCode(){}[0]
     final fun toString(): kotlin/String // ai.torad.aisdk/CompletionRequestOptions.toString|toString(){}[0]
+}
+
+final class ai.torad.aisdk/CompletionState { // ai.torad.aisdk/CompletionState|null[0]
+    constructor <init>(kotlin/String = ..., ai.torad.aisdk/CompletionPhase = ...) // ai.torad.aisdk/CompletionState.<init>|<init>(kotlin.String;ai.torad.aisdk.CompletionPhase){}[0]
+
+    final val completion // ai.torad.aisdk/CompletionState.completion|{}completion[0]
+        final fun <get-completion>(): kotlin/String // ai.torad.aisdk/CompletionState.completion.<get-completion>|<get-completion>(){}[0]
+    final val error // ai.torad.aisdk/CompletionState.error|{}error[0]
+        final fun <get-error>(): kotlin/Throwable? // ai.torad.aisdk/CompletionState.error.<get-error>|<get-error>(){}[0]
+    final val input // ai.torad.aisdk/CompletionState.input|{}input[0]
+        final fun <get-input>(): kotlin/String // ai.torad.aisdk/CompletionState.input.<get-input>|<get-input>(){}[0]
+    final val loading // ai.torad.aisdk/CompletionState.loading|{}loading[0]
+        final fun <get-loading>(): kotlin/Boolean // ai.torad.aisdk/CompletionState.loading.<get-loading>|<get-loading>(){}[0]
+    final val phase // ai.torad.aisdk/CompletionState.phase|{}phase[0]
+        final fun <get-phase>(): ai.torad.aisdk/CompletionPhase // ai.torad.aisdk/CompletionState.phase.<get-phase>|<get-phase>(){}[0]
+
+    final fun component1(): kotlin/String // ai.torad.aisdk/CompletionState.component1|component1(){}[0]
+    final fun component2(): ai.torad.aisdk/CompletionPhase // ai.torad.aisdk/CompletionState.component2|component2(){}[0]
+    final fun copy(kotlin/String = ..., ai.torad.aisdk/CompletionPhase = ...): ai.torad.aisdk/CompletionState // ai.torad.aisdk/CompletionState.copy|copy(kotlin.String;ai.torad.aisdk.CompletionPhase){}[0]
+    final fun equals(kotlin/Any?): kotlin/Boolean // ai.torad.aisdk/CompletionState.equals|equals(kotlin.Any?){}[0]
+    final fun hashCode(): kotlin/Int // ai.torad.aisdk/CompletionState.hashCode|hashCode(){}[0]
+    final fun toString(): kotlin/String // ai.torad.aisdk/CompletionState.toString|toString(){}[0]
 }
 
 final class ai.torad.aisdk/Configuration { // ai.torad.aisdk/Configuration|null[0]
@@ -13534,6 +13560,52 @@ sealed class <#A: out kotlin/Any?> ai.torad.aisdk/ParseResult { // ai.torad.aisd
     }
 }
 
+sealed class <#A: out kotlin/Any?> ai.torad.aisdk/StructuredObjectPhase { // ai.torad.aisdk/StructuredObjectPhase|null[0]
+    final class <#A1: out kotlin/Any?> Done : ai.torad.aisdk/StructuredObjectPhase<#A1> { // ai.torad.aisdk/StructuredObjectPhase.Done|null[0]
+        constructor <init>(#A1?, kotlinx.serialization.json/JsonElement?, kotlin/Throwable?) // ai.torad.aisdk/StructuredObjectPhase.Done.<init>|<init>(1:0?;kotlinx.serialization.json.JsonElement?;kotlin.Throwable?){}[0]
+
+        final val error // ai.torad.aisdk/StructuredObjectPhase.Done.error|{}error[0]
+            final fun <get-error>(): kotlin/Throwable? // ai.torad.aisdk/StructuredObjectPhase.Done.error.<get-error>|<get-error>(){}[0]
+        final val raw // ai.torad.aisdk/StructuredObjectPhase.Done.raw|{}raw[0]
+            final fun <get-raw>(): kotlinx.serialization.json/JsonElement? // ai.torad.aisdk/StructuredObjectPhase.Done.raw.<get-raw>|<get-raw>(){}[0]
+        final val value // ai.torad.aisdk/StructuredObjectPhase.Done.value|{}value[0]
+            final fun <get-value>(): #A1? // ai.torad.aisdk/StructuredObjectPhase.Done.value.<get-value>|<get-value>(){}[0]
+
+        final fun component1(): #A1? // ai.torad.aisdk/StructuredObjectPhase.Done.component1|component1(){}[0]
+        final fun component2(): kotlinx.serialization.json/JsonElement? // ai.torad.aisdk/StructuredObjectPhase.Done.component2|component2(){}[0]
+        final fun component3(): kotlin/Throwable? // ai.torad.aisdk/StructuredObjectPhase.Done.component3|component3(){}[0]
+        final fun copy(#A1? = ..., kotlinx.serialization.json/JsonElement? = ..., kotlin/Throwable? = ...): ai.torad.aisdk/StructuredObjectPhase.Done<#A1> // ai.torad.aisdk/StructuredObjectPhase.Done.copy|copy(1:0?;kotlinx.serialization.json.JsonElement?;kotlin.Throwable?){}[0]
+        final fun equals(kotlin/Any?): kotlin/Boolean // ai.torad.aisdk/StructuredObjectPhase.Done.equals|equals(kotlin.Any?){}[0]
+        final fun hashCode(): kotlin/Int // ai.torad.aisdk/StructuredObjectPhase.Done.hashCode|hashCode(){}[0]
+        final fun toString(): kotlin/String // ai.torad.aisdk/StructuredObjectPhase.Done.toString|toString(){}[0]
+    }
+
+    final class <#A1: out kotlin/Any?> Streaming : ai.torad.aisdk/StructuredObjectPhase<#A1> { // ai.torad.aisdk/StructuredObjectPhase.Streaming|null[0]
+        constructor <init>(#A1?, kotlinx.serialization.json/JsonElement?, kotlin/Throwable?) // ai.torad.aisdk/StructuredObjectPhase.Streaming.<init>|<init>(1:0?;kotlinx.serialization.json.JsonElement?;kotlin.Throwable?){}[0]
+
+        final val error // ai.torad.aisdk/StructuredObjectPhase.Streaming.error|{}error[0]
+            final fun <get-error>(): kotlin/Throwable? // ai.torad.aisdk/StructuredObjectPhase.Streaming.error.<get-error>|<get-error>(){}[0]
+        final val partial // ai.torad.aisdk/StructuredObjectPhase.Streaming.partial|{}partial[0]
+            final fun <get-partial>(): #A1? // ai.torad.aisdk/StructuredObjectPhase.Streaming.partial.<get-partial>|<get-partial>(){}[0]
+        final val raw // ai.torad.aisdk/StructuredObjectPhase.Streaming.raw|{}raw[0]
+            final fun <get-raw>(): kotlinx.serialization.json/JsonElement? // ai.torad.aisdk/StructuredObjectPhase.Streaming.raw.<get-raw>|<get-raw>(){}[0]
+
+        final fun component1(): #A1? // ai.torad.aisdk/StructuredObjectPhase.Streaming.component1|component1(){}[0]
+        final fun component2(): kotlinx.serialization.json/JsonElement? // ai.torad.aisdk/StructuredObjectPhase.Streaming.component2|component2(){}[0]
+        final fun component3(): kotlin/Throwable? // ai.torad.aisdk/StructuredObjectPhase.Streaming.component3|component3(){}[0]
+        final fun copy(#A1? = ..., kotlinx.serialization.json/JsonElement? = ..., kotlin/Throwable? = ...): ai.torad.aisdk/StructuredObjectPhase.Streaming<#A1> // ai.torad.aisdk/StructuredObjectPhase.Streaming.copy|copy(1:0?;kotlinx.serialization.json.JsonElement?;kotlin.Throwable?){}[0]
+        final fun equals(kotlin/Any?): kotlin/Boolean // ai.torad.aisdk/StructuredObjectPhase.Streaming.equals|equals(kotlin.Any?){}[0]
+        final fun hashCode(): kotlin/Int // ai.torad.aisdk/StructuredObjectPhase.Streaming.hashCode|hashCode(){}[0]
+        final fun toString(): kotlin/String // ai.torad.aisdk/StructuredObjectPhase.Streaming.toString|toString(){}[0]
+    }
+
+    final object Idle : ai.torad.aisdk/StructuredObjectPhase<kotlin/Nothing> { // ai.torad.aisdk/StructuredObjectPhase.Idle|null[0]
+        final fun equals(kotlin/Any?): kotlin/Boolean // ai.torad.aisdk/StructuredObjectPhase.Idle.equals|equals(kotlin.Any?){}[0]
+        final fun hashCode(): kotlin/Int // ai.torad.aisdk/StructuredObjectPhase.Idle.hashCode|hashCode(){}[0]
+        final fun toString(): kotlin/String // ai.torad.aisdk/StructuredObjectPhase.Idle.toString|toString(){}[0]
+    }
+}
+
 sealed class <#A: out kotlin/Any?> ai.torad.aisdk/ToolResult { // ai.torad.aisdk/ToolResult|null[0]
     final class <#A1: out kotlin/Any?> Success : ai.torad.aisdk/ToolResult<#A1> { // ai.torad.aisdk/ToolResult.Success|null[0]
         constructor <init>(#A1) // ai.torad.aisdk/ToolResult.Success.<init>|<init>(1:0){}[0]
@@ -13628,6 +13700,56 @@ sealed class ai.torad.aisdk/AgentError : ai.torad.aisdk/AiSdkException { // ai.t
 }
 
 sealed class ai.torad.aisdk/AiSdkException : kotlin/RuntimeException // ai.torad.aisdk/AiSdkException|null[0]
+
+sealed class ai.torad.aisdk/CompletionPhase { // ai.torad.aisdk/CompletionPhase|null[0]
+    final class Done : ai.torad.aisdk/CompletionPhase { // ai.torad.aisdk/CompletionPhase.Done|null[0]
+        constructor <init>(kotlin/String) // ai.torad.aisdk/CompletionPhase.Done.<init>|<init>(kotlin.String){}[0]
+
+        final val text // ai.torad.aisdk/CompletionPhase.Done.text|{}text[0]
+            final fun <get-text>(): kotlin/String // ai.torad.aisdk/CompletionPhase.Done.text.<get-text>|<get-text>(){}[0]
+
+        final fun component1(): kotlin/String // ai.torad.aisdk/CompletionPhase.Done.component1|component1(){}[0]
+        final fun copy(kotlin/String = ...): ai.torad.aisdk/CompletionPhase.Done // ai.torad.aisdk/CompletionPhase.Done.copy|copy(kotlin.String){}[0]
+        final fun equals(kotlin/Any?): kotlin/Boolean // ai.torad.aisdk/CompletionPhase.Done.equals|equals(kotlin.Any?){}[0]
+        final fun hashCode(): kotlin/Int // ai.torad.aisdk/CompletionPhase.Done.hashCode|hashCode(){}[0]
+        final fun toString(): kotlin/String // ai.torad.aisdk/CompletionPhase.Done.toString|toString(){}[0]
+    }
+
+    final class Failed : ai.torad.aisdk/CompletionPhase { // ai.torad.aisdk/CompletionPhase.Failed|null[0]
+        constructor <init>(kotlin/String, kotlin/Throwable) // ai.torad.aisdk/CompletionPhase.Failed.<init>|<init>(kotlin.String;kotlin.Throwable){}[0]
+
+        final val cause // ai.torad.aisdk/CompletionPhase.Failed.cause|{}cause[0]
+            final fun <get-cause>(): kotlin/Throwable // ai.torad.aisdk/CompletionPhase.Failed.cause.<get-cause>|<get-cause>(){}[0]
+        final val text // ai.torad.aisdk/CompletionPhase.Failed.text|{}text[0]
+            final fun <get-text>(): kotlin/String // ai.torad.aisdk/CompletionPhase.Failed.text.<get-text>|<get-text>(){}[0]
+
+        final fun component1(): kotlin/String // ai.torad.aisdk/CompletionPhase.Failed.component1|component1(){}[0]
+        final fun component2(): kotlin/Throwable // ai.torad.aisdk/CompletionPhase.Failed.component2|component2(){}[0]
+        final fun copy(kotlin/String = ..., kotlin/Throwable = ...): ai.torad.aisdk/CompletionPhase.Failed // ai.torad.aisdk/CompletionPhase.Failed.copy|copy(kotlin.String;kotlin.Throwable){}[0]
+        final fun equals(kotlin/Any?): kotlin/Boolean // ai.torad.aisdk/CompletionPhase.Failed.equals|equals(kotlin.Any?){}[0]
+        final fun hashCode(): kotlin/Int // ai.torad.aisdk/CompletionPhase.Failed.hashCode|hashCode(){}[0]
+        final fun toString(): kotlin/String // ai.torad.aisdk/CompletionPhase.Failed.toString|toString(){}[0]
+    }
+
+    final class Streaming : ai.torad.aisdk/CompletionPhase { // ai.torad.aisdk/CompletionPhase.Streaming|null[0]
+        constructor <init>(kotlin/String) // ai.torad.aisdk/CompletionPhase.Streaming.<init>|<init>(kotlin.String){}[0]
+
+        final val text // ai.torad.aisdk/CompletionPhase.Streaming.text|{}text[0]
+            final fun <get-text>(): kotlin/String // ai.torad.aisdk/CompletionPhase.Streaming.text.<get-text>|<get-text>(){}[0]
+
+        final fun component1(): kotlin/String // ai.torad.aisdk/CompletionPhase.Streaming.component1|component1(){}[0]
+        final fun copy(kotlin/String = ...): ai.torad.aisdk/CompletionPhase.Streaming // ai.torad.aisdk/CompletionPhase.Streaming.copy|copy(kotlin.String){}[0]
+        final fun equals(kotlin/Any?): kotlin/Boolean // ai.torad.aisdk/CompletionPhase.Streaming.equals|equals(kotlin.Any?){}[0]
+        final fun hashCode(): kotlin/Int // ai.torad.aisdk/CompletionPhase.Streaming.hashCode|hashCode(){}[0]
+        final fun toString(): kotlin/String // ai.torad.aisdk/CompletionPhase.Streaming.toString|toString(){}[0]
+    }
+
+    final object Idle : ai.torad.aisdk/CompletionPhase { // ai.torad.aisdk/CompletionPhase.Idle|null[0]
+        final fun equals(kotlin/Any?): kotlin/Boolean // ai.torad.aisdk/CompletionPhase.Idle.equals|equals(kotlin.Any?){}[0]
+        final fun hashCode(): kotlin/Int // ai.torad.aisdk/CompletionPhase.Idle.hashCode|hashCode(){}[0]
+        final fun toString(): kotlin/String // ai.torad.aisdk/CompletionPhase.Idle.toString|toString(){}[0]
+    }
+}
 
 sealed class ai.torad.aisdk/GenerationInput { // ai.torad.aisdk/GenerationInput|null[0]
     final class Messages : ai.torad.aisdk/GenerationInput { // ai.torad.aisdk/GenerationInput.Messages|null[0]

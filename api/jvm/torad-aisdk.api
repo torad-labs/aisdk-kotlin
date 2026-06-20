@@ -612,6 +612,7 @@ public final class ai/torad/aisdk/Completion {
 	public final fun getId ()Ljava/lang/String;
 	public final fun getInput ()Ljava/lang/String;
 	public final fun getLoading ()Z
+	public final fun getState ()Lkotlinx/coroutines/flow/StateFlow;
 	public final fun getStreamProtocol ()Lai/torad/aisdk/CompletionStreamProtocol;
 	public final fun handleSubmit (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public final fun setCompletion (Ljava/lang/String;)V
@@ -621,6 +622,51 @@ public final class ai/torad/aisdk/Completion {
 
 public final class ai/torad/aisdk/CompletionApiKt {
 	public static final fun callCompletionApi (Lai/torad/aisdk/CallCompletionApiOptions;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+}
+
+public abstract class ai/torad/aisdk/CompletionPhase {
+}
+
+public final class ai/torad/aisdk/CompletionPhase$Done : ai/torad/aisdk/CompletionPhase {
+	public fun <init> (Ljava/lang/String;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun copy (Ljava/lang/String;)Lai/torad/aisdk/CompletionPhase$Done;
+	public static synthetic fun copy$default (Lai/torad/aisdk/CompletionPhase$Done;Ljava/lang/String;ILjava/lang/Object;)Lai/torad/aisdk/CompletionPhase$Done;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getText ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class ai/torad/aisdk/CompletionPhase$Failed : ai/torad/aisdk/CompletionPhase {
+	public fun <init> (Ljava/lang/String;Ljava/lang/Throwable;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()Ljava/lang/Throwable;
+	public final fun copy (Ljava/lang/String;Ljava/lang/Throwable;)Lai/torad/aisdk/CompletionPhase$Failed;
+	public static synthetic fun copy$default (Lai/torad/aisdk/CompletionPhase$Failed;Ljava/lang/String;Ljava/lang/Throwable;ILjava/lang/Object;)Lai/torad/aisdk/CompletionPhase$Failed;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getCause ()Ljava/lang/Throwable;
+	public final fun getText ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class ai/torad/aisdk/CompletionPhase$Idle : ai/torad/aisdk/CompletionPhase {
+	public static final field INSTANCE Lai/torad/aisdk/CompletionPhase$Idle;
+	public fun equals (Ljava/lang/Object;)Z
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class ai/torad/aisdk/CompletionPhase$Streaming : ai/torad/aisdk/CompletionPhase {
+	public fun <init> (Ljava/lang/String;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun copy (Ljava/lang/String;)Lai/torad/aisdk/CompletionPhase$Streaming;
+	public static synthetic fun copy$default (Lai/torad/aisdk/CompletionPhase$Streaming;Ljava/lang/String;ILjava/lang/Object;)Lai/torad/aisdk/CompletionPhase$Streaming;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getText ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
 }
 
 public final class ai/torad/aisdk/CompletionRequest {
@@ -658,6 +704,24 @@ public final class ai/torad/aisdk/CompletionRequestOptions {
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getBody ()Ljava/util/Map;
 	public final fun getHeaders ()Ljava/util/Map;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class ai/torad/aisdk/CompletionState {
+	public fun <init> ()V
+	public fun <init> (Ljava/lang/String;Lai/torad/aisdk/CompletionPhase;)V
+	public synthetic fun <init> (Ljava/lang/String;Lai/torad/aisdk/CompletionPhase;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()Lai/torad/aisdk/CompletionPhase;
+	public final fun copy (Ljava/lang/String;Lai/torad/aisdk/CompletionPhase;)Lai/torad/aisdk/CompletionState;
+	public static synthetic fun copy$default (Lai/torad/aisdk/CompletionState;Ljava/lang/String;Lai/torad/aisdk/CompletionPhase;ILjava/lang/Object;)Lai/torad/aisdk/CompletionState;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getCompletion ()Ljava/lang/String;
+	public final fun getError ()Ljava/lang/Throwable;
+	public final fun getInput ()Ljava/lang/String;
+	public final fun getLoading ()Z
+	public final fun getPhase ()Lai/torad/aisdk/CompletionPhase;
 	public fun hashCode ()I
 	public fun toString ()Ljava/lang/String;
 }
@@ -6297,6 +6361,7 @@ public final class ai/torad/aisdk/StructuredObject {
 	public final fun getLoading ()Z
 	public final fun getObjectValue ()Ljava/lang/Object;
 	public final fun getRawValue ()Lkotlinx/serialization/json/JsonElement;
+	public final fun getState ()Lkotlinx/coroutines/flow/StateFlow;
 	public final fun getValue ()Ljava/lang/Object;
 	public final fun stop ()V
 	public final fun submit (Ljava/lang/Object;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
@@ -6339,6 +6404,46 @@ public final class ai/torad/aisdk/StructuredObjectOptions {
 	public final fun getOnFinish ()Lkotlin/jvm/functions/Function2;
 	public final fun getSchema ()Lai/torad/aisdk/Schema;
 	public final fun getTransport ()Lai/torad/aisdk/StructuredObjectTransport;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public abstract class ai/torad/aisdk/StructuredObjectPhase {
+}
+
+public final class ai/torad/aisdk/StructuredObjectPhase$Done : ai/torad/aisdk/StructuredObjectPhase {
+	public fun <init> (Ljava/lang/Object;Lkotlinx/serialization/json/JsonElement;Ljava/lang/Throwable;)V
+	public final fun component1 ()Ljava/lang/Object;
+	public final fun component2 ()Lkotlinx/serialization/json/JsonElement;
+	public final fun component3 ()Ljava/lang/Throwable;
+	public final fun copy (Ljava/lang/Object;Lkotlinx/serialization/json/JsonElement;Ljava/lang/Throwable;)Lai/torad/aisdk/StructuredObjectPhase$Done;
+	public static synthetic fun copy$default (Lai/torad/aisdk/StructuredObjectPhase$Done;Ljava/lang/Object;Lkotlinx/serialization/json/JsonElement;Ljava/lang/Throwable;ILjava/lang/Object;)Lai/torad/aisdk/StructuredObjectPhase$Done;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getError ()Ljava/lang/Throwable;
+	public final fun getRaw ()Lkotlinx/serialization/json/JsonElement;
+	public final fun getValue ()Ljava/lang/Object;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class ai/torad/aisdk/StructuredObjectPhase$Idle : ai/torad/aisdk/StructuredObjectPhase {
+	public static final field INSTANCE Lai/torad/aisdk/StructuredObjectPhase$Idle;
+	public fun equals (Ljava/lang/Object;)Z
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class ai/torad/aisdk/StructuredObjectPhase$Streaming : ai/torad/aisdk/StructuredObjectPhase {
+	public fun <init> (Ljava/lang/Object;Lkotlinx/serialization/json/JsonElement;Ljava/lang/Throwable;)V
+	public final fun component1 ()Ljava/lang/Object;
+	public final fun component2 ()Lkotlinx/serialization/json/JsonElement;
+	public final fun component3 ()Ljava/lang/Throwable;
+	public final fun copy (Ljava/lang/Object;Lkotlinx/serialization/json/JsonElement;Ljava/lang/Throwable;)Lai/torad/aisdk/StructuredObjectPhase$Streaming;
+	public static synthetic fun copy$default (Lai/torad/aisdk/StructuredObjectPhase$Streaming;Ljava/lang/Object;Lkotlinx/serialization/json/JsonElement;Ljava/lang/Throwable;ILjava/lang/Object;)Lai/torad/aisdk/StructuredObjectPhase$Streaming;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getError ()Ljava/lang/Throwable;
+	public final fun getPartial ()Ljava/lang/Object;
+	public final fun getRaw ()Lkotlinx/serialization/json/JsonElement;
 	public fun hashCode ()I
 	public fun toString ()Ljava/lang/String;
 }
@@ -13119,6 +13224,7 @@ public final class ai/torad/aisdk/ui/Chat {
 	public final fun getError ()Ljava/lang/Throwable;
 	public final fun getId ()Ljava/lang/String;
 	public final fun getMessages ()Ljava/util/List;
+	public final fun getState ()Lkotlinx/coroutines/flow/StateFlow;
 	public final fun getStatus ()Lai/torad/aisdk/ui/ChatStatus;
 	public final fun reconnectToStream (Ljava/util/Map;)Lkotlinx/coroutines/flow/Flow;
 	public static synthetic fun reconnectToStream$default (Lai/torad/aisdk/ui/Chat;Ljava/util/Map;ILjava/lang/Object;)Lkotlinx/coroutines/flow/Flow;
