@@ -1,7 +1,6 @@
 package ai.torad.aisdk
 import ai.torad.aisdk.providers.OpenResponsesProviderSettings
 import ai.torad.aisdk.providers.createOpenResponses
-import ai.torad.aisdk.providers.openai
 
 import ai.torad.aisdk.testing.drainAllItems
 import io.ktor.client.HttpClient

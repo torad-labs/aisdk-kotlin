@@ -3,7 +3,6 @@ import ai.torad.aisdk.providers.AZURE_VERSION
 import ai.torad.aisdk.providers.AzureOpenAIProviderSettings
 import ai.torad.aisdk.providers.azure
 import ai.torad.aisdk.providers.createAzure
-import ai.torad.aisdk.providers.openai
 
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.mock.MockEngine

@@ -22,71 +22,25 @@ public data class OpenAIProviderSettings(
     val includeUsage: Boolean = false,
 )
 
-public interface OpenAIProvider : Provider {
-    public val settings: OpenAIProviderSettings
-    public val tools: OpenAITools
+public typealias OpenAISettings = OpenAIProviderSettings
 
-    public operator fun invoke(modelId: String): LanguageModel = languageModel(modelId)
-    public fun chat(modelId: String): LanguageModel
-    public fun responses(modelId: String): LanguageModel
-    public fun completion(modelId: String): LanguageModel
-    public fun embedding(modelId: String): EmbeddingModel
-    public fun image(modelId: String): ImageModel
-    public fun transcription(modelId: String): TranscriptionModel
-    public fun speech(modelId: String): SpeechModel
-
-    override fun embeddingModel(modelId: String): EmbeddingModel = embedding(modelId)
-    public fun textEmbedding(modelId: String): EmbeddingModel = embedding(modelId)
-    public fun textEmbeddingModel(modelId: String): EmbeddingModel = embedding(modelId)
-    override fun imageModel(modelId: String): ImageModel = image(modelId)
-    override fun transcriptionModel(modelId: String): TranscriptionModel = transcription(modelId)
-    override fun speechModel(modelId: String): SpeechModel = speech(modelId)
-}
-
-public fun createOpenAI(
-    client: HttpClient,
-    settings: OpenAIProviderSettings = OpenAIProviderSettings(),
-): OpenAIProvider = DefaultOpenAIProvider(client, settings)
-
-public fun createOpenAIProvider(
-    client: HttpClient,
-    settings: OpenAIProviderSettings = OpenAIProviderSettings(),
-): OpenAIProvider = createOpenAI(client, settings)
-
-public val openai: OpenAIProvider = OpenAIProviderNotConfigured
-
-public class OpenAIProviderNotConfiguredError :
-    AiSdkRuntimeException("OpenAI provider is not configured. Use createOpenAI(client, settings).")
-
-private object OpenAIProviderNotConfigured : OpenAIProvider {
-    override val settings: OpenAIProviderSettings = OpenAIProviderSettings()
-    override val providerId: String = "openai"
-    override val tools: OpenAITools = OpenAITools()
-
-    override fun languageModel(modelId: String): LanguageModel = missing()
-    override fun chat(modelId: String): LanguageModel = missing()
-    override fun responses(modelId: String): LanguageModel = missing()
-    override fun completion(modelId: String): LanguageModel = missing()
-    override fun embedding(modelId: String): EmbeddingModel = missing()
-    override fun image(modelId: String): ImageModel = missing()
-    override fun transcription(modelId: String): TranscriptionModel = missing()
-    override fun speech(modelId: String): SpeechModel = missing()
-
-    private fun missing(): Nothing = throw OpenAIProviderNotConfiguredError()
-}
-
-private class DefaultOpenAIProvider(
+public class OpenAIProvider(
     private val client: HttpClient,
-    override val settings: OpenAIProviderSettings,
-) : OpenAIProvider {
+    public val settings: OpenAIProviderSettings,
+) : Provider {
     private val compatible = createOpenAICompatible(client, settings.toCompatibleSettings())
 
     override val providerId: String = settings.name
-    override val tools: OpenAITools = OpenAITools()
+    public val tools: OpenAITools = OpenAITools()
+
+    public operator fun invoke(modelId: String): LanguageModel = languageModel(modelId)
 
     override fun languageModel(modelId: String): LanguageModel = responses(modelId)
 
-    override fun responses(modelId: String): LanguageModel =
+    public fun chat(modelId: String): LanguageModel =
+        compatible.chatModel(modelId)
+
+    public fun responses(modelId: String): LanguageModel =
         createOpenResponses(
             client,
             OpenResponsesProviderSettings(
@@ -101,24 +55,44 @@ private class DefaultOpenAIProvider(
             ),
         ).responses(modelId)
 
-    override fun chat(modelId: String): LanguageModel =
-        compatible.chatModel(modelId)
-
-    override fun completion(modelId: String): LanguageModel =
+    public fun completion(modelId: String): LanguageModel =
         compatible.completionModel(modelId)
 
-    override fun embedding(modelId: String): EmbeddingModel =
+    public fun embedding(modelId: String): EmbeddingModel =
         compatible.embeddingModel(modelId)
 
-    override fun image(modelId: String): ImageModel =
+    public fun image(modelId: String): ImageModel =
         OpenAIImageModel(modelId, compatible.imageModel(modelId))
 
-    override fun transcription(modelId: String): TranscriptionModel =
+    public fun transcription(modelId: String): TranscriptionModel =
         compatible.transcriptionModel(modelId)
 
-    override fun speech(modelId: String): SpeechModel =
+    public fun speech(modelId: String): SpeechModel =
         compatible.speechModel(modelId)
+
+    override fun embeddingModel(modelId: String): EmbeddingModel = embedding(modelId)
+    public fun textEmbedding(modelId: String): EmbeddingModel = embedding(modelId)
+    public fun textEmbeddingModel(modelId: String): EmbeddingModel = embedding(modelId)
+    override fun imageModel(modelId: String): ImageModel = image(modelId)
+    override fun transcriptionModel(modelId: String): TranscriptionModel = transcription(modelId)
+    override fun speechModel(modelId: String): SpeechModel = speech(modelId)
 }
+
+/** PascalCase factory — the reference pattern that Layer-8 providers will follow. */
+public fun OpenAI(
+    client: HttpClient,
+    settings: OpenAISettings = OpenAISettings(),
+): OpenAIProvider = OpenAIProvider(client, settings)
+
+public fun createOpenAI(
+    client: HttpClient,
+    settings: OpenAIProviderSettings = OpenAIProviderSettings(),
+): OpenAIProvider = OpenAIProvider(client, settings)
+
+public fun createOpenAIProvider(
+    client: HttpClient,
+    settings: OpenAIProviderSettings = OpenAIProviderSettings(),
+): OpenAIProvider = OpenAIProvider(client, settings)
 
 private class OpenAIImageModel(
     override val modelId: String,

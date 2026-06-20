@@ -2,7 +2,6 @@ package ai.torad.aisdk
 
 import ai.torad.aisdk.providers.mockLanguageModelTextOnly
 import ai.torad.aisdk.providers.anthropic
-import ai.torad.aisdk.providers.openai
 import ai.torad.aisdk.ui.ToolCallState
 import ai.torad.aisdk.ui.UIMessage
 import ai.torad.aisdk.ui.UIMessagePart
