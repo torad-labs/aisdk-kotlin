@@ -1,0 +1,62 @@
+#!/usr/bin/env bash
+# Repo architecture gate — runs the SAME ast-grep rules the Claude PreToolUse hook
+# enforces, but on the whole tree at commit/CI time, so they apply to EVERY commit
+# (human or agent), not just Claude's edits. Plus the whole-program non-integrated
+# check (the cross-file class a per-file hook can't see).
+#
+# Used by .githooks/pre-commit (local) and ci.yml verify job (non-bypassable).
+# Exit 0 = clean, 1 = violation. Pure ast-grep + python; no model.
+# NOTE: no `pipefail` — `ast-grep scan` exits 1 when it FINDS matches (grep-style),
+# which combined with a `|| fallback` would make a found-violation read as zero
+# (fake-green). Keep scan and the JSON count as separate steps.
+set -u
+
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)"
+cd "$ROOT"
+RULES_DIR=".claude/hooks/rules/kotlin"
+AG="$(command -v ast-grep || echo "$HOME/.local/bin/ast-grep")"
+[ -x "$AG" ] || { echo "ci-gate: ast-grep not found"; exit 2; }
+
+fail=0
+
+count() {
+  local json
+  json="$("$AG" scan --rule "$1" $2 --json=compact 2>/dev/null || true)"
+  [ -z "$json" ] && { echo 0; return; }
+  printf '%s' "$json" | python3 -c 'import json,sys
+try: print(len(json.load(sys.stdin)))
+except Exception: print(0)'
+}
+
+echo "== architecture gate: error-severity ast-grep rules =="
+for f in "$RULES_DIR"/*.yaml; do
+  sev=$(grep -m1 '^severity:' "$f" | cut -d' ' -f2)
+  [ "$sev" = "error" ] || continue
+  base=$(basename "$f" .yaml)
+  # JVM-platform rules are legitimate in JVM source sets — scope them out (matches the policy).
+  case "$base" in
+    no-java-import|no-thread-sleep|no-string-format|no-print-stack-trace)
+      dirs="src/commonMain/kotlin src/nativeMain/kotlin" ;;
+    no-camelcase-top-level-function)
+      dirs="src/commonMain/kotlin src/jvmMain/kotlin src/jvmAndAndroidMain/kotlin src/nativeMain/kotlin src/commonTest/kotlin" ;;
+    *)
+      dirs="src/commonMain/kotlin" ;;
+  esac
+  n=$(count "$f" "$dirs")
+  if [ "$n" -gt 0 ] 2>/dev/null; then
+    echo "  FAIL $base: $n violation(s)"
+    "$AG" scan --rule "$f" $dirs 2>/dev/null | head -8
+    fail=1
+  fi
+done
+[ "$fail" = 0 ] && echo "  ok: 0 error-rule violations"
+
+echo "== non-integrated (internal, cross-file) gate =="
+python3 .claude/hooks/rules/detect-nonintegrated-kotlin.py src --check || fail=1
+
+if [ "$fail" != 0 ]; then
+  echo ""
+  echo "ARCHITECTURE GATE FAILED — fix the violations above (do not bypass)."
+  exit 1
+fi
+echo "architecture gate: PASS"

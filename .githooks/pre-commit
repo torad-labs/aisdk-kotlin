@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+# Committed pre-commit hook. Enable once with:  git config core.hooksPath .githooks
+# Runs the repo architecture gate (the same ast-grep rules the Claude PreToolUse
+# hook enforces, applied to the whole tree, + the cross-file non-integrated check)
+# so EVERY commit — human or agent — is gated, not just Claude's edits.
+# CI runs the identical gate (ci.yml) so this cannot be bypassed by skipping the hook.
+set -u
+repo="$(git rev-parse --show-toplevel)"
+gate="$repo/.claude/hooks/rules/ci-gate.sh"
+[ -x "$gate" ] || { echo "pre-commit: gate script missing ($gate)"; exit 1; }
+exec bash "$gate"

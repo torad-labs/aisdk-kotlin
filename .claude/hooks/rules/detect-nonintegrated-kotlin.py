@@ -71,14 +71,36 @@ def main() -> int:
             if refs <= 1:
                 candidates[str(f).split("/ai/torad/aisdk/")[-1]].append(name)
 
-    total = sum(len(v) for v in candidates.values())
-    print(f"=== NON-INTEGRATED CANDIDATES (heuristic, review before acting): {total} ===")
+    # Flatten to a stable signature set: "file::Name".
+    found = {f"{f}::{name}" for f, names in candidates.items() for name in names}
+
+    baseline_path = Path(__file__).resolve().parent / "nonintegrated-baseline.txt"
+
+    if "--update-baseline" in sys.argv:
+        baseline_path.write_text("\n".join(sorted(found)) + ("\n" if found else ""), encoding="utf-8")
+        print(f"wrote baseline: {len(found)} grandfathered internal non-integrated declarations")
+        return 0
+
+    if "--check" in sys.argv:
+        baseline = set()
+        if baseline_path.exists():
+            baseline = {ln.strip() for ln in baseline_path.read_text(encoding="utf-8").splitlines() if ln.strip()}
+        new = sorted(found - baseline)
+        if new:
+            print(f"NON-INTEGRATED GATE FAILED: {len(new)} NEW internal declaration(s) referenced nowhere in-module:")
+            for sig in new:
+                print(f"  - {sig}")
+            print("\nWire it into a real flow, or delete it. (If genuinely intended, add to nonintegrated-baseline.txt with justification.)")
+            return 1
+        print(f"non-integrated gate OK: no new internal dead declarations (baseline grandfathers {len(baseline)})")
+        return 0
+
+    # default: report
+    total = len(found)
+    print(f"=== NON-INTEGRATED CANDIDATES (internal-only, heuristic): {total} ===")
     for f in sorted(candidates):
         print(f"  {f}: {', '.join(sorted(candidates[f]))}")
-    print(
-        "\nNote: heuristic — verify each (may be intended public API, @Serializable-"
-        "via-reflection, or expect/actual) before removing. Not a blocking gate."
-    )
+    print("\nNote: heuristic — verify each (may be expect/actual or reflection) before removing.")
     return 0
 
 
