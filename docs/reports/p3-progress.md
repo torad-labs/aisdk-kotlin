@@ -62,17 +62,71 @@ no single owner. (FacadeHttp in the same file is separate — untouched.)
   (from re-homing `GatewayWire.gatewayTransportMissing` onto the `GatewayTransport` interface's
   companion). The OpenAICompatible `fromOpenAI` factories added ZERO ABI (their core types are
   `@Serializable`, so the companions already existed; the new members are `internal`).
-- **Per the user's instruction (re-confirmed at steps 4 and 5), ABI regen is held until the P3
+- **Per the user's instruction (re-confirmed at steps 4, 5 and 6), ABI regen is held until the P3
   FINAL gate** — not regenerated per step. The cumulative public delta vs the last regen (`80ac799`)
-  is exactly ONE item, `GatewayTransport$Companion` (from p3-3); steps 4-5 add no public surface
-  (all re-homed members are internal/private). Known, traced, surfaced — not silently accepted.
+  is exactly ONE item, `GatewayTransport$Companion` (from p3-3); steps 4-6 add no public surface
+  (all re-homed members — including the new `XaiProviderSettings.Companion` and every step-6 settings
+  member — are internal/private). Known, traced, surfaced — not silently accepted.
   Resolution at P3 end: a single `updateKotlinAbi`.
 - The real ABI task is `checkLegacyAbi` (alias `checkKotlinAbi`); there is no `apiCheck` task.
   ABI checks are NOT run per step (the deferral is explicit), to keep the per-step gate to
   compileKotlinJvm + jvmTest + objects-gone + no-camelcase.
 
-## Remaining steps
+## Step 4 — google + anthropic + cohere + mistral + alibaba wire (`a41cf0e`)
 
-4. GoogleWire, GoogleVertexWire, GoogleHttp, AnthropicAwsWire, CohereWire, MistralWire, AlibabaWire
-5. BedrockMapping, BedrockHttp, FalWire, BflWire, ByteDanceWire, LumaWire, KlingAIWire, HuggingFaceWire
-6. audio + remaining facade wires
+Dissolved 6 / 7:
+
+- GoogleWire → `GoogleGenerativeAILanguageModel` + its companion + `GoogleTools.Companion.providerTool` (file deleted)
+- GoogleVertexWire → `GoogleVertexProviderSettings` + the Vertex model classes
+- AnthropicAwsWire → `AnthropicAwsProviderSettings`
+- MistralWire → `MistralProviderSettings` (public companion, all-private members) + `MistralChatLanguageModel`
+- CohereWire → `CohereProviderSettings` + `CohereChatLanguageModel`
+- AlibabaWire → `AlibabaProviderSettings` + `AlibabaChatLanguageModel` + `AlibabaVideoModel`
+
+**Kept — GoogleHttp (irreducible shared transport, like UrlOps):** `googlePostJson` (3 consumers),
+`googleStreamSse` (2) + their internal helpers — multi-consumer, no single owning model. Reported.
+
+## Step 5 — bedrock + media wire (`c807f57`)
+
+Dissolved 7 / 8:
+
+- BedrockMapping → `BedrockRequest` / `BedrockResponse` / `AmazonBedrockProviderSettings.bedrockEncodeModelId` / `BedrockMantleChatLanguageModel` (file deleted)
+- FalWire → `FalProviderSettings` + the Fal model classes + `FalBinaryResponse`
+- BflWire → `BlackForestLabsProviderSettings` / model
+- ByteDanceWire → `ByteDanceProviderSettings` / model
+- LumaWire → `LumaImageModel`
+- KlingAIWire → `KlingAIProviderSettings` / model
+- HuggingFaceWire → `HuggingFaceProviderSettings` (5 shared helpers) + `HuggingFaceProvider` + `HuggingFaceResponsesLanguageModel`
+
+**Kept — BedrockHttp (irreducible shared transport):** `bedrockPostJson` (5 consumers),
+`bedrockStreamPayloads`, `bedrockHeaders`, `bedrockErrorMessage`, `isBedrockClockSkewError`,
+`headerValue` (2) — multi-consumer AWS SigV4 transport, no single owner. Reported.
+
+## Step 6 — audio + facade wire (`55f92c4`) — FINAL
+
+Dissolved 18 / 18, **0 irreducible**:
+
+- Audio: DeepgramWire, AssemblyAIWire, RevaiWire, ElevenLabsWire, HumeWire, LMNTWire →
+  their `XxxProviderSettings` (headers/options/error/query) + the speech/transcription model
+  classes. (`AssemblyAIProviderSettings.headers()` renamed `requestHeaders()` — data-class
+  `headers` property clash.)
+- Facades (thin OpenAI-compatible adapters): VoyageWire, FireworksWire, GroqWire,
+  PerplexityWire, DeepSeekWire, TogetherAIWire, DeepInfraWire, CerebrasWire, MoonshotAIWire,
+  VercelWire, BasetenWire → their `XxxProviderSettings` (`toCompatible` / usage / errorMessage)
+  + model classes; DeepInfra usage fix-up as a private `Usage` member-extension.
+- XaiWire **fully dissolved**: the 3 xAI snake-case search-parameter helpers
+  (`xaiSnakeCaseJson`/`Key`/`Naive`) → `XaiProviderSettings.Companion` as the single source of
+  truth shared by the xAI chat path (`XaiChatLanguageModel`) and the Google Vertex
+  xAI-compatible path (`GoogleVertexProvider`); the other xAI wire fns → `XaiProviderSettings` /
+  `XaiTools.Companion` / the Xai model classes. (Earlier provisionally kept as a slim 3-fn bag;
+  re-homed onto the settings companion at the user's direction — 2 unrelated consumers, but a
+  single static home reaches both without duplication.)
+
+## P3 complete
+
+All 6 dissolve steps landed. 52 helper-bag objects fully dissolved except the irreducible,
+multi-consumer, no-single-owner shared utilities, left intact and reported: **UrlOps**
+(percent-encoder, 6 consumers), **FacadeSupport** (3 generic JSON readers, 10 facades),
+**GoogleHttp** (Gemini transport), **BedrockHttp** (AWS SigV4 transport). Next: a single
+`updateKotlinAbi` to regenerate dumps for the one cumulative public delta (`GatewayTransport$Companion`),
+then the full check + push — run by the operator.
