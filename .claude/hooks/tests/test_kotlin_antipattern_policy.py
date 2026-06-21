@@ -71,6 +71,7 @@ with tempfile.TemporaryDirectory() as tmp:
         "sealed interface (bodied)": P + "public sealed interface Shape {\n    public val x: Int\n}\n",
         "sealed interface (bodyless)": P + "public sealed interface Marker\n",
         "not-null assertion": P + "public class C {\n    fun f(s: String?): String = s!!\n}\n",
+        "deferred-wiring comment (xray root cause)": P + "public class C {\n    // The accumulated steps. Loop-side population is staged in as a follow-up.\n    val priorSteps: List<Int> = emptyList()\n}\n",
     }
     for name, content in blocks.items():
         check(f"BLOCK: {name}", kind_of(content, kt) == "block")

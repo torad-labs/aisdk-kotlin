@@ -334,5 +334,12 @@
     "yaml": "id: no-float-equality-comparison\nlanguage: kotlin\nseverity: warning\nmessage: >-\n  ==/!= against a floating-point literal is fragile (rounding/representation\n  error). Compare with a tolerance (abs(a - b) < epsilon), or check a typed\n  range. (Exact 0.0 guard before division? acceptable \u2014 suppress locally.)\nrule:\n  kind: equality_expression\n  has:\n    kind: real_literal\n",
     "badExample": "if (temperature == 1.0) { useDefault() }",
     "goodExample": "if (abs(temperature - 1.0) < 1e-9) { useDefault() }"
+  },
+  {
+    "id": "no-deferred-wiring-comment",
+    "severity": "error",
+    "yaml": "id: no-deferred-wiring-comment\nlanguage: kotlin\nseverity: error\n# Catches the \"declare the type surface now, wire the producer later\" convention\n# that the pipeline x-ray found behind half its data-flow defects: a public\n# event/result/wire field is added with a silent default and a comment admitting\n# it isn't populated yet (\"wired ... as a follow-up\", \"type surface is in place\",\n# \"the loop hasn't yet wired the field\", \"back-compat\" null). Either wire the\n# producer now or don't declare the field \u2014 never ship a permanently-empty seam.\nrule:\n  any:\n    - kind: line_comment\n    - kind: multiline_comment\n  regex: '(?i)(wired|populate[ds]?) .{0,40}(later|follow-?up)|staged in as a follow-?up|type surface is in place|loop hasn.t yet wired|hasn.t yet wired the field|wire[ds]? the field'\n",
+    "badExample": "package x\n\nclass C {\n    // The accumulated steps. Loop-side population is staged in as a follow-up.\n    public val priorSteps: List<Int> = emptyList()\n}\n",
+    "goodExample": "package x\n\nclass C {\n    /** The accumulated prior steps, populated by the loop each step. */\n    public val priorSteps: List<Int>\n}\n"
   }
 ]
