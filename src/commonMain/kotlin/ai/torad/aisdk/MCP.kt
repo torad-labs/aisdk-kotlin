@@ -1096,7 +1096,7 @@ public class HttpMCPTransport(
                 JSONRPCMessage.fromJsonBatch(response.bodyAsText()).forEach { onMessage?.invoke(it) }
             }
             contentType.contains("text/event-stream", ignoreCase = true) -> {
-                McpSseEvent.parseStream(response.bodyAsChannel()) { event ->
+                McpSseFrame.parseStream(response.bodyAsChannel()) { event ->
                     if (event.event == "message") {
                         onMessage?.invoke(JSONRPCMessage.fromJson(event.data))
                     }
@@ -1142,7 +1142,7 @@ public class HttpMCPTransport(
                 onError?.invoke(error)
                 return
             }
-            McpSseEvent.parseStream(response.bodyAsChannel()) { event ->
+            McpSseFrame.parseStream(response.bodyAsChannel()) { event ->
                 if (event.event == "message") {
                     onMessage?.invoke(JSONRPCMessage.fromJson(event.data))
                 }
@@ -1226,7 +1226,7 @@ public class SseMCPTransport(
                         "MCP SSE Transport Error: ${response.status.value} ${response.status.description}$hint",
                     )
                 }
-                McpSseEvent.parseStream(response.bodyAsChannel()) { event ->
+                McpSseFrame.parseStream(response.bodyAsChannel()) { event ->
                     when (event.event) {
                         "endpoint" -> {
                             endpoint = McpUrl.resolve(event.data, url).also { resolved ->
@@ -1345,7 +1345,7 @@ public class SseMCPTransport(
     }
 }
 
-internal data class McpSseEvent(
+internal data class McpSseFrame(
     val event: String,
     val data: String,
     val id: String? = null,
@@ -1371,9 +1371,9 @@ internal data class McpSseEvent(
             data += value
         }
 
-        suspend fun flush(onEvent: suspend (McpSseEvent) -> Unit) {
+        suspend fun flush(onEvent: suspend (McpSseFrame) -> Unit) {
             if (data.isEmpty()) return
-            onEvent(McpSseEvent(eventName, data.joinToString("\n"), eventId))
+            onEvent(McpSseFrame(eventName, data.joinToString("\n"), eventId))
             reset()
         }
 
@@ -1385,7 +1385,7 @@ internal data class McpSseEvent(
     }
 
     internal companion object {
-        suspend fun parseStream(channel: ByteReadChannel, onEvent: suspend (McpSseEvent) -> Unit) {
+        suspend fun parseStream(channel: ByteReadChannel, onEvent: suspend (McpSseFrame) -> Unit) {
             val frame = FrameBuffer()
             while (true) {
                 val line = channel.readLine() ?: break

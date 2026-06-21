@@ -53,23 +53,6 @@ public data class TelemetryCall(
     val functionId: String? = null,
 )
 
-/** Fired before one step's model call — carries the EXACT prepared params sent to the provider. */
-public data class TelemetryModelCallEvent(
-    val stepNumber: Int,
-    val modelId: String?,
-    val params: LanguageModelCallParams,
-)
-
-/** Fired after one step's model call streamed to completion. */
-public data class TelemetryModelCallResultEvent(
-    val stepNumber: Int,
-    val modelId: String?,
-    val finishReason: FinishReason,
-    val usage: Usage,
-    val response: LanguageModelResponseMetadata = LanguageModelResponseMetadata(),
-    val rawFinishReason: String? = null,
-)
-
 /**
  * The v7 telemetry integration seam (upstream's `Telemetry`, the revamped
  * `TelemetryIntegration`): implement it ONCE and the loop feeds it every
@@ -80,8 +63,8 @@ public data class TelemetryModelCallResultEvent(
  * implement a `Telemetry` once and register it globally or pass it via
  * `telemetry.integrations`."
  *
- * Event payloads reuse the lifecycle hook event types ([OnStartEvent],
- * [OnStepFinishEvent], ...) — upstream: "The event types for each method are
+ * Event payloads reuse the lifecycle hook event types ([AgentEvent.Started],
+ * [AgentEvent.StepFinished], ...) — upstream: "The event types for each method are
  * the same as the corresponding event callbacks." Each is paired with the
  * invocation's [TelemetryCall] for correlation.
  *
@@ -94,19 +77,19 @@ public data class TelemetryModelCallResultEvent(
  */
 public interface Telemetry {
     public val name: String
-    public suspend fun onAgentStart(call: TelemetryCall, event: OnStartEvent) {}
-    public suspend fun onStepStart(call: TelemetryCall, event: OnStepStartEvent) {}
-    public suspend fun onModelCallStart(call: TelemetryCall, event: TelemetryModelCallEvent) {}
-    public suspend fun onModelCallFinish(call: TelemetryCall, event: TelemetryModelCallResultEvent) {}
-    public suspend fun onToolCallStart(call: TelemetryCall, event: OnToolCallStartEvent) {}
+    public suspend fun onAgentStart(call: TelemetryCall, event: AgentEvent.Started<*>) {}
+    public suspend fun onStepStart(call: TelemetryCall, event: AgentEvent.StepStarted) {}
+    public suspend fun onModelCallStart(call: TelemetryCall, event: AgentEvent.ModelCallStarted) {}
+    public suspend fun onModelCallFinish(call: TelemetryCall, event: AgentEvent.ModelCallFinished) {}
+    public suspend fun onToolCallStart(call: TelemetryCall, event: AgentEvent.ToolCallStarted) {}
 
     /** Exactly one of `outputJson`/`errorMessage` is non-null. NOT fired for a CANCELLED tool
      *  call — cancellation unwinds the loop, so integrations may see a start without a finish. */
-    public suspend fun onToolCallFinish(call: TelemetryCall, event: OnToolCallFinishEvent) {}
-    public suspend fun onStepFinish(call: TelemetryCall, event: OnStepFinishEvent) {}
-    public suspend fun onError(call: TelemetryCall, event: OnErrorEvent) {}
-    public suspend fun onAbort(call: TelemetryCall, event: OnAbortEvent) {}
-    public suspend fun onAgentFinish(call: TelemetryCall, event: OnFinishEvent) {}
+    public suspend fun onToolCallFinish(call: TelemetryCall, event: AgentEvent.ToolCallFinished) {}
+    public suspend fun onStepFinish(call: TelemetryCall, event: AgentEvent.StepFinished) {}
+    public suspend fun onError(call: TelemetryCall, event: AgentEvent.Errored) {}
+    public suspend fun onAbort(call: TelemetryCall, event: AgentEvent.Aborted) {}
+    public suspend fun onAgentFinish(call: TelemetryCall, event: AgentEvent.Finished<*, *>) {}
 
     /**
      * Telemetry registration + per-call resolution procedures. These are genuine
@@ -210,43 +193,43 @@ private class CompositeTelemetry(
 ) : Telemetry {
     override val name: String = "composite"
 
-    override suspend fun onAgentStart(call: TelemetryCall, event: OnStartEvent) {
+    override suspend fun onAgentStart(call: TelemetryCall, event: AgentEvent.Started<*>) {
         TelemetryBroadcast.run(integrations, logger) { it.onAgentStart(call, event) }
     }
 
-    override suspend fun onStepStart(call: TelemetryCall, event: OnStepStartEvent) {
+    override suspend fun onStepStart(call: TelemetryCall, event: AgentEvent.StepStarted) {
         TelemetryBroadcast.run(integrations, logger) { it.onStepStart(call, event) }
     }
 
-    override suspend fun onModelCallStart(call: TelemetryCall, event: TelemetryModelCallEvent) {
+    override suspend fun onModelCallStart(call: TelemetryCall, event: AgentEvent.ModelCallStarted) {
         TelemetryBroadcast.run(integrations, logger) { it.onModelCallStart(call, event) }
     }
 
-    override suspend fun onModelCallFinish(call: TelemetryCall, event: TelemetryModelCallResultEvent) {
+    override suspend fun onModelCallFinish(call: TelemetryCall, event: AgentEvent.ModelCallFinished) {
         TelemetryBroadcast.run(integrations, logger) { it.onModelCallFinish(call, event) }
     }
 
-    override suspend fun onToolCallStart(call: TelemetryCall, event: OnToolCallStartEvent) {
+    override suspend fun onToolCallStart(call: TelemetryCall, event: AgentEvent.ToolCallStarted) {
         TelemetryBroadcast.run(integrations, logger) { it.onToolCallStart(call, event) }
     }
 
-    override suspend fun onToolCallFinish(call: TelemetryCall, event: OnToolCallFinishEvent) {
+    override suspend fun onToolCallFinish(call: TelemetryCall, event: AgentEvent.ToolCallFinished) {
         TelemetryBroadcast.run(integrations, logger) { it.onToolCallFinish(call, event) }
     }
 
-    override suspend fun onStepFinish(call: TelemetryCall, event: OnStepFinishEvent) {
+    override suspend fun onStepFinish(call: TelemetryCall, event: AgentEvent.StepFinished) {
         TelemetryBroadcast.run(integrations, logger) { it.onStepFinish(call, event) }
     }
 
-    override suspend fun onError(call: TelemetryCall, event: OnErrorEvent) {
+    override suspend fun onError(call: TelemetryCall, event: AgentEvent.Errored) {
         TelemetryBroadcast.run(integrations, logger) { it.onError(call, event) }
     }
 
-    override suspend fun onAbort(call: TelemetryCall, event: OnAbortEvent) {
+    override suspend fun onAbort(call: TelemetryCall, event: AgentEvent.Aborted) {
         TelemetryBroadcast.run(integrations, logger) { it.onAbort(call, event) }
     }
 
-    override suspend fun onAgentFinish(call: TelemetryCall, event: OnFinishEvent) {
+    override suspend fun onAgentFinish(call: TelemetryCall, event: AgentEvent.Finished<*, *>) {
         TelemetryBroadcast.run(integrations, logger) { it.onAgentFinish(call, event) }
     }
 }

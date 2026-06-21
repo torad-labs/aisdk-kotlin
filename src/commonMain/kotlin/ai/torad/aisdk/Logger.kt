@@ -22,7 +22,7 @@ package ai.torad.aisdk
  *    these unless a debug-mode toggle is on.
  *
  * Errors are NOT routed here — those crash the loop via
- * [StreamEvent.Error] / `OnErrorEvent`, which is the typed channel
+ * [StreamEvent.Error] / `AgentEvent.Errored`, which is the typed channel
  * consumers should listen on.
  */
 public interface Logger {

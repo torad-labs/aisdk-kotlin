@@ -13,7 +13,7 @@ internal class TelemetryFeed(val tele: Telemetry, val call: TelemetryCall)
  */
 internal class AgentTelemetryDispatcher<TContext>(
     private val logger: Logger,
-    private val onError: (suspend OnErrorEvent.() -> Unit)?,
+    private val onError: (suspend AgentEvent.Errored.() -> Unit)?,
 ) {
     /**
      * Deliver one telemetry event, guarded: telemetry OBSERVES — an
@@ -34,7 +34,7 @@ internal class AgentTelemetryDispatcher<TContext>(
         }
     }
 
-    /** Run one guarded lifecycle-hook body. On failure: dispatch [OnErrorEvent]
+    /** Run one guarded lifecycle-hook body. On failure: dispatch [AgentEvent.Errored]
      *  to [onError] and telemetry, never propagate. */
     suspend fun runHook(
         stepNumber: Int,
@@ -46,7 +46,7 @@ internal class AgentTelemetryDispatcher<TContext>(
         } catch (ce: CancellationException) {
             throw ce
         } catch (t: Throwable) {
-            val event = OnErrorEvent(t, stepNumber, OnErrorEvent.ErrorSource.Hook)
+            val event = AgentEvent.Errored(t, stepNumber, AgentEvent.Errored.ErrorSource.Hook)
             try {
                 onError?.invoke(event)
             } catch (ce: CancellationException) {
@@ -58,15 +58,15 @@ internal class AgentTelemetryDispatcher<TContext>(
         }
     }
 
-    /** Fire [OnErrorEvent] to the agent-level hook, the per-call [hooks], and telemetry. */
+    /** Fire [AgentEvent.Errored] to the agent-level hook, the per-call [hooks], and telemetry. */
     suspend fun emitError(
         t: Throwable,
         stepNumber: Int,
-        source: OnErrorEvent.ErrorSource,
+        source: AgentEvent.Errored.ErrorSource,
         hooks: AgentCallHooks?,
         feed: TelemetryFeed? = null,
     ) {
-        val event = OnErrorEvent(t, stepNumber, source)
+        val event = AgentEvent.Errored(t, stepNumber, source)
         try { onError?.invoke(event) } catch (ce: CancellationException) { throw ce } catch (_: Throwable) {}
         try { hooks?.onError?.invoke(event) } catch (ce: CancellationException) { throw ce } catch (_: Throwable) {}
         fireTelemetry(feed) { onError(it, event) }

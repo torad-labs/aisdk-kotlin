@@ -39,7 +39,7 @@ class LifecycleHooksTest {
 
     @Test
     fun `hook_failure_does_not_crash_the_loop`() = runTest {
-        val errorsObserved = mutableListOf<OnErrorEvent.ErrorSource>()
+        val errorsObserved = mutableListOf<AgentEvent.Errored.ErrorSource>()
         val agent = TestToolLoopAgent<Unit, String>(
             model = MockLanguageModelTextOnly("ok"),
             instructions = "x",
@@ -49,39 +49,39 @@ class LifecycleHooksTest {
         )
         val result = agent.generate("go").first()
         assertEquals("ok", result.text, "loop completed despite hook failure")
-        assertTrue(errorsObserved.contains(OnErrorEvent.ErrorSource.Hook), "Hook source surfaced via onError")
+        assertTrue(errorsObserved.contains(AgentEvent.Errored.ErrorSource.Hook), "Hook source surfaced via onError")
     }
 
     @Test
     fun `tool finish typed success outcome is the primary event surface`() {
         val output = JsonPrimitive("ok")
-        val event = OnToolCallFinishEvent(
+        val event = AgentEvent.ToolCallFinished(
             toolCallId = "call_1",
             toolName = "tool",
-            outcome = OnToolCallFinishEvent.Outcome.Success(output),
+            outcome = AgentEvent.ToolCallFinished.Outcome.Success(output),
             stepNumber = 1,
         )
 
-        val outcome = assertIs<OnToolCallFinishEvent.Outcome.Success>(event.outcome)
+        val outcome = assertIs<AgentEvent.ToolCallFinished.Outcome.Success>(event.outcome)
         assertEquals(output, outcome.outputJson)
     }
 
     @Test
     fun `tool finish typed failure outcome is the primary event surface`() {
-        val event = OnToolCallFinishEvent(
+        val event = AgentEvent.ToolCallFinished(
             toolCallId = "call_1",
             toolName = "tool",
-            outcome = OnToolCallFinishEvent.Outcome.Failure("failed"),
+            outcome = AgentEvent.ToolCallFinished.Outcome.Failure("failed"),
             stepNumber = 1,
         )
 
-        val outcome = assertIs<OnToolCallFinishEvent.Outcome.Failure>(event.outcome)
+        val outcome = assertIs<AgentEvent.ToolCallFinished.Outcome.Failure>(event.outcome)
         assertEquals("failed", outcome.errorMessage)
     }
 
     @Test
     fun `tool finish hook observes typed outcome`() = runTest {
-        var observed: OnToolCallFinishEvent.Outcome? = null
+        var observed: AgentEvent.ToolCallFinished.Outcome? = null
         val pingTool = Tool<Empty, String, Unit>(
             name = "ping",
             description = "respond with pong",
@@ -103,7 +103,7 @@ class LifecycleHooksTest {
 
         agent.generate("go").first()
 
-        val outcome = assertIs<OnToolCallFinishEvent.Outcome.Success>(observed)
+        val outcome = assertIs<AgentEvent.ToolCallFinished.Outcome.Success>(observed)
         assertEquals(JsonPrimitive("pong"), outcome.outputJson)
     }
 }
