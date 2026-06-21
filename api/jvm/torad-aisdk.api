@@ -2588,6 +2588,7 @@ public final class ai/torad/aisdk/ImageModelResult {
 }
 
 public final class ai/torad/aisdk/ImageModelUsage {
+	public static final field Companion Lai/torad/aisdk/ImageModelUsage$Companion;
 	public fun <init> ()V
 	public fun <init> (Ljava/lang/Integer;Ljava/lang/Integer;Ljava/lang/Integer;)V
 	public synthetic fun <init> (Ljava/lang/Integer;Ljava/lang/Integer;Ljava/lang/Integer;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
@@ -2602,6 +2603,9 @@ public final class ai/torad/aisdk/ImageModelUsage {
 	public final fun getTotalTokens ()Ljava/lang/Integer;
 	public fun hashCode ()I
 	public fun toString ()Ljava/lang/String;
+}
+
+public final class ai/torad/aisdk/ImageModelUsage$Companion {
 }
 
 public final class ai/torad/aisdk/InMemoryDevToolsRecorder : ai/torad/aisdk/DevToolsRecorder {
@@ -4383,6 +4387,7 @@ public abstract class ai/torad/aisdk/Output {
 	public fun getSchemaDescription ()Ljava/lang/String;
 	public abstract fun getSchemaJson ()Ljava/lang/String;
 	public abstract fun getSchemaName ()Ljava/lang/String;
+	public final fun toResponseFormat ()Lai/torad/aisdk/ResponseFormat;
 }
 
 public final class ai/torad/aisdk/Output$Arr : ai/torad/aisdk/Output {
@@ -7244,12 +7249,16 @@ public final class ai/torad/aisdk/ToolSchemaOptions {
 }
 
 public final class ai/torad/aisdk/ToolSet {
+	public static final field Companion Lai/torad/aisdk/ToolSet$Companion;
 	public fun <init> (Ljava/util/Map;)V
 	public final fun find (Ljava/lang/String;)Lai/torad/aisdk/Tool;
 	public final fun getByName ()Ljava/util/Map;
 	public final fun getDescriptors ()Ljava/util/List;
 	public final fun names ()Ljava/util/List;
 	public final fun plus (Lai/torad/aisdk/ToolSet;)Lai/torad/aisdk/ToolSet;
+}
+
+public final class ai/torad/aisdk/ToolSet$Companion {
 }
 
 public final class ai/torad/aisdk/ToolSetBuilder {
