@@ -358,7 +358,7 @@
   "xray_fix": {
     "source": "docs/reports/pipeline-xray.md (14 confirmed + 7 low)",
     "decision": "address root cause structurally first (Opus leverage), then remaining findings",
-    "current_step": 2,
+    "current_step": 3,
     "steps": [
       {
         "n": 1,
@@ -376,7 +376,8 @@
         "what": "integrate-or-remove: StructuredObjectApi.kt (RECOMMEND, do not delete a whole subsystem without confirm), ProviderToolFactory* cluster (recommend); REMOVE clearly-dead: SimulateReadableStream, test-only ToolNameMapping/LazySchema/DefaultChatTransport, parity stubs (ToolCall.invalid), UIMessagePart.Data.transient, dead UrlOps.isSupported. Report integrated-vs-removed per item."
       }
     ],
-    "gate": "per step: compile+jvmTest green + finding addressed + no new hook violation; FINAL: full check + updateKotlinAbi + push"
+    "gate": "per step: compile+jvmTest green + finding addressed + no new hook violation; FINAL: full check + updateKotlinAbi + push",
+    "step2_done": "committed 7f44dbe+8b48a35: wire round-trip, ToolApprovalRequest signature (security), gateway isError, Source.sourceId, isError default, approvalId; ABI regen; gate+check green"
   },
   "agent_event_redesign": {
     "spec": "docs/reports/agent-event-redesign.md",
