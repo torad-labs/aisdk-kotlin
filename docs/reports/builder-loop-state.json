@@ -358,7 +358,7 @@
   "xray_fix": {
     "source": "docs/reports/pipeline-xray.md (14 confirmed + 7 low)",
     "decision": "address root cause structurally first (Opus leverage), then remaining findings",
-    "current_step": 1,
+    "current_step": 2,
     "steps": [
       {
         "n": 1,
