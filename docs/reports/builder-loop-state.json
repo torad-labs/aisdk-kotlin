@@ -213,7 +213,7 @@
   "p3": {
     "decision": "FULL DISSOLVE all 52 bag-objects (user override of scoped recommendation)",
     "principle": "re-home each fn onto the type it is behavior for, as a member or PRIVATE member-extension INSIDE the owning type/class; JsonObject->T decoders become T.Companion factories or private member-extensions inside the consuming model class; DELETE the bag object; do NOT create a new bag; no loose top-level fns/extensions (hook). Keep compile green each step.",
-    "current_p3_step": 1,
+    "current_p3_step": 2,
     "steps": [
       {
         "n": 1,
@@ -309,6 +309,14 @@
         "why": "remaining facades+audio"
       }
     ],
-    "gate": "per step: bag-objects in scope GONE + compileKotlinJvm+jvmTest green + no-camelcase-top-level-function=0 + no new bag object; FINAL: full ./gradlew check + updateKotlinAbi + push"
+    "gate": "per step: bag-objects in scope GONE + compileKotlinJvm+jvmTest green + no-camelcase-top-level-function=0 + no new bag object; FINAL: full ./gradlew check + updateKotlinAbi + push",
+    "step1_done": "committed b9ce294: 10/11 dissolved (Output/ToolSet/Chat/StreamMetadata/ToolCallRepair/UIMessage/Logging/Media/Collection/Json -> owning types) + 2 dead fns deleted. UrlOps KEPT as irreducible (encode: 6 unrelated consumers; withoutTrailingSlash: 1).",
+    "irreducible": [
+      {
+        "obj": "UrlOps",
+        "reason": "encode() is cross-cutting URL percent-encoding used by 6 unrelated providers/transports; no single owning type. Forcing a home = duplication.",
+        "evidence": "6 prod consumers"
+      }
+    ]
   }
 }
