@@ -213,7 +213,7 @@
   "p3": {
     "decision": "FULL DISSOLVE all 52 bag-objects (user override of scoped recommendation)",
     "principle": "re-home each fn onto the type it is behavior for, as a member or PRIVATE member-extension INSIDE the owning type/class; JsonObject->T decoders become T.Companion factories or private member-extensions inside the consuming model class; DELETE the bag object; do NOT create a new bag; no loose top-level fns/extensions (hook). Keep compile green each step.",
-    "current_p3_step": 7,
+    "current_p3_step": "COMPLETE",
     "steps": [
       {
         "n": 1,
@@ -352,6 +352,7 @@
     "step4_done": "committed a41cf0e: Google/GoogleVertex/AnthropicAws/Cohere/Mistral/Alibaba Wire dissolved (6); GoogleHttp kept (shared transport, 3+2 consumers); green",
     "step5_done": "committed c807f57: BedrockMapping/Fal/Bfl/ByteDance/Luma/KlingAI/HuggingFace dissolved (7); BedrockHttp kept (2-consumer shared transport); green",
     "step6_done": "committed 55f92c4: all 18 audio+facade Wires dissolved (XaiWire incl.); green",
-    "inventory_correction": "Orchestrator inventory undercounted (1 bag/file). 7 pre-existing bags missed: AnthropicWire(1), FacadeHttp(3), ProdiaWire(1), QuiverAIWire(1), ReplicateWire(1), TelemetryOps(2), TypedJsonOps(5 consumers). Added step 7 to finish them. No NEW bags created by P3 (all pre-existing)."
+    "inventory_correction": "Orchestrator inventory undercounted (1 bag/file). 7 pre-existing bags missed: AnthropicWire(1), FacadeHttp(3), ProdiaWire(1), QuiverAIWire(1), ReplicateWire(1), TelemetryOps(2), TypedJsonOps(5 consumers). Added step 7 to finish them. No NEW bags created by P3 (all pre-existing).",
+    "final": "58 bag objects dissolved across 7 steps; 6 irreducible shared-infra/cross-cutting utilities kept w/ consumer evidence (UrlOps, FacadeSupport, GoogleHttp, BedrockHttp, FacadeHttp, core TypedJsonOps); ABI regenerated; detekt baseline 3766->3692 (net -74); full check green."
   }
 }
