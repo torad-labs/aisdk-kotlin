@@ -8211,16 +8211,18 @@ public final class ai/torad/aisdk/providers/AssemblyAIProviderKt {
 public final class ai/torad/aisdk/providers/AssemblyAIProviderSettings {
 	public static final field Companion Lai/torad/aisdk/providers/AssemblyAIProviderSettings$Companion;
 	public fun <init> ()V
-	public fun <init> (Ljava/lang/String;Ljava/util/Map;J)V
-	public synthetic fun <init> (Ljava/lang/String;Ljava/util/Map;JILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun <init> (Ljava/lang/String;Ljava/util/Map;JI)V
+	public synthetic fun <init> (Ljava/lang/String;Ljava/util/Map;JIILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun component1 ()Ljava/lang/String;
 	public final fun component2 ()Ljava/util/Map;
 	public final fun component3 ()J
-	public final fun copy (Ljava/lang/String;Ljava/util/Map;J)Lai/torad/aisdk/providers/AssemblyAIProviderSettings;
-	public static synthetic fun copy$default (Lai/torad/aisdk/providers/AssemblyAIProviderSettings;Ljava/lang/String;Ljava/util/Map;JILjava/lang/Object;)Lai/torad/aisdk/providers/AssemblyAIProviderSettings;
+	public final fun component4 ()I
+	public final fun copy (Ljava/lang/String;Ljava/util/Map;JI)Lai/torad/aisdk/providers/AssemblyAIProviderSettings;
+	public static synthetic fun copy$default (Lai/torad/aisdk/providers/AssemblyAIProviderSettings;Ljava/lang/String;Ljava/util/Map;JIILjava/lang/Object;)Lai/torad/aisdk/providers/AssemblyAIProviderSettings;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getApiKey ()Ljava/lang/String;
 	public final fun getHeaders ()Ljava/util/Map;
+	public final fun getMaxPollAttempts ()I
 	public final fun getPollingIntervalMillis ()J
 	public fun hashCode ()I
 	public fun toString ()Ljava/lang/String;

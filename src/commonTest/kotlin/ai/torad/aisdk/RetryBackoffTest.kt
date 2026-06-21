@@ -56,7 +56,7 @@ class RetryBackoffTest {
     }
 
     @Test
-    fun `Retry-After above the 60s ceiling is capped, not dropped to backoff`() = runTest {
+    fun `Retry-After above the 60s ceiling is capped - not dropped to backoff`() = runTest {
         var attempt = 0
         val result = RetryPolicy(maxRetries = 1).execute<String> {
             if (attempt++ == 0) throw apiError("90")
