@@ -213,7 +213,7 @@
   "p3": {
     "decision": "FULL DISSOLVE all 52 bag-objects (user override of scoped recommendation)",
     "principle": "re-home each fn onto the type it is behavior for, as a member or PRIVATE member-extension INSIDE the owning type/class; JsonObject->T decoders become T.Companion factories or private member-extensions inside the consuming model class; DELETE the bag object; do NOT create a new bag; no loose top-level fns/extensions (hook). Keep compile green each step.",
-    "current_p3_step": 2,
+    "current_p3_step": 3,
     "steps": [
       {
         "n": 1,
@@ -317,6 +317,7 @@
         "reason": "encode() is cross-cutting URL percent-encoding used by 6 unrelated providers/transports; no single owning type. Forcing a home = duplication.",
         "evidence": "6 prod consumers"
       }
-    ]
+    ],
+    "step2_done": "committed ade4384: McpWire(106)+McpToolMapping dissolved onto protocol/client/transport types; MCP.kt 1533->1514 (no re-bloat); green"
   }
 }
