@@ -1,5 +1,6 @@
 package ai.torad.aisdk
 
+import ai.torad.aisdk.JSONRPCMessage.Companion.toJsonElement
 import io.ktor.http.HttpHeaders
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
@@ -320,11 +321,11 @@ class MCPClientTest {
 
     @Test
     fun `JSON-RPC parser maps requests notifications responses and errors`() {
-        assertIs<JSONRPCRequest>(McpWire.parseJSONRPCMessage("""{"jsonrpc":"2.0","id":1,"method":"tools/list"}"""))
-        assertIs<JSONRPCNotification>(McpWire.parseJSONRPCMessage("""{"jsonrpc":"2.0","method":"notifications/initialized"}"""))
-        assertIs<JSONRPCResponse>(McpWire.parseJSONRPCMessage("""{"jsonrpc":"2.0","id":1,"result":{"ok":true}}"""))
+        assertIs<JSONRPCRequest>(JSONRPCMessage.fromJson("""{"jsonrpc":"2.0","id":1,"method":"tools/list"}"""))
+        assertIs<JSONRPCNotification>(JSONRPCMessage.fromJson("""{"jsonrpc":"2.0","method":"notifications/initialized"}"""))
+        assertIs<JSONRPCResponse>(JSONRPCMessage.fromJson("""{"jsonrpc":"2.0","id":1,"result":{"ok":true}}"""))
         val error = assertIs<JSONRPCError>(
-            McpWire.parseJSONRPCMessage("""{"jsonrpc":"2.0","id":1,"error":{"code":-1,"message":"bad"}}"""),
+            JSONRPCMessage.fromJson("""{"jsonrpc":"2.0","id":1,"error":{"code":-1,"message":"bad"}}"""),
         )
         assertEquals(-1, error.error.code)
     }
@@ -332,10 +333,10 @@ class MCPClientTest {
     @Test
     fun `JSON-RPC parser rejects malformed envelopes through wire decoder`() {
         assertFailsWith<WireDecodeException> {
-            McpWire.parseJSONRPCMessage("""{"jsonrpc":"2.0","id":1,"method":"tools/list","unexpected":true}""")
+            JSONRPCMessage.fromJson("""{"jsonrpc":"2.0","id":1,"method":"tools/list","unexpected":true}""")
         }
         assertFailsWith<WireDecodeException> {
-            McpWire.parseJSONRPCMessage("""{"jsonrpc":"1.0","id":1,"method":"tools/list"}""")
+            JSONRPCMessage.fromJson("""{"jsonrpc":"1.0","id":1,"method":"tools/list"}""")
         }
     }
 
@@ -702,12 +703,12 @@ class MCPClientTest {
                         when {
                             request.method == "GET" -> UrlResponse.Error(status = 405, body = "GET not supported")
                             "\"method\":\"initialize\"" in request.body -> UrlResponse.JsonValue(
-                                McpWire.toJsonElement(JSONRPCResponse(id = JsonPrimitive(0), result = initializeResult())),
+                                JSONRPCResponse(id = JsonPrimitive(0), result = initializeResult()).toJsonElement(),
                                 headers = mapOf("mcp-session-id" to "session-1"),
                             )
                             "\"method\":\"notifications/initialized\"" in request.body -> UrlResponse.Empty(status = 202)
                             "\"method\":\"tools/list\"" in request.body ->
-                                UrlResponse.JsonValue(McpWire.toJsonElement(JSONRPCResponse(id = JsonPrimitive(1), result = listToolsResult())))
+                                UrlResponse.JsonValue(JSONRPCResponse(id = JsonPrimitive(1), result = listToolsResult()).toJsonElement())
                             else -> UrlResponse.Error(status = 500, body = "unexpected request: ${request.body}")
                         }
                     },
