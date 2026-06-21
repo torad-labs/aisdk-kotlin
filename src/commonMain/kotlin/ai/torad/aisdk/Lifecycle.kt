@@ -18,34 +18,35 @@ public data class OnStartEvent(
 )
 
 /**
- * Fired before each loop step's model call. Per historical parity gap #35,
- * the payload was extended from `(stepNumber, messages)` to carry the full
- * prepared [request] (post `prepareCall` + `prepareStep` overrides) plus
- * accumulated [priorSteps] so observers can:
+ * Fired before each loop step's model call, AFTER `prepareCall` +
+ * `prepareStep` have resolved it. Per historical parity gap #35, the
+ * payload carries the full prepared [request] plus accumulated
+ * [priorSteps] so observers can:
  *
  * - Inspect the EXACT params being sent (system prompt, tool subset,
  *   sampler overrides) — useful for telemetry and reproduction.
  * - Read prior-step output without re-walking the [StepResult] list
  *   from a separate accumulator.
  *
- * Both new fields default to null / empty so existing observers keep
- * working unchanged. Loop-side population is staged in as a follow-up;
- * the type surface is in place now.
+ * [request] and [priorSteps] are REQUIRED (no defaults): the loop fires
+ * this event only after the call params exist, so there is no
+ * "declared-but-permanently-empty" state — every construction site must
+ * supply the real data it has in scope.
  */
 public data class OnStepStartEvent(
     val stepNumber: Int,
     val messages: List<ModelMessage>,
     /**
-     * The prepared call params for this step. Null when the loop
-     * hasn't yet wired the field (back-compat). When set, includes
-     * the resolved system prompt, tool subset, sampler params, etc.
+     * The fully-resolved call params for this step: resolved system
+     * prompt, tool subset, sampler params, etc., after the
+     * `prepareCall`/`prepareStep` overrides have been applied.
      */
-    val request: LanguageModelCallParams? = null,
+    val request: LanguageModelCallParams,
     /**
      * Accumulated prior-step results — `priorSteps[i]` is step i+1's
      * outcome. Empty on step 1.
      */
-    val priorSteps: List<StepResult> = emptyList(),
+    val priorSteps: List<StepResult>,
 )
 
 public data class OnStepFinishEvent(
