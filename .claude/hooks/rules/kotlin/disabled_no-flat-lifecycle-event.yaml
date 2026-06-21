@@ -1,0 +1,20 @@
+id: no-flat-lifecycle-event
+language: kotlin
+severity: error
+# STAGED (disabled_ prefix => policy skips it) until the AgentEvent redesign lands.
+# Activate by renaming to no-flat-lifecycle-event.yaml IN THE SAME COMMIT that converts
+# the 9 flat lifecycle events into sealed `AgentEvent` subtypes — otherwise it red-gates
+# the pre-redesign tree. Once active it runs in BOTH the Claude PreToolUse hook and the
+# whole-tree ci-gate.
+#
+# Enforces: a top-level `data class …Event` MUST be a subtype of the sealed event
+# hierarchy (have a `: AgentEvent()` supertype), never a free-floating flat struct.
+# Tested: matches a flat `OnFooEvent(...)`; skips `… : AgentEvent()` subtypes and
+# non-event data classes.
+rule:
+  all:
+    - kind: class_declaration
+    - inside: { kind: source_file }
+    - has: { kind: type_identifier, regex: 'Event$', stopBy: neighbor }
+    - has: { kind: modifiers, has: { kind: class_modifier, regex: 'data' } }
+    - not: { has: { kind: delegation_specifier, stopBy: neighbor } }

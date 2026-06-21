@@ -30,9 +30,12 @@ except Exception: print(0)'
 
 echo "== architecture gate: error-severity ast-grep rules =="
 for f in "$RULES_DIR"/*.yaml; do
+  base=$(basename "$f" .yaml)
+  # Honor the `disabled_` convention (same as the Claude PreToolUse policy): staged
+  # rules are not enforced until renamed to activate.
+  case "$base" in disabled_*) continue ;; esac
   sev=$(grep -m1 '^severity:' "$f" | cut -d' ' -f2)
   [ "$sev" = "error" ] || continue
-  base=$(basename "$f" .yaml)
   # JVM-platform rules are legitimate in JVM source sets — scope them out (matches the policy).
   case "$base" in
     no-java-import|no-thread-sleep|no-string-format|no-print-stack-trace)
