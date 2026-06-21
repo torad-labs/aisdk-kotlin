@@ -9925,7 +9925,7 @@ final class ai.torad.aisdk/LanguageModelRequestMetadata { // ai.torad.aisdk/Lang
 }
 
 final class ai.torad.aisdk/LanguageModelResponseMetadata { // ai.torad.aisdk/LanguageModelResponseMetadata|null[0]
-    constructor <init>(kotlin/String? = ..., kotlin/Long? = ..., kotlin/String? = ..., kotlin.collections/Map<kotlin/String, kotlin/String> = ..., kotlinx.serialization.json/JsonElement? = ..., kotlin.collections/List<ai.torad.aisdk/ModelMessage> = ...) // ai.torad.aisdk/LanguageModelResponseMetadata.<init>|<init>(kotlin.String?;kotlin.Long?;kotlin.String?;kotlin.collections.Map<kotlin.String,kotlin.String>;kotlinx.serialization.json.JsonElement?;kotlin.collections.List<ai.torad.aisdk.ModelMessage>){}[0]
+    constructor <init>(kotlin/String? = ..., kotlin/Long? = ..., kotlin/String? = ..., kotlin.collections/Map<kotlin/String, kotlin/String> = ..., kotlinx.serialization.json/JsonElement? = ...) // ai.torad.aisdk/LanguageModelResponseMetadata.<init>|<init>(kotlin.String?;kotlin.Long?;kotlin.String?;kotlin.collections.Map<kotlin.String,kotlin.String>;kotlinx.serialization.json.JsonElement?){}[0]
 
     final val body // ai.torad.aisdk/LanguageModelResponseMetadata.body|{}body[0]
         final fun <get-body>(): kotlinx.serialization.json/JsonElement? // ai.torad.aisdk/LanguageModelResponseMetadata.body.<get-body>|<get-body>(){}[0]
@@ -9933,8 +9933,6 @@ final class ai.torad.aisdk/LanguageModelResponseMetadata { // ai.torad.aisdk/Lan
         final fun <get-headers>(): kotlin.collections/Map<kotlin/String, kotlin/String> // ai.torad.aisdk/LanguageModelResponseMetadata.headers.<get-headers>|<get-headers>(){}[0]
     final val id // ai.torad.aisdk/LanguageModelResponseMetadata.id|{}id[0]
         final fun <get-id>(): kotlin/String? // ai.torad.aisdk/LanguageModelResponseMetadata.id.<get-id>|<get-id>(){}[0]
-    final val messages // ai.torad.aisdk/LanguageModelResponseMetadata.messages|{}messages[0]
-        final fun <get-messages>(): kotlin.collections/List<ai.torad.aisdk/ModelMessage> // ai.torad.aisdk/LanguageModelResponseMetadata.messages.<get-messages>|<get-messages>(){}[0]
     final val modelId // ai.torad.aisdk/LanguageModelResponseMetadata.modelId|{}modelId[0]
         final fun <get-modelId>(): kotlin/String? // ai.torad.aisdk/LanguageModelResponseMetadata.modelId.<get-modelId>|<get-modelId>(){}[0]
     final val timestampMillis // ai.torad.aisdk/LanguageModelResponseMetadata.timestampMillis|{}timestampMillis[0]
@@ -9945,8 +9943,7 @@ final class ai.torad.aisdk/LanguageModelResponseMetadata { // ai.torad.aisdk/Lan
     final fun component3(): kotlin/String? // ai.torad.aisdk/LanguageModelResponseMetadata.component3|component3(){}[0]
     final fun component4(): kotlin.collections/Map<kotlin/String, kotlin/String> // ai.torad.aisdk/LanguageModelResponseMetadata.component4|component4(){}[0]
     final fun component5(): kotlinx.serialization.json/JsonElement? // ai.torad.aisdk/LanguageModelResponseMetadata.component5|component5(){}[0]
-    final fun component6(): kotlin.collections/List<ai.torad.aisdk/ModelMessage> // ai.torad.aisdk/LanguageModelResponseMetadata.component6|component6(){}[0]
-    final fun copy(kotlin/String? = ..., kotlin/Long? = ..., kotlin/String? = ..., kotlin.collections/Map<kotlin/String, kotlin/String> = ..., kotlinx.serialization.json/JsonElement? = ..., kotlin.collections/List<ai.torad.aisdk/ModelMessage> = ...): ai.torad.aisdk/LanguageModelResponseMetadata // ai.torad.aisdk/LanguageModelResponseMetadata.copy|copy(kotlin.String?;kotlin.Long?;kotlin.String?;kotlin.collections.Map<kotlin.String,kotlin.String>;kotlinx.serialization.json.JsonElement?;kotlin.collections.List<ai.torad.aisdk.ModelMessage>){}[0]
+    final fun copy(kotlin/String? = ..., kotlin/Long? = ..., kotlin/String? = ..., kotlin.collections/Map<kotlin/String, kotlin/String> = ..., kotlinx.serialization.json/JsonElement? = ...): ai.torad.aisdk/LanguageModelResponseMetadata // ai.torad.aisdk/LanguageModelResponseMetadata.copy|copy(kotlin.String?;kotlin.Long?;kotlin.String?;kotlin.collections.Map<kotlin.String,kotlin.String>;kotlinx.serialization.json.JsonElement?){}[0]
     final fun equals(kotlin/Any?): kotlin/Boolean // ai.torad.aisdk/LanguageModelResponseMetadata.equals|equals(kotlin.Any?){}[0]
     final fun hashCode(): kotlin/Int // ai.torad.aisdk/LanguageModelResponseMetadata.hashCode|hashCode(){}[0]
     final fun toString(): kotlin/String // ai.torad.aisdk/LanguageModelResponseMetadata.toString|toString(){}[0]
@@ -11143,22 +11140,22 @@ final class ai.torad.aisdk/OnStepFinishEvent { // ai.torad.aisdk/OnStepFinishEve
 }
 
 final class ai.torad.aisdk/OnStepStartEvent { // ai.torad.aisdk/OnStepStartEvent|null[0]
-    constructor <init>(kotlin/Int, kotlin.collections/List<ai.torad.aisdk/ModelMessage>, ai.torad.aisdk/LanguageModelCallParams? = ..., kotlin.collections/List<ai.torad.aisdk/StepResult> = ...) // ai.torad.aisdk/OnStepStartEvent.<init>|<init>(kotlin.Int;kotlin.collections.List<ai.torad.aisdk.ModelMessage>;ai.torad.aisdk.LanguageModelCallParams?;kotlin.collections.List<ai.torad.aisdk.StepResult>){}[0]
+    constructor <init>(kotlin/Int, kotlin.collections/List<ai.torad.aisdk/ModelMessage>, ai.torad.aisdk/LanguageModelCallParams, kotlin.collections/List<ai.torad.aisdk/StepResult>) // ai.torad.aisdk/OnStepStartEvent.<init>|<init>(kotlin.Int;kotlin.collections.List<ai.torad.aisdk.ModelMessage>;ai.torad.aisdk.LanguageModelCallParams;kotlin.collections.List<ai.torad.aisdk.StepResult>){}[0]
 
     final val messages // ai.torad.aisdk/OnStepStartEvent.messages|{}messages[0]
         final fun <get-messages>(): kotlin.collections/List<ai.torad.aisdk/ModelMessage> // ai.torad.aisdk/OnStepStartEvent.messages.<get-messages>|<get-messages>(){}[0]
     final val priorSteps // ai.torad.aisdk/OnStepStartEvent.priorSteps|{}priorSteps[0]
         final fun <get-priorSteps>(): kotlin.collections/List<ai.torad.aisdk/StepResult> // ai.torad.aisdk/OnStepStartEvent.priorSteps.<get-priorSteps>|<get-priorSteps>(){}[0]
     final val request // ai.torad.aisdk/OnStepStartEvent.request|{}request[0]
-        final fun <get-request>(): ai.torad.aisdk/LanguageModelCallParams? // ai.torad.aisdk/OnStepStartEvent.request.<get-request>|<get-request>(){}[0]
+        final fun <get-request>(): ai.torad.aisdk/LanguageModelCallParams // ai.torad.aisdk/OnStepStartEvent.request.<get-request>|<get-request>(){}[0]
     final val stepNumber // ai.torad.aisdk/OnStepStartEvent.stepNumber|{}stepNumber[0]
         final fun <get-stepNumber>(): kotlin/Int // ai.torad.aisdk/OnStepStartEvent.stepNumber.<get-stepNumber>|<get-stepNumber>(){}[0]
 
     final fun component1(): kotlin/Int // ai.torad.aisdk/OnStepStartEvent.component1|component1(){}[0]
     final fun component2(): kotlin.collections/List<ai.torad.aisdk/ModelMessage> // ai.torad.aisdk/OnStepStartEvent.component2|component2(){}[0]
-    final fun component3(): ai.torad.aisdk/LanguageModelCallParams? // ai.torad.aisdk/OnStepStartEvent.component3|component3(){}[0]
+    final fun component3(): ai.torad.aisdk/LanguageModelCallParams // ai.torad.aisdk/OnStepStartEvent.component3|component3(){}[0]
     final fun component4(): kotlin.collections/List<ai.torad.aisdk/StepResult> // ai.torad.aisdk/OnStepStartEvent.component4|component4(){}[0]
-    final fun copy(kotlin/Int = ..., kotlin.collections/List<ai.torad.aisdk/ModelMessage> = ..., ai.torad.aisdk/LanguageModelCallParams? = ..., kotlin.collections/List<ai.torad.aisdk/StepResult> = ...): ai.torad.aisdk/OnStepStartEvent // ai.torad.aisdk/OnStepStartEvent.copy|copy(kotlin.Int;kotlin.collections.List<ai.torad.aisdk.ModelMessage>;ai.torad.aisdk.LanguageModelCallParams?;kotlin.collections.List<ai.torad.aisdk.StepResult>){}[0]
+    final fun copy(kotlin/Int = ..., kotlin.collections/List<ai.torad.aisdk/ModelMessage> = ..., ai.torad.aisdk/LanguageModelCallParams = ..., kotlin.collections/List<ai.torad.aisdk/StepResult> = ...): ai.torad.aisdk/OnStepStartEvent // ai.torad.aisdk/OnStepStartEvent.copy|copy(kotlin.Int;kotlin.collections.List<ai.torad.aisdk.ModelMessage>;ai.torad.aisdk.LanguageModelCallParams;kotlin.collections.List<ai.torad.aisdk.StepResult>){}[0]
     final fun equals(kotlin/Any?): kotlin/Boolean // ai.torad.aisdk/OnStepStartEvent.equals|equals(kotlin.Any?){}[0]
     final fun hashCode(): kotlin/Int // ai.torad.aisdk/OnStepStartEvent.hashCode|hashCode(){}[0]
     final fun toString(): kotlin/String // ai.torad.aisdk/OnStepStartEvent.toString|toString(){}[0]
