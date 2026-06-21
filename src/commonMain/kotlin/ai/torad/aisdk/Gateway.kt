@@ -19,16 +19,6 @@ public const val GATEWAY_AUTH_METHOD_HEADER: String = "ai-gateway-auth-method"
 public enum class GatewayAuthMethod(public val wireValue: String) {
     ApiKey("api-key"),
     Oidc("oidc"),
-    ;
-
-    internal companion object {
-        internal fun fromHeaders(headers: Map<String, String?>): GatewayAuthMethod? =
-            when (headers[GATEWAY_AUTH_METHOD_HEADER]) {
-                ApiKey.wireValue -> ApiKey
-                Oidc.wireValue -> Oidc
-                else -> null
-            }
-    }
 }
 
 public data class GatewayAuthToken(

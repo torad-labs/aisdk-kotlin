@@ -101,8 +101,6 @@ public sealed class ContentPart {
         val providerExecuted: Boolean = false,
         /** Call made against a dynamic (runtime-typed) tool. v6 parity. */
         val dynamic: Boolean = false,
-        /** Model emitted a malformed/unrepairable tool call. v6 parity. */
-        val invalid: Boolean = false,
         @EncodeDefault(EncodeDefault.Mode.NEVER)
         val providerMetadata: ProviderMetadata = ProviderMetadata.None,
     ) : ContentPart() {

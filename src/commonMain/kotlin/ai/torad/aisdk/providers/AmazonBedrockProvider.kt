@@ -433,8 +433,3 @@ private class BedrockMantleChatLanguageModel(
         else -> FinishReason.Other
     }
 }
-
-internal object BedrockUserAgent {
-    fun appendUserAgent(existing: String?, suffix: String): String =
-        existing?.takeIf { it.isNotBlank() }?.let { "$it $suffix" } ?: suffix
-}
