@@ -208,5 +208,107 @@
       "after": "P2",
       "status": "queued"
     }
-  ]
+  ],
+  "p2_done": "committed 460066f: jvmAndAndroidMain collapse + applyDefaultHierarchyTemplate + hook scoping fix; full check green; PR #10 CI green.",
+  "p3": {
+    "decision": "FULL DISSOLVE all 52 bag-objects (user override of scoped recommendation)",
+    "principle": "re-home each fn onto the type it is behavior for, as a member or PRIVATE member-extension INSIDE the owning type/class; JsonObject->T decoders become T.Companion factories or private member-extensions inside the consuming model class; DELETE the bag object; do NOT create a new bag; no loose top-level fns/extensions (hook). Keep compile green each step.",
+    "current_p3_step": 1,
+    "steps": [
+      {
+        "n": 1,
+        "name": "core-ops",
+        "objs": [
+          "OutputOps",
+          "ToolSetOps",
+          "ChatStateOps",
+          "StreamMetadataOps",
+          "ToolCallRepairOps",
+          "CollectionOps",
+          "JsonOps",
+          "UrlOps",
+          "MediaSupport",
+          "UIMessageWire",
+          "LoggingWire"
+        ],
+        "why": "clear behavior-on-type wins; establishes the pattern"
+      },
+      {
+        "n": 2,
+        "name": "mcp",
+        "objs": [
+          "McpWire",
+          "McpToolMapping"
+        ],
+        "why": "McpWire 106 fns \u2014 biggest; onto MCP client/protocol types"
+      },
+      {
+        "n": 3,
+        "name": "openai-family",
+        "objs": [
+          "GatewayWire",
+          "OpenResponsesWire",
+          "OpenAIWire",
+          "OpenAICompatibleWire",
+          "FacadeSupport"
+        ],
+        "why": "gateway+openai+compatible"
+      },
+      {
+        "n": 4,
+        "name": "google-anthropic-cohere-mistral-alibaba",
+        "objs": [
+          "GoogleWire",
+          "GoogleVertexWire",
+          "GoogleHttp",
+          "AnthropicAwsWire",
+          "CohereWire",
+          "MistralWire",
+          "AlibabaWire"
+        ],
+        "why": ""
+      },
+      {
+        "n": 5,
+        "name": "bedrock-media",
+        "objs": [
+          "BedrockMapping",
+          "BedrockHttp",
+          "FalWire",
+          "BflWire",
+          "ByteDanceWire",
+          "LumaWire",
+          "KlingAIWire",
+          "HuggingFaceWire"
+        ],
+        "why": ""
+      },
+      {
+        "n": 6,
+        "name": "audio-and-facades",
+        "objs": [
+          "DeepgramWire",
+          "AssemblyAIWire",
+          "RevaiWire",
+          "ElevenLabsWire",
+          "HumeWire",
+          "LMNTWire",
+          "VoyageWire",
+          "XaiWire",
+          "FireworksWire",
+          "TogetherAIWire",
+          "GroqWire",
+          "DeepInfraWire",
+          "PerplexityWire",
+          "DeepSeekWire",
+          "CerebrasWire",
+          "MoonshotAIWire",
+          "VercelWire",
+          "BasetenWire"
+        ],
+        "why": "remaining facades+audio"
+      }
+    ],
+    "gate": "per step: bag-objects in scope GONE + compileKotlinJvm+jvmTest green + no-camelcase-top-level-function=0 + no new bag object; FINAL: full ./gradlew check + updateKotlinAbi + push"
+  }
 }
