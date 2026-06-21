@@ -270,7 +270,23 @@ private object ProdiaWire {
 
     suspend fun prodiaInputFile(client: HttpClient, file: GeneratedFile): ProdiaInputFile {
         val bytes = file.url?.takeIf { it.isNotBlank() }
-            ?.let { client.request(it).bodyAsBytes() }
+            ?.let { url ->
+                // Ktor isn't configured with expectSuccess, so check the status manually (every
+                // sibling download helper does) — otherwise a 404/500 error page is uploaded as
+                // the input image, surfacing as a confusing downstream Prodia rejection.
+                val response = client.request(url)
+                val body = response.bodyAsBytes()
+                if (response.status.value !in 200..299) {
+                    throw ApiCallError(
+                        url = url,
+                        statusCode = response.status.value,
+                        rawBody = body.decodeToString(),
+                        headers = with(HttpTransport) { response.flattenedHeaders() },
+                        message = "Prodia input file download failed with status ${response.status.value}",
+                    )
+                }
+                body
+            }
             ?: Base64Codec.decode(file.base64)
         return ProdiaInputFile(file.mediaType, bytes, file.filename)
     }

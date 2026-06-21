@@ -134,7 +134,17 @@ private class ReplicateImageModel(
                 extraHeaders = ReplicateWire.replicatePreferHeader(options),
             ),
         )
-        val output = response.value.jsonObject["output"]
+        val prediction = response.value.jsonObject
+        // Inspect a terminal failure status BEFORE the output check so a failed/canceled prediction
+        // surfaces its real `error` instead of a generic "missing output". Read status leniently
+        // (don't require it) — a successful prefer=wait body need not carry one.
+        when (prediction["status"]?.jsonPrimitive?.contentOrNull) {
+            "failed" -> throw NoImageGeneratedError(
+                "Replicate image generation failed: ${prediction["error"]?.jsonPrimitive?.contentOrNull ?: "Unknown error"}",
+            )
+            "canceled" -> throw NoImageGeneratedError("Replicate image generation was canceled")
+        }
+        val output = prediction["output"]
             ?: throw NoImageGeneratedError("Replicate image response is missing output")
         val imageUrls = when (output) {
             is JsonArray -> output.map { it.jsonPrimitive.contentOrNull ?: throw InvalidResponseDataError(output, "Replicate image output contains a non-string URL") }

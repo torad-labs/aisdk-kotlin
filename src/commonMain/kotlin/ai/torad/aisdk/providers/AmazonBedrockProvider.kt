@@ -292,7 +292,10 @@ private class BedrockRerankingModel(
     override suspend fun rerank(params: RerankingParams): RerankingModelResult {
         params.abortSignal.throwIfAborted()
         val options = params.providerOptions.toMap()["bedrock"] as? JsonObject ?: JsonObject(emptyMap())
-        val body = BedrockRequest.bedrockRerankBody(settings.region ?: "us-east-1", modelId, params, options)
+        // Default region must match bedrockAgentRuntimeBaseURL's "us-west-2" default — the ARN
+        // region is validated against the endpoint region, so a us-east-1 ARN on the us-west-2
+        // endpoint failed every out-of-the-box rerank call.
+        val body = BedrockRequest.bedrockRerankBody(settings.region ?: "us-west-2", modelId, params, options)
         val response = BedrockHttp.bedrockPostJson(
             client = client,
             url = "${BedrockHttp.bedrockAgentRuntimeBaseURL(settings)}/rerank",
