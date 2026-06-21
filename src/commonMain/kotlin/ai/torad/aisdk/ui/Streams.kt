@@ -1,12 +1,14 @@
 package ai.torad.aisdk.ui
 
 import ai.torad.aisdk.StreamEvent
+import ai.torad.aisdk.aiSdkJson
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.channelFlow
 import kotlinx.coroutines.flow.filterIsInstance
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
+import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.JsonElement
 
 public data class TextStreamResponse(
@@ -144,7 +146,10 @@ public object UiMessageStreams {
     public suspend fun pipeUiMessageStreamToResponse(
         stream: Flow<UIMessage>,
         response: ServerResponseWriter,
-        encoder: (UIMessage) -> String = { it.toString() },
+        // Default to real SSE framing (`data: <json>\n\n`) matching the text/event-stream
+        // content-type — the old `it.toString()` wrote Kotlin debug output that no SSE client
+        // can parse. Callers needing a different wire shape still pass their own encoder.
+        encoder: (UIMessage) -> String = { "data: ${aiSdkJson.encodeToString(it)}\n\n" },
         status: Int = 200,
         headers: Map<String, String> = uiMessageStreamHeaders(),
     ) {
@@ -164,7 +169,8 @@ public object UiMessageStreams {
     }
 
     public fun validateUiMessages(messages: List<UIMessage>) {
-        require(messages.isNotEmpty()) { "Messages array must not be empty" }
+        // An empty list is valid (it is the default constructor state) — `setMessages(emptyList())`
+        // is the canonical "clear chat" op. Validate only id uniqueness / non-blank / non-empty parts.
         val ids = mutableSetOf<String>()
         for (message in messages) {
             require(message.id.isNotBlank()) { "UIMessage.id must not be blank" }

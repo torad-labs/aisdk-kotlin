@@ -58,6 +58,12 @@ public fun StreamToUiMessages(
         for ((key, value) in partIndexById.toMap()) {
             if (value > removedIndex) partIndexById[key] = value - 1
         }
+        // dataPartIndexById also stores ABSOLUTE part indices — it must shift too, or a keyed Raw
+        // data part recorded after the removed placeholder gets a stale index and a later upsert
+        // overwrites the wrong part (or appends a duplicate).
+        for ((key, value) in dataPartIndexById.toMap()) {
+            if (value > removedIndex) dataPartIndexById[key] = value - 1
+        }
     }
 
     fun openTextPart(id: String) {
@@ -268,17 +274,34 @@ public fun StreamToUiMessages(
                     ?.let { parts[it] as? UIMessagePart.ToolUI }
                     ?.input
                 val deniedOutput = event.output as? ToolResultOutput.ExecutionDenied
+                // A result that returned can still signal failure — output type Error/ErrorJson, or
+                // an MCP Content(isError=true). event.isError captures all of these; render it as
+                // OutputError (not a green OutputAvailable card) and surface the error text.
+                val resultState = when {
+                    deniedOutput != null -> ToolCallState.OutputDenied
+                    event.isError -> ToolCallState.OutputError
+                    else -> ToolCallState.OutputAvailable
+                }
+                val resultError = when {
+                    deniedOutput != null -> deniedOutput.reason
+                    event.isError -> when (val out = event.output) {
+                        is ToolResultOutput.Error -> out.message
+                        is ToolResultOutput.ErrorJson -> out.json.toString()
+                        is ToolResultOutput.Text,
+                        is ToolResultOutput.Json,
+                        is ToolResultOutput.ExecutionDenied,
+                        is ToolResultOutput.Content,
+                        -> event.outputJson.toString()
+                    }
+                    else -> null
+                }
                 upsertTool(
                     toolCallId = event.toolCallId,
                     toolName = event.toolName,
-                    state = if (deniedOutput != null) {
-                        ToolCallState.OutputDenied
-                    } else {
-                        ToolCallState.OutputAvailable
-                    },
+                    state = resultState,
                     input = existingInput,
                     output = event.outputJson,
-                    error = deniedOutput?.reason,
+                    error = resultError,
                     preliminary = event.preliminary,
                 )
                 emit(snapshot())

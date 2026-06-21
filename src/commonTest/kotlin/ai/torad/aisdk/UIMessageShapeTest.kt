@@ -110,6 +110,29 @@ class UIMessageShapeTest {
     }
 
     @Test
+    fun `given an errored ToolResult when converted then it renders as OutputError not a success card`() = runTest {
+        // An MCP-style tool that returns isError=true WITHOUT being ExecutionDenied must render as
+        // OutputError with surfaced error text — not a green OutputAvailable card (error-masking).
+        val events = flowOf(
+            StreamEvent.StreamStart(),
+            StreamEvent.ToolCall("call_1", "search", JsonPrimitive("{}")),
+            StreamEvent.ToolResult(
+                toolCallId = "call_1",
+                toolName = "search",
+                outputJson = JsonPrimitive("boom: upstream 500"),
+                output = ToolResultOutput.Error("boom: upstream 500"),
+            ),
+            StreamEvent.Finish(1, FinishReason.Stop, Usage()),
+        )
+
+        val tool = drainAllItems(StreamToUiMessages(events, assistantMessageId = "asst_err"))
+            .last().parts.filterIsInstance<UIMessagePart.ToolUI>().single()
+
+        assertEquals(ToolCallState.OutputError, tool.state, "errored ToolResult must not render as OutputAvailable")
+        assertNotNull(tool.error, "errored ToolResult must surface error text")
+    }
+
+    @Test
     fun `given a DynamicToolUI part when constructed then it carries the same lifecycle fields as ToolUI`() {
         // GIVEN
         val dyn = UIMessagePart.DynamicToolUI(
