@@ -55,13 +55,13 @@ import kotlinx.serialization.json.put
  */
 @OptIn(ExperimentalSerializationApi::class)
 @Serializable
-public sealed interface StreamEvent {
+public sealed class StreamEvent {
 
     /** Stream began. Emitted exactly once at the very top. */
     @Serializable
     public data class StreamStart(
         val warnings: List<CallWarning> = emptyList(),
-    ) : StreamEvent
+    ) : StreamEvent()
 
     /**
      * Provider response metadata that becomes available after the
@@ -76,7 +76,7 @@ public sealed interface StreamEvent {
         val modelId: String? = null,
         val headers: Map<String, String> = emptyMap(),
         val body: JsonElement? = null,
-    ) : StreamEvent {
+    ) : StreamEvent() {
         internal fun toLanguageModelResponseMetadata(): LanguageModelResponseMetadata =
             LanguageModelResponseMetadata(
                 id = id,
@@ -111,14 +111,14 @@ public sealed interface StreamEvent {
         val stepNumber: Int,
         @EncodeDefault(EncodeDefault.Mode.NEVER)
         val providerMetadata: ProviderMetadata = ProviderMetadata.None,
-    ) : StreamEvent
+    ) : StreamEvent()
 
     @Serializable
     public data class TextStart(
         val id: String,
         @EncodeDefault(EncodeDefault.Mode.NEVER)
         val providerMetadata: ProviderMetadata = ProviderMetadata.None,
-    ) : StreamEvent
+    ) : StreamEvent()
 
     @Serializable
     public data class TextDelta(
@@ -126,21 +126,21 @@ public sealed interface StreamEvent {
         val text: String,
         @EncodeDefault(EncodeDefault.Mode.NEVER)
         val providerMetadata: ProviderMetadata = ProviderMetadata.None,
-    ) : StreamEvent
+    ) : StreamEvent()
 
     @Serializable
     public data class TextEnd(
         val id: String,
         @EncodeDefault(EncodeDefault.Mode.NEVER)
         val providerMetadata: ProviderMetadata = ProviderMetadata.None,
-    ) : StreamEvent
+    ) : StreamEvent()
 
     @Serializable
     public data class ReasoningStart(
         val id: String,
         @EncodeDefault(EncodeDefault.Mode.NEVER)
         val providerMetadata: ProviderMetadata = ProviderMetadata.None,
-    ) : StreamEvent
+    ) : StreamEvent()
 
     @Serializable
     public data class ReasoningDelta(
@@ -148,14 +148,14 @@ public sealed interface StreamEvent {
         val text: String,
         @EncodeDefault(EncodeDefault.Mode.NEVER)
         val providerMetadata: ProviderMetadata = ProviderMetadata.None,
-    ) : StreamEvent
+    ) : StreamEvent()
 
     @Serializable
     public data class ReasoningEnd(
         val id: String,
         @EncodeDefault(EncodeDefault.Mode.NEVER)
         val providerMetadata: ProviderMetadata = ProviderMetadata.None,
-    ) : StreamEvent
+    ) : StreamEvent()
 
     /** Citation / web grounding source. */
     @Serializable
@@ -167,7 +167,7 @@ public sealed interface StreamEvent {
         val mediaType: String? = null,
         @EncodeDefault(EncodeDefault.Mode.NEVER)
         val providerMetadata: ProviderMetadata = ProviderMetadata.None,
-    ) : StreamEvent {
+    ) : StreamEvent() {
         @Serializable
         public enum class SourceType { Url, Document }
     }
@@ -181,7 +181,7 @@ public sealed interface StreamEvent {
         val base64: String,
         @EncodeDefault(EncodeDefault.Mode.NEVER)
         val providerMetadata: ProviderMetadata = ProviderMetadata.None,
-    ) : StreamEvent
+    ) : StreamEvent()
 
     /** Tool input streaming opens — the model has decided which tool to call. */
     @Serializable
@@ -190,7 +190,7 @@ public sealed interface StreamEvent {
         val toolName: String,
         @EncodeDefault(EncodeDefault.Mode.NEVER)
         val providerMetadata: ProviderMetadata = ProviderMetadata.None,
-    ) : StreamEvent
+    ) : StreamEvent()
 
     /** Incremental input bytes for the in-flight tool call. */
     @Serializable
@@ -199,7 +199,7 @@ public sealed interface StreamEvent {
         val delta: String,
         @EncodeDefault(EncodeDefault.Mode.NEVER)
         val providerMetadata: ProviderMetadata = ProviderMetadata.None,
-    ) : StreamEvent
+    ) : StreamEvent()
 
     /** Tool input streaming ends — full JSON has been received. */
     @Serializable
@@ -207,7 +207,7 @@ public sealed interface StreamEvent {
         val id: String,
         @EncodeDefault(EncodeDefault.Mode.NEVER)
         val providerMetadata: ProviderMetadata = ProviderMetadata.None,
-    ) : StreamEvent
+    ) : StreamEvent()
 
     /** Final, parsed tool call envelope. Emitted once `ToolInputEnd` fires and JSON parses. */
     @Serializable
@@ -217,7 +217,7 @@ public sealed interface StreamEvent {
         val inputJson: JsonElement,
         @EncodeDefault(EncodeDefault.Mode.NEVER)
         val providerMetadata: ProviderMetadata = ProviderMetadata.None,
-    ) : StreamEvent
+    ) : StreamEvent()
 
     /**
      * Tool execution emitted a result. By default this is the final
@@ -245,7 +245,7 @@ public sealed interface StreamEvent {
         val preliminary: Boolean = false,
         @EncodeDefault(EncodeDefault.Mode.NEVER)
         val providerMetadata: ProviderMetadata = ProviderMetadata.None,
-    ) : StreamEvent
+    ) : StreamEvent()
 
     /**
      * Tool execution failed. [error] carries the typed [AgentError]
@@ -263,7 +263,7 @@ public sealed interface StreamEvent {
         @Transient val error: AgentError? = null,
         @EncodeDefault(EncodeDefault.Mode.NEVER)
         val providerMetadata: ProviderMetadata = ProviderMetadata.None,
-    ) : StreamEvent
+    ) : StreamEvent()
 
     /**
      * Tool requires approval. Per v6 RPC semantics, the loop **ends** after
@@ -288,7 +288,7 @@ public sealed interface StreamEvent {
         val signature: String? = null,
         @EncodeDefault(EncodeDefault.Mode.NEVER)
         val providerMetadata: ProviderMetadata = ProviderMetadata.None,
-    ) : StreamEvent
+    ) : StreamEvent()
 
     /**
      * The host denied a previously requested approval. v6's
@@ -305,7 +305,7 @@ public sealed interface StreamEvent {
         val reason: String? = null,
         @EncodeDefault(EncodeDefault.Mode.NEVER)
         val providerMetadata: ProviderMetadata = ProviderMetadata.None,
-    ) : StreamEvent
+    ) : StreamEvent()
 
     /** Step ended — aggregated finish reason + usage for that one step.
      *  Per historical parity gap #18 (slice), [providerMetadata]
@@ -321,7 +321,7 @@ public sealed interface StreamEvent {
          *  don't expose it. Mirrors v6's `finishStep.providerMetadata`. */
         @EncodeDefault(EncodeDefault.Mode.NEVER)
         val providerMetadata: ProviderMetadata = ProviderMetadata.None,
-    ) : StreamEvent
+    ) : StreamEvent()
 
     /** Loop ended — final aggregated finish reason + usage. */
     @Serializable
@@ -346,11 +346,11 @@ public sealed interface StreamEvent {
          *  Null when the provider does not send a finish-reason string (e.g. KtorGatewayTransport,
          *  which receives an already-mapped enum value on the wire). */
         val rawFinishReason: String? = null,
-    ) : StreamEvent
+    ) : StreamEvent()
 
     /** Generation aborted via [AbortSignal]. Loop unwinds. */
     @Serializable
-    public data object Abort : StreamEvent
+    public data object Abort : StreamEvent()
 
     /** Terminal error. Loop unwinds. */
     @Serializable
@@ -358,7 +358,7 @@ public sealed interface StreamEvent {
         val message: String,
         /** Typed cause when available, preserved to the boundary; not serialized. */
         @Transient val cause: Throwable? = null,
-    ) : StreamEvent
+    ) : StreamEvent()
 
     /**
      * Unprocessed provider-specific chunk. Escape hatch for cutting-edge
@@ -367,7 +367,7 @@ public sealed interface StreamEvent {
      * IS the provider payload, so no separate `providerMetadata` slot.
      */
     @Serializable
-    public data class Raw(val rawValue: JsonElement) : StreamEvent
+    public data class Raw(val rawValue: JsonElement) : StreamEvent()
 
     /**
      * Wire-protocol mapping helpers for [ai.torad.aisdk.ui.ToUIMessageStream]: the

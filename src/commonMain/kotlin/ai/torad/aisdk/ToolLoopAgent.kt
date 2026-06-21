@@ -92,15 +92,15 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
      * still applied to the message log in deterministic call order.
      */
     public val maxParallelToolCalls: Int = Int.MAX_VALUE,
-    public val onStart: (suspend OnStartEvent.() -> Unit)? = null,
-    public val onStepStart: (suspend OnStepStartEvent.() -> Unit)? = null,
-    public val onStepFinish: (suspend OnStepFinishEvent.() -> Unit)? = null,
-    public val onFinish: (suspend OnFinishEvent.() -> Unit)? = null,
-    public val onError: (suspend OnErrorEvent.() -> Unit)? = null,
-    public val onChunk: (suspend OnChunkEvent.() -> Unit)? = null,
-    public val onAbort: (suspend OnAbortEvent.() -> Unit)? = null,
-    public val experimental_onToolCallStart: (suspend OnToolCallStartEvent.() -> Unit)? = null,
-    public val experimental_onToolCallFinish: (suspend OnToolCallFinishEvent.() -> Unit)? = null,
+    public val onStart: (suspend AgentEvent.Started<TContext>.() -> Unit)? = null,
+    public val onStepStart: (suspend AgentEvent.StepStarted.() -> Unit)? = null,
+    public val onStepFinish: (suspend AgentEvent.StepFinished.() -> Unit)? = null,
+    public val onFinish: (suspend AgentEvent.Finished<TContext, TOutput>.() -> Unit)? = null,
+    public val onError: (suspend AgentEvent.Errored.() -> Unit)? = null,
+    public val onChunk: (suspend AgentEvent.Chunk.() -> Unit)? = null,
+    public val onAbort: (suspend AgentEvent.Aborted.() -> Unit)? = null,
+    public val experimental_onToolCallStart: (suspend AgentEvent.ToolCallStarted.() -> Unit)? = null,
+    public val experimental_onToolCallFinish: (suspend AgentEvent.ToolCallFinished.() -> Unit)? = null,
     /**
      * Self-healing callback fired when a tool call's arguments fail to
      * decode. Return a corrected call to retry, or null to surface
@@ -548,7 +548,7 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
         }
         emit(StreamEvent.StreamStart())
         // One immutable event shared by both hook invocations AND telemetry — the identical snapshot.
-        val startEvent = OnStartEvent(prompt, priorMessages, validatedOptions)
+        val startEvent = AgentEvent.Started(prompt, priorMessages, validatedOptions)
         dispatcher.runHook(0, feed) {
             onStart?.invoke(startEvent)
             hooks?.onStart?.invoke(startEvent)
@@ -562,7 +562,7 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
             } catch (ce: CancellationException) {
                 throw ce
             } catch (t: Throwable) {
-                dispatcher.emitError(t, 0, OnErrorEvent.ErrorSource.PrepareCall, hooks, feed)
+                dispatcher.emitError(t, 0, AgentEvent.Errored.ErrorSource.PrepareCall, hooks, feed)
                 emit(StreamEvent.Error(t.message ?: "prepareCall failed", cause = t))
                 finalMessagesRef?.value = priorMessages
                 return@flow
@@ -626,7 +626,7 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
         // StreamEvent.Abort and returns; this only does the side effects (it isn't the
         // FlowCollector, so it can't emit itself).
         suspend fun fireAbort() {
-            val abortEvent = OnAbortEvent(completedSteps.toList())
+            val abortEvent = AgentEvent.Aborted(completedSteps.toList())
             dispatcher.runHook(stepNumber, feed) {
                 onAbort?.invoke(abortEvent)
                 hooks?.onAbort?.invoke(abortEvent)
@@ -652,7 +652,7 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
                 } catch (ce: CancellationException) {
                     throw ce
                 } catch (t: Throwable) {
-                    dispatcher.emitError(t, stepNumber, OnErrorEvent.ErrorSource.PrepareStep, hooks, feed)
+                    dispatcher.emitError(t, stepNumber, AgentEvent.Errored.ErrorSource.PrepareStep, hooks, feed)
                     emit(StreamEvent.Error(t.message ?: "prepareStep failed", cause = t))
                     finalMessagesRef?.value = messages.toList()
                     return@flow
@@ -710,7 +710,7 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
             // Fire onStepStart AFTER prepareStep + callParams so the event carries the
             // fully-resolved request (post prepareStep overrides) and the accumulated
             // priorSteps — both now required params, not silently-empty defaults.
-            val stepStartEvent = OnStepStartEvent(
+            val stepStartEvent = AgentEvent.StepStarted(
                 stepNumber = stepNumber,
                 messages = messages.toList(),
                 request = callParams,
@@ -751,7 +751,7 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
                 dispatcher.fireTelemetry(feed) {
                     onModelCallFinish(
                         it,
-                        TelemetryModelCallResultEvent(
+                        AgentEvent.ModelCallFinished(
                             stepNumber = stepNumber,
                             modelId = stepModel.modelId,
                             finishReason = finishReason,
@@ -764,7 +764,7 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
             }
 
             dispatcher.fireTelemetry(feed) {
-                onModelCallStart(it, TelemetryModelCallEvent(stepNumber, stepModel.modelId, callParams))
+                onModelCallStart(it, AgentEvent.ModelCallStarted(stepNumber, stepModel.modelId, callParams))
             }
             try {
                 val stepStreamResult = stepModel.streamResult(callParams)
@@ -772,8 +772,8 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
                 stepStreamResult.stream.collect { event ->
                     abortSignal.throwIfAborted()
                     dispatcher.runHook(stepNumber, feed) {
-                        onChunk?.invoke(OnChunkEvent(event, stepNumber))
-                        hooks?.onChunk?.invoke(OnChunkEvent(event, stepNumber))
+                        onChunk?.invoke(AgentEvent.Chunk(event, stepNumber))
+                        hooks?.onChunk?.invoke(AgentEvent.Chunk(event, stepNumber))
                     }
                     when (event) {
                         is StreamEvent.TextDelta -> {
@@ -885,7 +885,7 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
                 // A genuine coroutine cancellation must re-throw untouched (Tier-0 coroutines).
                 throw ce
             } catch (t: Throwable) {
-                dispatcher.emitError(t, stepNumber, OnErrorEvent.ErrorSource.Model, hooks, feed)
+                dispatcher.emitError(t, stepNumber, AgentEvent.Errored.ErrorSource.Model, hooks, feed)
                 // try-finally so the model-call telemetry bracket ALWAYS closes: when generate()
                 // is the collector its StreamCapture throws synchronously on StreamEvent.Error, so
                 // a bare closeModelCall AFTER the emit would be skipped and the span would leak.
@@ -939,7 +939,7 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
                     // the error-reporting surface — before input resolution was hoisted ahead of the
                     // approval gate, a non-gated tool's decode failure happened inside executeTool,
                     // which reported it; categorizing it here must report it too.
-                    dispatcher.emitError(t, stepNumber, OnErrorEvent.ErrorSource.Tool, hooks, feed)
+                    dispatcher.emitError(t, stepNumber, AgentEvent.Errored.ErrorSource.Tool, hooks, feed)
                     deferredToolErrorMessages.add(
                         emitToolErrorDeferred(
                             this,
@@ -1059,7 +1059,7 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
                         permits.withPermit {
                             val progressOut = ChannelToolEventCollector(signals)
                             dispatcher.runHook(stepNumber, feed) {
-                                val startEvent = OnToolCallStartEvent(
+                                val startEvent = AgentEvent.ToolCallStarted(
                                     call.toolCallId,
                                     call.toolName,
                                     call.input,
@@ -1084,14 +1084,14 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
                                 preResolved = resolvedForExecution[call.toolCallId],
                             )
                             dispatcher.runHook(stepNumber, feed) {
-                                val finishEvent = OnToolCallFinishEvent(
+                                val finishEvent = AgentEvent.ToolCallFinished(
                                     toolCallId = call.toolCallId,
                                     toolName = call.toolName,
                                     outcome = when (result) {
                                         is ToolExecutionResult.Success ->
-                                            OnToolCallFinishEvent.Outcome.Success(result.outputJson)
+                                            AgentEvent.ToolCallFinished.Outcome.Success(result.outputJson)
                                         is ToolExecutionResult.Failure ->
-                                            OnToolCallFinishEvent.Outcome.Failure(
+                                            AgentEvent.ToolCallFinished.Outcome.Failure(
                                                 result.error.message ?: "tool failed",
                                             )
                                     },
@@ -1166,7 +1166,7 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
             totalUsage = with(UsageArithmetic) { totalUsage + stepUsage }
             lastFinishReason = effectiveFinishReason
 
-            val stepFinishEvent = OnStepFinishEvent(stepNumber, step)
+            val stepFinishEvent = AgentEvent.StepFinished(stepNumber, step)
             dispatcher.runHook(stepNumber, feed) {
                 onStepFinish?.invoke(stepFinishEvent)
                 hooks?.onStepFinish?.invoke(stepFinishEvent)
@@ -1215,7 +1215,7 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
             emptyList()
         }
 
-        val finishEvent = OnFinishEvent(
+        val finishEvent = AgentEvent.Finished<TContext, TOutput>(
             null,
             stepNumber,
             totalUsage,
@@ -1223,7 +1223,7 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
             messages.toList(),
             // gap #36: surface the post-prepareStep-override context the
             // loop tracked (activeContext), not a hardcoded null.
-            experimental_context = activeContext,
+            experimentalContext = activeContext,
         )
         dispatcher.runHook(stepNumber, feed) {
             onFinish?.invoke(finishEvent)
@@ -1269,7 +1269,7 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
         // Telemetry brackets the execution HERE (not at the dispatch site) so
         // both routes — the step loop AND the approval-resume path — emit.
         dispatcher.fireTelemetry(feed) {
-            onToolCallStart(it, OnToolCallStartEvent(call.toolCallId, call.toolName, call.input, stepNumber, messages))
+            onToolCallStart(it, AgentEvent.ToolCallStarted(call.toolCallId, call.toolName, call.input, stepNumber, messages))
         }
         val result = try {
             // Resolve (toolDef, decoded input). On first attempt: decode
@@ -1322,7 +1322,7 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
             // tool returned cancellation" and the conversation goes off-rails.
             throw ce
         } catch (t: Throwable) {
-            dispatcher.emitError(t, stepNumber, OnErrorEvent.ErrorSource.Tool, hooks, feed)
+            dispatcher.emitError(t, stepNumber, AgentEvent.Errored.ErrorSource.Tool, hooks, feed)
             // resolveToolInput throws typed AgentError; a raw executor
             // throw becomes ToolExecution (see toolFailure).
             toolFailure(call, t)
@@ -1330,14 +1330,14 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
         dispatcher.fireTelemetry(feed) {
             onToolCallFinish(
                 it,
-                OnToolCallFinishEvent(
+                AgentEvent.ToolCallFinished(
                     toolCallId = call.toolCallId,
                     toolName = call.toolName,
                     outcome = when (result) {
                         is ToolExecutionResult.Success ->
-                            OnToolCallFinishEvent.Outcome.Success(result.outputJson)
+                            AgentEvent.ToolCallFinished.Outcome.Success(result.outputJson)
                         is ToolExecutionResult.Failure ->
-                            OnToolCallFinishEvent.Outcome.Failure(
+                            AgentEvent.ToolCallFinished.Outcome.Failure(
                                 result.error.message ?: "tool failed",
                             )
                     },

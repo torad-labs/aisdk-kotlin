@@ -120,15 +120,15 @@ public data class GenerateResult<TOutput>(
  * first, then call-site) — neither replaces the other.
  */
 public data class AgentCallHooks(
-    val onStart: (suspend (OnStartEvent) -> Unit)? = null,
-    val onStepStart: (suspend (OnStepStartEvent) -> Unit)? = null,
-    val onStepFinish: (suspend (OnStepFinishEvent) -> Unit)? = null,
-    val onFinish: (suspend (OnFinishEvent) -> Unit)? = null,
-    val onError: (suspend (OnErrorEvent) -> Unit)? = null,
-    val onChunk: (suspend (OnChunkEvent) -> Unit)? = null,
-    val onAbort: (suspend (OnAbortEvent) -> Unit)? = null,
+    val onStart: (suspend (AgentEvent.Started<*>) -> Unit)? = null,
+    val onStepStart: (suspend (AgentEvent.StepStarted) -> Unit)? = null,
+    val onStepFinish: (suspend (AgentEvent.StepFinished) -> Unit)? = null,
+    val onFinish: (suspend (AgentEvent.Finished<*, *>) -> Unit)? = null,
+    val onError: (suspend (AgentEvent.Errored) -> Unit)? = null,
+    val onChunk: (suspend (AgentEvent.Chunk) -> Unit)? = null,
+    val onAbort: (suspend (AgentEvent.Aborted) -> Unit)? = null,
     /** Per-call mirror of the constructor hook — fired before a (non-gated) tool executes. */
-    val experimental_onToolCallStart: (suspend (OnToolCallStartEvent) -> Unit)? = null,
+    val experimental_onToolCallStart: (suspend (AgentEvent.ToolCallStarted) -> Unit)? = null,
     /** Per-call mirror of the constructor hook — fired after a tool returns or throws. */
-    val experimental_onToolCallFinish: (suspend (OnToolCallFinishEvent) -> Unit)? = null,
+    val experimental_onToolCallFinish: (suspend (AgentEvent.ToolCallFinished) -> Unit)? = null,
 )

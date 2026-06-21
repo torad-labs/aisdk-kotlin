@@ -49,47 +49,47 @@ class TelemetryWiringTest {
             modelId = call.modelId
         }
 
-        override suspend fun onAgentStart(call: TelemetryCall, event: OnStartEvent) = record(call, "agentStart")
-        override suspend fun onStepStart(call: TelemetryCall, event: OnStepStartEvent) =
+        override suspend fun onAgentStart(call: TelemetryCall, event: AgentEvent.Started) = record(call, "agentStart")
+        override suspend fun onStepStart(call: TelemetryCall, event: AgentEvent.StepStarted) =
             record(call, "stepStart:${event.stepNumber}")
-        override suspend fun onModelCallStart(call: TelemetryCall, event: TelemetryModelCallEvent) =
+        override suspend fun onModelCallStart(call: TelemetryCall, event: AgentEvent.ModelCallStarted) =
             record(call, "modelCallStart:${event.stepNumber}")
-        override suspend fun onModelCallFinish(call: TelemetryCall, event: TelemetryModelCallResultEvent) =
+        override suspend fun onModelCallFinish(call: TelemetryCall, event: AgentEvent.ModelCallFinished) =
             record(call, "modelCallFinish:${event.stepNumber}:${event.finishReason}")
-        override suspend fun onToolCallStart(call: TelemetryCall, event: OnToolCallStartEvent) =
+        override suspend fun onToolCallStart(call: TelemetryCall, event: AgentEvent.ToolCallStarted) =
             record(call, "toolCallStart:${event.toolName}")
-        override suspend fun onToolCallFinish(call: TelemetryCall, event: OnToolCallFinishEvent) =
+        override suspend fun onToolCallFinish(call: TelemetryCall, event: AgentEvent.ToolCallFinished) =
             record(
                 call,
                 "toolCallFinish:${event.toolName}:${
                     when (event.outcome) {
-                        is OnToolCallFinishEvent.Outcome.Success -> "ok"
-                        is OnToolCallFinishEvent.Outcome.Failure -> "err"
+                        is AgentEvent.ToolCallFinished.Outcome.Success -> "ok"
+                        is AgentEvent.ToolCallFinished.Outcome.Failure -> "err"
                     }
                 }",
             )
-        override suspend fun onStepFinish(call: TelemetryCall, event: OnStepFinishEvent) =
+        override suspend fun onStepFinish(call: TelemetryCall, event: AgentEvent.StepFinished) =
             record(call, "stepFinish:${event.stepNumber}")
-        override suspend fun onError(call: TelemetryCall, event: OnErrorEvent) =
+        override suspend fun onError(call: TelemetryCall, event: AgentEvent.Errored) =
             record(call, "error:${event.source}")
-        override suspend fun onAbort(call: TelemetryCall, event: OnAbortEvent) = record(call, "abort")
-        override suspend fun onAgentFinish(call: TelemetryCall, event: OnFinishEvent) =
+        override suspend fun onAbort(call: TelemetryCall, event: AgentEvent.Aborted) = record(call, "abort")
+        override suspend fun onAgentFinish(call: TelemetryCall, event: AgentEvent.Finished) =
             record(call, "agentFinish:${event.totalSteps}")
     }
 
     /** Throws from every method — the loop must be unaffected. */
     private class ExplodingTelemetry : Telemetry {
         override val name: String = "exploding"
-        override suspend fun onAgentStart(call: TelemetryCall, event: OnStartEvent) = boom()
-        override suspend fun onStepStart(call: TelemetryCall, event: OnStepStartEvent) = boom()
-        override suspend fun onModelCallStart(call: TelemetryCall, event: TelemetryModelCallEvent) = boom()
-        override suspend fun onModelCallFinish(call: TelemetryCall, event: TelemetryModelCallResultEvent) = boom()
-        override suspend fun onToolCallStart(call: TelemetryCall, event: OnToolCallStartEvent) = boom()
-        override suspend fun onToolCallFinish(call: TelemetryCall, event: OnToolCallFinishEvent) = boom()
-        override suspend fun onStepFinish(call: TelemetryCall, event: OnStepFinishEvent) = boom()
-        override suspend fun onError(call: TelemetryCall, event: OnErrorEvent) = boom()
-        override suspend fun onAbort(call: TelemetryCall, event: OnAbortEvent) = boom()
-        override suspend fun onAgentFinish(call: TelemetryCall, event: OnFinishEvent) = boom()
+        override suspend fun onAgentStart(call: TelemetryCall, event: AgentEvent.Started) = boom()
+        override suspend fun onStepStart(call: TelemetryCall, event: AgentEvent.StepStarted) = boom()
+        override suspend fun onModelCallStart(call: TelemetryCall, event: AgentEvent.ModelCallStarted) = boom()
+        override suspend fun onModelCallFinish(call: TelemetryCall, event: AgentEvent.ModelCallFinished) = boom()
+        override suspend fun onToolCallStart(call: TelemetryCall, event: AgentEvent.ToolCallStarted) = boom()
+        override suspend fun onToolCallFinish(call: TelemetryCall, event: AgentEvent.ToolCallFinished) = boom()
+        override suspend fun onStepFinish(call: TelemetryCall, event: AgentEvent.StepFinished) = boom()
+        override suspend fun onError(call: TelemetryCall, event: AgentEvent.Errored) = boom()
+        override suspend fun onAbort(call: TelemetryCall, event: AgentEvent.Aborted) = boom()
+        override suspend fun onAgentFinish(call: TelemetryCall, event: AgentEvent.Finished) = boom()
         private fun boom(): Nothing = error("telemetry exploded")
     }
 
@@ -275,7 +275,7 @@ class TelemetryWiringTest {
     fun `a CancellationException from an integration propagates — the one throw that must alter the loop`() = runTest {
         val cancelling = object : Telemetry {
             override val name: String = "cancelling"
-            override suspend fun onAgentStart(call: TelemetryCall, event: OnStartEvent) {
+            override suspend fun onAgentStart(call: TelemetryCall, event: AgentEvent.Started) {
                 throw CancellationException("stop from telemetry")
             }
         }
@@ -293,7 +293,7 @@ class TelemetryWiringTest {
         val survivor = RecordingTelemetry("survivor")
         val cancelling = object : Telemetry {
             override val name: String = "cancelling"
-            override suspend fun onAgentStart(call: TelemetryCall, event: OnStartEvent) {
+            override suspend fun onAgentStart(call: TelemetryCall, event: AgentEvent.Started) {
                 throw CancellationException("stop from composite member")
             }
         }

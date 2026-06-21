@@ -115,16 +115,12 @@ public sealed class TelemetrySpanStatus {
     public data class Error(val message: String? = null) : TelemetrySpanStatus()
 }
 
-public data class TelemetrySpanEvent(
-    val name: String,
-    val attributes: Map<String, JsonElement> = emptyMap(),
-)
 
 public interface TelemetryActiveSpan {
     public val name: String
     public val attributes: Map<String, JsonElement>
     public val status: TelemetrySpanStatus
-    public val events: List<TelemetrySpanEvent>
+    public val events: List<AgentEvent.SpanEmitted>
     public val hasEnded: Boolean
 
     public fun setAttribute(key: String, value: JsonElement)
@@ -174,8 +170,8 @@ public class MutableTelemetrySpan(
     private var _status: TelemetrySpanStatus = TelemetrySpanStatus.Ok
     override val status: TelemetrySpanStatus get() = _status
     override fun setStatus(status: TelemetrySpanStatus) { _status = status }
-    private val mutableEvents: MutableList<TelemetrySpanEvent> = mutableListOf()
-    override val events: List<TelemetrySpanEvent>
+    private val mutableEvents: MutableList<AgentEvent.SpanEmitted> = mutableListOf()
+    override val events: List<AgentEvent.SpanEmitted>
         get() = mutableEvents.toList()
     private var _hasEnded: Boolean = false
     override val hasEnded: Boolean get() = _hasEnded
@@ -185,7 +181,7 @@ public class MutableTelemetrySpan(
     }
 
     override fun addEvent(name: String, attributes: Map<String, JsonElement>) {
-        mutableEvents += TelemetrySpanEvent(name, attributes)
+        mutableEvents += AgentEvent.SpanEmitted(name, attributes)
     }
 
     override fun recordException(error: Throwable) {
@@ -211,7 +207,7 @@ private class NoopTelemetryActiveSpan(
     private var _status: TelemetrySpanStatus = TelemetrySpanStatus.Ok
     override val status: TelemetrySpanStatus get() = _status
     override fun setStatus(status: TelemetrySpanStatus) { _status = status }
-    override val events: List<TelemetrySpanEvent> = emptyList()
+    override val events: List<AgentEvent.SpanEmitted> = emptyList()
     private var _hasEnded: Boolean = false
     override val hasEnded: Boolean get() = _hasEnded
     override fun setAttribute(key: String, value: JsonElement) {}

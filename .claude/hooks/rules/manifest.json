@@ -341,5 +341,12 @@
     "yaml": "id: no-deferred-wiring-comment\nlanguage: kotlin\nseverity: error\n# Catches the \"declare the type surface now, wire the producer later\" convention\n# that the pipeline x-ray found behind half its data-flow defects: a public\n# event/result/wire field is added with a silent default and a comment admitting\n# it isn't populated yet (\"wired ... as a follow-up\", \"type surface is in place\",\n# \"the loop hasn't yet wired the field\", \"back-compat\" null). Either wire the\n# producer now or don't declare the field \u2014 never ship a permanently-empty seam.\nrule:\n  any:\n    - kind: line_comment\n    - kind: multiline_comment\n  regex: '(?i)(wired|populate[ds]?) .{0,40}(later|follow-?up)|staged in as a follow-?up|type surface is in place|loop hasn.t yet wired|hasn.t yet wired the field|wire[ds]? the field'\n",
     "badExample": "package x\n\nclass C {\n    // The accumulated steps. Loop-side population is staged in as a follow-up.\n    public val priorSteps: List<Int> = emptyList()\n}\n",
     "goodExample": "package x\n\nclass C {\n    /** The accumulated prior steps, populated by the loop each step. */\n    public val priorSteps: List<Int>\n}\n"
+  },
+  {
+    "id": "no-flat-lifecycle-event",
+    "severity": "error",
+    "yaml": "id: no-flat-lifecycle-event\nlanguage: kotlin\nseverity: error\n# A top-level `data class …Event` MUST be a subtype of the sealed `AgentEvent`\n# hierarchy (have a `: AgentEvent()` supertype), never a free-floating flat\n# struct dispatched via nullable callbacks. Activated with the AgentEvent redesign.\nrule:\n  all:\n    - kind: class_declaration\n    - inside: { kind: source_file }\n    - has: { kind: type_identifier, regex: 'Event$', stopBy: neighbor }\n    - has: { kind: modifiers, has: { kind: class_modifier, regex: 'data' } }\n    - not: { has: { kind: delegation_specifier, stopBy: neighbor } }",
+    "badExample": "public data class OnFooEvent(val x: Int)",
+    "goodExample": "public sealed class AgentEvent {\n    public data class Foo(val x: Int) : AgentEvent()\n}"
   }
 ]
