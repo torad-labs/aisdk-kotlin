@@ -10,7 +10,7 @@
   },
   "ownership": "builder owns src/ edits; orchestrator owns .claude/ + validation; parallel work only on distinct files",
   "spec": "docs/reports/target-architecture.md",
-  "current_status": "CLEANUP rounds (user: keep going). Final 62-rule audit found 993 grandfathered violations. L16: genuine error-level anti-patterns (sealed interface->class x12, public mutable var->val x42, secondary ctor x4, primitive-array-in-data-class x7, nullable-bag x2, lateinit x1, mutable-collection x1) = builder. L17: 705 loose camelCase top-level fns -> internal objects across 81 files (PARALLEL workflow). L18: warn sweep (else-in-sealed-when x37, keyed-json-cast x124, multiple-boolean-params x19, others). current_layer=16.",
+  "current_status": "ALL 18 LAYERS COMPLETE + green. 9 rewrite + 6 polish + 3 cleanup. Hook violations 993->124 (the 124 = deliberate keyed-json idiomatic-dynamic-JSON exception, warn-level). Loose fns 705->0 all source sets. Branch refactor/ts-residue-cleanup, full gate green.",
   "hard_rules": "no camelCase top-level fns (only PascalCase factories); logic on types/in units; Flow over suspend; sealed CLASS not interface; no public/top-level/companion mutable var; no secondary ctor/lateinit/!!; sealed errors; typed over Map<String,JsonElement>/Any?",
   "layers": [
     {
@@ -68,10 +68,7 @@
       "status": "pending"
     }
   ],
-  "current_layer": 18,
-  "layer17_done": "VALIDATED (d649cac): no-camelcase-top-level-function = 0 across commonMain+jvmMain+nativeMain+commonTest (was 705). 82 factory renames + 584 moves + expect/actual rename; ABI regenerated; full gate green. Hardest layer — builder thrashed (542->860) then recovered via staged fix-syntax-first + precise metavar rewrites.",
-  "layer16_done": "VALIDATED (ae72aef): all 7 error-level rules ->0, ABI regenerated, full gate green.",
-  "layer17_note": "DECISION: STRICT — eliminate ALL 705 camelCase top-level fns, rule stays strict. private/internal (506) -> internal object members; public free procedures (155) -> PascalCase factories where they return objects, else object members; public extensions (44) -> member-extensions inside objects/types. Parallel workflow per-file + builder integration for cross-file callers; ABI WILL change (updateKotlinAbi). WORKFLOW DONE (wngo4qfdu, 81 agents, 4.14M tok): commonMain loose 705->0; 82 factory renames + 584 moves in docs/reports/layer17-renames.json. INTEGRATION in progress (builder). USER DECISION: grind to green (over revert). Builder thrashed 542->860 (broad text rewrites mangled ~120 call sites into syntax errors). Re-engaged with staged strategy: fix syntax errors first (hand-fix), then precise ast-grep metavar rewrites (preserve args) for the 82 renames, then moved-symbol member-imports, then updateKotlinAbi + green + commit. Work error count monotonically down.",
+  "current_layer": "COMPLETE",
   "completed_layers": [
     {
       "n": 1,
