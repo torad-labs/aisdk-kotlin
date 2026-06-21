@@ -1,7 +1,7 @@
 # @ai-sdk/moonshotai
 
-- Version: 2.0.25
-- Upstream path: `.reference/vercel-ai-sdk-ai-6.0.204/packages/moonshotai`
+- Version: 2.0.26
+- Upstream path: `.reference/vercel-ai-sdk-ai-6.0.208/packages/moonshotai`
 - Kotlin parity area: `:aisdk-provider-moonshotai`
 - Current parity status: ported: createMoonshotAI/moonshotai, provider settings, model id/options aliases, and chat model routing are represented as an OpenAI-compatible Kotlin facade folded into the root module
 
@@ -9,7 +9,7 @@
 
 | Subpath | Source | Export count |
 |---|---|---:|
-| `.` | `.reference/vercel-ai-sdk-ai-6.0.204/packages/moonshotai/src/index.ts` | 7 |
+| `.` | `.reference/vercel-ai-sdk-ai-6.0.208/packages/moonshotai/src/index.ts` | 7 |
 
 ## Public Exports
 
