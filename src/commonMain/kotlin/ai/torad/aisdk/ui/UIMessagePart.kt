@@ -9,7 +9,6 @@ import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonElement
-import kotlinx.serialization.serializer
 
 /**
  * Per-message UI part. Mirrors v6's part taxonomy — `text` and tool parts
@@ -107,7 +106,33 @@ public sealed interface UIMessagePart {
         val signature: String? = null,
         @EncodeDefault(EncodeDefault.Mode.NEVER)
         val providerMetadata: ProviderMetadata = ProviderMetadata.None,
-    ) : UIMessagePart
+    ) : UIMessagePart {
+        /**
+         * Type-safe extraction of [output]. Returns `null` if state isn't
+         * `OutputAvailable` (caller should branch on [state] first).
+         */
+        public fun <TOutput> outputAs(serializer: KSerializer<TOutput>): TOutput? {
+            if (state != ToolCallState.OutputAvailable) return null
+            val raw = output ?: return null
+            return raw.decodeAs(serializer)
+        }
+
+        public inline fun <reified TOutput> outputAs(): TOutput? =
+            outputAs(kotlinx.serialization.serializer())
+
+        /**
+         * Type-safe extraction of input args while the tool is mid-flight or
+         * complete. Returns `null` if input isn't yet available.
+         */
+        public fun <TInput> inputAs(serializer: KSerializer<TInput>): TInput? {
+            if (state == ToolCallState.InputStreaming) return null
+            val raw = input ?: return null
+            return raw.decodeAs(serializer)
+        }
+
+        public inline fun <reified TInput> inputAs(): TInput? =
+            inputAs(kotlinx.serialization.serializer())
+    }
 
     @Serializable
     public data class Reasoning(
@@ -186,7 +211,13 @@ public sealed interface UIMessagePart {
          * message history. Mirrors v6's `transient` data-chunk flag.
          */
         val transient: Boolean = false,
-    ) : UIMessagePart
+    ) : UIMessagePart {
+        public fun <TData> dataAs(serializer: KSerializer<TData>): TData =
+            data.decodeAs(serializer)
+
+        public inline fun <reified TData> dataAs(): TData =
+            dataAs(kotlinx.serialization.serializer())
+    }
 
     /**
      * Step boundary marker — emitted between LLM call iterations
@@ -218,74 +249,23 @@ public sealed interface UIMessagePart {
         val preliminary: Boolean = false,
         @EncodeDefault(EncodeDefault.Mode.NEVER)
         val providerMetadata: ProviderMetadata = ProviderMetadata.None,
-    ) : UIMessagePart
-}
+    ) : UIMessagePart {
+        public fun <TOutput> outputAs(serializer: KSerializer<TOutput>): TOutput? {
+            if (state != ToolCallState.OutputAvailable) return null
+            val raw = output ?: return null
+            return raw.decodeAs(serializer)
+        }
 
-/**
- * Typed JSON extraction at the UI render seam. Groups the previously
- * loose top-level extractors so no camelCase top-level `fun`s remain in
- * this file. The non-extension forms take the part as first param; the
- * `inline reified` forms are member-extensions (callers use a
- * member-import or `with(TypedJsonOps) { part.outputAs<Result>() }`).
- */
-public object TypedJsonOps {
+        public inline fun <reified TOutput> outputAs(): TOutput? =
+            outputAs(kotlinx.serialization.serializer())
 
-    /**
-     * Type-safe extraction at the UI render seam. Pulls a typed `TOutput`
-     * out of [UIMessagePart.ToolUI.output]. Returns `null` if state isn't
-     * `OutputAvailable` (caller should branch on `state` first).
-     *
-     * Call as `TypedJsonOps.outputAs(part, serializer<Result>())`.
-     */
-    public fun <TOutput> outputAs(part: UIMessagePart.ToolUI, serializer: KSerializer<TOutput>): TOutput? {
-        if (part.state != ToolCallState.OutputAvailable) return null
-        val raw = part.output ?: return null
-        return raw.decodeAs(serializer)
+        public fun <TInput> inputAs(serializer: KSerializer<TInput>): TInput? {
+            if (state == ToolCallState.InputStreaming) return null
+            val raw = input ?: return null
+            return raw.decodeAs(serializer)
+        }
+
+        public inline fun <reified TInput> inputAs(): TInput? =
+            inputAs(kotlinx.serialization.serializer())
     }
-
-    public inline fun <reified TOutput> UIMessagePart.ToolUI.outputAs(): TOutput? =
-        outputAs(this, serializer())
-
-    /**
-     * Type-safe extraction of input args while the tool is mid-flight or
-     * complete. Returns `null` if input isn't yet available.
-     */
-    public fun <TInput> inputAs(part: UIMessagePart.ToolUI, serializer: KSerializer<TInput>): TInput? {
-        if (part.state == ToolCallState.InputStreaming) return null
-        val raw = part.input ?: return null
-        return raw.decodeAs(serializer)
-    }
-
-    public inline fun <reified TInput> UIMessagePart.ToolUI.inputAs(): TInput? =
-        inputAs(this, serializer())
-
-    public fun <TData> dataAs(part: UIMessagePart.Data, serializer: KSerializer<TData>): TData =
-        part.data.decodeAs(serializer)
-
-    public inline fun <reified TData> UIMessagePart.Data.dataAs(): TData =
-        dataAs(this, serializer())
-
-    public fun <TOutput> dynamicOutputAs(
-        part: UIMessagePart.DynamicToolUI,
-        serializer: KSerializer<TOutput>,
-    ): TOutput? {
-        if (part.state != ToolCallState.OutputAvailable) return null
-        val raw = part.output ?: return null
-        return raw.decodeAs(serializer)
-    }
-
-    public inline fun <reified TOutput> UIMessagePart.DynamicToolUI.outputAs(): TOutput? =
-        dynamicOutputAs(this, serializer())
-
-    public fun <TInput> dynamicInputAs(
-        part: UIMessagePart.DynamicToolUI,
-        serializer: KSerializer<TInput>,
-    ): TInput? {
-        if (part.state == ToolCallState.InputStreaming) return null
-        val raw = part.input ?: return null
-        return raw.decodeAs(serializer)
-    }
-
-    public inline fun <reified TInput> UIMessagePart.DynamicToolUI.inputAs(): TInput? =
-        dynamicInputAs(this, serializer())
 }

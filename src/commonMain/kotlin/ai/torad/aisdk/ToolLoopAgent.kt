@@ -534,7 +534,7 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
         val validatedOptions = validateCallOptions(options)
         // v7 telemetry: resolve the effective integration once per invocation and
         // stamp every event of this call with one TelemetryCall envelope.
-        val feed = TelemetryOps.resolveTelemetry(telemetry, logger)?.let { tele ->
+        val feed = Telemetry.resolveTelemetry(telemetry, logger)?.let { tele ->
             TelemetryFeed(
                 tele = tele,
                 call = TelemetryCall(

@@ -64,7 +64,73 @@ public data class ReplicateProviderSettings(
     val apiToken: String? = null,
     val baseURL: String = "https://api.replicate.com/v1",
     val headers: Map<String, String> = emptyMap(),
-)
+) {
+    internal fun replicateOptions(providerOptions: ProviderOptions): JsonObject =
+        providerOptions.toMap()["replicate"] as? JsonObject ?: JsonObject(emptyMap())
+
+    internal fun replicatePreferHeader(options: JsonObject): Map<String, String> {
+        val maxWait = options["maxWaitTimeInSeconds"]?.jsonPrimitive?.contentOrNull
+        return mapOf("prefer" to if (maxWait != null) "wait=$maxWait" else "wait")
+    }
+
+    internal fun putReplicateProviderOptions(builder: JsonObjectBuilder, options: JsonObject, excludedKeys: Set<String>) {
+        for ((key, value) in options) {
+            if (key !in excludedKeys) builder.put(key, value)
+        }
+    }
+
+    internal fun replicateHeaders(
+        callHeaders: Map<String, String> = emptyMap(),
+        extraHeaders: Map<String, String> = emptyMap(),
+    ): Map<String, String> {
+        val base = linkedMapOf<String, String?>()
+        apiToken?.takeIf { it.isNotBlank() }?.let { base[HttpHeaders.Authorization] = "Bearer $it" }
+        headers.forEach { (key, value) -> base[key] = value }
+        callHeaders.forEach { (key, value) -> base[key] = value }
+        extraHeaders.forEach { (key, value) -> base[key] = value }
+        return ProviderHeaders.withUserAgentSuffix(base, "ai-sdk/replicate/$REPLICATE_VERSION")
+    }
+
+    internal suspend fun replicatePostJson(
+        client: HttpClient,
+        url: String,
+        body: JsonObject,
+        headers: Map<String, String>,
+    ): HttpJsonResponse =
+        HttpTransport.requestJson(
+            client = client,
+            url = url,
+            method = HttpMethod.Post,
+            headers = headers,
+            body = body,
+            requestBodyValues = body,
+            errorMessage = ::replicateErrorMessage,
+        )
+
+    internal suspend fun replicateGetJson(
+        client: HttpClient,
+        url: String,
+        headers: Map<String, String>,
+        abortSignal: AbortSignal,
+    ): HttpJsonResponse {
+        abortSignal.throwIfAborted()
+        return HttpTransport.requestJson(
+            client = client,
+            url = url,
+            method = HttpMethod.Get,
+            headers = headers,
+            errorMessage = ::replicateErrorMessage,
+        )
+    }
+
+    private fun replicateErrorMessage(statusCode: Int, parsed: JsonElement?, raw: String): String {
+        val obj = parsed as? JsonObject
+        val detail = obj?.get("detail")?.jsonPrimitive?.contentOrNull
+            ?: obj?.get("error")?.jsonPrimitive?.contentOrNull
+            ?: raw.ifBlank { "request failed" }
+        return "Replicate request failed ($statusCode): $detail"
+    }
+}
 
 public class ReplicateProvider(
     private val client: HttpClient,
@@ -106,18 +172,18 @@ private class ReplicateImageModel(
     override suspend fun generate(params: ImageGenerationParams): ImageModelResult {
         params.abortSignal.throwIfAborted()
         val warnings = mutableListOf<CallWarning>()
-        val options = ReplicateWire.replicateOptions(params.providerOptions)
-        val model = ReplicateWire.replicateModelRef(modelId)
+        val options = settings.replicateOptions(params.providerOptions)
+        val model = ReplicateModelRef.fromModelId(modelId)
         val input = buildJsonObject {
             put("prompt", JsonPrimitive(params.prompt))
             params.aspectRatio?.let { put("aspect_ratio", JsonPrimitive(it)) }
             params.size?.let { put("size", JsonPrimitive(it)) }
             params.seed?.let { put("seed", JsonPrimitive(it)) }
             put("num_outputs", JsonPrimitive(params.n))
-            ReplicateWire.putReplicateImageInputs(this, modelId, params.files, params.mask, warnings)
-            ReplicateWire.putReplicateProviderOptions(this, options, replicateImageExcludedOptionKeys)
+            putReplicateImageInputs(this, modelId, params.files, params.mask, warnings)
+            settings.putReplicateProviderOptions(this, options, replicateImageExcludedOptionKeys)
         }
-        val response = ReplicateWire.replicatePostJson(
+        val response = settings.replicatePostJson(
             client = client,
             url = if (model.version != null) {
                 "${settings.baseURL.trimEnd('/')}/predictions"
@@ -128,10 +194,9 @@ private class ReplicateImageModel(
                 put("input", input)
                 model.version?.let { put("version", JsonPrimitive(it)) }
             },
-            headers = ReplicateWire.replicateHeaders(
-                settings = settings,
+            headers = settings.replicateHeaders(
                 callHeaders = params.headers,
-                extraHeaders = ReplicateWire.replicatePreferHeader(options),
+                extraHeaders = settings.replicatePreferHeader(options),
             ),
         )
         val prediction = response.value.jsonObject
@@ -151,7 +216,7 @@ private class ReplicateImageModel(
             else -> listOf(output.jsonPrimitive.contentOrNull ?: throw InvalidResponseDataError(output, "Replicate image output is not a URL"))
         }
         val images = imageUrls.map { url ->
-            ReplicateWire.replicateDownloadImage(client, url, params.abortSignal)
+            replicateDownloadImage(client, url, params.abortSignal)
         }
         return ImageModelResult(
             images = images,
@@ -159,93 +224,8 @@ private class ReplicateImageModel(
             response = LanguageModelResponseMetadata(modelId = modelId, headers = response.headers),
         )
     }
-}
 
-private class ReplicateVideoModel(
-    private val client: HttpClient,
-    private val settings: ReplicateProviderSettings,
-    override val modelId: String,
-) : VideoModel {
-    override val provider: String = "replicate.video"
-    override val maxVideosPerCall: Int = 1
-
-    override suspend fun generate(params: VideoGenerationParams): VideoModelResult {
-        params.abortSignal.throwIfAborted()
-        val options = ReplicateWire.replicateOptions(params.providerOptions)
-        val model = ReplicateWire.replicateModelRef(modelId)
-        val input = buildJsonObject {
-            put("prompt", JsonPrimitive(params.prompt))
-            params.image?.let { put("image", JsonPrimitive(ReplicateWire.replicateDataUri(it))) }
-            params.aspectRatio?.let { put("aspect_ratio", JsonPrimitive(it)) }
-            (params.resolution ?: params.size)?.let { put("size", JsonPrimitive(it)) }
-            params.durationSeconds?.let { put("duration", JsonPrimitive(it.toDouble())) }
-            params.fps?.let { put("fps", JsonPrimitive(it)) }
-            params.seed?.let { put("seed", JsonPrimitive(it)) }
-            ReplicateWire.putReplicateProviderOptions(this, options, replicateVideoExcludedOptionKeys)
-        }
-        val submitted = ReplicateWire.replicatePostJson(
-            client = client,
-            url = if (model.version != null) {
-                "${settings.baseURL.trimEnd('/')}/predictions"
-            } else {
-                "${settings.baseURL.trimEnd('/')}/models/${model.ownerModel}/predictions"
-            },
-            body = buildJsonObject {
-                put("input", input)
-                model.version?.let { put("version", JsonPrimitive(it)) }
-            },
-            headers = ReplicateWire.replicateHeaders(
-                settings = settings,
-                callHeaders = params.headers,
-                extraHeaders = ReplicateWire.replicatePreferHeader(options),
-            ),
-        )
-        val prediction = ReplicateWire.replicatePollVideoPrediction(
-            client = client,
-            settings = settings,
-            initialPrediction = submitted.value.jsonObject,
-            options = options,
-            abortSignal = params.abortSignal,
-        )
-        val videoUrl = prediction["output"]?.jsonPrimitive?.contentOrNull
-            ?: throw NoVideoGeneratedError("No video URL in Replicate response")
-        return VideoModelResult(
-            videos = listOf(
-                GeneratedFile(
-                    mediaType = "video/mp4",
-                    base64 = "",
-                    url = videoUrl,
-                    providerMetadata = ProviderMetadata.Raw(JsonObject(mapOf("url" to JsonPrimitive(videoUrl)))),
-                ),
-            ),
-            response = LanguageModelResponseMetadata(modelId = modelId, headers = submitted.headers),
-            providerMetadata = ProviderMetadata.Raw(JsonObject(mapOf("replicate" to ReplicateWire.replicateVideoProviderMetadata(prediction, videoUrl)))),
-        )
-    }
-}
-
-private data class ReplicateModelRef(
-    val ownerModel: String,
-    val version: String?,
-)
-
-private val replicateImageExcludedOptionKeys = setOf("maxWaitTimeInSeconds")
-private val replicateVideoExcludedOptionKeys = setOf("pollIntervalMs", "pollTimeoutMs", "maxWaitTimeInSeconds")
-private const val REPLICATE_MAX_FLUX_2_INPUT_IMAGES = 8
-private const val DEFAULT_REPLICATE_VIDEO_POLL_INTERVAL_MS: Long = 2_000L
-private const val DEFAULT_REPLICATE_VIDEO_POLL_TIMEOUT_MS: Long = 300_000L
-
-private object ReplicateWire {
-    fun replicateModelRef(modelId: String): ReplicateModelRef {
-        val colon = modelId.indexOf(':')
-        return if (colon < 0) {
-            ReplicateModelRef(ownerModel = modelId, version = null)
-        } else {
-            ReplicateModelRef(ownerModel = modelId.substring(0, colon), version = modelId.substring(colon + 1))
-        }
-    }
-
-    fun putReplicateImageInputs(
+    private fun putReplicateImageInputs(
         builder: JsonObjectBuilder,
         modelId: String,
         files: List<ImageGenerationFile>,
@@ -287,7 +267,7 @@ private object ReplicateWire {
         }
     }
 
-    fun replicateDataUri(file: ImageGenerationFile): String {
+    private fun replicateDataUri(file: ImageGenerationFile): String {
         file.url?.takeIf { it.isNotBlank() }?.let { return it }
         val mediaType = file.mediaType ?: "application/octet-stream"
         val data = file.base64?.takeIf { it.isNotBlank() }
@@ -295,55 +275,7 @@ private object ReplicateWire {
         return "data:$mediaType;base64,$data"
     }
 
-    fun replicateDataUri(file: GeneratedFile): String {
-        file.url?.takeIf { it.isNotBlank() }?.let { return it }
-        return "data:${file.mediaType};base64,${file.base64}"
-    }
-
-    fun putReplicateProviderOptions(builder: JsonObjectBuilder, options: JsonObject, excludedKeys: Set<String>) {
-        for ((key, value) in options) {
-            if (key !in excludedKeys) builder.put(key, value)
-        }
-    }
-
-    fun replicatePreferHeader(options: JsonObject): Map<String, String> {
-        val maxWait = options["maxWaitTimeInSeconds"]?.jsonPrimitive?.contentOrNull
-        return mapOf("prefer" to if (maxWait != null) "wait=$maxWait" else "wait")
-    }
-
-    suspend fun replicatePostJson(
-        client: HttpClient,
-        url: String,
-        body: JsonObject,
-        headers: Map<String, String>,
-    ): HttpJsonResponse =
-        HttpTransport.requestJson(
-            client = client,
-            url = url,
-            method = HttpMethod.Post,
-            headers = headers,
-            body = body,
-            requestBodyValues = body,
-            errorMessage = ::replicateErrorMessage,
-        )
-
-    suspend fun replicateGetJson(
-        client: HttpClient,
-        url: String,
-        headers: Map<String, String>,
-        abortSignal: AbortSignal,
-    ): HttpJsonResponse {
-        abortSignal.throwIfAborted()
-        return HttpTransport.requestJson(
-            client = client,
-            url = url,
-            method = HttpMethod.Get,
-            headers = headers,
-            errorMessage = ::replicateErrorMessage,
-        )
-    }
-
-    suspend fun replicateDownloadImage(
+    private suspend fun replicateDownloadImage(
         client: HttpClient,
         url: String,
         abortSignal: AbortSignal,
@@ -368,9 +300,75 @@ private object ReplicateWire {
         )
     }
 
-    suspend fun replicatePollVideoPrediction(
-        client: HttpClient,
-        settings: ReplicateProviderSettings,
+    private fun replicateHeaderValue(headers: Map<String, String>, name: String): String? =
+        headers.entries.firstOrNull { it.key.equals(name, ignoreCase = true) }?.value
+}
+
+private class ReplicateVideoModel(
+    private val client: HttpClient,
+    private val settings: ReplicateProviderSettings,
+    override val modelId: String,
+) : VideoModel {
+    override val provider: String = "replicate.video"
+    override val maxVideosPerCall: Int = 1
+
+    override suspend fun generate(params: VideoGenerationParams): VideoModelResult {
+        params.abortSignal.throwIfAborted()
+        val options = settings.replicateOptions(params.providerOptions)
+        val model = ReplicateModelRef.fromModelId(modelId)
+        val input = buildJsonObject {
+            put("prompt", JsonPrimitive(params.prompt))
+            params.image?.let { put("image", JsonPrimitive(replicateDataUri(it))) }
+            params.aspectRatio?.let { put("aspect_ratio", JsonPrimitive(it)) }
+            (params.resolution ?: params.size)?.let { put("size", JsonPrimitive(it)) }
+            params.durationSeconds?.let { put("duration", JsonPrimitive(it.toDouble())) }
+            params.fps?.let { put("fps", JsonPrimitive(it)) }
+            params.seed?.let { put("seed", JsonPrimitive(it)) }
+            settings.putReplicateProviderOptions(this, options, replicateVideoExcludedOptionKeys)
+        }
+        val submitted = settings.replicatePostJson(
+            client = client,
+            url = if (model.version != null) {
+                "${settings.baseURL.trimEnd('/')}/predictions"
+            } else {
+                "${settings.baseURL.trimEnd('/')}/models/${model.ownerModel}/predictions"
+            },
+            body = buildJsonObject {
+                put("input", input)
+                model.version?.let { put("version", JsonPrimitive(it)) }
+            },
+            headers = settings.replicateHeaders(
+                callHeaders = params.headers,
+                extraHeaders = settings.replicatePreferHeader(options),
+            ),
+        )
+        val prediction = replicatePollVideoPrediction(
+            initialPrediction = submitted.value.jsonObject,
+            options = options,
+            abortSignal = params.abortSignal,
+        )
+        val videoUrl = prediction["output"]?.jsonPrimitive?.contentOrNull
+            ?: throw NoVideoGeneratedError("No video URL in Replicate response")
+        return VideoModelResult(
+            videos = listOf(
+                GeneratedFile(
+                    mediaType = "video/mp4",
+                    base64 = "",
+                    url = videoUrl,
+                    providerMetadata = ProviderMetadata.Raw(JsonObject(mapOf("url" to JsonPrimitive(videoUrl)))),
+                ),
+            ),
+            response = LanguageModelResponseMetadata(modelId = modelId, headers = submitted.headers),
+            providerMetadata = ProviderMetadata.Raw(JsonObject(mapOf("replicate" to replicateVideoProviderMetadata(prediction, videoUrl)))),
+        )
+    }
+
+    private fun replicateDataUri(file: GeneratedFile): String {
+        file.url?.takeIf { it.isNotBlank() }?.let { return it }
+        return "data:${file.mediaType};base64,${file.base64}"
+    }
+
+    private suspend fun replicatePollVideoPrediction(
         initialPrediction: JsonObject,
         options: JsonObject,
         abortSignal: AbortSignal,
@@ -392,10 +390,10 @@ private object ReplicateWire {
             abortSignal.throwIfAborted()
             val pollUrl = prediction["urls"]?.jsonObject?.get("get")?.jsonPrimitive?.contentOrNull
                 ?: throw InvalidResponseDataError(null, "Replicate prediction response is missing urls.get")
-            prediction = replicateGetJson(
+            prediction = settings.replicateGetJson(
                 client = client,
                 url = pollUrl,
-                headers = replicateHeaders(settings),
+                headers = settings.replicateHeaders(),
                 abortSignal = abortSignal,
             ).value.jsonObject
             attempts++
@@ -407,10 +405,10 @@ private object ReplicateWire {
         return prediction
     }
 
-    fun replicateStatus(prediction: JsonObject): String =
+    private fun replicateStatus(prediction: JsonObject): String =
         prediction["status"]?.jsonPrimitive?.contentOrNull ?: throw InvalidResponseDataError(null, "Replicate prediction response is missing status")
 
-    fun replicateVideoProviderMetadata(prediction: JsonObject, videoUrl: String): JsonElement = buildJsonObject {
+    private fun replicateVideoProviderMetadata(prediction: JsonObject, videoUrl: String): JsonElement = buildJsonObject {
         put("videos", JsonArray(listOf(buildJsonObject {
             put("url", JsonPrimitive(videoUrl))
         })))
@@ -418,34 +416,29 @@ private object ReplicateWire {
         putIfPresent(this, "metrics", prediction["metrics"])
     }
 
-    fun replicateHeaders(
-        settings: ReplicateProviderSettings,
-        callHeaders: Map<String, String> = emptyMap(),
-        extraHeaders: Map<String, String> = emptyMap(),
-    ): Map<String, String> {
-        val base = linkedMapOf<String, String?>()
-        settings.apiToken?.takeIf { it.isNotBlank() }?.let { base[HttpHeaders.Authorization] = "Bearer $it" }
-        settings.headers.forEach { (key, value) -> base[key] = value }
-        callHeaders.forEach { (key, value) -> base[key] = value }
-        extraHeaders.forEach { (key, value) -> base[key] = value }
-        return ProviderHeaders.withUserAgentSuffix(base, "ai-sdk/replicate/$REPLICATE_VERSION")
-    }
-
-    fun replicateOptions(providerOptions: ProviderOptions): JsonObject =
-        providerOptions.toMap()["replicate"] as? JsonObject ?: JsonObject(emptyMap())
-
-    fun replicateErrorMessage(statusCode: Int, parsed: JsonElement?, raw: String): String {
-        val obj = parsed as? JsonObject
-        val detail = obj?.get("detail")?.jsonPrimitive?.contentOrNull
-            ?: obj?.get("error")?.jsonPrimitive?.contentOrNull
-            ?: raw.ifBlank { "request failed" }
-        return "Replicate request failed ($statusCode): $detail"
-    }
-
-    fun putIfPresent(builder: JsonObjectBuilder, key: String, value: JsonElement?) {
+    private fun putIfPresent(builder: JsonObjectBuilder, key: String, value: JsonElement?) {
         if (value != null && value !is JsonNull) builder.put(key, value)
     }
-
-    fun replicateHeaderValue(headers: Map<String, String>, name: String): String? =
-        headers.entries.firstOrNull { it.key.equals(name, ignoreCase = true) }?.value
 }
+
+internal data class ReplicateModelRef(
+    val ownerModel: String,
+    val version: String?,
+) {
+    companion object {
+        internal fun fromModelId(modelId: String): ReplicateModelRef {
+            val colon = modelId.indexOf(':')
+            return if (colon < 0) {
+                ReplicateModelRef(ownerModel = modelId, version = null)
+            } else {
+                ReplicateModelRef(ownerModel = modelId.substring(0, colon), version = modelId.substring(colon + 1))
+            }
+        }
+    }
+}
+
+private val replicateImageExcludedOptionKeys = setOf("maxWaitTimeInSeconds")
+private val replicateVideoExcludedOptionKeys = setOf("pollIntervalMs", "pollTimeoutMs", "maxWaitTimeInSeconds")
+private const val REPLICATE_MAX_FLUX_2_INPUT_IMAGES = 8
+private const val DEFAULT_REPLICATE_VIDEO_POLL_INTERVAL_MS: Long = 2_000L
+private const val DEFAULT_REPLICATE_VIDEO_POLL_TIMEOUT_MS: Long = 300_000L

@@ -4,6 +4,7 @@ import kotlinx.serialization.EncodeDefault
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonClassDiscriminator
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
@@ -355,6 +356,70 @@ public data class Usage(
             ),
             raw = raw,
         )
+
+        /**
+         * Usage from an Anthropic `usage` JSON object: base input/output plus cache
+         * write/read counts, summing executor `iterations` (compaction/message) when present.
+         */
+        internal fun fromAnthropic(element: JsonElement?): Usage {
+            val obj = element as? JsonObject ?: return Usage()
+            val baseInput = obj["input_tokens"]?.jsonPrimitive?.intOrNull ?: 0
+            val baseOutput = obj["output_tokens"]?.jsonPrimitive?.intOrNull ?: 0
+            val cacheWrite = obj["cache_creation_input_tokens"]?.jsonPrimitive?.intOrNull ?: 0
+            val cacheRead = obj["cache_read_input_tokens"]?.jsonPrimitive?.intOrNull ?: 0
+            val iterations = obj["iterations"] as? JsonArray
+            val executorIterations = iterations.orEmpty().mapNotNull { it as? JsonObject }
+                .filter { it["type"]?.jsonPrimitive?.contentOrNull in setOf("compaction", "message") }
+            val input = if (executorIterations.isNotEmpty()) {
+                executorIterations.sumOf { it["input_tokens"]?.jsonPrimitive?.intOrNull ?: 0 }
+            } else {
+                baseInput
+            }
+            val output = if (executorIterations.isNotEmpty()) {
+                executorIterations.sumOf { it["output_tokens"]?.jsonPrimitive?.intOrNull ?: 0 }
+            } else {
+                baseOutput
+            }
+            return Usage(
+                inputTokens = InputTokenBreakdown(
+                    total = input + cacheWrite + cacheRead,
+                    noCache = input,
+                    cacheRead = cacheRead,
+                    cacheWrite = cacheWrite,
+                ),
+                outputTokens = OutputTokenBreakdown(total = output),
+                raw = element,
+            )
+        }
+
+        /**
+         * Merge a streaming `message_delta` usage object onto the usage captured at
+         * `message_start`. Anthropic's message_delta usually carries only output_tokens, so a
+         * full replace (the prior behavior) dropped the input/cache counts to 0 — upstream
+         * mutates in place: keep prior input/cache when the delta omits them, update what it
+         * provides.
+         */
+        internal fun mergeAnthropic(existing: Usage, deltaElement: JsonElement?): Usage {
+            val obj = deltaElement as? JsonObject ?: return existing
+            val deltaInput = obj["input_tokens"]?.jsonPrimitive?.intOrNull
+            val deltaOutput = obj["output_tokens"]?.jsonPrimitive?.intOrNull
+            val deltaCacheRead = obj["cache_read_input_tokens"]?.jsonPrimitive?.intOrNull
+            val deltaCacheWrite = obj["cache_creation_input_tokens"]?.jsonPrimitive?.intOrNull
+            val input = deltaInput ?: existing.inputTokens.noCache
+            val cacheRead = deltaCacheRead ?: existing.inputTokens.cacheRead
+            val cacheWrite = deltaCacheWrite ?: existing.inputTokens.cacheWrite
+            val output = deltaOutput ?: existing.outputTokens.total
+            return Usage(
+                inputTokens = InputTokenBreakdown(
+                    total = input + cacheWrite + cacheRead,
+                    noCache = input,
+                    cacheRead = cacheRead,
+                    cacheWrite = cacheWrite,
+                ),
+                outputTokens = OutputTokenBreakdown(total = output),
+                raw = deltaElement,
+            )
+        }
     }
 
     /** Legacy flat accessor — `inputTokens.total`. */
@@ -448,6 +513,15 @@ public enum class FinishReason {
             "length" -> Length
             "tool_calls", "function_call" -> ToolCalls
             "content_filter" -> ContentFilter
+            else -> Other
+        }
+
+        /** Map an Anthropic `stop_reason` wire string to a [FinishReason]. */
+        internal fun fromAnthropicStopReason(reason: String?): FinishReason = when (reason) {
+            "pause_turn", "end_turn", "stop_sequence" -> Stop
+            "refusal" -> ContentFilter
+            "tool_use" -> ToolCalls
+            "max_tokens", "model_context_window_exceeded" -> Length
             else -> Other
         }
     }

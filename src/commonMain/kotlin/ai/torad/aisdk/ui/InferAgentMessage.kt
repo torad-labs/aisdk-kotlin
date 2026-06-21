@@ -90,8 +90,8 @@ public class ToolPartHandlerRegistry<TRenderResult> internal constructor(
                     toolCallId = part.toolCallId,
                     toolName = part.toolName,
                     state = part.state,
-                    input = TypedJsonOps.inputAs(part, tool.inputSerializer),
-                    output = TypedJsonOps.outputAs(part, tool.outputSerializer),
+                    input = part.inputAs(tool.inputSerializer),
+                    output = part.outputAs(tool.outputSerializer),
                     error = part.error,
                 )
                 render(typed)
