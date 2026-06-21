@@ -29,26 +29,6 @@ internal object UrlOps {
             }
         }
 
-    fun isSupported(
-        mediaType: String,
-        url: String,
-        supportedUrls: Map<String, List<Regex>>,
-    ): Boolean {
-        val lowerMediaType = mediaType.lowercase()
-        val lowerUrl = url.lowercase()
-        return supportedUrls.asSequence()
-            .map { (key, regexes) ->
-                val prefix = when (val lowerKey = key.lowercase()) {
-                    "*", "*/*" -> ""
-                    else -> lowerKey.replace("*", "")
-                }
-                prefix to regexes
-            }
-            .filter { (prefix, _) -> lowerMediaType.startsWith(prefix) }
-            .flatMap { (_, regexes) -> regexes.asSequence() }
-            .any { regex -> regex.containsMatchIn(lowerUrl) }
-    }
-
     fun validateDownload(url: String) {
         val parsed = parseUrl(url) ?: throw DownloadError(url, "Invalid URL: $url")
         if (parsed.scheme == "data") return

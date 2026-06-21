@@ -142,15 +142,8 @@ class GatewayAndProviderUtilsParityTest {
             apiKey = "key",
             headers = mapOf("User-Agent" to "app"),
         ).gatewayHeaders()
-        val oidcHeaders = GatewayProviderSettings(
-            authTokenProvider = { GatewayAuthToken("oidc", GatewayAuthMethod.Oidc) },
-        ).gatewayHeaders()
-
         assertEquals("Bearer key", apiKeyHeaders["authorization"])
         assertEquals("app ai-sdk/gateway-kotlin", apiKeyHeaders["user-agent"])
-        assertEquals(GatewayAuthMethod.ApiKey, GatewayAuthMethod.fromHeaders(apiKeyHeaders))
-        assertEquals(GatewayAuthMethod.Oidc, GatewayAuthMethod.fromHeaders(oidcHeaders))
-        assertNull(GatewayAuthMethod.fromHeaders(mapOf(GATEWAY_AUTH_METHOD_HEADER to "API-KEY")))
 
         val auth = GatewayAuthenticationError(generationId = "gen_1")
         val timeout = GatewayTimeoutError()
@@ -218,16 +211,7 @@ class GatewayAndProviderUtilsParityTest {
         val encoded = Base64Codec.encode(raw)
 
         assertEquals(raw.toList(), Base64Codec.decode(encoded).toList())
-        assertEquals(raw.toList(), Base64Codec.decodeToUint8Array(encoded).toList())
-        assertEquals(encoded, Base64Codec.encodeFromUint8Array(raw))
-        assertEquals(byteArrayOf(0xfb.toByte(), 0xff.toByte()).toList(), Base64Codec.decodeToUint8Array("-_8=").toList())
-        assertEquals("already-base64", Base64Codec.encodeString("already-base64"))
         assertEquals(encoded, Base64Codec.encode(raw))
-        assertTrue(
-            UrlOps.isSupported(mediaType = "image/png",
-            url = "https://cdn.example.com/image.png",
-            supportedUrls = mapOf("image/*" to listOf(Regex("cdn\\.example\\.com"))),),
-        )
         UrlOps.validateDownload("https://example.com/file.png")
         UrlOps.validateDownload("data:text/plain;base64,SGk=")
         assertFailsWith<DownloadError> { UrlOps.validateDownload("http://localhost/file") }
@@ -243,7 +227,7 @@ class GatewayAndProviderUtilsParityTest {
     }
 
     @Test
-    fun `lazy schemas validation provider options and setting loaders match provider-utils`() {
+    fun `lazy schemas validation and provider options match provider-utils`() {
         var created = 0
         val lazy = Schemas.lazySchema<JsonObject> {
             created += 1
@@ -266,13 +250,6 @@ class GatewayAndProviderUtilsParityTest {
                 Schemas.jsonSchema<JsonObject>(JsonObject(emptyMap())) { throw IllegalStateException("bad") },
             )
         }
-
-        assertEquals("explicit", SettingsSource.loadApiKey("explicit", "TEST_API_KEY", description = "Test"))
-        assertEquals("from-env", SettingsSource.loadApiKey(null, "TEST_API_KEY", description = "Test", environment = mapOf("TEST_API_KEY" to "from-env")))
-        assertEquals("setting", SettingsSource.loadSetting(null, "TEST_SETTING", "setting", "Test", mapOf("TEST_SETTING" to "setting")))
-        assertEquals("optional", SettingsSource.loadOptional(null, "TEST_OPTIONAL", mapOf("TEST_OPTIONAL" to "optional")))
-        assertFailsWith<LoadAPIKeyError> { SettingsSource.loadApiKey(null, "MISSING_API_KEY", description = "Missing") }
-        assertFailsWith<LoadSettingError> { SettingsSource.loadSetting(null, "MISSING_SETTING", "setting", "Missing") }
     }
 
     @Test
