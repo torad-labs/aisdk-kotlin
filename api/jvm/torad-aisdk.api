@@ -2107,6 +2107,7 @@ public final class ai/torad/aisdk/GatewayTools {
 }
 
 public abstract interface class ai/torad/aisdk/GatewayTransport {
+	public static final field Companion Lai/torad/aisdk/GatewayTransport$Companion;
 	public fun embed-vGZ__7U (Lai/torad/aisdk/GatewayRequestContext;Ljava/lang/String;Lai/torad/aisdk/EmbeddingModelCallParams;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public fun generateImage-vGZ__7U (Lai/torad/aisdk/GatewayRequestContext;Ljava/lang/String;Lai/torad/aisdk/ImageGenerationParams;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public fun generateText-vGZ__7U (Lai/torad/aisdk/GatewayRequestContext;Ljava/lang/String;Lai/torad/aisdk/LanguageModelCallParams;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
@@ -2117,6 +2118,9 @@ public abstract interface class ai/torad/aisdk/GatewayTransport {
 	public fun getSpendReport (Lai/torad/aisdk/GatewayRequestContext;Lai/torad/aisdk/GatewaySpendReportParams;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public fun rerank-vGZ__7U (Lai/torad/aisdk/GatewayRequestContext;Ljava/lang/String;Lai/torad/aisdk/RerankingParams;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public fun streamText-7ta_rok (Lai/torad/aisdk/GatewayRequestContext;Ljava/lang/String;Lai/torad/aisdk/LanguageModelCallParams;)Lkotlinx/coroutines/flow/Flow;
+}
+
+public final class ai/torad/aisdk/GatewayTransport$Companion {
 }
 
 public final class ai/torad/aisdk/GatewayTransport$DefaultImpls {
@@ -6331,6 +6335,7 @@ public abstract interface class ai/torad/aisdk/StructuredObjectTransport {
 }
 
 public abstract interface class ai/torad/aisdk/Telemetry {
+	public static final field Companion Lai/torad/aisdk/Telemetry$Companion;
 	public abstract fun getName ()Ljava/lang/String;
 	public fun onAbort (Lai/torad/aisdk/TelemetryCall;Lai/torad/aisdk/OnAbortEvent;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public fun onAgentFinish (Lai/torad/aisdk/TelemetryCall;Lai/torad/aisdk/OnFinishEvent;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
@@ -6342,6 +6347,11 @@ public abstract interface class ai/torad/aisdk/Telemetry {
 	public fun onStepStart (Lai/torad/aisdk/TelemetryCall;Lai/torad/aisdk/OnStepStartEvent;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public fun onToolCallFinish (Lai/torad/aisdk/TelemetryCall;Lai/torad/aisdk/OnToolCallFinishEvent;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public fun onToolCallStart (Lai/torad/aisdk/TelemetryCall;Lai/torad/aisdk/OnToolCallStartEvent;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+}
+
+public final class ai/torad/aisdk/Telemetry$Companion {
+	public final fun clearGlobalTelemetry ()V
+	public final fun registerTelemetry (Lai/torad/aisdk/Telemetry;)V
 }
 
 public final class ai/torad/aisdk/Telemetry$DefaultImpls {
@@ -6434,12 +6444,6 @@ public final class ai/torad/aisdk/TelemetryModelCallResultEvent {
 	public final fun getUsage ()Lai/torad/aisdk/Usage;
 	public fun hashCode ()I
 	public fun toString ()Ljava/lang/String;
-}
-
-public final class ai/torad/aisdk/TelemetryOps {
-	public static final field INSTANCE Lai/torad/aisdk/TelemetryOps;
-	public final fun clearGlobalTelemetry ()V
-	public final fun registerTelemetry (Lai/torad/aisdk/Telemetry;)V
 }
 
 public final class ai/torad/aisdk/TelemetryRegistry {
@@ -8043,6 +8047,7 @@ public final class ai/torad/aisdk/providers/AnthropicAwsProviderSettings$Compani
 }
 
 public final class ai/torad/aisdk/providers/AnthropicMessagesLanguageModel : ai/torad/aisdk/LanguageModel {
+	public static final field Companion Lai/torad/aisdk/providers/AnthropicMessagesLanguageModel$Companion;
 	public fun <init> (Lio/ktor/client/HttpClient;Lai/torad/aisdk/providers/AnthropicProviderSettings;Ljava/lang/String;)V
 	public fun generate (Lai/torad/aisdk/LanguageModelCallParams;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public fun getModelId ()Ljava/lang/String;
@@ -8050,6 +8055,10 @@ public final class ai/torad/aisdk/providers/AnthropicMessagesLanguageModel : ai/
 	public fun getSupportedUrls ()Ljava/util/Map;
 	public fun stream (Lai/torad/aisdk/LanguageModelCallParams;)Lkotlinx/coroutines/flow/Flow;
 	public fun streamResult (Lai/torad/aisdk/LanguageModelCallParams;)Lai/torad/aisdk/LanguageModelStreamResult;
+}
+
+public final class ai/torad/aisdk/providers/AnthropicMessagesLanguageModel$Companion {
+	public final fun forwardAnthropicContainerIdFromLastStep (Ljava/util/List;)Ljava/util/Map;
 }
 
 public final class ai/torad/aisdk/providers/AnthropicProvider : ai/torad/aisdk/Provider {
@@ -8158,11 +8167,6 @@ public final class ai/torad/aisdk/providers/AnthropicTools {
 	public final fun getWebSearch_20260209 ()Lai/torad/aisdk/Tool;
 	public fun hashCode ()I
 	public fun toString ()Ljava/lang/String;
-}
-
-public final class ai/torad/aisdk/providers/AnthropicWire {
-	public static final field INSTANCE Lai/torad/aisdk/providers/AnthropicWire;
-	public final fun forwardAnthropicContainerIdFromLastStep (Ljava/util/List;)Ljava/util/Map;
 }
 
 public final class ai/torad/aisdk/providers/AssemblyAICustomSpelling {
@@ -10425,7 +10429,6 @@ public final class ai/torad/aisdk/providers/GroqProvider : ai/torad/aisdk/Provid
 }
 
 public final class ai/torad/aisdk/providers/GroqProviderSettings {
-	public static final field Companion Lai/torad/aisdk/providers/GroqProviderSettings$Companion;
 	public fun <init> ()V
 	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;)V
 	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
@@ -10451,10 +10454,6 @@ public final synthetic class ai/torad/aisdk/providers/GroqProviderSettings$$seri
 	public final fun serialize (Lkotlinx/serialization/encoding/Encoder;Lai/torad/aisdk/providers/GroqProviderSettings;)V
 	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
 	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
-}
-
-public final class ai/torad/aisdk/providers/GroqProviderSettings$Companion {
-	public final fun serializer ()Lkotlinx/serialization/KSerializer;
 }
 
 public final class ai/torad/aisdk/providers/GroqTools {
@@ -12631,7 +12630,6 @@ public final class ai/torad/aisdk/providers/XaiProviderKt {
 }
 
 public final class ai/torad/aisdk/providers/XaiProviderSettings {
-	public static final field Companion Lai/torad/aisdk/providers/XaiProviderSettings$Companion;
 	public fun <init> ()V
 	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;)V
 	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
@@ -12657,10 +12655,6 @@ public final synthetic class ai/torad/aisdk/providers/XaiProviderSettings$$seria
 	public final fun serialize (Lkotlinx/serialization/encoding/Encoder;Lai/torad/aisdk/providers/XaiProviderSettings;)V
 	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
 	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
-}
-
-public final class ai/torad/aisdk/providers/XaiProviderSettings$Companion {
-	public final fun serializer ()Lkotlinx/serialization/KSerializer;
 }
 
 public final class ai/torad/aisdk/providers/XaiTools {
@@ -12977,15 +12971,6 @@ public final class ai/torad/aisdk/ui/ToolPartHandlerRegistry$Builder {
 	public final fun register (Lai/torad/aisdk/Tool;Lkotlin/jvm/functions/Function1;)V
 }
 
-public final class ai/torad/aisdk/ui/TypedJsonOps {
-	public static final field INSTANCE Lai/torad/aisdk/ui/TypedJsonOps;
-	public final fun dataAs (Lai/torad/aisdk/ui/UIMessagePart$Data;Lkotlinx/serialization/KSerializer;)Ljava/lang/Object;
-	public final fun dynamicInputAs (Lai/torad/aisdk/ui/UIMessagePart$DynamicToolUI;Lkotlinx/serialization/KSerializer;)Ljava/lang/Object;
-	public final fun dynamicOutputAs (Lai/torad/aisdk/ui/UIMessagePart$DynamicToolUI;Lkotlinx/serialization/KSerializer;)Ljava/lang/Object;
-	public final fun inputAs (Lai/torad/aisdk/ui/UIMessagePart$ToolUI;Lkotlinx/serialization/KSerializer;)Ljava/lang/Object;
-	public final fun outputAs (Lai/torad/aisdk/ui/UIMessagePart$ToolUI;Lkotlinx/serialization/KSerializer;)Ljava/lang/Object;
-}
-
 public final class ai/torad/aisdk/ui/UIMessage {
 	public static final field Companion Lai/torad/aisdk/ui/UIMessage$Companion;
 	public fun <init> (Ljava/lang/String;Lai/torad/aisdk/ui/UIMessageRole;Ljava/util/List;JLjava/util/Map;)V
@@ -13046,6 +13031,7 @@ public final class ai/torad/aisdk/ui/UIMessagePart$Data : ai/torad/aisdk/ui/UIMe
 	public final fun component5 ()Z
 	public final fun copy (Ljava/lang/String;Lkotlinx/serialization/json/JsonElement;Lai/torad/aisdk/ProviderMetadata;Ljava/lang/String;Z)Lai/torad/aisdk/ui/UIMessagePart$Data;
 	public static synthetic fun copy$default (Lai/torad/aisdk/ui/UIMessagePart$Data;Ljava/lang/String;Lkotlinx/serialization/json/JsonElement;Lai/torad/aisdk/ProviderMetadata;Ljava/lang/String;ZILjava/lang/Object;)Lai/torad/aisdk/ui/UIMessagePart$Data;
+	public final fun dataAs (Lkotlinx/serialization/KSerializer;)Ljava/lang/Object;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getData ()Lkotlinx/serialization/json/JsonElement;
 	public final fun getId ()Ljava/lang/String;
@@ -13095,6 +13081,8 @@ public final class ai/torad/aisdk/ui/UIMessagePart$DynamicToolUI : ai/torad/aisd
 	public final fun getToolCallId ()Ljava/lang/String;
 	public final fun getToolName ()Ljava/lang/String;
 	public fun hashCode ()I
+	public final fun inputAs (Lkotlinx/serialization/KSerializer;)Ljava/lang/Object;
+	public final fun outputAs (Lkotlinx/serialization/KSerializer;)Ljava/lang/Object;
 	public fun toString ()Ljava/lang/String;
 }
 
@@ -13363,6 +13351,8 @@ public final class ai/torad/aisdk/ui/UIMessagePart$ToolUI : ai/torad/aisdk/ui/UI
 	public final fun getToolCallId ()Ljava/lang/String;
 	public final fun getToolName ()Ljava/lang/String;
 	public fun hashCode ()I
+	public final fun inputAs (Lkotlinx/serialization/KSerializer;)Ljava/lang/Object;
+	public final fun outputAs (Lkotlinx/serialization/KSerializer;)Ljava/lang/Object;
 	public fun toString ()Ljava/lang/String;
 }
 

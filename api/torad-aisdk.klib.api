@@ -442,6 +442,8 @@ abstract interface ai.torad.aisdk/GatewayTransport { // ai.torad.aisdk/GatewayTr
     open suspend fun getGenerationInfo(ai.torad.aisdk/GatewayRequestContext, ai.torad.aisdk/GatewayGenerationInfoParams): ai.torad.aisdk/GatewayGenerationInfo // ai.torad.aisdk/GatewayTransport.getGenerationInfo|getGenerationInfo(ai.torad.aisdk.GatewayRequestContext;ai.torad.aisdk.GatewayGenerationInfoParams){}[0]
     open suspend fun getSpendReport(ai.torad.aisdk/GatewayRequestContext, ai.torad.aisdk/GatewaySpendReportParams): ai.torad.aisdk/GatewaySpendReportResponse // ai.torad.aisdk/GatewayTransport.getSpendReport|getSpendReport(ai.torad.aisdk.GatewayRequestContext;ai.torad.aisdk.GatewaySpendReportParams){}[0]
     open suspend fun rerank(ai.torad.aisdk/GatewayRequestContext, ai.torad.aisdk/ModelId, ai.torad.aisdk/RerankingParams): ai.torad.aisdk/RerankingModelResult // ai.torad.aisdk/GatewayTransport.rerank|rerank(ai.torad.aisdk.GatewayRequestContext;ai.torad.aisdk.ModelId;ai.torad.aisdk.RerankingParams){}[0]
+
+    final object Companion // ai.torad.aisdk/GatewayTransport.Companion|null[0]
 }
 
 abstract interface ai.torad.aisdk/ImageModel { // ai.torad.aisdk/ImageModel|null[0]
@@ -581,6 +583,11 @@ abstract interface ai.torad.aisdk/Telemetry { // ai.torad.aisdk/Telemetry|null[0
     open suspend fun onStepStart(ai.torad.aisdk/TelemetryCall, ai.torad.aisdk/OnStepStartEvent) // ai.torad.aisdk/Telemetry.onStepStart|onStepStart(ai.torad.aisdk.TelemetryCall;ai.torad.aisdk.OnStepStartEvent){}[0]
     open suspend fun onToolCallFinish(ai.torad.aisdk/TelemetryCall, ai.torad.aisdk/OnToolCallFinishEvent) // ai.torad.aisdk/Telemetry.onToolCallFinish|onToolCallFinish(ai.torad.aisdk.TelemetryCall;ai.torad.aisdk.OnToolCallFinishEvent){}[0]
     open suspend fun onToolCallStart(ai.torad.aisdk/TelemetryCall, ai.torad.aisdk/OnToolCallStartEvent) // ai.torad.aisdk/Telemetry.onToolCallStart|onToolCallStart(ai.torad.aisdk.TelemetryCall;ai.torad.aisdk.OnToolCallStartEvent){}[0]
+
+    final object Companion { // ai.torad.aisdk/Telemetry.Companion|null[0]
+        final fun clearGlobalTelemetry() // ai.torad.aisdk/Telemetry.Companion.clearGlobalTelemetry|clearGlobalTelemetry(){}[0]
+        final fun registerTelemetry(ai.torad.aisdk/Telemetry) // ai.torad.aisdk/Telemetry.Companion.registerTelemetry|registerTelemetry(ai.torad.aisdk.Telemetry){}[0]
+    }
 }
 
 abstract interface ai.torad.aisdk/TelemetryActiveSpan { // ai.torad.aisdk/TelemetryActiveSpan|null[0]
@@ -646,6 +653,7 @@ sealed interface ai.torad.aisdk.ui/UIMessagePart { // ai.torad.aisdk.ui/UIMessag
         final val type // ai.torad.aisdk.ui/UIMessagePart.Data.type|{}type[0]
             final fun <get-type>(): kotlin/String // ai.torad.aisdk.ui/UIMessagePart.Data.type.<get-type>|<get-type>(){}[0]
 
+        final fun <#A2: kotlin/Any?> dataAs(kotlinx.serialization/KSerializer<#A2>): #A2 // ai.torad.aisdk.ui/UIMessagePart.Data.dataAs|dataAs(kotlinx.serialization.KSerializer<0:0>){0§<kotlin.Any?>}[0]
         final fun component1(): kotlin/String // ai.torad.aisdk.ui/UIMessagePart.Data.component1|component1(){}[0]
         final fun component2(): kotlinx.serialization.json/JsonElement // ai.torad.aisdk.ui/UIMessagePart.Data.component2|component2(){}[0]
         final fun component3(): ai.torad.aisdk/ProviderMetadata // ai.torad.aisdk.ui/UIMessagePart.Data.component3|component3(){}[0]
@@ -655,6 +663,7 @@ sealed interface ai.torad.aisdk.ui/UIMessagePart { // ai.torad.aisdk.ui/UIMessag
         final fun equals(kotlin/Any?): kotlin/Boolean // ai.torad.aisdk.ui/UIMessagePart.Data.equals|equals(kotlin.Any?){}[0]
         final fun hashCode(): kotlin/Int // ai.torad.aisdk.ui/UIMessagePart.Data.hashCode|hashCode(){}[0]
         final fun toString(): kotlin/String // ai.torad.aisdk.ui/UIMessagePart.Data.toString|toString(){}[0]
+        final inline fun <#A2: reified kotlin/Any?> dataAs(): #A2 // ai.torad.aisdk.ui/UIMessagePart.Data.dataAs|dataAs(){0§<kotlin.Any?>}[0]
 
         final object $serializer : kotlinx.serialization.internal/GeneratedSerializer<ai.torad.aisdk.ui/UIMessagePart.Data> { // ai.torad.aisdk.ui/UIMessagePart.Data.$serializer|null[0]
             final val descriptor // ai.torad.aisdk.ui/UIMessagePart.Data.$serializer.descriptor|{}descriptor[0]
@@ -690,6 +699,8 @@ sealed interface ai.torad.aisdk.ui/UIMessagePart { // ai.torad.aisdk.ui/UIMessag
         final val toolName // ai.torad.aisdk.ui/UIMessagePart.DynamicToolUI.toolName|{}toolName[0]
             final fun <get-toolName>(): kotlin/String // ai.torad.aisdk.ui/UIMessagePart.DynamicToolUI.toolName.<get-toolName>|<get-toolName>(){}[0]
 
+        final fun <#A2: kotlin/Any?> inputAs(kotlinx.serialization/KSerializer<#A2>): #A2? // ai.torad.aisdk.ui/UIMessagePart.DynamicToolUI.inputAs|inputAs(kotlinx.serialization.KSerializer<0:0>){0§<kotlin.Any?>}[0]
+        final fun <#A2: kotlin/Any?> outputAs(kotlinx.serialization/KSerializer<#A2>): #A2? // ai.torad.aisdk.ui/UIMessagePart.DynamicToolUI.outputAs|outputAs(kotlinx.serialization.KSerializer<0:0>){0§<kotlin.Any?>}[0]
         final fun component1(): kotlin/String // ai.torad.aisdk.ui/UIMessagePart.DynamicToolUI.component1|component1(){}[0]
         final fun component2(): kotlin/String // ai.torad.aisdk.ui/UIMessagePart.DynamicToolUI.component2|component2(){}[0]
         final fun component3(): ai.torad.aisdk.ui/ToolCallState // ai.torad.aisdk.ui/UIMessagePart.DynamicToolUI.component3|component3(){}[0]
@@ -702,6 +713,8 @@ sealed interface ai.torad.aisdk.ui/UIMessagePart { // ai.torad.aisdk.ui/UIMessag
         final fun equals(kotlin/Any?): kotlin/Boolean // ai.torad.aisdk.ui/UIMessagePart.DynamicToolUI.equals|equals(kotlin.Any?){}[0]
         final fun hashCode(): kotlin/Int // ai.torad.aisdk.ui/UIMessagePart.DynamicToolUI.hashCode|hashCode(){}[0]
         final fun toString(): kotlin/String // ai.torad.aisdk.ui/UIMessagePart.DynamicToolUI.toString|toString(){}[0]
+        final inline fun <#A2: reified kotlin/Any?> inputAs(): #A2? // ai.torad.aisdk.ui/UIMessagePart.DynamicToolUI.inputAs|inputAs(){0§<kotlin.Any?>}[0]
+        final inline fun <#A2: reified kotlin/Any?> outputAs(): #A2? // ai.torad.aisdk.ui/UIMessagePart.DynamicToolUI.outputAs|outputAs(){0§<kotlin.Any?>}[0]
 
         final object $serializer : kotlinx.serialization.internal/GeneratedSerializer<ai.torad.aisdk.ui/UIMessagePart.DynamicToolUI> { // ai.torad.aisdk.ui/UIMessagePart.DynamicToolUI.$serializer|null[0]
             final val descriptor // ai.torad.aisdk.ui/UIMessagePart.DynamicToolUI.$serializer.descriptor|{}descriptor[0]
@@ -971,6 +984,8 @@ sealed interface ai.torad.aisdk.ui/UIMessagePart { // ai.torad.aisdk.ui/UIMessag
         final val toolName // ai.torad.aisdk.ui/UIMessagePart.ToolUI.toolName|{}toolName[0]
             final fun <get-toolName>(): kotlin/String // ai.torad.aisdk.ui/UIMessagePart.ToolUI.toolName.<get-toolName>|<get-toolName>(){}[0]
 
+        final fun <#A2: kotlin/Any?> inputAs(kotlinx.serialization/KSerializer<#A2>): #A2? // ai.torad.aisdk.ui/UIMessagePart.ToolUI.inputAs|inputAs(kotlinx.serialization.KSerializer<0:0>){0§<kotlin.Any?>}[0]
+        final fun <#A2: kotlin/Any?> outputAs(kotlinx.serialization/KSerializer<#A2>): #A2? // ai.torad.aisdk.ui/UIMessagePart.ToolUI.outputAs|outputAs(kotlinx.serialization.KSerializer<0:0>){0§<kotlin.Any?>}[0]
         final fun component1(): kotlin/String // ai.torad.aisdk.ui/UIMessagePart.ToolUI.component1|component1(){}[0]
         final fun component10(): ai.torad.aisdk/ProviderMetadata // ai.torad.aisdk.ui/UIMessagePart.ToolUI.component10|component10(){}[0]
         final fun component2(): kotlin/String // ai.torad.aisdk.ui/UIMessagePart.ToolUI.component2|component2(){}[0]
@@ -985,6 +1000,8 @@ sealed interface ai.torad.aisdk.ui/UIMessagePart { // ai.torad.aisdk.ui/UIMessag
         final fun equals(kotlin/Any?): kotlin/Boolean // ai.torad.aisdk.ui/UIMessagePart.ToolUI.equals|equals(kotlin.Any?){}[0]
         final fun hashCode(): kotlin/Int // ai.torad.aisdk.ui/UIMessagePart.ToolUI.hashCode|hashCode(){}[0]
         final fun toString(): kotlin/String // ai.torad.aisdk.ui/UIMessagePart.ToolUI.toString|toString(){}[0]
+        final inline fun <#A2: reified kotlin/Any?> inputAs(): #A2? // ai.torad.aisdk.ui/UIMessagePart.ToolUI.inputAs|inputAs(){0§<kotlin.Any?>}[0]
+        final inline fun <#A2: reified kotlin/Any?> outputAs(): #A2? // ai.torad.aisdk.ui/UIMessagePart.ToolUI.outputAs|outputAs(){0§<kotlin.Any?>}[0]
 
         final object $serializer : kotlinx.serialization.internal/GeneratedSerializer<ai.torad.aisdk.ui/UIMessagePart.ToolUI> { // ai.torad.aisdk.ui/UIMessagePart.ToolUI.$serializer|null[0]
             final val descriptor // ai.torad.aisdk.ui/UIMessagePart.ToolUI.$serializer.descriptor|{}descriptor[0]
@@ -3086,6 +3103,10 @@ final class ai.torad.aisdk.providers/AnthropicMessagesLanguageModel : ai.torad.a
     final fun stream(ai.torad.aisdk/LanguageModelCallParams): kotlinx.coroutines.flow/Flow<ai.torad.aisdk/StreamEvent> // ai.torad.aisdk.providers/AnthropicMessagesLanguageModel.stream|stream(ai.torad.aisdk.LanguageModelCallParams){}[0]
     final fun streamResult(ai.torad.aisdk/LanguageModelCallParams): ai.torad.aisdk/LanguageModelStreamResult // ai.torad.aisdk.providers/AnthropicMessagesLanguageModel.streamResult|streamResult(ai.torad.aisdk.LanguageModelCallParams){}[0]
     final suspend fun generate(ai.torad.aisdk/LanguageModelCallParams): ai.torad.aisdk/LanguageModelResult // ai.torad.aisdk.providers/AnthropicMessagesLanguageModel.generate|generate(ai.torad.aisdk.LanguageModelCallParams){}[0]
+
+    final object Companion { // ai.torad.aisdk.providers/AnthropicMessagesLanguageModel.Companion|null[0]
+        final fun forwardAnthropicContainerIdFromLastStep(kotlin.collections/List<kotlin.collections/Map<kotlin/String, kotlinx.serialization.json/JsonElement>>): kotlin.collections/Map<kotlin/String, kotlinx.serialization.json/JsonElement>? // ai.torad.aisdk.providers/AnthropicMessagesLanguageModel.Companion.forwardAnthropicContainerIdFromLastStep|forwardAnthropicContainerIdFromLastStep(kotlin.collections.List<kotlin.collections.Map<kotlin.String,kotlinx.serialization.json.JsonElement>>){}[0]
+    }
 }
 
 final class ai.torad.aisdk.providers/AnthropicProvider : ai.torad.aisdk/Provider { // ai.torad.aisdk.providers/AnthropicProvider|null[0]
@@ -5481,12 +5502,6 @@ final class ai.torad.aisdk.providers/GroqProviderSettings { // ai.torad.aisdk.pr
         final fun deserialize(kotlinx.serialization.encoding/Decoder): ai.torad.aisdk.providers/GroqProviderSettings // ai.torad.aisdk.providers/GroqProviderSettings.$serializer.deserialize|deserialize(kotlinx.serialization.encoding.Decoder){}[0]
         final fun serialize(kotlinx.serialization.encoding/Encoder, ai.torad.aisdk.providers/GroqProviderSettings) // ai.torad.aisdk.providers/GroqProviderSettings.$serializer.serialize|serialize(kotlinx.serialization.encoding.Encoder;ai.torad.aisdk.providers.GroqProviderSettings){}[0]
     }
-
-    final object Companion { // ai.torad.aisdk.providers/GroqProviderSettings.Companion|null[0]
-        final val $childSerializers // ai.torad.aisdk.providers/GroqProviderSettings.Companion.$childSerializers|{}$childSerializers[0]
-
-        final fun serializer(): kotlinx.serialization/KSerializer<ai.torad.aisdk.providers/GroqProviderSettings> // ai.torad.aisdk.providers/GroqProviderSettings.Companion.serializer|serializer(){}[0]
-    }
 }
 
 final class ai.torad.aisdk.providers/GroqTools { // ai.torad.aisdk.providers/GroqTools|null[0]
@@ -7658,12 +7673,6 @@ final class ai.torad.aisdk.providers/XaiProviderSettings { // ai.torad.aisdk.pro
         final fun childSerializers(): kotlin/Array<kotlinx.serialization/KSerializer<*>> // ai.torad.aisdk.providers/XaiProviderSettings.$serializer.childSerializers|childSerializers(){}[0]
         final fun deserialize(kotlinx.serialization.encoding/Decoder): ai.torad.aisdk.providers/XaiProviderSettings // ai.torad.aisdk.providers/XaiProviderSettings.$serializer.deserialize|deserialize(kotlinx.serialization.encoding.Decoder){}[0]
         final fun serialize(kotlinx.serialization.encoding/Encoder, ai.torad.aisdk.providers/XaiProviderSettings) // ai.torad.aisdk.providers/XaiProviderSettings.$serializer.serialize|serialize(kotlinx.serialization.encoding.Encoder;ai.torad.aisdk.providers.XaiProviderSettings){}[0]
-    }
-
-    final object Companion { // ai.torad.aisdk.providers/XaiProviderSettings.Companion|null[0]
-        final val $childSerializers // ai.torad.aisdk.providers/XaiProviderSettings.Companion.$childSerializers|{}$childSerializers[0]
-
-        final fun serializer(): kotlinx.serialization/KSerializer<ai.torad.aisdk.providers/XaiProviderSettings> // ai.torad.aisdk.providers/XaiProviderSettings.Companion.serializer|serializer(){}[0]
     }
 }
 
@@ -13897,29 +13906,12 @@ sealed class ai.torad.aisdk/ToolResultOutput { // ai.torad.aisdk/ToolResultOutpu
     }
 }
 
-final object ai.torad.aisdk.providers/AnthropicWire { // ai.torad.aisdk.providers/AnthropicWire|null[0]
-    final fun forwardAnthropicContainerIdFromLastStep(kotlin.collections/List<kotlin.collections/Map<kotlin/String, kotlinx.serialization.json/JsonElement>>): kotlin.collections/Map<kotlin/String, kotlinx.serialization.json/JsonElement>? // ai.torad.aisdk.providers/AnthropicWire.forwardAnthropicContainerIdFromLastStep|forwardAnthropicContainerIdFromLastStep(kotlin.collections.List<kotlin.collections.Map<kotlin.String,kotlinx.serialization.json.JsonElement>>){}[0]
-}
-
 final object ai.torad.aisdk.ui/ChatSessionFactory { // ai.torad.aisdk.ui/ChatSessionFactory|null[0]
     final fun (ai.torad.aisdk.ui/Chat).asSession(): ai.torad.aisdk.ui/ChatSession // ai.torad.aisdk.ui/ChatSessionFactory.asSession|asSession@ai.torad.aisdk.ui.Chat(){}[0]
 }
 
 final object ai.torad.aisdk.ui/ModelMessageConversion { // ai.torad.aisdk.ui/ModelMessageConversion|null[0]
     final fun convertToModelMessages(kotlin.collections/List<ai.torad.aisdk.ui/UIMessage>, kotlin/Boolean = ...): kotlin.collections/List<ai.torad.aisdk/ModelMessage> // ai.torad.aisdk.ui/ModelMessageConversion.convertToModelMessages|convertToModelMessages(kotlin.collections.List<ai.torad.aisdk.ui.UIMessage>;kotlin.Boolean){}[0]
-}
-
-final object ai.torad.aisdk.ui/TypedJsonOps { // ai.torad.aisdk.ui/TypedJsonOps|null[0]
-    final fun <#A1: kotlin/Any?> dataAs(ai.torad.aisdk.ui/UIMessagePart.Data, kotlinx.serialization/KSerializer<#A1>): #A1 // ai.torad.aisdk.ui/TypedJsonOps.dataAs|dataAs(ai.torad.aisdk.ui.UIMessagePart.Data;kotlinx.serialization.KSerializer<0:0>){0§<kotlin.Any?>}[0]
-    final fun <#A1: kotlin/Any?> dynamicInputAs(ai.torad.aisdk.ui/UIMessagePart.DynamicToolUI, kotlinx.serialization/KSerializer<#A1>): #A1? // ai.torad.aisdk.ui/TypedJsonOps.dynamicInputAs|dynamicInputAs(ai.torad.aisdk.ui.UIMessagePart.DynamicToolUI;kotlinx.serialization.KSerializer<0:0>){0§<kotlin.Any?>}[0]
-    final fun <#A1: kotlin/Any?> dynamicOutputAs(ai.torad.aisdk.ui/UIMessagePart.DynamicToolUI, kotlinx.serialization/KSerializer<#A1>): #A1? // ai.torad.aisdk.ui/TypedJsonOps.dynamicOutputAs|dynamicOutputAs(ai.torad.aisdk.ui.UIMessagePart.DynamicToolUI;kotlinx.serialization.KSerializer<0:0>){0§<kotlin.Any?>}[0]
-    final fun <#A1: kotlin/Any?> inputAs(ai.torad.aisdk.ui/UIMessagePart.ToolUI, kotlinx.serialization/KSerializer<#A1>): #A1? // ai.torad.aisdk.ui/TypedJsonOps.inputAs|inputAs(ai.torad.aisdk.ui.UIMessagePart.ToolUI;kotlinx.serialization.KSerializer<0:0>){0§<kotlin.Any?>}[0]
-    final fun <#A1: kotlin/Any?> outputAs(ai.torad.aisdk.ui/UIMessagePart.ToolUI, kotlinx.serialization/KSerializer<#A1>): #A1? // ai.torad.aisdk.ui/TypedJsonOps.outputAs|outputAs(ai.torad.aisdk.ui.UIMessagePart.ToolUI;kotlinx.serialization.KSerializer<0:0>){0§<kotlin.Any?>}[0]
-    final inline fun <#A1: reified kotlin/Any?> (ai.torad.aisdk.ui/UIMessagePart.Data).dataAs(): #A1 // ai.torad.aisdk.ui/TypedJsonOps.dataAs|dataAs@ai.torad.aisdk.ui.UIMessagePart.Data(){0§<kotlin.Any?>}[0]
-    final inline fun <#A1: reified kotlin/Any?> (ai.torad.aisdk.ui/UIMessagePart.DynamicToolUI).inputAs(): #A1? // ai.torad.aisdk.ui/TypedJsonOps.inputAs|inputAs@ai.torad.aisdk.ui.UIMessagePart.DynamicToolUI(){0§<kotlin.Any?>}[0]
-    final inline fun <#A1: reified kotlin/Any?> (ai.torad.aisdk.ui/UIMessagePart.DynamicToolUI).outputAs(): #A1? // ai.torad.aisdk.ui/TypedJsonOps.outputAs|outputAs@ai.torad.aisdk.ui.UIMessagePart.DynamicToolUI(){0§<kotlin.Any?>}[0]
-    final inline fun <#A1: reified kotlin/Any?> (ai.torad.aisdk.ui/UIMessagePart.ToolUI).inputAs(): #A1? // ai.torad.aisdk.ui/TypedJsonOps.inputAs|inputAs@ai.torad.aisdk.ui.UIMessagePart.ToolUI(){0§<kotlin.Any?>}[0]
-    final inline fun <#A1: reified kotlin/Any?> (ai.torad.aisdk.ui/UIMessagePart.ToolUI).outputAs(): #A1? // ai.torad.aisdk.ui/TypedJsonOps.outputAs|outputAs@ai.torad.aisdk.ui.UIMessagePart.ToolUI(){0§<kotlin.Any?>}[0]
 }
 
 final object ai.torad.aisdk.ui/UIMessageMetadata { // ai.torad.aisdk.ui/UIMessageMetadata|null[0]
@@ -14094,11 +14086,6 @@ final object ai.torad.aisdk/Schemas { // ai.torad.aisdk/Schemas|null[0]
 final object ai.torad.aisdk/SpeechGeneration { // ai.torad.aisdk/SpeechGeneration|null[0]
     final suspend fun experimental_generateSpeech(ai.torad.aisdk/SpeechModel, kotlin/String, kotlin/String? = ..., kotlin/String? = ..., kotlin/Float? = ..., kotlin/String? = ..., ai.torad.aisdk/ProviderOptions = ..., kotlin.collections/Map<kotlin/String, kotlin/String> = ..., ai.torad.aisdk/AbortSignal = ...): ai.torad.aisdk/GenerateSpeechResult // ai.torad.aisdk/SpeechGeneration.experimental_generateSpeech|experimental_generateSpeech(ai.torad.aisdk.SpeechModel;kotlin.String;kotlin.String?;kotlin.String?;kotlin.Float?;kotlin.String?;ai.torad.aisdk.ProviderOptions;kotlin.collections.Map<kotlin.String,kotlin.String>;ai.torad.aisdk.AbortSignal){}[0]
     final suspend fun generateSpeech(ai.torad.aisdk/SpeechModel, kotlin/String, kotlin/String? = ..., kotlin/String? = ..., kotlin/Float? = ..., kotlin/String? = ..., kotlin/String? = ..., ai.torad.aisdk/ProviderOptions = ..., kotlin.collections/Map<kotlin/String, kotlin/String> = ..., ai.torad.aisdk/AbortSignal = ..., ai.torad.aisdk/Logger = ...): ai.torad.aisdk/GenerateSpeechResult // ai.torad.aisdk/SpeechGeneration.generateSpeech|generateSpeech(ai.torad.aisdk.SpeechModel;kotlin.String;kotlin.String?;kotlin.String?;kotlin.Float?;kotlin.String?;kotlin.String?;ai.torad.aisdk.ProviderOptions;kotlin.collections.Map<kotlin.String,kotlin.String>;ai.torad.aisdk.AbortSignal;ai.torad.aisdk.Logger){}[0]
-}
-
-final object ai.torad.aisdk/TelemetryOps { // ai.torad.aisdk/TelemetryOps|null[0]
-    final fun clearGlobalTelemetry() // ai.torad.aisdk/TelemetryOps.clearGlobalTelemetry|clearGlobalTelemetry(){}[0]
-    final fun registerTelemetry(ai.torad.aisdk/Telemetry) // ai.torad.aisdk/TelemetryOps.registerTelemetry|registerTelemetry(ai.torad.aisdk.Telemetry){}[0]
 }
 
 final object ai.torad.aisdk/ToolApprovalSignature { // ai.torad.aisdk/ToolApprovalSignature|null[0]
