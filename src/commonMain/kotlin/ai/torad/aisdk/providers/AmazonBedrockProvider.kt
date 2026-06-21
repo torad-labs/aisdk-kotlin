@@ -7,6 +7,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
@@ -44,7 +45,31 @@ public data class AmazonBedrockProviderSettings(
     val agentBaseURL: String? = null,
     val headers: Map<String, String> = emptyMap(),
     val generateId: () -> String = { IdGenerator.generate() },
-)
+) {
+    internal fun bedrockRuntimeBaseURL(): String =
+        baseURL?.trimEnd('/')
+            ?: "https://bedrock-runtime.${region ?: "us-east-1"}.amazonaws.com"
+
+    internal fun bedrockAgentRuntimeBaseURL(): String =
+        agentBaseURL?.trimEnd('/')
+            ?: baseURL?.trimEnd('/')
+            ?: "https://bedrock-agent-runtime.${region ?: "us-west-2"}.amazonaws.com"
+
+    internal fun bedrockMantleBaseURL(): String =
+        baseURL?.trimEnd('/')
+            ?: "https://bedrock-mantle.${region ?: "us-east-1"}.api.aws/v1"
+
+    // Percent-encodes a model id into a URL path segment; shared by every Bedrock
+    // model class (chat/embedding/image), which all build URLs from this settings.
+    internal fun bedrockEncodeModelId(modelId: String): String =
+        modelId.flatMap { ch ->
+            if (ch.isLetterOrDigit() || ch in "-_.~") {
+                listOf(ch.toString())
+            } else {
+                listOf("%" + ch.code.toString(16).uppercase().padStart(2, '0'))
+            }
+        }.joinToString("")
+}
 
 public class AmazonBedrockProvider(
     private val client: HttpClient,
@@ -141,7 +166,7 @@ private class BedrockChatLanguageModel(
         val prepared = BedrockRequest.bedrockChatRequestBody(modelId, params)
         val response = BedrockHttp.bedrockPostJson(
             client = client,
-            url = "${BedrockHttp.bedrockRuntimeBaseURL(settings)}/model/${BedrockMapping.bedrockEncodeModelId(modelId)}/converse",
+            url = "${settings.bedrockRuntimeBaseURL()}/model/${settings.bedrockEncodeModelId(modelId)}/converse",
             body = prepared.body,
             settings = settings,
             extraHeaders = params.headers,
@@ -166,7 +191,7 @@ private class BedrockChatLanguageModel(
         var sseHeaders: Map<String, String> = emptyMap()
         val payloads = BedrockHttp.bedrockStreamPayloads(
             client = client,
-            url = "${BedrockHttp.bedrockRuntimeBaseURL(settings)}/model/${BedrockMapping.bedrockEncodeModelId(modelId)}/converse-stream",
+            url = "${settings.bedrockRuntimeBaseURL()}/model/${settings.bedrockEncodeModelId(modelId)}/converse-stream",
             body = prepared.body,
             settings = settings,
             extraHeaders = params.headers + (HttpHeaders.Accept to "application/vnd.amazon.eventstream"),
@@ -229,7 +254,7 @@ private class BedrockEmbeddingModel(
         val body = BedrockRequest.bedrockEmbeddingBody(modelId, value, options)
         val response = BedrockHttp.bedrockPostJson(
             client = client,
-            url = "${BedrockHttp.bedrockRuntimeBaseURL(settings)}/model/${BedrockMapping.bedrockEncodeModelId(modelId)}/invoke",
+            url = "${settings.bedrockRuntimeBaseURL()}/model/${settings.bedrockEncodeModelId(modelId)}/invoke",
             body = body,
             settings = settings,
             extraHeaders = params.headers,
@@ -258,7 +283,7 @@ private class BedrockImageModel(
         val prepared = BedrockRequest.bedrockImageBody(params)
         val response = BedrockHttp.bedrockPostJson(
             client = client,
-            url = "${BedrockHttp.bedrockRuntimeBaseURL(settings)}/model/${BedrockMapping.bedrockEncodeModelId(modelId)}/invoke",
+            url = "${settings.bedrockRuntimeBaseURL()}/model/${settings.bedrockEncodeModelId(modelId)}/invoke",
             body = prepared.body,
             settings = settings,
             extraHeaders = params.headers,
@@ -298,7 +323,7 @@ private class BedrockRerankingModel(
         val body = BedrockRequest.bedrockRerankBody(settings.region ?: "us-west-2", modelId, params, options)
         val response = BedrockHttp.bedrockPostJson(
             client = client,
-            url = "${BedrockHttp.bedrockAgentRuntimeBaseURL(settings)}/rerank",
+            url = "${settings.bedrockAgentRuntimeBaseURL()}/rerank",
             body = body,
             settings = settings,
             extraHeaders = params.headers,
@@ -345,7 +370,7 @@ private class BedrockMantleChatLanguageModel(
         }
         val response = BedrockHttp.bedrockPostJson(
             client = client,
-            url = "${BedrockHttp.bedrockMantleBaseURL(settings)}$path",
+            url = "${settings.bedrockMantleBaseURL()}$path",
             body = body,
             settings = settings,
             extraHeaders = params.headers,
@@ -359,8 +384,8 @@ private class BedrockMantleChatLanguageModel(
         val content = message?.get("content")?.jsonPrimitive?.contentOrNull.orEmpty()
         return LanguageModelResult(
             text = content,
-            finishReason = BedrockMapping.mapOpenAILikeFinishReason(choice?.get("finish_reason")?.jsonPrimitive?.contentOrNull),
-            usage = BedrockMapping.bedrockOpenAILikeUsage(obj["usage"]),
+            finishReason = mapOpenAILikeFinishReason(choice?.get("finish_reason")?.jsonPrimitive?.contentOrNull),
+            usage = bedrockOpenAILikeUsage(obj["usage"]),
             request = LanguageModelRequestMetadata(body),
             response = LanguageModelResponseMetadata(
                 id = obj["id"]?.jsonPrimitive?.contentOrNull,
@@ -390,6 +415,22 @@ private class BedrockMantleChatLanguageModel(
                 rawFinishReason = result.rawFinishReason,
             ),
         )
+    }
+
+    private fun bedrockOpenAILikeUsage(element: JsonElement?): Usage {
+        val obj = element as? JsonObject ?: return Usage()
+        return Usage.of(
+            promptTokens = obj["prompt_tokens"]?.jsonPrimitive?.intOrNull ?: 0,
+            completionTokens = obj["completion_tokens"]?.jsonPrimitive?.intOrNull ?: 0,
+        )
+    }
+
+    private fun mapOpenAILikeFinishReason(reason: String?): FinishReason = when (reason) {
+        "stop" -> FinishReason.Stop
+        "length" -> FinishReason.Length
+        "tool_calls" -> FinishReason.ToolCalls
+        "content_filter" -> FinishReason.ContentFilter
+        else -> FinishReason.Other
     }
 }
 

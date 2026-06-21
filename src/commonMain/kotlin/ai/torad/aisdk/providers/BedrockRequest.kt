@@ -113,7 +113,7 @@ internal object BedrockRequest {
                     if (part is ContentPart.Text) {
                         system += buildJsonObject {
                             put("text", JsonPrimitive(part.text))
-                            BedrockMapping.bedrockCachePoint(part.providerMetadata.toMap())?.let { put("cachePoint", it) }
+                            bedrockCachePoint(part.providerMetadata.toMap())?.let { put("cachePoint", it) }
                         }
                     }
                 }
@@ -137,13 +137,13 @@ internal object BedrockRequest {
     private fun bedrockUserPart(part: ContentPart): JsonElement? = when (part) {
         is ContentPart.Text -> buildJsonObject {
             put("text", JsonPrimitive(part.text))
-            BedrockMapping.bedrockCachePoint(part.providerMetadata.toMap())?.let { put("cachePoint", it) }
+            bedrockCachePoint(part.providerMetadata.toMap())?.let { put("cachePoint", it) }
         }
         is ContentPart.Image -> buildJsonObject {
             put(
                 "image",
                 buildJsonObject {
-                    put("format", JsonPrimitive(BedrockMapping.bedrockImageFormat(part.mediaType)))
+                    put("format", JsonPrimitive(bedrockImageFormat(part.mediaType)))
                     put("source", buildJsonObject { put("bytes", JsonPrimitive(part.base64)) })
                 },
             )
@@ -153,7 +153,7 @@ internal object BedrockRequest {
                 put(
                     "image",
                     buildJsonObject {
-                        put("format", JsonPrimitive(BedrockMapping.bedrockImageFormat(part.mediaType)))
+                        put("format", JsonPrimitive(bedrockImageFormat(part.mediaType)))
                         put("source", buildJsonObject { put("bytes", JsonPrimitive(part.base64)) })
                     },
                 )
@@ -161,10 +161,10 @@ internal object BedrockRequest {
                 put(
                     "document",
                     buildJsonObject {
-                        put("format", JsonPrimitive(BedrockMapping.bedrockDocumentFormat(part.mediaType)))
+                        put("format", JsonPrimitive(bedrockDocumentFormat(part.mediaType)))
                         put("name", JsonPrimitive(part.filename?.substringBeforeLast('.') ?: "document"))
                         put("source", buildJsonObject { put("bytes", JsonPrimitive(part.base64)) })
-                        if (BedrockMapping.bedrockCitationsEnabled(part.providerMetadata.toMap())) {
+                        if (bedrockCitationsEnabled(part.providerMetadata.toMap())) {
                             put("citations", buildJsonObject { put("enabled", JsonPrimitive(true)) })
                         }
                     },
@@ -401,10 +401,10 @@ internal object BedrockRequest {
                     put(
                         "inPaintingParams",
                         buildJsonObject {
-                            put("image", JsonPrimitive(BedrockMapping.bedrockImageFileBase64(params.files.first())))
+                            put("image", JsonPrimitive(bedrockImageFileBase64(params.files.first())))
                             if (params.prompt.isNotBlank()) put("text", JsonPrimitive(params.prompt))
                             options["negativeText"]?.let { put("negativeText", it) }
-                            params.mask?.let { put("maskImage", JsonPrimitive(BedrockMapping.bedrockImageFileBase64(it))) }
+                            params.mask?.let { put("maskImage", JsonPrimitive(bedrockImageFileBase64(it))) }
                             options["maskPrompt"]?.let { put("maskPrompt", it) }
                         },
                     )
@@ -415,11 +415,11 @@ internal object BedrockRequest {
                     put(
                         "outPaintingParams",
                         buildJsonObject {
-                            put("image", JsonPrimitive(BedrockMapping.bedrockImageFileBase64(params.files.first())))
+                            put("image", JsonPrimitive(bedrockImageFileBase64(params.files.first())))
                             if (params.prompt.isNotBlank()) put("text", JsonPrimitive(params.prompt))
                             options["negativeText"]?.let { put("negativeText", it) }
                             options["outPaintingMode"]?.let { put("outPaintingMode", it) }
-                            params.mask?.let { put("maskImage", JsonPrimitive(BedrockMapping.bedrockImageFileBase64(it))) }
+                            params.mask?.let { put("maskImage", JsonPrimitive(bedrockImageFileBase64(it))) }
                             options["maskPrompt"]?.let { put("maskPrompt", it) }
                         },
                     )
@@ -427,14 +427,14 @@ internal object BedrockRequest {
                 }
                 "BACKGROUND_REMOVAL" -> buildJsonObject {
                     put("taskType", JsonPrimitive("BACKGROUND_REMOVAL"))
-                    put("backgroundRemovalParams", buildJsonObject { put("image", JsonPrimitive(BedrockMapping.bedrockImageFileBase64(params.files.first()))) })
+                    put("backgroundRemovalParams", buildJsonObject { put("image", JsonPrimitive(bedrockImageFileBase64(params.files.first()))) })
                 }
                 else -> buildJsonObject {
                     put("taskType", JsonPrimitive("IMAGE_VARIATION"))
                     put(
                         "imageVariationParams",
                         buildJsonObject {
-                            put("images", JsonArray(params.files.map { JsonPrimitive(BedrockMapping.bedrockImageFileBase64(it)) }))
+                            put("images", JsonArray(params.files.map { JsonPrimitive(bedrockImageFileBase64(it)) }))
                             if (params.prompt.isNotBlank()) put("text", JsonPrimitive(params.prompt))
                             options["negativeText"]?.let { put("negativeText", it) }
                             options["similarityStrength"]?.let { put("similarityStrength", it) }
@@ -542,4 +542,29 @@ internal object BedrockRequest {
             },
         )
     }
+
+    private fun bedrockImageFileBase64(file: ImageGenerationFile): String =
+        file.base64 ?: throw UnsupportedFunctionalityError("url-based images", "URL-based images are not supported for Amazon Bedrock image editing. Provide base64 data directly.")
+
+    private fun bedrockImageFormat(mediaType: String): String =
+        mediaType.substringAfter("image/", "png").substringBefore("+").substringBefore(";")
+
+    private fun bedrockDocumentFormat(mediaType: String): String = when (mediaType) {
+        "application/pdf" -> "pdf"
+        "text/csv" -> "csv"
+        "text/html" -> "html"
+        "text/plain" -> "txt"
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document" -> "docx"
+        "application/msword" -> "doc"
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" -> "xlsx"
+        "application/vnd.ms-excel" -> "xls"
+        else -> mediaType.substringAfterLast('/').substringAfterLast('.')
+    }
+
+    private fun bedrockCachePoint(metadata: Map<String, JsonElement>?): JsonElement? =
+        (metadata?.get("bedrock") as? JsonObject)?.get("cachePoint")
+
+    private fun bedrockCitationsEnabled(metadata: Map<String, JsonElement>?): Boolean =
+        ((metadata?.get("bedrock") as? JsonObject)?.get("citations") as? JsonObject)
+            ?.get("enabled")?.jsonPrimitive?.contentOrNull == "true"
 }

@@ -28,8 +28,9 @@ internal data class BedrockHttpResponse(
 
 /**
  * Amazon Bedrock HTTP transport: SigV4/bearer header assembly, the JSON POST
- * path, the incremental `converse-stream` reader, regional base-URL resolution,
- * and rich error-message extraction (including clock-skew detection).
+ * path, the incremental `converse-stream` reader, and rich error-message
+ * extraction (including clock-skew detection). Cross-cutting transport shared by
+ * every Bedrock model class, so it has no single owning type.
  */
 internal object BedrockHttp {
     suspend fun bedrockPostJson(
@@ -167,19 +168,6 @@ internal object BedrockHttp {
         ),
         amzDate = amzDate,)
     }
-
-    fun bedrockRuntimeBaseURL(settings: AmazonBedrockProviderSettings): String =
-        settings.baseURL?.trimEnd('/')
-            ?: "https://bedrock-runtime.${settings.region ?: "us-east-1"}.amazonaws.com"
-
-    fun bedrockAgentRuntimeBaseURL(settings: AmazonBedrockProviderSettings): String =
-        settings.agentBaseURL?.trimEnd('/')
-            ?: settings.baseURL?.trimEnd('/')
-            ?: "https://bedrock-agent-runtime.${settings.region ?: "us-west-2"}.amazonaws.com"
-
-    fun bedrockMantleBaseURL(settings: AmazonBedrockProviderSettings): String =
-        settings.baseURL?.trimEnd('/')
-            ?: "https://bedrock-mantle.${settings.region ?: "us-east-1"}.api.aws/v1"
 
     fun bedrockErrorMessage(parsed: JsonElement?, raw: String): String {
         val obj = parsed as? JsonObject ?: return raw

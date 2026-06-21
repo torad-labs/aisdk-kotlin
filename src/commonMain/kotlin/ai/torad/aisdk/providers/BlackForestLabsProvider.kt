@@ -64,7 +64,15 @@ public data class BlackForestLabsProviderSettings(
     val headers: Map<String, String> = emptyMap(),
     val pollIntervalMillis: Long? = null,
     val pollTimeoutMillis: Long? = null,
-)
+) {
+    internal fun bflHeaders(callHeaders: Map<String, String>): Map<String, String> {
+        val base = linkedMapOf<String, String?>()
+        apiKey?.takeIf { it.isNotBlank() }?.let { base["x-key"] = it }
+        headers.forEach { (key, value) -> base[key] = value }
+        callHeaders.forEach { (key, value) -> base[key] = value }
+        return ProviderHeaders.withUserAgentSuffix(base, "ai-sdk/black-forest-labs/$BLACK_FOREST_LABS_VERSION")
+    }
+}
 
 public interface BlackForestLabsProvider : Provider {
     public fun image(modelId: ModelId): ImageModel
@@ -103,10 +111,10 @@ private class BlackForestLabsImageModel(
 
     override suspend fun generate(params: ImageGenerationParams): ImageModelResult {
         params.abortSignal.throwIfAborted()
-        val options = BflWire.bflOptions(params.providerOptions)
-        val args = BflWire.bflRequestBody(modelId, params, options)
-        val headers = BflWire.bflHeaders(settings, params.headers)
-        val submit = BflWire.bflPostJson(
+        val options = bflOptions(params.providerOptions)
+        val args = bflRequestBody(modelId, params, options)
+        val headers = settings.bflHeaders(params.headers)
+        val submit = bflPostJson(
             client = client,
             url = "${settings.baseURL.trimEnd('/')}/$modelId",
             body = args.body,
@@ -117,9 +125,9 @@ private class BlackForestLabsImageModel(
             ?: throw InvalidResponseDataError(null, "Black Forest Labs submit response is missing id")
         val pollingUrl = submitBody["polling_url"]?.jsonPrimitive?.contentOrNull
             ?: throw InvalidResponseDataError(null, "Black Forest Labs submit response is missing polling_url")
-        val pollResult = BflWire.bflPollForImage(
+        val pollResult = bflPollForImage(
             client = client,
-            pollingUrl = BflWire.bflPollUrl(pollingUrl, requestId),
+            pollingUrl = bflPollUrl(pollingUrl, requestId),
             headers = headers,
             abortSignal = params.abortSignal,
             pollIntervalMillis = options["pollIntervalMillis"]?.jsonPrimitive?.contentOrNull?.toLongOrNull()
@@ -129,39 +137,18 @@ private class BlackForestLabsImageModel(
                 ?: settings.pollTimeoutMillis
                 ?: DEFAULT_BFL_POLL_TIMEOUT_MILLIS,
         )
-        val downloaded = BflWire.bflDownloadImage(client, pollResult.imageUrl, headers, params.abortSignal)
+        val downloaded = bflDownloadImage(client, pollResult.imageUrl, headers, params.abortSignal)
         return ImageModelResult(
             images = listOf(downloaded.file),
             warnings = args.warnings,
             response = LanguageModelResponseMetadata(modelId = modelId, headers = downloaded.headers),
             providerMetadata = ProviderMetadata.Raw(JsonObject(mapOf(
-                "blackForestLabs" to BflWire.bflProviderMetadata(submitBody, pollResult.result),
+                "blackForestLabs" to bflProviderMetadata(submitBody, pollResult.result),
             ))),
         )
     }
-}
 
-private const val DEFAULT_BFL_POLL_INTERVAL_MILLIS: Long = 500L
-private const val DEFAULT_BFL_POLL_TIMEOUT_MILLIS: Long = 60_000L
-
-
-internal data class BflArgs(
-    val body: JsonObject,
-    val warnings: List<CallWarning>,
-)
-
-internal data class BflPollResult(
-    val imageUrl: String,
-    val result: JsonObject,
-)
-
-internal data class BflDownloadedImage(
-    val file: GeneratedFile,
-    val headers: Map<String, String>,
-)
-
-internal object BflWire {
-    fun bflRequestBody(
+    private fun bflRequestBody(
         modelId: String,
         params: ImageGenerationParams,
         options: JsonObject,
@@ -206,7 +193,7 @@ internal object BflWire {
         )
     }
 
-    fun JsonObjectBuilder.putBflInputImages(modelId: String, files: List<ImageGenerationFile>) {
+    private fun JsonObjectBuilder.putBflInputImages(modelId: String, files: List<ImageGenerationFile>) {
         if (files.size > 10) throw InvalidArgumentError("files", "Black Forest Labs supports up to 10 input images.")
         val inputImageField = if (modelId == "flux-pro-1.0-fill") "image" else "input_image"
         files.forEachIndexed { index, file ->
@@ -215,10 +202,10 @@ internal object BflWire {
         }
     }
 
-    fun ImageGenerationFile.bflValue(): String? =
+    private fun ImageGenerationFile.bflValue(): String? =
         url?.takeIf { it.isNotBlank() } ?: base64?.takeIf { it.isNotBlank() }
 
-    suspend fun bflPostJson(
+    private suspend fun bflPostJson(
         client: HttpClient,
         url: String,
         body: JsonObject,
@@ -234,7 +221,7 @@ internal object BflWire {
             errorMessage = ::bflErrorMessage,
         )
 
-    suspend fun bflGetJson(
+    private suspend fun bflGetJson(
         client: HttpClient,
         url: String,
         headers: Map<String, String>,
@@ -250,7 +237,7 @@ internal object BflWire {
         )
     }
 
-    suspend fun bflPollForImage(
+    private suspend fun bflPollForImage(
         client: HttpClient,
         pollingUrl: String,
         headers: Map<String, String>,
@@ -278,7 +265,7 @@ internal object BflWire {
         throw NoImageGeneratedError("Black Forest Labs generation timed out.")
     }
 
-    suspend fun bflDownloadImage(
+    private suspend fun bflDownloadImage(
         client: HttpClient,
         url: String,
         headers: Map<String, String>,
@@ -311,7 +298,7 @@ internal object BflWire {
         )
     }
 
-    fun bflProviderMetadata(submit: JsonObject, result: JsonObject): JsonElement = buildJsonObject {
+    private fun bflProviderMetadata(submit: JsonObject, result: JsonObject): JsonElement = buildJsonObject {
         put("images", JsonArray(listOf(buildJsonObject {
             putIfPresent("seed", result["seed"])
             putIfPresent("start_time", result["start_time"])
@@ -323,39 +310,31 @@ internal object BflWire {
         })))
     }
 
-    fun bflHeaders(settings: BlackForestLabsProviderSettings, callHeaders: Map<String, String>): Map<String, String> {
-        val base = linkedMapOf<String, String?>()
-        settings.apiKey?.takeIf { it.isNotBlank() }?.let { base["x-key"] = it }
-        settings.headers.forEach { (key, value) -> base[key] = value }
-        callHeaders.forEach { (key, value) -> base[key] = value }
-        return ProviderHeaders.withUserAgentSuffix(base, "ai-sdk/black-forest-labs/$BLACK_FOREST_LABS_VERSION")
-    }
-
-    fun bflOptions(providerOptions: ProviderOptions): JsonObject =
+    private fun bflOptions(providerOptions: ProviderOptions): JsonObject =
         providerOptions.toMap()["blackForestLabs"] as? JsonObject ?: JsonObject(emptyMap())
 
-    fun bflPollUrl(pollingUrl: String, requestId: String): String {
+    private fun bflPollUrl(pollingUrl: String, requestId: String): String {
         val hasId = pollingUrl.substringAfter('?', missingDelimiterValue = "").split('&').any { it.substringBefore('=') == "id" }
         if (hasId) return pollingUrl
         val separator = if ('?' in pollingUrl) "&" else "?"
         return "$pollingUrl${separator}id=$requestId"
     }
 
-    fun bflParseSize(size: String?): Pair<Int?, Int?> {
+    private fun bflParseSize(size: String?): Pair<Int?, Int?> {
         if (size == null) return null to null
         val width = size.substringBefore('x', missingDelimiterValue = "").toIntOrNull()
         val height = size.substringAfter('x', missingDelimiterValue = "").toIntOrNull()
         return width to height
     }
 
-    fun bflSizeToAspectRatio(size: String): String? {
+    private fun bflSizeToAspectRatio(size: String): String? {
         val (width, height) = bflParseSize(size)
         if (width == null || height == null || width <= 0 || height <= 0) return null
         val divisor = bflGcd(width, height)
         return "${width / divisor}:${height / divisor}"
     }
 
-    fun bflGcd(a: Int, b: Int): Int {
+    private fun bflGcd(a: Int, b: Int): Int {
         var x = abs(a)
         var y = abs(b)
         while (y != 0) {
@@ -366,7 +345,7 @@ internal object BflWire {
         return x.coerceAtLeast(1)
     }
 
-    fun bflErrorMessage(statusCode: Int, parsed: JsonElement?, raw: String): String {
+    private fun bflErrorMessage(statusCode: Int, parsed: JsonElement?, raw: String): String {
         val obj = parsed as? JsonObject
         val detail = obj?.get("detail")
         val message = when {
@@ -378,26 +357,45 @@ internal object BflWire {
         return "Black Forest Labs request failed ($statusCode): $message"
     }
 
-    fun JsonObjectBuilder.putIfPresent(key: String, value: JsonElement?) {
+    private fun JsonObjectBuilder.putIfPresent(key: String, value: JsonElement?) {
         if (value != null && value !is JsonNull) put(key, value)
     }
 
-    fun JsonObjectBuilder.putStringIfNotNull(key: String, value: String?) {
+    private fun JsonObjectBuilder.putStringIfNotNull(key: String, value: String?) {
         if (value != null) put(key, JsonPrimitive(value))
     }
 
-    fun JsonObjectBuilder.putIntIfNotNull(key: String, value: Int?) {
+    private fun JsonObjectBuilder.putIntIfNotNull(key: String, value: Int?) {
         if (value != null) put(key, JsonPrimitive(value))
     }
 
-    fun JsonObjectBuilder.putDoubleIfNotNull(key: String, value: Double?) {
+    private fun JsonObjectBuilder.putDoubleIfNotNull(key: String, value: Double?) {
         if (value != null) put(key, JsonPrimitive(value))
     }
 
-    fun JsonObjectBuilder.putBooleanIfNotNull(key: String, value: Boolean?) {
+    private fun JsonObjectBuilder.putBooleanIfNotNull(key: String, value: Boolean?) {
         if (value != null) put(key, JsonPrimitive(value))
     }
 
-    fun Map<String, String>.bflHeaderValue(name: String): String? =
+    private fun Map<String, String>.bflHeaderValue(name: String): String? =
         entries.firstOrNull { it.key.equals(name, ignoreCase = true) }?.value
 }
+
+private const val DEFAULT_BFL_POLL_INTERVAL_MILLIS: Long = 500L
+private const val DEFAULT_BFL_POLL_TIMEOUT_MILLIS: Long = 60_000L
+
+
+internal data class BflArgs(
+    val body: JsonObject,
+    val warnings: List<CallWarning>,
+)
+
+internal data class BflPollResult(
+    val imageUrl: String,
+    val result: JsonObject,
+)
+
+internal data class BflDownloadedImage(
+    val file: GeneratedFile,
+    val headers: Map<String, String>,
+)

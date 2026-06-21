@@ -211,7 +211,7 @@ private class LumaImageModel(
             headers = headers,
             body = body,
             requestBodyValues = body,
-            errorMessage = LumaWire::lumaErrorMessage,
+            errorMessage = ::lumaErrorMessage,
         )
 
     private suspend fun getJson(
@@ -223,7 +223,7 @@ private class LumaImageModel(
             url = url,
             method = HttpMethod.Get,
             headers = headers,
-            errorMessage = LumaWire::lumaErrorMessage,
+            errorMessage = ::lumaErrorMessage,
         )
 
     private suspend fun pollImageUrl(
@@ -283,6 +283,13 @@ private class LumaImageModel(
     private fun lumaOptions(providerOptions: ProviderOptions): JsonObject =
         providerOptions.toMap()["luma"] as? JsonObject ?: JsonObject(emptyMap())
 
+    private fun lumaErrorMessage(statusCode: Int, parsed: JsonElement?, raw: String): String {
+        val obj = parsed as? JsonObject
+        val details = obj?.get("detail")?.jsonArray?.firstOrNull()?.jsonObject?.get("msg")?.jsonPrimitive?.contentOrNull
+        val message = details ?: obj?.get("error")?.jsonPrimitive?.contentOrNull ?: raw.ifBlank { "request failed" }
+        return "Luma request failed ($statusCode): $message"
+    }
+
     private fun Map<String, String>.headerValue(name: String): String? =
         entries.firstOrNull { it.key.equals(name, ignoreCase = true) }?.value
 }
@@ -291,12 +298,3 @@ private const val DEFAULT_LUMA_POLL_INTERVAL_MILLIS: Long = 500L
 private const val DEFAULT_LUMA_MAX_POLL_ATTEMPTS: Int = 120
 
 private val lumaNonRequestOptionKeys = setOf("pollIntervalMillis", "maxPollAttempts", "referenceType", "images")
-
-internal object LumaWire {
-    fun lumaErrorMessage(statusCode: Int, parsed: JsonElement?, raw: String): String {
-        val obj = parsed as? JsonObject
-        val details = obj?.get("detail")?.jsonArray?.firstOrNull()?.jsonObject?.get("msg")?.jsonPrimitive?.contentOrNull
-        val message = details ?: obj?.get("error")?.jsonPrimitive?.contentOrNull ?: raw.ifBlank { "request failed" }
-        return "Luma request failed ($statusCode): $message"
-    }
-}

@@ -79,8 +79,8 @@ internal object BedrockResponse {
         return LanguageModelResult(
             text = text,
             toolCalls = toolCalls,
-            finishReason = BedrockMapping.mapBedrockFinishReason(stopReason, isJsonResponseFromTool),
-            usage = BedrockMapping.bedrockUsage(response["usage"]),
+            finishReason = mapBedrockFinishReason(stopReason, isJsonResponseFromTool),
+            usage = bedrockUsage(response["usage"]),
             providerMetadata = if (metadata.isNotEmpty()) ProviderMetadata.Raw(JsonObject(mapOf("bedrock" to metadata))) else ProviderMetadata.None,
             content = content,
             rawFinishReason = stopReason,
@@ -112,6 +112,44 @@ internal object BedrockResponse {
         response["inputTextTokenCount"]?.jsonPrimitive?.intOrNull
             ?: response["inputTokenCount"]?.jsonPrimitive?.intOrNull
             ?: 0
+
+    // Shared by the non-streaming decoder above and the streaming [BedrockStreamState] below.
+    fun bedrockUsage(element: JsonElement?): Usage {
+        val obj = element as? JsonObject ?: return Usage()
+        val input = obj["inputTokens"]?.jsonPrimitive?.intOrNull ?: 0
+        val output = obj["outputTokens"]?.jsonPrimitive?.intOrNull ?: 0
+        val cacheRead = obj["cacheReadInputTokens"]?.jsonPrimitive?.intOrNull
+            ?: obj["cacheReadInputTokenCount"]?.jsonPrimitive?.intOrNull
+            ?: 0
+        val cacheWrite = obj["cacheWriteInputTokens"]?.jsonPrimitive?.intOrNull
+            ?: obj["cacheWriteInputTokenCount"]?.jsonPrimitive?.intOrNull
+            ?: 0
+        val safeCacheRead = cacheRead.coerceIn(0, input)
+        val safeCacheWrite = cacheWrite.coerceIn(0, input - safeCacheRead)
+        return Usage(
+            inputTokens = Usage.InputTokenBreakdown(
+                total = input,
+                noCache = input - safeCacheRead - safeCacheWrite,
+                cacheRead = safeCacheRead,
+                cacheWrite = safeCacheWrite,
+            ),
+            outputTokens = Usage.OutputTokenBreakdown(total = output),
+            raw = element,
+        )
+    }
+
+    fun mapBedrockFinishReason(reason: String?, isJsonResponseFromTool: Boolean = false): FinishReason =
+        if (isJsonResponseFromTool) {
+            FinishReason.Stop
+        } else {
+            when (reason) {
+                "end_turn", "stop_sequence" -> FinishReason.Stop
+                "tool_use" -> FinishReason.ToolCalls
+                "max_tokens" -> FinishReason.Length
+                "content_filtered", "guardrail_intervened" -> FinishReason.ContentFilter
+                else -> FinishReason.Other
+            }
+        }
 }
 
 internal class BedrockStreamState(
@@ -136,11 +174,11 @@ internal class BedrockStreamState(
         }
         (value["messageStop"] as? JsonObject)?.let { stop ->
             rawStopReason = stop["stopReason"]?.jsonPrimitive?.contentOrNull
-            finishReason = BedrockMapping.mapBedrockFinishReason(rawStopReason, isJsonResponseFromTool)
+            finishReason = BedrockResponse.mapBedrockFinishReason(rawStopReason, isJsonResponseFromTool)
             stopSequence = stop["additionalModelResponseFields"]?.jsonObject?.get("delta")?.jsonObject?.get("stop_sequence")
         }
         (value["metadata"] as? JsonObject)?.let { metadata ->
-            metadata["usage"]?.let { usage = BedrockMapping.bedrockUsage(it) }
+            metadata["usage"]?.let { usage = BedrockResponse.bedrockUsage(it) }
             providerMetadata = metadata
         }
         (value["contentBlockStart"] as? JsonObject)?.let { start ->
