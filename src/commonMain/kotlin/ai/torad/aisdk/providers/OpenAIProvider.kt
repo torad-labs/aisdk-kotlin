@@ -174,6 +174,9 @@ internal object OpenAIWire {
             baseUrl = baseURL.trimEnd('/'),
             apiKey = apiKey,
             headers = headersWithUserAgent,
+            // UA already embedded in headersWithUserAgent — null the default suffix to avoid
+            // commonHeaders() appending "ai-sdk/openai-compatible-kotlin" a second time.
+            userAgentSuffix = null,
             queryParams = queryParams,
             includeUsage = includeUsage,
             supportsStructuredOutputs = true,

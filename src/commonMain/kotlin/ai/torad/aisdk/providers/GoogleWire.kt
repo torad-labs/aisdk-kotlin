@@ -257,26 +257,23 @@ private const val GOOGLE_SKIP_THOUGHT_SIGNATURE = "skip_thought_signature_valida
 }
 
     fun googleToolConfig(choice: ToolChoice, options: JsonObject): JsonObject? {
-    options["retrievalConfig"]?.let { retrieval ->
-        return buildJsonObject { put("retrievalConfig", retrieval) }
-    }
-    return when (choice) {
+    // retrievalConfig and functionCallingConfig are INDEPENDENT ToolConfig fields. The old early
+    // return on retrievalConfig skipped the choice handling, so `ToolChoice.None` was silently
+    // dropped when retrievalConfig was also set (tools stayed enabled). Merge both instead.
+    val functionCallingConfig = when (choice) {
         ToolChoice.Auto -> null
-        ToolChoice.None -> buildJsonObject {
-            put("functionCallingConfig", buildJsonObject { put("mode", JsonPrimitive("NONE")) })
-        }
-        ToolChoice.Required -> buildJsonObject {
-            put("functionCallingConfig", buildJsonObject { put("mode", JsonPrimitive("ANY")) })
-        }
+        ToolChoice.None -> buildJsonObject { put("mode", JsonPrimitive("NONE")) }
+        ToolChoice.Required -> buildJsonObject { put("mode", JsonPrimitive("ANY")) }
         is ToolChoice.Specific -> buildJsonObject {
-            put(
-                "functionCallingConfig",
-                buildJsonObject {
-                    put("mode", JsonPrimitive("ANY"))
-                    put("allowedFunctionNames", JsonArray(listOf(JsonPrimitive(choice.toolName))))
-                },
-            )
+            put("mode", JsonPrimitive("ANY"))
+            put("allowedFunctionNames", JsonArray(listOf(JsonPrimitive(choice.toolName))))
         }
+    }
+    val retrieval = options["retrievalConfig"]
+    if (functionCallingConfig == null && retrieval == null) return null
+    return buildJsonObject {
+        retrieval?.let { put("retrievalConfig", it) }
+        functionCallingConfig?.let { put("functionCallingConfig", it) }
     }
 }
 
@@ -317,7 +314,10 @@ private const val GOOGLE_SKIP_THOUGHT_SIGNATURE = "skip_thought_signature_valida
         obj["functionCall"]?.jsonObject?.let { callObj ->
             val call = ContentPart.ToolCall(
                 toolCallId = callObj["id"]?.jsonPrimitive?.contentOrNull ?: settings.generateId(),
-                toolName = callObj["name"]?.jsonPrimitive?.contentOrNull.orEmpty(),
+                // Fail loudly on a missing/blank functionCall.name (matching the streaming path)
+                // rather than fabricating toolName="" that fails downstream as a confusing
+                // "tool not found", masking the real wire problem.
+                toolName = WireDecoder.requiredString(callObj, "name", "google", "generateContent response", "$.functionCall"),
                 input = callObj["args"] ?: JsonObject(emptyMap()),
                 providerMetadata = googlePartMetadata(obj)?.let { ProviderMetadata.Raw(JsonObject(it)) } ?: ProviderMetadata.None,
             )

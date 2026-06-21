@@ -14,6 +14,7 @@ import io.ktor.http.contentType
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emitAll
 import kotlinx.coroutines.flow.flow
+import kotlinx.serialization.SerializationException
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
@@ -27,6 +28,7 @@ import kotlinx.serialization.json.booleanOrNull
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.decodeFromJsonElement
+import kotlinx.serialization.json.doubleOrNull
 import kotlinx.serialization.json.intOrNull
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
@@ -946,7 +948,18 @@ internal object OpenResponsesWire {
     ): OpenResponsesOptions? {
         val poMap = providerOptions.toMap()
         val element = poMap[providerOptionsName] ?: poMap["open-responses"] ?: return null
-        return runCatching { json.decodeFromJsonElement(OpenResponsesOptions.serializer(), element) }.getOrNull()
+        // Surface a malformed options block instead of swallowing it to null — getOrNull() here
+        // silently dropped EVERY user option (instructions, reasoningEffort, store, …) on a single
+        // wrong-typed field, with no error and no clue why the request behaved as if unconfigured.
+        return try {
+            json.decodeFromJsonElement(OpenResponsesOptions.serializer(), element)
+        } catch (e: SerializationException) {
+            throw InvalidArgumentError(
+                "providerOptions.$providerOptionsName",
+                "could not decode OpenResponses provider options: ${e.message ?: "<no message>"}",
+                e,
+            )
+        }
     }
 
     internal fun openResponsesReasoning(options: OpenResponsesOptions?): Map<String, JsonElement> = buildMap {
@@ -1069,7 +1082,9 @@ internal object OpenResponsesWire {
             request = LanguageModelRequestMetadata(body = requestBody),
             response = LanguageModelResponseMetadata(
                 id = response["id"]?.jsonPrimitive?.contentOrNull,
-                timestampMillis = response["created_at"]?.jsonPrimitive?.intOrNull?.toLong()?.times(1000),
+                // doubleOrNull, not intOrNull: a Unix-seconds timestamp exceeds Int.MAX_VALUE from
+                // 2038-01-19, where intOrNull would silently yield null. Mirrors the chat wire.
+                timestampMillis = response["created_at"]?.jsonPrimitive?.doubleOrNull?.let { (it * 1000).toLong() },
                 modelId = response["model"]?.jsonPrimitive?.contentOrNull,
                 headers = responseHeaders,
                 body = responseBody,

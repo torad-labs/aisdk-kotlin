@@ -258,7 +258,9 @@ private class AlibabaEmbeddingModel(
             .sortedBy { it.jsonObject["text_index"]?.jsonPrimitive?.intOrNull ?: Int.MAX_VALUE }
         return EmbeddingModelResult(
             embeddings = items.map { item ->
-                item.jsonObject["embedding"]?.jsonArray.orEmpty().map { it.jsonPrimitive.floatOrNull ?: 0f }
+                // Decode each element strictly (like Cohere/Google) — the old `?: 0f` silently
+                // substituted 0f for a null/non-numeric element, corrupting the embedding vector.
+                item.jsonObject["embedding"]?.jsonArray.orEmpty().map { WireDecoder.embeddingFloat(it, "alibaba") }
             },
             usage = EmbeddingUsage(
                 tokens = value["usage"]?.jsonObject?.get("total_tokens")?.jsonPrimitive?.intOrNull ?: 0,
@@ -328,7 +330,15 @@ internal object AlibabaWire {
         options["negativePrompt"]?.let { put("negative_prompt", it) }
         options["audioUrl"]?.let { put("audio_url", it) }
         if (mode == AlibabaVideoMode.ImageToVideo) {
-            params.image?.let { put("img_url", JsonPrimitive(it.url ?: it.base64)) }
+            params.image?.let {
+                // img_url expects an HTTP URL; emitting raw base64 here (the old `?: it.base64`)
+                // sends binary into a URL field and the i2v API rejects it. Fail explicitly.
+                val url = it.url ?: throw UnsupportedFunctionalityError(
+                    "imageToVideo-base64",
+                    "Alibaba i2v requires an image URL; inline base64 is not supported.",
+                )
+                put("img_url", JsonPrimitive(url))
+            }
         }
         if (mode == AlibabaVideoMode.ReferenceToVideo) {
             options["referenceUrls"]?.let { put("reference_urls", it) }

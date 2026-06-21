@@ -52,7 +52,10 @@ internal object OpenAICompatibleWire {
 
     fun openAICompatibleInBandError(value: JsonElement): OpenAICompatibleInBandError? {
         val obj = value as? JsonObject
-        val error = obj?.get("error")
+        // Treat an explicit `"error": null` (JsonNull, a non-null reference) as absent — many
+        // OpenAI-compatible backends (LiteLLM/vLLM/gateways) include it on SUCCESS, and reading it
+        // as a real error turned every such 200 response into a thrown "200: null" failure.
+        val error = obj?.get("error")?.takeUnless { it is JsonNull }
         return if (obj == null || error == null) {
             null
         } else {
