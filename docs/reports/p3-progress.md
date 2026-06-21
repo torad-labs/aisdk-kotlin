@@ -122,11 +122,39 @@ Dissolved 18 / 18, **0 irreducible**:
   re-homed onto the settings companion at the user's direction — 2 unrelated consumers, but a
   single static home reaches both without duplication.)
 
+## Step 7 — inventory-missed bags (`4b06fe4`)
+
+A re-audit found 7 bag objects the step-1..6 inventory had never listed. Dissolved 6 / 7:
+
+- AnthropicWire (public) → AnthropicProviderSettings (headers/options/cache/file/citation/
+  max-tokens), AnthropicMessagesLanguageModel.Companion (`forwardAnthropicContainerIdFromLastStep`
+  stays public; generate-result decode), AnthropicTools.Companion, PreparedAnthropicRequest.Companion,
+  AnthropicPrompt.Companion, + core factories `Usage.fromAnthropic`/`mergeAnthropic`,
+  `FinishReason.fromAnthropicStopReason`.
+- ProdiaWire / QuiverAIWire / ReplicateWire (all `private`) → their `XxxProviderSettings` + model/
+  data types (ProdiaInputFile/ProdiaMultipartResult, ReplicateModelRef, the image/video/language models).
+- TelemetryOps (public) → `Telemetry.Companion` (registerTelemetry/clearGlobalTelemetry public,
+  resolveTelemetry internal).
+- ui.TypedJsonOps (public) → members of `UIMessagePart.ToolUI`/`Data`/`DynamicToolUI`
+  (`outputAs`/`inputAs`/`dataAs`). The inventory counted ONE TypedJsonOps; there were TWO — this
+  ui one is a single-family extractor set (no cross-cutting), so it dissolved onto its owning types.
+
+**Kept — irreducible (evidence-justified, like UrlOps):**
+- **FacadeHttp** (internal, 3 consumers: DeepInfraFacade/FireworksFacade/TogetherAIFacade) — cohesive
+  shared facade HTTP transport; binary + JSON paths share helpers (headerValue/stripDataUriPrefix),
+  no single owner.
+- **TypedJsonOps** (public, TypedJson.kt, 5 consumers: KotlinApi/KtorGatewayTransport/ui.UIMessage/
+  ui.UIMessagePart/KotlinIdiomsTest) — cross-cutting public JSON codec API across 6+ receiver types.
+
 ## P3 complete
 
-All 6 dissolve steps landed. 52 helper-bag objects fully dissolved except the irreducible,
-multi-consumer, no-single-owner shared utilities, left intact and reported: **UrlOps**
-(percent-encoder, 6 consumers), **FacadeSupport** (3 generic JSON readers, 10 facades),
-**GoogleHttp** (Gemini transport), **BedrockHttp** (AWS SigV4 transport). Next: a single
-`updateKotlinAbi` to regenerate dumps for the one cumulative public delta (`GatewayTransport$Companion`),
-then the full check + push — run by the operator.
+All 7 dissolve steps landed; 58 helper-bag objects fully dissolved. The remaining objects are the
+irreducible, multi-consumer, no-single-owner shared utilities, left intact and reported with
+evidence: **UrlOps** (percent-encoder, 6 consumers), **FacadeSupport** (3 generic JSON readers, 10
+facades), **GoogleHttp** (Gemini transport), **BedrockHttp** (AWS SigV4 transport), **FacadeHttp**
+(facade HTTP transport, 3 consumers), **TypedJsonOps** (public JSON codec API, 5 consumers).
+
+Next (operator-run): a single `updateKotlinAbi` to regenerate dumps for the cumulative public delta
+— `GatewayTransport$Companion` (p3-3) plus the removed public objects AnthropicWire / TelemetryOps /
+ui.TypedJsonOps and the new public companions (Telemetry.Companion, AnthropicMessagesLanguageModel
+forward fn, UIMessagePart subtype members) from p3-7 — then the full check + push.
