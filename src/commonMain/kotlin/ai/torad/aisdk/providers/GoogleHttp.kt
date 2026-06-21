@@ -34,11 +34,13 @@ import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 
-// HTTP transport for the Google providers: JSON POST/GET (+retry), SSE streaming
-// helpers, header assembly, and error-message extraction. Extracted verbatim
-// from GoogleProvider.kt.
+// Slim shared HTTP transport for the Google providers: the genuinely cross-cutting
+// JSON POST + SSE streaming calls used by multiple unrelated Google model classes,
+// plus their internal response-parsing / error-extraction helpers. Single-consumer
+// transport fns (GET, GET-with-retry, background-poll SSE) and the header builders
+// were re-homed onto their owning model classes / settings type.
 internal object GoogleHttp {
-private val googleErrorExtractor: ErrorMessageExtractor = { _, parsed, raw -> googleErrorMessage(parsed, raw) }
+internal val googleErrorExtractor: ErrorMessageExtractor = { _, parsed, raw -> googleErrorMessage(parsed, raw) }
 
     suspend fun HttpResponse.parseGoogleResponse(
     url: String,
@@ -91,75 +93,6 @@ private val googleErrorExtractor: ErrorMessageExtractor = { _, parsed, raw -> go
     )
 }
 
-/** Streaming counterpart of [googleGetJson] (background-interaction polling). */
-    fun googleStreamSseGet(
-    client: HttpClient,
-    url: String,
-    headers: Map<String, String>,
-    abortSignal: AbortSignal,
-): Flow<String> = flow {
-    abortSignal.throwIfAborted()
-    emitAll(
-        HttpTransport.streamSse(client = client,
-        url = url,
-        method = HttpMethod.Get,
-        headers = headers,
-        body = null,
-        json = aiSdkJson,
-        errorMessage = googleErrorExtractor,),
-    )
-}
-    suspend fun googleGetJson(
-    client: HttpClient,
-    url: String,
-    headers: Map<String, String>,
-    abortSignal: AbortSignal,
-    parseJson: Boolean = true,
-): HttpJsonResponse {
-    abortSignal.throwIfAborted()
-    val response = client.request(url) {
-        method = HttpMethod.Get
-        headers.forEach { (name, value) -> header(name, value) }
-    }
-    return response.parseGoogleResponse(url, parseJson = parseJson)
-}
-
-    suspend fun googleGetJsonWithRetry(
-    client: HttpClient,
-    url: String,
-    headers: Map<String, String>,
-    abortSignal: AbortSignal,
-    parseJson: Boolean = true,
-    maxRetries: Int = 2,
-    retryDelayMillis: Long = 0,
-): HttpJsonResponse {
-    var attempt = 0
-    while (true) {
-        abortSignal.throwIfAborted()
-        val response = client.request(url) {
-            method = HttpMethod.Get
-            headers.forEach { (name, value) -> header(name, value) }
-        }
-        if (response.status.value !in 500..599 || attempt >= maxRetries) {
-            return response.parseGoogleResponse(url, parseJson = parseJson)
-        }
-        response.bodyAsText()
-        attempt += 1
-        if (retryDelayMillis > 0) delay(retryDelayMillis)
-    }
-}
-
-    fun googleHeaders(settings: GoogleGenerativeAIProviderSettings, extra: Map<String, String>): Map<String, String> {
-    val headers = linkedMapOf<String, String>()
-    settings.apiKey?.let { headers["x-goog-api-key"] = it }
-    headers.putAll(settings.headers)
-    headers.putAll(extra)
-    headers[HttpHeaders.UserAgent] = appendGoogleUserAgent(headers[HttpHeaders.UserAgent], "ai-sdk/google/$GOOGLE_VERSION")
-    return headers
-}
-
-    fun googleInteractionsHeaders(settings: GoogleGenerativeAIProviderSettings, extra: Map<String, String>): Map<String, String> =
-    googleHeaders(settings, extra) + ("Api-Revision" to "2026-05-20")
     fun googleErrorMessage(parsed: JsonElement?, raw: String): String {
     val obj = parsed as? JsonObject ?: return raw
     val error = obj["error"]

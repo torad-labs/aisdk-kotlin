@@ -1,8 +1,6 @@
 package ai.torad.aisdk.providers
 
 import ai.torad.aisdk.*
-import ai.torad.aisdk.providers.GoogleHttp.googleGetJsonWithRetry
-import ai.torad.aisdk.providers.GoogleHttp.googleHeaders
 import ai.torad.aisdk.providers.GoogleHttp.googlePostJson
 import io.ktor.client.HttpClient
 import io.ktor.client.request.header
@@ -62,7 +60,7 @@ internal class GoogleGenerativeAIEmbeddingModel(
             client = client,
             url = "${settings.baseURL.trimEnd('/')}/models/$modelId:${if (single) "embedContent" else "batchEmbedContents"}",
             body = body,
-            headers = googleHeaders(settings, params.headers),
+            headers = settings.googleHeaders(params.headers),
             abortSignal = params.abortSignal,
             parseJson = true,
         )
@@ -120,7 +118,7 @@ internal class GoogleGenerativeAIImageModel(
             client = client,
             url = "${settings.baseURL.trimEnd('/')}/models/$modelId:predict",
             body = body,
-            headers = googleHeaders(settings, params.headers),
+            headers = settings.googleHeaders(params.headers),
             abortSignal = params.abortSignal,
             parseJson = true,
         )
@@ -187,7 +185,7 @@ internal class GoogleGenerativeAIVideoModel(
             client = client,
             url = "${settings.baseURL.trimEnd('/')}/models/$modelId:predictLongRunning",
             body = body,
-            headers = googleHeaders(settings, params.headers),
+            headers = settings.googleHeaders(params.headers),
             abortSignal = params.abortSignal,
             parseJson = true,
         ).value.let { WireDecoder.objectValue(it, provider, "video operation response") }
@@ -202,7 +200,7 @@ internal class GoogleGenerativeAIVideoModel(
             val poll = googleGetJsonWithRetry(
                 client = client,
                 url = "${settings.baseURL.trimEnd('/')}/$operationName",
-                headers = googleHeaders(settings, params.headers),
+                headers = settings.googleHeaders(params.headers),
                 abortSignal = params.abortSignal,
                 retryDelayMillis = pollInterval,
             )
@@ -249,6 +247,31 @@ internal class GoogleGenerativeAIVideoModel(
         }
         if (videos.isEmpty()) throw NoVideoGeneratedError("Google video response contained no videos.")
         return VideoModelResult(videos = videos, response = LanguageModelResponseMetadata(modelId = modelId, headers = headers, body = current), providerMetadata = ProviderMetadata.Raw(JsonObject(mapOf("google" to current))))
+    }
+
+    private suspend fun googleGetJsonWithRetry(
+        client: HttpClient,
+        url: String,
+        headers: Map<String, String>,
+        abortSignal: AbortSignal,
+        parseJson: Boolean = true,
+        maxRetries: Int = 2,
+        retryDelayMillis: Long = 0,
+    ): HttpJsonResponse {
+        var attempt = 0
+        while (true) {
+            abortSignal.throwIfAborted()
+            val response = client.request(url) {
+                method = HttpMethod.Get
+                headers.forEach { (name, value) -> header(name, value) }
+            }
+            if (response.status.value !in 500..599 || attempt >= maxRetries) {
+                return with(GoogleHttp) { response.parseGoogleResponse(url, parseJson = parseJson) }
+            }
+            response.bodyAsText()
+            attempt += 1
+            if (retryDelayMillis > 0) delay(retryDelayMillis)
+        }
     }
 }
 

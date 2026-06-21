@@ -1,16 +1,6 @@
 package ai.torad.aisdk.providers
 
 import ai.torad.aisdk.*
-import ai.torad.aisdk.providers.AlibabaWire.alibabaHeaders
-import ai.torad.aisdk.providers.AlibabaWire.alibabaOptions
-import ai.torad.aisdk.providers.AlibabaWire.alibabaGetJson
-import ai.torad.aisdk.providers.AlibabaWire.alibabaPostJson
-import ai.torad.aisdk.providers.AlibabaWire.alibabaUsage
-import ai.torad.aisdk.providers.AlibabaWire.alibabaVideoInput
-import ai.torad.aisdk.providers.AlibabaWire.alibabaVideoMetadata
-import ai.torad.aisdk.providers.AlibabaWire.alibabaVideoMode
-import ai.torad.aisdk.providers.AlibabaWire.alibabaVideoParameters
-import ai.torad.aisdk.providers.AlibabaWire.transformAlibabaChatOptions
 import io.ktor.client.HttpClient
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpMethod
@@ -50,7 +40,52 @@ public data class AlibabaProviderSettings(
     val apiKey: String? = null,
     val headers: Map<String, String> = emptyMap(),
     val includeUsage: Boolean = true,
-)
+) {
+    internal suspend fun alibabaPostJson(
+        client: HttpClient,
+        url: String,
+        body: JsonObject,
+        headers: Map<String, String>,
+    ): HttpJsonResponse =
+        HttpTransport.requestJson(
+            client = client,
+            url = url,
+            method = HttpMethod.Post,
+            headers = headers,
+            body = body,
+            requestBodyValues = body,
+            errorMessage = this::alibabaErrorMessage,
+        )
+
+    internal suspend fun alibabaGetJson(
+        client: HttpClient,
+        url: String,
+        headers: Map<String, String>,
+    ): HttpJsonResponse =
+        HttpTransport.requestJson(
+            client = client,
+            url = url,
+            method = HttpMethod.Get,
+            headers = headers,
+            errorMessage = this::alibabaErrorMessage,
+        )
+
+    internal fun alibabaHeaders(callHeaders: Map<String, String>): Map<String, String> =
+        ProviderHeaders.build(headers, callHeaders, "ai-sdk/alibaba/$ALIBABA_VERSION") { base ->
+            apiKey?.takeIf { it.isNotBlank() }?.let { base[HttpHeaders.Authorization] = "Bearer $it" }
+        }
+
+    internal fun alibabaOptions(providerOptions: ProviderOptions): JsonObject =
+        providerOptions.toMap()["alibaba"] as? JsonObject ?: JsonObject(emptyMap())
+
+    private fun alibabaErrorMessage(statusCode: Int, parsed: JsonElement?, raw: String): String {
+        val obj = parsed as? JsonObject
+        val detail = obj?.get("message")?.jsonPrimitive?.contentOrNull
+            ?: obj?.get("error")?.jsonObject?.get("message")?.jsonPrimitive?.contentOrNull
+            ?: raw.ifBlank { "request failed" }
+        return "Alibaba request failed ($statusCode): $detail"
+    }
+}
 
 /** Provider options for [AlibabaProvider.embeddingModel] — pass under the
  *  `"alibaba"` key in [EmbeddingModelCallParams.providerOptions]. */
@@ -138,6 +173,39 @@ private class AlibabaChatLanguageModel(
             emit(if (event is StreamEvent.Finish) event.copy(usage = alibabaUsage(event.usage)) else event)
         }
     }
+
+    private fun transformAlibabaChatOptions(providerOptions: ProviderOptions): ProviderOptions {
+        val map = providerOptions.toMap()
+        val options = map["alibaba"] as? JsonObject ?: return providerOptions
+        val transformed = buildJsonObject {
+            options["enableThinking"]?.let { put("enable_thinking", it) }
+            options["thinkingBudget"]?.let { put("thinking_budget", it) }
+            options["parallelToolCalls"]?.let { put("parallel_tool_calls", it) }
+            for ((key, value) in options) {
+                if (key !in setOf("enableThinking", "thinkingBudget", "parallelToolCalls")) put(key, value)
+            }
+        }
+        return ProviderOptions.Raw(JsonObject(map + ("alibaba" to (transformed as JsonElement))))
+    }
+
+    private fun alibabaUsage(usage: Usage): Usage {
+        val raw = usage.raw?.jsonObject
+        val cacheWrite = raw?.get("prompt_tokens_details")?.jsonObject
+            ?.get("cache_creation_input_tokens")?.jsonPrimitive?.intOrNull ?: 0
+        val inputTotal = usage.inputTokens.total
+        val cacheRead = usage.inputTokens.cacheRead
+        val reasoning = usage.outputTokens.reasoning
+        val outputTotal = usage.outputTokens.total
+        return usage.copy(
+            inputTokens = usage.inputTokens.copy(
+                cacheWrite = cacheWrite,
+                noCache = (inputTotal - cacheRead - cacheWrite).coerceAtLeast(0),
+            ),
+            outputTokens = usage.outputTokens.copy(
+                text = (outputTotal - reasoning).coerceAtLeast(0),
+            ),
+        )
+    }
 }
 
 private class AlibabaVideoModel(
@@ -150,7 +218,7 @@ private class AlibabaVideoModel(
 
     override suspend fun generate(params: VideoGenerationParams): VideoModelResult {
         params.abortSignal.throwIfAborted()
-        val options = alibabaOptions(params.providerOptions)
+        val options = settings.alibabaOptions(params.providerOptions)
         val mode = alibabaVideoMode(modelId)
         val warnings = mutableListOf<CallWarning>()
         val body = buildJsonObject {
@@ -158,11 +226,11 @@ private class AlibabaVideoModel(
             put("input", alibabaVideoInput(mode, params, options))
             put("parameters", alibabaVideoParameters(mode, params, options, warnings))
         }
-        val create = alibabaPostJson(
+        val create = settings.alibabaPostJson(
             client = client,
             url = "${settings.videoBaseURL.trimEnd('/')}/api/v1/services/aigc/video-generation/video-synthesis",
             body = body,
-            headers = alibabaHeaders(settings, params.headers + mapOf("X-DashScope-Async" to "enable")),
+            headers = settings.alibabaHeaders(params.headers + mapOf("X-DashScope-Async" to "enable")),
         )
         val taskId = create.value.jsonObject["output"]?.jsonObject?.get("task_id")?.jsonPrimitive?.contentOrNull
             ?: throw NoVideoGeneratedError("No task_id returned from Alibaba API. Response: ${create.value}")
@@ -177,10 +245,10 @@ private class AlibabaVideoModel(
             if (clock.now().toEpochMilliseconds() - started > pollTimeoutMs) {
                 throw NoVideoGeneratedError("Video generation timed out after ${pollTimeoutMs}ms")
             }
-            val status = alibabaGetJson(
+            val status = settings.alibabaGetJson(
                 client = client,
                 url = "${settings.videoBaseURL.trimEnd('/')}/api/v1/tasks/$taskId",
-                headers = alibabaHeaders(settings, params.headers),
+                headers = settings.alibabaHeaders(params.headers),
             )
             headers = status.headers
             val output = status.value.jsonObject["output"]?.jsonObject ?: JsonObject(emptyMap())
@@ -201,79 +269,7 @@ private class AlibabaVideoModel(
             }
         }
     }
-}
 
-internal enum class AlibabaVideoMode { TextToVideo, ImageToVideo, ReferenceToVideo }
-
-private const val ALIBABA_MAX_EMBEDDINGS_PER_CALL = 10
-
-/** DashScope text-embedding (text-embedding-v3/v4) model. Routes to the native
- *  DashScope endpoint (`embeddingBaseURL`), not the OpenAI-compatible chat base. */
-private class AlibabaEmbeddingModel(
-    private val client: HttpClient,
-    private val settings: AlibabaProviderSettings,
-    override val modelId: String,
-) : EmbeddingModel {
-    override val provider: String = "alibaba.embedding"
-    override val maxEmbeddingsPerCall: Int = ALIBABA_MAX_EMBEDDINGS_PER_CALL
-    override val supportsParallelCalls: Boolean = false
-
-    override suspend fun embed(params: EmbeddingModelCallParams): EmbeddingModelResult {
-        if (params.values.size > ALIBABA_MAX_EMBEDDINGS_PER_CALL) {
-            throw TooManyEmbeddingValuesForCallError(
-                provider = provider,
-                modelId = modelId,
-                maxEmbeddingsPerCall = ALIBABA_MAX_EMBEDDINGS_PER_CALL,
-                values = params.values,
-            )
-        }
-        val options = alibabaOptions(params.providerOptions)
-        if (options["outputType"]?.jsonPrimitive?.contentOrNull == "sparse") {
-            throw UnsupportedFunctionalityError(
-                "Alibaba embedding outputType 'sparse'",
-                "Alibaba embedding outputType 'sparse' is not supported because embeddings require " +
-                    "dense number arrays. Use 'dense' or 'dense&sparse' instead.",
-            )
-        }
-        val body = buildJsonObject {
-            put("model", JsonPrimitive(modelId))
-            put("input", buildJsonObject { put("texts", JsonArray(params.values.map(::JsonPrimitive))) })
-            put(
-                "parameters",
-                buildJsonObject {
-                    options["textType"]?.let { put("text_type", it) }
-                    options["dimension"]?.let { put("dimension", it) }
-                    options["outputType"]?.let { put("output_type", it) }
-                },
-            )
-        }
-        val response = alibabaPostJson(
-            client = client,
-            url = "${settings.embeddingBaseURL.trimEnd('/')}/services/embeddings/text-embedding/text-embedding",
-            body = body,
-            headers = alibabaHeaders(settings, params.headers),
-        )
-        val value = response.value.jsonObject
-        val items = value["output"]?.jsonObject?.get("embeddings")?.jsonArray.orEmpty()
-            .sortedBy { it.jsonObject["text_index"]?.jsonPrimitive?.intOrNull ?: Int.MAX_VALUE }
-        return EmbeddingModelResult(
-            embeddings = items.map { item ->
-                // Decode each element strictly (like Cohere/Google) — the old `?: 0f` silently
-                // substituted 0f for a null/non-numeric element, corrupting the embedding vector.
-                item.jsonObject["embedding"]?.jsonArray.orEmpty().map { WireDecoder.embeddingFloat(it, "alibaba") }
-            },
-            usage = EmbeddingUsage(
-                tokens = value["usage"]?.jsonObject?.get("total_tokens")?.jsonPrimitive?.intOrNull ?: 0,
-                raw = value["usage"],
-            ),
-            request = LanguageModelRequestMetadata(body = body),
-            response = LanguageModelResponseMetadata(headers = response.headers, body = response.value),
-        )
-    }
-}
-
-/** Wire-format helpers for the Alibaba/DashScope provider. */
-internal object AlibabaWire {
     private val alibabaVideoHandledOptions = setOf(
         "negativePrompt",
         "audioUrl",
@@ -286,46 +282,13 @@ internal object AlibabaWire {
         "pollTimeoutMs",
     )
 
-    fun transformAlibabaChatOptions(providerOptions: ProviderOptions): ProviderOptions {
-        val map = providerOptions.toMap()
-        val options = map["alibaba"] as? JsonObject ?: return providerOptions
-        val transformed = buildJsonObject {
-            options["enableThinking"]?.let { put("enable_thinking", it) }
-            options["thinkingBudget"]?.let { put("thinking_budget", it) }
-            options["parallelToolCalls"]?.let { put("parallel_tool_calls", it) }
-            for ((key, value) in options) {
-                if (key !in setOf("enableThinking", "thinkingBudget", "parallelToolCalls")) put(key, value)
-            }
-        }
-        return ProviderOptions.Raw(JsonObject(map + ("alibaba" to (transformed as JsonElement))))
-    }
-
-    fun alibabaUsage(usage: Usage): Usage {
-        val raw = usage.raw?.jsonObject
-        val cacheWrite = raw?.get("prompt_tokens_details")?.jsonObject
-            ?.get("cache_creation_input_tokens")?.jsonPrimitive?.intOrNull ?: 0
-        val inputTotal = usage.inputTokens.total
-        val cacheRead = usage.inputTokens.cacheRead
-        val reasoning = usage.outputTokens.reasoning
-        val outputTotal = usage.outputTokens.total
-        return usage.copy(
-            inputTokens = usage.inputTokens.copy(
-                cacheWrite = cacheWrite,
-                noCache = (inputTotal - cacheRead - cacheWrite).coerceAtLeast(0),
-            ),
-            outputTokens = usage.outputTokens.copy(
-                text = (outputTotal - reasoning).coerceAtLeast(0),
-            ),
-        )
-    }
-
-    fun alibabaVideoMode(modelId: String): AlibabaVideoMode = when {
+    private fun alibabaVideoMode(modelId: String): AlibabaVideoMode = when {
         modelId.contains("-i2v") -> AlibabaVideoMode.ImageToVideo
         modelId.contains("-r2v") -> AlibabaVideoMode.ReferenceToVideo
         else -> AlibabaVideoMode.TextToVideo
     }
 
-    fun alibabaVideoInput(mode: AlibabaVideoMode, params: VideoGenerationParams, options: JsonObject): JsonObject = buildJsonObject {
+    private fun alibabaVideoInput(mode: AlibabaVideoMode, params: VideoGenerationParams, options: JsonObject): JsonObject = buildJsonObject {
         params.prompt.takeIf { it.isNotBlank() }?.let { put("prompt", JsonPrimitive(it)) }
         options["negativePrompt"]?.let { put("negative_prompt", it) }
         options["audioUrl"]?.let { put("audio_url", it) }
@@ -345,7 +308,7 @@ internal object AlibabaWire {
         }
     }
 
-    fun alibabaVideoParameters(
+    private fun alibabaVideoParameters(
         mode: AlibabaVideoMode,
         params: VideoGenerationParams,
         options: JsonObject,
@@ -383,7 +346,7 @@ internal object AlibabaWire {
         else -> value
     }
 
-    fun alibabaVideoMetadata(taskId: String, videoUrl: String, value: JsonObject): JsonObject = buildJsonObject {
+    private fun alibabaVideoMetadata(taskId: String, videoUrl: String, value: JsonObject): JsonObject = buildJsonObject {
         val output = value["output"]?.jsonObject ?: JsonObject(emptyMap())
         put("taskId", JsonPrimitive(taskId))
         put("videoUrl", JsonPrimitive(videoUrl))
@@ -397,49 +360,73 @@ internal object AlibabaWire {
             })
         }
     }
+}
 
-    suspend fun alibabaPostJson(
-        client: HttpClient,
-        url: String,
-        body: JsonObject,
-        headers: Map<String, String>,
-    ): HttpJsonResponse =
-        HttpTransport.requestJson(
-            client = client,
-            url = url,
-            method = HttpMethod.Post,
-            headers = headers,
-            body = body,
-            requestBodyValues = body,
-            errorMessage = ::alibabaErrorMessage,
-        )
+internal enum class AlibabaVideoMode { TextToVideo, ImageToVideo, ReferenceToVideo }
 
-    suspend fun alibabaGetJson(
-        client: HttpClient,
-        url: String,
-        headers: Map<String, String>,
-    ): HttpJsonResponse =
-        HttpTransport.requestJson(
-            client = client,
-            url = url,
-            method = HttpMethod.Get,
-            headers = headers,
-            errorMessage = ::alibabaErrorMessage,
-        )
+private const val ALIBABA_MAX_EMBEDDINGS_PER_CALL = 10
 
-    fun alibabaHeaders(settings: AlibabaProviderSettings, callHeaders: Map<String, String>): Map<String, String> =
-        ProviderHeaders.build(settings.headers, callHeaders, "ai-sdk/alibaba/$ALIBABA_VERSION") { base ->
-            settings.apiKey?.takeIf { it.isNotBlank() }?.let { base[HttpHeaders.Authorization] = "Bearer $it" }
+/** DashScope text-embedding (text-embedding-v3/v4) model. Routes to the native
+ *  DashScope endpoint (`embeddingBaseURL`), not the OpenAI-compatible chat base. */
+private class AlibabaEmbeddingModel(
+    private val client: HttpClient,
+    private val settings: AlibabaProviderSettings,
+    override val modelId: String,
+) : EmbeddingModel {
+    override val provider: String = "alibaba.embedding"
+    override val maxEmbeddingsPerCall: Int = ALIBABA_MAX_EMBEDDINGS_PER_CALL
+    override val supportsParallelCalls: Boolean = false
+
+    override suspend fun embed(params: EmbeddingModelCallParams): EmbeddingModelResult {
+        if (params.values.size > ALIBABA_MAX_EMBEDDINGS_PER_CALL) {
+            throw TooManyEmbeddingValuesForCallError(
+                provider = provider,
+                modelId = modelId,
+                maxEmbeddingsPerCall = ALIBABA_MAX_EMBEDDINGS_PER_CALL,
+                values = params.values,
+            )
         }
-
-    fun alibabaOptions(providerOptions: ProviderOptions): JsonObject =
-        providerOptions.toMap()["alibaba"] as? JsonObject ?: JsonObject(emptyMap())
-
-    private fun alibabaErrorMessage(statusCode: Int, parsed: JsonElement?, raw: String): String {
-        val obj = parsed as? JsonObject
-        val detail = obj?.get("message")?.jsonPrimitive?.contentOrNull
-            ?: obj?.get("error")?.jsonObject?.get("message")?.jsonPrimitive?.contentOrNull
-            ?: raw.ifBlank { "request failed" }
-        return "Alibaba request failed ($statusCode): $detail"
+        val options = settings.alibabaOptions(params.providerOptions)
+        if (options["outputType"]?.jsonPrimitive?.contentOrNull == "sparse") {
+            throw UnsupportedFunctionalityError(
+                "Alibaba embedding outputType 'sparse'",
+                "Alibaba embedding outputType 'sparse' is not supported because embeddings require " +
+                    "dense number arrays. Use 'dense' or 'dense&sparse' instead.",
+            )
+        }
+        val body = buildJsonObject {
+            put("model", JsonPrimitive(modelId))
+            put("input", buildJsonObject { put("texts", JsonArray(params.values.map(::JsonPrimitive))) })
+            put(
+                "parameters",
+                buildJsonObject {
+                    options["textType"]?.let { put("text_type", it) }
+                    options["dimension"]?.let { put("dimension", it) }
+                    options["outputType"]?.let { put("output_type", it) }
+                },
+            )
+        }
+        val response = settings.alibabaPostJson(
+            client = client,
+            url = "${settings.embeddingBaseURL.trimEnd('/')}/services/embeddings/text-embedding/text-embedding",
+            body = body,
+            headers = settings.alibabaHeaders(params.headers),
+        )
+        val value = response.value.jsonObject
+        val items = value["output"]?.jsonObject?.get("embeddings")?.jsonArray.orEmpty()
+            .sortedBy { it.jsonObject["text_index"]?.jsonPrimitive?.intOrNull ?: Int.MAX_VALUE }
+        return EmbeddingModelResult(
+            embeddings = items.map { item ->
+                // Decode each element strictly (like Cohere/Google) — the old `?: 0f` silently
+                // substituted 0f for a null/non-numeric element, corrupting the embedding vector.
+                item.jsonObject["embedding"]?.jsonArray.orEmpty().map { WireDecoder.embeddingFloat(it, "alibaba") }
+            },
+            usage = EmbeddingUsage(
+                tokens = value["usage"]?.jsonObject?.get("total_tokens")?.jsonPrimitive?.intOrNull ?: 0,
+                raw = value["usage"],
+            ),
+            request = LanguageModelRequestMetadata(body = body),
+            response = LanguageModelResponseMetadata(headers = response.headers, body = response.value),
+        )
     }
 }

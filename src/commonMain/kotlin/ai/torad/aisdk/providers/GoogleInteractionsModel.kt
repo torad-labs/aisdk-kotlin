@@ -1,11 +1,8 @@
 package ai.torad.aisdk.providers
 
 import ai.torad.aisdk.*
-import ai.torad.aisdk.providers.GoogleHttp.googleGetJson
-import ai.torad.aisdk.providers.GoogleHttp.googleInteractionsHeaders
 import ai.torad.aisdk.providers.GoogleHttp.googlePostJson
 import ai.torad.aisdk.providers.GoogleHttp.googleStreamSse
-import ai.torad.aisdk.providers.GoogleHttp.googleStreamSseGet
 import ai.torad.aisdk.providers.GoogleInteractions.googleInteractionsFinishReason
 import ai.torad.aisdk.providers.GoogleInteractions.googleInteractionsMetadata
 import ai.torad.aisdk.providers.GoogleInteractions.googleInteractionsRequestBody
@@ -70,7 +67,7 @@ internal class GoogleInteractionsLanguageModel(
             client = client,
             url = "${settings.baseURL.trimEnd('/')}/interactions",
             body = prepared.body,
-            headers = googleInteractionsHeaders(settings, params.headers),
+            headers = settings.googleInteractionsHeaders(params.headers),
             abortSignal = params.abortSignal,
             parseJson = true,
         )
@@ -81,7 +78,7 @@ internal class GoogleInteractionsLanguageModel(
                 settings = settings,
                 interactionId = body["id"]?.jsonPrimitive?.contentOrNull
                     ?: throw InvalidResponseDataError(body, "google.interactions: background response did not include an interaction id."),
-                headers = googleInteractionsHeaders(settings, params.headers),
+                headers = settings.googleInteractionsHeaders(params.headers),
                 abortSignal = params.abortSignal,
                 timeoutMillis = prepared.pollingTimeoutMillis,
             ).value.jsonObject
@@ -98,7 +95,7 @@ internal class GoogleInteractionsLanguageModel(
                 client = client,
                 url = "${settings.baseURL.trimEnd('/')}/interactions",
                 body = prepared.body,
-                headers = googleInteractionsHeaders(settings, params.headers),
+                headers = settings.googleInteractionsHeaders(params.headers),
                 abortSignal = params.abortSignal,
                 parseJson = true,
             )
@@ -111,7 +108,7 @@ internal class GoogleInteractionsLanguageModel(
                 val rawLines = googleStreamSseGet(
                     client = client,
                     url = "${settings.baseURL.trimEnd('/')}/interactions/$interactionId?stream=true",
-                    headers = googleInteractionsHeaders(settings, params.headers) + (HttpHeaders.Accept to "text/event-stream"),
+                    headers = settings.googleInteractionsHeaders(params.headers) + (HttpHeaders.Accept to "text/event-stream"),
                     abortSignal = params.abortSignal,
                 )
                 with(GoogleInteractions) { collectGoogleInteractions(rawLines, state) }
@@ -121,7 +118,7 @@ internal class GoogleInteractionsLanguageModel(
                 client = client,
                 url = "${settings.baseURL.trimEnd('/')}/interactions",
                 body = prepared.body,
-                headers = googleInteractionsHeaders(settings, params.headers) + (HttpHeaders.Accept to "text/event-stream"),
+                headers = settings.googleInteractionsHeaders(params.headers) + (HttpHeaders.Accept to "text/event-stream"),
                 abortSignal = params.abortSignal,
             )
             with(GoogleInteractions) { collectGoogleInteractions(rawLines, state) }
@@ -132,6 +129,27 @@ internal class GoogleInteractionsLanguageModel(
     override fun streamResult(params: LanguageModelCallParams): LanguageModelStreamResult {
         val prepared = googleInteractionsRequestBody(modelInput, params, stream = true)
         return LanguageModelStreamResult(stream = stream(params), request = LanguageModelRequestMetadata(prepared.body))
+    }
+
+    /** Streaming counterpart of the background-interaction GET poll: reads the SSE body incrementally. */
+    private fun googleStreamSseGet(
+        client: HttpClient,
+        url: String,
+        headers: Map<String, String>,
+        abortSignal: AbortSignal,
+    ): Flow<String> = flow {
+        abortSignal.throwIfAborted()
+        emitAll(
+            HttpTransport.streamSse(
+                client = client,
+                url = url,
+                method = HttpMethod.Get,
+                headers = headers,
+                body = null,
+                json = aiSdkJson,
+                errorMessage = GoogleHttp.googleErrorExtractor,
+            ),
+        )
     }
 }
 
@@ -857,6 +875,21 @@ internal object GoogleInteractions {
 
     fun googleInteractionsTerminal(status: String?): Boolean =
     status in setOf("completed", "failed", "cancelled", "incomplete")
+
+    private suspend fun googleGetJson(
+        client: HttpClient,
+        url: String,
+        headers: Map<String, String>,
+        abortSignal: AbortSignal,
+        parseJson: Boolean = true,
+    ): HttpJsonResponse {
+        abortSignal.throwIfAborted()
+        val response = client.request(url) {
+            method = HttpMethod.Get
+            headers.forEach { (name, value) -> header(name, value) }
+        }
+        return with(GoogleHttp) { response.parseGoogleResponse(url, parseJson = parseJson) }
+    }
 
     suspend fun googlePollInteraction(
     client: HttpClient,
