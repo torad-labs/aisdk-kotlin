@@ -1,7 +1,7 @@
 package ai.torad.aisdk
 
-import ai.torad.aisdk.providers.mockLanguageModelToolThenText
-import ai.torad.aisdk.providers.mockToolInput
+import ai.torad.aisdk.providers.MockLanguageModelToolThenText
+import ai.torad.aisdk.providers.MockToolInput
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.Serializable
@@ -37,9 +37,9 @@ class ToolLoopContractGapsTest {
             "ok"
         }
         val agent = TestToolLoopAgent<String, String>(
-            model = mockLanguageModelToolThenText("probe", mockToolInput("unused" to ""), "done"),
+            model = MockLanguageModelToolThenText("probe", MockToolInput("unused" to ""), "done"),
             instructions = "run probe",
-            tools = toolSetOf(probe),
+            tools = ToolSet(probe),
         )
 
         // WHEN streamed with the call context "initial" and no prepareStep.
@@ -64,9 +64,9 @@ class ToolLoopContractGapsTest {
             "ok"
         }
         val agent = TestToolLoopAgent<String, String>(
-            model = mockLanguageModelToolThenText("probe", mockToolInput("unused" to ""), "done"),
+            model = MockLanguageModelToolThenText("probe", MockToolInput("unused" to ""), "done"),
             instructions = "run probe",
-            tools = toolSetOf(probe),
+            tools = ToolSet(probe),
             prepareStep = { StepSettings(experimental_context = "augmented") },
         )
 
@@ -96,9 +96,9 @@ class ToolLoopContractGapsTest {
             onInputAvailable = { callId, _ -> avails.add(callId) },
         ) { _ -> "ok" }
         val agent = TestToolLoopAgent<Unit, String>(
-            model = mockLanguageModelToolThenText("probe", mockToolInput("unused" to ""), "done"),
+            model = MockLanguageModelToolThenText("probe", MockToolInput("unused" to ""), "done"),
             instructions = "run probe",
-            tools = toolSetOf(probe),
+            tools = ToolSet(probe),
         )
 
         // WHEN the model streams the tool's input then calls it.
@@ -121,9 +121,9 @@ class ToolLoopContractGapsTest {
             onInputStart = { error("pre-warm boom") },
         ) { _ -> "ok" }
         val agent = TestToolLoopAgent<Unit, String>(
-            model = mockLanguageModelToolThenText("probe", mockToolInput("unused" to ""), "done"),
+            model = MockLanguageModelToolThenText("probe", MockToolInput("unused" to ""), "done"),
             instructions = "run probe",
-            tools = toolSetOf(probe),
+            tools = ToolSet(probe),
         )
 
         // WHEN streamed.
@@ -150,9 +150,9 @@ class ToolLoopContractGapsTest {
             "final"
         }
         val agent = TestToolLoopAgent<Unit, String>(
-            model = mockLanguageModelToolThenText("progressing", mockToolInput("unused" to ""), "done"),
+            model = MockLanguageModelToolThenText("progressing", MockToolInput("unused" to ""), "done"),
             instructions = "run it",
-            tools = toolSetOf(writerTool),
+            tools = ToolSet(writerTool),
         )
 
         // WHEN streamed.

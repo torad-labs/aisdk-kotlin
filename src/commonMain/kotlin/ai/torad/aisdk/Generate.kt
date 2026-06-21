@@ -98,13 +98,13 @@ public class StreamTextResult(
     }
 
     public fun toTextStreamResponse(): ai.torad.aisdk.ui.TextStreamResponse =
-        ai.torad.aisdk.ui.createTextStreamResponse(textStream)
+        ai.torad.aisdk.ui.CreateTextStreamResponse(textStream)
 
     public fun toUiMessageStream(assistantMessageId: String): Flow<ai.torad.aisdk.ui.UIMessage> =
-        ai.torad.aisdk.ui.streamToUiMessages(fullStream, assistantMessageId)
+        ai.torad.aisdk.ui.StreamToUiMessages(fullStream, assistantMessageId)
 
     public fun toUiMessageStreamResponse(assistantMessageId: String): ai.torad.aisdk.ui.UIMessageStreamResponse =
-        ai.torad.aisdk.ui.createUiMessageStreamResponse(toUiMessageStream(assistantMessageId))
+        ai.torad.aisdk.ui.CreateUiMessageStreamResponse(toUiMessageStream(assistantMessageId))
 
     private suspend fun ensureCollected() {
         fullStream.collect { }
@@ -117,9 +117,11 @@ public class StreamTextResult(
             .firstOrNull { it.isNotEmpty() }
             ?: emptyList()
         var response = initialResponse
-        for (event in buffer) {
-            if (event is StreamEvent.ResponseMetadata) {
-                response = response.merge(event.toLanguageModelResponseMetadata())
+        with(StreamMetadataOps) {
+            for (event in buffer) {
+                if (event is StreamEvent.ResponseMetadata) {
+                    response = response.merge(event.toLanguageModelResponseMetadata())
+                }
             }
         }
         capturedResponse = response
@@ -141,21 +143,23 @@ public data class GenerateObjectResult<TOutput>(
     val generatedObject: TOutput get() = value
 }
 
-private fun StreamEvent.ResponseMetadata.toLanguageModelResponseMetadata(): LanguageModelResponseMetadata =
-    LanguageModelResponseMetadata(
-        id = id,
-        timestampMillis = timestampMillis,
-        modelId = modelId,
-        headers = headers,
-        body = body,
-    )
+internal object StreamMetadataOps {
+    fun StreamEvent.ResponseMetadata.toLanguageModelResponseMetadata(): LanguageModelResponseMetadata =
+        LanguageModelResponseMetadata(
+            id = id,
+            timestampMillis = timestampMillis,
+            modelId = modelId,
+            headers = headers,
+            body = body,
+        )
 
-private fun LanguageModelResponseMetadata.merge(
-    other: LanguageModelResponseMetadata,
-): LanguageModelResponseMetadata = LanguageModelResponseMetadata(
-    id = other.id ?: id,
-    timestampMillis = other.timestampMillis ?: timestampMillis,
-    modelId = other.modelId ?: modelId,
-    headers = headers + other.headers,
-    body = other.body ?: body,
-)
+    fun LanguageModelResponseMetadata.merge(
+        other: LanguageModelResponseMetadata,
+    ): LanguageModelResponseMetadata = LanguageModelResponseMetadata(
+        id = other.id ?: id,
+        timestampMillis = other.timestampMillis ?: timestampMillis,
+        modelId = other.modelId ?: modelId,
+        headers = headers + other.headers,
+        body = other.body ?: body,
+    )
+}

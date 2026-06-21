@@ -6,8 +6,8 @@ import ai.torad.aisdk.Logger
 import ai.torad.aisdk.StreamEvent
 import ai.torad.aisdk.providers.MockLanguageModel
 import ai.torad.aisdk.providers.ScriptedResponse
-import ai.torad.aisdk.userMessage
-import ai.torad.aisdk.wrapLanguageModel
+import ai.torad.aisdk.UserMessage
+import ai.torad.aisdk.WrapLanguageModel
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.JsonPrimitive
 import kotlin.test.Test
@@ -37,7 +37,7 @@ class LoggingMiddlewareTest {
         }
     }
 
-    private val params = LanguageModelCallParams(messages = listOf(userMessage("hi")))
+    private val params = LanguageModelCallParams(messages = listOf(UserMessage("hi")))
 
     @Test
     fun `given a model that emits a tool call when logging-wrapped then the call is logged at debug`() = runTest {
@@ -53,7 +53,7 @@ class LoggingMiddlewareTest {
             ),
         )
         val logger = RecordingLogger()
-        val wrapped = wrapLanguageModel(model, listOf(loggingMiddleware(logger)))
+        val wrapped = WrapLanguageModel(model, listOf(LoggingMiddleware(logger)))
 
         // WHEN streamed.
         val sink = mutableListOf<StreamEvent>()
@@ -78,7 +78,7 @@ class LoggingMiddlewareTest {
                 ),
             )
             val logger = RecordingLogger()
-            val wrapped = wrapLanguageModel(model, listOf(loggingMiddleware(logger)))
+            val wrapped = WrapLanguageModel(model, listOf(LoggingMiddleware(logger)))
 
             // WHEN streamed.
             val sink = mutableListOf<StreamEvent>()

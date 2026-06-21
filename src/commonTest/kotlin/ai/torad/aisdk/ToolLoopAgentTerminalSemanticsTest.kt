@@ -1,6 +1,6 @@
 package ai.torad.aisdk
 
-import ai.torad.aisdk.testing.drainAllItems
+import ai.torad.aisdk.testing.FlowDrain.drainAllItems
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlinx.coroutines.flow.Flow
@@ -35,7 +35,7 @@ class ToolLoopAgentTerminalSemanticsTest {
             val generateAgent = TestToolLoopAgent<Unit, String>(
                 model = generateModel,
                 instructions = "finish once",
-                tools = toolSetOf(),
+                tools = ToolSet(),
             )
             val result = generateAgent.generate(prompt = "run", options = Unit).first()
 
@@ -58,7 +58,7 @@ class ToolLoopAgentTerminalSemanticsTest {
             val streamAgent = TestToolLoopAgent<Unit, String>(
                 model = streamModel,
                 instructions = "finish once",
-                tools = toolSetOf(),
+                tools = ToolSet(),
             )
             val events = drainAllItems(streamAgent.stream(prompt = "run", options = Unit))
 

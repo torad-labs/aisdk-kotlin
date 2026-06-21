@@ -203,7 +203,7 @@ public sealed interface StreamEvent {
         val toolCallId: String,
         val toolName: String,
         val outputJson: JsonElement,
-        val output: ToolResultOutput = toolResultOutputFromJson(outputJson),
+        val output: ToolResultOutput = ToolResultOutputs.toolResultOutputFromJson(outputJson),
         val modelOutput: ToolResultOutput = output,
         val isError: Boolean = modelOutput is ToolResultOutput.Error ||
             modelOutput is ToolResultOutput.ErrorJson ||

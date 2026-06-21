@@ -24,7 +24,7 @@ class RegistryCustomProviderR5Test {
     @Test
     fun `customProvider falls back to the fallback provider on a miss`() {
         val fallback = providerWith("fb", stubModel("fb/model"))
-        val provider = customProvider(providerId = "custom", fallbackProvider = fallback)
+        val provider = Provider(providerId = "custom", fallbackProvider = fallback)
         // "anything" is not in custom's maps → resolves via fallback rather than throwing.
         assertEquals("fb/model", provider.languageModel("anything").modelId)
     }
@@ -34,7 +34,7 @@ class RegistryCustomProviderR5Test {
         val mw = object : LanguageModelMiddleware {
             override fun overrideModelId(model: LanguageModel) = "wrapped"
         }
-        val registry = createProviderRegistry(
+        val registry = ProviderRegistry.createProviderRegistry(
             mapOf("p" to providerWith("p", stubModel("p/inner"))),
             languageModelMiddleware = listOf(mw),
         )
@@ -54,7 +54,7 @@ class RegistryCustomProviderR5Test {
             ModelMessage(MessageRole.Tool, listOf(ContentPart.ToolResult("c1", "t", JsonPrimitive("a")))),
             ModelMessage(MessageRole.Tool, listOf(ContentPart.ToolResult("c2", "t", JsonPrimitive("b")))),
         )
-        val converted = convertToLanguageModelPrompt(messages)
+        val converted = PromptConversion.convertToLanguageModelPrompt(messages)
         // The two tool messages collapse into one with both results.
         val toolMessages = converted.filter { it.role == MessageRole.Tool }
         assertEquals(1, toolMessages.size)

@@ -30,11 +30,11 @@ import kotlinx.serialization.json.jsonPrimitive
  * ```
  * val messages: StateFlow<List<UIMessage>> = chatRepository
  *     .streamReply(turns)
- *     .let { streamToUiMessages(it, assistantMessageId = "asst_${turns.size}") }
+ *     .let { StreamToUiMessages(it, assistantMessageId = "asst_${turns.size}") }
  *     .stateIn(scope, SharingStarted.Eagerly, emptyList())
  * ```
  */
-public fun streamToUiMessages(
+public fun StreamToUiMessages(
     events: Flow<StreamEvent>,
     assistantMessageId: String,
 ): Flow<UIMessage> = flow {

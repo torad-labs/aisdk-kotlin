@@ -38,7 +38,10 @@ public data class PendingApproval(
     val signature: String? = null,
 )
 
-/** The effective approval ID — explicit [PendingApproval.approvalId] or
- *  fallback to [PendingApproval.toolCallId]. */
-public fun effectiveApprovalId(approval: PendingApproval): String =
-    approval.approvalId ?: approval.toolCallId
+/** Approval-identity helpers for [PendingApproval]. */
+public object ApprovalIds {
+    /** The effective approval ID — explicit [PendingApproval.approvalId] or
+     *  fallback to [PendingApproval.toolCallId]. */
+    public fun effectiveApprovalId(approval: PendingApproval): String =
+        approval.approvalId ?: approval.toolCallId
+}

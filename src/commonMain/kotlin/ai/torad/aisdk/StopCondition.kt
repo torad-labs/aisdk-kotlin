@@ -6,10 +6,10 @@ package ai.torad.aisdk
  * agent constructor or `generateText`.
  *
  * Built-ins:
- *   - [stepCountIs] — stop after N completed steps. Default `stepCountIs(20)`
+ *   - [StepCountIs] — stop after N completed steps. Default `StepCountIs(20)`
  *     so any agent without explicit `stopWhen` still terminates.
- *   - [hasToolCall] — stop the moment a specific tool is called.
- *   - [anyOf] — short-circuit OR over multiple conditions (matches v6's
+ *   - [HasToolCall] — stop the moment a specific tool is called.
+ *   - [AnyOf] — short-circuit OR over multiple conditions (matches v6's
  *     array form).
  *
  * Custom: implement [StopCondition] directly. Receives a snapshot of the
@@ -38,20 +38,20 @@ public data class LoopState(
 )
 
 /** Stop after [n] completed steps. v6's default is 20 if `stopWhen` omitted. */
-public fun stepCountIs(n: Int): StopCondition = StopCondition { state -> state.totalSteps >= n }
+public fun StepCountIs(n: Int): StopCondition = StopCondition { state -> state.totalSteps >= n }
 
 /** Stop the moment the named tool is called in any step. */
-public fun hasToolCall(toolName: String): StopCondition = StopCondition { state ->
+public fun HasToolCall(toolName: String): StopCondition = StopCondition { state ->
     state.toolCallsAllSteps.any { it.toolName == toolName }
 }
 
 /** Stop when any of [conditions] reports done. v6's array-of-conditions shape. */
-public fun anyOf(vararg conditions: StopCondition): StopCondition = StopCondition { state ->
+public fun AnyOf(vararg conditions: StopCondition): StopCondition = StopCondition { state ->
     conditions.any { it.shouldStop(state) }
 }
 
 /** Stop only when all [conditions] report done. */
-public fun allOf(vararg conditions: StopCondition): StopCondition = StopCondition { state ->
+public fun AllOf(vararg conditions: StopCondition): StopCondition = StopCondition { state ->
     conditions.all { it.shouldStop(state) }
 }
 
@@ -67,7 +67,7 @@ public fun allOf(vararg conditions: StopCondition): StopCondition = StopConditio
  * tool per step in practice); per-step JSON identity uses the raw
  * `input` JsonElement's stringified form so identical args match.
  */
-public fun repeatedToolCallLoop(n: Int): StopCondition = StopCondition { state ->
+public fun RepeatedToolCallLoop(n: Int): StopCondition = StopCondition { state ->
     if (n < 2 || state.steps.size < n) return@StopCondition false
     val recent = state.steps.takeLast(n).map { it.toolCalls.firstOrNull() }
     val first = recent.first() ?: return@StopCondition false

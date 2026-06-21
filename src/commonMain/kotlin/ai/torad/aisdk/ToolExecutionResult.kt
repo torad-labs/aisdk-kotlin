@@ -16,11 +16,11 @@ import kotlinx.serialization.json.JsonElement
 internal sealed class ToolExecutionResult {
     data class Success(
         val outputJson: JsonElement,
-        val output: ToolResultOutput = toolResultOutputFromJson(outputJson),
+        val output: ToolResultOutput = ToolResultOutputs.toolResultOutputFromJson(outputJson),
         val modelOutput: ToolResultOutput = output,
         val modelVisible: JsonElement = outputJson,
     ) : ToolExecutionResult() {
-        val isError: Boolean = modelOutput.isToolResultError()
+        val isError: Boolean = with(ToolResultOutputs) { modelOutput.isToolResultError() }
     }
 
     data class Failure(val error: AgentError) : ToolExecutionResult()

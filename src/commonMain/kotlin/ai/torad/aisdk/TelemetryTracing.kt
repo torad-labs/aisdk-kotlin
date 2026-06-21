@@ -10,89 +10,98 @@ import kotlinx.serialization.json.JsonPrimitive
 // This half is opt-IN via an explicit `TelemetrySettings(isEnabled = true)` and is kept
 // for span-shaped consumers until a GenAI-conventions integration replaces it.
 
-internal fun assembleOperationName(
-    operationId: String,
-    telemetry: TelemetrySettings = TelemetrySettings(),
-): String = telemetry.functionId?.let { "$it.$operationId" } ?: operationId
+// Decision-C cleanup: all file-local telemetry/tracing helpers are grouped as members of
+// this internal object (no loose top-level camelCase funs). In-file call sites qualify or
+// member-import; cross-file callers must follow the same `TelemetryTracing.<name>` move.
+internal object TelemetryTracing {
+    fun assembleOperationName(
+        operationId: String,
+        telemetry: TelemetrySettings = TelemetrySettings(),
+    ): String = telemetry.functionId?.let { "$it.$operationId" } ?: operationId
 
-internal fun assembleOperationNameAttributes(
-    operationId: String,
-    telemetry: TelemetrySettings = TelemetrySettings(),
-): Map<String, JsonElement> = buildMap {
-    put("operation.name", JsonPrimitive(operationId + telemetry.functionId?.let { " $it" }.orEmpty()))
-    telemetry.functionId?.let { put("resource.name", JsonPrimitive(it)) }
-    put("ai.operationId", JsonPrimitive(operationId))
-    telemetry.functionId?.let { put("ai.telemetry.functionId", JsonPrimitive(it)) }
-}
+    fun assembleOperationNameAttributes(
+        operationId: String,
+        telemetry: TelemetrySettings = TelemetrySettings(),
+    ): Map<String, JsonElement> = buildMap {
+        put("operation.name", JsonPrimitive(operationId + telemetry.functionId?.let { " $it" }.orEmpty()))
+        telemetry.functionId?.let { put("resource.name", JsonPrimitive(it)) }
+        put("ai.operationId", JsonPrimitive(operationId))
+        telemetry.functionId?.let { put("ai.telemetry.functionId", JsonPrimitive(it)) }
+    }
 
-internal suspend fun <T> recordSpan(
-    name: String,
-    tracer: TelemetryTracer,
-    attributes: Map<String, JsonElement> = emptyMap(),
-    endWhenDone: Boolean = true,
-    block: suspend (TelemetryActiveSpan) -> T,
-): T = tracer.startActiveSpan(name, attributes) { span ->
-    try {
-        val result = block(span)
-        if (endWhenDone) span.end()
-        result
-    } catch (error: Throwable) {
+    suspend fun <T> recordSpan(
+        name: String,
+        tracer: TelemetryTracer,
+        attributes: Map<String, JsonElement> = emptyMap(),
+        endWhenDone: Boolean = true,
+        block: suspend (TelemetryActiveSpan) -> T,
+    ): T = tracer.startActiveSpan(name, attributes) { span ->
         try {
-            recordErrorOnSpan(span, error)
-        } finally {
-            span.end()
-        }
-        throw error
-    }
-}
-
-internal fun recordErrorOnSpan(span: TelemetryActiveSpan, error: Throwable) {
-    span.recordException(error)
-    span.setStatus(TelemetrySpanStatus.Error(error.message))
-}
-
-internal fun selectTelemetryAttributes(
-    telemetry: TelemetrySettings,
-    input: JsonElement? = null,
-    output: JsonElement? = null,
-    providerMetadata: ProviderMetadata = ProviderMetadata.None,
-): Map<String, JsonElement> = buildMap {
-    // Legacy span path: stays opt-IN (only an explicit `isEnabled = true` selects attributes).
-    if (telemetry.isEnabled != true) return@buildMap
-    putAll(telemetry.metadata)
-    if (telemetry.recordInputs && input != null) put("ai.input", input)
-    if (telemetry.recordOutputs && output != null) put("ai.output", output)
-    val pmMap = providerMetadata.toMap()
-    if (pmMap.isNotEmpty()) {
-        put("ai.providerMetadata", JsonObject(pmMap))
-    }
-}
-
-internal suspend fun selectTelemetryAttributes(
-    telemetry: TelemetrySettings,
-    attributes: Map<String, TelemetryAttribute>,
-): Map<String, JsonElement> {
-    // Legacy span path: stays opt-IN (only an explicit `isEnabled = true` selects attributes).
-    if (telemetry.isEnabled != true) return emptyMap()
-    val selected = linkedMapOf<String, JsonElement>()
-    for ((key, value) in attributes) {
-        when (value) {
-            is TelemetryAttribute.Value -> selected[key] = value.value
-            is TelemetryAttribute.Input -> {
-                if (telemetry.recordInputs) value.resolve()?.let { selected[key] = it }
+            val result = block(span)
+            if (endWhenDone) span.end()
+            result
+        } catch (error: Throwable) {
+            try {
+                recordErrorOnSpan(span, error)
+            } finally {
+                span.end()
             }
-            is TelemetryAttribute.Output -> {
-                if (telemetry.recordOutputs) value.resolve()?.let { selected[key] = it }
-            }
+            throw error
         }
     }
-    return selected
-}
 
-internal fun stringifyForTelemetry(value: JsonElement?): String? = when (value) {
-    null -> null
-    is JsonPrimitive -> value.content
-    else -> value.toString()
+    fun recordErrorOnSpan(span: TelemetryActiveSpan, error: Throwable) {
+        span.recordException(error)
+        span.setStatus(TelemetrySpanStatus.Error(error.message))
+    }
+
+    fun selectTelemetryAttributes(
+        telemetry: TelemetrySettings,
+        input: JsonElement? = null,
+        output: JsonElement? = null,
+        providerMetadata: ProviderMetadata = ProviderMetadata.None,
+    ): Map<String, JsonElement> = buildMap {
+        // Legacy span path: stays opt-IN (only an explicit `isEnabled = true` selects attributes).
+        if (telemetry.isEnabled != true) return@buildMap
+        putAll(telemetry.metadata)
+        if (telemetry.recordInputs && input != null) put("ai.input", input)
+        if (telemetry.recordOutputs && output != null) put("ai.output", output)
+        val pmMap = providerMetadata.toMap()
+        if (pmMap.isNotEmpty()) {
+            put("ai.providerMetadata", JsonObject(pmMap))
+        }
+    }
+
+    suspend fun selectTelemetryAttributes(
+        telemetry: TelemetrySettings,
+        attributes: Map<String, TelemetryAttribute>,
+    ): Map<String, JsonElement> {
+        // Legacy span path: stays opt-IN (only an explicit `isEnabled = true` selects attributes).
+        if (telemetry.isEnabled != true) return emptyMap()
+        val selected = linkedMapOf<String, JsonElement>()
+        for ((key, value) in attributes) {
+            when (value) {
+                is TelemetryAttribute.Value -> selected[key] = value.value
+                is TelemetryAttribute.Input -> {
+                    if (telemetry.recordInputs) value.resolve()?.let { selected[key] = it }
+                }
+                is TelemetryAttribute.Output -> {
+                    if (telemetry.recordOutputs) value.resolve()?.let { selected[key] = it }
+                }
+            }
+        }
+        return selected
+    }
+
+    fun stringifyForTelemetry(value: JsonElement?): String? = when (value) {
+        null -> null
+        is JsonPrimitive -> value.content
+        else -> value.toString()
+    }
+
+    fun telemetryAttribute(value: JsonElement): TelemetryAttribute = TelemetryAttribute.Value(value)
+    fun telemetryInput(resolve: suspend () -> JsonElement?): TelemetryAttribute = TelemetryAttribute.Input(resolve)
+    fun telemetryOutput(resolve: suspend () -> JsonElement?): TelemetryAttribute = TelemetryAttribute.Output(resolve)
 }
 
 internal sealed class TelemetryAttribute {
@@ -100,10 +109,6 @@ internal sealed class TelemetryAttribute {
     data class Input(val resolve: suspend () -> JsonElement?) : TelemetryAttribute()
     data class Output(val resolve: suspend () -> JsonElement?) : TelemetryAttribute()
 }
-
-internal fun telemetryAttribute(value: JsonElement): TelemetryAttribute = TelemetryAttribute.Value(value)
-internal fun telemetryInput(resolve: suspend () -> JsonElement?): TelemetryAttribute = TelemetryAttribute.Input(resolve)
-internal fun telemetryOutput(resolve: suspend () -> JsonElement?): TelemetryAttribute = TelemetryAttribute.Output(resolve)
 
 public sealed class TelemetrySpanStatus {
     public data object Ok : TelemetrySpanStatus()

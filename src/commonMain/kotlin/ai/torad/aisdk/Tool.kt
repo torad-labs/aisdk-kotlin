@@ -165,7 +165,7 @@ internal class LambdaStreamingTool<TInput, TOutput, TContext>(
 }
 
 /**
- * Erased map of tools indexed by name. Application code constructs via [toolSetOf].
+ * Erased map of tools indexed by name. Application code constructs via the [ToolSet] factory.
  */
 public class ToolSet<TContext>(
     public val byName: Map<String, Tool<*, *, TContext>>,
@@ -174,8 +174,8 @@ public class ToolSet<TContext>(
         byName.values.map { tool ->
             LanguageModelTool(
                 name = tool.name,
-                description = descriptionWithExamples(tool),
-                parametersSchemaJson = jsonSchemaFor(tool),
+                description = ToolSetOps.descriptionWithExamples(tool),
+                parametersSchemaJson = ToolJsonSchema.jsonSchemaFor(tool),
                 strict = tool.strict,
                 providerExecuted = tool.providerExecuted,
                 metadata = tool.metadata,
@@ -197,27 +197,29 @@ public class ToolSet<TContext>(
     }
 }
 
-private fun descriptionWithExamples(tool: Tool<*, *, *>): String {
-    val examples = tool.inputExamples
-    if (examples.isEmpty()) return tool.description
-    val appendix = examples.joinToString(separator = "\n") { "Example: $it" }
-    return "${tool.description}\n\n$appendix"
-}
-
-internal fun <TContext> requireUniqueToolNames(
-    tools: List<Tool<*, *, TContext>>,
-): Map<String, Tool<*, *, TContext>> {
-    val byName = linkedMapOf<String, Tool<*, *, TContext>>()
-    for (tool in tools) {
-        require(tool.name !in byName) { "Duplicate tool name `${tool.name}`." }
-        byName[tool.name] = tool
+internal object ToolSetOps {
+    fun descriptionWithExamples(tool: Tool<*, *, *>): String {
+        val examples = tool.inputExamples
+        if (examples.isEmpty()) return tool.description
+        val appendix = examples.joinToString(separator = "\n") { "Example: $it" }
+        return "${tool.description}\n\n$appendix"
     }
-    return byName
+
+    fun <TContext> requireUniqueToolNames(
+        tools: List<Tool<*, *, TContext>>,
+    ): Map<String, Tool<*, *, TContext>> {
+        val byName = linkedMapOf<String, Tool<*, *, TContext>>()
+        for (tool in tools) {
+            require(tool.name !in byName) { "Duplicate tool name `${tool.name}`." }
+            byName[tool.name] = tool
+        }
+        return byName
+    }
 }
 
 /** Construct a [ToolSet] from individual tools. Throws on duplicate names. */
-public fun <TContext> toolSetOf(vararg tools: Tool<*, *, TContext>): ToolSet<TContext> =
-    ToolSet(requireUniqueToolNames(tools.toList()))
+public fun <TContext> ToolSet(vararg tools: Tool<*, *, TContext>): ToolSet<TContext> =
+    ToolSet(ToolSetOps.requireUniqueToolNames(tools.toList()))
 
 @AiSdkDsl
 public class ToolSetBuilder<TContext> internal constructor() {
@@ -447,24 +449,6 @@ public class LazySchema<T>(
         cached ?: createSchema().also { cached = it }
 }
 
-public fun <T> lazySchema(createSchema: () -> Schema<T>): LazySchema<T> =
-    LazySchema(createSchema)
-
-public fun <T> jsonSchema(
-    schema: JsonElement,
-    validate: ((JsonElement) -> T)? = null,
-): Schema<T> = Schema(schema, validate)
-
-public fun <T> asSchema(schema: Schema<T>?): Schema<T> =
-    schema ?: jsonSchema(
-        buildJsonObject {
-            put("properties", JsonObject(emptyMap()))
-            put("additionalProperties", JsonPrimitive(false))
-        }
-    )
-
-public fun <T> asSchema(schema: LazySchema<T>): Schema<T> = schema()
-
 public sealed class ValidationResult<out T> {
     public data class Success<T>(
         val value: T,
@@ -477,74 +461,94 @@ public sealed class ValidationResult<out T> {
     ) : ValidationResult<Nothing>()
 }
 
-public fun <T> safeValidateTypes(
-    value: JsonElement,
-    schema: Schema<T>,
-    context: TypeValidationContext? = null,
-): ValidationResult<T> =
-    try {
-        val validated = schema.validate?.invoke(value) ?: schemaFallbackValue(value, schema.jsonSchema)
-        @Suppress("UNCHECKED_CAST")
-        ValidationResult.Success(validated as T, value)
-    } catch (error: Throwable) {
-        ValidationResult.Failure(TypeValidationError.wrap(value, error, context), value)
-    }
+public object Schemas {
+    public fun <T> lazySchema(createSchema: () -> Schema<T>): LazySchema<T> =
+        LazySchema(createSchema)
 
-private fun schemaFallbackValue(value: JsonElement, schema: JsonElement): Any? {
-    val schemaType = (schema as? JsonObject)?.get("type")?.jsonPrimitive?.contentOrNull
-    return when (schemaType) {
-        null -> value
-        "object" -> value as? JsonObject ?: throw IllegalArgumentException("Expected JSON object.")
-        "array" -> value as? JsonArray ?: throw IllegalArgumentException("Expected JSON array.")
-        "string" -> {
-            val primitive = value as? JsonPrimitive ?: throw IllegalArgumentException("Expected JSON string.")
-            if (!primitive.isJsonString()) throw IllegalArgumentException("Expected JSON string.")
-            primitive.content
-        }
-        "integer" -> value.jsonPrimitive.intOrNull ?: throw IllegalArgumentException("Expected JSON integer.")
-        "number" -> value.jsonPrimitive.doubleOrNull ?: throw IllegalArgumentException("Expected JSON number.")
-        "boolean" -> value.jsonPrimitive.booleanOrNull ?: throw IllegalArgumentException("Expected JSON boolean.")
-        else -> value
-    }
-}
+    public fun <T> jsonSchema(
+        schema: JsonElement,
+        validate: ((JsonElement) -> T)? = null,
+    ): Schema<T> = Schema(schema, validate)
 
-private fun JsonPrimitive.isJsonString(): Boolean =
-    toString().startsWith("\"")
-
-public fun <T> safeValidateTypes(
-    value: JsonElement,
-    schema: LazySchema<T>,
-    context: TypeValidationContext? = null,
-): ValidationResult<T> = safeValidateTypes(value, schema(), context)
-
-public fun <T> validateTypes(
-    value: JsonElement,
-    schema: Schema<T>,
-    context: TypeValidationContext? = null,
-): T = when (val result = safeValidateTypes(value, schema, context)) {
-    is ValidationResult.Success -> result.value
-    is ValidationResult.Failure -> throw result.error
-}
-
-public fun <T> validateTypes(
-    value: JsonElement,
-    schema: LazySchema<T>,
-    context: TypeValidationContext? = null,
-): T = validateTypes(value, schema(), context)
-
-public fun <T> parseProviderOptions(
-    provider: String,
-    providerOptions: ProviderOptions,
-    schema: Schema<T>,
-): T? {
-    val value = providerOptions.toMap()[provider] ?: return null
-    return when (val result = safeValidateTypes(value, schema)) {
-        is ValidationResult.Success -> result.value
-        is ValidationResult.Failure -> throw InvalidArgumentError(
-            "providerOptions",
-            "invalid $provider provider options",
-            result.error,
+    public fun <T> asSchema(schema: Schema<T>?): Schema<T> =
+        schema ?: jsonSchema(
+            buildJsonObject {
+                put("properties", JsonObject(emptyMap()))
+                put("additionalProperties", JsonPrimitive(false))
+            }
         )
+
+    public fun <T> asSchema(schema: LazySchema<T>): Schema<T> = schema()
+
+    public fun <T> safeValidateTypes(
+        value: JsonElement,
+        schema: Schema<T>,
+        context: TypeValidationContext? = null,
+    ): ValidationResult<T> =
+        try {
+            val validated = schema.validate?.invoke(value) ?: schemaFallbackValue(value, schema.jsonSchema)
+            @Suppress("UNCHECKED_CAST")
+            ValidationResult.Success(validated as T, value)
+        } catch (error: Throwable) {
+            ValidationResult.Failure(TypeValidationError.wrap(value, error, context), value)
+        }
+
+    private fun schemaFallbackValue(value: JsonElement, schema: JsonElement): Any? {
+        val schemaType = (schema as? JsonObject)?.get("type")?.jsonPrimitive?.contentOrNull
+        return when (schemaType) {
+            null -> value
+            "object" -> value as? JsonObject ?: throw IllegalArgumentException("Expected JSON object.")
+            "array" -> value as? JsonArray ?: throw IllegalArgumentException("Expected JSON array.")
+            "string" -> {
+                val primitive = value as? JsonPrimitive ?: throw IllegalArgumentException("Expected JSON string.")
+                if (!primitive.isJsonString()) throw IllegalArgumentException("Expected JSON string.")
+                primitive.content
+            }
+            "integer" -> value.jsonPrimitive.intOrNull ?: throw IllegalArgumentException("Expected JSON integer.")
+            "number" -> value.jsonPrimitive.doubleOrNull ?: throw IllegalArgumentException("Expected JSON number.")
+            "boolean" -> value.jsonPrimitive.booleanOrNull ?: throw IllegalArgumentException("Expected JSON boolean.")
+            else -> value
+        }
+    }
+
+    private fun JsonPrimitive.isJsonString(): Boolean =
+        toString().startsWith("\"")
+
+    public fun <T> safeValidateTypes(
+        value: JsonElement,
+        schema: LazySchema<T>,
+        context: TypeValidationContext? = null,
+    ): ValidationResult<T> = Schemas.safeValidateTypes(value, schema(), context)
+
+    public fun <T> validateTypes(
+        value: JsonElement,
+        schema: Schema<T>,
+        context: TypeValidationContext? = null,
+    ): T = when (val result = Schemas.safeValidateTypes(value, schema, context)) {
+        is ValidationResult.Success -> result.value
+        is ValidationResult.Failure -> throw result.error
+    }
+
+    public fun <T> validateTypes(
+        value: JsonElement,
+        schema: LazySchema<T>,
+        context: TypeValidationContext? = null,
+    ): T = validateTypes(value, schema(), context)
+
+    public fun <T> parseProviderOptions(
+        provider: String,
+        providerOptions: ProviderOptions,
+        schema: Schema<T>,
+    ): T? {
+        val value = providerOptions.toMap()[provider] ?: return null
+        return when (val result = Schemas.safeValidateTypes(value, schema)) {
+            is ValidationResult.Success -> result.value
+            is ValidationResult.Failure -> throw InvalidArgumentError(
+                "providerOptions",
+                "invalid $provider provider options",
+                result.error,
+            )
+        }
     }
 }
 
@@ -564,7 +568,7 @@ public data class ToolNameMapping(
         providerToolNameToCustomToolName[providerToolName] ?: providerToolName
 }
 
-public fun createToolNameMapping(
+public fun ToolNameMapping(
     tools: List<LanguageModelTool> = emptyList(),
     providerToolNames: Map<String, String>,
     resolveProviderToolName: ((LanguageModelTool) -> String?)? = null,
@@ -607,7 +611,7 @@ public class ProviderToolFactory<TInput, TContext>(
 
     public fun <TOutput> create(
         options: ProviderToolFactoryOptions<TInput, TOutput, TContext>,
-    ): Tool<TInput, TOutput, TContext> = buildProviderTool(
+    ): Tool<TInput, TOutput, TContext> = ProviderTools.buildProviderTool(
         id = id,
         inputSerializer = inputSerializer,
         inputSchema = inputSchema,
@@ -634,7 +638,7 @@ public class ProviderToolFactoryWithOutputSchema<TInput, TOutput, TContext>(
     public fun create(
         options: ProviderToolFactoryOptions<TInput, TOutput, TContext> =
             ProviderToolFactoryOptions(outputSerializer = outputSerializer, outputSchema = outputSchema),
-    ): Tool<TInput, TOutput, TContext> = buildProviderTool(
+    ): Tool<TInput, TOutput, TContext> = ProviderTools.buildProviderTool(
         id = id,
         inputSerializer = inputSerializer,
         inputSchema = inputSchema,
@@ -644,94 +648,96 @@ public class ProviderToolFactoryWithOutputSchema<TInput, TOutput, TContext>(
     )
 }
 
-public fun <TInput, TContext> createProviderToolFactory(
-    id: String,
-    inputSerializer: KSerializer<TInput>,
-    inputSchema: Schema<TInput>,
-    description: String = "Provider tool $id",
-): ProviderToolFactory<TInput, TContext> =
-    ProviderToolFactory(id, inputSerializer, inputSchema, description)
+public object ProviderTools {
+    public fun <TInput, TContext> createProviderToolFactory(
+        id: String,
+        inputSerializer: KSerializer<TInput>,
+        inputSchema: Schema<TInput>,
+        description: String = "Provider tool $id",
+    ): ProviderToolFactory<TInput, TContext> =
+        ProviderToolFactory(id, inputSerializer, inputSchema, description)
 
-public fun <TInput, TOutput, TContext> createProviderToolFactoryWithOutputSchema(
-    id: String,
-    inputSerializer: KSerializer<TInput>,
-    inputSchema: Schema<TInput>,
-    outputSerializer: KSerializer<TOutput>,
-    outputSchema: Schema<TOutput>,
-    supportsDeferredResults: Boolean = false,
-    description: String = "Provider tool $id",
-): ProviderToolFactoryWithOutputSchema<TInput, TOutput, TContext> =
-    ProviderToolFactoryWithOutputSchema(
-        id = id,
-        inputSerializer = inputSerializer,
-        inputSchema = inputSchema,
-        outputSerializer = outputSerializer,
-        outputSchema = outputSchema,
-        supportsDeferredResults = supportsDeferredResults,
-        defaultDescription = description,
-    )
+    public fun <TInput, TOutput, TContext> createProviderToolFactoryWithOutputSchema(
+        id: String,
+        inputSerializer: KSerializer<TInput>,
+        inputSchema: Schema<TInput>,
+        outputSerializer: KSerializer<TOutput>,
+        outputSchema: Schema<TOutput>,
+        supportsDeferredResults: Boolean = false,
+        description: String = "Provider tool $id",
+    ): ProviderToolFactoryWithOutputSchema<TInput, TOutput, TContext> =
+        ProviderToolFactoryWithOutputSchema(
+            id = id,
+            inputSerializer = inputSerializer,
+            inputSchema = inputSchema,
+            outputSerializer = outputSerializer,
+            outputSchema = outputSchema,
+            supportsDeferredResults = supportsDeferredResults,
+            defaultDescription = description,
+        )
 
-private fun <TInput, TOutput, TContext> buildProviderTool(
-    id: String,
-    inputSerializer: KSerializer<TInput>,
-    inputSchema: Schema<TInput>,
-    defaultDescription: String,
-    supportsDeferredResults: Boolean,
-    options: ProviderToolFactoryOptions<TInput, TOutput, TContext>,
-): Tool<TInput, TOutput, TContext> {
-    val execute = options.execute
-    val resolvedName = options.name ?: id.substringAfter('.')
-    return LambdaStreamingTool(
-        schema = ToolSchema(
-            name = resolvedName,
-            description = options.description ?: defaultDescription,
-            strict = true,
-            inputExamples = emptyList(),
-            metadata = options.metadata + buildProviderToolMetadata(
-                id = id,
-                args = options.args,
-                inputSchema = inputSchema,
-                outputSchema = options.outputSchema,
-                supportsDeferredResults = supportsDeferredResults,
+    internal fun <TInput, TOutput, TContext> buildProviderTool(
+        id: String,
+        inputSerializer: KSerializer<TInput>,
+        inputSchema: Schema<TInput>,
+        defaultDescription: String,
+        supportsDeferredResults: Boolean,
+        options: ProviderToolFactoryOptions<TInput, TOutput, TContext>,
+    ): Tool<TInput, TOutput, TContext> {
+        val execute = options.execute
+        val resolvedName = options.name ?: id.substringAfter('.')
+        return LambdaStreamingTool(
+            schema = ToolSchema(
+                name = resolvedName,
+                description = options.description ?: defaultDescription,
+                strict = true,
+                inputExamples = emptyList(),
+                metadata = options.metadata + buildProviderToolMetadata(
+                    id = id,
+                    args = options.args,
+                    inputSchema = inputSchema,
+                    outputSchema = options.outputSchema,
+                    supportsDeferredResults = supportsDeferredResults,
+                ),
+                providerExecuted = true,
+                providerOptions = ProviderOptions.None,
             ),
-            providerExecuted = true,
-            providerOptions = ProviderOptions.None,
-        ),
-        inputSerializer = inputSerializer,
-        outputSerializer = options.outputSerializer,
-        streamFn = { input ->
-            val context = this
-            flow {
-                if (execute == null) {
-                    throw AgentError.ToolExecution(
-                        resolvedName,
-                        context.toolCallId,
-                        UnsupportedOperationException("provider-executed tool has no local executor"),
-                    )
+            inputSerializer = inputSerializer,
+            outputSerializer = options.outputSerializer,
+            streamFn = { input ->
+                val context = this
+                flow {
+                    if (execute == null) {
+                        throw AgentError.ToolExecution(
+                            resolvedName,
+                            context.toolCallId,
+                            UnsupportedOperationException("provider-executed tool has no local executor"),
+                        )
+                    }
+                    emit(execute.invoke(context, input))
                 }
-                emit(execute.invoke(context, input))
-            }
-        },
-        approvalFn = options.needsApproval,
-        modelOutputFn = options.toModelOutput,
-        inputStartFn = options.onInputStart,
-        inputDeltaFn = options.onInputDelta,
-        inputAvailableFn = options.onInputAvailable,
-    )
-}
+            },
+            approvalFn = options.needsApproval,
+            modelOutputFn = options.toModelOutput,
+            inputStartFn = options.onInputStart,
+            inputDeltaFn = options.onInputDelta,
+            inputAvailableFn = options.onInputAvailable,
+        )
+    }
 
-private fun buildProviderToolMetadata(
-    id: String,
-    args: Map<String, JsonElement>,
-    inputSchema: Schema<*>,
-    outputSchema: Schema<*>?,
-    supportsDeferredResults: Boolean,
-): Map<String, JsonElement> = buildMap {
-    put("providerToolId", JsonPrimitive(id))
-    put("args", JsonObject(args))
-    put("inputSchema", inputSchema.jsonSchema)
-    outputSchema?.let { put("outputSchema", it.jsonSchema) }
-    if (supportsDeferredResults) put("supportsDeferredResults", JsonPrimitive(true))
+    private fun buildProviderToolMetadata(
+        id: String,
+        args: Map<String, JsonElement>,
+        inputSchema: Schema<*>,
+        outputSchema: Schema<*>?,
+        supportsDeferredResults: Boolean,
+    ): Map<String, JsonElement> = buildMap {
+        put("providerToolId", JsonPrimitive(id))
+        put("args", JsonObject(args))
+        put("inputSchema", inputSchema.jsonSchema)
+        outputSchema?.let { put("outputSchema", it.jsonSchema) }
+        if (supportsDeferredResults) put("supportsDeferredResults", JsonPrimitive(true))
+    }
 }
 
 /** Whether the LLM should call a tool, no tool, a specific tool, etc. */
@@ -809,61 +815,63 @@ public sealed class ToolResultOutput {
     ) : ToolResultOutput()
 }
 
-internal fun toolResultOutputFromJson(json: JsonElement): ToolResultOutput =
-    if (json is JsonPrimitive && json.isString) {
-        ToolResultOutput.Text(json.content)
-    } else {
-        ToolResultOutput.Json(json)
+public object ToolResultOutputs {
+    internal fun toolResultOutputFromJson(json: JsonElement): ToolResultOutput =
+        if (json is JsonPrimitive && json.isString) {
+            ToolResultOutput.Text(json.content)
+        } else {
+            ToolResultOutput.Json(json)
+        }
+
+    internal fun toolResultOutputFromWire(json: JsonElement): ToolResultOutput {
+        val obj = json as? JsonObject ?: return ToolResultOutputs.toolResultOutputFromJson(json)
+        val type = WireDecoder.optionalString(obj, "type", "tool", "tool-result output")
+            ?: return ToolResultOutputs.toolResultOutputFromJson(json)
+        return when (type) {
+            "text" -> ToolResultOutput.Text(
+                WireDecoder.requiredString(obj, "value", "tool", "tool-result output"),
+            )
+            "json" -> ToolResultOutput.Json(
+                WireDecoder.required(obj, "value", "tool", "tool-result output"),
+            )
+            "error-text" -> ToolResultOutput.Error(
+                WireDecoder.requiredString(obj, "value", "tool", "tool-result output"),
+            )
+            "error-json" -> ToolResultOutput.ErrorJson(
+                WireDecoder.required(obj, "value", "tool", "tool-result output"),
+            )
+            "execution-denied" -> ToolResultOutput.ExecutionDenied(
+                WireDecoder.optionalString(obj, "reason", "tool", "tool-result output"),
+            )
+            "content" -> ToolResultOutput.Content(
+                value = WireDecoder.requiredArray(obj, "value", "tool", "tool-result output").toList(),
+                isError = WireDecoder.optionalBoolean(obj, "isError", "tool", "tool-result output") ?: false,
+            )
+            else -> ToolResultOutputs.toolResultOutputFromJson(json)
+        }
     }
 
-internal fun toolResultOutputFromWire(json: JsonElement): ToolResultOutput {
-    val obj = json as? JsonObject ?: return toolResultOutputFromJson(json)
-    val type = WireDecoder.optionalString(obj, "type", "tool", "tool-result output")
-        ?: return toolResultOutputFromJson(json)
-    return when (type) {
-        "text" -> ToolResultOutput.Text(
-            WireDecoder.requiredString(obj, "value", "tool", "tool-result output"),
-        )
-        "json" -> ToolResultOutput.Json(
-            WireDecoder.required(obj, "value", "tool", "tool-result output"),
-        )
-        "error-text" -> ToolResultOutput.Error(
-            WireDecoder.requiredString(obj, "value", "tool", "tool-result output"),
-        )
-        "error-json" -> ToolResultOutput.ErrorJson(
-            WireDecoder.required(obj, "value", "tool", "tool-result output"),
-        )
-        "execution-denied" -> ToolResultOutput.ExecutionDenied(
-            WireDecoder.optionalString(obj, "reason", "tool", "tool-result output"),
-        )
-        "content" -> ToolResultOutput.Content(
-            value = WireDecoder.requiredArray(obj, "value", "tool", "tool-result output").toList(),
-            isError = WireDecoder.optionalBoolean(obj, "isError", "tool", "tool-result output") ?: false,
-        )
-        else -> toolResultOutputFromJson(json)
+    public fun ToolResultOutput.isToolResultError(): Boolean = when (this) {
+        is ToolResultOutput.Error,
+        is ToolResultOutput.ErrorJson,
+        is ToolResultOutput.ExecutionDenied -> true
+        is ToolResultOutput.Content -> isError
+        is ToolResultOutput.Text,
+        is ToolResultOutput.Json -> false
     }
-}
 
-public fun ToolResultOutput.isToolResultError(): Boolean = when (this) {
-    is ToolResultOutput.Error,
-    is ToolResultOutput.ErrorJson,
-    is ToolResultOutput.ExecutionDenied -> true
-    is ToolResultOutput.Content -> isError
-    is ToolResultOutput.Text,
-    is ToolResultOutput.Json -> false
-}
-
-public fun ToolResultOutput.toJsonElement(): JsonElement = when (this) {
-    is ToolResultOutput.Text -> JsonPrimitive(text)
-    is ToolResultOutput.Json -> json
-    is ToolResultOutput.Error -> JsonPrimitive("Error: $message")
-    is ToolResultOutput.ErrorJson -> json
-    is ToolResultOutput.ExecutionDenied -> JsonPrimitive(reason ?: "Tool execution denied")
-    is ToolResultOutput.Content -> buildJsonObject {
-        put("type", JsonPrimitive("content"))
-        put("value", JsonArray(value))
-        if (isError) {
-            put("isError", JsonPrimitive(true))
+    public fun ToolResultOutput.toJsonElement(): JsonElement = when (this) {
+        is ToolResultOutput.Text -> JsonPrimitive(text)
+        is ToolResultOutput.Json -> json
+        is ToolResultOutput.Error -> JsonPrimitive("Error: $message")
+        is ToolResultOutput.ErrorJson -> json
+        is ToolResultOutput.ExecutionDenied -> JsonPrimitive(reason ?: "Tool execution denied")
+        is ToolResultOutput.Content -> buildJsonObject {
+            put("type", JsonPrimitive("content"))
+            put("value", JsonArray(value))
+            if (isError) {
+                put("isError", JsonPrimitive(true))
+            }
         }
     }
 }

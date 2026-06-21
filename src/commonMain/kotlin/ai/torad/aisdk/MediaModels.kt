@@ -53,7 +53,7 @@ public sealed class FileData {
     ) : FileData()
 }
 
-public fun generatedFile(
+public fun GeneratedFile(
     data: FileData,
     mediaType: String = data.mediaType ?: "application/octet-stream",
     filename: String? = data.filename,
@@ -80,7 +80,7 @@ public fun generatedFile(
     )
 }
 
-public fun imageGenerationFile(data: FileData): ImageGenerationFile = when (data) {
+public fun ImageGenerationFile(data: FileData): ImageGenerationFile = when (data) {
     is FileData.Base64 -> ImageGenerationFile(
         mediaType = data.mediaType,
         base64 = data.value,
@@ -98,32 +98,38 @@ public fun imageGenerationFile(data: FileData): ImageGenerationFile = when (data
     )
 }
 
-public fun GeneratedFile.fileData(): FileData =
-    url?.let { FileData.Url(it, mediaType = mediaType, filename = filename) }
-        ?: FileData.Base64(base64, mediaType = mediaType, filename = filename)
-
 /**
- * Decode the inline base64 payload to bytes.
- *
- * @throws IllegalStateException when this file is URL-backed (no inline
- * bytes) — fetch [GeneratedFile.url] to obtain the data. Without this guard a
- * URL-backed file (whose `base64` is `""`) silently decoded to an empty
- * `ByteArray`, a wrong answer indistinguishable from a genuinely empty file.
+ * GeneratedFile read accessors as member-extensions. Use via member-import
+ * (`import ai.torad.aisdk.GeneratedFiles.bytes`) or `with(GeneratedFiles) { ... }`.
  */
-public fun GeneratedFile.bytes(): ByteArray {
-    if (base64.isEmpty()) {
-        check(url == null) {
-            "GeneratedFile is URL-backed (mediaType=$mediaType); it has no inline bytes. " +
-                "Fetch `url` to obtain the data, or use bytesOrNull()."
-        }
-        return ByteArray(0)
-    }
-    return Base64Codec.decode(base64)
-}
+public object GeneratedFiles {
+    public fun GeneratedFile.fileData(): FileData =
+        url?.let { FileData.Url(it, mediaType = mediaType, filename = filename) }
+            ?: FileData.Base64(base64, mediaType = mediaType, filename = filename)
 
-/** Like [bytes] but returns null for a URL-backed file instead of throwing. */
-public fun GeneratedFile.bytesOrNull(): ByteArray? =
-    if (base64.isEmpty() && url != null) null else bytes()
+    /**
+     * Decode the inline base64 payload to bytes.
+     *
+     * @throws IllegalStateException when this file is URL-backed (no inline
+     * bytes) — fetch [GeneratedFile.url] to obtain the data. Without this guard a
+     * URL-backed file (whose `base64` is `""`) silently decoded to an empty
+     * `ByteArray`, a wrong answer indistinguishable from a genuinely empty file.
+     */
+    public fun GeneratedFile.bytes(): ByteArray {
+        if (base64.isEmpty()) {
+            check(url == null) {
+                "GeneratedFile is URL-backed (mediaType=$mediaType); it has no inline bytes. " +
+                    "Fetch `url` to obtain the data, or use bytesOrNull()."
+            }
+            return ByteArray(0)
+        }
+        return Base64Codec.decode(base64)
+    }
+
+    /** Like [bytes] but returns null for a URL-backed file instead of throwing. */
+    public fun GeneratedFile.bytesOrNull(): ByteArray? =
+        if (base64.isEmpty() && url != null) null else bytes()
+}
 
 public typealias GeneratedAudioFile = GeneratedFile
 public typealias Experimental_GeneratedImage = GeneratedFile
@@ -228,91 +234,96 @@ public data class GenerateImageResult(
     val image: GeneratedFile get() = images.firstOrNull() ?: throw NoImageGeneratedError()
 }
 
-public suspend fun generateImage(
-    model: ImageModel,
-    prompt: String,
-    n: Int = 1,
-    size: String? = null,
-    aspectRatio: String? = null,
-    seed: Int? = null,
-    providerOptions: ProviderOptions = ProviderOptions.None,
-    headers: Map<String, String> = emptyMap(),
-    abortSignal: AbortSignal = AbortSignalNever,
-    files: List<ImageGenerationFile> = emptyList(),
-    mask: ImageGenerationFile? = null,
-    logger: Logger = NoopLogger,
-): GenerateImageResult {
-    require(prompt.isNotBlank()) { "generateImage: prompt must not be blank" }
-    require(n > 0) { "generateImage: n must be > 0" }
-    // Split into ceil(n / maxImagesPerCall) calls when the model is limited, so a
-    // request for n images from a model capped at < n returns all n (was returning
-    // only one call's worth). Calls run concurrently and results are aggregated.
-    fun paramsFor(count: Int) = ImageGenerationParams(
-        prompt, count, size, aspectRatio, seed, providerOptions, headers, abortSignal, files, mask,
-    )
-    val counts = splitCount(n, model.maxImagesPerCall?.coerceAtLeast(1) ?: n)
-    val results = if (counts.size == 1) {
-        listOf(model.generate(paramsFor(n)))
-    } else {
-        coroutineScope { counts.map { async { model.generate(paramsFor(it)) } }.awaitAll() }
+/** Internal call-support helpers shared by the media-generation entry points. */
+internal object MediaSupport {
+    /** Sum image usage across n-batched calls; a field stays null only if every call left it null. */
+    internal fun sumImageUsage(usages: List<ImageModelUsage>): ImageModelUsage {
+        fun sum(selector: (ImageModelUsage) -> Int?): Int? =
+            usages.mapNotNull(selector).takeIf { it.isNotEmpty() }?.sum()
+        return ImageModelUsage(sum { it.inputTokens }, sum { it.outputTokens }, sum { it.totalTokens })
     }
-    val images = results.flatMap { it.images }
-    if (images.isEmpty()) throw NoImageGeneratedError(responses = results.map { it.response })
-    results.flatMap { it.warnings }.forEach { logger.warn(formatCallWarning(it)) }
-    return GenerateImageResult(
-        images = images,
-        warnings = results.flatMap { it.warnings },
-        response = results.first().response,
-        providerMetadata = results.firstNotNullOfOrNull { (it.providerMetadata as? ProviderMetadata.Raw) } ?: ProviderMetadata.None,
-        responses = results.map { it.response },
-        usage = sumImageUsage(results.map { it.usage }),
+
+    /** Render a CallWarning for the logger seam (upstream's logWarnings). */
+    internal fun formatCallWarning(warning: CallWarning): String =
+        "AI SDK Warning [${warning.type}]: ${warning.message ?: warning.details?.toString() ?: ""}"
+
+    /** Split [total] into chunks of at most [perChunk] — e.g. (5, 2) → [2, 2, 1]. */
+    internal fun splitCount(total: Int, perChunk: Int): List<Int> {
+        if (perChunk <= 0 || total <= perChunk) return listOf(total)
+        val full = total / perChunk
+        val remainder = total % perChunk
+        return List(full) { perChunk } + if (remainder > 0) listOf(remainder) else emptyList()
+    }
+}
+
+public object ImageGeneration {
+    public suspend fun generateImage(
+        model: ImageModel,
+        prompt: String,
+        n: Int = 1,
+        size: String? = null,
+        aspectRatio: String? = null,
+        seed: Int? = null,
+        providerOptions: ProviderOptions = ProviderOptions.None,
+        headers: Map<String, String> = emptyMap(),
+        abortSignal: AbortSignal = AbortSignalNever,
+        files: List<ImageGenerationFile> = emptyList(),
+        mask: ImageGenerationFile? = null,
+        logger: Logger = NoopLogger,
+    ): GenerateImageResult {
+        require(prompt.isNotBlank()) { "generateImage: prompt must not be blank" }
+        require(n > 0) { "generateImage: n must be > 0" }
+        // Split into ceil(n / maxImagesPerCall) calls when the model is limited, so a
+        // request for n images from a model capped at < n returns all n (was returning
+        // only one call's worth). Calls run concurrently and results are aggregated.
+        fun paramsFor(count: Int) = ImageGenerationParams(
+            prompt, count, size, aspectRatio, seed, providerOptions, headers, abortSignal, files, mask,
+        )
+        val counts = MediaSupport.splitCount(n, model.maxImagesPerCall?.coerceAtLeast(1) ?: n)
+        val results = if (counts.size == 1) {
+            listOf(model.generate(paramsFor(n)))
+        } else {
+            coroutineScope { counts.map { async { model.generate(paramsFor(it)) } }.awaitAll() }
+        }
+        val images = results.flatMap { it.images }
+        if (images.isEmpty()) throw NoImageGeneratedError(responses = results.map { it.response })
+        results.flatMap { it.warnings }.forEach { logger.warn(MediaSupport.formatCallWarning(it)) }
+        return GenerateImageResult(
+            images = images,
+            warnings = results.flatMap { it.warnings },
+            response = results.first().response,
+            providerMetadata = results.firstNotNullOfOrNull { (it.providerMetadata as? ProviderMetadata.Raw) } ?: ProviderMetadata.None,
+            responses = results.map { it.response },
+            usage = MediaSupport.sumImageUsage(results.map { it.usage }),
+        )
+    }
+
+    public suspend fun experimental_generateImage(
+        model: ImageModel,
+        prompt: String,
+        n: Int = 1,
+        size: String? = null,
+        aspectRatio: String? = null,
+        seed: Int? = null,
+        providerOptions: ProviderOptions = ProviderOptions.None,
+        headers: Map<String, String> = emptyMap(),
+        abortSignal: AbortSignal = AbortSignalNever,
+        files: List<ImageGenerationFile> = emptyList(),
+        mask: ImageGenerationFile? = null,
+    ): GenerateImageResult = generateImage(
+        model = model,
+        prompt = prompt,
+        n = n,
+        size = size,
+        aspectRatio = aspectRatio,
+        seed = seed,
+        providerOptions = providerOptions,
+        headers = headers,
+        abortSignal = abortSignal,
+        files = files,
+        mask = mask,
     )
 }
-
-/** Sum image usage across n-batched calls; a field stays null only if every call left it null. */
-internal fun sumImageUsage(usages: List<ImageModelUsage>): ImageModelUsage {
-    fun sum(selector: (ImageModelUsage) -> Int?): Int? =
-        usages.mapNotNull(selector).takeIf { it.isNotEmpty() }?.sum()
-    return ImageModelUsage(sum { it.inputTokens }, sum { it.outputTokens }, sum { it.totalTokens })
-}
-
-/** Render a CallWarning for the logger seam (upstream's logWarnings). */
-internal fun formatCallWarning(warning: CallWarning): String =
-    "AI SDK Warning [${warning.type}]: ${warning.message ?: warning.details?.toString() ?: ""}"
-
-/** Split [total] into chunks of at most [perChunk] — e.g. (5, 2) → [2, 2, 1]. */
-internal fun splitCount(total: Int, perChunk: Int): List<Int> {
-    if (perChunk <= 0 || total <= perChunk) return listOf(total)
-    val full = total / perChunk
-    val remainder = total % perChunk
-    return List(full) { perChunk } + if (remainder > 0) listOf(remainder) else emptyList()
-}
-
-public suspend fun experimental_generateImage(
-    model: ImageModel,
-    prompt: String,
-    n: Int = 1,
-    size: String? = null,
-    aspectRatio: String? = null,
-    seed: Int? = null,
-    providerOptions: ProviderOptions = ProviderOptions.None,
-    headers: Map<String, String> = emptyMap(),
-    abortSignal: AbortSignal = AbortSignalNever,
-    files: List<ImageGenerationFile> = emptyList(),
-    mask: ImageGenerationFile? = null,
-): GenerateImageResult = generateImage(
-    model = model,
-    prompt = prompt,
-    n = n,
-    size = size,
-    aspectRatio = aspectRatio,
-    seed = seed,
-    providerOptions = providerOptions,
-    headers = headers,
-    abortSignal = abortSignal,
-    files = files,
-    mask = mask,
-)
 
 public interface ImageModelMiddleware {
     public suspend fun wrapGenerate(context: ImageMiddlewareCallContext): ImageModelResult =
@@ -325,7 +336,7 @@ public data class ImageMiddlewareCallContext(
     val doGenerate: suspend (ImageGenerationParams) -> ImageModelResult,
 )
 
-public fun wrapImageModel(
+public fun WrapImageModel(
     model: ImageModel,
     middlewares: List<ImageModelMiddleware>,
 ): ImageModel {
@@ -398,56 +409,58 @@ public data class GenerateSpeechResult(
     val responses: List<LanguageModelResponseMetadata> = listOf(response),
 )
 
-public suspend fun generateSpeech(
-    model: SpeechModel,
-    text: String,
-    voice: String? = null,
-    instructions: String? = null,
-    speed: Float? = null,
-    responseFormat: String? = null,
-    language: String? = null,
-    providerOptions: ProviderOptions = ProviderOptions.None,
-    headers: Map<String, String> = emptyMap(),
-    abortSignal: AbortSignal = AbortSignalNever,
-    logger: Logger = NoopLogger,
-): GenerateSpeechResult {
-    require(text.isNotBlank()) { "generateSpeech: text must not be blank" }
-    val result = model.generate(
-        SpeechGenerationParams(
-            text, voice, instructions, speed, responseFormat, language, providerOptions, headers, abortSignal,
-        ),
-    )
-    result.warnings.forEach { logger.warn(formatCallWarning(it)) }
-    return GenerateSpeechResult(
-        audio = result.audio ?: throw NoSpeechGeneratedError(),
-        warnings = result.warnings,
-        response = result.response,
-        providerMetadata = result.providerMetadata,
-        responses = listOf(result.response),
+public object SpeechGeneration {
+    public suspend fun generateSpeech(
+        model: SpeechModel,
+        text: String,
+        voice: String? = null,
+        instructions: String? = null,
+        speed: Float? = null,
+        responseFormat: String? = null,
+        language: String? = null,
+        providerOptions: ProviderOptions = ProviderOptions.None,
+        headers: Map<String, String> = emptyMap(),
+        abortSignal: AbortSignal = AbortSignalNever,
+        logger: Logger = NoopLogger,
+    ): GenerateSpeechResult {
+        require(text.isNotBlank()) { "generateSpeech: text must not be blank" }
+        val result = model.generate(
+            SpeechGenerationParams(
+                text, voice, instructions, speed, responseFormat, language, providerOptions, headers, abortSignal,
+            ),
+        )
+        result.warnings.forEach { logger.warn(MediaSupport.formatCallWarning(it)) }
+        return GenerateSpeechResult(
+            audio = result.audio ?: throw NoSpeechGeneratedError(),
+            warnings = result.warnings,
+            response = result.response,
+            providerMetadata = result.providerMetadata,
+            responses = listOf(result.response),
+        )
+    }
+
+    public suspend fun experimental_generateSpeech(
+        model: SpeechModel,
+        text: String,
+        voice: String? = null,
+        instructions: String? = null,
+        speed: Float? = null,
+        responseFormat: String? = null,
+        providerOptions: ProviderOptions = ProviderOptions.None,
+        headers: Map<String, String> = emptyMap(),
+        abortSignal: AbortSignal = AbortSignalNever,
+    ): GenerateSpeechResult = generateSpeech(
+        model = model,
+        text = text,
+        voice = voice,
+        instructions = instructions,
+        speed = speed,
+        responseFormat = responseFormat,
+        providerOptions = providerOptions,
+        headers = headers,
+        abortSignal = abortSignal,
     )
 }
-
-public suspend fun experimental_generateSpeech(
-    model: SpeechModel,
-    text: String,
-    voice: String? = null,
-    instructions: String? = null,
-    speed: Float? = null,
-    responseFormat: String? = null,
-    providerOptions: ProviderOptions = ProviderOptions.None,
-    headers: Map<String, String> = emptyMap(),
-    abortSignal: AbortSignal = AbortSignalNever,
-): GenerateSpeechResult = generateSpeech(
-    model = model,
-    text = text,
-    voice = voice,
-    instructions = instructions,
-    speed = speed,
-    responseFormat = responseFormat,
-    providerOptions = providerOptions,
-    headers = headers,
-    abortSignal = abortSignal,
-)
 
 public interface TranscriptionModel {
     public val modelId: String
@@ -503,50 +516,52 @@ public data class TranscribeResult(
     val durationInSeconds: Float? = null,
 )
 
-public suspend fun transcribe(
-    model: TranscriptionModel,
-    audio: AudioSource,
-    language: String? = null,
-    prompt: String? = null,
-    providerOptions: ProviderOptions = ProviderOptions.None,
-    headers: Map<String, String> = emptyMap(),
-    abortSignal: AbortSignal = AbortSignalNever,
-    logger: Logger = NoopLogger,
-): TranscribeResult {
-    require(audio.base64.isNotBlank()) { "transcribe: audio base64 must not be blank" }
-    val result = model.transcribe(
-        TranscriptionParams(audio, language, prompt, providerOptions, headers, abortSignal),
-    )
-    result.warnings.forEach { logger.warn(formatCallWarning(it)) }
-    return TranscribeResult(
-        text = result.text ?: throw NoTranscriptGeneratedError(),
-        segments = result.segments,
-        warnings = result.warnings,
-        response = result.response,
-        providerMetadata = result.providerMetadata,
-        responses = listOf(result.response),
-        language = result.language,
-        durationInSeconds = result.durationInSeconds,
+public object Transcription {
+    public suspend fun transcribe(
+        model: TranscriptionModel,
+        audio: AudioSource,
+        language: String? = null,
+        prompt: String? = null,
+        providerOptions: ProviderOptions = ProviderOptions.None,
+        headers: Map<String, String> = emptyMap(),
+        abortSignal: AbortSignal = AbortSignalNever,
+        logger: Logger = NoopLogger,
+    ): TranscribeResult {
+        require(audio.base64.isNotBlank()) { "transcribe: audio base64 must not be blank" }
+        val result = model.transcribe(
+            TranscriptionParams(audio, language, prompt, providerOptions, headers, abortSignal),
+        )
+        result.warnings.forEach { logger.warn(MediaSupport.formatCallWarning(it)) }
+        return TranscribeResult(
+            text = result.text ?: throw NoTranscriptGeneratedError(),
+            segments = result.segments,
+            warnings = result.warnings,
+            response = result.response,
+            providerMetadata = result.providerMetadata,
+            responses = listOf(result.response),
+            language = result.language,
+            durationInSeconds = result.durationInSeconds,
+        )
+    }
+
+    public suspend fun experimental_transcribe(
+        model: TranscriptionModel,
+        audio: AudioSource,
+        language: String? = null,
+        prompt: String? = null,
+        providerOptions: ProviderOptions = ProviderOptions.None,
+        headers: Map<String, String> = emptyMap(),
+        abortSignal: AbortSignal = AbortSignalNever,
+    ): TranscribeResult = transcribe(
+        model = model,
+        audio = audio,
+        language = language,
+        prompt = prompt,
+        providerOptions = providerOptions,
+        headers = headers,
+        abortSignal = abortSignal,
     )
 }
-
-public suspend fun experimental_transcribe(
-    model: TranscriptionModel,
-    audio: AudioSource,
-    language: String? = null,
-    prompt: String? = null,
-    providerOptions: ProviderOptions = ProviderOptions.None,
-    headers: Map<String, String> = emptyMap(),
-    abortSignal: AbortSignal = AbortSignalNever,
-): TranscribeResult = transcribe(
-    model = model,
-    audio = audio,
-    language = language,
-    prompt = prompt,
-    providerOptions = providerOptions,
-    headers = headers,
-    abortSignal = abortSignal,
-)
 
 public interface VideoModel {
     public val modelId: String
@@ -593,27 +608,76 @@ public data class GenerateVideoResult(
     val video: GeneratedFile get() = videos.firstOrNull() ?: throw NoVideoGeneratedError()
 }
 
-public suspend fun generateVideo(
-    model: VideoModel,
-    prompt: String,
-    n: Int = 1,
-    image: GeneratedFile? = null,
-    durationSeconds: Float? = null,
-    size: String? = null,
-    aspectRatio: String? = null,
-    providerOptions: ProviderOptions = ProviderOptions.None,
-    headers: Map<String, String> = emptyMap(),
-    abortSignal: AbortSignal = AbortSignalNever,
-    seed: Int? = null,
-    fps: Int? = null,
-    resolution: String? = null,
-    logger: Logger = NoopLogger,
-): GenerateVideoResult {
-    require(prompt.isNotBlank()) { "generateVideo: prompt must not be blank" }
-    require(n > 0) { "generateVideo: n must be > 0" }
-    fun paramsFor(count: Int) = VideoGenerationParams(
+public object VideoGeneration {
+    public suspend fun generateVideo(
+        model: VideoModel,
+        prompt: String,
+        n: Int = 1,
+        image: GeneratedFile? = null,
+        durationSeconds: Float? = null,
+        size: String? = null,
+        aspectRatio: String? = null,
+        providerOptions: ProviderOptions = ProviderOptions.None,
+        headers: Map<String, String> = emptyMap(),
+        abortSignal: AbortSignal = AbortSignalNever,
+        seed: Int? = null,
+        fps: Int? = null,
+        resolution: String? = null,
+        logger: Logger = NoopLogger,
+    ): GenerateVideoResult {
+        require(prompt.isNotBlank()) { "generateVideo: prompt must not be blank" }
+        require(n > 0) { "generateVideo: n must be > 0" }
+        fun paramsFor(count: Int) = VideoGenerationParams(
+            prompt = prompt,
+            n = count,
+            image = image,
+            durationSeconds = durationSeconds,
+            size = size,
+            aspectRatio = aspectRatio,
+            providerOptions = providerOptions,
+            headers = headers,
+            abortSignal = abortSignal,
+            seed = seed,
+            fps = fps,
+            resolution = resolution,
+        )
+        // Split into ceil(n / maxVideosPerCall) concurrent calls when the model is limited.
+        val counts = MediaSupport.splitCount(n, model.maxVideosPerCall?.coerceAtLeast(1) ?: n)
+        val results = if (counts.size == 1) {
+            listOf(model.generate(paramsFor(n)))
+        } else {
+            coroutineScope { counts.map { async { model.generate(paramsFor(it)) } }.awaitAll() }
+        }
+        val videos = results.flatMap { it.videos }
+        if (videos.isEmpty()) throw NoVideoGeneratedError(responses = results.map { it.response })
+        results.flatMap { it.warnings }.forEach { logger.warn(MediaSupport.formatCallWarning(it)) }
+        return GenerateVideoResult(
+            videos = videos,
+            warnings = results.flatMap { it.warnings },
+            response = results.first().response,
+            providerMetadata = results.firstNotNullOfOrNull { (it.providerMetadata as? ProviderMetadata.Raw) } ?: ProviderMetadata.None,
+            responses = results.map { it.response },
+        )
+    }
+
+    public suspend fun experimental_generateVideo(
+        model: VideoModel,
+        prompt: String,
+        n: Int = 1,
+        image: GeneratedFile? = null,
+        durationSeconds: Float? = null,
+        size: String? = null,
+        aspectRatio: String? = null,
+        providerOptions: ProviderOptions = ProviderOptions.None,
+        headers: Map<String, String> = emptyMap(),
+        abortSignal: AbortSignal = AbortSignalNever,
+        seed: Int? = null,
+        fps: Int? = null,
+        resolution: String? = null,
+    ): GenerateVideoResult = generateVideo(
+        model = model,
         prompt = prompt,
-        n = count,
+        n = n,
         image = image,
         durationSeconds = durationSeconds,
         size = size,
@@ -625,51 +689,4 @@ public suspend fun generateVideo(
         fps = fps,
         resolution = resolution,
     )
-    // Split into ceil(n / maxVideosPerCall) concurrent calls when the model is limited.
-    val counts = splitCount(n, model.maxVideosPerCall?.coerceAtLeast(1) ?: n)
-    val results = if (counts.size == 1) {
-        listOf(model.generate(paramsFor(n)))
-    } else {
-        coroutineScope { counts.map { async { model.generate(paramsFor(it)) } }.awaitAll() }
-    }
-    val videos = results.flatMap { it.videos }
-    if (videos.isEmpty()) throw NoVideoGeneratedError(responses = results.map { it.response })
-    results.flatMap { it.warnings }.forEach { logger.warn(formatCallWarning(it)) }
-    return GenerateVideoResult(
-        videos = videos,
-        warnings = results.flatMap { it.warnings },
-        response = results.first().response,
-        providerMetadata = results.firstNotNullOfOrNull { (it.providerMetadata as? ProviderMetadata.Raw) } ?: ProviderMetadata.None,
-        responses = results.map { it.response },
-    )
 }
-
-public suspend fun experimental_generateVideo(
-    model: VideoModel,
-    prompt: String,
-    n: Int = 1,
-    image: GeneratedFile? = null,
-    durationSeconds: Float? = null,
-    size: String? = null,
-    aspectRatio: String? = null,
-    providerOptions: ProviderOptions = ProviderOptions.None,
-    headers: Map<String, String> = emptyMap(),
-    abortSignal: AbortSignal = AbortSignalNever,
-    seed: Int? = null,
-    fps: Int? = null,
-    resolution: String? = null,
-): GenerateVideoResult = generateVideo(
-    model = model,
-    prompt = prompt,
-    n = n,
-    image = image,
-    durationSeconds = durationSeconds,
-    size = size,
-    aspectRatio = aspectRatio,
-    providerOptions = providerOptions,
-    headers = headers,
-    abortSignal = abortSignal,
-    seed = seed,
-    fps = fps,
-    resolution = resolution,
-)

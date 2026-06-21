@@ -23,7 +23,7 @@ class ToolProviderOptionsTest {
             outputSerializer = serializer(),
             providerOptions = opts,
         ) { "ok" }
-        val descriptor = toolSetOf(t).descriptors.single()
+        val descriptor = ToolSet(t).descriptors.single()
         assertEquals(opts, descriptor.providerOptions, "providerOptions threaded to the wire descriptor")
     }
 }

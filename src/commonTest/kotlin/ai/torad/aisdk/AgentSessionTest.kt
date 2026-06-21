@@ -1,7 +1,8 @@
 package ai.torad.aisdk
 
-import ai.torad.aisdk.providers.mockLanguageModelToolThenText
-import ai.torad.aisdk.providers.mockToolInput
+import ai.torad.aisdk.AgentSessions.session
+import ai.torad.aisdk.providers.MockLanguageModelToolThenText
+import ai.torad.aisdk.providers.MockToolInput
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
@@ -42,13 +43,13 @@ class AgentSessionTest {
             needsApproval = { _, _ -> true },
         ) { SendResult(sent = true) }
         val agent = TestToolLoopAgent<Unit, String>(
-            model = mockLanguageModelToolThenText(
+            model = MockLanguageModelToolThenText(
                 toolName = "send",
-                toolInput = mockToolInput("message" to "hi"),
+                toolInput = MockToolInput("message" to "hi"),
                 finalText = "sent",
             ),
             instructions = "use send",
-            tools = toolSetOf(sendTool),
+            tools = ToolSet(sendTool),
         )
         val session = agent.session(this)
         var steps = 0 // var-ok: test step counter
@@ -70,14 +71,14 @@ class AgentSessionTest {
 
     @Test
     fun `streaming session records tool-call and tool-result parts in the message log`() = runTest {
-        val tools = toolSetOf(Tool<WeatherInput, WeatherOutput, Unit>(
+        val tools = ToolSet(Tool<WeatherInput, WeatherOutput, Unit>(
             name = "weather",
             description = "Get weather.",
         ) { input -> WeatherOutput(temperature = input.city.length) })
         val agent = TestToolLoopAgent<Unit, String>(
-            model = mockLanguageModelToolThenText(
+            model = MockLanguageModelToolThenText(
                 toolName = "weather",
-                toolInput = mockToolInput("city" to "Paris"),
+                toolInput = MockToolInput("city" to "Paris"),
                 finalText = "It is mild.",
             ),
             instructions = "Be brief.",
@@ -104,15 +105,15 @@ class AgentSessionTest {
 
     @Test
     fun `streaming preserves the tool's model-visible summary rather than the full output`() = runTest {
-        val tools = toolSetOf(Tool<WeatherInput, WeatherOutput, Unit>(
+        val tools = ToolSet(Tool<WeatherInput, WeatherOutput, Unit>(
             name = "weather",
             description = "Get weather.",
             toModelOutput = { _, _ -> ToolResultOutput.Text("summary") },
         ) { input -> WeatherOutput(temperature = input.city.length) })
         val agent = TestToolLoopAgent<Unit, String>(
-            model = mockLanguageModelToolThenText(
+            model = MockLanguageModelToolThenText(
                 toolName = "weather",
-                toolInput = mockToolInput("city" to "Paris"),
+                toolInput = MockToolInput("city" to "Paris"),
                 finalText = "done",
             ),
             instructions = "Be brief.",
@@ -161,7 +162,7 @@ class AgentSessionTest {
         val agent = TestToolLoopAgent<Unit, String>(
             model = model,
             instructions = "Be brief.",
-            tools = toolSetOf<Unit>(),
+            tools = ToolSet<Unit>(),
         )
         val session = agent.session(this)
 

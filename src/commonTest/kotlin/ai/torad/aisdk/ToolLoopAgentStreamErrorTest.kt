@@ -1,6 +1,6 @@
 package ai.torad.aisdk
 
-import ai.torad.aisdk.testing.drainAllItems
+import ai.torad.aisdk.testing.FlowDrain.drainAllItems
 import kotlin.test.Test
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
@@ -28,7 +28,7 @@ class ToolLoopAgentStreamErrorTest {
         val agent = TestToolLoopAgent<Unit, String>(
             model = model,
             instructions = "stream",
-            tools = toolSetOf(),
+            tools = ToolSet(),
         )
 
         val events = drainAllItems(agent.stream(prompt = "run", options = Unit))

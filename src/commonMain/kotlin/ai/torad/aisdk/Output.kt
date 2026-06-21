@@ -129,7 +129,7 @@ public sealed class Output<T> {
         }.toString()
 
         override fun decode(text: String): T {
-            val value = extractChoiceValue(text)
+            val value = OutputOps.extractChoiceValue(text)
             require(value in encodedOptions) {
                 "Expected one of ${encodedOptions.joinToString(prefix = "[", postfix = "]")}, got `$value`"
             }
@@ -183,31 +183,31 @@ public sealed class Output<T> {
 // Naming: `output<Variant>(...)` so call sites read as `outputObj(...)`
 // while `Output.obj(...)` also works for v6-shaped call sites.
 
-public fun <T> outputObj(
+public fun <T> OutputObj(
     serializer: KSerializer<T>,
     name: String = serializer.descriptor.serialName.substringAfterLast('.'),
     description: String? = null,
 ): Output<T> = Output.Obj(serializer, name, description)
 
-public fun <T> outputArray(
+public fun <T> OutputArray(
     elementSerializer: KSerializer<T>,
     name: String = elementSerializer.descriptor.serialName.substringAfterLast('.') + "[]",
     description: String? = null,
 ): Output<List<T>> = Output.Arr(elementSerializer, name, description)
 
-public fun outputChoice(
+public fun OutputChoice(
     options: Iterable<String>,
     name: String = "choice",
     description: String? = null,
 ): Output<String> = Output.choice(options, name, description)
 
-public fun outputChoice(
+public fun OutputChoice(
     vararg options: String,
     name: String = "choice",
     description: String? = null,
 ): Output<String> = Output.choice(options.asIterable(), name, description)
 
-public fun <T> outputChoice(
+public fun <T> OutputChoice(
     options: Iterable<T>,
     encode: (T) -> String,
     decodeChoice: (String) -> T,
@@ -215,22 +215,28 @@ public fun <T> outputChoice(
     description: String? = null,
 ): Output<T> = Output.Choice(options.toList(), encode, decodeChoice, name, description)
 
-public fun outputJson(
+public fun OutputJson(
     name: String = "json",
     description: String? = null,
 ): Output<JsonElement> = Output.JsonTree(name, description)
 
-internal fun Output<*>.toResponseFormat(): ResponseFormat = ResponseFormat.Json(
-    schemaName = schemaName,
-    schemaDescription = schemaDescription,
-    schemaJson = runCatching { schema }.getOrNull(),
-)
+/**
+ * File-local helpers for [Output], grouped to avoid loose top-level functions.
+ * - [toResponseFormat] is a member-extension; callers use member-import or `with(OutputOps) { ... }`.
+ */
+internal object OutputOps {
+    fun Output<*>.toResponseFormat(): ResponseFormat = ResponseFormat.Json(
+        schemaName = schemaName,
+        schemaDescription = schemaDescription,
+        schemaJson = runCatching { schema }.getOrNull(),
+    )
 
-private fun extractChoiceValue(text: String): String {
-    val element = aiSdkOutputJson.parseToJsonElement(text)
-    return when (element) {
-        is JsonObject -> element["result"]?.jsonPrimitive?.contentOrNull
-        is JsonPrimitive -> element.contentOrNull
-        else -> null
-    } ?: error("Expected a JSON object with a `result` string")
+    fun extractChoiceValue(text: String): String {
+        val element = aiSdkOutputJson.parseToJsonElement(text)
+        return when (element) {
+            is JsonObject -> element["result"]?.jsonPrimitive?.contentOrNull
+            is JsonPrimitive -> element.contentOrNull
+            else -> null
+        } ?: error("Expected a JSON object with a `result` string")
+    }
 }

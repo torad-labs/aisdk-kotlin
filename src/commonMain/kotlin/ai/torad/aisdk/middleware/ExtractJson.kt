@@ -6,7 +6,7 @@ import ai.torad.aisdk.MiddlewareCallContext
 import ai.torad.aisdk.PartialJsonState
 import ai.torad.aisdk.ContentPart
 import ai.torad.aisdk.StreamEvent
-import ai.torad.aisdk.parsePartialJson
+import ai.torad.aisdk.PartialJson
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.FlowCollector
 import kotlinx.coroutines.flow.flow
@@ -37,7 +37,7 @@ import kotlinx.coroutines.flow.flow
  * streaming text is buffered until `TextEnd`, matching v6 because an
  * arbitrary transform cannot be applied incrementally.
  */
-public fun extractJsonMiddleware(
+public fun ExtractJsonMiddleware(
     transform: ((String) -> String)? = null,
 ): LanguageModelMiddleware = object : LanguageModelMiddleware {
 
@@ -166,7 +166,7 @@ public fun extractJsonMiddleware(
      */
     private fun extractAndRepairJson(text: String): String {
         val region = extractJsonRegion(text)
-        val parsed = parsePartialJson(region)
+        val parsed = PartialJson.parsePartialJson(region)
         if (parsed.state == PartialJsonState.RepairedParse && parsed.value != null) {
             return parsed.value.toString()
         }

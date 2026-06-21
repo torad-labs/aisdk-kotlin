@@ -207,7 +207,7 @@ private class GladiaTranscriptionModel(
                 ),
             )
         }
-        return response.toJsonResponse(url = url, errorMessage = ::errorMessage)
+        return with(HttpTransport) { response.toJsonResponse(url = url, errorMessage = ::errorMessage) }
     }
 
     private suspend fun postJson(
@@ -215,7 +215,7 @@ private class GladiaTranscriptionModel(
         body: JsonObject,
         requestHeaders: Map<String, String>,
     ): HttpJsonResponse =
-        requestJson(
+        HttpTransport.requestJson(
             client = client,
             url = url,
             method = HttpMethod.Post,
@@ -229,7 +229,7 @@ private class GladiaTranscriptionModel(
         url: String,
         requestHeaders: Map<String, String>,
     ): HttpJsonResponse =
-        requestJson(
+        HttpTransport.requestJson(
             client = client,
             url = url,
             method = HttpMethod.Get,

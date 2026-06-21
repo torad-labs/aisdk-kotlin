@@ -15,7 +15,7 @@ import ai.torad.aisdk.Tool
  *
  * Idiomatic use in an application:
  * ```
- * val handlers = buildToolPartHandlerRegistry(
+ * val handlers = ToolPartHandlerRegistry(
  *     fallback = { part -> UnknownToolCard(part) },
  * ) {
  *     register(searchDocsTool) { invocation ->
@@ -90,8 +90,8 @@ public class ToolPartHandlerRegistry<TRenderResult> internal constructor(
                     toolCallId = part.toolCallId,
                     toolName = part.toolName,
                     state = part.state,
-                    input = inputAs(part, tool.inputSerializer),
-                    output = outputAs(part, tool.outputSerializer),
+                    input = TypedJsonOps.inputAs(part, tool.inputSerializer),
+                    output = TypedJsonOps.outputAs(part, tool.outputSerializer),
                     error = part.error,
                 )
                 render(typed)
@@ -105,8 +105,8 @@ public class ToolPartHandlerRegistry<TRenderResult> internal constructor(
     }
 }
 
-/** Top-level builder for [ToolPartHandlerRegistry]. */
-public fun <TRenderResult> buildToolPartHandlerRegistry(
+/** Faux-constructor builder for [ToolPartHandlerRegistry]. */
+public fun <TRenderResult> ToolPartHandlerRegistry(
     fallback: (UIMessagePart.ToolUI) -> TRenderResult,
     block: ToolPartHandlerRegistry.Builder<TRenderResult>.() -> Unit,
 ): ToolPartHandlerRegistry<TRenderResult> {

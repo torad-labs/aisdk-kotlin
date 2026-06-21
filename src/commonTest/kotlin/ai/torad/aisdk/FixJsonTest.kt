@@ -14,7 +14,7 @@ import kotlin.test.assertNull
 class FixJsonTest {
 
     private fun assertFix(input: String, expected: String) =
-        assertEquals(expected, fixJson(input), "fixJson(${quoted(input)})")
+        assertEquals(expected, PartialJson.fixJson(input), "PartialJson.fixJson(${quoted(input)})")
 
     @Test
     fun `given complete valid json when fixed then it passes through unchanged`() {
@@ -69,21 +69,21 @@ class FixJsonTest {
 
     @Test
     fun `given null input when parsed partially then state is UndefinedInput`() {
-        val r = parsePartialJson(null)
+        val r = PartialJson.parsePartialJson(null)
         assertEquals(PartialJsonState.UndefinedInput, r.state)
         assertNull(r.value)
     }
 
     @Test
     fun `given complete json when parsed partially then state is SuccessfulParse`() {
-        val r = parsePartialJson("""{"a":1}""")
+        val r = PartialJson.parsePartialJson("""{"a":1}""")
         assertEquals(PartialJsonState.SuccessfulParse, r.state)
         assertNotNull(r.value)
     }
 
     @Test
     fun `given truncated json when parsed partially then state is RepairedParse with the repaired value`() {
-        val r = parsePartialJson("""{"a":1""")
+        val r = PartialJson.parsePartialJson("""{"a":1""")
         assertEquals(PartialJsonState.RepairedParse, r.state)
         assertNotNull(r.value)
     }
@@ -91,19 +91,19 @@ class FixJsonTest {
     @Test
     fun `given an empty string when parsed partially then state is FailedParse not UndefinedInput`() {
         // Per v6: "" is NOT undefined-input; it falls through both parses and fails.
-        assertEquals(PartialJsonState.FailedParse, parsePartialJson("").state)
-        assertEquals(PartialJsonState.FailedParse, parsePartialJson("garbage").state)
+        assertEquals(PartialJsonState.FailedParse, PartialJson.parsePartialJson("").state)
+        assertEquals(PartialJsonState.FailedParse, PartialJson.parsePartialJson("garbage").state)
     }
 
     @Test
     fun `given bare NaN or Infinity when parsed partially then state is FailedParse like JS JSON parse`() {
         // toDoubleOrNull accepts these, but JS JSON.parse throws on all of
         // them — isStrictJsonValue requires isFinite() so they fail.
-        assertEquals(PartialJsonState.FailedParse, parsePartialJson("NaN").state)
-        assertEquals(PartialJsonState.FailedParse, parsePartialJson("Infinity").state)
-        assertEquals(PartialJsonState.FailedParse, parsePartialJson("-Infinity").state)
-        assertEquals(PartialJsonState.FailedParse, parsePartialJson("1e999").state)
+        assertEquals(PartialJsonState.FailedParse, PartialJson.parsePartialJson("NaN").state)
+        assertEquals(PartialJsonState.FailedParse, PartialJson.parsePartialJson("Infinity").state)
+        assertEquals(PartialJsonState.FailedParse, PartialJson.parsePartialJson("-Infinity").state)
+        assertEquals(PartialJsonState.FailedParse, PartialJson.parsePartialJson("1e999").state)
     }
-}
 
-private fun quoted(s: String): String = "\"" + s.replace("\"", "\\\"") + "\""
+    private fun quoted(s: String): String = "\"" + s.replace("\"", "\\\"") + "\""
+}

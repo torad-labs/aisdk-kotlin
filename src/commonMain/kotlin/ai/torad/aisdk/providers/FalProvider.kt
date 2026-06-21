@@ -1,6 +1,22 @@
 package ai.torad.aisdk.providers
 
 import ai.torad.aisdk.*
+import ai.torad.aisdk.providers.FalWire.falGetBinary
+import ai.torad.aisdk.providers.FalWire.falHeaders
+import ai.torad.aisdk.providers.FalWire.falImageMetadata
+import ai.torad.aisdk.providers.FalWire.falImageProviderMetadata
+import ai.torad.aisdk.providers.FalWire.falImageRequestBody
+import ai.torad.aisdk.providers.FalWire.falNormalizedVideoModelId
+import ai.torad.aisdk.providers.FalWire.falOptions
+import ai.torad.aisdk.providers.FalWire.falPollJson
+import ai.torad.aisdk.providers.FalWire.falPostJson
+import ai.torad.aisdk.providers.FalWire.falResponseImages
+import ai.torad.aisdk.providers.FalWire.falSpeechRequestBody
+import ai.torad.aisdk.providers.FalWire.falTranscriptionRequestBody
+import ai.torad.aisdk.providers.FalWire.falVideoMetadata
+import ai.torad.aisdk.providers.FalWire.falVideoProviderMetadata
+import ai.torad.aisdk.providers.FalWire.falVideoRequestBody
+import ai.torad.aisdk.providers.FalWire.headerValue
 import io.ktor.client.HttpClient
 import io.ktor.client.request.header
 import io.ktor.client.request.request
@@ -130,7 +146,7 @@ private class FalImageModel(
             val bytes = falGetBinary(client, url, emptyMap(), params.abortSignal)
             GeneratedFile(
                 mediaType = image["content_type"]?.jsonPrimitive?.contentOrNull
-                    ?: bytes.headers.headerValue(HttpHeaders.ContentType)
+                    ?: headerValue(bytes.headers, HttpHeaders.ContentType)
                     ?: "image/png",
                 base64 = Base64Codec.encode(bytes.bytes),
                 filename = image["file_name"]?.jsonPrimitive?.contentOrNull,
@@ -169,7 +185,7 @@ private class FalSpeechModel(
         val audio = falGetBinary(client, audioUrl, emptyMap(), params.abortSignal)
         return SpeechModelResult(
             audio = GeneratedFile(
-                mediaType = audio.headers.headerValue(HttpHeaders.ContentType) ?: "audio/mpeg",
+                mediaType = headerValue(audio.headers, HttpHeaders.ContentType) ?: "audio/mpeg",
                 base64 = Base64Codec.encode(audio.bytes),
                 url = audioUrl,
             ),
@@ -279,117 +295,20 @@ private class FalVideoModel(
 
 
 
-private class FalBinaryResponse(
+internal class FalBinaryResponse(
     val bytes: ByteArray,
     val headers: Map<String, String>,
 )
 
-private data class FalImageRequest(
+internal data class FalImageRequest(
     val body: JsonObject,
     val warnings: List<CallWarning>,
 )
 
-private data class FalSpeechRequest(
+internal data class FalSpeechRequest(
     val body: JsonObject,
     val warnings: List<CallWarning>,
 )
-
-private fun falImageRequestBody(params: ImageGenerationParams): FalImageRequest {
-    val warnings = mutableListOf<CallWarning>()
-    val options = falOptions(params.providerOptions)
-    val normalizedOptions = falImageOptions(options, warnings)
-    val useMultipleImages = options["useMultipleImages"]?.jsonPrimitive?.booleanOrNull == true
-
-    return FalImageRequest(
-        body = buildJsonObject {
-            put("prompt", JsonPrimitive(params.prompt))
-            params.seed?.let { put("seed", JsonPrimitive(it)) }
-            falImageSize(params.size, params.aspectRatio)?.let { put("image_size", it) }
-            put("num_images", JsonPrimitive(params.n))
-            if (params.files.isNotEmpty()) {
-                if (useMultipleImages) {
-                    put("image_urls", JsonArray(params.files.map(::falImageGenerationFileUrl)))
-                } else {
-                    put("image_url", falImageGenerationFileUrl(params.files.first()))
-                    if (params.files.size > 1) {
-                        warnings += CallWarning(
-                            "other",
-                            "Multiple input images provided but useMultipleImages is not enabled. Only the first image will be used.",
-                        )
-                    }
-                }
-            }
-            params.mask?.let { put("mask_url", falImageGenerationFileUrl(it)) }
-            putJsonObjectFields(normalizedOptions)
-        },
-        warnings = warnings,
-    )
-}
-
-private fun falSpeechRequestBody(params: SpeechGenerationParams): FalSpeechRequest {
-    val warnings = mutableListOf<CallWarning>()
-    if (!params.instructions.isNullOrBlank()) {
-        warnings += CallWarning("unsupported", "instructions")
-    }
-    val outputFormat = when (params.responseFormat) {
-        null, "url" -> "url"
-        "hex" -> "hex"
-        else -> {
-            warnings += CallWarning("unsupported", "outputFormat")
-            "url"
-        }
-    }
-    return FalSpeechRequest(
-        body = buildJsonObject {
-            put("text", JsonPrimitive(params.text))
-            put("output_format", JsonPrimitive(outputFormat))
-            params.voice?.let { put("voice", JsonPrimitive(it)) }
-            params.speed?.let { put("speed", JsonPrimitive(it)) }
-            putJsonObjectFields(falOptions(params.providerOptions))
-        },
-        warnings = warnings,
-    )
-}
-
-private fun falTranscriptionRequestBody(params: TranscriptionParams): JsonObject {
-    val options = falOptions(params.providerOptions)
-    return buildJsonObject {
-        put("task", JsonPrimitive("transcribe"))
-        put("diarize", options["diarize"] ?: JsonPrimitive(true))
-        put("chunk_level", options["chunkLevel"] ?: options["chunk_level"] ?: JsonPrimitive("word"))
-        params.language?.let { put("language", JsonPrimitive(it)) }
-        options["language"]?.let { put("language", it) }
-        options["version"]?.let { put("version", it) }
-        (options["batchSize"] ?: options["batch_size"])?.let { put("batch_size", it) }
-        (options["numSpeakers"] ?: options["num_speakers"])?.let { put("num_speakers", it) }
-        put("audio_url", JsonPrimitive("data:${params.audio.mediaType};base64,${params.audio.base64}"))
-    }
-}
-
-private fun falVideoRequestBody(
-    params: VideoGenerationParams,
-    options: JsonObject,
-): JsonObject = buildJsonObject {
-    params.prompt.takeIf { it.isNotBlank() }?.let { put("prompt", JsonPrimitive(it)) }
-    params.image?.let { put("image_url", JsonPrimitive(it.url ?: "data:${it.mediaType};base64,${it.base64}")) }
-    params.aspectRatio?.let { put("aspect_ratio", JsonPrimitive(it)) }
-    params.durationSeconds?.let { put("duration", JsonPrimitive("${formatFalSeconds(it)}s")) }
-    params.seed?.let { put("seed", JsonPrimitive(it)) }
-    (options["resolution"] ?: params.resolution?.let(::JsonPrimitive))?.let { put("resolution", it) }
-    options["loop"]?.takeUnless { it is JsonNull }?.let { put("loop", it) }
-    options["motionStrength"]?.takeUnless { it is JsonNull }?.let { put("motion_strength", it) }
-    options["negativePrompt"]?.takeUnless { it is JsonNull }?.let { put("negative_prompt", it) }
-    options["promptOptimizer"]?.takeUnless { it is JsonNull }?.let { put("prompt_optimizer", it) }
-    for ((key, value) in options) {
-        if (key !in falVideoNonPassthroughKeys && value !is JsonNull) put(key, value)
-    }
-}
-
-private fun JsonObjectBuilder.putJsonObjectFields(fields: JsonObject) {
-    fields.forEach { (key, value) ->
-        if (value !is JsonNull) put(key, value)
-    }
-}
 
 private val falVideoNonPassthroughKeys = setOf(
     "loop",
@@ -401,121 +320,6 @@ private val falVideoNonPassthroughKeys = setOf(
     "promptOptimizer",
 )
 
-private fun falImageOptions(
-    options: JsonObject,
-    warnings: MutableList<CallWarning>,
-): JsonObject {
-    val deprecated = mutableListOf<String>()
-    val result = linkedMapOf<String, JsonElement>()
-    fun putMapped(camel: String, api: String) {
-        val snake = api
-        val value = options[snake] ?: options[camel]
-        if (options[snake] != null) deprecated += snake
-        if (value != null && value !is JsonNull) result[api] = value
-    }
-
-    putMapped("imageUrl", "image_url")
-    putMapped("maskUrl", "mask_url")
-    putMapped("guidanceScale", "guidance_scale")
-    putMapped("numInferenceSteps", "num_inference_steps")
-    putMapped("enableSafetyChecker", "enable_safety_checker")
-    putMapped("outputFormat", "output_format")
-    putMapped("syncMode", "sync_mode")
-    putMapped("safetyTolerance", "safety_tolerance")
-    listOf("strength", "acceleration").forEach { key ->
-        options[key]?.takeUnless { it is JsonNull }?.let { result[key] = it }
-    }
-    val known = setOf(
-        "imageUrl", "maskUrl", "guidanceScale", "numInferenceSteps", "enableSafetyChecker", "outputFormat", "syncMode",
-        "safetyTolerance", "useMultipleImages", "image_url", "mask_url", "guidance_scale", "num_inference_steps",
-        "enable_safety_checker", "output_format", "sync_mode", "safety_tolerance", "strength", "acceleration",
-    )
-    for ((key, value) in options) {
-        if (key !in known && value !is JsonNull) result[key] = value
-    }
-    if (deprecated.isNotEmpty()) {
-        warnings += CallWarning(
-            "other",
-            "The following provider options use deprecated snake_case and will be removed in @ai-sdk/fal v2.0. " +
-                "Please use camelCase instead: ${deprecated.joinToString(", ") { key -> "'$key' (use '${snakeToCamel(key)}')" }}",
-        )
-    }
-    return JsonObject(result)
-}
-
-private fun falOptions(providerOptions: ProviderOptions): JsonObject =
-    providerOptions.toMap()["fal"] as? JsonObject ?: JsonObject(emptyMap())
-
-private fun falImageSize(size: String?, aspectRatio: String?): JsonElement? {
-    if (size != null) {
-        val width = size.substringBefore('x').toIntOrNull()
-        val height = size.substringAfter('x', missingDelimiterValue = "").toIntOrNull()
-        if (width != null && height != null) {
-            return buildJsonObject {
-                put("width", JsonPrimitive(width))
-                put("height", JsonPrimitive(height))
-            }
-        }
-    }
-    return when (aspectRatio) {
-        "1:1" -> JsonPrimitive("square_hd")
-        "16:9" -> JsonPrimitive("landscape_16_9")
-        "9:16" -> JsonPrimitive("portrait_16_9")
-        "4:3" -> JsonPrimitive("landscape_4_3")
-        "3:4" -> JsonPrimitive("portrait_4_3")
-        "16:10" -> buildJsonObject { put("width", JsonPrimitive(1280)); put("height", JsonPrimitive(800)) }
-        "10:16" -> buildJsonObject { put("width", JsonPrimitive(800)); put("height", JsonPrimitive(1280)) }
-        "21:9" -> buildJsonObject { put("width", JsonPrimitive(2560)); put("height", JsonPrimitive(1080)) }
-        "9:21" -> buildJsonObject { put("width", JsonPrimitive(1080)); put("height", JsonPrimitive(2560)) }
-        else -> null
-    }
-}
-
-private fun falImageGenerationFileUrl(file: ImageGenerationFile): JsonPrimitive =
-    JsonPrimitive(file.url ?: "data:${file.mediaType ?: "application/octet-stream"};base64,${file.base64.orEmpty()}")
-
-private fun snakeToCamel(key: String): String =
-    key.replace(Regex("_([a-z])")) { it.groupValues[1].uppercase() }
-
-private fun formatFalSeconds(value: Float): String {
-    val int = value.toInt()
-    return if (value == int.toFloat()) int.toString() else value.toString()
-}
-
-private fun falNormalizedVideoModelId(modelId: String): String =
-    modelId.removePrefix("fal-ai/").removePrefix("fal/")
-
-private suspend fun falPostJson(
-    client: HttpClient,
-    url: String,
-    body: JsonObject,
-    headers: Map<String, String>,
-): HttpJsonResponse =
-    requestJson(
-        client = client,
-        url = url,
-        method = HttpMethod.Post,
-        headers = headers,
-        body = body,
-        requestBodyValues = body,
-        errorMessage = falErrorMessage,
-        errorFromResponse = falInProgressSignal,
-    )
-
-private suspend fun falGetJson(
-    client: HttpClient,
-    url: String,
-    headers: Map<String, String>,
-): HttpJsonResponse =
-    requestJson(
-        client = client,
-        url = url,
-        method = HttpMethod.Get,
-        headers = headers,
-        errorMessage = falErrorMessage,
-        errorFromResponse = falInProgressSignal,
-    )
-
 /**
  * fal returns 4xx with `detail == "Request is still in progress"` while a job
  * is queued; the poll loop treats that exception's message as a retry signal,
@@ -525,112 +329,6 @@ private suspend fun falGetJson(
 private val falInProgressSignal: ResponseErrorFactory = { _, parsed, _, _ ->
     val detail = (parsed as? JsonObject)?.get("detail")?.jsonPrimitive?.contentOrNull
     if (detail == "Request is still in progress") InvalidResponseDataError(null, detail.orEmpty()) else null
-}
-
-private suspend fun falPollJson(
-    client: HttpClient,
-    url: String,
-    headers: Map<String, String>,
-    abortSignal: AbortSignal,
-    pollIntervalMillis: Long,
-    maxPollAttempts: Int,
-    timeoutMessage: String,
-): HttpJsonResponse {
-    repeat(maxPollAttempts.coerceAtLeast(1)) { attempt ->
-        abortSignal.throwIfAborted()
-        val response = runCatching { falGetJson(client, url, headers) }
-            .getOrElse { error ->
-                if (error.message == "Request is still in progress") null else throw error
-            }
-        if (response != null) return response
-        if (pollIntervalMillis > 0 && attempt < maxPollAttempts - 1) delay(pollIntervalMillis)
-    }
-    throw NoVideoGeneratedError(timeoutMessage)
-}
-
-private suspend fun falGetBinary(
-    client: HttpClient,
-    url: String,
-    headers: Map<String, String>,
-    abortSignal: AbortSignal,
-): FalBinaryResponse {
-    abortSignal.throwIfAborted()
-    val response = client.request(url) {
-        method = HttpMethod.Get
-        headers.forEach { (name, value) -> header(name, value) }
-    }
-    val bytes = response.bodyAsBytes()
-    val flattened = response.flattenedHeaders()
-    if (response.status.value !in 200..299) {
-        val raw = bytes.decodeToString()
-        throw apiCallError(
-            url = url,
-            statusCode = response.status.value,
-            rawBody = raw,
-            headers = flattened,
-            message = "fal binary request failed with status ${response.status.value}: $raw",
-        )
-    }
-    return FalBinaryResponse(
-        bytes = bytes,
-        headers = flattened,
-    )
-}
-
-private fun falHeaders(settings: FalProviderSettings, extra: Map<String, String>): Map<String, String> =
-    ProviderHeaders.build(settings.headers, extra, "ai-sdk/fal/$FAL_VERSION") { headers ->
-        settings.apiKey?.takeIf { it.isNotBlank() }?.let { headers[HttpHeaders.Authorization] = "Key $it" }
-    }
-
-private fun falResponseImages(value: JsonObject): List<JsonObject> {
-    (value["images"] as? JsonArray)?.let { images -> return images.map { it.jsonObject } }
-    (value["image"] as? JsonObject)?.let { return listOf(it) }
-    return emptyList()
-}
-
-private fun falImageProviderMetadata(
-    value: JsonObject,
-    images: List<JsonObject>,
-): JsonObject = buildJsonObject {
-    put("images", JsonArray(images.mapIndexed { index, image ->
-        buildJsonObject {
-            putJsonObjectFields(falImageMetadata(image))
-            val nsfw = (value["has_nsfw_concepts"] as? JsonArray)?.getOrNull(index)
-                ?: (value["nsfw_content_detected"] as? JsonArray)?.getOrNull(index)
-            nsfw?.let { put("nsfw", it) }
-        }
-    }))
-    for ((key, item) in value) {
-        if (key !in setOf("images", "image", "prompt", "has_nsfw_concepts", "nsfw_content_detected") && item !is JsonNull) {
-            put(key, item)
-        }
-    }
-}
-
-private fun falImageMetadata(image: JsonObject): JsonObject = buildJsonObject {
-    listOf("width", "height", "file_data", "file_size").forEach { key ->
-        image[key]?.takeUnless { it is JsonNull }?.let { put(key, it) }
-    }
-    image["content_type"]?.takeUnless { it is JsonNull }?.let { put("contentType", it) }
-    image["file_name"]?.takeUnless { it is JsonNull }?.let { put("fileName", it) }
-}
-
-private fun falVideoProviderMetadata(
-    value: JsonObject,
-    video: JsonObject,
-): JsonObject = buildJsonObject {
-    put("videos", buildJsonArray { add(falVideoMetadata(video)) })
-    listOf("seed", "timings", "has_nsfw_concepts", "prompt").forEach { key ->
-        value[key]?.takeUnless { it is JsonNull }?.let { put(key, it) }
-    }
-}
-
-private fun falVideoMetadata(video: JsonObject): JsonObject = buildJsonObject {
-    video["url"]?.let { put("url", it) }
-    listOf("width", "height", "duration", "fps").forEach { key ->
-        video[key]?.takeUnless { it is JsonNull }?.let { put(key, it) }
-    }
-    video["content_type"]?.takeUnless { it is JsonNull }?.let { put("contentType", it) }
 }
 
 private val falErrorMessage: ErrorMessageExtractor = { _, parsed, raw ->
@@ -650,5 +348,326 @@ private val falErrorMessage: ErrorMessageExtractor = { _, parsed, raw ->
     }
 }
 
-private fun Map<String, String>.headerValue(name: String): String? =
-    entries.firstOrNull { it.key.equals(name, ignoreCase = true) }?.value
+/** Wire-format helpers for the fal provider. Grouped to keep them off the top level. */
+internal object FalWire {
+    fun falImageRequestBody(params: ImageGenerationParams): FalImageRequest {
+        val warnings = mutableListOf<CallWarning>()
+        val options = falOptions(params.providerOptions)
+        val normalizedOptions = falImageOptions(options, warnings)
+        val useMultipleImages = options["useMultipleImages"]?.jsonPrimitive?.booleanOrNull == true
+
+        return FalImageRequest(
+            body = buildJsonObject {
+                put("prompt", JsonPrimitive(params.prompt))
+                params.seed?.let { put("seed", JsonPrimitive(it)) }
+                falImageSize(params.size, params.aspectRatio)?.let { put("image_size", it) }
+                put("num_images", JsonPrimitive(params.n))
+                if (params.files.isNotEmpty()) {
+                    if (useMultipleImages) {
+                        put("image_urls", JsonArray(params.files.map(::falImageGenerationFileUrl)))
+                    } else {
+                        put("image_url", falImageGenerationFileUrl(params.files.first()))
+                        if (params.files.size > 1) {
+                            warnings += CallWarning(
+                                "other",
+                                "Multiple input images provided but useMultipleImages is not enabled. Only the first image will be used.",
+                            )
+                        }
+                    }
+                }
+                params.mask?.let { put("mask_url", falImageGenerationFileUrl(it)) }
+                putJsonObjectFields(this, normalizedOptions)
+            },
+            warnings = warnings,
+        )
+    }
+
+    fun falSpeechRequestBody(params: SpeechGenerationParams): FalSpeechRequest {
+        val warnings = mutableListOf<CallWarning>()
+        if (!params.instructions.isNullOrBlank()) {
+            warnings += CallWarning("unsupported", "instructions")
+        }
+        val outputFormat = when (params.responseFormat) {
+            null, "url" -> "url"
+            "hex" -> "hex"
+            else -> {
+                warnings += CallWarning("unsupported", "outputFormat")
+                "url"
+            }
+        }
+        return FalSpeechRequest(
+            body = buildJsonObject {
+                put("text", JsonPrimitive(params.text))
+                put("output_format", JsonPrimitive(outputFormat))
+                params.voice?.let { put("voice", JsonPrimitive(it)) }
+                params.speed?.let { put("speed", JsonPrimitive(it)) }
+                putJsonObjectFields(this, falOptions(params.providerOptions))
+            },
+            warnings = warnings,
+        )
+    }
+
+    fun falTranscriptionRequestBody(params: TranscriptionParams): JsonObject {
+        val options = falOptions(params.providerOptions)
+        return buildJsonObject {
+            put("task", JsonPrimitive("transcribe"))
+            put("diarize", options["diarize"] ?: JsonPrimitive(true))
+            put("chunk_level", options["chunkLevel"] ?: options["chunk_level"] ?: JsonPrimitive("word"))
+            params.language?.let { put("language", JsonPrimitive(it)) }
+            options["language"]?.let { put("language", it) }
+            options["version"]?.let { put("version", it) }
+            (options["batchSize"] ?: options["batch_size"])?.let { put("batch_size", it) }
+            (options["numSpeakers"] ?: options["num_speakers"])?.let { put("num_speakers", it) }
+            put("audio_url", JsonPrimitive("data:${params.audio.mediaType};base64,${params.audio.base64}"))
+        }
+    }
+
+    fun falVideoRequestBody(
+        params: VideoGenerationParams,
+        options: JsonObject,
+    ): JsonObject = buildJsonObject {
+        params.prompt.takeIf { it.isNotBlank() }?.let { put("prompt", JsonPrimitive(it)) }
+        params.image?.let { put("image_url", JsonPrimitive(it.url ?: "data:${it.mediaType};base64,${it.base64}")) }
+        params.aspectRatio?.let { put("aspect_ratio", JsonPrimitive(it)) }
+        params.durationSeconds?.let { put("duration", JsonPrimitive("${formatFalSeconds(it)}s")) }
+        params.seed?.let { put("seed", JsonPrimitive(it)) }
+        (options["resolution"] ?: params.resolution?.let(::JsonPrimitive))?.let { put("resolution", it) }
+        options["loop"]?.takeUnless { it is JsonNull }?.let { put("loop", it) }
+        options["motionStrength"]?.takeUnless { it is JsonNull }?.let { put("motion_strength", it) }
+        options["negativePrompt"]?.takeUnless { it is JsonNull }?.let { put("negative_prompt", it) }
+        options["promptOptimizer"]?.takeUnless { it is JsonNull }?.let { put("prompt_optimizer", it) }
+        for ((key, value) in options) {
+            if (key !in falVideoNonPassthroughKeys && value !is JsonNull) put(key, value)
+        }
+    }
+
+    fun putJsonObjectFields(builder: JsonObjectBuilder, fields: JsonObject) {
+        fields.forEach { (key, value) ->
+            if (value !is JsonNull) builder.put(key, value)
+        }
+    }
+
+    fun falImageOptions(
+        options: JsonObject,
+        warnings: MutableList<CallWarning>,
+    ): JsonObject {
+        val deprecated = mutableListOf<String>()
+        val result = linkedMapOf<String, JsonElement>()
+        fun putMapped(camel: String, api: String) {
+            val snake = api
+            val value = options[snake] ?: options[camel]
+            if (options[snake] != null) deprecated += snake
+            if (value != null && value !is JsonNull) result[api] = value
+        }
+
+        putMapped("imageUrl", "image_url")
+        putMapped("maskUrl", "mask_url")
+        putMapped("guidanceScale", "guidance_scale")
+        putMapped("numInferenceSteps", "num_inference_steps")
+        putMapped("enableSafetyChecker", "enable_safety_checker")
+        putMapped("outputFormat", "output_format")
+        putMapped("syncMode", "sync_mode")
+        putMapped("safetyTolerance", "safety_tolerance")
+        listOf("strength", "acceleration").forEach { key ->
+            options[key]?.takeUnless { it is JsonNull }?.let { result[key] = it }
+        }
+        val known = setOf(
+            "imageUrl", "maskUrl", "guidanceScale", "numInferenceSteps", "enableSafetyChecker", "outputFormat", "syncMode",
+            "safetyTolerance", "useMultipleImages", "image_url", "mask_url", "guidance_scale", "num_inference_steps",
+            "enable_safety_checker", "output_format", "sync_mode", "safety_tolerance", "strength", "acceleration",
+        )
+        for ((key, value) in options) {
+            if (key !in known && value !is JsonNull) result[key] = value
+        }
+        if (deprecated.isNotEmpty()) {
+            warnings += CallWarning(
+                "other",
+                "The following provider options use deprecated snake_case and will be removed in @ai-sdk/fal v2.0. " +
+                    "Please use camelCase instead: ${deprecated.joinToString(", ") { key -> "'$key' (use '${snakeToCamel(key)}')" }}",
+            )
+        }
+        return JsonObject(result)
+    }
+
+    fun falOptions(providerOptions: ProviderOptions): JsonObject =
+        providerOptions.toMap()["fal"] as? JsonObject ?: JsonObject(emptyMap())
+
+    fun falImageSize(size: String?, aspectRatio: String?): JsonElement? {
+        if (size != null) {
+            val width = size.substringBefore('x').toIntOrNull()
+            val height = size.substringAfter('x', missingDelimiterValue = "").toIntOrNull()
+            if (width != null && height != null) {
+                return buildJsonObject {
+                    put("width", JsonPrimitive(width))
+                    put("height", JsonPrimitive(height))
+                }
+            }
+        }
+        return when (aspectRatio) {
+            "1:1" -> JsonPrimitive("square_hd")
+            "16:9" -> JsonPrimitive("landscape_16_9")
+            "9:16" -> JsonPrimitive("portrait_16_9")
+            "4:3" -> JsonPrimitive("landscape_4_3")
+            "3:4" -> JsonPrimitive("portrait_4_3")
+            "16:10" -> buildJsonObject { put("width", JsonPrimitive(1280)); put("height", JsonPrimitive(800)) }
+            "10:16" -> buildJsonObject { put("width", JsonPrimitive(800)); put("height", JsonPrimitive(1280)) }
+            "21:9" -> buildJsonObject { put("width", JsonPrimitive(2560)); put("height", JsonPrimitive(1080)) }
+            "9:21" -> buildJsonObject { put("width", JsonPrimitive(1080)); put("height", JsonPrimitive(2560)) }
+            else -> null
+        }
+    }
+
+    fun falImageGenerationFileUrl(file: ImageGenerationFile): JsonPrimitive =
+        JsonPrimitive(file.url ?: "data:${file.mediaType ?: "application/octet-stream"};base64,${file.base64.orEmpty()}")
+
+    fun snakeToCamel(key: String): String =
+        key.replace(Regex("_([a-z])")) { it.groupValues[1].uppercase() }
+
+    fun formatFalSeconds(value: Float): String {
+        val int = value.toInt()
+        return if (value == int.toFloat()) int.toString() else value.toString()
+    }
+
+    fun falNormalizedVideoModelId(modelId: String): String =
+        modelId.removePrefix("fal-ai/").removePrefix("fal/")
+
+    suspend fun falPostJson(
+        client: HttpClient,
+        url: String,
+        body: JsonObject,
+        headers: Map<String, String>,
+    ): HttpJsonResponse =
+        HttpTransport.requestJson(
+            client = client,
+            url = url,
+            method = HttpMethod.Post,
+            headers = headers,
+            body = body,
+            requestBodyValues = body,
+            errorMessage = falErrorMessage,
+            errorFromResponse = falInProgressSignal,
+        )
+
+    suspend fun falGetJson(
+        client: HttpClient,
+        url: String,
+        headers: Map<String, String>,
+    ): HttpJsonResponse =
+        HttpTransport.requestJson(
+            client = client,
+            url = url,
+            method = HttpMethod.Get,
+            headers = headers,
+            errorMessage = falErrorMessage,
+            errorFromResponse = falInProgressSignal,
+        )
+
+    suspend fun falPollJson(
+        client: HttpClient,
+        url: String,
+        headers: Map<String, String>,
+        abortSignal: AbortSignal,
+        pollIntervalMillis: Long,
+        maxPollAttempts: Int,
+        timeoutMessage: String,
+    ): HttpJsonResponse {
+        repeat(maxPollAttempts.coerceAtLeast(1)) { attempt ->
+            abortSignal.throwIfAborted()
+            val response = runCatching { falGetJson(client, url, headers) }
+                .getOrElse { error ->
+                    if (error.message == "Request is still in progress") null else throw error
+                }
+            if (response != null) return response
+            if (pollIntervalMillis > 0 && attempt < maxPollAttempts - 1) delay(pollIntervalMillis)
+        }
+        throw NoVideoGeneratedError(timeoutMessage)
+    }
+
+    suspend fun falGetBinary(
+        client: HttpClient,
+        url: String,
+        headers: Map<String, String>,
+        abortSignal: AbortSignal,
+    ): FalBinaryResponse {
+        abortSignal.throwIfAborted()
+        val response = client.request(url) {
+            method = HttpMethod.Get
+            headers.forEach { (name, value) -> header(name, value) }
+        }
+        val bytes = response.bodyAsBytes()
+        val flattened = with(HttpTransport) { response.flattenedHeaders() }
+        if (response.status.value !in 200..299) {
+            val raw = bytes.decodeToString()
+            throw ApiCallError(
+                url = url,
+                statusCode = response.status.value,
+                rawBody = raw,
+                headers = flattened,
+                message = "fal binary request failed with status ${response.status.value}: $raw",
+            )
+        }
+        return FalBinaryResponse(
+            bytes = bytes,
+            headers = flattened,
+        )
+    }
+
+    fun falHeaders(settings: FalProviderSettings, extra: Map<String, String>): Map<String, String> =
+        ProviderHeaders.build(settings.headers, extra, "ai-sdk/fal/$FAL_VERSION") { headers ->
+            settings.apiKey?.takeIf { it.isNotBlank() }?.let { headers[HttpHeaders.Authorization] = "Key $it" }
+        }
+
+    fun falResponseImages(value: JsonObject): List<JsonObject> {
+        (value["images"] as? JsonArray)?.let { images -> return images.map { it.jsonObject } }
+        (value["image"] as? JsonObject)?.let { return listOf(it) }
+        return emptyList()
+    }
+
+    fun falImageProviderMetadata(
+        value: JsonObject,
+        images: List<JsonObject>,
+    ): JsonObject = buildJsonObject {
+        put("images", JsonArray(images.mapIndexed { index, image ->
+            buildJsonObject {
+                putJsonObjectFields(this, falImageMetadata(image))
+                val nsfw = (value["has_nsfw_concepts"] as? JsonArray)?.getOrNull(index)
+                    ?: (value["nsfw_content_detected"] as? JsonArray)?.getOrNull(index)
+                nsfw?.let { put("nsfw", it) }
+            }
+        }))
+        for ((key, item) in value) {
+            if (key !in setOf("images", "image", "prompt", "has_nsfw_concepts", "nsfw_content_detected") && item !is JsonNull) {
+                put(key, item)
+            }
+        }
+    }
+
+    fun falImageMetadata(image: JsonObject): JsonObject = buildJsonObject {
+        listOf("width", "height", "file_data", "file_size").forEach { key ->
+            image[key]?.takeUnless { it is JsonNull }?.let { put(key, it) }
+        }
+        image["content_type"]?.takeUnless { it is JsonNull }?.let { put("contentType", it) }
+        image["file_name"]?.takeUnless { it is JsonNull }?.let { put("fileName", it) }
+    }
+
+    fun falVideoProviderMetadata(
+        value: JsonObject,
+        video: JsonObject,
+    ): JsonObject = buildJsonObject {
+        put("videos", buildJsonArray { add(falVideoMetadata(video)) })
+        listOf("seed", "timings", "has_nsfw_concepts", "prompt").forEach { key ->
+            value[key]?.takeUnless { it is JsonNull }?.let { put(key, it) }
+        }
+    }
+
+    fun falVideoMetadata(video: JsonObject): JsonObject = buildJsonObject {
+        video["url"]?.let { put("url", it) }
+        listOf("width", "height", "duration", "fps").forEach { key ->
+            video[key]?.takeUnless { it is JsonNull }?.let { put(key, it) }
+        }
+        video["content_type"]?.takeUnless { it is JsonNull }?.let { put("contentType", it) }
+    }
+
+    fun headerValue(headers: Map<String, String>, name: String): String? =
+        headers.entries.firstOrNull { it.key.equals(name, ignoreCase = true) }?.value
+}

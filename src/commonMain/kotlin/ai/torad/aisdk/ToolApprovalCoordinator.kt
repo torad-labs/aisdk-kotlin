@@ -145,7 +145,7 @@ internal class ToolApprovalCoordinator<TContext>(
         val secret = approvalSecret ?: return
         val signature = request?.signature
             ?: throw AgentError.InvalidToolApprovalSignature(approvalKey, call.toolCallId, "missing signature")
-        val valid = verifyToolApprovalSignature(
+        val valid = ToolApprovalSignature.verifyToolApprovalSignature(
             secret = secret,
             signature = signature,
             approvalId = approvalKey,
@@ -224,7 +224,7 @@ internal class ToolApprovalCoordinator<TContext>(
     ) {
         val msg = error.message ?: "tool failed"
         out.emit(StreamEvent.ToolError(toolCallId, toolName, msg, error = error))
-        messages.add(toolMessage(toolCallId, toolName, JsonPrimitive(msg)))
+        messages.add(ToolMessage(toolCallId, toolName, JsonPrimitive(msg)))
     }
 
     /** Approval denials: emit the denial + ToolResult events and append to the message log. */
@@ -236,7 +236,7 @@ internal class ToolApprovalCoordinator<TContext>(
         messages: MutableList<ModelMessage>,
     ) {
         val output = ToolResultOutput.ExecutionDenied(reason)
-        val outputJson = output.toJsonElement()
+        val outputJson = with(ToolResultOutputs) { output.toJsonElement() }
         out.emit(StreamEvent.ToolOutputDenied(call.toolCallId, call.toolName, approvalId, reason))
         out.emit(
             StreamEvent.ToolResult(

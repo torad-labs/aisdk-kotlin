@@ -96,7 +96,7 @@ public class MockLanguageModel(
 // Top-level factories for concise tests and examples.
 
 /** A model that just emits the given text once and finishes. */
-public fun mockLanguageModelTextOnly(text: String): MockLanguageModel = MockLanguageModel(
+public fun MockLanguageModelTextOnly(text: String): MockLanguageModel = MockLanguageModel(
     responses = listOf(
         ScriptedResponse(
             events = listOf(
@@ -114,7 +114,7 @@ public fun mockLanguageModelTextOnly(text: String): MockLanguageModel = MockLang
  * A model whose first call requests a tool, second call (after the
  * tool result is appended) returns a final text response.
  */
-public fun mockLanguageModelToolThenText(
+public fun MockLanguageModelToolThenText(
     toolName: String,
     toolInput: JsonObject,
     finalText: String,
@@ -148,7 +148,7 @@ public fun mockLanguageModelToolThenText(
 )
 
 /** Convenience for a tool-call input expressed as JSON literal map. */
-public fun mockToolInput(vararg pairs: Pair<String, String>): JsonObject = buildJsonObject {
+public fun MockToolInput(vararg pairs: Pair<String, String>): JsonObject = buildJsonObject {
     for ((k, v) in pairs) put(k, JsonPrimitive(v))
 }
 

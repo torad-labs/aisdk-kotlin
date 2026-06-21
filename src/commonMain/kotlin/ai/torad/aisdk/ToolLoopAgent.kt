@@ -63,7 +63,7 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
     override val tools: ToolSet<TContext>,
     public val activeTools: List<String>? = null,
     public val output: Output<TOutput>? = null,
-    public val stopWhen: StopCondition = stepCountIs(20),
+    public val stopWhen: StopCondition = StepCountIs(20),
     public val prepareCall: (suspend PrepareCallScope<TContext>.() -> AgentSettings<TContext>)? = null,
     public val prepareStep: (suspend PrepareStepScope<TContext>.() -> StepSettings<TContext>)? = null,
     public val callOptionsSchema: KSerializer<TContext>? = null,
@@ -238,7 +238,7 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
         val priorMessages = mutableEngineState.value.messages
         mutableEngineState.update {
             it.copy(
-                messages = priorMessages + userMessage(text),
+                messages = priorMessages + UserMessage(text),
                 streamingAssistantText = "",
                 currentToolCalls = emptyList(),
                 pendingApprovals = emptyList(),
@@ -396,7 +396,7 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
                 is StreamEvent.TextDelta -> accumulator.append(event.text)
                 is StreamEvent.StepFinish -> {
                     finishReason = event.finishReason
-                    totalUsage += event.usage
+                    totalUsage = with(UsageArithmetic) { totalUsage + event.usage }
                 }
                 is StreamEvent.Finish -> {
                     finishReason = event.finishReason
@@ -478,7 +478,7 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
         val validatedOptions = validateCallOptions(options)
         // v7 telemetry: resolve the effective integration once per invocation and
         // stamp every event of this call with one TelemetryCall envelope.
-        val feed = resolveTelemetry(telemetry, logger)?.let { tele ->
+        val feed = TelemetryOps.resolveTelemetry(telemetry, logger)?.let { tele ->
             TelemetryFeed(
                 tele = tele,
                 call = TelemetryCall(
@@ -520,13 +520,13 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
         val isResumption = priorMessages.isNotEmpty() && hasSystemMessage(priorMessages)
         val messages = if (isResumption) {
             priorMessages.toMutableList().apply {
-                if (prompt != null) add(userMessage(prompt))
+                if (prompt != null) add(UserMessage(prompt))
             }
         } else {
             mutableListOf<ModelMessage>().apply {
-                add(systemMessage(resolvedInstructions))
+                add(SystemMessage(resolvedInstructions))
                 addAll(priorMessages)
-                if (prompt != null) add(userMessage(prompt))
+                if (prompt != null) add(UserMessage(prompt))
             }
         }
 
@@ -625,7 +625,7 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
             val stepSystem = stepSettings.system
 
             val effectiveMessages = if (stepSystem != null) {
-                listOf(systemMessage(stepSystem)) + stepMessages.dropWhile { it.role == MessageRole.System }
+                listOf(SystemMessage(stepSystem)) + stepMessages.dropWhile { it.role == MessageRole.System }
             } else {
                 stepMessages
             }
@@ -651,7 +651,7 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
                 responseFormat = stepSettings.responseFormat
                     ?: resolvedSettings.responseFormat
                     ?: if (responseFormat == ResponseFormat.Text && output != null) {
-                        output.toResponseFormat()
+                        with(OutputOps) { output.toResponseFormat() }
                     } else {
                         responseFormat
                     },
@@ -902,7 +902,7 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
             // With an approval secret configured, each request is signed at issuance over its
             // EFFECTIVE approval id (explicit approvalId ?: toolCallId — here the default).
             for (call in toolsRequiringApproval) {
-                val signature = maybeSignToolApproval(
+                val signature = ToolApprovalSignature.maybeSignToolApproval(
                     secret = experimental_toolApprovalSecret,
                     approvalId = call.toolCallId,
                     toolCallId = call.toolCallId,
@@ -1060,7 +1060,7 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
             )
             completedSteps.add(step)
             stepsCapture?.steps?.add(step)
-            totalUsage += stepUsage
+            totalUsage = with(UsageArithmetic) { totalUsage + stepUsage }
             lastFinishReason = effectiveFinishReason
 
             val stepFinishEvent = OnStepFinishEvent(stepNumber, step)
@@ -1204,13 +1204,13 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
                     messages = messages,
                     experimental_context = options,
                 )
-                val output = toolResultOutputFromJson(outputJson)
+                val output = ToolResultOutputs.toolResultOutputFromJson(outputJson)
                 val modelOutput = typedTool.toModelOutput(lastOutput, predicateOptions) ?: output
                 ToolExecutionResult.Success(
                     outputJson = outputJson,
                     output = output,
                     modelOutput = modelOutput,
-                    modelVisible = modelOutput.toJsonElement(),
+                    modelVisible = with(ToolResultOutputs) { modelOutput.toJsonElement() },
                 )
             }
         } catch (ce: CancellationException) {
@@ -1266,7 +1266,7 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
         tool.streamExecutor(ctx, input).collect { output ->
             if (hasOutput) {
                 val outputJson = encodeToolOutput(tool, lastOutput)
-                val output = toolResultOutputFromJson(outputJson)
+                val output = ToolResultOutputs.toolResultOutputFromJson(outputJson)
                 val predicateOptions = ToolPredicateOptions(
                     toolCallId = call.toolCallId,
                     messages = ctx.messages,
@@ -1280,7 +1280,7 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
                         outputJson = outputJson,
                         output = output,
                         modelOutput = modelOutput,
-                        isError = modelOutput.isToolResultError(),
+                        isError = with(ToolResultOutputs) { modelOutput.isToolResultError() },
                         preliminary = true,
                     ),
                 )
@@ -1364,7 +1364,7 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
     ) {
         val msg = error.message ?: "tool failed"
         out.emit(StreamEvent.ToolError(toolCallId, toolName, msg, error = error))
-        messages.add(toolMessage(toolCallId, toolName, JsonPrimitive(msg)))
+        messages.add(ToolMessage(toolCallId, toolName, JsonPrimitive(msg)))
     }
 
     /** Wrap a tool-execution throwable as a typed Failure: an AgentError

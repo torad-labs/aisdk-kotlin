@@ -13,7 +13,7 @@ import kotlinx.coroutines.withContext
 // source set via applyDefaultHierarchyTemplate() + a manual `dependsOn` would collapse the
 // two actuals into one source of truth — deferred as build-structural. Keep the two bodies
 // in lockstep until then.
-internal actual fun createMCPStdioProcess(config: StdioConfig): MCPStdioProcess =
+internal actual fun CreateMCPStdioProcess(config: StdioConfig): MCPStdioProcess =
     JvmMCPStdioProcess(config)
 
 private class JvmMCPStdioProcess(config: StdioConfig) : MCPStdioProcess {

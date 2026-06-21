@@ -21,7 +21,7 @@ class CompletionApiTest {
         }
 
         assertFailsWith<CancellationException> {
-            callCompletionApi(
+            CompletionApi.callCompletionApi(
                 CallCompletionApiOptions(
                     prompt = "hello",
                     transport = transport,

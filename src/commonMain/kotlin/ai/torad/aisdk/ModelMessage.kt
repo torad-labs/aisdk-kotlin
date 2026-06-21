@@ -26,14 +26,14 @@ public data class ModelMessage(
 // Top-level convenience constructors.
 // Naming: `<role>Message(...)` for the four role-shaped factories.
 
-public fun systemMessage(text: String): ModelMessage = ModelMessage(MessageRole.System, listOf(ContentPart.Text(text)))
-public fun userMessage(text: String): ModelMessage = ModelMessage(MessageRole.User, listOf(ContentPart.Text(text)))
-public fun assistantMessage(text: String): ModelMessage = ModelMessage(MessageRole.Assistant, listOf(ContentPart.Text(text)))
-public fun toolMessage(toolCallId: String, toolName: String, output: JsonElement): ModelMessage = ModelMessage(
+public fun SystemMessage(text: String): ModelMessage = ModelMessage(MessageRole.System, listOf(ContentPart.Text(text)))
+public fun UserMessage(text: String): ModelMessage = ModelMessage(MessageRole.User, listOf(ContentPart.Text(text)))
+public fun AssistantMessage(text: String): ModelMessage = ModelMessage(MessageRole.Assistant, listOf(ContentPart.Text(text)))
+public fun ToolMessage(toolCallId: String, toolName: String, output: JsonElement): ModelMessage = ModelMessage(
     MessageRole.Tool,
     listOf(ContentPart.ToolResult(toolCallId, toolName, output)),
 )
-public fun toolApprovalResponseMessage(
+public fun ToolApprovalResponseMessage(
     toolCallId: String,
     approved: Boolean,
     reason: String? = null,
@@ -316,20 +316,27 @@ public data class Usage(
     }
 }
 
-public operator fun Usage.plus(other: Usage): Usage = Usage(
-    inputTokens = Usage.InputTokenBreakdown(
-        total = inputTokens.total + other.inputTokens.total,
-        noCache = inputTokens.noCache + other.inputTokens.noCache,
-        cacheRead = inputTokens.cacheRead + other.inputTokens.cacheRead,
-        cacheWrite = inputTokens.cacheWrite + other.inputTokens.cacheWrite,
-    ),
-    outputTokens = Usage.OutputTokenBreakdown(
-        total = outputTokens.total + other.outputTokens.total,
-        text = outputTokens.text + other.outputTokens.text,
-        reasoning = outputTokens.reasoning + other.outputTokens.reasoning,
-    ),
-    raw = other.raw ?: raw,
-)
+/**
+ * Arithmetic over [Usage]. The `+` operator lives here as a member-extension
+ * (decision-C: no loose top-level funs). Call sites bring it into scope with
+ * `with(UsageArithmetic) { a + b }` or a member import.
+ */
+public object UsageArithmetic {
+    public operator fun Usage.plus(other: Usage): Usage = Usage(
+        inputTokens = Usage.InputTokenBreakdown(
+            total = inputTokens.total + other.inputTokens.total,
+            noCache = inputTokens.noCache + other.inputTokens.noCache,
+            cacheRead = inputTokens.cacheRead + other.inputTokens.cacheRead,
+            cacheWrite = inputTokens.cacheWrite + other.inputTokens.cacheWrite,
+        ),
+        outputTokens = Usage.OutputTokenBreakdown(
+            total = outputTokens.total + other.outputTokens.total,
+            text = outputTokens.text + other.outputTokens.text,
+            reasoning = outputTokens.reasoning + other.outputTokens.reasoning,
+        ),
+        raw = other.raw ?: raw,
+    )
+}
 
 /** Why a generation step ended. */
 @Serializable

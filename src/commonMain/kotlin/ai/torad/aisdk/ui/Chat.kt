@@ -44,11 +44,11 @@ public class DefaultChatTransport(
 public class TextStreamChatTransport(
     private val handler: (ChatRequest) -> Flow<String>,
     private val assistantMessageId: (ChatRequest) -> String = { request ->
-        getResponseUiMessageId(request.messages)
+        UiMessageStreams.getResponseUiMessageId(request.messages)
     },
 ) : ChatTransport {
     override fun sendMessages(request: ChatRequest): Flow<UIMessage> =
-        transformTextToUiMessageStream(handler(request), assistantMessageId(request))
+        TransformTextToUiMessageStream(handler(request), assistantMessageId(request))
 }
 
 public enum class ChatStatus {
@@ -106,7 +106,7 @@ public class Chat(
     )
 
     public fun setMessages(messages: List<UIMessage>) {
-        validateUiMessages(messages)
+        UiMessageStreams.validateUiMessages(messages)
         applyState {
             copy(
                 messages = messages.toList(),

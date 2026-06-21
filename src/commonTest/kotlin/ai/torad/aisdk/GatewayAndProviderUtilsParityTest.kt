@@ -1,18 +1,18 @@
 package ai.torad.aisdk
 
-import ai.torad.aisdk.testing.drainAllItems
+import ai.torad.aisdk.testing.FlowDrain.drainAllItems
 import ai.torad.aisdk.providers.MockImageModel
 import ai.torad.aisdk.providers.MockSpeechModel
 import ai.torad.aisdk.providers.MockTranscriptionModel
 import ai.torad.aisdk.providers.MockVideoModel
-import ai.torad.aisdk.providers.mockAudioSource
+import ai.torad.aisdk.providers.MockAudioSource
 import ai.torad.aisdk.ui.SafeValidateUIMessagesResult
 import ai.torad.aisdk.ui.TextUIPartState
 import ai.torad.aisdk.ui.UIMessage
 import ai.torad.aisdk.ui.UIMessagePart
 import ai.torad.aisdk.ui.UIMessageRole
-import ai.torad.aisdk.ui.safeValidateUIMessages
-import ai.torad.aisdk.ui.validateUIMessages
+import ai.torad.aisdk.ui.UiMessageStreams.safeValidateUIMessages
+import ai.torad.aisdk.ui.UiMessageStreams.validateUIMessages
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.respond
@@ -43,7 +43,7 @@ class GatewayAndProviderUtilsParityTest {
     @Test
     fun `gateway provider exposes v6 model aliases and routes through transport`() = runTest {
         val transport = CapturingGatewayTransport()
-        val provider = createGateway(
+        val provider = Gateway(
             GatewayProviderSettings(
                 baseUrl = "https://gateway.test/v3/ai/",
                 apiKey = "secret",
@@ -55,9 +55,9 @@ class GatewayAndProviderUtilsParityTest {
         val text = TextGenerator(provider(ModelId("chat-model"))).generate(GenerationInput.Prompt("hi")).single()
         val chat = TextGenerator(provider.chat(ModelId("chat-model-2"))).generate(GenerationInput.Prompt("hi")).single()
         val embedding = Embedding.embed(provider.embedding(ModelId("embed-model")), "hello")
-        val image = generateImage(provider.image(ModelId("image-model")), "logo")
-        val video = generateVideo(provider.video(ModelId("video-model")), "clip")
-        val previewVideo = generateVideo(provider.video(ModelId("xai/grok-imagine-video-1.5-preview")), "clip")
+        val image = ImageGeneration.generateImage(provider.image(ModelId("image-model")), "logo")
+        val video = VideoGeneration.generateVideo(provider.video(ModelId("video-model")), "clip")
+        val previewVideo = VideoGeneration.generateVideo(provider.video(ModelId("xai/grok-imagine-video-1.5-preview")), "clip")
         val reranked = Reranking.rerank(provider.reranking(ModelId("rank-model")), "q", listOf("a", "bb"))
 
         assertEquals("gateway:chat-model", text.text)
@@ -82,7 +82,7 @@ class GatewayAndProviderUtilsParityTest {
     fun `gateway metadata methods use transport and cache available models`() = runTest {
         var now = 1_000L
         val transport = CapturingGatewayTransport()
-        val provider = createGatewayProvider(
+        val provider = GatewayProvider(
             GatewayProviderSettings(
                 apiKey = "secret",
                 transport = transport,
@@ -120,7 +120,7 @@ class GatewayAndProviderUtilsParityTest {
     @Test
     fun `gateway metadata cache uses system clock by default`() = runTest {
         val transport = CapturingGatewayTransport()
-        val provider = createGatewayProvider(
+        val provider = GatewayProvider(
             GatewayProviderSettings(
                 apiKey = "secret",
                 transport = transport,
@@ -138,13 +138,13 @@ class GatewayAndProviderUtilsParityTest {
 
     @Test
     fun `gateway headers and errors mirror public gateway package behavior`() = runTest {
-        val apiKeyHeaders = gatewayHeaders(
+        val apiKeyHeaders = GatewayWire.gatewayHeaders(
             GatewayProviderSettings(
                 apiKey = "key",
                 headers = mapOf("User-Agent" to "app"),
             ),
         )
-        val oidcHeaders = gatewayHeaders(
+        val oidcHeaders = GatewayWire.gatewayHeaders(
             GatewayProviderSettings(
                 authTokenProvider = { GatewayAuthToken("oidc", GatewayAuthMethod.Oidc) },
             ),
@@ -152,9 +152,9 @@ class GatewayAndProviderUtilsParityTest {
 
         assertEquals("Bearer key", apiKeyHeaders["authorization"])
         assertEquals("app ai-sdk/gateway-kotlin", apiKeyHeaders["user-agent"])
-        assertEquals(GatewayAuthMethod.ApiKey, parseGatewayAuthMethod(apiKeyHeaders))
-        assertEquals(GatewayAuthMethod.Oidc, parseGatewayAuthMethod(oidcHeaders))
-        assertNull(parseGatewayAuthMethod(mapOf(GATEWAY_AUTH_METHOD_HEADER to "API-KEY")))
+        assertEquals(GatewayAuthMethod.ApiKey, GatewayWire.parseGatewayAuthMethod(apiKeyHeaders))
+        assertEquals(GatewayAuthMethod.Oidc, GatewayWire.parseGatewayAuthMethod(oidcHeaders))
+        assertNull(GatewayWire.parseGatewayAuthMethod(mapOf(GATEWAY_AUTH_METHOD_HEADER to "API-KEY")))
 
         val auth = GatewayAuthenticationError(generationId = "gen_1")
         val timeout = GatewayTimeoutError()
@@ -170,7 +170,7 @@ class GatewayAndProviderUtilsParityTest {
 
     @Test
     fun `parseJsonEventStream parses SSE JSON events and ignores done markers`() = runTest {
-        val schema = jsonSchema<JsonObject>(
+        val schema = Schemas.jsonSchema<JsonObject>(
             buildJsonObject { put("type", JsonPrimitive("object")) },
         ) { it.jsonObject }
         val text = """
@@ -243,27 +243,25 @@ class GatewayAndProviderUtilsParityTest {
     @Test
     fun `lazy schemas validation provider options and setting loaders match provider-utils`() {
         var created = 0
-        val lazy = lazySchema<JsonObject> {
+        val lazy = Schemas.lazySchema<JsonObject> {
             created += 1
-            jsonSchema(
-                buildJsonObject { put("type", JsonPrimitive("object")) },
-            ) { value -> value.jsonObject }
+            Schemas.jsonSchema(buildJsonObject { put("type", JsonPrimitive("object")) }) { value -> value.jsonObject }
         }
         val value = buildJsonObject { put("name", JsonPrimitive("ok")) }
 
         assertEquals(0, created)
-        assertEquals(JsonPrimitive("ok"), validateTypes(value, lazy)["name"])
-        assertEquals(JsonPrimitive("ok"), safeValidateTypes(value, lazy).let { (it as ValidationResult.Success).value["name"] })
+        assertEquals(JsonPrimitive("ok"), Schemas.validateTypes(value, lazy)["name"])
+        assertEquals(JsonPrimitive("ok"), Schemas.safeValidateTypes(value, lazy).let { (it as ValidationResult.Success).value["name"] })
         assertEquals(1, created)
-        assertEquals(lazy(), asSchema(lazy))
+        assertEquals(lazy(), Schemas.asSchema(lazy))
         assertEquals(1, created)
-        assertNull(parseProviderOptions("missing", ProviderOptions.None, lazy()))
-        assertEquals(JsonPrimitive("ok"), parseProviderOptions("test", ProviderOptions.Raw(JsonObject(mapOf("test" to value))), lazy())?.get("name"))
+        assertNull(Schemas.parseProviderOptions("missing", ProviderOptions.None, lazy()))
+        assertEquals(JsonPrimitive("ok"), Schemas.parseProviderOptions("test", ProviderOptions.Raw(JsonObject(mapOf("test" to value))), lazy())?.get("name"))
         assertFailsWith<InvalidArgumentError> {
-            parseProviderOptions(
+            Schemas.parseProviderOptions(
                 "test",
                 ProviderOptions.Raw(JsonObject(mapOf("test" to value))),
-                jsonSchema<JsonObject>(JsonObject(emptyMap())) { throw IllegalStateException("bad") },
+                Schemas.jsonSchema<JsonObject>(JsonObject(emptyMap())) { throw IllegalStateException("bad") },
             )
         }
 
@@ -277,16 +275,16 @@ class GatewayAndProviderUtilsParityTest {
 
     @Test
     fun `schema fallback validates basic JSON schema type before returning values`() {
-        val stringSchema = jsonSchema<String>(
+        val stringSchema = Schemas.jsonSchema<String>(
             buildJsonObject { put("type", JsonPrimitive("string")) },
         )
-        val objectSchema = jsonSchema<JsonObject>(
+        val objectSchema = Schemas.jsonSchema<JsonObject>(
             buildJsonObject { put("type", JsonPrimitive("object")) },
         )
 
-        val string = assertIs<ValidationResult.Success<String>>(safeValidateTypes(JsonPrimitive("ok"), stringSchema))
-        val objectFailure = assertIs<ValidationResult.Failure>(safeValidateTypes(JsonPrimitive("not-object"), objectSchema))
-        val stringFailure = assertIs<ValidationResult.Failure>(safeValidateTypes(buildJsonObject { put("x", JsonPrimitive(1)) }, stringSchema))
+        val string = assertIs<ValidationResult.Success<String>>(Schemas.safeValidateTypes(JsonPrimitive("ok"), stringSchema))
+        val objectFailure = assertIs<ValidationResult.Failure>(Schemas.safeValidateTypes(JsonPrimitive("not-object"), objectSchema))
+        val stringFailure = assertIs<ValidationResult.Failure>(Schemas.safeValidateTypes(buildJsonObject { put("x", JsonPrimitive(1)) }, stringSchema))
 
         assertEquals("ok", string.value)
         assertTrue(objectFailure.error.message.orEmpty().contains("Expected JSON object"))
@@ -295,16 +293,16 @@ class GatewayAndProviderUtilsParityTest {
 
     @Test
     fun `provider tool factories execute tools and create name mappings`() = runTest {
-        val inputSchema = jsonSchema<JsonObject>(
+        val inputSchema = Schemas.jsonSchema<JsonObject>(
             buildJsonObject {
                 put("type", JsonPrimitive("object"))
                 put("additionalProperties", JsonPrimitive(false))
             },
         ) { value -> value.jsonObject }
-        val outputSchema = jsonSchema<JsonElement>(
+        val outputSchema = Schemas.jsonSchema<JsonElement>(
             buildJsonObject { put("type", JsonPrimitive("object")) },
         )
-        val factory = createProviderToolFactory<JsonObject, Unit>(
+        val factory = ProviderTools.createProviderToolFactory<JsonObject, Unit>(
             id = "web.search",
             inputSerializer = JsonObject.serializer(),
             inputSchema = inputSchema,
@@ -317,8 +315,8 @@ class GatewayAndProviderUtilsParityTest {
                 args = mapOf("limit" to JsonPrimitive(3)),
             ),
         )
-        val descriptor = toolSetOf<Unit>(hosted).descriptors.single()
-        val mapping = createToolNameMapping(
+        val descriptor = ToolSet<Unit>(hosted).descriptors.single()
+        val mapping = ToolNameMapping(
             tools = listOf(descriptor),
             providerToolNames = mapOf("web.search" to "provider_search"),
         )
@@ -344,7 +342,7 @@ class GatewayAndProviderUtilsParityTest {
                 ),
             ),
         )
-        val withOutputSchema = createProviderToolFactoryWithOutputSchema<JsonObject, JsonElement, Unit>(
+        val withOutputSchema = ProviderTools.createProviderToolFactoryWithOutputSchema<JsonObject, JsonElement, Unit>(
             id = "web.lookup",
             inputSerializer = JsonObject.serializer(),
             inputSchema = inputSchema,
@@ -368,11 +366,11 @@ class GatewayAndProviderUtilsParityTest {
     fun `generated file and experimental media aliases preserve v6 compatibility`() = runTest {
         val fileFromBytes = DefaultGeneratedFile.fromBytes(byteArrayOf(1, 2, 3), "application/octet-stream")
         val fileFromBase64 = DefaultGeneratedFile.fromBase64(fileFromBytes.base64, "application/octet-stream")
-        val image: Experimental_GenerateImageResult = experimental_generateImage(MockImageModel(), "logo")
-        val speech: Experimental_SpeechResult = experimental_generateSpeech(MockSpeechModel(), "hello")
+        val image: Experimental_GenerateImageResult = ImageGeneration.experimental_generateImage(MockImageModel(), "logo")
+        val speech: Experimental_SpeechResult = SpeechGeneration.experimental_generateSpeech(MockSpeechModel(), "hello")
         val transcript: Experimental_TranscriptionResult =
-            experimental_transcribe(MockTranscriptionModel(), mockAudioSource())
-        val video = experimental_generateVideo(MockVideoModel(), "clip")
+            Transcription.experimental_transcribe(MockTranscriptionModel(), MockAudioSource())
+        val video = VideoGeneration.experimental_generateVideo(MockVideoModel(), "clip")
 
         assertEquals(fileFromBytes.byteArray.toList(), fileFromBase64.byteArray.toList())
         assertEquals("asset.bin", fileFromBytes.toGeneratedFile("asset.bin").filename)
@@ -406,7 +404,7 @@ class GatewayAndProviderUtilsParityTest {
             ),
         )
 
-        val pruned = pruneMessages(
+        val pruned = MessagePruning.pruneMessages(
             messages,
             reasoning = PruneReasoning.BeforeLastMessage,
             toolCalls = PruneToolCalls.BeforeLastMessage,
@@ -521,13 +519,13 @@ class GatewayAndProviderUtilsParityTest {
                 }
             },
         )
-        val provider = createGatewayHttpProvider(
+        val provider = CreateGatewayHttpProvider(
             client,
             GatewayProviderSettings(baseUrl = "https://gateway.test/v3/ai", apiKey = "secret"),
         )
 
         val generated = TextGenerator(provider.languageModel("gpt-test")).generate(GenerationInput.Prompt("hi")).single()
-        val streamed = drainAllItems(provider.languageModel("gpt-test").stream(LanguageModelCallParams(listOf(userMessage("hi")))))
+        val streamed = drainAllItems(provider.languageModel("gpt-test").stream(LanguageModelCallParams(listOf(UserMessage("hi")))))
 
         assertEquals("hello", generated.text)
         assertEquals(JsonPrimitive("gen_1"), generated.providerMetadata.toMap()["gateway"]?.jsonObject?.get("id"))
@@ -552,13 +550,13 @@ class GatewayAndProviderUtilsParityTest {
                 }
             },
         )
-        val provider = createGatewayHttpProvider(
+        val provider = CreateGatewayHttpProvider(
             client,
             GatewayProviderSettings(baseUrl = "https://gateway.test/v3/ai", apiKey = "secret"),
         )
 
         val error = assertFailsWith<WireDecodeException> {
-            drainAllItems(provider.languageModel("gpt-test").stream(LanguageModelCallParams(listOf(userMessage("hi")))))
+            drainAllItems(provider.languageModel("gpt-test").stream(LanguageModelCallParams(listOf(UserMessage("hi")))))
         }
 
         assertEquals("gateway", error.provider)
@@ -581,7 +579,7 @@ class GatewayAndProviderUtilsParityTest {
                 respond(content, HttpStatusCode.OK, headersOf(HttpHeaders.ContentType, "application/json"))
             },
         )
-        val provider = createGatewayHttpProvider(
+        val provider = CreateGatewayHttpProvider(
             client,
             GatewayProviderSettings(baseUrl = "https://gateway.test/v3/ai", apiKey = "secret"),
         )
@@ -625,14 +623,14 @@ class GatewayAndProviderUtilsParityTest {
                 )
             },
         )
-        val provider = createGatewayHttpProvider(
+        val provider = CreateGatewayHttpProvider(
             client,
             GatewayProviderSettings(baseUrl = "https://gateway.test/v3/ai", apiKey = "secret"),
         )
 
         val embedding = Embedding.embed(provider.embeddingModel("embed"), "abc")
-        val image = generateImage(provider.imageModel("image"), "logo")
-        val video = generateVideo(provider.videoModel("video"), "clip")
+        val image = ImageGeneration.generateImage(provider.imageModel("image"), "logo")
+        val video = VideoGeneration.generateVideo(provider.videoModel("video"), "clip")
         val ranked = Reranking.rerank(provider.rerankingModel("rank"), "q", listOf("first", "second"))
 
         assertEquals(listOf(1f, 2f), embedding.embedding)
@@ -646,7 +644,7 @@ class GatewayAndProviderUtilsParityTest {
     @Test
     fun `concurrent getAvailableModels within refresh window calls transport at most once`() = runTest {
         val transport = CapturingGatewayTransport()
-        val provider = createGatewayProvider(
+        val provider = GatewayProvider(
             GatewayProviderSettings(
                 apiKey = "secret",
                 transport = transport,

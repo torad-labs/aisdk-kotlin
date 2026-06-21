@@ -25,7 +25,7 @@ import kotlinx.serialization.json.JsonObject
 class ProdiaProviderTest {
     @Test
     fun `image model sends Prodia job request and parses multipart image`() = runTest {
-        val fixture = createTestServer(
+        val fixture = TestServer.createTestServer(
             mutableMapOf(
                 "https://prodia.test/v2/job?price=true" to UrlHandler(
                     prodiaMultipartResponse(
@@ -100,7 +100,7 @@ class ProdiaProviderTest {
 
     @Test
     fun `language model sends multipart job and maps text plus file output`() = runTest {
-        val fixture = createTestServer(
+        val fixture = TestServer.createTestServer(
             mutableMapOf(
                 "https://prodia.test/v2/job?price=true" to UrlHandler(
                     prodiaMultipartResponse(
@@ -122,7 +122,7 @@ class ProdiaProviderTest {
         val result = model.generate(
             LanguageModelCallParams(
                 messages = listOf(
-                    systemMessage("System line."),
+                    SystemMessage("System line."),
                     ModelMessage(
                         MessageRole.User,
                         listOf(
@@ -165,7 +165,7 @@ class ProdiaProviderTest {
     @Test
     @Suppress("LongMethod")
     fun `video model supports text and image job request paths`() = runTest {
-        val fixture = createTestServer(
+        val fixture = TestServer.createTestServer(
             mutableMapOf(
                 "https://prodia.test/v2/job?price=true" to UrlHandler { options ->
                     if (options.callNumber == 0) {
@@ -236,7 +236,7 @@ class ProdiaProviderTest {
 
     @Test
     fun `unsupported Prodia surfaces and unconfigured singleton fail explicitly`() {
-        val provider = Prodia(createTestServer(mutableMapOf()).httpClient(), ProdiaProviderSettings(apiKey = "token"))
+        val provider = Prodia(TestServer.createTestServer(mutableMapOf()).httpClient(), ProdiaProviderSettings(apiKey = "token"))
 
         assertFailsWith<NoSuchModelError> { provider.embeddingModel("embed") }
         assertFailsWith<NoSuchModelError> { provider.textEmbeddingModel("embed") }

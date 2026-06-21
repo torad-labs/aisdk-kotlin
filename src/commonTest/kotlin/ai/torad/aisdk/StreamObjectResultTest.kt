@@ -29,7 +29,7 @@ class StreamObjectResultTest {
 
     @Test
     fun `objectValue returns the final typed object from the stream`() = runTest {
-        val result = streamObjectResult(
+        val result = StreamObjectResult(
             model = streamingModel("""{"name":"An""", """n","age":30}"""),
             output = Output.obj(serializer<Person>()),
             prompt = "make a person",
@@ -39,7 +39,7 @@ class StreamObjectResultTest {
 
     @Test
     fun `partialObjectStream emits the object as it builds and ends at the complete value`() = runTest {
-        val result = streamObjectResult(
+        val result = StreamObjectResult(
             model = streamingModel("""{"name":"Bo""", """b",""", """"age":7}"""),
             output = Output.obj(serializer<Person>()),
             prompt = "make a person",
@@ -53,7 +53,7 @@ class StreamObjectResultTest {
 
     @Test
     fun `repairText salvages a final object wrapped in markdown fences`() = runTest {
-        val result = streamObjectResult(
+        val result = StreamObjectResult(
             // The model wrapped the JSON in a ```json fence — invalid as-is.
             model = streamingModel("```json\n", """{"name":"Cy","age":9}""", "\n```"),
             output = Output.obj(serializer<Person>()),
@@ -80,7 +80,7 @@ class StreamObjectResultTest {
                 emit(StreamEvent.Finish(1, FinishReason.ToolCalls, Usage(), rawFinishReason = "stop"))
             }
         }
-        val finish = streamObjectResult(model, Output.obj(serializer<Person>()), prompt = "go").finish()
+        val finish = StreamObjectResult(model, Output.obj(serializer<Person>()), prompt = "go").finish()
         assertEquals(Person("Zed", 5), finish.value)
         assertEquals(FinishReason.ToolCalls, finish.finishReason)
     }
@@ -88,7 +88,7 @@ class StreamObjectResultTest {
     @Test
     fun `elementStream emits each array element as it completes`() = runTest {
         val arrayOutput = Output.Arr(serializer<Person>())
-        val result = streamObjectResult(
+        val result = StreamObjectResult(
             model = streamingModel(
                 """{"elements":[{"name":"A","age":1},""",
                 """{"name":"B","age":2},""",

@@ -98,13 +98,15 @@ internal class OpenAICompatibleChatLanguageModel(
             headers = params.headers + mapOf(HttpHeaders.Accept to "text/event-stream"),
             onResponse = { sseHeaders = it },
         )
-        forwardSseEvents(
-            events = EventStreamParser.parse(rawLines, jsonSchema<JsonElement>(JsonObject(emptyMap())), json)
-                .map { it.transformChatStreamEvent(prepared.body) { sseHeaders } },
-            capturedHeaders = { sseHeaders },
-            parseErrorPrefix = "Failed to parse OpenAI-compatible stream event",
-            onEvent = { state.accept(it).forEach { e -> emit(e) } },
-        )
+        with(HttpTransport) {
+            forwardSseEvents(
+                events = EventStreamParser.parse(rawLines, Schemas.jsonSchema<JsonElement>(JsonObject(emptyMap())), json)
+                    .map { it.transformChatStreamEvent(prepared.body) { sseHeaders } },
+                capturedHeaders = { sseHeaders },
+                parseErrorPrefix = "Failed to parse OpenAI-compatible stream event",
+                onEvent = { state.accept(it).forEach { e -> emit(e) } },
+            )
+        }
         state.finish().forEach { emit(it) }
     }
 
@@ -218,7 +220,7 @@ internal class OpenAICompatibleCompletionLanguageModel(
             headers = params.headers + mapOf(HttpHeaders.Accept to "text/event-stream"),
             onResponse = { sseHeaders = it },
         )
-        EventStreamParser.parse(rawLines, jsonSchema<JsonElement>(JsonObject(emptyMap())), json).collect { event ->
+        EventStreamParser.parse(rawLines, Schemas.jsonSchema<JsonElement>(JsonObject(emptyMap())), json).collect { event ->
             if (!headerMetaEmitted) {
                 emit(StreamEvent.ResponseMetadata(headers = sseHeaders))
                 headerMetaEmitted = true

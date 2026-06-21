@@ -1,7 +1,7 @@
 package ai.torad.aisdk
 
-import ai.torad.aisdk.middleware.defaultSettingsMiddleware
-import ai.torad.aisdk.middleware.extractReasoningMiddleware
+import ai.torad.aisdk.middleware.DefaultSettingsMiddleware
+import ai.torad.aisdk.middleware.ExtractReasoningMiddleware
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.test.runTest
@@ -33,8 +33,8 @@ class MiddlewareBugfixTest {
                 usage = Usage(),
             ),
         )
-        val wrapped = wrapLanguageModel(inner, listOf(extractReasoningMiddleware()))
-        val result = wrapped.generate(LanguageModelCallParams(messages = listOf(userMessage("hi"))))
+        val wrapped = WrapLanguageModel(inner, listOf(ExtractReasoningMiddleware()))
+        val result = wrapped.generate(LanguageModelCallParams(messages = listOf(UserMessage("hi"))))
 
         // text is cleaned of the tag
         assertEquals("beforeafter", result.text)
@@ -52,8 +52,8 @@ class MiddlewareBugfixTest {
                 usage = Usage(),
             ),
         )
-        val wrapped = wrapLanguageModel(inner, listOf(extractReasoningMiddleware()))
-        val result = wrapped.generate(LanguageModelCallParams(messages = listOf(userMessage("hi"))))
+        val wrapped = WrapLanguageModel(inner, listOf(ExtractReasoningMiddleware()))
+        val result = wrapped.generate(LanguageModelCallParams(messages = listOf(UserMessage("hi"))))
         // Empty tags must still be stripped — no literal <reasoning> in visible text.
         assertEquals("beforeafter", result.text)
         assertTrue(result.content.filterIsInstance<ContentPart.Text>().none { "<reasoning>" in it.text })
@@ -66,10 +66,10 @@ class MiddlewareBugfixTest {
             "openai" to buildJsonObject { put("reasoningEffort", JsonPrimitive("high")) },
         )))
         val inner = model(LanguageModelResult(text = "ok", finishReason = FinishReason.Stop, usage = Usage()))
-        val wrapped = wrapLanguageModel(inner, listOf(defaultSettingsMiddleware(providerOptions = defaults)))
+        val wrapped = WrapLanguageModel(inner, listOf(DefaultSettingsMiddleware(providerOptions = defaults)))
         wrapped.generate(
             LanguageModelCallParams(
-                messages = listOf(userMessage("hi")),
+                messages = listOf(UserMessage("hi")),
                 providerOptions = ProviderOptions.Raw(JsonObject(mapOf(
                     "openai" to buildJsonObject { put("user", JsonPrimitive("u1")) } as JsonObject,
                 ))),

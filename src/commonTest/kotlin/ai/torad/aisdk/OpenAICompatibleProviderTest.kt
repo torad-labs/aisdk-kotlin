@@ -1,7 +1,7 @@
 package ai.torad.aisdk
 import ai.torad.aisdk.providers.OpenAICompatibleProviderSettings
 import ai.torad.aisdk.providers.OpenAICompatible
-import ai.torad.aisdk.testing.drainAllItems
+import ai.torad.aisdk.testing.FlowDrain.drainAllItems
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.respond
@@ -150,7 +150,7 @@ class OpenAICompatibleProviderTest {
 
         provider.languageModel("gpt-test").generate(
             LanguageModelCallParams(
-                messages = listOf(userMessage("hi")),
+                messages = listOf(UserMessage("hi")),
                 tools = listOf(
                     LanguageModelTool(
                         name = "loose",
@@ -193,7 +193,7 @@ class OpenAICompatibleProviderTest {
             client,
             OpenAICompatibleProviderSettings(name = "openai", baseUrl = "https://api.test/v1", apiKey = "secret"),
         )
-        provider.languageModel("gpt-test").generate(LanguageModelCallParams(messages = listOf(userMessage("hi"))))
+        provider.languageModel("gpt-test").generate(LanguageModelCallParams(messages = listOf(UserMessage("hi"))))
         // No tools → neither tools nor tool_choice in the body (strict servers reject lone tool_choice).
         val body = seenBodies.single()
         assertEquals(null, body["tool_choice"], "tool_choice omitted without tools")
@@ -231,7 +231,7 @@ class OpenAICompatibleProviderTest {
             OpenAICompatibleProviderSettings(name = "openai", baseUrl = "https://api.test/v1", includeUsage = true),
         )
 
-        val events = drainAllItems(provider.languageModel("gpt-test").stream(LanguageModelCallParams(listOf(userMessage("hi")))))
+        val events = drainAllItems(provider.languageModel("gpt-test").stream(LanguageModelCallParams(listOf(UserMessage("hi")))))
 
         assertIs<StreamEvent.StreamStart>(events[0])
         val metadata = events.filterIsInstance<StreamEvent.ResponseMetadata>()
@@ -284,10 +284,10 @@ class OpenAICompatibleProviderTest {
         )
 
         val generated = provider.languageModel("gpt-test").generate(
-            LanguageModelCallParams(messages = listOf(userMessage("hi"))),
+            LanguageModelCallParams(messages = listOf(UserMessage("hi"))),
         )
         val events = drainAllItems(
-            provider.languageModel("gpt-test").stream(LanguageModelCallParams(messages = listOf(userMessage("hi")))),
+            provider.languageModel("gpt-test").stream(LanguageModelCallParams(messages = listOf(UserMessage("hi")))),
         )
 
         assertEquals("generated", generated.text)
@@ -320,7 +320,7 @@ class OpenAICompatibleProviderTest {
         val firstDelta = CompletableDeferred<Unit>()
         val collector = launch {
             provider.languageModel("gpt-test")
-                .stream(LanguageModelCallParams(listOf(userMessage("hi"))))
+                .stream(LanguageModelCallParams(listOf(UserMessage("hi"))))
                 .collect { event ->
                     if (event is StreamEvent.TextDelta) {
                         deltas += event.text
@@ -375,7 +375,7 @@ class OpenAICompatibleProviderTest {
         val provider = OpenAICompatible(client, OpenAICompatibleProviderSettings("openai", "https://api.test/v1"))
 
         val generated = TextGenerator(provider.completionModel("davinci")).generate(GenerationInput.Prompt("complete")).first()
-        val streamed = drainAllItems(provider.completionModel("davinci").stream(LanguageModelCallParams(listOf(userMessage("hi")))))
+        val streamed = drainAllItems(provider.completionModel("davinci").stream(LanguageModelCallParams(listOf(UserMessage("hi")))))
 
         assertEquals("done", generated.text)
         assertEquals(3, generated.usage.promptTokens)
@@ -397,7 +397,7 @@ class OpenAICompatibleProviderTest {
         )
         val provider = OpenAICompatible(client, OpenAICompatibleProviderSettings("openai", "https://api.test/v1"))
 
-        val image = generateImage(provider.imageModel("image"), prompt = "logo")
+        val image = ImageGeneration.generateImage(provider.imageModel("image"), prompt = "logo")
 
         assertEquals("", image.image.base64)
         assertEquals("https://cdn.test/image.png", image.image.url)
@@ -446,9 +446,9 @@ class OpenAICompatibleProviderTest {
         val provider = OpenAICompatible(client, OpenAICompatibleProviderSettings("openai", "https://api.test/v1"))
 
         val embedding = Embedding.embedMany(provider.embeddingModel("embed"), listOf("a", "b"))
-        val image = generateImage(provider.imageModel("image"), prompt = "logo", aspectRatio = "1:1", seed = 1)
-        val speech = generateSpeech(provider.speechModel("tts"), text = "hello", voice = "alloy")
-        val transcript = transcribe(
+        val image = ImageGeneration.generateImage(provider.imageModel("image"), prompt = "logo", aspectRatio = "1:1", seed = 1)
+        val speech = SpeechGeneration.generateSpeech(provider.speechModel("tts"), text = "hello", voice = "alloy")
+        val transcript = Transcription.transcribe(
             provider.transcriptionModel("whisper"),
             AudioSource(mediaType = "audio/mpeg", base64 = Base64Codec.encode("abc".encodeToByteArray())),
         )
@@ -489,7 +489,7 @@ class OpenAICompatibleProviderTest {
         )
         val provider = OpenAICompatible(client, OpenAICompatibleProviderSettings("openai", "https://api.test/v1"))
 
-        val image = generateImage(
+        val image = ImageGeneration.generateImage(
             model = provider.imageModel("image"),
             prompt = "edit",
             files = listOf(ImageGenerationFile(mediaType = "image/png", base64 = "aW1n", filename = "input.png")),
@@ -573,10 +573,10 @@ class OpenAICompatibleProviderTest {
             TextGenerator(provider.completionModel("davinci")).generate(GenerationInput.Prompt("complete")).first()
         }
         val imageError = assertFailsWith<WireDecodeException> {
-            generateImage(provider.imageModel("image"), prompt = "logo")
+            ImageGeneration.generateImage(provider.imageModel("image"), prompt = "logo")
         }
         val transcriptError = assertFailsWith<WireDecodeException> {
-            transcribe(
+            Transcription.transcribe(
                 provider.transcriptionModel("whisper"),
                 AudioSource(mediaType = "audio/mpeg", base64 = Base64Codec.encode("abc".encodeToByteArray())),
             )

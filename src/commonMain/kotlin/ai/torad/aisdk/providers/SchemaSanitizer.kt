@@ -5,19 +5,21 @@ import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.buildJsonObject
 
-internal fun stripUnsupportedSchemaKeys(
-    schema: JsonElement,
-    dropAdditionalProperties: Boolean,
-): JsonElement = when (schema) {
-    is JsonArray -> JsonArray(schema.map { stripUnsupportedSchemaKeys(it, dropAdditionalProperties) })
-    is JsonObject -> buildJsonObject {
-        for ((key, value) in schema) {
-            when {
-                key == "\$schema" || key == "title" -> Unit
-                dropAdditionalProperties && key == "additionalProperties" -> Unit
-                else -> put(key, stripUnsupportedSchemaKeys(value, dropAdditionalProperties))
+internal object SchemaSanitizer {
+    fun stripUnsupportedSchemaKeys(
+        schema: JsonElement,
+        dropAdditionalProperties: Boolean,
+    ): JsonElement = when (schema) {
+        is JsonArray -> JsonArray(schema.map { SchemaSanitizer.stripUnsupportedSchemaKeys(it, dropAdditionalProperties) })
+        is JsonObject -> buildJsonObject {
+            for ((key, value) in schema) {
+                when {
+                    key == "\$schema" || key == "title" -> Unit
+                    dropAdditionalProperties && key == "additionalProperties" -> Unit
+                    else -> put(key, SchemaSanitizer.stripUnsupportedSchemaKeys(value, dropAdditionalProperties))
+                }
             }
         }
+        else -> schema
     }
-    else -> schema
 }

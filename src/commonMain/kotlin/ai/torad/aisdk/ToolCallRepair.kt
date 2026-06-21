@@ -27,7 +27,7 @@ import kotlinx.serialization.json.JsonElement
  *              Pass a wrapped model if you want repair attempts
  *              instrumented the same way as main-flow calls.
  */
-public fun <TContext> modelRepromptRepair(
+public fun <TContext> ModelRepromptRepair(
     model: LanguageModel,
 ): ToolCallRepairFunction<TContext> = { failedCall, error, messages, tools ->
     val tool = tools.find(failedCall.toolName)
@@ -38,7 +38,7 @@ public fun <TContext> modelRepromptRepair(
             .firstOrNull { it.name == failedCall.toolName }
             ?.parametersSchemaJson
             ?: "{}"
-        val correctedJson = repromptForJson(
+        val correctedJson = ToolCallRepairOps.repromptForJson(
             model = model,
             messages = messages,
             request = RepairRequest(
@@ -60,53 +60,57 @@ public fun <TContext> modelRepromptRepair(
 
 /** Inputs for a single repair re-prompt — bundled so the call doesn't
  *  trip the long-parameter-list rule. The repair fn is the only caller. */
-private data class RepairRequest(
+internal data class RepairRequest(
     val toolName: String,
     val failedArgs: String,
     val schema: String,
     val errorMessage: String,
 )
 
-/** Issue a focused re-prompt and parse the response as JSON. Returns
- *  null if the model's reply doesn't parse — single attempt, no
- *  recursion. */
-private suspend fun repromptForJson(
-    model: LanguageModel,
-    messages: List<ModelMessage>,
-    request: RepairRequest,
-): JsonElement? {
-    val prompt = buildRepairPrompt(request)
-    val result = model.generate(
-        LanguageModelCallParams(
-            messages = messages + userMessage(prompt),
-            tools = emptyList(),
-            toolChoice = ToolChoice.None,
-        ),
-    )
-    val text = stripCodeFences(result.text.trim())
-    return runCatching { aiSdkJson.parseToJsonElement(text) }.getOrNull()
-}
+/** File-local helpers for the stock re-prompt repair flow, grouped to
+ *  keep them off the top level. Only [ModelRepromptRepair] calls these. */
+internal object ToolCallRepairOps {
+    /** Issue a focused re-prompt and parse the response as JSON. Returns
+     *  null if the model's reply doesn't parse — single attempt, no
+     *  recursion. */
+    suspend fun repromptForJson(
+        model: LanguageModel,
+        messages: List<ModelMessage>,
+        request: RepairRequest,
+    ): JsonElement? {
+        val prompt = buildRepairPrompt(request)
+        val result = model.generate(
+            LanguageModelCallParams(
+                messages = messages + UserMessage(prompt),
+                tools = emptyList(),
+                toolChoice = ToolChoice.None,
+            ),
+        )
+        val text = stripCodeFences(result.text.trim())
+        return runCatching { aiSdkJson.parseToJsonElement(text) }.getOrNull()
+    }
 
-private fun buildRepairPrompt(request: RepairRequest): String = """
-    Your previous call to tool `${request.toolName}` had invalid JSON arguments.
+    private fun buildRepairPrompt(request: RepairRequest): String = """
+        Your previous call to tool `${request.toolName}` had invalid JSON arguments.
 
-    Failed arguments:
-    ${request.failedArgs}
+        Failed arguments:
+        ${request.failedArgs}
 
-    Error: ${request.errorMessage}
+        Error: ${request.errorMessage}
 
-    Tool input schema:
-    ${request.schema}
+        Tool input schema:
+        ${request.schema}
 
-    Reply with ONLY the corrected JSON arguments — no prose, no
-    explanation, no markdown code fences. Just the raw JSON object.
-""".trimIndent()
+        Reply with ONLY the corrected JSON arguments — no prose, no
+        explanation, no markdown code fences. Just the raw JSON object.
+    """.trimIndent()
 
-/** Strip Markdown code fences off a model response so the JSON inside parses cleanly. */
-private fun stripCodeFences(raw: String): String {
-    var t = raw
-    if (t.startsWith("```json")) t = t.removePrefix("```json").trim()
-    if (t.startsWith("```")) t = t.removePrefix("```").trim()
-    if (t.endsWith("```")) t = t.removeSuffix("```").trim()
-    return t
+    /** Strip Markdown code fences off a model response so the JSON inside parses cleanly. */
+    private fun stripCodeFences(raw: String): String {
+        var t = raw
+        if (t.startsWith("```json")) t = t.removePrefix("```json").trim()
+        if (t.startsWith("```")) t = t.removePrefix("```").trim()
+        if (t.endsWith("```")) t = t.removeSuffix("```").trim()
+        return t
+    }
 }

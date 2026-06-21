@@ -23,7 +23,7 @@ class ErrorCauseTest {
         val agent = TestToolLoopAgent<Unit, String>(
             model = model,
             instructions = "x",
-            tools = toolSetOf<Unit>(),
+            tools = ToolSet<Unit>(),
         )
 
         val thrown = assertFailsWith<AiSdkException> { agent.generate(prompt = "hi").first() }

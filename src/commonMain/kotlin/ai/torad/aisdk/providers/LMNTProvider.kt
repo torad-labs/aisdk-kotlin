@@ -77,7 +77,7 @@ private class LMNTSpeechModel(
 
     override suspend fun generate(params: SpeechGenerationParams): SpeechModelResult {
         val warnings = mutableListOf<CallWarning>()
-        val responseFormat = lmntResponseFormat(params.responseFormat, warnings)
+        val responseFormat = LMNTWire.lmntResponseFormat(params.responseFormat, warnings)
         val body = buildJsonObject {
             put("model", JsonPrimitive(modelId))
             put("text", JsonPrimitive(params.text))
@@ -85,7 +85,7 @@ private class LMNTSpeechModel(
             put("response_format", JsonPrimitive(responseFormat))
             params.language?.let { put("language", JsonPrimitive(it)) }
             params.speed?.let { put("speed", JsonPrimitive(it)) }
-            val options = lmntOptions(params.providerOptions)
+            val options = LMNTWire.lmntOptions(params.providerOptions)
             options["conversational"]?.let { put("conversational", it) }
             options["length"]?.let { put("length", it) }
             options["seed"]?.let { put("seed", it) }
@@ -95,12 +95,14 @@ private class LMNTSpeechModel(
             options["sampleRate"]?.let { put("sample_rate", it) }
         }
         val url = "https://api.lmnt.com/v1/ai/speech/bytes"
-        val response = client.request(url) {
-            method = HttpMethod.Post
-            contentType(ContentType.Application.Json)
-            lmntHeaders(settings, params.headers).forEach { (name, value) -> header(name, value) }
-            setBody(aiSdkJson.encodeToString(JsonElement.serializer(), body))
-        }.parseLMNTBinary(url, responseFormat)
+        val response = with(LMNTWire) {
+            client.request(url) {
+                method = HttpMethod.Post
+                contentType(ContentType.Application.Json)
+                lmntHeaders(settings, params.headers).forEach { (name, value) -> header(name, value) }
+                setBody(aiSdkJson.encodeToString(JsonElement.serializer(), body))
+            }.parseLMNTBinary(url, responseFormat)
+        }
         return SpeechModelResult(
             audio = GeneratedFile(
                 mediaType = response.mediaType,
@@ -113,62 +115,64 @@ private class LMNTSpeechModel(
 }
 
 
-private class LMNTBinaryResponse(
+internal class LMNTBinaryResponse(
     val bytes: ByteArray,
     val mediaType: String,
     val headers: Map<String, String>,
 )
 
-private suspend fun HttpResponse.parseLMNTBinary(url: String, responseFormat: String): LMNTBinaryResponse {
-    val bytes = bodyAsBytes()
-    val headers = flattenedHeaders()
-    if (status.value !in 200..299) {
-        val raw = bytes.decodeToString()
-        throw apiCallError(
-            url = url,
-            statusCode = status.value,
-            rawBody = raw,
+internal object LMNTWire {
+    private val lmntSupportedFormats = setOf("aac", "mp3", "mulaw", "raw", "wav")
+
+    suspend fun HttpResponse.parseLMNTBinary(url: String, responseFormat: String): LMNTBinaryResponse {
+        val bytes = bodyAsBytes()
+        val headers = with(HttpTransport) { flattenedHeaders() }
+        if (status.value !in 200..299) {
+            val raw = bytes.decodeToString()
+            throw ApiCallError(
+                url = url,
+                statusCode = status.value,
+                rawBody = raw,
+                headers = headers,
+                message = "LMNT request failed (${status.value}): ${raw.ifBlank { "request failed" }}",
+            )
+        }
+        return LMNTBinaryResponse(
+            bytes = bytes,
+            mediaType = headers.headerValue(HttpHeaders.ContentType) ?: lmntMediaType(responseFormat),
             headers = headers,
-            message = "LMNT request failed (${status.value}): ${raw.ifBlank { "request failed" }}",
         )
     }
-    return LMNTBinaryResponse(
-        bytes = bytes,
-        mediaType = headers.headerValue(HttpHeaders.ContentType) ?: lmntMediaType(responseFormat),
-        headers = headers,
-    )
-}
 
-private fun lmntHeaders(settings: LMNTProviderSettings, callHeaders: Map<String, String>): Map<String, String> {
-    val base = linkedMapOf<String, String>()
-    settings.apiKey?.takeIf { it.isNotBlank() }?.let { base["x-api-key"] = it }
-    base.putAll(settings.headers)
-    base.putAll(callHeaders)
-    return ProviderHeaders.withUserAgentSuffix(base, "ai-sdk/lmnt/$LMNT_VERSION")
-}
-
-private fun lmntOptions(providerOptions: ProviderOptions): JsonObject =
-    providerOptions.toMap()["lmnt"] as? JsonObject ?: JsonObject(emptyMap())
-
-private fun lmntResponseFormat(value: String?, warnings: MutableList<CallWarning>): String {
-    val format = value ?: "mp3"
-    if (format in lmntSupportedFormats) return format
-    warnings += CallWarning(
-        type = "unsupported",
-        message = "Unsupported output format: $format. Using mp3 instead.",
-    )
-    return "mp3"
-}
-
-private fun lmntMediaType(format: String): String =
-    when (format) {
-        "aac" -> "audio/aac"
-        "mulaw", "raw" -> "application/octet-stream"
-        "wav" -> "audio/wav"
-        else -> "audio/mpeg"
+    fun lmntHeaders(settings: LMNTProviderSettings, callHeaders: Map<String, String>): Map<String, String> {
+        val base = linkedMapOf<String, String>()
+        settings.apiKey?.takeIf { it.isNotBlank() }?.let { base["x-api-key"] = it }
+        base.putAll(settings.headers)
+        base.putAll(callHeaders)
+        return ProviderHeaders.withUserAgentSuffix(base, "ai-sdk/lmnt/$LMNT_VERSION")
     }
 
-private val lmntSupportedFormats = setOf("aac", "mp3", "mulaw", "raw", "wav")
+    fun lmntOptions(providerOptions: ProviderOptions): JsonObject =
+        providerOptions.toMap()["lmnt"] as? JsonObject ?: JsonObject(emptyMap())
 
-private fun Map<String, String>.headerValue(name: String): String? =
-    entries.firstOrNull { it.key.equals(name, ignoreCase = true) }?.value
+    fun lmntResponseFormat(value: String?, warnings: MutableList<CallWarning>): String {
+        val format = value ?: "mp3"
+        if (format in lmntSupportedFormats) return format
+        warnings += CallWarning(
+            type = "unsupported",
+            message = "Unsupported output format: $format. Using mp3 instead.",
+        )
+        return "mp3"
+    }
+
+    fun lmntMediaType(format: String): String =
+        when (format) {
+            "aac" -> "audio/aac"
+            "mulaw", "raw" -> "application/octet-stream"
+            "wav" -> "audio/wav"
+            else -> "audio/mpeg"
+        }
+
+    private fun Map<String, String>.headerValue(name: String): String? =
+        entries.firstOrNull { it.key.equals(name, ignoreCase = true) }?.value
+}

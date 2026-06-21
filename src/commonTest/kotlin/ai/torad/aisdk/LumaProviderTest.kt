@@ -23,7 +23,7 @@ import kotlinx.serialization.json.JsonObject
 class LumaProviderTest {
     @Test
     fun `image model creates generation polls and downloads image`() = runTest {
-        val fixture = createTestServer(
+        val fixture = TestServer.createTestServer(
             mutableMapOf(
                 "https://api.lumalabs.ai/dream-machine/v1/generations/image" to UrlHandler(
                     UrlResponse.JsonValue(Json.parseToJsonElement("""{"id":"gen1","state":"queued"}""")),
@@ -87,7 +87,7 @@ class LumaProviderTest {
 
     @Test
     fun `image model maps character references`() = runTest {
-        val fixture = createTestServer(
+        val fixture = TestServer.createTestServer(
             mutableMapOf(
                 "https://api.lumalabs.ai/dream-machine/v1/generations/image" to UrlHandler(
                     UrlResponse.JsonValue(Json.parseToJsonElement("""{"id":"gen1","state":"queued"}""")),
@@ -129,7 +129,7 @@ class LumaProviderTest {
 
     @Test
     fun `image model rejects base64 reference files and masks`() = runTest {
-        val fixture = createTestServer(mutableMapOf())
+        val fixture = TestServer.createTestServer(mutableMapOf())
         val model = Luma(fixture.httpClient(), LumaProviderSettings(apiKey = "key")).image(ModelId("photon-1"))
 
         assertFailsWith<AiSdkException> {
@@ -142,7 +142,7 @@ class LumaProviderTest {
 
     @Test
     fun `default provider and unsupported model families fail explicitly`() {
-        val fixture = createTestServer(mutableMapOf())
+        val fixture = TestServer.createTestServer(mutableMapOf())
         val provider = Luma(fixture.httpClient(), LumaProviderSettings(apiKey = "key"))
 
         assertFailsWith<NoSuchModelError> { provider.languageModel("model") }

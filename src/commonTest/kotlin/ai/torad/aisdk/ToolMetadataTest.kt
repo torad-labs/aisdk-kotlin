@@ -59,7 +59,7 @@ class ToolMetadataTest {
             outputSerializer = serializer(),
             metadata = mapOf("sample-rate" to JsonPrimitive(0.1)),
         ) { _ -> "ok" }
-        val ts: ToolSet<Unit> = toolSetOf(t)
+        val ts: ToolSet<Unit> = ToolSet(t)
 
         // WHEN — consumers reach into the toolset for the metadata bag.
         val found = ts.find("telemetry")

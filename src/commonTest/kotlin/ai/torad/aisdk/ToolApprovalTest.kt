@@ -1,8 +1,8 @@
 package ai.torad.aisdk
 
 import ai.torad.aisdk.providers.MockLanguageModel
-import ai.torad.aisdk.providers.mockLanguageModelToolThenText
-import ai.torad.aisdk.providers.mockToolInput
+import ai.torad.aisdk.providers.MockLanguageModelToolThenText
+import ai.torad.aisdk.providers.MockToolInput
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
@@ -48,13 +48,13 @@ class ToolApprovalTest {
         }
 
         val agent = TestToolLoopAgent<Unit, String>(
-            model = mockLanguageModelToolThenText(
+            model = MockLanguageModelToolThenText(
                 toolName = "send",
-                toolInput = mockToolInput("message" to "hey friend"),
+                toolInput = MockToolInput("message" to "hey friend"),
                 finalText = "sent",
             ),
             instructions = "use send",
-            tools = toolSetOf(sendTool),
+            tools = ToolSet(sendTool),
         )
 
         val first = agent.generate(prompt = "trigger").first()
@@ -63,7 +63,7 @@ class ToolApprovalTest {
         assertEquals("send", first.pendingApprovals[0].toolName)
         assertEquals(false, executed, "tool not executed before approval")
 
-        val approval = toolApprovalResponseMessage(
+        val approval = ToolApprovalResponseMessage(
             toolCallId = first.pendingApprovals[0].toolCallId,
             approved = true,
         )
@@ -89,19 +89,19 @@ class ToolApprovalTest {
         }
 
         val agent = TestToolLoopAgent<Unit, String>(
-            model = mockLanguageModelToolThenText(
+            model = MockLanguageModelToolThenText(
                 toolName = "send",
-                toolInput = mockToolInput("message" to "spam"),
+                toolInput = MockToolInput("message" to "spam"),
                 finalText = "ok skipped",
             ),
             instructions = "use send",
-            tools = toolSetOf(sendTool),
+            tools = ToolSet(sendTool),
         )
 
         val first = agent.generate(prompt = "trigger").first()
         assertEquals(1, first.pendingApprovals.size)
 
-        val denial = toolApprovalResponseMessage(
+        val denial = ToolApprovalResponseMessage(
             toolCallId = first.pendingApprovals[0].toolCallId,
             approved = false,
             reason = "user said no",
@@ -124,13 +124,13 @@ class ToolApprovalTest {
         }
 
         val agent = TestToolLoopAgent<Unit, String>(
-            model = mockLanguageModelToolThenText(
+            model = MockLanguageModelToolThenText(
                 toolName = "send",
                 toolInput = JsonObject(emptyMap()),
                 finalText = "sent",
             ),
             instructions = "use send",
-            tools = toolSetOf(sendTool),
+            tools = ToolSet(sendTool),
         )
 
         val events = agent.stream(prompt = "trigger").toList()
@@ -155,13 +155,13 @@ class ToolApprovalTest {
         }
 
         val agent = TestToolLoopAgent<String, String>(
-            model = mockLanguageModelToolThenText(
+            model = MockLanguageModelToolThenText(
                 toolName = "send",
-                toolInput = mockToolInput("message" to "hey friend"),
+                toolInput = MockToolInput("message" to "hey friend"),
                 finalText = "sent",
             ),
             instructions = "use send",
-            tools = toolSetOf(sendTool),
+            tools = ToolSet(sendTool),
         )
 
         agent.dispatchEngineAction(ToolLoopAgentAction.UserSubmitPrompt("trigger", context = "request-context"))

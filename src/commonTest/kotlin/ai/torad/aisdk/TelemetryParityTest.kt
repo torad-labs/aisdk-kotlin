@@ -12,21 +12,21 @@ import kotlin.test.assertTrue
 class TelemetryParityTest {
     @AfterTest
     fun clearTelemetry() {
-        clearGlobalTelemetry()
+        TelemetryOps.clearGlobalTelemetry()
     }
 
     @Test
     fun `disabled telemetry selects no attributes and enabled telemetry honors input output gates`() = runTest {
-        val disabled = selectTelemetryAttributes(
+        val disabled = TelemetryTracing.selectTelemetryAttributes(
             TelemetrySettings(isEnabled = false),
-            mapOf("input" to telemetryInput { JsonPrimitive("secret") }),
+            mapOf("input" to TelemetryTracing.telemetryInput { JsonPrimitive("secret") }),
         )
-        val noInputs = selectTelemetryAttributes(
+        val noInputs = TelemetryTracing.selectTelemetryAttributes(
             TelemetrySettings(isEnabled = true, recordInputs = false),
             mapOf(
-                "simple" to telemetryAttribute(JsonPrimitive("value")),
-                "input" to telemetryInput { JsonPrimitive("in") },
-                "output" to telemetryOutput { JsonPrimitive("out") },
+                "simple" to TelemetryTracing.telemetryAttribute(JsonPrimitive("value")),
+                "input" to TelemetryTracing.telemetryInput { JsonPrimitive("in") },
+                "output" to TelemetryTracing.telemetryOutput { JsonPrimitive("out") },
             ),
         )
 
@@ -38,7 +38,7 @@ class TelemetryParityTest {
 
     @Test
     fun `operation name attributes match v6 telemetry shape`() {
-        val attributes = assembleOperationNameAttributes(
+        val attributes = TelemetryTracing.assembleOperationNameAttributes(
             operationId = "ai.generateText",
             telemetry = TelemetrySettings(functionId = "chat"),
         )
@@ -52,9 +52,9 @@ class TelemetryParityTest {
     @Test
     fun `global telemetry integrations broadcast in registration order`() = runTest {
         val calls = mutableListOf<String>()
-        registerTelemetry(OrderedIntegration("first", calls))
-        registerTelemetry(OrderedIntegration("second", calls))
-        val composite = resolveTelemetry(null)
+        TelemetryOps.registerTelemetry(OrderedIntegration("first", calls))
+        TelemetryOps.registerTelemetry(OrderedIntegration("second", calls))
+        val composite = TelemetryOps.resolveTelemetry(null)
         checkNotNull(composite)
         val call = TelemetryCall(callId = "c1", agentId = "agent")
 
@@ -67,7 +67,7 @@ class TelemetryParityTest {
     @Test
     fun `tracer recordSpan returns result ends spans and records errors`() = runTest {
         val tracer = InMemoryTelemetryTracer()
-        val result = recordSpan(
+        val result = TelemetryTracing.recordSpan(
             name = "ai.generateText",
             tracer = tracer,
             attributes = mapOf("ai.model.id" to JsonPrimitive("gpt-test")),
@@ -82,7 +82,7 @@ class TelemetryParityTest {
         assertEquals(JsonPrimitive("ok"), tracer.spans.single().attributes["custom"])
 
         val error = assertFailsWith<IllegalStateException> {
-            recordSpan(name = "ai.fail", tracer = tracer) {
+            TelemetryTracing.recordSpan(name = "ai.fail", tracer = tracer) {
                 error("boom")
             }
         }

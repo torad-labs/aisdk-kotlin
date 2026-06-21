@@ -23,7 +23,7 @@ import kotlinx.serialization.json.JsonObject
 class ByteDanceProviderTest {
     @Test
     fun `video model creates task polls and returns url metadata`() = runTest {
-        val fixture = createTestServer(
+        val fixture = TestServer.createTestServer(
             mutableMapOf(
                 "https://ark.test/api/v3/contents/generations/tasks" to UrlHandler(
                     UrlResponse.JsonValue(Json.parseToJsonElement("""{"id":"task-1"}""")),
@@ -114,7 +114,7 @@ class ByteDanceProviderTest {
 
     @Test
     fun `video model reports failed tasks and unsupported families`() = runTest {
-        val fixture = createTestServer(
+        val fixture = TestServer.createTestServer(
             mutableMapOf(
                 "https://ark.test/api/v3/contents/generations/tasks" to UrlHandler(
                     UrlResponse.JsonValue(Json.parseToJsonElement("""{"id":"task-1"}""")),

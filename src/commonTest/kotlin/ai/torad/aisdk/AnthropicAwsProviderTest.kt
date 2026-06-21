@@ -4,7 +4,7 @@ import ai.torad.aisdk.providers.ANTHROPIC_VERSION
 import ai.torad.aisdk.providers.AnthropicAwsProviderSettings
 import ai.torad.aisdk.providers.AnthropicAws
 
-import ai.torad.aisdk.testing.drainAllItems
+import ai.torad.aisdk.testing.FlowDrain.drainAllItems
 import io.ktor.http.HttpHeaders
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.Json
@@ -20,7 +20,7 @@ import kotlin.test.assertTrue
 class AnthropicAwsProviderTest {
     @Test
     fun `messages model uses AWS base url workspace header api key and Anthropic mapping`() = runTest {
-        val fixture = createTestServer(
+        val fixture = TestServer.createTestServer(
             mutableMapOf(
                 "https://aws-anthropic.test/v1/messages" to UrlHandler(
                     UrlResponse.JsonValue(
@@ -52,7 +52,7 @@ class AnthropicAwsProviderTest {
 
         val result = provider(ModelId("claude-sonnet-4-6")).generate(
             LanguageModelCallParams(
-                messages = listOf(userMessage("Hello")),
+                messages = listOf(UserMessage("Hello")),
                 headers = mapOf("X-Request" to "request"),
             ),
         )
@@ -75,7 +75,7 @@ class AnthropicAwsProviderTest {
 
     @Test
     fun `stream uses Anthropic SSE mapping with AWS headers`() = runTest {
-        val fixture = createTestServer(
+        val fixture = TestServer.createTestServer(
             mutableMapOf(
                 "https://aws-external-anthropic.us-east-1.api.aws/v1/messages" to UrlHandler(
                     UrlResponse.StreamChunks(
@@ -105,7 +105,7 @@ class AnthropicAwsProviderTest {
         )
 
         val events = drainAllItems(
-            provider.messages(ModelId("claude-sonnet-4-6")).stream(LanguageModelCallParams(messages = listOf(userMessage("hi")))),
+            provider.messages(ModelId("claude-sonnet-4-6")).stream(LanguageModelCallParams(messages = listOf(UserMessage("hi")))),
         )
 
         assertIs<StreamEvent.StreamStart>(events.first())
@@ -120,7 +120,7 @@ class AnthropicAwsProviderTest {
 
     @Test
     fun `unsupported models and SigV4 path are explicit`() = runTest {
-        val fixture = createTestServer(
+        val fixture = TestServer.createTestServer(
             mutableMapOf(
                 "https://aws-anthropic.test/v1/messages" to UrlHandler(
                     UrlResponse.JsonValue(
@@ -154,7 +154,7 @@ class AnthropicAwsProviderTest {
 
         assertFailsWith<NoSuchModelError> { provider.embeddingModel("embed") }
         assertEquals("advisor", provider.tools.advisor_20260301.name)
-        val result = provider.languageModel("claude-sonnet-4-6").generate(LanguageModelCallParams(messages = listOf(userMessage("hi"))))
+        val result = provider.languageModel("claude-sonnet-4-6").generate(LanguageModelCallParams(messages = listOf(UserMessage("hi"))))
 
         val request = fixture.calls.single()
         assertEquals("signed", result.text)

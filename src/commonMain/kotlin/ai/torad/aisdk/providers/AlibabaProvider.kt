@@ -1,6 +1,16 @@
 package ai.torad.aisdk.providers
 
 import ai.torad.aisdk.*
+import ai.torad.aisdk.providers.AlibabaWire.alibabaHeaders
+import ai.torad.aisdk.providers.AlibabaWire.alibabaOptions
+import ai.torad.aisdk.providers.AlibabaWire.alibabaGetJson
+import ai.torad.aisdk.providers.AlibabaWire.alibabaPostJson
+import ai.torad.aisdk.providers.AlibabaWire.alibabaUsage
+import ai.torad.aisdk.providers.AlibabaWire.alibabaVideoInput
+import ai.torad.aisdk.providers.AlibabaWire.alibabaVideoMetadata
+import ai.torad.aisdk.providers.AlibabaWire.alibabaVideoMode
+import ai.torad.aisdk.providers.AlibabaWire.alibabaVideoParameters
+import ai.torad.aisdk.providers.AlibabaWire.transformAlibabaChatOptions
 import io.ktor.client.HttpClient
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpMethod
@@ -95,9 +105,9 @@ public class AlibabaProvider(
             ),
         )
 
-    public operator fun invoke(modelId: ModelId): LanguageModel = languageModel(modelId)
-    public fun chatModel(modelId: ModelId): LanguageModel = languageModel(modelId)
-    public fun video(modelId: ModelId): VideoModel = videoModel(modelId)
+    public operator fun invoke(modelId: ModelId): LanguageModel = languageModel(modelId.value)
+    public fun chatModel(modelId: ModelId): LanguageModel = languageModel(modelId.value)
+    public fun video(modelId: ModelId): VideoModel = videoModel(modelId.value)
 
     override fun languageModel(modelId: String): LanguageModel = AlibabaChatLanguageModel(chatProvider.chatModel(modelId))
     override fun videoModel(modelId: String): VideoModel = AlibabaVideoModel(client, settings, modelId)
@@ -193,124 +203,7 @@ private class AlibabaVideoModel(
     }
 }
 
-private enum class AlibabaVideoMode { TextToVideo, ImageToVideo, ReferenceToVideo }
-
-
-private fun transformAlibabaChatOptions(providerOptions: ProviderOptions): ProviderOptions {
-    val map = providerOptions.toMap()
-    val options = map["alibaba"] as? JsonObject ?: return providerOptions
-    val transformed = buildJsonObject {
-        options["enableThinking"]?.let { put("enable_thinking", it) }
-        options["thinkingBudget"]?.let { put("thinking_budget", it) }
-        options["parallelToolCalls"]?.let { put("parallel_tool_calls", it) }
-        for ((key, value) in options) {
-            if (key !in setOf("enableThinking", "thinkingBudget", "parallelToolCalls")) put(key, value)
-        }
-    }
-    return ProviderOptions.Raw(JsonObject(map + ("alibaba" to (transformed as JsonElement))))
-}
-
-private fun alibabaUsage(usage: Usage): Usage {
-    val raw = usage.raw?.jsonObject
-    val cacheWrite = raw?.get("prompt_tokens_details")?.jsonObject
-        ?.get("cache_creation_input_tokens")?.jsonPrimitive?.intOrNull ?: 0
-    val inputTotal = usage.inputTokens.total
-    val cacheRead = usage.inputTokens.cacheRead
-    val reasoning = usage.outputTokens.reasoning
-    val outputTotal = usage.outputTokens.total
-    return usage.copy(
-        inputTokens = usage.inputTokens.copy(
-            cacheWrite = cacheWrite,
-            noCache = (inputTotal - cacheRead - cacheWrite).coerceAtLeast(0),
-        ),
-        outputTokens = usage.outputTokens.copy(
-            text = (outputTotal - reasoning).coerceAtLeast(0),
-        ),
-    )
-}
-
-private fun alibabaVideoMode(modelId: String): AlibabaVideoMode = when {
-    modelId.contains("-i2v") -> AlibabaVideoMode.ImageToVideo
-    modelId.contains("-r2v") -> AlibabaVideoMode.ReferenceToVideo
-    else -> AlibabaVideoMode.TextToVideo
-}
-
-private fun alibabaVideoInput(mode: AlibabaVideoMode, params: VideoGenerationParams, options: JsonObject): JsonObject = buildJsonObject {
-    params.prompt.takeIf { it.isNotBlank() }?.let { put("prompt", JsonPrimitive(it)) }
-    options["negativePrompt"]?.let { put("negative_prompt", it) }
-    options["audioUrl"]?.let { put("audio_url", it) }
-    if (mode == AlibabaVideoMode.ImageToVideo) {
-        params.image?.let { put("img_url", JsonPrimitive(it.url ?: it.base64)) }
-    }
-    if (mode == AlibabaVideoMode.ReferenceToVideo) {
-        options["referenceUrls"]?.let { put("reference_urls", it) }
-    }
-}
-
-private fun alibabaVideoParameters(
-    mode: AlibabaVideoMode,
-    params: VideoGenerationParams,
-    options: JsonObject,
-    warnings: MutableList<CallWarning>,
-): JsonObject = buildJsonObject {
-    params.durationSeconds?.let { put("duration", JsonPrimitive(it)) }
-    params.seed?.let { put("seed", JsonPrimitive(it)) }
-    params.resolution?.let { resolution ->
-        if (mode == AlibabaVideoMode.ImageToVideo) {
-            put("resolution", JsonPrimitive(alibabaI2VResolution(resolution)))
-        } else {
-            put("size", JsonPrimitive(resolution.replace('x', '*')))
-        }
-    }
-    options["promptExtend"]?.let { put("prompt_extend", it) }
-    options["shotType"]?.let { put("shot_type", it) }
-    options["watermark"]?.let { put("watermark", it) }
-    options["audio"]?.let { put("audio", it) }
-    if (params.aspectRatio != null) warnings += CallWarning("unsupported", "Alibaba video models use explicit size/resolution dimensions. Use the resolution option or providerOptions.alibaba for size control.")
-    if (params.fps != null) warnings += CallWarning("unsupported", "Alibaba video models do not support custom FPS.")
-    if (params.n > 1) warnings += CallWarning("unsupported", "Alibaba video models only support generating 1 video per call.")
-    alibabaVideoPassthroughOptions(this, options)
-}
-
-private val alibabaVideoHandledOptions = setOf(
-    "negativePrompt",
-    "audioUrl",
-    "promptExtend",
-    "shotType",
-    "watermark",
-    "audio",
-    "referenceUrls",
-    "pollIntervalMs",
-    "pollTimeoutMs",
-)
-
-private fun alibabaVideoPassthroughOptions(builder: kotlinx.serialization.json.JsonObjectBuilder, options: JsonObject) {
-    for ((key, value) in options) {
-        if (key !in alibabaVideoHandledOptions) builder.put(key, value)
-    }
-}
-
-private fun alibabaI2VResolution(value: String): String = when (value) {
-    "1280x720", "720x1280", "960x960", "1088x832", "832x1088" -> "720P"
-    "1920x1080", "1080x1920", "1440x1440", "1632x1248", "1248x1632" -> "1080P"
-    "832x480", "480x832", "624x624" -> "480P"
-    else -> value
-}
-
-private fun alibabaVideoMetadata(taskId: String, videoUrl: String, value: JsonObject): JsonObject = buildJsonObject {
-    val output = value["output"]?.jsonObject ?: JsonObject(emptyMap())
-    put("taskId", JsonPrimitive(taskId))
-    put("videoUrl", JsonPrimitive(videoUrl))
-    output["actual_prompt"]?.jsonPrimitive?.contentOrNull?.let { put("actualPrompt", JsonPrimitive(it)) }
-    value["usage"]?.jsonObject?.let { usage ->
-        put("usage", buildJsonObject {
-            usage["duration"]?.let { put("duration", it) }
-            usage["output_video_duration"]?.let { put("outputVideoDuration", it) }
-            usage["SR"]?.let { put("resolution", it) }
-            usage["size"]?.let { put("size", it) }
-        })
-    }
-}
+internal enum class AlibabaVideoMode { TextToVideo, ImageToVideo, ReferenceToVideo }
 
 private const val ALIBABA_MAX_EMBEDDINGS_PER_CALL = 10
 
@@ -377,47 +270,166 @@ private class AlibabaEmbeddingModel(
     }
 }
 
-private suspend fun alibabaPostJson(
-    client: HttpClient,
-    url: String,
-    body: JsonObject,
-    headers: Map<String, String>,
-): HttpJsonResponse =
-    requestJson(
-        client = client,
-        url = url,
-        method = HttpMethod.Post,
-        headers = headers,
-        body = body,
-        requestBodyValues = body,
-        errorMessage = ::alibabaErrorMessage,
+/** Wire-format helpers for the Alibaba/DashScope provider. */
+internal object AlibabaWire {
+    private val alibabaVideoHandledOptions = setOf(
+        "negativePrompt",
+        "audioUrl",
+        "promptExtend",
+        "shotType",
+        "watermark",
+        "audio",
+        "referenceUrls",
+        "pollIntervalMs",
+        "pollTimeoutMs",
     )
 
-private suspend fun alibabaGetJson(
-    client: HttpClient,
-    url: String,
-    headers: Map<String, String>,
-): HttpJsonResponse =
-    requestJson(
-        client = client,
-        url = url,
-        method = HttpMethod.Get,
-        headers = headers,
-        errorMessage = ::alibabaErrorMessage,
-    )
-
-private fun alibabaHeaders(settings: AlibabaProviderSettings, callHeaders: Map<String, String>): Map<String, String> =
-    ProviderHeaders.build(settings.headers, callHeaders, "ai-sdk/alibaba/$ALIBABA_VERSION") { base ->
-        settings.apiKey?.takeIf { it.isNotBlank() }?.let { base[HttpHeaders.Authorization] = "Bearer $it" }
+    fun transformAlibabaChatOptions(providerOptions: ProviderOptions): ProviderOptions {
+        val map = providerOptions.toMap()
+        val options = map["alibaba"] as? JsonObject ?: return providerOptions
+        val transformed = buildJsonObject {
+            options["enableThinking"]?.let { put("enable_thinking", it) }
+            options["thinkingBudget"]?.let { put("thinking_budget", it) }
+            options["parallelToolCalls"]?.let { put("parallel_tool_calls", it) }
+            for ((key, value) in options) {
+                if (key !in setOf("enableThinking", "thinkingBudget", "parallelToolCalls")) put(key, value)
+            }
+        }
+        return ProviderOptions.Raw(JsonObject(map + ("alibaba" to (transformed as JsonElement))))
     }
 
-private fun alibabaOptions(providerOptions: ProviderOptions): JsonObject =
-    providerOptions.toMap()["alibaba"] as? JsonObject ?: JsonObject(emptyMap())
+    fun alibabaUsage(usage: Usage): Usage {
+        val raw = usage.raw?.jsonObject
+        val cacheWrite = raw?.get("prompt_tokens_details")?.jsonObject
+            ?.get("cache_creation_input_tokens")?.jsonPrimitive?.intOrNull ?: 0
+        val inputTotal = usage.inputTokens.total
+        val cacheRead = usage.inputTokens.cacheRead
+        val reasoning = usage.outputTokens.reasoning
+        val outputTotal = usage.outputTokens.total
+        return usage.copy(
+            inputTokens = usage.inputTokens.copy(
+                cacheWrite = cacheWrite,
+                noCache = (inputTotal - cacheRead - cacheWrite).coerceAtLeast(0),
+            ),
+            outputTokens = usage.outputTokens.copy(
+                text = (outputTotal - reasoning).coerceAtLeast(0),
+            ),
+        )
+    }
 
-private fun alibabaErrorMessage(statusCode: Int, parsed: JsonElement?, raw: String): String {
-    val obj = parsed as? JsonObject
-    val detail = obj?.get("message")?.jsonPrimitive?.contentOrNull
-        ?: obj?.get("error")?.jsonObject?.get("message")?.jsonPrimitive?.contentOrNull
-        ?: raw.ifBlank { "request failed" }
-    return "Alibaba request failed ($statusCode): $detail"
+    fun alibabaVideoMode(modelId: String): AlibabaVideoMode = when {
+        modelId.contains("-i2v") -> AlibabaVideoMode.ImageToVideo
+        modelId.contains("-r2v") -> AlibabaVideoMode.ReferenceToVideo
+        else -> AlibabaVideoMode.TextToVideo
+    }
+
+    fun alibabaVideoInput(mode: AlibabaVideoMode, params: VideoGenerationParams, options: JsonObject): JsonObject = buildJsonObject {
+        params.prompt.takeIf { it.isNotBlank() }?.let { put("prompt", JsonPrimitive(it)) }
+        options["negativePrompt"]?.let { put("negative_prompt", it) }
+        options["audioUrl"]?.let { put("audio_url", it) }
+        if (mode == AlibabaVideoMode.ImageToVideo) {
+            params.image?.let { put("img_url", JsonPrimitive(it.url ?: it.base64)) }
+        }
+        if (mode == AlibabaVideoMode.ReferenceToVideo) {
+            options["referenceUrls"]?.let { put("reference_urls", it) }
+        }
+    }
+
+    fun alibabaVideoParameters(
+        mode: AlibabaVideoMode,
+        params: VideoGenerationParams,
+        options: JsonObject,
+        warnings: MutableList<CallWarning>,
+    ): JsonObject = buildJsonObject {
+        params.durationSeconds?.let { put("duration", JsonPrimitive(it)) }
+        params.seed?.let { put("seed", JsonPrimitive(it)) }
+        params.resolution?.let { resolution ->
+            if (mode == AlibabaVideoMode.ImageToVideo) {
+                put("resolution", JsonPrimitive(alibabaI2VResolution(resolution)))
+            } else {
+                put("size", JsonPrimitive(resolution.replace('x', '*')))
+            }
+        }
+        options["promptExtend"]?.let { put("prompt_extend", it) }
+        options["shotType"]?.let { put("shot_type", it) }
+        options["watermark"]?.let { put("watermark", it) }
+        options["audio"]?.let { put("audio", it) }
+        if (params.aspectRatio != null) warnings += CallWarning("unsupported", "Alibaba video models use explicit size/resolution dimensions. Use the resolution option or providerOptions.alibaba for size control.")
+        if (params.fps != null) warnings += CallWarning("unsupported", "Alibaba video models do not support custom FPS.")
+        if (params.n > 1) warnings += CallWarning("unsupported", "Alibaba video models only support generating 1 video per call.")
+        alibabaVideoPassthroughOptions(this, options)
+    }
+
+    private fun alibabaVideoPassthroughOptions(builder: kotlinx.serialization.json.JsonObjectBuilder, options: JsonObject) {
+        for ((key, value) in options) {
+            if (key !in alibabaVideoHandledOptions) builder.put(key, value)
+        }
+    }
+
+    private fun alibabaI2VResolution(value: String): String = when (value) {
+        "1280x720", "720x1280", "960x960", "1088x832", "832x1088" -> "720P"
+        "1920x1080", "1080x1920", "1440x1440", "1632x1248", "1248x1632" -> "1080P"
+        "832x480", "480x832", "624x624" -> "480P"
+        else -> value
+    }
+
+    fun alibabaVideoMetadata(taskId: String, videoUrl: String, value: JsonObject): JsonObject = buildJsonObject {
+        val output = value["output"]?.jsonObject ?: JsonObject(emptyMap())
+        put("taskId", JsonPrimitive(taskId))
+        put("videoUrl", JsonPrimitive(videoUrl))
+        output["actual_prompt"]?.jsonPrimitive?.contentOrNull?.let { put("actualPrompt", JsonPrimitive(it)) }
+        value["usage"]?.jsonObject?.let { usage ->
+            put("usage", buildJsonObject {
+                usage["duration"]?.let { put("duration", it) }
+                usage["output_video_duration"]?.let { put("outputVideoDuration", it) }
+                usage["SR"]?.let { put("resolution", it) }
+                usage["size"]?.let { put("size", it) }
+            })
+        }
+    }
+
+    suspend fun alibabaPostJson(
+        client: HttpClient,
+        url: String,
+        body: JsonObject,
+        headers: Map<String, String>,
+    ): HttpJsonResponse =
+        HttpTransport.requestJson(
+            client = client,
+            url = url,
+            method = HttpMethod.Post,
+            headers = headers,
+            body = body,
+            requestBodyValues = body,
+            errorMessage = ::alibabaErrorMessage,
+        )
+
+    suspend fun alibabaGetJson(
+        client: HttpClient,
+        url: String,
+        headers: Map<String, String>,
+    ): HttpJsonResponse =
+        HttpTransport.requestJson(
+            client = client,
+            url = url,
+            method = HttpMethod.Get,
+            headers = headers,
+            errorMessage = ::alibabaErrorMessage,
+        )
+
+    fun alibabaHeaders(settings: AlibabaProviderSettings, callHeaders: Map<String, String>): Map<String, String> =
+        ProviderHeaders.build(settings.headers, callHeaders, "ai-sdk/alibaba/$ALIBABA_VERSION") { base ->
+            settings.apiKey?.takeIf { it.isNotBlank() }?.let { base[HttpHeaders.Authorization] = "Bearer $it" }
+        }
+
+    fun alibabaOptions(providerOptions: ProviderOptions): JsonObject =
+        providerOptions.toMap()["alibaba"] as? JsonObject ?: JsonObject(emptyMap())
+
+    private fun alibabaErrorMessage(statusCode: Int, parsed: JsonElement?, raw: String): String {
+        val obj = parsed as? JsonObject
+        val detail = obj?.get("message")?.jsonPrimitive?.contentOrNull
+            ?: obj?.get("error")?.jsonObject?.get("message")?.jsonPrimitive?.contentOrNull
+            ?: raw.ifBlank { "request failed" }
+        return "Alibaba request failed ($statusCode): $detail"
+    }
 }

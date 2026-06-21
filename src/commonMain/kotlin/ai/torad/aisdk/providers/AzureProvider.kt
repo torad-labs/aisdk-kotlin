@@ -59,16 +59,16 @@ public class AzureOpenAIProvider(
         compatible.completionModel(deploymentId.value)
 
     public fun embedding(deploymentId: ModelId): EmbeddingModel =
-        AzureOpenAIEmbeddingModel(compatible.embeddingModel(deploymentId))
+        AzureOpenAIEmbeddingModel(compatible.embeddingModel(deploymentId.value))
 
     public fun image(deploymentId: ModelId): ImageModel =
-        compatible.imageModel(deploymentId)
+        compatible.imageModel(deploymentId.value)
 
     public fun transcription(deploymentId: ModelId): TranscriptionModel =
-        compatible.transcriptionModel(deploymentId)
+        compatible.transcriptionModel(deploymentId.value)
 
     public fun speech(deploymentId: ModelId): SpeechModel =
-        compatible.speechModel(deploymentId)
+        compatible.speechModel(deploymentId.value)
 
     override fun languageModel(modelId: String): LanguageModel = responses(modelId)
     override fun embeddingModel(modelId: String): EmbeddingModel = embedding(ModelId(modelId))

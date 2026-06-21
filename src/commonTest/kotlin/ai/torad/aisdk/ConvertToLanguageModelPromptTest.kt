@@ -16,9 +16,7 @@ class ConvertToLanguageModelPromptTest {
 
     @Test
     fun `a data URL image is decoded inline regardless of supportedUrls`() = runTest {
-        val converted = convertToLanguageModelPrompt(
-            listOf(imageMessage("data:image/png;base64,aW1n")),
-        )
+        val converted = PromptConversion.convertToLanguageModelPrompt(listOf(imageMessage("data:image/png;base64,aW1n")))
         val img = converted.single().content.single() as ContentPart.Image
         assertEquals("aW1n", img.base64)
         assertNull(img.url, "url cleared once inlined")
@@ -27,7 +25,7 @@ class ConvertToLanguageModelPromptTest {
     @Test
     fun `a supported remote URL passes through untouched`() = runTest {
         var downloaded = false
-        val converted = convertToLanguageModelPrompt(
+        val converted = PromptConversion.convertToLanguageModelPrompt(
             listOf(imageMessage("https://cdn.test/a.png")),
             supportedUrls = mapOf("image/*" to listOf("^https://cdn\\.test/")),
             download = {
@@ -42,7 +40,7 @@ class ConvertToLanguageModelPromptTest {
 
     @Test
     fun `an unsupported remote URL is downloaded and inlined`() = runTest {
-        val converted = convertToLanguageModelPrompt(
+        val converted = PromptConversion.convertToLanguageModelPrompt(
             listOf(imageMessage("https://other.test/a", mediaType = "")),
             supportedUrls = mapOf("image/*" to listOf("^https://cdn\\.test/")),
             download = { DownloadedAsset("ZGF0YQ==", "image/jpeg") },
@@ -64,7 +62,7 @@ class ConvertToLanguageModelPromptTest {
             // no Tool result before the next user turn
             ModelMessage(MessageRole.User, listOf(ContentPart.Text("again"))),
         )
-        val e = assertFailsWith<MissingToolResultsError> { convertToLanguageModelPrompt(messages) }
+        val e = assertFailsWith<MissingToolResultsError> { PromptConversion.convertToLanguageModelPrompt(messages) }
         assertEquals(listOf("call_1"), e.toolCallIds)
     }
 
@@ -81,7 +79,7 @@ class ConvertToLanguageModelPromptTest {
             ),
         )
         // does not throw
-        assertEquals(2, convertToLanguageModelPrompt(messages).size)
+        assertEquals(2, PromptConversion.convertToLanguageModelPrompt(messages).size)
     }
 
     @Test
@@ -99,7 +97,7 @@ class ConvertToLanguageModelPromptTest {
             ),
             ModelMessage(MessageRole.User, listOf(ContentPart.Text("ok go"))),
         )
-        assertEquals(3, convertToLanguageModelPrompt(messages).size)
+        assertEquals(3, PromptConversion.convertToLanguageModelPrompt(messages).size)
     }
 
     @Test
@@ -109,7 +107,7 @@ class ConvertToLanguageModelPromptTest {
         val messages = listOf(
             ModelMessage(MessageRole.User, listOf(ContentPart.Image(mediaType = "image/jpeg", base64 = pngBase64))),
         )
-        val img = convertToLanguageModelPrompt(messages).single().content.single() as ContentPart.Image
+        val img = PromptConversion.convertToLanguageModelPrompt(messages).single().content.single() as ContentPart.Image
         assertEquals("image/png", img.mediaType, "media type sniffed from bytes overrides the wrong label")
     }
 
@@ -132,7 +130,7 @@ class ConvertToLanguageModelPromptTest {
         val messages = listOf(
             ModelMessage(MessageRole.Tool, listOf(ContentPart.ToolResult("c1", "t", output))),
         )
-        val converted = convertToLanguageModelPrompt(
+        val converted = PromptConversion.convertToLanguageModelPrompt(
             messages,
             download = { DownloadedAsset("Ym9keQ==", "image/png") },
         )
@@ -151,7 +149,7 @@ class ConvertToLanguageModelPromptTest {
         val messages = listOf(
             ModelMessage(MessageRole.User, listOf(ContentPart.File(mediaType = "text/plain", base64 = bmBase64))),
         )
-        val file = convertToLanguageModelPrompt(messages).single().content.single() as ContentPart.File
+        val file = PromptConversion.convertToLanguageModelPrompt(messages).single().content.single() as ContentPart.File
         assertEquals("text/plain", file.mediaType, "File media type must NOT be overridden by byte-sniffing")
     }
 
@@ -159,7 +157,7 @@ class ConvertToLanguageModelPromptTest {
     fun `a non-base64 data URL is left untouched rather than crashing`() = runTest {
         val messages = listOf(imageMessage("data:text/plain,Hello", mediaType = "text/plain"))
         // splitDataUrl would throw on this; the resolver must leave it for the provider.
-        val img = convertToLanguageModelPrompt(messages).single().content.single() as ContentPart.Image
+        val img = PromptConversion.convertToLanguageModelPrompt(messages).single().content.single() as ContentPart.Image
         assertEquals("data:text/plain,Hello", img.url, "non-base64 data URL preserved, not crashed")
     }
 }

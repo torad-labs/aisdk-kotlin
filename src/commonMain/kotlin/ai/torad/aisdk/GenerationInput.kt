@@ -27,13 +27,13 @@ public sealed class GenerationInput {
     }
 
     internal fun toMessages(system: String?): List<ModelMessage> = buildList {
-        if (system != null) add(systemMessage(system))
+        if (system != null) add(SystemMessage(system))
         when (this@GenerationInput) {
-            is Prompt -> add(userMessage(text))
+            is Prompt -> add(UserMessage(text))
             is Messages -> addAll(history.values)
             is MessagesWithPrompt -> {
                 addAll(history.values)
-                add(userMessage(prompt))
+                add(UserMessage(prompt))
             }
         }
     }

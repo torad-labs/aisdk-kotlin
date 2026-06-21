@@ -2,11 +2,11 @@ package ai.torad.aisdk
 import ai.torad.aisdk.providers.OpenAIProviderSettings
 import ai.torad.aisdk.providers.VERSION
 import ai.torad.aisdk.providers.OpenAI
-import ai.torad.aisdk.providers.openAICodeInterpreter
-import ai.torad.aisdk.providers.openAIFileSearch
-import ai.torad.aisdk.providers.openAIImageGeneration
-import ai.torad.aisdk.providers.openAIMcp
-import ai.torad.aisdk.providers.openAIWebSearch
+import ai.torad.aisdk.providers.OpenAICodeInterpreter
+import ai.torad.aisdk.providers.OpenAIFileSearch
+import ai.torad.aisdk.providers.OpenAIImageGeneration
+import ai.torad.aisdk.providers.OpenAIMcp
+import ai.torad.aisdk.providers.OpenAIWebSearch
 
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.mock.MockEngine
@@ -277,7 +277,7 @@ class OpenAIProviderTest {
 
         provider.responses("gpt-5").generate(
             LanguageModelCallParams(
-                messages = listOf(userMessage("hi")),
+                messages = listOf(UserMessage("hi")),
                 tools = listOf(
                     LanguageModelTool("lookup", "Lookup.", """{"type":"object"}"""),
                     LanguageModelTool("code_interpreter", "Run code.", """{"type":"object"}""", providerExecuted = true),
@@ -328,8 +328,8 @@ class OpenAIProviderTest {
             },
         )
         val provider = OpenAI(client, OpenAIProviderSettings(apiKey = "test-api-key"))
-        val tools = toolSetOf<Any?>(
-            openAIFileSearch(
+        val tools = ToolSet<Any?>(
+            OpenAIFileSearch(
                 buildJsonObject {
                     put("vectorStoreIds", JsonArray(listOf(JsonPrimitive("vs_1"))))
                     put("maxNumResults", JsonPrimitive(3))
@@ -341,19 +341,19 @@ class OpenAIProviderTest {
                     })
                 },
             ),
-            openAICodeInterpreter(
+            OpenAICodeInterpreter(
                 buildJsonObject {
                     put("container", buildJsonObject { put("fileIds", JsonArray(listOf(JsonPrimitive("file_1")))) })
                 },
             ),
-            openAIWebSearch(
+            OpenAIWebSearch(
                 buildJsonObject {
                     put("externalWebAccess", JsonPrimitive(false))
                     put("filters", buildJsonObject { put("allowedDomains", JsonArray(listOf(JsonPrimitive("example.com")))) })
                     put("searchContextSize", JsonPrimitive("high"))
                 },
             ),
-            openAIImageGeneration(
+            OpenAIImageGeneration(
                 buildJsonObject {
                     put("inputFidelity", JsonPrimitive("high"))
                     put("inputImageMask", buildJsonObject { put("fileId", JsonPrimitive("file_mask")) })
@@ -361,7 +361,7 @@ class OpenAIProviderTest {
                     put("outputFormat", JsonPrimitive("webp"))
                 },
             ),
-            openAIMcp(
+            OpenAIMcp(
                 buildJsonObject {
                     put("serverLabel", JsonPrimitive("docs"))
                     put("allowedTools", buildJsonObject {
@@ -378,7 +378,7 @@ class OpenAIProviderTest {
 
         provider.responses("gpt-5").generate(
             LanguageModelCallParams(
-                messages = listOf(userMessage("hi")),
+                messages = listOf(UserMessage("hi")),
                 tools = tools.descriptors,
             ),
         )
@@ -475,7 +475,7 @@ class OpenAIProviderTest {
         )
         val provider = OpenAI(client, OpenAIProviderSettings(apiKey = "test-api-key"))
 
-        val result = provider.responses("gpt-4o").generate(LanguageModelCallParams(messages = listOf(userMessage("hi"))))
+        val result = provider.responses("gpt-4o").generate(LanguageModelCallParams(messages = listOf(UserMessage("hi"))))
 
         val topLevel = result.providerMetadata.toMap()["openai"]?.jsonObject ?: error("missing openai metadata")
         assertEquals("resp_1", topLevel["responseId"]?.jsonPrimitive?.content)

@@ -53,7 +53,7 @@ public class AmazonBedrockProvider(
     override val providerId: String = "amazon-bedrock"
     public val tools: AnthropicTools = anthropicTools
 
-    public operator fun invoke(modelId: ModelId): LanguageModel = languageModel(modelId)
+    public operator fun invoke(modelId: ModelId): LanguageModel = languageModel(modelId.value)
 
     override fun languageModel(modelId: String): LanguageModel =
         BedrockChatLanguageModel(client, settings, modelId, "amazon-bedrock")
@@ -90,7 +90,7 @@ public class BedrockAnthropicProvider(
     override val providerId: String = "bedrock.anthropic"
     public val tools: AnthropicTools = anthropicTools
 
-    public operator fun invoke(modelId: ModelId): LanguageModel = languageModel(modelId)
+    public operator fun invoke(modelId: ModelId): LanguageModel = languageModel(modelId.value)
 
     override fun languageModel(modelId: String): LanguageModel =
         BedrockChatLanguageModel(client, settings, modelId, "bedrock.anthropic.messages")
@@ -390,5 +390,7 @@ private class BedrockMantleChatLanguageModel(
     }
 }
 
-private fun appendUserAgent(existing: String?, suffix: String): String =
-    existing?.takeIf { it.isNotBlank() }?.let { "$it $suffix" } ?: suffix
+internal object BedrockUserAgent {
+    fun appendUserAgent(existing: String?, suffix: String): String =
+        existing?.takeIf { it.isNotBlank() }?.let { "$it $suffix" } ?: suffix
+}

@@ -24,7 +24,7 @@ import kotlinx.serialization.json.JsonObject
 class BlackForestLabsProviderTest {
     @Test
     fun `image model submits polls downloads image and records metadata`() = runTest {
-        val fixture = createTestServer(
+        val fixture = TestServer.createTestServer(
             mutableMapOf(
                 "https://api.bfl.ai/v1/flux-pro-1.1" to UrlHandler(
                     UrlResponse.JsonValue(
@@ -122,7 +122,7 @@ class BlackForestLabsProviderTest {
 
     @Test
     fun `fill model uses image fields and aspect ratio overrides size`() = runTest {
-        val fixture = createTestServer(
+        val fixture = TestServer.createTestServer(
             mutableMapOf(
                 "https://api.bfl.ai/v1/flux-pro-1.0-fill" to UrlHandler(
                     UrlResponse.JsonValue(Json.parseToJsonElement("""{"id":"req1","polling_url":"https://api.bfl.ai/v1/poll?id=req1"}""")),
@@ -168,7 +168,7 @@ class BlackForestLabsProviderTest {
 
     @Test
     fun `poll failure and input image limit fail explicitly`() = runTest {
-        val fixture = createTestServer(
+        val fixture = TestServer.createTestServer(
             mutableMapOf(
                 "https://api.bfl.ai/v1/flux-pro-1.1" to UrlHandler(
                     UrlResponse.JsonValue(Json.parseToJsonElement("""{"id":"req1","polling_url":"https://api.bfl.ai/v1/poll"}""")),
@@ -208,7 +208,7 @@ class BlackForestLabsProviderTest {
 
     @Test
     fun `default provider and unsupported model families fail explicitly`() {
-        val fixture = createTestServer(mutableMapOf())
+        val fixture = TestServer.createTestServer(mutableMapOf())
         val provider = BlackForestLabs(fixture.httpClient(), BlackForestLabsProviderSettings(apiKey = "key"))
 
         assertFailsWith<NoSuchModelError> { provider.languageModel("model") }

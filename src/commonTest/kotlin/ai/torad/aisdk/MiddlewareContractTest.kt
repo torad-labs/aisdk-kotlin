@@ -1,6 +1,6 @@
 package ai.torad.aisdk
 
-import ai.torad.aisdk.middleware.defaultSettingsMiddleware
+import ai.torad.aisdk.middleware.DefaultSettingsMiddleware
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.test.runTest
@@ -29,8 +29,8 @@ class MiddlewareContractTest {
                 model: LanguageModel,
             ): LanguageModelCallParams = params.copy(temperature = 0.42f)
         }
-        val wrapped = wrapLanguageModel(inner, listOf(mw))
-        wrapped.generate(LanguageModelCallParams(messages = listOf(userMessage("hi"))))
+        val wrapped = WrapLanguageModel(inner, listOf(mw))
+        wrapped.generate(LanguageModelCallParams(messages = listOf(UserMessage("hi"))))
         assertEquals(0.42f, inner.seen?.temperature, "transformParams applied before generate")
     }
 
@@ -41,7 +41,7 @@ class MiddlewareContractTest {
             override fun overrideModelId(model: LanguageModel) = "outer/model"
             override fun overrideProvider(model: LanguageModel) = "outer"
         }
-        val wrapped = wrapLanguageModel(inner, listOf(mw))
+        val wrapped = WrapLanguageModel(inner, listOf(mw))
         assertEquals("outer/model", wrapped.modelId)
         assertEquals("outer", wrapped.provider)
     }
@@ -50,10 +50,10 @@ class MiddlewareContractTest {
     fun `defaultSettingsMiddleware fills tools toolChoice and headers via transformParams`() = runTest {
         val inner = CapturingModel()
         val tool = LanguageModelTool(name = "t", description = "d", parametersSchemaJson = "{}")
-        val wrapped = wrapLanguageModel(
+        val wrapped = WrapLanguageModel(
             inner,
             listOf(
-                defaultSettingsMiddleware(
+                DefaultSettingsMiddleware(
                     tools = listOf(tool),
                     toolChoice = ToolChoice.Required,
                     headers = mapOf("x-default" to "1"),
@@ -61,7 +61,7 @@ class MiddlewareContractTest {
                 ),
             ),
         )
-        wrapped.generate(LanguageModelCallParams(messages = listOf(userMessage("hi"))))
+        wrapped.generate(LanguageModelCallParams(messages = listOf(UserMessage("hi"))))
         assertEquals(listOf("t"), inner.seen?.tools?.map { it.name })
         assertEquals(ToolChoice.Required, inner.seen?.toolChoice)
         assertEquals("1", inner.seen?.headers?.get("x-default"))

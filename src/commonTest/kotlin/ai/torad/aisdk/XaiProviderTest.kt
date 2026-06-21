@@ -27,7 +27,7 @@ import kotlinx.serialization.json.JsonObject
 class XaiProviderTest {
     @Test
     fun `chat and responses route through xAI endpoints with headers options and citations`() = runTest {
-        val fixture = createTestServer(
+        val fixture = TestServer.createTestServer(
             mutableMapOf(
                 "https://api.x.ai/v1/chat/completions" to UrlHandler(
                     UrlResponse.JsonValue(
@@ -77,7 +77,7 @@ class XaiProviderTest {
 
         val chat = provider.chat(ModelId("grok-3")).generate(
             LanguageModelCallParams(
-                messages = listOf(userMessage("Hello")),
+                messages = listOf(UserMessage("Hello")),
                 maxOutputTokens = 128,
                 providerOptions = ProviderOptions.Raw(JsonObject(mapOf(
                     "xai" to buildJsonObject {
@@ -109,7 +109,7 @@ class XaiProviderTest {
         )
         val responses = provider.responses(ModelId("grok-4")).generate(
             LanguageModelCallParams(
-                messages = listOf(userMessage("Hi")),
+                messages = listOf(UserMessage("Hi")),
                 providerOptions = ProviderOptions.Raw(JsonObject(mapOf("xai" to buildJsonObject { put("reasoningEffort", JsonPrimitive("low")) }))),
             ),
         )
@@ -141,7 +141,7 @@ class XaiProviderTest {
     @Test
     @Suppress("LongMethod")
     fun `chat body drops stop and strips additionalProperties and maps xHandles alias`() = runTest {
-        val fixture = createTestServer(
+        val fixture = TestServer.createTestServer(
             mutableMapOf(
                 "https://api.x.ai/v1/chat/completions" to UrlHandler(
                     UrlResponse.JsonValue(
@@ -158,7 +158,7 @@ class XaiProviderTest {
         val provider = Xai(fixture.httpClient(), XaiProviderSettings(apiKey = "key"))
         provider.chat(ModelId("grok-3")).generate(
             LanguageModelCallParams(
-                messages = listOf(userMessage("go")),
+                messages = listOf(UserMessage("go")),
                 stopSequences = listOf("END"),
                 tools = listOf(
                     LanguageModelTool(
@@ -206,7 +206,7 @@ class XaiProviderTest {
 
     @Test
     fun `chat throws APICallError when xAI returns 200 error body`() = runTest {
-        val fixture = createTestServer(
+        val fixture = TestServer.createTestServer(
             mutableMapOf(
                 "https://api.x.ai/v1/chat/completions" to UrlHandler(
                     UrlResponse.JsonValue(
@@ -226,7 +226,7 @@ class XaiProviderTest {
         val provider = Xai(fixture.httpClient(), XaiProviderSettings(apiKey = "key"))
 
         val error = assertFailsWith<APICallError> {
-            provider.chat(ModelId("grok-3")).generate(LanguageModelCallParams(messages = listOf(userMessage("hi"))))
+            provider.chat(ModelId("grok-3")).generate(LanguageModelCallParams(messages = listOf(UserMessage("hi"))))
         }
 
         assertEquals("Timed out waiting for first token", error.message)
@@ -237,7 +237,7 @@ class XaiProviderTest {
 
     @Test
     fun `image model supports generation edits options metadata and warnings`() = runTest {
-        val fixture = createTestServer(
+        val fixture = TestServer.createTestServer(
             mutableMapOf(
                 "https://xai.test/v1/images/generations" to UrlHandler(
                     UrlResponse.JsonValue(
@@ -310,7 +310,7 @@ class XaiProviderTest {
 
     @Test
     fun `video model submits polls maps modes warnings and metadata`() = runTest {
-        val fixture = createTestServer(
+        val fixture = TestServer.createTestServer(
             mutableMapOf(
                 "https://xai.test/v1/videos/generations" to UrlHandler(
                     UrlResponse.JsonValue(Json.parseToJsonElement("""{"request_id":"req-1"}""")),
@@ -393,7 +393,7 @@ class XaiProviderTest {
     @Test
     fun `tools unsupported embeddings and default singleton match provider surface`() {
         val provider = Xai(
-            createTestServer(mutableMapOf()).httpClient(),
+            TestServer.createTestServer(mutableMapOf()).httpClient(),
             XaiProviderSettings(apiKey = "key"),
         )
 

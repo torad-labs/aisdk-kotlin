@@ -458,4 +458,17 @@ private val GOOGLE_SCHEMA_PASSTHROUGH = listOf(
     fun JsonObjectBuilder.putJsonObjectFields(fields: JsonObject, excluded: Set<String> = emptySet()) {
         fields.forEach { (key, value) -> if (value !is JsonNull && key !in excluded) put(key, value) }
     }
+
+    fun providerTool(
+        name: String,
+        id: String,
+        description: String,
+    ): Tool<JsonElement, JsonElement, Any?> =
+        ProviderExecutedTool(
+            name = name,
+            description = description,
+            inputSerializer = JsonElement.serializer(),
+            outputSerializer = JsonElement.serializer(),
+            metadata = mapOf("providerToolId" to JsonPrimitive(id)),
+        )
 }

@@ -24,7 +24,7 @@ import kotlinx.serialization.json.JsonObject
 class FalProviderTest {
     @Test
     fun `image model maps request options downloads images and exposes metadata`() = runTest {
-        val fixture = createTestServer(
+        val fixture = TestServer.createTestServer(
             mutableMapOf(
                 "https://fal.test/fal-ai/qwen-image" to UrlHandler(
                     UrlResponse.JsonValue(
@@ -127,7 +127,7 @@ class FalProviderTest {
 
     @Test
     fun `speech model posts text options downloads audio and warns on unsupported settings`() = runTest {
-        val fixture = createTestServer(
+        val fixture = TestServer.createTestServer(
             mutableMapOf(
                 "https://fal.run/fal-ai/minimax/speech-02-hd" to UrlHandler(
                     UrlResponse.JsonValue(
@@ -191,7 +191,7 @@ class FalProviderTest {
 
     @Test
     fun `transcription model queues audio polls result and maps chunks`() = runTest {
-        val fixture = createTestServer(
+        val fixture = TestServer.createTestServer(
             mutableMapOf(
                 "https://queue.fal.run/fal-ai/wizper" to UrlHandler(
                     UrlResponse.JsonValue(
@@ -259,7 +259,7 @@ class FalProviderTest {
 
     @Test
     fun `video model queues normalized model id polls result and returns url video`() = runTest {
-        val fixture = createTestServer(
+        val fixture = TestServer.createTestServer(
             mutableMapOf(
                 "https://queue.fal.run/fal-ai/luma-dream-machine" to UrlHandler(
                     UrlResponse.JsonValue(
@@ -353,7 +353,7 @@ class FalProviderTest {
 
     @Test
     fun `unsupported language and embedding models throw no such model errors`() {
-        val provider = Fal(createTestServer(mutableMapOf()).httpClient())
+        val provider = Fal(TestServer.createTestServer(mutableMapOf()).httpClient())
 
         assertFailsWith<NoSuchModelError> { provider.languageModel("model") }
         assertFailsWith<NoSuchModelError> { provider.embeddingModel("model") }

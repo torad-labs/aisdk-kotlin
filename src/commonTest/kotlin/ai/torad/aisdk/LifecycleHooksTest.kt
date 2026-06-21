@@ -1,9 +1,9 @@
 package ai.torad.aisdk
 
 import ai.torad.aisdk.providers.MockLanguageModel
-import ai.torad.aisdk.providers.mockLanguageModelToolThenText
-import ai.torad.aisdk.providers.mockLanguageModelTextOnly
-import ai.torad.aisdk.providers.mockToolInput
+import ai.torad.aisdk.providers.MockLanguageModelToolThenText
+import ai.torad.aisdk.providers.MockLanguageModelTextOnly
+import ai.torad.aisdk.providers.MockToolInput
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
@@ -26,9 +26,9 @@ class LifecycleHooksTest {
     fun `hooks_fire_in_order_onStart_onStepFinish_onFinish`() = runTest {
         val seq = mutableListOf<String>()
         val agent = TestToolLoopAgent<Unit, String>(
-            model = mockLanguageModelTextOnly("answer"),
+            model = MockLanguageModelTextOnly("answer"),
             instructions = "x",
-            tools = toolSetOf(),
+            tools = ToolSet(),
             onStart = { seq.add("start") },
             onStepFinish = { seq.add("step:$stepNumber") },
             onFinish = { seq.add("finish") },
@@ -41,9 +41,9 @@ class LifecycleHooksTest {
     fun `hook_failure_does_not_crash_the_loop`() = runTest {
         val errorsObserved = mutableListOf<OnErrorEvent.ErrorSource>()
         val agent = TestToolLoopAgent<Unit, String>(
-            model = mockLanguageModelTextOnly("ok"),
+            model = MockLanguageModelTextOnly("ok"),
             instructions = "x",
-            tools = toolSetOf(),
+            tools = ToolSet(),
             onStart = { error("boom from hook") },
             onError = { errorsObserved.add(source) },
         )
@@ -89,13 +89,13 @@ class LifecycleHooksTest {
             outputSerializer = serializer(),
         ) { _ -> "pong" }
         val agent = TestToolLoopAgent<Unit, String>(
-            model = mockLanguageModelToolThenText(
+            model = MockLanguageModelToolThenText(
                 toolName = "ping",
-                toolInput = mockToolInput("unused" to ""),
+                toolInput = MockToolInput("unused" to ""),
                 finalText = "done",
             ),
             instructions = "x",
-            tools = toolSetOf(pingTool),
+            tools = ToolSet(pingTool),
             experimental_onToolCallFinish = {
                 observed = outcome
             },

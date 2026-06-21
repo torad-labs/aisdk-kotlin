@@ -59,7 +59,7 @@ internal abstract class OpenAICompatibleHttpModel(
         headers: Map<String, String> = emptyMap(),
         parseJson: Boolean = true,
     ): HttpJsonResponse =
-        requestJson(
+        HttpTransport.requestJson(
             client = client,
             url = url(path),
             method = HttpMethod.Post,
@@ -82,16 +82,14 @@ internal abstract class OpenAICompatibleHttpModel(
         onResponse: suspend (Map<String, String>) -> Unit = {},
     ): Flow<String> = flow {
         emitAll(
-            streamSse(
-                client = client,
-                url = url(path),
-                method = HttpMethod.Post,
-                headers = commonHeaders(headers),
-                body = body,
-                json = json,
-                errorMessage = OpenAICompatibleWire::openAICompatibleErrorMessage,
-                onResponse = onResponse,
-            ),
+            HttpTransport.streamSse(client = client,
+            url = url(path),
+            method = HttpMethod.Post,
+            headers = commonHeaders(headers),
+            body = body,
+            json = json,
+            errorMessage = OpenAICompatibleWire::openAICompatibleErrorMessage,
+            onResponse = onResponse,),
         )
     }
 
@@ -105,11 +103,11 @@ internal abstract class OpenAICompatibleHttpModel(
             commonHeaders(headers).forEach { (name, value) -> header(name, value) }
             setBody(body)
         }
-        return response.toJsonResponse(
+        return with(HttpTransport) { response.toJsonResponse(
             url = url(path),
             json = json,
             errorMessage = OpenAICompatibleWire::openAICompatibleErrorMessage,
-        )
+        ) }
     }
 
     protected suspend fun postBytes(
@@ -123,12 +121,12 @@ internal abstract class OpenAICompatibleHttpModel(
             commonHeaders(headers).forEach { (name, value) -> header(name, value) }
             setBody(json.encodeToString(JsonElement.serializer(), body))
         }
-        val responseHeaders = response.flattenedHeaders()
+        val responseHeaders = with(HttpTransport) { response.flattenedHeaders() }
         val bytes = response.bodyAsBytes()
         if (response.status.value !in 200..299) {
             val raw = bytes.decodeToString()
             val parsed = runCatching { json.parseToJsonElement(raw) }.getOrNull()
-            throw apiCallError(
+            throw ApiCallError(
                 url = url(path),
                 statusCode = response.status.value,
                 rawBody = raw,

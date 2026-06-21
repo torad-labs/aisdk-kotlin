@@ -123,13 +123,14 @@ public class StructuredObject<RESULT, INPUT>(
             options.transport.submit(request).collect { chunk ->
                 controller.signal.throwIfAborted()
                 accumulated.append(chunk)
-                val parsed = parsePartialJson(accumulated.toString()).value ?: return@collect
+                val parsed = PartialJson.parsePartialJson(accumulated.toString()).value ?: return@collect
                 if (!JsonOps.isDeepEqual(latestRaw, parsed)) {
                     latestRaw = parsed
                     var validationError: Throwable? = null
-                    when (val validated = safeValidateTypes(parsed, options.schema)) {
-                        is ValidationResult.Success -> {
-                            currentValue = validated.value
+                    when (val validated = Schemas.safeValidateTypes(parsed, options.schema)) {
+                        is ValidationResult.Success<*> -> {
+                            @Suppress("UNCHECKED_CAST")
+                            currentValue = validated.value as RESULT?
                         }
                         is ValidationResult.Failure -> {
                             validationError = validated.error
@@ -142,9 +143,10 @@ public class StructuredObject<RESULT, INPUT>(
             val finalError = if (finalRaw == null) {
                 TypeValidationError.wrap(null, IllegalArgumentException("Structured object response did not contain JSON"))
             } else {
-                when (val validated = safeValidateTypes(finalRaw, options.schema)) {
-                    is ValidationResult.Success -> {
-                        currentValue = validated.value
+                when (val validated = Schemas.safeValidateTypes(finalRaw, options.schema)) {
+                    is ValidationResult.Success<*> -> {
+                        @Suppress("UNCHECKED_CAST")
+                        currentValue = validated.value as RESULT?
                         null
                     }
                     is ValidationResult.Failure -> validated.error

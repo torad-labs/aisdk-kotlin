@@ -70,9 +70,9 @@ public class ProdiaProvider(
 ) : Provider {
     override val providerId: String = "prodia"
 
-    public operator fun invoke(modelId: ModelId): LanguageModel = languageModel(modelId)
-    public fun image(modelId: ModelId): ImageModel = imageModel(modelId)
-    public fun video(modelId: ModelId): VideoModel = videoModel(modelId)
+    public operator fun invoke(modelId: ModelId): LanguageModel = languageModel(modelId.value)
+    public fun image(modelId: ModelId): ImageModel = imageModel(modelId.value)
+    public fun video(modelId: ModelId): VideoModel = videoModel(modelId.value)
     public fun textEmbeddingModel(modelId: String): Nothing = throw NoSuchModelError(providerId, "embeddingModel", modelId)
 
     override fun languageModel(modelId: String): LanguageModel = ProdiaLanguageModel(client, settings, modelId)
@@ -95,10 +95,10 @@ private class ProdiaLanguageModel(
     override val provider: String = "prodia.language"
 
     override suspend fun generate(params: LanguageModelCallParams): LanguageModelResult {
-        val warnings = prodiaLanguageWarnings(params)
-        val options = prodiaOptions(params.providerOptions)
-        val prompt = prodiaLanguagePrompt(params.messages)
-        val image = prodiaLanguageImage(params.messages)
+        val warnings = ProdiaWire.prodiaLanguageWarnings(params)
+        val options = ProdiaWire.prodiaOptions(params.providerOptions)
+        val prompt = ProdiaWire.prodiaLanguagePrompt(params.messages)
+        val image = ProdiaWire.prodiaLanguageImage(params.messages)
         val body = buildJsonObject {
             put("type", JsonPrimitive(modelId))
             put("config", buildJsonObject {
@@ -107,13 +107,13 @@ private class ProdiaLanguageModel(
                 options["aspectRatio"]?.let { put("aspect_ratio", it) }
             })
         }
-        val response = prodiaPostMultipart(
+        val response = ProdiaWire.prodiaPostMultipart(
             client = client,
             url = "${settings.baseURL.trimEnd('/')}/job?price=true",
             body = body,
             input = image,
             accept = "multipart/form-data",
-            headers = prodiaHeaders(settings, params.headers),
+            headers = ProdiaWire.prodiaHeaders(settings, params.headers),
         )
         val content = buildList {
             response.text?.takeIf { it.isNotEmpty() }?.let { add(ContentPart.Text(it)) }
@@ -129,7 +129,7 @@ private class ProdiaLanguageModel(
             content = content,
             request = LanguageModelRequestMetadata(body),
             response = LanguageModelResponseMetadata(modelId = modelId, headers = response.headers),
-            providerMetadata = ProviderMetadata.Raw(JsonObject(mapOf("prodia" to prodiaJobMetadata(response.job)))),
+            providerMetadata = ProviderMetadata.Raw(JsonObject(mapOf("prodia" to ProdiaWire.prodiaJobMetadata(response.job)))),
         )
     }
 
@@ -158,10 +158,10 @@ private class ProdiaImageModel(
     override val maxImagesPerCall: Int = 1
 
     override suspend fun generate(params: ImageGenerationParams): ImageModelResult {
-        val options = prodiaOptions(params.providerOptions)
+        val options = ProdiaWire.prodiaOptions(params.providerOptions)
         val warnings = mutableListOf<CallWarning>()
         if (params.n != 1) warnings += CallWarning("unsupported", "Prodia image models support one image per call; n was ignored.")
-        val (sizeWidth, sizeHeight) = prodiaParseSize(params.size, warnings)
+        val (sizeWidth, sizeHeight) = ProdiaWire.prodiaParseSize(params.size, warnings)
         val body = buildJsonObject {
             put("type", JsonPrimitive(modelId))
             put("config", buildJsonObject {
@@ -175,12 +175,12 @@ private class ProdiaImageModel(
                 options["progressive"]?.let { put("progressive", it) }
             })
         }
-        val response = prodiaPostJsonForMultipart(
+        val response = ProdiaWire.prodiaPostJsonForMultipart(
             client = client,
             url = "${settings.baseURL.trimEnd('/')}/job?price=true",
             body = body,
             accept = "multipart/form-data; image/png",
-            headers = prodiaHeaders(settings, params.headers),
+            headers = ProdiaWire.prodiaHeaders(settings, params.headers),
         )
         val image = response.files.firstOrNull { it.mediaType.startsWith("image/") }
             ?: throw NoImageGeneratedError("Prodia multipart response missing output image")
@@ -190,7 +190,7 @@ private class ProdiaImageModel(
             response = LanguageModelResponseMetadata(modelId = modelId, headers = response.headers),
             providerMetadata = ProviderMetadata.Raw(JsonObject(mapOf(
                 "prodia" to buildJsonObject {
-                    put("images", JsonArray(listOf(prodiaJobMetadata(response.job))))
+                    put("images", JsonArray(listOf(ProdiaWire.prodiaJobMetadata(response.job))))
                 },
             ))),
         )
@@ -206,7 +206,7 @@ private class ProdiaVideoModel(
     override val maxVideosPerCall: Int = 1
 
     override suspend fun generate(params: VideoGenerationParams): VideoModelResult {
-        val options = prodiaOptions(params.providerOptions)
+        val options = ProdiaWire.prodiaOptions(params.providerOptions)
         val body = buildJsonObject {
             put("type", JsonPrimitive(modelId))
             put("config", buildJsonObject {
@@ -215,23 +215,23 @@ private class ProdiaVideoModel(
                 (options["resolution"] ?: params.resolution?.let(::JsonPrimitive))?.let { put("resolution", it) }
             })
         }
-        val input = params.image?.let { prodiaInputFile(client, it) }
+        val input = params.image?.let { ProdiaWire.prodiaInputFile(client, it) }
         val response = if (input == null) {
-            prodiaPostJsonForMultipart(
+            ProdiaWire.prodiaPostJsonForMultipart(
                 client = client,
                 url = "${settings.baseURL.trimEnd('/')}/job?price=true",
                 body = body,
                 accept = "multipart/form-data; video/mp4",
-                headers = prodiaHeaders(settings, params.headers),
+                headers = ProdiaWire.prodiaHeaders(settings, params.headers),
             )
         } else {
-            prodiaPostMultipart(
+            ProdiaWire.prodiaPostMultipart(
                 client = client,
                 url = "${settings.baseURL.trimEnd('/')}/job?price=true",
                 body = body,
                 input = input,
                 accept = "multipart/form-data; video/mp4",
-                headers = prodiaHeaders(settings, params.headers),
+                headers = ProdiaWire.prodiaHeaders(settings, params.headers),
             )
         }
         val video = response.files.firstOrNull { it.mediaType.startsWith("video/") }
@@ -241,7 +241,7 @@ private class ProdiaVideoModel(
             response = LanguageModelResponseMetadata(modelId = modelId, headers = response.headers),
             providerMetadata = ProviderMetadata.Raw(JsonObject(mapOf(
                 "prodia" to buildJsonObject {
-                    put("videos", JsonArray(listOf(prodiaJobMetadata(response.job))))
+                    put("videos", JsonArray(listOf(ProdiaWire.prodiaJobMetadata(response.job))))
                 },
             ))),
         )
@@ -266,270 +266,272 @@ private data class ProdiaMultipartResult(
     val headers: Map<String, String>,
 )
 
-private suspend fun prodiaInputFile(client: HttpClient, file: GeneratedFile): ProdiaInputFile {
-    val bytes = file.url?.takeIf { it.isNotBlank() }
-        ?.let { client.request(it).bodyAsBytes() }
-        ?: Base64Codec.decode(file.base64)
-    return ProdiaInputFile(file.mediaType, bytes, file.filename)
-}
+private object ProdiaWire {
 
-
-private fun prodiaLanguageWarnings(params: LanguageModelCallParams): List<CallWarning> = buildList {
-    if (params.temperature != null) add(CallWarning("unsupported", "Prodia language models do not support temperature."))
-    if (params.topP != null) add(CallWarning("unsupported", "Prodia language models do not support topP."))
-    if (params.topK != null) add(CallWarning("unsupported", "Prodia language models do not support topK."))
-    if (params.maxOutputTokens != null) add(CallWarning("unsupported", "Prodia language models do not support maxOutputTokens."))
-    if (params.stopSequences.isNotEmpty()) add(CallWarning("unsupported", "Prodia language models do not support stopSequences."))
-    if (params.presencePenalty != null) add(CallWarning("unsupported", "Prodia language models do not support presencePenalty."))
-    if (params.frequencyPenalty != null) add(CallWarning("unsupported", "Prodia language models do not support frequencyPenalty."))
-    if (params.tools.isNotEmpty()) add(CallWarning("unsupported", "Prodia language models do not support tools."))
-    if (params.toolChoice != ToolChoice.Auto) add(CallWarning("unsupported", "Prodia language models do not support toolChoice."))
-    if (params.responseFormat != ResponseFormat.Text) add(CallWarning("unsupported", "Prodia language models do not support responseFormat."))
-}
-
-private fun prodiaLanguagePrompt(messages: List<ModelMessage>): String {
-    val system = messages.lastOrNull { it.role == MessageRole.System }?.content?.textContent().orEmpty()
-    val user = messages.asReversed().firstOrNull { it.role == MessageRole.User }?.content
-        ?.filterIsInstance<ContentPart.Text>()
-        ?.joinToString("\n") { it.text }
-        .orEmpty()
-    return listOf(system, user).filter { it.isNotBlank() }.joinToString("\n")
-}
-
-private fun prodiaLanguageImage(messages: List<ModelMessage>): ProdiaInputFile? =
-    messages.asReversed().firstOrNull { it.role == MessageRole.User }?.content?.firstNotNullOfOrNull { part ->
-        when (part) {
-            is ContentPart.Image -> ProdiaInputFile(part.mediaType, Base64Codec.decode(part.base64))
-            is ContentPart.File if part.mediaType.startsWith("image/") ->
-                ProdiaInputFile(part.mediaType, Base64Codec.decode(part.base64), part.filename)
-            else -> null
-        }
+    suspend fun prodiaInputFile(client: HttpClient, file: GeneratedFile): ProdiaInputFile {
+        val bytes = file.url?.takeIf { it.isNotBlank() }
+            ?.let { client.request(it).bodyAsBytes() }
+            ?: Base64Codec.decode(file.base64)
+        return ProdiaInputFile(file.mediaType, bytes, file.filename)
     }
 
-private fun prodiaParseSize(size: String?, warnings: MutableList<CallWarning>): Pair<Int?, Int?> {
-    if (size == null) return null to null
-    val parts = size.split("x")
-    val width = parts.getOrNull(0)?.toIntOrNull()
-    val height = parts.getOrNull(1)?.toIntOrNull()
-    return if (parts.size == 2 && width != null && height != null) {
-        width to height
-    } else {
-        warnings += CallWarning("unsupported", "Invalid Prodia size format: $size. Expected WIDTHxHEIGHT.")
-        null to null
+    fun prodiaLanguageWarnings(params: LanguageModelCallParams): List<CallWarning> = buildList {
+        if (params.temperature != null) add(CallWarning("unsupported", "Prodia language models do not support temperature."))
+        if (params.topP != null) add(CallWarning("unsupported", "Prodia language models do not support topP."))
+        if (params.topK != null) add(CallWarning("unsupported", "Prodia language models do not support topK."))
+        if (params.maxOutputTokens != null) add(CallWarning("unsupported", "Prodia language models do not support maxOutputTokens."))
+        if (params.stopSequences.isNotEmpty()) add(CallWarning("unsupported", "Prodia language models do not support stopSequences."))
+        if (params.presencePenalty != null) add(CallWarning("unsupported", "Prodia language models do not support presencePenalty."))
+        if (params.frequencyPenalty != null) add(CallWarning("unsupported", "Prodia language models do not support frequencyPenalty."))
+        if (params.tools.isNotEmpty()) add(CallWarning("unsupported", "Prodia language models do not support tools."))
+        if (params.toolChoice != ToolChoice.Auto) add(CallWarning("unsupported", "Prodia language models do not support toolChoice."))
+        if (params.responseFormat != ResponseFormat.Text) add(CallWarning("unsupported", "Prodia language models do not support responseFormat."))
     }
-}
 
-private suspend fun prodiaPostJsonForMultipart(
-    client: HttpClient,
-    url: String,
-    body: JsonObject,
-    accept: String,
-    headers: Map<String, String>,
-): ProdiaMultipartResult {
-    val response = client.request(url) {
-        method = HttpMethod.Post
-        contentType(ContentType.Application.Json)
-        header(HttpHeaders.Accept, accept)
-        headers.forEach { (name, value) -> header(name, value) }
-        setBody(aiSdkJson.encodeToString(JsonElement.serializer(), body))
+    fun prodiaLanguagePrompt(messages: List<ModelMessage>): String {
+        val system = messages.lastOrNull { it.role == MessageRole.System }?.content?.textContent().orEmpty()
+        val user = messages.asReversed().firstOrNull { it.role == MessageRole.User }?.content
+            ?.filterIsInstance<ContentPart.Text>()
+            ?.joinToString("\n") { it.text }
+            .orEmpty()
+        return listOf(system, user).filter { it.isNotBlank() }.joinToString("\n")
     }
-    return response.parseProdiaMultipart(url)
-}
 
-private suspend fun prodiaPostMultipart(
-    client: HttpClient,
-    url: String,
-    body: JsonObject,
-    input: ProdiaInputFile?,
-    accept: String,
-    headers: Map<String, String>,
-): ProdiaMultipartResult {
-    val response = client.request(url) {
-        method = HttpMethod.Post
-        header(HttpHeaders.Accept, accept)
-        headers.forEach { (name, value) -> header(name, value) }
-        setBody(
-            MultiPartFormDataContent(
-                formData {
-                    append(
-                        "job",
-                        aiSdkJson.encodeToString(JsonElement.serializer(), body),
-                        Headers.build { append(HttpHeaders.ContentType, "application/json") },
-                    )
-                    input?.let { file ->
-                        append(
-                            "input",
-                            file.bytes,
-                            Headers.build {
-                                append(HttpHeaders.ContentType, file.mediaType)
-                                append(HttpHeaders.ContentDisposition, "${ContentDisposition.File}; filename=\"${file.filename ?: "input.${MediaTypes.toExtension(file.mediaType)}"}\"")
-                            },
-                        )
-                    }
-                },
-            ),
-        )
-    }
-    return response.parseProdiaMultipart(url)
-}
-
-private suspend fun HttpResponse.parseProdiaMultipart(url: String): ProdiaMultipartResult {
-    val responseHeaders = flattenedHeaders()
-    val rawContentType = headers[HttpHeaders.ContentType].orEmpty()
-    val bytes = bodyAsBytes()
-    if (status.value !in 200..299) {
-        val raw = bytes.decodeToString()
-        throw apiCallError(
-            url = url,
-            statusCode = status.value,
-            rawBody = raw,
-            headers = responseHeaders,
-            message = "Prodia request failed (${status.value}): ${prodiaErrorMessage(raw)}",
-        )
-    }
-    val boundary = Regex("""boundary=([^;\s]+)""").find(rawContentType)?.groupValues?.get(1)
-        ?: throw InvalidResponseDataError(null, "Prodia response missing multipart boundary in content-type: $rawContentType")
-    val parts = parseProdiaMultipart(bytes, boundary)
-    var job: JsonObject? = null
-    var text: String? = null
-    val files = mutableListOf<GeneratedFile>()
-    for (part in parts) {
-        val contentDisposition = part.headers["content-disposition"].orEmpty()
-        val contentType = part.headers["content-type"].orEmpty()
-        if (contentDisposition.contains("name=\"job\"")) {
-            job = aiSdkJson.parseToJsonElement(part.body.decodeToString()).jsonObject
-        } else if (contentDisposition.contains("name=\"output\"")) {
+    fun prodiaLanguageImage(messages: List<ModelMessage>): ProdiaInputFile? =
+        messages.asReversed().firstOrNull { it.role == MessageRole.User }?.content?.firstNotNullOfOrNull { part ->
             when {
-                contentType.startsWith("text/") || contentDisposition.contains(".txt") -> text = part.body.decodeToString()
-                contentType.startsWith("image/") || contentType.startsWith("video/") -> files += GeneratedFile(
-                    mediaType = contentType,
-                    base64 = Base64Codec.encode(part.body),
-                )
+                part is ContentPart.Image -> ProdiaInputFile(part.mediaType, Base64Codec.decode(part.base64))
+                part is ContentPart.File && part.mediaType.startsWith("image/") ->
+                    ProdiaInputFile(part.mediaType, Base64Codec.decode(part.base64), part.filename)
+                else -> null
             }
-        } else if (contentType.startsWith("image/") || contentType.startsWith("video/")) {
-            files += GeneratedFile(mediaType = contentType, base64 = Base64Codec.encode(part.body))
         }
-    }
-    return ProdiaMultipartResult(
-        job = job ?: throw InvalidResponseDataError(null, "Prodia multipart response missing job part"),
-        text = text,
-        files = files,
-        headers = responseHeaders,
-    )
-}
 
-private fun parseProdiaMultipart(data: ByteArray, boundary: String): List<ProdiaMultipartPart> {
-    val boundaryBytes = "--$boundary".encodeToByteArray()
-    val positions = mutableListOf<Int>()
-    var searchFrom = 0
-    while (searchFrom <= data.size - boundaryBytes.size) {
-        val next = data.indexOfBytes(boundaryBytes, searchFrom)
-        if (next < 0) break
-        positions += next
-        searchFrom = next + boundaryBytes.size
-    }
-    val parts = mutableListOf<ProdiaMultipartPart>()
-    for (index in 0 until positions.lastIndex) {
-        var partStart = positions[index] + boundaryBytes.size
-        var partEnd = positions[index + 1]
-        if (data.getOrNull(partStart) == '\r'.code.toByte() && data.getOrNull(partStart + 1) == '\n'.code.toByte()) {
-            partStart += 2
-        } else if (data.getOrNull(partStart) == '\n'.code.toByte()) {
-            partStart += 1
-        }
-        if (data.getOrNull(partEnd - 2) == '\r'.code.toByte() && data.getOrNull(partEnd - 1) == '\n'.code.toByte()) {
-            partEnd -= 2
-        } else if (data.getOrNull(partEnd - 1) == '\n'.code.toByte()) {
-            partEnd -= 1
-        }
-        if (partStart >= partEnd) continue
-        val partData = data.copyOfRange(partStart, partEnd)
-        val headerEnd = partData.headerEndIndex()
-        if (headerEnd < 0) continue
-        val headerSeparatorLength = if (
-            partData.getOrNull(headerEnd) == '\r'.code.toByte() &&
-            partData.getOrNull(headerEnd + 1) == '\n'.code.toByte()
-        ) {
-            4
+    fun prodiaParseSize(size: String?, warnings: MutableList<CallWarning>): Pair<Int?, Int?> {
+        if (size == null) return null to null
+        val parts = size.split("x")
+        val width = parts.getOrNull(0)?.toIntOrNull()
+        val height = parts.getOrNull(1)?.toIntOrNull()
+        return if (parts.size == 2 && width != null && height != null) {
+            width to height
         } else {
-            2
+            warnings += CallWarning("unsupported", "Invalid Prodia size format: $size. Expected WIDTHxHEIGHT.")
+            null to null
         }
-        val headers = partData.copyOfRange(0, headerEnd).decodeToString()
-            .lineSequence()
-            .mapNotNull { line ->
-                val colon = line.indexOf(':')
-                if (colon <= 0) null else line.substring(0, colon).trim().lowercase() to line.substring(colon + 1).trim()
+    }
+
+    suspend fun prodiaPostJsonForMultipart(
+        client: HttpClient,
+        url: String,
+        body: JsonObject,
+        accept: String,
+        headers: Map<String, String>,
+    ): ProdiaMultipartResult {
+        val response = client.request(url) {
+            method = HttpMethod.Post
+            contentType(ContentType.Application.Json)
+            header(HttpHeaders.Accept, accept)
+            headers.forEach { (name, value) -> header(name, value) }
+            setBody(aiSdkJson.encodeToString(JsonElement.serializer(), body))
+        }
+        return response.parseProdiaMultipart(url)
+    }
+
+    suspend fun prodiaPostMultipart(
+        client: HttpClient,
+        url: String,
+        body: JsonObject,
+        input: ProdiaInputFile?,
+        accept: String,
+        headers: Map<String, String>,
+    ): ProdiaMultipartResult {
+        val response = client.request(url) {
+            method = HttpMethod.Post
+            header(HttpHeaders.Accept, accept)
+            headers.forEach { (name, value) -> header(name, value) }
+            setBody(
+                MultiPartFormDataContent(
+                    formData {
+                        append(
+                            "job",
+                            aiSdkJson.encodeToString(JsonElement.serializer(), body),
+                            Headers.build { append(HttpHeaders.ContentType, "application/json") },
+                        )
+                        input?.let { file ->
+                            append(
+                                "input",
+                                file.bytes,
+                                Headers.build {
+                                    append(HttpHeaders.ContentType, file.mediaType)
+                                    append(HttpHeaders.ContentDisposition, "${ContentDisposition.File}; filename=\"${file.filename ?: "input.${MediaTypes.toExtension(file.mediaType)}"}\"")
+                                },
+                            )
+                        }
+                    },
+                ),
+            )
+        }
+        return response.parseProdiaMultipart(url)
+    }
+
+    suspend fun HttpResponse.parseProdiaMultipart(url: String): ProdiaMultipartResult {
+        val responseHeaders = with(HttpTransport) { flattenedHeaders() }
+        val rawContentType = headers[HttpHeaders.ContentType].orEmpty()
+        val bytes = bodyAsBytes()
+        if (status.value !in 200..299) {
+            val raw = bytes.decodeToString()
+            throw ApiCallError(
+                url = url,
+                statusCode = status.value,
+                rawBody = raw,
+                headers = responseHeaders,
+                message = "Prodia request failed (${status.value}): ${prodiaErrorMessage(raw)}",
+            )
+        }
+        val boundary = Regex("""boundary=([^;\s]+)""").find(rawContentType)?.groupValues?.get(1)
+            ?: throw InvalidResponseDataError(null, "Prodia response missing multipart boundary in content-type: $rawContentType")
+        val parts = parseProdiaMultipart(bytes, boundary)
+        var job: JsonObject? = null
+        var text: String? = null
+        val files = mutableListOf<GeneratedFile>()
+        for (part in parts) {
+            val contentDisposition = part.headers["content-disposition"].orEmpty()
+            val contentType = part.headers["content-type"].orEmpty()
+            if (contentDisposition.contains("name=\"job\"")) {
+                job = aiSdkJson.parseToJsonElement(part.body.decodeToString()).jsonObject
+            } else if (contentDisposition.contains("name=\"output\"")) {
+                when {
+                    contentType.startsWith("text/") || contentDisposition.contains(".txt") -> text = part.body.decodeToString()
+                    contentType.startsWith("image/") || contentType.startsWith("video/") -> files += GeneratedFile(
+                        mediaType = contentType,
+                        base64 = Base64Codec.encode(part.body),
+                    )
+                }
+            } else if (contentType.startsWith("image/") || contentType.startsWith("video/")) {
+                files += GeneratedFile(mediaType = contentType, base64 = Base64Codec.encode(part.body))
             }
-            .toMap()
-        val body = partData.copyOfRange(headerEnd + headerSeparatorLength, partData.size)
-        parts += ProdiaMultipartPart(headers, body)
+        }
+        return ProdiaMultipartResult(
+            job = job ?: throw InvalidResponseDataError(null, "Prodia multipart response missing job part"),
+            text = text,
+            files = files,
+            headers = responseHeaders,
+        )
     }
-    return parts
-}
 
-private fun ByteArray.indexOfBytes(needle: ByteArray, start: Int): Int {
-    if (needle.isEmpty()) return start
-    for (index in start..(size - needle.size)) {
-        var matches = true
-        for (needleIndex in needle.indices) {
-            if (this[index + needleIndex] != needle[needleIndex]) {
-                matches = false
-                break
+    fun parseProdiaMultipart(data: ByteArray, boundary: String): List<ProdiaMultipartPart> {
+        val boundaryBytes = "--$boundary".encodeToByteArray()
+        val positions = mutableListOf<Int>()
+        var searchFrom = 0
+        while (searchFrom <= data.size - boundaryBytes.size) {
+            val next = data.indexOfBytes(boundaryBytes, searchFrom)
+            if (next < 0) break
+            positions += next
+            searchFrom = next + boundaryBytes.size
+        }
+        val parts = mutableListOf<ProdiaMultipartPart>()
+        for (index in 0 until positions.lastIndex) {
+            var partStart = positions[index] + boundaryBytes.size
+            var partEnd = positions[index + 1]
+            if (data.getOrNull(partStart) == '\r'.code.toByte() && data.getOrNull(partStart + 1) == '\n'.code.toByte()) {
+                partStart += 2
+            } else if (data.getOrNull(partStart) == '\n'.code.toByte()) {
+                partStart += 1
+            }
+            if (data.getOrNull(partEnd - 2) == '\r'.code.toByte() && data.getOrNull(partEnd - 1) == '\n'.code.toByte()) {
+                partEnd -= 2
+            } else if (data.getOrNull(partEnd - 1) == '\n'.code.toByte()) {
+                partEnd -= 1
+            }
+            if (partStart >= partEnd) continue
+            val partData = data.copyOfRange(partStart, partEnd)
+            val headerEnd = partData.headerEndIndex()
+            if (headerEnd < 0) continue
+            val headerSeparatorLength = if (
+                partData.getOrNull(headerEnd) == '\r'.code.toByte() &&
+                partData.getOrNull(headerEnd + 1) == '\n'.code.toByte()
+            ) {
+                4
+            } else {
+                2
+            }
+            val headers = partData.copyOfRange(0, headerEnd).decodeToString()
+                .lineSequence()
+                .mapNotNull { line ->
+                    val colon = line.indexOf(':')
+                    if (colon <= 0) null else line.substring(0, colon).trim().lowercase() to line.substring(colon + 1).trim()
+                }
+                .toMap()
+            val body = partData.copyOfRange(headerEnd + headerSeparatorLength, partData.size)
+            parts += ProdiaMultipartPart(headers, body)
+        }
+        return parts
+    }
+
+    fun ByteArray.indexOfBytes(needle: ByteArray, start: Int): Int {
+        if (needle.isEmpty()) return start
+        for (index in start..(size - needle.size)) {
+            var matches = true
+            for (needleIndex in needle.indices) {
+                if (this[index + needleIndex] != needle[needleIndex]) {
+                    matches = false
+                    break
+                }
+            }
+            if (matches) return index
+        }
+        return -1
+    }
+
+    fun ByteArray.headerEndIndex(): Int {
+        for (index in 0 until size - 3) {
+            if (
+                this[index] == '\r'.code.toByte() &&
+                this[index + 1] == '\n'.code.toByte() &&
+                this[index + 2] == '\r'.code.toByte() &&
+                this[index + 3] == '\n'.code.toByte()
+            ) {
+                return index
             }
         }
-        if (matches) return index
+        for (index in 0 until size - 1) {
+            if (this[index] == '\n'.code.toByte() && this[index + 1] == '\n'.code.toByte()) return index
+        }
+        return -1
     }
-    return -1
-}
 
-private fun ByteArray.headerEndIndex(): Int {
-    for (index in 0 until size - 3) {
-        if (
-            this[index] == '\r'.code.toByte() &&
-            this[index + 1] == '\n'.code.toByte() &&
-            this[index + 2] == '\r'.code.toByte() &&
-            this[index + 3] == '\n'.code.toByte()
-        ) {
-            return index
+    fun prodiaHeaders(settings: ProdiaProviderSettings, callHeaders: Map<String, String>): Map<String, String> {
+        val base = linkedMapOf<String, String?>()
+        settings.apiKey?.takeIf { it.isNotBlank() }?.let { base[HttpHeaders.Authorization] = "Bearer $it" }
+        settings.headers.forEach { (key, value) -> base[key] = value }
+        callHeaders.forEach { (key, value) -> base[key] = value }
+        return ProviderHeaders.withUserAgentSuffix(base, "ai-sdk/prodia/$PRODIA_VERSION")
+    }
+
+    fun prodiaOptions(providerOptions: ProviderOptions): JsonObject =
+        providerOptions.toMap()["prodia"] as? JsonObject ?: JsonObject(emptyMap())
+
+    fun prodiaJobMetadata(job: JsonObject): JsonObject = buildJsonObject {
+        job["id"]?.jsonPrimitive?.contentOrNull?.let { put("jobId", JsonPrimitive(it)) }
+        job["config"]?.jsonObject?.get("seed")?.jsonPrimitive?.intOrNull?.let { put("seed", JsonPrimitive(it)) }
+        job["metrics"]?.jsonObject?.get("elapsed")?.jsonPrimitive?.doubleOrNull?.let { put("elapsed", JsonPrimitive(it)) }
+        job["metrics"]?.jsonObject?.get("ips")?.jsonPrimitive?.doubleOrNull?.let { put("iterationsPerSecond", JsonPrimitive(it)) }
+        job["created_at"]?.jsonPrimitive?.contentOrNull?.let { put("createdAt", JsonPrimitive(it)) }
+        job["updated_at"]?.jsonPrimitive?.contentOrNull?.let { put("updatedAt", JsonPrimitive(it)) }
+        val price = job["price"]
+        if (price !is JsonNull) {
+            price?.jsonObject?.get("dollars")?.jsonPrimitive?.doubleOrNull?.let { put("dollars", JsonPrimitive(it)) }
         }
     }
-    for (index in 0 until size - 1) {
-        if (this[index] == '\n'.code.toByte() && this[index + 1] == '\n'.code.toByte()) return index
+
+    fun prodiaErrorMessage(raw: String): String {
+        val obj = runCatching { aiSdkJson.parseToJsonElement(raw).jsonObject }.getOrNull() ?: return raw.ifBlank { "request failed" }
+        return obj["detail"]?.jsonPrimitive?.contentOrNull
+            ?: obj["error"]?.jsonPrimitive?.contentOrNull
+            ?: obj["message"]?.jsonPrimitive?.contentOrNull
+            ?: raw.ifBlank { "request failed" }
     }
-    return -1
+
+    fun List<ContentPart>.textContent(): String =
+        filterIsInstance<ContentPart.Text>().joinToString("") { it.text }
 }
-
-private fun prodiaHeaders(settings: ProdiaProviderSettings, callHeaders: Map<String, String>): Map<String, String> {
-    val base = linkedMapOf<String, String?>()
-    settings.apiKey?.takeIf { it.isNotBlank() }?.let { base[HttpHeaders.Authorization] = "Bearer $it" }
-    settings.headers.forEach { (key, value) -> base[key] = value }
-    callHeaders.forEach { (key, value) -> base[key] = value }
-    return ProviderHeaders.withUserAgentSuffix(base, "ai-sdk/prodia/$PRODIA_VERSION")
-}
-
-private fun prodiaOptions(providerOptions: ProviderOptions): JsonObject =
-    providerOptions.toMap()["prodia"] as? JsonObject ?: JsonObject(emptyMap())
-
-private fun prodiaJobMetadata(job: JsonObject): JsonObject = buildJsonObject {
-    job["id"]?.jsonPrimitive?.contentOrNull?.let { put("jobId", JsonPrimitive(it)) }
-    job["config"]?.jsonObject?.get("seed")?.jsonPrimitive?.intOrNull?.let { put("seed", JsonPrimitive(it)) }
-    job["metrics"]?.jsonObject?.get("elapsed")?.jsonPrimitive?.doubleOrNull?.let { put("elapsed", JsonPrimitive(it)) }
-    job["metrics"]?.jsonObject?.get("ips")?.jsonPrimitive?.doubleOrNull?.let { put("iterationsPerSecond", JsonPrimitive(it)) }
-    job["created_at"]?.jsonPrimitive?.contentOrNull?.let { put("createdAt", JsonPrimitive(it)) }
-    job["updated_at"]?.jsonPrimitive?.contentOrNull?.let { put("updatedAt", JsonPrimitive(it)) }
-    val price = job["price"]
-    if (price !is JsonNull) {
-        price?.jsonObject?.get("dollars")?.jsonPrimitive?.doubleOrNull?.let { put("dollars", JsonPrimitive(it)) }
-    }
-}
-
-private fun prodiaErrorMessage(raw: String): String {
-    val obj = runCatching { aiSdkJson.parseToJsonElement(raw).jsonObject }.getOrNull() ?: return raw.ifBlank { "request failed" }
-    return obj["detail"]?.jsonPrimitive?.contentOrNull
-        ?: obj["error"]?.jsonPrimitive?.contentOrNull
-        ?: obj["message"]?.jsonPrimitive?.contentOrNull
-        ?: raw.ifBlank { "request failed" }
-}
-
-private fun List<ContentPart>.textContent(): String =
-    filterIsInstance<ContentPart.Text>().joinToString("") { it.text }

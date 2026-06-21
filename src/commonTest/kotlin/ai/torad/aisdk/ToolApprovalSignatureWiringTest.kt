@@ -1,7 +1,7 @@
 package ai.torad.aisdk
 
-import ai.torad.aisdk.providers.mockLanguageModelTextOnly
-import ai.torad.aisdk.providers.mockLanguageModelToolThenText
+import ai.torad.aisdk.providers.MockLanguageModelTextOnly
+import ai.torad.aisdk.providers.MockLanguageModelToolThenText
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.Serializable
@@ -35,13 +35,13 @@ class ToolApprovalSignatureWiringTest {
         secret: ByteArray?,
         needsApproval: Boolean = true,
     ) = TestToolLoopAgent<Unit, String>(
-        model = mockLanguageModelToolThenText(
+        model = MockLanguageModelToolThenText(
             toolName = "send",
             toolInput = buildJsonObject { put("message", "hello") },
             finalText = "sent",
         ),
         instructions = "use send",
-        tools = toolSetOf(
+        tools = ToolSet(
             Tool<SendInput, String, Unit>(
                 name = "send",
                 description = "send a message",
@@ -65,7 +65,7 @@ class ToolApprovalSignatureWiringTest {
         val pending = first.pendingApprovals.single()
         val signature = assertNotNull(pending.signature, "issuance must sign when a secret is configured")
         assertTrue(
-            verifyToolApprovalSignature(
+            ToolApprovalSignature.verifyToolApprovalSignature(
                 secret = secret,
                 signature = signature,
                 approvalId = pending.approvalId ?: pending.toolCallId,
@@ -90,7 +90,7 @@ class ToolApprovalSignatureWiringTest {
         val pending = first.pendingApprovals.single()
         assertNull(pending.signature)
 
-        val approval = toolApprovalResponseMessage(pending.toolCallId, approved = true, approvalId = pending.approvalId)
+        val approval = ToolApprovalResponseMessage(pending.toolCallId, approved = true, approvalId = pending.approvalId)
         agent.generate(messages = first.messages + approval).first()
         assertEquals(listOf("hello"), state.executed)
     }
@@ -102,7 +102,7 @@ class ToolApprovalSignatureWiringTest {
         val first = agent.generate(prompt = "go").first()
         val pending = first.pendingApprovals.single()
 
-        val approval = toolApprovalResponseMessage(pending.toolCallId, approved = true, approvalId = pending.approvalId)
+        val approval = ToolApprovalResponseMessage(pending.toolCallId, approved = true, approvalId = pending.approvalId)
         val second = agent.generate(messages = first.messages + approval).first()
         assertEquals(listOf("hello"), state.executed)
         assertEquals("sent", second.text)
@@ -127,7 +127,7 @@ class ToolApprovalSignatureWiringTest {
                 },
             )
         }
-        val approval = toolApprovalResponseMessage(pending.toolCallId, approved = true, approvalId = pending.approvalId)
+        val approval = ToolApprovalResponseMessage(pending.toolCallId, approved = true, approvalId = pending.approvalId)
         val failure = assertFailsWith<AgentError.InvalidToolApprovalSignature> {
             agent.generate(messages = tamperedHistory + approval).first()
         }
@@ -141,7 +141,7 @@ class ToolApprovalSignatureWiringTest {
         // History minted WITHOUT a secret (no signature on the request part)...
         val unsigned = gatedAgent(state, secret = null).generate(prompt = "go").first()
         val pending = unsigned.pendingApprovals.single()
-        val approval = toolApprovalResponseMessage(pending.toolCallId, approved = true, approvalId = pending.approvalId)
+        val approval = ToolApprovalResponseMessage(pending.toolCallId, approved = true, approvalId = pending.approvalId)
 
         // ...replayed against an agent that REQUIRES signatures.
         val failure = assertFailsWith<AgentError.InvalidToolApprovalSignature> {
@@ -156,15 +156,15 @@ class ToolApprovalSignatureWiringTest {
         val state = GateState()
         val first = gatedAgent(state, secret).generate(prompt = "go").first()
         val pending = first.pendingApprovals.single()
-        val approval = toolApprovalResponseMessage(pending.toolCallId, approved = true, approvalId = pending.approvalId)
+        val approval = ToolApprovalResponseMessage(pending.toolCallId, approved = true, approvalId = pending.approvalId)
 
         // At replay time the tool's gate resolves false — the server would never have
         // issued this request, so the approval is treated as fabricated and denied.
         // The replay model is TEXT-ONLY so the only execution path is the stale approval.
         val replayAgent = TestToolLoopAgent<Unit, String>(
-            model = mockLanguageModelTextOnly("ok"),
+            model = MockLanguageModelTextOnly("ok"),
             instructions = "use send",
-            tools = toolSetOf(
+            tools = ToolSet(
                 Tool<SendInput, String, Unit>(
                     name = "send",
                     description = "send a message",

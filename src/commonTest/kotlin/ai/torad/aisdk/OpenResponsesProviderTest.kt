@@ -1,8 +1,9 @@
 package ai.torad.aisdk
 import ai.torad.aisdk.providers.OpenResponsesProviderSettings
 import ai.torad.aisdk.providers.OpenResponses
+import ai.torad.aisdk.ToolResultOutputs.toJsonElement
 
-import ai.torad.aisdk.testing.drainAllItems
+import ai.torad.aisdk.testing.FlowDrain.drainAllItems
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.respond
@@ -77,7 +78,7 @@ class OpenResponsesProviderTest {
 
         val result = provider.responses("gpt-resp").generate(
             LanguageModelCallParams(
-                messages = listOf(systemMessage("system rules"), userMessage("hi")),
+                messages = listOf(SystemMessage("system rules"), UserMessage("hi")),
                 tools = listOf(
                     LanguageModelTool(
                         name = "search",
@@ -151,7 +152,7 @@ class OpenResponsesProviderTest {
         val provider = OpenResponses(client, OpenResponsesProviderSettings("https://api.test/v1/responses", "openresponses"))
 
         val error = assertFailsWith<WireDecodeException> {
-            provider.responses("gpt-resp").generate(LanguageModelCallParams(listOf(userMessage("hi"))))
+            provider.responses("gpt-resp").generate(LanguageModelCallParams(listOf(UserMessage("hi"))))
         }
 
         val message = error.message.orEmpty()
@@ -181,7 +182,7 @@ class OpenResponsesProviderTest {
         val provider = OpenResponses(client, OpenResponsesProviderSettings("https://api.test/v1/responses", "openresponses"))
 
         val error = assertFailsWith<WireDecodeException> {
-            provider.responses("gpt-resp").generate(LanguageModelCallParams(listOf(userMessage("hi"))))
+            provider.responses("gpt-resp").generate(LanguageModelCallParams(listOf(UserMessage("hi"))))
         }
 
         val message = error.message.orEmpty()
@@ -230,7 +231,7 @@ class OpenResponsesProviderTest {
         )
         val provider = OpenResponses(client, OpenResponsesProviderSettings("https://api.test/v1/responses", "openresponses"))
 
-        val events = drainAllItems(provider.languageModel("gpt-resp").stream(LanguageModelCallParams(listOf(userMessage("hi")))))
+        val events = drainAllItems(provider.languageModel("gpt-resp").stream(LanguageModelCallParams(listOf(UserMessage("hi")))))
 
         assertIs<StreamEvent.StreamStart>(events.first())
         assertTrue(events.any { it is StreamEvent.ReasoningDelta && it.text == "think" })
@@ -263,7 +264,7 @@ class OpenResponsesProviderTest {
         )
         val provider = OpenResponses(client, OpenResponsesProviderSettings("https://api.test/v1/responses", "openresponses"))
 
-        val events = drainAllItems(provider.languageModel("gpt-resp").stream(LanguageModelCallParams(listOf(userMessage("hi")))))
+        val events = drainAllItems(provider.languageModel("gpt-resp").stream(LanguageModelCallParams(listOf(UserMessage("hi")))))
 
         val error = events.filterIsInstance<StreamEvent.Error>().single()
         assertTrue(error.message.contains("item_id"), error.message)
@@ -288,7 +289,7 @@ class OpenResponsesProviderTest {
         )
         val provider = OpenResponses(client, OpenResponsesProviderSettings("https://api.test/v1/responses", "openresponses"))
 
-        val events = drainAllItems(provider.languageModel("gpt-resp").stream(LanguageModelCallParams(listOf(userMessage("hi")))))
+        val events = drainAllItems(provider.languageModel("gpt-resp").stream(LanguageModelCallParams(listOf(UserMessage("hi")))))
 
         val errors = events.filterIsInstance<StreamEvent.Error>()
         assertEquals(2, errors.size)
@@ -310,7 +311,7 @@ class OpenResponsesProviderTest {
         )
         val provider = OpenResponses(client, OpenResponsesProviderSettings("https://api.test/v1/responses", "openresponses"))
 
-        val events = drainAllItems(provider.languageModel("gpt-resp").stream(LanguageModelCallParams(listOf(userMessage("hi")))))
+        val events = drainAllItems(provider.languageModel("gpt-resp").stream(LanguageModelCallParams(listOf(UserMessage("hi")))))
 
         val error = events.filterIsInstance<StreamEvent.Error>().single()
         assertTrue(error.message.contains("missing item"))

@@ -16,14 +16,14 @@ class ToolSetDuplicateTest {
     @Test
     fun `toolSetOf throws on duplicate tool names`() {
         assertFailsWith<IllegalArgumentException> {
-            toolSetOf(dummy("a"), dummy("a"))
+            ToolSet(dummy("a"), dummy("a"))
         }
     }
 
     @Test
     fun `ToolSet plus throws on overlapping tool names`() {
-        val left = toolSetOf(dummy("a"))
-        val right = toolSetOf(dummy("a"))
+        val left = ToolSet(dummy("a"))
+        val right = ToolSet(dummy("a"))
         assertFailsWith<IllegalArgumentException> { left + right }
     }
 }

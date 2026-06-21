@@ -23,7 +23,7 @@ import kotlinx.serialization.json.JsonElement
  *   - default `tools` / `toolChoice` / `headers`
  *   - default `providerOptions` like `{ openai: { reasoningEffort: "high" } }`
  */
-public fun defaultSettingsMiddleware(
+public fun DefaultSettingsMiddleware(
     temperature: Float? = null,
     topP: Float? = null,
     topK: Int? = null,

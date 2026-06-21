@@ -1,9 +1,9 @@
 package ai.torad.aisdk
 import ai.torad.aisdk.providers.ANTHROPIC_VERSION
 import ai.torad.aisdk.providers.AnthropicProviderSettings
-import ai.torad.aisdk.providers.forwardAnthropicContainerIdFromLastStep
+import ai.torad.aisdk.providers.AnthropicWire.forwardAnthropicContainerIdFromLastStep
 
-import ai.torad.aisdk.testing.drainAllItems
+import ai.torad.aisdk.testing.FlowDrain.drainAllItems
 import io.ktor.http.HttpHeaders
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.Json
@@ -27,7 +27,7 @@ import ai.torad.aisdk.providers.Anthropic
 class AnthropicProviderTest {
     @Test
     fun `messages model sends Anthropic request and maps response content`() = runTest {
-        val fixture = createTestServer(
+        val fixture = TestServer.createTestServer(
             mutableMapOf(
                 "https://anthropic.test/v1/messages" to UrlHandler(
                     UrlResponse.JsonValue(
@@ -105,7 +105,7 @@ class AnthropicProviderTest {
         val result = provider.messages(ModelId("claude-sonnet-4-5")).generate(
             LanguageModelCallParams(
                 messages = listOf(
-                    systemMessage("Follow policy."),
+                    SystemMessage("Follow policy."),
                     ModelMessage(
                         MessageRole.User,
                         listOf(
@@ -276,7 +276,7 @@ class AnthropicProviderTest {
 
     @Test
     fun `messages model rejects tool use missing id`() = runTest {
-        val fixture = createTestServer(
+        val fixture = TestServer.createTestServer(
             mutableMapOf(
                 "https://anthropic.test/v1/messages" to UrlHandler(
                     UrlResponse.JsonValue(
@@ -301,7 +301,7 @@ class AnthropicProviderTest {
         val provider = Anthropic(fixture.httpClient(), AnthropicProviderSettings(baseURL = "https://anthropic.test/v1"))
 
         val error = assertFailsWith<WireDecodeException> {
-            provider.messages(ModelId("claude-sonnet-4-5")).generate(LanguageModelCallParams(messages = listOf(userMessage("hi"))))
+            provider.messages(ModelId("claude-sonnet-4-5")).generate(LanguageModelCallParams(messages = listOf(UserMessage("hi"))))
         }
 
         val message = error.message.orEmpty()
@@ -312,7 +312,7 @@ class AnthropicProviderTest {
 
     @Test
     fun `messages model rejects tool use missing name`() = runTest {
-        val fixture = createTestServer(
+        val fixture = TestServer.createTestServer(
             mutableMapOf(
                 "https://anthropic.test/v1/messages" to UrlHandler(
                     UrlResponse.JsonValue(
@@ -337,7 +337,7 @@ class AnthropicProviderTest {
         val provider = Anthropic(fixture.httpClient(), AnthropicProviderSettings(baseURL = "https://anthropic.test/v1"))
 
         val error = assertFailsWith<WireDecodeException> {
-            provider.messages(ModelId("claude-sonnet-4-5")).generate(LanguageModelCallParams(messages = listOf(userMessage("hi"))))
+            provider.messages(ModelId("claude-sonnet-4-5")).generate(LanguageModelCallParams(messages = listOf(UserMessage("hi"))))
         }
 
         val message = error.message.orEmpty()
@@ -348,7 +348,7 @@ class AnthropicProviderTest {
 
     @Test
     fun `messages model rejects provider tool result missing tool use id`() = runTest {
-        val fixture = createTestServer(
+        val fixture = TestServer.createTestServer(
             mutableMapOf(
                 "https://anthropic.test/v1/messages" to UrlHandler(
                     UrlResponse.JsonValue(
@@ -373,7 +373,7 @@ class AnthropicProviderTest {
         val provider = Anthropic(fixture.httpClient(), AnthropicProviderSettings(baseURL = "https://anthropic.test/v1"))
 
         val error = assertFailsWith<WireDecodeException> {
-            provider.messages(ModelId("claude-sonnet-4-5")).generate(LanguageModelCallParams(messages = listOf(userMessage("hi"))))
+            provider.messages(ModelId("claude-sonnet-4-5")).generate(LanguageModelCallParams(messages = listOf(UserMessage("hi"))))
         }
 
         val message = error.message.orEmpty()
@@ -385,7 +385,7 @@ class AnthropicProviderTest {
 
     @Test
     fun `messages model rejects provider tool result missing name`() = runTest {
-        val fixture = createTestServer(
+        val fixture = TestServer.createTestServer(
             mutableMapOf(
                 "https://anthropic.test/v1/messages" to UrlHandler(
                     UrlResponse.JsonValue(
@@ -410,7 +410,7 @@ class AnthropicProviderTest {
         val provider = Anthropic(fixture.httpClient(), AnthropicProviderSettings(baseURL = "https://anthropic.test/v1"))
 
         val error = assertFailsWith<WireDecodeException> {
-            provider.messages(ModelId("claude-sonnet-4-5")).generate(LanguageModelCallParams(messages = listOf(userMessage("hi"))))
+            provider.messages(ModelId("claude-sonnet-4-5")).generate(LanguageModelCallParams(messages = listOf(UserMessage("hi"))))
         }
 
         val message = error.message.orEmpty()
@@ -421,7 +421,7 @@ class AnthropicProviderTest {
 
     @Test
     fun `stream surfaces malformed content block delta as wire error event`() = runTest {
-        val fixture = createTestServer(
+        val fixture = TestServer.createTestServer(
             mutableMapOf(
                 "https://anthropic.test/v1/messages" to UrlHandler(
                     UrlResponse.StreamChunks(
@@ -439,7 +439,7 @@ class AnthropicProviderTest {
         )
 
         val events = drainAllItems(
-            provider.messages(ModelId("claude-sonnet-4-5")).stream(LanguageModelCallParams(messages = listOf(userMessage("hi")))),
+            provider.messages(ModelId("claude-sonnet-4-5")).stream(LanguageModelCallParams(messages = listOf(UserMessage("hi")))),
         )
 
         val error = events.filterIsInstance<StreamEvent.Error>().single()
@@ -448,7 +448,7 @@ class AnthropicProviderTest {
 
     @Test
     fun `stream maps Anthropic SSE text reasoning tool call and finish`() = runTest {
-        val fixture = createTestServer(
+        val fixture = TestServer.createTestServer(
             mutableMapOf(
                 "https://anthropic.test/v1/messages" to UrlHandler(
                     UrlResponse.StreamChunks(
@@ -489,7 +489,7 @@ class AnthropicProviderTest {
 
         val events = drainAllItems(
             provider.messages(ModelId("claude-sonnet-4-5")).stream(
-                LanguageModelCallParams(messages = listOf(userMessage("hi"))),
+                LanguageModelCallParams(messages = listOf(UserMessage("hi"))),
             ),
         )
 
@@ -510,7 +510,7 @@ class AnthropicProviderTest {
 
     @Test
     fun `stream rejects tool block missing id or name`() = runTest {
-        val fixture = createTestServer(
+        val fixture = TestServer.createTestServer(
             mutableMapOf(
                 "https://anthropic.test/v1/messages" to UrlHandler(
                     UrlResponse.StreamChunks(
@@ -531,7 +531,7 @@ class AnthropicProviderTest {
         fixture.server.start()
         val provider = Anthropic(fixture.httpClient(), AnthropicProviderSettings(baseURL = "https://anthropic.test/v1"))
 
-        val events = drainAllItems(provider.messages(ModelId("claude-sonnet-4-5")).stream(LanguageModelCallParams(messages = listOf(userMessage("hi")))))
+        val events = drainAllItems(provider.messages(ModelId("claude-sonnet-4-5")).stream(LanguageModelCallParams(messages = listOf(UserMessage("hi")))))
 
         val errors = events.filterIsInstance<StreamEvent.Error>()
         assertEquals(2, errors.size)
@@ -544,7 +544,7 @@ class AnthropicProviderTest {
     fun `stream usage merges message_delta onto message_start preserving input tokens`() = runTest {
         // The real-world case: message_delta carries ONLY output_tokens. The final usage
         // must keep the input_tokens captured at message_start (was collapsing to 0).
-        val fixture = createTestServer(
+        val fixture = TestServer.createTestServer(
             mutableMapOf(
                 "https://anthropic.test/v1/messages" to UrlHandler(
                     UrlResponse.StreamChunks(
@@ -566,7 +566,7 @@ class AnthropicProviderTest {
         val provider = Anthropic(fixture.httpClient(), AnthropicProviderSettings(baseURL = "https://anthropic.test/v1"))
         val events = drainAllItems(
             provider.messages(ModelId("claude-sonnet-4-5")).stream(
-                LanguageModelCallParams(messages = listOf(userMessage("hi"))),
+                LanguageModelCallParams(messages = listOf(UserMessage("hi"))),
             ),
         )
         val finish = events.filterIsInstance<StreamEvent.Finish>().single()
@@ -576,7 +576,7 @@ class AnthropicProviderTest {
 
     @Test
     fun `max_tokens defaults to the per-model limit when caller omits maxOutputTokens`() = runTest {
-        val fixture = createTestServer(
+        val fixture = TestServer.createTestServer(
             mutableMapOf(
                 "https://anthropic.test/v1/messages" to UrlHandler(
                     UrlResponse.JsonValue(
@@ -592,7 +592,7 @@ class AnthropicProviderTest {
         fixture.server.start()
         val provider = Anthropic(fixture.httpClient(), AnthropicProviderSettings(baseURL = "https://anthropic.test/v1"))
         provider.messages(ModelId("claude-opus-4-8")).generate(
-            LanguageModelCallParams(messages = listOf(userMessage("hi"))),
+            LanguageModelCallParams(messages = listOf(UserMessage("hi"))),
         )
         val body = fixture.calls.single().requestBodyJson.jsonObject
         // claude-opus-4-8 → 128000, not the old hardcoded 4096.
@@ -601,7 +601,7 @@ class AnthropicProviderTest {
 
     @Test
     fun `final assistant text is trimmed of trailing whitespace in a pre-fill`() = runTest {
-        val fixture = createTestServer(
+        val fixture = TestServer.createTestServer(
             mutableMapOf(
                 "https://anthropic.test/v1/messages" to UrlHandler(
                     UrlResponse.JsonValue(
@@ -617,7 +617,7 @@ class AnthropicProviderTest {
         val provider = Anthropic(fixture.httpClient(), AnthropicProviderSettings(baseURL = "https://anthropic.test/v1"))
         // The last message is a pre-filled assistant turn with trailing whitespace.
         provider.messages(ModelId("claude-sonnet-4-5")).generate(
-            LanguageModelCallParams(messages = listOf(userMessage("hi"), assistantMessage("The answer is  \n  "))),
+            LanguageModelCallParams(messages = listOf(UserMessage("hi"), AssistantMessage("The answer is  \n  "))),
         )
         val body = fixture.calls.single().requestBodyJson.jsonObject
         val assistantText = body["messages"]?.jsonArray?.last()?.jsonObject
@@ -627,7 +627,7 @@ class AnthropicProviderTest {
 
     @Test
     fun `stream surfaces Anthropic deltas for unknown content blocks as errors`() = runTest {
-        val fixture = createTestServer(
+        val fixture = TestServer.createTestServer(
             mutableMapOf(
                 "https://anthropic.test/v1/messages" to UrlHandler(
                     UrlResponse.StreamChunks(
@@ -646,7 +646,7 @@ class AnthropicProviderTest {
         fixture.server.start()
         val provider = Anthropic(fixture.httpClient(), AnthropicProviderSettings(baseURL = "https://anthropic.test/v1"))
 
-        val events = drainAllItems(provider.messages(ModelId("claude-sonnet-4-5")).stream(LanguageModelCallParams(messages = listOf(userMessage("hi")))))
+        val events = drainAllItems(provider.messages(ModelId("claude-sonnet-4-5")).stream(LanguageModelCallParams(messages = listOf(UserMessage("hi")))))
 
         val error = events.filterIsInstance<StreamEvent.Error>().single()
         assertTrue(error.message.contains("unknown block index 4"))
@@ -654,7 +654,7 @@ class AnthropicProviderTest {
 
     @Test
     fun `stream malformed Anthropic tool input emits error and no final tool call`() = runTest {
-        val fixture = createTestServer(
+        val fixture = TestServer.createTestServer(
             mutableMapOf(
                 "https://anthropic.test/v1/messages" to UrlHandler(
                     UrlResponse.StreamChunks(
@@ -677,7 +677,7 @@ class AnthropicProviderTest {
         fixture.server.start()
         val provider = Anthropic(fixture.httpClient(), AnthropicProviderSettings(baseURL = "https://anthropic.test/v1"))
 
-        val events = drainAllItems(provider.messages(ModelId("claude-sonnet-4-5")).stream(LanguageModelCallParams(messages = listOf(userMessage("hi")))))
+        val events = drainAllItems(provider.messages(ModelId("claude-sonnet-4-5")).stream(LanguageModelCallParams(messages = listOf(UserMessage("hi")))))
 
         assertTrue(events.filterIsInstance<StreamEvent.ToolCall>().isEmpty())
         val error = events.filterIsInstance<StreamEvent.Error>().single()
@@ -686,7 +686,7 @@ class AnthropicProviderTest {
 
     @Test
     fun `auth conflict hosted tools and container forwarding are exposed`() {
-        val fixture = createTestServer(mutableMapOf())
+        val fixture = TestServer.createTestServer(mutableMapOf())
         val provider = Anthropic(
             fixture.httpClient(),
             AnthropicProviderSettings(authToken = "token"),

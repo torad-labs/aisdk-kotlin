@@ -1,6 +1,6 @@
 package ai.torad.aisdk
 
-import ai.torad.aisdk.providers.mockLanguageModelToolThenText
+import ai.torad.aisdk.providers.MockLanguageModelToolThenText
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -43,13 +43,13 @@ class ToolCallRepairTest {
             ) { input -> "sunny in ${input.city}" }
             val malformed: JsonObject = buildJsonObject { put("location", JsonPrimitive("Paris")) }
             val agent = TestToolLoopAgent<Unit, String>(
-                model = mockLanguageModelToolThenText(
+                model = MockLanguageModelToolThenText(
                     toolName = "weather",
                     toolInput = malformed,
                     finalText = "done",
                 ),
                 instructions = "",
-                tools = toolSetOf(weatherTool),
+                tools = ToolSet(weatherTool),
                 experimental_repairToolCall = { failedCall, _, _, _ ->
                     // Rewrite `location` → `city`.
                     val original = failedCall.input.jsonObject["location"]?.jsonPrimitive?.content ?: ""
@@ -85,13 +85,13 @@ class ToolCallRepairTest {
             ) { input -> "sunny in ${input.city}" }
             val malformed: JsonObject = buildJsonObject { put("location", JsonPrimitive("Paris")) }
             val agent = TestToolLoopAgent<Unit, String>(
-                model = mockLanguageModelToolThenText(
+                model = MockLanguageModelToolThenText(
                     toolName = "weather",
                     toolInput = malformed,
                     finalText = "done",
                 ),
                 instructions = "",
-                tools = toolSetOf(weatherTool),
+                tools = ToolSet(weatherTool),
                 // experimental_repairToolCall = null (default)
             )
 
@@ -119,13 +119,13 @@ class ToolCallRepairTest {
             val malformed: JsonObject = buildJsonObject { put("location", JsonPrimitive("Paris")) }
             var repairInvoked = false
             val agent = TestToolLoopAgent<Unit, String>(
-                model = mockLanguageModelToolThenText(
+                model = MockLanguageModelToolThenText(
                     toolName = "weather",
                     toolInput = malformed,
                     finalText = "done",
                 ),
                 instructions = "",
-                tools = toolSetOf(weatherTool),
+                tools = ToolSet(weatherTool),
                 experimental_repairToolCall = { _, _, _, _ ->
                     repairInvoked = true
                     null // give up

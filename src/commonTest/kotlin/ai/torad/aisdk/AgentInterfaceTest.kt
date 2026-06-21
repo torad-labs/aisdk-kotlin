@@ -17,7 +17,7 @@ import kotlinx.coroutines.test.runTest
 class AgentInterfaceTest {
 
     private class FakeAgent : Agent<Unit, String> {
-        override val tools: ToolSet<Unit> = toolSetOf()
+        override val tools: ToolSet<Unit> = ToolSet()
         var generatedPrompt: String? = null
         override fun generate(
             prompt: String?,

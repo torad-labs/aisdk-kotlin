@@ -54,7 +54,7 @@ class PrepareCallPenaltiesTest {
         val agent = TestToolLoopAgent<Unit, String>(
             model = capture,
             instructions = "",
-            tools = toolSetOf(),
+            tools = ToolSet(),
             presencePenalty = 0.2f,
             frequencyPenalty = 0.4f,
         )
@@ -74,7 +74,7 @@ class PrepareCallPenaltiesTest {
         val agent = TestToolLoopAgent<Unit, String>(
             model = capture,
             instructions = "",
-            tools = toolSetOf(),
+            tools = ToolSet(),
             presencePenalty = 0.2f,
             frequencyPenalty = 0.4f,
             prepareCall = {
@@ -100,7 +100,7 @@ class PrepareCallPenaltiesTest {
         val agent = TestToolLoopAgent<Unit, String>(
             model = capture,
             instructions = "",
-            tools = toolSetOf(),
+            tools = ToolSet(),
             presencePenalty = 0.2f,
             prepareCall = { AgentSettings(presencePenalty = 0.5f) },
             prepareStep = { StepSettings(presencePenalty = 0.9f) },
@@ -120,8 +120,8 @@ class PrepareCallPenaltiesTest {
         val agent = TestToolLoopAgent<Unit, StructuredAnswer>(
             model = capture,
             instructions = "",
-            tools = toolSetOf(),
-            output = outputObj(serializer(), name = "StructuredAnswer"),
+            tools = ToolSet(),
+            output = OutputObj(serializer(), name = "StructuredAnswer"),
         )
 
         // WHEN
@@ -143,7 +143,7 @@ class PrepareCallPenaltiesTest {
         val agent = TestToolLoopAgent<Unit, String>(
             model = capture,
             instructions = "",
-            tools = toolSetOf(),
+            tools = ToolSet(),
             prepareCall = { AgentSettings(responseFormat = callFormat) },
             prepareStep = { StepSettings(responseFormat = stepFormat) },
         )
@@ -162,7 +162,7 @@ class PrepareCallPenaltiesTest {
         val agent = TestToolLoopAgent<Unit, String>(
             model = capture,
             instructions = "",
-            tools = toolSetOf(),
+            tools = ToolSet(),
             prepareCall = {
                 AgentSettings(providerOptions = ProviderOptions.Raw(JsonObject(mapOf("common" to JsonPrimitive("call"), "callOnly" to JsonPrimitive(true)))))
             },

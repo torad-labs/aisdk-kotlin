@@ -26,6 +26,13 @@ private const val DEFAULT_SCHEMA_SUFFIX =
 private const val DEFAULT_GENERIC_SUFFIX = "You MUST answer with JSON."
 
 /**
+ * JSON-mode instruction injection operations.
+ *
+ * Groups the splice-half procedures ported from Vercel AI SDK v6
+ * `inject-json-instruction.ts`.
+ */
+public object JsonInstruction {
+    /**
  * Build the JSON instruction block.
  *
  * Mirrors the v6 array-filter-join exactly:
@@ -51,46 +58,47 @@ private const val DEFAULT_GENERIC_SUFFIX = "You MUST answer with JSON."
  * @param schemaPrefix label printed before the schema. Defaults to
  *   [DEFAULT_SCHEMA_PREFIX] when a schema is present, else null.
  * @param schemaSuffix closing instruction. Defaults to the
- *   schema-aware suffix when a schema is present, else the generic one.
- */
-public fun injectJsonInstruction(
-    prompt: String? = null,
-    schema: JsonElement? = null,
-    schemaPrefix: String? = if (schema != null) DEFAULT_SCHEMA_PREFIX else null,
-    schemaSuffix: String? = if (schema != null) DEFAULT_SCHEMA_SUFFIX else DEFAULT_GENERIC_SUFFIX,
-): String = listOfNotNull(
-    prompt?.takeIf { it.isNotEmpty() },
-    "".takeIf { !prompt.isNullOrEmpty() },
-    schemaPrefix,
-    schema?.toString(),
-    schemaSuffix,
-).joinToString("\n")
+     *   schema-aware suffix when a schema is present, else the generic one.
+     */
+    public fun injectJsonInstruction(
+        prompt: String? = null,
+        schema: JsonElement? = null,
+        schemaPrefix: String? = if (schema != null) DEFAULT_SCHEMA_PREFIX else null,
+        schemaSuffix: String? = if (schema != null) DEFAULT_SCHEMA_SUFFIX else DEFAULT_GENERIC_SUFFIX,
+    ): String = listOfNotNull(
+        prompt?.takeIf { it.isNotEmpty() },
+        "".takeIf { !prompt.isNullOrEmpty() },
+        schemaPrefix,
+        schema?.toString(),
+        schemaSuffix,
+    ).joinToString("\n")
 
-/**
- * Splice [injectJsonInstruction] into a message list's system prompt.
- *
- * If the first message is a [MessageRole.System] message, its text is
- * used as the `prompt` seed and the whole leading system message is
- * replaced by the injected one. Otherwise a fresh system message is
- * prepended. The remaining messages pass through untouched.
- *
- * This is the provider-side entry point a LiteRt [LanguageModel] would
- * call before generation when the caller requested structured output
- * but the engine has no native JSON mode.
- */
-public fun injectJsonInstructionIntoMessages(
-    messages: List<ModelMessage>,
-    schema: JsonElement? = null,
-    schemaPrefix: String? = if (schema != null) DEFAULT_SCHEMA_PREFIX else null,
-    schemaSuffix: String? = if (schema != null) DEFAULT_SCHEMA_SUFFIX else DEFAULT_GENERIC_SUFFIX,
-): List<ModelMessage> {
-    val leadingSystem = messages.firstOrNull()?.takeIf { it.role == MessageRole.System }
-    val existingText = leadingSystem
-        ?.content
-        ?.filterIsInstance<ContentPart.Text>()
-        ?.joinToString("") { it.text }
-        ?: ""
-    val injected = injectJsonInstruction(existingText, schema, schemaPrefix, schemaSuffix)
-    val tail = if (leadingSystem != null) messages.drop(1) else messages
-    return listOf(systemMessage(injected)) + tail
+    /**
+     * Splice [injectJsonInstruction] into a message list's system prompt.
+     *
+     * If the first message is a [MessageRole.System] message, its text is
+     * used as the `prompt` seed and the whole leading system message is
+     * replaced by the injected one. Otherwise a fresh system message is
+     * prepended. The remaining messages pass through untouched.
+     *
+     * This is the provider-side entry point a LiteRt [LanguageModel] would
+     * call before generation when the caller requested structured output
+     * but the engine has no native JSON mode.
+     */
+    public fun injectJsonInstructionIntoMessages(
+        messages: List<ModelMessage>,
+        schema: JsonElement? = null,
+        schemaPrefix: String? = if (schema != null) DEFAULT_SCHEMA_PREFIX else null,
+        schemaSuffix: String? = if (schema != null) DEFAULT_SCHEMA_SUFFIX else DEFAULT_GENERIC_SUFFIX,
+    ): List<ModelMessage> {
+        val leadingSystem = messages.firstOrNull()?.takeIf { it.role == MessageRole.System }
+        val existingText = leadingSystem
+            ?.content
+            ?.filterIsInstance<ContentPart.Text>()
+            ?.joinToString("") { it.text }
+            ?: ""
+        val injected = injectJsonInstruction(existingText, schema, schemaPrefix, schemaSuffix)
+        val tail = if (leadingSystem != null) messages.drop(1) else messages
+        return listOf(SystemMessage(injected)) + tail
+    }
 }

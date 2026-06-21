@@ -93,7 +93,7 @@ public data class MiddlewareCallContext(
  * runs first on the way in, last on the way out (innermost in the
  * call stack, like Express middleware).
  */
-public fun wrapLanguageModel(
+public fun WrapLanguageModel(
     model: LanguageModel,
     middlewares: List<LanguageModelMiddleware>,
 ): LanguageModel {

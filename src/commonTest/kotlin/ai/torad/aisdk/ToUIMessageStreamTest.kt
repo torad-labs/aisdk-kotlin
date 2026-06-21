@@ -1,6 +1,6 @@
 package ai.torad.aisdk
 
-import ai.torad.aisdk.ui.toUIMessageStream
+import ai.torad.aisdk.ui.ToUIMessageStream
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.test.runTest
@@ -15,7 +15,7 @@ class ToUIMessageStreamTest {
 
     @Test
     fun `maps core stream events to their UIMessageChunk wire shapes`() = runTest {
-        val chunks = toUIMessageStream(
+        val chunks = ToUIMessageStream(
             flowOf(
                 StreamEvent.StreamStart(),
                 StreamEvent.TextStart("t1"),
@@ -35,13 +35,13 @@ class ToUIMessageStreamTest {
 
     @Test
     fun `finish chunk maps tool-calls finishReason to its wire value`() = runTest {
-        val chunk = toUIMessageStream(flowOf(StreamEvent.Finish(1, FinishReason.ToolCalls, Usage()))).toList().single()
+        val chunk = ToUIMessageStream(flowOf(StreamEvent.Finish(1, FinishReason.ToolCalls, Usage()))).toList().single()
         assertEquals("tool-calls", chunk["finishReason"]?.jsonPrimitive?.content)
     }
 
     @Test
     fun `tool-output-denied chunk carries only type and toolCallId without errorText`() = runTest {
-        val chunk = toUIMessageStream(
+        val chunk = ToUIMessageStream(
             flowOf(StreamEvent.ToolOutputDenied("c1", "t", approvalId = "a1", reason = "nope")),
         ).toList().single()
         assertEquals("tool-output-denied", chunk["type"]?.jsonPrimitive?.content)
@@ -51,7 +51,7 @@ class ToUIMessageStreamTest {
 
     @Test
     fun `maps a tool round-trip and drops events with no wire counterpart`() = runTest {
-        val chunks = toUIMessageStream(
+        val chunks = ToUIMessageStream(
             flowOf(
                 StreamEvent.ResponseMetadata(id = "r1"), // dropped
                 StreamEvent.ToolCall("c1", "search", JsonPrimitive("q")),
