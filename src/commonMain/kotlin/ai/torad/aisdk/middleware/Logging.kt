@@ -66,7 +66,10 @@ internal object LoggingWire {
                     event.error,
                 )
             is StreamEvent.Error ->
-                logger.warn("[$tag] stream-error ${event.message}")
+                // Forward the typed cause (like the ToolError branch forwards event.error) so a
+                // Crashlytics/Sentry-style Logger sink can group + symbolicate the terminal error —
+                // the one failure a developer most needs a stack trace for.
+                logger.warn("[$tag] stream-error ${event.message}", event.cause)
             is StreamEvent.StreamStart,
             is StreamEvent.ResponseMetadata,
             is StreamEvent.StepStart,

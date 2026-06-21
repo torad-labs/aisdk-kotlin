@@ -434,9 +434,12 @@ class GatewayAndProviderUtilsParityTest {
         validateUIMessages(listOf(message))
 
         val ok = safeValidateUIMessages(listOf(message))
-        val failed = safeValidateUIMessages(emptyList())
+        // An empty list is valid (clear-chat / default state); only a null bag fails the guard.
+        val emptyOk = safeValidateUIMessages(emptyList())
+        val failed = safeValidateUIMessages(null)
 
         assertIs<SafeValidateUIMessagesResult.Success>(ok)
+        assertIs<SafeValidateUIMessagesResult.Success>(emptyOk)
         assertIs<SafeValidateUIMessagesResult.Failure>(failed)
     }
 

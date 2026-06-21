@@ -151,8 +151,12 @@ public fun ExtractJsonMiddleware(
                 if (prefixMatch != null) {
                     block.buffer.deleteRange(0, prefixMatch.value.length)
                     block.prefixStripped = true
+                    // Only stream once the JSON fence header is stripped. A non-JSON fence
+                    // (```python, ```sh …) yields no prefix match — transitioning to Streaming
+                    // there would flush the raw fence header and force the wrong TextEnd path;
+                    // staying Buffering lets remainingText() extract the JSON via scanBalanced.
+                    block.phase = TextPhase.Streaming
                 }
-                block.phase = TextPhase.Streaming
             }
             current.length >= 3 && !current.startsWith("```") -> {
                 block.phase = TextPhase.Streaming

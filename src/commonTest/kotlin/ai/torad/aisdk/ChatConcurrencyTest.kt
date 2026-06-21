@@ -66,6 +66,31 @@ class ChatConcurrencyTest {
     }
 
     @Test
+    fun `regenerate re-runs from existing history without duplicating the last user message`() = runTest {
+        val sentRequests = mutableListOf<List<String>>()
+        var calls = 0
+        val chat = Chat(
+            transport = DirectChatTransport { request ->
+                sentRequests.add(request.messages.map { it.id })
+                val n = ++calls
+                flow { emit(assistant("a$n", "reply$n")) }
+            },
+        )
+
+        chat.sendMessage(user("u1", "hello")).collect {}
+        assertEquals(listOf("u1", "a1"), chat.messages.map { it.id })
+
+        chat.regenerate().collect {}
+
+        // The regenerate request carries exactly one u1 (trailing assistant a1 dropped) — NOT a
+        // duplicated user turn, which the old sendMessage(lastUser) path produced.
+        assertEquals(listOf("u1"), sentRequests.last())
+        assertEquals(1, chat.messages.count { it.id == "u1" }, "u1 must appear exactly once")
+        val ids = chat.messages.map { it.id }
+        assertEquals(ids.size, ids.toSet().size, "no duplicate message ids after regenerate")
+    }
+
+    @Test
     fun `stop supersedes an in-flight send so its terminal write is ignored`() = runTest {
         val gate = CompletableDeferred<Unit>()
         val chat = Chat(

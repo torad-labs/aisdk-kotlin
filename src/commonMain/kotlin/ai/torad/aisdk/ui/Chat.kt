@@ -163,11 +163,25 @@ public class Chat(
         toolName: String = "tool",
     ): Unit = addToolOutput(toolCallId, output, toolName)
 
-    public fun sendMessage(message: UIMessage, body: Map<String, JsonElement> = emptyMap()): Flow<UIMessage> = flow {
+    public fun sendMessage(message: UIMessage, body: Map<String, JsonElement> = emptyMap()): Flow<UIMessage> =
+        sendInternal(body) { it + message }
+
+    public fun regenerate(body: Map<String, JsonElement> = emptyMap()): Flow<UIMessage> {
+        // Re-run from the existing history with the trailing assistant turn(s) dropped. Do NOT
+        // re-append the last user message — it is already present, and appending it (as the old
+        // code did via sendMessage) duplicated its id and sent a doubled user turn to the model.
+        if (internalState.value.messages.none { it.role == UIMessageRole.User }) return emptyFlow()
+        return sendInternal(body) { msgs -> msgs.dropLastWhile { it.role == UIMessageRole.Assistant } }
+    }
+
+    private fun sendInternal(
+        body: Map<String, JsonElement>,
+        transformMessages: (List<UIMessage>) -> List<UIMessage>,
+    ): Flow<UIMessage> = flow {
         val op = Any()
         currentOpRef.store(op)
         val request = applyState {
-            copy(messages = messages + message, status = ChatStatus.Submitted, error = null)
+            copy(messages = transformMessages(messages), status = ChatStatus.Submitted, error = null)
         }.let { ChatRequest(messages = it.messages, body = body) }
         try {
             transport.sendMessages(request).collect { response ->
@@ -190,12 +204,6 @@ public class Chat(
             }
             throw t
         }
-    }
-
-    public fun regenerate(body: Map<String, JsonElement> = emptyMap()): Flow<UIMessage> {
-        val lastUser = internalState.value.messages.lastOrNull { it.role == UIMessageRole.User }
-            ?: return emptyFlow()
-        return sendMessage(lastUser, body)
     }
 
     public fun stop() {
