@@ -49,6 +49,38 @@ class Change:
     new_text: str
 
 
+# Rules that ban JVM-only APIs purely for multiplatform (commonMain / Kotlin-Native /
+# wasm / js) safety. They are LEGITIMATE Kotlin/JVM in JVM-backed source sets, so they
+# must not be enforced there — only in common + the non-JVM platform source sets.
+_JVM_PLATFORM_OK_RULES = frozenset({
+    "no-java-import",
+    "no-thread-sleep",
+    "no-string-format",
+    "no-print-stack-trace",
+})
+_JVM_SOURCE_SET_MARKERS = (
+    "/jvmMain/",
+    "/jvmTest/",
+    "/androidMain/",
+    "/jvmAndAndroidMain/",
+    "/androidUnitTest/",
+    "/androidInstrumentedTest/",
+)
+
+
+def _rules_for_path(rule_files: list[Path], file_path: str) -> list[Path]:
+    """Scope JVM-platform-legitimate rules out of JVM-backed source sets.
+
+    `java.*` imports, Thread.sleep, String.format, printStackTrace are illegal in
+    commonMain / Native / wasm / js (they break those targets) but perfectly valid
+    Kotlin/JVM. The rules banning them exist for multiplatform safety, so they apply
+    everywhere EXCEPT the JVM/Android source sets where the APIs genuinely exist.
+    """
+    if any(marker in file_path for marker in _JVM_SOURCE_SET_MARKERS):
+        return [r for r in rule_files if r.stem not in _JVM_PLATFORM_OK_RULES]
+    return rule_files
+
+
 def applies(data: dict) -> bool:
     return data.get("tool_name") in WATCHED
 
@@ -73,7 +105,8 @@ def run(data: dict) -> Optional[HookResult]:
     for change in _changes(tool_input):
         if Path(change.file_path).suffix.lower() != ".kt":
             continue
-        for hit in _introduced(binary, rule_files, severities, change.old_text, change.new_text):
+        applicable = _rules_for_path(rule_files, change.file_path)
+        for hit in _introduced(binary, applicable, severities, change.old_text, change.new_text):
             target = block_hits if hit.severity == "error" else warn_hits
             target.append((change.file_path, hit))
 

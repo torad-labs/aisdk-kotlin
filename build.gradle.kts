@@ -105,7 +105,22 @@ kotlin {
     // artifact for server-side Kotlin/Native and CLI consumers.
     linuxX64()
 
+    // Apply the default source-set hierarchy explicitly: declaring the manual
+    // jvmAndAndroidMain dependsOn edge below otherwise disables Kotlin's auto-applied
+    // template, which is what groups the Native targets (linux + ios) under nativeMain.
+    // With it explicit, nativeMain stays wired AND the custom jvmAndAndroid group is additive.
+    applyDefaultHierarchyTemplate()
+
     sourceSets {
+        // Intermediate source set shared by the JVM and Android targets: both are
+        // JVM-backed, so their `actual`s (SecureRandom via java.security, the
+        // ProcessBuilder-backed MCP stdio transport) are identical. Declaring them
+        // once here — instead of byte-identical copies in jvmMain + androidMain —
+        // makes it a single source of truth.
+        val jvmAndAndroidMain by creating { dependsOn(commonMain.get()) }
+        jvmMain { dependsOn(jvmAndAndroidMain) }
+        androidMain { dependsOn(jvmAndAndroidMain) }
+
         commonMain.dependencies {
             api(libs.kotlinx.coroutines.core)
             api(libs.kotlinx.serialization.json)
@@ -132,6 +147,7 @@ detekt {
     baseline = file("$projectDir/detekt-baseline.xml")
     source.setFrom(
         "src/commonMain/kotlin",
+        "src/jvmAndAndroidMain/kotlin",
         "src/jvmMain/kotlin",
         "src/androidMain/kotlin",
         "src/nativeMain/kotlin",
