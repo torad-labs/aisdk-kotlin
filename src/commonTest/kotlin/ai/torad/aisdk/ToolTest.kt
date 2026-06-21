@@ -5,6 +5,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
+import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonPrimitive
@@ -128,6 +129,58 @@ class ToolTest {
         assertEquals(setOf("startHour", "endHour"), window["required"]!!.jsonArray.map { it.jsonPrimitive.content }.toSet())
         assertEquals(setOf("location", "days", "threshold", "includeAlerts", "tags", "weights", "note", "window"), required)
         assertTrue("unit" !in required)
+    }
+
+    @Serializable
+    private sealed class ShapeCmd {
+        @Serializable @SerialName("circle")
+        data class Circle(val radius: Int) : ShapeCmd()
+
+        @Serializable @SerialName("rect")
+        data class Rect(val w: Int, val h: Int) : ShapeCmd()
+    }
+
+    @Test
+    fun `sealed-class tool input schema is a oneOf of typed subclass objects`() {
+        val tool = Tool<ShapeCmd, String, Unit>(
+            name = "shape",
+            description = "draw a shape",
+            inputSerializer = serializer(),
+            outputSerializer = serializer(),
+        ) { "ok" }
+
+        val schema = Json.parseToJsonElement(ToolSet(tool).descriptors.single().parametersSchemaJson).jsonObject
+        val variants = schema["oneOf"]?.jsonArray
+        assertNotNull(variants, "a sealed-class input must produce a oneOf of subclass variants")
+        assertEquals(2, variants.size)
+
+        // Each variant is keyed by its pinned "type" discriminator const (the subclass serialName).
+        val byType = variants.associateBy { v ->
+            v.jsonObject["properties"]?.jsonObject?.get("type")?.jsonObject
+                ?.get("enum")?.jsonArray?.single()?.jsonPrimitive?.content
+        }
+        assertEquals(setOf("circle", "rect"), byType.keys)
+
+        val circle = byType["circle"]?.jsonObject
+        assertNotNull(circle)
+        assertEquals("object", circle["type"]?.jsonPrimitive?.content)
+        assertEquals(JsonPrimitive(false), circle["additionalProperties"])
+        // The "type" discriminator is required alongside the subclass's own fields.
+        assertEquals(
+            setOf("type", "radius"),
+            circle["required"]?.jsonArray?.map { it.jsonPrimitive.content }?.toSet(),
+        )
+        assertEquals(
+            "integer",
+            circle["properties"]?.jsonObject?.get("radius")?.jsonObject?.get("type")?.jsonPrimitive?.content,
+        )
+
+        val rect = byType["rect"]?.jsonObject
+        assertNotNull(rect)
+        assertEquals(
+            setOf("type", "w", "h"),
+            rect["required"]?.jsonArray?.map { it.jsonPrimitive.content }?.toSet(),
+        )
     }
 
     @Test

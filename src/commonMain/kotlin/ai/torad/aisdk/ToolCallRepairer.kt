@@ -72,8 +72,18 @@ internal class ToolCallRepairer<TContext>(
         } else {
             originalToolDef
         }
+        // toolDef == null (repair re-routed to a tool not in the set) is the ONLY null return —
+        // the caller turns that into ToolCallRepairFailed(repairError = null). When the repaired
+        // input itself fails to decode, surface that decode error as repairError instead of
+        // swallowing it via getOrNull() (which mislabels it "repair: returned null").
         return toolDef?.let { def ->
-            runCatching { def to decodeInput(def, corrected.input) }.getOrNull()
+            try {
+                def to decodeInput(def, corrected.input)
+            } catch (ce: CancellationException) {
+                throw ce
+            } catch (@Suppress("TooGenericExceptionCaught") t: Throwable) {
+                throw AgentError.ToolCallRepairFailed(call.toolName, originalError = originalError, repairError = t)
+            }
         }
     }
 }
