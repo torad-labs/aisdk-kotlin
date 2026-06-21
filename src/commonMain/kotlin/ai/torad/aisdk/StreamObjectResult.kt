@@ -9,14 +9,21 @@ import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 
 public class StreamObjectResult<TOutput> internal constructor(
-    private val events: Flow<StreamEvent>,
+    events: Flow<StreamEvent>,
     private val output: Output<TOutput>,
     private val repairText: ((String) -> String?)? = null,
 ) {
+    // Memoise the cold upstream: per the LanguageModel.stream() contract each collection drives a
+    // fresh API call, so partialObjectStream / textStream / elementStream / finish() collecting
+    // `events` directly would each trigger a SEPARATE (paid, possibly divergent) generation. Route
+    // every accessor through one StreamTextResult so the provider is hit at most once and replayed.
+    private val stream: Flow<StreamEvent> = StreamTextResult(events).fullStream
+
     public val partialObjectStream: Flow<TOutput> = flow {
         val accumulated = StringBuilder()
         var lastKey: String? = null
-        events.collect { event ->
+        stream.collect { event ->
+            if (event is StreamEvent.Error) throw UiMessageStreamError(event.message, event.cause)
             if (event !is StreamEvent.TextDelta) return@collect
             accumulated.append(event.text)
             val parsed = PartialJson.parsePartialJson(accumulated.toString()).value ?: return@collect
@@ -29,7 +36,7 @@ public class StreamObjectResult<TOutput> internal constructor(
     }
 
     public val textStream: Flow<String> =
-        events.filterIsInstance<StreamEvent.TextDelta>().map { it.text }
+        stream.filterIsInstance<StreamEvent.TextDelta>().map { it.text }
 
     public fun <E> elementStream(arrayOutput: Output.Arr<E>): Flow<E> = flow {
         val accumulated = StringBuilder()
@@ -49,7 +56,8 @@ public class StreamObjectResult<TOutput> internal constructor(
             return out
         }
 
-        events.collect { event ->
+        stream.collect { event ->
+            if (event is StreamEvent.Error) throw UiMessageStreamError(event.message, event.cause)
             if (event !is StreamEvent.TextDelta) return@collect
             accumulated.append(event.text)
             ready(complete = false).forEach { emit(it) }
@@ -63,9 +71,12 @@ public class StreamObjectResult<TOutput> internal constructor(
         var finishReason = FinishReason.Stop
         var warnings: List<CallWarning> = emptyList()
         var response = LanguageModelResponseMetadata()
-        events.collect { event ->
+        stream.collect { event ->
             when (event) {
                 is StreamEvent.TextDelta -> accumulated.append(event.text)
+                // In-band terminal error: surface the real provider failure (preserving its cause)
+                // instead of letting it fall through to a misleading NoObjectGeneratedError below.
+                is StreamEvent.Error -> throw UiMessageStreamError(event.message, event.cause)
                 is StreamEvent.StreamStart -> warnings = event.warnings
                 is StreamEvent.ResponseMetadata -> response = LanguageModelResponseMetadata(
                     id = event.id,
@@ -96,22 +107,42 @@ public class StreamObjectResult<TOutput> internal constructor(
                 is StreamEvent.ToolOutputDenied,
                 is StreamEvent.StepFinish,
                 StreamEvent.Abort,
-                is StreamEvent.Error,
                 is StreamEvent.Raw,
                 -> Unit
             }
         }
-        return StreamObjectFinish(decodeOrThrow(accumulated.toString()), usage, finishReason, warnings, response)
+        return StreamObjectFinish(
+            decodeOrThrow(accumulated.toString(), usage, finishReason, response),
+            usage,
+            finishReason,
+            warnings,
+            response,
+        )
     }
 
     public suspend fun objectValue(): TOutput = finish().value
 
-    private fun decodeOrThrow(text: String): TOutput {
-        runCatching { output.decode(text) }.getOrNull()?.let { return it }
+    private fun decodeOrThrow(
+        text: String,
+        usage: Usage,
+        finishReason: FinishReason,
+        response: LanguageModelResponseMetadata,
+    ): TOutput {
+        val primary = runCatching { output.decode(text) }
+        primary.getOrNull()?.let { return it }
         repairText?.invoke(text)?.let { repaired ->
             runCatching { output.decode(repaired) }.getOrNull()?.let { return it }
         }
-        throw NoObjectGeneratedError("Object stream produced no parseable object", text = text)
+        throw NoObjectGeneratedError(
+            "Object stream produced no parseable object",
+            text = text,
+            response = response,
+            usage = usage,
+            finishReason = finishReason,
+            // Attach the real decode failure (kotlinx SerializationException / validation error)
+            // so callers see WHY the JSON failed, not just a generic "no parseable object".
+            cause = primary.exceptionOrNull(),
+        )
     }
 }
 

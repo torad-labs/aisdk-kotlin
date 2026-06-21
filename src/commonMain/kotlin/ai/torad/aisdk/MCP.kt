@@ -917,9 +917,11 @@ suspend fun auth(
         return AuthResult.AUTHORIZED
     }
 
-    val state = provider.state() ?: IdGenerator.generate(prefix = "mcp")
+    // OAuth state (CSRF) and PKCE code_verifier must come from a CSPRNG, not the
+    // seeded Random.Default — RFC 7636 §4.1 requires high-entropy cryptographic random.
+    val state = provider.state() ?: IdGenerator.generate(prefix = "mcp", random = SecureRandom())
     provider.saveState(state)
-    val codeVerifier = IdGenerator(prefix = "mcp-verifier", size = 48).generate()
+    val codeVerifier = IdGenerator(prefix = "mcp-verifier", size = 48, random = SecureRandom()).generate()
     provider.saveCodeVerifier(codeVerifier)
 
     val authClientInformation = clientInformation
@@ -1144,10 +1146,10 @@ public class HttpMCPTransport(
             postMessage(message, triedAuth = true)
             return
         }
-        if (response.status.value == 202 || message is JSONRPCNotification) {
-            ensureInboundSse()
-            return
-        }
+        // Surface transport errors for BOTH requests and notifications. This check must run
+        // before the 202/notification short-circuit below, otherwise a non-2xx response to a
+        // notification POST (e.g. a rejected notifications/initialized handshake) would be
+        // silently swallowed and init() would report success on an uninitialized session.
         if (response.status.value !in 200..299) {
             val text = response.bodyAsText()
             val hint = if (response.status.value == HTTP_NOT_FOUND) {
@@ -1161,6 +1163,10 @@ public class HttpMCPTransport(
                 )
             onError?.invoke(error)
             throw error
+        }
+        if (response.status.value == 202 || message is JSONRPCNotification) {
+            ensureInboundSse()
+            return
         }
         val contentType = response.headers[HttpHeaders.ContentType].orEmpty()
         when {

@@ -189,12 +189,14 @@ public class Completion(
                             s.copy(phase = CompletionPhase.Streaming(s.completion))
                         } else {
                             s.copy(
+                                // Preserve terminal states: stop() sets Done to keep the partial
+                                // text, and setLoading(false) firing afterward must not erase it.
                                 phase = when (val p = s.phase) {
                                     is CompletionPhase.Streaming -> CompletionPhase.Done(p.text)
-                                    is CompletionPhase.Failed -> p
                                     is CompletionPhase.Idle,
                                     is CompletionPhase.Done,
-                                    -> CompletionPhase.Idle
+                                    is CompletionPhase.Failed,
+                                    -> p
                                 },
                             )
                         }

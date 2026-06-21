@@ -350,6 +350,9 @@ private class WrappedImageModel(
 ) : ImageModel {
     override val modelId: String = inner.modelId
     override val provider: String = inner.provider
+    // Forward the inner model's per-call image cap; without this the wrapper inherits the
+    // interface default (null = unlimited) and defeats n-batching for capped inner models.
+    override val maxImagesPerCall: Int? = inner.maxImagesPerCall
     private val chainGenerate: suspend (ImageGenerationParams) -> ImageModelResult
 
     init {

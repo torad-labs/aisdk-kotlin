@@ -1,5 +1,6 @@
 package ai.torad.aisdk
 
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -156,6 +157,11 @@ public class StructuredObject<RESULT, INPUT>(
             options.onFinish(StructuredObjectFinish(currentValue, finalError, finalRaw))
         } catch (abort: AbortError) {
             // Preserve partial state on abort — finally block converts Streaming to Done.
+        } catch (c: CancellationException) {
+            // External/structured cancellation (a CancellationException that is NOT our explicit
+            // AbortError) must propagate so cooperative cancellation unwinds the job tree. Ordering
+            // matters: AbortError is a CancellationException subtype, so its catch stays first.
+            throw c
         } catch (t: Throwable) {
             val current = mutableState.value
             val partial = (current as? StructuredObjectPhase.Streaming)?.partial ?: currentValue

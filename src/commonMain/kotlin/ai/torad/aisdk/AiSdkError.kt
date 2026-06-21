@@ -26,6 +26,12 @@ public class APICallError(
 
 public class EmptyResponseBodyError(message: String = "Empty response body") : AiSdkException(message)
 
+/** The platform cryptographic entropy source could not be read (native CSPRNG seam). */
+internal class SecureRandomUnavailableError(
+    message: String = "Secure random source unavailable",
+    cause: Throwable? = null,
+) : AiSdkException(message, cause)
+
 public class InvalidPromptError(
     public val prompt: String?,
     message: String,
