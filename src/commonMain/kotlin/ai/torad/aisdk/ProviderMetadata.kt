@@ -43,7 +43,8 @@ internal object ProviderMetadataSerializer : KSerializer<ProviderMetadata> {
     override val descriptor: SerialDescriptor = buildClassSerialDescriptor("ai.torad.aisdk.ProviderMetadata")
 
     override fun serialize(encoder: Encoder, value: ProviderMetadata) {
-        val jsonEncoder = encoder as? JsonEncoder ?: error("ProviderMetadata requires a JSON encoder")
+        val jsonEncoder = encoder as? JsonEncoder
+            ?: throw UnsupportedFunctionalityError("JSON-only serialization", "ProviderMetadata requires a JSON encoder")
         jsonEncoder.encodeJsonElement(
             when (value) {
                 ProviderMetadata.None -> JsonNull
@@ -53,7 +54,8 @@ internal object ProviderMetadataSerializer : KSerializer<ProviderMetadata> {
     }
 
     override fun deserialize(decoder: Decoder): ProviderMetadata {
-        val jsonDecoder = decoder as? JsonDecoder ?: error("ProviderMetadata requires a JSON decoder")
+        val jsonDecoder = decoder as? JsonDecoder
+            ?: throw UnsupportedFunctionalityError("JSON-only serialization", "ProviderMetadata requires a JSON decoder")
         return when (val element = jsonDecoder.decodeJsonElement()) {
             is JsonNull -> ProviderMetadata.None
             is JsonObject -> ProviderMetadata.Raw(element)

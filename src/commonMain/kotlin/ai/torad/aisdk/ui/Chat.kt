@@ -1,6 +1,7 @@
 package ai.torad.aisdk.ui
 
-import kotlin.concurrent.Volatile
+import kotlin.concurrent.atomics.AtomicReference
+import kotlin.concurrent.atomics.ExperimentalAtomicApi
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -58,6 +59,7 @@ public enum class ChatStatus {
     Error,
 }
 
+@OptIn(ExperimentalAtomicApi::class)
 public class Chat(
     public val id: String = "chat",
     initialMessages: List<UIMessage> = emptyList(),
@@ -79,11 +81,10 @@ public class Chat(
 
     public val state: StateFlow<ChatState> = _state.asStateFlow()
 
-    // @Volatile for cross-thread visibility: an in-flight sendMessage/regenerate
+    // Cross-thread visibility via AtomicReference: an in-flight sendMessage/regenerate
     // collector reads this to decide whether it is still the active operation
     // before writing state.
-    @Volatile
-    private var currentOp: Any? = null
+    private val currentOpRef = AtomicReference<Any?>(null)
 
     public val status: ChatStatus
         get() = internalState.value.status
@@ -164,27 +165,27 @@ public class Chat(
 
     public fun sendMessage(message: UIMessage, body: Map<String, JsonElement> = emptyMap()): Flow<UIMessage> = flow {
         val op = Any()
-        currentOp = op
+        currentOpRef.store(op)
         val request = applyState {
             copy(messages = messages + message, status = ChatStatus.Submitted, error = null)
         }.let { ChatRequest(messages = it.messages, body = body) }
         try {
             transport.sendMessages(request).collect { response ->
-                if (currentOp === op) {
+                if (currentOpRef.load() === op) {
                     applyState { copy(status = ChatStatus.Streaming).withUpsert(response) }
                 }
                 emit(response)
             }
-            if (currentOp === op) {
+            if (currentOpRef.load() === op) {
                 applyState { copy(status = ChatStatus.Ready) }
             }
         } catch (t: CancellationException) {
-            if (currentOp === op) {
+            if (currentOpRef.load() === op) {
                 applyState { copy(error = null, status = ChatStatus.Ready) }
             }
             throw t
         } catch (t: Throwable) {
-            if (currentOp === op) {
+            if (currentOpRef.load() === op) {
                 applyState { copy(error = t, status = ChatStatus.Error) }
             }
             throw t
@@ -198,7 +199,7 @@ public class Chat(
     }
 
     public fun stop() {
-        currentOp = null
+        currentOpRef.store(null)
         applyState { copy(status = ChatStatus.Ready) }
     }
 

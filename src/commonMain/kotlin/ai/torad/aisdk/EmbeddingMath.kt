@@ -18,6 +18,6 @@ public object EmbeddingMath {
             rightNorm += b * b
         }
         val denom = sqrt(leftNorm) * sqrt(rightNorm)
-        return if (denom == 0.0) 0f else (dot / denom).toFloat()
+        return if (denom > 0) (dot / denom).toFloat() else 0f
     }
 }

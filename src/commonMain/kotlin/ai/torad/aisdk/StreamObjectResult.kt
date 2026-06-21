@@ -78,7 +78,27 @@ public class StreamObjectResult<TOutput> internal constructor(
                     usage = event.usage
                     finishReason = event.finishReason
                 }
-                else -> Unit
+                is StreamEvent.StepStart,
+                is StreamEvent.TextStart,
+                is StreamEvent.TextEnd,
+                is StreamEvent.ReasoningStart,
+                is StreamEvent.ReasoningDelta,
+                is StreamEvent.ReasoningEnd,
+                is StreamEvent.SourcePart,
+                is StreamEvent.FilePart,
+                is StreamEvent.ToolInputStart,
+                is StreamEvent.ToolInputDelta,
+                is StreamEvent.ToolInputEnd,
+                is StreamEvent.ToolCall,
+                is StreamEvent.ToolResult,
+                is StreamEvent.ToolError,
+                is StreamEvent.ToolApprovalRequest,
+                is StreamEvent.ToolOutputDenied,
+                is StreamEvent.StepFinish,
+                StreamEvent.Abort,
+                is StreamEvent.Error,
+                is StreamEvent.Raw,
+                -> Unit
             }
         }
         return StreamObjectFinish(decodeOrThrow(accumulated.toString()), usage, finishReason, warnings, response)

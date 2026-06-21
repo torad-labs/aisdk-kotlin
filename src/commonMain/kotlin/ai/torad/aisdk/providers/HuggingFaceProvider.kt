@@ -86,7 +86,7 @@ private class HuggingFaceResponsesLanguageModel(
 
     override suspend fun generate(params: LanguageModelCallParams): LanguageModelResult {
         val prepared = HuggingFaceWire.huggingFaceResponsesRequestBody(modelId, params, stream = false)
-        val response = postJson(prepared.body, acceptEventStream = false, parseJson = true, headers = params.headers)
+        val response = postJson(prepared.body, headers = params.headers)
         return responsesResult(
             response = response.value.jsonObject,
             requestBody = prepared.body,
@@ -123,18 +123,15 @@ private class HuggingFaceResponsesLanguageModel(
 
     private suspend fun postJson(
         body: JsonElement,
-        acceptEventStream: Boolean,
-        parseJson: Boolean,
         headers: Map<String, String>,
     ): HuggingFaceHttpResponse {
         val response = client.request("${settings.baseURL.trimEnd('/')}/responses") {
             method = HttpMethod.Post
             contentType(ContentType.Application.Json)
-            if (acceptEventStream) header(HttpHeaders.Accept, "text/event-stream")
             HuggingFaceWire.huggingFaceHeaders(settings, headers).forEach { (name, value) -> header(name, value) }
             setBody(aiSdkJson.encodeToString(JsonElement.serializer(), body))
         }
-        return parseResponse(response, parseJson)
+        return parseResponse(response, parseJson = true)
     }
 
     private suspend fun parseResponse(
@@ -151,7 +148,7 @@ private class HuggingFaceResponsesLanguageModel(
                 rawBody = raw,
                 headers = headers,
                 message = "Hugging Face API error: ${parsed?.let(HuggingFaceWire::huggingFaceErrorMessage) ?: raw}",
-                requestBodyValues = raw,
+                requestBodyValues = parsed,
             )
         }
         return HuggingFaceHttpResponse(
@@ -566,7 +563,14 @@ internal object HuggingFaceWire {
                     when (part) {
                         is ContentPart.Text -> input += huggingFaceAssistantMessage(part.text)
                         is ContentPart.Reasoning -> input += huggingFaceAssistantMessage(part.text)
-                        else -> Unit
+                        is ContentPart.ToolCall,
+                        is ContentPart.ToolResult,
+                        is ContentPart.ToolApprovalRequest,
+                        is ContentPart.ToolApprovalResponse,
+                        is ContentPart.Source,
+                        is ContentPart.File,
+                        is ContentPart.Image,
+                        -> Unit
                     }
                 }
                 MessageRole.Tool -> warnings += CallWarning("unsupported", "tool messages")
@@ -581,7 +585,14 @@ internal object HuggingFaceWire {
             when (part) {
                 is ContentPart.Text -> part.text
                 is ContentPart.Reasoning -> part.text
-                else -> ""
+                is ContentPart.ToolCall,
+                is ContentPart.ToolResult,
+                is ContentPart.ToolApprovalRequest,
+                is ContentPart.ToolApprovalResponse,
+                is ContentPart.Source,
+                is ContentPart.File,
+                is ContentPart.Image,
+                -> ""
             }
         }
 
@@ -618,7 +629,13 @@ internal object HuggingFaceWire {
                 put("image_url", JsonPrimitive("data:${huggingFaceImageMediaType(part.mediaType)};base64,${part.base64}"))
             }
         }
-        else -> null
+        is ContentPart.Reasoning,
+        is ContentPart.ToolCall,
+        is ContentPart.ToolResult,
+        is ContentPart.ToolApprovalRequest,
+        is ContentPart.ToolApprovalResponse,
+        is ContentPart.Source,
+        -> null
     }
 
     fun huggingFaceImageMediaType(mediaType: String): String =

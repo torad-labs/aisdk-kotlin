@@ -4,7 +4,6 @@ import ai.torad.aisdk.ContentPart
 import ai.torad.aisdk.MessageRole
 import ai.torad.aisdk.ModelMessage
 import ai.torad.aisdk.StreamEvent
-import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.contentOrNull
 
@@ -164,10 +163,9 @@ public object ModelMessageConversion {
                 state = part.state,
                 input = part.input,
                 output = part.output,
-                preliminary = part.preliminary,
+                flags = ToolConversionFlags(part.preliminary, ignoreIncompleteToolCalls),
                 approvalId = part.approvalId,
                 signature = part.signature,
-                ignoreIncompleteToolCalls = ignoreIncompleteToolCalls,
                 onContentPart = onContentPart,
                 onDeferredToolResult = onDeferredToolResult,
                 contextHint = contextHint,
@@ -178,11 +176,10 @@ public object ModelMessageConversion {
                 state = part.state,
                 input = part.input,
                 output = part.output,
-                preliminary = part.preliminary,
+                flags = ToolConversionFlags(part.preliminary, ignoreIncompleteToolCalls),
                 // Dynamic tool parts carry no approval identity (server-defined tools only).
                 approvalId = null,
                 signature = null,
-                ignoreIncompleteToolCalls = ignoreIncompleteToolCalls,
                 onContentPart = onContentPart,
                 onDeferredToolResult = onDeferredToolResult,
                 contextHint = contextHint,
@@ -222,8 +219,20 @@ public object ModelMessageConversion {
             mediaType = part.mediaType,
             filename = part.filename,
         )
-        else -> null
+        is UIMessagePart.Text,
+        is UIMessagePart.ToolUI,
+        is UIMessagePart.Reasoning,
+        is UIMessagePart.Error,
+        is UIMessagePart.Data,
+        is UIMessagePart.StepStart,
+        is UIMessagePart.DynamicToolUI,
+        -> null
     }
+
+    private data class ToolConversionFlags(
+        val preliminary: Boolean,
+        val ignoreIncompleteToolCalls: Boolean,
+    )
 
     @Suppress("LongParameterList", "CyclomaticComplexMethod")
     private fun convertToolCall(
@@ -232,29 +241,28 @@ public object ModelMessageConversion {
         state: ToolCallState,
         input: kotlinx.serialization.json.JsonElement?,
         output: kotlinx.serialization.json.JsonElement?,
-        preliminary: Boolean,
+        flags: ToolConversionFlags,
         approvalId: String?,
         signature: String?,
-        ignoreIncompleteToolCalls: Boolean,
         onContentPart: (ContentPart) -> Unit,
         onDeferredToolResult: (ContentPart.ToolResult) -> Unit,
         contextHint: String,
     ) {
         when (state) {
             ToolCallState.OutputAvailable -> {
-                if (preliminary) return
+                if (flags.preliminary) return
                 onContentPart(
                     ContentPart.ToolCall(
                         toolCallId = toolCallId,
                         toolName = toolName,
-                        input = input ?: JsonNull,
+                        input = requireNotNull(input) { "ToolCall.input absent at OutputAvailable in $contextHint" },
                     ),
                 )
                 onDeferredToolResult(
                     ContentPart.ToolResult(
                         toolCallId = toolCallId,
                         toolName = toolName,
-                        output = output ?: JsonNull,
+                        output = requireNotNull(output) { "ToolResult.output absent at OutputAvailable in $contextHint" },
                     ),
                 )
             }
@@ -266,14 +274,14 @@ public object ModelMessageConversion {
                 ContentPart.ToolApprovalRequest(
                     toolCallId = toolCallId,
                     toolName = toolName,
-                    input = input ?: JsonNull,
+                    input = requireNotNull(input) { "ToolApprovalRequest.input absent at approval state in $contextHint" },
                     approvalId = approvalId,
                     // The v6.0.202 HMAC signature must survive the UI round-trip: with a
                     // configured approval secret, a replay without it is denied fail-closed.
                     signature = signature,
                 ),
             )
-            ToolCallState.InputStreaming, ToolCallState.InputAvailable -> if (!ignoreIncompleteToolCalls) {
+            ToolCallState.InputStreaming, ToolCallState.InputAvailable -> if (!flags.ignoreIncompleteToolCalls) {
                 error(
                     "incomplete tool call '$toolName' (id=$toolCallId, state=$state) in $contextHint; " +
                         "set ignoreIncompleteToolCalls=true to drop these silently",

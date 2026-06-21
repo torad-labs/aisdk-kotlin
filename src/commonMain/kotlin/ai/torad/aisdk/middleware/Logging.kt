@@ -67,7 +67,26 @@ internal object LoggingWire {
                 )
             is StreamEvent.Error ->
                 logger.warn("[$tag] stream-error ${event.message}")
-            else -> Unit // text / reasoning / lifecycle events are noise here.
+            is StreamEvent.StreamStart,
+            is StreamEvent.ResponseMetadata,
+            is StreamEvent.StepStart,
+            is StreamEvent.TextStart,
+            is StreamEvent.TextDelta,
+            is StreamEvent.TextEnd,
+            is StreamEvent.ReasoningStart,
+            is StreamEvent.ReasoningDelta,
+            is StreamEvent.ReasoningEnd,
+            is StreamEvent.SourcePart,
+            is StreamEvent.FilePart,
+            is StreamEvent.ToolInputDelta,
+            is StreamEvent.ToolInputEnd,
+            is StreamEvent.ToolApprovalRequest,
+            is StreamEvent.ToolOutputDenied,
+            is StreamEvent.StepFinish,
+            is StreamEvent.Finish,
+            StreamEvent.Abort,
+            is StreamEvent.Raw,
+            -> Unit // text / reasoning / lifecycle events are noise here.
         }
     }
 }

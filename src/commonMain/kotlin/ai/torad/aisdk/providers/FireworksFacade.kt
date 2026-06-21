@@ -220,10 +220,9 @@ internal object FireworksWire {
     fun FireworksProviderSettings.toCompatible(
         name: String,
         version: String,
-        includeUsage: Boolean = false,
-        supportsStructuredOutputs: Boolean = false,
+        capabilities: ProviderCapabilities = ProviderCapabilities(),
     ): OpenAICompatibleProviderSettings =
-        compatibleSettings(name, version, baseURL, apiKey, headers, includeUsage, supportsStructuredOutputs)
+        compatibleSettings(name, version, baseURL, apiKey, headers, capabilities)
 
     fun transformFireworksProviderOptions(options: ProviderOptions): ProviderOptions {
         val map = options.toMap()

@@ -245,7 +245,7 @@ internal object MediaSupport {
 
     /** Render a CallWarning for the logger seam (upstream's logWarnings). */
     internal fun formatCallWarning(warning: CallWarning): String =
-        "AI SDK Warning [${warning.type}]: ${warning.message ?: warning.details?.toString() ?: ""}"
+        "AI SDK Warning [${warning.type}]: ${warning.message ?: warning.details?.toString().orEmpty()}"
 
     /** Split [total] into chunks of at most [perChunk] — e.g. (5, 2) → [2, 2, 1]. */
     internal fun splitCount(total: Int, perChunk: Int): List<Int> {
@@ -353,6 +353,12 @@ private class WrappedImageModel(
     private val chainGenerate: suspend (ImageGenerationParams) -> ImageModelResult
 
     init {
+        chainGenerate = buildGenerateChain(middlewares)
+    }
+
+    private fun buildGenerateChain(
+        middlewares: List<ImageModelMiddleware>,
+    ): suspend (ImageGenerationParams) -> ImageModelResult {
         var doGenerate: suspend (ImageGenerationParams) -> ImageModelResult = inner::generate
         for (middleware in middlewares.asReversed()) {
             val downstream = doGenerate
@@ -366,7 +372,7 @@ private class WrappedImageModel(
                 )
             }
         }
-        chainGenerate = doGenerate
+        return doGenerate
     }
 
     override suspend fun generate(params: ImageGenerationParams): ImageModelResult =

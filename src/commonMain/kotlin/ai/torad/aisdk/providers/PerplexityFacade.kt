@@ -31,7 +31,7 @@ public class PerplexityProvider(
 ) : Provider {
     private val compatible = OpenAICompatible(
         client,
-        settings.toCompatible("perplexity", PERPLEXITY_VERSION, supportsStructuredOutputs = true),
+        settings.toCompatible("perplexity", PERPLEXITY_VERSION, capabilities = ProviderCapabilities(supportsStructuredOutputs = true)),
     )
     override val providerId: String = "perplexity"
 
@@ -51,8 +51,7 @@ internal object PerplexityWire {
     fun PerplexityProviderSettings.toCompatible(
         name: String,
         version: String,
-        includeUsage: Boolean = false,
-        supportsStructuredOutputs: Boolean = false,
+        capabilities: ProviderCapabilities = ProviderCapabilities(),
     ): OpenAICompatibleProviderSettings =
         compatibleSettings(
             name = name,
@@ -60,8 +59,7 @@ internal object PerplexityWire {
             baseURL = baseURL,
             apiKey = apiKey,
             headers = headers,
-            includeUsage = includeUsage,
-            supportsStructuredOutputs = supportsStructuredOutputs,
+            capabilities = capabilities,
             transformChatRequestBody = ::perplexityTransformChatBody,
             convertUsage = ::perplexityUsage,
         )

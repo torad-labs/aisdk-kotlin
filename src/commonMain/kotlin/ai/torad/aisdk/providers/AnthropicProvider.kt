@@ -92,7 +92,7 @@ public class AnthropicMessagesLanguageModel(
 
     override suspend fun generate(params: LanguageModelCallParams): LanguageModelResult {
         val prepared = AnthropicWire.anthropicRequestBody(settings, modelId, params, stream = false)
-        val response = anthropicPost(prepared.body, prepared.betas, params.headers, acceptEventStream = false, parseJson = true)
+        val response = anthropicPost(prepared.body, prepared.betas, params.headers)
         return AnthropicWire.anthropicGenerateResult(
             response = response.value.jsonObject,
             requestBody = prepared.body,
@@ -130,25 +130,22 @@ public class AnthropicMessagesLanguageModel(
         body: JsonObject,
         betas: Set<String>,
         extraHeaders: Map<String, String>,
-        acceptEventStream: Boolean,
-        parseJson: Boolean,
     ): HttpJsonResponse {
         val baseURL = settings.baseURL.trimEnd('/')
-        val url = settings.buildRequestUrl?.invoke(baseURL, modelId, acceptEventStream) ?: "$baseURL/messages"
-        val requestBody = settings.transformRequestBody?.invoke(modelId, body, acceptEventStream) ?: body
+        val url = settings.buildRequestUrl?.invoke(baseURL, modelId, false) ?: "$baseURL/messages"
+        val requestBody = settings.transformRequestBody?.invoke(modelId, body, false) ?: body
         val encodedBody = aiSdkJson.encodeToString(JsonElement.serializer(), requestBody)
         val baseHeaders = AnthropicWire.anthropicHeaders(settings, extraHeaders, betas)
         val requestHeaders = settings.requestHeadersProvider?.invoke(url, encodedBody, baseHeaders) ?: baseHeaders
         val response = client.request(url) {
             method = HttpMethod.Post
             contentType(ContentType.Application.Json)
-            if (acceptEventStream) header(HttpHeaders.Accept, "text/event-stream")
             requestHeaders.forEach { (name, value) -> header(name, value) }
             setBody(encodedBody)
         }
         return with(HttpTransport) { response.toJsonResponse(
             url = url,
-            parseJson = parseJson,
+            parseJson = true,
             requestBodyValues = requestBody,
             errorMessage = { _, parsed, raw -> AnthropicWire.anthropicErrorMessage(parsed, raw) },
         ) }
@@ -577,7 +574,7 @@ public object AnthropicWire {
                     val lastTextIndex =
                         if (isLastMessage) message.content.indexOfLast { it is ContentPart.Text } else -1
                     val content = message.content.mapIndexedNotNull { index, part ->
-                        anthropicAssistantPart(part, sendReasoning, trimText = index == lastTextIndex)
+                        anthropicAssistantPart(part, sendReasoning, currentIndex = index, lastTextIndex = lastTextIndex)
                     }
                     if (content.isNotEmpty()) {
                         apiMessages += buildJsonObject {
@@ -648,7 +645,13 @@ public object AnthropicWire {
             }
             else -> throw UnsupportedFunctionalityError("file media type ${part.mediaType}", "Unsupported Anthropic file media type: ${part.mediaType}")
         }
-        else -> null
+        is ContentPart.Reasoning,
+        is ContentPart.ToolCall,
+        is ContentPart.ToolResult,
+        is ContentPart.ToolApprovalRequest,
+        is ContentPart.ToolApprovalResponse,
+        is ContentPart.Source,
+        -> null
     }
 
     /**
@@ -670,25 +673,32 @@ public object AnthropicWire {
     internal fun anthropicAssistantPart(
         part: ContentPart,
         sendReasoning: Boolean,
-        trimText: Boolean = false,
+        currentIndex: Int = -1,
+        lastTextIndex: Int = -1,
     ): JsonElement? = when (part) {
         is ContentPart.Text -> buildJsonObject {
             put("type", JsonPrimitive("text"))
-            put("text", JsonPrimitive(if (trimText) part.text.trim() else part.text))
+            put("text", JsonPrimitive(if (currentIndex == lastTextIndex && lastTextIndex >= 0) part.text.trim() else part.text))
         }
-        is ContentPart.Reasoning if sendReasoning -> buildJsonObject {
+        is ContentPart.Reasoning -> if (sendReasoning) buildJsonObject {
             val metadata = part.providerMetadata.toMap()["anthropic"] as? JsonObject
             put("type", JsonPrimitive("thinking"))
             put("thinking", JsonPrimitive(part.text))
             metadata?.get("signature")?.let { put("signature", it) }
-        }
+        } else null
         is ContentPart.ToolCall -> buildJsonObject {
             put("type", JsonPrimitive("tool_use"))
             put("id", JsonPrimitive(part.toolCallId))
             put("name", JsonPrimitive(part.toolName))
             put("input", part.input)
         }
-        else -> null
+        is ContentPart.ToolResult,
+        is ContentPart.ToolApprovalRequest,
+        is ContentPart.ToolApprovalResponse,
+        is ContentPart.Source,
+        is ContentPart.File,
+        is ContentPart.Image,
+        -> null
     }
 
     internal fun anthropicToolResultContent(result: ContentPart.ToolResult): JsonElement {

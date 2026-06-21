@@ -151,7 +151,8 @@ public data object NoopTelemetryTracer : TelemetryTracer {
 }
 
 public class InMemoryTelemetryTracer : TelemetryTracer {
-    public val spans: MutableList<MutableTelemetrySpan> = mutableListOf()
+    private val _spans: MutableList<MutableTelemetrySpan> = mutableListOf()
+    public val spans: List<MutableTelemetrySpan> get() = _spans
 
     override suspend fun <T> startActiveSpan(
         name: String,
@@ -159,7 +160,7 @@ public class InMemoryTelemetryTracer : TelemetryTracer {
         block: suspend (TelemetryActiveSpan) -> T,
     ): T {
         val span = MutableTelemetrySpan(name, attributes.toMutableMap())
-        spans += span
+        _spans += span
         return block(span)
     }
 }

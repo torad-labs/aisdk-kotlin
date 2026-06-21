@@ -192,7 +192,9 @@ public class Completion(
                                 phase = when (val p = s.phase) {
                                     is CompletionPhase.Streaming -> CompletionPhase.Done(p.text)
                                     is CompletionPhase.Failed -> p
-                                    else -> CompletionPhase.Idle
+                                    is CompletionPhase.Idle,
+                                    is CompletionPhase.Done,
+                                    -> CompletionPhase.Idle
                                 },
                             )
                         }
@@ -223,7 +225,10 @@ public class Completion(
             s.copy(
                 phase = when (val p = s.phase) {
                     is CompletionPhase.Streaming -> CompletionPhase.Done(p.text)
-                    else -> p
+                    is CompletionPhase.Idle,
+                    is CompletionPhase.Done,
+                    is CompletionPhase.Failed,
+                    -> p
                 },
             )
         }

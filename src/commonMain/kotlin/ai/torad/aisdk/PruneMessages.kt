@@ -86,7 +86,12 @@ public object MessagePruning {
                     is ContentPart.ToolResult -> keptToolCallIds += part.toolCallId
                     is ContentPart.ToolApprovalRequest -> keptApprovalIds += part.approvalId ?: part.toolCallId
                     is ContentPart.ToolApprovalResponse -> keptApprovalIds += part.approvalId ?: part.toolCallId
-                    else -> Unit
+                    is ContentPart.Text,
+                    is ContentPart.Reasoning,
+                    is ContentPart.Source,
+                    is ContentPart.File,
+                    is ContentPart.Image,
+                    -> Unit
                 }
             }
         }
@@ -131,7 +136,12 @@ public object MessagePruning {
                                 keptIds = keptApprovalIds,
                                 tools = rule.tools,
                             )
-                            else -> true
+                            is ContentPart.Text,
+                            is ContentPart.Reasoning,
+                            is ContentPart.Source,
+                            is ContentPart.File,
+                            is ContentPart.Image,
+                            -> true
                         }
                     },
                 )

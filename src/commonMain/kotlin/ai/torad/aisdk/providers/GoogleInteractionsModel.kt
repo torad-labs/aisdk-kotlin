@@ -431,7 +431,13 @@ internal object GoogleInteractions {
                         }
                         is ContentPart.File -> googleInteractionsFileContent(part.mediaType, part.base64, mediaResolution)
                         is ContentPart.Image -> googleInteractionsFileContent(part.mediaType, part.base64, mediaResolution)
-                        else -> null
+                        is ContentPart.Reasoning,
+                        is ContentPart.ToolCall,
+                        is ContentPart.ToolResult,
+                        is ContentPart.ToolApprovalRequest,
+                        is ContentPart.ToolApprovalResponse,
+                        is ContentPart.Source,
+                        -> null
                     }
                 }
                 if (content.isNotEmpty()) steps += buildJsonObject {
@@ -488,7 +494,11 @@ internal object GoogleInteractions {
                                 googleInteractionsSignature(part.providerMetadata.toMap())?.let { put("signature", JsonPrimitive(it)) }
                             }
                         }
-                        else -> warnings += CallWarning("other", "google.interactions: unsupported assistant content part; part dropped.")
+                        is ContentPart.ToolResult,
+                        is ContentPart.ToolApprovalRequest,
+                        is ContentPart.ToolApprovalResponse,
+                        is ContentPart.Source,
+                        -> warnings += CallWarning("other", "google.interactions: unsupported assistant content part; part dropped.")
                     }
                 }
                 flush()
@@ -777,7 +787,7 @@ internal object GoogleInteractions {
                         } else {
                             type.removeSuffix("_result")
                         },
-                        output = step["result"] ?: JsonNull,
+                        output = step.getOrElse("result") { JsonNull },
                         isError = step["is_error"]?.jsonPrimitive?.booleanOrNull == true,
                         providerMetadata = ProviderMetadata.Raw(JsonObject(mapOf("google" to buildJsonObject { put("providerExecuted", JsonPrimitive(true)) }))),
                     )

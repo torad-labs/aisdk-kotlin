@@ -115,10 +115,18 @@ private class WrappedLanguageModel(
     private val chainStream: (LanguageModelCallParams) -> Flow<StreamEvent>
 
     init {
-        // Build both chains bottom-up so each middleware sees `doGenerate`
-        // and `doStream` pointing at the rest of the chain past itself
-        // (not at this middleware's own wrappers). Each middleware's
-        // transformParams runs first (for its axis), then its wrap hook.
+        val (gen, stream) = buildChains(middlewares)
+        chainGenerate = gen
+        chainStream = stream
+    }
+
+    // Build both chains bottom-up so each middleware sees `doGenerate`
+    // and `doStream` pointing at the rest of the chain past itself
+    // (not at this middleware's own wrappers). Each middleware's
+    // transformParams runs first (for its axis), then its wrap hook.
+    private fun buildChains(
+        middlewares: List<LanguageModelMiddleware>,
+    ): Pair<suspend (LanguageModelCallParams) -> LanguageModelResult, (LanguageModelCallParams) -> Flow<StreamEvent>> {
         var doGenerate: suspend (LanguageModelCallParams) -> LanguageModelResult = inner::generate
         var doStream: (LanguageModelCallParams) -> Flow<StreamEvent> = inner::stream
         for (mw in middlewares.asReversed()) {
@@ -155,8 +163,7 @@ private class WrappedLanguageModel(
             doGenerate = outerGen
             doStream = outerStream
         }
-        chainGenerate = doGenerate
-        chainStream = doStream
+        return doGenerate to doStream
     }
 
     override suspend fun generate(params: LanguageModelCallParams): LanguageModelResult =

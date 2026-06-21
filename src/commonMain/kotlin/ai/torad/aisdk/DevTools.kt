@@ -38,20 +38,23 @@ public interface DevToolsRecorder {
 }
 
 public class InMemoryDevToolsRecorder : DevToolsRecorder {
-    public val runs: MutableList<String> = mutableListOf()
-    public val steps: MutableList<DevToolsStep> = mutableListOf()
-    public val results: MutableMap<String, DevToolsStepResult> = linkedMapOf()
+    private val _runs: MutableList<String> = mutableListOf()
+    private val _steps: MutableList<DevToolsStep> = mutableListOf()
+    private val _results: MutableMap<String, DevToolsStepResult> = linkedMapOf()
+    public val runs: List<String> get() = _runs
+    public val steps: List<DevToolsStep> get() = _steps
+    public val results: Map<String, DevToolsStepResult> get() = _results
 
     override suspend fun createRun(runId: String) {
-        runs += runId
+        _runs += runId
     }
 
     override suspend fun createStep(step: DevToolsStep) {
-        steps += step
+        _steps += step
     }
 
     override suspend fun updateStepResult(stepId: String, result: DevToolsStepResult) {
-        results[stepId] = result
+        _results[stepId] = result
     }
 }
 
@@ -200,7 +203,22 @@ private class DevToolsStreamCollector {
                 finishReason = event.finishReason
                 usage = event.usage
             }
-            else -> Unit
+            is StreamEvent.StreamStart,
+            is StreamEvent.ResponseMetadata,
+            is StreamEvent.StepStart,
+            is StreamEvent.SourcePart,
+            is StreamEvent.FilePart,
+            is StreamEvent.ToolInputStart,
+            is StreamEvent.ToolInputDelta,
+            is StreamEvent.ToolInputEnd,
+            is StreamEvent.ToolResult,
+            is StreamEvent.ToolError,
+            is StreamEvent.ToolApprovalRequest,
+            is StreamEvent.ToolOutputDenied,
+            is StreamEvent.StepFinish,
+            StreamEvent.Abort,
+            is StreamEvent.Error,
+            -> Unit
         }
     }
 
@@ -275,6 +293,21 @@ internal object DevToolsJson {
         put("type", JsonPrimitive("raw"))
         put("rawValue", event.rawValue)
     }
-    else -> buildJsonObject { put("type", JsonPrimitive("event")) }
+    is StreamEvent.StreamStart,
+    is StreamEvent.ResponseMetadata,
+    is StreamEvent.StepStart,
+    is StreamEvent.SourcePart,
+    is StreamEvent.FilePart,
+    is StreamEvent.ToolInputStart,
+    is StreamEvent.ToolInputDelta,
+    is StreamEvent.ToolInputEnd,
+    is StreamEvent.ToolResult,
+    is StreamEvent.ToolError,
+    is StreamEvent.ToolApprovalRequest,
+    is StreamEvent.ToolOutputDenied,
+    is StreamEvent.StepFinish,
+    StreamEvent.Abort,
+    is StreamEvent.Error,
+    -> buildJsonObject { put("type", JsonPrimitive("event")) }
     }
 }
