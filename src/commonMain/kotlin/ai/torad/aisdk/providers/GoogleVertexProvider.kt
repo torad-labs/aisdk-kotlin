@@ -294,9 +294,9 @@ private class GoogleVertexXaiLanguageModel(
     override fun streamResult(params: LanguageModelCallParams): LanguageModelStreamResult =
         delegate.streamResult(params.copy(providerOptions = googleVertexXaiProviderOptions(params.providerOptions)))
 
-    // Snake-cases xAI searchParameters via XaiWire.xaiSnakeCaseJson (single source of truth); the
-    // former local copy drifted, lacking the `xHandles` -> `included_x_handles` special-case and the
-    // `index > 0` leading-underscore guard.
+    // Snake-cases xAI searchParameters via XaiProviderSettings.xaiSnakeCaseJson (single source of
+    // truth); the former local copy drifted, lacking the `xHandles` -> `included_x_handles`
+    // special-case and the `index > 0` leading-underscore guard.
     private fun googleVertexXaiProviderOptions(options: ProviderOptions): ProviderOptions {
         val map = options.toMap()
         val xai = map["xai"] as? JsonObject ?: return options
@@ -308,7 +308,7 @@ private class GoogleVertexXaiLanguageModel(
                         put("top_logprobs", value)
                         if ("logprobs" !in xai) put("logprobs", JsonPrimitive(true))
                     }
-                    "searchParameters" -> put("search_parameters", XaiWire.xaiSnakeCaseJson(value))
+                    "searchParameters" -> put("search_parameters", XaiProviderSettings.xaiSnakeCaseJson(value))
                     else -> put(key, value)
                 }
             }

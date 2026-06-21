@@ -1,7 +1,6 @@
 package ai.torad.aisdk.providers
 
 import ai.torad.aisdk.*
-import ai.torad.aisdk.providers.BasetenWire.toCompatible
 import io.ktor.client.HttpClient
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonElement
@@ -25,7 +24,15 @@ public data class BasetenProviderSettings(
     val baseURL: String = "https://inference.baseten.co/v1",
     val modelURL: String? = null,
     val headers: Map<String, String> = emptyMap(),
-)
+) {
+    internal fun toCompatible(
+        name: String,
+        version: String,
+        baseURL: String,
+        capabilities: ProviderCapabilities = ProviderCapabilities(),
+    ): OpenAICompatibleProviderSettings =
+        OpenAICompatibleProviderSettings.forFacade(name, version, baseURL, apiKey, headers, capabilities)
+}
 
 public class BasetenProvider(
     private val client: HttpClient,
@@ -84,13 +91,3 @@ public fun Baseten(
     client: HttpClient,
     settings: BasetenProviderSettings = BasetenProviderSettings(),
 ): BasetenProvider = BasetenProvider(client, settings)
-
-internal object BasetenWire {
-    fun BasetenProviderSettings.toCompatible(
-        name: String,
-        version: String,
-        baseURL: String,
-        capabilities: ProviderCapabilities = ProviderCapabilities(),
-    ): OpenAICompatibleProviderSettings =
-        OpenAICompatibleProviderSettings.forFacade(name, version, baseURL, apiKey, headers, capabilities)
-}

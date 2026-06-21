@@ -1,7 +1,6 @@
 package ai.torad.aisdk.providers
 
 import ai.torad.aisdk.*
-import ai.torad.aisdk.providers.CerebrasWire.toCompatible
 import io.ktor.client.HttpClient
 import kotlinx.serialization.Serializable
 
@@ -12,7 +11,14 @@ public data class CerebrasProviderSettings(
     val apiKey: String? = null,
     val baseURL: String = "https://api.cerebras.ai/v1",
     val headers: Map<String, String> = emptyMap(),
-)
+) {
+    internal fun toCompatible(
+        name: String,
+        version: String,
+        capabilities: ProviderCapabilities = ProviderCapabilities(),
+    ): OpenAICompatibleProviderSettings =
+        OpenAICompatibleProviderSettings.forFacade(name, version, baseURL, apiKey, headers, capabilities)
+}
 
 @Serializable
 public data class CerebrasErrorData(
@@ -44,12 +50,3 @@ public fun Cerebras(
     client: HttpClient,
     settings: CerebrasProviderSettings = CerebrasProviderSettings(),
 ): CerebrasProvider = CerebrasProvider(client, settings)
-
-internal object CerebrasWire {
-    fun CerebrasProviderSettings.toCompatible(
-        name: String,
-        version: String,
-        capabilities: ProviderCapabilities = ProviderCapabilities(),
-    ): OpenAICompatibleProviderSettings =
-        OpenAICompatibleProviderSettings.forFacade(name, version, baseURL, apiKey, headers, capabilities)
-}

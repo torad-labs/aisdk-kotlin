@@ -1,7 +1,6 @@
 package ai.torad.aisdk.providers
 
 import ai.torad.aisdk.*
-import ai.torad.aisdk.providers.VercelWire.toCompatible
 import io.ktor.client.HttpClient
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonElement
@@ -15,7 +14,14 @@ public data class VercelProviderSettings(
     val apiKey: String? = null,
     val baseURL: String = "https://api.v0.dev/v1",
     val headers: Map<String, String> = emptyMap(),
-)
+) {
+    internal fun toCompatible(
+        name: String,
+        version: String,
+        capabilities: ProviderCapabilities = ProviderCapabilities(),
+    ): OpenAICompatibleProviderSettings =
+        OpenAICompatibleProviderSettings.forFacade(name, version, baseURL, apiKey, headers, capabilities)
+}
 
 public class VercelProvider(
     client: HttpClient,
@@ -38,12 +44,3 @@ public fun Vercel(
     client: HttpClient,
     settings: VercelProviderSettings = VercelProviderSettings(),
 ): VercelProvider = VercelProvider(client, settings)
-
-internal object VercelWire {
-    fun VercelProviderSettings.toCompatible(
-        name: String,
-        version: String,
-        capabilities: ProviderCapabilities = ProviderCapabilities(),
-    ): OpenAICompatibleProviderSettings =
-        OpenAICompatibleProviderSettings.forFacade(name, version, baseURL, apiKey, headers, capabilities)
-}

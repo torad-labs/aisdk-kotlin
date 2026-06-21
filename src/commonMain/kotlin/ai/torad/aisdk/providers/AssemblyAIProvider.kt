@@ -77,7 +77,15 @@ public data class AssemblyAIProviderSettings(
     val pollingIntervalMillis: Long = 3_000L,
     /** Upper bound on transcript poll attempts (120 × 3s ≈ 6 min) so a stuck job can't hang forever. */
     val maxPollAttempts: Int = 120,
-)
+) {
+    internal fun requestHeaders(callHeaders: Map<String, String>): Map<String, String> {
+        val base = linkedMapOf<String, String>()
+        apiKey?.takeIf { it.isNotBlank() }?.let { base[HttpHeaders.Authorization] = it }
+        base.putAll(headers)
+        base.putAll(callHeaders)
+        return ProviderHeaders.withUserAgentSuffix(base, "ai-sdk/assemblyai/$ASSEMBLYAI_VERSION")
+    }
+}
 
 public class AssemblyAIProvider(
     private val client: HttpClient,
@@ -113,33 +121,28 @@ private class AssemblyAITranscriptionModel(
 
     override suspend fun transcribe(params: TranscriptionParams): TranscriptionModelResult {
         params.abortSignal.throwIfAborted()
-        val upload = AssemblyAIWire.postBinary(
-            client = client,
+        val upload = postBinary(
             url = "$ASSEMBLYAI_BASE_URL/v2/upload",
             bytes = Base64Codec.decode(params.audio.base64),
-            headers = AssemblyAIWire.headers(settings, params.headers),
+            headers = settings.requestHeaders(params.headers),
         )
         val uploadUrl = upload.value.jsonObject["upload_url"]?.jsonPrimitive?.contentOrNull
             ?: throw InvalidResponseDataError(upload.value, "AssemblyAI upload response is missing upload_url")
 
         params.abortSignal.throwIfAborted()
-        val submitBody = AssemblyAIWire.submitBody(
-            modelId = modelId,
+        val submitBody = submitBody(
             uploadUrl = uploadUrl,
             params = params,
         )
-        val submit = AssemblyAIWire.postJson(
-            client = client,
+        val submit = postJson(
             url = "$ASSEMBLYAI_BASE_URL/v2/transcript",
             body = submitBody,
-            headers = AssemblyAIWire.headers(settings, params.headers),
+            headers = settings.requestHeaders(params.headers),
         )
         val transcriptId = submit.value.jsonObject["id"]?.jsonPrimitive?.contentOrNull
             ?: throw InvalidResponseDataError(submit.value, "AssemblyAI transcript submit response is missing id")
 
-        val transcript = AssemblyAIWire.pollTranscript(
-            client = client,
-            settings = settings,
+        val transcript = pollTranscript(
             transcriptId = transcriptId,
             headers = params.headers,
             abortSignal = params.abortSignal,
@@ -166,13 +169,8 @@ private class AssemblyAITranscriptionModel(
             durationInSeconds = body["audio_duration"]?.jsonPrimitive?.floatOrNull,
         )
     }
-}
 
-private const val ASSEMBLYAI_BASE_URL: String = "https://api.assemblyai.com"
-
-internal object AssemblyAIWire {
-    suspend fun postBinary(
-        client: HttpClient,
+    private suspend fun postBinary(
         url: String,
         bytes: ByteArray,
         headers: Map<String, String>,
@@ -186,8 +184,7 @@ internal object AssemblyAIWire {
         return with(HttpTransport) { response.toJsonResponse(url = url, errorMessage = ::errorMessage) }
     }
 
-    suspend fun postJson(
-        client: HttpClient,
+    private suspend fun postJson(
         url: String,
         body: JsonObject,
         headers: Map<String, String>,
@@ -199,11 +196,10 @@ internal object AssemblyAIWire {
             headers = headers,
             body = body,
             requestBodyValues = body,
-            errorMessage = AssemblyAIWire::errorMessage,
+            errorMessage = ::errorMessage,
         )
 
-    suspend fun getJson(
-        client: HttpClient,
+    private suspend fun getJson(
         url: String,
         headers: Map<String, String>,
     ): HttpJsonResponse =
@@ -212,12 +208,10 @@ internal object AssemblyAIWire {
             url = url,
             method = HttpMethod.Get,
             headers = headers,
-            errorMessage = AssemblyAIWire::errorMessage,
+            errorMessage = ::errorMessage,
         )
 
-    suspend fun pollTranscript(
-        client: HttpClient,
-        settings: AssemblyAIProviderSettings,
+    private suspend fun pollTranscript(
         transcriptId: String,
         headers: Map<String, String>,
         abortSignal: AbortSignal,
@@ -227,9 +221,8 @@ internal object AssemblyAIWire {
         repeat(settings.maxPollAttempts) { attempt ->
             abortSignal.throwIfAborted()
             val response = getJson(
-                client = client,
                 url = "$ASSEMBLYAI_BASE_URL/v2/transcript/$transcriptId",
-                headers = headers(settings, headers),
+                headers = settings.requestHeaders(headers),
             )
             val body = response.value.jsonObject
             when (body["status"]?.jsonPrimitive?.contentOrNull) {
@@ -245,8 +238,7 @@ internal object AssemblyAIWire {
         throw NoTranscriptGeneratedError("AssemblyAI transcription polling timed out after ${settings.maxPollAttempts} attempts")
     }
 
-    fun submitBody(
-        modelId: String,
+    private fun submitBody(
         uploadUrl: String,
         params: TranscriptionParams,
     ): JsonObject {
@@ -258,7 +250,7 @@ internal object AssemblyAIWire {
         }
     }
 
-    fun JsonObjectBuilder.putOptions(options: JsonObject, fallbackLanguage: String?) {
+    private fun JsonObjectBuilder.putOptions(options: JsonObject, fallbackLanguage: String?) {
         for ((source, target) in optionKeyMap) {
             val value = options[source] ?: continue
             if (value !is JsonNull) put(target, value)
@@ -268,18 +260,10 @@ internal object AssemblyAIWire {
         }
     }
 
-    fun headers(settings: AssemblyAIProviderSettings, callHeaders: Map<String, String>): Map<String, String> {
-        val base = linkedMapOf<String, String>()
-        settings.apiKey?.takeIf { it.isNotBlank() }?.let { base[HttpHeaders.Authorization] = it }
-        base.putAll(settings.headers)
-        base.putAll(callHeaders)
-        return ProviderHeaders.withUserAgentSuffix(base, "ai-sdk/assemblyai/$ASSEMBLYAI_VERSION")
-    }
-
-    fun options(providerOptions: ProviderOptions): JsonObject =
+    private fun options(providerOptions: ProviderOptions): JsonObject =
         providerOptions.toMap()["assemblyai"] as? JsonObject ?: JsonObject(emptyMap())
 
-    fun errorMessage(statusCode: Int, parsed: JsonElement?, raw: String): String {
+    private fun errorMessage(statusCode: Int, parsed: JsonElement?, raw: String): String {
         val obj = parsed as? JsonObject
         val detail = obj?.get("error")?.jsonObject?.get("message")?.jsonPrimitive?.contentOrNull
             ?: obj?.get("error")?.jsonPrimitive?.contentOrNull
@@ -287,6 +271,8 @@ internal object AssemblyAIWire {
         return "AssemblyAI request failed ($statusCode): $detail"
     }
 }
+
+private const val ASSEMBLYAI_BASE_URL: String = "https://api.assemblyai.com"
 
 private val optionKeyMap: Map<String, String> = linkedMapOf(
     "audioEndAt" to "audio_end_at",

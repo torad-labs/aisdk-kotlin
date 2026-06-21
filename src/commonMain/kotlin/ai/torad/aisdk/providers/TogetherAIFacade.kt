@@ -5,8 +5,6 @@ import ai.torad.aisdk.providers.FacadeHttp.postFacadeJson
 import ai.torad.aisdk.providers.FacadeHttp.providerFacadeHeaders
 import ai.torad.aisdk.providers.FacadeHttp.providerSpecificOptions
 import ai.torad.aisdk.providers.FacadeHttp.putProviderSpecificOptions
-import ai.torad.aisdk.providers.TogetherAIWire.toCompatible
-import ai.torad.aisdk.providers.TogetherAIWire.togetherAIUsage
 import io.ktor.client.HttpClient
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -49,7 +47,14 @@ public data class TogetherAIProviderSettings(
     val apiKey: String? = null,
     val baseURL: String = "https://api.together.xyz/v1",
     val headers: Map<String, String> = emptyMap(),
-)
+) {
+    internal fun toCompatible(
+        name: String,
+        version: String,
+        capabilities: ProviderCapabilities = ProviderCapabilities(),
+    ): OpenAICompatibleProviderSettings =
+        OpenAICompatibleProviderSettings.forFacade(name, version, baseURL, apiKey, headers, capabilities)
+}
 
 public class TogetherAIProvider(
     private val client: HttpClient,
@@ -178,17 +183,8 @@ public class TogetherAIRerankingModel(
             ),
         )
     }
-}
 
-internal object TogetherAIWire {
-    fun TogetherAIProviderSettings.toCompatible(
-        name: String,
-        version: String,
-        capabilities: ProviderCapabilities = ProviderCapabilities(),
-    ): OpenAICompatibleProviderSettings =
-        OpenAICompatibleProviderSettings.forFacade(name, version, baseURL, apiKey, headers, capabilities)
-
-    fun togetherAIUsage(value: JsonElement?): Usage {
+    private fun togetherAIUsage(value: JsonElement?): Usage {
         val obj = value as? JsonObject ?: return Usage()
         return Usage.of(
             promptTokens = obj["prompt_tokens"]?.jsonPrimitive?.intOrNull ?: 0,

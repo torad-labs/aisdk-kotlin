@@ -63,7 +63,15 @@ public data class RevaiProviderSettings(
     val headers: Map<String, String> = emptyMap(),
     val pollingIntervalMillis: Long = 1_000L,
     val maxPollAttempts: Int = 60,
-)
+) {
+    internal fun revaiHeaders(callHeaders: Map<String, String>): Map<String, String> {
+        val base = linkedMapOf<String, String>()
+        apiKey?.takeIf { it.isNotBlank() }?.let { base[HttpHeaders.Authorization] = "Bearer $it" }
+        base.putAll(headers)
+        base.putAll(callHeaders)
+        return ProviderHeaders.withUserAgentSuffix(base, "ai-sdk/revai/$REVAI_VERSION")
+    }
+}
 
 public class RevaiProvider(
     private val client: HttpClient,
@@ -99,12 +107,10 @@ private class RevaiTranscriptionModel(
 
     override suspend fun transcribe(params: TranscriptionParams): TranscriptionModelResult {
         params.abortSignal.throwIfAborted()
-        val submit = RevaiWire.revaiPostMultipart(
-            client = client,
+        val submit = revaiPostMultipart(
             url = "$REVAI_BASE_URL/speechtotext/v1/jobs",
             params = params,
-            modelId = modelId,
-            headers = RevaiWire.revaiHeaders(settings, params.headers),
+            headers = settings.revaiHeaders(params.headers),
         )
         var job = submit.value.jsonObject
         if (job["status"]?.jsonPrimitive?.contentOrNull == "failed") {
@@ -118,10 +124,9 @@ private class RevaiTranscriptionModel(
             val status = job["status"]?.jsonPrimitive?.contentOrNull
             if (status == "transcribed") return@repeat
             if (attempt > 0 || status != "transcribed") {
-                val poll = RevaiWire.revaiGetJson(
-                    client = client,
+                val poll = revaiGetJson(
                     url = "$REVAI_BASE_URL/speechtotext/v1/jobs/$jobId",
-                    headers = RevaiWire.revaiHeaders(settings, params.headers),
+                    headers = settings.revaiHeaders(params.headers),
                 )
                 job = poll.value.jsonObject
                 when (job["status"]?.jsonPrimitive?.contentOrNull) {
@@ -137,12 +142,11 @@ private class RevaiTranscriptionModel(
             throw NoTranscriptGeneratedError("Rev.ai transcription job polling timed out")
         }
 
-        val transcript = RevaiWire.revaiGetJson(
-            client = client,
+        val transcript = revaiGetJson(
             url = "$REVAI_BASE_URL/speechtotext/v1/jobs/$jobId/transcript",
-            headers = RevaiWire.revaiHeaders(settings, params.headers),
+            headers = settings.revaiHeaders(params.headers),
         )
-        val mapped = RevaiWire.mapRevaiTranscript(transcript.value)
+        val mapped = mapRevaiTranscript(transcript.value)
         return TranscriptionModelResult(
             text = mapped.text,
             segments = mapped.segments,
@@ -155,6 +159,119 @@ private class RevaiTranscriptionModel(
             language = job["language"]?.jsonPrimitive?.contentOrNull,
             durationInSeconds = mapped.durationInSeconds,
         )
+    }
+
+    private suspend fun revaiPostMultipart(
+        url: String,
+        params: TranscriptionParams,
+        headers: Map<String, String>,
+    ): HttpJsonResponse {
+        val filename = params.audio.filename ?: "audio.${MediaTypes.toExtension(params.audio.mediaType)}"
+        val config = revaiConfigBody(params)
+        val response = client.request(url) {
+            method = HttpMethod.Post
+            headers.forEach { (name, value) -> header(name, value) }
+            setBody(
+                MultiPartFormDataContent(
+                    formData {
+                        append(
+                            "media",
+                            Base64Codec.decode(params.audio.base64),
+                            Headers.build {
+                                append(HttpHeaders.ContentType, params.audio.mediaType)
+                                append(HttpHeaders.ContentDisposition, "${ContentDisposition.File}; filename=\"$filename\"")
+                            },
+                        )
+                        append("config", aiSdkJson.encodeToString(JsonElement.serializer(), config))
+                    },
+                ),
+            )
+        }
+        return with(HttpTransport) { response.toJsonResponse(url = url, errorMessage = ::revaiErrorMessage) }
+    }
+
+    private suspend fun revaiGetJson(
+        url: String,
+        headers: Map<String, String>,
+    ): HttpJsonResponse =
+        HttpTransport.requestJson(
+            client = client,
+            url = url,
+            method = HttpMethod.Get,
+            headers = headers,
+            errorMessage = ::revaiErrorMessage,
+        )
+
+    private fun revaiConfigBody(params: TranscriptionParams): JsonObject {
+        val options = revaiOptions(params.providerOptions)
+        return buildJsonObject {
+            put("transcriber", JsonPrimitive(modelId))
+            putRevaiOptions(options)
+            if (!options.containsKey("language")) {
+                params.language?.let { put("language", JsonPrimitive(it)) }
+            }
+        }
+    }
+
+    private fun JsonObjectBuilder.putRevaiOptions(options: JsonObject) {
+        for (key in revaiOptionKeys) {
+            val value = options[key] ?: continue
+            if (value !is JsonNull) put(key, value)
+        }
+    }
+
+    private fun mapRevaiTranscript(value: JsonElement): RevaiTranscriptMapping {
+        val monologues = value.jsonObject["monologues"]?.jsonArray.orEmpty()
+        val text = monologues.joinToString(" ") { monologue ->
+            monologue.jsonObject["elements"]?.jsonArray.orEmpty()
+                .joinToString("") { element -> element.jsonObject["value"]?.jsonPrimitive?.contentOrNull.orEmpty() }
+        }
+        val segments = mutableListOf<TranscriptSegment>()
+        var durationInSeconds = 0f
+        for (monologue in monologues) {
+            var currentText = ""
+            var segmentStart = 0f
+            var hasStarted = false
+            for (element in monologue.jsonObject["elements"]?.jsonArray.orEmpty()) {
+                val obj = element.jsonObject
+                if (obj["type"]?.jsonPrimitive?.contentOrNull == "text") {
+                    // Accumulate ONLY text elements — a "punct" element (comma/period/space) between two
+                    // words must not prepend into the next word's segment text (e.g. ",World").
+                    currentText += obj["value"]?.jsonPrimitive?.contentOrNull.orEmpty()
+                    val end = obj["end_ts"]?.jsonPrimitive?.floatOrNull
+                    if (end != null && end > durationInSeconds) durationInSeconds = end
+                    if (!hasStarted) {
+                        obj["ts"]?.jsonPrimitive?.floatOrNull?.let {
+                            segmentStart = it
+                            hasStarted = true
+                        }
+                    }
+                    if (end != null && hasStarted) {
+                        currentText.trim().takeIf { it.isNotBlank() }?.let { text ->
+                            segments += TranscriptSegment(text = text, startSeconds = segmentStart, endSeconds = end)
+                        }
+                        currentText = ""
+                        hasStarted = false
+                    }
+                }
+            }
+            currentText.trim().takeIf { hasStarted && it.isNotBlank() }?.let { text ->
+                val end = if (durationInSeconds > segmentStart) durationInSeconds else segmentStart + 1f
+                segments += TranscriptSegment(text = text, startSeconds = segmentStart, endSeconds = end)
+            }
+        }
+        return RevaiTranscriptMapping(text = text, segments = segments, durationInSeconds = durationInSeconds)
+    }
+
+    private fun revaiOptions(providerOptions: ProviderOptions): JsonObject =
+        providerOptions.toMap()["revai"] as? JsonObject ?: JsonObject(emptyMap())
+
+    private fun revaiErrorMessage(statusCode: Int, parsed: JsonElement?, raw: String): String {
+        val obj = parsed as? JsonObject
+        val detail = obj?.get("error")?.jsonObject?.get("message")?.jsonPrimitive?.contentOrNull
+            ?: obj?.get("error")?.jsonPrimitive?.contentOrNull
+            ?: raw.ifBlank { "request failed" }
+        return "Rev.ai request failed ($statusCode): $detail"
     }
 }
 
@@ -193,132 +310,3 @@ private val revaiOptionKeys: Set<String> = linkedSetOf(
     "language",
     "forced_alignment",
 )
-
-internal object RevaiWire {
-    suspend fun revaiPostMultipart(
-        client: HttpClient,
-        url: String,
-        params: TranscriptionParams,
-        modelId: String,
-        headers: Map<String, String>,
-    ): HttpJsonResponse {
-        val filename = params.audio.filename ?: "audio.${MediaTypes.toExtension(params.audio.mediaType)}"
-        val config = revaiConfigBody(modelId, params)
-        val response = client.request(url) {
-            method = HttpMethod.Post
-            headers.forEach { (name, value) -> header(name, value) }
-            setBody(
-                MultiPartFormDataContent(
-                    formData {
-                        append(
-                            "media",
-                            Base64Codec.decode(params.audio.base64),
-                            Headers.build {
-                                append(HttpHeaders.ContentType, params.audio.mediaType)
-                                append(HttpHeaders.ContentDisposition, "${ContentDisposition.File}; filename=\"$filename\"")
-                            },
-                        )
-                        append("config", aiSdkJson.encodeToString(JsonElement.serializer(), config))
-                    },
-                ),
-            )
-        }
-        return with(HttpTransport) { response.toJsonResponse(url = url, errorMessage = ::revaiErrorMessage) }
-    }
-
-    suspend fun revaiGetJson(
-        client: HttpClient,
-        url: String,
-        headers: Map<String, String>,
-    ): HttpJsonResponse =
-        HttpTransport.requestJson(
-            client = client,
-            url = url,
-            method = HttpMethod.Get,
-            headers = headers,
-            errorMessage = ::revaiErrorMessage,
-        )
-
-    fun revaiConfigBody(
-        modelId: String,
-        params: TranscriptionParams,
-    ): JsonObject {
-        val options = revaiOptions(params.providerOptions)
-        return buildJsonObject {
-            put("transcriber", JsonPrimitive(modelId))
-            putRevaiOptions(options)
-            if (!options.containsKey("language")) {
-                params.language?.let { put("language", JsonPrimitive(it)) }
-            }
-        }
-    }
-
-    private fun JsonObjectBuilder.putRevaiOptions(options: JsonObject) {
-        for (key in revaiOptionKeys) {
-            val value = options[key] ?: continue
-            if (value !is JsonNull) put(key, value)
-        }
-    }
-
-    fun mapRevaiTranscript(value: JsonElement): RevaiTranscriptMapping {
-        val monologues = value.jsonObject["monologues"]?.jsonArray.orEmpty()
-    val text = monologues.joinToString(" ") { monologue ->
-        monologue.jsonObject["elements"]?.jsonArray.orEmpty()
-            .joinToString("") { element -> element.jsonObject["value"]?.jsonPrimitive?.contentOrNull.orEmpty() }
-    }
-    val segments = mutableListOf<TranscriptSegment>()
-    var durationInSeconds = 0f
-    for (monologue in monologues) {
-        var currentText = ""
-        var segmentStart = 0f
-        var hasStarted = false
-        for (element in monologue.jsonObject["elements"]?.jsonArray.orEmpty()) {
-            val obj = element.jsonObject
-            if (obj["type"]?.jsonPrimitive?.contentOrNull == "text") {
-                // Accumulate ONLY text elements — a "punct" element (comma/period/space) between two
-                // words must not prepend into the next word's segment text (e.g. ",World").
-                currentText += obj["value"]?.jsonPrimitive?.contentOrNull.orEmpty()
-                val end = obj["end_ts"]?.jsonPrimitive?.floatOrNull
-                if (end != null && end > durationInSeconds) durationInSeconds = end
-                if (!hasStarted) {
-                    obj["ts"]?.jsonPrimitive?.floatOrNull?.let {
-                        segmentStart = it
-                        hasStarted = true
-                    }
-                }
-                if (end != null && hasStarted) {
-                    currentText.trim().takeIf { it.isNotBlank() }?.let { text ->
-                        segments += TranscriptSegment(text = text, startSeconds = segmentStart, endSeconds = end)
-                    }
-                    currentText = ""
-                    hasStarted = false
-                }
-            }
-        }
-        currentText.trim().takeIf { hasStarted && it.isNotBlank() }?.let { text ->
-            val end = if (durationInSeconds > segmentStart) durationInSeconds else segmentStart + 1f
-            segments += TranscriptSegment(text = text, startSeconds = segmentStart, endSeconds = end)
-        }
-    }
-        return RevaiTranscriptMapping(text = text, segments = segments, durationInSeconds = durationInSeconds)
-    }
-
-    fun revaiHeaders(settings: RevaiProviderSettings, callHeaders: Map<String, String>): Map<String, String> {
-        val base = linkedMapOf<String, String>()
-        settings.apiKey?.takeIf { it.isNotBlank() }?.let { base[HttpHeaders.Authorization] = "Bearer $it" }
-        base.putAll(settings.headers)
-        base.putAll(callHeaders)
-        return ProviderHeaders.withUserAgentSuffix(base, "ai-sdk/revai/$REVAI_VERSION")
-    }
-
-    fun revaiOptions(providerOptions: ProviderOptions): JsonObject =
-        providerOptions.toMap()["revai"] as? JsonObject ?: JsonObject(emptyMap())
-
-    fun revaiErrorMessage(statusCode: Int, parsed: JsonElement?, raw: String): String {
-        val obj = parsed as? JsonObject
-        val detail = obj?.get("error")?.jsonObject?.get("message")?.jsonPrimitive?.contentOrNull
-            ?: obj?.get("error")?.jsonPrimitive?.contentOrNull
-            ?: raw.ifBlank { "request failed" }
-        return "Rev.ai request failed ($statusCode): $detail"
-    }
-}

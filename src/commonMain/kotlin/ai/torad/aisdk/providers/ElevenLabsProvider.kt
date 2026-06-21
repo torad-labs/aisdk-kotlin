@@ -62,7 +62,18 @@ public data class ElevenLabsTranscriptionModelOptions(
 public data class ElevenLabsProviderSettings(
     val apiKey: String? = null,
     val headers: Map<String, String> = emptyMap(),
-)
+) {
+    internal fun elevenLabsHeaders(callHeaders: Map<String, String>): Map<String, String> {
+        val base = linkedMapOf<String, String>()
+        apiKey?.takeIf { it.isNotBlank() }?.let { base["xi-api-key"] = it }
+        base.putAll(headers)
+        base.putAll(callHeaders)
+        return ProviderHeaders.withUserAgentSuffix(base, "ai-sdk/elevenlabs/$ELEVENLABS_VERSION")
+    }
+
+    internal fun elevenLabsOptions(providerOptions: ProviderOptions): JsonObject =
+        providerOptions.toMap()["elevenlabs"] as? JsonObject ?: JsonObject(emptyMap())
+}
 
 public class ElevenLabsProvider(
     private val client: HttpClient,
@@ -103,9 +114,9 @@ private class ElevenLabsSpeechModel(
         if (params.instructions != null) {
             warnings += CallWarning("unsupported", "ElevenLabs speech models do not support instructions. Instructions parameter was ignored.")
         }
-        val options = ElevenLabsWire.elevenLabsOptions(params.providerOptions)
+        val options = settings.elevenLabsOptions(params.providerOptions)
         val queryParams = linkedMapOf(
-            "output_format" to ElevenLabsWire.elevenLabsOutputFormat(params.responseFormat ?: "mp3_44100_128"),
+            "output_format" to elevenLabsOutputFormat(params.responseFormat ?: "mp3_44100_128"),
         )
         options["enableLogging"]?.jsonPrimitive?.contentOrNull?.let { queryParams["enable_logging"] = it }
         val body = buildJsonObject {
@@ -147,15 +158,13 @@ private class ElevenLabsSpeechModel(
             options["applyLanguageTextNormalization"]?.let { put("apply_language_text_normalization", it) }
         }
         val url =
-            "https://api.elevenlabs.io/v1/text-to-speech/${params.voice ?: ELEVENLABS_DEFAULT_VOICE_ID}?${with(ElevenLabsWire) { queryParams.toQueryString() }}"
-        val response = with(ElevenLabsWire) {
-            client.request(url) {
-                method = HttpMethod.Post
-                contentType(ContentType.Application.Json)
-                elevenLabsHeaders(settings, params.headers).forEach { (name, value) -> header(name, value) }
-                setBody(aiSdkJson.encodeToString(JsonElement.serializer(), body))
-            }.parseElevenLabsBinary(url, queryParams["output_format"].orEmpty())
-        }
+            "https://api.elevenlabs.io/v1/text-to-speech/${params.voice ?: ELEVENLABS_DEFAULT_VOICE_ID}?${queryParams.toQueryString()}"
+        val response = client.request(url) {
+            method = HttpMethod.Post
+            contentType(ContentType.Application.Json)
+            settings.elevenLabsHeaders(params.headers).forEach { (name, value) -> header(name, value) }
+            setBody(aiSdkJson.encodeToString(JsonElement.serializer(), body))
+        }.parseElevenLabsBinary(url, queryParams["output_format"].orEmpty())
         return SpeechModelResult(
             audio = GeneratedFile(
                 mediaType = response.mediaType,
@@ -165,6 +174,51 @@ private class ElevenLabsSpeechModel(
             response = LanguageModelResponseMetadata(modelId = modelId, headers = response.headers),
         )
     }
+
+    private suspend fun HttpResponse.parseElevenLabsBinary(url: String, outputFormat: String): ElevenLabsBinaryResponse {
+        val bytes = bodyAsBytes()
+        val headers = with(HttpTransport) { flattenedHeaders() }
+        if (status.value !in 200..299) {
+            val raw = bytes.decodeToString()
+            throw ApiCallError(
+                url = url,
+                statusCode = status.value,
+                rawBody = raw,
+                headers = headers,
+                message = "ElevenLabs request failed (${status.value}): ${raw.ifBlank { "request failed" }}",
+            )
+        }
+        return ElevenLabsBinaryResponse(
+            bytes = bytes,
+            mediaType = headers.headerValue(HttpHeaders.ContentType) ?: elevenLabsMediaType(outputFormat),
+            headers = headers,
+        )
+    }
+
+    private fun elevenLabsOutputFormat(format: String): String =
+        when (format) {
+            "mp3" -> "mp3_44100_128"
+            "mp3_32" -> "mp3_44100_32"
+            "mp3_64" -> "mp3_44100_64"
+            "mp3_96" -> "mp3_44100_96"
+            "mp3_128" -> "mp3_44100_128"
+            "mp3_192" -> "mp3_44100_192"
+            "pcm" -> "pcm_44100"
+            "ulaw" -> "ulaw_8000"
+            else -> format
+        }
+
+    private fun elevenLabsMediaType(format: String): String =
+        when {
+            format.startsWith("pcm") || format.startsWith("ulaw") -> "application/octet-stream"
+            else -> "audio/mpeg"
+        }
+
+    private fun Map<String, String>.toQueryString(): String =
+        entries.joinToString("&") { (key, value) -> "${UrlOps.encode(key)}=${UrlOps.encode(value)}" }
+
+    private fun Map<String, String>.headerValue(name: String): String? =
+        entries.firstOrNull { it.key.equals(name, ignoreCase = true) }?.value
 }
 
 private class ElevenLabsTranscriptionModel(
@@ -175,10 +229,10 @@ private class ElevenLabsTranscriptionModel(
     override val provider: String = "elevenlabs.transcription"
 
     override suspend fun transcribe(params: TranscriptionParams): TranscriptionModelResult {
-        val options = ElevenLabsWire.elevenLabsOptions(params.providerOptions)
+        val options = settings.elevenLabsOptions(params.providerOptions)
         val rawResponse = client.request("https://api.elevenlabs.io/v1/speech-to-text") {
             method = HttpMethod.Post
-            ElevenLabsWire.elevenLabsHeaders(settings, params.headers).forEach { (name, value) -> header(name, value) }
+            settings.elevenLabsHeaders(params.headers).forEach { (name, value) -> header(name, value) }
             setBody(
                 MultiPartFormDataContent(
                     formData {
@@ -204,7 +258,7 @@ private class ElevenLabsTranscriptionModel(
                 ),
             )
         }
-        val response = with(HttpTransport) { rawResponse.toJsonResponse(url = "https://api.elevenlabs.io/v1/speech-to-text", errorMessage = ElevenLabsWire::elevenLabsErrorMessage) }
+        val response = with(HttpTransport) { rawResponse.toJsonResponse(url = "https://api.elevenlabs.io/v1/speech-to-text", errorMessage = ::elevenLabsErrorMessage) }
         val value = response.value.jsonObject
         val words = value["words"]?.jsonArray.orEmpty()
         return TranscriptionModelResult(
@@ -222,6 +276,15 @@ private class ElevenLabsTranscriptionModel(
             durationInSeconds = words.lastOrNull()?.jsonObject?.get("end")?.jsonPrimitive?.floatOrNull,
         )
     }
+
+    private fun elevenLabsErrorMessage(statusCode: Int, parsed: JsonElement?, raw: String): String {
+        val obj = parsed as? JsonObject
+        val detail = obj?.get("detail")?.jsonObject?.get("message")?.jsonPrimitive?.contentOrNull
+            ?: obj?.get("detail")?.jsonPrimitive?.contentOrNull
+            ?: obj?.get("message")?.jsonPrimitive?.contentOrNull
+            ?: raw.ifBlank { "request failed" }
+        return "ElevenLabs request failed ($statusCode): $detail"
+    }
 }
 
 private const val ELEVENLABS_DEFAULT_VOICE_ID: String = "21m00Tcm4TlvDq8ikWAM"
@@ -232,70 +295,3 @@ internal class ElevenLabsBinaryResponse(
     val mediaType: String,
     val headers: Map<String, String>,
 )
-
-internal object ElevenLabsWire {
-    suspend fun HttpResponse.parseElevenLabsBinary(url: String, outputFormat: String): ElevenLabsBinaryResponse {
-        val bytes = bodyAsBytes()
-        val headers = with(HttpTransport) { flattenedHeaders() }
-        if (status.value !in 200..299) {
-            val raw = bytes.decodeToString()
-            throw ApiCallError(
-                url = url,
-                statusCode = status.value,
-                rawBody = raw,
-                headers = headers,
-                message = "ElevenLabs request failed (${status.value}): ${raw.ifBlank { "request failed" }}",
-            )
-        }
-        return ElevenLabsBinaryResponse(
-            bytes = bytes,
-            mediaType = headers.headerValue(HttpHeaders.ContentType) ?: elevenLabsMediaType(outputFormat),
-            headers = headers,
-        )
-    }
-
-    fun elevenLabsErrorMessage(statusCode: Int, parsed: JsonElement?, raw: String): String {
-        val obj = parsed as? JsonObject
-        val detail = obj?.get("detail")?.jsonObject?.get("message")?.jsonPrimitive?.contentOrNull
-            ?: obj?.get("detail")?.jsonPrimitive?.contentOrNull
-            ?: obj?.get("message")?.jsonPrimitive?.contentOrNull
-            ?: raw.ifBlank { "request failed" }
-        return "ElevenLabs request failed ($statusCode): $detail"
-    }
-
-    fun elevenLabsHeaders(settings: ElevenLabsProviderSettings, callHeaders: Map<String, String>): Map<String, String> {
-        val base = linkedMapOf<String, String>()
-        settings.apiKey?.takeIf { it.isNotBlank() }?.let { base["xi-api-key"] = it }
-        base.putAll(settings.headers)
-        base.putAll(callHeaders)
-        return ProviderHeaders.withUserAgentSuffix(base, "ai-sdk/elevenlabs/$ELEVENLABS_VERSION")
-    }
-
-    fun elevenLabsOptions(providerOptions: ProviderOptions): JsonObject =
-        providerOptions.toMap()["elevenlabs"] as? JsonObject ?: JsonObject(emptyMap())
-
-    fun elevenLabsOutputFormat(format: String): String =
-        when (format) {
-            "mp3" -> "mp3_44100_128"
-            "mp3_32" -> "mp3_44100_32"
-            "mp3_64" -> "mp3_44100_64"
-            "mp3_96" -> "mp3_44100_96"
-            "mp3_128" -> "mp3_44100_128"
-            "mp3_192" -> "mp3_44100_192"
-            "pcm" -> "pcm_44100"
-            "ulaw" -> "ulaw_8000"
-            else -> format
-        }
-
-    fun elevenLabsMediaType(format: String): String =
-        when {
-            format.startsWith("pcm") || format.startsWith("ulaw") -> "application/octet-stream"
-            else -> "audio/mpeg"
-        }
-
-    fun Map<String, String>.toQueryString(): String =
-        entries.joinToString("&") { (key, value) -> "${UrlOps.encode(key)}=${UrlOps.encode(value)}" }
-
-    fun Map<String, String>.headerValue(name: String): String? =
-        entries.firstOrNull { it.key.equals(name, ignoreCase = true) }?.value
-}

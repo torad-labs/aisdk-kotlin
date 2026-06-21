@@ -44,7 +44,15 @@ public data class LMNTSpeechModelOptions(
 public data class LMNTProviderSettings(
     val apiKey: String? = null,
     val headers: Map<String, String> = emptyMap(),
-)
+) {
+    internal fun lmntHeaders(callHeaders: Map<String, String>): Map<String, String> {
+        val base = linkedMapOf<String, String>()
+        apiKey?.takeIf { it.isNotBlank() }?.let { base["x-api-key"] = it }
+        base.putAll(headers)
+        base.putAll(callHeaders)
+        return ProviderHeaders.withUserAgentSuffix(base, "ai-sdk/lmnt/$LMNT_VERSION")
+    }
+}
 
 public class LMNTProvider(
     private val client: HttpClient,
@@ -77,7 +85,7 @@ private class LMNTSpeechModel(
 
     override suspend fun generate(params: SpeechGenerationParams): SpeechModelResult {
         val warnings = mutableListOf<CallWarning>()
-        val responseFormat = LMNTWire.lmntResponseFormat(params.responseFormat, warnings)
+        val responseFormat = lmntResponseFormat(params.responseFormat, warnings)
         val body = buildJsonObject {
             put("model", JsonPrimitive(modelId))
             put("text", JsonPrimitive(params.text))
@@ -85,7 +93,7 @@ private class LMNTSpeechModel(
             put("response_format", JsonPrimitive(responseFormat))
             params.language?.let { put("language", JsonPrimitive(it)) }
             params.speed?.let { put("speed", JsonPrimitive(it)) }
-            val options = LMNTWire.lmntOptions(params.providerOptions)
+            val options = lmntOptions(params.providerOptions)
             options["conversational"]?.let { put("conversational", it) }
             options["length"]?.let { put("length", it) }
             options["seed"]?.let { put("seed", it) }
@@ -95,14 +103,12 @@ private class LMNTSpeechModel(
             options["sampleRate"]?.let { put("sample_rate", it) }
         }
         val url = "https://api.lmnt.com/v1/ai/speech/bytes"
-        val response = with(LMNTWire) {
-            client.request(url) {
-                method = HttpMethod.Post
-                contentType(ContentType.Application.Json)
-                lmntHeaders(settings, params.headers).forEach { (name, value) -> header(name, value) }
-                setBody(aiSdkJson.encodeToString(JsonElement.serializer(), body))
-            }.parseLMNTBinary(url, responseFormat)
-        }
+        val response = client.request(url) {
+            method = HttpMethod.Post
+            contentType(ContentType.Application.Json)
+            settings.lmntHeaders(params.headers).forEach { (name, value) -> header(name, value) }
+            setBody(aiSdkJson.encodeToString(JsonElement.serializer(), body))
+        }.parseLMNTBinary(url, responseFormat)
         return SpeechModelResult(
             audio = GeneratedFile(
                 mediaType = response.mediaType,
@@ -112,19 +118,8 @@ private class LMNTSpeechModel(
             response = LanguageModelResponseMetadata(modelId = modelId, headers = response.headers),
         )
     }
-}
 
-
-internal class LMNTBinaryResponse(
-    val bytes: ByteArray,
-    val mediaType: String,
-    val headers: Map<String, String>,
-)
-
-internal object LMNTWire {
-    private val lmntSupportedFormats = setOf("aac", "mp3", "mulaw", "raw", "wav")
-
-    suspend fun HttpResponse.parseLMNTBinary(url: String, responseFormat: String): LMNTBinaryResponse {
+    private suspend fun HttpResponse.parseLMNTBinary(url: String, responseFormat: String): LMNTBinaryResponse {
         val bytes = bodyAsBytes()
         val headers = with(HttpTransport) { flattenedHeaders() }
         if (status.value !in 200..299) {
@@ -144,18 +139,10 @@ internal object LMNTWire {
         )
     }
 
-    fun lmntHeaders(settings: LMNTProviderSettings, callHeaders: Map<String, String>): Map<String, String> {
-        val base = linkedMapOf<String, String>()
-        settings.apiKey?.takeIf { it.isNotBlank() }?.let { base["x-api-key"] = it }
-        base.putAll(settings.headers)
-        base.putAll(callHeaders)
-        return ProviderHeaders.withUserAgentSuffix(base, "ai-sdk/lmnt/$LMNT_VERSION")
-    }
-
-    fun lmntOptions(providerOptions: ProviderOptions): JsonObject =
+    private fun lmntOptions(providerOptions: ProviderOptions): JsonObject =
         providerOptions.toMap()["lmnt"] as? JsonObject ?: JsonObject(emptyMap())
 
-    fun lmntResponseFormat(value: String?, warnings: MutableList<CallWarning>): String {
+    private fun lmntResponseFormat(value: String?, warnings: MutableList<CallWarning>): String {
         val format = value ?: "mp3"
         if (format in lmntSupportedFormats) return format
         warnings += CallWarning(
@@ -165,7 +152,7 @@ internal object LMNTWire {
         return "mp3"
     }
 
-    fun lmntMediaType(format: String): String =
+    private fun lmntMediaType(format: String): String =
         when (format) {
             "aac" -> "audio/aac"
             "mulaw", "raw" -> "application/octet-stream"
@@ -176,3 +163,12 @@ internal object LMNTWire {
     private fun Map<String, String>.headerValue(name: String): String? =
         entries.firstOrNull { it.key.equals(name, ignoreCase = true) }?.value
 }
+
+
+internal class LMNTBinaryResponse(
+    val bytes: ByteArray,
+    val mediaType: String,
+    val headers: Map<String, String>,
+)
+
+private val lmntSupportedFormats: Set<String> = setOf("aac", "mp3", "mulaw", "raw", "wav")
