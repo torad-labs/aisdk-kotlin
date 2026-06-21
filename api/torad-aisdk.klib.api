@@ -3264,19 +3264,22 @@ final class ai.torad.aisdk.providers/AssemblyAIProvider : ai.torad.aisdk/Provide
 }
 
 final class ai.torad.aisdk.providers/AssemblyAIProviderSettings { // ai.torad.aisdk.providers/AssemblyAIProviderSettings|null[0]
-    constructor <init>(kotlin/String? = ..., kotlin.collections/Map<kotlin/String, kotlin/String> = ..., kotlin/Long = ...) // ai.torad.aisdk.providers/AssemblyAIProviderSettings.<init>|<init>(kotlin.String?;kotlin.collections.Map<kotlin.String,kotlin.String>;kotlin.Long){}[0]
+    constructor <init>(kotlin/String? = ..., kotlin.collections/Map<kotlin/String, kotlin/String> = ..., kotlin/Long = ..., kotlin/Int = ...) // ai.torad.aisdk.providers/AssemblyAIProviderSettings.<init>|<init>(kotlin.String?;kotlin.collections.Map<kotlin.String,kotlin.String>;kotlin.Long;kotlin.Int){}[0]
 
     final val apiKey // ai.torad.aisdk.providers/AssemblyAIProviderSettings.apiKey|{}apiKey[0]
         final fun <get-apiKey>(): kotlin/String? // ai.torad.aisdk.providers/AssemblyAIProviderSettings.apiKey.<get-apiKey>|<get-apiKey>(){}[0]
     final val headers // ai.torad.aisdk.providers/AssemblyAIProviderSettings.headers|{}headers[0]
         final fun <get-headers>(): kotlin.collections/Map<kotlin/String, kotlin/String> // ai.torad.aisdk.providers/AssemblyAIProviderSettings.headers.<get-headers>|<get-headers>(){}[0]
+    final val maxPollAttempts // ai.torad.aisdk.providers/AssemblyAIProviderSettings.maxPollAttempts|{}maxPollAttempts[0]
+        final fun <get-maxPollAttempts>(): kotlin/Int // ai.torad.aisdk.providers/AssemblyAIProviderSettings.maxPollAttempts.<get-maxPollAttempts>|<get-maxPollAttempts>(){}[0]
     final val pollingIntervalMillis // ai.torad.aisdk.providers/AssemblyAIProviderSettings.pollingIntervalMillis|{}pollingIntervalMillis[0]
         final fun <get-pollingIntervalMillis>(): kotlin/Long // ai.torad.aisdk.providers/AssemblyAIProviderSettings.pollingIntervalMillis.<get-pollingIntervalMillis>|<get-pollingIntervalMillis>(){}[0]
 
     final fun component1(): kotlin/String? // ai.torad.aisdk.providers/AssemblyAIProviderSettings.component1|component1(){}[0]
     final fun component2(): kotlin.collections/Map<kotlin/String, kotlin/String> // ai.torad.aisdk.providers/AssemblyAIProviderSettings.component2|component2(){}[0]
     final fun component3(): kotlin/Long // ai.torad.aisdk.providers/AssemblyAIProviderSettings.component3|component3(){}[0]
-    final fun copy(kotlin/String? = ..., kotlin.collections/Map<kotlin/String, kotlin/String> = ..., kotlin/Long = ...): ai.torad.aisdk.providers/AssemblyAIProviderSettings // ai.torad.aisdk.providers/AssemblyAIProviderSettings.copy|copy(kotlin.String?;kotlin.collections.Map<kotlin.String,kotlin.String>;kotlin.Long){}[0]
+    final fun component4(): kotlin/Int // ai.torad.aisdk.providers/AssemblyAIProviderSettings.component4|component4(){}[0]
+    final fun copy(kotlin/String? = ..., kotlin.collections/Map<kotlin/String, kotlin/String> = ..., kotlin/Long = ..., kotlin/Int = ...): ai.torad.aisdk.providers/AssemblyAIProviderSettings // ai.torad.aisdk.providers/AssemblyAIProviderSettings.copy|copy(kotlin.String?;kotlin.collections.Map<kotlin.String,kotlin.String>;kotlin.Long;kotlin.Int){}[0]
     final fun equals(kotlin/Any?): kotlin/Boolean // ai.torad.aisdk.providers/AssemblyAIProviderSettings.equals|equals(kotlin.Any?){}[0]
     final fun hashCode(): kotlin/Int // ai.torad.aisdk.providers/AssemblyAIProviderSettings.hashCode|hashCode(){}[0]
     final fun toString(): kotlin/String // ai.torad.aisdk.providers/AssemblyAIProviderSettings.toString|toString(){}[0]
