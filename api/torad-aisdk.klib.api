@@ -2772,6 +2772,8 @@ final class <#A: kotlin/Any?> ai.torad.aisdk/ToolSet { // ai.torad.aisdk/ToolSet
     final fun find(kotlin/String): ai.torad.aisdk/Tool<*, *, #A>? // ai.torad.aisdk/ToolSet.find|find(kotlin.String){}[0]
     final fun names(): kotlin.collections/List<kotlin/String> // ai.torad.aisdk/ToolSet.names|names(){}[0]
     final fun plus(ai.torad.aisdk/ToolSet<#A>): ai.torad.aisdk/ToolSet<#A> // ai.torad.aisdk/ToolSet.plus|plus(ai.torad.aisdk.ToolSet<1:0>){}[0]
+
+    final object Companion // ai.torad.aisdk/ToolSet.Companion|null[0]
 }
 
 final class <#A: kotlin/Any?> ai.torad.aisdk/ToolSetBuilder { // ai.torad.aisdk/ToolSetBuilder|null[0]
@@ -9536,6 +9538,8 @@ final class ai.torad.aisdk/ImageModelUsage { // ai.torad.aisdk/ImageModelUsage|n
     final fun equals(kotlin/Any?): kotlin/Boolean // ai.torad.aisdk/ImageModelUsage.equals|equals(kotlin.Any?){}[0]
     final fun hashCode(): kotlin/Int // ai.torad.aisdk/ImageModelUsage.hashCode|hashCode(){}[0]
     final fun toString(): kotlin/String // ai.torad.aisdk/ImageModelUsage.toString|toString(){}[0]
+
+    final object Companion // ai.torad.aisdk/ImageModelUsage.Companion|null[0]
 }
 
 final class ai.torad.aisdk/InMemoryDevToolsRecorder : ai.torad.aisdk/DevToolsRecorder { // ai.torad.aisdk/InMemoryDevToolsRecorder|null[0]
@@ -12593,6 +12597,7 @@ sealed class <#A: kotlin/Any?> ai.torad.aisdk/Output { // ai.torad.aisdk/Output|
         open fun <get-schemaDescription>(): kotlin/String? // ai.torad.aisdk/Output.schemaDescription.<get-schemaDescription>|<get-schemaDescription>(){}[0]
 
     abstract fun decode(kotlin/String): #A // ai.torad.aisdk/Output.decode|decode(kotlin.String){}[0]
+    final fun toResponseFormat(): ai.torad.aisdk/ResponseFormat // ai.torad.aisdk/Output.toResponseFormat|toResponseFormat(){}[0]
 
     final class <#A1: kotlin/Any?> Arr : ai.torad.aisdk/Output<kotlin.collections/List<#A1>> { // ai.torad.aisdk/Output.Arr|null[0]
         constructor <init>(kotlinx.serialization/KSerializer<#A1>, kotlin/String = ..., kotlin/String? = ...) // ai.torad.aisdk/Output.Arr.<init>|<init>(kotlinx.serialization.KSerializer<1:0>;kotlin.String;kotlin.String?){}[0]
