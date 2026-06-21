@@ -157,6 +157,9 @@ detekt {
 
 dependencies {
     detektPlugins(libs.detekt.formatting)
+    // The project's own architectural tenets as detekt rules (mirrors of the ast-grep
+    // PreToolUse hook rules), so they surface in the IDE + `check` for every developer.
+    detektPlugins(project(":detekt-rules"))
 }
 
 tasks.withType<Detekt>().configureEach {
