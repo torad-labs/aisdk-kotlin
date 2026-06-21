@@ -138,23 +138,19 @@ class GatewayAndProviderUtilsParityTest {
 
     @Test
     fun `gateway headers and errors mirror public gateway package behavior`() = runTest {
-        val apiKeyHeaders = GatewayWire.gatewayHeaders(
-            GatewayProviderSettings(
-                apiKey = "key",
-                headers = mapOf("User-Agent" to "app"),
-            ),
-        )
-        val oidcHeaders = GatewayWire.gatewayHeaders(
-            GatewayProviderSettings(
-                authTokenProvider = { GatewayAuthToken("oidc", GatewayAuthMethod.Oidc) },
-            ),
-        )
+        val apiKeyHeaders = GatewayProviderSettings(
+            apiKey = "key",
+            headers = mapOf("User-Agent" to "app"),
+        ).gatewayHeaders()
+        val oidcHeaders = GatewayProviderSettings(
+            authTokenProvider = { GatewayAuthToken("oidc", GatewayAuthMethod.Oidc) },
+        ).gatewayHeaders()
 
         assertEquals("Bearer key", apiKeyHeaders["authorization"])
         assertEquals("app ai-sdk/gateway-kotlin", apiKeyHeaders["user-agent"])
-        assertEquals(GatewayAuthMethod.ApiKey, GatewayWire.parseGatewayAuthMethod(apiKeyHeaders))
-        assertEquals(GatewayAuthMethod.Oidc, GatewayWire.parseGatewayAuthMethod(oidcHeaders))
-        assertNull(GatewayWire.parseGatewayAuthMethod(mapOf(GATEWAY_AUTH_METHOD_HEADER to "API-KEY")))
+        assertEquals(GatewayAuthMethod.ApiKey, GatewayAuthMethod.fromHeaders(apiKeyHeaders))
+        assertEquals(GatewayAuthMethod.Oidc, GatewayAuthMethod.fromHeaders(oidcHeaders))
+        assertNull(GatewayAuthMethod.fromHeaders(mapOf(GATEWAY_AUTH_METHOD_HEADER to "API-KEY")))
 
         val auth = GatewayAuthenticationError(generationId = "gen_1")
         val timeout = GatewayTimeoutError()

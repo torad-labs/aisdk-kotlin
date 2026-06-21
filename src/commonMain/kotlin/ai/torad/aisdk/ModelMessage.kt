@@ -6,6 +6,12 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonClassDiscriminator
 import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.contentOrNull
+import kotlinx.serialization.json.intOrNull
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
 
 /**
  * v6 wire-shape message — the type passed to [LanguageModel] generations.
@@ -98,7 +104,34 @@ public sealed class ContentPart {
         val invalid: Boolean = false,
         @EncodeDefault(EncodeDefault.Mode.NEVER)
         val providerMetadata: ProviderMetadata = ProviderMetadata.None,
-    ) : ContentPart()
+    ) : ContentPart() {
+        public companion object {
+            /**
+             * Tool-call `input` decoded from an OpenAI-compatible arguments
+             * string: blank → empty object, valid JSON → parsed, otherwise the
+             * raw string. Shared by the chat model (full response) and the
+             * streaming state (incremental deltas).
+             */
+            internal fun parseOpenAIToolInput(value: String?): JsonElement =
+                if (value.isNullOrBlank()) {
+                    JsonObject(emptyMap())
+                } else {
+                    runCatching { aiSdkJson.parseToJsonElement(value) }.getOrElse { JsonPrimitive(value) }
+                }
+
+            /** Whether a streamed OpenAI-compatible arguments buffer is now complete (parseable) JSON. */
+            internal fun isParsableOpenAIJson(value: String): Boolean =
+                value.isNotBlank() && runCatching { aiSdkJson.parseToJsonElement(value) }.isSuccess
+
+            /** Google `thought_signature` provider-metadata pulled from an OpenAI-compatible tool-call object. */
+            internal fun thoughtSignatureMetadata(value: JsonObject): Map<String, JsonElement>? {
+                val signature = value["extra_content"]?.jsonObject
+                    ?.get("google")?.jsonObject
+                    ?.get("thought_signature")?.jsonPrimitive?.contentOrNull
+                return signature?.let { mapOf("thoughtSignature" to JsonPrimitive(it)) }
+            }
+        }
+    }
 
     /**
      * Tool execution result. [output] is the canonical FULL payload —
@@ -265,6 +298,63 @@ public data class Usage(
             inputTokens = InputTokenBreakdown(total = promptTokens),
             outputTokens = OutputTokenBreakdown(total = completionTokens),
         )
+
+        /**
+         * Usage from an OpenAI-compatible `usage` JSON object: prompt/completion
+         * totals plus cached- and reasoning-token breakdowns. Shared by the
+         * chat/completion models and the streaming state.
+         */
+        internal fun fromOpenAI(value: JsonElement?): Usage {
+            val obj = value?.jsonObject ?: return Usage()
+            val promptTokens = obj["prompt_tokens"]?.jsonPrimitive?.intOrNull ?: 0
+            val completionTokens = obj["completion_tokens"]?.jsonPrimitive?.intOrNull ?: 0
+            val cachedTokens = (obj["prompt_tokens_details"]?.jsonObject?.get("cached_tokens")?.jsonPrimitive?.intOrNull ?: 0)
+                .coerceIn(0, promptTokens)
+            val reasoningTokens = (obj["completion_tokens_details"]?.jsonObject?.get("reasoning_tokens")?.jsonPrimitive?.intOrNull ?: 0)
+                .coerceAtLeast(0)
+            val outputTotal = if (reasoningTokens > completionTokens) {
+                completionTokens + reasoningTokens
+            } else {
+                completionTokens
+            }
+            return Usage(
+                inputTokens = InputTokenBreakdown(
+                    total = promptTokens,
+                    noCache = promptTokens - cachedTokens,
+                    cacheRead = cachedTokens,
+                ),
+                outputTokens = OutputTokenBreakdown(
+                    total = outputTotal,
+                    text = outputTotal - reasoningTokens,
+                    reasoning = reasoningTokens,
+                ),
+                raw = value,
+            )
+        }
+
+        /**
+         * Usage from already-extracted token counts — the building block for
+         * OpenAI-compatible facade `convertUsage` overrides.
+         */
+        internal fun fromParts(
+            promptTokens: Int,
+            completionTokens: Int,
+            cacheRead: Int,
+            reasoningTokens: Int,
+            raw: JsonElement?,
+        ): Usage = Usage(
+            inputTokens = InputTokenBreakdown(
+                total = promptTokens,
+                noCache = promptTokens - cacheRead,
+                cacheRead = cacheRead,
+            ),
+            outputTokens = OutputTokenBreakdown(
+                total = completionTokens,
+                text = completionTokens - reasoningTokens,
+                reasoning = reasoningTokens,
+            ),
+            raw = raw,
+        )
     }
 
     /** Legacy flat accessor — `inputTokens.total`. */
@@ -349,4 +439,16 @@ public enum class FinishReason {
     /** v6: generation paused because tool(s) need approval. */
     ToolApprovalRequested,
     Other,
+    ;
+
+    public companion object {
+        /** Map an OpenAI-compatible `finish_reason` wire string to a [FinishReason]. */
+        internal fun fromOpenAI(value: String?): FinishReason = when (value) {
+            "stop" -> Stop
+            "length" -> Length
+            "tool_calls", "function_call" -> ToolCalls
+            "content_filter" -> ContentFilter
+            else -> Other
+        }
+    }
 }

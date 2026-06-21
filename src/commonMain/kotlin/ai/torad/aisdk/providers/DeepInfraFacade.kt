@@ -7,7 +7,6 @@ import ai.torad.aisdk.providers.FacadeHttp.postFacadeJson
 import ai.torad.aisdk.providers.FacadeHttp.providerFacadeHeaders
 import ai.torad.aisdk.providers.FacadeHttp.putProviderSpecificOptions
 import ai.torad.aisdk.providers.FacadeHttp.stripDataUriPrefix
-import ai.torad.aisdk.providers.FacadeSupport.compatibleSettings
 import io.ktor.client.HttpClient
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
@@ -39,7 +38,7 @@ public class DeepInfraProvider(
 ) : Provider {
     private val compatible = OpenAICompatible(
         client,
-        compatibleSettings(
+        OpenAICompatibleProviderSettings.forFacade(
             name = "deepinfra",
             version = DEEPINFRA_VERSION,
             baseURL = "${settings.baseURL.trimEnd('/')}/openai",

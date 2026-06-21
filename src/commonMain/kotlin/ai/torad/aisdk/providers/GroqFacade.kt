@@ -1,10 +1,8 @@
 package ai.torad.aisdk.providers
 
 import ai.torad.aisdk.*
-import ai.torad.aisdk.providers.FacadeSupport.compatibleSettings
 import ai.torad.aisdk.providers.FacadeSupport.intField
 import ai.torad.aisdk.providers.FacadeSupport.nestedIntField
-import ai.torad.aisdk.providers.FacadeSupport.usageFromParts
 import ai.torad.aisdk.providers.GroqWire.toCompatible
 import io.ktor.client.HttpClient
 import kotlinx.serialization.Serializable
@@ -89,7 +87,7 @@ internal object GroqWire {
         version: String,
         capabilities: ProviderCapabilities = ProviderCapabilities(),
     ): OpenAICompatibleProviderSettings =
-        compatibleSettings(
+        OpenAICompatibleProviderSettings.forFacade(
             name = name,
             version = version,
             baseURL = baseURL,
@@ -162,6 +160,6 @@ internal object GroqWire {
         val promptTokens = obj.intField("prompt_tokens")
         val completionTokens = obj.intField("completion_tokens")
         val reasoning = obj.nestedIntField("completion_tokens_details", "reasoning_tokens").coerceAtMost(completionTokens)
-        return usageFromParts(promptTokens, completionTokens, cacheRead = 0, reasoningTokens = reasoning, raw = obj)
+        return Usage.fromParts(promptTokens, completionTokens, cacheRead = 0, reasoningTokens = reasoning, raw = obj)
     }
 }

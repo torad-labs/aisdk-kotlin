@@ -8,6 +8,9 @@ import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonObjectBuilder
 import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.contentOrNull
+import kotlinx.serialization.json.doubleOrNull
+import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.put
 
 /**
@@ -82,6 +85,24 @@ public sealed interface StreamEvent {
                 headers = headers,
                 body = body,
             )
+
+        public companion object {
+            /**
+             * Response metadata from an OpenAI-compatible stream chunk — `null`
+             * when the chunk carries no id / model / timestamp.
+             */
+            internal fun fromOpenAI(obj: JsonObject): ResponseMetadata? {
+                val id = obj["id"]?.jsonPrimitive?.contentOrNull
+                val modelId = obj["model"]?.jsonPrimitive?.contentOrNull
+                val timestampMillis = obj["created"]?.jsonPrimitive?.doubleOrNull?.let { (it * 1000).toLong() }
+                if (id == null && modelId == null && timestampMillis == null) return null
+                return ResponseMetadata(
+                    id = id,
+                    modelId = modelId,
+                    timestampMillis = timestampMillis,
+                )
+            }
+        }
     }
 
     /** New step (one LLM call) began. Emitted at the start of every loop iteration. */

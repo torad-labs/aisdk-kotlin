@@ -1,12 +1,6 @@
 package ai.torad.aisdk.providers
 
 import ai.torad.aisdk.*
-import ai.torad.aisdk.providers.OpenAICompatibleWire.isParsableOpenAIJson
-import ai.torad.aisdk.providers.OpenAICompatibleWire.openAIFinishReason
-import ai.torad.aisdk.providers.OpenAICompatibleWire.openAIUsage
-import ai.torad.aisdk.providers.OpenAICompatibleWire.parseOpenAIToolInput
-import ai.torad.aisdk.providers.OpenAICompatibleWire.streamResponseMetadata
-import ai.torad.aisdk.providers.OpenAICompatibleWire.thoughtSignatureMetadata
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonObject
@@ -33,7 +27,7 @@ internal class OpenAIChatStreamState(
         val events = mutableListOf<StreamEvent>()
         val obj = WireDecoder.objectValue(value, provider, "chat stream event")
         if (!emittedResponseMetadata) {
-            streamResponseMetadata(obj)?.let {
+            StreamEvent.ResponseMetadata.fromOpenAI(obj)?.let {
                 events += it
                 emittedResponseMetadata = true
             }
@@ -51,10 +45,10 @@ internal class OpenAIChatStreamState(
             finishReason = FinishReason.Error
             return events
         }
-        obj["usage"]?.let { usage = convertUsage?.invoke(it) ?: openAIUsage(it) }
+        obj["usage"]?.let { usage = convertUsage?.invoke(it) ?: Usage.fromOpenAI(it) }
         val choice = obj["choices"]?.jsonArray?.firstOrNull()?.jsonObject ?: return events
         choice["finish_reason"]?.jsonPrimitive?.contentOrNull?.let {
-            finishReason = openAIFinishReason(it)
+            finishReason = FinishReason.fromOpenAI(it)
             rawFinishReason = it
         }
         val delta = choice["delta"]?.jsonObject ?: return events
@@ -99,7 +93,7 @@ internal class OpenAIChatStreamState(
                 StreamEvent.ToolCall(
                     toolCallId = toolCall.id,
                     toolName = toolCall.name,
-                    inputJson = parseOpenAIToolInput(toolCall.arguments),
+                    inputJson = ContentPart.ToolCall.parseOpenAIToolInput(toolCall.arguments),
                     providerMetadata = toolCall.providerMetadata,
                 ),
             )
@@ -126,15 +120,15 @@ internal class OpenAIChatStreamState(
             val id = obj["id"]?.jsonPrimitive?.contentOrNull ?: IdGenerator.generate("call")
             val name = WireDecoder.requiredString(function, "name", provider, "chat stream tool call", "$.function")
             val arguments = WireDecoder.optionalString(function, "arguments", provider, "chat stream tool call", "$.function").orEmpty()
-            val metadata = thoughtSignatureMetadata(obj)?.let { ProviderMetadata.Raw(JsonObject(mapOf(providerKey to JsonObject(it)))) } ?: ProviderMetadata.None
+            val metadata = ContentPart.ToolCall.thoughtSignatureMetadata(obj)?.let { ProviderMetadata.Raw(JsonObject(mapOf(providerKey to JsonObject(it)))) } ?: ProviderMetadata.None
             val toolCall = StreamingToolCall(id, name, arguments, metadata)
             toolCalls[index] = toolCall
             return buildList {
                 add(StreamEvent.ToolInputStart(id, name, providerMetadata = metadata))
                 if (arguments.isNotEmpty()) add(StreamEvent.ToolInputDelta(id, arguments, providerMetadata = metadata))
-                if (isParsableOpenAIJson(arguments)) {
+                if (ContentPart.ToolCall.isParsableOpenAIJson(arguments)) {
                     add(StreamEvent.ToolInputEnd(id, providerMetadata = metadata))
-                    add(StreamEvent.ToolCall(id, name, parseOpenAIToolInput(arguments), providerMetadata = metadata))
+                    add(StreamEvent.ToolCall(id, name, ContentPart.ToolCall.parseOpenAIToolInput(arguments), providerMetadata = metadata))
                     toolCall.finished = true
                 }
             }
@@ -144,13 +138,13 @@ internal class OpenAIChatStreamState(
         existing.arguments += delta
         return buildList {
             if (delta.isNotEmpty()) add(StreamEvent.ToolInputDelta(existing.id, delta, providerMetadata = existing.providerMetadata))
-            if (isParsableOpenAIJson(existing.arguments)) {
+            if (ContentPart.ToolCall.isParsableOpenAIJson(existing.arguments)) {
                 add(StreamEvent.ToolInputEnd(existing.id, providerMetadata = existing.providerMetadata))
                 add(
                     StreamEvent.ToolCall(
                         existing.id,
                         existing.name,
-                        parseOpenAIToolInput(existing.arguments),
+                        ContentPart.ToolCall.parseOpenAIToolInput(existing.arguments),
                         providerMetadata = existing.providerMetadata,
                     ),
                 )

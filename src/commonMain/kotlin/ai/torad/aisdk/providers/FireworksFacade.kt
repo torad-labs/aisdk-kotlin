@@ -6,7 +6,6 @@ import ai.torad.aisdk.providers.FacadeHttp.postFacadeBinary
 import ai.torad.aisdk.providers.FacadeHttp.postFacadeJson
 import ai.torad.aisdk.providers.FacadeHttp.providerFacadeHeaders
 import ai.torad.aisdk.providers.FacadeHttp.putProviderSpecificOptions
-import ai.torad.aisdk.providers.FacadeSupport.compatibleSettings
 import ai.torad.aisdk.providers.FireworksWire.fireworksImageBackend
 import ai.torad.aisdk.providers.FireworksWire.fireworksImageUrl
 import ai.torad.aisdk.providers.FireworksWire.fireworksImageWarnings
@@ -222,7 +221,7 @@ internal object FireworksWire {
         version: String,
         capabilities: ProviderCapabilities = ProviderCapabilities(),
     ): OpenAICompatibleProviderSettings =
-        compatibleSettings(name, version, baseURL, apiKey, headers, capabilities)
+        OpenAICompatibleProviderSettings.forFacade(name, version, baseURL, apiKey, headers, capabilities)
 
     fun transformFireworksProviderOptions(options: ProviderOptions): ProviderOptions {
         val map = options.toMap()

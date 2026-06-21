@@ -26,59 +26,13 @@ internal data class ProviderCapabilities(
     val supportsStructuredOutputs: Boolean = false,
 )
 
-// Shared support for the OpenAI-compatible provider facades. Holds the settings
-// builder + usage helpers (FacadeSupport) and the raw HTTP transport used by the
-// image/reranking models (FacadeHttp). Extracted verbatim from
-// OpenAICompatibleProviderFacades.kt; loose helpers become object members so the
-// repo policy against top-level camelCase functions is satisfied.
+// Shared JSON field readers for the OpenAI-compatible provider facades
+// (FacadeSupport) plus the raw HTTP transport used by the image/reranking models
+// (FacadeHttp). The settings builder and usage construction now live on their
+// owning types (OpenAICompatibleProviderSettings.forFacade, Usage.fromParts);
+// these readers stay here because they are generic JsonObject/JsonArray accessors
+// with several unrelated facade consumers and no single owning type.
 internal object FacadeSupport {
-    @Suppress("LongParameterList")
-    fun compatibleSettings(
-        name: String,
-        version: String,
-        baseURL: String,
-        apiKey: String?,
-        headers: Map<String, String>,
-        capabilities: ProviderCapabilities = ProviderCapabilities(),
-        transformChatRequestBody: ((JsonObject) -> JsonObject)? = null,
-        convertUsage: ((JsonElement?) -> Usage)? = null,
-        transformChatResponse: ((JsonObject) -> JsonObject)? = null,
-    ): OpenAICompatibleProviderSettings =
-        OpenAICompatibleProviderSettings(
-            name = name,
-            baseUrl = baseURL.trimEnd('/'),
-            apiKey = apiKey,
-            headers = ProviderHeaders.withUserAgentSuffix(headers, "ai-sdk/$name/$version"),
-            // UA already embedded in headers above — null out the default suffix so commonHeaders()
-            // doesn't APPEND "ai-sdk/openai-compatible-kotlin" again (double User-Agent).
-            userAgentSuffix = null,
-            includeUsage = capabilities.includeUsage,
-            supportsStructuredOutputs = capabilities.supportsStructuredOutputs,
-            transformChatRequestBody = transformChatRequestBody,
-            convertUsage = convertUsage,
-            transformChatResponse = transformChatResponse,
-        )
-
-    fun usageFromParts(
-        promptTokens: Int,
-        completionTokens: Int,
-        cacheRead: Int,
-        reasoningTokens: Int,
-        raw: JsonElement?,
-    ): Usage = Usage(
-        inputTokens = Usage.InputTokenBreakdown(
-            total = promptTokens,
-            noCache = promptTokens - cacheRead,
-            cacheRead = cacheRead,
-        ),
-        outputTokens = Usage.OutputTokenBreakdown(
-            total = completionTokens,
-            text = completionTokens - reasoningTokens,
-            reasoning = reasoningTokens,
-        ),
-        raw = raw,
-    )
-
     fun JsonObject.intField(name: String): Int =
         this[name]?.jsonPrimitive?.intOrNull ?: 0
 
