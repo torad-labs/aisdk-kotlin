@@ -1,6 +1,6 @@
 package ai.torad.aisdk
 
-import ai.torad.aisdk.testing.drainAllItems
+import ai.torad.aisdk.testing.FlowDrain.drainAllItems
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -16,7 +16,7 @@ class SmoothStreamTest {
             emit(StreamEvent.TextDelta("t_1", "app"))
             emit(StreamEvent.TextEnd("t_1"))
         }
-        val out = drainAllItems(smoothStream(events, delayMs = 0L))
+        val out = drainAllItems(SmoothStream(events, delayMs = 0L))
         val texts = out.filterIsInstance<StreamEvent.TextDelta>().map { it.text }
         assertTrue(texts.size >= 3, "got at least three word chunks")
         val joined = texts.joinToString("")
@@ -29,7 +29,7 @@ class SmoothStreamTest {
             emit(StreamEvent.ToolCall("c1", "t", kotlinx.serialization.json.JsonObject(emptyMap())))
             emit(StreamEvent.Finish(1, FinishReason.Stop, Usage()))
         }
-        val out = drainAllItems(smoothStream(events, delayMs = 0L))
+        val out = drainAllItems(SmoothStream(events, delayMs = 0L))
         assertTrue(out.any { it is StreamEvent.ToolCall })
         assertTrue(out.any { it is StreamEvent.Finish })
     }
@@ -40,7 +40,7 @@ class SmoothStreamTest {
             emit(StreamEvent.TextDelta("t_1", "line one\nline two\n"))
             emit(StreamEvent.TextEnd("t_1"))
         }
-        val out = drainAllItems(smoothStream(events, delayMs = 0L, chunkBy = ChunkBy.Line))
+        val out = drainAllItems(SmoothStream(events, delayMs = 0L, chunkBy = ChunkBy.Line))
         val texts = out.filterIsInstance<StreamEvent.TextDelta>().map { it.text }
         assertEquals(listOf("line one\n", "line two\n"), texts)
     }
@@ -60,7 +60,7 @@ class SmoothStreamTest {
             }
 
             // WHEN
-            val out = drainAllItems(smoothStream(events, delayMs = 0L))
+            val out = drainAllItems(SmoothStream(events, delayMs = 0L))
             val texts = out.filterIsInstance<StreamEvent.TextDelta>().map { it.text }
 
             // THEN — four ideograms flush as four separate chunks.
@@ -82,7 +82,7 @@ class SmoothStreamTest {
             }
 
             // WHEN
-            val out = drainAllItems(smoothStream(events, delayMs = 0L))
+            val out = drainAllItems(SmoothStream(events, delayMs = 0L))
             val texts = out.filterIsInstance<StreamEvent.TextDelta>().map { it.text }
 
             // THEN — the join preserves input; the contiguous 你好
@@ -102,7 +102,7 @@ class SmoothStreamTest {
             }
 
             // WHEN
-            val out = drainAllItems(smoothStream(events, delayMs = 0L))
+            val out = drainAllItems(SmoothStream(events, delayMs = 0L))
             val texts = out.filterIsInstance<StreamEvent.TextDelta>().map { it.text }
 
             // THEN

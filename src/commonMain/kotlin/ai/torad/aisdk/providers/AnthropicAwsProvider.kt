@@ -28,9 +28,9 @@ public interface AnthropicAwsProvider : Provider {
     public val settings: AnthropicAwsProviderSettings
     public val tools: AnthropicTools
 
-    public operator fun invoke(modelId: ModelId): LanguageModel = languageModel(modelId)
-    public fun chat(modelId: ModelId): LanguageModel = languageModel(modelId)
-    public fun messages(modelId: ModelId): LanguageModel = languageModel(modelId)
+    public operator fun invoke(modelId: ModelId): LanguageModel = languageModel(modelId.value)
+    public fun chat(modelId: ModelId): LanguageModel = languageModel(modelId.value)
+    public fun messages(modelId: ModelId): LanguageModel = languageModel(modelId.value)
     public fun textEmbeddingModel(modelId: String): Nothing = throw NoSuchModelError(providerId, "embeddingModel", modelId)
 }
 
@@ -71,11 +71,11 @@ private class AnthropicAwsMessagesLanguageModel(
     private val delegate = AnthropicMessagesLanguageModel(
         client = client,
         settings = AnthropicProviderSettings(
-            baseURL = anthropicAwsBaseURL(settings),
+            baseURL = AnthropicAwsWire.baseURL(settings),
             apiKey = settings.apiKey,
-            headers = anthropicAwsHeaders(settings),
+            headers = AnthropicAwsWire.headers(settings),
             requestHeadersProvider = if (settings.apiKey.isNullOrBlank()) {
-                { url, body, headers -> anthropicAwsSigV4Headers(settings, url, body, headers) }
+                { url, body, headers -> AnthropicAwsWire.sigV4Headers(settings, url, body, headers) }
             } else {
                 null
             },
@@ -101,39 +101,39 @@ private class AnthropicAwsMessagesLanguageModel(
     }
 }
 
-private fun anthropicAwsBaseURL(settings: AnthropicAwsProviderSettings): String =
-    settings.baseURL?.trimEnd('/')
-        ?: "https://aws-external-anthropic.${settings.region ?: "us-east-1"}.api.aws/v1"
+internal object AnthropicAwsWire {
+    fun baseURL(settings: AnthropicAwsProviderSettings): String =
+        settings.baseURL?.trimEnd('/')
+            ?: "https://aws-external-anthropic.${settings.region ?: "us-east-1"}.api.aws/v1"
 
-private fun anthropicAwsHeaders(settings: AnthropicAwsProviderSettings): Map<String, String> {
-    val workspaceId = settings.workspaceId
-        ?: throw LoadSettingError("Anthropic AWS workspaceId is required. Provide workspaceId or ANTHROPIC_AWS_WORKSPACE_ID-style configuration.")
-    return linkedMapOf<String, String>().apply {
-        put("anthropic-workspace-id", workspaceId)
-        put(HttpHeaders.UserAgent, "ai-sdk/anthropic-aws/$ANTHROPIC_AWS_VERSION")
-        putAll(settings.headers)
+    fun headers(settings: AnthropicAwsProviderSettings): Map<String, String> {
+        val workspaceId = settings.workspaceId
+            ?: throw LoadSettingError("Anthropic AWS workspaceId is required. Provide workspaceId or ANTHROPIC_AWS_WORKSPACE_ID-style configuration.")
+        return linkedMapOf<String, String>().apply {
+            put("anthropic-workspace-id", workspaceId)
+            put(HttpHeaders.UserAgent, "ai-sdk/anthropic-aws/$ANTHROPIC_AWS_VERSION")
+            putAll(settings.headers)
+        }
     }
-}
 
-internal suspend fun anthropicAwsSigV4Headers(
-    settings: AnthropicAwsProviderSettings,
-    url: String,
-    body: String,
-    headers: Map<String, String>,
-    amzDate: String = currentAwsAmzDate(),
-): Map<String, String> {
-    val credentials = settings.credentialProvider?.invoke()
-        ?: AnthropicAwsCredentials(
-            accessKeyId = settings.accessKeyId.orEmpty(),
-            secretAccessKey = settings.secretAccessKey.orEmpty(),
-            sessionToken = settings.sessionToken,
-            region = settings.region,
-        )
-    if (credentials.accessKeyId.isBlank() || credentials.secretAccessKey.isBlank()) {
-        throw LoadAPIKeyError("AWS SigV4 authentication requires both accessKeyId and secretAccessKey.")
-    }
-    return awsSigV4SignedHeaders(
-        method = "POST",
+    suspend fun sigV4Headers(
+        settings: AnthropicAwsProviderSettings,
+        url: String,
+        body: String,
+        headers: Map<String, String>,
+        amzDate: String = AwsSigV4.currentAwsAmzDate(),
+    ): Map<String, String> {
+        val credentials = settings.credentialProvider?.invoke()
+            ?: AnthropicAwsCredentials(
+                accessKeyId = settings.accessKeyId.orEmpty(),
+                secretAccessKey = settings.secretAccessKey.orEmpty(),
+                sessionToken = settings.sessionToken,
+                region = settings.region,
+            )
+        if (credentials.accessKeyId.isBlank() || credentials.secretAccessKey.isBlank()) {
+            throw LoadAPIKeyError("AWS SigV4 authentication requires both accessKeyId and secretAccessKey.")
+        }
+        return AwsSigV4.awsSigV4SignedHeaders(method = "POST",
         url = url,
         service = "aws-external-anthropic",
         region = credentials.region ?: settings.region ?: "us-east-1",
@@ -144,6 +144,6 @@ internal suspend fun anthropicAwsSigV4Headers(
             secretAccessKey = credentials.secretAccessKey,
             sessionToken = credentials.sessionToken,
         ),
-        amzDate = amzDate,
-    )
+        amzDate = amzDate,)
+    }
 }

@@ -20,7 +20,7 @@ import kotlinx.coroutines.flow.flow
  * models that emit thinking inline rather than via dedicated reasoning
  * channels.
  */
-public fun extractReasoningMiddleware(
+public fun ExtractReasoningMiddleware(
     tagName: String = "reasoning",
     separator: String = "\n",
     startWithReasoning: Boolean = false,
@@ -97,7 +97,7 @@ public fun extractReasoningMiddleware(
                         if (!inReasoning) {
                             val openIdx = buffer.indexOf(openTag)
                             if (openIdx < 0) {
-                                val emitLength = buffer.length - buffer.longestSuffixPrefixOf(openTag)
+                                val emitLength = buffer.length - ReasoningScan.longestSuffixPrefixOf(buffer, openTag)
                                 if (emitLength > 0) {
                                     emit(StreamEvent.TextDelta(event.id, buffer.substring(0, emitLength), event.providerMetadata))
                                     buffer.deleteRange(0, emitLength)
@@ -119,7 +119,7 @@ public fun extractReasoningMiddleware(
                             }
                             val closeIdx = buffer.indexOf(closeTag)
                             if (closeIdx < 0) {
-                                val emitLength = buffer.length - buffer.longestSuffixPrefixOf(closeTag)
+                                val emitLength = buffer.length - ReasoningScan.longestSuffixPrefixOf(buffer, closeTag)
                                 if (emitLength > 0) {
                                     emit(StreamEvent.ReasoningDelta(rid, buffer.substring(0, emitLength), event.providerMetadata))
                                     buffer.deleteRange(0, emitLength)
@@ -167,18 +167,24 @@ public fun extractReasoningMiddleware(
     }
 }
 
-private fun StringBuilder.longestSuffixPrefixOf(value: String): Int {
-    val maxLength = minOf(length, value.length - 1)
-    for (candidateLength in maxLength downTo 1) {
-        val suffixStart = length - candidateLength
-        var matches = true
-        for (i in 0 until candidateLength) {
-            if (this[suffixStart + i] != value[i]) {
-                matches = false
-                break
+internal object ReasoningScan {
+    /**
+     * Length of the longest suffix of [builder] that is also a (strict) prefix of [value].
+     * Used to hold back a partial tag match that may complete on the next stream delta.
+     */
+    fun longestSuffixPrefixOf(builder: StringBuilder, value: String): Int {
+        val maxLength = minOf(builder.length, value.length - 1)
+        for (candidateLength in maxLength downTo 1) {
+            val suffixStart = builder.length - candidateLength
+            var matches = true
+            for (i in 0 until candidateLength) {
+                if (builder[suffixStart + i] != value[i]) {
+                    matches = false
+                    break
+                }
             }
+            if (matches) return candidateLength
         }
-        if (matches) return candidateLength
+        return 0
     }
-    return 0
 }

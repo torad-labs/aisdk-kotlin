@@ -80,13 +80,13 @@ public class GoogleGenerativeAIProvider(
     override val providerId: String = "google"
     public val tools: GoogleTools = GoogleTools()
 
-    public operator fun invoke(modelId: ModelId): LanguageModel = languageModel(modelId)
+    public operator fun invoke(modelId: ModelId): LanguageModel = languageModel(modelId.value)
 
     override fun languageModel(modelId: String): LanguageModel =
         GoogleGenerativeAILanguageModel(client, settings, modelId)
 
-    public fun chat(modelId: ModelId): LanguageModel = languageModel(modelId)
-    public fun generativeAI(modelId: ModelId): LanguageModel = languageModel(modelId)
+    public fun chat(modelId: ModelId): LanguageModel = languageModel(modelId.value)
+    public fun generativeAI(modelId: ModelId): LanguageModel = languageModel(modelId.value)
 
     public fun embedding(modelId: ModelId): EmbeddingModel =
         GoogleGenerativeAIEmbeddingModel(client, settings, modelId.value)
@@ -125,32 +125,20 @@ public fun GoogleGenerativeAI(
 
 public data class GoogleTools(
     val googleSearch: Tool<JsonElement, JsonElement, Any?> =
-        googleProviderTool("google_search", "google.google_search", "Ground responses with Google Search."),
+        GoogleWire.providerTool("google_search", "google.google_search", "Ground responses with Google Search."),
     val enterpriseWebSearch: Tool<JsonElement, JsonElement, Any?> =
-        googleProviderTool("enterprise_web_search", "google.enterprise_web_search", "Ground responses with Enterprise Web Search."),
+        GoogleWire.providerTool("enterprise_web_search", "google.enterprise_web_search", "Ground responses with Enterprise Web Search."),
     val googleMaps: Tool<JsonElement, JsonElement, Any?> =
-        googleProviderTool("google_maps", "google.google_maps", "Ground responses with Google Maps."),
+        GoogleWire.providerTool("google_maps", "google.google_maps", "Ground responses with Google Maps."),
     val urlContext: Tool<JsonElement, JsonElement, Any?> =
-        googleProviderTool("url_context", "google.url_context", "Fetch URL context through Google."),
+        GoogleWire.providerTool("url_context", "google.url_context", "Fetch URL context through Google."),
     val fileSearch: Tool<JsonElement, JsonElement, Any?> =
-        googleProviderTool("file_search", "google.file_search", "Use Gemini File Search."),
+        GoogleWire.providerTool("file_search", "google.file_search", "Use Gemini File Search."),
     val codeExecution: Tool<JsonElement, JsonElement, Any?> =
-        googleProviderTool("code_execution", "google.code_execution", "Use Google hosted code execution."),
+        GoogleWire.providerTool("code_execution", "google.code_execution", "Use Google hosted code execution."),
     val vertexRagStore: Tool<JsonElement, JsonElement, Any?> =
-        googleProviderTool("vertex_rag_store", "google.vertex_rag_store", "Use Vertex RAG Store."),
+        GoogleWire.providerTool("vertex_rag_store", "google.vertex_rag_store", "Use Vertex RAG Store."),
 )
 
 public val googleTools: GoogleTools = GoogleTools()
 
-private fun googleProviderTool(
-    name: String,
-    id: String,
-    description: String,
-): Tool<JsonElement, JsonElement, Any?> =
-    ProviderExecutedTool(
-        name = name,
-        description = description,
-        inputSerializer = JsonElement.serializer(),
-        outputSerializer = JsonElement.serializer(),
-        metadata = mapOf("providerToolId" to JsonPrimitive(id)),
-    )

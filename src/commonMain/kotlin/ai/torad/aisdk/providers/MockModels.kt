@@ -120,4 +120,4 @@ public class MockRerankingModel(
     }
 }
 
-public fun mockAudioSource(): AudioSource = AudioSource(mediaType = "audio/mpeg", base64 = "SUQz", filename = "audio.mp3")
+public fun MockAudioSource(): AudioSource = AudioSource(mediaType = "audio/mpeg", base64 = "SUQz", filename = "audio.mp3")

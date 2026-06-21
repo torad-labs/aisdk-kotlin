@@ -1,7 +1,7 @@
 package ai.torad.aisdk
 import ai.torad.aisdk.providers.MISTRAL_VERSION
 import ai.torad.aisdk.providers.MistralProviderSettings
-import ai.torad.aisdk.testing.drainAllItems
+import ai.torad.aisdk.testing.FlowDrain.drainAllItems
 import io.ktor.http.HttpHeaders
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.Json
@@ -24,7 +24,7 @@ import kotlinx.serialization.json.JsonObject
 class MistralProviderTest {
     @Test
     fun `chat model uses Mistral endpoint headers and option mapping`() = runTest {
-        val fixture = createTestServer(
+        val fixture = TestServer.createTestServer(
             mutableMapOf(
                 "https://api.mistral.ai/v1/chat/completions" to UrlHandler(
                     UrlResponse.JsonValue(
@@ -51,7 +51,7 @@ class MistralProviderTest {
 
         val result = provider.chat(ModelId("mistral-small-latest")).generate(
             LanguageModelCallParams(
-                messages = listOf(userMessage("Hello")),
+                messages = listOf(UserMessage("Hello")),
                 maxOutputTokens = 256,
                 seed = 77,
                 providerOptions = ProviderOptions.Raw(JsonObject(mapOf(
@@ -91,7 +91,7 @@ class MistralProviderTest {
 
     @Test
     fun `embedding model aliases map usage and request body`() = runTest {
-        val fixture = createTestServer(
+        val fixture = TestServer.createTestServer(
             mutableMapOf(
                 "https://mistral.test/v1/embeddings" to UrlHandler(
                     UrlResponse.JsonValue(
@@ -133,7 +133,7 @@ class MistralProviderTest {
 
     @Test
     fun `chat body uses Mistral wire shape - any toolChoice + tool name + prefix`() = runTest {
-        val fixture = createTestServer(
+        val fixture = TestServer.createTestServer(
             mutableMapOf(
                 "https://api.mistral.ai/v1/chat/completions" to UrlHandler(
                     UrlResponse.JsonValue(
@@ -151,7 +151,7 @@ class MistralProviderTest {
         provider.chat(ModelId("mistral-small-latest")).generate(
             LanguageModelCallParams(
                 messages = listOf(
-                    userMessage("go"),
+                    UserMessage("go"),
                     ModelMessage(
                         MessageRole.Assistant,
                         listOf(ContentPart.ToolCall("t1", "lookup", buildJsonObject {})),
@@ -185,7 +185,7 @@ class MistralProviderTest {
     @Test
     @Suppress("LongMethod")
     fun `chat response maps Mistral thinking content for generate and stream`() = runTest {
-        val fixture = createTestServer(
+        val fixture = TestServer.createTestServer(
             mutableMapOf(
                 "https://api.mistral.ai/v1/chat/completions" to UrlHandler(
                     listOf(
@@ -234,10 +234,10 @@ class MistralProviderTest {
         val provider = Mistral(fixture.httpClient(), MistralProviderSettings(apiKey = "key"))
 
         val generated = provider.chat(ModelId("magistral-small-2507")).generate(
-            LanguageModelCallParams(messages = listOf(userMessage("hi"))),
+            LanguageModelCallParams(messages = listOf(UserMessage("hi"))),
         )
         val events = drainAllItems(
-            provider.chat(ModelId("magistral-small-2507")).stream(LanguageModelCallParams(messages = listOf(userMessage("hi")))),
+            provider.chat(ModelId("magistral-small-2507")).stream(LanguageModelCallParams(messages = listOf(UserMessage("hi")))),
         )
 
         assertEquals("Final answer.", generated.text)
@@ -249,7 +249,7 @@ class MistralProviderTest {
 
     @Test
     fun `unsupported model families and unconfigured singleton fail explicitly`() {
-        val provider = Mistral(createTestServer(mutableMapOf()).httpClient(), MistralProviderSettings(apiKey = "key"))
+        val provider = Mistral(TestServer.createTestServer(mutableMapOf()).httpClient(), MistralProviderSettings(apiKey = "key"))
 
         assertFailsWith<NoSuchModelError> { provider.imageModel("pixtral") }
     }

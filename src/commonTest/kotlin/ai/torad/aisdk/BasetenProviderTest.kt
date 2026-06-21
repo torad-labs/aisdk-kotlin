@@ -20,7 +20,7 @@ import kotlin.test.assertTrue
 class BasetenProviderTest {
     @Test
     fun `default chat model uses model api base url and baseten headers`() = runTest {
-        val fixture = createTestServer(
+        val fixture = TestServer.createTestServer(
             mutableMapOf(
                 "https://inference.baseten.co/v1/chat/completions" to UrlHandler(
                     UrlResponse.JsonValue(
@@ -34,7 +34,7 @@ class BasetenProviderTest {
         fixture.server.start()
         val provider = Baseten(fixture.httpClient(), BasetenProviderSettings(apiKey = "key"))
 
-        val result = provider.chatModel(ModelId("deepseek-ai/DeepSeek-V3-0324")).generate(LanguageModelCallParams(listOf(userMessage("hi"))))
+        val result = provider.chatModel(ModelId("deepseek-ai/DeepSeek-V3-0324")).generate(LanguageModelCallParams(listOf(UserMessage("hi"))))
 
         assertEquals("ok", result.text)
         assertEquals("baseten.chat", provider.chatModel(ModelId("deepseek-ai/DeepSeek-V3-0324")).provider)
@@ -47,7 +47,7 @@ class BasetenProviderTest {
     @Test
     fun `custom sync v1 chat endpoint uses placeholder default model id`() = runTest {
         val modelURL = "https://model-123.api.baseten.co/environments/production/sync/v1"
-        val fixture = createTestServer(
+        val fixture = TestServer.createTestServer(
             mutableMapOf(
                 "$modelURL/chat/completions" to UrlHandler(
                     UrlResponse.JsonValue(
@@ -61,7 +61,7 @@ class BasetenProviderTest {
         fixture.server.start()
         val provider = Baseten(fixture.httpClient(), BasetenProviderSettings(apiKey = "key", modelURL = modelURL))
 
-        val result = provider.chatModel().generate(LanguageModelCallParams(listOf(userMessage("hi"))))
+        val result = provider.chatModel().generate(LanguageModelCallParams(listOf(UserMessage("hi"))))
 
         assertEquals("custom", result.text)
         assertEquals("placeholder", fixture.calls.single().requestBodyJson.jsonObject["model"]?.jsonPrimitive?.contentOrNull)
@@ -69,7 +69,7 @@ class BasetenProviderTest {
 
     @Test
     fun `chat rejects custom predict endpoints`() {
-        val fixture = createTestServer(mutableMapOf())
+        val fixture = TestServer.createTestServer(mutableMapOf())
         val provider = Baseten(
             fixture.httpClient(),
             BasetenProviderSettings(
@@ -84,7 +84,7 @@ class BasetenProviderTest {
     @Test
     fun `embedding requires model url and normalizes sync endpoint`() = runTest {
         val modelURL = "https://model-123.api.baseten.co/environments/production/sync"
-        val fixture = createTestServer(
+        val fixture = TestServer.createTestServer(
             mutableMapOf(
                 "$modelURL/v1/embeddings" to UrlHandler(
                     UrlResponse.JsonValue(
@@ -110,7 +110,7 @@ class BasetenProviderTest {
 
     @Test
     fun `embedding rejects missing or unsupported model urls and unsupported image models`() {
-        val fixture = createTestServer(mutableMapOf())
+        val fixture = TestServer.createTestServer(mutableMapOf())
 
         assertFailsWith<AiSdkException> {
             Baseten(fixture.httpClient(), BasetenProviderSettings(apiKey = "key")).embeddingModel()

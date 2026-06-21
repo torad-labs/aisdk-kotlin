@@ -2,7 +2,7 @@ package ai.torad.aisdk
 import ai.torad.aisdk.providers.AMAZON_BEDROCK_VERSION
 import ai.torad.aisdk.providers.AmazonBedrockProviderSettings
 import ai.torad.aisdk.providers.BedrockMantleProviderSettings
-import ai.torad.aisdk.testing.drainAllItems
+import ai.torad.aisdk.testing.FlowDrain.drainAllItems
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.respond
@@ -36,7 +36,7 @@ import ai.torad.aisdk.providers.BedrockMantle
 class AmazonBedrockProviderTest {
     @Test
     fun `chat model maps Converse request response metadata and auth`() = runTest {
-        val fixture = createTestServer(
+        val fixture = TestServer.createTestServer(
             mutableMapOf(
                 "https://bedrock.test/model/anthropic.claude-3-7-sonnet-20250219-v1%3A0/converse" to UrlHandler(
                     UrlResponse.JsonValue(
@@ -183,7 +183,7 @@ class AmazonBedrockProviderTest {
 
     @Test
     fun `tool result serializes as a text block with no status field`() = runTest {
-        val fixture = createTestServer(
+        val fixture = TestServer.createTestServer(
             mutableMapOf(
                 "https://bedrock.test/model/anthropic.claude-3-7-sonnet-20250219-v1%3A0/converse" to UrlHandler(
                     UrlResponse.JsonValue(
@@ -234,7 +234,7 @@ class AmazonBedrockProviderTest {
 
     @Test
     fun `chat stream maps decoded Bedrock event stream chunks`() = runTest {
-        val fixture = createTestServer(
+        val fixture = TestServer.createTestServer(
             mutableMapOf(
                 "https://bedrock.test/model/anthropic.claude-3-7-sonnet-20250219-v1%3A0/converse-stream" to UrlHandler(
                     UrlResponse.StreamChunks(
@@ -265,7 +265,7 @@ class AmazonBedrockProviderTest {
 
         val events = drainAllItems(
             provider.languageModel("anthropic.claude-3-7-sonnet-20250219-v1:0").stream(
-                LanguageModelCallParams(messages = listOf(userMessage("hi"))),
+                LanguageModelCallParams(messages = listOf(UserMessage("hi"))),
             ),
         )
 
@@ -285,7 +285,7 @@ class AmazonBedrockProviderTest {
 
     @Test
     fun `chat stream decodes Smithy binary event stream frames`() = runTest {
-        val fixture = createTestServer(
+        val fixture = TestServer.createTestServer(
             mutableMapOf(
                 "https://bedrock.test/model/amazon.nova-lite-v1%3A0/converse-stream" to UrlHandler(
                     UrlResponse.Binary(
@@ -312,7 +312,7 @@ class AmazonBedrockProviderTest {
 
         val events = drainAllItems(
             provider.languageModel("amazon.nova-lite-v1:0").stream(
-                LanguageModelCallParams(messages = listOf(userMessage("hi"))),
+                LanguageModelCallParams(messages = listOf(UserMessage("hi"))),
             ),
         )
 
@@ -353,7 +353,7 @@ class AmazonBedrockProviderTest {
         val deltas = mutableListOf<String>()
         val collector = launch {
             provider.languageModel("amazon.nova-lite-v1:0")
-                .stream(LanguageModelCallParams(messages = listOf(userMessage("hi"))))
+                .stream(LanguageModelCallParams(messages = listOf(UserMessage("hi"))))
                 .collect { if (it is StreamEvent.TextDelta) deltas += it.text }
         }
 
@@ -370,7 +370,7 @@ class AmazonBedrockProviderTest {
 
     @Test
     fun `embedding image and reranking models map Bedrock runtime payloads`() = runTest {
-        val fixture = createTestServer(
+        val fixture = TestServer.createTestServer(
             mutableMapOf(
                 "https://bedrock.test/model/amazon.titan-embed-text-v2%3A0/invoke" to UrlHandler(
                     UrlResponse.JsonValue(Json.parseToJsonElement("""{"embedding":[1.0,2.0],"inputTextTokenCount":7}""")),
@@ -449,7 +449,7 @@ class AmazonBedrockProviderTest {
 
     @Test
     fun `mantle facade maps OpenAI compatible chat and SigV4 settings are surfaced`() = runTest {
-        val fixture = createTestServer(
+        val fixture = TestServer.createTestServer(
             mutableMapOf(
                 "https://mantle.test/v1/chat/completions" to UrlHandler(
                     UrlResponse.JsonValue(
@@ -488,7 +488,7 @@ class AmazonBedrockProviderTest {
         )
 
         val result = provider.chat(ModelId("openai.gpt-oss-20b-1:0")).generate(
-            LanguageModelCallParams(messages = listOf(userMessage("hi"))),
+            LanguageModelCallParams(messages = listOf(UserMessage("hi"))),
         )
 
         assertEquals("hello", result.text)
@@ -508,7 +508,7 @@ class AmazonBedrockProviderTest {
             ),
         )
         val signed = sigV4Provider.languageModel("amazon.nova-lite-v1:0").generate(
-            LanguageModelCallParams(messages = listOf(userMessage("hi"))),
+            LanguageModelCallParams(messages = listOf(UserMessage("hi"))),
         )
         val signedRequest = fixture.calls.last()
         assertEquals("signed", signed.text)
@@ -521,7 +521,7 @@ class AmazonBedrockProviderTest {
 
     @Test
     fun `bedrock SigV4 clock skew errors include actionable clock guidance`() = runTest {
-        val fixture = createTestServer(
+        val fixture = TestServer.createTestServer(
             mutableMapOf(
                 "https://bedrock.test/model/amazon.nova-lite-v1%3A0/converse" to UrlHandler(
                     UrlResponse.Error(
@@ -548,7 +548,7 @@ class AmazonBedrockProviderTest {
 
         val error = assertFailsWith<APICallError> {
             provider.languageModel("amazon.nova-lite-v1:0").generate(
-                LanguageModelCallParams(messages = listOf(userMessage("hi"))),
+                LanguageModelCallParams(messages = listOf(UserMessage("hi"))),
             )
         }
 

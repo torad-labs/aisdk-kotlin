@@ -24,7 +24,7 @@ import kotlinx.serialization.json.JsonObject
 class GladiaProviderTest {
     @Test
     fun `transcription model uploads audio initializes job polls result and maps options`() = runTest {
-        val fixture = createTestServer(
+        val fixture = TestServer.createTestServer(
             mutableMapOf(
                 "https://api.gladia.io/v2/upload" to UrlHandler(
                     UrlResponse.JsonValue(Json.parseToJsonElement("""{"audio_url":"https://cdn.example/audio"}""")),
@@ -161,7 +161,7 @@ class GladiaProviderTest {
 
     @Test
     fun `transcription model throws when job fails`() = runTest {
-        val fixture = createTestServer(
+        val fixture = TestServer.createTestServer(
             mutableMapOf(
                 "https://api.gladia.io/v2/upload" to UrlHandler(
                     UrlResponse.JsonValue(Json.parseToJsonElement("""{"audio_url":"https://cdn.example/audio"}""")),
@@ -188,7 +188,7 @@ class GladiaProviderTest {
 
     @Test
     fun `default provider and unsupported model families fail explicitly`() {
-        val fixture = createTestServer(mutableMapOf())
+        val fixture = TestServer.createTestServer(mutableMapOf())
         val provider = Gladia(fixture.httpClient(), GladiaProviderSettings(apiKey = "key"))
 
         assertFailsWith<NoSuchModelError> { provider.languageModel("model") }

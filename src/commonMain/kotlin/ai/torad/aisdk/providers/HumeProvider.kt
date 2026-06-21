@@ -68,7 +68,7 @@ private class HumeSpeechModel(
 
     override suspend fun generate(params: SpeechGenerationParams): SpeechModelResult {
         val warnings = mutableListOf<CallWarning>()
-        val format = humeOutputFormat(params.responseFormat, warnings)
+        val format = HumeWire.humeOutputFormat(params.responseFormat, warnings)
         val body = buildJsonObject {
             put(
                 "utterances",
@@ -90,17 +90,17 @@ private class HumeSpeechModel(
                 ),
             )
             put("format", buildJsonObject { put("type", JsonPrimitive(format)) })
-            humeOptions(params.providerOptions)["context"]?.jsonObject?.let { context ->
-                put("context", humeContext(context))
+            HumeWire.humeOptions(params.providerOptions)["context"]?.jsonObject?.let { context ->
+                put("context", HumeWire.humeContext(context))
             }
         }
         val url = "https://api.hume.ai/v0/tts/file"
         val response = client.request(url) {
             method = HttpMethod.Post
             contentType(ContentType.Application.Json)
-            humeHeaders(settings, params.headers).forEach { (name, value) -> header(name, value) }
+            HumeWire.humeHeaders(settings, params.headers).forEach { (name, value) -> header(name, value) }
             setBody(aiSdkJson.encodeToString(JsonElement.serializer(), body))
-        }.parseHumeBinary(url, format)
+        }.let { HumeWire.parseHumeBinary(it, url, format) }
         return SpeechModelResult(
             audio = GeneratedFile(
                 mediaType = response.mediaType,
@@ -115,83 +115,85 @@ private class HumeSpeechModel(
 private const val HUME_DEFAULT_VOICE_ID: String = "d8ab67c6-953d-4bd8-9370-8fa53a0f1453"
 
 
-private class HumeBinaryResponse(
+internal class HumeBinaryResponse(
     val bytes: ByteArray,
     val mediaType: String,
     val headers: Map<String, String>,
 )
 
-private suspend fun HttpResponse.parseHumeBinary(url: String, format: String): HumeBinaryResponse {
-    val bytes = bodyAsBytes()
-    val headers = flattenedHeaders()
-    if (status.value !in 200..299) {
-        val raw = bytes.decodeToString()
-        throw apiCallError(
-            url = url,
-            statusCode = status.value,
-            rawBody = raw,
-            headers = headers,
-            message = "Hume request failed (${status.value}): ${raw.ifBlank { "request failed" }}",
-        )
-    }
-    return HumeBinaryResponse(
-        bytes = bytes,
-        mediaType = headers.headerValue(HttpHeaders.ContentType) ?: humeMediaType(format),
-        headers = headers,
-    )
-}
+internal object HumeWire {
+    private val humeSupportedFormats = setOf("mp3", "pcm", "wav")
 
-private fun humeHeaders(settings: HumeProviderSettings, callHeaders: Map<String, String>): Map<String, String> {
-    val base = linkedMapOf<String, String>()
-    settings.apiKey?.takeIf { it.isNotBlank() }?.let { base["X-Hume-Api-Key"] = it }
-    base.putAll(settings.headers)
-    base.putAll(callHeaders)
-    return ProviderHeaders.withUserAgentSuffix(base, "ai-sdk/hume/$HUME_VERSION")
-}
-
-private fun humeOptions(providerOptions: ProviderOptions): JsonObject =
-    providerOptions.toMap()["hume"] as? JsonObject ?: JsonObject(emptyMap())
-
-private fun humeContext(context: JsonObject): JsonObject =
-    when {
-        "generationId" in context -> buildJsonObject {
-            context["generationId"]?.let { put("generation_id", it) }
-        }
-        "utterances" in context -> buildJsonObject {
-            put(
-                "utterances",
-                JsonArray(
-                    context["utterances"]?.jsonArray.orEmpty().map { item ->
-                        val utterance = item.jsonObject
-                        buildJsonObject {
-                            utterance["text"]?.let { put("text", it) }
-                            utterance["description"]?.let { put("description", it) }
-                            utterance["speed"]?.let { put("speed", it) }
-                            utterance["trailingSilence"]?.let { put("trailing_silence", it) }
-                            utterance["voice"]?.let { put("voice", it) }
-                        }
-                    },
-                ),
+    suspend fun parseHumeBinary(response: HttpResponse, url: String, format: String): HumeBinaryResponse {
+        val bytes = response.bodyAsBytes()
+        val headers = with(HttpTransport) { response.flattenedHeaders() }
+        if (response.status.value !in 200..299) {
+            val raw = bytes.decodeToString()
+            throw ApiCallError(
+                url = url,
+                statusCode = response.status.value,
+                rawBody = raw,
+                headers = headers,
+                message = "Hume request failed (${response.status.value}): ${raw.ifBlank { "request failed" }}",
             )
         }
-        else -> context
+        return HumeBinaryResponse(
+            bytes = bytes,
+            mediaType = headerValue(headers, HttpHeaders.ContentType) ?: humeMediaType(format),
+            headers = headers,
+        )
     }
 
-private fun humeOutputFormat(format: String?, warnings: MutableList<CallWarning>): String {
-    val value = format ?: "mp3"
-    if (value in humeSupportedFormats) return value
-    warnings += CallWarning("unsupported", "Unsupported output format: $value. Using mp3 instead.")
-    return "mp3"
+    fun humeHeaders(settings: HumeProviderSettings, callHeaders: Map<String, String>): Map<String, String> {
+        val base = linkedMapOf<String, String>()
+        settings.apiKey?.takeIf { it.isNotBlank() }?.let { base["X-Hume-Api-Key"] = it }
+        base.putAll(settings.headers)
+        base.putAll(callHeaders)
+        return ProviderHeaders.withUserAgentSuffix(base, "ai-sdk/hume/$HUME_VERSION")
+    }
+
+    fun humeOptions(providerOptions: ProviderOptions): JsonObject =
+        providerOptions.toMap()["hume"] as? JsonObject ?: JsonObject(emptyMap())
+
+    fun humeContext(context: JsonObject): JsonObject =
+        when {
+            "generationId" in context -> buildJsonObject {
+                context["generationId"]?.let { put("generation_id", it) }
+            }
+            "utterances" in context -> buildJsonObject {
+                put(
+                    "utterances",
+                    JsonArray(
+                        context["utterances"]?.jsonArray.orEmpty().map { item ->
+                            val utterance = item.jsonObject
+                            buildJsonObject {
+                                utterance["text"]?.let { put("text", it) }
+                                utterance["description"]?.let { put("description", it) }
+                                utterance["speed"]?.let { put("speed", it) }
+                                utterance["trailingSilence"]?.let { put("trailing_silence", it) }
+                                utterance["voice"]?.let { put("voice", it) }
+                            }
+                        },
+                    ),
+                )
+            }
+            else -> context
+        }
+
+    fun humeOutputFormat(format: String?, warnings: MutableList<CallWarning>): String {
+        val value = format ?: "mp3"
+        if (value in humeSupportedFormats) return value
+        warnings += CallWarning("unsupported", "Unsupported output format: $value. Using mp3 instead.")
+        return "mp3"
+    }
+
+    private fun humeMediaType(format: String): String =
+        when (format) {
+            "wav" -> "audio/wav"
+            "pcm" -> "application/octet-stream"
+            else -> "audio/mpeg"
+        }
+
+    private fun headerValue(map: Map<String, String>, name: String): String? =
+        map.entries.firstOrNull { it.key.equals(name, ignoreCase = true) }?.value
 }
-
-private fun humeMediaType(format: String): String =
-    when (format) {
-        "wav" -> "audio/wav"
-        "pcm" -> "application/octet-stream"
-        else -> "audio/mpeg"
-    }
-
-private val humeSupportedFormats = setOf("mp3", "pcm", "wav")
-
-private fun Map<String, String>.headerValue(name: String): String? =
-    entries.firstOrNull { it.key.equals(name, ignoreCase = true) }?.value

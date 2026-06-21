@@ -1,11 +1,11 @@
 package ai.torad.aisdk
 
-import ai.torad.aisdk.testing.drainAllItems
+import ai.torad.aisdk.testing.FlowDrain.drainAllItems
 import ai.torad.aisdk.ui.TextUIPartState
 import ai.torad.aisdk.ui.ToolCallState
 import ai.torad.aisdk.ui.UIMessagePart
-import ai.torad.aisdk.ui.streamToUiMessages
-import ai.torad.aisdk.ui.transformTextToUiMessageStream
+import ai.torad.aisdk.ui.StreamToUiMessages
+import ai.torad.aisdk.ui.TransformTextToUiMessageStream
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -24,7 +24,7 @@ class MessagePartsTest {
 
     @Test
     fun `empty text stream emits done assistant message`() = runTest {
-        val messages = drainAllItems(transformTextToUiMessageStream(emptyFlow(), "msg_empty"))
+        val messages = drainAllItems(TransformTextToUiMessageStream(emptyFlow(), "msg_empty"))
 
         val final = messages.single()
         val text = final.parts.single() as UIMessagePart.Text
@@ -41,7 +41,7 @@ class MessagePartsTest {
             emit(StreamEvent.TextEnd("t1"))
             emit(StreamEvent.Finish(1, FinishReason.Stop, Usage()))
         }
-        val snapshots = drainAllItems(streamToUiMessages(events, "msg_1"))
+        val snapshots = drainAllItems(StreamToUiMessages(events, "msg_1"))
         val final = snapshots.last()
         assertEquals(1, final.parts.size, "exactly one text part")
         assertEquals("Hello there", (final.parts[0] as UIMessagePart.Text).text)
@@ -59,7 +59,7 @@ class MessagePartsTest {
             emit(StreamEvent.ToolResult("call_1", "weather", output))
             emit(StreamEvent.Finish(1, FinishReason.Stop, Usage()))
         }
-        val snapshots = drainAllItems(streamToUiMessages(events, "msg_2"))
+        val snapshots = drainAllItems(StreamToUiMessages(events, "msg_2"))
 
         val states = snapshots.map { snap ->
             (snap.parts.firstOrNull { it is UIMessagePart.ToolUI } as? UIMessagePart.ToolUI)?.state
@@ -87,7 +87,7 @@ class MessagePartsTest {
             emit(StreamEvent.Finish(1, FinishReason.Stop, Usage()))
         }
 
-        val final = drainAllItems(streamToUiMessages(events, "msg_placeholder")).last()
+        val final = drainAllItems(StreamToUiMessages(events, "msg_placeholder")).last()
 
         val text = final.parts.filterIsInstance<UIMessagePart.Text>().single()
         val tool = final.parts.filterIsInstance<UIMessagePart.ToolUI>().single()
@@ -108,7 +108,7 @@ class MessagePartsTest {
             emit(StreamEvent.Finish(1, FinishReason.Stop, Usage()))
         }
 
-        val final = drainAllItems(streamToUiMessages(events, "msg_same_name")).last()
+        val final = drainAllItems(StreamToUiMessages(events, "msg_same_name")).last()
 
         val tools = final.parts.filterIsInstance<UIMessagePart.ToolUI>()
         assertEquals(2, tools.size)
@@ -131,7 +131,7 @@ class MessagePartsTest {
             emit(StreamEvent.Finish(1, FinishReason.Stop, Usage()))
         }
 
-        val final = drainAllItems(streamToUiMessages(events, "msg_shifted_placeholders")).last()
+        val final = drainAllItems(StreamToUiMessages(events, "msg_shifted_placeholders")).last()
 
         val tools = final.parts.filterIsInstance<UIMessagePart.ToolUI>()
         val text = final.parts.filterIsInstance<UIMessagePart.Text>().single()
@@ -150,7 +150,7 @@ class MessagePartsTest {
             emit(StreamEvent.ToolError("call_1", "weather", "API down"))
             emit(StreamEvent.Finish(1, FinishReason.Error, Usage()))
         }
-        val snapshots = drainAllItems(streamToUiMessages(events, "msg_3"))
+        val snapshots = drainAllItems(StreamToUiMessages(events, "msg_3"))
         val finalToolPart = snapshots.last().parts.first { it is UIMessagePart.ToolUI } as UIMessagePart.ToolUI
         assertEquals(ToolCallState.OutputError, finalToolPart.state)
         assertEquals("API down", finalToolPart.error)
@@ -167,7 +167,7 @@ class MessagePartsTest {
             emit(StreamEvent.TextEnd("t1"))
             emit(StreamEvent.Finish(1, FinishReason.Stop, Usage()))
         }
-        val final = drainAllItems(streamToUiMessages(events, "msg_4")).last()
+        val final = drainAllItems(StreamToUiMessages(events, "msg_4")).last()
         assertEquals(2, final.parts.size, "reasoning + text")
         assertTrue(final.parts[0] is UIMessagePart.Reasoning)
         assertEquals("thinking...", (final.parts[0] as UIMessagePart.Reasoning).text)

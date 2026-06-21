@@ -23,7 +23,7 @@ import kotlinx.serialization.json.JsonObject
 class RevaiProviderTest {
     @Test
     fun `transcription model submits multipart job polls status and maps transcript`() = runTest {
-        val fixture = createTestServer(
+        val fixture = TestServer.createTestServer(
             mutableMapOf(
                 "https://api.rev.ai/speechtotext/v1/jobs" to UrlHandler(
                     UrlResponse.JsonValue(Json.parseToJsonElement("""{"id":"job1","status":"in_progress","language":"en"}""")),
@@ -134,7 +134,7 @@ class RevaiProviderTest {
 
     @Test
     fun `transcription model throws when submission fails`() = runTest {
-        val fixture = createTestServer(
+        val fixture = TestServer.createTestServer(
             mutableMapOf(
                 "https://api.rev.ai/speechtotext/v1/jobs" to UrlHandler(
                     UrlResponse.JsonValue(Json.parseToJsonElement("""{"id":"job1","status":"failed"}""")),
@@ -155,7 +155,7 @@ class RevaiProviderTest {
 
     @Test
     fun `default provider and unsupported model families fail explicitly`() {
-        val fixture = createTestServer(mutableMapOf())
+        val fixture = TestServer.createTestServer(mutableMapOf())
         val provider = Revai(fixture.httpClient(), RevaiProviderSettings(apiKey = "key"))
 
         assertFailsWith<NoSuchModelError> { provider.languageModel("model") }

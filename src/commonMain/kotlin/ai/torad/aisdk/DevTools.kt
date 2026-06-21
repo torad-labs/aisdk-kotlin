@@ -55,7 +55,7 @@ public class InMemoryDevToolsRecorder : DevToolsRecorder {
     }
 }
 
-public fun devToolsMiddleware(
+public fun DevToolsMiddleware(
     recorder: DevToolsRecorder = InMemoryDevToolsRecorder(),
     environment: String = "development",
     runId: String = IdGenerator.generate(prefix = "run"),
@@ -81,7 +81,7 @@ public fun devToolsMiddleware(
                     step.id,
                     DevToolsStepResult(
                         durationMs = mark.elapsedNow().inWholeMilliseconds,
-                        output = generateOutput(result),
+                        output = DevToolsJson.generateOutput(result),
                         usage = result.usage,
                         error = null,
                         rawRequest = result.request.body,
@@ -157,7 +157,7 @@ public fun devToolsMiddleware(
                 type = type,
                 modelId = context.model.modelId,
                 provider = context.model.provider,
-                input = callParamsInput(context.params),
+                input = DevToolsJson.callParamsInput(context.params),
                 providerOptions = context.params.providerOptions,
             )
         }
@@ -176,7 +176,7 @@ private class DevToolsStreamCollector {
     private var finishReason: FinishReason? = null
 
     fun accept(event: StreamEvent) {
-        streamEvents += streamEventJson(event)
+        streamEvents += DevToolsJson.streamEventJson(event)
         when (event) {
             is StreamEvent.TextStart -> currentText[event.id] = ""
             is StreamEvent.TextDelta -> currentText[event.id] = currentText[event.id].orEmpty() + event.text
@@ -214,26 +214,27 @@ private class DevToolsStreamCollector {
     fun fullStream(): JsonElement = JsonArray(streamEvents)
 }
 
-private fun callParamsInput(params: LanguageModelCallParams): JsonElement = buildJsonObject {
-    put("messages", JsonPrimitive(params.messages.size))
-    put("tools", JsonArray(params.tools.map { JsonPrimitive(it.name) }))
-    put("toolChoice", JsonPrimitive(params.toolChoice.toString()))
-    params.maxOutputTokens?.let { put("maxOutputTokens", JsonPrimitive(it)) }
-    params.temperature?.let { put("temperature", JsonPrimitive(it)) }
-    params.topP?.let { put("topP", JsonPrimitive(it)) }
-    params.topK?.let { put("topK", JsonPrimitive(it)) }
-    params.presencePenalty?.let { put("presencePenalty", JsonPrimitive(it)) }
-    params.frequencyPenalty?.let { put("frequencyPenalty", JsonPrimitive(it)) }
-}
+internal object DevToolsJson {
+    fun callParamsInput(params: LanguageModelCallParams): JsonElement = buildJsonObject {
+        put("messages", JsonPrimitive(params.messages.size))
+        put("tools", JsonArray(params.tools.map { JsonPrimitive(it.name) }))
+        put("toolChoice", JsonPrimitive(params.toolChoice.toString()))
+        params.maxOutputTokens?.let { put("maxOutputTokens", JsonPrimitive(it)) }
+        params.temperature?.let { put("temperature", JsonPrimitive(it)) }
+        params.topP?.let { put("topP", JsonPrimitive(it)) }
+        params.topK?.let { put("topK", JsonPrimitive(it)) }
+        params.presencePenalty?.let { put("presencePenalty", JsonPrimitive(it)) }
+        params.frequencyPenalty?.let { put("frequencyPenalty", JsonPrimitive(it)) }
+    }
 
-private fun generateOutput(result: LanguageModelResult): JsonElement = buildJsonObject {
-    put("text", JsonPrimitive(result.text))
-    put("finishReason", JsonPrimitive(result.finishReason.name))
-    put("toolCalls", JsonArray(result.toolCalls.map { JsonPrimitive(it.toolName) }))
-    put("responseId", result.response.id?.let(::JsonPrimitive) ?: JsonPrimitive(""))
-}
+    fun generateOutput(result: LanguageModelResult): JsonElement = buildJsonObject {
+        put("text", JsonPrimitive(result.text))
+        put("finishReason", JsonPrimitive(result.finishReason.name))
+        put("toolCalls", JsonArray(result.toolCalls.map { JsonPrimitive(it.toolName) }))
+        put("responseId", result.response.id?.let(::JsonPrimitive) ?: JsonPrimitive(""))
+    }
 
-private fun streamEventJson(event: StreamEvent): JsonElement = when (event) {
+    fun streamEventJson(event: StreamEvent): JsonElement = when (event) {
     is StreamEvent.TextStart -> buildJsonObject {
         put("type", JsonPrimitive("text-start"))
         put("id", JsonPrimitive(event.id))
@@ -275,4 +276,5 @@ private fun streamEventJson(event: StreamEvent): JsonElement = when (event) {
         put("rawValue", event.rawValue)
     }
     else -> buildJsonObject { put("type", JsonPrimitive("event")) }
+    }
 }

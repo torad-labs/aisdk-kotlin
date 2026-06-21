@@ -67,7 +67,7 @@ public class TextGenerator(
             presencePenalty = config.presencePenalty,
             frequencyPenalty = config.frequencyPenalty,
             responseFormat = output?.let { o ->
-                if (config.responseFormat == ResponseFormat.Text) o.toResponseFormat() else config.responseFormat
+                if (config.responseFormat == ResponseFormat.Text) with(OutputOps) { o.toResponseFormat() } else config.responseFormat
             } ?: config.responseFormat,
         )
 }

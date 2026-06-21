@@ -64,7 +64,7 @@ public class CallSettingsBuilder internal constructor() {
     }
 
     public fun providerOptions(block: ProviderOptionsBuilder.() -> Unit) {
-        providerOptions = providerOptions + ProviderOptions.Raw(JsonObject(buildProviderOptions(block)))
+        providerOptions = providerOptions + ProviderOptions.Raw(JsonObject(ProviderOptionsDsl.build(block)))
     }
 
     internal fun build(): CallSettings = CallSettings(
@@ -82,7 +82,7 @@ public class CallSettingsBuilder internal constructor() {
     )
 }
 
-public fun callSettings(block: CallSettingsBuilder.() -> Unit): CallSettings =
+public fun CallSettings(block: CallSettingsBuilder.() -> Unit): CallSettings =
     CallSettingsBuilder().apply(block).build()
 
 @AiSdkDsl
@@ -94,7 +94,7 @@ public class ProviderOptionsBuilder internal constructor() {
     }
 
     public fun <T> put(name: String, value: T, serializer: KSerializer<T>) {
-        values[name] = encodeJsonElement(value, serializer)
+        values[name] = TypedJsonOps.encodeJsonElement(value, serializer)
     }
 
     public inline fun <reified T> put(name: String, value: T) {
@@ -106,7 +106,7 @@ public class ProviderOptionsBuilder internal constructor() {
     }
 
     public fun <T> provider(name: String, value: T, serializer: KSerializer<T>) {
-        values[name] = encodeJsonElement(value, serializer)
+        values[name] = TypedJsonOps.encodeJsonElement(value, serializer)
     }
 
     public inline fun <reified T> provider(name: String, value: T) {
@@ -120,8 +120,10 @@ public class ProviderOptionsBuilder internal constructor() {
     internal fun build(): Map<String, JsonElement> = values.toMap()
 }
 
-public fun buildProviderOptions(block: ProviderOptionsBuilder.() -> Unit): Map<String, JsonElement> =
-    ProviderOptionsBuilder().apply(block).build()
+public object ProviderOptionsDsl {
+    public fun build(block: ProviderOptionsBuilder.() -> Unit): Map<String, JsonElement> =
+        ProviderOptionsBuilder().apply(block).build()
+}
 
 public data class TextGenerationRequest public constructor(
     val prompt: String? = null,
@@ -244,7 +246,7 @@ public class TextGenerationRequestBuilder internal constructor() {
     }
 
     public fun settings(block: CallSettingsBuilder.() -> Unit) {
-        settings = callSettings(block)
+        settings = CallSettings(block)
     }
 
     internal fun build(): TextGenerationRequest = TextGenerationRequest(
@@ -255,5 +257,5 @@ public class TextGenerationRequestBuilder internal constructor() {
     )
 }
 
-public fun textGenerationRequest(block: TextGenerationRequestBuilder.() -> Unit): TextGenerationRequest =
+public fun TextGenerationRequest(block: TextGenerationRequestBuilder.() -> Unit): TextGenerationRequest =
     TextGenerationRequestBuilder().apply(block).build()

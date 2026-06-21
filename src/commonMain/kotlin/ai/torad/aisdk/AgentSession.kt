@@ -198,7 +198,7 @@ public class AgentSession<TContext, TOutput>(
                                 isError = event.isError,
                                 // Carry the tool's model-facing summary (toModelOutput)
                                 // so a resumed turn doesn't re-feed the full payload.
-                                modelVisible = event.modelOutput.toJsonElement(),
+                                modelVisible = with(ToolResultOutputs) { event.modelOutput.toJsonElement() },
                                 providerMetadata = event.providerMetadata,
                             )
                             render(AgentSessionStatus.Running)
@@ -295,7 +295,7 @@ public class AgentSession<TContext, TOutput>(
         options: TContext?,
         reason: String?,
     ): Job {
-        val response = toolApprovalResponseMessage(
+        val response = ToolApprovalResponseMessage(
             toolCallId = approval.toolCallId,
             approved = approved,
             reason = reason,
@@ -355,7 +355,7 @@ public class AgentSession<TContext, TOutput>(
     }
 
     private fun visibleMessages(messages: List<ModelMessage>, prompt: String?): List<ModelMessage> =
-        if (prompt == null) messages else messages + userMessage(prompt)
+        if (prompt == null) messages else messages + UserMessage(prompt)
 
     private fun streamingMessages(
         messages: List<ModelMessage>,
@@ -390,11 +390,13 @@ public class AgentSession<TContext, TOutput>(
     }
 }
 
-public fun <TContext, TOutput> Agent<TContext, TOutput>.session(
-    scope: CoroutineScope,
-    initialMessages: List<ModelMessage> = emptyList(),
-): AgentSession<TContext, TOutput> = AgentSession(
-    scope = scope,
-    agent = this,
-    initialMessages = initialMessages,
-)
+public object AgentSessions {
+    public fun <TContext, TOutput> Agent<TContext, TOutput>.session(
+        scope: CoroutineScope,
+        initialMessages: List<ModelMessage> = emptyList(),
+    ): AgentSession<TContext, TOutput> = AgentSession(
+        scope = scope,
+        agent = this,
+        initialMessages = initialMessages,
+    )
+}

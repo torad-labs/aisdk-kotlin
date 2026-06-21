@@ -61,7 +61,7 @@ public class KlingAIProvider(
 ) : Provider {
     override val providerId: String = "klingai"
 
-    public fun video(modelId: ModelId): VideoModel = videoModel(modelId)
+    public fun video(modelId: ModelId): VideoModel = videoModel(modelId.value)
 
     override fun videoModel(modelId: String): VideoModel = KlingAIVideoModel(client, settings, modelId)
     override fun languageModel(modelId: String): LanguageModel = throw NoSuchModelError(providerId, "languageModel", modelId)
@@ -86,26 +86,26 @@ private class KlingAIVideoModel(
 
     override suspend fun generate(params: VideoGenerationParams): VideoModelResult {
         params.abortSignal.throwIfAborted()
-        val options = klingAIOptions(params.providerOptions)
+        val options = KlingAIWire.klingAIOptions(params.providerOptions)
         val warnings = mutableListOf<CallWarning>()
-        val mode = klingAIDetectMode(modelId)
+        val mode = KlingAIWire.klingAIDetectMode(modelId)
         val body = when (mode) {
-            KlingAIVideoMode.TextToVideo -> klingAIT2VBody(modelId, params, options, warnings)
-            KlingAIVideoMode.ImageToVideo -> klingAII2VBody(modelId, params, options, warnings)
-            KlingAIVideoMode.MotionControl -> klingAIMotionControlBody(modelId, params, options, warnings)
+            KlingAIVideoMode.TextToVideo -> KlingAIWire.klingAIT2VBody(modelId, params, options, warnings)
+            KlingAIVideoMode.ImageToVideo -> KlingAIWire.klingAII2VBody(modelId, params, options, warnings)
+            KlingAIVideoMode.MotionControl -> KlingAIWire.klingAIMotionControlBody(modelId, params, options, warnings)
         }
-        warnings += klingAIStandardWarnings(params)
+        warnings += KlingAIWire.klingAIStandardWarnings(params)
 
         val endpoint = when (mode) {
             KlingAIVideoMode.TextToVideo -> "/v1/videos/text2video"
             KlingAIVideoMode.ImageToVideo -> "/v1/videos/image2video"
             KlingAIVideoMode.MotionControl -> "/v1/videos/motion-control"
         }
-        val create = klingAIRequestJson(
+        val create = KlingAIWire.klingAIRequestJson(
             client = client,
             method = HttpMethod.Post,
             url = "${settings.baseURL.trimEnd('/')}$endpoint",
-            headers = klingAIHeaders(settings, params.headers, clock),
+            headers = KlingAIWire.klingAIHeaders(settings, params.headers, clock),
             body = body,
         )
         val taskId = create.value.jsonObject["data"]?.jsonObject?.get("task_id")?.jsonPrimitive?.contentOrNull
@@ -121,11 +121,11 @@ private class KlingAIVideoModel(
             if (clock.now().toEpochMilliseconds() - started > pollTimeoutMs) {
                 throw NoVideoGeneratedError("Video generation timed out after ${pollTimeoutMs}ms")
             }
-            val status = klingAIRequestJson(
+            val status = KlingAIWire.klingAIRequestJson(
                 client = client,
                 method = HttpMethod.Get,
                 url = "${settings.baseURL.trimEnd('/')}$endpoint/$taskId",
-                headers = klingAIHeaders(settings, params.headers, clock),
+                headers = KlingAIWire.klingAIHeaders(settings, params.headers, clock),
             )
             headers = status.headers
             val data = status.value.jsonObject["data"]?.jsonObject ?: JsonObject(emptyMap())
@@ -152,7 +152,7 @@ private class KlingAIVideoModel(
                 mediaType = "video/mp4",
                 base64 = "",
                 url = url,
-                providerMetadata = ProviderMetadata.Raw(JsonObject(mapOf("klingai" to klingAIVideoMetadata(obj)))),
+                providerMetadata = ProviderMetadata.Raw(JsonObject(mapOf("klingai" to KlingAIWire.klingAIVideoMetadata(obj)))),
             )
         }
         if (generated.isEmpty()) throw NoVideoGeneratedError("No valid video URLs in KlingAI response")
@@ -163,18 +163,20 @@ private class KlingAIVideoModel(
             providerMetadata = ProviderMetadata.Raw(JsonObject(mapOf(
                 "klingai" to buildJsonObject {
                     put("taskId", JsonPrimitive(taskId))
-                    put("videos", JsonArray(videos.map { klingAIVideoMetadata(it.jsonObject) }))
+                    put("videos", JsonArray(videos.map { KlingAIWire.klingAIVideoMetadata(it.jsonObject) }))
                 },
             ))),
         )
     }
 }
 
-private enum class KlingAIVideoMode {
+internal enum class KlingAIVideoMode {
     TextToVideo,
     ImageToVideo,
     MotionControl,
 }
+
+internal object KlingAIWire {
 
 private val klingAIHandledProviderOptions = setOf(
     "mode",
@@ -199,25 +201,25 @@ private val klingAIHandledProviderOptions = setOf(
 )
 
 
-private fun klingAIDetectMode(modelId: String): KlingAIVideoMode = when {
+fun klingAIDetectMode(modelId: String): KlingAIVideoMode = when {
     modelId.endsWith("-t2v") -> KlingAIVideoMode.TextToVideo
     modelId.endsWith("-i2v") -> KlingAIVideoMode.ImageToVideo
     modelId.endsWith("-motion-control") -> KlingAIVideoMode.MotionControl
     else -> throw NoSuchModelError("klingai", "videoModel", modelId)
 }
 
-private fun klingAIModelName(modelId: String, mode: KlingAIVideoMode): String {
+fun klingAIModelName(modelId: String, mode: KlingAIVideoMode): String {
     val suffix = if (mode == KlingAIVideoMode.MotionControl) "-motion-control" else "-${modeSuffix(mode)}"
     return modelId.removeSuffix(suffix).replace(Regex("""\.0$"""), "").replace('.', '-')
 }
 
-private fun modeSuffix(mode: KlingAIVideoMode): String = when (mode) {
+fun modeSuffix(mode: KlingAIVideoMode): String = when (mode) {
     KlingAIVideoMode.TextToVideo -> "t2v"
     KlingAIVideoMode.ImageToVideo -> "i2v"
     KlingAIVideoMode.MotionControl -> "motion-control"
 }
 
-private fun klingAIT2VBody(
+fun klingAIT2VBody(
     modelId: String,
     params: VideoGenerationParams,
     options: JsonObject,
@@ -243,7 +245,7 @@ private fun klingAIT2VBody(
     klingAIPassthroughOptions(this, options)
 }
 
-private fun klingAII2VBody(
+fun klingAII2VBody(
     modelId: String,
     params: VideoGenerationParams,
     options: JsonObject,
@@ -273,7 +275,7 @@ private fun klingAII2VBody(
     klingAIPassthroughOptions(this, options)
 }
 
-private fun klingAIMotionControlBody(
+fun klingAIMotionControlBody(
     modelId: String,
     params: VideoGenerationParams,
     options: JsonObject,
@@ -305,27 +307,27 @@ private fun klingAIMotionControlBody(
     }
 }
 
-private fun klingAIStandardWarnings(params: VideoGenerationParams): List<CallWarning> = buildList {
+fun klingAIStandardWarnings(params: VideoGenerationParams): List<CallWarning> = buildList {
     if (params.resolution != null) add(CallWarning("unsupported", "KlingAI video models do not support the resolution option."))
     if (params.seed != null) add(CallWarning("unsupported", "KlingAI video models do not support seed for deterministic generation."))
     if (params.fps != null) add(CallWarning("unsupported", "KlingAI video models do not support custom FPS."))
     if (params.n > 1) add(CallWarning("unsupported", "KlingAI video models do not support generating multiple videos per call. Only 1 video will be generated."))
 }
 
-private fun klingAIPassthroughOptions(builder: kotlinx.serialization.json.JsonObjectBuilder, options: JsonObject) {
+fun klingAIPassthroughOptions(builder: kotlinx.serialization.json.JsonObjectBuilder, options: JsonObject) {
     for ((key, value) in options) {
         if (key !in klingAIHandledProviderOptions) builder.put(key, value)
     }
 }
 
-private suspend fun klingAIRequestJson(
+suspend fun klingAIRequestJson(
     client: HttpClient,
     method: HttpMethod,
     url: String,
     headers: Map<String, String>,
     body: JsonObject? = null,
 ): HttpJsonResponse =
-    requestJson(
+    HttpTransport.requestJson(
         client = client,
         url = url,
         method = method,
@@ -335,7 +337,7 @@ private suspend fun klingAIRequestJson(
         errorMessage = ::klingAIErrorMessage,
     )
 
-private fun klingAIHeaders(
+fun klingAIHeaders(
     settings: KlingAIProviderSettings,
     callHeaders: Map<String, String>,
     clock: Clock = Clock.System,
@@ -350,28 +352,28 @@ private fun klingAIHeaders(
     }
 }
 
-private fun klingAIOptions(providerOptions: ProviderOptions): JsonObject =
+fun klingAIOptions(providerOptions: ProviderOptions): JsonObject =
     providerOptions.toMap()["klingai"] as? JsonObject ?: JsonObject(emptyMap())
 
-private fun klingAIVideoMetadata(value: JsonObject): JsonObject = buildJsonObject {
+fun klingAIVideoMetadata(value: JsonObject): JsonObject = buildJsonObject {
     value["id"]?.jsonPrimitive?.contentOrNull?.let { put("id", JsonPrimitive(it)) }
     value["url"]?.jsonPrimitive?.contentOrNull?.let { put("url", JsonPrimitive(it)) }
     value["watermark_url"]?.jsonPrimitive?.contentOrNull?.let { put("watermarkUrl", JsonPrimitive(it)) }
     value["duration"]?.jsonPrimitive?.contentOrNull?.let { put("duration", JsonPrimitive(it)) }
 }
 
-private fun klingAIDuration(value: Float): String {
+fun klingAIDuration(value: Float): String {
     val wholeSeconds = value.toInt()
     return if (value == wholeSeconds.toFloat()) wholeSeconds.toString() else value.toString()
 }
 
-private fun klingAIErrorMessage(statusCode: Int, parsed: JsonElement?, raw: String): String {
+fun klingAIErrorMessage(statusCode: Int, parsed: JsonElement?, raw: String): String {
     val detail = (parsed as? JsonObject)?.get("message")?.jsonPrimitive?.contentOrNull
         ?: raw.ifBlank { "request failed" }
     return "KlingAI request failed ($statusCode): $detail"
 }
 
-private fun generateKlingAIAuthToken(accessKey: String, secretKey: String, clock: Clock = Clock.System): String {
+fun generateKlingAIAuthToken(accessKey: String, secretKey: String, clock: Clock = Clock.System): String {
     val now = clock.now().epochSeconds
     val header = buildJsonObject {
         put("alg", JsonPrimitive("HS256"))
@@ -384,9 +386,10 @@ private fun generateKlingAIAuthToken(accessKey: String, secretKey: String, clock
     }
     val signingInput = "${base64Url(aiSdkJson.encodeToString(JsonElement.serializer(), header).encodeToByteArray())}." +
         base64Url(aiSdkJson.encodeToString(JsonElement.serializer(), payload).encodeToByteArray())
-    val signature = hmacSha256(secretKey.encodeToByteArray(), signingInput.encodeToByteArray())
+    val signature = CryptoPrimitives.hmacSha256(secretKey.encodeToByteArray(), signingInput.encodeToByteArray())
     return "$signingInput.${base64Url(signature)}"
 }
 
-private fun base64Url(bytes: ByteArray): String =
+fun base64Url(bytes: ByteArray): String =
     Base64Codec.encode(bytes).replace('+', '-').replace('/', '_').trimEnd('=')
+}

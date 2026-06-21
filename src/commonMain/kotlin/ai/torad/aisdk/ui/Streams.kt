@@ -1,7 +1,6 @@
 package ai.torad.aisdk.ui
 
 import ai.torad.aisdk.StreamEvent
-import ai.torad.aisdk.UiMessageStreamError
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.channelFlow
@@ -13,13 +12,13 @@ import kotlinx.serialization.json.JsonElement
 public data class TextStreamResponse(
     val textStream: Flow<String>,
     val status: Int = 200,
-    val headers: Map<String, String> = textStreamHeaders(),
+    val headers: Map<String, String> = UiMessageStreams.textStreamHeaders(),
 )
 
 public data class UIMessageStreamResponse(
     val stream: Flow<UIMessage>,
     val status: Int = 200,
-    val headers: Map<String, String> = uiMessageStreamHeaders(),
+    val headers: Map<String, String> = UiMessageStreams.uiMessageStreamHeaders(),
 )
 
 public interface ServerResponseWriter {
@@ -28,49 +27,20 @@ public interface ServerResponseWriter {
     public suspend fun write(chunk: String)
 }
 
-public fun textStreamHeaders(): Map<String, String> =
-    mapOf("Content-Type" to "text/plain; charset=utf-8")
-
-public fun uiMessageStreamHeaders(): Map<String, String> =
-    mapOf("Content-Type" to "text/event-stream; charset=utf-8")
-
-public fun textStreamFromEvents(events: Flow<StreamEvent>): Flow<String> =
+public fun TextStreamFromEvents(events: Flow<StreamEvent>): Flow<String> =
     events.filterIsInstance<StreamEvent.TextDelta>().map { it.text }
 
-public fun createTextStreamResponse(
+public fun CreateTextStreamResponse(
     textStream: Flow<String>,
     status: Int = 200,
-    headers: Map<String, String> = textStreamHeaders(),
+    headers: Map<String, String> = UiMessageStreams.textStreamHeaders(),
 ): TextStreamResponse = TextStreamResponse(textStream, status, headers)
 
-public suspend fun pipeTextStreamToResponse(
-    textStream: Flow<String>,
-    response: ServerResponseWriter,
-    status: Int = 200,
-    headers: Map<String, String> = textStreamHeaders(),
-) {
-    response.setStatus(status)
-    headers.forEach { (name, value) -> response.setHeader(name, value) }
-    textStream.collect { response.write(it) }
-}
-
-public fun createUiMessageStreamResponse(
+public fun CreateUiMessageStreamResponse(
     stream: Flow<UIMessage>,
     status: Int = 200,
-    headers: Map<String, String> = uiMessageStreamHeaders(),
+    headers: Map<String, String> = UiMessageStreams.uiMessageStreamHeaders(),
 ): UIMessageStreamResponse = UIMessageStreamResponse(stream, status, headers)
-
-public suspend fun pipeUiMessageStreamToResponse(
-    stream: Flow<UIMessage>,
-    response: ServerResponseWriter,
-    encoder: (UIMessage) -> String = { it.toString() },
-    status: Int = 200,
-    headers: Map<String, String> = uiMessageStreamHeaders(),
-) {
-    response.setStatus(status)
-    headers.forEach { (name, value) -> response.setHeader(name, value) }
-    stream.collect { response.write(encoder(it)) }
-}
 
 public interface UIMessageStreamWriter {
     public suspend fun write(message: UIMessage)
@@ -78,7 +48,7 @@ public interface UIMessageStreamWriter {
     public suspend fun error(message: String)
 }
 
-public fun createUiMessageStream(
+public fun CreateUiMessageStream(
     onError: (Throwable) -> UIMessage = { throwable ->
         UIMessage(
             id = "error",
@@ -116,45 +86,14 @@ public fun createUiMessageStream(
     }
 }
 
-public fun readUiMessageStream(stream: Flow<UIMessage>): Flow<UIMessage> = stream
-
-public fun getResponseUiMessageId(messages: List<UIMessage>, createId: () -> String = { "msg_${messages.size + 1}" }): String =
-    messages.lastOrNull { it.role == UIMessageRole.Assistant }?.id ?: createId()
-
-public fun handleUiMessageStreamFinish(
-    messages: List<UIMessage>,
-    onFinish: (List<UIMessage>) -> Unit,
-) {
-    onFinish(messages)
-}
-
-public fun validateUiMessages(messages: List<UIMessage>) {
-    require(messages.isNotEmpty()) { "Messages array must not be empty" }
-    val ids = mutableSetOf<String>()
-    for (message in messages) {
-        require(message.id.isNotBlank()) { "UIMessage.id must not be blank" }
-        require(ids.add(message.id)) { "Duplicate UIMessage id `${message.id}`" }
-        require(message.parts.isNotEmpty()) { "UIMessage.parts must not be empty" }
-    }
-}
+public fun ReadUiMessageStream(stream: Flow<UIMessage>): Flow<UIMessage> = stream
 
 public sealed class SafeValidateUIMessagesResult {
     public data class Success(val messages: List<UIMessage>) : SafeValidateUIMessagesResult()
     public data class Failure(val error: Throwable) : SafeValidateUIMessagesResult()
 }
 
-public fun validateUIMessages(messages: List<UIMessage>): Unit = validateUiMessages(messages)
-
-public fun safeValidateUIMessages(messages: List<UIMessage>?): SafeValidateUIMessagesResult =
-    try {
-        require(messages != null) { "messages parameter must be provided" }
-        validateUiMessages(messages)
-        SafeValidateUIMessagesResult.Success(messages)
-    } catch (t: Throwable) {
-        SafeValidateUIMessagesResult.Failure(t)
-    }
-
-public fun transformTextToUiMessageStream(
+public fun TransformTextToUiMessageStream(
     textStream: Flow<String>,
     assistantMessageId: String,
     metadata: Map<String, JsonElement>? = null,
@@ -181,21 +120,83 @@ public fun transformTextToUiMessageStream(
     )
 }
 
-public fun lastAssistantMessageIsCompleteWithToolCalls(messages: List<UIMessage>): Boolean {
-    val last = messages.lastOrNull { it.role == UIMessageRole.Assistant } ?: return true
-    return last.parts.filterIsInstance<UIMessagePart.ToolUI>().all {
-        it.state == ToolCallState.OutputAvailable ||
-            it.state == ToolCallState.OutputDenied ||
-            it.state == ToolCallState.OutputError
+public fun UiMessageStreamError(message: String, cause: Throwable? = null): ai.torad.aisdk.UiMessageStreamError =
+    ai.torad.aisdk.UiMessageStreamError(message, cause)
+
+public object UiMessageStreams {
+    public fun textStreamHeaders(): Map<String, String> =
+        mapOf("Content-Type" to "text/plain; charset=utf-8")
+
+    public fun uiMessageStreamHeaders(): Map<String, String> =
+        mapOf("Content-Type" to "text/event-stream; charset=utf-8")
+
+    public suspend fun pipeTextStreamToResponse(
+        textStream: Flow<String>,
+        response: ServerResponseWriter,
+        status: Int = 200,
+        headers: Map<String, String> = textStreamHeaders(),
+    ) {
+        response.setStatus(status)
+        headers.forEach { (name, value) -> response.setHeader(name, value) }
+        textStream.collect { response.write(it) }
     }
+
+    public suspend fun pipeUiMessageStreamToResponse(
+        stream: Flow<UIMessage>,
+        response: ServerResponseWriter,
+        encoder: (UIMessage) -> String = { it.toString() },
+        status: Int = 200,
+        headers: Map<String, String> = uiMessageStreamHeaders(),
+    ) {
+        response.setStatus(status)
+        headers.forEach { (name, value) -> response.setHeader(name, value) }
+        stream.collect { response.write(encoder(it)) }
+    }
+
+    public fun getResponseUiMessageId(messages: List<UIMessage>, createId: () -> String = { "msg_${messages.size + 1}" }): String =
+        messages.lastOrNull { it.role == UIMessageRole.Assistant }?.id ?: createId()
+
+    public fun handleUiMessageStreamFinish(
+        messages: List<UIMessage>,
+        onFinish: (List<UIMessage>) -> Unit,
+    ) {
+        onFinish(messages)
+    }
+
+    public fun validateUiMessages(messages: List<UIMessage>) {
+        require(messages.isNotEmpty()) { "Messages array must not be empty" }
+        val ids = mutableSetOf<String>()
+        for (message in messages) {
+            require(message.id.isNotBlank()) { "UIMessage.id must not be blank" }
+            require(ids.add(message.id)) { "Duplicate UIMessage id `${message.id}`" }
+            require(message.parts.isNotEmpty()) { "UIMessage.parts must not be empty" }
+        }
+    }
+
+    public fun validateUIMessages(messages: List<UIMessage>): Unit = validateUiMessages(messages)
+
+    public fun safeValidateUIMessages(messages: List<UIMessage>?): SafeValidateUIMessagesResult =
+        try {
+            require(messages != null) { "messages parameter must be provided" }
+            validateUiMessages(messages)
+            SafeValidateUIMessagesResult.Success(messages)
+        } catch (t: Throwable) {
+            SafeValidateUIMessagesResult.Failure(t)
+        }
+
+    public fun lastAssistantMessageIsCompleteWithToolCalls(messages: List<UIMessage>): Boolean {
+        val last = messages.lastOrNull { it.role == UIMessageRole.Assistant } ?: return true
+        return last.parts.filterIsInstance<UIMessagePart.ToolUI>().all {
+            it.state == ToolCallState.OutputAvailable ||
+                it.state == ToolCallState.OutputDenied ||
+                it.state == ToolCallState.OutputError
+        }
+    }
+
+    public fun lastAssistantMessageIsCompleteWithApprovalResponses(messages: List<UIMessage>): Boolean =
+        messages.lastOrNull { it.role == UIMessageRole.Assistant }
+            ?.parts
+            ?.filterIsInstance<UIMessagePart.ToolUI>()
+            ?.none { it.state == ToolCallState.ApprovalRequested }
+            ?: true
 }
-
-public fun lastAssistantMessageIsCompleteWithApprovalResponses(messages: List<UIMessage>): Boolean =
-    messages.lastOrNull { it.role == UIMessageRole.Assistant }
-        ?.parts
-        ?.filterIsInstance<UIMessagePart.ToolUI>()
-        ?.none { it.state == ToolCallState.ApprovalRequested }
-        ?: true
-
-public fun uiMessageStreamError(message: String, cause: Throwable? = null): UiMessageStreamError =
-    UiMessageStreamError(message, cause)

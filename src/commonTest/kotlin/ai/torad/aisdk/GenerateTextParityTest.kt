@@ -1,6 +1,7 @@
 package ai.torad.aisdk
 
-import ai.torad.aisdk.testing.drainAllItems
+import ai.torad.aisdk.OutputOps.toResponseFormat
+import ai.torad.aisdk.testing.FlowDrain.drainAllItems
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
@@ -93,7 +94,7 @@ class GenerateTextParityTest {
         ).generate(
             GenerationInput.from(
                 prompt = "recipe",
-                messages = listOf(systemMessage("be structured"), userMessage("history")),
+                messages = listOf(SystemMessage("be structured"), UserMessage("history")),
             ),
             output,
         ).first()
@@ -132,7 +133,7 @@ class GenerateTextParityTest {
         TextGenerator(
             model,
             CallConfig(responseFormat = explicit),
-        ).generate(GenerationInput.Prompt("recipe"), outputObj<Recipe>(serializer())).first()
+        ).generate(GenerationInput.Prompt("recipe"), OutputObj<Recipe>(serializer())).first()
 
         // THEN
         assertEquals(explicit, model.generateParams?.responseFormat)
@@ -195,7 +196,7 @@ class GenerateTextParityTest {
     fun `stream is cold and forwards output response format plus penalties`() = runTest {
         // GIVEN
         val model = CapturingModel()
-        val output = outputObj<Recipe>(serializer(), name = "Recipe")
+        val output = OutputObj<Recipe>(serializer(), name = "Recipe")
         val flow = TextGenerator(
             model,
             CallConfig(
@@ -303,7 +304,7 @@ class GenerateTextParityTest {
         // WHEN
         val result = TextGenerator(model).generate(
             GenerationInput.Prompt("recipe"),
-            outputObj<Recipe>(serializer(), name = "Recipe"),
+            OutputObj<Recipe>(serializer(), name = "Recipe"),
         ).first()
 
         // THEN
@@ -316,7 +317,7 @@ class GenerateTextParityTest {
     fun `stream with output-derived response format passes correct schema`() = runTest {
         // GIVEN
         val model = CapturingModel()
-        val output = outputChoice("yes", "no")
+        val output = OutputChoice("yes", "no")
 
         // WHEN
         drainAllItems(

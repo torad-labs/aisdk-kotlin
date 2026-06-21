@@ -3,7 +3,7 @@ import ai.torad.aisdk.providers.GOOGLE_VERSION
 import ai.torad.aisdk.providers.GoogleGenerativeAIProviderSettings
 import ai.torad.aisdk.providers.GoogleGenerativeAI
 
-import ai.torad.aisdk.testing.drainAllItems
+import ai.torad.aisdk.testing.FlowDrain.drainAllItems
 import io.ktor.http.HttpHeaders
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.Json
@@ -27,7 +27,7 @@ import kotlin.test.assertTrue
 class GoogleProviderTest {
     @Test
     fun `language model maps Gemini request response tools sources and metadata`() = runTest {
-        val fixture = createTestServer(
+        val fixture = TestServer.createTestServer(
             mutableMapOf(
                 "https://google.test/v1beta/models/gemini-2.5-flash:generateContent" to UrlHandler(
                     UrlResponse.JsonValue(
@@ -79,7 +79,7 @@ class GoogleProviderTest {
         val result = provider(ModelId("gemini-2.5-flash")).generate(
             LanguageModelCallParams(
                 messages = listOf(
-                    systemMessage("Follow policy."),
+                    SystemMessage("Follow policy."),
                     ModelMessage(
                         MessageRole.User,
                         listOf(
@@ -147,7 +147,7 @@ class GoogleProviderTest {
 
     @Test
     fun `stream maps Gemini SSE text reasoning tool calls files and finish`() = runTest {
-        val fixture = createTestServer(
+        val fixture = TestServer.createTestServer(
             mutableMapOf(
                 "https://google.test/v1beta/models/gemini-2.5-flash:streamGenerateContent?alt=sse" to UrlHandler(
                     UrlResponse.StreamChunks(
@@ -167,7 +167,7 @@ class GoogleProviderTest {
         )
 
         val events = drainAllItems(
-            provider.chat(ModelId("gemini-2.5-flash")).stream(LanguageModelCallParams(messages = listOf(userMessage("hi")))),
+            provider.chat(ModelId("gemini-2.5-flash")).stream(LanguageModelCallParams(messages = listOf(UserMessage("hi")))),
         )
 
         assertIs<StreamEvent.StreamStart>(events.first())
@@ -186,7 +186,7 @@ class GoogleProviderTest {
 
     @Test
     fun `language model reports length when max tokens response contains tool calls`() = runTest {
-        val fixture = createTestServer(
+        val fixture = TestServer.createTestServer(
             mutableMapOf(
                 "https://google.test/v1beta/models/gemini-2.5-flash:generateContent" to UrlHandler(
                     UrlResponse.JsonValue(
@@ -224,7 +224,7 @@ class GoogleProviderTest {
 
         val result = provider(ModelId("gemini-2.5-flash")).generate(
             LanguageModelCallParams(
-                messages = listOf(userMessage("hi")),
+                messages = listOf(UserMessage("hi")),
                 tools = listOf(LanguageModelTool("lookup", "Lookup.", objectSchema("city").toString())),
             ),
         )
@@ -236,7 +236,7 @@ class GoogleProviderTest {
 
     @Test
     fun `language model maps MALFORMED_FUNCTION_CALL to error`() = runTest {
-        val fixture = createTestServer(
+        val fixture = TestServer.createTestServer(
             mutableMapOf(
                 "https://google.test/v1beta/models/gemini-2.5-flash:generateContent" to UrlHandler(
                     UrlResponse.JsonValue(
@@ -256,7 +256,7 @@ class GoogleProviderTest {
             GoogleGenerativeAIProviderSettings(apiKey = "key", baseURL = "https://google.test/v1beta"),
         )
         val result = provider(ModelId("gemini-2.5-flash")).generate(
-            LanguageModelCallParams(messages = listOf(userMessage("hi"))),
+            LanguageModelCallParams(messages = listOf(UserMessage("hi"))),
         )
         // Upstream maps MALFORMED_FUNCTION_CALL to error, not content-filter.
         assertEquals(FinishReason.Error, result.finishReason)
@@ -265,7 +265,7 @@ class GoogleProviderTest {
 
     @Test
     fun `language model omits toolConfig when there are no tools`() = runTest {
-        val fixture = createTestServer(
+        val fixture = TestServer.createTestServer(
             mutableMapOf(
                 "https://google.test/v1beta/models/gemini-2.5-flash:generateContent" to UrlHandler(
                     UrlResponse.JsonValue(
@@ -288,7 +288,7 @@ class GoogleProviderTest {
 
         val result = provider(ModelId("gemini-2.5-flash")).generate(
             LanguageModelCallParams(
-                messages = listOf(userMessage("hi")),
+                messages = listOf(UserMessage("hi")),
                 toolChoice = ToolChoice.Required,
             ),
         )
@@ -301,7 +301,7 @@ class GoogleProviderTest {
 
     @Test
     fun `stream surfaces malformed Gemini function call as wire error event`() = runTest {
-        val fixture = createTestServer(
+        val fixture = TestServer.createTestServer(
             mutableMapOf(
                 "https://google.test/v1beta/models/gemini-2.5-flash:streamGenerateContent?alt=sse" to UrlHandler(
                     UrlResponse.StreamChunks(
@@ -319,7 +319,7 @@ class GoogleProviderTest {
         )
 
         val events = drainAllItems(
-            provider.chat(ModelId("gemini-2.5-flash")).stream(LanguageModelCallParams(messages = listOf(userMessage("hi")))),
+            provider.chat(ModelId("gemini-2.5-flash")).stream(LanguageModelCallParams(messages = listOf(UserMessage("hi")))),
         )
 
         val error = events.filterIsInstance<StreamEvent.Error>().single()
@@ -329,7 +329,7 @@ class GoogleProviderTest {
     @Test
     fun `embedding image and video models map Google payloads`() = runTest {
         var videoPolls = 0
-        val fixture = createTestServer(
+        val fixture = TestServer.createTestServer(
             mutableMapOf(
                 "https://google.test/v1beta/models/text-embedding-004:batchEmbedContents" to UrlHandler(
                     UrlResponse.JsonValue(Json.parseToJsonElement("""{"embeddings":[{"values":[1.0,2.0]},{"values":[3.0,4.0]}]}""")),
@@ -430,7 +430,7 @@ class GoogleProviderTest {
 
     @Test
     fun `image and video models reject malformed Google media wire data`() = runTest {
-        val fixture = createTestServer(
+        val fixture = TestServer.createTestServer(
             mutableMapOf(
                 "https://google.test/v1beta/models/imagen-4.0-generate-001:predict" to UrlHandler(
                     UrlResponse.JsonValue(Json.parseToJsonElement("""{"predictions":[{}]}""")),
@@ -473,7 +473,7 @@ class GoogleProviderTest {
 
     @Test
     fun `interactions model posts v6 request and maps steps usage metadata and sources`() = runTest {
-        val fixture = createTestServer(
+        val fixture = TestServer.createTestServer(
             mutableMapOf(
                 "https://google.test/v1beta/interactions" to UrlHandler(
                     UrlResponse.JsonValue(
@@ -537,8 +537,8 @@ class GoogleProviderTest {
         val result = provider.interactions(ModelId("gemini-2.5-flash")).generate(
             LanguageModelCallParams(
                 messages = listOf(
-                    systemMessage("Follow policy."),
-                    userMessage("Use interactions."),
+                    SystemMessage("Follow policy."),
+                    UserMessage("Use interactions."),
                 ),
                 tools = listOf(LanguageModelTool("lookup", "Lookup a city.", objectSchema("city").toString())),
                 toolChoice = ToolChoice.Required,
@@ -606,7 +606,7 @@ class GoogleProviderTest {
 
     @Test
     fun `interactions stream maps SSE steps into stream events`() = runTest {
-        val fixture = createTestServer(
+        val fixture = TestServer.createTestServer(
             mutableMapOf(
                 "https://google.test/v1beta/interactions" to UrlHandler(
                     UrlResponse.StreamChunks(
@@ -635,7 +635,7 @@ class GoogleProviderTest {
         )
 
         val events = drainAllItems(
-            provider.interactions(ModelId("gemini-2.5-flash")).stream(LanguageModelCallParams(messages = listOf(userMessage("hi")))),
+            provider.interactions(ModelId("gemini-2.5-flash")).stream(LanguageModelCallParams(messages = listOf(UserMessage("hi")))),
         )
 
         assertIs<StreamEvent.StreamStart>(events.first())
@@ -657,7 +657,7 @@ class GoogleProviderTest {
 
     @Test
     fun `interactions agent background stream omits stream on post and synthesizes terminal response`() = runTest {
-        val fixture = createTestServer(
+        val fixture = TestServer.createTestServer(
             mutableMapOf(
                 "https://google.test/v1beta/interactions" to UrlHandler(
                     UrlResponse.JsonValue(
@@ -685,7 +685,7 @@ class GoogleProviderTest {
         val events = drainAllItems(
             provider.agentInteraction("deep-research").stream(
                 LanguageModelCallParams(
-                    messages = listOf(userMessage("research this")),
+                    messages = listOf(UserMessage("research this")),
                     tools = listOf(LanguageModelTool("lookup", "Lookup.", objectSchema("q").toString())),
                     temperature = 0.1f,
                     providerOptions = ProviderOptions.Raw(JsonObject(mapOf(

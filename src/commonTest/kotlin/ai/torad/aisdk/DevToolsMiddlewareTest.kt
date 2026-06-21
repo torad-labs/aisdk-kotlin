@@ -1,6 +1,6 @@
 package ai.torad.aisdk
 
-import ai.torad.aisdk.providers.mockLanguageModelTextOnly
+import ai.torad.aisdk.providers.MockLanguageModelTextOnly
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -22,14 +22,14 @@ class DevToolsMiddlewareTest {
     @Test
     fun `devToolsMiddleware records generate steps`() = runTest {
         val recorder = InMemoryDevToolsRecorder()
-        val middleware = devToolsMiddleware(
+        val middleware = DevToolsMiddleware(
             recorder = recorder,
             runId = "run_1",
             idGenerator = { "step_1" },
         )
-        val wrapped = wrapLanguageModel(mockLanguageModelTextOnly("ok"), listOf(middleware))
+        val wrapped = WrapLanguageModel(MockLanguageModelTextOnly("ok"), listOf(middleware))
 
-        wrapped.generate(LanguageModelCallParams(messages = listOf(userMessage("hi"))))
+        wrapped.generate(LanguageModelCallParams(messages = listOf(UserMessage("hi"))))
 
         assertEquals(listOf("run_1"), recorder.runs)
         val step = recorder.steps.single()
@@ -49,14 +49,14 @@ class DevToolsMiddlewareTest {
     @Test
     fun `devToolsMiddleware records stream output and raw chunks`() = runTest {
         val recorder = InMemoryDevToolsRecorder()
-        val middleware = devToolsMiddleware(
+        val middleware = DevToolsMiddleware(
             recorder = recorder,
             runId = "run_1",
             idGenerator = { "step_1" },
         )
-        val wrapped = wrapLanguageModel(StreamingFixtureModel(), listOf(middleware))
+        val wrapped = WrapLanguageModel(StreamingFixtureModel(), listOf(middleware))
 
-        val events = wrapped.stream(LanguageModelCallParams(messages = listOf(userMessage("hi")))).toList()
+        val events = wrapped.stream(LanguageModelCallParams(messages = listOf(UserMessage("hi")))).toList()
 
         assertTrue(events.any { it is StreamEvent.TextDelta && it.text == "hello" })
         val result = assertNotNull(recorder.results["step_1"])
@@ -73,7 +73,7 @@ class DevToolsMiddlewareTest {
     @Test
     fun `devToolsMiddleware rejects production environment`() {
         val error = assertFailsWith<AiSdkException> {
-            devToolsMiddleware(environment = "production")
+            DevToolsMiddleware(environment = "production")
         }
 
         assertTrue(error.message!!.contains("should not be used in production"))

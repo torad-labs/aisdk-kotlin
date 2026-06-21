@@ -111,31 +111,31 @@ private class AssemblyAITranscriptionModel(
 
     override suspend fun transcribe(params: TranscriptionParams): TranscriptionModelResult {
         params.abortSignal.throwIfAborted()
-        val upload = assemblyAIPostBinary(
+        val upload = AssemblyAIWire.postBinary(
             client = client,
             url = "$ASSEMBLYAI_BASE_URL/v2/upload",
             bytes = Base64Codec.decode(params.audio.base64),
-            headers = assemblyAIHeaders(settings, params.headers),
+            headers = AssemblyAIWire.headers(settings, params.headers),
         )
         val uploadUrl = upload.value.jsonObject["upload_url"]?.jsonPrimitive?.contentOrNull
             ?: throw InvalidResponseDataError(upload.value, "AssemblyAI upload response is missing upload_url")
 
         params.abortSignal.throwIfAborted()
-        val submitBody = assemblyAISubmitBody(
+        val submitBody = AssemblyAIWire.submitBody(
             modelId = modelId,
             uploadUrl = uploadUrl,
             params = params,
         )
-        val submit = assemblyAIPostJson(
+        val submit = AssemblyAIWire.postJson(
             client = client,
             url = "$ASSEMBLYAI_BASE_URL/v2/transcript",
             body = submitBody,
-            headers = assemblyAIHeaders(settings, params.headers),
+            headers = AssemblyAIWire.headers(settings, params.headers),
         )
         val transcriptId = submit.value.jsonObject["id"]?.jsonPrimitive?.contentOrNull
             ?: throw InvalidResponseDataError(submit.value, "AssemblyAI transcript submit response is missing id")
 
-        val transcript = assemblyAIPollTranscript(
+        val transcript = AssemblyAIWire.pollTranscript(
             client = client,
             settings = settings,
             transcriptId = transcriptId,
@@ -168,99 +168,119 @@ private class AssemblyAITranscriptionModel(
 
 private const val ASSEMBLYAI_BASE_URL: String = "https://api.assemblyai.com"
 
-
-private suspend fun assemblyAIPostBinary(
-    client: HttpClient,
-    url: String,
-    bytes: ByteArray,
-    headers: Map<String, String>,
-): HttpJsonResponse {
-    val response = client.request(url) {
-        method = HttpMethod.Post
-        contentType(ContentType.Application.OctetStream)
-        headers.forEach { (name, value) -> header(name, value) }
-        setBody(bytes)
+internal object AssemblyAIWire {
+    suspend fun postBinary(
+        client: HttpClient,
+        url: String,
+        bytes: ByteArray,
+        headers: Map<String, String>,
+    ): HttpJsonResponse {
+        val response = client.request(url) {
+            method = HttpMethod.Post
+            contentType(ContentType.Application.OctetStream)
+            headers.forEach { (name, value) -> header(name, value) }
+            setBody(bytes)
+        }
+        return with(HttpTransport) { response.toJsonResponse(url = url, errorMessage = ::errorMessage) }
     }
-    return response.toJsonResponse(url = url, errorMessage = ::assemblyAIErrorMessage)
-}
 
-private suspend fun assemblyAIPostJson(
-    client: HttpClient,
-    url: String,
-    body: JsonObject,
-    headers: Map<String, String>,
-): HttpJsonResponse =
-    requestJson(
-        client = client,
-        url = url,
-        method = HttpMethod.Post,
-        headers = headers,
-        body = body,
-        requestBodyValues = body,
-        errorMessage = ::assemblyAIErrorMessage,
-    )
-
-private suspend fun assemblyAIGetJson(
-    client: HttpClient,
-    url: String,
-    headers: Map<String, String>,
-): HttpJsonResponse =
-    requestJson(
-        client = client,
-        url = url,
-        method = HttpMethod.Get,
-        headers = headers,
-        errorMessage = ::assemblyAIErrorMessage,
-    )
-
-private suspend fun assemblyAIPollTranscript(
-    client: HttpClient,
-    settings: AssemblyAIProviderSettings,
-    transcriptId: String,
-    headers: Map<String, String>,
-    abortSignal: AbortSignal,
-): HttpJsonResponse {
-    while (true) {
-        abortSignal.throwIfAborted()
-        val response = assemblyAIGetJson(
+    suspend fun postJson(
+        client: HttpClient,
+        url: String,
+        body: JsonObject,
+        headers: Map<String, String>,
+    ): HttpJsonResponse =
+        HttpTransport.requestJson(
             client = client,
-            url = "$ASSEMBLYAI_BASE_URL/v2/transcript/$transcriptId",
-            headers = assemblyAIHeaders(settings, headers),
+            url = url,
+            method = HttpMethod.Post,
+            headers = headers,
+            body = body,
+            requestBodyValues = body,
+            errorMessage = AssemblyAIWire::errorMessage,
         )
-        val body = response.value.jsonObject
-        when (body["status"]?.jsonPrimitive?.contentOrNull) {
-            "completed" -> return response
-            "error" -> throw NoTranscriptGeneratedError("Transcription failed: ${body["error"]?.jsonPrimitive?.contentOrNull ?: "Unknown error"}")
-            "queued", "processing" -> if (settings.pollingIntervalMillis > 0) delay(settings.pollingIntervalMillis)
-            else -> throw InvalidResponseDataError(null, "AssemblyAI transcript response has unsupported status")
+
+    suspend fun getJson(
+        client: HttpClient,
+        url: String,
+        headers: Map<String, String>,
+    ): HttpJsonResponse =
+        HttpTransport.requestJson(
+            client = client,
+            url = url,
+            method = HttpMethod.Get,
+            headers = headers,
+            errorMessage = AssemblyAIWire::errorMessage,
+        )
+
+    suspend fun pollTranscript(
+        client: HttpClient,
+        settings: AssemblyAIProviderSettings,
+        transcriptId: String,
+        headers: Map<String, String>,
+        abortSignal: AbortSignal,
+    ): HttpJsonResponse {
+        while (true) {
+            abortSignal.throwIfAborted()
+            val response = getJson(
+                client = client,
+                url = "$ASSEMBLYAI_BASE_URL/v2/transcript/$transcriptId",
+                headers = headers(settings, headers),
+            )
+            val body = response.value.jsonObject
+            when (body["status"]?.jsonPrimitive?.contentOrNull) {
+                "completed" -> return response
+                "error" -> throw NoTranscriptGeneratedError("Transcription failed: ${body["error"]?.jsonPrimitive?.contentOrNull ?: "Unknown error"}")
+                "queued", "processing" -> if (settings.pollingIntervalMillis > 0) delay(settings.pollingIntervalMillis)
+                else -> throw InvalidResponseDataError(null, "AssemblyAI transcript response has unsupported status")
+            }
         }
     }
-}
 
-private fun assemblyAISubmitBody(
-    modelId: String,
-    uploadUrl: String,
-    params: TranscriptionParams,
-): JsonObject {
-    val options = assemblyAIOptions(params.providerOptions)
-    return buildJsonObject {
-        put("speech_model", JsonPrimitive(modelId))
-        putAssemblyAIOptions(options, params.language)
-        put("audio_url", JsonPrimitive(uploadUrl))
+    fun submitBody(
+        modelId: String,
+        uploadUrl: String,
+        params: TranscriptionParams,
+    ): JsonObject {
+        val options = options(params.providerOptions)
+        return buildJsonObject {
+            put("speech_model", JsonPrimitive(modelId))
+            putOptions(options, params.language)
+            put("audio_url", JsonPrimitive(uploadUrl))
+        }
+    }
+
+    fun JsonObjectBuilder.putOptions(options: JsonObject, fallbackLanguage: String?) {
+        for ((source, target) in optionKeyMap) {
+            val value = options[source] ?: continue
+            if (value !is JsonNull) put(target, value)
+        }
+        if (!options.containsKey("languageCode")) {
+            fallbackLanguage?.let { put("language_code", JsonPrimitive(it)) }
+        }
+    }
+
+    fun headers(settings: AssemblyAIProviderSettings, callHeaders: Map<String, String>): Map<String, String> {
+        val base = linkedMapOf<String, String>()
+        settings.apiKey?.takeIf { it.isNotBlank() }?.let { base[HttpHeaders.Authorization] = it }
+        base.putAll(settings.headers)
+        base.putAll(callHeaders)
+        return ProviderHeaders.withUserAgentSuffix(base, "ai-sdk/assemblyai/$ASSEMBLYAI_VERSION")
+    }
+
+    fun options(providerOptions: ProviderOptions): JsonObject =
+        providerOptions.toMap()["assemblyai"] as? JsonObject ?: JsonObject(emptyMap())
+
+    fun errorMessage(statusCode: Int, parsed: JsonElement?, raw: String): String {
+        val obj = parsed as? JsonObject
+        val detail = obj?.get("error")?.jsonObject?.get("message")?.jsonPrimitive?.contentOrNull
+            ?: obj?.get("error")?.jsonPrimitive?.contentOrNull
+            ?: raw.ifBlank { "request failed" }
+        return "AssemblyAI request failed ($statusCode): $detail"
     }
 }
 
-private fun JsonObjectBuilder.putAssemblyAIOptions(options: JsonObject, fallbackLanguage: String?) {
-    for ((source, target) in assemblyAIOptionKeyMap) {
-        val value = options[source] ?: continue
-        if (value !is JsonNull) put(target, value)
-    }
-    if (!options.containsKey("languageCode")) {
-        fallbackLanguage?.let { put("language_code", JsonPrimitive(it)) }
-    }
-}
-
-private val assemblyAIOptionKeyMap: Map<String, String> = linkedMapOf(
+private val optionKeyMap: Map<String, String> = linkedMapOf(
     "audioEndAt" to "audio_end_at",
     "audioStartFrom" to "audio_start_from",
     "autoChapters" to "auto_chapters",
@@ -296,22 +316,3 @@ private val assemblyAIOptionKeyMap: Map<String, String> = linkedMapOf(
     "webhookUrl" to "webhook_url",
     "wordBoost" to "word_boost",
 )
-
-private fun assemblyAIHeaders(settings: AssemblyAIProviderSettings, callHeaders: Map<String, String>): Map<String, String> {
-    val base = linkedMapOf<String, String>()
-    settings.apiKey?.takeIf { it.isNotBlank() }?.let { base[HttpHeaders.Authorization] = it }
-    base.putAll(settings.headers)
-    base.putAll(callHeaders)
-    return ProviderHeaders.withUserAgentSuffix(base, "ai-sdk/assemblyai/$ASSEMBLYAI_VERSION")
-}
-
-private fun assemblyAIOptions(providerOptions: ProviderOptions): JsonObject =
-    providerOptions.toMap()["assemblyai"] as? JsonObject ?: JsonObject(emptyMap())
-
-private fun assemblyAIErrorMessage(statusCode: Int, parsed: JsonElement?, raw: String): String {
-    val obj = parsed as? JsonObject
-    val detail = obj?.get("error")?.jsonObject?.get("message")?.jsonPrimitive?.contentOrNull
-        ?: obj?.get("error")?.jsonPrimitive?.contentOrNull
-        ?: raw.ifBlank { "request failed" }
-    return "AssemblyAI request failed ($statusCode): $detail"
-}

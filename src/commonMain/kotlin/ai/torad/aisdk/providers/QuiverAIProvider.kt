@@ -73,14 +73,14 @@ private class QuiverAIImageModel(
 
     override suspend fun generate(params: ImageGenerationParams): ImageModelResult {
         params.abortSignal.throwIfAborted()
-        val options = quiverAIOptions(params.providerOptions)
+        val options = QuiverAIWire.quiverAIOptions(params.providerOptions)
         val operation = options["operation"]?.jsonPrimitive?.contentOrNull ?: "generate"
-        val body = quiverAIRequestBody(modelId, params, operation, options)
-        val response = quiverAIPostJson(
+        val body = QuiverAIWire.quiverAIRequestBody(modelId, params, operation, options)
+        val response = QuiverAIWire.quiverAIPostJson(
             client = client,
-            url = "${settings.baseURL.trimEnd('/')}${quiverAIOperationPath(operation)}",
+            url = "${settings.baseURL.trimEnd('/')}${QuiverAIWire.quiverAIOperationPath(operation)}",
             body = body,
-            headers = quiverAIHeaders(settings, params.headers),
+            headers = QuiverAIWire.quiverAIHeaders(settings, params.headers),
         )
         val root = response.value.jsonObject
         val data = root["data"]?.jsonArray ?: throw InvalidResponseDataError(response.value, "QuiverAI response is missing data")
@@ -93,7 +93,7 @@ private class QuiverAIImageModel(
                     base64 = Base64Codec.encode(svg.encodeToByteArray()),
                 )
             },
-            warnings = quiverAIWarnings(params),
+            warnings = QuiverAIWire.quiverAIWarnings(params),
             response = LanguageModelResponseMetadata(
                 id = root["id"]?.jsonPrimitive?.contentOrNull,
                 timestampMillis = root["created"]?.jsonPrimitive?.contentOrNull?.toLongOrNull()?.times(1000),
@@ -101,172 +101,175 @@ private class QuiverAIImageModel(
                 headers = response.headers,
                 body = response.value,
             ),
-            providerMetadata = ProviderMetadata.Raw(JsonObject(mapOf("quiverai" to quiverAIProviderMetadata(root)))),
-            usage = quiverAIUsage(root["usage"]),
+            providerMetadata = ProviderMetadata.Raw(JsonObject(mapOf("quiverai" to QuiverAIWire.quiverAIProviderMetadata(root)))),
+            usage = QuiverAIWire.quiverAIUsage(root["usage"]),
         )
     }
 }
 
 
-private fun quiverAIRequestBody(
-    modelId: String,
-    params: ImageGenerationParams,
-    operation: String,
-    options: JsonObject,
-): JsonObject {
-    val shared = buildJsonObject {
-        putDoubleIfNotNull("temperature", options["temperature"]?.jsonPrimitive?.doubleOrNull)
-        putDoubleIfNotNull("top_p", options["topP"]?.jsonPrimitive?.doubleOrNull)
-        putDoubleIfNotNull("presence_penalty", options["presencePenalty"]?.jsonPrimitive?.doubleOrNull)
-        putIntIfNotNull("max_output_tokens", options["maxOutputTokens"]?.jsonPrimitive?.intOrNull)
-        put("stream", JsonPrimitive(false))
-    }
-    return when (operation) {
-        "generate" -> quiverAIGenerateBody(modelId, params, options, shared)
-        "vectorize" -> quiverAIVectorizeBody(modelId, params, options, shared)
-        else -> throw InvalidArgumentError("providerOptions.quiverai.operation", "must be `generate` or `vectorize`")
-    }
-}
+private object QuiverAIWire {
 
-private fun quiverAIGenerateBody(
-    modelId: String,
-    params: ImageGenerationParams,
-    options: JsonObject,
-    shared: JsonObject,
-): JsonObject {
-    if (params.prompt.isBlank()) {
-        throw InvalidArgumentError("prompt", "QuiverAI image generation requires a non-empty prompt for generateImage.")
-    }
-    val maxReferences = if (modelId == "arrow-1.1-max") 16 else 4
-    if (params.files.size > maxReferences) {
-        throw InvalidArgumentError("files", "QuiverAI generate supports up to $maxReferences reference images for model \"$modelId\".")
-    }
-    return buildJsonObject {
-        put("model", JsonPrimitive(modelId))
-        put("n", JsonPrimitive(params.n))
-        put("prompt", JsonPrimitive(params.prompt))
-        putAll(shared)
-        putStringIfNotNull("instructions", options["instructions"]?.jsonPrimitive?.contentOrNull)
-        if (params.files.isNotEmpty()) {
-            put("references", JsonArray(params.files.map { it.toQuiverAIImageReference() }))
+    fun quiverAIRequestBody(
+        modelId: String,
+        params: ImageGenerationParams,
+        operation: String,
+        options: JsonObject,
+    ): JsonObject {
+        val shared = buildJsonObject {
+            putDoubleIfNotNull("temperature", options["temperature"]?.jsonPrimitive?.doubleOrNull)
+            putDoubleIfNotNull("top_p", options["topP"]?.jsonPrimitive?.doubleOrNull)
+            putDoubleIfNotNull("presence_penalty", options["presencePenalty"]?.jsonPrimitive?.doubleOrNull)
+            putIntIfNotNull("max_output_tokens", options["maxOutputTokens"]?.jsonPrimitive?.intOrNull)
+            put("stream", JsonPrimitive(false))
+        }
+        return when (operation) {
+            "generate" -> quiverAIGenerateBody(modelId, params, options, shared)
+            "vectorize" -> quiverAIVectorizeBody(modelId, params, options, shared)
+            else -> throw InvalidArgumentError("providerOptions.quiverai.operation", "must be `generate` or `vectorize`")
         }
     }
-}
 
-private fun quiverAIVectorizeBody(
-    modelId: String,
-    params: ImageGenerationParams,
-    options: JsonObject,
-    shared: JsonObject,
-): JsonObject {
-    if (params.files.isEmpty()) {
-        throw InvalidArgumentError(
-            "files",
-            "QuiverAI vectorize requires an input image. Pass an image in generateImage files and set providerOptions.quiverai.operation to \"vectorize\".",
+    fun quiverAIGenerateBody(
+        modelId: String,
+        params: ImageGenerationParams,
+        options: JsonObject,
+        shared: JsonObject,
+    ): JsonObject {
+        if (params.prompt.isBlank()) {
+            throw InvalidArgumentError("prompt", "QuiverAI image generation requires a non-empty prompt for generateImage.")
+        }
+        val maxReferences = if (modelId == "arrow-1.1-max") 16 else 4
+        if (params.files.size > maxReferences) {
+            throw InvalidArgumentError("files", "QuiverAI generate supports up to $maxReferences reference images for model \"$modelId\".")
+        }
+        return buildJsonObject {
+            put("model", JsonPrimitive(modelId))
+            put("n", JsonPrimitive(params.n))
+            put("prompt", JsonPrimitive(params.prompt))
+            putAll(shared)
+            putStringIfNotNull("instructions", options["instructions"]?.jsonPrimitive?.contentOrNull)
+            if (params.files.isNotEmpty()) {
+                put("references", JsonArray(params.files.map { it.toQuiverAIImageReference() }))
+            }
+        }
+    }
+
+    fun quiverAIVectorizeBody(
+        modelId: String,
+        params: ImageGenerationParams,
+        options: JsonObject,
+        shared: JsonObject,
+    ): JsonObject {
+        if (params.files.isEmpty()) {
+            throw InvalidArgumentError(
+                "files",
+                "QuiverAI vectorize requires an input image. Pass an image in generateImage files and set providerOptions.quiverai.operation to \"vectorize\".",
+            )
+        }
+        if (params.files.size > 1) throw InvalidArgumentError("files", "QuiverAI vectorize accepts a single input image.")
+        return buildJsonObject {
+            put("model", JsonPrimitive(modelId))
+            put("n", JsonPrimitive(params.n))
+            put("image", params.files.single().toQuiverAIImageReference())
+            putAll(shared)
+            putBooleanIfNotNull("auto_crop", options["autoCrop"]?.jsonPrimitive?.booleanOrNull)
+            putIntIfNotNull("target_size", options["targetSize"]?.jsonPrimitive?.intOrNull)
+        }
+    }
+
+    fun quiverAIWarnings(params: ImageGenerationParams): List<CallWarning> = buildList {
+        if (params.size != null) add(CallWarning("unsupported", "QuiverAI SVG generation does not support the `size` option. The setting was ignored."))
+        if (params.aspectRatio != null) add(CallWarning("unsupported", "QuiverAI SVG generation does not support the `aspectRatio` option. The setting was ignored."))
+        if (params.seed != null) add(CallWarning("unsupported", "QuiverAI SVG generation does not support the `seed` option. The setting was ignored."))
+        if (params.mask != null) add(CallWarning("unsupported", "QuiverAI SVG generation does not support masks. The mask was ignored."))
+    }
+
+    fun ImageGenerationFile.toQuiverAIImageReference(): JsonObject = buildJsonObject {
+        url?.takeIf { it.isNotBlank() }?.let {
+            put("url", JsonPrimitive(it))
+            return@buildJsonObject
+        }
+        val data = base64?.takeIf { it.isNotBlank() }
+            ?: throw InvalidArgumentError("files", "QuiverAI image references must include either url or base64 data.")
+        put("base64", JsonPrimitive(data))
+    }
+
+    suspend fun quiverAIPostJson(
+        client: HttpClient,
+        url: String,
+        body: JsonObject,
+        headers: Map<String, String>,
+    ): HttpJsonResponse =
+        HttpTransport.requestJson(
+            client = client,
+            url = url,
+            method = HttpMethod.Post,
+            headers = headers,
+            body = body,
+            requestBodyValues = body,
+            errorMessage = ::quiverAIErrorMessage,
+        )
+
+    fun quiverAIProviderMetadata(root: JsonObject): JsonElement = buildJsonObject {
+        val data = root["data"]?.jsonArray.orEmpty()
+        put("images", JsonArray(data.mapIndexed { index, item ->
+            buildJsonObject {
+                put("index", JsonPrimitive(index))
+                put("mimeType", JsonPrimitive(item.jsonObject["mime_type"]?.jsonPrimitive?.contentOrNull ?: "image/svg+xml"))
+            }
+        }))
+        root["usage"]?.takeIf { it !is JsonNull }?.let { usage ->
+            put("usage", usage)
+        }
+    }
+
+    fun quiverAIUsage(value: JsonElement?): ImageModelUsage {
+        val usage = value as? JsonObject ?: return ImageModelUsage()
+        return ImageModelUsage(
+            inputTokens = usage["input_tokens"]?.jsonPrimitive?.intOrNull,
+            outputTokens = usage["output_tokens"]?.jsonPrimitive?.intOrNull,
+            totalTokens = usage["total_tokens"]?.jsonPrimitive?.intOrNull,
         )
     }
-    if (params.files.size > 1) throw InvalidArgumentError("files", "QuiverAI vectorize accepts a single input image.")
-    return buildJsonObject {
-        put("model", JsonPrimitive(modelId))
-        put("n", JsonPrimitive(params.n))
-        put("image", params.files.single().toQuiverAIImageReference())
-        putAll(shared)
-        putBooleanIfNotNull("auto_crop", options["autoCrop"]?.jsonPrimitive?.booleanOrNull)
-        putIntIfNotNull("target_size", options["targetSize"]?.jsonPrimitive?.intOrNull)
+
+    fun quiverAIHeaders(settings: QuiverAIProviderSettings, callHeaders: Map<String, String>): Map<String, String> {
+        val base = linkedMapOf<String, String?>()
+        settings.apiKey?.takeIf { it.isNotBlank() }?.let { base[HttpHeaders.Authorization] = "Bearer $it" }
+        settings.headers.forEach { (key, value) -> base[key] = value }
+        callHeaders.forEach { (key, value) -> base[key] = value }
+        return ProviderHeaders.withUserAgentSuffix(base, "ai-sdk/quiverai/$QUIVERAI_VERSION")
     }
-}
 
-private fun quiverAIWarnings(params: ImageGenerationParams): List<CallWarning> = buildList {
-    if (params.size != null) add(CallWarning("unsupported", "QuiverAI SVG generation does not support the `size` option. The setting was ignored."))
-    if (params.aspectRatio != null) add(CallWarning("unsupported", "QuiverAI SVG generation does not support the `aspectRatio` option. The setting was ignored."))
-    if (params.seed != null) add(CallWarning("unsupported", "QuiverAI SVG generation does not support the `seed` option. The setting was ignored."))
-    if (params.mask != null) add(CallWarning("unsupported", "QuiverAI SVG generation does not support masks. The mask was ignored."))
-}
+    fun quiverAIOptions(providerOptions: ProviderOptions): JsonObject =
+        providerOptions.toMap()["quiverai"] as? JsonObject ?: JsonObject(emptyMap())
 
-private fun ImageGenerationFile.toQuiverAIImageReference(): JsonObject = buildJsonObject {
-    url?.takeIf { it.isNotBlank() }?.let {
-        put("url", JsonPrimitive(it))
-        return@buildJsonObject
+    fun quiverAIOperationPath(operation: String): String =
+        if (operation == "generate") "/svgs/generations" else "/svgs/vectorizations"
+
+    fun quiverAIErrorMessage(statusCode: Int, parsed: JsonElement?, raw: String): String {
+        val obj = parsed as? JsonObject
+        val detail = obj?.get("message")?.jsonPrimitive?.contentOrNull ?: raw.ifBlank { "request failed" }
+        return "QuiverAI request failed ($statusCode): $detail"
     }
-    val data = base64?.takeIf { it.isNotBlank() }
-        ?: throw InvalidArgumentError("files", "QuiverAI image references must include either url or base64 data.")
-    put("base64", JsonPrimitive(data))
-}
 
-private suspend fun quiverAIPostJson(
-    client: HttpClient,
-    url: String,
-    body: JsonObject,
-    headers: Map<String, String>,
-): HttpJsonResponse =
-    requestJson(
-        client = client,
-        url = url,
-        method = HttpMethod.Post,
-        headers = headers,
-        body = body,
-        requestBodyValues = body,
-        errorMessage = ::quiverAIErrorMessage,
-    )
-
-private fun quiverAIProviderMetadata(root: JsonObject): JsonElement = buildJsonObject {
-    val data = root["data"]?.jsonArray.orEmpty()
-    put("images", JsonArray(data.mapIndexed { index, item ->
-        buildJsonObject {
-            put("index", JsonPrimitive(index))
-            put("mimeType", JsonPrimitive(item.jsonObject["mime_type"]?.jsonPrimitive?.contentOrNull ?: "image/svg+xml"))
-        }
-    }))
-    root["usage"]?.takeIf { it !is JsonNull }?.let { usage ->
-        put("usage", usage)
+    private fun JsonObjectBuilder.putAll(values: JsonObject) {
+        values.forEach { (key, value) -> put(key, value) }
     }
-}
 
-private fun quiverAIUsage(value: JsonElement?): ImageModelUsage {
-    val usage = value as? JsonObject ?: return ImageModelUsage()
-    return ImageModelUsage(
-        inputTokens = usage["input_tokens"]?.jsonPrimitive?.intOrNull,
-        outputTokens = usage["output_tokens"]?.jsonPrimitive?.intOrNull,
-        totalTokens = usage["total_tokens"]?.jsonPrimitive?.intOrNull,
-    )
-}
+    private fun JsonObjectBuilder.putStringIfNotNull(key: String, value: String?) {
+        if (value != null) put(key, JsonPrimitive(value))
+    }
 
-private fun quiverAIHeaders(settings: QuiverAIProviderSettings, callHeaders: Map<String, String>): Map<String, String> {
-    val base = linkedMapOf<String, String?>()
-    settings.apiKey?.takeIf { it.isNotBlank() }?.let { base[HttpHeaders.Authorization] = "Bearer $it" }
-    settings.headers.forEach { (key, value) -> base[key] = value }
-    callHeaders.forEach { (key, value) -> base[key] = value }
-    return ProviderHeaders.withUserAgentSuffix(base, "ai-sdk/quiverai/$QUIVERAI_VERSION")
-}
+    private fun JsonObjectBuilder.putIntIfNotNull(key: String, value: Int?) {
+        if (value != null) put(key, JsonPrimitive(value))
+    }
 
-private fun quiverAIOptions(providerOptions: ProviderOptions): JsonObject =
-    providerOptions.toMap()["quiverai"] as? JsonObject ?: JsonObject(emptyMap())
+    private fun JsonObjectBuilder.putDoubleIfNotNull(key: String, value: Double?) {
+        if (value != null) put(key, JsonPrimitive(value))
+    }
 
-private fun quiverAIOperationPath(operation: String): String =
-    if (operation == "generate") "/svgs/generations" else "/svgs/vectorizations"
-
-private fun quiverAIErrorMessage(statusCode: Int, parsed: JsonElement?, raw: String): String {
-    val obj = parsed as? JsonObject
-    val detail = obj?.get("message")?.jsonPrimitive?.contentOrNull ?: raw.ifBlank { "request failed" }
-    return "QuiverAI request failed ($statusCode): $detail"
-}
-
-private fun JsonObjectBuilder.putAll(values: JsonObject) {
-    values.forEach { (key, value) -> put(key, value) }
-}
-
-private fun JsonObjectBuilder.putStringIfNotNull(key: String, value: String?) {
-    if (value != null) put(key, JsonPrimitive(value))
-}
-
-private fun JsonObjectBuilder.putIntIfNotNull(key: String, value: Int?) {
-    if (value != null) put(key, JsonPrimitive(value))
-}
-
-private fun JsonObjectBuilder.putDoubleIfNotNull(key: String, value: Double?) {
-    if (value != null) put(key, JsonPrimitive(value))
-}
-
-private fun JsonObjectBuilder.putBooleanIfNotNull(key: String, value: Boolean?) {
-    if (value != null) put(key, JsonPrimitive(value))
+    private fun JsonObjectBuilder.putBooleanIfNotNull(key: String, value: Boolean?) {
+        if (value != null) put(key, JsonPrimitive(value))
+    }
 }

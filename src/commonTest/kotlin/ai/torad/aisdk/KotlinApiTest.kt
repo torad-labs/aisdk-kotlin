@@ -1,6 +1,6 @@
 package ai.torad.aisdk
 
-import ai.torad.aisdk.testing.drainAllItems
+import ai.torad.aisdk.testing.FlowDrain.drainAllItems
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -57,7 +57,7 @@ class KotlinApiTest {
         val model = CapturingModel()
         val request = TextGenerationRequest.of(
             input = TextGenerationRequest.Input.messagesWithPrompt(
-                history = TextGenerationRequest.NonEmptyMessages.of(userMessage("history")),
+                history = TextGenerationRequest.NonEmptyMessages.of(UserMessage("history")),
                 prompt = "answer",
             ),
             system = "be concise",
@@ -74,7 +74,7 @@ class KotlinApiTest {
             ),
         )
         val msgs = buildList<ModelMessage> {
-            if (request.system != null) add(systemMessage(request.system))
+            if (request.system != null) add(SystemMessage(request.system))
             addAll(request.messages)
         }
         val s = request.settings
@@ -112,17 +112,17 @@ class KotlinApiTest {
     fun `compat request constructor derives owned typed input and still executes`() = runTest {
         val model = CapturingModel()
         val request = TextGenerationRequest(
-            messages = listOf(userMessage("history")),
+            messages = listOf(UserMessage("history")),
             prompt = "answer",
         )
 
         val input = assertIs<TextGenerationRequest.Input.MessageHistoryWithPrompt>(request.input)
 
-        assertEquals(listOf(userMessage("history")), input.messages)
+        assertEquals(listOf(UserMessage("history")), input.messages)
         assertEquals("answer", input.prompt)
 
         val msgs = buildList<ModelMessage> {
-            if (request.system != null) add(systemMessage(request.system))
+            if (request.system != null) add(SystemMessage(request.system))
             addAll(request.messages)
         }
         TextGenerator(model).generate(GenerationInput.from(prompt = request.prompt, messages = msgs)).first()
@@ -140,7 +140,7 @@ class KotlinApiTest {
 
     @Test
     fun `builder creates request with owned typed input`() {
-        val request = textGenerationRequest {
+        val request = TextGenerationRequest {
             prompt("answer")
         }
 
@@ -151,13 +151,13 @@ class KotlinApiTest {
 
     @Test
     fun `empty builder preserves construction compatibility and fails at execution boundary`() = runTest {
-        val request = textGenerationRequest { }
+        val request = TextGenerationRequest { }
 
         assertEquals(null, request.prompt)
         assertEquals(emptyList(), request.messages)
         assertFailsWith<IllegalArgumentException> {
             val msgs = buildList<ModelMessage> {
-                if (request.system != null) add(systemMessage(request.system))
+                if (request.system != null) add(SystemMessage(request.system))
                 addAll(request.messages)
             }
             GenerationInput.from(prompt = request.prompt, messages = msgs)
@@ -170,7 +170,7 @@ class KotlinApiTest {
 
         assertFailsWith<IllegalArgumentException> {
             val msgs = buildList<ModelMessage> {
-                if (request.system != null) add(systemMessage(request.system))
+                if (request.system != null) add(SystemMessage(request.system))
                 addAll(request.messages)
             }
             GenerationInput.from(prompt = request.prompt, messages = msgs)
@@ -209,7 +209,7 @@ class KotlinApiTest {
                 usage = Usage.of(promptTokens = 1, completionTokens = 1),
             ),
         )
-        val output = outputObj<Recipe>(serializer(), name = "Recipe")
+        val output = OutputObj<Recipe>(serializer(), name = "Recipe")
 
         val result = TextGenerator(model).generate(GenerationInput.Prompt("recipe"), output).first()
 

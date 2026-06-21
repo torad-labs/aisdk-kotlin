@@ -1,8 +1,8 @@
 package ai.torad.aisdk
 
-import ai.torad.aisdk.providers.mockLanguageModelTextOnly
-import ai.torad.aisdk.providers.mockLanguageModelToolThenText
-import ai.torad.aisdk.testing.drainAllItems
+import ai.torad.aisdk.providers.MockLanguageModelTextOnly
+import ai.torad.aisdk.providers.MockLanguageModelToolThenText
+import ai.torad.aisdk.testing.FlowDrain.drainAllItems
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
@@ -94,13 +94,13 @@ class TelemetryWiringTest {
     }
 
     private fun toolThenTextAgent(rec: Telemetry?) = TestToolLoopAgent<Unit, String>(
-        model = mockLanguageModelToolThenText(
+        model = MockLanguageModelToolThenText(
             toolName = "echo",
             toolInput = buildJsonObject { put("q", "hi") },
             finalText = "done",
         ),
         instructions = "x",
-        tools = toolSetOf(echoTool()),
+        tools = ToolSet(echoTool()),
         telemetry = rec?.let { TelemetrySettings(integrations = listOf(it)) },
     )
 
@@ -136,9 +136,9 @@ class TelemetryWiringTest {
     fun `two invocations get distinct callIds`() = runTest {
         val rec = RecordingTelemetry()
         val agent = TestToolLoopAgent<Unit, String>(
-            model = mockLanguageModelTextOnly("hi"),
+            model = MockLanguageModelTextOnly("hi"),
             instructions = "x",
-            tools = toolSetOf(),
+            tools = ToolSet(),
             telemetry = TelemetrySettings(integrations = listOf(rec)),
         )
         agent.generate(prompt = "one").first()
@@ -164,9 +164,9 @@ class TelemetryWiringTest {
             override fun debug(message: String): Unit = Unit
         }
         val agent = TestToolLoopAgent<Unit, String>(
-            model = mockLanguageModelTextOnly("hi"),
+            model = MockLanguageModelTextOnly("hi"),
             instructions = "x",
-            tools = toolSetOf(),
+            tools = ToolSet(),
             telemetry = TelemetrySettings(integrations = listOf(ExplodingTelemetry())),
             logger = tellLogger,
         )
@@ -179,16 +179,16 @@ class TelemetryWiringTest {
     @Test
     fun `a globally registered integration observes with no constructor wiring`() = runTest {
         val rec = RecordingTelemetry()
-        registerTelemetry(rec)
+        TelemetryOps.registerTelemetry(rec)
         try {
             val agent = TestToolLoopAgent<Unit, String>(
-                model = mockLanguageModelTextOnly("hi"),
+                model = MockLanguageModelTextOnly("hi"),
                 instructions = "x",
-                tools = toolSetOf(),
+                tools = ToolSet(),
             )
             agent.generate(prompt = "go").first()
         } finally {
-            clearGlobalTelemetry()
+            TelemetryOps.clearGlobalTelemetry()
         }
         assertTrue(rec.events.isNotEmpty(), "global registration alone makes calls emit")
         assertEquals("agentStart", rec.events.first())
@@ -199,17 +199,17 @@ class TelemetryWiringTest {
     fun `per-call integrations replace the global registration`() = runTest {
         val global = RecordingTelemetry("global")
         val local = RecordingTelemetry("local")
-        registerTelemetry(global)
+        TelemetryOps.registerTelemetry(global)
         try {
             val agent = TestToolLoopAgent<Unit, String>(
-                model = mockLanguageModelTextOnly("hi"),
+                model = MockLanguageModelTextOnly("hi"),
                 instructions = "x",
-                tools = toolSetOf(),
+                tools = ToolSet(),
                 telemetry = TelemetrySettings(integrations = listOf(local)),
             )
             agent.generate(prompt = "go").first()
         } finally {
-            clearGlobalTelemetry()
+            TelemetryOps.clearGlobalTelemetry()
         }
         assertTrue(global.events.isEmpty(), "per-call integrations REPLACE the global set")
         assertTrue(local.events.isNotEmpty())
@@ -229,7 +229,7 @@ class TelemetryWiringTest {
         val agent = TestToolLoopAgent<Unit, String>(
             model = brokenModel,
             instructions = "x",
-            tools = toolSetOf(),
+            tools = ToolSet(),
             telemetry = TelemetrySettings(integrations = listOf(rec)),
         )
         assertFailsWith<AiSdkException> { agent.generate(prompt = "go").first() }
@@ -242,9 +242,9 @@ class TelemetryWiringTest {
         val controller = AbortController()
         controller.abort()
         val agent = TestToolLoopAgent<Unit, String>(
-            model = mockLanguageModelTextOnly("hi"),
+            model = MockLanguageModelTextOnly("hi"),
             instructions = "x",
-            tools = toolSetOf(),
+            tools = ToolSet(),
             telemetry = TelemetrySettings(integrations = listOf(rec)),
         )
         val events = drainAllItems(agent.stream(prompt = "go", abortSignal = controller.signal))
@@ -256,17 +256,17 @@ class TelemetryWiringTest {
     @Test
     fun `an explicit isEnabled false opts the call out even with a global registration`() = runTest {
         val global = RecordingTelemetry("global")
-        registerTelemetry(global)
+        TelemetryOps.registerTelemetry(global)
         try {
             val agent = TestToolLoopAgent<Unit, String>(
-                model = mockLanguageModelTextOnly("hi"),
+                model = MockLanguageModelTextOnly("hi"),
                 instructions = "x",
-                tools = toolSetOf(),
+                tools = ToolSet(),
                 telemetry = TelemetrySettings(isEnabled = false),
             )
             agent.generate(prompt = "go").first()
         } finally {
-            clearGlobalTelemetry()
+            TelemetryOps.clearGlobalTelemetry()
         }
         assertTrue(global.events.isEmpty(), "isEnabled=false is the per-call opt-out")
     }
@@ -280,9 +280,9 @@ class TelemetryWiringTest {
             }
         }
         val agent = TestToolLoopAgent<Unit, String>(
-            model = mockLanguageModelTextOnly("hi"),
+            model = MockLanguageModelTextOnly("hi"),
             instructions = "x",
-            tools = toolSetOf(),
+            tools = ToolSet(),
             telemetry = TelemetrySettings(integrations = listOf(cancelling)),
         )
         assertFailsWith<CancellationException> { agent.generate(prompt = "go").first() }
@@ -298,9 +298,9 @@ class TelemetryWiringTest {
             }
         }
         val agent = TestToolLoopAgent<Unit, String>(
-            model = mockLanguageModelTextOnly("hi"),
+            model = MockLanguageModelTextOnly("hi"),
             instructions = "x",
-            tools = toolSetOf(),
+            tools = ToolSet(),
             // Two integrations force the CompositeTelemetry path — its broadcast guard must
             // still let cancellation through (and stop the remaining integrations).
             telemetry = TelemetrySettings(integrations = listOf(cancelling, survivor)),
@@ -325,7 +325,7 @@ class TelemetryWiringTest {
         val agent = TestToolLoopAgent<Unit, String>(
             model = erroringStreamModel,
             instructions = "x",
-            tools = toolSetOf(),
+            tools = ToolSet(),
             telemetry = TelemetrySettings(integrations = listOf(rec)),
         )
         drainAllItems(agent.stream(prompt = "go"))
@@ -345,13 +345,13 @@ class TelemetryWiringTest {
             outputSerializer = serializer(),
         ) { _ -> error("tool blew up") }
         val agent = TestToolLoopAgent<Unit, String>(
-            model = mockLanguageModelToolThenText(
+            model = MockLanguageModelToolThenText(
                 toolName = "echo",
                 toolInput = buildJsonObject { put("q", "hi") },
                 finalText = "done",
             ),
             instructions = "x",
-            tools = toolSetOf(failingTool),
+            tools = ToolSet(failingTool),
             telemetry = TelemetrySettings(integrations = listOf(rec)),
         )
         agent.generate(prompt = "go").first()
@@ -370,13 +370,13 @@ class TelemetryWiringTest {
             needsApproval = { _, _ -> true },
         ) { input -> "echo:${input.q}" }
         val agent = TestToolLoopAgent<Unit, String>(
-            model = mockLanguageModelToolThenText(
+            model = MockLanguageModelToolThenText(
                 toolName = "echo",
                 toolInput = buildJsonObject { put("q", "hi") },
                 finalText = "done",
             ),
             instructions = "x",
-            tools = toolSetOf(gated),
+            tools = ToolSet(gated),
             telemetry = TelemetrySettings(integrations = listOf(rec)),
         )
         val first = agent.generate(prompt = "go").first()
@@ -384,7 +384,7 @@ class TelemetryWiringTest {
         assertTrue(rec.events.none { it.startsWith("toolCallStart") }, "gated tool must not run before approval")
 
         rec.events.clear()
-        val approval = toolApprovalResponseMessage(pending.toolCallId, approved = true, approvalId = pending.approvalId)
+        val approval = ToolApprovalResponseMessage(pending.toolCallId, approved = true, approvalId = pending.approvalId)
         agent.generate(messages = first.messages + approval).first()
 
         // The approval-resume path runs the tool through executeTool — the telemetry bracket

@@ -21,7 +21,7 @@ public data class ChatState(
 public class ChatSession(
     private val chat: Chat,
 ) {
-    private val mutableState = MutableStateFlow(chat.toState())
+    private val mutableState = MutableStateFlow(ChatStateOps.toState(chat))
 
     public val state: StateFlow<ChatState> = mutableState.asStateFlow()
 
@@ -104,11 +104,13 @@ public class ChatSession(
         chat.resumeStream(headers)
 
     private fun syncState() {
-        mutableState.value = chat.toState()
+        mutableState.value = ChatStateOps.toState(chat)
     }
 }
 
-public fun chatSession(
+// Faux-constructor factory (was top-level `fun chatSession(...)`): overloads the
+// ChatSession class name to build one from transport config.
+public fun ChatSession(
     id: String = "chat",
     initialMessages: List<UIMessage> = emptyList(),
     transport: ChatTransport,
@@ -120,11 +122,19 @@ public fun chatSession(
     ),
 )
 
-public fun Chat.asSession(): ChatSession = ChatSession(this)
+// Public Chat extension (was top-level `fun Chat.asSession()`), now a
+// member-extension. Callers use member-import or `with(ChatSessionFactory) { ... }`.
+public object ChatSessionFactory {
+    public fun Chat.asSession(): ChatSession = ChatSession(this)
+}
 
-private fun Chat.toState(): ChatState = ChatState(
-    id = id,
-    messages = messages,
-    status = status,
-    error = error,
-)
+// File-local mapping helper (was private `fun Chat.toState()`), now an object
+// method taking the receiver as its first parameter.
+internal object ChatStateOps {
+    fun toState(chat: Chat): ChatState = ChatState(
+        id = chat.id,
+        messages = chat.messages,
+        status = chat.status,
+        error = chat.error,
+    )
+}

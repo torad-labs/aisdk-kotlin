@@ -1,6 +1,6 @@
 package ai.torad.aisdk
 
-import ai.torad.aisdk.testing.drainAllItems
+import ai.torad.aisdk.testing.FlowDrain.drainAllItems
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.test.runTest
@@ -29,7 +29,7 @@ class AgentAbortEventTest {
         val agent = TestToolLoopAgent<Unit, String>(
             model = textModel("hi"),
             instructions = "x",
-            tools = toolSetOf(),
+            tools = ToolSet(),
         )
         val events = drainAllItems(
             agent.stream(
@@ -48,7 +48,7 @@ class AgentAbortEventTest {
         val agent = TestToolLoopAgent<Unit, String>(
             model = textModel("hi"),
             instructions = "x",
-            tools = toolSetOf(),
+            tools = ToolSet(),
         )
         var onAbortFired = false
         val events = drainAllItems(

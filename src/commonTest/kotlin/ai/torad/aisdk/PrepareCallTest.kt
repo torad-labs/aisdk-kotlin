@@ -1,7 +1,7 @@
 package ai.torad.aisdk
 
 import ai.torad.aisdk.providers.MockLanguageModel
-import ai.torad.aisdk.providers.mockLanguageModelTextOnly
+import ai.torad.aisdk.providers.MockLanguageModelTextOnly
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.first
@@ -83,9 +83,9 @@ class PrepareCallTest {
     fun `prepareCall_runs_once_and_overrides_instructions`() = runTest {
         var callCount = 0
         val agent = TestToolLoopAgent<String, String>(
-            model = mockLanguageModelTextOnly("done"),
+            model = MockLanguageModelTextOnly("done"),
             instructions = "default instructions",
-            tools = toolSetOf(),
+            tools = ToolSet(),
             prepareCall = {
                 callCount += 1
                 AgentSettings(instructions = "overridden for ${options ?: "no-context"}")
@@ -99,9 +99,9 @@ class PrepareCallTest {
     fun `prepareCall_can_provide_typed_context`() = runTest {
         var observedContext: String? = null
         val agent = TestToolLoopAgent<String, String>(
-            model = mockLanguageModelTextOnly("done"),
+            model = MockLanguageModelTextOnly("done"),
             instructions = "x",
-            tools = toolSetOf(),
+            tools = ToolSet(),
             prepareCall = {
                 observedContext = options
                 AgentSettings()
@@ -118,7 +118,7 @@ class PrepareCallTest {
         val agent = TestToolLoopAgent<TopicOptions, String>(
             model = model,
             instructions = "x",
-            tools = toolSetOf(),
+            tools = ToolSet(),
             callOptionsSchema = TopicOptionsSerializer,
         )
 
@@ -137,7 +137,7 @@ class PrepareCallTest {
         val agent = TestToolLoopAgent<TopicOptions, String>(
             model = model,
             instructions = "x",
-            tools = toolSetOf(),
+            tools = ToolSet(),
             callOptionsSchema = TopicOptionsSerializer,
             prepareCall = {
                 observed = options

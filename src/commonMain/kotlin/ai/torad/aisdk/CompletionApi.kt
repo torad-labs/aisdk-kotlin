@@ -68,38 +68,40 @@ public data class CallCompletionApiOptions(
     val onError: suspend (Throwable) -> Unit = {},
 )
 
-public suspend fun callCompletionApi(options: CallCompletionApiOptions): String? {
-    val request = CompletionRequest(
-        api = options.api,
-        id = options.id,
-        prompt = options.prompt,
-        headers = options.headers,
-        body = options.body,
-        streamProtocol = options.streamProtocol,
-        abortSignal = options.abortSignal,
-    )
-    val builder = StringBuilder()
-    options.setLoading(true)
-    options.setError(null)
-    return try {
-        options.transport.complete(request).collect { delta ->
-            options.abortSignal.throwIfAborted()
-            builder.append(delta)
-            options.setCompletion(builder.toString())
+public object CompletionApi {
+    public suspend fun callCompletionApi(options: CallCompletionApiOptions): String? {
+        val request = CompletionRequest(
+            api = options.api,
+            id = options.id,
+            prompt = options.prompt,
+            headers = options.headers,
+            body = options.body,
+            streamProtocol = options.streamProtocol,
+            abortSignal = options.abortSignal,
+        )
+        val builder = StringBuilder()
+        options.setLoading(true)
+        options.setError(null)
+        return try {
+            options.transport.complete(request).collect { delta ->
+                options.abortSignal.throwIfAborted()
+                builder.append(delta)
+                options.setCompletion(builder.toString())
+            }
+            val completion = builder.toString()
+            options.onFinish(options.prompt, completion)
+            completion
+        } catch (abort: AbortError) {
+            builder.toString().ifEmpty { null }
+        } catch (t: CancellationException) {
+            throw t
+        } catch (t: Throwable) {
+            options.setError(t)
+            options.onError(t)
+            null
+        } finally {
+            options.setLoading(false)
         }
-        val completion = builder.toString()
-        options.onFinish(options.prompt, completion)
-        completion
-    } catch (abort: AbortError) {
-        builder.toString().ifEmpty { null }
-    } catch (t: CancellationException) {
-        throw t
-    } catch (t: Throwable) {
-        options.setError(t)
-        options.onError(t)
-        null
-    } finally {
-        options.setLoading(false)
     }
 }
 
@@ -168,7 +170,7 @@ public class Completion(
     ): String? {
         val controller = AbortController()
         abortController = controller
-        return callCompletionApi(
+        return CompletionApi.callCompletionApi(
             CallCompletionApiOptions(
                 api = options.api,
                 id = options.id,

@@ -886,7 +886,7 @@ internal object GoogleInteractions {
     rawLines: Flow<String>,
     state: GoogleInteractionsStreamState,
 ) {
-    EventStreamParser.parse(rawLines, jsonSchema<JsonElement>(JsonObject(emptyMap())), aiSdkJson).collect { event ->
+    EventStreamParser.parse(rawLines, Schemas.jsonSchema<JsonElement>(JsonObject(emptyMap())), aiSdkJson).collect { event ->
         when (event) {
             is ParseResult.Success -> state.accept(event.value.jsonObject).forEach { emit(it) }
             is ParseResult.Failure -> emit(

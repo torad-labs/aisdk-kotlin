@@ -31,7 +31,7 @@ import kotlinx.coroutines.flow.onEach
  * `wrapGenerate` logs a one-line completion summary; the streaming path
  * (the chat surface) carries the per-event detail.
  */
-public fun loggingMiddleware(
+public fun LoggingMiddleware(
     logger: Logger,
     tag: String = "agent",
 ): LanguageModelMiddleware = object : LanguageModelMiddleware {
@@ -43,28 +43,31 @@ public fun loggingMiddleware(
     }
 
     override fun wrapStream(context: MiddlewareCallContext): Flow<StreamEvent> =
-        context.doStream(context.params).onEach { event -> logStreamEvent(logger, tag, event) }
+        context.doStream(context.params).onEach { event -> LoggingWire.logStreamEvent(logger, tag, event) }
 }
 
-/** Per-event routing for [loggingMiddleware]'s stream path. */
-private fun logStreamEvent(logger: Logger, tag: String, event: StreamEvent) {
-    when (event) {
-        is StreamEvent.ToolInputStart ->
-            logger.debug("[$tag] tool-open id=${event.id} name=${event.toolName}")
-        is StreamEvent.ToolCall ->
-            logger.debug("[$tag] tool-call id=${event.toolCallId} name=${event.toolName} args=${event.inputJson}")
-        is StreamEvent.ToolResult ->
-            logger.debug(
-                "[$tag] tool-result id=${event.toolCallId} name=${event.toolName} " +
-                    "bytes=${event.outputJson.toString().length}",
-            )
-        is StreamEvent.ToolError ->
-            logger.warn(
-                "[$tag] tool-error id=${event.toolCallId} name=${event.toolName} reason=${event.message}",
-                event.error,
-            )
-        is StreamEvent.Error ->
-            logger.warn("[$tag] stream-error ${event.message}")
-        else -> Unit // text / reasoning / lifecycle events are noise here.
+/** Stream-event routing helpers for [LoggingMiddleware]. */
+internal object LoggingWire {
+    /** Per-event routing for [LoggingMiddleware]'s stream path. */
+    fun logStreamEvent(logger: Logger, tag: String, event: StreamEvent) {
+        when (event) {
+            is StreamEvent.ToolInputStart ->
+                logger.debug("[$tag] tool-open id=${event.id} name=${event.toolName}")
+            is StreamEvent.ToolCall ->
+                logger.debug("[$tag] tool-call id=${event.toolCallId} name=${event.toolName} args=${event.inputJson}")
+            is StreamEvent.ToolResult ->
+                logger.debug(
+                    "[$tag] tool-result id=${event.toolCallId} name=${event.toolName} " +
+                        "bytes=${event.outputJson.toString().length}",
+                )
+            is StreamEvent.ToolError ->
+                logger.warn(
+                    "[$tag] tool-error id=${event.toolCallId} name=${event.toolName} reason=${event.message}",
+                    event.error,
+                )
+            is StreamEvent.Error ->
+                logger.warn("[$tag] stream-error ${event.message}")
+            else -> Unit // text / reasoning / lifecycle events are noise here.
+        }
     }
 }

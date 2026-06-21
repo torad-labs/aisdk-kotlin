@@ -51,12 +51,12 @@ public class DeepInfraProvider(
     )
     override val providerId: String = "deepinfra"
 
-    public operator fun invoke(modelId: ModelId): LanguageModel = languageModel(modelId)
+    public operator fun invoke(modelId: ModelId): LanguageModel = languageModel(modelId.value)
     override fun languageModel(modelId: String): LanguageModel = chatModel(ModelId(modelId))
     public fun chatModel(modelId: ModelId): LanguageModel = DeepInfraChatLanguageModel(compatible.chatModel(modelId.value))
     public fun completionModel(modelId: ModelId): LanguageModel = compatible.completionModel(modelId.value)
-    public fun textEmbeddingModel(modelId: ModelId): EmbeddingModel = embeddingModel(modelId)
-    public fun image(modelId: ModelId): ImageModel = imageModel(modelId)
+    public fun textEmbeddingModel(modelId: ModelId): EmbeddingModel = embeddingModel(modelId.value)
+    public fun image(modelId: ModelId): ImageModel = imageModel(modelId.value)
     override fun embeddingModel(modelId: String): EmbeddingModel = compatible.embeddingModel(modelId)
     override fun imageModel(modelId: String): ImageModel = DeepInfraImageModel(client, settings, modelId)
 }

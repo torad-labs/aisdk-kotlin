@@ -24,7 +24,7 @@ class DeepgramProviderTest {
     @Test
     fun `speech model maps output format provider options warnings and binary audio`() = runTest {
         val url = "https://api.deepgram.com/v1/speak?model=aura-2-helena-en&encoding=opus&container=ogg&bit_rate=64000&callback=https%3A%2F%2Fexample.com%2Fhook&callback_method=POST&mip_opt_out=true&tag=alpha%2Cbeta"
-        val fixture = createTestServer(
+        val fixture = TestServer.createTestServer(
             mutableMapOf(
                 url to UrlHandler(
                     UrlResponse.Binary(byteArrayOf(1, 2, 3), headers = mapOf(HttpHeaders.ContentType to "audio/ogg")),
@@ -79,7 +79,7 @@ class DeepgramProviderTest {
     @Test
     fun `transcription model maps query options audio body and word segments`() = runTest {
         val url = "https://api.deepgram.com/v1/listen?model=nova-3&diarize=false&detect_language=true&filler_words=true&language=en&punctuate=true&redact=pii%2Cssn&search=Kotlin&smart_format=true&summarize=v2&topics=true&utterances=true&utt_split=0.8&paragraphs=true&intents=true&sentiment=true&replace=redacted&keyterm=sdk"
-        val fixture = createTestServer(
+        val fixture = TestServer.createTestServer(
             mutableMapOf(
                 url to UrlHandler(
                     UrlResponse.JsonValue(
@@ -153,7 +153,7 @@ class DeepgramProviderTest {
     @Test
     fun `transcription model uses top-level language when deepgram option is omitted`() = runTest {
         val url = "https://api.deepgram.com/v1/listen?model=nova-3&diarize=true&language=pt"
-        val fixture = createTestServer(
+        val fixture = TestServer.createTestServer(
             mutableMapOf(
                 url to UrlHandler(
                     UrlResponse.JsonValue(Json.parseToJsonElement("""{"results":{"channels":[{"alternatives":[{"transcript":"ola","words":[]}]}]}}""")),
@@ -178,7 +178,7 @@ class DeepgramProviderTest {
 
     @Test
     fun `default provider and unsupported model families fail explicitly`() {
-        val fixture = createTestServer(mutableMapOf())
+        val fixture = TestServer.createTestServer(mutableMapOf())
         val provider = Deepgram(fixture.httpClient(), DeepgramProviderSettings(apiKey = "key"))
 
         assertFailsWith<NoSuchModelError> { provider.languageModel("model") }

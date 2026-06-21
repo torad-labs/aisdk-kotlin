@@ -1,12 +1,12 @@
 package ai.torad.aisdk
 
-import ai.torad.aisdk.testing.drainAllItems
+import ai.torad.aisdk.testing.FlowDrain.drainAllItems
 import ai.torad.aisdk.ui.ToolCallState
 import ai.torad.aisdk.ui.UIMessage
 import ai.torad.aisdk.ui.UIMessagePart
 import ai.torad.aisdk.ui.UIMessageRole
-import ai.torad.aisdk.ui.createUiMessageStream
-import ai.torad.aisdk.ui.streamToUiMessages
+import ai.torad.aisdk.ui.CreateUiMessageStream
+import ai.torad.aisdk.ui.StreamToUiMessages
 import kotlin.test.assertFailsWith
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -95,7 +95,7 @@ class UIMessageShapeTest {
         )
 
         // WHEN
-        val snapshots = drainAllItems(streamToUiMessages(events, assistantMessageId = "asst_3"))
+        val snapshots = drainAllItems(StreamToUiMessages(events, assistantMessageId = "asst_3"))
         val finalParts = snapshots.last().parts
 
         // THEN
@@ -137,7 +137,7 @@ class UIMessageShapeTest {
 
     @Test
     fun `createUiMessageStream rethrows cancellation without emitting an error message`() = runTest {
-        val stream = createUiMessageStream {
+        val stream = CreateUiMessageStream {
             throw CancellationException("cancelled")
         }
 

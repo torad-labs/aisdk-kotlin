@@ -28,7 +28,7 @@ import kotlinx.serialization.json.JsonObject
 class GoogleVertexProviderTest {
     @Test
     fun `vertex core provider maps publisher base url auth and Gemini body`() = runTest {
-        val fixture = createTestServer(
+        val fixture = TestServer.createTestServer(
             mutableMapOf(
                 "https://us-central1-aiplatform.googleapis.com/v1beta1/projects/project-1/locations/us-central1/publishers/google/models/gemini-2.5-flash:generateContent" to UrlHandler(
                     UrlResponse.JsonValue(
@@ -57,7 +57,7 @@ class GoogleVertexProviderTest {
 
         val result = provider.chat(ModelId("gemini-2.5-flash")).generate(
             LanguageModelCallParams(
-                messages = listOf(userMessage("hi")),
+                messages = listOf(UserMessage("hi")),
                 providerOptions = ProviderOptions.Raw(JsonObject(mapOf(
                     "google" to buildJsonObject {
                         put("sharedRequestType", JsonPrimitive("priority"))
@@ -87,7 +87,7 @@ class GoogleVertexProviderTest {
 
     @Test
     fun `vertex core provider uses multi-region REP host for eu and us`() = runTest {
-        val fixture = createTestServer(
+        val fixture = TestServer.createTestServer(
             mutableMapOf(
                 "https://aiplatform.eu.rep.googleapis.com/v1beta1/projects/project-1/locations/eu/publishers/google/models/gemini-2.5-flash:generateContent" to UrlHandler(
                     UrlResponse.JsonValue(
@@ -126,8 +126,8 @@ class GoogleVertexProviderTest {
             GoogleVertexProviderSettings(project = "project-1", location = "us", accessToken = "token"),
         )
 
-        assertEquals("eu", eu.chat(ModelId("gemini-2.5-flash")).generate(LanguageModelCallParams(messages = listOf(userMessage("hi")))).text)
-        assertEquals("us", us.chat(ModelId("gemini-2.5-flash")).generate(LanguageModelCallParams(messages = listOf(userMessage("hi")))).text)
+        assertEquals("eu", eu.chat(ModelId("gemini-2.5-flash")).generate(LanguageModelCallParams(messages = listOf(UserMessage("hi")))).text)
+        assertEquals("us", us.chat(ModelId("gemini-2.5-flash")).generate(LanguageModelCallParams(messages = listOf(UserMessage("hi")))).text)
         assertEquals(
             listOf(
                 "https://aiplatform.eu.rep.googleapis.com/v1beta1/projects/project-1/locations/eu/publishers/google/models/gemini-2.5-flash:generateContent",
@@ -139,7 +139,7 @@ class GoogleVertexProviderTest {
 
     @Test
     fun `vertex maas routes through OpenAI compatible chat`() = runTest {
-        val fixture = createTestServer(
+        val fixture = TestServer.createTestServer(
             mutableMapOf(
                 "https://vertex-openai.test/v1/chat/completions" to UrlHandler(
                     UrlResponse.JsonValue(
@@ -163,7 +163,7 @@ class GoogleVertexProviderTest {
             GoogleVertexMaasProviderSettings(baseURL = "https://vertex-openai.test/v1", accessToken = "token"),
         )
 
-        val result = provider.chat(ModelId("llama-model")).generate(LanguageModelCallParams(messages = listOf(userMessage("hi"))))
+        val result = provider.chat(ModelId("llama-model")).generate(LanguageModelCallParams(messages = listOf(UserMessage("hi"))))
 
         assertEquals("maas", result.text)
         assertEquals(3, result.usage.promptTokens)
@@ -174,7 +174,7 @@ class GoogleVertexProviderTest {
 
     @Test
     fun `vertex maas constructs global regional and multi-region base urls`() = runTest {
-        val fixture = createTestServer(
+        val fixture = TestServer.createTestServer(
             mutableMapOf(
                 "https://aiplatform.googleapis.com/v1/projects/project-1/locations/global/endpoints/openapi/chat/completions" to UrlHandler(
                     UrlResponse.JsonValue(
@@ -208,9 +208,9 @@ class GoogleVertexProviderTest {
             GoogleVertexMaasProviderSettings(project = "project-1", location = "eu", accessToken = "token"),
         )
 
-        assertEquals("global", global.chat(ModelId("llama")).generate(LanguageModelCallParams(messages = listOf(userMessage("hi")))).text)
-        assertEquals("regional", regional.chat(ModelId("llama")).generate(LanguageModelCallParams(messages = listOf(userMessage("hi")))).text)
-        assertEquals("eu", eu.chat(ModelId("llama")).generate(LanguageModelCallParams(messages = listOf(userMessage("hi")))).text)
+        assertEquals("global", global.chat(ModelId("llama")).generate(LanguageModelCallParams(messages = listOf(UserMessage("hi")))).text)
+        assertEquals("regional", regional.chat(ModelId("llama")).generate(LanguageModelCallParams(messages = listOf(UserMessage("hi")))).text)
+        assertEquals("eu", eu.chat(ModelId("llama")).generate(LanguageModelCallParams(messages = listOf(UserMessage("hi")))).text)
         assertEquals(
             listOf(
                 "https://aiplatform.googleapis.com/v1/projects/project-1/locations/global/endpoints/openapi/chat/completions",
@@ -223,7 +223,7 @@ class GoogleVertexProviderTest {
 
     @Test
     fun `vertex anthropic maps rawPredict url headers and body`() = runTest {
-        val fixture = createTestServer(
+        val fixture = TestServer.createTestServer(
             mutableMapOf(
                 "https://us-central1-aiplatform.googleapis.com/v1/projects/project-1/locations/us-central1/publishers/anthropic/models/claude-sonnet-4:rawPredict" to UrlHandler(
                     UrlResponse.JsonValue(
@@ -258,7 +258,7 @@ class GoogleVertexProviderTest {
 
         val result = anthropic.messages(ModelId("claude-sonnet-4")).generate(
             LanguageModelCallParams(
-                messages = listOf(userMessage("hi")),
+                messages = listOf(UserMessage("hi")),
                 headers = mapOf("X-Request" to "request"),
             ),
         )
@@ -279,7 +279,7 @@ class GoogleVertexProviderTest {
 
     @Test
     fun `vertex anthropic uses multi-region REP host for eu and us`() = runTest {
-        val fixture = createTestServer(
+        val fixture = TestServer.createTestServer(
             mutableMapOf(
                 "https://aiplatform.eu.rep.googleapis.com/v1/projects/project-1/locations/eu/publishers/anthropic/models/claude-sonnet-4:rawPredict" to UrlHandler(
                     UrlResponse.JsonValue(
@@ -326,8 +326,8 @@ class GoogleVertexProviderTest {
             GoogleVertexAnthropicProviderSettings(project = "project-1", location = "us", accessToken = "token"),
         )
 
-        assertEquals("eu", eu.messages(ModelId("claude-sonnet-4")).generate(LanguageModelCallParams(messages = listOf(userMessage("hi")))).text)
-        assertEquals("us", us.messages(ModelId("claude-sonnet-4")).generate(LanguageModelCallParams(messages = listOf(userMessage("hi")))).text)
+        assertEquals("eu", eu.messages(ModelId("claude-sonnet-4")).generate(LanguageModelCallParams(messages = listOf(UserMessage("hi")))).text)
+        assertEquals("us", us.messages(ModelId("claude-sonnet-4")).generate(LanguageModelCallParams(messages = listOf(UserMessage("hi")))).text)
         assertEquals(
             listOf(
                 "https://aiplatform.eu.rep.googleapis.com/v1/projects/project-1/locations/eu/publishers/anthropic/models/claude-sonnet-4:rawPredict",
@@ -339,7 +339,7 @@ class GoogleVertexProviderTest {
 
     @Test
     fun `vertex xai drops reasoning effort and uses xai usage totals`() = runTest {
-        val fixture = createTestServer(
+        val fixture = TestServer.createTestServer(
             mutableMapOf(
                 "https://aiplatform.googleapis.com/v1/projects/project-1/locations/global/endpoints/openapi/chat/completions" to UrlHandler(
                     UrlResponse.JsonValue(
@@ -370,7 +370,7 @@ class GoogleVertexProviderTest {
 
         val result = provider.chatModel(ModelId("grok")).generate(
             LanguageModelCallParams(
-                messages = listOf(userMessage("hi")),
+                messages = listOf(UserMessage("hi")),
                 providerOptions = ProviderOptions.Raw(JsonObject(mapOf(
                     "xai" to buildJsonObject {
                         put("reasoningEffort", JsonPrimitive("high"))

@@ -53,7 +53,7 @@ class AzureProviderTest {
 
         val result = provider("test-deployment").generate(
             LanguageModelCallParams(
-                messages = listOf(userMessage("Hello")),
+                messages = listOf(UserMessage("Hello")),
                 maxOutputTokens = 64,
                 providerOptions = ProviderOptions.Raw(JsonObject(mapOf(
                     "openai" to JsonObject(
@@ -108,8 +108,8 @@ class AzureProviderTest {
             ),
         )
 
-        provider.chat(ModelId("test-deployment")).generate(LanguageModelCallParams(listOf(userMessage("Hi"))))
-        provider.chat(ModelId("test-deployment")).generate(LanguageModelCallParams(listOf(userMessage("Hi again"))))
+        provider.chat(ModelId("test-deployment")).generate(LanguageModelCallParams(listOf(UserMessage("Hi"))))
+        provider.chat(ModelId("test-deployment")).generate(LanguageModelCallParams(listOf(UserMessage("Hi again"))))
 
         assertEquals(2, tokenCount)
         assertEquals(

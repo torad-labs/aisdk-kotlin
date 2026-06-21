@@ -204,26 +204,26 @@ private class LumaImageModel(
         body: JsonObject,
         headers: Map<String, String>,
     ): HttpJsonResponse =
-        requestJson(
+        HttpTransport.requestJson(
             client = client,
             url = url,
             method = HttpMethod.Post,
             headers = headers,
             body = body,
             requestBodyValues = body,
-            errorMessage = ::lumaErrorMessage,
+            errorMessage = LumaWire::lumaErrorMessage,
         )
 
     private suspend fun getJson(
         url: String,
         headers: Map<String, String>,
     ): HttpJsonResponse =
-        requestJson(
+        HttpTransport.requestJson(
             client = client,
             url = url,
             method = HttpMethod.Get,
             headers = headers,
-            errorMessage = ::lumaErrorMessage,
+            errorMessage = LumaWire::lumaErrorMessage,
         )
 
     private suspend fun pollImageUrl(
@@ -255,10 +255,10 @@ private class LumaImageModel(
         abortSignal.throwIfAborted()
         val response = client.request(url) { method = HttpMethod.Get }
         val bytes = response.bodyAsBytes()
-        val responseHeaders = response.flattenedHeaders()
+        val responseHeaders = with(HttpTransport) { response.flattenedHeaders() }
         if (response.status.value !in 200..299) {
             val raw = bytes.decodeToString()
-            throw apiCallError(
+            throw ApiCallError(
                 url = url,
                 statusCode = response.status.value,
                 rawBody = raw,
@@ -292,9 +292,11 @@ private const val DEFAULT_LUMA_MAX_POLL_ATTEMPTS: Int = 120
 
 private val lumaNonRequestOptionKeys = setOf("pollIntervalMillis", "maxPollAttempts", "referenceType", "images")
 
-private fun lumaErrorMessage(statusCode: Int, parsed: JsonElement?, raw: String): String {
-    val obj = parsed as? JsonObject
-    val details = obj?.get("detail")?.jsonArray?.firstOrNull()?.jsonObject?.get("msg")?.jsonPrimitive?.contentOrNull
-    val message = details ?: obj?.get("error")?.jsonPrimitive?.contentOrNull ?: raw.ifBlank { "request failed" }
-    return "Luma request failed ($statusCode): $message"
+internal object LumaWire {
+    fun lumaErrorMessage(statusCode: Int, parsed: JsonElement?, raw: String): String {
+        val obj = parsed as? JsonObject
+        val details = obj?.get("detail")?.jsonArray?.firstOrNull()?.jsonObject?.get("msg")?.jsonPrimitive?.contentOrNull
+        val message = details ?: obj?.get("error")?.jsonPrimitive?.contentOrNull ?: raw.ifBlank { "request failed" }
+        return "Luma request failed ($statusCode): $message"
+    }
 }

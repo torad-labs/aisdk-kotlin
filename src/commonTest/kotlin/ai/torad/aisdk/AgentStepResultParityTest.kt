@@ -41,7 +41,7 @@ class AgentStepResultParityTest {
         val agent = TestToolLoopAgent<Unit, String>(
             model = richModel(FinishReason.Stop),
             instructions = "hi",
-            tools = toolSetOf(),
+            tools = ToolSet(),
         )
         val result = agent.generate(prompt = "go", options = Unit).first()
         val step = result.steps.single()
@@ -59,7 +59,7 @@ class AgentStepResultParityTest {
         val agent = TestToolLoopAgent<Unit, Holder>(
             model = richModel(FinishReason.Length),
             instructions = "hi",
-            tools = toolSetOf(),
+            tools = ToolSet(),
             output = Output.obj(kotlinx.serialization.serializer<Holder>()),
         )
         assertFailsWith<NoOutputGeneratedError> { agent.generate(prompt = "go", options = Unit).first() }

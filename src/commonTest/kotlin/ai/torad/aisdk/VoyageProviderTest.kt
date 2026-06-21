@@ -23,7 +23,7 @@ import kotlinx.serialization.json.JsonObject
 class VoyageProviderTest {
     @Test
     fun `embedding model sends voyage request shape and parses usage`() = runTest {
-        val fixture = createTestServer(
+        val fixture = TestServer.createTestServer(
             mutableMapOf(
                 "https://voyage.test/v1/embeddings" to UrlHandler(
                     UrlResponse.JsonValue(
@@ -75,7 +75,7 @@ class VoyageProviderTest {
 
     @Test
     fun `reranking model sends voyage request shape and maps ranking`() = runTest {
-        val fixture = createTestServer(
+        val fixture = TestServer.createTestServer(
             mutableMapOf(
                 "https://voyage.test/v1/rerank" to UrlHandler(
                     UrlResponse.JsonValue(

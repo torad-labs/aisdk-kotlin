@@ -183,7 +183,7 @@ public data class EmbeddingMiddlewareCallContext(
     val doEmbed: suspend (EmbeddingModelCallParams) -> EmbeddingModelResult,
 )
 
-public fun wrapEmbeddingModel(
+public fun WrapEmbeddingModel(
     model: EmbeddingModel,
     middlewares: List<EmbeddingModelMiddleware>,
 ): EmbeddingModel {
@@ -191,7 +191,7 @@ public fun wrapEmbeddingModel(
     return WrappedEmbeddingModel(model, middlewares)
 }
 
-public fun defaultEmbeddingSettingsMiddleware(
+public fun DefaultEmbeddingSettingsMiddleware(
     maxEmbeddingsPerCall: Int? = null,
     truncate: Boolean? = null,
     providerOptions: ProviderOptions = ProviderOptions.None,

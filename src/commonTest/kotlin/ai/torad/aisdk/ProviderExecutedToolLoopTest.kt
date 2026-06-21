@@ -1,6 +1,6 @@
 package ai.torad.aisdk
 
-import ai.torad.aisdk.testing.drainAllItems
+import ai.torad.aisdk.testing.FlowDrain.drainAllItems
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -39,7 +39,7 @@ class ProviderExecutedToolLoopTest {
         val agent = TestToolLoopAgent<Unit, String>(
             model = model,
             instructions = "use hosted tools",
-            tools = toolSetOf(hostedTool),
+            tools = ToolSet(hostedTool),
         )
 
         val events = drainAllItems(agent.stream(prompt = "search", options = Unit))

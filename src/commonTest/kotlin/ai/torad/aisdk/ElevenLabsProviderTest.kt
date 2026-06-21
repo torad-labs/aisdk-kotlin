@@ -21,7 +21,7 @@ import kotlinx.serialization.json.JsonObject
 class ElevenLabsProviderTest {
     @Test
     fun `speech model maps query body headers and binary audio`() = runTest {
-        val fixture = createTestServer(
+        val fixture = TestServer.createTestServer(
             mutableMapOf(
                 "https://api.elevenlabs.io/v1/text-to-speech/voice-1?output_format=mp3_44100_192&enable_logging=false" to UrlHandler(
                     UrlResponse.Binary(byteArrayOf(1, 2, 3), headers = mapOf(HttpHeaders.ContentType to "audio/mpeg")),
@@ -78,7 +78,7 @@ class ElevenLabsProviderTest {
 
     @Test
     fun `transcription model sends multipart options and maps words to segments`() = runTest {
-        val fixture = createTestServer(
+        val fixture = TestServer.createTestServer(
             mutableMapOf(
                 "https://api.elevenlabs.io/v1/speech-to-text" to UrlHandler(
                     UrlResponse.JsonValue(

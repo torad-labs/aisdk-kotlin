@@ -20,7 +20,7 @@ import kotlinx.serialization.json.JsonObject
 class LMNTProviderTest {
     @Test
     fun `speech model sends lmnt request shape and returns binary audio`() = runTest {
-        val fixture = createTestServer(
+        val fixture = TestServer.createTestServer(
             mutableMapOf(
                 "https://api.lmnt.com/v1/ai/speech/bytes" to UrlHandler(
                     UrlResponse.Binary(byteArrayOf(1, 2, 3), headers = mapOf(HttpHeaders.ContentType to "audio/wav")),
@@ -74,7 +74,7 @@ class LMNTProviderTest {
 
     @Test
     fun `speech model warns and falls back to mp3 for unsupported format`() = runTest {
-        val fixture = createTestServer(
+        val fixture = TestServer.createTestServer(
             mutableMapOf(
                 "https://api.lmnt.com/v1/ai/speech/bytes" to UrlHandler(
                     UrlResponse.Binary(byteArrayOf(4, 5, 6)),

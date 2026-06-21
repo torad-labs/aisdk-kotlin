@@ -1,7 +1,7 @@
 package ai.torad.aisdk
 
-import ai.torad.aisdk.providers.mockLanguageModelToolThenText
-import ai.torad.aisdk.providers.mockToolInput
+import ai.torad.aisdk.providers.MockLanguageModelToolThenText
+import ai.torad.aisdk.providers.MockToolInput
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flow
@@ -59,8 +59,8 @@ class ToolSubclassTest {
         assertEquals(Answer("B:hi"), bResult)
 
         // Stateless (I-8): one instance is safely reused across tool sets.
-        assertEquals("prefix", toolSetOf(a).names().single())
-        assertEquals(setOf("prefix"), toolSetOf(a).descriptors.map { it.name }.toSet())
+        assertEquals("prefix", ToolSet(a).names().single())
+        assertEquals(setOf("prefix"), ToolSet(a).descriptors.map { it.name }.toSet())
     }
 
     @Test
@@ -135,13 +135,13 @@ class ToolSubclassTest {
     fun `subclassed gated Tool pauses for approval then resumes through the agent loop`() = runTest {
         var executed = false
         val agent = TestToolLoopAgent<Unit, String>(
-            model = mockLanguageModelToolThenText(
+            model = MockLanguageModelToolThenText(
                 toolName = "send",
-                toolInput = mockToolInput("message" to "hi"),
+                toolInput = MockToolInput("message" to "hi"),
                 finalText = "sent",
             ),
             instructions = "use send",
-            tools = toolSetOf(SendTool { executed = true }),
+            tools = ToolSet(SendTool { executed = true }),
         )
 
         val first = agent.generate(prompt = "trigger").first()
@@ -150,7 +150,7 @@ class ToolSubclassTest {
         assertFalse(executed, "gated subclass must not execute before approval")
 
         val resumed = agent.generate(
-            messages = first.messages + toolApprovalResponseMessage(
+            messages = first.messages + ToolApprovalResponseMessage(
                 toolCallId = first.pendingApprovals.single().toolCallId,
                 approved = true,
             ),
@@ -179,9 +179,9 @@ class ToolSubclassTest {
         // ever reaching repair. Now repair reaches subclass tools like factory tools.
         val malformed = buildJsonObject { put("location", JsonPrimitive("Paris")) }
         val agent = TestToolLoopAgent<Unit, String>(
-            model = mockLanguageModelToolThenText(toolName = "weather", toolInput = malformed, finalText = "done"),
+            model = MockLanguageModelToolThenText(toolName = "weather", toolInput = malformed, finalText = "done"),
             instructions = "",
-            tools = toolSetOf(CityTool()),
+            tools = ToolSet(CityTool()),
             experimental_repairToolCall = { failedCall, _, _, _ ->
                 val original = failedCall.input.jsonObject["location"]?.jsonPrimitive?.content ?: ""
                 failedCall.copy(input = buildJsonObject { put("city", JsonPrimitive(original)) })

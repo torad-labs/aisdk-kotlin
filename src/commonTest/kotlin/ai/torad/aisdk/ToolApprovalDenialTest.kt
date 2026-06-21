@@ -1,11 +1,11 @@
 package ai.torad.aisdk
 
-import ai.torad.aisdk.providers.mockLanguageModelToolThenText
-import ai.torad.aisdk.providers.mockToolInput
-import ai.torad.aisdk.testing.drainAllItems
+import ai.torad.aisdk.providers.MockLanguageModelToolThenText
+import ai.torad.aisdk.providers.MockToolInput
+import ai.torad.aisdk.testing.FlowDrain.drainAllItems
 import ai.torad.aisdk.ui.ToolCallState
 import ai.torad.aisdk.ui.UIMessagePart
-import ai.torad.aisdk.ui.streamToUiMessages
+import ai.torad.aisdk.ui.StreamToUiMessages
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -38,17 +38,17 @@ class ToolApprovalDenialTest {
             SendResult(sent = true)
         }
         val agent = TestToolLoopAgent<Unit, String>(
-            model = mockLanguageModelToolThenText(
+            model = MockLanguageModelToolThenText(
                 toolName = "send",
-                toolInput = mockToolInput("message" to "spam"),
+                toolInput = MockToolInput("message" to "spam"),
                 finalText = "skipped",
             ),
             instructions = "use send",
-            tools = toolSetOf(sendTool),
+            tools = ToolSet(sendTool),
         )
         val first = agent.generate(prompt = "trigger", options = Unit).first()
         val pending = first.pendingApprovals.single()
-        val denial = toolApprovalResponseMessage(
+        val denial = ToolApprovalResponseMessage(
             toolCallId = pending.toolCallId,
             approved = false,
             reason = "user said no",
@@ -56,7 +56,7 @@ class ToolApprovalDenialTest {
         )
 
         val events = drainAllItems(agent.stream(messages = first.messages + denial, options = Unit))
-        val ui = drainAllItems(streamToUiMessages(events.asFlow(), "assistant_1"))
+        val ui = drainAllItems(StreamToUiMessages(events.asFlow(), "assistant_1"))
             .last()
             .parts
             .filterIsInstance<UIMessagePart.ToolUI>()

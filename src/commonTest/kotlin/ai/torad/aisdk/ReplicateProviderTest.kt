@@ -24,7 +24,7 @@ import kotlinx.serialization.json.JsonObject
 class ReplicateProviderTest {
     @Test
     fun `image model sends versioned prediction and downloads outputs`() = runTest {
-        val fixture = createTestServer(
+        val fixture = TestServer.createTestServer(
             mutableMapOf(
                 "https://api.replicate.com/v1/predictions" to UrlHandler(
                     UrlResponse.JsonValue(Json.parseToJsonElement("""{"output":["https://cdn.example/a.png","https://cdn.example/b.webp"]}""")),
@@ -92,7 +92,7 @@ class ReplicateProviderTest {
 
     @Test
     fun `flux two image models map up to eight input images and warn on extras`() = runTest {
-        val fixture = createTestServer(
+        val fixture = TestServer.createTestServer(
             mutableMapOf(
                 "https://api.replicate.com/v1/models/black-forest-labs/flux-2-pro/predictions" to UrlHandler(
                     UrlResponse.JsonValue(Json.parseToJsonElement("""{"output":"https://cdn.example/out.png"}""")),
@@ -126,7 +126,7 @@ class ReplicateProviderTest {
 
     @Test
     fun `video model submits polls and returns url video metadata`() = runTest {
-        val fixture = createTestServer(
+        val fixture = TestServer.createTestServer(
             mutableMapOf(
                 "https://api.replicate.com/v1/models/minimax/video-01/predictions" to UrlHandler(
                     UrlResponse.JsonValue(
@@ -201,7 +201,7 @@ class ReplicateProviderTest {
 
     @Test
     fun `video model reports failed predictions and unsupported families`() = runTest {
-        val fixture = createTestServer(
+        val fixture = TestServer.createTestServer(
             mutableMapOf(
                 "https://api.replicate.com/v1/models/minimax/video-01/predictions" to UrlHandler(
                     UrlResponse.JsonValue(

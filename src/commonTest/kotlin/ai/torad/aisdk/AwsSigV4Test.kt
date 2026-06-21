@@ -7,7 +7,7 @@ import kotlin.test.assertTrue
 class AwsSigV4Test {
     @Test
     fun `signer matches AWS IAM canonical request example`() {
-        val headers = awsSigV4SignedHeaders(
+        val headers = AwsSigV4.awsSigV4SignedHeaders(
             method = "GET",
             url = "https://iam.amazonaws.com/?Action=ListUsers&Version=2010-05-08",
             service = "iam",
@@ -31,7 +31,7 @@ class AwsSigV4Test {
 
     @Test
     fun `signer preserves session token and encoded path for provider requests`() {
-        val headers = awsSigV4SignedHeaders(
+        val headers = AwsSigV4.awsSigV4SignedHeaders(
             method = "POST",
             url = "https://bedrock-runtime.us-east-1.amazonaws.com/model/amazon.nova-lite-v1%3A0/converse",
             service = "bedrock",

@@ -81,7 +81,7 @@ internal class GoogleGenerativeAILanguageModel(
             headers = googleHeaders(settings, params.headers) + (HttpHeaders.Accept to "text/event-stream"),
             abortSignal = params.abortSignal,
         )
-        EventStreamParser.parse(rawLines, jsonSchema<JsonElement>(JsonObject(emptyMap())), aiSdkJson).collect { event ->
+        EventStreamParser.parse(rawLines, Schemas.jsonSchema<JsonElement>(JsonObject(emptyMap())), aiSdkJson).collect { event ->
             when (event) {
                 is ParseResult.Success -> state.accept(event.value.jsonObject).forEach { emit(it) }
                 is ParseResult.Failure -> emit(StreamEvent.Error("Failed to parse Google stream event: ${event.error.message}"))

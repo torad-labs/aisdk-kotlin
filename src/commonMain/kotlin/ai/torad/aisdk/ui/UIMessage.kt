@@ -1,6 +1,6 @@
 package ai.torad.aisdk.ui
 
-import ai.torad.aisdk.decodeValue
+import ai.torad.aisdk.TypedJsonOps.decodeValue
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.json.JsonElement
@@ -31,8 +31,10 @@ public data class UIMessage(
 @Serializable
 public enum class UIMessageRole { System, User, Assistant }
 
-public fun <TMetadata> UIMessage.metadataAs(name: String, serializer: KSerializer<TMetadata>): TMetadata? =
-    metadata?.decodeValue(name, serializer)
+public object UIMessageMetadata {
+    public fun <TMetadata> UIMessage.metadataAs(name: String, serializer: KSerializer<TMetadata>): TMetadata? =
+        metadata?.decodeValue(name, serializer)
 
-public inline fun <reified TMetadata> UIMessage.metadataAs(name: String): TMetadata? =
-    metadataAs(name, serializer())
+    public inline fun <reified TMetadata> UIMessage.metadataAs(name: String): TMetadata? =
+        metadataAs(name, serializer())
+}

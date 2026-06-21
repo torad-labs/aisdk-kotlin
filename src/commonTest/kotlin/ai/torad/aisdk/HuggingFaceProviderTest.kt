@@ -1,7 +1,7 @@
 package ai.torad.aisdk
 import ai.torad.aisdk.providers.HuggingFaceProviderSettings
 
-import ai.torad.aisdk.testing.drainAllItems
+import ai.torad.aisdk.testing.FlowDrain.drainAllItems
 import io.ktor.http.HttpHeaders
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.Json
@@ -26,7 +26,7 @@ import ai.torad.aisdk.providers.HuggingFace
 class HuggingFaceProviderTest {
     @Test
     fun `responses model sends Hugging Face request and maps output parts`() = runTest {
-        val fixture = createTestServer(
+        val fixture = TestServer.createTestServer(
             mutableMapOf(
                 "https://hf.test/v1/responses" to UrlHandler(
                     UrlResponse.JsonValue(
@@ -116,7 +116,7 @@ class HuggingFaceProviderTest {
         val result = provider.responses(ModelId("Qwen/Qwen3-32B")).generate(
             LanguageModelCallParams(
                 messages = listOf(
-                    systemMessage("System rules."),
+                    SystemMessage("System rules."),
                     ModelMessage(
                         MessageRole.User,
                         listOf(
@@ -125,12 +125,12 @@ class HuggingFaceProviderTest {
                             ContentPart.File("image/*", "abc="),
                         ),
                     ),
-                    assistantMessage("Previous answer."),
+                    AssistantMessage("Previous answer."),
                     ModelMessage(
                         MessageRole.Assistant,
                         listOf(ContentPart.Reasoning("Previous reasoning.")),
                     ),
-                    toolMessage("call-old", "old", JsonPrimitive("ignored")),
+                    ToolMessage("call-old", "old", JsonPrimitive("ignored")),
                 ),
                 tools = listOf(
                     LanguageModelTool(
@@ -240,7 +240,7 @@ class HuggingFaceProviderTest {
 
     @Test
     fun `stream maps Hugging Face response events`() = runTest {
-        val fixture = createTestServer(
+        val fixture = TestServer.createTestServer(
             mutableMapOf(
                 "https://hf.test/v1/responses" to UrlHandler(
                     UrlResponse.StreamChunks(
@@ -281,7 +281,7 @@ class HuggingFaceProviderTest {
         val events = drainAllItems(
             provider.responses(ModelId("meta-llama/Llama-3.1-8B-Instruct")).stream(
                 LanguageModelCallParams(
-                    messages = listOf(userMessage("hi")),
+                    messages = listOf(UserMessage("hi")),
                     tools = listOf(LanguageModelTool("lookup", "Lookup.", objectSchema("city").toString())),
                     toolChoice = ToolChoice.Required,
                 ),
@@ -311,7 +311,7 @@ class HuggingFaceProviderTest {
 
     @Test
     fun `stream surfaces Hugging Face missing output item as error`() = runTest {
-        val fixture = createTestServer(
+        val fixture = TestServer.createTestServer(
             mutableMapOf(
                 "https://hf.test/v1/responses" to UrlHandler(
                     UrlResponse.StreamChunks(listOf("""data: {"type":"response.output_item.done"}""")),
@@ -321,7 +321,7 @@ class HuggingFaceProviderTest {
         fixture.server.start()
         val provider = HuggingFace(fixture.httpClient(), HuggingFaceProviderSettings(baseURL = "https://hf.test/v1"))
 
-        val events = drainAllItems(provider.responses(ModelId("meta-llama/Llama-3.1-8B-Instruct")).stream(LanguageModelCallParams(messages = listOf(userMessage("hi")))))
+        val events = drainAllItems(provider.responses(ModelId("meta-llama/Llama-3.1-8B-Instruct")).stream(LanguageModelCallParams(messages = listOf(UserMessage("hi")))))
 
         val error = events.filterIsInstance<StreamEvent.Error>().single()
         assertTrue(error.message.contains("missing item"))
@@ -329,7 +329,7 @@ class HuggingFaceProviderTest {
 
     @Test
     fun `unsupported embedding and image factories match upstream guidance`() {
-        val fixture = createTestServer(mutableMapOf())
+        val fixture = TestServer.createTestServer(mutableMapOf())
         val provider = HuggingFace(fixture.httpClient())
 
         val embedding = assertFailsWith<NoSuchModelError> {
@@ -348,7 +348,7 @@ class HuggingFaceProviderTest {
 
     @Test
     fun `tool choice none is omitted and non-image files are rejected`() = runTest {
-        val fixture = createTestServer(
+        val fixture = TestServer.createTestServer(
             mutableMapOf(
                 "https://hf.test/v1/responses" to UrlHandler(
                     UrlResponse.JsonValue(
@@ -386,7 +386,7 @@ class HuggingFaceProviderTest {
 
         val result = provider(ModelId("model")).generate(
             LanguageModelCallParams(
-                messages = listOf(userMessage("hi")),
+                messages = listOf(UserMessage("hi")),
                 tools = listOf(LanguageModelTool("lookup", "Lookup.", objectSchema("q").toString())),
                 toolChoice = ToolChoice.None,
             ),

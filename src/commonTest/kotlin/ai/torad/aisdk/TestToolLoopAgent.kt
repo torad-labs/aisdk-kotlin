@@ -15,7 +15,7 @@ internal class TestToolLoopAgent<TContext, TOutput>(
     tools: ToolSet<TContext>,
     activeTools: List<String>? = null,
     output: Output<TOutput>? = null,
-    stopWhen: StopCondition = stepCountIs(20),
+    stopWhen: StopCondition = StepCountIs(20),
     prepareCall: (suspend PrepareCallScope<TContext>.() -> AgentSettings<TContext>)? = null,
     prepareStep: (suspend PrepareStepScope<TContext>.() -> StepSettings<TContext>)? = null,
     callOptionsSchema: KSerializer<TContext>? = null,

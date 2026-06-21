@@ -74,7 +74,7 @@ class ToolLoopAgentUsageAggregationTest {
         val agent = TestToolLoopAgent<Unit, String>(
             model = model,
             instructions = "use tool",
-            tools = toolSetOf(doneTool),
+            tools = ToolSet(doneTool),
         )
 
         val result = agent.generate(prompt = "run", options = Unit).first()

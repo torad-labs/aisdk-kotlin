@@ -1,8 +1,8 @@
 package ai.torad.aisdk
 
 import ai.torad.aisdk.providers.MockLanguageModel
-import ai.torad.aisdk.providers.mockLanguageModelToolThenText
-import ai.torad.aisdk.providers.mockToolInput
+import ai.torad.aisdk.providers.MockLanguageModelToolThenText
+import ai.torad.aisdk.providers.MockToolInput
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.first
@@ -54,13 +54,13 @@ class PrepareStepTest {
         ) { _ -> "pong" }
 
         val agent = TestToolLoopAgent<Unit, String>(
-            model = mockLanguageModelToolThenText(
+            model = MockLanguageModelToolThenText(
                 toolName = "ping",
-                toolInput = mockToolInput("unused" to ""),
+                toolInput = MockToolInput("unused" to ""),
                 finalText = "ok",
             ),
             instructions = "x",
-            tools = toolSetOf(ping),
+            tools = ToolSet(ping),
             prepareStep = {
                 recordedStepNumbers.add(stepNumber)
                 StepSettings(activeTools = listOf("ping"))
@@ -78,7 +78,7 @@ class PrepareStepTest {
         val agent = TestToolLoopAgent<Unit, String>(
             model = capture,
             instructions = "x",
-            tools = toolSetOf(testTool("ping"), testTool("pong")),
+            tools = ToolSet(testTool("ping"), testTool("pong")),
             activeTools = listOf("ping"),
         )
 
@@ -94,7 +94,7 @@ class PrepareStepTest {
         val agent = TestToolLoopAgent<Unit, String>(
             model = capture,
             instructions = "x",
-            tools = toolSetOf(testTool("ping"), testTool("pong")),
+            tools = ToolSet(testTool("ping"), testTool("pong")),
             activeTools = listOf("ping"),
             prepareCall = { AgentSettings(activeTools = listOf("pong")) },
         )
@@ -111,7 +111,7 @@ class PrepareStepTest {
         val agent = TestToolLoopAgent<Unit, String>(
             model = capture,
             instructions = "x",
-            tools = toolSetOf(testTool("ping"), testTool("pong")),
+            tools = ToolSet(testTool("ping"), testTool("pong")),
             activeTools = listOf("ping"),
             prepareCall = { AgentSettings(activeTools = listOf("pong")) },
             prepareStep = { StepSettings(activeTools = listOf("ping")) },

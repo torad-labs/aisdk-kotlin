@@ -19,7 +19,7 @@ public class StreamObjectResult<TOutput> internal constructor(
         events.collect { event ->
             if (event !is StreamEvent.TextDelta) return@collect
             accumulated.append(event.text)
-            val parsed = parsePartialJson(accumulated.toString()).value ?: return@collect
+            val parsed = PartialJson.parsePartialJson(accumulated.toString()).value ?: return@collect
             val key = parsed.toString()
             if (key == lastKey) return@collect
             val decoded = runCatching { output.decode(key) }.getOrNull() ?: return@collect
@@ -36,7 +36,7 @@ public class StreamObjectResult<TOutput> internal constructor(
         var emitted = 0
 
         fun ready(complete: Boolean): List<E> {
-            val elements = (parsePartialJson(accumulated.toString()).value as? JsonObject)
+            val elements = (PartialJson.parsePartialJson(accumulated.toString()).value as? JsonObject)
                 ?.get("elements") as? JsonArray ?: return emptyList()
             val readyCount = if (complete) elements.size else (elements.size - 1).coerceAtLeast(0)
             val out = mutableListOf<E>()
@@ -103,7 +103,7 @@ public data class StreamObjectFinish<TOutput>(
     val response: LanguageModelResponseMetadata,
 )
 
-public fun <TOutput> streamObjectResult(
+public fun <TOutput> StreamObjectResult(
     model: LanguageModel,
     output: Output<TOutput>,
     prompt: String? = null,
@@ -123,9 +123,9 @@ public fun <TOutput> streamObjectResult(
     repairText: ((String) -> String?)? = null,
 ): StreamObjectResult<TOutput> {
     val effectiveResponseFormat =
-        if (responseFormat == ResponseFormat.Text) output.toResponseFormat() else responseFormat
+        if (responseFormat == ResponseFormat.Text) with(OutputOps) { output.toResponseFormat() } else responseFormat
     val inputMessages = buildList {
-        if (system != null) add(systemMessage(system))
+        if (system != null) add(SystemMessage(system))
         addAll(messages)
     }
     val input = GenerationInput.from(

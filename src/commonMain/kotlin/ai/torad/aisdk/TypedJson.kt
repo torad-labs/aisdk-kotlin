@@ -3,9 +3,13 @@ package ai.torad.aisdk
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonObjectBuilder
 import kotlinx.serialization.json.decodeFromJsonElement
+import kotlinx.serialization.json.doubleOrNull
 import kotlinx.serialization.json.encodeToJsonElement
+import kotlinx.serialization.json.intOrNull
+import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.serializer
 
 @PublishedApi
@@ -23,69 +27,6 @@ internal val aiSdkOutputJson = Json {
     encodeDefaults = true
 }
 
-public fun <T> encodeJsonElement(value: T, serializer: KSerializer<T>): JsonElement =
-    aiSdkJson.encodeToJsonElement(serializer, value)
-
-public inline fun <reified T> encodeJsonElement(value: T): JsonElement =
-    encodeJsonElement(value, serializer())
-
-public fun <T> JsonElement.decodeAs(serializer: KSerializer<T>): T =
-    aiSdkJson.decodeFromJsonElement(serializer, this)
-
-public inline fun <reified T> JsonElement.decodeAs(): T =
-    decodeAs(serializer())
-
-public fun <T> JsonObjectBuilder.putJson(name: String, value: T, serializer: KSerializer<T>) {
-    put(name, encodeJsonElement(value, serializer))
-}
-
-public inline fun <reified T> JsonObjectBuilder.putJson(name: String, value: T) {
-    putJson(name, value, serializer())
-}
-
-public fun <T> JsonObjectBuilder.putJsonIfNotNull(name: String, value: T?, serializer: KSerializer<T>) {
-    if (value != null) putJson(name, value, serializer)
-}
-
-public inline fun <reified T> JsonObjectBuilder.putJsonIfNotNull(name: String, value: T?) {
-    putJsonIfNotNull(name, value, serializer())
-}
-
-public fun <T> Map<String, JsonElement>.decodeValue(name: String, serializer: KSerializer<T>): T? =
-    this[name]?.decodeAs(serializer)
-
-public inline fun <reified T> Map<String, JsonElement>.decodeValue(name: String): T? =
-    decodeValue(name, serializer())
-
-public fun Map<String, JsonElement>?.providerMetadata(provider: String): JsonElement? =
-    this?.get(provider)
-
-public fun <T> Map<String, JsonElement>?.decodeProviderMetadata(
-    provider: String,
-    serializer: KSerializer<T>,
-): T? = providerMetadata(provider)?.decodeAs(serializer)
-
-public inline fun <reified T> Map<String, JsonElement>?.decodeProviderMetadata(provider: String): T? =
-    decodeProviderMetadata(provider, serializer())
-
-public fun <T> GenerateTextResult<*>.providerMetadataAs(provider: String, serializer: KSerializer<T>): T? =
-    providerMetadata.toMap().decodeProviderMetadata(provider, serializer)
-
-public inline fun <reified T> GenerateTextResult<*>.providerMetadataAs(provider: String): T? =
-    providerMetadataAs(provider, serializer())
-
-public fun <T> GenerateObjectResult<*>.providerMetadataAs(provider: String, serializer: KSerializer<T>): T? =
-    providerMetadata.toMap().decodeProviderMetadata(provider, serializer)
-
-public inline fun <reified T> GenerateObjectResult<*>.providerMetadataAs(provider: String): T? =
-    providerMetadataAs(provider, serializer())
-
-public fun <T> LanguageModelResult.providerMetadataAs(provider: String, serializer: KSerializer<T>): T? =
-    providerMetadata.toMap().decodeProviderMetadata(provider, serializer)
-
-public inline fun <reified T> LanguageModelResult.providerMetadataAs(provider: String): T? =
-    providerMetadataAs(provider, serializer())
-
 public val ContentPart.metadata: ProviderMetadata
     get() = when (this) {
         is ContentPart.Text -> providerMetadata
@@ -98,12 +39,6 @@ public val ContentPart.metadata: ProviderMetadata
         is ContentPart.File -> providerMetadata
         is ContentPart.Image -> providerMetadata
     }
-
-public fun <T> ContentPart.providerMetadataAs(provider: String, serializer: KSerializer<T>): T? =
-    metadata.toMap().decodeProviderMetadata(provider, serializer)
-
-public inline fun <reified T> ContentPart.providerMetadataAs(provider: String): T? =
-    providerMetadataAs(provider, serializer())
 
 public val StreamEvent.metadata: ProviderMetadata
     get() = when (this) {
@@ -133,8 +68,95 @@ public val StreamEvent.metadata: ProviderMetadata
         is StreamEvent.Raw -> ProviderMetadata.None
     }
 
-public fun <T> StreamEvent.providerMetadataAs(provider: String, serializer: KSerializer<T>): T? =
-    metadata.toMap().decodeProviderMetadata(provider, serializer)
+// Typed JSON operations. Previously loose top-level funs (decision-C cleanup):
+// member functions and member-extension functions now live on this object so
+// none remain camelCase top-level `fun`s. Callers use a member-import or
+// `with(TypedJsonOps) { ... }`.
+public object TypedJsonOps {
+    public fun <T> encodeJsonElement(value: T, serializer: KSerializer<T>): JsonElement =
+        aiSdkJson.encodeToJsonElement(serializer, value)
 
-public inline fun <reified T> StreamEvent.providerMetadataAs(provider: String): T? =
-    providerMetadataAs(provider, serializer())
+    public inline fun <reified T> encodeJsonElement(value: T): JsonElement =
+        encodeJsonElement(value, serializer())
+
+    public fun <T> JsonElement.decodeAs(serializer: KSerializer<T>): T =
+        aiSdkJson.decodeFromJsonElement(serializer, this)
+
+    public inline fun <reified T> JsonElement.decodeAs(): T =
+        decodeAs(serializer())
+
+    public fun <T> JsonObjectBuilder.putJson(name: String, value: T, serializer: KSerializer<T>) {
+        put(name, encodeJsonElement(value, serializer))
+    }
+
+    public inline fun <reified T> JsonObjectBuilder.putJson(name: String, value: T) {
+        putJson(name, value, serializer())
+    }
+
+    public fun <T> JsonObjectBuilder.putJsonIfNotNull(name: String, value: T?, serializer: KSerializer<T>) {
+        if (value != null) putJson(name, value, serializer)
+    }
+
+    public inline fun <reified T> JsonObjectBuilder.putJsonIfNotNull(name: String, value: T?) {
+        putJsonIfNotNull(name, value, serializer())
+    }
+
+    public fun <T> Map<String, JsonElement>.decodeValue(name: String, serializer: KSerializer<T>): T? =
+        this[name]?.decodeAs(serializer)
+
+    public inline fun <reified T> Map<String, JsonElement>.decodeValue(name: String): T? =
+        decodeValue(name, serializer())
+
+    public fun Map<String, JsonElement>?.providerMetadata(provider: String): JsonElement? =
+        this?.get(provider)
+
+    public fun <T> Map<String, JsonElement>?.decodeProviderMetadata(
+        provider: String,
+        serializer: KSerializer<T>,
+    ): T? = providerMetadata(provider)?.decodeAs(serializer)
+
+    public inline fun <reified T> Map<String, JsonElement>?.decodeProviderMetadata(provider: String): T? =
+        decodeProviderMetadata(provider, serializer())
+
+    public fun <T> GenerateTextResult<*>.providerMetadataAs(provider: String, serializer: KSerializer<T>): T? =
+        providerMetadata.toMap().decodeProviderMetadata(provider, serializer)
+
+    public inline fun <reified T> GenerateTextResult<*>.providerMetadataAs(provider: String): T? =
+        providerMetadataAs(provider, serializer())
+
+    public fun <T> GenerateObjectResult<*>.providerMetadataAs(provider: String, serializer: KSerializer<T>): T? =
+        providerMetadata.toMap().decodeProviderMetadata(provider, serializer)
+
+    public inline fun <reified T> GenerateObjectResult<*>.providerMetadataAs(provider: String): T? =
+        providerMetadataAs(provider, serializer())
+
+    public fun <T> LanguageModelResult.providerMetadataAs(provider: String, serializer: KSerializer<T>): T? =
+        providerMetadata.toMap().decodeProviderMetadata(provider, serializer)
+
+    public inline fun <reified T> LanguageModelResult.providerMetadataAs(provider: String): T? =
+        providerMetadataAs(provider, serializer())
+
+    public fun <T> ContentPart.providerMetadataAs(provider: String, serializer: KSerializer<T>): T? =
+        metadata.toMap().decodeProviderMetadata(provider, serializer)
+
+    public inline fun <reified T> ContentPart.providerMetadataAs(provider: String): T? =
+        providerMetadataAs(provider, serializer())
+
+    public fun <T> StreamEvent.providerMetadataAs(provider: String, serializer: KSerializer<T>): T? =
+        metadata.toMap().decodeProviderMetadata(provider, serializer)
+
+    public inline fun <reified T> StreamEvent.providerMetadataAs(provider: String): T? =
+        providerMetadataAs(provider, serializer())
+
+    public fun jsonNumber(obj: JsonObject, vararg names: String): Double =
+        jsonNumberOrNull(obj, *names) ?: 0.0
+
+    public fun jsonNumberOrNull(obj: JsonObject, vararg names: String): Double? =
+        names.firstNotNullOfOrNull { name -> obj[name]?.jsonPrimitive?.doubleOrNull }
+
+    public fun jsonInt(obj: JsonObject, vararg names: String): Int =
+        jsonIntOrNull(obj, *names) ?: 0
+
+    public fun jsonIntOrNull(obj: JsonObject, vararg names: String): Int? =
+        names.firstNotNullOfOrNull { name -> obj[name]?.jsonPrimitive?.intOrNull }
+}

@@ -40,7 +40,7 @@ public class MoonshotAIProvider(
     )
     override val providerId: String = "moonshotai"
 
-    public operator fun invoke(modelId: ModelId): LanguageModel = languageModel(modelId)
+    public operator fun invoke(modelId: ModelId): LanguageModel = languageModel(modelId.value)
     override fun languageModel(modelId: String): LanguageModel = chatModel(ModelId(modelId))
     public fun chatModel(modelId: ModelId): LanguageModel = compatible.chatModel(modelId.value)
     override fun embeddingModel(modelId: String): EmbeddingModel = throw NoSuchModelError(providerId, "embeddingModel", modelId)

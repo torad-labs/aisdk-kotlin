@@ -60,7 +60,7 @@ public data class CustomProvider(
         videoModels[modelId] ?: fallbackProvider?.videoModel(modelId) ?: super.videoModel(modelId)
 }
 
-public fun customProvider(
+public fun Provider(
     providerId: String,
     languageModels: Map<String, LanguageModel> = emptyMap(),
     embeddingModels: Map<String, EmbeddingModel> = emptyMap(),
@@ -96,7 +96,7 @@ public class ProviderRegistry(
             ?: throw NoSuchProviderError(providerId, availableProviders = providers.keys.sorted())
 
     override fun languageModel(modelId: String): LanguageModel =
-        wrapLanguageModel(
+        WrapLanguageModel(
             resolve(modelId) { provider, localId -> provider.languageModel(localId) },
             languageModelMiddleware,
         )
@@ -129,26 +129,28 @@ public class ProviderRegistry(
         if (providers.size == 1) return providers.keys.single()
         throw InvalidArgumentError("modelId", "must include a provider prefix when more than one provider is registered")
     }
-}
 
-public fun createProviderRegistry(
-    providers: Map<String, Provider>,
-    defaultProviderId: String? = null,
-    separator: String = ":",
-    languageModelMiddleware: List<LanguageModelMiddleware> = emptyList(),
-): ProviderRegistry = ProviderRegistry(providers, defaultProviderId, separator, languageModelMiddleware)
+    public companion object {
+        public fun createProviderRegistry(
+            providers: Map<String, Provider>,
+            defaultProviderId: String? = null,
+            separator: String = ":",
+            languageModelMiddleware: List<LanguageModelMiddleware> = emptyList(),
+        ): ProviderRegistry = ProviderRegistry(providers, defaultProviderId, separator, languageModelMiddleware)
 
-public fun createProviderRegistry(
-    vararg providers: Pair<String, Provider>,
-    defaultProviderId: String? = null,
-    separator: String = ":",
-    languageModelMiddleware: List<LanguageModelMiddleware> = emptyList(),
-): ProviderRegistry = ProviderRegistry(providers.toMap(), defaultProviderId, separator, languageModelMiddleware)
+        public fun createProviderRegistry(
+            vararg providers: Pair<String, Provider>,
+            defaultProviderId: String? = null,
+            separator: String = ":",
+            languageModelMiddleware: List<LanguageModelMiddleware> = emptyList(),
+        ): ProviderRegistry = ProviderRegistry(providers.toMap(), defaultProviderId, separator, languageModelMiddleware)
 
-public fun splitProviderModelId(modelId: String, separator: String = ":"): Pair<String?, String> {
-    val colon = modelId.indexOf(separator)
-    if (colon <= 0) return null to modelId
-    return modelId.substring(0, colon) to modelId.substring(colon + separator.length)
+        public fun splitProviderModelId(modelId: String, separator: String = ":"): Pair<String?, String> {
+            val colon = modelId.indexOf(separator)
+            if (colon <= 0) return null to modelId
+            return modelId.substring(0, colon) to modelId.substring(colon + separator.length)
+        }
+    }
 }
 
 public data class ProviderMiddleware(
@@ -157,18 +159,18 @@ public data class ProviderMiddleware(
     val imageModelMiddlewares: List<ImageModelMiddleware> = emptyList(),
 )
 
-public fun wrapProvider(provider: Provider, middleware: ProviderMiddleware): Provider =
+public fun WrapProvider(provider: Provider, middleware: ProviderMiddleware): Provider =
     object : Provider {
         override val providerId: String = provider.providerId
 
         override fun languageModel(modelId: String): LanguageModel =
-            wrapLanguageModel(provider.languageModel(modelId), middleware.languageModelMiddlewares)
+            WrapLanguageModel(provider.languageModel(modelId), middleware.languageModelMiddlewares)
 
         override fun embeddingModel(modelId: String): EmbeddingModel =
-            wrapEmbeddingModel(provider.embeddingModel(modelId), middleware.embeddingModelMiddlewares)
+            WrapEmbeddingModel(provider.embeddingModel(modelId), middleware.embeddingModelMiddlewares)
 
         override fun imageModel(modelId: String): ImageModel =
-            wrapImageModel(provider.imageModel(modelId), middleware.imageModelMiddlewares)
+            WrapImageModel(provider.imageModel(modelId), middleware.imageModelMiddlewares)
 
         override fun speechModel(modelId: String): SpeechModel = provider.speechModel(modelId)
         override fun transcriptionModel(modelId: String): TranscriptionModel = provider.transcriptionModel(modelId)

@@ -58,7 +58,7 @@ class ToolTest {
             inputSerializer = serializer(),
             outputSerializer = serializer(),
         ) { "" }
-        val set = toolSetOf(a)
+        val set = ToolSet(a)
         assertNotNull(set.find("a"))
         assertNull(set.find("b"))
     }
@@ -73,7 +73,7 @@ class ToolTest {
             name = "b", description = "beta",
             inputSerializer = serializer(), outputSerializer = serializer(),
         ) { "" }
-        val set = toolSetOf(a, b)
+        val set = ToolSet(a, b)
         val names = set.descriptors.map { it.name }.toSet()
         assertEquals(setOf("a", "b"), names)
     }
@@ -88,7 +88,7 @@ class ToolTest {
             strict = false,
         ) { WeatherOutput(72, "sunny") }
 
-        assertEquals(false, toolSetOf(loose).descriptors.single().strict)
+        assertEquals(false, ToolSet(loose).descriptors.single().strict)
     }
 
     @Test
@@ -100,7 +100,7 @@ class ToolTest {
             outputSerializer = serializer(),
         ) { WeatherOutput(72, "sunny in ${it.location}") }
 
-        val schema = Json.parseToJsonElement(toolSetOf(forecast).descriptors.single().parametersSchemaJson).jsonObject
+        val schema = Json.parseToJsonElement(ToolSet(forecast).descriptors.single().parametersSchemaJson).jsonObject
         val properties = schema["properties"]!!.jsonObject
         val required = schema["required"]!!.jsonArray.map { it.jsonPrimitive.content }.toSet()
 
@@ -147,7 +147,7 @@ class ToolTest {
             inputSchemaJson = explicit.toString(),
         ) { input -> input }
 
-        val descriptorSchema = Json.parseToJsonElement(toolSetOf(runtime).descriptors.single().parametersSchemaJson)
+        val descriptorSchema = Json.parseToJsonElement(ToolSet(runtime).descriptors.single().parametersSchemaJson)
 
         assertEquals(explicit, descriptorSchema)
     }

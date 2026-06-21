@@ -1,7 +1,7 @@
 package ai.torad.aisdk
 
-import ai.torad.aisdk.middleware.simulateStreamingMiddleware
-import ai.torad.aisdk.testing.drainAllItems
+import ai.torad.aisdk.middleware.SimulateStreamingMiddleware
+import ai.torad.aisdk.testing.FlowDrain.drainAllItems
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -56,11 +56,11 @@ class SimulateStreamingTest {
         runTest {
             // GIVEN
             val model = GenerateOnlyModel(text = "hello world")
-            val wrapped = wrapLanguageModel(model, listOf(simulateStreamingMiddleware()))
+            val wrapped = WrapLanguageModel(model, listOf(SimulateStreamingMiddleware()))
 
             // WHEN
             val events = drainAllItems(
-                wrapped.stream(LanguageModelCallParams(messages = listOf(userMessage("hi")))),
+                wrapped.stream(LanguageModelCallParams(messages = listOf(UserMessage("hi")))),
             )
 
             // THEN — leads with StreamStart + ResponseMetadata (v6 parity), then the
@@ -95,11 +95,11 @@ class SimulateStreamingTest {
                 input = JsonObject(mapOf("body" to JsonPrimitive("remember the venue map"))),
             )
             val model = GenerateOnlyModel(text = "ok, saving", toolCalls = listOf(toolCall))
-            val wrapped = wrapLanguageModel(model, listOf(simulateStreamingMiddleware()))
+            val wrapped = WrapLanguageModel(model, listOf(SimulateStreamingMiddleware()))
 
             // WHEN
             val events = drainAllItems(
-                wrapped.stream(LanguageModelCallParams(messages = listOf(userMessage("save a note")))),
+                wrapped.stream(LanguageModelCallParams(messages = listOf(UserMessage("save a note")))),
             )
 
             // THEN
@@ -125,11 +125,11 @@ class SimulateStreamingTest {
         runTest {
             // GIVEN
             val model = GenerateOnlyModel(text = "")
-            val wrapped = wrapLanguageModel(model, listOf(simulateStreamingMiddleware()))
+            val wrapped = WrapLanguageModel(model, listOf(SimulateStreamingMiddleware()))
 
             // WHEN
             val events = drainAllItems(
-                wrapped.stream(LanguageModelCallParams(messages = listOf(userMessage("hi")))),
+                wrapped.stream(LanguageModelCallParams(messages = listOf(UserMessage("hi")))),
             )
 
             // THEN

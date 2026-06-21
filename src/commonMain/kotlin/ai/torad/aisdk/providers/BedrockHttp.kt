@@ -52,10 +52,10 @@ internal object BedrockHttp {
             setBody(encodedBody)
         }
         val raw = response.bodyAsBytes().decodeToString()
-        val responseHeaders = response.flattenedHeaders()
+        val responseHeaders = with(HttpTransport) { response.flattenedHeaders() }
         if (response.status.value !in 200..299) {
             val parsed = runCatching { aiSdkJson.parseToJsonElement(raw) }.getOrNull()
-            throw apiCallError(
+            throw ApiCallError(
                 url = url,
                 statusCode = response.status.value,
                 rawBody = raw,
@@ -99,11 +99,11 @@ internal object BedrockHttp {
             setBody(encodedBody)
         }
         statement.execute { response ->
-            val flattened = response.flattenedHeaders()
+            val flattened = with(HttpTransport) { response.flattenedHeaders() }
             if (response.status.value !in 200..299) {
                 val raw = response.bodyAsBytes().decodeToString()
                 val parsed = runCatching { aiSdkJson.parseToJsonElement(raw) }.getOrNull()
-                throw apiCallError(
+                throw ApiCallError(
                     url = url,
                     statusCode = response.status.value,
                     rawBody = raw,
@@ -132,7 +132,7 @@ internal object BedrockHttp {
         url: String,
         body: String,
         service: String,
-        amzDate: String = currentAwsAmzDate(),
+        amzDate: String = AwsSigV4.currentAwsAmzDate(),
     ): Map<String, String> {
         val headers = linkedMapOf<String, String?>()
         headers[HttpHeaders.ContentType] = ContentType.Application.Json.toString()
@@ -154,20 +154,18 @@ internal object BedrockHttp {
             return headersWithUserAgent
         }
         val region = credentials.region ?: settings.region ?: "us-east-1"
-        return awsSigV4SignedHeaders(
-            method = "POST",
-            url = url,
-            service = service,
-            region = region,
-            headers = headersWithUserAgent,
-            body = body,
-            credentials = AwsSigV4Credentials(
-                accessKeyId = credentials.accessKeyId,
-                secretAccessKey = credentials.secretAccessKey,
-                sessionToken = credentials.sessionToken,
-            ),
-            amzDate = amzDate,
-        )
+        return AwsSigV4.awsSigV4SignedHeaders(method = "POST",
+        url = url,
+        service = service,
+        region = region,
+        headers = headersWithUserAgent,
+        body = body,
+        credentials = AwsSigV4Credentials(
+            accessKeyId = credentials.accessKeyId,
+            secretAccessKey = credentials.secretAccessKey,
+            sessionToken = credentials.sessionToken,
+        ),
+        amzDate = amzDate,)
     }
 
     fun bedrockRuntimeBaseURL(settings: AmazonBedrockProviderSettings): String =

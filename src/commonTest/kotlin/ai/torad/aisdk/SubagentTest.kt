@@ -1,8 +1,8 @@
 package ai.torad.aisdk
 
 import ai.torad.aisdk.providers.MockLanguageModel
-import ai.torad.aisdk.providers.mockLanguageModelToolThenText
-import ai.torad.aisdk.providers.mockToolInput
+import ai.torad.aisdk.providers.MockLanguageModelToolThenText
+import ai.torad.aisdk.providers.MockToolInput
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -38,13 +38,13 @@ class SubagentTest {
 
         val controller = AbortController()
         val agent = TestToolLoopAgent<Unit, String>(
-            model = mockLanguageModelToolThenText(
+            model = MockLanguageModelToolThenText(
                 toolName = "subagent",
-                toolInput = mockToolInput("text" to "hello"),
+                toolInput = MockToolInput("text" to "hello"),
                 finalText = "done",
             ),
             instructions = "x",
-            tools = toolSetOf(subagentTool),
+            tools = ToolSet(subagentTool),
         )
 
         agent.generate("go", abortSignal = controller.signal).first()

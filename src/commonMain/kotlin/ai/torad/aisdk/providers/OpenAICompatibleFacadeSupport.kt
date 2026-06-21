@@ -108,7 +108,7 @@ internal object FacadeHttp {
         body: JsonElement,
         headers: Map<String, String>,
     ): HttpJsonResponse =
-        requestJson(
+        HttpTransport.requestJson(
             client = client,
             url = url,
             method = HttpMethod.Post,
@@ -147,11 +147,11 @@ internal object FacadeHttp {
 
     suspend fun HttpResponse.parseFacadeBinary(url: String): ProviderFacadeBinaryResponse {
         val bytes = bodyAsBytes()
-        val flattened = flattenedHeaders()
+        val flattened = with(HttpTransport) { flattenedHeaders() }
         if (status.value !in 200..299) {
             val raw = bytes.decodeToString()
             val parsed = runCatching { aiSdkJson.parseToJsonElement(raw) }.getOrNull()
-            throw apiCallError(
+            throw ApiCallError(
                 url = url,
                 statusCode = status.value,
                 rawBody = raw,

@@ -120,8 +120,8 @@ data class TestServerCall(
         }
 
     val requestBodyMultipart: Map<String, String>?
-        get() = if (requestHeaders.headerValue(HttpHeaders.ContentType)?.startsWith("multipart/form-data", ignoreCase = true) == true) {
-            parseMultipartFormData(requestBodyText)
+        get() = if (TestServerOps.headerValue(requestHeaders, HttpHeaders.ContentType)?.startsWith("multipart/form-data", ignoreCase = true) == true) {
+            TestServerOps.parseMultipartFormData(requestBodyText)
         } else {
             null
         }
@@ -182,7 +182,7 @@ class TestServer internal constructor(
             requestBodyText = request.body,
             requestCredentials = request.credentials,
             requestHeaders = request.headers.filterKeys { !it.equals(HttpHeaders.UserAgent, ignoreCase = true) },
-            requestUserAgent = request.headers.headerValue(HttpHeaders.UserAgent),
+            requestUserAgent = TestServerOps.headerValue(request.headers, HttpHeaders.UserAgent),
             requestUrlSearchParams = Url(request.url).parameters.entries().associate { it.key to it.value },
             requestUrl = request.url,
             requestMethod = request.method,
@@ -204,14 +204,14 @@ class TestServer internal constructor(
                 body = ByteReadChannel(json.encodeToString(JsonObject(mapOf("error" to kotlinx.serialization.json.JsonPrimitive("Not Found"))))),
             )
 
-        return response.toHttpResponse(json)
+        return with(TestServerOps) { response.toHttpResponse(json) }
     }
 
     fun httpClient(): HttpClient = HttpClient(MockEngine { request ->
         respondToKtor(request)
     })
 
-    private suspend fun MockRequestHandleScope.respondToKtor(request: HttpRequestData) =
+    private suspend fun MockRequestHandleScope.respondToKtor(request: HttpRequestData) = with(TestServerOps) {
         handle(
             TestServerHttpRequest(
                 method = request.method.value,
@@ -220,7 +220,18 @@ class TestServer internal constructor(
                     request.body.contentType?.let { mapOf(HttpHeaders.ContentType to it.toString()) }.orEmpty(),
                 body = request.body.bodyText(),
             ),
-        ).toKtorResponse(this)
+        ).toKtorResponse(this@respondToKtor)
+    }
+
+    companion object {
+        fun createTestServer(
+            routes: UrlHandlers,
+            json: Json = Json,
+        ): CreatedTestServer {
+            val server = TestServer(routes, json)
+            return CreatedTestServer(urls = server.urls, server = server)
+        }
+    }
 }
 
 data class CreatedTestServer(
@@ -233,13 +244,6 @@ data class CreatedTestServer(
     fun httpClient(): HttpClient = server.httpClient()
 }
 
-fun createTestServer(
-    routes: UrlHandlers,
-    json: Json = Json,
-): CreatedTestServer {
-    val server = TestServer(routes, json)
-    return CreatedTestServer(urls = server.urls, server = server)
-}
 
 class TestResponseController {
     private val channel = ByteChannel(autoFlush = true)
@@ -261,80 +265,82 @@ class TestResponseController {
     }
 }
 
-private suspend fun UrlResponse.toHttpResponse(json: Json): TestServerHttpResponse =
-    when (this) {
-        is UrlResponse.JsonValue -> TestServerHttpResponse(
-            status = 200,
-            headers = mapOf(HttpHeaders.ContentType to "application/json") + headers,
-            body = ByteReadChannel(json.encodeToString(JsonElement.serializer(), body)),
+private object TestServerOps {
+    fun headerValue(headers: Map<String, String>, name: String): String? =
+        headers.entries.firstOrNull { it.key.equals(name, ignoreCase = true) }?.value
+
+    fun streamHeaders(headers: Map<String, String>): Map<String, String> =
+        mapOf(
+            HttpHeaders.ContentType to "text/event-stream",
+            HttpHeaders.CacheControl to "no-cache",
+            HttpHeaders.Connection to "keep-alive",
+        ) + headers
+
+    suspend fun UrlResponse.toHttpResponse(json: Json): TestServerHttpResponse =
+        when (this) {
+            is UrlResponse.JsonValue -> TestServerHttpResponse(
+                status = 200,
+                headers = mapOf(HttpHeaders.ContentType to "application/json") + headers,
+                body = ByteReadChannel(json.encodeToString(JsonElement.serializer(), body)),
+            )
+            is UrlResponse.StreamChunks -> TestServerHttpResponse(
+                status = 200,
+                headers = streamHeaders(headers),
+                body = ByteReadChannel(chunks.joinToString(separator = "")),
+            )
+            is UrlResponse.Binary -> TestServerHttpResponse(
+                status = 200,
+                headers = headers,
+                body = ByteReadChannel(body),
+            )
+            is UrlResponse.Empty -> TestServerHttpResponse(
+                status = status,
+                headers = headers,
+                body = ByteReadChannel(ByteArray(0)),
+            )
+            is UrlResponse.Error -> TestServerHttpResponse(
+                status = status,
+                headers = headers,
+                body = ByteReadChannel(body),
+            )
+            is UrlResponse.ControlledStream -> TestServerHttpResponse(
+                status = 200,
+                headers = streamHeaders(headers),
+                body = controller.stream,
+            )
+        }
+
+    fun TestServerHttpResponse.toKtorResponse(scope: MockRequestHandleScope) =
+        scope.respond(
+            content = body,
+            status = HttpStatusCode.fromValue(status),
+            headers = headers.toKtorHeaders(),
         )
-        is UrlResponse.StreamChunks -> TestServerHttpResponse(
-            status = 200,
-            headers = streamHeaders(headers),
-            body = ByteReadChannel(chunks.joinToString(separator = "")),
-        )
-        is UrlResponse.Binary -> TestServerHttpResponse(
-            status = 200,
-            headers = headers,
-            body = ByteReadChannel(body),
-        )
-        is UrlResponse.Empty -> TestServerHttpResponse(
-            status = status,
-            headers = headers,
-            body = ByteReadChannel(ByteArray(0)),
-        )
-        is UrlResponse.Error -> TestServerHttpResponse(
-            status = status,
-            headers = headers,
-            body = ByteReadChannel(body),
-        )
-        is UrlResponse.ControlledStream -> TestServerHttpResponse(
-            status = 200,
-            headers = streamHeaders(headers),
-            body = controller.stream,
-        )
+
+    fun Map<String, String>.toKtorHeaders(): Headers =
+        Headers.build {
+            forEach { (name, value) -> append(name, value) }
+        }
+
+    suspend fun OutgoingContent.bodyText(): String =
+        when (this) {
+            is OutgoingContent.NoContent -> ""
+            else -> toByteArray().decodeToString()
+        }
+
+    fun parseMultipartFormData(body: String): Map<String, String> {
+        if (body.isBlank()) return emptyMap()
+        val result = linkedMapOf<String, String>()
+        val nameRegex = Regex("""name="([^"]+)"""")
+        val sections = body.split("\r\n--", "\n--")
+        for (section in sections) {
+            val name = nameRegex.find(section)?.groupValues?.get(1) ?: continue
+            val value = section.substringAfter("\r\n\r\n", section.substringAfter("\n\n", ""))
+                .trim()
+                .trimEnd('-')
+                .trim()
+            result[name] = value
+        }
+        return result
     }
-
-private fun streamHeaders(headers: Map<String, String>): Map<String, String> =
-    mapOf(
-        HttpHeaders.ContentType to "text/event-stream",
-        HttpHeaders.CacheControl to "no-cache",
-        HttpHeaders.Connection to "keep-alive",
-    ) + headers
-
-private fun TestServerHttpResponse.toKtorResponse(scope: MockRequestHandleScope) =
-    scope.respond(
-        content = body,
-        status = HttpStatusCode.fromValue(status),
-        headers = headers.toKtorHeaders(),
-    )
-
-private fun Map<String, String>.toKtorHeaders(): Headers =
-    Headers.build {
-        forEach { (name, value) -> append(name, value) }
-    }
-
-private suspend fun OutgoingContent.bodyText(): String =
-    when (this) {
-        is OutgoingContent.NoContent -> ""
-        else -> toByteArray().decodeToString()
-    }
-
-private fun Map<String, String>.headerValue(name: String): String? =
-    entries.firstOrNull { it.key.equals(name, ignoreCase = true) }?.value
-
-private fun parseMultipartFormData(body: String): Map<String, String> {
-    if (body.isBlank()) return emptyMap()
-    val result = linkedMapOf<String, String>()
-    val nameRegex = Regex("""name="([^"]+)"""")
-    val sections = body.split("\r\n--", "\n--")
-    for (section in sections) {
-        val name = nameRegex.find(section)?.groupValues?.get(1) ?: continue
-        val value = section.substringAfter("\r\n\r\n", section.substringAfter("\n\n", ""))
-            .trim()
-            .trimEnd('-')
-            .trim()
-        result[name] = value
-    }
-    return result
 }

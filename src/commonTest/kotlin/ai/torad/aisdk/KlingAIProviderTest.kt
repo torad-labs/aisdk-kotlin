@@ -217,7 +217,7 @@ class KlingAIProviderTest {
     @Test
     fun `unsupported KlingAI surfaces and unconfigured singleton fail explicitly`() = runTest {
         val provider = KlingAI(
-            createTestServer(mutableMapOf()).httpClient(),
+            TestServer.createTestServer(mutableMapOf()).httpClient(),
             KlingAIProviderSettings(accessKey = "access-key", secretKey = "secret-key"),
         )
 
@@ -250,7 +250,7 @@ class KlingAIProviderTest {
               }
             }
         """.trimIndent()
-        val fixture = createTestServer(
+        val fixture = TestServer.createTestServer(
             mutableMapOf(
                 "$KLING_TEST_BASE_URL$endpoint" to UrlHandler(UrlResponse.JsonValue(Json.parseToJsonElement(createResponse))),
                 "$KLING_TEST_BASE_URL$endpoint/task-1" to UrlHandler(UrlResponse.JsonValue(Json.parseToJsonElement(statusResponse))),

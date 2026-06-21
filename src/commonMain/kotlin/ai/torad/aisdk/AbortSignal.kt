@@ -128,18 +128,21 @@ public class AbortError(message: String = "operation aborted") : kotlin.coroutin
  * completes (cancelled or otherwise). Lets a parent scope's lifetime
  * automatically cancel anything observing the signal.
  */
-public fun abortSignalFromJob(job: Job): AbortSignal {
+public fun AbortSignalFromJob(job: Job): AbortSignal {
     val controller = AbortController()
     job.invokeOnCompletion { controller.abort() }
     return controller.signal
 }
 
-public fun Job.asAbortSignal(): AbortSignal = abortSignalFromJob(this)
+/** Member-extensions converting coroutine handles into [AbortSignal]s. */
+public object AbortSignals {
+    public fun Job.asAbortSignal(): AbortSignal = AbortSignalFromJob(this)
 
-public fun CoroutineScope.asAbortSignal(): AbortSignal =
-    coroutineContext[Job]?.asAbortSignal() ?: AbortSignalNever
+    public fun CoroutineScope.asAbortSignal(): AbortSignal =
+        coroutineContext[Job]?.asAbortSignal() ?: AbortSignalNever
+}
 
-public fun combineAbortSignals(vararg signals: AbortSignal): AbortSignal {
+public fun CombineAbortSignals(vararg signals: AbortSignal): AbortSignal {
     val active = signals.filterNot { it === AbortSignalNever }
     if (active.isEmpty()) return AbortSignalNever
     if (active.size == 1) return active.single()

@@ -24,7 +24,7 @@ import kotlinx.serialization.json.JsonObject
 class AssemblyAIProviderTest {
     @Test
     fun `transcription model uploads audio submits transcript and maps completed result`() = runTest {
-        val fixture = createTestServer(
+        val fixture = TestServer.createTestServer(
             mutableMapOf(
                 "https://api.assemblyai.com/v2/upload" to UrlHandler(
                     UrlResponse.JsonValue(Json.parseToJsonElement("""{"upload_url":"https://cdn.example/audio"}""")),
@@ -120,7 +120,7 @@ class AssemblyAIProviderTest {
 
     @Test
     fun `transcription model uses top-level language when provider option is omitted`() = runTest {
-        val fixture = createTestServer(
+        val fixture = TestServer.createTestServer(
             mutableMapOf(
                 "https://api.assemblyai.com/v2/upload" to UrlHandler(
                     UrlResponse.JsonValue(Json.parseToJsonElement("""{"upload_url":"https://cdn.example/audio"}""")),
@@ -151,7 +151,7 @@ class AssemblyAIProviderTest {
 
     @Test
     fun `transcription model throws when transcript finishes with error`() = runTest {
-        val fixture = createTestServer(
+        val fixture = TestServer.createTestServer(
             mutableMapOf(
                 "https://api.assemblyai.com/v2/upload" to UrlHandler(
                     UrlResponse.JsonValue(Json.parseToJsonElement("""{"upload_url":"https://cdn.example/audio"}""")),
@@ -178,7 +178,7 @@ class AssemblyAIProviderTest {
 
     @Test
     fun `default provider and unsupported model families fail explicitly`() {
-        val fixture = createTestServer(mutableMapOf())
+        val fixture = TestServer.createTestServer(mutableMapOf())
         val provider = AssemblyAI(fixture.httpClient(), AssemblyAIProviderSettings(apiKey = "key"))
 
         assertFailsWith<NoSuchModelError> { provider.languageModel("model") }

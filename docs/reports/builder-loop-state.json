@@ -10,7 +10,7 @@
   },
   "ownership": "builder owns src/ edits; orchestrator owns .claude/ + validation; parallel work only on distinct files",
   "spec": "docs/reports/target-architecture.md",
-  "current_status": "ALL 15 LAYERS COMPLETE + green. 9 rewrite (foundations->wire-finalize) + 6 polish (metadata cascade, god-file splits, OpenAICompatible splits, typealias->ModelId, ToolLoopAgent decomposition). Branch refactor/ts-residue-cleanup, full gate (compileKotlinJvm+jvmTest+checkKotlinAbi) green at HEAD.",
+  "current_status": "CLEANUP rounds (user: keep going). Final 62-rule audit found 993 grandfathered violations. L16: genuine error-level anti-patterns (sealed interface->class x12, public mutable var->val x42, secondary ctor x4, primitive-array-in-data-class x7, nullable-bag x2, lateinit x1, mutable-collection x1) = builder. L17: 705 loose camelCase top-level fns -> internal objects across 81 files (PARALLEL workflow). L18: warn sweep (else-in-sealed-when x37, keyed-json-cast x124, multiple-boolean-params x19, others). current_layer=16.",
   "hard_rules": "no camelCase top-level fns (only PascalCase factories); logic on types/in units; Flow over suspend; sealed CLASS not interface; no public/top-level/companion mutable var; no secondary ctor/lateinit/!!; sealed errors; typed over Map<String,JsonElement>/Any?",
   "layers": [
     {
@@ -68,10 +68,9 @@
       "status": "pending"
     }
   ],
-  "current_layer": "COMPLETE",
-  "layer15_status": "IN PROGRESS: 3 collaborators created (AgentTelemetryDispatcher/ToolApprovalCoordinator/ToolCallRepairer) but ToolLoopAgent call sites not rewired -> 81 unresolved-ref errors (runHook/fireTelemetry/emitError) + cascade suspension errors. Re-engaged: construct+hold collaborators, delegate every moved call to the instance. Awaiting green + commit.",
-  "layer14_done": "VALIDATED (6227a39): all 85 String typealiases eliminated -> generic ModelId value class; ModelId<->String boundary unwrapped at wire; 65 files, ABI regenerated, full gate green.",
-  "layer11_done": "VALIDATED (god-file splits, parallel workflow): Google 2027->162, Bedrock 1544->402, MCP 2221->1491, ToolLoopAgent 1879->1806 (abstract-class floor), 16 new same-package files, ABI-neutral, combined gate green. ToolLoopAgent deeper decomposition (Approval/Repair/Telemetry collaborators) is an optional further follow-up.",
+  "current_layer": 17,
+  "layer16_done": "VALIDATED (ae72aef): all 7 error-level rules ->0, ABI regenerated, full gate green.",
+  "layer17_note": "DECISION: STRICT — eliminate ALL 705 camelCase top-level fns, rule stays strict. private/internal (506) -> internal object members; public free procedures (155) -> PascalCase factories where they return objects, else object members; public extensions (44) -> member-extensions inside objects/types. Parallel workflow per-file + builder integration for cross-file callers; ABI WILL change (updateKotlinAbi). WORKFLOW DONE (wngo4qfdu, 81 agents, 4.14M tok): commonMain loose 705->0; 82 factory renames + 584 moves in docs/reports/layer17-renames.json. INTEGRATION in progress (builder). USER DECISION: grind to green (over revert). Builder thrashed 542->860 (broad text rewrites mangled ~120 call sites into syntax errors). Re-engaged with staged strategy: fix syntax errors first (hand-fix), then precise ast-grep metavar rewrites (preserve args) for the 82 renames, then moved-symbol member-imports, then updateKotlinAbi + green + commit. Work error count monotonically down.",
   "completed_layers": [
     {
       "n": 1,
@@ -114,6 +113,24 @@
       "n": 15,
       "name": "toolloopagent-decomposition",
       "what": "extract Approval/Repair/Telemetry concerns from ToolLoopAgent into collaborator classes it delegates to (composition, T7 testability); preserve channel-parallel-exec + sealed Outcome"
+    }
+  ],
+  "rewrite_complete": "Layers 1-15 done+green (9 rewrite + 6 polish). HEAD had full gate green.",
+  "cleanup_layers": [
+    {
+      "n": 16,
+      "name": "error-level-cleanup",
+      "what": "drive error-severity rules to 0 EXCEPT no-camelcase-top-level-function (that is L17): no-sealed-interface, no-public-mutable-var, no-secondary-constructor, no-primitive-array-property-in-data-class, no-nullable-prompt-messages-bag, no-lateinit-var, no-mutable-collection-in-public-fun"
+    },
+    {
+      "n": 17,
+      "name": "loose-fn-dissolve",
+      "what": "705 camelCase top-level fns -> members of internal objects/classes per file (81 files); PARALLEL workflow; ABI-neutral where internal"
+    },
+    {
+      "n": 18,
+      "name": "warn-sweep",
+      "what": "else-in-sealed-when->exhaustive, keyed-json-cast->typed decode, multiple-boolean-params->enum/config, remaining warns"
     }
   ]
 }

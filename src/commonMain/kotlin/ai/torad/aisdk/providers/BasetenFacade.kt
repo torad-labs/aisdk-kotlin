@@ -43,7 +43,7 @@ public class BasetenProvider(
     public fun embeddingModel(): EmbeddingModel = createEmbeddingModel(null)
     override fun embeddingModel(modelId: String): EmbeddingModel = createEmbeddingModel(modelId)
     public fun textEmbeddingModel(): EmbeddingModel = embeddingModel()
-    public fun textEmbeddingModel(modelId: ModelId): EmbeddingModel = embeddingModel(modelId)
+    public fun textEmbeddingModel(modelId: ModelId): EmbeddingModel = embeddingModel(modelId.value)
     override fun imageModel(modelId: String): ImageModel = throw NoSuchModelError(providerId, "imageModel", modelId)
 
     private fun createChatModel(modelId: String?): LanguageModel {

@@ -62,7 +62,7 @@ public class CohereProvider(
 ) : Provider {
     override val providerId: String = "cohere"
 
-    public operator fun invoke(modelId: ModelId): LanguageModel = languageModel(modelId)
+    public operator fun invoke(modelId: ModelId): LanguageModel = languageModel(modelId.value)
 
     override fun languageModel(modelId: String): LanguageModel =
         CohereChatLanguageModel(client, settings, modelId)
@@ -98,14 +98,14 @@ private class CohereChatLanguageModel(
     override val supportedUrls: Map<String, List<String>> = mapOf("image/*" to listOf("^https?://.*$"))
 
     override suspend fun generate(params: LanguageModelCallParams): LanguageModelResult {
-        val request = cohereChatRequest(modelId, params)
-        val response = coherePostJson(
+        val request = CohereWire.cohereChatRequest(modelId, params)
+        val response = CohereWire.coherePostJson(
             client = client,
             url = "${settings.baseURL.trimEnd('/')}/chat",
             body = request.body,
-            headers = cohereHeaders(settings, params.headers),
+            headers = CohereWire.cohereHeaders(settings, params.headers),
         )
-        return cohereChatResult(response.value.jsonObject, request.body, response.headers, response.value, request.warnings)
+        return CohereWire.cohereChatResult(response.value.jsonObject, request.body, response.headers, response.value, request.warnings)
     }
 
     override fun stream(params: LanguageModelCallParams): Flow<StreamEvent> = flow {
@@ -157,7 +157,7 @@ private class CohereEmbeddingModel(
                 values = params.values,
             )
         }
-        val options = cohereOptions(params.providerOptions)
+        val options = CohereWire.cohereOptions(params.providerOptions)
         val body = buildJsonObject {
             put("model", JsonPrimitive(modelId))
             put("texts", JsonArray(params.values.map(::JsonPrimitive)))
@@ -166,11 +166,11 @@ private class CohereEmbeddingModel(
             (options["truncate"] ?: params.truncate?.let { JsonPrimitive(if (it) "END" else "NONE") })?.let { put("truncate", it) }
             options["outputDimension"]?.let { put("output_dimension", it) }
         }
-        val response = coherePostJson(
+        val response = CohereWire.coherePostJson(
             client = client,
             url = "${settings.baseURL.trimEnd('/')}/embed",
             body = body,
-            headers = cohereHeaders(settings, params.headers),
+            headers = CohereWire.cohereHeaders(settings, params.headers),
         )
         val value = response.value.jsonObject
         val embeddings = value["embeddings"]?.jsonObject?.get("float")?.jsonArray.orEmpty()
@@ -195,7 +195,7 @@ private class CohereRerankingModel(
     override val provider: String = "cohere.reranking"
 
     override suspend fun rerank(params: RerankingParams): RerankingModelResult {
-        val options = cohereOptions(params.providerOptions)
+        val options = CohereWire.cohereOptions(params.providerOptions)
         val body = buildJsonObject {
             put("model", JsonPrimitive(modelId))
             put("query", JsonPrimitive(params.query))
@@ -204,11 +204,11 @@ private class CohereRerankingModel(
             options["maxTokensPerDoc"]?.let { put("max_tokens_per_doc", it) }
             options["priority"]?.let { put("priority", it) }
         }
-        val response = coherePostJson(
+        val response = CohereWire.coherePostJson(
             client = client,
             url = "${settings.baseURL.trimEnd('/')}/rerank",
             body = body,
-            headers = cohereHeaders(settings, params.headers),
+            headers = CohereWire.cohereHeaders(settings, params.headers),
         )
         val value = response.value.jsonObject
         val results = value["results"]?.jsonArray.orEmpty().map { item ->
@@ -232,7 +232,7 @@ private class CohereRerankingModel(
 }
 
 
-private data class CohereChatRequest(
+internal data class CohereChatRequest(
     val body: JsonObject,
     val warnings: List<CallWarning>,
 )
@@ -249,7 +249,9 @@ private data class CoherePreparedTools(
     val warnings: List<CallWarning>,
 )
 
-private fun cohereChatRequest(modelId: String, params: LanguageModelCallParams): CohereChatRequest {
+internal object CohereWire {
+
+fun cohereChatRequest(modelId: String, params: LanguageModelCallParams): CohereChatRequest {
     val options = cohereOptions(params.providerOptions)
     val prompt = coherePrompt(params.messages)
     val toolConfig = cohereTools(params.tools, params.toolChoice)
@@ -477,7 +479,7 @@ private fun String.normalizeCohereImageMediaType(): String = when (this) {
 
 private fun String.isCohereDocumentMediaType(): Boolean = startsWith("text/") || this == "application/json"
 
-private fun cohereChatResult(
+fun cohereChatResult(
     value: JsonObject,
     requestBody: JsonObject,
     headers: Map<String, String>,
@@ -573,13 +575,13 @@ private fun cohereFinishReason(value: String?): FinishReason = when (value) {
     else -> FinishReason.Other
 }
 
-private suspend fun coherePostJson(
+suspend fun coherePostJson(
     client: HttpClient,
     url: String,
     body: JsonObject,
     headers: Map<String, String>,
 ): HttpJsonResponse =
-    requestJson(
+    HttpTransport.requestJson(
         client = client,
         url = url,
         method = HttpMethod.Post,
@@ -589,7 +591,7 @@ private suspend fun coherePostJson(
         errorMessage = ::cohereErrorMessage,
     )
 
-private fun cohereHeaders(settings: CohereProviderSettings, callHeaders: Map<String, String>): Map<String, String> {
+fun cohereHeaders(settings: CohereProviderSettings, callHeaders: Map<String, String>): Map<String, String> {
     val base = linkedMapOf<String, String?>()
     settings.apiKey?.takeIf { it.isNotBlank() }?.let { base[HttpHeaders.Authorization] = "Bearer $it" }
     settings.headers.forEach { (key, value) -> base[key] = value }
@@ -597,7 +599,7 @@ private fun cohereHeaders(settings: CohereProviderSettings, callHeaders: Map<Str
     return ProviderHeaders.withUserAgentSuffix(base, "ai-sdk/cohere/$COHERE_VERSION")
 }
 
-private fun cohereOptions(providerOptions: ProviderOptions): JsonObject =
+fun cohereOptions(providerOptions: ProviderOptions): JsonObject =
     providerOptions.toMap()["cohere"] as? JsonObject ?: JsonObject(emptyMap())
 
 private fun cohereErrorMessage(statusCode: Int, parsed: JsonElement?, raw: String): String {
@@ -610,3 +612,5 @@ private fun cohereErrorMessage(statusCode: Int, parsed: JsonElement?, raw: Strin
 
 private fun List<ContentPart>.textContent(): String =
     filterIsInstance<ContentPart.Text>().joinToString("") { it.text }
+
+}

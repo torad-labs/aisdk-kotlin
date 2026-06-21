@@ -1,6 +1,6 @@
 package ai.torad.aisdk
 
-import ai.torad.aisdk.providers.mockLanguageModelTextOnly
+import ai.torad.aisdk.providers.MockLanguageModelTextOnly
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlinx.coroutines.flow.Flow
@@ -35,16 +35,16 @@ class MiddlewareTest {
         val onOut = mutableListOf<String>()
         val outer = TaggingMiddleware("outer", onIn, onOut)
         val inner = TaggingMiddleware("inner", onIn, onOut)
-        val wrapped = wrapLanguageModel(mockLanguageModelTextOnly("ok"), listOf(outer, inner))
-        wrapped.generate(LanguageModelCallParams(messages = listOf(userMessage("hi"))))
+        val wrapped = WrapLanguageModel(MockLanguageModelTextOnly("ok"), listOf(outer, inner))
+        wrapped.generate(LanguageModelCallParams(messages = listOf(UserMessage("hi"))))
         assertEquals(listOf("outer", "inner"), onIn)
         assertEquals(listOf("inner", "outer"), onOut)
     }
 
     @Test
     fun `zero_middlewares_returns_inner_model_unchanged`() {
-        val inner = mockLanguageModelTextOnly("untouched")
-        val wrapped = wrapLanguageModel(inner, emptyList())
+        val inner = MockLanguageModelTextOnly("untouched")
+        val wrapped = WrapLanguageModel(inner, emptyList())
         assertEquals(inner.modelId, wrapped.modelId)
     }
 }

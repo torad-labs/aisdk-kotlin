@@ -64,7 +64,7 @@ class ParallelToolExecutionTest {
         val agent = TestToolLoopAgent<Unit, String>(
             model = TwoToolThenText(),
             instructions = "x",
-            tools = toolSetOf(gatedTool("toolA"), gatedTool("toolB")),
+            tools = ToolSet(gatedTool("toolA"), gatedTool("toolB")),
         )
         val result = agent.generate(prompt = "go").first()
 
@@ -87,7 +87,7 @@ class ParallelToolExecutionTest {
         val agent = TestToolLoopAgent<Unit, String>(
             model = TwoToolThenText(),
             instructions = "x",
-            tools = toolSetOf(echoTool("toolA"), echoTool("toolB")),
+            tools = ToolSet(echoTool("toolA"), echoTool("toolB")),
             maxParallelToolCalls = 1,
         )
         val result = agent.generate(prompt = "go").first()
@@ -124,7 +124,7 @@ class ParallelToolExecutionTest {
         val agent = TestToolLoopAgent<Unit, String>(
             model = TwoToolThenText(),
             instructions = "x",
-            tools = toolSetOf(fastTool, slowTool),
+            tools = ToolSet(fastTool, slowTool),
         )
         val job = launch {
             agent.stream(prompt = "go").collect { event ->
@@ -171,7 +171,7 @@ class ParallelToolExecutionTest {
         val agent = TestToolLoopAgent<Unit, String>(
             model = TwoToolThenText(),
             instructions = "x",
-            tools = toolSetOf(gatedTool("toolA"), gatedTool("toolB")),
+            tools = ToolSet(gatedTool("toolA"), gatedTool("toolB")),
             maxParallelToolCalls = 1,
             experimental_onToolCallStart = {
                 startOrder += toolName

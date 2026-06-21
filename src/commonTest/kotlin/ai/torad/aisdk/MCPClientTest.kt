@@ -40,7 +40,7 @@ class MCPClientTest {
             }
         }
 
-        val client = createMCPClient(
+        val client = CreateMCPClient(
             MCPClientConfig(
                 transport = transport,
                 clientName = "fixture-client",
@@ -89,7 +89,7 @@ class MCPClientTest {
                 }
             }
         }
-        val client = createMCPClient(MCPClientConfig(transport = transport))
+        val client = CreateMCPClient(MCPClientConfig(transport = transport))
 
         val toolSet = client.tools<Unit>()
         val echoTool = toolSet.byName["echo"].asJsonTool()
@@ -133,7 +133,7 @@ class MCPClientTest {
                 )
             }
         }
-        val client = createMCPClient(MCPClientConfig(transport = transport))
+        val client = CreateMCPClient(MCPClientConfig(transport = transport))
         val definitions = ListToolsResult(
             tools = listOf(
                 MCPToolDefinition(
@@ -235,7 +235,7 @@ class MCPClientTest {
                 )
             }
         }
-        val client = createMCPClient(MCPClientConfig(transport = transport))
+        val client = CreateMCPClient(MCPClientConfig(transport = transport))
 
         assertEquals("a.txt", client.listResources().resources.single().name)
         assertEquals("hello", client.readResource("file://a").contents.single()["text"]!!.jsonPrimitive.content)
@@ -258,7 +258,7 @@ class MCPClientTest {
                 respond(message.id, initializeResult())
             }
         }
-        val client = createMCPClient(MCPClientConfig(transport = transport))
+        val client = CreateMCPClient(MCPClientConfig(transport = transport))
         client.onElicitationRequest(ElicitationRequestSchema) { request ->
             assertEquals("Need confirmation", request.params.message)
             ElicitResult(
@@ -293,7 +293,7 @@ class MCPClientTest {
                     fail(message.id, code = -32000, message = "boom")
             }
         }
-        val client = createMCPClient(MCPClientConfig(transport = transport))
+        val client = CreateMCPClient(MCPClientConfig(transport = transport))
 
         val error = assertFailsWith<MCPClientError> { client.listTools() }
         assertEquals(-32000, error.code)
@@ -310,7 +310,7 @@ class MCPClientTest {
                 )
             }
         }
-        val client = createMCPClient(MCPClientConfig(transport = transport))
+        val client = CreateMCPClient(MCPClientConfig(transport = transport))
 
         val before = transport.sent.size
         val error = assertFailsWith<MCPClientError> { client.listTools() }
@@ -320,11 +320,11 @@ class MCPClientTest {
 
     @Test
     fun `JSON-RPC parser maps requests notifications responses and errors`() {
-        assertIs<JSONRPCRequest>(parseJSONRPCMessage("""{"jsonrpc":"2.0","id":1,"method":"tools/list"}"""))
-        assertIs<JSONRPCNotification>(parseJSONRPCMessage("""{"jsonrpc":"2.0","method":"notifications/initialized"}"""))
-        assertIs<JSONRPCResponse>(parseJSONRPCMessage("""{"jsonrpc":"2.0","id":1,"result":{"ok":true}}"""))
+        assertIs<JSONRPCRequest>(McpWire.parseJSONRPCMessage("""{"jsonrpc":"2.0","id":1,"method":"tools/list"}"""))
+        assertIs<JSONRPCNotification>(McpWire.parseJSONRPCMessage("""{"jsonrpc":"2.0","method":"notifications/initialized"}"""))
+        assertIs<JSONRPCResponse>(McpWire.parseJSONRPCMessage("""{"jsonrpc":"2.0","id":1,"result":{"ok":true}}"""))
         val error = assertIs<JSONRPCError>(
-            parseJSONRPCMessage("""{"jsonrpc":"2.0","id":1,"error":{"code":-1,"message":"bad"}}"""),
+            McpWire.parseJSONRPCMessage("""{"jsonrpc":"2.0","id":1,"error":{"code":-1,"message":"bad"}}"""),
         )
         assertEquals(-1, error.error.code)
     }
@@ -332,10 +332,10 @@ class MCPClientTest {
     @Test
     fun `JSON-RPC parser rejects malformed envelopes through wire decoder`() {
         assertFailsWith<WireDecodeException> {
-            parseJSONRPCMessage("""{"jsonrpc":"2.0","id":1,"method":"tools/list","unexpected":true}""")
+            McpWire.parseJSONRPCMessage("""{"jsonrpc":"2.0","id":1,"method":"tools/list","unexpected":true}""")
         }
         assertFailsWith<WireDecodeException> {
-            parseJSONRPCMessage("""{"jsonrpc":"1.0","id":1,"method":"tools/list"}""")
+            McpWire.parseJSONRPCMessage("""{"jsonrpc":"1.0","id":1,"method":"tools/list"}""")
         }
     }
 
@@ -354,7 +354,7 @@ class MCPClientTest {
                 }
             }
         }
-        val client = createMCPClient(MCPClientConfig(transport = transport, onUncaughtError = { uncaught += it }))
+        val client = CreateMCPClient(MCPClientConfig(transport = transport, onUncaughtError = { uncaught += it }))
 
         assertEquals("echo", client.listTools().tools.single().name)
         assertTrue(uncaught.isEmpty(), "JSON-RPC notifications are advisory and must not trip uncaught errors")
@@ -370,7 +370,7 @@ class MCPClientTest {
                     respond(message.id, listToolsResult())
             }
         }
-        val client = createMCPClient(MCPClientConfig(transport = transport))
+        val client = CreateMCPClient(MCPClientConfig(transport = transport))
         val gate = CompletableDeferred<Unit>()
 
         val jobs = List(100) {
@@ -392,10 +392,10 @@ class MCPClientTest {
     @Test
     fun `auth returns authorized with existing tokens and redirect when tokens are absent`() = runTest {
         val authorized = MemoryOAuthProvider(tokens = OAuthTokens(accessToken = "token", tokenType = "Bearer"))
-        assertEquals(AuthResult.AUTHORIZED, auth(authorized, AuthOptions(serverUrl = "https://mcp.example.com")))
+        assertEquals(AuthResult.AUTHORIZED, McpAuth.auth(authorized, AuthOptions(serverUrl = "https://mcp.example.com")))
 
         val redirect = MemoryOAuthProvider(tokens = null)
-        assertEquals(AuthResult.REDIRECT, auth(redirect, AuthOptions(serverUrl = "https://mcp.example.com", scope = "tools")))
+        assertEquals(AuthResult.REDIRECT, McpAuth.auth(redirect, AuthOptions(serverUrl = "https://mcp.example.com", scope = "tools")))
         assertNotNull(redirect.lastAuthorizationUrl)
         assertTrue(redirect.lastAuthorizationUrl!!.startsWith("https://mcp.example.com/authorize?"))
         assertTrue("scope=tools" in redirect.lastAuthorizationUrl!!)
@@ -403,7 +403,7 @@ class MCPClientTest {
 
     @Test
     fun `auth starts authorization with dynamic registration and PKCE`() = runTest {
-        val fixture = createTestServer(
+        val fixture = TestServer.createTestServer(
             mutableMapOf(
                 "https://auth.example.com/.well-known/oauth-authorization-server" to UrlHandler(
                     UrlResponse.JsonValue(
@@ -433,7 +433,7 @@ class MCPClientTest {
 
         assertEquals(
             AuthResult.REDIRECT,
-            auth(
+            McpAuth.auth(
                 provider,
                 AuthOptions(serverUrl = "https://auth.example.com", scope = "tools offline_access", client = fixture.httpClient()),
             ),
@@ -453,7 +453,7 @@ class MCPClientTest {
 
     @Test
     fun `auth exchanges authorization code and awaits async client authentication`() = runTest {
-        val fixture = createTestServer(
+        val fixture = TestServer.createTestServer(
             mutableMapOf(
                 "https://auth.example.com/.well-known/oauth-authorization-server" to UrlHandler(
                     UrlResponse.JsonValue(
@@ -505,7 +505,7 @@ class MCPClientTest {
 
         assertEquals(
             AuthResult.AUTHORIZED,
-            auth(
+            McpAuth.auth(
                 provider,
                 AuthOptions(
                     serverUrl = "https://auth.example.com",
@@ -522,7 +522,7 @@ class MCPClientTest {
 
     @Test
     fun `auth refreshes tokens preserves refresh token and awaits async client authentication`() = runTest {
-        val fixture = createTestServer(
+        val fixture = TestServer.createTestServer(
             mutableMapOf(
                 "https://auth.example.com/.well-known/oauth-authorization-server" to UrlHandler(
                     UrlResponse.JsonValue(
@@ -566,7 +566,7 @@ class MCPClientTest {
             },
         )
 
-        assertEquals(AuthResult.AUTHORIZED, auth(provider, AuthOptions(serverUrl = "https://auth.example.com", client = fixture.httpClient())))
+        assertEquals(AuthResult.AUTHORIZED, McpAuth.auth(provider, AuthOptions(serverUrl = "https://auth.example.com", client = fixture.httpClient())))
 
         assertEquals("new-token", provider.tokens()?.accessToken)
         assertEquals("old-refresh", provider.tokens()?.refreshToken)
@@ -574,7 +574,7 @@ class MCPClientTest {
 
     @Test
     fun `auth uses protected resource metadata for authorization server and redirect resource`() = runTest {
-        val fixture = createTestServer(
+        val fixture = TestServer.createTestServer(
             mutableMapOf(
                 "https://api.example.com/.well-known/oauth-protected-resource/mcp-server" to UrlHandler(
                     UrlResponse.JsonValue(
@@ -604,7 +604,7 @@ class MCPClientTest {
 
         assertEquals(
             AuthResult.REDIRECT,
-            auth(provider, AuthOptions(serverUrl = "https://api.example.com/mcp-server", client = fixture.httpClient())),
+            McpAuth.auth(provider, AuthOptions(serverUrl = "https://api.example.com/mcp-server", client = fixture.httpClient())),
         )
 
         val authorizationUrl = assertNotNull(provider.lastAuthorizationUrl)
@@ -621,7 +621,7 @@ class MCPClientTest {
 
     @Test
     fun `auth carries protected resource through code exchange and refresh`() = runTest {
-        val fixture = createTestServer(
+        val fixture = TestServer.createTestServer(
             mutableMapOf(
                 "https://api.example.com/.well-known/oauth-protected-resource/mcp-server" to UrlHandler(
                     UrlResponse.JsonValue(
@@ -673,7 +673,7 @@ class MCPClientTest {
 
         assertEquals(
             AuthResult.AUTHORIZED,
-            auth(
+            McpAuth.auth(
                 provider,
                 AuthOptions(
                     serverUrl = "https://api.example.com/mcp-server",
@@ -687,7 +687,7 @@ class MCPClientTest {
 
         assertEquals(
             AuthResult.AUTHORIZED,
-            auth(provider, AuthOptions(serverUrl = "https://api.example.com/mcp-server", client = fixture.httpClient())),
+            McpAuth.auth(provider, AuthOptions(serverUrl = "https://api.example.com/mcp-server", client = fixture.httpClient())),
         )
         assertEquals("refreshed", provider.tokens()?.accessToken)
         assertEquals("refresh-token", provider.tokens()?.refreshToken)
@@ -695,19 +695,19 @@ class MCPClientTest {
 
     @Test
     fun `HTTP MCP transport performs initialize post session headers and tool list`() = runTest {
-        val fixture = createTestServer(
+        val fixture = TestServer.createTestServer(
             mutableMapOf(
                 "https://mcp.test/mcp" to UrlHandler(
                     { request, _ ->
                         when {
                             request.method == "GET" -> UrlResponse.Error(status = 405, body = "GET not supported")
                             "\"method\":\"initialize\"" in request.body -> UrlResponse.JsonValue(
-                                JSONRPCResponse(id = JsonPrimitive(0), result = initializeResult()).toJsonElement(),
+                                McpWire.toJsonElement(JSONRPCResponse(id = JsonPrimitive(0), result = initializeResult())),
                                 headers = mapOf("mcp-session-id" to "session-1"),
                             )
                             "\"method\":\"notifications/initialized\"" in request.body -> UrlResponse.Empty(status = 202)
                             "\"method\":\"tools/list\"" in request.body ->
-                                UrlResponse.JsonValue(JSONRPCResponse(id = JsonPrimitive(1), result = listToolsResult()).toJsonElement())
+                                UrlResponse.JsonValue(McpWire.toJsonElement(JSONRPCResponse(id = JsonPrimitive(1), result = listToolsResult())))
                             else -> UrlResponse.Error(status = 500, body = "unexpected request: ${request.body}")
                         }
                     },
@@ -716,7 +716,7 @@ class MCPClientTest {
         )
         fixture.server.start()
 
-        val client = createMCPClient(
+        val client = CreateMCPClient(
             MCPClientConfig(
                 transport = HttpMCPTransport(
                     client = fixture.httpClient(),
@@ -742,7 +742,7 @@ class MCPClientTest {
     @Test
     fun `SSE MCP transport discovers endpoint posts messages and receives server messages`() = runTest {
         val serverNotification = """{"jsonrpc":"2.0","method":"notifications/server"}"""
-        val fixture = createTestServer(
+        val fixture = TestServer.createTestServer(
             mutableMapOf(
                 "https://mcp.test/sse" to UrlHandler(
                     UrlResponse.StreamChunks(
@@ -773,7 +773,7 @@ class MCPClientTest {
     @Test
     fun `SSE MCP transport retries start GET after authorized auth`() = runTest {
         var sseAttempts = 0
-        val fixture = createTestServer(
+        val fixture = TestServer.createTestServer(
             mutableMapOf(
                 "https://mcp.test/sse" to UrlHandler(
                     { _, _ ->
@@ -803,7 +803,7 @@ class MCPClientTest {
     fun `HTTP MCP transport starts at most one inbound SSE reader after concurrent accepted notifications`() = runTest {
         val controller = TestResponseController()
         var getAttempts = 0
-        val fixture = createTestServer(
+        val fixture = TestServer.createTestServer(
             mutableMapOf(
                 "https://mcp.test/mcp" to UrlHandler(
                     { request, _ ->

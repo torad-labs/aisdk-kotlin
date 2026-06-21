@@ -24,7 +24,7 @@ class QuiverAIProviderTest {
     @Test
     @Suppress("LongMethod")
     fun `generate creates svg images with references options auth and metadata`() = runTest {
-        val fixture = createTestServer(
+        val fixture = TestServer.createTestServer(
             mutableMapOf(
                 "https://api.quiver.ai/v1/svgs/generations" to UrlHandler(
                     UrlResponse.JsonValue(
@@ -91,7 +91,7 @@ class QuiverAIProviderTest {
 
     @Test
     fun `vectorize posts one input image with vectorize options`() = runTest {
-        val fixture = createTestServer(
+        val fixture = TestServer.createTestServer(
             mutableMapOf(
                 "https://api.quiver.ai/v1/svgs/vectorizations" to UrlHandler(
                     UrlResponse.JsonValue(
@@ -134,7 +134,7 @@ class QuiverAIProviderTest {
 
     @Test
     fun `validates reference limits vectorize inputs and unsupported options`() = runTest {
-        val fixture = createTestServer(
+        val fixture = TestServer.createTestServer(
             mutableMapOf(
                 "https://api.quiver.ai/v1/svgs/generations" to UrlHandler(
                     UrlResponse.JsonValue(Json.parseToJsonElement("""{"id":"svg","created":1,"data":[{"svg":"<svg/>","mime_type":"image/svg+xml"}]}""")),
@@ -190,7 +190,7 @@ class QuiverAIProviderTest {
 
     @Test
     fun `default provider and unsupported model families fail explicitly`() {
-        val fixture = createTestServer(mutableMapOf())
+        val fixture = TestServer.createTestServer(mutableMapOf())
         val provider = QuiverAI(fixture.httpClient(), QuiverAIProviderSettings(apiKey = "key"))
 
         assertFailsWith<NoSuchModelError> { provider.languageModel("model") }

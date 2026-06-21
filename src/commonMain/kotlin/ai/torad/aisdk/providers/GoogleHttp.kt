@@ -45,12 +45,12 @@ private val googleErrorExtractor: ErrorMessageExtractor = { _, parsed, raw -> go
     parseJson: Boolean,
     requestBodyValues: Any? = null,
 ): HttpJsonResponse =
-    toJsonResponse(
+    with(HttpTransport) { toJsonResponse(
         url = url,
         parseJson = parseJson,
         requestBodyValues = requestBodyValues,
         errorMessage = googleErrorExtractor,
-    )
+    ) }
 
     suspend fun googlePostJson(
     client: HttpClient,
@@ -80,16 +80,14 @@ private val googleErrorExtractor: ErrorMessageExtractor = { _, parsed, raw -> go
 ): Flow<String> = flow {
     abortSignal.throwIfAborted()
     emitAll(
-        streamSse(
-            client = client,
-            url = url,
-            method = HttpMethod.Post,
-            headers = headers,
-            body = body,
-            json = aiSdkJson,
-            requestBodyValues = body,
-            errorMessage = googleErrorExtractor,
-        ),
+        HttpTransport.streamSse(client = client,
+        url = url,
+        method = HttpMethod.Post,
+        headers = headers,
+        body = body,
+        json = aiSdkJson,
+        requestBodyValues = body,
+        errorMessage = googleErrorExtractor,),
     )
 }
 
@@ -102,15 +100,13 @@ private val googleErrorExtractor: ErrorMessageExtractor = { _, parsed, raw -> go
 ): Flow<String> = flow {
     abortSignal.throwIfAborted()
     emitAll(
-        streamSse(
-            client = client,
-            url = url,
-            method = HttpMethod.Get,
-            headers = headers,
-            body = null,
-            json = aiSdkJson,
-            errorMessage = googleErrorExtractor,
-        ),
+        HttpTransport.streamSse(client = client,
+        url = url,
+        method = HttpMethod.Get,
+        headers = headers,
+        body = null,
+        json = aiSdkJson,
+        errorMessage = googleErrorExtractor,),
     )
 }
     suspend fun googleGetJson(

@@ -3,7 +3,7 @@ package ai.torad.aisdk
 import ai.torad.aisdk.ui.UIMessage
 import ai.torad.aisdk.ui.UIMessagePart
 import ai.torad.aisdk.ui.UIMessageRole
-import ai.torad.aisdk.ui.convertToModelMessages
+import ai.torad.aisdk.ui.ModelMessageConversion.convertToModelMessages
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject

@@ -24,7 +24,7 @@ import kotlinx.serialization.json.JsonObject
 class CohereProviderTest {
     @Test
     fun `chat model sends Cohere request shape and maps response content`() = runTest {
-        val fixture = createTestServer(
+        val fixture = TestServer.createTestServer(
             mutableMapOf(
                 "https://cohere.test/v2/chat" to UrlHandler(
                     UrlResponse.JsonValue(
@@ -82,7 +82,7 @@ class CohereProviderTest {
         val result = provider(ModelId("command-r-plus")).generate(
             LanguageModelCallParams(
                 messages = listOf(
-                    systemMessage("Use documents when available."),
+                    SystemMessage("Use documents when available."),
                     ModelMessage(
                         MessageRole.User,
                         listOf(
@@ -188,7 +188,7 @@ class CohereProviderTest {
 
     @Test
     fun `embedding model sends Cohere embed request and parses embeddings`() = runTest {
-        val fixture = createTestServer(
+        val fixture = TestServer.createTestServer(
             mutableMapOf(
                 "https://cohere.test/v2/embed" to UrlHandler(
                     UrlResponse.JsonValue(
@@ -250,7 +250,7 @@ class CohereProviderTest {
 
     @Test
     fun `reranking model sends Cohere rerank request and maps scores`() = runTest {
-        val fixture = createTestServer(
+        val fixture = TestServer.createTestServer(
             mutableMapOf(
                 "https://cohere.test/v2/rerank" to UrlHandler(
                     UrlResponse.JsonValue(
@@ -310,7 +310,7 @@ class CohereProviderTest {
 
     @Test
     fun `stream emits tool input lifecycle before final tool call`() = runTest {
-        val fixture = createTestServer(
+        val fixture = TestServer.createTestServer(
             mutableMapOf(
                 "https://cohere.test/v2/chat" to UrlHandler(
                     UrlResponse.JsonValue(
@@ -345,7 +345,7 @@ class CohereProviderTest {
 
         val events = model.stream(
             LanguageModelCallParams(
-                messages = listOf(userMessage("where")),
+                messages = listOf(UserMessage("where")),
                 tools = listOf(
                     LanguageModelTool(
                         name = "lookup",
@@ -379,7 +379,7 @@ class CohereProviderTest {
 
     @Test
     fun `unsupported Cohere surfaces and unconfigured singleton fail explicitly`() = runTest {
-        val provider = Cohere(createTestServer(mutableMapOf()).httpClient(), CohereProviderSettings(apiKey = "key"))
+        val provider = Cohere(TestServer.createTestServer(mutableMapOf()).httpClient(), CohereProviderSettings(apiKey = "key"))
 
         assertFailsWith<NoSuchModelError> { provider.imageModel("image") }
 
