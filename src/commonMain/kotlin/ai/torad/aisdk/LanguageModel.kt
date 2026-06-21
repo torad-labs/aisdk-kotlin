@@ -156,7 +156,11 @@ public data class CallWarning(
     val type: String,
     val message: String? = null,
     val details: JsonElement? = null,
-)
+) {
+    /** Render this warning for the logger seam (upstream's logWarnings). */
+    internal fun format(): String =
+        "AI SDK Warning [$type]: ${message ?: details?.toString().orEmpty()}"
+}
 
 /** Request metadata recorded by HTTP-backed or gateway providers. */
 public data class LanguageModelRequestMetadata(
@@ -176,4 +180,13 @@ public data class LanguageModelResponseMetadata(
      * unless the caller/provider populates it. Mirrors upstream `response.messages`.
      */
     val messages: List<ModelMessage> = emptyList(),
-)
+) {
+    internal fun merge(other: LanguageModelResponseMetadata): LanguageModelResponseMetadata =
+        LanguageModelResponseMetadata(
+            id = other.id ?: id,
+            timestampMillis = other.timestampMillis ?: timestampMillis,
+            modelId = other.modelId ?: modelId,
+            headers = headers + other.headers,
+            body = other.body ?: body,
+        )
+}

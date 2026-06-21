@@ -95,6 +95,13 @@ public class Chat(
     public val messages: List<UIMessage>
         get() = internalState.value.messages
 
+    internal fun toState(): ChatState = ChatState(
+        id = id,
+        messages = messages,
+        status = status,
+        error = error,
+    )
+
     // Atomically updates internalState and syncs the public StateFlow.
     private fun applyState(block: InternalState.() -> InternalState): InternalState =
         internalState.updateAndGet(block).also { _state.value = it.toChatState() }

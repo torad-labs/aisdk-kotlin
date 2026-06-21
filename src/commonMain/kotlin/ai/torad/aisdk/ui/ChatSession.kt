@@ -21,7 +21,7 @@ public data class ChatState(
 public class ChatSession(
     private val chat: Chat,
 ) {
-    private val mutableState = MutableStateFlow(ChatStateOps.toState(chat))
+    private val mutableState = MutableStateFlow(chat.toState())
 
     public val state: StateFlow<ChatState> = mutableState.asStateFlow()
 
@@ -104,7 +104,7 @@ public class ChatSession(
         chat.resumeStream(headers)
 
     private fun syncState() {
-        mutableState.value = ChatStateOps.toState(chat)
+        mutableState.value = chat.toState()
     }
 }
 
@@ -126,15 +126,4 @@ public fun ChatSession(
 // member-extension. Callers use member-import or `with(ChatSessionFactory) { ... }`.
 public object ChatSessionFactory {
     public fun Chat.asSession(): ChatSession = ChatSession(this)
-}
-
-// File-local mapping helper (was private `fun Chat.toState()`), now an object
-// method taking the receiver as its first parameter.
-internal object ChatStateOps {
-    fun toState(chat: Chat): ChatState = ChatState(
-        id = chat.id,
-        messages = chat.messages,
-        status = chat.status,
-        error = chat.error,
-    )
 }

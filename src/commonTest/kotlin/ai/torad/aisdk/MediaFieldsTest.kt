@@ -7,7 +7,7 @@ import kotlin.test.assertEquals
 class MediaFieldsTest {
     @Test
     fun `sumImageUsage adds per-batch token counts and keeps null when all null`() {
-        val summed = MediaSupport.sumImageUsage(
+        val summed = ImageModelUsage.sum(
             listOf(
                 ImageModelUsage(inputTokens = 3, totalTokens = 3),
                 ImageModelUsage(inputTokens = 4, outputTokens = 1, totalTokens = 5),
@@ -17,7 +17,7 @@ class MediaFieldsTest {
         assertEquals(1, summed.outputTokens)
         assertEquals(8, summed.totalTokens)
         // all-null field stays null
-        assertEquals(null, MediaSupport.sumImageUsage(listOf(ImageModelUsage(), ImageModelUsage())).inputTokens)
+        assertEquals(null, ImageModelUsage.sum(listOf(ImageModelUsage(), ImageModelUsage())).inputTokens)
     }
 
     @Test

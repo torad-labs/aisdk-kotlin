@@ -707,7 +707,7 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
                 responseFormat = stepSettings.responseFormat
                     ?: resolvedSettings.responseFormat
                     ?: if (responseFormat == ResponseFormat.Text && output != null) {
-                        with(OutputOps) { output.toResponseFormat() }
+                        output.toResponseFormat()
                     } else {
                         responseFormat
                     },

@@ -7,7 +7,14 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.update
+import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonNull
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.booleanOrNull
+import kotlinx.serialization.json.doubleOrNull
+import kotlinx.serialization.json.jsonPrimitive
 
 public data class DeepPartial<T>(val value: T?)
 
@@ -125,7 +132,7 @@ public class StructuredObject<RESULT, INPUT>(
                 controller.signal.throwIfAborted()
                 accumulated.append(chunk)
                 val parsed = PartialJson.parsePartialJson(accumulated.toString()).value ?: return@collect
-                if (!JsonOps.isDeepEqual(latestRaw, parsed)) {
+                if (!latestRaw.isDeepEqual(parsed)) {
                     latestRaw = parsed
                     var validationError: Throwable? = null
                     when (val validated = Schemas.safeValidateTypes(parsed, options.schema)) {
@@ -199,5 +206,27 @@ public class StructuredObject<RESULT, INPUT>(
 
     private fun clearObject() {
         mutableState.value = StructuredObjectPhase.Idle
+    }
+
+    private fun JsonElement?.isDeepEqual(other: JsonElement?): Boolean = when {
+        this === other -> true
+        this == null || other == null -> false
+        this is JsonNull && other is JsonNull -> true
+        this is JsonPrimitive && other is JsonPrimitive -> primitiveEquals(this, other)
+        this is JsonArray && other is JsonArray ->
+            this.size == other.size && this.indices.all { this[it].isDeepEqual(other[it]) }
+        this is JsonObject && other is JsonObject ->
+            this.keys == other.keys && this.keys.all { key -> this[key].isDeepEqual(other[key]) }
+        else -> false
+    }
+
+    private fun primitiveEquals(left: JsonPrimitive, right: JsonPrimitive): Boolean {
+        val l = left.jsonPrimitive
+        val r = right.jsonPrimitive
+        return when {
+            l.booleanOrNull != null || r.booleanOrNull != null -> l.booleanOrNull == r.booleanOrNull
+            l.doubleOrNull != null || r.doubleOrNull != null -> l.doubleOrNull == r.doubleOrNull
+            else -> l.content == r.content
+        }
     }
 }

@@ -30,7 +30,6 @@ import ai.torad.aisdk.ui.UiMessageStreams.validateUiMessages
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
-import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 import kotlinx.coroutines.flow.Flow
@@ -240,9 +239,6 @@ class FullPortFeatureParityTest {
         assertEquals("text/plain", dataUrl.mediaType)
         assertEquals("image/png", MediaTypes.detect(filename = "a.png"))
         assertTrue(IdGenerator.generate("test").startsWith("test-"))
-        assertTrue(JsonOps.isDeepEqual(JsonPrimitive(1), JsonPrimitive(1.0)))
-        assertFalse(JsonOps.isDeepEqual(JsonPrimitive(1), JsonPrimitive(2)))
-        assertEquals(listOf(listOf(1, 2), listOf(3)), CollectionOps.splitArray(listOf(1, 2, 3), 2))
     }
 
     @Test

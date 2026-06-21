@@ -117,11 +117,9 @@ public class StreamTextResult(
             .firstOrNull { it.isNotEmpty() }
             ?: emptyList()
         var response = initialResponse
-        with(StreamMetadataOps) {
-            for (event in buffer) {
-                if (event is StreamEvent.ResponseMetadata) {
-                    response = response.merge(event.toLanguageModelResponseMetadata())
-                }
+        for (event in buffer) {
+            if (event is StreamEvent.ResponseMetadata) {
+                response = response.merge(event.toLanguageModelResponseMetadata())
             }
         }
         capturedResponse = response
@@ -141,25 +139,4 @@ public data class GenerateObjectResult<TOutput>(
 ) {
     val output: TOutput get() = value
     val generatedObject: TOutput get() = value
-}
-
-internal object StreamMetadataOps {
-    fun StreamEvent.ResponseMetadata.toLanguageModelResponseMetadata(): LanguageModelResponseMetadata =
-        LanguageModelResponseMetadata(
-            id = id,
-            timestampMillis = timestampMillis,
-            modelId = modelId,
-            headers = headers,
-            body = body,
-        )
-
-    fun LanguageModelResponseMetadata.merge(
-        other: LanguageModelResponseMetadata,
-    ): LanguageModelResponseMetadata = LanguageModelResponseMetadata(
-        id = other.id ?: id,
-        timestampMillis = other.timestampMillis ?: timestampMillis,
-        modelId = other.modelId ?: modelId,
-        headers = headers + other.headers,
-        body = other.body ?: body,
-    )
 }

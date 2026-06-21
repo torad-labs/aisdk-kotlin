@@ -92,6 +92,13 @@ public sealed class Tool<TInput, TOutput, TContext> {
     /** Internal bridge for ToolLoopAgent — returns raw Flow<TOutput> via execute() unwrap. */
     internal open fun streamExecutor(scope: ToolExecutionContext<TContext>, input: TInput): Flow<TOutput> =
         execute(input, scope).map { result -> when (result) { is ToolResult.Success -> result.value } }
+
+    internal fun descriptionWithExamples(): String {
+        val examples = inputExamples
+        if (examples.isEmpty()) return description
+        val appendix = examples.joinToString(separator = "\n") { "Example: $it" }
+        return "$description\n\n$appendix"
+    }
 }
 
 /**
@@ -180,7 +187,7 @@ public class ToolSet<TContext>(
         byName.values.map { tool ->
             LanguageModelTool(
                 name = tool.name,
-                description = ToolSetOps.descriptionWithExamples(tool),
+                description = tool.descriptionWithExamples(),
                 parametersSchemaJson = ToolJsonSchema.jsonSchemaFor(tool),
                 strict = tool.strict,
                 providerExecuted = tool.providerExecuted,
@@ -201,31 +208,24 @@ public class ToolSet<TContext>(
         }
         return ToolSet(byName + other.byName)
     }
-}
 
-internal object ToolSetOps {
-    fun descriptionWithExamples(tool: Tool<*, *, *>): String {
-        val examples = tool.inputExamples
-        if (examples.isEmpty()) return tool.description
-        val appendix = examples.joinToString(separator = "\n") { "Example: $it" }
-        return "${tool.description}\n\n$appendix"
-    }
-
-    fun <TContext> requireUniqueToolNames(
-        tools: List<Tool<*, *, TContext>>,
-    ): Map<String, Tool<*, *, TContext>> {
-        val byName = linkedMapOf<String, Tool<*, *, TContext>>()
-        for (tool in tools) {
-            require(tool.name !in byName) { "Duplicate tool name `${tool.name}`." }
-            byName[tool.name] = tool
+    public companion object {
+        internal fun <TContext> requireUniqueToolNames(
+            tools: List<Tool<*, *, TContext>>,
+        ): Map<String, Tool<*, *, TContext>> {
+            val byName = linkedMapOf<String, Tool<*, *, TContext>>()
+            for (tool in tools) {
+                require(tool.name !in byName) { "Duplicate tool name `${tool.name}`." }
+                byName[tool.name] = tool
+            }
+            return byName
         }
-        return byName
     }
 }
 
 /** Construct a [ToolSet] from individual tools. Throws on duplicate names. */
 public fun <TContext> ToolSet(vararg tools: Tool<*, *, TContext>): ToolSet<TContext> =
-    ToolSet(ToolSetOps.requireUniqueToolNames(tools.toList()))
+    ToolSet(ToolSet.requireUniqueToolNames(tools.toList()))
 
 @AiSdkDsl
 public class ToolSetBuilder<TContext> internal constructor() {

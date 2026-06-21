@@ -35,6 +35,28 @@ public sealed class ProviderOptions {
         else -> other
     }
 
+    /**
+     * Recursively deep-merge [other] on top of these options; nested JSON objects
+     * are merged key-by-key ([other] wins on scalar conflicts).
+     */
+    internal fun mergedWith(other: ProviderOptions): ProviderOptions {
+        val merged = toMap().toMutableMap()
+        for ((key, value) in other.toMap()) {
+            val existing = merged[key]
+            merged[key] = if (existing is JsonObject && value is JsonObject) deepMerge(existing, value) else value
+        }
+        return Raw(JsonObject(merged))
+    }
+
+    private fun deepMerge(base: JsonObject, override: JsonObject): JsonObject {
+        val merged = base.toMutableMap()
+        for ((key, value) in override) {
+            val existing = merged[key]
+            merged[key] = if (existing is JsonObject && value is JsonObject) deepMerge(existing, value) else value
+        }
+        return JsonObject(merged)
+    }
+
     public companion object {
         /** Build [ProviderOptions] from provider-name / JSON-object pairs. */
         public fun ofPairs(vararg pairs: Pair<String, JsonObject>): ProviderOptions =
