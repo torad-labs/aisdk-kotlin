@@ -354,5 +354,28 @@
     "step6_done": "committed 55f92c4: all 18 audio+facade Wires dissolved (XaiWire incl.); green",
     "inventory_correction": "Orchestrator inventory undercounted (1 bag/file). 7 pre-existing bags missed: AnthropicWire(1), FacadeHttp(3), ProdiaWire(1), QuiverAIWire(1), ReplicateWire(1), TelemetryOps(2), TypedJsonOps(5 consumers). Added step 7 to finish them. No NEW bags created by P3 (all pre-existing).",
     "final": "58 bag objects dissolved across 7 steps; 6 irreducible shared-infra/cross-cutting utilities kept w/ consumer evidence (UrlOps, FacadeSupport, GoogleHttp, BedrockHttp, FacadeHttp, core TypedJsonOps); ABI regenerated; detekt baseline 3766->3692 (net -74); full check green."
+  },
+  "xray_fix": {
+    "source": "docs/reports/pipeline-xray.md (14 confirmed + 7 low)",
+    "decision": "address root cause structurally first (Opus leverage), then remaining findings",
+    "current_step": 1,
+    "steps": [
+      {
+        "n": 1,
+        "name": "root-cause-wiring",
+        "what": "Make producer-never-wired fields REQUIRED (no silent defaults) so non-population is a compile error: OnStepStartEvent.request+priorSteps (thread callParams [reorder: build before event] + completedSteps.toList() at ToolLoopAgent ~648); StepResult.request (populate real request metadata; loop uses stream() not streamResult()); LanguageModelResponseMetadata.messages (populate or remove). Flip the assert-empty tests to assert-roundtrip."
+      },
+      {
+        "n": 2,
+        "name": "wire-contract-integrity",
+        "what": "ToolResultOutput.toJsonElement<->toolResultOutputFromWire typed-discriminator round-trip; ToolApprovalRequest SSE chunk include signature (Streaming.kt:431, security); Gateway use transmitted isError not recompute (KtorGatewayTransport ~668); ContentPart.Source.sourceId round-trip (ModelMessage ~203); StreamEvent.ToolResult.isError default == isToolResultError() (Streaming ~242); ToolOutputDenied.approvalId consume-or-remove."
+      },
+      {
+        "n": 3,
+        "name": "non-integrated-code",
+        "what": "integrate-or-remove: StructuredObjectApi.kt (RECOMMEND, do not delete a whole subsystem without confirm), ProviderToolFactory* cluster (recommend); REMOVE clearly-dead: SimulateReadableStream, test-only ToolNameMapping/LazySchema/DefaultChatTransport, parity stubs (ToolCall.invalid), UIMessagePart.Data.transient, dead UrlOps.isSupported. Report integrated-vs-removed per item."
+      }
+    ],
+    "gate": "per step: compile+jvmTest green + finding addressed + no new hook violation; FINAL: full check + updateKotlinAbi + push"
   }
 }
