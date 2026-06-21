@@ -80,5 +80,7 @@ class ConvertFidelityR4Test {
         val source = convertToModelMessages(ui).single().content.single() as ContentPart.Source
         assertEquals("application/pdf", source.mediaType)
         assertEquals("spec.pdf", source.filename)
+        // sourceId must survive the round-trip so source identity isn't lost on resume.
+        assertEquals("s1", source.sourceId)
     }
 }

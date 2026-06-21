@@ -108,6 +108,23 @@ class ToolFlowTest {
     }
 
     @Test
+    fun `Error ErrorJson and ExecutionDenied round-trip through toJsonElement and back`() = with(ToolResultOutputs) {
+        // The three error/denial subtypes used to serialize as bare values that the reader
+        // could not reconstruct (they fell through to Text/Json). They must now round-trip.
+        val cases = listOf(
+            ToolResultOutput.Error("bad input"),
+            ToolResultOutput.ErrorJson(buildJsonObject { put("code", JsonPrimitive(42)) }),
+            ToolResultOutput.ExecutionDenied("user said no"),
+            ToolResultOutput.ExecutionDenied(null),
+        )
+        for (original in cases) {
+            val restored = ToolResultOutputs.toolResultOutputFromWire(original.toJsonElement())
+            assertEquals(original, restored, "round-trip lost identity for $original")
+            assertTrue(restored.isToolResultError(), "$restored must still read as an error/denial")
+        }
+    }
+
+    @Test
     fun `given a single-value tool when invoked then it emits exactly one final ToolResult with preliminary false`() =
         runTest {
             // GIVEN
@@ -273,7 +290,20 @@ class ToolFlowTest {
                 .single()
             assertIs<ContentPart.ToolResult>(toolPart)
             assertTrue(toolPart.isError)
-            assertEquals(JsonPrimitive("Error: redacted failure"), toolPart.modelVisible)
+            // modelVisible now carries the typed discriminator (was a bare "Error: ..."
+            // string that lost its error identity on read-back).
+            assertEquals(
+                buildJsonObject {
+                    put("type", JsonPrimitive("error-text"))
+                    put("value", JsonPrimitive("redacted failure"))
+                },
+                toolPart.modelVisible,
+            )
+            // ...and it reconstructs back to Error rather than degrading to Text.
+            assertEquals(
+                ToolResultOutput.Error("redacted failure"),
+                ToolResultOutputs.toolResultOutputFromWire(toolPart.modelVisible),
+            )
         }
 
     @Test

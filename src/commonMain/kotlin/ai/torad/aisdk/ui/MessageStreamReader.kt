@@ -330,6 +330,9 @@ public fun StreamToUiMessages(
                     toolName = event.toolName,
                     state = ToolCallState.OutputDenied,
                     input = existingInput,
+                    // Carry the approval-identity key so a denial whose approvalId diverges
+                    // from toolCallId can be correlated to its originating request.
+                    approvalId = event.approvalId,
                     error = event.reason,
                 )
                 emit(snapshot())

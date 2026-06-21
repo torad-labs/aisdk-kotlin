@@ -239,9 +239,9 @@ public sealed interface StreamEvent {
         val outputJson: JsonElement,
         val output: ToolResultOutput = ToolResultOutputs.toolResultOutputFromJson(outputJson),
         val modelOutput: ToolResultOutput = output,
-        val isError: Boolean = modelOutput is ToolResultOutput.Error ||
-            modelOutput is ToolResultOutput.ErrorJson ||
-            modelOutput is ToolResultOutput.ExecutionDenied,
+        // Canonical error check — also true for Content(isError = true) (the MCP shape),
+        // which the old inline expression missed, diverging from isToolResultError().
+        val isError: Boolean = with(ToolResultOutputs) { modelOutput.isToolResultError() },
         val preliminary: Boolean = false,
         @EncodeDefault(EncodeDefault.Mode.NEVER)
         val providerMetadata: ProviderMetadata = ProviderMetadata.None,
@@ -431,6 +431,9 @@ public sealed interface StreamEvent {
             is StreamEvent.ToolApprovalRequest -> jsonChunk("tool-approval-request") {
                 put("toolCallId", toolCallId)
                 approvalId?.let { put("approvalId", it) }
+                // Carry the HMAC-SHA256 approval signature so a JS/TS useChat client can
+                // replay it — without it, signed-approval replays are rejected fail-closed.
+                signature?.let { put("signature", it) }
             }
             is StreamEvent.ToolResult -> jsonChunk("tool-output-available") {
                 put("toolCallId", toolCallId)

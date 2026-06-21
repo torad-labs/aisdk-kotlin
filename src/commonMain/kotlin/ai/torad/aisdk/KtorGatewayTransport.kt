@@ -665,7 +665,10 @@ public class KtorGatewayTransport(
                     outputJson = output.toJsonElement(),
                     output = output,
                     modelOutput = output,
-                    isError = output.isToolResultError(),
+                    // Honor the flag the gateway explicitly transmits (the content-part path
+                    // already does); only recompute when it's absent.
+                    isError = WireDecoder.optionalBoolean(obj, "isError", "gateway", "stream event")
+                        ?: output.isToolResultError(),
                 )
             }
             "finish-step" -> StreamEvent.StepFinish(

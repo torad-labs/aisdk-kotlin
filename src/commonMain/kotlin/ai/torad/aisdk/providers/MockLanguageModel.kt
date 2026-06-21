@@ -49,7 +49,15 @@ public class MockLanguageModel(
             ?: emptyList()
         val sources = response.events
             .filterIsInstance<StreamEvent.SourcePart>()
-            .map { ContentPart.Source(it.sourceType, it.url, it.title, it.providerMetadata) }
+            .map {
+                ContentPart.Source(
+                    sourceType = it.sourceType,
+                    sourceId = it.id,
+                    url = it.url,
+                    title = it.title,
+                    providerMetadata = it.providerMetadata,
+                )
+            }
         val files = response.events
             .filterIsInstance<StreamEvent.FilePart>()
             .map { ContentPart.File(it.mediaType, it.base64, providerMetadata = it.providerMetadata) }

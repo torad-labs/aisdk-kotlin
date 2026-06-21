@@ -50,6 +50,34 @@ class ToUIMessageStreamTest {
     }
 
     @Test
+    fun `tool-approval-request chunk carries the HMAC signature when set`() = runTest {
+        val chunk = ToUIMessageStream(
+            flowOf(
+                StreamEvent.ToolApprovalRequest(
+                    toolCallId = "c1",
+                    toolName = "t",
+                    inputJson = JsonPrimitive("in"),
+                    approvalId = "a1",
+                    signature = "sig-abc",
+                ),
+            ),
+        ).toList().single()
+        assertEquals("tool-approval-request", chunk["type"]?.jsonPrimitive?.content)
+        assertEquals("c1", chunk["toolCallId"]?.jsonPrimitive?.content)
+        assertEquals("a1", chunk["approvalId"]?.jsonPrimitive?.content)
+        // Security: the signature must reach a JS/TS client or signed-replay is rejected.
+        assertEquals("sig-abc", chunk["signature"]?.jsonPrimitive?.content)
+    }
+
+    @Test
+    fun `tool-approval-request chunk omits signature when null`() = runTest {
+        val chunk = ToUIMessageStream(
+            flowOf(StreamEvent.ToolApprovalRequest("c1", "t", JsonPrimitive("in"))),
+        ).toList().single()
+        assertEquals(null, chunk["signature"], "signature absent when the agent holds no approval secret")
+    }
+
+    @Test
     fun `maps a tool round-trip and drops events with no wire counterpart`() = runTest {
         val chunks = ToUIMessageStream(
             flowOf(
