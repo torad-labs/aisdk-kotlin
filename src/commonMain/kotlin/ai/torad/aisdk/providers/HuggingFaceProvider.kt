@@ -41,7 +41,75 @@ public data class HuggingFaceProviderSettings(
     val baseURL: String = "https://router.huggingface.co/v1",
     val headers: Map<String, String> = emptyMap(),
     val generateId: () -> String = { IdGenerator.generate() },
-)
+) {
+    internal fun huggingFaceHeaders(extra: Map<String, String>): Map<String, String> {
+        val merged = linkedMapOf<String, String?>()
+        apiKey?.takeIf { it.isNotBlank() }?.let { merged[HttpHeaders.Authorization] = "Bearer $it" }
+        merged.putAll(headers)
+        merged.putAll(extra)
+        return ProviderHeaders.normalize(merged)
+    }
+
+    internal fun huggingFaceUsage(element: JsonElement?): Usage {
+        val obj = element as? JsonObject ?: return Usage()
+        val inputTokens = obj["input_tokens"]?.jsonPrimitive?.intOrNull ?: 0
+        val cachedTokens = (obj["input_tokens_details"]?.jsonObject?.get("cached_tokens")?.jsonPrimitive?.intOrNull ?: 0)
+            .coerceIn(0, inputTokens)
+        val outputTokens = obj["output_tokens"]?.jsonPrimitive?.intOrNull ?: 0
+        val reasoningTokens = (obj["output_tokens_details"]?.jsonObject?.get("reasoning_tokens")?.jsonPrimitive?.intOrNull ?: 0)
+            .coerceAtLeast(0)
+        val outputTotal = if (reasoningTokens > outputTokens) outputTokens + reasoningTokens else outputTokens
+        return Usage(
+            inputTokens = Usage.InputTokenBreakdown(
+                total = inputTokens,
+                noCache = (inputTokens - cachedTokens).coerceAtLeast(0),
+                cacheRead = cachedTokens,
+            ),
+            outputTokens = Usage.OutputTokenBreakdown(
+                total = outputTotal,
+                text = outputTotal - reasoningTokens,
+                reasoning = reasoningTokens,
+            ),
+            raw = element,
+        )
+    }
+
+    internal fun mapHuggingFaceFinishReason(reason: String?): FinishReason = when (reason) {
+        "stop" -> FinishReason.Stop
+        "length" -> FinishReason.Length
+        "content_filter" -> FinishReason.ContentFilter
+        "tool_calls" -> FinishReason.ToolCalls
+        "error" -> FinishReason.Error
+        else -> FinishReason.Other
+    }
+
+    internal fun huggingFaceItemMetadata(
+        itemId: String,
+        providerExecuted: Boolean = false,
+    ): ProviderMetadata = ProviderMetadata.Raw(JsonObject(mapOf(
+        "huggingface" to buildJsonObject {
+            put("itemId", JsonPrimitive(itemId))
+            if (providerExecuted) put("providerExecuted", JsonPrimitive(true))
+        },
+    )))
+
+    internal fun huggingFaceParseToolInput(arguments: String?, json: Json): JsonElement =
+        if (arguments.isNullOrBlank()) {
+            JsonObject(emptyMap())
+        } else {
+            runCatching { json.parseToJsonElement(arguments) }.getOrElse { JsonPrimitive(arguments) }
+        }
+
+    internal fun huggingFaceErrorMessage(error: JsonElement): String {
+        val obj = error as? JsonObject
+        val nested = obj?.get("error")
+        val nestedObj = nested as? JsonObject
+        return nestedObj?.get("message")?.jsonPrimitive?.contentOrNull
+            ?: obj?.get("message")?.jsonPrimitive?.contentOrNull
+            ?: nested?.jsonPrimitive?.contentOrNull
+            ?: error.toString()
+    }
+}
 
 @Serializable
 public data class HuggingFaceResponsesSettings(
@@ -61,14 +129,32 @@ public class HuggingFaceProvider(
 
     public fun responses(modelId: ModelId): LanguageModel = languageModel(modelId.value)
 
-    public fun textEmbeddingModel(modelId: String): Nothing = throw HuggingFaceWire.huggingFaceNoEmbeddingModel(providerId, modelId)
+    public fun textEmbeddingModel(modelId: String): Nothing = throw huggingFaceNoEmbeddingModel(providerId, modelId)
 
     override fun languageModel(modelId: String): LanguageModel =
         HuggingFaceResponsesLanguageModel(client, settings, modelId)
 
-    override fun embeddingModel(modelId: String): EmbeddingModel = throw HuggingFaceWire.huggingFaceNoEmbeddingModel(providerId, modelId)
+    override fun embeddingModel(modelId: String): EmbeddingModel = throw huggingFaceNoEmbeddingModel(providerId, modelId)
 
-    override fun imageModel(modelId: String): ImageModel = throw HuggingFaceWire.huggingFaceNoImageModel(providerId, modelId)
+    override fun imageModel(modelId: String): ImageModel = throw huggingFaceNoImageModel(providerId, modelId)
+
+    private fun huggingFaceNoEmbeddingModel(providerId: String?, modelId: String): NoSuchModelError =
+        NoSuchModelError(
+            providerId = providerId,
+            modelType = "embeddingModel",
+            modelId = modelId,
+            message = "Hugging Face Responses API does not support text embeddings. " +
+                "Use the Hugging Face Inference API directly for embeddings.",
+        )
+
+    private fun huggingFaceNoImageModel(providerId: String?, modelId: String): NoSuchModelError =
+        NoSuchModelError(
+            providerId = providerId,
+            modelType = "imageModel",
+            modelId = modelId,
+            message = "Hugging Face Responses API does not support image generation. " +
+                "Use the Hugging Face Inference API directly for image models.",
+        )
 }
 
 /** PascalCase factory — mirrors `OpenAI(...)`. */
@@ -86,7 +172,7 @@ private class HuggingFaceResponsesLanguageModel(
     override val supportedUrls: Map<String, List<String>> = mapOf("image/*" to listOf("^https?://.*$"))
 
     override suspend fun generate(params: LanguageModelCallParams): LanguageModelResult {
-        val prepared = HuggingFaceWire.huggingFaceResponsesRequestBody(modelId, params, stream = false)
+        val prepared = huggingFaceResponsesRequestBody(modelId, params, stream = false)
         val response = postJson(prepared.body, headers = params.headers)
         return responsesResult(
             response = response.value.jsonObject,
@@ -98,7 +184,7 @@ private class HuggingFaceResponsesLanguageModel(
     }
 
     override fun stream(params: LanguageModelCallParams): Flow<StreamEvent> = flow {
-        val prepared = HuggingFaceWire.huggingFaceResponsesRequestBody(modelId, params, stream = true)
+        val prepared = huggingFaceResponsesRequestBody(modelId, params, stream = true)
         emit(StreamEvent.StreamStart(prepared.warnings))
         val state = HuggingFaceResponsesStreamState(settings, aiSdkJson)
         var sseHeaders: Map<String, String> = emptyMap()
@@ -115,7 +201,7 @@ private class HuggingFaceResponsesLanguageModel(
     }
 
     override fun streamResult(params: LanguageModelCallParams): LanguageModelStreamResult {
-        val prepared = HuggingFaceWire.huggingFaceResponsesRequestBody(modelId, params, stream = true)
+        val prepared = huggingFaceResponsesRequestBody(modelId, params, stream = true)
         return LanguageModelStreamResult(
             stream = stream(params),
             request = LanguageModelRequestMetadata(body = prepared.body),
@@ -129,7 +215,7 @@ private class HuggingFaceResponsesLanguageModel(
         val response = client.request("${settings.baseURL.trimEnd('/')}/responses") {
             method = HttpMethod.Post
             contentType(ContentType.Application.Json)
-            HuggingFaceWire.huggingFaceHeaders(settings, headers).forEach { (name, value) -> header(name, value) }
+            settings.huggingFaceHeaders(headers).forEach { (name, value) -> header(name, value) }
             setBody(aiSdkJson.encodeToString(JsonElement.serializer(), body))
         }
         return parseResponse(response, parseJson = true)
@@ -148,7 +234,7 @@ private class HuggingFaceResponsesLanguageModel(
                 statusCode = response.status.value,
                 rawBody = raw,
                 headers = headers,
-                message = "Hugging Face API error: ${parsed?.let(HuggingFaceWire::huggingFaceErrorMessage) ?: raw}",
+                message = "Hugging Face API error: ${parsed?.let(settings::huggingFaceErrorMessage) ?: raw}",
                 requestBodyValues = parsed,
             )
         }
@@ -172,7 +258,7 @@ private class HuggingFaceResponsesLanguageModel(
                 statusCode = 200,
                 rawBody = responseBody.toString(),
                 headers = responseHeaders,
-                message = "Hugging Face API error: ${HuggingFaceWire.huggingFaceErrorMessage(error)}",
+                message = "Hugging Face API error: ${settings.huggingFaceErrorMessage(error)}",
                 requestBodyValues = requestBody,
             )
         }
@@ -183,7 +269,7 @@ private class HuggingFaceResponsesLanguageModel(
         for (part in (response["output"] as? JsonArray).orEmpty()) {
             val obj = part.jsonObject
             val itemId = obj["id"]?.jsonPrimitive?.contentOrNull
-            val providerMetadata = itemId?.let(HuggingFaceWire::huggingFaceItemMetadata) ?: ProviderMetadata.None
+            val providerMetadata = itemId?.let(settings::huggingFaceItemMetadata) ?: ProviderMetadata.None
             when (obj["type"]?.jsonPrimitive?.contentOrNull) {
                 "message" -> {
                     for (messagePart in (obj["content"] as? JsonArray).orEmpty()) {
@@ -213,7 +299,7 @@ private class HuggingFaceResponsesLanguageModel(
                     val toolCall = ContentPart.ToolCall(
                         toolCallId = callId,
                         toolName = toolName,
-                        input = HuggingFaceWire.huggingFaceParseToolInput(obj["arguments"]?.jsonPrimitive?.contentOrNull, aiSdkJson),
+                        input = settings.huggingFaceParseToolInput(obj["arguments"]?.jsonPrimitive?.contentOrNull, aiSdkJson),
                         providerMetadata = providerMetadata,
                     )
                     toolCalls += toolCall
@@ -225,11 +311,11 @@ private class HuggingFaceResponsesLanguageModel(
                 "mcp_call" -> {
                     val callId = itemId ?: settings.generateId()
                     val toolName = obj["name"]?.jsonPrimitive?.contentOrNull.orEmpty()
-                    val mcpMetadata = HuggingFaceWire.huggingFaceItemMetadata(callId, providerExecuted = true)
+                    val mcpMetadata = settings.huggingFaceItemMetadata(callId, providerExecuted = true)
                     val toolCall = ContentPart.ToolCall(
                         toolCallId = callId,
                         toolName = toolName,
-                        input = HuggingFaceWire.huggingFaceParseToolInput(obj["arguments"]?.jsonPrimitive?.contentOrNull, aiSdkJson),
+                        input = settings.huggingFaceParseToolInput(obj["arguments"]?.jsonPrimitive?.contentOrNull, aiSdkJson),
                         providerMetadata = mcpMetadata,
                     )
                     toolCalls += toolCall
@@ -240,7 +326,7 @@ private class HuggingFaceResponsesLanguageModel(
                 }
                 "mcp_list_tools" -> {
                     val callId = itemId ?: settings.generateId()
-                    val mcpMetadata = HuggingFaceWire.huggingFaceItemMetadata(callId, providerExecuted = true)
+                    val mcpMetadata = settings.huggingFaceItemMetadata(callId, providerExecuted = true)
                     val toolCall = ContentPart.ToolCall(
                         toolCallId = callId,
                         toolName = "list_tools",
@@ -269,8 +355,8 @@ private class HuggingFaceResponsesLanguageModel(
         return LanguageModelResult(
             text = text,
             toolCalls = toolCalls,
-            finishReason = HuggingFaceWire.mapHuggingFaceFinishReason(incompleteReason ?: "stop"),
-            usage = HuggingFaceWire.huggingFaceUsage(response["usage"]),
+            finishReason = settings.mapHuggingFaceFinishReason(incompleteReason ?: "stop"),
+            usage = settings.huggingFaceUsage(response["usage"]),
             providerMetadata = responseId?.let { ProviderMetadata.Raw(JsonObject(mapOf("huggingface" to buildJsonObject { put("responseId", JsonPrimitive(it)) }))) } ?: ProviderMetadata.None,
             content = content,
             rawFinishReason = incompleteReason,
@@ -297,15 +383,219 @@ private class HuggingFaceResponsesLanguageModel(
             HttpTransport.streamSse(client = client,
             url = "${settings.baseURL.trimEnd('/')}/responses",
             method = HttpMethod.Post,
-            headers = HuggingFaceWire.huggingFaceHeaders(settings, headers) + (HttpHeaders.Accept to "text/event-stream"),
+            headers = settings.huggingFaceHeaders(headers) + (HttpHeaders.Accept to "text/event-stream"),
             body = body,
             json = aiSdkJson,
             requestBodyValues = body,
             errorMessage = { _, parsed, raw ->
-                "Hugging Face API error: ${parsed?.let(HuggingFaceWire::huggingFaceErrorMessage) ?: raw}"
+                "Hugging Face API error: ${parsed?.let(settings::huggingFaceErrorMessage) ?: raw}"
             },
             onResponse = onResponse,),
         )
+    }
+
+    private fun huggingFaceResponsesRequestBody(
+        modelId: String,
+        params: LanguageModelCallParams,
+        stream: Boolean,
+    ): HuggingFacePreparedRequest {
+        val warnings = mutableListOf<CallWarning>()
+        params.topK?.let { warnings += CallWarning("unsupported", "topK") }
+        params.seed?.let { warnings += CallWarning("unsupported", "seed") }
+        params.presencePenalty?.let { warnings += CallWarning("unsupported", "presencePenalty") }
+        params.frequencyPenalty?.let { warnings += CallWarning("unsupported", "frequencyPenalty") }
+        if (params.stopSequences.isNotEmpty()) warnings += CallWarning("unsupported", "stopSequences")
+
+        val messages = huggingFaceMessages(params.messages)
+        warnings += messages.warnings
+        val providerOptions = huggingFaceProviderOptions(params.providerOptions)
+        val preparedTools = huggingFaceTools(params.tools, params.toolChoice)
+        warnings += preparedTools.warnings
+
+        return HuggingFacePreparedRequest(
+            body = buildJsonObject {
+                put("model", JsonPrimitive(modelId))
+                put("input", messages.input)
+                params.temperature?.let { put("temperature", JsonPrimitive(it)) }
+                params.topP?.let { put("top_p", JsonPrimitive(it)) }
+                params.maxOutputTokens?.let { put("max_output_tokens", JsonPrimitive(it)) }
+                put("stream", JsonPrimitive(stream))
+                huggingFaceTextFormat(params.responseFormat, providerOptions)?.let { format ->
+                    put("text", buildJsonObject { put("format", format) })
+                }
+                providerOptions?.metadata?.let { metadata ->
+                    put("metadata", JsonObject(metadata.mapValues { JsonPrimitive(it.value) }))
+                }
+                providerOptions?.instructions?.let { put("instructions", JsonPrimitive(it)) }
+                if (preparedTools.tools.isNotEmpty()) put("tools", JsonArray(preparedTools.tools))
+                preparedTools.toolChoice?.let { put("tool_choice", it) }
+                providerOptions?.reasoningEffort?.let { effort ->
+                    put("reasoning", buildJsonObject { put("effort", JsonPrimitive(effort)) })
+                }
+            },
+            warnings = warnings,
+        )
+    }
+
+    private fun huggingFaceMessages(messages: List<ModelMessage>): HuggingFaceConvertedMessages {
+        val input = mutableListOf<JsonElement>()
+        val warnings = mutableListOf<CallWarning>()
+
+        for (message in messages) {
+            when (message.role) {
+                MessageRole.System -> input += buildJsonObject {
+                    put("role", JsonPrimitive("system"))
+                    put("content", JsonPrimitive(message.content.textContent()))
+                }
+                MessageRole.User -> input += buildJsonObject {
+                    put("role", JsonPrimitive("user"))
+                    put("content", JsonArray(message.content.mapNotNull(::huggingFaceUserContentPart)))
+                }
+                MessageRole.Assistant -> message.content.forEach { part ->
+                    when (part) {
+                        is ContentPart.Text -> input += huggingFaceAssistantMessage(part.text)
+                        is ContentPart.Reasoning -> input += huggingFaceAssistantMessage(part.text)
+                        is ContentPart.ToolCall,
+                        is ContentPart.ToolResult,
+                        is ContentPart.ToolApprovalRequest,
+                        is ContentPart.ToolApprovalResponse,
+                        is ContentPart.Source,
+                        is ContentPart.File,
+                        is ContentPart.Image,
+                        -> Unit
+                    }
+                }
+                MessageRole.Tool -> warnings += CallWarning("unsupported", "tool messages")
+            }
+        }
+
+        return HuggingFaceConvertedMessages(JsonArray(input), warnings)
+    }
+
+    private fun List<ContentPart>.textContent(): String =
+        joinToString("") { part ->
+            when (part) {
+                is ContentPart.Text -> part.text
+                is ContentPart.Reasoning -> part.text
+                is ContentPart.ToolCall,
+                is ContentPart.ToolResult,
+                is ContentPart.ToolApprovalRequest,
+                is ContentPart.ToolApprovalResponse,
+                is ContentPart.Source,
+                is ContentPart.File,
+                is ContentPart.Image,
+                -> ""
+            }
+        }
+
+    private fun huggingFaceAssistantMessage(text: String): JsonObject = buildJsonObject {
+        put("role", JsonPrimitive("assistant"))
+        put(
+            "content",
+            JsonArray(
+                listOf(
+                    buildJsonObject {
+                        put("type", JsonPrimitive("output_text"))
+                        put("text", JsonPrimitive(text))
+                    },
+                ),
+            ),
+        )
+    }
+
+    private fun huggingFaceUserContentPart(part: ContentPart): JsonElement? = when (part) {
+        is ContentPart.Text -> buildJsonObject {
+            put("type", JsonPrimitive("input_text"))
+            put("text", JsonPrimitive(part.text))
+        }
+        is ContentPart.Image -> buildJsonObject {
+            put("type", JsonPrimitive("input_image"))
+            put("image_url", JsonPrimitive("data:${huggingFaceImageMediaType(part.mediaType)};base64,${part.base64}"))
+        }
+        is ContentPart.File -> {
+            if (!part.mediaType.startsWith("image/")) {
+                throw UnsupportedFunctionalityError("file part media type ${part.mediaType}", "Hugging Face Responses API does not support file part media type ${part.mediaType}.")
+            }
+            buildJsonObject {
+                put("type", JsonPrimitive("input_image"))
+                put("image_url", JsonPrimitive("data:${huggingFaceImageMediaType(part.mediaType)};base64,${part.base64}"))
+            }
+        }
+        is ContentPart.Reasoning,
+        is ContentPart.ToolCall,
+        is ContentPart.ToolResult,
+        is ContentPart.ToolApprovalRequest,
+        is ContentPart.ToolApprovalResponse,
+        is ContentPart.Source,
+        -> null
+    }
+
+    private fun huggingFaceImageMediaType(mediaType: String): String =
+        if (mediaType == "image/*") "image/jpeg" else mediaType
+
+    private fun huggingFaceTools(
+        tools: List<LanguageModelTool>,
+        choice: ToolChoice,
+    ): HuggingFacePreparedTools {
+        if (tools.isEmpty()) return HuggingFacePreparedTools(emptyList(), null, emptyList())
+
+        val warnings = mutableListOf<CallWarning>()
+        val prepared = tools.mapNotNull { tool ->
+            if (tool.providerExecuted) {
+                warnings += CallWarning("unsupported", "provider-defined tool ${tool.name}")
+                null
+            } else {
+                buildJsonObject {
+                    put("type", JsonPrimitive("function"))
+                    put("name", JsonPrimitive(tool.name))
+                    if (tool.description.isNotBlank()) put("description", JsonPrimitive(tool.description))
+                    put("parameters", aiSdkJson.parseToJsonElement(tool.parametersSchemaJson))
+                }
+            }
+        }
+
+        val toolChoice = when (choice) {
+            ToolChoice.Auto -> JsonPrimitive("auto")
+            ToolChoice.Required -> JsonPrimitive("required")
+            ToolChoice.None -> null
+            is ToolChoice.Specific -> buildJsonObject {
+                put("type", JsonPrimitive("function"))
+                put("function", buildJsonObject { put("name", JsonPrimitive(choice.toolName)) })
+            }
+        }
+
+        return HuggingFacePreparedTools(prepared, toolChoice, warnings)
+    }
+
+    private fun huggingFaceTextFormat(
+        format: ResponseFormat,
+        options: HuggingFaceResponsesSettings?,
+    ): JsonElement? = when (format) {
+        ResponseFormat.Text -> null
+        is ResponseFormat.Json -> format.schemaJson?.let { schema ->
+            buildJsonObject {
+                put("type", JsonPrimitive("json_schema"))
+                put("strict", JsonPrimitive(options?.strictJsonSchema ?: false))
+                put("name", JsonPrimitive(format.schemaName ?: "response"))
+                format.schemaDescription?.let { put("description", JsonPrimitive(it)) }
+                put("schema", schema)
+            }
+        }
+    }
+
+    private fun huggingFaceProviderOptions(providerOptions: ProviderOptions): HuggingFaceResponsesSettings? {
+        val element = providerOptions.toMap()["huggingface"] ?: providerOptions.toMap()["hugging-face"] ?: return null
+        // Surface a malformed options block instead of getOrNull()-swallowing it to null, which
+        // silently dropped EVERY hf option (instructions/reasoningEffort/metadata/strictJsonSchema).
+        return try {
+            aiSdkJson.decodeFromJsonElement(HuggingFaceResponsesSettings.serializer(), element)
+        } catch (e: SerializationException) {
+            throw InvalidArgumentError(
+                "providerOptions.huggingface",
+                "could not decode Hugging Face provider options: ${e.message ?: "<no message>"}",
+                e,
+            )
+        }
     }
 }
 
@@ -362,11 +652,11 @@ private class HuggingFaceResponsesStreamState(
                 val itemType = item["type"]?.jsonPrimitive?.contentOrNull
                 when (itemType) {
                     "message" -> if (item["role"]?.jsonPrimitive?.contentOrNull == null || item["role"]?.jsonPrimitive?.contentOrNull == "assistant") {
-                        events += StreamEvent.TextStart(itemId, HuggingFaceWire.huggingFaceItemMetadata(itemId))
+                        events += StreamEvent.TextStart(itemId, settings.huggingFaceItemMetadata(itemId))
                     }
                     "reasoning" -> {
                         openReasoningIds += itemId
-                        events += StreamEvent.ReasoningStart(itemId, HuggingFaceWire.huggingFaceItemMetadata(itemId))
+                        events += StreamEvent.ReasoningStart(itemId, settings.huggingFaceItemMetadata(itemId))
                     }
                     "function_call" -> events += StreamEvent.ToolInputStart(
                         id = item["call_id"]?.jsonPrimitive?.contentOrNull ?: itemId,
@@ -375,7 +665,7 @@ private class HuggingFaceResponsesStreamState(
                     "mcp_call" -> events += StreamEvent.ToolInputStart(
                         id = itemId,
                         toolName = item["name"]?.jsonPrimitive?.contentOrNull.orEmpty(),
-                        providerMetadata = HuggingFaceWire.huggingFaceItemMetadata(itemId, providerExecuted = true),
+                        providerMetadata = settings.huggingFaceItemMetadata(itemId, providerExecuted = true),
                     )
                 }
             }
@@ -384,9 +674,9 @@ private class HuggingFaceResponsesStreamState(
                     ?: return listOf(StreamEvent.Error("Hugging Face stream protocol error: response.output_item.done missing item."))
                 val itemId = item["id"]?.jsonPrimitive?.contentOrNull ?: obj["item_id"]?.jsonPrimitive?.contentOrNull.orEmpty()
                 when (item["type"]?.jsonPrimitive?.contentOrNull) {
-                    "message" -> events += StreamEvent.TextEnd(itemId, HuggingFaceWire.huggingFaceItemMetadata(itemId))
+                    "message" -> events += StreamEvent.TextEnd(itemId, settings.huggingFaceItemMetadata(itemId))
                     "reasoning" -> if (openReasoningIds.remove(itemId)) {
-                        events += StreamEvent.ReasoningEnd(itemId, HuggingFaceWire.huggingFaceItemMetadata(itemId))
+                        events += StreamEvent.ReasoningEnd(itemId, settings.huggingFaceItemMetadata(itemId))
                     }
                     "function_call" -> {
                         val callId = item["call_id"]?.jsonPrimitive?.contentOrNull ?: settings.generateId()
@@ -395,21 +685,21 @@ private class HuggingFaceResponsesStreamState(
                         events += StreamEvent.ToolCall(
                             toolCallId = callId,
                             toolName = toolName,
-                            inputJson = HuggingFaceWire.huggingFaceParseToolInput(item["arguments"]?.jsonPrimitive?.contentOrNull, json),
-                            providerMetadata = HuggingFaceWire.huggingFaceItemMetadata(itemId),
+                            inputJson = settings.huggingFaceParseToolInput(item["arguments"]?.jsonPrimitive?.contentOrNull, json),
+                            providerMetadata = settings.huggingFaceItemMetadata(itemId),
                         )
                         item["output"]?.jsonPrimitive?.contentOrNull?.let { output ->
-                            events += StreamEvent.ToolResult(callId, toolName, JsonPrimitive(output), providerMetadata = HuggingFaceWire.huggingFaceItemMetadata(itemId))
+                            events += StreamEvent.ToolResult(callId, toolName, JsonPrimitive(output), providerMetadata = settings.huggingFaceItemMetadata(itemId))
                         }
                     }
                     "mcp_call" -> {
                         val toolName = item["name"]?.jsonPrimitive?.contentOrNull.orEmpty()
-                        val metadata = HuggingFaceWire.huggingFaceItemMetadata(itemId, providerExecuted = true)
+                        val metadata = settings.huggingFaceItemMetadata(itemId, providerExecuted = true)
                         events += StreamEvent.ToolInputEnd(itemId, metadata)
                         events += StreamEvent.ToolCall(
                             toolCallId = itemId,
                             toolName = toolName,
-                            inputJson = HuggingFaceWire.huggingFaceParseToolInput(item["arguments"]?.jsonPrimitive?.contentOrNull, json),
+                            inputJson = settings.huggingFaceParseToolInput(item["arguments"]?.jsonPrimitive?.contentOrNull, json),
                             providerMetadata = metadata,
                         )
                         item["output"]?.jsonPrimitive?.contentOrNull?.let { output ->
@@ -417,7 +707,7 @@ private class HuggingFaceResponsesStreamState(
                         }
                     }
                     "mcp_list_tools" -> {
-                        val metadata = HuggingFaceWire.huggingFaceItemMetadata(itemId, providerExecuted = true)
+                        val metadata = settings.huggingFaceItemMetadata(itemId, providerExecuted = true)
                         events += StreamEvent.ToolCall(
                             toolCallId = itemId,
                             toolName = "list_tools",
@@ -442,20 +732,20 @@ private class HuggingFaceResponsesStreamState(
                 events += StreamEvent.ReasoningDelta(
                     id = itemId,
                     text = obj["delta"]?.jsonPrimitive?.contentOrNull.orEmpty(),
-                    providerMetadata = HuggingFaceWire.huggingFaceItemMetadata(itemId),
+                    providerMetadata = settings.huggingFaceItemMetadata(itemId),
                 )
             }
             "response.reasoning_summary_text.done", "response.reasoning_text.done" -> {
                 val itemId = obj["item_id"]?.jsonPrimitive?.contentOrNull.orEmpty()
                 openReasoningIds.remove(itemId)
-                events += StreamEvent.ReasoningEnd(itemId, HuggingFaceWire.huggingFaceItemMetadata(itemId))
+                events += StreamEvent.ReasoningEnd(itemId, settings.huggingFaceItemMetadata(itemId))
             }
             "response.output_text.delta" -> {
                 val itemId = obj["item_id"]?.jsonPrimitive?.contentOrNull.orEmpty()
                 events += StreamEvent.TextDelta(
                     id = itemId,
                     text = obj["delta"]?.jsonPrimitive?.contentOrNull.orEmpty(),
-                    providerMetadata = HuggingFaceWire.huggingFaceItemMetadata(itemId),
+                    providerMetadata = settings.huggingFaceItemMetadata(itemId),
                 )
             }
             "response.completed",
@@ -465,16 +755,16 @@ private class HuggingFaceResponsesStreamState(
                 responseId = response["id"]?.jsonPrimitive?.contentOrNull ?: responseId
                 val reason = response["incomplete_details"]?.jsonObject?.get("reason")?.jsonPrimitive?.contentOrNull ?: "stop"
                 rawFinishReason = reason
-                finishReason = HuggingFaceWire.mapHuggingFaceFinishReason(reason)
-                usage = HuggingFaceWire.huggingFaceUsage(response["usage"])
+                finishReason = settings.mapHuggingFaceFinishReason(reason)
+                usage = settings.huggingFaceUsage(response["usage"])
             }
             "response.failed" -> {
                 val response = obj["response"]?.jsonObject ?: JsonObject(emptyMap())
                 responseId = response["id"]?.jsonPrimitive?.contentOrNull ?: responseId
                 finishReason = FinishReason.Error
-                usage = HuggingFaceWire.huggingFaceUsage(response["usage"])
+                usage = settings.huggingFaceUsage(response["usage"])
                 events += StreamEvent.Error(
-                    response["error"]?.let(HuggingFaceWire::huggingFaceErrorMessage) ?: "Hugging Face Responses stream failed",
+                    response["error"]?.let(settings::huggingFaceErrorMessage) ?: "Hugging Face Responses stream failed",
                 )
             }
         }
@@ -482,7 +772,7 @@ private class HuggingFaceResponsesStreamState(
     }
 
     fun finish(): List<StreamEvent> = buildList {
-        openReasoningIds.toList().forEach { id -> add(StreamEvent.ReasoningEnd(id, HuggingFaceWire.huggingFaceItemMetadata(id))) }
+        openReasoningIds.toList().forEach { id -> add(StreamEvent.ReasoningEnd(id, settings.huggingFaceItemMetadata(id))) }
         add(
             StreamEvent.Finish(
                 totalSteps = 1,
@@ -494,302 +784,5 @@ private class HuggingFaceResponsesStreamState(
                 rawFinishReason = rawFinishReason,
             ),
         )
-    }
-}
-
-/**
- * Wire-format helpers for the Hugging Face Responses API. These are file-local
- * conversion/parse routines grouped as object members so none remain loose
- * top-level functions.
- */
-internal object HuggingFaceWire {
-    fun huggingFaceResponsesRequestBody(
-        modelId: String,
-        params: LanguageModelCallParams,
-        stream: Boolean,
-    ): HuggingFacePreparedRequest {
-        val warnings = mutableListOf<CallWarning>()
-        params.topK?.let { warnings += CallWarning("unsupported", "topK") }
-        params.seed?.let { warnings += CallWarning("unsupported", "seed") }
-        params.presencePenalty?.let { warnings += CallWarning("unsupported", "presencePenalty") }
-        params.frequencyPenalty?.let { warnings += CallWarning("unsupported", "frequencyPenalty") }
-        if (params.stopSequences.isNotEmpty()) warnings += CallWarning("unsupported", "stopSequences")
-
-        val messages = huggingFaceMessages(params.messages)
-        warnings += messages.warnings
-        val providerOptions = huggingFaceProviderOptions(params.providerOptions)
-        val preparedTools = huggingFaceTools(params.tools, params.toolChoice)
-        warnings += preparedTools.warnings
-
-        return HuggingFacePreparedRequest(
-            body = buildJsonObject {
-                put("model", JsonPrimitive(modelId))
-                put("input", messages.input)
-                params.temperature?.let { put("temperature", JsonPrimitive(it)) }
-                params.topP?.let { put("top_p", JsonPrimitive(it)) }
-                params.maxOutputTokens?.let { put("max_output_tokens", JsonPrimitive(it)) }
-                put("stream", JsonPrimitive(stream))
-                huggingFaceTextFormat(params.responseFormat, providerOptions)?.let { format ->
-                    put("text", buildJsonObject { put("format", format) })
-                }
-                providerOptions?.metadata?.let { metadata ->
-                    put("metadata", JsonObject(metadata.mapValues { JsonPrimitive(it.value) }))
-                }
-                providerOptions?.instructions?.let { put("instructions", JsonPrimitive(it)) }
-                if (preparedTools.tools.isNotEmpty()) put("tools", JsonArray(preparedTools.tools))
-                preparedTools.toolChoice?.let { put("tool_choice", it) }
-                providerOptions?.reasoningEffort?.let { effort ->
-                    put("reasoning", buildJsonObject { put("effort", JsonPrimitive(effort)) })
-                }
-            },
-            warnings = warnings,
-        )
-    }
-
-    fun huggingFaceMessages(messages: List<ModelMessage>): HuggingFaceConvertedMessages {
-        val input = mutableListOf<JsonElement>()
-        val warnings = mutableListOf<CallWarning>()
-
-        for (message in messages) {
-            when (message.role) {
-                MessageRole.System -> input += buildJsonObject {
-                    put("role", JsonPrimitive("system"))
-                    put("content", JsonPrimitive(message.content.textContent()))
-                }
-                MessageRole.User -> input += buildJsonObject {
-                    put("role", JsonPrimitive("user"))
-                    put("content", JsonArray(message.content.mapNotNull(::huggingFaceUserContentPart)))
-                }
-                MessageRole.Assistant -> message.content.forEach { part ->
-                    when (part) {
-                        is ContentPart.Text -> input += huggingFaceAssistantMessage(part.text)
-                        is ContentPart.Reasoning -> input += huggingFaceAssistantMessage(part.text)
-                        is ContentPart.ToolCall,
-                        is ContentPart.ToolResult,
-                        is ContentPart.ToolApprovalRequest,
-                        is ContentPart.ToolApprovalResponse,
-                        is ContentPart.Source,
-                        is ContentPart.File,
-                        is ContentPart.Image,
-                        -> Unit
-                    }
-                }
-                MessageRole.Tool -> warnings += CallWarning("unsupported", "tool messages")
-            }
-        }
-
-        return HuggingFaceConvertedMessages(JsonArray(input), warnings)
-    }
-
-    private fun List<ContentPart>.textContent(): String =
-        joinToString("") { part ->
-            when (part) {
-                is ContentPart.Text -> part.text
-                is ContentPart.Reasoning -> part.text
-                is ContentPart.ToolCall,
-                is ContentPart.ToolResult,
-                is ContentPart.ToolApprovalRequest,
-                is ContentPart.ToolApprovalResponse,
-                is ContentPart.Source,
-                is ContentPart.File,
-                is ContentPart.Image,
-                -> ""
-            }
-        }
-
-    fun huggingFaceAssistantMessage(text: String): JsonObject = buildJsonObject {
-        put("role", JsonPrimitive("assistant"))
-        put(
-            "content",
-            JsonArray(
-                listOf(
-                    buildJsonObject {
-                        put("type", JsonPrimitive("output_text"))
-                        put("text", JsonPrimitive(text))
-                    },
-                ),
-            ),
-        )
-    }
-
-    fun huggingFaceUserContentPart(part: ContentPart): JsonElement? = when (part) {
-        is ContentPart.Text -> buildJsonObject {
-            put("type", JsonPrimitive("input_text"))
-            put("text", JsonPrimitive(part.text))
-        }
-        is ContentPart.Image -> buildJsonObject {
-            put("type", JsonPrimitive("input_image"))
-            put("image_url", JsonPrimitive("data:${huggingFaceImageMediaType(part.mediaType)};base64,${part.base64}"))
-        }
-        is ContentPart.File -> {
-            if (!part.mediaType.startsWith("image/")) {
-                throw UnsupportedFunctionalityError("file part media type ${part.mediaType}", "Hugging Face Responses API does not support file part media type ${part.mediaType}.")
-            }
-            buildJsonObject {
-                put("type", JsonPrimitive("input_image"))
-                put("image_url", JsonPrimitive("data:${huggingFaceImageMediaType(part.mediaType)};base64,${part.base64}"))
-            }
-        }
-        is ContentPart.Reasoning,
-        is ContentPart.ToolCall,
-        is ContentPart.ToolResult,
-        is ContentPart.ToolApprovalRequest,
-        is ContentPart.ToolApprovalResponse,
-        is ContentPart.Source,
-        -> null
-    }
-
-    fun huggingFaceImageMediaType(mediaType: String): String =
-        if (mediaType == "image/*") "image/jpeg" else mediaType
-
-    fun huggingFaceTools(
-        tools: List<LanguageModelTool>,
-        choice: ToolChoice,
-    ): HuggingFacePreparedTools {
-        if (tools.isEmpty()) return HuggingFacePreparedTools(emptyList(), null, emptyList())
-
-        val warnings = mutableListOf<CallWarning>()
-        val prepared = tools.mapNotNull { tool ->
-            if (tool.providerExecuted) {
-                warnings += CallWarning("unsupported", "provider-defined tool ${tool.name}")
-                null
-            } else {
-                buildJsonObject {
-                    put("type", JsonPrimitive("function"))
-                    put("name", JsonPrimitive(tool.name))
-                    if (tool.description.isNotBlank()) put("description", JsonPrimitive(tool.description))
-                    put("parameters", aiSdkJson.parseToJsonElement(tool.parametersSchemaJson))
-                }
-            }
-        }
-
-        val toolChoice = when (choice) {
-            ToolChoice.Auto -> JsonPrimitive("auto")
-            ToolChoice.Required -> JsonPrimitive("required")
-            ToolChoice.None -> null
-            is ToolChoice.Specific -> buildJsonObject {
-                put("type", JsonPrimitive("function"))
-                put("function", buildJsonObject { put("name", JsonPrimitive(choice.toolName)) })
-            }
-        }
-
-        return HuggingFacePreparedTools(prepared, toolChoice, warnings)
-    }
-
-    fun huggingFaceTextFormat(
-        format: ResponseFormat,
-        options: HuggingFaceResponsesSettings?,
-    ): JsonElement? = when (format) {
-        ResponseFormat.Text -> null
-        is ResponseFormat.Json -> format.schemaJson?.let { schema ->
-            buildJsonObject {
-                put("type", JsonPrimitive("json_schema"))
-                put("strict", JsonPrimitive(options?.strictJsonSchema ?: false))
-                put("name", JsonPrimitive(format.schemaName ?: "response"))
-                format.schemaDescription?.let { put("description", JsonPrimitive(it)) }
-                put("schema", schema)
-            }
-        }
-    }
-
-    fun huggingFaceProviderOptions(providerOptions: ProviderOptions): HuggingFaceResponsesSettings? {
-        val element = providerOptions.toMap()["huggingface"] ?: providerOptions.toMap()["hugging-face"] ?: return null
-        // Surface a malformed options block instead of getOrNull()-swallowing it to null, which
-        // silently dropped EVERY hf option (instructions/reasoningEffort/metadata/strictJsonSchema).
-        return try {
-            aiSdkJson.decodeFromJsonElement(HuggingFaceResponsesSettings.serializer(), element)
-        } catch (e: SerializationException) {
-            throw InvalidArgumentError(
-                "providerOptions.huggingface",
-                "could not decode Hugging Face provider options: ${e.message ?: "<no message>"}",
-                e,
-            )
-        }
-    }
-
-    fun huggingFaceHeaders(settings: HuggingFaceProviderSettings, extra: Map<String, String>): Map<String, String> {
-        val headers = linkedMapOf<String, String?>()
-        settings.apiKey?.takeIf { it.isNotBlank() }?.let { headers[HttpHeaders.Authorization] = "Bearer $it" }
-        headers.putAll(settings.headers)
-        headers.putAll(extra)
-        return ProviderHeaders.normalize(headers)
-    }
-
-    fun huggingFaceNoEmbeddingModel(providerId: String?, modelId: String): NoSuchModelError =
-        NoSuchModelError(
-            providerId = providerId,
-            modelType = "embeddingModel",
-            modelId = modelId,
-            message = "Hugging Face Responses API does not support text embeddings. " +
-                "Use the Hugging Face Inference API directly for embeddings.",
-        )
-
-    fun huggingFaceNoImageModel(providerId: String?, modelId: String): NoSuchModelError =
-        NoSuchModelError(
-            providerId = providerId,
-            modelType = "imageModel",
-            modelId = modelId,
-            message = "Hugging Face Responses API does not support image generation. " +
-                "Use the Hugging Face Inference API directly for image models.",
-        )
-
-    fun huggingFaceUsage(element: JsonElement?): Usage {
-        val obj = element as? JsonObject ?: return Usage()
-        val inputTokens = obj["input_tokens"]?.jsonPrimitive?.intOrNull ?: 0
-        val cachedTokens = (obj["input_tokens_details"]?.jsonObject?.get("cached_tokens")?.jsonPrimitive?.intOrNull ?: 0)
-            .coerceIn(0, inputTokens)
-        val outputTokens = obj["output_tokens"]?.jsonPrimitive?.intOrNull ?: 0
-        val reasoningTokens = (obj["output_tokens_details"]?.jsonObject?.get("reasoning_tokens")?.jsonPrimitive?.intOrNull ?: 0)
-            .coerceAtLeast(0)
-        val outputTotal = if (reasoningTokens > outputTokens) outputTokens + reasoningTokens else outputTokens
-        return Usage(
-            inputTokens = Usage.InputTokenBreakdown(
-                total = inputTokens,
-                noCache = (inputTokens - cachedTokens).coerceAtLeast(0),
-                cacheRead = cachedTokens,
-            ),
-            outputTokens = Usage.OutputTokenBreakdown(
-                total = outputTotal,
-                text = outputTotal - reasoningTokens,
-                reasoning = reasoningTokens,
-            ),
-            raw = element,
-        )
-    }
-
-    fun mapHuggingFaceFinishReason(reason: String?): FinishReason = when (reason) {
-        "stop" -> FinishReason.Stop
-        "length" -> FinishReason.Length
-        "content_filter" -> FinishReason.ContentFilter
-        "tool_calls" -> FinishReason.ToolCalls
-        "error" -> FinishReason.Error
-        else -> FinishReason.Other
-    }
-
-    fun huggingFaceItemMetadata(
-        itemId: String,
-        providerExecuted: Boolean = false,
-    ): ProviderMetadata = ProviderMetadata.Raw(JsonObject(mapOf(
-        "huggingface" to buildJsonObject {
-            put("itemId", JsonPrimitive(itemId))
-            if (providerExecuted) put("providerExecuted", JsonPrimitive(true))
-        },
-    )))
-
-    fun huggingFaceParseToolInput(arguments: String?, json: Json): JsonElement =
-        if (arguments.isNullOrBlank()) {
-            JsonObject(emptyMap())
-        } else {
-            runCatching { json.parseToJsonElement(arguments) }.getOrElse { JsonPrimitive(arguments) }
-        }
-
-    fun huggingFaceErrorMessage(error: JsonElement): String {
-        val obj = error as? JsonObject
-        val nested = obj?.get("error")
-        val nestedObj = nested as? JsonObject
-        return nestedObj?.get("message")?.jsonPrimitive?.contentOrNull
-            ?: obj?.get("message")?.jsonPrimitive?.contentOrNull
-            ?: nested?.jsonPrimitive?.contentOrNull
-            ?: error.toString()
     }
 }
