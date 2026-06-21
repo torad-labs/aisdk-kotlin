@@ -863,9 +863,21 @@ public object ToolResultOutputs {
     public fun ToolResultOutput.toJsonElement(): JsonElement = when (this) {
         is ToolResultOutput.Text -> JsonPrimitive(text)
         is ToolResultOutput.Json -> json
-        is ToolResultOutput.Error -> JsonPrimitive("Error: $message")
-        is ToolResultOutput.ErrorJson -> json
-        is ToolResultOutput.ExecutionDenied -> JsonPrimitive(reason ?: "Tool execution denied")
+        // Typed discriminators so the three error/denial subtypes round-trip through
+        // toolResultOutputFromWire() (which keys on `type`). Bare values fell through
+        // its fallback and lost their error/denial identity (and baked-in "Error: ").
+        is ToolResultOutput.Error -> buildJsonObject {
+            put("type", JsonPrimitive("error-text"))
+            put("value", JsonPrimitive(message))
+        }
+        is ToolResultOutput.ErrorJson -> buildJsonObject {
+            put("type", JsonPrimitive("error-json"))
+            put("value", json)
+        }
+        is ToolResultOutput.ExecutionDenied -> buildJsonObject {
+            put("type", JsonPrimitive("execution-denied"))
+            reason?.let { put("reason", JsonPrimitive(it)) }
+        }
         is ToolResultOutput.Content -> buildJsonObject {
             put("type", JsonPrimitive("content"))
             put("value", JsonArray(value))

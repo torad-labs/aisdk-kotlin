@@ -208,12 +208,14 @@ public object ModelMessageConversion {
         )
         is UIMessagePart.SourceUrl -> ContentPart.Source(
             sourceType = StreamEvent.SourcePart.SourceType.Url,
+            sourceId = part.sourceId,
             url = part.url,
             title = part.title,
             providerMetadata = part.providerMetadata,
         )
         is UIMessagePart.SourceDocument -> ContentPart.Source(
             sourceType = StreamEvent.SourcePart.SourceType.Document,
+            sourceId = part.sourceId,
             title = part.title,
             providerMetadata = part.providerMetadata,
             mediaType = part.mediaType,

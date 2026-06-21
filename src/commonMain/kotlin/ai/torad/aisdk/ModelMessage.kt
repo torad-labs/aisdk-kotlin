@@ -202,6 +202,9 @@ public sealed class ContentPart {
     @SerialName("source")
     public data class Source(
         val sourceType: StreamEvent.SourcePart.SourceType,
+        /** Provider's stable handle for the source so repeated mentions can be deduped;
+         *  survives the UIMessage -> ModelMessage round-trip (was silently dropped). */
+        val sourceId: String? = null,
         val url: String? = null,
         val title: String? = null,
         @EncodeDefault(EncodeDefault.Mode.NEVER)
