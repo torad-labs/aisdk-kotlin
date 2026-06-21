@@ -238,6 +238,13 @@ class GatewayAndProviderUtilsParityTest {
         assertFailsWith<DownloadError> { UrlOps.validateDownload("http://localhost/file") }
         assertFailsWith<DownloadError> { UrlOps.validateDownload("http://10.0.0.1/file") }
         assertFailsWith<DownloadError> { UrlOps.validateDownload("file:///tmp/secret") }
+        // SSRF guard must not be bypassed by userinfo in front of a bracketed IPv6 literal:
+        // the parser previously yielded host "[" for these and let the loopback through.
+        assertFailsWith<DownloadError> { UrlOps.validateDownload("http://user@[::1]/path") }
+        assertFailsWith<DownloadError> { UrlOps.validateDownload("http://[::1]/path") }
+        // Non-ASCII is percent-encoded from its UTF-8 bytes, not passed through as Latin-1 chars.
+        assertEquals("%C3%A9", UrlOps.encode("é"))
+        assertEquals("caf%C3%A9", UrlOps.encode("café"))
     }
 
     @Test

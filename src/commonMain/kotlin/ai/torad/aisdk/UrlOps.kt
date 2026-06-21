@@ -17,7 +17,10 @@ internal object UrlOps {
             value.encodeToByteArray().forEach { byte ->
                 val unsigned = byte.toInt() and 0xff
                 val char = unsigned.toChar()
-                if (char.isLetterOrDigit() || char in setOf('-', '_', '.', '~')) {
+                // Only ASCII letters/digits are unreserved. isLetterOrDigit() uses Unicode
+                // semantics, so a multibyte UTF-8 byte (0x80-0xFF) maps to a Latin-1 letter and
+                // would pass through unencoded — guard on unsigned < 128 so those bytes get %XX.
+                if ((unsigned < 128 && char.isLetterOrDigit()) || char in setOf('-', '_', '.', '~')) {
                     append(char)
                 } else {
                     append('%')
@@ -76,10 +79,15 @@ internal object UrlOps {
         val rest = match.groupValues[2]
         if (!rest.startsWith("//")) return null
         val authority = rest.removePrefix("//").substringBefore('/').substringBefore('?').substringBefore('#')
-        val host = if (authority.startsWith("[")) {
-            authority.substringBefore(']') + "]"
+        // Strip userinfo FIRST, then detect a bracketed IPv6 literal. Doing the bracket check on
+        // the whole authority misses `user@[::1]` (it starts with 'u'), and substringBefore(':')
+        // would then stop at the first colon INSIDE the brackets, yielding host "[" — which slips
+        // past the private-IP / IPv6 SSRF guard in validateDownload.
+        val hostPart = authority.substringAfter('@')
+        val host = if (hostPart.startsWith("[")) {
+            hostPart.substringBefore(']') + "]"
         } else {
-            authority.substringAfter('@').substringBefore(':')
+            hostPart.substringBefore(':')
         }
         return ParsedUrl(scheme, host)
     }
