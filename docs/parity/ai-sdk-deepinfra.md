@@ -1,7 +1,7 @@
 # @ai-sdk/deepinfra
 
-- Version: 2.0.54
-- Upstream path: `.reference/vercel-ai-sdk-ai-6.0.204/packages/deepinfra`
+- Version: 2.0.55
+- Upstream path: `.reference/vercel-ai-sdk-ai-6.0.208/packages/deepinfra`
 - Kotlin parity area: `:aisdk-provider-deepinfra`
 - Current parity status: ported: createDeepInfra/deepinfra, provider settings, chat/completion/embedding/image routing, DeepInfraErrorData, and DeepInfra usage correction are represented as a Kotlin facade folded into the root module; VERSION is exposed as DEEPINFRA_VERSION until package modules are split
 
@@ -9,7 +9,7 @@
 
 | Subpath | Source | Export count |
 |---|---|---:|
-| `.` | `.reference/vercel-ai-sdk-ai-6.0.204/packages/deepinfra/src/index.ts` | 6 |
+| `.` | `.reference/vercel-ai-sdk-ai-6.0.208/packages/deepinfra/src/index.ts` | 6 |
 
 ## Public Exports
 

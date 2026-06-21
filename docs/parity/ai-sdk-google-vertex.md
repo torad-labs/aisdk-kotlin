@@ -1,7 +1,7 @@
 # @ai-sdk/google-vertex
 
-- Version: 4.0.145
-- Upstream path: `.reference/vercel-ai-sdk-ai-6.0.204/packages/google-vertex`
+- Version: 4.0.147
+- Upstream path: `.reference/vercel-ai-sdk-ai-6.0.208/packages/google-vertex`
 - Kotlin parity area: `:aisdk-provider-google-vertex`
 - Current parity status: ported: createVertex/vertex, createVertexAnthropic/vertexAnthropic, createVertexMaas/vertexMaas, createGoogleVertexXai/googleVertexXai, GoogleVertexProviderSettings and option aliases, Vertex publisher/express-mode base URL construction including global, regional, and eu/us REP hosts, Bearer/API-key/header auth behavior, Vertex Gemini language/embedding/image/video routing through the Google core adapter, Vertex hosted tool descriptors, Vertex Anthropic rawPredict/streamRawPredict routing with Vertex body/header transforms, Vertex MaAS OpenAI-compatible routing, Vertex xAI OpenAI-compatible routing with xAI request/usage transforms, unsupported model errors, and KMP host-injected credential boundaries are represented as Kotlin facades folded into the root module; VERSION is exposed as GOOGLE_VERTEX_VERSION until package modules are split
 
@@ -9,14 +9,14 @@
 
 | Subpath | Source | Export count |
 |---|---|---:|
-| `.` | `.reference/vercel-ai-sdk-ai-6.0.204/packages/google-vertex/src/index.ts` | 11 |
-| `./edge` | `.reference/vercel-ai-sdk-ai-6.0.204/packages/google-vertex/src/edge/index.ts` | 4 |
-| `./anthropic` | `.reference/vercel-ai-sdk-ai-6.0.204/packages/google-vertex/src/anthropic/index.ts` | 4 |
-| `./anthropic/edge` | `.reference/vercel-ai-sdk-ai-6.0.204/packages/google-vertex/src/anthropic/edge/index.ts` | 4 |
-| `./maas` | `.reference/vercel-ai-sdk-ai-6.0.204/packages/google-vertex/src/maas/index.ts` | 5 |
-| `./maas/edge` | `.reference/vercel-ai-sdk-ai-6.0.204/packages/google-vertex/src/maas/edge/index.ts` | 5 |
-| `./xai` | `.reference/vercel-ai-sdk-ai-6.0.204/packages/google-vertex/src/xai/index.ts` | 5 |
-| `./xai/edge` | `.reference/vercel-ai-sdk-ai-6.0.204/packages/google-vertex/src/xai/edge/index.ts` | 5 |
+| `.` | `.reference/vercel-ai-sdk-ai-6.0.208/packages/google-vertex/src/index.ts` | 13 |
+| `./edge` | `.reference/vercel-ai-sdk-ai-6.0.208/packages/google-vertex/src/edge/index.ts` | 4 |
+| `./anthropic` | `.reference/vercel-ai-sdk-ai-6.0.208/packages/google-vertex/src/anthropic/index.ts` | 4 |
+| `./anthropic/edge` | `.reference/vercel-ai-sdk-ai-6.0.208/packages/google-vertex/src/anthropic/edge/index.ts` | 4 |
+| `./maas` | `.reference/vercel-ai-sdk-ai-6.0.208/packages/google-vertex/src/maas/index.ts` | 5 |
+| `./maas/edge` | `.reference/vercel-ai-sdk-ai-6.0.208/packages/google-vertex/src/maas/edge/index.ts` | 5 |
+| `./xai` | `.reference/vercel-ai-sdk-ai-6.0.208/packages/google-vertex/src/xai/index.ts` | 5 |
+| `./xai/edge` | `.reference/vercel-ai-sdk-ai-6.0.208/packages/google-vertex/src/xai/edge/index.ts` | 5 |
 
 ## Public Exports
 
@@ -36,6 +36,8 @@
 | `GoogleVertexMaasProviderSettings` | type | `src/maas/google-vertex-maas-provider-node.ts` | `./maas`, `./maas/edge` |
 | `GoogleVertexProvider` | type | `src/google-vertex-provider-node.ts` | `.`, `./edge` |
 | `GoogleVertexProviderSettings` | type | `src/google-vertex-provider-node.ts` | `.`, `./edge` |
+| `GoogleVertexTranscriptionModelId` | type | `src/google-vertex-transcription-model-options.ts` | `.` |
+| `GoogleVertexTranscriptionModelOptions` | type | `src/google-vertex-transcription-model-options.ts` | `.` |
 | `GoogleVertexVideoModelId` | type | `src/google-vertex-video-settings.ts` | `.` |
 | `GoogleVertexVideoModelOptions` | type | `src/google-vertex-video-model.ts` | `.` |
 | `GoogleVertexVideoProviderOptions` | type | `src/google-vertex-video-model.ts` | `.` |
