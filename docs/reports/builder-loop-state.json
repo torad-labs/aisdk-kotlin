@@ -377,5 +377,12 @@
       }
     ],
     "gate": "per step: compile+jvmTest green + finding addressed + no new hook violation; FINAL: full check + updateKotlinAbi + push"
+  },
+  "agent_event_redesign": {
+    "spec": "docs/reports/agent-event-redesign.md",
+    "decision": "full: sealed AgentEvent + Flow<AgentEvent>, typed payloads (no Any?), StreamEvent sealed class, Telemetry as collector",
+    "enforcement": "activate disabled_no-flat-lifecycle-event.yaml (rename) IN THE SAME COMMIT; runs in Claude hook + ci-gate",
+    "sequencing": "AFTER FIX-X (steps 2-3 touch Lifecycle/Streaming/Telemetry \u2014 no concurrent writers)",
+    "status": "queued"
   }
 }
