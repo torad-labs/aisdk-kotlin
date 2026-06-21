@@ -2,6 +2,7 @@
 
 package ai.torad.aisdk
 
+import ai.torad.aisdk.JSONRPCMessage.Companion.toJsonString
 import io.ktor.client.HttpClient
 import io.ktor.client.request.header
 import io.ktor.client.request.request
@@ -85,7 +86,68 @@ public class MCPClientError(
 ) : AiSdkException(message, cause)
 
 @Serializable
-public sealed interface JSONRPCMessage
+public sealed interface JSONRPCMessage {
+    public companion object {
+        internal fun JSONRPCMessage.toJsonElement(): JsonObject = when (this) {
+            is JSONRPCRequest -> mcpJson.encodeToJsonElement(JSONRPCRequest.serializer(), this).jsonObject
+            is JSONRPCNotification -> mcpJson.encodeToJsonElement(JSONRPCNotification.serializer(), this).jsonObject
+            is JSONRPCResponse -> mcpJson.encodeToJsonElement(JSONRPCResponse.serializer(), this).jsonObject
+            is JSONRPCError -> mcpJson.encodeToJsonElement(JSONRPCError.serializer(), this).jsonObject
+        }
+
+        internal fun JSONRPCMessage.toJsonString(): String = toJsonElement().toString()
+
+        internal fun fromJson(text: String): JSONRPCMessage {
+            val obj = WireDecoder.parseObject(text, provider = "mcp", operation = "json-rpc message")
+            val envelope = WireDecoder.decode(
+                JSONRPCEnvelope.serializer(),
+                obj,
+                provider = "mcp",
+                operation = "json-rpc message",
+            )
+            if (envelope.jsonrpc != JSONRPC_VERSION) {
+                WireDecoder.fail(
+                    provider = "mcp",
+                    operation = "json-rpc message",
+                    path = "$.jsonrpc",
+                    message = "expected JSON-RPC version $JSONRPC_VERSION",
+                    value = obj["jsonrpc"],
+                )
+            }
+            val hasId = "id" in obj
+            return when {
+                envelope.method != null && hasId -> WireDecoder.decode(
+                    JSONRPCRequest.serializer(),
+                    obj,
+                    "mcp",
+                    "json-rpc request"
+                )
+                envelope.method != null -> WireDecoder.decode(
+                    JSONRPCNotification.serializer(),
+                    obj,
+                    "mcp",
+                    "json-rpc notification"
+                )
+                envelope.result != null && hasId -> WireDecoder.decode(
+                    JSONRPCResponse.serializer(),
+                    obj,
+                    "mcp",
+                    "json-rpc response"
+                )
+                envelope.error != null && hasId -> WireDecoder.decode(JSONRPCError.serializer(), obj, "mcp", "json-rpc error")
+                else -> WireDecoder.fail("mcp", "json-rpc message", "$", "invalid JSON-RPC envelope", obj)
+            }
+        }
+
+        internal fun fromJsonBatch(text: String): List<JSONRPCMessage> {
+            val element = mcpJson.parseToJsonElement(text)
+            return when (element) {
+                is JsonArray -> element.map { fromJson(it.toString()) }
+                else -> listOf(fromJson(element.toString()))
+            }
+        }
+    }
+}
 
 @Serializable
 private data class JSONRPCEnvelope(
@@ -96,116 +158,6 @@ private data class JSONRPCEnvelope(
     val result: JsonElement? = null,
     val error: JSONRPCErrorData? = null,
 )
-
-/** JSON-RPC wire encode/decode plus SSE-frame parsing shared across the MCP transports. */
-internal object McpWire {
-    fun toJsonElement(message: JSONRPCMessage): JsonObject = when (message) {
-        is JSONRPCRequest -> mcpJson.encodeToJsonElement(JSONRPCRequest.serializer(), message).jsonObject
-        is JSONRPCNotification -> mcpJson.encodeToJsonElement(JSONRPCNotification.serializer(), message).jsonObject
-        is JSONRPCResponse -> mcpJson.encodeToJsonElement(JSONRPCResponse.serializer(), message).jsonObject
-        is JSONRPCError -> mcpJson.encodeToJsonElement(JSONRPCError.serializer(), message).jsonObject
-    }
-
-    fun toJsonString(message: JSONRPCMessage): String = toJsonElement(message).toString()
-
-    fun parseJSONRPCMessage(text: String): JSONRPCMessage {
-        val obj = WireDecoder.parseObject(text, provider = "mcp", operation = "json-rpc message")
-        val envelope = WireDecoder.decode(
-            JSONRPCEnvelope.serializer(),
-            obj,
-            provider = "mcp",
-            operation = "json-rpc message",
-        )
-        if (envelope.jsonrpc != JSONRPC_VERSION) {
-            WireDecoder.fail(
-                provider = "mcp",
-                operation = "json-rpc message",
-                path = "$.jsonrpc",
-                message = "expected JSON-RPC version $JSONRPC_VERSION",
-                value = obj["jsonrpc"],
-            )
-        }
-        val hasId = "id" in obj
-        return when {
-            envelope.method != null && hasId -> WireDecoder.decode(
-                JSONRPCRequest.serializer(),
-                obj,
-                "mcp",
-                "json-rpc request"
-            )
-            envelope.method != null -> WireDecoder.decode(
-                JSONRPCNotification.serializer(),
-                obj,
-                "mcp",
-                "json-rpc notification"
-            )
-            envelope.result != null && hasId -> WireDecoder.decode(
-                JSONRPCResponse.serializer(),
-                obj,
-                "mcp",
-                "json-rpc response"
-            )
-            envelope.error != null && hasId -> WireDecoder.decode(JSONRPCError.serializer(), obj, "mcp", "json-rpc error")
-            else -> WireDecoder.fail("mcp", "json-rpc message", "$", "invalid JSON-RPC envelope", obj)
-        }
-    }
-
-    fun mcpJsonRpcMessages(text: String): List<JSONRPCMessage> {
-        val element = mcpJson.parseToJsonElement(text)
-        return when (element) {
-            is JsonArray -> element.map { parseJSONRPCMessage(it.toString()) }
-            else -> listOf(parseJSONRPCMessage(element.toString()))
-        }
-    }
-
-    fun mcpSessionId(response: HttpResponse): String? =
-        response.headers["mcp-session-id"]?.takeIf { it.isNotBlank() }
-
-    fun rpcIdKey(element: JsonElement): String {
-        val primitive = element as? JsonPrimitive ?: return "json:$element"
-        return if (primitive.isString) {
-            "s:${primitive.content}"
-        } else {
-            "n:${primitive.content}"
-        }
-    }
-
-    suspend fun processMcpSse(channel: ByteReadChannel, onEvent: suspend (McpSseEvent) -> Unit) {
-        var eventName = "message"
-        var eventId: String? = null
-        val data = mutableListOf<String>()
-
-        suspend fun flush() {
-            if (data.isEmpty()) return
-            onEvent(McpSseEvent(eventName, data.joinToString("\n"), eventId))
-            eventName = "message"
-            eventId = null
-            data.clear()
-        }
-
-        while (true) {
-            val line = channel.readLine() ?: break
-            when {
-                line.isEmpty() -> flush()
-                line.startsWith("event:") -> eventName = line.removePrefix("event:").trimStart()
-                line.startsWith("data:") -> {
-                    if (data.size >= MCP_SSE_MAX_DATA_LINES) {
-                        data.clear()
-                        eventName = "message"
-                        eventId = null
-                        throw MCPClientError(
-                            "MCP SSE Transport Error: SSE event exceeded " +
-                                "$MCP_SSE_MAX_DATA_LINES data lines; possible malformed stream"
-                        )
-                    }
-                    data += line.removePrefix("data:").trimStart()
-                }
-                line.startsWith("id:") -> eventId = line.removePrefix("id:").trimStart()
-            }
-        }
-        flush()
-    }
-}
 
 /**
  * Transport interface for MCP communication. Implementations may wrap stdio,
@@ -399,23 +351,23 @@ private class DefaultMCPClient(config: MCPClientConfig) : MCPClient {
             }
             val selectedSchema = schemas?.get(definition.name)
             val inputSchema = selectedSchema?.inputSchema
-                ?: McpToolMapping.schemaWithClosedAdditionalProperties(definition.inputSchema)
+                ?: schemaWithClosedAdditionalProperties(definition.inputSchema)
             val outputSchema = selectedSchema?.outputSchema
             val description = definition.description ?: definition.title ?: definition.name
             DynamicTool<TContext>(
                 name = definition.name,
                 description = description,
                 inputSchemaJson = inputSchema.toString(),
-                metadata = McpToolMapping.toolMetadata(definition, clientInfo),
-                toModelOutput = { output, _ -> McpToolMapping.mcpToModelOutput(output) },
+                metadata = definition.toolMetadata(clientInfo),
+                toModelOutput = { output, _ -> mcpToModelOutput(output) },
             ) { input ->
                 val result = callTool(
                     name = definition.name,
-                    args = McpToolMapping.asArgumentsObject(input),
+                    args = asArgumentsObject(input),
                     options = MCPRequestOptions(signal = abortSignal),
                 )
                 if (!result.isError && outputSchema != null) {
-                    McpToolMapping.extractStructuredContent(result, outputSchema, definition.name)
+                    result.extractStructuredContent(outputSchema, definition.name)
                 } else {
                     mcpJson.encodeToJsonElement(CallToolResult.serializer(), result)
                 }
@@ -537,7 +489,7 @@ private class DefaultMCPClient(config: MCPClientConfig) : MCPClient {
             if (isClosed.load()) {
                 throw MCPClientError("Attempted to send a request from a closed client")
             }
-            JsonPrimitive(requestMessageId++).also { responseHandlers[McpWire.rpcIdKey(it)] = deferred }
+            JsonPrimitive(requestMessageId++).also { responseHandlers[rpcIdKey(it)] = deferred }
         }
         try {
             transport.send(JSONRPCRequest(id = id, method = method, params = params))
@@ -550,7 +502,7 @@ private class DefaultMCPClient(config: MCPClientConfig) : MCPClient {
                 throw MCPClientError("Failed to parse server response", cause = error)
             }
         } finally {
-            responseHandlersMutex.withLock { responseHandlers.remove(McpWire.rpcIdKey(id)) }
+            responseHandlersMutex.withLock { responseHandlers.remove(rpcIdKey(id)) }
         }
     }
 
@@ -660,17 +612,17 @@ private class DefaultMCPClient(config: MCPClientConfig) : MCPClient {
     }
 
     private suspend fun onResponse(response: JSONRPCResponse) {
-        val handler = responseHandlersMutex.withLock { responseHandlers[McpWire.rpcIdKey(response.id)] }
+        val handler = responseHandlersMutex.withLock { responseHandlers[rpcIdKey(response.id)] }
             ?: throw MCPClientError(
-                "Protocol error: Received a response for an unknown message ID: ${McpWire.toJsonString(response)}"
+                "Protocol error: Received a response for an unknown message ID: ${response.toJsonString()}"
             )
         handler.complete(response.result)
     }
 
     private suspend fun onResponse(response: JSONRPCError) {
-        val handler = responseHandlersMutex.withLock { responseHandlers[McpWire.rpcIdKey(response.id)] }
+        val handler = responseHandlersMutex.withLock { responseHandlers[rpcIdKey(response.id)] }
             ?: throw MCPClientError(
-                "Protocol error: Received a response for an unknown message ID: ${McpWire.toJsonString(response)}"
+                "Protocol error: Received a response for an unknown message ID: ${response.toJsonString()}"
             )
         handler.completeExceptionally(
             MCPClientError(
@@ -693,18 +645,17 @@ private class DefaultMCPClient(config: MCPClientConfig) : MCPClient {
     private fun onError(error: Throwable) {
         onUncaughtError?.invoke(error)
     }
-}
 
-/** Maps MCP tool definitions / tool-call results into the SDK's tool + output shapes. */
-internal object McpToolMapping {
-    fun toolMetadata(definition: MCPToolDefinition, clientInfo: Configuration): Map<String, JsonElement> = buildMap {
-        put("clientName", JsonPrimitive(clientInfo.name))
-        put("mcpToolName", JsonPrimitive(definition.name))
-        definition.title?.let { put("title", JsonPrimitive(it)) }
-        definition.meta?.let { put("_meta", it) }
+    private fun rpcIdKey(element: JsonElement): String {
+        val primitive = element as? JsonPrimitive ?: return "json:$element"
+        return if (primitive.isString) {
+            "s:${primitive.content}"
+        } else {
+            "n:${primitive.content}"
+        }
     }
 
-    fun schemaWithClosedAdditionalProperties(schema: JsonObject): JsonObject =
+    private fun schemaWithClosedAdditionalProperties(schema: JsonObject): JsonObject =
         JsonObject(
             schema + mapOf(
                 "properties" to (schema["properties"] ?: JsonObject(emptyMap())),
@@ -712,42 +663,13 @@ internal object McpToolMapping {
             ),
         )
 
-    fun asArgumentsObject(element: JsonElement): JsonObject = when (element) {
+    private fun asArgumentsObject(element: JsonElement): JsonObject = when (element) {
         is JsonObject -> element
         JsonNull -> JsonObject(emptyMap())
         else -> JsonObject(mapOf("value" to element))
     }
 
-    fun extractStructuredContent(
-        result: CallToolResult,
-        outputSchema: JsonElement,
-        toolName: String,
-    ): JsonElement {
-        result.structuredContent?.let { return it }
-
-        val text = result.content.firstNotNullOfOrNull { content ->
-            if (content["type"]?.jsonPrimitive?.contentOrNull == "text") {
-                content["text"]?.jsonPrimitive?.contentOrNull
-            } else {
-                null
-            }
-        }
-        if (text != null) {
-            return try {
-                mcpJson.parseToJsonElement(text)
-            } catch (error: Throwable) {
-                throw MCPClientError(
-                    message = "Tool \"$toolName\" returned content that does not match the expected outputSchema",
-                    data = outputSchema,
-                    cause = error,
-                )
-            }
-        }
-
-        throw MCPClientError("Tool \"$toolName\" did not return structuredContent or parseable text content")
-    }
-
-    fun mcpToModelOutput(output: JsonElement): ToolResultOutput {
+    private fun mcpToModelOutput(output: JsonElement): ToolResultOutput {
         val obj = output as? JsonObject ?: return ToolResultOutput.Json(output)
         val content = obj["content"] as? JsonArray ?: return ToolResultOutput.Json(output)
         val converted = content.map { part ->
@@ -1136,9 +1058,9 @@ public class HttpMCPTransport(
                     HttpHeaders.Accept to "application/json, text/event-stream",
                 ),
             ).forEach { (name, value) -> header(name, value) }
-            setBody(McpWire.toJsonString(message))
+            setBody(message.toJsonString())
         }
-        McpWire.mcpSessionId(response)?.let { sessionId = it }
+        mcpSessionId(response)?.let { sessionId = it }
         if (response.status.value == 401 && authProvider != null && !triedAuth) {
             if (McpAuth.auth(authProvider, AuthOptions(serverUrl = url, client = client)) != AuthResult.AUTHORIZED) {
                 throw UnauthorizedError()
@@ -1171,12 +1093,12 @@ public class HttpMCPTransport(
         val contentType = response.headers[HttpHeaders.ContentType].orEmpty()
         when {
             contentType.contains("application/json", ignoreCase = true) -> {
-                McpWire.mcpJsonRpcMessages(response.bodyAsText()).forEach { onMessage?.invoke(it) }
+                JSONRPCMessage.fromJsonBatch(response.bodyAsText()).forEach { onMessage?.invoke(it) }
             }
             contentType.contains("text/event-stream", ignoreCase = true) -> {
-                McpWire.processMcpSse(response.bodyAsChannel()) { event ->
+                McpSseEvent.parseStream(response.bodyAsChannel()) { event ->
                     if (event.event == "message") {
-                        onMessage?.invoke(McpWire.parseJSONRPCMessage(event.data))
+                        onMessage?.invoke(JSONRPCMessage.fromJson(event.data))
                     }
                 }
             }
@@ -1209,7 +1131,7 @@ public class HttpMCPTransport(
                     mapOf(HttpHeaders.Accept to "text/event-stream")
                 ).forEach { (name, value) -> header(name, value) }
             }
-            McpWire.mcpSessionId(response)?.let { sessionId = it }
+            mcpSessionId(response)?.let { sessionId = it }
             if (response.status.value == 405) return
             if (response.status.value !in 200..299) {
                 val error =
@@ -1220,9 +1142,9 @@ public class HttpMCPTransport(
                 onError?.invoke(error)
                 return
             }
-            McpWire.processMcpSse(response.bodyAsChannel()) { event ->
+            McpSseEvent.parseStream(response.bodyAsChannel()) { event ->
                 if (event.event == "message") {
-                    onMessage?.invoke(McpWire.parseJSONRPCMessage(event.data))
+                    onMessage?.invoke(JSONRPCMessage.fromJson(event.data))
                 }
             }
         } catch (error: Throwable) {
@@ -1254,6 +1176,9 @@ public class HttpMCPTransport(
         }?.let { values[HttpHeaders.Authorization] = "Bearer $it" }
         return ProviderHeaders.withUserAgentSuffix(values, "ai-sdk/mcp/$MCP_PACKAGE_VERSION")
     }
+
+    private fun mcpSessionId(response: HttpResponse): String? =
+        response.headers["mcp-session-id"]?.takeIf { it.isNotBlank() }
 }
 
 public class SseMCPTransport(
@@ -1301,7 +1226,7 @@ public class SseMCPTransport(
                         "MCP SSE Transport Error: ${response.status.value} ${response.status.description}$hint",
                     )
                 }
-                McpWire.processMcpSse(response.bodyAsChannel()) { event ->
+                McpSseEvent.parseStream(response.bodyAsChannel()) { event ->
                     when (event.event) {
                         "endpoint" -> {
                             endpoint = McpUrl.resolve(event.data, url).also { resolved ->
@@ -1312,7 +1237,7 @@ public class SseMCPTransport(
                             established = true
                             if (!ready.isCompleted) ready.complete(Unit)
                         }
-                        "message" -> onMessage?.invoke(McpWire.parseJSONRPCMessage(event.data))
+                        "message" -> onMessage?.invoke(JSONRPCMessage.fromJson(event.data))
                     }
                 }
             } catch (error: Throwable) {
@@ -1378,7 +1303,7 @@ public class SseMCPTransport(
             mcpCommonHeaders(
                 mapOf(HttpHeaders.ContentType to ContentType.Application.Json.toString())
             ).forEach { (name, value) -> header(name, value) }
-            setBody(McpWire.toJsonString(message))
+            setBody(message.toJsonString())
         }
         if (response.status.value == 401 && authProvider != null && !triedAuth) {
             if (McpAuth.auth(authProvider, AuthOptions(serverUrl = url, client = client)) != AuthResult.AUTHORIZED) {
@@ -1424,7 +1349,57 @@ internal data class McpSseEvent(
     val event: String,
     val data: String,
     val id: String? = null,
-)
+) {
+    // Per-frame accumulator for the SSE line parser. Holds the mutable
+    // event/id/data state so the companion's parseStream stays var-free.
+    private class FrameBuffer {
+        private var eventName: String = "message"
+        private var eventId: String? = null
+        private val data: MutableList<String> = mutableListOf()
+
+        fun setEvent(value: String) { eventName = value }
+        fun setId(value: String) { eventId = value }
+
+        fun addData(value: String) {
+            if (data.size >= MCP_SSE_MAX_DATA_LINES) {
+                reset()
+                throw MCPClientError(
+                    "MCP SSE Transport Error: SSE event exceeded " +
+                        "$MCP_SSE_MAX_DATA_LINES data lines; possible malformed stream"
+                )
+            }
+            data += value
+        }
+
+        suspend fun flush(onEvent: suspend (McpSseEvent) -> Unit) {
+            if (data.isEmpty()) return
+            onEvent(McpSseEvent(eventName, data.joinToString("\n"), eventId))
+            reset()
+        }
+
+        private fun reset() {
+            eventName = "message"
+            eventId = null
+            data.clear()
+        }
+    }
+
+    internal companion object {
+        suspend fun parseStream(channel: ByteReadChannel, onEvent: suspend (McpSseEvent) -> Unit) {
+            val frame = FrameBuffer()
+            while (true) {
+                val line = channel.readLine() ?: break
+                when {
+                    line.isEmpty() -> frame.flush(onEvent)
+                    line.startsWith("event:") -> frame.setEvent(line.removePrefix("event:").trimStart())
+                    line.startsWith("data:") -> frame.addData(line.removePrefix("data:").trimStart())
+                    line.startsWith("id:") -> frame.setId(line.removePrefix("id:").trimStart())
+                }
+            }
+            frame.flush(onEvent)
+        }
+    }
+}
 
 /** URL origin/relative-resolution helpers shared by the SSE transport and the OAuth flow. */
 internal object McpUrl {
@@ -1487,7 +1462,7 @@ public class Experimental_StdioMCPTransport(
                     while (true) {
                         val line = started.readLine() ?: break
                         try {
-                            onMessage?.invoke(McpWire.parseJSONRPCMessage(line))
+                            onMessage?.invoke(JSONRPCMessage.fromJson(line))
                         } catch (error: Throwable) {
                             if (error is CancellationException) throw error
                             onError?.invoke(error)
@@ -1511,7 +1486,7 @@ public class Experimental_StdioMCPTransport(
     override suspend fun send(message: JSONRPCMessage) {
         val active = process ?: throw MCPClientError("StdioClientTransport not connected")
         try {
-            active.writeLine(McpWire.toJsonString(message))
+            active.writeLine(message.toJsonString())
         } catch (error: CancellationException) {
             throw error
         } catch (error: Throwable) {

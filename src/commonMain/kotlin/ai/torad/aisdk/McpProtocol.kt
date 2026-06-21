@@ -7,6 +7,8 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.contentOrNull
+import kotlinx.serialization.json.jsonPrimitive
 
 internal const val JSONRPC_VERSION: String = "2.0"
 
@@ -105,7 +107,14 @@ public data class MCPToolDefinition(
     val outputSchema: JsonObject? = null,
     val annotations: JsonObject? = null,
     @SerialName("_meta") val meta: JsonObject? = null,
-)
+) {
+    internal fun toolMetadata(clientInfo: Configuration): Map<String, JsonElement> = buildMap {
+        put("clientName", JsonPrimitive(clientInfo.name))
+        put("mcpToolName", JsonPrimitive(name))
+        title?.let { put("title", JsonPrimitive(it)) }
+        meta?.let { put("_meta", it) }
+    }
+}
 
 @Serializable
 public data class ListToolsResult(
@@ -129,7 +138,32 @@ public data class CallToolResult(
     val isError: Boolean = false,
     val toolResult: JsonElement? = null,
     @SerialName("_meta") val meta: JsonObject? = null,
-)
+) {
+    internal fun extractStructuredContent(outputSchema: JsonElement, toolName: String): JsonElement {
+        structuredContent?.let { return it }
+
+        val text = content.firstNotNullOfOrNull { part ->
+            if (part["type"]?.jsonPrimitive?.contentOrNull == "text") {
+                part["text"]?.jsonPrimitive?.contentOrNull
+            } else {
+                null
+            }
+        }
+        if (text != null) {
+            return try {
+                mcpJson.parseToJsonElement(text)
+            } catch (error: Throwable) {
+                throw MCPClientError(
+                    message = "Tool \"$toolName\" returned content that does not match the expected outputSchema",
+                    data = outputSchema,
+                    cause = error,
+                )
+            }
+        }
+
+        throw MCPClientError("Tool \"$toolName\" did not return structuredContent or parseable text content")
+    }
+}
 
 @Serializable
 public data class MCPResource(
