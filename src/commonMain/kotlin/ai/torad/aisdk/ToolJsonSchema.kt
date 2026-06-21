@@ -176,14 +176,61 @@ internal object ToolJsonSchema {
         )
     }
 
+    @OptIn(kotlinx.serialization.ExperimentalSerializationApi::class)
     private fun sealedSchema(
         descriptor: kotlinx.serialization.descriptors.SerialDescriptor,
         seen: Set<String>,
     ): kotlinx.serialization.json.JsonObject {
-        val variants = (0 until descriptor.elementsCount)
-            .map { descriptorToJsonSchema(descriptor.getElementDescriptor(it), seen) }
+        // A SealedClassSerializer descriptor has exactly two elements: [0] the "type"
+        // discriminator (a bare string) and [1] the "value" descriptor whose OWN elements are
+        // the concrete subclass descriptors. Iterating descriptor's own elements (the old code)
+        // wrapped the discriminator pseudo-field + the nested value-descriptor in oneOf, which
+        // is structurally wrong. Walk the value descriptor's subclasses instead and emit a
+        // oneOf of object schemas, each carrying the required "type" const that kotlinx's
+        // polymorphic JSON wire shape expects: {"type": "<serialName>", ...subclass fields}.
+        val valueDescriptor = if (descriptor.elementsCount > 1) descriptor.getElementDescriptor(1) else null
+        if (valueDescriptor == null || valueDescriptor.elementsCount == 0) {
+            return openJsonObjectSchema()
+        }
+        val variants = (0 until valueDescriptor.elementsCount)
+            .map { subclassSchema(valueDescriptor.getElementDescriptor(it), seen) }
         return jsonObj(
             "oneOf" to kotlinx.serialization.json.JsonArray(variants),
+        )
+    }
+
+    /** One sealed-subclass variant: the subclass's object schema with a required "type"
+     *  discriminator pinned (via enum) to the subclass serialName — the value kotlinx writes
+     *  for the polymorphic discriminator. */
+    @OptIn(kotlinx.serialization.ExperimentalSerializationApi::class)
+    private fun subclassSchema(
+        descriptor: kotlinx.serialization.descriptors.SerialDescriptor,
+        seen: Set<String>,
+    ): kotlinx.serialization.json.JsonObject {
+        val nextSeen = seen + descriptor.serialName
+        val properties = mutableMapOf<String, kotlinx.serialization.json.JsonElement>(
+            SCHEMA_TYPE_KEY to jsonObj(
+                SCHEMA_TYPE_KEY to kotlinx.serialization.json.JsonPrimitive(SCHEMA_STRING),
+                "enum" to kotlinx.serialization.json.JsonArray(
+                    listOf(kotlinx.serialization.json.JsonPrimitive(descriptor.serialName)),
+                ),
+            ),
+        )
+        val required = mutableListOf<kotlinx.serialization.json.JsonElement>(
+            kotlinx.serialization.json.JsonPrimitive(SCHEMA_TYPE_KEY),
+        )
+        for (i in 0 until descriptor.elementsCount) {
+            val name = descriptor.getElementName(i)
+            properties[name] = descriptorToJsonSchema(descriptor.getElementDescriptor(i), nextSeen)
+            if (!descriptor.isElementOptional(i)) {
+                required.add(kotlinx.serialization.json.JsonPrimitive(name))
+            }
+        }
+        return jsonObj(
+            SCHEMA_TYPE_KEY to kotlinx.serialization.json.JsonPrimitive(SCHEMA_OBJECT),
+            "properties" to kotlinx.serialization.json.JsonObject(properties),
+            "required" to kotlinx.serialization.json.JsonArray(required),
+            "additionalProperties" to kotlinx.serialization.json.JsonPrimitive(false),
         )
     }
 

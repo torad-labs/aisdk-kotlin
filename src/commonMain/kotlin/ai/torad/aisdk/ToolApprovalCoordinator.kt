@@ -68,7 +68,12 @@ internal class ToolApprovalCoordinator<TContext>(
             val targetCallId = approval.approvalId?.let { approvalIdToCallId[it] } ?: approval.toolCallId
             if (targetCallId in alreadyResolved) continue
             val callIndex = remainingCalls.indexOfFirst { it.toolCallId == targetCallId }
-            if (callIndex == -1) continue
+            // An approval that correlates to no pending tool call (garbled/forged approvalId on the
+            // untrusted resume path) must NOT be silently dropped — that leaves a dangling tool call
+            // that wedges the next model turn. Surface the purpose-built typed error.
+            if (callIndex == -1) {
+                throw AgentError.InvalidApprovalResponse(targetCallId, priorToolCalls.map { it.toolCallId })
+            }
             val matchingCall = remainingCalls.removeAt(callIndex)
             alreadyResolved += matchingCall.toolCallId
             if (!approval.approved) {

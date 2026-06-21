@@ -344,6 +344,12 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
                     is StreamEvent.Error -> updateEngineStateIfCurrent(ownJob) {
                         it.copy(phase = ToolLoopAgentState.Phase.Error(event.message))
                     }
+                    // Record the terminal finish reason on the engine state so hosts that
+                    // branch on engineState.lastFinishReason (stop/length/max-steps/approval)
+                    // observe it; without this it stayed permanently null.
+                    is StreamEvent.Finish -> updateEngineStateIfCurrent(ownJob) {
+                        it.copy(lastFinishReason = event.finishReason)
+                    }
                     is StreamEvent.StreamStart,
                     is StreamEvent.ResponseMetadata,
                     is StreamEvent.StepStart,
@@ -363,7 +369,6 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
                     is StreamEvent.ToolApprovalRequest,
                     is StreamEvent.ToolOutputDenied,
                     is StreamEvent.StepFinish,
-                    is StreamEvent.Finish,
                     StreamEvent.Abort,
                     is StreamEvent.Raw,
                     -> Unit
@@ -464,15 +469,20 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
         collectedMessages = finalMessagesRef.value
         val text = accumulator.toString()
         val steps = collectedSteps.toList()
+        val approvals = collectedApprovals.toList()
+        // A loop paused on tool approval has no final object yet — the host inspects
+        // pendingApprovals and resumes. Decoding (or throwing NoOutputGeneratedError) here
+        // would discard the approvals, making structured-output + approval unresumable.
+        val pausedForApproval = approvals.isNotEmpty() || finishReason == FinishReason.ToolApprovalRequested
         emit(GenerateResult(
-            output = decodeFinalOutput(output, text, finishReason),
+            output = decodeFinalOutput(output, text, finishReason, pausedForApproval),
             text = text,
             steps = steps,
             finishReason = finishReason,
             // upstream parity: usage = final step's usage, totalUsage = sum across steps.
             usage = steps.lastOrNull()?.usage ?: totalUsage,
             totalUsage = totalUsage,
-            pendingApprovals = collectedApprovals.toList(),
+            pendingApprovals = approvals,
             messages = collectedMessages,
         ))
     }
@@ -483,8 +493,16 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
      * length / step-cap / non-stop yields no parseable object, surfaced as
      * [NoOutputGeneratedError] rather than a confusing decode error.
      */
-    private fun decodeFinalOutput(output: Output<TOutput>?, text: String, finishReason: FinishReason): TOutput =
-        if (output == null) {
+    private fun decodeFinalOutput(
+        output: Output<TOutput>?,
+        text: String,
+        finishReason: FinishReason,
+        pausedForApproval: Boolean,
+    ): TOutput =
+        if (output == null || pausedForApproval) {
+            // No structured object to decode: a text agent returns raw text, and an
+            // approval-paused turn has no final object yet. The cast targets the erased
+            // TOutput, so it is a no-op at this site (the host resumes via pendingApprovals).
             @Suppress("UNCHECKED_CAST")
             (text as TOutput)
         } else if (finishReason == FinishReason.Stop) {
@@ -854,9 +872,17 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
                 throw ce
             } catch (t: Throwable) {
                 dispatcher.emitError(t, stepNumber, OnErrorEvent.ErrorSource.Model, hooks, feed)
-                emit(StreamEvent.Error(t.message ?: "model failed", cause = t))
-                closeModelCall(FinishReason.Error, stepRawFinishReason)
-                finalMessagesRef?.value = messages.toList()
+                // try-finally so the model-call telemetry bracket ALWAYS closes: when generate()
+                // is the collector its StreamCapture throws synchronously on StreamEvent.Error, so
+                // a bare closeModelCall AFTER the emit would be skipped and the span would leak.
+                // (A mid-stream provider Error also funnels here for generate(), since its emit
+                // throws before the TerminalModelStreamError handoff — so this covers both paths.)
+                try {
+                    emit(StreamEvent.Error(t.message ?: "model failed", cause = t))
+                } finally {
+                    closeModelCall(FinishReason.Error, stepRawFinishReason)
+                    finalMessagesRef?.value = messages.toList()
+                }
                 return@flow
             }
             closeModelCall(stepFinishReason, stepRawFinishReason)
@@ -876,11 +902,15 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
             val toolsRequiringApproval = mutableListOf<ContentPart.ToolCall>()
             val toolsToExecute = mutableListOf<ContentPart.ToolCall>()
             val resolvedForExecution = mutableMapOf<String, Pair<Tool<*, *, TContext>, Any?>>()
+            // Tool-error results for calls that fail categorization. Held here (not appended to
+            // `messages`) until AFTER the assistant tool-call message is added below, so a failed
+            // call's tool_result never precedes the assistant tool_use that issued it.
+            val deferredToolErrorMessages = mutableListOf<ModelMessage>()
             for (call in stepToolCalls) {
                 val toolDef = stepTools.find(call.toolName)
                 if (toolDef == null) {
                     val err = AgentError.NoSuchTool(call.toolName, stepTools.names())
-                    emitToolError(this, call.toolCallId, call.toolName, err, messages)
+                    deferredToolErrorMessages.add(emitToolErrorDeferred(this, call.toolCallId, call.toolName, err))
                     continue
                 }
                 if (toolDef.providerExecuted) {
@@ -896,12 +926,13 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
                     // approval gate, a non-gated tool's decode failure happened inside executeTool,
                     // which reported it; categorizing it here must report it too.
                     dispatcher.emitError(t, stepNumber, OnErrorEvent.ErrorSource.Tool, hooks, feed)
-                    emitToolError(
-                        this,
-                        call.toolCallId,
-                        call.toolName,
-                        t as? AgentError ?: AgentError.ToolExecution(call.toolName, call.toolCallId, t),
-                        messages,
+                    deferredToolErrorMessages.add(
+                        emitToolErrorDeferred(
+                            this,
+                            call.toolCallId,
+                            call.toolName,
+                            t as? AgentError ?: AgentError.ToolExecution(call.toolName, call.toolCallId, t),
+                        ),
                     )
                     continue
                 }
@@ -910,12 +941,13 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
                 } catch (ce: CancellationException) {
                     throw ce
                 } catch (@Suppress("TooGenericExceptionCaught") t: Throwable) {
-                    emitToolError(
-                        this,
-                        call.toolCallId,
-                        call.toolName,
-                        t as? AgentError ?: AgentError.ToolExecution(call.toolName, call.toolCallId, t),
-                        messages,
+                    deferredToolErrorMessages.add(
+                        emitToolErrorDeferred(
+                            this,
+                            call.toolCallId,
+                            call.toolName,
+                            t as? AgentError ?: AgentError.ToolExecution(call.toolName, call.toolCallId, t),
+                        ),
                     )
                     continue
                 }
@@ -926,19 +958,20 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
                         // re-validation are keyed to the model's ORIGINAL input (and its signature),
                         // so approve-over-repaired could not be honored on resume. Matches the
                         // pre-resolve "gated tool + malformed input = error" behavior.
-                        emitToolError(
-                            this,
-                            call.toolCallId,
-                            call.toolName,
-                            AgentError.InvalidToolInput(
+                        deferredToolErrorMessages.add(
+                            emitToolErrorDeferred(
+                                this,
+                                call.toolCallId,
                                 call.toolName,
-                                call.input.toString(),
-                                IllegalStateException(
-                                    "approval-gated tool received input that only decoded after repair; " +
-                                        "gated tool calls are not auto-repaired",
+                                AgentError.InvalidToolInput(
+                                    call.toolName,
+                                    call.input.toString(),
+                                    IllegalStateException(
+                                        "approval-gated tool received input that only decoded after repair; " +
+                                            "gated tool calls are not auto-repaired",
+                                    ),
                                 ),
                             ),
-                            messages,
                         )
                     } else {
                         toolsRequiringApproval.add(call)
@@ -983,6 +1016,10 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
             if (assistantParts.isNotEmpty()) {
                 messages.add(ModelMessage(MessageRole.Assistant, assistantParts.toList()))
             }
+            // Now that the assistant tool-call message is in the log, append the deferred
+            // categorization tool-error results — they pair with tool_use blocks in the message
+            // just added, so the [assistant(calls), tool_result/err...] ordering is correct.
+            messages.addAll(deferredToolErrorMessages)
 
             // Execute non-approval-gated tools concurrently (bounded by
             // maxParallelToolCalls). Child coroutines send progress to a parent-owned
@@ -1404,9 +1441,11 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
         }
     }
 
-    /** Single source for the 3 tool-error sites: emit a typed
-     *  [StreamEvent.ToolError] (display text derived from [error]) AND
-     *  append the matching tool message so the model sees the failure. */
+    /** Emit a typed [StreamEvent.ToolError] (display text derived from [error]) AND
+     *  append the matching tool message so the model sees the failure. Correct only at
+     *  sites where the assistant tool-call message is ALREADY in [messages]; the
+     *  categorization pass (which runs before that message exists) must instead use
+     *  [emitToolErrorDeferred] and append the returned message afterward. */
     private suspend fun emitToolError(
         out: FlowCollector<StreamEvent>,
         toolCallId: String,
@@ -1414,9 +1453,21 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
         error: AgentError,
         messages: MutableList<ModelMessage>,
     ) {
+        messages.add(emitToolErrorDeferred(out, toolCallId, toolName, error))
+    }
+
+    /** Emit the tool-error event for live observers and RETURN the matching Tool message
+     *  instead of appending it — so the caller can order it AFTER the assistant tool-call
+     *  message (a failed call's tool_result must never precede the tool_use that issued it). */
+    private suspend fun emitToolErrorDeferred(
+        out: FlowCollector<StreamEvent>,
+        toolCallId: String,
+        toolName: String,
+        error: AgentError,
+    ): ModelMessage {
         val msg = error.message ?: "tool failed"
         out.emit(StreamEvent.ToolError(toolCallId, toolName, msg, error = error))
-        messages.add(ToolMessage(toolCallId, toolName, JsonPrimitive(msg)))
+        return ToolMessage(toolCallId, toolName, JsonPrimitive(msg))
     }
 
     /** Wrap a tool-execution throwable as a typed Failure: an AgentError
