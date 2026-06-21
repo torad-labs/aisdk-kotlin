@@ -3,7 +3,6 @@ package ai.torad.aisdk.providers
 import ai.torad.aisdk.*
 import ai.torad.aisdk.providers.FacadeSupport.intField
 import ai.torad.aisdk.providers.FacadeSupport.textFromContentParts
-import ai.torad.aisdk.providers.PerplexityWire.toCompatible
 import io.ktor.client.HttpClient
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonArray
@@ -21,7 +20,73 @@ public data class PerplexityProviderSettings(
     val apiKey: String? = null,
     val baseURL: String = "https://api.perplexity.ai",
     val headers: Map<String, String> = emptyMap(),
-)
+) {
+    internal fun toCompatible(
+        name: String,
+        version: String,
+        capabilities: ProviderCapabilities = ProviderCapabilities(),
+    ): OpenAICompatibleProviderSettings =
+        OpenAICompatibleProviderSettings.forFacade(
+            name = name,
+            version = version,
+            baseURL = baseURL,
+            apiKey = apiKey,
+            headers = headers,
+            capabilities = capabilities,
+            transformChatRequestBody = ::perplexityTransformChatBody,
+            convertUsage = ::perplexityUsage,
+        )
+
+    private fun perplexityTransformChatBody(body: JsonObject): JsonObject = buildJsonObject {
+        for ((key, value) in body) {
+            when (key) {
+                "messages" -> put("messages", perplexityMessages(value as? JsonArray))
+                "stop", "seed", "tools", "tool_choice" -> Unit
+                else -> put(key, value)
+            }
+        }
+    }
+
+    private fun perplexityMessages(messages: JsonArray?): JsonArray = JsonArray(
+        messages.orEmpty().mapNotNull { message ->
+            val obj = message as? JsonObject ?: return@mapNotNull message
+            when (obj["role"]?.jsonPrimitive?.contentOrNull) {
+                "tool" -> null
+                "assistant" -> perplexityAssistantMessage(obj)
+                "user" -> perplexityTextMessage(obj)
+                else -> obj
+            }
+        },
+    )
+
+    private fun perplexityAssistantMessage(message: JsonObject): JsonObject {
+        val transformed = perplexityTextMessage(message).toMutableMap()
+        transformed.remove("tool_calls")
+        transformed.remove("reasoning_content")
+        transformed["content"] = JsonPrimitive((transformed["content"] as? JsonPrimitive)?.contentOrNull.orEmpty())
+        return JsonObject(transformed)
+    }
+
+    private fun perplexityTextMessage(message: JsonObject): JsonObject {
+        val content = message["content"] as? JsonArray
+        val textOnly = content?.all {
+            (it as? JsonObject)?.get("type")?.jsonPrimitive?.contentOrNull == "text"
+        } == true
+        return if (content != null && textOnly) {
+            JsonObject(message + ("content" to JsonPrimitive(textFromContentParts(content))))
+        } else {
+            message
+        }
+    }
+
+    private fun perplexityUsage(value: JsonElement?): Usage {
+        val obj = value as? JsonObject ?: return Usage(raw = value)
+        val promptTokens = obj.intField("prompt_tokens")
+        val completionTokens = obj.intField("completion_tokens")
+        val reasoning = obj.intField("reasoning_tokens").coerceAtMost(completionTokens)
+        return Usage.fromParts(promptTokens, completionTokens, cacheRead = 0, reasoningTokens = reasoning, raw = obj)
+    }
+}
 
 public class PerplexityProvider(
     client: HttpClient,
@@ -44,71 +109,3 @@ public fun Perplexity(
     client: HttpClient,
     settings: PerplexityProviderSettings = PerplexityProviderSettings(),
 ): PerplexityProvider = PerplexityProvider(client, settings)
-
-internal object PerplexityWire {
-    fun PerplexityProviderSettings.toCompatible(
-        name: String,
-        version: String,
-        capabilities: ProviderCapabilities = ProviderCapabilities(),
-    ): OpenAICompatibleProviderSettings =
-        OpenAICompatibleProviderSettings.forFacade(
-            name = name,
-            version = version,
-            baseURL = baseURL,
-            apiKey = apiKey,
-            headers = headers,
-            capabilities = capabilities,
-            transformChatRequestBody = ::perplexityTransformChatBody,
-            convertUsage = ::perplexityUsage,
-        )
-
-    fun perplexityTransformChatBody(body: JsonObject): JsonObject = buildJsonObject {
-        for ((key, value) in body) {
-            when (key) {
-                "messages" -> put("messages", perplexityMessages(value as? JsonArray))
-                "stop", "seed", "tools", "tool_choice" -> Unit
-                else -> put(key, value)
-            }
-        }
-    }
-
-    fun perplexityMessages(messages: JsonArray?): JsonArray = JsonArray(
-        messages.orEmpty().mapNotNull { message ->
-            val obj = message as? JsonObject ?: return@mapNotNull message
-            when (obj["role"]?.jsonPrimitive?.contentOrNull) {
-                "tool" -> null
-                "assistant" -> perplexityAssistantMessage(obj)
-                "user" -> perplexityTextMessage(obj)
-                else -> obj
-            }
-        },
-    )
-
-    fun perplexityAssistantMessage(message: JsonObject): JsonObject {
-        val transformed = perplexityTextMessage(message).toMutableMap()
-        transformed.remove("tool_calls")
-        transformed.remove("reasoning_content")
-        transformed["content"] = JsonPrimitive((transformed["content"] as? JsonPrimitive)?.contentOrNull.orEmpty())
-        return JsonObject(transformed)
-    }
-
-    fun perplexityTextMessage(message: JsonObject): JsonObject {
-        val content = message["content"] as? JsonArray
-        val textOnly = content?.all {
-            (it as? JsonObject)?.get("type")?.jsonPrimitive?.contentOrNull == "text"
-        } == true
-        return if (content != null && textOnly) {
-            JsonObject(message + ("content" to JsonPrimitive(textFromContentParts(content))))
-        } else {
-            message
-        }
-    }
-
-    fun perplexityUsage(value: JsonElement?): Usage {
-        val obj = value as? JsonObject ?: return Usage(raw = value)
-        val promptTokens = obj.intField("prompt_tokens")
-        val completionTokens = obj.intField("completion_tokens")
-        val reasoning = obj.intField("reasoning_tokens").coerceAtMost(completionTokens)
-        return Usage.fromParts(promptTokens, completionTokens, cacheRead = 0, reasoningTokens = reasoning, raw = obj)
-    }
-}

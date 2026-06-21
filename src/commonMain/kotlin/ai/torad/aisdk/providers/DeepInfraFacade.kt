@@ -1,8 +1,6 @@
 package ai.torad.aisdk.providers
 
 import ai.torad.aisdk.*
-import ai.torad.aisdk.providers.DeepInfraWire.fixDeepInfraUsage
-import ai.torad.aisdk.providers.DeepInfraWire.fixDeepInfraUsageEvent
 import ai.torad.aisdk.providers.FacadeHttp.postFacadeJson
 import ai.torad.aisdk.providers.FacadeHttp.providerFacadeHeaders
 import ai.torad.aisdk.providers.FacadeHttp.putProviderSpecificOptions
@@ -74,6 +72,63 @@ private class DeepInfraChatLanguageModel(
 
     override fun streamResult(params: LanguageModelCallParams): LanguageModelStreamResult =
         delegate.streamResult(params).let { result -> result.copy(stream = result.stream.map(::fixDeepInfraUsageEvent)) }
+
+    private fun fixDeepInfraUsageEvent(event: StreamEvent): StreamEvent =
+        when (event) {
+            is StreamEvent.StepFinish -> event.copy(usage = event.usage.fixDeepInfraUsage())
+            is StreamEvent.Finish -> event.copy(usage = event.usage.fixDeepInfraUsage())
+            is StreamEvent.StreamStart,
+            is StreamEvent.ResponseMetadata,
+            is StreamEvent.StepStart,
+            is StreamEvent.TextStart,
+            is StreamEvent.TextDelta,
+            is StreamEvent.TextEnd,
+            is StreamEvent.ReasoningStart,
+            is StreamEvent.ReasoningDelta,
+            is StreamEvent.ReasoningEnd,
+            is StreamEvent.SourcePart,
+            is StreamEvent.FilePart,
+            is StreamEvent.ToolInputStart,
+            is StreamEvent.ToolInputDelta,
+            is StreamEvent.ToolInputEnd,
+            is StreamEvent.ToolCall,
+            is StreamEvent.ToolResult,
+            is StreamEvent.ToolError,
+            is StreamEvent.ToolApprovalRequest,
+            is StreamEvent.ToolOutputDenied,
+            StreamEvent.Abort,
+            is StreamEvent.Error,
+            is StreamEvent.Raw,
+            -> event
+        }
+
+    private fun Usage.fixDeepInfraUsage(): Usage {
+        val rawObject = raw as? JsonObject ?: return this
+        val reasoningTokens = rawObject["completion_tokens_details"]
+            ?.jsonObject
+            ?.get("reasoning_tokens")
+            ?.jsonPrimitive
+            ?.intOrNull
+            ?: return this
+        val completionTokens = rawObject["completion_tokens"]?.jsonPrimitive?.intOrNull ?: return this
+        if (reasoningTokens <= completionTokens) return this
+
+        val correctedCompletionTokens = completionTokens + reasoningTokens
+        val correctedRaw = rawObject.toMutableMap().apply {
+            put("completion_tokens", JsonPrimitive(correctedCompletionTokens))
+            rawObject["total_tokens"]?.jsonPrimitive?.intOrNull?.let { total ->
+                put("total_tokens", JsonPrimitive(total + reasoningTokens))
+            }
+        }
+        return copy(
+            outputTokens = outputTokens.copy(
+                total = correctedCompletionTokens,
+                text = correctedCompletionTokens - reasoningTokens,
+                reasoning = reasoningTokens,
+            ),
+            raw = JsonObject(correctedRaw),
+        )
+    }
 }
 
 private class DeepInfraImageModel(
@@ -114,65 +169,6 @@ private class DeepInfraImageModel(
         return ImageModelResult(
             images = images,
             response = LanguageModelResponseMetadata(modelId = modelId, headers = response.headers, body = response.value),
-        )
-    }
-}
-
-internal object DeepInfraWire {
-    fun fixDeepInfraUsageEvent(event: StreamEvent): StreamEvent =
-        when (event) {
-            is StreamEvent.StepFinish -> event.copy(usage = event.usage.fixDeepInfraUsage())
-            is StreamEvent.Finish -> event.copy(usage = event.usage.fixDeepInfraUsage())
-            is StreamEvent.StreamStart,
-            is StreamEvent.ResponseMetadata,
-            is StreamEvent.StepStart,
-            is StreamEvent.TextStart,
-            is StreamEvent.TextDelta,
-            is StreamEvent.TextEnd,
-            is StreamEvent.ReasoningStart,
-            is StreamEvent.ReasoningDelta,
-            is StreamEvent.ReasoningEnd,
-            is StreamEvent.SourcePart,
-            is StreamEvent.FilePart,
-            is StreamEvent.ToolInputStart,
-            is StreamEvent.ToolInputDelta,
-            is StreamEvent.ToolInputEnd,
-            is StreamEvent.ToolCall,
-            is StreamEvent.ToolResult,
-            is StreamEvent.ToolError,
-            is StreamEvent.ToolApprovalRequest,
-            is StreamEvent.ToolOutputDenied,
-            StreamEvent.Abort,
-            is StreamEvent.Error,
-            is StreamEvent.Raw,
-            -> event
-        }
-
-    fun Usage.fixDeepInfraUsage(): Usage {
-        val rawObject = raw as? JsonObject ?: return this
-        val reasoningTokens = rawObject["completion_tokens_details"]
-            ?.jsonObject
-            ?.get("reasoning_tokens")
-            ?.jsonPrimitive
-            ?.intOrNull
-            ?: return this
-        val completionTokens = rawObject["completion_tokens"]?.jsonPrimitive?.intOrNull ?: return this
-        if (reasoningTokens <= completionTokens) return this
-
-        val correctedCompletionTokens = completionTokens + reasoningTokens
-        val correctedRaw = rawObject.toMutableMap().apply {
-            put("completion_tokens", JsonPrimitive(correctedCompletionTokens))
-            rawObject["total_tokens"]?.jsonPrimitive?.intOrNull?.let { total ->
-                put("total_tokens", JsonPrimitive(total + reasoningTokens))
-            }
-        }
-        return copy(
-            outputTokens = outputTokens.copy(
-                total = correctedCompletionTokens,
-                text = correctedCompletionTokens - reasoningTokens,
-                reasoning = reasoningTokens,
-            ),
-            raw = JsonObject(correctedRaw),
         )
     }
 }

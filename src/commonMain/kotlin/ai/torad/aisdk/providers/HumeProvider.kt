@@ -34,7 +34,15 @@ public data class HumeSpeechModelOptions(
 public data class HumeProviderSettings(
     val apiKey: String? = null,
     val headers: Map<String, String> = emptyMap(),
-)
+) {
+    internal fun humeHeaders(callHeaders: Map<String, String>): Map<String, String> {
+        val base = linkedMapOf<String, String>()
+        apiKey?.takeIf { it.isNotBlank() }?.let { base["X-Hume-Api-Key"] = it }
+        base.putAll(headers)
+        base.putAll(callHeaders)
+        return ProviderHeaders.withUserAgentSuffix(base, "ai-sdk/hume/$HUME_VERSION")
+    }
+}
 
 public class HumeProvider(
     private val client: HttpClient,
@@ -68,7 +76,7 @@ private class HumeSpeechModel(
 
     override suspend fun generate(params: SpeechGenerationParams): SpeechModelResult {
         val warnings = mutableListOf<CallWarning>()
-        val format = HumeWire.humeOutputFormat(params.responseFormat, warnings)
+        val format = humeOutputFormat(params.responseFormat, warnings)
         val body = buildJsonObject {
             put(
                 "utterances",
@@ -90,17 +98,17 @@ private class HumeSpeechModel(
                 ),
             )
             put("format", buildJsonObject { put("type", JsonPrimitive(format)) })
-            HumeWire.humeOptions(params.providerOptions)["context"]?.jsonObject?.let { context ->
-                put("context", HumeWire.humeContext(context))
+            humeOptions(params.providerOptions)["context"]?.jsonObject?.let { context ->
+                put("context", humeContext(context))
             }
         }
         val url = "https://api.hume.ai/v0/tts/file"
         val response = client.request(url) {
             method = HttpMethod.Post
             contentType(ContentType.Application.Json)
-            HumeWire.humeHeaders(settings, params.headers).forEach { (name, value) -> header(name, value) }
+            settings.humeHeaders(params.headers).forEach { (name, value) -> header(name, value) }
             setBody(aiSdkJson.encodeToString(JsonElement.serializer(), body))
-        }.let { HumeWire.parseHumeBinary(it, url, format) }
+        }.let { parseHumeBinary(it, url, format) }
         return SpeechModelResult(
             audio = GeneratedFile(
                 mediaType = response.mediaType,
@@ -110,21 +118,8 @@ private class HumeSpeechModel(
             response = LanguageModelResponseMetadata(headers = response.headers),
         )
     }
-}
 
-private const val HUME_DEFAULT_VOICE_ID: String = "d8ab67c6-953d-4bd8-9370-8fa53a0f1453"
-
-
-internal class HumeBinaryResponse(
-    val bytes: ByteArray,
-    val mediaType: String,
-    val headers: Map<String, String>,
-)
-
-internal object HumeWire {
-    private val humeSupportedFormats = setOf("mp3", "pcm", "wav")
-
-    suspend fun parseHumeBinary(response: HttpResponse, url: String, format: String): HumeBinaryResponse {
+    private suspend fun parseHumeBinary(response: HttpResponse, url: String, format: String): HumeBinaryResponse {
         val bytes = response.bodyAsBytes()
         val headers = with(HttpTransport) { response.flattenedHeaders() }
         if (response.status.value !in 200..299) {
@@ -144,18 +139,10 @@ internal object HumeWire {
         )
     }
 
-    fun humeHeaders(settings: HumeProviderSettings, callHeaders: Map<String, String>): Map<String, String> {
-        val base = linkedMapOf<String, String>()
-        settings.apiKey?.takeIf { it.isNotBlank() }?.let { base["X-Hume-Api-Key"] = it }
-        base.putAll(settings.headers)
-        base.putAll(callHeaders)
-        return ProviderHeaders.withUserAgentSuffix(base, "ai-sdk/hume/$HUME_VERSION")
-    }
-
-    fun humeOptions(providerOptions: ProviderOptions): JsonObject =
+    private fun humeOptions(providerOptions: ProviderOptions): JsonObject =
         providerOptions.toMap()["hume"] as? JsonObject ?: JsonObject(emptyMap())
 
-    fun humeContext(context: JsonObject): JsonObject =
+    private fun humeContext(context: JsonObject): JsonObject =
         when {
             "generationId" in context -> buildJsonObject {
                 context["generationId"]?.let { put("generation_id", it) }
@@ -180,7 +167,7 @@ internal object HumeWire {
             else -> context
         }
 
-    fun humeOutputFormat(format: String?, warnings: MutableList<CallWarning>): String {
+    private fun humeOutputFormat(format: String?, warnings: MutableList<CallWarning>): String {
         val value = format ?: "mp3"
         if (value in humeSupportedFormats) return value
         warnings += CallWarning("unsupported", "Unsupported output format: $value. Using mp3 instead.")
@@ -197,3 +184,14 @@ internal object HumeWire {
     private fun headerValue(map: Map<String, String>, name: String): String? =
         map.entries.firstOrNull { it.key.equals(name, ignoreCase = true) }?.value
 }
+
+private const val HUME_DEFAULT_VOICE_ID: String = "d8ab67c6-953d-4bd8-9370-8fa53a0f1453"
+
+private val humeSupportedFormats: Set<String> = setOf("mp3", "pcm", "wav")
+
+
+internal class HumeBinaryResponse(
+    val bytes: ByteArray,
+    val mediaType: String,
+    val headers: Map<String, String>,
+)

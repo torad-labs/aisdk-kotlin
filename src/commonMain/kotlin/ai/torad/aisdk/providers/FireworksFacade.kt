@@ -6,11 +6,6 @@ import ai.torad.aisdk.providers.FacadeHttp.postFacadeBinary
 import ai.torad.aisdk.providers.FacadeHttp.postFacadeJson
 import ai.torad.aisdk.providers.FacadeHttp.providerFacadeHeaders
 import ai.torad.aisdk.providers.FacadeHttp.putProviderSpecificOptions
-import ai.torad.aisdk.providers.FireworksWire.fireworksImageBackend
-import ai.torad.aisdk.providers.FireworksWire.fireworksImageUrl
-import ai.torad.aisdk.providers.FireworksWire.fireworksImageWarnings
-import ai.torad.aisdk.providers.FireworksWire.toCompatible
-import ai.torad.aisdk.providers.FireworksWire.transformFireworksProviderOptions
 import io.ktor.client.HttpClient
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
@@ -58,7 +53,14 @@ public data class FireworksProviderSettings(
     val apiKey: String? = null,
     val baseURL: String = "https://api.fireworks.ai/inference/v1",
     val headers: Map<String, String> = emptyMap(),
-)
+) {
+    internal fun toCompatible(
+        name: String,
+        version: String,
+        capabilities: ProviderCapabilities = ProviderCapabilities(),
+    ): OpenAICompatibleProviderSettings =
+        OpenAICompatibleProviderSettings.forFacade(name, version, baseURL, apiKey, headers, capabilities)
+}
 
 public class FireworksProvider(
     private val client: HttpClient,
@@ -96,6 +98,33 @@ private class FireworksLanguageModel(
 
     override fun streamResult(params: LanguageModelCallParams): LanguageModelStreamResult =
         delegate.streamResult(params.copy(providerOptions = transformFireworksProviderOptions(params.providerOptions)))
+
+    private fun transformFireworksProviderOptions(options: ProviderOptions): ProviderOptions {
+        val map = options.toMap()
+        val fireworksOptions = map["fireworks"] as? JsonObject ?: return options
+        val transformed = buildJsonObject {
+            for ((key, value) in fireworksOptions) {
+                when (key) {
+                    "thinking" -> put("thinking", transformFireworksThinking(value))
+                    "reasoningHistory" -> put("reasoning_history", value)
+                    else -> put(key, value)
+                }
+            }
+        }
+        return ProviderOptions.Raw(JsonObject(map + ("fireworks" to (transformed as JsonElement))))
+    }
+
+    private fun transformFireworksThinking(value: JsonElement): JsonElement {
+        val objectValue = value as? JsonObject ?: return value
+        return buildJsonObject {
+            for ((key, nestedValue) in objectValue) {
+                when (key) {
+                    "budgetTokens" -> put("budget_tokens", nestedValue)
+                    else -> put(key, nestedValue)
+                }
+            }
+        }
+    }
 }
 
 public class FireworksImageModel(
@@ -199,6 +228,39 @@ public class FireworksImageModel(
             url = pollUrl,
         )
     }
+
+    private fun fireworksImageBackend(modelId: String): FireworksImageBackend =
+        when (modelId) {
+            "accounts/fireworks/models/flux-kontext-pro",
+            "accounts/fireworks/models/flux-kontext-max",
+            -> FireworksImageBackend(FireworksImageUrlFormat.WorkflowsAsync)
+            "accounts/fireworks/models/playground-v2-5-1024px-aesthetic",
+            "accounts/fireworks/models/japanese-stable-diffusion-xl",
+            "accounts/fireworks/models/playground-v2-1024px-aesthetic",
+            "accounts/fireworks/models/stable-diffusion-xl-1024-v1-0",
+            "accounts/fireworks/models/SSD-1B",
+            -> FireworksImageBackend(FireworksImageUrlFormat.ImageGeneration, supportsSize = true)
+            else -> FireworksImageBackend(FireworksImageUrlFormat.Workflows)
+        }
+
+    private fun fireworksImageUrl(baseURL: String, modelId: String, backend: FireworksImageBackend): String {
+        val base = baseURL.trimEnd('/')
+        return when (backend.urlFormat) {
+            FireworksImageUrlFormat.ImageGeneration -> "$base/image_generation/$modelId"
+            FireworksImageUrlFormat.WorkflowsAsync -> "$base/workflows/$modelId"
+            FireworksImageUrlFormat.Workflows -> "$base/workflows/$modelId/text_to_image"
+        }
+    }
+
+    private fun fireworksImageWarnings(params: ImageGenerationParams, backend: FireworksImageBackend): List<CallWarning> =
+        buildList {
+            if (!backend.supportsSize && params.size != null) {
+                add(CallWarning("unsupported", "This Fireworks model does not support size; use aspectRatio."))
+            }
+            if (backend.supportsSize && params.aspectRatio != null) {
+                add(CallWarning("unsupported", "This Fireworks model does not support aspectRatio."))
+            }
+        }
 }
 
 internal enum class FireworksImageUrlFormat {
@@ -214,72 +276,3 @@ internal data class FireworksImageBackend(
 
 private const val FIREWORKS_POLL_INTERVAL_MILLIS: Long = 500
 private const val FIREWORKS_MAX_POLL_ATTEMPTS: Int = 240
-
-internal object FireworksWire {
-    fun FireworksProviderSettings.toCompatible(
-        name: String,
-        version: String,
-        capabilities: ProviderCapabilities = ProviderCapabilities(),
-    ): OpenAICompatibleProviderSettings =
-        OpenAICompatibleProviderSettings.forFacade(name, version, baseURL, apiKey, headers, capabilities)
-
-    fun transformFireworksProviderOptions(options: ProviderOptions): ProviderOptions {
-        val map = options.toMap()
-        val fireworksOptions = map["fireworks"] as? JsonObject ?: return options
-        val transformed = buildJsonObject {
-            for ((key, value) in fireworksOptions) {
-                when (key) {
-                    "thinking" -> put("thinking", transformFireworksThinking(value))
-                    "reasoningHistory" -> put("reasoning_history", value)
-                    else -> put(key, value)
-                }
-            }
-        }
-        return ProviderOptions.Raw(JsonObject(map + ("fireworks" to (transformed as JsonElement))))
-    }
-
-    fun transformFireworksThinking(value: JsonElement): JsonElement {
-        val objectValue = value as? JsonObject ?: return value
-        return buildJsonObject {
-            for ((key, nestedValue) in objectValue) {
-                when (key) {
-                    "budgetTokens" -> put("budget_tokens", nestedValue)
-                    else -> put(key, nestedValue)
-                }
-            }
-        }
-    }
-
-    fun fireworksImageBackend(modelId: String): FireworksImageBackend =
-        when (modelId) {
-            "accounts/fireworks/models/flux-kontext-pro",
-            "accounts/fireworks/models/flux-kontext-max",
-            -> FireworksImageBackend(FireworksImageUrlFormat.WorkflowsAsync)
-            "accounts/fireworks/models/playground-v2-5-1024px-aesthetic",
-            "accounts/fireworks/models/japanese-stable-diffusion-xl",
-            "accounts/fireworks/models/playground-v2-1024px-aesthetic",
-            "accounts/fireworks/models/stable-diffusion-xl-1024-v1-0",
-            "accounts/fireworks/models/SSD-1B",
-            -> FireworksImageBackend(FireworksImageUrlFormat.ImageGeneration, supportsSize = true)
-            else -> FireworksImageBackend(FireworksImageUrlFormat.Workflows)
-        }
-
-    fun fireworksImageUrl(baseURL: String, modelId: String, backend: FireworksImageBackend): String {
-        val base = baseURL.trimEnd('/')
-        return when (backend.urlFormat) {
-            FireworksImageUrlFormat.ImageGeneration -> "$base/image_generation/$modelId"
-            FireworksImageUrlFormat.WorkflowsAsync -> "$base/workflows/$modelId"
-            FireworksImageUrlFormat.Workflows -> "$base/workflows/$modelId/text_to_image"
-        }
-    }
-
-    fun fireworksImageWarnings(params: ImageGenerationParams, backend: FireworksImageBackend): List<CallWarning> =
-        buildList {
-            if (!backend.supportsSize && params.size != null) {
-                add(CallWarning("unsupported", "This Fireworks model does not support size; use aspectRatio."))
-            }
-            if (backend.supportsSize && params.aspectRatio != null) {
-                add(CallWarning("unsupported", "This Fireworks model does not support aspectRatio."))
-            }
-        }
-}

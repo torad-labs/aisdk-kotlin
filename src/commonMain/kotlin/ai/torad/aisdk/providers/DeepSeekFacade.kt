@@ -1,7 +1,6 @@
 package ai.torad.aisdk.providers
 
 import ai.torad.aisdk.*
-import ai.torad.aisdk.providers.DeepSeekWire.toCompatible
 import ai.torad.aisdk.providers.FacadeSupport.intField
 import ai.torad.aisdk.providers.FacadeSupport.nestedIntField
 import ai.torad.aisdk.providers.FacadeSupport.textFromContentParts
@@ -22,7 +21,99 @@ public data class DeepSeekProviderSettings(
     val apiKey: String? = null,
     val baseURL: String = "https://api.deepseek.com",
     val headers: Map<String, String> = emptyMap(),
-)
+) {
+    internal fun toCompatible(
+        name: String,
+        version: String,
+        capabilities: ProviderCapabilities = ProviderCapabilities(),
+    ): OpenAICompatibleProviderSettings =
+        OpenAICompatibleProviderSettings.forFacade(
+            name = name,
+            version = version,
+            baseURL = baseURL,
+            apiKey = apiKey,
+            headers = headers,
+            capabilities = capabilities,
+            transformChatRequestBody = ::deepSeekTransformChatBody,
+            convertUsage = ::deepSeekUsage,
+        )
+
+    private fun deepSeekTransformChatBody(body: JsonObject): JsonObject {
+        val responseFormat = body["response_format"] as? JsonObject
+        val responseFormatType = responseFormat?.get("type")?.jsonPrimitive?.contentOrNull
+        val schema = (responseFormat?.get("json_schema") as? JsonObject)?.get("schema")
+        val jsonRequested = responseFormatType == "json_object" || responseFormatType == "json_schema"
+        return buildJsonObject {
+            for ((key, value) in body) {
+                when (key) {
+                    "messages" -> put(
+                        "messages",
+                        deepSeekMessages(
+                            messages = value as? JsonArray,
+                            jsonRequested = jsonRequested,
+                            schema = schema,
+                        ),
+                    )
+                    "response_format" -> if (jsonRequested) {
+                        put("response_format", buildJsonObject { put("type", JsonPrimitive("json_object")) })
+                    } else {
+                        put(key, value)
+                    }
+                    "seed" -> Unit
+                    else -> put(key, value)
+                }
+            }
+        }
+    }
+
+    private fun deepSeekMessages(
+        messages: JsonArray?,
+        jsonRequested: Boolean,
+        schema: JsonElement?,
+    ): JsonArray = JsonArray(
+        buildList {
+            if (jsonRequested) {
+                add(
+                    buildJsonObject {
+                        put("role", JsonPrimitive("system"))
+                        put(
+                            "content",
+                            JsonPrimitive(
+                                if (schema == null) {
+                                    "Return JSON."
+                                } else {
+                                    "Return JSON that conforms to the following schema: $schema"
+                                },
+                            ),
+                        )
+                    },
+                )
+            }
+            messages.orEmpty().forEach { message ->
+                add(deepSeekMessage(message))
+            }
+        },
+    )
+
+    private fun deepSeekMessage(message: JsonElement): JsonElement {
+        val obj = message as? JsonObject
+        val content = obj?.get("content") as? JsonArray
+        return if (obj?.get("role")?.jsonPrimitive?.contentOrNull == "user" && content != null) {
+            JsonObject(obj + ("content" to JsonPrimitive(textFromContentParts(content))))
+        } else {
+            message
+        }
+    }
+
+    private fun deepSeekUsage(value: JsonElement?): Usage {
+        val obj = value as? JsonObject ?: return Usage(raw = value)
+        val promptTokens = obj.intField("prompt_tokens")
+        val completionTokens = obj.intField("completion_tokens")
+        val cacheRead = obj.intField("prompt_cache_hit_tokens").coerceAtMost(promptTokens)
+        val reasoning = obj.nestedIntField("completion_tokens_details", "reasoning_tokens").coerceAtMost(completionTokens)
+        return Usage.fromParts(promptTokens, completionTokens, cacheRead, reasoning, obj)
+    }
+}
 
 @Serializable
 public data class DeepSeekLanguageModelOptions(
@@ -54,97 +145,3 @@ public fun DeepSeek(
     client: HttpClient,
     settings: DeepSeekProviderSettings = DeepSeekProviderSettings(),
 ): DeepSeekProvider = DeepSeekProvider(client, settings)
-
-internal object DeepSeekWire {
-    fun DeepSeekProviderSettings.toCompatible(
-        name: String,
-        version: String,
-        capabilities: ProviderCapabilities = ProviderCapabilities(),
-    ): OpenAICompatibleProviderSettings =
-        OpenAICompatibleProviderSettings.forFacade(
-            name = name,
-            version = version,
-            baseURL = baseURL,
-            apiKey = apiKey,
-            headers = headers,
-            capabilities = capabilities,
-            transformChatRequestBody = ::deepSeekTransformChatBody,
-            convertUsage = ::deepSeekUsage,
-        )
-
-    fun deepSeekTransformChatBody(body: JsonObject): JsonObject {
-        val responseFormat = body["response_format"] as? JsonObject
-        val responseFormatType = responseFormat?.get("type")?.jsonPrimitive?.contentOrNull
-        val schema = (responseFormat?.get("json_schema") as? JsonObject)?.get("schema")
-        val jsonRequested = responseFormatType == "json_object" || responseFormatType == "json_schema"
-        return buildJsonObject {
-            for ((key, value) in body) {
-                when (key) {
-                    "messages" -> put(
-                        "messages",
-                        deepSeekMessages(
-                            messages = value as? JsonArray,
-                            jsonRequested = jsonRequested,
-                            schema = schema,
-                        ),
-                    )
-                    "response_format" -> if (jsonRequested) {
-                        put("response_format", buildJsonObject { put("type", JsonPrimitive("json_object")) })
-                    } else {
-                        put(key, value)
-                    }
-                    "seed" -> Unit
-                    else -> put(key, value)
-                }
-            }
-        }
-    }
-
-    fun deepSeekMessages(
-        messages: JsonArray?,
-        jsonRequested: Boolean,
-        schema: JsonElement?,
-    ): JsonArray = JsonArray(
-        buildList {
-            if (jsonRequested) {
-                add(
-                    buildJsonObject {
-                        put("role", JsonPrimitive("system"))
-                        put(
-                            "content",
-                            JsonPrimitive(
-                                if (schema == null) {
-                                    "Return JSON."
-                                } else {
-                                    "Return JSON that conforms to the following schema: $schema"
-                                },
-                            ),
-                        )
-                    },
-                )
-            }
-            messages.orEmpty().forEach { message ->
-                add(deepSeekMessage(message))
-            }
-        },
-    )
-
-    fun deepSeekMessage(message: JsonElement): JsonElement {
-        val obj = message as? JsonObject
-        val content = obj?.get("content") as? JsonArray
-        return if (obj?.get("role")?.jsonPrimitive?.contentOrNull == "user" && content != null) {
-            JsonObject(obj + ("content" to JsonPrimitive(textFromContentParts(content))))
-        } else {
-            message
-        }
-    }
-
-    fun deepSeekUsage(value: JsonElement?): Usage {
-        val obj = value as? JsonObject ?: return Usage(raw = value)
-        val promptTokens = obj.intField("prompt_tokens")
-        val completionTokens = obj.intField("completion_tokens")
-        val cacheRead = obj.intField("prompt_cache_hit_tokens").coerceAtMost(promptTokens)
-        val reasoning = obj.nestedIntField("completion_tokens_details", "reasoning_tokens").coerceAtMost(completionTokens)
-        return Usage.fromParts(promptTokens, completionTokens, cacheRead, reasoning, obj)
-    }
-}

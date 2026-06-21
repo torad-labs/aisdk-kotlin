@@ -3,7 +3,6 @@ package ai.torad.aisdk.providers
 import ai.torad.aisdk.*
 import ai.torad.aisdk.providers.FacadeSupport.intField
 import ai.torad.aisdk.providers.FacadeSupport.nestedIntField
-import ai.torad.aisdk.providers.MoonshotAIWire.toCompatible
 import io.ktor.client.HttpClient
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonElement
@@ -19,7 +18,34 @@ public data class MoonshotAIProviderSettings(
     val apiKey: String? = null,
     val baseURL: String = "https://api.moonshot.ai/v1",
     val headers: Map<String, String> = emptyMap(),
-)
+) {
+    internal fun toCompatible(
+        name: String,
+        version: String,
+        capabilities: ProviderCapabilities = ProviderCapabilities(),
+    ): OpenAICompatibleProviderSettings =
+        OpenAICompatibleProviderSettings.forFacade(
+            name = name,
+            version = version,
+            baseURL = baseURL,
+            apiKey = apiKey,
+            headers = headers,
+            capabilities = capabilities,
+            convertUsage = ::moonshotAIUsage,
+        )
+
+    private fun moonshotAIUsage(value: JsonElement?): Usage {
+        val obj = value as? JsonObject ?: return Usage(raw = value)
+        val promptTokens = obj.intField("prompt_tokens")
+        val completionTokens = obj.intField("completion_tokens")
+        val cacheRead = (
+            obj["cached_tokens"]?.jsonPrimitive?.intOrNull
+                ?: obj.nestedIntField("prompt_tokens_details", "cached_tokens")
+            ).coerceAtMost(promptTokens)
+        val reasoning = obj.nestedIntField("completion_tokens_details", "reasoning_tokens").coerceAtMost(completionTokens)
+        return Usage.fromParts(promptTokens, completionTokens, cacheRead, reasoning, obj)
+    }
+}
 
 @Serializable
 public data class MoonshotAILanguageModelOptions(
@@ -49,32 +75,3 @@ public fun MoonshotAI(
     client: HttpClient,
     settings: MoonshotAIProviderSettings = MoonshotAIProviderSettings(),
 ): MoonshotAIProvider = MoonshotAIProvider(client, settings)
-
-internal object MoonshotAIWire {
-    fun MoonshotAIProviderSettings.toCompatible(
-        name: String,
-        version: String,
-        capabilities: ProviderCapabilities = ProviderCapabilities(),
-    ): OpenAICompatibleProviderSettings =
-        OpenAICompatibleProviderSettings.forFacade(
-            name = name,
-            version = version,
-            baseURL = baseURL,
-            apiKey = apiKey,
-            headers = headers,
-            capabilities = capabilities,
-            convertUsage = ::moonshotAIUsage,
-        )
-
-    fun moonshotAIUsage(value: JsonElement?): Usage {
-        val obj = value as? JsonObject ?: return Usage(raw = value)
-        val promptTokens = obj.intField("prompt_tokens")
-        val completionTokens = obj.intField("completion_tokens")
-        val cacheRead = (
-            obj["cached_tokens"]?.jsonPrimitive?.intOrNull
-                ?: obj.nestedIntField("prompt_tokens_details", "cached_tokens")
-            ).coerceAtMost(promptTokens)
-        val reasoning = obj.nestedIntField("completion_tokens_details", "reasoning_tokens").coerceAtMost(completionTokens)
-        return Usage.fromParts(promptTokens, completionTokens, cacheRead, reasoning, obj)
-    }
-}

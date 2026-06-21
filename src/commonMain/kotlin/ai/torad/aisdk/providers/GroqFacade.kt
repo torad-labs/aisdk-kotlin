@@ -3,7 +3,6 @@ package ai.torad.aisdk.providers
 import ai.torad.aisdk.*
 import ai.torad.aisdk.providers.FacadeSupport.intField
 import ai.torad.aisdk.providers.FacadeSupport.nestedIntField
-import ai.torad.aisdk.providers.GroqWire.toCompatible
 import io.ktor.client.HttpClient
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonArray
@@ -21,7 +20,93 @@ public data class GroqProviderSettings(
     val apiKey: String? = null,
     val baseURL: String = "https://api.groq.com/openai/v1",
     val headers: Map<String, String> = emptyMap(),
-)
+) {
+    internal fun toCompatible(
+        name: String,
+        version: String,
+        capabilities: ProviderCapabilities = ProviderCapabilities(),
+    ): OpenAICompatibleProviderSettings =
+        OpenAICompatibleProviderSettings.forFacade(
+            name = name,
+            version = version,
+            baseURL = baseURL,
+            apiKey = apiKey,
+            headers = headers,
+            capabilities = capabilities,
+            transformChatRequestBody = ::groqTransformChatBody,
+            transformChatResponse = ::groqTransformChatResponse,
+            convertUsage = ::groqUsage,
+        )
+
+    private fun groqTransformChatBody(body: JsonObject): JsonObject {
+        val modelId = body["model"]?.jsonPrimitive?.contentOrNull
+        val tools = groqTools(body["tools"] as? JsonArray, modelId)
+        return buildJsonObject {
+            for ((key, value) in body) {
+                when (key) {
+                    "messages" -> put("messages", groqMessages(value as? JsonArray))
+                    // browser_search may have been filtered out — drop the tools key if now empty
+                    // (an empty tools array is invalid, same as sending tool_choice without tools).
+                    "tools" -> if (tools.isNotEmpty()) put("tools", tools)
+                    else -> put(key, value)
+                }
+            }
+        }
+    }
+
+    private fun groqMessages(messages: JsonArray?): JsonArray = JsonArray(
+        messages.orEmpty().map { message ->
+            val obj = message as? JsonObject ?: return@map message
+            if (obj["role"]?.jsonPrimitive?.contentOrNull != "assistant") return@map obj
+            val reasoning = obj["reasoning_content"] ?: return@map obj
+            val transformed = obj.toMutableMap()
+            transformed.remove("reasoning_content")
+            transformed["reasoning"] = reasoning
+            JsonObject(transformed)
+        },
+    )
+
+    private fun groqTools(tools: JsonArray?, modelId: String?): JsonArray = JsonArray(
+        tools.orEmpty().mapNotNull { tool ->
+            val obj = tool as? JsonObject ?: return@mapNotNull tool
+            val function = obj["function"] as? JsonObject ?: return@mapNotNull tool
+            val name = function["name"]?.jsonPrimitive?.contentOrNull
+            if (name == "browserSearch" || name == "browser_search") {
+                // Gate the browser_search tool to the models that support it; drop it elsewhere
+                // (upstream emits an unsupported warning and omits the tool).
+                if (modelId in GROQ_BROWSER_SEARCH_MODELS) {
+                    buildJsonObject { put("type", JsonPrimitive("browser_search")) }
+                } else {
+                    null
+                }
+            } else {
+                tool
+            }
+        },
+    )
+
+    private fun groqTransformChatResponse(body: JsonObject): JsonObject {
+        val usage = (body["x_groq"] as? JsonObject)?.get("usage")
+        return if (body["usage"] == null && usage != null) {
+            JsonObject(body + ("usage" to usage))
+        } else {
+            body
+        }
+    }
+
+    private fun groqUsage(value: JsonElement?): Usage {
+        val obj = value as? JsonObject ?: return Usage(raw = value)
+        val promptTokens = obj.intField("prompt_tokens")
+        val completionTokens = obj.intField("completion_tokens")
+        val reasoning = obj.nestedIntField("completion_tokens_details", "reasoning_tokens").coerceAtMost(completionTokens)
+        return Usage.fromParts(promptTokens, completionTokens, cacheRead = 0, reasoningTokens = reasoning, raw = obj)
+    }
+
+    private companion object {
+        // Groq supports the browser_search tool only on these models; elsewhere it is dropped.
+        private val GROQ_BROWSER_SEARCH_MODELS = setOf("openai/gpt-oss-20b", "openai/gpt-oss-120b")
+    }
+}
 
 @Serializable
 public data class GroqLanguageModelOptions(
@@ -77,89 +162,3 @@ public data class GroqTools(
 )
 
 public val browserSearch: Tool<JsonElement, JsonElement, Any?> = groqBrowserSearchTool
-
-internal object GroqWire {
-    // Groq supports the browser_search tool only on these models; elsewhere it is dropped.
-    private val GROQ_BROWSER_SEARCH_MODELS = setOf("openai/gpt-oss-20b", "openai/gpt-oss-120b")
-
-    fun GroqProviderSettings.toCompatible(
-        name: String,
-        version: String,
-        capabilities: ProviderCapabilities = ProviderCapabilities(),
-    ): OpenAICompatibleProviderSettings =
-        OpenAICompatibleProviderSettings.forFacade(
-            name = name,
-            version = version,
-            baseURL = baseURL,
-            apiKey = apiKey,
-            headers = headers,
-            capabilities = capabilities,
-            transformChatRequestBody = ::groqTransformChatBody,
-            transformChatResponse = ::groqTransformChatResponse,
-            convertUsage = ::groqUsage,
-        )
-
-    fun groqTransformChatBody(body: JsonObject): JsonObject {
-        val modelId = body["model"]?.jsonPrimitive?.contentOrNull
-        val tools = groqTools(body["tools"] as? JsonArray, modelId)
-        return buildJsonObject {
-            for ((key, value) in body) {
-                when (key) {
-                    "messages" -> put("messages", groqMessages(value as? JsonArray))
-                    // browser_search may have been filtered out — drop the tools key if now empty
-                    // (an empty tools array is invalid, same as sending tool_choice without tools).
-                    "tools" -> if (tools.isNotEmpty()) put("tools", tools)
-                    else -> put(key, value)
-                }
-            }
-        }
-    }
-
-    fun groqMessages(messages: JsonArray?): JsonArray = JsonArray(
-        messages.orEmpty().map { message ->
-            val obj = message as? JsonObject ?: return@map message
-            if (obj["role"]?.jsonPrimitive?.contentOrNull != "assistant") return@map obj
-            val reasoning = obj["reasoning_content"] ?: return@map obj
-            val transformed = obj.toMutableMap()
-            transformed.remove("reasoning_content")
-            transformed["reasoning"] = reasoning
-            JsonObject(transformed)
-        },
-    )
-
-    fun groqTools(tools: JsonArray?, modelId: String?): JsonArray = JsonArray(
-        tools.orEmpty().mapNotNull { tool ->
-            val obj = tool as? JsonObject ?: return@mapNotNull tool
-            val function = obj["function"] as? JsonObject ?: return@mapNotNull tool
-            val name = function["name"]?.jsonPrimitive?.contentOrNull
-            if (name == "browserSearch" || name == "browser_search") {
-                // Gate the browser_search tool to the models that support it; drop it elsewhere
-                // (upstream emits an unsupported warning and omits the tool).
-                if (modelId in GROQ_BROWSER_SEARCH_MODELS) {
-                    buildJsonObject { put("type", JsonPrimitive("browser_search")) }
-                } else {
-                    null
-                }
-            } else {
-                tool
-            }
-        },
-    )
-
-    fun groqTransformChatResponse(body: JsonObject): JsonObject {
-        val usage = (body["x_groq"] as? JsonObject)?.get("usage")
-        return if (body["usage"] == null && usage != null) {
-            JsonObject(body + ("usage" to usage))
-        } else {
-            body
-        }
-    }
-
-    fun groqUsage(value: JsonElement?): Usage {
-        val obj = value as? JsonObject ?: return Usage(raw = value)
-        val promptTokens = obj.intField("prompt_tokens")
-        val completionTokens = obj.intField("completion_tokens")
-        val reasoning = obj.nestedIntField("completion_tokens_details", "reasoning_tokens").coerceAtMost(completionTokens)
-        return Usage.fromParts(promptTokens, completionTokens, cacheRead = 0, reasoningTokens = reasoning, raw = obj)
-    }
-}
