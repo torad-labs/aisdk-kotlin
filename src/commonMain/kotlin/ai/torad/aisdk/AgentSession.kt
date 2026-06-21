@@ -1,6 +1,7 @@
 package ai.torad.aisdk
 
-import kotlin.concurrent.Volatile
+import kotlin.concurrent.atomics.AtomicReference
+import kotlin.concurrent.atomics.ExperimentalAtomicApi
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
@@ -35,6 +36,7 @@ public data class AgentSessionState<TOutput>(
         get() = status == AgentSessionStatus.Running
 }
 
+@OptIn(ExperimentalAtomicApi::class)
 public class AgentSession<TContext, TOutput>(
     private val scope: CoroutineScope,
     private val agent: Agent<TContext, TOutput>,
@@ -42,34 +44,27 @@ public class AgentSession<TContext, TOutput>(
 ) {
     private val mutableState = MutableStateFlow(AgentSessionState<TOutput>(messages = initialMessages))
 
-    // @Volatile for cross-thread visibility: a launched job reads this to
-    // decide whether it is still the active job before writing state.
-    @Volatile
-    private var currentJob: Job? = null
+    private val currentJobRef = AtomicReference<Job?>(null)
 
-    // The last submit's call configuration, remembered so a resume (approve/deny) re-runs with the SAME
+    // Bundles the last submit's call configuration so a resume (approve/deny) re-runs with the SAME
     // hooks / options / abort-signal / streaming-mode. This mirrors upstream Vercel AI SDK v6, where the host
     // re-passes its call settings on every resume generate()/stream(); without it a streamed, hook-observed
     // turn would go dark (no onStepFinish/onChunk, non-streaming) the moment it crossed a tool approval.
-    @Volatile
-    private var lastOptions: TContext? = null // var-ok: per-turn call-continuation state (mirrors currentJob)
+    private data class CallState<TContext>(
+        val options: TContext?,
+        val abortSignal: AbortSignal,
+        val hooks: AgentCallHooks?,
+        val streaming: Boolean,
+    )
 
-    @Volatile
-    private var lastAbortSignal: AbortSignal = AbortSignalNever // var-ok: per-turn call-continuation state
-
-    @Volatile
-    private var lastHooks: AgentCallHooks? = null // var-ok: per-turn call-continuation state
-
-    @Volatile
-    private var lastStreaming: Boolean = false // var-ok: per-turn call-continuation state (resume in same mode)
+    private val lastCallRef = AtomicReference<CallState<TContext>>(
+        CallState(null, AbortSignalNever, null, false),
+    )
 
     public val state: StateFlow<AgentSessionState<TOutput>> = mutableState.asStateFlow()
 
     private fun rememberCall(options: TContext?, abortSignal: AbortSignal, hooks: AgentCallHooks?, streaming: Boolean) {
-        lastOptions = options
-        lastAbortSignal = abortSignal
-        lastHooks = hooks
-        lastStreaming = streaming
+        lastCallRef.store(CallState(options, abortSignal, hooks, streaming))
     }
 
     public fun submit(
@@ -79,7 +74,7 @@ public class AgentSession<TContext, TOutput>(
         abortSignal: AbortSignal = AbortSignalNever,
         hooks: AgentCallHooks? = null,
     ): Job {
-        currentJob?.cancel()
+        currentJobRef.load()?.cancel()
         rememberCall(options, abortSignal, hooks, streaming = false)
         val visibleMessages = visibleMessages(messages, prompt)
         mutableState.update {
@@ -126,7 +121,7 @@ public class AgentSession<TContext, TOutput>(
         abortSignal: AbortSignal = AbortSignalNever,
         hooks: AgentCallHooks? = null,
     ): Job {
-        currentJob?.cancel()
+        currentJobRef.load()?.cancel()
         rememberCall(options, abortSignal, hooks, streaming = true)
         val visibleMessages = visibleMessages(messages, prompt)
         mutableState.update {
@@ -249,7 +244,23 @@ public class AgentSession<TContext, TOutput>(
                             }
                         }
                     }
-                    else -> Unit
+                    is StreamEvent.StreamStart,
+                    is StreamEvent.ResponseMetadata,
+                    is StreamEvent.StepStart,
+                    is StreamEvent.TextStart,
+                    is StreamEvent.TextEnd,
+                    is StreamEvent.ReasoningStart,
+                    is StreamEvent.ReasoningDelta,
+                    is StreamEvent.ReasoningEnd,
+                    is StreamEvent.SourcePart,
+                    is StreamEvent.FilePart,
+                    is StreamEvent.ToolInputStart,
+                    is StreamEvent.ToolInputDelta,
+                    is StreamEvent.ToolInputEnd,
+                    is StreamEvent.ToolOutputDenied,
+                    is StreamEvent.StepFinish,
+                    is StreamEvent.Raw,
+                    -> Unit
                 }
             }
             // Settle if the stream ended without an explicit Finish/Abort/Error.
@@ -278,14 +289,14 @@ public class AgentSession<TContext, TOutput>(
     ): Job = resumeApproval(approval, approved = false, options = options, reason = reason)
 
     public fun cancel() {
-        currentJob?.cancel()
-        currentJob = null
+        currentJobRef.load()?.cancel()
+        currentJobRef.store(null)
         mutableState.update { it.copy(status = AgentSessionStatus.Cancelled) }
     }
 
     public fun reset(messages: List<ModelMessage> = emptyList()) {
-        currentJob?.cancel()
-        currentJob = null
+        currentJobRef.load()?.cancel()
+        currentJobRef.store(null)
         mutableState.value = AgentSessionState(messages = messages)
     }
 
@@ -304,17 +315,18 @@ public class AgentSession<TContext, TOutput>(
         // Resume with the SAME call config the paused turn ran under (upstream v6 re-passes settings on every
         // resume call): the remembered hooks + abort-signal + streaming mode, so a streamed/observed turn keeps
         // streaming and firing its callbacks across the approval. An explicit [options] still overrides.
+        val cs = lastCallRef.load()
         val resumeMessages = state.value.messages + response
-        val resumeOptions = options ?: lastOptions
-        return if (lastStreaming) {
+        val resumeOptions = options ?: cs.options
+        return if (cs.streaming) {
             submitStreaming(
                 messages = resumeMessages,
                 options = resumeOptions,
-                abortSignal = lastAbortSignal,
-                hooks = lastHooks,
+                abortSignal = cs.abortSignal,
+                hooks = cs.hooks,
             )
         } else {
-            submit(messages = resumeMessages, options = resumeOptions, abortSignal = lastAbortSignal, hooks = lastHooks)
+            submit(messages = resumeMessages, options = resumeOptions, abortSignal = cs.abortSignal, hooks = cs.hooks)
         }
     }
 
@@ -326,18 +338,18 @@ public class AgentSession<TContext, TOutput>(
         val externalRegistration = abortSignal.register { controller.abort() }
         var job: Job? = null
         // The `active` guard stops a job that has been superseded by a newer
-        // submit() (which reassigned currentJob) from clobbering the new
+        // submit() (which reassigned currentJobRef) from clobbering the new
         // job's state — including from its own cancellation/error handler.
         val launched = scope.launch(start = CoroutineStart.LAZY) {
             try {
-                block(controller.signal) { job === currentJob }
+                block(controller.signal) { job === currentJobRef.load() }
             } catch (error: CancellationException) {
-                if (job === currentJob) {
+                if (job === currentJobRef.load()) {
                     mutableState.update { it.copy(status = AgentSessionStatus.Cancelled) }
                 }
                 throw error
             } catch (error: Throwable) {
-                if (job === currentJob) {
+                if (job === currentJobRef.load()) {
                     mutableState.update { it.copy(status = AgentSessionStatus.Error, error = error) }
                 }
             }
@@ -349,7 +361,7 @@ public class AgentSession<TContext, TOutput>(
         }
         // Claim ownership before starting the body so the `active` check inside
         // the coroutine always observes the assignment.
-        currentJob = launched
+        currentJobRef.store(launched)
         launched.start()
         return launched
     }

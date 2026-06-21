@@ -36,7 +36,7 @@ public class MoonshotAIProvider(
 ) : Provider {
     private val compatible = OpenAICompatible(
         client,
-        settings.toCompatible("moonshotai", MOONSHOTAI_VERSION, includeUsage = true),
+        settings.toCompatible("moonshotai", MOONSHOTAI_VERSION, capabilities = ProviderCapabilities(includeUsage = true)),
     )
     override val providerId: String = "moonshotai"
 
@@ -56,8 +56,7 @@ internal object MoonshotAIWire {
     fun MoonshotAIProviderSettings.toCompatible(
         name: String,
         version: String,
-        includeUsage: Boolean = false,
-        supportsStructuredOutputs: Boolean = false,
+        capabilities: ProviderCapabilities = ProviderCapabilities(),
     ): OpenAICompatibleProviderSettings =
         compatibleSettings(
             name = name,
@@ -65,8 +64,7 @@ internal object MoonshotAIWire {
             baseURL = baseURL,
             apiKey = apiKey,
             headers = headers,
-            includeUsage = includeUsage,
-            supportsStructuredOutputs = supportsStructuredOutputs,
+            capabilities = capabilities,
             convertUsage = ::moonshotAIUsage,
         )
 

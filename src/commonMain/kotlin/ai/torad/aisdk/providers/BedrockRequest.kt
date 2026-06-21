@@ -171,7 +171,12 @@ internal object BedrockRequest {
                 )
             }
         }
-        else -> null
+        is ContentPart.Reasoning -> null
+        is ContentPart.ToolCall -> null
+        is ContentPart.ToolResult -> null
+        is ContentPart.ToolApprovalRequest -> null
+        is ContentPart.ToolApprovalResponse -> null
+        is ContentPart.Source -> null
     }
 
     private fun bedrockAssistantPart(part: ContentPart): JsonElement? = when (part) {
@@ -200,7 +205,12 @@ internal object BedrockRequest {
                 },
             )
         }
-        else -> null
+        is ContentPart.Image -> null
+        is ContentPart.File -> null
+        is ContentPart.ToolResult -> null
+        is ContentPart.ToolApprovalRequest -> null
+        is ContentPart.ToolApprovalResponse -> null
+        is ContentPart.Source -> null
     }
 
     private fun bedrockToolResultPart(part: ContentPart): JsonElement? = when (part) {
@@ -226,7 +236,13 @@ internal object BedrockRequest {
                 },
             )
         }
-        else -> null
+        is ContentPart.Text -> null
+        is ContentPart.Reasoning -> null
+        is ContentPart.ToolCall -> null
+        is ContentPart.ToolApprovalRequest -> null
+        is ContentPart.Source -> null
+        is ContentPart.File -> null
+        is ContentPart.Image -> null
     }
 
     private fun bedrockToolResultContent(output: JsonElement): JsonObject = when {
@@ -246,7 +262,9 @@ internal object BedrockRequest {
         val preparedTools = mutableListOf<LanguageModelTool>()
         preparedTools += when (choice) {
             is ToolChoice.Specific -> tools.filter { it.name == choice.toolName }
-            else -> tools
+            is ToolChoice.Auto -> tools
+            is ToolChoice.Required -> tools
+            is ToolChoice.None -> tools
         }
         val usesJsonResponseTool = responseFormat is ResponseFormat.Json && responseFormat.schemaJson != null
         if (usesJsonResponseTool) {

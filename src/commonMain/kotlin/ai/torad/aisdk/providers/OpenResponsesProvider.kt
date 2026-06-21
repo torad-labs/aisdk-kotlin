@@ -122,7 +122,7 @@ private class OpenResponsesLanguageModel(
             json,
             settings.fileIdPrefixes,
         )
-        val response = postJson(prepared.body, acceptEventStream = false, headers = params.headers)
+        val response = postJson(prepared.body, headers = params.headers)
         return OpenResponsesWire.openResponsesGenerateResult(
             response = response.value.jsonObject,
             requestBody = prepared.body,
@@ -175,18 +175,15 @@ private class OpenResponsesLanguageModel(
 
     private suspend fun postJson(
         body: JsonElement,
-        acceptEventStream: Boolean,
-        parseJson: Boolean = true,
         headers: Map<String, String> = emptyMap(),
     ): OpenResponsesHttpResponse {
         val response = client.request(settings.url) {
             method = HttpMethod.Post
             contentType(ContentType.Application.Json)
-            if (acceptEventStream) header(HttpHeaders.Accept, "text/event-stream")
             requestHeaders(headers).forEach { (name, value) -> header(name, value) }
             setBody(json.encodeToString(JsonElement.serializer(), body))
         }
-        return parseResponse(response, parseJson)
+        return parseResponse(response, parseJson = true)
     }
 
     /** Streaming counterpart of [postJson]: reads the SSE body incrementally,
@@ -263,7 +260,7 @@ internal data class ConvertedOpenResponsesInput(
 private data class PendingOpenResponsesToolCall(
     var toolName: String? = null,
     var toolCallId: String? = null,
-    var arguments: String? = null,
+    var arguments: String = "",
 )
 
 private class OpenResponsesStreamState(
@@ -291,7 +288,7 @@ private class OpenResponsesStreamState(
                         toolCallsByItemId[itemId] = PendingOpenResponsesToolCall(
                             toolName = item["name"]?.jsonPrimitive?.contentOrNull,
                             toolCallId = item["call_id"]?.jsonPrimitive?.contentOrNull,
-                            arguments = item["arguments"]?.jsonPrimitive?.contentOrNull,
+                            arguments = item["arguments"]?.jsonPrimitive?.contentOrNull.orEmpty(),
                         )
                     }
                     "reasoning" -> {
@@ -308,12 +305,12 @@ private class OpenResponsesStreamState(
             "response.function_call_arguments.delta" -> {
                 val itemId = itemIdFromEvent(obj) ?: return listOf(missingIdentityError(type, "item_id"))
                 val pending = toolCallsByItemId.getOrPut(itemId) { PendingOpenResponsesToolCall() }
-                pending.arguments = (pending.arguments ?: "") + obj["delta"]?.jsonPrimitive?.contentOrNull.orEmpty()
+                pending.arguments += obj["delta"]?.jsonPrimitive?.contentOrNull.orEmpty()
             }
             "response.function_call_arguments.done" -> {
                 val itemId = itemIdFromEvent(obj) ?: return listOf(missingIdentityError(type, "item_id"))
                 val pending = toolCallsByItemId.getOrPut(itemId) { PendingOpenResponsesToolCall() }
-                pending.arguments = obj["arguments"]?.jsonPrimitive?.contentOrNull
+                pending.arguments = obj["arguments"]?.jsonPrimitive?.contentOrNull.orEmpty()
             }
             "response.output_item.done" -> {
                 val item = obj["item"] as? JsonObject
@@ -520,7 +517,14 @@ internal object OpenResponsesWire {
             when (part) {
                 is ContentPart.Text -> part.text
                 is ContentPart.Reasoning -> part.text
-                else -> ""
+                is ContentPart.ToolCall,
+                is ContentPart.ToolResult,
+                is ContentPart.ToolApprovalRequest,
+                is ContentPart.ToolApprovalResponse,
+                is ContentPart.Source,
+                is ContentPart.File,
+                is ContentPart.Image,
+                -> ""
             }
         }
 
@@ -588,7 +592,13 @@ internal object OpenResponsesWire {
                 }
             }
         }
-        else -> null
+        is ContentPart.Reasoning,
+        is ContentPart.ToolCall,
+        is ContentPart.ToolResult,
+        is ContentPart.ToolApprovalRequest,
+        is ContentPart.ToolApprovalResponse,
+        is ContentPart.Source,
+        -> null
     }
 
     internal fun openResponsesAssistantContentPart(part: ContentPart): JsonElement? = when (part) {
@@ -596,7 +606,15 @@ internal object OpenResponsesWire {
             put("type", JsonPrimitive("output_text"))
             put("text", JsonPrimitive(part.text))
         }
-        else -> null
+        is ContentPart.Reasoning,
+        is ContentPart.ToolCall,
+        is ContentPart.ToolResult,
+        is ContentPart.ToolApprovalRequest,
+        is ContentPart.ToolApprovalResponse,
+        is ContentPart.Source,
+        is ContentPart.File,
+        is ContentPart.Image,
+        -> null
     }
 
     internal fun openResponsesToolOutput(

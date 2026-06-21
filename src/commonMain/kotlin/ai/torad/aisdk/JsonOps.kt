@@ -56,7 +56,7 @@ internal object JsonOps {
     }
 
     fun removeUndefinedEntries(values: Map<String, JsonElement?>): Map<String, JsonElement> =
-        values.filterValues { it != null }.mapValues { it.value ?: JsonNull }
+        buildMap { values.forEach { (k, v) -> if (v != null) put(k, v) } }
 
     private fun primitiveEquals(left: JsonPrimitive, right: JsonPrimitive): Boolean {
         val l = left.jsonPrimitive

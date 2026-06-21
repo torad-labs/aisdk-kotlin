@@ -94,7 +94,7 @@ public sealed class Output<T> {
                 is JsonArray -> element
                 is JsonObject -> element["elements"] as? JsonArray
                 else -> null
-            } ?: error("Expected a JSON array or an object with an `elements` array")
+            } ?: throw InvalidResponseDataError(element, "Expected a JSON array or an object with an 'elements' array")
             return aiSdkOutputJson.decodeFromJsonElement(listSerializer, elements)
         }
     }
@@ -237,6 +237,6 @@ internal object OutputOps {
             is JsonObject -> element["result"]?.jsonPrimitive?.contentOrNull
             is JsonPrimitive -> element.contentOrNull
             else -> null
-        } ?: error("Expected a JSON object with a `result` string")
+        } ?: throw InvalidResponseDataError(element, "Expected a JSON object with a 'result' string")
     }
 }

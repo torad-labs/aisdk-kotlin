@@ -309,7 +309,13 @@ internal object OpenAICompatibleWire {
             }
             else -> null
         }
-        else -> null
+        is ContentPart.Reasoning,
+        is ContentPart.ToolCall,
+        is ContentPart.ToolResult,
+        is ContentPart.ToolApprovalRequest,
+        is ContentPart.ToolApprovalResponse,
+        is ContentPart.Source,
+        -> null
     }
 
     /**
@@ -376,7 +382,12 @@ internal object OpenAICompatibleWire {
                     is ContentPart.Reasoning -> part.text
                     is ContentPart.ToolResult -> openAIContentString(part.modelVisible)
                     is ContentPart.ToolCall -> part.input.toString()
-                    else -> ""
+                    is ContentPart.ToolApprovalRequest,
+                    is ContentPart.ToolApprovalResponse,
+                    is ContentPart.Source,
+                    is ContentPart.File,
+                    is ContentPart.Image,
+                    -> ""
                 }
             }
             "$role: $content"

@@ -29,7 +29,7 @@ public class CerebrasProvider(
 ) : Provider {
     private val compatible = OpenAICompatible(
         client,
-        settings.toCompatible("cerebras", CEREBRAS_VERSION, supportsStructuredOutputs = true),
+        settings.toCompatible("cerebras", CEREBRAS_VERSION, capabilities = ProviderCapabilities(supportsStructuredOutputs = true)),
     )
     override val providerId: String = "cerebras"
 
@@ -50,8 +50,7 @@ internal object CerebrasWire {
     fun CerebrasProviderSettings.toCompatible(
         name: String,
         version: String,
-        includeUsage: Boolean = false,
-        supportsStructuredOutputs: Boolean = false,
+        capabilities: ProviderCapabilities = ProviderCapabilities(),
     ): OpenAICompatibleProviderSettings =
-        compatibleSettings(name, version, baseURL, apiKey, headers, includeUsage, supportsStructuredOutputs)
+        compatibleSettings(name, version, baseURL, apiKey, headers, capabilities)
 }

@@ -89,7 +89,13 @@ public object PromptConversion {
         // inline them so a URL-rejecting provider sees data (upstream parity).
         is ContentPart.ToolResult ->
             if (download == null) part else inlineToolResultUrls(part, supportedUrls, download)
-        else -> part
+        is ContentPart.Text,
+        is ContentPart.Reasoning,
+        is ContentPart.ToolCall,
+        is ContentPart.ToolApprovalRequest,
+        is ContentPart.ToolApprovalResponse,
+        is ContentPart.Source,
+        -> part
     }
 
     private suspend fun inlineToolResultUrls(

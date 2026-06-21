@@ -219,6 +219,12 @@ private class WrappedEmbeddingModel(
     private val chainEmbed: suspend (EmbeddingModelCallParams) -> EmbeddingModelResult
 
     init {
+        chainEmbed = buildEmbedChain(middlewares)
+    }
+
+    private fun buildEmbedChain(
+        middlewares: List<EmbeddingModelMiddleware>,
+    ): suspend (EmbeddingModelCallParams) -> EmbeddingModelResult {
         var doEmbed: suspend (EmbeddingModelCallParams) -> EmbeddingModelResult = inner::embed
         for (middleware in middlewares.asReversed()) {
             val downstream = doEmbed
@@ -232,7 +238,7 @@ private class WrappedEmbeddingModel(
                 )
             }
         }
-        chainEmbed = doEmbed
+        return doEmbed
     }
 
     override suspend fun embed(params: EmbeddingModelCallParams): EmbeddingModelResult =

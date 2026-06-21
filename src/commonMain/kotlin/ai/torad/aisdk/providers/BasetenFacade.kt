@@ -91,8 +91,7 @@ internal object BasetenWire {
         name: String,
         version: String,
         baseURL: String,
-        includeUsage: Boolean = false,
-        supportsStructuredOutputs: Boolean = false,
+        capabilities: ProviderCapabilities = ProviderCapabilities(),
     ): OpenAICompatibleProviderSettings =
-        compatibleSettings(name, version, baseURL, apiKey, headers, includeUsage, supportsStructuredOutputs)
+        compatibleSettings(name, version, baseURL, apiKey, headers, capabilities)
 }

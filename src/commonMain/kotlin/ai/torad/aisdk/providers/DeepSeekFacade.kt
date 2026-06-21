@@ -40,7 +40,7 @@ public class DeepSeekProvider(
 ) : Provider {
     private val compatible = OpenAICompatible(
         client,
-        settings.toCompatible("deepseek", DEEPSEEK_VERSION, supportsStructuredOutputs = true),
+        settings.toCompatible("deepseek", DEEPSEEK_VERSION, capabilities = ProviderCapabilities(supportsStructuredOutputs = true)),
     )
     override val providerId: String = "deepseek"
 
@@ -61,8 +61,7 @@ internal object DeepSeekWire {
     fun DeepSeekProviderSettings.toCompatible(
         name: String,
         version: String,
-        includeUsage: Boolean = false,
-        supportsStructuredOutputs: Boolean = false,
+        capabilities: ProviderCapabilities = ProviderCapabilities(),
     ): OpenAICompatibleProviderSettings =
         compatibleSettings(
             name = name,
@@ -70,8 +69,7 @@ internal object DeepSeekWire {
             baseURL = baseURL,
             apiKey = apiKey,
             headers = headers,
-            includeUsage = includeUsage,
-            supportsStructuredOutputs = supportsStructuredOutputs,
+            capabilities = capabilities,
             transformChatRequestBody = ::deepSeekTransformChatBody,
             convertUsage = ::deepSeekUsage,
         )

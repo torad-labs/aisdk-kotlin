@@ -85,7 +85,7 @@ class ToolTest {
             description = "Non-strict schema tool",
             inputSerializer = serializer(),
             outputSerializer = serializer(),
-            strict = false,
+            schemaOptions = ToolSchemaOptions(strict = false),
         ) { WeatherOutput(72, "sunny") }
 
         assertEquals(false, ToolSet(loose).descriptors.single().strict)

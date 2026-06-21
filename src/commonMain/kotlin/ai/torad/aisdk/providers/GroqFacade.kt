@@ -46,7 +46,7 @@ public class GroqProvider(
 ) : Provider {
     private val compatible = OpenAICompatible(
         client,
-        settings.toCompatible("groq", GROQ_VERSION, includeUsage = true),
+        settings.toCompatible("groq", GROQ_VERSION, capabilities = ProviderCapabilities(includeUsage = true)),
     )
     override val providerId: String = "groq"
     public val tools: GroqTools = GroqTools()
@@ -87,8 +87,7 @@ internal object GroqWire {
     fun GroqProviderSettings.toCompatible(
         name: String,
         version: String,
-        includeUsage: Boolean = false,
-        supportsStructuredOutputs: Boolean = false,
+        capabilities: ProviderCapabilities = ProviderCapabilities(),
     ): OpenAICompatibleProviderSettings =
         compatibleSettings(
             name = name,
@@ -96,8 +95,7 @@ internal object GroqWire {
             baseURL = baseURL,
             apiKey = apiKey,
             headers = headers,
-            includeUsage = includeUsage,
-            supportsStructuredOutputs = supportsStructuredOutputs,
+            capabilities = capabilities,
             transformChatRequestBody = ::groqTransformChatBody,
             transformChatResponse = ::groqTransformChatResponse,
             convertUsage = ::groqUsage,

@@ -21,6 +21,11 @@ import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.intOrNull
 import kotlinx.serialization.json.jsonPrimitive
 
+internal data class ProviderCapabilities(
+    val includeUsage: Boolean = false,
+    val supportsStructuredOutputs: Boolean = false,
+)
+
 // Shared support for the OpenAI-compatible provider facades. Holds the settings
 // builder + usage helpers (FacadeSupport) and the raw HTTP transport used by the
 // image/reranking models (FacadeHttp). Extracted verbatim from
@@ -34,8 +39,7 @@ internal object FacadeSupport {
         baseURL: String,
         apiKey: String?,
         headers: Map<String, String>,
-        includeUsage: Boolean,
-        supportsStructuredOutputs: Boolean,
+        capabilities: ProviderCapabilities = ProviderCapabilities(),
         transformChatRequestBody: ((JsonObject) -> JsonObject)? = null,
         convertUsage: ((JsonElement?) -> Usage)? = null,
         transformChatResponse: ((JsonObject) -> JsonObject)? = null,
@@ -45,8 +49,8 @@ internal object FacadeSupport {
             baseUrl = baseURL.trimEnd('/'),
             apiKey = apiKey,
             headers = ProviderHeaders.withUserAgentSuffix(headers, "ai-sdk/$name/$version"),
-            includeUsage = includeUsage,
-            supportsStructuredOutputs = supportsStructuredOutputs,
+            includeUsage = capabilities.includeUsage,
+            supportsStructuredOutputs = capabilities.supportsStructuredOutputs,
             transformChatRequestBody = transformChatRequestBody,
             convertUsage = convertUsage,
             transformChatResponse = transformChatResponse,

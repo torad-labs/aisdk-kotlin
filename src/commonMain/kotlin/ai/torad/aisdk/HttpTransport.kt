@@ -12,6 +12,7 @@ import io.ktor.http.HttpMethod
 import io.ktor.http.contentType
 import io.ktor.utils.io.readAvailable
 import io.ktor.utils.io.readLine
+import kotlin.coroutines.CoroutineContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.FlowCollector
@@ -75,7 +76,7 @@ internal fun ApiCallError(
     rawBody: String,
     headers: Map<String, String>,
     message: String,
-    requestBodyValues: Any? = null,
+    requestBodyValues: JsonElement? = null,
 ): APICallError =
     APICallError(
         message = message,
@@ -109,8 +110,11 @@ internal object HttpTransport {
      * wall-clock seconds in production and never spuriously fires in tests whose
      * mocks respond promptly. Used for non-streaming requests and MCP handshakes.
      */
-    internal suspend fun <T> withRealTimeout(timeoutMs: Long, block: suspend () -> T): T =
-        withContext(Dispatchers.Default) { withTimeout(timeoutMs) { block() } }
+    internal suspend fun <T> withRealTimeout(
+        timeoutMs: Long,
+        dispatcher: CoroutineContext = Dispatchers.Default,
+        block: suspend () -> T,
+    ): T = withContext(dispatcher) { withTimeout(timeoutMs) { block() } }
 
     /** Flatten Ktor's multi-valued headers into the `Map<String, String>` providers carry. */
     internal fun HttpResponse.flattenedHeaders(): Map<String, String> =
@@ -135,7 +139,7 @@ internal object HttpTransport {
         body: JsonElement? = null,
         json: Json = aiSdkJson,
         parseJson: Boolean = true,
-        requestBodyValues: Any? = body,
+        requestBodyValues: JsonElement? = body,
         errorMessage: ErrorMessageExtractor = ::defaultErrorMessage,
         errorFromResponse: ResponseErrorFactory? = null,
     ): HttpJsonResponse =
@@ -210,7 +214,7 @@ internal object HttpTransport {
         url: String,
         json: Json = aiSdkJson,
         parseJson: Boolean = true,
-        requestBodyValues: Any? = null,
+        requestBodyValues: JsonElement? = null,
         errorMessage: ErrorMessageExtractor = ::defaultErrorMessage,
         errorFromResponse: ResponseErrorFactory? = null,
     ): HttpJsonResponse {
@@ -266,7 +270,7 @@ internal object HttpTransport {
         headers: Map<String, String> = emptyMap(),
         body: JsonElement? = null,
         json: Json = aiSdkJson,
-        requestBodyValues: Any? = body,
+        requestBodyValues: JsonElement? = body,
         errorMessage: ErrorMessageExtractor = ::defaultErrorMessage,
         errorFromResponse: ResponseErrorFactory? = null,
         onResponse: suspend (Map<String, String>) -> Unit = {},

@@ -20,9 +20,11 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
 import kotlinx.serialization.KSerializer
+import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonPrimitive
-import kotlin.concurrent.Volatile
+import kotlin.concurrent.atomics.AtomicReference
+import kotlin.concurrent.atomics.ExperimentalAtomicApi
 import kotlin.coroutines.CoroutineContext
 import kotlin.coroutines.coroutineContext
 
@@ -57,6 +59,7 @@ import kotlin.coroutines.coroutineContext
  * Generation isn't kept "in flight" while the user decides — host can
  * serialize, persist, transport, then resume.
  */
+@OptIn(ExperimentalAtomicApi::class)
 public abstract class ToolLoopAgent<TContext, TOutput>(
     public val model: LanguageModel,
     public val instructions: String,
@@ -172,23 +175,17 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
 
     private val engineScope: CoroutineScope = CoroutineScope(SupervisorJob() + engineContext)
 
-    // @Volatile for cross-thread visibility: these are written from host-thread
-    // entry points (dispatchEngineAction/submitPrompt/resumeWithApproval/close) and
-    // read from engine jobs running on a multi-threaded dispatcher (Dispatchers.Default,
-    // i.e. Native). A plain var here is a data race the single-threaded test scheduler
-    // hides. currentEngineJob also backs the supersession guard (see runEngineLoop).
-    @Volatile
-    private var currentEngineJob: Job? = null
-
-    @Volatile
-    private var currentEngineContext: TContext? = null
+    // AtomicReference for cross-thread visibility: written from host-thread entry points
+    // (dispatchEngineAction/submitPrompt/resumeWithApproval/close) and read from engine
+    // jobs on Dispatchers.Default. currentEngineJobRef also backs the supersession guard.
+    private val currentEngineJobRef = AtomicReference<Job?>(null)
+    private val currentEngineContextRef = AtomicReference<TContext?>(null)
 
     // TOOL-004: tracks the most recent activeContext the loop was running with,
     // including any override applied by prepareStep via StepSettings.experimental_context.
     // Updated by runEngineLoop before the stream starts and after each prepareStep override,
     // so resumeWithApproval picks up the live context rather than the stale submitPrompt one.
-    @Volatile
-    private var currentActiveContext: TContext? = null
+    private val currentActiveContextRef = AtomicReference<TContext?>(null)
 
     /**
      * Cancel the engine scope and any in-flight engine job. Call when a
@@ -196,8 +193,8 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
      * is disposed. The per-call generate()/stream() API needs no close().
      */
     public fun close() {
-        currentEngineJob?.cancel()
-        currentEngineJob = null
+        currentEngineJobRef.load()?.cancel()
+        currentEngineJobRef.store(null)
         engineScope.cancel()
     }
 
@@ -221,20 +218,20 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
             is ToolLoopAgentAction.DenyToolCall ->
                 resumeWithApproval(action.toolCallId, approved = false, reason = action.reason)
             ToolLoopAgentAction.Cancel -> {
-                currentEngineJob?.cancel()
+                currentEngineJobRef.load()?.cancel()
                 mutableEngineState.update { it.copy(phase = ToolLoopAgentState.Phase.Idle) }
             }
             ToolLoopAgentAction.Reset -> {
-                currentEngineJob?.cancel()
-                currentEngineContext = null
+                currentEngineJobRef.load()?.cancel()
+                currentEngineContextRef.store(null)
                 mutableEngineState.value = ToolLoopAgentState()
             }
         }
     }
 
     private fun submitPrompt(text: String, context: TContext?) {
-        currentEngineJob?.cancel()
-        currentEngineContext = context
+        currentEngineJobRef.load()?.cancel()
+        currentEngineContextRef.store(context)
         val priorMessages = mutableEngineState.value.messages
         mutableEngineState.update {
             it.copy(
@@ -245,19 +242,19 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
                 phase = ToolLoopAgentState.Phase.Streaming,
             )
         }
-        // Lazy-start so currentEngineJob is published BEFORE the loop body runs (build →
-        // assign → start). The body's supersession guard (runEngineLoop) compares its own
-        // job to this field; an eager launch could begin writing state before the
-        // assignment lands, making the new job's own early writes fail the guard.
+        // Lazy-start so currentEngineJobRef is published BEFORE the loop body runs (build →
+        // store → start). The body's supersession guard (runEngineLoop) compares its own
+        // job to this ref; an eager launch could begin writing state before the
+        // store lands, making the new job's own early writes fail the guard.
         val job = engineScope.launch(start = CoroutineStart.LAZY) {
             runEngineLoop(prompt = text, priorMessages = priorMessages, context = context)
         }
-        currentEngineJob = job
+        currentEngineJobRef.store(job)
         job.start()
     }
 
     private fun resumeWithApproval(toolCallId: String, approved: Boolean, reason: String?) {
-        currentEngineJob?.cancel()
+        currentEngineJobRef.load()?.cancel()
         val priorMessages = mutableEngineState.value.messages
         val approvalResponse = ModelMessage(
             role = MessageRole.Tool,
@@ -273,13 +270,13 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
                 phase = ToolLoopAgentState.Phase.Streaming,
             )
         }
-        // Build → assign → start (see submitPrompt) so the guard sees this job published.
+        // Build → store → start (see submitPrompt) so the guard sees this job published.
         val job = engineScope.launch(start = CoroutineStart.LAZY) {
-            // TOOL-004: use currentActiveContext (updated by prepareStep overrides)
-            // rather than currentEngineContext (only set at submitPrompt time).
-            runEngineLoop(prompt = null, priorMessages = updatedMessages, context = currentActiveContext)
+            // TOOL-004: use currentActiveContextRef (updated by prepareStep overrides)
+            // rather than currentEngineContextRef (only set at submitPrompt time).
+            runEngineLoop(prompt = null, priorMessages = updatedMessages, context = currentActiveContextRef.load())
         }
-        currentEngineJob = job
+        currentEngineJobRef.store(job)
         job.start()
     }
 
@@ -291,7 +288,7 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
         // This loop's own job. Every state write below is gated on it still being the
         // current engine job, so a superseded-but-cooperatively-unwinding old loop can't
         // clobber a newer submit's state (the stale-write race AgentSession's active()
-        // guard prevents). currentEngineJob was published before start() (see callers).
+        // guard prevents). currentEngineJobRef was stored before start() (see callers).
         val ownJob = coroutineContext[Job]
         // TOOL-004: seed the active context so resumeWithApproval uses at least the
         // caller-supplied context when no prepareStep override has fired yet.
@@ -299,7 +296,7 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
         // inside streamInternal) are not yet reflected here — that requires threading a
         // callback into streamInternal. The seed covers the common case; per-step context
         // evolution on resume is a follow-up.
-        currentActiveContext = context
+        currentActiveContextRef.store(context)
         val engineHooks = AgentCallHooks(
             onChunk = { event ->
                 val streamEvent = event.event
@@ -347,7 +344,29 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
                     is StreamEvent.Error -> updateEngineStateIfCurrent(ownJob) {
                         it.copy(phase = ToolLoopAgentState.Phase.Error(event.message))
                     }
-                    else -> Unit
+                    is StreamEvent.StreamStart,
+                    is StreamEvent.ResponseMetadata,
+                    is StreamEvent.StepStart,
+                    is StreamEvent.TextStart,
+                    is StreamEvent.TextDelta,
+                    is StreamEvent.TextEnd,
+                    is StreamEvent.ReasoningStart,
+                    is StreamEvent.ReasoningDelta,
+                    is StreamEvent.ReasoningEnd,
+                    is StreamEvent.SourcePart,
+                    is StreamEvent.FilePart,
+                    is StreamEvent.ToolInputStart,
+                    is StreamEvent.ToolInputDelta,
+                    is StreamEvent.ToolInputEnd,
+                    is StreamEvent.ToolResult,
+                    is StreamEvent.ToolError,
+                    is StreamEvent.ToolApprovalRequest,
+                    is StreamEvent.ToolOutputDenied,
+                    is StreamEvent.StepFinish,
+                    is StreamEvent.Finish,
+                    StreamEvent.Abort,
+                    is StreamEvent.Raw,
+                    -> Unit
                 }
             }
         } catch (t: CancellationException) {
@@ -364,7 +383,7 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
      * overwrite the new job's state. Mirrors [AgentSession]'s `active()` guard.
      *
      * The check→write is not atomic against a concurrent [close] that nulls
-     * currentEngineJob between the two: such a write lands on an agent that is
+     * currentEngineJobRef between the two: such a write lands on an agent that is
      * already disposing (engineScope is being cancelled) and on a StateFlow no
      * live host is observing, so it is benign — a tighter lock would buy nothing.
      */
@@ -372,7 +391,7 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
         ownerJob: Job?,
         block: (ToolLoopAgentState) -> ToolLoopAgentState,
     ) {
-        if (currentEngineJob !== ownerJob) return
+        if (currentEngineJobRef.load() !== ownerJob) return
         mutableEngineState.update(block)
     }
     // ──────────────────────────────────────────────────────────────────────
@@ -414,7 +433,26 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
                     )
                 }
                 is StreamEvent.Error -> throw UiMessageStreamError(event.message, event.cause)
-                else -> Unit
+                is StreamEvent.StreamStart,
+                is StreamEvent.ResponseMetadata,
+                is StreamEvent.StepStart,
+                is StreamEvent.TextStart,
+                is StreamEvent.TextEnd,
+                is StreamEvent.ReasoningStart,
+                is StreamEvent.ReasoningDelta,
+                is StreamEvent.ReasoningEnd,
+                is StreamEvent.SourcePart,
+                is StreamEvent.FilePart,
+                is StreamEvent.ToolInputStart,
+                is StreamEvent.ToolInputDelta,
+                is StreamEvent.ToolInputEnd,
+                is StreamEvent.ToolCall,
+                is StreamEvent.ToolResult,
+                is StreamEvent.ToolError,
+                is StreamEvent.ToolOutputDenied,
+                StreamEvent.Abort,
+                is StreamEvent.Raw,
+                -> Unit
             }
         }
         val finalMessagesRef = MessageHolder()
@@ -769,7 +807,21 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
                             emit(event)
                             throw TerminalModelStreamError()
                         }
-                        else -> emit(event)
+                        is StreamEvent.StepStart,
+                        is StreamEvent.TextStart,
+                        is StreamEvent.TextEnd,
+                        is StreamEvent.ReasoningStart,
+                        is StreamEvent.ReasoningEnd,
+                        is StreamEvent.SourcePart,
+                        is StreamEvent.FilePart,
+                        is StreamEvent.ToolInputEnd,
+                        is StreamEvent.ToolResult,
+                        is StreamEvent.ToolError,
+                        is StreamEvent.ToolApprovalRequest,
+                        is StreamEvent.ToolOutputDenied,
+                        StreamEvent.Abort,
+                        is StreamEvent.Raw,
+                        -> emit(event)
                     }
                 }
             } catch (_: TerminalModelStreamError) {
@@ -1347,7 +1399,7 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
         if (options == null) return null
         return try {
             aiSdkOutputJson.decodeFromJsonElement(serializer, aiSdkOutputJson.encodeToJsonElement(serializer, options))
-        } catch (error: Exception) {
+        } catch (error: SerializationException) {
             throw AgentError.InvalidCallOptions(error)
         }
     }

@@ -152,7 +152,13 @@ internal object GoogleWire {
             put("data", JsonPrimitive(part.base64))
         })
     }
-    else -> null
+    is ContentPart.Reasoning,
+    is ContentPart.ToolCall,
+    is ContentPart.ToolResult,
+    is ContentPart.ToolApprovalRequest,
+    is ContentPart.ToolApprovalResponse,
+    is ContentPart.Source,
+    -> null
 }
 
 private const val GOOGLE_SKIP_THOUGHT_SIGNATURE = "skip_thought_signature_validator"
@@ -182,7 +188,12 @@ private const val GOOGLE_SKIP_THOUGHT_SIGNATURE = "skip_thought_signature_valida
             isGemini3 -> put("thoughtSignature", JsonPrimitive(GOOGLE_SKIP_THOUGHT_SIGNATURE))
         }
     }
-    else -> null
+    is ContentPart.ToolResult,
+    is ContentPart.ToolApprovalRequest,
+    is ContentPart.ToolApprovalResponse,
+    is ContentPart.Source,
+    is ContentPart.Image,
+    -> null
 }
 
 // ToolApprovalResponse is deliberately NOT serialized (falls to the null arm): tool approvals are an
@@ -202,7 +213,15 @@ private const val GOOGLE_SKIP_THOUGHT_SIGNATURE = "skip_thought_signature_valida
             put("response", response)
         })
     }
-    else -> null
+    is ContentPart.Text,
+    is ContentPart.Reasoning,
+    is ContentPart.ToolCall,
+    is ContentPart.ToolApprovalRequest,
+    is ContentPart.ToolApprovalResponse,
+    is ContentPart.Source,
+    is ContentPart.File,
+    is ContentPart.Image,
+    -> null
 }
 
     fun googleToolsJson(

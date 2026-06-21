@@ -43,7 +43,7 @@ private val googleErrorExtractor: ErrorMessageExtractor = { _, parsed, raw -> go
     suspend fun HttpResponse.parseGoogleResponse(
     url: String,
     parseJson: Boolean,
-    requestBodyValues: Any? = null,
+    requestBodyValues: JsonElement? = null,
 ): HttpJsonResponse =
     with(HttpTransport) { toJsonResponse(
         url = url,

@@ -96,7 +96,7 @@ public object JsonInstruction {
             ?.content
             ?.filterIsInstance<ContentPart.Text>()
             ?.joinToString("") { it.text }
-            ?: ""
+            .orEmpty()
         val injected = injectJsonInstruction(existingText, schema, schemaPrefix, schemaSuffix)
         val tail = if (leadingSystem != null) messages.drop(1) else messages
         return listOf(SystemMessage(injected)) + tail

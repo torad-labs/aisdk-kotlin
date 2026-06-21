@@ -68,7 +68,8 @@
       "status": "pending"
     }
   ],
-  "current_layer": 17,
+  "current_layer": 18,
+  "layer17_done": "VALIDATED (d649cac): no-camelcase-top-level-function = 0 across commonMain+jvmMain+nativeMain+commonTest (was 705). 82 factory renames + 584 moves + expect/actual rename; ABI regenerated; full gate green. Hardest layer — builder thrashed (542->860) then recovered via staged fix-syntax-first + precise metavar rewrites.",
   "layer16_done": "VALIDATED (ae72aef): all 7 error-level rules ->0, ABI regenerated, full gate green.",
   "layer17_note": "DECISION: STRICT — eliminate ALL 705 camelCase top-level fns, rule stays strict. private/internal (506) -> internal object members; public free procedures (155) -> PascalCase factories where they return objects, else object members; public extensions (44) -> member-extensions inside objects/types. Parallel workflow per-file + builder integration for cross-file callers; ABI WILL change (updateKotlinAbi). WORKFLOW DONE (wngo4qfdu, 81 agents, 4.14M tok): commonMain loose 705->0; 82 factory renames + 584 moves in docs/reports/layer17-renames.json. INTEGRATION in progress (builder). USER DECISION: grind to green (over revert). Builder thrashed 542->860 (broad text rewrites mangled ~120 call sites into syntax errors). Re-engaged with staged strategy: fix syntax errors first (hand-fix), then precise ast-grep metavar rewrites (preserve args) for the 82 renames, then moved-symbol member-imports, then updateKotlinAbi + green + commit. Work error count monotonically down.",
   "completed_layers": [

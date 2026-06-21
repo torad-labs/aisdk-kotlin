@@ -30,6 +30,12 @@ public data class ToolSchema(
     val providerOptions: ProviderOptions = ProviderOptions.None,
 )
 
+/** Bundles the two [ToolSchema] boolean flags for factory functions. */
+public data class ToolSchemaOptions(
+    val strict: Boolean = true,
+    val providerExecuted: Boolean = false,
+)
+
 /** Wrapper emitted by [Tool.execute] — currently only [Success]; sealed for future variants. */
 public sealed class ToolResult<out O> {
     public data class Success<out O>(public val value: O) : ToolResult<O>()
@@ -242,17 +248,16 @@ public fun <TInput, TOutput, TContext> Tool(
     outputSerializer: KSerializer<TOutput>,
     needsApproval: (suspend (input: TInput, options: ToolPredicateOptions<TContext>) -> Boolean)? = null,
     toModelOutput: ((TOutput, ToolPredicateOptions<TContext>) -> ToolResultOutput)? = null,
-    strict: Boolean = true,
+    schemaOptions: ToolSchemaOptions = ToolSchemaOptions(),
     inputExamples: List<String> = emptyList(),
     onInputStart: (suspend (streamingId: String) -> Unit)? = null,
     onInputDelta: (suspend (streamingId: String, delta: String) -> Unit)? = null,
     onInputAvailable: (suspend (toolCallId: String, input: TInput) -> Unit)? = null,
     metadata: Map<String, JsonElement> = emptyMap(),
-    providerExecuted: Boolean = false,
     providerOptions: ProviderOptions = ProviderOptions.None,
     executor: suspend ToolExecutionContext<TContext>.(TInput) -> TOutput,
 ): Tool<TInput, TOutput, TContext> = LambdaTool(
-    schema = ToolSchema(name, description, strict, inputExamples, metadata, providerExecuted, providerOptions),
+    schema = ToolSchema(name, description, schemaOptions.strict, inputExamples, metadata, schemaOptions.providerExecuted, providerOptions),
     inputSerializer = inputSerializer,
     outputSerializer = outputSerializer,
     executeFn = executor,
@@ -270,13 +275,12 @@ public inline fun <reified TInput, reified TOutput, TContext> Tool(
     description: String,
     noinline needsApproval: (suspend (input: TInput, options: ToolPredicateOptions<TContext>) -> Boolean)? = null,
     noinline toModelOutput: ((TOutput, ToolPredicateOptions<TContext>) -> ToolResultOutput)? = null,
-    strict: Boolean = true,
+    schemaOptions: ToolSchemaOptions = ToolSchemaOptions(),
     inputExamples: List<String> = emptyList(),
     noinline onInputStart: (suspend (streamingId: String) -> Unit)? = null,
     noinline onInputDelta: (suspend (streamingId: String, delta: String) -> Unit)? = null,
     noinline onInputAvailable: (suspend (toolCallId: String, input: TInput) -> Unit)? = null,
     metadata: Map<String, JsonElement> = emptyMap(),
-    providerExecuted: Boolean = false,
     providerOptions: ProviderOptions = ProviderOptions.None,
     noinline executor: suspend ToolExecutionContext<TContext>.(TInput) -> TOutput,
 ): Tool<TInput, TOutput, TContext> = Tool(
@@ -286,13 +290,12 @@ public inline fun <reified TInput, reified TOutput, TContext> Tool(
     outputSerializer = serializer<TOutput>(),
     needsApproval = needsApproval,
     toModelOutput = toModelOutput,
-    strict = strict,
+    schemaOptions = schemaOptions,
     inputExamples = inputExamples,
     onInputStart = onInputStart,
     onInputDelta = onInputDelta,
     onInputAvailable = onInputAvailable,
     metadata = metadata,
-    providerExecuted = providerExecuted,
     providerOptions = providerOptions,
     executor = executor,
 )
@@ -306,17 +309,16 @@ public fun <TInput, TOutput, TContext> StreamingTool(
     outputSerializer: KSerializer<TOutput>,
     needsApproval: (suspend (input: TInput, options: ToolPredicateOptions<TContext>) -> Boolean)? = null,
     toModelOutput: ((TOutput, ToolPredicateOptions<TContext>) -> ToolResultOutput)? = null,
-    strict: Boolean = true,
+    schemaOptions: ToolSchemaOptions = ToolSchemaOptions(),
     inputExamples: List<String> = emptyList(),
     onInputStart: (suspend (streamingId: String) -> Unit)? = null,
     onInputDelta: (suspend (streamingId: String, delta: String) -> Unit)? = null,
     onInputAvailable: (suspend (toolCallId: String, input: TInput) -> Unit)? = null,
     metadata: Map<String, JsonElement> = emptyMap(),
-    providerExecuted: Boolean = false,
     providerOptions: ProviderOptions = ProviderOptions.None,
     executor: ToolExecutionContext<TContext>.(TInput) -> Flow<TOutput>,
 ): Tool<TInput, TOutput, TContext> = LambdaStreamingTool(
-    schema = ToolSchema(name, description, strict, inputExamples, metadata, providerExecuted, providerOptions),
+    schema = ToolSchema(name, description, schemaOptions.strict, inputExamples, metadata, schemaOptions.providerExecuted, providerOptions),
     inputSerializer = inputSerializer,
     outputSerializer = outputSerializer,
     streamFn = executor,
@@ -334,13 +336,12 @@ public inline fun <reified TInput, reified TOutput, TContext> StreamingTool(
     description: String,
     noinline needsApproval: (suspend (input: TInput, options: ToolPredicateOptions<TContext>) -> Boolean)? = null,
     noinline toModelOutput: ((TOutput, ToolPredicateOptions<TContext>) -> ToolResultOutput)? = null,
-    strict: Boolean = true,
+    schemaOptions: ToolSchemaOptions = ToolSchemaOptions(),
     inputExamples: List<String> = emptyList(),
     noinline onInputStart: (suspend (streamingId: String) -> Unit)? = null,
     noinline onInputDelta: (suspend (streamingId: String, delta: String) -> Unit)? = null,
     noinline onInputAvailable: (suspend (toolCallId: String, input: TInput) -> Unit)? = null,
     metadata: Map<String, JsonElement> = emptyMap(),
-    providerExecuted: Boolean = false,
     providerOptions: ProviderOptions = ProviderOptions.None,
     noinline executor: ToolExecutionContext<TContext>.(TInput) -> Flow<TOutput>,
 ): Tool<TInput, TOutput, TContext> = StreamingTool(
@@ -350,13 +351,12 @@ public inline fun <reified TInput, reified TOutput, TContext> StreamingTool(
     outputSerializer = serializer<TOutput>(),
     needsApproval = needsApproval,
     toModelOutput = toModelOutput,
-    strict = strict,
+    schemaOptions = schemaOptions,
     inputExamples = inputExamples,
     onInputStart = onInputStart,
     onInputDelta = onInputDelta,
     onInputAvailable = onInputAvailable,
     metadata = metadata,
-    providerExecuted = providerExecuted,
     providerOptions = providerOptions,
     executor = executor,
 )
@@ -405,8 +405,8 @@ public fun <TInput, TOutput, TContext> ProviderExecutedTool(
     inputSerializer = inputSerializer,
     outputSerializer = outputSerializer,
     metadata = metadata,
-    providerExecuted = true,
-) {
+    schemaOptions = ToolSchemaOptions(providerExecuted = true),
+) { _ ->
     flow {
         throw AgentError.ToolExecution(
             name,

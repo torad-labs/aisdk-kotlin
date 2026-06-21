@@ -44,8 +44,7 @@ internal object VercelWire {
     fun VercelProviderSettings.toCompatible(
         name: String,
         version: String,
-        includeUsage: Boolean = false,
-        supportsStructuredOutputs: Boolean = false,
+        capabilities: ProviderCapabilities = ProviderCapabilities(),
     ): OpenAICompatibleProviderSettings =
-        compatibleSettings(name, version, baseURL, apiKey, headers, includeUsage, supportsStructuredOutputs)
+        compatibleSettings(name, version, baseURL, apiKey, headers, capabilities)
 }

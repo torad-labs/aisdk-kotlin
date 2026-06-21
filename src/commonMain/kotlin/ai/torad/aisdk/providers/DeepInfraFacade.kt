@@ -45,8 +45,6 @@ public class DeepInfraProvider(
             baseURL = "${settings.baseURL.trimEnd('/')}/openai",
             apiKey = settings.apiKey,
             headers = settings.headers,
-            includeUsage = false,
-            supportsStructuredOutputs = false,
         ),
     )
     override val providerId: String = "deepinfra"
@@ -123,7 +121,29 @@ internal object DeepInfraWire {
         when (event) {
             is StreamEvent.StepFinish -> event.copy(usage = event.usage.fixDeepInfraUsage())
             is StreamEvent.Finish -> event.copy(usage = event.usage.fixDeepInfraUsage())
-            else -> event
+            is StreamEvent.StreamStart,
+            is StreamEvent.ResponseMetadata,
+            is StreamEvent.StepStart,
+            is StreamEvent.TextStart,
+            is StreamEvent.TextDelta,
+            is StreamEvent.TextEnd,
+            is StreamEvent.ReasoningStart,
+            is StreamEvent.ReasoningDelta,
+            is StreamEvent.ReasoningEnd,
+            is StreamEvent.SourcePart,
+            is StreamEvent.FilePart,
+            is StreamEvent.ToolInputStart,
+            is StreamEvent.ToolInputDelta,
+            is StreamEvent.ToolInputEnd,
+            is StreamEvent.ToolCall,
+            is StreamEvent.ToolResult,
+            is StreamEvent.ToolError,
+            is StreamEvent.ToolApprovalRequest,
+            is StreamEvent.ToolOutputDenied,
+            StreamEvent.Abort,
+            is StreamEvent.Error,
+            is StreamEvent.Raw,
+            -> event
         }
 
     fun Usage.fixDeepInfraUsage(): Usage {

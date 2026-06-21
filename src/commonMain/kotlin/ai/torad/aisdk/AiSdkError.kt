@@ -16,7 +16,7 @@ public class InvalidArgumentError(
 public class APICallError(
     message: String,
     public val url: String,
-    public val requestBodyValues: Any? = null,
+    public val requestBodyValues: JsonElement? = null,
     public val statusCode: Int? = null,
     public val responseHeaders: Map<String, String>? = null,
     public val responseBody: String? = null,
@@ -90,12 +90,12 @@ public class TypeValidationError(
             cause: Throwable,
             context: TypeValidationContext?,
         ): String {
-            val entityQualifier = buildList {
+            val entityQualifier: String? = buildList {
                 context?.entityName?.let { add(it) }
                 context?.entityId?.let { add("id: \"$it\"") }
-            }.takeIf { it.isNotEmpty() }?.joinToString(", ")?.let { " ($it)" } ?: ""
-            val fieldQualifier = context?.field?.let { " for $it" } ?: ""
-            return "Type validation failed$fieldQualifier$entityQualifier: Value: $value.\nError message: ${ErrorMessages.of(cause)}"
+            }.takeIf { it.isNotEmpty() }?.joinToString(", ")?.let { " ($it)" }
+            val fieldQualifier: String? = context?.field?.let { " for $it" }
+            return "Type validation failed${fieldQualifier.orEmpty()}${entityQualifier.orEmpty()}: Value: $value.\nError message: ${ErrorMessages.of(cause)}"
         }
     }
 }
