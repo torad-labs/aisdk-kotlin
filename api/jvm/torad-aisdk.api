@@ -3010,21 +3010,19 @@ public final class ai/torad/aisdk/LanguageModelRequestMetadata {
 
 public final class ai/torad/aisdk/LanguageModelResponseMetadata {
 	public fun <init> ()V
-	public fun <init> (Ljava/lang/String;Ljava/lang/Long;Ljava/lang/String;Ljava/util/Map;Lkotlinx/serialization/json/JsonElement;Ljava/util/List;)V
-	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/Long;Ljava/lang/String;Ljava/util/Map;Lkotlinx/serialization/json/JsonElement;Ljava/util/List;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun <init> (Ljava/lang/String;Ljava/lang/Long;Ljava/lang/String;Ljava/util/Map;Lkotlinx/serialization/json/JsonElement;)V
+	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/Long;Ljava/lang/String;Ljava/util/Map;Lkotlinx/serialization/json/JsonElement;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun component1 ()Ljava/lang/String;
 	public final fun component2 ()Ljava/lang/Long;
 	public final fun component3 ()Ljava/lang/String;
 	public final fun component4 ()Ljava/util/Map;
 	public final fun component5 ()Lkotlinx/serialization/json/JsonElement;
-	public final fun component6 ()Ljava/util/List;
-	public final fun copy (Ljava/lang/String;Ljava/lang/Long;Ljava/lang/String;Ljava/util/Map;Lkotlinx/serialization/json/JsonElement;Ljava/util/List;)Lai/torad/aisdk/LanguageModelResponseMetadata;
-	public static synthetic fun copy$default (Lai/torad/aisdk/LanguageModelResponseMetadata;Ljava/lang/String;Ljava/lang/Long;Ljava/lang/String;Ljava/util/Map;Lkotlinx/serialization/json/JsonElement;Ljava/util/List;ILjava/lang/Object;)Lai/torad/aisdk/LanguageModelResponseMetadata;
+	public final fun copy (Ljava/lang/String;Ljava/lang/Long;Ljava/lang/String;Ljava/util/Map;Lkotlinx/serialization/json/JsonElement;)Lai/torad/aisdk/LanguageModelResponseMetadata;
+	public static synthetic fun copy$default (Lai/torad/aisdk/LanguageModelResponseMetadata;Ljava/lang/String;Ljava/lang/Long;Ljava/lang/String;Ljava/util/Map;Lkotlinx/serialization/json/JsonElement;ILjava/lang/Object;)Lai/torad/aisdk/LanguageModelResponseMetadata;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getBody ()Lkotlinx/serialization/json/JsonElement;
 	public final fun getHeaders ()Ljava/util/Map;
 	public final fun getId ()Ljava/lang/String;
-	public final fun getMessages ()Ljava/util/List;
 	public final fun getModelId ()Ljava/lang/String;
 	public final fun getTimestampMillis ()Ljava/lang/Long;
 	public fun hashCode ()I
@@ -4307,7 +4305,6 @@ public final class ai/torad/aisdk/OnStepFinishEvent {
 
 public final class ai/torad/aisdk/OnStepStartEvent {
 	public fun <init> (ILjava/util/List;Lai/torad/aisdk/LanguageModelCallParams;Ljava/util/List;)V
-	public synthetic fun <init> (ILjava/util/List;Lai/torad/aisdk/LanguageModelCallParams;Ljava/util/List;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun component1 ()I
 	public final fun component2 ()Ljava/util/List;
 	public final fun component3 ()Lai/torad/aisdk/LanguageModelCallParams;
