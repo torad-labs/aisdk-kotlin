@@ -378,13 +378,24 @@
     ],
     "gate": "per step: compile+jvmTest green + finding addressed + no new hook violation; FINAL: full check + updateKotlinAbi + push",
     "step2_done": "committed 7f44dbe+8b48a35: wire round-trip, ToolApprovalRequest signature (security), gateway isError, Source.sourceId, isError default, approvalId; ABI regen; gate+check green",
-    "completed": true
+    "completed": true,
+    "step3_done": "committed fecb7e6+35a0f00: removed SimulateReadableStream, SettingsSource, Base64Codec aliases+Uint8Array typealias, GatewayAuthMethod.fromHeaders, UrlOps.isSupported, BedrockUserAgent, ContentPart.ToolCall.invalid (wire-safe: ignoreUnknownKeys); KEPT UIMessagePart.Data.transient (NOT dead - DataPartUpsertTest round-trip), ToolNameMapping/LazySchema/DefaultChatTransport (public v6 API); detector 6->0; 615 tests green; full check+gate+CI(verify+verify-apple) green.",
+    "non_integrated_decisions": {
+      "ProviderToolFactory": "KEEP (decided): public v6-parity API exercised by GatewayAndProviderUtilsParityTest; library integration point is the external consumer, not an internal caller (same class as the 286 rejected FPs).",
+      "StructuredObjectApi": "INTEGRATE (user decision 2026-06-21): 232 lines of StructuredObject state machine + transport with zero callers/tests/entry-point. Wire a top-level generateObject/streamObject + tests to close v6 flagship-feature parity gap."
+    }
   },
   "agent_event_redesign": {
     "spec": "docs/reports/agent-event-redesign.md",
     "decision": "full: sealed AgentEvent + Flow<AgentEvent>, typed payloads (no Any?), StreamEvent sealed class, Telemetry as collector",
     "enforcement": "activate disabled_no-flat-lifecycle-event.yaml (rename) IN THE SAME COMMIT; runs in Claude hook + ci-gate",
     "sequencing": "AFTER FIX-X (steps 2-3 touch Lifecycle/Streaming/Telemetry \u2014 no concurrent writers)",
+    "status": "queued"
+  },
+  "structured_object_integration": {
+    "spec": "docs/reports/pipeline-xray.md + StructuredObjectApi.kt",
+    "decision": "INTEGRATE: add top-level generateObject/streamObject entry on the existing StructuredObject state machine; add tests; close v6 structured-output parity gap",
+    "sequencing": "AFTER agent_event_redesign (streamObject emission sits on the redesigned StreamEvent sealed class - avoid two writers on StreamEvent)",
     "status": "queued"
   }
 }
