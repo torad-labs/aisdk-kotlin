@@ -40,15 +40,34 @@ namespace-wide overestimate). Spread, not dumped in the client:
 
 No irreducible remainder. Zero MCP public-ABI delta (new members internal/private).
 
-## ABI dumps (`80ac799`)
+## Step 3 — openai-family wire (`5a22489`)
 
-`checkLegacyAbi` had been red since step 1: re-homing exposed 3 public members and the
-`api/` reference dumps were stale. Regenerated via `updateKotlinAbi`; diff is exactly:
-`ImageModelUsage.Companion`, `Output.toResponseFormat()`, `ToolSet.Companion`. Gate green.
+Dissolved 4 / 5: OpenAIWire → OpenAIProviderSettings/OpenAITools; GatewayWire → 7 Gateway
+data-type companions + 13 private members of KtorGatewayTransport; OpenResponsesWire → 40
+onto PreparedOpenResponsesRequest/ConvertedOpenResponsesInput companions + the model class;
+OpenAICompatibleWire → 6 core-type companions (Usage/FinishReason/ResponseMetadata/ToolCall
+`fromOpenAI`) + 18 on the shared base `OpenAICompatibleHttpModel`.
+
+**Kept — FacadeSupport (irreducible, 10-facade shared layer):** its 2 single-owner fns were
+re-homed (compatibleSettings → OpenAICompatibleProviderSettings.Companion.forFacade;
+usageFromParts → Usage.Companion.fromParts). The 3 generic JsonObject/JsonArray readers stay —
+`intField` (4 consumers), `nestedIntField` (3), `textFromContentParts` (2), all unrelated facades,
+no single owner. (FacadeHttp in the same file is separate — untouched.)
+
+## ABI status
+
+- `80ac799` regenerated the step-1 dumps (`ImageModelUsage.Companion`, `Output.toResponseFormat()`,
+  `ToolSet.Companion`). Step 2 added zero ABI.
+- After step 3 `checkLegacyAbi` is RED again — diff is **exactly one item**: `GatewayTransport$Companion`
+  (from re-homing `GatewayWire.gatewayTransportMissing` onto the `GatewayTransport` interface's
+  companion). The OpenAICompatible `fromOpenAI` factories added ZERO ABI (their core types are
+  `@Serializable`, so the companions already existed; the new members are `internal`).
+- **Per the user's instruction, ABI regen is held until the P3 FINAL gate** (not regenerated per
+  step). This red is known, traced, and expected — surfaced here rather than silently accepted.
+  Resolution at P3 end: a single `updateKotlinAbi` for the cumulative surface.
 
 ## Remaining steps
 
-3. GatewayWire, OpenResponsesWire, OpenAIWire, OpenAICompatibleWire, FacadeSupport
 4. GoogleWire, GoogleVertexWire, GoogleHttp, AnthropicAwsWire, CohereWire, MistralWire, AlibabaWire
 5. BedrockMapping, BedrockHttp, FalWire, BflWire, ByteDanceWire, LumaWire, KlingAIWire, HuggingFaceWire
 6. audio + remaining facade wires
