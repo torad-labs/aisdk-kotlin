@@ -15,6 +15,7 @@ import io.ktor.http.contentType
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emitAll
 import kotlinx.coroutines.flow.flow
+import kotlinx.serialization.SerializationException
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
@@ -693,8 +694,17 @@ internal object HuggingFaceWire {
 
     fun huggingFaceProviderOptions(providerOptions: ProviderOptions): HuggingFaceResponsesSettings? {
         val element = providerOptions.toMap()["huggingface"] ?: providerOptions.toMap()["hugging-face"] ?: return null
-        return runCatching { aiSdkJson.decodeFromJsonElement(HuggingFaceResponsesSettings.serializer(), element) }
-            .getOrNull()
+        // Surface a malformed options block instead of getOrNull()-swallowing it to null, which
+        // silently dropped EVERY hf option (instructions/reasoningEffort/metadata/strictJsonSchema).
+        return try {
+            aiSdkJson.decodeFromJsonElement(HuggingFaceResponsesSettings.serializer(), element)
+        } catch (e: SerializationException) {
+            throw InvalidArgumentError(
+                "providerOptions.huggingface",
+                "could not decode Hugging Face provider options: ${e.message ?: "<no message>"}",
+                e,
+            )
+        }
     }
 
     fun huggingFaceHeaders(settings: HuggingFaceProviderSettings, extra: Map<String, String>): Map<String, String> {

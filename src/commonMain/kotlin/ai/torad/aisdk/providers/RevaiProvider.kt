@@ -274,8 +274,10 @@ internal object RevaiWire {
         var hasStarted = false
         for (element in monologue.jsonObject["elements"]?.jsonArray.orEmpty()) {
             val obj = element.jsonObject
-            currentText += obj["value"]?.jsonPrimitive?.contentOrNull.orEmpty()
             if (obj["type"]?.jsonPrimitive?.contentOrNull == "text") {
+                // Accumulate ONLY text elements — a "punct" element (comma/period/space) between two
+                // words must not prepend into the next word's segment text (e.g. ",World").
+                currentText += obj["value"]?.jsonPrimitive?.contentOrNull.orEmpty()
                 val end = obj["end_ts"]?.jsonPrimitive?.floatOrNull
                 if (end != null && end > durationInSeconds) durationInSeconds = end
                 if (!hasStarted) {

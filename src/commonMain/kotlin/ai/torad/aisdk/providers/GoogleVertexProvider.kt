@@ -282,7 +282,7 @@ internal object GoogleVertexWire {
                         put("top_logprobs", value)
                         if ("logprobs" !in xai) put("logprobs", JsonPrimitive(true))
                     }
-                    "searchParameters" -> put("search_parameters", googleVertexXaiSnakeCase(value))
+                    "searchParameters" -> put("search_parameters", XaiWire.xaiSnakeCaseJson(value))
                     else -> put(key, value)
                 }
             }
@@ -319,24 +319,7 @@ internal object GoogleVertexWire {
         )
     }
 
-    fun googleVertexXaiSnakeCase(value: JsonElement): JsonElement =
-        when (value) {
-            is JsonObject -> buildJsonObject {
-                value.forEach { (key, nested) -> put(googleVertexXaiSnakeCaseKey(key), googleVertexXaiSnakeCase(nested)) }
-            }
-            is JsonArray -> JsonArray(value.map(::googleVertexXaiSnakeCase))
-            else -> value
-        }
-
-    fun googleVertexXaiSnakeCaseKey(value: String): String =
-        buildString {
-            value.forEach { char ->
-                if (char.isUpperCase()) {
-                    append('_')
-                    append(char.lowercaseChar())
-                } else {
-                    append(char)
-                }
-            }
-        }
+    // Snake-casing of xAI searchParameters now reuses XaiWire.xaiSnakeCaseJson (single source of
+    // truth) — the former local copy drifted: it lacked the `xHandles` -> `included_x_handles`
+    // special-case (so the filter was silently dropped) and the `index > 0` leading-underscore guard.
 }

@@ -302,9 +302,14 @@ internal object ByteDanceWire {
                 abortSignal = abortSignal,
             )
             val statusBody = status.value.jsonObject
-            when (statusBody["status"]?.jsonPrimitive?.contentOrNull) {
+            // Terminal states must fail immediately with the real status (like KlingAI's else-throw),
+            // not fall through and re-poll until the 5-minute timeout masks them as a generic timeout.
+            when (val taskStatus = statusBody["status"]?.jsonPrimitive?.contentOrNull) {
                 "succeeded" -> return status
                 "failed" -> throw NoVideoGeneratedError("ByteDance video generation failed: $statusBody")
+                "canceled", "cancelled" -> throw NoVideoGeneratedError("ByteDance video generation was canceled")
+                "queued", "running", "processing", null -> Unit // still in progress — keep polling
+                else -> throw InvalidResponseDataError(statusBody, "Unknown ByteDance task status: $taskStatus")
             }
             if (pollIntervalMs > 0 && attempt < maxPollAttempts - 1) delay(pollIntervalMs)
         }

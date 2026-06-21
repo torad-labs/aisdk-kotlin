@@ -75,6 +75,8 @@ public data class AssemblyAIProviderSettings(
     val apiKey: String? = null,
     val headers: Map<String, String> = emptyMap(),
     val pollingIntervalMillis: Long = 3_000L,
+    /** Upper bound on transcript poll attempts (120 × 3s ≈ 6 min) so a stuck job can't hang forever. */
+    val maxPollAttempts: Int = 120,
 )
 
 public class AssemblyAIProvider(
@@ -220,7 +222,9 @@ internal object AssemblyAIWire {
         headers: Map<String, String>,
         abortSignal: AbortSignal,
     ): HttpJsonResponse {
-        while (true) {
+        // Bounded poll (like RevAI/Gladia) so an indefinitely "queued"/"processing" job can't hang
+        // the coroutine forever when the caller hasn't set a timeout AbortSignal.
+        repeat(settings.maxPollAttempts) { attempt ->
             abortSignal.throwIfAborted()
             val response = getJson(
                 client = client,
@@ -231,10 +235,14 @@ internal object AssemblyAIWire {
             when (body["status"]?.jsonPrimitive?.contentOrNull) {
                 "completed" -> return response
                 "error" -> throw NoTranscriptGeneratedError("Transcription failed: ${body["error"]?.jsonPrimitive?.contentOrNull ?: "Unknown error"}")
-                "queued", "processing" -> if (settings.pollingIntervalMillis > 0) delay(settings.pollingIntervalMillis)
+                "queued", "processing" ->
+                    if (settings.pollingIntervalMillis > 0 && attempt < settings.maxPollAttempts - 1) {
+                        delay(settings.pollingIntervalMillis)
+                    }
                 else -> throw InvalidResponseDataError(null, "AssemblyAI transcript response has unsupported status")
             }
         }
+        throw NoTranscriptGeneratedError("AssemblyAI transcription polling timed out after ${settings.maxPollAttempts} attempts")
     }
 
     fun submitBody(

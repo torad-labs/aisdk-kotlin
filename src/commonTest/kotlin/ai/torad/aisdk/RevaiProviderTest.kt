@@ -34,7 +34,7 @@ class RevaiProviderTest {
                 "https://api.rev.ai/speechtotext/v1/jobs/job1/transcript" to UrlHandler(
                     UrlResponse.JsonValue(
                         Json.parseToJsonElement(
-                            """{"monologues":[{"elements":[{"type":"text","value":"Hello","ts":0.1,"end_ts":0.3},{"type":"punct","value":" "},{"type":"text","value":"world","ts":0.4,"end_ts":0.8}]}]}""",
+                            """{"monologues":[{"elements":[{"type":"text","value":"Hello","ts":0.1,"end_ts":0.3},{"type":"punct","value":", "},{"type":"text","value":"world","ts":0.4,"end_ts":0.8}]}]}""",
                         ),
                         headers = mapOf("x-final" to "true"),
                     ),
@@ -100,7 +100,9 @@ class RevaiProviderTest {
         )
 
         assertEquals("revai.transcription", model.provider)
-        assertEquals("Hello world", result.text)
+        // Top-level text keeps punctuation (joins all element values); segment text must NOT —
+        // the inter-word ", " punct must not prepend into the "world" segment (was ", world").
+        assertEquals("Hello, world", result.text)
         assertEquals(2, result.segments.size)
         assertEquals("Hello", result.segments.first().text)
         assertEquals(0.1f, result.segments.first().startSeconds)

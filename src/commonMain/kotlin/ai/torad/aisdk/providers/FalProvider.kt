@@ -176,7 +176,9 @@ private class FalSpeechModel(
         val prepared = falSpeechRequestBody(params)
         val response = falPostJson(
             client = client,
-            url = "https://fal.run/$modelId",
+            // Honor settings.baseURL like FalImageModel — the old hardcoded fal.run bypassed any
+            // custom endpoint (test proxy / self-hosted / staging gateway) for speech only.
+            url = "${settings.baseURL.trimEnd('/')}/$modelId",
             body = prepared.body,
             headers = falHeaders(settings, params.headers),
         )
