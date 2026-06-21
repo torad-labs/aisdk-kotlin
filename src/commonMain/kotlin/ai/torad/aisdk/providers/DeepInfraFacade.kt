@@ -106,8 +106,11 @@ private class DeepInfraImageModel(
                 userAgent = "ai-sdk/deepinfra/$DEEPINFRA_VERSION",
             ),
         )
-        val images = response.value.jsonObject["images"]?.jsonArray.orEmpty().map { image ->
-            GeneratedFile(mediaType = "image/png", base64 = image.jsonPrimitive.contentOrNull.orEmpty().stripDataUriPrefix())
+        val images = response.value.jsonObject["images"]?.jsonArray.orEmpty().mapIndexed { index, image ->
+            // Require a real string payload; the old `.orEmpty()` produced a zero-byte PNG that
+            // passed generateImage's empty-list guard and surfaced as a false success.
+            val base64 = WireDecoder.stringValue(image, "deepinfra", "image generation response", "$.images[$index]")
+            GeneratedFile(mediaType = "image/png", base64 = base64.stripDataUriPrefix())
         }
         return ImageModelResult(
             images = images,

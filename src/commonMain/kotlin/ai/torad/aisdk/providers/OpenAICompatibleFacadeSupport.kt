@@ -49,6 +49,9 @@ internal object FacadeSupport {
             baseUrl = baseURL.trimEnd('/'),
             apiKey = apiKey,
             headers = ProviderHeaders.withUserAgentSuffix(headers, "ai-sdk/$name/$version"),
+            // UA already embedded in headers above — null out the default suffix so commonHeaders()
+            // doesn't APPEND "ai-sdk/openai-compatible-kotlin" again (double User-Agent).
+            userAgentSuffix = null,
             includeUsage = capabilities.includeUsage,
             supportsStructuredOutputs = capabilities.supportsStructuredOutputs,
             transformChatRequestBody = transformChatRequestBody,

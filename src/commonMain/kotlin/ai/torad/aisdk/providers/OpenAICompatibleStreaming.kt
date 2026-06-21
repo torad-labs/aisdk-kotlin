@@ -8,7 +8,9 @@ import ai.torad.aisdk.providers.OpenAICompatibleWire.parseOpenAIToolInput
 import ai.torad.aisdk.providers.OpenAICompatibleWire.streamResponseMetadata
 import ai.torad.aisdk.providers.OpenAICompatibleWire.thoughtSignatureMetadata
 import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
@@ -36,10 +38,14 @@ internal class OpenAIChatStreamState(
                 emittedResponseMetadata = true
             }
         }
-        if (obj["error"] != null) {
+        // Ignore an explicit `"error": null` (JsonNull) — it is not a real error, and calling
+        // `.jsonObject` on it would throw. Use `as?` casts so a string-typed error also degrades
+        // gracefully instead of throwing on the `.jsonObject` accessor.
+        val error = obj["error"]?.takeUnless { it is JsonNull }
+        if (error != null) {
             events += StreamEvent.Error(
-                obj["error"]?.jsonObject?.get("message")?.jsonPrimitive?.contentOrNull
-                    ?: obj["error"]?.jsonPrimitive?.contentOrNull
+                (error as? JsonObject)?.get("message")?.jsonPrimitive?.contentOrNull
+                    ?: (error as? JsonPrimitive)?.contentOrNull
                     ?: "OpenAI-compatible stream error",
             )
             finishReason = FinishReason.Error

@@ -318,8 +318,16 @@ private class AnthropicStreamState(
             }
             "content_block_delta" -> {
                 val index = try {
-                    WireDecoder.required(obj, "index", "anthropic", "stream event")
-                    WireDecoder.optionalInt(obj, "index", "anthropic", "stream event") ?: blocks.size
+                    // index is REQUIRED for delta/stop (unlike content_block_start, which CREATES a
+                    // block at blocks.size) — a missing index references no block, so it is a wire
+                    // error. This single strict read replaces the old required()+optionalInt double
+                    // read whose `?: blocks.size` fallback was dead code.
+                    WireDecoder.intValue(
+                        WireDecoder.required(obj, "index", "anthropic", "stream event"),
+                        "anthropic",
+                        "stream event",
+                        "$.index",
+                    )
                 } catch (error: WireDecodeException) {
                     return listOf(StreamEvent.Error(error.message ?: "Anthropic stream protocol error"))
                 }
@@ -344,8 +352,16 @@ private class AnthropicStreamState(
             }
             "content_block_stop" -> {
                 val index = try {
-                    WireDecoder.required(obj, "index", "anthropic", "stream event")
-                    WireDecoder.optionalInt(obj, "index", "anthropic", "stream event") ?: blocks.size
+                    // index is REQUIRED for delta/stop (unlike content_block_start, which CREATES a
+                    // block at blocks.size) — a missing index references no block, so it is a wire
+                    // error. This single strict read replaces the old required()+optionalInt double
+                    // read whose `?: blocks.size` fallback was dead code.
+                    WireDecoder.intValue(
+                        WireDecoder.required(obj, "index", "anthropic", "stream event"),
+                        "anthropic",
+                        "stream event",
+                        "$.index",
+                    )
                 } catch (error: WireDecodeException) {
                     return listOf(StreamEvent.Error(error.message ?: "Anthropic stream protocol error"))
                 }

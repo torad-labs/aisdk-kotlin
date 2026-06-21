@@ -114,10 +114,13 @@ private class TogetherAIImageModel(
                 userAgent = "ai-sdk/togetherai/$TOGETHERAI_VERSION",
             ),
         )
-        val images = response.value.jsonObject["data"]?.jsonArray.orEmpty().map { item ->
+        val images = response.value.jsonObject["data"]?.jsonArray.orEmpty().mapIndexed { index, item ->
+            val obj = WireDecoder.objectValue(item, "togetherai", "image generation response", "$.data[$index]")
             GeneratedFile(
                 mediaType = "image/png",
-                base64 = item.jsonObject["b64_json"]?.jsonPrimitive?.contentOrNull.orEmpty(),
+                // Fail loudly on a missing image payload instead of emitting base64="" — a zero-byte
+                // PNG slips past generateImage's empty-list guard and reaches the caller as success.
+                base64 = WireDecoder.requiredString(obj, "b64_json", "togetherai", "image generation response", "$.data[$index]"),
             )
         }
         return ImageModelResult(

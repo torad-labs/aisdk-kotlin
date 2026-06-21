@@ -758,7 +758,8 @@ internal object GoogleInteractions {
                 hasFunctionCall = true
                 content += ContentPart.ToolCall(
                     toolCallId = step["id"]?.jsonPrimitive?.contentOrNull ?: IdGenerator.generate(),
-                    toolName = step["name"]?.jsonPrimitive?.contentOrNull.orEmpty(),
+                    // Fail loudly on a missing/blank function_call name instead of fabricating "".
+                    toolName = WireDecoder.requiredString(step, "name", "google", "interactions response", "$.function_call"),
                     input = step["arguments"] ?: JsonObject(emptyMap()),
                     providerMetadata = googleInteractionsMetadata(
                         signature = step["signature"]?.jsonPrimitive?.contentOrNull,
@@ -872,6 +873,9 @@ internal object GoogleInteractions {
         if (settings.videoPollIntervalMillis > 0) delay(settings.videoPollIntervalMillis)
         current = googleGetJson(client, "${settings.baseURL.trimEnd('/')}/interactions/$interactionId", headers, abortSignal)
     }
+    // The loop checks terminal status at the TOP of each iteration, so the final fetch is never
+    // inspected — check it here (mirrors the video-polling post-loop guard) before timing out.
+    if (googleInteractionsTerminal(current.value.jsonObject["status"]?.jsonPrimitive?.contentOrNull)) return current
     throw InvalidResponseDataError(null, "google.interactions: polling timed out for interaction $interactionId.")
 }
 
