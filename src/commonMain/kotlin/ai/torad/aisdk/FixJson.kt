@@ -278,17 +278,10 @@ public object PartialJson {
         // Stack-drain: close innermost frame first (walk top -> bottom).
         for (idx in stack.indices.reversed()) {
             val state = stack[idx]
-            // SER-003: when the scan consumed both the '\' and its escaped char
-            // (e.g. input ends with `\"`), the escape state was already popped but
-            // `result` ends with `\<char>` — an incomplete escape sequence.  Closing
-            // the string at that position produces `\""` (escaped-quote + close),
-            // which is malformed JSON.  Drop the dangling `\<char>` pair so the
-            // string closes cleanly at the last valid content character.
-            if (state == FixJsonState.INSIDE_STRING && result.length >= 2 &&
-                result[result.length - 2] == '\\'
-            ) {
-                result = result.dropLast(2)
-            }
+            // A string ending at a COMPLETE escape (e.g. `\"`, `\\`, `\n`) closes cleanly: `"ab\""`
+            // is valid JSON for `ab"`. The former SER-003 drop-last-2 here corrupted that into
+            // `"ab"` (losing the escaped char). A lone DANGLING `\` needs no special-casing —
+            // lastValidIndex never includes it, so it is already excluded before this drain.
             result += drainClose(state, input, literalStart)
         }
 

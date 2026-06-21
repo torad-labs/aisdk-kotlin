@@ -68,17 +68,21 @@ public data class RetryPolicy(
 
     private fun retryDelayMs(t: Throwable, exponentialBackoffDelay: Long): Long {
         val serverMs = retryAfterDelayMs(t) ?: return exponentialBackoffDelay
-        return if (serverMs in 0 until MAX_RETRY_AFTER_MS || serverMs < exponentialBackoffDelay) {
-            serverMs
-        } else {
-            exponentialBackoffDelay
-        }
+        // Honor the server's Retry-After, CAPPED at the 60s ceiling. A server asking for 90s must
+        // wait 60s — not fall back to the tiny exponential backoff, which would immediately
+        // re-hit the rate limit (MAX_RETRY_AFTER_MS names the cap; the old code discarded it).
+        return serverMs.coerceAtMost(MAX_RETRY_AFTER_MS)
     }
 
     private fun retryAfterDelayMs(t: Throwable): Long? {
         val headers = (t as? APICallError)?.responseHeaders ?: return null
-        val delayMs = headers["retry-after-ms"]?.toLongOrNull()?.takeIf { it > 0 }
-            ?: headers["retry-after"]?.trim()?.toLongOrNull()?.takeIf { it >= 0 }
+        // The flattened header map preserves the server's wire casing, and HTTP/1.1 servers send
+        // `Retry-After` / `Retry-After-Ms` in Title-Case — so these MUST be looked up
+        // case-insensitively, or the server's backoff guidance is silently dropped over HTTP/1.1.
+        fun header(name: String): String? =
+            headers.entries.firstOrNull { it.key.equals(name, ignoreCase = true) }?.value
+        val delayMs = header("retry-after-ms")?.toLongOrNull()?.takeIf { it > 0 }
+            ?: header("retry-after")?.trim()?.toLongOrNull()?.takeIf { it >= 0 }
                 ?.let { it * MILLIS_PER_SECOND }
         return delayMs
     }

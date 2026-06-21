@@ -47,6 +47,17 @@ class FixJsonTest {
     }
 
     @Test
+    fun `given a string ending at a complete escape when fixed then the escape is preserved`() {
+        // SER-003 regression: a COMPLETE escape closes cleanly and must NOT be dropped.
+        // input  "ab\"  ->  "ab\""   (valid JSON for ab")
+        assertFix("\"ab\\\"", "\"ab\\\"\"")
+        // input  "ab\\  ->  "ab\\"   (valid JSON for ab\)
+        assertFix("\"ab\\\\", "\"ab\\\\\"")
+        // input  "ab\n  ->  "ab\n"   (valid JSON for ab<newline>)
+        assertFix("\"ab\\n", "\"ab\\n\"")
+    }
+
+    @Test
     fun `given a trailing comma when fixed then it is stripped and the container closed`() {
         assertFix("[1, ", "[1]")
         assertFix("""{"k1": 1, "k2""", """{"k1": 1}""")

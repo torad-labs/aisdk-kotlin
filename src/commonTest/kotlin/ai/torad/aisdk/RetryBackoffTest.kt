@@ -35,6 +35,42 @@ class RetryBackoffTest {
     }
 
     @Test
+    fun `Title-Case Retry-After is honored via case-insensitive lookup`() = runTest {
+        // HTTP/1.1 servers send `Retry-After` in Title-Case; the flattened header map preserves
+        // wire casing, so a case-sensitive lookup would miss it and fall back to the tiny backoff.
+        var attempt = 0
+        val result = RetryPolicy(maxRetries = 1).execute<String> {
+            if (attempt++ == 0) {
+                throw APICallError(
+                    message = "rate limited",
+                    url = "https://api.test/v1",
+                    statusCode = 429,
+                    responseHeaders = mapOf("Retry-After" to "5"),
+                    isRetryable = true,
+                )
+            }
+            "ok"
+        }
+        assertEquals("ok", result)
+        assertEquals(5_000L, testScheduler.currentTime, "Title-Case Retry-After must be honored")
+    }
+
+    @Test
+    fun `Retry-After above the 60s ceiling is capped, not dropped to backoff`() = runTest {
+        var attempt = 0
+        val result = RetryPolicy(maxRetries = 1).execute<String> {
+            if (attempt++ == 0) throw apiError("90")
+            "ok"
+        }
+        assertEquals("ok", result)
+        assertEquals(
+            60_000L,
+            testScheduler.currentTime,
+            "a 90s Retry-After must cap at the 60s ceiling, not fall back to the 2s backoff",
+        )
+    }
+
+    @Test
     fun `exhausting retries throws RetryError carrying every attempt error`() = runTest {
         val failure = assertFailsWith<RetryError> {
             RetryPolicy(maxRetries = 2, baseDelayMs = 0).execute<String> {
