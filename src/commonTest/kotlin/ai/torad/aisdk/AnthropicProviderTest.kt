@@ -1,7 +1,7 @@
 package ai.torad.aisdk
 import ai.torad.aisdk.providers.ANTHROPIC_VERSION
 import ai.torad.aisdk.providers.AnthropicProviderSettings
-import ai.torad.aisdk.providers.AnthropicWire.forwardAnthropicContainerIdFromLastStep
+import ai.torad.aisdk.providers.AnthropicMessagesLanguageModel.Companion.forwardAnthropicContainerIdFromLastStep
 
 import ai.torad.aisdk.testing.FlowDrain.drainAllItems
 import io.ktor.http.HttpHeaders

@@ -179,7 +179,7 @@ class TelemetryWiringTest {
     @Test
     fun `a globally registered integration observes with no constructor wiring`() = runTest {
         val rec = RecordingTelemetry()
-        TelemetryOps.registerTelemetry(rec)
+        Telemetry.registerTelemetry(rec)
         try {
             val agent = TestToolLoopAgent<Unit, String>(
                 model = MockLanguageModelTextOnly("hi"),
@@ -188,7 +188,7 @@ class TelemetryWiringTest {
             )
             agent.generate(prompt = "go").first()
         } finally {
-            TelemetryOps.clearGlobalTelemetry()
+            Telemetry.clearGlobalTelemetry()
         }
         assertTrue(rec.events.isNotEmpty(), "global registration alone makes calls emit")
         assertEquals("agentStart", rec.events.first())
@@ -199,7 +199,7 @@ class TelemetryWiringTest {
     fun `per-call integrations replace the global registration`() = runTest {
         val global = RecordingTelemetry("global")
         val local = RecordingTelemetry("local")
-        TelemetryOps.registerTelemetry(global)
+        Telemetry.registerTelemetry(global)
         try {
             val agent = TestToolLoopAgent<Unit, String>(
                 model = MockLanguageModelTextOnly("hi"),
@@ -209,7 +209,7 @@ class TelemetryWiringTest {
             )
             agent.generate(prompt = "go").first()
         } finally {
-            TelemetryOps.clearGlobalTelemetry()
+            Telemetry.clearGlobalTelemetry()
         }
         assertTrue(global.events.isEmpty(), "per-call integrations REPLACE the global set")
         assertTrue(local.events.isNotEmpty())
@@ -256,7 +256,7 @@ class TelemetryWiringTest {
     @Test
     fun `an explicit isEnabled false opts the call out even with a global registration`() = runTest {
         val global = RecordingTelemetry("global")
-        TelemetryOps.registerTelemetry(global)
+        Telemetry.registerTelemetry(global)
         try {
             val agent = TestToolLoopAgent<Unit, String>(
                 model = MockLanguageModelTextOnly("hi"),
@@ -266,7 +266,7 @@ class TelemetryWiringTest {
             )
             agent.generate(prompt = "go").first()
         } finally {
-            TelemetryOps.clearGlobalTelemetry()
+            Telemetry.clearGlobalTelemetry()
         }
         assertTrue(global.events.isEmpty(), "isEnabled=false is the per-call opt-out")
     }

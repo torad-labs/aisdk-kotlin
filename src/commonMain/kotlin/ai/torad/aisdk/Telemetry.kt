@@ -9,7 +9,7 @@ import kotlin.concurrent.atomics.update
 /**
  * Telemetry settings for an agent or call (upstream v7 `telemetry`, the
  * stabilized `experimental_telemetry`). With the v7 revamp, telemetry is
- * opt-out: once an integration is registered via [TelemetryOps.registerTelemetry], every
+ * opt-out: once an integration is registered via [Telemetry.registerTelemetry], every
  * agent invocation emits events to it automatically.
  *
  * What the v7 INTEGRATION path honors:
@@ -107,6 +107,41 @@ public interface Telemetry {
     public suspend fun onError(call: TelemetryCall, event: OnErrorEvent) {}
     public suspend fun onAbort(call: TelemetryCall, event: OnAbortEvent) {}
     public suspend fun onAgentFinish(call: TelemetryCall, event: OnFinishEvent) {}
+
+    /**
+     * Telemetry registration + per-call resolution procedures. These are genuine
+     * procedures (not loose top-level funs): [registerTelemetry]/[clearGlobalTelemetry]
+     * mutate the [globalTelemetry] registry; [resolveTelemetry] computes the effective
+     * integration for one call.
+     */
+    public companion object {
+        public fun registerTelemetry(integration: Telemetry) {
+            globalTelemetry.register(integration)
+        }
+
+        public fun clearGlobalTelemetry() {
+            globalTelemetry.clear()
+        }
+
+        /**
+         * Effective integration for one call: an explicit `isEnabled = false` opts the call out
+         * entirely (upstream "opt out of a specific call"); otherwise per-call
+         * [TelemetrySettings.integrations] REPLACE the global registrations when non-empty
+         * (upstream per-call semantics); null when nothing is registered (zero-overhead path).
+         * [logger] receives one warn per swallowed integration throw — a dead integration is
+         * discoverable, never perfectly silent.
+         */
+        internal fun resolveTelemetry(settings: TelemetrySettings?, logger: Logger = NoopLogger): Telemetry? {
+            if (settings?.isEnabled == false) return null
+            val perCall = settings?.integrations.orEmpty()
+            val effective = perCall.ifEmpty { globalTelemetry.list() }
+            return when {
+                effective.isEmpty() -> null
+                effective.size == 1 -> effective.single()
+                else -> CompositeTelemetry(effective, logger)
+            }
+        }
+    }
 }
 
 /**
@@ -145,40 +180,6 @@ public class TelemetryRegistry(
 /** Global registry — upstream v7 `registerTelemetry`: register once at startup, all calls emit. */
 public val globalTelemetry: TelemetryRegistry = TelemetryRegistry()
 
-/**
- * Telemetry registration + per-call resolution procedures. These are genuine
- * procedures (not loose top-level funs): [registerTelemetry]/[clearGlobalTelemetry]
- * mutate the [globalTelemetry] registry; [resolveTelemetry] computes the effective
- * integration for one call.
- */
-public object TelemetryOps {
-    public fun registerTelemetry(integration: Telemetry) {
-        globalTelemetry.register(integration)
-    }
-
-    public fun clearGlobalTelemetry() {
-        globalTelemetry.clear()
-    }
-
-    /**
-     * Effective integration for one call: an explicit `isEnabled = false` opts the call out
-     * entirely (upstream "opt out of a specific call"); otherwise per-call
-     * [TelemetrySettings.integrations] REPLACE the global registrations when non-empty
-     * (upstream per-call semantics); null when nothing is registered (zero-overhead path).
-     * [logger] receives one warn per swallowed integration throw — a dead integration is
-     * discoverable, never perfectly silent.
-     */
-    internal fun resolveTelemetry(settings: TelemetrySettings?, logger: Logger = NoopLogger): Telemetry? {
-        if (settings?.isEnabled == false) return null
-        val perCall = settings?.integrations.orEmpty()
-        val effective = perCall.ifEmpty { globalTelemetry.list() }
-        return when {
-            effective.isEmpty() -> null
-            effective.size == 1 -> effective.single()
-            else -> CompositeTelemetry(effective, logger)
-        }
-    }
-}
 
 /** One telemetry notification, delivered to each integration of a [CompositeTelemetry]. */
 private fun interface TelemetryNotify {

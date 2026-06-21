@@ -5,7 +5,6 @@ import ai.torad.aisdk.ui.ToolCallState
 import ai.torad.aisdk.ui.UIMessage
 import ai.torad.aisdk.ui.UIMessagePart
 import ai.torad.aisdk.ui.UIMessageRole
-import ai.torad.aisdk.ui.TypedJsonOps.dataAs
 import ai.torad.aisdk.ui.UIMessageMetadata.metadataAs
 import ai.torad.aisdk.TypedJsonOps.decodeAs
 import ai.torad.aisdk.TypedJsonOps.decodeValue
@@ -16,7 +15,6 @@ import ai.torad.aisdk.AbortSignals.asAbortSignal
 import ai.torad.aisdk.AgentSessions.session
 import ai.torad.aisdk.GeneratedFiles.bytes
 import ai.torad.aisdk.GeneratedFiles.fileData
-import ai.torad.aisdk.ui.TypedJsonOps.outputAs
 import kotlinx.coroutines.Job
 import kotlin.test.Test
 import kotlin.test.assertContentEquals
@@ -222,7 +220,7 @@ class KotlinIdiomsTest {
         )
 
         assertEquals(72, part.outputAs<WeatherOutput>()?.temperature)
-        assertEquals(72, outputAs(part, serializer<WeatherOutput>())?.temperature)
+        assertEquals(72, part.outputAs(serializer<WeatherOutput>())?.temperature)
         assertEquals(72, data.dataAs<WeatherOutput>().temperature)
         assertEquals("visible", message.metadataAs<ProviderTuning>("mock")?.reasoningEffort)
     }

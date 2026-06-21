@@ -42,7 +42,40 @@ public data class QuiverAIProviderSettings(
     val apiKey: String? = null,
     val baseURL: String = "https://api.quiver.ai/v1",
     val headers: Map<String, String> = emptyMap(),
-)
+) {
+    internal fun quiverAIOptions(providerOptions: ProviderOptions): JsonObject =
+        providerOptions.toMap()["quiverai"] as? JsonObject ?: JsonObject(emptyMap())
+
+    internal fun quiverAIHeaders(callHeaders: Map<String, String>): Map<String, String> {
+        val base = linkedMapOf<String, String?>()
+        apiKey?.takeIf { it.isNotBlank() }?.let { base[HttpHeaders.Authorization] = "Bearer $it" }
+        headers.forEach { (key, value) -> base[key] = value }
+        callHeaders.forEach { (key, value) -> base[key] = value }
+        return ProviderHeaders.withUserAgentSuffix(base, "ai-sdk/quiverai/$QUIVERAI_VERSION")
+    }
+
+    internal suspend fun quiverAIPostJson(
+        client: HttpClient,
+        url: String,
+        body: JsonObject,
+        headers: Map<String, String>,
+    ): HttpJsonResponse =
+        HttpTransport.requestJson(
+            client = client,
+            url = url,
+            method = HttpMethod.Post,
+            headers = headers,
+            body = body,
+            requestBodyValues = body,
+            errorMessage = ::quiverAIErrorMessage,
+        )
+
+    private fun quiverAIErrorMessage(statusCode: Int, parsed: JsonElement?, raw: String): String {
+        val obj = parsed as? JsonObject
+        val detail = obj?.get("message")?.jsonPrimitive?.contentOrNull ?: raw.ifBlank { "request failed" }
+        return "QuiverAI request failed ($statusCode): $detail"
+    }
+}
 
 public class QuiverAIProvider(
     private val client: HttpClient,
@@ -73,14 +106,14 @@ private class QuiverAIImageModel(
 
     override suspend fun generate(params: ImageGenerationParams): ImageModelResult {
         params.abortSignal.throwIfAborted()
-        val options = QuiverAIWire.quiverAIOptions(params.providerOptions)
+        val options = settings.quiverAIOptions(params.providerOptions)
         val operation = options["operation"]?.jsonPrimitive?.contentOrNull ?: "generate"
-        val body = QuiverAIWire.quiverAIRequestBody(modelId, params, operation, options)
-        val response = QuiverAIWire.quiverAIPostJson(
+        val body = quiverAIRequestBody(modelId, params, operation, options)
+        val response = settings.quiverAIPostJson(
             client = client,
-            url = "${settings.baseURL.trimEnd('/')}${QuiverAIWire.quiverAIOperationPath(operation)}",
+            url = "${settings.baseURL.trimEnd('/')}${quiverAIOperationPath(operation)}",
             body = body,
-            headers = QuiverAIWire.quiverAIHeaders(settings, params.headers),
+            headers = settings.quiverAIHeaders(params.headers),
         )
         val root = response.value.jsonObject
         val data = root["data"]?.jsonArray ?: throw InvalidResponseDataError(response.value, "QuiverAI response is missing data")
@@ -93,7 +126,7 @@ private class QuiverAIImageModel(
                     base64 = Base64Codec.encode(svg.encodeToByteArray()),
                 )
             },
-            warnings = QuiverAIWire.quiverAIWarnings(params),
+            warnings = quiverAIWarnings(params),
             response = LanguageModelResponseMetadata(
                 id = root["id"]?.jsonPrimitive?.contentOrNull,
                 timestampMillis = root["created"]?.jsonPrimitive?.contentOrNull?.toLongOrNull()?.times(1000),
@@ -101,16 +134,12 @@ private class QuiverAIImageModel(
                 headers = response.headers,
                 body = response.value,
             ),
-            providerMetadata = ProviderMetadata.Raw(JsonObject(mapOf("quiverai" to QuiverAIWire.quiverAIProviderMetadata(root)))),
-            usage = QuiverAIWire.quiverAIUsage(root["usage"]),
+            providerMetadata = ProviderMetadata.Raw(JsonObject(mapOf("quiverai" to quiverAIProviderMetadata(root)))),
+            usage = quiverAIUsage(root["usage"]),
         )
     }
-}
 
-
-private object QuiverAIWire {
-
-    fun quiverAIRequestBody(
+    private fun quiverAIRequestBody(
         modelId: String,
         params: ImageGenerationParams,
         operation: String,
@@ -130,7 +159,7 @@ private object QuiverAIWire {
         }
     }
 
-    fun quiverAIGenerateBody(
+    private fun quiverAIGenerateBody(
         modelId: String,
         params: ImageGenerationParams,
         options: JsonObject,
@@ -155,7 +184,7 @@ private object QuiverAIWire {
         }
     }
 
-    fun quiverAIVectorizeBody(
+    private fun quiverAIVectorizeBody(
         modelId: String,
         params: ImageGenerationParams,
         options: JsonObject,
@@ -178,14 +207,14 @@ private object QuiverAIWire {
         }
     }
 
-    fun quiverAIWarnings(params: ImageGenerationParams): List<CallWarning> = buildList {
+    private fun quiverAIWarnings(params: ImageGenerationParams): List<CallWarning> = buildList {
         if (params.size != null) add(CallWarning("unsupported", "QuiverAI SVG generation does not support the `size` option. The setting was ignored."))
         if (params.aspectRatio != null) add(CallWarning("unsupported", "QuiverAI SVG generation does not support the `aspectRatio` option. The setting was ignored."))
         if (params.seed != null) add(CallWarning("unsupported", "QuiverAI SVG generation does not support the `seed` option. The setting was ignored."))
         if (params.mask != null) add(CallWarning("unsupported", "QuiverAI SVG generation does not support masks. The mask was ignored."))
     }
 
-    fun ImageGenerationFile.toQuiverAIImageReference(): JsonObject = buildJsonObject {
+    private fun ImageGenerationFile.toQuiverAIImageReference(): JsonObject = buildJsonObject {
         url?.takeIf { it.isNotBlank() }?.let {
             put("url", JsonPrimitive(it))
             return@buildJsonObject
@@ -195,23 +224,7 @@ private object QuiverAIWire {
         put("base64", JsonPrimitive(data))
     }
 
-    suspend fun quiverAIPostJson(
-        client: HttpClient,
-        url: String,
-        body: JsonObject,
-        headers: Map<String, String>,
-    ): HttpJsonResponse =
-        HttpTransport.requestJson(
-            client = client,
-            url = url,
-            method = HttpMethod.Post,
-            headers = headers,
-            body = body,
-            requestBodyValues = body,
-            errorMessage = ::quiverAIErrorMessage,
-        )
-
-    fun quiverAIProviderMetadata(root: JsonObject): JsonElement = buildJsonObject {
+    private fun quiverAIProviderMetadata(root: JsonObject): JsonElement = buildJsonObject {
         val data = root["data"]?.jsonArray.orEmpty()
         put("images", JsonArray(data.mapIndexed { index, item ->
             buildJsonObject {
@@ -224,7 +237,7 @@ private object QuiverAIWire {
         }
     }
 
-    fun quiverAIUsage(value: JsonElement?): ImageModelUsage {
+    private fun quiverAIUsage(value: JsonElement?): ImageModelUsage {
         val usage = value as? JsonObject ?: return ImageModelUsage()
         return ImageModelUsage(
             inputTokens = usage["input_tokens"]?.jsonPrimitive?.intOrNull,
@@ -233,25 +246,8 @@ private object QuiverAIWire {
         )
     }
 
-    fun quiverAIHeaders(settings: QuiverAIProviderSettings, callHeaders: Map<String, String>): Map<String, String> {
-        val base = linkedMapOf<String, String?>()
-        settings.apiKey?.takeIf { it.isNotBlank() }?.let { base[HttpHeaders.Authorization] = "Bearer $it" }
-        settings.headers.forEach { (key, value) -> base[key] = value }
-        callHeaders.forEach { (key, value) -> base[key] = value }
-        return ProviderHeaders.withUserAgentSuffix(base, "ai-sdk/quiverai/$QUIVERAI_VERSION")
-    }
-
-    fun quiverAIOptions(providerOptions: ProviderOptions): JsonObject =
-        providerOptions.toMap()["quiverai"] as? JsonObject ?: JsonObject(emptyMap())
-
-    fun quiverAIOperationPath(operation: String): String =
+    private fun quiverAIOperationPath(operation: String): String =
         if (operation == "generate") "/svgs/generations" else "/svgs/vectorizations"
-
-    fun quiverAIErrorMessage(statusCode: Int, parsed: JsonElement?, raw: String): String {
-        val obj = parsed as? JsonObject
-        val detail = obj?.get("message")?.jsonPrimitive?.contentOrNull ?: raw.ifBlank { "request failed" }
-        return "QuiverAI request failed ($statusCode): $detail"
-    }
 
     private fun JsonObjectBuilder.putAll(values: JsonObject) {
         values.forEach { (key, value) -> put(key, value) }
