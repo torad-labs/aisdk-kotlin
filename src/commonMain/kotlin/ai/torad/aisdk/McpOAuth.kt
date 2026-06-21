@@ -239,7 +239,7 @@ internal object McpOAuthFlow {
         applyOAuthClientAuthentication(
             headers,
             params,
-            authorizationServerUrl,
+            tokenUrl,
             metadata,
             clientInformation,
             addClientAuthentication
@@ -278,7 +278,7 @@ internal object McpOAuthFlow {
         applyOAuthClientAuthentication(
             headers,
             params,
-            authorizationServerUrl,
+            tokenUrl,
             metadata,
             clientInformation,
             addClientAuthentication
