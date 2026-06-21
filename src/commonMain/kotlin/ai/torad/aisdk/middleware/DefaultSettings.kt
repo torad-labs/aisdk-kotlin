@@ -7,10 +7,7 @@ import ai.torad.aisdk.LanguageModelTool
 import ai.torad.aisdk.MiddlewareOperation
 import ai.torad.aisdk.ResponseFormat
 import ai.torad.aisdk.ToolChoice
-import ai.torad.aisdk.JsonOps
 import ai.torad.aisdk.ProviderOptions
-import kotlinx.serialization.json.JsonObject
-import kotlinx.serialization.json.JsonElement
 
 /**
  * Applies default per-call settings to every model invocation. Explicitly
@@ -52,7 +49,7 @@ public fun DefaultSettingsMiddleware(
         tools = params.tools.ifEmpty { tools },
         toolChoice = if (params.toolChoice == ToolChoice.Auto && toolChoice != null) toolChoice else params.toolChoice,
         headers = headers + params.headers,
-        providerOptions = ProviderOptions.Raw(JsonObject(JsonOps.mergeProviderOptions(providerOptions.toMap(), params.providerOptions.toMap()))),
+        providerOptions = providerOptions.mergedWith(params.providerOptions),
         presencePenalty = params.presencePenalty ?: presencePenalty,
         frequencyPenalty = params.frequencyPenalty ?: frequencyPenalty,
         responseFormat = if (params.responseFormat == ResponseFormat.Text) responseFormat else params.responseFormat,

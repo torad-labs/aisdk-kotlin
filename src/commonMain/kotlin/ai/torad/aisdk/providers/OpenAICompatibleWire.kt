@@ -473,12 +473,21 @@ internal object OpenAICompatibleWire {
         return signature?.let { mapOf("thoughtSignature" to JsonPrimitive(it)) }
     }
 
+    private fun JsonObject.deepMergedWith(other: JsonObject): JsonObject {
+        val merged = toMutableMap()
+        for ((key, value) in other) {
+            val prior = merged[key]
+            merged[key] = if (prior is JsonObject && value is JsonObject) prior.deepMergedWith(value) else value
+        }
+        return JsonObject(merged)
+    }
+
     fun openAIProviderOptions(options: Map<String, JsonElement>, providerName: String): JsonObject {
         val keys = listOf("openai-compatible", "openaiCompatible", providerName, toOpenAICamelCase(providerName))
         var merged = JsonObject(emptyMap())
         for (key in keys.distinct()) {
             val obj = options[key] as? JsonObject ?: continue
-            merged = JsonOps.merge(merged, obj)
+            merged = merged.deepMergedWith(obj)
         }
         return merged
     }

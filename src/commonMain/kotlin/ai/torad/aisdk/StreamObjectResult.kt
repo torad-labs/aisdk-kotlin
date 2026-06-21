@@ -174,7 +174,7 @@ public fun <TOutput> StreamObjectResult(
     repairText: ((String) -> String?)? = null,
 ): StreamObjectResult<TOutput> {
     val effectiveResponseFormat =
-        if (responseFormat == ResponseFormat.Text) with(OutputOps) { output.toResponseFormat() } else responseFormat
+        if (responseFormat == ResponseFormat.Text) output.toResponseFormat() else responseFormat
     val inputMessages = buildList {
         if (system != null) add(SystemMessage(system))
         addAll(messages)

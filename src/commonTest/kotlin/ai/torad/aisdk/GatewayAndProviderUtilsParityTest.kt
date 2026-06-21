@@ -213,7 +213,6 @@ class GatewayAndProviderUtilsParityTest {
         assertEquals("mp3", MediaTypes.toExtension("audio/mpeg"))
         assertEquals("archive", MediaTypes.stripFileExtension("archive.tar.gz"))
         assertEquals("https://x.test/a", UrlOps.withoutTrailingSlash("https://x.test/a/"))
-        assertEquals(mapOf("a" to JsonPrimitive(1)), JsonOps.removeUndefinedEntries(mapOf("a" to JsonPrimitive(1), "b" to null)))
         assertEquals("boom", ErrorMessages.of(IllegalStateException("boom")))
     }
 

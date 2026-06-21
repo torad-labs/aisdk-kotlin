@@ -865,11 +865,20 @@ public object AnthropicWire {
         }
     }
 
+    private fun JsonObject.deepMergedWith(other: JsonObject): JsonObject {
+        val merged = toMutableMap()
+        for ((key, value) in other) {
+            val prior = merged[key]
+            merged[key] = if (prior is JsonObject && value is JsonObject) prior.deepMergedWith(value) else value
+        }
+        return JsonObject(merged)
+    }
+
     internal fun anthropicOptions(providerOptions: ProviderOptions, providerName: String): JsonObject {
         val canonical = providerOptions.toMap()["anthropic"] as? JsonObject ?: JsonObject(emptyMap())
         val customName = providerName.substringBefore('.')
         val custom = if (customName != "anthropic") providerOptions.toMap()[customName] as? JsonObject else null
-        return JsonOps.merge(canonical, custom ?: JsonObject(emptyMap()))
+        return canonical.deepMergedWith(custom ?: JsonObject(emptyMap()))
     }
 
     internal fun anthropicCacheControl(metadata: Map<String, JsonElement>?): JsonElement? =

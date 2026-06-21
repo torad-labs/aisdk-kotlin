@@ -42,6 +42,12 @@ public sealed class Output<T> {
     public open val schema: JsonElement by lazy { aiSdkOutputJson.parseToJsonElement(schemaJson) }
     public abstract fun decode(text: String): T
 
+    public fun toResponseFormat(): ResponseFormat = ResponseFormat.Json(
+        schemaName = schemaName,
+        schemaDescription = schemaDescription,
+        schemaJson = runCatching { schema }.getOrNull(),
+    )
+
     /** `Output.object()` in v6, renamed to `obj` because `object` is a Kotlin keyword. */
     public class Obj<T>(
         public val serializer: KSerializer<T>,
@@ -129,7 +135,7 @@ public sealed class Output<T> {
         }.toString()
 
         override fun decode(text: String): T {
-            val value = OutputOps.extractChoiceValue(text)
+            val value = extractChoiceValue(text)
             require(value in encodedOptions) {
                 "Expected one of ${encodedOptions.joinToString(prefix = "[", postfix = "]")}, got `$value`"
             }
@@ -175,6 +181,15 @@ public sealed class Output<T> {
             name: String = "json",
             description: String? = null,
         ): Output<JsonElement> = JsonTree(name, description)
+
+        internal fun extractChoiceValue(text: String): String {
+            val element = aiSdkOutputJson.parseToJsonElement(text)
+            return when (element) {
+                is JsonObject -> element["result"]?.jsonPrimitive?.contentOrNull
+                is JsonPrimitive -> element.contentOrNull
+                else -> null
+            } ?: throw InvalidResponseDataError(element, "Expected a JSON object with a 'result' string")
+        }
     }
 
 }
@@ -219,24 +234,3 @@ public fun OutputJson(
     name: String = "json",
     description: String? = null,
 ): Output<JsonElement> = Output.JsonTree(name, description)
-
-/**
- * File-local helpers for [Output], grouped to avoid loose top-level functions.
- * - [toResponseFormat] is a member-extension; callers use member-import or `with(OutputOps) { ... }`.
- */
-internal object OutputOps {
-    fun Output<*>.toResponseFormat(): ResponseFormat = ResponseFormat.Json(
-        schemaName = schemaName,
-        schemaDescription = schemaDescription,
-        schemaJson = runCatching { schema }.getOrNull(),
-    )
-
-    fun extractChoiceValue(text: String): String {
-        val element = aiSdkOutputJson.parseToJsonElement(text)
-        return when (element) {
-            is JsonObject -> element["result"]?.jsonPrimitive?.contentOrNull
-            is JsonPrimitive -> element.contentOrNull
-            else -> null
-        } ?: throw InvalidResponseDataError(element, "Expected a JSON object with a 'result' string")
-    }
-}

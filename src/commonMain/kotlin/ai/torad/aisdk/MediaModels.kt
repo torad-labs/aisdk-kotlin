@@ -212,7 +212,16 @@ public data class ImageModelUsage(
     val inputTokens: Int? = null,
     val outputTokens: Int? = null,
     val totalTokens: Int? = null,
-)
+) {
+    public companion object {
+        /** Sum image usage across n-batched calls; a field stays null only if every call left it null. */
+        internal fun sum(usages: List<ImageModelUsage>): ImageModelUsage {
+            fun sum(selector: (ImageModelUsage) -> Int?): Int? =
+                usages.mapNotNull(selector).takeIf { it.isNotEmpty() }?.sum()
+            return ImageModelUsage(sum { it.inputTokens }, sum { it.outputTokens }, sum { it.totalTokens })
+        }
+    }
+}
 
 public data class ImageModelResult(
     val images: List<GeneratedFile>,
@@ -234,29 +243,15 @@ public data class GenerateImageResult(
     val image: GeneratedFile get() = images.firstOrNull() ?: throw NoImageGeneratedError()
 }
 
-/** Internal call-support helpers shared by the media-generation entry points. */
-internal object MediaSupport {
-    /** Sum image usage across n-batched calls; a field stays null only if every call left it null. */
-    internal fun sumImageUsage(usages: List<ImageModelUsage>): ImageModelUsage {
-        fun sum(selector: (ImageModelUsage) -> Int?): Int? =
-            usages.mapNotNull(selector).takeIf { it.isNotEmpty() }?.sum()
-        return ImageModelUsage(sum { it.inputTokens }, sum { it.outputTokens }, sum { it.totalTokens })
-    }
-
-    /** Render a CallWarning for the logger seam (upstream's logWarnings). */
-    internal fun formatCallWarning(warning: CallWarning): String =
-        "AI SDK Warning [${warning.type}]: ${warning.message ?: warning.details?.toString().orEmpty()}"
-
-    /** Split [total] into chunks of at most [perChunk] — e.g. (5, 2) → [2, 2, 1]. */
-    internal fun splitCount(total: Int, perChunk: Int): List<Int> {
-        if (perChunk <= 0 || total <= perChunk) return listOf(total)
-        val full = total / perChunk
-        val remainder = total % perChunk
+public object ImageGeneration {
+    /** Split this count into chunks of at most [perChunk] — e.g. (5, 2) → [2, 2, 1]. */
+    private fun Int.splitCount(perChunk: Int): List<Int> {
+        if (perChunk <= 0 || this <= perChunk) return listOf(this)
+        val full = this / perChunk
+        val remainder = this % perChunk
         return List(full) { perChunk } + if (remainder > 0) listOf(remainder) else emptyList()
     }
-}
 
-public object ImageGeneration {
     public suspend fun generateImage(
         model: ImageModel,
         prompt: String,
@@ -279,7 +274,7 @@ public object ImageGeneration {
         fun paramsFor(count: Int) = ImageGenerationParams(
             prompt, count, size, aspectRatio, seed, providerOptions, headers, abortSignal, files, mask,
         )
-        val counts = MediaSupport.splitCount(n, model.maxImagesPerCall?.coerceAtLeast(1) ?: n)
+        val counts = n.splitCount(model.maxImagesPerCall?.coerceAtLeast(1) ?: n)
         val results = if (counts.size == 1) {
             listOf(model.generate(paramsFor(n)))
         } else {
@@ -287,14 +282,14 @@ public object ImageGeneration {
         }
         val images = results.flatMap { it.images }
         if (images.isEmpty()) throw NoImageGeneratedError(responses = results.map { it.response })
-        results.flatMap { it.warnings }.forEach { logger.warn(MediaSupport.formatCallWarning(it)) }
+        results.flatMap { it.warnings }.forEach { logger.warn(it.format()) }
         return GenerateImageResult(
             images = images,
             warnings = results.flatMap { it.warnings },
             response = results.first().response,
             providerMetadata = results.firstNotNullOfOrNull { (it.providerMetadata as? ProviderMetadata.Raw) } ?: ProviderMetadata.None,
             responses = results.map { it.response },
-            usage = MediaSupport.sumImageUsage(results.map { it.usage }),
+            usage = ImageModelUsage.sum(results.map { it.usage }),
         )
     }
 
@@ -438,7 +433,7 @@ public object SpeechGeneration {
                 text, voice, instructions, speed, responseFormat, language, providerOptions, headers, abortSignal,
             ),
         )
-        result.warnings.forEach { logger.warn(MediaSupport.formatCallWarning(it)) }
+        result.warnings.forEach { logger.warn(it.format()) }
         return GenerateSpeechResult(
             audio = result.audio ?: throw NoSpeechGeneratedError(),
             warnings = result.warnings,
@@ -540,7 +535,7 @@ public object Transcription {
         val result = model.transcribe(
             TranscriptionParams(audio, language, prompt, providerOptions, headers, abortSignal),
         )
-        result.warnings.forEach { logger.warn(MediaSupport.formatCallWarning(it)) }
+        result.warnings.forEach { logger.warn(it.format()) }
         return TranscribeResult(
             text = result.text ?: throw NoTranscriptGeneratedError(),
             segments = result.segments,
@@ -618,6 +613,14 @@ public data class GenerateVideoResult(
 }
 
 public object VideoGeneration {
+    /** Split this count into chunks of at most [perChunk] — e.g. (5, 2) → [2, 2, 1]. */
+    private fun Int.splitCount(perChunk: Int): List<Int> {
+        if (perChunk <= 0 || this <= perChunk) return listOf(this)
+        val full = this / perChunk
+        val remainder = this % perChunk
+        return List(full) { perChunk } + if (remainder > 0) listOf(remainder) else emptyList()
+    }
+
     public suspend fun generateVideo(
         model: VideoModel,
         prompt: String,
@@ -651,7 +654,7 @@ public object VideoGeneration {
             resolution = resolution,
         )
         // Split into ceil(n / maxVideosPerCall) concurrent calls when the model is limited.
-        val counts = MediaSupport.splitCount(n, model.maxVideosPerCall?.coerceAtLeast(1) ?: n)
+        val counts = n.splitCount(model.maxVideosPerCall?.coerceAtLeast(1) ?: n)
         val results = if (counts.size == 1) {
             listOf(model.generate(paramsFor(n)))
         } else {
@@ -659,7 +662,7 @@ public object VideoGeneration {
         }
         val videos = results.flatMap { it.videos }
         if (videos.isEmpty()) throw NoVideoGeneratedError(responses = results.map { it.response })
-        results.flatMap { it.warnings }.forEach { logger.warn(MediaSupport.formatCallWarning(it)) }
+        results.flatMap { it.warnings }.forEach { logger.warn(it.format()) }
         return GenerateVideoResult(
             videos = videos,
             warnings = results.flatMap { it.warnings },

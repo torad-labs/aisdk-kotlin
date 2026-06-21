@@ -6,7 +6,6 @@ import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
 import kotlinx.serialization.json.JsonElement
-import kotlinx.serialization.json.JsonObject
 
 public interface EmbeddingModel {
     public val modelId: String
@@ -81,6 +80,11 @@ internal val retryableApiError: (Throwable) -> Boolean = { (it as? APICallError)
 
 public object Embedding {
 
+    private fun <T> List<T>.splitArray(chunkSize: Int): List<List<T>> {
+        require(chunkSize > 0) { "chunkSize must be > 0" }
+        return chunked(chunkSize)
+    }
+
     public suspend fun embed(
         model: EmbeddingModel,
         value: String,
@@ -124,7 +128,7 @@ public object Embedding {
     ): EmbedManyResult<String> {
         require(values.isNotEmpty()) { "embedMany: values must not be empty" }
         val batchSize = maxEmbeddingsPerCall ?: model.maxEmbeddingsPerCall
-        val batches = batchSize?.let { CollectionOps.splitArray(values, it) } ?: listOf(values)
+        val batches = batchSize?.let { values.splitArray(it) } ?: listOf(values)
 
         suspend fun embedBatch(batch: List<String>): EmbeddingModelResult {
             abortSignal.throwIfAborted()
@@ -202,7 +206,7 @@ public fun DefaultEmbeddingSettingsMiddleware(
             context.params.copy(
                 maxEmbeddingsPerCall = context.params.maxEmbeddingsPerCall ?: maxEmbeddingsPerCall,
                 truncate = context.params.truncate ?: truncate,
-                providerOptions = ProviderOptions.Raw(JsonObject(JsonOps.mergeProviderOptions(providerOptions.toMap(), context.params.providerOptions.toMap()))),
+                providerOptions = providerOptions.mergedWith(context.params.providerOptions),
                 headers = headers + context.params.headers,
             ),
         )

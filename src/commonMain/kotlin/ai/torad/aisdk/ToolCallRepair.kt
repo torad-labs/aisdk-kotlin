@@ -38,16 +38,12 @@ public fun <TContext> ModelRepromptRepair(
             .firstOrNull { it.name == failedCall.toolName }
             ?.parametersSchemaJson
             ?: "{}"
-        val correctedJson = ToolCallRepairOps.repromptForJson(
-            model = model,
-            messages = messages,
-            request = RepairRequest(
-                toolName = failedCall.toolName,
-                failedArgs = failedCall.input.toString(),
-                schema = schema,
-                errorMessage = error.message ?: "JSON parse error",
-            ),
-        )
+        val correctedJson = RepairRequest(
+            toolName = failedCall.toolName,
+            failedArgs = failedCall.input.toString(),
+            schema = schema,
+            errorMessage = error.message ?: "JSON parse error",
+        ).reprompt(model, messages)
         correctedJson?.let { json ->
             ContentPart.ToolCall(
                 toolCallId = failedCall.toolCallId,
@@ -65,20 +61,12 @@ internal data class RepairRequest(
     val failedArgs: String,
     val schema: String,
     val errorMessage: String,
-)
-
-/** File-local helpers for the stock re-prompt repair flow, grouped to
- *  keep them off the top level. Only [ModelRepromptRepair] calls these. */
-internal object ToolCallRepairOps {
+) {
     /** Issue a focused re-prompt and parse the response as JSON. Returns
      *  null if the model's reply doesn't parse — single attempt, no
      *  recursion. */
-    suspend fun repromptForJson(
-        model: LanguageModel,
-        messages: List<ModelMessage>,
-        request: RepairRequest,
-    ): JsonElement? {
-        val prompt = buildRepairPrompt(request)
+    suspend fun reprompt(model: LanguageModel, messages: List<ModelMessage>): JsonElement? {
+        val prompt = toPrompt()
         val result = model.generate(
             LanguageModelCallParams(
                 messages = messages + UserMessage(prompt),
@@ -90,16 +78,16 @@ internal object ToolCallRepairOps {
         return runCatching { aiSdkJson.parseToJsonElement(text) }.getOrNull()
     }
 
-    private fun buildRepairPrompt(request: RepairRequest): String = """
-        Your previous call to tool `${request.toolName}` had invalid JSON arguments.
+    fun toPrompt(): String = """
+        Your previous call to tool `$toolName` had invalid JSON arguments.
 
         Failed arguments:
-        ${request.failedArgs}
+        $failedArgs
 
-        Error: ${request.errorMessage}
+        Error: $errorMessage
 
         Tool input schema:
-        ${request.schema}
+        $schema
 
         Reply with ONLY the corrected JSON arguments — no prose, no
         explanation, no markdown code fences. Just the raw JSON object.

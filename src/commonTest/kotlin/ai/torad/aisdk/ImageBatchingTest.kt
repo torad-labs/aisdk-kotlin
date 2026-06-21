@@ -35,11 +35,4 @@ class ImageBatchingTest {
         assertEquals(1, model.calls, "no limit → one call")
         assertEquals(4, result.images.size)
     }
-
-    @Test
-    fun `splitCount chunks correctly`() {
-        assertEquals(listOf(2, 2, 1), MediaSupport.splitCount(5, 2))
-        assertEquals(listOf(3), MediaSupport.splitCount(3, 5))
-        assertEquals(listOf(2, 2), MediaSupport.splitCount(4, 2))
-    }
 }

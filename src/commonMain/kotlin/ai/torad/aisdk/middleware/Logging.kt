@@ -43,13 +43,10 @@ public fun LoggingMiddleware(
     }
 
     override fun wrapStream(context: MiddlewareCallContext): Flow<StreamEvent> =
-        context.doStream(context.params).onEach { event -> LoggingWire.logStreamEvent(logger, tag, event) }
-}
+        context.doStream(context.params).onEach { event -> logStreamEvent(logger, tag, event) }
 
-/** Stream-event routing helpers for [LoggingMiddleware]. */
-internal object LoggingWire {
     /** Per-event routing for [LoggingMiddleware]'s stream path. */
-    fun logStreamEvent(logger: Logger, tag: String, event: StreamEvent) {
+    private fun logStreamEvent(logger: Logger, tag: String, event: StreamEvent) {
         when (event) {
             is StreamEvent.ToolInputStart ->
                 logger.debug("[$tag] tool-open id=${event.id} name=${event.toolName}")

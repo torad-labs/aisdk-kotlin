@@ -1,6 +1,5 @@
 package ai.torad.aisdk
 
-import ai.torad.aisdk.OutputOps.toResponseFormat
 import ai.torad.aisdk.testing.FlowDrain.drainAllItems
 import kotlin.test.Test
 import kotlin.test.assertEquals
