@@ -174,12 +174,6 @@ public data class LanguageModelResponseMetadata(
     val modelId: String? = null,
     val headers: Map<String, String> = emptyMap(),
     val body: JsonElement? = null,
-    /**
-     * The messages produced by this response (assistant + tool messages), for
-     * multi-turn persistence without holding the full conversation list. Empty
-     * unless the caller/provider populates it. Mirrors upstream `response.messages`.
-     */
-    val messages: List<ModelMessage> = emptyList(),
 ) {
     internal fun merge(other: LanguageModelResponseMetadata): LanguageModelResponseMetadata =
         LanguageModelResponseMetadata(

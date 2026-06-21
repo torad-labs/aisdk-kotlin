@@ -645,12 +645,6 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
                 return@flow
             }
             emit(StreamEvent.StepStart(stepNumber))
-            val stepStartEvent = OnStepStartEvent(stepNumber, messages.toList())
-            dispatcher.runHook(stepNumber, feed) {
-                onStepStart?.invoke(stepStartEvent)
-                hooks?.onStepStart?.invoke(stepStartEvent)
-            }
-            dispatcher.fireTelemetry(feed) { onStepStart(it, stepStartEvent) }
 
             val stepSettings: StepSettings<TContext> = prepareStep?.let { hook ->
                 try {
@@ -713,6 +707,21 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
                     },
             )
 
+            // Fire onStepStart AFTER prepareStep + callParams so the event carries the
+            // fully-resolved request (post prepareStep overrides) and the accumulated
+            // priorSteps — both now required params, not silently-empty defaults.
+            val stepStartEvent = OnStepStartEvent(
+                stepNumber = stepNumber,
+                messages = messages.toList(),
+                request = callParams,
+                priorSteps = completedSteps.toList(),
+            )
+            dispatcher.runHook(stepNumber, feed) {
+                onStepStart?.invoke(stepStartEvent)
+                hooks?.onStepStart?.invoke(stepStartEvent)
+            }
+            dispatcher.fireTelemetry(feed) { onStepStart(it, stepStartEvent) }
+
             val stepText = StringBuilder()
             val stepReasoning = StringBuilder()
             val stepToolCalls = mutableListOf<ContentPart.ToolCall>()
@@ -725,6 +734,9 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
             var stepWarnings: List<CallWarning> = emptyList()
             var stepProviderMetadata: ProviderMetadata = ProviderMetadata.None
             var stepResponse = LanguageModelResponseMetadata()
+            // Captured from streamResult() so StepResult.request carries the real
+            // serialized request body (providers populate it only on streamResult()).
+            var stepRequest = LanguageModelRequestMetadata()
             var stepRawFinishReason: String? = null
             // gap #18: a streaming tool-input id -> toolName, so ToolInputDelta
             // (which carries only the streaming id) can route to the right
@@ -755,7 +767,9 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
                 onModelCallStart(it, TelemetryModelCallEvent(stepNumber, stepModel.modelId, callParams))
             }
             try {
-                stepModel.stream(callParams).collect { event ->
+                val stepStreamResult = stepModel.streamResult(callParams)
+                stepRequest = stepStreamResult.request
+                stepStreamResult.stream.collect { event ->
                     abortSignal.throwIfAborted()
                     dispatcher.runHook(stepNumber, feed) {
                         onChunk?.invoke(OnChunkEvent(event, stepNumber))
@@ -1140,7 +1154,7 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
                 finishReason = effectiveFinishReason,
                 usage = stepUsage,
                 warnings = stepWarnings,
-                request = LanguageModelRequestMetadata(),
+                request = stepRequest,
                 response = stepResponse,
                 providerMetadata = stepProviderMetadata,
                 rawFinishReason = stepRawFinishReason,
