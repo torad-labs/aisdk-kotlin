@@ -62,9 +62,14 @@ no single owner. (FacadeHttp in the same file is separate — untouched.)
   (from re-homing `GatewayWire.gatewayTransportMissing` onto the `GatewayTransport` interface's
   companion). The OpenAICompatible `fromOpenAI` factories added ZERO ABI (their core types are
   `@Serializable`, so the companions already existed; the new members are `internal`).
-- **Per the user's instruction, ABI regen is held until the P3 FINAL gate** (not regenerated per
-  step). This red is known, traced, and expected — surfaced here rather than silently accepted.
-  Resolution at P3 end: a single `updateKotlinAbi` for the cumulative surface.
+- **Per the user's instruction (re-confirmed at steps 4 and 5), ABI regen is held until the P3
+  FINAL gate** — not regenerated per step. The cumulative public delta vs the last regen (`80ac799`)
+  is exactly ONE item, `GatewayTransport$Companion` (from p3-3); steps 4-5 add no public surface
+  (all re-homed members are internal/private). Known, traced, surfaced — not silently accepted.
+  Resolution at P3 end: a single `updateKotlinAbi`.
+- The real ABI task is `checkLegacyAbi` (alias `checkKotlinAbi`); there is no `apiCheck` task.
+  ABI checks are NOT run per step (the deferral is explicit), to keep the per-step gate to
+  compileKotlinJvm + jvmTest + objects-gone + no-camelcase.
 
 ## Remaining steps
 
