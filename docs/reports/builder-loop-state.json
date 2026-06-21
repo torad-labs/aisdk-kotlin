@@ -358,7 +358,7 @@
   "xray_fix": {
     "source": "docs/reports/pipeline-xray.md (14 confirmed + 7 low)",
     "decision": "address root cause structurally first (Opus leverage), then remaining findings",
-    "current_step": 3,
+    "current_step": "done",
     "steps": [
       {
         "n": 1,
@@ -377,7 +377,8 @@
       }
     ],
     "gate": "per step: compile+jvmTest green + finding addressed + no new hook violation; FINAL: full check + updateKotlinAbi + push",
-    "step2_done": "committed 7f44dbe+8b48a35: wire round-trip, ToolApprovalRequest signature (security), gateway isError, Source.sourceId, isError default, approvalId; ABI regen; gate+check green"
+    "step2_done": "committed 7f44dbe+8b48a35: wire round-trip, ToolApprovalRequest signature (security), gateway isError, Source.sourceId, isError default, approvalId; ABI regen; gate+check green",
+    "completed": true
   },
   "agent_event_redesign": {
     "spec": "docs/reports/agent-event-redesign.md",
