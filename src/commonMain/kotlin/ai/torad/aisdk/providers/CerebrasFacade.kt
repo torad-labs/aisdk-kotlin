@@ -2,7 +2,6 @@ package ai.torad.aisdk.providers
 
 import ai.torad.aisdk.*
 import ai.torad.aisdk.providers.CerebrasWire.toCompatible
-import ai.torad.aisdk.providers.FacadeSupport.compatibleSettings
 import io.ktor.client.HttpClient
 import kotlinx.serialization.Serializable
 
@@ -52,5 +51,5 @@ internal object CerebrasWire {
         version: String,
         capabilities: ProviderCapabilities = ProviderCapabilities(),
     ): OpenAICompatibleProviderSettings =
-        compatibleSettings(name, version, baseURL, apiKey, headers, capabilities)
+        OpenAICompatibleProviderSettings.forFacade(name, version, baseURL, apiKey, headers, capabilities)
 }

@@ -2,11 +2,9 @@ package ai.torad.aisdk.providers
 
 import ai.torad.aisdk.*
 import ai.torad.aisdk.providers.DeepSeekWire.toCompatible
-import ai.torad.aisdk.providers.FacadeSupport.compatibleSettings
 import ai.torad.aisdk.providers.FacadeSupport.intField
 import ai.torad.aisdk.providers.FacadeSupport.nestedIntField
 import ai.torad.aisdk.providers.FacadeSupport.textFromContentParts
-import ai.torad.aisdk.providers.FacadeSupport.usageFromParts
 import io.ktor.client.HttpClient
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonArray
@@ -63,7 +61,7 @@ internal object DeepSeekWire {
         version: String,
         capabilities: ProviderCapabilities = ProviderCapabilities(),
     ): OpenAICompatibleProviderSettings =
-        compatibleSettings(
+        OpenAICompatibleProviderSettings.forFacade(
             name = name,
             version = version,
             baseURL = baseURL,
@@ -147,6 +145,6 @@ internal object DeepSeekWire {
         val completionTokens = obj.intField("completion_tokens")
         val cacheRead = obj.intField("prompt_cache_hit_tokens").coerceAtMost(promptTokens)
         val reasoning = obj.nestedIntField("completion_tokens_details", "reasoning_tokens").coerceAtMost(completionTokens)
-        return usageFromParts(promptTokens, completionTokens, cacheRead, reasoning, obj)
+        return Usage.fromParts(promptTokens, completionTokens, cacheRead, reasoning, obj)
     }
 }

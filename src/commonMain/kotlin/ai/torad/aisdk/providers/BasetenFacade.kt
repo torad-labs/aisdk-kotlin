@@ -2,7 +2,6 @@ package ai.torad.aisdk.providers
 
 import ai.torad.aisdk.*
 import ai.torad.aisdk.providers.BasetenWire.toCompatible
-import ai.torad.aisdk.providers.FacadeSupport.compatibleSettings
 import io.ktor.client.HttpClient
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonElement
@@ -93,5 +92,5 @@ internal object BasetenWire {
         baseURL: String,
         capabilities: ProviderCapabilities = ProviderCapabilities(),
     ): OpenAICompatibleProviderSettings =
-        compatibleSettings(name, version, baseURL, apiKey, headers, capabilities)
+        OpenAICompatibleProviderSettings.forFacade(name, version, baseURL, apiKey, headers, capabilities)
 }

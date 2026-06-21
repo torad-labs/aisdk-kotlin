@@ -1,25 +1,6 @@
 package ai.torad.aisdk.providers
 
 import ai.torad.aisdk.*
-import ai.torad.aisdk.providers.OpenAICompatibleWire.applyChatResponseTransform
-import ai.torad.aisdk.providers.OpenAICompatibleWire.audioMediaType
-import ai.torad.aisdk.providers.OpenAICompatibleWire.chatResultFromJson
-import ai.torad.aisdk.providers.OpenAICompatibleWire.completionResultFromJson
-import ai.torad.aisdk.providers.OpenAICompatibleWire.openAIChatMessagesJson
-import ai.torad.aisdk.providers.OpenAICompatibleWire.openAICompatibleImageUsage
-import ai.torad.aisdk.providers.OpenAICompatibleWire.openAICompatibleInBandError
-import ai.torad.aisdk.providers.OpenAICompatibleWire.openAICompletionPrompt
-import ai.torad.aisdk.providers.OpenAICompatibleWire.openAIFinishReason
-import ai.torad.aisdk.providers.OpenAICompatibleWire.openAIFormValue
-import ai.torad.aisdk.providers.OpenAICompatibleWire.openAIProviderMetadata
-import ai.torad.aisdk.providers.OpenAICompatibleWire.openAIProviderOptions
-import ai.torad.aisdk.providers.OpenAICompatibleWire.openAIResponseFormat
-import ai.torad.aisdk.providers.OpenAICompatibleWire.openAIToolChoiceJson
-import ai.torad.aisdk.providers.OpenAICompatibleWire.openAIToolJson
-import ai.torad.aisdk.providers.OpenAICompatibleWire.openAIUsage
-import ai.torad.aisdk.providers.OpenAICompatibleWire.putProviderOptions
-import ai.torad.aisdk.providers.OpenAICompatibleWire.streamResponseMetadata
-import ai.torad.aisdk.providers.OpenAICompatibleWire.toApiCallError
 import io.ktor.client.HttpClient
 import io.ktor.client.request.forms.MultiPartFormDataContent
 import io.ktor.client.request.forms.formData
@@ -45,6 +26,26 @@ import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 
 internal const val OPENAI_COMPATIBLE_MAX_IMAGES_PER_CALL: Int = 10
+
+internal val openAIChatReservedOptions = setOf(
+    "user",
+    "strictJsonSchema",
+    "reasoningEffort",
+    "textVerbosity",
+)
+
+internal val openAICompletionReservedOptions = setOf(
+    "user",
+)
+
+internal val openAICompatibleImageEditReservedOptions = setOf(
+    "model",
+    "prompt",
+    "image",
+    "mask",
+    "n",
+    "size",
+)
 
 internal data class PreparedOpenAIRequest(
     val body: JsonObject,
@@ -230,12 +231,12 @@ internal class OpenAICompatibleCompletionLanguageModel(
                 is ParseResult.Success -> {
                     val value = event.value.jsonObject
                     if (!emittedResponseMetadata) {
-                        streamResponseMetadata(value)?.let {
+                        StreamEvent.ResponseMetadata.fromOpenAI(value)?.let {
                             emit(it)
                             emittedResponseMetadata = true
                         }
                     }
-                    value["usage"]?.let { usage = openAIUsage(it) }
+                    value["usage"]?.let { usage = Usage.fromOpenAI(it) }
                     val choice = value["choices"]?.jsonArray?.firstOrNull()?.jsonObject
                     val text = choice?.get("text")?.jsonPrimitive?.contentOrNull
                     if (!text.isNullOrEmpty()) {
@@ -246,7 +247,7 @@ internal class OpenAICompatibleCompletionLanguageModel(
                         emit(StreamEvent.TextDelta("txt-0", text))
                     }
                     choice?.get("finish_reason")?.jsonPrimitive?.contentOrNull?.let {
-                        finish = openAIFinishReason(it)
+                        finish = FinishReason.fromOpenAI(it)
                         rawFinish = it
                     }
                 }
@@ -362,7 +363,7 @@ internal class OpenAICompatibleImageModel(
             warnings = warnings,
             response = LanguageModelResponseMetadata(modelId = modelId, headers = response.headers, body = response.value),
             providerMetadata = openAIProviderMetadata(responseObject["providerMetadata"], settings.name).let { m -> if (m.isEmpty()) ProviderMetadata.None else ProviderMetadata.Raw(JsonObject(m)) },
-            usage = openAICompatibleImageUsage(responseObject["usage"]),
+            usage = ImageModelUsage.fromOpenAI(responseObject["usage"]),
         )
     }
 

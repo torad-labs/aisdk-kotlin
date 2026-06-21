@@ -3,6 +3,10 @@ package ai.torad.aisdk
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
+import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.intOrNull
+import kotlinx.serialization.json.jsonPrimitive
 
 public data class GeneratedFile(
     val mediaType: String,
@@ -219,6 +223,16 @@ public data class ImageModelUsage(
             fun sum(selector: (ImageModelUsage) -> Int?): Int? =
                 usages.mapNotNull(selector).takeIf { it.isNotEmpty() }?.sum()
             return ImageModelUsage(sum { it.inputTokens }, sum { it.outputTokens }, sum { it.totalTokens })
+        }
+
+        /** Image usage from an OpenAI-compatible image response `usage` object. */
+        internal fun fromOpenAI(value: JsonElement?): ImageModelUsage {
+            val obj = value as? JsonObject ?: return ImageModelUsage()
+            return ImageModelUsage(
+                inputTokens = obj["input_tokens"]?.jsonPrimitive?.intOrNull,
+                outputTokens = obj["output_tokens"]?.jsonPrimitive?.intOrNull,
+                totalTokens = obj["total_tokens"]?.jsonPrimitive?.intOrNull,
+            )
         }
     }
 }

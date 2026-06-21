@@ -5,7 +5,6 @@ import ai.torad.aisdk.providers.FacadeHttp.postFacadeJson
 import ai.torad.aisdk.providers.FacadeHttp.providerFacadeHeaders
 import ai.torad.aisdk.providers.FacadeHttp.providerSpecificOptions
 import ai.torad.aisdk.providers.FacadeHttp.putProviderSpecificOptions
-import ai.torad.aisdk.providers.FacadeSupport.compatibleSettings
 import ai.torad.aisdk.providers.TogetherAIWire.toCompatible
 import ai.torad.aisdk.providers.TogetherAIWire.togetherAIUsage
 import io.ktor.client.HttpClient
@@ -187,7 +186,7 @@ internal object TogetherAIWire {
         version: String,
         capabilities: ProviderCapabilities = ProviderCapabilities(),
     ): OpenAICompatibleProviderSettings =
-        compatibleSettings(name, version, baseURL, apiKey, headers, capabilities)
+        OpenAICompatibleProviderSettings.forFacade(name, version, baseURL, apiKey, headers, capabilities)
 
     fun togetherAIUsage(value: JsonElement?): Usage {
         val obj = value as? JsonObject ?: return Usage()
