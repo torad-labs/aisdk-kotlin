@@ -390,7 +390,11 @@
     "decision": "full: sealed AgentEvent + Flow<AgentEvent>, typed payloads (no Any?), StreamEvent sealed class, Telemetry as collector",
     "enforcement": "activate disabled_no-flat-lifecycle-event.yaml (rename) IN THE SAME COMMIT; runs in Claude hook + ci-gate",
     "sequencing": "AFTER FIX-X (steps 2-3 touch Lifecycle/Streaming/Telemetry \u2014 no concurrent writers)",
-    "status": "queued"
+    "status": "in-progress",
+    "step1_done": "committed 418747a: sealed AgentEvent (typed subtypes, generics Started<TContext>/Finished<TContext,TOutput> \u2014 kills Any?), StreamEvent sealed interface->class, no-flat-lifecycle-event.yaml activated. NOTE: left commonTest red (consumers/tests not yet migrated) \u2014 main-only green per the step-1 brief.",
+    "step2_status": "IN PROGRESS. Builder first made everything compile by RETYPING the AgentCallHooks 9-nullable-callback bag with AgentEvent subtypes (615 tests green) \u2014 but that KEPT the nullable bag + no events(): Flow, which is OFF-SPEC (user chose full redesign; violates no-nullable-bags + Flow-first tenets). Orchestrator flagged; builder ACKNOWLEDGED and is now doing it right: events(): Flow<AgentEvent> as THE public API, AgentCallHooks -> internal engine bridge, remove public hooks param from generate()/stream(), migrate consumers to events().collect{when}.",
+    "open_design_point": "events() return type given generic subtypes: (a) Flow<AgentEvent> raw (star-projected subtypes) vs (b) AgentEvent<TContext,TOutput> generic + Flow<AgentEvent<TContext,TOutput>> (fully typed, no erasure \u2014 spec-preferred). Builder to decide or ping for a ruling.",
+    "sec10_note": "Transient compile-red (ParallelToolExecutionTest, builder's in-flight step-2) observed + driven to green (615 tests, 0 fail verified) before proceeding. Branch tip red is LOCAL-ONLY (origin at c6f8d1c green); cron gates push on full check green."
   },
   "structured_object_integration": {
     "spec": "docs/reports/pipeline-xray.md + StructuredObjectApi.kt",
