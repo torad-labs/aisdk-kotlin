@@ -98,7 +98,7 @@ private class HumeSpeechModel(
                 ),
             )
             put("format", buildJsonObject { put("type", JsonPrimitive(format)) })
-            humeOptions(params.providerOptions)["context"]?.jsonObject?.let { context ->
+            (humeOptions(params.providerOptions)["context"] as? JsonObject)?.let { context ->
                 put("context", humeContext(context))
             }
         }
@@ -151,7 +151,7 @@ private class HumeSpeechModel(
                 put(
                     "utterances",
                     JsonArray(
-                        context["utterances"]?.jsonArray.orEmpty().map { item ->
+                        (context["utterances"] as? JsonArray).orEmpty().map { item ->
                             val utterance = item.jsonObject
                             buildJsonObject {
                                 utterance["text"]?.let { put("text", it) }
