@@ -179,4 +179,55 @@ class AgentSessionTest {
         assertEquals(AgentSessionStatus.Ready, session.state.value.status)
         assertEquals("call2", session.state.value.text)
     }
+
+    @Test
+    fun `non-streaming submit settles Cancelled when aborted via abortSignal`() = runTest {
+        val gate = CompletableDeferred<Unit>()
+        // A provider that honours the abort by RETURNING a (partial) result rather
+        // than throwing CancellationException: generate() parks until released, then
+        // emits a normal Ready-shaped result. The session must still settle Cancelled.
+        val agent = object : Agent<Unit, String> {
+            override val tools = ToolSet<Unit>()
+
+            override fun generate(
+                prompt: String?,
+                messages: List<ModelMessage>,
+                options: Unit?,
+                abortSignal: AbortSignal,
+            ): Flow<GenerateResult<String>> = flow {
+                gate.await()
+                emit(
+                    GenerateResult(
+                        output = "done",
+                        text = "done",
+                        steps = emptyList(),
+                        finishReason = FinishReason.Stop,
+                        usage = Usage.of(promptTokens = 1, completionTokens = 1),
+                        messages = messages,
+                    ),
+                )
+            }
+
+            override fun stream(
+                prompt: String?,
+                messages: List<ModelMessage>,
+                options: Unit?,
+                abortSignal: AbortSignal,
+            ): Flow<StreamEvent> = flow {}
+        }
+        val session = agent.session(this)
+
+        val controller = AbortController()
+        val job = session.submit(prompt = "x", abortSignal = controller.signal)
+        runCurrent() // job starts; generate() parks at the gate
+        assertEquals(AgentSessionStatus.Running, session.state.value.status)
+
+        controller.abort() // external signal fires; the in-flight turn is aborted
+        gate.complete(Unit) // generate() now returns its (partial) result
+        job.join()
+
+        // The returned result must NOT be committed as Ready — the abort wins,
+        // mirroring submitStreaming's StreamEvent.Abort handling.
+        assertEquals(AgentSessionStatus.Cancelled, session.state.value.status)
+    }
 }
