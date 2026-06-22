@@ -181,7 +181,7 @@ private class KlingAIVideoModel(
     ): VideoModelResult {
         val videos = ((data["task_result"] as? JsonObject)?.get("videos") as? JsonArray).orEmpty()
         val generated = videos.mapNotNull { item ->
-            val obj = item.jsonObject
+            val obj = item as? JsonObject ?: return@mapNotNull null
             val url = (obj["url"] as? JsonPrimitive)?.contentOrNull ?: return@mapNotNull null
             GeneratedFile(
                 mediaType = "video/mp4",
@@ -198,7 +198,7 @@ private class KlingAIVideoModel(
             providerMetadata = ProviderMetadata.Raw(JsonObject(mapOf(
                 "klingai" to buildJsonObject {
                     put("taskId", JsonPrimitive(taskId))
-                    put("videos", JsonArray(videos.map { klingAIVideoMetadata(it.jsonObject) }))
+                    put("videos", JsonArray(videos.mapNotNull { (it as? JsonObject)?.let(::klingAIVideoMetadata) }))
                 },
             ))),
         )

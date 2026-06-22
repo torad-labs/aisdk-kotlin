@@ -416,12 +416,13 @@ private class AlibabaEmbeddingModel(
         )
         val value = response.value.jsonObject
         val items = ((value["output"] as? JsonObject)?.get("embeddings") as? JsonArray).orEmpty()
-            .sortedBy { (it.jsonObject["text_index"] as? JsonPrimitive)?.intOrNull ?: Int.MAX_VALUE }
+            .sortedBy { ((it as? JsonObject)?.get("text_index") as? JsonPrimitive)?.intOrNull ?: Int.MAX_VALUE }
         return EmbeddingModelResult(
             embeddings = items.map { item ->
                 // Decode each element strictly (like Cohere/Google) — the old `?: 0f` silently
                 // substituted 0f for a null/non-numeric element, corrupting the embedding vector.
-                (item.jsonObject["embedding"] as? JsonArray).orEmpty().map { WireDecoder.embeddingFloat(it, "alibaba") }
+                val row = ((item as? JsonObject)?.get("embedding") as? JsonArray).orEmpty()
+                row.map { WireDecoder.embeddingFloat(it, "alibaba") }
             },
             usage = EmbeddingUsage(
                 tokens = ((value["usage"] as? JsonObject)?.get("total_tokens") as? JsonPrimitive)?.intOrNull ?: 0,
