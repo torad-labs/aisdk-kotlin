@@ -153,7 +153,11 @@ internal object BedrockHttp {
         } else {
             return headersWithUserAgent
         }
-        val region = credentials.region ?: settings.region ?: "us-east-1"
+        // Derive the signing region from the endpoint host so every Bedrock URL
+        // (e.g. bedrock-runtime.us-east-1 vs bedrock-agent-runtime.us-west-2 for
+        // rerank) is signed for the region it actually targets. Falls back to the
+        // configured region for custom/proxy hosts that don't follow the AWS shape.
+        val region = regionFromAwsHost(url) ?: credentials.region ?: settings.region ?: "us-east-1"
         return AwsSigV4.awsSigV4SignedHeaders(method = "POST",
         url = url,
         service = service,
@@ -194,4 +198,24 @@ internal object BedrockHttp {
 
     fun headerValue(headers: Map<String, String>, name: String): String? =
         headers.entries.firstOrNull { it.key.equals(name, ignoreCase = true) }?.value
+
+    /**
+     * Extracts the AWS region from a standard endpoint host of the form
+     * `<service>.<region>.amazonaws.com` or `<service>.<region>.api.aws`
+     * (the region is always the second dot-separated label, and both suffixes
+     * are two labels, so a valid host has at least [MIN_AWS_HOST_LABELS]). Returns
+     * null for custom/proxy hosts that don't match, so the caller falls back to
+     * the configured region.
+     */
+    private fun regionFromAwsHost(url: String): String? {
+        val host = url.substringAfter("://", url)
+            .substringBefore('/').substringBefore('?').substringAfter('@').lowercase()
+        val labels = host.split('.')
+        val isStandardAwsHost = host.endsWith(".amazonaws.com") || host.endsWith(".api.aws")
+        return labels.getOrNull(1)
+            ?.takeIf { isStandardAwsHost && it.isNotEmpty() && labels.size >= MIN_AWS_HOST_LABELS }
+    }
+
+    // service.region.<2-label suffix>, e.g. bedrock-runtime.us-east-1.amazonaws.com
+    private const val MIN_AWS_HOST_LABELS = 4
 }
