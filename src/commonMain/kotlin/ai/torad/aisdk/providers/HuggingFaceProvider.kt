@@ -52,10 +52,10 @@ public data class HuggingFaceProviderSettings(
     internal fun huggingFaceUsage(element: JsonElement?): Usage {
         val obj = element as? JsonObject ?: return Usage()
         val inputTokens = (obj["input_tokens"] as? JsonPrimitive)?.intOrNull ?: 0
-        val cachedTokens = ((obj["input_tokens_details"]?.jsonObject?.get("cached_tokens") as? JsonPrimitive)?.intOrNull ?: 0)
+        val cachedTokens = (((obj["input_tokens_details"] as? JsonObject)?.get("cached_tokens") as? JsonPrimitive)?.intOrNull ?: 0)
             .coerceIn(0, inputTokens)
         val outputTokens = (obj["output_tokens"] as? JsonPrimitive)?.intOrNull ?: 0
-        val reasoningTokens = ((obj["output_tokens_details"]?.jsonObject?.get("reasoning_tokens") as? JsonPrimitive)?.intOrNull ?: 0)
+        val reasoningTokens = (((obj["output_tokens_details"] as? JsonObject)?.get("reasoning_tokens") as? JsonPrimitive)?.intOrNull ?: 0)
             .coerceAtLeast(0)
         val outputTotal = if (reasoningTokens > outputTokens) outputTokens + reasoningTokens else outputTokens
         return Usage(
@@ -354,7 +354,7 @@ private class HuggingFaceResponsesLanguageModel(
             }
         }
 
-        val reasonElement = response["incomplete_details"]?.jsonObject?.get("reason")
+        val reasonElement = (response["incomplete_details"] as? JsonObject)?.get("reason")
         val incompleteReason = (reasonElement as? JsonPrimitive)?.contentOrNull
         val text = content.filterIsInstance<ContentPart.Text>().joinToString("") { it.text }
         val responseId = (response["id"] as? JsonPrimitive)?.contentOrNull
@@ -643,7 +643,7 @@ private class HuggingFaceResponsesStreamState(
         val events = mutableListOf<StreamEvent>()
         when (type) {
             "response.created" -> {
-                val response = obj["response"]?.jsonObject ?: return emptyList()
+                val response = (obj["response"] as? JsonObject) ?: return emptyList()
                 responseId = (response["id"] as? JsonPrimitive)?.contentOrNull
                 events += StreamEvent.ResponseMetadata(
                     id = responseId,
@@ -765,16 +765,16 @@ private class HuggingFaceResponsesStreamState(
             "response.completed",
             "response.incomplete",
             -> {
-                val response = obj["response"]?.jsonObject ?: JsonObject(emptyMap())
+                val response = (obj["response"] as? JsonObject) ?: JsonObject(emptyMap())
                 responseId = (response["id"] as? JsonPrimitive)?.contentOrNull ?: responseId
-                val reasonElement = response["incomplete_details"]?.jsonObject?.get("reason")
+                val reasonElement = (response["incomplete_details"] as? JsonObject)?.get("reason")
                 val reason = (reasonElement as? JsonPrimitive)?.contentOrNull ?: "stop"
                 rawFinishReason = reason
                 finishReason = settings.mapHuggingFaceFinishReason(reason)
                 usage = settings.huggingFaceUsage(response["usage"])
             }
             "response.failed" -> {
-                val response = obj["response"]?.jsonObject ?: JsonObject(emptyMap())
+                val response = (obj["response"] as? JsonObject) ?: JsonObject(emptyMap())
                 responseId = (response["id"] as? JsonPrimitive)?.contentOrNull ?: responseId
                 finishReason = FinishReason.Error
                 usage = settings.huggingFaceUsage(response["usage"])
