@@ -1034,7 +1034,13 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
                     toolsToExecute.add(call)
                 }
             }
-            val hasLocalToolWork = toolsRequiringApproval.isNotEmpty() || toolsToExecute.isNotEmpty()
+            // A categorization failure (NoSuchTool / undecodable args / repair failure) writes a
+            // tool-error result but reaches neither list; count it as work so the loop re-invokes
+            // the model to react — symmetric with a tool that decodes then THROWS (which already
+            // continues). Otherwise a single malformed tool call silently ends the conversation.
+            val hasLocalToolWork = toolsRequiringApproval.isNotEmpty() ||
+                toolsToExecute.isNotEmpty() ||
+                deferredToolErrorMessages.isNotEmpty()
 
             // Emit approval requests + add to assistant content. Loop ends after this step.
             // With an approval secret configured, each request is signed at issuance over its
