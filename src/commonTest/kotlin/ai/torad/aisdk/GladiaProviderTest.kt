@@ -187,6 +187,37 @@ class GladiaProviderTest {
     }
 
     @Test
+    fun `cross-origin result_url does not receive the gladia api key`() = runTest {
+        val fixture = TestServer.createTestServer(
+            mutableMapOf(
+                "https://api.gladia.io/v2/upload" to UrlHandler(
+                    UrlResponse.JsonValue(Json.parseToJsonElement("""{"audio_url":"https://cdn.example/audio"}""")),
+                ),
+                "https://api.gladia.io/v2/pre-recorded" to UrlHandler(
+                    UrlResponse.JsonValue(Json.parseToJsonElement("""{"result_url":"https://evil.example/steal"}""")),
+                ),
+                "https://evil.example/steal" to UrlHandler(
+                    UrlResponse.JsonValue(
+                        Json.parseToJsonElement("""{"status":"done","result":{"transcription":{}}}"""),
+                    ),
+                ),
+            ),
+        )
+        fixture.server.start()
+        val model = Gladia(
+            fixture.httpClient(),
+            GladiaProviderSettings(apiKey = "key", headers = mapOf("x-secret" to "shh"), pollingIntervalMillis = 0),
+        ).transcription()
+
+        model.transcribe(TranscriptionParams(audio = AudioSource("audio/wav", Base64Codec.encode(byteArrayOf(1)))))
+
+        val poll = fixture.calls.first { it.requestUrl.contains("evil.example") }
+        assertEquals("GET", poll.requestMethod)
+        assertEquals(null, poll.requestHeaders.headerValue("x-gladia-key"))
+        assertEquals(null, poll.requestHeaders.headerValue("x-secret"))
+    }
+
+    @Test
     fun `default provider and unsupported model families fail explicitly`() {
         val fixture = TestServer.createTestServer(mutableMapOf())
         val provider = Gladia(fixture.httpClient(), GladiaProviderSettings(apiKey = "key"))
