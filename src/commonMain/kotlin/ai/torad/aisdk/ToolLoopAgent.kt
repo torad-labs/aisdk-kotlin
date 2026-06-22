@@ -5,21 +5,23 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.FlowCollector
-import kotlinx.coroutines.flow.channelFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.channelFlow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
+import kotlinx.coroutines.withContext
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.JsonElement
@@ -1082,6 +1084,9 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
             val promptSnapshot = messages.toList()
             val permits = Semaphore(maxParallelToolCalls.coerceAtLeast(1))
             val parentOut: FlowCollector<StreamEvent> = this
+            // Set when any child unwinds with AbortError (its terminal Aborted marker reaches the
+            // collector). Checked after the scope to surface ONE clean Abort for the step.
+            var sawAbort = false
             coroutineScope {
                 val signals = Channel<ParallelToolSignal>(Channel.BUFFERED)
                 toolsToExecute.forEachIndexed { index, call ->
@@ -1093,53 +1098,66 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
                             )
                             return@launch
                         }
-                        permits.withPermit {
-                            val progressOut = ChannelToolEventCollector(signals)
-                            dispatcher.runHook(stepNumber, feed, hooks) {
-                                val startEvent = AgentEvent.ToolCallStarted(
-                                    call.toolCallId,
-                                    call.toolName,
-                                    call.input,
-                                    stepNumber,
-                                    promptSnapshot,
-                                )
-                                hooks?.experimental_onToolCallStart?.invoke(startEvent)
-                            }
-                            val result = executeTool(
-                                out = progressOut,
-                                toolDef = toolDef,
-                                call = call,
-                                options = activeContext,
-                                abortSignal = abortSignal,
-                                stepNumber = stepNumber,
-                                messages = promptSnapshot,
-                                hooks = hooks,
-                                feed = feed,
-                                // Reuse the (tool, input) already resolved + repaired during the
-                                // approval-categorization pass — don't decode/repair a second time.
-                                preResolved = resolvedForExecution[call.toolCallId],
-                            )
-                            dispatcher.runHook(stepNumber, feed, hooks) {
-                                val finishEvent = AgentEvent.ToolCallFinished(
-                                    toolCallId = call.toolCallId,
-                                    toolName = call.toolName,
-                                    outcome = when (result) {
-                                        is ToolExecutionResult.Success ->
-                                            AgentEvent.ToolCallFinished.Outcome.Success(result.outputJson)
-                                        is ToolExecutionResult.Failure ->
-                                            AgentEvent.ToolCallFinished.Outcome.Failure(
-                                                result.error.message ?: "tool failed",
-                                            )
-                                    },
+                        try {
+                            permits.withPermit {
+                                val progressOut = ChannelToolEventCollector(signals)
+                                dispatcher.runHook(stepNumber, feed, hooks) {
+                                    val startEvent = AgentEvent.ToolCallStarted(
+                                        call.toolCallId,
+                                        call.toolName,
+                                        call.input,
+                                        stepNumber,
+                                        promptSnapshot,
+                                    )
+                                    hooks?.experimental_onToolCallStart?.invoke(startEvent)
+                                }
+                                val result = executeTool(
+                                    out = progressOut,
+                                    toolDef = toolDef,
+                                    call = call,
+                                    options = activeContext,
+                                    abortSignal = abortSignal,
                                     stepNumber = stepNumber,
+                                    messages = promptSnapshot,
+                                    hooks = hooks,
+                                    feed = feed,
+                                    // Reuse the (tool, input) already resolved + repaired during the
+                                    // approval-categorization pass — don't decode/repair a second time.
+                                    preResolved = resolvedForExecution[call.toolCallId],
                                 )
-                                hooks?.experimental_onToolCallFinish?.invoke(finishEvent)
+                                dispatcher.runHook(stepNumber, feed, hooks) {
+                                    val finishEvent = AgentEvent.ToolCallFinished(
+                                        toolCallId = call.toolCallId,
+                                        toolName = call.toolName,
+                                        outcome = when (result) {
+                                            is ToolExecutionResult.Success ->
+                                                AgentEvent.ToolCallFinished.Outcome.Success(result.outputJson)
+                                            is ToolExecutionResult.Failure ->
+                                                AgentEvent.ToolCallFinished.Outcome.Failure(
+                                                    result.error.message ?: "tool failed",
+                                                )
+                                        },
+                                        stepNumber = stepNumber,
+                                    )
+                                    hooks?.experimental_onToolCallFinish?.invoke(finishEvent)
+                                }
+                                signals.send(
+                                    ParallelToolSignal.Completed(
+                                        OrderedToolCompletion.Executed(index, call, result),
+                                    ),
+                                )
                             }
-                            signals.send(
-                                ParallelToolSignal.Completed(
-                                    OrderedToolCompletion.Executed(index, call, result),
-                                ),
-                            )
+                        } catch (abort: AbortError) {
+                            // The cooperative abort does NOT structurally cancel this scope (DECISION 3),
+                            // so the collector below would otherwise wait forever for a Completed that
+                            // never comes. Send a terminal Aborted marker (NonCancellable — we're already
+                            // unwinding) so the count completes, then rethrow to unwind this child.
+                            withContext(NonCancellable) {
+                                signals.send(
+                                    ParallelToolSignal.Completed(OrderedToolCompletion.Aborted(index)),
+                                )
+                            }
+                            throw abort
                         }
                     }
                 }
@@ -1165,12 +1183,22 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
                                             stepToolResults,
                                         )
                                     is OrderedToolCompletion.Skipped -> Unit
+                                    is OrderedToolCompletion.Aborted -> sawAbort = true
                                 }
                                 nextToApply += 1
                             }
                         }
                     }
                 }
+            }
+
+            // A child aborted mid-flight: surface ONE terminal Abort for the step (mirroring the
+            // model-stream abort path at the top of this loop) and end cleanly, instead of building
+            // a step result on partial tool output.
+            if (sawAbort) {
+                emit(StreamEvent.Abort)
+                fireAbort()
+                return@flow
             }
 
             val effectiveFinishReason = if (toolsRequiringApproval.isNotEmpty()) {

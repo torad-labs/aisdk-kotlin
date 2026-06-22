@@ -3,8 +3,9 @@ package ai.torad.aisdk
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
@@ -16,6 +17,7 @@ import kotlinx.serialization.serializer
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
+import kotlin.test.assertTrue
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class ParallelToolExecutionTest {
@@ -41,6 +43,60 @@ class ParallelToolExecutionTest {
                 emit(StreamEvent.Finish(2, FinishReason.Stop, Usage()))
             }
         }
+    }
+
+    // A model whose first step emits a SINGLE tool call, then (after the tool runs) returns text.
+    private class OneToolThenText : LanguageModel {
+        override val modelId = "m"
+        private var calls = 0
+        override suspend fun generate(params: LanguageModelCallParams) =
+            LanguageModelResult(text = "done", finishReason = FinishReason.Stop, usage = Usage())
+        override fun stream(params: LanguageModelCallParams): Flow<StreamEvent> = flow {
+            if (calls++ == 0) {
+                emit(StreamEvent.ToolCall("c_a", "toolA", JsonObject(emptyMap())))
+                emit(StreamEvent.StepFinish(1, FinishReason.ToolCalls, Usage()))
+                emit(StreamEvent.Finish(1, FinishReason.ToolCalls, Usage()))
+            } else {
+                emit(StreamEvent.TextStart("t"))
+                emit(StreamEvent.TextDelta("t", "done"))
+                emit(StreamEvent.TextEnd("t"))
+                emit(StreamEvent.Finish(2, FinishReason.Stop, Usage()))
+            }
+        }
+    }
+
+    @Test
+    fun `a tool that aborts mid parallel step emits Abort and does not hang`() = runTest {
+        // Regression: a tool throwing AbortError (the cooperative stop signal — what
+        // ctx.abortSignal.throwIfAborted() raises) used to black-hole the parallel-tool consumer:
+        // the child died via CancellationException without sending its Completed signal, so the
+        // `while (completed < n) { receive() }` consumer suspended forever and the whole agent hung.
+        val controller = AbortController()
+        val abortingTool = Tool<Empty, String, Unit>(
+            name = "toolA",
+            description = "aborts mid-flight",
+            inputSerializer = serializer(),
+            outputSerializer = serializer(),
+        ) { _ ->
+            // Mirror a stop pressed while the tool runs: the host's signal aborts, and an
+            // abort-aware executor surfaces it via throwIfAborted() (AbortSignal.kt:95).
+            controller.abort()
+            abortSignal.throwIfAborted()
+            "unreachable"
+        }
+        val agent = TestToolLoopAgent<Unit, String>(
+            model = OneToolThenText(),
+            instructions = "x",
+            tools = ToolSet(abortingTool),
+        )
+
+        // withTimeout bounds the deadlock: pre-fix this hangs and the (virtual-time) timeout fires
+        // the test; post-fix the abort surfaces as a terminal StreamEvent.Abort and the flow ends.
+        val events = withTimeout(10_000) {
+            agent.stream(prompt = "go", abortSignal = controller.signal).toList()
+        }
+
+        assertTrue(events.any { it == StreamEvent.Abort }, "aborted parallel step emits a terminal Abort")
     }
 
     @Test
