@@ -13,7 +13,6 @@ import kotlinx.serialization.json.doubleOrNull
 import kotlinx.serialization.json.floatOrNull
 import kotlinx.serialization.json.intOrNull
 import kotlinx.serialization.json.jsonObject
-import kotlinx.serialization.json.jsonPrimitive
 
 public class WireDecodeException(
     public val provider: String,
@@ -95,7 +94,7 @@ internal object WireDecoder {
             ?: fail(provider, operation, path, "missing one required field: ${keys.joinToString(" or ")}")
 
     fun stringValue(value: JsonElement, provider: String, operation: String, path: String = "$"): String =
-        (value as? JsonPrimitive)?.takeIf { it.isString }?.jsonPrimitive?.content
+        (value as? JsonPrimitive)?.takeIf { it.isString }?.content
             ?: fail(provider, operation, path, "expected string", value)
 
     fun optionalBoolean(obj: JsonObject, key: String, provider: String, operation: String, path: String = "$"): Boolean? =

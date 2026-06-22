@@ -5,11 +5,11 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonObjectBuilder
+import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.decodeFromJsonElement
 import kotlinx.serialization.json.doubleOrNull
 import kotlinx.serialization.json.encodeToJsonElement
 import kotlinx.serialization.json.intOrNull
-import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.serializer
 
 @PublishedApi
@@ -152,11 +152,11 @@ public object TypedJsonOps {
         jsonNumberOrNull(obj, *names) ?: 0.0
 
     public fun jsonNumberOrNull(obj: JsonObject, vararg names: String): Double? =
-        names.firstNotNullOfOrNull { name -> obj[name]?.jsonPrimitive?.doubleOrNull }
+        names.firstNotNullOfOrNull { name -> (obj[name] as? JsonPrimitive)?.doubleOrNull }
 
     public fun jsonInt(obj: JsonObject, vararg names: String): Int =
         jsonIntOrNull(obj, *names) ?: 0
 
     public fun jsonIntOrNull(obj: JsonObject, vararg names: String): Int? =
-        names.firstNotNullOfOrNull { name -> obj[name]?.jsonPrimitive?.intOrNull }
+        names.firstNotNullOfOrNull { name -> (obj[name] as? JsonPrimitive)?.intOrNull }
 }

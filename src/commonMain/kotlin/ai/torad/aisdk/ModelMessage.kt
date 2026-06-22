@@ -12,7 +12,6 @@ import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.intOrNull
 import kotlinx.serialization.json.jsonObject
-import kotlinx.serialization.json.jsonPrimitive
 
 /**
  * v6 wire-shape message — the type passed to [LanguageModel] generations.
@@ -124,9 +123,10 @@ public sealed class ContentPart {
 
             /** Google `thought_signature` provider-metadata pulled from an OpenAI-compatible tool-call object. */
             internal fun thoughtSignatureMetadata(value: JsonObject): Map<String, JsonElement>? {
-                val signature = value["extra_content"]?.jsonObject
+                val element = value["extra_content"]?.jsonObject
                     ?.get("google")?.jsonObject
-                    ?.get("thought_signature")?.jsonPrimitive?.contentOrNull
+                    ?.get("thought_signature")
+                val signature = (element as? JsonPrimitive)?.contentOrNull
                 return signature?.let { mapOf("thoughtSignature" to JsonPrimitive(it)) }
             }
         }
@@ -308,11 +308,11 @@ public data class Usage(
          */
         internal fun fromOpenAI(value: JsonElement?): Usage {
             val obj = value?.jsonObject ?: return Usage()
-            val promptTokens = obj["prompt_tokens"]?.jsonPrimitive?.intOrNull ?: 0
-            val completionTokens = obj["completion_tokens"]?.jsonPrimitive?.intOrNull ?: 0
-            val cachedTokens = (obj["prompt_tokens_details"]?.jsonObject?.get("cached_tokens")?.jsonPrimitive?.intOrNull ?: 0)
+            val promptTokens = (obj["prompt_tokens"] as? JsonPrimitive)?.intOrNull ?: 0
+            val completionTokens = (obj["completion_tokens"] as? JsonPrimitive)?.intOrNull ?: 0
+            val cachedTokens = ((obj["prompt_tokens_details"]?.jsonObject?.get("cached_tokens") as? JsonPrimitive)?.intOrNull ?: 0)
                 .coerceIn(0, promptTokens)
-            val reasoningTokens = (obj["completion_tokens_details"]?.jsonObject?.get("reasoning_tokens")?.jsonPrimitive?.intOrNull ?: 0)
+            val reasoningTokens = ((obj["completion_tokens_details"]?.jsonObject?.get("reasoning_tokens") as? JsonPrimitive)?.intOrNull ?: 0)
                 .coerceAtLeast(0)
             val outputTotal = if (reasoningTokens > completionTokens) {
                 completionTokens + reasoningTokens
@@ -364,20 +364,20 @@ public data class Usage(
          */
         internal fun fromAnthropic(element: JsonElement?): Usage {
             val obj = element as? JsonObject ?: return Usage()
-            val baseInput = obj["input_tokens"]?.jsonPrimitive?.intOrNull ?: 0
-            val baseOutput = obj["output_tokens"]?.jsonPrimitive?.intOrNull ?: 0
-            val cacheWrite = obj["cache_creation_input_tokens"]?.jsonPrimitive?.intOrNull ?: 0
-            val cacheRead = obj["cache_read_input_tokens"]?.jsonPrimitive?.intOrNull ?: 0
+            val baseInput = (obj["input_tokens"] as? JsonPrimitive)?.intOrNull ?: 0
+            val baseOutput = (obj["output_tokens"] as? JsonPrimitive)?.intOrNull ?: 0
+            val cacheWrite = (obj["cache_creation_input_tokens"] as? JsonPrimitive)?.intOrNull ?: 0
+            val cacheRead = (obj["cache_read_input_tokens"] as? JsonPrimitive)?.intOrNull ?: 0
             val iterations = obj["iterations"] as? JsonArray
             val executorIterations = iterations.orEmpty().mapNotNull { it as? JsonObject }
-                .filter { it["type"]?.jsonPrimitive?.contentOrNull in setOf("compaction", "message") }
+                .filter { (it["type"] as? JsonPrimitive)?.contentOrNull in setOf("compaction", "message") }
             val input = if (executorIterations.isNotEmpty()) {
-                executorIterations.sumOf { it["input_tokens"]?.jsonPrimitive?.intOrNull ?: 0 }
+                executorIterations.sumOf { (it["input_tokens"] as? JsonPrimitive)?.intOrNull ?: 0 }
             } else {
                 baseInput
             }
             val output = if (executorIterations.isNotEmpty()) {
-                executorIterations.sumOf { it["output_tokens"]?.jsonPrimitive?.intOrNull ?: 0 }
+                executorIterations.sumOf { (it["output_tokens"] as? JsonPrimitive)?.intOrNull ?: 0 }
             } else {
                 baseOutput
             }
@@ -402,10 +402,10 @@ public data class Usage(
          */
         internal fun mergeAnthropic(existing: Usage, deltaElement: JsonElement?): Usage {
             val obj = deltaElement as? JsonObject ?: return existing
-            val deltaInput = obj["input_tokens"]?.jsonPrimitive?.intOrNull
-            val deltaOutput = obj["output_tokens"]?.jsonPrimitive?.intOrNull
-            val deltaCacheRead = obj["cache_read_input_tokens"]?.jsonPrimitive?.intOrNull
-            val deltaCacheWrite = obj["cache_creation_input_tokens"]?.jsonPrimitive?.intOrNull
+            val deltaInput = (obj["input_tokens"] as? JsonPrimitive)?.intOrNull
+            val deltaOutput = (obj["output_tokens"] as? JsonPrimitive)?.intOrNull
+            val deltaCacheRead = (obj["cache_read_input_tokens"] as? JsonPrimitive)?.intOrNull
+            val deltaCacheWrite = (obj["cache_creation_input_tokens"] as? JsonPrimitive)?.intOrNull
             val input = deltaInput ?: existing.inputTokens.noCache
             val cacheRead = deltaCacheRead ?: existing.inputTokens.cacheRead
             val cacheWrite = deltaCacheWrite ?: existing.inputTokens.cacheWrite
