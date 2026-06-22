@@ -28,9 +28,17 @@ class KonsistArchitectureTest {
             .assertTrue { it.parents().isNotEmpty() }
     }
 
-    // NOTE: a `no sealed interfaces in production` invariant is intentionally NOT added yet —
-    // it surfaced 5 pre-existing sealed interfaces in commonMain (UIMessagePart, JSONRPCMessage,
-    // ResponseFormat = @Serializable polymorphic wire types; ToolChoice = public config; State =
-    // private state machine) that the ast-grep no-sealed-interface rule's pattern gap was missing.
-    // Pending the tenet decision (carve out @Serializable/private vs strict) + the ast-grep rule fix.
+    @Test
+    fun `no sealed interfaces in production except serializable wire types and private`() {
+        // Mirror of no-sealed-interface with the approved carve-outs (2026-06-22): a sealed
+        // hierarchy's root is a sealed CLASS, EXCEPT @Serializable polymorphic wire types (the
+        // idiomatic kotlinx pattern) and private internal ones (e.g. the MCP State machine).
+        // Test helpers are excluded — this is a production-surface tenet. This whole-codebase
+        // check is what caught ToolChoice, which the ast-grep rule's pattern gap was missing.
+        Konsist.scopeFromProject()
+            .interfaces()
+            .filter { !it.path.contains("Test/") }
+            .filter { !it.hasAnnotationWithName("Serializable") && !it.hasPrivateModifier }
+            .assertFalse { it.hasSealedModifier }
+    }
 }
