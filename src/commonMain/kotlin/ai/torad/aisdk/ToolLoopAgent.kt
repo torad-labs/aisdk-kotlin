@@ -787,7 +787,8 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
             // (the fireAbort precedent) so the step locals are captured, not re-passed 4x.
             suspend fun closeModelCall(finishReason: FinishReason, rawFinishReason: String?) {
                 dispatcher.fireTelemetry(feed) {
-                    onEvent(it,
+                    onEvent(
+                        it,
                         AgentEvent.ModelCallFinished(
                             stepNumber = stepNumber,
                             modelId = stepModel.modelId,
@@ -1360,7 +1361,8 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
             toolFailure(call, t)
         }
         dispatcher.fireTelemetry(feed) {
-            onEvent(it,
+            onEvent(
+                it,
                 AgentEvent.ToolCallFinished(
                     toolCallId = call.toolCallId,
                     toolName = call.toolName,
