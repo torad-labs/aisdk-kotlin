@@ -18,7 +18,6 @@ import kotlinx.serialization.json.floatOrNull
 import kotlinx.serialization.json.intOrNull
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
-import kotlinx.serialization.json.jsonPrimitive
 
 public const val TOGETHERAI_VERSION: String = "2.0.53"
 
@@ -165,10 +164,10 @@ public class TogetherAIRerankingModel(
         val value = response.value.jsonObject
         val ranking = value["results"]?.jsonArray.orEmpty().map { item ->
             val obj = item.jsonObject
-            val index = obj["index"]?.jsonPrimitive?.intOrNull ?: 0
+            val index = (obj["index"] as? JsonPrimitive)?.intOrNull ?: 0
             RerankedItem(
                 value = params.documents.getOrElse(index) { "" },
-                score = obj["relevance_score"]?.jsonPrimitive?.floatOrNull ?: 0f,
+                score = (obj["relevance_score"] as? JsonPrimitive)?.floatOrNull ?: 0f,
                 index = index,
             )
         }
@@ -176,8 +175,8 @@ public class TogetherAIRerankingModel(
             results = ranking,
             usage = togetherAIUsage(value["usage"]),
             response = LanguageModelResponseMetadata(
-                id = value["id"]?.jsonPrimitive?.contentOrNull,
-                modelId = value["model"]?.jsonPrimitive?.contentOrNull ?: modelId,
+                id = (value["id"] as? JsonPrimitive)?.contentOrNull,
+                modelId = (value["model"] as? JsonPrimitive)?.contentOrNull ?: modelId,
                 headers = response.headers,
                 body = response.value,
             ),
@@ -187,8 +186,8 @@ public class TogetherAIRerankingModel(
     private fun togetherAIUsage(value: JsonElement?): Usage {
         val obj = value as? JsonObject ?: return Usage()
         return Usage.of(
-            promptTokens = obj["prompt_tokens"]?.jsonPrimitive?.intOrNull ?: 0,
-            completionTokens = obj["completion_tokens"]?.jsonPrimitive?.intOrNull ?: 0,
+            promptTokens = (obj["prompt_tokens"] as? JsonPrimitive)?.intOrNull ?: 0,
+            completionTokens = (obj["completion_tokens"] as? JsonPrimitive)?.intOrNull ?: 0,
         )
     }
 }

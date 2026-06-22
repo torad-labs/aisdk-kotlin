@@ -11,7 +11,6 @@ import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.contentOrNull
-import kotlinx.serialization.json.jsonPrimitive
 
 public const val PERPLEXITY_VERSION: String = "3.0.33"
 
@@ -50,7 +49,7 @@ public data class PerplexityProviderSettings(
     private fun perplexityMessages(messages: JsonArray?): JsonArray = JsonArray(
         messages.orEmpty().mapNotNull { message ->
             val obj = message as? JsonObject ?: return@mapNotNull message
-            when (obj["role"]?.jsonPrimitive?.contentOrNull) {
+            when ((obj["role"] as? JsonPrimitive)?.contentOrNull) {
                 "tool" -> null
                 "assistant" -> perplexityAssistantMessage(obj)
                 "user" -> perplexityTextMessage(obj)
@@ -70,7 +69,7 @@ public data class PerplexityProviderSettings(
     private fun perplexityTextMessage(message: JsonObject): JsonObject {
         val content = message["content"] as? JsonArray
         val textOnly = content?.all {
-            (it as? JsonObject)?.get("type")?.jsonPrimitive?.contentOrNull == "text"
+            ((it as? JsonObject)?.get("type") as? JsonPrimitive)?.contentOrNull == "text"
         } == true
         return if (content != null && textOnly) {
             JsonObject(message + ("content" to JsonPrimitive(textFromContentParts(content))))

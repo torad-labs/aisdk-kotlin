@@ -12,7 +12,6 @@ import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.contentOrNull
-import kotlinx.serialization.json.jsonPrimitive
 
 public const val DEEPSEEK_VERSION: String = "2.0.35"
 
@@ -40,7 +39,7 @@ public data class DeepSeekProviderSettings(
 
     private fun deepSeekTransformChatBody(body: JsonObject): JsonObject {
         val responseFormat = body["response_format"] as? JsonObject
-        val responseFormatType = responseFormat?.get("type")?.jsonPrimitive?.contentOrNull
+        val responseFormatType = (responseFormat?.get("type") as? JsonPrimitive)?.contentOrNull
         val schema = (responseFormat?.get("json_schema") as? JsonObject)?.get("schema")
         val jsonRequested = responseFormatType == "json_object" || responseFormatType == "json_schema"
         return buildJsonObject {
@@ -98,7 +97,7 @@ public data class DeepSeekProviderSettings(
     private fun deepSeekMessage(message: JsonElement): JsonElement {
         val obj = message as? JsonObject
         val content = obj?.get("content") as? JsonArray
-        return if (obj?.get("role")?.jsonPrimitive?.contentOrNull == "user" && content != null) {
+        return if ((obj?.get("role") as? JsonPrimitive)?.contentOrNull == "user" && content != null) {
             JsonObject(obj + ("content" to JsonPrimitive(textFromContentParts(content))))
         } else {
             message

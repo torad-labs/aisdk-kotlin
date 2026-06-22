@@ -17,7 +17,6 @@ import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.intOrNull
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
-import kotlinx.serialization.json.jsonPrimitive
 
 public const val DEEPINFRA_VERSION: String = "2.0.52"
 
@@ -104,19 +103,15 @@ private class DeepInfraChatLanguageModel(
 
     private fun Usage.fixDeepInfraUsage(): Usage {
         val rawObject = raw as? JsonObject ?: return this
-        val reasoningTokens = rawObject["completion_tokens_details"]
-            ?.jsonObject
-            ?.get("reasoning_tokens")
-            ?.jsonPrimitive
-            ?.intOrNull
-            ?: return this
-        val completionTokens = rawObject["completion_tokens"]?.jsonPrimitive?.intOrNull ?: return this
+        val reasoningTokensElement = rawObject["completion_tokens_details"]?.jsonObject?.get("reasoning_tokens")
+        val reasoningTokens = (reasoningTokensElement as? JsonPrimitive)?.intOrNull ?: return this
+        val completionTokens = (rawObject["completion_tokens"] as? JsonPrimitive)?.intOrNull ?: return this
         if (reasoningTokens <= completionTokens) return this
 
         val correctedCompletionTokens = completionTokens + reasoningTokens
         val correctedRaw = rawObject.toMutableMap().apply {
             put("completion_tokens", JsonPrimitive(correctedCompletionTokens))
-            rawObject["total_tokens"]?.jsonPrimitive?.intOrNull?.let { total ->
+            (rawObject["total_tokens"] as? JsonPrimitive)?.intOrNull?.let { total ->
                 put("total_tokens", JsonPrimitive(total + reasoningTokens))
             }
         }
