@@ -742,14 +742,14 @@ public object ProviderTools {
 
 /** Whether the LLM should call a tool, no tool, a specific tool, etc. */
 @kotlinx.serialization.Serializable
-public sealed interface ToolChoice {
-    @kotlinx.serialization.Serializable public data object Auto : ToolChoice
+public sealed class ToolChoice {
+    @kotlinx.serialization.Serializable public data object Auto : ToolChoice()
 
-    @kotlinx.serialization.Serializable public data object None : ToolChoice
+    @kotlinx.serialization.Serializable public data object None : ToolChoice()
 
-    @kotlinx.serialization.Serializable public data object Required : ToolChoice
+    @kotlinx.serialization.Serializable public data object Required : ToolChoice()
 
-    @kotlinx.serialization.Serializable public data class Specific(val toolName: String) : ToolChoice
+    @kotlinx.serialization.Serializable public data class Specific(val toolName: String) : ToolChoice()
 }
 
 /**
