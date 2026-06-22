@@ -8,7 +8,6 @@ import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.contentOrNull
-import kotlinx.serialization.json.jsonPrimitive
 
 internal const val JSONRPC_VERSION: String = "2.0"
 
@@ -143,8 +142,10 @@ public data class CallToolResult(
         structuredContent?.let { return it }
 
         val text = content.firstNotNullOfOrNull { part ->
-            if (part["type"]?.jsonPrimitive?.contentOrNull == "text") {
-                part["text"]?.jsonPrimitive?.contentOrNull
+            // `as? JsonPrimitive` (server-controlled content): a non-primitive type/text degrades to
+            // null and the part is skipped, rather than throwing IllegalArgumentException.
+            if ((part["type"] as? JsonPrimitive)?.contentOrNull == "text") {
+                (part["text"] as? JsonPrimitive)?.contentOrNull
             } else {
                 null
             }

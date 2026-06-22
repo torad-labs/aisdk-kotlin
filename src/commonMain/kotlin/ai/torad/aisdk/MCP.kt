@@ -683,11 +683,14 @@ private class DefaultMCPClient(config: MCPClientConfig) : MCPClient {
         val content = obj["content"] as? JsonArray ?: return ToolResultOutput.Json(output)
         val converted = content.map { part ->
             val partObj = part as? JsonObject
-            when (partObj?.get("type")?.jsonPrimitive?.contentOrNull) {
+            // `as? JsonPrimitive` (not `?.jsonPrimitive`, which throws on a non-primitive value):
+            // MCP content is server-controlled, so a malformed object/array type/text must degrade
+            // gracefully (fall through / empty) rather than throw a low-level IllegalArgumentException.
+            when ((partObj?.get("type") as? JsonPrimitive)?.contentOrNull) {
                 "text" -> JsonObject(
                     mapOf(
                         "type" to JsonPrimitive("text"),
-                        "text" to JsonPrimitive(partObj["text"]?.jsonPrimitive?.contentOrNull.orEmpty()),
+                        "text" to JsonPrimitive((partObj["text"] as? JsonPrimitive)?.contentOrNull.orEmpty()),
                     ),
                 )
                 "image" -> JsonObject(
