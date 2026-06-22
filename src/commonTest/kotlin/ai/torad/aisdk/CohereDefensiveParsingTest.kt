@@ -47,4 +47,38 @@ class CohereDefensiveParsingTest {
 
         assertEquals(0, result.usage.inputTokens.total, "a non-primitive input_tokens degrades to 0, no crash")
     }
+
+    /**
+     * Regression (Wave 7b, array-element accessors): the chat parser walked the `content` array via
+     * the non-null `part.jsonObject` in a joinToString (text) and a forEach (thinking). A non-object
+     * element threw ISE, failing generate(). The safe `part as? JsonObject ?: return@…` skips the
+     * malformed element; the valid text part is still extracted.
+     */
+    @Test
+    fun `generate drops a malformed content element instead of crashing`() = runTest {
+        val client = HttpClient(
+            MockEngine {
+                respond(
+                    content = """
+                        {
+                          "message":{"role":"assistant","content":[{"type":"text","text":"hi"},"malformed"]},
+                          "finish_reason":"COMPLETE"
+                        }
+                    """.trimIndent(),
+                    status = HttpStatusCode.OK,
+                    headers = headersOf(HttpHeaders.ContentType, "application/json"),
+                )
+            },
+        )
+        val provider = Cohere(
+            client,
+            CohereProviderSettings(apiKey = "key", baseURL = "https://cohere.test/v2"),
+        )
+
+        val result = provider(ModelId("command-r-plus")).generate(
+            LanguageModelCallParams(messages = listOf(UserMessage("hi"))),
+        )
+
+        assertEquals("hi", result.text)
+    }
 }

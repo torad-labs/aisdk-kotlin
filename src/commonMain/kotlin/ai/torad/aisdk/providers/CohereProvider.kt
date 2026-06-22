@@ -15,7 +15,6 @@ import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.floatOrNull
 import kotlinx.serialization.json.intOrNull
-import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 
 public const val COHERE_VERSION: String = "3.0.36"
@@ -400,6 +399,30 @@ private class CohereChatLanguageModel(
 
     private fun String.isCohereDocumentMediaType(): Boolean = startsWith("text/") || this == "application/json"
 
+    // Parse one Cohere tool_call array element, skipping a non-object element (Wave 7b). Extracted
+    // so cohereChatResult stays under the cyclomatic-complexity threshold after the skip guards.
+    private fun cohereToolCallPart(call: JsonElement): ContentPart.ToolCall? {
+        val obj = call as? JsonObject ?: return null
+        val function = (obj["function"] as? JsonObject) ?: JsonObject(emptyMap())
+        return ContentPart.ToolCall(
+            toolCallId = (obj["id"] as? JsonPrimitive)?.contentOrNull ?: IdGenerator.generate("call"),
+            toolName = (function["name"] as? JsonPrimitive)?.contentOrNull.orEmpty(),
+            input = cohereToolInput((function["arguments"] as? JsonPrimitive)?.contentOrNull),
+        )
+    }
+
+    // Parse one Cohere citation array element, skipping a non-object element (Wave 7b).
+    private fun cohereCitationPart(citation: JsonElement): ContentPart.Source? {
+        val obj = citation as? JsonObject ?: return null
+        val sourceObj = (obj["sources"] as? JsonArray)?.firstOrNull() as? JsonObject
+        val documentObj = sourceObj?.get("document") as? JsonObject
+        return ContentPart.Source(
+            sourceType = StreamEvent.SourcePart.SourceType.Document,
+            title = (documentObj?.get("title") as? JsonPrimitive)?.contentOrNull ?: "Document",
+            providerMetadata = ProviderMetadata.Raw(JsonObject(mapOf("cohere" to obj))),
+        )
+    }
+
     private fun cohereChatResult(
         value: JsonObject,
         requestBody: JsonObject,
@@ -410,7 +433,7 @@ private class CohereChatLanguageModel(
         val message = (value["message"] as? JsonObject) ?: JsonObject(emptyMap())
         val content = mutableListOf<ContentPart>()
         val text = (message["content"] as? JsonArray).orEmpty().joinToString("") { part ->
-            val obj = part.jsonObject
+            val obj = part as? JsonObject ?: return@joinToString ""
             when ((obj["type"] as? JsonPrimitive)?.contentOrNull) {
                 "text" -> (obj["text"] as? JsonPrimitive)?.contentOrNull.orEmpty()
                 else -> ""
@@ -418,7 +441,7 @@ private class CohereChatLanguageModel(
         }
         if (text.isNotEmpty()) content += ContentPart.Text(text)
         (message["content"] as? JsonArray).orEmpty().forEach { part ->
-            val obj = part.jsonObject
+            val obj = part as? JsonObject ?: return@forEach
             if ((obj["type"] as? JsonPrimitive)?.contentOrNull == "thinking") {
                 (obj["thinking"] as? JsonPrimitive)?.contentOrNull?.takeIf { it.isNotEmpty() }?.let {
                     content += ContentPart.Reasoning(it)
@@ -428,26 +451,9 @@ private class CohereChatLanguageModel(
         (message["tool_plan"] as? JsonPrimitive)?.contentOrNull?.takeIf { it.isNotBlank() }?.let {
             content += ContentPart.Reasoning(it)
         }
-        val toolCalls = (message["tool_calls"] as? JsonArray).orEmpty().map { call ->
-            val obj = call.jsonObject
-            val function = (obj["function"] as? JsonObject) ?: JsonObject(emptyMap())
-            ContentPart.ToolCall(
-                toolCallId = (obj["id"] as? JsonPrimitive)?.contentOrNull ?: IdGenerator.generate("call"),
-                toolName = (function["name"] as? JsonPrimitive)?.contentOrNull.orEmpty(),
-                input = cohereToolInput((function["arguments"] as? JsonPrimitive)?.contentOrNull),
-            )
-        }
+        val toolCalls = (message["tool_calls"] as? JsonArray).orEmpty().mapNotNull(::cohereToolCallPart)
         content += toolCalls
-        (message["citations"] as? JsonArray).orEmpty().forEach { citation ->
-            val obj = citation.jsonObject
-            val sourceObj = (obj["sources"] as? JsonArray)?.firstOrNull() as? JsonObject
-            val documentObj = sourceObj?.get("document") as? JsonObject
-            content += ContentPart.Source(
-                sourceType = StreamEvent.SourcePart.SourceType.Document,
-                title = (documentObj?.get("title") as? JsonPrimitive)?.contentOrNull ?: "Document",
-                providerMetadata = ProviderMetadata.Raw(JsonObject(mapOf("cohere" to obj))),
-            )
-        }
+        content += (message["citations"] as? JsonArray).orEmpty().mapNotNull(::cohereCitationPart)
         return LanguageModelResult(
             text = text,
             toolCalls = toolCalls,
@@ -536,7 +542,7 @@ private class CohereEmbeddingModel(
         )
         val value = response.value.jsonObject
         val embeddings = ((value["embeddings"] as? JsonObject)?.get("float") as? JsonArray).orEmpty()
-            .map { row -> row.jsonArray.map { WireDecoder.embeddingFloat(it, provider) } }
+            .map { row -> (row as? JsonArray).orEmpty().map { WireDecoder.embeddingFloat(it, provider) } }
         val billedUnits = ((value["meta"] as? JsonObject)?.get("billed_units") as? JsonObject)
         val usage = (billedUnits?.get("input_tokens") as? JsonPrimitive)?.intOrNull ?: 0
         return EmbeddingModelResult(
@@ -576,8 +582,8 @@ private class CohereRerankingModel(
             headers = settings.cohereHeaders(params.headers),
         )
         val value = response.value.jsonObject
-        val results = (value["results"] as? JsonArray).orEmpty().map { item ->
-            val obj = item.jsonObject
+        val results = (value["results"] as? JsonArray).orEmpty().mapNotNull { item ->
+            val obj = item as? JsonObject ?: return@mapNotNull null
             val index = (obj["index"] as? JsonPrimitive)?.intOrNull ?: 0
             RerankedItem(
                 value = params.documents.getOrElse(index) { "" },
