@@ -8,6 +8,7 @@ serialization = "1.11.0"
 turbine = "1.2.1"
 ktor = "3.5.0"
 detekt = "1.23.8"
+konsist = "0.17.3"
 kover = "0.9.8"
 dokka = "2.2.0"
 junit = "5.11.4"
@@ -20,6 +21,9 @@ ktor-client-core = { module = "io.ktor:ktor-client-core", version.ref = "ktor" }
 ktor-client-mock = { module = "io.ktor:ktor-client-mock", version.ref = "ktor" }
 turbine = { module = "app.cash.turbine:turbine", version.ref = "turbine" }
 detekt-formatting = { module = "io.gitlab.arturbosch.detekt:detekt-formatting", version.ref = "detekt" }
+# Konsist: whole-codebase architecture invariants as jvmTest tests (declaration-level checks
+# a single-file lint can't see). Verified to parse this Kotlin 2.4.0 source.
+konsist = { module = "com.lemonappdev:konsist", version.ref = "konsist" }
 # Custom detekt rule authoring + its unit-test harness (the :detekt-rules module).
 detekt-api = { module = "io.gitlab.arturbosch.detekt:detekt-api", version.ref = "detekt" }
 detekt-test = { module = "io.gitlab.arturbosch.detekt:detekt-test", version.ref = "detekt" }

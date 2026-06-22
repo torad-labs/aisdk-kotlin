@@ -132,6 +132,12 @@ kotlin {
             implementation(libs.ktor.client.mock)
             implementation(libs.turbine)
         }
+        // Konsist architecture tests run on the JVM only (Konsist is a JVM library that scans
+        // the project's .kt source from disk). They enforce the whole-codebase structural
+        // tenets that single-file lints can't see (e.g. "every data class `…Event` has a supertype").
+        jvmTest.dependencies {
+            implementation(libs.konsist)
+        }
     }
 }
 
