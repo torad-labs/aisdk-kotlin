@@ -915,11 +915,55 @@ internal data class AnthropicPrompt(
             -> null
         }
 
-        private fun anthropicToolResultContent(result: ContentPart.ToolResult): JsonElement {
-            val output = result.modelVisible
-            return when {
-                output is JsonPrimitive && output.isString -> JsonPrimitive(output.content)
-                else -> JsonPrimitive(output.toString())
+        /**
+         * Decode [ContentPart.ToolResult.modelVisible] off the wire and render it as an Anthropic
+         * `tool_result.content` value. Text/json/error/denied collapse to a string; `Content`
+         * (the MCP shape) maps to the native content-block array, preserving image blocks. The old
+         * implementation `toString()`'d the raw element, which dropped MCP content/images and leaked
+         * the error/denial wrapper objects into the prompt — mirrors OpenResponsesProvider's
+         * `openResponsesToolOutput`.
+         */
+        private fun anthropicToolResultContent(result: ContentPart.ToolResult): JsonElement =
+            when (val output = ToolResultOutputs.toolResultOutputFromWire(result.modelVisible)) {
+                is ToolResultOutput.Text -> JsonPrimitive(output.text)
+                is ToolResultOutput.Error -> JsonPrimitive(output.message)
+                is ToolResultOutput.ExecutionDenied -> JsonPrimitive(output.reason ?: "Tool execution denied.")
+                is ToolResultOutput.Json -> JsonPrimitive(output.json.toString())
+                is ToolResultOutput.ErrorJson -> JsonPrimitive(output.json.toString())
+                is ToolResultOutput.Content -> JsonArray(output.value.mapNotNull(::anthropicToolResultContentBlock))
+            }
+
+        /** Map one MCP/`Content` item to an Anthropic `tool_result` content block. Anthropic
+         *  tool_result content supports text + image blocks only; other item types are skipped. */
+        private fun anthropicToolResultContentBlock(item: JsonElement): JsonObject? {
+            val obj = item as? JsonObject
+            return when ((obj?.get("type") as? JsonPrimitive)?.contentOrNull) {
+                "text" -> buildJsonObject {
+                    put("type", JsonPrimitive("text"))
+                    put("text", obj["text"] ?: JsonPrimitive(""))
+                }
+                "image-data" -> buildJsonObject {
+                    put("type", JsonPrimitive("image"))
+                    put(
+                        "source",
+                        buildJsonObject {
+                            put("type", JsonPrimitive("base64"))
+                            put("media_type", obj["mediaType"] ?: JsonPrimitive("application/octet-stream"))
+                            put("data", obj["data"] ?: JsonPrimitive(""))
+                        },
+                    )
+                }
+                "image-url" -> buildJsonObject {
+                    put("type", JsonPrimitive("image"))
+                    put(
+                        "source",
+                        buildJsonObject {
+                            put("type", JsonPrimitive("url"))
+                            put("url", obj["url"] ?: JsonPrimitive(""))
+                        },
+                    )
+                }
+                else -> null
             }
         }
 
@@ -1031,16 +1075,25 @@ private class AnthropicStreamState(
                 } catch (error: WireDecodeException) {
                     return listOf(StreamEvent.Error(error.message ?: "Anthropic stream protocol error"))
                 }
-                when (val deltaType = WireDecoder.optionalString(delta, "type", "anthropic", "stream event", "$.delta")) {
+                when (WireDecoder.optionalString(delta, "type", "anthropic", "stream event", "$.delta")) {
                     "text_delta" -> events += StreamEvent.TextDelta(block.id, WireDecoder.requiredString(delta, "text", "anthropic", "stream event", "$.delta"))
                     "thinking_delta" -> events += StreamEvent.ReasoningDelta(block.id, WireDecoder.requiredString(delta, "thinking", "anthropic", "stream event", "$.delta"))
+                    // Capture the streamed thinking signature onto the block; it surfaces on the
+                    // eventual ReasoningEnd providerMetadata (content_block_stop) for replay parity
+                    // with the non-streaming `signature` capture. Not a fatal stream error.
+                    "signature_delta" ->
+                        (delta["signature"] as? JsonPrimitive)?.contentOrNull?.let { block.signature = it }
+                    // Mid-stream citation: emit a Source, mirroring the non-streaming citation path.
+                    "citations_delta" -> citationSourceEvent(delta)?.let { events += it }
                     "input_json_delta" -> {
                         val text = WireDecoder.requiredString(delta, "partial_json", "anthropic", "stream event", "$.delta")
                         block.input += text
                         events += StreamEvent.ToolInputDelta(block.id, text)
                     }
                     null -> return listOf(StreamEvent.Error("Anthropic stream protocol error: content_block_delta missing delta.type."))
-                    else -> return listOf(StreamEvent.Error("Anthropic stream protocol error: unsupported content_block_delta type `$deltaType`."))
+                    // Forward-compatible: ignore unknown delta subtypes (matches upstream Vercel AI
+                    // SDK) rather than aborting generation on a delta Anthropic adds later.
+                    else -> return emptyList()
                 }
             }
             "content_block_stop" -> {
@@ -1062,7 +1115,12 @@ private class AnthropicStreamState(
                     ?: return listOf(StreamEvent.Error("Anthropic stream protocol error: content_block_stop for unknown block index $index."))
                 when (block.type) {
                     "text" -> events += StreamEvent.TextEnd(block.id)
-                    "thinking", "redacted_thinking" -> events += StreamEvent.ReasoningEnd(block.id)
+                    // Surface the streamed signature for replay, mirroring the non-streaming
+                    // `signature` capture. ProviderMetadata.None when no signature_delta arrived.
+                    "thinking", "redacted_thinking" -> events += StreamEvent.ReasoningEnd(
+                        block.id,
+                        providerMetadata = reasoningEndMetadata(block.signature),
+                    )
                     "tool_use", "server_tool_use", "mcp_tool_use" -> {
                         events += StreamEvent.ToolInputEnd(block.id)
                         val toolName = block.toolName ?: return listOf(missingToolIdentityError("content_block_stop", "name"))
@@ -1101,6 +1159,29 @@ private class AnthropicStreamState(
         else -> input.toString()
     }
 
+    /** Wrap a captured thinking [signature] as `anthropic.signature` provider metadata for
+     *  [StreamEvent.ReasoningEnd]; [ProviderMetadata.None] when none was streamed. */
+    private fun reasoningEndMetadata(signature: String?): ProviderMetadata =
+        signature?.let { sig ->
+            val anthropic = buildJsonObject { put("signature", JsonPrimitive(sig)) }
+            ProviderMetadata.Raw(JsonObject(mapOf("anthropic" to anthropic)))
+        } ?: ProviderMetadata.None
+
+    /** Map a streamed `citations_delta` to a [StreamEvent.SourcePart], reusing the non-streaming
+     *  citation decoder; null when the delta carries no parsable citation. */
+    private fun citationSourceEvent(delta: JsonObject): StreamEvent.SourcePart? =
+        (delta["citation"] as? JsonObject)
+            ?.let { settings.anthropicCitationSource(it) }
+            ?.let { source ->
+                StreamEvent.SourcePart(
+                    id = settings.generateId(),
+                    sourceType = source.sourceType,
+                    url = source.url,
+                    title = source.title,
+                    providerMetadata = source.providerMetadata,
+                )
+            }
+
     private fun missingToolIdentityError(eventType: String, field: String): StreamEvent.Error =
         StreamEvent.Error("Anthropic stream protocol error: $eventType missing required $field.")
 
@@ -1122,4 +1203,8 @@ private data class AnthropicStreamBlock(
     val type: String,
     val toolName: String?,
     var input: String,
+    /** Captured from streamed `signature_delta` on a thinking block; surfaced on the
+     *  eventual [StreamEvent.ReasoningEnd] so streamed reasoning carries its signature
+     *  for replay (mirrors the non-streaming `signature` capture). */
+    var signature: String? = null,
 )
