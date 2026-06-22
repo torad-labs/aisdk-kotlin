@@ -17,7 +17,6 @@ import kotlinx.serialization.json.floatOrNull
 import kotlinx.serialization.json.intOrNull
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
-import kotlinx.serialization.json.jsonPrimitive
 
 public const val COHERE_VERSION: String = "3.0.36"
 private const val COHERE_MAX_EMBEDDINGS_PER_CALL: Int = 96
@@ -60,8 +59,8 @@ public data class CohereProviderSettings(
 
     private fun cohereErrorMessage(statusCode: Int, parsed: JsonElement?, raw: String): String {
         val obj = parsed as? JsonObject
-        val detail = obj?.get("message")?.jsonPrimitive?.contentOrNull
-            ?: obj?.get("error")?.jsonPrimitive?.contentOrNull
+        val detail = (obj?.get("message") as? JsonPrimitive)?.contentOrNull
+            ?: (obj?.get("error") as? JsonPrimitive)?.contentOrNull
             ?: raw.ifBlank { "request failed" }
         return "Cohere request failed ($statusCode): $detail"
     }
@@ -262,7 +261,7 @@ private class CohereChatLanguageModel(
                 -> Unit
             }
         }
-        val hasImage = parts.any { it["type"]?.jsonPrimitive?.contentOrNull == "image_url" }
+        val hasImage = parts.any { (it["type"] as? JsonPrimitive)?.contentOrNull == "image_url" }
         return buildJsonObject {
             put("role", JsonPrimitive("user"))
             put(
@@ -270,7 +269,7 @@ private class CohereChatLanguageModel(
                 if (hasImage) {
                     JsonArray(parts)
                 } else {
-                    JsonPrimitive(parts.joinToString("") { it["text"]?.jsonPrimitive?.contentOrNull.orEmpty() })
+                    JsonPrimitive(parts.joinToString("") { (it["text"] as? JsonPrimitive)?.contentOrNull.orEmpty() })
                 },
             )
         }
@@ -315,14 +314,14 @@ private class CohereChatLanguageModel(
         providerMetadata: ProviderMetadata,
     ): JsonObject = buildJsonObject {
         put("type", JsonPrimitive("image_url"))
-        put("image_url", buildJsonObject {
-            put("url", JsonPrimitive("data:${mediaType.normalizeCohereImageMediaType()};base64,$base64"))
-            (providerMetadata.toMap()["cohere"] as? JsonObject)
-                ?.get("detail")
-                ?.jsonPrimitive
-                ?.contentOrNull
-                ?.let { put("detail", JsonPrimitive(it)) }
-        })
+        put(
+            "image_url",
+            buildJsonObject {
+                put("url", JsonPrimitive("data:${mediaType.normalizeCohereImageMediaType()};base64,$base64"))
+                val detail = (providerMetadata.toMap()["cohere"] as? JsonObject)?.get("detail") as? JsonPrimitive
+                detail?.contentOrNull?.let { put("detail", JsonPrimitive(it)) }
+            },
+        )
     }
 
     private fun cohereDocumentPart(part: ContentPart.File): JsonObject = buildJsonObject {
@@ -412,30 +411,30 @@ private class CohereChatLanguageModel(
         val content = mutableListOf<ContentPart>()
         val text = message["content"]?.jsonArray.orEmpty().joinToString("") { part ->
             val obj = part.jsonObject
-            when (obj["type"]?.jsonPrimitive?.contentOrNull) {
-                "text" -> obj["text"]?.jsonPrimitive?.contentOrNull.orEmpty()
+            when ((obj["type"] as? JsonPrimitive)?.contentOrNull) {
+                "text" -> (obj["text"] as? JsonPrimitive)?.contentOrNull.orEmpty()
                 else -> ""
             }
         }
         if (text.isNotEmpty()) content += ContentPart.Text(text)
         message["content"]?.jsonArray.orEmpty().forEach { part ->
             val obj = part.jsonObject
-            if (obj["type"]?.jsonPrimitive?.contentOrNull == "thinking") {
-                obj["thinking"]?.jsonPrimitive?.contentOrNull?.takeIf { it.isNotEmpty() }?.let {
+            if ((obj["type"] as? JsonPrimitive)?.contentOrNull == "thinking") {
+                (obj["thinking"] as? JsonPrimitive)?.contentOrNull?.takeIf { it.isNotEmpty() }?.let {
                     content += ContentPart.Reasoning(it)
                 }
             }
         }
-        message["tool_plan"]?.jsonPrimitive?.contentOrNull?.takeIf { it.isNotBlank() }?.let {
+        (message["tool_plan"] as? JsonPrimitive)?.contentOrNull?.takeIf { it.isNotBlank() }?.let {
             content += ContentPart.Reasoning(it)
         }
         val toolCalls = message["tool_calls"]?.jsonArray.orEmpty().map { call ->
             val obj = call.jsonObject
             val function = obj["function"]?.jsonObject ?: JsonObject(emptyMap())
             ContentPart.ToolCall(
-                toolCallId = obj["id"]?.jsonPrimitive?.contentOrNull ?: IdGenerator.generate("call"),
-                toolName = function["name"]?.jsonPrimitive?.contentOrNull.orEmpty(),
-                input = cohereToolInput(function["arguments"]?.jsonPrimitive?.contentOrNull),
+                toolCallId = (obj["id"] as? JsonPrimitive)?.contentOrNull ?: IdGenerator.generate("call"),
+                toolName = (function["name"] as? JsonPrimitive)?.contentOrNull.orEmpty(),
+                input = cohereToolInput((function["arguments"] as? JsonPrimitive)?.contentOrNull),
             )
         }
         content += toolCalls
@@ -443,22 +442,23 @@ private class CohereChatLanguageModel(
             val obj = citation.jsonObject
             content += ContentPart.Source(
                 sourceType = StreamEvent.SourcePart.SourceType.Document,
-                title = obj["sources"]?.jsonArray?.firstOrNull()?.jsonObject
+                title = (obj["sources"]?.jsonArray?.firstOrNull()?.jsonObject
                     ?.get("document")?.jsonObject
-                    ?.get("title")?.jsonPrimitive?.contentOrNull ?: "Document",
+                    ?.get("title") as? JsonPrimitive)?.contentOrNull ?: "Document",
                 providerMetadata = ProviderMetadata.Raw(JsonObject(mapOf("cohere" to obj))),
             )
         }
         return LanguageModelResult(
             text = text,
             toolCalls = toolCalls,
-            finishReason = cohereFinishReason(value["finish_reason"]?.jsonPrimitive?.contentOrNull),
+            finishReason = cohereFinishReason((value["finish_reason"] as? JsonPrimitive)?.contentOrNull),
             usage = cohereUsage(value["usage"]?.jsonObject),
             content = content,
-            rawFinishReason = value["finish_reason"]?.jsonPrimitive?.contentOrNull,
+            rawFinishReason = (value["finish_reason"] as? JsonPrimitive)?.contentOrNull,
             request = LanguageModelRequestMetadata(requestBody),
             response = LanguageModelResponseMetadata(
-                id = value["generation_id"]?.jsonPrimitive?.contentOrNull ?: value["id"]?.jsonPrimitive?.contentOrNull,
+                id = (value["generation_id"] as? JsonPrimitive)?.contentOrNull
+                    ?: (value["id"] as? JsonPrimitive)?.contentOrNull,
                 headers = headers,
                 body = responseBody,
             ),
@@ -475,8 +475,8 @@ private class CohereChatLanguageModel(
 
     private fun cohereUsage(value: JsonObject?): Usage {
         val tokens = value?.get("tokens")?.jsonObject
-        val input = tokens?.get("input_tokens")?.jsonPrimitive?.intOrNull ?: 0
-        val output = tokens?.get("output_tokens")?.jsonPrimitive?.intOrNull ?: 0
+        val input = (tokens?.get("input_tokens") as? JsonPrimitive)?.intOrNull ?: 0
+        val output = (tokens?.get("output_tokens") as? JsonPrimitive)?.intOrNull ?: 0
         return Usage(
             inputTokens = Usage.InputTokenBreakdown(
                 total = input,
@@ -537,14 +537,17 @@ private class CohereEmbeddingModel(
         val value = response.value.jsonObject
         val embeddings = value["embeddings"]?.jsonObject?.get("float")?.jsonArray.orEmpty()
             .map { row -> row.jsonArray.map { WireDecoder.embeddingFloat(it, provider) } }
-        val usage = value["meta"]?.jsonObject
-            ?.get("billed_units")?.jsonObject
-            ?.get("input_tokens")?.jsonPrimitive?.intOrNull ?: 0
+        val billedUnits = value["meta"]?.jsonObject?.get("billed_units")?.jsonObject
+        val usage = (billedUnits?.get("input_tokens") as? JsonPrimitive)?.intOrNull ?: 0
         return EmbeddingModelResult(
             embeddings = embeddings,
             usage = EmbeddingUsage(tokens = usage, raw = value["meta"]),
             request = LanguageModelRequestMetadata(body),
-            response = LanguageModelResponseMetadata(id = value["id"]?.jsonPrimitive?.contentOrNull, headers = response.headers, body = response.value),
+            response = LanguageModelResponseMetadata(
+                id = (value["id"] as? JsonPrimitive)?.contentOrNull,
+                headers = response.headers,
+                body = response.value,
+            ),
         )
     }
 }
@@ -575,20 +578,23 @@ private class CohereRerankingModel(
         val value = response.value.jsonObject
         val results = value["results"]?.jsonArray.orEmpty().map { item ->
             val obj = item.jsonObject
-            val index = obj["index"]?.jsonPrimitive?.intOrNull ?: 0
+            val index = (obj["index"] as? JsonPrimitive)?.intOrNull ?: 0
             RerankedItem(
                 value = params.documents.getOrElse(index) { "" },
-                score = obj["relevance_score"]?.jsonPrimitive?.floatOrNull ?: 0f,
+                score = (obj["relevance_score"] as? JsonPrimitive)?.floatOrNull ?: 0f,
                 index = index,
             )
         }
-        val searchUnits = value["meta"]?.jsonObject
-            ?.get("billed_units")?.jsonObject
-            ?.get("search_units")?.jsonPrimitive?.intOrNull ?: 0
+        val billedUnits = value["meta"]?.jsonObject?.get("billed_units")?.jsonObject
+        val searchUnits = (billedUnits?.get("search_units") as? JsonPrimitive)?.intOrNull ?: 0
         return RerankingModelResult(
             results = results,
             usage = Usage.of(promptTokens = searchUnits, completionTokens = 0),
-            response = LanguageModelResponseMetadata(id = value["id"]?.jsonPrimitive?.contentOrNull, headers = response.headers, body = response.value),
+            response = LanguageModelResponseMetadata(
+                id = (value["id"] as? JsonPrimitive)?.contentOrNull,
+                headers = response.headers,
+                body = response.value,
+            ),
         )
     }
 }
