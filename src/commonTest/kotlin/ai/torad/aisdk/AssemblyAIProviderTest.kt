@@ -35,7 +35,12 @@ class AssemblyAIProviderTest {
                 "https://api.assemblyai.com/v2/transcript/tx1" to UrlHandler(
                     UrlResponse.JsonValue(
                         Json.parseToJsonElement(
-                            """{"id":"tx1","status":"completed","text":"hello world","language_code":"en","audio_duration":4.2,"words":[{"start":0.1,"end":0.3,"text":"hello"},{"start":0.4,"end":0.8,"text":"world"}]}""",
+                            """
+                            {"id":"tx1","status":"completed","text":"hello world",
+                            "language_code":"en","audio_duration":4.2,
+                            "words":[{"start":100,"end":300,"text":"hello"},
+                            {"start":400,"end":800,"text":"world"}]}
+                            """.trimIndent(),
                         ),
                         headers = mapOf("x-final" to "true"),
                     ),
@@ -84,6 +89,8 @@ class AssemblyAIProviderTest {
         assertEquals(2, result.segments.size)
         assertEquals("hello", result.segments.first().text)
         assertEquals(0.1f, result.segments.first().startSeconds)
+        assertEquals(0.3f, result.segments.first().endSeconds)
+        assertEquals(0.4f, result.segments.last().startSeconds)
         assertEquals(0.8f, result.segments.last().endSeconds)
         assertEquals("en", result.language)
         assertEquals(4.2f, result.durationInSeconds)
