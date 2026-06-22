@@ -15,8 +15,8 @@ import kotlinx.serialization.json.booleanOrNull
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.doubleOrNull
-import kotlinx.serialization.json.intOrNull
 import kotlinx.serialization.json.jsonPrimitive
+import kotlinx.serialization.json.longOrNull
 import kotlinx.serialization.serializer
 
 /** LLM-visible metadata for a [Tool]. Separates schema from executor. */
@@ -504,7 +504,9 @@ public object Schemas {
                 if (!primitive.isJsonString()) throw IllegalArgumentException("Expected JSON string.")
                 primitive.content
             }
-            "integer" -> value.jsonPrimitive.intOrNull ?: throw IllegalArgumentException("Expected JSON integer.")
+            // longOrNull (not intOrNull): JSON Schema "integer" is not 32-bit — a ms timestamp or
+            // 64-bit id is a valid integer that intOrNull would reject as null.
+            "integer" -> value.jsonPrimitive.longOrNull ?: throw IllegalArgumentException("Expected JSON integer.")
             "number" -> value.jsonPrimitive.doubleOrNull ?: throw IllegalArgumentException("Expected JSON number.")
             "boolean" -> value.jsonPrimitive.booleanOrNull ?: throw IllegalArgumentException("Expected JSON boolean.")
             else -> value
