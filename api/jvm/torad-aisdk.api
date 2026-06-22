@@ -6682,8 +6682,10 @@ public final class ai/torad/aisdk/ToolCallRepairKt {
 	public static final fun ModelRepromptRepair (Lai/torad/aisdk/LanguageModel;)Lkotlin/jvm/functions/Function5;
 }
 
-public abstract interface class ai/torad/aisdk/ToolChoice {
+public abstract class ai/torad/aisdk/ToolChoice {
 	public static final field Companion Lai/torad/aisdk/ToolChoice$Companion;
+	public synthetic fun <init> (ILkotlinx/serialization/internal/SerializationConstructorMarker;)V
+	public static final synthetic fun write$Self (Lai/torad/aisdk/ToolChoice;Lkotlinx/serialization/encoding/CompositeEncoder;Lkotlinx/serialization/descriptors/SerialDescriptor;)V
 }
 
 public final class ai/torad/aisdk/ToolChoice$Auto : ai/torad/aisdk/ToolChoice {
