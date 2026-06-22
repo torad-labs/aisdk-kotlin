@@ -25,7 +25,6 @@ import kotlinx.serialization.json.doubleOrNull
 import kotlinx.serialization.json.intOrNull
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
-import kotlinx.serialization.json.jsonPrimitive
 import kotlin.math.ceil
 
 public const val XAI_VERSION: String = "3.0.93"
@@ -121,8 +120,8 @@ public data class XaiProviderSettings(
 
     private fun xaiErrorMessage(statusCode: Int, parsed: JsonElement?, raw: String): String {
         val obj = parsed as? JsonObject
-        val detail = obj?.get("error")?.jsonObject?.get("message")?.jsonPrimitive?.contentOrNull
-            ?: obj?.get("error")?.jsonPrimitive?.contentOrNull
+        val detail = (obj?.get("error")?.jsonObject?.get("message") as? JsonPrimitive)?.contentOrNull
+            ?: (obj?.get("error") as? JsonPrimitive)?.contentOrNull
             ?: raw.ifBlank { "request failed" }
         return "xAI request failed ($statusCode): $detail"
     }
@@ -348,7 +347,7 @@ private class XaiChatLanguageModel(
 
     private fun LanguageModelResult.withXaiCitations(): LanguageModelResult {
         val citations = response.body?.jsonObject?.get("citations")?.jsonArray.orEmpty()
-            .mapNotNull { it.jsonPrimitive.contentOrNull }
+            .mapNotNull { (it as? JsonPrimitive)?.contentOrNull }
             .map { url ->
                 ContentPart.Source(
                     sourceType = StreamEvent.SourcePart.SourceType.Url,
@@ -385,7 +384,7 @@ private class XaiImageModel(
             put("prompt", JsonPrimitive(params.prompt))
             put("n", JsonPrimitive(params.n))
             put("response_format", JsonPrimitive("b64_json"))
-            (params.aspectRatio ?: options["aspect_ratio"]?.jsonPrimitive?.contentOrNull)?.let {
+            (params.aspectRatio ?: (options["aspect_ratio"] as? JsonPrimitive)?.contentOrNull)?.let {
                 put("aspect_ratio", JsonPrimitive(it))
             }
             settings.putXaiProviderOptions(this, options, setOf("aspect_ratio"))
@@ -401,11 +400,11 @@ private class XaiImageModel(
         val data = responseObj["data"]?.jsonArray.orEmpty()
         val images = data.map { image ->
             val obj = image.jsonObject
-            val base64 = obj["b64_json"]?.jsonPrimitive?.contentOrNull
+            val base64 = (obj["b64_json"] as? JsonPrimitive)?.contentOrNull
             if (base64 != null) {
                 GeneratedFile(mediaType = "image/png", base64 = base64)
             } else {
-                val url = obj["url"]?.jsonPrimitive?.contentOrNull
+                val url = (obj["url"] as? JsonPrimitive)?.contentOrNull
                     ?: throw NoImageGeneratedError("xAI image response is missing b64_json and url")
                 xaiDownloadImage(client, url, params.abortSignal)
             }
@@ -414,17 +413,21 @@ private class XaiImageModel(
             images = images,
             warnings = warnings,
             response = LanguageModelResponseMetadata(modelId = modelId, headers = response.headers, body = response.value),
-            providerMetadata = ProviderMetadata.Raw(JsonObject(mapOf("xai" to buildJsonObject {
-                put("images", JsonArray(data.map { image ->
-                    val revisedPrompt = image.jsonObject["revised_prompt"]?.jsonPrimitive?.contentOrNull
-                    buildJsonObject {
-                        if (revisedPrompt != null) put("revisedPrompt", JsonPrimitive(revisedPrompt))
-                    }
-                }))
-                responseObj["usage"]?.jsonObject?.get("cost_in_usd_ticks")?.let { put("costInUsdTicks", it) }
-            }))),
+            providerMetadata = xaiImageMetadata(data, responseObj),
         )
     }
+
+    private fun xaiImageMetadata(data: List<JsonElement>, responseObj: JsonObject): ProviderMetadata =
+        ProviderMetadata.Raw(JsonObject(mapOf("xai" to buildJsonObject {
+            val imageEntries = data.map { image ->
+                val revisedPrompt = (image.jsonObject["revised_prompt"] as? JsonPrimitive)?.contentOrNull
+                buildJsonObject {
+                    if (revisedPrompt != null) put("revisedPrompt", JsonPrimitive(revisedPrompt))
+                }
+            }
+            put("images", JsonArray(imageEntries))
+            responseObj["usage"]?.jsonObject?.get("cost_in_usd_ticks")?.let { put("costInUsdTicks", it) }
+        })))
 
     private fun putXaiImageInputs(builder: JsonObjectBuilder, files: List<ImageGenerationFile>) {
         val imageUrls = files.map { xaiDataUri(it) }
@@ -501,7 +504,7 @@ private class XaiVideoModel(
             body = body,
             headers = settings.xaiHeaders(params.headers),
         )
-        val requestId = create.value.jsonObject["request_id"]?.jsonPrimitive?.contentOrNull
+        val requestId = (create.value.jsonObject["request_id"] as? JsonPrimitive)?.contentOrNull
             ?: throw NoVideoGeneratedError("No request_id returned from xAI video API")
         val status = xaiPollVideo(
             client = client,
@@ -509,15 +512,17 @@ private class XaiVideoModel(
             requestId = requestId,
             callHeaders = params.headers,
             abortSignal = params.abortSignal,
-            pollIntervalMs = options["pollIntervalMs"]?.jsonPrimitive?.contentOrNull?.toLongOrNull() ?: DEFAULT_XAI_VIDEO_POLL_INTERVAL_MS,
-            pollTimeoutMs = options["pollTimeoutMs"]?.jsonPrimitive?.contentOrNull?.toLongOrNull() ?: DEFAULT_XAI_VIDEO_POLL_TIMEOUT_MS,
+            pollIntervalMs = (options["pollIntervalMs"] as? JsonPrimitive)?.contentOrNull?.toLongOrNull()
+                ?: DEFAULT_XAI_VIDEO_POLL_INTERVAL_MS,
+            pollTimeoutMs = (options["pollTimeoutMs"] as? JsonPrimitive)?.contentOrNull?.toLongOrNull()
+                ?: DEFAULT_XAI_VIDEO_POLL_TIMEOUT_MS,
         )
         val statusObj = status.value.jsonObject
         val video = statusObj["video"]?.jsonObject ?: JsonObject(emptyMap())
-        if (video["respect_moderation"]?.jsonPrimitive?.booleanOrNull == false) {
+        if ((video["respect_moderation"] as? JsonPrimitive)?.booleanOrNull == false) {
             throw NoVideoGeneratedError("xAI video generation was blocked due to a content policy violation.")
         }
-        val videoUrl = video["url"]?.jsonPrimitive?.contentOrNull
+        val videoUrl = (video["url"] as? JsonPrimitive)?.contentOrNull
             ?: throw NoVideoGeneratedError("xAI video generation completed but no video URL was returned.")
         return VideoModelResult(
             videos = listOf(GeneratedFile(mediaType = "video/mp4", base64 = "", url = videoUrl)),
@@ -534,8 +539,8 @@ private class XaiVideoModel(
     }
 
     private fun xaiVideoMode(options: JsonObject): String? {
-        options["mode"]?.jsonPrimitive?.contentOrNull?.let { return it }
-        if (!options["videoUrl"]?.jsonPrimitive?.contentOrNull.isNullOrBlank()) return "edit-video"
+        (options["mode"] as? JsonPrimitive)?.contentOrNull?.let { return it }
+        if (!(options["videoUrl"] as? JsonPrimitive)?.contentOrNull.isNullOrBlank()) return "edit-video"
         if (options["referenceImageUrls"]?.jsonArray?.isNotEmpty() == true) return "reference-to-video"
         return null
     }
@@ -571,7 +576,7 @@ private class XaiVideoModel(
         if (!isEdit) params.durationSeconds?.let { put("duration", JsonPrimitive(it.toDouble())) }
         if (!isEdit && !isExtension) params.aspectRatio?.let { put("aspect_ratio", JsonPrimitive(it)) }
         if (!isEdit && !isExtension) {
-            val resolution = options["resolution"]?.jsonPrimitive?.contentOrNull
+            val resolution = (options["resolution"] as? JsonPrimitive)?.contentOrNull
                 ?: params.resolution?.let { xaiVideoResolutionMap[it] ?: it.also {
                     warnings += CallWarning(
                         "unsupported",
@@ -581,7 +586,7 @@ private class XaiVideoModel(
             if (resolution in setOf("480p", "720p")) put("resolution", JsonPrimitive(resolution))
         }
         if (isEdit || isExtension) {
-            val videoUrl = options["videoUrl"]?.jsonPrimitive?.contentOrNull
+            val videoUrl = (options["videoUrl"] as? JsonPrimitive)?.contentOrNull
                 ?: throw InvalidArgumentError("providerOptions.xai.videoUrl", "videoUrl is required for xAI $mode mode")
             put("video", buildJsonObject { put("url", JsonPrimitive(videoUrl)) })
         }
@@ -589,7 +594,8 @@ private class XaiVideoModel(
             put("image", buildJsonObject { put("url", JsonPrimitive(xaiDataUri(image))) })
         }
         if (mode == "reference-to-video") {
-            val urls = options["referenceImageUrls"]?.jsonArray.orEmpty().mapNotNull { it.jsonPrimitive.contentOrNull }
+            val urls = options["referenceImageUrls"]?.jsonArray.orEmpty()
+                .mapNotNull { (it as? JsonPrimitive)?.contentOrNull }
             put("reference_images", JsonArray(urls.map { url -> buildJsonObject { put("url", JsonPrimitive(url)) } }))
         }
         settings.putXaiProviderOptions(
@@ -624,8 +630,8 @@ private class XaiVideoModel(
                 abortSignal = abortSignal,
             )
             val body = status.value.jsonObject
-            val statusValue = body["status"]?.jsonPrimitive?.contentOrNull
-            val hasVideoUrl = body["video"]?.jsonObject?.get("url")?.jsonPrimitive?.contentOrNull != null
+            val statusValue = (body["status"] as? JsonPrimitive)?.contentOrNull
+            val hasVideoUrl = (body["video"]?.jsonObject?.get("url") as? JsonPrimitive)?.contentOrNull != null
             if (statusValue == "done" || (statusValue == null && hasVideoUrl)) return status
             if (statusValue in setOf("failed", "error")) throw NoVideoGeneratedError("xAI video generation failed: $body")
         }
