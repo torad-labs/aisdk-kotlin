@@ -24,7 +24,6 @@ import kotlinx.serialization.json.floatOrNull
 import kotlinx.serialization.json.intOrNull
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
-import kotlinx.serialization.json.jsonPrimitive
 
 public const val DEEPGRAM_VERSION: String = "2.0.33"
 
@@ -82,8 +81,8 @@ public data class DeepgramProviderSettings(
 
     internal fun deepgramErrorMessage(statusCode: Int, parsed: JsonElement?, raw: String): String {
         val obj = parsed as? JsonObject
-        val detail = obj?.get("error")?.jsonObject?.get("message")?.jsonPrimitive?.contentOrNull
-            ?: obj?.get("error")?.jsonPrimitive?.contentOrNull
+        val detail = (obj?.get("error")?.jsonObject?.get("message") as? JsonPrimitive)?.contentOrNull
+            ?: (obj?.get("error") as? JsonPrimitive)?.contentOrNull
             ?: raw.ifBlank { "request failed" }
         return "Deepgram request failed ($statusCode): $detail"
     }
@@ -250,8 +249,8 @@ public class DeepgramSpeechModel(
         queryParams: LinkedHashMap<String, String>,
         warnings: MutableList<CallWarning>,
     ) {
-        val encoding = options["encoding"]?.jsonPrimitive?.contentOrNull?.lowercase()
-        val container = options["container"]?.jsonPrimitive?.contentOrNull?.lowercase()
+        val encoding = (options["encoding"] as? JsonPrimitive)?.contentOrNull?.lowercase()
+        val container = (options["container"] as? JsonPrimitive)?.contentOrNull?.lowercase()
         if (encoding != null) {
             queryParams["encoding"] = encoding
             if (container != null) {
@@ -293,15 +292,15 @@ public class DeepgramSpeechModel(
             }
         }
 
-        options["sampleRate"]?.jsonPrimitive?.intOrNull?.let { sampleRate ->
+        (options["sampleRate"] as? JsonPrimitive)?.intOrNull?.let { sampleRate ->
             applyDeepgramSampleRate(sampleRate, queryParams, warnings)
         }
         options["bitRate"]?.let { bitRate ->
             applyDeepgramBitRate(bitRate, queryParams, warnings)
         }
-        options["callback"]?.jsonPrimitive?.contentOrNull?.let { queryParams["callback"] = it }
-        options["callbackMethod"]?.jsonPrimitive?.contentOrNull?.let { queryParams["callback_method"] = it }
-        options["mipOptOut"]?.jsonPrimitive?.booleanOrNull?.let { queryParams["mip_opt_out"] = it.toString() }
+        (options["callback"] as? JsonPrimitive)?.contentOrNull?.let { queryParams["callback"] = it }
+        (options["callbackMethod"] as? JsonPrimitive)?.contentOrNull?.let { queryParams["callback_method"] = it }
+        (options["mipOptOut"] as? JsonPrimitive)?.booleanOrNull?.let { queryParams["mip_opt_out"] = it.toString() }
         options["tag"]?.let { queryParams["tag"] = settings.deepgramQueryValue(it) }
     }
 
@@ -423,13 +422,13 @@ private class DeepgramTranscriptionModel(
             ?.get("alternatives")?.jsonArray?.firstOrNull()?.jsonObject
         val words = firstAlternative?.get("words")?.jsonArray.orEmpty()
         return TranscriptionModelResult(
-            text = firstAlternative?.get("transcript")?.jsonPrimitive?.contentOrNull.orEmpty(),
+            text = (firstAlternative?.get("transcript") as? JsonPrimitive)?.contentOrNull.orEmpty(),
             segments = words.map { word ->
                 val obj = word.jsonObject
                 TranscriptSegment(
-                    text = obj["word"]?.jsonPrimitive?.contentOrNull.orEmpty(),
-                    startSeconds = obj["start"]?.jsonPrimitive?.floatOrNull,
-                    endSeconds = obj["end"]?.jsonPrimitive?.floatOrNull,
+                    text = (obj["word"] as? JsonPrimitive)?.contentOrNull.orEmpty(),
+                    startSeconds = (obj["start"] as? JsonPrimitive)?.floatOrNull,
+                    endSeconds = (obj["end"] as? JsonPrimitive)?.floatOrNull,
                 )
             },
             warnings = prepared.warnings,
@@ -439,8 +438,8 @@ private class DeepgramTranscriptionModel(
                 body = response.value,
             ),
             providerMetadata = ProviderMetadata.Raw(JsonObject(mapOf("deepgram" to response.value))),
-            language = firstChannel?.get("detected_language")?.jsonPrimitive?.contentOrNull,
-            durationInSeconds = value["metadata"]?.jsonObject?.get("duration")?.jsonPrimitive?.floatOrNull,
+            language = (firstChannel?.get("detected_language") as? JsonPrimitive)?.contentOrNull,
+            durationInSeconds = (value["metadata"]?.jsonObject?.get("duration") as? JsonPrimitive)?.floatOrNull,
         )
     }
 
