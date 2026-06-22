@@ -1108,7 +1108,7 @@ public class HttpMCPTransport(
                 JSONRPCMessage.fromJsonBatch(response.bodyAsText()).forEach { onMessage?.invoke(it) }
             }
             contentType.contains("text/event-stream", ignoreCase = true) -> {
-                McpSseFrame.parseStream(response.bodyAsChannel()) { event ->
+                McpSseFrame.parseStreamReleasing(response.bodyAsChannel()) { event ->
                     if (event.event == "message") {
                         onMessage?.invoke(JSONRPCMessage.fromJson(event.data))
                     }
@@ -1154,7 +1154,7 @@ public class HttpMCPTransport(
                 onError?.invoke(error)
                 return
             }
-            McpSseFrame.parseStream(response.bodyAsChannel()) { event ->
+            McpSseFrame.parseStreamReleasing(response.bodyAsChannel()) { event ->
                 if (event.event == "message") {
                     // Isolate per-message handling (mirrors the stdio reader): a malformed/unknown-ID
                     // frame is a NON-fatal protocol error routed to onError — it must not unwind
@@ -1246,12 +1246,15 @@ public class SseMCPTransport(
                         "MCP SSE Transport Error: ${response.status.value} ${response.status.description}$hint",
                     )
                 }
-                McpSseFrame.parseStream(response.bodyAsChannel()) { event ->
+                McpSseFrame.parseStreamReleasing(response.bodyAsChannel()) { event ->
                     when (event.event) {
                         "endpoint" -> {
                             endpoint = McpUrl.resolve(event.data, url).also { resolved ->
                                 if (McpUrl.origin(resolved) != McpUrl.origin(url)) {
-                                    throw MCPClientError("MCP SSE Transport Error: Endpoint origin does not match connection origin: ${McpUrl.origin(resolved)}")
+                                    throw MCPClientError(
+                                        "MCP SSE Transport Error: Endpoint origin does not " +
+                                            "match connection origin: ${McpUrl.origin(resolved)}",
+                                    )
                                 }
                             }
                             established = true
@@ -1425,6 +1428,19 @@ internal data class McpSseFrame(
                 }
             }
             frame.flush(onEvent)
+        }
+
+        /**
+         * [parseStream] that ALWAYS releases the channel on EOF/error/cancel — on some Ktor engines
+         * the connection only closes when the body channel is explicitly cancelled (mirrors
+         * HttpTransport.streamSse). Used by the MCP SSE read sites so the release isn't duplicated.
+         */
+        suspend fun parseStreamReleasing(channel: ByteReadChannel, onEvent: suspend (McpSseFrame) -> Unit) {
+            try {
+                parseStream(channel, onEvent)
+            } finally {
+                channel.cancel(null)
+            }
         }
     }
 }
