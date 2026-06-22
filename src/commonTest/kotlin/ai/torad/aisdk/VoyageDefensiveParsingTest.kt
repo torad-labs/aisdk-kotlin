@@ -10,6 +10,7 @@ import io.ktor.http.HttpStatusCode
 import io.ktor.http.headersOf
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
+import kotlin.test.assertEquals
 import kotlin.test.assertFails
 import kotlin.test.assertTrue
 
@@ -42,5 +43,50 @@ class VoyageDefensiveParsingTest {
             error.message?.contains("Voyage request failed") == true,
             "the structured Voyage error is built, not an IllegalArgumentException from jsonPrimitive",
         )
+    }
+
+    /**
+     * Regression (Wave 7b, array-element accessors): the rerank parser read each `data` element via
+     * the non-null `item.jsonObject`, throwing ISE on a non-object element. The safe
+     * `item as? JsonObject ?: return@mapNotNull null` drops the malformed element; valid ones survive.
+     */
+    @Test
+    fun `rerank drops a malformed data element instead of crashing`() = runTest {
+        val client = HttpClient(
+            MockEngine {
+                respond(
+                    content = """{"data":[{"index":0,"relevance_score":0.9},"malformed"]}""",
+                    status = HttpStatusCode.OK,
+                    headers = headersOf(HttpHeaders.ContentType, "application/json"),
+                )
+            },
+        )
+        val result = Voyage(client, VoyageProviderSettings(apiKey = "key"))
+            .reranking(ModelId("rerank-2"))
+            .rerank(RerankingParams(query = "q", documents = listOf("a", "b")))
+        assertEquals(1, result.results.size)
+    }
+
+    /**
+     * Regression (Wave 7b): the embed parser read each `data` row via the non-null `item.jsonObject`
+     * to reach `embedding`. The safe `(item as? JsonObject)?.get("embedding")` degrades a malformed
+     * row to an empty embedding in place — the row count (and thus index alignment) is preserved.
+     */
+    @Test
+    fun `embed degrades a malformed data row to an empty embedding instead of crashing`() = runTest {
+        val client = HttpClient(
+            MockEngine {
+                respond(
+                    content = """{"data":[{"embedding":[0.1,0.2]},"malformed"]}""",
+                    status = HttpStatusCode.OK,
+                    headers = headersOf(HttpHeaders.ContentType, "application/json"),
+                )
+            },
+        )
+        val result = Voyage(client, VoyageProviderSettings(apiKey = "key"))
+            .embedding(ModelId("voyage-4"))
+            .embed(EmbeddingModelCallParams(values = listOf("hi", "yo")))
+        assertEquals(2, result.embeddings.size)
+        assertTrue(result.embeddings[1].isEmpty(), "the malformed row degrades to an empty embedding, count preserved")
     }
 }
