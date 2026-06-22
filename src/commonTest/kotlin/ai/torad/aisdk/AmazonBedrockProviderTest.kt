@@ -558,6 +558,33 @@ class AmazonBedrockProviderTest {
     }
 
     @Test
+    fun `mantle chat decodes OpenAI shaped tool_calls into ContentPart ToolCall`() = runTest {
+        val toolCall =
+            """{"id":"call_abc","function":{"name":"get_weather","arguments":"{\"city\":\"Paris\"}"}}"""
+        val message = """{"content":null,"tool_calls":[$toolCall]}"""
+        val body = """{"choices":[{"message":$message,"finish_reason":"tool_calls"}]}"""
+        val fixture = TestServer.createTestServer(
+            mutableMapOf(
+                "https://mantle.test/v1/chat/completions" to
+                    UrlHandler(UrlResponse.JsonValue(Json.parseToJsonElement(body))),
+            ),
+        )
+        fixture.server.start()
+        val provider = BedrockMantle(
+            fixture.httpClient(),
+            BedrockMantleProviderSettings(apiKey = "key", baseURL = "https://mantle.test/v1"),
+        )
+        val result = provider.chat(ModelId("m")).generate(
+            LanguageModelCallParams(messages = listOf(UserMessage("hi"))),
+        )
+        assertEquals(FinishReason.ToolCalls, result.finishReason)
+        val call = result.toolCalls.single()
+        assertEquals("call_abc", call.toolCallId)
+        assertEquals("get_weather", call.toolName)
+        assertEquals("Paris", call.input.jsonObject["city"]?.jsonPrimitive?.contentOrNull)
+    }
+
+    @Test
     fun `bedrock SigV4 clock skew errors include actionable clock guidance`() = runTest {
         val fixture = TestServer.createTestServer(
             mutableMapOf(

@@ -381,8 +381,20 @@ private class BedrockMantleChatLanguageModel(
         val choice = ((obj["choices"] as? JsonArray)?.firstOrNull() as? JsonObject)
         val message = (choice?.get("message") as? JsonObject)
         val content = (message?.get("content") as? JsonPrimitive)?.contentOrNull.orEmpty()
+        val toolCalls = (message?.get("tool_calls") as? JsonArray).orEmpty().mapNotNull { call ->
+            val callObj = call as? JsonObject ?: return@mapNotNull null
+            val function = callObj["function"] as? JsonObject ?: return@mapNotNull null
+            val toolName = (function["name"] as? JsonPrimitive)?.contentOrNull ?: return@mapNotNull null
+            val arguments = (function["arguments"] as? JsonPrimitive)?.contentOrNull
+            ContentPart.ToolCall(
+                toolCallId = (callObj["id"] as? JsonPrimitive)?.contentOrNull ?: IdGenerator.generate("call"),
+                toolName = toolName,
+                input = ContentPart.ToolCall.parseOpenAIToolInput(arguments),
+            )
+        }
         return LanguageModelResult(
             text = content,
+            toolCalls = toolCalls,
             finishReason = mapOpenAILikeFinishReason((choice?.get("finish_reason") as? JsonPrimitive)?.contentOrNull),
             usage = bedrockOpenAILikeUsage(obj["usage"]),
             request = LanguageModelRequestMetadata(body),
