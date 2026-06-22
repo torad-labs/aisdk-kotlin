@@ -17,17 +17,17 @@ Source: multi-agent adversarial audit wf_9484daad-28f. 55 raw -> 26 verified -> 
 | 2 | HIGH | mcp | `MCP.kt:1240` | ☑ | A single late/duplicate/malformed inbound message aborts the entire SSE inbound stream and |
 | 2 | HIGH | tools-approval | `Crypto.kt:91` | ☑ | HMAC-SHA256 crashes (IndexOutOfBoundsException) for any key longer than 64 bytes — breaks  |
 | 2 | HIGH | json-wire | `MCPStdioProcess.jvmAndAndroid.kt:17` | ☑ | Spawned MCP stdio child's stderr is never drained, redirected, or closed — child blocks an |
-| 3 | MEDIUM | streaming-sse | `EventStreamParser.kt:29` | ☐ | EventStreamParser silently yields an empty, error-free stream when the body contains no SS |
-| 3 | MEDIUM | streaming-sse | `Streaming.kt:95` | ☐ | fromOpenAI crashes the whole stream on non-primitive id/model/created fields |
-| 3 | MEDIUM | mcp | `MCP.kt:504` | ☐ | Pending-request handler leaks when a request is cancelled/times out (suspend cleanup in fi |
-| 3 | MEDIUM | mcp | `MCP.kt:1229` | ☐ | MCP SSE readers leak the HTTP connection — bodyAsChannel() is never cancelled and the resp |
-| 3 | MEDIUM | mcp | `MCP.kt:1474` | ☐ | Stdio reader EOF fires onClose but never destroys the child process or closes its streams |
-| 3 | MEDIUM | mcp | `MCP.kt:677` | ☐ | Unsafe `.jsonPrimitive` on server-controlled content parts throws on non-primitive fields  |
-| 3 | MEDIUM | tools-approval | `Tool.kt:507` | ☐ | Schema validation rejects valid 64-bit JSON integers (intOrNull boundary) as "not an integ |
-| 3 | MEDIUM | json-wire | `FixJson.kt:262` | ☐ | fixJson drops INSIDE_STRING_UNICODE_ESCAPE state — truncation mid-\uXXXX yields invalid JS |
-| 3 | MEDIUM | core-transport | `AbortSignal.kt:159` | ☐ | Data race on plain MutableList in CombineAbortSignals teardown vs. wiring loop |
-| 3 | MEDIUM | structured-object-ui | `MCP.kt:1145` | ☐ | MCP HTTP/SSE transports leak the response connection on the error/cancel path (no execute{ |
-| 3 | MEDIUM | structured-object-ui | `MessageStreamReader.kt:82` | ☐ | Unchecked cast crashes stream when a block id is reused across text and reasoning parts |
+| 3 | MEDIUM | streaming-sse | `EventStreamParser.kt:29` | ☑ | EventStreamParser silently yields an empty, error-free stream when the body contains no SS |
+| 3 | MEDIUM | streaming-sse | `Streaming.kt:95` | ☑ | fromOpenAI crashes the whole stream on non-primitive id/model/created fields |
+| 3 | MEDIUM | mcp | `MCP.kt:504` | ☑ | Pending-request handler leaks when a request is cancelled/times out (suspend cleanup in fi |
+| 3 | MEDIUM | mcp | `MCP.kt:1229` | ☑ | MCP SSE readers leak the HTTP connection — bodyAsChannel() is never cancelled and the resp |
+| 3 | MEDIUM | mcp | `MCP.kt:1474` | ☑ | Stdio reader EOF fires onClose but never destroys the child process or closes its streams |
+| 3 | MEDIUM | mcp | `MCP.kt:677` | ☑ | Unsafe `.jsonPrimitive` on server-controlled content parts throws on non-primitive fields  |
+| 3 | MEDIUM | tools-approval | `Tool.kt:507` | ☑ | Schema validation rejects valid 64-bit JSON integers (intOrNull boundary) as "not an integ |
+| 3 | MEDIUM | json-wire | `FixJson.kt:262` | ☑ | fixJson drops INSIDE_STRING_UNICODE_ESCAPE state — truncation mid-\uXXXX yields invalid JS |
+| 3 | MEDIUM | core-transport | `AbortSignal.kt:159` | ☑ | Data race on plain MutableList in CombineAbortSignals teardown vs. wiring loop |
+| 3 | MEDIUM | structured-object-ui | `MCP.kt:1145` | ☑ | MCP HTTP/SSE transports leak the response connection on the error/cancel path (no execute{ |
+| 3 | MEDIUM | structured-object-ui | `MessageStreamReader.kt:82` | ☑ | Unchecked cast crashes stream when a block id is reused across text and reasoning parts |
 | 4 | LOW | agent-loop | `AgentSession.kt:238` | ☐ | AgentSession streaming-mode error drops the underlying cause, hiding the root failure |
 | 4 | LOW | agent-loop | `ToolLoopAgent.kt:1031` | ☐ | Duplicate toolCallId within one step collides in resolvedForExecution, executing a call wi |
 | 4 | LOW | streaming-sse | `EventStreamParser.kt:27` | ☐ | Empty/blank SSE data field is emitted as a spurious parse Failure (StreamEvent.Error) |
