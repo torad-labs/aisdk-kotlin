@@ -142,6 +142,10 @@ public object AbortSignals {
         coroutineContext[Job]?.asAbortSignal() ?: AbortSignalNever
 }
 
+// FunctionNaming/ReturnCount: PascalCase factory (matches AbortSignalFromJob) with intentional
+// early returns for the empty / single / already-aborted fast paths — long-standing, baselined.
+@OptIn(ExperimentalAtomicApi::class)
+@Suppress("FunctionNaming", "ReturnCount")
 public fun CombineAbortSignals(vararg signals: AbortSignal): AbortSignal {
     val active = signals.filterNot { it === AbortSignalNever }
     if (active.isEmpty()) return AbortSignalNever
@@ -156,13 +160,20 @@ public fun CombineAbortSignals(vararg signals: AbortSignal): AbortSignal {
         return controller.signal
     }
 
-    val registrations = mutableListOf<AbortSignal.AbortRegistration>()
+    // Copy-on-write via AtomicReference (the AbortController idiom): the wiring loop CAS-appends
+    // while the teardown reads an immutable snapshot via exchange. A plain MutableList raced here —
+    // a source firing from another thread mid-wiring iterated the list while the loop mutated it
+    // (ConcurrentModificationException on JVM, memory-unsafe on Native).
+    val registrations = AtomicReference<List<AbortSignal.AbortRegistration>>(emptyList())
     // Attach teardown BEFORE the forwards, so a source that aborts
     // synchronously mid-wiring still tears down everything registered so far.
-    controller.signal.register { registrations.forEach { it.cancel() } }
+    controller.signal.register { registrations.exchange(emptyList()).forEach { it.cancel() } }
     for (signal in active) {
         val registration = signal.register { controller.abort() }
-        registrations += registration
+        while (true) {
+            val current = registrations.load()
+            if (registrations.compareAndSet(current, current + registration)) break
+        }
         // If that source fired synchronously, the teardown already ran (before
         // this registration was listed). Cancel it explicitly and stop wiring
         // the remaining sources — the controller is already terminal.
