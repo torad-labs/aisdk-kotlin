@@ -504,10 +504,19 @@ internal abstract class OpenAICompatibleHttpModel(
         else -> value.toString()
     }
 
-    private fun openAIContentString(value: JsonElement): String = when (value) {
-        is JsonPrimitive -> value.contentOrNull ?: value.toString()
-        else -> value.toString()
-    }
+    private fun openAIContentString(value: JsonElement): String =
+        when (val output = ToolResultOutputs.toolResultOutputFromWire(value)) {
+            is ToolResultOutput.Text -> output.text
+            is ToolResultOutput.Error -> output.message
+            is ToolResultOutput.ExecutionDenied -> output.reason ?: "Tool execution denied."
+            is ToolResultOutput.Json -> output.json.toString()
+            is ToolResultOutput.ErrorJson -> output.json.toString()
+            is ToolResultOutput.Content -> output.value.joinToString("", transform = ::openAIToolResultItemText)
+        }
+
+    private fun openAIToolResultItemText(item: JsonElement): String =
+        ((item as? JsonObject)?.takeIf { (it["type"] as? JsonPrimitive)?.contentOrNull == "text" }
+            ?.get("text") as? JsonPrimitive)?.contentOrNull.orEmpty()
 
     private fun JsonObject.deepMergedWith(other: JsonObject): JsonObject {
         val merged = toMutableMap()

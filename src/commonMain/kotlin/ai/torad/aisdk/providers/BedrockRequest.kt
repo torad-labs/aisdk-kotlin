@@ -244,11 +244,24 @@ internal object BedrockRequest {
         is ContentPart.Image -> null
     }
 
-    private fun bedrockToolResultContent(output: JsonElement): JsonObject = when {
-        output is JsonPrimitive && output.isString -> buildJsonObject { put("text", JsonPrimitive(output.content)) }
-        // Any non-string output becomes a JSON-stringified text block (Bedrock rejects a `json` block).
-        else -> buildJsonObject { put("text", JsonPrimitive(output.toString())) }
-    }
+    private fun bedrockToolResultContent(output: JsonElement): JsonObject =
+        buildJsonObject { put("text", JsonPrimitive(bedrockToolResultText(output))) }
+
+    // Bedrock tool_result here is a single text block (it rejects a `json` block; image blocks would
+    // need a multi-block array — tracked follow-up). Decode the wire wrapper and extract the real
+    // content instead of stringifying it, so a Text/structured output isn't sent as a raw JSON blob.
+    private fun bedrockToolResultText(output: JsonElement): String =
+        when (val o = ToolResultOutputs.toolResultOutputFromWire(output)) {
+            is ToolResultOutput.Text -> o.text
+            is ToolResultOutput.Error -> o.message
+            is ToolResultOutput.ExecutionDenied -> o.reason ?: "Tool execution denied."
+            is ToolResultOutput.Json -> o.json.toString()
+            is ToolResultOutput.ErrorJson -> o.json.toString()
+            is ToolResultOutput.Content -> o.value.joinToString("") { item ->
+                ((item as? JsonObject)?.takeIf { (it["type"] as? JsonPrimitive)?.contentOrNull == "text" }
+                    ?.get("text") as? JsonPrimitive)?.contentOrNull.orEmpty()
+            }
+        }
 
     private fun bedrockTools(
         modelId: String,
