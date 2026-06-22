@@ -1,4 +1,5 @@
-# Robustness audit — fix-tracking
+# Robustness audit — fix-tracking  ✅ ALL 26 FIXED (Waves 1-4, CI-green)
+
 
 Source: multi-agent adversarial audit wf_9484daad-28f. 55 raw -> 26 verified -> **24 unique** (MCP-stderr deduped 3->1).
 
@@ -28,10 +29,10 @@ Source: multi-agent adversarial audit wf_9484daad-28f. 55 raw -> 26 verified -> 
 | 3 | MEDIUM | core-transport | `AbortSignal.kt:159` | ☑ | Data race on plain MutableList in CombineAbortSignals teardown vs. wiring loop |
 | 3 | MEDIUM | structured-object-ui | `MCP.kt:1145` | ☑ | MCP HTTP/SSE transports leak the response connection on the error/cancel path (no execute{ |
 | 3 | MEDIUM | structured-object-ui | `MessageStreamReader.kt:82` | ☑ | Unchecked cast crashes stream when a block id is reused across text and reasoning parts |
-| 4 | LOW | agent-loop | `AgentSession.kt:238` | ☐ | AgentSession streaming-mode error drops the underlying cause, hiding the root failure |
-| 4 | LOW | agent-loop | `ToolLoopAgent.kt:1031` | ☐ | Duplicate toolCallId within one step collides in resolvedForExecution, executing a call wi |
-| 4 | LOW | streaming-sse | `EventStreamParser.kt:27` | ☐ | Empty/blank SSE data field is emitted as a spurious parse Failure (StreamEvent.Error) |
-| 4 | LOW | mcp | `MCP.kt:1457` | ☐ | Stdio start() leaks its CoroutineScope and wedges the lifecycle in Active when process spa |
+| 4 | LOW | agent-loop | `AgentSession.kt:238` | ☑ | AgentSession streaming-mode error drops the underlying cause, hiding the root failure |
+| 4 | LOW | agent-loop | `ToolLoopAgent.kt:1031` | ☑ | Duplicate toolCallId within one step collides in resolvedForExecution, executing a call wi |
+| 4 | LOW | streaming-sse | `EventStreamParser.kt:27` | ☑ | Empty/blank SSE data field is emitted as a spurious parse Failure (StreamEvent.Error) |
+| 4 | LOW | mcp | `MCP.kt:1457` | ☑ | Stdio start() leaks its CoroutineScope and wedges the lifecycle in Active when process spa |
 
 ### [W1 · HIGH] Parallel tool execution deadlocks permanently when a tool throws AbortError/CancellationException (the designed abort path black-holes)
 `src/commonMain/kotlin/ai/torad/aisdk/ToolLoopAgent.kt:1150` — agent-loop/concurrency-cancellation
