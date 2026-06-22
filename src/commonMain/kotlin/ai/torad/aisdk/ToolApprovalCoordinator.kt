@@ -46,7 +46,9 @@ internal class ToolApprovalCoordinator<TContext>(
         val approvals = lastToolMsg.content.filterIsInstance<ContentPart.ToolApprovalResponse>()
         if (approvals.isEmpty()) return null
 
-        val priorAssistantMsg = messages.findLast { it.role == MessageRole.Assistant } ?: return null
+        val priorAssistantIndex = messages.indexOfLast { it.role == MessageRole.Assistant }
+        if (priorAssistantIndex == -1) return null
+        val priorAssistantMsg = messages[priorAssistantIndex]
         val priorToolCalls = priorAssistantMsg.content.filterIsInstance<ContentPart.ToolCall>()
         if (priorToolCalls.isEmpty()) return null
 
@@ -59,7 +61,10 @@ internal class ToolApprovalCoordinator<TContext>(
         // v6.0.202 fail-closed re-validation checks before an approved tool executes.
         val requestsByApprovalId = approvalRequests.associateBy { it.approvalId ?: it.toolCallId }
         // Idempotency: a call already answered by a tool result must NOT re-execute.
-        val alreadyResolved = resolvedToolCallIds(messages)
+        // Scope to results from THIS pending turn (messages after the assistant turn that
+        // issued the calls); a same-valued toolCallId reused by a prior, unrelated turn must
+        // not mask a legitimately-pending approval and leave a dangling tool call.
+        val alreadyResolved = resolvedToolCallIds(messages, priorAssistantIndex)
 
         // TOOL-003: index calls by toolCallId so duplicate approvals for the same id
         // are each matched deterministically to a distinct call occurrence.
@@ -176,9 +181,12 @@ internal class ToolApprovalCoordinator<TContext>(
         }
     }
 
-    /** Tool-call ids already answered by a tool result anywhere in the message log. */
-    private fun resolvedToolCallIds(messages: List<ModelMessage>): MutableSet<String> =
+    /** Tool-call ids answered by a tool result within the pending turn — messages after
+     *  [afterIndex] (the assistant turn that issued the pending calls). Scoping here, rather
+     *  than the whole log, stops a cross-turn toolCallId reuse from masking a pending call. */
+    private fun resolvedToolCallIds(messages: List<ModelMessage>, afterIndex: Int): MutableSet<String> =
         messages.asSequence()
+            .drop(afterIndex + 1)
             .filter { it.role == MessageRole.Tool }
             .flatMap { it.content.asSequence() }
             .filterIsInstance<ContentPart.ToolResult>()
