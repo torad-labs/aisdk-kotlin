@@ -34,7 +34,6 @@ import kotlinx.serialization.json.floatOrNull
 import kotlinx.serialization.json.intOrNull
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
-import kotlinx.serialization.json.jsonPrimitive
 
 internal data class GooglePreparedRequest(
     val body: JsonObject,
@@ -354,9 +353,9 @@ internal class GoogleGenerativeAILanguageModel(
                 content += ContentPart.ToolResult(lastCodeExecutionId ?: settings.generateId(), "code_execution", result, providerMetadata = ProviderMetadata.Raw(JsonObject(mapOf("google" to buildJsonObject { put("providerExecuted", JsonPrimitive(true)) }))))
                 lastCodeExecutionId = null
             }
-            obj["text"]?.jsonPrimitive?.contentOrNull?.let { text ->
+            (obj["text"] as? JsonPrimitive)?.contentOrNull?.let { text ->
                 val metadata = googlePartMetadata(obj)?.let { ProviderMetadata.Raw(JsonObject(it)) } ?: ProviderMetadata.None
-                content += if (obj["thought"]?.jsonPrimitive?.booleanOrNull == true) {
+                content += if ((obj["thought"] as? JsonPrimitive)?.booleanOrNull == true) {
                     ContentPart.Reasoning(text, metadata)
                 } else {
                     ContentPart.Text(text, metadata)
@@ -364,7 +363,7 @@ internal class GoogleGenerativeAILanguageModel(
             }
             obj["functionCall"]?.jsonObject?.let { callObj ->
                 val call = ContentPart.ToolCall(
-                    toolCallId = callObj["id"]?.jsonPrimitive?.contentOrNull ?: settings.generateId(),
+                    toolCallId = (callObj["id"] as? JsonPrimitive)?.contentOrNull ?: settings.generateId(),
                     // Fail loudly on a missing/blank functionCall.name (matching the streaming path)
                     // rather than fabricating toolName="" that fails downstream as a confusing
                     // "tool not found", masking the real wire problem.
@@ -377,15 +376,15 @@ internal class GoogleGenerativeAILanguageModel(
             }
             obj["inlineData"]?.jsonObject?.let { data ->
                 content += ContentPart.File(
-                    mediaType = data["mimeType"]?.jsonPrimitive?.contentOrNull ?: "application/octet-stream",
-                    base64 = data["data"]?.jsonPrimitive?.contentOrNull.orEmpty(),
+                    mediaType = (data["mimeType"] as? JsonPrimitive)?.contentOrNull ?: "application/octet-stream",
+                    base64 = (data["data"] as? JsonPrimitive)?.contentOrNull.orEmpty(),
                     providerMetadata = googlePartMetadata(obj)?.let { ProviderMetadata.Raw(JsonObject(it)) } ?: ProviderMetadata.None,
                 )
             }
         }
         googleSources(candidate, settings.generateId).forEach { content += it }
         val text = content.filterIsInstance<ContentPart.Text>().joinToString("") { it.text }
-        val finish = candidate["finishReason"]?.jsonPrimitive?.contentOrNull
+        val finish = (candidate["finishReason"] as? JsonPrimitive)?.contentOrNull
         val metadata = buildJsonObject {
             response["promptFeedback"]?.let { put("promptFeedback", it) }
             candidate["groundingMetadata"]?.let { put("groundingMetadata", it) }
@@ -473,10 +472,10 @@ internal class GoogleGenerativeAILanguageModel(
 
         internal fun googleUsage(element: JsonElement?): Usage {
             val obj = element as? JsonObject ?: return Usage()
-            val prompt = obj["promptTokenCount"]?.jsonPrimitive?.intOrNull ?: 0
-            val candidates = obj["candidatesTokenCount"]?.jsonPrimitive?.intOrNull ?: 0
-            val thoughts = obj["thoughtsTokenCount"]?.jsonPrimitive?.intOrNull ?: 0
-            val cached = obj["cachedContentTokenCount"]?.jsonPrimitive?.intOrNull ?: 0
+            val prompt = (obj["promptTokenCount"] as? JsonPrimitive)?.intOrNull ?: 0
+            val candidates = (obj["candidatesTokenCount"] as? JsonPrimitive)?.intOrNull ?: 0
+            val thoughts = (obj["thoughtsTokenCount"] as? JsonPrimitive)?.intOrNull ?: 0
+            val cached = (obj["cachedContentTokenCount"] as? JsonPrimitive)?.intOrNull ?: 0
             // Match upstream: output total = candidates + thoughts (not clamped); cached input
             // tokens map to cacheRead with noCache = prompt - cached.
             return Usage(
@@ -523,8 +522,8 @@ internal class GoogleGenerativeAILanguageModel(
                 val web = chunk.jsonObject["web"]?.jsonObject ?: return@mapNotNull null
                 ContentPart.Source(
                     sourceType = StreamEvent.SourcePart.SourceType.Url,
-                    url = web["uri"]?.jsonPrimitive?.contentOrNull,
-                    title = web["title"]?.jsonPrimitive?.contentOrNull,
+                    url = (web["uri"] as? JsonPrimitive)?.contentOrNull,
+                    title = (web["title"] as? JsonPrimitive)?.contentOrNull,
                     providerMetadata = ProviderMetadata.Raw(JsonObject(mapOf("google" to buildJsonObject {
                         put("id", JsonPrimitive(IdGenerator.generate()))
                         put("groundingChunk", chunk)
@@ -563,7 +562,7 @@ private class GoogleStreamState(
                 return listOf(StreamEvent.Error(error.message ?: "Google stream protocol error"))
             }
             text?.let {
-                if (obj["thought"]?.jsonPrimitive?.booleanOrNull == true) {
+                if ((obj["thought"] as? JsonPrimitive)?.booleanOrNull == true) {
                     if (textId != null) {
                         events += StreamEvent.TextEnd(textId.orEmpty())
                         textId = null
@@ -591,7 +590,7 @@ private class GoogleStreamState(
                 } catch (error: WireDecodeException) {
                     return listOf(StreamEvent.Error(error.message ?: "Google stream protocol error"))
                 }
-                val id = call["id"]?.jsonPrimitive?.contentOrNull ?: IdGenerator.generate()
+                val id = (call["id"] as? JsonPrimitive)?.contentOrNull ?: IdGenerator.generate()
                 val name = try {
                     WireDecoder.requiredString(call, "name", "google", "generateContent stream part", "$.candidates[0].content.parts[$index].functionCall")
                 } catch (error: WireDecodeException) {
@@ -613,7 +612,7 @@ private class GoogleStreamState(
                 }
                 events += StreamEvent.FilePart(
                     id = IdGenerator.generate(),
-                    mediaType = data["mimeType"]?.jsonPrimitive?.contentOrNull ?: "application/octet-stream",
+                    mediaType = (data["mimeType"] as? JsonPrimitive)?.contentOrNull ?: "application/octet-stream",
                     base64 = try {
                         WireDecoder.requiredString(data, "data", "google", "generateContent stream part", "$.candidates[0].content.parts[$index].inlineData")
                     } catch (error: WireDecodeException) {
@@ -625,14 +624,15 @@ private class GoogleStreamState(
         }
         GoogleGenerativeAILanguageModel.googleSources(candidate, generateId).forEach { source ->
             events += StreamEvent.SourcePart(
-                id = source.providerMetadata.toMap()["google"]?.jsonObject?.get("id")?.jsonPrimitive?.contentOrNull ?: IdGenerator.generate(),
+                id = (source.providerMetadata.toMap()["google"]?.jsonObject?.get("id") as? JsonPrimitive)?.contentOrNull
+                    ?: IdGenerator.generate(),
                 sourceType = source.sourceType,
                 url = source.url,
                 title = source.title,
                 providerMetadata = source.providerMetadata,
             )
         }
-        candidate["finishReason"]?.jsonPrimitive?.contentOrNull?.let {
+        (candidate["finishReason"] as? JsonPrimitive)?.contentOrNull?.let {
             rawFinishReason = it
             finishReason = GoogleGenerativeAILanguageModel.mapGoogleFinishReason(it, hasToolCalls)
         }
