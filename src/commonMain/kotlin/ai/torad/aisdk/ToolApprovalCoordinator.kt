@@ -229,7 +229,15 @@ internal class ToolApprovalCoordinator<TContext>(
     ) {
         val msg = error.message ?: "tool failed"
         out.emit(StreamEvent.ToolError(toolCallId, toolName, msg, error = error))
-        messages.add(ToolMessage(toolCallId, toolName, JsonPrimitive(msg)))
+        // isError = true: an approved tool that then fails is re-logged as an error (not a success
+        // carrying the error text), so the provider sees is_error and the model can self-correct.
+        // Matches emitToolErrorDeferred + applyDenied.
+        messages.add(
+            ModelMessage(
+                MessageRole.Tool,
+                listOf(ContentPart.ToolResult(toolCallId, toolName, JsonPrimitive(msg), isError = true)),
+            ),
+        )
     }
 
     /** Approval denials: emit the denial + ToolResult events and append to the message log. */
