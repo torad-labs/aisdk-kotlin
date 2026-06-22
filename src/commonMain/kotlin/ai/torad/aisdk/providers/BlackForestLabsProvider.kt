@@ -269,7 +269,14 @@ private class BlackForestLabsImageModel(
                         )
                     return BflPollResult(imageUrl = imageUrl, result = result)
                 }
-                "Error", "Failed" -> throw NoImageGeneratedError("Black Forest Labs generation failed.")
+                "Error", "Failed", "Content Moderated", "Request Moderated", "Task not found" -> {
+                    val reasons = ((poll["details"] as? JsonObject)?.get("Moderation Reasons") as? JsonArray)
+                        ?.joinToString(", ") { (it as? JsonPrimitive)?.contentOrNull.orEmpty() }
+                    throw NoImageGeneratedError(
+                        "Black Forest Labs generation $status" +
+                            (reasons?.takeIf { it.isNotBlank() }?.let { ": $it" } ?: "."),
+                    )
+                }
             }
             if (pollIntervalMillis > 0 && attempt < maxPollAttempts - 1) delay(pollIntervalMillis)
         }
