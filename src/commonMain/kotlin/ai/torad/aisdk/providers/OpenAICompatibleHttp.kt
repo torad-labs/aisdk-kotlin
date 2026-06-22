@@ -25,7 +25,6 @@ import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.doubleOrNull
-import kotlinx.serialization.json.jsonObject
 
 /**
  * HTTP transport base for OpenAI-compatible models: URL/query assembly, common
@@ -493,7 +492,7 @@ internal abstract class OpenAICompatibleHttpModel(
         null, JsonNull -> ""
         is JsonPrimitive -> value.contentOrNull.orEmpty()
         is JsonArray -> value.mapNotNull { item ->
-            (item.jsonObject.takeIf { (it["type"] as? JsonPrimitive)?.contentOrNull == "text" }
+            ((item as? JsonObject)?.takeIf { (it["type"] as? JsonPrimitive)?.contentOrNull == "text" }
                 ?.get("text") as? JsonPrimitive)?.contentOrNull
         }.joinToString("")
         else -> value.toString()
