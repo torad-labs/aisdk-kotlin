@@ -19,7 +19,6 @@ import kotlinx.serialization.json.doubleOrNull
 import kotlinx.serialization.json.intOrNull
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
-import kotlinx.serialization.json.jsonPrimitive
 
 public const val QUIVERAI_VERSION: String = "1.0.0"
 private const val QUIVERAI_MAX_IMAGES_PER_CALL: Int = 16
@@ -72,7 +71,7 @@ public data class QuiverAIProviderSettings(
 
     private fun quiverAIErrorMessage(statusCode: Int, parsed: JsonElement?, raw: String): String {
         val obj = parsed as? JsonObject
-        val detail = obj?.get("message")?.jsonPrimitive?.contentOrNull ?: raw.ifBlank { "request failed" }
+        val detail = (obj?.get("message") as? JsonPrimitive)?.contentOrNull ?: raw.ifBlank { "request failed" }
         return "QuiverAI request failed ($statusCode): $detail"
     }
 }
@@ -107,7 +106,7 @@ private class QuiverAIImageModel(
     override suspend fun generate(params: ImageGenerationParams): ImageModelResult {
         params.abortSignal.throwIfAborted()
         val options = settings.quiverAIOptions(params.providerOptions)
-        val operation = options["operation"]?.jsonPrimitive?.contentOrNull ?: "generate"
+        val operation = (options["operation"] as? JsonPrimitive)?.contentOrNull ?: "generate"
         val body = quiverAIRequestBody(modelId, params, operation, options)
         val response = settings.quiverAIPostJson(
             client = client,
@@ -120,16 +119,17 @@ private class QuiverAIImageModel(
         return ImageModelResult(
             images = data.map { item ->
                 val obj = item.jsonObject
-                val svg = obj["svg"]?.jsonPrimitive?.contentOrNull ?: throw InvalidResponseDataError(item, "QuiverAI image item is missing svg")
+                val svg = (obj["svg"] as? JsonPrimitive)?.contentOrNull
+                    ?: throw InvalidResponseDataError(item, "QuiverAI image item is missing svg")
                 GeneratedFile(
-                    mediaType = obj["mime_type"]?.jsonPrimitive?.contentOrNull ?: "image/svg+xml",
+                    mediaType = (obj["mime_type"] as? JsonPrimitive)?.contentOrNull ?: "image/svg+xml",
                     base64 = Base64Codec.encode(svg.encodeToByteArray()),
                 )
             },
             warnings = quiverAIWarnings(params),
             response = LanguageModelResponseMetadata(
-                id = root["id"]?.jsonPrimitive?.contentOrNull,
-                timestampMillis = root["created"]?.jsonPrimitive?.contentOrNull?.toLongOrNull()?.times(1000),
+                id = (root["id"] as? JsonPrimitive)?.contentOrNull,
+                timestampMillis = (root["created"] as? JsonPrimitive)?.contentOrNull?.toLongOrNull()?.times(1000),
                 modelId = modelId,
                 headers = response.headers,
                 body = response.value,
@@ -146,10 +146,10 @@ private class QuiverAIImageModel(
         options: JsonObject,
     ): JsonObject {
         val shared = buildJsonObject {
-            putDoubleIfNotNull("temperature", options["temperature"]?.jsonPrimitive?.doubleOrNull)
-            putDoubleIfNotNull("top_p", options["topP"]?.jsonPrimitive?.doubleOrNull)
-            putDoubleIfNotNull("presence_penalty", options["presencePenalty"]?.jsonPrimitive?.doubleOrNull)
-            putIntIfNotNull("max_output_tokens", options["maxOutputTokens"]?.jsonPrimitive?.intOrNull)
+            putDoubleIfNotNull("temperature", (options["temperature"] as? JsonPrimitive)?.doubleOrNull)
+            putDoubleIfNotNull("top_p", (options["topP"] as? JsonPrimitive)?.doubleOrNull)
+            putDoubleIfNotNull("presence_penalty", (options["presencePenalty"] as? JsonPrimitive)?.doubleOrNull)
+            putIntIfNotNull("max_output_tokens", (options["maxOutputTokens"] as? JsonPrimitive)?.intOrNull)
             put("stream", JsonPrimitive(false))
         }
         return when (operation) {
@@ -177,7 +177,7 @@ private class QuiverAIImageModel(
             put("n", JsonPrimitive(params.n))
             put("prompt", JsonPrimitive(params.prompt))
             putAll(shared)
-            putStringIfNotNull("instructions", options["instructions"]?.jsonPrimitive?.contentOrNull)
+            putStringIfNotNull("instructions", (options["instructions"] as? JsonPrimitive)?.contentOrNull)
             if (params.files.isNotEmpty()) {
                 put("references", JsonArray(params.files.map { it.toQuiverAIImageReference() }))
             }
@@ -202,8 +202,8 @@ private class QuiverAIImageModel(
             put("n", JsonPrimitive(params.n))
             put("image", params.files.single().toQuiverAIImageReference())
             putAll(shared)
-            putBooleanIfNotNull("auto_crop", options["autoCrop"]?.jsonPrimitive?.booleanOrNull)
-            putIntIfNotNull("target_size", options["targetSize"]?.jsonPrimitive?.intOrNull)
+            putBooleanIfNotNull("auto_crop", (options["autoCrop"] as? JsonPrimitive)?.booleanOrNull)
+            putIntIfNotNull("target_size", (options["targetSize"] as? JsonPrimitive)?.intOrNull)
         }
     }
 
@@ -226,12 +226,14 @@ private class QuiverAIImageModel(
 
     private fun quiverAIProviderMetadata(root: JsonObject): JsonElement = buildJsonObject {
         val data = root["data"]?.jsonArray.orEmpty()
-        put("images", JsonArray(data.mapIndexed { index, item ->
+        val imageEntries = data.mapIndexed { index, item ->
             buildJsonObject {
                 put("index", JsonPrimitive(index))
-                put("mimeType", JsonPrimitive(item.jsonObject["mime_type"]?.jsonPrimitive?.contentOrNull ?: "image/svg+xml"))
+                val mimeType = (item.jsonObject["mime_type"] as? JsonPrimitive)?.contentOrNull ?: "image/svg+xml"
+                put("mimeType", JsonPrimitive(mimeType))
             }
-        }))
+        }
+        put("images", JsonArray(imageEntries))
         root["usage"]?.takeIf { it !is JsonNull }?.let { usage ->
             put("usage", usage)
         }
@@ -240,9 +242,9 @@ private class QuiverAIImageModel(
     private fun quiverAIUsage(value: JsonElement?): ImageModelUsage {
         val usage = value as? JsonObject ?: return ImageModelUsage()
         return ImageModelUsage(
-            inputTokens = usage["input_tokens"]?.jsonPrimitive?.intOrNull,
-            outputTokens = usage["output_tokens"]?.jsonPrimitive?.intOrNull,
-            totalTokens = usage["total_tokens"]?.jsonPrimitive?.intOrNull,
+            inputTokens = (usage["input_tokens"] as? JsonPrimitive)?.intOrNull,
+            outputTokens = (usage["output_tokens"] as? JsonPrimitive)?.intOrNull,
+            totalTokens = (usage["total_tokens"] as? JsonPrimitive)?.intOrNull,
         )
     }
 
