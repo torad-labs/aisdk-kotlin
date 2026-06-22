@@ -1,5 +1,7 @@
 package ai.torad.aisdk
 
+import ai.torad.aisdk.providers.DeepInfra
+import ai.torad.aisdk.providers.DeepInfraProviderSettings
 import ai.torad.aisdk.providers.FacadeHttp
 import ai.torad.aisdk.providers.Xai
 import ai.torad.aisdk.providers.XaiProviderSettings
@@ -14,6 +16,7 @@ import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 import kotlin.test.Test
+import kotlin.test.assertEquals
 import kotlin.test.assertFails
 import kotlin.test.assertTrue
 
@@ -98,5 +101,53 @@ class OpenAICompatibleCoreDefensiveParsingTest {
             error.message?.contains("OpenAI-compatible request failed") == true,
             "a primitive error degrades through the object accessor, no crash",
         )
+    }
+
+    /**
+     * Wave 7b (array-element accessor) in the shared chat content parser: openAITextContent read
+     * each multimodal content part via the non-null `item.jsonObject`, throwing ISE if any part is
+     * a non-object. The safe `(item as? JsonObject)?.takeIf { … }` drops the malformed part and the
+     * valid text part is still extracted — hardening multimodal parsing for every compat provider.
+     */
+    @Test
+    fun `openai-compatible chat drops a malformed content part instead of crashing`() = runTest {
+        val client = HttpClient(
+            MockEngine {
+                respond(
+                    content = """
+                        {"choices":[{"message":{"content":[{"type":"text","text":"hi"},"malformed"]}}]}
+                    """.trimIndent(),
+                    status = HttpStatusCode.OK,
+                    headers = headersOf(HttpHeaders.ContentType, "application/json"),
+                )
+            },
+        )
+        val result = Xai(client, XaiProviderSettings(apiKey = "key"))
+            .chat(ModelId("grok-3"))
+            .generate(LanguageModelCallParams(messages = listOf(UserMessage("hi"))))
+        assertEquals("hi", result.text)
+    }
+
+    /**
+     * Wave 7b: the shared embeddings parser read each `data` row via the non-null `item.jsonObject`
+     * to reach `embedding`. The safe `(item as? JsonObject)?.get("embedding")` degrades a malformed
+     * row to an empty embedding in place — row count (index alignment) is preserved.
+     */
+    @Test
+    fun `openai-compatible embeddings degrade a malformed data row instead of crashing`() = runTest {
+        val client = HttpClient(
+            MockEngine {
+                respond(
+                    content = """{"data":[{"embedding":[0.1,0.2]},"malformed"]}""",
+                    status = HttpStatusCode.OK,
+                    headers = headersOf(HttpHeaders.ContentType, "application/json"),
+                )
+            },
+        )
+        val result = DeepInfra(client, DeepInfraProviderSettings(apiKey = "key"))
+            .embeddingModel("BAAI/bge")
+            .embed(EmbeddingModelCallParams(values = listOf("a", "b")))
+        assertEquals(2, result.embeddings.size)
+        assertTrue(result.embeddings[1].isEmpty(), "the malformed row degrades to an empty embedding")
     }
 }

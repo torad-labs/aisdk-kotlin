@@ -313,7 +313,7 @@ internal class OpenAICompatibleEmbeddingModel(
         return EmbeddingModelResult(
             embeddings = (value["data"] as? JsonArray).orEmpty()
                 .map { item ->
-                    val row = (item.jsonObject["embedding"] as? JsonArray).orEmpty()
+                    val row = ((item as? JsonObject)?.get("embedding") as? JsonArray).orEmpty()
                     row.map { WireDecoder.embeddingFloat(it, provider) }
                 },
             usage = EmbeddingUsage(
