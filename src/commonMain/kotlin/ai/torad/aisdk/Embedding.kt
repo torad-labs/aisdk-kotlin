@@ -76,7 +76,9 @@ public data class EmbedManyResult<TValue>(
     val providerMetadata: ProviderMetadata = ProviderMetadata.None,
 )
 
-internal val retryableApiError: (Throwable) -> Boolean = { (it as? APICallError)?.isRetryable == true }
+internal val retryableApiError: (Throwable) -> Boolean = {
+    (it as? APICallError)?.isRetryable == true || (it as? GatewayError)?.isRetryable == true
+}
 
 public object Embedding {
 
