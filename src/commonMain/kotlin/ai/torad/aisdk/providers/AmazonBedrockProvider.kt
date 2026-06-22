@@ -16,7 +16,6 @@ import kotlinx.serialization.json.floatOrNull
 import kotlinx.serialization.json.intOrNull
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
-import kotlinx.serialization.json.jsonPrimitive
 
 public const val AMAZON_BEDROCK_VERSION: String = "4.0.112"
 
@@ -291,11 +290,12 @@ private class BedrockImageModel(
             parseJson = true,
         )
         val obj = response.value.jsonObject
-        if (obj["status"]?.jsonPrimitive?.contentOrNull == "Request Moderated") {
+        if ((obj["status"] as? JsonPrimitive)?.contentOrNull == "Request Moderated") {
             throw NoImageGeneratedError("Amazon Bedrock request was moderated: ${obj["details"] ?: "Unknown"}")
         }
-        val images = (obj["images"] as? JsonArray).orEmpty().map {
-            GeneratedFile(mediaType = "image/png", base64 = it.jsonPrimitive.content)
+        val images = (obj["images"] as? JsonArray).orEmpty().mapNotNull {
+            val base64 = (it as? JsonPrimitive)?.content ?: return@mapNotNull null
+            GeneratedFile(mediaType = "image/png", base64 = base64)
         }
         if (images.isEmpty()) throw NoImageGeneratedError("Amazon Bedrock returned no images.")
         return ImageModelResult(
@@ -332,11 +332,11 @@ private class BedrockRerankingModel(
         )
         val results = (response.value.jsonObject["results"] as? JsonArray).orEmpty().map { item ->
             val obj = item.jsonObject
-            val index = obj["index"]?.jsonPrimitive?.intOrNull ?: 0
+            val index = (obj["index"] as? JsonPrimitive)?.intOrNull ?: 0
             RerankedItem(
                 value = params.documents.getOrElse(index) { "" },
-                score = obj["relevanceScore"]?.jsonPrimitive?.floatOrNull
-                    ?: obj["score"]?.jsonPrimitive?.floatOrNull
+                score = (obj["relevanceScore"] as? JsonPrimitive)?.floatOrNull
+                    ?: (obj["score"] as? JsonPrimitive)?.floatOrNull
                     ?: 0f,
                 index = index,
             )
@@ -381,19 +381,19 @@ private class BedrockMantleChatLanguageModel(
         val obj = response.value.jsonObject
         val choice = obj["choices"]?.jsonArray?.firstOrNull()?.jsonObject
         val message = choice?.get("message")?.jsonObject
-        val content = message?.get("content")?.jsonPrimitive?.contentOrNull.orEmpty()
+        val content = (message?.get("content") as? JsonPrimitive)?.contentOrNull.orEmpty()
         return LanguageModelResult(
             text = content,
-            finishReason = mapOpenAILikeFinishReason(choice?.get("finish_reason")?.jsonPrimitive?.contentOrNull),
+            finishReason = mapOpenAILikeFinishReason((choice?.get("finish_reason") as? JsonPrimitive)?.contentOrNull),
             usage = bedrockOpenAILikeUsage(obj["usage"]),
             request = LanguageModelRequestMetadata(body),
             response = LanguageModelResponseMetadata(
-                id = obj["id"]?.jsonPrimitive?.contentOrNull,
-                modelId = obj["model"]?.jsonPrimitive?.contentOrNull ?: modelId,
+                id = (obj["id"] as? JsonPrimitive)?.contentOrNull,
+                modelId = (obj["model"] as? JsonPrimitive)?.contentOrNull ?: modelId,
                 headers = response.headers,
                 body = response.value,
             ),
-            rawFinishReason = choice?.get("finish_reason")?.jsonPrimitive?.contentOrNull,
+            rawFinishReason = (choice?.get("finish_reason") as? JsonPrimitive)?.contentOrNull,
         )
     }
 
@@ -420,8 +420,8 @@ private class BedrockMantleChatLanguageModel(
     private fun bedrockOpenAILikeUsage(element: JsonElement?): Usage {
         val obj = element as? JsonObject ?: return Usage()
         return Usage.of(
-            promptTokens = obj["prompt_tokens"]?.jsonPrimitive?.intOrNull ?: 0,
-            completionTokens = obj["completion_tokens"]?.jsonPrimitive?.intOrNull ?: 0,
+            promptTokens = (obj["prompt_tokens"] as? JsonPrimitive)?.intOrNull ?: 0,
+            completionTokens = (obj["completion_tokens"] as? JsonPrimitive)?.intOrNull ?: 0,
         )
     }
 
