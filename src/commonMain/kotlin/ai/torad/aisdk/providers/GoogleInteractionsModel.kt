@@ -183,7 +183,7 @@ internal class GoogleInteractionsStreamState(
 
     fun accept(event: JsonObject): List<StreamEvent> {
         val events = mutableListOf<StreamEvent>()
-        val interaction = event["interaction"]?.jsonObject
+        val interaction = (event["interaction"] as? JsonObject)
         val interactionId = (interaction?.get("id") as? JsonPrimitive)?.contentOrNull
         if (interaction != null) {
             events += StreamEvent.ResponseMetadata(
@@ -192,7 +192,7 @@ internal class GoogleInteractionsStreamState(
                 body = interaction,
             )
         }
-        val step = event["step"]?.jsonObject
+        val step = (event["step"] as? JsonObject)
         if (step != null) {
             events += acceptStep(step, interactionId)
         }
@@ -221,7 +221,7 @@ internal class GoogleInteractionsStreamState(
             modelId = (response["model"] as? JsonPrimitive)?.contentOrNull,
             body = response,
         )
-        response["steps"]?.jsonArray.orEmpty().forEach { step ->
+        (response["steps"] as? JsonArray).orEmpty().forEach { step ->
             events += acceptStep(step.jsonObject, interactionId)
         }
         usage = googleInteractionsUsage(response["usage"])
@@ -243,7 +243,7 @@ internal class GoogleInteractionsStreamState(
         val events = mutableListOf<StreamEvent>()
         when (val type = (step["type"] as? JsonPrimitive)?.contentOrNull) {
             "model_output" -> {
-                step["content"]?.jsonArray.orEmpty().forEachIndexed { index, blockElement ->
+                (step["content"] as? JsonArray).orEmpty().forEachIndexed { index, blockElement ->
                     val block = try {
                         WireDecoder.objectValue(blockElement, "google", "interactions stream step", "$.content[$index]")
                     } catch (error: WireDecodeException) {
@@ -286,7 +286,7 @@ internal class GoogleInteractionsStreamState(
                 events += StreamEvent.ReasoningStart(id, metadata)
                 events += StreamEvent.ReasoningDelta(
                     id,
-                    step["summary"]?.jsonArray.orEmpty()
+                    (step["summary"] as? JsonArray).orEmpty()
                         .mapNotNull { (it.jsonObject["text"] as? JsonPrimitive)?.contentOrNull }
                         .joinToString("\n"),
                     metadata,
@@ -590,7 +590,7 @@ internal object GoogleInteractions {
             obj["imageSize"]?.let { put("image_size", it) }
         }
     }
-    options["imageConfig"]?.jsonObject?.let { image ->
+    (options["imageConfig"] as? JsonObject)?.let { image ->
         warnings += CallWarning("other", "google.interactions: providerOptions.google.imageConfig is deprecated. Use providerOptions.google.responseFormat with an image entry instead.")
         if (entries.none { (it.jsonObject["type"] as? JsonPrimitive)?.contentOrNull == "image" }) {
             entries += buildJsonObject {
@@ -653,7 +653,7 @@ internal object GoogleInteractions {
 }
 
     fun googleInteractionsAgentConfig(options: JsonObject): JsonObject? {
-    val config = options["agentConfig"]?.jsonObject ?: return null
+    val config = (options["agentConfig"] as? JsonObject) ?: return null
     val type = (config["type"] as? JsonPrimitive)?.contentOrNull ?: return null
     return buildJsonObject {
         put("type", JsonPrimitive(type))
@@ -738,7 +738,7 @@ internal object GoogleInteractions {
         val step = stepElement.jsonObject
         when (val type = (step["type"] as? JsonPrimitive)?.contentOrNull) {
             "model_output" -> {
-                step["content"]?.jsonArray.orEmpty().forEach { blockElement ->
+                (step["content"] as? JsonArray).orEmpty().forEach { blockElement ->
                     val block = blockElement.jsonObject
                     when ((block["type"] as? JsonPrimitive)?.contentOrNull) {
                         "text" -> {
@@ -764,7 +764,7 @@ internal object GoogleInteractions {
             }
             "thought" -> {
                 content += ContentPart.Reasoning(
-                    text = step["summary"]?.jsonArray.orEmpty()
+                    text = (step["summary"] as? JsonArray).orEmpty()
                         .mapNotNull { (it.jsonObject["text"] as? JsonPrimitive)?.contentOrNull }
                         .joinToString("\n"),
                     providerMetadata = googleInteractionsMetadata(
