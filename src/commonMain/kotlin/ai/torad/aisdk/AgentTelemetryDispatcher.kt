@@ -10,10 +10,14 @@ internal class TelemetryFeed(val tele: Telemetry, val call: TelemetryCall)
  * telemetry fires and hook invocations go through this collaborator so the
  * agent loop body is pure orchestration — the "fire-and-maybe-swallow"
  * semantics live here.
+ *
+ * Error events route to the per-call [AgentCallHooks] passed at each call (the
+ * `events()` Flow bridge, the engine submit, or an explicit per-call hook) so a
+ * `Flow<AgentEvent>` collector sees them. There is no agent-level callback — the
+ * 9 constructor `onX` callbacks were replaced by `ToolLoopAgent.events()`.
  */
 internal class AgentTelemetryDispatcher<TContext>(
     private val logger: Logger,
-    private val onError: (suspend AgentEvent.Errored.() -> Unit)?,
 ) {
     /**
      * Deliver one telemetry event, guarded: telemetry OBSERVES — an
@@ -35,10 +39,11 @@ internal class AgentTelemetryDispatcher<TContext>(
     }
 
     /** Run one guarded lifecycle-hook body. On failure: dispatch [AgentEvent.Errored]
-     *  to [onError] and telemetry, never propagate. */
+     *  to the per-call [hooks] and telemetry, never propagate. */
     suspend fun runHook(
         stepNumber: Int,
         feed: TelemetryFeed?,
+        hooks: AgentCallHooks?,
         block: suspend () -> Unit,
     ) {
         try {
@@ -48,7 +53,7 @@ internal class AgentTelemetryDispatcher<TContext>(
         } catch (t: Throwable) {
             val event = AgentEvent.Errored(t, stepNumber, AgentEvent.Errored.ErrorSource.Hook)
             try {
-                onError?.invoke(event)
+                hooks?.onError?.invoke(event)
             } catch (ce: CancellationException) {
                 throw ce
             } catch (_: Throwable) {
@@ -58,7 +63,7 @@ internal class AgentTelemetryDispatcher<TContext>(
         }
     }
 
-    /** Fire [AgentEvent.Errored] to the agent-level hook, the per-call [hooks], and telemetry. */
+    /** Fire [AgentEvent.Errored] to the per-call [hooks] (Flow bridge / engine) and telemetry. */
     suspend fun emitError(
         t: Throwable,
         stepNumber: Int,
@@ -67,7 +72,6 @@ internal class AgentTelemetryDispatcher<TContext>(
         feed: TelemetryFeed? = null,
     ) {
         val event = AgentEvent.Errored(t, stepNumber, source)
-        try { onError?.invoke(event) } catch (ce: CancellationException) { throw ce } catch (_: Throwable) {}
         try { hooks?.onError?.invoke(event) } catch (ce: CancellationException) { throw ce } catch (_: Throwable) {}
         fireTelemetry(feed) { onError(it, event) }
     }

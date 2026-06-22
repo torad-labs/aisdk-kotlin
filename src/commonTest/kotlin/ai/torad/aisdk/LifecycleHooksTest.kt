@@ -1,6 +1,5 @@
 package ai.torad.aisdk
 
-import ai.torad.aisdk.providers.MockLanguageModel
 import ai.torad.aisdk.providers.MockLanguageModelToolThenText
 import ai.torad.aisdk.providers.MockLanguageModelTextOnly
 import ai.torad.aisdk.providers.MockToolInput
@@ -8,48 +7,82 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
 import kotlin.test.assertTrue
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.serializer
 
 /**
- * Best practice #10 — lifecycle hooks observe but do NOT modify behavior.
- * Hook failures don't crash the loop; they're surfaced via `onError`.
+ * Best practice #10 — lifecycle events OBSERVE but do not modify behavior.
+ * Observers collect [ToolLoopAgent.events] (a `Flow<AgentEvent>`) with an
+ * exhaustive `when`; the loop never crashes when an observer is present, and
+ * internal failures surface as [AgentEvent.Errored] rather than propagating.
  */
 class LifecycleHooksTest {
     @Serializable
     private data class Empty(val unused: String = "")
 
     @Test
-    fun `hooks_fire_in_order_onStart_onStepFinish_onFinish`() = runTest {
+    fun `events fire in order Started StepFinished Finished`() = runTest {
         val seq = mutableListOf<String>()
         val agent = TestToolLoopAgent<Unit, String>(
             model = MockLanguageModelTextOnly("answer"),
             instructions = "x",
             tools = ToolSet(),
-            onStart = { seq.add("start") },
-            onStepFinish = { seq.add("step:$stepNumber") },
-            onFinish = { seq.add("finish") },
         )
-        agent.generate("go").first()
+        agent.collectAgentEvents(prompt = "go") { event ->
+            when (event) {
+                is AgentEvent.Started<*> -> seq.add("start")
+                is AgentEvent.StepFinished -> seq.add("step:${event.stepNumber}")
+                is AgentEvent.Finished<*, *> -> seq.add("finish")
+                is AgentEvent.StepStarted,
+                is AgentEvent.Chunk,
+                is AgentEvent.ToolCallStarted,
+                is AgentEvent.ToolCallFinished,
+                is AgentEvent.Errored,
+                is AgentEvent.Aborted,
+                is AgentEvent.ModelCallStarted,
+                is AgentEvent.ModelCallFinished,
+                is AgentEvent.SpanEmitted,
+                -> Unit
+            }
+        }
         assertEquals(listOf("start", "step:1", "finish"), seq)
     }
 
     @Test
-    fun `hook_failure_does_not_crash_the_loop`() = runTest {
-        val errorsObserved = mutableListOf<AgentEvent.Errored.ErrorSource>()
+    fun `an internal error surfaces as Errored without crashing the collector`() = runTest {
+        // A prepareCall failure ends the run gracefully (StreamEvent.Error) and is
+        // delivered to observers as AgentEvent.Errored(PrepareCall) — the loop never
+        // throws into the collector.
+        val sources = mutableListOf<AgentEvent.Errored.ErrorSource>()
         val agent = TestToolLoopAgent<Unit, String>(
             model = MockLanguageModelTextOnly("ok"),
             instructions = "x",
             tools = ToolSet(),
-            onStart = { error("boom from hook") },
-            onError = { errorsObserved.add(source) },
+            prepareCall = { error("boom from prepareCall") },
         )
-        val result = agent.generate("go").first()
-        assertEquals("ok", result.text, "loop completed despite hook failure")
-        assertTrue(errorsObserved.contains(AgentEvent.Errored.ErrorSource.Hook), "Hook source surfaced via onError")
+        agent.collectAgentEvents(prompt = "go") { event ->
+            when (event) {
+                is AgentEvent.Errored -> sources.add(event.source)
+                is AgentEvent.Started<*>,
+                is AgentEvent.StepStarted,
+                is AgentEvent.Chunk,
+                is AgentEvent.StepFinished,
+                is AgentEvent.ToolCallStarted,
+                is AgentEvent.ToolCallFinished,
+                is AgentEvent.Aborted,
+                is AgentEvent.Finished<*, *>,
+                is AgentEvent.ModelCallStarted,
+                is AgentEvent.ModelCallFinished,
+                is AgentEvent.SpanEmitted,
+                -> Unit
+            }
+        }
+        assertTrue(
+            sources.contains(AgentEvent.Errored.ErrorSource.PrepareCall),
+            "PrepareCall error surfaced via the event stream",
+        )
     }
 
     @Test
@@ -80,7 +113,7 @@ class LifecycleHooksTest {
     }
 
     @Test
-    fun `tool finish hook observes typed outcome`() = runTest {
+    fun `tool finish event observes typed outcome`() = runTest {
         var observed: AgentEvent.ToolCallFinished.Outcome? = null
         val pingTool = Tool<Empty, String, Unit>(
             name = "ping",
@@ -96,12 +129,25 @@ class LifecycleHooksTest {
             ),
             instructions = "x",
             tools = ToolSet(pingTool),
-            experimental_onToolCallFinish = {
-                observed = outcome
-            },
         )
 
-        agent.generate("go").first()
+        agent.collectAgentEvents(prompt = "go") { event ->
+            when (event) {
+                is AgentEvent.ToolCallFinished -> observed = event.outcome
+                is AgentEvent.Started<*>,
+                is AgentEvent.StepStarted,
+                is AgentEvent.Chunk,
+                is AgentEvent.StepFinished,
+                is AgentEvent.ToolCallStarted,
+                is AgentEvent.Errored,
+                is AgentEvent.Aborted,
+                is AgentEvent.Finished<*, *>,
+                is AgentEvent.ModelCallStarted,
+                is AgentEvent.ModelCallFinished,
+                is AgentEvent.SpanEmitted,
+                -> Unit
+            }
+        }
 
         val outcome = assertIs<AgentEvent.ToolCallFinished.Outcome.Success>(observed)
         assertEquals(JsonPrimitive("pong"), outcome.outputJson)

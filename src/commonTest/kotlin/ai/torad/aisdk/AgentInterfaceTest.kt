@@ -24,7 +24,6 @@ class AgentInterfaceTest {
             messages: List<ModelMessage>,
             options: Unit?,
             abortSignal: AbortSignal,
-            hooks: AgentCallHooks?,
         ): Flow<GenerateResult<String>> = flow {
             generatedPrompt = prompt
             emit(GenerateResult(
@@ -40,7 +39,6 @@ class AgentInterfaceTest {
             messages: List<ModelMessage>,
             options: Unit?,
             abortSignal: AbortSignal,
-            hooks: AgentCallHooks?,
         ): Flow<StreamEvent> = flowOf(
             StreamEvent.TextStart("t1"),
             StreamEvent.TextDelta("t1", "fake-output"),
@@ -66,15 +64,4 @@ class AgentInterfaceTest {
         assertTrue(events.last() is StreamEvent.Finish)
     }
 
-    @Test
-    fun `call_site_hooks_fire_in_addition_to_constructor_hooks`() = runTest {
-        var callSiteOnStartFired = false
-        val agent: Agent<Unit, String> = FakeAgent()
-        agent.generate(
-            prompt = "go",
-            hooks = AgentCallHooks(onStart = { callSiteOnStartFired = true }),
-        ).first()
-        // FakeAgent doesn't fire hooks, but the contract should accept the parameter.
-        assertEquals(false, callSiteOnStartFired, "FakeAgent does not invoke the hooks; contract just accepts them")
-    }
 }
