@@ -8,10 +8,10 @@ Source: multi-agent adversarial audit wf_9484daad-28f. 55 raw -> 26 verified -> 
 
 | Wave | Sev | Subsystem | Location | Status | Defect |
 |---|---|---|---|---|---|
-| 1 | HIGH | agent-loop | `ToolLoopAgent.kt:1150` | ☐ | Parallel tool execution deadlocks permanently when a tool throws AbortError/CancellationEx |
-| 1 | HIGH | agent-loop | `ToolLoopAgent.kt:1517` | ☐ | Tool-failure messages fed back to the model are silently mis-flagged as successful (isErro |
-| 1 | HIGH | agent-loop | `AgentSession.kt:210` | ☐ | Streaming approval flow drops HMAC signature -> approvals with experimental_toolApprovalSe |
-| 1 | HIGH | agent-loop | `ToolLoopAgent.kt:1226` | ☐ | Loop terminates prematurely when every tool call in a step fails categorization (decode/re |
+| 1 | HIGH | agent-loop | `ToolLoopAgent.kt:1150` | ☑ | Parallel tool execution deadlocks permanently when a tool throws AbortError/CancellationEx |
+| 1 | HIGH | agent-loop | `ToolLoopAgent.kt:1517` | ☑ | Tool-failure messages fed back to the model are silently mis-flagged as successful (isErro |
+| 1 | HIGH | agent-loop | `AgentSession.kt:210` | ☑ | Streaming approval flow drops HMAC signature -> approvals with experimental_toolApprovalSe |
+| 1 | HIGH | agent-loop | `ToolLoopAgent.kt:1226` | ☑ | Loop terminates prematurely when every tool call in a step fails categorization (decode/re |
 | 2 | HIGH | mcp | `MCP.kt:1145` | ☐ | A single malformed/unknown-ID inbound message permanently kills the SSE/HTTP reader (and t |
 | 2 | HIGH | mcp | `MCP.kt:1240` | ☐ | Stray/late/duplicate JSON-RPC response ID tears down the SSE reader and (for SseMCPTranspo |
 | 2 | HIGH | mcp | `MCP.kt:1240` | ☐ | A single late/duplicate/malformed inbound message aborts the entire SSE inbound stream and |
