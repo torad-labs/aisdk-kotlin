@@ -421,6 +421,8 @@ internal class GoogleGenerativeAILanguageModel(
             for (key in GOOGLE_SCHEMA_PASSTHROUGH) {
                 obj[key]?.let { put(key, it) }
             }
+            // OpenAPI 3.0 has no `const`; map it to a single-value `enum` (enum wins if both present).
+            if ("enum" !in obj) obj["const"]?.let { put("enum", JsonArray(listOf(it))) }
             googleSchemaType(obj)?.let { (typeEl, nullable) ->
                 typeEl?.let { put("type", it) }
                 if (nullable) put("nullable", JsonPrimitive(true))
@@ -465,7 +467,7 @@ internal class GoogleGenerativeAILanguageModel(
         private const val GOOGLE_SKIP_THOUGHT_SIGNATURE = "skip_thought_signature_validator"
 
         private val GOOGLE_SCHEMA_PASSTHROUGH = listOf(
-            "description", "required", "format", "enum", "const",
+            "description", "required", "format", "enum",
             "minLength", "maxLength", "minItems", "maxItems", "minimum", "maximum",
         )
 
