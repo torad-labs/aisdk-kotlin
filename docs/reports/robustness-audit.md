@@ -12,11 +12,11 @@ Source: multi-agent adversarial audit wf_9484daad-28f. 55 raw -> 26 verified -> 
 | 1 | HIGH | agent-loop | `ToolLoopAgent.kt:1517` | ☑ | Tool-failure messages fed back to the model are silently mis-flagged as successful (isErro |
 | 1 | HIGH | agent-loop | `AgentSession.kt:210` | ☑ | Streaming approval flow drops HMAC signature -> approvals with experimental_toolApprovalSe |
 | 1 | HIGH | agent-loop | `ToolLoopAgent.kt:1226` | ☑ | Loop terminates prematurely when every tool call in a step fails categorization (decode/re |
-| 2 | HIGH | mcp | `MCP.kt:1145` | ☐ | A single malformed/unknown-ID inbound message permanently kills the SSE/HTTP reader (and t |
-| 2 | HIGH | mcp | `MCP.kt:1240` | ☐ | Stray/late/duplicate JSON-RPC response ID tears down the SSE reader and (for SseMCPTranspo |
-| 2 | HIGH | mcp | `MCP.kt:1240` | ☐ | A single late/duplicate/malformed inbound message aborts the entire SSE inbound stream and |
-| 2 | HIGH | tools-approval | `Crypto.kt:91` | ☐ | HMAC-SHA256 crashes (IndexOutOfBoundsException) for any key longer than 64 bytes — breaks  |
-| 2 | HIGH | json-wire | `MCPStdioProcess.jvmAndAndroid.kt:17` | ☐ | Spawned MCP stdio child's stderr is never drained, redirected, or closed — child blocks an |
+| 2 | HIGH | mcp | `MCP.kt:1145` | ☑ | A single malformed/unknown-ID inbound message permanently kills the SSE/HTTP reader (and t |
+| 2 | HIGH | mcp | `MCP.kt:1240` | ☑ | Stray/late/duplicate JSON-RPC response ID tears down the SSE reader and (for SseMCPTranspo |
+| 2 | HIGH | mcp | `MCP.kt:1240` | ☑ | A single late/duplicate/malformed inbound message aborts the entire SSE inbound stream and |
+| 2 | HIGH | tools-approval | `Crypto.kt:91` | ☑ | HMAC-SHA256 crashes (IndexOutOfBoundsException) for any key longer than 64 bytes — breaks  |
+| 2 | HIGH | json-wire | `MCPStdioProcess.jvmAndAndroid.kt:17` | ☑ | Spawned MCP stdio child's stderr is never drained, redirected, or closed — child blocks an |
 | 3 | MEDIUM | streaming-sse | `EventStreamParser.kt:29` | ☐ | EventStreamParser silently yields an empty, error-free stream when the body contains no SS |
 | 3 | MEDIUM | streaming-sse | `Streaming.kt:95` | ☐ | fromOpenAI crashes the whole stream on non-primitive id/model/created fields |
 | 3 | MEDIUM | mcp | `MCP.kt:504` | ☐ | Pending-request handler leaks when a request is cancelled/times out (suspend cleanup in fi |
