@@ -15,8 +15,8 @@ import io.ktor.http.contentType
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emitAll
 import kotlinx.coroutines.flow.flow
-import kotlinx.serialization.SerializationException
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.SerializationException
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
@@ -29,7 +29,6 @@ import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.decodeFromJsonElement
 import kotlinx.serialization.json.intOrNull
 import kotlinx.serialization.json.jsonObject
-import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.longOrNull
 
 public const val HUGGINGFACE_VERSION: String = "1.0.50"
@@ -52,11 +51,11 @@ public data class HuggingFaceProviderSettings(
 
     internal fun huggingFaceUsage(element: JsonElement?): Usage {
         val obj = element as? JsonObject ?: return Usage()
-        val inputTokens = obj["input_tokens"]?.jsonPrimitive?.intOrNull ?: 0
-        val cachedTokens = (obj["input_tokens_details"]?.jsonObject?.get("cached_tokens")?.jsonPrimitive?.intOrNull ?: 0)
+        val inputTokens = (obj["input_tokens"] as? JsonPrimitive)?.intOrNull ?: 0
+        val cachedTokens = ((obj["input_tokens_details"]?.jsonObject?.get("cached_tokens") as? JsonPrimitive)?.intOrNull ?: 0)
             .coerceIn(0, inputTokens)
-        val outputTokens = obj["output_tokens"]?.jsonPrimitive?.intOrNull ?: 0
-        val reasoningTokens = (obj["output_tokens_details"]?.jsonObject?.get("reasoning_tokens")?.jsonPrimitive?.intOrNull ?: 0)
+        val outputTokens = (obj["output_tokens"] as? JsonPrimitive)?.intOrNull ?: 0
+        val reasoningTokens = ((obj["output_tokens_details"]?.jsonObject?.get("reasoning_tokens") as? JsonPrimitive)?.intOrNull ?: 0)
             .coerceAtLeast(0)
         val outputTotal = if (reasoningTokens > outputTokens) outputTokens + reasoningTokens else outputTokens
         return Usage(
@@ -104,9 +103,9 @@ public data class HuggingFaceProviderSettings(
         val obj = error as? JsonObject
         val nested = obj?.get("error")
         val nestedObj = nested as? JsonObject
-        return nestedObj?.get("message")?.jsonPrimitive?.contentOrNull
-            ?: obj?.get("message")?.jsonPrimitive?.contentOrNull
-            ?: nested?.jsonPrimitive?.contentOrNull
+        return (nestedObj?.get("message") as? JsonPrimitive)?.contentOrNull
+            ?: (obj?.get("message") as? JsonPrimitive)?.contentOrNull
+            ?: (nested as? JsonPrimitive)?.contentOrNull
             ?: error.toString()
     }
 }
@@ -268,20 +267,20 @@ private class HuggingFaceResponsesLanguageModel(
 
         for (part in (response["output"] as? JsonArray).orEmpty()) {
             val obj = part.jsonObject
-            val itemId = obj["id"]?.jsonPrimitive?.contentOrNull
+            val itemId = (obj["id"] as? JsonPrimitive)?.contentOrNull
             val providerMetadata = itemId?.let(settings::huggingFaceItemMetadata) ?: ProviderMetadata.None
-            when (obj["type"]?.jsonPrimitive?.contentOrNull) {
+            when ((obj["type"] as? JsonPrimitive)?.contentOrNull) {
                 "message" -> {
                     for (messagePart in (obj["content"] as? JsonArray).orEmpty()) {
                         val messageObj = messagePart.jsonObject
-                        val text = messageObj["text"]?.jsonPrimitive?.contentOrNull
+                        val text = (messageObj["text"] as? JsonPrimitive)?.contentOrNull
                         if (!text.isNullOrEmpty()) content += ContentPart.Text(text, providerMetadata)
                         for (annotation in (messageObj["annotations"] as? JsonArray).orEmpty()) {
                             val annotationObj = annotation as? JsonObject ?: continue
                             content += ContentPart.Source(
                                 sourceType = StreamEvent.SourcePart.SourceType.Url,
-                                url = annotationObj["url"]?.jsonPrimitive?.contentOrNull,
-                                title = annotationObj["title"]?.jsonPrimitive?.contentOrNull,
+                                url = (annotationObj["url"] as? JsonPrimitive)?.contentOrNull,
+                                title = (annotationObj["title"] as? JsonPrimitive)?.contentOrNull,
                             )
                         }
                     }
@@ -289,38 +288,44 @@ private class HuggingFaceResponsesLanguageModel(
                 "reasoning" -> {
                     val reasoningParts = ((obj["content"] as? JsonArray).orEmpty() + (obj["summary"] as? JsonArray).orEmpty())
                     for (reasoningPart in reasoningParts) {
-                        val text = reasoningPart.jsonObject["text"]?.jsonPrimitive?.contentOrNull
+                        val text = (reasoningPart.jsonObject["text"] as? JsonPrimitive)?.contentOrNull
                         if (!text.isNullOrEmpty()) content += ContentPart.Reasoning(text, providerMetadata)
                     }
                 }
                 "function_call" -> {
-                    val callId = obj["call_id"]?.jsonPrimitive?.contentOrNull ?: settings.generateId()
-                    val toolName = obj["name"]?.jsonPrimitive?.contentOrNull.orEmpty()
+                    val callId = (obj["call_id"] as? JsonPrimitive)?.contentOrNull ?: settings.generateId()
+                    val toolName = (obj["name"] as? JsonPrimitive)?.contentOrNull.orEmpty()
                     val toolCall = ContentPart.ToolCall(
                         toolCallId = callId,
                         toolName = toolName,
-                        input = settings.huggingFaceParseToolInput(obj["arguments"]?.jsonPrimitive?.contentOrNull, aiSdkJson),
+                        input = settings.huggingFaceParseToolInput(
+                            (obj["arguments"] as? JsonPrimitive)?.contentOrNull,
+                            aiSdkJson,
+                        ),
                         providerMetadata = providerMetadata,
                     )
                     toolCalls += toolCall
                     content += toolCall
-                    obj["output"]?.jsonPrimitive?.contentOrNull?.let { output ->
+                    (obj["output"] as? JsonPrimitive)?.contentOrNull?.let { output ->
                         content += ContentPart.ToolResult(callId, toolName, JsonPrimitive(output), providerMetadata = providerMetadata)
                     }
                 }
                 "mcp_call" -> {
                     val callId = itemId ?: settings.generateId()
-                    val toolName = obj["name"]?.jsonPrimitive?.contentOrNull.orEmpty()
+                    val toolName = (obj["name"] as? JsonPrimitive)?.contentOrNull.orEmpty()
                     val mcpMetadata = settings.huggingFaceItemMetadata(callId, providerExecuted = true)
                     val toolCall = ContentPart.ToolCall(
                         toolCallId = callId,
                         toolName = toolName,
-                        input = settings.huggingFaceParseToolInput(obj["arguments"]?.jsonPrimitive?.contentOrNull, aiSdkJson),
+                        input = settings.huggingFaceParseToolInput(
+                            (obj["arguments"] as? JsonPrimitive)?.contentOrNull,
+                            aiSdkJson,
+                        ),
                         providerMetadata = mcpMetadata,
                     )
                     toolCalls += toolCall
                     content += toolCall
-                    obj["output"]?.jsonPrimitive?.contentOrNull?.let { output ->
+                    (obj["output"] as? JsonPrimitive)?.contentOrNull?.let { output ->
                         content += ContentPart.ToolResult(callId, toolName, JsonPrimitive(output), providerMetadata = mcpMetadata)
                     }
                 }
@@ -349,9 +354,10 @@ private class HuggingFaceResponsesLanguageModel(
             }
         }
 
-        val incompleteReason = response["incomplete_details"]?.jsonObject?.get("reason")?.jsonPrimitive?.contentOrNull
+        val reasonElement = response["incomplete_details"]?.jsonObject?.get("reason")
+        val incompleteReason = (reasonElement as? JsonPrimitive)?.contentOrNull
         val text = content.filterIsInstance<ContentPart.Text>().joinToString("") { it.text }
-        val responseId = response["id"]?.jsonPrimitive?.contentOrNull
+        val responseId = (response["id"] as? JsonPrimitive)?.contentOrNull
         return LanguageModelResult(
             text = text,
             toolCalls = toolCalls,
@@ -364,8 +370,8 @@ private class HuggingFaceResponsesLanguageModel(
             request = LanguageModelRequestMetadata(body = requestBody),
             response = LanguageModelResponseMetadata(
                 id = responseId,
-                timestampMillis = response["created_at"]?.jsonPrimitive?.longOrNull?.times(1000),
-                modelId = response["model"]?.jsonPrimitive?.contentOrNull,
+                timestampMillis = (response["created_at"] as? JsonPrimitive)?.longOrNull?.times(1000),
+                modelId = (response["model"] as? JsonPrimitive)?.contentOrNull,
                 headers = responseHeaders,
                 body = responseBody,
             ),
@@ -633,25 +639,26 @@ private class HuggingFaceResponsesStreamState(
 
     fun accept(chunk: JsonElement): List<StreamEvent> {
         val obj = chunk as? JsonObject ?: return emptyList()
-        val type = obj["type"]?.jsonPrimitive?.contentOrNull ?: return emptyList()
+        val type = (obj["type"] as? JsonPrimitive)?.contentOrNull ?: return emptyList()
         val events = mutableListOf<StreamEvent>()
         when (type) {
             "response.created" -> {
                 val response = obj["response"]?.jsonObject ?: return emptyList()
-                responseId = response["id"]?.jsonPrimitive?.contentOrNull
+                responseId = (response["id"] as? JsonPrimitive)?.contentOrNull
                 events += StreamEvent.ResponseMetadata(
                     id = responseId,
-                    timestampMillis = response["created_at"]?.jsonPrimitive?.longOrNull?.times(1000),
-                    modelId = response["model"]?.jsonPrimitive?.contentOrNull,
+                    timestampMillis = (response["created_at"] as? JsonPrimitive)?.longOrNull?.times(1000),
+                    modelId = (response["model"] as? JsonPrimitive)?.contentOrNull,
                 )
             }
             "response.output_item.added" -> {
                 val item = obj["item"] as? JsonObject
                     ?: return listOf(StreamEvent.Error("Hugging Face stream protocol error: response.output_item.added missing item."))
-                val itemId = item["id"]?.jsonPrimitive?.contentOrNull ?: obj["item_id"]?.jsonPrimitive?.contentOrNull.orEmpty()
-                val itemType = item["type"]?.jsonPrimitive?.contentOrNull
+                val itemId = (item["id"] as? JsonPrimitive)?.contentOrNull
+                    ?: (obj["item_id"] as? JsonPrimitive)?.contentOrNull.orEmpty()
+                val itemType = (item["type"] as? JsonPrimitive)?.contentOrNull
                 when (itemType) {
-                    "message" -> if (item["role"]?.jsonPrimitive?.contentOrNull == null || item["role"]?.jsonPrimitive?.contentOrNull == "assistant") {
+                    "message" -> if ((item["role"] as? JsonPrimitive)?.contentOrNull == null || (item["role"] as? JsonPrimitive)?.contentOrNull == "assistant") {
                         events += StreamEvent.TextStart(itemId, settings.huggingFaceItemMetadata(itemId))
                     }
                     "reasoning" -> {
@@ -659,12 +666,12 @@ private class HuggingFaceResponsesStreamState(
                         events += StreamEvent.ReasoningStart(itemId, settings.huggingFaceItemMetadata(itemId))
                     }
                     "function_call" -> events += StreamEvent.ToolInputStart(
-                        id = item["call_id"]?.jsonPrimitive?.contentOrNull ?: itemId,
-                        toolName = item["name"]?.jsonPrimitive?.contentOrNull.orEmpty(),
+                        id = (item["call_id"] as? JsonPrimitive)?.contentOrNull ?: itemId,
+                        toolName = (item["name"] as? JsonPrimitive)?.contentOrNull.orEmpty(),
                     )
                     "mcp_call" -> events += StreamEvent.ToolInputStart(
                         id = itemId,
-                        toolName = item["name"]?.jsonPrimitive?.contentOrNull.orEmpty(),
+                        toolName = (item["name"] as? JsonPrimitive)?.contentOrNull.orEmpty(),
                         providerMetadata = settings.huggingFaceItemMetadata(itemId, providerExecuted = true),
                     )
                 }
@@ -672,37 +679,44 @@ private class HuggingFaceResponsesStreamState(
             "response.output_item.done" -> {
                 val item = obj["item"] as? JsonObject
                     ?: return listOf(StreamEvent.Error("Hugging Face stream protocol error: response.output_item.done missing item."))
-                val itemId = item["id"]?.jsonPrimitive?.contentOrNull ?: obj["item_id"]?.jsonPrimitive?.contentOrNull.orEmpty()
-                when (item["type"]?.jsonPrimitive?.contentOrNull) {
+                val itemId = (item["id"] as? JsonPrimitive)?.contentOrNull
+                    ?: (obj["item_id"] as? JsonPrimitive)?.contentOrNull.orEmpty()
+                when ((item["type"] as? JsonPrimitive)?.contentOrNull) {
                     "message" -> events += StreamEvent.TextEnd(itemId, settings.huggingFaceItemMetadata(itemId))
                     "reasoning" -> if (openReasoningIds.remove(itemId)) {
                         events += StreamEvent.ReasoningEnd(itemId, settings.huggingFaceItemMetadata(itemId))
                     }
                     "function_call" -> {
-                        val callId = item["call_id"]?.jsonPrimitive?.contentOrNull ?: settings.generateId()
-                        val toolName = item["name"]?.jsonPrimitive?.contentOrNull.orEmpty()
+                        val callId = (item["call_id"] as? JsonPrimitive)?.contentOrNull ?: settings.generateId()
+                        val toolName = (item["name"] as? JsonPrimitive)?.contentOrNull.orEmpty()
                         events += StreamEvent.ToolInputEnd(callId)
                         events += StreamEvent.ToolCall(
                             toolCallId = callId,
                             toolName = toolName,
-                            inputJson = settings.huggingFaceParseToolInput(item["arguments"]?.jsonPrimitive?.contentOrNull, json),
+                            inputJson = settings.huggingFaceParseToolInput(
+                                (item["arguments"] as? JsonPrimitive)?.contentOrNull,
+                                json,
+                            ),
                             providerMetadata = settings.huggingFaceItemMetadata(itemId),
                         )
-                        item["output"]?.jsonPrimitive?.contentOrNull?.let { output ->
+                        (item["output"] as? JsonPrimitive)?.contentOrNull?.let { output ->
                             events += StreamEvent.ToolResult(callId, toolName, JsonPrimitive(output), providerMetadata = settings.huggingFaceItemMetadata(itemId))
                         }
                     }
                     "mcp_call" -> {
-                        val toolName = item["name"]?.jsonPrimitive?.contentOrNull.orEmpty()
+                        val toolName = (item["name"] as? JsonPrimitive)?.contentOrNull.orEmpty()
                         val metadata = settings.huggingFaceItemMetadata(itemId, providerExecuted = true)
                         events += StreamEvent.ToolInputEnd(itemId, metadata)
                         events += StreamEvent.ToolCall(
                             toolCallId = itemId,
                             toolName = toolName,
-                            inputJson = settings.huggingFaceParseToolInput(item["arguments"]?.jsonPrimitive?.contentOrNull, json),
+                            inputJson = settings.huggingFaceParseToolInput(
+                                (item["arguments"] as? JsonPrimitive)?.contentOrNull,
+                                json,
+                            ),
                             providerMetadata = metadata,
                         )
-                        item["output"]?.jsonPrimitive?.contentOrNull?.let { output ->
+                        (item["output"] as? JsonPrimitive)?.contentOrNull?.let { output ->
                             events += StreamEvent.ToolResult(itemId, toolName, JsonPrimitive(output), providerMetadata = metadata)
                         }
                     }
@@ -728,23 +742,23 @@ private class HuggingFaceResponsesStreamState(
                 }
             }
             "response.reasoning_summary_text.delta", "response.reasoning_text.delta" -> {
-                val itemId = obj["item_id"]?.jsonPrimitive?.contentOrNull.orEmpty()
+                val itemId = (obj["item_id"] as? JsonPrimitive)?.contentOrNull.orEmpty()
                 events += StreamEvent.ReasoningDelta(
                     id = itemId,
-                    text = obj["delta"]?.jsonPrimitive?.contentOrNull.orEmpty(),
+                    text = (obj["delta"] as? JsonPrimitive)?.contentOrNull.orEmpty(),
                     providerMetadata = settings.huggingFaceItemMetadata(itemId),
                 )
             }
             "response.reasoning_summary_text.done", "response.reasoning_text.done" -> {
-                val itemId = obj["item_id"]?.jsonPrimitive?.contentOrNull.orEmpty()
+                val itemId = (obj["item_id"] as? JsonPrimitive)?.contentOrNull.orEmpty()
                 openReasoningIds.remove(itemId)
                 events += StreamEvent.ReasoningEnd(itemId, settings.huggingFaceItemMetadata(itemId))
             }
             "response.output_text.delta" -> {
-                val itemId = obj["item_id"]?.jsonPrimitive?.contentOrNull.orEmpty()
+                val itemId = (obj["item_id"] as? JsonPrimitive)?.contentOrNull.orEmpty()
                 events += StreamEvent.TextDelta(
                     id = itemId,
-                    text = obj["delta"]?.jsonPrimitive?.contentOrNull.orEmpty(),
+                    text = (obj["delta"] as? JsonPrimitive)?.contentOrNull.orEmpty(),
                     providerMetadata = settings.huggingFaceItemMetadata(itemId),
                 )
             }
@@ -752,15 +766,16 @@ private class HuggingFaceResponsesStreamState(
             "response.incomplete",
             -> {
                 val response = obj["response"]?.jsonObject ?: JsonObject(emptyMap())
-                responseId = response["id"]?.jsonPrimitive?.contentOrNull ?: responseId
-                val reason = response["incomplete_details"]?.jsonObject?.get("reason")?.jsonPrimitive?.contentOrNull ?: "stop"
+                responseId = (response["id"] as? JsonPrimitive)?.contentOrNull ?: responseId
+                val reasonElement = response["incomplete_details"]?.jsonObject?.get("reason")
+                val reason = (reasonElement as? JsonPrimitive)?.contentOrNull ?: "stop"
                 rawFinishReason = reason
                 finishReason = settings.mapHuggingFaceFinishReason(reason)
                 usage = settings.huggingFaceUsage(response["usage"])
             }
             "response.failed" -> {
                 val response = obj["response"]?.jsonObject ?: JsonObject(emptyMap())
-                responseId = response["id"]?.jsonPrimitive?.contentOrNull ?: responseId
+                responseId = (response["id"] as? JsonPrimitive)?.contentOrNull ?: responseId
                 finishReason = FinishReason.Error
                 usage = settings.huggingFaceUsage(response["usage"])
                 events += StreamEvent.Error(
