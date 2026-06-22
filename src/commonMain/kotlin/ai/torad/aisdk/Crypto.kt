@@ -88,7 +88,10 @@ internal object CryptoPrimitives {
     fun hmacSha256(key: ByteArray, message: ByteArray): ByteArray {
         val blockSize = 64
         val normalizedKey = when {
-            key.size > blockSize -> sha256(key)
+            // A key longer than the block is hashed AND zero-padded back to the block size (standard
+            // HMAC). The hash alone is 32 bytes — without re-padding, the 0..blockSize XOR loop
+            // overran. Pad via the digest's own size so this holds if the digest width ever changes.
+            key.size > blockSize -> sha256(key).let { hashed -> hashed + ByteArray(blockSize - hashed.size) }
             key.size < blockSize -> key + ByteArray(blockSize - key.size)
             else -> key
         }
