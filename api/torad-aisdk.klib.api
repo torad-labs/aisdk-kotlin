@@ -573,16 +573,7 @@ abstract interface ai.torad.aisdk/Telemetry { // ai.torad.aisdk/Telemetry|null[0
     abstract val name // ai.torad.aisdk/Telemetry.name|{}name[0]
         abstract fun <get-name>(): kotlin/String // ai.torad.aisdk/Telemetry.name.<get-name>|<get-name>(){}[0]
 
-    open suspend fun onAbort(ai.torad.aisdk/TelemetryCall, ai.torad.aisdk/AgentEvent.Aborted) // ai.torad.aisdk/Telemetry.onAbort|onAbort(ai.torad.aisdk.TelemetryCall;ai.torad.aisdk.AgentEvent.Aborted){}[0]
-    open suspend fun onAgentFinish(ai.torad.aisdk/TelemetryCall, ai.torad.aisdk/AgentEvent.Finished<*, *>) // ai.torad.aisdk/Telemetry.onAgentFinish|onAgentFinish(ai.torad.aisdk.TelemetryCall;ai.torad.aisdk.AgentEvent.Finished<*,*>){}[0]
-    open suspend fun onAgentStart(ai.torad.aisdk/TelemetryCall, ai.torad.aisdk/AgentEvent.Started<*>) // ai.torad.aisdk/Telemetry.onAgentStart|onAgentStart(ai.torad.aisdk.TelemetryCall;ai.torad.aisdk.AgentEvent.Started<*>){}[0]
-    open suspend fun onError(ai.torad.aisdk/TelemetryCall, ai.torad.aisdk/AgentEvent.Errored) // ai.torad.aisdk/Telemetry.onError|onError(ai.torad.aisdk.TelemetryCall;ai.torad.aisdk.AgentEvent.Errored){}[0]
-    open suspend fun onModelCallFinish(ai.torad.aisdk/TelemetryCall, ai.torad.aisdk/AgentEvent.ModelCallFinished) // ai.torad.aisdk/Telemetry.onModelCallFinish|onModelCallFinish(ai.torad.aisdk.TelemetryCall;ai.torad.aisdk.AgentEvent.ModelCallFinished){}[0]
-    open suspend fun onModelCallStart(ai.torad.aisdk/TelemetryCall, ai.torad.aisdk/AgentEvent.ModelCallStarted) // ai.torad.aisdk/Telemetry.onModelCallStart|onModelCallStart(ai.torad.aisdk.TelemetryCall;ai.torad.aisdk.AgentEvent.ModelCallStarted){}[0]
-    open suspend fun onStepFinish(ai.torad.aisdk/TelemetryCall, ai.torad.aisdk/AgentEvent.StepFinished) // ai.torad.aisdk/Telemetry.onStepFinish|onStepFinish(ai.torad.aisdk.TelemetryCall;ai.torad.aisdk.AgentEvent.StepFinished){}[0]
-    open suspend fun onStepStart(ai.torad.aisdk/TelemetryCall, ai.torad.aisdk/AgentEvent.StepStarted) // ai.torad.aisdk/Telemetry.onStepStart|onStepStart(ai.torad.aisdk.TelemetryCall;ai.torad.aisdk.AgentEvent.StepStarted){}[0]
-    open suspend fun onToolCallFinish(ai.torad.aisdk/TelemetryCall, ai.torad.aisdk/AgentEvent.ToolCallFinished) // ai.torad.aisdk/Telemetry.onToolCallFinish|onToolCallFinish(ai.torad.aisdk.TelemetryCall;ai.torad.aisdk.AgentEvent.ToolCallFinished){}[0]
-    open suspend fun onToolCallStart(ai.torad.aisdk/TelemetryCall, ai.torad.aisdk/AgentEvent.ToolCallStarted) // ai.torad.aisdk/Telemetry.onToolCallStart|onToolCallStart(ai.torad.aisdk.TelemetryCall;ai.torad.aisdk.AgentEvent.ToolCallStarted){}[0]
+    abstract suspend fun onEvent(ai.torad.aisdk/TelemetryCall, ai.torad.aisdk/AgentEvent) // ai.torad.aisdk/Telemetry.onEvent|onEvent(ai.torad.aisdk.TelemetryCall;ai.torad.aisdk.AgentEvent){}[0]
 
     final object Companion { // ai.torad.aisdk/Telemetry.Companion|null[0]
         final fun clearGlobalTelemetry() // ai.torad.aisdk/Telemetry.Companion.clearGlobalTelemetry|clearGlobalTelemetry(){}[0]
