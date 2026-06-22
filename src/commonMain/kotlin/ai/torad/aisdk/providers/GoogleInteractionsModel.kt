@@ -371,7 +371,8 @@ internal object GoogleInteractions {
     } else {
         googleInteractionsTools(params.tools, warnings)
     }
-    val toolChoice = if (isAgent || tools.isEmpty()) null else googleInteractionsToolChoice(params.toolChoice)
+    val hasFunctionTool = params.tools.any { !it.providerExecuted }
+    val toolChoice = if (isAgent || !hasFunctionTool) null else googleInteractionsToolChoice(params.toolChoice)
     val generationConfig = if (isAgent) {
         val dropped = buildList {
             if (params.temperature != null) add("temperature")
