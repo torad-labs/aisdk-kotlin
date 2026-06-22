@@ -954,7 +954,10 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
             // executor via resolvedForExecution so the repair attempt is not repeated.
             val toolsRequiringApproval = mutableListOf<ContentPart.ToolCall>()
             val toolsToExecute = mutableListOf<ContentPart.ToolCall>()
-            val resolvedForExecution = mutableMapOf<String, Pair<Tool<*, *, TContext>, Any?>>()
+            // Keyed by the call's POSITION in toolsToExecute, not toolCallId: a malformed step that
+            // emits two calls sharing one id must not collide (the second overwriting the first so
+            // both run with the second's args). The parallel loop fetches by its forEachIndexed index.
+            val resolvedForExecution = mutableMapOf<Int, Pair<Tool<*, *, TContext>, Any?>>()
             // Tool-error results for calls that fail categorization. Held here (not appended to
             // `messages`) until AFTER the assistant tool-call message is added below, so a failed
             // call's tool_result never precedes the assistant tool_use that issued it.
@@ -1030,7 +1033,8 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
                         toolsRequiringApproval.add(call)
                     }
                 } else {
-                    resolvedForExecution[call.toolCallId] = resolvedTool to resolvedInput
+                    // toolsToExecute.size is the index this call will occupy after the add below.
+                    resolvedForExecution[toolsToExecute.size] = resolvedTool to resolvedInput
                     toolsToExecute.add(call)
                 }
             }
@@ -1129,7 +1133,8 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
                                     feed = feed,
                                     // Reuse the (tool, input) already resolved + repaired during the
                                     // approval-categorization pass — don't decode/repair a second time.
-                                    preResolved = resolvedForExecution[call.toolCallId],
+                                    // Keyed by position (index), so duplicate toolCallIds don't collide.
+                                    preResolved = resolvedForExecution[index],
                                 )
                                 dispatcher.runHook(stepNumber, feed, hooks) {
                                     val finishEvent = AgentEvent.ToolCallFinished(
