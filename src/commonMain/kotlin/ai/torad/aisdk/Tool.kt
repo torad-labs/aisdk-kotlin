@@ -829,30 +829,45 @@ public object ToolResultOutputs {
 
     internal fun toolResultOutputFromWire(json: JsonElement): ToolResultOutput {
         val obj = json as? JsonObject ?: return ToolResultOutputs.toolResultOutputFromJson(json)
-        val type = WireDecoder.optionalString(obj, "type", "tool", "tool-result output")
-            ?: return ToolResultOutputs.toolResultOutputFromJson(json)
-        return when (type) {
-            "text" -> ToolResultOutput.Text(
-                WireDecoder.requiredString(obj, "value", "tool", "tool-result output"),
+        val type = stringFieldOrNull(obj, "type") ?: return ToolResultOutputs.toolResultOutputFromJson(json)
+        // Decode only when the object matches the exact shape toJsonElement() emits for this tag.
+        // modelVisible is often a RAW success output (it defaults to the tool's output), so a payload
+        // that merely collides on `type` — e.g. a tool returning {"type":"text", ...} or {"type":"json"}
+        // with no matching `value` — carries no companion field and falls through to be preserved
+        // verbatim as Json, instead of throwing (a hard model-call failure) or silently dropping data.
+        // This keeps toJsonElement()/toolResultOutputFromWire() inverse for every variant.
+        return taggedOutputOrNull(obj, type) ?: ToolResultOutputs.toolResultOutputFromJson(json)
+    }
+
+    private fun taggedOutputOrNull(obj: JsonObject, type: String): ToolResultOutput? = when (type) {
+        "text" -> stringFieldOrNull(obj, "value")?.let { ToolResultOutput.Text(it) }
+        "json" -> obj["value"]?.let { ToolResultOutput.Json(it) }
+        "error-text" -> stringFieldOrNull(obj, "value")?.let { ToolResultOutput.Error(it) }
+        "error-json" -> obj["value"]?.let { ToolResultOutput.ErrorJson(it) }
+        "execution-denied" -> executionDeniedOrNull(obj)
+        "content" -> contentOutputOrNull(obj)
+        else -> null
+    }
+
+    private fun contentOutputOrNull(obj: JsonObject): ToolResultOutput.Content? =
+        (obj["value"] as? JsonArray)?.let { value ->
+            ToolResultOutput.Content(
+                value = value.toList(),
+                isError = (obj["isError"] as? JsonPrimitive)?.booleanOrNull ?: false,
             )
-            "json" -> ToolResultOutput.Json(
-                WireDecoder.required(obj, "value", "tool", "tool-result output"),
-            )
-            "error-text" -> ToolResultOutput.Error(
-                WireDecoder.requiredString(obj, "value", "tool", "tool-result output"),
-            )
-            "error-json" -> ToolResultOutput.ErrorJson(
-                WireDecoder.required(obj, "value", "tool", "tool-result output"),
-            )
-            "execution-denied" -> ToolResultOutput.ExecutionDenied(
-                WireDecoder.optionalString(obj, "reason", "tool", "tool-result output"),
-            )
-            "content" -> ToolResultOutput.Content(
-                value = WireDecoder.requiredArray(obj, "value", "tool", "tool-result output").toList(),
-                isError = WireDecoder.optionalBoolean(obj, "isError", "tool", "tool-result output") ?: false,
-            )
-            else -> ToolResultOutputs.toolResultOutputFromJson(json)
         }
+
+    private fun stringFieldOrNull(obj: JsonObject, key: String): String? =
+        (obj[key] as? JsonPrimitive)?.takeIf { it.isString }?.content
+
+    private fun executionDeniedOrNull(obj: JsonObject): ToolResultOutput.ExecutionDenied? {
+        // Exactly {"type":"execution-denied"} optionally plus a string "reason"; any other field
+        // means this is a raw success that merely collides on the discriminator, so it is preserved
+        // verbatim rather than masquerading as a denial.
+        val foreignKey = obj.keys.any { it != "type" && it != "reason" }
+        val malformedReason = obj.containsKey("reason") && stringFieldOrNull(obj, "reason") == null
+        if (foreignKey || malformedReason) return null
+        return ToolResultOutput.ExecutionDenied(stringFieldOrNull(obj, "reason"))
     }
 
     public fun ToolResultOutput.isToolResultError(): Boolean = when (this) {
