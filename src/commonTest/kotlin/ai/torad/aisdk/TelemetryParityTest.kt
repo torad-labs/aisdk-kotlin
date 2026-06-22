@@ -58,8 +58,8 @@ class TelemetryParityTest {
         checkNotNull(composite)
         val call = TelemetryCall(callId = "c1", agentId = "agent")
 
-        composite.onAgentStart(call, AgentEvent.Started<Unit>(null, emptyList(), null))
-        composite.onAgentFinish(call, AgentEvent.Finished<Unit, String>(null, 1, Usage()))
+        composite.onEvent(call, AgentEvent.Started<Unit>(null, emptyList(), null))
+        composite.onEvent(call, AgentEvent.Finished<Unit, String>(null, 1, Usage()))
 
         assertEquals(listOf("first:start", "second:start", "first:finish", "second:finish"), calls)
     }
@@ -98,12 +98,22 @@ class TelemetryParityTest {
         override val name: String,
         private val calls: MutableList<String>,
     ) : Telemetry {
-        override suspend fun onAgentStart(call: TelemetryCall, event: AgentEvent.Started<*>) {
-            calls += "$name:start"
-        }
-
-        override suspend fun onAgentFinish(call: TelemetryCall, event: AgentEvent.Finished<*, *>) {
-            calls += "$name:finish"
+        override suspend fun onEvent(call: TelemetryCall, event: AgentEvent) {
+            when (event) {
+                is AgentEvent.Started<*> -> calls += "$name:start"
+                is AgentEvent.Finished<*, *> -> calls += "$name:finish"
+                is AgentEvent.StepStarted,
+                is AgentEvent.Chunk,
+                is AgentEvent.StepFinished,
+                is AgentEvent.ToolCallStarted,
+                is AgentEvent.ToolCallFinished,
+                is AgentEvent.Errored,
+                is AgentEvent.Aborted,
+                is AgentEvent.ModelCallStarted,
+                is AgentEvent.ModelCallFinished,
+                is AgentEvent.SpanEmitted,
+                -> Unit
+            }
         }
     }
 }

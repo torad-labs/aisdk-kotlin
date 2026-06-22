@@ -593,7 +593,7 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
         dispatcher.runHook(0, feed, hooks) {
             hooks?.onStart?.invoke(startEvent)
         }
-        dispatcher.fireTelemetry(feed) { onAgentStart(it, startEvent) }
+        dispatcher.fireTelemetry(feed) { onEvent(it, startEvent) }
 
         // prepareCall — once per invocation.
         val resolvedSettings: AgentSettings<TContext> = prepareCall?.let { hook ->
@@ -670,7 +670,7 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
             dispatcher.runHook(stepNumber, feed, hooks) {
                 hooks?.onAbort?.invoke(abortEvent)
             }
-            dispatcher.fireTelemetry(feed) { onAbort(it, abortEvent) }
+            dispatcher.fireTelemetry(feed) { onEvent(it, abortEvent) }
             finalMessagesRef?.value = messages.toList()
         }
 
@@ -758,7 +758,7 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
             dispatcher.runHook(stepNumber, feed, hooks) {
                 hooks?.onStepStart?.invoke(stepStartEvent)
             }
-            dispatcher.fireTelemetry(feed) { onStepStart(it, stepStartEvent) }
+            dispatcher.fireTelemetry(feed) { onEvent(it, stepStartEvent) }
 
             val stepText = StringBuilder()
             val stepReasoning = StringBuilder()
@@ -787,8 +787,7 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
             // (the fireAbort precedent) so the step locals are captured, not re-passed 4x.
             suspend fun closeModelCall(finishReason: FinishReason, rawFinishReason: String?) {
                 dispatcher.fireTelemetry(feed) {
-                    onModelCallFinish(
-                        it,
+                    onEvent(it,
                         AgentEvent.ModelCallFinished(
                             stepNumber = stepNumber,
                             modelId = stepModel.modelId,
@@ -802,7 +801,7 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
             }
 
             dispatcher.fireTelemetry(feed) {
-                onModelCallStart(it, AgentEvent.ModelCallStarted(stepNumber, stepModel.modelId, callParams))
+                onEvent(it, AgentEvent.ModelCallStarted(stepNumber, stepModel.modelId, callParams))
             }
             try {
                 val stepStreamResult = stepModel.streamResult(callParams)
@@ -1205,7 +1204,7 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
             dispatcher.runHook(stepNumber, feed, hooks) {
                 hooks?.onStepFinish?.invoke(stepFinishEvent)
             }
-            dispatcher.fireTelemetry(feed) { onStepFinish(it, stepFinishEvent) }
+            dispatcher.fireTelemetry(feed) { onEvent(it, stepFinishEvent) }
             emit(StreamEvent.StepFinish(stepNumber, effectiveFinishReason, stepUsage))
 
             // If approval was emitted this step, the loop ends — host resumes.
@@ -1262,7 +1261,7 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
         dispatcher.runHook(stepNumber, feed, hooks) {
             hooks?.onFinish?.invoke(finishEvent)
         }
-        dispatcher.fireTelemetry(feed) { onAgentFinish(it, finishEvent) }
+        dispatcher.fireTelemetry(feed) { onEvent(it, finishEvent) }
     }
 
     /**
@@ -1302,7 +1301,7 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
         // Telemetry brackets the execution HERE (not at the dispatch site) so
         // both routes — the step loop AND the approval-resume path — emit.
         dispatcher.fireTelemetry(feed) {
-            onToolCallStart(it, AgentEvent.ToolCallStarted(call.toolCallId, call.toolName, call.input, stepNumber, messages))
+            onEvent(it, AgentEvent.ToolCallStarted(call.toolCallId, call.toolName, call.input, stepNumber, messages))
         }
         val result = try {
             // Resolve (toolDef, decoded input). On first attempt: decode
@@ -1361,8 +1360,7 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
             toolFailure(call, t)
         }
         dispatcher.fireTelemetry(feed) {
-            onToolCallFinish(
-                it,
+            onEvent(it,
                 AgentEvent.ToolCallFinished(
                     toolCallId = call.toolCallId,
                     toolName = call.toolName,
