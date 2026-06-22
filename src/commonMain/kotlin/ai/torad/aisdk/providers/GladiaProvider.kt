@@ -13,6 +13,7 @@ import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpMethod
 import kotlinx.coroutines.delay
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonObject
@@ -21,7 +22,6 @@ import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.floatOrNull
-import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 
 public const val GLADIA_VERSION: String = "2.0.33"
@@ -155,9 +155,10 @@ private class GladiaTranscriptionModel(
             abortSignal = params.abortSignal,
         )
         val responseBody = result.value.jsonObject
-        val transcript = responseBody["result"]?.jsonObject?.get("transcription")?.jsonObject
+        val resultObj = responseBody["result"] as? JsonObject
+        val transcript = (resultObj?.get("transcription") as? JsonObject)
             ?: throw NoTranscriptGeneratedError("Transcription result is empty")
-        val utterances = transcript["utterances"]?.jsonArray.orEmpty()
+        val utterances = (transcript["utterances"] as? JsonArray).orEmpty()
         return TranscriptionModelResult(
             text = (transcript["full_transcript"] as? JsonPrimitive)?.contentOrNull.orEmpty(),
             segments = utterances.map { utterance ->
@@ -174,9 +175,8 @@ private class GladiaTranscriptionModel(
                 body = result.value,
             ),
             providerMetadata = ProviderMetadata.Raw(JsonObject(mapOf("gladia" to result.value))),
-            language = (transcript["languages"]?.jsonArray?.firstOrNull() as? JsonPrimitive)?.contentOrNull,
-            durationInSeconds = (responseBody["result"]?.jsonObject
-                ?.get("metadata")?.jsonObject
+            language = ((transcript["languages"] as? JsonArray)?.firstOrNull() as? JsonPrimitive)?.contentOrNull,
+            durationInSeconds = ((resultObj?.get("metadata") as? JsonObject)
                 ?.get("audio_duration") as? JsonPrimitive)
                 ?.floatOrNull,
         )
@@ -351,7 +351,7 @@ private class GladiaTranscriptionModel(
 
     private fun errorMessage(statusCode: Int, parsed: JsonElement?, raw: String): String {
         val obj = parsed as? JsonObject
-        val detail = (obj?.get("error")?.jsonObject?.get("message") as? JsonPrimitive)?.contentOrNull
+        val detail = ((obj?.get("error") as? JsonObject)?.get("message") as? JsonPrimitive)?.contentOrNull
             ?: (obj?.get("error") as? JsonPrimitive)?.contentOrNull
             ?: raw.ifBlank { "request failed" }
         return "Gladia request failed ($statusCode): $detail"
