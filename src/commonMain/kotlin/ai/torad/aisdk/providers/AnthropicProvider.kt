@@ -270,13 +270,14 @@ public class AnthropicMessagesLanguageModel(
         val content = mutableListOf<ContentPart>()
         val toolCalls = mutableListOf<ContentPart.ToolCall>()
         (response["content"] as? JsonArray).orEmpty().forEachIndexed { index, part ->
-            val obj = part.jsonObject
+            val obj = part as? JsonObject ?: return@forEachIndexed
             val path = "$.content[$index]"
             when ((obj["type"] as? JsonPrimitive)?.contentOrNull) {
                 "text" -> {
                     (obj["text"] as? JsonPrimitive)?.contentOrNull?.let { text -> content += ContentPart.Text(text) }
                     for (citation in (obj["citations"] as? JsonArray).orEmpty()) {
-                        settings.anthropicCitationSource(citation.jsonObject)?.let { content += it }
+                        val citationObj = citation as? JsonObject ?: continue
+                        settings.anthropicCitationSource(citationObj)?.let { content += it }
                     }
                 }
                 "thinking" -> content += ContentPart.Reasoning(
@@ -715,8 +716,8 @@ internal data class PreparedAnthropicRequest(
         private fun anthropicMcpServers(options: JsonObject): JsonArray? {
             val servers = options["mcpServers"] as? JsonArray ?: return null
             if (servers.isEmpty()) return null
-            return JsonArray(servers.map { server ->
-                val obj = server.jsonObject
+            return JsonArray(servers.mapNotNull { server ->
+                val obj = server as? JsonObject ?: return@mapNotNull null
                 buildJsonObject {
                     put("type", obj["type"] ?: JsonPrimitive("url"))
                     put("name", obj["name"] ?: JsonPrimitive(""))

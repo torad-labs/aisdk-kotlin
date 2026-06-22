@@ -219,47 +219,63 @@ private class RevaiTranscriptionModel(
         }
     }
 
-    private fun mapRevaiTranscript(value: JsonElement): RevaiTranscriptMapping {
-        val monologues = (value.jsonObject["monologues"] as? JsonArray).orEmpty()
-        val text = monologues.joinToString(" ") { monologue ->
-            (monologue.jsonObject["elements"] as? JsonArray).orEmpty()
-                .joinToString("") { element ->
-                    (element.jsonObject["value"] as? JsonPrimitive)?.contentOrNull.orEmpty()
+    // Concatenate one monologue's element values, skipping non-object elements (Wave 7b). Extracted
+    // so mapRevaiTranscript stays under the cyclomatic-complexity threshold after the skip guards.
+    private fun revaiMonologueText(monologue: JsonElement): String =
+        ((monologue as? JsonObject)?.get("elements") as? JsonArray).orEmpty()
+            .joinToString("") { element ->
+                ((element as? JsonObject)?.get("value") as? JsonPrimitive)?.contentOrNull.orEmpty()
+            }
+
+    // Build one monologue's segments and the running max end-timestamp, skipping non-object elements
+    // (Wave 7b). Extracted so mapRevaiTranscript stays under the cyclomatic-complexity threshold.
+    private fun revaiMonologueSegments(
+        monologue: JsonElement,
+        baseDuration: Float,
+    ): Pair<List<TranscriptSegment>, Float> {
+        val segments = mutableListOf<TranscriptSegment>()
+        var durationInSeconds = baseDuration
+        var currentText = ""
+        var segmentStart = 0f
+        var hasStarted = false
+        val elements = ((monologue as? JsonObject)?.get("elements") as? JsonArray).orEmpty()
+        for (obj in elements.filterIsInstance<JsonObject>()) {
+            if ((obj["type"] as? JsonPrimitive)?.contentOrNull != "text") continue
+            // Accumulate ONLY text elements — a "punct" element (comma/period/space) between two
+            // words must not prepend into the next word's segment text (e.g. ",World").
+            currentText += (obj["value"] as? JsonPrimitive)?.contentOrNull.orEmpty()
+            val end = (obj["end_ts"] as? JsonPrimitive)?.floatOrNull
+            if (end != null && end > durationInSeconds) durationInSeconds = end
+            if (!hasStarted) {
+                (obj["ts"] as? JsonPrimitive)?.floatOrNull?.let {
+                    segmentStart = it
+                    hasStarted = true
                 }
+            }
+            if (end != null && hasStarted) {
+                currentText.trim().takeIf { it.isNotBlank() }?.let { text ->
+                    segments += TranscriptSegment(text = text, startSeconds = segmentStart, endSeconds = end)
+                }
+                currentText = ""
+                hasStarted = false
+            }
         }
+        currentText.trim().takeIf { hasStarted && it.isNotBlank() }?.let { text ->
+            val end = if (durationInSeconds > segmentStart) durationInSeconds else segmentStart + 1f
+            segments += TranscriptSegment(text = text, startSeconds = segmentStart, endSeconds = end)
+        }
+        return segments to durationInSeconds
+    }
+
+    private fun mapRevaiTranscript(value: JsonElement): RevaiTranscriptMapping {
+        val monologues = ((value as? JsonObject)?.get("monologues") as? JsonArray).orEmpty()
+        val text = monologues.joinToString(" ") { revaiMonologueText(it) }
         val segments = mutableListOf<TranscriptSegment>()
         var durationInSeconds = 0f
         for (monologue in monologues) {
-            var currentText = ""
-            var segmentStart = 0f
-            var hasStarted = false
-            for (element in (monologue.jsonObject["elements"] as? JsonArray).orEmpty()) {
-                val obj = element.jsonObject
-                if ((obj["type"] as? JsonPrimitive)?.contentOrNull == "text") {
-                    // Accumulate ONLY text elements — a "punct" element (comma/period/space) between two
-                    // words must not prepend into the next word's segment text (e.g. ",World").
-                    currentText += (obj["value"] as? JsonPrimitive)?.contentOrNull.orEmpty()
-                    val end = (obj["end_ts"] as? JsonPrimitive)?.floatOrNull
-                    if (end != null && end > durationInSeconds) durationInSeconds = end
-                    if (!hasStarted) {
-                        (obj["ts"] as? JsonPrimitive)?.floatOrNull?.let {
-                            segmentStart = it
-                            hasStarted = true
-                        }
-                    }
-                    if (end != null && hasStarted) {
-                        currentText.trim().takeIf { it.isNotBlank() }?.let { text ->
-                            segments += TranscriptSegment(text = text, startSeconds = segmentStart, endSeconds = end)
-                        }
-                        currentText = ""
-                        hasStarted = false
-                    }
-                }
-            }
-            currentText.trim().takeIf { hasStarted && it.isNotBlank() }?.let { text ->
-                val end = if (durationInSeconds > segmentStart) durationInSeconds else segmentStart + 1f
-                segments += TranscriptSegment(text = text, startSeconds = segmentStart, endSeconds = end)
-            }
+            val (monologueSegments, newDuration) = revaiMonologueSegments(monologue, durationInSeconds)
+            segments += monologueSegments
+            durationInSeconds = newDuration
         }
         return RevaiTranscriptMapping(text = text, segments = segments, durationInSeconds = durationInSeconds)
     }
