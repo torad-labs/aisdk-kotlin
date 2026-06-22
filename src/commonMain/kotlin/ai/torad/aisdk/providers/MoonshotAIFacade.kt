@@ -7,8 +7,8 @@ import io.ktor.client.HttpClient
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.intOrNull
-import kotlinx.serialization.json.jsonPrimitive
 
 public const val MOONSHOTAI_VERSION: String = "2.0.23"
 
@@ -39,7 +39,7 @@ public data class MoonshotAIProviderSettings(
         val promptTokens = obj.intField("prompt_tokens")
         val completionTokens = obj.intField("completion_tokens")
         val cacheRead = (
-            obj["cached_tokens"]?.jsonPrimitive?.intOrNull
+            (obj["cached_tokens"] as? JsonPrimitive)?.intOrNull
                 ?: obj.nestedIntField("prompt_tokens_details", "cached_tokens")
             ).coerceAtMost(promptTokens)
         val reasoning = obj.nestedIntField("completion_tokens_details", "reasoning_tokens").coerceAtMost(completionTokens)

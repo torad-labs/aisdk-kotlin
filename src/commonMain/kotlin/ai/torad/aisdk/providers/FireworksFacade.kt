@@ -16,7 +16,6 @@ import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonObject
-import kotlinx.serialization.json.jsonPrimitive
 
 public const val FIREWORKS_VERSION: String = "2.0.53"
 
@@ -182,7 +181,7 @@ public class FireworksImageModel(
             body = body,
             headers = requestHeaders,
         )
-        val requestId = submitResponse.value.jsonObject["request_id"]?.jsonPrimitive?.contentOrNull
+        val requestId = (submitResponse.value.jsonObject["request_id"] as? JsonPrimitive)?.contentOrNull
             ?: throw InvalidResponseDataError(
                 submitResponse.value,
                 "Fireworks image generation response is missing request_id",
@@ -205,17 +204,16 @@ public class FireworksImageModel(
                 body = buildJsonObject { put("id", JsonPrimitive(requestId)) },
                 headers = requestHeaders,
             )
-            val status = response.value.jsonObject["status"]?.jsonPrimitive?.contentOrNull
+            val status = (response.value.jsonObject["status"] as? JsonPrimitive)?.contentOrNull
             when (status) {
-                "Ready" -> return response.value.jsonObject["result"]
-                    ?.jsonObject
-                    ?.get("sample")
-                    ?.jsonPrimitive
-                    ?.contentOrNull
-                    ?: throw InvalidResponseDataError(
-                        response.value,
-                        "Fireworks poll response is Ready but missing result.sample",
-                    )
+                "Ready" -> {
+                    val sample = response.value.jsonObject["result"]?.jsonObject?.get("sample")
+                    return (sample as? JsonPrimitive)?.contentOrNull
+                        ?: throw InvalidResponseDataError(
+                            response.value,
+                            "Fireworks poll response is Ready but missing result.sample",
+                        )
+                }
                 "Error", "Failed" -> throw APICallError(
                     message = "Fireworks image generation failed with status: $status",
                     url = pollUrl,

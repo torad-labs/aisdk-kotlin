@@ -11,7 +11,6 @@ import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.contentOrNull
-import kotlinx.serialization.json.jsonPrimitive
 
 public const val GROQ_VERSION: String = "3.0.39"
 
@@ -39,7 +38,7 @@ public data class GroqProviderSettings(
         )
 
     private fun groqTransformChatBody(body: JsonObject): JsonObject {
-        val modelId = body["model"]?.jsonPrimitive?.contentOrNull
+        val modelId = (body["model"] as? JsonPrimitive)?.contentOrNull
         val tools = groqTools(body["tools"] as? JsonArray, modelId)
         return buildJsonObject {
             for ((key, value) in body) {
@@ -57,7 +56,7 @@ public data class GroqProviderSettings(
     private fun groqMessages(messages: JsonArray?): JsonArray = JsonArray(
         messages.orEmpty().map { message ->
             val obj = message as? JsonObject ?: return@map message
-            if (obj["role"]?.jsonPrimitive?.contentOrNull != "assistant") return@map obj
+            if ((obj["role"] as? JsonPrimitive)?.contentOrNull != "assistant") return@map obj
             val reasoning = obj["reasoning_content"] ?: return@map obj
             val transformed = obj.toMutableMap()
             transformed.remove("reasoning_content")
@@ -70,7 +69,7 @@ public data class GroqProviderSettings(
         tools.orEmpty().mapNotNull { tool ->
             val obj = tool as? JsonObject ?: return@mapNotNull tool
             val function = obj["function"] as? JsonObject ?: return@mapNotNull tool
-            val name = function["name"]?.jsonPrimitive?.contentOrNull
+            val name = (function["name"] as? JsonPrimitive)?.contentOrNull
             if (name == "browserSearch" || name == "browser_search") {
                 // Gate the browser_search tool to the models that support it; drop it elsewhere
                 // (upstream emits an unsupported warning and omits the tool).
