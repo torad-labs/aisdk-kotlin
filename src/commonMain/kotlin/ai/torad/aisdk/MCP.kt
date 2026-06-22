@@ -21,12 +21,14 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Serializable
@@ -502,7 +504,14 @@ private class DefaultMCPClient(config: MCPClientConfig) : MCPClient {
                 throw MCPClientError("Failed to parse server response", cause = error)
             }
         } finally {
-            responseHandlersMutex.withLock { responseHandlers.remove(rpcIdKey(id)) }
+            // Cleanup MUST survive the in-flight cancellation (timeoutMillis elapsed / abort /
+            // scope-cancel): a plain withLock takes its non-suspending fast path only when
+            // uncontended — if it has to suspend it observes the cancellation and throws BEFORE
+            // acquiring the lock, so the remove never runs and this handler is stranded in
+            // responseHandlers until close(). NonCancellable guarantees the removal completes.
+            withContext(NonCancellable) {
+                responseHandlersMutex.withLock { responseHandlers.remove(rpcIdKey(id)) }
+            }
         }
     }
 
