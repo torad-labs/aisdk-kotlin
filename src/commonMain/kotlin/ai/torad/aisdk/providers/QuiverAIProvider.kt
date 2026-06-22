@@ -117,8 +117,8 @@ private class QuiverAIImageModel(
         val data = (root["data"] as? JsonArray)
             ?: throw InvalidResponseDataError(response.value, "QuiverAI response is missing data")
         return ImageModelResult(
-            images = data.map { item ->
-                val obj = item.jsonObject
+            images = data.mapNotNull { item ->
+                val obj = item as? JsonObject ?: return@mapNotNull null
                 val svg = (obj["svg"] as? JsonPrimitive)?.contentOrNull
                     ?: throw InvalidResponseDataError(item, "QuiverAI image item is missing svg")
                 GeneratedFile(
@@ -229,7 +229,8 @@ private class QuiverAIImageModel(
         val imageEntries = data.mapIndexed { index, item ->
             buildJsonObject {
                 put("index", JsonPrimitive(index))
-                val mimeType = (item.jsonObject["mime_type"] as? JsonPrimitive)?.contentOrNull ?: "image/svg+xml"
+                val mimeType = ((item as? JsonObject)?.get("mime_type") as? JsonPrimitive)?.contentOrNull
+                    ?: "image/svg+xml"
                 put("mimeType", JsonPrimitive(mimeType))
             }
         }

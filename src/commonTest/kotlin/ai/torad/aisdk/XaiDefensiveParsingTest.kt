@@ -74,4 +74,27 @@ class XaiDefensiveParsingTest {
             "a primitive error degrades through the object accessor, no crash",
         )
     }
+
+    /**
+     * Regression (Wave 7b, array-element accessor): the image parser mapped each `data` element via
+     * the non-null `image.jsonObject`, throwing ISE on a non-object element — and `xaiImageMetadata`
+     * mapped the same array. The safe `image as? JsonObject ?: return@mapNotNull null` (and the
+     * in-place `(image as? JsonObject)?.get(...)` in metadata) drops the malformed entry; valid survive.
+     */
+    @Test
+    fun `image generate drops a malformed data element instead of crashing`() = runTest {
+        val client = HttpClient(
+            MockEngine {
+                respond(
+                    content = """{"data":[{"b64_json":"aW1n"},"malformed"]}""",
+                    status = HttpStatusCode.OK,
+                    headers = headersOf(HttpHeaders.ContentType, "application/json"),
+                )
+            },
+        )
+        val result = Xai(client, XaiProviderSettings(apiKey = "key"))
+            .image(ModelId("grok-2-image"))
+            .generate(ImageGenerationParams(prompt = "x", n = 1))
+        assertEquals(1, result.images.size)
+    }
 }

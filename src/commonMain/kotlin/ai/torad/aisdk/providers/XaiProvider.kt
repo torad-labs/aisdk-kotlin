@@ -397,8 +397,8 @@ private class XaiImageModel(
         )
         val responseObj = response.value.jsonObject
         val data = (responseObj["data"] as? JsonArray).orEmpty()
-        val images = data.map { image ->
-            val obj = image.jsonObject
+        val images = data.mapNotNull { image ->
+            val obj = image as? JsonObject ?: return@mapNotNull null
             val base64 = (obj["b64_json"] as? JsonPrimitive)?.contentOrNull
             if (base64 != null) {
                 GeneratedFile(mediaType = "image/png", base64 = base64)
@@ -419,7 +419,7 @@ private class XaiImageModel(
     private fun xaiImageMetadata(data: List<JsonElement>, responseObj: JsonObject): ProviderMetadata =
         ProviderMetadata.Raw(JsonObject(mapOf("xai" to buildJsonObject {
             val imageEntries = data.map { image ->
-                val revisedPrompt = (image.jsonObject["revised_prompt"] as? JsonPrimitive)?.contentOrNull
+                val revisedPrompt = ((image as? JsonObject)?.get("revised_prompt") as? JsonPrimitive)?.contentOrNull
                 buildJsonObject {
                     if (revisedPrompt != null) put("revisedPrompt", JsonPrimitive(revisedPrompt))
                 }

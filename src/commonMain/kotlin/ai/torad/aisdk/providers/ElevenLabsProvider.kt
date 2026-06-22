@@ -137,8 +137,8 @@ private class ElevenLabsSpeechModel(
                 put(
                     "pronunciation_dictionary_locators",
                     JsonArray(
-                        locators.map { locator ->
-                            val obj = locator.jsonObject
+                        locators.mapNotNull { locator ->
+                            val obj = locator as? JsonObject ?: return@mapNotNull null
                             buildJsonObject {
                                 obj["pronunciationDictionaryId"]?.let { put("pronunciation_dictionary_id", it) }
                                 obj["versionId"]?.let { put("version_id", it) }
@@ -267,8 +267,8 @@ private class ElevenLabsTranscriptionModel(
         val words = (value["words"] as? JsonArray).orEmpty()
         return TranscriptionModelResult(
             text = (value["text"] as? JsonPrimitive)?.contentOrNull,
-            segments = words.map { word ->
-                val obj = word.jsonObject
+            segments = words.mapNotNull { word ->
+                val obj = word as? JsonObject ?: return@mapNotNull null
                 TranscriptSegment(
                     text = (obj["text"] as? JsonPrimitive)?.contentOrNull.orEmpty(),
                     startSeconds = (obj["start"] as? JsonPrimitive)?.floatOrNull,

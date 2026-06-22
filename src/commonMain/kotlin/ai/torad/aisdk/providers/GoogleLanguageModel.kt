@@ -340,7 +340,7 @@ internal class GoogleGenerativeAILanguageModel(
         val toolCalls = mutableListOf<ContentPart.ToolCall>()
         var lastCodeExecutionId: String? = null
         for (part in contentParts) {
-            val obj = part.jsonObject
+            val obj = part as? JsonObject ?: continue
             (obj["executableCode"] as? JsonObject)?.let { code ->
                 val id = settings.generateId()
                 lastCodeExecutionId = id
@@ -519,7 +519,7 @@ internal class GoogleGenerativeAILanguageModel(
             val groundingMetadata = candidate["groundingMetadata"] as? JsonObject
             val chunks = (groundingMetadata?.get("groundingChunks") as? JsonArray).orEmpty()
             return chunks.mapNotNull { chunk ->
-                val web = (chunk.jsonObject["web"] as? JsonObject) ?: return@mapNotNull null
+                val web = ((chunk as? JsonObject)?.get("web") as? JsonObject) ?: return@mapNotNull null
                 ContentPart.Source(
                     sourceType = StreamEvent.SourcePart.SourceType.Url,
                     url = (web["uri"] as? JsonPrimitive)?.contentOrNull,
