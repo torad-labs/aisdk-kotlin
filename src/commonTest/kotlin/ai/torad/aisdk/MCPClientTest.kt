@@ -877,6 +877,36 @@ class MCPClientTest {
     }
 
     @Test
+    fun `stdio transport survives a child that floods stderr before responding`() = runTest {
+        // Regression: the child's stderr pipe was never drained, so a server that logs a large
+        // banner/diagnostics to stderr blocks on the write once the ~64KB pipe buffer fills, then
+        // stops producing stdout and hangs the JSON-RPC reader forever.
+        val transport = Experimental_StdioMCPTransport(
+            StdioConfig(
+                command = "/bin/sh",
+                // Write ~256KB to stderr (well past the pipe buffer) BEFORE emitting any stdout.
+                args = listOf(
+                    "-c",
+                    "yes 0123456789abcdef | head -c 262144 1>&2; " +
+                        "printf '%s\\n' '{\"jsonrpc\":\"2.0\",\"method\":\"notifications/ready\"}'",
+                ),
+            ),
+        )
+        var received: JSONRPCMessage? = null
+        transport.setOnMessage { received = it }
+
+        try {
+            transport.start()
+        } catch (ignoredOnUnsupportedPlatform: UnsupportedOperationException) {
+            return@runTest // Native/iOS: no subprocess support (same skip as the stdio round-trip test)
+        }
+        waitForRealTime { received != null } // pre-fix: child blocks on stderr -> stdout never comes -> timeout
+
+        assertEquals("notifications/ready", assertIs<JSONRPCNotification>(received).method)
+        transport.close()
+    }
+
+    @Test
     fun `SSE reader survives a malformed message and still processes the next one`() = runTest {
         // Regression: a per-message JSONRPCMessage.fromJson throw used to propagate out of
         // parseStream into the reader's OUTER catch -> onError + the reader EXITS (and for SSE,
