@@ -11,7 +11,6 @@ import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.intOrNull
-import kotlinx.serialization.json.jsonObject
 
 /**
  * v6 wire-shape message — the type passed to [LanguageModel] generations.
@@ -123,9 +122,8 @@ public sealed class ContentPart {
 
             /** Google `thought_signature` provider-metadata pulled from an OpenAI-compatible tool-call object. */
             internal fun thoughtSignatureMetadata(value: JsonObject): Map<String, JsonElement>? {
-                val element = value["extra_content"]?.jsonObject
-                    ?.get("google")?.jsonObject
-                    ?.get("thought_signature")
+                val google = (value["extra_content"] as? JsonObject)?.get("google") as? JsonObject
+                val element = google?.get("thought_signature")
                 val signature = (element as? JsonPrimitive)?.contentOrNull
                 return signature?.let { mapOf("thoughtSignature" to JsonPrimitive(it)) }
             }
@@ -307,12 +305,12 @@ public data class Usage(
          * chat/completion models and the streaming state.
          */
         internal fun fromOpenAI(value: JsonElement?): Usage {
-            val obj = value?.jsonObject ?: return Usage()
+            val obj = (value as? JsonObject) ?: return Usage()
             val promptTokens = (obj["prompt_tokens"] as? JsonPrimitive)?.intOrNull ?: 0
             val completionTokens = (obj["completion_tokens"] as? JsonPrimitive)?.intOrNull ?: 0
-            val cachedTokens = ((obj["prompt_tokens_details"]?.jsonObject?.get("cached_tokens") as? JsonPrimitive)?.intOrNull ?: 0)
+            val cachedTokens = (((obj["prompt_tokens_details"] as? JsonObject)?.get("cached_tokens") as? JsonPrimitive)?.intOrNull ?: 0)
                 .coerceIn(0, promptTokens)
-            val reasoningTokens = ((obj["completion_tokens_details"]?.jsonObject?.get("reasoning_tokens") as? JsonPrimitive)?.intOrNull ?: 0)
+            val reasoningTokens = (((obj["completion_tokens_details"] as? JsonObject)?.get("reasoning_tokens") as? JsonPrimitive)?.intOrNull ?: 0)
                 .coerceAtLeast(0)
             val outputTotal = if (reasoningTokens > completionTokens) {
                 completionTokens + reasoningTokens

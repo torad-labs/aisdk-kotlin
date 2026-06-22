@@ -9,6 +9,7 @@ import io.ktor.http.headersOf
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 
 class GatewayDefensiveParsingTest {
     private fun gateway(body: String): GatewayProvider {
@@ -48,5 +49,20 @@ class GatewayDefensiveParsingTest {
             .generate(ImageGenerationParams(prompt = "x", n = 1))
         assertEquals(1, result.images.size)
         assertEquals("", result.images.first().base64)
+    }
+
+    /**
+     * Regression (Wave 7, the sibling-accessor hole the M4 leaf-fix missed): GatewayError.fromResponse
+     * read `error` via `?.jsonObject`, which throws on `{"error":"plain string"}` (a primitive) — the
+     * `?.` guards null, not type, so the leaf `as? JsonPrimitive` was never reached. The safe
+     * `(parsed?.get("error") as? JsonObject)` degrades to the raw-body message instead of crashing.
+     */
+    @Test
+    fun `fromResponse degrades on a primitive error field instead of crashing`() {
+        val error = GatewayError.fromResponse(400, """{"error":"plain string message"}""")
+        assertTrue(
+            error.message?.contains("plain string message") == true,
+            "a primitive error field degrades to the raw-body message, not an ISE from ?.jsonObject",
+        )
     }
 }

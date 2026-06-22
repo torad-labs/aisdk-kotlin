@@ -6,6 +6,7 @@ import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonObject
@@ -445,7 +446,7 @@ public open class GatewayError(
     internal companion object {
         internal fun fromResponse(statusCode: Int, raw: String): GatewayError {
             val parsed = runCatching { aiSdkJson.parseToJsonElement(raw).jsonObject }.getOrNull()
-            val error = parsed?.get("error")?.jsonObject
+            val error = (parsed?.get("error") as? JsonObject)
             val type = (error?.get("type") as? JsonPrimitive)?.contentOrNull
             val message = (error?.get("message") as? JsonPrimitive)?.contentOrNull
                 ?: raw.ifBlank { "Gateway request failed" }
