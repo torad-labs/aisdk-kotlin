@@ -32,7 +32,6 @@ import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.floatOrNull
 import kotlinx.serialization.json.intOrNull
-import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 
 internal data class GooglePreparedRequest(
@@ -335,21 +334,21 @@ internal class GoogleGenerativeAILanguageModel(
         warnings: List<CallWarning>,
         settings: GoogleGenerativeAIProviderSettings,
     ): LanguageModelResult {
-        val candidate = response["candidates"]?.jsonArray?.firstOrNull()?.jsonObject ?: JsonObject(emptyMap())
-        val contentParts = candidate["content"]?.jsonObject?.get("parts")?.jsonArray.orEmpty()
+        val candidate = ((response["candidates"] as? JsonArray)?.firstOrNull() as? JsonObject) ?: JsonObject(emptyMap())
+        val contentParts = ((candidate["content"] as? JsonObject)?.get("parts") as? JsonArray).orEmpty()
         val content = mutableListOf<ContentPart>()
         val toolCalls = mutableListOf<ContentPart.ToolCall>()
         var lastCodeExecutionId: String? = null
         for (part in contentParts) {
             val obj = part.jsonObject
-            obj["executableCode"]?.jsonObject?.let { code ->
+            (obj["executableCode"] as? JsonObject)?.let { code ->
                 val id = settings.generateId()
                 lastCodeExecutionId = id
                 val call = ContentPart.ToolCall(id, "code_execution", code, providerMetadata = ProviderMetadata.Raw(JsonObject(mapOf("google" to buildJsonObject { put("providerExecuted", JsonPrimitive(true)) }))))
                 content += call
                 toolCalls += call
             }
-            obj["codeExecutionResult"]?.jsonObject?.let { result ->
+            (obj["codeExecutionResult"] as? JsonObject)?.let { result ->
                 content += ContentPart.ToolResult(lastCodeExecutionId ?: settings.generateId(), "code_execution", result, providerMetadata = ProviderMetadata.Raw(JsonObject(mapOf("google" to buildJsonObject { put("providerExecuted", JsonPrimitive(true)) }))))
                 lastCodeExecutionId = null
             }
@@ -361,7 +360,7 @@ internal class GoogleGenerativeAILanguageModel(
                     ContentPart.Text(text, metadata)
                 }
             }
-            obj["functionCall"]?.jsonObject?.let { callObj ->
+            (obj["functionCall"] as? JsonObject)?.let { callObj ->
                 val call = ContentPart.ToolCall(
                     toolCallId = (callObj["id"] as? JsonPrimitive)?.contentOrNull ?: settings.generateId(),
                     // Fail loudly on a missing/blank functionCall.name (matching the streaming path)
@@ -374,7 +373,7 @@ internal class GoogleGenerativeAILanguageModel(
                 content += call
                 toolCalls += call
             }
-            obj["inlineData"]?.jsonObject?.let { data ->
+            (obj["inlineData"] as? JsonObject)?.let { data ->
                 content += ContentPart.File(
                     mediaType = (data["mimeType"] as? JsonPrimitive)?.contentOrNull ?: "application/octet-stream",
                     base64 = (data["data"] as? JsonPrimitive)?.contentOrNull.orEmpty(),
@@ -517,9 +516,10 @@ internal class GoogleGenerativeAILanguageModel(
         }
 
         internal fun googleSources(candidate: JsonObject, generateId: () -> String): List<ContentPart.Source> {
-            val chunks = candidate["groundingMetadata"]?.jsonObject?.get("groundingChunks")?.jsonArray.orEmpty()
+            val groundingMetadata = candidate["groundingMetadata"] as? JsonObject
+            val chunks = (groundingMetadata?.get("groundingChunks") as? JsonArray).orEmpty()
             return chunks.mapNotNull { chunk ->
-                val web = chunk.jsonObject["web"]?.jsonObject ?: return@mapNotNull null
+                val web = (chunk.jsonObject["web"] as? JsonObject) ?: return@mapNotNull null
                 ContentPart.Source(
                     sourceType = StreamEvent.SourcePart.SourceType.Url,
                     url = (web["uri"] as? JsonPrimitive)?.contentOrNull,
@@ -548,8 +548,8 @@ private class GoogleStreamState(
     fun accept(value: JsonObject): List<StreamEvent> {
         val events = mutableListOf<StreamEvent>()
         value["usageMetadata"]?.let { usage = GoogleGenerativeAILanguageModel.googleUsage(it) }
-        val candidate = value["candidates"]?.jsonArray?.firstOrNull()?.jsonObject ?: return events
-        val parts = candidate["content"]?.jsonObject?.get("parts")?.jsonArray.orEmpty()
+        val candidate = ((value["candidates"] as? JsonArray)?.firstOrNull() as? JsonObject) ?: return events
+        val parts = ((candidate["content"] as? JsonObject)?.get("parts") as? JsonArray).orEmpty()
         for ((index, part) in parts.withIndex()) {
             val obj = try {
                 WireDecoder.objectValue(part, "google", "generateContent stream part", "$.candidates[0].content.parts[$index]")
@@ -623,8 +623,9 @@ private class GoogleStreamState(
             }
         }
         GoogleGenerativeAILanguageModel.googleSources(candidate, generateId).forEach { source ->
+            val googleMeta = source.providerMetadata.toMap()["google"] as? JsonObject
             events += StreamEvent.SourcePart(
-                id = (source.providerMetadata.toMap()["google"]?.jsonObject?.get("id") as? JsonPrimitive)?.contentOrNull
+                id = (googleMeta?.get("id") as? JsonPrimitive)?.contentOrNull
                     ?: IdGenerator.generate(),
                 sourceType = source.sourceType,
                 url = source.url,
