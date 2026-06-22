@@ -1542,7 +1542,14 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
     ): ModelMessage {
         val msg = error.message ?: "tool failed"
         out.emit(StreamEvent.ToolError(toolCallId, toolName, msg, error = error))
-        return ToolMessage(toolCallId, toolName, JsonPrimitive(msg))
+        // isError = true: a failed tool MUST be logged (and re-sent to the provider) as an error,
+        // not a success whose body happens to hold the error text — providers map isError ->
+        // is_error, which is what lets the model self-correct. Mirrors applyToolResult's Success
+        // path (which carries result.isError) and ToolApprovalCoordinator.applyDenied.
+        return ModelMessage(
+            MessageRole.Tool,
+            listOf(ContentPart.ToolResult(toolCallId, toolName, JsonPrimitive(msg), isError = true)),
+        )
     }
 
     /** Wrap a tool-execution throwable as a typed Failure: an AgentError
