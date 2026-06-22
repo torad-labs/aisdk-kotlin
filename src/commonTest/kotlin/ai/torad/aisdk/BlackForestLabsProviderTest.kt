@@ -207,6 +207,45 @@ class BlackForestLabsProviderTest {
     }
 
     @Test
+    fun `poll surfaces content moderation terminal status and reasons without polling to timeout`() = runTest {
+        val moderated = """{"status":"Content Moderated","details":{"Moderation Reasons":["nsfw","violence"]}}"""
+        val fixture = TestServer.createTestServer(
+            mutableMapOf(
+                "https://api.bfl.ai/v1/flux-pro-1.1" to UrlHandler(
+                    UrlResponse.JsonValue(Json.parseToJsonElement("""{"id":"req1","polling_url":"https://api.bfl.ai/v1/poll"}""")),
+                ),
+                "https://api.bfl.ai/v1/poll?id=req1" to UrlHandler(
+                    UrlResponse.JsonValue(Json.parseToJsonElement(moderated)),
+                ),
+            ),
+        )
+        fixture.server.start()
+        val model = BlackForestLabs(
+            fixture.httpClient(),
+            BlackForestLabsProviderSettings(apiKey = "key"),
+        ).image(ModelId("flux-pro-1.1"))
+
+        val error = assertFailsWith<NoImageGeneratedError> {
+            model.generate(
+                ImageGenerationParams(
+                    prompt = "x",
+                    providerOptions = ProviderOptions.Raw(JsonObject(mapOf("blackForestLabs" to buildJsonObject {
+                        put("pollIntervalMillis", JsonPrimitive(1))
+                        put("pollTimeoutMillis", JsonPrimitive(100))
+                    }))),
+                ),
+            )
+        }
+
+        assertTrue(error.message.orEmpty().contains("Content Moderated"))
+        assertTrue(error.message.orEmpty().contains("nsfw"))
+        assertTrue(error.message.orEmpty().contains("violence"))
+        // 1 submit POST + exactly 1 poll GET: the terminal status returns immediately
+        // instead of polling ~100 times to timeout with a misleading message.
+        assertEquals(2, fixture.calls.size)
+    }
+
+    @Test
     fun `default provider and unsupported model families fail explicitly`() {
         val fixture = TestServer.createTestServer(mutableMapOf())
         val provider = BlackForestLabs(fixture.httpClient(), BlackForestLabsProviderSettings(apiKey = "key"))
