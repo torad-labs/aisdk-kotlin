@@ -13,7 +13,6 @@ import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.intOrNull
 import kotlinx.serialization.json.jsonObject
-import kotlinx.serialization.json.jsonPrimitive
 
 public const val GOOGLE_VERTEX_VERSION: String = "4.0.142"
 
@@ -240,11 +239,11 @@ public class GoogleVertexXaiProvider(
 
     private fun googleVertexXaiUsage(value: JsonElement?): Usage {
         val obj = value as? JsonObject ?: return Usage()
-        val promptTokens = obj["prompt_tokens"]?.jsonPrimitive?.intOrNull ?: 0
-        val completionTokens = obj["completion_tokens"]?.jsonPrimitive?.intOrNull ?: 0
-        val cacheReadTokens = (obj["prompt_tokens_details"]?.jsonObject?.get("cached_tokens")?.jsonPrimitive?.intOrNull ?: 0)
+        val promptTokens = (obj["prompt_tokens"] as? JsonPrimitive)?.intOrNull ?: 0
+        val completionTokens = (obj["completion_tokens"] as? JsonPrimitive)?.intOrNull ?: 0
+        val cacheReadTokens = ((obj["prompt_tokens_details"]?.jsonObject?.get("cached_tokens") as? JsonPrimitive)?.intOrNull ?: 0)
             .coerceIn(0, promptTokens)
-        val reasoningTokens = (obj["completion_tokens_details"]?.jsonObject?.get("reasoning_tokens")?.jsonPrimitive?.intOrNull ?: 0)
+        val reasoningTokens = ((obj["completion_tokens_details"]?.jsonObject?.get("reasoning_tokens") as? JsonPrimitive)?.intOrNull ?: 0)
             .coerceAtLeast(0)
         return Usage(
             inputTokens = Usage.InputTokenBreakdown(

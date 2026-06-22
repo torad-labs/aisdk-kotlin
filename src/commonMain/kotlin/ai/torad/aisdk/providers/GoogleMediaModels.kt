@@ -33,7 +33,6 @@ import kotlinx.serialization.json.floatOrNull
 import kotlinx.serialization.json.intOrNull
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
-import kotlinx.serialization.json.jsonPrimitive
 
 internal class GoogleGenerativeAIEmbeddingModel(
     private val client: HttpClient,
@@ -191,11 +190,13 @@ internal class GoogleGenerativeAIVideoModel(
         ).value.let { WireDecoder.objectValue(it, provider, "video operation response") }
         val operationName = WireDecoder.requiredString(operation, "name", provider, "video operation response")
         var current = operation
-        val pollInterval = options["pollIntervalMs"]?.jsonPrimitive?.intOrNull?.toLong() ?: settings.videoPollIntervalMillis
-        val maxAttempts = (options["maxPollAttempts"]?.jsonPrimitive?.intOrNull ?: settings.videoMaxPollAttempts).coerceAtLeast(1)
+        val pollInterval = (options["pollIntervalMs"] as? JsonPrimitive)?.intOrNull?.toLong()
+            ?: settings.videoPollIntervalMillis
+        val maxAttempts = ((options["maxPollAttempts"] as? JsonPrimitive)?.intOrNull ?: settings.videoMaxPollAttempts)
+            .coerceAtLeast(1)
         var headers = emptyMap<String, String>()
         repeat(maxAttempts) {
-            if (current["done"]?.jsonPrimitive?.booleanOrNull == true) return@repeat
+            if ((current["done"] as? JsonPrimitive)?.booleanOrNull == true) return@repeat
             if (pollInterval > 0) delay(pollInterval)
             val poll = googleGetJsonWithRetry(
                 client = client,
@@ -207,10 +208,13 @@ internal class GoogleGenerativeAIVideoModel(
             current = WireDecoder.objectValue(poll.value, provider, "video poll response")
             headers = poll.headers
         }
-        if (current["done"]?.jsonPrimitive?.booleanOrNull != true) {
+        if ((current["done"] as? JsonPrimitive)?.booleanOrNull != true) {
             throw NoVideoGeneratedError("Google video generation timed out after $maxAttempts poll attempts.")
         }
-        current["error"]?.jsonObject?.let { throw NoVideoGeneratedError("Google video generation failed: ${it["message"]?.jsonPrimitive?.contentOrNull ?: it}") }
+        current["error"]?.jsonObject?.let { error ->
+            val message = (error["message"] as? JsonPrimitive)?.contentOrNull ?: error
+            throw NoVideoGeneratedError("Google video generation failed: $message")
+        }
         val responseObject = WireDecoder.objectValue(
             WireDecoder.required(current, "response", provider, "video poll response"),
             provider,

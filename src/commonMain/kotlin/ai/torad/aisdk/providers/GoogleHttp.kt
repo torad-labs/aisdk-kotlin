@@ -32,7 +32,6 @@ import kotlinx.serialization.json.floatOrNull
 import kotlinx.serialization.json.intOrNull
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
-import kotlinx.serialization.json.jsonPrimitive
 
 // Slim shared HTTP transport for the Google providers: the genuinely cross-cutting
 // JSON POST + SSE streaming calls used by multiple unrelated Google model classes,
@@ -96,9 +95,9 @@ internal val googleErrorExtractor: ErrorMessageExtractor = { _, parsed, raw -> g
     fun googleErrorMessage(parsed: JsonElement?, raw: String): String {
     val obj = parsed as? JsonObject ?: return raw
     val error = obj["error"]
-    return (error as? JsonObject)?.get("message")?.jsonPrimitive?.contentOrNull
+    return ((error as? JsonObject)?.get("message") as? JsonPrimitive)?.contentOrNull
         ?: (error as? JsonPrimitive)?.contentOrNull
-        ?: obj["message"]?.jsonPrimitive?.contentOrNull
+        ?: (obj["message"] as? JsonPrimitive)?.contentOrNull
         ?: raw
 }
     fun appendGoogleUserAgent(existing: String?, suffix: String): String =
