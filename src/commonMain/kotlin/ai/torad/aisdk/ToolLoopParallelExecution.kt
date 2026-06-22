@@ -35,6 +35,15 @@ internal sealed class OrderedToolCompletion {
     ) : OrderedToolCompletion()
 
     class Skipped(override val index: Int) : OrderedToolCompletion()
+
+    /**
+     * A child whose tool execution unwound with [AbortError] (the cooperative stop signal).
+     * Because that abort does NOT structurally cancel the parent scope (DECISION 3 decouples
+     * AbortSignal from coroutine cancellation), the child sends this terminal marker on its way
+     * out so the collector's count still completes instead of waiting forever on a dead child;
+     * the loop then surfaces a single [StreamEvent.Abort] for the step.
+     */
+    class Aborted(override val index: Int) : OrderedToolCompletion()
 }
 
 /**
