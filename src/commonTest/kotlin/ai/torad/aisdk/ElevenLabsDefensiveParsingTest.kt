@@ -49,4 +49,38 @@ class ElevenLabsDefensiveParsingTest {
             "the structured ElevenLabs error is built, not an IllegalArgumentException from jsonPrimitive",
         )
     }
+
+    /**
+     * Regression (the M4 sibling-accessor bug-class, Wave 7): elevenLabsErrorMessage navigates
+     * `detail?.jsonObject?.get("message")` — `?.jsonObject` throws if `detail` is present but a
+     * primitive (`{"detail":"plain string"}`), crashing BEFORE the leaf cast. The safe
+     * `(detail as? JsonObject)?.…` degrades to null -> the `detail as? JsonPrimitive` fallback.
+     */
+    @Test
+    fun `transcription surfaces the structured error on a primitive detail`() = runTest {
+        val client = HttpClient(
+            MockEngine {
+                respond(
+                    content = """{"detail":"plain string"}""",
+                    status = HttpStatusCode.BadRequest,
+                    headers = headersOf(HttpHeaders.ContentType, "application/json"),
+                )
+            },
+        )
+        val model = ElevenLabs(client, ElevenLabsProviderSettings(apiKey = "key"))
+            .transcription(ModelId("scribe_v1"))
+
+        val error = assertFails {
+            model.transcribe(
+                TranscriptionParams(
+                    audio = AudioSource(mediaType = "audio/mpeg", base64 = Base64Codec.encode(byteArrayOf(1, 2, 3))),
+                ),
+            )
+        }
+
+        assertTrue(
+            error.message?.contains("ElevenLabs request failed") == true,
+            "a primitive detail degrades through the object accessor, no crash",
+        )
+    }
 }
