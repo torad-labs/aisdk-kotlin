@@ -11,6 +11,7 @@ import io.ktor.http.HttpMethod
 import io.ktor.http.contentType
 import kotlinx.coroutines.delay
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonObject
@@ -19,7 +20,6 @@ import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.floatOrNull
-import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 
 public const val ASSEMBLYAI_VERSION: String = "2.0.33"
@@ -147,7 +147,7 @@ private class AssemblyAITranscriptionModel(
             abortSignal = params.abortSignal,
         )
         val body = transcript.value.jsonObject
-        val words = body["words"]?.jsonArray.orEmpty()
+        val words = (body["words"] as? JsonArray).orEmpty()
         return TranscriptionModelResult(
             text = (body["text"] as? JsonPrimitive)?.contentOrNull.orEmpty(),
             segments = words.map { word ->
@@ -267,7 +267,7 @@ private class AssemblyAITranscriptionModel(
 
     private fun errorMessage(statusCode: Int, parsed: JsonElement?, raw: String): String {
         val obj = parsed as? JsonObject
-        val detail = (obj?.get("error")?.jsonObject?.get("message") as? JsonPrimitive)?.contentOrNull
+        val detail = ((obj?.get("error") as? JsonObject)?.get("message") as? JsonPrimitive)?.contentOrNull
             ?: (obj?.get("error") as? JsonPrimitive)?.contentOrNull
             ?: raw.ifBlank { "request failed" }
         return "AssemblyAI request failed ($statusCode): $detail"
