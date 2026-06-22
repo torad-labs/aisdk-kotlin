@@ -154,8 +154,9 @@ private class AssemblyAITranscriptionModel(
                 val obj = word as? JsonObject ?: return@mapNotNull null
                 TranscriptSegment(
                     text = (obj["text"] as? JsonPrimitive)?.contentOrNull.orEmpty(),
-                    startSeconds = (obj["start"] as? JsonPrimitive)?.floatOrNull,
-                    endSeconds = (obj["end"] as? JsonPrimitive)?.floatOrNull,
+                    // AssemblyAI word timestamps are in milliseconds; segment fields are seconds.
+                    startSeconds = (obj["start"] as? JsonPrimitive)?.floatOrNull?.let { it / MILLIS_PER_SECOND },
+                    endSeconds = (obj["end"] as? JsonPrimitive)?.floatOrNull?.let { it / MILLIS_PER_SECOND },
                 )
             },
             response = LanguageModelResponseMetadata(
@@ -275,6 +276,9 @@ private class AssemblyAITranscriptionModel(
 }
 
 private const val ASSEMBLYAI_BASE_URL: String = "https://api.assemblyai.com"
+
+/** AssemblyAI reports word timestamps in milliseconds; segments use seconds. */
+private const val MILLIS_PER_SECOND: Float = 1000f
 
 private val optionKeyMap: Map<String, String> = linkedMapOf(
     "audioEndAt" to "audio_end_at",
