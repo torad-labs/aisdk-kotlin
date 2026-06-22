@@ -21,7 +21,6 @@ import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.floatOrNull
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
-import kotlinx.serialization.json.jsonPrimitive
 
 public const val ASSEMBLYAI_VERSION: String = "2.0.33"
 
@@ -126,7 +125,7 @@ private class AssemblyAITranscriptionModel(
             bytes = Base64Codec.decode(params.audio.base64),
             headers = settings.requestHeaders(params.headers),
         )
-        val uploadUrl = upload.value.jsonObject["upload_url"]?.jsonPrimitive?.contentOrNull
+        val uploadUrl = (upload.value.jsonObject["upload_url"] as? JsonPrimitive)?.contentOrNull
             ?: throw InvalidResponseDataError(upload.value, "AssemblyAI upload response is missing upload_url")
 
         params.abortSignal.throwIfAborted()
@@ -139,7 +138,7 @@ private class AssemblyAITranscriptionModel(
             body = submitBody,
             headers = settings.requestHeaders(params.headers),
         )
-        val transcriptId = submit.value.jsonObject["id"]?.jsonPrimitive?.contentOrNull
+        val transcriptId = (submit.value.jsonObject["id"] as? JsonPrimitive)?.contentOrNull
             ?: throw InvalidResponseDataError(submit.value, "AssemblyAI transcript submit response is missing id")
 
         val transcript = pollTranscript(
@@ -150,13 +149,13 @@ private class AssemblyAITranscriptionModel(
         val body = transcript.value.jsonObject
         val words = body["words"]?.jsonArray.orEmpty()
         return TranscriptionModelResult(
-            text = body["text"]?.jsonPrimitive?.contentOrNull.orEmpty(),
+            text = (body["text"] as? JsonPrimitive)?.contentOrNull.orEmpty(),
             segments = words.map { word ->
                 val obj = word.jsonObject
                 TranscriptSegment(
-                    text = obj["text"]?.jsonPrimitive?.contentOrNull.orEmpty(),
-                    startSeconds = obj["start"]?.jsonPrimitive?.floatOrNull,
-                    endSeconds = obj["end"]?.jsonPrimitive?.floatOrNull,
+                    text = (obj["text"] as? JsonPrimitive)?.contentOrNull.orEmpty(),
+                    startSeconds = (obj["start"] as? JsonPrimitive)?.floatOrNull,
+                    endSeconds = (obj["end"] as? JsonPrimitive)?.floatOrNull,
                 )
             },
             response = LanguageModelResponseMetadata(
@@ -165,8 +164,8 @@ private class AssemblyAITranscriptionModel(
                 body = transcript.value,
             ),
             providerMetadata = ProviderMetadata.Raw(JsonObject(mapOf("assemblyai" to transcript.value))),
-            language = body["language_code"]?.jsonPrimitive?.contentOrNull,
-            durationInSeconds = body["audio_duration"]?.jsonPrimitive?.floatOrNull,
+            language = (body["language_code"] as? JsonPrimitive)?.contentOrNull,
+            durationInSeconds = (body["audio_duration"] as? JsonPrimitive)?.floatOrNull,
         )
     }
 
@@ -225,9 +224,12 @@ private class AssemblyAITranscriptionModel(
                 headers = settings.requestHeaders(headers),
             )
             val body = response.value.jsonObject
-            when (body["status"]?.jsonPrimitive?.contentOrNull) {
+            when ((body["status"] as? JsonPrimitive)?.contentOrNull) {
                 "completed" -> return response
-                "error" -> throw NoTranscriptGeneratedError("Transcription failed: ${body["error"]?.jsonPrimitive?.contentOrNull ?: "Unknown error"}")
+                "error" -> {
+                    val detail = (body["error"] as? JsonPrimitive)?.contentOrNull ?: "Unknown error"
+                    throw NoTranscriptGeneratedError("Transcription failed: $detail")
+                }
                 "queued", "processing" ->
                     if (settings.pollingIntervalMillis > 0 && attempt < settings.maxPollAttempts - 1) {
                         delay(settings.pollingIntervalMillis)
@@ -265,8 +267,8 @@ private class AssemblyAITranscriptionModel(
 
     private fun errorMessage(statusCode: Int, parsed: JsonElement?, raw: String): String {
         val obj = parsed as? JsonObject
-        val detail = obj?.get("error")?.jsonObject?.get("message")?.jsonPrimitive?.contentOrNull
-            ?: obj?.get("error")?.jsonPrimitive?.contentOrNull
+        val detail = (obj?.get("error")?.jsonObject?.get("message") as? JsonPrimitive)?.contentOrNull
+            ?: (obj?.get("error") as? JsonPrimitive)?.contentOrNull
             ?: raw.ifBlank { "request failed" }
         return "AssemblyAI request failed ($statusCode): $detail"
     }

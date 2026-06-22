@@ -17,7 +17,6 @@ import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
-import kotlinx.serialization.json.jsonPrimitive
 import kotlin.math.ceil
 
 public const val BYTEDANCE_VERSION: String = "1.0.15"
@@ -106,7 +105,7 @@ private class ByteDanceVideoModel(
             body = byteDanceRequestBody(modelId, params, options),
             headers = settings.byteDanceHeaders(params.headers),
         )
-        val taskId = create.value.jsonObject["id"]?.jsonPrimitive?.contentOrNull
+        val taskId = (create.value.jsonObject["id"] as? JsonPrimitive)?.contentOrNull
             ?: throw InvalidResponseDataError(null, "No task ID returned from ByteDance API")
         val status = byteDancePoll(
             client = client,
@@ -114,11 +113,13 @@ private class ByteDanceVideoModel(
             taskId = taskId,
             callHeaders = params.headers,
             abortSignal = params.abortSignal,
-            pollIntervalMs = options["pollIntervalMs"]?.jsonPrimitive?.contentOrNull?.toLongOrNull() ?: DEFAULT_BYTEDANCE_POLL_INTERVAL_MS,
-            pollTimeoutMs = options["pollTimeoutMs"]?.jsonPrimitive?.contentOrNull?.toLongOrNull() ?: DEFAULT_BYTEDANCE_POLL_TIMEOUT_MS,
+            pollIntervalMs = (options["pollIntervalMs"] as? JsonPrimitive)?.contentOrNull?.toLongOrNull()
+                ?: DEFAULT_BYTEDANCE_POLL_INTERVAL_MS,
+            pollTimeoutMs = (options["pollTimeoutMs"] as? JsonPrimitive)?.contentOrNull?.toLongOrNull()
+                ?: DEFAULT_BYTEDANCE_POLL_TIMEOUT_MS,
         )
         val statusBody = status.value.jsonObject
-        val videoUrl = statusBody["content"]?.jsonObject?.get("video_url")?.jsonPrimitive?.contentOrNull
+        val videoUrl = (statusBody["content"]?.jsonObject?.get("video_url") as? JsonPrimitive)?.contentOrNull
             ?: throw InvalidResponseDataError(null, "No video URL in ByteDance response")
         return VideoModelResult(
             videos = listOf(
@@ -171,17 +172,20 @@ private class ByteDanceVideoModel(
                 if (options["lastFrameImage"] != null) put("role", JsonPrimitive("first_frame"))
             })
         }
-        options["lastFrameImage"]?.jsonPrimitive?.contentOrNull?.let { url ->
+        (options["lastFrameImage"] as? JsonPrimitive)?.contentOrNull?.let { url ->
             add(byteDanceMediaContent("image_url", "image_url", url, "last_frame"))
         }
         options["referenceImages"]?.jsonArray.orEmpty().forEach { url ->
-            add(byteDanceMediaContent("image_url", "image_url", url.jsonPrimitive.contentOrNull.orEmpty(), "reference_image"))
+            val ref = (url as? JsonPrimitive)?.contentOrNull.orEmpty()
+            add(byteDanceMediaContent("image_url", "image_url", ref, "reference_image"))
         }
         options["referenceVideos"]?.jsonArray.orEmpty().forEach { url ->
-            add(byteDanceMediaContent("video_url", "video_url", url.jsonPrimitive.contentOrNull.orEmpty(), "reference_video"))
+            val ref = (url as? JsonPrimitive)?.contentOrNull.orEmpty()
+            add(byteDanceMediaContent("video_url", "video_url", ref, "reference_video"))
         }
         options["referenceAudio"]?.jsonArray.orEmpty().forEach { url ->
-            add(byteDanceMediaContent("audio_url", "audio_url", url.jsonPrimitive.contentOrNull.orEmpty(), "reference_audio"))
+            val ref = (url as? JsonPrimitive)?.contentOrNull.orEmpty()
+            add(byteDanceMediaContent("audio_url", "audio_url", ref, "reference_audio"))
         }
     })
 
@@ -249,7 +253,7 @@ private class ByteDanceVideoModel(
             val statusBody = status.value.jsonObject
             // Terminal states must fail immediately with the real status (like KlingAI's else-throw),
             // not fall through and re-poll until the 5-minute timeout masks them as a generic timeout.
-            when (val taskStatus = statusBody["status"]?.jsonPrimitive?.contentOrNull) {
+            when (val taskStatus = (statusBody["status"] as? JsonPrimitive)?.contentOrNull) {
                 "succeeded" -> return status
                 "failed" -> throw NoVideoGeneratedError("ByteDance video generation failed: $statusBody")
                 "canceled", "cancelled" -> throw NoVideoGeneratedError("ByteDance video generation was canceled")
@@ -266,17 +270,17 @@ private class ByteDanceVideoModel(
 
     private fun byteDanceErrorMessage(statusCode: Int, parsed: JsonElement?, raw: String): String {
         val obj = parsed as? JsonObject
-        val detail = obj?.get("error")?.jsonObject?.get("message")?.jsonPrimitive?.contentOrNull
+        val detail = (obj?.get("error")?.jsonObject?.get("message") as? JsonPrimitive)?.contentOrNull
             ?: raw.ifBlank { "request failed" }
         return "ByteDance request failed ($statusCode): $detail"
     }
 
     private fun JsonObjectBuilder.putBooleanIfPresent(key: String, value: JsonElement?) {
-        value?.jsonPrimitive?.booleanOrNull?.let { put(key, JsonPrimitive(it)) }
+        (value as? JsonPrimitive)?.booleanOrNull?.let { put(key, JsonPrimitive(it)) }
     }
 
     private fun JsonObjectBuilder.putStringIfPresent(key: String, value: JsonElement?) {
-        value?.jsonPrimitive?.contentOrNull?.let { put(key, JsonPrimitive(it)) }
+        (value as? JsonPrimitive)?.contentOrNull?.let { put(key, JsonPrimitive(it)) }
     }
 }
 

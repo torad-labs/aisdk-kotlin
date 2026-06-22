@@ -24,7 +24,6 @@ import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.floatOrNull
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
-import kotlinx.serialization.json.jsonPrimitive
 
 public const val REVAI_VERSION: String = "2.0.33"
 
@@ -113,15 +112,15 @@ private class RevaiTranscriptionModel(
             headers = settings.revaiHeaders(params.headers),
         )
         var job = submit.value.jsonObject
-        if (job["status"]?.jsonPrimitive?.contentOrNull == "failed") {
+        if ((job["status"] as? JsonPrimitive)?.contentOrNull == "failed") {
             throw NoTranscriptGeneratedError("Failed to submit transcription job to Rev.ai")
         }
-        val jobId = job["id"]?.jsonPrimitive?.contentOrNull
+        val jobId = (job["id"] as? JsonPrimitive)?.contentOrNull
             ?: throw InvalidResponseDataError(submit.value, "Rev.ai transcription job response is missing id")
 
         repeat(settings.maxPollAttempts.coerceAtLeast(1)) { attempt ->
             params.abortSignal.throwIfAborted()
-            val status = job["status"]?.jsonPrimitive?.contentOrNull
+            val status = (job["status"] as? JsonPrimitive)?.contentOrNull
             if (status == "transcribed") return@repeat
             if (attempt > 0 || status != "transcribed") {
                 val poll = revaiGetJson(
@@ -129,16 +128,16 @@ private class RevaiTranscriptionModel(
                     headers = settings.revaiHeaders(params.headers),
                 )
                 job = poll.value.jsonObject
-                when (job["status"]?.jsonPrimitive?.contentOrNull) {
+                when ((job["status"] as? JsonPrimitive)?.contentOrNull) {
                     "transcribed" -> return@repeat
                     "failed" -> throw NoTranscriptGeneratedError("Rev.ai transcription job failed")
                 }
             }
-            if (job["status"]?.jsonPrimitive?.contentOrNull != "transcribed" && settings.pollingIntervalMillis > 0 && attempt < settings.maxPollAttempts - 1) {
+            if ((job["status"] as? JsonPrimitive)?.contentOrNull != "transcribed" && settings.pollingIntervalMillis > 0 && attempt < settings.maxPollAttempts - 1) {
                 delay(settings.pollingIntervalMillis)
             }
         }
-        if (job["status"]?.jsonPrimitive?.contentOrNull != "transcribed") {
+        if ((job["status"] as? JsonPrimitive)?.contentOrNull != "transcribed") {
             throw NoTranscriptGeneratedError("Rev.ai transcription job polling timed out")
         }
 
@@ -156,7 +155,7 @@ private class RevaiTranscriptionModel(
                 body = transcript.value,
             ),
             providerMetadata = ProviderMetadata.Raw(JsonObject(mapOf("revai" to transcript.value))),
-            language = job["language"]?.jsonPrimitive?.contentOrNull,
+            language = (job["language"] as? JsonPrimitive)?.contentOrNull,
             durationInSeconds = mapped.durationInSeconds,
         )
     }
@@ -224,7 +223,9 @@ private class RevaiTranscriptionModel(
         val monologues = value.jsonObject["monologues"]?.jsonArray.orEmpty()
         val text = monologues.joinToString(" ") { monologue ->
             monologue.jsonObject["elements"]?.jsonArray.orEmpty()
-                .joinToString("") { element -> element.jsonObject["value"]?.jsonPrimitive?.contentOrNull.orEmpty() }
+                .joinToString("") { element ->
+                    (element.jsonObject["value"] as? JsonPrimitive)?.contentOrNull.orEmpty()
+                }
         }
         val segments = mutableListOf<TranscriptSegment>()
         var durationInSeconds = 0f
@@ -234,14 +235,14 @@ private class RevaiTranscriptionModel(
             var hasStarted = false
             for (element in monologue.jsonObject["elements"]?.jsonArray.orEmpty()) {
                 val obj = element.jsonObject
-                if (obj["type"]?.jsonPrimitive?.contentOrNull == "text") {
+                if ((obj["type"] as? JsonPrimitive)?.contentOrNull == "text") {
                     // Accumulate ONLY text elements — a "punct" element (comma/period/space) between two
                     // words must not prepend into the next word's segment text (e.g. ",World").
-                    currentText += obj["value"]?.jsonPrimitive?.contentOrNull.orEmpty()
-                    val end = obj["end_ts"]?.jsonPrimitive?.floatOrNull
+                    currentText += (obj["value"] as? JsonPrimitive)?.contentOrNull.orEmpty()
+                    val end = (obj["end_ts"] as? JsonPrimitive)?.floatOrNull
                     if (end != null && end > durationInSeconds) durationInSeconds = end
                     if (!hasStarted) {
-                        obj["ts"]?.jsonPrimitive?.floatOrNull?.let {
+                        (obj["ts"] as? JsonPrimitive)?.floatOrNull?.let {
                             segmentStart = it
                             hasStarted = true
                         }
@@ -268,8 +269,8 @@ private class RevaiTranscriptionModel(
 
     private fun revaiErrorMessage(statusCode: Int, parsed: JsonElement?, raw: String): String {
         val obj = parsed as? JsonObject
-        val detail = obj?.get("error")?.jsonObject?.get("message")?.jsonPrimitive?.contentOrNull
-            ?: obj?.get("error")?.jsonPrimitive?.contentOrNull
+        val detail = (obj?.get("error")?.jsonObject?.get("message") as? JsonPrimitive)?.contentOrNull
+            ?: (obj?.get("error") as? JsonPrimitive)?.contentOrNull
             ?: raw.ifBlank { "request failed" }
         return "Rev.ai request failed ($statusCode): $detail"
     }
