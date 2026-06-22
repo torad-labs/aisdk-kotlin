@@ -14,7 +14,6 @@ import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.floatOrNull
 import kotlinx.serialization.json.intOrNull
-import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 
 public const val AMAZON_BEDROCK_VERSION: String = "4.0.112"
@@ -379,8 +378,8 @@ private class BedrockMantleChatLanguageModel(
             parseJson = true,
         )
         val obj = response.value.jsonObject
-        val choice = obj["choices"]?.jsonArray?.firstOrNull()?.jsonObject
-        val message = choice?.get("message")?.jsonObject
+        val choice = ((obj["choices"] as? JsonArray)?.firstOrNull() as? JsonObject)
+        val message = (choice?.get("message") as? JsonObject)
         val content = (message?.get("content") as? JsonPrimitive)?.contentOrNull.orEmpty()
         return LanguageModelResult(
             text = content,

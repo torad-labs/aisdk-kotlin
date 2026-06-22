@@ -14,6 +14,7 @@ import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpMethod
 import kotlinx.coroutines.delay
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonObject
@@ -22,7 +23,6 @@ import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.floatOrNull
-import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 
 public const val REVAI_VERSION: String = "2.0.33"
@@ -220,9 +220,9 @@ private class RevaiTranscriptionModel(
     }
 
     private fun mapRevaiTranscript(value: JsonElement): RevaiTranscriptMapping {
-        val monologues = value.jsonObject["monologues"]?.jsonArray.orEmpty()
+        val monologues = (value.jsonObject["monologues"] as? JsonArray).orEmpty()
         val text = monologues.joinToString(" ") { monologue ->
-            monologue.jsonObject["elements"]?.jsonArray.orEmpty()
+            (monologue.jsonObject["elements"] as? JsonArray).orEmpty()
                 .joinToString("") { element ->
                     (element.jsonObject["value"] as? JsonPrimitive)?.contentOrNull.orEmpty()
                 }
@@ -233,7 +233,7 @@ private class RevaiTranscriptionModel(
             var currentText = ""
             var segmentStart = 0f
             var hasStarted = false
-            for (element in monologue.jsonObject["elements"]?.jsonArray.orEmpty()) {
+            for (element in (monologue.jsonObject["elements"] as? JsonArray).orEmpty()) {
                 val obj = element.jsonObject
                 if ((obj["type"] as? JsonPrimitive)?.contentOrNull == "text") {
                     // Accumulate ONLY text elements — a "punct" element (comma/period/space) between two
@@ -269,7 +269,7 @@ private class RevaiTranscriptionModel(
 
     private fun revaiErrorMessage(statusCode: Int, parsed: JsonElement?, raw: String): String {
         val obj = parsed as? JsonObject
-        val detail = (obj?.get("error")?.jsonObject?.get("message") as? JsonPrimitive)?.contentOrNull
+        val detail = ((obj?.get("error") as? JsonObject)?.get("message") as? JsonPrimitive)?.contentOrNull
             ?: (obj?.get("error") as? JsonPrimitive)?.contentOrNull
             ?: raw.ifBlank { "request failed" }
         return "Rev.ai request failed ($statusCode): $detail"

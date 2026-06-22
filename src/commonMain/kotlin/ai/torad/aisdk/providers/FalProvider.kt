@@ -398,7 +398,8 @@ private class FalSpeechModel(
             body = prepared.body,
             headers = settings.falHeaders(params.headers),
         )
-        val audioUrl = (response.value.jsonObject["audio"]?.jsonObject?.get("url") as? JsonPrimitive)?.contentOrNull
+        val audioObj = response.value.jsonObject["audio"] as? JsonObject
+        val audioUrl = (audioObj?.get("url") as? JsonPrimitive)?.contentOrNull
             ?: throw NoSpeechGeneratedError("fal speech response is missing audio.url")
         val audio = settings.falGetBinary(client, audioUrl, emptyMap(), params.abortSignal)
         return SpeechModelResult(
@@ -533,7 +534,7 @@ private class FalVideoModel(
             timeoutMessage = "Video generation request timed out",
         )
         val value = result.value.jsonObject
-        val video = value["video"]?.jsonObject ?: throw NoVideoGeneratedError("No video URL in response")
+        val video = (value["video"] as? JsonObject) ?: throw NoVideoGeneratedError("No video URL in response")
         val videoUrl = (video["url"] as? JsonPrimitive)?.contentOrNull
             ?: throw NoVideoGeneratedError("No video URL in response")
         val mediaType = (video["content_type"] as? JsonPrimitive)?.contentOrNull ?: "video/mp4"

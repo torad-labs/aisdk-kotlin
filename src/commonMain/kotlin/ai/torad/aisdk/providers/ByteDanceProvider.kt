@@ -15,7 +15,6 @@ import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.booleanOrNull
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.contentOrNull
-import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlin.math.ceil
 
@@ -119,7 +118,7 @@ private class ByteDanceVideoModel(
                 ?: DEFAULT_BYTEDANCE_POLL_TIMEOUT_MS,
         )
         val statusBody = status.value.jsonObject
-        val videoUrl = (statusBody["content"]?.jsonObject?.get("video_url") as? JsonPrimitive)?.contentOrNull
+        val videoUrl = ((statusBody["content"] as? JsonObject)?.get("video_url") as? JsonPrimitive)?.contentOrNull
             ?: throw InvalidResponseDataError(null, "No video URL in ByteDance response")
         return VideoModelResult(
             videos = listOf(
@@ -175,15 +174,15 @@ private class ByteDanceVideoModel(
         (options["lastFrameImage"] as? JsonPrimitive)?.contentOrNull?.let { url ->
             add(byteDanceMediaContent("image_url", "image_url", url, "last_frame"))
         }
-        options["referenceImages"]?.jsonArray.orEmpty().forEach { url ->
+        (options["referenceImages"] as? JsonArray).orEmpty().forEach { url ->
             val ref = (url as? JsonPrimitive)?.contentOrNull.orEmpty()
             add(byteDanceMediaContent("image_url", "image_url", ref, "reference_image"))
         }
-        options["referenceVideos"]?.jsonArray.orEmpty().forEach { url ->
+        (options["referenceVideos"] as? JsonArray).orEmpty().forEach { url ->
             val ref = (url as? JsonPrimitive)?.contentOrNull.orEmpty()
             add(byteDanceMediaContent("video_url", "video_url", ref, "reference_video"))
         }
-        options["referenceAudio"]?.jsonArray.orEmpty().forEach { url ->
+        (options["referenceAudio"] as? JsonArray).orEmpty().forEach { url ->
             val ref = (url as? JsonPrimitive)?.contentOrNull.orEmpty()
             add(byteDanceMediaContent("audio_url", "audio_url", ref, "reference_audio"))
         }
@@ -270,7 +269,7 @@ private class ByteDanceVideoModel(
 
     private fun byteDanceErrorMessage(statusCode: Int, parsed: JsonElement?, raw: String): String {
         val obj = parsed as? JsonObject
-        val detail = (obj?.get("error")?.jsonObject?.get("message") as? JsonPrimitive)?.contentOrNull
+        val detail = ((obj?.get("error") as? JsonObject)?.get("message") as? JsonPrimitive)?.contentOrNull
             ?: raw.ifBlank { "request failed" }
         return "ByteDance request failed ($statusCode): $detail"
     }

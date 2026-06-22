@@ -538,18 +538,20 @@ internal data class ProdiaMultipartResult(
 ) {
     internal fun jobMetadata(): JsonObject = buildJsonObject {
         (job["id"] as? JsonPrimitive)?.contentOrNull?.let { put("jobId", JsonPrimitive(it)) }
-        (job["config"]?.jsonObject?.get("seed") as? JsonPrimitive)?.intOrNull?.let { put("seed", JsonPrimitive(it)) }
-        (job["metrics"]?.jsonObject?.get("elapsed") as? JsonPrimitive)?.doubleOrNull?.let {
+        ((job["config"] as? JsonObject)?.get("seed") as? JsonPrimitive)?.intOrNull?.let {
+            put("seed", JsonPrimitive(it))
+        }
+        ((job["metrics"] as? JsonObject)?.get("elapsed") as? JsonPrimitive)?.doubleOrNull?.let {
             put("elapsed", JsonPrimitive(it))
         }
-        (job["metrics"]?.jsonObject?.get("ips") as? JsonPrimitive)?.doubleOrNull?.let {
+        ((job["metrics"] as? JsonObject)?.get("ips") as? JsonPrimitive)?.doubleOrNull?.let {
             put("iterationsPerSecond", JsonPrimitive(it))
         }
         (job["created_at"] as? JsonPrimitive)?.contentOrNull?.let { put("createdAt", JsonPrimitive(it)) }
         (job["updated_at"] as? JsonPrimitive)?.contentOrNull?.let { put("updatedAt", JsonPrimitive(it)) }
         val price = job["price"]
         if (price !is JsonNull) {
-            (price?.jsonObject?.get("dollars") as? JsonPrimitive)?.doubleOrNull?.let {
+            ((price as? JsonObject)?.get("dollars") as? JsonPrimitive)?.doubleOrNull?.let {
                 put("dollars", JsonPrimitive(it))
             }
         }
