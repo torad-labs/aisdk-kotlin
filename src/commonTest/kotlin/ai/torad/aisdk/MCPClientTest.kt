@@ -876,6 +876,77 @@ class MCPClientTest {
         transport.close()
     }
 
+    @Test
+    fun `SSE reader survives a malformed message and still processes the next one`() = runTest {
+        // Regression: a per-message JSONRPCMessage.fromJson throw used to propagate out of
+        // parseStream into the reader's OUTER catch -> onError + the reader EXITS (and for SSE,
+        // onClose tears down the whole connection). One bad inbound frame killed the reader.
+        val good = """{"jsonrpc":"2.0","method":"notifications/server"}"""
+        val fixture = TestServer.createTestServer(
+            mutableMapOf(
+                "https://mcp.test/sse" to UrlHandler(
+                    UrlResponse.StreamChunks(
+                        listOf(
+                            "event: endpoint\ndata: /messages\n\n",
+                            "event: message\ndata: {not valid json\n\n", // fromJson throws here
+                            "event: message\ndata: $good\n\n", // must STILL be delivered
+                        ),
+                    ),
+                ),
+                "https://mcp.test/messages" to UrlHandler(UrlResponse.Empty(status = 202)),
+            ),
+        )
+        fixture.server.start()
+        val transport = SseMCPTransport(fixture.httpClient(), "https://mcp.test/sse")
+        var received: JSONRPCMessage? = null
+        var errored: Throwable? = null
+        transport.setOnMessage { received = it }
+        transport.setOnError { errored = it }
+
+        transport.start()
+        waitForRealTime { received != null } // pre-fix: never arrives (reader died) -> times out
+
+        assertEquals("notifications/server", assertIs<JSONRPCNotification>(received).method)
+        assertNotNull(errored, "the malformed frame is surfaced as a non-fatal error, not a teardown")
+        transport.close()
+    }
+
+    @Test
+    fun `HTTP inbound SSE reader survives a malformed message and still processes the next one`() = runTest {
+        val good = """{"jsonrpc":"2.0","method":"notifications/server"}"""
+        val fixture = TestServer.createTestServer(
+            mutableMapOf(
+                "https://mcp.test/mcp" to UrlHandler(
+                    { request, _ ->
+                        if (request.method == "GET") {
+                            UrlResponse.StreamChunks(
+                                listOf(
+                                    "event: message\ndata: {not valid json\n\n",
+                                    "event: message\ndata: $good\n\n",
+                                ),
+                            )
+                        } else {
+                            UrlResponse.Empty(status = 202)
+                        }
+                    },
+                ),
+            ),
+        )
+        fixture.server.start()
+        val transport = HttpMCPTransport(fixture.httpClient(), "https://mcp.test/mcp")
+        var received: JSONRPCMessage? = null
+        var errored: Throwable? = null
+        transport.setOnMessage { received = it }
+        transport.setOnError { errored = it }
+
+        transport.start()
+        waitForRealTime { received != null }
+
+        assertEquals("notifications/server", assertIs<JSONRPCNotification>(received).method)
+        assertNotNull(errored, "the malformed frame is surfaced as a non-fatal error, not a stream abort")
+        transport.close()
+    }
+
     private fun objectSchema(vararg required: String): JsonObject = buildJsonObject {
         put("type", JsonPrimitive("object"))
         put(

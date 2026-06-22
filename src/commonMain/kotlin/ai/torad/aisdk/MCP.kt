@@ -1144,7 +1144,15 @@ public class HttpMCPTransport(
             }
             McpSseFrame.parseStream(response.bodyAsChannel()) { event ->
                 if (event.event == "message") {
-                    onMessage?.invoke(JSONRPCMessage.fromJson(event.data))
+                    // Isolate per-message handling (mirrors the stdio reader): a malformed/unknown-ID
+                    // frame is a NON-fatal protocol error routed to onError — it must not unwind
+                    // parseStream and kill the inbound reader (dropping all later messages).
+                    try {
+                        onMessage?.invoke(JSONRPCMessage.fromJson(event.data))
+                    } catch (error: Throwable) {
+                        if (error is CancellationException) throw error
+                        onError?.invoke(error)
+                    }
                 }
             }
         } catch (error: Throwable) {
@@ -1237,7 +1245,15 @@ public class SseMCPTransport(
                             established = true
                             if (!ready.isCompleted) ready.complete(Unit)
                         }
-                        "message" -> onMessage?.invoke(JSONRPCMessage.fromJson(event.data))
+                        // Isolate per-message handling (mirrors the stdio reader): a malformed/
+                        // unknown-ID frame is a NON-fatal protocol error routed to onError. Only the
+                        // "message" branch is guarded — an "endpoint" handshake error stays fatal.
+                        "message" -> try {
+                            onMessage?.invoke(JSONRPCMessage.fromJson(event.data))
+                        } catch (error: Throwable) {
+                            if (error is CancellationException) throw error
+                            onError?.invoke(error)
+                        }
                     }
                 }
             } catch (error: Throwable) {
