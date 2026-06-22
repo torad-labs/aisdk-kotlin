@@ -306,7 +306,19 @@ private class CohereChatLanguageModel(
         }
 
     private fun cohereToolResultContent(value: JsonElement): String =
-        if (value is JsonPrimitive) value.contentOrNull ?: value.toString() else aiSdkJson.encodeToString(JsonElement.serializer(), value)
+        when (val output = ToolResultOutputs.toolResultOutputFromWire(value)) {
+            is ToolResultOutput.Text -> output.text
+            is ToolResultOutput.Error -> output.message
+            is ToolResultOutput.ExecutionDenied -> output.reason ?: "Tool execution denied."
+            is ToolResultOutput.Json -> output.json.toString()
+            is ToolResultOutput.ErrorJson -> output.json.toString()
+            is ToolResultOutput.Content -> output.value.joinToString("", transform = ::cohereToolResultItemText)
+        }
+
+    /** Flatten one MCP content item to plain text — Cohere tool content is a string, so images can't ride here. */
+    private fun cohereToolResultItemText(item: JsonElement): String =
+        ((item as? JsonObject)?.takeIf { (it["type"] as? JsonPrimitive)?.contentOrNull == "text" }
+            ?.get("text") as? JsonPrimitive)?.contentOrNull.orEmpty()
 
     private fun cohereImagePart(
         mediaType: String,
