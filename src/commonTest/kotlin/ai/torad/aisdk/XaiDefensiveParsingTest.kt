@@ -11,6 +11,8 @@ import io.ktor.http.headersOf
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFails
+import kotlin.test.assertTrue
 
 class XaiDefensiveParsingTest {
     /**
@@ -42,5 +44,34 @@ class XaiDefensiveParsingTest {
         )
 
         assertEquals(1, result.images.size, "a non-primitive revised_prompt degrades to omitted metadata, no crash")
+    }
+
+    /**
+     * Regression (the M4 sibling-accessor bug-class, Wave 7): xaiErrorMessage navigates
+     * `error?.jsonObject?.get("message")` — `?.jsonObject` throws if `error` is present but a
+     * primitive (`{"error":"plain string"}`), crashing BEFORE the leaf cast. The safe
+     * `(error as? JsonObject)?.…` degrades to null -> the `error as? JsonPrimitive` fallback.
+     */
+    @Test
+    fun `image generate surfaces the structured error on a primitive error`() = runTest {
+        val client = HttpClient(
+            MockEngine {
+                respond(
+                    content = """{"error":"plain string"}""",
+                    status = HttpStatusCode.BadRequest,
+                    headers = headersOf(HttpHeaders.ContentType, "application/json"),
+                )
+            },
+        )
+        val provider = Xai(client, XaiProviderSettings(apiKey = "key"))
+
+        val error = assertFails {
+            provider.image(ModelId("grok-2-image")).generate(ImageGenerationParams(prompt = "x", n = 1))
+        }
+
+        assertTrue(
+            error.message?.contains("xAI request failed") == true,
+            "a primitive error degrades through the object accessor, no crash",
+        )
     }
 }
