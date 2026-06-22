@@ -353,8 +353,12 @@ private class ReplicateVideoModel(
             options = options,
             abortSignal = params.abortSignal,
         )
-        val videoUrl = (prediction["output"] as? JsonPrimitive)?.contentOrNull
+        val output = prediction["output"]
             ?: throw NoVideoGeneratedError("No video URL in Replicate response")
+        val videoUrl = when (output) {
+            is JsonArray -> (output.firstOrNull() as? JsonPrimitive)?.contentOrNull
+            else -> (output as? JsonPrimitive)?.contentOrNull
+        } ?: throw NoVideoGeneratedError("No video URL in Replicate response")
         return VideoModelResult(
             videos = listOf(
                 GeneratedFile(

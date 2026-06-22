@@ -200,6 +200,30 @@ class ReplicateProviderTest {
     }
 
     @Test
+    fun `video model extracts url from array-shaped output`() = runTest {
+        val fixture = TestServer.createTestServer(
+            mutableMapOf(
+                "https://api.replicate.com/v1/models/minimax/video-01/predictions" to UrlHandler(
+                    UrlResponse.JsonValue(
+                        Json.parseToJsonElement(
+                            """{"status":"succeeded","output":["https://cdn.example/array.mp4"]}""",
+                        ),
+                    ),
+                ),
+            ),
+        )
+        fixture.server.start()
+        val model = Replicate(
+            fixture.httpClient(),
+            ReplicateProviderSettings(apiToken = "token"),
+        ).video(ModelId("minimax/video-01"))
+
+        val result = model.generate(VideoGenerationParams(prompt = "array output"))
+
+        assertEquals("https://cdn.example/array.mp4", result.videos.single().url)
+    }
+
+    @Test
     fun `video model reports failed predictions and unsupported families`() = runTest {
         val fixture = TestServer.createTestServer(
             mutableMapOf(
