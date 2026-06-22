@@ -6356,34 +6356,12 @@ public abstract interface class ai/torad/aisdk/StructuredObjectTransport {
 public abstract interface class ai/torad/aisdk/Telemetry {
 	public static final field Companion Lai/torad/aisdk/Telemetry$Companion;
 	public abstract fun getName ()Ljava/lang/String;
-	public fun onAbort (Lai/torad/aisdk/TelemetryCall;Lai/torad/aisdk/AgentEvent$Aborted;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
-	public fun onAgentFinish (Lai/torad/aisdk/TelemetryCall;Lai/torad/aisdk/AgentEvent$Finished;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
-	public fun onAgentStart (Lai/torad/aisdk/TelemetryCall;Lai/torad/aisdk/AgentEvent$Started;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
-	public fun onError (Lai/torad/aisdk/TelemetryCall;Lai/torad/aisdk/AgentEvent$Errored;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
-	public fun onModelCallFinish (Lai/torad/aisdk/TelemetryCall;Lai/torad/aisdk/AgentEvent$ModelCallFinished;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
-	public fun onModelCallStart (Lai/torad/aisdk/TelemetryCall;Lai/torad/aisdk/AgentEvent$ModelCallStarted;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
-	public fun onStepFinish (Lai/torad/aisdk/TelemetryCall;Lai/torad/aisdk/AgentEvent$StepFinished;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
-	public fun onStepStart (Lai/torad/aisdk/TelemetryCall;Lai/torad/aisdk/AgentEvent$StepStarted;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
-	public fun onToolCallFinish (Lai/torad/aisdk/TelemetryCall;Lai/torad/aisdk/AgentEvent$ToolCallFinished;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
-	public fun onToolCallStart (Lai/torad/aisdk/TelemetryCall;Lai/torad/aisdk/AgentEvent$ToolCallStarted;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public abstract fun onEvent (Lai/torad/aisdk/TelemetryCall;Lai/torad/aisdk/AgentEvent;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 }
 
 public final class ai/torad/aisdk/Telemetry$Companion {
 	public final fun clearGlobalTelemetry ()V
 	public final fun registerTelemetry (Lai/torad/aisdk/Telemetry;)V
-}
-
-public final class ai/torad/aisdk/Telemetry$DefaultImpls {
-	public static fun onAbort (Lai/torad/aisdk/Telemetry;Lai/torad/aisdk/TelemetryCall;Lai/torad/aisdk/AgentEvent$Aborted;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
-	public static fun onAgentFinish (Lai/torad/aisdk/Telemetry;Lai/torad/aisdk/TelemetryCall;Lai/torad/aisdk/AgentEvent$Finished;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
-	public static fun onAgentStart (Lai/torad/aisdk/Telemetry;Lai/torad/aisdk/TelemetryCall;Lai/torad/aisdk/AgentEvent$Started;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
-	public static fun onError (Lai/torad/aisdk/Telemetry;Lai/torad/aisdk/TelemetryCall;Lai/torad/aisdk/AgentEvent$Errored;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
-	public static fun onModelCallFinish (Lai/torad/aisdk/Telemetry;Lai/torad/aisdk/TelemetryCall;Lai/torad/aisdk/AgentEvent$ModelCallFinished;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
-	public static fun onModelCallStart (Lai/torad/aisdk/Telemetry;Lai/torad/aisdk/TelemetryCall;Lai/torad/aisdk/AgentEvent$ModelCallStarted;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
-	public static fun onStepFinish (Lai/torad/aisdk/Telemetry;Lai/torad/aisdk/TelemetryCall;Lai/torad/aisdk/AgentEvent$StepFinished;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
-	public static fun onStepStart (Lai/torad/aisdk/Telemetry;Lai/torad/aisdk/TelemetryCall;Lai/torad/aisdk/AgentEvent$StepStarted;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
-	public static fun onToolCallFinish (Lai/torad/aisdk/Telemetry;Lai/torad/aisdk/TelemetryCall;Lai/torad/aisdk/AgentEvent$ToolCallFinished;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
-	public static fun onToolCallStart (Lai/torad/aisdk/Telemetry;Lai/torad/aisdk/TelemetryCall;Lai/torad/aisdk/AgentEvent$ToolCallStarted;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 }
 
 public abstract interface class ai/torad/aisdk/TelemetryActiveSpan {
