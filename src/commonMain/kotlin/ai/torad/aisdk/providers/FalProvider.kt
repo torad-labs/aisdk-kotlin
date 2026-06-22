@@ -347,7 +347,7 @@ private class FalImageModel(
         key.replace(Regex("_([a-z])")) { it.groupValues[1].uppercase() }
 
     private fun falResponseImages(value: JsonObject): List<JsonObject> {
-        (value["images"] as? JsonArray)?.let { images -> return images.map { it.jsonObject } }
+        (value["images"] as? JsonArray)?.let { images -> return images.mapNotNull { it as? JsonObject } }
         (value["image"] as? JsonObject)?.let { return listOf(it) }
         return emptyList()
     }
@@ -470,8 +470,8 @@ private class FalTranscriptionModel(
         val chunks = value["chunks"] as? JsonArray ?: JsonArray(emptyList())
         return TranscriptionModelResult(
             text = (value["text"] as? JsonPrimitive)?.contentOrNull,
-            segments = chunks.map { chunk ->
-                val obj = chunk.jsonObject
+            segments = chunks.mapNotNull { chunk ->
+                val obj = chunk as? JsonObject ?: return@mapNotNull null
                 val timestamp = obj["timestamp"] as? JsonArray
                 TranscriptSegment(
                     text = (obj["text"] as? JsonPrimitive)?.contentOrNull.orEmpty(),
@@ -645,7 +645,7 @@ private val falErrorMessage: ErrorMessageExtractor = { _, parsed, raw ->
     when {
         obj == null -> raw
         validation != null -> validation.joinToString("\n") { item ->
-            val detail = item.jsonObject
+            val detail = item as? JsonObject ?: return@joinToString ""
             val loc = (detail["loc"] as? JsonArray)
                 ?.joinToString(".") { (it as? JsonPrimitive)?.contentOrNull.orEmpty() }
             val msg = (detail["msg"] as? JsonPrimitive)?.contentOrNull.orEmpty()

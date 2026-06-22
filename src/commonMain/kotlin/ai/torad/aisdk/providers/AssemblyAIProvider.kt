@@ -150,8 +150,8 @@ private class AssemblyAITranscriptionModel(
         val words = (body["words"] as? JsonArray).orEmpty()
         return TranscriptionModelResult(
             text = (body["text"] as? JsonPrimitive)?.contentOrNull.orEmpty(),
-            segments = words.map { word ->
-                val obj = word.jsonObject
+            segments = words.mapNotNull { word ->
+                val obj = word as? JsonObject ?: return@mapNotNull null
                 TranscriptSegment(
                     text = (obj["text"] as? JsonPrimitive)?.contentOrNull.orEmpty(),
                     startSeconds = (obj["start"] as? JsonPrimitive)?.floatOrNull,

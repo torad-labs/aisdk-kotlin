@@ -266,13 +266,13 @@ private class HuggingFaceResponsesLanguageModel(
         val toolCalls = mutableListOf<ContentPart.ToolCall>()
 
         for (part in (response["output"] as? JsonArray).orEmpty()) {
-            val obj = part.jsonObject
+            val obj = part as? JsonObject ?: continue
             val itemId = (obj["id"] as? JsonPrimitive)?.contentOrNull
             val providerMetadata = itemId?.let(settings::huggingFaceItemMetadata) ?: ProviderMetadata.None
             when ((obj["type"] as? JsonPrimitive)?.contentOrNull) {
                 "message" -> {
                     for (messagePart in (obj["content"] as? JsonArray).orEmpty()) {
-                        val messageObj = messagePart.jsonObject
+                        val messageObj = messagePart as? JsonObject ?: continue
                         val text = (messageObj["text"] as? JsonPrimitive)?.contentOrNull
                         if (!text.isNullOrEmpty()) content += ContentPart.Text(text, providerMetadata)
                         for (annotation in (messageObj["annotations"] as? JsonArray).orEmpty()) {
@@ -288,7 +288,7 @@ private class HuggingFaceResponsesLanguageModel(
                 "reasoning" -> {
                     val reasoningParts = ((obj["content"] as? JsonArray).orEmpty() + (obj["summary"] as? JsonArray).orEmpty())
                     for (reasoningPart in reasoningParts) {
-                        val text = (reasoningPart.jsonObject["text"] as? JsonPrimitive)?.contentOrNull
+                        val text = ((reasoningPart as? JsonObject)?.get("text") as? JsonPrimitive)?.contentOrNull
                         if (!text.isNullOrEmpty()) content += ContentPart.Reasoning(text, providerMetadata)
                     }
                 }

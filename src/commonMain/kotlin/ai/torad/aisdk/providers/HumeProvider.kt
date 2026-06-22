@@ -151,8 +151,8 @@ private class HumeSpeechModel(
                 put(
                     "utterances",
                     JsonArray(
-                        (context["utterances"] as? JsonArray).orEmpty().map { item ->
-                            val utterance = item.jsonObject
+                        (context["utterances"] as? JsonArray).orEmpty().mapNotNull { item ->
+                            val utterance = item as? JsonObject ?: return@mapNotNull null
                             buildJsonObject {
                                 utterance["text"]?.let { put("text", it) }
                                 utterance["description"]?.let { put("description", it) }
