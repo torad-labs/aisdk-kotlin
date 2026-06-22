@@ -26,7 +26,6 @@ import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.floatOrNull
 import kotlinx.serialization.json.intOrNull
-import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 
 public const val ELEVENLABS_VERSION: String = "2.0.33"
@@ -134,7 +133,7 @@ private class ElevenLabsSpeechModel(
                 }
             }
             if (voiceSettings.isNotEmpty()) put("voice_settings", voiceSettings)
-            options["pronunciationDictionaryLocators"]?.jsonArray?.let { locators ->
+            (options["pronunciationDictionaryLocators"] as? JsonArray)?.let { locators ->
                 put(
                     "pronunciation_dictionary_locators",
                     JsonArray(
@@ -265,7 +264,7 @@ private class ElevenLabsTranscriptionModel(
         }
         val response = with(HttpTransport) { rawResponse.toJsonResponse(url = "https://api.elevenlabs.io/v1/speech-to-text", errorMessage = ::elevenLabsErrorMessage) }
         val value = response.value.jsonObject
-        val words = value["words"]?.jsonArray.orEmpty()
+        val words = (value["words"] as? JsonArray).orEmpty()
         return TranscriptionModelResult(
             text = (value["text"] as? JsonPrimitive)?.contentOrNull,
             segments = words.map { word ->
@@ -278,13 +277,13 @@ private class ElevenLabsTranscriptionModel(
             },
             response = LanguageModelResponseMetadata(modelId = modelId, headers = response.headers, body = response.value),
             language = (value["language_code"] as? JsonPrimitive)?.contentOrNull,
-            durationInSeconds = (words.lastOrNull()?.jsonObject?.get("end") as? JsonPrimitive)?.floatOrNull,
+            durationInSeconds = ((words.lastOrNull() as? JsonObject)?.get("end") as? JsonPrimitive)?.floatOrNull,
         )
     }
 
     private fun elevenLabsErrorMessage(statusCode: Int, parsed: JsonElement?, raw: String): String {
         val obj = parsed as? JsonObject
-        val detail = (obj?.get("detail")?.jsonObject?.get("message") as? JsonPrimitive)?.contentOrNull
+        val detail = ((obj?.get("detail") as? JsonObject)?.get("message") as? JsonPrimitive)?.contentOrNull
             ?: (obj?.get("detail") as? JsonPrimitive)?.contentOrNull
             ?: (obj?.get("message") as? JsonPrimitive)?.contentOrNull
             ?: raw.ifBlank { "request failed" }
