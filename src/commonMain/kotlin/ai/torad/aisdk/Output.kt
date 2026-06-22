@@ -54,10 +54,11 @@ public sealed class Output<T> {
         override val schemaDescription: String? = null,
     ) : Output<T>() {
         override val schemaName: String = name
-        override val schemaJson: String = buildJsonObject {
-            put("type", JsonPrimitive("object"))
-            put("title", JsonPrimitive(name))
-        }.toString()
+
+        // Generate the real schema (type/properties/required/additionalProperties:false) from the
+        // serializer's descriptor — a property-less object stub makes strict structured-output
+        // providers reject the request (400). Reuses the tool-input schema generator.
+        override val schemaJson: String = ToolJsonSchema.jsonSchemaFor(serializer.descriptor).toString()
         override fun decode(text: String): T = aiSdkOutputJson.decodeFromString(serializer, text)
     }
 
@@ -77,13 +78,9 @@ public sealed class Output<T> {
                         "elements",
                         buildJsonObject {
                             put("type", JsonPrimitive("array"))
-                            put(
-                                "items",
-                                buildJsonObject {
-                                    put("type", JsonPrimitive("object"))
-                                    put("title", JsonPrimitive(name))
-                                },
-                            )
+                            // Describe the element shape from its serializer instead of a
+                            // property-less object stub, so strict providers accept the array.
+                            put("items", ToolJsonSchema.jsonSchemaFor(elementSerializer.descriptor))
                         },
                     )
                 },
