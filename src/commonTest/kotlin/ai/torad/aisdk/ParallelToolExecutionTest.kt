@@ -173,12 +173,25 @@ class ParallelToolExecutionTest {
             instructions = "x",
             tools = ToolSet(gatedTool("toolA"), gatedTool("toolB")),
             maxParallelToolCalls = 1,
-            experimental_onToolCallStart = {
-                startOrder += toolName
-            },
         )
         val job = launch {
-            agent.stream(prompt = "go").collect { }
+            agent.collectAgentEvents(prompt = "go") { event ->
+                when (event) {
+                    is AgentEvent.ToolCallStarted -> startOrder += event.toolName
+                    is AgentEvent.Started<*>,
+                    is AgentEvent.StepStarted,
+                    is AgentEvent.Chunk,
+                    is AgentEvent.StepFinished,
+                    is AgentEvent.ToolCallFinished,
+                    is AgentEvent.Errored,
+                    is AgentEvent.Aborted,
+                    is AgentEvent.Finished<*, *>,
+                    is AgentEvent.ModelCallStarted,
+                    is AgentEvent.ModelCallFinished,
+                    is AgentEvent.SpanEmitted,
+                    -> Unit
+                }
+            }
         }
 
         firstStarted.await()

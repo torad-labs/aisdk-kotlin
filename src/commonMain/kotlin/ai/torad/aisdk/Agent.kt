@@ -70,14 +70,14 @@ public interface Agent<TContext, TOutput> {
      * be supplied. When both are present, [prompt] is appended as a
      * trailing user message.
      *
-     * @param hooks per-call lifecycle observation; see [AgentCallHooks].
+     * To observe lifecycle events, collect [ToolLoopAgent.events] (a
+     * `Flow<AgentEvent>`) — there is no callback parameter.
      */
     public fun generate(
         prompt: String? = null,
         messages: List<ModelMessage> = emptyList(),
         options: TContext? = null,
         abortSignal: AbortSignal = AbortSignalNever,
-        hooks: AgentCallHooks? = null,
     ): Flow<GenerateResult<TOutput>>
 
     /** Streaming generation. Cold flow — starts when collected. */
@@ -86,7 +86,6 @@ public interface Agent<TContext, TOutput> {
         messages: List<ModelMessage> = emptyList(),
         options: TContext? = null,
         abortSignal: AbortSignal = AbortSignalNever,
-        hooks: AgentCallHooks? = null,
     ): Flow<StreamEvent>
 }
 
@@ -111,15 +110,12 @@ public data class GenerateResult<TOutput>(
 )
 
 /**
- * Per-call lifecycle hooks. These mirror the ones on the agent
- * constructor but apply to a single [Agent.generate] / [Agent.stream]
- * invocation — useful for request-scoped logging, tracing, or
- * progress UI.
- *
- * Both call-site hooks and constructor-site hooks fire (constructor
- * first, then call-site) — neither replaces the other.
+ * INTERNAL lifecycle-hook substrate. Not a public API — the public observation
+ * surface is [ToolLoopAgent.events] (`Flow<AgentEvent>`). The loop fires these
+ * per-call hooks; [ToolLoopAgent.events] builds one whose lambdas fan each event
+ * into the Flow, and the engine surface uses one to drive its [ToolLoopAgentState].
  */
-public data class AgentCallHooks(
+internal data class AgentCallHooks(
     val onStart: (suspend (AgentEvent.Started<*>) -> Unit)? = null,
     val onStepStart: (suspend (AgentEvent.StepStarted) -> Unit)? = null,
     val onStepFinish: (suspend (AgentEvent.StepFinished) -> Unit)? = null,

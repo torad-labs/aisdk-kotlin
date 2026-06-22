@@ -64,7 +64,7 @@ class ContentPartPolishTest {
     }
 
     @Test
-    fun `given an AgentEvent.StepStarted with request and priorSteps when read then they round-trip`() {
+    fun `given an AgentEvent StepStarted with request and priorSteps when read then they round-trip`() {
         // GIVEN — the producer obligation: request + priorSteps are REQUIRED, so
         // the loop must supply the data it already has in scope (no empty default).
         val params = LanguageModelCallParams(messages = listOf(UserMessage("hi")))

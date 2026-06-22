@@ -11,6 +11,7 @@ import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.FlowCollector
+import kotlinx.coroutines.flow.channelFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -92,15 +93,6 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
      * still applied to the message log in deterministic call order.
      */
     public val maxParallelToolCalls: Int = Int.MAX_VALUE,
-    public val onStart: (suspend AgentEvent.Started<TContext>.() -> Unit)? = null,
-    public val onStepStart: (suspend AgentEvent.StepStarted.() -> Unit)? = null,
-    public val onStepFinish: (suspend AgentEvent.StepFinished.() -> Unit)? = null,
-    public val onFinish: (suspend AgentEvent.Finished<TContext, TOutput>.() -> Unit)? = null,
-    public val onError: (suspend AgentEvent.Errored.() -> Unit)? = null,
-    public val onChunk: (suspend AgentEvent.Chunk.() -> Unit)? = null,
-    public val onAbort: (suspend AgentEvent.Aborted.() -> Unit)? = null,
-    public val experimental_onToolCallStart: (suspend AgentEvent.ToolCallStarted.() -> Unit)? = null,
-    public val experimental_onToolCallFinish: (suspend AgentEvent.ToolCallFinished.() -> Unit)? = null,
     /**
      * Self-healing callback fired when a tool call's arguments fail to
      * decode. Return a corrected call to retry, or null to surface
@@ -146,7 +138,7 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
     engineContext: CoroutineContext = Dispatchers.Default,
 ) : Agent<TContext, TOutput> {
 
-    private val dispatcher = AgentTelemetryDispatcher<TContext>(logger, onError)
+    private val dispatcher = AgentTelemetryDispatcher<TContext>(logger)
     private val repairer = ToolCallRepairer<TContext>(experimental_repairToolCall, tools)
     private val approvalCoordinator = ToolApprovalCoordinator<TContext>(experimental_toolApprovalSecret, repairer)
 
@@ -328,11 +320,14 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
             },
         )
         try {
-            stream(
+            streamInternal(
                 prompt = prompt,
-                messages = priorMessages,
+                priorMessages = priorMessages,
                 options = context,
+                abortSignal = AbortSignalNever,
                 hooks = engineHooks,
+                finalMessagesRef = null,
+                stepsCapture = null,
             ).collect { event ->
                 when (event) {
                     is StreamEvent.ToolCall -> updateEngineStateIfCurrent(ownJob) { current ->
@@ -407,7 +402,6 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
         messages: List<ModelMessage>,
         options: TContext?,
         abortSignal: AbortSignal,
-        hooks: AgentCallHooks?,
     ): Flow<GenerateResult<TOutput>> = flow {
         val accumulator = StringBuilder()
         val collectedSteps = mutableListOf<StepResult>()
@@ -462,7 +456,7 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
         }
         val finalMessagesRef = MessageHolder()
         val stepsRef = StepsHolder(collectedSteps)
-        streamInternal(prompt, messages, options, abortSignal, hooks, finalMessagesRef, stepsRef)
+        streamInternal(prompt, messages, options, abortSignal, null, finalMessagesRef, stepsRef)
             .collect { event ->
                 captureCollector.consume(event)
             }
@@ -516,8 +510,55 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
         messages: List<ModelMessage>,
         options: TContext?,
         abortSignal: AbortSignal,
-        hooks: AgentCallHooks?,
-    ): Flow<StreamEvent> = streamInternal(prompt, messages, options, abortSignal, hooks, null, null)
+    ): Flow<StreamEvent> = streamInternal(prompt, messages, options, abortSignal, null, null, null)
+
+    /**
+     * Observe the FULL agent-lifecycle event stream as a `Flow<AgentEvent>` — the
+     * Flow-first replacement for the former bag of nullable `onX` callbacks. Cold:
+     * one loop run per collection. Carries every lifecycle event ([AgentEvent.Started],
+     * [AgentEvent.StepStarted], every [AgentEvent.Chunk], [AgentEvent.StepFinished],
+     * the tool-call pair, [AgentEvent.Errored], [AgentEvent.Aborted],
+     * [AgentEvent.Finished]).
+     *
+     * Collect with an exhaustive `when` (no `else`), or use [collectAgentEvents].
+     * [stream] stays the curated `Flow<StreamEvent>` (model deltas only); this is the
+     * superset that also surfaces the loop's own lifecycle boundaries.
+     */
+    public fun events(
+        prompt: String? = null,
+        messages: List<ModelMessage> = emptyList(),
+        options: TContext? = null,
+        abortSignal: AbortSignal = AbortSignalNever,
+    ): Flow<AgentEvent> = channelFlow {
+        // Bridge: each lifecycle hook fans its event into the channel. The loop fires
+        // these per-call hooks (the constructor `onX` callbacks are gone); onChunk fires
+        // for EVERY model event, so events() carries a Chunk for each.
+        val bridge = AgentCallHooks(
+            onStart = { send(it) },
+            onStepStart = { send(it) },
+            onStepFinish = { send(it) },
+            onFinish = { send(it) },
+            onError = { send(it) },
+            onChunk = { send(it) },
+            onAbort = { send(it) },
+            experimental_onToolCallStart = { send(it) },
+            experimental_onToolCallFinish = { send(it) },
+        )
+        // Drive one loop run; drain the StreamEvents (already surfaced as Chunk above).
+        streamInternal(prompt, messages, options, abortSignal, bridge, null, null).collect { }
+    }
+
+    /**
+     * Convenience over [events]: collect the lifecycle stream with one suspend handler —
+     * `agent.collectAgentEvents { when (it) { is AgentEvent.Chunk -> … } }`.
+     */
+    public suspend fun collectAgentEvents(
+        prompt: String? = null,
+        messages: List<ModelMessage> = emptyList(),
+        options: TContext? = null,
+        abortSignal: AbortSignal = AbortSignalNever,
+        onEvent: suspend (AgentEvent) -> Unit,
+    ): Unit = events(prompt, messages, options, abortSignal).collect(onEvent)
 
     // SwallowedException: the AbortError catch intentionally consumes the abort — it is a
     // terminal user signal surfaced as StreamEvent.Abort, not an error to propagate.
@@ -549,8 +590,7 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
         emit(StreamEvent.StreamStart())
         // One immutable event shared by both hook invocations AND telemetry — the identical snapshot.
         val startEvent = AgentEvent.Started(prompt, priorMessages, validatedOptions)
-        dispatcher.runHook(0, feed) {
-            onStart?.invoke(startEvent)
+        dispatcher.runHook(0, feed, hooks) {
             hooks?.onStart?.invoke(startEvent)
         }
         dispatcher.fireTelemetry(feed) { onAgentStart(it, startEvent) }
@@ -627,8 +667,7 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
         // FlowCollector, so it can't emit itself).
         suspend fun fireAbort() {
             val abortEvent = AgentEvent.Aborted(completedSteps.toList())
-            dispatcher.runHook(stepNumber, feed) {
-                onAbort?.invoke(abortEvent)
+            dispatcher.runHook(stepNumber, feed, hooks) {
                 hooks?.onAbort?.invoke(abortEvent)
             }
             dispatcher.fireTelemetry(feed) { onAbort(it, abortEvent) }
@@ -716,8 +755,7 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
                 request = callParams,
                 priorSteps = completedSteps.toList(),
             )
-            dispatcher.runHook(stepNumber, feed) {
-                onStepStart?.invoke(stepStartEvent)
+            dispatcher.runHook(stepNumber, feed, hooks) {
                 hooks?.onStepStart?.invoke(stepStartEvent)
             }
             dispatcher.fireTelemetry(feed) { onStepStart(it, stepStartEvent) }
@@ -771,8 +809,7 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
                 stepRequest = stepStreamResult.request
                 stepStreamResult.stream.collect { event ->
                     abortSignal.throwIfAborted()
-                    dispatcher.runHook(stepNumber, feed) {
-                        onChunk?.invoke(AgentEvent.Chunk(event, stepNumber))
+                    dispatcher.runHook(stepNumber, feed, hooks) {
                         hooks?.onChunk?.invoke(AgentEvent.Chunk(event, stepNumber))
                     }
                     when (event) {
@@ -790,13 +827,13 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
                             // so a hook failure can't abort the inference stream.
                             toolInputNames[event.id] = event.toolName
                             val startedTool = stepTools.find(event.toolName)
-                            dispatcher.runHook(stepNumber, feed) { startedTool?.onInputStart(event.id) }
+                            dispatcher.runHook(stepNumber, feed, hooks) { startedTool?.onInputStart(event.id) }
                             emit(event)
                         }
                         is StreamEvent.ToolInputDelta -> {
                             // gap #18: raw-character pre-warm as input streams in.
                             val deltaTool = toolInputNames[event.id]?.let { stepTools.find(it) }
-                            dispatcher.runHook(stepNumber, feed) { deltaTool?.onInputDelta(event.id, event.delta) }
+                            dispatcher.runHook(stepNumber, feed, hooks) { deltaTool?.onInputDelta(event.id, event.delta) }
                             emit(event)
                         }
                         is StreamEvent.ToolCall -> {
@@ -1058,7 +1095,7 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
                         }
                         permits.withPermit {
                             val progressOut = ChannelToolEventCollector(signals)
-                            dispatcher.runHook(stepNumber, feed) {
+                            dispatcher.runHook(stepNumber, feed, hooks) {
                                 val startEvent = AgentEvent.ToolCallStarted(
                                     call.toolCallId,
                                     call.toolName,
@@ -1066,7 +1103,6 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
                                     stepNumber,
                                     promptSnapshot,
                                 )
-                                experimental_onToolCallStart?.invoke(startEvent)
                                 hooks?.experimental_onToolCallStart?.invoke(startEvent)
                             }
                             val result = executeTool(
@@ -1083,7 +1119,7 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
                                 // approval-categorization pass — don't decode/repair a second time.
                                 preResolved = resolvedForExecution[call.toolCallId],
                             )
-                            dispatcher.runHook(stepNumber, feed) {
+                            dispatcher.runHook(stepNumber, feed, hooks) {
                                 val finishEvent = AgentEvent.ToolCallFinished(
                                     toolCallId = call.toolCallId,
                                     toolName = call.toolName,
@@ -1097,7 +1133,6 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
                                     },
                                     stepNumber = stepNumber,
                                 )
-                                experimental_onToolCallFinish?.invoke(finishEvent)
                                 hooks?.experimental_onToolCallFinish?.invoke(finishEvent)
                             }
                             signals.send(
@@ -1167,8 +1202,7 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
             lastFinishReason = effectiveFinishReason
 
             val stepFinishEvent = AgentEvent.StepFinished(stepNumber, step)
-            dispatcher.runHook(stepNumber, feed) {
-                onStepFinish?.invoke(stepFinishEvent)
+            dispatcher.runHook(stepNumber, feed, hooks) {
                 hooks?.onStepFinish?.invoke(stepFinishEvent)
             }
             dispatcher.fireTelemetry(feed) { onStepFinish(it, stepFinishEvent) }
@@ -1225,8 +1259,7 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
             // loop tracked (activeContext), not a hardcoded null.
             experimentalContext = activeContext,
         )
-        dispatcher.runHook(stepNumber, feed) {
-            onFinish?.invoke(finishEvent)
+        dispatcher.runHook(stepNumber, feed, hooks) {
             hooks?.onFinish?.invoke(finishEvent)
         }
         dispatcher.fireTelemetry(feed) { onAgentFinish(it, finishEvent) }
@@ -1295,7 +1328,7 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
             // gap #18: typed input parsed — fire onInputAvailable just before
             // the executor runs (UI pre-warm). Guarded so a hook failure does
             // not fail the tool call itself.
-            dispatcher.runHook(stepNumber, feed) { typedTool.onInputAvailable(call.toolCallId, input) }
+            dispatcher.runHook(stepNumber, feed, hooks) { typedTool.onInputAvailable(call.toolCallId, input) }
             val captured = collectFinalToolOutput(out, typedTool, ctx, call, input)
             if (!captured.hasOutput) {
                 toolFailure(call, IllegalStateException("tool emitted no values"))

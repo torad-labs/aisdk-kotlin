@@ -5,7 +5,6 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
-import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
 class AgentAbortEventTest {
@@ -22,25 +21,20 @@ class AgentAbortEventTest {
     }
 
     @Test
-    fun `a pre-aborted stream emits a terminal Abort event and fires onAbort`() = runTest {
+    fun `a pre-aborted stream fires the Aborted lifecycle event`() = runTest {
         val controller = AbortController()
         controller.abort()
-        var onAbortFired = false
         val agent = TestToolLoopAgent<Unit, String>(
             model = textModel("hi"),
             instructions = "x",
             tools = ToolSet(),
         )
         val events = drainAllItems(
-            agent.stream(
-                prompt = "go",
-                abortSignal = controller.signal,
-                hooks = AgentCallHooks(onAbort = { onAbortFired = true }),
-            ),
+            agent.events(prompt = "go", abortSignal = controller.signal),
         )
-        // The loop-top abort poll emits StreamEvent.Abort as the terminal event.
-        assertTrue(events.any { it is StreamEvent.Abort }, "Abort event emitted")
-        assertTrue(onAbortFired, "onAbort hook fired")
+        // The pre-aborted loop fires AgentEvent.Aborted — the events() equivalent of the former
+        // terminal StreamEvent.Abort + onAbort hook.
+        assertTrue(events.any { it is AgentEvent.Aborted }, "Aborted lifecycle event fired")
     }
 
     @Test
@@ -50,12 +44,8 @@ class AgentAbortEventTest {
             instructions = "x",
             tools = ToolSet(),
         )
-        var onAbortFired = false
-        val events = drainAllItems(
-            agent.stream(prompt = "go", hooks = AgentCallHooks(onAbort = { onAbortFired = true })),
-        )
-        assertTrue(events.none { it is StreamEvent.Abort }, "no Abort on normal completion")
-        assertTrue(events.any { it is StreamEvent.Finish }, "normal completion finishes")
-        assertEquals(false, onAbortFired, "onAbort not fired on normal completion")
+        val events = drainAllItems(agent.events(prompt = "go"))
+        assertTrue(events.none { it is AgentEvent.Aborted }, "no Aborted on normal completion")
+        assertTrue(events.any { it is AgentEvent.Finished<*, *> }, "normal completion finishes")
     }
 }
