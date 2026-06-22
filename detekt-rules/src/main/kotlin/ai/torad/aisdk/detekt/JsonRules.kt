@@ -26,18 +26,19 @@ class NoJsonContainerForceCast(config: Config) : Rule(config) {
 
     override fun visitBinaryWithTypeRHSExpression(expression: KtBinaryExpressionWithTypeRHS) {
         super.visitBinaryWithTypeRHSExpression(expression)
-        val op = expression.operationReference.text
-        if (op != "as" && op != "as?") return
+        // Only the UNSAFE force-cast `as` throws at runtime — the safe `as?` returns null and
+        // is the recommended pattern, so it must NOT be flagged. Mirrors no-json-container-force-cast.
+        if (expression.operationReference.text != "as") return
         val type = expression.right?.text?.substringBefore("<")?.trim() ?: return
         if (type in JSON_CONTAINERS) {
             report(
-                CodeSmell(issue, Entity.from(expression), "Force-cast `$op $type` — decode into a typed model instead."),
+                CodeSmell(issue, Entity.from(expression), "Force-cast `as $type` — decode into a typed model instead."),
             )
         }
     }
 
     private companion object {
-        val JSON_CONTAINERS = setOf("JsonObject", "JsonArray", "JsonPrimitive")
+        val JSON_CONTAINERS = setOf("JsonObject", "JsonArray")
     }
 }
 
