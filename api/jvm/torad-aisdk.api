@@ -6234,6 +6234,7 @@ public abstract class ai/torad/aisdk/StreamingTool : ai/torad/aisdk/Tool {
 }
 
 public final class ai/torad/aisdk/StructuredObject {
+	public static final field Companion Lai/torad/aisdk/StructuredObject$Companion;
 	public fun <init> (Lai/torad/aisdk/StructuredObjectOptions;)V
 	public final fun clear ()V
 	public final fun getApi ()Ljava/lang/String;
@@ -6246,6 +6247,9 @@ public final class ai/torad/aisdk/StructuredObject {
 	public final fun getValue ()Ljava/lang/Object;
 	public final fun stop ()V
 	public final fun submit (Ljava/lang/Object;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+}
+
+public final class ai/torad/aisdk/StructuredObject$Companion {
 }
 
 public final class ai/torad/aisdk/StructuredObjectFinish {
@@ -6261,6 +6265,13 @@ public final class ai/torad/aisdk/StructuredObjectFinish {
 	public final fun getValue ()Ljava/lang/Object;
 	public fun hashCode ()I
 	public fun toString ()Ljava/lang/String;
+}
+
+public final class ai/torad/aisdk/StructuredObjectGenerator {
+	public fun <init> (Lai/torad/aisdk/LanguageModel;Lai/torad/aisdk/Schema;Lai/torad/aisdk/CallConfig;Ljava/lang/String;Ljava/lang/String;)V
+	public synthetic fun <init> (Lai/torad/aisdk/LanguageModel;Lai/torad/aisdk/Schema;Lai/torad/aisdk/CallConfig;Ljava/lang/String;Ljava/lang/String;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun generate (Lai/torad/aisdk/GenerationInput;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public final fun stream (Lai/torad/aisdk/GenerationInput;)Lkotlinx/coroutines/flow/Flow;
 }
 
 public final class ai/torad/aisdk/StructuredObjectOptions {
