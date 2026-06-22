@@ -8,7 +8,6 @@ import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.intOrNull
-import kotlinx.serialization.json.jsonPrimitive
 
 internal data class BedrockPreparedChatRequest(
     val body: JsonObject,
@@ -56,8 +55,8 @@ internal object BedrockRequest {
         // for thinking-enabled Anthropic calls, so they're stripped (matching upstream).
         val reasoningConfig = options["reasoningConfig"] as? JsonObject
         val isAnthropicThinking = modelId.contains("anthropic") &&
-            reasoningConfig?.get("type")?.jsonPrimitive?.contentOrNull in setOf("enabled", "adaptive")
-        val thinkingBudget = reasoningConfig?.get("budgetTokens")?.jsonPrimitive?.intOrNull
+            (reasoningConfig?.get("type") as? JsonPrimitive)?.contentOrNull in setOf("enabled", "adaptive")
+        val thinkingBudget = (reasoningConfig?.get("budgetTokens") as? JsonPrimitive)?.intOrNull
         val hasSamplingParams = params.temperature != null || params.topP != null || params.topK != null
         if (isAnthropicThinking && hasSamplingParams) {
             warnings += CallWarning("unsupported", "temperature/topP/topK are not supported with Anthropic thinking")
@@ -82,7 +81,7 @@ internal object BedrockRequest {
         val tools = bedrockTools(modelId, params.tools, params.toolChoice, params.responseFormat)
         warnings += tools.warnings
         val bedrockOptions = bedrockAdditionalModelRequestFields(options, modelId, params.responseFormat)
-        val serviceTier = options["serviceTier"]?.jsonPrimitive?.contentOrNull
+        val serviceTier = (options["serviceTier"] as? JsonPrimitive)?.contentOrNull
 
         return BedrockPreparedChatRequest(
             body = buildJsonObject {
@@ -311,8 +310,8 @@ internal object BedrockRequest {
     ): JsonObject {
         val additional = (options["additionalModelRequestFields"] as? JsonObject)?.toMutableMap() ?: mutableMapOf()
         val reasoningConfig = options["reasoningConfig"] as? JsonObject
-        val reasoningType = reasoningConfig?.get("type")?.jsonPrimitive?.contentOrNull
-        val maxReasoningEffort = reasoningConfig?.get("maxReasoningEffort")?.jsonPrimitive?.contentOrNull
+        val reasoningType = (reasoningConfig?.get("type") as? JsonPrimitive)?.contentOrNull
+        val maxReasoningEffort = (reasoningConfig?.get("maxReasoningEffort") as? JsonPrimitive)?.contentOrNull
         if (modelId.contains("anthropic") && reasoningType in setOf("enabled", "adaptive")) {
             additional["thinking"] = buildJsonObject {
                 put("type", JsonPrimitive(reasoningType))
@@ -393,7 +392,7 @@ internal object BedrockRequest {
             options["cfgScale"]?.let { put("cfgScale", it) }
         }
         val body = if (params.files.isNotEmpty()) {
-            val taskType = options["taskType"]?.jsonPrimitive?.contentOrNull
+            val taskType = (options["taskType"] as? JsonPrimitive)?.contentOrNull
                 ?: if (params.mask != null || options["maskPrompt"] != null) "INPAINTING" else "IMAGE_VARIATION"
             when (taskType) {
                 "INPAINTING" -> buildJsonObject {
@@ -565,6 +564,6 @@ internal object BedrockRequest {
         (metadata?.get("bedrock") as? JsonObject)?.get("cachePoint")
 
     private fun bedrockCitationsEnabled(metadata: Map<String, JsonElement>?): Boolean =
-        ((metadata?.get("bedrock") as? JsonObject)?.get("citations") as? JsonObject)
-            ?.get("enabled")?.jsonPrimitive?.contentOrNull == "true"
+        (((metadata?.get("bedrock") as? JsonObject)?.get("citations") as? JsonObject)
+            ?.get("enabled") as? JsonPrimitive)?.contentOrNull == "true"
 }

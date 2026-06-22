@@ -17,9 +17,9 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.channelFlow
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonObject
-import kotlinx.serialization.json.jsonPrimitive
 
 internal data class BedrockHttpResponse(
     val value: JsonElement,
@@ -171,13 +171,13 @@ internal object BedrockHttp {
 
     fun bedrockErrorMessage(parsed: JsonElement?, raw: String): String {
         val obj = parsed as? JsonObject ?: return raw
-        val message = obj["message"]?.jsonPrimitive?.contentOrNull
-            ?: obj["error"]?.jsonObject?.get("message")?.jsonPrimitive?.contentOrNull
-            ?: obj["type"]?.jsonPrimitive?.contentOrNull
+        val message = (obj["message"] as? JsonPrimitive)?.contentOrNull
+            ?: (obj["error"]?.jsonObject?.get("message") as? JsonPrimitive)?.contentOrNull
+            ?: (obj["type"] as? JsonPrimitive)?.contentOrNull
             ?: raw
-        val code = obj["__type"]?.jsonPrimitive?.contentOrNull
-            ?: obj["code"]?.jsonPrimitive?.contentOrNull
-            ?: obj["type"]?.jsonPrimitive?.contentOrNull
+        val code = (obj["__type"] as? JsonPrimitive)?.contentOrNull
+            ?: (obj["code"] as? JsonPrimitive)?.contentOrNull
+            ?: (obj["type"] as? JsonPrimitive)?.contentOrNull
         return if (isBedrockClockSkewError(code, message)) {
             "Amazon Bedrock request failed because the local clock appears to be skewed. Sync the host clock and retry. Provider message: $message"
         } else {
