@@ -238,7 +238,9 @@ public class AgentSession<TContext, TOutput>(
                             mutableState.update {
                                 it.copy(
                                     status = AgentSessionStatus.Error,
-                                    error = UiMessageStreamError(event.message),
+                                    // Chain event.cause (matches the generate() path) so the host
+                                    // keeps the root exception, not just the message string.
+                                    error = UiMessageStreamError(event.message, event.cause),
                                 )
                             }
                         }
