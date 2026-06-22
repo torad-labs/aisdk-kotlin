@@ -391,9 +391,8 @@ public class AnthropicMessagesLanguageModel(
             steps: List<Map<String, JsonElement>>,
         ): Map<String, JsonElement>? {
             for (step in steps.asReversed()) {
-                val idElement = step["anthropic"]?.jsonObject
-                    ?.get("container")?.jsonObject
-                    ?.get("id")
+                val containerObj = (step["anthropic"] as? JsonObject)?.get("container") as? JsonObject
+                val idElement = containerObj?.get("id")
                 val containerId = (idElement as? JsonPrimitive)?.contentOrNull
                 if (!containerId.isNullOrBlank()) {
                     return mapOf(
@@ -1084,7 +1083,7 @@ private class AnthropicStreamState(
                 }
             }
             "message_delta" -> {
-                val delta = obj["delta"]?.jsonObject ?: JsonObject(emptyMap())
+                val delta = (obj["delta"] as? JsonObject) ?: JsonObject(emptyMap())
                 rawStopReason = (delta["stop_reason"] as? JsonPrimitive)?.contentOrNull
                 finishReason = FinishReason.fromAnthropicStopReason(rawStopReason)
                 // Merge onto the message_start usage (delta usually has only output_tokens).
