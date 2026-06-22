@@ -96,18 +96,25 @@ public class AgentSession<TContext, TOutput>(
                 abortSignal = effectiveAbortSignal,
             ).first()
             if (active()) {
-                mutableState.value = AgentSessionState(
-                    messages = result.messages,
-                    status = if (result.pendingApprovals.isEmpty()) {
-                        AgentSessionStatus.Ready
-                    } else {
-                        AgentSessionStatus.AwaitingApproval
-                    },
-                    text = result.text,
-                    output = result.output,
-                    pendingApprovals = result.pendingApprovals,
-                    lastResult = result,
-                )
+                // An abort that surfaces as a returned (partial) result rather than a
+                // thrown CancellationException must still settle Cancelled — mirroring
+                // submitStreaming's StreamEvent.Abort handling — not commit it as Ready.
+                if (effectiveAbortSignal.isAborted) {
+                    mutableState.update { it.copy(status = AgentSessionStatus.Cancelled) }
+                } else {
+                    mutableState.value = AgentSessionState(
+                        messages = result.messages,
+                        status = if (result.pendingApprovals.isEmpty()) {
+                            AgentSessionStatus.Ready
+                        } else {
+                            AgentSessionStatus.AwaitingApproval
+                        },
+                        text = result.text,
+                        output = result.output,
+                        pendingApprovals = result.pendingApprovals,
+                        lastResult = result,
+                    )
+                }
             }
         }
     }
