@@ -21,7 +21,6 @@ import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.doubleOrNull
 import kotlinx.serialization.json.intOrNull
 import kotlinx.serialization.json.jsonObject
-import kotlinx.serialization.json.jsonPrimitive
 import kotlin.math.abs
 import kotlin.math.ceil
 
@@ -121,19 +120,19 @@ private class BlackForestLabsImageModel(
             headers = headers,
         )
         val submitBody = submit.value.jsonObject
-        val requestId = submitBody["id"]?.jsonPrimitive?.contentOrNull
+        val requestId = (submitBody["id"] as? JsonPrimitive)?.contentOrNull
             ?: throw InvalidResponseDataError(null, "Black Forest Labs submit response is missing id")
-        val pollingUrl = submitBody["polling_url"]?.jsonPrimitive?.contentOrNull
+        val pollingUrl = (submitBody["polling_url"] as? JsonPrimitive)?.contentOrNull
             ?: throw InvalidResponseDataError(null, "Black Forest Labs submit response is missing polling_url")
         val pollResult = bflPollForImage(
             client = client,
             pollingUrl = bflPollUrl(pollingUrl, requestId),
             headers = headers,
             abortSignal = params.abortSignal,
-            pollIntervalMillis = options["pollIntervalMillis"]?.jsonPrimitive?.contentOrNull?.toLongOrNull()
+            pollIntervalMillis = (options["pollIntervalMillis"] as? JsonPrimitive)?.contentOrNull?.toLongOrNull()
                 ?: settings.pollIntervalMillis
                 ?: DEFAULT_BFL_POLL_INTERVAL_MILLIS,
-            pollTimeoutMillis = options["pollTimeoutMillis"]?.jsonPrimitive?.contentOrNull?.toLongOrNull()
+            pollTimeoutMillis = (options["pollTimeoutMillis"] as? JsonPrimitive)?.contentOrNull?.toLongOrNull()
                 ?: settings.pollTimeoutMillis
                 ?: DEFAULT_BFL_POLL_TIMEOUT_MILLIS,
         )
@@ -167,8 +166,8 @@ private class BlackForestLabsImageModel(
             )
         }
         val (sizeWidth, sizeHeight) = bflParseSize(params.size)
-        val width = options["width"]?.jsonPrimitive?.intOrNull ?: sizeWidth
-        val height = options["height"]?.jsonPrimitive?.intOrNull ?: sizeHeight
+        val width = (options["width"] as? JsonPrimitive)?.intOrNull ?: sizeWidth
+        val height = (options["height"] as? JsonPrimitive)?.intOrNull ?: sizeHeight
         return BflArgs(
             body = buildJsonObject {
                 put("prompt", JsonPrimitive(params.prompt))
@@ -176,18 +175,21 @@ private class BlackForestLabsImageModel(
                 putIntIfNotNull("seed", params.seed)
                 putIntIfNotNull("width", width)
                 putIntIfNotNull("height", height)
-                putIntIfNotNull("steps", options["steps"]?.jsonPrimitive?.intOrNull)
-                putDoubleIfNotNull("guidance", options["guidance"]?.jsonPrimitive?.doubleOrNull)
-                putDoubleIfNotNull("image_prompt_strength", options["imagePromptStrength"]?.jsonPrimitive?.doubleOrNull)
-                putStringIfNotNull("image_prompt", options["imagePrompt"]?.jsonPrimitive?.contentOrNull)
+                putIntIfNotNull("steps", (options["steps"] as? JsonPrimitive)?.intOrNull)
+                putDoubleIfNotNull("guidance", (options["guidance"] as? JsonPrimitive)?.doubleOrNull)
+                putDoubleIfNotNull(
+                    "image_prompt_strength",
+                    (options["imagePromptStrength"] as? JsonPrimitive)?.doubleOrNull,
+                )
+                putStringIfNotNull("image_prompt", (options["imagePrompt"] as? JsonPrimitive)?.contentOrNull)
                 putBflInputImages(modelId, params.files)
                 putStringIfNotNull("mask", params.mask?.bflValue())
-                putStringIfNotNull("output_format", options["outputFormat"]?.jsonPrimitive?.contentOrNull)
-                putBooleanIfNotNull("prompt_upsampling", options["promptUpsampling"]?.jsonPrimitive?.booleanOrNull)
-                putBooleanIfNotNull("raw", options["raw"]?.jsonPrimitive?.booleanOrNull)
-                putIntIfNotNull("safety_tolerance", options["safetyTolerance"]?.jsonPrimitive?.intOrNull)
-                putStringIfNotNull("webhook_secret", options["webhookSecret"]?.jsonPrimitive?.contentOrNull)
-                putStringIfNotNull("webhook_url", options["webhookUrl"]?.jsonPrimitive?.contentOrNull)
+                putStringIfNotNull("output_format", (options["outputFormat"] as? JsonPrimitive)?.contentOrNull)
+                putBooleanIfNotNull("prompt_upsampling", (options["promptUpsampling"] as? JsonPrimitive)?.booleanOrNull)
+                putBooleanIfNotNull("raw", (options["raw"] as? JsonPrimitive)?.booleanOrNull)
+                putIntIfNotNull("safety_tolerance", (options["safetyTolerance"] as? JsonPrimitive)?.intOrNull)
+                putStringIfNotNull("webhook_secret", (options["webhookSecret"] as? JsonPrimitive)?.contentOrNull)
+                putStringIfNotNull("webhook_url", (options["webhookUrl"] as? JsonPrimitive)?.contentOrNull)
             },
             warnings = warnings,
         )
@@ -250,12 +252,17 @@ private class BlackForestLabsImageModel(
         repeat(maxPollAttempts) { attempt ->
             abortSignal.throwIfAborted()
             val poll = bflGetJson(client, pollingUrl, headers, abortSignal).value.jsonObject
-            val status = poll["status"]?.jsonPrimitive?.contentOrNull ?: poll["state"]?.jsonPrimitive?.contentOrNull
+            val status = (poll["status"] as? JsonPrimitive)?.contentOrNull
+                ?: (poll["state"] as? JsonPrimitive)?.contentOrNull
                 ?: throw InvalidResponseDataError(null, "Missing status in Black Forest Labs poll response")
             when (status) {
                 "Ready" -> {
                     val result = poll["result"]?.jsonObject ?: throw InvalidResponseDataError(null, "Black Forest Labs poll response is Ready but missing result.sample")
-                    val imageUrl = result["sample"]?.jsonPrimitive?.contentOrNull ?: throw InvalidResponseDataError(null, "Black Forest Labs poll response is Ready but missing result.sample")
+                    val imageUrl = (result["sample"] as? JsonPrimitive)?.contentOrNull
+                        ?: throw InvalidResponseDataError(
+                            null,
+                            "Black Forest Labs poll response is Ready but missing result.sample",
+                        )
                     return BflPollResult(imageUrl = imageUrl, result = result)
                 }
                 "Error", "Failed" -> throw NoImageGeneratedError("Black Forest Labs generation failed.")
@@ -348,10 +355,12 @@ private class BlackForestLabsImageModel(
     private fun bflErrorMessage(statusCode: Int, parsed: JsonElement?, raw: String): String {
         val obj = parsed as? JsonObject
         val detail = obj?.get("detail")
+        val detailContent = (detail as? JsonPrimitive)?.contentOrNull
+        val messageContent = (obj?.get("message") as? JsonPrimitive)?.contentOrNull
         val message = when {
-            detail?.jsonPrimitive?.contentOrNull != null -> detail.jsonPrimitive.content
+            detailContent != null -> detailContent
             detail != null && detail !is JsonNull -> detail.toString()
-            obj?.get("message")?.jsonPrimitive?.contentOrNull != null -> obj["message"]?.jsonPrimitive?.content.orEmpty()
+            messageContent != null -> messageContent
             else -> raw.ifBlank { "request failed" }
         }
         return "Black Forest Labs request failed ($statusCode): $message"
