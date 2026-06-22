@@ -36,7 +36,9 @@ public object EventStreamParser {
             emittedAny = true // a data: event was framed (even [DONE]) — this body IS an SSE stream
             val data = eventData.joinToString("\n")
             eventData = mutableListOf()
-            if (data != "[DONE]") emit(safeParseJson(data, schema, json))
+            // Blank joined data (a lone empty `data:`) is valid, payload-less SSE — a no-op, NOT a
+            // parse error. Only [DONE] is likewise skipped.
+            if (data.isNotBlank() && data != "[DONE]") emit(safeParseJson(data, schema, json))
         }
         fun recordNonSse(line: String) {
             if (sseFieldPrefixes.any { line.startsWith(it) }) return
@@ -80,7 +82,9 @@ public object EventStreamParser {
         json: Json = Json,
     ): List<ParseResult<T>> =
         serverSentEventData(text).mapNotNull { data ->
-            if (data == "[DONE]") null else safeParseJson(data, schema, json)
+            // Blank data (a lone empty `data:`) is payload-less SSE — skip it; parsing "" would
+            // wrongly yield a ParseResult.Failure. Mirrors the Flow overload above.
+            if (data.isBlank() || data == "[DONE]") null else safeParseJson(data, schema, json)
         }
 
     private fun serverSentEventData(text: String): List<String> {
