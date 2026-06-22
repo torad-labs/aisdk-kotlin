@@ -384,6 +384,54 @@ class OpenResponsesProviderTest {
     }
 
     @Test
+    fun `raw tool result colliding on a tag discriminator is forwarded verbatim`() = runTest {
+        val seenBodies = mutableListOf<JsonObject>()
+        val client = HttpClient(
+            MockEngine { request ->
+                seenBodies += Json.parseToJsonElement(requestBodyText(request)).jsonObject
+                respond(
+                    content = """{"id":"resp_4","created_at":1780000003,"model":"gpt-resp",""" +
+                        """"output":[{"type":"message","id":"msg_4","role":"assistant",""" +
+                        """"content":[{"type":"output_text","text":"done"}]}]}""",
+                    status = HttpStatusCode.OK,
+                    headers = headersOf(HttpHeaders.ContentType, "application/json"),
+                )
+            },
+        )
+        val provider = OpenResponses(client, OpenResponsesProviderSettings("https://api.test/v1/responses", "openresponses"))
+
+        // modelVisible defaults to the tool's RAW output. This success object collides on the
+        // "text" discriminator yet carries no `value` companion: the old path threw a hard
+        // model-call failure here. It must now be forwarded to the model verbatim (regression
+        // for OpenResponsesProvider:996).
+        val rawModelVisible = buildJsonObject {
+            put("type", JsonPrimitive("text"))
+            put("message", JsonPrimitive("hi"))
+        }
+        provider.languageModel("gpt-resp").generate(
+            LanguageModelCallParams(
+                messages = listOf(
+                    ModelMessage(
+                        MessageRole.Tool,
+                        listOf(
+                            ContentPart.ToolResult(
+                                toolCallId = "call_raw",
+                                toolName = "lookup",
+                                output = rawModelVisible,
+                                modelVisible = rawModelVisible,
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val output = seenBodies.single().getValue("input").jsonArray.single().jsonObject
+        assertEquals("function_call_output", output.getValue("type").jsonPrimitive.content)
+        assertEquals(rawModelVisible.toString(), output.getValue("output").jsonPrimitive.content)
+    }
+
+    @Test
     fun `user file content does not infer file id from decodable base64 prefix`() = runTest {
         val seenBodies = mutableListOf<JsonObject>()
         val client = HttpClient(

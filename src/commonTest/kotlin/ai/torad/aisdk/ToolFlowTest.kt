@@ -2,14 +2,9 @@ package ai.torad.aisdk
 
 import ai.torad.aisdk.providers.MockLanguageModelToolThenText
 import ai.torad.aisdk.providers.MockToolInput
-import kotlin.test.Test
-import kotlin.test.assertEquals
-import kotlin.test.assertFailsWith
-import kotlin.test.assertIs
-import kotlin.test.assertTrue
 import kotlinx.coroutines.CompletableDeferred
-import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.Serializable
@@ -17,6 +12,10 @@ import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.serializer
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertIs
+import kotlin.test.assertTrue
 
 /**
  * Validates the v6-aligned `Flow<TOutput>` tool executor surface (gap #2
@@ -84,27 +83,43 @@ class ToolFlowTest {
     }
 
     @Test
-    fun `tool content result rejects malformed isError flag`() {
-        assertFailsWith<WireDecodeException> {
-            ToolResultOutputs.toolResultOutputFromWire(
-                buildJsonObject {
-                    put("type", JsonPrimitive("content"))
-                    put("value", kotlinx.serialization.json.JsonArray(emptyList()))
-                    put("isError", JsonNull)
-                },
-            )
-        }
+    fun `content tag with a non-boolean isError flag reads as non-error`() {
+        // A content tag whose `value` is a valid array is honored; a malformed (null) isError
+        // is treated as absent (false) rather than throwing a hard model-call failure.
+        val decoded = ToolResultOutputs.toolResultOutputFromWire(
+            buildJsonObject {
+                put("type", JsonPrimitive("content"))
+                put("value", kotlinx.serialization.json.JsonArray(emptyList()))
+                put("isError", JsonNull)
+            },
+        )
+        assertEquals(ToolResultOutput.Content(value = emptyList(), isError = false), decoded)
     }
 
     @Test
-    fun `tagged tool result rejects missing required value`() {
-        assertFailsWith<WireDecodeException> {
-            ToolResultOutputs.toolResultOutputFromWire(
-                buildJsonObject {
-                    put("type", JsonPrimitive("text"))
-                },
-            )
+    fun `raw success colliding on a tag discriminator is preserved verbatim not thrown`() {
+        // modelVisible defaults to the tool's RAW output. A success object that merely collides
+        // on `type` (no matching companion field) must round-trip verbatim instead of throwing
+        // (hard model-call failure) or being mis-read as a denial (data loss). Regression for
+        // OpenResponsesProvider:996 / toolResultOutputFromWire.
+        val collidesOnText = buildJsonObject {
+            put("type", JsonPrimitive("text"))
+            put("message", JsonPrimitive("hi"))
         }
+        assertEquals(
+            ToolResultOutput.Json(collidesOnText),
+            ToolResultOutputs.toolResultOutputFromWire(collidesOnText),
+        )
+
+        val collidesOnDenial = buildJsonObject {
+            put("type", JsonPrimitive("execution-denied"))
+            put("result", JsonPrimitive("ok"))
+        }
+        // Preserved as Json (not silently re-tagged as a denial, which loses the payload).
+        assertEquals(
+            ToolResultOutput.Json(collidesOnDenial),
+            ToolResultOutputs.toolResultOutputFromWire(collidesOnDenial),
+        )
     }
 
     @Test
