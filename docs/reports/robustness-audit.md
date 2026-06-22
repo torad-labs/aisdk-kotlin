@@ -251,3 +251,13 @@ The Kotlin port omits INSIDE_STRING_UNICODE_ESCAPE entirely (the enum at lines 2
 **Defect:** lifecycle.begin{...} has already transitioned Idle -> Active and constructed a SupervisorJob+engineContext CoroutineScope before CreateMCPStdioProcess(config) runs. If that call throws, start() propagates the exception with no try/catch: the lifecycle is left Active (so a later start() throws "already started" and the transport can never be used), and the freshly built scope is never cancelled — a leaked scope. This is asymmetric with SseMCPTransport.start(), whose reader finally returns the lifecycle to Idle and cancels the scope on a pre-handshake failure. Through the documented client path it is masked because DefaultMCPClient.init() catches and calls close() (which does lifecycle.close()->scope.cancel()), but direct users of the public transport leak.
 
 **Fix:** Wrap the spawn + reader launch in try/catch; on failure call lifecycle.close()?.let { (scope, _) -> scope.cancel() } (or onReaderExited()) and rethrow, so the scope is cancelled and the lifecycle returns to a clean (closed/idle) state.
+
+---
+
+## Wave 5 — providers defensive-parsing (found rate-limit-free via ast-grep, the providers LLM re-audit having rate-limited out)
+
+Providers are STRUCTURALLY clean: 0 `!!`, 0 `as`-force-casts (the rewrite's tenets held). But the **M4 bug-class is widespread**: `X?.jsonPrimitive?.contentOrNull` on server-controlled fields **throws** `IllegalArgumentException` if the field is present but a non-primitive (object/array) — `.jsonPrimitive` throws even through `?.`. ~40 provider files. The established safe form already exists in-repo: `(X as? JsonPrimitive)?.contentOrNull` (see ConvertToLanguageModelPrompt.kt, McpProtocol.kt comment). All inspected sites already have `?: default` fallbacks, so degrading-to-null is intent-preserving (no silent-failure risk).
+
+FIX (Wave 5, builder, test-first): convert server-controlled `?.jsonPrimitive?.{contentOrNull,intOrNull,...}` → `(X as? JsonPrimitive)?....` across providers. Add a provider test feeding a non-primitive where a primitive is expected → falls back to default instead of crashing. Skip sites where the field is contractually the provider's OWN constructed object (not server data).
+
+STILL OPEN (rate-limited, deferred to cooldown): the SEMANTIC providers re-audit (LLM) for non-pattern bugs (streaming accumulation, error-mapping logic) that ast-grep can't see.
