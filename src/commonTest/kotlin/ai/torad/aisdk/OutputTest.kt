@@ -145,4 +145,36 @@ class OutputTest {
         assertEquals("A generated recipe", responseFormat.schemaDescription)
         assertEquals("object", responseFormat.schemaJson?.jsonObject?.get("type")?.jsonPrimitive?.content)
     }
+
+    @Test
+    fun `typed-object Output schemaJson describes the properties not a property-less stub`() {
+        // GIVEN
+        val output = OutputObj<Recipe>(serializer())
+
+        // WHEN
+        val schema = Json.parseToJsonElement(output.schemaJson).jsonObject
+
+        // THEN — strict providers reject a property-less object; the descriptor's fields must show.
+        assertEquals("object", schema["type"]?.jsonPrimitive?.content)
+        assertEquals("false", schema["additionalProperties"]?.jsonPrimitive?.content)
+        assertEquals(setOf("name", "ingredients"), schema["properties"]?.jsonObject?.keys)
+        val required = schema["required"]?.jsonArray?.map { it.jsonPrimitive.content }
+        assertEquals(listOf("name", "ingredients"), required)
+    }
+
+    @Test
+    fun `array Output schemaJson describes the element items not a property-less stub`() {
+        // GIVEN
+        val output = OutputArray<Recipe>(serializer())
+
+        // WHEN
+        val items = Json.parseToJsonElement(output.schemaJson).jsonObject["properties"]
+            ?.jsonObject?.get("elements")
+            ?.jsonObject?.get("items")
+            ?.jsonObject
+
+        // THEN — items must describe the element, not be a property-less object stub.
+        assertEquals("object", items?.get("type")?.jsonPrimitive?.content)
+        assertTrue(items?.get("properties")?.jsonObject?.containsKey("name") == true)
+    }
 }

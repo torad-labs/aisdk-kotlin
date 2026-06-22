@@ -17,6 +17,12 @@ internal object ToolJsonSchema {
         return descriptorToJsonSchema(descriptor).toString()
     }
 
+    /** Same generator over a bare descriptor — used by structured [Output] to describe its
+     *  schema (object properties / array items) instead of emitting a property-less stub. */
+    fun jsonSchemaFor(
+        descriptor: kotlinx.serialization.descriptors.SerialDescriptor,
+    ): kotlinx.serialization.json.JsonElement = descriptorToJsonSchema(descriptor)
+
     /**
      * Walk a kotlinx.serialization [kotlinx.serialization.descriptors.SerialDescriptor]
      * and produce a JSON Schema describing the shape. The output feeds two
