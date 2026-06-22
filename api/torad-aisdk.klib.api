@@ -1079,63 +1079,6 @@ sealed interface ai.torad.aisdk/ResponseFormat { // ai.torad.aisdk/ResponseForma
     }
 }
 
-sealed interface ai.torad.aisdk/ToolChoice { // ai.torad.aisdk/ToolChoice|null[0]
-    final class Specific : ai.torad.aisdk/ToolChoice { // ai.torad.aisdk/ToolChoice.Specific|null[0]
-        constructor <init>(kotlin/String) // ai.torad.aisdk/ToolChoice.Specific.<init>|<init>(kotlin.String){}[0]
-
-        final val toolName // ai.torad.aisdk/ToolChoice.Specific.toolName|{}toolName[0]
-            final fun <get-toolName>(): kotlin/String // ai.torad.aisdk/ToolChoice.Specific.toolName.<get-toolName>|<get-toolName>(){}[0]
-
-        final fun component1(): kotlin/String // ai.torad.aisdk/ToolChoice.Specific.component1|component1(){}[0]
-        final fun copy(kotlin/String = ...): ai.torad.aisdk/ToolChoice.Specific // ai.torad.aisdk/ToolChoice.Specific.copy|copy(kotlin.String){}[0]
-        final fun equals(kotlin/Any?): kotlin/Boolean // ai.torad.aisdk/ToolChoice.Specific.equals|equals(kotlin.Any?){}[0]
-        final fun hashCode(): kotlin/Int // ai.torad.aisdk/ToolChoice.Specific.hashCode|hashCode(){}[0]
-        final fun toString(): kotlin/String // ai.torad.aisdk/ToolChoice.Specific.toString|toString(){}[0]
-
-        final object $serializer : kotlinx.serialization.internal/GeneratedSerializer<ai.torad.aisdk/ToolChoice.Specific> { // ai.torad.aisdk/ToolChoice.Specific.$serializer|null[0]
-            final val descriptor // ai.torad.aisdk/ToolChoice.Specific.$serializer.descriptor|{}descriptor[0]
-                final fun <get-descriptor>(): kotlinx.serialization.descriptors/SerialDescriptor // ai.torad.aisdk/ToolChoice.Specific.$serializer.descriptor.<get-descriptor>|<get-descriptor>(){}[0]
-
-            final fun childSerializers(): kotlin/Array<kotlinx.serialization/KSerializer<*>> // ai.torad.aisdk/ToolChoice.Specific.$serializer.childSerializers|childSerializers(){}[0]
-            final fun deserialize(kotlinx.serialization.encoding/Decoder): ai.torad.aisdk/ToolChoice.Specific // ai.torad.aisdk/ToolChoice.Specific.$serializer.deserialize|deserialize(kotlinx.serialization.encoding.Decoder){}[0]
-            final fun serialize(kotlinx.serialization.encoding/Encoder, ai.torad.aisdk/ToolChoice.Specific) // ai.torad.aisdk/ToolChoice.Specific.$serializer.serialize|serialize(kotlinx.serialization.encoding.Encoder;ai.torad.aisdk.ToolChoice.Specific){}[0]
-        }
-
-        final object Companion { // ai.torad.aisdk/ToolChoice.Specific.Companion|null[0]
-            final fun serializer(): kotlinx.serialization/KSerializer<ai.torad.aisdk/ToolChoice.Specific> // ai.torad.aisdk/ToolChoice.Specific.Companion.serializer|serializer(){}[0]
-        }
-    }
-
-    final object Auto : ai.torad.aisdk/ToolChoice, kotlinx.serialization.internal/SerializerFactory { // ai.torad.aisdk/ToolChoice.Auto|null[0]
-        final fun equals(kotlin/Any?): kotlin/Boolean // ai.torad.aisdk/ToolChoice.Auto.equals|equals(kotlin.Any?){}[0]
-        final fun hashCode(): kotlin/Int // ai.torad.aisdk/ToolChoice.Auto.hashCode|hashCode(){}[0]
-        final fun serializer(): kotlinx.serialization/KSerializer<ai.torad.aisdk/ToolChoice.Auto> // ai.torad.aisdk/ToolChoice.Auto.serializer|serializer(){}[0]
-        final fun serializer(kotlin/Array<out kotlinx.serialization/KSerializer<*>>...): kotlinx.serialization/KSerializer<*> // ai.torad.aisdk/ToolChoice.Auto.serializer|serializer(kotlin.Array<out|kotlinx.serialization.KSerializer<*>>...){}[0]
-        final fun toString(): kotlin/String // ai.torad.aisdk/ToolChoice.Auto.toString|toString(){}[0]
-    }
-
-    final object Companion : kotlinx.serialization.internal/SerializerFactory { // ai.torad.aisdk/ToolChoice.Companion|null[0]
-        final fun serializer(): kotlinx.serialization/KSerializer<ai.torad.aisdk/ToolChoice> // ai.torad.aisdk/ToolChoice.Companion.serializer|serializer(){}[0]
-        final fun serializer(kotlin/Array<out kotlinx.serialization/KSerializer<*>>...): kotlinx.serialization/KSerializer<*> // ai.torad.aisdk/ToolChoice.Companion.serializer|serializer(kotlin.Array<out|kotlinx.serialization.KSerializer<*>>...){}[0]
-    }
-
-    final object None : ai.torad.aisdk/ToolChoice, kotlinx.serialization.internal/SerializerFactory { // ai.torad.aisdk/ToolChoice.None|null[0]
-        final fun equals(kotlin/Any?): kotlin/Boolean // ai.torad.aisdk/ToolChoice.None.equals|equals(kotlin.Any?){}[0]
-        final fun hashCode(): kotlin/Int // ai.torad.aisdk/ToolChoice.None.hashCode|hashCode(){}[0]
-        final fun serializer(): kotlinx.serialization/KSerializer<ai.torad.aisdk/ToolChoice.None> // ai.torad.aisdk/ToolChoice.None.serializer|serializer(){}[0]
-        final fun serializer(kotlin/Array<out kotlinx.serialization/KSerializer<*>>...): kotlinx.serialization/KSerializer<*> // ai.torad.aisdk/ToolChoice.None.serializer|serializer(kotlin.Array<out|kotlinx.serialization.KSerializer<*>>...){}[0]
-        final fun toString(): kotlin/String // ai.torad.aisdk/ToolChoice.None.toString|toString(){}[0]
-    }
-
-    final object Required : ai.torad.aisdk/ToolChoice, kotlinx.serialization.internal/SerializerFactory { // ai.torad.aisdk/ToolChoice.Required|null[0]
-        final fun equals(kotlin/Any?): kotlin/Boolean // ai.torad.aisdk/ToolChoice.Required.equals|equals(kotlin.Any?){}[0]
-        final fun hashCode(): kotlin/Int // ai.torad.aisdk/ToolChoice.Required.hashCode|hashCode(){}[0]
-        final fun serializer(): kotlinx.serialization/KSerializer<ai.torad.aisdk/ToolChoice.Required> // ai.torad.aisdk/ToolChoice.Required.serializer|serializer(){}[0]
-        final fun serializer(kotlin/Array<out kotlinx.serialization/KSerializer<*>>...): kotlinx.serialization/KSerializer<*> // ai.torad.aisdk/ToolChoice.Required.serializer|serializer(kotlin.Array<out|kotlinx.serialization.KSerializer<*>>...){}[0]
-        final fun toString(): kotlin/String // ai.torad.aisdk/ToolChoice.Required.toString|toString(){}[0]
-    }
-}
-
 abstract class <#A: kotlin/Any?, #B: kotlin/Any?, #C: kotlin/Any?> ai.torad.aisdk/StreamingTool : ai.torad.aisdk/Tool<#A, #B, #C> { // ai.torad.aisdk/StreamingTool|null[0]
     constructor <init>() // ai.torad.aisdk/StreamingTool.<init>|<init>(){}[0]
 
@@ -13681,6 +13624,63 @@ sealed class ai.torad.aisdk/TelemetrySpanStatus { // ai.torad.aisdk/TelemetrySpa
         final fun equals(kotlin/Any?): kotlin/Boolean // ai.torad.aisdk/TelemetrySpanStatus.Ok.equals|equals(kotlin.Any?){}[0]
         final fun hashCode(): kotlin/Int // ai.torad.aisdk/TelemetrySpanStatus.Ok.hashCode|hashCode(){}[0]
         final fun toString(): kotlin/String // ai.torad.aisdk/TelemetrySpanStatus.Ok.toString|toString(){}[0]
+    }
+}
+
+sealed class ai.torad.aisdk/ToolChoice { // ai.torad.aisdk/ToolChoice|null[0]
+    final class Specific : ai.torad.aisdk/ToolChoice { // ai.torad.aisdk/ToolChoice.Specific|null[0]
+        constructor <init>(kotlin/String) // ai.torad.aisdk/ToolChoice.Specific.<init>|<init>(kotlin.String){}[0]
+
+        final val toolName // ai.torad.aisdk/ToolChoice.Specific.toolName|{}toolName[0]
+            final fun <get-toolName>(): kotlin/String // ai.torad.aisdk/ToolChoice.Specific.toolName.<get-toolName>|<get-toolName>(){}[0]
+
+        final fun component1(): kotlin/String // ai.torad.aisdk/ToolChoice.Specific.component1|component1(){}[0]
+        final fun copy(kotlin/String = ...): ai.torad.aisdk/ToolChoice.Specific // ai.torad.aisdk/ToolChoice.Specific.copy|copy(kotlin.String){}[0]
+        final fun equals(kotlin/Any?): kotlin/Boolean // ai.torad.aisdk/ToolChoice.Specific.equals|equals(kotlin.Any?){}[0]
+        final fun hashCode(): kotlin/Int // ai.torad.aisdk/ToolChoice.Specific.hashCode|hashCode(){}[0]
+        final fun toString(): kotlin/String // ai.torad.aisdk/ToolChoice.Specific.toString|toString(){}[0]
+
+        final object $serializer : kotlinx.serialization.internal/GeneratedSerializer<ai.torad.aisdk/ToolChoice.Specific> { // ai.torad.aisdk/ToolChoice.Specific.$serializer|null[0]
+            final val descriptor // ai.torad.aisdk/ToolChoice.Specific.$serializer.descriptor|{}descriptor[0]
+                final fun <get-descriptor>(): kotlinx.serialization.descriptors/SerialDescriptor // ai.torad.aisdk/ToolChoice.Specific.$serializer.descriptor.<get-descriptor>|<get-descriptor>(){}[0]
+
+            final fun childSerializers(): kotlin/Array<kotlinx.serialization/KSerializer<*>> // ai.torad.aisdk/ToolChoice.Specific.$serializer.childSerializers|childSerializers(){}[0]
+            final fun deserialize(kotlinx.serialization.encoding/Decoder): ai.torad.aisdk/ToolChoice.Specific // ai.torad.aisdk/ToolChoice.Specific.$serializer.deserialize|deserialize(kotlinx.serialization.encoding.Decoder){}[0]
+            final fun serialize(kotlinx.serialization.encoding/Encoder, ai.torad.aisdk/ToolChoice.Specific) // ai.torad.aisdk/ToolChoice.Specific.$serializer.serialize|serialize(kotlinx.serialization.encoding.Encoder;ai.torad.aisdk.ToolChoice.Specific){}[0]
+        }
+
+        final object Companion { // ai.torad.aisdk/ToolChoice.Specific.Companion|null[0]
+            final fun serializer(): kotlinx.serialization/KSerializer<ai.torad.aisdk/ToolChoice.Specific> // ai.torad.aisdk/ToolChoice.Specific.Companion.serializer|serializer(){}[0]
+        }
+    }
+
+    final object Auto : ai.torad.aisdk/ToolChoice, kotlinx.serialization.internal/SerializerFactory { // ai.torad.aisdk/ToolChoice.Auto|null[0]
+        final fun equals(kotlin/Any?): kotlin/Boolean // ai.torad.aisdk/ToolChoice.Auto.equals|equals(kotlin.Any?){}[0]
+        final fun hashCode(): kotlin/Int // ai.torad.aisdk/ToolChoice.Auto.hashCode|hashCode(){}[0]
+        final fun serializer(): kotlinx.serialization/KSerializer<ai.torad.aisdk/ToolChoice.Auto> // ai.torad.aisdk/ToolChoice.Auto.serializer|serializer(){}[0]
+        final fun serializer(kotlin/Array<out kotlinx.serialization/KSerializer<*>>...): kotlinx.serialization/KSerializer<*> // ai.torad.aisdk/ToolChoice.Auto.serializer|serializer(kotlin.Array<out|kotlinx.serialization.KSerializer<*>>...){}[0]
+        final fun toString(): kotlin/String // ai.torad.aisdk/ToolChoice.Auto.toString|toString(){}[0]
+    }
+
+    final object Companion : kotlinx.serialization.internal/SerializerFactory { // ai.torad.aisdk/ToolChoice.Companion|null[0]
+        final fun serializer(): kotlinx.serialization/KSerializer<ai.torad.aisdk/ToolChoice> // ai.torad.aisdk/ToolChoice.Companion.serializer|serializer(){}[0]
+        final fun serializer(kotlin/Array<out kotlinx.serialization/KSerializer<*>>...): kotlinx.serialization/KSerializer<*> // ai.torad.aisdk/ToolChoice.Companion.serializer|serializer(kotlin.Array<out|kotlinx.serialization.KSerializer<*>>...){}[0]
+    }
+
+    final object None : ai.torad.aisdk/ToolChoice, kotlinx.serialization.internal/SerializerFactory { // ai.torad.aisdk/ToolChoice.None|null[0]
+        final fun equals(kotlin/Any?): kotlin/Boolean // ai.torad.aisdk/ToolChoice.None.equals|equals(kotlin.Any?){}[0]
+        final fun hashCode(): kotlin/Int // ai.torad.aisdk/ToolChoice.None.hashCode|hashCode(){}[0]
+        final fun serializer(): kotlinx.serialization/KSerializer<ai.torad.aisdk/ToolChoice.None> // ai.torad.aisdk/ToolChoice.None.serializer|serializer(){}[0]
+        final fun serializer(kotlin/Array<out kotlinx.serialization/KSerializer<*>>...): kotlinx.serialization/KSerializer<*> // ai.torad.aisdk/ToolChoice.None.serializer|serializer(kotlin.Array<out|kotlinx.serialization.KSerializer<*>>...){}[0]
+        final fun toString(): kotlin/String // ai.torad.aisdk/ToolChoice.None.toString|toString(){}[0]
+    }
+
+    final object Required : ai.torad.aisdk/ToolChoice, kotlinx.serialization.internal/SerializerFactory { // ai.torad.aisdk/ToolChoice.Required|null[0]
+        final fun equals(kotlin/Any?): kotlin/Boolean // ai.torad.aisdk/ToolChoice.Required.equals|equals(kotlin.Any?){}[0]
+        final fun hashCode(): kotlin/Int // ai.torad.aisdk/ToolChoice.Required.hashCode|hashCode(){}[0]
+        final fun serializer(): kotlinx.serialization/KSerializer<ai.torad.aisdk/ToolChoice.Required> // ai.torad.aisdk/ToolChoice.Required.serializer|serializer(){}[0]
+        final fun serializer(kotlin/Array<out kotlinx.serialization/KSerializer<*>>...): kotlinx.serialization/KSerializer<*> // ai.torad.aisdk/ToolChoice.Required.serializer|serializer(kotlin.Array<out|kotlinx.serialization.KSerializer<*>>...){}[0]
+        final fun toString(): kotlin/String // ai.torad.aisdk/ToolChoice.Required.toString|toString(){}[0]
     }
 }
 
