@@ -24,7 +24,6 @@ import kotlinx.serialization.json.floatOrNull
 import kotlinx.serialization.json.intOrNull
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
-import kotlinx.serialization.json.jsonPrimitive
 
 public const val FAL_VERSION: String = "2.0.34"
 
@@ -220,15 +219,15 @@ private class FalImageModel(
         if (targetImages.isEmpty()) throw NoImageGeneratedError("No fal image URL in response")
 
         val downloaded = targetImages.map { image ->
-            val url = image["url"]?.jsonPrimitive?.contentOrNull
+            val url = (image["url"] as? JsonPrimitive)?.contentOrNull
                 ?: throw NoImageGeneratedError("No fal image URL in response")
             val bytes = settings.falGetBinary(client, url, emptyMap(), params.abortSignal)
             GeneratedFile(
-                mediaType = image["content_type"]?.jsonPrimitive?.contentOrNull
+                mediaType = (image["content_type"] as? JsonPrimitive)?.contentOrNull
                     ?: bytes.headerValue(HttpHeaders.ContentType)
                     ?: "image/png",
                 base64 = Base64Codec.encode(bytes.bytes),
-                filename = image["file_name"]?.jsonPrimitive?.contentOrNull,
+                filename = (image["file_name"] as? JsonPrimitive)?.contentOrNull,
                 providerMetadata = ProviderMetadata.Raw(JsonObject(mapOf("fal" to falImageMetadata(image)))),
                 url = url,
             )
@@ -246,7 +245,7 @@ private class FalImageModel(
         val warnings = mutableListOf<CallWarning>()
         val options = settings.falOptions(params.providerOptions)
         val normalizedOptions = falImageOptions(options, warnings)
-        val useMultipleImages = options["useMultipleImages"]?.jsonPrimitive?.booleanOrNull == true
+        val useMultipleImages = (options["useMultipleImages"] as? JsonPrimitive)?.booleanOrNull == true
 
         return FalImageRequest(
             body = buildJsonObject {
@@ -399,7 +398,7 @@ private class FalSpeechModel(
             body = prepared.body,
             headers = settings.falHeaders(params.headers),
         )
-        val audioUrl = response.value.jsonObject["audio"]?.jsonObject?.get("url")?.jsonPrimitive?.contentOrNull
+        val audioUrl = (response.value.jsonObject["audio"]?.jsonObject?.get("url") as? JsonPrimitive)?.contentOrNull
             ?: throw NoSpeechGeneratedError("fal speech response is missing audio.url")
         val audio = settings.falGetBinary(client, audioUrl, emptyMap(), params.abortSignal)
         return SpeechModelResult(
@@ -455,7 +454,7 @@ private class FalTranscriptionModel(
             body = body,
             headers = settings.falHeaders(params.headers),
         )
-        val requestId = queue.value.jsonObject["request_id"]?.jsonPrimitive?.contentOrNull
+        val requestId = (queue.value.jsonObject["request_id"] as? JsonPrimitive)?.contentOrNull
             ?: throw InvalidResponseDataError(queue.value, "fal transcription queue response is missing request_id")
         val result = settings.falPollJson(
             client = client,
@@ -469,14 +468,14 @@ private class FalTranscriptionModel(
         val value = result.value.jsonObject
         val chunks = value["chunks"] as? JsonArray ?: JsonArray(emptyList())
         return TranscriptionModelResult(
-            text = value["text"]?.jsonPrimitive?.contentOrNull,
+            text = (value["text"] as? JsonPrimitive)?.contentOrNull,
             segments = chunks.map { chunk ->
                 val obj = chunk.jsonObject
                 val timestamp = obj["timestamp"] as? JsonArray
                 TranscriptSegment(
-                    text = obj["text"]?.jsonPrimitive?.contentOrNull.orEmpty(),
-                    startSeconds = timestamp?.getOrNull(0)?.jsonPrimitive?.floatOrNull,
-                    endSeconds = timestamp?.getOrNull(1)?.jsonPrimitive?.floatOrNull,
+                    text = (obj["text"] as? JsonPrimitive)?.contentOrNull.orEmpty(),
+                    startSeconds = (timestamp?.getOrNull(0) as? JsonPrimitive)?.floatOrNull,
+                    endSeconds = (timestamp?.getOrNull(1) as? JsonPrimitive)?.floatOrNull,
                 )
             },
             response = LanguageModelResponseMetadata(modelId = modelId, headers = result.headers, body = result.value),
@@ -518,9 +517,9 @@ private class FalVideoModel(
             body = body,
             headers = settings.falHeaders(params.headers),
         )
-        val responseUrl = queue.value.jsonObject["response_url"]?.jsonPrimitive?.contentOrNull
+        val responseUrl = (queue.value.jsonObject["response_url"] as? JsonPrimitive)?.contentOrNull
             ?: throw InvalidResponseDataError(queue.value, "No response URL returned from queue endpoint")
-        val pollIntervalMillis = options["pollIntervalMs"]?.jsonPrimitive?.contentOrNull?.toLongOrNull()
+        val pollIntervalMillis = (options["pollIntervalMs"] as? JsonPrimitive)?.contentOrNull?.toLongOrNull()
             ?: settings.videoPollIntervalMillis
         val result = settings.falPollJson(
             client = client,
@@ -528,15 +527,16 @@ private class FalVideoModel(
             headers = settings.falHeaders(params.headers),
             abortSignal = params.abortSignal,
             pollIntervalMillis = pollIntervalMillis,
-            maxPollAttempts = options["pollTimeoutMs"]?.jsonPrimitive?.contentOrNull?.toLongOrNull()
+            maxPollAttempts = (options["pollTimeoutMs"] as? JsonPrimitive)?.contentOrNull?.toLongOrNull()
                 ?.let { timeout -> (timeout / pollIntervalMillis.coerceAtLeast(1)).toInt().coerceAtLeast(1) }
                 ?: settings.videoMaxPollAttempts,
             timeoutMessage = "Video generation request timed out",
         )
         val value = result.value.jsonObject
         val video = value["video"]?.jsonObject ?: throw NoVideoGeneratedError("No video URL in response")
-        val videoUrl = video["url"]?.jsonPrimitive?.contentOrNull ?: throw NoVideoGeneratedError("No video URL in response")
-        val mediaType = video["content_type"]?.jsonPrimitive?.contentOrNull ?: "video/mp4"
+        val videoUrl = (video["url"] as? JsonPrimitive)?.contentOrNull
+            ?: throw NoVideoGeneratedError("No video URL in response")
+        val mediaType = (video["content_type"] as? JsonPrimitive)?.contentOrNull ?: "video/mp4"
         return VideoModelResult(
             videos = listOf(
                 GeneratedFile(
@@ -634,7 +634,7 @@ private val falVideoNonPassthroughKeys = setOf(
  * non-2xx falls through to the default rich [APICallError].
  */
 private val falInProgressSignal: ResponseErrorFactory = { _, parsed, _, _ ->
-    val detail = (parsed as? JsonObject)?.get("detail")?.jsonPrimitive?.contentOrNull
+    val detail = ((parsed as? JsonObject)?.get("detail") as? JsonPrimitive)?.contentOrNull
     if (detail == "Request is still in progress") InvalidResponseDataError(null, detail.orEmpty()) else null
 }
 
@@ -645,12 +645,13 @@ private val falErrorMessage: ErrorMessageExtractor = { _, parsed, raw ->
         obj == null -> raw
         validation != null -> validation.joinToString("\n") { item ->
             val detail = item.jsonObject
-            val loc = (detail["loc"] as? JsonArray)?.joinToString(".") { it.jsonPrimitive.contentOrNull.orEmpty() }
-            val msg = detail["msg"]?.jsonPrimitive?.contentOrNull.orEmpty()
+            val loc = (detail["loc"] as? JsonArray)
+                ?.joinToString(".") { (it as? JsonPrimitive)?.contentOrNull.orEmpty() }
+            val msg = (detail["msg"] as? JsonPrimitive)?.contentOrNull.orEmpty()
             listOfNotNull(loc?.takeIf { it.isNotBlank() }, msg.takeIf { it.isNotBlank() }).joinToString(": ")
         }
-        else -> (obj["error"] as? JsonObject)?.get("message")?.jsonPrimitive?.contentOrNull
-            ?: obj["message"]?.jsonPrimitive?.contentOrNull
+        else -> ((obj["error"] as? JsonObject)?.get("message") as? JsonPrimitive)?.contentOrNull
+            ?: (obj["message"] as? JsonPrimitive)?.contentOrNull
             ?: raw
     }
 }
