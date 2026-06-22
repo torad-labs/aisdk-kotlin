@@ -5,7 +5,6 @@ import ai.torad.aisdk.ProviderMetadata
 import io.ktor.client.HttpClient
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpMethod
-import kotlin.time.Clock
 import kotlinx.coroutines.delay
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
@@ -18,7 +17,7 @@ import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
-import kotlinx.serialization.json.jsonPrimitive
+import kotlin.time.Clock
 
 public const val KLINGAI_VERSION: String = "3.0.18"
 
@@ -142,11 +141,11 @@ private class KlingAIVideoModel(
             headers = settings.klingAIHeaders(params.headers, clock),
             body = body,
         )
-        val taskId = create.value.jsonObject["data"]?.jsonObject?.get("task_id")?.jsonPrimitive?.contentOrNull
+        val taskId = (create.value.jsonObject["data"]?.jsonObject?.get("task_id") as? JsonPrimitive)?.contentOrNull
             ?: throw InvalidResponseDataError(create.value, "No task_id returned from KlingAI API. Response: ${create.value}")
 
-        val pollIntervalMs = options["pollIntervalMs"]?.jsonPrimitive?.contentOrNull?.toLongOrNull() ?: 5_000L
-        val pollTimeoutMs = options["pollTimeoutMs"]?.jsonPrimitive?.contentOrNull?.toLongOrNull() ?: 600_000L
+        val pollIntervalMs = (options["pollIntervalMs"] as? JsonPrimitive)?.contentOrNull?.toLongOrNull() ?: 5_000L
+        val pollTimeoutMs = (options["pollTimeoutMs"] as? JsonPrimitive)?.contentOrNull?.toLongOrNull() ?: 600_000L
         val started = clock.now().toEpochMilliseconds()
         var headers = create.headers
         while (true) {
@@ -163,9 +162,12 @@ private class KlingAIVideoModel(
             )
             headers = status.headers
             val data = status.value.jsonObject["data"]?.jsonObject ?: JsonObject(emptyMap())
-            when (val taskStatus = data["task_status"]?.jsonPrimitive?.contentOrNull) {
+            when (val taskStatus = (data["task_status"] as? JsonPrimitive)?.contentOrNull) {
                 "succeed" -> return klingAISuccessResult(taskId, data, headers, warnings)
-                "failed" -> throw NoVideoGeneratedError("Video generation failed: ${data["task_status_msg"]?.jsonPrimitive?.contentOrNull ?: "Unknown error"}")
+                "failed" -> {
+                    val statusMsg = (data["task_status_msg"] as? JsonPrimitive)?.contentOrNull ?: "Unknown error"
+                    throw NoVideoGeneratedError("Video generation failed: $statusMsg")
+                }
                 "submitted", "processing", null -> Unit
                 else -> throw InvalidResponseDataError(data, "Unknown KlingAI task status: $taskStatus")
             }
@@ -181,7 +183,7 @@ private class KlingAIVideoModel(
         val videos = data["task_result"]?.jsonObject?.get("videos")?.jsonArray.orEmpty()
         val generated = videos.mapNotNull { item ->
             val obj = item.jsonObject
-            val url = obj["url"]?.jsonPrimitive?.contentOrNull ?: return@mapNotNull null
+            val url = (obj["url"] as? JsonPrimitive)?.contentOrNull ?: return@mapNotNull null
             GeneratedFile(
                 mediaType = "video/mp4",
                 base64 = "",
@@ -243,7 +245,9 @@ private class KlingAIVideoModel(
         options["shotType"]?.let { put("shot_type", it) }
         options["multiPrompt"]?.let { put("multi_prompt", it) }
         options["voiceList"]?.let { put("voice_list", it) }
-        options["watermarkEnabled"]?.jsonPrimitive?.booleanOrNull?.let { put("watermark_info", buildJsonObject { put("enabled", JsonPrimitive(it)) }) }
+        (options["watermarkEnabled"] as? JsonPrimitive)?.booleanOrNull?.let {
+            put("watermark_info", buildJsonObject { put("enabled", JsonPrimitive(it)) })
+        }
         if (params.image != null) {
             warnings += CallWarning("unsupported", "KlingAI text-to-video does not support image input. Use an image-to-video model instead.")
         }
@@ -272,7 +276,9 @@ private class KlingAIVideoModel(
         options["multiPrompt"]?.let { put("multi_prompt", it) }
         options["elementList"]?.let { put("element_list", it) }
         options["voiceList"]?.let { put("voice_list", it) }
-        options["watermarkEnabled"]?.jsonPrimitive?.booleanOrNull?.let { put("watermark_info", buildJsonObject { put("enabled", JsonPrimitive(it)) }) }
+        (options["watermarkEnabled"] as? JsonPrimitive)?.booleanOrNull?.let {
+            put("watermark_info", buildJsonObject { put("enabled", JsonPrimitive(it)) })
+        }
         params.durationSeconds?.let { put("duration", JsonPrimitive(klingAIDuration(it))) }
         if (params.aspectRatio != null) {
             warnings += CallWarning("unsupported", "KlingAI image-to-video does not support aspectRatio. The output dimensions are determined by the input image.")
@@ -286,9 +292,9 @@ private class KlingAIVideoModel(
         options: JsonObject,
         warnings: MutableList<CallWarning>,
     ): JsonObject {
-        val videoUrl = options["videoUrl"]?.jsonPrimitive?.contentOrNull
-        val characterOrientation = options["characterOrientation"]?.jsonPrimitive?.contentOrNull
-        val mode = options["mode"]?.jsonPrimitive?.contentOrNull
+        val videoUrl = (options["videoUrl"] as? JsonPrimitive)?.contentOrNull
+        val characterOrientation = (options["characterOrientation"] as? JsonPrimitive)?.contentOrNull
+        val mode = (options["mode"] as? JsonPrimitive)?.contentOrNull
         if (videoUrl.isNullOrBlank() || characterOrientation.isNullOrBlank() || mode.isNullOrBlank()) {
             throw InvalidArgumentError("providerOptions", "KlingAI Motion Control requires providerOptions.klingai with videoUrl, characterOrientation, and mode.")
         }
@@ -300,7 +306,9 @@ private class KlingAIVideoModel(
             params.prompt.takeIf { it.isNotBlank() }?.let { put("prompt", JsonPrimitive(it)) }
             params.image?.let { put("image_url", JsonPrimitive(it.url ?: it.base64)) }
             options["keepOriginalSound"]?.let { put("keep_original_sound", it) }
-            options["watermarkEnabled"]?.jsonPrimitive?.booleanOrNull?.let { put("watermark_info", buildJsonObject { put("enabled", JsonPrimitive(it)) }) }
+            (options["watermarkEnabled"] as? JsonPrimitive)?.booleanOrNull?.let {
+                put("watermark_info", buildJsonObject { put("enabled", JsonPrimitive(it)) })
+            }
             options["elementList"]?.let { put("element_list", it) }
             if (params.aspectRatio != null) {
                 warnings += CallWarning("unsupported", "KlingAI Motion Control does not support aspectRatio. The output dimensions are determined by the reference image/video.")
@@ -343,10 +351,10 @@ private class KlingAIVideoModel(
         )
 
     private fun klingAIVideoMetadata(value: JsonObject): JsonObject = buildJsonObject {
-        value["id"]?.jsonPrimitive?.contentOrNull?.let { put("id", JsonPrimitive(it)) }
-        value["url"]?.jsonPrimitive?.contentOrNull?.let { put("url", JsonPrimitive(it)) }
-        value["watermark_url"]?.jsonPrimitive?.contentOrNull?.let { put("watermarkUrl", JsonPrimitive(it)) }
-        value["duration"]?.jsonPrimitive?.contentOrNull?.let { put("duration", JsonPrimitive(it)) }
+        (value["id"] as? JsonPrimitive)?.contentOrNull?.let { put("id", JsonPrimitive(it)) }
+        (value["url"] as? JsonPrimitive)?.contentOrNull?.let { put("url", JsonPrimitive(it)) }
+        (value["watermark_url"] as? JsonPrimitive)?.contentOrNull?.let { put("watermarkUrl", JsonPrimitive(it)) }
+        (value["duration"] as? JsonPrimitive)?.contentOrNull?.let { put("duration", JsonPrimitive(it)) }
     }
 
     private fun klingAIDuration(value: Float): String {
@@ -355,7 +363,7 @@ private class KlingAIVideoModel(
     }
 
     private fun klingAIErrorMessage(statusCode: Int, parsed: JsonElement?, raw: String): String {
-        val detail = (parsed as? JsonObject)?.get("message")?.jsonPrimitive?.contentOrNull
+        val detail = ((parsed as? JsonObject)?.get("message") as? JsonPrimitive)?.contentOrNull
             ?: raw.ifBlank { "request failed" }
         return "KlingAI request failed ($statusCode): $detail"
     }
