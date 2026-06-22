@@ -407,9 +407,9 @@ private class CohereChatLanguageModel(
         responseBody: JsonElement,
         warnings: List<CallWarning>,
     ): LanguageModelResult {
-        val message = value["message"]?.jsonObject ?: JsonObject(emptyMap())
+        val message = (value["message"] as? JsonObject) ?: JsonObject(emptyMap())
         val content = mutableListOf<ContentPart>()
-        val text = message["content"]?.jsonArray.orEmpty().joinToString("") { part ->
+        val text = (message["content"] as? JsonArray).orEmpty().joinToString("") { part ->
             val obj = part.jsonObject
             when ((obj["type"] as? JsonPrimitive)?.contentOrNull) {
                 "text" -> (obj["text"] as? JsonPrimitive)?.contentOrNull.orEmpty()
@@ -417,7 +417,7 @@ private class CohereChatLanguageModel(
             }
         }
         if (text.isNotEmpty()) content += ContentPart.Text(text)
-        message["content"]?.jsonArray.orEmpty().forEach { part ->
+        (message["content"] as? JsonArray).orEmpty().forEach { part ->
             val obj = part.jsonObject
             if ((obj["type"] as? JsonPrimitive)?.contentOrNull == "thinking") {
                 (obj["thinking"] as? JsonPrimitive)?.contentOrNull?.takeIf { it.isNotEmpty() }?.let {
@@ -428,9 +428,9 @@ private class CohereChatLanguageModel(
         (message["tool_plan"] as? JsonPrimitive)?.contentOrNull?.takeIf { it.isNotBlank() }?.let {
             content += ContentPart.Reasoning(it)
         }
-        val toolCalls = message["tool_calls"]?.jsonArray.orEmpty().map { call ->
+        val toolCalls = (message["tool_calls"] as? JsonArray).orEmpty().map { call ->
             val obj = call.jsonObject
-            val function = obj["function"]?.jsonObject ?: JsonObject(emptyMap())
+            val function = (obj["function"] as? JsonObject) ?: JsonObject(emptyMap())
             ContentPart.ToolCall(
                 toolCallId = (obj["id"] as? JsonPrimitive)?.contentOrNull ?: IdGenerator.generate("call"),
                 toolName = (function["name"] as? JsonPrimitive)?.contentOrNull.orEmpty(),
@@ -438,13 +438,13 @@ private class CohereChatLanguageModel(
             )
         }
         content += toolCalls
-        message["citations"]?.jsonArray.orEmpty().forEach { citation ->
+        (message["citations"] as? JsonArray).orEmpty().forEach { citation ->
             val obj = citation.jsonObject
+            val sourceObj = (obj["sources"] as? JsonArray)?.firstOrNull() as? JsonObject
+            val documentObj = sourceObj?.get("document") as? JsonObject
             content += ContentPart.Source(
                 sourceType = StreamEvent.SourcePart.SourceType.Document,
-                title = (obj["sources"]?.jsonArray?.firstOrNull()?.jsonObject
-                    ?.get("document")?.jsonObject
-                    ?.get("title") as? JsonPrimitive)?.contentOrNull ?: "Document",
+                title = (documentObj?.get("title") as? JsonPrimitive)?.contentOrNull ?: "Document",
                 providerMetadata = ProviderMetadata.Raw(JsonObject(mapOf("cohere" to obj))),
             )
         }
@@ -452,7 +452,7 @@ private class CohereChatLanguageModel(
             text = text,
             toolCalls = toolCalls,
             finishReason = cohereFinishReason((value["finish_reason"] as? JsonPrimitive)?.contentOrNull),
-            usage = cohereUsage(value["usage"]?.jsonObject),
+            usage = cohereUsage((value["usage"] as? JsonObject)),
             content = content,
             rawFinishReason = (value["finish_reason"] as? JsonPrimitive)?.contentOrNull,
             request = LanguageModelRequestMetadata(requestBody),
@@ -474,7 +474,7 @@ private class CohereChatLanguageModel(
     }
 
     private fun cohereUsage(value: JsonObject?): Usage {
-        val tokens = value?.get("tokens")?.jsonObject
+        val tokens = (value?.get("tokens") as? JsonObject)
         val input = (tokens?.get("input_tokens") as? JsonPrimitive)?.intOrNull ?: 0
         val output = (tokens?.get("output_tokens") as? JsonPrimitive)?.intOrNull ?: 0
         return Usage(
@@ -535,9 +535,9 @@ private class CohereEmbeddingModel(
             headers = settings.cohereHeaders(params.headers),
         )
         val value = response.value.jsonObject
-        val embeddings = value["embeddings"]?.jsonObject?.get("float")?.jsonArray.orEmpty()
+        val embeddings = ((value["embeddings"] as? JsonObject)?.get("float") as? JsonArray).orEmpty()
             .map { row -> row.jsonArray.map { WireDecoder.embeddingFloat(it, provider) } }
-        val billedUnits = value["meta"]?.jsonObject?.get("billed_units")?.jsonObject
+        val billedUnits = ((value["meta"] as? JsonObject)?.get("billed_units") as? JsonObject)
         val usage = (billedUnits?.get("input_tokens") as? JsonPrimitive)?.intOrNull ?: 0
         return EmbeddingModelResult(
             embeddings = embeddings,
@@ -576,7 +576,7 @@ private class CohereRerankingModel(
             headers = settings.cohereHeaders(params.headers),
         )
         val value = response.value.jsonObject
-        val results = value["results"]?.jsonArray.orEmpty().map { item ->
+        val results = (value["results"] as? JsonArray).orEmpty().map { item ->
             val obj = item.jsonObject
             val index = (obj["index"] as? JsonPrimitive)?.intOrNull ?: 0
             RerankedItem(
@@ -585,7 +585,7 @@ private class CohereRerankingModel(
                 index = index,
             )
         }
-        val billedUnits = value["meta"]?.jsonObject?.get("billed_units")?.jsonObject
+        val billedUnits = ((value["meta"] as? JsonObject)?.get("billed_units") as? JsonObject)
         val searchUnits = (billedUnits?.get("search_units") as? JsonPrimitive)?.intOrNull ?: 0
         return RerankingModelResult(
             results = results,
