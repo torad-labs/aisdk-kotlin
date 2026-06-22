@@ -213,10 +213,16 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
                 resumeWithApproval(action.toolCallId, approved = false, reason = action.reason)
             ToolLoopAgentAction.Cancel -> {
                 currentEngineJobRef.load()?.cancel()
+                // Null the ref (mirroring close()) so updateEngineStateIfCurrent's guard
+                // rejects a late write from the cancelled-but-unwinding job clobbering Idle.
+                currentEngineJobRef.store(null)
                 mutableEngineState.update { it.copy(phase = ToolLoopAgentState.Phase.Idle) }
             }
             ToolLoopAgentAction.Reset -> {
                 currentEngineJobRef.load()?.cancel()
+                // Null the ref (mirroring close()) so updateEngineStateIfCurrent's guard
+                // rejects a late write from the cancelled-but-unwinding job clobbering the reset.
+                currentEngineJobRef.store(null)
                 currentEngineContextRef.store(null)
                 mutableEngineState.value = ToolLoopAgentState()
             }
