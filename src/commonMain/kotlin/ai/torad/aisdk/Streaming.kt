@@ -7,10 +7,10 @@ import kotlinx.serialization.Transient
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonObjectBuilder
+import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.doubleOrNull
-import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.put
 
 /**
@@ -92,9 +92,11 @@ public sealed class StreamEvent {
              * when the chunk carries no id / model / timestamp.
              */
             internal fun fromOpenAI(obj: JsonObject): ResponseMetadata? {
-                val id = obj["id"]?.jsonPrimitive?.contentOrNull
-                val modelId = obj["model"]?.jsonPrimitive?.contentOrNull
-                val timestampMillis = obj["created"]?.jsonPrimitive?.doubleOrNull?.let { (it * 1000).toLong() }
+                // `as?` (not `?.jsonPrimitive`, which throws on a non-primitive value): a quirky
+                // object/array id/model/created must degrade to null, not abort the whole stream.
+                val id = (obj["id"] as? JsonPrimitive)?.contentOrNull
+                val modelId = (obj["model"] as? JsonPrimitive)?.contentOrNull
+                val timestampMillis = (obj["created"] as? JsonPrimitive)?.doubleOrNull?.let { (it * 1000).toLong() }
                 if (id == null && modelId == null && timestampMillis == null) return null
                 return ResponseMetadata(
                     id = id,
