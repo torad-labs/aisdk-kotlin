@@ -31,7 +31,6 @@ import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.doubleOrNull
 import kotlinx.serialization.json.intOrNull
 import kotlinx.serialization.json.jsonObject
-import kotlinx.serialization.json.jsonPrimitive
 
 public const val PRODIA_VERSION: String = "1.0.31"
 
@@ -236,9 +235,9 @@ public data class ProdiaProviderSettings(
 
     private fun prodiaErrorMessage(raw: String): String {
         val obj = runCatching { aiSdkJson.parseToJsonElement(raw).jsonObject }.getOrNull() ?: return raw.ifBlank { "request failed" }
-        return obj["detail"]?.jsonPrimitive?.contentOrNull
-            ?: obj["error"]?.jsonPrimitive?.contentOrNull
-            ?: obj["message"]?.jsonPrimitive?.contentOrNull
+        return (obj["detail"] as? JsonPrimitive)?.contentOrNull
+            ?: (obj["error"] as? JsonPrimitive)?.contentOrNull
+            ?: (obj["message"] as? JsonPrimitive)?.contentOrNull
             ?: raw.ifBlank { "request failed" }
     }
 }
@@ -538,15 +537,21 @@ internal data class ProdiaMultipartResult(
     val headers: Map<String, String>,
 ) {
     internal fun jobMetadata(): JsonObject = buildJsonObject {
-        job["id"]?.jsonPrimitive?.contentOrNull?.let { put("jobId", JsonPrimitive(it)) }
-        job["config"]?.jsonObject?.get("seed")?.jsonPrimitive?.intOrNull?.let { put("seed", JsonPrimitive(it)) }
-        job["metrics"]?.jsonObject?.get("elapsed")?.jsonPrimitive?.doubleOrNull?.let { put("elapsed", JsonPrimitive(it)) }
-        job["metrics"]?.jsonObject?.get("ips")?.jsonPrimitive?.doubleOrNull?.let { put("iterationsPerSecond", JsonPrimitive(it)) }
-        job["created_at"]?.jsonPrimitive?.contentOrNull?.let { put("createdAt", JsonPrimitive(it)) }
-        job["updated_at"]?.jsonPrimitive?.contentOrNull?.let { put("updatedAt", JsonPrimitive(it)) }
+        (job["id"] as? JsonPrimitive)?.contentOrNull?.let { put("jobId", JsonPrimitive(it)) }
+        (job["config"]?.jsonObject?.get("seed") as? JsonPrimitive)?.intOrNull?.let { put("seed", JsonPrimitive(it)) }
+        (job["metrics"]?.jsonObject?.get("elapsed") as? JsonPrimitive)?.doubleOrNull?.let {
+            put("elapsed", JsonPrimitive(it))
+        }
+        (job["metrics"]?.jsonObject?.get("ips") as? JsonPrimitive)?.doubleOrNull?.let {
+            put("iterationsPerSecond", JsonPrimitive(it))
+        }
+        (job["created_at"] as? JsonPrimitive)?.contentOrNull?.let { put("createdAt", JsonPrimitive(it)) }
+        (job["updated_at"] as? JsonPrimitive)?.contentOrNull?.let { put("updatedAt", JsonPrimitive(it)) }
         val price = job["price"]
         if (price !is JsonNull) {
-            price?.jsonObject?.get("dollars")?.jsonPrimitive?.doubleOrNull?.let { put("dollars", JsonPrimitive(it)) }
+            (price?.jsonObject?.get("dollars") as? JsonPrimitive)?.doubleOrNull?.let {
+                put("dollars", JsonPrimitive(it))
+            }
         }
     }
 }

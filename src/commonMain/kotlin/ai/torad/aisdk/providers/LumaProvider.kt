@@ -21,7 +21,6 @@ import kotlinx.serialization.json.floatOrNull
 import kotlinx.serialization.json.intOrNull
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
-import kotlinx.serialization.json.jsonPrimitive
 
 public const val LUMA_VERSION: String = "2.0.33"
 
@@ -91,14 +90,16 @@ private class LumaImageModel(
             body = body,
             headers = headers(params.headers),
         )
-        val generationId = create.value.jsonObject["id"]?.jsonPrimitive?.contentOrNull
+        val generationId = (create.value.jsonObject["id"] as? JsonPrimitive)?.contentOrNull
             ?: throw InvalidResponseDataError(create.value, "Luma generation response is missing id")
         val imageUrl = pollImageUrl(
             generationId = generationId,
             headers = headers(params.headers),
             abortSignal = params.abortSignal,
-            pollIntervalMillis = options["pollIntervalMillis"]?.jsonPrimitive?.contentOrNull?.toLongOrNull() ?: DEFAULT_LUMA_POLL_INTERVAL_MILLIS,
-            maxPollAttempts = options["maxPollAttempts"]?.jsonPrimitive?.intOrNull ?: DEFAULT_LUMA_MAX_POLL_ATTEMPTS,
+            pollIntervalMillis = (options["pollIntervalMillis"] as? JsonPrimitive)?.contentOrNull?.toLongOrNull()
+                ?: DEFAULT_LUMA_POLL_INTERVAL_MILLIS,
+            maxPollAttempts = (options["maxPollAttempts"] as? JsonPrimitive)?.intOrNull
+                ?: DEFAULT_LUMA_MAX_POLL_ATTEMPTS,
         )
         val image = downloadImage(imageUrl, params.abortSignal)
         return ImageModelResult(
@@ -136,7 +137,7 @@ private class LumaImageModel(
             )
         }
         if (params.files.isEmpty()) return
-        val referenceType = options["referenceType"]?.jsonPrimitive?.contentOrNull ?: "image"
+        val referenceType = (options["referenceType"] as? JsonPrimitive)?.contentOrNull ?: "image"
         val imageConfigs = options["images"]?.jsonArray.orEmpty().map { it.jsonObject }
         params.files.forEach { file ->
             if (file.url.isNullOrBlank()) {
@@ -167,7 +168,7 @@ private class LumaImageModel(
             "character" -> {
                 val identities = linkedMapOf<String, MutableList<String>>()
                 params.files.forEachIndexed { index, file ->
-                    val id = imageConfigs.getOrNull(index)?.get("id")?.jsonPrimitive?.contentOrNull ?: "identity0"
+                    val id = (imageConfigs.getOrNull(index)?.get("id") as? JsonPrimitive)?.contentOrNull ?: "identity0"
                     identities.getOrPut(id) { mutableListOf() } += file.url.orEmpty()
                 }
                 identities.forEach { (id, images) ->
@@ -238,8 +239,8 @@ private class LumaImageModel(
             abortSignal.throwIfAborted()
             val status = getJson("$baseURL/dream-machine/v1/generations/$generationId", headers)
             val body = status.value.jsonObject
-            when (body["state"]?.jsonPrimitive?.contentOrNull) {
-                "completed" -> return body["assets"]?.jsonObject?.get("image")?.jsonPrimitive?.contentOrNull
+            when ((body["state"] as? JsonPrimitive)?.contentOrNull) {
+                "completed" -> return (body["assets"]?.jsonObject?.get("image") as? JsonPrimitive)?.contentOrNull
                     ?: throw NoImageGeneratedError("Image generation completed but no image was found.")
                 "failed" -> throw NoImageGeneratedError("Image generation failed.")
             }
@@ -285,8 +286,10 @@ private class LumaImageModel(
 
     private fun lumaErrorMessage(statusCode: Int, parsed: JsonElement?, raw: String): String {
         val obj = parsed as? JsonObject
-        val details = obj?.get("detail")?.jsonArray?.firstOrNull()?.jsonObject?.get("msg")?.jsonPrimitive?.contentOrNull
-        val message = details ?: obj?.get("error")?.jsonPrimitive?.contentOrNull ?: raw.ifBlank { "request failed" }
+        val msgElement = obj?.get("detail")?.jsonArray?.firstOrNull()?.jsonObject?.get("msg")
+        val details = (msgElement as? JsonPrimitive)?.contentOrNull
+        val message = details ?: (obj?.get("error") as? JsonPrimitive)?.contentOrNull
+            ?: raw.ifBlank { "request failed" }
         return "Luma request failed ($statusCode): $message"
     }
 

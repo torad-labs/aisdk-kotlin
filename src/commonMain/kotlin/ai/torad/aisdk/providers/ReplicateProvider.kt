@@ -22,7 +22,6 @@ import kotlinx.serialization.json.doubleOrNull
 import kotlinx.serialization.json.intOrNull
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
-import kotlinx.serialization.json.jsonPrimitive
 import kotlin.math.ceil
 
 public const val REPLICATE_VERSION: String = "2.0.33"
@@ -69,7 +68,7 @@ public data class ReplicateProviderSettings(
         providerOptions.toMap()["replicate"] as? JsonObject ?: JsonObject(emptyMap())
 
     internal fun replicatePreferHeader(options: JsonObject): Map<String, String> {
-        val maxWait = options["maxWaitTimeInSeconds"]?.jsonPrimitive?.contentOrNull
+        val maxWait = (options["maxWaitTimeInSeconds"] as? JsonPrimitive)?.contentOrNull
         return mapOf("prefer" to if (maxWait != null) "wait=$maxWait" else "wait")
     }
 
@@ -125,8 +124,8 @@ public data class ReplicateProviderSettings(
 
     private fun replicateErrorMessage(statusCode: Int, parsed: JsonElement?, raw: String): String {
         val obj = parsed as? JsonObject
-        val detail = obj?.get("detail")?.jsonPrimitive?.contentOrNull
-            ?: obj?.get("error")?.jsonPrimitive?.contentOrNull
+        val detail = (obj?.get("detail") as? JsonPrimitive)?.contentOrNull
+            ?: (obj?.get("error") as? JsonPrimitive)?.contentOrNull
             ?: raw.ifBlank { "request failed" }
         return "Replicate request failed ($statusCode): $detail"
     }
@@ -203,17 +202,24 @@ private class ReplicateImageModel(
         // Inspect a terminal failure status BEFORE the output check so a failed/canceled prediction
         // surfaces its real `error` instead of a generic "missing output". Read status leniently
         // (don't require it) — a successful prefer=wait body need not carry one.
-        when (prediction["status"]?.jsonPrimitive?.contentOrNull) {
-            "failed" -> throw NoImageGeneratedError(
-                "Replicate image generation failed: ${prediction["error"]?.jsonPrimitive?.contentOrNull ?: "Unknown error"}",
-            )
+        when ((prediction["status"] as? JsonPrimitive)?.contentOrNull) {
+            "failed" -> {
+                val detail = (prediction["error"] as? JsonPrimitive)?.contentOrNull ?: "Unknown error"
+                throw NoImageGeneratedError("Replicate image generation failed: $detail")
+            }
             "canceled" -> throw NoImageGeneratedError("Replicate image generation was canceled")
         }
         val output = prediction["output"]
             ?: throw NoImageGeneratedError("Replicate image response is missing output")
         val imageUrls = when (output) {
-            is JsonArray -> output.map { it.jsonPrimitive.contentOrNull ?: throw InvalidResponseDataError(output, "Replicate image output contains a non-string URL") }
-            else -> listOf(output.jsonPrimitive.contentOrNull ?: throw InvalidResponseDataError(output, "Replicate image output is not a URL"))
+            is JsonArray -> output.map {
+                (it as? JsonPrimitive)?.contentOrNull
+                    ?: throw InvalidResponseDataError(output, "Replicate image output contains a non-string URL")
+            }
+            else -> listOf(
+                (output as? JsonPrimitive)?.contentOrNull
+                    ?: throw InvalidResponseDataError(output, "Replicate image output is not a URL"),
+            )
         }
         val images = imageUrls.map { url ->
             replicateDownloadImage(client, url, params.abortSignal)
@@ -347,7 +353,7 @@ private class ReplicateVideoModel(
             options = options,
             abortSignal = params.abortSignal,
         )
-        val videoUrl = prediction["output"]?.jsonPrimitive?.contentOrNull
+        val videoUrl = (prediction["output"] as? JsonPrimitive)?.contentOrNull
             ?: throw NoVideoGeneratedError("No video URL in Replicate response")
         return VideoModelResult(
             videos = listOf(
@@ -374,9 +380,9 @@ private class ReplicateVideoModel(
         abortSignal: AbortSignal,
     ): JsonObject {
         var prediction = initialPrediction
-        val pollIntervalMs = options["pollIntervalMs"]?.jsonPrimitive?.contentOrNull?.toLongOrNull()
+        val pollIntervalMs = (options["pollIntervalMs"] as? JsonPrimitive)?.contentOrNull?.toLongOrNull()
             ?: DEFAULT_REPLICATE_VIDEO_POLL_INTERVAL_MS
-        val pollTimeoutMs = options["pollTimeoutMs"]?.jsonPrimitive?.contentOrNull?.toLongOrNull()
+        val pollTimeoutMs = (options["pollTimeoutMs"] as? JsonPrimitive)?.contentOrNull?.toLongOrNull()
             ?: DEFAULT_REPLICATE_VIDEO_POLL_TIMEOUT_MS
         val maxPollAttempts = ceil(pollTimeoutMs.coerceAtLeast(1L).toDouble() / pollIntervalMs.coerceAtLeast(1L).toDouble())
             .toInt()
@@ -388,7 +394,7 @@ private class ReplicateVideoModel(
             }
             if (pollIntervalMs > 0) delay(pollIntervalMs)
             abortSignal.throwIfAborted()
-            val pollUrl = prediction["urls"]?.jsonObject?.get("get")?.jsonPrimitive?.contentOrNull
+            val pollUrl = (prediction["urls"]?.jsonObject?.get("get") as? JsonPrimitive)?.contentOrNull
                 ?: throw InvalidResponseDataError(null, "Replicate prediction response is missing urls.get")
             prediction = settings.replicateGetJson(
                 client = client,
@@ -399,14 +405,18 @@ private class ReplicateVideoModel(
             attempts++
         }
         when (replicateStatus(prediction)) {
-            "failed" -> throw NoVideoGeneratedError("Video generation failed: ${prediction["error"]?.jsonPrimitive?.contentOrNull ?: "Unknown error"}")
+            "failed" -> {
+                val detail = (prediction["error"] as? JsonPrimitive)?.contentOrNull ?: "Unknown error"
+                throw NoVideoGeneratedError("Video generation failed: $detail")
+            }
             "canceled" -> throw NoVideoGeneratedError("Video generation was canceled")
         }
         return prediction
     }
 
     private fun replicateStatus(prediction: JsonObject): String =
-        prediction["status"]?.jsonPrimitive?.contentOrNull ?: throw InvalidResponseDataError(null, "Replicate prediction response is missing status")
+        (prediction["status"] as? JsonPrimitive)?.contentOrNull
+            ?: throw InvalidResponseDataError(null, "Replicate prediction response is missing status")
 
     private fun replicateVideoProviderMetadata(prediction: JsonObject, videoUrl: String): JsonElement = buildJsonObject {
         put("videos", JsonArray(listOf(buildJsonObject {

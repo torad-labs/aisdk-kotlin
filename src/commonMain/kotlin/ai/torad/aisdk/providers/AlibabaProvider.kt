@@ -20,7 +20,6 @@ import kotlinx.serialization.json.floatOrNull
 import kotlinx.serialization.json.intOrNull
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
-import kotlinx.serialization.json.jsonPrimitive
 import kotlin.time.Clock
 
 public const val ALIBABA_VERSION: String = "1.0.26"
@@ -80,8 +79,8 @@ public data class AlibabaProviderSettings(
 
     private fun alibabaErrorMessage(statusCode: Int, parsed: JsonElement?, raw: String): String {
         val obj = parsed as? JsonObject
-        val detail = obj?.get("message")?.jsonPrimitive?.contentOrNull
-            ?: obj?.get("error")?.jsonObject?.get("message")?.jsonPrimitive?.contentOrNull
+        val detail = (obj?.get("message") as? JsonPrimitive)?.contentOrNull
+            ?: (obj?.get("error")?.jsonObject?.get("message") as? JsonPrimitive)?.contentOrNull
             ?: raw.ifBlank { "request failed" }
         return "Alibaba request failed ($statusCode): $detail"
     }
@@ -190,8 +189,8 @@ private class AlibabaChatLanguageModel(
 
     private fun alibabaUsage(usage: Usage): Usage {
         val raw = usage.raw?.jsonObject
-        val cacheWrite = raw?.get("prompt_tokens_details")?.jsonObject
-            ?.get("cache_creation_input_tokens")?.jsonPrimitive?.intOrNull ?: 0
+        val cacheWriteElement = raw?.get("prompt_tokens_details")?.jsonObject?.get("cache_creation_input_tokens")
+        val cacheWrite = (cacheWriteElement as? JsonPrimitive)?.intOrNull ?: 0
         val inputTotal = usage.inputTokens.total
         val cacheRead = usage.inputTokens.cacheRead
         val reasoning = usage.outputTokens.reasoning
@@ -232,11 +231,11 @@ private class AlibabaVideoModel(
             body = body,
             headers = settings.alibabaHeaders(params.headers + mapOf("X-DashScope-Async" to "enable")),
         )
-        val taskId = create.value.jsonObject["output"]?.jsonObject?.get("task_id")?.jsonPrimitive?.contentOrNull
+        val taskId = (create.value.jsonObject["output"]?.jsonObject?.get("task_id") as? JsonPrimitive)?.contentOrNull
             ?: throw NoVideoGeneratedError("No task_id returned from Alibaba API. Response: ${create.value}")
 
-        val pollIntervalMs = options["pollIntervalMs"]?.jsonPrimitive?.contentOrNull?.toLongOrNull() ?: 5_000L
-        val pollTimeoutMs = options["pollTimeoutMs"]?.jsonPrimitive?.contentOrNull?.toLongOrNull() ?: 600_000L
+        val pollIntervalMs = (options["pollIntervalMs"] as? JsonPrimitive)?.contentOrNull?.toLongOrNull() ?: 5_000L
+        val pollTimeoutMs = (options["pollTimeoutMs"] as? JsonPrimitive)?.contentOrNull?.toLongOrNull() ?: 600_000L
         val started = clock.now().toEpochMilliseconds()
         var headers = create.headers
         while (true) {
@@ -252,9 +251,9 @@ private class AlibabaVideoModel(
             )
             headers = status.headers
             val output = status.value.jsonObject["output"]?.jsonObject ?: JsonObject(emptyMap())
-            when (val taskStatus = output["task_status"]?.jsonPrimitive?.contentOrNull) {
+            when (val taskStatus = (output["task_status"] as? JsonPrimitive)?.contentOrNull) {
                 "SUCCEEDED" -> {
-                    val videoUrl = output["video_url"]?.jsonPrimitive?.contentOrNull
+                    val videoUrl = (output["video_url"] as? JsonPrimitive)?.contentOrNull
                         ?: throw NoVideoGeneratedError("No video URL in Alibaba response. Task ID: $taskId")
                     return VideoModelResult(
                         videos = listOf(GeneratedFile(mediaType = "video/mp4", base64 = "", url = videoUrl)),
@@ -263,7 +262,10 @@ private class AlibabaVideoModel(
                         providerMetadata = ProviderMetadata.Raw(JsonObject(mapOf("alibaba" to alibabaVideoMetadata(taskId, videoUrl, status.value.jsonObject)))),
                     )
                 }
-                "FAILED", "CANCELED" -> throw NoVideoGeneratedError("Video generation ${taskStatus.lowercase()}. Task ID: $taskId. ${output["message"]?.jsonPrimitive?.contentOrNull.orEmpty()}")
+                "FAILED", "CANCELED" -> {
+                    val detail = (output["message"] as? JsonPrimitive)?.contentOrNull.orEmpty()
+                    throw NoVideoGeneratedError("Video generation ${taskStatus.lowercase()}. Task ID: $taskId. $detail")
+                }
                 "PENDING", "RUNNING", "UNKNOWN", null -> Unit
                 else -> throw NoVideoGeneratedError("Unknown Alibaba task status: $taskStatus")
             }
@@ -350,7 +352,7 @@ private class AlibabaVideoModel(
         val output = value["output"]?.jsonObject ?: JsonObject(emptyMap())
         put("taskId", JsonPrimitive(taskId))
         put("videoUrl", JsonPrimitive(videoUrl))
-        output["actual_prompt"]?.jsonPrimitive?.contentOrNull?.let { put("actualPrompt", JsonPrimitive(it)) }
+        (output["actual_prompt"] as? JsonPrimitive)?.contentOrNull?.let { put("actualPrompt", JsonPrimitive(it)) }
         value["usage"]?.jsonObject?.let { usage ->
             put("usage", buildJsonObject {
                 usage["duration"]?.let { put("duration", it) }
@@ -387,7 +389,7 @@ private class AlibabaEmbeddingModel(
             )
         }
         val options = settings.alibabaOptions(params.providerOptions)
-        if (options["outputType"]?.jsonPrimitive?.contentOrNull == "sparse") {
+        if ((options["outputType"] as? JsonPrimitive)?.contentOrNull == "sparse") {
             throw UnsupportedFunctionalityError(
                 "Alibaba embedding outputType 'sparse'",
                 "Alibaba embedding outputType 'sparse' is not supported because embeddings require " +
@@ -414,7 +416,7 @@ private class AlibabaEmbeddingModel(
         )
         val value = response.value.jsonObject
         val items = value["output"]?.jsonObject?.get("embeddings")?.jsonArray.orEmpty()
-            .sortedBy { it.jsonObject["text_index"]?.jsonPrimitive?.intOrNull ?: Int.MAX_VALUE }
+            .sortedBy { (it.jsonObject["text_index"] as? JsonPrimitive)?.intOrNull ?: Int.MAX_VALUE }
         return EmbeddingModelResult(
             embeddings = items.map { item ->
                 // Decode each element strictly (like Cohere/Google) — the old `?: 0f` silently
@@ -422,7 +424,7 @@ private class AlibabaEmbeddingModel(
                 item.jsonObject["embedding"]?.jsonArray.orEmpty().map { WireDecoder.embeddingFloat(it, "alibaba") }
             },
             usage = EmbeddingUsage(
-                tokens = value["usage"]?.jsonObject?.get("total_tokens")?.jsonPrimitive?.intOrNull ?: 0,
+                tokens = (value["usage"]?.jsonObject?.get("total_tokens") as? JsonPrimitive)?.intOrNull ?: 0,
                 raw = value["usage"],
             ),
             request = LanguageModelRequestMetadata(body = body),
