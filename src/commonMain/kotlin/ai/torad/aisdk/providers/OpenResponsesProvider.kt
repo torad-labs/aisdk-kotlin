@@ -284,22 +284,26 @@ private class OpenResponsesLanguageModel(
         var hasToolCalls = false
 
         (response["output"] as? JsonArray).orEmpty().forEachIndexed { index, part ->
-            val obj = part.jsonObject
+            val obj = part as? JsonObject ?: return@forEachIndexed
             val itemId = (obj["id"] as? JsonPrimitive)?.contentOrNull
             val path = "$.output[$index]"
             when ((obj["type"] as? JsonPrimitive)?.contentOrNull) {
                 "reasoning" -> {
                     val reasoningParts = (obj["content"] as? JsonArray) ?: (obj["summary"] as? JsonArray) ?: JsonArray(emptyList())
                     reasoningParts.forEach { reasoning ->
-                        val text = (reasoning.jsonObject["text"] as? JsonPrimitive)?.contentOrNull
+                        val reasoningObj = reasoning as? JsonObject ?: return@forEach
+                        val text = (reasoningObj["text"] as? JsonPrimitive)?.contentOrNull
                         if (!text.isNullOrEmpty()) {
-                            content += ContentPart.Reasoning(text, openResponsesPartMetadata(providerMetadataKey, itemId, reasoning.jsonObject))
+                            content += ContentPart.Reasoning(
+                                text,
+                                openResponsesPartMetadata(providerMetadataKey, itemId, reasoningObj),
+                            )
                         }
                     }
                 }
                 "message" -> {
                     (obj["content"] as? JsonArray).orEmpty().forEach { messagePart ->
-                        val messageObj = messagePart.jsonObject
+                        val messageObj = messagePart as? JsonObject ?: return@forEach
                         val text = (messageObj["text"] as? JsonPrimitive)?.contentOrNull
                             ?: (messageObj["refusal"] as? JsonPrimitive)?.contentOrNull
                         messageObj["logprobs"]?.let { logprobs += it }

@@ -131,7 +131,7 @@ public data class ProdiaProviderSettings(
             val contentDisposition = part.headers["content-disposition"].orEmpty()
             val contentType = part.headers["content-type"].orEmpty()
             if (contentDisposition.contains("name=\"job\"")) {
-                job = aiSdkJson.parseToJsonElement(part.body.decodeToString()).jsonObject
+                job = aiSdkJson.parseToJsonElement(part.body.decodeToString()) as? JsonObject
             } else if (contentDisposition.contains("name=\"output\"")) {
                 when {
                     contentType.startsWith("text/") || contentDisposition.contains(".txt") -> text = part.body.decodeToString()

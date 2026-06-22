@@ -10,8 +10,6 @@ import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.intOrNull
-import kotlinx.serialization.json.jsonArray
-import kotlinx.serialization.json.jsonObject
 
 /**
  * Decodes Amazon Bedrock `converse` / `invoke` responses into the SDK result
@@ -34,7 +32,7 @@ internal object BedrockResponse {
         val outputMessage = (response["output"] as? JsonObject)?.get("message") as? JsonObject
         val parts = (outputMessage?.get("content") as? JsonArray) ?: JsonArray(emptyList())
         for (part in parts) {
-            val obj = part.jsonObject
+            val obj = part as? JsonObject ?: continue
             (obj["text"] as? JsonPrimitive)?.contentOrNull?.let { content += ContentPart.Text(it) }
             (obj["reasoningContent"] as? JsonObject)?.let { reasoning ->
                 (reasoning["reasoningText"] as? JsonObject)?.let {
@@ -97,12 +95,14 @@ internal object BedrockResponse {
     }
 
     fun bedrockEmbeddingVector(response: JsonObject): List<Float> {
-        response["embedding"]?.let { return it.jsonArray.map { item -> WireDecoder.embeddingFloat(item, "amazon-bedrock.embedding") } }
+        (response["embedding"] as? JsonArray)?.let { arr ->
+            return arr.map { item -> WireDecoder.embeddingFloat(item, "amazon-bedrock.embedding") }
+        }
         val embeddings = response["embeddings"]
         if (embeddings is JsonArray) {
             val first = embeddings.firstOrNull() ?: return emptyList()
             if (first is JsonArray) return first.map { WireDecoder.embeddingFloat(it, "amazon-bedrock.embedding") }
-            val obj = first.jsonObject
+            val obj = first as? JsonObject ?: return emptyList()
             return (obj["embedding"] as? JsonArray).orEmpty()
                 .map { WireDecoder.embeddingFloat(it, "amazon-bedrock.embedding") }
         }
