@@ -21,7 +21,6 @@ import kotlinx.serialization.json.booleanOrNull
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.intOrNull
-import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 
 internal const val OPENAI_COMPATIBLE_MAX_IMAGES_PER_CALL: Int = 10
@@ -236,7 +235,7 @@ internal class OpenAICompatibleCompletionLanguageModel(
                         }
                     }
                     value["usage"]?.let { usage = Usage.fromOpenAI(it) }
-                    val choice = value["choices"]?.jsonArray?.firstOrNull()?.jsonObject
+                    val choice = ((value["choices"] as? JsonArray)?.firstOrNull() as? JsonObject)
                     val text = (choice?.get("text") as? JsonPrimitive)?.contentOrNull
                     if (!text.isNullOrEmpty()) {
                         if (!activeText) {
@@ -312,10 +311,13 @@ internal class OpenAICompatibleEmbeddingModel(
         val response = postJson("/embeddings", body, params.headers)
         val value = response.value.jsonObject
         return EmbeddingModelResult(
-            embeddings = value["data"]?.jsonArray.orEmpty()
-                .map { item -> item.jsonObject["embedding"]?.jsonArray.orEmpty().map { WireDecoder.embeddingFloat(it, provider) } },
+            embeddings = (value["data"] as? JsonArray).orEmpty()
+                .map { item ->
+                    val row = (item.jsonObject["embedding"] as? JsonArray).orEmpty()
+                    row.map { WireDecoder.embeddingFloat(it, provider) }
+                },
             usage = EmbeddingUsage(
-                tokens = (value["usage"]?.jsonObject?.get("prompt_tokens") as? JsonPrimitive)?.intOrNull ?: 0,
+                tokens = ((value["usage"] as? JsonObject)?.get("prompt_tokens") as? JsonPrimitive)?.intOrNull ?: 0,
                 raw = value["usage"],
             ),
             warnings = emptyList(),
