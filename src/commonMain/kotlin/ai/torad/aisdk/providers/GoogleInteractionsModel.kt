@@ -41,7 +41,6 @@ import kotlinx.serialization.json.floatOrNull
 import kotlinx.serialization.json.intOrNull
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
-import kotlinx.serialization.json.jsonPrimitive
 
 internal class GoogleInteractionsLanguageModel(
     private val client: HttpClient,
@@ -72,11 +71,11 @@ internal class GoogleInteractionsLanguageModel(
             parseJson = true,
         )
         var body = response.value.jsonObject
-        if (modelInput !is GoogleInteractionsModelInput.Model && !googleInteractionsTerminal(body["status"]?.jsonPrimitive?.contentOrNull)) {
+        if (modelInput !is GoogleInteractionsModelInput.Model && !googleInteractionsTerminal((body["status"] as? JsonPrimitive)?.contentOrNull)) {
             body = googlePollInteraction(
                 client = client,
                 settings = settings,
-                interactionId = body["id"]?.jsonPrimitive?.contentOrNull
+                interactionId = (body["id"] as? JsonPrimitive)?.contentOrNull
                     ?: throw InvalidResponseDataError(body, "google.interactions: background response did not include an interaction id."),
                 headers = settings.googleInteractionsHeaders(params.headers),
                 abortSignal = params.abortSignal,
@@ -100,10 +99,10 @@ internal class GoogleInteractionsLanguageModel(
                 parseJson = true,
             )
             val postBody = post.value.jsonObject
-            if (googleInteractionsTerminal(postBody["status"]?.jsonPrimitive?.contentOrNull)) {
+            if (googleInteractionsTerminal((postBody["status"] as? JsonPrimitive)?.contentOrNull)) {
                 state.synthesize(postBody).forEach { emit(it) }
             } else {
-                val interactionId = postBody["id"]?.jsonPrimitive?.contentOrNull
+                val interactionId = (postBody["id"] as? JsonPrimitive)?.contentOrNull
                     ?: throw InvalidResponseDataError(postBody, "google.interactions: background response did not include an interaction id.")
                 val rawLines = googleStreamSseGet(
                     client = client,
@@ -185,11 +184,11 @@ internal class GoogleInteractionsStreamState(
     fun accept(event: JsonObject): List<StreamEvent> {
         val events = mutableListOf<StreamEvent>()
         val interaction = event["interaction"]?.jsonObject
-        val interactionId = interaction?.get("id")?.jsonPrimitive?.contentOrNull
+        val interactionId = (interaction?.get("id") as? JsonPrimitive)?.contentOrNull
         if (interaction != null) {
             events += StreamEvent.ResponseMetadata(
                 id = interactionId,
-                modelId = interaction["model"]?.jsonPrimitive?.contentOrNull,
+                modelId = (interaction["model"] as? JsonPrimitive)?.contentOrNull,
                 body = interaction,
             )
         }
@@ -197,9 +196,9 @@ internal class GoogleInteractionsStreamState(
         if (step != null) {
             events += acceptStep(step, interactionId)
         }
-        if (event["type"]?.jsonPrimitive?.contentOrNull == "interaction.complete" && interaction != null) {
+        if ((event["type"] as? JsonPrimitive)?.contentOrNull == "interaction.complete" && interaction != null) {
             usage = googleInteractionsUsage(interaction["usage"])
-            rawFinishReason = interaction["status"]?.jsonPrimitive?.contentOrNull
+            rawFinishReason = (interaction["status"] as? JsonPrimitive)?.contentOrNull
             finishReason = googleInteractionsFinishReason(rawFinishReason, hasFunctionCall)
             events += closeText()
             events += StreamEvent.Finish(
@@ -216,17 +215,17 @@ internal class GoogleInteractionsStreamState(
 
     fun synthesize(response: JsonObject): List<StreamEvent> {
         val events = mutableListOf<StreamEvent>()
-        val interactionId = response["id"]?.jsonPrimitive?.contentOrNull
+        val interactionId = (response["id"] as? JsonPrimitive)?.contentOrNull
         events += StreamEvent.ResponseMetadata(
             id = interactionId,
-            modelId = response["model"]?.jsonPrimitive?.contentOrNull,
+            modelId = (response["model"] as? JsonPrimitive)?.contentOrNull,
             body = response,
         )
         response["steps"]?.jsonArray.orEmpty().forEach { step ->
             events += acceptStep(step.jsonObject, interactionId)
         }
         usage = googleInteractionsUsage(response["usage"])
-        rawFinishReason = response["status"]?.jsonPrimitive?.contentOrNull
+        rawFinishReason = (response["status"] as? JsonPrimitive)?.contentOrNull
         finishReason = googleInteractionsFinishReason(rawFinishReason, hasFunctionCall)
         events += closeText()
         events += StreamEvent.Finish(
@@ -242,7 +241,7 @@ internal class GoogleInteractionsStreamState(
 
     private fun acceptStep(step: JsonObject, interactionId: String?): List<StreamEvent> {
         val events = mutableListOf<StreamEvent>()
-        when (val type = step["type"]?.jsonPrimitive?.contentOrNull) {
+        when (val type = (step["type"] as? JsonPrimitive)?.contentOrNull) {
             "model_output" -> {
                 step["content"]?.jsonArray.orEmpty().forEachIndexed { index, blockElement ->
                     val block = try {
@@ -265,7 +264,7 @@ internal class GoogleInteractionsStreamState(
                         }
                         "image" -> events += StreamEvent.FilePart(
                             id = IdGenerator.generate(),
-                            mediaType = block["mime_type"]?.jsonPrimitive?.contentOrNull ?: "image/png",
+                            mediaType = (block["mime_type"] as? JsonPrimitive)?.contentOrNull ?: "image/png",
                             base64 = try {
                                 WireDecoder.requiredString(block, "data", "google", "interactions stream step", "$.content[$index]")
                             } catch (error: WireDecodeException) {
@@ -281,14 +280,14 @@ internal class GoogleInteractionsStreamState(
             "thought" -> {
                 val id = IdGenerator.generate()
                 val metadata = googleInteractionsMetadata(
-                    signature = step["signature"]?.jsonPrimitive?.contentOrNull,
+                    signature = (step["signature"] as? JsonPrimitive)?.contentOrNull,
                     interactionId = interactionId,
                 )
                 events += StreamEvent.ReasoningStart(id, metadata)
                 events += StreamEvent.ReasoningDelta(
                     id,
                     step["summary"]?.jsonArray.orEmpty()
-                        .mapNotNull { it.jsonObject["text"]?.jsonPrimitive?.contentOrNull }
+                        .mapNotNull { (it.jsonObject["text"] as? JsonPrimitive)?.contentOrNull }
                         .joinToString("\n"),
                     metadata,
                 )
@@ -296,7 +295,7 @@ internal class GoogleInteractionsStreamState(
             }
             "function_call" -> {
                 hasFunctionCall = true
-                val id = step["id"]?.jsonPrimitive?.contentOrNull ?: IdGenerator.generate()
+                val id = (step["id"] as? JsonPrimitive)?.contentOrNull ?: IdGenerator.generate()
                 val name = try {
                     WireDecoder.requiredString(step, "name", "google", "interactions stream step")
                 } catch (error: WireDecodeException) {
@@ -304,7 +303,7 @@ internal class GoogleInteractionsStreamState(
                 }
                 val input = step["arguments"] ?: JsonObject(emptyMap())
                 val metadata = googleInteractionsMetadata(
-                    signature = step["signature"]?.jsonPrimitive?.contentOrNull,
+                    signature = (step["signature"] as? JsonPrimitive)?.contentOrNull,
                     interactionId = interactionId,
                 )
                 events += StreamEvent.ToolInputStart(id, name, metadata)
@@ -314,7 +313,7 @@ internal class GoogleInteractionsStreamState(
             }
             else -> if (type != null && type.endsWith("_call")) {
                 hasFunctionCall = true
-                val id = step["id"]?.jsonPrimitive?.contentOrNull ?: IdGenerator.generate()
+                val id = (step["id"] as? JsonPrimitive)?.contentOrNull ?: IdGenerator.generate()
                 val name = if (type == "mcp_server_tool_call") {
                     WireDecoder.optionalString(step, "name", "google", "interactions stream step") ?: "mcp_server_tool"
                 } else {
@@ -356,10 +355,10 @@ internal object GoogleInteractions {
     val warnings = mutableListOf<CallWarning>()
     val options = params.providerOptions.toMap()["google"] as? JsonObject ?: JsonObject(emptyMap())
     val isAgent = input !is GoogleInteractionsModelInput.Model
-    val isBackground = options["background"]?.jsonPrimitive?.booleanOrNull == true
+    val isBackground = (options["background"] as? JsonPrimitive)?.booleanOrNull == true
     val converted = googleInteractionsInput(
         messages = params.messages,
-        mediaResolution = options["mediaResolution"]?.jsonPrimitive?.contentOrNull,
+        mediaResolution = (options["mediaResolution"] as? JsonPrimitive)?.contentOrNull,
     )
     warnings += converted.warnings
 
@@ -402,7 +401,7 @@ internal object GoogleInteractions {
     }
 
     val systemInstruction = converted.systemInstruction
-        ?: options["systemInstruction"]?.jsonPrimitive?.contentOrNull
+        ?: (options["systemInstruction"] as? JsonPrimitive)?.contentOrNull
 
     return GoogleInteractionsPreparedRequest(
         body = buildJsonObject {
@@ -426,7 +425,7 @@ internal object GoogleInteractions {
             if (stream && !isBackground) put("stream", JsonPrimitive(true))
         },
         warnings = warnings,
-        pollingTimeoutMillis = options["pollingTimeoutMs"]?.jsonPrimitive?.intOrNull?.toLong(),
+        pollingTimeoutMillis = (options["pollingTimeoutMs"] as? JsonPrimitive)?.intOrNull?.toLong(),
         isBackground = isBackground,
     )
 }
@@ -593,7 +592,7 @@ internal object GoogleInteractions {
     }
     options["imageConfig"]?.jsonObject?.let { image ->
         warnings += CallWarning("other", "google.interactions: providerOptions.google.imageConfig is deprecated. Use providerOptions.google.responseFormat with an image entry instead.")
-        if (entries.none { it.jsonObject["type"]?.jsonPrimitive?.contentOrNull == "image" }) {
+        if (entries.none { (it.jsonObject["type"] as? JsonPrimitive)?.contentOrNull == "image" }) {
             entries += buildJsonObject {
                 put("type", JsonPrimitive("image"))
                 put("mime_type", JsonPrimitive("image/png"))
@@ -618,7 +617,7 @@ internal object GoogleInteractions {
                 put("parameters", aiSdkJson.parseToJsonElement(tool.parametersSchemaJson))
             }
         } else {
-            when (tool.metadata["providerToolId"]?.jsonPrimitive?.contentOrNull) {
+            when ((tool.metadata["providerToolId"] as? JsonPrimitive)?.contentOrNull) {
                 "google.google_search" -> buildJsonObject { put("type", JsonPrimitive("google_search")) }
                 "google.code_execution" -> buildJsonObject { put("type", JsonPrimitive("code_execution")) }
                 "google.url_context" -> buildJsonObject { put("type", JsonPrimitive("url_context")) }
@@ -655,7 +654,7 @@ internal object GoogleInteractions {
 
     fun googleInteractionsAgentConfig(options: JsonObject): JsonObject? {
     val config = options["agentConfig"]?.jsonObject ?: return null
-    val type = config["type"]?.jsonPrimitive?.contentOrNull ?: return null
+    val type = (config["type"] as? JsonPrimitive)?.contentOrNull ?: return null
     return buildJsonObject {
         put("type", JsonPrimitive(type))
         if (type == "deep-research") {
@@ -701,11 +700,11 @@ internal object GoogleInteractions {
     warnings: List<CallWarning>,
     settings: GoogleGenerativeAIProviderSettings,
 ): LanguageModelResult {
-    val interactionId = response["id"]?.jsonPrimitive?.contentOrNull?.takeIf { it.isNotBlank() }
+    val interactionId = (response["id"] as? JsonPrimitive)?.contentOrNull?.takeIf { it.isNotBlank() }
     val parsed = googleInteractionsContent(response["steps"] as? JsonArray, settings.generateId, interactionId)
     val text = parsed.content.filterIsInstance<ContentPart.Text>().joinToString("") { it.text }
-    val status = response["status"]?.jsonPrimitive?.contentOrNull
-    val serviceTier = response["service_tier"]?.jsonPrimitive?.contentOrNull ?: headers["x-gemini-service-tier"]
+    val status = (response["status"] as? JsonPrimitive)?.contentOrNull
+    val serviceTier = (response["service_tier"] as? JsonPrimitive)?.contentOrNull ?: headers["x-gemini-service-tier"]
     val providerMetadata = buildJsonObject {
         interactionId?.let { put("interactionId", JsonPrimitive(it)) }
         serviceTier?.let { put("serviceTier", JsonPrimitive(it)) }
@@ -722,7 +721,7 @@ internal object GoogleInteractions {
         request = LanguageModelRequestMetadata(requestBody),
         response = LanguageModelResponseMetadata(
             id = interactionId,
-            modelId = response["model"]?.jsonPrimitive?.contentOrNull,
+            modelId = (response["model"] as? JsonPrimitive)?.contentOrNull,
             headers = headers,
             body = rawBody,
         ),
@@ -737,24 +736,26 @@ internal object GoogleInteractions {
     var hasFunctionCall = false
     steps.orEmpty().forEach { stepElement ->
         val step = stepElement.jsonObject
-        when (val type = step["type"]?.jsonPrimitive?.contentOrNull) {
+        when (val type = (step["type"] as? JsonPrimitive)?.contentOrNull) {
             "model_output" -> {
                 step["content"]?.jsonArray.orEmpty().forEach { blockElement ->
                     val block = blockElement.jsonObject
-                    when (block["type"]?.jsonPrimitive?.contentOrNull) {
+                    when ((block["type"] as? JsonPrimitive)?.contentOrNull) {
                         "text" -> {
                             val metadata = googleInteractionsMetadata(interactionId = interactionId)
-                            content += ContentPart.Text(block["text"]?.jsonPrimitive?.contentOrNull.orEmpty(), metadata)
+                            val blockText = (block["text"] as? JsonPrimitive)?.contentOrNull.orEmpty()
+                            content += ContentPart.Text(blockText, metadata)
                             content += googleInteractionsAnnotationSources(block["annotations"] as? JsonArray, generateId, metadata.toMap().ifEmpty { null })
                         }
                         "image" -> {
                             val metadata = googleInteractionsMetadata(
                                 interactionId = interactionId,
-                                extra = block["uri"]?.jsonPrimitive?.contentOrNull?.let { mapOf("imageUri" to JsonPrimitive(it)) }.orEmpty(),
+                                extra = (block["uri"] as? JsonPrimitive)?.contentOrNull
+                                    ?.let { mapOf("imageUri" to JsonPrimitive(it)) }.orEmpty(),
                             )
                             content += ContentPart.File(
-                                mediaType = block["mime_type"]?.jsonPrimitive?.contentOrNull ?: "image/png",
-                                base64 = block["data"]?.jsonPrimitive?.contentOrNull.orEmpty(),
+                                mediaType = (block["mime_type"] as? JsonPrimitive)?.contentOrNull ?: "image/png",
+                                base64 = (block["data"] as? JsonPrimitive)?.contentOrNull.orEmpty(),
                                 providerMetadata = metadata,
                             )
                         }
@@ -764,10 +765,10 @@ internal object GoogleInteractions {
             "thought" -> {
                 content += ContentPart.Reasoning(
                     text = step["summary"]?.jsonArray.orEmpty()
-                        .mapNotNull { it.jsonObject["text"]?.jsonPrimitive?.contentOrNull }
+                        .mapNotNull { (it.jsonObject["text"] as? JsonPrimitive)?.contentOrNull }
                         .joinToString("\n"),
                     providerMetadata = googleInteractionsMetadata(
-                        signature = step["signature"]?.jsonPrimitive?.contentOrNull,
+                        signature = (step["signature"] as? JsonPrimitive)?.contentOrNull,
                         interactionId = interactionId,
                     ),
                 )
@@ -775,12 +776,12 @@ internal object GoogleInteractions {
             "function_call" -> {
                 hasFunctionCall = true
                 content += ContentPart.ToolCall(
-                    toolCallId = step["id"]?.jsonPrimitive?.contentOrNull ?: IdGenerator.generate(),
+                    toolCallId = (step["id"] as? JsonPrimitive)?.contentOrNull ?: IdGenerator.generate(),
                     // Fail loudly on a missing/blank function_call name instead of fabricating "".
                     toolName = WireDecoder.requiredString(step, "name", "google", "interactions response", "$.function_call"),
                     input = step["arguments"] ?: JsonObject(emptyMap()),
                     providerMetadata = googleInteractionsMetadata(
-                        signature = step["signature"]?.jsonPrimitive?.contentOrNull,
+                        signature = (step["signature"] as? JsonPrimitive)?.contentOrNull,
                         interactionId = interactionId,
                     ),
                 )
@@ -789,9 +790,9 @@ internal object GoogleInteractions {
                 if (type != null && type.endsWith("_call")) {
                     hasFunctionCall = true
                     content += ContentPart.ToolCall(
-                        toolCallId = step["id"]?.jsonPrimitive?.contentOrNull ?: IdGenerator.generate(),
+                        toolCallId = (step["id"] as? JsonPrimitive)?.contentOrNull ?: IdGenerator.generate(),
                         toolName = if (type == "mcp_server_tool_call") {
-                            step["name"]?.jsonPrimitive?.contentOrNull ?: "mcp_server_tool"
+                            (step["name"] as? JsonPrimitive)?.contentOrNull ?: "mcp_server_tool"
                         } else {
                             type.removeSuffix("_call")
                         },
@@ -800,14 +801,14 @@ internal object GoogleInteractions {
                     )
                 } else if (type != null && type.endsWith("_result")) {
                     content += ContentPart.ToolResult(
-                        toolCallId = step["call_id"]?.jsonPrimitive?.contentOrNull ?: IdGenerator.generate(),
+                        toolCallId = (step["call_id"] as? JsonPrimitive)?.contentOrNull ?: IdGenerator.generate(),
                         toolName = if (type == "mcp_server_tool_result") {
-                            step["name"]?.jsonPrimitive?.contentOrNull ?: "mcp_server_tool"
+                            (step["name"] as? JsonPrimitive)?.contentOrNull ?: "mcp_server_tool"
                         } else {
                             type.removeSuffix("_result")
                         },
                         output = step.getOrElse("result") { JsonNull },
-                        isError = step["is_error"]?.jsonPrimitive?.booleanOrNull == true,
+                        isError = (step["is_error"] as? JsonPrimitive)?.booleanOrNull == true,
                         providerMetadata = ProviderMetadata.Raw(JsonObject(mapOf("google" to buildJsonObject { put("providerExecuted", JsonPrimitive(true)) }))),
                     )
                 }
@@ -823,21 +824,22 @@ internal object GoogleInteractions {
     metadata: Map<String, JsonElement>?,
 ): List<ContentPart.Source> = annotations.orEmpty().mapNotNull { annotationElement ->
     val annotation = annotationElement.jsonObject
-    val type = annotation["type"]?.jsonPrimitive?.contentOrNull
-    val url = annotation["url"]?.jsonPrimitive?.contentOrNull
-        ?: annotation["document_uri"]?.jsonPrimitive?.contentOrNull
+    val type = (annotation["type"] as? JsonPrimitive)?.contentOrNull
+    val url = (annotation["url"] as? JsonPrimitive)?.contentOrNull
+        ?: (annotation["document_uri"] as? JsonPrimitive)?.contentOrNull
         ?: return@mapNotNull null
     when (type) {
         "url_citation", "place_citation" -> ContentPart.Source(
             sourceType = StreamEvent.SourcePart.SourceType.Url,
             url = url,
-            title = annotation["title"]?.jsonPrimitive?.contentOrNull ?: annotation["name"]?.jsonPrimitive?.contentOrNull,
+            title = (annotation["title"] as? JsonPrimitive)?.contentOrNull
+                ?: (annotation["name"] as? JsonPrimitive)?.contentOrNull,
             providerMetadata = metadata?.let { ProviderMetadata.Raw(JsonObject(it)) } ?: ProviderMetadata.Raw(JsonObject(mapOf("google" to buildJsonObject { put("id", JsonPrimitive(IdGenerator.generate())) }))),
         )
         "file_citation" -> ContentPart.Source(
             sourceType = StreamEvent.SourcePart.SourceType.Document,
             url = url,
-            title = annotation["file_name"]?.jsonPrimitive?.contentOrNull,
+            title = (annotation["file_name"] as? JsonPrimitive)?.contentOrNull,
             providerMetadata = metadata?.let { ProviderMetadata.Raw(JsonObject(it)) } ?: ProviderMetadata.Raw(JsonObject(mapOf("google" to buildJsonObject { put("id", JsonPrimitive(IdGenerator.generate())) }))),
         )
         else -> null
@@ -845,10 +847,10 @@ internal object GoogleInteractions {
 }
     fun googleInteractionsUsage(element: JsonElement?): Usage {
     val obj = element as? JsonObject ?: return Usage()
-    val input = obj["total_input_tokens"]?.jsonPrimitive?.intOrNull ?: 0
-    val output = obj["total_output_tokens"]?.jsonPrimitive?.intOrNull ?: 0
-    val thought = obj["total_thought_tokens"]?.jsonPrimitive?.intOrNull ?: 0
-    val cached = (obj["total_cached_tokens"]?.jsonPrimitive?.intOrNull ?: 0).coerceIn(0, input)
+    val input = (obj["total_input_tokens"] as? JsonPrimitive)?.intOrNull ?: 0
+    val output = (obj["total_output_tokens"] as? JsonPrimitive)?.intOrNull ?: 0
+    val thought = (obj["total_thought_tokens"] as? JsonPrimitive)?.intOrNull ?: 0
+    val cached = ((obj["total_cached_tokens"] as? JsonPrimitive)?.intOrNull ?: 0).coerceIn(0, input)
     return Usage(
         inputTokens = Usage.InputTokenBreakdown(
             total = input,
@@ -902,13 +904,15 @@ internal object GoogleInteractions {
     val maxAttempts = ((timeoutMillis ?: 30 * 60 * 1_000L) / settings.videoPollIntervalMillis.coerceAtLeast(1L)).coerceAtLeast(1L).toInt()
     var current = googleGetJson(client, "${settings.baseURL.trimEnd('/')}/interactions/$interactionId", headers, abortSignal)
     repeat(maxAttempts) {
-        if (googleInteractionsTerminal(current.value.jsonObject["status"]?.jsonPrimitive?.contentOrNull)) return current
+        val status = (current.value.jsonObject["status"] as? JsonPrimitive)?.contentOrNull
+        if (googleInteractionsTerminal(status)) return current
         if (settings.videoPollIntervalMillis > 0) delay(settings.videoPollIntervalMillis)
         current = googleGetJson(client, "${settings.baseURL.trimEnd('/')}/interactions/$interactionId", headers, abortSignal)
     }
     // The loop checks terminal status at the TOP of each iteration, so the final fetch is never
     // inspected — check it here (mirrors the video-polling post-loop guard) before timing out.
-    if (googleInteractionsTerminal(current.value.jsonObject["status"]?.jsonPrimitive?.contentOrNull)) return current
+    val finalStatus = (current.value.jsonObject["status"] as? JsonPrimitive)?.contentOrNull
+    if (googleInteractionsTerminal(finalStatus)) return current
     throw InvalidResponseDataError(null, "google.interactions: polling timed out for interaction $interactionId.")
 }
 
@@ -926,7 +930,7 @@ internal object GoogleInteractions {
 }
 
     fun googleInteractionsSignature(metadata: Map<String, JsonElement>?): String? =
-    (metadata?.get("google") as? JsonObject)?.get("signature")?.jsonPrimitive?.contentOrNull
+    ((metadata?.get("google") as? JsonObject)?.get("signature") as? JsonPrimitive)?.contentOrNull
 /** Parse the interactions SSE [rawLines] and feed each event to [state],
  *  emitting its produced [StreamEvent]s (shared by both stream branches). */
     suspend fun FlowCollector<StreamEvent>.collectGoogleInteractions(
