@@ -13,7 +13,7 @@ import kotlinx.serialization.json.buildJsonObject
  *
  * Reads one Smithy binary frame at a time off the response channel — the 4-byte
  * total-length prelude, then the remaining bytes — decodes each frame's
- * `:event-type`/`:error-code` headers and JSON payload, and reshapes it into the
+ * `:event-type`/`:exception-type`/`:error-code` headers and JSON payload, and reshapes it into the
  * JSON-line payload the stream-state consumer expects (mirrors the v6
  * `:event-type` wrapping).
  */
@@ -90,9 +90,9 @@ internal object BedrockEventStream {
             val payload = bytes.copyOfRange(payloadStart, payloadEnd).decodeToString()
             messages += Message(
                 messageType = headers[":message-type"].orEmpty(),
-                eventType = headers[":event-type"].orEmpty().ifBlank {
-                    headers[":error-code"].orEmpty().replaceFirstChar { it.lowercaseChar() }
-                },
+                eventType = headers[":event-type"].orEmpty()
+                    .ifBlank { headers[":exception-type"].orEmpty() }
+                    .ifBlank { headers[":error-code"].orEmpty().replaceFirstChar { it.lowercaseChar() } },
                 payloadText = payload,
             )
             offset += totalLength

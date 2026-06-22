@@ -325,6 +325,44 @@ class AmazonBedrockProviderTest {
     }
 
     @Test
+    fun `chat stream surfaces a mid-stream modeled exception sent via colon-exception-type`() = runTest {
+        // AWS sends a modeled error event with :message-type=exception and the
+        // union member name in :exception-type (camelCase) -- NOT :event-type and
+        // NOT :error-code. The decoder must read :exception-type so the payload
+        // is wrapped under e.g. "internalServerException" and accept() raises it.
+        val errorPayload = """{"message":"boom"}"""
+        val frames = bedrockSmithyFrame(
+            headers = smithyStringHeader(":message-type", "exception") +
+                smithyStringHeader(":exception-type", "internalServerException"),
+            payload = errorPayload.encodeToByteArray(),
+        )
+        val fixture = TestServer.createTestServer(
+            mutableMapOf(
+                "https://bedrock.test/model/amazon.nova-lite-v1%3A0/converse-stream" to UrlHandler(
+                    UrlResponse.Binary(
+                        frames,
+                        headers = mapOf(HttpHeaders.ContentType to "application/vnd.amazon.eventstream"),
+                    ),
+                ),
+            ),
+        )
+        fixture.server.start()
+        val provider = AmazonBedrock(
+            fixture.httpClient(),
+            AmazonBedrockProviderSettings(apiKey = "key", baseURL = "https://bedrock.test"),
+        )
+
+        val events = drainAllItems(
+            provider.languageModel("amazon.nova-lite-v1:0").stream(
+                LanguageModelCallParams(messages = listOf(UserMessage("hi"))),
+            ),
+        )
+
+        val error = events.filterIsInstance<StreamEvent.Error>().single()
+        assertTrue(error.message.contains("boom"))
+    }
+
+    @Test
     fun `chat stream decodes binary frames delivered across split reads`() = runTest {
         // The binary frame reader must reassemble a frame across multiple channel
         // reads. Deliver the bytes in two halves with the collector running in
