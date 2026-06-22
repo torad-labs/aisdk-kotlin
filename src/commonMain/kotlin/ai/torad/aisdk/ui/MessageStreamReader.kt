@@ -6,9 +6,9 @@ import ai.torad.aisdk.aiSdkJson
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonObject
-import kotlinx.serialization.json.jsonPrimitive
 
 /**
  * Convert a raw agent [StreamEvent] flow into a flow of growing
@@ -349,11 +349,11 @@ public fun StreamToUiMessages(
             }
             is StreamEvent.Raw -> {
                 val rawObject = runCatching { event.rawValue.jsonObject }.getOrNull()
-                val type = rawObject?.get("type")?.jsonPrimitive?.contentOrNull
+                val type = (rawObject?.get("type") as? JsonPrimitive)?.contentOrNull
                 val data = rawObject?.get("data")
                 if (type != null && data != null) {
-                    val dataId = rawObject["id"]?.jsonPrimitive?.contentOrNull
-                    val transient = rawObject["transient"]?.jsonPrimitive?.contentOrNull == "true"
+                    val dataId = (rawObject["id"] as? JsonPrimitive)?.contentOrNull
+                    val transient = (rawObject["transient"] as? JsonPrimitive)?.contentOrNull == "true"
                     val part = UIMessagePart.Data(type = type, data = data, id = dataId, transient = transient)
                     // Keyed data parts upsert in place; unkeyed ones append.
                     val existingIdx = dataId?.let { dataPartIndexById[it] }

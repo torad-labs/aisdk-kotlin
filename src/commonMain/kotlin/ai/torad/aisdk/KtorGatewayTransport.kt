@@ -19,7 +19,6 @@ import kotlinx.serialization.json.floatOrNull
 import kotlinx.serialization.json.intOrNull
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
-import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.longOrNull
 
 public fun CreateGatewayHttpProvider(
@@ -110,7 +109,9 @@ public class KtorGatewayTransport(
             embeddings = value["embeddings"]?.jsonArray.orEmpty().map { row ->
                 row.jsonArray.map { WireDecoder.embeddingFloat(it, "gateway.embedding") }
             },
-            usage = EmbeddingUsage(tokens = value["usage"]?.jsonObject?.get("tokens")?.jsonPrimitive?.intOrNull ?: 0),
+            usage = EmbeddingUsage(
+                tokens = (value["usage"]?.jsonObject?.get("tokens") as? JsonPrimitive)?.intOrNull ?: 0,
+            ),
             response = LanguageModelResponseMetadata(headers = response.headers, body = response.value),
             providerMetadata = value["providerMetadata"].let { if (it is JsonObject) ProviderMetadata.Raw(it) else ProviderMetadata.None },
         )
@@ -140,7 +141,7 @@ public class KtorGatewayTransport(
         val value = response.value.jsonObject
         return ImageModelResult(
             images = value["images"]?.jsonArray.orEmpty().map {
-                GeneratedFile(mediaType = "image/png", base64 = it.jsonPrimitive.content)
+                GeneratedFile(mediaType = "image/png", base64 = (it as? JsonPrimitive)?.content.orEmpty())
             },
             warnings = callWarnings(value["warnings"]),
             response = LanguageModelResponseMetadata(
@@ -212,9 +213,9 @@ public class KtorGatewayTransport(
             )
             null -> throw GatewayResponseError("SSE stream ended without a data event")
         }
-        if (event["type"]?.jsonPrimitive?.contentOrNull == "error") {
+        if ((event["type"] as? JsonPrimitive)?.contentOrNull == "error") {
             throw GatewayResponseError(
-                message = event["message"]?.jsonPrimitive?.contentOrNull ?: "Gateway video generation failed",
+                message = (event["message"] as? JsonPrimitive)?.contentOrNull ?: "Gateway video generation failed",
                 response = JsonObject(event),
             )
         }
@@ -222,9 +223,9 @@ public class KtorGatewayTransport(
             videos = event["videos"]?.jsonArray.orEmpty().map { video ->
                 val obj = video.jsonObject
                 GeneratedFile(
-                    mediaType = obj["mediaType"]?.jsonPrimitive?.contentOrNull ?: "video/mp4",
-                    base64 = obj["data"]?.jsonPrimitive?.contentOrNull.orEmpty(),
-                    url = obj["url"]?.jsonPrimitive?.contentOrNull,
+                    mediaType = (obj["mediaType"] as? JsonPrimitive)?.contentOrNull ?: "video/mp4",
+                    base64 = (obj["data"] as? JsonPrimitive)?.contentOrNull.orEmpty(),
+                    url = (obj["url"] as? JsonPrimitive)?.contentOrNull,
                 )
             },
             warnings = callWarnings(event["warnings"]),
@@ -257,10 +258,10 @@ public class KtorGatewayTransport(
         return RerankingModelResult(
             results = value["ranking"]?.jsonArray.orEmpty().map { item ->
                 val obj = item.jsonObject
-                val index = obj["index"]?.jsonPrimitive?.intOrNull ?: 0
+                val index = (obj["index"] as? JsonPrimitive)?.intOrNull ?: 0
                 RerankedItem(
                     value = params.documents.getOrElse(index) { "" },
-                    score = obj["relevanceScore"]?.jsonPrimitive?.floatOrNull ?: 0f,
+                    score = (obj["relevanceScore"] as? JsonPrimitive)?.floatOrNull ?: 0f,
                     index = index,
                 )
             },
@@ -275,25 +276,26 @@ public class KtorGatewayTransport(
             val obj = model.jsonObject
             val spec = obj["specification"]?.jsonObject ?: return@mapNotNull null
             GatewayLanguageModelEntry(
-                id = obj["id"]?.jsonPrimitive?.contentOrNull ?: return@mapNotNull null,
-                name = obj["name"]?.jsonPrimitive?.contentOrNull.orEmpty(),
-                description = obj["description"]?.jsonPrimitive?.contentOrNull,
+                id = (obj["id"] as? JsonPrimitive)?.contentOrNull ?: return@mapNotNull null,
+                name = (obj["name"] as? JsonPrimitive)?.contentOrNull.orEmpty(),
+                description = (obj["description"] as? JsonPrimitive)?.contentOrNull,
                 pricing = obj["pricing"]?.jsonObject?.let { pricing ->
                     GatewayPricing(
-                        input = pricing["input"]?.jsonPrimitive?.contentOrNull.orEmpty(),
-                        output = pricing["output"]?.jsonPrimitive?.contentOrNull.orEmpty(),
-                        cachedInputTokens = pricing["cachedInputTokens"]?.jsonPrimitive?.contentOrNull
-                            ?: pricing["input_cache_read"]?.jsonPrimitive?.contentOrNull,
-                        cacheCreationInputTokens = pricing["cacheCreationInputTokens"]?.jsonPrimitive?.contentOrNull
-                            ?: pricing["input_cache_write"]?.jsonPrimitive?.contentOrNull,
+                        input = (pricing["input"] as? JsonPrimitive)?.contentOrNull.orEmpty(),
+                        output = (pricing["output"] as? JsonPrimitive)?.contentOrNull.orEmpty(),
+                        cachedInputTokens = (pricing["cachedInputTokens"] as? JsonPrimitive)?.contentOrNull
+                            ?: (pricing["input_cache_read"] as? JsonPrimitive)?.contentOrNull,
+                        cacheCreationInputTokens =
+                        (pricing["cacheCreationInputTokens"] as? JsonPrimitive)?.contentOrNull
+                            ?: (pricing["input_cache_write"] as? JsonPrimitive)?.contentOrNull,
                     )
                 },
                 specification = GatewayLanguageModelSpecification(
-                    specificationVersion = spec["specificationVersion"]?.jsonPrimitive?.contentOrNull ?: "v3",
-                    provider = spec["provider"]?.jsonPrimitive?.contentOrNull.orEmpty(),
-                    modelId = spec["modelId"]?.jsonPrimitive?.contentOrNull.orEmpty(),
+                    specificationVersion = (spec["specificationVersion"] as? JsonPrimitive)?.contentOrNull ?: "v3",
+                    provider = (spec["provider"] as? JsonPrimitive)?.contentOrNull.orEmpty(),
+                    modelId = (spec["modelId"] as? JsonPrimitive)?.contentOrNull.orEmpty(),
                 ),
-                modelType = GatewayModelType.fromWire(obj["modelType"]?.jsonPrimitive?.contentOrNull),
+                modelType = GatewayModelType.fromWire((obj["modelType"] as? JsonPrimitive)?.contentOrNull),
             )
         }
         return GatewayFetchMetadataResponse(models)
@@ -303,9 +305,9 @@ public class KtorGatewayTransport(
         val response = getJson(context.copy(baseUrl = gatewayOrigin(context.baseUrl)), "/v1/credits")
         val obj = response.value.jsonObject
         return GatewayCreditsResponse(
-            balance = obj["balance"]?.jsonPrimitive?.contentOrNull.orEmpty(),
-            totalUsed = obj["total_used"]?.jsonPrimitive?.contentOrNull
-                ?: obj["totalUsed"]?.jsonPrimitive?.contentOrNull.orEmpty(),
+            balance = (obj["balance"] as? JsonPrimitive)?.contentOrNull.orEmpty(),
+            totalUsed = (obj["total_used"] as? JsonPrimitive)?.contentOrNull
+                ?: (obj["totalUsed"] as? JsonPrimitive)?.contentOrNull.orEmpty(),
         )
     }
 
@@ -329,15 +331,15 @@ public class KtorGatewayTransport(
             results = response.value.jsonObject["results"]?.jsonArray.orEmpty().map { row ->
                 val obj = row.jsonObject
                 GatewaySpendReportRow(
-                    day = obj["day"]?.jsonPrimitive?.contentOrNull,
-                    hour = obj["hour"]?.jsonPrimitive?.contentOrNull,
-                    user = obj["user"]?.jsonPrimitive?.contentOrNull,
-                    model = obj["model"]?.jsonPrimitive?.contentOrNull,
-                    tag = obj["tag"]?.jsonPrimitive?.contentOrNull,
-                    provider = obj["provider"]?.jsonPrimitive?.contentOrNull,
+                    day = (obj["day"] as? JsonPrimitive)?.contentOrNull,
+                    hour = (obj["hour"] as? JsonPrimitive)?.contentOrNull,
+                    user = (obj["user"] as? JsonPrimitive)?.contentOrNull,
+                    model = (obj["model"] as? JsonPrimitive)?.contentOrNull,
+                    tag = (obj["tag"] as? JsonPrimitive)?.contentOrNull,
+                    provider = (obj["provider"] as? JsonPrimitive)?.contentOrNull,
                     credentialType = GatewayCredentialType.fromWire(
-                        obj["credential_type"]?.jsonPrimitive?.contentOrNull
-                            ?: obj["credentialType"]?.jsonPrimitive?.contentOrNull,
+                        (obj["credential_type"] as? JsonPrimitive)?.contentOrNull
+                            ?: (obj["credentialType"] as? JsonPrimitive)?.contentOrNull,
                     ),
                     totalCost = TypedJsonOps.jsonNumber(obj, "total_cost", "totalCost"),
                     marketCost = TypedJsonOps.jsonNumberOrNull(obj, "market_cost", "marketCost"),
@@ -366,20 +368,20 @@ public class KtorGatewayTransport(
         )
         val data = response.value.jsonObject["data"]?.jsonObject ?: response.value.jsonObject
         return GatewayGenerationInfo(
-            id = data["id"]?.jsonPrimitive?.contentOrNull.orEmpty(),
+            id = (data["id"] as? JsonPrimitive)?.contentOrNull.orEmpty(),
             totalCost = TypedJsonOps.jsonNumber(data, "total_cost", "totalCost"),
             upstreamInferenceCost = TypedJsonOps.jsonNumber(data, "upstream_inference_cost", "upstreamInferenceCost"),
             usage = TypedJsonOps.jsonNumber(data, "usage"),
-            createdAt = data["created_at"]?.jsonPrimitive?.contentOrNull
-                ?: data["createdAt"]?.jsonPrimitive?.contentOrNull.orEmpty(),
-            model = data["model"]?.jsonPrimitive?.contentOrNull.orEmpty(),
-            isByok = data["is_byok"]?.jsonPrimitive?.booleanOrNull
-                ?: data["isByok"]?.jsonPrimitive?.booleanOrNull ?: false,
-            providerName = data["provider_name"]?.jsonPrimitive?.contentOrNull
-                ?: data["providerName"]?.jsonPrimitive?.contentOrNull.orEmpty(),
-            streamed = data["streamed"]?.jsonPrimitive?.booleanOrNull ?: false,
-            finishReason = data["finish_reason"]?.jsonPrimitive?.contentOrNull
-                ?: data["finishReason"]?.jsonPrimitive?.contentOrNull.orEmpty(),
+            createdAt = (data["created_at"] as? JsonPrimitive)?.contentOrNull
+                ?: (data["createdAt"] as? JsonPrimitive)?.contentOrNull.orEmpty(),
+            model = (data["model"] as? JsonPrimitive)?.contentOrNull.orEmpty(),
+            isByok = (data["is_byok"] as? JsonPrimitive)?.booleanOrNull
+                ?: (data["isByok"] as? JsonPrimitive)?.booleanOrNull ?: false,
+            providerName = (data["provider_name"] as? JsonPrimitive)?.contentOrNull
+                ?: (data["providerName"] as? JsonPrimitive)?.contentOrNull.orEmpty(),
+            streamed = (data["streamed"] as? JsonPrimitive)?.booleanOrNull ?: false,
+            finishReason = (data["finish_reason"] as? JsonPrimitive)?.contentOrNull
+                ?: (data["finishReason"] as? JsonPrimitive)?.contentOrNull.orEmpty(),
             latency = TypedJsonOps.jsonInt(data, "latency"),
             generationTime = TypedJsonOps.jsonInt(data, "generation_time", "generationTime"),
             promptTokens = TypedJsonOps.jsonInt(data, "native_tokens_prompt", "promptTokens"),
@@ -457,16 +459,16 @@ public class KtorGatewayTransport(
     ): LanguageModelResult {
         val obj = value.jsonObject
         val content = contentParts(obj["content"])
-        val text = obj["text"]?.jsonPrimitive?.contentOrNull
+        val text = (obj["text"] as? JsonPrimitive)?.contentOrNull
             ?: content.filterIsInstance<ContentPart.Text>().joinToString("") { it.text }
         return LanguageModelResult(
             text = text,
             toolCalls = content.filterIsInstance<ContentPart.ToolCall>(),
-            finishReason = finishReason(obj["finishReason"]?.jsonPrimitive?.contentOrNull),
+            finishReason = finishReason((obj["finishReason"] as? JsonPrimitive)?.contentOrNull),
             usage = usageFromJson(obj["usage"]),
             providerMetadata = obj["providerMetadata"].let { if (it is JsonObject) ProviderMetadata.Raw(it) else ProviderMetadata.None },
             content = content.ifEmpty { if (text.isNotEmpty()) listOf(ContentPart.Text(text)) else emptyList() },
-            rawFinishReason = obj["finishReason"]?.jsonPrimitive?.contentOrNull,
+            rawFinishReason = (obj["finishReason"] as? JsonPrimitive)?.contentOrNull,
             warnings = callWarnings(obj["warnings"]),
             request = LanguageModelRequestMetadata(body = requestBody),
             response = LanguageModelResponseMetadata(headers = responseHeaders, body = responseBody),
@@ -617,10 +619,12 @@ public class KtorGatewayTransport(
             "stream-start" -> StreamEvent.StreamStart(callWarnings(obj["warnings"]))
             "response-metadata" -> StreamEvent.ResponseMetadata(
                 id = WireDecoder.optionalString(obj, "id", "gateway", "stream event"),
-                timestampMillis = obj["timestampMillis"]?.jsonPrimitive?.longOrNull
-                    ?: obj["timestamp"]?.jsonPrimitive?.doubleOrNull?.let { (it * 1000).toLong() },
+                timestampMillis = (obj["timestampMillis"] as? JsonPrimitive)?.longOrNull
+                    ?: (obj["timestamp"] as? JsonPrimitive)?.doubleOrNull?.let { (it * 1000).toLong() },
                 modelId = WireDecoder.optionalString(obj, "modelId", "gateway", "stream event"),
-                headers = (obj["headers"] as? JsonObject)?.mapValues { it.value.jsonPrimitive.content }.orEmpty(),
+                headers = (obj["headers"] as? JsonObject)
+                    ?.mapValues { (it.value as? JsonPrimitive)?.content.orEmpty() }
+                    .orEmpty(),
                 body = obj["body"],
             )
             "text-start" -> StreamEvent.TextStart(
@@ -672,13 +676,13 @@ public class KtorGatewayTransport(
                 )
             }
             "finish-step" -> StreamEvent.StepFinish(
-                stepNumber = obj["stepNumber"]?.jsonPrimitive?.intOrNull ?: 1,
-                finishReason = finishReason(obj["finishReason"]?.jsonPrimitive?.contentOrNull),
+                stepNumber = (obj["stepNumber"] as? JsonPrimitive)?.intOrNull ?: 1,
+                finishReason = finishReason((obj["finishReason"] as? JsonPrimitive)?.contentOrNull),
                 usage = usageFromJson(obj["usage"]),
             )
             "finish" -> StreamEvent.Finish(
-                totalSteps = obj["totalSteps"]?.jsonPrimitive?.intOrNull ?: 1,
-                finishReason = finishReason(obj["finishReason"]?.jsonPrimitive?.contentOrNull),
+                totalSteps = (obj["totalSteps"] as? JsonPrimitive)?.intOrNull ?: 1,
+                finishReason = finishReason((obj["finishReason"] as? JsonPrimitive)?.contentOrNull),
                 usage = usageFromJson(obj["usage"]),
             )
             "error" -> StreamEvent.Error(WireDecoder.requiredString(obj, "message", "gateway", "stream event"))
@@ -723,9 +727,9 @@ public class KtorGatewayTransport(
         (value as? JsonArray).orEmpty().map { warning ->
             val obj = warning.jsonObject
             CallWarning(
-                type = obj["type"]?.jsonPrimitive?.contentOrNull ?: "other",
-                message = obj["message"]?.jsonPrimitive?.contentOrNull
-                    ?: obj["details"]?.jsonPrimitive?.contentOrNull,
+                type = (obj["type"] as? JsonPrimitive)?.contentOrNull ?: "other",
+                message = (obj["message"] as? JsonPrimitive)?.contentOrNull
+                    ?: (obj["details"] as? JsonPrimitive)?.contentOrNull,
                 details = warning,
             )
         }

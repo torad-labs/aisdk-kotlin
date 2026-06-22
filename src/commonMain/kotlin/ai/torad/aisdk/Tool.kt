@@ -15,7 +15,6 @@ import kotlinx.serialization.json.booleanOrNull
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.doubleOrNull
-import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.longOrNull
 import kotlinx.serialization.serializer
 
@@ -494,7 +493,7 @@ public object Schemas {
         }
 
     private fun schemaFallbackValue(value: JsonElement, schema: JsonElement): Any? {
-        val schemaType = (schema as? JsonObject)?.get("type")?.jsonPrimitive?.contentOrNull
+        val schemaType = ((schema as? JsonObject)?.get("type") as? JsonPrimitive)?.contentOrNull
         return when (schemaType) {
             null -> value
             "object" -> value as? JsonObject ?: throw IllegalArgumentException("Expected JSON object.")
@@ -506,9 +505,12 @@ public object Schemas {
             }
             // longOrNull (not intOrNull): JSON Schema "integer" is not 32-bit — a ms timestamp or
             // 64-bit id is a valid integer that intOrNull would reject as null.
-            "integer" -> value.jsonPrimitive.longOrNull ?: throw IllegalArgumentException("Expected JSON integer.")
-            "number" -> value.jsonPrimitive.doubleOrNull ?: throw IllegalArgumentException("Expected JSON number.")
-            "boolean" -> value.jsonPrimitive.booleanOrNull ?: throw IllegalArgumentException("Expected JSON boolean.")
+            "integer" -> (value as? JsonPrimitive)?.longOrNull
+                ?: throw IllegalArgumentException("Expected JSON integer.")
+            "number" -> (value as? JsonPrimitive)?.doubleOrNull
+                ?: throw IllegalArgumentException("Expected JSON number.")
+            "boolean" -> (value as? JsonPrimitive)?.booleanOrNull
+                ?: throw IllegalArgumentException("Expected JSON boolean.")
             else -> value
         }
     }

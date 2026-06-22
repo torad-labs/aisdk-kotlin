@@ -9,7 +9,6 @@ import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.decodeFromJsonElement
-import kotlinx.serialization.json.jsonPrimitive
 
 /**
  * Structured output for [generateText] / [streamText] / [Agent].
@@ -185,7 +184,7 @@ public sealed class Output<T> {
         internal fun extractChoiceValue(text: String): String {
             val element = aiSdkOutputJson.parseToJsonElement(text)
             return when (element) {
-                is JsonObject -> element["result"]?.jsonPrimitive?.contentOrNull
+                is JsonObject -> (element["result"] as? JsonPrimitive)?.contentOrNull
                 is JsonPrimitive -> element.contentOrNull
                 else -> null
             } ?: throw InvalidResponseDataError(element, "Expected a JSON object with a 'result' string")

@@ -44,7 +44,6 @@ import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.decodeFromJsonElement
 import kotlinx.serialization.json.encodeToJsonElement
 import kotlinx.serialization.json.jsonObject
-import kotlinx.serialization.json.jsonPrimitive
 import kotlin.concurrent.atomics.AtomicBoolean
 import kotlin.concurrent.atomics.AtomicReference
 import kotlin.concurrent.atomics.ExperimentalAtomicApi
@@ -710,7 +709,7 @@ private class DefaultMCPClient(config: MCPClientConfig) : MCPClient {
         }
         return ToolResultOutput.Content(
             value = converted,
-            isError = obj["isError"]?.jsonPrimitive?.booleanOrNull == true,
+            isError = (obj["isError"] as? JsonPrimitive)?.booleanOrNull == true,
         )
     }
 }

@@ -5,8 +5,8 @@ import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.intOrNull
-import kotlinx.serialization.json.jsonPrimitive
 
 public data class GeneratedFile(
     val mediaType: String,
@@ -229,9 +229,9 @@ public data class ImageModelUsage(
         internal fun fromOpenAI(value: JsonElement?): ImageModelUsage {
             val obj = value as? JsonObject ?: return ImageModelUsage()
             return ImageModelUsage(
-                inputTokens = obj["input_tokens"]?.jsonPrimitive?.intOrNull,
-                outputTokens = obj["output_tokens"]?.jsonPrimitive?.intOrNull,
-                totalTokens = obj["total_tokens"]?.jsonPrimitive?.intOrNull,
+                inputTokens = (obj["input_tokens"] as? JsonPrimitive)?.intOrNull,
+                outputTokens = (obj["output_tokens"] as? JsonPrimitive)?.intOrNull,
+                totalTokens = (obj["total_tokens"] as? JsonPrimitive)?.intOrNull,
             )
         }
     }
