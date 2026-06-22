@@ -1003,6 +1003,66 @@ class MCPClientTest {
         transport.close()
     }
 
+    @Test
+    fun `onResponse resolves a numeric request id echoed back as a JSON string`() = runTest {
+        // Regression: response handlers were keyed by the id's JSON *type* (s:/n:), so a
+        // server that echoes our numeric request id back as a JSON string (1 -> "1") missed
+        // the numeric-keyed handler and the response was dropped as an "unknown message ID".
+        val transport = FakeMCPTransport { message ->
+            when {
+                message is JSONRPCRequest && message.method == "initialize" ->
+                    respond(message.id, initializeResult())
+                message is JSONRPCRequest && message.method == "tools/list" ->
+                    // Echo the numeric request id back as a JSON string instead of a number.
+                    respond(JsonPrimitive(message.id.jsonPrimitive.content), listToolsResult())
+            }
+        }
+        val client = CreateMCPClient(MCPClientConfig(transport = transport))
+
+        // Pre-fix: the string-typed echo misses the handler and throws out of send().
+        val tools = client.listTools()
+        assertEquals("echo", tools.tools.single().name)
+    }
+
+    @Test
+    fun `HTTP transport delivers a response streamed as the POST text event-stream body`() = runTest {
+        // Exercises the POST-response SSE path (launchPostResponseSse): when a POST is answered
+        // with text/event-stream, the body is parsed off the connection scope and the response is
+        // delivered via onMessage to resolve the caller's request. The bug was that this parse ran
+        // INLINE in send() and blocked until the stream closed; the true non-blocking property
+        // cannot be reproduced under MockEngine (it only completes a request once the body channel
+        // closes, so it cannot model a server that holds the stream open), so this guards the
+        // refactored delivery path with a finite stream that closes.
+        val listToolsFrame =
+            JSONRPCResponse(id = JsonPrimitive(1), result = listToolsResult()).toJsonElement()
+        val fixture = TestServer.createTestServer(
+            mutableMapOf(
+                "https://mcp.test/mcp" to UrlHandler(
+                    { request, _ ->
+                        when {
+                            request.method == "GET" -> UrlResponse.Error(status = 405, body = "GET not supported")
+                            "\"method\":\"initialize\"" in request.body -> UrlResponse.JsonValue(
+                                JSONRPCResponse(id = JsonPrimitive(0), result = initializeResult()).toJsonElement(),
+                            )
+                            "\"method\":\"notifications/initialized\"" in request.body -> UrlResponse.Empty(status = 202)
+                            // tools/list response is streamed back as an SSE frame, not application/json.
+                            "\"method\":\"tools/list\"" in request.body ->
+                                UrlResponse.StreamChunks(listOf("event: message\ndata: $listToolsFrame\n\n"))
+                            else -> UrlResponse.Error(status = 500, body = "unexpected request: ${request.body}")
+                        }
+                    },
+                ),
+            ),
+        )
+        fixture.server.start()
+        val transport = HttpMCPTransport(fixture.httpClient(), "https://mcp.test/mcp")
+        val client = CreateMCPClient(MCPClientConfig(transport = transport))
+
+        val tools = withContext(Dispatchers.Default) { withTimeout(20_000) { client.listTools() } }
+        assertEquals("echo", tools.tools.single().name)
+        client.close()
+    }
+
     private fun objectSchema(vararg required: String): JsonObject = buildJsonObject {
         put("type", JsonPrimitive("object"))
         put(

@@ -656,11 +656,12 @@ private class DefaultMCPClient(config: MCPClientConfig) : MCPClient {
 
     private fun rpcIdKey(element: JsonElement): String {
         val primitive = element as? JsonPrimitive ?: return "json:$element"
-        return if (primitive.isString) {
-            "s:${primitive.content}"
-        } else {
-            "n:${primitive.content}"
-        }
+        // Key by the primitive's content, NOT its JSON type: this client only ever
+        // issues numeric ids, so a server that echoes a numeric id back as a JSON
+        // string (e.g. 5 -> "5") must still resolve its registered handler. Mirrors
+        // the reference's Number(id) coercion; without it the typed lookup misses and
+        // the response is dropped as an "unknown message ID".
+        return primitive.content
     }
 
     private fun schemaWithClosedAdditionalProperties(schema: JsonObject): JsonObject =
@@ -1106,17 +1107,42 @@ public class HttpMCPTransport(
             contentType.contains("application/json", ignoreCase = true) -> {
                 JSONRPCMessage.fromJsonBatch(response.bodyAsText()).forEach { onMessage?.invoke(it) }
             }
-            contentType.contains("text/event-stream", ignoreCase = true) -> {
-                McpSseFrame.parseStreamReleasing(response.bodyAsChannel()) { event ->
-                    if (event.event == "message") {
-                        onMessage?.invoke(JSONRPCMessage.fromJson(event.data))
-                    }
-                }
-            }
+            contentType.contains("text/event-stream", ignoreCase = true) -> launchPostResponseSse(response)
             else -> {
                 val error = MCPClientError("MCP HTTP Transport Error: Unexpected content type: $contentType")
                 onError?.invoke(error)
                 throw error
+            }
+        }
+    }
+
+    // A POST may be answered with an SSE stream that stays open until the server has
+    // streamed its response(s). Parsing it inline would block send() — and therefore
+    // the caller's request — until the stream closes. Launch the parse on the
+    // connection scope (the same way readInboundSse() is launched) and return
+    // immediately: the background reader delivers the response via onMessage,
+    // completing the caller's awaiting deferred. Mirrors the reference's non-blocking
+    // `processEvents(); return;`.
+    private fun launchPostResponseSse(response: HttpResponse) {
+        val activeScope = lifecycle.scopeOrNull() ?: return
+        activeScope.launch(start = CoroutineStart.UNDISPATCHED) {
+            try {
+                McpSseFrame.parseStreamReleasing(response.bodyAsChannel()) { event ->
+                    if (event.event == "message") {
+                        // Isolate per-message handling (mirrors readInboundSse): a malformed/
+                        // unknown-ID frame is a NON-fatal protocol error routed to onError, not
+                        // an unwind that kills the rest of the stream.
+                        try {
+                            onMessage?.invoke(JSONRPCMessage.fromJson(event.data))
+                        } catch (error: Throwable) {
+                            if (error is CancellationException) throw error
+                            onError?.invoke(error)
+                        }
+                    }
+                }
+            } catch (error: Throwable) {
+                if (error is CancellationException) throw error
+                if (lifecycle.isActive) onError?.invoke(error)
             }
         }
     }
