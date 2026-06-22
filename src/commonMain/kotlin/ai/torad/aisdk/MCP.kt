@@ -1482,6 +1482,9 @@ public class Experimental_StdioMCPTransport(
     override suspend fun start() {
         val readerScope = lifecycle.begin { CoroutineScope(SupervisorJob() + engineContext) }
             ?: throw MCPClientError("StdioMCPTransport already started.")
+        // Close any pre-existing process before overwriting the field — a reconnect after the
+        // reader EOF'd would otherwise leak the prior child + its FDs.
+        process?.let { stale -> runCatching { stale.close() } }
         val started = CreateMCPStdioProcess(config)
         process = started
         lifecycle.setReader(
@@ -1500,10 +1503,14 @@ public class Experimental_StdioMCPTransport(
                     if (error is CancellationException) throw error
                     onError?.invoke(error)
                 } finally {
-                    // Reader/process exited. Release the lifecycle and fire onClose
-                    // unless close() already won the transition (it then owns onClose).
+                    // Reader/process exited (EOF or error). Release the lifecycle and, when this
+                    // reader owns the teardown, destroy the child + close its streams — the reader
+                    // exiting does NOT otherwise do so, leaking the process handle + FDs — then fire
+                    // onClose. If close() already won the transition it owns onClose.
                     lifecycle.onReaderExited()?.let { deadScope ->
                         deadScope.cancel()
+                        runCatching { started.close() }
+                        if (process === started) process = null
                         onClose?.invoke()
                     }
                 }

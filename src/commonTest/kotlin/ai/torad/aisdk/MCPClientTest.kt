@@ -977,6 +977,32 @@ class MCPClientTest {
         transport.close()
     }
 
+    @Test
+    fun `stdio reader EOF tears down the process so a later send reports not-connected`() = runTest {
+        // Regression: when the child exits (readLine -> null) the reader fired onClose but never
+        // destroyed the process or nulled the field — leaking the handle/FDs (and a reconnect would
+        // overwrite the still-open process). Observable proxy: post-fix the field is nulled, so a
+        // send after EOF reports the clean "not connected" error instead of a write-to-dead-pipe.
+        val transport = Experimental_StdioMCPTransport(
+            StdioConfig(command = "/bin/sh", args = listOf("-c", "exit 0")), // exits immediately -> reader EOF
+        )
+        var closed = false
+        transport.setOnClose { closed = true }
+        try {
+            transport.start()
+        } catch (ignoredOnUnsupportedPlatform: UnsupportedOperationException) {
+            return@runTest // Native/iOS: no subprocess support
+        }
+        waitForRealTime { closed } // reader hit EOF and ran its teardown
+
+        val error = assertFailsWith<MCPClientError> { transport.send(JSONRPCNotification(method = "x")) }
+        assertTrue(
+            error.message?.contains("not connected") == true,
+            "EOF nulls the process; send reports not-connected (pre-fix: a write-to-dead-pipe error)",
+        )
+        transport.close()
+    }
+
     private fun objectSchema(vararg required: String): JsonObject = buildJsonObject {
         put("type", JsonPrimitive("object"))
         put(
