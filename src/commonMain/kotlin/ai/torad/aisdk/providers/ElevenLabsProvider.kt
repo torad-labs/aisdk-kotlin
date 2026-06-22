@@ -28,7 +28,6 @@ import kotlinx.serialization.json.floatOrNull
 import kotlinx.serialization.json.intOrNull
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
-import kotlinx.serialization.json.jsonPrimitive
 
 public const val ELEVENLABS_VERSION: String = "2.0.33"
 
@@ -118,12 +117,12 @@ private class ElevenLabsSpeechModel(
         val queryParams = linkedMapOf(
             "output_format" to elevenLabsOutputFormat(params.responseFormat ?: "mp3_44100_128"),
         )
-        options["enableLogging"]?.jsonPrimitive?.contentOrNull?.let { queryParams["enable_logging"] = it }
+        (options["enableLogging"] as? JsonPrimitive)?.contentOrNull?.let { queryParams["enable_logging"] = it }
         val body = buildJsonObject {
             put("text", JsonPrimitive(params.text))
             put("model_id", JsonPrimitive(modelId))
             // params.language wins; the languageCode provider-option is only a fallback (upstream order).
-            (params.language ?: options["languageCode"]?.jsonPrimitive?.contentOrNull)
+            (params.language ?: (options["languageCode"] as? JsonPrimitive)?.contentOrNull)
                 ?.let { put("language_code", JsonPrimitive(it)) }
             val voiceSettings = buildJsonObject {
                 params.speed?.let { put("speed", JsonPrimitive(it)) }
@@ -237,12 +236,18 @@ private class ElevenLabsTranscriptionModel(
                 MultiPartFormDataContent(
                     formData {
                         append("model_id", modelId)
-                        append("diarize", options["diarize"]?.jsonPrimitive?.contentOrNull ?: "true")
-                        (options["languageCode"]?.jsonPrimitive?.contentOrNull ?: params.language)?.let { append("language_code", it) }
-                        options["tagAudioEvents"]?.jsonPrimitive?.contentOrNull?.let { append("tag_audio_events", it) }
-                        options["numSpeakers"]?.jsonPrimitive?.contentOrNull?.let { append("num_speakers", it) }
-                        options["timestampsGranularity"]?.jsonPrimitive?.contentOrNull?.let { append("timestamps_granularity", it) }
-                        options["fileFormat"]?.jsonPrimitive?.contentOrNull?.let { append("file_format", it) }
+                        append("diarize", (options["diarize"] as? JsonPrimitive)?.contentOrNull ?: "true")
+                        ((options["languageCode"] as? JsonPrimitive)?.contentOrNull ?: params.language)?.let {
+                            append("language_code", it)
+                        }
+                        (options["tagAudioEvents"] as? JsonPrimitive)?.contentOrNull?.let {
+                            append("tag_audio_events", it)
+                        }
+                        (options["numSpeakers"] as? JsonPrimitive)?.contentOrNull?.let { append("num_speakers", it) }
+                        (options["timestampsGranularity"] as? JsonPrimitive)?.contentOrNull?.let {
+                            append("timestamps_granularity", it)
+                        }
+                        (options["fileFormat"] as? JsonPrimitive)?.contentOrNull?.let { append("file_format", it) }
                         append(
                             "file",
                             Base64Codec.decode(params.audio.base64),
@@ -262,26 +267,26 @@ private class ElevenLabsTranscriptionModel(
         val value = response.value.jsonObject
         val words = value["words"]?.jsonArray.orEmpty()
         return TranscriptionModelResult(
-            text = value["text"]?.jsonPrimitive?.contentOrNull,
+            text = (value["text"] as? JsonPrimitive)?.contentOrNull,
             segments = words.map { word ->
                 val obj = word.jsonObject
                 TranscriptSegment(
-                    text = obj["text"]?.jsonPrimitive?.contentOrNull.orEmpty(),
-                    startSeconds = obj["start"]?.jsonPrimitive?.floatOrNull,
-                    endSeconds = obj["end"]?.jsonPrimitive?.floatOrNull,
+                    text = (obj["text"] as? JsonPrimitive)?.contentOrNull.orEmpty(),
+                    startSeconds = (obj["start"] as? JsonPrimitive)?.floatOrNull,
+                    endSeconds = (obj["end"] as? JsonPrimitive)?.floatOrNull,
                 )
             },
             response = LanguageModelResponseMetadata(modelId = modelId, headers = response.headers, body = response.value),
-            language = value["language_code"]?.jsonPrimitive?.contentOrNull,
-            durationInSeconds = words.lastOrNull()?.jsonObject?.get("end")?.jsonPrimitive?.floatOrNull,
+            language = (value["language_code"] as? JsonPrimitive)?.contentOrNull,
+            durationInSeconds = (words.lastOrNull()?.jsonObject?.get("end") as? JsonPrimitive)?.floatOrNull,
         )
     }
 
     private fun elevenLabsErrorMessage(statusCode: Int, parsed: JsonElement?, raw: String): String {
         val obj = parsed as? JsonObject
-        val detail = obj?.get("detail")?.jsonObject?.get("message")?.jsonPrimitive?.contentOrNull
-            ?: obj?.get("detail")?.jsonPrimitive?.contentOrNull
-            ?: obj?.get("message")?.jsonPrimitive?.contentOrNull
+        val detail = (obj?.get("detail")?.jsonObject?.get("message") as? JsonPrimitive)?.contentOrNull
+            ?: (obj?.get("detail") as? JsonPrimitive)?.contentOrNull
+            ?: (obj?.get("message") as? JsonPrimitive)?.contentOrNull
             ?: raw.ifBlank { "request failed" }
         return "ElevenLabs request failed ($statusCode): $detail"
     }
