@@ -65,4 +65,17 @@ class GatewayDefensiveParsingTest {
             "a primitive error field degrades to the raw-body message, not an ISE from ?.jsonObject",
         )
     }
+
+    /**
+     * Regression (Wave 7b, array-element accessors): the gateway rerank parse read each ranking
+     * element via the non-null `item.jsonObject`, throwing ISE if any element is a non-object. The
+     * safe `item as? JsonObject ?: return@mapNotNull null` drops the malformed element; valid ones survive.
+     */
+    @Test
+    fun `rerank drops a malformed ranking element instead of crashing`() = runTest {
+        val result = gateway("""{"ranking":[{"index":0,"relevance_score":0.9},"malformed"]}""")
+            .reranking(ModelId("test-model"))
+            .rerank(RerankingParams(query = "q", documents = listOf("a", "b")))
+        assertEquals(1, result.results.size)
+    }
 }

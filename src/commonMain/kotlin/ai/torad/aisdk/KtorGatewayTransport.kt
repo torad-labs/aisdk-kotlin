@@ -17,7 +17,6 @@ import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.doubleOrNull
 import kotlinx.serialization.json.floatOrNull
 import kotlinx.serialization.json.intOrNull
-import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.longOrNull
 
@@ -107,7 +106,7 @@ public class KtorGatewayTransport(
         val value = response.value.jsonObject
         return EmbeddingModelResult(
             embeddings = (value["embeddings"] as? JsonArray).orEmpty().map { row ->
-                row.jsonArray.map { WireDecoder.embeddingFloat(it, "gateway.embedding") }
+                (row as? JsonArray).orEmpty().map { WireDecoder.embeddingFloat(it, "gateway.embedding") }
             },
             usage = EmbeddingUsage(
                 tokens = ((value["usage"] as? JsonObject)?.get("tokens") as? JsonPrimitive)?.intOrNull ?: 0,
@@ -220,8 +219,8 @@ public class KtorGatewayTransport(
             )
         }
         return VideoModelResult(
-            videos = (event["videos"] as? JsonArray).orEmpty().map { video ->
-                val obj = video.jsonObject
+            videos = (event["videos"] as? JsonArray).orEmpty().mapNotNull { video ->
+                val obj = video as? JsonObject ?: return@mapNotNull null
                 GeneratedFile(
                     mediaType = (obj["mediaType"] as? JsonPrimitive)?.contentOrNull ?: "video/mp4",
                     base64 = (obj["data"] as? JsonPrimitive)?.contentOrNull.orEmpty(),
@@ -256,8 +255,8 @@ public class KtorGatewayTransport(
         )
         val value = response.value.jsonObject
         return RerankingModelResult(
-            results = (value["ranking"] as? JsonArray).orEmpty().map { item ->
-                val obj = item.jsonObject
+            results = (value["ranking"] as? JsonArray).orEmpty().mapNotNull { item ->
+                val obj = item as? JsonObject ?: return@mapNotNull null
                 val index = (obj["index"] as? JsonPrimitive)?.intOrNull ?: 0
                 RerankedItem(
                     value = params.documents.getOrElse(index) { "" },
@@ -273,7 +272,7 @@ public class KtorGatewayTransport(
     override suspend fun getAvailableModels(context: GatewayRequestContext): GatewayFetchMetadataResponse {
         val response = getJson(context, "/config")
         val models = (response.value.jsonObject["models"] as? JsonArray).orEmpty().mapNotNull { model ->
-            val obj = model.jsonObject
+            val obj = model as? JsonObject ?: return@mapNotNull null
             val spec = (obj["specification"] as? JsonObject) ?: return@mapNotNull null
             GatewayLanguageModelEntry(
                 id = (obj["id"] as? JsonPrimitive)?.contentOrNull ?: return@mapNotNull null,
@@ -328,8 +327,8 @@ public class KtorGatewayTransport(
         }.joinToString("&")
         val response = getJson(context.copy(baseUrl = gatewayOrigin(context.baseUrl)), "/v1/report?$query")
         return GatewaySpendReportResponse(
-            results = (response.value.jsonObject["results"] as? JsonArray).orEmpty().map { row ->
-                val obj = row.jsonObject
+            results = (response.value.jsonObject["results"] as? JsonArray).orEmpty().mapNotNull { row ->
+                val obj = row as? JsonObject ?: return@mapNotNull null
                 GatewaySpendReportRow(
                     day = (obj["day"] as? JsonPrimitive)?.contentOrNull,
                     hour = (obj["hour"] as? JsonPrimitive)?.contentOrNull,
@@ -724,8 +723,8 @@ public class KtorGatewayTransport(
     }
 
     private fun callWarnings(value: JsonElement?): List<CallWarning> =
-        (value as? JsonArray).orEmpty().map { warning ->
-            val obj = warning.jsonObject
+        (value as? JsonArray).orEmpty().mapNotNull { warning ->
+            val obj = warning as? JsonObject ?: return@mapNotNull null
             CallWarning(
                 type = (obj["type"] as? JsonPrimitive)?.contentOrNull ?: "other",
                 message = (obj["message"] as? JsonPrimitive)?.contentOrNull
