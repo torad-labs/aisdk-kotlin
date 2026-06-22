@@ -15,7 +15,6 @@ import kotlinx.serialization.json.floatOrNull
 import kotlinx.serialization.json.intOrNull
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
-import kotlinx.serialization.json.jsonPrimitive
 
 public const val VOYAGE_VERSION: String = "1.0.4"
 
@@ -69,10 +68,10 @@ public data class VoyageProviderSettings(
 
     private fun voyageErrorMessage(statusCode: Int, parsed: JsonElement?, raw: String): String {
         val obj = parsed as? JsonObject
-        val message = obj?.get("message")?.jsonPrimitive?.contentOrNull
-            ?: obj?.get("detail")?.jsonPrimitive?.contentOrNull
-            ?: obj?.get("error")?.jsonObject?.get("message")?.jsonPrimitive?.contentOrNull
-            ?: obj?.get("error")?.jsonPrimitive?.contentOrNull
+        val message = (obj?.get("message") as? JsonPrimitive)?.contentOrNull
+            ?: (obj?.get("detail") as? JsonPrimitive)?.contentOrNull
+            ?: (obj?.get("error")?.jsonObject?.get("message") as? JsonPrimitive)?.contentOrNull
+            ?: (obj?.get("error") as? JsonPrimitive)?.contentOrNull
             ?: raw.ifBlank { "request failed" }
         return "Voyage request failed ($statusCode): $message"
     }
@@ -135,7 +134,7 @@ private class VoyageEmbeddingModel(
             embeddings = value["data"]?.jsonArray.orEmpty()
                 .map { item -> item.jsonObject["embedding"]?.jsonArray.orEmpty().map { WireDecoder.embeddingFloat(it, provider) } },
             usage = EmbeddingUsage(
-                tokens = value["usage"]?.jsonObject?.get("total_tokens")?.jsonPrimitive?.intOrNull ?: 0,
+                tokens = (value["usage"]?.jsonObject?.get("total_tokens") as? JsonPrimitive)?.intOrNull ?: 0,
                 raw = value["usage"],
             ),
             request = LanguageModelRequestMetadata(body = body),
@@ -169,16 +168,17 @@ private class VoyageRerankingModel(
         val value = response.value.jsonObject
         val results = value["data"]?.jsonArray.orEmpty().map { item ->
             val obj = item.jsonObject
-            val index = obj["index"]?.jsonPrimitive?.intOrNull ?: 0
+            val index = (obj["index"] as? JsonPrimitive)?.intOrNull ?: 0
             RerankedItem(
                 value = params.documents.getOrElse(index) { "" },
-                score = obj["relevance_score"]?.jsonPrimitive?.floatOrNull ?: 0f,
+                score = (obj["relevance_score"] as? JsonPrimitive)?.floatOrNull ?: 0f,
                 index = index,
             )
         }
+        val totalTokens = (value["usage"]?.jsonObject?.get("total_tokens") as? JsonPrimitive)?.intOrNull ?: 0
         return RerankingModelResult(
             results = results,
-            usage = Usage.of(promptTokens = value["usage"]?.jsonObject?.get("total_tokens")?.jsonPrimitive?.intOrNull ?: 0, completionTokens = 0),
+            usage = Usage.of(promptTokens = totalTokens, completionTokens = 0),
             response = LanguageModelResponseMetadata(headers = response.headers, body = response.value),
         )
     }
