@@ -1,13 +1,12 @@
 package ai.torad.aisdk.providers
 
 import ai.torad.aisdk.*
+import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.contentOrNull
-import kotlinx.serialization.json.jsonArray
-import kotlinx.serialization.json.jsonObject
 
 internal class OpenAIChatStreamState(
     private val provider: String,
@@ -45,12 +44,12 @@ internal class OpenAIChatStreamState(
             return events
         }
         obj["usage"]?.let { usage = convertUsage?.invoke(it) ?: Usage.fromOpenAI(it) }
-        val choice = obj["choices"]?.jsonArray?.firstOrNull()?.jsonObject ?: return events
+        val choice = ((obj["choices"] as? JsonArray)?.firstOrNull() as? JsonObject) ?: return events
         (choice["finish_reason"] as? JsonPrimitive)?.contentOrNull?.let {
             finishReason = FinishReason.fromOpenAI(it)
             rawFinishReason = it
         }
-        val delta = choice["delta"]?.jsonObject ?: return events
+        val delta = (choice["delta"] as? JsonObject) ?: return events
         val reasoning = (delta["reasoning_content"] as? JsonPrimitive)?.contentOrNull
             ?: (delta["reasoning"] as? JsonPrimitive)?.contentOrNull
         if (!reasoning.isNullOrEmpty()) {

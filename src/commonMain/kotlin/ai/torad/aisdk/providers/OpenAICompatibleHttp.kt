@@ -550,7 +550,7 @@ internal abstract class OpenAICompatibleHttpModel(
     }
 
     private fun openAICompatibleErrorMessage(statusCode: Int, parsed: JsonElement?, raw: String): String {
-        val error = (parsed as? JsonObject)?.get("error")?.jsonObject
+        val error = ((parsed as? JsonObject)?.get("error") as? JsonObject)
         val message = (error?.get("message") as? JsonPrimitive)?.contentOrNull
             ?: raw.ifBlank { "OpenAI-compatible request failed" }
         return "OpenAI-compatible request failed ($statusCode): $message"

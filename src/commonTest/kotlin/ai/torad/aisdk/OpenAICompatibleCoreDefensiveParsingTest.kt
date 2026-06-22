@@ -68,4 +68,35 @@ class OpenAICompatibleCoreDefensiveParsingTest {
             "the structured OpenAI-compatible error is built, not an IllegalArgumentException from jsonPrimitive",
         )
     }
+
+    /**
+     * Wave 7 sibling-accessor variant: openAICompatibleErrorMessage navigates
+     * `error?.jsonObject` — `?.jsonObject` throws if `error` is a primitive (`{"error":"plain string"}`),
+     * crashing BEFORE the leaf cast. The safe `(error as? JsonObject)` degrades to the raw fallback.
+     * This hardens the chat-error path for every OpenAI-compatible provider at once.
+     */
+    @Test
+    fun `openai-compatible chat surfaces the structured error on a primitive error`() = runTest {
+        val client = HttpClient(
+            MockEngine {
+                respond(
+                    content = """{"error":"plain string"}""",
+                    status = HttpStatusCode.BadRequest,
+                    headers = headersOf(HttpHeaders.ContentType, "application/json"),
+                )
+            },
+        )
+        val provider = Xai(client, XaiProviderSettings(apiKey = "key"))
+
+        val error = assertFails {
+            provider.chat(ModelId("grok-3")).generate(
+                LanguageModelCallParams(messages = listOf(UserMessage("hi"))),
+            )
+        }
+
+        assertTrue(
+            error.message?.contains("OpenAI-compatible request failed") == true,
+            "a primitive error degrades through the object accessor, no crash",
+        )
+    }
 }
