@@ -4032,6 +4032,8 @@ final class ai.torad.aisdk.providers/FireworksErrorData { // ai.torad.aisdk.prov
 final class ai.torad.aisdk.providers/FireworksImageModel : ai.torad.aisdk/ImageModel { // ai.torad.aisdk.providers/FireworksImageModel|null[0]
     constructor <init>(io.ktor.client/HttpClient, ai.torad.aisdk.providers/FireworksProviderSettings, kotlin/String) // ai.torad.aisdk.providers/FireworksImageModel.<init>|<init>(io.ktor.client.HttpClient;ai.torad.aisdk.providers.FireworksProviderSettings;kotlin.String){}[0]
 
+    final val maxImagesPerCall // ai.torad.aisdk.providers/FireworksImageModel.maxImagesPerCall|{}maxImagesPerCall[0]
+        final fun <get-maxImagesPerCall>(): kotlin/Int // ai.torad.aisdk.providers/FireworksImageModel.maxImagesPerCall.<get-maxImagesPerCall>|<get-maxImagesPerCall>(){}[0]
     final val modelId // ai.torad.aisdk.providers/FireworksImageModel.modelId|{}modelId[0]
         final fun <get-modelId>(): kotlin/String // ai.torad.aisdk.providers/FireworksImageModel.modelId.<get-modelId>|<get-modelId>(){}[0]
     final val provider // ai.torad.aisdk.providers/FireworksImageModel.provider|{}provider[0]

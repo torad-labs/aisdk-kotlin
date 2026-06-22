@@ -132,6 +132,7 @@ public class FireworksImageModel(
     override val modelId: String,
 ) : ImageModel {
     override val provider: String = "fireworks.image"
+    override val maxImagesPerCall: Int = 1
 
     override suspend fun generate(params: ImageGenerationParams): ImageModelResult {
         val backend = fireworksImageBackend(modelId)
