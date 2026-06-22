@@ -40,7 +40,7 @@ public class KtorGatewayTransport(
             context = context,
             path = "/language-model",
             body = body,
-            headers = languageModelHeaders(modelId.value, streaming = false),
+            headers = languageModelHeaders(modelId.value, streaming = false) + params.headers,
         )
         return languageModelResultFromJson(
             value = response.value,
@@ -59,6 +59,7 @@ public class KtorGatewayTransport(
         val url = context.baseUrl.trimEnd('/') + "/language-model"
         val headers = context.headers +
             languageModelHeaders(modelId.value, streaming = true) +
+            params.headers +
             mapOf(HttpHeaders.Accept to "text/event-stream")
         // Route through the incremental streamSse() helper so SSE events are
         // emitted as they arrive instead of buffering the whole body first.
@@ -619,7 +620,9 @@ public class KtorGatewayTransport(
             "response-metadata" -> StreamEvent.ResponseMetadata(
                 id = WireDecoder.optionalString(obj, "id", "gateway", "stream event"),
                 timestampMillis = (obj["timestampMillis"] as? JsonPrimitive)?.longOrNull
-                    ?: (obj["timestamp"] as? JsonPrimitive)?.doubleOrNull?.let { (it * 1000).toLong() },
+                    ?: (obj["timestamp"] as? JsonPrimitive)?.doubleOrNull?.let { (it * 1000).toLong() }
+                    ?: (obj["timestamp"] as? JsonPrimitive)?.contentOrNull
+                        ?.let { runCatching { kotlin.time.Instant.parse(it).toEpochMilliseconds() }.getOrNull() },
                 modelId = WireDecoder.optionalString(obj, "modelId", "gateway", "stream event"),
                 headers = (obj["headers"] as? JsonObject)
                     ?.mapValues { (it.value as? JsonPrimitive)?.content.orEmpty() }
@@ -684,7 +687,12 @@ public class KtorGatewayTransport(
                 finishReason = finishReason((obj["finishReason"] as? JsonPrimitive)?.contentOrNull),
                 usage = usageFromJson(obj["usage"]),
             )
-            "error" -> StreamEvent.Error(WireDecoder.requiredString(obj, "message", "gateway", "stream event"))
+            "error" -> StreamEvent.Error(
+                (obj["error"] as? JsonPrimitive)?.contentOrNull
+                    ?: obj["error"]?.toString()
+                    ?: (obj["message"] as? JsonPrimitive)?.contentOrNull
+                    ?: "Gateway stream error"
+            )
             "raw" -> StreamEvent.Raw(obj["rawValue"] ?: value)
             else -> StreamEvent.Raw(
                 buildJsonObject {
