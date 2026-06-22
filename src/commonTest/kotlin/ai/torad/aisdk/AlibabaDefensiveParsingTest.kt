@@ -49,4 +49,39 @@ class AlibabaDefensiveParsingTest {
             "the structured Alibaba error is built, not an IllegalArgumentException from jsonPrimitive",
         )
     }
+
+    /**
+     * Regression (the M4 sibling-accessor bug-class, Wave 7): alibabaErrorMessage navigates
+     * `error?.jsonObject?.get("message")` — `?.jsonObject` throws if `error` is a primitive
+     * (`{"error":"plain string"}`), crashing BEFORE the leaf cast. The safe `(error as? JsonObject)`
+     * degrades to null -> the raw-body fallback.
+     */
+    @Test
+    fun `video generate surfaces the structured error on a primitive error`() = runTest {
+        val client = HttpClient(
+            MockEngine {
+                respond(
+                    content = """{"error":"plain string"}""",
+                    status = HttpStatusCode.BadRequest,
+                    headers = headersOf(HttpHeaders.ContentType, "application/json"),
+                )
+            },
+        )
+        val model = Alibaba(client, AlibabaProviderSettings(apiKey = "key"))
+            .video(ModelId("wan2.6-i2v"))
+
+        val error = assertFails {
+            model.generate(
+                VideoGenerationParams(
+                    prompt = "x",
+                    image = GeneratedFile(mediaType = "image/png", base64 = "", url = "https://example.com/start.png"),
+                ),
+            )
+        }
+
+        assertTrue(
+            error.message?.contains("Alibaba request failed") == true,
+            "a primitive error degrades through the object accessor, no crash",
+        )
+    }
 }
