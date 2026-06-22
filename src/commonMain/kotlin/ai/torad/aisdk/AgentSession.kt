@@ -213,6 +213,9 @@ public class AgentSession<TContext, TOutput>(
                             toolName = event.toolName,
                             input = event.inputJson,
                             approvalId = event.approvalId,
+                            // Carry the HMAC signature (mirrors generate() at ToolLoopAgent.kt:430);
+                            // without it a streamed approval can't be re-validated on resume.
+                            signature = event.signature,
                         )
                         render(AgentSessionStatus.AwaitingApproval)
                     }
@@ -382,6 +385,9 @@ public class AgentSession<TContext, TOutput>(
                         toolName = approval.toolName,
                         input = approval.input,
                         approvalId = approval.approvalId,
+                        // Persist the signature into the replayed log so the resume's fail-closed
+                        // verifySignature (ToolApprovalCoordinator) can re-validate it.
+                        signature = approval.signature,
                     )
                 )
             }
