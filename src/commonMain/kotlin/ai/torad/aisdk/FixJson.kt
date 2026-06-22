@@ -30,6 +30,7 @@ private enum class FixJsonState {
     FINISH,
     INSIDE_STRING,
     INSIDE_STRING_ESCAPE,
+    INSIDE_STRING_UNICODE_ESCAPE,
     INSIDE_LITERAL,
     INSIDE_NUMBER,
     INSIDE_OBJECT_START,
@@ -46,6 +47,7 @@ private enum class FixJsonState {
 private const val LITERAL_FALSE = "false"
 private const val LITERAL_TRUE = "true"
 private const val LITERAL_NULL = "null"
+private const val UNICODE_ESCAPE_HEX_DIGITS = 4
 
 /** Outcome of [PartialJson.parsePartialJson], mirroring v6's four state strings. */
 public enum class PartialJsonState { UndefinedInput, SuccessfulParse, RepairedParse, FailedParse }
@@ -77,6 +79,9 @@ public object PartialJson {
         val stack = ArrayDeque<FixJsonState>().apply { addLast(FixJsonState.ROOT) }
         var lastValidIndex = -1
         var literalStart: Int? = null
+        // Hex digits seen so far inside a \uXXXX escape. lastValidIndex only advances over the
+        // escape once all 4 arrive — so a stream cut mid-escape drops the whole partial \u.
+        var unicodeEscapeDigits = 0
 
         // "A value can begin here": pop the expecting-value state, push the
         // continuation (swapState) we return to once the value completes,
@@ -212,6 +217,31 @@ public object PartialJson {
             }
         }
 
+        fun processStringEscape(char: Char, i: Int) {
+            stack.removeLast()
+            if (char == 'u') {
+                // \uXXXX: enter the unicode-escape state and DON'T advance lastValidIndex until all
+                // 4 hex digits arrive (a cut mid-escape must drop the partial \u).
+                unicodeEscapeDigits = 0
+                stack.addLast(FixJsonState.INSIDE_STRING_UNICODE_ESCAPE)
+            } else {
+                // A complete single-char escape (\", \\, \n, ...): the escaped char is valid.
+                lastValidIndex = i
+            }
+        }
+
+        fun processStringUnicodeEscape(char: Char, i: Int) {
+            // A non-hex char mid-escape is malformed: ignore it (no advance) so the incomplete
+            // escape stays excluded by lastValidIndex and is dropped on drain.
+            if (!isHexDigit(char)) return
+            unicodeEscapeDigits += 1
+            if (unicodeEscapeDigits == UNICODE_ESCAPE_HEX_DIGITS) {
+                // \uXXXX is now complete — pop back to INSIDE_STRING and advance.
+                stack.removeLast()
+                lastValidIndex = i
+            }
+        }
+
         fun processArrayStart(char: Char, i: Int) {
             if (char == ']') {
                 lastValidIndex = i
@@ -259,10 +289,8 @@ public object PartialJson {
                     processValueStart(char, i, FixJsonState.INSIDE_OBJECT_AFTER_VALUE)
                 FixJsonState.INSIDE_OBJECT_AFTER_VALUE -> processAfterObjectValue(char, i)
                 FixJsonState.INSIDE_STRING -> processString(char, i)
-                FixJsonState.INSIDE_STRING_ESCAPE -> {
-                    stack.removeLast()
-                    lastValidIndex = i
-                }
+                FixJsonState.INSIDE_STRING_ESCAPE -> processStringEscape(char, i)
+                FixJsonState.INSIDE_STRING_UNICODE_ESCAPE -> processStringUnicodeEscape(char, i)
                 FixJsonState.INSIDE_ARRAY_START -> processArrayStart(char, i)
                 FixJsonState.INSIDE_ARRAY_AFTER_VALUE -> processArrayAfterValue(char, i)
                 FixJsonState.INSIDE_ARRAY_AFTER_COMMA ->
@@ -307,9 +335,15 @@ public object PartialJson {
         FixJsonState.ROOT,
         FixJsonState.FINISH,
         FixJsonState.INSIDE_STRING_ESCAPE,
+        // A dangling \ or partial \uXXXX is already excluded by lastValidIndex; the enclosing
+        // INSIDE_STRING frame still appends its closing quote, so the string closes cleanly.
+        FixJsonState.INSIDE_STRING_UNICODE_ESCAPE,
         FixJsonState.INSIDE_NUMBER,
         -> ""
     }
+
+    private fun isHexDigit(char: Char): Boolean =
+        char in '0'..'9' || char in 'a'..'f' || char in 'A'..'F'
 
     private fun literalTail(partial: String): String = when {
         LITERAL_TRUE.startsWith(partial) -> LITERAL_TRUE.substring(partial.length)
