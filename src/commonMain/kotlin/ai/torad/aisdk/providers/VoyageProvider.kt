@@ -13,7 +13,6 @@ import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.floatOrNull
 import kotlinx.serialization.json.intOrNull
-import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 
 public const val VOYAGE_VERSION: String = "1.0.4"
@@ -70,7 +69,7 @@ public data class VoyageProviderSettings(
         val obj = parsed as? JsonObject
         val message = (obj?.get("message") as? JsonPrimitive)?.contentOrNull
             ?: (obj?.get("detail") as? JsonPrimitive)?.contentOrNull
-            ?: (obj?.get("error")?.jsonObject?.get("message") as? JsonPrimitive)?.contentOrNull
+            ?: ((obj?.get("error") as? JsonObject)?.get("message") as? JsonPrimitive)?.contentOrNull
             ?: (obj?.get("error") as? JsonPrimitive)?.contentOrNull
             ?: raw.ifBlank { "request failed" }
         return "Voyage request failed ($statusCode): $message"
@@ -131,10 +130,13 @@ private class VoyageEmbeddingModel(
         )
         val value = response.value.jsonObject
         return EmbeddingModelResult(
-            embeddings = value["data"]?.jsonArray.orEmpty()
-                .map { item -> item.jsonObject["embedding"]?.jsonArray.orEmpty().map { WireDecoder.embeddingFloat(it, provider) } },
+            embeddings = (value["data"] as? JsonArray).orEmpty()
+                .map { item ->
+                    val row = (item.jsonObject["embedding"] as? JsonArray).orEmpty()
+                    row.map { WireDecoder.embeddingFloat(it, provider) }
+                },
             usage = EmbeddingUsage(
-                tokens = (value["usage"]?.jsonObject?.get("total_tokens") as? JsonPrimitive)?.intOrNull ?: 0,
+                tokens = ((value["usage"] as? JsonObject)?.get("total_tokens") as? JsonPrimitive)?.intOrNull ?: 0,
                 raw = value["usage"],
             ),
             request = LanguageModelRequestMetadata(body = body),
@@ -166,7 +168,7 @@ private class VoyageRerankingModel(
             headers = settings.voyageHeaders(params.headers),
         )
         val value = response.value.jsonObject
-        val results = value["data"]?.jsonArray.orEmpty().map { item ->
+        val results = (value["data"] as? JsonArray).orEmpty().map { item ->
             val obj = item.jsonObject
             val index = (obj["index"] as? JsonPrimitive)?.intOrNull ?: 0
             RerankedItem(
@@ -175,7 +177,7 @@ private class VoyageRerankingModel(
                 index = index,
             )
         }
-        val totalTokens = (value["usage"]?.jsonObject?.get("total_tokens") as? JsonPrimitive)?.intOrNull ?: 0
+        val totalTokens = ((value["usage"] as? JsonObject)?.get("total_tokens") as? JsonPrimitive)?.intOrNull ?: 0
         return RerankingModelResult(
             results = results,
             usage = Usage.of(promptTokens = totalTokens, completionTokens = 0),

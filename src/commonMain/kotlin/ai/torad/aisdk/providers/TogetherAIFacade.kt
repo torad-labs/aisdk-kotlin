@@ -16,7 +16,6 @@ import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.floatOrNull
 import kotlinx.serialization.json.intOrNull
-import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 
 public const val TOGETHERAI_VERSION: String = "2.0.53"
@@ -117,7 +116,7 @@ private class TogetherAIImageModel(
                 userAgent = "ai-sdk/togetherai/$TOGETHERAI_VERSION",
             ),
         )
-        val images = response.value.jsonObject["data"]?.jsonArray.orEmpty().mapIndexed { index, item ->
+        val images = (response.value.jsonObject["data"] as? JsonArray).orEmpty().mapIndexed { index, item ->
             val obj = WireDecoder.objectValue(item, "togetherai", "image generation response", "$.data[$index]")
             GeneratedFile(
                 mediaType = "image/png",
@@ -162,7 +161,7 @@ public class TogetherAIRerankingModel(
             ),
         )
         val value = response.value.jsonObject
-        val ranking = value["results"]?.jsonArray.orEmpty().map { item ->
+        val ranking = (value["results"] as? JsonArray).orEmpty().map { item ->
             val obj = item.jsonObject
             val index = (obj["index"] as? JsonPrimitive)?.intOrNull ?: 0
             RerankedItem(

@@ -9,6 +9,7 @@ import io.ktor.client.HttpClient
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
@@ -103,7 +104,7 @@ private class DeepInfraChatLanguageModel(
 
     private fun Usage.fixDeepInfraUsage(): Usage {
         val rawObject = raw as? JsonObject ?: return this
-        val reasoningTokensElement = rawObject["completion_tokens_details"]?.jsonObject?.get("reasoning_tokens")
+        val reasoningTokensElement = (rawObject["completion_tokens_details"] as? JsonObject)?.get("reasoning_tokens")
         val reasoningTokens = (reasoningTokensElement as? JsonPrimitive)?.intOrNull ?: return this
         val completionTokens = (rawObject["completion_tokens"] as? JsonPrimitive)?.intOrNull ?: return this
         if (reasoningTokens <= completionTokens) return this
@@ -155,7 +156,7 @@ private class DeepInfraImageModel(
                 userAgent = "ai-sdk/deepinfra/$DEEPINFRA_VERSION",
             ),
         )
-        val images = response.value.jsonObject["images"]?.jsonArray.orEmpty().mapIndexed { index, image ->
+        val images = (response.value.jsonObject["images"] as? JsonArray).orEmpty().mapIndexed { index, image ->
             // Require a real string payload; the old `.orEmpty()` produced a zero-byte PNG that
             // passed generateImage's empty-list guard and surfaced as a false success.
             val base64 = WireDecoder.stringValue(image, "deepinfra", "image generation response", "$.images[$index]")

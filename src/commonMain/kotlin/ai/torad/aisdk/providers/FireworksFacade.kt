@@ -207,7 +207,7 @@ public class FireworksImageModel(
             val status = (response.value.jsonObject["status"] as? JsonPrimitive)?.contentOrNull
             when (status) {
                 "Ready" -> {
-                    val sample = response.value.jsonObject["result"]?.jsonObject?.get("sample")
+                    val sample = (response.value.jsonObject["result"] as? JsonObject)?.get("sample")
                     return (sample as? JsonPrimitive)?.contentOrNull
                         ?: throw InvalidResponseDataError(
                             response.value,
