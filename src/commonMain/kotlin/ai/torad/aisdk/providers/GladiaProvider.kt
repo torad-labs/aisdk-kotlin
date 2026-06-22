@@ -161,8 +161,8 @@ private class GladiaTranscriptionModel(
         val utterances = (transcript["utterances"] as? JsonArray).orEmpty()
         return TranscriptionModelResult(
             text = (transcript["full_transcript"] as? JsonPrimitive)?.contentOrNull.orEmpty(),
-            segments = utterances.map { utterance ->
-                val obj = utterance.jsonObject
+            segments = utterances.mapNotNull { utterance ->
+                val obj = utterance as? JsonObject ?: return@mapNotNull null
                 TranscriptSegment(
                     text = (obj["text"] as? JsonPrimitive)?.contentOrNull.orEmpty(),
                     startSeconds = (obj["start"] as? JsonPrimitive)?.floatOrNull,
@@ -176,7 +176,7 @@ private class GladiaTranscriptionModel(
             ),
             providerMetadata = ProviderMetadata.Raw(JsonObject(mapOf("gladia" to result.value))),
             language = ((transcript["languages"] as? JsonArray)?.firstOrNull() as? JsonPrimitive)?.contentOrNull,
-            durationInSeconds = ((resultObj?.get("metadata") as? JsonObject)
+            durationInSeconds = ((resultObj["metadata"] as? JsonObject)
                 ?.get("audio_duration") as? JsonPrimitive)
                 ?.floatOrNull,
         )

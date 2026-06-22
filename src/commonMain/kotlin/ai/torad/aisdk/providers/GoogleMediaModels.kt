@@ -70,7 +70,8 @@ internal class GoogleGenerativeAIEmbeddingModel(
             )
         } else {
             (response.value.jsonObject["embeddings"] as? JsonArray).orEmpty().map { item ->
-                (item.jsonObject["values"] as? JsonArray).orEmpty().map { WireDecoder.embeddingFloat(it, provider) }
+                val values = ((item as? JsonObject)?.get("values") as? JsonArray).orEmpty()
+                values.map { WireDecoder.embeddingFloat(it, provider) }
             }
         }
         return EmbeddingModelResult(

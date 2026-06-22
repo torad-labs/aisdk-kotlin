@@ -138,7 +138,7 @@ private class LumaImageModel(
         }
         if (params.files.isEmpty()) return
         val referenceType = (options["referenceType"] as? JsonPrimitive)?.contentOrNull ?: "image"
-        val imageConfigs = (options["images"] as? JsonArray).orEmpty().map { it.jsonObject }
+        val imageConfigs = (options["images"] as? JsonArray).orEmpty().mapNotNull { it as? JsonObject }
         params.files.forEach { file ->
             if (file.url.isNullOrBlank()) {
                 throw UnsupportedFunctionalityError(
