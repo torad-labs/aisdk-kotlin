@@ -238,7 +238,7 @@ private class CohereChatLanguageModel(
                     }
                 }
                 is ContentPart.File -> if (part.mediaType.isCohereImageMediaType()) {
-                    parts += cohereImagePart(part.mediaType, part.base64, part.providerMetadata)
+                    parts += cohereImagePart(part.mediaType, part.base64, part.url, part.providerMetadata)
                 } else if (part.mediaType.isCohereDocumentMediaType()) {
                     documents += cohereDocumentPart(part)
                 } else {
@@ -247,7 +247,8 @@ private class CohereChatLanguageModel(
                         "Cohere supports image files, text/* documents, and application/json documents; got ${part.mediaType}.",
                     )
                 }
-                is ContentPart.Image -> parts += cohereImagePart(part.mediaType, part.base64, part.providerMetadata)
+                is ContentPart.Image ->
+                    parts += cohereImagePart(part.mediaType, part.base64, part.url, part.providerMetadata)
                 is ContentPart.Source -> warnings += CallWarning(
                     type = "unsupported",
                     message = "Cohere chat prompt conversion ignores source content parts.",
@@ -310,13 +311,19 @@ private class CohereChatLanguageModel(
     private fun cohereImagePart(
         mediaType: String,
         base64: String,
+        url: String?,
         providerMetadata: ProviderMetadata,
     ): JsonObject = buildJsonObject {
         put("type", JsonPrimitive("image_url"))
         put(
             "image_url",
             buildJsonObject {
-                put("url", JsonPrimitive("data:${mediaType.normalizeCohereImageMediaType()};base64,$base64"))
+                val resolved = if (!url.isNullOrEmpty()) {
+                    url
+                } else {
+                    "data:${mediaType.normalizeCohereImageMediaType()};base64,$base64"
+                }
+                put("url", JsonPrimitive(resolved))
                 val detail = (providerMetadata.toMap()["cohere"] as? JsonObject)?.get("detail") as? JsonPrimitive
                 detail?.contentOrNull?.let { put("detail", JsonPrimitive(it)) }
             },
