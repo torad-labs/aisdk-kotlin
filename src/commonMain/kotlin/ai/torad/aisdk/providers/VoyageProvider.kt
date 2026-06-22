@@ -132,7 +132,7 @@ private class VoyageEmbeddingModel(
         return EmbeddingModelResult(
             embeddings = (value["data"] as? JsonArray).orEmpty()
                 .map { item ->
-                    val row = (item.jsonObject["embedding"] as? JsonArray).orEmpty()
+                    val row = ((item as? JsonObject)?.get("embedding") as? JsonArray).orEmpty()
                     row.map { WireDecoder.embeddingFloat(it, provider) }
                 },
             usage = EmbeddingUsage(
@@ -168,8 +168,8 @@ private class VoyageRerankingModel(
             headers = settings.voyageHeaders(params.headers),
         )
         val value = response.value.jsonObject
-        val results = (value["data"] as? JsonArray).orEmpty().map { item ->
-            val obj = item.jsonObject
+        val results = (value["data"] as? JsonArray).orEmpty().mapNotNull { item ->
+            val obj = item as? JsonObject ?: return@mapNotNull null
             val index = (obj["index"] as? JsonPrimitive)?.intOrNull ?: 0
             RerankedItem(
                 value = params.documents.getOrElse(index) { "" },

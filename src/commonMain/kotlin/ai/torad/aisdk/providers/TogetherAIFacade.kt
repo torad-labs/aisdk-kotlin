@@ -161,8 +161,8 @@ public class TogetherAIRerankingModel(
             ),
         )
         val value = response.value.jsonObject
-        val ranking = (value["results"] as? JsonArray).orEmpty().map { item ->
-            val obj = item.jsonObject
+        val ranking = (value["results"] as? JsonArray).orEmpty().mapNotNull { item ->
+            val obj = item as? JsonObject ?: return@mapNotNull null
             val index = (obj["index"] as? JsonPrimitive)?.intOrNull ?: 0
             RerankedItem(
                 value = params.documents.getOrElse(index) { "" },
