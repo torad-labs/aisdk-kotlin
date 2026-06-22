@@ -22,7 +22,6 @@ import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.floatOrNull
 import kotlinx.serialization.json.intOrNull
-import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 
 public const val DEEPGRAM_VERSION: String = "2.0.33"
@@ -81,7 +80,7 @@ public data class DeepgramProviderSettings(
 
     internal fun deepgramErrorMessage(statusCode: Int, parsed: JsonElement?, raw: String): String {
         val obj = parsed as? JsonObject
-        val detail = (obj?.get("error")?.jsonObject?.get("message") as? JsonPrimitive)?.contentOrNull
+        val detail = ((obj?.get("error") as? JsonObject)?.get("message") as? JsonPrimitive)?.contentOrNull
             ?: (obj?.get("error") as? JsonPrimitive)?.contentOrNull
             ?: raw.ifBlank { "request failed" }
         return "Deepgram request failed ($statusCode): $detail"
@@ -416,11 +415,10 @@ private class DeepgramTranscriptionModel(
             headers = settings.deepgramHeaders(params.headers),
         )
         val value = response.value.jsonObject
-        val firstChannel = value["results"]?.jsonObject
-            ?.get("channels")?.jsonArray?.firstOrNull()?.jsonObject
-        val firstAlternative = firstChannel
-            ?.get("alternatives")?.jsonArray?.firstOrNull()?.jsonObject
-        val words = firstAlternative?.get("words")?.jsonArray.orEmpty()
+        val results = value["results"] as? JsonObject
+        val firstChannel = (results?.get("channels") as? JsonArray)?.firstOrNull() as? JsonObject
+        val firstAlternative = (firstChannel?.get("alternatives") as? JsonArray)?.firstOrNull() as? JsonObject
+        val words = (firstAlternative?.get("words") as? JsonArray).orEmpty()
         return TranscriptionModelResult(
             text = (firstAlternative?.get("transcript") as? JsonPrimitive)?.contentOrNull.orEmpty(),
             segments = words.map { word ->
@@ -439,7 +437,7 @@ private class DeepgramTranscriptionModel(
             ),
             providerMetadata = ProviderMetadata.Raw(JsonObject(mapOf("deepgram" to response.value))),
             language = (firstChannel?.get("detected_language") as? JsonPrimitive)?.contentOrNull,
-            durationInSeconds = (value["metadata"]?.jsonObject?.get("duration") as? JsonPrimitive)?.floatOrNull,
+            durationInSeconds = ((value["metadata"] as? JsonObject)?.get("duration") as? JsonPrimitive)?.floatOrNull,
         )
     }
 
