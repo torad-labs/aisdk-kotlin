@@ -59,7 +59,7 @@ internal class AgentTelemetryDispatcher<TContext>(
             } catch (_: Throwable) {
                 // reporting hook's own failure is best-effort
             }
-            fireTelemetry(feed) { onError(it, event) }
+            fireTelemetry(feed) { onEvent(it, event) }
         }
     }
 
@@ -73,6 +73,6 @@ internal class AgentTelemetryDispatcher<TContext>(
     ) {
         val event = AgentEvent.Errored(t, stepNumber, source)
         try { hooks?.onError?.invoke(event) } catch (ce: CancellationException) { throw ce } catch (_: Throwable) {}
-        fireTelemetry(feed) { onError(it, event) }
+        fireTelemetry(feed) { onEvent(it, event) }
     }
 }
