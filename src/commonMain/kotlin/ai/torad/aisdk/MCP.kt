@@ -1501,7 +1501,15 @@ public class Experimental_StdioMCPTransport(
         // Close any pre-existing process before overwriting the field — a reconnect after the
         // reader EOF'd would otherwise leak the prior child + its FDs.
         process?.let { stale -> runCatching { stale.close() } }
-        val started = CreateMCPStdioProcess(config)
+        val started = try {
+            CreateMCPStdioProcess(config)
+        } catch (@Suppress("TooGenericExceptionCaught") error: Throwable) {
+            // Spawn failed (bad command/cwd/permissions) AFTER begin() already won Idle->Active: undo
+            // the transition and cancel the freshly built scope, else the transport is wedged Active
+            // (a later start() throws "already started") with a leaked scope. Rethrow the real cause.
+            lifecycle.onReaderExited()?.cancel()
+            throw error
+        }
         process = started
         lifecycle.setReader(
             readerScope.launch {
