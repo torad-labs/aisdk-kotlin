@@ -74,12 +74,14 @@ public fun StreamToUiMessages(
 
     fun appendTextPart(id: String, delta: String) {
         val idx = partIndexById[id]
-        if (idx == null) {
+        val existing = idx?.let { parts[it] as? UIMessagePart.Text }
+        if (idx == null || existing == null) {
+            // No part yet, OR the id was first opened as a different kind (a text/reasoning id
+            // collision) — start a fresh Text part rather than crashing on an unchecked cast.
             parts.add(UIMessagePart.Text(text = delta, state = TextUIPartState.Streaming))
             partIndexById[id] = parts.size - 1
             return
         }
-        val existing = parts[idx] as UIMessagePart.Text
         parts[idx] = UIMessagePart.Text(
             text = existing.text + delta,
             state = TextUIPartState.Streaming,
@@ -100,12 +102,13 @@ public fun StreamToUiMessages(
 
     fun appendReasoningPart(id: String, delta: String) {
         val idx = partIndexById[id]
-        if (idx == null) {
+        val existing = idx?.let { parts[it] as? UIMessagePart.Reasoning }
+        if (idx == null || existing == null) {
+            // Mirror appendTextPart: a fresh Reasoning part on an absent index or a kind mismatch.
             parts.add(UIMessagePart.Reasoning(text = delta, state = TextUIPartState.Streaming))
             partIndexById[id] = parts.size - 1
             return
         }
-        val existing = parts[idx] as UIMessagePart.Reasoning
         parts[idx] = UIMessagePart.Reasoning(
             text = existing.text + delta,
             state = TextUIPartState.Streaming,
