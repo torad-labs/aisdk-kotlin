@@ -82,6 +82,10 @@ class OpenResponsesDefensiveParsingTest {
             LanguageModelCallParams(messages = listOf(UserMessage("hi"))),
         )
 
-        assertEquals(3, result.usage.inputTokens.total, "a non-object input_tokens_details degrades cached tokens to 0, no crash")
+        assertEquals(
+            3,
+            result.usage.inputTokens.total,
+            "a non-object input_tokens_details degrades cached tokens to 0, no crash",
+        )
     }
 }
