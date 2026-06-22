@@ -398,6 +398,59 @@ class CohereProviderTest {
         assertTrue(unsupportedFile.message.orEmpty().contains("application/pdf"))
     }
 
+    @Test
+    fun `image supplied by url passes the url through unchanged when base64 is empty`() = runTest {
+        val fixture = TestServer.createTestServer(
+            mutableMapOf(
+                "https://cohere.test/v2/chat" to UrlHandler(
+                    UrlResponse.JsonValue(
+                        Json.parseToJsonElement(
+                            """
+                            {
+                              "generation_id":"gen-1",
+                              "message":{"role":"assistant","content":[{"type":"text","text":"ok"}]},
+                              "finish_reason":"COMPLETE",
+                              "usage":{"tokens":{"input_tokens":1,"output_tokens":1}}
+                            }
+                            """.trimIndent(),
+                        ),
+                    ),
+                ),
+            ),
+        )
+        fixture.server.start()
+        val model = Cohere(
+            fixture.httpClient(),
+            CohereProviderSettings(apiKey = "key", baseURL = "https://cohere.test/v2"),
+        ).languageModel("command-r-plus")
+
+        model.generate(
+            LanguageModelCallParams(
+                messages = listOf(
+                    ModelMessage(
+                        MessageRole.User,
+                        listOf(
+                            ContentPart.Image(
+                                mediaType = "image/png",
+                                base64 = "",
+                                url = "https://images.test/cat.png",
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val body = fixture.calls.single().requestBodyJson.jsonObject
+        val userContent = body["messages"]?.jsonArray.orEmpty()
+            .single { it.jsonObject["role"]?.jsonPrimitive?.contentOrNull == "user" }
+            .jsonObject["content"]?.jsonArray.orEmpty()
+        assertEquals(
+            "https://images.test/cat.png",
+            userContent.single().jsonObject["image_url"]?.jsonObject?.get("url")?.jsonPrimitive?.contentOrNull,
+        )
+    }
+
     private fun Map<String, String>.headerValue(name: String): String? =
         entries.firstOrNull { it.key.equals(name, ignoreCase = true) }?.value
 }
