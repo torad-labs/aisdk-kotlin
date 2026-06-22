@@ -5,7 +5,12 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.channelFlow
 import kotlinx.coroutines.flow.emptyFlow
+import kotlinx.coroutines.flow.filterIsInstance
+import kotlinx.coroutines.flow.last
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.update
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
@@ -116,7 +121,6 @@ public class StructuredObject<RESULT, INPUT>(
         clearObject()
         val controller = AbortController()
         abortController = controller
-        mutableState.value = StructuredObjectPhase.Streaming(null, null, null)
         val request = StructuredObjectRequest(
             api = options.api,
             id = options.id,
@@ -124,55 +128,26 @@ public class StructuredObject<RESULT, INPUT>(
             headers = options.headers,
             abortSignal = controller.signal,
         )
-        val accumulated = StringBuilder()
-        var latestRaw: JsonElement? = null
-        var currentValue: RESULT? = null
         try {
-            options.transport.submit(request).collect { chunk ->
-                controller.signal.throwIfAborted()
-                accumulated.append(chunk)
-                val parsed = PartialJson.parsePartialJson(accumulated.toString()).value ?: return@collect
-                if (!latestRaw.isDeepEqual(parsed)) {
-                    latestRaw = parsed
-                    var validationError: Throwable? = null
-                    when (val validated = Schemas.safeValidateTypes(parsed, options.schema)) {
-                        is ValidationResult.Success<*> -> {
-                            @Suppress("UNCHECKED_CAST")
-                            currentValue = validated.value as RESULT?
-                        }
-                        is ValidationResult.Failure -> {
-                            validationError = validated.error
-                        }
-                    }
-                    mutableState.value = StructuredObjectPhase.Streaming(currentValue, latestRaw, validationError)
+            // Reuse the shared parse/validate loop; drive the StateFlow from its phases.
+            phases(options.transport.submit(request), options.schema, controller.signal).collect { phase ->
+                mutableState.value = phase
+            }
+            // Normal completion: the validation error (if any) rides on Done.error. An abort also
+            // reaches Done (partial preserved) but must NOT fire onFinish — the host didn't finish.
+            if (!controller.signal.isAborted) {
+                (mutableState.value as? StructuredObjectPhase.Done)?.let {
+                    options.onFinish(StructuredObjectFinish(it.value, it.error, it.raw))
                 }
             }
-            val finalRaw = latestRaw
-            val finalError = if (finalRaw == null) {
-                TypeValidationError.wrap(null, IllegalArgumentException("Structured object response did not contain JSON"))
-            } else {
-                when (val validated = Schemas.safeValidateTypes(finalRaw, options.schema)) {
-                    is ValidationResult.Success<*> -> {
-                        @Suppress("UNCHECKED_CAST")
-                        currentValue = validated.value as RESULT?
-                        null
-                    }
-                    is ValidationResult.Failure -> validated.error
-                }
-            }
-            mutableState.value = StructuredObjectPhase.Done(currentValue, finalRaw, finalError)
-            options.onFinish(StructuredObjectFinish(currentValue, finalError, finalRaw))
-        } catch (abort: AbortError) {
-            // Preserve partial state on abort — finally block converts Streaming to Done.
         } catch (c: CancellationException) {
-            // External/structured cancellation (a CancellationException that is NOT our explicit
-            // AbortError) must propagate so cooperative cancellation unwinds the job tree. Ordering
-            // matters: AbortError is a CancellationException subtype, so its catch stays first.
+            // External/structured cancellation (NOT our explicit AbortError, which `phases` already
+            // turned into a Done) must propagate so cooperative cancellation unwinds the job tree.
             throw c
         } catch (t: Throwable) {
             val current = mutableState.value
-            val partial = (current as? StructuredObjectPhase.Streaming)?.partial ?: currentValue
-            val raw = (current as? StructuredObjectPhase.Streaming)?.raw ?: latestRaw
+            val partial = (current as? StructuredObjectPhase.Streaming)?.partial
+            val raw = (current as? StructuredObjectPhase.Streaming)?.raw
             mutableState.value = StructuredObjectPhase.Done(partial, raw, t)
             options.onError(t)
         } finally {
@@ -208,25 +183,162 @@ public class StructuredObject<RESULT, INPUT>(
         mutableState.value = StructuredObjectPhase.Idle
     }
 
-    private fun JsonElement?.isDeepEqual(other: JsonElement?): Boolean = when {
-        this === other -> true
-        this == null || other == null -> false
-        this is JsonNull && other is JsonNull -> true
-        this is JsonPrimitive && other is JsonPrimitive -> primitiveEquals(this, other)
-        this is JsonArray && other is JsonArray ->
-            this.size == other.size && this.indices.all { this[it].isDeepEqual(other[it]) }
-        this is JsonObject && other is JsonObject ->
-            this.keys == other.keys && this.keys.all { key -> this[key].isDeepEqual(other[key]) }
-        else -> false
-    }
+    public companion object {
+        /**
+         * The shared parse/validate loop as a cold Flow of phases — the single source of truth
+         * reused by [submit] and by [StructuredObjectGenerator]. Emits an initial
+         * [StructuredObjectPhase.Streaming], one Streaming per CHANGED partial parse
+         * ([PartialJson.parsePartialJson] -> [Schemas.safeValidateTypes]), then a terminal
+         * [StructuredObjectPhase.Done] carrying the validated value (or the validation error).
+         *
+         * An [AbortError] (cooperative stop via [AbortSignal.throwIfAborted]) becomes a Done that
+         * preserves the latest partial with no error; a non-Abort `CancellationException` and any
+         * other `Throwable` propagate to the caller. `channelFlow` (not `flow {}`) lets us `send`
+         * the terminal Done from the abort `catch` without tripping flow exception-transparency.
+         */
+        internal fun <RESULT> phases(
+            chunks: Flow<String>,
+            schema: Schema<RESULT>,
+            abortSignal: AbortSignal,
+        ): Flow<StructuredObjectPhase<RESULT>> = channelFlow {
+            send(StructuredObjectPhase.Streaming(null, null, null))
+            val accumulated = StringBuilder()
+            var latestRaw: JsonElement? = null
+            var currentValue: RESULT? = null
+            try {
+                chunks.collect { chunk ->
+                    abortSignal.throwIfAborted()
+                    accumulated.append(chunk)
+                    val parsed = PartialJson.parsePartialJson(accumulated.toString()).value ?: return@collect
+                    if (!latestRaw.isDeepEqual(parsed)) {
+                        latestRaw = parsed
+                        when (val validated = Schemas.safeValidateTypes(parsed, schema)) {
+                            is ValidationResult.Success -> {
+                                currentValue = validated.value
+                                send(StructuredObjectPhase.Streaming(currentValue, parsed, null))
+                            }
+                            is ValidationResult.Failure ->
+                                send(StructuredObjectPhase.Streaming(currentValue, parsed, validated.error))
+                        }
+                    }
+                }
+                val finalRaw = latestRaw
+                if (finalRaw == null) {
+                    send(
+                        StructuredObjectPhase.Done(
+                            null,
+                            null,
+                            TypeValidationError.wrap(
+                                null,
+                                IllegalArgumentException("Structured object response did not contain JSON"),
+                            ),
+                        ),
+                    )
+                } else {
+                    when (val validated = Schemas.safeValidateTypes(finalRaw, schema)) {
+                        is ValidationResult.Success -> {
+                            currentValue = validated.value
+                            send(StructuredObjectPhase.Done(currentValue, finalRaw, null))
+                        }
+                        is ValidationResult.Failure ->
+                            send(StructuredObjectPhase.Done(currentValue, finalRaw, validated.error))
+                    }
+                }
+            } catch (ignored: AbortError) {
+                // Cooperative stop: keep the latest partial, no error (the host didn't fail).
+                send(StructuredObjectPhase.Done(currentValue, latestRaw, null))
+            }
+        }
 
-    private fun primitiveEquals(left: JsonPrimitive, right: JsonPrimitive): Boolean {
-        val l = left.jsonPrimitive
-        val r = right.jsonPrimitive
-        return when {
-            l.booleanOrNull != null || r.booleanOrNull != null -> l.booleanOrNull == r.booleanOrNull
-            l.doubleOrNull != null || r.doubleOrNull != null -> l.doubleOrNull == r.doubleOrNull
-            else -> l.content == r.content
+        private fun JsonElement?.isDeepEqual(other: JsonElement?): Boolean = when {
+            this === other -> true
+            this == null || other == null -> false
+            this is JsonNull && other is JsonNull -> true
+            this is JsonPrimitive && other is JsonPrimitive -> primitiveEquals(this, other)
+            this is JsonArray && other is JsonArray -> arraysDeepEqual(this, other)
+            this is JsonObject && other is JsonObject -> objectsDeepEqual(this, other)
+            else -> false
+        }
+
+        private fun arraysDeepEqual(left: JsonArray, right: JsonArray): Boolean =
+            left.size == right.size && left.indices.all { left[it].isDeepEqual(right[it]) }
+
+        private fun objectsDeepEqual(left: JsonObject, right: JsonObject): Boolean =
+            left.keys == right.keys && left.keys.all { key -> left[key].isDeepEqual(right[key]) }
+
+        private fun primitiveEquals(left: JsonPrimitive, right: JsonPrimitive): Boolean {
+            val l = left.jsonPrimitive
+            val r = right.jsonPrimitive
+            return when {
+                l.booleanOrNull != null || r.booleanOrNull != null -> l.booleanOrNull == r.booleanOrNull
+                l.doubleOrNull != null || r.doubleOrNull != null -> l.doubleOrNull == r.doubleOrNull
+                else -> l.content == r.content
+            }
         }
     }
+}
+
+/**
+ * Wires a [LanguageModel] to the structured-object machinery: constrains the model to emit JSON
+ * for [schema], streams its text deltas into [StructuredObject.phases] (the shared parse/validate
+ * loop), and surfaces typed partials/value. Mirrors [TextGenerator] — a PascalCase class, not a
+ * camelCase top-level `generateObject`/`streamObject`.
+ */
+public class StructuredObjectGenerator<RESULT>(
+    private val model: LanguageModel,
+    private val schema: Schema<RESULT>,
+    private val config: CallConfig = CallConfig(),
+    private val schemaName: String = "object",
+    private val schemaDescription: String? = null,
+) {
+    /**
+     * Cold stream of phases: accumulating [StructuredObjectPhase.Streaming] partials terminating in
+     * a single [StructuredObjectPhase.Done]. An in-band [StreamEvent.Error] from the model is
+     * surfaced (not silently dropped) so a provider failure can't masquerade as an empty object.
+     */
+    public fun stream(input: GenerationInput): Flow<StructuredObjectPhase<RESULT>> =
+        StructuredObject.phases(
+            chunks = model.stream(buildParams(input)).textDeltas(),
+            schema = schema,
+            abortSignal = config.abortSignal,
+        )
+
+    /** Text-delta payloads from the model stream, surfacing any in-band [StreamEvent.Error]. */
+    private fun Flow<StreamEvent>.textDeltas(): Flow<String> =
+        onEach { event ->
+            if (event is StreamEvent.Error) throw UiMessageStreamError(event.message, event.cause)
+        }.filterIsInstance<StreamEvent.TextDelta>().map { it.text }
+
+    /** One-shot: drives the stream to [StructuredObjectPhase.Done] and returns the typed result. */
+    public suspend fun generate(input: GenerationInput): StructuredObjectFinish<RESULT> =
+        when (val terminal = stream(input).last()) {
+            is StructuredObjectPhase.Done -> StructuredObjectFinish(terminal.value, terminal.error, terminal.raw)
+            is StructuredObjectPhase.Streaming -> StructuredObjectFinish(terminal.partial, terminal.error, terminal.raw)
+            StructuredObjectPhase.Idle -> StructuredObjectFinish(null, null, null)
+        }
+
+    private fun buildParams(input: GenerationInput): LanguageModelCallParams =
+        LanguageModelCallParams(
+            messages = input.toMessages(null),
+            temperature = config.temperature,
+            topP = config.topP,
+            topK = config.topK,
+            maxOutputTokens = config.maxOutputTokens,
+            stopSequences = config.stopSequences,
+            seed = config.seed,
+            providerOptions = config.providerOptions,
+            abortSignal = config.abortSignal,
+            presencePenalty = config.presencePenalty,
+            frequencyPenalty = config.frequencyPenalty,
+            // Constrain the model to JSON for our schema unless the caller pinned a responseFormat.
+            responseFormat = if (config.responseFormat == ResponseFormat.Text) {
+                ResponseFormat.Json(
+                    schemaName = schemaName,
+                    schemaDescription = schemaDescription,
+                    schemaJson = schema.jsonSchema,
+                )
+            } else {
+                config.responseFormat
+            },
+        )
 }

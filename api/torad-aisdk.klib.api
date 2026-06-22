@@ -1251,6 +1251,8 @@ final class <#A: kotlin/Any?, #B: kotlin/Any?> ai.torad.aisdk/StructuredObject {
     final fun clear() // ai.torad.aisdk/StructuredObject.clear|clear(){}[0]
     final fun stop() // ai.torad.aisdk/StructuredObject.stop|stop(){}[0]
     final suspend fun submit(#B) // ai.torad.aisdk/StructuredObject.submit|submit(1:1){}[0]
+
+    final object Companion // ai.torad.aisdk/StructuredObject.Companion|null[0]
 }
 
 final class <#A: kotlin/Any?, #B: kotlin/Any?> ai.torad.aisdk/StructuredObjectOptions { // ai.torad.aisdk/StructuredObjectOptions|null[0]
@@ -1821,6 +1823,13 @@ final class <#A: kotlin/Any?> ai.torad.aisdk/StructuredObjectFinish { // ai.tora
     final fun equals(kotlin/Any?): kotlin/Boolean // ai.torad.aisdk/StructuredObjectFinish.equals|equals(kotlin.Any?){}[0]
     final fun hashCode(): kotlin/Int // ai.torad.aisdk/StructuredObjectFinish.hashCode|hashCode(){}[0]
     final fun toString(): kotlin/String // ai.torad.aisdk/StructuredObjectFinish.toString|toString(){}[0]
+}
+
+final class <#A: kotlin/Any?> ai.torad.aisdk/StructuredObjectGenerator { // ai.torad.aisdk/StructuredObjectGenerator|null[0]
+    constructor <init>(ai.torad.aisdk/LanguageModel, ai.torad.aisdk/Schema<#A>, ai.torad.aisdk/CallConfig = ..., kotlin/String = ..., kotlin/String? = ...) // ai.torad.aisdk/StructuredObjectGenerator.<init>|<init>(ai.torad.aisdk.LanguageModel;ai.torad.aisdk.Schema<1:0>;ai.torad.aisdk.CallConfig;kotlin.String;kotlin.String?){}[0]
+
+    final fun stream(ai.torad.aisdk/GenerationInput): kotlinx.coroutines.flow/Flow<ai.torad.aisdk/StructuredObjectPhase<#A>> // ai.torad.aisdk/StructuredObjectGenerator.stream|stream(ai.torad.aisdk.GenerationInput){}[0]
+    final suspend fun generate(ai.torad.aisdk/GenerationInput): ai.torad.aisdk/StructuredObjectFinish<#A> // ai.torad.aisdk/StructuredObjectGenerator.generate|generate(ai.torad.aisdk.GenerationInput){}[0]
 }
 
 final class <#A: kotlin/Any?> ai.torad.aisdk/StructuredObjectRequest { // ai.torad.aisdk/StructuredObjectRequest|null[0]
