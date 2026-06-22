@@ -222,7 +222,7 @@ internal class GoogleInteractionsStreamState(
             body = response,
         )
         (response["steps"] as? JsonArray).orEmpty().forEach { step ->
-            events += acceptStep(step.jsonObject, interactionId)
+            (step as? JsonObject)?.let { events += acceptStep(it, interactionId) }
         }
         usage = googleInteractionsUsage(response["usage"])
         rawFinishReason = (response["status"] as? JsonPrimitive)?.contentOrNull
@@ -287,7 +287,7 @@ internal class GoogleInteractionsStreamState(
                 events += StreamEvent.ReasoningDelta(
                     id,
                     (step["summary"] as? JsonArray).orEmpty()
-                        .mapNotNull { (it.jsonObject["text"] as? JsonPrimitive)?.contentOrNull }
+                        .mapNotNull { ((it as? JsonObject)?.get("text") as? JsonPrimitive)?.contentOrNull }
                         .joinToString("\n"),
                     metadata,
                 )
@@ -562,6 +562,19 @@ internal object GoogleInteractions {
     }
 }
 
+    // Map one caller responseFormat entry, skipping a non-object element (Wave 7b). Extracted so
+    // googleInteractionsResponseFormat stays under the cyclomatic-complexity threshold.
+    private fun googleInteractionsFormatEntry(entry: JsonElement): JsonObject? {
+    val obj = entry as? JsonObject ?: return null
+    return buildJsonObject {
+        obj["type"]?.let { put("type", it) }
+        obj["mimeType"]?.let { put("mime_type", it) }
+        obj["schema"]?.let { put("schema", it) }
+        obj["aspectRatio"]?.let { put("aspect_ratio", it) }
+        obj["imageSize"]?.let { put("image_size", it) }
+    }
+    }
+
     fun googleInteractionsResponseFormat(
     responseFormat: ResponseFormat,
     options: JsonObject,
@@ -580,16 +593,7 @@ internal object GoogleInteractions {
             }
         }
     }
-    (options["responseFormat"] as? JsonArray)?.forEach { entry ->
-        val obj = entry.jsonObject
-        entries += buildJsonObject {
-            obj["type"]?.let { put("type", it) }
-            obj["mimeType"]?.let { put("mime_type", it) }
-            obj["schema"]?.let { put("schema", it) }
-            obj["aspectRatio"]?.let { put("aspect_ratio", it) }
-            obj["imageSize"]?.let { put("image_size", it) }
-        }
-    }
+    entries += (options["responseFormat"] as? JsonArray).orEmpty().mapNotNull(::googleInteractionsFormatEntry)
     (options["imageConfig"] as? JsonObject)?.let { image ->
         warnings += CallWarning("other", "google.interactions: providerOptions.google.imageConfig is deprecated. Use providerOptions.google.responseFormat with an image entry instead.")
         if (entries.none { (it.jsonObject["type"] as? JsonPrimitive)?.contentOrNull == "image" }) {
@@ -676,7 +680,7 @@ internal object GoogleInteractions {
         return null
     }
     if (element is JsonPrimitive) return element
-    val obj = element.jsonObject
+    val obj = element as? JsonObject ?: return element
     return buildJsonObject {
         put("type", obj["type"] ?: JsonPrimitive("remote"))
         obj["sources"]?.let { put("sources", it) }
@@ -688,8 +692,9 @@ internal object GoogleInteractions {
     if (element is JsonPrimitive) {
         element
     } else {
-        val obj = element.jsonObject
-        buildJsonObject { obj["allowlist"]?.let { put("allowlist", it) } }
+        (element as? JsonObject)?.let { obj ->
+            buildJsonObject { obj["allowlist"]?.let { put("allowlist", it) } }
+        } ?: element
     }
 
     fun googleInteractionsResult(
@@ -735,11 +740,11 @@ internal object GoogleInteractions {
     val content = mutableListOf<ContentPart>()
     var hasFunctionCall = false
     steps.orEmpty().forEach { stepElement ->
-        val step = stepElement.jsonObject
+        val step = stepElement as? JsonObject ?: return@forEach
         when (val type = (step["type"] as? JsonPrimitive)?.contentOrNull) {
             "model_output" -> {
                 (step["content"] as? JsonArray).orEmpty().forEach { blockElement ->
-                    val block = blockElement.jsonObject
+                    val block = blockElement as? JsonObject ?: return@forEach
                     when ((block["type"] as? JsonPrimitive)?.contentOrNull) {
                         "text" -> {
                             val metadata = googleInteractionsMetadata(interactionId = interactionId)
@@ -765,7 +770,7 @@ internal object GoogleInteractions {
             "thought" -> {
                 content += ContentPart.Reasoning(
                     text = (step["summary"] as? JsonArray).orEmpty()
-                        .mapNotNull { (it.jsonObject["text"] as? JsonPrimitive)?.contentOrNull }
+                        .mapNotNull { ((it as? JsonObject)?.get("text") as? JsonPrimitive)?.contentOrNull }
                         .joinToString("\n"),
                     providerMetadata = googleInteractionsMetadata(
                         signature = (step["signature"] as? JsonPrimitive)?.contentOrNull,
@@ -823,7 +828,7 @@ internal object GoogleInteractions {
     generateId: () -> String,
     metadata: Map<String, JsonElement>?,
 ): List<ContentPart.Source> = annotations.orEmpty().mapNotNull { annotationElement ->
-    val annotation = annotationElement.jsonObject
+    val annotation = annotationElement as? JsonObject ?: return@mapNotNull null
     val type = (annotation["type"] as? JsonPrimitive)?.contentOrNull
     val url = (annotation["url"] as? JsonPrimitive)?.contentOrNull
         ?: (annotation["document_uri"] as? JsonPrimitive)?.contentOrNull
