@@ -26,7 +26,6 @@ import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.doubleOrNull
 import kotlinx.serialization.json.jsonObject
-import kotlinx.serialization.json.jsonPrimitive
 
 /**
  * HTTP transport base for OpenAI-compatible models: URL/query assembly, common
@@ -221,8 +220,8 @@ internal abstract class OpenAICompatibleHttpModel(
         val content = mutableListOf<ContentPart>()
         val text = openAITextContent(message["content"])
         if (text.isNotEmpty()) content += ContentPart.Text(text)
-        val reasoning = message["reasoning_content"]?.jsonPrimitive?.contentOrNull
-            ?: message["reasoning"]?.jsonPrimitive?.contentOrNull
+        val reasoning = (message["reasoning_content"] as? JsonPrimitive)?.contentOrNull
+            ?: (message["reasoning"] as? JsonPrimitive)?.contentOrNull
         if (!reasoning.isNullOrEmpty()) content += ContentPart.Reasoning(reasoning)
         val toolCalls = WireDecoder.optionalArray(message, "tool_calls", provider, "chat completion response", "$.choices[0].message").orEmpty()
             .mapIndexed { index, call ->
@@ -234,14 +233,14 @@ internal abstract class OpenAICompatibleHttpModel(
                 "$.choices[0].message.tool_calls[$index].function",
             )
             ContentPart.ToolCall(
-                toolCallId = callObj["id"]?.jsonPrimitive?.contentOrNull ?: IdGenerator.generate("call"),
+                toolCallId = (callObj["id"] as? JsonPrimitive)?.contentOrNull ?: IdGenerator.generate("call"),
                 toolName = WireDecoder.requiredString(function, "name", provider, "chat completion response", "$.choices[0].message.tool_calls[$index].function"),
                 input = ContentPart.ToolCall.parseOpenAIToolInput(WireDecoder.requiredString(function, "arguments", provider, "chat completion response", "$.choices[0].message.tool_calls[$index].function")),
                 providerMetadata = ContentPart.ToolCall.thoughtSignatureMetadata(callObj)?.let { ProviderMetadata.Raw(JsonObject(it)) } ?: ProviderMetadata.None,
             )
         }
         content += toolCalls
-        val finishReason = FinishReason.fromOpenAI(choice["finish_reason"]?.jsonPrimitive?.contentOrNull)
+        val finishReason = FinishReason.fromOpenAI((choice["finish_reason"] as? JsonPrimitive)?.contentOrNull)
         return LanguageModelResult(
             text = text,
             toolCalls = toolCalls,
@@ -249,13 +248,13 @@ internal abstract class OpenAICompatibleHttpModel(
             usage = (convertUsage ?: Usage.Companion::fromOpenAI).invoke(obj["usage"]),
             providerMetadata = openAIProviderMetadata(obj["providerMetadata"], "openaiCompatible").let { m -> if (m.isEmpty()) ProviderMetadata.None else ProviderMetadata.Raw(JsonObject(m)) },
             content = content,
-            rawFinishReason = choice["finish_reason"]?.jsonPrimitive?.contentOrNull,
+            rawFinishReason = (choice["finish_reason"] as? JsonPrimitive)?.contentOrNull,
             warnings = warnings,
             request = LanguageModelRequestMetadata(requestBody),
             response = LanguageModelResponseMetadata(
-                id = obj["id"]?.jsonPrimitive?.contentOrNull,
-                timestampMillis = obj["created"]?.jsonPrimitive?.doubleOrNull?.let { (it * 1000).toLong() },
-                modelId = obj["model"]?.jsonPrimitive?.contentOrNull,
+                id = (obj["id"] as? JsonPrimitive)?.contentOrNull,
+                timestampMillis = (obj["created"] as? JsonPrimitive)?.doubleOrNull?.let { (it * 1000).toLong() },
+                modelId = (obj["model"] as? JsonPrimitive)?.contentOrNull,
                 headers = responseHeaders,
                 body = responseBody,
             ),
@@ -278,15 +277,15 @@ internal abstract class OpenAICompatibleHttpModel(
         val text = WireDecoder.requiredString(choice, "text", provider, "completion response", "$.choices[0]")
         return LanguageModelResult(
             text = text,
-            finishReason = FinishReason.fromOpenAI(choice["finish_reason"]?.jsonPrimitive?.contentOrNull),
+            finishReason = FinishReason.fromOpenAI((choice["finish_reason"] as? JsonPrimitive)?.contentOrNull),
             usage = Usage.fromOpenAI(obj["usage"]),
-            rawFinishReason = choice["finish_reason"]?.jsonPrimitive?.contentOrNull,
+            rawFinishReason = (choice["finish_reason"] as? JsonPrimitive)?.contentOrNull,
             warnings = warnings,
             request = LanguageModelRequestMetadata(requestBody),
             response = LanguageModelResponseMetadata(
-                id = obj["id"]?.jsonPrimitive?.contentOrNull,
-                timestampMillis = obj["created"]?.jsonPrimitive?.doubleOrNull?.let { (it * 1000).toLong() },
-                modelId = obj["model"]?.jsonPrimitive?.contentOrNull,
+                id = (obj["id"] as? JsonPrimitive)?.contentOrNull,
+                timestampMillis = (obj["created"] as? JsonPrimitive)?.doubleOrNull?.let { (it * 1000).toLong() },
+                modelId = (obj["model"] as? JsonPrimitive)?.contentOrNull,
                 headers = responseHeaders,
                 body = responseBody,
             ),
@@ -494,8 +493,8 @@ internal abstract class OpenAICompatibleHttpModel(
         null, JsonNull -> ""
         is JsonPrimitive -> value.contentOrNull.orEmpty()
         is JsonArray -> value.mapNotNull { item ->
-            item.jsonObject.takeIf { it["type"]?.jsonPrimitive?.contentOrNull == "text" }
-                ?.get("text")?.jsonPrimitive?.contentOrNull
+            (item.jsonObject.takeIf { (it["type"] as? JsonPrimitive)?.contentOrNull == "text" }
+                ?.get("text") as? JsonPrimitive)?.contentOrNull
         }.joinToString("")
         else -> value.toString()
     }
@@ -552,7 +551,8 @@ internal abstract class OpenAICompatibleHttpModel(
 
     private fun openAICompatibleErrorMessage(statusCode: Int, parsed: JsonElement?, raw: String): String {
         val error = (parsed as? JsonObject)?.get("error")?.jsonObject
-        val message = error?.get("message")?.jsonPrimitive?.contentOrNull ?: raw.ifBlank { "OpenAI-compatible request failed" }
+        val message = (error?.get("message") as? JsonPrimitive)?.contentOrNull
+            ?: raw.ifBlank { "OpenAI-compatible request failed" }
         return "OpenAI-compatible request failed ($statusCode): $message"
     }
 

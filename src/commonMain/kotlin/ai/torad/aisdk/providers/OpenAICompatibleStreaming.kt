@@ -8,7 +8,6 @@ import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
-import kotlinx.serialization.json.jsonPrimitive
 
 internal class OpenAIChatStreamState(
     private val provider: String,
@@ -38,7 +37,7 @@ internal class OpenAIChatStreamState(
         val error = obj["error"]?.takeUnless { it is JsonNull }
         if (error != null) {
             events += StreamEvent.Error(
-                (error as? JsonObject)?.get("message")?.jsonPrimitive?.contentOrNull
+                ((error as? JsonObject)?.get("message") as? JsonPrimitive)?.contentOrNull
                     ?: (error as? JsonPrimitive)?.contentOrNull
                     ?: "OpenAI-compatible stream error",
             )
@@ -47,13 +46,13 @@ internal class OpenAIChatStreamState(
         }
         obj["usage"]?.let { usage = convertUsage?.invoke(it) ?: Usage.fromOpenAI(it) }
         val choice = obj["choices"]?.jsonArray?.firstOrNull()?.jsonObject ?: return events
-        choice["finish_reason"]?.jsonPrimitive?.contentOrNull?.let {
+        (choice["finish_reason"] as? JsonPrimitive)?.contentOrNull?.let {
             finishReason = FinishReason.fromOpenAI(it)
             rawFinishReason = it
         }
         val delta = choice["delta"]?.jsonObject ?: return events
-        val reasoning = delta["reasoning_content"]?.jsonPrimitive?.contentOrNull
-            ?: delta["reasoning"]?.jsonPrimitive?.contentOrNull
+        val reasoning = (delta["reasoning_content"] as? JsonPrimitive)?.contentOrNull
+            ?: (delta["reasoning"] as? JsonPrimitive)?.contentOrNull
         if (!reasoning.isNullOrEmpty()) {
             if (!activeReasoning) {
                 events += StreamEvent.ReasoningStart("reasoning-0")
@@ -61,7 +60,7 @@ internal class OpenAIChatStreamState(
             }
             events += StreamEvent.ReasoningDelta("reasoning-0", reasoning)
         }
-        val text = delta["content"]?.jsonPrimitive?.contentOrNull
+        val text = (delta["content"] as? JsonPrimitive)?.contentOrNull
         if (!text.isNullOrEmpty()) {
             if (activeReasoning) {
                 events += StreamEvent.ReasoningEnd("reasoning-0")
@@ -117,7 +116,7 @@ internal class OpenAIChatStreamState(
         } ?: JsonObject(emptyMap())
         val existing = toolCalls[index]
         if (existing == null) {
-            val id = obj["id"]?.jsonPrimitive?.contentOrNull ?: IdGenerator.generate("call")
+            val id = (obj["id"] as? JsonPrimitive)?.contentOrNull ?: IdGenerator.generate("call")
             val name = WireDecoder.requiredString(function, "name", provider, "chat stream tool call", "$.function")
             val arguments = WireDecoder.optionalString(function, "arguments", provider, "chat stream tool call", "$.function").orEmpty()
             val metadata = ContentPart.ToolCall.thoughtSignatureMetadata(obj)?.let { ProviderMetadata.Raw(JsonObject(mapOf(providerKey to JsonObject(it)))) } ?: ProviderMetadata.None
@@ -134,7 +133,7 @@ internal class OpenAIChatStreamState(
             }
         }
         if (existing.finished) return emptyList()
-        val delta = function["arguments"]?.jsonPrimitive?.contentOrNull.orEmpty()
+        val delta = (function["arguments"] as? JsonPrimitive)?.contentOrNull.orEmpty()
         existing.arguments += delta
         return buildList {
             if (delta.isNotEmpty()) add(StreamEvent.ToolInputDelta(existing.id, delta, providerMetadata = existing.providerMetadata))
