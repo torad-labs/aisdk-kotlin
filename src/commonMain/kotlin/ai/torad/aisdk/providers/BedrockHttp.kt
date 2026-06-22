@@ -19,7 +19,6 @@ import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.contentOrNull
-import kotlinx.serialization.json.jsonObject
 
 internal data class BedrockHttpResponse(
     val value: JsonElement,
@@ -172,7 +171,7 @@ internal object BedrockHttp {
     fun bedrockErrorMessage(parsed: JsonElement?, raw: String): String {
         val obj = parsed as? JsonObject ?: return raw
         val message = (obj["message"] as? JsonPrimitive)?.contentOrNull
-            ?: (obj["error"]?.jsonObject?.get("message") as? JsonPrimitive)?.contentOrNull
+            ?: ((obj["error"] as? JsonObject)?.get("message") as? JsonPrimitive)?.contentOrNull
             ?: (obj["type"] as? JsonPrimitive)?.contentOrNull
             ?: raw
         val code = (obj["__type"] as? JsonPrimitive)?.contentOrNull

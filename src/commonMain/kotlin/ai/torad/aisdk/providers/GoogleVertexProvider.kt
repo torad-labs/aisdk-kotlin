@@ -241,9 +241,9 @@ public class GoogleVertexXaiProvider(
         val obj = value as? JsonObject ?: return Usage()
         val promptTokens = (obj["prompt_tokens"] as? JsonPrimitive)?.intOrNull ?: 0
         val completionTokens = (obj["completion_tokens"] as? JsonPrimitive)?.intOrNull ?: 0
-        val cacheReadTokens = ((obj["prompt_tokens_details"]?.jsonObject?.get("cached_tokens") as? JsonPrimitive)?.intOrNull ?: 0)
+        val cacheReadTokens = (((obj["prompt_tokens_details"] as? JsonObject)?.get("cached_tokens") as? JsonPrimitive)?.intOrNull ?: 0)
             .coerceIn(0, promptTokens)
-        val reasoningTokens = ((obj["completion_tokens_details"]?.jsonObject?.get("reasoning_tokens") as? JsonPrimitive)?.intOrNull ?: 0)
+        val reasoningTokens = (((obj["completion_tokens_details"] as? JsonObject)?.get("reasoning_tokens") as? JsonPrimitive)?.intOrNull ?: 0)
             .coerceAtLeast(0)
         return Usage(
             inputTokens = Usage.InputTokenBreakdown(

@@ -394,7 +394,7 @@ private class ReplicateVideoModel(
             }
             if (pollIntervalMs > 0) delay(pollIntervalMs)
             abortSignal.throwIfAborted()
-            val pollUrl = (prediction["urls"]?.jsonObject?.get("get") as? JsonPrimitive)?.contentOrNull
+            val pollUrl = ((prediction["urls"] as? JsonObject)?.get("get") as? JsonPrimitive)?.contentOrNull
                 ?: throw InvalidResponseDataError(null, "Replicate prediction response is missing urls.get")
             prediction = settings.replicateGetJson(
                 client = client,

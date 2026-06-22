@@ -257,7 +257,11 @@ private class BlackForestLabsImageModel(
                 ?: throw InvalidResponseDataError(null, "Missing status in Black Forest Labs poll response")
             when (status) {
                 "Ready" -> {
-                    val result = poll["result"]?.jsonObject ?: throw InvalidResponseDataError(null, "Black Forest Labs poll response is Ready but missing result.sample")
+                    val result = (poll["result"] as? JsonObject)
+                        ?: throw InvalidResponseDataError(
+                            null,
+                            "Black Forest Labs poll response is Ready but missing result.sample",
+                        )
                     val imageUrl = (result["sample"] as? JsonPrimitive)?.contentOrNull
                         ?: throw InvalidResponseDataError(
                             null,

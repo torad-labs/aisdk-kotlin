@@ -15,7 +15,6 @@ import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.booleanOrNull
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.contentOrNull
-import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlin.time.Clock
 
@@ -141,7 +140,7 @@ private class KlingAIVideoModel(
             headers = settings.klingAIHeaders(params.headers, clock),
             body = body,
         )
-        val taskId = (create.value.jsonObject["data"]?.jsonObject?.get("task_id") as? JsonPrimitive)?.contentOrNull
+        val taskId = ((create.value.jsonObject["data"] as? JsonObject)?.get("task_id") as? JsonPrimitive)?.contentOrNull
             ?: throw InvalidResponseDataError(create.value, "No task_id returned from KlingAI API. Response: ${create.value}")
 
         val pollIntervalMs = (options["pollIntervalMs"] as? JsonPrimitive)?.contentOrNull?.toLongOrNull() ?: 5_000L
@@ -161,7 +160,7 @@ private class KlingAIVideoModel(
                 headers = settings.klingAIHeaders(params.headers, clock),
             )
             headers = status.headers
-            val data = status.value.jsonObject["data"]?.jsonObject ?: JsonObject(emptyMap())
+            val data = (status.value.jsonObject["data"] as? JsonObject) ?: JsonObject(emptyMap())
             when (val taskStatus = (data["task_status"] as? JsonPrimitive)?.contentOrNull) {
                 "succeed" -> return klingAISuccessResult(taskId, data, headers, warnings)
                 "failed" -> {
@@ -180,7 +179,7 @@ private class KlingAIVideoModel(
         headers: Map<String, String>,
         warnings: List<CallWarning>,
     ): VideoModelResult {
-        val videos = data["task_result"]?.jsonObject?.get("videos")?.jsonArray.orEmpty()
+        val videos = ((data["task_result"] as? JsonObject)?.get("videos") as? JsonArray).orEmpty()
         val generated = videos.mapNotNull { item ->
             val obj = item.jsonObject
             val url = (obj["url"] as? JsonPrimitive)?.contentOrNull ?: return@mapNotNull null

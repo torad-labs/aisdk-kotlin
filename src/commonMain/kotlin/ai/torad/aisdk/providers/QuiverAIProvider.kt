@@ -17,7 +17,6 @@ import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.doubleOrNull
 import kotlinx.serialization.json.intOrNull
-import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 
 public const val QUIVERAI_VERSION: String = "1.0.0"
@@ -115,7 +114,8 @@ private class QuiverAIImageModel(
             headers = settings.quiverAIHeaders(params.headers),
         )
         val root = response.value.jsonObject
-        val data = root["data"]?.jsonArray ?: throw InvalidResponseDataError(response.value, "QuiverAI response is missing data")
+        val data = (root["data"] as? JsonArray)
+            ?: throw InvalidResponseDataError(response.value, "QuiverAI response is missing data")
         return ImageModelResult(
             images = data.map { item ->
                 val obj = item.jsonObject
@@ -225,7 +225,7 @@ private class QuiverAIImageModel(
     }
 
     private fun quiverAIProviderMetadata(root: JsonObject): JsonElement = buildJsonObject {
-        val data = root["data"]?.jsonArray.orEmpty()
+        val data = (root["data"] as? JsonArray).orEmpty()
         val imageEntries = data.mapIndexed { index, item ->
             buildJsonObject {
                 put("index", JsonPrimitive(index))

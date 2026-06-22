@@ -64,10 +64,13 @@ internal class GoogleGenerativeAIEmbeddingModel(
             parseJson = true,
         )
         val embeddings = if (single) {
-            listOf(response.value.jsonObject["embedding"]?.jsonObject?.get("values")?.jsonArray.orEmpty().map { WireDecoder.embeddingFloat(it, provider) })
+            listOf(
+                ((response.value.jsonObject["embedding"] as? JsonObject)?.get("values") as? JsonArray).orEmpty()
+                    .map { WireDecoder.embeddingFloat(it, provider) },
+            )
         } else {
-            response.value.jsonObject["embeddings"]?.jsonArray.orEmpty().map { item ->
-                item.jsonObject["values"]?.jsonArray.orEmpty().map { WireDecoder.embeddingFloat(it, provider) }
+            (response.value.jsonObject["embeddings"] as? JsonArray).orEmpty().map { item ->
+                (item.jsonObject["values"] as? JsonArray).orEmpty().map { WireDecoder.embeddingFloat(it, provider) }
             }
         }
         return EmbeddingModelResult(
@@ -211,7 +214,7 @@ internal class GoogleGenerativeAIVideoModel(
         if ((current["done"] as? JsonPrimitive)?.booleanOrNull != true) {
             throw NoVideoGeneratedError("Google video generation timed out after $maxAttempts poll attempts.")
         }
-        current["error"]?.jsonObject?.let { error ->
+        (current["error"] as? JsonObject)?.let { error ->
             val message = (error["message"] as? JsonPrimitive)?.contentOrNull ?: error
             throw NoVideoGeneratedError("Google video generation failed: $message")
         }
