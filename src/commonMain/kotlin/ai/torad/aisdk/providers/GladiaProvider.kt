@@ -241,11 +241,17 @@ private class GladiaTranscriptionModel(
         callHeaders: Map<String, String>,
         abortSignal: AbortSignal,
     ): HttpJsonResponse {
+        // The result_url is server-provided. Only attach credentialed headers
+        // (x-gladia-key, custom headers) when it is same-origin with the Gladia
+        // API; otherwise a malicious result_url would exfiltrate the API key.
+        // Mirrors upstream's isSameOrigin guard.
+        val pollHeaders =
+            if (McpUrl.origin(resultUrl) == McpUrl.origin(GLADIA_BASE_URL)) headers(callHeaders) else emptyMap()
         repeat(settings.maxPollAttempts.coerceAtLeast(1)) { attempt ->
             abortSignal.throwIfAborted()
             val response = getJson(
                 url = resultUrl,
-                requestHeaders = headers(callHeaders),
+                requestHeaders = pollHeaders,
             )
             when ((response.value.jsonObject["status"] as? JsonPrimitive)?.contentOrNull) {
                 "done" -> return response
