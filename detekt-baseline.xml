@@ -11,7 +11,6 @@
     <ID>ArgumentListWrapping:AlibabaProvider.kt$AlibabaChatLanguageModel$(providerOptions = transformAlibabaChatOptions(params.providerOptions))</ID>
     <ID>ArgumentListWrapping:AlibabaProvider.kt$AlibabaProvider$(chatProvider.chatModel(modelId))</ID>
     <ID>ArgumentListWrapping:AlibabaProvider.kt$AlibabaProvider$(modelId)</ID>
-    <ID>ArgumentListWrapping:AlibabaProvider.kt$AlibabaVideoModel$("Video generation ${taskStatus.lowercase()}. Task ID: $taskId. ${output["message"]?.jsonPrimitive?.contentOrNull.orEmpty()}")</ID>
     <ID>ArgumentListWrapping:AlibabaProvider.kt$AlibabaVideoModel$("alibaba" to alibabaVideoMetadata(taskId, videoUrl, status.value.jsonObject))</ID>
     <ID>ArgumentListWrapping:AlibabaProvider.kt$AlibabaVideoModel$(JsonObject(mapOf("alibaba" to alibabaVideoMetadata(taskId, videoUrl, status.value.jsonObject))))</ID>
     <ID>ArgumentListWrapping:AlibabaProvider.kt$AlibabaVideoModel$(mapOf("alibaba" to alibabaVideoMetadata(taskId, videoUrl, status.value.jsonObject)))</ID>
@@ -192,7 +191,6 @@
     <ID>ArgumentListWrapping:AssemblyAIProvider.kt$AssemblyAIProvider$(providerId, "embeddingModel", modelId)</ID>
     <ID>ArgumentListWrapping:AssemblyAIProvider.kt$AssemblyAIProvider$(providerId, "languageModel", modelId)</ID>
     <ID>ArgumentListWrapping:AssemblyAIProvider.kt$AssemblyAITranscriptionModel$("AssemblyAI transcription polling timed out after ${settings.maxPollAttempts} attempts")</ID>
-    <ID>ArgumentListWrapping:AssemblyAIProvider.kt$AssemblyAITranscriptionModel$("Transcription failed: ${body["error"]?.jsonPrimitive?.contentOrNull ?: "Unknown error"}")</ID>
     <ID>ArgumentListWrapping:AssemblyAIProviderTest.kt$AssemblyAIProviderTest$("SDK", body["custom_spelling"]?.jsonArray?.single()?.jsonObject?.get("to")?.jsonPrimitive?.contentOrNull)</ID>
     <ID>ArgumentListWrapping:AssemblyAIProviderTest.kt$AssemblyAIProviderTest$("completed", result.providerMetadata.toMap()["assemblyai"]?.jsonObject?.get("status")?.jsonPrimitive?.contentOrNull)</ID>
     <ID>ArgumentListWrapping:AssemblyAIProviderTest.kt$AssemblyAIProviderTest$("status")</ID>
@@ -241,12 +239,7 @@
     <ID>ArgumentListWrapping:BedrockRequest.kt$BedrockRequest$(params.stopSequences.map(::JsonPrimitive))</ID>
     <ID>ArgumentListWrapping:BedrockRequest.kt$BedrockRequest$(tool.parametersSchemaJson)</ID>
     <ID>ArgumentListWrapping:BedrockResponse.kt$BedrockResponse$("bedrock" to metadata)</ID>
-    <ID>ArgumentListWrapping:BedrockResponse.kt$BedrockResponse$("delta")</ID>
-    <ID>ArgumentListWrapping:BedrockResponse.kt$BedrockResponse$("stopSequence", it)</ID>
-    <ID>ArgumentListWrapping:BedrockResponse.kt$BedrockResponse$("stop_sequence")</ID>
     <ID>ArgumentListWrapping:BedrockResponse.kt$BedrockResponse$(JsonObject(mapOf("bedrock" to metadata)))</ID>
-    <ID>ArgumentListWrapping:BedrockResponse.kt$BedrockResponse$(it, "amazon-bedrock.embedding")</ID>
-    <ID>ArgumentListWrapping:BedrockResponse.kt$BedrockResponse$(item, "amazon-bedrock.embedding")</ID>
     <ID>ArgumentListWrapping:BedrockResponse.kt$BedrockResponse$(mapOf("bedrock" to metadata))</ID>
     <ID>ArgumentListWrapping:BedrockResponse.kt$BedrockStreamState$("bedrock" to metadata)</ID>
     <ID>ArgumentListWrapping:BedrockResponse.kt$BedrockStreamState$(JsonObject(mapOf("bedrock" to metadata)))</ID>
@@ -260,13 +253,7 @@
     <ID>ArgumentListWrapping:BlackForestLabsProvider.kt$DefaultBlackForestLabsProvider$(providerId, "embeddingModel", modelId)</ID>
     <ID>ArgumentListWrapping:BlackForestLabsProvider.kt$DefaultBlackForestLabsProvider$(providerId, "languageModel", modelId)</ID>
     <ID>ArgumentListWrapping:ByteDanceProvider.kt$&lt;no name provided>$("bytedance", "ByteDance provider is not configured. Use ByteDance(client, settings).")</ID>
-    <ID>ArgumentListWrapping:ByteDanceProvider.kt$ByteDanceVideoModel$("audio_url", "audio_url", url.jsonPrimitive.contentOrNull.orEmpty(), "reference_audio")</ID>
-    <ID>ArgumentListWrapping:ByteDanceProvider.kt$ByteDanceVideoModel$("image_url", "image_url", url.jsonPrimitive.contentOrNull.orEmpty(), "reference_image")</ID>
-    <ID>ArgumentListWrapping:ByteDanceProvider.kt$ByteDanceVideoModel$("video_url", "video_url", url.jsonPrimitive.contentOrNull.orEmpty(), "reference_video")</ID>
     <ID>ArgumentListWrapping:ByteDanceProvider.kt$ByteDanceVideoModel$(1)</ID>
-    <ID>ArgumentListWrapping:ByteDanceProvider.kt$ByteDanceVideoModel$(byteDanceMediaContent("audio_url", "audio_url", url.jsonPrimitive.contentOrNull.orEmpty(), "reference_audio"))</ID>
-    <ID>ArgumentListWrapping:ByteDanceProvider.kt$ByteDanceVideoModel$(byteDanceMediaContent("image_url", "image_url", url.jsonPrimitive.contentOrNull.orEmpty(), "reference_image"))</ID>
-    <ID>ArgumentListWrapping:ByteDanceProvider.kt$ByteDanceVideoModel$(byteDanceMediaContent("video_url", "video_url", url.jsonPrimitive.contentOrNull.orEmpty(), "reference_video"))</ID>
     <ID>ArgumentListWrapping:ByteDanceProvider.kt$ByteDanceVideoModel$(pollTimeoutMs.coerceAtLeast(1L).toDouble() / interval.toDouble())</ID>
     <ID>ArgumentListWrapping:ByteDanceProvider.kt$DefaultByteDanceProvider$(providerId, "embeddingModel", modelId)</ID>
     <ID>ArgumentListWrapping:ByteDanceProvider.kt$DefaultByteDanceProvider$(providerId, "languageModel", modelId)</ID>
@@ -291,8 +278,6 @@
     <ID>ArgumentListWrapping:CohereProvider.kt$CohereChatLanguageModel$(params.stopSequences.map(::JsonPrimitive))</ID>
     <ID>ArgumentListWrapping:CohereProvider.kt$CohereChatLanguageModel$(response.value.jsonObject, request.body, response.headers, response.value, request.warnings)</ID>
     <ID>ArgumentListWrapping:CohereProvider.kt$CohereEmbeddingModel$("truncate", it)</ID>
-    <ID>ArgumentListWrapping:CohereProvider.kt$CohereEmbeddingModel$(id = value["id"]?.jsonPrimitive?.contentOrNull, headers = response.headers, body = response.value)</ID>
-    <ID>ArgumentListWrapping:CohereProvider.kt$CohereRerankingModel$(id = value["id"]?.jsonPrimitive?.contentOrNull, headers = response.headers, body = response.value)</ID>
     <ID>ArgumentListWrapping:CohereProviderTest.kt$CohereProviderTest$("additionalProperties")</ID>
     <ID>ArgumentListWrapping:CohereProviderTest.kt$CohereProviderTest$("cohere" to buildJsonObject { put("detail", JsonPrimitive("high")) })</ID>
     <ID>ArgumentListWrapping:CohereProviderTest.kt$CohereProviderTest$("detail")</ID>
@@ -338,8 +323,6 @@
     <ID>ArgumentListWrapping:DeepgramProvider.kt$DeepgramProvider$(providerId, "languageModel", modelId)</ID>
     <ID>ArgumentListWrapping:DevTools.kt$("devtools in production", "@ai-sdk/devtools should not be used in production. " + "Remove devToolsMiddleware from your model configuration for production builds.")</ID>
     <ID>ArgumentListWrapping:DevToolsMiddlewareTest.kt$DevToolsMiddlewareTest$("because", output["reasoningParts"]!!.jsonArray.single().jsonObject["text"]!!.jsonPrimitive.content)</ID>
-    <ID>ArgumentListWrapping:ElevenLabsProvider.kt$ElevenLabsTranscriptionModel$("language_code", it)</ID>
-    <ID>ArgumentListWrapping:ElevenLabsProvider.kt$ElevenLabsTranscriptionModel$("timestamps_granularity", it)</ID>
     <ID>ArgumentListWrapping:ElevenLabsProvider.kt$ElevenLabsTranscriptionModel$(HttpTransport)</ID>
     <ID>ArgumentListWrapping:ElevenLabsProvider.kt$ElevenLabsTranscriptionModel$(modelId = modelId, headers = response.headers, body = response.value)</ID>
     <ID>ArgumentListWrapping:ElevenLabsProvider.kt$ElevenLabsTranscriptionModel$(url = "https://api.elevenlabs.io/v1/speech-to-text", errorMessage = ::elevenLabsErrorMessage)</ID>
@@ -459,7 +442,6 @@
     <ID>ArgumentListWrapping:GladiaProviderTest.kt$GladiaProviderTest$(42, body["subtitles_config"]?.jsonObject?.get("maximum_characters_per_row")?.jsonPrimitive?.intOrNull)</ID>
     <ID>ArgumentListWrapping:GoogleHttp.kt$GoogleHttp$(client = client, url = url, method = HttpMethod.Post, headers = headers, body = body, json = aiSdkJson, requestBodyValues = body, errorMessage = googleErrorExtractor,)</ID>
     <ID>ArgumentListWrapping:GoogleInteractionsModel.kt$GoogleInteractions$("google" to providerMetadata)</ID>
-    <ID>ArgumentListWrapping:GoogleInteractionsModel.kt$GoogleInteractions$("imageUri" to JsonPrimitive(it))</ID>
     <ID>ArgumentListWrapping:GoogleInteractionsModel.kt$GoogleInteractions$("signature", JsonPrimitive(it))</ID>
     <ID>ArgumentListWrapping:GoogleInteractionsModel.kt$GoogleInteractions$("stop_sequences", JsonArray(params.stopSequences.map(::JsonPrimitive)))</ID>
     <ID>ArgumentListWrapping:GoogleInteractionsModel.kt$GoogleInteractions$('/')</ID>
@@ -508,11 +490,8 @@
     <ID>ArgumentListWrapping:GoogleLanguageModel.kt$GoogleStreamState$(dataElement, "google", "generateContent stream part", "$.candidates[0].content.parts[$index].inlineData")</ID>
     <ID>ArgumentListWrapping:GoogleLanguageModel.kt$GoogleStreamState$(obj, "text", "google", "generateContent stream part", "$.candidates[0].content.parts[$index]")</ID>
     <ID>ArgumentListWrapping:GoogleLanguageModel.kt$GoogleStreamState$(part, "google", "generateContent stream part", "$.candidates[0].content.parts[$index]")</ID>
-    <ID>ArgumentListWrapping:GoogleMediaModels.kt$GoogleGenerativeAIEmbeddingModel$("values")</ID>
     <ID>ArgumentListWrapping:GoogleMediaModels.kt$GoogleGenerativeAIEmbeddingModel$('/')</ID>
-    <ID>ArgumentListWrapping:GoogleMediaModels.kt$GoogleGenerativeAIEmbeddingModel$(it, provider)</ID>
     <ID>ArgumentListWrapping:GoogleMediaModels.kt$GoogleGenerativeAIEmbeddingModel$(modelId = modelId, headers = response.headers, body = response.value)</ID>
-    <ID>ArgumentListWrapping:GoogleMediaModels.kt$GoogleGenerativeAIEmbeddingModel$(response.value.jsonObject["embedding"]?.jsonObject?.get("values")?.jsonArray.orEmpty().map { WireDecoder.embeddingFloat(it, provider) })</ID>
     <ID>ArgumentListWrapping:GoogleMediaModels.kt$GoogleGenerativeAIImageModel$("google" to response.value)</ID>
     <ID>ArgumentListWrapping:GoogleMediaModels.kt$GoogleGenerativeAIImageModel$("imageEditing", "Google Generative AI Imagen models do not support image editing. Use Google Vertex AI for image editing.")</ID>
     <ID>ArgumentListWrapping:GoogleMediaModels.kt$GoogleGenerativeAIImageModel$("imageMask", "Gemini image models do not support mask-based image editing.")</ID>
@@ -529,9 +508,7 @@
     <ID>ArgumentListWrapping:GoogleMediaModels.kt$GoogleGenerativeAIImageModel$(obj, "bytesBase64Encoded", provider, "image generation response", "$.predictions[$index]")</ID>
     <ID>ArgumentListWrapping:GoogleMediaModels.kt$GoogleGenerativeAIImageModel$(prediction, provider, "image generation response", "$.predictions[$index]")</ID>
     <ID>ArgumentListWrapping:GoogleMediaModels.kt$GoogleGenerativeAIImageModel$(responseObject, "predictions", provider, "image generation response")</ID>
-    <ID>ArgumentListWrapping:GoogleMediaModels.kt$GoogleGenerativeAIVideoModel$("Google video generation failed: ${it["message"]?.jsonPrimitive?.contentOrNull ?: it}")</ID>
     <ID>ArgumentListWrapping:GoogleMediaModels.kt$GoogleGenerativeAIVideoModel$("google" to current)</ID>
-    <ID>ArgumentListWrapping:GoogleMediaModels.kt$GoogleGenerativeAIVideoModel$(1)</ID>
     <ID>ArgumentListWrapping:GoogleMediaModels.kt$GoogleGenerativeAIVideoModel$(JsonObject(mapOf("google" to current)))</ID>
     <ID>ArgumentListWrapping:GoogleMediaModels.kt$GoogleGenerativeAIVideoModel$(mapOf("google" to current))</ID>
     <ID>ArgumentListWrapping:GoogleMediaModels.kt$GoogleGenerativeAIVideoModel$(modelId = modelId, headers = headers, body = current)</ID>
@@ -627,7 +604,6 @@
     <ID>ArgumentListWrapping:HuggingFaceProvider.kt$HuggingFaceResponsesLanguageModel$("image_url", JsonPrimitive("data:${huggingFaceImageMediaType(part.mediaType)};base64,${part.base64}"))</ID>
     <ID>ArgumentListWrapping:HuggingFaceProvider.kt$HuggingFaceResponsesLanguageModel$(JsonObject(emptyMap()))</ID>
     <ID>ArgumentListWrapping:HuggingFaceProvider.kt$HuggingFaceResponsesLanguageModel$(emptyMap())</ID>
-    <ID>ArgumentListWrapping:HuggingFaceProvider.kt$HuggingFaceResponsesLanguageModel$(obj["arguments"]?.jsonPrimitive?.contentOrNull, aiSdkJson)</ID>
     <ID>ArgumentListWrapping:HuggingFaceProvider.kt$HuggingFaceResponsesLanguageModel$(part.mediaType)</ID>
     <ID>ArgumentListWrapping:HuggingFaceProvider.kt$HuggingFaceResponsesLanguageModel$(rawLines, Schemas.jsonSchema&lt;JsonElement>(JsonObject(emptyMap())), aiSdkJson)</ID>
     <ID>ArgumentListWrapping:HuggingFaceProvider.kt$HuggingFaceResponsesStreamState$(StreamEvent.ReasoningEnd(id, settings.huggingFaceItemMetadata(id)))</ID>
@@ -660,17 +636,13 @@
     <ID>ArgumentListWrapping:HumeProviderTest.kt$HumeProviderTest$("type")</ID>
     <ID>ArgumentListWrapping:KlingAIProvider.kt$KlingAIProvider$(providerId, "embeddingModel", modelId)</ID>
     <ID>ArgumentListWrapping:KlingAIProvider.kt$KlingAIProvider$(providerId, "languageModel", modelId)</ID>
-    <ID>ArgumentListWrapping:KlingAIProvider.kt$KlingAIVideoModel$("Video generation failed: ${data["task_status_msg"]?.jsonPrimitive?.contentOrNull ?: "Unknown error"}")</ID>
-    <ID>ArgumentListWrapping:KlingAIProvider.kt$KlingAIVideoModel$("enabled", JsonPrimitive(it))</ID>
     <ID>ArgumentListWrapping:KlingAIProvider.kt$KlingAIVideoModel$("providerOptions", "KlingAI Motion Control requires providerOptions.klingai with videoUrl, characterOrientation, and mode.")</ID>
     <ID>ArgumentListWrapping:KlingAIProvider.kt$KlingAIVideoModel$("unsupported", "KlingAI video models do not support generating multiple videos per call. Only 1 video will be generated.")</ID>
     <ID>ArgumentListWrapping:KlingAIProvider.kt$KlingAIVideoModel$("unsupported", "KlingAI video models do not support seed for deterministic generation.")</ID>
     <ID>ArgumentListWrapping:KlingAIProvider.kt$KlingAIVideoModel$("unsupported", "KlingAI video models do not support the resolution option.")</ID>
-    <ID>ArgumentListWrapping:KlingAIProvider.kt$KlingAIVideoModel$("watermark_info", buildJsonObject { put("enabled", JsonPrimitive(it)) })</ID>
     <ID>ArgumentListWrapping:KlingAIProvider.kt$KlingAIVideoModel$(CallWarning("unsupported", "KlingAI video models do not support generating multiple videos per call. Only 1 video will be generated."))</ID>
     <ID>ArgumentListWrapping:KlingAIProvider.kt$KlingAIVideoModel$(CallWarning("unsupported", "KlingAI video models do not support seed for deterministic generation."))</ID>
     <ID>ArgumentListWrapping:KlingAIProvider.kt$KlingAIVideoModel$(CallWarning("unsupported", "KlingAI video models do not support the resolution option."))</ID>
-    <ID>ArgumentListWrapping:KlingAIProvider.kt$KlingAIVideoModel$(it)</ID>
     <ID>ArgumentListWrapping:KlingAIProviderTest.kt$KlingAIProviderTest$("dynmask", body["dynamic_masks"]?.jsonArray?.single()?.jsonObject?.get("mask")?.jsonPrimitive?.contentOrNull)</ID>
     <ID>ArgumentListWrapping:KlingAIProviderTest.kt$KlingAIProviderTest$("element_id")</ID>
     <ID>ArgumentListWrapping:KlingAIProviderTest.kt$KlingAIProviderTest$("https://cdn.kling.test/video-watermark.mp4", videoMetadata?.get("watermarkUrl")?.jsonPrimitive?.contentOrNull)</ID>
@@ -800,7 +772,6 @@
     <ID>ArgumentListWrapping:OpenAICompatibleModels.kt$OpenAICompatibleCompletionLanguageModel$(response.value, providerName, prepared.body, response.headers, response.value, prepared.warnings)</ID>
     <ID>ArgumentListWrapping:OpenAICompatibleModels.kt$OpenAICompatibleEmbeddingModel$("values", "embedding model ${settings.name}:$modelId supports at most $max values per call")</ID>
     <ID>ArgumentListWrapping:OpenAICompatibleModels.kt$OpenAICompatibleEmbeddingModel$(JsonObject(m))</ID>
-    <ID>ArgumentListWrapping:OpenAICompatibleModels.kt$OpenAICompatibleEmbeddingModel$(it, provider)</ID>
     <ID>ArgumentListWrapping:OpenAICompatibleModels.kt$OpenAICompatibleEmbeddingModel$(m)</ID>
     <ID>ArgumentListWrapping:OpenAICompatibleModels.kt$OpenAICompatibleEmbeddingModel$(params.providerOptions.toMap(), settings.providerOptionsName ?: settings.name)</ID>
     <ID>ArgumentListWrapping:OpenAICompatibleModels.kt$OpenAICompatibleEmbeddingModel$(value["providerMetadata"], settings.name)</ID>
@@ -972,11 +943,6 @@
     <ID>ArgumentListWrapping:ProdiaProvider.kt$ProdiaLanguageModel$(CallWarning("unsupported", "Prodia language models do not support toolChoice."))</ID>
     <ID>ArgumentListWrapping:ProdiaProvider.kt$ProdiaLanguageModel$(StreamEvent.Finish(totalSteps = 1, finishReason = result.finishReason, usage = result.usage, providerMetadata = result.providerMetadata))</ID>
     <ID>ArgumentListWrapping:ProdiaProvider.kt$ProdiaLanguageModel$(totalSteps = 1, finishReason = result.finishReason, usage = result.usage, providerMetadata = result.providerMetadata)</ID>
-    <ID>ArgumentListWrapping:ProdiaProvider.kt$ProdiaMultipartResult$("elapsed")</ID>
-    <ID>ArgumentListWrapping:ProdiaProvider.kt$ProdiaMultipartResult$("elapsed", JsonPrimitive(it))</ID>
-    <ID>ArgumentListWrapping:ProdiaProvider.kt$ProdiaMultipartResult$("ips")</ID>
-    <ID>ArgumentListWrapping:ProdiaProvider.kt$ProdiaMultipartResult$("iterationsPerSecond", JsonPrimitive(it))</ID>
-    <ID>ArgumentListWrapping:ProdiaProvider.kt$ProdiaMultipartResult$(it)</ID>
     <ID>ArgumentListWrapping:ProdiaProvider.kt$ProdiaProvider$(providerId, "embeddingModel", modelId)</ID>
     <ID>ArgumentListWrapping:ProdiaProvider.kt$ProdiaProviderSettings$(HttpHeaders.ContentDisposition, "${ContentDisposition.File}; filename=\"${file.filename ?: "input.${MediaTypes.toExtension(file.mediaType)}"}\"")</ID>
     <ID>ArgumentListWrapping:ProdiaProviderTest.kt$ProdiaProviderTest$("images")</ID>
@@ -1011,7 +977,6 @@
     <ID>ArgumentListWrapping:ProviderExecutedToolLoopTest.kt$ProviderExecutedToolLoopTest$(mapOf("test" to JsonPrimitive("provider-executed")))</ID>
     <ID>ArgumentListWrapping:QuiverAIProvider.kt$QuiverAIImageModel$("files", "QuiverAI generate supports up to $maxReferences reference images for model \"$modelId\".")</ID>
     <ID>ArgumentListWrapping:QuiverAIProvider.kt$QuiverAIImageModel$("files", "QuiverAI vectorize accepts a single input image.")</ID>
-    <ID>ArgumentListWrapping:QuiverAIProvider.kt$QuiverAIImageModel$("mimeType", JsonPrimitive(item.jsonObject["mime_type"]?.jsonPrimitive?.contentOrNull ?: "image/svg+xml"))</ID>
     <ID>ArgumentListWrapping:QuiverAIProvider.kt$QuiverAIImageModel$("prompt", "QuiverAI image generation requires a non-empty prompt for generateImage.")</ID>
     <ID>ArgumentListWrapping:QuiverAIProvider.kt$QuiverAIImageModel$("providerOptions.quiverai.operation", "must be `generate` or `vectorize`")</ID>
     <ID>ArgumentListWrapping:QuiverAIProvider.kt$QuiverAIImageModel$("unsupported", "QuiverAI SVG generation does not support masks. The mask was ignored.")</ID>
@@ -1022,7 +987,6 @@
     <ID>ArgumentListWrapping:QuiverAIProvider.kt$QuiverAIImageModel$(CallWarning("unsupported", "QuiverAI SVG generation does not support the `aspectRatio` option. The setting was ignored."))</ID>
     <ID>ArgumentListWrapping:QuiverAIProvider.kt$QuiverAIImageModel$(CallWarning("unsupported", "QuiverAI SVG generation does not support the `seed` option. The setting was ignored."))</ID>
     <ID>ArgumentListWrapping:QuiverAIProvider.kt$QuiverAIImageModel$(CallWarning("unsupported", "QuiverAI SVG generation does not support the `size` option. The setting was ignored."))</ID>
-    <ID>ArgumentListWrapping:QuiverAIProvider.kt$QuiverAIImageModel$(item.jsonObject["mime_type"]?.jsonPrimitive?.contentOrNull ?: "image/svg+xml")</ID>
     <ID>ArgumentListWrapping:QuiverAIProvider.kt$QuiverAIProvider$(providerId, "embeddingModel", modelId)</ID>
     <ID>ArgumentListWrapping:QuiverAIProvider.kt$QuiverAIProvider$(providerId, "languageModel", modelId)</ID>
     <ID>ArgumentListWrapping:QuiverAIProviderTest.kt$QuiverAIProviderTest$("BAUG", body["references"]?.jsonArray?.get(1)?.jsonObject?.get("base64")?.jsonPrimitive?.contentOrNull)</ID>
@@ -1045,10 +1009,8 @@
     <ID>ArgumentListWrapping:RegistryGatewayParityTest.kt$RegistryGatewayParityTest$(apiKey = "explicit", environment = mapOf("AI_GATEWAY_API_KEY" to "env-key"))</ID>
     <ID>ArgumentListWrapping:RegistryGatewayParityTest.kt$RegistryGatewayParityTest$(environment = mapOf("AI_GATEWAY_API_KEY" to "env-key"))</ID>
     <ID>ArgumentListWrapping:RegistryGatewayParityTest.kt$RegistryGatewayParityTest$(environment = mapOf("VERCEL_OIDC_TOKEN" to "oidc-tok"))</ID>
-    <ID>ArgumentListWrapping:ReplicateProvider.kt$ReplicateImageModel$(output.jsonPrimitive.contentOrNull ?: throw InvalidResponseDataError(output, "Replicate image output is not a URL"))</ID>
     <ID>ArgumentListWrapping:ReplicateProvider.kt$ReplicateProvider$(providerId, "embeddingModel", modelId)</ID>
     <ID>ArgumentListWrapping:ReplicateProvider.kt$ReplicateProvider$(providerId, "languageModel", modelId)</ID>
-    <ID>ArgumentListWrapping:ReplicateProvider.kt$ReplicateVideoModel$("Video generation failed: ${prediction["error"]?.jsonPrimitive?.contentOrNull ?: "Unknown error"}")</ID>
     <ID>ArgumentListWrapping:ReplicateProvider.kt$ReplicateVideoModel$("replicate" to replicateVideoProviderMetadata(prediction, videoUrl))</ID>
     <ID>ArgumentListWrapping:ReplicateProvider.kt$ReplicateVideoModel$(JsonObject(mapOf("replicate" to replicateVideoProviderMetadata(prediction, videoUrl))))</ID>
     <ID>ArgumentListWrapping:ReplicateProvider.kt$ReplicateVideoModel$(mapOf("replicate" to replicateVideoProviderMetadata(prediction, videoUrl)))</ID>
@@ -1058,11 +1020,8 @@
     <ID>ArgumentListWrapping:RevaiProvider.kt$RevaiTranscriptionModel$(HttpHeaders.ContentDisposition, "${ContentDisposition.File}; filename=\"$filename\"")</ID>
     <ID>ArgumentListWrapping:SchemaSanitizer.kt$SchemaSanitizer$(it, dropAdditionalProperties)</ID>
     <ID>ArgumentListWrapping:SchemaSanitizer.kt$SchemaSanitizer$(schema.map { SchemaSanitizer.stripUnsupportedSchemaKeys(it, dropAdditionalProperties) })</ID>
-    <ID>ArgumentListWrapping:StructuredObjectApi.kt$StructuredObject$("Structured object response did not contain JSON")</ID>
-    <ID>ArgumentListWrapping:StructuredObjectApi.kt$StructuredObject$(null, IllegalArgumentException("Structured object response did not contain JSON"))</ID>
     <ID>ArgumentListWrapping:TelemetryTracing.kt$MutableTelemetrySpan$("exception.stacktrace", JsonPrimitive(it))</ID>
     <ID>ArgumentListWrapping:TelemetryTracing.kt$MutableTelemetrySpan$(it)</ID>
-    <ID>ArgumentListWrapping:TelemetryWiringTest.kt$TelemetryWiringTest.RecordingTelemetry$(call, "agentStart")</ID>
     <ID>ArgumentListWrapping:TestServer.kt$UrlHandler$(UrlResponseParameter.RequestFactory(factory))</ID>
     <ID>ArgumentListWrapping:TestServer.kt$UrlHandler$(factory)</ID>
     <ID>ArgumentListWrapping:TestServer.kt$UrlResponseParameter.Factory$(TestServerCallOptions(callNumber))</ID>
@@ -1096,9 +1055,7 @@
     <ID>ArgumentListWrapping:ToolApprovalSignatureTest.kt$ToolApprovalSignatureTest$(secret, signature, "appr_1", "call_2", "deleteFile", input)</ID>
     <ID>ArgumentListWrapping:ToolApprovalSignatureTest.kt$ToolApprovalSignatureTest$(secret, signature, "appr_2", "call_1", "deleteFile", input)</ID>
     <ID>ArgumentListWrapping:ToolApprovalTest.kt$ToolApprovalTest$(10)</ID>
-    <ID>ArgumentListWrapping:ToolLoopAgent.kt$ToolLoopAgent$(call.toolCallId, call.toolName, call.input, stepNumber, messages)</ID>
     <ID>ArgumentListWrapping:ToolLoopAgent.kt$ToolLoopAgent$(event.id, event.delta)</ID>
-    <ID>ArgumentListWrapping:ToolLoopAgent.kt$ToolLoopAgent$(it, AgentEvent.ToolCallStarted(call.toolCallId, call.toolName, call.input, stepNumber, messages))</ID>
     <ID>ArgumentListWrapping:ToolLoopAgent.kt$ToolLoopAgent$(ownJob)</ID>
     <ID>ArgumentListWrapping:ToolLoopAgent.kt$ToolLoopAgent$(phase = ToolLoopAgentState.Phase.Error(t.message ?: "agent failed"))</ID>
     <ID>ArgumentListWrapping:ToolLoopAgent.kt$ToolLoopAgent$(resolvedTool, call, resolvedInput, activeContext, messages.toList())</ID>
@@ -1115,8 +1072,6 @@
     <ID>ArgumentListWrapping:ToolTest.kt$ToolTest$(setOf("location", "days", "threshold", "includeAlerts", "tags", "weights", "note", "window"), required)</ID>
     <ID>ArgumentListWrapping:ToolTest.kt$ToolTest$(setOf("startHour", "endHour"), window["required"]!!.jsonArray.map { it.jsonPrimitive.content }.toSet())</ID>
     <ID>ArgumentListWrapping:VercelFacade.kt$VercelProvider$(providerId, "embeddingModel", modelId)</ID>
-    <ID>ArgumentListWrapping:VoyageProvider.kt$VoyageEmbeddingModel$(it, provider)</ID>
-    <ID>ArgumentListWrapping:VoyageProvider.kt$VoyageRerankingModel$(promptTokens = value["usage"]?.jsonObject?.get("total_tokens")?.jsonPrimitive?.intOrNull ?: 0, completionTokens = 0)</ID>
     <ID>ArgumentListWrapping:WireDecoderTest.kt$WireDecoderTest$("not-a-number")</ID>
     <ID>ArgumentListWrapping:WireDecoderTest.kt$WireDecoderTest$(JsonPrimitive("not-a-number"), provider = "fixture.embedding", path = "$.data[0]")</ID>
     <ID>ArgumentListWrapping:XaiProvider.kt$XaiChatLanguageModel$(params.copy(providerOptions = transformXaiChatProviderOptions(params.providerOptions)))</ID>
@@ -1266,7 +1221,6 @@
     <ID>CyclomaticComplexMethod:OpenResponsesProvider.kt$PreparedOpenResponsesRequest.Companion$private fun openResponsesProviderToolJson(tool: LanguageModelTool): JsonObject</ID>
     <ID>CyclomaticComplexMethod:ProdiaProvider.kt$ProdiaProviderSettings$private fun prodiaSplitMultipart(data: ByteArray, boundary: String): List&lt;ProdiaMultipartPart></ID>
     <ID>CyclomaticComplexMethod:PruneMessages.kt$MessagePruning$private fun pruneToolCalls(messages: List&lt;ModelMessage>, rule: PruneToolCallRule): List&lt;ModelMessage></ID>
-    <ID>CyclomaticComplexMethod:StructuredObjectApi.kt$StructuredObject$private fun JsonElement?.isDeepEqual(other: JsonElement?): Boolean</ID>
     <ID>CyclomaticComplexMethod:Tool.kt$Schemas$private fun schemaFallbackValue(value: JsonElement, schema: JsonElement): Any?</ID>
     <ID>CyclomaticComplexMethod:ToolApprovalCoordinator.kt$ToolApprovalCoordinator$@Suppress("LongParameterList") suspend fun applyToolApprovalResponses( out: FlowCollector&lt;StreamEvent>, messages: MutableList&lt;ModelMessage>, tools: ToolSet&lt;TContext>, options: TContext?, abortSignal: AbortSignal, hooks: AgentCallHooks?, feed: TelemetryFeed?, executeApprovedTool: suspend ( out: FlowCollector&lt;StreamEvent>, toolDef: Tool&lt;*, *, TContext>, call: ContentPart.ToolCall, options: TContext?, abortSignal: AbortSignal, messages: List&lt;ModelMessage>, hooks: AgentCallHooks?, feed: TelemetryFeed?, preResolved: Pair&lt;Tool&lt;*, *, TContext>, Any?>?, ) -> ToolExecutionResult, ): Unit?</ID>
     <ID>CyclomaticComplexMethod:ToolLoopAgent.kt$ToolLoopAgent$@Suppress("SwallowedException") private fun streamInternal( prompt: String?, priorMessages: List&lt;ModelMessage>, options: TContext?, abortSignal: AbortSignal, hooks: AgentCallHooks?, finalMessagesRef: MessageHolder?, stepsCapture: StepsHolder?, ): Flow&lt;StreamEvent></ID>
@@ -1281,7 +1235,6 @@
     <ID>Filename:OpenAICompatibleStreaming.kt$ai.torad.aisdk.providers.OpenAICompatibleStreaming.kt</ID>
     <ID>Filename:Streaming.kt$ai.torad.aisdk.Streaming.kt</ID>
     <ID>FunctionNaming:AbortSignal.kt$public fun AbortSignalFromJob(job: Job): AbortSignal</ID>
-    <ID>FunctionNaming:AbortSignal.kt$public fun CombineAbortSignals(vararg signals: AbortSignal): AbortSignal</ID>
     <ID>FunctionNaming:AddToolInputExamples.kt$public fun AddToolInputExamplesMiddleware( examplesByTool: Map&lt;String, List&lt;String>>, ): LanguageModelMiddleware</ID>
     <ID>FunctionNaming:AlibabaProvider.kt$public fun Alibaba( client: HttpClient, settings: AlibabaProviderSettings = AlibabaProviderSettings(), ): AlibabaProvider</ID>
     <ID>FunctionNaming:AmazonBedrockProvider.kt$public fun AmazonBedrock( client: HttpClient, settings: AmazonBedrockProviderSettings = AmazonBedrockProviderSettings(), ): AmazonBedrockProvider</ID>
@@ -1445,10 +1398,8 @@
     <ID>ImportOrdering:GoogleProviderTest.kt$import ai.torad.aisdk.providers.GOOGLE_VERSION import ai.torad.aisdk.providers.GoogleGenerativeAIProviderSettings import ai.torad.aisdk.providers.GoogleGenerativeAI import ai.torad.aisdk.testing.FlowDrain.drainAllItems import io.ktor.http.HttpHeaders import kotlinx.coroutines.test.runTest import kotlinx.serialization.json.Json import kotlinx.serialization.json.JsonObject import kotlinx.serialization.json.JsonPrimitive import kotlinx.serialization.json.booleanOrNull import kotlinx.serialization.json.buildJsonObject import kotlinx.serialization.json.contentOrNull import kotlinx.serialization.json.floatOrNull import kotlinx.serialization.json.intOrNull import kotlinx.serialization.json.jsonArray import kotlinx.serialization.json.jsonObject import kotlinx.serialization.json.jsonPrimitive import kotlin.test.Test import kotlin.test.assertEquals import kotlin.test.assertFailsWith import kotlin.test.assertIs import kotlin.test.assertTrue</ID>
     <ID>ImportOrdering:GoogleVertexProviderTest.kt$import ai.torad.aisdk.providers.GOOGLE_VERSION import ai.torad.aisdk.providers.GOOGLE_VERTEX_VERSION import ai.torad.aisdk.providers.GoogleVertexAnthropicProviderSettings import ai.torad.aisdk.providers.GoogleVertexMaasProviderSettings import ai.torad.aisdk.providers.GoogleVertexProviderSettings import ai.torad.aisdk.providers.GoogleVertexXaiProviderSettings import kotlinx.coroutines.test.runTest import kotlinx.serialization.json.Json import kotlinx.serialization.json.JsonPrimitive import kotlinx.serialization.json.buildJsonObject import kotlinx.serialization.json.contentOrNull import kotlinx.serialization.json.intOrNull import kotlinx.serialization.json.jsonArray import kotlinx.serialization.json.jsonObject import kotlinx.serialization.json.jsonPrimitive import kotlin.test.Test import kotlin.test.assertEquals import kotlin.test.assertFailsWith import kotlin.test.assertTrue import ai.torad.aisdk.providers.GoogleVertex import ai.torad.aisdk.providers.GoogleVertexAnthropic import ai.torad.aisdk.providers.GoogleVertexMaas import ai.torad.aisdk.providers.GoogleVertexXai import kotlinx.serialization.json.JsonObject</ID>
     <ID>ImportOrdering:HttpTransport.kt$import io.ktor.client.HttpClient import io.ktor.client.request.header import io.ktor.client.request.prepareRequest import io.ktor.client.request.request import io.ktor.client.request.setBody import io.ktor.client.statement.HttpResponse import io.ktor.client.statement.bodyAsChannel import io.ktor.http.ContentType import io.ktor.http.HttpMethod import io.ktor.http.contentType import io.ktor.utils.io.readAvailable import io.ktor.utils.io.readLine import kotlin.coroutines.CoroutineContext import kotlinx.coroutines.Dispatchers import kotlinx.coroutines.flow.Flow import kotlinx.coroutines.flow.FlowCollector import kotlinx.coroutines.flow.channelFlow import kotlinx.coroutines.withContext import kotlinx.coroutines.withTimeout import kotlinx.serialization.json.Json import kotlinx.serialization.json.JsonElement import kotlinx.serialization.json.JsonObject</ID>
-    <ID>ImportOrdering:HuggingFaceProvider.kt$import ai.torad.aisdk.* import ai.torad.aisdk.ProviderMetadata import io.ktor.client.HttpClient import io.ktor.client.request.header import io.ktor.client.request.request import io.ktor.client.request.setBody import io.ktor.client.statement.HttpResponse import io.ktor.client.statement.bodyAsText import io.ktor.http.ContentType import io.ktor.http.HttpHeaders import io.ktor.http.HttpMethod import io.ktor.http.contentType import kotlinx.coroutines.flow.Flow import kotlinx.coroutines.flow.emitAll import kotlinx.coroutines.flow.flow import kotlinx.serialization.SerializationException import kotlinx.serialization.Serializable import kotlinx.serialization.encodeToString import kotlinx.serialization.json.Json import kotlinx.serialization.json.JsonArray import kotlinx.serialization.json.JsonElement import kotlinx.serialization.json.JsonNull import kotlinx.serialization.json.JsonObject import kotlinx.serialization.json.JsonPrimitive import kotlinx.serialization.json.buildJsonObject import kotlinx.serialization.json.contentOrNull import kotlinx.serialization.json.decodeFromJsonElement import kotlinx.serialization.json.intOrNull import kotlinx.serialization.json.jsonObject import kotlinx.serialization.json.jsonPrimitive import kotlinx.serialization.json.longOrNull</ID>
     <ID>ImportOrdering:HuggingFaceProviderTest.kt$import ai.torad.aisdk.providers.HuggingFaceProviderSettings import ai.torad.aisdk.testing.FlowDrain.drainAllItems import io.ktor.http.HttpHeaders import kotlinx.coroutines.test.runTest import kotlinx.serialization.json.Json import kotlinx.serialization.json.JsonArray import kotlinx.serialization.json.JsonObject import kotlinx.serialization.json.JsonPrimitive import kotlinx.serialization.json.buildJsonObject import kotlinx.serialization.json.booleanOrNull import kotlinx.serialization.json.contentOrNull import kotlinx.serialization.json.intOrNull import kotlinx.serialization.json.jsonArray import kotlinx.serialization.json.jsonObject import kotlinx.serialization.json.jsonPrimitive import kotlin.test.Test import kotlin.test.assertEquals import kotlin.test.assertFailsWith import kotlin.test.assertIs import kotlin.test.assertNull import kotlin.test.assertTrue import ai.torad.aisdk.providers.HuggingFace</ID>
     <ID>ImportOrdering:HumeProviderTest.kt$import ai.torad.aisdk.providers.HUME_VERSION import ai.torad.aisdk.providers.HumeProviderSettings import io.ktor.http.HttpHeaders import kotlinx.coroutines.test.runTest import kotlinx.serialization.json.JsonPrimitive import kotlinx.serialization.json.buildJsonArray import kotlinx.serialization.json.buildJsonObject import kotlinx.serialization.json.contentOrNull import kotlinx.serialization.json.floatOrNull import kotlinx.serialization.json.jsonArray import kotlinx.serialization.json.jsonObject import kotlinx.serialization.json.jsonPrimitive import kotlin.test.Test import kotlin.test.assertEquals import kotlin.test.assertTrue import ai.torad.aisdk.providers.Hume import kotlinx.serialization.json.JsonObject</ID>
-    <ID>ImportOrdering:KlingAIProvider.kt$import ai.torad.aisdk.* import ai.torad.aisdk.ProviderMetadata import io.ktor.client.HttpClient import io.ktor.http.HttpHeaders import io.ktor.http.HttpMethod import kotlin.time.Clock import kotlinx.coroutines.delay import kotlinx.serialization.Serializable import kotlinx.serialization.encodeToString import kotlinx.serialization.json.JsonArray import kotlinx.serialization.json.JsonElement import kotlinx.serialization.json.JsonObject import kotlinx.serialization.json.JsonPrimitive import kotlinx.serialization.json.booleanOrNull import kotlinx.serialization.json.buildJsonObject import kotlinx.serialization.json.contentOrNull import kotlinx.serialization.json.jsonArray import kotlinx.serialization.json.jsonObject import kotlinx.serialization.json.jsonPrimitive</ID>
     <ID>ImportOrdering:KlingAIProviderTest.kt$import ai.torad.aisdk.providers.KLINGAI_VERSION import ai.torad.aisdk.providers.KlingAIProviderSettings import io.ktor.http.HttpHeaders import kotlinx.coroutines.test.runTest import kotlinx.serialization.json.Json import kotlinx.serialization.json.JsonPrimitive import kotlinx.serialization.json.booleanOrNull import kotlinx.serialization.json.buildJsonArray import kotlinx.serialization.json.buildJsonObject import kotlinx.serialization.json.contentOrNull import kotlinx.serialization.json.floatOrNull import kotlinx.serialization.json.jsonArray import kotlinx.serialization.json.jsonObject import kotlinx.serialization.json.jsonPrimitive import kotlin.test.Test import kotlin.test.assertEquals import kotlin.test.assertFailsWith import kotlin.test.assertTrue import ai.torad.aisdk.providers.KlingAI import kotlinx.serialization.json.JsonObject</ID>
     <ID>ImportOrdering:KotlinApiTest.kt$import ai.torad.aisdk.testing.FlowDrain.drainAllItems import kotlin.test.Test import kotlin.test.assertEquals import kotlin.test.assertFailsWith import kotlin.test.assertIs import kotlin.test.assertNotNull import kotlin.test.assertNull import kotlinx.coroutines.flow.Flow import kotlinx.coroutines.flow.first import kotlinx.coroutines.flow.flow import kotlinx.coroutines.test.runTest import kotlinx.serialization.Serializable import kotlinx.serialization.json.JsonPrimitive import kotlinx.serialization.json.buildJsonObject import kotlinx.serialization.json.jsonObject import kotlinx.serialization.json.jsonPrimitive import kotlinx.serialization.serializer import kotlinx.serialization.json.JsonObject</ID>
     <ID>ImportOrdering:KotlinIdiomsTest.kt$import ai.torad.aisdk.providers.MockLanguageModelTextOnly import ai.torad.aisdk.ui.ToolCallState import ai.torad.aisdk.ui.UIMessage import ai.torad.aisdk.ui.UIMessagePart import ai.torad.aisdk.ui.UIMessageRole import ai.torad.aisdk.ui.UIMessageMetadata.metadataAs import ai.torad.aisdk.TypedJsonOps.decodeAs import ai.torad.aisdk.TypedJsonOps.decodeValue import ai.torad.aisdk.TypedJsonOps.decodeProviderMetadata import ai.torad.aisdk.TypedJsonOps.providerMetadataAs import ai.torad.aisdk.TypedJsonOps.putJson import ai.torad.aisdk.AbortSignals.asAbortSignal import ai.torad.aisdk.AgentSessions.session import ai.torad.aisdk.GeneratedFiles.bytes import ai.torad.aisdk.GeneratedFiles.fileData import kotlinx.coroutines.Job import kotlin.test.Test import kotlin.test.assertContentEquals import kotlin.test.assertEquals import kotlin.test.assertFailsWith import kotlin.test.assertFalse import kotlin.test.assertIs import kotlin.test.assertNotNull import kotlin.test.assertTrue import kotlinx.coroutines.test.runTest import kotlinx.serialization.Serializable import kotlinx.serialization.json.JsonObject import kotlinx.serialization.json.JsonPrimitive import kotlinx.serialization.json.buildJsonObject import kotlinx.serialization.json.jsonObject import kotlinx.serialization.json.jsonPrimitive import kotlinx.serialization.serializer</ID>
@@ -1465,10 +1416,8 @@
     <ID>ImportOrdering:OpenAICompatibleProviderFacadesTest.kt$import ai.torad.aisdk.providers.CEREBRAS_VERSION import ai.torad.aisdk.providers.CerebrasProviderSettings import ai.torad.aisdk.providers.DEEPINFRA_VERSION import ai.torad.aisdk.providers.DEEPSEEK_VERSION import ai.torad.aisdk.providers.DeepInfraProviderSettings import ai.torad.aisdk.providers.DeepSeekProviderSettings import ai.torad.aisdk.providers.FIREWORKS_VERSION import ai.torad.aisdk.providers.FireworksProviderSettings import ai.torad.aisdk.providers.GROQ_VERSION import ai.torad.aisdk.providers.GroqProviderSettings import ai.torad.aisdk.providers.MOONSHOTAI_VERSION import ai.torad.aisdk.providers.MoonshotAIProviderSettings import ai.torad.aisdk.providers.PERPLEXITY_VERSION import ai.torad.aisdk.providers.PerplexityProviderSettings import ai.torad.aisdk.providers.TOGETHERAI_VERSION import ai.torad.aisdk.providers.TogetherAIProviderSettings import ai.torad.aisdk.providers.VERCEL_VERSION import ai.torad.aisdk.providers.VercelProviderSettings import ai.torad.aisdk.providers.browserSearch import ai.torad.aisdk.providers.Cerebras import ai.torad.aisdk.providers.DeepInfra import ai.torad.aisdk.providers.DeepSeek import ai.torad.aisdk.providers.Fireworks import ai.torad.aisdk.providers.Groq import ai.torad.aisdk.providers.MoonshotAI import ai.torad.aisdk.providers.Perplexity import ai.torad.aisdk.providers.TogetherAI import ai.torad.aisdk.providers.Vercel import io.ktor.http.HttpHeaders import kotlinx.coroutines.test.runTest import kotlinx.serialization.json.Json import kotlinx.serialization.json.JsonArray import kotlinx.serialization.json.JsonPrimitive import kotlinx.serialization.json.booleanOrNull import kotlinx.serialization.json.buildJsonObject import kotlinx.serialization.json.contentOrNull import kotlinx.serialization.json.intOrNull import kotlinx.serialization.json.jsonArray import kotlinx.serialization.json.jsonObject import kotlinx.serialization.json.jsonPrimitive import kotlin.test.Test import kotlin.test.assertEquals import kotlin.test.assertFailsWith import kotlin.test.assertTrue import kotlinx.serialization.json.JsonObject</ID>
     <ID>ImportOrdering:OpenAICompatibleProviderTest.kt$import ai.torad.aisdk.providers.OpenAICompatibleProviderSettings import ai.torad.aisdk.providers.OpenAICompatible import ai.torad.aisdk.testing.FlowDrain.drainAllItems import io.ktor.client.HttpClient import io.ktor.client.engine.mock.MockEngine import io.ktor.client.engine.mock.respond import io.ktor.client.request.HttpRequestData import io.ktor.http.HttpHeaders import io.ktor.http.HttpStatusCode import io.ktor.http.content.OutgoingContent import io.ktor.http.headersOf import io.ktor.utils.io.ByteChannel import io.ktor.utils.io.writeStringUtf8 import kotlinx.coroutines.CompletableDeferred import kotlinx.coroutines.launch import kotlinx.coroutines.flow.first import kotlinx.coroutines.test.runTest import kotlinx.serialization.json.Json import kotlinx.serialization.json.JsonArray import kotlinx.serialization.json.JsonObject import kotlinx.serialization.json.JsonPrimitive import kotlinx.serialization.json.booleanOrNull import kotlinx.serialization.json.contentOrNull import kotlinx.serialization.json.jsonArray import kotlinx.serialization.json.jsonObject import kotlinx.serialization.json.jsonPrimitive import kotlin.test.Test import kotlin.test.assertEquals import kotlin.test.assertFailsWith import kotlin.test.assertIs import kotlin.test.assertNotNull import kotlin.test.assertTrue</ID>
     <ID>ImportOrdering:OpenAIProviderTest.kt$import ai.torad.aisdk.providers.OpenAIProviderSettings import ai.torad.aisdk.providers.VERSION import ai.torad.aisdk.providers.OpenAI import ai.torad.aisdk.providers.OpenAICodeInterpreter import ai.torad.aisdk.providers.OpenAIFileSearch import ai.torad.aisdk.providers.OpenAIImageGeneration import ai.torad.aisdk.providers.OpenAIMcp import ai.torad.aisdk.providers.OpenAIWebSearch import io.ktor.client.HttpClient import io.ktor.client.engine.mock.MockEngine import io.ktor.client.engine.mock.respond import io.ktor.client.request.HttpRequestData import io.ktor.http.HttpHeaders import io.ktor.http.HttpStatusCode import io.ktor.http.content.OutgoingContent import io.ktor.http.headersOf import kotlinx.coroutines.flow.first import kotlinx.coroutines.test.runTest import kotlinx.serialization.json.Json import kotlinx.serialization.json.JsonArray import kotlinx.serialization.json.JsonElement import kotlinx.serialization.json.JsonObject import kotlinx.serialization.json.JsonPrimitive import kotlinx.serialization.json.buildJsonObject import kotlinx.serialization.json.booleanOrNull import kotlinx.serialization.json.jsonArray import kotlinx.serialization.json.jsonObject import kotlinx.serialization.json.jsonPrimitive import kotlin.test.Test import kotlin.test.assertEquals import kotlin.test.assertFailsWith import kotlin.test.assertNotNull import kotlin.test.assertTrue</ID>
-    <ID>ImportOrdering:OpenResponsesProvider.kt$import ai.torad.aisdk.* import io.ktor.client.HttpClient import io.ktor.client.request.header import io.ktor.client.request.request import io.ktor.client.request.setBody import io.ktor.client.statement.HttpResponse import io.ktor.client.statement.bodyAsText import io.ktor.http.ContentType import io.ktor.http.HttpHeaders import io.ktor.http.HttpMethod import io.ktor.http.contentType import kotlinx.coroutines.flow.Flow import kotlinx.coroutines.flow.emitAll import kotlinx.coroutines.flow.flow import kotlinx.serialization.SerializationException import kotlinx.serialization.Serializable import kotlinx.serialization.encodeToString import kotlinx.serialization.json.Json import kotlinx.serialization.json.JsonArray import kotlinx.serialization.json.JsonElement import kotlinx.serialization.json.JsonNull import kotlinx.serialization.json.JsonObject import kotlinx.serialization.json.JsonObjectBuilder import kotlinx.serialization.json.JsonPrimitive import kotlinx.serialization.json.booleanOrNull import kotlinx.serialization.json.buildJsonObject import kotlinx.serialization.json.contentOrNull import kotlinx.serialization.json.decodeFromJsonElement import kotlinx.serialization.json.doubleOrNull import kotlinx.serialization.json.intOrNull import kotlinx.serialization.json.jsonArray import kotlinx.serialization.json.jsonObject import kotlinx.serialization.json.jsonPrimitive</ID>
     <ID>ImportOrdering:OpenResponsesProviderTest.kt$import ai.torad.aisdk.providers.OpenResponsesProviderSettings import ai.torad.aisdk.providers.OpenResponses import ai.torad.aisdk.ToolResultOutputs.toJsonElement import ai.torad.aisdk.testing.FlowDrain.drainAllItems import io.ktor.client.HttpClient import io.ktor.client.engine.mock.MockEngine import io.ktor.client.engine.mock.respond import io.ktor.client.request.HttpRequestData import io.ktor.http.HttpHeaders import io.ktor.http.HttpStatusCode import io.ktor.http.content.OutgoingContent import io.ktor.http.headersOf import kotlin.test.Test import kotlin.test.assertEquals import kotlin.test.assertFailsWith import kotlin.test.assertIs import kotlin.test.assertTrue import kotlinx.coroutines.test.runTest import kotlinx.serialization.json.Json import kotlinx.serialization.json.JsonObject import kotlinx.serialization.json.JsonPrimitive import kotlinx.serialization.json.buildJsonObject import kotlinx.serialization.json.booleanOrNull import kotlinx.serialization.json.contentOrNull import kotlinx.serialization.json.jsonArray import kotlinx.serialization.json.jsonObject import kotlinx.serialization.json.jsonPrimitive</ID>
     <ID>ImportOrdering:OutputTest.kt$import kotlin.test.Test import kotlin.test.assertEquals import kotlin.test.assertTrue import kotlinx.serialization.Serializable import kotlinx.serialization.json.Json import kotlinx.serialization.json.JsonObject import kotlinx.serialization.json.JsonPrimitive import kotlinx.serialization.json.jsonArray import kotlinx.serialization.json.jsonObject import kotlinx.serialization.json.jsonPrimitive import kotlinx.serialization.serializer</ID>
-    <ID>ImportOrdering:ParallelToolExecutionTest.kt$import kotlinx.coroutines.CompletableDeferred import kotlinx.coroutines.ExperimentalCoroutinesApi import kotlinx.coroutines.flow.Flow import kotlinx.coroutines.flow.flow import kotlinx.coroutines.flow.first import kotlinx.coroutines.launch import kotlinx.coroutines.test.runCurrent import kotlinx.coroutines.test.runTest import kotlinx.coroutines.withTimeout import kotlinx.serialization.Serializable import kotlinx.serialization.json.JsonObject import kotlinx.serialization.json.JsonPrimitive import kotlinx.serialization.serializer import kotlin.test.Test import kotlin.test.assertEquals import kotlin.test.assertFalse</ID>
     <ID>ImportOrdering:PrepareCallPenaltiesTest.kt$import kotlin.test.Test import kotlin.test.assertEquals import kotlinx.coroutines.flow.Flow import kotlinx.coroutines.flow.flow import kotlinx.coroutines.flow.first import kotlinx.coroutines.test.runTest import kotlinx.serialization.Serializable import kotlinx.serialization.json.JsonPrimitive import kotlinx.serialization.json.jsonObject import kotlinx.serialization.json.jsonPrimitive import kotlinx.serialization.serializer import kotlinx.serialization.json.JsonObject</ID>
     <ID>ImportOrdering:PrepareCallTest.kt$import ai.torad.aisdk.providers.MockLanguageModel import ai.torad.aisdk.providers.MockLanguageModelTextOnly import kotlinx.coroutines.flow.Flow import kotlinx.coroutines.flow.flow import kotlinx.coroutines.flow.first import kotlinx.serialization.KSerializer import kotlinx.serialization.SerializationException import kotlinx.serialization.Serializable import kotlinx.serialization.descriptors.buildClassSerialDescriptor import kotlinx.serialization.descriptors.element import kotlinx.serialization.encoding.CompositeDecoder import kotlinx.serialization.encoding.Decoder import kotlinx.serialization.encoding.Encoder import kotlinx.serialization.encoding.decodeStructure import kotlinx.serialization.encoding.encodeStructure import kotlin.test.Test import kotlin.test.assertEquals import kotlin.test.assertFailsWith import kotlin.test.assertFalse import kotlin.test.assertNotNull import kotlin.test.assertTrue import kotlinx.coroutines.test.runTest</ID>
     <ID>ImportOrdering:PrepareStepTest.kt$import ai.torad.aisdk.providers.MockLanguageModel import ai.torad.aisdk.providers.MockLanguageModelToolThenText import ai.torad.aisdk.providers.MockToolInput import kotlinx.coroutines.flow.Flow import kotlinx.coroutines.flow.flow import kotlinx.coroutines.flow.first import kotlin.test.Test import kotlin.test.assertEquals import kotlin.test.assertTrue import kotlinx.coroutines.test.runTest import kotlinx.serialization.Serializable import kotlinx.serialization.serializer</ID>
@@ -1488,7 +1437,6 @@
     <ID>ImportOrdering:ToolApprovalTest.kt$import ai.torad.aisdk.providers.MockLanguageModel import ai.torad.aisdk.providers.MockLanguageModelToolThenText import ai.torad.aisdk.providers.MockToolInput import kotlin.test.Test import kotlin.test.assertEquals import kotlin.test.assertIs import kotlin.test.assertTrue import kotlinx.coroutines.delay import kotlinx.coroutines.Dispatchers import kotlinx.coroutines.flow.toList import kotlinx.coroutines.flow.first import kotlinx.coroutines.test.runTest import kotlinx.coroutines.withContext import kotlinx.coroutines.withTimeout import kotlinx.serialization.Serializable import kotlinx.serialization.json.JsonObject import kotlinx.serialization.serializer</ID>
     <ID>ImportOrdering:ToolCallRepairTest.kt$import ai.torad.aisdk.providers.MockLanguageModelToolThenText import kotlin.test.Test import kotlin.test.assertEquals import kotlin.test.assertTrue import kotlinx.coroutines.test.runTest import kotlinx.serialization.Serializable import kotlinx.serialization.json.JsonObject import kotlinx.serialization.json.JsonPrimitive import kotlinx.serialization.json.buildJsonObject import kotlinx.serialization.json.jsonObject import kotlinx.serialization.json.jsonPrimitive import kotlinx.serialization.serializer</ID>
     <ID>ImportOrdering:ToolFlowTest.kt$import ai.torad.aisdk.providers.MockLanguageModelToolThenText import ai.torad.aisdk.providers.MockToolInput import kotlin.test.Test import kotlin.test.assertEquals import kotlin.test.assertFailsWith import kotlin.test.assertIs import kotlin.test.assertTrue import kotlinx.coroutines.CompletableDeferred import kotlinx.coroutines.flow.flow import kotlinx.coroutines.flow.first import kotlinx.coroutines.launch import kotlinx.coroutines.test.runTest import kotlinx.serialization.Serializable import kotlinx.serialization.json.JsonNull import kotlinx.serialization.json.JsonPrimitive import kotlinx.serialization.json.buildJsonObject import kotlinx.serialization.serializer</ID>
-    <ID>ImportOrdering:ToolLoopAgent.kt$import kotlinx.coroutines.CancellationException import kotlinx.coroutines.CoroutineScope import kotlinx.coroutines.CoroutineStart import kotlinx.coroutines.Dispatchers import kotlinx.coroutines.Job import kotlinx.coroutines.SupervisorJob import kotlinx.coroutines.cancel import kotlinx.coroutines.channels.Channel import kotlinx.coroutines.coroutineScope import kotlinx.coroutines.flow.Flow import kotlinx.coroutines.flow.FlowCollector import kotlinx.coroutines.flow.channelFlow import kotlinx.coroutines.flow.MutableStateFlow import kotlinx.coroutines.flow.StateFlow import kotlinx.coroutines.flow.asStateFlow import kotlinx.coroutines.flow.flow import kotlinx.coroutines.flow.update import kotlinx.coroutines.launch import kotlinx.coroutines.sync.Semaphore import kotlinx.coroutines.sync.withPermit import kotlinx.serialization.KSerializer import kotlinx.serialization.SerializationException import kotlinx.serialization.json.JsonElement import kotlinx.serialization.json.JsonPrimitive import kotlin.concurrent.atomics.AtomicReference import kotlin.concurrent.atomics.ExperimentalAtomicApi import kotlin.coroutines.CoroutineContext import kotlin.coroutines.coroutineContext</ID>
     <ID>ImportOrdering:ToolLoopAgentStreamErrorTest.kt$import ai.torad.aisdk.testing.FlowDrain.drainAllItems import kotlin.test.Test import kotlin.test.assertFalse import kotlin.test.assertTrue import kotlinx.coroutines.flow.Flow import kotlinx.coroutines.flow.flow import kotlinx.coroutines.test.runTest</ID>
     <ID>ImportOrdering:ToolLoopAgentTerminalSemanticsTest.kt$import ai.torad.aisdk.testing.FlowDrain.drainAllItems import kotlin.test.Test import kotlin.test.assertEquals import kotlinx.coroutines.flow.Flow import kotlinx.coroutines.flow.flow import kotlinx.coroutines.flow.first import kotlinx.coroutines.test.runTest</ID>
     <ID>ImportOrdering:ToolLoopAgentTest.kt$import ai.torad.aisdk.providers.MockLanguageModel import ai.torad.aisdk.providers.MockLanguageModelTextOnly import ai.torad.aisdk.providers.MockLanguageModelToolThenText import ai.torad.aisdk.providers.MockToolInput import kotlin.test.Test import kotlin.test.assertEquals import kotlin.test.assertTrue import kotlinx.coroutines.flow.first import kotlinx.coroutines.test.runTest import kotlinx.serialization.Serializable import kotlinx.serialization.serializer</ID>
@@ -1594,7 +1542,6 @@
     <ID>LongMethod:ReplicateProviderTest.kt$ReplicateProviderTest$@Test fun `video model submits polls and returns url video metadata`()</ID>
     <ID>LongMethod:RevaiProviderTest.kt$RevaiProviderTest$@Test fun `transcription model submits multipart job polls status and maps transcript`()</ID>
     <ID>LongMethod:SmoothStream.kt$@Suppress("TooGenericExceptionCaught", "CyclomaticComplexMethod") public fun SmoothStream( upstream: Flow&lt;StreamEvent>, delayMs: Long = 10L, chunkBy: ChunkBy = ChunkBy.Word, ): Flow&lt;StreamEvent></ID>
-    <ID>LongMethod:StructuredObjectApi.kt$StructuredObject$public suspend fun submit(input: INPUT)</ID>
     <ID>LongMethod:ToolLoopAgent.kt$ToolLoopAgent$@Suppress("LongParameterList") private suspend fun executeTool( out: FlowCollector&lt;StreamEvent>, toolDef: Tool&lt;*, *, TContext>, call: ContentPart.ToolCall, options: TContext?, abortSignal: AbortSignal, stepNumber: Int, messages: List&lt;ModelMessage>, hooks: AgentCallHooks?, feed: TelemetryFeed? = null, // Pre-resolved (tool, input) from the approval-categorization pass, so the // step-loop path doesn't decode/repair twice. Null on the resume path, where // executeTool resolves the approved call itself. preResolved: Pair&lt;Tool&lt;*, *, TContext>, Any?>? = null, ): ToolExecutionResult</ID>
     <ID>LongMethod:ToolLoopAgent.kt$ToolLoopAgent$@Suppress("SwallowedException") private fun streamInternal( prompt: String?, priorMessages: List&lt;ModelMessage>, options: TContext?, abortSignal: AbortSignal, hooks: AgentCallHooks?, finalMessagesRef: MessageHolder?, stepsCapture: StepsHolder?, ): Flow&lt;StreamEvent></ID>
     <ID>LongMethod:ToolLoopAgent.kt$ToolLoopAgent$@Suppress("UNCHECKED_CAST") override fun generate( prompt: String?, messages: List&lt;ModelMessage>, options: TContext?, abortSignal: AbortSignal, ): Flow&lt;GenerateResult&lt;TOutput>></ID>
@@ -1942,7 +1889,6 @@
     <ID>MaxLineLength:AlibabaProvider.kt$AlibabaChatLanguageModel$delegate.stream(params.copy(providerOptions = transformAlibabaChatOptions(params.providerOptions)))</ID>
     <ID>MaxLineLength:AlibabaProvider.kt$AlibabaChatLanguageModel$val result = delegate.generate(params.copy(providerOptions = transformAlibabaChatOptions(params.providerOptions)))</ID>
     <ID>MaxLineLength:AlibabaProvider.kt$AlibabaProvider$override fun languageModel(modelId: String): LanguageModel</ID>
-    <ID>MaxLineLength:AlibabaProvider.kt$AlibabaVideoModel$"FAILED", "CANCELED" -> throw NoVideoGeneratedError("Video generation ${taskStatus.lowercase()}. Task ID: $taskId. ${output["message"]?.jsonPrimitive?.contentOrNull.orEmpty()}")</ID>
     <ID>MaxLineLength:AlibabaProvider.kt$AlibabaVideoModel$if (params.aspectRatio != null) warnings += CallWarning("unsupported", "Alibaba video models use explicit size/resolution dimensions. Use the resolution option or providerOptions.alibaba for size control.")</ID>
     <ID>MaxLineLength:AlibabaProvider.kt$AlibabaVideoModel$if (params.fps != null) warnings += CallWarning("unsupported", "Alibaba video models do not support custom FPS.")</ID>
     <ID>MaxLineLength:AlibabaProvider.kt$AlibabaVideoModel$if (params.n > 1) warnings += CallWarning("unsupported", "Alibaba video models only support generating 1 video per call.")</ID>
@@ -2058,7 +2004,6 @@
     <ID>MaxLineLength:AssemblyAIProvider.kt$AssemblyAIProvider$override fun embeddingModel(modelId: String): EmbeddingModel</ID>
     <ID>MaxLineLength:AssemblyAIProvider.kt$AssemblyAIProvider$override fun languageModel(modelId: String): LanguageModel</ID>
     <ID>MaxLineLength:AssemblyAIProvider.kt$AssemblyAIProvider$public fun textEmbeddingModel(modelId: String): Nothing</ID>
-    <ID>MaxLineLength:AssemblyAIProvider.kt$AssemblyAITranscriptionModel$"error" -> throw NoTranscriptGeneratedError("Transcription failed: ${body["error"]?.jsonPrimitive?.contentOrNull ?: "Unknown error"}")</ID>
     <ID>MaxLineLength:AssemblyAIProvider.kt$AssemblyAITranscriptionModel$throw NoTranscriptGeneratedError("AssemblyAI transcription polling timed out after ${settings.maxPollAttempts} attempts")</ID>
     <ID>MaxLineLength:AssemblyAIProviderTest.kt$AssemblyAIProviderTest$"""{"id":"tx1","status":"completed","text":"hello world","language_code":"en","audio_duration":4.2,"words":[{"start":0.1,"end":0.3,"text":"hello"},{"start":0.4,"end":0.8,"text":"world"}]}"""</ID>
     <ID>MaxLineLength:AssemblyAIProviderTest.kt$AssemblyAIProviderTest$UrlResponse.JsonValue(Json.parseToJsonElement("""{"id":"tx1","status":"completed","text":"ola"}"""))</ID>
@@ -2098,25 +2043,16 @@
     <ID>MaxLineLength:BedrockResponse.kt$BedrockResponse$providerMetadata = ProviderMetadata.Raw(JsonObject(mapOf("bedrock" to buildJsonObject { it["data"]?.let { data -> put("redactedData", data) } })))</ID>
     <ID>MaxLineLength:BedrockResponse.kt$BedrockResponse$providerMetadata = ProviderMetadata.Raw(JsonObject(mapOf("bedrock" to buildJsonObject { it["signature"]?.let { signature -> put("signature", signature) } })))</ID>
     <ID>MaxLineLength:BedrockResponse.kt$BedrockResponse$providerMetadata = if (metadata.isNotEmpty()) ProviderMetadata.Raw(JsonObject(mapOf("bedrock" to metadata))) else ProviderMetadata.None</ID>
-    <ID>MaxLineLength:BedrockResponse.kt$BedrockResponse$response["additionalModelResponseFields"]?.jsonObject?.get("delta")?.jsonObject?.get("stop_sequence")?.let { put("stopSequence", it) }</ID>
-    <ID>MaxLineLength:BedrockResponse.kt$BedrockResponse$response["embedding"]?.let { return it.jsonArray.map { item -> WireDecoder.embeddingFloat(item, "amazon-bedrock.embedding") } }</ID>
-    <ID>MaxLineLength:BedrockResponse.kt$BedrockResponse$return obj["embedding"]?.jsonArray.orEmpty().map { WireDecoder.embeddingFloat(it, "amazon-bedrock.embedding") }</ID>
-    <ID>MaxLineLength:BedrockResponse.kt$BedrockResponse$val parts = response["output"]?.jsonObject?.get("message")?.jsonObject?.get("content") as? JsonArray ?: JsonArray(emptyList())</ID>
     <ID>MaxLineLength:BedrockResponse.kt$BedrockStreamBlock$Tool : BedrockStreamBlock</ID>
-    <ID>MaxLineLength:BedrockResponse.kt$BedrockStreamState$events += StreamEvent.ReasoningDelta(index.toString(), reasoning["text"]?.jsonPrimitive?.contentOrNull.orEmpty(), metadata)</ID>
     <ID>MaxLineLength:BedrockResponse.kt$BedrockStreamState$inputJson = runCatching { aiSdkJson.parseToJsonElement(block.input.ifBlank { "{}" }) }.getOrElse { JsonPrimitive(block.input) }</ID>
     <ID>MaxLineLength:BedrockResponse.kt$BedrockStreamState$providerMetadata = if (metadata.isNotEmpty()) ProviderMetadata.Raw(JsonObject(mapOf("bedrock" to metadata))) else ProviderMetadata.None</ID>
-    <ID>MaxLineLength:BedrockResponse.kt$BedrockStreamState$stopSequence = stop["additionalModelResponseFields"]?.jsonObject?.get("delta")?.jsonObject?.get("stop_sequence")</ID>
     <ID>MaxLineLength:BedrockResponse.kt$BedrockStreamState$val error = value["internalServerException"] ?: value["modelStreamErrorException"] ?: value["throttlingException"] ?: value["validationException"]</ID>
     <ID>MaxLineLength:BedrockResponse.kt$BedrockStreamState$}</ID>
     <ID>MaxLineLength:BlackForestLabsProvider.kt$&lt;no name provided>$throw UnsupportedFunctionalityError("black-forest-labs", "Black Forest Labs provider is not configured. Use BlackForestLabs(client, settings).")</ID>
     <ID>MaxLineLength:BlackForestLabsProvider.kt$BlackForestLabsImageModel$message = "Black Forest Labs ignores size when aspectRatio is provided. Use width and height provider options to specify dimensions for models that support them."</ID>
     <ID>MaxLineLength:BlackForestLabsProvider.kt$BlackForestLabsImageModel$message = "Deriving aspect_ratio from size. Use width and height provider options to specify dimensions for models that support them."</ID>
-    <ID>MaxLineLength:BlackForestLabsProvider.kt$BlackForestLabsImageModel$obj?.get("message")?.jsonPrimitive?.contentOrNull != null -> obj["message"]?.jsonPrimitive?.content.orEmpty()</ID>
     <ID>MaxLineLength:BlackForestLabsProvider.kt$BlackForestLabsImageModel$val hasId = pollingUrl.substringAfter('?', missingDelimiterValue = "").split('&amp;').any { it.substringBefore('=') == "id" }</ID>
-    <ID>MaxLineLength:BlackForestLabsProvider.kt$BlackForestLabsImageModel$val imageUrl = result["sample"]?.jsonPrimitive?.contentOrNull ?: throw InvalidResponseDataError(null, "Black Forest Labs poll response is Ready but missing result.sample")</ID>
     <ID>MaxLineLength:BlackForestLabsProvider.kt$BlackForestLabsImageModel$val maxPollAttempts = ceil(pollTimeoutMillis.coerceAtLeast(1L).toDouble() / interval.toDouble()).toInt().coerceAtLeast(1)</ID>
-    <ID>MaxLineLength:BlackForestLabsProvider.kt$BlackForestLabsImageModel$val result = poll["result"]?.jsonObject ?: throw InvalidResponseDataError(null, "Black Forest Labs poll response is Ready but missing result.sample")</ID>
     <ID>MaxLineLength:BlackForestLabsProvider.kt$BlackForestLabsProvider$public fun textEmbeddingModel(modelId: String): Nothing</ID>
     <ID>MaxLineLength:BlackForestLabsProvider.kt$DefaultBlackForestLabsProvider$override fun embeddingModel(modelId: String): EmbeddingModel</ID>
     <ID>MaxLineLength:BlackForestLabsProvider.kt$DefaultBlackForestLabsProvider$override fun languageModel(modelId: String): LanguageModel</ID>
@@ -2126,11 +2062,6 @@
     <ID>MaxLineLength:BlackForestLabsProviderTest.kt$BlackForestLabsProviderTest$UrlResponse.JsonValue(Json.parseToJsonElement("""{"id":"req1","polling_url":"https://api.bfl.ai/v1/poll?id=req1"}"""))</ID>
     <ID>MaxLineLength:BlackForestLabsProviderTest.kt$BlackForestLabsProviderTest$UrlResponse.JsonValue(Json.parseToJsonElement("""{"state":"Ready","result":{"sample":"https://cdn.example/fill.png"}}"""))</ID>
     <ID>MaxLineLength:ByteDanceProvider.kt$&lt;no name provided>$throw UnsupportedFunctionalityError("bytedance", "ByteDance provider is not configured. Use ByteDance(client, settings).")</ID>
-    <ID>MaxLineLength:ByteDanceProvider.kt$ByteDanceVideoModel$add(byteDanceMediaContent("audio_url", "audio_url", url.jsonPrimitive.contentOrNull.orEmpty(), "reference_audio"))</ID>
-    <ID>MaxLineLength:ByteDanceProvider.kt$ByteDanceVideoModel$add(byteDanceMediaContent("image_url", "image_url", url.jsonPrimitive.contentOrNull.orEmpty(), "reference_image"))</ID>
-    <ID>MaxLineLength:ByteDanceProvider.kt$ByteDanceVideoModel$add(byteDanceMediaContent("video_url", "video_url", url.jsonPrimitive.contentOrNull.orEmpty(), "reference_video"))</ID>
-    <ID>MaxLineLength:ByteDanceProvider.kt$ByteDanceVideoModel$pollIntervalMs = options["pollIntervalMs"]?.jsonPrimitive?.contentOrNull?.toLongOrNull() ?: DEFAULT_BYTEDANCE_POLL_INTERVAL_MS</ID>
-    <ID>MaxLineLength:ByteDanceProvider.kt$ByteDanceVideoModel$pollTimeoutMs = options["pollTimeoutMs"]?.jsonPrimitive?.contentOrNull?.toLongOrNull() ?: DEFAULT_BYTEDANCE_POLL_TIMEOUT_MS</ID>
     <ID>MaxLineLength:ByteDanceProvider.kt$ByteDanceVideoModel$private</ID>
     <ID>MaxLineLength:ByteDanceProvider.kt$ByteDanceVideoModel$val maxPollAttempts = ceil(pollTimeoutMs.coerceAtLeast(1L).toDouble() / interval.toDouble()).toInt().coerceAtLeast(1)</ID>
     <ID>MaxLineLength:ByteDanceProvider.kt$ByteDanceVideoModel$warnings += CallWarning("unsupported", "ByteDance video models do not support custom FPS. Frame rate is fixed at 24 fps.")</ID>
@@ -2151,8 +2082,6 @@
     <ID>MaxLineLength:CohereProvider.kt$CohereChatLanguageModel$if (value is JsonPrimitive) value.contentOrNull ?: value.toString() else aiSdkJson.encodeToString(JsonElement.serializer(), value)</ID>
     <ID>MaxLineLength:CohereProvider.kt$CohereChatLanguageModel$return cohereChatResult(response.value.jsonObject, request.body, response.headers, response.value, request.warnings)</ID>
     <ID>MaxLineLength:CohereProvider.kt$CohereEmbeddingModel$(options["truncate"] ?: params.truncate?.let { JsonPrimitive(if (it) "END" else "NONE") })?.let { put("truncate", it) }</ID>
-    <ID>MaxLineLength:CohereProvider.kt$CohereEmbeddingModel$response = LanguageModelResponseMetadata(id = value["id"]?.jsonPrimitive?.contentOrNull, headers = response.headers, body = response.value)</ID>
-    <ID>MaxLineLength:CohereProvider.kt$CohereRerankingModel$response = LanguageModelResponseMetadata(id = value["id"]?.jsonPrimitive?.contentOrNull, headers = response.headers, body = response.value)</ID>
     <ID>MaxLineLength:CohereProviderTest.kt$CohereProviderTest$assertEquals("high", userContent[1].jsonObject["image_url"]?.jsonObject?.get("detail")?.jsonPrimitive?.contentOrNull)</ID>
     <ID>MaxLineLength:CohereProviderTest.kt$CohereProviderTest$assertEquals("lookup", body["tools"]?.jsonArray?.single()?.jsonObject?.get("function")?.jsonObject?.get("name")?.jsonPrimitive?.contentOrNull)</ID>
     <ID>MaxLineLength:CohereProviderTest.kt$CohereProviderTest$assertEquals(false, body["response_format"]?.jsonObject?.get("json_schema")?.jsonObject?.get("additionalProperties")?.jsonPrimitive?.contentOrNull?.toBoolean())</ID>
@@ -2203,8 +2132,6 @@
     <ID>MaxLineLength:ElevenLabsProvider.kt$ElevenLabsSpeechModel$"https://api.elevenlabs.io/v1/text-to-speech/${params.voice ?: ELEVENLABS_DEFAULT_VOICE_ID}?${queryParams.toQueryString()}"</ID>
     <ID>MaxLineLength:ElevenLabsProvider.kt$ElevenLabsSpeechModel$private suspend</ID>
     <ID>MaxLineLength:ElevenLabsProvider.kt$ElevenLabsSpeechModel$warnings += CallWarning("unsupported", "ElevenLabs speech models do not support instructions. Instructions parameter was ignored.")</ID>
-    <ID>MaxLineLength:ElevenLabsProvider.kt$ElevenLabsTranscriptionModel$(options["languageCode"]?.jsonPrimitive?.contentOrNull ?: params.language)?.let { append("language_code", it) }</ID>
-    <ID>MaxLineLength:ElevenLabsProvider.kt$ElevenLabsTranscriptionModel$options["timestampsGranularity"]?.jsonPrimitive?.contentOrNull?.let { append("timestamps_granularity", it) }</ID>
     <ID>MaxLineLength:ElevenLabsProvider.kt$ElevenLabsTranscriptionModel$response = LanguageModelResponseMetadata(modelId = modelId, headers = response.headers, body = response.value)</ID>
     <ID>MaxLineLength:ElevenLabsProvider.kt$ElevenLabsTranscriptionModel$val response = with(HttpTransport) { rawResponse.toJsonResponse(url = "https://api.elevenlabs.io/v1/speech-to-text", errorMessage = ::elevenLabsErrorMessage) }</ID>
     <ID>MaxLineLength:ElevenLabsProviderTest.kt$ElevenLabsProviderTest$"""{"language_code":"en","language_probability":0.99,"text":"hello world","words":[{"text":"hello","type":"word","start":0.1,"end":0.3},{"text":"world","type":"word","start":0.4,"end":0.8}]}"""</ID>
@@ -2231,7 +2158,6 @@
     <ID>MaxLineLength:FalProvider.kt$FalProvider$public fun transcription(modelId: ModelId): TranscriptionModel</ID>
     <ID>MaxLineLength:FalProvider.kt$FalSpeechModel$response = LanguageModelResponseMetadata(modelId = modelId, headers = response.headers, body = response.value)</ID>
     <ID>MaxLineLength:FalProvider.kt$FalTranscriptionModel$timeoutMessage = "Transcription request timed out after ${settings.transcriptionPollIntervalMillis * settings.transcriptionMaxPollAttempts}ms"</ID>
-    <ID>MaxLineLength:FalProvider.kt$FalVideoModel$val videoUrl = video["url"]?.jsonPrimitive?.contentOrNull ?: throw NoVideoGeneratedError("No video URL in response")</ID>
     <ID>MaxLineLength:FalProviderTest.kt$FalProviderTest$"""{"request_id":"video-1","response_url":"https://queue.fal.run/fal-ai/luma-dream-machine/requests/video-1"}"""</ID>
     <ID>MaxLineLength:FalProviderTest.kt$FalProviderTest$assertEquals("Enhanced prompt", result.providerMetadata.toMap()["fal"]?.jsonObject?.get("prompt")?.jsonPrimitive?.contentOrNull)</ID>
     <ID>MaxLineLength:FalProviderTest.kt$FalProviderTest$assertEquals(1920, result.providerMetadata.toMap()["fal"]?.jsonObject?.get("videos")?.jsonArray?.single()?.jsonObject?.get("width")?.jsonPrimitive?.intOrNull)</ID>
@@ -2245,7 +2171,6 @@
     <ID>MaxLineLength:FullPortFeatureParityTest.kt$FullPortFeatureParityTest$val value = (tool.execute(buildJsonObject { put("value", JsonPrimitive("ok")) }, ctx).first() as ToolResult.Success).value</ID>
     <ID>MaxLineLength:FullPortFeatureParityTest.kt$FullPortFeatureParityTest.&lt;no name provided>$providerOptions = context.params.providerOptions + ProviderOptions.Raw(JsonObject(mapOf("wrapped" to JsonPrimitive(true) as JsonElement)))</ID>
     <ID>MaxLineLength:Gateway.kt$DefaultGatewayProvider$?.</ID>
-    <ID>MaxLineLength:Gateway.kt$GatewayError.Companion$val message = error?.get("message")?.jsonPrimitive?.contentOrNull ?: raw.ifBlank { "Gateway request failed" }</ID>
     <ID>MaxLineLength:GatewayAndProviderUtilsParityTest.kt$GatewayAndProviderUtilsParityTest$"/v1/generation" -> """{"data":{"id":"gen_1","total_cost":1.0,"upstream_inference_cost":0.5,"usage":1.0,"created_at":"2026-06-03T00:00:00Z","model":"m1","is_byok":true,"provider_name":"openai","streamed":false,"finish_reason":"stop","latency":10,"generation_time":20,"native_tokens_prompt":1,"native_tokens_completion":2,"native_tokens_reasoning":0,"native_tokens_cached":0,"native_tokens_cache_creation":0,"billable_web_search_calls":0}}"""</ID>
     <ID>MaxLineLength:GatewayAndProviderUtilsParityTest.kt$GatewayAndProviderUtilsParityTest$"/v1/report" -> """{"results":[{"model":"m1","credential_type":"byok","total_cost":1.5,"request_count":2}]}"""</ID>
     <ID>MaxLineLength:GatewayAndProviderUtilsParityTest.kt$GatewayAndProviderUtilsParityTest$"/v3/ai/config" -> """{"models":[{"id":"m1","name":"Model 1","description":"test","pricing":{"input":"0.1","output":"0.2","input_cache_read":"0.01","input_cache_write":"0.02"},"specification":{"specificationVersion":"v3","provider":"openai","modelId":"m1"},"modelType":"language"}]}"""</ID>
@@ -2283,7 +2208,6 @@
     <ID>MaxLineLength:GoogleInteractionsModel.kt$GoogleInteractions$EventStreamParser.parse(rawLines, Schemas.jsonSchema&lt;JsonElement>(JsonObject(emptyMap())), aiSdkJson)</ID>
     <ID>MaxLineLength:GoogleInteractionsModel.kt$GoogleInteractions$content += googleInteractionsAnnotationSources(block["annotations"] as? JsonArray, generateId, metadata.toMap().ifEmpty { null })</ID>
     <ID>MaxLineLength:GoogleInteractionsModel.kt$GoogleInteractions$current = googleGetJson(client, "${settings.baseURL.trimEnd('/')}/interactions/$interactionId", headers, abortSignal)</ID>
-    <ID>MaxLineLength:GoogleInteractionsModel.kt$GoogleInteractions$extra = block["uri"]?.jsonPrimitive?.contentOrNull?.let { mapOf("imageUri" to JsonPrimitive(it)) }.orEmpty()</ID>
     <ID>MaxLineLength:GoogleInteractionsModel.kt$GoogleInteractions$googleInteractionsSignature(part.providerMetadata.toMap())?.let { put("signature", JsonPrimitive(it)) }</ID>
     <ID>MaxLineLength:GoogleInteractionsModel.kt$GoogleInteractions$if (params.stopSequences.isNotEmpty()) put("stop_sequences", JsonArray(params.stopSequences.map(::JsonPrimitive)))</ID>
     <ID>MaxLineLength:GoogleInteractionsModel.kt$GoogleInteractions$is ContentPart.File -> googleInteractionsFileContent(part.mediaType, part.base64, mediaResolution)</ID>
@@ -2293,7 +2217,6 @@
     <ID>MaxLineLength:GoogleInteractionsModel.kt$GoogleInteractions$providerMetadata = ProviderMetadata.Raw(JsonObject(mapOf("google" to buildJsonObject { put("providerExecuted", JsonPrimitive(true)) })))</ID>
     <ID>MaxLineLength:GoogleInteractionsModel.kt$GoogleInteractions$providerMetadata = if (providerMetadata.isEmpty()) ProviderMetadata.None else ProviderMetadata.Raw(JsonObject(mapOf("google" to providerMetadata)))</ID>
     <ID>MaxLineLength:GoogleInteractionsModel.kt$GoogleInteractions$providerMetadata = metadata?.let { ProviderMetadata.Raw(JsonObject(it)) } ?: ProviderMetadata.Raw(JsonObject(mapOf("google" to buildJsonObject { put("id", JsonPrimitive(IdGenerator.generate())) })))</ID>
-    <ID>MaxLineLength:GoogleInteractionsModel.kt$GoogleInteractions$title = annotation["title"]?.jsonPrimitive?.contentOrNull ?: annotation["name"]?.jsonPrimitive?.contentOrNull</ID>
     <ID>MaxLineLength:GoogleInteractionsModel.kt$GoogleInteractions$toolName = WireDecoder.requiredString(step, "name", "google", "interactions response", "$.function_call")</ID>
     <ID>MaxLineLength:GoogleInteractionsModel.kt$GoogleInteractions$val maxAttempts = ((timeoutMillis ?: 30 * 60 * 1_000L) / settings.videoPollIntervalMillis.coerceAtLeast(1L)).coerceAtLeast(1L).toInt()</ID>
     <ID>MaxLineLength:GoogleInteractionsModel.kt$GoogleInteractions$var current = googleGetJson(client, "${settings.baseURL.trimEnd('/')}/interactions/$interactionId", headers, abortSignal)</ID>
@@ -2338,10 +2261,8 @@
     <ID>MaxLineLength:GoogleLanguageModel.kt$GoogleStreamState$events += StreamEvent.ReasoningStart(reasoningId.orEmpty(), GoogleGenerativeAILanguageModel.googlePartMetadata(obj)?.let { pm -> ProviderMetadata.Raw(JsonObject(pm)) } ?: ProviderMetadata.None)</ID>
     <ID>MaxLineLength:GoogleLanguageModel.kt$GoogleStreamState$events += StreamEvent.TextDelta(textId.orEmpty(), it, GoogleGenerativeAILanguageModel.googlePartMetadata(obj)?.let { pm -> ProviderMetadata.Raw(JsonObject(pm)) } ?: ProviderMetadata.None)</ID>
     <ID>MaxLineLength:GoogleLanguageModel.kt$GoogleStreamState$events += StreamEvent.TextStart(textId.orEmpty(), GoogleGenerativeAILanguageModel.googlePartMetadata(obj)?.let { pm -> ProviderMetadata.Raw(JsonObject(pm)) } ?: ProviderMetadata.None)</ID>
-    <ID>MaxLineLength:GoogleLanguageModel.kt$GoogleStreamState$id = source.providerMetadata.toMap()["google"]?.jsonObject?.get("id")?.jsonPrimitive?.contentOrNull ?: IdGenerator.generate()</ID>
     <ID>MaxLineLength:GoogleLanguageModel.kt$GoogleStreamState$providerMetadata = GoogleGenerativeAILanguageModel.googlePartMetadata(obj)?.let { ProviderMetadata.Raw(JsonObject(it)) } ?: ProviderMetadata.None</ID>
     <ID>MaxLineLength:GoogleLanguageModel.kt$GoogleStreamState$val partMetadata = GoogleGenerativeAILanguageModel.googlePartMetadata(obj)?.let { ProviderMetadata.Raw(JsonObject(it)) } ?: ProviderMetadata.None</ID>
-    <ID>MaxLineLength:GoogleMediaModels.kt$GoogleGenerativeAIEmbeddingModel$listOf(response.value.jsonObject["embedding"]?.jsonObject?.get("values")?.jsonArray.orEmpty().map { WireDecoder.embeddingFloat(it, provider) })</ID>
     <ID>MaxLineLength:GoogleMediaModels.kt$GoogleGenerativeAIEmbeddingModel$response = LanguageModelResponseMetadata(modelId = modelId, headers = response.headers, body = response.value)</ID>
     <ID>MaxLineLength:GoogleMediaModels.kt$GoogleGenerativeAIEmbeddingModel$url = "${settings.baseURL.trimEnd('/')}/models/$modelId:${if (single) "embedContent" else "batchEmbedContents"}"</ID>
     <ID>MaxLineLength:GoogleMediaModels.kt$GoogleGenerativeAIImageModel$.</ID>
@@ -2357,10 +2278,7 @@
     <ID>MaxLineLength:GoogleMediaModels.kt$GoogleGenerativeAIImageModel$val predictions = WireDecoder.requiredArray(responseObject, "predictions", provider, "image generation response")</ID>
     <ID>MaxLineLength:GoogleMediaModels.kt$GoogleGenerativeAIVideoModel$WireDecoder.required(responseObject, "generateVideoResponse", provider, "video poll response", "$.response")</ID>
     <ID>MaxLineLength:GoogleMediaModels.kt$GoogleGenerativeAIVideoModel$WireDecoder.required(sampleObject, "video", provider, "video poll response", "$.response.generateVideoResponse.generatedSamples[$index]")</ID>
-    <ID>MaxLineLength:GoogleMediaModels.kt$GoogleGenerativeAIVideoModel$current["error"]?.jsonObject?.let { throw NoVideoGeneratedError("Google video generation failed: ${it["message"]?.jsonPrimitive?.contentOrNull ?: it}") }</ID>
     <ID>MaxLineLength:GoogleMediaModels.kt$GoogleGenerativeAIVideoModel$return VideoModelResult(videos = videos, response = LanguageModelResponseMetadata(modelId = modelId, headers = headers, body = current), providerMetadata = ProviderMetadata.Raw(JsonObject(mapOf("google" to current))))</ID>
-    <ID>MaxLineLength:GoogleMediaModels.kt$GoogleGenerativeAIVideoModel$val maxAttempts = (options["maxPollAttempts"]?.jsonPrimitive?.intOrNull ?: settings.videoMaxPollAttempts).coerceAtLeast(1)</ID>
-    <ID>MaxLineLength:GoogleMediaModels.kt$GoogleGenerativeAIVideoModel$val pollInterval = options["pollIntervalMs"]?.jsonPrimitive?.intOrNull?.toLong() ?: settings.videoPollIntervalMillis</ID>
     <ID>MaxLineLength:GoogleMediaModels.kt$GoogleGenerativeAIVideoModel$val sampleObject = WireDecoder.objectValue(sample, provider, "video poll response", "$.response.generateVideoResponse.generatedSamples[$index]")</ID>
     <ID>MaxLineLength:GoogleMediaModels.kt$GoogleGenerativeAIVideoModel$val samples = WireDecoder.requiredArray(videoResponse, "generatedSamples", provider, "video poll response", "$.response.generateVideoResponse")</ID>
     <ID>MaxLineLength:GoogleMediaModels.kt$GoogleGenerativeAIVideoModel$val uri = WireDecoder.requiredString(video, "uri", provider, "video poll response", "$.response.generateVideoResponse.generatedSamples[$index].video")</ID>
@@ -2431,7 +2349,6 @@
     <ID>MaxLineLength:HuggingFaceProvider.kt$HuggingFaceResponsesLanguageModel$content += ContentPart.ToolResult(callId, toolName, JsonPrimitive(output), providerMetadata = mcpMetadata)</ID>
     <ID>MaxLineLength:HuggingFaceProvider.kt$HuggingFaceResponsesLanguageModel$content += ContentPart.ToolResult(callId, toolName, JsonPrimitive(output), providerMetadata = providerMetadata)</ID>
     <ID>MaxLineLength:HuggingFaceProvider.kt$HuggingFaceResponsesLanguageModel$events = EventStreamParser.parse(rawLines, Schemas.jsonSchema&lt;JsonElement>(JsonObject(emptyMap())), aiSdkJson)</ID>
-    <ID>MaxLineLength:HuggingFaceProvider.kt$HuggingFaceResponsesLanguageModel$input = settings.huggingFaceParseToolInput(obj["arguments"]?.jsonPrimitive?.contentOrNull, aiSdkJson)</ID>
     <ID>MaxLineLength:HuggingFaceProvider.kt$HuggingFaceResponsesLanguageModel$providerMetadata = responseId?.let { ProviderMetadata.Raw(JsonObject(mapOf("huggingface" to buildJsonObject { put("responseId", JsonPrimitive(it)) }))) } ?: ProviderMetadata.None</ID>
     <ID>MaxLineLength:HuggingFaceProvider.kt$HuggingFaceResponsesLanguageModel$put("image_url", JsonPrimitive("data:${huggingFaceImageMediaType(part.mediaType)};base64,${part.base64}"))</ID>
     <ID>MaxLineLength:HuggingFaceProvider.kt$HuggingFaceResponsesLanguageModel$throw UnsupportedFunctionalityError("file part media type ${part.mediaType}", "Hugging Face Responses API does not support file part media type ${part.mediaType}.")</ID>
@@ -2441,10 +2358,7 @@
     <ID>MaxLineLength:HuggingFaceProvider.kt$HuggingFaceResponsesStreamState$ProviderMetadata.Raw(JsonObject(mapOf("huggingface" to buildJsonObject { put("responseId", JsonPrimitive(it)) })))</ID>
     <ID>MaxLineLength:HuggingFaceProvider.kt$HuggingFaceResponsesStreamState$events += StreamEvent.ToolResult(callId, toolName, JsonPrimitive(output), providerMetadata = settings.huggingFaceItemMetadata(itemId))</ID>
     <ID>MaxLineLength:HuggingFaceProvider.kt$HuggingFaceResponsesStreamState$events += StreamEvent.ToolResult(itemId, toolName, JsonPrimitive(output), providerMetadata = metadata)</ID>
-    <ID>MaxLineLength:HuggingFaceProvider.kt$HuggingFaceResponsesStreamState$inputJson = settings.huggingFaceParseToolInput(item["arguments"]?.jsonPrimitive?.contentOrNull, json)</ID>
     <ID>MaxLineLength:HuggingFaceProvider.kt$HuggingFaceResponsesStreamState$openReasoningIds.toList().forEach { id -> add(StreamEvent.ReasoningEnd(id, settings.huggingFaceItemMetadata(id))) }</ID>
-    <ID>MaxLineLength:HuggingFaceProvider.kt$HuggingFaceResponsesStreamState$val itemId = item["id"]?.jsonPrimitive?.contentOrNull ?: obj["item_id"]?.jsonPrimitive?.contentOrNull.orEmpty()</ID>
-    <ID>MaxLineLength:HuggingFaceProvider.kt$HuggingFaceResponsesStreamState$val reason = response["incomplete_details"]?.jsonObject?.get("reason")?.jsonPrimitive?.contentOrNull ?: "stop"</ID>
     <ID>MaxLineLength:HuggingFaceProviderTest.kt$HuggingFaceProviderTest$assertEquals("Previous answer.", input[2].jsonObject["content"]?.jsonArray?.single()?.jsonObject?.get("text")?.jsonPrimitive?.contentOrNull)</ID>
     <ID>MaxLineLength:HuggingFaceProviderTest.kt$HuggingFaceProviderTest$assertEquals("Previous reasoning.", input[3].jsonObject["content"]?.jsonArray?.single()?.jsonObject?.get("text")?.jsonPrimitive?.contentOrNull)</ID>
     <ID>MaxLineLength:HuggingFaceProviderTest.kt$HuggingFaceProviderTest$assertEquals("Use the cached city context.", result.content.filterIsInstance&lt;ContentPart.Reasoning>().single().text)</ID>
@@ -2462,12 +2376,10 @@
     <ID>MaxLineLength:KlingAIProvider.kt$KlingAIProvider$override fun embeddingModel(modelId: String): EmbeddingModel</ID>
     <ID>MaxLineLength:KlingAIProvider.kt$KlingAIProvider$override fun languageModel(modelId: String): LanguageModel</ID>
     <ID>MaxLineLength:KlingAIProvider.kt$KlingAIProviderSettings$val</ID>
-    <ID>MaxLineLength:KlingAIProvider.kt$KlingAIVideoModel$"failed" -> throw NoVideoGeneratedError("Video generation failed: ${data["task_status_msg"]?.jsonPrimitive?.contentOrNull ?: "Unknown error"}")</ID>
     <ID>MaxLineLength:KlingAIProvider.kt$KlingAIVideoModel$?:</ID>
     <ID>MaxLineLength:KlingAIProvider.kt$KlingAIVideoModel$if (params.n > 1) add(CallWarning("unsupported", "KlingAI video models do not support generating multiple videos per call. Only 1 video will be generated."))</ID>
     <ID>MaxLineLength:KlingAIProvider.kt$KlingAIVideoModel$if (params.resolution != null) add(CallWarning("unsupported", "KlingAI video models do not support the resolution option."))</ID>
     <ID>MaxLineLength:KlingAIProvider.kt$KlingAIVideoModel$if (params.seed != null) add(CallWarning("unsupported", "KlingAI video models do not support seed for deterministic generation."))</ID>
-    <ID>MaxLineLength:KlingAIProvider.kt$KlingAIVideoModel$options["watermarkEnabled"]?.jsonPrimitive?.booleanOrNull?.let { put("watermark_info", buildJsonObject { put("enabled", JsonPrimitive(it)) }) }</ID>
     <ID>MaxLineLength:KlingAIProvider.kt$KlingAIVideoModel$throw InvalidArgumentError("providerOptions", "KlingAI Motion Control requires providerOptions.klingai with videoUrl, characterOrientation, and mode.")</ID>
     <ID>MaxLineLength:KlingAIProvider.kt$KlingAIVideoModel$warnings += CallWarning("unsupported", "KlingAI Motion Control does not support aspectRatio. The output dimensions are determined by the reference image/video.")</ID>
     <ID>MaxLineLength:KlingAIProvider.kt$KlingAIVideoModel$warnings += CallWarning("unsupported", "KlingAI Motion Control does not support custom duration. The output duration matches the reference video duration.")</ID>
@@ -2499,7 +2411,6 @@
     <ID>MaxLineLength:LMNTProvider.kt$LMNTProvider$override fun languageModel(modelId: String): LanguageModel</ID>
     <ID>MaxLineLength:LMNTProviderTest.kt$LMNTProviderTest$assertEquals("mp3", fixture.calls.single().requestBodyJson.jsonObject["response_format"]?.jsonPrimitive?.contentOrNull)</ID>
     <ID>MaxLineLength:LumaProvider.kt$LumaImageModel$"Luma AI character supports up to 4 images per identity. Identity '$id' has ${images.size} images."</ID>
-    <ID>MaxLineLength:LumaProvider.kt$LumaImageModel$pollIntervalMillis = options["pollIntervalMillis"]?.jsonPrimitive?.contentOrNull?.toLongOrNull() ?: DEFAULT_LUMA_POLL_INTERVAL_MILLIS</ID>
     <ID>MaxLineLength:LumaProvider.kt$LumaImageModel$warnings += CallWarning("unsupported", "This model does not support the `size` option. Use `aspectRatio` instead.")</ID>
     <ID>MaxLineLength:LumaProviderTest.kt$LumaProviderTest$UrlResponse.JsonValue(Json.parseToJsonElement("""{"id":"gen1","state":"completed","assets":{"image":"https://cdn.example/image.png"}}"""))</ID>
     <ID>MaxLineLength:LumaProviderTest.kt$LumaProviderTest$assertEquals("https://example.com/a.png", character?.get("images")?.jsonArray?.first()?.jsonPrimitive?.contentOrNull)</ID>
@@ -2508,7 +2419,6 @@
     <ID>MaxLineLength:LumaProviderTest.kt$LumaProviderTest$model.generate(ImageGenerationParams(prompt = "x", mask = ImageGenerationFile(url = "https://example.com/mask.png")))</ID>
     <ID>MaxLineLength:LumaProviderTest.kt$LumaProviderTest$val character = fixture.calls.first().requestBodyJson.jsonObject["character"]?.jsonObject?.get("hero")?.jsonObject</ID>
     <ID>MaxLineLength:MCP.kt$JSONRPCMessage.Companion$envelope.error != null &amp;&amp; hasId -> WireDecoder.decode(JSONRPCError.serializer(), obj, "mcp", "json-rpc error")</ID>
-    <ID>MaxLineLength:MCP.kt$SseMCPTransport$throw MCPClientError("MCP SSE Transport Error: Endpoint origin does not match connection origin: ${McpUrl.origin(resolved)}")</ID>
     <ID>MaxLineLength:MCPClientTest.kt$MCPClientTest$"""{"access_token":"access-token","token_type":"Bearer","refresh_token":"refresh-token"}"""</ID>
     <ID>MaxLineLength:MCPClientTest.kt$MCPClientTest$"""{"access_token":"async-token","token_type":"Bearer","refresh_token":"refresh-token"}"""</ID>
     <ID>MaxLineLength:MCPClientTest.kt$MCPClientTest$"""{"resource":"https://api.example.com/mcp-server","authorization_servers":["https://auth.example.com"]}"""</ID>
@@ -2562,7 +2472,6 @@
     <ID>MaxLineLength:OpenAICompatibleHttp.kt$OpenAICompatibleHttpModel$toolName = WireDecoder.requiredString(function, "name", provider, "chat completion response", "$.choices[0].message.tool_calls[$index].function")</ID>
     <ID>MaxLineLength:OpenAICompatibleHttp.kt$OpenAICompatibleHttpModel$val</ID>
     <ID>MaxLineLength:OpenAICompatibleHttp.kt$OpenAICompatibleHttpModel$val callObj = WireDecoder.objectValue(call, provider, "chat completion response", "$.choices[0].message.tool_calls[$index]")</ID>
-    <ID>MaxLineLength:OpenAICompatibleHttp.kt$OpenAICompatibleHttpModel$val message = error?.get("message")?.jsonPrimitive?.contentOrNull ?: raw.ifBlank { "OpenAI-compatible request failed" }</ID>
     <ID>MaxLineLength:OpenAICompatibleModels.kt$OpenAICompatibleChatLanguageModel$events</ID>
     <ID>MaxLineLength:OpenAICompatibleModels.kt$OpenAICompatibleChatLanguageModel$val state = OpenAIChatStreamState(provider = providerName, providerKey = providerOptionsKey(), convertUsage = settings.convertUsage)</ID>
     <ID>MaxLineLength:OpenAICompatibleModels.kt$OpenAICompatibleCompletionLanguageModel$EventStreamParser.parse(rawLines, Schemas.jsonSchema&lt;JsonElement>(JsonObject(emptyMap())), json)</ID>
@@ -2570,7 +2479,6 @@
     <ID>MaxLineLength:OpenAICompatibleModels.kt$OpenAICompatibleCompletionLanguageModel$is ParseResult.Failure -> emit(StreamEvent.Error("Failed to parse OpenAI-compatible completion stream event: ${event.error.message}"))</ID>
     <ID>MaxLineLength:OpenAICompatibleModels.kt$OpenAICompatibleCompletionLanguageModel$return completionResultFromJson(response.value, providerName, prepared.body, response.headers, response.value, prepared.warnings)</ID>
     <ID>MaxLineLength:OpenAICompatibleModels.kt$OpenAICompatibleCompletionLanguageModel$val options = openAIProviderOptions(params.providerOptions.toMap(), settings.providerOptionsName ?: settings.name)</ID>
-    <ID>MaxLineLength:OpenAICompatibleModels.kt$OpenAICompatibleEmbeddingModel$.</ID>
     <ID>MaxLineLength:OpenAICompatibleModels.kt$OpenAICompatibleEmbeddingModel$providerMetadata = openAIProviderMetadata(value["providerMetadata"], settings.name).let { m -> if (m.isEmpty()) ProviderMetadata.None else ProviderMetadata.Raw(JsonObject(m)) }</ID>
     <ID>MaxLineLength:OpenAICompatibleModels.kt$OpenAICompatibleEmbeddingModel$throw InvalidArgumentError("values", "embedding model ${settings.name}:$modelId supports at most $max values per call")</ID>
     <ID>MaxLineLength:OpenAICompatibleModels.kt$OpenAICompatibleEmbeddingModel$val options = openAIProviderOptions(params.providerOptions.toMap(), settings.providerOptionsName ?: settings.name)</ID>
@@ -2650,16 +2558,13 @@
     <ID>MaxLineLength:OpenResponsesProvider.kt$ConvertedOpenResponsesInput.Companion$prefixes.any { prefix -> prefix.isNotEmpty() &amp;&amp; value.startsWith(prefix) } &amp;&amp; !isOpenResponsesBase64Payload(value)</ID>
     <ID>MaxLineLength:OpenResponsesProvider.kt$ConvertedOpenResponsesInput.Companion$put("content", JsonArray(message.content.mapNotNull { openResponsesUserContentPart(it, fileIdPrefixes) }))</ID>
     <ID>MaxLineLength:OpenResponsesProvider.kt$ConvertedOpenResponsesInput.Companion$put("output", openResponsesToolOutput(ToolResultOutputs.toolResultOutputFromWire(toolResult.modelVisible), warnings))</ID>
-    <ID>MaxLineLength:OpenResponsesProvider.kt$OpenResponsesLanguageModel$content += ContentPart.Reasoning(text, openResponsesPartMetadata(providerMetadataKey, itemId, reasoning.jsonObject))</ID>
     <ID>MaxLineLength:OpenResponsesProvider.kt$OpenResponsesLanguageModel$content += ContentPart.Text(text, openResponsesPartMetadata(providerMetadataKey, itemId, messageObj))</ID>
     <ID>MaxLineLength:OpenResponsesProvider.kt$OpenResponsesLanguageModel$events = EventStreamParser.parse(rawLines, Schemas.jsonSchema&lt;JsonElement>(JsonObject(emptyMap())), json)</ID>
     <ID>MaxLineLength:OpenResponsesProvider.kt$OpenResponsesLanguageModel$val</ID>
     <ID>MaxLineLength:OpenResponsesProvider.kt$OpenResponsesLanguageModel$val reasoningParts = (obj["content"] as? JsonArray) ?: (obj["summary"] as? JsonArray) ?: JsonArray(emptyList())</ID>
     <ID>MaxLineLength:OpenResponsesProvider.kt$OpenResponsesLanguageModel$val toolCallId = WireDecoder.requiredString(obj, "call_id", "Open Responses", "response output", path)</ID>
     <ID>MaxLineLength:OpenResponsesProvider.kt$OpenResponsesLanguageModel.OpenResponsesStreamState$?:</ID>
-    <ID>MaxLineLength:OpenResponsesProvider.kt$OpenResponsesLanguageModel.OpenResponsesStreamState$rawFinishReason = response["incomplete_details"]?.jsonObject?.get("reason")?.jsonPrimitive?.contentOrNull</ID>
     <ID>MaxLineLength:OpenResponsesProvider.kt$OpenResponsesLanguageModel.OpenResponsesStreamState$val itemId = itemIdFromItem(item, obj) ?: return listOf(missingIdentityError(type, "item_id"))</ID>
-    <ID>MaxLineLength:OpenResponsesProvider.kt$OpenResponsesLanguageModel.OpenResponsesStreamState$val itemId = item["id"]?.jsonPrimitive?.contentOrNull ?: obj["item_id"]?.jsonPrimitive?.contentOrNull.orEmpty()</ID>
     <ID>MaxLineLength:OpenResponsesProvider.kt$PreparedOpenResponsesRequest.Companion$putOpenResponsesField("allowed_tools", openResponsesAllowedMcpTools(args["allowedTools"] ?: args["allowed_tools"]))</ID>
     <ID>MaxLineLength:OpenResponsesProvider.kt$PreparedOpenResponsesRequest.Companion$putOpenResponsesField("external_web_access", args["externalWebAccess"] ?: args["external_web_access"])</ID>
     <ID>MaxLineLength:OpenResponsesProvider.kt$PreparedOpenResponsesRequest.Companion$putOpenResponsesField("input_image_mask", openResponsesInputImageMask(args["inputImageMask"] ?: args["input_image_mask"]))</ID>
@@ -2684,8 +2589,6 @@
     <ID>MaxLineLength:ProdiaProvider.kt$ProdiaLanguageModel$if (params.stopSequences.isNotEmpty()) add(CallWarning("unsupported", "Prodia language models do not support stopSequences."))</ID>
     <ID>MaxLineLength:ProdiaProvider.kt$ProdiaLanguageModel$if (params.temperature != null) add(CallWarning("unsupported", "Prodia language models do not support temperature."))</ID>
     <ID>MaxLineLength:ProdiaProvider.kt$ProdiaLanguageModel$if (params.toolChoice != ToolChoice.Auto) add(CallWarning("unsupported", "Prodia language models do not support toolChoice."))</ID>
-    <ID>MaxLineLength:ProdiaProvider.kt$ProdiaMultipartResult$job["metrics"]?.jsonObject?.get("elapsed")?.jsonPrimitive?.doubleOrNull?.let { put("elapsed", JsonPrimitive(it)) }</ID>
-    <ID>MaxLineLength:ProdiaProvider.kt$ProdiaMultipartResult$job["metrics"]?.jsonObject?.get("ips")?.jsonPrimitive?.doubleOrNull?.let { put("iterationsPerSecond", JsonPrimitive(it)) }</ID>
     <ID>MaxLineLength:ProdiaProvider.kt$ProdiaProvider$override fun embeddingModel(modelId: String): EmbeddingModel</ID>
     <ID>MaxLineLength:ProdiaProvider.kt$ProdiaProvider$public fun textEmbeddingModel(modelId: String): Nothing</ID>
     <ID>MaxLineLength:ProdiaProvider.kt$ProdiaProviderSettings$?:</ID>
@@ -2719,11 +2622,8 @@
     <ID>MaxLineLength:QuiverAIProvider.kt$QuiverAIImageModel$if (params.mask != null) add(CallWarning("unsupported", "QuiverAI SVG generation does not support masks. The mask was ignored."))</ID>
     <ID>MaxLineLength:QuiverAIProvider.kt$QuiverAIImageModel$if (params.seed != null) add(CallWarning("unsupported", "QuiverAI SVG generation does not support the `seed` option. The setting was ignored."))</ID>
     <ID>MaxLineLength:QuiverAIProvider.kt$QuiverAIImageModel$if (params.size != null) add(CallWarning("unsupported", "QuiverAI SVG generation does not support the `size` option. The setting was ignored."))</ID>
-    <ID>MaxLineLength:QuiverAIProvider.kt$QuiverAIImageModel$put("mimeType", JsonPrimitive(item.jsonObject["mime_type"]?.jsonPrimitive?.contentOrNull ?: "image/svg+xml"))</ID>
     <ID>MaxLineLength:QuiverAIProvider.kt$QuiverAIImageModel$throw InvalidArgumentError("files", "QuiverAI generate supports up to $maxReferences reference images for model \"$modelId\".")</ID>
     <ID>MaxLineLength:QuiverAIProvider.kt$QuiverAIImageModel$throw InvalidArgumentError("prompt", "QuiverAI image generation requires a non-empty prompt for generateImage.")</ID>
-    <ID>MaxLineLength:QuiverAIProvider.kt$QuiverAIImageModel$val data = root["data"]?.jsonArray ?: throw InvalidResponseDataError(response.value, "QuiverAI response is missing data")</ID>
-    <ID>MaxLineLength:QuiverAIProvider.kt$QuiverAIImageModel$val svg = obj["svg"]?.jsonPrimitive?.contentOrNull ?: throw InvalidResponseDataError(item, "QuiverAI image item is missing svg")</ID>
     <ID>MaxLineLength:QuiverAIProvider.kt$QuiverAIProvider$override fun embeddingModel(modelId: String): EmbeddingModel</ID>
     <ID>MaxLineLength:QuiverAIProvider.kt$QuiverAIProvider$override fun languageModel(modelId: String): LanguageModel</ID>
     <ID>MaxLineLength:QuiverAIProvider.kt$QuiverAIProvider$public fun textEmbeddingModel(modelId: String): Nothing</ID>
@@ -2738,9 +2638,6 @@
     <ID>MaxLineLength:RegistryGatewayParityTest.kt$RegistryGatewayParityTest$val token = GatewayAuthToken.fromSettings(GatewayProviderSettings(apiKey = "explicit", environment = mapOf("AI_GATEWAY_API_KEY" to "env-key")))</ID>
     <ID>MaxLineLength:RegistryGatewayParityTest.kt$RegistryGatewayParityTest$val token = GatewayAuthToken.fromSettings(GatewayProviderSettings(environment = mapOf("AI_GATEWAY_API_KEY" to "env-key")))</ID>
     <ID>MaxLineLength:RegistryGatewayParityTest.kt$RegistryGatewayParityTest$val token = GatewayAuthToken.fromSettings(GatewayProviderSettings(environment = mapOf("VERCEL_OIDC_TOKEN" to "oidc-tok")))</ID>
-    <ID>MaxLineLength:ReplicateProvider.kt$ReplicateImageModel$"Replicate image generation failed: ${prediction["error"]?.jsonPrimitive?.contentOrNull ?: "Unknown error"}"</ID>
-    <ID>MaxLineLength:ReplicateProvider.kt$ReplicateImageModel$else -> listOf(output.jsonPrimitive.contentOrNull ?: throw InvalidResponseDataError(output, "Replicate image output is not a URL"))</ID>
-    <ID>MaxLineLength:ReplicateProvider.kt$ReplicateImageModel$is JsonArray -> output.map { it.jsonPrimitive.contentOrNull ?: throw InvalidResponseDataError(output, "Replicate image output contains a non-string URL") }</ID>
     <ID>MaxLineLength:ReplicateProvider.kt$ReplicateImageModel$message = "Flux-2 models support up to $REPLICATE_MAX_FLUX_2_INPUT_IMAGES input images. Additional images are ignored."</ID>
     <ID>MaxLineLength:ReplicateProvider.kt$ReplicateImageModel$message = "Replicate image download failed (${response.status.value}): ${raw.ifBlank { "request failed" }}"</ID>
     <ID>MaxLineLength:ReplicateProvider.kt$ReplicateImageModel$message = "This Replicate model only supports a single input image. Additional images are ignored."</ID>
@@ -2748,8 +2645,6 @@
     <ID>MaxLineLength:ReplicateProvider.kt$ReplicateProvider$override fun languageModel(modelId: String): LanguageModel</ID>
     <ID>MaxLineLength:ReplicateProvider.kt$ReplicateProvider$public fun textEmbeddingModel(modelId: String): Nothing</ID>
     <ID>MaxLineLength:ReplicateProvider.kt$ReplicateProviderSettings$internal</ID>
-    <ID>MaxLineLength:ReplicateProvider.kt$ReplicateVideoModel$"failed" -> throw NoVideoGeneratedError("Video generation failed: ${prediction["error"]?.jsonPrimitive?.contentOrNull ?: "Unknown error"}")</ID>
-    <ID>MaxLineLength:ReplicateProvider.kt$ReplicateVideoModel$prediction["status"]?.jsonPrimitive?.contentOrNull ?: throw InvalidResponseDataError(null, "Replicate prediction response is missing status")</ID>
     <ID>MaxLineLength:ReplicateProvider.kt$ReplicateVideoModel$private</ID>
     <ID>MaxLineLength:ReplicateProvider.kt$ReplicateVideoModel$providerMetadata = ProviderMetadata.Raw(JsonObject(mapOf("replicate" to replicateVideoProviderMetadata(prediction, videoUrl))))</ID>
     <ID>MaxLineLength:ReplicateProvider.kt$ReplicateVideoModel$val</ID>
@@ -2768,9 +2663,7 @@
     <ID>MaxLineLength:SchemaSanitizer.kt$SchemaSanitizer$is JsonArray -> JsonArray(schema.map { SchemaSanitizer.stripUnsupportedSchemaKeys(it, dropAdditionalProperties) })</ID>
     <ID>MaxLineLength:SimulateStreamingTest.kt$SimulateStreamingTest$fun</ID>
     <ID>MaxLineLength:Streams.kt$UiMessageStreams$public</ID>
-    <ID>MaxLineLength:StructuredObjectApi.kt$StructuredObject$TypeValidationError.wrap(null, IllegalArgumentException("Structured object response did not contain JSON"))</ID>
     <ID>MaxLineLength:TelemetryTracing.kt$MutableTelemetrySpan$error.stackTraceToString().takeIf { it.isNotBlank() }?.let { put("exception.stacktrace", JsonPrimitive(it)) }</ID>
-    <ID>MaxLineLength:TelemetryWiringTest.kt$TelemetryWiringTest.RecordingTelemetry$override suspend fun onAgentStart(call: TelemetryCall, event: AgentEvent.Started&lt;*>)</ID>
     <ID>MaxLineLength:TestServer.kt$TestServer$body = ByteReadChannel(json.encodeToString(JsonObject(mapOf("error" to kotlinx.serialization.json.JsonPrimitive("Not Found")))))</ID>
     <ID>MaxLineLength:TestServer.kt$TestServerCall$get</ID>
     <ID>MaxLineLength:TestServer.kt$UrlHandler$constructor(factory: (TestServerHttpRequest, TestServerCallOptions) -> UrlResponse?) : this(UrlResponseParameter.RequestFactory(factory))</ID>
@@ -2799,7 +2692,6 @@
     <ID>MaxLineLength:ToolLoopAgent.kt$ToolLoopAgent$PrepareStepScope(stepNumber, resolvedModel, completedSteps.toList(), messages.toList(), activeContext).hook()</ID>
     <ID>MaxLineLength:ToolLoopAgent.kt$ToolLoopAgent$approvalCoordinator.callNeedsApproval(resolvedTool, call, resolvedInput, activeContext, messages.toList())</ID>
     <ID>MaxLineLength:ToolLoopAgent.kt$ToolLoopAgent$dispatcher.runHook(stepNumber, feed, hooks) { deltaTool?.onInputDelta(event.id, event.delta) }</ID>
-    <ID>MaxLineLength:ToolLoopAgent.kt$ToolLoopAgent$onToolCallStart(it, AgentEvent.ToolCallStarted(call.toolCallId, call.toolName, call.input, stepNumber, messages))</ID>
     <ID>MaxLineLength:ToolLoopAgent.kt$ToolLoopAgent$updateEngineStateIfCurrent(ownJob) { it.copy(phase = ToolLoopAgentState.Phase.Error(t.message ?: "agent failed")) }</ID>
     <ID>MaxLineLength:ToolTest.kt$ToolTest$assertEquals("string", properties["tags"]?.jsonObject?.get("items")?.jsonObject?.get("type")?.jsonPrimitive?.content)</ID>
     <ID>MaxLineLength:ToolTest.kt$ToolTest$assertEquals(setOf("location", "days", "threshold", "includeAlerts", "tags", "weights", "note", "window"), required)</ID>
@@ -2808,8 +2700,6 @@
     <ID>MaxLineLength:UsageRichTreeTest.kt$UsageRichTreeTest$fun</ID>
     <ID>MaxLineLength:VercelFacade.kt$VercelProvider$override fun embeddingModel(modelId: String): EmbeddingModel</ID>
     <ID>MaxLineLength:VercelFacade.kt$VercelProvider$public fun textEmbeddingModel(modelId: String): Nothing</ID>
-    <ID>MaxLineLength:VoyageProvider.kt$VoyageEmbeddingModel$.</ID>
-    <ID>MaxLineLength:VoyageProvider.kt$VoyageRerankingModel$usage = Usage.of(promptTokens = value["usage"]?.jsonObject?.get("total_tokens")?.jsonPrimitive?.intOrNull ?: 0, completionTokens = 0)</ID>
     <ID>MaxLineLength:VoyageProviderTest.kt$VoyageProviderTest$"""{"data":[{"embedding":[0.1,0.2],"index":1},{"embedding":[0.3,0.4],"index":0}],"usage":{"total_tokens":7}}"""</ID>
     <ID>MaxLineLength:VoyageProviderTest.kt$VoyageProviderTest$"""{"data":[{"index":1,"relevance_score":0.9},{"index":0,"relevance_score":0.2}],"usage":{"total_tokens":11}}"""</ID>
     <ID>MaxLineLength:WireDecoder.kt$WireDecoder$fun</ID>
@@ -2826,8 +2716,6 @@
     <ID>MaxLineLength:XaiProvider.kt$XaiVideoModel$if (mode == "extend-video" &amp;&amp; params.aspectRatio != null) warnings += CallWarning("unsupported", "xAI video extension does not support custom aspect ratio.")</ID>
     <ID>MaxLineLength:XaiProvider.kt$XaiVideoModel$if (params.n > 1) warnings += CallWarning("unsupported", "xAI video models do not support generating multiple videos per call. Only 1 video will be generated.")</ID>
     <ID>MaxLineLength:XaiProvider.kt$XaiVideoModel$if (statusValue in setOf("failed", "error")) throw NoVideoGeneratedError("xAI video generation failed: $body")</ID>
-    <ID>MaxLineLength:XaiProvider.kt$XaiVideoModel$pollIntervalMs = options["pollIntervalMs"]?.jsonPrimitive?.contentOrNull?.toLongOrNull() ?: DEFAULT_XAI_VIDEO_POLL_INTERVAL_MS</ID>
-    <ID>MaxLineLength:XaiProvider.kt$XaiVideoModel$pollTimeoutMs = options["pollTimeoutMs"]?.jsonPrimitive?.contentOrNull?.toLongOrNull() ?: DEFAULT_XAI_VIDEO_POLL_TIMEOUT_MS</ID>
     <ID>MaxLineLength:XaiProvider.kt$XaiVideoModel$val maxPollAttempts = ceil(pollTimeoutMs.coerceAtLeast(1L).toDouble() / interval.toDouble()).toInt().coerceAtLeast(1)</ID>
     <ID>MaxLineLength:XaiProviderTest.kt$XaiProviderTest$"""{"data":[{"b64_json":"base64-image","revised_prompt":"revised"}],"usage":{"cost_in_usd_ticks":12}}"""</ID>
     <ID>MaxLineLength:XaiProviderTest.kt$XaiProviderTest$"""{"status":"done","video":{"url":"https://cdn.example/edit.mp4","respect_moderation":true}}"""</ID>
@@ -2896,7 +2784,6 @@
     <ID>MaximumLineLength:ChatApprovalResponseTest.kt$ChatApprovalResponseTest$ </ID>
     <ID>MaximumLineLength:CohereProvider.kt$CohereChatLanguageModel$ </ID>
     <ID>MaximumLineLength:CohereProvider.kt$CohereEmbeddingModel$ </ID>
-    <ID>MaximumLineLength:CohereProvider.kt$CohereRerankingModel$ </ID>
     <ID>MaximumLineLength:CohereProviderTest.kt$CohereProviderTest$ </ID>
     <ID>MaximumLineLength:ConvertFidelityR4Test.kt$ConvertFidelityR4Test$ </ID>
     <ID>MaximumLineLength:ConvertToLanguageModelPrompt.kt$PromptConversion$ </ID>
@@ -2924,13 +2811,11 @@
     <ID>MaximumLineLength:FalProvider.kt$FalProvider$ </ID>
     <ID>MaximumLineLength:FalProvider.kt$FalSpeechModel$ </ID>
     <ID>MaximumLineLength:FalProvider.kt$FalTranscriptionModel$ </ID>
-    <ID>MaximumLineLength:FalProvider.kt$FalVideoModel$ </ID>
     <ID>MaximumLineLength:FalProviderTest.kt$FalProviderTest$ </ID>
     <ID>MaximumLineLength:FireworksFacade.kt$FireworksImageModel$ </ID>
     <ID>MaximumLineLength:FullPortFeatureParityTest.kt$FullPortFeatureParityTest$ </ID>
     <ID>MaximumLineLength:FullPortFeatureParityTest.kt$FullPortFeatureParityTest.&lt;no name provided>$ </ID>
     <ID>MaximumLineLength:Gateway.kt$DefaultGatewayProvider$ </ID>
-    <ID>MaximumLineLength:Gateway.kt$GatewayError.Companion$ </ID>
     <ID>MaximumLineLength:GatewayAndProviderUtilsParityTest.kt$GatewayAndProviderUtilsParityTest$ </ID>
     <ID>MaximumLineLength:GatewayAndProviderUtilsParityTest.kt$GatewayAndProviderUtilsParityTest.CapturingGatewayTransport$ </ID>
     <ID>MaximumLineLength:GenerateTextParityTest.kt$GenerateTextParityTest$ </ID>
@@ -2973,7 +2858,6 @@
     <ID>MaximumLineLength:LumaProvider.kt$LumaImageModel$ </ID>
     <ID>MaximumLineLength:LumaProviderTest.kt$LumaProviderTest$ </ID>
     <ID>MaximumLineLength:MCP.kt$JSONRPCMessage.Companion$ </ID>
-    <ID>MaximumLineLength:MCP.kt$SseMCPTransport$ </ID>
     <ID>MaximumLineLength:MCPClientTest.kt$MCPClientTest$ </ID>
     <ID>MaximumLineLength:McpOAuth.kt$McpOAuthFlow$ </ID>
     <ID>MaximumLineLength:MediaModels.kt$DefaultGeneratedFile$ </ID>
@@ -3008,7 +2892,6 @@
     <ID>MaximumLineLength:PrepareCallPenaltiesTest.kt$PrepareCallPenaltiesTest$ </ID>
     <ID>MaximumLineLength:ProdiaProvider.kt$ProdiaImageModel$ </ID>
     <ID>MaximumLineLength:ProdiaProvider.kt$ProdiaLanguageModel$ </ID>
-    <ID>MaximumLineLength:ProdiaProvider.kt$ProdiaMultipartResult$ </ID>
     <ID>MaximumLineLength:ProdiaProvider.kt$ProdiaProvider$ </ID>
     <ID>MaximumLineLength:ProdiaProvider.kt$ProdiaProviderSettings$ </ID>
     <ID>MaximumLineLength:ProdiaProviderTest.kt$ProdiaProviderTest$ </ID>
@@ -3030,9 +2913,7 @@
     <ID>MaximumLineLength:SchemaSanitizer.kt$SchemaSanitizer$ </ID>
     <ID>MaximumLineLength:SimulateStreamingTest.kt$SimulateStreamingTest$ </ID>
     <ID>MaximumLineLength:Streams.kt$UiMessageStreams$ </ID>
-    <ID>MaximumLineLength:StructuredObjectApi.kt$StructuredObject$ </ID>
     <ID>MaximumLineLength:TelemetryTracing.kt$MutableTelemetrySpan$ </ID>
-    <ID>MaximumLineLength:TelemetryWiringTest.kt$TelemetryWiringTest.RecordingTelemetry$ </ID>
     <ID>MaximumLineLength:TestServer.kt$TestServer$ </ID>
     <ID>MaximumLineLength:TestServer.kt$TestServerCall$ </ID>
     <ID>MaximumLineLength:TestServer.kt$UrlHandler$ </ID>
@@ -3053,8 +2934,6 @@
     <ID>MaximumLineLength:ToolTest.kt$ToolTest$ </ID>
     <ID>MaximumLineLength:UsageRichTreeTest.kt$UsageRichTreeTest$ </ID>
     <ID>MaximumLineLength:VercelFacade.kt$VercelProvider$ </ID>
-    <ID>MaximumLineLength:VoyageProvider.kt$VoyageEmbeddingModel$ </ID>
-    <ID>MaximumLineLength:VoyageProvider.kt$VoyageRerankingModel$ </ID>
     <ID>MaximumLineLength:VoyageProviderTest.kt$VoyageProviderTest$ </ID>
     <ID>MaximumLineLength:WireDecoder.kt$WireDecoder$ </ID>
     <ID>MaximumLineLength:WireDecoderTest.kt$WireDecoderTest$ </ID>
@@ -3086,7 +2965,6 @@
     <ID>NestedBlockDepth:HuggingFaceProvider.kt$HuggingFaceResponsesLanguageModel$private fun huggingFaceMessages(messages: List&lt;ModelMessage>): HuggingFaceConvertedMessages</ID>
     <ID>NestedBlockDepth:HuggingFaceProvider.kt$HuggingFaceResponsesLanguageModel$private fun responsesResult( response: JsonObject, requestBody: JsonElement, responseHeaders: Map&lt;String, String>, responseBody: JsonElement, warnings: List&lt;CallWarning>, ): LanguageModelResult</ID>
     <ID>NestedBlockDepth:ReplicateProvider.kt$ReplicateImageModel$private fun putReplicateImageInputs( builder: JsonObjectBuilder, modelId: String, files: List&lt;ImageGenerationFile>, mask: ImageGenerationFile?, warnings: MutableList&lt;CallWarning>, )</ID>
-    <ID>NestedBlockDepth:RevaiProvider.kt$RevaiTranscriptionModel$private fun mapRevaiTranscript(value: JsonElement): RevaiTranscriptMapping</ID>
     <ID>NestedBlockDepth:TelemetryTracing.kt$TelemetryTracing$suspend fun selectTelemetryAttributes( telemetry: TelemetrySettings, attributes: Map&lt;String, TelemetryAttribute>, ): Map&lt;String, JsonElement></ID>
     <ID>NoBlankLineBeforeRbrace:AgentInterfaceTest.kt$AgentInterfaceTest$ </ID>
     <ID>NoBlankLineBeforeRbrace:AzureProviderTest.kt$AzureProviderTest$ </ID>
@@ -3420,7 +3298,6 @@
     <ID>PropertyWrapping:OpenResponsesProviderTest.kt$OpenResponsesProviderTest$val events = drainAllItems(provider.languageModel("gpt-resp").stream(LanguageModelCallParams(listOf(UserMessage("hi")))))</ID>
     <ID>PropertyWrapping:OpenResponsesProviderTest.kt$OpenResponsesProviderTest$val provider = OpenResponses(client, OpenResponsesProviderSettings("https://api.test/v1/responses", "openresponses"))</ID>
     <ID>PropertyWrapping:ProdiaProviderTest.kt$ProdiaProviderTest$val provider = Prodia(TestServer.createTestServer(mutableMapOf()).httpClient(), ProdiaProviderSettings(apiKey = "token"))</ID>
-    <ID>ReturnCount:AbortSignal.kt$public fun CombineAbortSignals(vararg signals: AbortSignal): AbortSignal</ID>
     <ID>ReturnCount:AnthropicProvider.kt$AnthropicStreamState$fun accept(chunk: JsonElement): List&lt;StreamEvent></ID>
     <ID>ReturnCount:AnthropicProvider.kt$PreparedAnthropicRequest.Companion$private fun anthropicMcpServers(options: JsonObject): JsonArray?</ID>
     <ID>ReturnCount:AnthropicProvider.kt$PreparedAnthropicRequest.Companion$private fun anthropicMetadata(options: JsonObject): JsonObject?</ID>
@@ -3474,7 +3351,6 @@
     <ID>SpacingBetweenDeclarationsWithComments:ModelMessage.kt$FinishReason.ToolApprovalRequested$/** v6: generation paused because tool(s) need approval. */</ID>
     <ID>SpacingBetweenDeclarationsWithComments:RetryPolicy.kt$RetryPolicy$// The flattened header map preserves the server's wire casing, and HTTP/1.1 servers send</ID>
     <ID>SwallowedException:CompletionApi.kt$CompletionApi$abort: AbortError</ID>
-    <ID>SwallowedException:StructuredObjectApi.kt$StructuredObject$abort: AbortError</ID>
     <ID>ThrowsCount:AssemblyAIProvider.kt$AssemblyAITranscriptionModel$private suspend fun pollTranscript( transcriptId: String, headers: Map&lt;String, String>, abortSignal: AbortSignal, ): HttpJsonResponse</ID>
     <ID>ThrowsCount:BlackForestLabsProvider.kt$BlackForestLabsImageModel$private suspend fun bflPollForImage( client: HttpClient, pollingUrl: String, headers: Map&lt;String, String>, abortSignal: AbortSignal, pollIntervalMillis: Long, pollTimeoutMillis: Long, ): BflPollResult</ID>
     <ID>ThrowsCount:ByteDanceProvider.kt$ByteDanceVideoModel$private suspend fun byteDancePoll( client: HttpClient, settings: ByteDanceProviderSettings, taskId: String, callHeaders: Map&lt;String, String>, abortSignal: AbortSignal, pollIntervalMs: Long, pollTimeoutMs: Long, ): HttpJsonResponse</ID>
@@ -3647,8 +3523,6 @@
     <ID>Wrapping:BedrockRequest.kt$BedrockRequest$put("tool", buildJsonObject { put("name", JsonPrimitive(choice.toolName)) })</ID>
     <ID>Wrapping:BedrockResponse.kt$BedrockResponse$it["data"]?.let { data -> put("redactedData", data) }</ID>
     <ID>Wrapping:BedrockResponse.kt$BedrockResponse$it["signature"]?.let { signature -> put("signature", signature) }</ID>
-    <ID>Wrapping:BedrockResponse.kt$BedrockResponse$put("stopSequence", it)</ID>
-    <ID>Wrapping:BedrockResponse.kt$BedrockResponse$return it.jsonArray.map { item -> WireDecoder.embeddingFloat(item, "amazon-bedrock.embedding") }</ID>
     <ID>Wrapping:BedrockResponse.kt$BedrockStreamState$"{}"</ID>
     <ID>Wrapping:BedrockResponse.kt$BedrockStreamState$JsonPrimitive(block.input)</ID>
     <ID>Wrapping:BedrockResponse.kt$BedrockStreamState$aiSdkJson.parseToJsonElement(block.input.ifBlank { "{}" })</ID>
@@ -3665,7 +3539,6 @@
     <ID>Wrapping:CohereProvider.kt$CohereChatLanguageModel$("data", buildJsonObject { put( "text", JsonPrimitive( runCatching { Base64Codec.decode(part.base64).decodeToString() }.getOrElse { throw InvalidArgumentError("messages", "Cohere document file content must be valid base64.") }, ), ) part.filename?.let { put("title", JsonPrimitive(it)) } })</ID>
     <ID>Wrapping:CohereProvider.kt$CohereChatLanguageModel$("function", buildJsonObject { put("name", JsonPrimitive(call.toolName)) put("arguments", JsonPrimitive(aiSdkJson.encodeToString(JsonElement.serializer(), call.input))) })</ID>
     <ID>Wrapping:CohereProvider.kt$CohereChatLanguageModel$("function", buildJsonObject { put("name", JsonPrimitive(tool.name)) put("description", JsonPrimitive(tool.description)) put("parameters", aiSdkJson.parseToJsonElement(tool.parametersSchemaJson)) })</ID>
-    <ID>Wrapping:CohereProvider.kt$CohereChatLanguageModel$("image_url", buildJsonObject { put("url", JsonPrimitive("data:${mediaType.normalizeCohereImageMediaType()};base64,$base64")) (providerMetadata.toMap()["cohere"] as? JsonObject) ?.get("detail") ?.jsonPrimitive ?.contentOrNull ?.let { put("detail", JsonPrimitive(it)) } })</ID>
     <ID>Wrapping:CohereProvider.kt$CohereChatLanguageModel$("thinking", buildJsonObject { put("type", thinking["type"] ?: JsonPrimitive("enabled")) thinking["tokenBudget"]?.let { put("token_budget", it) } })</ID>
     <ID>Wrapping:CohereProviderTest.kt$CohereProviderTest$(</ID>
     <ID>Wrapping:CohereProviderTest.kt$CohereProviderTest$put("detail", JsonPrimitive("high"))</ID>
@@ -3717,10 +3590,8 @@
     <ID>Wrapping:GoogleLanguageModel.kt$GoogleGenerativeAILanguageModel$put("vertexRagStore", buildJsonObject { })</ID>
     <ID>Wrapping:GoogleLanguageModel.kt$GoogleGenerativeAILanguageModel.Companion$(</ID>
     <ID>Wrapping:GoogleLanguageModel.kt$GoogleStreamState$ProviderMetadata.Raw(JsonObject(it))</ID>
-    <ID>Wrapping:GoogleMediaModels.kt$GoogleGenerativeAIEmbeddingModel$WireDecoder.embeddingFloat(it, provider)</ID>
     <ID>Wrapping:GoogleMediaModels.kt$GoogleGenerativeAIImageModel$GeneratedFile(mediaType = it.mediaType, base64 = it.base64, filename = it.filename, providerMetadata = it.providerMetadata)</ID>
     <ID>Wrapping:GoogleMediaModels.kt$GoogleGenerativeAIVideoModel$(</ID>
-    <ID>Wrapping:GoogleMediaModels.kt$GoogleGenerativeAIVideoModel$throw NoVideoGeneratedError("Google video generation failed: ${it["message"]?.jsonPrimitive?.contentOrNull ?: it}")</ID>
     <ID>Wrapping:GoogleMediaModels.kt$GoogleMedia$(</ID>
     <ID>Wrapping:GoogleMediaModels.kt$GoogleMedia$("content", buildJsonObject { put("role", JsonPrimitive("user")) put("parts", JsonArray(listOf(buildJsonObject { put("text", JsonPrimitive(value)) }))) })</ID>
     <ID>Wrapping:GoogleMediaModels.kt$GoogleMedia$("inlineData", buildJsonObject { put("mimeType", JsonPrimitive(image.mediaType)) put("data", JsonPrimitive(image.base64)) })</ID>
@@ -3737,8 +3608,6 @@
     <ID>Wrapping:HuggingFaceProviderTest.kt$HuggingFaceProviderTest$(</ID>
     <ID>Wrapping:HumeProviderTest.kt$HumeProviderTest$(</ID>
     <ID>Wrapping:KlingAIProvider.kt$KlingAIVideoModel$(</ID>
-    <ID>Wrapping:KlingAIProvider.kt$KlingAIVideoModel$put("enabled", JsonPrimitive(it))</ID>
-    <ID>Wrapping:KlingAIProvider.kt$KlingAIVideoModel$put("watermark_info", buildJsonObject { put("enabled", JsonPrimitive(it)) })</ID>
     <ID>Wrapping:KlingAIProviderTest.kt$KlingAIProviderTest$(</ID>
     <ID>Wrapping:KlingAIProviderTest.kt$KlingAIProviderTest$("cameraControl", buildJsonObject { put("type", JsonPrimitive("simple")) put("config", buildJsonObject { put("zoom", JsonPrimitive(0.2f)) }) })</ID>
     <ID>Wrapping:KlingAIProviderTest.kt$KlingAIProviderTest$("dynamicMasks", buildJsonArray { add(buildJsonObject { put("mask", JsonPrimitive("dynmask")) put("trajectories", buildJsonArray { add(buildJsonObject { put("x", JsonPrimitive(1)) put("y", JsonPrimitive(2)) }) }) }) })</ID>
@@ -3790,7 +3659,6 @@
     <ID>Wrapping:ProdiaProvider.kt$ProdiaImageModel$("config", buildJsonObject { put("prompt", JsonPrimitive(params.prompt)) (options["width"] ?: sizeWidth?.let(::JsonPrimitive))?.let { put("width", it) } (options["height"] ?: sizeHeight?.let(::JsonPrimitive))?.let { put("height", it) } params.seed?.let { put("seed", JsonPrimitive(it)) } options["steps"]?.let { put("steps", it) } options["stylePreset"]?.let { put("style_preset", it) } options["loras"]?.let { put("loras", it) } options["progressive"]?.let { put("progressive", it) } })</ID>
     <ID>Wrapping:ProdiaProvider.kt$ProdiaLanguageModel$(</ID>
     <ID>Wrapping:ProdiaProvider.kt$ProdiaLanguageModel$("config", buildJsonObject { put("prompt", JsonPrimitive(prompt)) put("include_messages", JsonPrimitive(true)) options["aspectRatio"]?.let { put("aspect_ratio", it) } })</ID>
-    <ID>Wrapping:ProdiaProvider.kt$ProdiaMultipartResult$put("iterationsPerSecond", JsonPrimitive(it))</ID>
     <ID>Wrapping:ProdiaProvider.kt$ProdiaProviderSettings$"request failed"</ID>
     <ID>Wrapping:ProdiaProvider.kt$ProdiaProviderSettings$aiSdkJson.parseToJsonElement(raw).jsonObject</ID>
     <ID>Wrapping:ProdiaProvider.kt$ProdiaVideoModel$(</ID>
@@ -3800,12 +3668,9 @@
     <ID>Wrapping:ProdiaProviderTest.kt$ProdiaProviderTest$put("aspectRatio", JsonPrimitive("16:9"))</ID>
     <ID>Wrapping:ProdiaProviderTest.kt$ProdiaProviderTest$put("resolution", JsonPrimitive("720p"))</ID>
     <ID>Wrapping:ProviderMetadataTest.kt$ProviderMetadataTest$(</ID>
-    <ID>Wrapping:QuiverAIProvider.kt$QuiverAIImageModel$(</ID>
-    <ID>Wrapping:QuiverAIProvider.kt$QuiverAIImageModel$("images", JsonArray(data.mapIndexed { index, item -> buildJsonObject { put("index", JsonPrimitive(index)) put("mimeType", JsonPrimitive(item.jsonObject["mime_type"]?.jsonPrimitive?.contentOrNull ?: "image/svg+xml")) } }))</ID>
     <ID>Wrapping:QuiverAIProviderTest.kt$QuiverAIProviderTest$(</ID>
     <ID>Wrapping:QuiverAIProviderTest.kt$QuiverAIProviderTest$put("operation", JsonPrimitive("vectorize"))</ID>
     <ID>Wrapping:RegistryGatewayParityTest.kt$RegistryGatewayParityTest$(</ID>
-    <ID>Wrapping:ReplicateProvider.kt$ReplicateImageModel$it.jsonPrimitive.contentOrNull ?: throw InvalidResponseDataError(output, "Replicate image output contains a non-string URL")</ID>
     <ID>Wrapping:ReplicateProvider.kt$ReplicateVideoModel$(</ID>
     <ID>Wrapping:ReplicateProvider.kt$ReplicateVideoModel$("videos", JsonArray(listOf(buildJsonObject { put("url", JsonPrimitive(videoUrl)) })))</ID>
     <ID>Wrapping:ReplicateProviderTest.kt$ReplicateProviderTest$(</ID>
@@ -3820,7 +3685,6 @@
     <ID>Wrapping:ToolLoopAgent.kt$ToolLoopAgent$(</ID>
     <ID>Wrapping:VoyageProviderTest.kt$VoyageProviderTest$(</ID>
     <ID>Wrapping:XaiProvider.kt$XaiImageModel$(</ID>
-    <ID>Wrapping:XaiProvider.kt$XaiImageModel$("images", JsonArray(data.map { image -> val revisedPrompt = image.jsonObject["revised_prompt"]?.jsonPrimitive?.contentOrNull buildJsonObject { if (revisedPrompt != null) put("revisedPrompt", JsonPrimitive(revisedPrompt)) } }))</ID>
     <ID>Wrapping:XaiProvider.kt$XaiVideoModel$(</ID>
     <ID>Wrapping:XaiProvider.kt$XaiVideoModel$xaiVideoResolutionMap[it] ?: it.also { warnings += CallWarning( "unsupported", "Unrecognized resolution \"$it\". Use providerOptions.xai.resolution with \"480p\" or \"720p\" instead.", ) }</ID>
     <ID>Wrapping:XaiProviderTest.kt$XaiProviderTest$(</ID>
