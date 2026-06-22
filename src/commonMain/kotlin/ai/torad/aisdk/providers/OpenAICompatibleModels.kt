@@ -457,7 +457,8 @@ internal class OpenAICompatibleSpeechModel(
         val response = postBytes("/audio/speech", body, params.headers)
         return SpeechModelResult(
             audio = GeneratedFile(
-                mediaType = response.headers[HttpHeaders.ContentType] ?: audioMediaType(format),
+                mediaType = with(FacadeHttp) { response.headers.headerValue(HttpHeaders.ContentType) }
+                    ?: audioMediaType(format),
                 base64 = Base64Codec.encode(response.bytes),
             ),
             response = LanguageModelResponseMetadata(modelId = modelId, headers = response.headers),
