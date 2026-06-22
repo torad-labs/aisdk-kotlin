@@ -25,7 +25,6 @@ import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.intOrNull
 import kotlinx.serialization.json.jsonObject
-import kotlinx.serialization.json.jsonPrimitive
 
 public const val ANTHROPIC_VERSION: String = "3.0.81"
 
@@ -78,11 +77,11 @@ public data class AnthropicProviderSettings(
     }
 
     internal fun anthropicCitationSource(citation: JsonObject): ContentPart.Source? =
-        when (citation["type"]?.jsonPrimitive?.contentOrNull) {
+        when ((citation["type"] as? JsonPrimitive)?.contentOrNull) {
             "web_search_result_location" -> ContentPart.Source(
                 sourceType = StreamEvent.SourcePart.SourceType.Url,
-                url = citation["url"]?.jsonPrimitive?.contentOrNull,
-                title = citation["title"]?.jsonPrimitive?.contentOrNull,
+                url = (citation["url"] as? JsonPrimitive)?.contentOrNull,
+                title = (citation["title"] as? JsonPrimitive)?.contentOrNull,
                 providerMetadata = ProviderMetadata.Raw(JsonObject(mapOf("anthropic" to buildJsonObject {
                     citation["cited_text"]?.let { put("citedText", it) }
                     citation["encrypted_index"]?.let { put("encryptedIndex", it) }
@@ -91,7 +90,7 @@ public data class AnthropicProviderSettings(
             )
             "page_location", "char_location" -> ContentPart.Source(
                 sourceType = StreamEvent.SourcePart.SourceType.Document,
-                title = citation["document_title"]?.jsonPrimitive?.contentOrNull,
+                title = (citation["document_title"] as? JsonPrimitive)?.contentOrNull,
                 providerMetadata = ProviderMetadata.Raw(JsonObject(mapOf("anthropic" to citation))),
             )
             else -> null
@@ -273,15 +272,15 @@ public class AnthropicMessagesLanguageModel(
         (response["content"] as? JsonArray).orEmpty().forEachIndexed { index, part ->
             val obj = part.jsonObject
             val path = "$.content[$index]"
-            when (obj["type"]?.jsonPrimitive?.contentOrNull) {
+            when ((obj["type"] as? JsonPrimitive)?.contentOrNull) {
                 "text" -> {
-                    obj["text"]?.jsonPrimitive?.contentOrNull?.let { text -> content += ContentPart.Text(text) }
+                    (obj["text"] as? JsonPrimitive)?.contentOrNull?.let { text -> content += ContentPart.Text(text) }
                     for (citation in (obj["citations"] as? JsonArray).orEmpty()) {
                         settings.anthropicCitationSource(citation.jsonObject)?.let { content += it }
                     }
                 }
                 "thinking" -> content += ContentPart.Reasoning(
-                    text = obj["thinking"]?.jsonPrimitive?.contentOrNull.orEmpty(),
+                    text = (obj["thinking"] as? JsonPrimitive)?.contentOrNull.orEmpty(),
                     providerMetadata = ProviderMetadata.Raw(JsonObject(mapOf("anthropic" to buildJsonObject {
                         obj["signature"]?.let { put("signature", it) }
                     }))),
@@ -317,7 +316,7 @@ public class AnthropicMessagesLanguageModel(
                         toolCallId = toolCallId,
                         toolName = toolName,
                         input = obj["input"] ?: JsonObject(emptyMap()),
-                        providerMetadata = if (obj["type"]?.jsonPrimitive?.contentOrNull != "tool_use") {
+                        providerMetadata = if ((obj["type"] as? JsonPrimitive)?.contentOrNull != "tool_use") {
                             ProviderMetadata.Raw(JsonObject(mapOf("anthropic" to buildJsonObject { put("providerExecuted", JsonPrimitive(true)) })))
                         } else {
                             ProviderMetadata.None
@@ -358,7 +357,7 @@ public class AnthropicMessagesLanguageModel(
             }
         }
 
-        val stopReason = response["stop_reason"]?.jsonPrimitive?.contentOrNull
+        val stopReason = (response["stop_reason"] as? JsonPrimitive)?.contentOrNull
         val usage = Usage.fromAnthropic(response["usage"])
         val text = content.filterIsInstance<ContentPart.Text>().joinToString("") { it.text }
         val metadata = buildJsonObject {
@@ -379,8 +378,8 @@ public class AnthropicMessagesLanguageModel(
             warnings = warnings,
             request = LanguageModelRequestMetadata(body = requestBody),
             response = LanguageModelResponseMetadata(
-                id = response["id"]?.jsonPrimitive?.contentOrNull,
-                modelId = response["model"]?.jsonPrimitive?.contentOrNull,
+                id = (response["id"] as? JsonPrimitive)?.contentOrNull,
+                modelId = (response["model"] as? JsonPrimitive)?.contentOrNull,
                 headers = responseHeaders,
                 body = responseBody,
             ),
@@ -392,9 +391,10 @@ public class AnthropicMessagesLanguageModel(
             steps: List<Map<String, JsonElement>>,
         ): Map<String, JsonElement>? {
             for (step in steps.asReversed()) {
-                val containerId = step["anthropic"]?.jsonObject
+                val idElement = step["anthropic"]?.jsonObject
                     ?.get("container")?.jsonObject
-                    ?.get("id")?.jsonPrimitive?.contentOrNull
+                    ?.get("id")
+                val containerId = (idElement as? JsonPrimitive)?.contentOrNull
                 if (!containerId.isNullOrBlank()) {
                     return mapOf(
                         "anthropic" to buildJsonObject {
@@ -409,9 +409,9 @@ public class AnthropicMessagesLanguageModel(
         internal fun anthropicErrorMessage(parsed: JsonElement?, raw: String): String {
             val obj = parsed as? JsonObject ?: return raw
             val error = obj["error"] as? JsonObject
-            return error?.get("message")?.jsonPrimitive?.contentOrNull
-                ?: error?.get("type")?.jsonPrimitive?.contentOrNull
-                ?: obj["message"]?.jsonPrimitive?.contentOrNull
+            return (error?.get("message") as? JsonPrimitive)?.contentOrNull
+                ?: (error?.get("type") as? JsonPrimitive)?.contentOrNull
+                ?: (obj["message"] as? JsonPrimitive)?.contentOrNull
                 ?: raw
         }
     }
@@ -469,8 +469,8 @@ public data class AnthropicTools(
             if (choice == ToolChoice.None) return PreparedAnthropicTools(null, null, emptyList(), emptySet())
             val warnings = mutableListOf<CallWarning>()
             val betas = linkedSetOf<String>()
-            val disableParallel = options["disableParallelToolUse"]?.jsonPrimitive?.booleanOrNull
-            val toolStreaming = options["toolStreaming"]?.jsonPrimitive?.booleanOrNull ?: true
+            val disableParallel = (options["disableParallelToolUse"] as? JsonPrimitive)?.booleanOrNull
+            val toolStreaming = (options["toolStreaming"] as? JsonPrimitive)?.booleanOrNull ?: true
             val prepared = mutableListOf<JsonElement>()
 
             for (tool in tools) {
@@ -589,15 +589,15 @@ internal data class PreparedAnthropicRequest(
 
             val options = settings.anthropicOptions(params.providerOptions)
             val betas = linkedSetOf<String>()
-            (options["anthropicBeta"] as? JsonArray)?.forEach { it.jsonPrimitive.contentOrNull?.let(betas::add) }
-            val sendReasoning = options["sendReasoning"]?.jsonPrimitive?.booleanOrNull ?: true
+            (options["anthropicBeta"] as? JsonArray)?.forEach { (it as? JsonPrimitive)?.contentOrNull?.let(betas::add) }
+            val sendReasoning = (options["sendReasoning"] as? JsonPrimitive)?.booleanOrNull ?: true
             val prompt = AnthropicPrompt.anthropicPrompt(params.messages, sendReasoning)
             betas += prompt.betas
 
             val thinking = options["thinking"] as? JsonObject
-            val thinkingType = thinking?.get("type")?.jsonPrimitive?.contentOrNull
+            val thinkingType = (thinking?.get("type") as? JsonPrimitive)?.contentOrNull
             val isThinking = thinkingType == "enabled" || thinkingType == "adaptive"
-            val rawThinkingBudget = thinking?.get("budgetTokens")?.jsonPrimitive?.intOrNull
+            val rawThinkingBudget = (thinking?.get("budgetTokens") as? JsonPrimitive)?.intOrNull
             val maxTokensBase = params.maxOutputTokens ?: AnthropicProviderSettings.anthropicMaxOutputTokensForModel(modelId)
             // `thinkingBudget` is the effective budget (defaulting to 1024 only when thinking is
             // explicitly enabled and the caller omitted it); `maxTokens` folds it into the base.
@@ -966,8 +966,8 @@ private class AnthropicStreamState(
                 } catch (error: WireDecodeException) {
                     return listOf(StreamEvent.Error(error.message ?: "Anthropic stream protocol error"))
                 }
-                responseId = message["id"]?.jsonPrimitive?.contentOrNull
-                modelId = message["model"]?.jsonPrimitive?.contentOrNull
+                responseId = (message["id"] as? JsonPrimitive)?.contentOrNull
+                modelId = (message["model"] as? JsonPrimitive)?.contentOrNull
                 usage = Usage.fromAnthropic(message["usage"])
                 events += StreamEvent.ResponseMetadata(id = responseId, modelId = modelId)
             }
@@ -989,16 +989,16 @@ private class AnthropicStreamState(
                 }
                 val isToolBlock = blockType == "tool_use" || blockType == "server_tool_use" || blockType == "mcp_tool_use"
                 val id = if (isToolBlock) {
-                    block["id"]?.jsonPrimitive?.contentOrNull?.takeIf { it.isNotBlank() }
+                    (block["id"] as? JsonPrimitive)?.contentOrNull?.takeIf { it.isNotBlank() }
                         ?: return listOf(missingToolIdentityError(type, "id"))
                 } else {
-                    block["id"]?.jsonPrimitive?.contentOrNull ?: "block-$index"
+                    (block["id"] as? JsonPrimitive)?.contentOrNull ?: "block-$index"
                 }
                 val toolName = if (isToolBlock) {
-                    block["name"]?.jsonPrimitive?.contentOrNull?.takeIf { it.isNotBlank() }
+                    (block["name"] as? JsonPrimitive)?.contentOrNull?.takeIf { it.isNotBlank() }
                         ?: return listOf(missingToolIdentityError(type, "name"))
                 } else {
-                    block["name"]?.jsonPrimitive?.contentOrNull
+                    (block["name"] as? JsonPrimitive)?.contentOrNull
                 }
                 blocks[index] = AnthropicStreamBlock(id, blockType, toolName, anthropicInitialStreamInput(block["input"]))
                 when (blockType) {
@@ -1085,7 +1085,7 @@ private class AnthropicStreamState(
             }
             "message_delta" -> {
                 val delta = obj["delta"]?.jsonObject ?: JsonObject(emptyMap())
-                rawStopReason = delta["stop_reason"]?.jsonPrimitive?.contentOrNull
+                rawStopReason = (delta["stop_reason"] as? JsonPrimitive)?.contentOrNull
                 finishReason = FinishReason.fromAnthropicStopReason(rawStopReason)
                 // Merge onto the message_start usage (delta usually has only output_tokens).
                 usage = Usage.mergeAnthropic(usage, obj["usage"])
