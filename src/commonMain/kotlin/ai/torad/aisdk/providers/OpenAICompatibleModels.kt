@@ -23,7 +23,6 @@ import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.intOrNull
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
-import kotlinx.serialization.json.jsonPrimitive
 
 internal const val OPENAI_COMPATIBLE_MAX_IMAGES_PER_CALL: Int = 10
 
@@ -126,7 +125,7 @@ internal class OpenAICompatibleChatLanguageModel(
             )
         }
         val options = providerOptions(params.providerOptions.toMap())
-        val strictJsonSchema = options["strictJsonSchema"]?.jsonPrimitive?.booleanOrNull ?: true
+        val strictJsonSchema = (options["strictJsonSchema"] as? JsonPrimitive)?.booleanOrNull ?: true
         val body = buildJsonObject {
             put("model", JsonPrimitive(modelId))
             put("messages", JsonArray(params.messages.flatMap { openAIChatMessagesJson(it) }))
@@ -238,7 +237,7 @@ internal class OpenAICompatibleCompletionLanguageModel(
                     }
                     value["usage"]?.let { usage = Usage.fromOpenAI(it) }
                     val choice = value["choices"]?.jsonArray?.firstOrNull()?.jsonObject
-                    val text = choice?.get("text")?.jsonPrimitive?.contentOrNull
+                    val text = (choice?.get("text") as? JsonPrimitive)?.contentOrNull
                     if (!text.isNullOrEmpty()) {
                         if (!activeText) {
                             emit(StreamEvent.TextStart("txt-0"))
@@ -246,7 +245,7 @@ internal class OpenAICompatibleCompletionLanguageModel(
                         }
                         emit(StreamEvent.TextDelta("txt-0", text))
                     }
-                    choice?.get("finish_reason")?.jsonPrimitive?.contentOrNull?.let {
+                    (choice?.get("finish_reason") as? JsonPrimitive)?.contentOrNull?.let {
                         finish = FinishReason.fromOpenAI(it)
                         rawFinish = it
                     }
@@ -316,7 +315,7 @@ internal class OpenAICompatibleEmbeddingModel(
             embeddings = value["data"]?.jsonArray.orEmpty()
                 .map { item -> item.jsonObject["embedding"]?.jsonArray.orEmpty().map { WireDecoder.embeddingFloat(it, provider) } },
             usage = EmbeddingUsage(
-                tokens = value["usage"]?.jsonObject?.get("prompt_tokens")?.jsonPrimitive?.intOrNull ?: 0,
+                tokens = (value["usage"]?.jsonObject?.get("prompt_tokens") as? JsonPrimitive)?.intOrNull ?: 0,
                 raw = value["usage"],
             ),
             warnings = emptyList(),
@@ -355,9 +354,9 @@ internal class OpenAICompatibleImageModel(
                 val obj = WireDecoder.objectValue(image, providerName, "image generation response", "$.data[$index]")
                 val imageData = WireDecoder.requiredOneOfString(obj, providerName, "image generation response", "$.data[$index]", "b64_json", "url")
                 GeneratedFile(
-                    mediaType = obj["media_type"]?.jsonPrimitive?.contentOrNull ?: "image/png",
+                    mediaType = (obj["media_type"] as? JsonPrimitive)?.contentOrNull ?: "image/png",
                     base64 = obj["b64_json"]?.let { imageData }.orEmpty(),
-                    url = obj["url"]?.jsonPrimitive?.contentOrNull,
+                    url = (obj["url"] as? JsonPrimitive)?.contentOrNull,
                 )
             },
             warnings = warnings,
@@ -438,7 +437,7 @@ internal class OpenAICompatibleSpeechModel(
 
     override suspend fun generate(params: SpeechGenerationParams): SpeechModelResult {
         val options = openAIProviderOptions(params.providerOptions.toMap(), settings.providerOptionsName ?: settings.name)
-        val format = params.responseFormat ?: options["response_format"]?.jsonPrimitive?.contentOrNull ?: "mp3"
+        val format = params.responseFormat ?: (options["response_format"] as? JsonPrimitive)?.contentOrNull ?: "mp3"
         val body = buildJsonObject {
             put("model", JsonPrimitive(modelId))
             put("input", JsonPrimitive(params.text))

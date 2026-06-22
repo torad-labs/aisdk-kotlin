@@ -19,7 +19,6 @@ import kotlinx.serialization.json.JsonObjectBuilder
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.intOrNull
-import kotlinx.serialization.json.jsonPrimitive
 
 internal data class ProviderCapabilities(
     val includeUsage: Boolean = false,
@@ -34,7 +33,7 @@ internal data class ProviderCapabilities(
 // with several unrelated facade consumers and no single owning type.
 internal object FacadeSupport {
     fun JsonObject.intField(name: String): Int =
-        this[name]?.jsonPrimitive?.intOrNull ?: 0
+        (this[name] as? JsonPrimitive)?.intOrNull ?: 0
 
     fun JsonObject.nestedIntField(objectName: String, fieldName: String): Int =
         (this[objectName] as? JsonObject)?.intField(fieldName) ?: 0
@@ -42,10 +41,8 @@ internal object FacadeSupport {
     fun textFromContentParts(content: JsonArray): String =
         content.mapNotNull { part ->
             val obj = part as? JsonObject ?: return@mapNotNull null
-            obj.takeIf { it["type"]?.jsonPrimitive?.contentOrNull == "text" }
-                ?.get("text")
-                ?.jsonPrimitive
-                ?.contentOrNull
+            if ((obj["type"] as? JsonPrimitive)?.contentOrNull != "text") return@mapNotNull null
+            (obj["text"] as? JsonPrimitive)?.contentOrNull
         }.joinToString("")
 }
 
@@ -155,8 +152,8 @@ internal object FacadeHttp {
         val detail = obj["detail"]
         val message = when {
             error is JsonPrimitive -> error.contentOrNull ?: raw
-            error is JsonObject -> error["message"]?.jsonPrimitive?.contentOrNull ?: error.toString()
-            detail is JsonObject -> detail["error"]?.jsonPrimitive?.contentOrNull ?: detail.toString()
+            error is JsonObject -> (error["message"] as? JsonPrimitive)?.contentOrNull ?: error.toString()
+            detail is JsonObject -> (detail["error"] as? JsonPrimitive)?.contentOrNull ?: detail.toString()
             else -> raw.ifBlank { "request failed" }
         }
         return "Provider request failed ($statusCode): $message"
