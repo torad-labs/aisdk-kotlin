@@ -105,45 +105,47 @@ internal abstract class OpenAICompatibleHttpModel(
         path: String,
         body: MultiPartFormDataContent,
         headers: Map<String, String> = emptyMap(),
-    ): HttpJsonResponse {
-        val response = client.request(url(path)) {
-            method = HttpMethod.Post
-            commonHeaders(headers).forEach { (name, value) -> header(name, value) }
-            setBody(body)
+    ): HttpJsonResponse =
+        HttpTransport.withRealTimeout(DEFAULT_REQUEST_TIMEOUT_MS) {
+            val response = client.request(url(path)) {
+                method = HttpMethod.Post
+                commonHeaders(headers).forEach { (name, value) -> header(name, value) }
+                setBody(body)
+            }
+            with(HttpTransport) { response.toJsonResponse(
+                url = url(path),
+                json = json,
+                errorMessage = ::openAICompatibleErrorMessage,
+            ) }
         }
-        return with(HttpTransport) { response.toJsonResponse(
-            url = url(path),
-            json = json,
-            errorMessage = ::openAICompatibleErrorMessage,
-        ) }
-    }
 
     protected suspend fun postBytes(
         path: String,
         body: JsonElement,
         headers: Map<String, String> = emptyMap(),
-    ): OpenAIBytesResponse {
-        val response = client.request(url(path)) {
-            method = HttpMethod.Post
-            contentType(ContentType.Application.Json)
-            commonHeaders(headers).forEach { (name, value) -> header(name, value) }
-            setBody(json.encodeToString(JsonElement.serializer(), body))
+    ): OpenAIBytesResponse =
+        HttpTransport.withRealTimeout(DEFAULT_REQUEST_TIMEOUT_MS) {
+            val response = client.request(url(path)) {
+                method = HttpMethod.Post
+                contentType(ContentType.Application.Json)
+                commonHeaders(headers).forEach { (name, value) -> header(name, value) }
+                setBody(json.encodeToString(JsonElement.serializer(), body))
+            }
+            val responseHeaders = with(HttpTransport) { response.flattenedHeaders() }
+            val bytes = response.bodyAsBytes()
+            if (response.status.value !in 200..299) {
+                val raw = bytes.decodeToString()
+                val parsed = runCatching { json.parseToJsonElement(raw) }.getOrNull()
+                throw ApiCallError(
+                    url = url(path),
+                    statusCode = response.status.value,
+                    rawBody = raw,
+                    headers = responseHeaders,
+                    message = openAICompatibleErrorMessage(response.status.value, parsed, raw),
+                )
+            }
+            OpenAIBytesResponse(bytes = bytes, headers = responseHeaders)
         }
-        val responseHeaders = with(HttpTransport) { response.flattenedHeaders() }
-        val bytes = response.bodyAsBytes()
-        if (response.status.value !in 200..299) {
-            val raw = bytes.decodeToString()
-            val parsed = runCatching { json.parseToJsonElement(raw) }.getOrNull()
-            throw ApiCallError(
-                url = url(path),
-                statusCode = response.status.value,
-                rawBody = raw,
-                headers = responseHeaders,
-                message = openAICompatibleErrorMessage(response.status.value, parsed, raw),
-            )
-        }
-        return OpenAIBytesResponse(bytes = bytes, headers = responseHeaders)
-    }
 
     // ---- Wire conversion + result decoding (model-internal). ----
     // Request message/tool/response-format assembly, chat/completion result
@@ -446,10 +448,14 @@ internal abstract class OpenAICompatibleHttpModel(
         }
     }
 
-    protected fun openAIResponseFormat(format: ResponseFormat, strictJsonSchema: Boolean): JsonElement? = when (format) {
+    protected fun openAIResponseFormat(
+        format: ResponseFormat,
+        strictJsonSchema: Boolean,
+        supportsStructuredOutputs: Boolean,
+    ): JsonElement? = when (format) {
         ResponseFormat.Text -> null
         is ResponseFormat.Json -> {
-            if (format.schemaJson != null) {
+            if (format.schemaJson != null && supportsStructuredOutputs) {
                 buildJsonObject {
                     put("type", JsonPrimitive("json_schema"))
                     put(
