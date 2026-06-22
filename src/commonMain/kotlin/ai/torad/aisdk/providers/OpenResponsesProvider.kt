@@ -30,7 +30,6 @@ import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.decodeFromJsonElement
 import kotlinx.serialization.json.doubleOrNull
 import kotlinx.serialization.json.intOrNull
-import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 
 public const val OPEN_RESPONSES_VERSION: String = "1.0.16"
@@ -203,7 +202,8 @@ private class OpenResponsesLanguageModel(
             json = json,
             requestBodyValues = body,
             errorMessage = { _, parsed, raw ->
-                ((parsed as? JsonObject)?.get("error")?.jsonObject?.get("message") as? JsonPrimitive)?.contentOrNull
+                val errorObj = (parsed as? JsonObject)?.get("error") as? JsonObject
+                (errorObj?.get("message") as? JsonPrimitive)?.contentOrNull
                     ?: raw.ifBlank { "Open Responses request failed" }
             },
             onResponse = onResponse,),
@@ -283,7 +283,7 @@ private class OpenResponsesLanguageModel(
         val logprobs = mutableListOf<JsonElement>()
         var hasToolCalls = false
 
-        response["output"]?.jsonArray.orEmpty().forEachIndexed { index, part ->
+        (response["output"] as? JsonArray).orEmpty().forEachIndexed { index, part ->
             val obj = part.jsonObject
             val itemId = (obj["id"] as? JsonPrimitive)?.contentOrNull
             val path = "$.output[$index]"
@@ -298,7 +298,7 @@ private class OpenResponsesLanguageModel(
                     }
                 }
                 "message" -> {
-                    obj["content"]?.jsonArray.orEmpty().forEach { messagePart ->
+                    (obj["content"] as? JsonArray).orEmpty().forEach { messagePart ->
                         val messageObj = messagePart.jsonObject
                         val text = (messageObj["text"] as? JsonPrimitive)?.contentOrNull
                             ?: (messageObj["refusal"] as? JsonPrimitive)?.contentOrNull
@@ -342,7 +342,7 @@ private class OpenResponsesLanguageModel(
             }
         }
 
-        val reasonElement = response["incomplete_details"]?.jsonObject?.get("reason")
+        val reasonElement = (response["incomplete_details"] as? JsonObject)?.get("reason")
         val incompleteReason = (reasonElement as? JsonPrimitive)?.contentOrNull
         val text = content.filterIsInstance<ContentPart.Text>().joinToString("") { it.text }
         return LanguageModelResult(
@@ -371,10 +371,10 @@ private class OpenResponsesLanguageModel(
     private fun openResponsesUsage(element: JsonElement?): Usage {
         val obj = element as? JsonObject ?: return Usage()
         val inputTokens = (obj["input_tokens"] as? JsonPrimitive)?.intOrNull ?: 0
-        val cachedInputTokens = ((obj["input_tokens_details"]?.jsonObject?.get("cached_tokens") as? JsonPrimitive)?.intOrNull ?: 0)
+        val cachedInputTokens = (((obj["input_tokens_details"] as? JsonObject)?.get("cached_tokens") as? JsonPrimitive)?.intOrNull ?: 0)
             .coerceIn(0, inputTokens)
         val outputTokens = (obj["output_tokens"] as? JsonPrimitive)?.intOrNull ?: 0
-        val reasoningTokens = ((obj["output_tokens_details"]?.jsonObject?.get("reasoning_tokens") as? JsonPrimitive)?.intOrNull ?: 0)
+        val reasoningTokens = (((obj["output_tokens_details"] as? JsonObject)?.get("reasoning_tokens") as? JsonPrimitive)?.intOrNull ?: 0)
             .coerceAtLeast(0)
         val outputTotal = if (reasoningTokens > outputTokens) outputTokens + reasoningTokens else outputTokens
         return Usage(
@@ -413,7 +413,7 @@ private class OpenResponsesLanguageModel(
     ): APICallError {
         val message = runCatching {
             val obj = openResponsesJson.parseToJsonElement(raw).jsonObject
-            (obj["error"]?.jsonObject?.get("message") as? JsonPrimitive)?.contentOrNull
+            ((obj["error"] as? JsonObject)?.get("message") as? JsonPrimitive)?.contentOrNull
         }.getOrNull()
         return ApiCallError(
             url = response.call.request.url.toString(),
@@ -518,16 +518,16 @@ private class OpenResponsesLanguageModel(
                 "response.completed",
                 "response.incomplete",
                 -> {
-                    val response = obj["response"]?.jsonObject ?: JsonObject(emptyMap())
-                    val reasonElement = response["incomplete_details"]?.jsonObject?.get("reason")
+                    val response = (obj["response"] as? JsonObject) ?: JsonObject(emptyMap())
+                    val reasonElement = (response["incomplete_details"] as? JsonObject)?.get("reason")
                     rawFinishReason = (reasonElement as? JsonPrimitive)?.contentOrNull
                     finishReason = mapOpenResponsesFinishReason(rawFinishReason, hasToolCalls)
                     usage = openResponsesUsage(response["usage"])
                 }
                 "response.failed" -> {
-                    val response = obj["response"]?.jsonObject ?: JsonObject(emptyMap())
+                    val response = (obj["response"] as? JsonObject) ?: JsonObject(emptyMap())
                     finishReason = FinishReason.Error
-                    rawFinishReason = (response["error"]?.jsonObject?.get("code") as? JsonPrimitive)?.contentOrNull
+                    rawFinishReason = ((response["error"] as? JsonObject)?.get("code") as? JsonPrimitive)?.contentOrNull
                         ?: (response["status"] as? JsonPrimitive)?.contentOrNull
                     usage = openResponsesUsage(response["usage"])
                 }
