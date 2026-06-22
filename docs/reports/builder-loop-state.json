@@ -406,9 +406,9 @@
   },
   "structured_object_integration": {
     "spec": "docs/reports/pipeline-xray.md + StructuredObjectApi.kt",
-    "decision": "INTEGRATE: add top-level generateObject/streamObject entry on the existing StructuredObject state machine; add tests; close v6 structured-output parity gap",
-    "sequencing": "AFTER the lint integration (detekt activation + Konsist) lands on the green agent-event tip \u2014 avoid churning the tree before the lint baseline/Konsist scan.",
-    "status": "NEXT \u2014 brief after step-3 push + CI green confirm"
+    "decision": "INTEGRATE: wire a functional structured-object generation entry to a real LanguageModel (currently StructuredObject's transport defaults to emptyFlow() = never model-backed). DESIGN (mirror TextGenerator, NOT a camelCase top-level generateObject/streamObject \u2014 that violates no-camelcase-top-level-function): add `public class StructuredObjectGenerator<RESULT>(model: LanguageModel, schema: Schema<RESULT>, \u2026)` via the PascalCase-factory pattern, with `fun stream(input: GenerationInput): Flow<StructuredObjectPhase<RESULT>>` (drives model.stream() text-deltas -> PartialJson.parsePartialJson -> Schemas.safeValidateTypes -> emit partials) + `suspend fun generate(input): StructuredObjectFinish<RESULT>` (one-shot, collect to Done). Reuse the existing StructuredObject parse/validate core; add a model-backed StructuredObjectTransport (model.stream(params) -> Flow<String> text deltas) + set responseFormat=JSON(schema) in the params. Tests: one-shot full object, streaming partials accumulate to final, validation-failure surfaced, abort preserves partial.",
+    "sequencing": "AFTER agent-event redesign (DONE+green) \u2014 this is the last queued stream.",
+    "status": "BRIEFED 2026-06-22 (builder executing StructuredObjectGenerator); step-3 CI green on f35da1c. Validate per-commit via build-drive cron 049fb870; orchestrator pushes + confirms CI."
   },
   "sealed_interface_tenet": {
     "decision": "Carve out @Serializable polymorphic wire types + private sealed interfaces; everything else is a sealed CLASS (user 2026-06-22).",
