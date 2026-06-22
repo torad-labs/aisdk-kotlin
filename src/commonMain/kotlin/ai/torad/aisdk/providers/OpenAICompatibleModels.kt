@@ -135,7 +135,11 @@ internal class OpenAICompatibleChatLanguageModel(
             params.presencePenalty?.let { put("presence_penalty", JsonPrimitive(it)) }
             if (params.stopSequences.isNotEmpty()) put("stop", JsonArray(params.stopSequences.map(::JsonPrimitive)))
             params.seed?.let { put(settings.chatSeedKey, JsonPrimitive(it)) }
-            val responseFormat = openAIResponseFormat(params.responseFormat, strictJsonSchema)
+            val responseFormat = openAIResponseFormat(
+                params.responseFormat,
+                strictJsonSchema,
+                settings.supportsStructuredOutputs,
+            )
             if (responseFormat != null) put("response_format", responseFormat)
             if (params.tools.isNotEmpty()) {
                 put("tools", JsonArray(params.tools.map { openAIToolJson(it) }))
