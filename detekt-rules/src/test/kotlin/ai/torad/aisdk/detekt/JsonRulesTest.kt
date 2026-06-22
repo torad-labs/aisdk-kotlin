@@ -19,6 +19,13 @@ class JsonRulesTest {
     }
 
     @Test
+    fun `does not flag the safe as-question cast`() {
+        // `as?` returns null on mismatch (the recommended pattern) — only the unsafe `as` throws.
+        val findings = NoJsonContainerForceCast(Config.empty).compileAndLint("fun f(x: Any): Any? = x as? JsonObject")
+        assertEquals(0, findings.size)
+    }
+
+    @Test
     fun `flags an inline Json builder`() {
         val findings = NoInlineJsonInstance(Config.empty).compileAndLint("val j = Json { ignoreUnknownKeys = true }")
         assertEquals(1, findings.size)

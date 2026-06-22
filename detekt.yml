@@ -24,6 +24,9 @@
 coroutines:
   SuspendFunSwallowedCancellation:
     active: true
+  # Built-in mirror of the ast-grep `no-globalscope` rule (off by default in detekt).
+  GlobalCoroutineUsage:
+    active: true
 exceptions:
   SwallowedException:
     active: true
@@ -36,4 +39,30 @@ exceptions:
       - 'ParseException'
     allowedExceptionNameRegex: '_|(ignore|expected).*'
   ThrowingExceptionsWithoutMessageOrCause:
+    active: true
+
+# --- Custom ruleset: the project's architectural tenets (see the :detekt-rules module) ---
+# Each rule mirrors an ast-grep PreToolUse hook rule, so the same invariant is enforced in
+# the IDE (detekt plugin) + `./gradlew check` for every developer, not only Claude's edits.
+# See docs/enforcement-layers.md. Pre-existing hits are grandfathered via detekt-baseline.xml.
+torad-aisdk:
+  NoNotNullAssertion:
+    active: true
+  NoJsonContainerForceCast:
+    active: true
+  NoInlineJsonInstance:
+    active: true
+  NoDeferredWiringComment:
+    active: true
+  NoConsoleOutputInLibrary:
+    active: true
+    # A library must not write to the console; tests legitimately may.
+    excludes: ['**/commonTest/**', '**/jvmTest/**']
+  NoFloatEqualityComparison:
+    active: true
+  PreferTypedErrorOverErrorCall:
+    active: true
+  PreferTypedErrorOverCheckNotNull:
+    active: true
+  PreferTypedErrorOverGenericThrow:
     active: true

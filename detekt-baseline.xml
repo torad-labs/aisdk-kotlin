@@ -3116,7 +3116,110 @@
     <ID>NoConsecutiveBlankLines:TestServer.kt$ </ID>
     <ID>NoConsecutiveBlankLines:VoyageProvider.kt$ </ID>
     <ID>NoConsecutiveBlankLines:XaiProvider.kt$ </ID>
+    <ID>NoInlineJsonInstance:ContentPartPolishTest.kt$ContentPartPolishTest$Json { encodeDefaults = true }</ID>
+    <ID>NoInlineJsonInstance:ContentPartWireFormatTest.kt$ContentPartWireFormatTest$Json { encodeDefaults = true }</ID>
+    <ID>NoInlineJsonInstance:FixJson.kt$PartialJson$Json { ignoreUnknownKeys = true }</ID>
+    <ID>NoInlineJsonInstance:MCP.kt$Json { ignoreUnknownKeys = true encodeDefaults = true explicitNulls = false }</ID>
+    <ID>NoInlineJsonInstance:MCPClientTest.kt$MCPClientTest.Companion$Json { ignoreUnknownKeys = true encodeDefaults = true }</ID>
+    <ID>NoInlineJsonInstance:OpenResponsesProvider.kt$Json { ignoreUnknownKeys = true encodeDefaults = true explicitNulls = false }</ID>
+    <ID>NoInlineJsonInstance:ProviderMetadataTest.kt$ProviderMetadataTest$Json { encodeDefaults = true }</ID>
+    <ID>NoInlineJsonInstance:ResponseFormatTest.kt$ResponseFormatTest$Json { encodeDefaults = true }</ID>
+    <ID>NoInlineJsonInstance:TypedJson.kt$Json { ignoreUnknownKeys = true encodeDefaults = true }</ID>
+    <ID>NoInlineJsonInstance:TypedJson.kt$Json { ignoreUnknownKeys = true isLenient = true explicitNulls = false }</ID>
+    <ID>NoInlineJsonInstance:UsageRichTreeTest.kt$UsageRichTreeTest$Json { encodeDefaults = true }</ID>
+    <ID>NoInlineJsonInstance:WireDecoder.kt$WireDecoder$Json { ignoreUnknownKeys = false isLenient = false encodeDefaults = true explicitNulls = false }</ID>
+    <ID>NoJsonContainerForceCast:MiddlewareBugfixTest.kt$MiddlewareBugfixTest$buildJsonObject { put("user", JsonPrimitive("u1")) } as JsonObject</ID>
     <ID>NoMultipleSpaces:LanguageModel.kt$LanguageModelCallParams$ </ID>
+    <ID>NoNotNullAssertion:AgentErrorTest.kt$AgentErrorTest$err.message!!</ID>
+    <ID>NoNotNullAssertion:AmazonBedrockProviderTest.kt$AmazonBedrockProviderTest$fixture.calls.single().requestBodyJson.jsonObject["messages"]!!</ID>
+    <ID>NoNotNullAssertion:AmazonBedrockProviderTest.kt$AmazonBedrockProviderTest$lastContent["toolResult"]!!</ID>
+    <ID>NoNotNullAssertion:AmazonBedrockProviderTest.kt$AmazonBedrockProviderTest$messages.last().jsonObject["content"]!!</ID>
+    <ID>NoNotNullAssertion:AmazonBedrockProviderTest.kt$AmazonBedrockProviderTest$toolResult["content"]!!</ID>
+    <ID>NoNotNullAssertion:ApprovalIdTest.kt$ApprovalIdTest$finalUi!!</ID>
+    <ID>NoNotNullAssertion:ContentPartWireFormatTest.kt$ContentPartWireFormatTest$codec.encodeToJsonElement(ContentPart.serializer(), part) .jsonObject["type"]!!</ID>
+    <ID>NoNotNullAssertion:DevToolsMiddlewareTest.kt$DevToolsMiddlewareTest$error.message!!</ID>
+    <ID>NoNotNullAssertion:DevToolsMiddlewareTest.kt$DevToolsMiddlewareTest$output["finishReason"]!!</ID>
+    <ID>NoNotNullAssertion:DevToolsMiddlewareTest.kt$DevToolsMiddlewareTest$output["reasoningParts"]!!</ID>
+    <ID>NoNotNullAssertion:DevToolsMiddlewareTest.kt$DevToolsMiddlewareTest$output["reasoningParts"]!!.jsonArray.single().jsonObject["text"]!!</ID>
+    <ID>NoNotNullAssertion:DevToolsMiddlewareTest.kt$DevToolsMiddlewareTest$output["textParts"]!!</ID>
+    <ID>NoNotNullAssertion:DevToolsMiddlewareTest.kt$DevToolsMiddlewareTest$output["textParts"]!!.jsonArray.single().jsonObject["text"]!!</ID>
+    <ID>NoNotNullAssertion:DevToolsMiddlewareTest.kt$DevToolsMiddlewareTest$output["toolCalls"]!!</ID>
+    <ID>NoNotNullAssertion:DevToolsMiddlewareTest.kt$DevToolsMiddlewareTest$output["toolCalls"]!!.jsonArray.single().jsonObject["toolName"]!!</ID>
+    <ID>NoNotNullAssertion:DevToolsMiddlewareTest.kt$DevToolsMiddlewareTest$result.output!!</ID>
+    <ID>NoNotNullAssertion:DevToolsMiddlewareTest.kt$DevToolsMiddlewareTest$result.output!!.jsonObject["text"]!!</ID>
+    <ID>NoNotNullAssertion:DevToolsMiddlewareTest.kt$DevToolsMiddlewareTest$result.output.jsonObject["finishReason"]!!</ID>
+    <ID>NoNotNullAssertion:DevToolsMiddlewareTest.kt$DevToolsMiddlewareTest$result.rawResponse!!</ID>
+    <ID>NoNotNullAssertion:DevToolsMiddlewareTest.kt$DevToolsMiddlewareTest$result.rawResponse!!.jsonArray.last().jsonObject["type"]!!</ID>
+    <ID>NoNotNullAssertion:DevToolsMiddlewareTest.kt$DevToolsMiddlewareTest$result.usage!!</ID>
+    <ID>NoNotNullAssertion:GoogleProviderTest.kt$GoogleProviderTest$body["generation_config"]!!</ID>
+    <ID>NoNotNullAssertion:GoogleProviderTest.kt$GoogleProviderTest$googleMetadata["requiresApiKey"]!!</ID>
+    <ID>NoNotNullAssertion:GoogleProviderTest.kt$GoogleProviderTest$googleMetadata["uri"]!!</ID>
+    <ID>NoNotNullAssertion:GoogleProviderTest.kt$GoogleProviderTest$params!!</ID>
+    <ID>NoNotNullAssertion:MCPClientTest.kt$MCPClientTest$client.readResource("file://a").contents.single()["text"]!!</ID>
+    <ID>NoNotNullAssertion:MCPClientTest.kt$MCPClientTest$content.value.single().jsonObject["text"]!!</ID>
+    <ID>NoNotNullAssertion:MCPClientTest.kt$MCPClientTest$initialize.params!!</ID>
+    <ID>NoNotNullAssertion:MCPClientTest.kt$MCPClientTest$initializeParams["clientInfo"]!!</ID>
+    <ID>NoNotNullAssertion:MCPClientTest.kt$MCPClientTest$initializeParams["clientInfo"]!!.jsonObject["name"]!!</ID>
+    <ID>NoNotNullAssertion:MCPClientTest.kt$MCPClientTest$initializeParams["clientInfo"]!!.jsonObject["version"]!!</ID>
+    <ID>NoNotNullAssertion:MCPClientTest.kt$MCPClientTest$it.params!!</ID>
+    <ID>NoNotNullAssertion:MCPClientTest.kt$MCPClientTest$it.params!!["name"]!!</ID>
+    <ID>NoNotNullAssertion:MCPClientTest.kt$MCPClientTest$message.params!!</ID>
+    <ID>NoNotNullAssertion:MCPClientTest.kt$MCPClientTest$output["temperature"]!!</ID>
+    <ID>NoNotNullAssertion:MCPClientTest.kt$MCPClientTest$params["arguments"]!!</ID>
+    <ID>NoNotNullAssertion:MCPClientTest.kt$MCPClientTest$params["arguments"]!!.jsonObject["message"]!!</ID>
+    <ID>NoNotNullAssertion:MCPClientTest.kt$MCPClientTest$params["name"]!!</ID>
+    <ID>NoNotNullAssertion:MCPClientTest.kt$MCPClientTest$redirect.lastAuthorizationUrl!!</ID>
+    <ID>NoNotNullAssertion:MCPClientTest.kt$MCPClientTest$response.result.jsonObject["action"]!!</ID>
+    <ID>NoNotNullAssertion:MCPClientTest.kt$MCPClientTest$response.result.jsonObject["content"]!!</ID>
+    <ID>NoNotNullAssertion:MCPClientTest.kt$MCPClientTest$response.result.jsonObject["content"]!!.jsonObject["confirmed"]!!</ID>
+    <ID>NoNotNullAssertion:MistralProviderTest.kt$MistralProviderTest$body["messages"]!!</ID>
+    <ID>NoNotNullAssertion:OpenAICompatibleProviderFacadesTest.kt$OpenAICompatibleProviderFacadesTest$body["messages"]!!</ID>
+    <ID>NoNotNullAssertion:OpenAICompatibleProviderTest.kt$OpenAICompatibleProviderTest$seenBodies.single()["messages"]!!</ID>
+    <ID>NoNotNullAssertion:OpenAIProviderTest.kt$OpenAIProviderTest$body["include"]!!</ID>
+    <ID>NoNotNullAssertion:OpenAIProviderTest.kt$OpenAIProviderTest$body["tool_choice"]!!</ID>
+    <ID>NoNotNullAssertion:OpenAIProviderTest.kt$OpenAIProviderTest$body["tools"]!!</ID>
+    <ID>NoNotNullAssertion:OpenAIProviderTest.kt$OpenAIProviderTest$byType["code_interpreter"]!!</ID>
+    <ID>NoNotNullAssertion:OpenAIProviderTest.kt$OpenAIProviderTest$byType["file_search"]!!</ID>
+    <ID>NoNotNullAssertion:OpenAIProviderTest.kt$OpenAIProviderTest$byType["image_generation"]!!</ID>
+    <ID>NoNotNullAssertion:OpenAIProviderTest.kt$OpenAIProviderTest$byType["mcp"]!!</ID>
+    <ID>NoNotNullAssertion:OpenAIProviderTest.kt$OpenAIProviderTest$byType["web_search"]!!</ID>
+    <ID>NoNotNullAssertion:OpenAIProviderTest.kt$OpenAIProviderTest$obj["type"]!!</ID>
+    <ID>NoNotNullAssertion:OpenAIProviderTest.kt$OpenAIProviderTest$seenBody.single()["input"]!!</ID>
+    <ID>NoNotNullAssertion:OpenAIProviderTest.kt$OpenAIProviderTest$seenBody.single()["input"]!!.jsonArray.single().jsonObject["content"]!!</ID>
+    <ID>NoNotNullAssertion:OpenAIProviderTest.kt$OpenAIProviderTest$seenBody.single()["tools"]!!</ID>
+    <ID>NoNotNullAssertion:OpenAIProviderTest.kt$OpenAIProviderTest$textMetadata["annotations"]!!</ID>
+    <ID>NoNotNullAssertion:OpenAIProviderTest.kt$OpenAIProviderTest$textMetadata["logprobs"]!!</ID>
+    <ID>NoNotNullAssertion:OpenAIProviderTest.kt$OpenAIProviderTest$toolChoice["tools"]!!</ID>
+    <ID>NoNotNullAssertion:OpenAIProviderTest.kt$OpenAIProviderTest$topLevel["logprobs"]!!</ID>
+    <ID>NoNotNullAssertion:OpenResponsesProviderTest.kt$OpenResponsesProviderTest$body["input"]!!</ID>
+    <ID>NoNotNullAssertion:OpenResponsesProviderTest.kt$OpenResponsesProviderTest$body["input"]!!.jsonArray.single().jsonObject["content"]!!</ID>
+    <ID>NoNotNullAssertion:OpenResponsesProviderTest.kt$OpenResponsesProviderTest$body["input"]!!.jsonArray.single().jsonObject["content"]!!.jsonArray.single().jsonObject["text"]!!</ID>
+    <ID>NoNotNullAssertion:OpenResponsesProviderTest.kt$OpenResponsesProviderTest$body["reasoning"]!!</ID>
+    <ID>NoNotNullAssertion:OpenResponsesProviderTest.kt$OpenResponsesProviderTest$body["reasoning"]!!.jsonObject["effort"]!!</ID>
+    <ID>NoNotNullAssertion:OpenResponsesProviderTest.kt$OpenResponsesProviderTest$body["reasoning"]!!.jsonObject["summary"]!!</ID>
+    <ID>NoNotNullAssertion:OpenResponsesProviderTest.kt$OpenResponsesProviderTest$body["text"]!!</ID>
+    <ID>NoNotNullAssertion:OpenResponsesProviderTest.kt$OpenResponsesProviderTest$body["text"]!!.jsonObject["format"]!!</ID>
+    <ID>NoNotNullAssertion:OpenResponsesProviderTest.kt$OpenResponsesProviderTest$body["text"]!!.jsonObject["format"]!!.jsonObject["type"]!!</ID>
+    <ID>NoNotNullAssertion:OpenResponsesProviderTest.kt$OpenResponsesProviderTest$body["tool_choice"]!!</ID>
+    <ID>NoNotNullAssertion:OpenResponsesProviderTest.kt$OpenResponsesProviderTest$body["tool_choice"]!!.jsonObject["name"]!!</ID>
+    <ID>NoNotNullAssertion:OpenResponsesProviderTest.kt$OpenResponsesProviderTest$body["tools"]!!</ID>
+    <ID>NoNotNullAssertion:OpenResponsesProviderTest.kt$OpenResponsesProviderTest$body["tools"]!!.jsonArray.single().jsonObject["type"]!!</ID>
+    <ID>NoNotNullAssertion:OpenResponsesProviderTest.kt$OpenResponsesProviderTest$explicit["file_id"]!!</ID>
+    <ID>NoNotNullAssertion:OpenResponsesProviderTest.kt$OpenResponsesProviderTest$input[0].jsonObject["type"]!!</ID>
+    <ID>NoNotNullAssertion:OpenResponsesProviderTest.kt$OpenResponsesProviderTest$input[1].jsonObject["output"]!!</ID>
+    <ID>NoNotNullAssertion:OpenResponsesProviderTest.kt$OpenResponsesProviderTest$input[1].jsonObject["type"]!!</ID>
+    <ID>NoNotNullAssertion:OpenResponsesProviderTest.kt$OpenResponsesProviderTest$output[0].jsonObject["text"]!!</ID>
+    <ID>NoNotNullAssertion:OpenResponsesProviderTest.kt$OpenResponsesProviderTest$output[0].jsonObject["type"]!!</ID>
+    <ID>NoNotNullAssertion:OpenResponsesProviderTest.kt$OpenResponsesProviderTest$output[1].jsonObject["image_url"]!!</ID>
+    <ID>NoNotNullAssertion:OpenResponsesProviderTest.kt$OpenResponsesProviderTest$output[1].jsonObject["type"]!!</ID>
+    <ID>NoNotNullAssertion:OpenResponsesProviderTest.kt$OpenResponsesProviderTest$payload["file_data"]!!</ID>
+    <ID>NoNotNullAssertion:OpenResponsesProviderTest.kt$OpenResponsesProviderTest$seenBodies.single()["input"]!!</ID>
+    <ID>NoNotNullAssertion:OpenResponsesProviderTest.kt$OpenResponsesProviderTest$seenBodies.single()["input"]!!.jsonArray.single().jsonObject["content"]!!</ID>
+    <ID>NoNotNullAssertion:OpenResponsesProviderTest.kt$OpenResponsesProviderTest$seenBodies.single()["model"]!!</ID>
+    <ID>NoNotNullAssertion:ToolTest.kt$ToolTest$properties["window"]!!</ID>
+    <ID>NoNotNullAssertion:ToolTest.kt$ToolTest$schema["properties"]!!</ID>
+    <ID>NoNotNullAssertion:ToolTest.kt$ToolTest$schema["required"]!!</ID>
+    <ID>NoNotNullAssertion:ToolTest.kt$ToolTest$window["required"]!!</ID>
     <ID>NoUnusedImports:AlibabaProvider.kt$ai.torad.aisdk.providers.AlibabaProvider.kt</ID>
     <ID>NoUnusedImports:AmazonBedrockProviderTest.kt$ai.torad.aisdk.AmazonBedrockProviderTest.kt</ID>
     <ID>NoUnusedImports:AzureProviderTest.kt$ai.torad.aisdk.AzureProviderTest.kt</ID>
@@ -3252,6 +3355,46 @@
     <ID>ParameterListWrapping:VercelFacade.kt$VercelProvider$(modelId: String)</ID>
     <ID>ParameterListWrapping:XaiProvider.kt$XaiProvider$(modelId: String)</ID>
     <ID>ParameterWrapping:AnthropicProvider.kt$AnthropicProviderSettings$val requestHeadersProvider: (suspend (url: String, body: String, headers: Map&lt;String, String>) -> Map&lt;String, String>)? = null</ID>
+    <ID>PreferTypedErrorOverCheckNotNull:TelemetryParityTest.kt$TelemetryParityTest$checkNotNull(composite)</ID>
+    <ID>PreferTypedErrorOverErrorCall:ApprovalIdTest.kt$ApprovalIdTest$error("unexpected event: $event")</ID>
+    <ID>PreferTypedErrorOverErrorCall:ConvertToModelMessages.kt$ModelMessageConversion$error( "incomplete tool call '$toolName' (id=$toolCallId, state=$state) in $contextHint; " + "set ignoreIncompleteToolCalls=true to drop these silently", )</ID>
+    <ID>PreferTypedErrorOverErrorCall:EmbedRerankParityTest.kt$EmbedRerankParityTest.&lt;no name provided>$error("must not be called for empty documents")</ID>
+    <ID>PreferTypedErrorOverErrorCall:FullPortFeatureParityTest.kt$FullPortFeatureParityTest$error("bad")</ID>
+    <ID>PreferTypedErrorOverErrorCall:FullPortFeatureParityTest.kt$FullPortFeatureParityTest$error("retry")</ID>
+    <ID>PreferTypedErrorOverErrorCall:GoogleProviderTest.kt$GoogleProviderTest$error("missing google metadata")</ID>
+    <ID>PreferTypedErrorOverErrorCall:KotlinIdiomsTest.kt$KotlinIdiomsTest$error("missing tool")</ID>
+    <ID>PreferTypedErrorOverErrorCall:LifecycleHooksTest.kt$LifecycleHooksTest$error("boom from prepareCall")</ID>
+    <ID>PreferTypedErrorOverErrorCall:OpenAIProviderTest.kt$OpenAIProviderTest$error("missing openai metadata")</ID>
+    <ID>PreferTypedErrorOverErrorCall:OpenAIProviderTest.kt$OpenAIProviderTest$error("missing openai text metadata")</ID>
+    <ID>PreferTypedErrorOverErrorCall:RetryBackoffTest.kt$RetryBackoffTest$error("boom")</ID>
+    <ID>PreferTypedErrorOverErrorCall:RetryBackoffTest.kt$RetryBackoffTest$error("fatal")</ID>
+    <ID>PreferTypedErrorOverErrorCall:RetryBackoffTest.kt$RetryBackoffTest$error("first-try fatal")</ID>
+    <ID>PreferTypedErrorOverErrorCall:RetryBackoffTest.kt$RetryBackoffTest$error("no retries")</ID>
+    <ID>PreferTypedErrorOverErrorCall:RetryBackoffTest.kt$RetryBackoffTest$error("transient")</ID>
+    <ID>PreferTypedErrorOverErrorCall:SimulateStreamingTest.kt$SimulateStreamingTest.GenerateOnlyModel$error("GenerateOnlyModel.stream should never be called when simulateStreamingMiddleware is wired correctly")</ID>
+    <ID>PreferTypedErrorOverErrorCall:TelemetryParityTest.kt$TelemetryParityTest$error("boom")</ID>
+    <ID>PreferTypedErrorOverErrorCall:TelemetryWiringTest.kt$TelemetryWiringTest$error("tool blew up")</ID>
+    <ID>PreferTypedErrorOverErrorCall:TelemetryWiringTest.kt$TelemetryWiringTest.&lt;no name provided>$error("no service")</ID>
+    <ID>PreferTypedErrorOverErrorCall:TelemetryWiringTest.kt$TelemetryWiringTest.&lt;no name provided>$error("unused — stream path only")</ID>
+    <ID>PreferTypedErrorOverErrorCall:TelemetryWiringTest.kt$TelemetryWiringTest.ExplodingTelemetry$error("telemetry exploded")</ID>
+    <ID>PreferTypedErrorOverErrorCall:ToolErrorWiringTest.kt$ToolErrorWiringTest$error("db down")</ID>
+    <ID>PreferTypedErrorOverErrorCall:ToolErrorWiringTest.kt$ToolErrorWiringTest$error("repair model unreachable")</ID>
+    <ID>PreferTypedErrorOverErrorCall:ToolLoopAgentStreamErrorTest.kt$ToolLoopAgentStreamErrorTest.&lt;no name provided>$error("stream only")</ID>
+    <ID>PreferTypedErrorOverErrorCall:ToolLoopAgentTerminalSemanticsTest.kt$CountingStreamModel$error("CountingStreamModel is intended for stream-driven agent tests")</ID>
+    <ID>PreferTypedErrorOverErrorCall:ToolLoopContractGapsTest.kt$ToolLoopContractGapsTest$error("pre-warm boom")</ID>
+    <ID>PreferTypedErrorOverErrorCall:ToolMetadataTest.kt$ToolMetadataTest$error("toolset must surface the tool by name")</ID>
+    <ID>PreferTypedErrorOverGenericThrow:ConvertToModelMessages.kt$ModelMessageConversion$throw IllegalArgumentException("Approval response output must be a string approval id.")</ID>
+    <ID>PreferTypedErrorOverGenericThrow:GatewayAndProviderUtilsParityTest.kt$GatewayAndProviderUtilsParityTest$throw IllegalStateException("bad")</ID>
+    <ID>PreferTypedErrorOverGenericThrow:GenerationInput.kt$GenerationInput.Companion$throw IllegalArgumentException( "GenerationInput requires prompt text or non-empty messages", )</ID>
+    <ID>PreferTypedErrorOverGenericThrow:KotlinApi.kt$TextGenerationRequest.Input.Companion$throw IllegalArgumentException( "TextGenerationRequest requires prompt text or non-empty messages" )</ID>
+    <ID>PreferTypedErrorOverGenericThrow:MCPStdioProcess.native.kt$throw UnsupportedOperationException( "Stdio MCP transport is not supported on this native target. " + "Use HttpMCPTransport, SseMCPTransport, or a custom MCPTransport.", )</ID>
+    <ID>PreferTypedErrorOverGenericThrow:TestServer.kt$TestServerCall$throw IllegalArgumentException("Request body is not valid JSON.", error)</ID>
+    <ID>PreferTypedErrorOverGenericThrow:Tool.kt$Schemas$throw IllegalArgumentException("Expected JSON array.")</ID>
+    <ID>PreferTypedErrorOverGenericThrow:Tool.kt$Schemas$throw IllegalArgumentException("Expected JSON boolean.")</ID>
+    <ID>PreferTypedErrorOverGenericThrow:Tool.kt$Schemas$throw IllegalArgumentException("Expected JSON integer.")</ID>
+    <ID>PreferTypedErrorOverGenericThrow:Tool.kt$Schemas$throw IllegalArgumentException("Expected JSON number.")</ID>
+    <ID>PreferTypedErrorOverGenericThrow:Tool.kt$Schemas$throw IllegalArgumentException("Expected JSON object.")</ID>
+    <ID>PreferTypedErrorOverGenericThrow:Tool.kt$Schemas$throw IllegalArgumentException("Expected JSON string.")</ID>
     <ID>PropertyWrapping:AlibabaProviderTest.kt$AlibabaProviderTest$val provider = Alibaba(TestServer.createTestServer(mutableMapOf()).httpClient(), AlibabaProviderSettings(apiKey = "key"))</ID>
     <ID>PropertyWrapping:AnthropicProviderTest.kt$AnthropicProviderTest$val events = drainAllItems(provider.messages(ModelId("claude-sonnet-4-5")).stream(LanguageModelCallParams(messages = listOf(UserMessage("hi")))))</ID>
     <ID>PropertyWrapping:AwsSigV4.kt$AwsSigV4$val signature = with(CryptoPrimitives) { CryptoPrimitives.hmacSha256(signingKey, stringToSign.encodeToByteArray()).toHex() }</ID>
