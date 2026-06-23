@@ -83,6 +83,56 @@ class ConvertToLanguageModelPromptTest {
     }
 
     @Test
+    fun `duplicate tool call ids require one tool result per occurrence`() = runTest {
+        val input = JsonObject(emptyMap())
+        val messages = listOf(
+            ModelMessage(
+                MessageRole.Assistant,
+                listOf(
+                    ContentPart.ToolCall("dup", "t", input),
+                    ContentPart.ToolCall("dup", "t", input),
+                ),
+            ),
+            ModelMessage(
+                MessageRole.Tool,
+                listOf(ContentPart.ToolResult("dup", "t", JsonPrimitive("ok"))),
+            ),
+        )
+
+        val e = assertFailsWith<MissingToolResultsError> {
+            PromptConversion.convertToLanguageModelPrompt(messages)
+        }
+        assertEquals(listOf("dup"), e.toolCallIds)
+    }
+
+    @Test
+    fun `duplicate tool call approval exemption applies to only the matching occurrence`() = runTest {
+        val firstInput = JsonObject(mapOf("message" to JsonPrimitive("first")))
+        val secondInput = JsonObject(mapOf("message" to JsonPrimitive("second")))
+        val messages = listOf(
+            ModelMessage(
+                MessageRole.Assistant,
+                listOf(
+                    ContentPart.ToolCall("dup", "send", firstInput),
+                    ContentPart.ToolCall("dup", "send", secondInput),
+                    ContentPart.ToolApprovalRequest(
+                        toolCallId = "dup",
+                        toolName = "send",
+                        input = secondInput,
+                        approvalId = "approval-2",
+                    ),
+                ),
+            ),
+            ModelMessage(
+                MessageRole.Tool,
+                listOf(ContentPart.ToolResult("dup", "send", JsonPrimitive("sent"))),
+            ),
+        )
+
+        assertEquals(2, PromptConversion.convertToLanguageModelPrompt(messages).size)
+    }
+
+    @Test
     fun `an approved tool call awaiting execution is not dangling`() = runTest {
         // The approval-resume path: a tool call, then a tool-approval-response (no
         // tool result yet), then the conversation continues — must NOT throw.

@@ -63,8 +63,17 @@ public class AgentSession<TContext, TOutput>(
     )
 
     private data class StreamingApprovalProjection(
-        val pending: List<PendingApproval>,
-        val metadataByApprovalKey: Map<String, ProviderMetadata>,
+        val records: List<StreamingApprovalRecord>,
+    )
+
+    private data class StreamingApprovalRecord(
+        val approval: PendingApproval,
+        val metadata: ProviderMetadata,
+    )
+
+    private data class StreamingToolResultRecord(
+        val result: ContentPart.ToolResult,
+        val provisionalDenied: Boolean = false,
     )
 
     private data class StreamingToolProjection(
@@ -168,13 +177,22 @@ public class AgentSession<TContext, TOutput>(
             val reasoningBuffers = mutableMapOf<String, StringBuilder>()
             val reasoningMetadata = mutableMapOf<String, ProviderMetadata>()
             val extraAssistantParts = mutableListOf<ContentPart>()
-            // Keyed by toolCallId so a streamed tool's final result replaces
-            // its preliminary chunks and order is preserved. These were
-            // previously dropped (else -> Unit), truncating the message log.
-            val toolCalls = linkedMapOf<String, ContentPart.ToolCall>()
-            val toolResults = linkedMapOf<String, ContentPart.ToolResult>()
-            val pendingApprovals = mutableListOf<PendingApproval>()
-            val pendingApprovalMetadata = mutableMapOf<String, ProviderMetadata>()
+            val toolCalls = mutableListOf<ContentPart.ToolCall>()
+            val toolResults = mutableListOf<StreamingToolResultRecord>()
+            val pendingApprovalRecords = mutableListOf<StreamingApprovalRecord>()
+
+            fun recordFinalToolResult(result: ContentPart.ToolResult) {
+                val provisionalIndex = toolResults.indexOfLast {
+                    it.provisionalDenied &&
+                        it.result.toolCallId == result.toolCallId &&
+                        it.result.toolName == result.toolName
+                }
+                if (provisionalIndex == -1) {
+                    toolResults += StreamingToolResultRecord(result)
+                } else {
+                    toolResults[provisionalIndex] = StreamingToolResultRecord(result)
+                }
+            }
 
             fun render(newStatus: AgentSessionStatus) {
                 if (!active()) return
@@ -182,7 +200,7 @@ public class AgentSession<TContext, TOutput>(
                     it.copy(
                         status = newStatus,
                         text = text.toString(),
-                        pendingApprovals = pendingApprovals.toList(),
+                        pendingApprovals = pendingApprovalRecords.map { record -> record.approval },
                         messages = streamingMessages(
                             messages = visibleMessages,
                             projection = StreamingMessageProjection(
@@ -192,11 +210,10 @@ public class AgentSession<TContext, TOutput>(
                                 ),
                                 extraAssistantParts = extraAssistantParts,
                                 tools = StreamingToolProjection(
-                                    calls = toolCalls.values.toList(),
-                                    results = toolResults.values.toList(),
+                                    calls = toolCalls.toList(),
+                                    results = toolResults.map { record -> record.result },
                                     approvals = StreamingApprovalProjection(
-                                        pending = pendingApprovals,
-                                        metadataByApprovalKey = pendingApprovalMetadata,
+                                        records = pendingApprovalRecords.toList(),
                                     ),
                                 ),
                             ),
@@ -260,7 +277,7 @@ public class AgentSession<TContext, TOutput>(
                         render(AgentSessionStatus.Running)
                     }
                     is StreamEvent.ToolCall -> {
-                        toolCalls[event.toolCallId] = ContentPart.ToolCall(
+                        toolCalls += ContentPart.ToolCall(
                             toolCallId = event.toolCallId,
                             toolName = event.toolName,
                             input = event.inputJson,
@@ -270,15 +287,17 @@ public class AgentSession<TContext, TOutput>(
                     }
                     is StreamEvent.ToolResult -> {
                         if (!event.preliminary) {
-                            toolResults[event.toolCallId] = ContentPart.ToolResult(
-                                toolCallId = event.toolCallId,
-                                toolName = event.toolName,
-                                output = event.outputJson,
-                                isError = event.isError,
-                                // Carry the tool's model-facing summary (toModelOutput)
-                                // so a resumed turn doesn't re-feed the full payload.
-                                modelVisible = with(ToolResultOutputs) { event.modelOutput.toJsonElement() },
-                                providerMetadata = event.providerMetadata,
+                            recordFinalToolResult(
+                                ContentPart.ToolResult(
+                                    toolCallId = event.toolCallId,
+                                    toolName = event.toolName,
+                                    output = event.outputJson,
+                                    isError = event.isError,
+                                    // Carry the tool's model-facing summary (toModelOutput)
+                                    // so a resumed turn doesn't re-feed the full payload.
+                                    modelVisible = with(ToolResultOutputs) { event.modelOutput.toJsonElement() },
+                                    providerMetadata = event.providerMetadata,
+                                ),
                             )
                             render(AgentSessionStatus.Running)
                         }
@@ -286,44 +305,51 @@ public class AgentSession<TContext, TOutput>(
                     is StreamEvent.ToolError -> {
                         // Mirror the agent's own log shape: a failed tool is an
                         // error-flagged tool result carrying the message.
-                        toolResults[event.toolCallId] = ContentPart.ToolResult(
-                            toolCallId = event.toolCallId,
-                            toolName = event.toolName,
-                            output = JsonPrimitive(event.message),
-                            isError = true,
-                            providerMetadata = event.providerMetadata,
+                        recordFinalToolResult(
+                            ContentPart.ToolResult(
+                                toolCallId = event.toolCallId,
+                                toolName = event.toolName,
+                                output = JsonPrimitive(event.message),
+                                isError = true,
+                                providerMetadata = event.providerMetadata,
+                            ),
                         )
                         render(AgentSessionStatus.Running)
                     }
                     is StreamEvent.ToolOutputDenied -> {
                         val output = ToolResultOutput.ExecutionDenied(event.reason)
                         val outputJson = with(ToolResultOutputs) { output.toJsonElement() }
-                        toolResults[event.toolCallId] = ContentPart.ToolResult(
-                            toolCallId = event.toolCallId,
-                            toolName = event.toolName,
-                            output = outputJson,
-                            isError = true,
-                            modelVisible = outputJson,
-                            providerMetadata = event.providerMetadata,
+                        toolResults += StreamingToolResultRecord(
+                            result = ContentPart.ToolResult(
+                                toolCallId = event.toolCallId,
+                                toolName = event.toolName,
+                                output = outputJson,
+                                isError = true,
+                                modelVisible = outputJson,
+                                providerMetadata = event.providerMetadata,
+                            ),
+                            provisionalDenied = true,
                         )
                         render(AgentSessionStatus.Running)
                     }
                     is StreamEvent.ToolApprovalRequest -> {
-                        pendingApprovals += PendingApproval(
-                            toolCallId = event.toolCallId,
-                            toolName = event.toolName,
-                            input = event.inputJson,
-                            approvalId = event.approvalId,
-                            // Carry the HMAC signature (mirrors generate() at ToolLoopAgent.kt:430);
-                            // without it a streamed approval can't be re-validated on resume.
-                            signature = event.signature,
+                        pendingApprovalRecords += StreamingApprovalRecord(
+                            approval = PendingApproval(
+                                toolCallId = event.toolCallId,
+                                toolName = event.toolName,
+                                input = event.inputJson,
+                                approvalId = event.approvalId,
+                                // Carry the HMAC signature (mirrors generate() at ToolLoopAgent.kt:430);
+                                // without it a streamed approval can't be re-validated on resume.
+                                signature = event.signature,
+                            ),
+                            metadata = event.providerMetadata,
                         )
-                        pendingApprovalMetadata[event.approvalId ?: event.toolCallId] = event.providerMetadata
                         render(AgentSessionStatus.AwaitingApproval)
                     }
                     is StreamEvent.Finish -> {
                         render(
-                            if (pendingApprovals.isEmpty()) {
+                            if (pendingApprovalRecords.isEmpty()) {
                                 AgentSessionStatus.Ready
                             } else {
                                 AgentSessionStatus.AwaitingApproval
@@ -363,7 +389,7 @@ public class AgentSession<TContext, TOutput>(
             // Settle if the stream ended without an explicit Finish/Abort/Error.
             if (active() && state.value.status == AgentSessionStatus.Running) {
                 render(
-                    if (pendingApprovals.isEmpty()) {
+                    if (pendingApprovalRecords.isEmpty()) {
                         AgentSessionStatus.Ready
                     } else {
                         AgentSessionStatus.AwaitingApproval
@@ -476,8 +502,8 @@ public class AgentSession<TContext, TOutput>(
             }
             addAll(projection.extraAssistantParts)
             addAll(projection.tools.calls)
-            projection.tools.approvals.pending.forEach { approval ->
-                val approvalKey = approval.approvalId ?: approval.toolCallId
+            projection.tools.approvals.records.forEach { record ->
+                val approval = record.approval
                 add(
                     ContentPart.ToolApprovalRequest(
                         toolCallId = approval.toolCallId,
@@ -487,8 +513,7 @@ public class AgentSession<TContext, TOutput>(
                         // Persist the signature into the replayed log so the resume's fail-closed
                         // verifySignature (ToolApprovalCoordinator) can re-validate it.
                         signature = approval.signature,
-                        providerMetadata = projection.tools.approvals.metadataByApprovalKey[approvalKey]
-                            ?: ProviderMetadata.None,
+                        providerMetadata = record.metadata,
                     ),
                 )
             }

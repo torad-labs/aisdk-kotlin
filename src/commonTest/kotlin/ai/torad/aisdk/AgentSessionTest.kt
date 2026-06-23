@@ -11,7 +11,10 @@ import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
 import kotlinx.serialization.serializer
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -100,6 +103,76 @@ class AgentSessionTest {
     }
 
     @Test
+    fun `streaming session preserves duplicate tool occurrences and approvals`() = runTest {
+        fun input(message: String): JsonObject = buildJsonObject { put("message", message) }
+        fun metadata(source: String): ProviderMetadata = ProviderMetadata.Raw(
+            buildJsonObject {
+                put("source", source)
+            },
+        )
+        val agent = object : Agent<Unit, String> {
+            override val tools: ToolSet<Unit> = ToolSet()
+
+            override fun generate(
+                prompt: String?,
+                messages: List<ModelMessage>,
+                options: Unit?,
+                abortSignal: AbortSignal,
+            ): Flow<GenerateResult<String>> = flow {}
+
+            override fun stream(
+                prompt: String?,
+                messages: List<ModelMessage>,
+                options: Unit?,
+                abortSignal: AbortSignal,
+            ): Flow<StreamEvent> = flow {
+                emit(StreamEvent.ToolCall("dup", "send", input("first"), metadata("call-1")))
+                emit(StreamEvent.ToolCall("dup", "send", input("second"), metadata("call-2")))
+                emit(
+                    StreamEvent.ToolApprovalRequest(
+                        toolCallId = "dup",
+                        toolName = "send",
+                        inputJson = input("first"),
+                        approvalId = "approval-1",
+                        signature = "sig-1",
+                        providerMetadata = metadata("approval-1"),
+                    ),
+                )
+                emit(
+                    StreamEvent.ToolApprovalRequest(
+                        toolCallId = "dup",
+                        toolName = "send",
+                        inputJson = input("second"),
+                        approvalId = "approval-2",
+                        signature = "sig-2",
+                        providerMetadata = metadata("approval-2"),
+                    ),
+                )
+                emit(StreamEvent.Finish(1, FinishReason.ToolApprovalRequested, Usage()))
+            }
+        }
+        val session = agent.session(this)
+
+        session.submitStreaming(prompt = "send").join()
+
+        val assistantParts = session.state.value.messages
+            .filter { it.role == MessageRole.Assistant }
+            .flatMap { it.content }
+        val calls = assistantParts.filterIsInstance<ContentPart.ToolCall>()
+        assertEquals(2, calls.size)
+        assertEquals(listOf(input("first"), input("second")), calls.map { it.input })
+
+        val approvals = assistantParts.filterIsInstance<ContentPart.ToolApprovalRequest>()
+        assertEquals(listOf("approval-1", "approval-2"), approvals.map { it.approvalId })
+        assertEquals(listOf("sig-1", "sig-2"), approvals.map { it.signature })
+        assertEquals(
+            listOf(JsonPrimitive("approval-1"), JsonPrimitive("approval-2")),
+            approvals.map { it.providerMetadata.toMap()["source"] },
+        )
+        assertEquals(approvals.map { it.approvalId }, session.state.value.pendingApprovals.map { it.approvalId })
+    }
+
+    @Test
     fun `streaming session records reasoning source file and denied tool outcomes`() = runTest {
         val agent = object : Agent<Unit, String> {
             override val tools: ToolSet<Unit> = ToolSet()
@@ -117,6 +190,8 @@ class AgentSessionTest {
                 options: Unit?,
                 abortSignal: AbortSignal,
             ): Flow<StreamEvent> = flow {
+                val denied = ToolResultOutput.ExecutionDenied("no")
+                val deniedJson = with(ToolResultOutputs) { denied.toJsonElement() }
                 emit(StreamEvent.ReasoningStart("r1"))
                 emit(StreamEvent.ReasoningDelta("r1", "thinking"))
                 emit(StreamEvent.ReasoningEnd("r1"))
@@ -129,6 +204,16 @@ class AgentSessionTest {
                 )
                 emit(StreamEvent.FilePart("file1", "text/plain", "aGk="))
                 emit(StreamEvent.ToolOutputDenied("call1", "send", approvalId = "approval1", reason = "no"))
+                emit(
+                    StreamEvent.ToolResult(
+                        toolCallId = "call1",
+                        toolName = "send",
+                        outputJson = deniedJson,
+                        output = denied,
+                        modelOutput = denied,
+                        isError = true,
+                    ),
+                )
                 emit(StreamEvent.Finish(1, FinishReason.Stop, Usage()))
             }
         }
@@ -140,7 +225,9 @@ class AgentSessionTest {
         assertTrue(parts.any { it is ContentPart.Reasoning && it.text == "thinking" })
         assertTrue(parts.any { it is ContentPart.Source && it.url == "https://example.test" })
         assertTrue(parts.any { it is ContentPart.File && it.base64 == "aGk=" })
-        assertTrue(parts.any { it is ContentPart.ToolResult && it.toolName == "send" && it.isError })
+        val toolResults = parts.filterIsInstance<ContentPart.ToolResult>()
+        assertEquals(1, toolResults.size)
+        assertTrue(toolResults.single().toolName == "send" && toolResults.single().isError)
     }
 
     @Test

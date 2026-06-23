@@ -71,7 +71,7 @@ class MiddlewareBugfixTest {
             LanguageModelCallParams(
                 messages = listOf(UserMessage("hi")),
                 providerOptions = ProviderOptions.Raw(JsonObject(mapOf(
-                    "openai" to buildJsonObject { put("user", JsonPrimitive("u1")) } as JsonObject,
+                    "openai" to buildJsonObject { put("user", JsonPrimitive("u1")) },
                 ))),
             ),
         )

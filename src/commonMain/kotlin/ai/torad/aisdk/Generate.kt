@@ -67,8 +67,14 @@ public class StreamTextResult(
                         emit(event)
                     }
                 } catch (t: Throwable) {
-                    primaryResult.compareAndSet(mine, null)
-                    mine.completeExceptionally(t)
+                    val captured = buffer.toList()
+                    if (captured.lastOrNull()?.isTerminalReplayPoint() == true) {
+                        commit(captured)
+                        mine.complete(captured)
+                    } else {
+                        primaryResult.compareAndSet(mine, null)
+                        mine.completeExceptionally(t)
+                    }
                     throw t
                 }
                 commit(buffer)
@@ -124,6 +130,11 @@ public class StreamTextResult(
         }
         capturedResponse = response
     }
+
+    private fun StreamEvent.isTerminalReplayPoint(): Boolean =
+        this is StreamEvent.Error ||
+            this is StreamEvent.Finish ||
+            this is StreamEvent.Abort
 }
 
 public data class GenerateObjectResult<TOutput>(

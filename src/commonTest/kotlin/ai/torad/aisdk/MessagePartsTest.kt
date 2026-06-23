@@ -74,6 +74,82 @@ class MessagePartsTest {
     }
 
     @Test
+    fun `duplicate tool call ids receive UI results by occurrence order`() = runTest {
+        val firstInput = JsonObject(mapOf("message" to JsonPrimitive("first")))
+        val secondInput = JsonObject(mapOf("message" to JsonPrimitive("second")))
+        val firstOutput = JsonObject(mapOf("sent" to JsonPrimitive("first")))
+        val secondOutput = JsonObject(mapOf("sent" to JsonPrimitive("second")))
+        val events = flow {
+            emit(StreamEvent.ToolCall("dup", "send", firstInput))
+            emit(StreamEvent.ToolCall("dup", "send", secondInput))
+            emit(StreamEvent.ToolResult("dup", "send", firstOutput))
+            emit(StreamEvent.ToolResult("dup", "send", secondOutput))
+            emit(StreamEvent.Finish(1, FinishReason.Stop, Usage()))
+        }
+
+        val final = drainAllItems(StreamToUiMessages(events, "msg_duplicate_results")).last()
+
+        val tools = final.parts.filterIsInstance<UIMessagePart.ToolUI>()
+        assertEquals(2, tools.size)
+        assertEquals(listOf(firstInput, secondInput), tools.map { it.input })
+        assertEquals(listOf(firstOutput, secondOutput), tools.map { it.output })
+        assertEquals(listOf(ToolCallState.OutputAvailable, ToolCallState.OutputAvailable), tools.map { it.state })
+    }
+
+    @Test
+    fun `duplicate tool call approvals remain separate UI parts by approval id`() = runTest {
+        val firstInput = JsonObject(mapOf("message" to JsonPrimitive("first")))
+        val secondInput = JsonObject(mapOf("message" to JsonPrimitive("second")))
+        val denied = ToolResultOutput.ExecutionDenied("no")
+        val deniedJson = with(ToolResultOutputs) { denied.toJsonElement() }
+        val events = flow {
+            emit(StreamEvent.ToolCall("dup", "send", firstInput))
+            emit(StreamEvent.ToolCall("dup", "send", secondInput))
+            emit(
+                StreamEvent.ToolApprovalRequest(
+                    toolCallId = "dup",
+                    toolName = "send",
+                    inputJson = firstInput,
+                    approvalId = "approval-1",
+                    signature = "sig-1",
+                ),
+            )
+            emit(
+                StreamEvent.ToolApprovalRequest(
+                    toolCallId = "dup",
+                    toolName = "send",
+                    inputJson = secondInput,
+                    approvalId = "approval-2",
+                    signature = "sig-2",
+                ),
+            )
+            emit(StreamEvent.ToolOutputDenied("dup", "send", approvalId = "approval-2", reason = "no"))
+            emit(
+                StreamEvent.ToolResult(
+                    toolCallId = "dup",
+                    toolName = "send",
+                    outputJson = deniedJson,
+                    output = denied,
+                    modelOutput = denied,
+                    isError = true,
+                ),
+            )
+            emit(StreamEvent.Finish(1, FinishReason.ToolApprovalRequested, Usage()))
+        }
+
+        val final = drainAllItems(StreamToUiMessages(events, "msg_duplicate_approvals")).last()
+
+        val tools = final.parts.filterIsInstance<UIMessagePart.ToolUI>()
+        assertEquals(2, tools.size)
+        assertEquals(listOf(firstInput, secondInput), tools.map { it.input })
+        assertEquals(listOf("approval-1", "approval-2"), tools.map { it.approvalId })
+        assertEquals(listOf("sig-1", "sig-2"), tools.map { it.signature })
+        assertEquals(listOf(ToolCallState.ApprovalRequested, ToolCallState.OutputDenied), tools.map { it.state })
+        assertEquals(null, tools[0].output)
+        assertEquals(deniedJson, tools[1].output)
+    }
+
+    @Test
     fun `placeholder removal keeps open text part indices in sync`() = runTest {
         val input = JsonObject(mapOf("location" to JsonPrimitive("nyc")))
         val events = flow {

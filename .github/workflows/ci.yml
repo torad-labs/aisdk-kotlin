@@ -44,7 +44,7 @@ jobs:
         run: node tools/check-ai-sdk-reference.mjs
       - name: Verify parity ledgers
         run: node tools/generate-parity-ledger.mjs --check
-      - name: Architecture gate (ast-grep rules + non-integrated check)
+      - name: Architecture gate (ast-grep rules + structural checks)
         run: |
           npm install -g @ast-grep/cli@0.42.1
           bash .claude/hooks/rules/ci-gate.sh

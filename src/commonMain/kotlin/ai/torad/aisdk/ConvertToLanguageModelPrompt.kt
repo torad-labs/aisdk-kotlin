@@ -248,50 +248,65 @@ public object PromptConversion {
     }
 
     /**
-     * Tool calls exempt from needing a tool result: those awaiting approval (an
-     * approval request exists) or already approved (a response exists, correlated by
-     * approvalId or directly by toolCallId) — they are answered after approval, not by
-     * a tool result. Mirrors upstream's approvalId→toolCallId correlation.
-     */
-    private fun approvalExemptCallIds(messages: List<ModelMessage>): Set<String> {
-        val approvalIdToToolCallId = mutableMapOf<String, String>()
-        val exempt = mutableSetOf<String>()
-        val parts = messages.flatMap { it.content }
-        parts.filterIsInstance<ContentPart.ToolApprovalRequest>().forEach {
-            it.approvalId?.let { id -> approvalIdToToolCallId[id] = it.toolCallId }
-            exempt += it.toolCallId
-        }
-        parts.filterIsInstance<ContentPart.ToolApprovalResponse>().forEach {
-            exempt += it.toolCallId
-            it.approvalId?.let { id -> approvalIdToToolCallId[id]?.let { call -> exempt += call } }
-        }
-        return exempt
-    }
-
-    /**
      * Every assistant tool call must be answered by a tool result before the next
      * user/system turn or the end of the prompt; otherwise providers reject it.
      */
     private fun validateNoDanglingToolCalls(messages: List<ModelMessage>) {
-        val exempt = approvalExemptCallIds(messages)
-        val pending = linkedSetOf<String>()
+        val pending = mutableListOf<String>()
         fun flush() {
             if (pending.isNotEmpty()) throw MissingToolResultsError(pending.toList())
         }
         for (message in messages) {
             when (message.role) {
-                MessageRole.Assistant ->
-                    // Provider-executed and approval-exempt calls are answered elsewhere.
-                    message.content.filterIsInstance<ContentPart.ToolCall>()
-                        .filter { !it.providerExecuted && it.toolCallId !in exempt }
-                        .forEach { pending += it.toolCallId }
-                MessageRole.Tool ->
-                    message.content.filterIsInstance<ContentPart.ToolResult>().forEach { pending -= it.toolCallId }
+                MessageRole.Assistant -> addPendingToolCalls(message, pending)
+                MessageRole.Tool -> removeAnsweredToolCalls(message, pending)
                 MessageRole.User, MessageRole.System -> flush() // a new turn must not leave calls unanswered
             }
         }
         flush()
     }
+
+    private fun addPendingToolCalls(message: ModelMessage, pending: MutableList<String>) {
+        // Provider-executed and approval-exempt calls are answered elsewhere.
+        val calls = message.content.filterIsInstance<ContentPart.ToolCall>()
+        val approvalExemptIndexes = approvalExemptCallIndexes(
+            calls = calls,
+            requests = message.content.filterIsInstance<ContentPart.ToolApprovalRequest>(),
+        )
+        calls.withIndex()
+            .filter { (index, call) -> !call.providerExecuted && index !in approvalExemptIndexes }
+            .forEach { (_, call) -> pending += call.toolCallId }
+    }
+
+    private fun removeAnsweredToolCalls(message: ModelMessage, pending: MutableList<String>) {
+        message.content.filterIsInstance<ContentPart.ToolResult>().forEach { result ->
+            val index = pending.indexOfFirst { it == result.toolCallId }
+            if (index != -1) pending.removeAt(index)
+        }
+    }
+
+    private fun approvalExemptCallIndexes(
+        calls: List<ContentPart.ToolCall>,
+        requests: List<ContentPart.ToolApprovalRequest>,
+    ): Set<Int> {
+        val available = calls.indices.toMutableList()
+        val exempt = mutableSetOf<Int>()
+        requests.forEach { request ->
+            val exactIndex = available.firstOrNull { index -> calls[index].matchesApprovalRequest(request) }
+            val fallbackIndex = available.firstOrNull { index -> calls[index].toolCallId == request.toolCallId }
+            val requestIndex = exactIndex ?: fallbackIndex
+            if (requestIndex != null) {
+                exempt += requestIndex
+                available -= requestIndex
+            }
+        }
+        return exempt
+    }
+
+    private fun ContentPart.ToolCall.matchesApprovalRequest(request: ContentPart.ToolApprovalRequest): Boolean =
+        toolCallId == request.toolCallId &&
+            toolName == request.toolName &&
+            input == request.input
 }
 
 private data class ResolvedMedia(val base64: String, val mediaType: String, val clearUrl: Boolean)

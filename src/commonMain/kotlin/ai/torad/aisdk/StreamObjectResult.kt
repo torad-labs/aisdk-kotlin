@@ -20,18 +20,23 @@ public class StreamObjectResult<TOutput> internal constructor(
     private val stream: Flow<StreamEvent> = StreamTextResult(events).fullStream
 
     public val partialObjectStream: Flow<TOutput> = flow {
-        val textBlocks = linkedMapOf<String, StringBuilder>()
+        val textBlocks = OrderedTextBlocks()
         var lastKey: String? = null
         stream.collect { event ->
-            if (event is StreamEvent.Error) throw UiMessageStreamError(event.message, event.cause)
-            if (event !is StreamEvent.TextDelta) return@collect
-            val text = appendTextBlock(textBlocks, event)
-            val parsed = PartialJson.parsePartialJson(text).value ?: return@collect
-            val key = parsed.toString()
-            if (key == lastKey) return@collect
-            val decoded = runCatching { output.decode(key) }.getOrNull() ?: return@collect
-            lastKey = key
-            emit(decoded)
+            when (event) {
+                is StreamEvent.TextStart -> textBlocks.start(event.id)
+                is StreamEvent.TextDelta -> {
+                    val text = textBlocks.append(event.id, event.text)
+                    val parsed = PartialJson.parsePartialJson(text).value ?: return@collect
+                    val key = parsed.toString()
+                    if (key == lastKey) return@collect
+                    val decoded = runCatching { output.decode(key) }.getOrNull() ?: return@collect
+                    lastKey = key
+                    emit(decoded)
+                }
+                is StreamEvent.Error -> throw UiMessageStreamError(event.message, event.cause)
+                else -> Unit
+            }
         }
     }
 
@@ -86,44 +91,32 @@ public class StreamObjectResult<TOutput> internal constructor(
     }
 
     public fun <E> elementStream(arrayOutput: Output.Arr<E>): Flow<E> = flow {
-        val textBlocks = linkedMapOf<String, StringBuilder>()
-        var emitted = 0
-
-        fun ready(text: String, complete: Boolean): List<E> {
-            val parsed = PartialJson.parsePartialJson(text).value
-            val elements = when (parsed) {
-                is JsonArray -> parsed
-                is JsonObject -> parsed["elements"] as? JsonArray
-                else -> null
-            } ?: return emptyList()
-            val readyCount = if (complete) elements.size else (elements.size - 1).coerceAtLeast(0)
-            val out = mutableListOf<E>()
-            while (emitted < readyCount) {
-                runCatching {
-                    aiSdkOutputJson.decodeFromJsonElement(arrayOutput.elementSerializer, elements[emitted])
-                }.getOrNull()?.let { out.add(it) }
-                emitted++
-            }
-            return out
-        }
+        val textBlocks = OrderedTextBlocks()
+        val decoder = ElementStreamDecoder(arrayOutput)
 
         stream.collect { event ->
-            if (event is StreamEvent.Error) throw UiMessageStreamError(event.message, event.cause)
-            if (event !is StreamEvent.TextDelta) return@collect
-            ready(appendTextBlock(textBlocks, event), complete = false).forEach { emit(it) }
+            when (event) {
+                is StreamEvent.TextStart -> textBlocks.start(event.id)
+                is StreamEvent.TextDelta -> {
+                    decoder.ready(textBlocks.append(event.id, event.text), complete = false).forEach { emit(it) }
+                }
+                is StreamEvent.Error -> throw UiMessageStreamError(event.message, event.cause)
+                else -> Unit
+            }
         }
-        ready(joinedText(textBlocks), complete = true).forEach { emit(it) }
+        decoder.ready(textBlocks.joinedText(), complete = true).forEach { emit(it) }
     }
 
     public suspend fun finish(): StreamObjectFinish<TOutput> {
-        val textBlocks = linkedMapOf<String, StringBuilder>()
+        val textBlocks = OrderedTextBlocks()
         var usage = Usage()
         var finishReason = FinishReason.Stop
         var warnings: List<CallWarning> = emptyList()
         var response = LanguageModelResponseMetadata()
         stream.collect { event ->
             when (event) {
-                is StreamEvent.TextDelta -> appendTextBlock(textBlocks, event)
+                is StreamEvent.TextStart -> textBlocks.start(event.id)
+                is StreamEvent.TextDelta -> textBlocks.append(event.id, event.text)
                 // In-band terminal error: surface the real provider failure (preserving its cause)
                 // instead of letting it fall through to a misleading NoObjectGeneratedError below.
                 is StreamEvent.Error -> throw UiMessageStreamError(event.message, event.cause)
@@ -140,7 +133,6 @@ public class StreamObjectResult<TOutput> internal constructor(
                     finishReason = event.finishReason
                 }
                 is StreamEvent.StepStart,
-                is StreamEvent.TextStart,
                 is StreamEvent.TextEnd,
                 is StreamEvent.ReasoningStart,
                 is StreamEvent.ReasoningDelta,
@@ -162,7 +154,7 @@ public class StreamObjectResult<TOutput> internal constructor(
             }
         }
         return StreamObjectFinish(
-            decodeOrThrow(joinedText(textBlocks), usage, finishReason, response),
+            decodeOrThrow(textBlocks.joinedText(), usage, finishReason, response),
             usage,
             finishReason,
             warnings,
@@ -195,16 +187,51 @@ public class StreamObjectResult<TOutput> internal constructor(
         )
     }
 
-    private fun appendTextBlock(
-        textBlocks: LinkedHashMap<String, StringBuilder>,
-        event: StreamEvent.TextDelta,
-    ): String {
-        textBlocks.getOrPut(event.id) { StringBuilder() }.append(event.text)
-        return joinedText(textBlocks)
+    private class OrderedTextBlocks {
+        private val blocks = linkedMapOf<String, StringBuilder>()
+
+        fun start(id: String) {
+            blocks.getOrPut(id) { StringBuilder() }
+        }
+
+        fun append(id: String, text: String): String {
+            blocks.getOrPut(id) { StringBuilder() }.append(text)
+            return joinedText()
+        }
+
+        fun joinedText(): String = buildString {
+            blocks.values.forEach { append(it) }
+        }
     }
 
-    private fun joinedText(textBlocks: LinkedHashMap<String, StringBuilder>): String = buildString {
-        textBlocks.values.forEach { append(it) }
+    private class ElementStreamDecoder<E>(
+        private val output: Output.Arr<E>,
+    ) {
+        private var emitted = 0
+
+        fun ready(text: String, complete: Boolean): List<E> {
+            val elements = parsedElements(text) ?: return emptyList()
+            val readyCount = if (complete) elements.size else (elements.size - 1).coerceAtLeast(0)
+            val out = mutableListOf<E>()
+            while (emitted < readyCount) {
+                val decoded = decode(elements[emitted]) ?: break
+                out += decoded
+                emitted++
+            }
+            return out
+        }
+
+        private fun parsedElements(text: String): JsonArray? =
+            when (val parsed = PartialJson.parsePartialJson(text).value) {
+                is JsonArray -> parsed
+                is JsonObject -> parsed["elements"] as? JsonArray
+                else -> null
+            }
+
+        private fun decode(value: JsonElement): E? =
+            runCatching {
+                aiSdkOutputJson.decodeFromJsonElement(output.elementSerializer, value)
+            }.getOrNull()
     }
 }
 

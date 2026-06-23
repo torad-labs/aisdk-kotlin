@@ -133,6 +133,24 @@ class ToolApprovalSignatureWiringTest {
     }
 
     @Test
+    fun `an approved response with an unknown approval id fails closed`() = runTest {
+        val state = GateState()
+        val agent = gatedAgent(state, secret)
+        val first = agent.generate(prompt = "go").first()
+        val pending = first.pendingApprovals.single()
+        val approval = ToolApprovalResponseMessage(
+            pending.toolCallId,
+            approved = true,
+            approvalId = "forged-approval-id",
+        )
+
+        assertFailsWith<AgentError.InvalidApprovalResponse> {
+            agent.generate(messages = first.messages + approval).first()
+        }
+        assertTrue(state.executed.isEmpty())
+    }
+
+    @Test
     fun `duplicate tool call ids get distinct approval ids and resume cleanly`() = runTest {
         val state = GateState()
         val agent = TestToolLoopAgent<Unit, String>(
@@ -171,6 +189,46 @@ class ToolApprovalSignatureWiringTest {
         val second = agent.generate(messages = first.messages + approvals).first()
 
         assertEquals(listOf("first", "second"), state.executed)
+        assertEquals("done", second.text)
+    }
+
+    @Test
+    fun `duplicate tool call ids can be approved out of order by approval id`() = runTest {
+        val state = GateState()
+        val agent = TestToolLoopAgent<Unit, String>(
+            model = DuplicateApprovalModel(),
+            instructions = "use send",
+            tools = ToolSet(
+                Tool<SendInput, String, Unit>(
+                    name = "send",
+                    description = "send a message",
+                    inputSerializer = serializer(),
+                    outputSerializer = serializer(),
+                    needsApproval = { _, _ -> true },
+                ) { input ->
+                    state.executed += input.message
+                    "sent:${input.message}"
+                },
+            ),
+            experimental_toolApprovalSecret = secret,
+        )
+
+        val first = agent.generate(prompt = "go").first()
+        val secondPending = first.pendingApprovals[1]
+        val firstPending = first.pendingApprovals[0]
+        val approvals = ModelMessage(
+            MessageRole.Tool,
+            listOf(secondPending, firstPending).map { pending ->
+                ContentPart.ToolApprovalResponse(
+                    toolCallId = pending.toolCallId,
+                    approved = true,
+                    approvalId = pending.approvalId,
+                )
+            },
+        )
+        val second = agent.generate(messages = first.messages + approvals).first()
+
+        assertEquals(listOf("second", "first"), state.executed)
         assertEquals("done", second.text)
     }
 

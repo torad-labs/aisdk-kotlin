@@ -1,6 +1,8 @@
 package ai.torad.aisdk
 import ai.torad.aisdk.providers.AMAZON_BEDROCK_VERSION
+import ai.torad.aisdk.providers.AmazonBedrock
 import ai.torad.aisdk.providers.AmazonBedrockProviderSettings
+import ai.torad.aisdk.providers.BedrockMantle
 import ai.torad.aisdk.providers.BedrockMantleProviderSettings
 import ai.torad.aisdk.testing.FlowDrain.drainAllItems
 import io.ktor.client.HttpClient
@@ -10,6 +12,7 @@ import io.ktor.http.HttpHeaders
 import io.ktor.http.headersOf
 import io.ktor.utils.io.ByteChannel
 import io.ktor.utils.io.writeFully
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
@@ -30,9 +33,8 @@ import kotlin.test.assertFailsWith
 import kotlin.test.assertIs
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
-import ai.torad.aisdk.providers.AmazonBedrock
-import ai.torad.aisdk.providers.BedrockMantle
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class AmazonBedrockProviderTest {
     @Test
     fun `chat model maps Converse request response metadata and auth`() = runTest {

@@ -42,7 +42,7 @@ public fun StreamToUiMessages(
 ): Flow<UIMessage> = flow {
     val parts = mutableListOf<UIMessagePart>()
     val partIndexById = mutableMapOf<String, Int>()
-    val toolByCallId = mutableMapOf<String, Int>()
+    val toolIndexesByCallId = mutableMapOf<String, MutableList<Int>>()
     val toolInputBufById = mutableMapOf<String, StringBuilder>()
     val toolNameByInputId = mutableMapOf<String, String>()
     val dataPartIndexById = mutableMapOf<String, Int>()
@@ -54,8 +54,19 @@ public fun StreamToUiMessages(
     )
 
     fun shiftIndexesAfterRemoval(removedIndex: Int) {
-        for ((key, value) in toolByCallId.toMap()) {
-            if (value > removedIndex) toolByCallId[key] = value - 1
+        for ((key, indexes) in toolIndexesByCallId.toMap()) {
+            val shifted = indexes.mapNotNull { index ->
+                when {
+                    index == removedIndex -> null
+                    index > removedIndex -> index - 1
+                    else -> index
+                }
+            }
+            if (shifted.isEmpty()) {
+                toolIndexesByCallId.remove(key)
+            } else {
+                toolIndexesByCallId[key] = shifted.toMutableList()
+            }
         }
         for ((key, value) in partIndexById.toMap()) {
             if (value > removedIndex) partIndexById[key] = value - 1
@@ -67,6 +78,27 @@ public fun StreamToUiMessages(
             if (value > removedIndex) dataPartIndexById[key] = value - 1
         }
     }
+
+    fun registerToolIndex(toolCallId: String, index: Int) {
+        toolIndexesByCallId.getOrPut(toolCallId) { mutableListOf() } += index
+    }
+
+    fun toolAt(index: Int): UIMessagePart.ToolUI? =
+        index.takeIf { it in parts.indices }?.let { parts[it] as? UIMessagePart.ToolUI }
+
+    fun firstToolIndex(
+        toolCallId: String,
+        predicate: (UIMessagePart.ToolUI) -> Boolean = { true },
+    ): Int? =
+        toolIndexesByCallId[toolCallId]
+            ?.firstOrNull { index -> toolAt(index)?.let(predicate) == true }
+
+    fun lastToolIndex(
+        toolCallId: String,
+        predicate: (UIMessagePart.ToolUI) -> Boolean = { true },
+    ): Int? =
+        toolIndexesByCallId[toolCallId]
+            ?.lastOrNull { index -> toolAt(index)?.let(predicate) == true }
 
     fun openTextPart(id: String, providerMetadata: ProviderMetadata) {
         if (partIndexById.containsKey(id)) return
@@ -166,9 +198,17 @@ public fun StreamToUiMessages(
         approvalId: String? = null,
         signature: String? = null,
         providerMetadata: ProviderMetadata = ProviderMetadata.None,
+        existingIndex: Int? = null,
+        appendNew: Boolean = false,
+        matchExisting: ((UIMessagePart.ToolUI) -> Boolean)? = null,
     ) {
-        val existingIndex = toolByCallId[toolCallId]
-        val existing = existingIndex?.takeIf { it in parts.indices }?.let { parts[it] as? UIMessagePart.ToolUI }
+        val targetIndex = when {
+            existingIndex != null -> existingIndex
+            appendNew -> null
+            matchExisting != null -> firstToolIndex(toolCallId, matchExisting)
+            else -> lastToolIndex(toolCallId)
+        }
+        val existing = targetIndex?.let { toolAt(it) }
         val nextPart = UIMessagePart.ToolUI(
             toolCallId = toolCallId,
             toolName = toolName,
@@ -177,15 +217,15 @@ public fun StreamToUiMessages(
             output = output,
             error = error,
             preliminary = preliminary,
-            approvalId = approvalId,
-            signature = signature,
+            approvalId = approvalId ?: existing?.approvalId,
+            signature = signature ?: existing?.signature,
             providerMetadata = existing?.providerMetadata?.plus(providerMetadata) ?: providerMetadata,
         )
-        if (existingIndex != null) {
-            parts[existingIndex] = nextPart
+        if (targetIndex != null) {
+            parts[targetIndex] = nextPart
         } else {
             parts.add(nextPart)
-            toolByCallId[toolCallId] = parts.size - 1
+            registerToolIndex(toolCallId, parts.size - 1)
         }
     }
 
@@ -284,7 +324,7 @@ public fun StreamToUiMessages(
                 emit(snapshot())
             }
             is StreamEvent.ToolInputEnd -> {
-                val placeholderIdx = toolByCallId.remove(event.id)
+                val placeholderIdx = lastToolIndex(event.id)
                 if (placeholderIdx != null && placeholderIdx in parts.indices) {
                     parts.removeAt(placeholderIdx)
                     shiftIndexesAfterRemoval(placeholderIdx)
@@ -304,12 +344,11 @@ public fun StreamToUiMessages(
                         ?.key
                 }
                 if (placeholderId != null) {
-                    val placeholderIdx = toolByCallId[placeholderId]
+                    val placeholderIdx = lastToolIndex(placeholderId)
                     if (placeholderIdx != null && placeholderIdx in parts.indices) {
                         parts.removeAt(placeholderIdx)
                         shiftIndexesAfterRemoval(placeholderIdx)
                     }
-                    toolByCallId.remove(placeholderId)
                     toolNameByInputId.remove(placeholderId)
                     toolInputBufById.remove(placeholderId)
                 }
@@ -319,6 +358,7 @@ public fun StreamToUiMessages(
                     state = ToolCallState.InputAvailable,
                     input = event.inputJson,
                     providerMetadata = event.providerMetadata,
+                    appendNew = true,
                 )
                 emit(snapshot())
             }
@@ -331,14 +371,28 @@ public fun StreamToUiMessages(
                     approvalId = event.approvalId,
                     signature = event.signature,
                     providerMetadata = event.providerMetadata,
+                    matchExisting = {
+                        it.toolName == event.toolName &&
+                            it.input == event.inputJson &&
+                            it.approvalId == null &&
+                            it.state != ToolCallState.OutputAvailable &&
+                            it.state != ToolCallState.OutputError &&
+                            it.state != ToolCallState.OutputDenied
+                    },
                 )
                 emit(snapshot())
             }
             is StreamEvent.ToolResult -> {
-                val existingIndex = toolByCallId[event.toolCallId]
-                val existingInput = existingIndex?.takeIf { it in parts.indices }
-                    ?.let { parts[it] as? UIMessagePart.ToolUI }
-                    ?.input
+                val resultIndex = firstToolIndex(event.toolCallId) {
+                    it.state == ToolCallState.OutputDenied && it.output == null
+                } ?: firstToolIndex(event.toolCallId) {
+                    it.preliminary
+                } ?: firstToolIndex(event.toolCallId) {
+                    it.state == ToolCallState.InputStreaming ||
+                        it.state == ToolCallState.InputAvailable ||
+                        it.state == ToolCallState.ApprovalRequested
+                }
+                val existingInput = resultIndex?.let { toolAt(it) }?.input
                 val deniedOutput = event.output as? ToolResultOutput.ExecutionDenied
                 // A result that returned can still signal failure — output type Error/ErrorJson, or
                 // an MCP Content(isError=true). event.isError captures all of these; render it as
@@ -370,14 +424,19 @@ public fun StreamToUiMessages(
                     error = resultError,
                     preliminary = event.preliminary,
                     providerMetadata = event.providerMetadata,
+                    existingIndex = resultIndex,
+                    appendNew = resultIndex == null,
                 )
                 emit(snapshot())
             }
             is StreamEvent.ToolError -> {
-                val existingIndex = toolByCallId[event.toolCallId]
-                val existingInput = existingIndex?.takeIf { it in parts.indices }
-                    ?.let { parts[it] as? UIMessagePart.ToolUI }
-                    ?.input
+                val errorIndex = firstToolIndex(event.toolCallId) {
+                    it.state == ToolCallState.InputStreaming ||
+                        it.state == ToolCallState.InputAvailable ||
+                        it.state == ToolCallState.ApprovalRequested ||
+                        it.preliminary
+                }
+                val existingInput = errorIndex?.let { toolAt(it) }?.input
                 upsertTool(
                     toolCallId = event.toolCallId,
                     toolName = event.toolName,
@@ -385,14 +444,20 @@ public fun StreamToUiMessages(
                     input = existingInput,
                     error = event.message,
                     providerMetadata = event.providerMetadata,
+                    existingIndex = errorIndex,
+                    appendNew = errorIndex == null,
                 )
                 emit(snapshot())
             }
             is StreamEvent.ToolOutputDenied -> {
-                val existingIndex = toolByCallId[event.toolCallId]
-                val existingInput = existingIndex?.takeIf { it in parts.indices }
-                    ?.let { parts[it] as? UIMessagePart.ToolUI }
-                    ?.input
+                val deniedIndex = firstToolIndex(event.toolCallId) {
+                    it.approvalId == event.approvalId
+                } ?: firstToolIndex(event.toolCallId) {
+                    it.state == ToolCallState.ApprovalRequested ||
+                        it.state == ToolCallState.InputAvailable ||
+                        it.state == ToolCallState.InputStreaming
+                }
+                val existingInput = deniedIndex?.let { toolAt(it) }?.input
                 upsertTool(
                     toolCallId = event.toolCallId,
                     toolName = event.toolName,
@@ -403,6 +468,8 @@ public fun StreamToUiMessages(
                     approvalId = event.approvalId,
                     error = event.reason,
                     providerMetadata = event.providerMetadata,
+                    existingIndex = deniedIndex,
+                    appendNew = deniedIndex == null,
                 )
                 emit(snapshot())
             }
