@@ -1,8 +1,8 @@
 package ai.torad.aisdk.ui
 
-import kotlin.concurrent.atomics.AtomicReference
-import kotlin.concurrent.atomics.ExperimentalAtomicApi
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -13,6 +13,8 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.flow.updateAndGet
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonPrimitive
+import kotlin.concurrent.atomics.AtomicReference
+import kotlin.concurrent.atomics.ExperimentalAtomicApi
 
 public data class ChatRequest(
     val messages: List<UIMessage>,
@@ -85,6 +87,7 @@ public class Chat(
     // collector reads this to decide whether it is still the active operation
     // before writing state.
     private val currentOpRef = AtomicReference<Any?>(null)
+    private val currentOpJobRef = AtomicReference<Job?>(null as Job?)
 
     public val status: ChatStatus
         get() = internalState.value.status
@@ -144,6 +147,7 @@ public class Chat(
             state = if (approved) ToolCallState.OutputAvailable else ToolCallState.OutputDenied,
             output = JsonPrimitive(approvalId ?: toolCallId),
             error = reason,
+            approvalId = approvalId ?: toolCallId,
         )
         appendToolMessage(responsePart)
     }
@@ -186,6 +190,8 @@ public class Chat(
         transformMessages: (List<UIMessage>) -> List<UIMessage>,
     ): Flow<UIMessage> = flow {
         val op = Any()
+        val opJob = currentCoroutineContext()[Job]
+        currentOpJobRef.store(opJob)
         currentOpRef.store(op)
         val request = applyState {
             copy(messages = transformMessages(messages), status = ChatStatus.Submitted, error = null)
@@ -210,10 +216,16 @@ public class Chat(
                 applyState { copy(error = t, status = ChatStatus.Error) }
             }
             throw t
+        } finally {
+            if (currentOpJobRef.load() === opJob) {
+                currentOpJobRef.store(null)
+            }
         }
     }
 
     public fun stop() {
+        currentOpJobRef.load()?.cancel()
+        currentOpJobRef.store(null)
         currentOpRef.store(null)
         applyState { copy(status = ChatStatus.Ready) }
     }

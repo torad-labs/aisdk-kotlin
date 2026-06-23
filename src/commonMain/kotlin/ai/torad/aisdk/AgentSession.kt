@@ -57,6 +57,28 @@ public class AgentSession<TContext, TOutput>(
         val streaming: Boolean,
     )
 
+    private data class StreamingTextProjection(
+        val value: String,
+        val metadata: ProviderMetadata,
+    )
+
+    private data class StreamingApprovalProjection(
+        val pending: List<PendingApproval>,
+        val metadataByApprovalKey: Map<String, ProviderMetadata>,
+    )
+
+    private data class StreamingToolProjection(
+        val calls: List<ContentPart.ToolCall>,
+        val results: List<ContentPart.ToolResult>,
+        val approvals: StreamingApprovalProjection,
+    )
+
+    private data class StreamingMessageProjection(
+        val text: StreamingTextProjection,
+        val extraAssistantParts: List<ContentPart>,
+        val tools: StreamingToolProjection,
+    )
+
     private val lastCallRef = AtomicReference<CallState<TContext>>(
         CallState(null, AbortSignalNever, false),
     )
@@ -110,7 +132,7 @@ public class AgentSession<TContext, TOutput>(
                             AgentSessionStatus.AwaitingApproval
                         },
                         text = result.text,
-                        output = result.output,
+                        output = if (result.pendingApprovals.isEmpty()) result.output else null,
                         pendingApprovals = result.pendingApprovals,
                         lastResult = result,
                     )
@@ -142,12 +164,17 @@ public class AgentSession<TContext, TOutput>(
 
         return launchSession(abortSignal) { effectiveAbortSignal, active ->
             val text = StringBuilder()
+            var textMetadata: ProviderMetadata = ProviderMetadata.None
+            val reasoningBuffers = mutableMapOf<String, StringBuilder>()
+            val reasoningMetadata = mutableMapOf<String, ProviderMetadata>()
+            val extraAssistantParts = mutableListOf<ContentPart>()
             // Keyed by toolCallId so a streamed tool's final result replaces
             // its preliminary chunks and order is preserved. These were
             // previously dropped (else -> Unit), truncating the message log.
             val toolCalls = linkedMapOf<String, ContentPart.ToolCall>()
             val toolResults = linkedMapOf<String, ContentPart.ToolResult>()
             val pendingApprovals = mutableListOf<PendingApproval>()
+            val pendingApprovalMetadata = mutableMapOf<String, ProviderMetadata>()
 
             fun render(newStatus: AgentSessionStatus) {
                 if (!active()) return
@@ -158,10 +185,21 @@ public class AgentSession<TContext, TOutput>(
                         pendingApprovals = pendingApprovals.toList(),
                         messages = streamingMessages(
                             messages = visibleMessages,
-                            text = text.toString(),
-                            toolCalls = toolCalls.values.toList(),
-                            toolResults = toolResults.values.toList(),
-                            pendingApprovals = pendingApprovals,
+                            projection = StreamingMessageProjection(
+                                text = StreamingTextProjection(
+                                    value = text.toString(),
+                                    metadata = textMetadata,
+                                ),
+                                extraAssistantParts = extraAssistantParts,
+                                tools = StreamingToolProjection(
+                                    calls = toolCalls.values.toList(),
+                                    results = toolResults.values.toList(),
+                                    approvals = StreamingApprovalProjection(
+                                        pending = pendingApprovals,
+                                        metadataByApprovalKey = pendingApprovalMetadata,
+                                    ),
+                                ),
+                            ),
                         ),
                     )
                 }
@@ -176,6 +214,49 @@ public class AgentSession<TContext, TOutput>(
                 when (event) {
                     is StreamEvent.TextDelta -> {
                         text.append(event.text)
+                        textMetadata += event.providerMetadata
+                        render(AgentSessionStatus.Running)
+                    }
+                    is StreamEvent.ReasoningStart -> {
+                        reasoningBuffers[event.id] = StringBuilder()
+                        reasoningMetadata[event.id] = event.providerMetadata
+                        render(AgentSessionStatus.Running)
+                    }
+                    is StreamEvent.ReasoningDelta -> {
+                        reasoningBuffers.getOrPut(event.id) { StringBuilder() }.append(event.text)
+                        reasoningMetadata[event.id] =
+                            (reasoningMetadata[event.id] ?: ProviderMetadata.None) + event.providerMetadata
+                        render(AgentSessionStatus.Running)
+                    }
+                    is StreamEvent.ReasoningEnd -> {
+                        val reasoningText = reasoningBuffers.remove(event.id)?.toString().orEmpty()
+                        val metadata = (reasoningMetadata.remove(event.id) ?: ProviderMetadata.None) +
+                            event.providerMetadata
+                        if (reasoningText.isNotEmpty()) {
+                            extraAssistantParts += ContentPart.Reasoning(
+                                text = reasoningText,
+                                providerMetadata = metadata,
+                            )
+                        }
+                        render(AgentSessionStatus.Running)
+                    }
+                    is StreamEvent.SourcePart -> {
+                        extraAssistantParts += ContentPart.Source(
+                            sourceType = event.sourceType,
+                            sourceId = event.id,
+                            url = event.url,
+                            title = event.title,
+                            providerMetadata = event.providerMetadata,
+                            mediaType = event.mediaType,
+                        )
+                        render(AgentSessionStatus.Running)
+                    }
+                    is StreamEvent.FilePart -> {
+                        extraAssistantParts += ContentPart.File(
+                            mediaType = event.mediaType,
+                            base64 = event.base64,
+                            providerMetadata = event.providerMetadata,
+                        )
                         render(AgentSessionStatus.Running)
                     }
                     is StreamEvent.ToolCall -> {
@@ -214,6 +295,19 @@ public class AgentSession<TContext, TOutput>(
                         )
                         render(AgentSessionStatus.Running)
                     }
+                    is StreamEvent.ToolOutputDenied -> {
+                        val output = ToolResultOutput.ExecutionDenied(event.reason)
+                        val outputJson = with(ToolResultOutputs) { output.toJsonElement() }
+                        toolResults[event.toolCallId] = ContentPart.ToolResult(
+                            toolCallId = event.toolCallId,
+                            toolName = event.toolName,
+                            output = outputJson,
+                            isError = true,
+                            modelVisible = outputJson,
+                            providerMetadata = event.providerMetadata,
+                        )
+                        render(AgentSessionStatus.Running)
+                    }
                     is StreamEvent.ToolApprovalRequest -> {
                         pendingApprovals += PendingApproval(
                             toolCallId = event.toolCallId,
@@ -224,6 +318,7 @@ public class AgentSession<TContext, TOutput>(
                             // without it a streamed approval can't be re-validated on resume.
                             signature = event.signature,
                         )
+                        pendingApprovalMetadata[event.approvalId ?: event.toolCallId] = event.providerMetadata
                         render(AgentSessionStatus.AwaitingApproval)
                     }
                     is StreamEvent.Finish -> {
@@ -257,15 +352,9 @@ public class AgentSession<TContext, TOutput>(
                     is StreamEvent.StepStart,
                     is StreamEvent.TextStart,
                     is StreamEvent.TextEnd,
-                    is StreamEvent.ReasoningStart,
-                    is StreamEvent.ReasoningDelta,
-                    is StreamEvent.ReasoningEnd,
-                    is StreamEvent.SourcePart,
-                    is StreamEvent.FilePart,
                     is StreamEvent.ToolInputStart,
                     is StreamEvent.ToolInputDelta,
                     is StreamEvent.ToolInputEnd,
-                    is StreamEvent.ToolOutputDenied,
                     is StreamEvent.StepFinish,
                     is StreamEvent.Raw,
                     -> Unit
@@ -378,16 +467,17 @@ public class AgentSession<TContext, TOutput>(
 
     private fun streamingMessages(
         messages: List<ModelMessage>,
-        text: String,
-        toolCalls: List<ContentPart.ToolCall>,
-        toolResults: List<ContentPart.ToolResult>,
-        pendingApprovals: List<PendingApproval>,
+        projection: StreamingMessageProjection,
     ): List<ModelMessage> = buildList {
         addAll(messages)
         val assistantParts = buildList {
-            if (text.isNotEmpty()) add(ContentPart.Text(text))
-            addAll(toolCalls)
-            pendingApprovals.forEach { approval ->
+            if (projection.text.value.isNotEmpty()) {
+                add(ContentPart.Text(projection.text.value, providerMetadata = projection.text.metadata))
+            }
+            addAll(projection.extraAssistantParts)
+            addAll(projection.tools.calls)
+            projection.tools.approvals.pending.forEach { approval ->
+                val approvalKey = approval.approvalId ?: approval.toolCallId
                 add(
                     ContentPart.ToolApprovalRequest(
                         toolCallId = approval.toolCallId,
@@ -397,7 +487,9 @@ public class AgentSession<TContext, TOutput>(
                         // Persist the signature into the replayed log so the resume's fail-closed
                         // verifySignature (ToolApprovalCoordinator) can re-validate it.
                         signature = approval.signature,
-                    )
+                        providerMetadata = projection.tools.approvals.metadataByApprovalKey[approvalKey]
+                            ?: ProviderMetadata.None,
+                    ),
                 )
             }
         }
@@ -406,8 +498,8 @@ public class AgentSession<TContext, TOutput>(
         }
         // Tool results ride on their own Tool-role message (v6 shape), so a
         // streamed tool round-trip is fully represented in the message log.
-        if (toolResults.isNotEmpty()) {
-            add(ModelMessage(MessageRole.Tool, toolResults))
+        if (projection.tools.results.isNotEmpty()) {
+            add(ModelMessage(MessageRole.Tool, projection.tools.results))
         }
     }
 }

@@ -59,19 +59,15 @@ internal class ToolApprovalCoordinator<TContext>(
             .toMap()
         // The issued request per EFFECTIVE approval id — carries the signature the
         // v6.0.202 fail-closed re-validation checks before an approved tool executes.
-        val requestsByApprovalId = approvalRequests.associateBy { it.approvalId ?: it.toolCallId }
-        // Idempotency: a call already answered by a tool result must NOT re-execute.
-        // Scope to results from THIS pending turn (messages after the assistant turn that
-        // issued the calls); a same-valued toolCallId reused by a prior, unrelated turn must
-        // not mask a legitimately-pending approval and leave a dangling tool call.
-        val alreadyResolved = resolvedToolCallIds(messages, priorAssistantIndex)
-
-        // TOOL-003: index calls by toolCallId so duplicate approvals for the same id
-        // are each matched deterministically to a distinct call occurrence.
-        val remainingCalls = priorToolCalls.toMutableList()
+        val requestsByApprovalId = approvalRequests
+            .groupBy { it.approvalId ?: it.toolCallId }
+            .mapValues { (_, requests) -> requests.toMutableList() }
+        // Resolve pending calls by OCCURRENCE, not by raw toolCallId. A malformed assistant turn
+        // can repeat a toolCallId; consuming prior tool results against the call list in order
+        // preserves the remaining pending occurrences for this resume step.
+        val remainingCalls = unresolvedToolCalls(priorToolCalls, messages, priorAssistantIndex)
         for (approval in approvals) {
             val targetCallId = approval.approvalId?.let { approvalIdToCallId[it] } ?: approval.toolCallId
-            if (targetCallId in alreadyResolved) continue
             val callIndex = remainingCalls.indexOfFirst { it.toolCallId == targetCallId }
             // An approval that correlates to no pending tool call (garbled/forged approvalId on the
             // untrusted resume path) must NOT be silently dropped — that leaves a dangling tool call
@@ -80,7 +76,6 @@ internal class ToolApprovalCoordinator<TContext>(
                 throw AgentError.InvalidApprovalResponse(targetCallId, priorToolCalls.map { it.toolCallId })
             }
             val matchingCall = remainingCalls.removeAt(callIndex)
-            alreadyResolved += matchingCall.toolCallId
             if (!approval.approved) {
                 val denialMsg = approval.reason ?: "user denied tool execution"
                 applyDenied(out, matchingCall, approval.approvalId ?: matchingCall.toolCallId, denialMsg, messages)
@@ -88,7 +83,8 @@ internal class ToolApprovalCoordinator<TContext>(
             }
             // v6.0.202 fail-closed re-validation: HMAC signature → input schema → fresh needsApproval.
             val effectiveApprovalKey = approval.approvalId ?: matchingCall.toolCallId
-            verifySignature(requestsByApprovalId[effectiveApprovalKey], effectiveApprovalKey, matchingCall)
+            val request = requestsByApprovalId[effectiveApprovalKey]?.removeFirstOrNull()
+            verifySignature(request, effectiveApprovalKey, matchingCall)
             val toolDef = tools.find(matchingCall.toolName)
             val decodedInput: Any? = if (toolDef != null) revalidateInput(toolDef, matchingCall) else null
             val stillNeedsApproval = toolDef != null &&
@@ -181,17 +177,26 @@ internal class ToolApprovalCoordinator<TContext>(
         }
     }
 
-    /** Tool-call ids answered by a tool result within the pending turn — messages after
-     *  [afterIndex] (the assistant turn that issued the pending calls). Scoping here, rather
-     *  than the whole log, stops a cross-turn toolCallId reuse from masking a pending call. */
-    private fun resolvedToolCallIds(messages: List<ModelMessage>, afterIndex: Int): MutableSet<String> =
+    /** Pending call occurrences left after consuming the tool results already recorded for this
+     *  assistant turn. Matching by occurrence instead of a set of raw ids preserves duplicate
+     *  toolCallIds in the same turn and still scopes idempotency to this pending turn only. */
+    private fun unresolvedToolCalls(
+        priorToolCalls: List<ContentPart.ToolCall>,
+        messages: List<ModelMessage>,
+        afterIndex: Int,
+    ): MutableList<ContentPart.ToolCall> {
+        val remaining = priorToolCalls.toMutableList()
         messages.asSequence()
             .drop(afterIndex + 1)
             .filter { it.role == MessageRole.Tool }
             .flatMap { it.content.asSequence() }
             .filterIsInstance<ContentPart.ToolResult>()
-            .map { it.toolCallId }
-            .toMutableSet()
+            .forEach { result ->
+                val resolvedIndex = remaining.indexOfFirst { it.toolCallId == result.toolCallId }
+                if (resolvedIndex != -1) remaining.removeAt(resolvedIndex)
+            }
+        return remaining
+    }
 
     /** Approval-resume success: emit the ToolResult event and append to the message log. */
     private suspend fun applyApprovedSuccess(
@@ -203,7 +208,7 @@ internal class ToolApprovalCoordinator<TContext>(
         out.emit(
             StreamEvent.ToolResult(
                 toolCallId = call.toolCallId,
-                toolName = call.toolName,
+                toolName = result.toolName,
                 outputJson = result.outputJson,
                 output = result.output,
                 modelOutput = result.modelOutput,
@@ -216,7 +221,7 @@ internal class ToolApprovalCoordinator<TContext>(
                 listOf(
                     ContentPart.ToolResult(
                         toolCallId = call.toolCallId,
-                        toolName = call.toolName,
+                        toolName = result.toolName,
                         output = result.outputJson,
                         isError = result.isError,
                         modelVisible = result.modelVisible,

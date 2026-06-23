@@ -51,6 +51,17 @@ class RegistryGatewayParityTest {
     }
 
     @Test
+    fun `blank AI_GATEWAY_API_KEY falls back to OIDC`() = runTest {
+        val token = GatewayAuthToken.fromSettings(
+            GatewayProviderSettings(
+                environment = mapOf("AI_GATEWAY_API_KEY" to "", "VERCEL_OIDC_TOKEN" to "oidc-tok"),
+            ),
+        )
+        assertEquals("oidc-tok", token?.token)
+        assertEquals(GatewayAuthMethod.Oidc, token?.authMethod)
+    }
+
+    @Test
     fun `api key wins over the OIDC token when both are present`() = runTest {
         val token = GatewayAuthToken.fromSettings(GatewayProviderSettings(
             environment = mapOf("AI_GATEWAY_API_KEY" to "k", "VERCEL_OIDC_TOKEN" to "oidc-tok"),

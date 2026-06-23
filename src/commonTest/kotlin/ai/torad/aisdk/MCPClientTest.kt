@@ -403,6 +403,17 @@ class MCPClientTest {
     }
 
     @Test
+    fun `reauthorize does not treat an access token without refresh token as already authorized`() = runTest {
+        val provider = MemoryOAuthProvider(tokens = OAuthTokens(accessToken = "stale-token", tokenType = "Bearer"))
+
+        assertEquals(
+            AuthResult.REDIRECT,
+            McpAuth.auth(provider, AuthOptions(serverUrl = "https://mcp.example.com"), reauthorize = true),
+        )
+        assertNotNull(provider.lastAuthorizationUrl)
+    }
+
+    @Test
     fun `auth starts authorization with dynamic registration and PKCE`() = runTest {
         val fixture = TestServer.createTestServer(
             mutableMapOf(
@@ -785,11 +796,42 @@ class MCPClientTest {
                         }
                     },
                 ),
+                "https://mcp.test/.well-known/oauth-protected-resource/sse" to UrlHandler(
+                    UrlResponse.JsonValue(
+                        Json.parseToJsonElement(
+                            """{"resource":"https://mcp.test/sse","authorization_servers":["https://auth.mcp.test"]}""",
+                        ),
+                    ),
+                ),
+                "https://auth.mcp.test/.well-known/oauth-authorization-server" to UrlHandler(
+                    UrlResponse.JsonValue(
+                        Json.parseToJsonElement(
+                            """
+                            {
+                              "authorization_endpoint":"https://auth.mcp.test/authorize",
+                              "token_endpoint":"https://auth.mcp.test/token",
+                              "grant_types_supported":["refresh_token"],
+                              "token_endpoint_auth_methods_supported":["client_secret_post"]
+                            }
+                            """.trimIndent(),
+                        ),
+                    ),
+                ),
+                "https://auth.mcp.test/token" to UrlHandler(
+                    { request, _ ->
+                        assertTrue(request.body.contains("grant_type=refresh_token"))
+                        assertTrue(request.body.contains("refresh_token=refresh-token"))
+                        UrlResponse.JsonValue(Json.parseToJsonElement("""{"access_token":"refreshed","token_type":"Bearer"}"""))
+                    },
+                ),
                 "https://mcp.test/messages" to UrlHandler(UrlResponse.Empty(status = 202)),
             ),
         )
         fixture.server.start()
-        val authProvider = MemoryOAuthProvider(tokens = OAuthTokens(accessToken = "token", tokenType = "Bearer"))
+        val authProvider = MemoryOAuthProvider(
+            tokens = OAuthTokens(accessToken = "stale-token", tokenType = "Bearer", refreshToken = "refresh-token"),
+            clientInformation = OAuthClientInformation(clientId = "client-id", clientSecret = "client-secret"),
+        )
         val transport = SseMCPTransport(fixture.httpClient(), "https://mcp.test/sse", authProvider = authProvider)
 
         transport.start()
@@ -797,7 +839,7 @@ class MCPClientTest {
 
         val sseGets = fixture.calls.filter { it.requestUrl == "https://mcp.test/sse" && it.requestMethod == "GET" }
         assertEquals(2, sseGets.size)
-        assertEquals("Bearer token", sseGets[1].requestHeaders.headerValue(HttpHeaders.Authorization))
+        assertEquals("Bearer refreshed", sseGets[1].requestHeaders.headerValue(HttpHeaders.Authorization))
     }
 
     @Test
@@ -846,6 +888,57 @@ class MCPClientTest {
         assertEquals(2, fixture.calls.count { it.requestMethod == "GET" })
         controller.close()
         transport.close()
+    }
+
+    @Test
+    fun `HTTP MCP transport reconnects inbound SSE after a clean drop so accepted requests still resolve`() = runTest {
+        val firstInbound = TestResponseController()
+        var getAttempts = 0
+        val fixture = TestServer.createTestServer(
+            mutableMapOf(
+                "https://mcp.test/mcp" to UrlHandler(
+                    { request, _ ->
+                        when {
+                            request.method == "GET" && getAttempts++ == 0 -> UrlResponse.ControlledStream(firstInbound)
+                            request.method == "GET" -> UrlResponse.StreamChunks(
+                                listOf(
+                                    "event: message\ndata: ${
+                                        JSONRPCResponse(id = JsonPrimitive(1), result = listToolsResult()).toJsonElement()
+                                    }\n\n",
+                                ),
+                            )
+                            "\"method\":\"initialize\"" in request.body -> UrlResponse.JsonValue(
+                                JSONRPCResponse(id = JsonPrimitive(0), result = initializeResult()).toJsonElement(),
+                            )
+                            "\"method\":\"notifications/initialized\"" in request.body -> UrlResponse.Empty(status = 202)
+                            "\"method\":\"tools/list\"" in request.body -> {
+                                firstInbound.close()
+                                UrlResponse.Empty(status = 202)
+                            }
+                            else -> UrlResponse.Error(status = 500, body = "unexpected request: ${request.body}")
+                        }
+                    },
+                ),
+            ),
+        )
+        fixture.server.start()
+        val client = CreateMCPClient(
+            MCPClientConfig(
+                transport = HttpMCPTransport(
+                    client = fixture.httpClient(),
+                    url = "https://mcp.test/mcp",
+                ),
+            ),
+        )
+
+        val tools = withContext(Dispatchers.Default) { withTimeout(20_000) { client.listTools() } }
+
+        assertEquals("echo", tools.tools.single().name)
+        assertTrue(
+            fixture.calls.count { it.requestMethod == "GET" } >= 2,
+            "a clean inbound SSE close must trigger a reconnect before the request times out",
+        )
+        client.close()
     }
 
     @Test

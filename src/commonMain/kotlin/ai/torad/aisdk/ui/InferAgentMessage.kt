@@ -48,14 +48,43 @@ import ai.torad.aisdk.Tool
  * Typed invocation handle — what a per-tool renderer receives. Carries
  * the typed input + output via the tool's own serializers.
  */
-public class UIToolInvocation<TInput, TOutput>(
-    public val toolCallId: String,
-    public val toolName: String,
-    public val state: ToolCallState,
+public data class UIToolInvocationPayload<TInput, TOutput>(
     public val input: TInput?,
     public val output: TOutput?,
     public val error: String?,
 )
+
+public data class UIToolInvocationMetadata(
+    public val preliminary: Boolean = false,
+    public val approvalId: String? = null,
+    public val signature: String? = null,
+)
+
+public class UIToolInvocation<TInput, TOutput> constructor(
+    public val toolCallId: String,
+    public val toolName: String,
+    public val state: ToolCallState,
+    public val payload: UIToolInvocationPayload<TInput, TOutput>,
+    public val metadata: UIToolInvocationMetadata = UIToolInvocationMetadata(),
+) {
+    public val input: TInput?
+        get() = payload.input
+
+    public val output: TOutput?
+        get() = payload.output
+
+    public val error: String?
+        get() = payload.error
+
+    public val preliminary: Boolean
+        get() = metadata.preliminary
+
+    public val approvalId: String?
+        get() = metadata.approvalId
+
+    public val signature: String?
+        get() = metadata.signature
+}
 
 /**
  * Registry of per-tool renderers. The SDK is UI-framework-agnostic — the
@@ -90,9 +119,16 @@ public class ToolPartHandlerRegistry<TRenderResult> internal constructor(
                     toolCallId = part.toolCallId,
                     toolName = part.toolName,
                     state = part.state,
-                    input = part.inputAs(tool.inputSerializer),
-                    output = part.outputAs(tool.outputSerializer),
-                    error = part.error,
+                    payload = UIToolInvocationPayload(
+                        input = part.inputAs(tool.inputSerializer),
+                        output = part.outputAs(tool.outputSerializer),
+                        error = part.error,
+                    ),
+                    metadata = UIToolInvocationMetadata(
+                        preliminary = part.preliminary,
+                        approvalId = part.approvalId,
+                        signature = part.signature,
+                    ),
                 )
                 render(typed)
             }

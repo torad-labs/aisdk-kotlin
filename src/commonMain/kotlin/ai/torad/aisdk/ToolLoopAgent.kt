@@ -173,6 +173,7 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
     // (dispatchEngineAction/submitPrompt/resumeWithApproval/close) and read from engine
     // jobs on Dispatchers.Default. currentEngineJobRef also backs the supersession guard.
     private val currentEngineJobRef = AtomicReference<Job?>(null)
+    private val currentEngineAbortControllerRef = AtomicReference<AbortController?>(null as AbortController?)
     private val currentEngineContextRef = AtomicReference<TContext?>(null)
 
     // TOOL-004: tracks the most recent activeContext the loop was running with,
@@ -187,6 +188,8 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
      * is disposed. The per-call generate()/stream() API needs no close().
      */
     public fun close() {
+        currentEngineAbortControllerRef.load()?.abort()
+        currentEngineAbortControllerRef.store(null)
         currentEngineJobRef.load()?.cancel()
         currentEngineJobRef.store(null)
         engineScope.cancel()
@@ -212,6 +215,8 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
             is ToolLoopAgentAction.DenyToolCall ->
                 resumeWithApproval(action.toolCallId, approved = false, reason = action.reason)
             ToolLoopAgentAction.Cancel -> {
+                currentEngineAbortControllerRef.load()?.abort()
+                currentEngineAbortControllerRef.store(null)
                 currentEngineJobRef.load()?.cancel()
                 // Null the ref (mirroring close()) so updateEngineStateIfCurrent's guard
                 // rejects a late write from the cancelled-but-unwinding job clobbering Idle.
@@ -219,6 +224,8 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
                 mutableEngineState.update { it.copy(phase = ToolLoopAgentState.Phase.Idle) }
             }
             ToolLoopAgentAction.Reset -> {
+                currentEngineAbortControllerRef.load()?.abort()
+                currentEngineAbortControllerRef.store(null)
                 currentEngineJobRef.load()?.cancel()
                 // Null the ref (mirroring close()) so updateEngineStateIfCurrent's guard
                 // rejects a late write from the cancelled-but-unwinding job clobbering the reset.
@@ -230,6 +237,7 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
     }
 
     private fun submitPrompt(text: String, context: TContext?) {
+        currentEngineAbortControllerRef.load()?.abort()
         currentEngineJobRef.load()?.cancel()
         currentEngineContextRef.store(context)
         val priorMessages = mutableEngineState.value.messages
@@ -246,19 +254,43 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
         // store → start). The body's supersession guard (runEngineLoop) compares its own
         // job to this ref; an eager launch could begin writing state before the
         // store lands, making the new job's own early writes fail the guard.
+        val abortController = AbortController()
         val job = engineScope.launch(start = CoroutineStart.LAZY) {
-            runEngineLoop(prompt = text, priorMessages = priorMessages, context = context)
+            runEngineLoop(
+                prompt = text,
+                priorMessages = priorMessages,
+                context = context,
+                abortSignal = abortController.signal,
+            )
         }
+        currentEngineAbortControllerRef.store(abortController)
         currentEngineJobRef.store(job)
         job.start()
     }
 
     private fun resumeWithApproval(toolCallId: String, approved: Boolean, reason: String?) {
+        val currentState = mutableEngineState.value
+        val matchingApprovals = currentState.pendingApprovals
+            .filter { it.toolCallId == toolCallId || ApprovalIds.effectiveApprovalId(it) == toolCallId }
+        if (matchingApprovals.isEmpty()) {
+            mutableEngineState.update {
+                it.copy(phase = ToolLoopAgentState.Phase.Error("Unknown approval id: $toolCallId"))
+            }
+            return
+        }
+        currentEngineAbortControllerRef.load()?.abort()
         currentEngineJobRef.load()?.cancel()
-        val priorMessages = mutableEngineState.value.messages
+        val priorMessages = currentState.messages
         val approvalResponse = ModelMessage(
             role = MessageRole.Tool,
-            content = listOf(ContentPart.ToolApprovalResponse(toolCallId, approved, reason)),
+            content = matchingApprovals.map {
+                ContentPart.ToolApprovalResponse(
+                    toolCallId = it.toolCallId,
+                    approved = approved,
+                    reason = reason,
+                    approvalId = it.approvalId,
+                )
+            },
         )
         val updatedMessages = priorMessages + approvalResponse
         mutableEngineState.update {
@@ -271,31 +303,37 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
             )
         }
         // Build → store → start (see submitPrompt) so the guard sees this job published.
+        val abortController = AbortController()
         val job = engineScope.launch(start = CoroutineStart.LAZY) {
             // TOOL-004: use currentActiveContextRef (updated by prepareStep overrides)
             // rather than currentEngineContextRef (only set at submitPrompt time).
-            runEngineLoop(prompt = null, priorMessages = updatedMessages, context = currentActiveContextRef.load())
+            runEngineLoop(
+                prompt = null,
+                priorMessages = updatedMessages,
+                context = currentActiveContextRef.load(),
+                abortSignal = abortController.signal,
+            )
         }
+        currentEngineAbortControllerRef.store(abortController)
         currentEngineJobRef.store(job)
         job.start()
     }
 
+    @Suppress("LongMethod")
     private suspend fun runEngineLoop(
         prompt: String?,
         priorMessages: List<ModelMessage>,
         context: TContext?,
+        abortSignal: AbortSignal,
     ) {
         // This loop's own job. Every state write below is gated on it still being the
         // current engine job, so a superseded-but-cooperatively-unwinding old loop can't
         // clobber a newer submit's state (the stale-write race AgentSession's active()
         // guard prevents). currentEngineJobRef was stored before start() (see callers).
         val ownJob = coroutineContext[Job]
-        // TOOL-004: seed the active context so resumeWithApproval uses at least the
-        // caller-supplied context when no prepareStep override has fired yet.
-        // FLAG: per-step updates (when stepSettings.experimental_context overrides activeContext
-        // inside streamInternal) are not yet reflected here — that requires threading a
-        // callback into streamInternal. The seed covers the common case; per-step context
-        // evolution on resume is a follow-up.
+        val engineAbortSignal = CombineAbortSignals(abortSignal, ownJob?.let(::AbortSignalFromJob) ?: AbortSignalNever)
+        // TOOL-004: seed the active context so approval-resume starts from the caller-supplied
+        // context even before prepareStep overrides the running value inside streamInternal.
         currentActiveContextRef.store(context)
         val engineHooks = AgentCallHooks(
             onChunk = { event ->
@@ -332,10 +370,11 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
                 prompt = prompt,
                 priorMessages = priorMessages,
                 options = context,
-                abortSignal = AbortSignalNever,
+                abortSignal = engineAbortSignal,
                 hooks = engineHooks,
                 finalMessagesRef = null,
                 stepsCapture = null,
+                onActiveContextChanged = { currentActiveContextRef.store(it) },
             ).collect { event ->
                 when (event) {
                     is StreamEvent.ToolCall -> updateEngineStateIfCurrent(ownJob) { current ->
@@ -476,17 +515,33 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
         // pendingApprovals and resumes. Decoding (or throwing NoOutputGeneratedError) here
         // would discard the approvals, making structured-output + approval unresumable.
         val pausedForApproval = approvals.isNotEmpty() || finishReason == FinishReason.ToolApprovalRequested
-        emit(GenerateResult(
-            output = decodeFinalOutput(output, text, finishReason, pausedForApproval),
-            text = text,
-            steps = steps,
-            finishReason = finishReason,
-            // upstream parity: usage = final step's usage, totalUsage = sum across steps.
-            usage = steps.lastOrNull()?.usage ?: totalUsage,
-            totalUsage = totalUsage,
-            pendingApprovals = approvals,
-            messages = collectedMessages,
-        ))
+        val usage = steps.lastOrNull()?.usage ?: totalUsage
+        if (output != null && pausedForApproval) {
+            emit(
+                GenerateResult.unavailable(
+                    outputUnavailableReason = "No object generated: the run is paused for tool approval.",
+                    text = text,
+                    steps = steps,
+                    finishReason = finishReason,
+                    usage = usage,
+                    totalUsage = totalUsage,
+                    pendingApprovals = approvals,
+                    messages = collectedMessages,
+                ),
+            )
+        } else {
+            emit(GenerateResult(
+                decodeFinalOutput(output, text, finishReason),
+                text = text,
+                steps = steps,
+                finishReason = finishReason,
+                // upstream parity: usage = final step's usage, totalUsage = sum across steps.
+                usage = usage,
+                totalUsage = totalUsage,
+                pendingApprovals = approvals,
+                messages = collectedMessages,
+            ))
+        }
     }
 
     /**
@@ -499,12 +554,10 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
         output: Output<TOutput>?,
         text: String,
         finishReason: FinishReason,
-        pausedForApproval: Boolean,
     ): TOutput =
-        if (output == null || pausedForApproval) {
-            // No structured object to decode: a text agent returns raw text, and an
-            // approval-paused turn has no final object yet. The cast targets the erased
-            // TOutput, so it is a no-op at this site (the host resumes via pendingApprovals).
+        if (output == null) {
+            // No structured object to decode: a text agent returns raw text, and the
+            // cast targets the erased TOutput, so it is a no-op at this site.
             @Suppress("UNCHECKED_CAST")
             (text as TOutput)
         } else if (finishReason == FinishReason.Stop) {
@@ -570,7 +623,7 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
 
     // SwallowedException: the AbortError catch intentionally consumes the abort — it is a
     // terminal user signal surfaced as StreamEvent.Abort, not an error to propagate.
-    @Suppress("SwallowedException")
+    @Suppress("SwallowedException", "LongMethod", "CyclomaticComplexMethod", "LongParameterList")
     private fun streamInternal(
         prompt: String?,
         priorMessages: List<ModelMessage>,
@@ -579,8 +632,10 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
         hooks: AgentCallHooks?,
         finalMessagesRef: MessageHolder?,
         stepsCapture: StepsHolder?,
+        onActiveContextChanged: ((TContext?) -> Unit)? = null,
     ): Flow<StreamEvent> = flow {
         val validatedOptions = validateCallOptions(options)
+        onActiveContextChanged?.invoke(validatedOptions)
         // v7 telemetry: resolve the effective integration once per invocation and
         // stamp every event of this call with one TelemetryCall envelope.
         val feed = Telemetry.resolveTelemetry(telemetry, logger)?.let { tele ->
@@ -707,7 +762,10 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
             } ?: StepSettings<TContext>()
             // gap #16: a returned experimental_context overrides the running
             // context — for this step's tool execution and every later step.
-            stepSettings.experimental_context?.let { activeContext = it }
+            stepSettings.experimental_context?.let {
+                activeContext = it
+                onActiveContextChanged?.invoke(activeContext)
+            }
 
             val stepModel = stepSettings.model ?: resolvedModel
             val stepMessages = stepSettings.messages ?: messages.toList()
@@ -1055,10 +1113,19 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
             // Emit approval requests + add to assistant content. Loop ends after this step.
             // With an approval secret configured, each request is signed at issuance over its
             // EFFECTIVE approval id (explicit approvalId ?: toolCallId — here the default).
+            val approvalCountsByToolCallId = toolsRequiringApproval.groupingBy { it.toolCallId }.eachCount()
+            val approvalOrdinalsByToolCallId = mutableMapOf<String, Int>()
             for (call in toolsRequiringApproval) {
+                val approvalId = if (approvalCountsByToolCallId.getValue(call.toolCallId) > 1) {
+                    val ordinal = (approvalOrdinalsByToolCallId[call.toolCallId] ?: 0) + 1
+                    approvalOrdinalsByToolCallId[call.toolCallId] = ordinal
+                    "${call.toolCallId}#$ordinal"
+                } else {
+                    null
+                }
                 val signature = ToolApprovalSignature.maybeSignToolApproval(
                     secret = experimental_toolApprovalSecret,
-                    approvalId = call.toolCallId,
+                    approvalId = approvalId ?: call.toolCallId,
                     toolCallId = call.toolCallId,
                     toolName = call.toolName,
                     input = call.input,
@@ -1068,6 +1135,7 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
                         call.toolCallId,
                         call.toolName,
                         call.input,
+                        approvalId = approvalId,
                         signature = signature,
                     ),
                 )
@@ -1075,6 +1143,7 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
                     call.toolCallId,
                     call.toolName,
                     call.input,
+                    approvalId = approvalId,
                     signature = signature,
                 )
                 assistantParts.add(request)
@@ -1120,7 +1189,7 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
                                 dispatcher.runHook(stepNumber, feed, hooks) {
                                     val startEvent = AgentEvent.ToolCallStarted(
                                         call.toolCallId,
-                                        call.toolName,
+                                        resolvedForExecution[index]?.first?.name ?: call.toolName,
                                         call.input,
                                         stepNumber,
                                         promptSnapshot,
@@ -1143,9 +1212,13 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
                                     preResolved = resolvedForExecution[index],
                                 )
                                 dispatcher.runHook(stepNumber, feed, hooks) {
+                                    val resultToolName = when (result) {
+                                        is ToolExecutionResult.Success -> result.toolName
+                                        is ToolExecutionResult.Failure -> result.toolName
+                                    }
                                     val finishEvent = AgentEvent.ToolCallFinished(
                                         toolCallId = call.toolCallId,
-                                        toolName = call.toolName,
+                                        toolName = resultToolName,
                                         outcome = when (result) {
                                             is ToolExecutionResult.Success ->
                                                 AgentEvent.ToolCallFinished.Outcome.Success(result.outputJson)
@@ -1328,7 +1401,7 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
      * Preliminary emissions never touch `messages` or the step's
      * `stepToolResults` list — they're UI-only progress signals.
      */
-    @Suppress("LongParameterList")
+    @Suppress("LongMethod", "LongParameterList", "CyclomaticComplexMethod")
     private suspend fun executeTool(
         out: FlowCollector<StreamEvent>,
         toolDef: Tool<*, *, TContext>,
@@ -1344,21 +1417,31 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
         // executeTool resolves the approved call itself.
         preResolved: Pair<Tool<*, *, TContext>, Any?>? = null,
     ): ToolExecutionResult {
-        // Telemetry brackets the execution HERE (not at the dispatch site) so
-        // both routes — the step loop AND the approval-resume path — emit.
-        dispatcher.fireTelemetry(feed) {
-            onEvent(it, AgentEvent.ToolCallStarted(call.toolCallId, call.toolName, call.input, stepNumber, messages))
-        }
+        var effectiveCallForFailure = call
         val result = try {
-            // Resolve (toolDef, decoded input). On first attempt: decode
-            // the call's args against `toolDef`. On decode failure with
-            // `experimental_repairToolCall` set: invoke the repair fn,
-            // re-resolve the tool (a repaired call may re-route to a
-            // different toolName), and retry decode ONCE. No recursive
-            // repair — keeps the loop bounded.
             val (resolvedTool, resolvedInput) = preResolved
                 ?: repairer.resolveCall(toolDef, call, messages).let { (t, i, _) -> t to i }
-
+            val effectiveCall =
+                if (resolvedTool.name == call.toolName) {
+                    call
+                } else {
+                    call.copy(toolName = resolvedTool.name)
+                }
+            effectiveCallForFailure = effectiveCall
+            // Telemetry brackets the execution HERE (not at the dispatch site) so
+            // both routes — the step loop AND the approval-resume path — emit.
+            dispatcher.fireTelemetry(feed) {
+                onEvent(
+                    it,
+                    AgentEvent.ToolCallStarted(
+                        call.toolCallId,
+                        effectiveCall.toolName,
+                        call.input,
+                        stepNumber,
+                        messages,
+                    ),
+                )
+            }
             @Suppress("UNCHECKED_CAST")
             val typedTool = resolvedTool as Tool<Any?, Any?, TContext>
             val input = resolvedInput
@@ -1374,9 +1457,9 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
             // the executor runs (UI pre-warm). Guarded so a hook failure does
             // not fail the tool call itself.
             dispatcher.runHook(stepNumber, feed, hooks) { typedTool.onInputAvailable(call.toolCallId, input) }
-            val captured = collectFinalToolOutput(out, typedTool, ctx, call, input)
+            val captured = collectFinalToolOutput(out, typedTool, ctx, effectiveCall, input)
             if (!captured.hasOutput) {
-                toolFailure(call, IllegalStateException("tool emitted no values"))
+                toolFailure(effectiveCall, IllegalStateException("tool emitted no values"))
             } else {
                 val lastOutput = captured.value
                 val outputJson = encodeToolOutput(typedTool, lastOutput)
@@ -1388,6 +1471,7 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
                 val output = ToolResultOutputs.toolResultOutputFromJson(outputJson)
                 val modelOutput = typedTool.toModelOutput(lastOutput, predicateOptions) ?: output
                 ToolExecutionResult.Success(
+                    toolName = effectiveCall.toolName,
                     outputJson = outputJson,
                     output = output,
                     modelOutput = modelOutput,
@@ -1403,14 +1487,18 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
             dispatcher.emitError(t, stepNumber, AgentEvent.Errored.ErrorSource.Tool, hooks, feed)
             // resolveToolInput throws typed AgentError; a raw executor
             // throw becomes ToolExecution (see toolFailure).
-            toolFailure(call, t)
+            toolFailure(effectiveCallForFailure, t)
         }
         dispatcher.fireTelemetry(feed) {
+            val resultToolName = when (result) {
+                is ToolExecutionResult.Success -> result.toolName
+                is ToolExecutionResult.Failure -> result.toolName
+            }
             onEvent(
                 it,
                 AgentEvent.ToolCallFinished(
                     toolCallId = call.toolCallId,
-                    toolName = call.toolName,
+                    toolName = resultToolName,
                     outcome = when (result) {
                         is ToolExecutionResult.Success ->
                             AgentEvent.ToolCallFinished.Outcome.Success(result.outputJson)
@@ -1495,7 +1583,7 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
                 out.emit(
                     StreamEvent.ToolResult(
                         toolCallId = call.toolCallId,
-                        toolName = call.toolName,
+                        toolName = result.toolName,
                         outputJson = result.outputJson,
                         output = result.output,
                         modelOutput = result.modelOutput,
@@ -1504,7 +1592,7 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
                 )
                 val toolPart = ContentPart.ToolResult(
                     toolCallId = call.toolCallId,
-                    toolName = call.toolName,
+                    toolName = result.toolName,
                     output = result.outputJson,
                     isError = result.isError,
                     modelVisible = result.modelVisible,
@@ -1513,7 +1601,7 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
                 messages.add(ModelMessage(MessageRole.Tool, listOf(toolPart)))
             }
             is ToolExecutionResult.Failure ->
-                emitToolError(out, call.toolCallId, call.toolName, result.error, messages)
+                emitToolError(out, call.toolCallId, result.toolName, result.error, messages)
         }
     }
 
@@ -1574,6 +1662,7 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
      *  [AgentError.ToolExecution]. */
     private fun toolFailure(call: ContentPart.ToolCall, t: Throwable): ToolExecutionResult.Failure =
         ToolExecutionResult.Failure(
+            toolName = call.toolName,
             t as? AgentError ?: AgentError.ToolExecution(call.toolName, call.toolCallId, t),
         )
 

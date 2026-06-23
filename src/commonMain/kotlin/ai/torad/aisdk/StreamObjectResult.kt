@@ -20,13 +20,13 @@ public class StreamObjectResult<TOutput> internal constructor(
     private val stream: Flow<StreamEvent> = StreamTextResult(events).fullStream
 
     public val partialObjectStream: Flow<TOutput> = flow {
-        val accumulated = StringBuilder()
+        val textBlocks = linkedMapOf<String, StringBuilder>()
         var lastKey: String? = null
         stream.collect { event ->
             if (event is StreamEvent.Error) throw UiMessageStreamError(event.message, event.cause)
             if (event !is StreamEvent.TextDelta) return@collect
-            accumulated.append(event.text)
-            val parsed = PartialJson.parsePartialJson(accumulated.toString()).value ?: return@collect
+            val text = appendTextBlock(textBlocks, event)
+            val parsed = PartialJson.parsePartialJson(text).value ?: return@collect
             val key = parsed.toString()
             if (key == lastKey) return@collect
             val decoded = runCatching { output.decode(key) }.getOrNull() ?: return@collect
@@ -35,16 +35,67 @@ public class StreamObjectResult<TOutput> internal constructor(
         }
     }
 
-    public val textStream: Flow<String> =
-        stream.filterIsInstance<StreamEvent.TextDelta>().map { it.text }
+    public val textStream: Flow<String> = flow {
+        data class TextBlock(
+            val buffer: StringBuilder = StringBuilder(),
+            var flushedLength: Int = 0,
+            var closed: Boolean = false,
+        )
+
+        val blockOrder = mutableListOf<String>()
+        val blocks = linkedMapOf<String, TextBlock>()
+
+        fun block(id: String): TextBlock {
+            if (id !in blocks) {
+                blockOrder += id
+            }
+            return blocks.getOrPut(id) { TextBlock() }
+        }
+
+        suspend fun flushStableSuffixes() {
+            for (id in blockOrder) {
+                val textBlock = block(id)
+                val earlierOpen = blockOrder
+                    .takeWhile { it != id }
+                    .any { !block(it).closed }
+                if (earlierOpen) return
+                val pending = textBlock.buffer.substring(textBlock.flushedLength)
+                if (pending.isNotEmpty()) {
+                    emit(pending)
+                    textBlock.flushedLength = textBlock.buffer.length
+                }
+                if (!textBlock.closed) return
+            }
+        }
+
+        stream.collect { event ->
+            when (event) {
+                is StreamEvent.TextStart -> block(event.id)
+                is StreamEvent.TextDelta -> {
+                    block(event.id).buffer.append(event.text)
+                    flushStableSuffixes()
+                }
+                is StreamEvent.TextEnd -> {
+                    block(event.id).closed = true
+                    flushStableSuffixes()
+                }
+                is StreamEvent.Error -> throw UiMessageStreamError(event.message, event.cause)
+                else -> Unit
+            }
+        }
+    }
 
     public fun <E> elementStream(arrayOutput: Output.Arr<E>): Flow<E> = flow {
-        val accumulated = StringBuilder()
+        val textBlocks = linkedMapOf<String, StringBuilder>()
         var emitted = 0
 
-        fun ready(complete: Boolean): List<E> {
-            val elements = (PartialJson.parsePartialJson(accumulated.toString()).value as? JsonObject)
-                ?.get("elements") as? JsonArray ?: return emptyList()
+        fun ready(text: String, complete: Boolean): List<E> {
+            val parsed = PartialJson.parsePartialJson(text).value
+            val elements = when (parsed) {
+                is JsonArray -> parsed
+                is JsonObject -> parsed["elements"] as? JsonArray
+                else -> null
+            } ?: return emptyList()
             val readyCount = if (complete) elements.size else (elements.size - 1).coerceAtLeast(0)
             val out = mutableListOf<E>()
             while (emitted < readyCount) {
@@ -59,21 +110,20 @@ public class StreamObjectResult<TOutput> internal constructor(
         stream.collect { event ->
             if (event is StreamEvent.Error) throw UiMessageStreamError(event.message, event.cause)
             if (event !is StreamEvent.TextDelta) return@collect
-            accumulated.append(event.text)
-            ready(complete = false).forEach { emit(it) }
+            ready(appendTextBlock(textBlocks, event), complete = false).forEach { emit(it) }
         }
-        ready(complete = true).forEach { emit(it) }
+        ready(joinedText(textBlocks), complete = true).forEach { emit(it) }
     }
 
     public suspend fun finish(): StreamObjectFinish<TOutput> {
-        val accumulated = StringBuilder()
+        val textBlocks = linkedMapOf<String, StringBuilder>()
         var usage = Usage()
         var finishReason = FinishReason.Stop
         var warnings: List<CallWarning> = emptyList()
         var response = LanguageModelResponseMetadata()
         stream.collect { event ->
             when (event) {
-                is StreamEvent.TextDelta -> accumulated.append(event.text)
+                is StreamEvent.TextDelta -> appendTextBlock(textBlocks, event)
                 // In-band terminal error: surface the real provider failure (preserving its cause)
                 // instead of letting it fall through to a misleading NoObjectGeneratedError below.
                 is StreamEvent.Error -> throw UiMessageStreamError(event.message, event.cause)
@@ -112,7 +162,7 @@ public class StreamObjectResult<TOutput> internal constructor(
             }
         }
         return StreamObjectFinish(
-            decodeOrThrow(accumulated.toString(), usage, finishReason, response),
+            decodeOrThrow(joinedText(textBlocks), usage, finishReason, response),
             usage,
             finishReason,
             warnings,
@@ -143,6 +193,18 @@ public class StreamObjectResult<TOutput> internal constructor(
             // so callers see WHY the JSON failed, not just a generic "no parseable object".
             cause = primary.exceptionOrNull(),
         )
+    }
+
+    private fun appendTextBlock(
+        textBlocks: LinkedHashMap<String, StringBuilder>,
+        event: StreamEvent.TextDelta,
+    ): String {
+        textBlocks.getOrPut(event.id) { StringBuilder() }.append(event.text)
+        return joinedText(textBlocks)
+    }
+
+    private fun joinedText(textBlocks: LinkedHashMap<String, StringBuilder>): String = buildString {
+        textBlocks.values.forEach { append(it) }
     }
 }
 

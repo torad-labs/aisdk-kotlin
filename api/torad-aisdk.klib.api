@@ -1191,20 +1191,49 @@ final class <#A: kotlin/Any?, #B: kotlin/Any?, #C: kotlin/Any?> ai.torad.aisdk/P
 }
 
 final class <#A: kotlin/Any?, #B: kotlin/Any?> ai.torad.aisdk.ui/UIToolInvocation { // ai.torad.aisdk.ui/UIToolInvocation|null[0]
-    constructor <init>(kotlin/String, kotlin/String, ai.torad.aisdk.ui/ToolCallState, #A?, #B?, kotlin/String?) // ai.torad.aisdk.ui/UIToolInvocation.<init>|<init>(kotlin.String;kotlin.String;ai.torad.aisdk.ui.ToolCallState;1:0?;1:1?;kotlin.String?){}[0]
+    constructor <init>(kotlin/String, kotlin/String, ai.torad.aisdk.ui/ToolCallState, ai.torad.aisdk.ui/UIToolInvocationPayload<#A, #B>, ai.torad.aisdk.ui/UIToolInvocationMetadata = ...) // ai.torad.aisdk.ui/UIToolInvocation.<init>|<init>(kotlin.String;kotlin.String;ai.torad.aisdk.ui.ToolCallState;ai.torad.aisdk.ui.UIToolInvocationPayload<1:0,1:1>;ai.torad.aisdk.ui.UIToolInvocationMetadata){}[0]
 
+    final val approvalId // ai.torad.aisdk.ui/UIToolInvocation.approvalId|{}approvalId[0]
+        final fun <get-approvalId>(): kotlin/String? // ai.torad.aisdk.ui/UIToolInvocation.approvalId.<get-approvalId>|<get-approvalId>(){}[0]
     final val error // ai.torad.aisdk.ui/UIToolInvocation.error|{}error[0]
         final fun <get-error>(): kotlin/String? // ai.torad.aisdk.ui/UIToolInvocation.error.<get-error>|<get-error>(){}[0]
     final val input // ai.torad.aisdk.ui/UIToolInvocation.input|{}input[0]
         final fun <get-input>(): #A? // ai.torad.aisdk.ui/UIToolInvocation.input.<get-input>|<get-input>(){}[0]
+    final val metadata // ai.torad.aisdk.ui/UIToolInvocation.metadata|{}metadata[0]
+        final fun <get-metadata>(): ai.torad.aisdk.ui/UIToolInvocationMetadata // ai.torad.aisdk.ui/UIToolInvocation.metadata.<get-metadata>|<get-metadata>(){}[0]
     final val output // ai.torad.aisdk.ui/UIToolInvocation.output|{}output[0]
         final fun <get-output>(): #B? // ai.torad.aisdk.ui/UIToolInvocation.output.<get-output>|<get-output>(){}[0]
+    final val payload // ai.torad.aisdk.ui/UIToolInvocation.payload|{}payload[0]
+        final fun <get-payload>(): ai.torad.aisdk.ui/UIToolInvocationPayload<#A, #B> // ai.torad.aisdk.ui/UIToolInvocation.payload.<get-payload>|<get-payload>(){}[0]
+    final val preliminary // ai.torad.aisdk.ui/UIToolInvocation.preliminary|{}preliminary[0]
+        final fun <get-preliminary>(): kotlin/Boolean // ai.torad.aisdk.ui/UIToolInvocation.preliminary.<get-preliminary>|<get-preliminary>(){}[0]
+    final val signature // ai.torad.aisdk.ui/UIToolInvocation.signature|{}signature[0]
+        final fun <get-signature>(): kotlin/String? // ai.torad.aisdk.ui/UIToolInvocation.signature.<get-signature>|<get-signature>(){}[0]
     final val state // ai.torad.aisdk.ui/UIToolInvocation.state|{}state[0]
         final fun <get-state>(): ai.torad.aisdk.ui/ToolCallState // ai.torad.aisdk.ui/UIToolInvocation.state.<get-state>|<get-state>(){}[0]
     final val toolCallId // ai.torad.aisdk.ui/UIToolInvocation.toolCallId|{}toolCallId[0]
         final fun <get-toolCallId>(): kotlin/String // ai.torad.aisdk.ui/UIToolInvocation.toolCallId.<get-toolCallId>|<get-toolCallId>(){}[0]
     final val toolName // ai.torad.aisdk.ui/UIToolInvocation.toolName|{}toolName[0]
         final fun <get-toolName>(): kotlin/String // ai.torad.aisdk.ui/UIToolInvocation.toolName.<get-toolName>|<get-toolName>(){}[0]
+}
+
+final class <#A: kotlin/Any?, #B: kotlin/Any?> ai.torad.aisdk.ui/UIToolInvocationPayload { // ai.torad.aisdk.ui/UIToolInvocationPayload|null[0]
+    constructor <init>(#A?, #B?, kotlin/String?) // ai.torad.aisdk.ui/UIToolInvocationPayload.<init>|<init>(1:0?;1:1?;kotlin.String?){}[0]
+
+    final val error // ai.torad.aisdk.ui/UIToolInvocationPayload.error|{}error[0]
+        final fun <get-error>(): kotlin/String? // ai.torad.aisdk.ui/UIToolInvocationPayload.error.<get-error>|<get-error>(){}[0]
+    final val input // ai.torad.aisdk.ui/UIToolInvocationPayload.input|{}input[0]
+        final fun <get-input>(): #A? // ai.torad.aisdk.ui/UIToolInvocationPayload.input.<get-input>|<get-input>(){}[0]
+    final val output // ai.torad.aisdk.ui/UIToolInvocationPayload.output|{}output[0]
+        final fun <get-output>(): #B? // ai.torad.aisdk.ui/UIToolInvocationPayload.output.<get-output>|<get-output>(){}[0]
+
+    final fun component1(): #A? // ai.torad.aisdk.ui/UIToolInvocationPayload.component1|component1(){}[0]
+    final fun component2(): #B? // ai.torad.aisdk.ui/UIToolInvocationPayload.component2|component2(){}[0]
+    final fun component3(): kotlin/String? // ai.torad.aisdk.ui/UIToolInvocationPayload.component3|component3(){}[0]
+    final fun copy(#A? = ..., #B? = ..., kotlin/String? = ...): ai.torad.aisdk.ui/UIToolInvocationPayload<#A, #B> // ai.torad.aisdk.ui/UIToolInvocationPayload.copy|copy(1:0?;1:1?;kotlin.String?){}[0]
+    final fun equals(kotlin/Any?): kotlin/Boolean // ai.torad.aisdk.ui/UIToolInvocationPayload.equals|equals(kotlin.Any?){}[0]
+    final fun hashCode(): kotlin/Int // ai.torad.aisdk.ui/UIToolInvocationPayload.hashCode|hashCode(){}[0]
+    final fun toString(): kotlin/String // ai.torad.aisdk.ui/UIToolInvocationPayload.toString|toString(){}[0]
 }
 
 final class <#A: kotlin/Any?, #B: kotlin/Any?> ai.torad.aisdk/AgentSession { // ai.torad.aisdk/AgentSession|null[0]
@@ -1527,7 +1556,6 @@ final class <#A: kotlin/Any?> ai.torad.aisdk/GenerateResult { // ai.torad.aisdk/
     final val usage // ai.torad.aisdk/GenerateResult.usage|{}usage[0]
         final fun <get-usage>(): ai.torad.aisdk/Usage // ai.torad.aisdk/GenerateResult.usage.<get-usage>|<get-usage>(){}[0]
 
-    final fun component1(): #A // ai.torad.aisdk/GenerateResult.component1|component1(){}[0]
     final fun component2(): kotlin/String // ai.torad.aisdk/GenerateResult.component2|component2(){}[0]
     final fun component3(): kotlin.collections/List<ai.torad.aisdk/StepResult> // ai.torad.aisdk/GenerateResult.component3|component3(){}[0]
     final fun component4(): ai.torad.aisdk/FinishReason // ai.torad.aisdk/GenerateResult.component4|component4(){}[0]
@@ -7049,6 +7077,25 @@ final class ai.torad.aisdk.ui/UIMessageStreamResponse { // ai.torad.aisdk.ui/UIM
     final fun equals(kotlin/Any?): kotlin/Boolean // ai.torad.aisdk.ui/UIMessageStreamResponse.equals|equals(kotlin.Any?){}[0]
     final fun hashCode(): kotlin/Int // ai.torad.aisdk.ui/UIMessageStreamResponse.hashCode|hashCode(){}[0]
     final fun toString(): kotlin/String // ai.torad.aisdk.ui/UIMessageStreamResponse.toString|toString(){}[0]
+}
+
+final class ai.torad.aisdk.ui/UIToolInvocationMetadata { // ai.torad.aisdk.ui/UIToolInvocationMetadata|null[0]
+    constructor <init>(kotlin/Boolean = ..., kotlin/String? = ..., kotlin/String? = ...) // ai.torad.aisdk.ui/UIToolInvocationMetadata.<init>|<init>(kotlin.Boolean;kotlin.String?;kotlin.String?){}[0]
+
+    final val approvalId // ai.torad.aisdk.ui/UIToolInvocationMetadata.approvalId|{}approvalId[0]
+        final fun <get-approvalId>(): kotlin/String? // ai.torad.aisdk.ui/UIToolInvocationMetadata.approvalId.<get-approvalId>|<get-approvalId>(){}[0]
+    final val preliminary // ai.torad.aisdk.ui/UIToolInvocationMetadata.preliminary|{}preliminary[0]
+        final fun <get-preliminary>(): kotlin/Boolean // ai.torad.aisdk.ui/UIToolInvocationMetadata.preliminary.<get-preliminary>|<get-preliminary>(){}[0]
+    final val signature // ai.torad.aisdk.ui/UIToolInvocationMetadata.signature|{}signature[0]
+        final fun <get-signature>(): kotlin/String? // ai.torad.aisdk.ui/UIToolInvocationMetadata.signature.<get-signature>|<get-signature>(){}[0]
+
+    final fun component1(): kotlin/Boolean // ai.torad.aisdk.ui/UIToolInvocationMetadata.component1|component1(){}[0]
+    final fun component2(): kotlin/String? // ai.torad.aisdk.ui/UIToolInvocationMetadata.component2|component2(){}[0]
+    final fun component3(): kotlin/String? // ai.torad.aisdk.ui/UIToolInvocationMetadata.component3|component3(){}[0]
+    final fun copy(kotlin/Boolean = ..., kotlin/String? = ..., kotlin/String? = ...): ai.torad.aisdk.ui/UIToolInvocationMetadata // ai.torad.aisdk.ui/UIToolInvocationMetadata.copy|copy(kotlin.Boolean;kotlin.String?;kotlin.String?){}[0]
+    final fun equals(kotlin/Any?): kotlin/Boolean // ai.torad.aisdk.ui/UIToolInvocationMetadata.equals|equals(kotlin.Any?){}[0]
+    final fun hashCode(): kotlin/Int // ai.torad.aisdk.ui/UIToolInvocationMetadata.hashCode|hashCode(){}[0]
+    final fun toString(): kotlin/String // ai.torad.aisdk.ui/UIToolInvocationMetadata.toString|toString(){}[0]
 }
 
 final class ai.torad.aisdk/APICallError : ai.torad.aisdk/AiSdkException { // ai.torad.aisdk/APICallError|null[0]
