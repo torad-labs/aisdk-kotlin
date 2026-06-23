@@ -1,8 +1,10 @@
 package ai.torad.aisdk.ui
 
+import ai.torad.aisdk.ProviderMetadata
 import ai.torad.aisdk.StreamEvent
 import ai.torad.aisdk.ToolResultOutput
 import ai.torad.aisdk.aiSdkJson
+import ai.torad.aisdk.protocol.ProtocolAdapters
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.serialization.json.JsonElement
@@ -66,59 +68,91 @@ public fun StreamToUiMessages(
         }
     }
 
-    fun openTextPart(id: String) {
+    fun openTextPart(id: String, providerMetadata: ProviderMetadata) {
         if (partIndexById.containsKey(id)) return
-        parts.add(UIMessagePart.Text(text = "", state = TextUIPartState.Streaming))
+        parts.add(
+            UIMessagePart.Text(
+                text = "",
+                state = TextUIPartState.Streaming,
+                providerMetadata = providerMetadata,
+            ),
+        )
         partIndexById[id] = parts.size - 1
     }
 
-    fun appendTextPart(id: String, delta: String) {
+    fun appendTextPart(id: String, delta: String, providerMetadata: ProviderMetadata) {
         val idx = partIndexById[id]
         val existing = idx?.let { parts[it] as? UIMessagePart.Text }
         if (idx == null || existing == null) {
             // No part yet, OR the id was first opened as a different kind (a text/reasoning id
             // collision) — start a fresh Text part rather than crashing on an unchecked cast.
-            parts.add(UIMessagePart.Text(text = delta, state = TextUIPartState.Streaming))
+            parts.add(
+                UIMessagePart.Text(
+                    text = delta,
+                    state = TextUIPartState.Streaming,
+                    providerMetadata = providerMetadata,
+                ),
+            )
             partIndexById[id] = parts.size - 1
             return
         }
         parts[idx] = UIMessagePart.Text(
             text = existing.text + delta,
             state = TextUIPartState.Streaming,
+            providerMetadata = existing.providerMetadata + providerMetadata,
         )
     }
 
-    fun closeTextPart(id: String) {
+    fun closeTextPart(id: String, providerMetadata: ProviderMetadata) {
         val idx = partIndexById[id] ?: return
         val existing = parts[idx] as? UIMessagePart.Text ?: return
-        parts[idx] = existing.copy(state = TextUIPartState.Done)
+        parts[idx] = existing.copy(
+            state = TextUIPartState.Done,
+            providerMetadata = existing.providerMetadata + providerMetadata,
+        )
     }
 
-    fun openReasoningPart(id: String) {
+    fun openReasoningPart(id: String, providerMetadata: ProviderMetadata) {
         if (partIndexById.containsKey(id)) return
-        parts.add(UIMessagePart.Reasoning(text = "", state = TextUIPartState.Streaming))
+        parts.add(
+            UIMessagePart.Reasoning(
+                text = "",
+                state = TextUIPartState.Streaming,
+                providerMetadata = providerMetadata,
+            ),
+        )
         partIndexById[id] = parts.size - 1
     }
 
-    fun appendReasoningPart(id: String, delta: String) {
+    fun appendReasoningPart(id: String, delta: String, providerMetadata: ProviderMetadata) {
         val idx = partIndexById[id]
         val existing = idx?.let { parts[it] as? UIMessagePart.Reasoning }
         if (idx == null || existing == null) {
             // Mirror appendTextPart: a fresh Reasoning part on an absent index or a kind mismatch.
-            parts.add(UIMessagePart.Reasoning(text = delta, state = TextUIPartState.Streaming))
+            parts.add(
+                UIMessagePart.Reasoning(
+                    text = delta,
+                    state = TextUIPartState.Streaming,
+                    providerMetadata = providerMetadata,
+                ),
+            )
             partIndexById[id] = parts.size - 1
             return
         }
         parts[idx] = UIMessagePart.Reasoning(
             text = existing.text + delta,
             state = TextUIPartState.Streaming,
+            providerMetadata = existing.providerMetadata + providerMetadata,
         )
     }
 
-    fun closeReasoningPart(id: String) {
+    fun closeReasoningPart(id: String, providerMetadata: ProviderMetadata) {
         val idx = partIndexById[id] ?: return
         val existing = parts[idx] as? UIMessagePart.Reasoning ?: return
-        parts[idx] = existing.copy(state = TextUIPartState.Done)
+        parts[idx] = existing.copy(
+            state = TextUIPartState.Done,
+            providerMetadata = existing.providerMetadata + providerMetadata,
+        )
     }
 
     fun upsertTool(
@@ -131,8 +165,10 @@ public fun StreamToUiMessages(
         preliminary: Boolean = false,
         approvalId: String? = null,
         signature: String? = null,
+        providerMetadata: ProviderMetadata = ProviderMetadata.None,
     ) {
         val existingIndex = toolByCallId[toolCallId]
+        val existing = existingIndex?.takeIf { it in parts.indices }?.let { parts[it] as? UIMessagePart.ToolUI }
         val nextPart = UIMessagePart.ToolUI(
             toolCallId = toolCallId,
             toolName = toolName,
@@ -143,6 +179,7 @@ public fun StreamToUiMessages(
             preliminary = preliminary,
             approvalId = approvalId,
             signature = signature,
+            providerMetadata = existing?.providerMetadata?.plus(providerMetadata) ?: providerMetadata,
         )
         if (existingIndex != null) {
             parts[existingIndex] = nextPart
@@ -168,27 +205,27 @@ public fun StreamToUiMessages(
                 }
             }
             is StreamEvent.TextStart -> {
-                openTextPart(event.id)
+                openTextPart(event.id, event.providerMetadata)
                 emit(snapshot())
             }
             is StreamEvent.TextDelta -> {
-                appendTextPart(event.id, event.text)
+                appendTextPart(event.id, event.text, event.providerMetadata)
                 emit(snapshot())
             }
             is StreamEvent.TextEnd -> {
-                closeTextPart(event.id)
+                closeTextPart(event.id, event.providerMetadata)
                 emit(snapshot())
             }
             is StreamEvent.ReasoningStart -> {
-                openReasoningPart(event.id)
+                openReasoningPart(event.id, event.providerMetadata)
                 emit(snapshot())
             }
             is StreamEvent.ReasoningDelta -> {
-                appendReasoningPart(event.id, event.text)
+                appendReasoningPart(event.id, event.text, event.providerMetadata)
                 emit(snapshot())
             }
             is StreamEvent.ReasoningEnd -> {
-                closeReasoningPart(event.id)
+                closeReasoningPart(event.id, event.providerMetadata)
                 emit(snapshot())
             }
             is StreamEvent.SourcePart -> {
@@ -197,24 +234,39 @@ public fun StreamToUiMessages(
                         sourceId = event.id,
                         url = event.url.orEmpty(),
                         title = event.title,
+                        providerMetadata = event.providerMetadata,
                     )
                     StreamEvent.SourcePart.SourceType.Document -> UIMessagePart.SourceDocument(
                         sourceId = event.id,
                         mediaType = event.mediaType.orEmpty(),
                         title = event.title.orEmpty(),
+                        filename = ProtocolAdapters.metadataString(event.providerMetadata, "filename"),
+                        providerMetadata = event.providerMetadata,
                     )
                 }
                 parts.add(partForEvent)
                 emit(snapshot())
             }
             is StreamEvent.FilePart -> {
-                parts.add(UIMessagePart.File(mediaType = event.mediaType, base64 = event.base64))
+                parts.add(
+                    UIMessagePart.File(
+                        mediaType = event.mediaType,
+                        base64 = event.base64,
+                        filename = ProtocolAdapters.metadataString(event.providerMetadata, "filename"),
+                        providerMetadata = event.providerMetadata,
+                    ),
+                )
                 emit(snapshot())
             }
             is StreamEvent.ToolInputStart -> {
                 toolInputBufById[event.id] = StringBuilder()
                 toolNameByInputId[event.id] = event.toolName
-                upsertTool(event.id, event.toolName, ToolCallState.InputStreaming)
+                upsertTool(
+                    toolCallId = event.id,
+                    toolName = event.toolName,
+                    state = ToolCallState.InputStreaming,
+                    providerMetadata = event.providerMetadata,
+                )
                 emit(snapshot())
             }
             is StreamEvent.ToolInputDelta -> {
@@ -227,10 +279,19 @@ public fun StreamToUiMessages(
                     toolName = toolName,
                     state = ToolCallState.InputStreaming,
                     input = partial,
+                    providerMetadata = event.providerMetadata,
                 )
                 emit(snapshot())
             }
-            is StreamEvent.ToolInputEnd -> Unit
+            is StreamEvent.ToolInputEnd -> {
+                val placeholderIdx = toolByCallId.remove(event.id)
+                if (placeholderIdx != null && placeholderIdx in parts.indices) {
+                    parts.removeAt(placeholderIdx)
+                    shiftIndexesAfterRemoval(placeholderIdx)
+                }
+                toolInputBufById.remove(event.id)
+                toolNameByInputId.remove(event.id)
+            }
             is StreamEvent.ToolCall -> {
                 // The streaming partial id (ToolInputStart.id) is typically distinct
                 // from the final ToolCall.toolCallId. If we see a placeholder in
@@ -257,6 +318,7 @@ public fun StreamToUiMessages(
                     toolName = event.toolName,
                     state = ToolCallState.InputAvailable,
                     input = event.inputJson,
+                    providerMetadata = event.providerMetadata,
                 )
                 emit(snapshot())
             }
@@ -268,6 +330,7 @@ public fun StreamToUiMessages(
                     input = event.inputJson,
                     approvalId = event.approvalId,
                     signature = event.signature,
+                    providerMetadata = event.providerMetadata,
                 )
                 emit(snapshot())
             }
@@ -306,6 +369,7 @@ public fun StreamToUiMessages(
                     output = event.outputJson,
                     error = resultError,
                     preliminary = event.preliminary,
+                    providerMetadata = event.providerMetadata,
                 )
                 emit(snapshot())
             }
@@ -320,6 +384,7 @@ public fun StreamToUiMessages(
                     state = ToolCallState.OutputError,
                     input = existingInput,
                     error = event.message,
+                    providerMetadata = event.providerMetadata,
                 )
                 emit(snapshot())
             }
@@ -337,6 +402,7 @@ public fun StreamToUiMessages(
                     // from toolCallId can be correlated to its originating request.
                     approvalId = event.approvalId,
                     error = event.reason,
+                    providerMetadata = event.providerMetadata,
                 )
                 emit(snapshot())
             }

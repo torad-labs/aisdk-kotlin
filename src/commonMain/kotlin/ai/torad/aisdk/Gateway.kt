@@ -28,7 +28,7 @@ public data class GatewayAuthToken(
 ) {
     internal companion object {
         internal suspend fun fromSettings(settings: GatewayProviderSettings): GatewayAuthToken? {
-            val key = settings.apiKey ?: settings.environment["AI_GATEWAY_API_KEY"]
+            val key = (settings.apiKey ?: settings.environment["AI_GATEWAY_API_KEY"])?.takeIf { it.isNotBlank() }
             if (key != null) return GatewayAuthToken(key, GatewayAuthMethod.ApiKey)
             // Then a custom token provider, else the OIDC fallback: VERCEL_OIDC_TOKEN from the
             // host environment (the KMP-idiomatic equivalent of upstream's getVercelOidcToken()).

@@ -95,7 +95,7 @@ public interface Agent<TContext, TOutput> {
  * [messages] plus tool-approval-response messages to resume.
  */
 public data class GenerateResult<TOutput>(
-    val output: TOutput,
+    internal val rawOutput: TOutput,
     val text: String,
     val steps: List<StepResult>,
     val finishReason: FinishReason,
@@ -107,7 +107,51 @@ public data class GenerateResult<TOutput>(
     val pendingApprovals: List<PendingApproval> = emptyList(),
     /** Full message log including all assistant + tool messages from this call. */
     val messages: List<ModelMessage> = emptyList(),
-)
+) {
+    private var outputUnavailableReason: String? = null
+
+    public val output: TOutput
+        get() {
+            if ((rawOutput as Any?) === OutputUnavailablePlaceholder) {
+                throw NoOutputGeneratedError(
+                    outputUnavailableReason ?: "No object generated: the run is paused for tool approval.",
+                )
+            }
+            return rawOutput
+        }
+
+    internal companion object {
+        private object OutputUnavailablePlaceholder
+
+        @Suppress("UNCHECKED_CAST")
+        private fun <TOutput> unavailableOutputPlaceholder(): TOutput =
+            OutputUnavailablePlaceholder as TOutput
+
+        @Suppress("LongParameterList")
+        internal fun <TOutput> unavailable(
+            outputUnavailableReason: String,
+            text: String,
+            steps: List<StepResult>,
+            finishReason: FinishReason,
+            usage: Usage,
+            totalUsage: Usage = usage,
+            pendingApprovals: List<PendingApproval> = emptyList(),
+            messages: List<ModelMessage> = emptyList(),
+        ): GenerateResult<TOutput> =
+            GenerateResult<TOutput>(
+                rawOutput = unavailableOutputPlaceholder<TOutput>(),
+                text = text,
+                steps = steps,
+                finishReason = finishReason,
+                usage = usage,
+                totalUsage = totalUsage,
+                pendingApprovals = pendingApprovals,
+                messages = messages,
+            ).also {
+                it.outputUnavailableReason = outputUnavailableReason
+            }
+    }
+}
 
 /**
  * INTERNAL lifecycle-hook substrate. Not a public API — the public observation

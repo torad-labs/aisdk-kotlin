@@ -100,6 +100,50 @@ class AgentSessionTest {
     }
 
     @Test
+    fun `streaming session records reasoning source file and denied tool outcomes`() = runTest {
+        val agent = object : Agent<Unit, String> {
+            override val tools: ToolSet<Unit> = ToolSet()
+
+            override fun generate(
+                prompt: String?,
+                messages: List<ModelMessage>,
+                options: Unit?,
+                abortSignal: AbortSignal,
+            ): Flow<GenerateResult<String>> = flow {}
+
+            override fun stream(
+                prompt: String?,
+                messages: List<ModelMessage>,
+                options: Unit?,
+                abortSignal: AbortSignal,
+            ): Flow<StreamEvent> = flow {
+                emit(StreamEvent.ReasoningStart("r1"))
+                emit(StreamEvent.ReasoningDelta("r1", "thinking"))
+                emit(StreamEvent.ReasoningEnd("r1"))
+                emit(
+                    StreamEvent.SourcePart(
+                        id = "src1",
+                        sourceType = StreamEvent.SourcePart.SourceType.Url,
+                        url = "https://example.test",
+                    ),
+                )
+                emit(StreamEvent.FilePart("file1", "text/plain", "aGk="))
+                emit(StreamEvent.ToolOutputDenied("call1", "send", approvalId = "approval1", reason = "no"))
+                emit(StreamEvent.Finish(1, FinishReason.Stop, Usage()))
+            }
+        }
+        val session = agent.session(this)
+
+        session.submitStreaming(prompt = "run").join()
+
+        val parts = session.state.value.messages.flatMap { it.content }
+        assertTrue(parts.any { it is ContentPart.Reasoning && it.text == "thinking" })
+        assertTrue(parts.any { it is ContentPart.Source && it.url == "https://example.test" })
+        assertTrue(parts.any { it is ContentPart.File && it.base64 == "aGk=" })
+        assertTrue(parts.any { it is ContentPart.ToolResult && it.toolName == "send" && it.isError })
+    }
+
+    @Test
     fun `streaming preserves the tool's model-visible summary rather than the full output`() = runTest {
         val tools = ToolSet(Tool<WeatherInput, WeatherOutput, Unit>(
             name = "weather",
@@ -198,7 +242,7 @@ class AgentSessionTest {
                 gate.await()
                 emit(
                     GenerateResult(
-                        output = "done",
+                        "done",
                         text = "done",
                         steps = emptyList(),
                         finishReason = FinishReason.Stop,

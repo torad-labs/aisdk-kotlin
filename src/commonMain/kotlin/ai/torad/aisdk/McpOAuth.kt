@@ -324,7 +324,12 @@ internal object McpOAuthFlow {
             if (scope?.split(' ')?.contains("offline_access") == true) "prompt=consent" else null,
             resource?.let { "resource=${urlComponent(it)}" },
         )
-        return "$authorizationEndpoint?${params.joinToString("&")}"
+        val separator = when {
+            '?' !in authorizationEndpoint -> "?"
+            authorizationEndpoint.endsWith("?") || authorizationEndpoint.endsWith("&") -> ""
+            else -> "&"
+        }
+        return "$authorizationEndpoint$separator${params.joinToString("&")}"
     }
 
     private fun urlComponent(value: String): String = buildString {

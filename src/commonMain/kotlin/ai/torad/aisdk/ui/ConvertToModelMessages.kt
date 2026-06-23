@@ -3,6 +3,7 @@ package ai.torad.aisdk.ui
 import ai.torad.aisdk.ContentPart
 import ai.torad.aisdk.MessageRole
 import ai.torad.aisdk.ModelMessage
+import ai.torad.aisdk.ProviderMetadata
 import ai.torad.aisdk.StreamEvent
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.contentOrNull
@@ -120,7 +121,7 @@ public object ModelMessageConversion {
             ToolCallState.OutputDenied -> false
             else -> return null
         }
-        val approvalId = when (val output = part.output) {
+        val approvalId = part.approvalId ?: when (val output = part.output) {
             null -> part.toolCallId
             is JsonPrimitive -> output.contentOrNull ?: part.toolCallId
             else -> throw IllegalArgumentException("Approval response output must be a string approval id.")
@@ -166,6 +167,7 @@ public object ModelMessageConversion {
                 flags = ToolConversionFlags(part.preliminary, ignoreIncompleteToolCalls),
                 approvalId = part.approvalId,
                 signature = part.signature,
+                providerMetadata = part.providerMetadata,
                 onContentPart = onContentPart,
                 onDeferredToolResult = onDeferredToolResult,
                 contextHint = contextHint,
@@ -180,6 +182,7 @@ public object ModelMessageConversion {
                 // Dynamic tool parts carry no approval identity (server-defined tools only).
                 approvalId = null,
                 signature = null,
+                providerMetadata = part.providerMetadata,
                 onContentPart = onContentPart,
                 onDeferredToolResult = onDeferredToolResult,
                 contextHint = contextHint,
@@ -246,6 +249,7 @@ public object ModelMessageConversion {
         flags: ToolConversionFlags,
         approvalId: String?,
         signature: String?,
+        providerMetadata: ProviderMetadata,
         onContentPart: (ContentPart) -> Unit,
         onDeferredToolResult: (ContentPart.ToolResult) -> Unit,
         contextHint: String,
@@ -258,6 +262,7 @@ public object ModelMessageConversion {
                         toolCallId = toolCallId,
                         toolName = toolName,
                         input = requireNotNull(input) { "ToolCall.input absent at OutputAvailable in $contextHint" },
+                        providerMetadata = providerMetadata,
                     ),
                 )
                 onDeferredToolResult(
@@ -265,6 +270,7 @@ public object ModelMessageConversion {
                         toolCallId = toolCallId,
                         toolName = toolName,
                         output = requireNotNull(output) { "ToolResult.output absent at OutputAvailable in $contextHint" },
+                        providerMetadata = providerMetadata,
                     ),
                 )
             }
@@ -281,6 +287,7 @@ public object ModelMessageConversion {
                     // The v6.0.202 HMAC signature must survive the UI round-trip: with a
                     // configured approval secret, a replay without it is denied fail-closed.
                     signature = signature,
+                    providerMetadata = providerMetadata,
                 ),
             )
             ToolCallState.InputStreaming, ToolCallState.InputAvailable -> if (!flags.ignoreIncompleteToolCalls) {

@@ -2,7 +2,9 @@ package ai.torad.aisdk
 
 import ai.torad.aisdk.providers.MockLanguageModelTextOnly
 import ai.torad.aisdk.providers.MockLanguageModelToolThenText
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.buildJsonObject
@@ -28,6 +30,28 @@ class ToolApprovalSignatureWiringTest {
 
     private class GateState {
         val executed = mutableListOf<String>()
+    }
+
+    private class DuplicateApprovalModel : LanguageModel {
+        override val modelId: String = "dup-approval"
+        private var calls = 0
+
+        override suspend fun generate(params: LanguageModelCallParams): LanguageModelResult =
+            LanguageModelResult(text = "done", finishReason = FinishReason.Stop, usage = Usage())
+
+        override fun stream(params: LanguageModelCallParams): Flow<StreamEvent> = flow {
+            if (calls++ == 0) {
+                emit(StreamEvent.ToolCall("dup", "send", buildJsonObject { put("message", "first") }))
+                emit(StreamEvent.ToolCall("dup", "send", buildJsonObject { put("message", "second") }))
+                emit(StreamEvent.StepFinish(1, FinishReason.ToolCalls, Usage()))
+                emit(StreamEvent.Finish(1, FinishReason.ToolCalls, Usage()))
+            } else {
+                emit(StreamEvent.TextStart("t1"))
+                emit(StreamEvent.TextDelta("t1", "done"))
+                emit(StreamEvent.TextEnd("t1"))
+                emit(StreamEvent.Finish(2, FinishReason.Stop, Usage()))
+            }
+        }
     }
 
     private fun gatedAgent(
@@ -106,6 +130,48 @@ class ToolApprovalSignatureWiringTest {
         val second = agent.generate(messages = first.messages + approval).first()
         assertEquals(listOf("hello"), state.executed)
         assertEquals("sent", second.text)
+    }
+
+    @Test
+    fun `duplicate tool call ids get distinct approval ids and resume cleanly`() = runTest {
+        val state = GateState()
+        val agent = TestToolLoopAgent<Unit, String>(
+            model = DuplicateApprovalModel(),
+            instructions = "use send",
+            tools = ToolSet(
+                Tool<SendInput, String, Unit>(
+                    name = "send",
+                    description = "send a message",
+                    inputSerializer = serializer(),
+                    outputSerializer = serializer(),
+                    needsApproval = { _, _ -> true },
+                ) { input ->
+                    state.executed += input.message
+                    "sent:${input.message}"
+                },
+            ),
+            experimental_toolApprovalSecret = secret,
+        )
+
+        val first = agent.generate(prompt = "go").first()
+        assertEquals(2, first.pendingApprovals.size)
+        val approvalIds = first.pendingApprovals.map { assertNotNull(it.approvalId) }
+        assertEquals(2, approvalIds.toSet().size, "duplicate toolCallIds must be disambiguated by approvalId")
+
+        val approvals = ModelMessage(
+            MessageRole.Tool,
+            first.pendingApprovals.map { pending ->
+                ContentPart.ToolApprovalResponse(
+                    toolCallId = pending.toolCallId,
+                    approved = true,
+                    approvalId = pending.approvalId,
+                )
+            },
+        )
+        val second = agent.generate(messages = first.messages + approvals).first()
+
+        assertEquals(listOf("first", "second"), state.executed)
+        assertEquals("done", second.text)
     }
 
     @Test

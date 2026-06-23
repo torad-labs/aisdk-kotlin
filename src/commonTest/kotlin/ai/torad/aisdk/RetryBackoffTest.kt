@@ -71,6 +71,29 @@ class RetryBackoffTest {
     }
 
     @Test
+    fun `HTTP-date Retry-After is honored instead of falling back to exponential backoff`() = runTest {
+        var attempt = 0
+        val result = RetryPolicy(maxRetries = 1).execute<String> {
+            if (attempt++ == 0) {
+                throw APICallError(
+                    message = "rate limited",
+                    url = "https://api.test/v1",
+                    statusCode = 429,
+                    responseHeaders = mapOf("Retry-After" to "Thu, 01 Jan 2099 00:01:30 GMT"),
+                    isRetryable = true,
+                )
+            }
+            "ok"
+        }
+        assertEquals("ok", result)
+        assertEquals(
+            60_000L,
+            testScheduler.currentTime,
+            "a future HTTP-date Retry-After must be parsed and capped at the 60s ceiling",
+        )
+    }
+
+    @Test
     fun `exhausting retries throws RetryError carrying every attempt error`() = runTest {
         val failure = assertFailsWith<RetryError> {
             RetryPolicy(maxRetries = 2, baseDelayMs = 0).execute<String> {

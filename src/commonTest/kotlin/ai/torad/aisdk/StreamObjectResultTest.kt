@@ -100,4 +100,67 @@ class StreamObjectResultTest {
         val elements = result.elementStream(arrayOutput).toList()
         assertEquals(listOf(Person("A", 1), Person("B", 2), Person("C", 3)), elements)
     }
+
+    @Test
+    fun `finish reconstructs JSON by text block id order instead of raw delta order`() = runTest {
+        val model = object : LanguageModel {
+            override val modelId = "test/multi-block"
+            override suspend fun generate(params: LanguageModelCallParams) =
+                LanguageModelResult(text = "{}", finishReason = FinishReason.Stop, usage = Usage())
+
+            override fun stream(params: LanguageModelCallParams): Flow<StreamEvent> = flow {
+                emit(StreamEvent.TextStart("a"))
+                emit(StreamEvent.TextDelta("a", "{\"name\":\"Ann\""))
+                emit(StreamEvent.TextStart("b"))
+                emit(StreamEvent.TextDelta("b", "}"))
+                emit(StreamEvent.TextDelta("a", ",\"age\":30"))
+                emit(StreamEvent.TextEnd("a"))
+                emit(StreamEvent.TextEnd("b"))
+                emit(StreamEvent.Finish(1, FinishReason.Stop, Usage()))
+            }
+        }
+
+        val result = StreamObjectResult(model, Output.obj(serializer<Person>()), prompt = "go")
+        assertEquals(Person("Ann", 30), result.objectValue())
+    }
+
+    @Test
+    fun `textStream emits stable block ordered deltas for interleaved object streams`() = runTest {
+        val model = object : LanguageModel {
+            override val modelId = "test/multi-block"
+            override suspend fun generate(params: LanguageModelCallParams) =
+                LanguageModelResult(text = "{}", finishReason = FinishReason.Stop, usage = Usage())
+
+            override fun stream(params: LanguageModelCallParams): Flow<StreamEvent> = flow {
+                emit(StreamEvent.TextStart("a"))
+                emit(StreamEvent.TextDelta("a", "{\"name\":\"Ann\""))
+                emit(StreamEvent.TextStart("b"))
+                emit(StreamEvent.TextDelta("b", "}"))
+                emit(StreamEvent.TextDelta("a", ",\"age\":30"))
+                emit(StreamEvent.TextEnd("a"))
+                emit(StreamEvent.TextEnd("b"))
+                emit(StreamEvent.Finish(1, FinishReason.Stop, Usage()))
+            }
+        }
+
+        val result = StreamObjectResult(model, Output.obj(serializer<Person>()), prompt = "go")
+        assertEquals(listOf("{\"name\":\"Ann\"", ",\"age\":30", "}"), result.textStream.toList())
+    }
+
+    @Test
+    fun `elementStream supports top level arrays during live streaming`() = runTest {
+        val arrayOutput = Output.Arr(serializer<Person>())
+        val result = StreamObjectResult(
+            model = streamingModel(
+                """[{"name":"A","age":1},""",
+                """{"name":"B","age":2},""",
+                """{"name":"C","age":3}]""",
+            ),
+            output = arrayOutput,
+            prompt = "make people",
+        )
+
+        val elements = result.elementStream(arrayOutput).toList()
+        assertEquals(listOf(Person("A", 1), Person("B", 2), Person("C", 3)), elements)
+    }
 }

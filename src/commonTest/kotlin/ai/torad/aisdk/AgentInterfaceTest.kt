@@ -27,7 +27,7 @@ class AgentInterfaceTest {
         ): Flow<GenerateResult<String>> = flow {
             generatedPrompt = prompt
             emit(GenerateResult(
-                output = "fake-output",
+                "fake-output",
                 text = "fake-output",
                 steps = emptyList(),
                 finishReason = FinishReason.Stop,

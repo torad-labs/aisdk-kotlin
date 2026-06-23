@@ -6,8 +6,8 @@ import ai.torad.aisdk.ui.DirectChatTransport
 import ai.torad.aisdk.ui.UIMessage
 import ai.torad.aisdk.ui.UIMessagePart
 import ai.torad.aisdk.ui.UIMessageRole
-import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.launch
@@ -17,6 +17,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertNull
+import kotlin.test.assertTrue
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class ChatConcurrencyTest {
@@ -120,6 +121,35 @@ class ChatConcurrencyTest {
         assertEquals(ChatStatus.Ready, chat.status)
         val texts = chat.messages.flatMap { it.parts }.filterIsInstance<UIMessagePart.Text>().map { it.text }
         assertEquals(listOf("ping"), texts)
+    }
+
+    @Test
+    fun `stop cancels the active transport collection`() = runTest {
+        val entered = CompletableDeferred<Unit>()
+        val cancelled = CompletableDeferred<Unit>()
+        val chat = Chat(
+            transport = DirectChatTransport {
+                flow {
+                    entered.complete(Unit)
+                    try {
+                        CompletableDeferred<Unit>().await()
+                    } finally {
+                        cancelled.complete(Unit)
+                    }
+                }
+            },
+        )
+
+        val job = launch {
+            runCatching { chat.sendMessage(user("u1", "ping")).collect {} }
+        }
+
+        entered.await()
+        chat.stop()
+        runCurrent()
+
+        assertTrue(cancelled.isCompleted, "stop() must cancel the active transport collection")
+        job.join()
     }
 
     @Test

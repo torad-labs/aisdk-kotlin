@@ -1,9 +1,7 @@
 package ai.torad.aisdk
 
 import ai.torad.aisdk.providers.MockLanguageModelToolThenText
-import kotlin.test.Test
-import kotlin.test.assertEquals
-import kotlin.test.assertTrue
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonObject
@@ -12,6 +10,10 @@ import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.serializer
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertIs
+import kotlin.test.assertTrue
 
 /**
  * Validates `experimental_repairToolCall` (gap #4 from
@@ -148,5 +150,96 @@ class ToolCallRepairTest {
                 events.filterIsInstance<StreamEvent.ToolResult>().size,
                 "no ToolResult when repair gives up",
             )
+        }
+
+    @Test
+    fun `given a repair reroutes to another tool when executed then the recorded result uses the repaired tool name`() =
+        runTest {
+            val weatherTool = Tool<WeatherIn, String, Unit>(
+                name = "weather",
+                description = "Get weather",
+                inputSerializer = serializer(),
+                outputSerializer = serializer(),
+            ) { input -> "weather:${input.city}" }
+            val forecastTool = Tool<WeatherIn, String, Unit>(
+                name = "forecast",
+                description = "Get forecast",
+                inputSerializer = serializer(),
+                outputSerializer = serializer(),
+            ) { input -> "forecast:${input.city}" }
+            val agent = TestToolLoopAgent<Unit, String>(
+                model = MockLanguageModelToolThenText(
+                    toolName = "weather",
+                    toolInput = buildJsonObject { put("location", JsonPrimitive("Paris")) },
+                    finalText = "done",
+                ),
+                instructions = "",
+                tools = ToolSet(weatherTool, forecastTool),
+                experimental_repairToolCall = { failedCall, _, _, _ ->
+                    failedCall.copy(
+                        toolName = "forecast",
+                        input = buildJsonObject { put("city", JsonPrimitive("Paris")) },
+                    )
+                },
+            )
+
+            val result = agent.generate(prompt = "weather?").first()
+            val toolResult = assertIs<ContentPart.ToolResult>(
+                result.messages.flatMap { it.content }.last { it is ContentPart.ToolResult },
+            )
+            val stepToolResults = result.steps.flatMap { it.toolResults }
+
+            assertEquals("forecast", toolResult.toolName)
+            assertEquals(
+                "forecast",
+                stepToolResults.single().toolName,
+                "the persisted step result must reflect the repaired tool name",
+            )
+        }
+
+    @Test
+    fun `given a repair reroutes to a failing tool then the recorded error uses the repaired tool name`() =
+        runTest {
+            val weatherTool = Tool<WeatherIn, String, Unit>(
+                name = "weather",
+                description = "Get weather",
+                inputSerializer = serializer(),
+                outputSerializer = serializer(),
+            ) { input -> "weather:${input.city}" }
+            val forecastTool = Tool<WeatherIn, String, Unit>(
+                name = "forecast",
+                description = "Get forecast",
+                inputSerializer = serializer(),
+                outputSerializer = serializer(),
+            ) {
+                throw AgentError.ToolExecution(
+                    toolName = "forecast",
+                    toolCallId = "dup",
+                    executorError = InvalidResponseDataError(null, "forecast unavailable"),
+                )
+            }
+            val agent = TestToolLoopAgent<Unit, String>(
+                model = MockLanguageModelToolThenText(
+                    toolName = "weather",
+                    toolInput = buildJsonObject { put("location", JsonPrimitive("Paris")) },
+                    finalText = "done",
+                ),
+                instructions = "",
+                tools = ToolSet(weatherTool, forecastTool),
+                experimental_repairToolCall = { failedCall, _, _, _ ->
+                    failedCall.copy(
+                        toolName = "forecast",
+                        input = buildJsonObject { put("city", JsonPrimitive("Paris")) },
+                    )
+                },
+            )
+
+            val result = agent.generate(prompt = "weather?").first()
+            val toolResult = assertIs<ContentPart.ToolResult>(
+                result.messages.flatMap { it.content }.last { it is ContentPart.ToolResult },
+            )
+
+            assertEquals("forecast", toolResult.toolName)
+            assertTrue(toolResult.isError, "the persisted repaired-tool failure must be marked as an error")
         }
 }

@@ -1,5 +1,6 @@
 package ai.torad.aisdk
 
+import ai.torad.aisdk.protocol.ProtocolAdapters
 import io.ktor.client.HttpClient
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpMethod
@@ -14,11 +15,9 @@ import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.booleanOrNull
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.contentOrNull
-import kotlinx.serialization.json.doubleOrNull
 import kotlinx.serialization.json.floatOrNull
 import kotlinx.serialization.json.intOrNull
 import kotlinx.serialization.json.jsonObject
-import kotlinx.serialization.json.longOrNull
 
 public fun CreateGatewayHttpProvider(
     client: HttpClient,
@@ -302,7 +301,7 @@ public class KtorGatewayTransport(
     }
 
     override suspend fun getCredits(context: GatewayRequestContext): GatewayCreditsResponse {
-        val response = getJson(context.copy(baseUrl = gatewayOrigin(context.baseUrl)), "/v1/credits")
+        val response = getJson(context.copy(baseUrl = gatewayMetadataBaseUrl(context.baseUrl)), "/v1/credits")
         val obj = response.value.jsonObject
         return GatewayCreditsResponse(
             balance = (obj["balance"] as? JsonPrimitive)?.contentOrNull.orEmpty(),
@@ -326,7 +325,7 @@ public class KtorGatewayTransport(
             params.credentialType?.let { add("credential_type=${UrlOps.encode(it.wireValue)}") }
             if (params.tags.isNotEmpty()) add("tags=${UrlOps.encode(params.tags.joinToString(","))}")
         }.joinToString("&")
-        val response = getJson(context.copy(baseUrl = gatewayOrigin(context.baseUrl)), "/v1/report?$query")
+        val response = getJson(context.copy(baseUrl = gatewayMetadataBaseUrl(context.baseUrl)), "/v1/report?$query")
         return GatewaySpendReportResponse(
             results = (response.value.jsonObject["results"] as? JsonArray).orEmpty().mapNotNull { row ->
                 val obj = row as? JsonObject ?: return@mapNotNull null
@@ -363,7 +362,7 @@ public class KtorGatewayTransport(
         params: GatewayGenerationInfoParams,
     ): GatewayGenerationInfo {
         val response = getJson(
-            context.copy(baseUrl = gatewayOrigin(context.baseUrl)),
+            context.copy(baseUrl = gatewayMetadataBaseUrl(context.baseUrl)),
             "/v1/generation?id=${UrlOps.encode(params.id)}",
         )
         val data = (response.value.jsonObject["data"] as? JsonObject) ?: response.value.jsonObject
@@ -480,65 +479,8 @@ public class KtorGatewayTransport(
         put("content", JsonArray(message.content.map(::contentPartJson)))
     }
 
-    private fun contentPartJson(part: ContentPart): JsonObject = buildJsonObject {
-        when (part) {
-            is ContentPart.Text -> {
-                put("type", JsonPrimitive("text"))
-                put("text", JsonPrimitive(part.text))
-            }
-            is ContentPart.Reasoning -> {
-                put("type", JsonPrimitive("reasoning"))
-                put("text", JsonPrimitive(part.text))
-            }
-            is ContentPart.ToolCall -> {
-                put("type", JsonPrimitive("tool-call"))
-                put("toolCallId", JsonPrimitive(part.toolCallId))
-                put("toolName", JsonPrimitive(part.toolName))
-                put("input", part.input)
-            }
-            is ContentPart.ToolResult -> {
-                put("type", JsonPrimitive("tool-result"))
-                put("toolCallId", JsonPrimitive(part.toolCallId))
-                put("toolName", JsonPrimitive(part.toolName))
-                put("output", part.modelVisible)
-                put("isError", JsonPrimitive(part.isError))
-            }
-            is ContentPart.ToolApprovalRequest -> {
-                put("type", JsonPrimitive("tool-approval-request"))
-                put("toolCallId", JsonPrimitive(part.toolCallId))
-                put("toolName", JsonPrimitive(part.toolName))
-                put("input", part.input)
-                part.approvalId?.let { put("approvalId", JsonPrimitive(it)) }
-            }
-            is ContentPart.ToolApprovalResponse -> {
-                put("type", JsonPrimitive("tool-approval-response"))
-                put("toolCallId", JsonPrimitive(part.toolCallId))
-                put("approved", JsonPrimitive(part.approved))
-                part.reason?.let { put("reason", JsonPrimitive(it)) }
-                part.approvalId?.let { put("approvalId", JsonPrimitive(it)) }
-            }
-            is ContentPart.Source -> {
-                val sourceType =
-                    if (part.sourceType == StreamEvent.SourcePart.SourceType.Url) "source-url" else "source-document"
-                put("type", JsonPrimitive(sourceType))
-                part.url?.let { put("url", JsonPrimitive(it)) }
-                part.title?.let { put("title", JsonPrimitive(it)) }
-            }
-            is ContentPart.File -> {
-                put("type", JsonPrimitive("file"))
-                put("mediaType", JsonPrimitive(part.mediaType))
-                put("data", JsonPrimitive(part.base64))
-                part.filename?.let { put("filename", JsonPrimitive(it)) }
-            }
-            is ContentPart.Image -> {
-                put("type", JsonPrimitive("file"))
-                put("mediaType", JsonPrimitive(part.mediaType))
-                put("data", JsonPrimitive(part.base64))
-            }
-        }
-        val pm = part.metadata
-        if (pm is ProviderMetadata.Raw) put("providerMetadata", pm.metadata)
-    }
+    private fun contentPartJson(part: ContentPart): JsonObject =
+        ProtocolAdapters.gatewayContentPartJson(part)
 
     private fun languageModelToolJson(tool: LanguageModelTool): JsonObject = buildJsonObject {
         put("type", JsonPrimitive("function"))
@@ -573,145 +515,11 @@ public class KtorGatewayTransport(
     private fun contentParts(value: JsonElement?): List<ContentPart> =
         value?.let { WireDecoder.arrayValue(it, "gateway", "content parts").mapNotNull(::contentPartFromJson) }.orEmpty()
 
-    private fun contentPartFromJson(value: JsonElement): ContentPart? {
-        val obj = WireDecoder.objectValue(value, "gateway", "content part")
-        return when (WireDecoder.requiredString(obj, "type", "gateway", "content part")) {
-            "text" -> ContentPart.Text(
-                text = WireDecoder.requiredString(obj, "text", "gateway", "content part"),
-                providerMetadata = obj["providerMetadata"].let { if (it is JsonObject) ProviderMetadata.Raw(it) else ProviderMetadata.None },
-            )
-            "reasoning" -> ContentPart.Reasoning(
-                text = WireDecoder.requiredString(obj, "text", "gateway", "content part"),
-                providerMetadata = obj["providerMetadata"].let { if (it is JsonObject) ProviderMetadata.Raw(it) else ProviderMetadata.None },
-            )
-            "tool-call" -> ContentPart.ToolCall(
-                toolCallId = WireDecoder.requiredString(obj, "toolCallId", "gateway", "content part"),
-                toolName = WireDecoder.requiredString(obj, "toolName", "gateway", "content part"),
-                input = WireDecoder.required(obj, "input", "gateway", "content part"),
-                providerMetadata = obj["providerMetadata"].let { if (it is JsonObject) ProviderMetadata.Raw(it) else ProviderMetadata.None },
-            )
-            "tool-result" -> ContentPart.ToolResult(
-                toolCallId = WireDecoder.requiredString(obj, "toolCallId", "gateway", "content part"),
-                toolName = WireDecoder.requiredString(obj, "toolName", "gateway", "content part"),
-                output = WireDecoder.required(obj, "output", "gateway", "content part"),
-                isError = WireDecoder.optionalBoolean(obj, "isError", "gateway", "content part") ?: false,
-                providerMetadata = obj["providerMetadata"].let { if (it is JsonObject) ProviderMetadata.Raw(it) else ProviderMetadata.None },
-            )
-            "source-url" -> ContentPart.Source(
-                sourceType = StreamEvent.SourcePart.SourceType.Url,
-                url = WireDecoder.requiredString(obj, "url", "gateway", "content part"),
-                title = WireDecoder.optionalString(obj, "title", "gateway", "content part"),
-                providerMetadata = obj["providerMetadata"].let { if (it is JsonObject) ProviderMetadata.Raw(it) else ProviderMetadata.None },
-            )
-            "file" -> ContentPart.File(
-                mediaType = WireDecoder.optionalString(obj, "mediaType", "gateway", "content part") ?: "application/octet-stream",
-                base64 = requiredOneOfString(obj, "gateway", "content part", "data", "base64"),
-                filename = WireDecoder.optionalString(obj, "filename", "gateway", "content part"),
-                providerMetadata = obj["providerMetadata"].let { if (it is JsonObject) ProviderMetadata.Raw(it) else ProviderMetadata.None },
-            )
-            else -> null
-        }
-    }
+    private fun contentPartFromJson(value: JsonElement): ContentPart? =
+        ProtocolAdapters.gatewayContentPartFromJson(value)
 
-    private fun streamEventFromJson(value: JsonElement): StreamEvent {
-        val obj = WireDecoder.objectValue(value, "gateway", "stream event")
-        return when (val type = WireDecoder.requiredString(obj, "type", "gateway", "stream event")) {
-            "stream-start" -> StreamEvent.StreamStart(callWarnings(obj["warnings"]))
-            "response-metadata" -> StreamEvent.ResponseMetadata(
-                id = WireDecoder.optionalString(obj, "id", "gateway", "stream event"),
-                timestampMillis = (obj["timestampMillis"] as? JsonPrimitive)?.longOrNull
-                    ?: (obj["timestamp"] as? JsonPrimitive)?.doubleOrNull?.let { (it * 1000).toLong() }
-                    ?: (obj["timestamp"] as? JsonPrimitive)?.contentOrNull
-                        ?.let { runCatching { kotlin.time.Instant.parse(it).toEpochMilliseconds() }.getOrNull() },
-                modelId = WireDecoder.optionalString(obj, "modelId", "gateway", "stream event"),
-                headers = (obj["headers"] as? JsonObject)
-                    ?.mapValues { (it.value as? JsonPrimitive)?.content.orEmpty() }
-                    .orEmpty(),
-                body = obj["body"],
-            )
-            "text-start" -> StreamEvent.TextStart(
-                WireDecoder.optionalString(obj, "id", "gateway", "stream event") ?: "text"
-            )
-            "text-delta" -> StreamEvent.TextDelta(
-                id = WireDecoder.optionalString(obj, "id", "gateway", "stream event") ?: "text",
-                text = requiredOneOfString(obj, "gateway", "stream event", "delta", "text"),
-            )
-            "text-end" -> StreamEvent.TextEnd(WireDecoder.optionalString(obj, "id", "gateway", "stream event") ?: "text")
-            "reasoning-start" -> StreamEvent.ReasoningStart(
-                WireDecoder.optionalString(obj, "id", "gateway", "stream event") ?: "reasoning"
-            )
-            "reasoning-delta" -> StreamEvent.ReasoningDelta(
-                id = WireDecoder.optionalString(obj, "id", "gateway", "stream event") ?: "reasoning",
-                text = requiredOneOfString(obj, "gateway", "stream event", "delta", "text"),
-            )
-            "reasoning-end" -> StreamEvent.ReasoningEnd(
-                WireDecoder.optionalString(obj, "id", "gateway", "stream event") ?: "reasoning"
-            )
-            "tool-input-start" -> StreamEvent.ToolInputStart(
-                id = requiredOneOfString(obj, "gateway", "stream event", "id", "toolCallId"),
-                toolName = WireDecoder.requiredString(obj, "toolName", "gateway", "stream event"),
-            )
-            "tool-input-delta" -> StreamEvent.ToolInputDelta(
-                id = requiredOneOfString(obj, "gateway", "stream event", "id", "toolCallId"),
-                delta = WireDecoder.requiredString(obj, "delta", "gateway", "stream event"),
-            )
-            "tool-input-end" -> StreamEvent.ToolInputEnd(
-                id = requiredOneOfString(obj, "gateway", "stream event", "id", "toolCallId"),
-            )
-            "tool-call" -> StreamEvent.ToolCall(
-                toolCallId = WireDecoder.requiredString(obj, "toolCallId", "gateway", "stream event"),
-                toolName = WireDecoder.requiredString(obj, "toolName", "gateway", "stream event"),
-                inputJson = WireDecoder.required(obj, "input", "gateway", "stream event"),
-            )
-            "tool-result" -> with(ToolResultOutputs) {
-                val output = toolResultOutputFromWire(WireDecoder.required(obj, "output", "gateway", "stream event"))
-                StreamEvent.ToolResult(
-                    toolCallId = WireDecoder.requiredString(obj, "toolCallId", "gateway", "stream event"),
-                    toolName = WireDecoder.requiredString(obj, "toolName", "gateway", "stream event"),
-                    outputJson = output.toJsonElement(),
-                    output = output,
-                    modelOutput = output,
-                    // Honor the flag the gateway explicitly transmits (the content-part path
-                    // already does); only recompute when it's absent.
-                    isError = WireDecoder.optionalBoolean(obj, "isError", "gateway", "stream event")
-                        ?: output.isToolResultError(),
-                )
-            }
-            "finish-step" -> StreamEvent.StepFinish(
-                stepNumber = (obj["stepNumber"] as? JsonPrimitive)?.intOrNull ?: 1,
-                finishReason = finishReason((obj["finishReason"] as? JsonPrimitive)?.contentOrNull),
-                usage = usageFromJson(obj["usage"]),
-            )
-            "finish" -> StreamEvent.Finish(
-                totalSteps = (obj["totalSteps"] as? JsonPrimitive)?.intOrNull ?: 1,
-                finishReason = finishReason((obj["finishReason"] as? JsonPrimitive)?.contentOrNull),
-                usage = usageFromJson(obj["usage"]),
-            )
-            "error" -> StreamEvent.Error(
-                (obj["error"] as? JsonPrimitive)?.contentOrNull
-                    ?: obj["error"]?.toString()
-                    ?: (obj["message"] as? JsonPrimitive)?.contentOrNull
-                    ?: "Gateway stream error"
-            )
-            "raw" -> StreamEvent.Raw(obj["rawValue"] ?: value)
-            else -> StreamEvent.Raw(
-                buildJsonObject {
-                    put("type", JsonPrimitive(type))
-                    put("data", value)
-                }
-            )
-        }
-    }
-
-    private fun requiredOneOfString(obj: JsonObject, provider: String, operation: String, vararg keys: String): String =
-        keys.firstNotNullOfOrNull { key -> WireDecoder.optionalString(obj, key, provider, operation) }
-            ?: WireDecoder.fail(
-                provider = provider,
-                operation = operation,
-                path = "$",
-                message = "missing one required field: ${keys.joinToString(" or ")}",
-                value = obj,
-            )
+    private fun streamEventFromJson(value: JsonElement): StreamEvent =
+        ProtocolAdapters.gatewayStreamEventFromJson(value)
 
     private fun finishReason(value: String?): FinishReason = when (value) {
         "stop" -> FinishReason.Stop
@@ -723,12 +531,8 @@ public class KtorGatewayTransport(
         else -> FinishReason.Other
     }
 
-    private fun usageFromJson(value: JsonElement?): Usage {
-        val obj = (value as? JsonObject) ?: return Usage()
-        val prompt = TypedJsonOps.jsonIntOrNull(obj, "promptTokens") ?: TypedJsonOps.jsonIntOrNull(obj, "inputTokens") ?: 0
-        val completion = TypedJsonOps.jsonIntOrNull(obj, "completionTokens") ?: TypedJsonOps.jsonIntOrNull(obj, "outputTokens") ?: 0
-        return Usage.of(promptTokens = prompt, completionTokens = completion)
-    }
+    private fun usageFromJson(value: JsonElement?): Usage =
+        ProtocolAdapters.gatewayUsageFromJson(value)
 
     private fun callWarnings(value: JsonElement?): List<CallWarning> =
         (value as? JsonArray).orEmpty().mapNotNull { warning ->
@@ -741,8 +545,8 @@ public class KtorGatewayTransport(
             )
         }
 
-    private fun gatewayOrigin(baseUrl: String): String =
-        Regex("^(https?://[^/]+)").find(baseUrl)?.groupValues?.get(1) ?: baseUrl.trimEnd('/')
+    private fun gatewayMetadataBaseUrl(baseUrl: String): String =
+        baseUrl.trimEnd('/').removeSuffix("/v3/ai")
 }
 
 /** Adapter for the shared transport's `errorFromResponse` hook — keeps the rich [GatewayError] hierarchy. */

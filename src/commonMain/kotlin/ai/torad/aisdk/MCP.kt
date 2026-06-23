@@ -754,15 +754,16 @@ public interface OAuthClientProvider {
 
 /** OAuth client handshake driver for the HTTP / SSE transports. */
 internal object McpAuth {
+@Suppress("LongMethod", "CyclomaticComplexMethod", "ReturnCount", "ThrowsCount")
 suspend fun auth(
     provider: OAuthClientProvider,
     options: AuthOptions,
+    reauthorize: Boolean = false,
 ): AuthResult {
     val currentTokens = provider.tokens()
-    if (currentTokens?.accessToken?.isNotBlank() == true &&
-        currentTokens.refreshToken.isNullOrBlank() &&
-        options.authorizationCode == null
-    ) {
+    val hasReusableAccessToken = currentTokens?.accessToken?.isNotBlank() == true &&
+        currentTokens.refreshToken.isNullOrBlank()
+    if (hasReusableAccessToken && options.authorizationCode == null && !reauthorize) {
         return AuthResult.AUTHORIZED
     }
     val resourceMetadata = options.client?.let { client ->
@@ -847,7 +848,7 @@ suspend fun auth(
         return AuthResult.AUTHORIZED
     }
 
-    if (currentTokens?.accessToken?.isNotBlank() == true) {
+    if (currentTokens?.accessToken?.isNotBlank() == true && !reauthorize) {
         return AuthResult.AUTHORIZED
     }
 
@@ -1074,7 +1075,13 @@ public class HttpMCPTransport(
         }
         mcpSessionId(response)?.let { sessionId = it }
         if (response.status.value == 401 && authProvider != null && !triedAuth) {
-            if (McpAuth.auth(authProvider, AuthOptions(serverUrl = url, client = client)) != AuthResult.AUTHORIZED) {
+            if (
+                McpAuth.auth(
+                    authProvider,
+                    AuthOptions(serverUrl = url, client = client),
+                    reauthorize = true,
+                ) != AuthResult.AUTHORIZED
+            ) {
                 throw UnauthorizedError()
             }
             postMessage(message, triedAuth = true)
@@ -1160,7 +1167,9 @@ public class HttpMCPTransport(
         }
     }
 
+    @Suppress("CyclomaticComplexMethod")
     private suspend fun readInboundSse() {
+        var shouldReconnect = false
         try {
             val response = client.request(url) {
                 method = HttpMethod.Get
@@ -1179,6 +1188,7 @@ public class HttpMCPTransport(
                 onError?.invoke(error)
                 return
             }
+            shouldReconnect = true
             McpSseFrame.parseStreamReleasing(response.bodyAsChannel()) { event ->
                 if (event.event == "message") {
                     // Isolate per-message handling (mirrors the stdio reader): a malformed/unknown-ID
@@ -1199,7 +1209,7 @@ public class HttpMCPTransport(
             var restart = false
             inboundMutex.withLock {
                 inboundJob = null
-                if (lifecycle.isActive && inboundRetryRequested) {
+                if (lifecycle.isActive && (inboundRetryRequested || shouldReconnect)) {
                     inboundRetryRequested = false
                     restart = true
                 }
@@ -1338,7 +1348,13 @@ public class SseMCPTransport(
             ).forEach { (name, value) -> header(name, value) }
         }
         if (response.status.value == 401 && authProvider != null && !triedAuth) {
-            if (McpAuth.auth(authProvider, AuthOptions(serverUrl = url, client = client)) != AuthResult.AUTHORIZED) {
+            if (
+                McpAuth.auth(
+                    authProvider,
+                    AuthOptions(serverUrl = url, client = client),
+                    reauthorize = true,
+                ) != AuthResult.AUTHORIZED
+            ) {
                 throw UnauthorizedError()
             }
             return openSseConnection(triedAuth = true)
@@ -1362,7 +1378,13 @@ public class SseMCPTransport(
             setBody(message.toJsonString())
         }
         if (response.status.value == 401 && authProvider != null && !triedAuth) {
-            if (McpAuth.auth(authProvider, AuthOptions(serverUrl = url, client = client)) != AuthResult.AUTHORIZED) {
+            if (
+                McpAuth.auth(
+                    authProvider,
+                    AuthOptions(serverUrl = url, client = client),
+                    reauthorize = true,
+                ) != AuthResult.AUTHORIZED
+            ) {
                 throw UnauthorizedError()
             }
             sendInternal(message, triedAuth = true)

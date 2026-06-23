@@ -77,7 +77,10 @@ class ToolApprovalCrossTurnIdReuseTest {
             feed = null,
         ) { _, _, _, _, _, _, _, _, _ ->
             executed = true
-            ToolExecutionResult.Success(outputJson = JsonObject(mapOf("ok" to JsonPrimitive(true))))
+            ToolExecutionResult.Success(
+                toolName = "send",
+                outputJson = JsonObject(mapOf("ok" to JsonPrimitive(true))),
+            )
         }
 
         assertTrue(executed, "approved tool must execute even though the id was resolved in a prior turn")
