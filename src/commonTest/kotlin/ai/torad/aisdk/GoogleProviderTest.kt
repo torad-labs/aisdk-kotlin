@@ -140,7 +140,7 @@ class GoogleProviderTest {
         // The tool parameters schema must be stripped of JSON-Schema keys Google rejects.
         val params = decl?.get("parameters")?.jsonObject
         assertTrue(params != null && "\$schema" !in params, "\$schema stripped from tool schema")
-        assertTrue("additionalProperties" !in params!!, "additionalProperties stripped from tool schema")
+        assertTrue("additionalProperties" !in params, "additionalProperties stripped from tool schema")
         assertTrue("title" !in params, "title stripped from tool schema")
         assertEquals("lookup", body["toolConfig"]?.jsonObject?.get("functionCallingConfig")?.jsonObject?.get("allowedFunctionNames")?.jsonArray?.single()?.jsonPrimitive?.contentOrNull)
     }

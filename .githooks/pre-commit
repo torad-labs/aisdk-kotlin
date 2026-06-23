@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Committed pre-commit hook. Enable once with:  git config core.hooksPath .githooks
 # Runs the repo architecture gate (the same ast-grep rules the Claude PreToolUse
-# hook enforces, applied to the whole tree, + the cross-file non-integrated check)
+# hook enforces, applied to the whole tree, + cross-file structural checks)
 # so EVERY commit — human or agent — is gated, not just Claude's edits.
 # CI runs the identical gate (ci.yml) so this cannot be bypassed by skipping the hook.
 set -u

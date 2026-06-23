@@ -1,11 +1,13 @@
 package ai.torad.aisdk
 
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertTrue
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class RetryBackoffTest {
     private fun apiError(retryAfterSeconds: String) = APICallError(
         message = "rate limited",

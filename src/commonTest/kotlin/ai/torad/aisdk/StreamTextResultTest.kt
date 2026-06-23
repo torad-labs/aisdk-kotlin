@@ -3,6 +3,7 @@ package ai.torad.aisdk
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.async
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.take
 import kotlinx.coroutines.flow.toList
@@ -11,6 +12,8 @@ import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
+import kotlin.test.assertTrue
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class StreamTextResultTest {
@@ -63,5 +66,28 @@ class StreamTextResultTest {
         val firstEvents = first.await()
         assertEquals(4, firstEvents.size)
         assertEquals(firstEvents, second.await()) // replay matches the live run
+    }
+
+    @Test
+    fun `a terminal error event remains memoised when the live collector throws`() = runTest {
+        var collections = 0
+        val upstream = flow {
+            collections++
+            emit(StreamEvent.TextStart("t"))
+            emit(StreamEvent.TextDelta("t", "partial"))
+            emit(StreamEvent.Error("provider failed"))
+        }
+        val result = StreamTextResult(sourceStream = upstream)
+
+        assertFailsWith<UiMessageStreamError> {
+            result.fullStream.collect { event ->
+                if (event is StreamEvent.Error) throw UiMessageStreamError(event.message, event.cause)
+            }
+        }
+
+        val replay = result.fullStream.toList()
+        assertEquals(1, collections)
+        assertEquals(3, replay.size)
+        assertTrue(replay.last() is StreamEvent.Error)
     }
 }

@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # Repo architecture gate — runs the SAME ast-grep rules the Claude PreToolUse hook
 # enforces, but on the whole tree at commit/CI time, so they apply to EVERY commit
-# (human or agent), not just Claude's edits. Plus the whole-program non-integrated
-# check (the cross-file class a per-file hook can't see).
+# (human or agent), not just Claude's edits. Plus whole-program structural checks
+# for the cross-file classes a per-file hook can't see.
 #
 # Used by .githooks/pre-commit (local) and ci.yml verify job (non-bypassable).
 # Exit 0 = clean, 1 = violation. Pure ast-grep + python; no model.
@@ -56,6 +56,12 @@ done
 
 echo "== non-integrated (internal, cross-file) gate =="
 python3 .claude/hooks/rules/detect-nonintegrated-kotlin.py src --check || fail=1
+
+echo "== tool occurrence identity gate =="
+python3 .claude/hooks/rules/detect-tool-identity-regressions.py src/commonMain/kotlin --check || fail=1
+
+echo "== release workflow trust gate =="
+python3 .claude/hooks/rules/detect-release-workflow-trust.py .github/workflows/release.yml --check || fail=1
 
 if [ "$fail" != 0 ]; then
   echo ""

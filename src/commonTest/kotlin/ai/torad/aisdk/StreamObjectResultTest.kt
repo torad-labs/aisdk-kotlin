@@ -8,11 +8,15 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.serializer
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertTrue
 
 class StreamObjectResultTest {
     @Serializable
     private data class Person(val name: String = "", val age: Int = 0)
+
+    @Serializable
+    private data class StrictPerson(val name: String, val age: Int)
 
     private fun streamingModel(vararg deltas: String) = object : LanguageModel {
         override val modelId = "test/obj"
@@ -23,6 +27,21 @@ class StreamObjectResultTest {
             emit(StreamEvent.TextStart("t"))
             deltas.forEach { emit(StreamEvent.TextDelta("t", it)) }
             emit(StreamEvent.TextEnd("t"))
+            emit(StreamEvent.Finish(1, FinishReason.Stop, Usage()))
+        }
+    }
+
+    private fun outOfOrderDeltaModel(vararg deltas: Pair<String, String>) = object : LanguageModel {
+        override val modelId = "test/out-of-order-blocks"
+        override suspend fun generate(params: LanguageModelCallParams) =
+            LanguageModelResult(text = "{}", finishReason = FinishReason.Stop, usage = Usage())
+
+        override fun stream(params: LanguageModelCallParams): Flow<StreamEvent> = flow {
+            emit(StreamEvent.TextStart("a"))
+            emit(StreamEvent.TextStart("b"))
+            deltas.forEach { (id, text) -> emit(StreamEvent.TextDelta(id, text)) }
+            emit(StreamEvent.TextEnd("a"))
+            emit(StreamEvent.TextEnd("b"))
             emit(StreamEvent.Finish(1, FinishReason.Stop, Usage()))
         }
     }
@@ -122,6 +141,86 @@ class StreamObjectResultTest {
 
         val result = StreamObjectResult(model, Output.obj(serializer<Person>()), prompt = "go")
         assertEquals(Person("Ann", 30), result.objectValue())
+    }
+
+    @Test
+    fun `finish respects TextStart block order when later block delta arrives first`() = runTest {
+        val result = StreamObjectResult(
+            outOfOrderDeltaModel("b" to "}", "a" to """{"name":"Ann","age":30"""),
+            Output.obj(serializer<Person>()),
+            prompt = "go",
+        )
+
+        assertEquals(Person("Ann", 30), result.objectValue())
+    }
+
+    @Test
+    fun `partialObjectStream respects TextStart block order when deltas are out of order`() = runTest {
+        val result = StreamObjectResult(
+            outOfOrderDeltaModel("b" to "}", "a" to """{"name":"Bea","age":4"""),
+            Output.obj(serializer<Person>()),
+            prompt = "go",
+        )
+
+        assertEquals(Person("Bea", 4), result.partialObjectStream.toList().last())
+    }
+
+    @Test
+    fun `elementStream respects TextStart block order when deltas are out of order`() = runTest {
+        val arrayOutput = Output.Arr(serializer<Person>())
+        val result = StreamObjectResult(
+            outOfOrderDeltaModel(
+                "b" to """{"name":"B","age":2}]}""",
+                "a" to """{"elements":[{"name":"A","age":1},""",
+            ),
+            arrayOutput,
+            prompt = "go",
+        )
+
+        assertEquals(listOf(Person("A", 1), Person("B", 2)), result.elementStream(arrayOutput).toList())
+    }
+
+    @Test
+    fun `elementStream retries an out of order element that failed partial decoding`() = runTest {
+        val arrayOutput = Output.Arr(serializer<StrictPerson>())
+        val result = StreamObjectResult(
+            outOfOrderDeltaModel(
+                "a" to "{\"elements\":[{\"name\":\"A\"",
+                "b" to """},{"name":"B","age":2}]}""",
+                "a" to ",\"age\":1",
+            ),
+            arrayOutput,
+            prompt = "go",
+        )
+
+        assertEquals(
+            listOf(StrictPerson("A", 1), StrictPerson("B", 2)),
+            result.elementStream(arrayOutput).toList(),
+        )
+    }
+
+    @Test
+    fun `terminal stream errors are replayed without recollecting the model stream`() = runTest {
+        var streamCollections = 0
+        val model = object : LanguageModel {
+            override val modelId = "test/error-replay"
+            override suspend fun generate(params: LanguageModelCallParams) =
+                LanguageModelResult(text = "{}", finishReason = FinishReason.Stop, usage = Usage())
+
+            override fun stream(params: LanguageModelCallParams): Flow<StreamEvent> = flow {
+                streamCollections++
+                emit(StreamEvent.TextStart("t"))
+                emit(StreamEvent.TextDelta("t", "{\"name\":\"Err\""))
+                emit(StreamEvent.Error("provider failed", IllegalStateException("root cause")))
+            }
+        }
+        val result = StreamObjectResult(model, Output.obj(serializer<Person>()), prompt = "go")
+
+        assertFailsWith<UiMessageStreamError> { result.partialObjectStream.toList() }
+        val second = assertFailsWith<UiMessageStreamError> { result.objectValue() }
+
+        assertEquals("root cause", second.cause?.message)
+        assertEquals(1, streamCollections)
     }
 
     @Test
