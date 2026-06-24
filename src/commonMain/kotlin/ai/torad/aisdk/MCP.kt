@@ -183,6 +183,7 @@ public data class MCPClientConfig(
     val capabilities: MCPClientCapabilities = MCPClientCapabilities(),
 )
 
+@ExperimentalAiSdkApi
 public typealias experimental_MCPClientConfig = MCPClientConfig
 
 public interface MCPClient {
@@ -215,11 +216,13 @@ public interface MCPClient {
         options: MCPRequestOptions? = null,
     ): ListResourceTemplatesResult
 
+    @ExperimentalAiSdkApi
     public suspend fun experimental_listPrompts(
         params: JsonObject? = null,
         options: MCPRequestOptions? = null,
     ): ListPromptsResult
 
+    @ExperimentalAiSdkApi
     public suspend fun experimental_getPrompt(
         name: String,
         arguments: JsonObject? = null,
@@ -234,11 +237,13 @@ public interface MCPClient {
     public suspend fun close()
 }
 
+@ExperimentalAiSdkApi
 public typealias experimental_MCPClient = MCPClient
 
 public suspend fun CreateMCPClient(config: MCPClientConfig): MCPClient =
     DefaultMCPClient(config).also { it.init() }
 
+@ExperimentalAiSdkApi
 public suspend fun Experimental_CreateMCPClient(config: MCPClientConfig): MCPClient =
     CreateMCPClient(config)
 
@@ -408,11 +413,13 @@ private class DefaultMCPClient(config: MCPClientConfig) : MCPClient {
         options = options,
     )
 
+    @ExperimentalAiSdkApi
     override suspend fun experimental_listPrompts(
         params: JsonObject?,
         options: MCPRequestOptions?,
     ): ListPromptsResult = request("prompts/list", params, ListPromptsResult.serializer(), options)
 
+    @ExperimentalAiSdkApi
     override suspend fun experimental_getPrompt(
         name: String,
         arguments: JsonObject?,
@@ -1539,6 +1546,7 @@ internal interface MCPStdioProcess {
 
 internal expect fun CreateMCPStdioProcess(config: StdioConfig): MCPStdioProcess
 
+@ExperimentalAiSdkApi
 public class Experimental_StdioMCPTransport(
     public val config: StdioConfig,
     private val engineContext: CoroutineContext = Dispatchers.Default,

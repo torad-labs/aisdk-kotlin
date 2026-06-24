@@ -31,23 +31,24 @@ public sealed class FileData {
         override val mediaType: String? = null,
         override val filename: String? = null,
     ) : FileData() {
-        public val bytes: ByteArray = bytes.copyOf()
+        private val bytesData: ByteArray = bytes.copyOf()
+        public fun toByteArray(): ByteArray = bytesData.copyOf()
 
         override fun equals(other: Any?): Boolean =
             other is Bytes &&
-                bytes.contentEquals(other.bytes) &&
+                bytesData.contentEquals(other.bytesData) &&
                 mediaType == other.mediaType &&
                 filename == other.filename
 
         override fun hashCode(): Int {
-            var result = bytes.contentHashCode()
+            var result = bytesData.contentHashCode()
             result = 31 * result + mediaType.hashCode()
             result = 31 * result + filename.hashCode()
             return result
         }
 
         override fun toString(): String =
-            "Bytes(size=${bytes.size}, mediaType=$mediaType, filename=$filename)"
+            "Bytes(size=${bytesData.size}, mediaType=$mediaType, filename=$filename)"
     }
 
     public data class Url(
@@ -71,7 +72,7 @@ public fun GeneratedFile(
     )
     is FileData.Bytes -> GeneratedFile(
         mediaType = mediaType,
-        base64 = Base64Codec.encode(data.bytes),
+        base64 = Base64Codec.encode(data.toByteArray()),
         filename = filename,
         providerMetadata = providerMetadata,
     )
@@ -92,7 +93,7 @@ public fun ImageGenerationFile(data: FileData): ImageGenerationFile = when (data
     )
     is FileData.Bytes -> ImageGenerationFile(
         mediaType = data.mediaType,
-        base64 = Base64Codec.encode(data.bytes),
+        base64 = Base64Codec.encode(data.toByteArray()),
         filename = data.filename,
     )
     is FileData.Url -> ImageGenerationFile(
@@ -136,9 +137,17 @@ public object GeneratedFiles {
 }
 
 public typealias GeneratedAudioFile = GeneratedFile
+
+@ExperimentalAiSdkApi
 public typealias Experimental_GeneratedImage = GeneratedFile
+
+@ExperimentalAiSdkApi
 public typealias Experimental_GenerateImageResult = GenerateImageResult
+
+@ExperimentalAiSdkApi
 public typealias Experimental_SpeechResult = GenerateSpeechResult
+
+@ExperimentalAiSdkApi
 public typealias Experimental_TranscriptionResult = TranscribeResult
 
 public class DefaultGeneratedFile private constructor(
@@ -151,7 +160,7 @@ public class DefaultGeneratedFile private constructor(
             DefaultGeneratedFile(base64Data = data, byteArrayData = null, mediaType = mediaType)
 
         public fun fromBytes(data: ByteArray, mediaType: String): DefaultGeneratedFile =
-            DefaultGeneratedFile(base64Data = null, byteArrayData = data, mediaType = mediaType)
+            DefaultGeneratedFile(base64Data = null, byteArrayData = data.copyOf(), mediaType = mediaType)
     }
 
     public val base64: String
@@ -167,7 +176,7 @@ public class DefaultGeneratedFile private constructor(
             if (byteArrayData == null) {
                 byteArrayData = Base64Codec.decode(base64Data.orEmpty())
             }
-            return byteArrayData ?: ByteArray(0)
+            return byteArrayData?.copyOf() ?: ByteArray(0)
         }
 
     public fun toGeneratedFile(filename: String? = null, providerMetadata: ProviderMetadata = ProviderMetadata.None): GeneratedFile =
@@ -307,6 +316,8 @@ public object ImageGeneration {
         )
     }
 
+    @ExperimentalAiSdkApi
+    @Suppress("FunctionNaming")
     public suspend fun experimental_generateImage(
         model: ImageModel,
         prompt: String,
@@ -457,6 +468,8 @@ public object SpeechGeneration {
         )
     }
 
+    @ExperimentalAiSdkApi
+    @Suppress("FunctionNaming")
     public suspend fun experimental_generateSpeech(
         model: SpeechModel,
         text: String,
@@ -562,6 +575,8 @@ public object Transcription {
         )
     }
 
+    @ExperimentalAiSdkApi
+    @Suppress("FunctionNaming")
     public suspend fun experimental_transcribe(
         model: TranscriptionModel,
         audio: AudioSource,
@@ -686,6 +701,8 @@ public object VideoGeneration {
         )
     }
 
+    @ExperimentalAiSdkApi
+    @Suppress("FunctionNaming")
     public suspend fun experimental_generateVideo(
         model: VideoModel,
         prompt: String,

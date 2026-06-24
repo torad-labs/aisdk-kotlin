@@ -1,11 +1,11 @@
 package ai.torad.aisdk
 
-import ai.torad.aisdk.testing.FlowDrain.drainAllItems
+import ai.torad.aisdk.providers.MockAudioSource
 import ai.torad.aisdk.providers.MockImageModel
 import ai.torad.aisdk.providers.MockSpeechModel
 import ai.torad.aisdk.providers.MockTranscriptionModel
 import ai.torad.aisdk.providers.MockVideoModel
-import ai.torad.aisdk.providers.MockAudioSource
+import ai.torad.aisdk.testing.FlowDrain.drainAllItems
 import ai.torad.aisdk.ui.SafeValidateUIMessagesResult
 import ai.torad.aisdk.ui.TextUIPartState
 import ai.torad.aisdk.ui.UIMessage
@@ -19,13 +19,6 @@ import io.ktor.client.engine.mock.respond
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.headersOf
-import kotlin.test.Test
-import kotlin.test.assertEquals
-import kotlin.test.assertFailsWith
-import kotlin.test.assertIs
-import kotlin.test.assertNotNull
-import kotlin.test.assertNull
-import kotlin.test.assertTrue
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.flow.Flow
@@ -37,7 +30,16 @@ import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.jsonObject
+import kotlin.test.Test
+import kotlin.test.assertContentEquals
+import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
+import kotlin.test.assertIs
+import kotlin.test.assertNotNull
+import kotlin.test.assertNull
+import kotlin.test.assertTrue
 
+@OptIn(ExperimentalAiSdkApi::class)
 class GatewayAndProviderUtilsParityTest {
 
     @Test
@@ -345,6 +347,11 @@ class GatewayAndProviderUtilsParityTest {
     fun `generated file and experimental media aliases preserve v6 compatibility`() = runTest {
         val fileFromBytes = DefaultGeneratedFile.fromBytes(byteArrayOf(1, 2, 3), "application/octet-stream")
         val fileFromBase64 = DefaultGeneratedFile.fromBase64(fileFromBytes.base64, "application/octet-stream")
+        val mutableBytes = byteArrayOf(7, 8, 9)
+        val copiedFile = DefaultGeneratedFile.fromBytes(mutableBytes, "application/octet-stream")
+        mutableBytes[0] = 0
+        val exposedBytes = copiedFile.byteArray
+        exposedBytes[1] = 0
         val image: Experimental_GenerateImageResult = ImageGeneration.experimental_generateImage(MockImageModel(), "logo")
         val speech: Experimental_SpeechResult = SpeechGeneration.experimental_generateSpeech(MockSpeechModel(), "hello")
         val transcript: Experimental_TranscriptionResult =
@@ -352,6 +359,7 @@ class GatewayAndProviderUtilsParityTest {
         val video = VideoGeneration.experimental_generateVideo(MockVideoModel(), "clip")
 
         assertEquals(fileFromBytes.byteArray.toList(), fileFromBase64.byteArray.toList())
+        assertContentEquals(byteArrayOf(7, 8, 9), copiedFile.byteArray)
         assertEquals("asset.bin", fileFromBytes.toGeneratedFile("asset.bin").filename)
         assertEquals("image/png", image.image.mediaType)
         assertEquals("audio/mpeg", speech.audio.mediaType)

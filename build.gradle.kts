@@ -4,6 +4,7 @@ import kotlinx.kover.gradle.plugin.dsl.AggregationType
 import kotlinx.kover.gradle.plugin.dsl.CoverageUnit
 import org.gradle.api.publish.maven.MavenPublication
 import org.gradle.api.publish.maven.tasks.PublishToMavenRepository
+import org.jetbrains.kotlin.gradle.dsl.JvmDefaultMode
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.jetbrains.kotlin.gradle.dsl.abi.ExperimentalAbiValidation
 import org.jetbrains.kotlin.gradle.plugin.mpp.apple.XCFramework
@@ -75,12 +76,14 @@ kotlin {
         withHostTest {}
         compilerOptions {
             jvmTarget.set(JvmTarget.JVM_17)
+            jvmDefault.set(JvmDefaultMode.ENABLE)
         }
     }
 
     jvm {
         compilerOptions {
             jvmTarget.set(JvmTarget.JVM_17)
+            jvmDefault.set(JvmDefaultMode.ENABLE)
         }
     }
 

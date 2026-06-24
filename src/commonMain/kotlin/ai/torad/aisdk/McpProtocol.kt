@@ -71,6 +71,7 @@ public data class MCPClientCapabilities(
     val experimental: JsonObject? = null,
 )
 
+@ExperimentalAiSdkApi
 public typealias experimental_MCPClientCapabilities = MCPClientCapabilities
 
 @Serializable

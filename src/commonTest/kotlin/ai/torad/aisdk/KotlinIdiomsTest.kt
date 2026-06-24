@@ -131,6 +131,13 @@ class KotlinIdiomsTest {
         assertEquals("application/octet-stream", generated.mediaType)
         assertEquals("data.bin", generated.filename)
         assertContentEquals(bytes, generated.bytes())
+        bytes[0] = 9
+        assertContentEquals(byteArrayOf(1, 2, 3), generated.bytes())
+
+        val fileData = FileData.Bytes(byteArrayOf(4, 5, 6))
+        val exposed = fileData.toByteArray()
+        exposed[0] = 0
+        assertContentEquals(byteArrayOf(4, 5, 6), fileData.toByteArray())
 
         val remote = GeneratedFile(FileData.Url("https://example.com/image.png", mediaType = "image/png"))
         assertEquals("", remote.base64)

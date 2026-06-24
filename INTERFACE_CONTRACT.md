@@ -153,8 +153,15 @@ Penalty and response-format fields participate in the `Step ?: Agent ?: agent-de
 - Transcription: `TranscriptionModel`, `AudioSource`, `TranscriptionParams`, `TranscriptSegment`, `TranscribeResult`, `transcribe(...)`
 - Video: `VideoModel`, `VideoGenerationParams`, `VideoModelResult`, `GenerateVideoResult`, `generateVideo(...)`
 - Rerank: `RerankingModel`, `RerankingParams`, `RerankedItem<T>`, `RerankResult<T>`, `rerank(...)`
-- Shared file payload: `GeneratedFile(mediaType, base64, filename?, providerMetadata)`
+- Shared file payload: `GeneratedFile(mediaType, base64, filename?, providerMetadata)`, `FileData.Base64`, `FileData.Bytes.toByteArray()` (copy-returning), `FileData.Url`, `DefaultGeneratedFile.fromBase64/fromBytes` (`byteArray` is copy-returning).
+- Experimental media aliases/functions require `@ExperimentalAiSdkApi`: `Experimental_GeneratedImage`, `Experimental_GenerateImageResult`, `Experimental_SpeechResult`, `Experimental_TranscriptionResult`, `experimental_generateImage`, `experimental_generateSpeech`, `experimental_transcribe`, `experimental_generateVideo`.
 - `ImageModelMiddleware`, `ImageMiddlewareCallContext`, `wrapImageModel`
+
+### MCP
+
+- `MCPTransport`, `MCPClientConfig`, `MCPClient`, `CreateMCPClient(config)`.
+- `MCPClient` resource/tool APIs: `tools`, `toolsFromDefinitions`, `listTools`, `listResources`, `readResource`, `listResourceTemplates`, `onElicitationRequest`, `close`.
+- Experimental MCP aliases/functions require `@ExperimentalAiSdkApi`: `experimental_MCPClientConfig`, `experimental_MCPClient`, `experimental_MCPClientCapabilities`, `experimental_listPrompts`, `experimental_getPrompt`, `Experimental_CreateMCPClient`, `Experimental_StdioMCPTransport`.
 
 ### Provider Registry
 
@@ -164,8 +171,8 @@ Penalty and response-format fields participate in the `Step ?: Agent ?: agent-de
 
 ### Telemetry
 
-- `TelemetrySettings`, `TelemetrySpan`, `TelemetryIntegration`, `NoopTelemetryIntegration`, `TelemetryIntegrationRegistry`, `globalTelemetryIntegrations`.
-- Helpers: `assembleOperationName`, `recordSpan`, `selectTelemetryAttributes`, `stringifyForTelemetry`.
+- `TelemetrySettings`, `TelemetryCall`, `Telemetry`, `registerTelemetry`, `clearGlobalTelemetry`, `globalTelemetry`, `NoopTelemetry`.
+- Tracing helpers: `TelemetryTracer`, `TelemetryActiveSpan`, `NoopTelemetryTracer`, `NoopTelemetryActiveSpan`, `InMemoryTelemetryTracer`, `MutableTelemetrySpan(name, initialAttributes: Map<String, JsonElement> = emptyMap())`, `TelemetryTracing.withActiveSpan`, `TelemetryTracing.recordErrorOnSpan`, `TelemetryTracing.selectTelemetryAttributes`.
 
 ### Provider-Utils Helpers
 
