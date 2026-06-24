@@ -107,7 +107,7 @@ private class HumeSpeechModel(
             method = HttpMethod.Post
             contentType(ContentType.Application.Json)
             settings.humeHeaders(params.headers).forEach { (name, value) -> header(name, value) }
-            setBody(aiSdkJson.encodeToString(JsonElement.serializer(), body))
+            setBody(aiSdkOutputJson.encodeToString(JsonElement.serializer(), body))
         }.let { parseHumeBinary(it, url, format) }
         return SpeechModelResult(
             audio = GeneratedFile(

@@ -66,7 +66,7 @@ internal val googleErrorExtractor: ErrorMessageExtractor = { _, parsed, raw -> g
         method = HttpMethod.Post
         contentType(ContentType.Application.Json)
         headers.forEach { (name, value) -> header(name, value) }
-        setBody(aiSdkJson.encodeToString(JsonElement.serializer(), body))
+        setBody(aiSdkOutputJson.encodeToString(JsonElement.serializer(), body))
     }
     return response.parseGoogleResponse(url, parseJson, requestBodyValues = body)
 }

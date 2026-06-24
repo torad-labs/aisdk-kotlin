@@ -29,6 +29,7 @@ class ToradRuleSetProvider : RuleSetProvider {
             PreferTypedErrorOverErrorCall(config),
             PreferTypedErrorOverCheckNotNull(config),
             PreferTypedErrorOverGenericThrow(config),
+            NoRunCatchingInSuspendFunction(config),
         ),
     )
 }

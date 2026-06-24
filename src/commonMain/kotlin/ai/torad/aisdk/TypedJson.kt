@@ -1,6 +1,7 @@
 package ai.torad.aisdk
 
 import kotlinx.serialization.KSerializer
+import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
@@ -12,6 +13,12 @@ import kotlinx.serialization.json.encodeToJsonElement
 import kotlinx.serialization.json.intOrNull
 import kotlinx.serialization.serializer
 
+// Inbound (decode-only) codec: lenient + unknown-key tolerant for provider
+// responses we don't fully model. NEVER used to encode outbound payloads — that
+// goes through [aiSdkOutputJson] (enforced by the beta-readiness gate) so the
+// `explicitNulls = false` leniency can't make an encode→decode round-trip
+// non-idempotent. This remains `@PublishedApi` because prior ABI dumps already
+// exposed it; removing it would be an ABI removal unrelated to the codec fix.
 @PublishedApi
 internal val aiSdkJson: Json = Json {
     ignoreUnknownKeys = true
@@ -74,7 +81,7 @@ public val StreamEvent.metadata: ProviderMetadata
 // `with(TypedJsonOps) { ... }`.
 public object TypedJsonOps {
     public fun <T> encodeJsonElement(value: T, serializer: KSerializer<T>): JsonElement =
-        aiSdkJson.encodeToJsonElement(serializer, value)
+        aiSdkOutputJson.encodeToJsonElement(serializer, value)
 
     public inline fun <reified T> encodeJsonElement(value: T): JsonElement =
         encodeJsonElement(value, serializer())
@@ -84,6 +91,15 @@ public object TypedJsonOps {
 
     public inline fun <reified T> JsonElement.decodeAs(): T =
         decodeAs(serializer())
+
+    internal fun parseJsonElementOrNull(json: Json, text: String): JsonElement? =
+        try {
+            json.parseToJsonElement(text)
+        } catch (_: SerializationException) {
+            null
+        } catch (_: IllegalArgumentException) {
+            null
+        }
 
     public fun <T> JsonObjectBuilder.putJson(name: String, value: T, serializer: KSerializer<T>) {
         put(name, encodeJsonElement(value, serializer))

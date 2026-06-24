@@ -92,6 +92,8 @@ public fun DevToolsMiddleware(
                     ),
                 )
                 result
+            } catch (error: kotlinx.coroutines.CancellationException) {
+                throw error
             } catch (error: Throwable) {
                 recorder.updateStepResult(
                     step.id,
@@ -128,6 +130,8 @@ public fun DevToolsMiddleware(
                         rawChunks = collector.rawChunks,
                     ),
                 )
+            } catch (error: kotlinx.coroutines.CancellationException) {
+                throw error
             } catch (error: Throwable) {
                 recorder.updateStepResult(
                     step.id,

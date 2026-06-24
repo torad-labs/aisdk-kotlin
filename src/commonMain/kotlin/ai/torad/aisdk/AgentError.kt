@@ -1,5 +1,7 @@
 package ai.torad.aisdk
 
+import kotlin.time.Duration
+
 public sealed class AgentError(
     message: String,
     cause: Throwable? = null,
@@ -70,5 +72,21 @@ public sealed class AgentError(
         public val stepCount: Int,
     ) : AgentError(
         "Agent loop hit stop condition after $stepCount step(s) without a terminal finish reason",
+    )
+
+    public class MaxToolCallsPerStepExceeded(
+        public val toolCallCount: Int,
+        public val maxToolCallsPerStep: Int,
+    ) : AgentError(
+        "Model emitted $toolCallCount tool call(s) in one step, exceeding the configured " +
+            "maxToolCallsPerStep=$maxToolCallsPerStep",
+    )
+
+    public class ToolExecutionTimedOut(
+        public val toolName: String,
+        public val toolCallId: String,
+        public val timeout: Duration,
+    ) : AgentError(
+        "Tool '$toolName' (callId=$toolCallId) timed out after $timeout",
     )
 }

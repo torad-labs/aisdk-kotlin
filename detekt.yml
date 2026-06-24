@@ -66,3 +66,5 @@ torad-aisdk:
     active: true
   PreferTypedErrorOverGenericThrow:
     active: true
+  NoRunCatchingInSuspendFunction:
+    active: true

@@ -215,7 +215,7 @@ private class HuggingFaceResponsesLanguageModel(
             method = HttpMethod.Post
             contentType(ContentType.Application.Json)
             settings.huggingFaceHeaders(headers).forEach { (name, value) -> header(name, value) }
-            setBody(aiSdkJson.encodeToString(JsonElement.serializer(), body))
+            setBody(aiSdkOutputJson.encodeToString(JsonElement.serializer(), body))
         }
         return parseResponse(response, parseJson = true)
     }
@@ -227,7 +227,7 @@ private class HuggingFaceResponsesLanguageModel(
         val raw = response.bodyAsText()
         val headers = response.headers.entries().associate { it.key to it.value.joinToString(",") }
         if (response.status.value !in 200..299) {
-            val parsed = runCatching { aiSdkJson.parseToJsonElement(raw) }.getOrNull()
+            val parsed = TypedJsonOps.parseJsonElementOrNull(aiSdkJson, raw)
             throw ApiCallError(
                 url = response.call.request.url.toString(),
                 statusCode = response.status.value,

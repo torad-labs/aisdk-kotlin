@@ -9,7 +9,6 @@ import io.ktor.client.request.request
 import io.ktor.client.request.setBody
 import io.ktor.client.statement.HttpResponse
 import io.ktor.client.statement.bodyAsChannel
-import io.ktor.client.statement.bodyAsText
 import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpMethod
@@ -312,12 +311,17 @@ private class DefaultMCPClient(config: MCPClientConfig) : MCPClient {
 
     override suspend fun close() {
         isClosed.store(true)
-        transport.close()
-        // Authoritative synchronous drain: when close() returns, every pending
-        // request is settled. Idempotent (clears the map), so it composes with a
-        // drain the transport's onClose callback may already have launched.
-        failAllPendingRequests()
-        clientScope.cancel()
+        try {
+            transport.close()
+        } finally {
+            withContext(NonCancellable) {
+                // Authoritative synchronous drain: when close() returns, every pending
+                // request is settled. Idempotent (clears the map), so it composes with a
+                // drain the transport's onClose callback may already have launched.
+                failAllPendingRequests()
+                clientScope.cancel()
+            }
+        }
     }
 
     /**
@@ -1037,6 +1041,7 @@ public class HttpMCPTransport(
         // Atomically claim the close (idempotent; no double-close TOCTOU) — only
         // the winning caller runs the teardown below.
         val (connectionScope, _) = lifecycle.close() ?: return
+        var cancellation: CancellationException? = null
         try {
             sessionId?.let { session ->
                 withTimeoutOrNull(MCP_CLOSE_DELETE_TIMEOUT_MS) {
@@ -1048,17 +1053,24 @@ public class HttpMCPTransport(
                 }
             }
         } catch (error: CancellationException) {
-            throw error
+            // Capture and rethrow only after local teardown runs: once close() has won
+            // the lifecycle transition, the inbound job/scope MUST be released even when
+            // the caller's coroutine is cancelled mid-DELETE, else the reader leaks.
+            cancellation = error
         } catch (_: Throwable) {
             // Best-effort session teardown; ignore transport errors on close.
+        } finally {
+            withContext(NonCancellable) {
+                val job = inboundMutex.withLock {
+                    inboundRetryRequested = false
+                    inboundJob.also { inboundJob = null }
+                }
+                connectionScope.cancel()
+                lifecycle.cancelAndJoinUnlessSelf(job)
+                onClose?.invoke()
+            }
         }
-        val job = inboundMutex.withLock {
-            inboundRetryRequested = false
-            inboundJob.also { inboundJob = null }
-        }
-        connectionScope.cancel()
-        lifecycle.cancelAndJoinUnlessSelf(job)
-        onClose?.invoke()
+        cancellation?.let { throw it }
     }
 
     private suspend fun postMessage(message: JSONRPCMessage, triedAuth: Boolean) {
@@ -1092,7 +1104,7 @@ public class HttpMCPTransport(
         // notification POST (e.g. a rejected notifications/initialized handshake) would be
         // silently swallowed and init() would report success on an uninitialized session.
         if (response.status.value !in 200..299) {
-            val text = response.bodyAsText()
+            val text = with(HttpTransport) { response.bodyAsTextCapped(url) }
             val hint = if (response.status.value == HTTP_NOT_FOUND) {
                 ". This server does not support HTTP transport. Try using `sse` transport instead"
             } else {
@@ -1112,7 +1124,8 @@ public class HttpMCPTransport(
         val contentType = response.headers[HttpHeaders.ContentType].orEmpty()
         when {
             contentType.contains("application/json", ignoreCase = true) -> {
-                JSONRPCMessage.fromJsonBatch(response.bodyAsText()).forEach { onMessage?.invoke(it) }
+                val text = with(HttpTransport) { response.bodyAsTextCapped(url) }
+                JSONRPCMessage.fromJsonBatch(text).forEach { onMessage?.invoke(it) }
             }
             contentType.contains("text/event-stream", ignoreCase = true) -> launchPostResponseSse(response)
             else -> {
@@ -1391,10 +1404,11 @@ public class SseMCPTransport(
             return
         }
         if (response.status.value !in 200..299) {
+            val text = with(HttpTransport) { response.bodyAsTextCapped(destination) }
             val error =
                 MCPClientError(
                     "MCP SSE Transport Error: POSTing to endpoint " +
-                        "(HTTP ${response.status.value}): ${response.bodyAsText()}"
+                        "(HTTP ${response.status.value}): $text",
                 )
             onError?.invoke(error)
             throw error
@@ -1547,7 +1561,7 @@ public class Experimental_StdioMCPTransport(
             ?: throw MCPClientError("StdioMCPTransport already started.")
         // Close any pre-existing process before overwriting the field — a reconnect after the
         // reader EOF'd would otherwise leak the prior child + its FDs.
-        process?.let { stale -> runCatching { stale.close() } }
+        process?.let { stale -> closeProcessPreservingCancellation(stale) }
         val started = try {
             CreateMCPStdioProcess(config)
         } catch (@Suppress("TooGenericExceptionCaught") error: Throwable) {
@@ -1579,10 +1593,12 @@ public class Experimental_StdioMCPTransport(
                     // exiting does NOT otherwise do so, leaking the process handle + FDs — then fire
                     // onClose. If close() already won the transition it owns onClose.
                     lifecycle.onReaderExited()?.let { deadScope ->
-                        deadScope.cancel()
-                        runCatching { started.close() }
-                        if (process === started) process = null
-                        onClose?.invoke()
+                        withContext(NonCancellable) {
+                            closeProcessForTeardown(started)
+                            deadScope.cancel()
+                            if (process === started) process = null
+                            onClose?.invoke()
+                        }
                     }
                 }
             },
@@ -1606,15 +1622,45 @@ public class Experimental_StdioMCPTransport(
         process = null
         if (handback == null) {
             // Reader already exited (or never started): just release the process.
-            p?.close()
+            withContext(NonCancellable) {
+                p?.let { closeProcessForTeardown(it) }
+            }
             return
         }
         val (scope, reader) = handback
+        // Local teardown is non-cancellable so a cancelled caller can't strand the
+        // reader job or skip onClose after close() won the lifecycle transition.
         // Cancel the scope, close the process to unblock a parked readLine, then
         // join — the ordering that prevents close() hanging on the blocking read.
-        scope.cancel()
-        p?.close()
-        lifecycle.cancelAndJoinUnlessSelf(reader)
-        onClose?.invoke()
+        withContext(NonCancellable) {
+            scope.cancel()
+            p?.let { closeProcessForTeardown(it) }
+            lifecycle.cancelAndJoinUnlessSelf(reader)
+            onClose?.invoke()
+        }
+    }
+
+    /**
+     * Close a stdio process, swallowing only non-cancellation failures. Cancellation
+     * is rethrown so structured concurrency is preserved (stdlib `runCatching` would
+     * capture it into a `Result.failure` instead). Member extension (not a top-level
+     * one) per the project's no-loose-top-level-function tenet.
+     */
+    private suspend fun closeProcessPreservingCancellation(process: MCPStdioProcess) {
+        try {
+            process.close()
+        } catch (error: CancellationException) {
+            throw error
+        } catch (_: Throwable) {
+            // Best-effort stdio teardown; the lifecycle owner still completes local cleanup.
+        }
+    }
+
+    private suspend fun closeProcessForTeardown(process: MCPStdioProcess) {
+        try {
+            process.close()
+        } catch (_: Throwable) {
+            // Teardown is already running in NonCancellable; process close failures are best-effort.
+        }
     }
 }

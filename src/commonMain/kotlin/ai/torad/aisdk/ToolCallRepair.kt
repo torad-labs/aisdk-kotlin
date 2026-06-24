@@ -75,7 +75,7 @@ internal data class RepairRequest(
             ),
         )
         val text = stripCodeFences(result.text.trim())
-        return runCatching { aiSdkJson.parseToJsonElement(text) }.getOrNull()
+        return TypedJsonOps.parseJsonElementOrNull(aiSdkJson, text)
     }
 
     fun toPrompt(): String = """

@@ -15,7 +15,6 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emitAll
 import kotlinx.coroutines.flow.flow
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.SerializationException
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
@@ -27,7 +26,6 @@ import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.booleanOrNull
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.contentOrNull
-import kotlinx.serialization.json.decodeFromJsonElement
 import kotlinx.serialization.json.doubleOrNull
 import kotlinx.serialization.json.intOrNull
 import kotlinx.serialization.json.jsonObject
@@ -119,7 +117,6 @@ private class OpenResponsesLanguageModel(
             stream = false,
             providerOptionsName = settings.providerOptionsName ?: settings.name,
             modelId,
-            json,
             settings.fileIdPrefixes,
         )
         val response = postJson(prepared.body, headers = params.headers)
@@ -140,7 +137,6 @@ private class OpenResponsesLanguageModel(
             stream = true,
             providerOptionsName = settings.providerOptionsName ?: settings.name,
             modelId,
-            json,
             settings.fileIdPrefixes,
         )
         emit(StreamEvent.StreamStart(prepared.warnings))
@@ -164,7 +160,6 @@ private class OpenResponsesLanguageModel(
             stream = true,
             providerOptionsName = settings.providerOptionsName ?: settings.name,
             modelId,
-            json,
             settings.fileIdPrefixes,
         )
         return LanguageModelStreamResult(
@@ -569,6 +564,16 @@ private data class OpenResponsesHttpResponse(
     val headers: Map<String, String>,
 )
 
+private data class OpenResponsesRequestBuildContext(
+    val params: LanguageModelCallParams,
+    val stream: Boolean,
+    val modelId: String,
+    val convertedInput: ConvertedOpenResponsesInput,
+    val providerOptions: OpenResponsesOptions?,
+    val include: JsonArray?,
+    val topLogprobs: Int?,
+)
+
 internal data class PreparedOpenResponsesRequest(
     val body: JsonObject,
     val warnings: List<CallWarning>,
@@ -579,72 +584,113 @@ internal data class PreparedOpenResponsesRequest(
             stream: Boolean,
             providerOptionsName: String,
             modelId: String,
-            json: Json,
             fileIdPrefixes: List<String> = emptyList(),
         ): PreparedOpenResponsesRequest {
-            val warnings = mutableListOf<CallWarning>()
-            if (params.stopSequences.isNotEmpty()) {
-                warnings += CallWarning("unsupported", "stopSequences are not supported by Open Responses models")
-            }
-            params.topK?.let {
-                warnings += CallWarning("unsupported", "topK is not supported by Open Responses models")
-            }
-            params.seed?.let {
-                warnings += CallWarning("unsupported", "seed is not supported by Open Responses models")
-            }
-
+            val warnings = unsupportedWarnings(params)
             val convertedInput = ConvertedOpenResponsesInput.from(params.messages, warnings, fileIdPrefixes)
-            val providerOptions = openResponsesProviderOptions(params.providerOptions, providerOptionsName, json)
+            val providerOptions = openResponsesProviderOptions(params.providerOptions, providerOptionsName)
             val topLogprobs = openResponsesTopLogprobs(providerOptions?.logprobs)
             val include = openResponsesInclude(providerOptions, params.tools, modelId, topLogprobs)
-
+            val context = OpenResponsesRequestBuildContext(
+                params = params,
+                stream = stream,
+                modelId = modelId,
+                convertedInput = convertedInput,
+                providerOptions = providerOptions,
+                include = include,
+                topLogprobs = topLogprobs,
+            )
             return PreparedOpenResponsesRequest(
-                body = buildJsonObject {
-                    put("model", JsonPrimitive(modelId))
-                    put("input", convertedInput.input)
-                    val instructions = when (providerOptions?.systemMessageMode) {
-                        "remove" -> providerOptions.instructions
-                        else -> providerOptions?.instructions ?: convertedInput.instructions
-                    }
-                    instructions?.let { put("instructions", JsonPrimitive(it)) }
-                    params.maxOutputTokens?.let { put("max_output_tokens", JsonPrimitive(it)) }
-                    params.temperature?.let { put("temperature", JsonPrimitive(it)) }
-                    params.topP?.let { put("top_p", JsonPrimitive(it)) }
-                    params.presencePenalty?.let { put("presence_penalty", JsonPrimitive(it)) }
-                    params.frequencyPenalty?.let { put("frequency_penalty", JsonPrimitive(it)) }
-                    if (stream) put("stream", JsonPrimitive(true))
-
-                    val reasoning = openResponsesReasoning(providerOptions)
-                    if (reasoning.isNotEmpty()) put("reasoning", JsonObject(reasoning))
-
-                    if (params.tools.isNotEmpty()) put("tools", JsonArray(params.tools.map(::openResponsesToolJson)))
-                    openResponsesToolChoice(params.toolChoice, providerOptions)?.let { put("tool_choice", it) }
-                    val text = openResponsesText(params.responseFormat, providerOptions)
-                    if (text.isNotEmpty()) put("text", JsonObject(text))
-
-                    providerOptions?.conversation?.let { put("conversation", JsonPrimitive(it)) }
-                    providerOptions?.maxToolCalls?.let { put("max_tool_calls", JsonPrimitive(it)) }
-                    providerOptions?.metadata?.let { put("metadata", it) }
-                    providerOptions?.parallelToolCalls?.let { put("parallel_tool_calls", JsonPrimitive(it)) }
-                    providerOptions?.previousResponseId?.let { put("previous_response_id", JsonPrimitive(it)) }
-                    providerOptions?.promptCacheKey?.let { put("prompt_cache_key", JsonPrimitive(it)) }
-                    providerOptions?.promptCacheRetention?.let { put("prompt_cache_retention", JsonPrimitive(it)) }
-                    providerOptions?.safetyIdentifier?.let { put("safety_identifier", JsonPrimitive(it)) }
-                    providerOptions?.serviceTier?.let { put("service_tier", JsonPrimitive(it)) }
-                    providerOptions?.store?.let { put("store", JsonPrimitive(it)) }
-                    providerOptions?.truncation?.let { put("truncation", JsonPrimitive(it)) }
-                    providerOptions?.user?.let { put("user", JsonPrimitive(it)) }
-                    include?.let { put("include", it) }
-                    topLogprobs?.let { put("top_logprobs", JsonPrimitive(it)) }
-                },
+                body = openResponsesRequestBody(context),
                 warnings = warnings,
             )
+        }
+
+        private fun unsupportedWarnings(params: LanguageModelCallParams): MutableList<CallWarning> = buildList {
+            if (params.stopSequences.isNotEmpty()) {
+                add(CallWarning("unsupported", "stopSequences are not supported by Open Responses models"))
+            }
+            params.topK?.let {
+                add(CallWarning("unsupported", "topK is not supported by Open Responses models"))
+            }
+            params.seed?.let {
+                add(CallWarning("unsupported", "seed is not supported by Open Responses models"))
+            }
+        }.toMutableList()
+
+        private fun openResponsesRequestBody(context: OpenResponsesRequestBuildContext): JsonObject =
+            buildJsonObject {
+                putCoreRequestFields(this, context)
+                putToolAndTextFields(this, context)
+                putProviderOptionFields(this, context)
+            }
+
+        private fun putCoreRequestFields(builder: JsonObjectBuilder, context: OpenResponsesRequestBuildContext) {
+            val params = context.params
+            val providerOptions = context.providerOptions
+            builder.put("model", JsonPrimitive(context.modelId))
+            builder.put("input", context.convertedInput.input)
+            val instructions = when (providerOptions?.systemMessageMode) {
+                "remove" -> providerOptions.instructions
+                else -> providerOptions?.instructions ?: context.convertedInput.instructions
+            }
+            instructions?.let { builder.put("instructions", JsonPrimitive(it)) }
+            params.maxOutputTokens?.let { builder.put("max_output_tokens", JsonPrimitive(it)) }
+            params.temperature?.let { builder.put("temperature", JsonPrimitive(it)) }
+            params.topP?.let { builder.put("top_p", JsonPrimitive(it)) }
+            params.presencePenalty?.let { builder.put("presence_penalty", JsonPrimitive(it)) }
+            params.frequencyPenalty?.let { builder.put("frequency_penalty", JsonPrimitive(it)) }
+            if (context.stream) builder.put("stream", JsonPrimitive(true))
+        }
+
+        private fun putToolAndTextFields(builder: JsonObjectBuilder, context: OpenResponsesRequestBuildContext) {
+            val params = context.params
+            val providerOptions = context.providerOptions
+            val reasoning = openResponsesReasoning(providerOptions)
+            if (reasoning.isNotEmpty()) builder.put("reasoning", JsonObject(reasoning))
+            if (params.tools.isNotEmpty()) builder.put("tools", JsonArray(params.tools.map(::openResponsesToolJson)))
+            openResponsesToolChoice(params.toolChoice, providerOptions)?.let { builder.put("tool_choice", it) }
+            val text = openResponsesText(params.responseFormat, providerOptions)
+            if (text.isNotEmpty()) builder.put("text", JsonObject(text))
+        }
+
+        private fun putProviderOptionFields(builder: JsonObjectBuilder, context: OpenResponsesRequestBuildContext) {
+            val providerOptions = context.providerOptions
+            putStringOption(builder, "conversation", providerOptions?.conversation)
+            putIntOption(builder, "max_tool_calls", providerOptions?.maxToolCalls)
+            putJsonOption(builder, "metadata", providerOptions?.metadata)
+            putBooleanOption(builder, "parallel_tool_calls", providerOptions?.parallelToolCalls)
+            putStringOption(builder, "previous_response_id", providerOptions?.previousResponseId)
+            putStringOption(builder, "prompt_cache_key", providerOptions?.promptCacheKey)
+            putStringOption(builder, "prompt_cache_retention", providerOptions?.promptCacheRetention)
+            putStringOption(builder, "safety_identifier", providerOptions?.safetyIdentifier)
+            putStringOption(builder, "service_tier", providerOptions?.serviceTier)
+            putBooleanOption(builder, "store", providerOptions?.store)
+            putStringOption(builder, "truncation", providerOptions?.truncation)
+            putStringOption(builder, "user", providerOptions?.user)
+            putJsonOption(builder, "include", context.include)
+            putIntOption(builder, "top_logprobs", context.topLogprobs)
+        }
+
+        private fun putStringOption(builder: JsonObjectBuilder, name: String, value: String?) {
+            if (value != null) builder.put(name, JsonPrimitive(value))
+        }
+
+        private fun putIntOption(builder: JsonObjectBuilder, name: String, value: Int?) {
+            if (value != null) builder.put(name, JsonPrimitive(value))
+        }
+
+        private fun putBooleanOption(builder: JsonObjectBuilder, name: String, value: Boolean?) {
+            if (value != null) builder.put(name, JsonPrimitive(value))
+        }
+
+        private fun putJsonOption(builder: JsonObjectBuilder, name: String, value: JsonElement?) {
+            if (value != null) builder.put(name, value)
         }
 
         private fun openResponsesProviderOptions(
             providerOptions: ProviderOptions,
             providerOptionsName: String,
-            json: Json,
         ): OpenResponsesOptions? {
             val poMap = providerOptions.toMap()
             val element = poMap[providerOptionsName] ?: poMap["open-responses"] ?: return null
@@ -652,8 +698,14 @@ internal data class PreparedOpenResponsesRequest(
             // silently dropped EVERY user option (instructions, reasoningEffort, store, …) on a single
             // wrong-typed field, with no error and no clue why the request behaved as if unconfigured.
             return try {
-                json.decodeFromJsonElement(OpenResponsesOptions.serializer(), element)
-            } catch (e: SerializationException) {
+                WireDecoder.decode(
+                    OpenResponsesOptions.serializer(),
+                    element,
+                    provider = "Open Responses",
+                    operation = "provider options",
+                    path = "$.providerOptions.$providerOptionsName",
+                )
+            } catch (e: WireDecodeException) {
                 throw InvalidArgumentError(
                     "providerOptions.$providerOptionsName",
                     "could not decode OpenResponses provider options: ${e.message ?: "<no message>"}",
@@ -993,7 +1045,13 @@ internal data class ConvertedOpenResponsesInput(
                         input += buildJsonObject {
                             put("type", JsonPrimitive("function_call_output"))
                             put("call_id", JsonPrimitive(toolResult.toolCallId))
-                            put("output", openResponsesToolOutput(ToolResultOutputs.toolResultOutputFromWire(toolResult.modelVisible), warnings))
+                            put(
+                                "output",
+                                openResponsesToolOutput(
+                                    ToolResultOutputs.toolResultOutputFromWire(toolResult.modelVisible),
+                                    warnings,
+                                ),
+                            )
                         }
                     }
                 }

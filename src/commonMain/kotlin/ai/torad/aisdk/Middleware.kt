@@ -18,7 +18,7 @@ import kotlinx.coroutines.flow.flow
  * [MiddlewareCallContext] exposing both `doGenerate` AND `doStream` so
  * a stream-wrapping middleware can synthesize a stream out of the
  * downstream `generate` result (which is exactly what
- * [ai.torad.aisdk.middleware.simulateStreamingMiddleware] needs and
+ * `ai.torad.aisdk.middleware.simulateStreamingMiddleware` needs and
  * couldn't do under the prior `(params, next)` shape that only exposed
  * the same-direction call).
  */
@@ -27,7 +27,7 @@ public interface LanguageModelMiddleware {
      * Transform the call params before [wrapGenerate]/[wrapStream] run, for the
      * given [operation]. The transformed params flow into both the wrap hooks and
      * the downstream call. This is the params-only seam — a middleware can implement
-     * just this (e.g. [ai.torad.aisdk.middleware.defaultSettingsMiddleware]).
+     * just this (e.g. `ai.torad.aisdk.middleware.defaultSettingsMiddleware`).
      * Default: pass through. Mirrors v6's `transformParams({ type, params, model })`.
      */
     public suspend fun transformParams(

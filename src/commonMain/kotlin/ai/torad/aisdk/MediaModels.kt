@@ -180,7 +180,7 @@ public interface ImageModel {
         get() = "unknown"
 
     /**
-     * How many images this model produces per call, if limited. [generateImage]
+     * How many images this model produces per call, if limited. `generateImage`
      * splits a request for more than this into ceil(n / limit) concurrent calls
      * (was: passing n straight through, so a model capped at 1 returned 1 of n).
      * Null = no limit.

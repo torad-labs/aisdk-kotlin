@@ -42,7 +42,7 @@ import kotlinx.serialization.json.JsonElement
  * Default value is [Done] so existing consumers that construct
  * Text/Reasoning parts directly (rehydration from storage,
  * test fixtures) keep working unchanged. The agent loop's
- * [streamToUiMessages] emits [Streaming] during `TextDelta` /
+ * `streamToUiMessages` emits [Streaming] during `TextDelta` /
  * `ReasoningDelta` and flips to [Done] on the matching `*End`.
  */
 @Serializable

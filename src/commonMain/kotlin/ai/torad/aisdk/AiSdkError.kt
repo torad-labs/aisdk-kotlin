@@ -246,10 +246,25 @@ public enum class RetryErrorReason {
     Abort,
 }
 
+public data class RetryAttemptDetail(
+    val attempt: Int,
+    val error: Throwable,
+    val retryable: Boolean,
+    val delayMs: Long?,
+)
+
 public class RetryError(
     message: String,
     public val reason: RetryErrorReason,
     public val errors: List<Throwable>,
+    public val attempts: List<RetryAttemptDetail> = errors.mapIndexed { index, error ->
+        RetryAttemptDetail(
+            attempt = index,
+            error = error,
+            retryable = index < errors.lastIndex,
+            delayMs = null,
+        )
+    },
 ) : AiSdkException(message, errors.lastOrNull()) {
     public val lastError: Throwable? = errors.lastOrNull()
 }

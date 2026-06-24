@@ -4,7 +4,12 @@ All notable changes to this project will be documented here.
 
 This project follows Semantic Versioning once the first stable release is cut.
 
-## 0.3.0-alpha01
+## 0.3.0-beta01
+
+- Beta-readiness hardening: tool execution now uses an explicit bounded `ToolExecutionPolicy` (default `maxParallelToolCalls=8`, `maxToolCallsPerStep=128`) so a model cannot create unbounded child coroutines or in-step tool work. The loop now surfaces typed `AgentError.MaxToolCallsPerStepExceeded` and `AgentError.ToolExecutionTimedOut` failures.
+- Retry hardening: `RetryPolicy` now defaults to retrying only typed retryable `APICallError` / `GatewayError`, uses injectable full-jitter backoff, honors `Retry-After` with an injected clock, supports per-attempt and total deadlines, and carries retry decision details through `RetryError.attempts`.
+- Privacy hardening: telemetry integrations are metadata-only by default (`recordInputs=false`, `recordOutputs=false`) and receive a redacted event projection. `LoggingMiddleware` now logs tool metadata and byte counts by default; raw/redacted payload logging is explicit via `LoggingOptions` and the shared `Redactor` seam.
+- Release gates: coverage thresholds, detekt baseline budget ratchet, dependency verification metadata, provider capability/API review checks, local-staging consumer smoke fixtures, SHA-pinned GitHub Actions, workflow timeouts, and a `tools/beta-readiness-check` gate were added.
 
 - **Tools are now class-based and extensible (breaking ABI change).** `Tool` is an `abstract class`
   you can extend for reusable, dependency-injected tools — mirroring how a concrete agent extends
@@ -20,13 +25,13 @@ This project follows Semantic Versioning once the first stable release is cut.
       override suspend fun ToolExecutionContext<AppContext>.execute(input: SearchInput) =
           repo.search(input.query)
   }
-  // usage: toolSetOf(SearchDocsTool(repo))
+  // usage: ToolSet(SearchDocsTool(repo))
   ```
   The executor and the optional callbacks (`needsApproval`, `toModelOutput`, `onInputStart`,
   `onInputDelta`, `onInputAvailable`) are now overridable methods instead of constructor lambdas —
   override only what you need. Tools that emit preliminary snapshots extend the new `StreamingTool`
-  base and override `executeStream`. The `tool { }` / `streamingTool { }` / `dynamicTool(...)` /
-  `providerExecutedTool(...)` factories keep their exact signatures for trivial inline tools; they
+  base and override `executeStream`. The `Tool(...)` / `StreamingTool(...)` / `DynamicTool(...)` /
+  `ProviderExecutedTool(...)` factories keep their exact signatures for trivial inline tools; they
   now build an internal `LambdaTool` / `LambdaStreamingTool` subclass.
 
   Migration: the `Tool(...)` constructor is no longer invoked directly, and the public `Tool.executor`

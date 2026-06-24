@@ -133,7 +133,7 @@ public sealed class ContentPart {
     /**
      * Tool execution result. [output] is the canonical FULL payload —
      * persisted, dispatched to UI converters, rendered as the rich
-     * card. [modelVisible] is what the LLM provider includes in the
+     * card. `modelVisible` is what the LLM provider includes in the
      * prompt on subsequent turns — defaults to [output], but tools
      * with a `toModelOutput` callback (see [Tool.toModelOutput])
      * supply a short summary so multi-turn conversations don't keep
@@ -231,7 +231,7 @@ public sealed class ContentPart {
         /**
          * Remote (or data) URL for the file content, when not provided inline as
          * [base64]. Mirrors v6's `data: DataContent | URL`. Resolve with
-         * [convertToLanguageModelPrompt] for providers that don't accept URLs.
+         * `convertToLanguageModelPrompt` for providers that don't accept URLs.
          */
         val url: String? = null,
     ) : ContentPart()
@@ -258,7 +258,7 @@ public sealed class ContentPart {
         /**
          * Remote (or data) URL for the image, when not provided inline as
          * [base64]. Mirrors v6's `image: DataContent | URL`. Resolve with
-         * [convertToLanguageModelPrompt] for providers that don't accept URLs.
+         * `convertToLanguageModelPrompt` for providers that don't accept URLs.
          */
         val url: String? = null,
     ) : ContentPart()

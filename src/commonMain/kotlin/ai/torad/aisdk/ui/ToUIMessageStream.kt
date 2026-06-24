@@ -13,7 +13,7 @@ import kotlinx.serialization.json.JsonObject
  * consumed by a JS `useChat` client. Events with no wire counterpart
  * (response-metadata, tool-input-end, raw) are dropped.
  *
- * This is the server-side counterpart to [streamToUiMessages] (which builds
+ * This is the server-side counterpart to `streamToUiMessages` (which builds
  * renderable snapshots in-process); use this when serving the stream over HTTP.
  */
 public fun ToUIMessageStream(events: Flow<StreamEvent>): Flow<JsonObject> =

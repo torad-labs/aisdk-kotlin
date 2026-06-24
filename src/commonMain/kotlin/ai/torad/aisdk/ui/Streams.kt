@@ -1,7 +1,7 @@
 package ai.torad.aisdk.ui
 
 import ai.torad.aisdk.StreamEvent
-import ai.torad.aisdk.aiSdkJson
+import ai.torad.aisdk.aiSdkOutputJson
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.channelFlow
@@ -149,7 +149,7 @@ public object UiMessageStreams {
         // Default to real SSE framing (`data: <json>\n\n`) matching the text/event-stream
         // content-type — the old `it.toString()` wrote Kotlin debug output that no SSE client
         // can parse. Callers needing a different wire shape still pass their own encoder.
-        encoder: (UIMessage) -> String = { "data: ${aiSdkJson.encodeToString(it)}\n\n" },
+        encoder: (UIMessage) -> String = { "data: ${aiSdkOutputJson.encodeToString(it)}\n\n" },
         status: Int = 200,
         headers: Map<String, String> = uiMessageStreamHeaders(),
     ) {

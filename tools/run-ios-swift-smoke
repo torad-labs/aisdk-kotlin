@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+set -euo pipefail
+if [[ "$(uname -s)" != "Darwin" ]]; then
+  echo "iOS Swift smoke skipped: requires macOS"
+  exit 0
+fi
+root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+cd "$root"
+./gradlew assembleAiSdkDebugXCFramework --no-configuration-cache
+framework_dir="$(find build -name 'AiSdk.xcframework' -type d | head -1)"
+if [[ -z "$framework_dir" ]]; then
+  echo "AiSdk.xcframework not found after assembleAiSdkDebugXCFramework" >&2
+  exit 1
+fi
+swiftc -typecheck -F "$(dirname "$framework_dir")" smoke-tests/ios-swift/AiSdkSmoke.swift

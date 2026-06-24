@@ -208,6 +208,8 @@ class FullPortFeatureParityTest {
             isEnabled = true,
             functionId = "chat",
             metadata = mapOf("custom" to JsonPrimitive("value")),
+            recordInputs = true,
+            recordOutputs = true,
         )
         val attributes = TelemetryTracing.selectTelemetryAttributes(
             telemetry = settings,
@@ -228,7 +230,13 @@ class FullPortFeatureParityTest {
         var attempts = 0
         val retried = RetryPolicy(maxRetries = 1, baseDelayMs = 0).execute { attempt ->
             attempts += 1
-            if (attempt == 0) error("retry")
+            if (attempt == 0) {
+                throw APICallError(
+                    message = "retry",
+                    url = "https://api.test",
+                    statusCode = 500,
+                )
+            }
             "ok"
         }
 

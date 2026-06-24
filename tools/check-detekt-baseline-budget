@@ -1,0 +1,85 @@
+#!/usr/bin/env python3
+"""Fail when detekt-baseline.xml grows beyond the checked-in budget.
+
+The budget is intentionally per-rule plus total so burn-downs are ratchetable:
+a PR may lower counts by updating detekt-baseline-budget.json, but any increase
+requires a visible budget diff.
+"""
+from __future__ import annotations
+
+import argparse
+import json
+import sys
+import xml.etree.ElementTree as ET
+from collections import Counter
+from pathlib import Path
+
+
+def load_actual(path: Path) -> tuple[int, dict[str, int]]:
+    if not path.exists():
+        raise FileNotFoundError(f"detekt baseline not found: {path}")
+    root = ET.parse(path).getroot()
+    ids = [element.text or "" for element in root.findall(".//ID")]
+    by_rule = Counter(identifier.split(":", 1)[0] for identifier in ids)
+    return len(ids), dict(sorted(by_rule.items()))
+
+
+def load_budget(path: Path) -> tuple[int, dict[str, int]]:
+    if not path.exists():
+        raise FileNotFoundError(f"detekt baseline budget not found: {path}")
+    data = json.loads(path.read_text())
+    if data.get("schemaVersion") != 1:
+        raise ValueError(f"unsupported budget schemaVersion in {path}: {data.get('schemaVersion')!r}")
+    return int(data["total"]), {str(k): int(v) for k, v in data.get("byRule", {}).items()}
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--baseline", default="detekt-baseline.xml", type=Path)
+    parser.add_argument("--budget", default="detekt-baseline-budget.json", type=Path)
+    parser.add_argument(
+        "--print-current",
+        action="store_true",
+        help="print the current budget JSON and exit without enforcing it",
+    )
+    args = parser.parse_args()
+
+    actual_total, actual_by_rule = load_actual(args.baseline)
+    if args.print_current:
+        print(json.dumps({
+            "schemaVersion": 1,
+            "source": str(args.baseline),
+            "total": actual_total,
+            "byRule": actual_by_rule,
+        }, indent=2, sort_keys=False))
+        return 0
+
+    budget_total, budget_by_rule = load_budget(args.budget)
+    failures: list[str] = []
+    if actual_total > budget_total:
+        failures.append(f"total baseline entries grew: {actual_total} > budget {budget_total}")
+
+    for rule in sorted(set(actual_by_rule) | set(budget_by_rule)):
+        actual = actual_by_rule.get(rule, 0)
+        budget = budget_by_rule.get(rule, 0)
+        if actual > budget:
+            failures.append(f"{rule}: {actual} > budget {budget}")
+
+    if failures:
+        print("detekt baseline budget exceeded:", file=sys.stderr)
+        for failure in failures:
+            print(f"  - {failure}", file=sys.stderr)
+        print("\nTo ratchet down after fixing issues, run:", file=sys.stderr)
+        print("  tools/check-detekt-baseline-budget --print-current > detekt-baseline-budget.json", file=sys.stderr)
+        return 1
+
+    print(f"detekt baseline budget OK: {actual_total}/{budget_total} entries")
+    return 0
+
+
+if __name__ == "__main__":
+    try:
+        raise SystemExit(main())
+    except Exception as exc:  # noqa: BLE001 - command-line tool should render concise failures.
+        print(f"detekt baseline budget check failed: {exc}", file=sys.stderr)
+        raise SystemExit(1)

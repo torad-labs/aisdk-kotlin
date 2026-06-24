@@ -54,8 +54,8 @@ public data class KlingAIProviderSettings(
             put("exp", JsonPrimitive(now + 1800))
             put("nbf", JsonPrimitive(now - 5))
         }
-        val signingInput = "${base64Url(aiSdkJson.encodeToString(JsonElement.serializer(), header).encodeToByteArray())}." +
-            base64Url(aiSdkJson.encodeToString(JsonElement.serializer(), payload).encodeToByteArray())
+        val signingInput = "${base64Url(aiSdkOutputJson.encodeToString(JsonElement.serializer(), header).encodeToByteArray())}." +
+            base64Url(aiSdkOutputJson.encodeToString(JsonElement.serializer(), payload).encodeToByteArray())
         val signature = CryptoPrimitives.hmacSha256(secretKey.encodeToByteArray(), signingInput.encodeToByteArray())
         return "$signingInput.${base64Url(signature)}"
     }

@@ -22,7 +22,7 @@ class TelemetryParityTest {
             mapOf("input" to TelemetryTracing.telemetryInput { JsonPrimitive("secret") }),
         )
         val noInputs = TelemetryTracing.selectTelemetryAttributes(
-            TelemetrySettings(isEnabled = true, recordInputs = false),
+            TelemetrySettings(isEnabled = true, recordInputs = false, recordOutputs = true),
             mapOf(
                 "simple" to TelemetryTracing.telemetryAttribute(JsonPrimitive("value")),
                 "input" to TelemetryTracing.telemetryInput { JsonPrimitive("in") },

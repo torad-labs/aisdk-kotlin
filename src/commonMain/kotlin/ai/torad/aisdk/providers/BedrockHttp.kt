@@ -43,7 +43,7 @@ internal object BedrockHttp {
         parseJson: Boolean,
     ): BedrockHttpResponse {
         abortSignal.throwIfAborted()
-        val encodedBody = aiSdkJson.encodeToString(JsonElement.serializer(), body)
+        val encodedBody = aiSdkOutputJson.encodeToString(JsonElement.serializer(), body)
         val headers = bedrockHeaders(settings, extraHeaders, url, encodedBody, service)
         val response = client.request(url) {
             method = HttpMethod.Post
@@ -54,7 +54,7 @@ internal object BedrockHttp {
         val raw = response.bodyAsBytes().decodeToString()
         val responseHeaders = with(HttpTransport) { response.flattenedHeaders() }
         if (response.status.value !in 200..299) {
-            val parsed = runCatching { aiSdkJson.parseToJsonElement(raw) }.getOrNull()
+            val parsed = TypedJsonOps.parseJsonElementOrNull(aiSdkJson, raw)
             throw ApiCallError(
                 url = url,
                 statusCode = response.status.value,
@@ -90,7 +90,7 @@ internal object BedrockHttp {
         // different coroutine than the collector on Kotlin/Native; `send` is safe
         // across that boundary where `emit` would throw "Flow invariant is violated".
         abortSignal.throwIfAborted()
-        val encodedBody = aiSdkJson.encodeToString(JsonElement.serializer(), body)
+        val encodedBody = aiSdkOutputJson.encodeToString(JsonElement.serializer(), body)
         val headers = bedrockHeaders(settings, extraHeaders, url, encodedBody, "bedrock")
         val statement = client.prepareRequest(url) {
             method = HttpMethod.Post
@@ -102,7 +102,7 @@ internal object BedrockHttp {
             val flattened = with(HttpTransport) { response.flattenedHeaders() }
             if (response.status.value !in 200..299) {
                 val raw = response.bodyAsBytes().decodeToString()
-                val parsed = runCatching { aiSdkJson.parseToJsonElement(raw) }.getOrNull()
+                val parsed = TypedJsonOps.parseJsonElementOrNull(aiSdkJson, raw)
                 throw ApiCallError(
                     url = url,
                     statusCode = response.status.value,

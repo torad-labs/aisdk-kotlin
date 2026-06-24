@@ -161,7 +161,7 @@ private class ElevenLabsSpeechModel(
             method = HttpMethod.Post
             contentType(ContentType.Application.Json)
             settings.elevenLabsHeaders(params.headers).forEach { (name, value) -> header(name, value) }
-            setBody(aiSdkJson.encodeToString(JsonElement.serializer(), body))
+            setBody(aiSdkOutputJson.encodeToString(JsonElement.serializer(), body))
         }.parseElevenLabsBinary(url, queryParams["output_format"].orEmpty())
         return SpeechModelResult(
             audio = GeneratedFile(
