@@ -7,7 +7,7 @@
     "src/commonMain/kotlin/ai/torad/aisdk/MCP.kt": 1675,
     "src/commonMain/kotlin/ai/torad/aisdk/MediaModels.kt": 736,
     "src/commonMain/kotlin/ai/torad/aisdk/ModelMessage.kt": 528,
-    "src/commonMain/kotlin/ai/torad/aisdk/Tool.kt": 920,
+    "src/commonMain/kotlin/ai/torad/aisdk/Tool.kt": 955,
     "src/commonMain/kotlin/ai/torad/aisdk/ToolLoopAgent.kt": 1707,
     "src/commonMain/kotlin/ai/torad/aisdk/providers/AnthropicProvider.kt": 1211,
     "src/commonMain/kotlin/ai/torad/aisdk/providers/BedrockRequest.kt": 583,

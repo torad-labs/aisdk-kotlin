@@ -5,6 +5,7 @@ import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
 import kotlinx.serialization.KSerializer
+import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
@@ -747,13 +748,41 @@ public object ProviderTools {
 /** Whether the LLM should call a tool, no tool, a specific tool, etc. */
 @kotlinx.serialization.Serializable
 public sealed class ToolChoice {
-    @kotlinx.serialization.Serializable public data object Auto : ToolChoice()
+    /**
+     * Let the provider/model decide whether to call a tool.
+     *
+     * @since 0.3.0-beta01
+     */
+    @kotlinx.serialization.Serializable
+    @SerialName("auto")
+    public data object Auto : ToolChoice()
 
-    @kotlinx.serialization.Serializable public data object None : ToolChoice()
+    /**
+     * Prevent tool calls for this request.
+     *
+     * @since 0.3.0-beta01
+     */
+    @kotlinx.serialization.Serializable
+    @SerialName("none")
+    public data object None : ToolChoice()
 
-    @kotlinx.serialization.Serializable public data object Required : ToolChoice()
+    /**
+     * Require at least one tool call when the provider supports this mode.
+     *
+     * @since 0.3.0-beta01
+     */
+    @kotlinx.serialization.Serializable
+    @SerialName("required")
+    public data object Required : ToolChoice()
 
-    @kotlinx.serialization.Serializable public data class Specific(val toolName: String) : ToolChoice()
+    /**
+     * Request a specific named tool.
+     *
+     * @since 0.3.0-beta01
+     */
+    @kotlinx.serialization.Serializable
+    @SerialName("specific")
+    public data class Specific(val toolName: String) : ToolChoice()
 }
 
 /**
@@ -798,21 +827,27 @@ public data class ToolPredicateOptions<TContext>(
 @Serializable
 public sealed class ToolResultOutput {
     @Serializable
+    @SerialName("text")
     public data class Text(val text: String) : ToolResultOutput()
 
     @Serializable
+    @SerialName("json")
     public data class Json(val json: JsonElement) : ToolResultOutput()
 
     @Serializable
+    @SerialName("error")
     public data class Error(val message: String) : ToolResultOutput()
 
     @Serializable
+    @SerialName("error-json")
     public data class ErrorJson(val json: JsonElement) : ToolResultOutput()
 
     @Serializable
+    @SerialName("execution-denied")
     public data class ExecutionDenied(val reason: String? = null) : ToolResultOutput()
 
     @Serializable
+    @SerialName("content")
     public data class Content(
         val value: List<JsonElement>,
         val isError: Boolean = false,

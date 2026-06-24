@@ -1,5 +1,6 @@
 package ai.torad.aisdk
 
+import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonElement
 
@@ -27,6 +28,7 @@ import kotlinx.serialization.json.JsonElement
 public sealed interface ResponseFormat {
 
     @Serializable
+    @SerialName("text")
     public data object Text : ResponseFormat
 
     /**
@@ -43,6 +45,7 @@ public sealed interface ResponseFormat {
      * the response text.
      */
     @Serializable
+    @SerialName("json")
     public data class Json(
         val schemaName: String? = null,
         val schemaDescription: String? = null,
