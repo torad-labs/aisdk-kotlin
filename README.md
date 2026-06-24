@@ -27,37 +27,46 @@ dependencies {
 
 ## Quick Start
 
+<!-- beta-readiness:readme-sample:start -->
 ```kotlin
+import ai.torad.aisdk.LanguageModel
+import ai.torad.aisdk.StepCountIs
+import ai.torad.aisdk.Tool
 import ai.torad.aisdk.ToolLoopAgent
-import ai.torad.aisdk.stepCountIs
-import ai.torad.aisdk.tool
-import ai.torad.aisdk.toolSetOf
-import ai.torad.aisdk.providers.MockLanguageModel
+import ai.torad.aisdk.ToolSet
+import ai.torad.aisdk.providers.MockLanguageModelTextOnly
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.serializer
 
 @Serializable
 data class EmptyInput(val unused: String = "")
 
-val helloTool = tool<EmptyInput, String, Unit>(
+val helloTool = Tool<EmptyInput, String, Unit>(
     name = "hello",
     description = "Return a greeting.",
     inputSerializer = serializer(),
     outputSerializer = serializer(),
-) { "Hello from a tool." }
+) { _ -> "Hello from a tool." }
 
-val agent = ToolLoopAgent<Unit, String>(
-    model = MockLanguageModel.textOnly("Welcome."),
-    instructions = "Be brief.",
-    tools = toolSetOf(helloTool),
-    stopWhen = stepCountIs(3),
+class HelloAgent(model: LanguageModel, tools: ToolSet<Unit>) :
+    ToolLoopAgent<Unit, String>(
+        model = model,
+        instructions = "Be brief.",
+        tools = tools,
+        stopWhen = StepCountIs(3),
+    )
+
+val agent = HelloAgent(
+    model = MockLanguageModelTextOnly("Welcome."),
+    tools = ToolSet(helloTool),
 )
 ```
+<!-- beta-readiness:readme-sample:end -->
 
 ## What Is Included
 
 - `Agent` and `ToolLoopAgent`.
-- Typed `tool()` definitions, `dynamicTool()`, schemas, and `ToolSet`.
+- Typed `Tool()` definitions, `DynamicTool()`, schemas, and `ToolSet`.
 - `generateText`, `streamText`, and cold `Flow<StreamEvent>` streaming.
 - Structured output through `Output.obj`, `Output.array`, `Output.choice`, and `Output.json`.
 - Deprecated v6 compatibility shims: `generateObject` and `streamObject`.

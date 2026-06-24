@@ -10,7 +10,7 @@ import kotlinx.serialization.serializer
  * UI-shape message — what the chat surface renders. Carries an ordered
  * list of [UIMessagePart]s (Vercel AI SDK v6 message-parts model). The
  * conversion from [ai.torad.aisdk.StreamEvent] flow into a growing list
- * of these messages happens in [streamToUiMessages].
+ * of these messages happens in `streamToUiMessages`.
  *
  * The optional [metadata] slot is the Kotlin port's monomorphic
  * substitute for v6's `UIMessage<METADATA, DATA_PARTS, TOOLS>`

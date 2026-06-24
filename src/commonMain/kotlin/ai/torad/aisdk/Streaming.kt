@@ -342,7 +342,7 @@ public sealed class StreamEvent {
          *  Anthropic (`stop_reason`), OpenAI Responses (`incomplete_details.reason` / error code),
          *  Cohere (from `LanguageModelResult.rawFinishReason`), Hugging Face Responses
          *  (`incomplete_details.reason`), Amazon Bedrock (`stopReason`), and
-         *  [ai.torad.aisdk.middleware.simulateStreamingMiddleware] (propagated from the generate result).
+         *  `ai.torad.aisdk.middleware.simulateStreamingMiddleware` (propagated from the generate result).
          *  Null when the provider does not send a finish-reason string (e.g. KtorGatewayTransport,
          *  which receives an already-mapped enum value on the wire). */
         val rawFinishReason: String? = null,

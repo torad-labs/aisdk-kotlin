@@ -6,7 +6,6 @@ import io.ktor.client.HttpClient
 import io.ktor.client.request.header
 import io.ktor.client.request.request
 import io.ktor.client.request.setBody
-import io.ktor.client.statement.bodyAsText
 import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpMethod
@@ -140,7 +139,7 @@ internal object McpResourceUrl {
 /**
  * MCP OAuth 2.0 authorization-code + PKCE flow: metadata discovery, dynamic
  * client registration, the authorization-URL builder, and the token endpoint
- * (exchange / refresh). The orchestration entry point [auth] lives alongside the
+ * (exchange / refresh). The orchestration entry point `auth` lives alongside the
  * transports; these are the round-trips it drives.
  */
 internal object McpOAuthFlow {
@@ -158,7 +157,8 @@ internal object McpOAuthFlow {
             if (response.status.value !in 200..299) {
                 throw MCPClientError("HTTP ${response.status.value} trying to load OAuth metadata from $url")
             }
-            return mcpJson.decodeFromString<AuthorizationServerMetadata>(response.bodyAsText())
+            val text = with(HttpTransport) { response.bodyAsTextCapped(url) }
+            return mcpJson.decodeFromString<AuthorizationServerMetadata>(text)
         }
         return null
     }
@@ -181,7 +181,8 @@ internal object McpOAuthFlow {
                     "HTTP ${response.status.value} trying to load well-known OAuth protected resource metadata."
                 )
             }
-            return mcpJson.decodeFromString<OAuthProtectedResourceMetadata>(response.bodyAsText())
+            val text = with(HttpTransport) { response.bodyAsTextCapped(url) }
+            return mcpJson.decodeFromString<OAuthProtectedResourceMetadata>(text)
         }
         throw MCPClientError("Resource server does not implement OAuth 2.0 Protected Resource Metadata.")
     }
@@ -198,10 +199,11 @@ internal object McpOAuthFlow {
             contentType(ContentType.Application.Json)
             setBody(mcpJson.encodeToString(clientMetadata))
         }
+        val responseText = with(HttpTransport) { response.bodyAsTextCapped(registrationUrl) }
         if (response.status.value !in 200..299) {
-            throw MCPClientError("OAuth client registration failed (${response.status.value}): ${response.bodyAsText()}")
+            throw MCPClientError("OAuth client registration failed (${response.status.value}): $responseText")
         }
-        return mcpJson.decodeFromString(response.bodyAsText())
+        return mcpJson.decodeFromString(responseText)
     }
 
     suspend fun exchangeAuthorization(
@@ -442,10 +444,11 @@ internal object McpOAuthFlow {
             headers.forEach { (name, value) -> header(name, value) }
             setBody(params.oauthFormBody())
         }
+        val responseText = with(HttpTransport) { response.bodyAsTextCapped(tokenUrl) }
         if (response.status.value !in 200..299) {
-            throw MCPClientError("OAuth token request failed (${response.status.value}): ${response.bodyAsText()}")
+            throw MCPClientError("OAuth token request failed (${response.status.value}): $responseText")
         }
-        return mcpJson.decodeFromString(response.bodyAsText())
+        return mcpJson.decodeFromString(responseText)
     }
 
     private fun Map<String, String>.oauthFormBody(): String =

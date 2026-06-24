@@ -16,10 +16,11 @@ env:
 jobs:
   preflight:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     permissions:
       contents: read
     steps:
-      - uses: actions/checkout@v6.0.3
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
           fetch-depth: 0
       - name: Verify release tag
@@ -33,30 +34,36 @@ jobs:
           fi
           git fetch origin main
           git merge-base --is-ancestor "${GITHUB_SHA}" origin/main
+      - name: Beta readiness gate
+        run: tools/beta-readiness-check
 
   verify-apple:
     runs-on: macos-latest
+    timeout-minutes: 75
     needs: preflight
     permissions:
       contents: read
     steps:
-      - uses: actions/checkout@v6.0.3
-      - uses: actions/setup-java@v5.2.0
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+      - uses: actions/setup-java@be666c2fcd27ec809703dec50e508c2fdc7f6654 # v5.2.0
         with:
           distribution: temurin
           java-version: "21"
-      - uses: gradle/actions/setup-gradle@v6.1.0
+      - uses: gradle/actions/setup-gradle@50e97c2cd7a37755bbfafc9c5b7cafaece252f6e # v6.1.0
       - name: Cache Kotlin/Native toolchain (~/.konan)
-        uses: actions/cache@v5.0.5
+        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
         with:
           path: ~/.konan
           key: konan-${{ runner.os }}-${{ hashFiles('gradle/libs.versions.toml') }}
           restore-keys: konan-${{ runner.os }}-
       - name: Verify Apple targets (compile all, test simulator)
         run: ./gradlew iosSimulatorArm64Test compileKotlinIosArm64 compileKotlinIosX64
+      - name: Verify Swift import smoke
+        run: tools/run-ios-swift-smoke
 
   publish:
     runs-on: ubuntu-latest
+    timeout-minutes: 120
     needs:
       - preflight
       - verify-apple
@@ -64,17 +71,17 @@ jobs:
       contents: read
       packages: write
     steps:
-      - uses: actions/checkout@v6.0.3
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
           fetch-depth: 0
-      - uses: actions/setup-java@v5.2.0
+      - uses: actions/setup-java@be666c2fcd27ec809703dec50e508c2fdc7f6654 # v5.2.0
         with:
           distribution: temurin
           java-version: "21"
-      - uses: android-actions/setup-android@v4.0.1
-      - uses: gradle/actions/setup-gradle@v6.1.0
+      - uses: android-actions/setup-android@40fd30fb8d7440372e1316f5d1809ec01dcd3699 # v4.0.1
+      - uses: gradle/actions/setup-gradle@50e97c2cd7a37755bbfafc9c5b7cafaece252f6e # v6.1.0
       - name: Cache Kotlin/Native toolchain (~/.konan)
-        uses: actions/cache@v5.0.5
+        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
         with:
           path: ~/.konan
           key: konan-${{ runner.os }}-${{ hashFiles('gradle/libs.versions.toml') }}
@@ -90,9 +97,9 @@ jobs:
       - name: Verify parity ledgers
         run: node tools/generate-parity-ledger.mjs --check
       - name: Architecture gate (ast-grep rules + structural checks)
-        run: |
-          npm install -g @ast-grep/cli@0.42.1
-          bash .claude/hooks/rules/ci-gate.sh
+        run: npm exec --yes --package @ast-grep/cli@0.42.1 -- bash .claude/hooks/rules/ci-gate.sh
+      - name: Beta readiness gate
+        run: tools/beta-readiness-check
       - name: Verify checks
         run: ./gradlew check
       # Maven Central is the release target. The Central Portal takes a single zip
@@ -113,6 +120,7 @@ jobs:
           # and PublishToMavenRepository captures Project references — both only
           # surface during real (remote) publishing, which is CI-only anyway.
           ./gradlew publishAllPublicationsToLocalStagingRepository --no-configuration-cache
+          tools/run-local-staging-smoke --no-publish --staging-repo build/staging-deploy
           # A release bundle must contain only the versioned artifacts. The Portal
           # generates its own group-level metadata, and leaving version-listing
           # maven-metadata.xml in the zip can trip bundle validation.

@@ -65,7 +65,7 @@ public data class ProdiaProviderSettings(
             contentType(ContentType.Application.Json)
             header(HttpHeaders.Accept, accept)
             headers.forEach { (name, value) -> header(name, value) }
-            setBody(aiSdkJson.encodeToString(JsonElement.serializer(), body))
+            setBody(aiSdkOutputJson.encodeToString(JsonElement.serializer(), body))
         }
         return prodiaParseMultipartResponse(response, url)
     }
@@ -87,7 +87,7 @@ public data class ProdiaProviderSettings(
                     formData {
                         append(
                             "job",
-                            aiSdkJson.encodeToString(JsonElement.serializer(), body),
+                            aiSdkOutputJson.encodeToString(JsonElement.serializer(), body),
                             Headers.build { append(HttpHeaders.ContentType, "application/json") },
                         )
                         input?.let { file ->

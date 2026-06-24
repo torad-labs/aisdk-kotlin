@@ -5,11 +5,9 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.cancel
-import kotlinx.coroutines.channels.Channel
-import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.FlowCollector
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -19,9 +17,7 @@ import kotlinx.coroutines.flow.channelFlow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.sync.Semaphore
-import kotlinx.coroutines.sync.withPermit
-import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeout
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.JsonElement
@@ -63,6 +59,7 @@ import kotlin.coroutines.coroutineContext
  * serialize, persist, transport, then resume.
  */
 @OptIn(ExperimentalAtomicApi::class)
+@Suppress("LongParameterList")
 public abstract class ToolLoopAgent<TContext, TOutput>(
     public val model: LanguageModel,
     public val instructions: String,
@@ -90,11 +87,18 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
     /** Wire-level response constraint for providers that support it. */
     public val responseFormat: ResponseFormat = ResponseFormat.Text,
     /**
-     * Max tool calls executed concurrently within one step. Default unbounded — all of a
-     * step's tool calls run at once (latency = slowest tool, not the sum). Results are
-     * still applied to the message log in deterministic call order.
+     * Legacy shorthand for [ToolExecutionPolicy.maxParallelToolCalls]. If [toolExecutionPolicy]
+     * is supplied, the policy is the source of truth.
      */
-    public val maxParallelToolCalls: Int = Int.MAX_VALUE,
+    maxParallelToolCalls: Int = ToolExecutionPolicy.DEFAULT_MAX_PARALLEL_TOOL_CALLS,
+    /**
+     * Explicit bounded policy for per-step tool execution. Defaults cap both concurrent
+     * tool executors and total accepted tool calls so a model cannot create unbounded
+     * child coroutines or unbounded in-step work.
+     */
+    public val toolExecutionPolicy: ToolExecutionPolicy = ToolExecutionPolicy(
+        maxParallelToolCalls = maxParallelToolCalls,
+    ),
     /**
      * Self-healing callback fired when a tool call's arguments fail to
      * decode. Return a corrected call to retry, or null to surface
@@ -115,7 +119,7 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
     public val experimental_toolApprovalSecret: ByteArray? = null,
     /**
      * Telemetry for this agent's invocations (upstream v7 `telemetry`).
-     * [Telemetry] integrations registered globally via [registerTelemetry]
+     * [Telemetry] integrations registered globally via `registerTelemetry`
      * observe every generate/stream call automatically; this setting adds
      * call metadata ([TelemetrySettings.functionId]) or per-agent
      * [TelemetrySettings.integrations] — which, when non-empty, REPLACE the
@@ -143,6 +147,9 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
     private val dispatcher = AgentTelemetryDispatcher<TContext>(logger)
     private val repairer = ToolCallRepairer<TContext>(experimental_repairToolCall, tools)
     private val approvalCoordinator = ToolApprovalCoordinator<TContext>(experimental_toolApprovalSecret, repairer)
+
+    /** Effective per-step parallelism cap, retained for source compatibility with existing callers. */
+    public val maxParallelToolCalls: Int = toolExecutionPolicy.maxParallelToolCalls
 
     // ─── ENGINE-SHAPE STATE-HOLDER SURFACE ───────────────────────────────
     //
@@ -1004,6 +1011,23 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
             }
             closeModelCall(stepFinishReason, stepRawFinishReason)
 
+            // Bounded execution policy: fail closed if the model emitted more tool calls in one
+            // step than the policy allows, BEFORE any executor coroutine is scheduled. A
+            // pathological/compromised model otherwise drives unbounded per-step fan-out.
+            if (stepToolCalls.size > toolExecutionPolicy.maxToolCallsPerStep) {
+                val policyError = AgentError.MaxToolCallsPerStepExceeded(
+                    toolCallCount = stepToolCalls.size,
+                    maxToolCallsPerStep = toolExecutionPolicy.maxToolCallsPerStep,
+                )
+                dispatcher.emitError(policyError, stepNumber, AgentEvent.Errored.ErrorSource.Tool, hooks, feed)
+                try {
+                    emit(StreamEvent.Error(policyError.message ?: "too many tool calls", cause = policyError))
+                } finally {
+                    finalMessagesRef?.value = messages.toList()
+                }
+                return@flow
+            }
+
             // Build assistant content: text + reasoning + tool calls.
             val assistantParts: MutableList<ContentPart> = mutableListOf()
             if (stepText.isNotEmpty()) assistantParts.add(ContentPart.Text(stepText.toString()))
@@ -1159,128 +1183,88 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
             // just added, so the [assistant(calls), tool_result/err...] ordering is correct.
             messages.addAll(deferredToolErrorMessages)
 
-            // Execute non-approval-gated tools concurrently (bounded by
-            // maxParallelToolCalls). Child coroutines send progress to a parent-owned
-            // channel; only this collector coroutine performs real Flow emits. Final
-            // durable tool results are applied incrementally in original call order.
+            // Execute non-approval-gated tools concurrently. The scheduler launches bounded
+            // workers (not one coroutine per tool call) and queues the rest as data. Child
+            // workers send progress to a parent-owned channel; only this collector coroutine
+            // performs real Flow emits. Final durable results are applied in original call order.
             // All tools see the SAME prompt snapshot (they were requested in one assistant
             // turn) — more correct than the prior serial leak of one tool's result into the
             // next tool's messages view.
             val promptSnapshot = messages.toList()
-            val permits = Semaphore(maxParallelToolCalls.coerceAtLeast(1))
             val parentOut: FlowCollector<StreamEvent> = this
-            // Set when any child unwinds with AbortError (its terminal Aborted marker reaches the
-            // collector). Checked after the scope to surface ONE clean Abort for the step.
-            var sawAbort = false
-            coroutineScope {
-                val signals = Channel<ParallelToolSignal>(Channel.BUFFERED)
-                toolsToExecute.forEachIndexed { index, call ->
-                    launch {
-                        val toolDef = stepTools.find(call.toolName)
-                        if (toolDef == null) {
-                            signals.send(
-                                ParallelToolSignal.Completed(OrderedToolCompletion.Skipped(index)),
+            val sawAbort = ToolLoopParallelExecution.runBoundedParallelToolCalls(
+                toolCalls = toolsToExecute,
+                policy = toolExecutionPolicy,
+                parentOut = parentOut,
+                executeCall = { index, call, progressOut ->
+                    val toolDef = stepTools.find(call.toolName)
+                    if (toolDef == null) {
+                        OrderedToolCompletion.Skipped(index)
+                    } else {
+                        dispatcher.runHook(stepNumber, feed, hooks) {
+                            val startEvent = AgentEvent.ToolCallStarted(
+                                call.toolCallId,
+                                resolvedForExecution[index]?.first?.name ?: call.toolName,
+                                call.input,
+                                stepNumber,
+                                promptSnapshot,
                             )
-                            return@launch
+                            hooks?.experimental_onToolCallStart?.invoke(startEvent)
                         }
-                        try {
-                            permits.withPermit {
-                                val progressOut = ChannelToolEventCollector(signals)
-                                dispatcher.runHook(stepNumber, feed, hooks) {
-                                    val startEvent = AgentEvent.ToolCallStarted(
-                                        call.toolCallId,
-                                        resolvedForExecution[index]?.first?.name ?: call.toolName,
-                                        call.input,
-                                        stepNumber,
-                                        promptSnapshot,
-                                    )
-                                    hooks?.experimental_onToolCallStart?.invoke(startEvent)
-                                }
-                                val result = executeTool(
-                                    out = progressOut,
-                                    toolDef = toolDef,
-                                    call = call,
-                                    options = activeContext,
-                                    abortSignal = abortSignal,
-                                    stepNumber = stepNumber,
-                                    messages = promptSnapshot,
-                                    hooks = hooks,
-                                    feed = feed,
-                                    // Reuse the (tool, input) already resolved + repaired during the
-                                    // approval-categorization pass — don't decode/repair a second time.
-                                    // Keyed by position (index), so duplicate toolCallIds don't collide.
-                                    preResolved = resolvedForExecution[index],
-                                )
-                                dispatcher.runHook(stepNumber, feed, hooks) {
-                                    val resultToolName = when (result) {
-                                        is ToolExecutionResult.Success -> result.toolName
-                                        is ToolExecutionResult.Failure -> result.toolName
-                                    }
-                                    val finishEvent = AgentEvent.ToolCallFinished(
-                                        toolCallId = call.toolCallId,
-                                        toolName = resultToolName,
-                                        outcome = when (result) {
-                                            is ToolExecutionResult.Success ->
-                                                AgentEvent.ToolCallFinished.Outcome.Success(result.outputJson)
-                                            is ToolExecutionResult.Failure ->
-                                                AgentEvent.ToolCallFinished.Outcome.Failure(
-                                                    result.error.message ?: "tool failed",
-                                                )
-                                        },
-                                        stepNumber = stepNumber,
-                                    )
-                                    hooks?.experimental_onToolCallFinish?.invoke(finishEvent)
-                                }
-                                signals.send(
-                                    ParallelToolSignal.Completed(
-                                        OrderedToolCompletion.Executed(index, call, result),
-                                    ),
-                                )
+                        val result = executeToolWithPolicy(
+                            out = progressOut,
+                            toolDef = toolDef,
+                            call = call,
+                            options = activeContext,
+                            abortSignal = abortSignal,
+                            stepNumber = stepNumber,
+                            messages = promptSnapshot,
+                            hooks = hooks,
+                            feed = feed,
+                            // Reuse the (tool, input) already resolved + repaired during the
+                            // approval-categorization pass — don't decode/repair a second time.
+                            // Keyed by position (index), so duplicate toolCallIds don't collide.
+                            preResolved = resolvedForExecution[index],
+                        )
+                        dispatcher.runHook(stepNumber, feed, hooks) {
+                            val resultToolName = when (result) {
+                                is ToolExecutionResult.Success -> result.toolName
+                                is ToolExecutionResult.Failure -> result.toolName
                             }
-                        } catch (abort: AbortError) {
-                            // The cooperative abort does NOT structurally cancel this scope (DECISION 3),
-                            // so the collector below would otherwise wait forever for a Completed that
-                            // never comes. Send a terminal Aborted marker (NonCancellable — we're already
-                            // unwinding) so the count completes, then rethrow to unwind this child.
-                            withContext(NonCancellable) {
-                                signals.send(
-                                    ParallelToolSignal.Completed(OrderedToolCompletion.Aborted(index)),
-                                )
-                            }
-                            throw abort
-                        }
-                    }
-                }
-
-                val completions = mutableMapOf<Int, OrderedToolCompletion>()
-                var completedChildren = 0
-                var nextToApply = 0
-                while (completedChildren < toolsToExecute.size) {
-                    when (val signal = signals.receive()) {
-                        is ParallelToolSignal.Progress -> parentOut.emit(signal.event)
-                        is ParallelToolSignal.Completed -> {
-                            completedChildren += 1
-                            completions[signal.completion.index] = signal.completion
-                            while (true) {
-                                val completion = completions.remove(nextToApply) ?: break
-                                when (completion) {
-                                    is OrderedToolCompletion.Executed ->
-                                        applyToolResult(
-                                            parentOut,
-                                            completion.call,
-                                            completion.result,
-                                            messages,
-                                            stepToolResults,
+                            val finishEvent = AgentEvent.ToolCallFinished(
+                                toolCallId = call.toolCallId,
+                                toolName = resultToolName,
+                                outcome = when (result) {
+                                    is ToolExecutionResult.Success ->
+                                        AgentEvent.ToolCallFinished.Outcome.Success(result.outputJson)
+                                    is ToolExecutionResult.Failure ->
+                                        AgentEvent.ToolCallFinished.Outcome.Failure(
+                                            result.error.message ?: "tool failed",
                                         )
-                                    is OrderedToolCompletion.Skipped -> Unit
-                                    is OrderedToolCompletion.Aborted -> sawAbort = true
-                                }
-                                nextToApply += 1
-                            }
+                                },
+                                stepNumber = stepNumber,
+                            )
+                            hooks?.experimental_onToolCallFinish?.invoke(finishEvent)
                         }
+                        OrderedToolCompletion.Executed(index, call, result)
                     }
-                }
-            }
+                },
+                applyCompletion = { completion ->
+                    when (completion) {
+                        is OrderedToolCompletion.Executed ->
+                            applyToolResult(
+                                parentOut,
+                                completion.call,
+                                completion.result,
+                                messages,
+                                stepToolResults,
+                            )
+                        is OrderedToolCompletion.Skipped,
+                        is OrderedToolCompletion.Aborted,
+                        -> Unit
+                    }
+                },
+            )
 
             // A child aborted mid-flight: surface ONE terminal Abort for the step (mirroring the
             // model-stream abort path at the top of this loop) and end cleanly, instead of building
@@ -1401,6 +1385,36 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
      * Preliminary emissions never touch `messages` or the step's
      * `stepToolResults` list — they're UI-only progress signals.
      */
+    @Suppress("LongMethod", "LongParameterList", "CyclomaticComplexMethod")
+    private suspend fun executeToolWithPolicy(
+        out: FlowCollector<StreamEvent>,
+        toolDef: Tool<*, *, TContext>,
+        call: ContentPart.ToolCall,
+        options: TContext?,
+        abortSignal: AbortSignal,
+        stepNumber: Int,
+        messages: List<ModelMessage>,
+        hooks: AgentCallHooks?,
+        feed: TelemetryFeed? = null,
+        preResolved: Pair<Tool<*, *, TContext>, Any?>? = null,
+    ): ToolExecutionResult {
+        val timeout = toolExecutionPolicy.toolExecutionTimeout
+        if (timeout == null) {
+            return executeTool(out, toolDef, call, options, abortSignal, stepNumber, messages, hooks, feed, preResolved)
+        }
+        return try {
+            withTimeout(timeout) {
+                executeTool(out, toolDef, call, options, abortSignal, stepNumber, messages, hooks, feed, preResolved)
+            }
+        } catch (timeoutError: TimeoutCancellationException) {
+            dispatcher.emitError(timeoutError, stepNumber, AgentEvent.Errored.ErrorSource.Tool, hooks, feed)
+            toolFailure(
+                call,
+                AgentError.ToolExecutionTimedOut(call.toolName, call.toolCallId, timeout),
+            )
+        }
+    }
+
     @Suppress("LongMethod", "LongParameterList", "CyclomaticComplexMethod")
     private suspend fun executeTool(
         out: FlowCollector<StreamEvent>,

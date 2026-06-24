@@ -11,7 +11,7 @@ import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.decodeFromJsonElement
 
 /**
- * Structured output for [generateText] / [streamText] / [Agent].
+ * Structured output for `generateText` / `streamText` / [Agent].
  *
  * Per invariant I-3 / I-6, structured output goes through `Output`.
  * Prefer `generateText(output = ...)` / `streamText(output = ...)`.

@@ -12,23 +12,25 @@
 - `interface Agent<TContext, TOutput>`
   - `suspend fun generate(prompt?, messages = emptyList(), options?, abortSignal?, hooks?): GenerateResult<TOutput>`
   - `fun stream(prompt?, messages = emptyList(), options?, abortSignal?, hooks?): Flow<StreamEvent>`
-- `class ToolLoopAgent<TContext, TOutput>(...) : Agent<TContext, TOutput>` — default impl
+- `abstract class ToolLoopAgent<TContext, TOutput>(...) : Agent<TContext, TOutput>` — extend-only default loop implementation; applications provide a named subclass
 - `data class GenerateResult<TOutput>(output, text, steps, finishReason, usage, pendingApprovals = [], messages = [])`
 - `data class AgentCallHooks(onStart?, onStepStart?, onStepFinish?, onFinish?, onError?, onChunk?)` — per-call hook surface
 
 ### Tool definition
 
-- `class Tool<TInput, TOutput, TContext>` — opaque; the `executor` field always stores a `Flow<TOutput>`-returning lambda internally. Construct via:
-  - `fun tool(...): Tool<...>` — single-value executor `suspend (TInput) -> TOutput`. Factory wraps in `flow { emit(value) }`. Use for the common case where the tool produces exactly one result.
-  - `fun streamingTool(...): Tool<...>` — `Flow<TOutput>`-returning executor. Each emission becomes a `StreamEvent.ToolResult`; the LAST emission is final (feeds the model on subsequent turns), earlier emissions are `preliminary = true` (UI-only progress). Empty flow → `StreamEvent.ToolError("tool emitted no values")`. Use when a tool can produce a useful early snapshot before the full result is ready.
+- `sealed class Tool<TInput, TOutput, TContext>` — extend it for named tools, or construct via PascalCase factories:
+  - `fun Tool(...): Tool<...>` — single-value executor `suspend ToolExecutionContext<TContext>.(TInput) -> TOutput`. Factory wraps in a one-emission flow. Use for the common case where the tool produces exactly one result.
+  - `fun StreamingTool(...): Tool<...>` — `Flow<TOutput>`-returning executor. Each emission becomes a `StreamEvent.ToolResult`; the LAST emission is final (feeds the model on subsequent turns), earlier emissions are `preliminary = true` (UI-only progress). Empty flow → `StreamEvent.ToolError("tool emitted no values")`. Use when a tool can produce a useful early snapshot before the full result is ready.
+  - `fun DynamicTool(...): Tool<JsonElement, JsonElement, TContext>` — runtime-typed JSON tool.
 - `class ToolSet<TContext>(...)` — `find(name): Tool?`, `names(): List<String>`, `descriptors`, `plus(other)`
-- `fun toolSetOf<TContext>(vararg tools: Tool<*, *, TContext>): ToolSet<TContext>`
+- `fun ToolSet<TContext>(vararg tools: Tool<*, *, TContext>): ToolSet<TContext>`
 - `class ToolExecutionContext<TContext>(context, abortSignal, stepNumber, messages, toolCallId, writer: ToolStreamWriter = NoopToolStreamWriter)` — `this` inside tool executor. `context` is the running typed context (a `prepareStep.experimental_context` override flows in here, gap #16). `writer` writes back into the active stream (gap #21).
 - `interface ToolStreamWriter { suspend fun write(event: StreamEvent); suspend fun writeData(value: JsonElement) }` — v6's `UIMessageStreamWriter` (gap #21). `writeData` emits `StreamEvent.Raw(value)`. `object NoopToolStreamWriter` is the off-loop default. Writes interleave with the tool's own emissions in stream order; `streamToUiMessages` ignores `Raw`, so a consumer that wants the custom data intercepts the `Flow<StreamEvent>` pre-conversion.
 - `data class ToolPredicateOptions<TContext>(toolCallId, messages, experimental_context: TContext? = null)` — passed to `Tool.needsApproval` / `Tool.toModelOutput` (gap #17) so a predicate can decide on conversation history or call identity.
 - Tool lifecycle hooks (gap #18), all optional + loop-invoked, `runHook`-guarded: `onInputStart(streamingId)` on `ToolInputStart`, `onInputDelta(streamingId, delta)` on `ToolInputDelta`, `onInputAvailable(toolCallId, input)` just before the executor runs.
+- `data class ToolExecutionPolicy(maxParallelToolCalls = 8, maxToolCallsPerStep = 128, progressBufferCapacity = 64, toolExecutionTimeout? = null)` — explicit bounded policy for local tool execution inside one step. `ToolLoopAgent.maxParallelToolCalls` remains as shorthand for the policy parallelism cap.
 - `typealias ToolCallRepairFunction<TContext> = suspend (failedCall, error, messages, tools) -> ContentPart.ToolCall?` — wired into `ToolLoopAgent` via the optional `experimental_repairToolCall` constructor param. Called once when a tool call's args fail to decode (model emitted JSON that doesn't match the schema). Return a corrected `ContentPart.ToolCall` (possibly with a different `toolName`) to retry; return null to surface `StreamEvent.ToolError`. Single-attempt — no recursive repair. Targets Gemma 4 E2B's ~5% rate of malformed-args calls.
-- `sealed class AgentError(message, cause?) : RuntimeException` — tool-loop error taxonomy: `NoSuchTool(toolName, availableTools)`, `InvalidToolInput(toolName, rawArgs, parseError)`, `ToolExecution(toolName, toolCallId, executorError)`, `ToolCallRepairFailed(toolName, originalError, repairError?)`, `InvalidApprovalResponse(toolCallId, knownPendingIds)`, `MaxStepsReached(stepCount)`. The loop populates `StreamEvent.ToolError.error` with these so consumers `when` on the type instead of substring-matching messages.
+- `sealed class AgentError(message, cause?) : RuntimeException` — tool-loop error taxonomy: `NoSuchTool(toolName, availableTools)`, `InvalidToolInput(toolName, rawArgs, parseError)`, `ToolExecution(toolName, toolCallId, executorError)`, `ToolCallRepairFailed(toolName, originalError, repairError?)`, `InvalidApprovalResponse(toolCallId, knownPendingIds)`, `InvalidToolApprovalSignature(approvalId, toolCallId, reason)`, `InvalidCallOptions(validationError)`, `MaxStepsReached(stepCount)`, `MaxToolCallsPerStepExceeded(toolCallCount, maxToolCallsPerStep)`, `ToolExecutionTimedOut(toolName, toolCallId, timeout)`. The loop populates `StreamEvent.ToolError.error` with these so consumers `when` on the type instead of substring-matching messages.
 
 ### Tool approval (RPC return-then-resume)
 
@@ -70,10 +72,10 @@ and repaired values are byte-identical to the JS SDK.
 
 - `fun interface StopCondition`
 - `data class LoopState(stepNumber, totalSteps, lastFinishReason, toolCallsThisStep, toolCallsAllSteps)`
-- `fun stepCountIs(n: Int): StopCondition`
-- `fun hasToolCall(toolName: String): StopCondition`
-- `fun anyOf(vararg conditions): StopCondition`
-- `fun allOf(vararg conditions): StopCondition`
+- `fun StepCountIs(n: Int): StopCondition`
+- `fun HasToolCall(toolName: String): StopCondition`
+- `fun AnyOf(vararg conditions): StopCondition`
+- `fun AllOf(vararg conditions): StopCondition`
 
 ### Lifecycle hooks
 
@@ -129,7 +131,9 @@ Penalty and response-format fields participate in the `Step ?: Agent ?: agent-de
   - `simulateStreamingMiddleware()` — calls `doGenerate` then synthesizes `TextStart / TextDelta / TextEnd / ToolCall* / StepFinish / Finish`
   - `addToolInputExamplesMiddleware(examplesByTool)`
   - `extractJsonMiddleware()`
-  - `loggingMiddleware(logger: Logger, tag = "agent")` — routes tool-call boundary events to `logger.debug` and errors to `logger.warn` (passing the `@Transient` typed `ToolError.error` as the throwable). The canonical consumer of the `Logger` primitive; logging lives in middleware, not the provider or loop.
+  - `LoggingMiddleware(logger: Logger, tag = "agent")` — routes tool-call boundary events to `logger.debug` and errors to `logger.warn` (passing the `@Transient` typed `ToolError.error` as the throwable). Default logging records metadata/byte counts, not raw payloads.
+  - `LoggingMiddleware(logger, options: LoggingOptions, tag = "agent")` — opt into redacted or raw input/output logging. `LoggingOptions(recordInputs=false, recordOutputs=false, allowRawValues=false, redactor=AiSdkDefaultRedactor)`.
+  - `interface Redactor`, `DefaultRedactor`, `RedactionOptions`, `AiSdkDefaultRedactor` — shared redaction seam for headers, text, and JSON payloads.
 - `interface Logger { fun warn(message, throwable? = null); fun info(message); fun debug(message) }` — host-injected log sink. `object NoopLogger` (drop-everything default). Errors are NOT routed here — those ride `StreamEvent.Error` / `OnErrorEvent`.
 
 ### Embeddings
@@ -165,7 +169,7 @@ Penalty and response-format fields participate in the `Step ?: Agent ?: agent-de
 
 ### Provider-Utils Helpers
 
-- `dynamicTool(name, description, inputSchemaJson?, metadata?, executor)`
+- `DynamicTool(name, description, inputSchemaJson?, metadata?, executor)`
 - `Schema<T>`, `jsonSchema`, `asSchema`, `zodSchema`
 - `IdGenerator`, `createIdGenerator`, `generateId`
 
@@ -173,7 +177,7 @@ Penalty and response-format fields participate in the `Step ?: Agent ?: agent-de
 
 - `cosineSimilarity`, `splitArray`, `asArray`, `mergeJsonObjects`, `isDeepEqualData`.
 - `DataUrl`, `splitDataUrl`, `detectMediaType`, `prepareHeaders`.
-- `RetryPolicy`, `retryWithExponentialBackoff`, `SerialJobExecutor`.
+- `RetryPolicy(maxRetries, baseDelayMs, maxDelayMs, clock, delayGenerator, totalTimeoutMs?, perAttemptTimeoutMs?)`, `RetryDelayGenerator`, `RetryAttemptDetail`, `retryWithExponentialBackoff`, `SerialJobExecutor`. Defaults retry only typed retryable `APICallError` / `GatewayError`, honor `Retry-After`, use full jitter, and preserve attempt history in `RetryError.attempts`.
 - `mergeAbortSignals`, `abortSignalFromJobs`.
 
 ### Streaming helpers
@@ -220,7 +224,7 @@ Penalty and response-format fields participate in the `Step ?: Agent ?: agent-de
   - `FilePart(id, mediaType, base64)`
   - `ToolInputStart(id, toolName) / ToolInputDelta(id, delta) / ToolInputEnd(id)`
   - `ToolCall(toolCallId, toolName, inputJson)` — final, parsed
-  - `ToolResult(toolCallId, toolName, outputJson, preliminary = false)` — `preliminary = true` for intermediate snapshots from a `streamingTool` executor; the final emission (and any tool built via the single-value `tool(...)` factory) carries `preliminary = false` and feeds the model on subsequent turns
+  - `ToolResult(toolCallId, toolName, outputJson, preliminary = false)` — `preliminary = true` for intermediate snapshots from a `StreamingTool` executor; the final emission (and any tool built via the single-value `Tool(...)` factory) carries `preliminary = false` and feeds the model on subsequent turns
   - `ToolError(toolCallId, toolName, message, error: AgentError? = null)` — `error` is a `@Transient` typed `AgentError` (dropped on serialization; `message` stays the wire-stable text) so in-process consumers `when (event.error)` instead of substring-matching. Loop-populated: `NoSuchTool` / `InvalidToolInput` / `ToolCallRepairFailed` / `ToolExecution`.
   - `ToolApprovalRequest(toolCallId, toolName, inputJson, approvalId: String? = null)` — loop ends after this
   - `ToolOutputDenied(toolCallId, toolName, approvalId, reason: String? = null)` — host denied a previously requested approval (distinct from `ToolError` — denial is a CHOICE, not a failure)
@@ -240,7 +244,7 @@ Penalty and response-format fields participate in the `Step ?: Agent ?: agent-de
 - `data class UIMessage(id, role, parts: List<UIMessagePart>, createdAtMs?, metadata: Map<String, JsonElement>? = null)` — `metadata` is the monomorphic substitute for v6's `<METADATA, DATA_PARTS, TOOLS>` generics; apps can attach source-agent identity or routing metadata under their own namespaced keys.
 - `enum UIMessageRole { System, User, Assistant }`
 - `sealed interface UIMessagePart { Text; ToolUI; DynamicToolUI; Reasoning; SourceUrl; SourceDocument; File; Error; StepStart }`
-  - `ToolUI(toolCallId, toolName, state, input?, output?, error?, preliminary = false)` — `preliminary = true` while a `streamingTool` is still mid-flight (state stays `OutputAvailable`, UI shows "loading more" affordance)
+  - `ToolUI(toolCallId, toolName, state, input?, output?, error?, preliminary = false)` — `preliminary = true` while a `StreamingTool` is still mid-flight (state stays `OutputAvailable`, UI shows "loading more" affordance)
   - `DynamicToolUI(toolCallId, toolName, state, input?, output?, error?, preliminary = false)` — runtime-typed tool variant (subagent prep — parent's static handler registry can't dispatch the subagent's tools)
   - `StepStart(stepNumber)` — multi-step boundary; emitted on `StreamEvent.StepStart` for step 2+ so multi-tool flows / subagent handoffs render a visible divider
   - `SourceUrl(sourceId, url, title?)` / `SourceDocument(sourceId, mediaType, title, filename?)` — split per gap #29

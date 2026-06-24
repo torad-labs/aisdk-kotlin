@@ -36,7 +36,7 @@ public sealed interface ResponseFormat {
      * named-schema modes (OpenAI structured outputs, Gemini's
      * `response_schema`).
      *
-     * Idiomatic use via [outputObj] / [outputArray]: when a caller
+     * Idiomatic use via `outputObj` / `outputArray`: when a caller
      * wants typed output, they construct an [Output] AND set
      * `responseFormat = ResponseFormat.Json(...)` on the call params so
      * the provider constrains decoding, then [Output.decode] parses

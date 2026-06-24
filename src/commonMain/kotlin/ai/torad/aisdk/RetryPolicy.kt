@@ -2,13 +2,53 @@ package ai.torad.aisdk
 
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.withTimeout
+import kotlin.random.Random
 import kotlin.time.Clock
 
+public fun interface RetryDelayGenerator {
+    public fun nextDelayMs(maxDelayMs: Long): Long
+
+    public companion object {
+        public fun fullJitter(random: Random = Random.Default): RetryDelayGenerator =
+            RetryDelayGenerator { maxDelayMs ->
+                when {
+                    maxDelayMs <= 0L -> 0L
+                    maxDelayMs == Long.MAX_VALUE -> random.nextLong(Long.MAX_VALUE)
+                    else -> random.nextLong(maxDelayMs + 1L)
+                }
+            }
+
+        public fun deterministic(vararg delaysMs: Long): RetryDelayGenerator =
+            object : RetryDelayGenerator {
+                private var index: Int = 0
+                override fun nextDelayMs(maxDelayMs: Long): Long {
+                    val raw = delaysMs.getOrNull(index) ?: delaysMs.lastOrNull() ?: 0L
+                    index += 1
+                    return raw.coerceIn(0L, maxDelayMs.coerceAtLeast(0L))
+                }
+            }
+    }
+}
+
+@Suppress("TooManyFunctions")
 public data class RetryPolicy(
     val maxRetries: Int = 2,
     val baseDelayMs: Long = 100L,
     val maxDelayMs: Long = 2_000L,
+    val clock: Clock = Clock.System,
+    val delayGenerator: RetryDelayGenerator = RetryDelayGenerator.fullJitter(),
+    val totalTimeoutMs: Long? = null,
+    val perAttemptTimeoutMs: Long? = null,
 ) {
+    init {
+        require(maxRetries >= 0) { "maxRetries must be >= 0" }
+        require(baseDelayMs >= 0) { "baseDelayMs must be >= 0" }
+        require(maxDelayMs >= 0) { "maxDelayMs must be >= 0" }
+        totalTimeoutMs?.let { require(it > 0L) { "totalTimeoutMs must be > 0 when set" } }
+        perAttemptTimeoutMs?.let { require(it > 0L) { "perAttemptTimeoutMs must be > 0 when set" } }
+    }
+
     /**
      * Execute [block] with exponential backoff, honoring server `Retry-After` headers,
      * and surfacing the full attempt history as a [RetryError] on exhaustion.
@@ -20,59 +60,97 @@ public data class RetryPolicy(
      * - retries exhausted → [RetryError] (`MaxRetriesExceeded`).
      */
     public suspend fun <T> execute(
-        shouldRetry: (Throwable) -> Boolean = { true },
+        shouldRetry: (Throwable) -> Boolean = RetryPolicy::isDefaultRetryable,
+        block: suspend (attempt: Int) -> T,
+    ): T = if (totalTimeoutMs == null) {
+        executeLoop(shouldRetry, block)
+    } else {
+        withTimeout(totalTimeoutMs) {
+            executeLoop(shouldRetry, block)
+        }
+    }
+
+    private suspend fun <T> executeLoop(
+        shouldRetry: (Throwable) -> Boolean,
         block: suspend (attempt: Int) -> T,
     ): T {
         val errors = mutableListOf<Throwable>()
-        var nextDelay = baseDelayMs
+        val attempts = mutableListOf<RetryAttemptDetail>()
         while (true) {
             @Suppress("SwallowedException")
             val waitMs = try {
-                return block(errors.size)
+                return executeAttempt(errors.size, block)
             } catch (ce: CancellationException) {
                 throw ce
             } catch (t: Throwable) {
-                classifyFailure(t, shouldRetry, errors, nextDelay)
+                classifyFailure(t, shouldRetry, errors, attempts)
             }
             if (waitMs > 0) delay(waitMs)
-            nextDelay = (nextDelay * 2).coerceAtMost(maxDelayMs)
         }
     }
+
+    private suspend fun <T> executeAttempt(attempt: Int, block: suspend (attempt: Int) -> T): T =
+        if (perAttemptTimeoutMs == null) {
+            block(attempt)
+        } else {
+            withTimeout(perAttemptTimeoutMs) {
+                block(attempt)
+            }
+        }
 
     @Suppress("ThrowsCount")
     private fun classifyFailure(
         t: Throwable,
         shouldRetry: (Throwable) -> Boolean,
         errors: MutableList<Throwable>,
-        exponentialBackoffDelay: Long,
+        attempts: MutableList<RetryAttemptDetail>,
     ): Long {
         if (maxRetries == 0) throw t
         errors += t
         val tryNumber = errors.size
+        val retryable = shouldRetry(t)
         if (tryNumber > maxRetries) {
+            attempts += RetryAttemptDetail(tryNumber - 1, t, retryable = false, delayMs = null)
             throw RetryError(
-                "Failed after $tryNumber attempts. Last error: ${t.message}",
+                "Failed after $tryNumber attempts. Last error: ${t.message}. " +
+                    "Retry decisions: ${attempts.summary()}",
                 RetryErrorReason.MaxRetriesExceeded,
                 errors.toList(),
+                attempts.toList(),
             )
         }
-        if (!shouldRetry(t)) {
+        if (!retryable) {
+            attempts += RetryAttemptDetail(tryNumber - 1, t, retryable = false, delayMs = null)
             if (tryNumber == 1) throw t
             throw RetryError(
-                "Failed after $tryNumber attempts with non-retryable error: '${t.message}'",
+                "Failed after $tryNumber attempts with non-retryable error: '${t.message}'. " +
+                    "Retry decisions: ${attempts.summary()}",
                 RetryErrorReason.ErrorNotRetryable,
                 errors.toList(),
+                attempts.toList(),
             )
         }
-        return retryDelayMs(t, exponentialBackoffDelay)
+        val delayMs = retryDelayMs(t, retryIndex = tryNumber - 1)
+        attempts += RetryAttemptDetail(tryNumber - 1, t, retryable = true, delayMs = delayMs)
+        return delayMs
     }
 
-    private fun retryDelayMs(t: Throwable, exponentialBackoffDelay: Long): Long {
-        val serverMs = retryAfterDelayMs(t) ?: return exponentialBackoffDelay
+    private fun retryDelayMs(t: Throwable, retryIndex: Int): Long {
+        val backoffCeiling = exponentialBackoffDelay(retryIndex)
+        val jitterMs = delayGenerator.nextDelayMs(backoffCeiling).coerceIn(0L, backoffCeiling)
+        val serverMs = retryAfterDelayMs(t) ?: return jitterMs
         // Honor the server's Retry-After, CAPPED at the 60s ceiling. A server asking for 90s must
         // wait 60s — not fall back to the tiny exponential backoff, which would immediately
         // re-hit the rate limit (MAX_RETRY_AFTER_MS names the cap; the old code discarded it).
-        return serverMs.coerceAtMost(MAX_RETRY_AFTER_MS)
+        return maxOf(jitterMs, serverMs.coerceAtMost(MAX_RETRY_AFTER_MS)).coerceAtMost(MAX_RETRY_AFTER_MS)
+    }
+
+    private fun exponentialBackoffDelay(retryIndex: Int): Long {
+        var delayMs = baseDelayMs
+        repeat(retryIndex) {
+            delayMs = (delayMs * 2L).takeUnless { it < 0L }?.coerceAtMost(maxDelayMs) ?: maxDelayMs
+        }
+        return delayMs.coerceAtMost(maxDelayMs)
     }
 
     private fun retryAfterDelayMs(t: Throwable): Long? {
@@ -93,8 +171,13 @@ public data class RetryPolicy(
 
     private fun retryAfterHttpDateMs(value: String): Long? {
         val epochMs = parseHttpDateEpochMilliseconds(value) ?: return null
-        return (epochMs - Clock.System.now().toEpochMilliseconds()).coerceAtLeast(0L)
+        return (epochMs - clock.now().toEpochMilliseconds()).coerceAtLeast(0L)
     }
+
+    private fun List<RetryAttemptDetail>.summary(): String =
+        joinToString(prefix = "[", postfix = "]") { detail ->
+            "attempt=${detail.attempt},retryable=${detail.retryable},delayMs=${detail.delayMs}"
+        }
 
     @Suppress("ReturnCount", "MagicNumber", "ComplexCondition")
     private fun parseHttpDateEpochMilliseconds(value: String): Long? {
@@ -153,5 +236,9 @@ public data class RetryPolicy(
         private const val MAX_RETRY_AFTER_MS: Long = 60L * 1_000L
         private val HTTP_DATE_REGEX =
             Regex("^[A-Za-z]{3}, (\\d{2}) ([A-Za-z]{3}) (\\d{4}) (\\d{2}):(\\d{2}):(\\d{2}) GMT$")
+
+        private fun isDefaultRetryable(t: Throwable): Boolean =
+            (t as? APICallError)?.isRetryable == true ||
+                (t as? GatewayError)?.isRetryable == true
     }
 }

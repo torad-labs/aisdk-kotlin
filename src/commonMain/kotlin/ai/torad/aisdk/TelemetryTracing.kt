@@ -40,6 +40,11 @@ internal object TelemetryTracing {
             val result = block(span)
             if (endWhenDone) span.end()
             result
+        } catch (error: kotlinx.coroutines.CancellationException) {
+            // Cancellation is control-flow, not a failed span. End the span cleanly
+            // and rethrow so structured concurrency remains intact.
+            span.end()
+            throw error
         } catch (error: Throwable) {
             try {
                 recordErrorOnSpan(span, error)

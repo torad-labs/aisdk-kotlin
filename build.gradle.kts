@@ -1,5 +1,7 @@
 import io.gitlab.arturbosch.detekt.Detekt
 import io.gitlab.arturbosch.detekt.DetektCreateBaselineTask
+import kotlinx.kover.gradle.plugin.dsl.AggregationType
+import kotlinx.kover.gradle.plugin.dsl.CoverageUnit
 import org.gradle.api.publish.maven.MavenPublication
 import org.gradle.api.publish.maven.tasks.PublishToMavenRepository
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
@@ -190,8 +192,36 @@ kover {
                 classes("*\$\$serializer")
             }
         }
-        // Measurement only for now — no enforced threshold so the build is not gated.
+        verify {
+            // Current aggregate coverage from build/reports/kover/report.xml:
+            //   line 81.32%, instruction 71.95%, branch 44.01%.
+            // These beta gates leave a small ratchet margin so incidental line
+            // churn can land with tests, while material regressions fail `check`.
+            rule("line coverage ratchet") {
+                minBound(80, CoverageUnit.LINE, AggregationType.COVERED_PERCENTAGE)
+            }
+            rule("instruction coverage ratchet") {
+                minBound(70, CoverageUnit.INSTRUCTION, AggregationType.COVERED_PERCENTAGE)
+            }
+            rule("branch coverage ratchet") {
+                minBound(43, CoverageUnit.BRANCH, AggregationType.COVERED_PERCENTAGE)
+            }
+        }
     }
+}
+
+val detektBaselineBudgetCheck by tasks.registering(Exec::class) {
+    description = "Fails if detekt-baseline.xml grows beyond detekt-baseline-budget.json."
+    group = LifecycleBasePlugin.VERIFICATION_GROUP
+    commandLine(layout.projectDirectory.file("tools/check-detekt-baseline-budget").asFile.absolutePath)
+    inputs.file(layout.projectDirectory.file("detekt-baseline.xml"))
+    inputs.file(layout.projectDirectory.file("detekt-baseline-budget.json"))
+    outputs.upToDateWhen { false }
+}
+
+tasks.named("check").configure {
+    dependsOn("koverVerify")
+    dependsOn(detektBaselineBudgetCheck)
 }
 
 // --- API docs: Dokka 2.x. HTML output (`./gradlew dokkaGenerate` → build/dokka/html). ---

@@ -1,7 +1,11 @@
 package ai.torad.aisdk
 
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.FlowCollector
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 // Channel-based, order-preserving fan-in for the tool loop's bounded-parallel
 // tool execution. A step's tool calls run concurrently; their progress and
@@ -57,5 +61,89 @@ internal class ChannelToolEventCollector(
 ) : FlowCollector<StreamEvent> {
     override suspend fun emit(value: StreamEvent) {
         signals.send(ParallelToolSignal.Progress(value))
+    }
+}
+
+private class IndexedToolCall(
+    val index: Int,
+    val call: ContentPart.ToolCall,
+)
+
+/**
+ * Execute `toolCalls` with at most [ToolExecutionPolicy.maxParallelToolCalls]
+ * worker coroutines. This bounds child-coroutine count before work is acquired:
+ * queued calls are data in `work`, not suspended coroutines waiting on permits.
+ *
+ * The parent drains progress and terminal signals, applying terminal completions
+ * in original call order even when workers finish out of order. Returns true if
+ * any worker reported [OrderedToolCompletion.Aborted].
+ */
+internal object ToolLoopParallelExecution {
+    suspend fun runBoundedParallelToolCalls(
+        toolCalls: List<ContentPart.ToolCall>,
+        policy: ToolExecutionPolicy,
+        parentOut: FlowCollector<StreamEvent>,
+        executeCall: suspend (Int, ContentPart.ToolCall, FlowCollector<StreamEvent>) -> OrderedToolCompletion,
+        applyCompletion: suspend (OrderedToolCompletion) -> Unit,
+    ): Boolean {
+        if (toolCalls.isEmpty()) return false
+
+        var sawAbort = false
+        coroutineScope {
+            val signals = Channel<ParallelToolSignal>(policy.progressBufferCapacity)
+            val workerCount = policy.workerCountFor(toolCalls.size)
+            val work = Channel<IndexedToolCall>(workerCount)
+
+            launch {
+                try {
+                    toolCalls.forEachIndexed { index, call ->
+                        work.send(IndexedToolCall(index, call))
+                    }
+                } finally {
+                    work.close()
+                }
+            }
+
+            repeat(workerCount) {
+                launch {
+                    for (item in work) {
+                        try {
+                            val progressOut = ChannelToolEventCollector(signals)
+                            signals.send(ParallelToolSignal.Completed(executeCall(item.index, item.call, progressOut)))
+                        } catch (abort: AbortError) {
+                            // AbortError is a cooperative user stop, not a structural failure of the
+                            // scheduler. Send the terminal marker while unwinding so the parent count
+                            // completes and the loop can emit exactly one StreamEvent.Abort.
+                            withContext(NonCancellable) {
+                                signals.send(
+                                    ParallelToolSignal.Completed(OrderedToolCompletion.Aborted(item.index)),
+                                )
+                            }
+                            throw abort
+                        }
+                    }
+                }
+            }
+
+            val completions = mutableMapOf<Int, OrderedToolCompletion>()
+            var completedChildren = 0
+            var nextToApply = 0
+            while (completedChildren < toolCalls.size) {
+                when (val signal = signals.receive()) {
+                    is ParallelToolSignal.Progress -> parentOut.emit(signal.event)
+                    is ParallelToolSignal.Completed -> {
+                        completedChildren += 1
+                        completions[signal.completion.index] = signal.completion
+                        while (true) {
+                            val completion = completions.remove(nextToApply) ?: break
+                            if (completion is OrderedToolCompletion.Aborted) sawAbort = true
+                            applyCompletion(completion)
+                            nextToApply += 1
+                        }
+                    }
+                }
+            }
+        }
+        return sawAbort
     }
 }

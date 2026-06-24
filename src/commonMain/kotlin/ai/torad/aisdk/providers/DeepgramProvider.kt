@@ -369,7 +369,7 @@ public class DeepgramSpeechModel(
             method = HttpMethod.Post
             contentType(ContentType.Application.Json)
             headers.forEach { (name, value) -> header(name, value) }
-            setBody(aiSdkJson.encodeToString(JsonElement.serializer(), body))
+            setBody(aiSdkOutputJson.encodeToString(JsonElement.serializer(), body))
         }
         return parseDeepgramBinary(response, url)
     }
@@ -379,7 +379,7 @@ public class DeepgramSpeechModel(
         val headers = with(HttpTransport) { response.flattenedHeaders() }
         if (response.status.value !in 200..299) {
             val raw = bytes.decodeToString()
-            val parsed = runCatching { aiSdkJson.parseToJsonElement(raw) }.getOrNull()
+            val parsed = TypedJsonOps.parseJsonElementOrNull(aiSdkJson, raw)
             throw ApiCallError(
                 url = url,
                 statusCode = response.status.value,

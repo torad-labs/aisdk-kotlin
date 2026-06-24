@@ -86,7 +86,7 @@ internal object FacadeHttp {
             method = HttpMethod.Post
             contentType(ContentType.Application.Json)
             headers.forEach { (name, value) -> header(name, value) }
-            setBody(aiSdkJson.encodeToString(JsonElement.serializer(), body))
+            setBody(aiSdkOutputJson.encodeToString(JsonElement.serializer(), body))
         }
         return response.parseFacadeBinary(url)
     }
@@ -108,7 +108,7 @@ internal object FacadeHttp {
         val flattened = with(HttpTransport) { flattenedHeaders() }
         if (status.value !in 200..299) {
             val raw = bytes.decodeToString()
-            val parsed = runCatching { aiSdkJson.parseToJsonElement(raw) }.getOrNull()
+            val parsed = TypedJsonOps.parseJsonElementOrNull(aiSdkJson, raw)
             throw ApiCallError(
                 url = url,
                 statusCode = status.value,

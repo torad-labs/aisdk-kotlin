@@ -4,6 +4,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 import kotlin.test.fail
+import kotlin.time.Duration.Companion.seconds
 
 /**
  * Surface tests for the [AgentError] taxonomy (Phase 4C gap #25).
@@ -81,6 +82,8 @@ class AgentErrorTest {
             AgentError.InvalidToolApprovalSignature("appr_1", "id", "invalid signature"),
             AgentError.InvalidCallOptions(RuntimeException("bad options")),
             AgentError.MaxStepsReached(20),
+            AgentError.MaxToolCallsPerStepExceeded(toolCallCount = 3, maxToolCallsPerStep = 2),
+            AgentError.ToolExecutionTimedOut("w", "id", 1.seconds),
         )
         for (e in errs) {
             // Forces the compiler to check exhaustiveness via assignment to a
@@ -95,6 +98,8 @@ class AgentErrorTest {
                 is AgentError.InvalidToolApprovalSignature -> "InvalidToolApprovalSignature"
                 is AgentError.InvalidCallOptions -> "InvalidCallOptions"
                 is AgentError.MaxStepsReached -> "MaxStepsReached"
+                is AgentError.MaxToolCallsPerStepExceeded -> "MaxToolCallsPerStepExceeded"
+                is AgentError.ToolExecutionTimedOut -> "ToolExecutionTimedOut"
             }
             assertTrue(label.isNotEmpty(), "every variant produces a label")
         }

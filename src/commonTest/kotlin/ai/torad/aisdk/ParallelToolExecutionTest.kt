@@ -2,6 +2,7 @@ package ai.torad.aisdk
 
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flow
@@ -18,6 +19,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
+import kotlin.time.Duration.Companion.milliseconds
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class ParallelToolExecutionTest {
@@ -65,6 +67,27 @@ class ParallelToolExecutionTest {
         }
     }
 
+    private class ManyToolsThenText(private val toolCallCount: Int) : LanguageModel {
+        override val modelId = "m"
+        private var calls = 0
+        override suspend fun generate(params: LanguageModelCallParams) =
+            LanguageModelResult(text = "done", finishReason = FinishReason.Stop, usage = Usage())
+        override fun stream(params: LanguageModelCallParams): Flow<StreamEvent> = flow {
+            if (calls++ == 0) {
+                repeat(toolCallCount) { index ->
+                    emit(StreamEvent.ToolCall("c_$index", "tool", JsonObject(emptyMap())))
+                }
+                emit(StreamEvent.StepFinish(1, FinishReason.ToolCalls, Usage()))
+                emit(StreamEvent.Finish(1, FinishReason.ToolCalls, Usage()))
+            } else {
+                emit(StreamEvent.TextStart("t"))
+                emit(StreamEvent.TextDelta("t", "done"))
+                emit(StreamEvent.TextEnd("t"))
+                emit(StreamEvent.Finish(2, FinishReason.Stop, Usage()))
+            }
+        }
+    }
+
     @Test
     fun `a tool that aborts mid parallel step emits Abort and does not hang`() = runTest {
         // Regression: a tool throwing AbortError (the cooperative stop signal — what
@@ -96,7 +119,7 @@ class ParallelToolExecutionTest {
             agent.stream(prompt = "go", abortSignal = controller.signal).toList()
         }
 
-        assertTrue(events.any { it == StreamEvent.Abort }, "aborted parallel step emits a terminal Abort")
+        assertEquals(1, events.count { it == StreamEvent.Abort }, "aborted parallel step emits one terminal Abort")
     }
 
     @Test
@@ -258,5 +281,109 @@ class ParallelToolExecutionTest {
         job.join()
 
         assertEquals(listOf("toolA", "toolB"), startOrder)
+    }
+
+    @Test
+    fun `many tool calls only start bounded workers before release`() = runTest {
+        val maxParallel = 4
+        val toolCallCount = 200
+        val startedIds = mutableListOf<String>()
+        val firstWaveStarted = CompletableDeferred<Unit>()
+        val release = CompletableDeferred<Unit>()
+        val blockingTool = Tool<Empty, String, Unit>(
+            name = "tool",
+            description = "blocked tool",
+            inputSerializer = serializer(),
+            outputSerializer = serializer(),
+        ) { _ ->
+            startedIds += toolCallId
+            if (startedIds.size == maxParallel) firstWaveStarted.complete(Unit)
+            release.await()
+            "ok-$toolCallId"
+        }
+        val agent = TestToolLoopAgent<Unit, String>(
+            model = ManyToolsThenText(toolCallCount),
+            instructions = "x",
+            tools = ToolSet(blockingTool),
+            toolExecutionPolicy = ToolExecutionPolicy(
+                maxParallelToolCalls = maxParallel,
+                maxToolCallsPerStep = toolCallCount,
+            ),
+        )
+
+        val job = launch { agent.generate(prompt = "go").first() }
+        firstWaveStarted.await()
+        runCurrent()
+
+        assertEquals(
+            maxParallel,
+            startedIds.size,
+            "scheduler must not start more tool executions than maxParallelToolCalls while first wave is blocked",
+        )
+
+        release.complete(Unit)
+        job.join()
+        assertEquals(toolCallCount, startedIds.size)
+    }
+
+    @Test
+    fun `maxToolCallsPerStep emits typed error before tool execution`() = runTest {
+        var executed = 0
+        val tool = Tool<Empty, String, Unit>(
+            name = "tool",
+            description = "should not run",
+            inputSerializer = serializer(),
+            outputSerializer = serializer(),
+        ) { _ ->
+            executed += 1
+            "unexpected"
+        }
+        val agent = TestToolLoopAgent<Unit, String>(
+            model = ManyToolsThenText(toolCallCount = 3),
+            instructions = "x",
+            tools = ToolSet(tool),
+            toolExecutionPolicy = ToolExecutionPolicy(
+                maxParallelToolCalls = 2,
+                maxToolCallsPerStep = 2,
+            ),
+        )
+
+        val events = agent.stream(prompt = "go").toList()
+        val error = events.filterIsInstance<StreamEvent.Error>().single()
+
+        assertTrue(error.cause is AgentError.MaxToolCallsPerStepExceeded)
+        assertEquals(0, executed, "over-limit step must fail before any tool executor starts")
+    }
+
+    @Test
+    fun `toolExecutionTimeout emits typed tool failure and loop continues`() = runTest {
+        val slowTool = Tool<Empty, String, Unit>(
+            name = "tool",
+            description = "slow tool",
+            inputSerializer = serializer(),
+            outputSerializer = serializer(),
+        ) { _ ->
+            delay(1_000)
+            "late"
+        }
+        val agent = TestToolLoopAgent<Unit, String>(
+            model = ManyToolsThenText(toolCallCount = 1),
+            instructions = "x",
+            tools = ToolSet(slowTool),
+            toolExecutionPolicy = ToolExecutionPolicy(
+                maxParallelToolCalls = 1,
+                maxToolCallsPerStep = 1,
+                toolExecutionTimeout = 10.milliseconds,
+            ),
+        )
+
+        val events = agent.stream(prompt = "go").toList()
+        val toolError = events.filterIsInstance<StreamEvent.ToolError>().single()
+
+        assertTrue(toolError.error is AgentError.ToolExecutionTimedOut)
+        assertTrue(
+            events.any { it is StreamEvent.TextDelta && it.text == "done" },
+            "a timed-out tool is reported as a tool failure and the model gets a retry step",
+        )
     }
 }

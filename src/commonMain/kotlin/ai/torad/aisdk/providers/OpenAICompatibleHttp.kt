@@ -80,7 +80,7 @@ internal abstract class OpenAICompatibleHttpModel(
 
     /**
      * Streaming counterpart of [postJson]: opens an SSE request and yields raw
-     * response lines incrementally (see [streamSse]). The auth/common headers
+     * response lines incrementally (see `streamSse`). The auth/common headers
      * are resolved inside the flow because [commonHeaders] is `suspend`.
      */
     protected fun postSse(
@@ -135,7 +135,7 @@ internal abstract class OpenAICompatibleHttpModel(
             val bytes = response.bodyAsBytes()
             if (response.status.value !in 200..299) {
                 val raw = bytes.decodeToString()
-                val parsed = runCatching { json.parseToJsonElement(raw) }.getOrNull()
+                val parsed = TypedJsonOps.parseJsonElementOrNull(json, raw)
                 throw ApiCallError(
                     url = url(path),
                     statusCode = response.status.value,

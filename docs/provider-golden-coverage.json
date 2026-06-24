@@ -1,0 +1,199 @@
+{
+  "schemaVersion": 1,
+  "providers": {
+    "AlibabaProvider": {
+      "requestGolden": "AlibabaDefensiveParsingTest.kt",
+      "streamGolden": "AlibabaDefensiveParsingTest.kt"
+    },
+    "AmazonBedrockProvider": {
+      "requestGolden": "AmazonBedrockProviderTest.kt",
+      "streamGolden": "AmazonBedrockProviderTest.kt"
+    },
+    "AnthropicAwsProvider": {
+      "requestGolden": "AnthropicAwsProviderTest.kt",
+      "streamGolden": "AnthropicAwsProviderTest.kt"
+    },
+    "AnthropicProvider": {
+      "requestGolden": "AnthropicAwsProviderTest.kt",
+      "streamGolden": "AnthropicAwsProviderTest.kt"
+    },
+    "AssemblyAIProvider": {
+      "requestGolden": "AssemblyAIDefensiveParsingTest.kt",
+      "streamGolden": "AssemblyAIDefensiveParsingTest.kt"
+    },
+    "AzureOpenAIProvider": {
+      "requestGolden": "docs/parity/AzureOpenAI.md",
+      "streamGolden": "docs/parity/AzureOpenAI.md",
+      "coverageNote": "Parity-ledger-backed facade/provider coverage; upgrade to concrete golden JSON fixture when provider wire body changes."
+    },
+    "BasetenProvider": {
+      "requestGolden": "BasetenProviderTest.kt",
+      "streamGolden": "BasetenProviderTest.kt"
+    },
+    "BedrockAnthropicProvider": {
+      "requestGolden": "docs/parity/BedrockAnthropic.md",
+      "streamGolden": "docs/parity/BedrockAnthropic.md",
+      "coverageNote": "Parity-ledger-backed facade/provider coverage; upgrade to concrete golden JSON fixture when provider wire body changes."
+    },
+    "BedrockMantleProvider": {
+      "requestGolden": "docs/parity/BedrockMantle.md",
+      "streamGolden": "docs/parity/BedrockMantle.md",
+      "coverageNote": "Parity-ledger-backed facade/provider coverage; upgrade to concrete golden JSON fixture when provider wire body changes."
+    },
+    "BlackForestLabsProvider": {
+      "requestGolden": "BlackForestLabsDefensiveParsingTest.kt",
+      "streamGolden": "BlackForestLabsDefensiveParsingTest.kt"
+    },
+    "ByteDanceProvider": {
+      "requestGolden": "ByteDanceDefensiveParsingTest.kt",
+      "streamGolden": "ByteDanceDefensiveParsingTest.kt"
+    },
+    "CerebrasProvider": {
+      "requestGolden": "docs/parity/Cerebras.md",
+      "streamGolden": "docs/parity/Cerebras.md",
+      "coverageNote": "Parity-ledger-backed facade/provider coverage; upgrade to concrete golden JSON fixture when provider wire body changes."
+    },
+    "CohereProvider": {
+      "requestGolden": "CohereDefensiveParsingTest.kt",
+      "streamGolden": "CohereDefensiveParsingTest.kt"
+    },
+    "DeepInfraProvider": {
+      "requestGolden": "docs/parity/DeepInfra.md",
+      "streamGolden": "docs/parity/DeepInfra.md",
+      "coverageNote": "Parity-ledger-backed facade/provider coverage; upgrade to concrete golden JSON fixture when provider wire body changes."
+    },
+    "DeepSeekProvider": {
+      "requestGolden": "docs/parity/DeepSeek.md",
+      "streamGolden": "docs/parity/DeepSeek.md",
+      "coverageNote": "Parity-ledger-backed facade/provider coverage; upgrade to concrete golden JSON fixture when provider wire body changes."
+    },
+    "DeepgramProvider": {
+      "requestGolden": "DeepgramDefensiveParsingTest.kt",
+      "streamGolden": "DeepgramDefensiveParsingTest.kt"
+    },
+    "ElevenLabsProvider": {
+      "requestGolden": "ElevenLabsDefensiveParsingTest.kt",
+      "streamGolden": "ElevenLabsDefensiveParsingTest.kt"
+    },
+    "FalProvider": {
+      "requestGolden": "FalDefensiveParsingTest.kt",
+      "streamGolden": "FalDefensiveParsingTest.kt"
+    },
+    "FireworksProvider": {
+      "requestGolden": "FireworksImageBatchingTest.kt",
+      "streamGolden": null
+    },
+    "GladiaProvider": {
+      "requestGolden": "GladiaDefensiveParsingTest.kt",
+      "streamGolden": "GladiaDefensiveParsingTest.kt"
+    },
+    "GoogleGenerativeAIProvider": {
+      "requestGolden": "docs/parity/GoogleGenerativeAI.md",
+      "streamGolden": "docs/parity/GoogleGenerativeAI.md",
+      "coverageNote": "Parity-ledger-backed facade/provider coverage; upgrade to concrete golden JSON fixture when provider wire body changes."
+    },
+    "GoogleVertexAnthropicProvider": {
+      "requestGolden": "docs/parity/GoogleVertexAnthropic.md",
+      "streamGolden": "docs/parity/GoogleVertexAnthropic.md",
+      "coverageNote": "Parity-ledger-backed facade/provider coverage; upgrade to concrete golden JSON fixture when provider wire body changes."
+    },
+    "GoogleVertexMaasProvider": {
+      "requestGolden": "docs/parity/GoogleVertexMaas.md",
+      "streamGolden": "docs/parity/GoogleVertexMaas.md",
+      "coverageNote": "Parity-ledger-backed facade/provider coverage; upgrade to concrete golden JSON fixture when provider wire body changes."
+    },
+    "GoogleVertexProvider": {
+      "requestGolden": "GoogleVertexProviderTest.kt",
+      "streamGolden": "GoogleVertexProviderTest.kt"
+    },
+    "GoogleVertexXaiProvider": {
+      "requestGolden": "docs/parity/GoogleVertexXai.md",
+      "streamGolden": "docs/parity/GoogleVertexXai.md",
+      "coverageNote": "Parity-ledger-backed facade/provider coverage; upgrade to concrete golden JSON fixture when provider wire body changes."
+    },
+    "GroqProvider": {
+      "requestGolden": "docs/parity/Groq.md",
+      "streamGolden": "docs/parity/Groq.md",
+      "coverageNote": "Parity-ledger-backed facade/provider coverage; upgrade to concrete golden JSON fixture when provider wire body changes."
+    },
+    "HuggingFaceProvider": {
+      "requestGolden": "HuggingFaceDefensiveParsingTest.kt",
+      "streamGolden": "HuggingFaceDefensiveParsingTest.kt"
+    },
+    "HumeProvider": {
+      "requestGolden": "HumeProviderTest.kt",
+      "streamGolden": "HumeProviderTest.kt"
+    },
+    "KlingAIProvider": {
+      "requestGolden": "KlingAIDefensiveParsingTest.kt",
+      "streamGolden": "KlingAIDefensiveParsingTest.kt"
+    },
+    "LMNTProvider": {
+      "requestGolden": "LMNTProviderTest.kt",
+      "streamGolden": "LMNTProviderTest.kt"
+    },
+    "LumaProvider": {
+      "requestGolden": "LumaDefensiveParsingTest.kt",
+      "streamGolden": "LumaDefensiveParsingTest.kt"
+    },
+    "MistralProvider": {
+      "requestGolden": "MistralProviderTest.kt",
+      "streamGolden": "MistralProviderTest.kt"
+    },
+    "MoonshotAIProvider": {
+      "requestGolden": "docs/parity/MoonshotAI.md",
+      "streamGolden": "docs/parity/MoonshotAI.md",
+      "coverageNote": "Parity-ledger-backed facade/provider coverage; upgrade to concrete golden JSON fixture when provider wire body changes."
+    },
+    "OpenAICompatibleProvider": {
+      "requestGolden": "OpenAICompatibleCoreDefensiveParsingTest.kt",
+      "streamGolden": "OpenAICompatibleCoreDefensiveParsingTest.kt"
+    },
+    "OpenAIProvider": {
+      "requestGolden": "FromOpenAIMetadataTest.kt",
+      "streamGolden": "OpenAICompatibleCoreDefensiveParsingTest.kt"
+    },
+    "OpenResponsesProvider": {
+      "requestGolden": "OpenResponsesDefensiveParsingTest.kt",
+      "streamGolden": "OpenResponsesDefensiveParsingTest.kt"
+    },
+    "PerplexityProvider": {
+      "requestGolden": "docs/parity/Perplexity.md",
+      "streamGolden": "docs/parity/Perplexity.md",
+      "coverageNote": "Parity-ledger-backed facade/provider coverage; upgrade to concrete golden JSON fixture when provider wire body changes."
+    },
+    "ProdiaProvider": {
+      "requestGolden": "ProdiaDefensiveParsingTest.kt",
+      "streamGolden": "ProdiaDefensiveParsingTest.kt"
+    },
+    "QuiverAIProvider": {
+      "requestGolden": "QuiverAIDefensiveParsingTest.kt",
+      "streamGolden": "QuiverAIDefensiveParsingTest.kt"
+    },
+    "ReplicateProvider": {
+      "requestGolden": "ReplicateDefensiveParsingTest.kt",
+      "streamGolden": "ReplicateDefensiveParsingTest.kt"
+    },
+    "RevaiProvider": {
+      "requestGolden": "RevaiDefensiveParsingTest.kt",
+      "streamGolden": "RevaiDefensiveParsingTest.kt"
+    },
+    "TogetherAIProvider": {
+      "requestGolden": "TogetherAIDefensiveParsingTest.kt",
+      "streamGolden": "TogetherAIDefensiveParsingTest.kt"
+    },
+    "VercelProvider": {
+      "requestGolden": "docs/parity/Vercel.md",
+      "streamGolden": "docs/parity/Vercel.md",
+      "coverageNote": "Parity-ledger-backed facade/provider coverage; upgrade to concrete golden JSON fixture when provider wire body changes."
+    },
+    "VoyageProvider": {
+      "requestGolden": "VoyageDefensiveParsingTest.kt",
+      "streamGolden": "VoyageDefensiveParsingTest.kt"
+    },
+    "XaiProvider": {
+      "requestGolden": "XaiDefensiveParsingTest.kt",
+      "streamGolden": "XaiDefensiveParsingTest.kt"
+    }
+  }
+}

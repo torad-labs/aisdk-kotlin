@@ -1,6 +1,7 @@
 package ai.torad.aisdk.arch
 
 import com.lemonappdev.konsist.api.Konsist
+import com.lemonappdev.konsist.api.declaration.KoFileDeclaration
 import com.lemonappdev.konsist.api.verify.assertFalse
 import com.lemonappdev.konsist.api.verify.assertTrue
 import kotlin.test.Test
@@ -40,5 +41,49 @@ class KonsistArchitectureTest {
             .filter { !it.path.contains("Test/") }
             .filter { !it.hasAnnotationWithName("Serializable") && !it.hasPrivateModifier }
             .assertFalse { it.hasSealedModifier }
+    }
+
+    @Test
+    fun `providers do not depend on ui or framework layer`() {
+        commonMainFiles()
+            .filter { it.path.contains("/providers/") }
+            .assertFalse { it.dependsOnPackage("ai.torad.aisdk.ui") }
+    }
+
+    @Test
+    fun `core agent protocol and ui layers do not import provider implementations`() {
+        commonMainFiles()
+            .filter { !it.path.contains("/providers/") }
+            .assertFalse { it.dependsOnPackage("ai.torad.aisdk.providers") }
+    }
+
+    @Test
+    fun `protocol codecs stay below agent runtime and ui layers`() {
+        val forbiddenAgentRuntimeTerms = listOf(
+            "AgentEvent",
+            "AgentSession",
+            "ToolLoopAgent",
+            "ToolLoopAgentEngine",
+        )
+
+        commonMainFiles()
+            .filter { it.path.contains("/protocol/") }
+            .assertFalse { file ->
+                file.dependsOnPackage("ai.torad.aisdk.providers") ||
+                    file.dependsOnPackage("ai.torad.aisdk.ui") ||
+                    file.dependsOnPackage("ai.torad.aisdk.middleware") ||
+                    forbiddenAgentRuntimeTerms.any { term -> file.text.contains(term) }
+            }
+    }
+
+    private fun commonMainFiles(): List<KoFileDeclaration> = Konsist.scopeFromProject()
+        .files
+        .filter { it.path.contains("/src/commonMain/") }
+
+    private fun KoFileDeclaration.dependsOnPackage(packageName: String): Boolean {
+        val packagePrefix = "$packageName."
+        return imports.any { import ->
+            import.name == packageName || import.name.startsWith(packagePrefix)
+        }
     }
 }

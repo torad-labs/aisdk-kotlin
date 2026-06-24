@@ -10,7 +10,7 @@ import kotlinx.serialization.json.JsonElement
  * structured-output / JSON mode the way cloud OpenAI / Anthropic do.
  * The v6 strategy for such providers is to splice a textual schema
  * instruction into the system prompt and then repair the model's
- * partial output with [fixJson] / [parsePartialJson]. This file ports
+ * partial output with `fixJson` / `parsePartialJson`. This file ports
  * the splice half; `FixJson` ports the repair half.
  *
  * The three default strings are reproduced verbatim from upstream so a

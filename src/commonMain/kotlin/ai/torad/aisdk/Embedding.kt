@@ -14,7 +14,7 @@ public interface EmbeddingModel {
 
     /**
      * How many values this model accepts in a single call, if limited.
-     * [embedMany] consults this to auto-split large requests into batches when the
+     * `embedMany` consults this to auto-split large requests into batches when the
      * caller doesn't pass an explicit `maxEmbeddingsPerCall`. Null = no limit.
      */
     public val maxEmbeddingsPerCall: Int?
@@ -22,7 +22,7 @@ public interface EmbeddingModel {
 
     /**
      * Whether the model permits its embedding batches to run concurrently.
-     * When true, [embedMany] fans batches out (bounded by `maxParallelCalls`)
+     * When true, `embedMany` fans batches out (bounded by `maxParallelCalls`)
      * instead of running them serially.
      */
     public val supportsParallelCalls: Boolean

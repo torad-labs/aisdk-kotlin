@@ -214,7 +214,7 @@ public class AnthropicMessagesLanguageModel(
         val baseURL = settings.baseURL.trimEnd('/')
         val url = settings.buildRequestUrl?.invoke(baseURL, modelId, false) ?: "$baseURL/messages"
         val requestBody = settings.transformRequestBody?.invoke(modelId, body, false) ?: body
-        val encodedBody = aiSdkJson.encodeToString(JsonElement.serializer(), requestBody)
+        val encodedBody = aiSdkOutputJson.encodeToString(JsonElement.serializer(), requestBody)
         val baseHeaders = settings.anthropicHeaders(extraHeaders, betas)
         val requestHeaders = settings.requestHeadersProvider?.invoke(url, encodedBody, baseHeaders) ?: baseHeaders
         val response = client.request(url) {
@@ -232,7 +232,7 @@ public class AnthropicMessagesLanguageModel(
     }
 
     /** Streaming counterpart of [anthropicPost]: same URL/header/transform path,
-     *  but reads the SSE body incrementally off the wire (see [streamSse]). */
+     *  but reads the SSE body incrementally off the wire (see `streamSse`). */
     private fun anthropicStreamSse(
         body: JsonObject,
         betas: Set<String>,
@@ -242,7 +242,7 @@ public class AnthropicMessagesLanguageModel(
         val baseURL = settings.baseURL.trimEnd('/')
         val url = settings.buildRequestUrl?.invoke(baseURL, modelId, true) ?: "$baseURL/messages"
         val requestBody = settings.transformRequestBody?.invoke(modelId, body, true) ?: body
-        val encodedBody = aiSdkJson.encodeToString(JsonElement.serializer(), requestBody)
+        val encodedBody = aiSdkOutputJson.encodeToString(JsonElement.serializer(), requestBody)
         val baseHeaders = settings.anthropicHeaders(extraHeaders, betas)
         val requestHeaders = settings.requestHeadersProvider?.invoke(url, encodedBody, baseHeaders) ?: baseHeaders
         emitAll(

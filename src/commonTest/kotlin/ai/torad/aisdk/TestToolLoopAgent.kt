@@ -9,6 +9,7 @@ import kotlin.coroutines.CoroutineContext
  * so the tests reach the loop machinery through this faithful forwarder (same constructor surface + defaults).
  * `internal` + test-only: it exists solely so the SDK can test its own base without re-opening it to instantiation.
  */
+@Suppress("LongParameterList")
 internal class TestToolLoopAgent<TContext, TOutput>(
     model: LanguageModel,
     instructions: String,
@@ -28,7 +29,10 @@ internal class TestToolLoopAgent<TContext, TOutput>(
     presencePenalty: Float? = null,
     frequencyPenalty: Float? = null,
     responseFormat: ResponseFormat = ResponseFormat.Text,
-    maxParallelToolCalls: Int = Int.MAX_VALUE,
+    maxParallelToolCalls: Int = ToolExecutionPolicy.DEFAULT_MAX_PARALLEL_TOOL_CALLS,
+    toolExecutionPolicy: ToolExecutionPolicy = ToolExecutionPolicy(
+        maxParallelToolCalls = maxParallelToolCalls,
+    ),
     experimental_repairToolCall: ToolCallRepairFunction<TContext>? = null,
     experimental_toolApprovalSecret: ByteArray? = null,
     telemetry: TelemetrySettings? = null,
@@ -54,6 +58,7 @@ internal class TestToolLoopAgent<TContext, TOutput>(
     frequencyPenalty = frequencyPenalty,
     responseFormat = responseFormat,
     maxParallelToolCalls = maxParallelToolCalls,
+    toolExecutionPolicy = toolExecutionPolicy,
     experimental_repairToolCall = experimental_repairToolCall,
     experimental_toolApprovalSecret = experimental_toolApprovalSecret,
     telemetry = telemetry,

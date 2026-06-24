@@ -173,7 +173,7 @@ internal object HttpTransport {
      * Uses [bodyAsChannel] + [readAvailable] in 8 KiB chunks, so in the common
      * case (small JSON bodies) no large allocation happens at all.
      */
-    private suspend fun HttpResponse.bodyAsTextCapped(
+    internal suspend fun HttpResponse.bodyAsTextCapped(
         url: String,
         maxBytes: Long = MAX_RESPONSE_BODY_BYTES,
     ): String {
@@ -181,20 +181,32 @@ internal object HttpTransport {
         val chunk = ByteArray(BODY_READ_CHUNK_SIZE)
         val acc = ArrayList<ByteArray>()
         var totalRead = 0L
-        while (true) {
-            val n = channel.readAvailable(chunk, 0, BODY_READ_CHUNK_SIZE)
-            if (n <= 0) break
-            totalRead += n
-            if (totalRead > maxBytes) {
-                throw APICallError(
-                    message = "Response body exceeded $maxBytes bytes limit from $url",
-                    url = url,
-                    statusCode = status.value,
-                    responseHeaders = flattenedHeaders(),
-                    isRetryable = false,
-                )
+        var completed = false
+        try {
+            while (true) {
+                val n = channel.readAvailable(chunk, 0, BODY_READ_CHUNK_SIZE)
+                if (n <= 0) break
+                totalRead += n
+                if (totalRead > maxBytes) {
+                    throw APICallError(
+                        message = "Response body exceeded $maxBytes bytes limit from $url",
+                        url = url,
+                        statusCode = status.value,
+                        responseHeaders = flattenedHeaders(),
+                        isRetryable = false,
+                    )
+                }
+                acc.add(chunk.copyOf(n))
             }
-            acc.add(chunk.copyOf(n))
+            completed = true
+        } finally {
+            if (!completed) {
+                // Release the response body on the exact path this cap defends:
+                // oversized/hostile bodies and collector cancellation. Otherwise
+                // some engines keep the connection pinned until the server finishes
+                // sending bytes we already decided not to buffer.
+                channel.cancel(null)
+            }
         }
         val full = ByteArray(totalRead.toInt())
         var pos = 0
@@ -221,7 +233,7 @@ internal object HttpTransport {
         val raw = bodyAsTextCapped(url)
         val flattened = flattenedHeaders()
         if (status.value !in successStatusRange) {
-            val parsed = runCatching { json.parseToJsonElement(raw) }.getOrNull()
+            val parsed = TypedJsonOps.parseJsonElementOrNull(json, raw)
             errorFromResponse?.invoke(status.value, parsed, raw, flattened)?.let { throw it }
             throw ApiCallError(
                 url = url,
@@ -244,8 +256,8 @@ internal object HttpTransport {
      * `prepareRequest{}.execute{}` so the response body stays a **live channel**,
      * then emits each raw SSE text line *as it arrives off the wire* — the flow
      * yields incrementally, long before the full body is received (unlike
-     * [bodyAsText], which suspends until the whole body lands). Pipe the result
-     * through the [parseJsonEventStream] `Flow<String>` overload to recover JSON
+     * `bodyAsText`, which suspends until the whole body lands). Pipe the result
+     * through the `parseJsonEventStream` `Flow<String>` overload to recover JSON
      * events. Mirrors the incremental channel read already used by the MCP SSE
      * transport (`processMcpSse`).
      *
@@ -292,7 +304,7 @@ internal object HttpTransport {
             val flattened = response.flattenedHeaders()
             if (response.status.value !in successStatusRange) {
                 val raw = response.bodyAsTextCapped(url)
-                val parsed = runCatching { json.parseToJsonElement(raw) }.getOrNull()
+                val parsed = TypedJsonOps.parseJsonElementOrNull(json, raw)
                 errorFromResponse?.invoke(response.status.value, parsed, raw, flattened)?.let { throw it }
                 throw ApiCallError(
                     url = url,
@@ -322,7 +334,7 @@ internal object HttpTransport {
 
     /**
      * Drive an SSE provider stream into a `Flow<StreamEvent>` the Kotlin/Native-safe
-     * way. The transport's `onResponse` callback runs in the [streamSse]
+     * way. The transport's `onResponse` callback runs in the `streamSse`
      * `channelFlow` *producer* coroutine, so emitting a `StreamEvent` from inside it
      * violates Flow's emission-context invariant (it throws on Native). Instead the
      * provider stores the headers from `onResponse` and passes a reader as

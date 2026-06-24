@@ -97,10 +97,11 @@ public data class FalProviderSettings(
     ): HttpJsonResponse {
         repeat(maxPollAttempts.coerceAtLeast(1)) { attempt ->
             abortSignal.throwIfAborted()
-            val response = runCatching { falGetJson(client, url, headers) }
-                .getOrElse { error ->
-                    if (error.message == "Request is still in progress") null else throw error
-                }
+            val response = try {
+                falGetJson(client, url, headers)
+            } catch (error: InvalidResponseDataError) {
+                if (error.message == "Request is still in progress") null else throw error
+            }
             if (response != null) return response
             if (pollIntervalMillis > 0 && attempt < maxPollAttempts - 1) delay(pollIntervalMillis)
         }

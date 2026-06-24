@@ -1,8 +1,7 @@
 package ai.torad.aisdk
-import ai.torad.aisdk.providers.OpenResponsesProviderSettings
-import ai.torad.aisdk.providers.OpenResponses
 import ai.torad.aisdk.ToolResultOutputs.toJsonElement
-
+import ai.torad.aisdk.providers.OpenResponses
+import ai.torad.aisdk.providers.OpenResponsesProviderSettings
 import ai.torad.aisdk.testing.FlowDrain.drainAllItems
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.mock.MockEngine
@@ -12,24 +11,23 @@ import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.content.OutgoingContent
 import io.ktor.http.headersOf
-import kotlin.test.Test
-import kotlin.test.assertEquals
-import kotlin.test.assertFailsWith
-import kotlin.test.assertIs
-import kotlin.test.assertTrue
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
-import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.booleanOrNull
+import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
-
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
+import kotlin.test.assertIs
+import kotlin.test.assertNotNull
+import kotlin.test.assertTrue
 class OpenResponsesProviderTest {
-
     @Test
     fun `generate posts Open Responses request and maps response output`() = runTest {
         val seenBodies = mutableListOf<JsonObject>()
@@ -75,7 +73,6 @@ class OpenResponsesProviderTest {
                 headers = mapOf("x-project" to "aisdk"),
             ),
         )
-
         val result = provider.responses("gpt-resp").generate(
             LanguageModelCallParams(
                 messages = listOf(SystemMessage("system rules"), UserMessage("hi")),
@@ -133,6 +130,10 @@ class OpenResponsesProviderTest {
 
     @Test
     fun `generate rejects function call missing call id`() = runTest {
+        runOpenResponsesMissingCallId()
+    }
+
+    private suspend fun runOpenResponsesMissingCallId() {
         val client = HttpClient(
             MockEngine {
                 respond(

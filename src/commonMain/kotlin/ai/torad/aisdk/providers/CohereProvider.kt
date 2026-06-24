@@ -288,12 +288,16 @@ private class CohereChatLanguageModel(
     }
 
     private fun cohereAssistantToolCall(call: ContentPart.ToolCall): JsonObject = buildJsonObject {
+        val arguments = aiSdkOutputJson.encodeToString(JsonElement.serializer(), call.input)
         put("id", JsonPrimitive(call.toolCallId))
         put("type", JsonPrimitive("function"))
-        put("function", buildJsonObject {
-            put("name", JsonPrimitive(call.toolName))
-            put("arguments", JsonPrimitive(aiSdkJson.encodeToString(JsonElement.serializer(), call.input)))
-        })
+        put(
+            "function",
+            buildJsonObject {
+                put("name", JsonPrimitive(call.toolName))
+                put("arguments", JsonPrimitive(arguments))
+            },
+        )
     }
 
     private fun cohereToolMessages(content: List<ContentPart>): List<JsonObject> =

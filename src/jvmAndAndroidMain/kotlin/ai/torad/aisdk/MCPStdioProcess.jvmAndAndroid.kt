@@ -1,12 +1,13 @@
 package ai.torad.aisdk
 
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import java.io.BufferedReader
 import java.io.BufferedWriter
 import java.io.File
+import java.io.IOException
 import java.io.InputStreamReader
 import java.io.OutputStreamWriter
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
 
 // Shared by the JVM and Android targets (both java.io / ProcessBuilder backed) via the
 // jvmAndAndroidMain intermediate source set — one source of truth for the stdio transport.
@@ -51,11 +52,23 @@ private class JvmMCPStdioProcess(config: StdioConfig) : MCPStdioProcess {
     }
 
     override suspend fun close() = withContext(Dispatchers.IO) {
-        runCatching { writer.close() }
-        runCatching { reader.close() }
+        try {
+            writer.close()
+        } catch (_: IOException) {
+            // Best-effort stdio cleanup.
+        }
+        try {
+            reader.close()
+        } catch (_: IOException) {
+            // Best-effort stdio cleanup.
+        }
         // Close stderr too (destroy() does not close parent-held stream fds): releases the fd and
         // unblocks the drain thread's read so the daemon exits promptly.
-        runCatching { process.errorStream.close() }
+        try {
+            process.errorStream.close()
+        } catch (_: IOException) {
+            // Best-effort stdio cleanup.
+        }
         stderrDrain.interrupt()
         process.destroy()
         if (process.isAlive) process.destroyForcibly()

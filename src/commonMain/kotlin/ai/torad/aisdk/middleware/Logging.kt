@@ -1,12 +1,23 @@
+@file:Suppress("FunctionNaming", "MatchingDeclarationName")
+
 package ai.torad.aisdk.middleware
 
+import ai.torad.aisdk.AiSdkDefaultRedactor
 import ai.torad.aisdk.LanguageModelMiddleware
 import ai.torad.aisdk.LanguageModelResult
 import ai.torad.aisdk.Logger
 import ai.torad.aisdk.MiddlewareCallContext
+import ai.torad.aisdk.Redactor
 import ai.torad.aisdk.StreamEvent
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.onEach
+
+public data class LoggingOptions(
+    val recordInputs: Boolean = false,
+    val recordOutputs: Boolean = false,
+    val allowRawValues: Boolean = false,
+    val redactor: Redactor = AiSdkDefaultRedactor,
+)
 
 /**
  * Routes a model invocation's tool-call boundary + error events through
@@ -34,6 +45,16 @@ import kotlinx.coroutines.flow.onEach
 public fun LoggingMiddleware(
     logger: Logger,
     tag: String = "agent",
+): LanguageModelMiddleware = LoggingMiddleware(
+    logger = logger,
+    options = LoggingOptions(),
+    tag = tag,
+)
+
+public fun LoggingMiddleware(
+    logger: Logger,
+    options: LoggingOptions,
+    tag: String = "agent",
 ): LanguageModelMiddleware = object : LanguageModelMiddleware {
 
     override suspend fun wrapGenerate(context: MiddlewareCallContext): LanguageModelResult {
@@ -43,19 +64,64 @@ public fun LoggingMiddleware(
     }
 
     override fun wrapStream(context: MiddlewareCallContext): Flow<StreamEvent> =
-        context.doStream(context.params).onEach { event -> logStreamEvent(logger, tag, event) }
+        context.doStream(context.params).onEach { event ->
+            logStreamEvent(
+                logger = logger,
+                tag = tag,
+                options = options,
+                toolSchemaBytes = context.params.tools.associate { tool ->
+                    tool.name to tool.parametersSchemaJson.encodeToByteArray().size
+                },
+                event = event,
+            )
+        }
 
     /** Per-event routing for [LoggingMiddleware]'s stream path. */
-    private fun logStreamEvent(logger: Logger, tag: String, event: StreamEvent) {
+    @Suppress("LongMethod")
+    private fun logStreamEvent(
+        logger: Logger,
+        tag: String,
+        options: LoggingOptions,
+        toolSchemaBytes: Map<String, Int>,
+        event: StreamEvent,
+    ) {
         when (event) {
             is StreamEvent.ToolInputStart ->
                 logger.debug("[$tag] tool-open id=${event.id} name=${event.toolName}")
             is StreamEvent.ToolCall ->
-                logger.debug("[$tag] tool-call id=${event.toolCallId} name=${event.toolName} args=${event.inputJson}")
+                logger.debug(
+                    buildString {
+                        append("[$tag] tool-call id=${event.toolCallId} name=${event.toolName}")
+                        append(" schemaBytes=${toolSchemaBytes[event.toolName] ?: 0}")
+                        append(" argsBytes=${event.inputJson.toString().encodeToByteArray().size}")
+                        if (options.recordInputs) {
+                            append(" args=")
+                            append(
+                                if (options.allowRawValues) {
+                                    event.inputJson
+                                } else {
+                                    options.redactor.redactJson(event.inputJson)
+                                },
+                            )
+                        }
+                    },
+                )
             is StreamEvent.ToolResult ->
                 logger.debug(
-                    "[$tag] tool-result id=${event.toolCallId} name=${event.toolName} " +
-                        "bytes=${event.outputJson.toString().length}",
+                    buildString {
+                        append("[$tag] tool-result id=${event.toolCallId} name=${event.toolName} ")
+                        append("bytes=${event.outputJson.toString().encodeToByteArray().size}")
+                        if (options.recordOutputs) {
+                            append(" output=")
+                            append(
+                                if (options.allowRawValues) {
+                                    event.outputJson
+                                } else {
+                                    options.redactor.redactJson(event.outputJson)
+                                },
+                            )
+                        }
+                    },
                 )
             is StreamEvent.ToolError ->
                 logger.warn(

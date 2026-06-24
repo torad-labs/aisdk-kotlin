@@ -72,7 +72,7 @@ public object PartialJson {
     /**
      * Complete a partial/truncated JSON string so `Json.parseToJsonElement`
      * can read it. Returns `""` when nothing valid was scanned (e.g. a lone
-     * `-`). See [parsePartialJson] for the parse wrapper.
+     * `-`). See `parsePartialJson` for the parse wrapper.
      */
     @Suppress("CyclomaticComplexMethod", "LongMethod")
     public fun fixJson(input: String): String {
@@ -381,7 +381,7 @@ public object PartialJson {
      *  - `null` input -> [PartialJsonState.UndefinedInput] (note: an empty/blank
      *    string is NOT undefined-input — it falls through and fails).
      *  - raw text parses -> [PartialJsonState.SuccessfulParse].
-     *  - [fixJson]-repaired text parses -> [PartialJsonState.RepairedParse].
+     *  - `fixJson`-repaired text parses -> [PartialJsonState.RepairedParse].
      *  - otherwise -> [PartialJsonState.FailedParse].
      *
      * The repair runs on the ORIGINAL raw text, not on intermediate output.

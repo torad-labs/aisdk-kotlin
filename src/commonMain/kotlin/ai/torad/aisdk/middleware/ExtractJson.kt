@@ -29,7 +29,7 @@ import kotlinx.coroutines.flow.flow
  * **Truncation robustness.** A truncated generation (context exhausted,
  * max tokens, cancellation) leaves the JSON region open — `{"a":1`
  * instead of `{"a":1}`. [extractAndRepairJson] runs the extracted
- * region through [parsePartialJson] / `fixJson`, so a cut-off object is
+ * region through `parsePartialJson` / `fixJson`, so a cut-off object is
  * repaired into a parseable one rather than failing downstream
  * `Output.decode`. This is the on-device "unstable as context grows"
  * failure mode the repair layer (gap #13) exists to absorb.

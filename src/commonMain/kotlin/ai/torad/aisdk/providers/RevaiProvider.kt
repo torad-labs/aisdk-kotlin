@@ -181,7 +181,7 @@ private class RevaiTranscriptionModel(
                                 append(HttpHeaders.ContentDisposition, "${ContentDisposition.File}; filename=\"$filename\"")
                             },
                         )
-                        append("config", aiSdkJson.encodeToString(JsonElement.serializer(), config))
+                        append("config", aiSdkOutputJson.encodeToString(JsonElement.serializer(), config))
                     },
                 ),
             )

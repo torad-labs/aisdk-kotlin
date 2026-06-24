@@ -5,9 +5,9 @@ import kotlinx.serialization.json.JsonElement
 /**
  * The terminal outcome of executing one tool call inside the loop.
  *
- * For [Success], [outputJson] is the full typed payload that drives the UI's
- * per-tool renderer pipeline. [modelVisible] is what the agent feeds back to
- * the model in its `toolMessage(...)` — by default the same as [outputJson],
+ * For [Success], `outputJson` is the full typed payload that drives the UI's
+ * per-tool renderer pipeline. `modelVisible` is what the agent feeds back to
+ * the model in its `toolMessage(...)` — by default the same as `outputJson`,
  * but tools can override via `toModelOutput` to send the model a token-cheap
  * summary (e.g. "lineup: 2127 artists across 9 stages") while the UI still
  * gets the full thing. Without this split, rich tools blow the model's

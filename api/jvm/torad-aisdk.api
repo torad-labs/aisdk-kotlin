@@ -94,6 +94,12 @@ public final class ai/torad/aisdk/AgentError$MaxStepsReached : ai/torad/aisdk/Ag
 	public final fun getStepCount ()I
 }
 
+public final class ai/torad/aisdk/AgentError$MaxToolCallsPerStepExceeded : ai/torad/aisdk/AgentError {
+	public fun <init> (II)V
+	public final fun getMaxToolCallsPerStep ()I
+	public final fun getToolCallCount ()I
+}
+
 public final class ai/torad/aisdk/AgentError$NoSuchTool : ai/torad/aisdk/AgentError {
 	public fun <init> (Ljava/lang/String;Ljava/util/List;)V
 	public final fun getAvailableTools ()Ljava/util/List;
@@ -110,6 +116,13 @@ public final class ai/torad/aisdk/AgentError$ToolCallRepairFailed : ai/torad/ais
 public final class ai/torad/aisdk/AgentError$ToolExecution : ai/torad/aisdk/AgentError {
 	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/Throwable;)V
 	public final fun getExecutorError ()Ljava/lang/Throwable;
+	public final fun getToolCallId ()Ljava/lang/String;
+	public final fun getToolName ()Ljava/lang/String;
+}
+
+public final class ai/torad/aisdk/AgentError$ToolExecutionTimedOut : ai/torad/aisdk/AgentError {
+	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;JLkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun getTimeout-UwyO8pc ()J
 	public final fun getToolCallId ()Ljava/lang/String;
 	public final fun getToolName ()Ljava/lang/String;
 }
@@ -1371,6 +1384,15 @@ public final class ai/torad/aisdk/DefaultGeneratedFile {
 public final class ai/torad/aisdk/DefaultGeneratedFile$Companion {
 	public final fun fromBase64 (Ljava/lang/String;Ljava/lang/String;)Lai/torad/aisdk/DefaultGeneratedFile;
 	public final fun fromBytes ([BLjava/lang/String;)Lai/torad/aisdk/DefaultGeneratedFile;
+}
+
+public final class ai/torad/aisdk/DefaultRedactor : ai/torad/aisdk/Redactor {
+	public fun <init> ()V
+	public fun <init> (Lai/torad/aisdk/RedactionOptions;)V
+	public synthetic fun <init> (Lai/torad/aisdk/RedactionOptions;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun redactHeaders (Ljava/util/Map;)Ljava/util/Map;
+	public fun redactJson (Lkotlinx/serialization/json/JsonElement;)Lkotlinx/serialization/json/JsonElement;
+	public fun redactText (Ljava/lang/String;)Ljava/lang/String;
 }
 
 public final class ai/torad/aisdk/DevToolsKt {
@@ -4964,6 +4986,33 @@ public final class ai/torad/aisdk/ReadResourceResult$Companion {
 	public final fun serializer ()Lkotlinx/serialization/KSerializer;
 }
 
+public final class ai/torad/aisdk/RedactionOptions {
+	public fun <init> ()V
+	public fun <init> (Ljava/lang/String;II)V
+	public synthetic fun <init> (Ljava/lang/String;IIILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()I
+	public final fun component3 ()I
+	public final fun copy (Ljava/lang/String;II)Lai/torad/aisdk/RedactionOptions;
+	public static synthetic fun copy$default (Lai/torad/aisdk/RedactionOptions;Ljava/lang/String;IIILjava/lang/Object;)Lai/torad/aisdk/RedactionOptions;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getMaxStringLength ()I
+	public final fun getMinBase64Length ()I
+	public final fun getReplacement ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public abstract interface class ai/torad/aisdk/Redactor {
+	public abstract fun redactHeaders (Ljava/util/Map;)Ljava/util/Map;
+	public abstract fun redactJson (Lkotlinx/serialization/json/JsonElement;)Lkotlinx/serialization/json/JsonElement;
+	public abstract fun redactText (Ljava/lang/String;)Ljava/lang/String;
+}
+
+public final class ai/torad/aisdk/RedactorKt {
+	public static final fun getAiSdkDefaultRedactor ()Lai/torad/aisdk/Redactor;
+}
+
 public final class ai/torad/aisdk/RerankResult {
 	public fun <init> (Ljava/util/List;Ljava/util/List;Lai/torad/aisdk/Usage;Ljava/util/List;Lai/torad/aisdk/LanguageModelResponseMetadata;Lai/torad/aisdk/ProviderMetadata;)V
 	public synthetic fun <init> (Ljava/util/List;Ljava/util/List;Lai/torad/aisdk/Usage;Ljava/util/List;Lai/torad/aisdk/LanguageModelResponseMetadata;Lai/torad/aisdk/ProviderMetadata;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
@@ -5109,8 +5158,38 @@ public final class ai/torad/aisdk/ResponseFormat$Text : ai/torad/aisdk/ResponseF
 	public fun toString ()Ljava/lang/String;
 }
 
+public final class ai/torad/aisdk/RetryAttemptDetail {
+	public fun <init> (ILjava/lang/Throwable;ZLjava/lang/Long;)V
+	public final fun component1 ()I
+	public final fun component2 ()Ljava/lang/Throwable;
+	public final fun component3 ()Z
+	public final fun component4 ()Ljava/lang/Long;
+	public final fun copy (ILjava/lang/Throwable;ZLjava/lang/Long;)Lai/torad/aisdk/RetryAttemptDetail;
+	public static synthetic fun copy$default (Lai/torad/aisdk/RetryAttemptDetail;ILjava/lang/Throwable;ZLjava/lang/Long;ILjava/lang/Object;)Lai/torad/aisdk/RetryAttemptDetail;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getAttempt ()I
+	public final fun getDelayMs ()Ljava/lang/Long;
+	public final fun getError ()Ljava/lang/Throwable;
+	public final fun getRetryable ()Z
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public abstract interface class ai/torad/aisdk/RetryDelayGenerator {
+	public static final field Companion Lai/torad/aisdk/RetryDelayGenerator$Companion;
+	public abstract fun nextDelayMs (J)J
+}
+
+public final class ai/torad/aisdk/RetryDelayGenerator$Companion {
+	public final fun deterministic ([J)Lai/torad/aisdk/RetryDelayGenerator;
+	public final fun fullJitter (Lkotlin/random/Random;)Lai/torad/aisdk/RetryDelayGenerator;
+	public static synthetic fun fullJitter$default (Lai/torad/aisdk/RetryDelayGenerator$Companion;Lkotlin/random/Random;ILjava/lang/Object;)Lai/torad/aisdk/RetryDelayGenerator;
+}
+
 public final class ai/torad/aisdk/RetryError : ai/torad/aisdk/AiSdkException {
-	public fun <init> (Ljava/lang/String;Lai/torad/aisdk/RetryErrorReason;Ljava/util/List;)V
+	public fun <init> (Ljava/lang/String;Lai/torad/aisdk/RetryErrorReason;Ljava/util/List;Ljava/util/List;)V
+	public synthetic fun <init> (Ljava/lang/String;Lai/torad/aisdk/RetryErrorReason;Ljava/util/List;Ljava/util/List;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun getAttempts ()Ljava/util/List;
 	public final fun getErrors ()Ljava/util/List;
 	public final fun getLastError ()Ljava/lang/Throwable;
 	public final fun getReason ()Lai/torad/aisdk/RetryErrorReason;
@@ -5127,19 +5206,27 @@ public final class ai/torad/aisdk/RetryErrorReason : java/lang/Enum {
 
 public final class ai/torad/aisdk/RetryPolicy {
 	public fun <init> ()V
-	public fun <init> (IJJ)V
-	public synthetic fun <init> (IJJILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun <init> (IJJLkotlin/time/Clock;Lai/torad/aisdk/RetryDelayGenerator;Ljava/lang/Long;Ljava/lang/Long;)V
+	public synthetic fun <init> (IJJLkotlin/time/Clock;Lai/torad/aisdk/RetryDelayGenerator;Ljava/lang/Long;Ljava/lang/Long;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun component1 ()I
 	public final fun component2 ()J
 	public final fun component3 ()J
-	public final fun copy (IJJ)Lai/torad/aisdk/RetryPolicy;
-	public static synthetic fun copy$default (Lai/torad/aisdk/RetryPolicy;IJJILjava/lang/Object;)Lai/torad/aisdk/RetryPolicy;
+	public final fun component4 ()Lkotlin/time/Clock;
+	public final fun component5 ()Lai/torad/aisdk/RetryDelayGenerator;
+	public final fun component6 ()Ljava/lang/Long;
+	public final fun component7 ()Ljava/lang/Long;
+	public final fun copy (IJJLkotlin/time/Clock;Lai/torad/aisdk/RetryDelayGenerator;Ljava/lang/Long;Ljava/lang/Long;)Lai/torad/aisdk/RetryPolicy;
+	public static synthetic fun copy$default (Lai/torad/aisdk/RetryPolicy;IJJLkotlin/time/Clock;Lai/torad/aisdk/RetryDelayGenerator;Ljava/lang/Long;Ljava/lang/Long;ILjava/lang/Object;)Lai/torad/aisdk/RetryPolicy;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun execute (Lkotlin/jvm/functions/Function1;Lkotlin/jvm/functions/Function2;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public static synthetic fun execute$default (Lai/torad/aisdk/RetryPolicy;Lkotlin/jvm/functions/Function1;Lkotlin/jvm/functions/Function2;Lkotlin/coroutines/Continuation;ILjava/lang/Object;)Ljava/lang/Object;
 	public final fun getBaseDelayMs ()J
+	public final fun getClock ()Lkotlin/time/Clock;
+	public final fun getDelayGenerator ()Lai/torad/aisdk/RetryDelayGenerator;
 	public final fun getMaxDelayMs ()J
 	public final fun getMaxRetries ()I
+	public final fun getPerAttemptTimeoutMs ()Ljava/lang/Long;
+	public final fun getTotalTimeoutMs ()Ljava/lang/Long;
 	public fun hashCode ()I
 	public fun toString ()Ljava/lang/String;
 }
@@ -6742,6 +6829,31 @@ public final class ai/torad/aisdk/ToolExecutionContext {
 	public final fun getWriter ()Lai/torad/aisdk/ToolStreamWriter;
 }
 
+public final class ai/torad/aisdk/ToolExecutionPolicy {
+	public static final field Companion Lai/torad/aisdk/ToolExecutionPolicy$Companion;
+	public static final field DEFAULT_MAX_PARALLEL_TOOL_CALLS I
+	public static final field DEFAULT_MAX_TOOL_CALLS_PER_STEP I
+	public static final field DEFAULT_PROGRESS_BUFFER_CAPACITY I
+	public synthetic fun <init> (IIILkotlin/time/Duration;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public synthetic fun <init> (IIILkotlin/time/Duration;Lkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()I
+	public final fun component2 ()I
+	public final fun component3 ()I
+	public final fun component4-FghU774 ()Lkotlin/time/Duration;
+	public final fun copy-Q2Q30fc (IIILkotlin/time/Duration;)Lai/torad/aisdk/ToolExecutionPolicy;
+	public static synthetic fun copy-Q2Q30fc$default (Lai/torad/aisdk/ToolExecutionPolicy;IIILkotlin/time/Duration;ILjava/lang/Object;)Lai/torad/aisdk/ToolExecutionPolicy;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getMaxParallelToolCalls ()I
+	public final fun getMaxToolCallsPerStep ()I
+	public final fun getProgressBufferCapacity ()I
+	public final fun getToolExecutionTimeout-FghU774 ()Lkotlin/time/Duration;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class ai/torad/aisdk/ToolExecutionPolicy$Companion {
+}
+
 public final class ai/torad/aisdk/ToolKt {
 	public static final fun DynamicTool (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;Lkotlin/jvm/functions/Function2;Lkotlin/jvm/functions/Function3;)Lai/torad/aisdk/Tool;
 	public static synthetic fun DynamicTool$default (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;Lkotlin/jvm/functions/Function2;Lkotlin/jvm/functions/Function3;ILjava/lang/Object;)Lai/torad/aisdk/Tool;
@@ -6758,8 +6870,8 @@ public final class ai/torad/aisdk/ToolKt {
 }
 
 public abstract class ai/torad/aisdk/ToolLoopAgent : ai/torad/aisdk/Agent {
-	public fun <init> (Lai/torad/aisdk/LanguageModel;Ljava/lang/String;Lai/torad/aisdk/ToolSet;Ljava/util/List;Lai/torad/aisdk/Output;Lai/torad/aisdk/StopCondition;Lkotlin/jvm/functions/Function2;Lkotlin/jvm/functions/Function2;Lkotlinx/serialization/KSerializer;Ljava/lang/Float;Ljava/lang/Float;Ljava/lang/Integer;Ljava/lang/Integer;Ljava/util/List;Ljava/lang/Integer;Ljava/lang/Float;Ljava/lang/Float;Lai/torad/aisdk/ResponseFormat;ILkotlin/jvm/functions/Function5;[BLai/torad/aisdk/TelemetrySettings;Lai/torad/aisdk/Logger;Lkotlin/coroutines/CoroutineContext;)V
-	public synthetic fun <init> (Lai/torad/aisdk/LanguageModel;Ljava/lang/String;Lai/torad/aisdk/ToolSet;Ljava/util/List;Lai/torad/aisdk/Output;Lai/torad/aisdk/StopCondition;Lkotlin/jvm/functions/Function2;Lkotlin/jvm/functions/Function2;Lkotlinx/serialization/KSerializer;Ljava/lang/Float;Ljava/lang/Float;Ljava/lang/Integer;Ljava/lang/Integer;Ljava/util/List;Ljava/lang/Integer;Ljava/lang/Float;Ljava/lang/Float;Lai/torad/aisdk/ResponseFormat;ILkotlin/jvm/functions/Function5;[BLai/torad/aisdk/TelemetrySettings;Lai/torad/aisdk/Logger;Lkotlin/coroutines/CoroutineContext;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun <init> (Lai/torad/aisdk/LanguageModel;Ljava/lang/String;Lai/torad/aisdk/ToolSet;Ljava/util/List;Lai/torad/aisdk/Output;Lai/torad/aisdk/StopCondition;Lkotlin/jvm/functions/Function2;Lkotlin/jvm/functions/Function2;Lkotlinx/serialization/KSerializer;Ljava/lang/Float;Ljava/lang/Float;Ljava/lang/Integer;Ljava/lang/Integer;Ljava/util/List;Ljava/lang/Integer;Ljava/lang/Float;Ljava/lang/Float;Lai/torad/aisdk/ResponseFormat;ILai/torad/aisdk/ToolExecutionPolicy;Lkotlin/jvm/functions/Function5;[BLai/torad/aisdk/TelemetrySettings;Lai/torad/aisdk/Logger;Lkotlin/coroutines/CoroutineContext;)V
+	public synthetic fun <init> (Lai/torad/aisdk/LanguageModel;Ljava/lang/String;Lai/torad/aisdk/ToolSet;Ljava/util/List;Lai/torad/aisdk/Output;Lai/torad/aisdk/StopCondition;Lkotlin/jvm/functions/Function2;Lkotlin/jvm/functions/Function2;Lkotlinx/serialization/KSerializer;Ljava/lang/Float;Ljava/lang/Float;Ljava/lang/Integer;Ljava/lang/Integer;Ljava/util/List;Ljava/lang/Integer;Ljava/lang/Float;Ljava/lang/Float;Lai/torad/aisdk/ResponseFormat;ILai/torad/aisdk/ToolExecutionPolicy;Lkotlin/jvm/functions/Function5;[BLai/torad/aisdk/TelemetrySettings;Lai/torad/aisdk/Logger;Lkotlin/coroutines/CoroutineContext;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun close ()V
 	public final fun collectAgentEvents (Ljava/lang/String;Ljava/util/List;Ljava/lang/Object;Lai/torad/aisdk/AbortSignal;Lkotlin/jvm/functions/Function2;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public static synthetic fun collectAgentEvents$default (Lai/torad/aisdk/ToolLoopAgent;Ljava/lang/String;Ljava/util/List;Ljava/lang/Object;Lai/torad/aisdk/AbortSignal;Lkotlin/jvm/functions/Function2;Lkotlin/coroutines/Continuation;ILjava/lang/Object;)Ljava/lang/Object;
@@ -6789,6 +6901,7 @@ public abstract class ai/torad/aisdk/ToolLoopAgent : ai/torad/aisdk/Agent {
 	public final fun getStopWhen ()Lai/torad/aisdk/StopCondition;
 	public final fun getTelemetry ()Lai/torad/aisdk/TelemetrySettings;
 	public final fun getTemperature ()Ljava/lang/Float;
+	public final fun getToolExecutionPolicy ()Lai/torad/aisdk/ToolExecutionPolicy;
 	public fun getTools ()Lai/torad/aisdk/ToolSet;
 	public final fun getTopK ()Ljava/lang/Integer;
 	public final fun getTopP ()Ljava/lang/Float;
@@ -7681,8 +7794,29 @@ public final class ai/torad/aisdk/middleware/ExtractReasoningKt {
 }
 
 public final class ai/torad/aisdk/middleware/LoggingKt {
+	public static final fun LoggingMiddleware (Lai/torad/aisdk/Logger;Lai/torad/aisdk/middleware/LoggingOptions;Ljava/lang/String;)Lai/torad/aisdk/LanguageModelMiddleware;
 	public static final fun LoggingMiddleware (Lai/torad/aisdk/Logger;Ljava/lang/String;)Lai/torad/aisdk/LanguageModelMiddleware;
+	public static synthetic fun LoggingMiddleware$default (Lai/torad/aisdk/Logger;Lai/torad/aisdk/middleware/LoggingOptions;Ljava/lang/String;ILjava/lang/Object;)Lai/torad/aisdk/LanguageModelMiddleware;
 	public static synthetic fun LoggingMiddleware$default (Lai/torad/aisdk/Logger;Ljava/lang/String;ILjava/lang/Object;)Lai/torad/aisdk/LanguageModelMiddleware;
+}
+
+public final class ai/torad/aisdk/middleware/LoggingOptions {
+	public fun <init> ()V
+	public fun <init> (ZZZLai/torad/aisdk/Redactor;)V
+	public synthetic fun <init> (ZZZLai/torad/aisdk/Redactor;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Z
+	public final fun component2 ()Z
+	public final fun component3 ()Z
+	public final fun component4 ()Lai/torad/aisdk/Redactor;
+	public final fun copy (ZZZLai/torad/aisdk/Redactor;)Lai/torad/aisdk/middleware/LoggingOptions;
+	public static synthetic fun copy$default (Lai/torad/aisdk/middleware/LoggingOptions;ZZZLai/torad/aisdk/Redactor;ILjava/lang/Object;)Lai/torad/aisdk/middleware/LoggingOptions;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getAllowRawValues ()Z
+	public final fun getRecordInputs ()Z
+	public final fun getRecordOutputs ()Z
+	public final fun getRedactor ()Lai/torad/aisdk/Redactor;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
 }
 
 public final class ai/torad/aisdk/middleware/SimulateStreamingKt {
