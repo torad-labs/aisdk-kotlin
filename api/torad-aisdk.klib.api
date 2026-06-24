@@ -9904,7 +9904,7 @@ final class ai.torad.aisdk/ModelRef { // ai.torad.aisdk/ModelRef|null[0]
 }
 
 final class ai.torad.aisdk/MutableTelemetrySpan : ai.torad.aisdk/TelemetryActiveSpan { // ai.torad.aisdk/MutableTelemetrySpan|null[0]
-    constructor <init>(kotlin/String, kotlin.collections/MutableMap<kotlin/String, kotlinx.serialization.json/JsonElement> = ...) // ai.torad.aisdk/MutableTelemetrySpan.<init>|<init>(kotlin.String;kotlin.collections.MutableMap<kotlin.String,kotlinx.serialization.json.JsonElement>){}[0]
+    constructor <init>(kotlin/String, kotlin.collections/Map<kotlin/String, kotlinx.serialization.json/JsonElement> = ...) // ai.torad.aisdk/MutableTelemetrySpan.<init>|<init>(kotlin.String;kotlin.collections.Map<kotlin.String,kotlinx.serialization.json.JsonElement>){}[0]
 
     final val attributes // ai.torad.aisdk/MutableTelemetrySpan.attributes|{}attributes[0]
         final fun <get-attributes>(): kotlin.collections/Map<kotlin/String, kotlinx.serialization.json/JsonElement> // ai.torad.aisdk/MutableTelemetrySpan.attributes.<get-attributes>|<get-attributes>(){}[0]
@@ -12784,8 +12784,6 @@ sealed class ai.torad.aisdk/FileData { // ai.torad.aisdk/FileData|null[0]
     final class Bytes : ai.torad.aisdk/FileData { // ai.torad.aisdk/FileData.Bytes|null[0]
         constructor <init>(kotlin/ByteArray, kotlin/String? = ..., kotlin/String? = ...) // ai.torad.aisdk/FileData.Bytes.<init>|<init>(kotlin.ByteArray;kotlin.String?;kotlin.String?){}[0]
 
-        final val bytes // ai.torad.aisdk/FileData.Bytes.bytes|{}bytes[0]
-            final fun <get-bytes>(): kotlin/ByteArray // ai.torad.aisdk/FileData.Bytes.bytes.<get-bytes>|<get-bytes>(){}[0]
         final val filename // ai.torad.aisdk/FileData.Bytes.filename|{}filename[0]
             final fun <get-filename>(): kotlin/String? // ai.torad.aisdk/FileData.Bytes.filename.<get-filename>|<get-filename>(){}[0]
         final val mediaType // ai.torad.aisdk/FileData.Bytes.mediaType|{}mediaType[0]
@@ -12793,6 +12791,7 @@ sealed class ai.torad.aisdk/FileData { // ai.torad.aisdk/FileData|null[0]
 
         final fun equals(kotlin/Any?): kotlin/Boolean // ai.torad.aisdk/FileData.Bytes.equals|equals(kotlin.Any?){}[0]
         final fun hashCode(): kotlin/Int // ai.torad.aisdk/FileData.Bytes.hashCode|hashCode(){}[0]
+        final fun toByteArray(): kotlin/ByteArray // ai.torad.aisdk/FileData.Bytes.toByteArray|toByteArray(){}[0]
         final fun toString(): kotlin/String // ai.torad.aisdk/FileData.Bytes.toString|toString(){}[0]
     }
 

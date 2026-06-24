@@ -59,7 +59,7 @@ import kotlin.coroutines.coroutineContext
  * serialize, persist, transport, then resume.
  */
 @OptIn(ExperimentalAtomicApi::class)
-@Suppress("LongParameterList")
+@Suppress("ConstructorParameterNaming", "LongParameterList", "VariableNaming")
 public abstract class ToolLoopAgent<TContext, TOutput>(
     public val model: LanguageModel,
     public val instructions: String,
@@ -116,7 +116,7 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
      * is denied rather than run — so a client cannot forge, re-target, or
      * input-swap an approval. Experimental upstream (can break in patches).
      */
-    public val experimental_toolApprovalSecret: ByteArray? = null,
+    experimental_toolApprovalSecret: ByteArray? = null,
     /**
      * Telemetry for this agent's invocations (upstream v7 `telemetry`).
      * [Telemetry] integrations registered globally via `registerTelemetry`
@@ -146,7 +146,11 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
 
     private val dispatcher = AgentTelemetryDispatcher<TContext>(logger)
     private val repairer = ToolCallRepairer<TContext>(experimental_repairToolCall, tools)
-    private val approvalCoordinator = ToolApprovalCoordinator<TContext>(experimental_toolApprovalSecret, repairer)
+    private val toolApprovalSecretBytes = experimental_toolApprovalSecret?.copyOf()
+    private val approvalCoordinator = ToolApprovalCoordinator<TContext>(toolApprovalSecretBytes, repairer)
+
+    public val experimental_toolApprovalSecret: ByteArray?
+        get() = toolApprovalSecretBytes?.copyOf()
 
     /** Effective per-step parallelism cap, retained for source compatibility with existing callers. */
     public val maxParallelToolCalls: Int = toolExecutionPolicy.maxParallelToolCalls
@@ -1148,7 +1152,7 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
                     null
                 }
                 val signature = ToolApprovalSignature.maybeSignToolApproval(
-                    secret = experimental_toolApprovalSecret,
+                    secret = toolApprovalSecretBytes,
                     approvalId = approvalId ?: call.toolCallId,
                     toolCallId = call.toolCallId,
                     toolName = call.toolName,

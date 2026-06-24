@@ -31,6 +31,7 @@ import kotlin.test.assertIs
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
+@OptIn(ExperimentalAiSdkApi::class)
 class MCPClientTest {
 
     @Test

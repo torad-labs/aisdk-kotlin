@@ -168,8 +168,9 @@ public class InMemoryTelemetryTracer : TelemetryTracer {
 
 public class MutableTelemetrySpan(
     override val name: String,
-    private val mutableAttributes: MutableMap<String, JsonElement> = linkedMapOf(),
+    initialAttributes: Map<String, JsonElement> = emptyMap(),
 ) : TelemetryActiveSpan {
+    private val mutableAttributes: MutableMap<String, JsonElement> = initialAttributes.toMutableMap()
     override val attributes: Map<String, JsonElement>
         get() = mutableAttributes.toMap()
     private var _status: TelemetrySpanStatus = TelemetrySpanStatus.Ok

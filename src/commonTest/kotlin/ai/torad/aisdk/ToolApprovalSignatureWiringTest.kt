@@ -11,6 +11,7 @@ import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 import kotlinx.serialization.serializer
 import kotlin.test.Test
+import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
@@ -30,6 +31,24 @@ class ToolApprovalSignatureWiringTest {
 
     private class GateState {
         val executed = mutableListOf<String>()
+    }
+
+    @Test
+    fun `approval secret is defensively copied on input and output`() {
+        val secret = byteArrayOf(1, 2, 3)
+        val agent = TestToolLoopAgent<Unit, String>(
+            model = MockLanguageModelTextOnly("ok"),
+            instructions = "test",
+            tools = ToolSet(),
+            experimental_toolApprovalSecret = secret,
+        )
+        secret[0] = 9
+
+        val exposed = agent.experimental_toolApprovalSecret
+        assertNotNull(exposed)
+        exposed[1] = 9
+
+        assertContentEquals(byteArrayOf(1, 2, 3), agent.experimental_toolApprovalSecret)
     }
 
     private class DuplicateApprovalModel : LanguageModel {

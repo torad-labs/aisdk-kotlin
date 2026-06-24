@@ -5,6 +5,7 @@ import kotlin.test.Test
 import kotlin.test.assertFails
 import kotlin.test.assertFalse
 
+@OptIn(ExperimentalAiSdkApi::class)
 class StdioSpawnFailureTest {
     /**
      * Regression: start() ran begin() (Idle->Active + built a CoroutineScope) BEFORE
