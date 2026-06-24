@@ -71,6 +71,15 @@ class ResponseFormatTest {
     }
 
     @Test
+    fun `response format uses stable serial names not Kotlin class names`() {
+        val encoded = codec.encodeToString(ResponseFormat.serializer(), ResponseFormat.Json(schemaName = "Recipe"))
+
+        assertTrue("\"type\":\"json\"" in encoded, encoded)
+        assertTrue("ai.torad.aisdk" !in encoded, encoded)
+        assertTrue("ResponseFormat" !in encoded, encoded)
+    }
+
+    @Test
     fun `given call params with Json response-format when constructed then the field is wired`() {
         // GIVEN — the wire surface a provider actually reads.
         val params = LanguageModelCallParams(
