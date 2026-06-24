@@ -3,8 +3,10 @@ package ai.torad.aisdk
 import ai.torad.aisdk.protocol.ProtocolAdapters
 import kotlinx.serialization.EncodeDefault
 import kotlinx.serialization.ExperimentalSerializationApi
+import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.Transient
+import kotlinx.serialization.json.JsonClassDiscriminator
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
@@ -53,10 +55,12 @@ import kotlinx.serialization.json.doubleOrNull
  */
 @OptIn(ExperimentalSerializationApi::class)
 @Serializable
+@JsonClassDiscriminator("type")
 public sealed class StreamEvent {
 
     /** Stream began. Emitted exactly once at the very top. */
     @Serializable
+    @SerialName("stream-start")
     public data class StreamStart(
         val warnings: List<CallWarning> = emptyList(),
     ) : StreamEvent()
@@ -68,6 +72,7 @@ public sealed class StreamEvent {
      * model IDs, headers, and retained response bodies.
      */
     @Serializable
+    @SerialName("response-metadata")
     public data class ResponseMetadata(
         val id: String? = null,
         val timestampMillis: Long? = null,
@@ -107,6 +112,7 @@ public sealed class StreamEvent {
 
     /** New step (one LLM call) began. Emitted at the start of every loop iteration. */
     @Serializable
+    @SerialName("step-start")
     public data class StepStart(
         val stepNumber: Int,
         @EncodeDefault(EncodeDefault.Mode.NEVER)
@@ -114,6 +120,7 @@ public sealed class StreamEvent {
     ) : StreamEvent()
 
     @Serializable
+    @SerialName("text-start")
     public data class TextStart(
         val id: String,
         @EncodeDefault(EncodeDefault.Mode.NEVER)
@@ -121,6 +128,7 @@ public sealed class StreamEvent {
     ) : StreamEvent()
 
     @Serializable
+    @SerialName("text-delta")
     public data class TextDelta(
         val id: String,
         val text: String,
@@ -129,6 +137,7 @@ public sealed class StreamEvent {
     ) : StreamEvent()
 
     @Serializable
+    @SerialName("text-end")
     public data class TextEnd(
         val id: String,
         @EncodeDefault(EncodeDefault.Mode.NEVER)
@@ -136,6 +145,7 @@ public sealed class StreamEvent {
     ) : StreamEvent()
 
     @Serializable
+    @SerialName("reasoning-start")
     public data class ReasoningStart(
         val id: String,
         @EncodeDefault(EncodeDefault.Mode.NEVER)
@@ -143,6 +153,7 @@ public sealed class StreamEvent {
     ) : StreamEvent()
 
     @Serializable
+    @SerialName("reasoning-delta")
     public data class ReasoningDelta(
         val id: String,
         val text: String,
@@ -151,6 +162,7 @@ public sealed class StreamEvent {
     ) : StreamEvent()
 
     @Serializable
+    @SerialName("reasoning-end")
     public data class ReasoningEnd(
         val id: String,
         @EncodeDefault(EncodeDefault.Mode.NEVER)
@@ -159,6 +171,7 @@ public sealed class StreamEvent {
 
     /** Citation / web grounding source. */
     @Serializable
+    @SerialName("source")
     public data class SourcePart(
         val id: String,
         val sourceType: SourceType,
@@ -174,6 +187,7 @@ public sealed class StreamEvent {
 
     /** Generated file (image, audio, etc.). */
     @Serializable
+    @SerialName("file")
     public data class FilePart(
         val id: String,
         val mediaType: String,
@@ -185,6 +199,7 @@ public sealed class StreamEvent {
 
     /** Tool input streaming opens — the model has decided which tool to call. */
     @Serializable
+    @SerialName("tool-input-start")
     public data class ToolInputStart(
         val id: String,
         val toolName: String,
@@ -194,6 +209,7 @@ public sealed class StreamEvent {
 
     /** Incremental input bytes for the in-flight tool call. */
     @Serializable
+    @SerialName("tool-input-delta")
     public data class ToolInputDelta(
         val id: String,
         val delta: String,
@@ -203,6 +219,7 @@ public sealed class StreamEvent {
 
     /** Tool input streaming ends — full JSON has been received. */
     @Serializable
+    @SerialName("tool-input-end")
     public data class ToolInputEnd(
         val id: String,
         @EncodeDefault(EncodeDefault.Mode.NEVER)
@@ -211,6 +228,7 @@ public sealed class StreamEvent {
 
     /** Final, parsed tool call envelope. Emitted once `ToolInputEnd` fires and JSON parses. */
     @Serializable
+    @SerialName("tool-call")
     public data class ToolCall(
         val toolCallId: String,
         val toolName: String,
@@ -233,6 +251,7 @@ public sealed class StreamEvent {
      * value once the Flow completes.
      */
     @Serializable
+    @SerialName("tool-result")
     public data class ToolResult(
         val toolCallId: String,
         val toolName: String,
@@ -256,6 +275,7 @@ public sealed class StreamEvent {
      * wire-stable rendering and stays the single source of display text.
      */
     @Serializable
+    @SerialName("tool-error")
     public data class ToolError(
         val toolCallId: String,
         val toolName: String,
@@ -273,6 +293,7 @@ public sealed class StreamEvent {
      * [ai.torad.aisdk.ContentPart.ToolApprovalResponse] to resume.
      */
     @Serializable
+    @SerialName("tool-approval-request")
     public data class ToolApprovalRequest(
         val toolCallId: String,
         val toolName: String,
@@ -298,6 +319,7 @@ public sealed class StreamEvent {
      * [ai.torad.aisdk.ui.ToolCallState.OutputDenied].
      */
     @Serializable
+    @SerialName("tool-output-denied")
     public data class ToolOutputDenied(
         val toolCallId: String,
         val toolName: String,
@@ -313,6 +335,7 @@ public sealed class StreamEvent {
      *  hints, OpenAI reasoning trace tokens, etc.) so consumers can
      *  measure cache-hit rate per step without parsing raw streams. */
     @Serializable
+    @SerialName("step-finish")
     public data class StepFinish(
         val stepNumber: Int,
         val finishReason: FinishReason,
@@ -325,6 +348,7 @@ public sealed class StreamEvent {
 
     /** Loop ended — final aggregated finish reason + usage. */
     @Serializable
+    @SerialName("finish")
     public data class Finish(
         val totalSteps: Int,
         val finishReason: FinishReason,
@@ -350,10 +374,12 @@ public sealed class StreamEvent {
 
     /** Generation aborted via [AbortSignal]. Loop unwinds. */
     @Serializable
+    @SerialName("abort")
     public data object Abort : StreamEvent()
 
     /** Terminal error. Loop unwinds. */
     @Serializable
+    @SerialName("error")
     public data class Error(
         val message: String,
         /** Typed cause when available, preserved to the boundary; not serialized. */
@@ -367,6 +393,7 @@ public sealed class StreamEvent {
      * IS the provider payload, so no separate `providerMetadata` slot.
      */
     @Serializable
+    @SerialName("raw")
     public data class Raw(val rawValue: JsonElement) : StreamEvent()
 
     /**

@@ -7,7 +7,9 @@ import ai.torad.aisdk.TypedJsonOps.decodeAs
 import kotlinx.serialization.EncodeDefault
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.KSerializer
+import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.JsonClassDiscriminator
 import kotlinx.serialization.json.JsonElement
 
 /**
@@ -52,9 +54,11 @@ public enum class TextUIPartState {
 }
 
 @Serializable
+@JsonClassDiscriminator("type")
 public sealed interface UIMessagePart {
 
     @Serializable
+    @SerialName("text")
     public data class Text(
         val text: String,
         val state: TextUIPartState = TextUIPartState.Done,
@@ -74,6 +78,7 @@ public sealed interface UIMessagePart {
      * site since Kotlin lacks TypeScript's literal-type narrowing.
      */
     @Serializable
+    @SerialName("tool")
     public data class ToolUI(
         val toolCallId: String,
         val toolName: String,
@@ -135,6 +140,7 @@ public sealed interface UIMessagePart {
     }
 
     @Serializable
+    @SerialName("reasoning")
     public data class Reasoning(
         val text: String,
         val state: TextUIPartState = TextUIPartState.Done,
@@ -151,6 +157,7 @@ public sealed interface UIMessagePart {
      * repeated mentions across multiple parts can be deduped.
      */
     @Serializable
+    @SerialName("source-url")
     public data class SourceUrl(
         val sourceId: String,
         val url: String,
@@ -167,6 +174,7 @@ public sealed interface UIMessagePart {
      * not a file the model produced.
      */
     @Serializable
+    @SerialName("source-document")
     public data class SourceDocument(
         val sourceId: String,
         val mediaType: String,
@@ -178,6 +186,7 @@ public sealed interface UIMessagePart {
 
     /** Generated file (image, audio, etc.). */
     @Serializable
+    @SerialName("file")
     public data class File(
         val mediaType: String,
         val base64: String,
@@ -188,6 +197,7 @@ public sealed interface UIMessagePart {
     ) : UIMessagePart
 
     @Serializable
+    @SerialName("error")
     public data class Error(val message: String) : UIMessagePart
 
     /**
@@ -195,6 +205,7 @@ public sealed interface UIMessagePart {
      * an explicit [type] string instead of TypeScript literal keys.
      */
     @Serializable
+    @SerialName("data")
     public data class Data(
         val type: String,
         val data: JsonElement,
@@ -227,6 +238,7 @@ public sealed interface UIMessagePart {
      * divider in the chat list. Per historical parity gap #8.
      */
     @Serializable
+    @SerialName("step-start")
     public data class StepStart(val stepNumber: Int) : UIMessagePart
 
     /**
@@ -239,6 +251,7 @@ public sealed interface UIMessagePart {
      * Per historical parity gap #9.
      */
     @Serializable
+    @SerialName("dynamic-tool")
     public data class DynamicToolUI(
         val toolCallId: String,
         val toolName: String,
