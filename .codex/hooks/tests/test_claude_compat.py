@@ -28,6 +28,12 @@ def check(name: str, condition: bool, failures: list[str]) -> None:
 
 def main() -> int:
     failures: list[str] = []
+    hook_config = json.loads((ROOT / ".codex" / "hooks.json").read_text())
+    command = hook_config["hooks"]["PreToolUse"][0]["hooks"][0]["command"]
+    check("local hooks config uses repo-local Codex adapter", "$root/.codex/hooks/claude_compat.py" in command, failures)
+    check("local hooks config targets repo-local Claude hook", "$root/.claude/hooks/orchestrator/pretooluse.py" in command, failures)
+    check("local hooks config does not target global hooks", "$HOME/.codex" not in command and "$HOME/.claude" not in command, failures)
+
     bad_patch = (
         "*** Begin Patch\n"
         "*** Add File: src/commonMain/kotlin/ai/torad/aisdk/CodexHookSmoke.kt\n"
