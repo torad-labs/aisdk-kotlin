@@ -46,9 +46,17 @@ public fun ExtractJsonMiddleware(
     override suspend fun wrapGenerate(context: MiddlewareCallContext): LanguageModelResult {
         val raw = context.doGenerate(context.params)
         val text = transformText(raw.text)
-        return raw.copy(
+        return LanguageModelResult(
             text = text,
+            toolCalls = raw.toolCalls,
+            finishReason = raw.finishReason,
+            usage = raw.usage,
+            providerMetadata = raw.providerMetadata,
             content = rebuildContent(raw.content, text),
+            rawFinishReason = raw.rawFinishReason,
+            warnings = raw.warnings,
+            request = raw.request,
+            response = raw.response,
         )
     }
 

@@ -165,7 +165,18 @@ private class AlibabaChatLanguageModel(
 
     override suspend fun generate(params: LanguageModelCallParams): LanguageModelResult {
         val result = delegate.generate(params.copy(providerOptions = transformAlibabaChatOptions(params.providerOptions)))
-        return result.copy(usage = alibabaUsage(result.usage))
+        return LanguageModelResult(
+            text = result.text,
+            toolCalls = result.toolCalls,
+            finishReason = result.finishReason,
+            usage = alibabaUsage(result.usage),
+            providerMetadata = result.providerMetadata,
+            content = result.content,
+            rawFinishReason = result.rawFinishReason,
+            warnings = result.warnings,
+            request = result.request,
+            response = result.response,
+        )
     }
 
     override fun stream(params: LanguageModelCallParams): Flow<StreamEvent> = flow {

@@ -2,6 +2,7 @@
 
 package ai.torad.aisdk
 
+import dev.drewhamilton.poko.Poko
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emitAll
 import kotlinx.coroutines.flow.flow
@@ -82,11 +83,12 @@ public enum class MiddlewareOperation { Generate, Stream }
  * generate path. This is the load-bearing property that lets
  * `simulateStreamingMiddleware` work.
  */
-public data class MiddlewareCallContext(
-    val params: LanguageModelCallParams,
-    val model: LanguageModel,
-    val doGenerate: suspend (LanguageModelCallParams) -> LanguageModelResult,
-    val doStream: (LanguageModelCallParams) -> Flow<StreamEvent>,
+@Poko
+public class MiddlewareCallContext(
+    public val params: LanguageModelCallParams,
+    public val model: LanguageModel,
+    public val doGenerate: suspend (LanguageModelCallParams) -> LanguageModelResult,
+    public val doStream: (LanguageModelCallParams) -> Flow<StreamEvent>,
 )
 
 /**

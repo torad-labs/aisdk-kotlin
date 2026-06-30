@@ -30,6 +30,14 @@ public fun AddToolInputExamplesMiddleware(
         val examples = examplesByTool[tool.name] ?: return@map tool
         if (examples.isEmpty()) return@map tool
         val appendix = examples.joinToString(separator = "\n") { "Example: $it" }
-        tool.copy(description = "${tool.description}\n\n$appendix")
+        LanguageModelTool(
+            name = tool.name,
+            description = "${tool.description}\n\n$appendix",
+            parametersSchemaJson = tool.parametersSchemaJson,
+            providerExecuted = tool.providerExecuted,
+            metadata = tool.metadata,
+            strict = tool.strict,
+            providerOptions = tool.providerOptions,
+        )
     }
 }

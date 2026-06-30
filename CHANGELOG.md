@@ -37,9 +37,10 @@ This project follows Semantic Versioning once the first stable release is cut.
   standalone `@Serializable` canary and continues with the `UIMessagePart`
   and `StreamEvent` sealed-leaf families as polymorphic serialization
   canaries, plus media-model result/metadata holders, lifecycle
-  `AgentEvent` / `StepResult` payloads, and embedding/rerank result holders;
-  field access, equality, hashCode, toString, and JSON serialization remain
-  supported where applicable.
+  `AgentEvent` / `StepResult` payloads, embedding/rerank result holders, and
+  language-model result/metadata/middleware-context holders; field access,
+  equality, hashCode, toString, and JSON serialization remain supported where
+  applicable.
 
 - **Tools are now class-based and extensible (breaking ABI change).** `Tool` is an `abstract class`
   you can extend for reusable, dependency-injected tools — mirroring how a concrete agent extends

@@ -118,42 +118,45 @@ public data class LanguageModelCallParams(
  * provider needs. Distinct from the application-side [Tool] which carries
  * a Kotlin executor; this is the wire shape that crosses into a provider.
  */
-public data class LanguageModelTool(
-    val name: String,
-    val description: String,
-    val parametersSchemaJson: String,
-    val providerExecuted: Boolean = false,
-    val metadata: Map<String, JsonElement> = emptyMap(),
-    val strict: Boolean? = null,
+@Poko
+public class LanguageModelTool(
+    public val name: String,
+    public val description: String,
+    public val parametersSchemaJson: String,
+    public val providerExecuted: Boolean = false,
+    public val metadata: Map<String, JsonElement> = emptyMap(),
+    public val strict: Boolean? = null,
     /** Provider-specific config sent to the model for this tool (upstream's `tool.providerOptions`). */
-    val providerOptions: ProviderOptions = ProviderOptions.None,
+    public val providerOptions: ProviderOptions = ProviderOptions.None,
 ) {
     /** Parsed once and cached — not a constructor arg, so not serialized. */
-    val parametersSchema: JsonElement by lazy { aiSdkJson.parseToJsonElement(parametersSchemaJson) }
+    public val parametersSchema: JsonElement by lazy { aiSdkJson.parseToJsonElement(parametersSchemaJson) }
 }
 
 /** One-shot generate result. */
-public data class LanguageModelResult(
-    val text: String,
-    val toolCalls: List<ContentPart.ToolCall> = emptyList(),
-    val finishReason: FinishReason,
-    val usage: Usage,
-    val providerMetadata: ProviderMetadata = ProviderMetadata.None,
-    val content: List<ContentPart> = buildList {
+@Poko
+public class LanguageModelResult(
+    public val text: String,
+    public val toolCalls: List<ContentPart.ToolCall> = emptyList(),
+    public val finishReason: FinishReason,
+    public val usage: Usage,
+    public val providerMetadata: ProviderMetadata = ProviderMetadata.None,
+    public val content: List<ContentPart> = buildList {
         if (text.isNotEmpty()) add(ContentPart.Text(text))
         addAll(toolCalls)
     },
-    val rawFinishReason: String? = null,
-    val warnings: List<CallWarning> = emptyList(),
-    val request: LanguageModelRequestMetadata = LanguageModelRequestMetadata(),
-    val response: LanguageModelResponseMetadata = LanguageModelResponseMetadata(),
+    public val rawFinishReason: String? = null,
+    public val warnings: List<CallWarning> = emptyList(),
+    public val request: LanguageModelRequestMetadata = LanguageModelRequestMetadata(),
+    public val response: LanguageModelResponseMetadata = LanguageModelResponseMetadata(),
 )
 
 /** Provider stream plus request/response metadata known before collection. */
-public data class LanguageModelStreamResult(
-    val stream: Flow<StreamEvent>,
-    val request: LanguageModelRequestMetadata = LanguageModelRequestMetadata(),
-    val response: LanguageModelResponseMetadata = LanguageModelResponseMetadata(),
+@Poko
+public class LanguageModelStreamResult(
+    public val stream: Flow<StreamEvent>,
+    public val request: LanguageModelRequestMetadata = LanguageModelRequestMetadata(),
+    public val response: LanguageModelResponseMetadata = LanguageModelResponseMetadata(),
 )
 
 /**
@@ -174,17 +177,19 @@ public class CallWarning(
 }
 
 /** Request metadata recorded by HTTP-backed or gateway providers. */
-public data class LanguageModelRequestMetadata(
-    val body: JsonElement? = null,
+@Poko
+public class LanguageModelRequestMetadata(
+    public val body: JsonElement? = null,
 )
 
 /** Response metadata recorded by HTTP-backed or gateway providers. */
-public data class LanguageModelResponseMetadata(
-    val id: String? = null,
-    val timestampMillis: Long? = null,
-    val modelId: String? = null,
-    val headers: Map<String, String> = emptyMap(),
-    val body: JsonElement? = null,
+@Poko
+public class LanguageModelResponseMetadata(
+    public val id: String? = null,
+    public val timestampMillis: Long? = null,
+    public val modelId: String? = null,
+    public val headers: Map<String, String> = emptyMap(),
+    public val body: JsonElement? = null,
 ) {
     internal fun merge(other: LanguageModelResponseMetadata): LanguageModelResponseMetadata =
         LanguageModelResponseMetadata(
