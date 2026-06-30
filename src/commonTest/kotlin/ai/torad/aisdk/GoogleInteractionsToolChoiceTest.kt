@@ -3,7 +3,10 @@ package ai.torad.aisdk
 import ai.torad.aisdk.providers.GoogleInteractions
 import ai.torad.aisdk.providers.GoogleInteractionsModelInput
 import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.contentOrNull
+import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
@@ -63,5 +66,55 @@ class GoogleInteractionsToolChoiceTest {
         val toolChoice = prepared.body["generation_config"]?.jsonObject?.get("tool_choice")
         assertTrue(toolChoice != null, "tool_choice must be present when a function tool is requested")
         assertEquals(JsonPrimitive("any"), toolChoice, "ToolChoice.Required maps to \"any\"")
+    }
+
+    @Test
+    fun `maps media URLs to uri and base64 media to data`() {
+        val imageUrl = "https://generativelanguage.googleapis.com/v1beta/files/image-1"
+        val fileUrl = "gs://bucket/doc.pdf"
+        val prepared = GoogleInteractions.googleInteractionsRequestBody(
+            input = GoogleInteractionsModelInput.Model("gemini-2.0"),
+            params = LanguageModelCallParams(
+                messages = listOf(
+                    ModelMessage(
+                        MessageRole.User,
+                        listOf(
+                            ContentPart.Image(mediaType = "image/png", url = imageUrl),
+                            ContentPart.File(mediaType = "application/pdf", url = fileUrl),
+                            ContentPart.Image(mediaType = "image/jpeg", base64 = "aW1n"),
+                            ContentPart.File(mediaType = "text/plain", base64 = "ZG9j"),
+                        ),
+                    ),
+                ),
+            ),
+            stream = false,
+        )
+
+        val content = prepared.body.getValue("input")
+            .jsonArray
+            .single()
+            .jsonObject
+            .getValue("content")
+            .jsonArray
+        val urlImage = content[0].jsonObject
+        assertEquals("image", urlImage["type"]?.jsonPrimitive?.contentOrNull)
+        assertEquals(imageUrl, urlImage["uri"]?.jsonPrimitive?.contentOrNull)
+        assertEquals("image/png", urlImage["mime_type"]?.jsonPrimitive?.contentOrNull)
+        assertNull(urlImage["data"])
+        val urlFile = content[1].jsonObject
+        assertEquals("document", urlFile["type"]?.jsonPrimitive?.contentOrNull)
+        assertEquals(fileUrl, urlFile["uri"]?.jsonPrimitive?.contentOrNull)
+        assertEquals("application/pdf", urlFile["mime_type"]?.jsonPrimitive?.contentOrNull)
+        assertNull(urlFile["data"])
+        val base64Image = content[2].jsonObject
+        assertEquals("image", base64Image["type"]?.jsonPrimitive?.contentOrNull)
+        assertEquals("aW1n", base64Image["data"]?.jsonPrimitive?.contentOrNull)
+        assertEquals("image/jpeg", base64Image["mime_type"]?.jsonPrimitive?.contentOrNull)
+        assertNull(base64Image["uri"])
+        val base64File = content[3].jsonObject
+        assertEquals("document", base64File["type"]?.jsonPrimitive?.contentOrNull)
+        assertEquals("ZG9j", base64File["data"]?.jsonPrimitive?.contentOrNull)
+        assertEquals("text/plain", base64File["mime_type"]?.jsonPrimitive?.contentOrNull)
+        assertNull(base64File["uri"])
     }
 }

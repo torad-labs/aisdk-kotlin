@@ -194,16 +194,30 @@ internal class GoogleGenerativeAILanguageModel(
             googleThoughtMetadata(part.providerMetadata.toMap())?.let { putJsonObjectFields(it) }
         }
         is ContentPart.File -> buildJsonObject {
-            put("inlineData", buildJsonObject {
-                put("mimeType", JsonPrimitive(part.mediaType))
-                put("data", JsonPrimitive(part.base64))
-            })
+            if (part.url != null) {
+                put("fileData", buildJsonObject {
+                    put("mimeType", JsonPrimitive(part.mediaType))
+                    put("fileUri", JsonPrimitive(part.url))
+                })
+            } else {
+                put("inlineData", buildJsonObject {
+                    put("mimeType", JsonPrimitive(part.mediaType))
+                    put("data", JsonPrimitive(part.base64))
+                })
+            }
         }
         is ContentPart.Image -> buildJsonObject {
-            put("inlineData", buildJsonObject {
-                put("mimeType", JsonPrimitive(part.mediaType))
-                put("data", JsonPrimitive(part.base64))
-            })
+            if (part.url != null) {
+                put("fileData", buildJsonObject {
+                    put("mimeType", JsonPrimitive(part.mediaType))
+                    put("fileUri", JsonPrimitive(part.url))
+                })
+            } else {
+                put("inlineData", buildJsonObject {
+                    put("mimeType", JsonPrimitive(part.mediaType))
+                    put("data", JsonPrimitive(part.base64))
+                })
+            }
         }
         is ContentPart.Reasoning,
         is ContentPart.ToolCall,

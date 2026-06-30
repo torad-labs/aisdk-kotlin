@@ -148,6 +148,73 @@ class GoogleProviderTest {
     }
 
     @Test
+    fun `language model sends URL media as fileData and base64 media as inlineData`() = runTest {
+        val fixture = TestServer.createTestServer(
+            mutableMapOf(
+                "https://google.test/v1beta/models/gemini-2.5-flash:generateContent" to UrlHandler(
+                    UrlResponse.JsonValue(
+                        Json.parseToJsonElement(
+                            """
+                            {
+                              "candidates":[{"content":{"role":"model","parts":[{"text":"ok"}]},"finishReason":"STOP"}]
+                            }
+                            """.trimIndent(),
+                        ),
+                    ),
+                ),
+            ),
+        )
+        fixture.server.start()
+        val provider = GoogleGenerativeAI(
+            fixture.httpClient(),
+            GoogleGenerativeAIProviderSettings(apiKey = "key", baseURL = "https://google.test/v1beta"),
+        )
+        val imageUrl = "https://generativelanguage.googleapis.com/v1beta/files/image-1"
+        val fileUrl = "gs://bucket/doc.pdf"
+
+        provider(ModelId("gemini-2.5-flash")).generate(
+            LanguageModelCallParams(
+                messages = listOf(
+                    ModelMessage(
+                        MessageRole.User,
+                        listOf(
+                            ContentPart.Text("inspect media"),
+                            ContentPart.Image(mediaType = "image/png", url = imageUrl),
+                            ContentPart.File(mediaType = "application/pdf", url = fileUrl),
+                            ContentPart.Image(mediaType = "image/jpeg", base64 = "aW1n"),
+                            ContentPart.File(mediaType = "text/plain", base64 = "ZG9j"),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val parts = fixture.calls.single().requestBodyJson.jsonObject["contents"]
+            ?.jsonArray
+            ?.single()
+            ?.jsonObject
+            ?.get("parts")
+            ?.jsonArray
+            .orEmpty()
+        val urlImage = parts[1].jsonObject
+        assertEquals(imageUrl, urlImage["fileData"]?.jsonObject?.get("fileUri")?.jsonPrimitive?.contentOrNull)
+        assertEquals("image/png", urlImage["fileData"]?.jsonObject?.get("mimeType")?.jsonPrimitive?.contentOrNull)
+        assertEquals(null, urlImage["inlineData"])
+        val urlFile = parts[2].jsonObject
+        assertEquals(fileUrl, urlFile["fileData"]?.jsonObject?.get("fileUri")?.jsonPrimitive?.contentOrNull)
+        assertEquals("application/pdf", urlFile["fileData"]?.jsonObject?.get("mimeType")?.jsonPrimitive?.contentOrNull)
+        assertEquals(null, urlFile["inlineData"])
+        val base64Image = parts[3].jsonObject
+        assertEquals("aW1n", base64Image["inlineData"]?.jsonObject?.get("data")?.jsonPrimitive?.contentOrNull)
+        assertEquals("image/jpeg", base64Image["inlineData"]?.jsonObject?.get("mimeType")?.jsonPrimitive?.contentOrNull)
+        assertEquals(null, base64Image["fileData"])
+        val base64File = parts[4].jsonObject
+        assertEquals("ZG9j", base64File["inlineData"]?.jsonObject?.get("data")?.jsonPrimitive?.contentOrNull)
+        assertEquals("text/plain", base64File["inlineData"]?.jsonObject?.get("mimeType")?.jsonPrimitive?.contentOrNull)
+        assertEquals(null, base64File["fileData"])
+    }
+
+    @Test
     fun `stream maps Gemini SSE text reasoning tool calls files and finish`() = runTest {
         val fixture = TestServer.createTestServer(
             mutableMapOf(

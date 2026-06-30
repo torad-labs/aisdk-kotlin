@@ -447,8 +447,8 @@ internal object GoogleInteractions {
                             put("type", JsonPrimitive("text"))
                             put("text", JsonPrimitive(part.text))
                         }
-                        is ContentPart.File -> googleInteractionsFileContent(part.mediaType, part.base64, mediaResolution)
-                        is ContentPart.Image -> googleInteractionsFileContent(part.mediaType, part.base64, mediaResolution)
+                        is ContentPart.File -> googleInteractionsFileContent(part.mediaType, part.base64, part.url, mediaResolution)
+                        is ContentPart.Image -> googleInteractionsFileContent(part.mediaType, part.base64, part.url, mediaResolution)
                         is ContentPart.Reasoning,
                         is ContentPart.ToolCall,
                         is ContentPart.ToolResult,
@@ -480,8 +480,8 @@ internal object GoogleInteractions {
                             put("type", JsonPrimitive("text"))
                             put("text", JsonPrimitive(part.text))
                         }
-                        is ContentPart.File -> pending += googleInteractionsFileContent(part.mediaType, part.base64, mediaResolution)
-                        is ContentPart.Image -> pending += googleInteractionsFileContent(part.mediaType, part.base64, mediaResolution)
+                        is ContentPart.File -> pending += googleInteractionsFileContent(part.mediaType, part.base64, part.url, mediaResolution)
+                        is ContentPart.Image -> pending += googleInteractionsFileContent(part.mediaType, part.base64, part.url, mediaResolution)
                         is ContentPart.Reasoning -> {
                             flush()
                             steps += buildJsonObject {
@@ -546,7 +546,7 @@ internal object GoogleInteractions {
     )
 }
 
-    fun googleInteractionsFileContent(mediaType: String, base64: String, mediaResolution: String?): JsonObject {
+    fun googleInteractionsFileContent(mediaType: String, base64: String, url: String?, mediaResolution: String?): JsonObject {
     val type = when (mediaType.substringBefore('/')) {
         "image" -> "image"
         "audio" -> "audio"
@@ -555,7 +555,11 @@ internal object GoogleInteractions {
     }
     return buildJsonObject {
         put("type", JsonPrimitive(type))
-        put("data", JsonPrimitive(base64))
+        if (url != null) {
+            put("uri", JsonPrimitive(url))
+        } else {
+            put("data", JsonPrimitive(base64))
+        }
         put("mime_type", JsonPrimitive(mediaType))
         if ((type == "image" || type == "video") && mediaResolution != null) {
             put("resolution", JsonPrimitive(mediaResolution))
