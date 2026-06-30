@@ -37,7 +37,7 @@ tests must stay green.
 | BL-017 | `headers` reachable only via low-level call params, not `CallSettings` builder | Low | Optional | CONFIRMED | OPEN |
 | BL-018 | No reactive UI binding (Compose `useChat`-style) | — | Post-beta | CONFIRMED | OPEN |
 | BL-019 | MCP inbound SSE reconnect storm (no backoff/cap, reconnects on clean EOF) | High | Recommended | CONFIRMED | DONE |
-| BL-020 | MCP OAuth refresh failure hard-fails instead of re-authorizing | Med-High | Recommended | CONFIRMED | OPEN |
+| BL-020 | MCP OAuth refresh failure hard-fails instead of re-authorizing | Med-High | Recommended | CONFIRMED | DONE |
 | BL-021 | MCP SSE reconnect loses messages (`last-event-id` not implemented) | Medium | Optional | CONFIRMED | OPEN |
 | BL-022 | MCP inbound GET SSE never re-auths on 401 | Medium | Optional | CONFIRMED | OPEN |
 | BL-023 | MCP OAuth refresh race under concurrent 401s (no single-flight) | Medium | Recommended | SUSPECTED | OPEN |
