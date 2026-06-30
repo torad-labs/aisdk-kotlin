@@ -1,5 +1,7 @@
 package ai.torad.aisdk
 
+import dev.drewhamilton.poko.Poko
+
 /**
  * Engine-shape state for [ToolLoopAgent].
  *
@@ -36,7 +38,8 @@ public data class ToolLoopAgentState(
         public data object Idle : Phase()
         public data object Streaming : Phase()
         public data object ModelLoading : Phase()
-        public data class Error(val message: String) : Phase()
+        @Poko
+        public class Error(public val message: String) : Phase()
     }
 }
 

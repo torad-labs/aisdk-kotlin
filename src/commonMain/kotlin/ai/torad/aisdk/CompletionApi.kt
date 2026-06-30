@@ -1,5 +1,6 @@
 package ai.torad.aisdk
 
+import dev.drewhamilton.poko.Poko
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -107,9 +108,12 @@ public object CompletionApi {
 
 public sealed class CompletionPhase {
     public data object Idle : CompletionPhase()
-    public data class Streaming(val text: String) : CompletionPhase()
-    public data class Done(val text: String) : CompletionPhase()
-    public data class Failed(val text: String, val cause: Throwable) : CompletionPhase()
+    @Poko
+    public class Streaming(public val text: String) : CompletionPhase()
+    @Poko
+    public class Done(public val text: String) : CompletionPhase()
+    @Poko
+    public class Failed(public val text: String, public val cause: Throwable) : CompletionPhase()
 }
 
 public data class CompletionState(

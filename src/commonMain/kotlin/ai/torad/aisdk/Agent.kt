@@ -1,5 +1,6 @@
 package ai.torad.aisdk
 
+import dev.drewhamilton.poko.Poko
 import kotlinx.coroutines.flow.Flow
 
 /**
@@ -94,19 +95,20 @@ public interface Agent<TContext, TOutput> {
  * the loop paused on tool approval — call [Agent.generate] again with
  * [messages] plus tool-approval-response messages to resume.
  */
-public data class GenerateResult<TOutput>(
+@Poko
+public class GenerateResult<TOutput>(
     internal val rawOutput: TOutput,
-    val text: String,
-    val steps: List<StepResult>,
-    val finishReason: FinishReason,
+    public val text: String,
+    public val steps: List<StepResult>,
+    public val finishReason: FinishReason,
     /** Token usage of the FINAL step (matching upstream's `usage`); for the sum see [totalUsage]. */
-    val usage: Usage,
+    public val usage: Usage,
     /** Combined token usage across every step of this call (matching upstream's `totalUsage`). */
-    val totalUsage: Usage = usage,
+    public val totalUsage: Usage = usage,
     /** Tool calls awaiting host decision. Empty when generation finished naturally. */
-    val pendingApprovals: List<PendingApproval> = emptyList(),
+    public val pendingApprovals: List<PendingApproval> = emptyList(),
     /** Full message log including all assistant + tool messages from this call. */
-    val messages: List<ModelMessage> = emptyList(),
+    public val messages: List<ModelMessage> = emptyList(),
 ) {
     private var outputUnavailableReason: String? = null
 

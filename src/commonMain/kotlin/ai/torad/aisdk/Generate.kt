@@ -1,5 +1,6 @@
 package ai.torad.aisdk
 
+import dev.drewhamilton.poko.Poko
 import kotlin.concurrent.atomics.AtomicReference
 import kotlin.concurrent.atomics.ExperimentalAtomicApi
 import kotlinx.coroutines.CoroutineScope
@@ -17,33 +18,34 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 
-public data class GenerateTextResult<TOutput>(
-    val output: TOutput,
-    val text: String,
-    val toolCalls: List<ContentPart.ToolCall>,
-    val finishReason: FinishReason,
-    val usage: Usage,
-    val content: List<ContentPart> = buildList {
+@Poko
+public class GenerateTextResult<TOutput>(
+    public val output: TOutput,
+    public val text: String,
+    public val toolCalls: List<ContentPart.ToolCall>,
+    public val finishReason: FinishReason,
+    public val usage: Usage,
+    public val content: List<ContentPart> = buildList {
         if (text.isNotEmpty()) add(ContentPart.Text(text))
         addAll(toolCalls)
     },
-    val toolResults: List<ContentPart.ToolResult> = content.filterIsInstance<ContentPart.ToolResult>(),
-    val reasoning: List<ContentPart.Reasoning> = content.filterIsInstance<ContentPart.Reasoning>(),
-    val reasoningText: String? = reasoning.takeIf { it.isNotEmpty() }?.joinToString("") { it.text },
-    val files: List<ContentPart.File> = content.filterIsInstance<ContentPart.File>(),
-    val sources: List<ContentPart.Source> = content.filterIsInstance<ContentPart.Source>(),
-    val totalUsage: Usage = usage,
-    val warnings: List<CallWarning> = emptyList(),
-    val request: LanguageModelRequestMetadata = LanguageModelRequestMetadata(),
-    val response: LanguageModelResponseMetadata = LanguageModelResponseMetadata(),
-    val providerMetadata: ProviderMetadata = ProviderMetadata.None,
-    val steps: List<StepResult> = emptyList(),
-    val rawFinishReason: String? = null,
+    public val toolResults: List<ContentPart.ToolResult> = content.filterIsInstance<ContentPart.ToolResult>(),
+    public val reasoning: List<ContentPart.Reasoning> = content.filterIsInstance<ContentPart.Reasoning>(),
+    public val reasoningText: String? = reasoning.takeIf { it.isNotEmpty() }?.joinToString("") { it.text },
+    public val files: List<ContentPart.File> = content.filterIsInstance<ContentPart.File>(),
+    public val sources: List<ContentPart.Source> = content.filterIsInstance<ContentPart.Source>(),
+    public val totalUsage: Usage = usage,
+    public val warnings: List<CallWarning> = emptyList(),
+    public val request: LanguageModelRequestMetadata = LanguageModelRequestMetadata(),
+    public val response: LanguageModelResponseMetadata = LanguageModelResponseMetadata(),
+    public val providerMetadata: ProviderMetadata = ProviderMetadata.None,
+    public val steps: List<StepResult> = emptyList(),
+    public val rawFinishReason: String? = null,
 ) {
-    val staticToolCalls: List<ContentPart.ToolCall> get() = toolCalls.filter { !it.dynamic }
-    val dynamicToolCalls: List<ContentPart.ToolCall> get() = toolCalls.filter { it.dynamic }
-    val staticToolResults: List<ContentPart.ToolResult> get() = toolResults.filter { !it.dynamic }
-    val dynamicToolResults: List<ContentPart.ToolResult> get() = toolResults.filter { it.dynamic }
+    public val staticToolCalls: List<ContentPart.ToolCall> get() = toolCalls.filter { !it.dynamic }
+    public val dynamicToolCalls: List<ContentPart.ToolCall> get() = toolCalls.filter { it.dynamic }
+    public val staticToolResults: List<ContentPart.ToolResult> get() = toolResults.filter { !it.dynamic }
+    public val dynamicToolResults: List<ContentPart.ToolResult> get() = toolResults.filter { it.dynamic }
 }
 
 /**
@@ -192,17 +194,18 @@ private sealed interface ReplayTerminal {
     data class Error(val throwable: Throwable) : ReplayTerminal
 }
 
-public data class GenerateObjectResult<TOutput>(
-    val value: TOutput,
-    val text: String,
-    val reasoning: String? = null,
-    val finishReason: FinishReason,
-    val usage: Usage,
-    val warnings: List<CallWarning> = emptyList(),
-    val request: LanguageModelRequestMetadata = LanguageModelRequestMetadata(),
-    val response: LanguageModelResponseMetadata = LanguageModelResponseMetadata(),
-    val providerMetadata: ProviderMetadata = ProviderMetadata.None,
+@Poko
+public class GenerateObjectResult<TOutput>(
+    public val value: TOutput,
+    public val text: String,
+    public val reasoning: String? = null,
+    public val finishReason: FinishReason,
+    public val usage: Usage,
+    public val warnings: List<CallWarning> = emptyList(),
+    public val request: LanguageModelRequestMetadata = LanguageModelRequestMetadata(),
+    public val response: LanguageModelResponseMetadata = LanguageModelResponseMetadata(),
+    public val providerMetadata: ProviderMetadata = ProviderMetadata.None,
 ) {
-    val output: TOutput get() = value
-    val generatedObject: TOutput get() = value
+    public val output: TOutput get() = value
+    public val generatedObject: TOutput get() = value
 }
