@@ -10,9 +10,26 @@ public const val BASETEN_VERSION: String = "1.0.51"
 
 
 @Serializable
-public data class BasetenEmbeddingModelOptions(
-    val raw: Map<String, JsonElement> = emptyMap(),
+@Poko
+public class BasetenEmbeddingModelOptions internal constructor(
+    public val raw: Map<String, JsonElement> = emptyMap(),
 )
+
+public class BasetenEmbeddingModelOptionsBuilder internal constructor() {
+    private var raw: Map<String, JsonElement> = emptyMap()
+
+    public fun raw(value: Map<String, JsonElement>) {
+        raw = value
+    }
+
+    internal fun build(): BasetenEmbeddingModelOptions =
+        BasetenEmbeddingModelOptions(raw = raw)
+}
+
+public fun BasetenEmbeddingModelOptions(
+    block: BasetenEmbeddingModelOptionsBuilder.() -> Unit = {},
+): BasetenEmbeddingModelOptions =
+    BasetenEmbeddingModelOptionsBuilder().apply(block).build()
 
 @Serializable
 @Poko
