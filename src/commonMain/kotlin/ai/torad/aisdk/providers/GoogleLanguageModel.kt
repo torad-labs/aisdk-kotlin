@@ -432,39 +432,7 @@ internal class GoogleGenerativeAILanguageModel(
      * and tool calling.
      */
     private fun googleSchema(element: JsonElement): JsonElement {
-        val obj = element as? JsonObject ?: return element
-        return buildJsonObject {
-            for (key in GOOGLE_SCHEMA_PASSTHROUGH) {
-                obj[key]?.let { put(key, it) }
-            }
-            // OpenAPI 3.0 has no `const`; map it to a single-value `enum` (enum wins if both present).
-            if ("enum" !in obj) obj["const"]?.let { put("enum", JsonArray(listOf(it))) }
-            googleSchemaType(obj)?.let { (typeEl, nullable) ->
-                typeEl?.let { put("type", it) }
-                if (nullable) put("nullable", JsonPrimitive(true))
-            }
-            (JsonAccess.obj(obj, "properties"))?.let { props ->
-                put("properties", buildJsonObject { props.forEach { (k, v) -> put(k, googleSchema(v)) } })
-            }
-            obj["items"]?.let { put("items", googleSchema(it)) }
-            for (combiner in listOf("allOf", "anyOf", "oneOf")) {
-                (JsonAccess.arr(obj, combiner))?.let { arr ->
-                    put(combiner, JsonArray(arr.map { googleSchema(it) }))
-                }
-            }
-        }
-    }
-
-    /** Resolves the OpenAPI `type` + nullable flag from a JSON Schema `type` (which may be an array incl. "null"). */
-    private fun googleSchemaType(obj: JsonObject): Pair<JsonElement?, Boolean>? {
-        val type = obj["type"] ?: return null
-        return if (type is JsonArray) {
-            val nonNull = type.filter { (it as? JsonPrimitive)?.content != "null" }
-            val hasNull = type.size != nonNull.size
-            (if (nonNull.size == 1) nonNull.single() else JsonArray(nonNull)) to hasNull
-        } else {
-            type to false
-        }
+        return SchemaSanitizer.stripUnsupportedSchemaKeys(element, dropAdditionalProperties = true, googleOpenApi = true)
     }
 
     private fun googleThoughtMetadata(metadata: Map<String, JsonElement>?): JsonObject? {
@@ -481,11 +449,6 @@ internal class GoogleGenerativeAILanguageModel(
 
     internal companion object {
         private const val GOOGLE_SKIP_THOUGHT_SIGNATURE = "skip_thought_signature_validator"
-
-        private val GOOGLE_SCHEMA_PASSTHROUGH = listOf(
-            "description", "required", "format", "enum",
-            "minLength", "maxLength", "minItems", "maxItems", "minimum", "maximum",
-        )
 
         internal fun googleUsage(element: JsonElement?): Usage {
             val obj = element as? JsonObject ?: return Usage()

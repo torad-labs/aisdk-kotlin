@@ -594,7 +594,7 @@ internal object GoogleInteractions {
             entries += buildJsonObject {
                 put("type", JsonPrimitive("text"))
                 put("mime_type", JsonPrimitive("application/json"))
-                responseFormat.schemaJson?.let { put("schema", it) }
+                responseFormat.schemaJson?.let { put("schema", SchemaSanitizer.stripUnsupportedSchemaKeys(it, dropAdditionalProperties = true, googleOpenApi = true)) }
             }
         }
     }
@@ -623,7 +623,14 @@ internal object GoogleInteractions {
                 put("type", JsonPrimitive("function"))
                 put("name", JsonPrimitive(tool.name))
                 if (tool.description.isNotBlank()) put("description", JsonPrimitive(tool.description))
-                put("parameters", aiSdkJson.parseToJsonElement(tool.parametersSchemaJson))
+                put(
+                    "parameters",
+                    SchemaSanitizer.stripUnsupportedSchemaKeys(
+                        aiSdkJson.parseToJsonElement(tool.parametersSchemaJson),
+                        dropAdditionalProperties = true,
+                        googleOpenApi = true,
+                    ),
+                )
             }
         } else {
             when ((tool.metadata["providerToolId"] as? JsonPrimitive)?.contentOrNull) {
