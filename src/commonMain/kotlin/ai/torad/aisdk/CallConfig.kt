@@ -14,4 +14,9 @@ public data class CallConfig(
     val presencePenalty: Float? = null,
     val frequencyPenalty: Float? = null,
     val responseFormat: ResponseFormat = ResponseFormat.Text,
-)
+    val maxRetries: Int = 2,
+) {
+    init {
+        require(maxRetries >= 0) { "maxRetries must be >= 0" }
+    }
+}

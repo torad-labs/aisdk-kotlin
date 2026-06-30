@@ -29,9 +29,10 @@ public class PrepareCallScope<TContext>(
  * Sampler params (`temperature`, `topP`, `topK`, `maxOutputTokens`,
  * `stopSequences`, `seed`) mirror Vercel AI SDK v6's `CallSettings` —
  * same vocabulary that already exists on [LanguageModelCallParams] and
- * is honored by every provider implementation. Resolution chain inside
- * the agent loop is `StepSettings ?: AgentSettings ?: agent-default
- * ?: provider-default`.
+ * is honored by every provider implementation. `maxRetries` is resolved
+ * on the same chain and applied by the agent around each non-streaming
+ * model round-trip. Resolution chain inside the agent loop is
+ * `StepSettings ?: AgentSettings ?: agent-default ?: provider-default`.
  */
 public data class AgentSettings<TContext>(
     val instructions: String? = null,
@@ -56,7 +57,12 @@ public data class AgentSettings<TContext>(
     val presencePenalty: Float? = null,
     val frequencyPenalty: Float? = null,
     val responseFormat: ResponseFormat? = null,
-)
+    val maxRetries: Int? = null,
+) {
+    init {
+        maxRetries?.let { require(it >= 0) { "maxRetries must be >= 0" } }
+    }
+}
 
 /**
  * Scope for `prepareStep`, run before every step in the loop. Used for:
@@ -98,6 +104,7 @@ public data class StepSettings<TContext>(
     val presencePenalty: Float? = null,
     val frequencyPenalty: Float? = null,
     val responseFormat: ResponseFormat? = null,
+    val maxRetries: Int? = null,
     /**
      * Per-step typed-context override. Mirrors v6's
      * `prepareStep.experimental_context` (per historical parity gap #16).
@@ -106,4 +113,8 @@ public data class StepSettings<TContext>(
      * (e.g., RAG augmentation after a tool result).
      */
     val experimental_context: TContext? = null,
-)
+) {
+    init {
+        maxRetries?.let { require(it >= 0) { "maxRetries must be >= 0" } }
+    }
+}
