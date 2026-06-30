@@ -144,38 +144,45 @@ public fun CallSettings(block: CallSettingsBuilder.() -> Unit = {}): CallSetting
     CallSettingsBuilder().apply(block).build()
 
 @AiSdkDsl
-public class ProviderOptionsBuilder internal constructor() {
+public class ProviderOptionsBuilder {
     private val values = linkedMapOf<String, JsonElement>()
 
-    public fun put(name: String, value: JsonElement) {
+    public fun put(name: String, value: JsonElement): ProviderOptionsBuilder {
         values[name] = value
+        return this
     }
 
-    public fun <T> put(name: String, value: T, serializer: KSerializer<T>) {
+    public fun <T> put(name: String, value: T, serializer: KSerializer<T>): ProviderOptionsBuilder {
         values[name] = TypedJsonOps.encodeJsonElement(value, serializer)
+        return this
     }
 
-    public inline fun <reified T> put(name: String, value: T) {
+    public inline fun <reified T> put(name: String, value: T): ProviderOptionsBuilder {
         put(name, value, serializer())
+        return this
     }
 
-    public fun provider(name: String, block: JsonObjectBuilder.() -> Unit) {
+    public fun provider(name: String, block: JsonObjectBuilder.() -> Unit): ProviderOptionsBuilder {
         values[name] = buildJsonObject(block)
+        return this
     }
 
-    public fun <T> provider(name: String, value: T, serializer: KSerializer<T>) {
+    public fun <T> provider(name: String, value: T, serializer: KSerializer<T>): ProviderOptionsBuilder {
         values[name] = TypedJsonOps.encodeJsonElement(value, serializer)
+        return this
     }
 
-    public inline fun <reified T> provider(name: String, value: T) {
+    public inline fun <reified T> provider(name: String, value: T): ProviderOptionsBuilder {
         provider(name, value, serializer())
+        return this
     }
 
-    public fun options(values: Map<String, JsonElement>) {
+    public fun options(values: Map<String, JsonElement>): ProviderOptionsBuilder {
         this.values.putAll(values)
+        return this
     }
 
-    internal fun build(): Map<String, JsonElement> = values.toMap()
+    public fun build(): Map<String, JsonElement> = values.toMap()
 }
 
 public object ProviderOptionsDsl {
@@ -277,38 +284,44 @@ public class TextGenerationRequest internal constructor(
 }
 
 @AiSdkDsl
-public class TextGenerationRequestBuilder internal constructor() {
+public class TextGenerationRequestBuilder {
     private var prompt: String? = null
     private var system: String? = null
     private var settings: CallSettings = CallSettings()
 
     private val messages = mutableListOf<ModelMessage>()
 
-    public fun prompt(value: String) {
+    public fun prompt(value: String): TextGenerationRequestBuilder {
         prompt = value
+        return this
     }
 
-    public fun system(value: String) {
+    public fun system(value: String): TextGenerationRequestBuilder {
         system = value
+        return this
     }
 
-    public fun message(message: ModelMessage) {
+    public fun message(message: ModelMessage): TextGenerationRequestBuilder {
         messages += message
+        return this
     }
 
-    public fun messages(values: Iterable<ModelMessage>) {
+    public fun messages(values: Iterable<ModelMessage>): TextGenerationRequestBuilder {
         messages += values
+        return this
     }
 
-    public fun settings(value: CallSettings) {
+    public fun settings(value: CallSettings): TextGenerationRequestBuilder {
         settings = value
+        return this
     }
 
-    public fun settings(block: CallSettingsBuilder.() -> Unit) {
+    public fun settings(block: CallSettingsBuilder.() -> Unit): TextGenerationRequestBuilder {
         settings = CallSettings(block)
+        return this
     }
 
-    internal fun build(): TextGenerationRequest = TextGenerationRequest(
+    public fun build(): TextGenerationRequest = TextGenerationRequest(
         prompt = prompt,
         messages = messages.toList(),
         system = system,

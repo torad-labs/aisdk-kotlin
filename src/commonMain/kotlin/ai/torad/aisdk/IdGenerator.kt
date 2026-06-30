@@ -32,34 +32,39 @@ public class IdGenerator internal constructor(
     }
 }
 
-public class IdGeneratorBuilder internal constructor() {
+public class IdGeneratorBuilder {
     private var prefix: String? = null
     private var size: Int = 16
     private var alphabet: String = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
     private var separator: String = "-"
     private var random: Random = Random.Default
 
-    public fun prefix(value: String?) {
+    public fun prefix(value: String?): IdGeneratorBuilder {
         prefix = value
+        return this
     }
 
-    public fun size(value: Int) {
+    public fun size(value: Int): IdGeneratorBuilder {
         size = value
+        return this
     }
 
-    public fun alphabet(value: String) {
+    public fun alphabet(value: String): IdGeneratorBuilder {
         alphabet = value
+        return this
     }
 
-    public fun separator(value: String) {
+    public fun separator(value: String): IdGeneratorBuilder {
         separator = value
+        return this
     }
 
-    public fun random(value: Random) {
+    public fun random(value: Random): IdGeneratorBuilder {
         random = value
+        return this
     }
 
-    internal fun build(): IdGenerator =
+    public fun build(): IdGenerator =
         IdGenerator(
             prefix = prefix,
             size = size,

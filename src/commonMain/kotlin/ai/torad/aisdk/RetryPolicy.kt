@@ -243,7 +243,7 @@ public class RetryPolicy internal constructor(
     }
 }
 
-public class RetryPolicyBuilder internal constructor() {
+public class RetryPolicyBuilder {
     private var maxRetries: Int = 2
     private var baseDelayMs: Long = 100L
     private var maxDelayMs: Long = 2_000L
@@ -252,35 +252,42 @@ public class RetryPolicyBuilder internal constructor() {
     private var totalTimeoutMs: Long? = null
     private var perAttemptTimeoutMs: Long? = null
 
-    public fun maxRetries(value: Int) {
+    public fun maxRetries(value: Int): RetryPolicyBuilder {
         maxRetries = value
+        return this
     }
 
-    public fun baseDelayMs(value: Long) {
+    public fun baseDelayMs(value: Long): RetryPolicyBuilder {
         baseDelayMs = value
+        return this
     }
 
-    public fun maxDelayMs(value: Long) {
+    public fun maxDelayMs(value: Long): RetryPolicyBuilder {
         maxDelayMs = value
+        return this
     }
 
-    public fun clock(value: Clock) {
+    public fun clock(value: Clock): RetryPolicyBuilder {
         clock = value
+        return this
     }
 
-    public fun delayGenerator(value: RetryDelayGenerator) {
+    public fun delayGenerator(value: RetryDelayGenerator): RetryPolicyBuilder {
         delayGenerator = value
+        return this
     }
 
-    public fun totalTimeoutMs(value: Long?) {
+    public fun totalTimeoutMs(value: Long?): RetryPolicyBuilder {
         totalTimeoutMs = value
+        return this
     }
 
-    public fun perAttemptTimeoutMs(value: Long?) {
+    public fun perAttemptTimeoutMs(value: Long?): RetryPolicyBuilder {
         perAttemptTimeoutMs = value
+        return this
     }
 
-    internal fun build(): RetryPolicy =
+    public fun build(): RetryPolicy =
         RetryPolicy(
             maxRetries = maxRetries,
             baseDelayMs = baseDelayMs,

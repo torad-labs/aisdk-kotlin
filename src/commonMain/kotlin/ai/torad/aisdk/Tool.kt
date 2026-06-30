@@ -40,19 +40,21 @@ public class ToolSchemaOptions internal constructor(
     public val providerExecuted: Boolean = false,
 )
 
-public class ToolSchemaOptionsBuilder internal constructor() {
+public class ToolSchemaOptionsBuilder {
     private var strict: Boolean? = null
     private var providerExecuted: Boolean = false
 
-    public fun strict(value: Boolean?) {
+    public fun strict(value: Boolean?): ToolSchemaOptionsBuilder {
         strict = value
+        return this
     }
 
-    public fun providerExecuted(value: Boolean) {
+    public fun providerExecuted(value: Boolean): ToolSchemaOptionsBuilder {
         providerExecuted = value
+        return this
     }
 
-    internal fun build(): ToolSchemaOptions =
+    public fun build(): ToolSchemaOptions =
         ToolSchemaOptions(
             strict = strict,
             providerExecuted = providerExecuted,
@@ -257,15 +259,16 @@ public fun <TContext> ToolSet(vararg tools: Tool<*, *, TContext>): ToolSet<TCont
     ToolSet(ToolSet.requireUniqueToolNames(tools.toList()))
 
 @AiSdkDsl
-public class ToolSetBuilder<TContext> internal constructor() {
+public class ToolSetBuilder<TContext> {
     private val tools = linkedMapOf<String, Tool<*, *, TContext>>()
 
-    public fun add(tool: Tool<*, *, TContext>) {
+    public fun add(tool: Tool<*, *, TContext>): ToolSetBuilder<TContext> {
         require(tool.name !in tools) { "Duplicate tool name `${tool.name}`." }
         tools[tool.name] = tool
+        return this
     }
 
-    internal fun build(): ToolSet<TContext> = ToolSet(tools.toMap())
+    public fun build(): ToolSet<TContext> = ToolSet(tools.toMap())
 }
 
 /** Single-value [Tool] factory — executor is a suspend function returning [TOutput]. */
@@ -644,7 +647,7 @@ public class ProviderToolFactoryOptions<TInput, TOutput, TContext> internal cons
     public val onInputAvailable: (suspend (toolCallId: String, input: TInput) -> Unit)? = null,
 )
 
-public class ProviderToolFactoryOptionsBuilder<TInput, TOutput, TContext> internal constructor() {
+public class ProviderToolFactoryOptionsBuilder<TInput, TOutput, TContext> {
     private var outputSerializer: KSerializer<TOutput>? = null
     private var outputSchema: Schema<TOutput>? = null
     private var args: Map<String, JsonElement> = emptyMap()
@@ -658,55 +661,67 @@ public class ProviderToolFactoryOptionsBuilder<TInput, TOutput, TContext> intern
     private var onInputDelta: (suspend (streamingId: String, delta: String) -> Unit)? = null
     private var onInputAvailable: (suspend (toolCallId: String, input: TInput) -> Unit)? = null
 
-    public fun outputSerializer(value: KSerializer<TOutput>) {
+    public fun outputSerializer(value: KSerializer<TOutput>): ProviderToolFactoryOptionsBuilder<TInput, TOutput, TContext> {
         outputSerializer = value
+        return this
     }
 
-    public fun outputSchema(value: Schema<TOutput>?) {
+    public fun outputSchema(value: Schema<TOutput>?): ProviderToolFactoryOptionsBuilder<TInput, TOutput, TContext> {
         outputSchema = value
+        return this
     }
 
-    public fun args(value: Map<String, JsonElement>) {
+    public fun args(value: Map<String, JsonElement>): ProviderToolFactoryOptionsBuilder<TInput, TOutput, TContext> {
         args = value
+        return this
     }
 
-    public fun name(value: String?) {
+    public fun name(value: String?): ProviderToolFactoryOptionsBuilder<TInput, TOutput, TContext> {
         name = value
+        return this
     }
 
-    public fun description(value: String?) {
+    public fun description(value: String?): ProviderToolFactoryOptionsBuilder<TInput, TOutput, TContext> {
         description = value
+        return this
     }
 
-    public fun metadata(value: Map<String, JsonElement>) {
+    public fun metadata(value: Map<String, JsonElement>): ProviderToolFactoryOptionsBuilder<TInput, TOutput, TContext> {
         metadata = value
+        return this
     }
 
-    public fun execute(value: (suspend ToolExecutionContext<TContext>.(TInput) -> TOutput)?) {
+    public fun execute(value: (suspend ToolExecutionContext<TContext>.(TInput) -> TOutput)?): ProviderToolFactoryOptionsBuilder<TInput, TOutput, TContext> {
         execute = value
+        return this
     }
 
-    public fun needsApproval(value: (suspend (input: TInput, options: ToolPredicateOptions<TContext>) -> Boolean)?) {
+    public fun needsApproval(value: (suspend (input: TInput, options: ToolPredicateOptions<TContext>) -> Boolean)?): ProviderToolFactoryOptionsBuilder<TInput, TOutput, TContext> {
         needsApproval = value
+        return this
     }
 
-    public fun toModelOutput(value: ((TOutput, ToolPredicateOptions<TContext>) -> ToolResultOutput)?) {
+    public fun toModelOutput(value: ((TOutput, ToolPredicateOptions<TContext>) -> ToolResultOutput)?): ProviderToolFactoryOptionsBuilder<TInput, TOutput, TContext> {
         toModelOutput = value
+        return this
     }
 
-    public fun onInputStart(value: (suspend (streamingId: String) -> Unit)?) {
+    public fun onInputStart(value: (suspend (streamingId: String) -> Unit)?): ProviderToolFactoryOptionsBuilder<TInput, TOutput, TContext> {
         onInputStart = value
+        return this
     }
 
-    public fun onInputDelta(value: (suspend (streamingId: String, delta: String) -> Unit)?) {
+    public fun onInputDelta(value: (suspend (streamingId: String, delta: String) -> Unit)?): ProviderToolFactoryOptionsBuilder<TInput, TOutput, TContext> {
         onInputDelta = value
+        return this
     }
 
-    public fun onInputAvailable(value: (suspend (toolCallId: String, input: TInput) -> Unit)?) {
+    public fun onInputAvailable(value: (suspend (toolCallId: String, input: TInput) -> Unit)?): ProviderToolFactoryOptionsBuilder<TInput, TOutput, TContext> {
         onInputAvailable = value
+        return this
     }
 
-    internal fun build(): ProviderToolFactoryOptions<TInput, TOutput, TContext> =
+    public fun build(): ProviderToolFactoryOptions<TInput, TOutput, TContext> =
         ProviderToolFactoryOptions(
             outputSerializer = requireNotNull(outputSerializer) {
                 "ProviderToolFactoryOptions.outputSerializer is required"
@@ -966,24 +981,27 @@ public class ToolPredicateOptions<TContext> internal constructor(
     public val experimental_context: TContext? = null,
 )
 
-public class ToolPredicateOptionsBuilder<TContext> internal constructor() {
+public class ToolPredicateOptionsBuilder<TContext> {
     private var toolCallId: String? = null
     private var messages: List<ModelMessage>? = null
     private var experimentalContext: TContext? = null
 
-    public fun toolCallId(value: String) {
+    public fun toolCallId(value: String): ToolPredicateOptionsBuilder<TContext> {
         toolCallId = value
+        return this
     }
 
-    public fun messages(value: List<ModelMessage>) {
+    public fun messages(value: List<ModelMessage>): ToolPredicateOptionsBuilder<TContext> {
         messages = value
+        return this
     }
 
-    public fun experimental_context(value: TContext?) {
+    public fun experimental_context(value: TContext?): ToolPredicateOptionsBuilder<TContext> {
         experimentalContext = value
+        return this
     }
 
-    internal fun build(): ToolPredicateOptions<TContext> =
+    public fun build(): ToolPredicateOptions<TContext> =
         ToolPredicateOptions(
             toolCallId = requireNotNull(toolCallId) { "ToolPredicateOptions.toolCallId is required" },
             messages = requireNotNull(messages) { "ToolPredicateOptions.messages is required" },

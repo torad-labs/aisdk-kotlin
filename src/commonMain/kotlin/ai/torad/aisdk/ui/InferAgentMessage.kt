@@ -105,7 +105,7 @@ public class ToolPartHandlerRegistry<TRenderResult> internal constructor(
         handlers[part.toolName]?.invoke(part) ?: fallback(part)
 
     @AiSdkDsl
-    public class Builder<TRenderResult> internal constructor() {
+    public class Builder<TRenderResult> {
         internal val handlers: MutableMap<String, (UIMessagePart.ToolUI) -> TRenderResult> = mutableMapOf()
 
         /**
@@ -116,7 +116,7 @@ public class ToolPartHandlerRegistry<TRenderResult> internal constructor(
         public fun <TInput, TOutput, TContext> register(
             tool: Tool<TInput, TOutput, TContext>,
             render: (UIToolInvocation<TInput, TOutput>) -> TRenderResult,
-        ) {
+        ): Builder<TRenderResult> {
             handlers[tool.name] = { part ->
                 val typed = UIToolInvocation(
                     toolCallId = part.toolCallId,
@@ -135,9 +135,10 @@ public class ToolPartHandlerRegistry<TRenderResult> internal constructor(
                 )
                 render(typed)
             }
+            return this
         }
 
-        internal fun build(
+        public fun build(
             fallback: (UIMessagePart.ToolUI) -> TRenderResult,
         ): ToolPartHandlerRegistry<TRenderResult> =
             ToolPartHandlerRegistry(handlers.toMap(), fallback)

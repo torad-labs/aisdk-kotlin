@@ -216,7 +216,7 @@ public class ImageGenerationParams internal constructor(
     public val mask: ImageGenerationFile? = null,
 )
 
-public class ImageGenerationParamsBuilder internal constructor() {
+public class ImageGenerationParamsBuilder {
     private var prompt: String? = null
     private var n: Int = 1
     private var size: String? = null
@@ -228,47 +228,57 @@ public class ImageGenerationParamsBuilder internal constructor() {
     private var files: List<ImageGenerationFile> = emptyList()
     private var mask: ImageGenerationFile? = null
 
-    public fun prompt(value: String) {
+    public fun prompt(value: String): ImageGenerationParamsBuilder {
         prompt = value
+        return this
     }
 
-    public fun n(value: Int) {
+    public fun n(value: Int): ImageGenerationParamsBuilder {
         n = value
+        return this
     }
 
-    public fun size(value: String?) {
+    public fun size(value: String?): ImageGenerationParamsBuilder {
         size = value
+        return this
     }
 
-    public fun aspectRatio(value: String?) {
+    public fun aspectRatio(value: String?): ImageGenerationParamsBuilder {
         aspectRatio = value
+        return this
     }
 
-    public fun seed(value: Int?) {
+    public fun seed(value: Int?): ImageGenerationParamsBuilder {
         seed = value
+        return this
     }
 
-    public fun providerOptions(value: ProviderOptions) {
+    public fun providerOptions(value: ProviderOptions): ImageGenerationParamsBuilder {
         providerOptions = value
+        return this
     }
 
-    public fun headers(value: Map<String, String>) {
+    public fun headers(value: Map<String, String>): ImageGenerationParamsBuilder {
         headers = value
+        return this
     }
 
-    public fun abortSignal(value: AbortSignal) {
+    public fun abortSignal(value: AbortSignal): ImageGenerationParamsBuilder {
         abortSignal = value
+        return this
     }
 
-    public fun files(value: List<ImageGenerationFile>) {
+    public fun files(value: List<ImageGenerationFile>): ImageGenerationParamsBuilder {
         files = value
+        return this
     }
 
-    public fun mask(value: ImageGenerationFile?) {
+    public fun mask(value: ImageGenerationFile?): ImageGenerationParamsBuilder {
         mask = value
+        return this
     }
 
-    internal fun build(): ImageGenerationParams =
+    public fun build(): ImageGenerationParams =
         ImageGenerationParams(
             prompt = requireNotNull(prompt) { "ImageGenerationParams.prompt is required" },
             n = n,
@@ -515,7 +525,7 @@ public class SpeechGenerationParams internal constructor(
     public val abortSignal: AbortSignal = AbortSignalNever,
 )
 
-public class SpeechGenerationParamsBuilder internal constructor() {
+public class SpeechGenerationParamsBuilder {
     private var text: String? = null
     private var voice: String? = null
     private var instructions: String? = null
@@ -526,43 +536,52 @@ public class SpeechGenerationParamsBuilder internal constructor() {
     private var headers: Map<String, String> = emptyMap()
     private var abortSignal: AbortSignal = AbortSignalNever
 
-    public fun text(value: String) {
+    public fun text(value: String): SpeechGenerationParamsBuilder {
         text = value
+        return this
     }
 
-    public fun voice(value: String?) {
+    public fun voice(value: String?): SpeechGenerationParamsBuilder {
         voice = value
+        return this
     }
 
-    public fun instructions(value: String?) {
+    public fun instructions(value: String?): SpeechGenerationParamsBuilder {
         instructions = value
+        return this
     }
 
-    public fun speed(value: Float?) {
+    public fun speed(value: Float?): SpeechGenerationParamsBuilder {
         speed = value
+        return this
     }
 
-    public fun responseFormat(value: String?) {
+    public fun responseFormat(value: String?): SpeechGenerationParamsBuilder {
         responseFormat = value
+        return this
     }
 
-    public fun language(value: String?) {
+    public fun language(value: String?): SpeechGenerationParamsBuilder {
         language = value
+        return this
     }
 
-    public fun providerOptions(value: ProviderOptions) {
+    public fun providerOptions(value: ProviderOptions): SpeechGenerationParamsBuilder {
         providerOptions = value
+        return this
     }
 
-    public fun headers(value: Map<String, String>) {
+    public fun headers(value: Map<String, String>): SpeechGenerationParamsBuilder {
         headers = value
+        return this
     }
 
-    public fun abortSignal(value: AbortSignal) {
+    public fun abortSignal(value: AbortSignal): SpeechGenerationParamsBuilder {
         abortSignal = value
+        return this
     }
 
-    internal fun build(): SpeechGenerationParams =
+    public fun build(): SpeechGenerationParams =
         SpeechGenerationParams(
             text = requireNotNull(text) { "SpeechGenerationParams.text is required" },
             voice = voice,
@@ -684,7 +703,7 @@ public class TranscriptionParams internal constructor(
     public val abortSignal: AbortSignal = AbortSignalNever,
 )
 
-public class TranscriptionParamsBuilder internal constructor() {
+public class TranscriptionParamsBuilder {
     private var audio: AudioSource? = null
     private var language: String? = null
     private var prompt: String? = null
@@ -692,31 +711,37 @@ public class TranscriptionParamsBuilder internal constructor() {
     private var headers: Map<String, String> = emptyMap()
     private var abortSignal: AbortSignal = AbortSignalNever
 
-    public fun audio(value: AudioSource) {
+    public fun audio(value: AudioSource): TranscriptionParamsBuilder {
         audio = value
+        return this
     }
 
-    public fun language(value: String?) {
+    public fun language(value: String?): TranscriptionParamsBuilder {
         language = value
+        return this
     }
 
-    public fun prompt(value: String?) {
+    public fun prompt(value: String?): TranscriptionParamsBuilder {
         prompt = value
+        return this
     }
 
-    public fun providerOptions(value: ProviderOptions) {
+    public fun providerOptions(value: ProviderOptions): TranscriptionParamsBuilder {
         providerOptions = value
+        return this
     }
 
-    public fun headers(value: Map<String, String>) {
+    public fun headers(value: Map<String, String>): TranscriptionParamsBuilder {
         headers = value
+        return this
     }
 
-    public fun abortSignal(value: AbortSignal) {
+    public fun abortSignal(value: AbortSignal): TranscriptionParamsBuilder {
         abortSignal = value
+        return this
     }
 
-    internal fun build(): TranscriptionParams =
+    public fun build(): TranscriptionParams =
         TranscriptionParams(
             audio = requireNotNull(audio) { "TranscriptionParams.audio is required" },
             language = language,
@@ -849,7 +874,7 @@ public class VideoGenerationParams internal constructor(
     public val resolution: String? = null,
 )
 
-public class VideoGenerationParamsBuilder internal constructor() {
+public class VideoGenerationParamsBuilder {
     private var prompt: String? = null
     private var n: Int = 1
     private var image: GeneratedFile? = null
@@ -863,55 +888,67 @@ public class VideoGenerationParamsBuilder internal constructor() {
     private var fps: Int? = null
     private var resolution: String? = null
 
-    public fun prompt(value: String) {
+    public fun prompt(value: String): VideoGenerationParamsBuilder {
         prompt = value
+        return this
     }
 
-    public fun n(value: Int) {
+    public fun n(value: Int): VideoGenerationParamsBuilder {
         n = value
+        return this
     }
 
-    public fun image(value: GeneratedFile?) {
+    public fun image(value: GeneratedFile?): VideoGenerationParamsBuilder {
         image = value
+        return this
     }
 
-    public fun durationSeconds(value: Float?) {
+    public fun durationSeconds(value: Float?): VideoGenerationParamsBuilder {
         durationSeconds = value
+        return this
     }
 
-    public fun size(value: String?) {
+    public fun size(value: String?): VideoGenerationParamsBuilder {
         size = value
+        return this
     }
 
-    public fun aspectRatio(value: String?) {
+    public fun aspectRatio(value: String?): VideoGenerationParamsBuilder {
         aspectRatio = value
+        return this
     }
 
-    public fun providerOptions(value: ProviderOptions) {
+    public fun providerOptions(value: ProviderOptions): VideoGenerationParamsBuilder {
         providerOptions = value
+        return this
     }
 
-    public fun headers(value: Map<String, String>) {
+    public fun headers(value: Map<String, String>): VideoGenerationParamsBuilder {
         headers = value
+        return this
     }
 
-    public fun abortSignal(value: AbortSignal) {
+    public fun abortSignal(value: AbortSignal): VideoGenerationParamsBuilder {
         abortSignal = value
+        return this
     }
 
-    public fun seed(value: Int?) {
+    public fun seed(value: Int?): VideoGenerationParamsBuilder {
         seed = value
+        return this
     }
 
-    public fun fps(value: Int?) {
+    public fun fps(value: Int?): VideoGenerationParamsBuilder {
         fps = value
+        return this
     }
 
-    public fun resolution(value: String?) {
+    public fun resolution(value: String?): VideoGenerationParamsBuilder {
         resolution = value
+        return this
     }
 
-    internal fun build(): VideoGenerationParams =
+    public fun build(): VideoGenerationParams =
         VideoGenerationParams(
             prompt = requireNotNull(prompt) { "VideoGenerationParams.prompt is required" },
             n = n,

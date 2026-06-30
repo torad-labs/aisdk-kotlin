@@ -190,7 +190,7 @@ public class MCPClientConfig internal constructor(
     public val capabilities: MCPClientCapabilities = MCPClientCapabilities(),
 )
 
-public class MCPClientConfigBuilder internal constructor() {
+public class MCPClientConfigBuilder {
     private var transport: MCPTransport? = null
     private var onUncaughtError: ((Throwable) -> Unit)? = null
     private var clientName: String? = null
@@ -198,31 +198,37 @@ public class MCPClientConfigBuilder internal constructor() {
     private var version: String = DEFAULT_MCP_CLIENT_VERSION
     private var capabilities: MCPClientCapabilities = MCPClientCapabilities()
 
-    public fun transport(value: MCPTransport) {
+    public fun transport(value: MCPTransport): MCPClientConfigBuilder {
         transport = value
+        return this
     }
 
-    public fun onUncaughtError(value: ((Throwable) -> Unit)?) {
+    public fun onUncaughtError(value: ((Throwable) -> Unit)?): MCPClientConfigBuilder {
         onUncaughtError = value
+        return this
     }
 
-    public fun clientName(value: String?) {
+    public fun clientName(value: String?): MCPClientConfigBuilder {
         clientName = value
+        return this
     }
 
-    public fun name(value: String?) {
+    public fun name(value: String?): MCPClientConfigBuilder {
         name = value
+        return this
     }
 
-    public fun version(value: String) {
+    public fun version(value: String): MCPClientConfigBuilder {
         version = value
+        return this
     }
 
-    public fun capabilities(value: MCPClientCapabilities) {
+    public fun capabilities(value: MCPClientCapabilities): MCPClientConfigBuilder {
         capabilities = value
+        return this
     }
 
-    internal fun build(): MCPClientConfig =
+    public fun build(): MCPClientConfig =
         MCPClientConfig(
             transport = requireNotNull(transport) { "MCPClientConfig.transport is required" },
             onUncaughtError = onUncaughtError,
@@ -977,7 +983,7 @@ public class MCPTransportConfig internal constructor(
     public val reconnectionOptions: MCPReconnectionOptions = MCPReconnectionOptions {},
 )
 
-public class MCPTransportConfigBuilder internal constructor() {
+public class MCPTransportConfigBuilder {
     private var type: MCPTransportKind? = null
     private var url: String? = null
     private var headers: Map<String, String> = emptyMap()
@@ -985,31 +991,37 @@ public class MCPTransportConfigBuilder internal constructor() {
     private var engineContext: CoroutineContext = Dispatchers.Default
     private var reconnectionOptions: MCPReconnectionOptions = MCPReconnectionOptions()
 
-    public fun type(value: MCPTransportKind) {
+    public fun type(value: MCPTransportKind): MCPTransportConfigBuilder {
         type = value
+        return this
     }
 
-    public fun url(value: String) {
+    public fun url(value: String): MCPTransportConfigBuilder {
         url = value
+        return this
     }
 
-    public fun headers(value: Map<String, String>) {
+    public fun headers(value: Map<String, String>): MCPTransportConfigBuilder {
         headers = value
+        return this
     }
 
-    public fun authProvider(value: OAuthClientProvider?) {
+    public fun authProvider(value: OAuthClientProvider?): MCPTransportConfigBuilder {
         authProvider = value
+        return this
     }
 
-    public fun engineContext(value: CoroutineContext) {
+    public fun engineContext(value: CoroutineContext): MCPTransportConfigBuilder {
         engineContext = value
+        return this
     }
 
-    public fun reconnectionOptions(value: MCPReconnectionOptions) {
+    public fun reconnectionOptions(value: MCPReconnectionOptions): MCPTransportConfigBuilder {
         reconnectionOptions = value
+        return this
     }
 
-    internal fun build(): MCPTransportConfig =
+    public fun build(): MCPTransportConfig =
         MCPTransportConfig(
             type = requireNotNull(type) { "MCPTransportConfig.type is required" },
             url = requireNotNull(url) { "MCPTransportConfig.url is required" },
@@ -1033,29 +1045,33 @@ public class MCPReconnectionOptions internal constructor(
     public val maxRetries: Int = 2,
 )
 
-public class MCPReconnectionOptionsBuilder internal constructor() {
+public class MCPReconnectionOptionsBuilder {
     private var initialReconnectionDelayMillis: Long = 1_000
     private var reconnectionDelayGrowFactor: Double = 1.5
     private var maxReconnectionDelayMillis: Long = 30_000
     private var maxRetries: Int = 2
 
-    public fun initialReconnectionDelayMillis(value: Long) {
+    public fun initialReconnectionDelayMillis(value: Long): MCPReconnectionOptionsBuilder {
         initialReconnectionDelayMillis = value
+        return this
     }
 
-    public fun reconnectionDelayGrowFactor(value: Double) {
+    public fun reconnectionDelayGrowFactor(value: Double): MCPReconnectionOptionsBuilder {
         reconnectionDelayGrowFactor = value
+        return this
     }
 
-    public fun maxReconnectionDelayMillis(value: Long) {
+    public fun maxReconnectionDelayMillis(value: Long): MCPReconnectionOptionsBuilder {
         maxReconnectionDelayMillis = value
+        return this
     }
 
-    public fun maxRetries(value: Int) {
+    public fun maxRetries(value: Int): MCPReconnectionOptionsBuilder {
         maxRetries = value
+        return this
     }
 
-    internal fun build(): MCPReconnectionOptions =
+    public fun build(): MCPReconnectionOptions =
         MCPReconnectionOptions(
             initialReconnectionDelayMillis = initialReconnectionDelayMillis,
             reconnectionDelayGrowFactor = reconnectionDelayGrowFactor,
@@ -1799,29 +1815,33 @@ public class StdioConfig internal constructor(
     public val cwd: String? = null,
 )
 
-public class StdioConfigBuilder internal constructor() {
+public class StdioConfigBuilder {
     private var command: String? = null
     private var args: List<String> = emptyList()
     private var env: Map<String, String> = emptyMap()
     private var cwd: String? = null
 
-    public fun command(value: String) {
+    public fun command(value: String): StdioConfigBuilder {
         command = value
+        return this
     }
 
-    public fun args(value: List<String>) {
+    public fun args(value: List<String>): StdioConfigBuilder {
         args = value
+        return this
     }
 
-    public fun env(value: Map<String, String>) {
+    public fun env(value: Map<String, String>): StdioConfigBuilder {
         env = value
+        return this
     }
 
-    public fun cwd(value: String?) {
+    public fun cwd(value: String?): StdioConfigBuilder {
         cwd = value
+        return this
     }
 
-    internal fun build(): StdioConfig =
+    public fun build(): StdioConfig =
         StdioConfig(
             command = requireNotNull(command) { "StdioConfig.command is required" },
             args = args,

@@ -62,7 +62,7 @@ public class CustomProvider internal constructor(
         videoModels[modelId] ?: fallbackProvider?.videoModel(modelId) ?: super.videoModel(modelId)
 }
 
-public class CustomProviderBuilder internal constructor() {
+public class CustomProviderBuilder {
     private var providerId: String? = null
     private var languageModels: Map<String, LanguageModel> = emptyMap()
     private var embeddingModels: Map<String, EmbeddingModel> = emptyMap()
@@ -73,71 +73,87 @@ public class CustomProviderBuilder internal constructor() {
     private var videoModels: Map<String, VideoModel> = emptyMap()
     private var fallbackProvider: Provider? = null
 
-    public fun providerId(value: String) {
+    public fun providerId(value: String): CustomProviderBuilder {
         providerId = value
+        return this
     }
 
-    public fun languageModels(value: Map<String, LanguageModel>) {
+    public fun languageModels(value: Map<String, LanguageModel>): CustomProviderBuilder {
         languageModels = value
+        return this
     }
 
-    public fun languageModel(id: String, model: LanguageModel) {
+    public fun languageModel(id: String, model: LanguageModel): CustomProviderBuilder {
         languageModels = languageModels + (id to model)
+        return this
     }
 
-    public fun embeddingModels(value: Map<String, EmbeddingModel>) {
+    public fun embeddingModels(value: Map<String, EmbeddingModel>): CustomProviderBuilder {
         embeddingModels = value
+        return this
     }
 
-    public fun embeddingModel(id: String, model: EmbeddingModel) {
+    public fun embeddingModel(id: String, model: EmbeddingModel): CustomProviderBuilder {
         embeddingModels = embeddingModels + (id to model)
+        return this
     }
 
-    public fun imageModels(value: Map<String, ImageModel>) {
+    public fun imageModels(value: Map<String, ImageModel>): CustomProviderBuilder {
         imageModels = value
+        return this
     }
 
-    public fun imageModel(id: String, model: ImageModel) {
+    public fun imageModel(id: String, model: ImageModel): CustomProviderBuilder {
         imageModels = imageModels + (id to model)
+        return this
     }
 
-    public fun speechModels(value: Map<String, SpeechModel>) {
+    public fun speechModels(value: Map<String, SpeechModel>): CustomProviderBuilder {
         speechModels = value
+        return this
     }
 
-    public fun speechModel(id: String, model: SpeechModel) {
+    public fun speechModel(id: String, model: SpeechModel): CustomProviderBuilder {
         speechModels = speechModels + (id to model)
+        return this
     }
 
-    public fun transcriptionModels(value: Map<String, TranscriptionModel>) {
+    public fun transcriptionModels(value: Map<String, TranscriptionModel>): CustomProviderBuilder {
         transcriptionModels = value
+        return this
     }
 
-    public fun transcriptionModel(id: String, model: TranscriptionModel) {
+    public fun transcriptionModel(id: String, model: TranscriptionModel): CustomProviderBuilder {
         transcriptionModels = transcriptionModels + (id to model)
+        return this
     }
 
-    public fun rerankingModels(value: Map<String, RerankingModel>) {
+    public fun rerankingModels(value: Map<String, RerankingModel>): CustomProviderBuilder {
         rerankingModels = value
+        return this
     }
 
-    public fun rerankingModel(id: String, model: RerankingModel) {
+    public fun rerankingModel(id: String, model: RerankingModel): CustomProviderBuilder {
         rerankingModels = rerankingModels + (id to model)
+        return this
     }
 
-    public fun videoModels(value: Map<String, VideoModel>) {
+    public fun videoModels(value: Map<String, VideoModel>): CustomProviderBuilder {
         videoModels = value
+        return this
     }
 
-    public fun videoModel(id: String, model: VideoModel) {
+    public fun videoModel(id: String, model: VideoModel): CustomProviderBuilder {
         videoModels = videoModels + (id to model)
+        return this
     }
 
-    public fun fallbackProvider(value: Provider?) {
+    public fun fallbackProvider(value: Provider?): CustomProviderBuilder {
         fallbackProvider = value
+        return this
     }
 
-    internal fun build(): CustomProvider =
+    public fun build(): CustomProvider =
         CustomProvider(
             providerId = requireNotNull(providerId) { "CustomProvider.providerId is required" },
             languageModels = languageModels,
@@ -254,24 +270,27 @@ public class ProviderMiddleware internal constructor(
     public val imageModelMiddlewares: List<ImageModelMiddleware> = emptyList(),
 )
 
-public class ProviderMiddlewareBuilder internal constructor() {
+public class ProviderMiddlewareBuilder {
     private var languageModelMiddlewares: List<LanguageModelMiddleware> = emptyList()
     private var embeddingModelMiddlewares: List<EmbeddingModelMiddleware> = emptyList()
     private var imageModelMiddlewares: List<ImageModelMiddleware> = emptyList()
 
-    public fun languageModelMiddlewares(value: List<LanguageModelMiddleware>) {
+    public fun languageModelMiddlewares(value: List<LanguageModelMiddleware>): ProviderMiddlewareBuilder {
         languageModelMiddlewares = value
+        return this
     }
 
-    public fun embeddingModelMiddlewares(value: List<EmbeddingModelMiddleware>) {
+    public fun embeddingModelMiddlewares(value: List<EmbeddingModelMiddleware>): ProviderMiddlewareBuilder {
         embeddingModelMiddlewares = value
+        return this
     }
 
-    public fun imageModelMiddlewares(value: List<ImageModelMiddleware>) {
+    public fun imageModelMiddlewares(value: List<ImageModelMiddleware>): ProviderMiddlewareBuilder {
         imageModelMiddlewares = value
+        return this
     }
 
-    internal fun build(): ProviderMiddleware =
+    public fun build(): ProviderMiddleware =
         ProviderMiddleware(
             languageModelMiddlewares = languageModelMiddlewares,
             embeddingModelMiddlewares = embeddingModelMiddlewares,

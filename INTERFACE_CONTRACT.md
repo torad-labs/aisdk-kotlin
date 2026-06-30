@@ -26,8 +26,9 @@
   `ExtractReasoningMiddleware`. Builder-DSL factories that take a single
   Kotlin function block remain a separate Java interop track.
 - Java builder interop is being hardened with public builder constructors,
-  fluent setter methods, and public `build()` methods. `CallSettingsBuilder`
-  and `ToolExecutionPolicyBuilder` are the canary builders for that rollout.
+  fluent setter methods, and public `build()` methods. The core non-provider
+  builders are the first rollout chunk; provider builders follow the same
+  contract as they are converted.
 - Known limitation: Kotlin cannot box-expose open/interface members
   (`-Xjvm-expose-boxed` errors on them by design). `GatewayProvider` and
   `AnthropicAwsProvider`'s `ModelId`-typed shorthand (`chat(ModelId)`,

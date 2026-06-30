@@ -33,4 +33,37 @@ public final class BuilderFluentInteropTest {
         assertEquals(9, policy.getMaxToolCallsPerStep());
         assertEquals(4, policy.getProgressBufferCapacity());
     }
+
+    @Test
+    public void coreChunkBuildersChainAndBuildFromJava() {
+        CallConfig config = new CallConfigBuilder()
+            .temperature(0.2f)
+            .maxRetries(4)
+            .stopSequences(Arrays.asList("END"))
+            .build();
+
+        assertEquals(Float.valueOf(0.2f), config.getTemperature());
+        assertEquals(4, config.getMaxRetries());
+        assertEquals(Arrays.asList("END"), config.getStopSequences());
+
+        IdGenerator generator = new IdGeneratorBuilder()
+            .prefix("msg")
+            .size(24)
+            .separator("_")
+            .build();
+
+        assertEquals("msg", generator.getPrefix());
+        assertEquals(24, generator.getSize());
+        assertEquals("_", generator.getSeparator());
+
+        TelemetrySettings telemetry = new TelemetrySettingsBuilder()
+            .functionId("fn")
+            .recordInputs(true)
+            .recordOutputs(true)
+            .build();
+
+        assertEquals("fn", telemetry.getFunctionId());
+        assertEquals(true, telemetry.getRecordInputs());
+        assertEquals(true, telemetry.getRecordOutputs());
+    }
 }
