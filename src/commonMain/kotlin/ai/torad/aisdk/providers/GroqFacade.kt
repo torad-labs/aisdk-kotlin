@@ -3,6 +3,7 @@ package ai.torad.aisdk.providers
 import ai.torad.aisdk.*
 import ai.torad.aisdk.providers.FacadeSupport.intField
 import ai.torad.aisdk.providers.FacadeSupport.nestedIntField
+import dev.drewhamilton.poko.Poko
 import io.ktor.client.HttpClient
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonArray
@@ -156,8 +157,9 @@ private val groqBrowserSearchTool: Tool<JsonElement, JsonElement, Any?> = Provid
     metadata = mapOf("providerToolId" to JsonPrimitive("groq.browser_search")),
 )
 
-public data class GroqTools(
-    val browserSearch: Tool<JsonElement, JsonElement, Any?> = groqBrowserSearchTool,
+@Poko
+public class GroqTools(
+    public val browserSearch: Tool<JsonElement, JsonElement, Any?> = groqBrowserSearchTool,
 )
 
 public val browserSearch: Tool<JsonElement, JsonElement, Any?> = groqBrowserSearchTool

@@ -194,6 +194,10 @@ Penalty, response-format, and retry fields participate in the `Step ?: Agent ?: 
   types; field access remains, but public `copy()` / `componentN()` ABI is
   intentionally absent. Gateway settings and call params stay on the
   builder/data-class track.
+- Provider tool-namespace holders such as `OpenAITools`, `AnthropicTools`,
+  `GoogleTools`, `XaiTools`, `AzureOpenAITools`, and `GroqTools` are
+  `@Poko class` value-semantics types; field access remains, but public
+  `copy()` / `componentN()` ABI is intentionally absent.
 - Errors: `AiSdkException`, `InvalidArgumentError`, `UnsupportedModelVersionError`, `NoSuchProviderError`, `NoSuchModelError`, `NoOutputGeneratedError`, `NoObjectGeneratedError`, `NoImageGeneratedError`, `NoSpeechGeneratedError`, `NoTranscriptGeneratedError`, `NoVideoGeneratedError`, `UiMessageStreamError`.
 
 ### Telemetry

@@ -39,8 +39,9 @@ This project follows Semantic Versioning once the first stable release is cut.
   canaries, plus media-model result/metadata holders, lifecycle
   `AgentEvent` / `StepResult` payloads, embedding/rerank result holders, and
   language-model result/metadata/middleware-context holders, and gateway
-  response/spec/metadata holders; field access, equality, hashCode, toString,
-  and JSON serialization remain supported where applicable.
+  response/spec/metadata holders, plus provider tool-namespace holders; field
+  access, equality, hashCode, toString, and JSON serialization remain
+  supported where applicable.
 
 - **Tools are now class-based and extensible (breaking ABI change).** `Tool` is an `abstract class`
   you can extend for reusable, dependency-injected tools — mirroring how a concrete agent extends

@@ -3,6 +3,7 @@
 package ai.torad.aisdk.providers
 
 import ai.torad.aisdk.*
+import dev.drewhamilton.poko.Poko
 import io.ktor.client.HttpClient
 import io.ktor.client.request.header
 import io.ktor.client.request.request
@@ -464,46 +465,47 @@ public class AnthropicMessagesLanguageModel(
     }
 }
 
-public data class AnthropicTools(
-    val advisor_20260301: Tool<JsonElement, JsonElement, Any?> =
+@Poko
+public class AnthropicTools(
+    public val advisor_20260301: Tool<JsonElement, JsonElement, Any?> =
         anthropicProviderTool("advisor", "anthropic.advisor_20260301", "Consult an Anthropic advisor model during generation."),
-    val bash_20241022: Tool<JsonElement, JsonElement, Any?> =
+    public val bash_20241022: Tool<JsonElement, JsonElement, Any?> =
         anthropicProviderTool("bash", "anthropic.bash_20241022", "Use Anthropic's hosted Bash tool."),
-    val bash_20250124: Tool<JsonElement, JsonElement, Any?> =
+    public val bash_20250124: Tool<JsonElement, JsonElement, Any?> =
         anthropicProviderTool("bash", "anthropic.bash_20250124", "Use Anthropic's hosted Bash tool."),
-    val codeExecution_20250522: Tool<JsonElement, JsonElement, Any?> =
+    public val codeExecution_20250522: Tool<JsonElement, JsonElement, Any?> =
         anthropicProviderTool("code_execution", "anthropic.code_execution_20250522", "Use Anthropic hosted code execution."),
-    val codeExecution_20250825: Tool<JsonElement, JsonElement, Any?> =
+    public val codeExecution_20250825: Tool<JsonElement, JsonElement, Any?> =
         anthropicProviderTool("code_execution", "anthropic.code_execution_20250825", "Use Anthropic hosted code execution."),
-    val codeExecution_20260120: Tool<JsonElement, JsonElement, Any?> =
+    public val codeExecution_20260120: Tool<JsonElement, JsonElement, Any?> =
         anthropicProviderTool("code_execution", "anthropic.code_execution_20260120", "Use Anthropic hosted code execution."),
-    val computer_20241022: Tool<JsonElement, JsonElement, Any?> =
+    public val computer_20241022: Tool<JsonElement, JsonElement, Any?> =
         anthropicProviderTool("computer", "anthropic.computer_20241022", "Use Anthropic computer control."),
-    val computer_20250124: Tool<JsonElement, JsonElement, Any?> =
+    public val computer_20250124: Tool<JsonElement, JsonElement, Any?> =
         anthropicProviderTool("computer", "anthropic.computer_20250124", "Use Anthropic computer control."),
-    val computer_20251124: Tool<JsonElement, JsonElement, Any?> =
+    public val computer_20251124: Tool<JsonElement, JsonElement, Any?> =
         anthropicProviderTool("computer", "anthropic.computer_20251124", "Use Anthropic computer control with zoom."),
-    val memory_20250818: Tool<JsonElement, JsonElement, Any?> =
+    public val memory_20250818: Tool<JsonElement, JsonElement, Any?> =
         anthropicProviderTool("memory", "anthropic.memory_20250818", "Use Anthropic memory."),
-    val textEditor_20241022: Tool<JsonElement, JsonElement, Any?> =
+    public val textEditor_20241022: Tool<JsonElement, JsonElement, Any?> =
         anthropicProviderTool("str_replace_editor", "anthropic.text_editor_20241022", "Use Anthropic text editor."),
-    val textEditor_20250124: Tool<JsonElement, JsonElement, Any?> =
+    public val textEditor_20250124: Tool<JsonElement, JsonElement, Any?> =
         anthropicProviderTool("str_replace_editor", "anthropic.text_editor_20250124", "Use Anthropic text editor."),
-    val textEditor_20250429: Tool<JsonElement, JsonElement, Any?> =
+    public val textEditor_20250429: Tool<JsonElement, JsonElement, Any?> =
         anthropicProviderTool("str_replace_based_edit_tool", "anthropic.text_editor_20250429", "Use Anthropic text editor."),
-    val textEditor_20250728: Tool<JsonElement, JsonElement, Any?> =
+    public val textEditor_20250728: Tool<JsonElement, JsonElement, Any?> =
         anthropicProviderTool("str_replace_based_edit_tool", "anthropic.text_editor_20250728", "Use Anthropic text editor."),
-    val webFetch_20250910: Tool<JsonElement, JsonElement, Any?> =
+    public val webFetch_20250910: Tool<JsonElement, JsonElement, Any?> =
         anthropicProviderTool("web_fetch", "anthropic.web_fetch_20250910", "Fetch web content through Anthropic."),
-    val webFetch_20260209: Tool<JsonElement, JsonElement, Any?> =
+    public val webFetch_20260209: Tool<JsonElement, JsonElement, Any?> =
         anthropicProviderTool("web_fetch", "anthropic.web_fetch_20260209", "Fetch web content through Anthropic."),
-    val webSearch_20250305: Tool<JsonElement, JsonElement, Any?> =
+    public val webSearch_20250305: Tool<JsonElement, JsonElement, Any?> =
         anthropicProviderTool("web_search", "anthropic.web_search_20250305", "Search the web through Anthropic."),
-    val webSearch_20260209: Tool<JsonElement, JsonElement, Any?> =
+    public val webSearch_20260209: Tool<JsonElement, JsonElement, Any?> =
         anthropicProviderTool("web_search", "anthropic.web_search_20260209", "Search the web through Anthropic."),
-    val toolSearchRegex_20251119: Tool<JsonElement, JsonElement, Any?> =
+    public val toolSearchRegex_20251119: Tool<JsonElement, JsonElement, Any?> =
         anthropicProviderTool("tool_search_tool_regex", "anthropic.tool_search_regex_20251119", "Search deferred tools with regex."),
-    val toolSearchBm25_20251119: Tool<JsonElement, JsonElement, Any?> =
+    public val toolSearchBm25_20251119: Tool<JsonElement, JsonElement, Any?> =
         anthropicProviderTool("tool_search_tool_bm25", "anthropic.tool_search_bm25_20251119", "Search deferred tools with BM25."),
 ) {
     internal companion object {

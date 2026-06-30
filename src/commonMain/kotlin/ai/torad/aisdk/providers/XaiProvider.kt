@@ -4,6 +4,7 @@ package ai.torad.aisdk.providers
 
 import ai.torad.aisdk.*
 import ai.torad.aisdk.ProviderMetadata
+import dev.drewhamilton.poko.Poko
 import io.ktor.client.HttpClient
 import io.ktor.client.request.request
 import io.ktor.client.statement.bodyAsBytes
@@ -251,14 +252,15 @@ public class XaiProvider(
         )
 }
 
-public data class XaiTools(
-    val codeExecution: Tool<JsonElement, JsonElement, Any?> = CodeExecution(),
-    val fileSearch: Tool<JsonElement, JsonElement, Any?> = FileSearch(),
-    val mcpServer: Tool<JsonElement, JsonElement, Any?> = McpServer(),
-    val viewImage: Tool<JsonElement, JsonElement, Any?> = ViewImage(),
-    val viewXVideo: Tool<JsonElement, JsonElement, Any?> = ViewXVideo(),
-    val webSearch: Tool<JsonElement, JsonElement, Any?> = WebSearch(),
-    val xSearch: Tool<JsonElement, JsonElement, Any?> = XSearch(),
+@Poko
+public class XaiTools(
+    public val codeExecution: Tool<JsonElement, JsonElement, Any?> = CodeExecution(),
+    public val fileSearch: Tool<JsonElement, JsonElement, Any?> = FileSearch(),
+    public val mcpServer: Tool<JsonElement, JsonElement, Any?> = McpServer(),
+    public val viewImage: Tool<JsonElement, JsonElement, Any?> = ViewImage(),
+    public val viewXVideo: Tool<JsonElement, JsonElement, Any?> = ViewXVideo(),
+    public val webSearch: Tool<JsonElement, JsonElement, Any?> = WebSearch(),
+    public val xSearch: Tool<JsonElement, JsonElement, Any?> = XSearch(),
 ) {
     internal companion object {
         fun xaiProviderTool(
