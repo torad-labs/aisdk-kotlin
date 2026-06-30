@@ -25,7 +25,7 @@ public interface Provider {
         throw NoSuchModelError(providerId, "video", modelId)
 }
 
-public data class CustomProvider(
+public class CustomProvider internal constructor(
     override val providerId: String,
     private val languageModels: Map<String, LanguageModel> = emptyMap(),
     private val embeddingModels: Map<String, EmbeddingModel> = emptyMap(),
@@ -60,6 +60,98 @@ public data class CustomProvider(
         videoModels[modelId] ?: fallbackProvider?.videoModel(modelId) ?: super.videoModel(modelId)
 }
 
+public class CustomProviderBuilder internal constructor() {
+    private var providerId: String? = null
+    private var languageModels: Map<String, LanguageModel> = emptyMap()
+    private var embeddingModels: Map<String, EmbeddingModel> = emptyMap()
+    private var imageModels: Map<String, ImageModel> = emptyMap()
+    private var speechModels: Map<String, SpeechModel> = emptyMap()
+    private var transcriptionModels: Map<String, TranscriptionModel> = emptyMap()
+    private var rerankingModels: Map<String, RerankingModel> = emptyMap()
+    private var videoModels: Map<String, VideoModel> = emptyMap()
+    private var fallbackProvider: Provider? = null
+
+    public fun providerId(value: String) {
+        providerId = value
+    }
+
+    public fun languageModels(value: Map<String, LanguageModel>) {
+        languageModels = value
+    }
+
+    public fun languageModel(id: String, model: LanguageModel) {
+        languageModels = languageModels + (id to model)
+    }
+
+    public fun embeddingModels(value: Map<String, EmbeddingModel>) {
+        embeddingModels = value
+    }
+
+    public fun embeddingModel(id: String, model: EmbeddingModel) {
+        embeddingModels = embeddingModels + (id to model)
+    }
+
+    public fun imageModels(value: Map<String, ImageModel>) {
+        imageModels = value
+    }
+
+    public fun imageModel(id: String, model: ImageModel) {
+        imageModels = imageModels + (id to model)
+    }
+
+    public fun speechModels(value: Map<String, SpeechModel>) {
+        speechModels = value
+    }
+
+    public fun speechModel(id: String, model: SpeechModel) {
+        speechModels = speechModels + (id to model)
+    }
+
+    public fun transcriptionModels(value: Map<String, TranscriptionModel>) {
+        transcriptionModels = value
+    }
+
+    public fun transcriptionModel(id: String, model: TranscriptionModel) {
+        transcriptionModels = transcriptionModels + (id to model)
+    }
+
+    public fun rerankingModels(value: Map<String, RerankingModel>) {
+        rerankingModels = value
+    }
+
+    public fun rerankingModel(id: String, model: RerankingModel) {
+        rerankingModels = rerankingModels + (id to model)
+    }
+
+    public fun videoModels(value: Map<String, VideoModel>) {
+        videoModels = value
+    }
+
+    public fun videoModel(id: String, model: VideoModel) {
+        videoModels = videoModels + (id to model)
+    }
+
+    public fun fallbackProvider(value: Provider?) {
+        fallbackProvider = value
+    }
+
+    internal fun build(): CustomProvider =
+        CustomProvider(
+            providerId = requireNotNull(providerId) { "CustomProvider.providerId is required" },
+            languageModels = languageModels,
+            embeddingModels = embeddingModels,
+            imageModels = imageModels,
+            speechModels = speechModels,
+            transcriptionModels = transcriptionModels,
+            rerankingModels = rerankingModels,
+            videoModels = videoModels,
+            fallbackProvider = fallbackProvider,
+        )
+}
+
+public fun CustomProvider(block: CustomProviderBuilder.() -> Unit): CustomProvider =
+    CustomProviderBuilder().apply(block).build()
+
 public fun Provider(
     providerId: String,
     languageModels: Map<String, LanguageModel> = emptyMap(),
@@ -70,17 +162,17 @@ public fun Provider(
     rerankingModels: Map<String, RerankingModel> = emptyMap(),
     videoModels: Map<String, VideoModel> = emptyMap(),
     fallbackProvider: Provider? = null,
-): Provider = CustomProvider(
-    providerId = providerId,
-    languageModels = languageModels,
-    embeddingModels = embeddingModels,
-    imageModels = imageModels,
-    speechModels = speechModels,
-    transcriptionModels = transcriptionModels,
-    rerankingModels = rerankingModels,
-    videoModels = videoModels,
-    fallbackProvider = fallbackProvider,
-)
+): Provider = CustomProvider {
+    providerId(providerId)
+    languageModels(languageModels)
+    embeddingModels(embeddingModels)
+    imageModels(imageModels)
+    speechModels(speechModels)
+    transcriptionModels(transcriptionModels)
+    rerankingModels(rerankingModels)
+    videoModels(videoModels)
+    fallbackProvider(fallbackProvider)
+}
 
 public class ProviderRegistry(
     private val providers: Map<String, Provider>,

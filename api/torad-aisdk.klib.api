@@ -7577,23 +7577,35 @@ final class ai.torad.aisdk/ConfigurationBuilder { // ai.torad.aisdk/Configuratio
 }
 
 final class ai.torad.aisdk/CustomProvider : ai.torad.aisdk/Provider { // ai.torad.aisdk/CustomProvider|null[0]
-    constructor <init>(kotlin/String, kotlin.collections/Map<kotlin/String, ai.torad.aisdk/LanguageModel> = ..., kotlin.collections/Map<kotlin/String, ai.torad.aisdk/EmbeddingModel> = ..., kotlin.collections/Map<kotlin/String, ai.torad.aisdk/ImageModel> = ..., kotlin.collections/Map<kotlin/String, ai.torad.aisdk/SpeechModel> = ..., kotlin.collections/Map<kotlin/String, ai.torad.aisdk/TranscriptionModel> = ..., kotlin.collections/Map<kotlin/String, ai.torad.aisdk/RerankingModel> = ..., kotlin.collections/Map<kotlin/String, ai.torad.aisdk/VideoModel> = ..., ai.torad.aisdk/Provider? = ...) // ai.torad.aisdk/CustomProvider.<init>|<init>(kotlin.String;kotlin.collections.Map<kotlin.String,ai.torad.aisdk.LanguageModel>;kotlin.collections.Map<kotlin.String,ai.torad.aisdk.EmbeddingModel>;kotlin.collections.Map<kotlin.String,ai.torad.aisdk.ImageModel>;kotlin.collections.Map<kotlin.String,ai.torad.aisdk.SpeechModel>;kotlin.collections.Map<kotlin.String,ai.torad.aisdk.TranscriptionModel>;kotlin.collections.Map<kotlin.String,ai.torad.aisdk.RerankingModel>;kotlin.collections.Map<kotlin.String,ai.torad.aisdk.VideoModel>;ai.torad.aisdk.Provider?){}[0]
-
     final val providerId // ai.torad.aisdk/CustomProvider.providerId|{}providerId[0]
         final fun <get-providerId>(): kotlin/String // ai.torad.aisdk/CustomProvider.providerId.<get-providerId>|<get-providerId>(){}[0]
 
-    final fun component1(): kotlin/String // ai.torad.aisdk/CustomProvider.component1|component1(){}[0]
-    final fun copy(kotlin/String = ..., kotlin.collections/Map<kotlin/String, ai.torad.aisdk/LanguageModel> = ..., kotlin.collections/Map<kotlin/String, ai.torad.aisdk/EmbeddingModel> = ..., kotlin.collections/Map<kotlin/String, ai.torad.aisdk/ImageModel> = ..., kotlin.collections/Map<kotlin/String, ai.torad.aisdk/SpeechModel> = ..., kotlin.collections/Map<kotlin/String, ai.torad.aisdk/TranscriptionModel> = ..., kotlin.collections/Map<kotlin/String, ai.torad.aisdk/RerankingModel> = ..., kotlin.collections/Map<kotlin/String, ai.torad.aisdk/VideoModel> = ..., ai.torad.aisdk/Provider? = ...): ai.torad.aisdk/CustomProvider // ai.torad.aisdk/CustomProvider.copy|copy(kotlin.String;kotlin.collections.Map<kotlin.String,ai.torad.aisdk.LanguageModel>;kotlin.collections.Map<kotlin.String,ai.torad.aisdk.EmbeddingModel>;kotlin.collections.Map<kotlin.String,ai.torad.aisdk.ImageModel>;kotlin.collections.Map<kotlin.String,ai.torad.aisdk.SpeechModel>;kotlin.collections.Map<kotlin.String,ai.torad.aisdk.TranscriptionModel>;kotlin.collections.Map<kotlin.String,ai.torad.aisdk.RerankingModel>;kotlin.collections.Map<kotlin.String,ai.torad.aisdk.VideoModel>;ai.torad.aisdk.Provider?){}[0]
     final fun embeddingModel(kotlin/String): ai.torad.aisdk/EmbeddingModel // ai.torad.aisdk/CustomProvider.embeddingModel|embeddingModel(kotlin.String){}[0]
-    final fun equals(kotlin/Any?): kotlin/Boolean // ai.torad.aisdk/CustomProvider.equals|equals(kotlin.Any?){}[0]
-    final fun hashCode(): kotlin/Int // ai.torad.aisdk/CustomProvider.hashCode|hashCode(){}[0]
     final fun imageModel(kotlin/String): ai.torad.aisdk/ImageModel // ai.torad.aisdk/CustomProvider.imageModel|imageModel(kotlin.String){}[0]
     final fun languageModel(kotlin/String): ai.torad.aisdk/LanguageModel // ai.torad.aisdk/CustomProvider.languageModel|languageModel(kotlin.String){}[0]
     final fun rerankingModel(kotlin/String): ai.torad.aisdk/RerankingModel // ai.torad.aisdk/CustomProvider.rerankingModel|rerankingModel(kotlin.String){}[0]
     final fun speechModel(kotlin/String): ai.torad.aisdk/SpeechModel // ai.torad.aisdk/CustomProvider.speechModel|speechModel(kotlin.String){}[0]
-    final fun toString(): kotlin/String // ai.torad.aisdk/CustomProvider.toString|toString(){}[0]
     final fun transcriptionModel(kotlin/String): ai.torad.aisdk/TranscriptionModel // ai.torad.aisdk/CustomProvider.transcriptionModel|transcriptionModel(kotlin.String){}[0]
     final fun videoModel(kotlin/String): ai.torad.aisdk/VideoModel // ai.torad.aisdk/CustomProvider.videoModel|videoModel(kotlin.String){}[0]
+}
+
+final class ai.torad.aisdk/CustomProviderBuilder { // ai.torad.aisdk/CustomProviderBuilder|null[0]
+    final fun embeddingModel(kotlin/String, ai.torad.aisdk/EmbeddingModel) // ai.torad.aisdk/CustomProviderBuilder.embeddingModel|embeddingModel(kotlin.String;ai.torad.aisdk.EmbeddingModel){}[0]
+    final fun embeddingModels(kotlin.collections/Map<kotlin/String, ai.torad.aisdk/EmbeddingModel>) // ai.torad.aisdk/CustomProviderBuilder.embeddingModels|embeddingModels(kotlin.collections.Map<kotlin.String,ai.torad.aisdk.EmbeddingModel>){}[0]
+    final fun fallbackProvider(ai.torad.aisdk/Provider?) // ai.torad.aisdk/CustomProviderBuilder.fallbackProvider|fallbackProvider(ai.torad.aisdk.Provider?){}[0]
+    final fun imageModel(kotlin/String, ai.torad.aisdk/ImageModel) // ai.torad.aisdk/CustomProviderBuilder.imageModel|imageModel(kotlin.String;ai.torad.aisdk.ImageModel){}[0]
+    final fun imageModels(kotlin.collections/Map<kotlin/String, ai.torad.aisdk/ImageModel>) // ai.torad.aisdk/CustomProviderBuilder.imageModels|imageModels(kotlin.collections.Map<kotlin.String,ai.torad.aisdk.ImageModel>){}[0]
+    final fun languageModel(kotlin/String, ai.torad.aisdk/LanguageModel) // ai.torad.aisdk/CustomProviderBuilder.languageModel|languageModel(kotlin.String;ai.torad.aisdk.LanguageModel){}[0]
+    final fun languageModels(kotlin.collections/Map<kotlin/String, ai.torad.aisdk/LanguageModel>) // ai.torad.aisdk/CustomProviderBuilder.languageModels|languageModels(kotlin.collections.Map<kotlin.String,ai.torad.aisdk.LanguageModel>){}[0]
+    final fun providerId(kotlin/String) // ai.torad.aisdk/CustomProviderBuilder.providerId|providerId(kotlin.String){}[0]
+    final fun rerankingModel(kotlin/String, ai.torad.aisdk/RerankingModel) // ai.torad.aisdk/CustomProviderBuilder.rerankingModel|rerankingModel(kotlin.String;ai.torad.aisdk.RerankingModel){}[0]
+    final fun rerankingModels(kotlin.collections/Map<kotlin/String, ai.torad.aisdk/RerankingModel>) // ai.torad.aisdk/CustomProviderBuilder.rerankingModels|rerankingModels(kotlin.collections.Map<kotlin.String,ai.torad.aisdk.RerankingModel>){}[0]
+    final fun speechModel(kotlin/String, ai.torad.aisdk/SpeechModel) // ai.torad.aisdk/CustomProviderBuilder.speechModel|speechModel(kotlin.String;ai.torad.aisdk.SpeechModel){}[0]
+    final fun speechModels(kotlin.collections/Map<kotlin/String, ai.torad.aisdk/SpeechModel>) // ai.torad.aisdk/CustomProviderBuilder.speechModels|speechModels(kotlin.collections.Map<kotlin.String,ai.torad.aisdk.SpeechModel>){}[0]
+    final fun transcriptionModel(kotlin/String, ai.torad.aisdk/TranscriptionModel) // ai.torad.aisdk/CustomProviderBuilder.transcriptionModel|transcriptionModel(kotlin.String;ai.torad.aisdk.TranscriptionModel){}[0]
+    final fun transcriptionModels(kotlin.collections/Map<kotlin/String, ai.torad.aisdk/TranscriptionModel>) // ai.torad.aisdk/CustomProviderBuilder.transcriptionModels|transcriptionModels(kotlin.collections.Map<kotlin.String,ai.torad.aisdk.TranscriptionModel>){}[0]
+    final fun videoModel(kotlin/String, ai.torad.aisdk/VideoModel) // ai.torad.aisdk/CustomProviderBuilder.videoModel|videoModel(kotlin.String;ai.torad.aisdk.VideoModel){}[0]
+    final fun videoModels(kotlin.collections/Map<kotlin/String, ai.torad.aisdk/VideoModel>) // ai.torad.aisdk/CustomProviderBuilder.videoModels|videoModels(kotlin.collections.Map<kotlin.String,ai.torad.aisdk.VideoModel>){}[0]
 }
 
 final class ai.torad.aisdk/DataUrl { // ai.torad.aisdk/DataUrl|null[0]
@@ -8388,8 +8400,6 @@ final class ai.torad.aisdk/HttpMCPTransport : ai.torad.aisdk/MCPTransport { // a
 }
 
 final class ai.torad.aisdk/IdGenerator { // ai.torad.aisdk/IdGenerator|null[0]
-    constructor <init>(kotlin/String? = ..., kotlin/Int = ..., kotlin/String = ..., kotlin/String = ..., kotlin.random/Random = ...) // ai.torad.aisdk/IdGenerator.<init>|<init>(kotlin.String?;kotlin.Int;kotlin.String;kotlin.String;kotlin.random.Random){}[0]
-
     final val alphabet // ai.torad.aisdk/IdGenerator.alphabet|{}alphabet[0]
         final fun <get-alphabet>(): kotlin/String // ai.torad.aisdk/IdGenerator.alphabet.<get-alphabet>|<get-alphabet>(){}[0]
     final val prefix // ai.torad.aisdk/IdGenerator.prefix|{}prefix[0]
@@ -8401,20 +8411,19 @@ final class ai.torad.aisdk/IdGenerator { // ai.torad.aisdk/IdGenerator|null[0]
     final val size // ai.torad.aisdk/IdGenerator.size|{}size[0]
         final fun <get-size>(): kotlin/Int // ai.torad.aisdk/IdGenerator.size.<get-size>|<get-size>(){}[0]
 
-    final fun component1(): kotlin/String? // ai.torad.aisdk/IdGenerator.component1|component1(){}[0]
-    final fun component2(): kotlin/Int // ai.torad.aisdk/IdGenerator.component2|component2(){}[0]
-    final fun component3(): kotlin/String // ai.torad.aisdk/IdGenerator.component3|component3(){}[0]
-    final fun component4(): kotlin/String // ai.torad.aisdk/IdGenerator.component4|component4(){}[0]
-    final fun component5(): kotlin.random/Random // ai.torad.aisdk/IdGenerator.component5|component5(){}[0]
-    final fun copy(kotlin/String? = ..., kotlin/Int = ..., kotlin/String = ..., kotlin/String = ..., kotlin.random/Random = ...): ai.torad.aisdk/IdGenerator // ai.torad.aisdk/IdGenerator.copy|copy(kotlin.String?;kotlin.Int;kotlin.String;kotlin.String;kotlin.random.Random){}[0]
-    final fun equals(kotlin/Any?): kotlin/Boolean // ai.torad.aisdk/IdGenerator.equals|equals(kotlin.Any?){}[0]
     final fun generate(): kotlin/String // ai.torad.aisdk/IdGenerator.generate|generate(){}[0]
-    final fun hashCode(): kotlin/Int // ai.torad.aisdk/IdGenerator.hashCode|hashCode(){}[0]
-    final fun toString(): kotlin/String // ai.torad.aisdk/IdGenerator.toString|toString(){}[0]
 
     final object Companion { // ai.torad.aisdk/IdGenerator.Companion|null[0]
         final fun generate(kotlin/String? = ..., kotlin.random/Random = ...): kotlin/String // ai.torad.aisdk/IdGenerator.Companion.generate|generate(kotlin.String?;kotlin.random.Random){}[0]
     }
+}
+
+final class ai.torad.aisdk/IdGeneratorBuilder { // ai.torad.aisdk/IdGeneratorBuilder|null[0]
+    final fun alphabet(kotlin/String) // ai.torad.aisdk/IdGeneratorBuilder.alphabet|alphabet(kotlin.String){}[0]
+    final fun prefix(kotlin/String?) // ai.torad.aisdk/IdGeneratorBuilder.prefix|prefix(kotlin.String?){}[0]
+    final fun random(kotlin.random/Random) // ai.torad.aisdk/IdGeneratorBuilder.random|random(kotlin.random.Random){}[0]
+    final fun separator(kotlin/String) // ai.torad.aisdk/IdGeneratorBuilder.separator|separator(kotlin.String){}[0]
+    final fun size(kotlin/Int) // ai.torad.aisdk/IdGeneratorBuilder.size|size(kotlin.Int){}[0]
 }
 
 final class ai.torad.aisdk/ImageGenerationFile { // ai.torad.aisdk/ImageGenerationFile|null[0]
@@ -13970,6 +13979,7 @@ final fun ai.torad.aisdk/CompletionRequestOptions(kotlin/Function1<ai.torad.aisd
 final fun ai.torad.aisdk/Configuration(kotlin/Function1<ai.torad.aisdk/ConfigurationBuilder, kotlin/Unit> = ...): ai.torad.aisdk/Configuration // ai.torad.aisdk/Configuration|Configuration(kotlin.Function1<ai.torad.aisdk.ConfigurationBuilder,kotlin.Unit>){}[0]
 final fun ai.torad.aisdk/CreateGatewayHttpProvider(io.ktor.client/HttpClient, ai.torad.aisdk/GatewayProviderSettings = ..., kotlinx.serialization.json/Json = ...): ai.torad.aisdk/GatewayProvider // ai.torad.aisdk/CreateGatewayHttpProvider|CreateGatewayHttpProvider(io.ktor.client.HttpClient;ai.torad.aisdk.GatewayProviderSettings;kotlinx.serialization.json.Json){}[0]
 final fun ai.torad.aisdk/CreateMcpTransport(io.ktor.client/HttpClient, ai.torad.aisdk/MCPTransportConfig): ai.torad.aisdk/MCPTransport // ai.torad.aisdk/CreateMcpTransport|CreateMcpTransport(io.ktor.client.HttpClient;ai.torad.aisdk.MCPTransportConfig){}[0]
+final fun ai.torad.aisdk/CustomProvider(kotlin/Function1<ai.torad.aisdk/CustomProviderBuilder, kotlin/Unit>): ai.torad.aisdk/CustomProvider // ai.torad.aisdk/CustomProvider|CustomProvider(kotlin.Function1<ai.torad.aisdk.CustomProviderBuilder,kotlin.Unit>){}[0]
 final fun ai.torad.aisdk/DefaultEmbeddingSettingsMiddleware(kotlin/Int? = ..., kotlin/Boolean? = ..., ai.torad.aisdk/ProviderOptions = ..., kotlin.collections/Map<kotlin/String, kotlin/String> = ...): ai.torad.aisdk/EmbeddingModelMiddleware // ai.torad.aisdk/DefaultEmbeddingSettingsMiddleware|DefaultEmbeddingSettingsMiddleware(kotlin.Int?;kotlin.Boolean?;ai.torad.aisdk.ProviderOptions;kotlin.collections.Map<kotlin.String,kotlin.String>){}[0]
 final fun ai.torad.aisdk/DevToolsMiddleware(ai.torad.aisdk/DevToolsRecorder = ..., kotlin/String = ..., kotlin/String = ..., kotlin/Function0<kotlin/String> = ...): ai.torad.aisdk/LanguageModelMiddleware // ai.torad.aisdk/DevToolsMiddleware|DevToolsMiddleware(ai.torad.aisdk.DevToolsRecorder;kotlin.String;kotlin.String;kotlin.Function0<kotlin.String>){}[0]
 final fun ai.torad.aisdk/ElicitationCapability(kotlin/Function1<ai.torad.aisdk/ElicitationCapabilityBuilder, kotlin/Unit> = ...): ai.torad.aisdk/ElicitationCapability // ai.torad.aisdk/ElicitationCapability|ElicitationCapability(kotlin.Function1<ai.torad.aisdk.ElicitationCapabilityBuilder,kotlin.Unit>){}[0]
@@ -13981,6 +13991,7 @@ final fun ai.torad.aisdk/GatewayProviderSettings(kotlin/Function1<ai.torad.aisdk
 final fun ai.torad.aisdk/GatewaySpendReportParams(kotlin/Function1<ai.torad.aisdk/GatewaySpendReportParamsBuilder, kotlin/Unit> = ...): ai.torad.aisdk/GatewaySpendReportParams // ai.torad.aisdk/GatewaySpendReportParams|GatewaySpendReportParams(kotlin.Function1<ai.torad.aisdk.GatewaySpendReportParamsBuilder,kotlin.Unit>){}[0]
 final fun ai.torad.aisdk/GeneratedFile(ai.torad.aisdk/FileData, kotlin/String = ..., kotlin/String? = ..., ai.torad.aisdk/ProviderMetadata = ...): ai.torad.aisdk/GeneratedFile // ai.torad.aisdk/GeneratedFile|GeneratedFile(ai.torad.aisdk.FileData;kotlin.String;kotlin.String?;ai.torad.aisdk.ProviderMetadata){}[0]
 final fun ai.torad.aisdk/HasToolCall(kotlin/String): ai.torad.aisdk/StopCondition // ai.torad.aisdk/HasToolCall|HasToolCall(kotlin.String){}[0]
+final fun ai.torad.aisdk/IdGenerator(kotlin/Function1<ai.torad.aisdk/IdGeneratorBuilder, kotlin/Unit> = ...): ai.torad.aisdk/IdGenerator // ai.torad.aisdk/IdGenerator|IdGenerator(kotlin.Function1<ai.torad.aisdk.IdGeneratorBuilder,kotlin.Unit>){}[0]
 final fun ai.torad.aisdk/ImageGenerationFile(ai.torad.aisdk/FileData): ai.torad.aisdk/ImageGenerationFile // ai.torad.aisdk/ImageGenerationFile|ImageGenerationFile(ai.torad.aisdk.FileData){}[0]
 final fun ai.torad.aisdk/ImageGenerationParams(kotlin/Function1<ai.torad.aisdk/ImageGenerationParamsBuilder, kotlin/Unit> = ...): ai.torad.aisdk/ImageGenerationParams // ai.torad.aisdk/ImageGenerationParams|ImageGenerationParams(kotlin.Function1<ai.torad.aisdk.ImageGenerationParamsBuilder,kotlin.Unit>){}[0]
 final fun ai.torad.aisdk/LanguageModelCallParams(kotlin/Function1<ai.torad.aisdk/LanguageModelCallParamsBuilder, kotlin/Unit>): ai.torad.aisdk/LanguageModelCallParams // ai.torad.aisdk/LanguageModelCallParams|LanguageModelCallParams(kotlin.Function1<ai.torad.aisdk.LanguageModelCallParamsBuilder,kotlin.Unit>){}[0]

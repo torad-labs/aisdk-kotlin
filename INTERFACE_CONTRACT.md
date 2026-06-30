@@ -214,7 +214,10 @@ Penalty, response-format, and retry fields participate in the `Step ?: Agent ?: 
 ### Provider Registry
 
 - `interface Provider` with `languageModel`, `embeddingModel`, `imageModel`, `speechModel`, `transcriptionModel`, `rerankingModel`, and `videoModel`.
-- `customProvider(...)`, `CustomProvider`, `ProviderRegistry`, `createProviderRegistry(...)`, `wrapProvider(...)`, `ProviderMiddleware { languageModelMiddlewares(...); embeddingModelMiddlewares(...); imageModelMiddlewares(...) }`.
+- `customProvider(...)`, `CustomProvider { providerId(...); languageModel(id, model); embeddingModel(id, model); imageModel(id, model); speechModel(id, model); transcriptionModel(id, model); rerankingModel(id, model); videoModel(id, model); fallbackProvider(...) }`, `ProviderRegistry`, `createProviderRegistry(...)`, `wrapProvider(...)`, `ProviderMiddleware { languageModelMiddlewares(...); embeddingModelMiddlewares(...); imageModelMiddlewares(...) }`.
+- `CustomProvider` is a regular builder-backed class with identity equality
+  because it holds model objects; the positional constructor, `copy()`, and
+  `componentN()` are not public.
 - Gateway response/spec/metadata holders are `@Poko class` value-semantics
   types; field access remains, but public `copy()` / `componentN()` ABI is
   intentionally absent. Gateway settings and call params stay on the
@@ -345,7 +348,7 @@ Penalty, response-format, and retry fields participate in the `Step ?: Agent ?: 
 
 - `DynamicTool(name, description, inputSchemaJson?, metadata?, executor)`
 - `Schema<T>`, `jsonSchema`, `asSchema`, `zodSchema`
-- `IdGenerator`, `createIdGenerator`, `generateId`
+- `IdGenerator { prefix(...); size(...); alphabet(...); separator(...); random(...) }`, `createIdGenerator`, `generateId`. `IdGenerator` is a regular builder-backed class with identity equality because it holds a `Random`; the positional constructor, `copy()`, and `componentN()` are not public.
 
 ### General Utilities
 

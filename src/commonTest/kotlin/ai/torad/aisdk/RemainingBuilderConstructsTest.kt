@@ -1,3 +1,5 @@
+@file:OptIn(LowLevelLanguageModelApi::class)
+
 package ai.torad.aisdk
 
 import ai.torad.aisdk.middleware.LoggingOptions
@@ -202,6 +204,30 @@ class RemainingBuilderConstructsTest {
             embeddingModelMiddlewares(emptyList())
             imageModelMiddlewares(emptyList())
         }
+        val idGenerator = IdGenerator {
+            prefix("msg")
+            size(4)
+        }
+        val equalShapeIdGenerator = IdGenerator {
+            prefix("msg")
+            size(4)
+        }
+        val languageModel = object : LanguageModel {
+            override val modelId: String = "mock"
+
+            override suspend fun generate(params: LanguageModelCallParams): LanguageModelResult =
+                LanguageModelResult("ok", finishReason = FinishReason.Stop, usage = Usage())
+
+            override fun stream(params: LanguageModelCallParams) = emptyFlow<StreamEvent>()
+        }
+        val customProvider = CustomProvider {
+            providerId("custom")
+            languageModel("chat", languageModel)
+        }
+        val equalShapeCustomProvider = CustomProvider {
+            providerId("custom")
+            languageModel("chat", languageModel)
+        }
 
         assertSame(transport, completion.transport)
         assertNotEquals(equalShapeCompletion, completion)
@@ -214,5 +240,11 @@ class RemainingBuilderConstructsTest {
         assertEquals(1, retryPolicy.maxRetries)
         assertNotEquals(equalShapeRetryPolicy, retryPolicy)
         assertEquals(0, providerMiddleware.languageModelMiddlewares.size)
+        assertEquals("msg", idGenerator.prefix)
+        assertEquals(4, idGenerator.size)
+        assertNotEquals(equalShapeIdGenerator, idGenerator)
+        assertEquals("custom", customProvider.providerId)
+        assertSame(languageModel, customProvider.languageModel("chat"))
+        assertNotEquals(equalShapeCustomProvider, customProvider)
     }
 }

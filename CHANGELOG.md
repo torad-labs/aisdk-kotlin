@@ -143,6 +143,11 @@ This project follows Semantic Versioning once the first stable release is cut.
   internal positional constructors, public DSL factories for fresh
   construction, and public seeded `toBuilder()` helpers for middleware/provider
   one-field overrides. Their public `copy()` and `componentN()` ABI is removed.
+  KEEP-floor stragglers `IdGenerator` and `CustomProvider` now join the
+  construct builder track as regular classes with identity equality because
+  they hold non-value `Random` / model-object fields. Their public positional
+  constructors, `copy()`, and `componentN()` ABI are removed; construct them via
+  `IdGenerator { ... }` and `CustomProvider { providerId(...); ... }`.
 
 - **Tools are now class-based and extensible (breaking ABI change).** `Tool` is an `abstract class`
   you can extend for reusable, dependency-injected tools — mirroring how a concrete agent extends

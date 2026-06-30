@@ -304,14 +304,23 @@ class GatewayAndProviderUtilsParityTest {
     @Test
     fun `provider util helpers match v6 defaults`() {
         val generated = IdGenerator.generate()
-        val prefixed = IdGenerator(prefix = "msg", size = 4, alphabet = "ab", separator = "_").generate()
+        val prefixed = IdGenerator {
+            prefix("msg")
+            size(4)
+            alphabet("ab")
+            separator("_")
+        }.generate()
         val headers = ProviderHeaders.withUserAgentSuffix(mapOf("User-Agent" to "app/1.0", "X-Empty" to null),
         "ai-sdk/test",)
 
         assertEquals(16, generated.length)
         assertTrue(prefixed.startsWith("msg_"))
         assertFailsWith<IllegalArgumentException> {
-            IdGenerator(prefix = "bad", alphabet = "ab-", separator = "-").generate()
+            IdGenerator {
+                prefix("bad")
+                alphabet("ab-")
+                separator("-")
+            }.generate()
         }
         assertEquals(mapOf("a" to "1", "b" to null), ProviderHeaders.combine(mapOf("a" to "0"), mapOf("a" to "1", "b" to null)))
         assertEquals(mapOf("x-a" to "1"), ProviderHeaders.normalize(mapOf("X-A" to "1", "X-B" to null)))
