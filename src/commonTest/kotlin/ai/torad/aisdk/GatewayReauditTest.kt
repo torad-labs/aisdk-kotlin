@@ -228,8 +228,11 @@ class GatewayReauditTest {
         )
 
         provider.getCredits()
-        provider.getSpendReport(GatewaySpendReportParams(startDate = "2026-06-01", endDate = "2026-06-02"))
-        provider.getGenerationInfo(GatewayGenerationInfoParams("gen_1"))
+        provider.getSpendReport(GatewaySpendReportParams {
+            startDate("2026-06-01")
+            endDate("2026-06-02")
+        })
+        provider.getGenerationInfo(GatewayGenerationInfoParams { id("gen_1") })
 
         assertTrue("/tenant/v1/credits" in seenPaths)
         assertTrue("/tenant/v1/report" in seenPaths)

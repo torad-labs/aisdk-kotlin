@@ -29,6 +29,9 @@ import ai.torad.aisdk.providers.HumeSpeechModelOptions
 import ai.torad.aisdk.providers.KlingAIVideoModelOptions
 import ai.torad.aisdk.providers.LMNTSpeechModelOptions
 import ai.torad.aisdk.providers.LumaImageModelOptions
+import ai.torad.aisdk.providers.MistralLanguageModelOptions
+import ai.torad.aisdk.providers.MoonshotAILanguageModelOptions
+import ai.torad.aisdk.providers.ProdiaLanguageModelOptions
 import ai.torad.aisdk.providers.ProdiaImageModelOptions
 import ai.torad.aisdk.providers.ProdiaVideoModelOptions
 import ai.torad.aisdk.providers.QuiverAIImageModelOptions
@@ -41,6 +44,8 @@ import ai.torad.aisdk.providers.TogetherAIImageModelOptions
 import ai.torad.aisdk.providers.TogetherAIRerankingModelOptions
 import ai.torad.aisdk.providers.VoyageEmbeddingModelOptions
 import ai.torad.aisdk.providers.VoyageRerankingModelOptions
+import ai.torad.aisdk.providers.XaiImageModelOptions
+import ai.torad.aisdk.providers.XaiVideoModelOptions
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.JsonPrimitive
@@ -538,5 +543,90 @@ class ProviderModelOptionsBuilderTest {
         val togetherJson = aiSdkJson.encodeToString(togetherImage)
         assertTrue(togetherJson.contains("\"negative_prompt\""))
         assertTrue(togetherJson.contains("\"disable_safety_checker\""))
+    }
+
+    @Test
+    fun `remaining provider model option DSLs keep value semantics and serialization`() {
+        val mistral = MistralLanguageModelOptions {
+            safePrompt(true)
+            documentImageLimit(8)
+            documentPageLimit(12)
+            structuredOutputs(true)
+            strictJsonSchema(false)
+            parallelToolCalls(true)
+            reasoningEffort("medium")
+        }
+        val moonshot = MoonshotAILanguageModelOptions {
+            raw(mapOf("thinking" to JsonPrimitive("auto")))
+        }
+        val prodia = ProdiaLanguageModelOptions {
+            aspectRatio("16:9")
+        }
+        val xaiImage = XaiImageModelOptions {
+            aspect_ratio("1:1")
+            output_format("png")
+            sync_mode(true)
+            resolution("1024x1024")
+            quality("high")
+            user("user-1")
+        }
+        val xaiVideo = XaiVideoModelOptions {
+            mode("standard")
+            videoUrl("https://example.test/source.mp4")
+            referenceImageUrls(listOf("https://example.test/ref.png"))
+            pollIntervalMs(250)
+            pollTimeoutMs(5_000)
+            resolution("720p")
+        }
+
+        assertEquals(mistral, aiSdkJson.decodeFromString<MistralLanguageModelOptions>(aiSdkJson.encodeToString(mistral)))
+        assertEquals(moonshot, aiSdkJson.decodeFromString<MoonshotAILanguageModelOptions>(aiSdkJson.encodeToString(moonshot)))
+        assertEquals(prodia, ProdiaLanguageModelOptions { aspectRatio("16:9") })
+        assertEquals(xaiImage, aiSdkJson.decodeFromString<XaiImageModelOptions>(aiSdkJson.encodeToString(xaiImage)))
+        assertEquals(xaiVideo, aiSdkJson.decodeFromString<XaiVideoModelOptions>(aiSdkJson.encodeToString(xaiVideo)))
+        assertNotEquals(xaiVideo, XaiVideoModelOptions { mode("fast") })
+
+        val xaiImageJson = aiSdkJson.encodeToString(xaiImage)
+        assertTrue(xaiImageJson.contains("\"aspect_ratio\""))
+        assertTrue(xaiImageJson.contains("\"output_format\""))
+        assertTrue(xaiImageJson.contains("\"sync_mode\""))
+    }
+
+    @Test
+    fun `gateway params use value semantics and auth options use identity semantics`() {
+        val spend = GatewaySpendReportParams {
+            startDate("2026-06-01")
+            endDate("2026-06-03")
+            groupBy(GatewaySpendReportGroupBy.Model)
+            credentialType(GatewayCredentialType.Byok)
+            tags(listOf("prod"))
+        }
+        val matchingSpend = GatewaySpendReportParams {
+            startDate("2026-06-01")
+            endDate("2026-06-03")
+            groupBy(GatewaySpendReportGroupBy.Model)
+            credentialType(GatewayCredentialType.Byok)
+            tags(listOf("prod"))
+        }
+        val generation = GatewayGenerationInfoParams {
+            id("gen_123")
+        }
+
+        assertEquals(matchingSpend, spend)
+        assertEquals(matchingSpend.hashCode(), spend.hashCode())
+        assertEquals(GatewayGenerationInfoParams { id("gen_123") }, generation)
+
+        val auth = AuthOptions {
+            serverUrl("https://mcp.example.com")
+            scope("tools")
+        }
+        val matchingAuth = AuthOptions {
+            serverUrl("https://mcp.example.com")
+            scope("tools")
+        }
+
+        assertEquals("https://mcp.example.com", auth.serverUrl)
+        assertEquals("tools", auth.scope)
+        assertNotEquals(matchingAuth, auth)
     }
 }

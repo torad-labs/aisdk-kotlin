@@ -232,17 +232,84 @@ public enum class GatewayCredentialType(public val wireValue: String) {
     }
 }
 
-public data class GatewaySpendReportParams(
-    val startDate: String,
-    val endDate: String,
-    val groupBy: GatewaySpendReportGroupBy? = null,
-    val datePart: GatewaySpendReportDatePart? = null,
-    val userId: String? = null,
-    val model: String? = null,
-    val provider: String? = null,
-    val credentialType: GatewayCredentialType? = null,
-    val tags: List<String> = emptyList(),
+@Poko
+public class GatewaySpendReportParams internal constructor(
+    public val startDate: String,
+    public val endDate: String,
+    public val groupBy: GatewaySpendReportGroupBy? = null,
+    public val datePart: GatewaySpendReportDatePart? = null,
+    public val userId: String? = null,
+    public val model: String? = null,
+    public val provider: String? = null,
+    public val credentialType: GatewayCredentialType? = null,
+    public val tags: List<String> = emptyList(),
 )
+
+public class GatewaySpendReportParamsBuilder internal constructor() {
+    private var startDate: String? = null
+    private var endDate: String? = null
+    private var groupBy: GatewaySpendReportGroupBy? = null
+    private var datePart: GatewaySpendReportDatePart? = null
+    private var userId: String? = null
+    private var model: String? = null
+    private var provider: String? = null
+    private var credentialType: GatewayCredentialType? = null
+    private var tags: List<String> = emptyList()
+
+    public fun startDate(value: String) {
+        startDate = value
+    }
+
+    public fun endDate(value: String) {
+        endDate = value
+    }
+
+    public fun groupBy(value: GatewaySpendReportGroupBy?) {
+        groupBy = value
+    }
+
+    public fun datePart(value: GatewaySpendReportDatePart?) {
+        datePart = value
+    }
+
+    public fun userId(value: String?) {
+        userId = value
+    }
+
+    public fun model(value: String?) {
+        model = value
+    }
+
+    public fun provider(value: String?) {
+        provider = value
+    }
+
+    public fun credentialType(value: GatewayCredentialType?) {
+        credentialType = value
+    }
+
+    public fun tags(value: List<String>) {
+        tags = value
+    }
+
+    internal fun build(): GatewaySpendReportParams =
+        GatewaySpendReportParams(
+            startDate = requireNotNull(startDate) { "GatewaySpendReportParams.startDate is required" },
+            endDate = requireNotNull(endDate) { "GatewaySpendReportParams.endDate is required" },
+            groupBy = groupBy,
+            datePart = datePart,
+            userId = userId,
+            model = model,
+            provider = provider,
+            credentialType = credentialType,
+            tags = tags,
+        )
+}
+
+public fun GatewaySpendReportParams(
+    block: GatewaySpendReportParamsBuilder.() -> Unit = {},
+): GatewaySpendReportParams =
+    GatewaySpendReportParamsBuilder().apply(block).build()
 
 @Poko
 public class GatewaySpendReportRow(
@@ -268,9 +335,28 @@ public class GatewaySpendReportResponse(
     public val results: List<GatewaySpendReportRow>,
 )
 
-public data class GatewayGenerationInfoParams(
-    val id: String,
+@Poko
+public class GatewayGenerationInfoParams internal constructor(
+    public val id: String,
 )
+
+public class GatewayGenerationInfoParamsBuilder internal constructor() {
+    private var id: String? = null
+
+    public fun id(value: String) {
+        id = value
+    }
+
+    internal fun build(): GatewayGenerationInfoParams =
+        GatewayGenerationInfoParams(
+            id = requireNotNull(id) { "GatewayGenerationInfoParams.id is required" },
+        )
+}
+
+public fun GatewayGenerationInfoParams(
+    block: GatewayGenerationInfoParamsBuilder.() -> Unit = {},
+): GatewayGenerationInfoParams =
+    GatewayGenerationInfoParamsBuilder().apply(block).build()
 
 @Poko
 public class GatewayGenerationInfo(

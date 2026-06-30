@@ -277,9 +277,26 @@ public fun ProdiaProviderSettings(
     ProdiaProviderSettingsBuilder().apply(block).build()
 
 @Serializable
-public data class ProdiaLanguageModelOptions(
-    val aspectRatio: String? = null,
+@Poko
+public class ProdiaLanguageModelOptions internal constructor(
+    public val aspectRatio: String? = null,
 )
+
+public class ProdiaLanguageModelOptionsBuilder internal constructor() {
+    private var aspectRatio: String? = null
+
+    public fun aspectRatio(value: String?) {
+        aspectRatio = value
+    }
+
+    internal fun build(): ProdiaLanguageModelOptions =
+        ProdiaLanguageModelOptions(aspectRatio = aspectRatio)
+}
+
+public fun ProdiaLanguageModelOptions(
+    block: ProdiaLanguageModelOptionsBuilder.() -> Unit = {},
+): ProdiaLanguageModelOptions =
+    ProdiaLanguageModelOptionsBuilder().apply(block).build()
 
 @Serializable
 @Poko

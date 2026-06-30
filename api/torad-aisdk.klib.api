@@ -5264,8 +5264,6 @@ final class ai.torad.aisdk.providers/LumaProviderSettingsBuilder { // ai.torad.a
 }
 
 final class ai.torad.aisdk.providers/MistralLanguageModelOptions { // ai.torad.aisdk.providers/MistralLanguageModelOptions|null[0]
-    constructor <init>(kotlin/Boolean? = ..., kotlin/Int? = ..., kotlin/Int? = ..., kotlin/Boolean? = ..., kotlin/Boolean? = ..., kotlin/Boolean? = ..., kotlin/String? = ...) // ai.torad.aisdk.providers/MistralLanguageModelOptions.<init>|<init>(kotlin.Boolean?;kotlin.Int?;kotlin.Int?;kotlin.Boolean?;kotlin.Boolean?;kotlin.Boolean?;kotlin.String?){}[0]
-
     final val documentImageLimit // ai.torad.aisdk.providers/MistralLanguageModelOptions.documentImageLimit|{}documentImageLimit[0]
         final fun <get-documentImageLimit>(): kotlin/Int? // ai.torad.aisdk.providers/MistralLanguageModelOptions.documentImageLimit.<get-documentImageLimit>|<get-documentImageLimit>(){}[0]
     final val documentPageLimit // ai.torad.aisdk.providers/MistralLanguageModelOptions.documentPageLimit|{}documentPageLimit[0]
@@ -5281,14 +5279,6 @@ final class ai.torad.aisdk.providers/MistralLanguageModelOptions { // ai.torad.a
     final val structuredOutputs // ai.torad.aisdk.providers/MistralLanguageModelOptions.structuredOutputs|{}structuredOutputs[0]
         final fun <get-structuredOutputs>(): kotlin/Boolean? // ai.torad.aisdk.providers/MistralLanguageModelOptions.structuredOutputs.<get-structuredOutputs>|<get-structuredOutputs>(){}[0]
 
-    final fun component1(): kotlin/Boolean? // ai.torad.aisdk.providers/MistralLanguageModelOptions.component1|component1(){}[0]
-    final fun component2(): kotlin/Int? // ai.torad.aisdk.providers/MistralLanguageModelOptions.component2|component2(){}[0]
-    final fun component3(): kotlin/Int? // ai.torad.aisdk.providers/MistralLanguageModelOptions.component3|component3(){}[0]
-    final fun component4(): kotlin/Boolean? // ai.torad.aisdk.providers/MistralLanguageModelOptions.component4|component4(){}[0]
-    final fun component5(): kotlin/Boolean? // ai.torad.aisdk.providers/MistralLanguageModelOptions.component5|component5(){}[0]
-    final fun component6(): kotlin/Boolean? // ai.torad.aisdk.providers/MistralLanguageModelOptions.component6|component6(){}[0]
-    final fun component7(): kotlin/String? // ai.torad.aisdk.providers/MistralLanguageModelOptions.component7|component7(){}[0]
-    final fun copy(kotlin/Boolean? = ..., kotlin/Int? = ..., kotlin/Int? = ..., kotlin/Boolean? = ..., kotlin/Boolean? = ..., kotlin/Boolean? = ..., kotlin/String? = ...): ai.torad.aisdk.providers/MistralLanguageModelOptions // ai.torad.aisdk.providers/MistralLanguageModelOptions.copy|copy(kotlin.Boolean?;kotlin.Int?;kotlin.Int?;kotlin.Boolean?;kotlin.Boolean?;kotlin.Boolean?;kotlin.String?){}[0]
     final fun equals(kotlin/Any?): kotlin/Boolean // ai.torad.aisdk.providers/MistralLanguageModelOptions.equals|equals(kotlin.Any?){}[0]
     final fun hashCode(): kotlin/Int // ai.torad.aisdk.providers/MistralLanguageModelOptions.hashCode|hashCode(){}[0]
     final fun toString(): kotlin/String // ai.torad.aisdk.providers/MistralLanguageModelOptions.toString|toString(){}[0]
@@ -5305,6 +5295,16 @@ final class ai.torad.aisdk.providers/MistralLanguageModelOptions { // ai.torad.a
     final object Companion { // ai.torad.aisdk.providers/MistralLanguageModelOptions.Companion|null[0]
         final fun serializer(): kotlinx.serialization/KSerializer<ai.torad.aisdk.providers/MistralLanguageModelOptions> // ai.torad.aisdk.providers/MistralLanguageModelOptions.Companion.serializer|serializer(){}[0]
     }
+}
+
+final class ai.torad.aisdk.providers/MistralLanguageModelOptionsBuilder { // ai.torad.aisdk.providers/MistralLanguageModelOptionsBuilder|null[0]
+    final fun documentImageLimit(kotlin/Int?) // ai.torad.aisdk.providers/MistralLanguageModelOptionsBuilder.documentImageLimit|documentImageLimit(kotlin.Int?){}[0]
+    final fun documentPageLimit(kotlin/Int?) // ai.torad.aisdk.providers/MistralLanguageModelOptionsBuilder.documentPageLimit|documentPageLimit(kotlin.Int?){}[0]
+    final fun parallelToolCalls(kotlin/Boolean?) // ai.torad.aisdk.providers/MistralLanguageModelOptionsBuilder.parallelToolCalls|parallelToolCalls(kotlin.Boolean?){}[0]
+    final fun reasoningEffort(kotlin/String?) // ai.torad.aisdk.providers/MistralLanguageModelOptionsBuilder.reasoningEffort|reasoningEffort(kotlin.String?){}[0]
+    final fun safePrompt(kotlin/Boolean?) // ai.torad.aisdk.providers/MistralLanguageModelOptionsBuilder.safePrompt|safePrompt(kotlin.Boolean?){}[0]
+    final fun strictJsonSchema(kotlin/Boolean?) // ai.torad.aisdk.providers/MistralLanguageModelOptionsBuilder.strictJsonSchema|strictJsonSchema(kotlin.Boolean?){}[0]
+    final fun structuredOutputs(kotlin/Boolean?) // ai.torad.aisdk.providers/MistralLanguageModelOptionsBuilder.structuredOutputs|structuredOutputs(kotlin.Boolean?){}[0]
 }
 
 final class ai.torad.aisdk.providers/MistralProvider : ai.torad.aisdk/Provider { // ai.torad.aisdk.providers/MistralProvider|null[0]
@@ -5450,13 +5450,9 @@ final class ai.torad.aisdk.providers/MockVideoModel : ai.torad.aisdk/VideoModel 
 }
 
 final class ai.torad.aisdk.providers/MoonshotAILanguageModelOptions { // ai.torad.aisdk.providers/MoonshotAILanguageModelOptions|null[0]
-    constructor <init>(kotlin.collections/Map<kotlin/String, kotlinx.serialization.json/JsonElement> = ...) // ai.torad.aisdk.providers/MoonshotAILanguageModelOptions.<init>|<init>(kotlin.collections.Map<kotlin.String,kotlinx.serialization.json.JsonElement>){}[0]
-
     final val raw // ai.torad.aisdk.providers/MoonshotAILanguageModelOptions.raw|{}raw[0]
         final fun <get-raw>(): kotlin.collections/Map<kotlin/String, kotlinx.serialization.json/JsonElement> // ai.torad.aisdk.providers/MoonshotAILanguageModelOptions.raw.<get-raw>|<get-raw>(){}[0]
 
-    final fun component1(): kotlin.collections/Map<kotlin/String, kotlinx.serialization.json/JsonElement> // ai.torad.aisdk.providers/MoonshotAILanguageModelOptions.component1|component1(){}[0]
-    final fun copy(kotlin.collections/Map<kotlin/String, kotlinx.serialization.json/JsonElement> = ...): ai.torad.aisdk.providers/MoonshotAILanguageModelOptions // ai.torad.aisdk.providers/MoonshotAILanguageModelOptions.copy|copy(kotlin.collections.Map<kotlin.String,kotlinx.serialization.json.JsonElement>){}[0]
     final fun equals(kotlin/Any?): kotlin/Boolean // ai.torad.aisdk.providers/MoonshotAILanguageModelOptions.equals|equals(kotlin.Any?){}[0]
     final fun hashCode(): kotlin/Int // ai.torad.aisdk.providers/MoonshotAILanguageModelOptions.hashCode|hashCode(){}[0]
     final fun toString(): kotlin/String // ai.torad.aisdk.providers/MoonshotAILanguageModelOptions.toString|toString(){}[0]
@@ -5475,6 +5471,10 @@ final class ai.torad.aisdk.providers/MoonshotAILanguageModelOptions { // ai.tora
 
         final fun serializer(): kotlinx.serialization/KSerializer<ai.torad.aisdk.providers/MoonshotAILanguageModelOptions> // ai.torad.aisdk.providers/MoonshotAILanguageModelOptions.Companion.serializer|serializer(){}[0]
     }
+}
+
+final class ai.torad.aisdk.providers/MoonshotAILanguageModelOptionsBuilder { // ai.torad.aisdk.providers/MoonshotAILanguageModelOptionsBuilder|null[0]
+    final fun raw(kotlin.collections/Map<kotlin/String, kotlinx.serialization.json/JsonElement>) // ai.torad.aisdk.providers/MoonshotAILanguageModelOptionsBuilder.raw|raw(kotlin.collections.Map<kotlin.String,kotlinx.serialization.json.JsonElement>){}[0]
 }
 
 final class ai.torad.aisdk.providers/MoonshotAIProvider : ai.torad.aisdk/Provider { // ai.torad.aisdk.providers/MoonshotAIProvider|null[0]
@@ -5923,13 +5923,9 @@ final class ai.torad.aisdk.providers/ProdiaImageModelOptionsBuilder { // ai.tora
 }
 
 final class ai.torad.aisdk.providers/ProdiaLanguageModelOptions { // ai.torad.aisdk.providers/ProdiaLanguageModelOptions|null[0]
-    constructor <init>(kotlin/String? = ...) // ai.torad.aisdk.providers/ProdiaLanguageModelOptions.<init>|<init>(kotlin.String?){}[0]
-
     final val aspectRatio // ai.torad.aisdk.providers/ProdiaLanguageModelOptions.aspectRatio|{}aspectRatio[0]
         final fun <get-aspectRatio>(): kotlin/String? // ai.torad.aisdk.providers/ProdiaLanguageModelOptions.aspectRatio.<get-aspectRatio>|<get-aspectRatio>(){}[0]
 
-    final fun component1(): kotlin/String? // ai.torad.aisdk.providers/ProdiaLanguageModelOptions.component1|component1(){}[0]
-    final fun copy(kotlin/String? = ...): ai.torad.aisdk.providers/ProdiaLanguageModelOptions // ai.torad.aisdk.providers/ProdiaLanguageModelOptions.copy|copy(kotlin.String?){}[0]
     final fun equals(kotlin/Any?): kotlin/Boolean // ai.torad.aisdk.providers/ProdiaLanguageModelOptions.equals|equals(kotlin.Any?){}[0]
     final fun hashCode(): kotlin/Int // ai.torad.aisdk.providers/ProdiaLanguageModelOptions.hashCode|hashCode(){}[0]
     final fun toString(): kotlin/String // ai.torad.aisdk.providers/ProdiaLanguageModelOptions.toString|toString(){}[0]
@@ -5946,6 +5942,10 @@ final class ai.torad.aisdk.providers/ProdiaLanguageModelOptions { // ai.torad.ai
     final object Companion { // ai.torad.aisdk.providers/ProdiaLanguageModelOptions.Companion|null[0]
         final fun serializer(): kotlinx.serialization/KSerializer<ai.torad.aisdk.providers/ProdiaLanguageModelOptions> // ai.torad.aisdk.providers/ProdiaLanguageModelOptions.Companion.serializer|serializer(){}[0]
     }
+}
+
+final class ai.torad.aisdk.providers/ProdiaLanguageModelOptionsBuilder { // ai.torad.aisdk.providers/ProdiaLanguageModelOptionsBuilder|null[0]
+    final fun aspectRatio(kotlin/String?) // ai.torad.aisdk.providers/ProdiaLanguageModelOptionsBuilder.aspectRatio|aspectRatio(kotlin.String?){}[0]
 }
 
 final class ai.torad.aisdk.providers/ProdiaProvider : ai.torad.aisdk/Provider { // ai.torad.aisdk.providers/ProdiaProvider|null[0]
@@ -6750,8 +6750,6 @@ final class ai.torad.aisdk.providers/VoyageRerankingModelOptionsBuilder { // ai.
 }
 
 final class ai.torad.aisdk.providers/XaiImageModelOptions { // ai.torad.aisdk.providers/XaiImageModelOptions|null[0]
-    constructor <init>(kotlin/String? = ..., kotlin/String? = ..., kotlin/Boolean? = ..., kotlin/String? = ..., kotlin/String? = ..., kotlin/String? = ...) // ai.torad.aisdk.providers/XaiImageModelOptions.<init>|<init>(kotlin.String?;kotlin.String?;kotlin.Boolean?;kotlin.String?;kotlin.String?;kotlin.String?){}[0]
-
     final val aspect_ratio // ai.torad.aisdk.providers/XaiImageModelOptions.aspect_ratio|{}aspect_ratio[0]
         final fun <get-aspect_ratio>(): kotlin/String? // ai.torad.aisdk.providers/XaiImageModelOptions.aspect_ratio.<get-aspect_ratio>|<get-aspect_ratio>(){}[0]
     final val output_format // ai.torad.aisdk.providers/XaiImageModelOptions.output_format|{}output_format[0]
@@ -6765,13 +6763,6 @@ final class ai.torad.aisdk.providers/XaiImageModelOptions { // ai.torad.aisdk.pr
     final val user // ai.torad.aisdk.providers/XaiImageModelOptions.user|{}user[0]
         final fun <get-user>(): kotlin/String? // ai.torad.aisdk.providers/XaiImageModelOptions.user.<get-user>|<get-user>(){}[0]
 
-    final fun component1(): kotlin/String? // ai.torad.aisdk.providers/XaiImageModelOptions.component1|component1(){}[0]
-    final fun component2(): kotlin/String? // ai.torad.aisdk.providers/XaiImageModelOptions.component2|component2(){}[0]
-    final fun component3(): kotlin/Boolean? // ai.torad.aisdk.providers/XaiImageModelOptions.component3|component3(){}[0]
-    final fun component4(): kotlin/String? // ai.torad.aisdk.providers/XaiImageModelOptions.component4|component4(){}[0]
-    final fun component5(): kotlin/String? // ai.torad.aisdk.providers/XaiImageModelOptions.component5|component5(){}[0]
-    final fun component6(): kotlin/String? // ai.torad.aisdk.providers/XaiImageModelOptions.component6|component6(){}[0]
-    final fun copy(kotlin/String? = ..., kotlin/String? = ..., kotlin/Boolean? = ..., kotlin/String? = ..., kotlin/String? = ..., kotlin/String? = ...): ai.torad.aisdk.providers/XaiImageModelOptions // ai.torad.aisdk.providers/XaiImageModelOptions.copy|copy(kotlin.String?;kotlin.String?;kotlin.Boolean?;kotlin.String?;kotlin.String?;kotlin.String?){}[0]
     final fun equals(kotlin/Any?): kotlin/Boolean // ai.torad.aisdk.providers/XaiImageModelOptions.equals|equals(kotlin.Any?){}[0]
     final fun hashCode(): kotlin/Int // ai.torad.aisdk.providers/XaiImageModelOptions.hashCode|hashCode(){}[0]
     final fun toString(): kotlin/String // ai.torad.aisdk.providers/XaiImageModelOptions.toString|toString(){}[0]
@@ -6788,6 +6779,15 @@ final class ai.torad.aisdk.providers/XaiImageModelOptions { // ai.torad.aisdk.pr
     final object Companion { // ai.torad.aisdk.providers/XaiImageModelOptions.Companion|null[0]
         final fun serializer(): kotlinx.serialization/KSerializer<ai.torad.aisdk.providers/XaiImageModelOptions> // ai.torad.aisdk.providers/XaiImageModelOptions.Companion.serializer|serializer(){}[0]
     }
+}
+
+final class ai.torad.aisdk.providers/XaiImageModelOptionsBuilder { // ai.torad.aisdk.providers/XaiImageModelOptionsBuilder|null[0]
+    final fun aspect_ratio(kotlin/String?) // ai.torad.aisdk.providers/XaiImageModelOptionsBuilder.aspect_ratio|aspect_ratio(kotlin.String?){}[0]
+    final fun output_format(kotlin/String?) // ai.torad.aisdk.providers/XaiImageModelOptionsBuilder.output_format|output_format(kotlin.String?){}[0]
+    final fun quality(kotlin/String?) // ai.torad.aisdk.providers/XaiImageModelOptionsBuilder.quality|quality(kotlin.String?){}[0]
+    final fun resolution(kotlin/String?) // ai.torad.aisdk.providers/XaiImageModelOptionsBuilder.resolution|resolution(kotlin.String?){}[0]
+    final fun sync_mode(kotlin/Boolean?) // ai.torad.aisdk.providers/XaiImageModelOptionsBuilder.sync_mode|sync_mode(kotlin.Boolean?){}[0]
+    final fun user(kotlin/String?) // ai.torad.aisdk.providers/XaiImageModelOptionsBuilder.user|user(kotlin.String?){}[0]
 }
 
 final class ai.torad.aisdk.providers/XaiLanguageModelChatOptions { // ai.torad.aisdk.providers/XaiLanguageModelChatOptions|null[0]
@@ -6931,8 +6931,6 @@ final class ai.torad.aisdk.providers/XaiTools { // ai.torad.aisdk.providers/XaiT
 }
 
 final class ai.torad.aisdk.providers/XaiVideoModelOptions { // ai.torad.aisdk.providers/XaiVideoModelOptions|null[0]
-    constructor <init>(kotlin/String? = ..., kotlin/String? = ..., kotlin.collections/List<kotlin/String>? = ..., kotlin/Long? = ..., kotlin/Long? = ..., kotlin/String? = ...) // ai.torad.aisdk.providers/XaiVideoModelOptions.<init>|<init>(kotlin.String?;kotlin.String?;kotlin.collections.List<kotlin.String>?;kotlin.Long?;kotlin.Long?;kotlin.String?){}[0]
-
     final val mode // ai.torad.aisdk.providers/XaiVideoModelOptions.mode|{}mode[0]
         final fun <get-mode>(): kotlin/String? // ai.torad.aisdk.providers/XaiVideoModelOptions.mode.<get-mode>|<get-mode>(){}[0]
     final val pollIntervalMs // ai.torad.aisdk.providers/XaiVideoModelOptions.pollIntervalMs|{}pollIntervalMs[0]
@@ -6946,13 +6944,6 @@ final class ai.torad.aisdk.providers/XaiVideoModelOptions { // ai.torad.aisdk.pr
     final val videoUrl // ai.torad.aisdk.providers/XaiVideoModelOptions.videoUrl|{}videoUrl[0]
         final fun <get-videoUrl>(): kotlin/String? // ai.torad.aisdk.providers/XaiVideoModelOptions.videoUrl.<get-videoUrl>|<get-videoUrl>(){}[0]
 
-    final fun component1(): kotlin/String? // ai.torad.aisdk.providers/XaiVideoModelOptions.component1|component1(){}[0]
-    final fun component2(): kotlin/String? // ai.torad.aisdk.providers/XaiVideoModelOptions.component2|component2(){}[0]
-    final fun component3(): kotlin.collections/List<kotlin/String>? // ai.torad.aisdk.providers/XaiVideoModelOptions.component3|component3(){}[0]
-    final fun component4(): kotlin/Long? // ai.torad.aisdk.providers/XaiVideoModelOptions.component4|component4(){}[0]
-    final fun component5(): kotlin/Long? // ai.torad.aisdk.providers/XaiVideoModelOptions.component5|component5(){}[0]
-    final fun component6(): kotlin/String? // ai.torad.aisdk.providers/XaiVideoModelOptions.component6|component6(){}[0]
-    final fun copy(kotlin/String? = ..., kotlin/String? = ..., kotlin.collections/List<kotlin/String>? = ..., kotlin/Long? = ..., kotlin/Long? = ..., kotlin/String? = ...): ai.torad.aisdk.providers/XaiVideoModelOptions // ai.torad.aisdk.providers/XaiVideoModelOptions.copy|copy(kotlin.String?;kotlin.String?;kotlin.collections.List<kotlin.String>?;kotlin.Long?;kotlin.Long?;kotlin.String?){}[0]
     final fun equals(kotlin/Any?): kotlin/Boolean // ai.torad.aisdk.providers/XaiVideoModelOptions.equals|equals(kotlin.Any?){}[0]
     final fun hashCode(): kotlin/Int // ai.torad.aisdk.providers/XaiVideoModelOptions.hashCode|hashCode(){}[0]
     final fun toString(): kotlin/String // ai.torad.aisdk.providers/XaiVideoModelOptions.toString|toString(){}[0]
@@ -6971,6 +6962,15 @@ final class ai.torad.aisdk.providers/XaiVideoModelOptions { // ai.torad.aisdk.pr
 
         final fun serializer(): kotlinx.serialization/KSerializer<ai.torad.aisdk.providers/XaiVideoModelOptions> // ai.torad.aisdk.providers/XaiVideoModelOptions.Companion.serializer|serializer(){}[0]
     }
+}
+
+final class ai.torad.aisdk.providers/XaiVideoModelOptionsBuilder { // ai.torad.aisdk.providers/XaiVideoModelOptionsBuilder|null[0]
+    final fun mode(kotlin/String?) // ai.torad.aisdk.providers/XaiVideoModelOptionsBuilder.mode|mode(kotlin.String?){}[0]
+    final fun pollIntervalMs(kotlin/Long?) // ai.torad.aisdk.providers/XaiVideoModelOptionsBuilder.pollIntervalMs|pollIntervalMs(kotlin.Long?){}[0]
+    final fun pollTimeoutMs(kotlin/Long?) // ai.torad.aisdk.providers/XaiVideoModelOptionsBuilder.pollTimeoutMs|pollTimeoutMs(kotlin.Long?){}[0]
+    final fun referenceImageUrls(kotlin.collections/List<kotlin/String>?) // ai.torad.aisdk.providers/XaiVideoModelOptionsBuilder.referenceImageUrls|referenceImageUrls(kotlin.collections.List<kotlin.String>?){}[0]
+    final fun resolution(kotlin/String?) // ai.torad.aisdk.providers/XaiVideoModelOptionsBuilder.resolution|resolution(kotlin.String?){}[0]
+    final fun videoUrl(kotlin/String?) // ai.torad.aisdk.providers/XaiVideoModelOptionsBuilder.videoUrl|videoUrl(kotlin.String?){}[0]
 }
 
 final class ai.torad.aisdk.ui/Chat { // ai.torad.aisdk.ui/Chat|null[0]
@@ -7214,8 +7214,6 @@ final class ai.torad.aisdk/AudioSource { // ai.torad.aisdk/AudioSource|null[0]
 }
 
 final class ai.torad.aisdk/AuthOptions { // ai.torad.aisdk/AuthOptions|null[0]
-    constructor <init>(kotlin/String, kotlin/String? = ..., kotlin/String? = ..., kotlin/String? = ..., kotlin/String? = ..., io.ktor.client/HttpClient? = ...) // ai.torad.aisdk/AuthOptions.<init>|<init>(kotlin.String;kotlin.String?;kotlin.String?;kotlin.String?;kotlin.String?;io.ktor.client.HttpClient?){}[0]
-
     final val authorizationCode // ai.torad.aisdk/AuthOptions.authorizationCode|{}authorizationCode[0]
         final fun <get-authorizationCode>(): kotlin/String? // ai.torad.aisdk/AuthOptions.authorizationCode.<get-authorizationCode>|<get-authorizationCode>(){}[0]
     final val callbackState // ai.torad.aisdk/AuthOptions.callbackState|{}callbackState[0]
@@ -7228,17 +7226,15 @@ final class ai.torad.aisdk/AuthOptions { // ai.torad.aisdk/AuthOptions|null[0]
         final fun <get-scope>(): kotlin/String? // ai.torad.aisdk/AuthOptions.scope.<get-scope>|<get-scope>(){}[0]
     final val serverUrl // ai.torad.aisdk/AuthOptions.serverUrl|{}serverUrl[0]
         final fun <get-serverUrl>(): kotlin/String // ai.torad.aisdk/AuthOptions.serverUrl.<get-serverUrl>|<get-serverUrl>(){}[0]
+}
 
-    final fun component1(): kotlin/String // ai.torad.aisdk/AuthOptions.component1|component1(){}[0]
-    final fun component2(): kotlin/String? // ai.torad.aisdk/AuthOptions.component2|component2(){}[0]
-    final fun component3(): kotlin/String? // ai.torad.aisdk/AuthOptions.component3|component3(){}[0]
-    final fun component4(): kotlin/String? // ai.torad.aisdk/AuthOptions.component4|component4(){}[0]
-    final fun component5(): kotlin/String? // ai.torad.aisdk/AuthOptions.component5|component5(){}[0]
-    final fun component6(): io.ktor.client/HttpClient? // ai.torad.aisdk/AuthOptions.component6|component6(){}[0]
-    final fun copy(kotlin/String = ..., kotlin/String? = ..., kotlin/String? = ..., kotlin/String? = ..., kotlin/String? = ..., io.ktor.client/HttpClient? = ...): ai.torad.aisdk/AuthOptions // ai.torad.aisdk/AuthOptions.copy|copy(kotlin.String;kotlin.String?;kotlin.String?;kotlin.String?;kotlin.String?;io.ktor.client.HttpClient?){}[0]
-    final fun equals(kotlin/Any?): kotlin/Boolean // ai.torad.aisdk/AuthOptions.equals|equals(kotlin.Any?){}[0]
-    final fun hashCode(): kotlin/Int // ai.torad.aisdk/AuthOptions.hashCode|hashCode(){}[0]
-    final fun toString(): kotlin/String // ai.torad.aisdk/AuthOptions.toString|toString(){}[0]
+final class ai.torad.aisdk/AuthOptionsBuilder { // ai.torad.aisdk/AuthOptionsBuilder|null[0]
+    final fun authorizationCode(kotlin/String?) // ai.torad.aisdk/AuthOptionsBuilder.authorizationCode|authorizationCode(kotlin.String?){}[0]
+    final fun callbackState(kotlin/String?) // ai.torad.aisdk/AuthOptionsBuilder.callbackState|callbackState(kotlin.String?){}[0]
+    final fun client(io.ktor.client/HttpClient?) // ai.torad.aisdk/AuthOptionsBuilder.client|client(io.ktor.client.HttpClient?){}[0]
+    final fun resourceMetadataUrl(kotlin/String?) // ai.torad.aisdk/AuthOptionsBuilder.resourceMetadataUrl|resourceMetadataUrl(kotlin.String?){}[0]
+    final fun scope(kotlin/String?) // ai.torad.aisdk/AuthOptionsBuilder.scope|scope(kotlin.String?){}[0]
+    final fun serverUrl(kotlin/String) // ai.torad.aisdk/AuthOptionsBuilder.serverUrl|serverUrl(kotlin.String){}[0]
 }
 
 final class ai.torad.aisdk/AuthorizationServerMetadata { // ai.torad.aisdk/AuthorizationServerMetadata|null[0]
@@ -8082,16 +8078,16 @@ final class ai.torad.aisdk/GatewayGenerationInfo { // ai.torad.aisdk/GatewayGene
 }
 
 final class ai.torad.aisdk/GatewayGenerationInfoParams { // ai.torad.aisdk/GatewayGenerationInfoParams|null[0]
-    constructor <init>(kotlin/String) // ai.torad.aisdk/GatewayGenerationInfoParams.<init>|<init>(kotlin.String){}[0]
-
     final val id // ai.torad.aisdk/GatewayGenerationInfoParams.id|{}id[0]
         final fun <get-id>(): kotlin/String // ai.torad.aisdk/GatewayGenerationInfoParams.id.<get-id>|<get-id>(){}[0]
 
-    final fun component1(): kotlin/String // ai.torad.aisdk/GatewayGenerationInfoParams.component1|component1(){}[0]
-    final fun copy(kotlin/String = ...): ai.torad.aisdk/GatewayGenerationInfoParams // ai.torad.aisdk/GatewayGenerationInfoParams.copy|copy(kotlin.String){}[0]
     final fun equals(kotlin/Any?): kotlin/Boolean // ai.torad.aisdk/GatewayGenerationInfoParams.equals|equals(kotlin.Any?){}[0]
     final fun hashCode(): kotlin/Int // ai.torad.aisdk/GatewayGenerationInfoParams.hashCode|hashCode(){}[0]
     final fun toString(): kotlin/String // ai.torad.aisdk/GatewayGenerationInfoParams.toString|toString(){}[0]
+}
+
+final class ai.torad.aisdk/GatewayGenerationInfoParamsBuilder { // ai.torad.aisdk/GatewayGenerationInfoParamsBuilder|null[0]
+    final fun id(kotlin/String) // ai.torad.aisdk/GatewayGenerationInfoParamsBuilder.id|id(kotlin.String){}[0]
 }
 
 final class ai.torad.aisdk/GatewayInternalServerError : ai.torad.aisdk/GatewayError { // ai.torad.aisdk/GatewayInternalServerError|null[0]
@@ -8217,8 +8213,6 @@ final class ai.torad.aisdk/GatewayResponseError : ai.torad.aisdk/GatewayError { 
 }
 
 final class ai.torad.aisdk/GatewaySpendReportParams { // ai.torad.aisdk/GatewaySpendReportParams|null[0]
-    constructor <init>(kotlin/String, kotlin/String, ai.torad.aisdk/GatewaySpendReportGroupBy? = ..., ai.torad.aisdk/GatewaySpendReportDatePart? = ..., kotlin/String? = ..., kotlin/String? = ..., kotlin/String? = ..., ai.torad.aisdk/GatewayCredentialType? = ..., kotlin.collections/List<kotlin/String> = ...) // ai.torad.aisdk/GatewaySpendReportParams.<init>|<init>(kotlin.String;kotlin.String;ai.torad.aisdk.GatewaySpendReportGroupBy?;ai.torad.aisdk.GatewaySpendReportDatePart?;kotlin.String?;kotlin.String?;kotlin.String?;ai.torad.aisdk.GatewayCredentialType?;kotlin.collections.List<kotlin.String>){}[0]
-
     final val credentialType // ai.torad.aisdk/GatewaySpendReportParams.credentialType|{}credentialType[0]
         final fun <get-credentialType>(): ai.torad.aisdk/GatewayCredentialType? // ai.torad.aisdk/GatewaySpendReportParams.credentialType.<get-credentialType>|<get-credentialType>(){}[0]
     final val datePart // ai.torad.aisdk/GatewaySpendReportParams.datePart|{}datePart[0]
@@ -8238,19 +8232,21 @@ final class ai.torad.aisdk/GatewaySpendReportParams { // ai.torad.aisdk/GatewayS
     final val userId // ai.torad.aisdk/GatewaySpendReportParams.userId|{}userId[0]
         final fun <get-userId>(): kotlin/String? // ai.torad.aisdk/GatewaySpendReportParams.userId.<get-userId>|<get-userId>(){}[0]
 
-    final fun component1(): kotlin/String // ai.torad.aisdk/GatewaySpendReportParams.component1|component1(){}[0]
-    final fun component2(): kotlin/String // ai.torad.aisdk/GatewaySpendReportParams.component2|component2(){}[0]
-    final fun component3(): ai.torad.aisdk/GatewaySpendReportGroupBy? // ai.torad.aisdk/GatewaySpendReportParams.component3|component3(){}[0]
-    final fun component4(): ai.torad.aisdk/GatewaySpendReportDatePart? // ai.torad.aisdk/GatewaySpendReportParams.component4|component4(){}[0]
-    final fun component5(): kotlin/String? // ai.torad.aisdk/GatewaySpendReportParams.component5|component5(){}[0]
-    final fun component6(): kotlin/String? // ai.torad.aisdk/GatewaySpendReportParams.component6|component6(){}[0]
-    final fun component7(): kotlin/String? // ai.torad.aisdk/GatewaySpendReportParams.component7|component7(){}[0]
-    final fun component8(): ai.torad.aisdk/GatewayCredentialType? // ai.torad.aisdk/GatewaySpendReportParams.component8|component8(){}[0]
-    final fun component9(): kotlin.collections/List<kotlin/String> // ai.torad.aisdk/GatewaySpendReportParams.component9|component9(){}[0]
-    final fun copy(kotlin/String = ..., kotlin/String = ..., ai.torad.aisdk/GatewaySpendReportGroupBy? = ..., ai.torad.aisdk/GatewaySpendReportDatePart? = ..., kotlin/String? = ..., kotlin/String? = ..., kotlin/String? = ..., ai.torad.aisdk/GatewayCredentialType? = ..., kotlin.collections/List<kotlin/String> = ...): ai.torad.aisdk/GatewaySpendReportParams // ai.torad.aisdk/GatewaySpendReportParams.copy|copy(kotlin.String;kotlin.String;ai.torad.aisdk.GatewaySpendReportGroupBy?;ai.torad.aisdk.GatewaySpendReportDatePart?;kotlin.String?;kotlin.String?;kotlin.String?;ai.torad.aisdk.GatewayCredentialType?;kotlin.collections.List<kotlin.String>){}[0]
     final fun equals(kotlin/Any?): kotlin/Boolean // ai.torad.aisdk/GatewaySpendReportParams.equals|equals(kotlin.Any?){}[0]
     final fun hashCode(): kotlin/Int // ai.torad.aisdk/GatewaySpendReportParams.hashCode|hashCode(){}[0]
     final fun toString(): kotlin/String // ai.torad.aisdk/GatewaySpendReportParams.toString|toString(){}[0]
+}
+
+final class ai.torad.aisdk/GatewaySpendReportParamsBuilder { // ai.torad.aisdk/GatewaySpendReportParamsBuilder|null[0]
+    final fun credentialType(ai.torad.aisdk/GatewayCredentialType?) // ai.torad.aisdk/GatewaySpendReportParamsBuilder.credentialType|credentialType(ai.torad.aisdk.GatewayCredentialType?){}[0]
+    final fun datePart(ai.torad.aisdk/GatewaySpendReportDatePart?) // ai.torad.aisdk/GatewaySpendReportParamsBuilder.datePart|datePart(ai.torad.aisdk.GatewaySpendReportDatePart?){}[0]
+    final fun endDate(kotlin/String) // ai.torad.aisdk/GatewaySpendReportParamsBuilder.endDate|endDate(kotlin.String){}[0]
+    final fun groupBy(ai.torad.aisdk/GatewaySpendReportGroupBy?) // ai.torad.aisdk/GatewaySpendReportParamsBuilder.groupBy|groupBy(ai.torad.aisdk.GatewaySpendReportGroupBy?){}[0]
+    final fun model(kotlin/String?) // ai.torad.aisdk/GatewaySpendReportParamsBuilder.model|model(kotlin.String?){}[0]
+    final fun provider(kotlin/String?) // ai.torad.aisdk/GatewaySpendReportParamsBuilder.provider|provider(kotlin.String?){}[0]
+    final fun startDate(kotlin/String) // ai.torad.aisdk/GatewaySpendReportParamsBuilder.startDate|startDate(kotlin.String){}[0]
+    final fun tags(kotlin.collections/List<kotlin/String>) // ai.torad.aisdk/GatewaySpendReportParamsBuilder.tags|tags(kotlin.collections.List<kotlin.String>){}[0]
+    final fun userId(kotlin/String?) // ai.torad.aisdk/GatewaySpendReportParamsBuilder.userId|userId(kotlin.String?){}[0]
 }
 
 final class ai.torad.aisdk/GatewaySpendReportResponse { // ai.torad.aisdk/GatewaySpendReportResponse|null[0]
@@ -13981,12 +13977,14 @@ final fun ai.torad.aisdk.providers/LumaImageModelOptions(kotlin/Function1<ai.tor
 final fun ai.torad.aisdk.providers/LumaProviderSettings(kotlin/Function1<ai.torad.aisdk.providers/LumaProviderSettingsBuilder, kotlin/Unit> = ...): ai.torad.aisdk.providers/LumaProviderSettings // ai.torad.aisdk.providers/LumaProviderSettings|LumaProviderSettings(kotlin.Function1<ai.torad.aisdk.providers.LumaProviderSettingsBuilder,kotlin.Unit>){}[0]
 final fun ai.torad.aisdk.providers/McpServer(kotlinx.serialization.json/JsonElement = ...): ai.torad.aisdk/Tool<kotlinx.serialization.json/JsonElement, kotlinx.serialization.json/JsonElement, kotlin/Any?> // ai.torad.aisdk.providers/McpServer|McpServer(kotlinx.serialization.json.JsonElement){}[0]
 final fun ai.torad.aisdk.providers/Mistral(io.ktor.client/HttpClient, ai.torad.aisdk.providers/MistralProviderSettings = ...): ai.torad.aisdk.providers/MistralProvider // ai.torad.aisdk.providers/Mistral|Mistral(io.ktor.client.HttpClient;ai.torad.aisdk.providers.MistralProviderSettings){}[0]
+final fun ai.torad.aisdk.providers/MistralLanguageModelOptions(kotlin/Function1<ai.torad.aisdk.providers/MistralLanguageModelOptionsBuilder, kotlin/Unit> = ...): ai.torad.aisdk.providers/MistralLanguageModelOptions // ai.torad.aisdk.providers/MistralLanguageModelOptions|MistralLanguageModelOptions(kotlin.Function1<ai.torad.aisdk.providers.MistralLanguageModelOptionsBuilder,kotlin.Unit>){}[0]
 final fun ai.torad.aisdk.providers/MistralProviderSettings(kotlin/Function1<ai.torad.aisdk.providers/MistralProviderSettingsBuilder, kotlin/Unit> = ...): ai.torad.aisdk.providers/MistralProviderSettings // ai.torad.aisdk.providers/MistralProviderSettings|MistralProviderSettings(kotlin.Function1<ai.torad.aisdk.providers.MistralProviderSettingsBuilder,kotlin.Unit>){}[0]
 final fun ai.torad.aisdk.providers/MockAudioSource(): ai.torad.aisdk/AudioSource // ai.torad.aisdk.providers/MockAudioSource|MockAudioSource(){}[0]
 final fun ai.torad.aisdk.providers/MockLanguageModelTextOnly(kotlin/String): ai.torad.aisdk.providers/MockLanguageModel // ai.torad.aisdk.providers/MockLanguageModelTextOnly|MockLanguageModelTextOnly(kotlin.String){}[0]
 final fun ai.torad.aisdk.providers/MockLanguageModelToolThenText(kotlin/String, kotlinx.serialization.json/JsonObject, kotlin/String, kotlin/String = ...): ai.torad.aisdk.providers/MockLanguageModel // ai.torad.aisdk.providers/MockLanguageModelToolThenText|MockLanguageModelToolThenText(kotlin.String;kotlinx.serialization.json.JsonObject;kotlin.String;kotlin.String){}[0]
 final fun ai.torad.aisdk.providers/MockToolInput(kotlin/Array<out kotlin/Pair<kotlin/String, kotlin/String>>...): kotlinx.serialization.json/JsonObject // ai.torad.aisdk.providers/MockToolInput|MockToolInput(kotlin.Array<out|kotlin.Pair<kotlin.String,kotlin.String>>...){}[0]
 final fun ai.torad.aisdk.providers/MoonshotAI(io.ktor.client/HttpClient, ai.torad.aisdk.providers/MoonshotAIProviderSettings = ...): ai.torad.aisdk.providers/MoonshotAIProvider // ai.torad.aisdk.providers/MoonshotAI|MoonshotAI(io.ktor.client.HttpClient;ai.torad.aisdk.providers.MoonshotAIProviderSettings){}[0]
+final fun ai.torad.aisdk.providers/MoonshotAILanguageModelOptions(kotlin/Function1<ai.torad.aisdk.providers/MoonshotAILanguageModelOptionsBuilder, kotlin/Unit> = ...): ai.torad.aisdk.providers/MoonshotAILanguageModelOptions // ai.torad.aisdk.providers/MoonshotAILanguageModelOptions|MoonshotAILanguageModelOptions(kotlin.Function1<ai.torad.aisdk.providers.MoonshotAILanguageModelOptionsBuilder,kotlin.Unit>){}[0]
 final fun ai.torad.aisdk.providers/MoonshotAIProviderSettings(kotlin/Function1<ai.torad.aisdk.providers/MoonshotAIProviderSettingsBuilder, kotlin/Unit> = ...): ai.torad.aisdk.providers/MoonshotAIProviderSettings // ai.torad.aisdk.providers/MoonshotAIProviderSettings|MoonshotAIProviderSettings(kotlin.Function1<ai.torad.aisdk.providers.MoonshotAIProviderSettingsBuilder,kotlin.Unit>){}[0]
 final fun ai.torad.aisdk.providers/OpenAI(io.ktor.client/HttpClient, ai.torad.aisdk.providers/OpenAIProviderSettings = ...): ai.torad.aisdk.providers/OpenAIProvider // ai.torad.aisdk.providers/OpenAI|OpenAI(io.ktor.client.HttpClient;ai.torad.aisdk.providers.OpenAIProviderSettings){}[0]
 final fun ai.torad.aisdk.providers/OpenAIApplyPatch(kotlinx.serialization.json/JsonElement = ...): ai.torad.aisdk/Tool<kotlinx.serialization.json/JsonElement, kotlinx.serialization.json/JsonElement, kotlin/Any?> // ai.torad.aisdk.providers/OpenAIApplyPatch|OpenAIApplyPatch(kotlinx.serialization.json.JsonElement){}[0]
@@ -14008,6 +14006,7 @@ final fun ai.torad.aisdk.providers/Perplexity(io.ktor.client/HttpClient, ai.tora
 final fun ai.torad.aisdk.providers/PerplexityProviderSettings(kotlin/Function1<ai.torad.aisdk.providers/PerplexityProviderSettingsBuilder, kotlin/Unit> = ...): ai.torad.aisdk.providers/PerplexityProviderSettings // ai.torad.aisdk.providers/PerplexityProviderSettings|PerplexityProviderSettings(kotlin.Function1<ai.torad.aisdk.providers.PerplexityProviderSettingsBuilder,kotlin.Unit>){}[0]
 final fun ai.torad.aisdk.providers/Prodia(io.ktor.client/HttpClient, ai.torad.aisdk.providers/ProdiaProviderSettings = ...): ai.torad.aisdk.providers/ProdiaProvider // ai.torad.aisdk.providers/Prodia|Prodia(io.ktor.client.HttpClient;ai.torad.aisdk.providers.ProdiaProviderSettings){}[0]
 final fun ai.torad.aisdk.providers/ProdiaImageModelOptions(kotlin/Function1<ai.torad.aisdk.providers/ProdiaImageModelOptionsBuilder, kotlin/Unit> = ...): ai.torad.aisdk.providers/ProdiaImageModelOptions // ai.torad.aisdk.providers/ProdiaImageModelOptions|ProdiaImageModelOptions(kotlin.Function1<ai.torad.aisdk.providers.ProdiaImageModelOptionsBuilder,kotlin.Unit>){}[0]
+final fun ai.torad.aisdk.providers/ProdiaLanguageModelOptions(kotlin/Function1<ai.torad.aisdk.providers/ProdiaLanguageModelOptionsBuilder, kotlin/Unit> = ...): ai.torad.aisdk.providers/ProdiaLanguageModelOptions // ai.torad.aisdk.providers/ProdiaLanguageModelOptions|ProdiaLanguageModelOptions(kotlin.Function1<ai.torad.aisdk.providers.ProdiaLanguageModelOptionsBuilder,kotlin.Unit>){}[0]
 final fun ai.torad.aisdk.providers/ProdiaProviderSettings(kotlin/Function1<ai.torad.aisdk.providers/ProdiaProviderSettingsBuilder, kotlin/Unit> = ...): ai.torad.aisdk.providers/ProdiaProviderSettings // ai.torad.aisdk.providers/ProdiaProviderSettings|ProdiaProviderSettings(kotlin.Function1<ai.torad.aisdk.providers.ProdiaProviderSettingsBuilder,kotlin.Unit>){}[0]
 final fun ai.torad.aisdk.providers/ProdiaVideoModelOptions(kotlin/Function1<ai.torad.aisdk.providers/ProdiaVideoModelOptionsBuilder, kotlin/Unit> = ...): ai.torad.aisdk.providers/ProdiaVideoModelOptions // ai.torad.aisdk.providers/ProdiaVideoModelOptions|ProdiaVideoModelOptions(kotlin.Function1<ai.torad.aisdk.providers.ProdiaVideoModelOptionsBuilder,kotlin.Unit>){}[0]
 final fun ai.torad.aisdk.providers/QuiverAI(io.ktor.client/HttpClient, ai.torad.aisdk.providers/QuiverAIProviderSettings = ...): ai.torad.aisdk.providers/QuiverAIProvider // ai.torad.aisdk.providers/QuiverAI|QuiverAI(io.ktor.client.HttpClient;ai.torad.aisdk.providers.QuiverAIProviderSettings){}[0]
@@ -14035,7 +14034,9 @@ final fun ai.torad.aisdk.providers/VoyageRerankingModelOptions(kotlin/Function1<
 final fun ai.torad.aisdk.providers/WebSearch(kotlinx.serialization.json/JsonElement = ...): ai.torad.aisdk/Tool<kotlinx.serialization.json/JsonElement, kotlinx.serialization.json/JsonElement, kotlin/Any?> // ai.torad.aisdk.providers/WebSearch|WebSearch(kotlinx.serialization.json.JsonElement){}[0]
 final fun ai.torad.aisdk.providers/XSearch(kotlinx.serialization.json/JsonElement = ...): ai.torad.aisdk/Tool<kotlinx.serialization.json/JsonElement, kotlinx.serialization.json/JsonElement, kotlin/Any?> // ai.torad.aisdk.providers/XSearch|XSearch(kotlinx.serialization.json.JsonElement){}[0]
 final fun ai.torad.aisdk.providers/Xai(io.ktor.client/HttpClient, ai.torad.aisdk.providers/XaiProviderSettings = ...): ai.torad.aisdk.providers/XaiProvider // ai.torad.aisdk.providers/Xai|Xai(io.ktor.client.HttpClient;ai.torad.aisdk.providers.XaiProviderSettings){}[0]
+final fun ai.torad.aisdk.providers/XaiImageModelOptions(kotlin/Function1<ai.torad.aisdk.providers/XaiImageModelOptionsBuilder, kotlin/Unit> = ...): ai.torad.aisdk.providers/XaiImageModelOptions // ai.torad.aisdk.providers/XaiImageModelOptions|XaiImageModelOptions(kotlin.Function1<ai.torad.aisdk.providers.XaiImageModelOptionsBuilder,kotlin.Unit>){}[0]
 final fun ai.torad.aisdk.providers/XaiProviderSettings(kotlin/Function1<ai.torad.aisdk.providers/XaiProviderSettingsBuilder, kotlin/Unit> = ...): ai.torad.aisdk.providers/XaiProviderSettings // ai.torad.aisdk.providers/XaiProviderSettings|XaiProviderSettings(kotlin.Function1<ai.torad.aisdk.providers.XaiProviderSettingsBuilder,kotlin.Unit>){}[0]
+final fun ai.torad.aisdk.providers/XaiVideoModelOptions(kotlin/Function1<ai.torad.aisdk.providers/XaiVideoModelOptionsBuilder, kotlin/Unit> = ...): ai.torad.aisdk.providers/XaiVideoModelOptions // ai.torad.aisdk.providers/XaiVideoModelOptions|XaiVideoModelOptions(kotlin.Function1<ai.torad.aisdk.providers.XaiVideoModelOptionsBuilder,kotlin.Unit>){}[0]
 final fun ai.torad.aisdk.ui/ChatSession(kotlin/String = ..., kotlin.collections/List<ai.torad.aisdk.ui/UIMessage> = ..., ai.torad.aisdk.ui/ChatTransport): ai.torad.aisdk.ui/ChatSession // ai.torad.aisdk.ui/ChatSession|ChatSession(kotlin.String;kotlin.collections.List<ai.torad.aisdk.ui.UIMessage>;ai.torad.aisdk.ui.ChatTransport){}[0]
 final fun ai.torad.aisdk.ui/CreateTextStreamResponse(kotlinx.coroutines.flow/Flow<kotlin/String>, kotlin/Int = ..., kotlin.collections/Map<kotlin/String, kotlin/String> = ...): ai.torad.aisdk.ui/TextStreamResponse // ai.torad.aisdk.ui/CreateTextStreamResponse|CreateTextStreamResponse(kotlinx.coroutines.flow.Flow<kotlin.String>;kotlin.Int;kotlin.collections.Map<kotlin.String,kotlin.String>){}[0]
 final fun ai.torad.aisdk.ui/CreateUiMessageStream(kotlin/Function1<kotlin/Throwable, ai.torad.aisdk.ui/UIMessage> = ..., kotlin.coroutines/SuspendFunction1<ai.torad.aisdk.ui/UIMessageStreamWriter, kotlin/Unit>): kotlinx.coroutines.flow/Flow<ai.torad.aisdk.ui/UIMessage> // ai.torad.aisdk.ui/CreateUiMessageStream|CreateUiMessageStream(kotlin.Function1<kotlin.Throwable,ai.torad.aisdk.ui.UIMessage>;kotlin.coroutines.SuspendFunction1<ai.torad.aisdk.ui.UIMessageStreamWriter,kotlin.Unit>){}[0]
@@ -14050,6 +14051,7 @@ final fun ai.torad.aisdk/AbortSignalFromJob(kotlinx.coroutines/Job): ai.torad.ai
 final fun ai.torad.aisdk/AllOf(kotlin/Array<out ai.torad.aisdk/StopCondition>...): ai.torad.aisdk/StopCondition // ai.torad.aisdk/AllOf|AllOf(kotlin.Array<out|ai.torad.aisdk.StopCondition>...){}[0]
 final fun ai.torad.aisdk/AnyOf(kotlin/Array<out ai.torad.aisdk/StopCondition>...): ai.torad.aisdk/StopCondition // ai.torad.aisdk/AnyOf|AnyOf(kotlin.Array<out|ai.torad.aisdk.StopCondition>...){}[0]
 final fun ai.torad.aisdk/AssistantMessage(kotlin/String): ai.torad.aisdk/ModelMessage // ai.torad.aisdk/AssistantMessage|AssistantMessage(kotlin.String){}[0]
+final fun ai.torad.aisdk/AuthOptions(kotlin/Function1<ai.torad.aisdk/AuthOptionsBuilder, kotlin/Unit> = ...): ai.torad.aisdk/AuthOptions // ai.torad.aisdk/AuthOptions|AuthOptions(kotlin.Function1<ai.torad.aisdk.AuthOptionsBuilder,kotlin.Unit>){}[0]
 final fun ai.torad.aisdk/CallSettings(kotlin/Function1<ai.torad.aisdk/CallSettingsBuilder, kotlin/Unit>): ai.torad.aisdk/CallSettings // ai.torad.aisdk/CallSettings|CallSettings(kotlin.Function1<ai.torad.aisdk.CallSettingsBuilder,kotlin.Unit>){}[0]
 final fun ai.torad.aisdk/CombineAbortSignals(kotlin/Array<out ai.torad.aisdk/AbortSignal>...): ai.torad.aisdk/AbortSignal // ai.torad.aisdk/CombineAbortSignals|CombineAbortSignals(kotlin.Array<out|ai.torad.aisdk.AbortSignal>...){}[0]
 final fun ai.torad.aisdk/CreateGatewayHttpProvider(io.ktor.client/HttpClient, ai.torad.aisdk/GatewayProviderSettings = ..., kotlinx.serialization.json/Json = ...): ai.torad.aisdk/GatewayProvider // ai.torad.aisdk/CreateGatewayHttpProvider|CreateGatewayHttpProvider(io.ktor.client.HttpClient;ai.torad.aisdk.GatewayProviderSettings;kotlinx.serialization.json.Json){}[0]
@@ -14057,8 +14059,10 @@ final fun ai.torad.aisdk/CreateMcpTransport(io.ktor.client/HttpClient, ai.torad.
 final fun ai.torad.aisdk/DefaultEmbeddingSettingsMiddleware(kotlin/Int? = ..., kotlin/Boolean? = ..., ai.torad.aisdk/ProviderOptions = ..., kotlin.collections/Map<kotlin/String, kotlin/String> = ...): ai.torad.aisdk/EmbeddingModelMiddleware // ai.torad.aisdk/DefaultEmbeddingSettingsMiddleware|DefaultEmbeddingSettingsMiddleware(kotlin.Int?;kotlin.Boolean?;ai.torad.aisdk.ProviderOptions;kotlin.collections.Map<kotlin.String,kotlin.String>){}[0]
 final fun ai.torad.aisdk/DevToolsMiddleware(ai.torad.aisdk/DevToolsRecorder = ..., kotlin/String = ..., kotlin/String = ..., kotlin/Function0<kotlin/String> = ...): ai.torad.aisdk/LanguageModelMiddleware // ai.torad.aisdk/DevToolsMiddleware|DevToolsMiddleware(ai.torad.aisdk.DevToolsRecorder;kotlin.String;kotlin.String;kotlin.Function0<kotlin.String>){}[0]
 final fun ai.torad.aisdk/Gateway(ai.torad.aisdk/GatewayProviderSettings = ...): ai.torad.aisdk/GatewayProvider // ai.torad.aisdk/Gateway|Gateway(ai.torad.aisdk.GatewayProviderSettings){}[0]
+final fun ai.torad.aisdk/GatewayGenerationInfoParams(kotlin/Function1<ai.torad.aisdk/GatewayGenerationInfoParamsBuilder, kotlin/Unit> = ...): ai.torad.aisdk/GatewayGenerationInfoParams // ai.torad.aisdk/GatewayGenerationInfoParams|GatewayGenerationInfoParams(kotlin.Function1<ai.torad.aisdk.GatewayGenerationInfoParamsBuilder,kotlin.Unit>){}[0]
 final fun ai.torad.aisdk/GatewayProvider(ai.torad.aisdk/GatewayProviderSettings = ...): ai.torad.aisdk/GatewayProvider // ai.torad.aisdk/GatewayProvider|GatewayProvider(ai.torad.aisdk.GatewayProviderSettings){}[0]
 final fun ai.torad.aisdk/GatewayProviderSettings(kotlin/Function1<ai.torad.aisdk/GatewayProviderSettingsBuilder, kotlin/Unit> = ...): ai.torad.aisdk/GatewayProviderSettings // ai.torad.aisdk/GatewayProviderSettings|GatewayProviderSettings(kotlin.Function1<ai.torad.aisdk.GatewayProviderSettingsBuilder,kotlin.Unit>){}[0]
+final fun ai.torad.aisdk/GatewaySpendReportParams(kotlin/Function1<ai.torad.aisdk/GatewaySpendReportParamsBuilder, kotlin/Unit> = ...): ai.torad.aisdk/GatewaySpendReportParams // ai.torad.aisdk/GatewaySpendReportParams|GatewaySpendReportParams(kotlin.Function1<ai.torad.aisdk.GatewaySpendReportParamsBuilder,kotlin.Unit>){}[0]
 final fun ai.torad.aisdk/GeneratedFile(ai.torad.aisdk/FileData, kotlin/String = ..., kotlin/String? = ..., ai.torad.aisdk/ProviderMetadata = ...): ai.torad.aisdk/GeneratedFile // ai.torad.aisdk/GeneratedFile|GeneratedFile(ai.torad.aisdk.FileData;kotlin.String;kotlin.String?;ai.torad.aisdk.ProviderMetadata){}[0]
 final fun ai.torad.aisdk/HasToolCall(kotlin/String): ai.torad.aisdk/StopCondition // ai.torad.aisdk/HasToolCall|HasToolCall(kotlin.String){}[0]
 final fun ai.torad.aisdk/ImageGenerationFile(ai.torad.aisdk/FileData): ai.torad.aisdk/ImageGenerationFile // ai.torad.aisdk/ImageGenerationFile|ImageGenerationFile(ai.torad.aisdk.FileData){}[0]

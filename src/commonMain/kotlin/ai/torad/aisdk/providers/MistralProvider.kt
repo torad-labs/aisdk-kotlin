@@ -235,15 +235,70 @@ public fun MistralProviderSettings(
     MistralProviderSettingsBuilder().apply(block).build()
 
 @Serializable
-public data class MistralLanguageModelOptions(
-    val safePrompt: Boolean? = null,
-    val documentImageLimit: Int? = null,
-    val documentPageLimit: Int? = null,
-    val structuredOutputs: Boolean? = null,
-    val strictJsonSchema: Boolean? = null,
-    val parallelToolCalls: Boolean? = null,
-    val reasoningEffort: String? = null,
+@Poko
+public class MistralLanguageModelOptions internal constructor(
+    public val safePrompt: Boolean? = null,
+    public val documentImageLimit: Int? = null,
+    public val documentPageLimit: Int? = null,
+    public val structuredOutputs: Boolean? = null,
+    public val strictJsonSchema: Boolean? = null,
+    public val parallelToolCalls: Boolean? = null,
+    public val reasoningEffort: String? = null,
 )
+
+public class MistralLanguageModelOptionsBuilder internal constructor() {
+    private var safePrompt: Boolean? = null
+    private var documentImageLimit: Int? = null
+    private var documentPageLimit: Int? = null
+    private var structuredOutputs: Boolean? = null
+    private var strictJsonSchema: Boolean? = null
+    private var parallelToolCalls: Boolean? = null
+    private var reasoningEffort: String? = null
+
+    public fun safePrompt(value: Boolean?) {
+        safePrompt = value
+    }
+
+    public fun documentImageLimit(value: Int?) {
+        documentImageLimit = value
+    }
+
+    public fun documentPageLimit(value: Int?) {
+        documentPageLimit = value
+    }
+
+    public fun structuredOutputs(value: Boolean?) {
+        structuredOutputs = value
+    }
+
+    public fun strictJsonSchema(value: Boolean?) {
+        strictJsonSchema = value
+    }
+
+    public fun parallelToolCalls(value: Boolean?) {
+        parallelToolCalls = value
+    }
+
+    public fun reasoningEffort(value: String?) {
+        reasoningEffort = value
+    }
+
+    internal fun build(): MistralLanguageModelOptions =
+        MistralLanguageModelOptions(
+            safePrompt = safePrompt,
+            documentImageLimit = documentImageLimit,
+            documentPageLimit = documentPageLimit,
+            structuredOutputs = structuredOutputs,
+            strictJsonSchema = strictJsonSchema,
+            parallelToolCalls = parallelToolCalls,
+            reasoningEffort = reasoningEffort,
+        )
+}
+
+public fun MistralLanguageModelOptions(
+    block: MistralLanguageModelOptionsBuilder.() -> Unit = {},
+): MistralLanguageModelOptions =
+    MistralLanguageModelOptionsBuilder().apply(block).build()
 
 public class MistralProvider(
     client: HttpClient,

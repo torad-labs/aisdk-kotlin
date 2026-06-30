@@ -98,8 +98,14 @@ This project follows Semantic Versioning once the first stable release is cut.
   `LMNTSpeechModelOptions`, `RevaiTranscriptionModelOptions`,
   `ReplicateImageModelOptions`, `ReplicateVideoModelOptions`,
   `ProdiaImageModelOptions`, `ProdiaVideoModelOptions`,
-  `QuiverAIImageModelOptions`, and `TogetherAIImageModelOptions`) now follow
-  the same DSL builder pattern with `@Serializable @Poko class` value semantics.
+  `QuiverAIImageModelOptions`, `TogetherAIImageModelOptions`,
+  `MistralLanguageModelOptions`, `MoonshotAILanguageModelOptions`,
+  `ProdiaLanguageModelOptions`, `XaiImageModelOptions`, and
+  `XaiVideoModelOptions`) now follow the same DSL builder pattern with
+  `@Serializable @Poko class` value semantics. Simple non-provider construct
+  types (`GatewaySpendReportParams`, `GatewayGenerationInfoParams`, and
+  `AuthOptions`) also move to builder factories; `AuthOptions` is a regular
+  class with identity equality because it may hold an `HttpClient`.
 
 - **Tools are now class-based and extensible (breaking ABI change).** `Tool` is an `abstract class`
   you can extend for reusable, dependency-injected tools — mirroring how a concrete agent extends

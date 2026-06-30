@@ -269,15 +269,24 @@ Penalty, response-format, and retry fields participate in the `Step ?: Agent ?: 
   `LMNTSpeechModelOptions`, `RevaiTranscriptionModelOptions`,
   `ReplicateImageModelOptions`, `ReplicateVideoModelOptions`,
   `ProdiaImageModelOptions`, `ProdiaVideoModelOptions`,
-  `QuiverAIImageModelOptions`, and `TogetherAIImageModelOptions`) expose field
-  getters and are configured through public DSL factories and builder setter
-  methods such as `CohereEmbeddingModelOptions { inputType("search") }`,
+  `QuiverAIImageModelOptions`, `TogetherAIImageModelOptions`,
+  `MistralLanguageModelOptions`, `MoonshotAILanguageModelOptions`,
+  `ProdiaLanguageModelOptions`, `XaiImageModelOptions`, and
+  `XaiVideoModelOptions`) expose field getters and are configured through
+  public DSL factories and builder setter methods such as
+  `CohereEmbeddingModelOptions { inputType("search") }`,
   `DeepgramTranscriptionModelOptions { language("en") }`,
   `FalVideoModelOptions { resolution("720p") }`,
-  `KlingAIVideoModelOptions { mode("std") }`, or
-  `ReplicateImageModelOptions { output_format("webp") }`. These pure data
-  options are `@Serializable @Poko class` value-semantics types; their
-  positional constructors, `copy()`, and `componentN()` are not public.
+  `KlingAIVideoModelOptions { mode("std") }`,
+  `ReplicateImageModelOptions { output_format("webp") }`, or
+  `XaiImageModelOptions { aspect_ratio("1:1") }`. These pure data options are
+  `@Serializable @Poko class` value-semantics types; their positional
+  constructors, `copy()`, and `componentN()` are not public.
+- Simple construct params on the builder track (`GatewaySpendReportParams`,
+  `GatewayGenerationInfoParams`, and `AuthOptions`) expose field getters and
+  are configured through public DSL factories. The gateway params are `@Poko`
+  value-semantics types. `AuthOptions` is a regular class with identity
+  equality because it may hold an `HttpClient`.
 - Provider error payloads (`BasetenErrorData`, `CerebrasErrorData`,
   `FireworksErrorData`) are `@Serializable @Poko class` value-semantics types;
   JSON field names remain unchanged, while public `copy()` / `componentN()`

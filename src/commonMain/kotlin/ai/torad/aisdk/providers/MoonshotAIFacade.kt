@@ -80,9 +80,26 @@ public fun MoonshotAIProviderSettings(
     MoonshotAIProviderSettingsBuilder().apply(block).build()
 
 @Serializable
-public data class MoonshotAILanguageModelOptions(
-    val raw: Map<String, JsonElement> = emptyMap(),
+@Poko
+public class MoonshotAILanguageModelOptions internal constructor(
+    public val raw: Map<String, JsonElement> = emptyMap(),
 )
+
+public class MoonshotAILanguageModelOptionsBuilder internal constructor() {
+    private var raw: Map<String, JsonElement> = emptyMap()
+
+    public fun raw(value: Map<String, JsonElement>) {
+        raw = value
+    }
+
+    internal fun build(): MoonshotAILanguageModelOptions =
+        MoonshotAILanguageModelOptions(raw = raw)
+}
+
+public fun MoonshotAILanguageModelOptions(
+    block: MoonshotAILanguageModelOptionsBuilder.() -> Unit = {},
+): MoonshotAILanguageModelOptions =
+    MoonshotAILanguageModelOptionsBuilder().apply(block).build()
 
 public typealias MoonshotAIProviderOptions = MoonshotAILanguageModelOptions
 

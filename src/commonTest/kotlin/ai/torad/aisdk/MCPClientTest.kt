@@ -517,10 +517,13 @@ class MCPClientTest {
     @Test
     fun `auth returns authorized with existing tokens and redirect when tokens are absent`() = runTest {
         val authorized = MemoryOAuthProvider(tokens = OAuthTokens(accessToken = "token", tokenType = "Bearer"))
-        assertEquals(AuthResult.AUTHORIZED, McpAuth.auth(authorized, AuthOptions(serverUrl = "https://mcp.example.com")))
+        assertEquals(AuthResult.AUTHORIZED, McpAuth.auth(authorized, AuthOptions { serverUrl("https://mcp.example.com") }))
 
         val redirect = MemoryOAuthProvider(tokens = null)
-        assertEquals(AuthResult.REDIRECT, McpAuth.auth(redirect, AuthOptions(serverUrl = "https://mcp.example.com", scope = "tools")))
+        assertEquals(AuthResult.REDIRECT, McpAuth.auth(redirect, AuthOptions {
+            serverUrl("https://mcp.example.com")
+            scope("tools")
+        }))
         assertNotNull(redirect.lastAuthorizationUrl)
         assertTrue(redirect.lastAuthorizationUrl!!.startsWith("https://mcp.example.com/authorize?"))
         assertTrue("scope=tools" in redirect.lastAuthorizationUrl!!)
@@ -532,7 +535,7 @@ class MCPClientTest {
 
         assertEquals(
             AuthResult.REDIRECT,
-            McpAuth.auth(provider, AuthOptions(serverUrl = "https://mcp.example.com"), reauthorize = true),
+            McpAuth.auth(provider, AuthOptions { serverUrl("https://mcp.example.com") }, reauthorize = true),
         )
         assertNotNull(provider.lastAuthorizationUrl)
     }
@@ -571,7 +574,11 @@ class MCPClientTest {
             AuthResult.REDIRECT,
             McpAuth.auth(
                 provider,
-                AuthOptions(serverUrl = "https://auth.example.com", scope = "tools offline_access", client = fixture.httpClient()),
+                AuthOptions {
+                    serverUrl("https://auth.example.com")
+                    scope("tools offline_access")
+                    client(fixture.httpClient())
+                },
             ),
         )
 
@@ -643,12 +650,12 @@ class MCPClientTest {
             AuthResult.AUTHORIZED,
             McpAuth.auth(
                 provider,
-                AuthOptions(
-                    serverUrl = "https://auth.example.com",
-                    authorizationCode = "code123",
-                    callbackState = "state-1",
-                    client = fixture.httpClient(),
-                ),
+                AuthOptions {
+                    serverUrl("https://auth.example.com")
+                    authorizationCode("code123")
+                    callbackState("state-1")
+                    client(fixture.httpClient())
+                },
             ),
         )
 
@@ -702,7 +709,10 @@ class MCPClientTest {
             },
         )
 
-        assertEquals(AuthResult.AUTHORIZED, McpAuth.auth(provider, AuthOptions(serverUrl = "https://auth.example.com", client = fixture.httpClient())))
+        assertEquals(AuthResult.AUTHORIZED, McpAuth.auth(provider, AuthOptions {
+            serverUrl("https://auth.example.com")
+            client(fixture.httpClient())
+        }))
 
         assertEquals("new-token", provider.tokens()?.accessToken)
         assertEquals("old-refresh", provider.tokens()?.refreshToken)
@@ -751,7 +761,10 @@ class MCPClientTest {
             AuthResult.REDIRECT,
             McpAuth.auth(
                 provider,
-                AuthOptions(serverUrl = "https://auth.example.com", client = fixture.httpClient()),
+                AuthOptions {
+                    serverUrl("https://auth.example.com")
+                    client(fixture.httpClient())
+                },
                 reauthorize = true,
             ),
         )
@@ -795,7 +808,10 @@ class MCPClientTest {
 
         assertEquals(
             AuthResult.REDIRECT,
-            McpAuth.auth(provider, AuthOptions(serverUrl = "https://api.example.com/mcp-server", client = fixture.httpClient())),
+            McpAuth.auth(provider, AuthOptions {
+                serverUrl("https://api.example.com/mcp-server")
+                client(fixture.httpClient())
+            }),
         )
 
         val authorizationUrl = assertNotNull(provider.lastAuthorizationUrl)
@@ -866,19 +882,22 @@ class MCPClientTest {
             AuthResult.AUTHORIZED,
             McpAuth.auth(
                 provider,
-                AuthOptions(
-                    serverUrl = "https://api.example.com/mcp-server",
-                    authorizationCode = "code",
-                    callbackState = "state-1",
-                    client = fixture.httpClient(),
-                ),
+                AuthOptions {
+                    serverUrl("https://api.example.com/mcp-server")
+                    authorizationCode("code")
+                    callbackState("state-1")
+                    client(fixture.httpClient())
+                },
             ),
         )
         assertEquals("access-token", provider.tokens()?.accessToken)
 
         assertEquals(
             AuthResult.AUTHORIZED,
-            McpAuth.auth(provider, AuthOptions(serverUrl = "https://api.example.com/mcp-server", client = fixture.httpClient())),
+            McpAuth.auth(provider, AuthOptions {
+                serverUrl("https://api.example.com/mcp-server")
+                client(fixture.httpClient())
+            }),
         )
         assertEquals("refreshed", provider.tokens()?.accessToken)
         assertEquals("refresh-token", provider.tokens()?.refreshToken)
