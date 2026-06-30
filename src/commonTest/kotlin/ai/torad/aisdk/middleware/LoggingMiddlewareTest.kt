@@ -137,7 +137,9 @@ class LoggingMiddlewareTest {
         val redactedLogger = RecordingLogger()
         WrapLanguageModel(
             model,
-            listOf(LoggingMiddleware(redactedLogger, LoggingOptions(recordInputs = true))),
+            listOf(LoggingMiddleware(redactedLogger, LoggingOptions {
+                recordInputs(true)
+            })),
         ).stream(params).collect { }
         val redactedLogs = redactedLogger.debugs.joinToString("\n")
         assertTrue("safe city" in redactedLogs, redactedLogs)
@@ -147,7 +149,10 @@ class LoggingMiddlewareTest {
         val rawLogger = RecordingLogger()
         WrapLanguageModel(
             model,
-            listOf(LoggingMiddleware(rawLogger, LoggingOptions(recordInputs = true, allowRawValues = true))),
+            listOf(LoggingMiddleware(rawLogger, LoggingOptions {
+                recordInputs(true)
+                allowRawValues(true)
+            })),
         ).stream(params).collect { }
         val rawLogs = rawLogger.debugs.joinToString("\n")
         assertTrue("sk-live-secret" in rawLogs, rawLogs)

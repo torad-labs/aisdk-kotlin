@@ -3,6 +3,7 @@
 package ai.torad.aisdk
 
 import ai.torad.aisdk.JSONRPCMessage.Companion.toJsonString
+import dev.drewhamilton.poko.Poko
 import io.ktor.client.HttpClient
 import io.ktor.client.request.header
 import io.ktor.client.request.request
@@ -962,7 +963,7 @@ public class MCPTransportConfig internal constructor(
     public val headers: Map<String, String> = emptyMap(),
     public val authProvider: OAuthClientProvider? = null,
     public val engineContext: CoroutineContext = Dispatchers.Default,
-    public val reconnectionOptions: MCPReconnectionOptions = MCPReconnectionOptions(),
+    public val reconnectionOptions: MCPReconnectionOptions = MCPReconnectionOptions {},
 )
 
 public class MCPTransportConfigBuilder internal constructor() {
@@ -1013,12 +1014,49 @@ public fun MCPTransportConfig(
 ): MCPTransportConfig =
     MCPTransportConfigBuilder().apply(block).build()
 
-public data class MCPReconnectionOptions(
-    val initialReconnectionDelayMillis: Long = 1_000,
-    val reconnectionDelayGrowFactor: Double = 1.5,
-    val maxReconnectionDelayMillis: Long = 30_000,
-    val maxRetries: Int = 2,
+@Poko
+public class MCPReconnectionOptions internal constructor(
+    public val initialReconnectionDelayMillis: Long = 1_000,
+    public val reconnectionDelayGrowFactor: Double = 1.5,
+    public val maxReconnectionDelayMillis: Long = 30_000,
+    public val maxRetries: Int = 2,
 )
+
+public class MCPReconnectionOptionsBuilder internal constructor() {
+    private var initialReconnectionDelayMillis: Long = 1_000
+    private var reconnectionDelayGrowFactor: Double = 1.5
+    private var maxReconnectionDelayMillis: Long = 30_000
+    private var maxRetries: Int = 2
+
+    public fun initialReconnectionDelayMillis(value: Long) {
+        initialReconnectionDelayMillis = value
+    }
+
+    public fun reconnectionDelayGrowFactor(value: Double) {
+        reconnectionDelayGrowFactor = value
+    }
+
+    public fun maxReconnectionDelayMillis(value: Long) {
+        maxReconnectionDelayMillis = value
+    }
+
+    public fun maxRetries(value: Int) {
+        maxRetries = value
+    }
+
+    internal fun build(): MCPReconnectionOptions =
+        MCPReconnectionOptions(
+            initialReconnectionDelayMillis = initialReconnectionDelayMillis,
+            reconnectionDelayGrowFactor = reconnectionDelayGrowFactor,
+            maxReconnectionDelayMillis = maxReconnectionDelayMillis,
+            maxRetries = maxRetries,
+        )
+}
+
+public fun MCPReconnectionOptions(
+    block: MCPReconnectionOptionsBuilder.() -> Unit = {},
+): MCPReconnectionOptions =
+    MCPReconnectionOptionsBuilder().apply(block).build()
 
 public fun CreateMcpTransport(client: HttpClient, config: MCPTransportConfig): MCPTransport =
     when (config.type) {
@@ -1140,7 +1178,7 @@ public class HttpMCPTransport(
     private val headers: Map<String, String> = emptyMap(),
     private val authProvider: OAuthClientProvider? = null,
     private val engineContext: CoroutineContext = Dispatchers.Default,
-    private val reconnectionOptions: MCPReconnectionOptions = MCPReconnectionOptions(),
+    private val reconnectionOptions: MCPReconnectionOptions = MCPReconnectionOptions {},
 ) : MCPTransport {
     private var onClose: (() -> Unit)? = null
     private var onError: ((Throwable) -> Unit)? = null
@@ -1739,12 +1777,49 @@ internal object McpUrl {
 }
 
 @Serializable
-public data class StdioConfig(
-    val command: String,
-    val args: List<String> = emptyList(),
-    val env: Map<String, String> = emptyMap(),
-    val cwd: String? = null,
+@Poko
+public class StdioConfig internal constructor(
+    public val command: String,
+    public val args: List<String> = emptyList(),
+    public val env: Map<String, String> = emptyMap(),
+    public val cwd: String? = null,
 )
+
+public class StdioConfigBuilder internal constructor() {
+    private var command: String? = null
+    private var args: List<String> = emptyList()
+    private var env: Map<String, String> = emptyMap()
+    private var cwd: String? = null
+
+    public fun command(value: String) {
+        command = value
+    }
+
+    public fun args(value: List<String>) {
+        args = value
+    }
+
+    public fun env(value: Map<String, String>) {
+        env = value
+    }
+
+    public fun cwd(value: String?) {
+        cwd = value
+    }
+
+    internal fun build(): StdioConfig =
+        StdioConfig(
+            command = requireNotNull(command) { "StdioConfig.command is required" },
+            args = args,
+            env = env,
+            cwd = cwd,
+        )
+}
+
+public fun StdioConfig(
+    block: StdioConfigBuilder.() -> Unit = {},
+): StdioConfig =
+    StdioConfigBuilder().apply(block).build()
 
 internal interface MCPStdioProcess {
     suspend fun readLine(): String?

@@ -3,6 +3,7 @@
 package ai.torad.aisdk.providers
 
 import ai.torad.aisdk.*
+import dev.drewhamilton.poko.Poko
 import io.ktor.client.HttpClient
 import io.ktor.client.request.header
 import io.ktor.client.request.request
@@ -116,37 +117,213 @@ public fun OpenResponsesProviderSettings(
     OpenResponsesProviderSettingsBuilder().apply(block).build()
 
 @Serializable
-public data class OpenResponsesOptions(
-    val conversation: String? = null,
-    val include: List<String>? = null,
-    val instructions: String? = null,
-    val logprobs: JsonElement? = null,
-    val maxToolCalls: Int? = null,
-    val metadata: JsonElement? = null,
-    val parallelToolCalls: Boolean? = null,
-    val previousResponseId: String? = null,
-    val promptCacheKey: String? = null,
-    val promptCacheRetention: String? = null,
-    val reasoningEffort: String? = null,
-    val reasoningSummary: String? = null,
-    val safetyIdentifier: String? = null,
-    val serviceTier: String? = null,
-    val store: Boolean? = null,
-    val passThroughUnsupportedFiles: Boolean? = null,
-    val strictJsonSchema: Boolean? = null,
-    val textVerbosity: String? = null,
-    val truncation: String? = null,
-    val user: String? = null,
-    val systemMessageMode: String? = null,
-    val forceReasoning: Boolean? = null,
-    val allowedTools: OpenResponsesAllowedTools? = null,
+@Poko
+public class OpenResponsesOptions internal constructor(
+    public val conversation: String? = null,
+    public val include: List<String>? = null,
+    public val instructions: String? = null,
+    public val logprobs: JsonElement? = null,
+    public val maxToolCalls: Int? = null,
+    public val metadata: JsonElement? = null,
+    public val parallelToolCalls: Boolean? = null,
+    public val previousResponseId: String? = null,
+    public val promptCacheKey: String? = null,
+    public val promptCacheRetention: String? = null,
+    public val reasoningEffort: String? = null,
+    public val reasoningSummary: String? = null,
+    public val safetyIdentifier: String? = null,
+    public val serviceTier: String? = null,
+    public val store: Boolean? = null,
+    public val passThroughUnsupportedFiles: Boolean? = null,
+    public val strictJsonSchema: Boolean? = null,
+    public val textVerbosity: String? = null,
+    public val truncation: String? = null,
+    public val user: String? = null,
+    public val systemMessageMode: String? = null,
+    public val forceReasoning: Boolean? = null,
+    public val allowedTools: OpenResponsesAllowedTools? = null,
 )
 
+public class OpenResponsesOptionsBuilder internal constructor() {
+    private var conversation: String? = null
+    private var include: List<String>? = null
+    private var instructions: String? = null
+    private var logprobs: JsonElement? = null
+    private var maxToolCalls: Int? = null
+    private var metadata: JsonElement? = null
+    private var parallelToolCalls: Boolean? = null
+    private var previousResponseId: String? = null
+    private var promptCacheKey: String? = null
+    private var promptCacheRetention: String? = null
+    private var reasoningEffort: String? = null
+    private var reasoningSummary: String? = null
+    private var safetyIdentifier: String? = null
+    private var serviceTier: String? = null
+    private var store: Boolean? = null
+    private var passThroughUnsupportedFiles: Boolean? = null
+    private var strictJsonSchema: Boolean? = null
+    private var textVerbosity: String? = null
+    private var truncation: String? = null
+    private var user: String? = null
+    private var systemMessageMode: String? = null
+    private var forceReasoning: Boolean? = null
+    private var allowedTools: OpenResponsesAllowedTools? = null
+
+    public fun conversation(value: String?) {
+        conversation = value
+    }
+
+    public fun include(value: List<String>?) {
+        include = value
+    }
+
+    public fun instructions(value: String?) {
+        instructions = value
+    }
+
+    public fun logprobs(value: JsonElement?) {
+        logprobs = value
+    }
+
+    public fun maxToolCalls(value: Int?) {
+        maxToolCalls = value
+    }
+
+    public fun metadata(value: JsonElement?) {
+        metadata = value
+    }
+
+    public fun parallelToolCalls(value: Boolean?) {
+        parallelToolCalls = value
+    }
+
+    public fun previousResponseId(value: String?) {
+        previousResponseId = value
+    }
+
+    public fun promptCacheKey(value: String?) {
+        promptCacheKey = value
+    }
+
+    public fun promptCacheRetention(value: String?) {
+        promptCacheRetention = value
+    }
+
+    public fun reasoningEffort(value: String?) {
+        reasoningEffort = value
+    }
+
+    public fun reasoningSummary(value: String?) {
+        reasoningSummary = value
+    }
+
+    public fun safetyIdentifier(value: String?) {
+        safetyIdentifier = value
+    }
+
+    public fun serviceTier(value: String?) {
+        serviceTier = value
+    }
+
+    public fun store(value: Boolean?) {
+        store = value
+    }
+
+    public fun passThroughUnsupportedFiles(value: Boolean?) {
+        passThroughUnsupportedFiles = value
+    }
+
+    public fun strictJsonSchema(value: Boolean?) {
+        strictJsonSchema = value
+    }
+
+    public fun textVerbosity(value: String?) {
+        textVerbosity = value
+    }
+
+    public fun truncation(value: String?) {
+        truncation = value
+    }
+
+    public fun user(value: String?) {
+        user = value
+    }
+
+    public fun systemMessageMode(value: String?) {
+        systemMessageMode = value
+    }
+
+    public fun forceReasoning(value: Boolean?) {
+        forceReasoning = value
+    }
+
+    public fun allowedTools(value: OpenResponsesAllowedTools?) {
+        allowedTools = value
+    }
+
+    internal fun build(): OpenResponsesOptions =
+        OpenResponsesOptions(
+            conversation = conversation,
+            include = include,
+            instructions = instructions,
+            logprobs = logprobs,
+            maxToolCalls = maxToolCalls,
+            metadata = metadata,
+            parallelToolCalls = parallelToolCalls,
+            previousResponseId = previousResponseId,
+            promptCacheKey = promptCacheKey,
+            promptCacheRetention = promptCacheRetention,
+            reasoningEffort = reasoningEffort,
+            reasoningSummary = reasoningSummary,
+            safetyIdentifier = safetyIdentifier,
+            serviceTier = serviceTier,
+            store = store,
+            passThroughUnsupportedFiles = passThroughUnsupportedFiles,
+            strictJsonSchema = strictJsonSchema,
+            textVerbosity = textVerbosity,
+            truncation = truncation,
+            user = user,
+            systemMessageMode = systemMessageMode,
+            forceReasoning = forceReasoning,
+            allowedTools = allowedTools,
+        )
+}
+
+public fun OpenResponsesOptions(
+    block: OpenResponsesOptionsBuilder.() -> Unit = {},
+): OpenResponsesOptions =
+    OpenResponsesOptionsBuilder().apply(block).build()
+
 @Serializable
-public data class OpenResponsesAllowedTools(
-    val toolNames: List<String> = emptyList(),
-    val mode: String? = null,
+@Poko
+public class OpenResponsesAllowedTools internal constructor(
+    public val toolNames: List<String> = emptyList(),
+    public val mode: String? = null,
 )
+
+public class OpenResponsesAllowedToolsBuilder internal constructor() {
+    private var toolNames: List<String> = emptyList()
+    private var mode: String? = null
+
+    public fun toolNames(value: List<String>) {
+        toolNames = value
+    }
+
+    public fun mode(value: String?) {
+        mode = value
+    }
+
+    internal fun build(): OpenResponsesAllowedTools =
+        OpenResponsesAllowedTools(
+            toolNames = toolNames,
+            mode = mode,
+        )
+}
+
+public fun OpenResponsesAllowedTools(
+    block: OpenResponsesAllowedToolsBuilder.() -> Unit = {},
+): OpenResponsesAllowedTools =
+    OpenResponsesAllowedToolsBuilder().apply(block).build()
 
 public interface OpenResponsesProvider : Provider {
     public operator fun invoke(modelId: String): LanguageModel = languageModel(modelId)

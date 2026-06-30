@@ -32,7 +32,7 @@
 - `fun ToolSet<TContext>(vararg tools: Tool<*, *, TContext>): ToolSet<TContext>`
 - `class ToolExecutionContext<TContext>(context, abortSignal, stepNumber, messages, toolCallId, writer: ToolStreamWriter = NoopToolStreamWriter)` — `this` inside tool executor. `context` is the running typed context (a `prepareStep.experimental_context` override flows in here, gap #16). `writer` writes back into the active stream (gap #21).
 - `interface ToolStreamWriter { suspend fun write(event: StreamEvent); suspend fun writeData(value: JsonElement) }` — v6's `UIMessageStreamWriter` (gap #21). `writeData` emits `StreamEvent.Raw(value)`. `object NoopToolStreamWriter` is the off-loop default. Writes interleave with the tool's own emissions in stream order; `streamToUiMessages` ignores `Raw`, so a consumer that wants the custom data intercepts the `Flow<StreamEvent>` pre-conversion.
-- `data class ToolPredicateOptions<TContext>(toolCallId, messages, experimental_context: TContext? = null)` — passed to `Tool.needsApproval` / `Tool.toModelOutput` (gap #17) so a predicate can decide on conversation history or call identity.
+- `ToolPredicateOptions<TContext> { toolCallId(...); messages(...); experimental_context(...) }` — regular builder-backed class passed to `Tool.needsApproval` / `Tool.toModelOutput` (gap #17) so a predicate can decide on conversation history or call identity. The positional constructor, `copy()`, and `componentN()` are not public.
 - Tool lifecycle hooks (gap #18), all optional + loop-invoked, `runHook`-guarded: `onInputStart(streamingId)` on `ToolInputStart`, `onInputDelta(streamingId, delta)` on `ToolInputDelta`, `onInputAvailable(toolCallId, input)` just before the executor runs.
 - `data class ToolExecutionPolicy(maxParallelToolCalls = 8, maxToolCallsPerStep = 128, progressBufferCapacity = 64, toolExecutionTimeout? = null)` — explicit bounded policy for local tool execution inside one step. `ToolLoopAgent.maxParallelToolCalls` remains as shorthand for the policy parallelism cap.
 - `typealias ToolCallRepairFunction<TContext> = suspend (failedCall, error, messages, tools) -> ContentPart.ToolCall?` — wired into `ToolLoopAgent` via the optional `experimental_repairToolCall` constructor param. Called once when a tool call's args fail to decode (model emitted JSON that doesn't match the schema). Return a corrected `ContentPart.ToolCall` (possibly with a different `toolName`) to retry; return null to surface `StreamEvent.ToolError`. Single-attempt — no recursive repair. Targets Gemma 4 E2B's ~5% rate of malformed-args calls.
@@ -158,8 +158,8 @@ Penalty, response-format, and retry fields participate in the `Step ?: Agent ?: 
   - `addToolInputExamplesMiddleware(examplesByTool)`
   - `extractJsonMiddleware()`
   - `LoggingMiddleware(logger: Logger, tag = "agent")` — routes tool-call boundary events to `logger.debug` and errors to `logger.warn` (passing the `@Transient` typed `ToolError.error` as the throwable). Default logging records metadata/byte counts, not raw payloads.
-  - `LoggingMiddleware(logger, options: LoggingOptions, tag = "agent")` — opt into redacted or raw input/output logging. `LoggingOptions(recordInputs=false, recordOutputs=false, allowRawValues=false, redactor=AiSdkDefaultRedactor)`.
-  - `interface Redactor`, `DefaultRedactor`, `RedactionOptions`, `AiSdkDefaultRedactor` — shared redaction seam for headers, text, and JSON payloads.
+  - `LoggingMiddleware(logger, options: LoggingOptions, tag = "agent")` — opt into redacted or raw input/output logging. `LoggingOptions { recordInputs(true); recordOutputs(true); allowRawValues(false); redactor(AiSdkDefaultRedactor) }` is a regular builder-backed class with identity equality because it holds a redactor object.
+  - `interface Redactor`, `DefaultRedactor`, `RedactionOptions`, `AiSdkDefaultRedactor` — shared redaction seam for headers, text, and JSON payloads. `RedactionOptions { replacement("[REDACTED]") }` is an `@Poko` value-semantics class.
 - `interface Logger { fun warn(message, throwable? = null); fun info(message); fun debug(message) }` — host-injected log sink. `object NoopLogger` (drop-everything default). Errors are NOT routed here — those ride `StreamEvent.Error` / `OnErrorEvent`.
 
 ### Embeddings
@@ -195,8 +195,8 @@ Penalty, response-format, and retry fields participate in the `Step ?: Agent ?: 
 ### MCP
 
 - `MCPTransport`, `MCPClientConfig`, `MCPClient`, `CreateMCPClient(config)`.
-- `MCPReconnectionOptions(initialReconnectionDelayMillis = 1000, reconnectionDelayGrowFactor = 1.5, maxReconnectionDelayMillis = 30000, maxRetries = 2)` — HTTP inbound SSE reconnect policy; `maxRetries = 0` disables automatic error reconnects.
-- `MCPTransportConfig(..., reconnectionOptions = MCPReconnectionOptions())` and `HttpMCPTransport(..., reconnectionOptions = MCPReconnectionOptions())`.
+- `MCPReconnectionOptions { initialReconnectionDelayMillis(1000); reconnectionDelayGrowFactor(1.5); maxReconnectionDelayMillis(30000); maxRetries(2) }` — `@Poko` HTTP inbound SSE reconnect policy; `maxRetries = 0` disables automatic error reconnects. The positional constructor, `copy()`, and `componentN()` are not public.
+- `MCPTransportConfig { reconnectionOptions(MCPReconnectionOptions { ... }) }`, `HttpMCPTransport(..., reconnectionOptions = MCPReconnectionOptions { ... })`, and `StdioConfig { command("..."); args([...]) }`. `StdioConfig` remains `@Serializable` and is an `@Poko` value-semantics class with no public positional constructor, `copy()`, or `componentN()`.
 - `MCPClient` resource/tool APIs: `tools`, `toolsFromDefinitions`, `listTools`, `listResources`, `readResource`, `listResourceTemplates`, `onElicitationRequest`, `close`.
 - MCP protocol result/capability holders are `@Serializable @Poko class`
   value-semantics types; JSON field names and `_meta` wire names remain
@@ -288,16 +288,31 @@ Penalty, response-format, and retry fields participate in the `Step ?: Agent ?: 
   `RerankingParams`, `CompletionRequestOptions`, `CallCompletionApiOptions`,
   `HuggingFaceResponsesSettings`, `TextGenerationRequest`,
   `CompletionRequest`, `StructuredObjectRequest`, `ChatRequest`,
-  `TelemetrySettings`, `MCPClientConfig`, `MCPTransportConfig`, and
-  `MCPRequestOptions`) expose field getters and are configured through public
-  DSL factories. The gateway params, `TextGenerationRequest`, `ChatRequest`,
-  `CompletionRequestOptions`, and `HuggingFaceResponsesSettings` are `@Poko`
-  value-semantics types. `AuthOptions`, media/rerank params,
-  `CompletionRequest`, `StructuredObjectRequest`, `TelemetrySettings`,
-  `MCPClientConfig`, `MCPTransportConfig`, `MCPRequestOptions`, and
-  `CallCompletionApiOptions` are regular classes with identity equality because
-  they may hold clients, abort signals, transports, callbacks, coroutine
-  contexts, telemetry integrations, or model input objects. The positional
+  `TelemetrySettings`, `MCPClientConfig`, `MCPTransportConfig`,
+  `MCPRequestOptions`, `UseCompletionOptions`, `StructuredObjectOptions`,
+  `LoggingOptions`, `RedactionOptions`, `MCPReconnectionOptions`,
+  `StdioConfig`, `ToolSchemaOptions`, `ProviderToolFactoryOptions`,
+  `ToolPredicateOptions`, `BedrockCredentials`, `AssemblyAICustomSpelling`,
+  `OpenResponsesOptions`, `OpenResponsesAllowedTools`,
+  `XaiLanguageModelChatOptions`, `XaiLanguageModelResponsesOptions`,
+  `LiteRTSamplerConfig`, `LiteRTConversationRequest`, and
+  `LiteRTLanguageModelSettings`) expose field getters and are configured
+  through public DSL factories. The gateway params, `TextGenerationRequest`,
+  `ChatRequest`, `CompletionRequestOptions`, `HuggingFaceResponsesSettings`,
+  `RedactionOptions`, `MCPReconnectionOptions`, `StdioConfig`,
+  `ToolSchemaOptions`, `BedrockCredentials`, `AssemblyAICustomSpelling`,
+  `OpenResponsesOptions`, `OpenResponsesAllowedTools`,
+  `XaiLanguageModelChatOptions`, `XaiLanguageModelResponsesOptions`, and
+  `LiteRTSamplerConfig` are `@Poko` value-semantics types. `AuthOptions`,
+  media/rerank params, `CompletionRequest`, `StructuredObjectRequest`,
+  `TelemetrySettings`, `MCPClientConfig`, `MCPTransportConfig`,
+  `MCPRequestOptions`, `CallCompletionApiOptions`, `UseCompletionOptions`,
+  `StructuredObjectOptions`, `LoggingOptions`, `ProviderToolFactoryOptions`,
+  `ToolPredicateOptions`, `LiteRTConversationRequest`, and
+  `LiteRTLanguageModelSettings` are regular classes with identity equality
+  because they may hold clients, abort signals, transports, callbacks,
+  coroutine contexts, telemetry integrations, serializers, functions, tool
+  definitions, arbitrary context values, or model input objects. The positional
   constructors, `copy()`, and `componentN()` are not public.
 - Provider error payloads (`BasetenErrorData`, `CerebrasErrorData`,
   `FireworksErrorData`) are `@Serializable @Poko class` value-semantics types;

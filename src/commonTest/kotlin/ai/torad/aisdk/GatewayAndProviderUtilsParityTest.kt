@@ -405,11 +405,11 @@ class GatewayAndProviderUtilsParityTest {
             description = "Search the web",
         )
         val hosted = factory(
-            ProviderToolFactoryOptions(
-                outputSerializer = JsonElement.serializer(),
-                outputSchema = outputSchema,
-                args = mapOf("limit" to JsonPrimitive(3)),
-            ),
+            ProviderToolFactoryOptions {
+                outputSerializer(JsonElement.serializer())
+                outputSchema(outputSchema)
+                args(mapOf("limit" to JsonPrimitive(3)))
+            },
         )
         val descriptor = ToolSet<Unit>(hosted).descriptors.single()
         val mapping = ToolNameMapping(
@@ -417,12 +417,12 @@ class GatewayAndProviderUtilsParityTest {
             providerToolNames = mapOf("web.search" to "provider_search"),
         )
         val executable = factory(
-            ProviderToolFactoryOptions(
-                outputSerializer = JsonElement.serializer(),
-                execute = { input ->
-                    buildJsonObject { put("seen", input["query"] ?: JsonPrimitive("missing")) }
-                },
-            ),
+            ProviderToolFactoryOptions {
+                outputSerializer(JsonElement.serializer())
+                execute({ input ->
+                                    buildJsonObject { put("seen", input["query"] ?: JsonPrimitive("missing")) }
+                                })
+            },
         )
 
         val executed = drainAllItems(

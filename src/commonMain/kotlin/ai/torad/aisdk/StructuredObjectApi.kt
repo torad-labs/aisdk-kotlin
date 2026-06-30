@@ -99,16 +99,76 @@ public class StructuredObjectFinish<RESULT>(
     public val rawValue: JsonElement?,
 )
 
-public data class StructuredObjectOptions<RESULT, INPUT>(
-    val api: String,
-    val schema: Schema<RESULT>,
-    val id: String = IdGenerator.generate("object"),
-    val initialValue: RESULT? = null,
-    val headers: Map<String, String> = emptyMap(),
-    val transport: StructuredObjectTransport<INPUT> = DirectStructuredObjectTransport { emptyFlow() },
-    val onFinish: suspend (StructuredObjectFinish<RESULT>) -> Unit = {},
-    val onError: suspend (Throwable) -> Unit = {},
+public class StructuredObjectOptions<RESULT, INPUT> internal constructor(
+    public val api: String,
+    public val schema: Schema<RESULT>,
+    public val id: String = IdGenerator.generate("object"),
+    public val initialValue: RESULT? = null,
+    public val headers: Map<String, String> = emptyMap(),
+    public val transport: StructuredObjectTransport<INPUT> = DirectStructuredObjectTransport { emptyFlow() },
+    public val onFinish: suspend (StructuredObjectFinish<RESULT>) -> Unit = {},
+    public val onError: suspend (Throwable) -> Unit = {},
 )
+
+public class StructuredObjectOptionsBuilder<RESULT, INPUT> internal constructor() {
+    private var api: String? = null
+    private var schema: Schema<RESULT>? = null
+    private var id: String = IdGenerator.generate("object")
+    private var initialValue: RESULT? = null
+    private var headers: Map<String, String> = emptyMap()
+    private var transport: StructuredObjectTransport<INPUT> = DirectStructuredObjectTransport { emptyFlow() }
+    private var onFinish: suspend (StructuredObjectFinish<RESULT>) -> Unit = {}
+    private var onError: suspend (Throwable) -> Unit = {}
+
+    public fun api(value: String) {
+        api = value
+    }
+
+    public fun schema(value: Schema<RESULT>) {
+        schema = value
+    }
+
+    public fun id(value: String) {
+        id = value
+    }
+
+    public fun initialValue(value: RESULT?) {
+        initialValue = value
+    }
+
+    public fun headers(value: Map<String, String>) {
+        headers = value
+    }
+
+    public fun transport(value: StructuredObjectTransport<INPUT>) {
+        transport = value
+    }
+
+    public fun onFinish(value: suspend (StructuredObjectFinish<RESULT>) -> Unit) {
+        onFinish = value
+    }
+
+    public fun onError(value: suspend (Throwable) -> Unit) {
+        onError = value
+    }
+
+    internal fun build(): StructuredObjectOptions<RESULT, INPUT> =
+        StructuredObjectOptions(
+            api = requireNotNull(api) { "StructuredObjectOptions.api is required" },
+            schema = requireNotNull(schema) { "StructuredObjectOptions.schema is required" },
+            id = id,
+            initialValue = initialValue,
+            headers = headers,
+            transport = transport,
+            onFinish = onFinish,
+            onError = onError,
+        )
+}
+
+public fun <RESULT, INPUT> StructuredObjectOptions(
+    block: StructuredObjectOptionsBuilder<RESULT, INPUT>.() -> Unit = {},
+): StructuredObjectOptions<RESULT, INPUT> =
+    StructuredObjectOptionsBuilder<RESULT, INPUT>().apply(block).build()
 
 public sealed class StructuredObjectPhase<out RESULT> {
     public data object Idle : StructuredObjectPhase<Nothing>()

@@ -119,18 +119,90 @@ public class DirectCompletionTransport(
     override fun complete(request: CompletionRequest): Flow<String> = handler(request)
 }
 
-public data class UseCompletionOptions(
-    val api: String = "/api/completion",
-    val id: String = IdGenerator.generate("completion"),
-    val initialCompletion: String = "",
-    val initialInput: String = "",
-    val headers: Map<String, String> = emptyMap(),
-    val body: Map<String, JsonElement> = emptyMap(),
-    val streamProtocol: CompletionStreamProtocol = CompletionStreamProtocol.Data,
-    val transport: CompletionTransport = DirectCompletionTransport { emptyFlow() },
-    val onFinish: suspend (prompt: String, completion: String) -> Unit = { _, _ -> },
-    val onError: suspend (Throwable) -> Unit = {},
+public class UseCompletionOptions internal constructor(
+    public val api: String = "/api/completion",
+    public val id: String = IdGenerator.generate("completion"),
+    public val initialCompletion: String = "",
+    public val initialInput: String = "",
+    public val headers: Map<String, String> = emptyMap(),
+    public val body: Map<String, JsonElement> = emptyMap(),
+    public val streamProtocol: CompletionStreamProtocol = CompletionStreamProtocol.Data,
+    public val transport: CompletionTransport = DirectCompletionTransport { emptyFlow() },
+    public val onFinish: suspend (prompt: String, completion: String) -> Unit = { _, _ -> },
+    public val onError: suspend (Throwable) -> Unit = {},
 )
+
+public class UseCompletionOptionsBuilder internal constructor() {
+    private var api: String = "/api/completion"
+    private var id: String = IdGenerator.generate("completion")
+    private var initialCompletion: String = ""
+    private var initialInput: String = ""
+    private var headers: Map<String, String> = emptyMap()
+    private var body: Map<String, JsonElement> = emptyMap()
+    private var streamProtocol: CompletionStreamProtocol = CompletionStreamProtocol.Data
+    private var transport: CompletionTransport = DirectCompletionTransport { emptyFlow() }
+    private var onFinish: suspend (prompt: String, completion: String) -> Unit = { _, _ -> }
+    private var onError: suspend (Throwable) -> Unit = {}
+
+    public fun api(value: String) {
+        api = value
+    }
+
+    public fun id(value: String) {
+        id = value
+    }
+
+    public fun initialCompletion(value: String) {
+        initialCompletion = value
+    }
+
+    public fun initialInput(value: String) {
+        initialInput = value
+    }
+
+    public fun headers(value: Map<String, String>) {
+        headers = value
+    }
+
+    public fun body(value: Map<String, JsonElement>) {
+        body = value
+    }
+
+    public fun streamProtocol(value: CompletionStreamProtocol) {
+        streamProtocol = value
+    }
+
+    public fun transport(value: CompletionTransport) {
+        transport = value
+    }
+
+    public fun onFinish(value: suspend (prompt: String, completion: String) -> Unit) {
+        onFinish = value
+    }
+
+    public fun onError(value: suspend (Throwable) -> Unit) {
+        onError = value
+    }
+
+    internal fun build(): UseCompletionOptions =
+        UseCompletionOptions(
+            api = api,
+            id = id,
+            initialCompletion = initialCompletion,
+            initialInput = initialInput,
+            headers = headers,
+            body = body,
+            streamProtocol = streamProtocol,
+            transport = transport,
+            onFinish = onFinish,
+            onError = onError,
+        )
+}
+
+public fun UseCompletionOptions(
+    block: UseCompletionOptionsBuilder.() -> Unit = {},
+): UseCompletionOptions =
+    UseCompletionOptionsBuilder().apply(block).build()
 
 public class CallCompletionApiOptions internal constructor(
     public val api: String = "/api/completion",
@@ -303,7 +375,7 @@ public data class CompletionState(
 }
 
 public class Completion(
-    private val options: UseCompletionOptions = UseCompletionOptions(),
+    private val options: UseCompletionOptions = UseCompletionOptions(block = {}),
 ) {
     public val id: String = options.id
     public val api: String = options.api

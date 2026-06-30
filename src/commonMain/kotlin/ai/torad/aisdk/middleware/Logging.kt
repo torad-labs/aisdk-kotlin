@@ -12,12 +12,48 @@ import ai.torad.aisdk.StreamEvent
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.onEach
 
-public data class LoggingOptions(
-    val recordInputs: Boolean = false,
-    val recordOutputs: Boolean = false,
-    val allowRawValues: Boolean = false,
-    val redactor: Redactor = AiSdkDefaultRedactor,
+public class LoggingOptions internal constructor(
+    public val recordInputs: Boolean = false,
+    public val recordOutputs: Boolean = false,
+    public val allowRawValues: Boolean = false,
+    public val redactor: Redactor = AiSdkDefaultRedactor,
 )
+
+public class LoggingOptionsBuilder internal constructor() {
+    private var recordInputs: Boolean = false
+    private var recordOutputs: Boolean = false
+    private var allowRawValues: Boolean = false
+    private var redactor: Redactor = AiSdkDefaultRedactor
+
+    public fun recordInputs(value: Boolean) {
+        recordInputs = value
+    }
+
+    public fun recordOutputs(value: Boolean) {
+        recordOutputs = value
+    }
+
+    public fun allowRawValues(value: Boolean) {
+        allowRawValues = value
+    }
+
+    public fun redactor(value: Redactor) {
+        redactor = value
+    }
+
+    internal fun build(): LoggingOptions =
+        LoggingOptions(
+            recordInputs = recordInputs,
+            recordOutputs = recordOutputs,
+            allowRawValues = allowRawValues,
+            redactor = redactor,
+        )
+}
+
+public fun LoggingOptions(
+    block: LoggingOptionsBuilder.() -> Unit = {},
+): LoggingOptions =
+    LoggingOptionsBuilder().apply(block).build()
 
 /**
  * Routes a model invocation's tool-call boundary + error events through
@@ -47,7 +83,7 @@ public fun LoggingMiddleware(
     tag: String = "agent",
 ): LanguageModelMiddleware = LoggingMiddleware(
     logger = logger,
-    options = LoggingOptions(),
+    options = LoggingOptions {},
     tag = tag,
 )
 

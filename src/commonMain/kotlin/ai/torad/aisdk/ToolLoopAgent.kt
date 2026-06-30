@@ -1505,11 +1505,11 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
             } else {
                 val lastOutput = captured.value
                 val outputJson = encodeToolOutput(typedTool, lastOutput)
-                val predicateOptions = ToolPredicateOptions(
-                    toolCallId = call.toolCallId,
-                    messages = messages,
-                    experimental_context = options,
-                )
+                val predicateOptions = ToolPredicateOptions<TContext> {
+                    toolCallId(call.toolCallId)
+                    messages(messages)
+                    experimental_context(options)
+                }
                 val output = ToolResultOutputs.toolResultOutputFromJson(outputJson)
                 val modelOutput = typedTool.toModelOutput(lastOutput, predicateOptions) ?: output
                 ToolExecutionResult.Success(
@@ -1578,11 +1578,11 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
             if (hasOutput) {
                 val outputJson = encodeToolOutput(tool, lastOutput)
                 val output = ToolResultOutputs.toolResultOutputFromJson(outputJson)
-                val predicateOptions = ToolPredicateOptions(
-                    toolCallId = call.toolCallId,
-                    messages = ctx.messages,
-                    experimental_context = ctx.context,
-                )
+                val predicateOptions = ToolPredicateOptions<TContext> {
+                    toolCallId(call.toolCallId)
+                    messages(ctx.messages)
+                    experimental_context(ctx.context)
+                }
                 val modelOutput = tool.toModelOutput(lastOutput, predicateOptions) ?: output
                 out.emit(
                     StreamEvent.ToolResult(

@@ -16,7 +16,9 @@ class StdioSpawnFailureTest {
     @Test
     fun `stdio start that fails to spawn resets the lifecycle instead of wedging Active`() = runTest {
         val transport = Experimental_StdioMCPTransport(
-            StdioConfig(command = "/nonexistent/aisdk-mcp-binary-xyz"),
+            StdioConfig {
+                command("/nonexistent/aisdk-mcp-binary-xyz")
+            },
         )
 
         // First start: the spawn throws (IOException on JVM, UnsupportedOperationException on native).

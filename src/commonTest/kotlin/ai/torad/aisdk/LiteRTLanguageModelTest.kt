@@ -89,7 +89,15 @@ class LiteRTLanguageModelTest {
             modelId = "gemma-litert",
             conversationFactory = factory,
             settings = LiteRTLanguageModelSettings(
-                defaultSamplerConfig = LiteRTSamplerConfig(topK = 8, topP = 0.8, temperature = 0.6),
+                block = {
+                    defaultSamplerConfig(
+                        LiteRTSamplerConfig {
+                            topK(8)
+                            topP(0.8)
+                            temperature(0.6)
+                        },
+                    )
+                },
             ),
         )
 
@@ -160,8 +168,10 @@ class LiteRTLanguageModelTest {
             modelId = "gemma-litert",
             conversationFactory = factory,
             settings = LiteRTLanguageModelSettings(
-                streamTextMode = LiteRTStreamTextMode.Cumulative,
-                toolCallIdGenerator = { "call_fixed" },
+                block = {
+                    streamTextMode(LiteRTStreamTextMode.Cumulative)
+                    toolCallIdGenerator({ "call_fixed" })
+                },
             ),
         )
 

@@ -145,7 +145,12 @@ internal object BedrockHttp {
         }
         val credentials = if (settings.accessKeyId != null || settings.secretAccessKey != null || settings.credentialProvider != null) {
             val credentials = settings.credentialProvider?.invoke()
-                ?: BedrockCredentials(settings.accessKeyId.orEmpty(), settings.secretAccessKey.orEmpty(), settings.sessionToken, settings.region)
+                ?: BedrockCredentials {
+                    accessKeyId(settings.accessKeyId.orEmpty())
+                    secretAccessKey(settings.secretAccessKey.orEmpty())
+                    sessionToken(settings.sessionToken)
+                    region(settings.region)
+                }
             if (credentials.accessKeyId.isBlank() || credentials.secretAccessKey.isBlank()) {
                 throw LoadAPIKeyError("AWS SigV4 authentication requires both accessKeyId and secretAccessKey.")
             }

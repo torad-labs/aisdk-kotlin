@@ -33,10 +33,35 @@ public class ToolSchema(
 )
 
 /** Bundles selected [ToolSchema] flags for factory functions. */
-public data class ToolSchemaOptions(
-    val strict: Boolean? = null,
-    val providerExecuted: Boolean = false,
+@Poko
+public class ToolSchemaOptions internal constructor(
+    public val strict: Boolean? = null,
+    public val providerExecuted: Boolean = false,
 )
+
+public class ToolSchemaOptionsBuilder internal constructor() {
+    private var strict: Boolean? = null
+    private var providerExecuted: Boolean = false
+
+    public fun strict(value: Boolean?) {
+        strict = value
+    }
+
+    public fun providerExecuted(value: Boolean) {
+        providerExecuted = value
+    }
+
+    internal fun build(): ToolSchemaOptions =
+        ToolSchemaOptions(
+            strict = strict,
+            providerExecuted = providerExecuted,
+        )
+}
+
+public fun ToolSchemaOptions(
+    block: ToolSchemaOptionsBuilder.() -> Unit = {},
+): ToolSchemaOptions =
+    ToolSchemaOptionsBuilder().apply(block).build()
 
 /** Wrapper emitted by [Tool.execute] — currently only [Success]; sealed for future variants. */
 public sealed class ToolResult<out O> {
@@ -251,7 +276,7 @@ public fun <TInput, TOutput, TContext> Tool(
     outputSerializer: KSerializer<TOutput>,
     needsApproval: (suspend (input: TInput, options: ToolPredicateOptions<TContext>) -> Boolean)? = null,
     toModelOutput: ((TOutput, ToolPredicateOptions<TContext>) -> ToolResultOutput)? = null,
-    schemaOptions: ToolSchemaOptions = ToolSchemaOptions(),
+    schemaOptions: ToolSchemaOptions = ToolSchemaOptions {},
     inputExamples: List<String> = emptyList(),
     onInputStart: (suspend (streamingId: String) -> Unit)? = null,
     onInputDelta: (suspend (streamingId: String, delta: String) -> Unit)? = null,
@@ -278,7 +303,7 @@ public inline fun <reified TInput, reified TOutput, TContext> Tool(
     description: String,
     noinline needsApproval: (suspend (input: TInput, options: ToolPredicateOptions<TContext>) -> Boolean)? = null,
     noinline toModelOutput: ((TOutput, ToolPredicateOptions<TContext>) -> ToolResultOutput)? = null,
-    schemaOptions: ToolSchemaOptions = ToolSchemaOptions(),
+    schemaOptions: ToolSchemaOptions = ToolSchemaOptions {},
     inputExamples: List<String> = emptyList(),
     noinline onInputStart: (suspend (streamingId: String) -> Unit)? = null,
     noinline onInputDelta: (suspend (streamingId: String, delta: String) -> Unit)? = null,
@@ -312,7 +337,7 @@ public fun <TInput, TOutput, TContext> StreamingTool(
     outputSerializer: KSerializer<TOutput>,
     needsApproval: (suspend (input: TInput, options: ToolPredicateOptions<TContext>) -> Boolean)? = null,
     toModelOutput: ((TOutput, ToolPredicateOptions<TContext>) -> ToolResultOutput)? = null,
-    schemaOptions: ToolSchemaOptions = ToolSchemaOptions(),
+    schemaOptions: ToolSchemaOptions = ToolSchemaOptions {},
     inputExamples: List<String> = emptyList(),
     onInputStart: (suspend (streamingId: String) -> Unit)? = null,
     onInputDelta: (suspend (streamingId: String, delta: String) -> Unit)? = null,
@@ -339,7 +364,7 @@ public inline fun <reified TInput, reified TOutput, TContext> StreamingTool(
     description: String,
     noinline needsApproval: (suspend (input: TInput, options: ToolPredicateOptions<TContext>) -> Boolean)? = null,
     noinline toModelOutput: ((TOutput, ToolPredicateOptions<TContext>) -> ToolResultOutput)? = null,
-    schemaOptions: ToolSchemaOptions = ToolSchemaOptions(),
+    schemaOptions: ToolSchemaOptions = ToolSchemaOptions {},
     inputExamples: List<String> = emptyList(),
     noinline onInputStart: (suspend (streamingId: String) -> Unit)? = null,
     noinline onInputDelta: (suspend (streamingId: String, delta: String) -> Unit)? = null,
@@ -408,7 +433,9 @@ public fun <TInput, TOutput, TContext> ProviderExecutedTool(
     inputSerializer = inputSerializer,
     outputSerializer = outputSerializer,
     metadata = metadata,
-    schemaOptions = ToolSchemaOptions(providerExecuted = true),
+    schemaOptions = ToolSchemaOptions {
+        providerExecuted(true)
+    },
 ) { _ ->
     flow {
         throw AgentError.ToolExecution(
@@ -598,20 +625,106 @@ public fun ToolNameMapping(
     return ToolNameMapping(customToProvider, providerToCustom)
 }
 
-public data class ProviderToolFactoryOptions<TInput, TOutput, TContext>(
-    val outputSerializer: KSerializer<TOutput>,
-    val outputSchema: Schema<TOutput>? = null,
-    val args: Map<String, JsonElement> = emptyMap(),
-    val name: String? = null,
-    val description: String? = null,
-    val metadata: Map<String, JsonElement> = emptyMap(),
-    val execute: (suspend ToolExecutionContext<TContext>.(TInput) -> TOutput)? = null,
-    val needsApproval: (suspend (input: TInput, options: ToolPredicateOptions<TContext>) -> Boolean)? = null,
-    val toModelOutput: ((TOutput, ToolPredicateOptions<TContext>) -> ToolResultOutput)? = null,
-    val onInputStart: (suspend (streamingId: String) -> Unit)? = null,
-    val onInputDelta: (suspend (streamingId: String, delta: String) -> Unit)? = null,
-    val onInputAvailable: (suspend (toolCallId: String, input: TInput) -> Unit)? = null,
+public class ProviderToolFactoryOptions<TInput, TOutput, TContext> internal constructor(
+    public val outputSerializer: KSerializer<TOutput>,
+    public val outputSchema: Schema<TOutput>? = null,
+    public val args: Map<String, JsonElement> = emptyMap(),
+    public val name: String? = null,
+    public val description: String? = null,
+    public val metadata: Map<String, JsonElement> = emptyMap(),
+    public val execute: (suspend ToolExecutionContext<TContext>.(TInput) -> TOutput)? = null,
+    public val needsApproval: (suspend (input: TInput, options: ToolPredicateOptions<TContext>) -> Boolean)? = null,
+    public val toModelOutput: ((TOutput, ToolPredicateOptions<TContext>) -> ToolResultOutput)? = null,
+    public val onInputStart: (suspend (streamingId: String) -> Unit)? = null,
+    public val onInputDelta: (suspend (streamingId: String, delta: String) -> Unit)? = null,
+    public val onInputAvailable: (suspend (toolCallId: String, input: TInput) -> Unit)? = null,
 )
+
+public class ProviderToolFactoryOptionsBuilder<TInput, TOutput, TContext> internal constructor() {
+    private var outputSerializer: KSerializer<TOutput>? = null
+    private var outputSchema: Schema<TOutput>? = null
+    private var args: Map<String, JsonElement> = emptyMap()
+    private var name: String? = null
+    private var description: String? = null
+    private var metadata: Map<String, JsonElement> = emptyMap()
+    private var execute: (suspend ToolExecutionContext<TContext>.(TInput) -> TOutput)? = null
+    private var needsApproval: (suspend (input: TInput, options: ToolPredicateOptions<TContext>) -> Boolean)? = null
+    private var toModelOutput: ((TOutput, ToolPredicateOptions<TContext>) -> ToolResultOutput)? = null
+    private var onInputStart: (suspend (streamingId: String) -> Unit)? = null
+    private var onInputDelta: (suspend (streamingId: String, delta: String) -> Unit)? = null
+    private var onInputAvailable: (suspend (toolCallId: String, input: TInput) -> Unit)? = null
+
+    public fun outputSerializer(value: KSerializer<TOutput>) {
+        outputSerializer = value
+    }
+
+    public fun outputSchema(value: Schema<TOutput>?) {
+        outputSchema = value
+    }
+
+    public fun args(value: Map<String, JsonElement>) {
+        args = value
+    }
+
+    public fun name(value: String?) {
+        name = value
+    }
+
+    public fun description(value: String?) {
+        description = value
+    }
+
+    public fun metadata(value: Map<String, JsonElement>) {
+        metadata = value
+    }
+
+    public fun execute(value: (suspend ToolExecutionContext<TContext>.(TInput) -> TOutput)?) {
+        execute = value
+    }
+
+    public fun needsApproval(value: (suspend (input: TInput, options: ToolPredicateOptions<TContext>) -> Boolean)?) {
+        needsApproval = value
+    }
+
+    public fun toModelOutput(value: ((TOutput, ToolPredicateOptions<TContext>) -> ToolResultOutput)?) {
+        toModelOutput = value
+    }
+
+    public fun onInputStart(value: (suspend (streamingId: String) -> Unit)?) {
+        onInputStart = value
+    }
+
+    public fun onInputDelta(value: (suspend (streamingId: String, delta: String) -> Unit)?) {
+        onInputDelta = value
+    }
+
+    public fun onInputAvailable(value: (suspend (toolCallId: String, input: TInput) -> Unit)?) {
+        onInputAvailable = value
+    }
+
+    internal fun build(): ProviderToolFactoryOptions<TInput, TOutput, TContext> =
+        ProviderToolFactoryOptions(
+            outputSerializer = requireNotNull(outputSerializer) {
+                "ProviderToolFactoryOptions.outputSerializer is required"
+            },
+            outputSchema = outputSchema,
+            args = args,
+            name = name,
+            description = description,
+            metadata = metadata,
+            execute = execute,
+            needsApproval = needsApproval,
+            toModelOutput = toModelOutput,
+            onInputStart = onInputStart,
+            onInputDelta = onInputDelta,
+            onInputAvailable = onInputAvailable,
+        )
+}
+
+public fun <TInput, TOutput, TContext> ProviderToolFactoryOptions(
+    block: ProviderToolFactoryOptionsBuilder<TInput, TOutput, TContext>.() -> Unit = {},
+): ProviderToolFactoryOptions<TInput, TOutput, TContext> =
+    ProviderToolFactoryOptionsBuilder<TInput, TOutput, TContext>().apply(block).build()
 
 public class ProviderToolFactory<TInput, TContext>(
     private val id: String,
@@ -646,19 +759,38 @@ public class ProviderToolFactoryWithOutputSchema<TInput, TOutput, TContext>(
 ) {
     public operator fun invoke(
         options: ProviderToolFactoryOptions<TInput, TOutput, TContext> =
-            ProviderToolFactoryOptions(outputSerializer = outputSerializer, outputSchema = outputSchema),
+            ProviderToolFactoryOptions<TInput, TOutput, TContext> {
+                outputSerializer(outputSerializer)
+                outputSchema(outputSchema)
+            },
     ): Tool<TInput, TOutput, TContext> = create(options)
 
     public fun create(
         options: ProviderToolFactoryOptions<TInput, TOutput, TContext> =
-            ProviderToolFactoryOptions(outputSerializer = outputSerializer, outputSchema = outputSchema),
+            ProviderToolFactoryOptions<TInput, TOutput, TContext> {
+                outputSerializer(outputSerializer)
+                outputSchema(outputSchema)
+            },
     ): Tool<TInput, TOutput, TContext> = ProviderTools.buildProviderTool(
         id = id,
         inputSerializer = inputSerializer,
         inputSchema = inputSchema,
         defaultDescription = defaultDescription,
         supportsDeferredResults = supportsDeferredResults,
-        options = options.copy(outputSerializer = outputSerializer, outputSchema = outputSchema),
+        options = ProviderToolFactoryOptions<TInput, TOutput, TContext> {
+            outputSerializer(outputSerializer)
+            outputSchema(outputSchema)
+            args(options.args)
+            name(options.name)
+            description(options.description)
+            metadata(options.metadata)
+            execute(options.execute)
+            needsApproval(options.needsApproval)
+            toModelOutput(options.toModelOutput)
+            onInputStart(options.onInputStart)
+            onInputDelta(options.onInputDelta)
+            onInputAvailable(options.onInputAvailable)
+        },
     )
 }
 
@@ -824,11 +956,41 @@ public class ToolExecutionContext<TContext>(
 /**
  * Options bag passed to predicate callbacks ([Tool.needsApproval], [Tool.toModelOutput]).
  */
-public data class ToolPredicateOptions<TContext>(
-    val toolCallId: String,
-    val messages: List<ModelMessage>,
-    val experimental_context: TContext? = null,
+public class ToolPredicateOptions<TContext> internal constructor(
+    public val toolCallId: String,
+    public val messages: List<ModelMessage>,
+    public val experimental_context: TContext? = null,
 )
+
+public class ToolPredicateOptionsBuilder<TContext> internal constructor() {
+    private var toolCallId: String? = null
+    private var messages: List<ModelMessage>? = null
+    private var experimentalContext: TContext? = null
+
+    public fun toolCallId(value: String) {
+        toolCallId = value
+    }
+
+    public fun messages(value: List<ModelMessage>) {
+        messages = value
+    }
+
+    public fun experimental_context(value: TContext?) {
+        experimentalContext = value
+    }
+
+    internal fun build(): ToolPredicateOptions<TContext> =
+        ToolPredicateOptions(
+            toolCallId = requireNotNull(toolCallId) { "ToolPredicateOptions.toolCallId is required" },
+            messages = requireNotNull(messages) { "ToolPredicateOptions.messages is required" },
+            experimental_context = experimentalContext,
+        )
+}
+
+public fun <TContext> ToolPredicateOptions(
+    block: ToolPredicateOptionsBuilder<TContext>.() -> Unit = {},
+): ToolPredicateOptions<TContext> =
+    ToolPredicateOptionsBuilder<TContext>().apply(block).build()
 
 /**
  * Structured return type for [Tool.toModelOutput].
