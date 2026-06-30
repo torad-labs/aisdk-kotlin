@@ -306,10 +306,10 @@ public suspend fun Experimental_CreateMCPClient(config: MCPClientConfig): MCPCli
 private class DefaultMCPClient(config: MCPClientConfig) : MCPClient {
     private val transport: MCPTransport = config.transport
     private val onUncaughtError = config.onUncaughtError
-    private val clientInfo = Configuration(
-        name = config.clientName ?: config.name ?: DEFAULT_MCP_CLIENT_NAME,
-        version = config.version,
-    )
+    private val clientInfo = Configuration {
+        name(config.clientName ?: config.name ?: DEFAULT_MCP_CLIENT_NAME)
+        version(config.version)
+    }
     private val clientCapabilities = config.capabilities
     private val responseHandlers = mutableMapOf<String, CompletableDeferred<JsonElement?>>()
     private val responseHandlersMutex = Mutex()
@@ -322,10 +322,15 @@ private class DefaultMCPClient(config: MCPClientConfig) : MCPClient {
     private val clientScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     private var serverCapabilities = MCPServerCapabilities()
     private var elicitationRequestHandler: (suspend (ElicitationRequest) -> ElicitResult)? = null
-    private var _serverInfo = Configuration(name = "", version = "")
+    private val serverInfoRef = AtomicReference(
+        Configuration {
+            name("")
+            version("")
+        },
+    )
     private var _instructions: String? = null
 
-    override val serverInfo: Configuration get() = _serverInfo
+    override val serverInfo: Configuration get() = serverInfoRef.load()
     override val instructions: String? get() = _instructions
 
     init {
@@ -360,7 +365,7 @@ private class DefaultMCPClient(config: MCPClientConfig) : MCPClient {
             }
 
             serverCapabilities = result.capabilities
-            _serverInfo = result.serverInfo
+            serverInfoRef.store(result.serverInfo)
             _instructions = result.instructions
             transport.setProtocolVersion(result.protocolVersion)
 
@@ -936,7 +941,9 @@ suspend fun auth(
     provider.saveCodeVerifier(codeVerifier)
 
     val authClientInformation = clientInformation
-        ?: OAuthClientInformation(clientId = provider.clientMetadata.clientName ?: DEFAULT_MCP_CLIENT_NAME)
+        ?: OAuthClientInformation {
+            clientId(provider.clientMetadata.clientName ?: DEFAULT_MCP_CLIENT_NAME)
+        }
     val authorizationUrl = McpOAuthFlow.startAuthorization(
         serverUrl = options.serverUrl,
         metadata = metadata,

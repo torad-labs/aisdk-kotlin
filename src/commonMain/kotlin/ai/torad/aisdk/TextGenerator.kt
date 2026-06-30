@@ -42,7 +42,9 @@ public class TextGenerator(
         decode: (String) -> T,
     ): GenerateTextResult<T> {
         val params = buildParams(input, output)
-        val raw = RetryPolicy(maxRetries = config.maxRetries).execute {
+        val raw = RetryPolicy {
+            maxRetries(config.maxRetries)
+        }.execute {
             model.generate(params)
         }
         return GenerateTextResult(

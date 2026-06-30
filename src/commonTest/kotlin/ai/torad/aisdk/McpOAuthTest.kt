@@ -14,7 +14,9 @@ class McpOAuthTest {
                 responseTypesSupported = listOf("code"),
                 codeChallengeMethodsSupported = listOf("S256"),
             ),
-            clientInformation = OAuthClientInformation(clientId = "client-1"),
+            clientInformation = OAuthClientInformation {
+                clientId("client-1")
+            },
             redirectUrl = "https://app.example.com/callback",
             scope = "tools",
             state = "state-1",

@@ -31,9 +31,9 @@ internal class TestToolLoopAgent<TContext, TOutput>(
     responseFormat: ResponseFormat = ResponseFormat.Text,
     maxRetries: Int = 2,
     maxParallelToolCalls: Int = ToolExecutionPolicy.DEFAULT_MAX_PARALLEL_TOOL_CALLS,
-    toolExecutionPolicy: ToolExecutionPolicy = ToolExecutionPolicy(
-        maxParallelToolCalls = maxParallelToolCalls,
-    ),
+    toolExecutionPolicy: ToolExecutionPolicy = ToolExecutionPolicy {
+        maxParallelToolCalls(maxParallelToolCalls)
+    },
     experimental_repairToolCall: ToolCallRepairFunction<TContext>? = null,
     experimental_toolApprovalSecret: ByteArray? = null,
     telemetry: TelemetrySettings? = null,

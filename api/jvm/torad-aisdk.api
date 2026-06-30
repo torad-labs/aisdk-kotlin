@@ -863,13 +863,6 @@ public abstract interface class ai/torad/aisdk/CompletionTransport {
 
 public final class ai/torad/aisdk/Configuration {
 	public static final field Companion Lai/torad/aisdk/Configuration$Companion;
-	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V
-	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public final fun component1 ()Ljava/lang/String;
-	public final fun component2 ()Ljava/lang/String;
-	public final fun component3 ()Ljava/lang/String;
-	public final fun copy (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)Lai/torad/aisdk/Configuration;
-	public static synthetic fun copy$default (Lai/torad/aisdk/Configuration;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ILjava/lang/Object;)Lai/torad/aisdk/Configuration;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getName ()Ljava/lang/String;
 	public final fun getTitle ()Ljava/lang/String;
@@ -891,6 +884,12 @@ public final synthetic class ai/torad/aisdk/Configuration$$serializer : kotlinx/
 
 public final class ai/torad/aisdk/Configuration$Companion {
 	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public final class ai/torad/aisdk/ConfigurationBuilder {
+	public final fun name (Ljava/lang/String;)V
+	public final fun title (Ljava/lang/String;)V
+	public final fun version (Ljava/lang/String;)V
 }
 
 public abstract class ai/torad/aisdk/ContentPart {
@@ -1340,12 +1339,6 @@ public final class ai/torad/aisdk/ElicitResultSchema {
 
 public final class ai/torad/aisdk/ElicitationCapability {
 	public static final field Companion Lai/torad/aisdk/ElicitationCapability$Companion;
-	public fun <init> ()V
-	public fun <init> (Ljava/lang/Boolean;)V
-	public synthetic fun <init> (Ljava/lang/Boolean;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public final fun component1 ()Ljava/lang/Boolean;
-	public final fun copy (Ljava/lang/Boolean;)Lai/torad/aisdk/ElicitationCapability;
-	public static synthetic fun copy$default (Lai/torad/aisdk/ElicitationCapability;Ljava/lang/Boolean;ILjava/lang/Object;)Lai/torad/aisdk/ElicitationCapability;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getApplyDefaults ()Ljava/lang/Boolean;
 	public fun hashCode ()I
@@ -1365,6 +1358,10 @@ public final synthetic class ai/torad/aisdk/ElicitationCapability$$serializer : 
 
 public final class ai/torad/aisdk/ElicitationCapability$Companion {
 	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public final class ai/torad/aisdk/ElicitationCapabilityBuilder {
+	public final fun applyDefaults (Ljava/lang/Boolean;)V
 }
 
 public final class ai/torad/aisdk/ElicitationRequest {
@@ -3453,9 +3450,17 @@ public final class ai/torad/aisdk/MCPTransportKind : java/lang/Enum {
 public final class ai/torad/aisdk/McpOAuthKt {
 	public static final fun AuthOptions (Lkotlin/jvm/functions/Function1;)Lai/torad/aisdk/AuthOptions;
 	public static synthetic fun AuthOptions$default (Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Lai/torad/aisdk/AuthOptions;
+	public static final fun OAuthClientInformation (Lkotlin/jvm/functions/Function1;)Lai/torad/aisdk/OAuthClientInformation;
+	public static synthetic fun OAuthClientInformation$default (Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Lai/torad/aisdk/OAuthClientInformation;
+	public static final fun OAuthClientMetadata (Lkotlin/jvm/functions/Function1;)Lai/torad/aisdk/OAuthClientMetadata;
+	public static synthetic fun OAuthClientMetadata$default (Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Lai/torad/aisdk/OAuthClientMetadata;
 }
 
 public final class ai/torad/aisdk/McpProtocolKt {
+	public static final fun Configuration (Lkotlin/jvm/functions/Function1;)Lai/torad/aisdk/Configuration;
+	public static synthetic fun Configuration$default (Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Lai/torad/aisdk/Configuration;
+	public static final fun ElicitationCapability (Lkotlin/jvm/functions/Function1;)Lai/torad/aisdk/ElicitationCapability;
+	public static synthetic fun ElicitationCapability$default (Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Lai/torad/aisdk/ElicitationCapability;
 	public static final fun MCPRequestOptions (Lkotlin/jvm/functions/Function1;)Lai/torad/aisdk/MCPRequestOptions;
 	public static synthetic fun MCPRequestOptions$default (Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Lai/torad/aisdk/MCPRequestOptions;
 }
@@ -3722,14 +3727,6 @@ public final class ai/torad/aisdk/NoopToolStreamWriter : ai/torad/aisdk/ToolStre
 
 public final class ai/torad/aisdk/OAuthClientInformation {
 	public static final field Companion Lai/torad/aisdk/OAuthClientInformation$Companion;
-	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/Long;Ljava/lang/Long;)V
-	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/Long;Ljava/lang/Long;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public final fun component1 ()Ljava/lang/String;
-	public final fun component2 ()Ljava/lang/String;
-	public final fun component3 ()Ljava/lang/Long;
-	public final fun component4 ()Ljava/lang/Long;
-	public final fun copy (Ljava/lang/String;Ljava/lang/String;Ljava/lang/Long;Ljava/lang/Long;)Lai/torad/aisdk/OAuthClientInformation;
-	public static synthetic fun copy$default (Lai/torad/aisdk/OAuthClientInformation;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Long;Ljava/lang/Long;ILjava/lang/Object;)Lai/torad/aisdk/OAuthClientInformation;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getClientId ()Ljava/lang/String;
 	public final fun getClientIdIssuedAt ()Ljava/lang/Long;
@@ -3754,28 +3751,15 @@ public final class ai/torad/aisdk/OAuthClientInformation$Companion {
 	public final fun serializer ()Lkotlinx/serialization/KSerializer;
 }
 
+public final class ai/torad/aisdk/OAuthClientInformationBuilder {
+	public final fun clientId (Ljava/lang/String;)V
+	public final fun clientIdIssuedAt (Ljava/lang/Long;)V
+	public final fun clientSecret (Ljava/lang/String;)V
+	public final fun clientSecretExpiresAt (Ljava/lang/Long;)V
+}
+
 public final class ai/torad/aisdk/OAuthClientMetadata {
 	public static final field Companion Lai/torad/aisdk/OAuthClientMetadata$Companion;
-	public fun <init> (Ljava/util/List;Ljava/lang/String;Ljava/util/List;Ljava/util/List;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/util/List;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lkotlinx/serialization/json/JsonElement;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V
-	public synthetic fun <init> (Ljava/util/List;Ljava/lang/String;Ljava/util/List;Ljava/util/List;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/util/List;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lkotlinx/serialization/json/JsonElement;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public final fun component1 ()Ljava/util/List;
-	public final fun component10 ()Ljava/lang/String;
-	public final fun component11 ()Ljava/lang/String;
-	public final fun component12 ()Ljava/lang/String;
-	public final fun component13 ()Lkotlinx/serialization/json/JsonElement;
-	public final fun component14 ()Ljava/lang/String;
-	public final fun component15 ()Ljava/lang/String;
-	public final fun component16 ()Ljava/lang/String;
-	public final fun component2 ()Ljava/lang/String;
-	public final fun component3 ()Ljava/util/List;
-	public final fun component4 ()Ljava/util/List;
-	public final fun component5 ()Ljava/lang/String;
-	public final fun component6 ()Ljava/lang/String;
-	public final fun component7 ()Ljava/lang/String;
-	public final fun component8 ()Ljava/lang/String;
-	public final fun component9 ()Ljava/util/List;
-	public final fun copy (Ljava/util/List;Ljava/lang/String;Ljava/util/List;Ljava/util/List;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/util/List;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lkotlinx/serialization/json/JsonElement;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)Lai/torad/aisdk/OAuthClientMetadata;
-	public static synthetic fun copy$default (Lai/torad/aisdk/OAuthClientMetadata;Ljava/util/List;Ljava/lang/String;Ljava/util/List;Ljava/util/List;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/util/List;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lkotlinx/serialization/json/JsonElement;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ILjava/lang/Object;)Lai/torad/aisdk/OAuthClientMetadata;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getClientName ()Ljava/lang/String;
 	public final fun getClientUri ()Ljava/lang/String;
@@ -3810,6 +3794,25 @@ public final synthetic class ai/torad/aisdk/OAuthClientMetadata$$serializer : ko
 
 public final class ai/torad/aisdk/OAuthClientMetadata$Companion {
 	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public final class ai/torad/aisdk/OAuthClientMetadataBuilder {
+	public final fun clientName (Ljava/lang/String;)V
+	public final fun clientUri (Ljava/lang/String;)V
+	public final fun contacts (Ljava/util/List;)V
+	public final fun grantTypes (Ljava/util/List;)V
+	public final fun jwks (Lkotlinx/serialization/json/JsonElement;)V
+	public final fun jwksUri (Ljava/lang/String;)V
+	public final fun logoUri (Ljava/lang/String;)V
+	public final fun policyUri (Ljava/lang/String;)V
+	public final fun redirectUris (Ljava/util/List;)V
+	public final fun responseTypes (Ljava/util/List;)V
+	public final fun scope (Ljava/lang/String;)V
+	public final fun softwareId (Ljava/lang/String;)V
+	public final fun softwareStatement (Ljava/lang/String;)V
+	public final fun softwareVersion (Ljava/lang/String;)V
+	public final fun tokenEndpointAuthMethod (Ljava/lang/String;)V
+	public final fun tosUri (Ljava/lang/String;)V
 }
 
 public abstract interface class ai/torad/aisdk/OAuthClientProvider {
@@ -4121,6 +4124,8 @@ public final class ai/torad/aisdk/ProviderId {
 public final class ai/torad/aisdk/ProviderKt {
 	public static final fun Provider (Ljava/lang/String;Ljava/util/Map;Ljava/util/Map;Ljava/util/Map;Ljava/util/Map;Ljava/util/Map;Ljava/util/Map;Ljava/util/Map;Lai/torad/aisdk/Provider;)Lai/torad/aisdk/Provider;
 	public static synthetic fun Provider$default (Ljava/lang/String;Ljava/util/Map;Ljava/util/Map;Ljava/util/Map;Ljava/util/Map;Ljava/util/Map;Ljava/util/Map;Ljava/util/Map;Lai/torad/aisdk/Provider;ILjava/lang/Object;)Lai/torad/aisdk/Provider;
+	public static final fun ProviderMiddleware (Lkotlin/jvm/functions/Function1;)Lai/torad/aisdk/ProviderMiddleware;
+	public static synthetic fun ProviderMiddleware$default (Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Lai/torad/aisdk/ProviderMiddleware;
 	public static final fun WrapProvider (Lai/torad/aisdk/Provider;Lai/torad/aisdk/ProviderMiddleware;)Lai/torad/aisdk/Provider;
 }
 
@@ -4151,20 +4156,15 @@ public final class ai/torad/aisdk/ProviderMetadata$Raw : ai/torad/aisdk/Provider
 }
 
 public final class ai/torad/aisdk/ProviderMiddleware {
-	public fun <init> ()V
-	public fun <init> (Ljava/util/List;Ljava/util/List;Ljava/util/List;)V
-	public synthetic fun <init> (Ljava/util/List;Ljava/util/List;Ljava/util/List;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public final fun component1 ()Ljava/util/List;
-	public final fun component2 ()Ljava/util/List;
-	public final fun component3 ()Ljava/util/List;
-	public final fun copy (Ljava/util/List;Ljava/util/List;Ljava/util/List;)Lai/torad/aisdk/ProviderMiddleware;
-	public static synthetic fun copy$default (Lai/torad/aisdk/ProviderMiddleware;Ljava/util/List;Ljava/util/List;Ljava/util/List;ILjava/lang/Object;)Lai/torad/aisdk/ProviderMiddleware;
-	public fun equals (Ljava/lang/Object;)Z
 	public final fun getEmbeddingModelMiddlewares ()Ljava/util/List;
 	public final fun getImageModelMiddlewares ()Ljava/util/List;
 	public final fun getLanguageModelMiddlewares ()Ljava/util/List;
-	public fun hashCode ()I
-	public fun toString ()Ljava/lang/String;
+}
+
+public final class ai/torad/aisdk/ProviderMiddlewareBuilder {
+	public final fun embeddingModelMiddlewares (Ljava/util/List;)V
+	public final fun imageModelMiddlewares (Ljava/util/List;)V
+	public final fun languageModelMiddlewares (Ljava/util/List;)V
 }
 
 public final class ai/torad/aisdk/ProviderModels {
@@ -4627,19 +4627,6 @@ public final class ai/torad/aisdk/RetryErrorReason : java/lang/Enum {
 }
 
 public final class ai/torad/aisdk/RetryPolicy {
-	public fun <init> ()V
-	public fun <init> (IJJLkotlin/time/Clock;Lai/torad/aisdk/RetryDelayGenerator;Ljava/lang/Long;Ljava/lang/Long;)V
-	public synthetic fun <init> (IJJLkotlin/time/Clock;Lai/torad/aisdk/RetryDelayGenerator;Ljava/lang/Long;Ljava/lang/Long;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public final fun component1 ()I
-	public final fun component2 ()J
-	public final fun component3 ()J
-	public final fun component4 ()Lkotlin/time/Clock;
-	public final fun component5 ()Lai/torad/aisdk/RetryDelayGenerator;
-	public final fun component6 ()Ljava/lang/Long;
-	public final fun component7 ()Ljava/lang/Long;
-	public final fun copy (IJJLkotlin/time/Clock;Lai/torad/aisdk/RetryDelayGenerator;Ljava/lang/Long;Ljava/lang/Long;)Lai/torad/aisdk/RetryPolicy;
-	public static synthetic fun copy$default (Lai/torad/aisdk/RetryPolicy;IJJLkotlin/time/Clock;Lai/torad/aisdk/RetryDelayGenerator;Ljava/lang/Long;Ljava/lang/Long;ILjava/lang/Object;)Lai/torad/aisdk/RetryPolicy;
-	public fun equals (Ljava/lang/Object;)Z
 	public final fun execute (Lkotlin/jvm/functions/Function1;Lkotlin/jvm/functions/Function2;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public static synthetic fun execute$default (Lai/torad/aisdk/RetryPolicy;Lkotlin/jvm/functions/Function1;Lkotlin/jvm/functions/Function2;Lkotlin/coroutines/Continuation;ILjava/lang/Object;)Ljava/lang/Object;
 	public final fun getBaseDelayMs ()J
@@ -4649,8 +4636,21 @@ public final class ai/torad/aisdk/RetryPolicy {
 	public final fun getMaxRetries ()I
 	public final fun getPerAttemptTimeoutMs ()Ljava/lang/Long;
 	public final fun getTotalTimeoutMs ()Ljava/lang/Long;
-	public fun hashCode ()I
-	public fun toString ()Ljava/lang/String;
+}
+
+public final class ai/torad/aisdk/RetryPolicyBuilder {
+	public final fun baseDelayMs (J)V
+	public final fun clock (Lkotlin/time/Clock;)V
+	public final fun delayGenerator (Lai/torad/aisdk/RetryDelayGenerator;)V
+	public final fun maxDelayMs (J)V
+	public final fun maxRetries (I)V
+	public final fun perAttemptTimeoutMs (Ljava/lang/Long;)V
+	public final fun totalTimeoutMs (Ljava/lang/Long;)V
+}
+
+public final class ai/torad/aisdk/RetryPolicyKt {
+	public static final fun RetryPolicy (Lkotlin/jvm/functions/Function1;)Lai/torad/aisdk/RetryPolicy;
+	public static synthetic fun RetryPolicy$default (Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Lai/torad/aisdk/RetryPolicy;
 }
 
 public final class ai/torad/aisdk/Schema {
@@ -6054,13 +6054,6 @@ public final class ai/torad/aisdk/ToolExecutionPolicy {
 	public static final field DEFAULT_MAX_TOOL_CALLS_PER_STEP I
 	public static final field DEFAULT_PROGRESS_BUFFER_CAPACITY I
 	public synthetic fun <init> (IIILkotlin/time/Duration;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public synthetic fun <init> (IIILkotlin/time/Duration;Lkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public final fun component1 ()I
-	public final fun component2 ()I
-	public final fun component3 ()I
-	public final fun component4-FghU774 ()Lkotlin/time/Duration;
-	public final fun copy-Q2Q30fc (IIILkotlin/time/Duration;)Lai/torad/aisdk/ToolExecutionPolicy;
-	public static synthetic fun copy-Q2Q30fc$default (Lai/torad/aisdk/ToolExecutionPolicy;IIILkotlin/time/Duration;ILjava/lang/Object;)Lai/torad/aisdk/ToolExecutionPolicy;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getMaxParallelToolCalls ()I
 	public final fun getMaxToolCallsPerStep ()I
@@ -6071,6 +6064,18 @@ public final class ai/torad/aisdk/ToolExecutionPolicy {
 }
 
 public final class ai/torad/aisdk/ToolExecutionPolicy$Companion {
+}
+
+public final class ai/torad/aisdk/ToolExecutionPolicyBuilder {
+	public final fun maxParallelToolCalls (I)V
+	public final fun maxToolCallsPerStep (I)V
+	public final fun progressBufferCapacity (I)V
+	public final fun toolExecutionTimeout-BwNAW2A (Lkotlin/time/Duration;)V
+}
+
+public final class ai/torad/aisdk/ToolExecutionPolicyKt {
+	public static final fun ToolExecutionPolicy (Lkotlin/jvm/functions/Function1;)Lai/torad/aisdk/ToolExecutionPolicy;
+	public static synthetic fun ToolExecutionPolicy$default (Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Lai/torad/aisdk/ToolExecutionPolicy;
 }
 
 public final class ai/torad/aisdk/ToolKt {

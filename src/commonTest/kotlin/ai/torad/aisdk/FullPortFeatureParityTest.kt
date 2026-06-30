@@ -240,7 +240,10 @@ class FullPortFeatureParityTest {
     @Test
     fun `utility helpers cover ids media data urls retries and JSON equality`() = runTest {
         var attempts = 0
-        val retried = RetryPolicy(maxRetries = 1, baseDelayMs = 0).execute { attempt ->
+        val retried = RetryPolicy {
+            maxRetries(1)
+            baseDelayMs(0)
+        }.execute { attempt ->
             attempts += 1
             if (attempt == 0) {
                 throw APICallError(

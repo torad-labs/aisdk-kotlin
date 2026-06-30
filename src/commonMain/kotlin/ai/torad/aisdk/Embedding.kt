@@ -95,7 +95,9 @@ public object Embedding {
         headers: Map<String, String> = emptyMap(),
         maxRetries: Int = 2,
     ): EmbedResult<String> {
-        val result = RetryPolicy(maxRetries = maxRetries).execute(retryableApiError) {
+        val result = RetryPolicy {
+            maxRetries(maxRetries)
+        }.execute(retryableApiError) {
             model.embed(
                 EmbeddingModelCallParams(
                     values = listOf(value),
@@ -135,7 +137,9 @@ public object Embedding {
 
         suspend fun embedBatch(batch: List<String>): EmbeddingModelResult {
             abortSignal.throwIfAborted()
-            val result = RetryPolicy(maxRetries = maxRetries).execute(retryableApiError) {
+            val result = RetryPolicy {
+                maxRetries(maxRetries)
+            }.execute(retryableApiError) {
                 model.embed(
                     EmbeddingModelCallParams(
                         values = batch,

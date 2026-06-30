@@ -665,7 +665,10 @@ class MCPClientTest {
         fixture.server.start()
         val provider = MemoryOAuthProvider(
             tokens = null,
-            clientInformation = OAuthClientInformation(clientId = "client-id", clientSecret = "client-secret"),
+            clientInformation = OAuthClientInformation {
+                clientId("client-id")
+                clientSecret("client-secret")
+            },
             onAddClientAuthentication = { _, _, _, _ ->
                 delay(5)
                 ClientAuthResult(additionalParams = mapOf(
@@ -729,7 +732,10 @@ class MCPClientTest {
         fixture.server.start()
         val provider = MemoryOAuthProvider(
             tokens = OAuthTokens(accessToken = "old-token", tokenType = "Bearer", refreshToken = "old-refresh"),
-            clientInformation = OAuthClientInformation(clientId = "client-id", clientSecret = "client-secret"),
+            clientInformation = OAuthClientInformation {
+                clientId("client-id")
+                clientSecret("client-secret")
+            },
             onAddClientAuthentication = { _, _, _, _ ->
                 delay(5)
                 ClientAuthResult(additionalParams = mapOf(
@@ -785,7 +791,10 @@ class MCPClientTest {
         fixture.server.start()
         val provider = MemoryOAuthProvider(
             tokens = OAuthTokens(accessToken = "expired-token", tokenType = "Bearer", refreshToken = "revoked-refresh"),
-            clientInformation = OAuthClientInformation(clientId = "client-id", clientSecret = "client-secret"),
+            clientInformation = OAuthClientInformation {
+                clientId("client-id")
+                clientSecret("client-secret")
+            },
         )
 
         assertEquals(
@@ -905,7 +914,10 @@ class MCPClientTest {
         fixture.server.start()
         val provider = MemoryOAuthProvider(
             tokens = null,
-            clientInformation = OAuthClientInformation(clientId = "client-id", clientSecret = "client-secret"),
+            clientInformation = OAuthClientInformation {
+                clientId("client-id")
+                clientSecret("client-secret")
+            },
         )
         provider.saveState("state-1")
 
@@ -1059,7 +1071,10 @@ class MCPClientTest {
         fixture.server.start()
         val authProvider = MemoryOAuthProvider(
             tokens = OAuthTokens(accessToken = "stale-token", tokenType = "Bearer", refreshToken = "refresh-token"),
-            clientInformation = OAuthClientInformation(clientId = "client-id", clientSecret = "client-secret"),
+            clientInformation = OAuthClientInformation {
+                clientId("client-id")
+                clientSecret("client-secret")
+            },
         )
         val transport = SseMCPTransport(fixture.httpClient(), "https://mcp.test/sse", authProvider = authProvider)
 
@@ -1577,7 +1592,7 @@ class MCPClientTest {
             tools = JsonObject(emptyMap()),
             resources = JsonObject(emptyMap()),
             prompts = JsonObject(emptyMap()),
-            elicitation = ElicitationCapability(),
+            elicitation = ElicitationCapability {},
         ),
         instructions: String? = null,
     ): JsonElement = json.encodeToJsonElement(
@@ -1585,7 +1600,10 @@ class MCPClientTest {
         InitializeResult(
             protocolVersion = LATEST_PROTOCOL_VERSION,
             capabilities = capabilities,
-            serverInfo = Configuration(name = "fixture-server", version = "1.0.0"),
+            serverInfo = Configuration {
+                name("fixture-server")
+                version("1.0.0")
+            },
             instructions = instructions,
         ),
     )
@@ -1667,7 +1685,9 @@ class MCPClientTest {
 
     private class MemoryOAuthProvider(
         private var tokens: OAuthTokens?,
-        private var clientInformation: OAuthClientInformation? = OAuthClientInformation(clientId = "client-id"),
+        private var clientInformation: OAuthClientInformation? = OAuthClientInformation {
+            clientId("client-id")
+        },
         private val onAddClientAuthentication: (suspend (
             headers: Map<String, String>,
             params: Map<String, String>,
@@ -1679,10 +1699,10 @@ class MCPClientTest {
         var savedCodeVerifier: String = "verifier"
         private var savedState: String? = null
         override val redirectUrl: String = "https://client.example.com/callback"
-        override val clientMetadata: OAuthClientMetadata = OAuthClientMetadata(
-            redirectUris = listOf(redirectUrl),
-            clientName = "client-1",
-        )
+        override val clientMetadata: OAuthClientMetadata = OAuthClientMetadata {
+            redirectUris(listOf(redirectUrl))
+            clientName("client-1")
+        }
 
         override suspend fun tokens(): OAuthTokens? = tokens
         override suspend fun saveTokens(tokens: OAuthTokens) {

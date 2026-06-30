@@ -34,7 +34,7 @@
 - `interface ToolStreamWriter { suspend fun write(event: StreamEvent); suspend fun writeData(value: JsonElement) }` — v6's `UIMessageStreamWriter` (gap #21). `writeData` emits `StreamEvent.Raw(value)`. `object NoopToolStreamWriter` is the off-loop default. Writes interleave with the tool's own emissions in stream order; `streamToUiMessages` ignores `Raw`, so a consumer that wants the custom data intercepts the `Flow<StreamEvent>` pre-conversion.
 - `ToolPredicateOptions<TContext> { toolCallId(...); messages(...); experimental_context(...) }` — regular builder-backed class passed to `Tool.needsApproval` / `Tool.toModelOutput` (gap #17) so a predicate can decide on conversation history or call identity. The positional constructor, `copy()`, and `componentN()` are not public.
 - Tool lifecycle hooks (gap #18), all optional + loop-invoked, `runHook`-guarded: `onInputStart(streamingId)` on `ToolInputStart`, `onInputDelta(streamingId, delta)` on `ToolInputDelta`, `onInputAvailable(toolCallId, input)` just before the executor runs.
-- `data class ToolExecutionPolicy(maxParallelToolCalls = 8, maxToolCallsPerStep = 128, progressBufferCapacity = 64, toolExecutionTimeout? = null)` — explicit bounded policy for local tool execution inside one step. `ToolLoopAgent.maxParallelToolCalls` remains as shorthand for the policy parallelism cap.
+- `ToolExecutionPolicy { maxParallelToolCalls(8); maxToolCallsPerStep(128); progressBufferCapacity(64); toolExecutionTimeout(null) }` — `@Poko` explicit bounded policy for local tool execution inside one step. `ToolLoopAgent.maxParallelToolCalls` remains as shorthand for the policy parallelism cap. The positional constructor, `copy()`, and `componentN()` are not public.
 - `typealias ToolCallRepairFunction<TContext> = suspend (failedCall, error, messages, tools) -> ContentPart.ToolCall?` — wired into `ToolLoopAgent` via the optional `experimental_repairToolCall` constructor param. Called once when a tool call's args fail to decode (model emitted JSON that doesn't match the schema). Return a corrected `ContentPart.ToolCall` (possibly with a different `toolName`) to retry; return null to surface `StreamEvent.ToolError`. Single-attempt — no recursive repair. Targets Gemma 4 E2B's ~5% rate of malformed-args calls.
 - `sealed class AgentError(message, cause?) : RuntimeException` — tool-loop error taxonomy: `NoSuchTool(toolName, availableTools)`, `InvalidToolInput(toolName, rawArgs, parseError)`, `ToolExecution(toolName, toolCallId, executorError)`, `ToolCallRepairFailed(toolName, originalError, repairError?)`, `InvalidApprovalResponse(toolCallId, knownPendingIds)`, `InvalidToolApprovalSignature(approvalId, toolCallId, reason)`, `InvalidCallOptions(validationError)`, `MaxStepsReached(stepCount)`, `MaxToolCallsPerStepExceeded(toolCallCount, maxToolCallsPerStep)`, `ToolExecutionTimedOut(toolName, toolCallId, timeout)`. The loop populates `StreamEvent.ToolError.error` with these so consumers `when` on the type instead of substring-matching messages.
 
@@ -207,13 +207,14 @@ Penalty, response-format, and retry fields participate in the `Step ?: Agent ?: 
   `AuthorizationServerMetadata`, `OAuthProtectedResourceMetadata`) are
   `@Serializable @Poko class` value-semantics types; JSON field names remain
   unchanged, while public `copy()` / `componentN()` ABI is intentionally
-  absent. OAuth client information/metadata structs stay on the builder track.
+  absent. OAuth client information/metadata structs are `@Serializable @Poko`
+  builder-backed value types.
 - Experimental MCP aliases/functions require `@ExperimentalAiSdkApi`: `experimental_MCPClientConfig`, `experimental_MCPClient`, `experimental_MCPClientCapabilities`, `experimental_listPrompts`, `experimental_getPrompt`, `Experimental_CreateMCPClient`, `Experimental_StdioMCPTransport`.
 
 ### Provider Registry
 
 - `interface Provider` with `languageModel`, `embeddingModel`, `imageModel`, `speechModel`, `transcriptionModel`, `rerankingModel`, and `videoModel`.
-- `customProvider(...)`, `CustomProvider`, `ProviderRegistry`, `createProviderRegistry(...)`, `wrapProvider(...)`, `ProviderMiddleware`.
+- `customProvider(...)`, `CustomProvider`, `ProviderRegistry`, `createProviderRegistry(...)`, `wrapProvider(...)`, `ProviderMiddleware { languageModelMiddlewares(...); embeddingModelMiddlewares(...); imageModelMiddlewares(...) }`.
 - Gateway response/spec/metadata holders are `@Poko class` value-semantics
   types; field access remains, but public `copy()` / `componentN()` ABI is
   intentionally absent. Gateway settings and call params stay on the
@@ -296,23 +297,29 @@ Penalty, response-format, and retry fields participate in the `Step ?: Agent ?: 
   `OpenResponsesOptions`, `OpenResponsesAllowedTools`,
   `XaiLanguageModelChatOptions`, `XaiLanguageModelResponsesOptions`,
   `LiteRTSamplerConfig`, `LiteRTConversationRequest`, and
-  `LiteRTLanguageModelSettings`) expose field getters and are configured
-  through public DSL factories. The gateway params, `TextGenerationRequest`,
+  `LiteRTLanguageModelSettings`, `OAuthClientInformation`,
+  `OAuthClientMetadata`, `Configuration`, `ElicitationCapability`,
+  `ProviderMiddleware`, `RetryPolicy`, and `ToolExecutionPolicy`) expose field
+  getters and are configured through public DSL factories. The gateway params,
+  `TextGenerationRequest`,
   `ChatRequest`, `CompletionRequestOptions`, `HuggingFaceResponsesSettings`,
   `RedactionOptions`, `MCPReconnectionOptions`, `StdioConfig`,
   `ToolSchemaOptions`, `BedrockCredentials`, `AssemblyAICustomSpelling`,
   `OpenResponsesOptions`, `OpenResponsesAllowedTools`,
   `XaiLanguageModelChatOptions`, `XaiLanguageModelResponsesOptions`, and
-  `LiteRTSamplerConfig` are `@Poko` value-semantics types. `AuthOptions`,
+  `LiteRTSamplerConfig`, `OAuthClientInformation`, `OAuthClientMetadata`,
+  `Configuration`, `ElicitationCapability`, and `ToolExecutionPolicy` are
+  `@Poko` value-semantics types. `AuthOptions`,
   media/rerank params, `CompletionRequest`, `StructuredObjectRequest`,
   `TelemetrySettings`, `MCPClientConfig`, `MCPTransportConfig`,
   `MCPRequestOptions`, `CallCompletionApiOptions`, `UseCompletionOptions`,
   `StructuredObjectOptions`, `LoggingOptions`, `ProviderToolFactoryOptions`,
   `ToolPredicateOptions`, `LiteRTConversationRequest`, and
-  `LiteRTLanguageModelSettings` are regular classes with identity equality
-  because they may hold clients, abort signals, transports, callbacks,
-  coroutine contexts, telemetry integrations, serializers, functions, tool
-  definitions, arbitrary context values, or model input objects. The positional
+  `LiteRTLanguageModelSettings`, `ProviderMiddleware`, and `RetryPolicy` are
+  regular classes with identity equality because they may hold clients, abort
+  signals, transports, callbacks, coroutine contexts, telemetry integrations,
+  serializers, functions, tool definitions, middleware instances, retry delay
+  generators, arbitrary context values, or model input objects. The positional
   constructors, `copy()`, and `componentN()` are not public.
 - Provider error payloads (`BasetenErrorData`, `CerebrasErrorData`,
   `FireworksErrorData`) are `@Serializable @Poko class` value-semantics types;
@@ -341,7 +348,7 @@ Penalty, response-format, and retry fields participate in the `Step ?: Agent ?: 
 
 - `cosineSimilarity`, `splitArray`, `asArray`, `mergeJsonObjects`, `isDeepEqualData`.
 - `DataUrl`, `splitDataUrl`, `detectMediaType`, `prepareHeaders`.
-- `RetryPolicy(maxRetries, baseDelayMs, maxDelayMs, clock, delayGenerator, totalTimeoutMs?, perAttemptTimeoutMs?)`, `RetryDelayGenerator`, `RetryAttemptDetail`, `retryWithExponentialBackoff`, `SerialJobExecutor`. Defaults retry only typed retryable `APICallError` / `GatewayError`, honor `Retry-After`, use full jitter, and preserve attempt history in `RetryError.attempts`.
+- `RetryPolicy { maxRetries(2); baseDelayMs(100); maxDelayMs(2000); clock(Clock.System); delayGenerator(...); totalTimeoutMs(null); perAttemptTimeoutMs(null) }`, `RetryDelayGenerator`, `RetryAttemptDetail`, `retryWithExponentialBackoff`, `SerialJobExecutor`. Defaults retry only typed retryable `APICallError` / `GatewayError`, honor `Retry-After`, use full jitter, and preserve attempt history in `RetryError.attempts`. `RetryPolicy` is a regular builder-backed class because delay generators may be stateful; the positional constructor, `copy()`, and `componentN()` are not public.
 - `mergeAbortSignals`, `abortSignalFromJobs`.
 
 ### DevTools

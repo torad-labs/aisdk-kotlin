@@ -116,7 +116,9 @@ public object Reranking {
         require(query.isNotBlank()) { "rerank: query must not be blank" }
         topN?.let { require(it > 0) { "rerank: topN must be > 0" } }
         if (documents.isEmpty()) return RerankResult(results = emptyList(), originalDocuments = emptyList())
-        val result = RetryPolicy(maxRetries = maxRetries).execute(retryableApiError) {
+        val result = RetryPolicy {
+            maxRetries(maxRetries)
+        }.execute(retryableApiError) {
             model.rerank(
                 RerankingParams {
                     query(query)

@@ -126,9 +126,12 @@ This project follows Semantic Versioning once the first stable release is cut.
   `AssemblyAICustomSpelling`, `OpenResponsesOptions`,
   `OpenResponsesAllowedTools`, `XaiLanguageModelChatOptions`,
   `XaiLanguageModelResponsesOptions`, `LiteRTSamplerConfig`,
-  `LiteRTConversationRequest`, and `LiteRTLanguageModelSettings`) now follow
-  the same builder pattern. Pure data-only options/configs/credentials are
-  `@Poko` value-semantics classes; callback-, transport-, serializer-, or
+  `LiteRTConversationRequest`, `LiteRTLanguageModelSettings`,
+  `OAuthClientInformation`, `OAuthClientMetadata`, `Configuration`,
+  `ElicitationCapability`, `ProviderMiddleware`, `RetryPolicy`, and
+  `ToolExecutionPolicy`) now follow the same builder pattern. Pure data-only
+  options/configs/credentials/policies are `@Poko` value-semantics classes;
+  callback-, transport-, serializer-, middleware-, retry-generator-, or
   arbitrary-context-bearing options are regular classes with identity equality.
 
 - **Tools are now class-based and extensible (breaking ABI change).** `Tool` is an `abstract class`

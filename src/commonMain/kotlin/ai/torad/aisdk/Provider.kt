@@ -153,11 +153,41 @@ public class ProviderRegistry(
     }
 }
 
-public data class ProviderMiddleware(
-    val languageModelMiddlewares: List<LanguageModelMiddleware> = emptyList(),
-    val embeddingModelMiddlewares: List<EmbeddingModelMiddleware> = emptyList(),
-    val imageModelMiddlewares: List<ImageModelMiddleware> = emptyList(),
+public class ProviderMiddleware internal constructor(
+    public val languageModelMiddlewares: List<LanguageModelMiddleware> = emptyList(),
+    public val embeddingModelMiddlewares: List<EmbeddingModelMiddleware> = emptyList(),
+    public val imageModelMiddlewares: List<ImageModelMiddleware> = emptyList(),
 )
+
+public class ProviderMiddlewareBuilder internal constructor() {
+    private var languageModelMiddlewares: List<LanguageModelMiddleware> = emptyList()
+    private var embeddingModelMiddlewares: List<EmbeddingModelMiddleware> = emptyList()
+    private var imageModelMiddlewares: List<ImageModelMiddleware> = emptyList()
+
+    public fun languageModelMiddlewares(value: List<LanguageModelMiddleware>) {
+        languageModelMiddlewares = value
+    }
+
+    public fun embeddingModelMiddlewares(value: List<EmbeddingModelMiddleware>) {
+        embeddingModelMiddlewares = value
+    }
+
+    public fun imageModelMiddlewares(value: List<ImageModelMiddleware>) {
+        imageModelMiddlewares = value
+    }
+
+    internal fun build(): ProviderMiddleware =
+        ProviderMiddleware(
+            languageModelMiddlewares = languageModelMiddlewares,
+            embeddingModelMiddlewares = embeddingModelMiddlewares,
+            imageModelMiddlewares = imageModelMiddlewares,
+        )
+}
+
+public fun ProviderMiddleware(
+    block: ProviderMiddlewareBuilder.() -> Unit = {},
+): ProviderMiddleware =
+    ProviderMiddlewareBuilder().apply(block).build()
 
 public fun WrapProvider(provider: Provider, middleware: ProviderMiddleware): Provider =
     object : Provider {
