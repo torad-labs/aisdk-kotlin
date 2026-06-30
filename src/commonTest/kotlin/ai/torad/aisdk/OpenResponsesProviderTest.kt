@@ -492,6 +492,64 @@ class OpenResponsesProviderTest {
         assertEquals(null, explicit["file_data"])
     }
 
+    @Test
+    fun `user URL media maps to URL fields and base64 media stays inline`() = runTest {
+        val seenBodies = mutableListOf<JsonObject>()
+        val client = HttpClient(
+            MockEngine { request ->
+                seenBodies += Json.parseToJsonElement(requestBodyText(request)).jsonObject
+                respond(
+                    content = """{"id":"resp_5","created_at":1780000004,"model":"gpt-resp","output":[{"type":"message","id":"msg_5","role":"assistant","content":[{"type":"output_text","text":"ok"}]}]}""",
+                    status = HttpStatusCode.OK,
+                    headers = headersOf(HttpHeaders.ContentType, "application/json"),
+                )
+            },
+        )
+        val provider = OpenResponses(client, OpenResponsesProviderSettings("https://api.test/v1/responses", "openresponses"))
+        val imageUrl = "https://cdn.test/image.png"
+        val fileUrl = "https://cdn.test/paper.pdf"
+
+        provider.languageModel("gpt-resp").generate(
+            LanguageModelCallParams(
+                messages = listOf(
+                    ModelMessage(
+                        MessageRole.User,
+                        listOf(
+                            ContentPart.Image(mediaType = "image/png", url = imageUrl),
+                            ContentPart.File(mediaType = "application/pdf", url = fileUrl, filename = "paper.pdf"),
+                            ContentPart.Image(mediaType = "image/jpeg", base64 = "aW1n"),
+                            ContentPart.File(mediaType = "text/plain", base64 = "ZG9j", filename = "note.txt"),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        val content = seenBodies.single().getValue("input")
+            .jsonArray
+            .single()
+            .jsonObject
+            .getValue("content")
+            .jsonArray
+        val urlImage = content[0].jsonObject
+        assertEquals("input_image", urlImage.getValue("type").jsonPrimitive.content)
+        assertEquals(imageUrl, urlImage.getValue("image_url").jsonPrimitive.content)
+        assertEquals(null, urlImage["file_id"])
+        val urlFile = content[1].jsonObject
+        assertEquals("input_file", urlFile.getValue("type").jsonPrimitive.content)
+        assertEquals(fileUrl, urlFile.getValue("file_url").jsonPrimitive.content)
+        assertEquals(null, urlFile["file_data"])
+        val base64Image = content[2].jsonObject
+        assertEquals("input_image", base64Image.getValue("type").jsonPrimitive.content)
+        assertEquals("data:image/jpeg;base64,aW1n", base64Image.getValue("image_url").jsonPrimitive.content)
+        assertEquals(null, base64Image["file_url"])
+        val base64File = content[3].jsonObject
+        assertEquals("input_file", base64File.getValue("type").jsonPrimitive.content)
+        assertEquals("data:text/plain;base64,ZG9j", base64File.getValue("file_data").jsonPrimitive.content)
+        assertEquals("note.txt", base64File.getValue("filename").jsonPrimitive.content)
+        assertEquals(null, base64File["file_url"])
+    }
+
     private fun objectSchema(vararg required: String): JsonObject = buildJsonObject {
         put("type", JsonPrimitive("object"))
         put(
