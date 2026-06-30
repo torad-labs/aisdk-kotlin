@@ -99,11 +99,11 @@ and repaired values are byte-identical to the JS SDK.
 ### Prepare scopes
 
 - `class PrepareCallScope<TContext>(options, instructions, model, tools)`
-- `data class AgentSettings<TContext>(instructions?, model?, tools?, providerOptions?, temperature?, topP?, topK?, maxOutputTokens?, stopSequences?, seed?, presencePenalty?, frequencyPenalty?, responseFormat?)`
+- `data class AgentSettings<TContext>(instructions?, model?, tools?, providerOptions?, temperature?, topP?, topK?, maxOutputTokens?, stopSequences?, seed?, presencePenalty?, frequencyPenalty?, responseFormat?, maxRetries?)`
 - `class PrepareStepScope<TContext>(stepNumber, model, steps, messages, context)`
-- `data class StepSettings(model?, activeTools?, toolChoice?, messages?, system?, providerOptions?, temperature?, topP?, topK?, maxOutputTokens?, stopSequences?, seed?, presencePenalty?, frequencyPenalty?, responseFormat?)`
+- `data class StepSettings(model?, activeTools?, toolChoice?, messages?, system?, providerOptions?, temperature?, topP?, topK?, maxOutputTokens?, stopSequences?, seed?, presencePenalty?, frequencyPenalty?, responseFormat?, maxRetries?)`
 
-Penalty and response-format fields participate in the `Step ?: Agent ?: agent-default ?: provider-default` resolution chain — same as the existing sampler params.
+Penalty, response-format, and retry fields participate in the `Step ?: Agent ?: agent-default ?: provider-default` resolution chain — same as the existing sampler params. `maxRetries` applies to non-streaming model round-trips only.
 
 ### Cancellation
 
@@ -202,9 +202,10 @@ Penalty and response-format fields participate in the `Step ?: Agent ?: agent-de
 
 ### Top-level inference
 
-- `suspend fun <TOutput> generateText(model, prompt? | messages?, system?, output?, temperature?, ..., abortSignal?, presencePenalty?, frequencyPenalty?, responseFormat?): GenerateTextResult<TOutput>`
+- `data class CallSettings(..., maxRetries = 2)` / `data class CallConfig(..., maxRetries = 2)` — non-streaming text/object generation retries typed retryable `APICallError` / `GatewayError` per model round-trip; `maxRetries = 0` disables retries.
+- `suspend fun <TOutput> generateText(model, prompt? | messages?, system?, output?, temperature?, ..., abortSignal?, presencePenalty?, frequencyPenalty?, responseFormat?, maxRetries = 2): GenerateTextResult<TOutput>`
 - `fun streamText(model, prompt? | messages?, system?, ..., abortSignal?, output?, presencePenalty?, frequencyPenalty?, responseFormat?): Flow<StreamEvent>`
-- `@Deprecated suspend fun <TOutput> generateObject(model, output, prompt? | messages?, ...): GenerateObjectResult<TOutput>`
+- `@Deprecated suspend fun <TOutput> generateObject(model, output, prompt? | messages?, ..., maxRetries = 2): GenerateObjectResult<TOutput>`
 - `@Deprecated fun <TOutput> streamObject(model, output, prompt? | messages?, ...): Flow<StreamEvent>`
 
 ### Messages

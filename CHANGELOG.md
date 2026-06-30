@@ -21,6 +21,11 @@ This project follows Semantic Versioning once the first stable release is cut.
   `Boolean?` values defaulting to `null`. OpenAI-compatible tool requests omit
   `strict` unless callers explicitly set `true` or `false`; structured-output
   `response_format` strict behavior is unchanged.
+- Non-streaming text/object generation now retries transient model-call failures
+  by default (breaking ABI change): `CallSettings`, `CallConfig`, `ToolLoopAgent`,
+  `AgentSettings`, and `StepSettings` expose `maxRetries` (`2` by default, `0`
+  disables). Retries wrap each individual `LanguageModel.generate` round-trip,
+  so a later model retry in a tool loop does not re-run already-executed tools.
 
 - **Tools are now class-based and extensible (breaking ABI change).** `Tool` is an `abstract class`
   you can extend for reusable, dependency-injected tools — mirroring how a concrete agent extends

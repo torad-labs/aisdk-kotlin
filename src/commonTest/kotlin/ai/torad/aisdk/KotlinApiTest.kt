@@ -73,6 +73,7 @@ class KotlinApiTest {
                 providerOptions = providerOptions,
                 presencePenalty = 0.4f,
                 frequencyPenalty = 0.5f,
+                maxRetries = 4,
             ),
         )
         val msgs = buildList<ModelMessage> {
@@ -93,6 +94,7 @@ class KotlinApiTest {
                 presencePenalty = s.presencePenalty,
                 frequencyPenalty = s.frequencyPenalty,
                 responseFormat = s.responseFormat ?: ResponseFormat.Text,
+                maxRetries = s.maxRetries,
             ),
         ).generate(GenerationInput.from(prompt = request.prompt, messages = msgs)).first()
 
@@ -108,6 +110,7 @@ class KotlinApiTest {
         assertEquals(providerOptions, params.providerOptions)
         assertEquals(0.4f, params.presencePenalty)
         assertEquals(0.5f, params.frequencyPenalty)
+        assertEquals(4, request.settings.maxRetries)
     }
 
     @Test

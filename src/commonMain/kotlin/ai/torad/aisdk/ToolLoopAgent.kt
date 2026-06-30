@@ -86,6 +86,8 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
     public val frequencyPenalty: Float? = null,
     /** Wire-level response constraint for providers that support it. */
     public val responseFormat: ResponseFormat = ResponseFormat.Text,
+    /** Maximum retries for each non-streaming model round-trip. Streaming retry is handled separately. */
+    public val maxRetries: Int = 2,
     /**
      * Legacy shorthand for [ToolExecutionPolicy.maxParallelToolCalls]. If [toolExecutionPolicy]
      * is supplied, the policy is the source of truth.
@@ -143,6 +145,9 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
      */
     engineContext: CoroutineContext = Dispatchers.Default,
 ) : Agent<TContext, TOutput> {
+    init {
+        require(maxRetries >= 0) { "maxRetries must be >= 0" }
+    }
 
     private val dispatcher = AgentTelemetryDispatcher<TContext>(logger)
     private val repairer = ToolCallRepairer<TContext>(experimental_repairToolCall, tools)
@@ -892,7 +897,8 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
                 onEvent(it, AgentEvent.ModelCallStarted(stepNumber, stepModel.modelId, callParams))
             }
             try {
-                val stepStreamResult = executeModelStep(stepModel, callParams, modelCallMode)
+                val stepMaxRetries = stepSettings.maxRetries ?: resolvedSettings.maxRetries ?: maxRetries
+                val stepStreamResult = executeModelStep(stepModel, callParams, modelCallMode, stepMaxRetries)
                 stepRequest = stepStreamResult.request
                 stepResponse = stepStreamResult.response
                 stepStreamResult.stream.collect { event ->
@@ -1705,11 +1711,14 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
         stepModel: LanguageModel,
         callParams: LanguageModelCallParams,
         mode: ModelCallMode,
+        maxRetries: Int,
     ): LanguageModelStreamResult =
         when (mode) {
             ModelCallMode.Stream -> stepModel.streamResult(callParams)
             ModelCallMode.Generate -> {
-                val result = stepModel.generate(callParams)
+                val result = RetryPolicy(maxRetries = maxRetries).execute {
+                    stepModel.generate(callParams)
+                }
                 LanguageModelStreamResult(
                     stream = LanguageModelResultStreamEvents.from(result),
                     request = result.request,

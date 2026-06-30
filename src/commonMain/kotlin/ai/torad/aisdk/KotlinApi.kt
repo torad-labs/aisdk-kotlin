@@ -23,7 +23,12 @@ public data class CallSettings(
     val presencePenalty: Float? = null,
     val frequencyPenalty: Float? = null,
     val responseFormat: ResponseFormat? = null,
-)
+    val maxRetries: Int = 2,
+) {
+    init {
+        require(maxRetries >= 0) { "maxRetries must be >= 0" }
+    }
+}
 
 @AiSdkDsl
 public class CallSettingsBuilder internal constructor() {
@@ -38,6 +43,8 @@ public class CallSettingsBuilder internal constructor() {
     private var frequencyPenalty: Float? = null
     private var responseFormat: ResponseFormat? = null
 
+    private var maxRetries: Int = 2
+
     private val stopSequences = mutableListOf<String>()
 
     public fun temperature(value: Float?) { temperature = value }
@@ -45,6 +52,7 @@ public class CallSettingsBuilder internal constructor() {
     public fun topK(value: Int?) { topK = value }
     public fun maxOutputTokens(value: Int?) { maxOutputTokens = value }
     public fun seed(value: Int?) { seed = value }
+    public fun maxRetries(value: Int) { maxRetries = value }
     public fun providerOptions(value: ProviderOptions) { providerOptions = value }
     public fun abortSignal(value: AbortSignal?) { abortSignal = value }
     public fun presencePenalty(value: Float?) { presencePenalty = value }
@@ -79,6 +87,7 @@ public class CallSettingsBuilder internal constructor() {
         presencePenalty = presencePenalty,
         frequencyPenalty = frequencyPenalty,
         responseFormat = responseFormat,
+        maxRetries = maxRetries,
     )
 }
 

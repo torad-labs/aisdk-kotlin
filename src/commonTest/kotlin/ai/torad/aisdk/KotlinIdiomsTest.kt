@@ -50,6 +50,7 @@ class KotlinIdiomsTest {
     @Test
     fun `provider option builder creates nested provider maps`() {
         val settings = CallSettings {
+            maxRetries(0)
             providerOptions {
                 provider("openai") {
                     put("reasoningEffort", JsonPrimitive("high"))
@@ -58,6 +59,7 @@ class KotlinIdiomsTest {
             }
         }
 
+        assertEquals(0, settings.maxRetries)
         assertEquals("enabled", settings.providerOptions.toMap()["trace"]?.jsonPrimitive?.content)
         val openai = assertIs<JsonObject>(settings.providerOptions.toMap()["openai"])
         assertEquals("high", openai["reasoningEffort"]?.jsonPrimitive?.content)
