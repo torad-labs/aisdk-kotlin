@@ -75,8 +75,8 @@ tests must stay green.
 | BL-052 | UI residual: same-name tool placeholder mis-drop; Text/Reasoning id-collision stuck | Low | Optional | CONFIRMED | OPEN |
 | BL-053 | Media transcription base64 ~2× peak memory (structural) | Low | Optional | CONFIRMED | OPEN |
 
-| BL-054 | SigV4 canonical path single-encoded — Bedrock needs double-encode → 403 | Critical | Recommended | CONFIRMED | OPEN |
-| BL-055 | Bedrock ARN model ids percent-encoded wholesale (should pass through raw) | High | Recommended | CONFIRMED | OPEN |
+| BL-054 | ~~SigV4 path needs double-encode~~ → FALSE POSITIVE (boto3: single `%3A` is correct); lock w/ test | ~~Critical~~ | Recommended | REFUTED | TEST-LOCK |
+| BL-055 | ~~Bedrock ARN should be raw~~ → FALSE POSITIVE (boto3 encodes ARN wholesale); lock w/ test | ~~High~~ | Recommended | REFUTED | TEST-LOCK |
 | BL-056 | Bedrock eventstream frames not CRC-validated | Low | Optional | CONFIRMED | OPEN |
 | BL-057 | Wiki/README/llms.txt code samples don't compile against the real API | High | Recommended | CONFIRMED | OPEN |
 | BL-058 | Public API evolvability: data-class traps, no top-level verbs, Java-uncallable fns | High | Recommended | CONFIRMED | OPEN |
@@ -697,9 +697,17 @@ amzDate, eventstream framing offsets, and region derivation are verified solid (
 signer passes AWS's official `AKIDEXAMPLE` test vector). One Critical path-encoding
 bug; BL-054 was independently re-verified in source.
 
-## BL-054 — SigV4 canonical path single-encoded; Bedrock requires double-encoding (→ 403 on nearly every model)
+## BL-054 — ~~SigV4 canonical path single-encoded~~ → FALSE POSITIVE (verified against boto3); lock with a regression test
 
-- **Severity:** Critical (blocks all Bedrock with a colon model id) · **Beta gate:** Recommended · **Confidence:** CONFIRMED (re-verified; agent ran differential signature tests)
+- **VERDICT: REFUTED.** The audit hypothesis (Bedrock requires double-encoding `%253A`) is WRONG. boto3 (the AWS reference SDK, botocore 1.43) signs the colon Bedrock path with **single-encoded `%3A`** on both the wire and the canonical request — byte-identical to the SDK's current output. Applying the proposed double-encode "fix" would sign `%253A` while sending `%3A` → signature mismatch → 403 on every Bedrock call. The agent's `%253A` "golden" was its own assumption, never checked against boto3.
+- **Action (do this instead):** add a regression test that LOCKS the verified-correct single-encoding so nobody "fixes" it later. boto3 golden (controlled request: POST `/model/anthropic.claude-3-5-sonnet-20240620-v1:0/converse`, body `{"messages":[]}`, content-type application/json, key `AKIDEXAMPLE`/`wJalrXUtnFEMI/K7MDENG+bPxRfiCYEXAMPLEKEY`, date `20150830T123600Z`, us-east-1/bedrock): canonical path `/model/anthropic.claude-3-5-sonnet-20240620-v1%3A0/converse`, **signature `d01a8d899a4fa4002b4b754611d4da1c824394200b23acaaa4609304bef93847`**, SignedHeaders `content-type;host;x-amz-date`.
+- **Acceptance criteria:**
+  - [ ] Test: SDK signs the controlled colon Bedrock request → Authorization signature == the boto3 golden above; canonical path contains `%3A` and NOT `%253A`. (Extends `AwsSigV4Test`, which today asserts only host/date/token for the Bedrock URL — the gap the audit correctly identified.)
+  - [ ] Do NOT change `uriEncodePreservingEscapes` / `bedrockEncodeModelId` encoding.
+
+<details><summary>superseded original hypothesis (kept for the record)</summary>
+
+- ~~Severity: Critical · Confidence: CONFIRMED (re-verified; agent ran differential signature tests)~~
 - **Location:** `AwsSigV4.kt:103-104,119-141` (`canonicalAwsPath`/`uriEncodePreservingEscapes`). The `%XX` passthrough branch (`:126-130`) preserves an existing `%3A` instead of re-encoding `%`→`%25`.
 - **Problem:** `bedrockEncodeModelId` puts `%3A` on the wire for a model-id colon; the canonical path then keeps `%3A`, but AWS double-encodes (non-S3 rule) to `%253A`, so signatures diverge → 403 "signature ... does not match." Hits `anthropic.claude-3-5-sonnet-20240620-v1:0`, `amazon.nova-lite-v1:0`, `meta.llama3-70b-instruct-v1:0` — almost every Bedrock model. The agent reproduced AWS's expected canonical and got divergent hashes (SDK `16b2a3f7…` vs AWS `0b507367…`).
 - **Why tests miss it:** `AwsSigV4Test:36-52` uses a colon model id but only asserts the credential-scope substring, never the full signature.
@@ -709,15 +717,16 @@ bug; BL-054 was independently re-verified in source.
   - [ ] Canonical path for `…-v1:0` contains `%253A`.
   - [ ] Standard `AKIDEXAMPLE` vector still passes (no regression to non-Bedrock signing).
 
-## BL-055 — Bedrock ARN model ids percent-encoded wholesale (invalid path)
+</details>
 
-- **Severity:** High · **Beta gate:** Recommended · **Confidence:** CONFIRMED (logic) / SUSPECTED (impact)
-- **Location:** `AmazonBedrockProvider.kt:64-71` (`bedrockEncodeModelId` encodes `:`/`/` inside an ARN). Upstream carves out `arn:` (Vercel #14117, PRs #14138/#14257).
-- **Problem:** `bedrock(ModelId("arn:aws:bedrock:us-east-1:123…:application-inference-profile/abc"))` → slashes/colons encoded → invalid path → Bedrock "provided model identifier is invalid." Interacts with BL-054.
-- **Fix direction:** If `modelId.startsWith("arn:")`, use it raw in the path; else encode as now.
+## BL-055 — ~~Bedrock ARN model ids percent-encoded wholesale~~ → FALSE POSITIVE (verified against boto3); lock with a regression test
+
+- **VERDICT: REFUTED.** The audit hypothesis (ARNs must be passed RAW, not percent-encoded) is WRONG. boto3's bedrock-runtime client wholesale percent-encodes an ARN model id on the wire: `arn:aws:bedrock:us-east-1:123456789012:application-inference-profile/abc123` → `/model/arn%3Aaws%3Abedrock%3Aus-east-1%3A123456789012%3Aapplication-inference-profile%2Fabc123/converse` (`:`→`%3A`, `/`→`%2F`). The SDK's `bedrockEncodeModelId` (AmazonBedrockProvider.kt:64) percent-encodes every non-`[A-Za-z0-9-_.~]` char → **byte-identical** to boto3. The proposed "use ARN raw" fix would diverge from boto3 → 403.
+- **Action:** lock the verified-correct encoding with a unit test on `bedrockEncodeModelId`.
 - **Acceptance criteria:**
-  - [ ] Test: an ARN model id produces a path with literal `/` and `:` (not percent-encoded).
-  - [ ] Non-ARN colon ids still encode correctly (with BL-054's double-encode).
+  - [ ] Test: `bedrockEncodeModelId("arn:aws:bedrock:us-east-1:123456789012:application-inference-profile/abc123")` == `arn%3Aaws%3Abedrock%3Aus-east-1%3A123456789012%3Aapplication-inference-profile%2Fabc123`.
+  - [ ] Test: `bedrockEncodeModelId("anthropic.claude-3-5-sonnet-20240620-v1:0")` == `anthropic.claude-3-5-sonnet-20240620-v1%3A0`.
+  - [ ] Do NOT add an `arn:` carve-out.
 
 ## BL-056 — Bedrock eventstream frames not CRC-validated
 
