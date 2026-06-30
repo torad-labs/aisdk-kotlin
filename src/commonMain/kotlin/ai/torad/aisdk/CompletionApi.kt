@@ -113,7 +113,7 @@ public interface CompletionTransport {
     public fun complete(request: CompletionRequest): Flow<String>
 }
 
-public class DirectCompletionTransport(
+internal class DirectCompletionTransport(
     private val handler: (CompletionRequest) -> Flow<String>,
 ) : CompletionTransport {
     override fun complete(request: CompletionRequest): Flow<String> = handler(request)

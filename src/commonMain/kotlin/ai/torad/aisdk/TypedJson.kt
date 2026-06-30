@@ -79,7 +79,7 @@ public val StreamEvent.metadata: ProviderMetadata
 // member functions and member-extension functions now live on this object so
 // none remain camelCase top-level `fun`s. Callers use a member-import or
 // `with(TypedJsonOps) { ... }`.
-public object TypedJsonOps {
+internal object TypedJsonOps {
     public fun <T> encodeJsonElement(value: T, serializer: KSerializer<T>): JsonElement =
         aiSdkOutputJson.encodeToJsonElement(serializer, value)
 

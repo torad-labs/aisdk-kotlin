@@ -1445,12 +1445,6 @@ final class <#A: kotlin/Any?> ai.torad.aisdk/DeepPartial { // ai.torad.aisdk/Dee
     final fun toString(): kotlin/String // ai.torad.aisdk/DeepPartial.toString|toString(){}[0]
 }
 
-final class <#A: kotlin/Any?> ai.torad.aisdk/DirectStructuredObjectTransport : ai.torad.aisdk/StructuredObjectTransport<#A> { // ai.torad.aisdk/DirectStructuredObjectTransport|null[0]
-    constructor <init>(kotlin/Function1<ai.torad.aisdk/StructuredObjectRequest<#A>, kotlinx.coroutines.flow/Flow<kotlin/String>>) // ai.torad.aisdk/DirectStructuredObjectTransport.<init>|<init>(kotlin.Function1<ai.torad.aisdk.StructuredObjectRequest<1:0>,kotlinx.coroutines.flow.Flow<kotlin.String>>){}[0]
-
-    final fun submit(ai.torad.aisdk/StructuredObjectRequest<#A>): kotlinx.coroutines.flow/Flow<kotlin/String> // ai.torad.aisdk/DirectStructuredObjectTransport.submit|submit(ai.torad.aisdk.StructuredObjectRequest<1:0>){}[0]
-}
-
 final class <#A: kotlin/Any?> ai.torad.aisdk/EmbedManyResult { // ai.torad.aisdk/EmbedManyResult|null[0]
     constructor <init>(kotlin.collections/List<#A>, kotlin.collections/List<kotlin.collections/List<kotlin/Float>>, ai.torad.aisdk/EmbeddingUsage, kotlin.collections/List<ai.torad.aisdk/CallWarning> = ..., ai.torad.aisdk/LanguageModelRequestMetadata = ..., ai.torad.aisdk/LanguageModelResponseMetadata = ..., kotlin.collections/List<ai.torad.aisdk/LanguageModelResponseMetadata> = ..., ai.torad.aisdk/ProviderMetadata = ...) // ai.torad.aisdk/EmbedManyResult.<init>|<init>(kotlin.collections.List<1:0>;kotlin.collections.List<kotlin.collections.List<kotlin.Float>>;ai.torad.aisdk.EmbeddingUsage;kotlin.collections.List<ai.torad.aisdk.CallWarning>;ai.torad.aisdk.LanguageModelRequestMetadata;ai.torad.aisdk.LanguageModelResponseMetadata;kotlin.collections.List<ai.torad.aisdk.LanguageModelResponseMetadata>;ai.torad.aisdk.ProviderMetadata){}[0]
 
@@ -7700,12 +7694,6 @@ final class ai.torad.aisdk/DevToolsStepResult { // ai.torad.aisdk/DevToolsStepRe
     final fun toString(): kotlin/String // ai.torad.aisdk/DevToolsStepResult.toString|toString(){}[0]
 }
 
-final class ai.torad.aisdk/DirectCompletionTransport : ai.torad.aisdk/CompletionTransport { // ai.torad.aisdk/DirectCompletionTransport|null[0]
-    constructor <init>(kotlin/Function1<ai.torad.aisdk/CompletionRequest, kotlinx.coroutines.flow/Flow<kotlin/String>>) // ai.torad.aisdk/DirectCompletionTransport.<init>|<init>(kotlin.Function1<ai.torad.aisdk.CompletionRequest,kotlinx.coroutines.flow.Flow<kotlin.String>>){}[0]
-
-    final fun complete(ai.torad.aisdk/CompletionRequest): kotlinx.coroutines.flow/Flow<kotlin/String> // ai.torad.aisdk/DirectCompletionTransport.complete|complete(ai.torad.aisdk.CompletionRequest){}[0]
-}
-
 final class ai.torad.aisdk/DownloadError : ai.torad.aisdk/AiSdkException { // ai.torad.aisdk/DownloadError|null[0]
     constructor <init>(kotlin/String, kotlin/String, kotlin/Int? = ..., kotlin/String? = ..., kotlin/Throwable? = ...) // ai.torad.aisdk/DownloadError.<init>|<init>(kotlin.String;kotlin.String;kotlin.Int?;kotlin.String?;kotlin.Throwable?){}[0]
 
@@ -8385,18 +8373,6 @@ final class ai.torad.aisdk/GetPromptResult { // ai.torad.aisdk/GetPromptResult|n
 
         final fun serializer(): kotlinx.serialization/KSerializer<ai.torad.aisdk/GetPromptResult> // ai.torad.aisdk/GetPromptResult.Companion.serializer|serializer(){}[0]
     }
-}
-
-final class ai.torad.aisdk/HttpMCPTransport : ai.torad.aisdk/MCPTransport { // ai.torad.aisdk/HttpMCPTransport|null[0]
-    constructor <init>(io.ktor.client/HttpClient, kotlin/String, kotlin.collections/Map<kotlin/String, kotlin/String> = ..., ai.torad.aisdk/OAuthClientProvider? = ..., kotlin.coroutines/CoroutineContext = ..., ai.torad.aisdk/MCPReconnectionOptions = ...) // ai.torad.aisdk/HttpMCPTransport.<init>|<init>(io.ktor.client.HttpClient;kotlin.String;kotlin.collections.Map<kotlin.String,kotlin.String>;ai.torad.aisdk.OAuthClientProvider?;kotlin.coroutines.CoroutineContext;ai.torad.aisdk.MCPReconnectionOptions){}[0]
-
-    final fun setOnClose(kotlin/Function0<kotlin/Unit>?) // ai.torad.aisdk/HttpMCPTransport.setOnClose|setOnClose(kotlin.Function0<kotlin.Unit>?){}[0]
-    final fun setOnError(kotlin/Function1<kotlin/Throwable, kotlin/Unit>?) // ai.torad.aisdk/HttpMCPTransport.setOnError|setOnError(kotlin.Function1<kotlin.Throwable,kotlin.Unit>?){}[0]
-    final fun setOnMessage(kotlin.coroutines/SuspendFunction1<ai.torad.aisdk/JSONRPCMessage, kotlin/Unit>?) // ai.torad.aisdk/HttpMCPTransport.setOnMessage|setOnMessage(kotlin.coroutines.SuspendFunction1<ai.torad.aisdk.JSONRPCMessage,kotlin.Unit>?){}[0]
-    final fun setProtocolVersion(kotlin/String?) // ai.torad.aisdk/HttpMCPTransport.setProtocolVersion|setProtocolVersion(kotlin.String?){}[0]
-    final suspend fun close() // ai.torad.aisdk/HttpMCPTransport.close|close(){}[0]
-    final suspend fun send(ai.torad.aisdk/JSONRPCMessage) // ai.torad.aisdk/HttpMCPTransport.send|send(ai.torad.aisdk.JSONRPCMessage){}[0]
-    final suspend fun start() // ai.torad.aisdk/HttpMCPTransport.start|start(){}[0]
 }
 
 final class ai.torad.aisdk/IdGenerator { // ai.torad.aisdk/IdGenerator|null[0]
@@ -10184,18 +10160,6 @@ final class ai.torad.aisdk/SpeechModelResult { // ai.torad.aisdk/SpeechModelResu
     final fun equals(kotlin/Any?): kotlin/Boolean // ai.torad.aisdk/SpeechModelResult.equals|equals(kotlin.Any?){}[0]
     final fun hashCode(): kotlin/Int // ai.torad.aisdk/SpeechModelResult.hashCode|hashCode(){}[0]
     final fun toString(): kotlin/String // ai.torad.aisdk/SpeechModelResult.toString|toString(){}[0]
-}
-
-final class ai.torad.aisdk/SseMCPTransport : ai.torad.aisdk/MCPTransport { // ai.torad.aisdk/SseMCPTransport|null[0]
-    constructor <init>(io.ktor.client/HttpClient, kotlin/String, kotlin.collections/Map<kotlin/String, kotlin/String> = ..., ai.torad.aisdk/OAuthClientProvider? = ..., kotlin.coroutines/CoroutineContext = ...) // ai.torad.aisdk/SseMCPTransport.<init>|<init>(io.ktor.client.HttpClient;kotlin.String;kotlin.collections.Map<kotlin.String,kotlin.String>;ai.torad.aisdk.OAuthClientProvider?;kotlin.coroutines.CoroutineContext){}[0]
-
-    final fun setOnClose(kotlin/Function0<kotlin/Unit>?) // ai.torad.aisdk/SseMCPTransport.setOnClose|setOnClose(kotlin.Function0<kotlin.Unit>?){}[0]
-    final fun setOnError(kotlin/Function1<kotlin/Throwable, kotlin/Unit>?) // ai.torad.aisdk/SseMCPTransport.setOnError|setOnError(kotlin.Function1<kotlin.Throwable,kotlin.Unit>?){}[0]
-    final fun setOnMessage(kotlin.coroutines/SuspendFunction1<ai.torad.aisdk/JSONRPCMessage, kotlin/Unit>?) // ai.torad.aisdk/SseMCPTransport.setOnMessage|setOnMessage(kotlin.coroutines.SuspendFunction1<ai.torad.aisdk.JSONRPCMessage,kotlin.Unit>?){}[0]
-    final fun setProtocolVersion(kotlin/String?) // ai.torad.aisdk/SseMCPTransport.setProtocolVersion|setProtocolVersion(kotlin.String?){}[0]
-    final suspend fun close() // ai.torad.aisdk/SseMCPTransport.close|close(){}[0]
-    final suspend fun send(ai.torad.aisdk/JSONRPCMessage) // ai.torad.aisdk/SseMCPTransport.send|send(ai.torad.aisdk.JSONRPCMessage){}[0]
-    final suspend fun start() // ai.torad.aisdk/SseMCPTransport.start|start(){}[0]
 }
 
 final class ai.torad.aisdk/StdioConfig { // ai.torad.aisdk/StdioConfig|null[0]
@@ -13442,11 +13406,6 @@ final object ai.torad.aisdk/ApprovalIds { // ai.torad.aisdk/ApprovalIds|null[0]
     final fun effectiveApprovalId(ai.torad.aisdk/PendingApproval): kotlin/String // ai.torad.aisdk/ApprovalIds.effectiveApprovalId|effectiveApprovalId(ai.torad.aisdk.PendingApproval){}[0]
 }
 
-final object ai.torad.aisdk/Base64Codec { // ai.torad.aisdk/Base64Codec|null[0]
-    final fun decode(kotlin/String): kotlin/ByteArray // ai.torad.aisdk/Base64Codec.decode|decode(kotlin.String){}[0]
-    final fun encode(kotlin/ByteArray): kotlin/String // ai.torad.aisdk/Base64Codec.encode|encode(kotlin.ByteArray){}[0]
-}
-
 final object ai.torad.aisdk/CompletionApi { // ai.torad.aisdk/CompletionApi|null[0]
     final suspend fun callCompletionApi(ai.torad.aisdk/CallCompletionApiOptions): kotlin/String? // ai.torad.aisdk/CompletionApi.callCompletionApi|callCompletionApi(ai.torad.aisdk.CallCompletionApiOptions){}[0]
 }
@@ -13462,10 +13421,6 @@ final object ai.torad.aisdk/Embedding { // ai.torad.aisdk/Embedding|null[0]
 
 final object ai.torad.aisdk/EmbeddingMath { // ai.torad.aisdk/EmbeddingMath|null[0]
     final fun cosineSimilarity(kotlin.collections/List<kotlin/Float>, kotlin.collections/List<kotlin/Float>): kotlin/Float // ai.torad.aisdk/EmbeddingMath.cosineSimilarity|cosineSimilarity(kotlin.collections.List<kotlin.Float>;kotlin.collections.List<kotlin.Float>){}[0]
-}
-
-final object ai.torad.aisdk/EventStreamParser { // ai.torad.aisdk/EventStreamParser|null[0]
-    final fun <#A1: kotlin/Any?> parse(kotlinx.coroutines.flow/Flow<kotlin/String>, ai.torad.aisdk/Schema<#A1>, kotlinx.serialization.json/Json = ...): kotlinx.coroutines.flow/Flow<ai.torad.aisdk/ParseResult<#A1>> // ai.torad.aisdk/EventStreamParser.parse|parse(kotlinx.coroutines.flow.Flow<kotlin.String>;ai.torad.aisdk.Schema<0:0>;kotlinx.serialization.json.Json){0§<kotlin.Any?>}[0]
 }
 
 final object ai.torad.aisdk/GatewayTransportNotConfigured : ai.torad.aisdk/GatewayTransport { // ai.torad.aisdk/GatewayTransportNotConfigured|null[0]
@@ -13598,36 +13553,6 @@ final object ai.torad.aisdk/ToolResultOutputs { // ai.torad.aisdk/ToolResultOutp
 final object ai.torad.aisdk/Transcription { // ai.torad.aisdk/Transcription|null[0]
     final suspend fun experimental_transcribe(ai.torad.aisdk/TranscriptionModel, ai.torad.aisdk/AudioSource, kotlin/String? = ..., kotlin/String? = ..., ai.torad.aisdk/ProviderOptions = ..., kotlin.collections/Map<kotlin/String, kotlin/String> = ..., ai.torad.aisdk/AbortSignal = ...): ai.torad.aisdk/TranscribeResult // ai.torad.aisdk/Transcription.experimental_transcribe|experimental_transcribe(ai.torad.aisdk.TranscriptionModel;ai.torad.aisdk.AudioSource;kotlin.String?;kotlin.String?;ai.torad.aisdk.ProviderOptions;kotlin.collections.Map<kotlin.String,kotlin.String>;ai.torad.aisdk.AbortSignal){}[0]
     final suspend fun transcribe(ai.torad.aisdk/TranscriptionModel, ai.torad.aisdk/AudioSource, kotlin/String? = ..., kotlin/String? = ..., ai.torad.aisdk/ProviderOptions = ..., kotlin.collections/Map<kotlin/String, kotlin/String> = ..., ai.torad.aisdk/AbortSignal = ..., ai.torad.aisdk/Logger = ...): ai.torad.aisdk/TranscribeResult // ai.torad.aisdk/Transcription.transcribe|transcribe(ai.torad.aisdk.TranscriptionModel;ai.torad.aisdk.AudioSource;kotlin.String?;kotlin.String?;ai.torad.aisdk.ProviderOptions;kotlin.collections.Map<kotlin.String,kotlin.String>;ai.torad.aisdk.AbortSignal;ai.torad.aisdk.Logger){}[0]
-}
-
-final object ai.torad.aisdk/TypedJsonOps { // ai.torad.aisdk/TypedJsonOps|null[0]
-    final fun (kotlin.collections/Map<kotlin/String, kotlinx.serialization.json/JsonElement>?).providerMetadata(kotlin/String): kotlinx.serialization.json/JsonElement? // ai.torad.aisdk/TypedJsonOps.providerMetadata|providerMetadata@kotlin.collections.Map<kotlin.String,kotlinx.serialization.json.JsonElement>?(kotlin.String){}[0]
-    final fun <#A1: kotlin/Any?> (ai.torad.aisdk/ContentPart).providerMetadataAs(kotlin/String, kotlinx.serialization/KSerializer<#A1>): #A1? // ai.torad.aisdk/TypedJsonOps.providerMetadataAs|providerMetadataAs@ai.torad.aisdk.ContentPart(kotlin.String;kotlinx.serialization.KSerializer<0:0>){0§<kotlin.Any?>}[0]
-    final fun <#A1: kotlin/Any?> (ai.torad.aisdk/GenerateObjectResult<*>).providerMetadataAs(kotlin/String, kotlinx.serialization/KSerializer<#A1>): #A1? // ai.torad.aisdk/TypedJsonOps.providerMetadataAs|providerMetadataAs@ai.torad.aisdk.GenerateObjectResult<*>(kotlin.String;kotlinx.serialization.KSerializer<0:0>){0§<kotlin.Any?>}[0]
-    final fun <#A1: kotlin/Any?> (ai.torad.aisdk/GenerateTextResult<*>).providerMetadataAs(kotlin/String, kotlinx.serialization/KSerializer<#A1>): #A1? // ai.torad.aisdk/TypedJsonOps.providerMetadataAs|providerMetadataAs@ai.torad.aisdk.GenerateTextResult<*>(kotlin.String;kotlinx.serialization.KSerializer<0:0>){0§<kotlin.Any?>}[0]
-    final fun <#A1: kotlin/Any?> (ai.torad.aisdk/LanguageModelResult).providerMetadataAs(kotlin/String, kotlinx.serialization/KSerializer<#A1>): #A1? // ai.torad.aisdk/TypedJsonOps.providerMetadataAs|providerMetadataAs@ai.torad.aisdk.LanguageModelResult(kotlin.String;kotlinx.serialization.KSerializer<0:0>){0§<kotlin.Any?>}[0]
-    final fun <#A1: kotlin/Any?> (ai.torad.aisdk/StreamEvent).providerMetadataAs(kotlin/String, kotlinx.serialization/KSerializer<#A1>): #A1? // ai.torad.aisdk/TypedJsonOps.providerMetadataAs|providerMetadataAs@ai.torad.aisdk.StreamEvent(kotlin.String;kotlinx.serialization.KSerializer<0:0>){0§<kotlin.Any?>}[0]
-    final fun <#A1: kotlin/Any?> (kotlin.collections/Map<kotlin/String, kotlinx.serialization.json/JsonElement>).decodeValue(kotlin/String, kotlinx.serialization/KSerializer<#A1>): #A1? // ai.torad.aisdk/TypedJsonOps.decodeValue|decodeValue@kotlin.collections.Map<kotlin.String,kotlinx.serialization.json.JsonElement>(kotlin.String;kotlinx.serialization.KSerializer<0:0>){0§<kotlin.Any?>}[0]
-    final fun <#A1: kotlin/Any?> (kotlin.collections/Map<kotlin/String, kotlinx.serialization.json/JsonElement>?).decodeProviderMetadata(kotlin/String, kotlinx.serialization/KSerializer<#A1>): #A1? // ai.torad.aisdk/TypedJsonOps.decodeProviderMetadata|decodeProviderMetadata@kotlin.collections.Map<kotlin.String,kotlinx.serialization.json.JsonElement>?(kotlin.String;kotlinx.serialization.KSerializer<0:0>){0§<kotlin.Any?>}[0]
-    final fun <#A1: kotlin/Any?> (kotlinx.serialization.json/JsonElement).decodeAs(kotlinx.serialization/KSerializer<#A1>): #A1 // ai.torad.aisdk/TypedJsonOps.decodeAs|decodeAs@kotlinx.serialization.json.JsonElement(kotlinx.serialization.KSerializer<0:0>){0§<kotlin.Any?>}[0]
-    final fun <#A1: kotlin/Any?> (kotlinx.serialization.json/JsonObjectBuilder).putJson(kotlin/String, #A1, kotlinx.serialization/KSerializer<#A1>) // ai.torad.aisdk/TypedJsonOps.putJson|putJson@kotlinx.serialization.json.JsonObjectBuilder(kotlin.String;0:0;kotlinx.serialization.KSerializer<0:0>){0§<kotlin.Any?>}[0]
-    final fun <#A1: kotlin/Any?> (kotlinx.serialization.json/JsonObjectBuilder).putJsonIfNotNull(kotlin/String, #A1?, kotlinx.serialization/KSerializer<#A1>) // ai.torad.aisdk/TypedJsonOps.putJsonIfNotNull|putJsonIfNotNull@kotlinx.serialization.json.JsonObjectBuilder(kotlin.String;0:0?;kotlinx.serialization.KSerializer<0:0>){0§<kotlin.Any?>}[0]
-    final fun <#A1: kotlin/Any?> encodeJsonElement(#A1, kotlinx.serialization/KSerializer<#A1>): kotlinx.serialization.json/JsonElement // ai.torad.aisdk/TypedJsonOps.encodeJsonElement|encodeJsonElement(0:0;kotlinx.serialization.KSerializer<0:0>){0§<kotlin.Any?>}[0]
-    final fun jsonInt(kotlinx.serialization.json/JsonObject, kotlin/Array<out kotlin/String>...): kotlin/Int // ai.torad.aisdk/TypedJsonOps.jsonInt|jsonInt(kotlinx.serialization.json.JsonObject;kotlin.Array<out|kotlin.String>...){}[0]
-    final fun jsonIntOrNull(kotlinx.serialization.json/JsonObject, kotlin/Array<out kotlin/String>...): kotlin/Int? // ai.torad.aisdk/TypedJsonOps.jsonIntOrNull|jsonIntOrNull(kotlinx.serialization.json.JsonObject;kotlin.Array<out|kotlin.String>...){}[0]
-    final fun jsonNumber(kotlinx.serialization.json/JsonObject, kotlin/Array<out kotlin/String>...): kotlin/Double // ai.torad.aisdk/TypedJsonOps.jsonNumber|jsonNumber(kotlinx.serialization.json.JsonObject;kotlin.Array<out|kotlin.String>...){}[0]
-    final fun jsonNumberOrNull(kotlinx.serialization.json/JsonObject, kotlin/Array<out kotlin/String>...): kotlin/Double? // ai.torad.aisdk/TypedJsonOps.jsonNumberOrNull|jsonNumberOrNull(kotlinx.serialization.json.JsonObject;kotlin.Array<out|kotlin.String>...){}[0]
-    final inline fun <#A1: reified kotlin/Any?> (ai.torad.aisdk/ContentPart).providerMetadataAs(kotlin/String): #A1? // ai.torad.aisdk/TypedJsonOps.providerMetadataAs|providerMetadataAs@ai.torad.aisdk.ContentPart(kotlin.String){0§<kotlin.Any?>}[0]
-    final inline fun <#A1: reified kotlin/Any?> (ai.torad.aisdk/GenerateObjectResult<*>).providerMetadataAs(kotlin/String): #A1? // ai.torad.aisdk/TypedJsonOps.providerMetadataAs|providerMetadataAs@ai.torad.aisdk.GenerateObjectResult<*>(kotlin.String){0§<kotlin.Any?>}[0]
-    final inline fun <#A1: reified kotlin/Any?> (ai.torad.aisdk/GenerateTextResult<*>).providerMetadataAs(kotlin/String): #A1? // ai.torad.aisdk/TypedJsonOps.providerMetadataAs|providerMetadataAs@ai.torad.aisdk.GenerateTextResult<*>(kotlin.String){0§<kotlin.Any?>}[0]
-    final inline fun <#A1: reified kotlin/Any?> (ai.torad.aisdk/LanguageModelResult).providerMetadataAs(kotlin/String): #A1? // ai.torad.aisdk/TypedJsonOps.providerMetadataAs|providerMetadataAs@ai.torad.aisdk.LanguageModelResult(kotlin.String){0§<kotlin.Any?>}[0]
-    final inline fun <#A1: reified kotlin/Any?> (ai.torad.aisdk/StreamEvent).providerMetadataAs(kotlin/String): #A1? // ai.torad.aisdk/TypedJsonOps.providerMetadataAs|providerMetadataAs@ai.torad.aisdk.StreamEvent(kotlin.String){0§<kotlin.Any?>}[0]
-    final inline fun <#A1: reified kotlin/Any?> (kotlin.collections/Map<kotlin/String, kotlinx.serialization.json/JsonElement>).decodeValue(kotlin/String): #A1? // ai.torad.aisdk/TypedJsonOps.decodeValue|decodeValue@kotlin.collections.Map<kotlin.String,kotlinx.serialization.json.JsonElement>(kotlin.String){0§<kotlin.Any?>}[0]
-    final inline fun <#A1: reified kotlin/Any?> (kotlin.collections/Map<kotlin/String, kotlinx.serialization.json/JsonElement>?).decodeProviderMetadata(kotlin/String): #A1? // ai.torad.aisdk/TypedJsonOps.decodeProviderMetadata|decodeProviderMetadata@kotlin.collections.Map<kotlin.String,kotlinx.serialization.json.JsonElement>?(kotlin.String){0§<kotlin.Any?>}[0]
-    final inline fun <#A1: reified kotlin/Any?> (kotlinx.serialization.json/JsonElement).decodeAs(): #A1 // ai.torad.aisdk/TypedJsonOps.decodeAs|decodeAs@kotlinx.serialization.json.JsonElement(){0§<kotlin.Any?>}[0]
-    final inline fun <#A1: reified kotlin/Any?> (kotlinx.serialization.json/JsonObjectBuilder).putJson(kotlin/String, #A1) // ai.torad.aisdk/TypedJsonOps.putJson|putJson@kotlinx.serialization.json.JsonObjectBuilder(kotlin.String;0:0){0§<kotlin.Any?>}[0]
-    final inline fun <#A1: reified kotlin/Any?> (kotlinx.serialization.json/JsonObjectBuilder).putJsonIfNotNull(kotlin/String, #A1?) // ai.torad.aisdk/TypedJsonOps.putJsonIfNotNull|putJsonIfNotNull@kotlinx.serialization.json.JsonObjectBuilder(kotlin.String;0:0?){0§<kotlin.Any?>}[0]
-    final inline fun <#A1: reified kotlin/Any?> encodeJsonElement(#A1): kotlinx.serialization.json/JsonElement // ai.torad.aisdk/TypedJsonOps.encodeJsonElement|encodeJsonElement(0:0){0§<kotlin.Any?>}[0]
 }
 
 final object ai.torad.aisdk/UsageArithmetic { // ai.torad.aisdk/UsageArithmetic|null[0]

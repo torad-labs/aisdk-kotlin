@@ -1069,6 +1069,7 @@ public fun MCPReconnectionOptions(
 ): MCPReconnectionOptions =
     MCPReconnectionOptionsBuilder().apply(block).build()
 
+@OptIn(InternalAiSdkApi::class)
 public fun CreateMcpTransport(client: HttpClient, config: MCPTransportConfig): MCPTransport =
     when (config.type) {
         MCPTransportKind.Http ->
@@ -1183,6 +1184,7 @@ internal class McpConnectionLifecycle {
     }
 }
 
+@InternalAiSdkApi
 public class HttpMCPTransport(
     private val client: HttpClient,
     private val url: String,
@@ -1507,6 +1509,7 @@ public class HttpMCPTransport(
         response.headers["mcp-session-id"]?.takeIf { it.isNotBlank() }
 }
 
+@InternalAiSdkApi
 public class SseMCPTransport(
     private val client: HttpClient,
     private val url: String,

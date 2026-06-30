@@ -502,12 +502,6 @@ public final class ai/torad/aisdk/AuthorizationServerMetadata$Companion {
 	public final fun serializer ()Lkotlinx/serialization/KSerializer;
 }
 
-public final class ai/torad/aisdk/Base64Codec {
-	public static final field INSTANCE Lai/torad/aisdk/Base64Codec;
-	public final fun decode (Ljava/lang/String;)[B
-	public final fun encode ([B)Ljava/lang/String;
-}
-
 public final class ai/torad/aisdk/CallCompletionApiOptions {
 	public final fun getAbortSignal ()Lai/torad/aisdk/AbortSignal;
 	public final fun getApi ()Ljava/lang/String;
@@ -1278,16 +1272,6 @@ public final class ai/torad/aisdk/DevToolsStepResult {
 	public fun toString ()Ljava/lang/String;
 }
 
-public final class ai/torad/aisdk/DirectCompletionTransport : ai/torad/aisdk/CompletionTransport {
-	public fun <init> (Lkotlin/jvm/functions/Function1;)V
-	public fun complete (Lai/torad/aisdk/CompletionRequest;)Lkotlinx/coroutines/flow/Flow;
-}
-
-public final class ai/torad/aisdk/DirectStructuredObjectTransport : ai/torad/aisdk/StructuredObjectTransport {
-	public fun <init> (Lkotlin/jvm/functions/Function1;)V
-	public fun submit (Lai/torad/aisdk/StructuredObjectRequest;)Lkotlinx/coroutines/flow/Flow;
-}
-
 public final class ai/torad/aisdk/DownloadError : ai/torad/aisdk/AiSdkException {
 	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/Integer;Ljava/lang/String;Ljava/lang/Throwable;)V
 	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/Integer;Ljava/lang/String;Ljava/lang/Throwable;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
@@ -1564,12 +1548,6 @@ public final class ai/torad/aisdk/EmptyResponseBodyError : ai/torad/aisdk/AiSdkE
 	public fun <init> ()V
 	public fun <init> (Ljava/lang/String;)V
 	public synthetic fun <init> (Ljava/lang/String;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
-}
-
-public final class ai/torad/aisdk/EventStreamParser {
-	public static final field INSTANCE Lai/torad/aisdk/EventStreamParser;
-	public final fun parse (Lkotlinx/coroutines/flow/Flow;Lai/torad/aisdk/Schema;Lkotlinx/serialization/json/Json;)Lkotlinx/coroutines/flow/Flow;
-	public static synthetic fun parse$default (Lai/torad/aisdk/EventStreamParser;Lkotlinx/coroutines/flow/Flow;Lai/torad/aisdk/Schema;Lkotlinx/serialization/json/Json;ILjava/lang/Object;)Lkotlinx/coroutines/flow/Flow;
 }
 
 public abstract class ai/torad/aisdk/ExecuteToolResult {
@@ -2276,18 +2254,6 @@ public final synthetic class ai/torad/aisdk/GetPromptResult$$serializer : kotlin
 
 public final class ai/torad/aisdk/GetPromptResult$Companion {
 	public final fun serializer ()Lkotlinx/serialization/KSerializer;
-}
-
-public final class ai/torad/aisdk/HttpMCPTransport : ai/torad/aisdk/MCPTransport {
-	public fun <init> (Lio/ktor/client/HttpClient;Ljava/lang/String;Ljava/util/Map;Lai/torad/aisdk/OAuthClientProvider;Lkotlin/coroutines/CoroutineContext;Lai/torad/aisdk/MCPReconnectionOptions;)V
-	public synthetic fun <init> (Lio/ktor/client/HttpClient;Ljava/lang/String;Ljava/util/Map;Lai/torad/aisdk/OAuthClientProvider;Lkotlin/coroutines/CoroutineContext;Lai/torad/aisdk/MCPReconnectionOptions;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public fun close (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
-	public fun send (Lai/torad/aisdk/JSONRPCMessage;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
-	public fun setOnClose (Lkotlin/jvm/functions/Function0;)V
-	public fun setOnError (Lkotlin/jvm/functions/Function1;)V
-	public fun setOnMessage (Lkotlin/jvm/functions/Function2;)V
-	public fun setProtocolVersion (Ljava/lang/String;)V
-	public fun start (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 }
 
 public final class ai/torad/aisdk/IdGenerator {
@@ -4748,18 +4714,6 @@ public final class ai/torad/aisdk/SpeechModelResult {
 	public fun toString ()Ljava/lang/String;
 }
 
-public final class ai/torad/aisdk/SseMCPTransport : ai/torad/aisdk/MCPTransport {
-	public fun <init> (Lio/ktor/client/HttpClient;Ljava/lang/String;Ljava/util/Map;Lai/torad/aisdk/OAuthClientProvider;Lkotlin/coroutines/CoroutineContext;)V
-	public synthetic fun <init> (Lio/ktor/client/HttpClient;Ljava/lang/String;Ljava/util/Map;Lai/torad/aisdk/OAuthClientProvider;Lkotlin/coroutines/CoroutineContext;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public fun close (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
-	public fun send (Lai/torad/aisdk/JSONRPCMessage;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
-	public fun setOnClose (Lkotlin/jvm/functions/Function0;)V
-	public fun setOnError (Lkotlin/jvm/functions/Function1;)V
-	public fun setOnMessage (Lkotlin/jvm/functions/Function2;)V
-	public fun setProtocolVersion (Ljava/lang/String;)V
-	public fun start (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
-}
-
 public final class ai/torad/aisdk/StdioConfig {
 	public static final field Companion Lai/torad/aisdk/StdioConfig$Companion;
 	public fun equals (Ljava/lang/Object;)Z
@@ -6641,26 +6595,6 @@ public final class ai/torad/aisdk/TypedJsonKt {
 	public static final fun getAiSdkJson ()Lkotlinx/serialization/json/Json;
 	public static final fun getMetadata (Lai/torad/aisdk/ContentPart;)Lai/torad/aisdk/ProviderMetadata;
 	public static final fun getMetadata (Lai/torad/aisdk/StreamEvent;)Lai/torad/aisdk/ProviderMetadata;
-}
-
-public final class ai/torad/aisdk/TypedJsonOps {
-	public static final field INSTANCE Lai/torad/aisdk/TypedJsonOps;
-	public final fun decodeAs (Lkotlinx/serialization/json/JsonElement;Lkotlinx/serialization/KSerializer;)Ljava/lang/Object;
-	public final fun decodeProviderMetadata (Ljava/util/Map;Ljava/lang/String;Lkotlinx/serialization/KSerializer;)Ljava/lang/Object;
-	public final fun decodeValue (Ljava/util/Map;Ljava/lang/String;Lkotlinx/serialization/KSerializer;)Ljava/lang/Object;
-	public final fun encodeJsonElement (Ljava/lang/Object;Lkotlinx/serialization/KSerializer;)Lkotlinx/serialization/json/JsonElement;
-	public final fun jsonInt (Lkotlinx/serialization/json/JsonObject;[Ljava/lang/String;)I
-	public final fun jsonIntOrNull (Lkotlinx/serialization/json/JsonObject;[Ljava/lang/String;)Ljava/lang/Integer;
-	public final fun jsonNumber (Lkotlinx/serialization/json/JsonObject;[Ljava/lang/String;)D
-	public final fun jsonNumberOrNull (Lkotlinx/serialization/json/JsonObject;[Ljava/lang/String;)Ljava/lang/Double;
-	public final fun providerMetadata (Ljava/util/Map;Ljava/lang/String;)Lkotlinx/serialization/json/JsonElement;
-	public final fun providerMetadataAs (Lai/torad/aisdk/ContentPart;Ljava/lang/String;Lkotlinx/serialization/KSerializer;)Ljava/lang/Object;
-	public final fun providerMetadataAs (Lai/torad/aisdk/GenerateObjectResult;Ljava/lang/String;Lkotlinx/serialization/KSerializer;)Ljava/lang/Object;
-	public final fun providerMetadataAs (Lai/torad/aisdk/GenerateTextResult;Ljava/lang/String;Lkotlinx/serialization/KSerializer;)Ljava/lang/Object;
-	public final fun providerMetadataAs (Lai/torad/aisdk/LanguageModelResult;Ljava/lang/String;Lkotlinx/serialization/KSerializer;)Ljava/lang/Object;
-	public final fun providerMetadataAs (Lai/torad/aisdk/StreamEvent;Ljava/lang/String;Lkotlinx/serialization/KSerializer;)Ljava/lang/Object;
-	public final fun putJson (Lkotlinx/serialization/json/JsonObjectBuilder;Ljava/lang/String;Ljava/lang/Object;Lkotlinx/serialization/KSerializer;)V
-	public final fun putJsonIfNotNull (Lkotlinx/serialization/json/JsonObjectBuilder;Ljava/lang/String;Ljava/lang/Object;Lkotlinx/serialization/KSerializer;)V
 }
 
 public final class ai/torad/aisdk/UiMessageStreamError : ai/torad/aisdk/AiSdkException {
