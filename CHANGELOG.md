@@ -50,6 +50,12 @@ This project follows Semantic Versioning once the first stable release is cut.
   `AgentSessionState`, `ToolLoopAgentState`, `ChatState`, and `CompletionState`
   intentionally remain data classes for `StateFlow.update { it.copy(...) }`
   MVI usage.
+- Construct-type builder migration (pre-beta): `CohereProviderSettings` is now
+  an `@Serializable @Poko class` with an internal positional constructor and a
+  public DSL factory, `CohereProviderSettings { apiKey("..."); baseURL("...") }`.
+  Field access, equality, hashCode, toString, and JSON serialization remain;
+  public positional construction, `copy()`, and `componentN()` are intentionally
+  absent so settings can grow without ABI breaks.
 
 - **Tools are now class-based and extensible (breaking ABI change).** `Tool` is an `abstract class`
   you can extend for reusable, dependency-injected tools — mirroring how a concrete agent extends

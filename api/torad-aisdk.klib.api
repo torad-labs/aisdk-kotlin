@@ -3188,8 +3188,6 @@ final class ai.torad.aisdk.providers/CohereProvider : ai.torad.aisdk/Provider { 
 }
 
 final class ai.torad.aisdk.providers/CohereProviderSettings { // ai.torad.aisdk.providers/CohereProviderSettings|null[0]
-    constructor <init>(kotlin/String = ..., kotlin/String? = ..., kotlin.collections/Map<kotlin/String, kotlin/String> = ...) // ai.torad.aisdk.providers/CohereProviderSettings.<init>|<init>(kotlin.String;kotlin.String?;kotlin.collections.Map<kotlin.String,kotlin.String>){}[0]
-
     final val apiKey // ai.torad.aisdk.providers/CohereProviderSettings.apiKey|{}apiKey[0]
         final fun <get-apiKey>(): kotlin/String? // ai.torad.aisdk.providers/CohereProviderSettings.apiKey.<get-apiKey>|<get-apiKey>(){}[0]
     final val baseURL // ai.torad.aisdk.providers/CohereProviderSettings.baseURL|{}baseURL[0]
@@ -3197,10 +3195,6 @@ final class ai.torad.aisdk.providers/CohereProviderSettings { // ai.torad.aisdk.
     final val headers // ai.torad.aisdk.providers/CohereProviderSettings.headers|{}headers[0]
         final fun <get-headers>(): kotlin.collections/Map<kotlin/String, kotlin/String> // ai.torad.aisdk.providers/CohereProviderSettings.headers.<get-headers>|<get-headers>(){}[0]
 
-    final fun component1(): kotlin/String // ai.torad.aisdk.providers/CohereProviderSettings.component1|component1(){}[0]
-    final fun component2(): kotlin/String? // ai.torad.aisdk.providers/CohereProviderSettings.component2|component2(){}[0]
-    final fun component3(): kotlin.collections/Map<kotlin/String, kotlin/String> // ai.torad.aisdk.providers/CohereProviderSettings.component3|component3(){}[0]
-    final fun copy(kotlin/String = ..., kotlin/String? = ..., kotlin.collections/Map<kotlin/String, kotlin/String> = ...): ai.torad.aisdk.providers/CohereProviderSettings // ai.torad.aisdk.providers/CohereProviderSettings.copy|copy(kotlin.String;kotlin.String?;kotlin.collections.Map<kotlin.String,kotlin.String>){}[0]
     final fun equals(kotlin/Any?): kotlin/Boolean // ai.torad.aisdk.providers/CohereProviderSettings.equals|equals(kotlin.Any?){}[0]
     final fun hashCode(): kotlin/Int // ai.torad.aisdk.providers/CohereProviderSettings.hashCode|hashCode(){}[0]
     final fun toString(): kotlin/String // ai.torad.aisdk.providers/CohereProviderSettings.toString|toString(){}[0]
@@ -3219,6 +3213,12 @@ final class ai.torad.aisdk.providers/CohereProviderSettings { // ai.torad.aisdk.
 
         final fun serializer(): kotlinx.serialization/KSerializer<ai.torad.aisdk.providers/CohereProviderSettings> // ai.torad.aisdk.providers/CohereProviderSettings.Companion.serializer|serializer(){}[0]
     }
+}
+
+final class ai.torad.aisdk.providers/CohereProviderSettingsBuilder { // ai.torad.aisdk.providers/CohereProviderSettingsBuilder|null[0]
+    final fun apiKey(kotlin/String?) // ai.torad.aisdk.providers/CohereProviderSettingsBuilder.apiKey|apiKey(kotlin.String?){}[0]
+    final fun baseURL(kotlin/String) // ai.torad.aisdk.providers/CohereProviderSettingsBuilder.baseURL|baseURL(kotlin.String){}[0]
+    final fun headers(kotlin.collections/Map<kotlin/String, kotlin/String>) // ai.torad.aisdk.providers/CohereProviderSettingsBuilder.headers|headers(kotlin.collections.Map<kotlin.String,kotlin.String>){}[0]
 }
 
 final class ai.torad.aisdk.providers/CohereRerankingModelOptions { // ai.torad.aisdk.providers/CohereRerankingModelOptions|null[0]
@@ -13936,6 +13936,7 @@ final fun ai.torad.aisdk.providers/ByteDance(io.ktor.client/HttpClient, ai.torad
 final fun ai.torad.aisdk.providers/Cerebras(io.ktor.client/HttpClient, ai.torad.aisdk.providers/CerebrasProviderSettings = ...): ai.torad.aisdk.providers/CerebrasProvider // ai.torad.aisdk.providers/Cerebras|Cerebras(io.ktor.client.HttpClient;ai.torad.aisdk.providers.CerebrasProviderSettings){}[0]
 final fun ai.torad.aisdk.providers/CodeExecution(kotlinx.serialization.json/JsonElement = ...): ai.torad.aisdk/Tool<kotlinx.serialization.json/JsonElement, kotlinx.serialization.json/JsonElement, kotlin/Any?> // ai.torad.aisdk.providers/CodeExecution|CodeExecution(kotlinx.serialization.json.JsonElement){}[0]
 final fun ai.torad.aisdk.providers/Cohere(io.ktor.client/HttpClient, ai.torad.aisdk.providers/CohereProviderSettings = ...): ai.torad.aisdk.providers/CohereProvider // ai.torad.aisdk.providers/Cohere|Cohere(io.ktor.client.HttpClient;ai.torad.aisdk.providers.CohereProviderSettings){}[0]
+final fun ai.torad.aisdk.providers/CohereProviderSettings(kotlin/Function1<ai.torad.aisdk.providers/CohereProviderSettingsBuilder, kotlin/Unit> = ...): ai.torad.aisdk.providers/CohereProviderSettings // ai.torad.aisdk.providers/CohereProviderSettings|CohereProviderSettings(kotlin.Function1<ai.torad.aisdk.providers.CohereProviderSettingsBuilder,kotlin.Unit>){}[0]
 final fun ai.torad.aisdk.providers/DeepInfra(io.ktor.client/HttpClient, ai.torad.aisdk.providers/DeepInfraProviderSettings = ...): ai.torad.aisdk.providers/DeepInfraProvider // ai.torad.aisdk.providers/DeepInfra|DeepInfra(io.ktor.client.HttpClient;ai.torad.aisdk.providers.DeepInfraProviderSettings){}[0]
 final fun ai.torad.aisdk.providers/DeepSeek(io.ktor.client/HttpClient, ai.torad.aisdk.providers/DeepSeekProviderSettings = ...): ai.torad.aisdk.providers/DeepSeekProvider // ai.torad.aisdk.providers/DeepSeek|DeepSeek(io.ktor.client.HttpClient;ai.torad.aisdk.providers.DeepSeekProviderSettings){}[0]
 final fun ai.torad.aisdk.providers/Deepgram(io.ktor.client/HttpClient, ai.torad.aisdk.providers/DeepgramProviderSettings = ...): ai.torad.aisdk.providers/DeepgramProvider // ai.torad.aisdk.providers/Deepgram|Deepgram(io.ktor.client.HttpClient;ai.torad.aisdk.providers.DeepgramProviderSettings){}[0]

@@ -8218,18 +8218,12 @@ public final class ai/torad/aisdk/providers/CohereProviderKt {
 	public static final field COHERE_VERSION Ljava/lang/String;
 	public static final fun Cohere (Lio/ktor/client/HttpClient;Lai/torad/aisdk/providers/CohereProviderSettings;)Lai/torad/aisdk/providers/CohereProvider;
 	public static synthetic fun Cohere$default (Lio/ktor/client/HttpClient;Lai/torad/aisdk/providers/CohereProviderSettings;ILjava/lang/Object;)Lai/torad/aisdk/providers/CohereProvider;
+	public static final fun CohereProviderSettings (Lkotlin/jvm/functions/Function1;)Lai/torad/aisdk/providers/CohereProviderSettings;
+	public static synthetic fun CohereProviderSettings$default (Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Lai/torad/aisdk/providers/CohereProviderSettings;
 }
 
 public final class ai/torad/aisdk/providers/CohereProviderSettings {
 	public static final field Companion Lai/torad/aisdk/providers/CohereProviderSettings$Companion;
-	public fun <init> ()V
-	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;)V
-	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public final fun component1 ()Ljava/lang/String;
-	public final fun component2 ()Ljava/lang/String;
-	public final fun component3 ()Ljava/util/Map;
-	public final fun copy (Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;)Lai/torad/aisdk/providers/CohereProviderSettings;
-	public static synthetic fun copy$default (Lai/torad/aisdk/providers/CohereProviderSettings;Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;ILjava/lang/Object;)Lai/torad/aisdk/providers/CohereProviderSettings;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getApiKey ()Ljava/lang/String;
 	public final fun getBaseURL ()Ljava/lang/String;
@@ -8251,6 +8245,12 @@ public final synthetic class ai/torad/aisdk/providers/CohereProviderSettings$$se
 
 public final class ai/torad/aisdk/providers/CohereProviderSettings$Companion {
 	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public final class ai/torad/aisdk/providers/CohereProviderSettingsBuilder {
+	public final fun apiKey (Ljava/lang/String;)V
+	public final fun baseURL (Ljava/lang/String;)V
+	public final fun headers (Ljava/util/Map;)V
 }
 
 public final class ai/torad/aisdk/providers/CohereRerankingModelOptions {

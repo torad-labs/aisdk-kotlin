@@ -40,7 +40,10 @@ class CohereDefensiveParsingTest {
         )
         val provider = Cohere(
             client,
-            CohereProviderSettings(apiKey = "key", baseURL = "https://cohere.test/v2"),
+            CohereProviderSettings {
+                apiKey("key")
+                baseURL("https://cohere.test/v2")
+            },
         )
 
         val result = provider(ModelId("command-r-plus")).generate(
@@ -74,7 +77,10 @@ class CohereDefensiveParsingTest {
         )
         val provider = Cohere(
             client,
-            CohereProviderSettings(apiKey = "key", baseURL = "https://cohere.test/v2"),
+            CohereProviderSettings {
+                apiKey("key")
+                baseURL("https://cohere.test/v2")
+            },
         )
 
         val result = provider(ModelId("command-r-plus")).generate(
