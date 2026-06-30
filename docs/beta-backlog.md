@@ -20,8 +20,8 @@ tests must stay green.
 |----|-------|----------|-----------|------------|--------|
 | BL-001 | Stop/abort hangs agent when tool calls exceed parallel cap | High | Recommended | CONFIRMED | DONE |
 | BL-002 | `generateText`/`streamText`/`generateObject` have no retry | High | Recommended | CONFIRMED | DONE (002a non-stream + 002b stream-open) |
-| BL-003 | Concurrent `StreamTextResult` collectors are coupled | Med-High | Recommended | CONFIRMED | OPEN |
-| BL-004 | `StreamTextResult` re-drives provider after non-terminal failure | Medium | Recommended | CONFIRMED | OPEN |
+| BL-003 | Concurrent `StreamTextResult` collectors are coupled | Med-High | Recommended | CONFIRMED | DONE |
+| BL-004 | `StreamTextResult` re-drives provider after non-terminal failure | Medium | Recommended | CONFIRMED | DONE |
 | BL-005 | RetryPolicy per-attempt timeout aborts whole loop | Medium | Recommended | CONFIRMED | OPEN |
 | BL-006 | Default retry predicate won't retry raw network errors | Medium | Recommended | CONFIRMED | OPEN |
 | BL-007 | `SmoothStream` can emit buffered text after terminal event | Medium | Optional | CONFIRMED | OPEN |

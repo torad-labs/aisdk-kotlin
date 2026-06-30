@@ -2,10 +2,18 @@
 
 package ai.torad.aisdk
 
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitCancellation
+import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeout
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.serializer
 import kotlin.test.Test
@@ -222,6 +230,45 @@ class StreamObjectResultTest {
         val second = assertFailsWith<UiMessageStreamError> { result.objectValue() }
 
         assertEquals("root cause", second.cause?.message)
+        assertEquals(1, streamCollections)
+    }
+
+    @Test
+    fun `objectValue does not recollect model stream after cancelled partialObjectStream collector`() = runTest {
+        var streamCollections = 0
+        val firstPartialSeen = CompletableDeferred<Unit>()
+        val gate = CompletableDeferred<Unit>()
+        val model = object : LanguageModel {
+            override val modelId = "test/object-cancel-replay"
+            override suspend fun generate(params: LanguageModelCallParams) =
+                LanguageModelResult(text = "{}", finishReason = FinishReason.Stop, usage = Usage())
+
+            override fun stream(params: LanguageModelCallParams): Flow<StreamEvent> = flow {
+                streamCollections++
+                emit(StreamEvent.TextStart("t"))
+                emit(StreamEvent.TextDelta("t", """{"name":"Ann","age":30}"""))
+                gate.await()
+                emit(StreamEvent.TextEnd("t"))
+                emit(StreamEvent.Finish(1, FinishReason.Stop, Usage()))
+            }
+        }
+        val result = StreamObjectResult(model, Output.obj(serializer<Person>()), prompt = "go")
+
+        val first = async(Dispatchers.Default) {
+            result.partialObjectStream.collect {
+                firstPartialSeen.complete(Unit)
+                awaitCancellation()
+            }
+        }
+        withContext(Dispatchers.Default) { withTimeout(5_000) { firstPartialSeen.await() } }
+
+        first.cancelAndJoin()
+        gate.complete(Unit)
+
+        assertEquals(
+            Person("Ann", 30),
+            withContext(Dispatchers.Default) { withTimeout(5_000) { result.objectValue() } },
+        )
         assertEquals(1, streamCollections)
     }
 
