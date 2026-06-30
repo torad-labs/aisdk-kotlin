@@ -28,7 +28,10 @@ class FireworksImageBatchingTest {
         fixture.server.start()
         val provider = Fireworks(
             fixture.httpClient(),
-            FireworksProviderSettings(apiKey = "key", baseURL = "https://fireworks.test"),
+            FireworksProviderSettings {
+                apiKey("key")
+                baseURL("https://fireworks.test")
+            },
         )
 
         assertEquals(1, provider.image(ModelId(modelId)).maxImagesPerCall)

@@ -3,6 +3,7 @@ package ai.torad.aisdk.providers
 import ai.torad.aisdk.*
 import ai.torad.aisdk.providers.FacadeSupport.intField
 import ai.torad.aisdk.providers.FacadeSupport.nestedIntField
+import dev.drewhamilton.poko.Poko
 import io.ktor.client.HttpClient
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonElement
@@ -14,10 +15,11 @@ public const val MOONSHOTAI_VERSION: String = "2.0.23"
 
 
 @Serializable
-public data class MoonshotAIProviderSettings(
-    val apiKey: String? = null,
-    val baseURL: String = "https://api.moonshot.ai/v1",
-    val headers: Map<String, String> = emptyMap(),
+@Poko
+public class MoonshotAIProviderSettings internal constructor(
+    public val apiKey: String? = null,
+    public val baseURL: String = "https://api.moonshot.ai/v1",
+    public val headers: Map<String, String> = emptyMap(),
 ) {
     internal fun toCompatible(
         name: String,
@@ -46,6 +48,36 @@ public data class MoonshotAIProviderSettings(
         return Usage.fromParts(promptTokens, completionTokens, cacheRead, reasoning, obj)
     }
 }
+
+public class MoonshotAIProviderSettingsBuilder internal constructor() {
+    private var apiKey: String? = null
+    private var baseURL: String = "https://api.moonshot.ai/v1"
+    private var headers: Map<String, String> = emptyMap()
+
+    public fun apiKey(value: String?) {
+        apiKey = value
+    }
+
+    public fun baseURL(value: String) {
+        baseURL = value
+    }
+
+    public fun headers(value: Map<String, String>) {
+        headers = value
+    }
+
+    internal fun build(): MoonshotAIProviderSettings =
+        MoonshotAIProviderSettings(
+            apiKey = apiKey,
+            baseURL = baseURL,
+            headers = headers,
+        )
+}
+
+public fun MoonshotAIProviderSettings(
+    block: MoonshotAIProviderSettingsBuilder.() -> Unit = {},
+): MoonshotAIProviderSettings =
+    MoonshotAIProviderSettingsBuilder().apply(block).build()
 
 @Serializable
 public data class MoonshotAILanguageModelOptions(

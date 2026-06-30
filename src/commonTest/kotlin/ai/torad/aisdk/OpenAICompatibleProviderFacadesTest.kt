@@ -55,49 +55,65 @@ class OpenAICompatibleProviderFacadesTest {
                 name = "deepseek",
                 expectedChatUrl = "https://deepseek.test/chat/completions",
                 expectedUserAgent = "ai-sdk/deepseek/$DEEPSEEK_VERSION",
-                create = { client -> DeepSeek(client, DeepSeekProviderSettings(apiKey = "key", baseURL = "https://deepseek.test")).languageModel("model") },
+                create = { client ->
+                    DeepSeek(client, DeepSeekProviderSettings { apiKey("key"); baseURL("https://deepseek.test") }).languageModel("model")
+                },
             ),
             ProviderCase(
                 name = "cerebras",
                 expectedChatUrl = "https://cerebras.test/v1/chat/completions",
                 expectedUserAgent = "ai-sdk/cerebras/$CEREBRAS_VERSION",
-                create = { client -> Cerebras(client, CerebrasProviderSettings(apiKey = "key", baseURL = "https://cerebras.test/v1")).languageModel("model") },
+                create = { client ->
+                    Cerebras(client, CerebrasProviderSettings { apiKey("key"); baseURL("https://cerebras.test/v1") }).languageModel("model")
+                },
             ),
             ProviderCase(
                 name = "deepinfra",
                 expectedChatUrl = "https://deepinfra.test/v1/openai/chat/completions",
                 expectedUserAgent = "ai-sdk/deepinfra/$DEEPINFRA_VERSION",
-                create = { client -> DeepInfra(client, DeepInfraProviderSettings(apiKey = "key", baseURL = "https://deepinfra.test/v1")).languageModel("model") },
+                create = { client ->
+                    DeepInfra(client, DeepInfraProviderSettings { apiKey("key"); baseURL("https://deepinfra.test/v1") }).languageModel("model")
+                },
             ),
             ProviderCase(
                 name = "fireworks",
                 expectedChatUrl = "https://fireworks.test/inference/v1/chat/completions",
                 expectedUserAgent = "ai-sdk/fireworks/$FIREWORKS_VERSION",
-                create = { client -> Fireworks(client, FireworksProviderSettings(apiKey = "key", baseURL = "https://fireworks.test/inference/v1")).chatModel(ModelId("model")) },
+                create = { client ->
+                    Fireworks(client, FireworksProviderSettings { apiKey("key"); baseURL("https://fireworks.test/inference/v1") }).chatModel(ModelId("model"))
+                },
             ),
             ProviderCase(
                 name = "perplexity",
                 expectedChatUrl = "https://perplexity.test/chat/completions",
                 expectedUserAgent = "ai-sdk/perplexity/$PERPLEXITY_VERSION",
-                create = { client -> Perplexity(client, PerplexityProviderSettings(apiKey = "key", baseURL = "https://perplexity.test")).languageModel("model") },
+                create = { client ->
+                    Perplexity(client, PerplexityProviderSettings { apiKey("key"); baseURL("https://perplexity.test") }).languageModel("model")
+                },
             ),
             ProviderCase(
                 name = "moonshotai",
                 expectedChatUrl = "https://moonshot.test/v1/chat/completions",
                 expectedUserAgent = "ai-sdk/moonshotai/$MOONSHOTAI_VERSION",
-                create = { client -> MoonshotAI(client, MoonshotAIProviderSettings(apiKey = "key", baseURL = "https://moonshot.test/v1")).chatModel(ModelId("model")) },
+                create = { client ->
+                    MoonshotAI(client, MoonshotAIProviderSettings { apiKey("key"); baseURL("https://moonshot.test/v1") }).chatModel(ModelId("model"))
+                },
             ),
             ProviderCase(
                 name = "groq",
                 expectedChatUrl = "https://groq.test/openai/v1/chat/completions",
                 expectedUserAgent = "ai-sdk/groq/$GROQ_VERSION",
-                create = { client -> Groq(client, GroqProviderSettings(apiKey = "key", baseURL = "https://groq.test/openai/v1")).chat("model") },
+                create = { client ->
+                    Groq(client, GroqProviderSettings { apiKey("key"); baseURL("https://groq.test/openai/v1") }).chat("model")
+                },
             ),
             ProviderCase(
                 name = "togetherai",
                 expectedChatUrl = "https://together.test/v1/chat/completions",
                 expectedUserAgent = "ai-sdk/togetherai/$TOGETHERAI_VERSION",
-                create = { client -> TogetherAI(client, TogetherAIProviderSettings(apiKey = "key", baseURL = "https://together.test/v1")).chatModel(ModelId("model")) },
+                create = { client ->
+                    TogetherAI(client, TogetherAIProviderSettings { apiKey("key"); baseURL("https://together.test/v1") }).chatModel(ModelId("model"))
+                },
             ),
             ProviderCase(
                 name = "vercel",
@@ -166,7 +182,10 @@ class OpenAICompatibleProviderFacadesTest {
         fixture.server.start()
         val provider = DeepSeek(
             fixture.httpClient(),
-            DeepSeekProviderSettings(apiKey = "key", baseURL = "https://deepseek.test"),
+            DeepSeekProviderSettings {
+                apiKey("key")
+                baseURL("https://deepseek.test")
+            },
         )
 
         val result = provider.chat("deepseek-chat").generate(
@@ -230,7 +249,10 @@ class OpenAICompatibleProviderFacadesTest {
         fixture.server.start()
         val provider = Perplexity(
             fixture.httpClient(),
-            PerplexityProviderSettings(apiKey = "key", baseURL = "https://perplexity.test"),
+            PerplexityProviderSettings {
+                apiKey("key")
+                baseURL("https://perplexity.test")
+            },
         )
 
         val result = provider.languageModel("sonar").generate(
@@ -300,7 +322,10 @@ class OpenAICompatibleProviderFacadesTest {
         fixture.server.start()
         val provider = MoonshotAI(
             fixture.httpClient(),
-            MoonshotAIProviderSettings(apiKey = "key", baseURL = "https://moonshot.test/v1"),
+            MoonshotAIProviderSettings {
+                apiKey("key")
+                baseURL("https://moonshot.test/v1")
+            },
         )
 
         val result = provider.chatModel(ModelId("kimi")).generate(LanguageModelCallParams(listOf(UserMessage("hi"))))
@@ -334,7 +359,10 @@ class OpenAICompatibleProviderFacadesTest {
         fixture.server.start()
         val provider = Groq(
             fixture.httpClient(),
-            GroqProviderSettings(apiKey = "key", baseURL = "https://groq.test/openai/v1"),
+            GroqProviderSettings {
+                apiKey("key")
+                baseURL("https://groq.test/openai/v1")
+            },
         )
 
         // browser_search is only valid on the gpt-oss models, so use a supported one here.
@@ -385,7 +413,10 @@ class OpenAICompatibleProviderFacadesTest {
         fixture.server.start()
         val provider = Groq(
             fixture.httpClient(),
-            GroqProviderSettings(apiKey = "key", baseURL = "https://groq.test/openai/v1"),
+            GroqProviderSettings {
+                apiKey("key")
+                baseURL("https://groq.test/openai/v1")
+            },
         )
         provider.chat("llama").generate(
             LanguageModelCallParams(
@@ -429,7 +460,10 @@ class OpenAICompatibleProviderFacadesTest {
         fixture.server.start()
         val provider = DeepInfra(
             fixture.httpClient(),
-            DeepInfraProviderSettings(apiKey = "key", baseURL = "https://deepinfra.test/v1"),
+            DeepInfraProviderSettings {
+                apiKey("key")
+                baseURL("https://deepinfra.test/v1")
+            },
         )
 
         val chat = provider.chatModel(ModelId("model")).generate(LanguageModelCallParams(listOf(UserMessage("hi"))))
@@ -481,7 +515,10 @@ class OpenAICompatibleProviderFacadesTest {
         fixture.server.start()
         val provider = Fireworks(
             fixture.httpClient(),
-            FireworksProviderSettings(apiKey = "key", baseURL = "https://fireworks.test/inference/v1"),
+            FireworksProviderSettings {
+                apiKey("key")
+                baseURL("https://fireworks.test/inference/v1")
+            },
         )
 
         provider.chatModel(ModelId("model")).generate(
@@ -541,7 +578,10 @@ class OpenAICompatibleProviderFacadesTest {
         fixture.server.start()
         val provider = Fireworks(
             fixture.httpClient(),
-            FireworksProviderSettings(apiKey = "key", baseURL = "https://fireworks.test/inference/v1"),
+            FireworksProviderSettings {
+                apiKey("key")
+                baseURL("https://fireworks.test/inference/v1")
+            },
         )
 
         val image = provider.image(ModelId("accounts/fireworks/models/flux-kontext-pro")).generate(ImageGenerationParams(prompt = "edit"))
@@ -584,7 +624,10 @@ class OpenAICompatibleProviderFacadesTest {
         fixture.server.start()
         val provider = TogetherAI(
             fixture.httpClient(),
-            TogetherAIProviderSettings(apiKey = "key", baseURL = "https://together.test/v1"),
+            TogetherAIProviderSettings {
+                apiKey("key")
+                baseURL("https://together.test/v1")
+            },
         )
 
         assertEquals("done", provider.completionModel(ModelId("model")).generate(LanguageModelCallParams(listOf(UserMessage("hi")))).text)
@@ -643,7 +686,10 @@ class OpenAICompatibleProviderFacadesTest {
         fixture.server.start()
         val provider = Groq(
             fixture.httpClient(),
-            GroqProviderSettings(apiKey = "key", baseURL = "https://groq.test/openai/v1"),
+            GroqProviderSettings {
+                apiKey("key")
+                baseURL("https://groq.test/openai/v1")
+            },
         )
 
         val transcript = provider.transcription("whisper-large-v3").transcribe(
@@ -661,7 +707,7 @@ class OpenAICompatibleProviderFacadesTest {
     fun `unsupported model families throw provider specific NoSuchModelError`() {
         val provider = DeepSeek(
             TestServer(mutableMapOf()).httpClient(),
-            DeepSeekProviderSettings(baseURL = "https://deepseek.test"),
+            DeepSeekProviderSettings { baseURL("https://deepseek.test") },
         )
 
         val error = assertFailsWith<NoSuchModelError> {

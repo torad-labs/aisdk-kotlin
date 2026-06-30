@@ -146,7 +146,7 @@ class OpenAICompatibleCoreDefensiveParsingTest {
                 )
             },
         )
-        val result = DeepInfra(client, DeepInfraProviderSettings(apiKey = "key"))
+        val result = DeepInfra(client, DeepInfraProviderSettings { apiKey("key") })
             .embeddingModel("BAAI/bge")
             .embed(EmbeddingModelCallParams(values = listOf("a", "b")))
         assertEquals(2, result.embeddings.size)

@@ -16,10 +16,11 @@ import kotlinx.serialization.json.contentOrNull
 public const val GROQ_VERSION: String = "3.0.39"
 
 @Serializable
-public data class GroqProviderSettings(
-    val apiKey: String? = null,
-    val baseURL: String = "https://api.groq.com/openai/v1",
-    val headers: Map<String, String> = emptyMap(),
+@Poko
+public class GroqProviderSettings internal constructor(
+    public val apiKey: String? = null,
+    public val baseURL: String = "https://api.groq.com/openai/v1",
+    public val headers: Map<String, String> = emptyMap(),
 ) {
     internal fun toCompatible(
         name: String,
@@ -107,6 +108,36 @@ public data class GroqProviderSettings(
         private val GROQ_BROWSER_SEARCH_MODELS = setOf("openai/gpt-oss-20b", "openai/gpt-oss-120b")
     }
 }
+
+public class GroqProviderSettingsBuilder internal constructor() {
+    private var apiKey: String? = null
+    private var baseURL: String = "https://api.groq.com/openai/v1"
+    private var headers: Map<String, String> = emptyMap()
+
+    public fun apiKey(value: String?) {
+        apiKey = value
+    }
+
+    public fun baseURL(value: String) {
+        baseURL = value
+    }
+
+    public fun headers(value: Map<String, String>) {
+        headers = value
+    }
+
+    internal fun build(): GroqProviderSettings =
+        GroqProviderSettings(
+            apiKey = apiKey,
+            baseURL = baseURL,
+            headers = headers,
+        )
+}
+
+public fun GroqProviderSettings(
+    block: GroqProviderSettingsBuilder.() -> Unit = {},
+): GroqProviderSettings =
+    GroqProviderSettingsBuilder().apply(block).build()
 
 @Serializable
 public data class GroqLanguageModelOptions(
