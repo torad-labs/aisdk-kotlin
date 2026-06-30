@@ -1,6 +1,7 @@
 package ai.torad.aisdk.providers
 
 import ai.torad.aisdk.*
+import dev.drewhamilton.poko.Poko
 import io.ktor.client.HttpClient
 import io.ktor.http.HttpHeaders
 import kotlinx.serialization.json.JsonElement
@@ -121,12 +122,13 @@ public fun AzureOpenAI(
     settings: AzureOpenAIProviderSettings = AzureOpenAIProviderSettings(),
 ): AzureOpenAIProvider = AzureOpenAIProvider(client, settings)
 
-public data class AzureOpenAITools(
-    val codeInterpreter: Tool<JsonElement, JsonElement, Any?> = OpenAITools().codeInterpreter,
-    val fileSearch: Tool<JsonElement, JsonElement, Any?> = OpenAITools().fileSearch,
-    val imageGeneration: Tool<JsonElement, JsonElement, Any?> = OpenAITools().imageGeneration,
-    val webSearch: Tool<JsonElement, JsonElement, Any?> = OpenAITools().webSearch,
-    val webSearchPreview: Tool<JsonElement, JsonElement, Any?> = OpenAITools().webSearchPreview,
+@Poko
+public class AzureOpenAITools(
+    public val codeInterpreter: Tool<JsonElement, JsonElement, Any?> = OpenAITools().codeInterpreter,
+    public val fileSearch: Tool<JsonElement, JsonElement, Any?> = OpenAITools().fileSearch,
+    public val imageGeneration: Tool<JsonElement, JsonElement, Any?> = OpenAITools().imageGeneration,
+    public val webSearch: Tool<JsonElement, JsonElement, Any?> = OpenAITools().webSearch,
+    public val webSearchPreview: Tool<JsonElement, JsonElement, Any?> = OpenAITools().webSearchPreview,
 )
 
 public val azureOpenaiTools: AzureOpenAITools = AzureOpenAITools()

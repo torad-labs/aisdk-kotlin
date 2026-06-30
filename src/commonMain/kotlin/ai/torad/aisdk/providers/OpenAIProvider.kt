@@ -1,6 +1,7 @@
 package ai.torad.aisdk.providers
 
 import ai.torad.aisdk.*
+import dev.drewhamilton.poko.Poko
 import io.ktor.client.HttpClient
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
@@ -137,17 +138,18 @@ private class OpenAIImageModel(
 private const val OPENAI_SINGLE_IMAGE_PER_CALL: Int = 1
 private const val OPENAI_MULTI_IMAGE_PER_CALL: Int = 10
 
-public data class OpenAITools(
-    val applyPatch: Tool<JsonElement, JsonElement, Any?> = OpenAIApplyPatch(),
-    val codeInterpreter: Tool<JsonElement, JsonElement, Any?> = OpenAICodeInterpreter(),
-    val fileSearch: Tool<JsonElement, JsonElement, Any?> = OpenAIFileSearch(JsonObject(emptyMap())),
-    val imageGeneration: Tool<JsonElement, JsonElement, Any?> = OpenAIImageGeneration(),
-    val localShell: Tool<JsonElement, JsonElement, Any?> = OpenAILocalShell(),
-    val shell: Tool<JsonElement, JsonElement, Any?> = OpenAIShell(),
-    val webSearchPreview: Tool<JsonElement, JsonElement, Any?> = OpenAIWebSearchPreview(),
-    val webSearch: Tool<JsonElement, JsonElement, Any?> = OpenAIWebSearch(),
-    val mcp: Tool<JsonElement, JsonElement, Any?> = OpenAIMcp(),
-    val toolSearch: Tool<JsonElement, JsonElement, Any?> = OpenAIToolSearch(),
+@Poko
+public class OpenAITools(
+    public val applyPatch: Tool<JsonElement, JsonElement, Any?> = OpenAIApplyPatch(),
+    public val codeInterpreter: Tool<JsonElement, JsonElement, Any?> = OpenAICodeInterpreter(),
+    public val fileSearch: Tool<JsonElement, JsonElement, Any?> = OpenAIFileSearch(JsonObject(emptyMap())),
+    public val imageGeneration: Tool<JsonElement, JsonElement, Any?> = OpenAIImageGeneration(),
+    public val localShell: Tool<JsonElement, JsonElement, Any?> = OpenAILocalShell(),
+    public val shell: Tool<JsonElement, JsonElement, Any?> = OpenAIShell(),
+    public val webSearchPreview: Tool<JsonElement, JsonElement, Any?> = OpenAIWebSearchPreview(),
+    public val webSearch: Tool<JsonElement, JsonElement, Any?> = OpenAIWebSearch(),
+    public val mcp: Tool<JsonElement, JsonElement, Any?> = OpenAIMcp(),
+    public val toolSearch: Tool<JsonElement, JsonElement, Any?> = OpenAIToolSearch(),
 ) {
     internal companion object {
         internal fun providerTool(
@@ -197,4 +199,3 @@ public fun OpenAIMcp(args: JsonElement = JsonObject(emptyMap())): Tool<JsonEleme
 
 public fun OpenAIToolSearch(args: JsonElement = JsonObject(emptyMap())): Tool<JsonElement, JsonElement, Any?> =
     OpenAITools.providerTool("openai.tool_search", "Let the model search deferred tools dynamically.", args)
-

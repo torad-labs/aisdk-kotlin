@@ -1,6 +1,7 @@
 package ai.torad.aisdk.providers
 
 import ai.torad.aisdk.*
+import dev.drewhamilton.poko.Poko
 import io.ktor.client.HttpClient
 import io.ktor.client.request.header
 import io.ktor.client.request.request
@@ -134,20 +135,21 @@ public fun GoogleGenerativeAI(
 ): GoogleGenerativeAIProvider = GoogleGenerativeAIProvider(client, settings)
 
 
-public data class GoogleTools(
-    val googleSearch: Tool<JsonElement, JsonElement, Any?> =
+@Poko
+public class GoogleTools(
+    public val googleSearch: Tool<JsonElement, JsonElement, Any?> =
         providerTool("google_search", "google.google_search", "Ground responses with Google Search."),
-    val enterpriseWebSearch: Tool<JsonElement, JsonElement, Any?> =
+    public val enterpriseWebSearch: Tool<JsonElement, JsonElement, Any?> =
         providerTool("enterprise_web_search", "google.enterprise_web_search", "Ground responses with Enterprise Web Search."),
-    val googleMaps: Tool<JsonElement, JsonElement, Any?> =
+    public val googleMaps: Tool<JsonElement, JsonElement, Any?> =
         providerTool("google_maps", "google.google_maps", "Ground responses with Google Maps."),
-    val urlContext: Tool<JsonElement, JsonElement, Any?> =
+    public val urlContext: Tool<JsonElement, JsonElement, Any?> =
         providerTool("url_context", "google.url_context", "Fetch URL context through Google."),
-    val fileSearch: Tool<JsonElement, JsonElement, Any?> =
+    public val fileSearch: Tool<JsonElement, JsonElement, Any?> =
         providerTool("file_search", "google.file_search", "Use Gemini File Search."),
-    val codeExecution: Tool<JsonElement, JsonElement, Any?> =
+    public val codeExecution: Tool<JsonElement, JsonElement, Any?> =
         providerTool("code_execution", "google.code_execution", "Use Google hosted code execution."),
-    val vertexRagStore: Tool<JsonElement, JsonElement, Any?> =
+    public val vertexRagStore: Tool<JsonElement, JsonElement, Any?> =
         providerTool("vertex_rag_store", "google.vertex_rag_store", "Use Vertex RAG Store."),
 ) {
     internal companion object {
@@ -167,4 +169,3 @@ public data class GoogleTools(
 }
 
 public val googleTools: GoogleTools = GoogleTools()
-
