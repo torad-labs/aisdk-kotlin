@@ -25,7 +25,7 @@ tests must stay green.
 | BL-005 | RetryPolicy per-attempt timeout aborts whole loop | Medium | Recommended | CONFIRMED | OPEN |
 | BL-006 | Default retry predicate won't retry raw network errors | Medium | Recommended | CONFIRMED | OPEN |
 | BL-007 | `SmoothStream` can emit buffered text after terminal event | Medium | Optional | CONFIRMED | OPEN |
-| BL-008 | `EventStreamParser` errors on `data: [DONE]` with trailing whitespace | Low-Med | Optional | CONFIRMED | OPEN |
+| BL-008 | `EventStreamParser` errors on `data: [DONE]` with trailing whitespace | Low-Med | Optional | CONFIRMED | DONE |
 | BL-009 | `StreamObjectResult` drops later-block text when earlier block unclosed | Low | Optional | CONFIRMED | OPEN |
 | BL-010 | `StreamObjectResult` overwrites instead of merges `ResponseMetadata` | Low | Optional | CONFIRMED | OPEN |
 | BL-011 | `StreamTextResult` retains full event history for single consumer | Low | Optional | CONFIRMED | OPEN |

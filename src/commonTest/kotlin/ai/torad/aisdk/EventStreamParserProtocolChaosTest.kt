@@ -56,5 +56,49 @@ class EventStreamParserProtocolChaosTest {
         assertIs<ParseResult.Success<JsonElement>>(results.single())
     }
 
+    @Test
+    fun `DONE sentinel with trailing space is ignored by both parse overloads`() = runTest {
+        val schema = jsonElementSchema()
+
+        val flowResults = EventStreamParser.parse(flowOf("data: [DONE] \n\n"), schema).toList()
+        val stringResults = EventStreamParser.parse("data: [DONE] \n\n", schema)
+
+        assertTrue(flowResults.isEmpty(), "flow: trailing space after DONE must terminate cleanly")
+        assertTrue(stringResults.isEmpty(), "string: trailing space after DONE must terminate cleanly")
+    }
+
+    @Test
+    fun `DONE sentinel with tabs is ignored by both parse overloads`() = runTest {
+        val schema = jsonElementSchema()
+
+        val flowResults = EventStreamParser.parse(flowOf("data:\t[DONE]\t\n\n"), schema).toList()
+        val stringResults = EventStreamParser.parse("data:\t[DONE]\t\n\n", schema)
+
+        assertTrue(flowResults.isEmpty(), "flow: tabs around DONE must terminate cleanly")
+        assertTrue(stringResults.isEmpty(), "string: tabs around DONE must terminate cleanly")
+    }
+
+    @Test
+    fun `normal DONE sentinel is ignored by both parse overloads`() = runTest {
+        val schema = jsonElementSchema()
+
+        val flowResults = EventStreamParser.parse(flowOf("data: [DONE]\n\n"), schema).toList()
+        val stringResults = EventStreamParser.parse("data: [DONE]\n\n", schema)
+
+        assertTrue(flowResults.isEmpty(), "flow: normal DONE must terminate cleanly")
+        assertTrue(stringResults.isEmpty(), "string: normal DONE must terminate cleanly")
+    }
+
+    @Test
+    fun `malformed data still fails in both parse overloads`() = runTest {
+        val schema = jsonElementSchema()
+
+        val flowResults = EventStreamParser.parse(flowOf("data: {bad json}\n\n"), schema).toList()
+        val stringResults = EventStreamParser.parse("data: {bad json}\n\n", schema)
+
+        assertIs<ParseResult.Failure>(flowResults.single())
+        assertIs<ParseResult.Failure>(stringResults.single())
+    }
+
     private fun jsonElementSchema(): Schema<JsonElement> = Schemas.jsonSchema(buildJsonObject { })
 }
