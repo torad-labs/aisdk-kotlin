@@ -41,7 +41,7 @@ public class TelemetrySettings internal constructor(
     public val tracer: TelemetryTracer? = null,
 )
 
-public class TelemetrySettingsBuilder internal constructor() {
+public class TelemetrySettingsBuilder {
     private var isEnabled: Boolean? = null
     private var functionId: String? = null
     private var metadata: Map<String, JsonElement> = emptyMap()
@@ -50,35 +50,42 @@ public class TelemetrySettingsBuilder internal constructor() {
     private var integrations: List<Telemetry> = emptyList()
     private var tracer: TelemetryTracer? = null
 
-    public fun isEnabled(value: Boolean?) {
+    public fun isEnabled(value: Boolean?): TelemetrySettingsBuilder {
         isEnabled = value
+        return this
     }
 
-    public fun functionId(value: String?) {
+    public fun functionId(value: String?): TelemetrySettingsBuilder {
         functionId = value
+        return this
     }
 
-    public fun metadata(value: Map<String, JsonElement>) {
+    public fun metadata(value: Map<String, JsonElement>): TelemetrySettingsBuilder {
         metadata = value
+        return this
     }
 
-    public fun recordInputs(value: Boolean) {
+    public fun recordInputs(value: Boolean): TelemetrySettingsBuilder {
         recordInputs = value
+        return this
     }
 
-    public fun recordOutputs(value: Boolean) {
+    public fun recordOutputs(value: Boolean): TelemetrySettingsBuilder {
         recordOutputs = value
+        return this
     }
 
-    public fun integrations(value: List<Telemetry>) {
+    public fun integrations(value: List<Telemetry>): TelemetrySettingsBuilder {
         integrations = value
+        return this
     }
 
-    public fun tracer(value: TelemetryTracer?) {
+    public fun tracer(value: TelemetryTracer?): TelemetrySettingsBuilder {
         tracer = value
+        return this
     }
 
-    internal fun build(): TelemetrySettings =
+    public fun build(): TelemetrySettings =
         TelemetrySettings(
             isEnabled = isEnabled,
             functionId = functionId,

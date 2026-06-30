@@ -37,29 +37,33 @@ public class OAuthClientInformation internal constructor(
     @SerialName("client_secret_expires_at") public val clientSecretExpiresAt: Long? = null,
 )
 
-public class OAuthClientInformationBuilder internal constructor() {
+public class OAuthClientInformationBuilder {
     private var clientId: String? = null
     private var clientSecret: String? = null
     private var clientIdIssuedAt: Long? = null
     private var clientSecretExpiresAt: Long? = null
 
-    public fun clientId(value: String) {
+    public fun clientId(value: String): OAuthClientInformationBuilder {
         clientId = value
+        return this
     }
 
-    public fun clientSecret(value: String?) {
+    public fun clientSecret(value: String?): OAuthClientInformationBuilder {
         clientSecret = value
+        return this
     }
 
-    public fun clientIdIssuedAt(value: Long?) {
+    public fun clientIdIssuedAt(value: Long?): OAuthClientInformationBuilder {
         clientIdIssuedAt = value
+        return this
     }
 
-    public fun clientSecretExpiresAt(value: Long?) {
+    public fun clientSecretExpiresAt(value: Long?): OAuthClientInformationBuilder {
         clientSecretExpiresAt = value
+        return this
     }
 
-    internal fun build(): OAuthClientInformation =
+    public fun build(): OAuthClientInformation =
         OAuthClientInformation(
             clientId = requireNotNull(clientId) { "OAuthClientInformation.clientId is required" },
             clientSecret = clientSecret,
@@ -94,7 +98,7 @@ public class OAuthClientMetadata internal constructor(
     @SerialName("software_statement") public val softwareStatement: String? = null,
 )
 
-public class OAuthClientMetadataBuilder internal constructor() {
+public class OAuthClientMetadataBuilder {
     private var redirectUris: List<String>? = null
     private var tokenEndpointAuthMethod: String? = null
     private var grantTypes: List<String>? = null
@@ -112,71 +116,87 @@ public class OAuthClientMetadataBuilder internal constructor() {
     private var softwareVersion: String? = null
     private var softwareStatement: String? = null
 
-    public fun redirectUris(value: List<String>) {
+    public fun redirectUris(value: List<String>): OAuthClientMetadataBuilder {
         redirectUris = value
+        return this
     }
 
-    public fun tokenEndpointAuthMethod(value: String?) {
+    public fun tokenEndpointAuthMethod(value: String?): OAuthClientMetadataBuilder {
         tokenEndpointAuthMethod = value
+        return this
     }
 
-    public fun grantTypes(value: List<String>?) {
+    public fun grantTypes(value: List<String>?): OAuthClientMetadataBuilder {
         grantTypes = value
+        return this
     }
 
-    public fun responseTypes(value: List<String>?) {
+    public fun responseTypes(value: List<String>?): OAuthClientMetadataBuilder {
         responseTypes = value
+        return this
     }
 
-    public fun clientName(value: String?) {
+    public fun clientName(value: String?): OAuthClientMetadataBuilder {
         clientName = value
+        return this
     }
 
-    public fun clientUri(value: String?) {
+    public fun clientUri(value: String?): OAuthClientMetadataBuilder {
         clientUri = value
+        return this
     }
 
-    public fun logoUri(value: String?) {
+    public fun logoUri(value: String?): OAuthClientMetadataBuilder {
         logoUri = value
+        return this
     }
 
-    public fun scope(value: String?) {
+    public fun scope(value: String?): OAuthClientMetadataBuilder {
         scope = value
+        return this
     }
 
-    public fun contacts(value: List<String>?) {
+    public fun contacts(value: List<String>?): OAuthClientMetadataBuilder {
         contacts = value
+        return this
     }
 
-    public fun tosUri(value: String?) {
+    public fun tosUri(value: String?): OAuthClientMetadataBuilder {
         tosUri = value
+        return this
     }
 
-    public fun policyUri(value: String?) {
+    public fun policyUri(value: String?): OAuthClientMetadataBuilder {
         policyUri = value
+        return this
     }
 
-    public fun jwksUri(value: String?) {
+    public fun jwksUri(value: String?): OAuthClientMetadataBuilder {
         jwksUri = value
+        return this
     }
 
-    public fun jwks(value: JsonElement?) {
+    public fun jwks(value: JsonElement?): OAuthClientMetadataBuilder {
         jwks = value
+        return this
     }
 
-    public fun softwareId(value: String?) {
+    public fun softwareId(value: String?): OAuthClientMetadataBuilder {
         softwareId = value
+        return this
     }
 
-    public fun softwareVersion(value: String?) {
+    public fun softwareVersion(value: String?): OAuthClientMetadataBuilder {
         softwareVersion = value
+        return this
     }
 
-    public fun softwareStatement(value: String?) {
+    public fun softwareStatement(value: String?): OAuthClientMetadataBuilder {
         softwareStatement = value
+        return this
     }
 
-    internal fun build(): OAuthClientMetadata =
+    public fun build(): OAuthClientMetadata =
         OAuthClientMetadata(
             redirectUris = requireNotNull(redirectUris) { "OAuthClientMetadata.redirectUris is required" },
             tokenEndpointAuthMethod = tokenEndpointAuthMethod,
@@ -242,7 +262,7 @@ public class AuthOptions internal constructor(
     public val client: HttpClient? = null,
 )
 
-public class AuthOptionsBuilder internal constructor() {
+public class AuthOptionsBuilder {
     private var serverUrl: String? = null
     private var authorizationCode: String? = null
     private var callbackState: String? = null
@@ -250,31 +270,37 @@ public class AuthOptionsBuilder internal constructor() {
     private var resourceMetadataUrl: String? = null
     private var client: HttpClient? = null
 
-    public fun serverUrl(value: String) {
+    public fun serverUrl(value: String): AuthOptionsBuilder {
         serverUrl = value
+        return this
     }
 
-    public fun authorizationCode(value: String?) {
+    public fun authorizationCode(value: String?): AuthOptionsBuilder {
         authorizationCode = value
+        return this
     }
 
-    public fun callbackState(value: String?) {
+    public fun callbackState(value: String?): AuthOptionsBuilder {
         callbackState = value
+        return this
     }
 
-    public fun scope(value: String?) {
+    public fun scope(value: String?): AuthOptionsBuilder {
         scope = value
+        return this
     }
 
-    public fun resourceMetadataUrl(value: String?) {
+    public fun resourceMetadataUrl(value: String?): AuthOptionsBuilder {
         resourceMetadataUrl = value
+        return this
     }
 
-    public fun client(value: HttpClient?) {
+    public fun client(value: HttpClient?): AuthOptionsBuilder {
         client = value
+        return this
     }
 
-    internal fun build(): AuthOptions =
+    public fun build(): AuthOptions =
         AuthOptions(
             serverUrl = requireNotNull(serverUrl) { "AuthOptions.serverUrl is required" },
             authorizationCode = authorizationCode,

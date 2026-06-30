@@ -21,24 +21,27 @@ public class RedactionOptions internal constructor(
     public val minBase64Length: Int = 64,
 )
 
-public class RedactionOptionsBuilder internal constructor() {
+public class RedactionOptionsBuilder {
     private var replacement: String = "[REDACTED]"
     private var maxStringLength: Int = 256
     private var minBase64Length: Int = 64
 
-    public fun replacement(value: String) {
+    public fun replacement(value: String): RedactionOptionsBuilder {
         replacement = value
+        return this
     }
 
-    public fun maxStringLength(value: Int) {
+    public fun maxStringLength(value: Int): RedactionOptionsBuilder {
         maxStringLength = value
+        return this
     }
 
-    public fun minBase64Length(value: Int) {
+    public fun minBase64Length(value: Int): RedactionOptionsBuilder {
         minBase64Length = value
+        return this
     }
 
-    internal fun build(): RedactionOptions =
+    public fun build(): RedactionOptions =
         RedactionOptions(
             replacement = replacement,
             maxStringLength = maxStringLength,

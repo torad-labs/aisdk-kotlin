@@ -63,7 +63,7 @@ public class AgentSettings<TContext> internal constructor(
 }
 
 @AiSdkDsl
-public class AgentSettingsBuilder<TContext> internal constructor() {
+public class AgentSettingsBuilder<TContext> {
     private var instructions: String? = null
     private var model: LanguageModel? = null
     private var tools: ToolSet<TContext>? = null
@@ -80,67 +80,82 @@ public class AgentSettingsBuilder<TContext> internal constructor() {
     private var responseFormat: ResponseFormat? = null
     private var maxRetries: Int? = null
 
-    public fun instructions(value: String?) {
+    public fun instructions(value: String?): AgentSettingsBuilder<TContext> {
         instructions = value
+        return this
     }
 
-    public fun model(value: LanguageModel?) {
+    public fun model(value: LanguageModel?): AgentSettingsBuilder<TContext> {
         model = value
+        return this
     }
 
-    public fun tools(value: ToolSet<TContext>?) {
+    public fun tools(value: ToolSet<TContext>?): AgentSettingsBuilder<TContext> {
         tools = value
+        return this
     }
 
-    public fun activeTools(value: List<String>?) {
+    public fun activeTools(value: List<String>?): AgentSettingsBuilder<TContext> {
         activeTools = value
+        return this
     }
 
-    public fun providerOptions(value: ProviderOptions) {
+    public fun providerOptions(value: ProviderOptions): AgentSettingsBuilder<TContext> {
         providerOptions = value
+        return this
     }
 
-    public fun temperature(value: Float?) {
+    public fun temperature(value: Float?): AgentSettingsBuilder<TContext> {
         temperature = value
+        return this
     }
 
-    public fun topP(value: Float?) {
+    public fun topP(value: Float?): AgentSettingsBuilder<TContext> {
         topP = value
+        return this
     }
 
-    public fun topK(value: Int?) {
+    public fun topK(value: Int?): AgentSettingsBuilder<TContext> {
         topK = value
+        return this
     }
 
-    public fun maxOutputTokens(value: Int?) {
+    public fun maxOutputTokens(value: Int?): AgentSettingsBuilder<TContext> {
         maxOutputTokens = value
+        return this
     }
 
-    public fun stopSequences(value: List<String>?) {
+    public fun stopSequences(value: List<String>?): AgentSettingsBuilder<TContext> {
         stopSequences = value
+        return this
     }
 
-    public fun seed(value: Int?) {
+    public fun seed(value: Int?): AgentSettingsBuilder<TContext> {
         seed = value
+        return this
     }
 
-    public fun presencePenalty(value: Float?) {
+    public fun presencePenalty(value: Float?): AgentSettingsBuilder<TContext> {
         presencePenalty = value
+        return this
     }
 
-    public fun frequencyPenalty(value: Float?) {
+    public fun frequencyPenalty(value: Float?): AgentSettingsBuilder<TContext> {
         frequencyPenalty = value
+        return this
     }
 
-    public fun responseFormat(value: ResponseFormat?) {
+    public fun responseFormat(value: ResponseFormat?): AgentSettingsBuilder<TContext> {
         responseFormat = value
+        return this
     }
 
-    public fun maxRetries(value: Int?) {
+    public fun maxRetries(value: Int?): AgentSettingsBuilder<TContext> {
         maxRetries = value
+        return this
     }
 
-    internal fun build(): AgentSettings<TContext> =
+    public fun build(): AgentSettings<TContext> =
         AgentSettings(
             instructions = instructions,
             model = model,
@@ -221,7 +236,7 @@ public class StepSettings<TContext> internal constructor(
 }
 
 @AiSdkDsl
-public class StepSettingsBuilder<TContext> internal constructor() {
+public class StepSettingsBuilder<TContext> {
     private var model: LanguageModel? = null
     private var activeTools: List<String>? = null
     private var toolChoice: ToolChoice? = null
@@ -240,75 +255,92 @@ public class StepSettingsBuilder<TContext> internal constructor() {
     private var maxRetries: Int? = null
     private var experimental_context: TContext? = null
 
-    public fun model(value: LanguageModel?) {
+    public fun model(value: LanguageModel?): StepSettingsBuilder<TContext> {
         model = value
+        return this
     }
 
-    public fun activeTools(value: List<String>?) {
+    public fun activeTools(value: List<String>?): StepSettingsBuilder<TContext> {
         activeTools = value
+        return this
     }
 
-    public fun toolChoice(value: ToolChoice?) {
+    public fun toolChoice(value: ToolChoice?): StepSettingsBuilder<TContext> {
         toolChoice = value
+        return this
     }
 
-    public fun messages(value: List<ModelMessage>?) {
+    public fun messages(value: List<ModelMessage>?): StepSettingsBuilder<TContext> {
         messages = value
+        return this
     }
 
-    public fun system(value: String?) {
+    public fun system(value: String?): StepSettingsBuilder<TContext> {
         system = value
+        return this
     }
 
-    public fun providerOptions(value: ProviderOptions) {
+    public fun providerOptions(value: ProviderOptions): StepSettingsBuilder<TContext> {
         providerOptions = value
+        return this
     }
 
-    public fun temperature(value: Float?) {
+    public fun temperature(value: Float?): StepSettingsBuilder<TContext> {
         temperature = value
+        return this
     }
 
-    public fun topP(value: Float?) {
+    public fun topP(value: Float?): StepSettingsBuilder<TContext> {
         topP = value
+        return this
     }
 
-    public fun topK(value: Int?) {
+    public fun topK(value: Int?): StepSettingsBuilder<TContext> {
         topK = value
+        return this
     }
 
-    public fun maxOutputTokens(value: Int?) {
+    public fun maxOutputTokens(value: Int?): StepSettingsBuilder<TContext> {
         maxOutputTokens = value
+        return this
     }
 
-    public fun stopSequences(value: List<String>?) {
+    public fun stopSequences(value: List<String>?): StepSettingsBuilder<TContext> {
         stopSequences = value
+        return this
     }
 
-    public fun seed(value: Int?) {
+    public fun seed(value: Int?): StepSettingsBuilder<TContext> {
         seed = value
+        return this
     }
 
-    public fun presencePenalty(value: Float?) {
+    public fun presencePenalty(value: Float?): StepSettingsBuilder<TContext> {
         presencePenalty = value
+        return this
     }
 
-    public fun frequencyPenalty(value: Float?) {
+    public fun frequencyPenalty(value: Float?): StepSettingsBuilder<TContext> {
         frequencyPenalty = value
+        return this
     }
 
-    public fun responseFormat(value: ResponseFormat?) {
+    public fun responseFormat(value: ResponseFormat?): StepSettingsBuilder<TContext> {
         responseFormat = value
+        return this
     }
 
-    public fun maxRetries(value: Int?) {
+    public fun maxRetries(value: Int?): StepSettingsBuilder<TContext> {
         maxRetries = value
+        return this
     }
 
-    public fun experimental_context(value: TContext?) {
+    public fun experimental_context(value: TContext?): StepSettingsBuilder<TContext> {
         experimental_context = value
+        return this
     }
 
-    internal fun build(): StepSettings<TContext> =
+    public fun build(): StepSettings<TContext> =
         StepSettings(
             model = model,
             activeTools = activeTools,

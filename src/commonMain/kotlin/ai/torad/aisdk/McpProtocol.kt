@@ -54,24 +54,27 @@ public class MCPRequestOptions internal constructor(
     public val maxTotalTimeoutMillis: Long? = null,
 )
 
-public class MCPRequestOptionsBuilder internal constructor() {
+public class MCPRequestOptionsBuilder {
     private var signal: AbortSignal? = null
     private var timeoutMillis: Long? = null
     private var maxTotalTimeoutMillis: Long? = null
 
-    public fun signal(value: AbortSignal?) {
+    public fun signal(value: AbortSignal?): MCPRequestOptionsBuilder {
         signal = value
+        return this
     }
 
-    public fun timeoutMillis(value: Long?) {
+    public fun timeoutMillis(value: Long?): MCPRequestOptionsBuilder {
         timeoutMillis = value
+        return this
     }
 
-    public fun maxTotalTimeoutMillis(value: Long?) {
+    public fun maxTotalTimeoutMillis(value: Long?): MCPRequestOptionsBuilder {
         maxTotalTimeoutMillis = value
+        return this
     }
 
-    internal fun build(): MCPRequestOptions =
+    public fun build(): MCPRequestOptions =
         MCPRequestOptions(
             signal = signal,
             timeoutMillis = timeoutMillis,
@@ -92,24 +95,27 @@ public class Configuration internal constructor(
     public val title: String? = null,
 )
 
-public class ConfigurationBuilder internal constructor() {
+public class ConfigurationBuilder {
     private var name: String? = null
     private var version: String? = null
     private var title: String? = null
 
-    public fun name(value: String) {
+    public fun name(value: String): ConfigurationBuilder {
         name = value
+        return this
     }
 
-    public fun version(value: String) {
+    public fun version(value: String): ConfigurationBuilder {
         version = value
+        return this
     }
 
-    public fun title(value: String?) {
+    public fun title(value: String?): ConfigurationBuilder {
         title = value
+        return this
     }
 
-    internal fun build(): Configuration =
+    public fun build(): Configuration =
         Configuration(
             name = requireNotNull(name) { "Configuration.name is required" },
             version = requireNotNull(version) { "Configuration.version is required" },
@@ -128,14 +134,15 @@ public class ElicitationCapability internal constructor(
     public val applyDefaults: Boolean? = null,
 )
 
-public class ElicitationCapabilityBuilder internal constructor() {
+public class ElicitationCapabilityBuilder {
     private var applyDefaults: Boolean? = null
 
-    public fun applyDefaults(value: Boolean?) {
+    public fun applyDefaults(value: Boolean?): ElicitationCapabilityBuilder {
         applyDefaults = value
+        return this
     }
 
-    internal fun build(): ElicitationCapability =
+    public fun build(): ElicitationCapability =
         ElicitationCapability(
             applyDefaults = applyDefaults,
         )

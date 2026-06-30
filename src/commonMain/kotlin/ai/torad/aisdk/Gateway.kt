@@ -80,7 +80,7 @@ public class GatewayProviderSettings internal constructor(
     }
 }
 
-public class GatewayProviderSettingsBuilder internal constructor() {
+public class GatewayProviderSettingsBuilder {
     private var baseUrl: String = AI_GATEWAY_DEFAULT_BASE_URL
     private var apiKey: String? = null
     private var headers: Map<String, String> = emptyMap()
@@ -90,39 +90,47 @@ public class GatewayProviderSettingsBuilder internal constructor() {
     private var authTokenProvider: (suspend () -> GatewayAuthToken?)? = null
     private var environment: Map<String, String> = emptyMap()
 
-    public fun baseUrl(value: String) {
+    public fun baseUrl(value: String): GatewayProviderSettingsBuilder {
         baseUrl = value
+        return this
     }
 
-    public fun apiKey(value: String?) {
+    public fun apiKey(value: String?): GatewayProviderSettingsBuilder {
         apiKey = value
+        return this
     }
 
-    public fun headers(value: Map<String, String>) {
+    public fun headers(value: Map<String, String>): GatewayProviderSettingsBuilder {
         headers = value
+        return this
     }
 
-    public fun transport(value: GatewayTransport) {
+    public fun transport(value: GatewayTransport): GatewayProviderSettingsBuilder {
         transport = value
+        return this
     }
 
-    public fun metadataCacheRefreshMillis(value: Long) {
+    public fun metadataCacheRefreshMillis(value: Long): GatewayProviderSettingsBuilder {
         metadataCacheRefreshMillis = value
+        return this
     }
 
-    public fun nowMillis(value: () -> Long) {
+    public fun nowMillis(value: () -> Long): GatewayProviderSettingsBuilder {
         nowMillis = value
+        return this
     }
 
-    public fun authTokenProvider(value: (suspend () -> GatewayAuthToken?)?) {
+    public fun authTokenProvider(value: (suspend () -> GatewayAuthToken?)?): GatewayProviderSettingsBuilder {
         authTokenProvider = value
+        return this
     }
 
-    public fun environment(value: Map<String, String>) {
+    public fun environment(value: Map<String, String>): GatewayProviderSettingsBuilder {
         environment = value
+        return this
     }
 
-    internal fun build(): GatewayProviderSettings =
+    public fun build(): GatewayProviderSettings =
         GatewayProviderSettings(
             baseUrl = baseUrl,
             apiKey = apiKey,
@@ -245,7 +253,7 @@ public class GatewaySpendReportParams internal constructor(
     public val tags: List<String> = emptyList(),
 )
 
-public class GatewaySpendReportParamsBuilder internal constructor() {
+public class GatewaySpendReportParamsBuilder {
     private var startDate: String? = null
     private var endDate: String? = null
     private var groupBy: GatewaySpendReportGroupBy? = null
@@ -256,43 +264,52 @@ public class GatewaySpendReportParamsBuilder internal constructor() {
     private var credentialType: GatewayCredentialType? = null
     private var tags: List<String> = emptyList()
 
-    public fun startDate(value: String) {
+    public fun startDate(value: String): GatewaySpendReportParamsBuilder {
         startDate = value
+        return this
     }
 
-    public fun endDate(value: String) {
+    public fun endDate(value: String): GatewaySpendReportParamsBuilder {
         endDate = value
+        return this
     }
 
-    public fun groupBy(value: GatewaySpendReportGroupBy?) {
+    public fun groupBy(value: GatewaySpendReportGroupBy?): GatewaySpendReportParamsBuilder {
         groupBy = value
+        return this
     }
 
-    public fun datePart(value: GatewaySpendReportDatePart?) {
+    public fun datePart(value: GatewaySpendReportDatePart?): GatewaySpendReportParamsBuilder {
         datePart = value
+        return this
     }
 
-    public fun userId(value: String?) {
+    public fun userId(value: String?): GatewaySpendReportParamsBuilder {
         userId = value
+        return this
     }
 
-    public fun model(value: String?) {
+    public fun model(value: String?): GatewaySpendReportParamsBuilder {
         model = value
+        return this
     }
 
-    public fun provider(value: String?) {
+    public fun provider(value: String?): GatewaySpendReportParamsBuilder {
         provider = value
+        return this
     }
 
-    public fun credentialType(value: GatewayCredentialType?) {
+    public fun credentialType(value: GatewayCredentialType?): GatewaySpendReportParamsBuilder {
         credentialType = value
+        return this
     }
 
-    public fun tags(value: List<String>) {
+    public fun tags(value: List<String>): GatewaySpendReportParamsBuilder {
         tags = value
+        return this
     }
 
-    internal fun build(): GatewaySpendReportParams =
+    public fun build(): GatewaySpendReportParams =
         GatewaySpendReportParams(
             startDate = requireNotNull(startDate) { "GatewaySpendReportParams.startDate is required" },
             endDate = requireNotNull(endDate) { "GatewaySpendReportParams.endDate is required" },
@@ -340,14 +357,15 @@ public class GatewayGenerationInfoParams internal constructor(
     public val id: String,
 )
 
-public class GatewayGenerationInfoParamsBuilder internal constructor() {
+public class GatewayGenerationInfoParamsBuilder {
     private var id: String? = null
 
-    public fun id(value: String) {
+    public fun id(value: String): GatewayGenerationInfoParamsBuilder {
         id = value
+        return this
     }
 
-    internal fun build(): GatewayGenerationInfoParams =
+    public fun build(): GatewayGenerationInfoParams =
         GatewayGenerationInfoParams(
             id = requireNotNull(id) { "GatewayGenerationInfoParams.id is required" },
         )

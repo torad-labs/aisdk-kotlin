@@ -370,21 +370,23 @@ public final class ai/torad/aisdk/AgentSettings {
 }
 
 public final class ai/torad/aisdk/AgentSettingsBuilder {
-	public final fun activeTools (Ljava/util/List;)V
-	public final fun frequencyPenalty (Ljava/lang/Float;)V
-	public final fun instructions (Ljava/lang/String;)V
-	public final fun maxOutputTokens (Ljava/lang/Integer;)V
-	public final fun maxRetries (Ljava/lang/Integer;)V
-	public final fun model (Lai/torad/aisdk/LanguageModel;)V
-	public final fun presencePenalty (Ljava/lang/Float;)V
-	public final fun providerOptions (Lai/torad/aisdk/ProviderOptions;)V
-	public final fun responseFormat (Lai/torad/aisdk/ResponseFormat;)V
-	public final fun seed (Ljava/lang/Integer;)V
-	public final fun stopSequences (Ljava/util/List;)V
-	public final fun temperature (Ljava/lang/Float;)V
-	public final fun tools (Lai/torad/aisdk/ToolSet;)V
-	public final fun topK (Ljava/lang/Integer;)V
-	public final fun topP (Ljava/lang/Float;)V
+	public fun <init> ()V
+	public final fun activeTools (Ljava/util/List;)Lai/torad/aisdk/AgentSettingsBuilder;
+	public final fun build ()Lai/torad/aisdk/AgentSettings;
+	public final fun frequencyPenalty (Ljava/lang/Float;)Lai/torad/aisdk/AgentSettingsBuilder;
+	public final fun instructions (Ljava/lang/String;)Lai/torad/aisdk/AgentSettingsBuilder;
+	public final fun maxOutputTokens (Ljava/lang/Integer;)Lai/torad/aisdk/AgentSettingsBuilder;
+	public final fun maxRetries (Ljava/lang/Integer;)Lai/torad/aisdk/AgentSettingsBuilder;
+	public final fun model (Lai/torad/aisdk/LanguageModel;)Lai/torad/aisdk/AgentSettingsBuilder;
+	public final fun presencePenalty (Ljava/lang/Float;)Lai/torad/aisdk/AgentSettingsBuilder;
+	public final fun providerOptions (Lai/torad/aisdk/ProviderOptions;)Lai/torad/aisdk/AgentSettingsBuilder;
+	public final fun responseFormat (Lai/torad/aisdk/ResponseFormat;)Lai/torad/aisdk/AgentSettingsBuilder;
+	public final fun seed (Ljava/lang/Integer;)Lai/torad/aisdk/AgentSettingsBuilder;
+	public final fun stopSequences (Ljava/util/List;)Lai/torad/aisdk/AgentSettingsBuilder;
+	public final fun temperature (Ljava/lang/Float;)Lai/torad/aisdk/AgentSettingsBuilder;
+	public final fun tools (Lai/torad/aisdk/ToolSet;)Lai/torad/aisdk/AgentSettingsBuilder;
+	public final fun topK (Ljava/lang/Integer;)Lai/torad/aisdk/AgentSettingsBuilder;
+	public final fun topP (Ljava/lang/Float;)Lai/torad/aisdk/AgentSettingsBuilder;
 }
 
 public abstract interface annotation class ai/torad/aisdk/AiSdkDsl : java/lang/annotation/Annotation {
@@ -462,12 +464,14 @@ public final class ai/torad/aisdk/AuthOptions {
 }
 
 public final class ai/torad/aisdk/AuthOptionsBuilder {
-	public final fun authorizationCode (Ljava/lang/String;)V
-	public final fun callbackState (Ljava/lang/String;)V
-	public final fun client (Lio/ktor/client/HttpClient;)V
-	public final fun resourceMetadataUrl (Ljava/lang/String;)V
-	public final fun scope (Ljava/lang/String;)V
-	public final fun serverUrl (Ljava/lang/String;)V
+	public fun <init> ()V
+	public final fun authorizationCode (Ljava/lang/String;)Lai/torad/aisdk/AuthOptionsBuilder;
+	public final fun build ()Lai/torad/aisdk/AuthOptions;
+	public final fun callbackState (Ljava/lang/String;)Lai/torad/aisdk/AuthOptionsBuilder;
+	public final fun client (Lio/ktor/client/HttpClient;)Lai/torad/aisdk/AuthOptionsBuilder;
+	public final fun resourceMetadataUrl (Ljava/lang/String;)Lai/torad/aisdk/AuthOptionsBuilder;
+	public final fun scope (Ljava/lang/String;)Lai/torad/aisdk/AuthOptionsBuilder;
+	public final fun serverUrl (Ljava/lang/String;)Lai/torad/aisdk/AuthOptionsBuilder;
 }
 
 public final class ai/torad/aisdk/AuthResult : java/lang/Enum {
@@ -528,19 +532,21 @@ public final class ai/torad/aisdk/CallCompletionApiOptions {
 }
 
 public final class ai/torad/aisdk/CallCompletionApiOptionsBuilder {
-	public final fun abortSignal (Lai/torad/aisdk/AbortSignal;)V
-	public final fun api (Ljava/lang/String;)V
-	public final fun body (Ljava/util/Map;)V
-	public final fun headers (Ljava/util/Map;)V
-	public final fun id (Ljava/lang/String;)V
-	public final fun onError (Lkotlin/jvm/functions/Function2;)V
-	public final fun onFinish (Lkotlin/jvm/functions/Function3;)V
-	public final fun prompt (Ljava/lang/String;)V
-	public final fun setCompletion (Lkotlin/jvm/functions/Function1;)V
-	public final fun setError (Lkotlin/jvm/functions/Function1;)V
-	public final fun setLoading (Lkotlin/jvm/functions/Function1;)V
-	public final fun streamProtocol (Lai/torad/aisdk/CompletionStreamProtocol;)V
-	public final fun transport (Lai/torad/aisdk/CompletionTransport;)V
+	public fun <init> ()V
+	public final fun abortSignal (Lai/torad/aisdk/AbortSignal;)Lai/torad/aisdk/CallCompletionApiOptionsBuilder;
+	public final fun api (Ljava/lang/String;)Lai/torad/aisdk/CallCompletionApiOptionsBuilder;
+	public final fun body (Ljava/util/Map;)Lai/torad/aisdk/CallCompletionApiOptionsBuilder;
+	public final fun build ()Lai/torad/aisdk/CallCompletionApiOptions;
+	public final fun headers (Ljava/util/Map;)Lai/torad/aisdk/CallCompletionApiOptionsBuilder;
+	public final fun id (Ljava/lang/String;)Lai/torad/aisdk/CallCompletionApiOptionsBuilder;
+	public final fun onError (Lkotlin/jvm/functions/Function2;)Lai/torad/aisdk/CallCompletionApiOptionsBuilder;
+	public final fun onFinish (Lkotlin/jvm/functions/Function3;)Lai/torad/aisdk/CallCompletionApiOptionsBuilder;
+	public final fun prompt (Ljava/lang/String;)Lai/torad/aisdk/CallCompletionApiOptionsBuilder;
+	public final fun setCompletion (Lkotlin/jvm/functions/Function1;)Lai/torad/aisdk/CallCompletionApiOptionsBuilder;
+	public final fun setError (Lkotlin/jvm/functions/Function1;)Lai/torad/aisdk/CallCompletionApiOptionsBuilder;
+	public final fun setLoading (Lkotlin/jvm/functions/Function1;)Lai/torad/aisdk/CallCompletionApiOptionsBuilder;
+	public final fun streamProtocol (Lai/torad/aisdk/CompletionStreamProtocol;)Lai/torad/aisdk/CallCompletionApiOptionsBuilder;
+	public final fun transport (Lai/torad/aisdk/CompletionTransport;)Lai/torad/aisdk/CallCompletionApiOptionsBuilder;
 }
 
 public final class ai/torad/aisdk/CallConfig {
@@ -562,18 +568,20 @@ public final class ai/torad/aisdk/CallConfig {
 }
 
 public final class ai/torad/aisdk/CallConfigBuilder {
-	public final fun abortSignal (Lai/torad/aisdk/AbortSignal;)V
-	public final fun frequencyPenalty (Ljava/lang/Float;)V
-	public final fun maxOutputTokens (Ljava/lang/Integer;)V
-	public final fun maxRetries (I)V
-	public final fun presencePenalty (Ljava/lang/Float;)V
-	public final fun providerOptions (Lai/torad/aisdk/ProviderOptions;)V
-	public final fun responseFormat (Lai/torad/aisdk/ResponseFormat;)V
-	public final fun seed (Ljava/lang/Integer;)V
-	public final fun stopSequences (Ljava/util/List;)V
-	public final fun temperature (Ljava/lang/Float;)V
-	public final fun topK (Ljava/lang/Integer;)V
-	public final fun topP (Ljava/lang/Float;)V
+	public fun <init> ()V
+	public final fun abortSignal (Lai/torad/aisdk/AbortSignal;)Lai/torad/aisdk/CallConfigBuilder;
+	public final fun build ()Lai/torad/aisdk/CallConfig;
+	public final fun frequencyPenalty (Ljava/lang/Float;)Lai/torad/aisdk/CallConfigBuilder;
+	public final fun maxOutputTokens (Ljava/lang/Integer;)Lai/torad/aisdk/CallConfigBuilder;
+	public final fun maxRetries (I)Lai/torad/aisdk/CallConfigBuilder;
+	public final fun presencePenalty (Ljava/lang/Float;)Lai/torad/aisdk/CallConfigBuilder;
+	public final fun providerOptions (Lai/torad/aisdk/ProviderOptions;)Lai/torad/aisdk/CallConfigBuilder;
+	public final fun responseFormat (Lai/torad/aisdk/ResponseFormat;)Lai/torad/aisdk/CallConfigBuilder;
+	public final fun seed (Ljava/lang/Integer;)Lai/torad/aisdk/CallConfigBuilder;
+	public final fun stopSequences (Ljava/util/List;)Lai/torad/aisdk/CallConfigBuilder;
+	public final fun temperature (Ljava/lang/Float;)Lai/torad/aisdk/CallConfigBuilder;
+	public final fun topK (Ljava/lang/Integer;)Lai/torad/aisdk/CallConfigBuilder;
+	public final fun topP (Ljava/lang/Float;)Lai/torad/aisdk/CallConfigBuilder;
 }
 
 public final class ai/torad/aisdk/CallConfigKt {
@@ -794,13 +802,15 @@ public final class ai/torad/aisdk/CompletionRequest {
 }
 
 public final class ai/torad/aisdk/CompletionRequestBuilder {
-	public final fun abortSignal (Lai/torad/aisdk/AbortSignal;)V
-	public final fun api (Ljava/lang/String;)V
-	public final fun body (Ljava/util/Map;)V
-	public final fun headers (Ljava/util/Map;)V
-	public final fun id (Ljava/lang/String;)V
-	public final fun prompt (Ljava/lang/String;)V
-	public final fun streamProtocol (Lai/torad/aisdk/CompletionStreamProtocol;)V
+	public fun <init> ()V
+	public final fun abortSignal (Lai/torad/aisdk/AbortSignal;)Lai/torad/aisdk/CompletionRequestBuilder;
+	public final fun api (Ljava/lang/String;)Lai/torad/aisdk/CompletionRequestBuilder;
+	public final fun body (Ljava/util/Map;)Lai/torad/aisdk/CompletionRequestBuilder;
+	public final fun build ()Lai/torad/aisdk/CompletionRequest;
+	public final fun headers (Ljava/util/Map;)Lai/torad/aisdk/CompletionRequestBuilder;
+	public final fun id (Ljava/lang/String;)Lai/torad/aisdk/CompletionRequestBuilder;
+	public final fun prompt (Ljava/lang/String;)Lai/torad/aisdk/CompletionRequestBuilder;
+	public final fun streamProtocol (Lai/torad/aisdk/CompletionStreamProtocol;)Lai/torad/aisdk/CompletionRequestBuilder;
 }
 
 public final class ai/torad/aisdk/CompletionRequestOptions {
@@ -812,8 +822,10 @@ public final class ai/torad/aisdk/CompletionRequestOptions {
 }
 
 public final class ai/torad/aisdk/CompletionRequestOptionsBuilder {
-	public final fun body (Ljava/util/Map;)V
-	public final fun headers (Ljava/util/Map;)V
+	public fun <init> ()V
+	public final fun body (Ljava/util/Map;)Lai/torad/aisdk/CompletionRequestOptionsBuilder;
+	public final fun build ()Lai/torad/aisdk/CompletionRequestOptions;
+	public final fun headers (Ljava/util/Map;)Lai/torad/aisdk/CompletionRequestOptionsBuilder;
 }
 
 public final class ai/torad/aisdk/CompletionState {
@@ -873,9 +885,11 @@ public final class ai/torad/aisdk/Configuration$Companion {
 }
 
 public final class ai/torad/aisdk/ConfigurationBuilder {
-	public final fun name (Ljava/lang/String;)V
-	public final fun title (Ljava/lang/String;)V
-	public final fun version (Ljava/lang/String;)V
+	public fun <init> ()V
+	public final fun build ()Lai/torad/aisdk/Configuration;
+	public final fun name (Ljava/lang/String;)Lai/torad/aisdk/ConfigurationBuilder;
+	public final fun title (Ljava/lang/String;)Lai/torad/aisdk/ConfigurationBuilder;
+	public final fun version (Ljava/lang/String;)Lai/torad/aisdk/ConfigurationBuilder;
 }
 
 public abstract class ai/torad/aisdk/ContentPart {
@@ -1175,22 +1189,24 @@ public final class ai/torad/aisdk/CustomProvider : ai/torad/aisdk/Provider {
 }
 
 public final class ai/torad/aisdk/CustomProviderBuilder {
-	public final fun embeddingModel (Ljava/lang/String;Lai/torad/aisdk/EmbeddingModel;)V
-	public final fun embeddingModels (Ljava/util/Map;)V
-	public final fun fallbackProvider (Lai/torad/aisdk/Provider;)V
-	public final fun imageModel (Ljava/lang/String;Lai/torad/aisdk/ImageModel;)V
-	public final fun imageModels (Ljava/util/Map;)V
-	public final fun languageModel (Ljava/lang/String;Lai/torad/aisdk/LanguageModel;)V
-	public final fun languageModels (Ljava/util/Map;)V
-	public final fun providerId (Ljava/lang/String;)V
-	public final fun rerankingModel (Ljava/lang/String;Lai/torad/aisdk/RerankingModel;)V
-	public final fun rerankingModels (Ljava/util/Map;)V
-	public final fun speechModel (Ljava/lang/String;Lai/torad/aisdk/SpeechModel;)V
-	public final fun speechModels (Ljava/util/Map;)V
-	public final fun transcriptionModel (Ljava/lang/String;Lai/torad/aisdk/TranscriptionModel;)V
-	public final fun transcriptionModels (Ljava/util/Map;)V
-	public final fun videoModel (Ljava/lang/String;Lai/torad/aisdk/VideoModel;)V
-	public final fun videoModels (Ljava/util/Map;)V
+	public fun <init> ()V
+	public final fun build ()Lai/torad/aisdk/CustomProvider;
+	public final fun embeddingModel (Ljava/lang/String;Lai/torad/aisdk/EmbeddingModel;)Lai/torad/aisdk/CustomProviderBuilder;
+	public final fun embeddingModels (Ljava/util/Map;)Lai/torad/aisdk/CustomProviderBuilder;
+	public final fun fallbackProvider (Lai/torad/aisdk/Provider;)Lai/torad/aisdk/CustomProviderBuilder;
+	public final fun imageModel (Ljava/lang/String;Lai/torad/aisdk/ImageModel;)Lai/torad/aisdk/CustomProviderBuilder;
+	public final fun imageModels (Ljava/util/Map;)Lai/torad/aisdk/CustomProviderBuilder;
+	public final fun languageModel (Ljava/lang/String;Lai/torad/aisdk/LanguageModel;)Lai/torad/aisdk/CustomProviderBuilder;
+	public final fun languageModels (Ljava/util/Map;)Lai/torad/aisdk/CustomProviderBuilder;
+	public final fun providerId (Ljava/lang/String;)Lai/torad/aisdk/CustomProviderBuilder;
+	public final fun rerankingModel (Ljava/lang/String;Lai/torad/aisdk/RerankingModel;)Lai/torad/aisdk/CustomProviderBuilder;
+	public final fun rerankingModels (Ljava/util/Map;)Lai/torad/aisdk/CustomProviderBuilder;
+	public final fun speechModel (Ljava/lang/String;Lai/torad/aisdk/SpeechModel;)Lai/torad/aisdk/CustomProviderBuilder;
+	public final fun speechModels (Ljava/util/Map;)Lai/torad/aisdk/CustomProviderBuilder;
+	public final fun transcriptionModel (Ljava/lang/String;Lai/torad/aisdk/TranscriptionModel;)Lai/torad/aisdk/CustomProviderBuilder;
+	public final fun transcriptionModels (Ljava/util/Map;)Lai/torad/aisdk/CustomProviderBuilder;
+	public final fun videoModel (Ljava/lang/String;Lai/torad/aisdk/VideoModel;)Lai/torad/aisdk/CustomProviderBuilder;
+	public final fun videoModels (Ljava/util/Map;)Lai/torad/aisdk/CustomProviderBuilder;
 }
 
 public final class ai/torad/aisdk/DataUrl {
@@ -1359,7 +1375,9 @@ public final class ai/torad/aisdk/ElicitationCapability$Companion {
 }
 
 public final class ai/torad/aisdk/ElicitationCapabilityBuilder {
-	public final fun applyDefaults (Ljava/lang/Boolean;)V
+	public fun <init> ()V
+	public final fun applyDefaults (Ljava/lang/Boolean;)Lai/torad/aisdk/ElicitationCapabilityBuilder;
+	public final fun build ()Lai/torad/aisdk/ElicitationCapability;
 }
 
 public final class ai/torad/aisdk/ElicitationRequest {
@@ -1752,7 +1770,9 @@ public final class ai/torad/aisdk/GatewayGenerationInfoParams {
 }
 
 public final class ai/torad/aisdk/GatewayGenerationInfoParamsBuilder {
-	public final fun id (Ljava/lang/String;)V
+	public fun <init> ()V
+	public final fun build ()Lai/torad/aisdk/GatewayGenerationInfoParams;
+	public final fun id (Ljava/lang/String;)Lai/torad/aisdk/GatewayGenerationInfoParamsBuilder;
 }
 
 public final class ai/torad/aisdk/GatewayInternalServerError : ai/torad/aisdk/GatewayError {
@@ -1884,14 +1904,16 @@ public final class ai/torad/aisdk/GatewayProviderSettings {
 }
 
 public final class ai/torad/aisdk/GatewayProviderSettingsBuilder {
-	public final fun apiKey (Ljava/lang/String;)V
-	public final fun authTokenProvider (Lkotlin/jvm/functions/Function1;)V
-	public final fun baseUrl (Ljava/lang/String;)V
-	public final fun environment (Ljava/util/Map;)V
-	public final fun headers (Ljava/util/Map;)V
-	public final fun metadataCacheRefreshMillis (J)V
-	public final fun nowMillis (Lkotlin/jvm/functions/Function0;)V
-	public final fun transport (Lai/torad/aisdk/GatewayTransport;)V
+	public fun <init> ()V
+	public final fun apiKey (Ljava/lang/String;)Lai/torad/aisdk/GatewayProviderSettingsBuilder;
+	public final fun authTokenProvider (Lkotlin/jvm/functions/Function1;)Lai/torad/aisdk/GatewayProviderSettingsBuilder;
+	public final fun baseUrl (Ljava/lang/String;)Lai/torad/aisdk/GatewayProviderSettingsBuilder;
+	public final fun build ()Lai/torad/aisdk/GatewayProviderSettings;
+	public final fun environment (Ljava/util/Map;)Lai/torad/aisdk/GatewayProviderSettingsBuilder;
+	public final fun headers (Ljava/util/Map;)Lai/torad/aisdk/GatewayProviderSettingsBuilder;
+	public final fun metadataCacheRefreshMillis (J)Lai/torad/aisdk/GatewayProviderSettingsBuilder;
+	public final fun nowMillis (Lkotlin/jvm/functions/Function0;)Lai/torad/aisdk/GatewayProviderSettingsBuilder;
+	public final fun transport (Lai/torad/aisdk/GatewayTransport;)Lai/torad/aisdk/GatewayProviderSettingsBuilder;
 }
 
 public final class ai/torad/aisdk/GatewayRateLimitError : ai/torad/aisdk/GatewayError {
@@ -1954,15 +1976,17 @@ public final class ai/torad/aisdk/GatewaySpendReportParams {
 }
 
 public final class ai/torad/aisdk/GatewaySpendReportParamsBuilder {
-	public final fun credentialType (Lai/torad/aisdk/GatewayCredentialType;)V
-	public final fun datePart (Lai/torad/aisdk/GatewaySpendReportDatePart;)V
-	public final fun endDate (Ljava/lang/String;)V
-	public final fun groupBy (Lai/torad/aisdk/GatewaySpendReportGroupBy;)V
-	public final fun model (Ljava/lang/String;)V
-	public final fun provider (Ljava/lang/String;)V
-	public final fun startDate (Ljava/lang/String;)V
-	public final fun tags (Ljava/util/List;)V
-	public final fun userId (Ljava/lang/String;)V
+	public fun <init> ()V
+	public final fun build ()Lai/torad/aisdk/GatewaySpendReportParams;
+	public final fun credentialType (Lai/torad/aisdk/GatewayCredentialType;)Lai/torad/aisdk/GatewaySpendReportParamsBuilder;
+	public final fun datePart (Lai/torad/aisdk/GatewaySpendReportDatePart;)Lai/torad/aisdk/GatewaySpendReportParamsBuilder;
+	public final fun endDate (Ljava/lang/String;)Lai/torad/aisdk/GatewaySpendReportParamsBuilder;
+	public final fun groupBy (Lai/torad/aisdk/GatewaySpendReportGroupBy;)Lai/torad/aisdk/GatewaySpendReportParamsBuilder;
+	public final fun model (Ljava/lang/String;)Lai/torad/aisdk/GatewaySpendReportParamsBuilder;
+	public final fun provider (Ljava/lang/String;)Lai/torad/aisdk/GatewaySpendReportParamsBuilder;
+	public final fun startDate (Ljava/lang/String;)Lai/torad/aisdk/GatewaySpendReportParamsBuilder;
+	public final fun tags (Ljava/util/List;)Lai/torad/aisdk/GatewaySpendReportParamsBuilder;
+	public final fun userId (Ljava/lang/String;)Lai/torad/aisdk/GatewaySpendReportParamsBuilder;
 }
 
 public final class ai/torad/aisdk/GatewaySpendReportResponse {
@@ -2287,11 +2311,13 @@ public final class ai/torad/aisdk/IdGenerator$Companion {
 }
 
 public final class ai/torad/aisdk/IdGeneratorBuilder {
-	public final fun alphabet (Ljava/lang/String;)V
-	public final fun prefix (Ljava/lang/String;)V
-	public final fun random (Lkotlin/random/Random;)V
-	public final fun separator (Ljava/lang/String;)V
-	public final fun size (I)V
+	public fun <init> ()V
+	public final fun alphabet (Ljava/lang/String;)Lai/torad/aisdk/IdGeneratorBuilder;
+	public final fun build ()Lai/torad/aisdk/IdGenerator;
+	public final fun prefix (Ljava/lang/String;)Lai/torad/aisdk/IdGeneratorBuilder;
+	public final fun random (Lkotlin/random/Random;)Lai/torad/aisdk/IdGeneratorBuilder;
+	public final fun separator (Ljava/lang/String;)Lai/torad/aisdk/IdGeneratorBuilder;
+	public final fun size (I)Lai/torad/aisdk/IdGeneratorBuilder;
 }
 
 public final class ai/torad/aisdk/IdGeneratorKt {
@@ -2334,16 +2360,18 @@ public final class ai/torad/aisdk/ImageGenerationParams {
 }
 
 public final class ai/torad/aisdk/ImageGenerationParamsBuilder {
-	public final fun abortSignal (Lai/torad/aisdk/AbortSignal;)V
-	public final fun aspectRatio (Ljava/lang/String;)V
-	public final fun files (Ljava/util/List;)V
-	public final fun headers (Ljava/util/Map;)V
-	public final fun mask (Lai/torad/aisdk/ImageGenerationFile;)V
-	public final fun n (I)V
-	public final fun prompt (Ljava/lang/String;)V
-	public final fun providerOptions (Lai/torad/aisdk/ProviderOptions;)V
-	public final fun seed (Ljava/lang/Integer;)V
-	public final fun size (Ljava/lang/String;)V
+	public fun <init> ()V
+	public final fun abortSignal (Lai/torad/aisdk/AbortSignal;)Lai/torad/aisdk/ImageGenerationParamsBuilder;
+	public final fun aspectRatio (Ljava/lang/String;)Lai/torad/aisdk/ImageGenerationParamsBuilder;
+	public final fun build ()Lai/torad/aisdk/ImageGenerationParams;
+	public final fun files (Ljava/util/List;)Lai/torad/aisdk/ImageGenerationParamsBuilder;
+	public final fun headers (Ljava/util/Map;)Lai/torad/aisdk/ImageGenerationParamsBuilder;
+	public final fun mask (Lai/torad/aisdk/ImageGenerationFile;)Lai/torad/aisdk/ImageGenerationParamsBuilder;
+	public final fun n (I)Lai/torad/aisdk/ImageGenerationParamsBuilder;
+	public final fun prompt (Ljava/lang/String;)Lai/torad/aisdk/ImageGenerationParamsBuilder;
+	public final fun providerOptions (Lai/torad/aisdk/ProviderOptions;)Lai/torad/aisdk/ImageGenerationParamsBuilder;
+	public final fun seed (Ljava/lang/Integer;)Lai/torad/aisdk/ImageGenerationParamsBuilder;
+	public final fun size (Ljava/lang/String;)Lai/torad/aisdk/ImageGenerationParamsBuilder;
 }
 
 public final class ai/torad/aisdk/ImageMiddlewareCallContext {
@@ -3112,12 +3140,14 @@ public final class ai/torad/aisdk/MCPClientConfig {
 }
 
 public final class ai/torad/aisdk/MCPClientConfigBuilder {
-	public final fun capabilities (Lai/torad/aisdk/MCPClientCapabilities;)V
-	public final fun clientName (Ljava/lang/String;)V
-	public final fun name (Ljava/lang/String;)V
-	public final fun onUncaughtError (Lkotlin/jvm/functions/Function1;)V
-	public final fun transport (Lai/torad/aisdk/MCPTransport;)V
-	public final fun version (Ljava/lang/String;)V
+	public fun <init> ()V
+	public final fun build ()Lai/torad/aisdk/MCPClientConfig;
+	public final fun capabilities (Lai/torad/aisdk/MCPClientCapabilities;)Lai/torad/aisdk/MCPClientConfigBuilder;
+	public final fun clientName (Ljava/lang/String;)Lai/torad/aisdk/MCPClientConfigBuilder;
+	public final fun name (Ljava/lang/String;)Lai/torad/aisdk/MCPClientConfigBuilder;
+	public final fun onUncaughtError (Lkotlin/jvm/functions/Function1;)Lai/torad/aisdk/MCPClientConfigBuilder;
+	public final fun transport (Lai/torad/aisdk/MCPTransport;)Lai/torad/aisdk/MCPClientConfigBuilder;
+	public final fun version (Ljava/lang/String;)Lai/torad/aisdk/MCPClientConfigBuilder;
 }
 
 public final class ai/torad/aisdk/MCPClientError : ai/torad/aisdk/AiSdkException {
@@ -3235,10 +3265,12 @@ public final class ai/torad/aisdk/MCPReconnectionOptions {
 }
 
 public final class ai/torad/aisdk/MCPReconnectionOptionsBuilder {
-	public final fun initialReconnectionDelayMillis (J)V
-	public final fun maxReconnectionDelayMillis (J)V
-	public final fun maxRetries (I)V
-	public final fun reconnectionDelayGrowFactor (D)V
+	public fun <init> ()V
+	public final fun build ()Lai/torad/aisdk/MCPReconnectionOptions;
+	public final fun initialReconnectionDelayMillis (J)Lai/torad/aisdk/MCPReconnectionOptionsBuilder;
+	public final fun maxReconnectionDelayMillis (J)Lai/torad/aisdk/MCPReconnectionOptionsBuilder;
+	public final fun maxRetries (I)Lai/torad/aisdk/MCPReconnectionOptionsBuilder;
+	public final fun reconnectionDelayGrowFactor (D)Lai/torad/aisdk/MCPReconnectionOptionsBuilder;
 }
 
 public final class ai/torad/aisdk/MCPRequestOptions {
@@ -3248,9 +3280,11 @@ public final class ai/torad/aisdk/MCPRequestOptions {
 }
 
 public final class ai/torad/aisdk/MCPRequestOptionsBuilder {
-	public final fun maxTotalTimeoutMillis (Ljava/lang/Long;)V
-	public final fun signal (Lai/torad/aisdk/AbortSignal;)V
-	public final fun timeoutMillis (Ljava/lang/Long;)V
+	public fun <init> ()V
+	public final fun build ()Lai/torad/aisdk/MCPRequestOptions;
+	public final fun maxTotalTimeoutMillis (Ljava/lang/Long;)Lai/torad/aisdk/MCPRequestOptionsBuilder;
+	public final fun signal (Lai/torad/aisdk/AbortSignal;)Lai/torad/aisdk/MCPRequestOptionsBuilder;
+	public final fun timeoutMillis (Ljava/lang/Long;)Lai/torad/aisdk/MCPRequestOptionsBuilder;
 }
 
 public final class ai/torad/aisdk/MCPResource {
@@ -3420,12 +3454,14 @@ public final class ai/torad/aisdk/MCPTransportConfig {
 }
 
 public final class ai/torad/aisdk/MCPTransportConfigBuilder {
-	public final fun authProvider (Lai/torad/aisdk/OAuthClientProvider;)V
-	public final fun engineContext (Lkotlin/coroutines/CoroutineContext;)V
-	public final fun headers (Ljava/util/Map;)V
-	public final fun reconnectionOptions (Lai/torad/aisdk/MCPReconnectionOptions;)V
-	public final fun type (Lai/torad/aisdk/MCPTransportKind;)V
-	public final fun url (Ljava/lang/String;)V
+	public fun <init> ()V
+	public final fun authProvider (Lai/torad/aisdk/OAuthClientProvider;)Lai/torad/aisdk/MCPTransportConfigBuilder;
+	public final fun build ()Lai/torad/aisdk/MCPTransportConfig;
+	public final fun engineContext (Lkotlin/coroutines/CoroutineContext;)Lai/torad/aisdk/MCPTransportConfigBuilder;
+	public final fun headers (Ljava/util/Map;)Lai/torad/aisdk/MCPTransportConfigBuilder;
+	public final fun reconnectionOptions (Lai/torad/aisdk/MCPReconnectionOptions;)Lai/torad/aisdk/MCPTransportConfigBuilder;
+	public final fun type (Lai/torad/aisdk/MCPTransportKind;)Lai/torad/aisdk/MCPTransportConfigBuilder;
+	public final fun url (Ljava/lang/String;)Lai/torad/aisdk/MCPTransportConfigBuilder;
 }
 
 public final class ai/torad/aisdk/MCPTransportKind : java/lang/Enum {
@@ -3762,10 +3798,12 @@ public final class ai/torad/aisdk/OAuthClientInformation$Companion {
 }
 
 public final class ai/torad/aisdk/OAuthClientInformationBuilder {
-	public final fun clientId (Ljava/lang/String;)V
-	public final fun clientIdIssuedAt (Ljava/lang/Long;)V
-	public final fun clientSecret (Ljava/lang/String;)V
-	public final fun clientSecretExpiresAt (Ljava/lang/Long;)V
+	public fun <init> ()V
+	public final fun build ()Lai/torad/aisdk/OAuthClientInformation;
+	public final fun clientId (Ljava/lang/String;)Lai/torad/aisdk/OAuthClientInformationBuilder;
+	public final fun clientIdIssuedAt (Ljava/lang/Long;)Lai/torad/aisdk/OAuthClientInformationBuilder;
+	public final fun clientSecret (Ljava/lang/String;)Lai/torad/aisdk/OAuthClientInformationBuilder;
+	public final fun clientSecretExpiresAt (Ljava/lang/Long;)Lai/torad/aisdk/OAuthClientInformationBuilder;
 }
 
 public final class ai/torad/aisdk/OAuthClientMetadata {
@@ -3807,22 +3845,24 @@ public final class ai/torad/aisdk/OAuthClientMetadata$Companion {
 }
 
 public final class ai/torad/aisdk/OAuthClientMetadataBuilder {
-	public final fun clientName (Ljava/lang/String;)V
-	public final fun clientUri (Ljava/lang/String;)V
-	public final fun contacts (Ljava/util/List;)V
-	public final fun grantTypes (Ljava/util/List;)V
-	public final fun jwks (Lkotlinx/serialization/json/JsonElement;)V
-	public final fun jwksUri (Ljava/lang/String;)V
-	public final fun logoUri (Ljava/lang/String;)V
-	public final fun policyUri (Ljava/lang/String;)V
-	public final fun redirectUris (Ljava/util/List;)V
-	public final fun responseTypes (Ljava/util/List;)V
-	public final fun scope (Ljava/lang/String;)V
-	public final fun softwareId (Ljava/lang/String;)V
-	public final fun softwareStatement (Ljava/lang/String;)V
-	public final fun softwareVersion (Ljava/lang/String;)V
-	public final fun tokenEndpointAuthMethod (Ljava/lang/String;)V
-	public final fun tosUri (Ljava/lang/String;)V
+	public fun <init> ()V
+	public final fun build ()Lai/torad/aisdk/OAuthClientMetadata;
+	public final fun clientName (Ljava/lang/String;)Lai/torad/aisdk/OAuthClientMetadataBuilder;
+	public final fun clientUri (Ljava/lang/String;)Lai/torad/aisdk/OAuthClientMetadataBuilder;
+	public final fun contacts (Ljava/util/List;)Lai/torad/aisdk/OAuthClientMetadataBuilder;
+	public final fun grantTypes (Ljava/util/List;)Lai/torad/aisdk/OAuthClientMetadataBuilder;
+	public final fun jwks (Lkotlinx/serialization/json/JsonElement;)Lai/torad/aisdk/OAuthClientMetadataBuilder;
+	public final fun jwksUri (Ljava/lang/String;)Lai/torad/aisdk/OAuthClientMetadataBuilder;
+	public final fun logoUri (Ljava/lang/String;)Lai/torad/aisdk/OAuthClientMetadataBuilder;
+	public final fun policyUri (Ljava/lang/String;)Lai/torad/aisdk/OAuthClientMetadataBuilder;
+	public final fun redirectUris (Ljava/util/List;)Lai/torad/aisdk/OAuthClientMetadataBuilder;
+	public final fun responseTypes (Ljava/util/List;)Lai/torad/aisdk/OAuthClientMetadataBuilder;
+	public final fun scope (Ljava/lang/String;)Lai/torad/aisdk/OAuthClientMetadataBuilder;
+	public final fun softwareId (Ljava/lang/String;)Lai/torad/aisdk/OAuthClientMetadataBuilder;
+	public final fun softwareStatement (Ljava/lang/String;)Lai/torad/aisdk/OAuthClientMetadataBuilder;
+	public final fun softwareVersion (Ljava/lang/String;)Lai/torad/aisdk/OAuthClientMetadataBuilder;
+	public final fun tokenEndpointAuthMethod (Ljava/lang/String;)Lai/torad/aisdk/OAuthClientMetadataBuilder;
+	public final fun tosUri (Ljava/lang/String;)Lai/torad/aisdk/OAuthClientMetadataBuilder;
 }
 
 public abstract interface class ai/torad/aisdk/OAuthClientProvider {
@@ -4190,9 +4230,11 @@ public final class ai/torad/aisdk/ProviderMiddleware {
 }
 
 public final class ai/torad/aisdk/ProviderMiddlewareBuilder {
-	public final fun embeddingModelMiddlewares (Ljava/util/List;)V
-	public final fun imageModelMiddlewares (Ljava/util/List;)V
-	public final fun languageModelMiddlewares (Ljava/util/List;)V
+	public fun <init> ()V
+	public final fun build ()Lai/torad/aisdk/ProviderMiddleware;
+	public final fun embeddingModelMiddlewares (Ljava/util/List;)Lai/torad/aisdk/ProviderMiddlewareBuilder;
+	public final fun imageModelMiddlewares (Ljava/util/List;)Lai/torad/aisdk/ProviderMiddlewareBuilder;
+	public final fun languageModelMiddlewares (Ljava/util/List;)Lai/torad/aisdk/ProviderMiddlewareBuilder;
 }
 
 public final class ai/torad/aisdk/ProviderModels {
@@ -4248,11 +4290,13 @@ public final class ai/torad/aisdk/ProviderOptions$Raw : ai/torad/aisdk/ProviderO
 }
 
 public final class ai/torad/aisdk/ProviderOptionsBuilder {
-	public final fun options (Ljava/util/Map;)V
-	public final fun provider (Ljava/lang/String;Ljava/lang/Object;Lkotlinx/serialization/KSerializer;)V
-	public final fun provider (Ljava/lang/String;Lkotlin/jvm/functions/Function1;)V
-	public final fun put (Ljava/lang/String;Ljava/lang/Object;Lkotlinx/serialization/KSerializer;)V
-	public final fun put (Ljava/lang/String;Lkotlinx/serialization/json/JsonElement;)V
+	public fun <init> ()V
+	public final fun build ()Ljava/util/Map;
+	public final fun options (Ljava/util/Map;)Lai/torad/aisdk/ProviderOptionsBuilder;
+	public final fun provider (Ljava/lang/String;Ljava/lang/Object;Lkotlinx/serialization/KSerializer;)Lai/torad/aisdk/ProviderOptionsBuilder;
+	public final fun provider (Ljava/lang/String;Lkotlin/jvm/functions/Function1;)Lai/torad/aisdk/ProviderOptionsBuilder;
+	public final fun put (Ljava/lang/String;Ljava/lang/Object;Lkotlinx/serialization/KSerializer;)Lai/torad/aisdk/ProviderOptionsBuilder;
+	public final fun put (Ljava/lang/String;Lkotlinx/serialization/json/JsonElement;)Lai/torad/aisdk/ProviderOptionsBuilder;
 }
 
 public final class ai/torad/aisdk/ProviderOptionsDsl {
@@ -4307,18 +4351,20 @@ public final class ai/torad/aisdk/ProviderToolFactoryOptions {
 }
 
 public final class ai/torad/aisdk/ProviderToolFactoryOptionsBuilder {
-	public final fun args (Ljava/util/Map;)V
-	public final fun description (Ljava/lang/String;)V
-	public final fun execute (Lkotlin/jvm/functions/Function3;)V
-	public final fun metadata (Ljava/util/Map;)V
-	public final fun name (Ljava/lang/String;)V
-	public final fun needsApproval (Lkotlin/jvm/functions/Function3;)V
-	public final fun onInputAvailable (Lkotlin/jvm/functions/Function3;)V
-	public final fun onInputDelta (Lkotlin/jvm/functions/Function3;)V
-	public final fun onInputStart (Lkotlin/jvm/functions/Function2;)V
-	public final fun outputSchema (Lai/torad/aisdk/Schema;)V
-	public final fun outputSerializer (Lkotlinx/serialization/KSerializer;)V
-	public final fun toModelOutput (Lkotlin/jvm/functions/Function2;)V
+	public fun <init> ()V
+	public final fun args (Ljava/util/Map;)Lai/torad/aisdk/ProviderToolFactoryOptionsBuilder;
+	public final fun build ()Lai/torad/aisdk/ProviderToolFactoryOptions;
+	public final fun description (Ljava/lang/String;)Lai/torad/aisdk/ProviderToolFactoryOptionsBuilder;
+	public final fun execute (Lkotlin/jvm/functions/Function3;)Lai/torad/aisdk/ProviderToolFactoryOptionsBuilder;
+	public final fun metadata (Ljava/util/Map;)Lai/torad/aisdk/ProviderToolFactoryOptionsBuilder;
+	public final fun name (Ljava/lang/String;)Lai/torad/aisdk/ProviderToolFactoryOptionsBuilder;
+	public final fun needsApproval (Lkotlin/jvm/functions/Function3;)Lai/torad/aisdk/ProviderToolFactoryOptionsBuilder;
+	public final fun onInputAvailable (Lkotlin/jvm/functions/Function3;)Lai/torad/aisdk/ProviderToolFactoryOptionsBuilder;
+	public final fun onInputDelta (Lkotlin/jvm/functions/Function3;)Lai/torad/aisdk/ProviderToolFactoryOptionsBuilder;
+	public final fun onInputStart (Lkotlin/jvm/functions/Function2;)Lai/torad/aisdk/ProviderToolFactoryOptionsBuilder;
+	public final fun outputSchema (Lai/torad/aisdk/Schema;)Lai/torad/aisdk/ProviderToolFactoryOptionsBuilder;
+	public final fun outputSerializer (Lkotlinx/serialization/KSerializer;)Lai/torad/aisdk/ProviderToolFactoryOptionsBuilder;
+	public final fun toModelOutput (Lkotlin/jvm/functions/Function2;)Lai/torad/aisdk/ProviderToolFactoryOptionsBuilder;
 }
 
 public final class ai/torad/aisdk/ProviderToolFactoryWithOutputSchema {
@@ -4479,9 +4525,11 @@ public final class ai/torad/aisdk/RedactionOptions {
 }
 
 public final class ai/torad/aisdk/RedactionOptionsBuilder {
-	public final fun maxStringLength (I)V
-	public final fun minBase64Length (I)V
-	public final fun replacement (Ljava/lang/String;)V
+	public fun <init> ()V
+	public final fun build ()Lai/torad/aisdk/RedactionOptions;
+	public final fun maxStringLength (I)Lai/torad/aisdk/RedactionOptionsBuilder;
+	public final fun minBase64Length (I)Lai/torad/aisdk/RedactionOptionsBuilder;
+	public final fun replacement (Ljava/lang/String;)Lai/torad/aisdk/RedactionOptionsBuilder;
 }
 
 public abstract interface class ai/torad/aisdk/Redactor {
@@ -4565,12 +4613,14 @@ public final class ai/torad/aisdk/RerankingParams {
 }
 
 public final class ai/torad/aisdk/RerankingParamsBuilder {
-	public final fun abortSignal (Lai/torad/aisdk/AbortSignal;)V
-	public final fun documents (Ljava/util/List;)V
-	public final fun headers (Ljava/util/Map;)V
-	public final fun providerOptions (Lai/torad/aisdk/ProviderOptions;)V
-	public final fun query (Ljava/lang/String;)V
-	public final fun topN (Ljava/lang/Integer;)V
+	public fun <init> ()V
+	public final fun abortSignal (Lai/torad/aisdk/AbortSignal;)Lai/torad/aisdk/RerankingParamsBuilder;
+	public final fun build ()Lai/torad/aisdk/RerankingParams;
+	public final fun documents (Ljava/util/List;)Lai/torad/aisdk/RerankingParamsBuilder;
+	public final fun headers (Ljava/util/Map;)Lai/torad/aisdk/RerankingParamsBuilder;
+	public final fun providerOptions (Lai/torad/aisdk/ProviderOptions;)Lai/torad/aisdk/RerankingParamsBuilder;
+	public final fun query (Ljava/lang/String;)Lai/torad/aisdk/RerankingParamsBuilder;
+	public final fun topN (Ljava/lang/Integer;)Lai/torad/aisdk/RerankingParamsBuilder;
 }
 
 public abstract interface class ai/torad/aisdk/ResponseFormat {
@@ -4675,13 +4725,15 @@ public final class ai/torad/aisdk/RetryPolicy {
 }
 
 public final class ai/torad/aisdk/RetryPolicyBuilder {
-	public final fun baseDelayMs (J)V
-	public final fun clock (Lkotlin/time/Clock;)V
-	public final fun delayGenerator (Lai/torad/aisdk/RetryDelayGenerator;)V
-	public final fun maxDelayMs (J)V
-	public final fun maxRetries (I)V
-	public final fun perAttemptTimeoutMs (Ljava/lang/Long;)V
-	public final fun totalTimeoutMs (Ljava/lang/Long;)V
+	public fun <init> ()V
+	public final fun baseDelayMs (J)Lai/torad/aisdk/RetryPolicyBuilder;
+	public final fun build ()Lai/torad/aisdk/RetryPolicy;
+	public final fun clock (Lkotlin/time/Clock;)Lai/torad/aisdk/RetryPolicyBuilder;
+	public final fun delayGenerator (Lai/torad/aisdk/RetryDelayGenerator;)Lai/torad/aisdk/RetryPolicyBuilder;
+	public final fun maxDelayMs (J)Lai/torad/aisdk/RetryPolicyBuilder;
+	public final fun maxRetries (I)Lai/torad/aisdk/RetryPolicyBuilder;
+	public final fun perAttemptTimeoutMs (Ljava/lang/Long;)Lai/torad/aisdk/RetryPolicyBuilder;
+	public final fun totalTimeoutMs (Ljava/lang/Long;)Lai/torad/aisdk/RetryPolicyBuilder;
 }
 
 public final class ai/torad/aisdk/RetryPolicyKt {
@@ -4743,15 +4795,17 @@ public final class ai/torad/aisdk/SpeechGenerationParams {
 }
 
 public final class ai/torad/aisdk/SpeechGenerationParamsBuilder {
-	public final fun abortSignal (Lai/torad/aisdk/AbortSignal;)V
-	public final fun headers (Ljava/util/Map;)V
-	public final fun instructions (Ljava/lang/String;)V
-	public final fun language (Ljava/lang/String;)V
-	public final fun providerOptions (Lai/torad/aisdk/ProviderOptions;)V
-	public final fun responseFormat (Ljava/lang/String;)V
-	public final fun speed (Ljava/lang/Float;)V
-	public final fun text (Ljava/lang/String;)V
-	public final fun voice (Ljava/lang/String;)V
+	public fun <init> ()V
+	public final fun abortSignal (Lai/torad/aisdk/AbortSignal;)Lai/torad/aisdk/SpeechGenerationParamsBuilder;
+	public final fun build ()Lai/torad/aisdk/SpeechGenerationParams;
+	public final fun headers (Ljava/util/Map;)Lai/torad/aisdk/SpeechGenerationParamsBuilder;
+	public final fun instructions (Ljava/lang/String;)Lai/torad/aisdk/SpeechGenerationParamsBuilder;
+	public final fun language (Ljava/lang/String;)Lai/torad/aisdk/SpeechGenerationParamsBuilder;
+	public final fun providerOptions (Lai/torad/aisdk/ProviderOptions;)Lai/torad/aisdk/SpeechGenerationParamsBuilder;
+	public final fun responseFormat (Ljava/lang/String;)Lai/torad/aisdk/SpeechGenerationParamsBuilder;
+	public final fun speed (Ljava/lang/Float;)Lai/torad/aisdk/SpeechGenerationParamsBuilder;
+	public final fun text (Ljava/lang/String;)Lai/torad/aisdk/SpeechGenerationParamsBuilder;
+	public final fun voice (Ljava/lang/String;)Lai/torad/aisdk/SpeechGenerationParamsBuilder;
 }
 
 public abstract interface class ai/torad/aisdk/SpeechModel {
@@ -4803,10 +4857,12 @@ public final class ai/torad/aisdk/StdioConfig$Companion {
 }
 
 public final class ai/torad/aisdk/StdioConfigBuilder {
-	public final fun args (Ljava/util/List;)V
-	public final fun command (Ljava/lang/String;)V
-	public final fun cwd (Ljava/lang/String;)V
-	public final fun env (Ljava/util/Map;)V
+	public fun <init> ()V
+	public final fun args (Ljava/util/List;)Lai/torad/aisdk/StdioConfigBuilder;
+	public final fun build ()Lai/torad/aisdk/StdioConfig;
+	public final fun command (Ljava/lang/String;)Lai/torad/aisdk/StdioConfigBuilder;
+	public final fun cwd (Ljava/lang/String;)Lai/torad/aisdk/StdioConfigBuilder;
+	public final fun env (Ljava/util/Map;)Lai/torad/aisdk/StdioConfigBuilder;
 }
 
 public final class ai/torad/aisdk/StepResult {
@@ -4858,23 +4914,25 @@ public final class ai/torad/aisdk/StepSettings {
 }
 
 public final class ai/torad/aisdk/StepSettingsBuilder {
-	public final fun activeTools (Ljava/util/List;)V
-	public final fun experimental_context (Ljava/lang/Object;)V
-	public final fun frequencyPenalty (Ljava/lang/Float;)V
-	public final fun maxOutputTokens (Ljava/lang/Integer;)V
-	public final fun maxRetries (Ljava/lang/Integer;)V
-	public final fun messages (Ljava/util/List;)V
-	public final fun model (Lai/torad/aisdk/LanguageModel;)V
-	public final fun presencePenalty (Ljava/lang/Float;)V
-	public final fun providerOptions (Lai/torad/aisdk/ProviderOptions;)V
-	public final fun responseFormat (Lai/torad/aisdk/ResponseFormat;)V
-	public final fun seed (Ljava/lang/Integer;)V
-	public final fun stopSequences (Ljava/util/List;)V
-	public final fun system (Ljava/lang/String;)V
-	public final fun temperature (Ljava/lang/Float;)V
-	public final fun toolChoice (Lai/torad/aisdk/ToolChoice;)V
-	public final fun topK (Ljava/lang/Integer;)V
-	public final fun topP (Ljava/lang/Float;)V
+	public fun <init> ()V
+	public final fun activeTools (Ljava/util/List;)Lai/torad/aisdk/StepSettingsBuilder;
+	public final fun build ()Lai/torad/aisdk/StepSettings;
+	public final fun experimental_context (Ljava/lang/Object;)Lai/torad/aisdk/StepSettingsBuilder;
+	public final fun frequencyPenalty (Ljava/lang/Float;)Lai/torad/aisdk/StepSettingsBuilder;
+	public final fun maxOutputTokens (Ljava/lang/Integer;)Lai/torad/aisdk/StepSettingsBuilder;
+	public final fun maxRetries (Ljava/lang/Integer;)Lai/torad/aisdk/StepSettingsBuilder;
+	public final fun messages (Ljava/util/List;)Lai/torad/aisdk/StepSettingsBuilder;
+	public final fun model (Lai/torad/aisdk/LanguageModel;)Lai/torad/aisdk/StepSettingsBuilder;
+	public final fun presencePenalty (Ljava/lang/Float;)Lai/torad/aisdk/StepSettingsBuilder;
+	public final fun providerOptions (Lai/torad/aisdk/ProviderOptions;)Lai/torad/aisdk/StepSettingsBuilder;
+	public final fun responseFormat (Lai/torad/aisdk/ResponseFormat;)Lai/torad/aisdk/StepSettingsBuilder;
+	public final fun seed (Ljava/lang/Integer;)Lai/torad/aisdk/StepSettingsBuilder;
+	public final fun stopSequences (Ljava/util/List;)Lai/torad/aisdk/StepSettingsBuilder;
+	public final fun system (Ljava/lang/String;)Lai/torad/aisdk/StepSettingsBuilder;
+	public final fun temperature (Ljava/lang/Float;)Lai/torad/aisdk/StepSettingsBuilder;
+	public final fun toolChoice (Lai/torad/aisdk/ToolChoice;)Lai/torad/aisdk/StepSettingsBuilder;
+	public final fun topK (Ljava/lang/Integer;)Lai/torad/aisdk/StepSettingsBuilder;
+	public final fun topP (Ljava/lang/Float;)Lai/torad/aisdk/StepSettingsBuilder;
 }
 
 public abstract interface class ai/torad/aisdk/StopCondition {
@@ -5652,14 +5710,16 @@ public final class ai/torad/aisdk/StructuredObjectOptions {
 }
 
 public final class ai/torad/aisdk/StructuredObjectOptionsBuilder {
-	public final fun api (Ljava/lang/String;)V
-	public final fun headers (Ljava/util/Map;)V
-	public final fun id (Ljava/lang/String;)V
-	public final fun initialValue (Ljava/lang/Object;)V
-	public final fun onError (Lkotlin/jvm/functions/Function2;)V
-	public final fun onFinish (Lkotlin/jvm/functions/Function2;)V
-	public final fun schema (Lai/torad/aisdk/Schema;)V
-	public final fun transport (Lai/torad/aisdk/StructuredObjectTransport;)V
+	public fun <init> ()V
+	public final fun api (Ljava/lang/String;)Lai/torad/aisdk/StructuredObjectOptionsBuilder;
+	public final fun build ()Lai/torad/aisdk/StructuredObjectOptions;
+	public final fun headers (Ljava/util/Map;)Lai/torad/aisdk/StructuredObjectOptionsBuilder;
+	public final fun id (Ljava/lang/String;)Lai/torad/aisdk/StructuredObjectOptionsBuilder;
+	public final fun initialValue (Ljava/lang/Object;)Lai/torad/aisdk/StructuredObjectOptionsBuilder;
+	public final fun onError (Lkotlin/jvm/functions/Function2;)Lai/torad/aisdk/StructuredObjectOptionsBuilder;
+	public final fun onFinish (Lkotlin/jvm/functions/Function2;)Lai/torad/aisdk/StructuredObjectOptionsBuilder;
+	public final fun schema (Lai/torad/aisdk/Schema;)Lai/torad/aisdk/StructuredObjectOptionsBuilder;
+	public final fun transport (Lai/torad/aisdk/StructuredObjectTransport;)Lai/torad/aisdk/StructuredObjectOptionsBuilder;
 }
 
 public abstract class ai/torad/aisdk/StructuredObjectPhase {
@@ -5701,11 +5761,13 @@ public final class ai/torad/aisdk/StructuredObjectRequest {
 }
 
 public final class ai/torad/aisdk/StructuredObjectRequestBuilder {
-	public final fun abortSignal (Lai/torad/aisdk/AbortSignal;)V
-	public final fun api (Ljava/lang/String;)V
-	public final fun headers (Ljava/util/Map;)V
-	public final fun id (Ljava/lang/String;)V
-	public final fun input (Ljava/lang/Object;)V
+	public fun <init> ()V
+	public final fun abortSignal (Lai/torad/aisdk/AbortSignal;)Lai/torad/aisdk/StructuredObjectRequestBuilder;
+	public final fun api (Ljava/lang/String;)Lai/torad/aisdk/StructuredObjectRequestBuilder;
+	public final fun build ()Lai/torad/aisdk/StructuredObjectRequest;
+	public final fun headers (Ljava/util/Map;)Lai/torad/aisdk/StructuredObjectRequestBuilder;
+	public final fun id (Ljava/lang/String;)Lai/torad/aisdk/StructuredObjectRequestBuilder;
+	public final fun input (Ljava/lang/Object;)Lai/torad/aisdk/StructuredObjectRequestBuilder;
 }
 
 public abstract interface class ai/torad/aisdk/StructuredObjectTransport {
@@ -5781,13 +5843,15 @@ public final class ai/torad/aisdk/TelemetrySettings {
 }
 
 public final class ai/torad/aisdk/TelemetrySettingsBuilder {
-	public final fun functionId (Ljava/lang/String;)V
-	public final fun integrations (Ljava/util/List;)V
-	public final fun isEnabled (Ljava/lang/Boolean;)V
-	public final fun metadata (Ljava/util/Map;)V
-	public final fun recordInputs (Z)V
-	public final fun recordOutputs (Z)V
-	public final fun tracer (Lai/torad/aisdk/TelemetryTracer;)V
+	public fun <init> ()V
+	public final fun build ()Lai/torad/aisdk/TelemetrySettings;
+	public final fun functionId (Ljava/lang/String;)Lai/torad/aisdk/TelemetrySettingsBuilder;
+	public final fun integrations (Ljava/util/List;)Lai/torad/aisdk/TelemetrySettingsBuilder;
+	public final fun isEnabled (Ljava/lang/Boolean;)Lai/torad/aisdk/TelemetrySettingsBuilder;
+	public final fun metadata (Ljava/util/Map;)Lai/torad/aisdk/TelemetrySettingsBuilder;
+	public final fun recordInputs (Z)Lai/torad/aisdk/TelemetrySettingsBuilder;
+	public final fun recordOutputs (Z)Lai/torad/aisdk/TelemetrySettingsBuilder;
+	public final fun tracer (Lai/torad/aisdk/TelemetryTracer;)Lai/torad/aisdk/TelemetrySettingsBuilder;
 }
 
 public abstract class ai/torad/aisdk/TelemetrySpanStatus {
@@ -5900,12 +5964,14 @@ public final class ai/torad/aisdk/TextGenerationRequest$NonEmptyMessages$Compani
 }
 
 public final class ai/torad/aisdk/TextGenerationRequestBuilder {
-	public final fun message (Lai/torad/aisdk/ModelMessage;)V
-	public final fun messages (Ljava/lang/Iterable;)V
-	public final fun prompt (Ljava/lang/String;)V
-	public final fun settings (Lai/torad/aisdk/CallSettings;)V
-	public final fun settings (Lkotlin/jvm/functions/Function1;)V
-	public final fun system (Ljava/lang/String;)V
+	public fun <init> ()V
+	public final fun build ()Lai/torad/aisdk/TextGenerationRequest;
+	public final fun message (Lai/torad/aisdk/ModelMessage;)Lai/torad/aisdk/TextGenerationRequestBuilder;
+	public final fun messages (Ljava/lang/Iterable;)Lai/torad/aisdk/TextGenerationRequestBuilder;
+	public final fun prompt (Ljava/lang/String;)Lai/torad/aisdk/TextGenerationRequestBuilder;
+	public final fun settings (Lai/torad/aisdk/CallSettings;)Lai/torad/aisdk/TextGenerationRequestBuilder;
+	public final fun settings (Lkotlin/jvm/functions/Function1;)Lai/torad/aisdk/TextGenerationRequestBuilder;
+	public final fun system (Ljava/lang/String;)Lai/torad/aisdk/TextGenerationRequestBuilder;
 }
 
 public final class ai/torad/aisdk/TextGenerator {
@@ -6359,9 +6425,11 @@ public final class ai/torad/aisdk/ToolPredicateOptions {
 }
 
 public final class ai/torad/aisdk/ToolPredicateOptionsBuilder {
-	public final fun experimental_context (Ljava/lang/Object;)V
-	public final fun messages (Ljava/util/List;)V
-	public final fun toolCallId (Ljava/lang/String;)V
+	public fun <init> ()V
+	public final fun build ()Lai/torad/aisdk/ToolPredicateOptions;
+	public final fun experimental_context (Ljava/lang/Object;)Lai/torad/aisdk/ToolPredicateOptionsBuilder;
+	public final fun messages (Ljava/util/List;)Lai/torad/aisdk/ToolPredicateOptionsBuilder;
+	public final fun toolCallId (Ljava/lang/String;)Lai/torad/aisdk/ToolPredicateOptionsBuilder;
 }
 
 public abstract class ai/torad/aisdk/ToolResult {
@@ -6563,8 +6631,10 @@ public final class ai/torad/aisdk/ToolSchemaOptions {
 }
 
 public final class ai/torad/aisdk/ToolSchemaOptionsBuilder {
-	public final fun providerExecuted (Z)V
-	public final fun strict (Ljava/lang/Boolean;)V
+	public fun <init> ()V
+	public final fun build ()Lai/torad/aisdk/ToolSchemaOptions;
+	public final fun providerExecuted (Z)Lai/torad/aisdk/ToolSchemaOptionsBuilder;
+	public final fun strict (Ljava/lang/Boolean;)Lai/torad/aisdk/ToolSchemaOptionsBuilder;
 }
 
 public final class ai/torad/aisdk/ToolSet {
@@ -6581,7 +6651,9 @@ public final class ai/torad/aisdk/ToolSet$Companion {
 }
 
 public final class ai/torad/aisdk/ToolSetBuilder {
-	public final fun add (Lai/torad/aisdk/Tool;)V
+	public fun <init> ()V
+	public final fun add (Lai/torad/aisdk/Tool;)Lai/torad/aisdk/ToolSetBuilder;
+	public final fun build ()Lai/torad/aisdk/ToolSet;
 }
 
 public abstract interface class ai/torad/aisdk/ToolStreamWriter {
@@ -6659,12 +6731,14 @@ public final class ai/torad/aisdk/TranscriptionParams {
 }
 
 public final class ai/torad/aisdk/TranscriptionParamsBuilder {
-	public final fun abortSignal (Lai/torad/aisdk/AbortSignal;)V
-	public final fun audio (Lai/torad/aisdk/AudioSource;)V
-	public final fun headers (Ljava/util/Map;)V
-	public final fun language (Ljava/lang/String;)V
-	public final fun prompt (Ljava/lang/String;)V
-	public final fun providerOptions (Lai/torad/aisdk/ProviderOptions;)V
+	public fun <init> ()V
+	public final fun abortSignal (Lai/torad/aisdk/AbortSignal;)Lai/torad/aisdk/TranscriptionParamsBuilder;
+	public final fun audio (Lai/torad/aisdk/AudioSource;)Lai/torad/aisdk/TranscriptionParamsBuilder;
+	public final fun build ()Lai/torad/aisdk/TranscriptionParams;
+	public final fun headers (Ljava/util/Map;)Lai/torad/aisdk/TranscriptionParamsBuilder;
+	public final fun language (Ljava/lang/String;)Lai/torad/aisdk/TranscriptionParamsBuilder;
+	public final fun prompt (Ljava/lang/String;)Lai/torad/aisdk/TranscriptionParamsBuilder;
+	public final fun providerOptions (Lai/torad/aisdk/ProviderOptions;)Lai/torad/aisdk/TranscriptionParamsBuilder;
 }
 
 public final class ai/torad/aisdk/TypeValidationContext {
@@ -6827,16 +6901,18 @@ public final class ai/torad/aisdk/UseCompletionOptions {
 }
 
 public final class ai/torad/aisdk/UseCompletionOptionsBuilder {
-	public final fun api (Ljava/lang/String;)V
-	public final fun body (Ljava/util/Map;)V
-	public final fun headers (Ljava/util/Map;)V
-	public final fun id (Ljava/lang/String;)V
-	public final fun initialCompletion (Ljava/lang/String;)V
-	public final fun initialInput (Ljava/lang/String;)V
-	public final fun onError (Lkotlin/jvm/functions/Function2;)V
-	public final fun onFinish (Lkotlin/jvm/functions/Function3;)V
-	public final fun streamProtocol (Lai/torad/aisdk/CompletionStreamProtocol;)V
-	public final fun transport (Lai/torad/aisdk/CompletionTransport;)V
+	public fun <init> ()V
+	public final fun api (Ljava/lang/String;)Lai/torad/aisdk/UseCompletionOptionsBuilder;
+	public final fun body (Ljava/util/Map;)Lai/torad/aisdk/UseCompletionOptionsBuilder;
+	public final fun build ()Lai/torad/aisdk/UseCompletionOptions;
+	public final fun headers (Ljava/util/Map;)Lai/torad/aisdk/UseCompletionOptionsBuilder;
+	public final fun id (Ljava/lang/String;)Lai/torad/aisdk/UseCompletionOptionsBuilder;
+	public final fun initialCompletion (Ljava/lang/String;)Lai/torad/aisdk/UseCompletionOptionsBuilder;
+	public final fun initialInput (Ljava/lang/String;)Lai/torad/aisdk/UseCompletionOptionsBuilder;
+	public final fun onError (Lkotlin/jvm/functions/Function2;)Lai/torad/aisdk/UseCompletionOptionsBuilder;
+	public final fun onFinish (Lkotlin/jvm/functions/Function3;)Lai/torad/aisdk/UseCompletionOptionsBuilder;
+	public final fun streamProtocol (Lai/torad/aisdk/CompletionStreamProtocol;)Lai/torad/aisdk/UseCompletionOptionsBuilder;
+	public final fun transport (Lai/torad/aisdk/CompletionTransport;)Lai/torad/aisdk/UseCompletionOptionsBuilder;
 }
 
 public abstract class ai/torad/aisdk/ValidationResult {
@@ -6884,18 +6960,20 @@ public final class ai/torad/aisdk/VideoGenerationParams {
 }
 
 public final class ai/torad/aisdk/VideoGenerationParamsBuilder {
-	public final fun abortSignal (Lai/torad/aisdk/AbortSignal;)V
-	public final fun aspectRatio (Ljava/lang/String;)V
-	public final fun durationSeconds (Ljava/lang/Float;)V
-	public final fun fps (Ljava/lang/Integer;)V
-	public final fun headers (Ljava/util/Map;)V
-	public final fun image (Lai/torad/aisdk/GeneratedFile;)V
-	public final fun n (I)V
-	public final fun prompt (Ljava/lang/String;)V
-	public final fun providerOptions (Lai/torad/aisdk/ProviderOptions;)V
-	public final fun resolution (Ljava/lang/String;)V
-	public final fun seed (Ljava/lang/Integer;)V
-	public final fun size (Ljava/lang/String;)V
+	public fun <init> ()V
+	public final fun abortSignal (Lai/torad/aisdk/AbortSignal;)Lai/torad/aisdk/VideoGenerationParamsBuilder;
+	public final fun aspectRatio (Ljava/lang/String;)Lai/torad/aisdk/VideoGenerationParamsBuilder;
+	public final fun build ()Lai/torad/aisdk/VideoGenerationParams;
+	public final fun durationSeconds (Ljava/lang/Float;)Lai/torad/aisdk/VideoGenerationParamsBuilder;
+	public final fun fps (Ljava/lang/Integer;)Lai/torad/aisdk/VideoGenerationParamsBuilder;
+	public final fun headers (Ljava/util/Map;)Lai/torad/aisdk/VideoGenerationParamsBuilder;
+	public final fun image (Lai/torad/aisdk/GeneratedFile;)Lai/torad/aisdk/VideoGenerationParamsBuilder;
+	public final fun n (I)Lai/torad/aisdk/VideoGenerationParamsBuilder;
+	public final fun prompt (Ljava/lang/String;)Lai/torad/aisdk/VideoGenerationParamsBuilder;
+	public final fun providerOptions (Lai/torad/aisdk/ProviderOptions;)Lai/torad/aisdk/VideoGenerationParamsBuilder;
+	public final fun resolution (Ljava/lang/String;)Lai/torad/aisdk/VideoGenerationParamsBuilder;
+	public final fun seed (Ljava/lang/Integer;)Lai/torad/aisdk/VideoGenerationParamsBuilder;
+	public final fun size (Ljava/lang/String;)Lai/torad/aisdk/VideoGenerationParamsBuilder;
 }
 
 public abstract interface class ai/torad/aisdk/VideoModel {
@@ -6983,10 +7061,12 @@ public final class ai/torad/aisdk/middleware/LoggingOptions {
 }
 
 public final class ai/torad/aisdk/middleware/LoggingOptionsBuilder {
-	public final fun allowRawValues (Z)V
-	public final fun recordInputs (Z)V
-	public final fun recordOutputs (Z)V
-	public final fun redactor (Lai/torad/aisdk/Redactor;)V
+	public fun <init> ()V
+	public final fun allowRawValues (Z)Lai/torad/aisdk/middleware/LoggingOptionsBuilder;
+	public final fun build ()Lai/torad/aisdk/middleware/LoggingOptions;
+	public final fun recordInputs (Z)Lai/torad/aisdk/middleware/LoggingOptionsBuilder;
+	public final fun recordOutputs (Z)Lai/torad/aisdk/middleware/LoggingOptionsBuilder;
+	public final fun redactor (Lai/torad/aisdk/Redactor;)Lai/torad/aisdk/middleware/LoggingOptionsBuilder;
 }
 
 public final class ai/torad/aisdk/middleware/SimulateStreamingKt {
@@ -12318,9 +12398,11 @@ public final class ai/torad/aisdk/ui/ChatRequest {
 }
 
 public final class ai/torad/aisdk/ui/ChatRequestBuilder {
-	public final fun body (Ljava/util/Map;)V
-	public final fun headers (Ljava/util/Map;)V
-	public final fun messages (Ljava/util/List;)V
+	public fun <init> ()V
+	public final fun body (Ljava/util/Map;)Lai/torad/aisdk/ui/ChatRequestBuilder;
+	public final fun build ()Lai/torad/aisdk/ui/ChatRequest;
+	public final fun headers (Ljava/util/Map;)Lai/torad/aisdk/ui/ChatRequestBuilder;
+	public final fun messages (Ljava/util/List;)Lai/torad/aisdk/ui/ChatRequestBuilder;
 }
 
 public final class ai/torad/aisdk/ui/ChatSession {
@@ -12516,7 +12598,9 @@ public final class ai/torad/aisdk/ui/ToolPartHandlerRegistry {
 }
 
 public final class ai/torad/aisdk/ui/ToolPartHandlerRegistry$Builder {
-	public final fun register (Lai/torad/aisdk/Tool;Lkotlin/jvm/functions/Function1;)V
+	public fun <init> ()V
+	public final fun build (Lkotlin/jvm/functions/Function1;)Lai/torad/aisdk/ui/ToolPartHandlerRegistry;
+	public final fun register (Lai/torad/aisdk/Tool;Lkotlin/jvm/functions/Function1;)Lai/torad/aisdk/ui/ToolPartHandlerRegistry$Builder;
 }
 
 public final class ai/torad/aisdk/ui/UIMessage {

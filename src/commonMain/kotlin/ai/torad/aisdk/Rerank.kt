@@ -19,7 +19,7 @@ public class RerankingParams internal constructor(
     public val abortSignal: AbortSignal = AbortSignalNever,
 )
 
-public class RerankingParamsBuilder internal constructor() {
+public class RerankingParamsBuilder {
     private var query: String? = null
     private var documents: List<String>? = null
     private var topN: Int? = null
@@ -27,31 +27,37 @@ public class RerankingParamsBuilder internal constructor() {
     private var headers: Map<String, String> = emptyMap()
     private var abortSignal: AbortSignal = AbortSignalNever
 
-    public fun query(value: String) {
+    public fun query(value: String): RerankingParamsBuilder {
         query = value
+        return this
     }
 
-    public fun documents(value: List<String>) {
+    public fun documents(value: List<String>): RerankingParamsBuilder {
         documents = value
+        return this
     }
 
-    public fun topN(value: Int?) {
+    public fun topN(value: Int?): RerankingParamsBuilder {
         topN = value
+        return this
     }
 
-    public fun providerOptions(value: ProviderOptions) {
+    public fun providerOptions(value: ProviderOptions): RerankingParamsBuilder {
         providerOptions = value
+        return this
     }
 
-    public fun headers(value: Map<String, String>) {
+    public fun headers(value: Map<String, String>): RerankingParamsBuilder {
         headers = value
+        return this
     }
 
-    public fun abortSignal(value: AbortSignal) {
+    public fun abortSignal(value: AbortSignal): RerankingParamsBuilder {
         abortSignal = value
+        return this
     }
 
-    internal fun build(): RerankingParams =
+    public fun build(): RerankingParams =
         RerankingParams(
             query = requireNotNull(query) { "RerankingParams.query is required" },
             documents = requireNotNull(documents) { "RerankingParams.documents is required" },

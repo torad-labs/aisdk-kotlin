@@ -21,19 +21,21 @@ public class CompletionRequestOptions internal constructor(
     public val body: Map<String, JsonElement> = emptyMap(),
 )
 
-public class CompletionRequestOptionsBuilder internal constructor() {
+public class CompletionRequestOptionsBuilder {
     private var headers: Map<String, String> = emptyMap()
     private var body: Map<String, JsonElement> = emptyMap()
 
-    public fun headers(value: Map<String, String>) {
+    public fun headers(value: Map<String, String>): CompletionRequestOptionsBuilder {
         headers = value
+        return this
     }
 
-    public fun body(value: Map<String, JsonElement>) {
+    public fun body(value: Map<String, JsonElement>): CompletionRequestOptionsBuilder {
         body = value
+        return this
     }
 
-    internal fun build(): CompletionRequestOptions =
+    public fun build(): CompletionRequestOptions =
         CompletionRequestOptions(
             headers = headers,
             body = body,
@@ -55,7 +57,7 @@ public class CompletionRequest internal constructor(
     public val abortSignal: AbortSignal = AbortSignalNever,
 )
 
-public class CompletionRequestBuilder internal constructor() {
+public class CompletionRequestBuilder {
     private var api: String? = null
     private var id: String? = null
     private var prompt: String? = null
@@ -64,35 +66,42 @@ public class CompletionRequestBuilder internal constructor() {
     private var streamProtocol: CompletionStreamProtocol = CompletionStreamProtocol.Data
     private var abortSignal: AbortSignal = AbortSignalNever
 
-    public fun api(value: String) {
+    public fun api(value: String): CompletionRequestBuilder {
         api = value
+        return this
     }
 
-    public fun id(value: String) {
+    public fun id(value: String): CompletionRequestBuilder {
         id = value
+        return this
     }
 
-    public fun prompt(value: String) {
+    public fun prompt(value: String): CompletionRequestBuilder {
         prompt = value
+        return this
     }
 
-    public fun headers(value: Map<String, String>) {
+    public fun headers(value: Map<String, String>): CompletionRequestBuilder {
         headers = value
+        return this
     }
 
-    public fun body(value: Map<String, JsonElement>) {
+    public fun body(value: Map<String, JsonElement>): CompletionRequestBuilder {
         body = value
+        return this
     }
 
-    public fun streamProtocol(value: CompletionStreamProtocol) {
+    public fun streamProtocol(value: CompletionStreamProtocol): CompletionRequestBuilder {
         streamProtocol = value
+        return this
     }
 
-    public fun abortSignal(value: AbortSignal) {
+    public fun abortSignal(value: AbortSignal): CompletionRequestBuilder {
         abortSignal = value
+        return this
     }
 
-    internal fun build(): CompletionRequest =
+    public fun build(): CompletionRequest =
         CompletionRequest(
             api = requireNotNull(api) { "CompletionRequest.api is required" },
             id = requireNotNull(id) { "CompletionRequest.id is required" },
@@ -132,7 +141,7 @@ public class UseCompletionOptions internal constructor(
     public val onError: suspend (Throwable) -> Unit = {},
 )
 
-public class UseCompletionOptionsBuilder internal constructor() {
+public class UseCompletionOptionsBuilder {
     private var api: String = "/api/completion"
     private var id: String = IdGenerator.generate("completion")
     private var initialCompletion: String = ""
@@ -144,47 +153,57 @@ public class UseCompletionOptionsBuilder internal constructor() {
     private var onFinish: suspend (prompt: String, completion: String) -> Unit = { _, _ -> }
     private var onError: suspend (Throwable) -> Unit = {}
 
-    public fun api(value: String) {
+    public fun api(value: String): UseCompletionOptionsBuilder {
         api = value
+        return this
     }
 
-    public fun id(value: String) {
+    public fun id(value: String): UseCompletionOptionsBuilder {
         id = value
+        return this
     }
 
-    public fun initialCompletion(value: String) {
+    public fun initialCompletion(value: String): UseCompletionOptionsBuilder {
         initialCompletion = value
+        return this
     }
 
-    public fun initialInput(value: String) {
+    public fun initialInput(value: String): UseCompletionOptionsBuilder {
         initialInput = value
+        return this
     }
 
-    public fun headers(value: Map<String, String>) {
+    public fun headers(value: Map<String, String>): UseCompletionOptionsBuilder {
         headers = value
+        return this
     }
 
-    public fun body(value: Map<String, JsonElement>) {
+    public fun body(value: Map<String, JsonElement>): UseCompletionOptionsBuilder {
         body = value
+        return this
     }
 
-    public fun streamProtocol(value: CompletionStreamProtocol) {
+    public fun streamProtocol(value: CompletionStreamProtocol): UseCompletionOptionsBuilder {
         streamProtocol = value
+        return this
     }
 
-    public fun transport(value: CompletionTransport) {
+    public fun transport(value: CompletionTransport): UseCompletionOptionsBuilder {
         transport = value
+        return this
     }
 
-    public fun onFinish(value: suspend (prompt: String, completion: String) -> Unit) {
+    public fun onFinish(value: suspend (prompt: String, completion: String) -> Unit): UseCompletionOptionsBuilder {
         onFinish = value
+        return this
     }
 
-    public fun onError(value: suspend (Throwable) -> Unit) {
+    public fun onError(value: suspend (Throwable) -> Unit): UseCompletionOptionsBuilder {
         onError = value
+        return this
     }
 
-    internal fun build(): UseCompletionOptions =
+    public fun build(): UseCompletionOptions =
         UseCompletionOptions(
             api = api,
             id = id,
@@ -220,7 +239,7 @@ public class CallCompletionApiOptions internal constructor(
     public val onError: suspend (Throwable) -> Unit = {},
 )
 
-public class CallCompletionApiOptionsBuilder internal constructor() {
+public class CallCompletionApiOptionsBuilder {
     private var api: String = "/api/completion"
     private var id: String = IdGenerator.generate("completion")
     private var prompt: String? = null
@@ -235,59 +254,72 @@ public class CallCompletionApiOptionsBuilder internal constructor() {
     private var onFinish: suspend (prompt: String, completion: String) -> Unit = { _, _ -> }
     private var onError: suspend (Throwable) -> Unit = {}
 
-    public fun api(value: String) {
+    public fun api(value: String): CallCompletionApiOptionsBuilder {
         api = value
+        return this
     }
 
-    public fun id(value: String) {
+    public fun id(value: String): CallCompletionApiOptionsBuilder {
         id = value
+        return this
     }
 
-    public fun prompt(value: String) {
+    public fun prompt(value: String): CallCompletionApiOptionsBuilder {
         prompt = value
+        return this
     }
 
-    public fun headers(value: Map<String, String>) {
+    public fun headers(value: Map<String, String>): CallCompletionApiOptionsBuilder {
         headers = value
+        return this
     }
 
-    public fun body(value: Map<String, JsonElement>) {
+    public fun body(value: Map<String, JsonElement>): CallCompletionApiOptionsBuilder {
         body = value
+        return this
     }
 
-    public fun streamProtocol(value: CompletionStreamProtocol) {
+    public fun streamProtocol(value: CompletionStreamProtocol): CallCompletionApiOptionsBuilder {
         streamProtocol = value
+        return this
     }
 
-    public fun transport(value: CompletionTransport) {
+    public fun transport(value: CompletionTransport): CallCompletionApiOptionsBuilder {
         transport = value
+        return this
     }
 
-    public fun abortSignal(value: AbortSignal) {
+    public fun abortSignal(value: AbortSignal): CallCompletionApiOptionsBuilder {
         abortSignal = value
+        return this
     }
 
-    public fun setCompletion(value: (String) -> Unit) {
+    public fun setCompletion(value: (String) -> Unit): CallCompletionApiOptionsBuilder {
         setCompletion = value
+        return this
     }
 
-    public fun setLoading(value: (Boolean) -> Unit) {
+    public fun setLoading(value: (Boolean) -> Unit): CallCompletionApiOptionsBuilder {
         setLoading = value
+        return this
     }
 
-    public fun setError(value: (Throwable?) -> Unit) {
+    public fun setError(value: (Throwable?) -> Unit): CallCompletionApiOptionsBuilder {
         setError = value
+        return this
     }
 
-    public fun onFinish(value: suspend (prompt: String, completion: String) -> Unit) {
+    public fun onFinish(value: suspend (prompt: String, completion: String) -> Unit): CallCompletionApiOptionsBuilder {
         onFinish = value
+        return this
     }
 
-    public fun onError(value: suspend (Throwable) -> Unit) {
+    public fun onError(value: suspend (Throwable) -> Unit): CallCompletionApiOptionsBuilder {
         onError = value
+        return this
     }
 
-    internal fun build(): CallCompletionApiOptions =
+    public fun build(): CallCompletionApiOptions =
         CallCompletionApiOptions(
             api = api,
             id = id,

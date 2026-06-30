@@ -35,7 +35,7 @@ public class StructuredObjectRequest<INPUT> internal constructor(
     public val abortSignal: AbortSignal = AbortSignalNever,
 )
 
-public class StructuredObjectRequestBuilder<INPUT> internal constructor() {
+public class StructuredObjectRequestBuilder<INPUT> {
     private var api: String? = null
     private var id: String? = null
     private var input: INPUT? = null
@@ -43,28 +43,33 @@ public class StructuredObjectRequestBuilder<INPUT> internal constructor() {
     private var headers: Map<String, String> = emptyMap()
     private var abortSignal: AbortSignal = AbortSignalNever
 
-    public fun api(value: String) {
+    public fun api(value: String): StructuredObjectRequestBuilder<INPUT> {
         api = value
+        return this
     }
 
-    public fun id(value: String) {
+    public fun id(value: String): StructuredObjectRequestBuilder<INPUT> {
         id = value
+        return this
     }
 
-    public fun input(value: INPUT) {
+    public fun input(value: INPUT): StructuredObjectRequestBuilder<INPUT> {
         input = value
         inputSet = true
+        return this
     }
 
-    public fun headers(value: Map<String, String>) {
+    public fun headers(value: Map<String, String>): StructuredObjectRequestBuilder<INPUT> {
         headers = value
+        return this
     }
 
-    public fun abortSignal(value: AbortSignal) {
+    public fun abortSignal(value: AbortSignal): StructuredObjectRequestBuilder<INPUT> {
         abortSignal = value
+        return this
     }
 
-    internal fun build(): StructuredObjectRequest<INPUT> {
+    public fun build(): StructuredObjectRequest<INPUT> {
         check(inputSet) { "StructuredObjectRequest.input is required" }
         @Suppress("UNCHECKED_CAST")
         return StructuredObjectRequest(
@@ -110,7 +115,7 @@ public class StructuredObjectOptions<RESULT, INPUT> internal constructor(
     public val onError: suspend (Throwable) -> Unit = {},
 )
 
-public class StructuredObjectOptionsBuilder<RESULT, INPUT> internal constructor() {
+public class StructuredObjectOptionsBuilder<RESULT, INPUT> {
     private var api: String? = null
     private var schema: Schema<RESULT>? = null
     private var id: String = IdGenerator.generate("object")
@@ -120,39 +125,47 @@ public class StructuredObjectOptionsBuilder<RESULT, INPUT> internal constructor(
     private var onFinish: suspend (StructuredObjectFinish<RESULT>) -> Unit = {}
     private var onError: suspend (Throwable) -> Unit = {}
 
-    public fun api(value: String) {
+    public fun api(value: String): StructuredObjectOptionsBuilder<RESULT, INPUT> {
         api = value
+        return this
     }
 
-    public fun schema(value: Schema<RESULT>) {
+    public fun schema(value: Schema<RESULT>): StructuredObjectOptionsBuilder<RESULT, INPUT> {
         schema = value
+        return this
     }
 
-    public fun id(value: String) {
+    public fun id(value: String): StructuredObjectOptionsBuilder<RESULT, INPUT> {
         id = value
+        return this
     }
 
-    public fun initialValue(value: RESULT?) {
+    public fun initialValue(value: RESULT?): StructuredObjectOptionsBuilder<RESULT, INPUT> {
         initialValue = value
+        return this
     }
 
-    public fun headers(value: Map<String, String>) {
+    public fun headers(value: Map<String, String>): StructuredObjectOptionsBuilder<RESULT, INPUT> {
         headers = value
+        return this
     }
 
-    public fun transport(value: StructuredObjectTransport<INPUT>) {
+    public fun transport(value: StructuredObjectTransport<INPUT>): StructuredObjectOptionsBuilder<RESULT, INPUT> {
         transport = value
+        return this
     }
 
-    public fun onFinish(value: suspend (StructuredObjectFinish<RESULT>) -> Unit) {
+    public fun onFinish(value: suspend (StructuredObjectFinish<RESULT>) -> Unit): StructuredObjectOptionsBuilder<RESULT, INPUT> {
         onFinish = value
+        return this
     }
 
-    public fun onError(value: suspend (Throwable) -> Unit) {
+    public fun onError(value: suspend (Throwable) -> Unit): StructuredObjectOptionsBuilder<RESULT, INPUT> {
         onError = value
+        return this
     }
 
-    internal fun build(): StructuredObjectOptions<RESULT, INPUT> =
+    public fun build(): StructuredObjectOptions<RESULT, INPUT> =
         StructuredObjectOptions(
             api = requireNotNull(api) { "StructuredObjectOptions.api is required" },
             schema = requireNotNull(schema) { "StructuredObjectOptions.schema is required" },

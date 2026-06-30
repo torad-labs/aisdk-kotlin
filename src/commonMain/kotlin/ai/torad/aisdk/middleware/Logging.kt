@@ -19,29 +19,33 @@ public class LoggingOptions internal constructor(
     public val redactor: Redactor = AiSdkDefaultRedactor,
 )
 
-public class LoggingOptionsBuilder internal constructor() {
+public class LoggingOptionsBuilder {
     private var recordInputs: Boolean = false
     private var recordOutputs: Boolean = false
     private var allowRawValues: Boolean = false
     private var redactor: Redactor = AiSdkDefaultRedactor
 
-    public fun recordInputs(value: Boolean) {
+    public fun recordInputs(value: Boolean): LoggingOptionsBuilder {
         recordInputs = value
+        return this
     }
 
-    public fun recordOutputs(value: Boolean) {
+    public fun recordOutputs(value: Boolean): LoggingOptionsBuilder {
         recordOutputs = value
+        return this
     }
 
-    public fun allowRawValues(value: Boolean) {
+    public fun allowRawValues(value: Boolean): LoggingOptionsBuilder {
         allowRawValues = value
+        return this
     }
 
-    public fun redactor(value: Redactor) {
+    public fun redactor(value: Redactor): LoggingOptionsBuilder {
         redactor = value
+        return this
     }
 
-    internal fun build(): LoggingOptions =
+    public fun build(): LoggingOptions =
         LoggingOptions(
             recordInputs = recordInputs,
             recordOutputs = recordOutputs,

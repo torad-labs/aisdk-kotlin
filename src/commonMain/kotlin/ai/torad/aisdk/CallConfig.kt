@@ -23,7 +23,7 @@ public class CallConfig internal constructor(
 }
 
 @AiSdkDsl
-public class CallConfigBuilder internal constructor() {
+public class CallConfigBuilder {
     private var temperature: Float? = null
     private var topP: Float? = null
     private var topK: Int? = null
@@ -37,55 +37,67 @@ public class CallConfigBuilder internal constructor() {
     private var responseFormat: ResponseFormat = ResponseFormat.Text
     private var maxRetries: Int = 2
 
-    public fun temperature(value: Float?) {
+    public fun temperature(value: Float?): CallConfigBuilder {
         temperature = value
+        return this
     }
 
-    public fun topP(value: Float?) {
+    public fun topP(value: Float?): CallConfigBuilder {
         topP = value
+        return this
     }
 
-    public fun topK(value: Int?) {
+    public fun topK(value: Int?): CallConfigBuilder {
         topK = value
+        return this
     }
 
-    public fun maxOutputTokens(value: Int?) {
+    public fun maxOutputTokens(value: Int?): CallConfigBuilder {
         maxOutputTokens = value
+        return this
     }
 
-    public fun stopSequences(value: List<String>) {
+    public fun stopSequences(value: List<String>): CallConfigBuilder {
         stopSequences = value
+        return this
     }
 
-    public fun seed(value: Int?) {
+    public fun seed(value: Int?): CallConfigBuilder {
         seed = value
+        return this
     }
 
-    public fun providerOptions(value: ProviderOptions) {
+    public fun providerOptions(value: ProviderOptions): CallConfigBuilder {
         providerOptions = value
+        return this
     }
 
-    public fun abortSignal(value: AbortSignal) {
+    public fun abortSignal(value: AbortSignal): CallConfigBuilder {
         abortSignal = value
+        return this
     }
 
-    public fun presencePenalty(value: Float?) {
+    public fun presencePenalty(value: Float?): CallConfigBuilder {
         presencePenalty = value
+        return this
     }
 
-    public fun frequencyPenalty(value: Float?) {
+    public fun frequencyPenalty(value: Float?): CallConfigBuilder {
         frequencyPenalty = value
+        return this
     }
 
-    public fun responseFormat(value: ResponseFormat) {
+    public fun responseFormat(value: ResponseFormat): CallConfigBuilder {
         responseFormat = value
+        return this
     }
 
-    public fun maxRetries(value: Int) {
+    public fun maxRetries(value: Int): CallConfigBuilder {
         maxRetries = value
+        return this
     }
 
-    internal fun build(): CallConfig =
+    public fun build(): CallConfig =
         CallConfig(
             temperature = temperature,
             topP = topP,

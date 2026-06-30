@@ -24,24 +24,27 @@ public class ChatRequest internal constructor(
     public val headers: Map<String, String> = emptyMap(),
 )
 
-public class ChatRequestBuilder internal constructor() {
+public class ChatRequestBuilder {
     private var messages: List<UIMessage>? = null
     private var body: Map<String, JsonElement> = emptyMap()
     private var headers: Map<String, String> = emptyMap()
 
-    public fun messages(value: List<UIMessage>) {
+    public fun messages(value: List<UIMessage>): ChatRequestBuilder {
         messages = value
+        return this
     }
 
-    public fun body(value: Map<String, JsonElement>) {
+    public fun body(value: Map<String, JsonElement>): ChatRequestBuilder {
         body = value
+        return this
     }
 
-    public fun headers(value: Map<String, String>) {
+    public fun headers(value: Map<String, String>): ChatRequestBuilder {
         headers = value
+        return this
     }
 
-    internal fun build(): ChatRequest =
+    public fun build(): ChatRequest =
         ChatRequest(
             messages = requireNotNull(messages) { "ChatRequest.messages is required" },
             body = body,
