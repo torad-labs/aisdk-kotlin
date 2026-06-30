@@ -4,9 +4,68 @@ import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertNotEquals
 import kotlin.test.assertTrue
 
 class EmbedRerankParityTest {
+    @Test
+    fun `embedding and rerank Poko result types keep value semantics`() {
+        val usage = EmbeddingUsage(tokens = 3)
+        val embed = EmbedResult(
+            value = "hello",
+            embedding = listOf(1f, 2f),
+            usage = usage,
+        )
+        val equalEmbed = EmbedResult(
+            value = "hello",
+            embedding = listOf(1f, 2f),
+            usage = EmbeddingUsage(tokens = 3),
+        )
+        val differentEmbed = EmbedResult(
+            value = "hello",
+            embedding = listOf(1f, 3f),
+            usage = usage,
+        )
+        assertEquals(embed, equalEmbed)
+        assertEquals(embed.hashCode(), equalEmbed.hashCode())
+        assertNotEquals(embed, differentEmbed)
+
+        val many = EmbedManyResult(
+            values = listOf("a", "bb"),
+            embeddings = listOf(listOf(1f), listOf(2f)),
+            usage = usage,
+        )
+        val equalMany = EmbedManyResult(
+            values = listOf("a", "bb"),
+            embeddings = listOf(listOf(1f), listOf(2f)),
+            usage = EmbeddingUsage(tokens = 3),
+        )
+        val differentMany = EmbedManyResult(
+            values = listOf("a", "bb"),
+            embeddings = listOf(listOf(1f), listOf(3f)),
+            usage = usage,
+        )
+        assertEquals(many, equalMany)
+        assertEquals(many.hashCode(), equalMany.hashCode())
+        assertNotEquals(many, differentMany)
+
+        val rerank = RerankResult(
+            results = listOf(RerankedItem(value = "a", score = 0.8f, index = 0)),
+            originalDocuments = listOf("a", "b"),
+        )
+        val equalRerank = RerankResult(
+            results = listOf(RerankedItem(value = "a", score = 0.8f, index = 0)),
+            originalDocuments = listOf("a", "b"),
+        )
+        val differentRerank = RerankResult(
+            results = listOf(RerankedItem(value = "b", score = 0.7f, index = 1)),
+            originalDocuments = listOf("a", "b"),
+        )
+        assertEquals(rerank, equalRerank)
+        assertEquals(rerank.hashCode(), equalRerank.hashCode())
+        assertNotEquals(rerank, differentRerank)
+    }
+
     // A model that auto-batches at 1/call, supports parallelism, and records how many
     // calls are concurrently in flight so the test can prove batches actually overlap.
     private class ParallelEmbeddingModel(

@@ -1551,16 +1551,6 @@ public final class ai/torad/aisdk/ElicitationRequestSchema {
 public final class ai/torad/aisdk/EmbedManyResult {
 	public fun <init> (Ljava/util/List;Ljava/util/List;Lai/torad/aisdk/EmbeddingUsage;Ljava/util/List;Lai/torad/aisdk/LanguageModelRequestMetadata;Lai/torad/aisdk/LanguageModelResponseMetadata;Ljava/util/List;Lai/torad/aisdk/ProviderMetadata;)V
 	public synthetic fun <init> (Ljava/util/List;Ljava/util/List;Lai/torad/aisdk/EmbeddingUsage;Ljava/util/List;Lai/torad/aisdk/LanguageModelRequestMetadata;Lai/torad/aisdk/LanguageModelResponseMetadata;Ljava/util/List;Lai/torad/aisdk/ProviderMetadata;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public final fun component1 ()Ljava/util/List;
-	public final fun component2 ()Ljava/util/List;
-	public final fun component3 ()Lai/torad/aisdk/EmbeddingUsage;
-	public final fun component4 ()Ljava/util/List;
-	public final fun component5 ()Lai/torad/aisdk/LanguageModelRequestMetadata;
-	public final fun component6 ()Lai/torad/aisdk/LanguageModelResponseMetadata;
-	public final fun component7 ()Ljava/util/List;
-	public final fun component8 ()Lai/torad/aisdk/ProviderMetadata;
-	public final fun copy (Ljava/util/List;Ljava/util/List;Lai/torad/aisdk/EmbeddingUsage;Ljava/util/List;Lai/torad/aisdk/LanguageModelRequestMetadata;Lai/torad/aisdk/LanguageModelResponseMetadata;Ljava/util/List;Lai/torad/aisdk/ProviderMetadata;)Lai/torad/aisdk/EmbedManyResult;
-	public static synthetic fun copy$default (Lai/torad/aisdk/EmbedManyResult;Ljava/util/List;Ljava/util/List;Lai/torad/aisdk/EmbeddingUsage;Ljava/util/List;Lai/torad/aisdk/LanguageModelRequestMetadata;Lai/torad/aisdk/LanguageModelResponseMetadata;Ljava/util/List;Lai/torad/aisdk/ProviderMetadata;ILjava/lang/Object;)Lai/torad/aisdk/EmbedManyResult;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getEmbeddings ()Ljava/util/List;
 	public final fun getProviderMetadata ()Lai/torad/aisdk/ProviderMetadata;
@@ -1577,15 +1567,6 @@ public final class ai/torad/aisdk/EmbedManyResult {
 public final class ai/torad/aisdk/EmbedResult {
 	public fun <init> (Ljava/lang/Object;Ljava/util/List;Lai/torad/aisdk/EmbeddingUsage;Ljava/util/List;Lai/torad/aisdk/LanguageModelRequestMetadata;Lai/torad/aisdk/LanguageModelResponseMetadata;Lai/torad/aisdk/ProviderMetadata;)V
 	public synthetic fun <init> (Ljava/lang/Object;Ljava/util/List;Lai/torad/aisdk/EmbeddingUsage;Ljava/util/List;Lai/torad/aisdk/LanguageModelRequestMetadata;Lai/torad/aisdk/LanguageModelResponseMetadata;Lai/torad/aisdk/ProviderMetadata;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public final fun component1 ()Ljava/lang/Object;
-	public final fun component2 ()Ljava/util/List;
-	public final fun component3 ()Lai/torad/aisdk/EmbeddingUsage;
-	public final fun component4 ()Ljava/util/List;
-	public final fun component5 ()Lai/torad/aisdk/LanguageModelRequestMetadata;
-	public final fun component6 ()Lai/torad/aisdk/LanguageModelResponseMetadata;
-	public final fun component7 ()Lai/torad/aisdk/ProviderMetadata;
-	public final fun copy (Ljava/lang/Object;Ljava/util/List;Lai/torad/aisdk/EmbeddingUsage;Ljava/util/List;Lai/torad/aisdk/LanguageModelRequestMetadata;Lai/torad/aisdk/LanguageModelResponseMetadata;Lai/torad/aisdk/ProviderMetadata;)Lai/torad/aisdk/EmbedResult;
-	public static synthetic fun copy$default (Lai/torad/aisdk/EmbedResult;Ljava/lang/Object;Ljava/util/List;Lai/torad/aisdk/EmbeddingUsage;Ljava/util/List;Lai/torad/aisdk/LanguageModelRequestMetadata;Lai/torad/aisdk/LanguageModelResponseMetadata;Lai/torad/aisdk/ProviderMetadata;ILjava/lang/Object;)Lai/torad/aisdk/EmbedResult;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getEmbedding ()Ljava/util/List;
 	public final fun getProviderMetadata ()Lai/torad/aisdk/ProviderMetadata;
@@ -1619,11 +1600,6 @@ public final class ai/torad/aisdk/EmbeddingMath {
 
 public final class ai/torad/aisdk/EmbeddingMiddlewareCallContext {
 	public fun <init> (Lai/torad/aisdk/EmbeddingModelCallParams;Lai/torad/aisdk/EmbeddingModel;Lkotlin/jvm/functions/Function2;)V
-	public final fun component1 ()Lai/torad/aisdk/EmbeddingModelCallParams;
-	public final fun component2 ()Lai/torad/aisdk/EmbeddingModel;
-	public final fun component3 ()Lkotlin/jvm/functions/Function2;
-	public final fun copy (Lai/torad/aisdk/EmbeddingModelCallParams;Lai/torad/aisdk/EmbeddingModel;Lkotlin/jvm/functions/Function2;)Lai/torad/aisdk/EmbeddingMiddlewareCallContext;
-	public static synthetic fun copy$default (Lai/torad/aisdk/EmbeddingMiddlewareCallContext;Lai/torad/aisdk/EmbeddingModelCallParams;Lai/torad/aisdk/EmbeddingModel;Lkotlin/jvm/functions/Function2;ILjava/lang/Object;)Lai/torad/aisdk/EmbeddingMiddlewareCallContext;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getDoEmbed ()Lkotlin/jvm/functions/Function2;
 	public final fun getModel ()Lai/torad/aisdk/EmbeddingModel;
@@ -1679,14 +1655,6 @@ public final class ai/torad/aisdk/EmbeddingModelMiddleware$DefaultImpls {
 public final class ai/torad/aisdk/EmbeddingModelResult {
 	public fun <init> (Ljava/util/List;Lai/torad/aisdk/EmbeddingUsage;Ljava/util/List;Lai/torad/aisdk/LanguageModelRequestMetadata;Lai/torad/aisdk/LanguageModelResponseMetadata;Lai/torad/aisdk/ProviderMetadata;)V
 	public synthetic fun <init> (Ljava/util/List;Lai/torad/aisdk/EmbeddingUsage;Ljava/util/List;Lai/torad/aisdk/LanguageModelRequestMetadata;Lai/torad/aisdk/LanguageModelResponseMetadata;Lai/torad/aisdk/ProviderMetadata;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public final fun component1 ()Ljava/util/List;
-	public final fun component2 ()Lai/torad/aisdk/EmbeddingUsage;
-	public final fun component3 ()Ljava/util/List;
-	public final fun component4 ()Lai/torad/aisdk/LanguageModelRequestMetadata;
-	public final fun component5 ()Lai/torad/aisdk/LanguageModelResponseMetadata;
-	public final fun component6 ()Lai/torad/aisdk/ProviderMetadata;
-	public final fun copy (Ljava/util/List;Lai/torad/aisdk/EmbeddingUsage;Ljava/util/List;Lai/torad/aisdk/LanguageModelRequestMetadata;Lai/torad/aisdk/LanguageModelResponseMetadata;Lai/torad/aisdk/ProviderMetadata;)Lai/torad/aisdk/EmbeddingModelResult;
-	public static synthetic fun copy$default (Lai/torad/aisdk/EmbeddingModelResult;Ljava/util/List;Lai/torad/aisdk/EmbeddingUsage;Ljava/util/List;Lai/torad/aisdk/LanguageModelRequestMetadata;Lai/torad/aisdk/LanguageModelResponseMetadata;Lai/torad/aisdk/ProviderMetadata;ILjava/lang/Object;)Lai/torad/aisdk/EmbeddingModelResult;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getEmbeddings ()Ljava/util/List;
 	public final fun getProviderMetadata ()Lai/torad/aisdk/ProviderMetadata;
@@ -1702,10 +1670,6 @@ public final class ai/torad/aisdk/EmbeddingUsage {
 	public fun <init> ()V
 	public fun <init> (ILkotlinx/serialization/json/JsonElement;)V
 	public synthetic fun <init> (ILkotlinx/serialization/json/JsonElement;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public final fun component1 ()I
-	public final fun component2 ()Lkotlinx/serialization/json/JsonElement;
-	public final fun copy (ILkotlinx/serialization/json/JsonElement;)Lai/torad/aisdk/EmbeddingUsage;
-	public static synthetic fun copy$default (Lai/torad/aisdk/EmbeddingUsage;ILkotlinx/serialization/json/JsonElement;ILjava/lang/Object;)Lai/torad/aisdk/EmbeddingUsage;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getRaw ()Lkotlinx/serialization/json/JsonElement;
 	public final fun getTokens ()I
@@ -4909,14 +4873,6 @@ public final class ai/torad/aisdk/RedactorKt {
 public final class ai/torad/aisdk/RerankResult {
 	public fun <init> (Ljava/util/List;Ljava/util/List;Lai/torad/aisdk/Usage;Ljava/util/List;Lai/torad/aisdk/LanguageModelResponseMetadata;Lai/torad/aisdk/ProviderMetadata;)V
 	public synthetic fun <init> (Ljava/util/List;Ljava/util/List;Lai/torad/aisdk/Usage;Ljava/util/List;Lai/torad/aisdk/LanguageModelResponseMetadata;Lai/torad/aisdk/ProviderMetadata;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public final fun component1 ()Ljava/util/List;
-	public final fun component2 ()Ljava/util/List;
-	public final fun component3 ()Lai/torad/aisdk/Usage;
-	public final fun component4 ()Ljava/util/List;
-	public final fun component5 ()Lai/torad/aisdk/LanguageModelResponseMetadata;
-	public final fun component6 ()Lai/torad/aisdk/ProviderMetadata;
-	public final fun copy (Ljava/util/List;Ljava/util/List;Lai/torad/aisdk/Usage;Ljava/util/List;Lai/torad/aisdk/LanguageModelResponseMetadata;Lai/torad/aisdk/ProviderMetadata;)Lai/torad/aisdk/RerankResult;
-	public static synthetic fun copy$default (Lai/torad/aisdk/RerankResult;Ljava/util/List;Ljava/util/List;Lai/torad/aisdk/Usage;Ljava/util/List;Lai/torad/aisdk/LanguageModelResponseMetadata;Lai/torad/aisdk/ProviderMetadata;ILjava/lang/Object;)Lai/torad/aisdk/RerankResult;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getOriginalDocuments ()Ljava/util/List;
 	public final fun getProviderMetadata ()Lai/torad/aisdk/ProviderMetadata;
@@ -4931,11 +4887,6 @@ public final class ai/torad/aisdk/RerankResult {
 
 public final class ai/torad/aisdk/RerankedItem {
 	public fun <init> (Ljava/lang/Object;FI)V
-	public final fun component1 ()Ljava/lang/Object;
-	public final fun component2 ()F
-	public final fun component3 ()I
-	public final fun copy (Ljava/lang/Object;FI)Lai/torad/aisdk/RerankedItem;
-	public static synthetic fun copy$default (Lai/torad/aisdk/RerankedItem;Ljava/lang/Object;FIILjava/lang/Object;)Lai/torad/aisdk/RerankedItem;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getIndex ()I
 	public final fun getScore ()F
@@ -4963,13 +4914,6 @@ public final class ai/torad/aisdk/RerankingModel$DefaultImpls {
 public final class ai/torad/aisdk/RerankingModelResult {
 	public fun <init> (Ljava/util/List;Lai/torad/aisdk/Usage;Ljava/util/List;Lai/torad/aisdk/LanguageModelResponseMetadata;Lai/torad/aisdk/ProviderMetadata;)V
 	public synthetic fun <init> (Ljava/util/List;Lai/torad/aisdk/Usage;Ljava/util/List;Lai/torad/aisdk/LanguageModelResponseMetadata;Lai/torad/aisdk/ProviderMetadata;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public final fun component1 ()Ljava/util/List;
-	public final fun component2 ()Lai/torad/aisdk/Usage;
-	public final fun component3 ()Ljava/util/List;
-	public final fun component4 ()Lai/torad/aisdk/LanguageModelResponseMetadata;
-	public final fun component5 ()Lai/torad/aisdk/ProviderMetadata;
-	public final fun copy (Ljava/util/List;Lai/torad/aisdk/Usage;Ljava/util/List;Lai/torad/aisdk/LanguageModelResponseMetadata;Lai/torad/aisdk/ProviderMetadata;)Lai/torad/aisdk/RerankingModelResult;
-	public static synthetic fun copy$default (Lai/torad/aisdk/RerankingModelResult;Ljava/util/List;Lai/torad/aisdk/Usage;Ljava/util/List;Lai/torad/aisdk/LanguageModelResponseMetadata;Lai/torad/aisdk/ProviderMetadata;ILjava/lang/Object;)Lai/torad/aisdk/RerankingModelResult;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getProviderMetadata ()Lai/torad/aisdk/ProviderMetadata;
 	public final fun getResponse ()Lai/torad/aisdk/LanguageModelResponseMetadata;

@@ -1,5 +1,6 @@
 package ai.torad.aisdk
 
+import dev.drewhamilton.poko.Poko
 
 public interface RerankingModel {
     public val modelId: String
@@ -18,35 +19,38 @@ public data class RerankingParams(
     val abortSignal: AbortSignal = AbortSignalNever,
 )
 
-public data class RerankedItem<T>(
-    val value: T,
-    val score: Float,
-    val index: Int,
+@Poko
+public class RerankedItem<T>(
+    public val value: T,
+    public val score: Float,
+    public val index: Int,
 )
 
-public data class RerankingModelResult(
-    val results: List<RerankedItem<String>>,
-    val usage: Usage = Usage(),
-    val warnings: List<CallWarning> = emptyList(),
-    val response: LanguageModelResponseMetadata = LanguageModelResponseMetadata(),
-    val providerMetadata: ProviderMetadata = ProviderMetadata.None,
+@Poko
+public class RerankingModelResult(
+    public val results: List<RerankedItem<String>>,
+    public val usage: Usage = Usage(),
+    public val warnings: List<CallWarning> = emptyList(),
+    public val response: LanguageModelResponseMetadata = LanguageModelResponseMetadata(),
+    public val providerMetadata: ProviderMetadata = ProviderMetadata.None,
 )
 
-public data class RerankResult<T>(
-    val results: List<RerankedItem<T>>,
+@Poko
+public class RerankResult<T>(
+    public val results: List<RerankedItem<T>>,
     /** The documents that were submitted for reranking, in their original order. */
-    val originalDocuments: List<T> = emptyList(),
-    val usage: Usage = Usage(),
-    val warnings: List<CallWarning> = emptyList(),
-    val response: LanguageModelResponseMetadata = LanguageModelResponseMetadata(),
-    val providerMetadata: ProviderMetadata = ProviderMetadata.None,
+    public val originalDocuments: List<T> = emptyList(),
+    public val usage: Usage = Usage(),
+    public val warnings: List<CallWarning> = emptyList(),
+    public val response: LanguageModelResponseMetadata = LanguageModelResponseMetadata(),
+    public val providerMetadata: ProviderMetadata = ProviderMetadata.None,
 ) {
     /**
      * The reranked documents in descending relevance order (fewer than
      * [originalDocuments] when a `topN` limit was applied). Convenience accessor
      * over [results]'s values — matches upstream's `rerankedDocuments`.
      */
-    val rerankedDocuments: List<T> get() = results.map { it.value }
+    public val rerankedDocuments: List<T> get() = results.map { it.value }
 }
 
 public object Reranking {
