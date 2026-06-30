@@ -1,6 +1,7 @@
 package ai.torad.aisdk.providers
 
 import ai.torad.aisdk.*
+import dev.drewhamilton.poko.Poko
 import io.ktor.client.HttpClient
 import io.ktor.client.request.forms.MultiPartFormDataContent
 import io.ktor.client.request.forms.formData
@@ -63,12 +64,49 @@ public data class GladiaTranscriptionModelOptions(
 )
 
 @Serializable
-public data class GladiaProviderSettings(
-    val apiKey: String? = null,
-    val headers: Map<String, String> = emptyMap(),
-    val pollingIntervalMillis: Long = 1_000L,
-    val maxPollAttempts: Int = 60,
+@Poko
+public class GladiaProviderSettings internal constructor(
+    public val apiKey: String? = null,
+    public val headers: Map<String, String> = emptyMap(),
+    public val pollingIntervalMillis: Long = 1_000L,
+    public val maxPollAttempts: Int = 60,
 )
+
+public class GladiaProviderSettingsBuilder internal constructor() {
+    private var apiKey: String? = null
+    private var headers: Map<String, String> = emptyMap()
+    private var pollingIntervalMillis: Long = 1_000L
+    private var maxPollAttempts: Int = 60
+
+    public fun apiKey(value: String?) {
+        apiKey = value
+    }
+
+    public fun headers(value: Map<String, String>) {
+        headers = value
+    }
+
+    public fun pollingIntervalMillis(value: Long) {
+        pollingIntervalMillis = value
+    }
+
+    public fun maxPollAttempts(value: Int) {
+        maxPollAttempts = value
+    }
+
+    internal fun build(): GladiaProviderSettings =
+        GladiaProviderSettings(
+            apiKey = apiKey,
+            headers = headers,
+            pollingIntervalMillis = pollingIntervalMillis,
+            maxPollAttempts = maxPollAttempts,
+        )
+}
+
+public fun GladiaProviderSettings(
+    block: GladiaProviderSettingsBuilder.() -> Unit = {},
+): GladiaProviderSettings =
+    GladiaProviderSettingsBuilder().apply(block).build()
 
 public class GladiaProvider(
     private val client: HttpClient,

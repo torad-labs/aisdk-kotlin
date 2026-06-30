@@ -1,6 +1,7 @@
 package ai.torad.aisdk.providers
 
 import ai.torad.aisdk.*
+import dev.drewhamilton.poko.Poko
 import io.ktor.client.HttpClient
 import io.ktor.client.request.header
 import io.ktor.client.request.request
@@ -41,9 +42,10 @@ public data class LMNTSpeechModelOptions(
 )
 
 @Serializable
-public data class LMNTProviderSettings(
-    val apiKey: String? = null,
-    val headers: Map<String, String> = emptyMap(),
+@Poko
+public class LMNTProviderSettings internal constructor(
+    public val apiKey: String? = null,
+    public val headers: Map<String, String> = emptyMap(),
 ) {
     internal fun lmntHeaders(callHeaders: Map<String, String>): Map<String, String> {
         val base = linkedMapOf<String, String>()
@@ -53,6 +55,30 @@ public data class LMNTProviderSettings(
         return ProviderHeaders.withUserAgentSuffix(base, "ai-sdk/lmnt/$LMNT_VERSION")
     }
 }
+
+public class LMNTProviderSettingsBuilder internal constructor() {
+    private var apiKey: String? = null
+    private var headers: Map<String, String> = emptyMap()
+
+    public fun apiKey(value: String?) {
+        apiKey = value
+    }
+
+    public fun headers(value: Map<String, String>) {
+        headers = value
+    }
+
+    internal fun build(): LMNTProviderSettings =
+        LMNTProviderSettings(
+            apiKey = apiKey,
+            headers = headers,
+        )
+}
+
+public fun LMNTProviderSettings(
+    block: LMNTProviderSettingsBuilder.() -> Unit = {},
+): LMNTProviderSettings =
+    LMNTProviderSettingsBuilder().apply(block).build()
 
 public class LMNTProvider(
     private val client: HttpClient,

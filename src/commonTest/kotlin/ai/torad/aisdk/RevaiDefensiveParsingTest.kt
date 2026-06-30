@@ -31,7 +31,7 @@ class RevaiDefensiveParsingTest {
                 )
             },
         )
-        val model = Revai(client, RevaiProviderSettings(apiKey = "key")).transcription(ModelId("machine"))
+        val model = Revai(client, RevaiProviderSettings { apiKey("key") }).transcription(ModelId("machine"))
 
         val error = assertFails {
             model.transcribe(

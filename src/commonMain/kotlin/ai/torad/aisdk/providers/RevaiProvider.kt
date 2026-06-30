@@ -2,6 +2,7 @@ package ai.torad.aisdk.providers
 
 import ai.torad.aisdk.*
 import ai.torad.aisdk.ProviderMetadata
+import dev.drewhamilton.poko.Poko
 import io.ktor.client.HttpClient
 import io.ktor.client.request.forms.MultiPartFormDataContent
 import io.ktor.client.request.forms.formData
@@ -57,11 +58,12 @@ public data class RevaiTranscriptionModelOptions(
 )
 
 @Serializable
-public data class RevaiProviderSettings(
-    val apiKey: String? = null,
-    val headers: Map<String, String> = emptyMap(),
-    val pollingIntervalMillis: Long = 1_000L,
-    val maxPollAttempts: Int = 60,
+@Poko
+public class RevaiProviderSettings internal constructor(
+    public val apiKey: String? = null,
+    public val headers: Map<String, String> = emptyMap(),
+    public val pollingIntervalMillis: Long = 1_000L,
+    public val maxPollAttempts: Int = 60,
 ) {
     internal fun revaiHeaders(callHeaders: Map<String, String>): Map<String, String> {
         val base = linkedMapOf<String, String>()
@@ -71,6 +73,42 @@ public data class RevaiProviderSettings(
         return ProviderHeaders.withUserAgentSuffix(base, "ai-sdk/revai/$REVAI_VERSION")
     }
 }
+
+public class RevaiProviderSettingsBuilder internal constructor() {
+    private var apiKey: String? = null
+    private var headers: Map<String, String> = emptyMap()
+    private var pollingIntervalMillis: Long = 1_000L
+    private var maxPollAttempts: Int = 60
+
+    public fun apiKey(value: String?) {
+        apiKey = value
+    }
+
+    public fun headers(value: Map<String, String>) {
+        headers = value
+    }
+
+    public fun pollingIntervalMillis(value: Long) {
+        pollingIntervalMillis = value
+    }
+
+    public fun maxPollAttempts(value: Int) {
+        maxPollAttempts = value
+    }
+
+    internal fun build(): RevaiProviderSettings =
+        RevaiProviderSettings(
+            apiKey = apiKey,
+            headers = headers,
+            pollingIntervalMillis = pollingIntervalMillis,
+            maxPollAttempts = maxPollAttempts,
+        )
+}
+
+public fun RevaiProviderSettings(
+    block: RevaiProviderSettingsBuilder.() -> Unit = {},
+): RevaiProviderSettings =
+    RevaiProviderSettingsBuilder().apply(block).build()
 
 public class RevaiProvider(
     private val client: HttpClient,

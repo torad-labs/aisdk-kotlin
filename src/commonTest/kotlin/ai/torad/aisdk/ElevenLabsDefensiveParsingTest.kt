@@ -33,7 +33,7 @@ class ElevenLabsDefensiveParsingTest {
                 )
             },
         )
-        val model = ElevenLabs(client, ElevenLabsProviderSettings(apiKey = "key"))
+        val model = ElevenLabs(client, ElevenLabsProviderSettings { apiKey("key") })
             .transcription(ModelId("scribe_v1"))
 
         val error = assertFails {
@@ -67,7 +67,7 @@ class ElevenLabsDefensiveParsingTest {
                 )
             },
         )
-        val model = ElevenLabs(client, ElevenLabsProviderSettings(apiKey = "key"))
+        val model = ElevenLabs(client, ElevenLabsProviderSettings { apiKey("key") })
             .transcription(ModelId("scribe_v1"))
 
         val error = assertFails {

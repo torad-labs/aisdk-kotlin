@@ -45,7 +45,10 @@ class GladiaProviderTest {
         fixture.server.start()
         val model = Gladia(
             fixture.httpClient(),
-            GladiaProviderSettings(apiKey = "key", pollingIntervalMillis = 0),
+            GladiaProviderSettings {
+                apiKey("key")
+                pollingIntervalMillis(0)
+            },
         ).transcription()
 
         val result = model.transcribe(
@@ -177,7 +180,10 @@ class GladiaProviderTest {
         fixture.server.start()
         val model = Gladia(
             fixture.httpClient(),
-            GladiaProviderSettings(apiKey = "key", pollingIntervalMillis = 0),
+            GladiaProviderSettings {
+                apiKey("key")
+                pollingIntervalMillis(0)
+            },
         ).transcription()
 
         val error = assertFailsWith<AiSdkException> {
@@ -206,7 +212,11 @@ class GladiaProviderTest {
         fixture.server.start()
         val model = Gladia(
             fixture.httpClient(),
-            GladiaProviderSettings(apiKey = "key", headers = mapOf("x-secret" to "shh"), pollingIntervalMillis = 0),
+            GladiaProviderSettings {
+                apiKey("key")
+                headers(mapOf("x-secret" to "shh"))
+                pollingIntervalMillis(0)
+            },
         ).transcription()
 
         model.transcribe(TranscriptionParams(audio = AudioSource("audio/wav", Base64Codec.encode(byteArrayOf(1)))))
@@ -220,7 +230,7 @@ class GladiaProviderTest {
     @Test
     fun `default provider and unsupported model families fail explicitly`() {
         val fixture = TestServer.createTestServer(mutableMapOf())
-        val provider = Gladia(fixture.httpClient(), GladiaProviderSettings(apiKey = "key"))
+        val provider = Gladia(fixture.httpClient(), GladiaProviderSettings { apiKey("key") })
 
         assertFailsWith<NoSuchModelError> { provider.languageModel("model") }
         assertFailsWith<NoSuchModelError> { provider.embeddingModel("embed") }

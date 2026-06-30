@@ -34,7 +34,9 @@ class DeepgramProviderTest {
         fixture.server.start()
         val model = Deepgram(
             fixture.httpClient(),
-            DeepgramProviderSettings(apiKey = "key"),
+            DeepgramProviderSettings {
+                apiKey("key")
+            },
         ).speech(ModelId("aura-2-helena-en"))
 
         val result = model.generate(
@@ -93,7 +95,9 @@ class DeepgramProviderTest {
         fixture.server.start()
         val model = Deepgram(
             fixture.httpClient(),
-            DeepgramProviderSettings(apiKey = "key"),
+            DeepgramProviderSettings {
+                apiKey("key")
+            },
         ).transcription(ModelId("nova-3"))
 
         val result = model.transcribe(
@@ -163,7 +167,9 @@ class DeepgramProviderTest {
         fixture.server.start()
         val model = Deepgram(
             fixture.httpClient(),
-            DeepgramProviderSettings(apiKey = "key"),
+            DeepgramProviderSettings {
+                apiKey("key")
+            },
         ).transcription(ModelId("nova-3"))
 
         val result = model.transcribe(
@@ -179,7 +185,12 @@ class DeepgramProviderTest {
     @Test
     fun `default provider and unsupported model families fail explicitly`() {
         val fixture = TestServer.createTestServer(mutableMapOf())
-        val provider = Deepgram(fixture.httpClient(), DeepgramProviderSettings(apiKey = "key"))
+        val provider = Deepgram(
+            fixture.httpClient(),
+            DeepgramProviderSettings {
+                apiKey("key")
+            },
+        )
 
         assertFailsWith<NoSuchModelError> { provider.languageModel("model") }
         assertFailsWith<NoSuchModelError> { provider.embeddingModel("embed") }

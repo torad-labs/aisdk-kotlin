@@ -30,7 +30,7 @@ class LMNTProviderTest {
         fixture.server.start()
         val model = LMNT(
             fixture.httpClient(),
-            LMNTProviderSettings(apiKey = "key"),
+            LMNTProviderSettings { apiKey("key") },
         ).speech(ModelId("aurora"))
 
         val result = model.generate(
@@ -84,7 +84,7 @@ class LMNTProviderTest {
         fixture.server.start()
         val model = LMNT(
             fixture.httpClient(),
-            LMNTProviderSettings(apiKey = "key"),
+            LMNTProviderSettings { apiKey("key") },
         ).speech(ModelId("aurora"))
 
         val result = model.generate(

@@ -1,6 +1,7 @@
 package ai.torad.aisdk.providers
 
 import ai.torad.aisdk.*
+import dev.drewhamilton.poko.Poko
 import io.ktor.client.HttpClient
 import io.ktor.client.request.header
 import io.ktor.client.request.request
@@ -31,9 +32,10 @@ public data class HumeSpeechModelOptions(
 )
 
 @Serializable
-public data class HumeProviderSettings(
-    val apiKey: String? = null,
-    val headers: Map<String, String> = emptyMap(),
+@Poko
+public class HumeProviderSettings internal constructor(
+    public val apiKey: String? = null,
+    public val headers: Map<String, String> = emptyMap(),
 ) {
     internal fun humeHeaders(callHeaders: Map<String, String>): Map<String, String> {
         val base = linkedMapOf<String, String>()
@@ -43,6 +45,30 @@ public data class HumeProviderSettings(
         return ProviderHeaders.withUserAgentSuffix(base, "ai-sdk/hume/$HUME_VERSION")
     }
 }
+
+public class HumeProviderSettingsBuilder internal constructor() {
+    private var apiKey: String? = null
+    private var headers: Map<String, String> = emptyMap()
+
+    public fun apiKey(value: String?) {
+        apiKey = value
+    }
+
+    public fun headers(value: Map<String, String>) {
+        headers = value
+    }
+
+    internal fun build(): HumeProviderSettings =
+        HumeProviderSettings(
+            apiKey = apiKey,
+            headers = headers,
+        )
+}
+
+public fun HumeProviderSettings(
+    block: HumeProviderSettingsBuilder.() -> Unit = {},
+): HumeProviderSettings =
+    HumeProviderSettingsBuilder().apply(block).build()
 
 public class HumeProvider(
     private val client: HttpClient,

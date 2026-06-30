@@ -2389,8 +2389,6 @@ final class ai.torad.aisdk.providers/AssemblyAIProvider : ai.torad.aisdk/Provide
 }
 
 final class ai.torad.aisdk.providers/AssemblyAIProviderSettings { // ai.torad.aisdk.providers/AssemblyAIProviderSettings|null[0]
-    constructor <init>(kotlin/String? = ..., kotlin.collections/Map<kotlin/String, kotlin/String> = ..., kotlin/Long = ..., kotlin/Int = ...) // ai.torad.aisdk.providers/AssemblyAIProviderSettings.<init>|<init>(kotlin.String?;kotlin.collections.Map<kotlin.String,kotlin.String>;kotlin.Long;kotlin.Int){}[0]
-
     final val apiKey // ai.torad.aisdk.providers/AssemblyAIProviderSettings.apiKey|{}apiKey[0]
         final fun <get-apiKey>(): kotlin/String? // ai.torad.aisdk.providers/AssemblyAIProviderSettings.apiKey.<get-apiKey>|<get-apiKey>(){}[0]
     final val headers // ai.torad.aisdk.providers/AssemblyAIProviderSettings.headers|{}headers[0]
@@ -2400,11 +2398,6 @@ final class ai.torad.aisdk.providers/AssemblyAIProviderSettings { // ai.torad.ai
     final val pollingIntervalMillis // ai.torad.aisdk.providers/AssemblyAIProviderSettings.pollingIntervalMillis|{}pollingIntervalMillis[0]
         final fun <get-pollingIntervalMillis>(): kotlin/Long // ai.torad.aisdk.providers/AssemblyAIProviderSettings.pollingIntervalMillis.<get-pollingIntervalMillis>|<get-pollingIntervalMillis>(){}[0]
 
-    final fun component1(): kotlin/String? // ai.torad.aisdk.providers/AssemblyAIProviderSettings.component1|component1(){}[0]
-    final fun component2(): kotlin.collections/Map<kotlin/String, kotlin/String> // ai.torad.aisdk.providers/AssemblyAIProviderSettings.component2|component2(){}[0]
-    final fun component3(): kotlin/Long // ai.torad.aisdk.providers/AssemblyAIProviderSettings.component3|component3(){}[0]
-    final fun component4(): kotlin/Int // ai.torad.aisdk.providers/AssemblyAIProviderSettings.component4|component4(){}[0]
-    final fun copy(kotlin/String? = ..., kotlin.collections/Map<kotlin/String, kotlin/String> = ..., kotlin/Long = ..., kotlin/Int = ...): ai.torad.aisdk.providers/AssemblyAIProviderSettings // ai.torad.aisdk.providers/AssemblyAIProviderSettings.copy|copy(kotlin.String?;kotlin.collections.Map<kotlin.String,kotlin.String>;kotlin.Long;kotlin.Int){}[0]
     final fun equals(kotlin/Any?): kotlin/Boolean // ai.torad.aisdk.providers/AssemblyAIProviderSettings.equals|equals(kotlin.Any?){}[0]
     final fun hashCode(): kotlin/Int // ai.torad.aisdk.providers/AssemblyAIProviderSettings.hashCode|hashCode(){}[0]
     final fun toString(): kotlin/String // ai.torad.aisdk.providers/AssemblyAIProviderSettings.toString|toString(){}[0]
@@ -2423,6 +2416,13 @@ final class ai.torad.aisdk.providers/AssemblyAIProviderSettings { // ai.torad.ai
 
         final fun serializer(): kotlinx.serialization/KSerializer<ai.torad.aisdk.providers/AssemblyAIProviderSettings> // ai.torad.aisdk.providers/AssemblyAIProviderSettings.Companion.serializer|serializer(){}[0]
     }
+}
+
+final class ai.torad.aisdk.providers/AssemblyAIProviderSettingsBuilder { // ai.torad.aisdk.providers/AssemblyAIProviderSettingsBuilder|null[0]
+    final fun apiKey(kotlin/String?) // ai.torad.aisdk.providers/AssemblyAIProviderSettingsBuilder.apiKey|apiKey(kotlin.String?){}[0]
+    final fun headers(kotlin.collections/Map<kotlin/String, kotlin/String>) // ai.torad.aisdk.providers/AssemblyAIProviderSettingsBuilder.headers|headers(kotlin.collections.Map<kotlin.String,kotlin.String>){}[0]
+    final fun maxPollAttempts(kotlin/Int) // ai.torad.aisdk.providers/AssemblyAIProviderSettingsBuilder.maxPollAttempts|maxPollAttempts(kotlin.Int){}[0]
+    final fun pollingIntervalMillis(kotlin/Long) // ai.torad.aisdk.providers/AssemblyAIProviderSettingsBuilder.pollingIntervalMillis|pollingIntervalMillis(kotlin.Long){}[0]
 }
 
 final class ai.torad.aisdk.providers/AssemblyAITranscriptionModelOptions { // ai.torad.aisdk.providers/AssemblyAITranscriptionModelOptions|null[0]
@@ -3425,16 +3425,11 @@ final class ai.torad.aisdk.providers/DeepgramProvider : ai.torad.aisdk/Provider 
 }
 
 final class ai.torad.aisdk.providers/DeepgramProviderSettings { // ai.torad.aisdk.providers/DeepgramProviderSettings|null[0]
-    constructor <init>(kotlin/String? = ..., kotlin.collections/Map<kotlin/String, kotlin/String> = ...) // ai.torad.aisdk.providers/DeepgramProviderSettings.<init>|<init>(kotlin.String?;kotlin.collections.Map<kotlin.String,kotlin.String>){}[0]
-
     final val apiKey // ai.torad.aisdk.providers/DeepgramProviderSettings.apiKey|{}apiKey[0]
         final fun <get-apiKey>(): kotlin/String? // ai.torad.aisdk.providers/DeepgramProviderSettings.apiKey.<get-apiKey>|<get-apiKey>(){}[0]
     final val headers // ai.torad.aisdk.providers/DeepgramProviderSettings.headers|{}headers[0]
         final fun <get-headers>(): kotlin.collections/Map<kotlin/String, kotlin/String> // ai.torad.aisdk.providers/DeepgramProviderSettings.headers.<get-headers>|<get-headers>(){}[0]
 
-    final fun component1(): kotlin/String? // ai.torad.aisdk.providers/DeepgramProviderSettings.component1|component1(){}[0]
-    final fun component2(): kotlin.collections/Map<kotlin/String, kotlin/String> // ai.torad.aisdk.providers/DeepgramProviderSettings.component2|component2(){}[0]
-    final fun copy(kotlin/String? = ..., kotlin.collections/Map<kotlin/String, kotlin/String> = ...): ai.torad.aisdk.providers/DeepgramProviderSettings // ai.torad.aisdk.providers/DeepgramProviderSettings.copy|copy(kotlin.String?;kotlin.collections.Map<kotlin.String,kotlin.String>){}[0]
     final fun equals(kotlin/Any?): kotlin/Boolean // ai.torad.aisdk.providers/DeepgramProviderSettings.equals|equals(kotlin.Any?){}[0]
     final fun hashCode(): kotlin/Int // ai.torad.aisdk.providers/DeepgramProviderSettings.hashCode|hashCode(){}[0]
     final fun toString(): kotlin/String // ai.torad.aisdk.providers/DeepgramProviderSettings.toString|toString(){}[0]
@@ -3453,6 +3448,11 @@ final class ai.torad.aisdk.providers/DeepgramProviderSettings { // ai.torad.aisd
 
         final fun serializer(): kotlinx.serialization/KSerializer<ai.torad.aisdk.providers/DeepgramProviderSettings> // ai.torad.aisdk.providers/DeepgramProviderSettings.Companion.serializer|serializer(){}[0]
     }
+}
+
+final class ai.torad.aisdk.providers/DeepgramProviderSettingsBuilder { // ai.torad.aisdk.providers/DeepgramProviderSettingsBuilder|null[0]
+    final fun apiKey(kotlin/String?) // ai.torad.aisdk.providers/DeepgramProviderSettingsBuilder.apiKey|apiKey(kotlin.String?){}[0]
+    final fun headers(kotlin.collections/Map<kotlin/String, kotlin/String>) // ai.torad.aisdk.providers/DeepgramProviderSettingsBuilder.headers|headers(kotlin.collections.Map<kotlin.String,kotlin.String>){}[0]
 }
 
 final class ai.torad.aisdk.providers/DeepgramSpeechModel : ai.torad.aisdk/SpeechModel { // ai.torad.aisdk.providers/DeepgramSpeechModel|null[0]
@@ -3607,16 +3607,11 @@ final class ai.torad.aisdk.providers/ElevenLabsProvider : ai.torad.aisdk/Provide
 }
 
 final class ai.torad.aisdk.providers/ElevenLabsProviderSettings { // ai.torad.aisdk.providers/ElevenLabsProviderSettings|null[0]
-    constructor <init>(kotlin/String? = ..., kotlin.collections/Map<kotlin/String, kotlin/String> = ...) // ai.torad.aisdk.providers/ElevenLabsProviderSettings.<init>|<init>(kotlin.String?;kotlin.collections.Map<kotlin.String,kotlin.String>){}[0]
-
     final val apiKey // ai.torad.aisdk.providers/ElevenLabsProviderSettings.apiKey|{}apiKey[0]
         final fun <get-apiKey>(): kotlin/String? // ai.torad.aisdk.providers/ElevenLabsProviderSettings.apiKey.<get-apiKey>|<get-apiKey>(){}[0]
     final val headers // ai.torad.aisdk.providers/ElevenLabsProviderSettings.headers|{}headers[0]
         final fun <get-headers>(): kotlin.collections/Map<kotlin/String, kotlin/String> // ai.torad.aisdk.providers/ElevenLabsProviderSettings.headers.<get-headers>|<get-headers>(){}[0]
 
-    final fun component1(): kotlin/String? // ai.torad.aisdk.providers/ElevenLabsProviderSettings.component1|component1(){}[0]
-    final fun component2(): kotlin.collections/Map<kotlin/String, kotlin/String> // ai.torad.aisdk.providers/ElevenLabsProviderSettings.component2|component2(){}[0]
-    final fun copy(kotlin/String? = ..., kotlin.collections/Map<kotlin/String, kotlin/String> = ...): ai.torad.aisdk.providers/ElevenLabsProviderSettings // ai.torad.aisdk.providers/ElevenLabsProviderSettings.copy|copy(kotlin.String?;kotlin.collections.Map<kotlin.String,kotlin.String>){}[0]
     final fun equals(kotlin/Any?): kotlin/Boolean // ai.torad.aisdk.providers/ElevenLabsProviderSettings.equals|equals(kotlin.Any?){}[0]
     final fun hashCode(): kotlin/Int // ai.torad.aisdk.providers/ElevenLabsProviderSettings.hashCode|hashCode(){}[0]
     final fun toString(): kotlin/String // ai.torad.aisdk.providers/ElevenLabsProviderSettings.toString|toString(){}[0]
@@ -3635,6 +3630,11 @@ final class ai.torad.aisdk.providers/ElevenLabsProviderSettings { // ai.torad.ai
 
         final fun serializer(): kotlinx.serialization/KSerializer<ai.torad.aisdk.providers/ElevenLabsProviderSettings> // ai.torad.aisdk.providers/ElevenLabsProviderSettings.Companion.serializer|serializer(){}[0]
     }
+}
+
+final class ai.torad.aisdk.providers/ElevenLabsProviderSettingsBuilder { // ai.torad.aisdk.providers/ElevenLabsProviderSettingsBuilder|null[0]
+    final fun apiKey(kotlin/String?) // ai.torad.aisdk.providers/ElevenLabsProviderSettingsBuilder.apiKey|apiKey(kotlin.String?){}[0]
+    final fun headers(kotlin.collections/Map<kotlin/String, kotlin/String>) // ai.torad.aisdk.providers/ElevenLabsProviderSettingsBuilder.headers|headers(kotlin.collections.Map<kotlin.String,kotlin.String>){}[0]
 }
 
 final class ai.torad.aisdk.providers/ElevenLabsSpeechModelOptions { // ai.torad.aisdk.providers/ElevenLabsSpeechModelOptions|null[0]
@@ -4140,8 +4140,6 @@ final class ai.torad.aisdk.providers/GladiaProvider : ai.torad.aisdk/Provider { 
 }
 
 final class ai.torad.aisdk.providers/GladiaProviderSettings { // ai.torad.aisdk.providers/GladiaProviderSettings|null[0]
-    constructor <init>(kotlin/String? = ..., kotlin.collections/Map<kotlin/String, kotlin/String> = ..., kotlin/Long = ..., kotlin/Int = ...) // ai.torad.aisdk.providers/GladiaProviderSettings.<init>|<init>(kotlin.String?;kotlin.collections.Map<kotlin.String,kotlin.String>;kotlin.Long;kotlin.Int){}[0]
-
     final val apiKey // ai.torad.aisdk.providers/GladiaProviderSettings.apiKey|{}apiKey[0]
         final fun <get-apiKey>(): kotlin/String? // ai.torad.aisdk.providers/GladiaProviderSettings.apiKey.<get-apiKey>|<get-apiKey>(){}[0]
     final val headers // ai.torad.aisdk.providers/GladiaProviderSettings.headers|{}headers[0]
@@ -4151,11 +4149,6 @@ final class ai.torad.aisdk.providers/GladiaProviderSettings { // ai.torad.aisdk.
     final val pollingIntervalMillis // ai.torad.aisdk.providers/GladiaProviderSettings.pollingIntervalMillis|{}pollingIntervalMillis[0]
         final fun <get-pollingIntervalMillis>(): kotlin/Long // ai.torad.aisdk.providers/GladiaProviderSettings.pollingIntervalMillis.<get-pollingIntervalMillis>|<get-pollingIntervalMillis>(){}[0]
 
-    final fun component1(): kotlin/String? // ai.torad.aisdk.providers/GladiaProviderSettings.component1|component1(){}[0]
-    final fun component2(): kotlin.collections/Map<kotlin/String, kotlin/String> // ai.torad.aisdk.providers/GladiaProviderSettings.component2|component2(){}[0]
-    final fun component3(): kotlin/Long // ai.torad.aisdk.providers/GladiaProviderSettings.component3|component3(){}[0]
-    final fun component4(): kotlin/Int // ai.torad.aisdk.providers/GladiaProviderSettings.component4|component4(){}[0]
-    final fun copy(kotlin/String? = ..., kotlin.collections/Map<kotlin/String, kotlin/String> = ..., kotlin/Long = ..., kotlin/Int = ...): ai.torad.aisdk.providers/GladiaProviderSettings // ai.torad.aisdk.providers/GladiaProviderSettings.copy|copy(kotlin.String?;kotlin.collections.Map<kotlin.String,kotlin.String>;kotlin.Long;kotlin.Int){}[0]
     final fun equals(kotlin/Any?): kotlin/Boolean // ai.torad.aisdk.providers/GladiaProviderSettings.equals|equals(kotlin.Any?){}[0]
     final fun hashCode(): kotlin/Int // ai.torad.aisdk.providers/GladiaProviderSettings.hashCode|hashCode(){}[0]
     final fun toString(): kotlin/String // ai.torad.aisdk.providers/GladiaProviderSettings.toString|toString(){}[0]
@@ -4174,6 +4167,13 @@ final class ai.torad.aisdk.providers/GladiaProviderSettings { // ai.torad.aisdk.
 
         final fun serializer(): kotlinx.serialization/KSerializer<ai.torad.aisdk.providers/GladiaProviderSettings> // ai.torad.aisdk.providers/GladiaProviderSettings.Companion.serializer|serializer(){}[0]
     }
+}
+
+final class ai.torad.aisdk.providers/GladiaProviderSettingsBuilder { // ai.torad.aisdk.providers/GladiaProviderSettingsBuilder|null[0]
+    final fun apiKey(kotlin/String?) // ai.torad.aisdk.providers/GladiaProviderSettingsBuilder.apiKey|apiKey(kotlin.String?){}[0]
+    final fun headers(kotlin.collections/Map<kotlin/String, kotlin/String>) // ai.torad.aisdk.providers/GladiaProviderSettingsBuilder.headers|headers(kotlin.collections.Map<kotlin.String,kotlin.String>){}[0]
+    final fun maxPollAttempts(kotlin/Int) // ai.torad.aisdk.providers/GladiaProviderSettingsBuilder.maxPollAttempts|maxPollAttempts(kotlin.Int){}[0]
+    final fun pollingIntervalMillis(kotlin/Long) // ai.torad.aisdk.providers/GladiaProviderSettingsBuilder.pollingIntervalMillis|pollingIntervalMillis(kotlin.Long){}[0]
 }
 
 final class ai.torad.aisdk.providers/GladiaTranscriptionModelOptions { // ai.torad.aisdk.providers/GladiaTranscriptionModelOptions|null[0]
@@ -4723,16 +4723,11 @@ final class ai.torad.aisdk.providers/HumeProvider : ai.torad.aisdk/Provider { //
 }
 
 final class ai.torad.aisdk.providers/HumeProviderSettings { // ai.torad.aisdk.providers/HumeProviderSettings|null[0]
-    constructor <init>(kotlin/String? = ..., kotlin.collections/Map<kotlin/String, kotlin/String> = ...) // ai.torad.aisdk.providers/HumeProviderSettings.<init>|<init>(kotlin.String?;kotlin.collections.Map<kotlin.String,kotlin.String>){}[0]
-
     final val apiKey // ai.torad.aisdk.providers/HumeProviderSettings.apiKey|{}apiKey[0]
         final fun <get-apiKey>(): kotlin/String? // ai.torad.aisdk.providers/HumeProviderSettings.apiKey.<get-apiKey>|<get-apiKey>(){}[0]
     final val headers // ai.torad.aisdk.providers/HumeProviderSettings.headers|{}headers[0]
         final fun <get-headers>(): kotlin.collections/Map<kotlin/String, kotlin/String> // ai.torad.aisdk.providers/HumeProviderSettings.headers.<get-headers>|<get-headers>(){}[0]
 
-    final fun component1(): kotlin/String? // ai.torad.aisdk.providers/HumeProviderSettings.component1|component1(){}[0]
-    final fun component2(): kotlin.collections/Map<kotlin/String, kotlin/String> // ai.torad.aisdk.providers/HumeProviderSettings.component2|component2(){}[0]
-    final fun copy(kotlin/String? = ..., kotlin.collections/Map<kotlin/String, kotlin/String> = ...): ai.torad.aisdk.providers/HumeProviderSettings // ai.torad.aisdk.providers/HumeProviderSettings.copy|copy(kotlin.String?;kotlin.collections.Map<kotlin.String,kotlin.String>){}[0]
     final fun equals(kotlin/Any?): kotlin/Boolean // ai.torad.aisdk.providers/HumeProviderSettings.equals|equals(kotlin.Any?){}[0]
     final fun hashCode(): kotlin/Int // ai.torad.aisdk.providers/HumeProviderSettings.hashCode|hashCode(){}[0]
     final fun toString(): kotlin/String // ai.torad.aisdk.providers/HumeProviderSettings.toString|toString(){}[0]
@@ -4751,6 +4746,11 @@ final class ai.torad.aisdk.providers/HumeProviderSettings { // ai.torad.aisdk.pr
 
         final fun serializer(): kotlinx.serialization/KSerializer<ai.torad.aisdk.providers/HumeProviderSettings> // ai.torad.aisdk.providers/HumeProviderSettings.Companion.serializer|serializer(){}[0]
     }
+}
+
+final class ai.torad.aisdk.providers/HumeProviderSettingsBuilder { // ai.torad.aisdk.providers/HumeProviderSettingsBuilder|null[0]
+    final fun apiKey(kotlin/String?) // ai.torad.aisdk.providers/HumeProviderSettingsBuilder.apiKey|apiKey(kotlin.String?){}[0]
+    final fun headers(kotlin.collections/Map<kotlin/String, kotlin/String>) // ai.torad.aisdk.providers/HumeProviderSettingsBuilder.headers|headers(kotlin.collections.Map<kotlin.String,kotlin.String>){}[0]
 }
 
 final class ai.torad.aisdk.providers/HumeSpeechModelOptions { // ai.torad.aisdk.providers/HumeSpeechModelOptions|null[0]
@@ -4928,16 +4928,11 @@ final class ai.torad.aisdk.providers/LMNTProvider : ai.torad.aisdk/Provider { //
 }
 
 final class ai.torad.aisdk.providers/LMNTProviderSettings { // ai.torad.aisdk.providers/LMNTProviderSettings|null[0]
-    constructor <init>(kotlin/String? = ..., kotlin.collections/Map<kotlin/String, kotlin/String> = ...) // ai.torad.aisdk.providers/LMNTProviderSettings.<init>|<init>(kotlin.String?;kotlin.collections.Map<kotlin.String,kotlin.String>){}[0]
-
     final val apiKey // ai.torad.aisdk.providers/LMNTProviderSettings.apiKey|{}apiKey[0]
         final fun <get-apiKey>(): kotlin/String? // ai.torad.aisdk.providers/LMNTProviderSettings.apiKey.<get-apiKey>|<get-apiKey>(){}[0]
     final val headers // ai.torad.aisdk.providers/LMNTProviderSettings.headers|{}headers[0]
         final fun <get-headers>(): kotlin.collections/Map<kotlin/String, kotlin/String> // ai.torad.aisdk.providers/LMNTProviderSettings.headers.<get-headers>|<get-headers>(){}[0]
 
-    final fun component1(): kotlin/String? // ai.torad.aisdk.providers/LMNTProviderSettings.component1|component1(){}[0]
-    final fun component2(): kotlin.collections/Map<kotlin/String, kotlin/String> // ai.torad.aisdk.providers/LMNTProviderSettings.component2|component2(){}[0]
-    final fun copy(kotlin/String? = ..., kotlin.collections/Map<kotlin/String, kotlin/String> = ...): ai.torad.aisdk.providers/LMNTProviderSettings // ai.torad.aisdk.providers/LMNTProviderSettings.copy|copy(kotlin.String?;kotlin.collections.Map<kotlin.String,kotlin.String>){}[0]
     final fun equals(kotlin/Any?): kotlin/Boolean // ai.torad.aisdk.providers/LMNTProviderSettings.equals|equals(kotlin.Any?){}[0]
     final fun hashCode(): kotlin/Int // ai.torad.aisdk.providers/LMNTProviderSettings.hashCode|hashCode(){}[0]
     final fun toString(): kotlin/String // ai.torad.aisdk.providers/LMNTProviderSettings.toString|toString(){}[0]
@@ -4956,6 +4951,11 @@ final class ai.torad.aisdk.providers/LMNTProviderSettings { // ai.torad.aisdk.pr
 
         final fun serializer(): kotlinx.serialization/KSerializer<ai.torad.aisdk.providers/LMNTProviderSettings> // ai.torad.aisdk.providers/LMNTProviderSettings.Companion.serializer|serializer(){}[0]
     }
+}
+
+final class ai.torad.aisdk.providers/LMNTProviderSettingsBuilder { // ai.torad.aisdk.providers/LMNTProviderSettingsBuilder|null[0]
+    final fun apiKey(kotlin/String?) // ai.torad.aisdk.providers/LMNTProviderSettingsBuilder.apiKey|apiKey(kotlin.String?){}[0]
+    final fun headers(kotlin.collections/Map<kotlin/String, kotlin/String>) // ai.torad.aisdk.providers/LMNTProviderSettingsBuilder.headers|headers(kotlin.collections.Map<kotlin.String,kotlin.String>){}[0]
 }
 
 final class ai.torad.aisdk.providers/LMNTSpeechModelOptions { // ai.torad.aisdk.providers/LMNTSpeechModelOptions|null[0]
@@ -5250,8 +5250,6 @@ final class ai.torad.aisdk.providers/LumaProvider : ai.torad.aisdk/Provider { //
 }
 
 final class ai.torad.aisdk.providers/LumaProviderSettings { // ai.torad.aisdk.providers/LumaProviderSettings|null[0]
-    constructor <init>(kotlin/String? = ..., kotlin/String = ..., kotlin.collections/Map<kotlin/String, kotlin/String> = ...) // ai.torad.aisdk.providers/LumaProviderSettings.<init>|<init>(kotlin.String?;kotlin.String;kotlin.collections.Map<kotlin.String,kotlin.String>){}[0]
-
     final val apiKey // ai.torad.aisdk.providers/LumaProviderSettings.apiKey|{}apiKey[0]
         final fun <get-apiKey>(): kotlin/String? // ai.torad.aisdk.providers/LumaProviderSettings.apiKey.<get-apiKey>|<get-apiKey>(){}[0]
     final val baseURL // ai.torad.aisdk.providers/LumaProviderSettings.baseURL|{}baseURL[0]
@@ -5259,10 +5257,6 @@ final class ai.torad.aisdk.providers/LumaProviderSettings { // ai.torad.aisdk.pr
     final val headers // ai.torad.aisdk.providers/LumaProviderSettings.headers|{}headers[0]
         final fun <get-headers>(): kotlin.collections/Map<kotlin/String, kotlin/String> // ai.torad.aisdk.providers/LumaProviderSettings.headers.<get-headers>|<get-headers>(){}[0]
 
-    final fun component1(): kotlin/String? // ai.torad.aisdk.providers/LumaProviderSettings.component1|component1(){}[0]
-    final fun component2(): kotlin/String // ai.torad.aisdk.providers/LumaProviderSettings.component2|component2(){}[0]
-    final fun component3(): kotlin.collections/Map<kotlin/String, kotlin/String> // ai.torad.aisdk.providers/LumaProviderSettings.component3|component3(){}[0]
-    final fun copy(kotlin/String? = ..., kotlin/String = ..., kotlin.collections/Map<kotlin/String, kotlin/String> = ...): ai.torad.aisdk.providers/LumaProviderSettings // ai.torad.aisdk.providers/LumaProviderSettings.copy|copy(kotlin.String?;kotlin.String;kotlin.collections.Map<kotlin.String,kotlin.String>){}[0]
     final fun equals(kotlin/Any?): kotlin/Boolean // ai.torad.aisdk.providers/LumaProviderSettings.equals|equals(kotlin.Any?){}[0]
     final fun hashCode(): kotlin/Int // ai.torad.aisdk.providers/LumaProviderSettings.hashCode|hashCode(){}[0]
     final fun toString(): kotlin/String // ai.torad.aisdk.providers/LumaProviderSettings.toString|toString(){}[0]
@@ -5281,6 +5275,12 @@ final class ai.torad.aisdk.providers/LumaProviderSettings { // ai.torad.aisdk.pr
 
         final fun serializer(): kotlinx.serialization/KSerializer<ai.torad.aisdk.providers/LumaProviderSettings> // ai.torad.aisdk.providers/LumaProviderSettings.Companion.serializer|serializer(){}[0]
     }
+}
+
+final class ai.torad.aisdk.providers/LumaProviderSettingsBuilder { // ai.torad.aisdk.providers/LumaProviderSettingsBuilder|null[0]
+    final fun apiKey(kotlin/String?) // ai.torad.aisdk.providers/LumaProviderSettingsBuilder.apiKey|apiKey(kotlin.String?){}[0]
+    final fun baseURL(kotlin/String) // ai.torad.aisdk.providers/LumaProviderSettingsBuilder.baseURL|baseURL(kotlin.String){}[0]
+    final fun headers(kotlin.collections/Map<kotlin/String, kotlin/String>) // ai.torad.aisdk.providers/LumaProviderSettingsBuilder.headers|headers(kotlin.collections.Map<kotlin.String,kotlin.String>){}[0]
 }
 
 final class ai.torad.aisdk.providers/MistralLanguageModelOptions { // ai.torad.aisdk.providers/MistralLanguageModelOptions|null[0]
@@ -6320,8 +6320,6 @@ final class ai.torad.aisdk.providers/RevaiProvider : ai.torad.aisdk/Provider { /
 }
 
 final class ai.torad.aisdk.providers/RevaiProviderSettings { // ai.torad.aisdk.providers/RevaiProviderSettings|null[0]
-    constructor <init>(kotlin/String? = ..., kotlin.collections/Map<kotlin/String, kotlin/String> = ..., kotlin/Long = ..., kotlin/Int = ...) // ai.torad.aisdk.providers/RevaiProviderSettings.<init>|<init>(kotlin.String?;kotlin.collections.Map<kotlin.String,kotlin.String>;kotlin.Long;kotlin.Int){}[0]
-
     final val apiKey // ai.torad.aisdk.providers/RevaiProviderSettings.apiKey|{}apiKey[0]
         final fun <get-apiKey>(): kotlin/String? // ai.torad.aisdk.providers/RevaiProviderSettings.apiKey.<get-apiKey>|<get-apiKey>(){}[0]
     final val headers // ai.torad.aisdk.providers/RevaiProviderSettings.headers|{}headers[0]
@@ -6331,11 +6329,6 @@ final class ai.torad.aisdk.providers/RevaiProviderSettings { // ai.torad.aisdk.p
     final val pollingIntervalMillis // ai.torad.aisdk.providers/RevaiProviderSettings.pollingIntervalMillis|{}pollingIntervalMillis[0]
         final fun <get-pollingIntervalMillis>(): kotlin/Long // ai.torad.aisdk.providers/RevaiProviderSettings.pollingIntervalMillis.<get-pollingIntervalMillis>|<get-pollingIntervalMillis>(){}[0]
 
-    final fun component1(): kotlin/String? // ai.torad.aisdk.providers/RevaiProviderSettings.component1|component1(){}[0]
-    final fun component2(): kotlin.collections/Map<kotlin/String, kotlin/String> // ai.torad.aisdk.providers/RevaiProviderSettings.component2|component2(){}[0]
-    final fun component3(): kotlin/Long // ai.torad.aisdk.providers/RevaiProviderSettings.component3|component3(){}[0]
-    final fun component4(): kotlin/Int // ai.torad.aisdk.providers/RevaiProviderSettings.component4|component4(){}[0]
-    final fun copy(kotlin/String? = ..., kotlin.collections/Map<kotlin/String, kotlin/String> = ..., kotlin/Long = ..., kotlin/Int = ...): ai.torad.aisdk.providers/RevaiProviderSettings // ai.torad.aisdk.providers/RevaiProviderSettings.copy|copy(kotlin.String?;kotlin.collections.Map<kotlin.String,kotlin.String>;kotlin.Long;kotlin.Int){}[0]
     final fun equals(kotlin/Any?): kotlin/Boolean // ai.torad.aisdk.providers/RevaiProviderSettings.equals|equals(kotlin.Any?){}[0]
     final fun hashCode(): kotlin/Int // ai.torad.aisdk.providers/RevaiProviderSettings.hashCode|hashCode(){}[0]
     final fun toString(): kotlin/String // ai.torad.aisdk.providers/RevaiProviderSettings.toString|toString(){}[0]
@@ -6354,6 +6347,13 @@ final class ai.torad.aisdk.providers/RevaiProviderSettings { // ai.torad.aisdk.p
 
         final fun serializer(): kotlinx.serialization/KSerializer<ai.torad.aisdk.providers/RevaiProviderSettings> // ai.torad.aisdk.providers/RevaiProviderSettings.Companion.serializer|serializer(){}[0]
     }
+}
+
+final class ai.torad.aisdk.providers/RevaiProviderSettingsBuilder { // ai.torad.aisdk.providers/RevaiProviderSettingsBuilder|null[0]
+    final fun apiKey(kotlin/String?) // ai.torad.aisdk.providers/RevaiProviderSettingsBuilder.apiKey|apiKey(kotlin.String?){}[0]
+    final fun headers(kotlin.collections/Map<kotlin/String, kotlin/String>) // ai.torad.aisdk.providers/RevaiProviderSettingsBuilder.headers|headers(kotlin.collections.Map<kotlin.String,kotlin.String>){}[0]
+    final fun maxPollAttempts(kotlin/Int) // ai.torad.aisdk.providers/RevaiProviderSettingsBuilder.maxPollAttempts|maxPollAttempts(kotlin.Int){}[0]
+    final fun pollingIntervalMillis(kotlin/Long) // ai.torad.aisdk.providers/RevaiProviderSettingsBuilder.pollingIntervalMillis|pollingIntervalMillis(kotlin.Long){}[0]
 }
 
 final class ai.torad.aisdk.providers/RevaiTranscriptionModelOptions { // ai.torad.aisdk.providers/RevaiTranscriptionModelOptions|null[0]
@@ -13927,6 +13927,7 @@ final fun ai.torad.aisdk.providers/AmazonBedrock(io.ktor.client/HttpClient, ai.t
 final fun ai.torad.aisdk.providers/Anthropic(io.ktor.client/HttpClient, ai.torad.aisdk.providers/AnthropicProviderSettings = ...): ai.torad.aisdk.providers/AnthropicProvider // ai.torad.aisdk.providers/Anthropic|Anthropic(io.ktor.client.HttpClient;ai.torad.aisdk.providers.AnthropicProviderSettings){}[0]
 final fun ai.torad.aisdk.providers/AnthropicAws(io.ktor.client/HttpClient, ai.torad.aisdk.providers/AnthropicAwsProviderSettings = ...): ai.torad.aisdk.providers/AnthropicAwsProvider // ai.torad.aisdk.providers/AnthropicAws|AnthropicAws(io.ktor.client.HttpClient;ai.torad.aisdk.providers.AnthropicAwsProviderSettings){}[0]
 final fun ai.torad.aisdk.providers/AssemblyAI(io.ktor.client/HttpClient, ai.torad.aisdk.providers/AssemblyAIProviderSettings = ...): ai.torad.aisdk.providers/AssemblyAIProvider // ai.torad.aisdk.providers/AssemblyAI|AssemblyAI(io.ktor.client.HttpClient;ai.torad.aisdk.providers.AssemblyAIProviderSettings){}[0]
+final fun ai.torad.aisdk.providers/AssemblyAIProviderSettings(kotlin/Function1<ai.torad.aisdk.providers/AssemblyAIProviderSettingsBuilder, kotlin/Unit> = ...): ai.torad.aisdk.providers/AssemblyAIProviderSettings // ai.torad.aisdk.providers/AssemblyAIProviderSettings|AssemblyAIProviderSettings(kotlin.Function1<ai.torad.aisdk.providers.AssemblyAIProviderSettingsBuilder,kotlin.Unit>){}[0]
 final fun ai.torad.aisdk.providers/AzureOpenAI(io.ktor.client/HttpClient, ai.torad.aisdk.providers/AzureOpenAIProviderSettings = ...): ai.torad.aisdk.providers/AzureOpenAIProvider // ai.torad.aisdk.providers/AzureOpenAI|AzureOpenAI(io.ktor.client.HttpClient;ai.torad.aisdk.providers.AzureOpenAIProviderSettings){}[0]
 final fun ai.torad.aisdk.providers/Baseten(io.ktor.client/HttpClient, ai.torad.aisdk.providers/BasetenProviderSettings = ...): ai.torad.aisdk.providers/BasetenProvider // ai.torad.aisdk.providers/Baseten|Baseten(io.ktor.client.HttpClient;ai.torad.aisdk.providers.BasetenProviderSettings){}[0]
 final fun ai.torad.aisdk.providers/BedrockAnthropic(io.ktor.client/HttpClient, ai.torad.aisdk.providers/AmazonBedrockProviderSettings = ...): ai.torad.aisdk.providers/BedrockAnthropicProvider // ai.torad.aisdk.providers/BedrockAnthropic|BedrockAnthropic(io.ktor.client.HttpClient;ai.torad.aisdk.providers.AmazonBedrockProviderSettings){}[0]
@@ -13940,11 +13941,14 @@ final fun ai.torad.aisdk.providers/CohereProviderSettings(kotlin/Function1<ai.to
 final fun ai.torad.aisdk.providers/DeepInfra(io.ktor.client/HttpClient, ai.torad.aisdk.providers/DeepInfraProviderSettings = ...): ai.torad.aisdk.providers/DeepInfraProvider // ai.torad.aisdk.providers/DeepInfra|DeepInfra(io.ktor.client.HttpClient;ai.torad.aisdk.providers.DeepInfraProviderSettings){}[0]
 final fun ai.torad.aisdk.providers/DeepSeek(io.ktor.client/HttpClient, ai.torad.aisdk.providers/DeepSeekProviderSettings = ...): ai.torad.aisdk.providers/DeepSeekProvider // ai.torad.aisdk.providers/DeepSeek|DeepSeek(io.ktor.client.HttpClient;ai.torad.aisdk.providers.DeepSeekProviderSettings){}[0]
 final fun ai.torad.aisdk.providers/Deepgram(io.ktor.client/HttpClient, ai.torad.aisdk.providers/DeepgramProviderSettings = ...): ai.torad.aisdk.providers/DeepgramProvider // ai.torad.aisdk.providers/Deepgram|Deepgram(io.ktor.client.HttpClient;ai.torad.aisdk.providers.DeepgramProviderSettings){}[0]
+final fun ai.torad.aisdk.providers/DeepgramProviderSettings(kotlin/Function1<ai.torad.aisdk.providers/DeepgramProviderSettingsBuilder, kotlin/Unit> = ...): ai.torad.aisdk.providers/DeepgramProviderSettings // ai.torad.aisdk.providers/DeepgramProviderSettings|DeepgramProviderSettings(kotlin.Function1<ai.torad.aisdk.providers.DeepgramProviderSettingsBuilder,kotlin.Unit>){}[0]
 final fun ai.torad.aisdk.providers/ElevenLabs(io.ktor.client/HttpClient, ai.torad.aisdk.providers/ElevenLabsProviderSettings = ...): ai.torad.aisdk.providers/ElevenLabsProvider // ai.torad.aisdk.providers/ElevenLabs|ElevenLabs(io.ktor.client.HttpClient;ai.torad.aisdk.providers.ElevenLabsProviderSettings){}[0]
+final fun ai.torad.aisdk.providers/ElevenLabsProviderSettings(kotlin/Function1<ai.torad.aisdk.providers/ElevenLabsProviderSettingsBuilder, kotlin/Unit> = ...): ai.torad.aisdk.providers/ElevenLabsProviderSettings // ai.torad.aisdk.providers/ElevenLabsProviderSettings|ElevenLabsProviderSettings(kotlin.Function1<ai.torad.aisdk.providers.ElevenLabsProviderSettingsBuilder,kotlin.Unit>){}[0]
 final fun ai.torad.aisdk.providers/Fal(io.ktor.client/HttpClient, ai.torad.aisdk.providers/FalProviderSettings = ...): ai.torad.aisdk.providers/FalProvider // ai.torad.aisdk.providers/Fal|Fal(io.ktor.client.HttpClient;ai.torad.aisdk.providers.FalProviderSettings){}[0]
 final fun ai.torad.aisdk.providers/FileSearch(kotlinx.serialization.json/JsonElement = ...): ai.torad.aisdk/Tool<kotlinx.serialization.json/JsonElement, kotlinx.serialization.json/JsonElement, kotlin/Any?> // ai.torad.aisdk.providers/FileSearch|FileSearch(kotlinx.serialization.json.JsonElement){}[0]
 final fun ai.torad.aisdk.providers/Fireworks(io.ktor.client/HttpClient, ai.torad.aisdk.providers/FireworksProviderSettings = ...): ai.torad.aisdk.providers/FireworksProvider // ai.torad.aisdk.providers/Fireworks|Fireworks(io.ktor.client.HttpClient;ai.torad.aisdk.providers.FireworksProviderSettings){}[0]
 final fun ai.torad.aisdk.providers/Gladia(io.ktor.client/HttpClient, ai.torad.aisdk.providers/GladiaProviderSettings = ...): ai.torad.aisdk.providers/GladiaProvider // ai.torad.aisdk.providers/Gladia|Gladia(io.ktor.client.HttpClient;ai.torad.aisdk.providers.GladiaProviderSettings){}[0]
+final fun ai.torad.aisdk.providers/GladiaProviderSettings(kotlin/Function1<ai.torad.aisdk.providers/GladiaProviderSettingsBuilder, kotlin/Unit> = ...): ai.torad.aisdk.providers/GladiaProviderSettings // ai.torad.aisdk.providers/GladiaProviderSettings|GladiaProviderSettings(kotlin.Function1<ai.torad.aisdk.providers.GladiaProviderSettingsBuilder,kotlin.Unit>){}[0]
 final fun ai.torad.aisdk.providers/GoogleGenerativeAI(io.ktor.client/HttpClient, ai.torad.aisdk.providers/GoogleGenerativeAIProviderSettings = ...): ai.torad.aisdk.providers/GoogleGenerativeAIProvider // ai.torad.aisdk.providers/GoogleGenerativeAI|GoogleGenerativeAI(io.ktor.client.HttpClient;ai.torad.aisdk.providers.GoogleGenerativeAIProviderSettings){}[0]
 final fun ai.torad.aisdk.providers/GoogleVertex(io.ktor.client/HttpClient, ai.torad.aisdk.providers/GoogleVertexProviderSettings = ...): ai.torad.aisdk.providers/GoogleVertexProvider // ai.torad.aisdk.providers/GoogleVertex|GoogleVertex(io.ktor.client.HttpClient;ai.torad.aisdk.providers.GoogleVertexProviderSettings){}[0]
 final fun ai.torad.aisdk.providers/GoogleVertexAnthropic(io.ktor.client/HttpClient, ai.torad.aisdk.providers/GoogleVertexProviderSettings = ...): ai.torad.aisdk.providers/GoogleVertexAnthropicProvider // ai.torad.aisdk.providers/GoogleVertexAnthropic|GoogleVertexAnthropic(io.ktor.client.HttpClient;ai.torad.aisdk.providers.GoogleVertexProviderSettings){}[0]
@@ -13953,9 +13957,12 @@ final fun ai.torad.aisdk.providers/GoogleVertexXai(io.ktor.client/HttpClient, ai
 final fun ai.torad.aisdk.providers/Groq(io.ktor.client/HttpClient, ai.torad.aisdk.providers/GroqProviderSettings = ...): ai.torad.aisdk.providers/GroqProvider // ai.torad.aisdk.providers/Groq|Groq(io.ktor.client.HttpClient;ai.torad.aisdk.providers.GroqProviderSettings){}[0]
 final fun ai.torad.aisdk.providers/HuggingFace(io.ktor.client/HttpClient, ai.torad.aisdk.providers/HuggingFaceProviderSettings = ...): ai.torad.aisdk.providers/HuggingFaceProvider // ai.torad.aisdk.providers/HuggingFace|HuggingFace(io.ktor.client.HttpClient;ai.torad.aisdk.providers.HuggingFaceProviderSettings){}[0]
 final fun ai.torad.aisdk.providers/Hume(io.ktor.client/HttpClient, ai.torad.aisdk.providers/HumeProviderSettings = ...): ai.torad.aisdk.providers/HumeProvider // ai.torad.aisdk.providers/Hume|Hume(io.ktor.client.HttpClient;ai.torad.aisdk.providers.HumeProviderSettings){}[0]
+final fun ai.torad.aisdk.providers/HumeProviderSettings(kotlin/Function1<ai.torad.aisdk.providers/HumeProviderSettingsBuilder, kotlin/Unit> = ...): ai.torad.aisdk.providers/HumeProviderSettings // ai.torad.aisdk.providers/HumeProviderSettings|HumeProviderSettings(kotlin.Function1<ai.torad.aisdk.providers.HumeProviderSettingsBuilder,kotlin.Unit>){}[0]
 final fun ai.torad.aisdk.providers/KlingAI(io.ktor.client/HttpClient, ai.torad.aisdk.providers/KlingAIProviderSettings = ...): ai.torad.aisdk.providers/KlingAIProvider // ai.torad.aisdk.providers/KlingAI|KlingAI(io.ktor.client.HttpClient;ai.torad.aisdk.providers.KlingAIProviderSettings){}[0]
 final fun ai.torad.aisdk.providers/LMNT(io.ktor.client/HttpClient, ai.torad.aisdk.providers/LMNTProviderSettings = ...): ai.torad.aisdk.providers/LMNTProvider // ai.torad.aisdk.providers/LMNT|LMNT(io.ktor.client.HttpClient;ai.torad.aisdk.providers.LMNTProviderSettings){}[0]
+final fun ai.torad.aisdk.providers/LMNTProviderSettings(kotlin/Function1<ai.torad.aisdk.providers/LMNTProviderSettingsBuilder, kotlin/Unit> = ...): ai.torad.aisdk.providers/LMNTProviderSettings // ai.torad.aisdk.providers/LMNTProviderSettings|LMNTProviderSettings(kotlin.Function1<ai.torad.aisdk.providers.LMNTProviderSettingsBuilder,kotlin.Unit>){}[0]
 final fun ai.torad.aisdk.providers/Luma(io.ktor.client/HttpClient, ai.torad.aisdk.providers/LumaProviderSettings = ...): ai.torad.aisdk.providers/LumaProvider // ai.torad.aisdk.providers/Luma|Luma(io.ktor.client.HttpClient;ai.torad.aisdk.providers.LumaProviderSettings){}[0]
+final fun ai.torad.aisdk.providers/LumaProviderSettings(kotlin/Function1<ai.torad.aisdk.providers/LumaProviderSettingsBuilder, kotlin/Unit> = ...): ai.torad.aisdk.providers/LumaProviderSettings // ai.torad.aisdk.providers/LumaProviderSettings|LumaProviderSettings(kotlin.Function1<ai.torad.aisdk.providers.LumaProviderSettingsBuilder,kotlin.Unit>){}[0]
 final fun ai.torad.aisdk.providers/McpServer(kotlinx.serialization.json/JsonElement = ...): ai.torad.aisdk/Tool<kotlinx.serialization.json/JsonElement, kotlinx.serialization.json/JsonElement, kotlin/Any?> // ai.torad.aisdk.providers/McpServer|McpServer(kotlinx.serialization.json.JsonElement){}[0]
 final fun ai.torad.aisdk.providers/Mistral(io.ktor.client/HttpClient, ai.torad.aisdk.providers/MistralProviderSettings = ...): ai.torad.aisdk.providers/MistralProvider // ai.torad.aisdk.providers/Mistral|Mistral(io.ktor.client.HttpClient;ai.torad.aisdk.providers.MistralProviderSettings){}[0]
 final fun ai.torad.aisdk.providers/MockAudioSource(): ai.torad.aisdk/AudioSource // ai.torad.aisdk.providers/MockAudioSource|MockAudioSource(){}[0]
@@ -13981,6 +13988,7 @@ final fun ai.torad.aisdk.providers/Prodia(io.ktor.client/HttpClient, ai.torad.ai
 final fun ai.torad.aisdk.providers/QuiverAI(io.ktor.client/HttpClient, ai.torad.aisdk.providers/QuiverAIProviderSettings = ...): ai.torad.aisdk.providers/QuiverAIProvider // ai.torad.aisdk.providers/QuiverAI|QuiverAI(io.ktor.client.HttpClient;ai.torad.aisdk.providers.QuiverAIProviderSettings){}[0]
 final fun ai.torad.aisdk.providers/Replicate(io.ktor.client/HttpClient, ai.torad.aisdk.providers/ReplicateProviderSettings = ...): ai.torad.aisdk.providers/ReplicateProvider // ai.torad.aisdk.providers/Replicate|Replicate(io.ktor.client.HttpClient;ai.torad.aisdk.providers.ReplicateProviderSettings){}[0]
 final fun ai.torad.aisdk.providers/Revai(io.ktor.client/HttpClient, ai.torad.aisdk.providers/RevaiProviderSettings = ...): ai.torad.aisdk.providers/RevaiProvider // ai.torad.aisdk.providers/Revai|Revai(io.ktor.client.HttpClient;ai.torad.aisdk.providers.RevaiProviderSettings){}[0]
+final fun ai.torad.aisdk.providers/RevaiProviderSettings(kotlin/Function1<ai.torad.aisdk.providers/RevaiProviderSettingsBuilder, kotlin/Unit> = ...): ai.torad.aisdk.providers/RevaiProviderSettings // ai.torad.aisdk.providers/RevaiProviderSettings|RevaiProviderSettings(kotlin.Function1<ai.torad.aisdk.providers.RevaiProviderSettingsBuilder,kotlin.Unit>){}[0]
 final fun ai.torad.aisdk.providers/TogetherAI(io.ktor.client/HttpClient, ai.torad.aisdk.providers/TogetherAIProviderSettings = ...): ai.torad.aisdk.providers/TogetherAIProvider // ai.torad.aisdk.providers/TogetherAI|TogetherAI(io.ktor.client.HttpClient;ai.torad.aisdk.providers.TogetherAIProviderSettings){}[0]
 final fun ai.torad.aisdk.providers/Vercel(io.ktor.client/HttpClient, ai.torad.aisdk.providers/VercelProviderSettings = ...): ai.torad.aisdk.providers/VercelProvider // ai.torad.aisdk.providers/Vercel|Vercel(io.ktor.client.HttpClient;ai.torad.aisdk.providers.VercelProviderSettings){}[0]
 final fun ai.torad.aisdk.providers/ViewImage(kotlinx.serialization.json/JsonElement = ...): ai.torad.aisdk/Tool<kotlinx.serialization.json/JsonElement, kotlinx.serialization.json/JsonElement, kotlin/Any?> // ai.torad.aisdk.providers/ViewImage|ViewImage(kotlinx.serialization.json.JsonElement){}[0]
