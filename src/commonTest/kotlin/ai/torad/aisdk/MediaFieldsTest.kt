@@ -3,8 +3,45 @@ package ai.torad.aisdk
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertNotEquals
 
 class MediaFieldsTest {
+    @Test
+    fun `media result Poko types keep value semantics`() {
+        val file = GeneratedFile(mediaType = "image/png", base64 = "aW1hZ2U=", filename = "image.png")
+        val equalFile = GeneratedFile(mediaType = "image/png", base64 = "aW1hZ2U=", filename = "image.png")
+        val differentFile = GeneratedFile(mediaType = "image/png", base64 = "ZGlmZmVyZW50", filename = "image.png")
+        assertEquals(file, equalFile)
+        assertEquals(file.hashCode(), equalFile.hashCode())
+        assertNotEquals(file, differentFile)
+
+        val imageResult = GenerateImageResult(images = listOf(file), usage = ImageModelUsage(inputTokens = 1))
+        val equalImageResult = GenerateImageResult(images = listOf(equalFile), usage = ImageModelUsage(inputTokens = 1))
+        val differentImageResult = GenerateImageResult(images = listOf(differentFile), usage = ImageModelUsage(inputTokens = 1))
+        assertEquals(imageResult, equalImageResult)
+        assertEquals(imageResult.hashCode(), equalImageResult.hashCode())
+        assertNotEquals(imageResult, differentImageResult)
+
+        val transcript = TranscribeResult(
+            text = "hello",
+            segments = listOf(TranscriptSegment(text = "hello", startSeconds = 0f, endSeconds = 1.5f)),
+            language = "en",
+        )
+        val equalTranscript = TranscribeResult(
+            text = "hello",
+            segments = listOf(TranscriptSegment(text = "hello", startSeconds = 0f, endSeconds = 1.5f)),
+            language = "en",
+        )
+        val differentTranscript = TranscribeResult(
+            text = "hello",
+            segments = listOf(TranscriptSegment(text = "hello", startSeconds = 0f, endSeconds = 2f)),
+            language = "en",
+        )
+        assertEquals(transcript, equalTranscript)
+        assertEquals(transcript.hashCode(), equalTranscript.hashCode())
+        assertNotEquals(transcript, differentTranscript)
+    }
+
     @Test
     fun `sumImageUsage adds per-batch token counts and keeps null when all null`() {
         val summed = ImageModelUsage.sum(
