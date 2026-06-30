@@ -7619,12 +7619,6 @@ public final class ai/torad/aisdk/providers/AzureProviderKt {
 
 public final class ai/torad/aisdk/providers/BasetenEmbeddingModelOptions {
 	public static final field Companion Lai/torad/aisdk/providers/BasetenEmbeddingModelOptions$Companion;
-	public fun <init> ()V
-	public fun <init> (Ljava/util/Map;)V
-	public synthetic fun <init> (Ljava/util/Map;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public final fun component1 ()Ljava/util/Map;
-	public final fun copy (Ljava/util/Map;)Lai/torad/aisdk/providers/BasetenEmbeddingModelOptions;
-	public static synthetic fun copy$default (Lai/torad/aisdk/providers/BasetenEmbeddingModelOptions;Ljava/util/Map;ILjava/lang/Object;)Lai/torad/aisdk/providers/BasetenEmbeddingModelOptions;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getRaw ()Ljava/util/Map;
 	public fun hashCode ()I
@@ -7644,6 +7638,10 @@ public final synthetic class ai/torad/aisdk/providers/BasetenEmbeddingModelOptio
 
 public final class ai/torad/aisdk/providers/BasetenEmbeddingModelOptions$Companion {
 	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public final class ai/torad/aisdk/providers/BasetenEmbeddingModelOptionsBuilder {
+	public final fun raw (Ljava/util/Map;)V
 }
 
 public final class ai/torad/aisdk/providers/BasetenErrorData {
@@ -7674,6 +7672,8 @@ public final class ai/torad/aisdk/providers/BasetenFacadeKt {
 	public static final field BASETEN_VERSION Ljava/lang/String;
 	public static final fun Baseten (Lio/ktor/client/HttpClient;Lai/torad/aisdk/providers/BasetenProviderSettings;)Lai/torad/aisdk/providers/BasetenProvider;
 	public static synthetic fun Baseten$default (Lio/ktor/client/HttpClient;Lai/torad/aisdk/providers/BasetenProviderSettings;ILjava/lang/Object;)Lai/torad/aisdk/providers/BasetenProvider;
+	public static final fun BasetenEmbeddingModelOptions (Lkotlin/jvm/functions/Function1;)Lai/torad/aisdk/providers/BasetenEmbeddingModelOptions;
+	public static synthetic fun BasetenEmbeddingModelOptions$default (Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Lai/torad/aisdk/providers/BasetenEmbeddingModelOptions;
 	public static final fun BasetenProviderSettings (Lkotlin/jvm/functions/Function1;)Lai/torad/aisdk/providers/BasetenProviderSettings;
 	public static synthetic fun BasetenProviderSettings$default (Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Lai/torad/aisdk/providers/BasetenProviderSettings;
 }
@@ -8124,14 +8124,6 @@ public final class ai/torad/aisdk/providers/CerebrasProviderSettingsBuilder {
 
 public final class ai/torad/aisdk/providers/CohereEmbeddingModelOptions {
 	public static final field Companion Lai/torad/aisdk/providers/CohereEmbeddingModelOptions$Companion;
-	public fun <init> ()V
-	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/Integer;)V
-	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/Integer;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public final fun component1 ()Ljava/lang/String;
-	public final fun component2 ()Ljava/lang/String;
-	public final fun component3 ()Ljava/lang/Integer;
-	public final fun copy (Ljava/lang/String;Ljava/lang/String;Ljava/lang/Integer;)Lai/torad/aisdk/providers/CohereEmbeddingModelOptions;
-	public static synthetic fun copy$default (Lai/torad/aisdk/providers/CohereEmbeddingModelOptions;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Integer;ILjava/lang/Object;)Lai/torad/aisdk/providers/CohereEmbeddingModelOptions;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getInputType ()Ljava/lang/String;
 	public final fun getOutputDimension ()Ljava/lang/Integer;
@@ -8155,14 +8147,14 @@ public final class ai/torad/aisdk/providers/CohereEmbeddingModelOptions$Companio
 	public final fun serializer ()Lkotlinx/serialization/KSerializer;
 }
 
+public final class ai/torad/aisdk/providers/CohereEmbeddingModelOptionsBuilder {
+	public final fun inputType (Ljava/lang/String;)V
+	public final fun outputDimension (Ljava/lang/Integer;)V
+	public final fun truncate (Ljava/lang/String;)V
+}
+
 public final class ai/torad/aisdk/providers/CohereLanguageModelOptions {
 	public static final field Companion Lai/torad/aisdk/providers/CohereLanguageModelOptions$Companion;
-	public fun <init> ()V
-	public fun <init> (Lai/torad/aisdk/providers/CohereThinkingOptions;)V
-	public synthetic fun <init> (Lai/torad/aisdk/providers/CohereThinkingOptions;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public final fun component1 ()Lai/torad/aisdk/providers/CohereThinkingOptions;
-	public final fun copy (Lai/torad/aisdk/providers/CohereThinkingOptions;)Lai/torad/aisdk/providers/CohereLanguageModelOptions;
-	public static synthetic fun copy$default (Lai/torad/aisdk/providers/CohereLanguageModelOptions;Lai/torad/aisdk/providers/CohereThinkingOptions;ILjava/lang/Object;)Lai/torad/aisdk/providers/CohereLanguageModelOptions;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getThinking ()Lai/torad/aisdk/providers/CohereThinkingOptions;
 	public fun hashCode ()I
@@ -8182,6 +8174,10 @@ public final synthetic class ai/torad/aisdk/providers/CohereLanguageModelOptions
 
 public final class ai/torad/aisdk/providers/CohereLanguageModelOptions$Companion {
 	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public final class ai/torad/aisdk/providers/CohereLanguageModelOptionsBuilder {
+	public final fun thinking (Lai/torad/aisdk/providers/CohereThinkingOptions;)V
 }
 
 public final class ai/torad/aisdk/providers/CohereProvider : ai/torad/aisdk/Provider {
@@ -8206,8 +8202,16 @@ public final class ai/torad/aisdk/providers/CohereProviderKt {
 	public static final field COHERE_VERSION Ljava/lang/String;
 	public static final fun Cohere (Lio/ktor/client/HttpClient;Lai/torad/aisdk/providers/CohereProviderSettings;)Lai/torad/aisdk/providers/CohereProvider;
 	public static synthetic fun Cohere$default (Lio/ktor/client/HttpClient;Lai/torad/aisdk/providers/CohereProviderSettings;ILjava/lang/Object;)Lai/torad/aisdk/providers/CohereProvider;
+	public static final fun CohereEmbeddingModelOptions (Lkotlin/jvm/functions/Function1;)Lai/torad/aisdk/providers/CohereEmbeddingModelOptions;
+	public static synthetic fun CohereEmbeddingModelOptions$default (Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Lai/torad/aisdk/providers/CohereEmbeddingModelOptions;
+	public static final fun CohereLanguageModelOptions (Lkotlin/jvm/functions/Function1;)Lai/torad/aisdk/providers/CohereLanguageModelOptions;
+	public static synthetic fun CohereLanguageModelOptions$default (Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Lai/torad/aisdk/providers/CohereLanguageModelOptions;
 	public static final fun CohereProviderSettings (Lkotlin/jvm/functions/Function1;)Lai/torad/aisdk/providers/CohereProviderSettings;
 	public static synthetic fun CohereProviderSettings$default (Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Lai/torad/aisdk/providers/CohereProviderSettings;
+	public static final fun CohereRerankingModelOptions (Lkotlin/jvm/functions/Function1;)Lai/torad/aisdk/providers/CohereRerankingModelOptions;
+	public static synthetic fun CohereRerankingModelOptions$default (Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Lai/torad/aisdk/providers/CohereRerankingModelOptions;
+	public static final fun CohereThinkingOptions (Lkotlin/jvm/functions/Function1;)Lai/torad/aisdk/providers/CohereThinkingOptions;
+	public static synthetic fun CohereThinkingOptions$default (Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Lai/torad/aisdk/providers/CohereThinkingOptions;
 }
 
 public final class ai/torad/aisdk/providers/CohereProviderSettings {
@@ -8243,13 +8247,6 @@ public final class ai/torad/aisdk/providers/CohereProviderSettingsBuilder {
 
 public final class ai/torad/aisdk/providers/CohereRerankingModelOptions {
 	public static final field Companion Lai/torad/aisdk/providers/CohereRerankingModelOptions$Companion;
-	public fun <init> ()V
-	public fun <init> (Ljava/lang/Integer;Ljava/lang/Integer;)V
-	public synthetic fun <init> (Ljava/lang/Integer;Ljava/lang/Integer;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public final fun component1 ()Ljava/lang/Integer;
-	public final fun component2 ()Ljava/lang/Integer;
-	public final fun copy (Ljava/lang/Integer;Ljava/lang/Integer;)Lai/torad/aisdk/providers/CohereRerankingModelOptions;
-	public static synthetic fun copy$default (Lai/torad/aisdk/providers/CohereRerankingModelOptions;Ljava/lang/Integer;Ljava/lang/Integer;ILjava/lang/Object;)Lai/torad/aisdk/providers/CohereRerankingModelOptions;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getMaxTokensPerDoc ()Ljava/lang/Integer;
 	public final fun getPriority ()Ljava/lang/Integer;
@@ -8272,15 +8269,13 @@ public final class ai/torad/aisdk/providers/CohereRerankingModelOptions$Companio
 	public final fun serializer ()Lkotlinx/serialization/KSerializer;
 }
 
+public final class ai/torad/aisdk/providers/CohereRerankingModelOptionsBuilder {
+	public final fun maxTokensPerDoc (Ljava/lang/Integer;)V
+	public final fun priority (Ljava/lang/Integer;)V
+}
+
 public final class ai/torad/aisdk/providers/CohereThinkingOptions {
 	public static final field Companion Lai/torad/aisdk/providers/CohereThinkingOptions$Companion;
-	public fun <init> ()V
-	public fun <init> (Ljava/lang/String;Ljava/lang/Integer;)V
-	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/Integer;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public final fun component1 ()Ljava/lang/String;
-	public final fun component2 ()Ljava/lang/Integer;
-	public final fun copy (Ljava/lang/String;Ljava/lang/Integer;)Lai/torad/aisdk/providers/CohereThinkingOptions;
-	public static synthetic fun copy$default (Lai/torad/aisdk/providers/CohereThinkingOptions;Ljava/lang/String;Ljava/lang/Integer;ILjava/lang/Object;)Lai/torad/aisdk/providers/CohereThinkingOptions;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getTokenBudget ()Ljava/lang/Integer;
 	public final fun getType ()Ljava/lang/String;
@@ -8301,6 +8296,11 @@ public final synthetic class ai/torad/aisdk/providers/CohereThinkingOptions$$ser
 
 public final class ai/torad/aisdk/providers/CohereThinkingOptions$Companion {
 	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public final class ai/torad/aisdk/providers/CohereThinkingOptionsBuilder {
+	public final fun tokenBudget (Ljava/lang/Integer;)V
+	public final fun type (Ljava/lang/String;)V
 }
 
 public final class ai/torad/aisdk/providers/DeepInfraFacadeKt {
@@ -11597,6 +11597,8 @@ public final class ai/torad/aisdk/providers/TogetherAIFacadeKt {
 	public static synthetic fun TogetherAI$default (Lio/ktor/client/HttpClient;Lai/torad/aisdk/providers/TogetherAIProviderSettings;ILjava/lang/Object;)Lai/torad/aisdk/providers/TogetherAIProvider;
 	public static final fun TogetherAIProviderSettings (Lkotlin/jvm/functions/Function1;)Lai/torad/aisdk/providers/TogetherAIProviderSettings;
 	public static synthetic fun TogetherAIProviderSettings$default (Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Lai/torad/aisdk/providers/TogetherAIProviderSettings;
+	public static final fun TogetherAIRerankingModelOptions (Lkotlin/jvm/functions/Function1;)Lai/torad/aisdk/providers/TogetherAIRerankingModelOptions;
+	public static synthetic fun TogetherAIRerankingModelOptions$default (Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Lai/torad/aisdk/providers/TogetherAIRerankingModelOptions;
 }
 
 public final class ai/torad/aisdk/providers/TogetherAIImageModelOptions {
@@ -11694,12 +11696,6 @@ public final class ai/torad/aisdk/providers/TogetherAIRerankingModel : ai/torad/
 
 public final class ai/torad/aisdk/providers/TogetherAIRerankingModelOptions {
 	public static final field Companion Lai/torad/aisdk/providers/TogetherAIRerankingModelOptions$Companion;
-	public fun <init> ()V
-	public fun <init> (Ljava/util/List;)V
-	public synthetic fun <init> (Ljava/util/List;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public final fun component1 ()Ljava/util/List;
-	public final fun copy (Ljava/util/List;)Lai/torad/aisdk/providers/TogetherAIRerankingModelOptions;
-	public static synthetic fun copy$default (Lai/torad/aisdk/providers/TogetherAIRerankingModelOptions;Ljava/util/List;ILjava/lang/Object;)Lai/torad/aisdk/providers/TogetherAIRerankingModelOptions;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getRankFields ()Ljava/util/List;
 	public fun hashCode ()I
@@ -11719,6 +11715,10 @@ public final synthetic class ai/torad/aisdk/providers/TogetherAIRerankingModelOp
 
 public final class ai/torad/aisdk/providers/TogetherAIRerankingModelOptions$Companion {
 	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public final class ai/torad/aisdk/providers/TogetherAIRerankingModelOptionsBuilder {
+	public final fun rankFields (Ljava/util/List;)V
 }
 
 public final class ai/torad/aisdk/providers/VercelFacadeKt {
@@ -11776,15 +11776,6 @@ public final class ai/torad/aisdk/providers/VercelProviderSettingsBuilder {
 
 public final class ai/torad/aisdk/providers/VoyageEmbeddingModelOptions {
 	public static final field Companion Lai/torad/aisdk/providers/VoyageEmbeddingModelOptions$Companion;
-	public fun <init> ()V
-	public fun <init> (Ljava/lang/String;Ljava/lang/Boolean;Ljava/lang/Integer;Ljava/lang/String;)V
-	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/Boolean;Ljava/lang/Integer;Ljava/lang/String;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public final fun component1 ()Ljava/lang/String;
-	public final fun component2 ()Ljava/lang/Boolean;
-	public final fun component3 ()Ljava/lang/Integer;
-	public final fun component4 ()Ljava/lang/String;
-	public final fun copy (Ljava/lang/String;Ljava/lang/Boolean;Ljava/lang/Integer;Ljava/lang/String;)Lai/torad/aisdk/providers/VoyageEmbeddingModelOptions;
-	public static synthetic fun copy$default (Lai/torad/aisdk/providers/VoyageEmbeddingModelOptions;Ljava/lang/String;Ljava/lang/Boolean;Ljava/lang/Integer;Ljava/lang/String;ILjava/lang/Object;)Lai/torad/aisdk/providers/VoyageEmbeddingModelOptions;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getInputType ()Ljava/lang/String;
 	public final fun getOutputDimension ()Ljava/lang/Integer;
@@ -11809,6 +11800,13 @@ public final class ai/torad/aisdk/providers/VoyageEmbeddingModelOptions$Companio
 	public final fun serializer ()Lkotlinx/serialization/KSerializer;
 }
 
+public final class ai/torad/aisdk/providers/VoyageEmbeddingModelOptionsBuilder {
+	public final fun inputType (Ljava/lang/String;)V
+	public final fun outputDimension (Ljava/lang/Integer;)V
+	public final fun outputDtype (Ljava/lang/String;)V
+	public final fun truncation (Ljava/lang/Boolean;)V
+}
+
 public final class ai/torad/aisdk/providers/VoyageProvider : ai/torad/aisdk/Provider {
 	public fun <init> (Lio/ktor/client/HttpClient;Lai/torad/aisdk/providers/VoyageProviderSettings;)V
 	public final fun embedding-tDyRgq0 (Ljava/lang/String;)Lai/torad/aisdk/EmbeddingModel;
@@ -11830,8 +11828,12 @@ public final class ai/torad/aisdk/providers/VoyageProviderKt {
 	public static final field VOYAGE_VERSION Ljava/lang/String;
 	public static final fun Voyage (Lio/ktor/client/HttpClient;Lai/torad/aisdk/providers/VoyageProviderSettings;)Lai/torad/aisdk/providers/VoyageProvider;
 	public static synthetic fun Voyage$default (Lio/ktor/client/HttpClient;Lai/torad/aisdk/providers/VoyageProviderSettings;ILjava/lang/Object;)Lai/torad/aisdk/providers/VoyageProvider;
+	public static final fun VoyageEmbeddingModelOptions (Lkotlin/jvm/functions/Function1;)Lai/torad/aisdk/providers/VoyageEmbeddingModelOptions;
+	public static synthetic fun VoyageEmbeddingModelOptions$default (Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Lai/torad/aisdk/providers/VoyageEmbeddingModelOptions;
 	public static final fun VoyageProviderSettings (Lkotlin/jvm/functions/Function1;)Lai/torad/aisdk/providers/VoyageProviderSettings;
 	public static synthetic fun VoyageProviderSettings$default (Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Lai/torad/aisdk/providers/VoyageProviderSettings;
+	public static final fun VoyageRerankingModelOptions (Lkotlin/jvm/functions/Function1;)Lai/torad/aisdk/providers/VoyageRerankingModelOptions;
+	public static synthetic fun VoyageRerankingModelOptions$default (Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Lai/torad/aisdk/providers/VoyageRerankingModelOptions;
 }
 
 public final class ai/torad/aisdk/providers/VoyageProviderSettings {
@@ -11867,13 +11869,6 @@ public final class ai/torad/aisdk/providers/VoyageProviderSettingsBuilder {
 
 public final class ai/torad/aisdk/providers/VoyageRerankingModelOptions {
 	public static final field Companion Lai/torad/aisdk/providers/VoyageRerankingModelOptions$Companion;
-	public fun <init> ()V
-	public fun <init> (Ljava/lang/Boolean;Ljava/lang/Boolean;)V
-	public synthetic fun <init> (Ljava/lang/Boolean;Ljava/lang/Boolean;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public final fun component1 ()Ljava/lang/Boolean;
-	public final fun component2 ()Ljava/lang/Boolean;
-	public final fun copy (Ljava/lang/Boolean;Ljava/lang/Boolean;)Lai/torad/aisdk/providers/VoyageRerankingModelOptions;
-	public static synthetic fun copy$default (Lai/torad/aisdk/providers/VoyageRerankingModelOptions;Ljava/lang/Boolean;Ljava/lang/Boolean;ILjava/lang/Object;)Lai/torad/aisdk/providers/VoyageRerankingModelOptions;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getReturnDocuments ()Ljava/lang/Boolean;
 	public final fun getTruncation ()Ljava/lang/Boolean;
@@ -11894,6 +11889,11 @@ public final synthetic class ai/torad/aisdk/providers/VoyageRerankingModelOption
 
 public final class ai/torad/aisdk/providers/VoyageRerankingModelOptions$Companion {
 	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public final class ai/torad/aisdk/providers/VoyageRerankingModelOptionsBuilder {
+	public final fun returnDocuments (Ljava/lang/Boolean;)V
+	public final fun truncation (Ljava/lang/Boolean;)V
 }
 
 public final class ai/torad/aisdk/providers/XaiImageModelOptions {

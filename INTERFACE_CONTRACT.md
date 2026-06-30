@@ -249,6 +249,15 @@ Penalty, response-format, and retry fields participate in the `Step ?: Agent ?: 
   that hold functions or transport objects are regular classes with identity
   equality. The positional constructors, `copy()`, and `componentN()` are not
   public.
+- Provider model option construct types on the builder track
+  (`CohereLanguageModelOptions`, `CohereThinkingOptions`,
+  `CohereEmbeddingModelOptions`, `CohereRerankingModelOptions`,
+  `VoyageEmbeddingModelOptions`, `VoyageRerankingModelOptions`,
+  `BasetenEmbeddingModelOptions`, and `TogetherAIRerankingModelOptions`) expose
+  field getters and are configured through public DSL factories and builder
+  setter methods such as `CohereEmbeddingModelOptions { inputType("search") }`.
+  These pure data options are `@Serializable @Poko class` value-semantics types;
+  their positional constructors, `copy()`, and `componentN()` are not public.
 - Provider error payloads (`BasetenErrorData`, `CerebrasErrorData`,
   `FireworksErrorData`) are `@Serializable @Poko class` value-semantics types;
   JSON field names remain unchanged, while public `copy()` / `componentN()`

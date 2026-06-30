@@ -78,6 +78,12 @@ This project follows Semantic Versioning once the first stable release is cut.
   identity equality. Field access and JSON serialization remain where
   applicable; public positional construction, `copy()`, and `componentN()` are
   intentionally absent so settings can grow without ABI breaks.
+  Small provider model option construct types (`CohereLanguageModelOptions`,
+  `CohereThinkingOptions`, `CohereEmbeddingModelOptions`,
+  `CohereRerankingModelOptions`, `VoyageEmbeddingModelOptions`,
+  `VoyageRerankingModelOptions`, `BasetenEmbeddingModelOptions`, and
+  `TogetherAIRerankingModelOptions`) now follow the same DSL builder pattern
+  with `@Serializable @Poko class` value semantics.
 
 - **Tools are now class-based and extensible (breaking ABI change).** `Tool` is an `abstract class`
   you can extend for reusable, dependency-injected tools — mirroring how a concrete agent extends

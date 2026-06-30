@@ -20,18 +20,80 @@ public const val VOYAGE_VERSION: String = "1.0.4"
 
 
 @Serializable
-public data class VoyageEmbeddingModelOptions(
-    val inputType: String? = null,
-    val truncation: Boolean? = null,
-    val outputDimension: Int? = null,
-    val outputDtype: String? = null,
+@Poko
+public class VoyageEmbeddingModelOptions internal constructor(
+    public val inputType: String? = null,
+    public val truncation: Boolean? = null,
+    public val outputDimension: Int? = null,
+    public val outputDtype: String? = null,
 )
 
+public class VoyageEmbeddingModelOptionsBuilder internal constructor() {
+    private var inputType: String? = null
+    private var truncation: Boolean? = null
+    private var outputDimension: Int? = null
+    private var outputDtype: String? = null
+
+    public fun inputType(value: String?) {
+        inputType = value
+    }
+
+    public fun truncation(value: Boolean?) {
+        truncation = value
+    }
+
+    public fun outputDimension(value: Int?) {
+        outputDimension = value
+    }
+
+    public fun outputDtype(value: String?) {
+        outputDtype = value
+    }
+
+    internal fun build(): VoyageEmbeddingModelOptions =
+        VoyageEmbeddingModelOptions(
+            inputType = inputType,
+            truncation = truncation,
+            outputDimension = outputDimension,
+            outputDtype = outputDtype,
+        )
+}
+
+public fun VoyageEmbeddingModelOptions(
+    block: VoyageEmbeddingModelOptionsBuilder.() -> Unit = {},
+): VoyageEmbeddingModelOptions =
+    VoyageEmbeddingModelOptionsBuilder().apply(block).build()
+
 @Serializable
-public data class VoyageRerankingModelOptions(
-    val returnDocuments: Boolean? = null,
-    val truncation: Boolean? = null,
+@Poko
+public class VoyageRerankingModelOptions internal constructor(
+    public val returnDocuments: Boolean? = null,
+    public val truncation: Boolean? = null,
 )
+
+public class VoyageRerankingModelOptionsBuilder internal constructor() {
+    private var returnDocuments: Boolean? = null
+    private var truncation: Boolean? = null
+
+    public fun returnDocuments(value: Boolean?) {
+        returnDocuments = value
+    }
+
+    public fun truncation(value: Boolean?) {
+        truncation = value
+    }
+
+    internal fun build(): VoyageRerankingModelOptions =
+        VoyageRerankingModelOptions(
+            returnDocuments = returnDocuments,
+            truncation = truncation,
+        )
+}
+
+public fun VoyageRerankingModelOptions(
+    block: VoyageRerankingModelOptionsBuilder.() -> Unit = {},
+): VoyageRerankingModelOptions =
+    VoyageRerankingModelOptionsBuilder().apply(block).build()
 
 @Serializable
 @Poko

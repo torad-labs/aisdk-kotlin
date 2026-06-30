@@ -35,9 +35,26 @@ public data class TogetherAIImageModelOptions(
 public typealias TogetherAIImageProviderOptions = TogetherAIImageModelOptions
 
 @Serializable
-public data class TogetherAIRerankingModelOptions(
-    val rankFields: List<String>? = null,
+@Poko
+public class TogetherAIRerankingModelOptions internal constructor(
+    public val rankFields: List<String>? = null,
 )
+
+public class TogetherAIRerankingModelOptionsBuilder internal constructor() {
+    private var rankFields: List<String>? = null
+
+    public fun rankFields(value: List<String>?) {
+        rankFields = value
+    }
+
+    internal fun build(): TogetherAIRerankingModelOptions =
+        TogetherAIRerankingModelOptions(rankFields = rankFields)
+}
+
+public fun TogetherAIRerankingModelOptions(
+    block: TogetherAIRerankingModelOptionsBuilder.() -> Unit = {},
+): TogetherAIRerankingModelOptions =
+    TogetherAIRerankingModelOptionsBuilder().apply(block).build()
 
 public typealias TogetherAIRerankingOptions = TogetherAIRerankingModelOptions
 

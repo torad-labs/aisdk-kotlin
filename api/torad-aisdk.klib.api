@@ -2618,13 +2618,9 @@ final class ai.torad.aisdk.providers/AzureOpenAITools { // ai.torad.aisdk.provid
 }
 
 final class ai.torad.aisdk.providers/BasetenEmbeddingModelOptions { // ai.torad.aisdk.providers/BasetenEmbeddingModelOptions|null[0]
-    constructor <init>(kotlin.collections/Map<kotlin/String, kotlinx.serialization.json/JsonElement> = ...) // ai.torad.aisdk.providers/BasetenEmbeddingModelOptions.<init>|<init>(kotlin.collections.Map<kotlin.String,kotlinx.serialization.json.JsonElement>){}[0]
-
     final val raw // ai.torad.aisdk.providers/BasetenEmbeddingModelOptions.raw|{}raw[0]
         final fun <get-raw>(): kotlin.collections/Map<kotlin/String, kotlinx.serialization.json/JsonElement> // ai.torad.aisdk.providers/BasetenEmbeddingModelOptions.raw.<get-raw>|<get-raw>(){}[0]
 
-    final fun component1(): kotlin.collections/Map<kotlin/String, kotlinx.serialization.json/JsonElement> // ai.torad.aisdk.providers/BasetenEmbeddingModelOptions.component1|component1(){}[0]
-    final fun copy(kotlin.collections/Map<kotlin/String, kotlinx.serialization.json/JsonElement> = ...): ai.torad.aisdk.providers/BasetenEmbeddingModelOptions // ai.torad.aisdk.providers/BasetenEmbeddingModelOptions.copy|copy(kotlin.collections.Map<kotlin.String,kotlinx.serialization.json.JsonElement>){}[0]
     final fun equals(kotlin/Any?): kotlin/Boolean // ai.torad.aisdk.providers/BasetenEmbeddingModelOptions.equals|equals(kotlin.Any?){}[0]
     final fun hashCode(): kotlin/Int // ai.torad.aisdk.providers/BasetenEmbeddingModelOptions.hashCode|hashCode(){}[0]
     final fun toString(): kotlin/String // ai.torad.aisdk.providers/BasetenEmbeddingModelOptions.toString|toString(){}[0]
@@ -2643,6 +2639,10 @@ final class ai.torad.aisdk.providers/BasetenEmbeddingModelOptions { // ai.torad.
 
         final fun serializer(): kotlinx.serialization/KSerializer<ai.torad.aisdk.providers/BasetenEmbeddingModelOptions> // ai.torad.aisdk.providers/BasetenEmbeddingModelOptions.Companion.serializer|serializer(){}[0]
     }
+}
+
+final class ai.torad.aisdk.providers/BasetenEmbeddingModelOptionsBuilder { // ai.torad.aisdk.providers/BasetenEmbeddingModelOptionsBuilder|null[0]
+    final fun raw(kotlin.collections/Map<kotlin/String, kotlinx.serialization.json/JsonElement>) // ai.torad.aisdk.providers/BasetenEmbeddingModelOptionsBuilder.raw|raw(kotlin.collections.Map<kotlin.String,kotlinx.serialization.json.JsonElement>){}[0]
 }
 
 final class ai.torad.aisdk.providers/BasetenErrorData { // ai.torad.aisdk.providers/BasetenErrorData|null[0]
@@ -3099,8 +3099,6 @@ final class ai.torad.aisdk.providers/CerebrasProviderSettingsBuilder { // ai.tor
 }
 
 final class ai.torad.aisdk.providers/CohereEmbeddingModelOptions { // ai.torad.aisdk.providers/CohereEmbeddingModelOptions|null[0]
-    constructor <init>(kotlin/String? = ..., kotlin/String? = ..., kotlin/Int? = ...) // ai.torad.aisdk.providers/CohereEmbeddingModelOptions.<init>|<init>(kotlin.String?;kotlin.String?;kotlin.Int?){}[0]
-
     final val inputType // ai.torad.aisdk.providers/CohereEmbeddingModelOptions.inputType|{}inputType[0]
         final fun <get-inputType>(): kotlin/String? // ai.torad.aisdk.providers/CohereEmbeddingModelOptions.inputType.<get-inputType>|<get-inputType>(){}[0]
     final val outputDimension // ai.torad.aisdk.providers/CohereEmbeddingModelOptions.outputDimension|{}outputDimension[0]
@@ -3108,10 +3106,6 @@ final class ai.torad.aisdk.providers/CohereEmbeddingModelOptions { // ai.torad.a
     final val truncate // ai.torad.aisdk.providers/CohereEmbeddingModelOptions.truncate|{}truncate[0]
         final fun <get-truncate>(): kotlin/String? // ai.torad.aisdk.providers/CohereEmbeddingModelOptions.truncate.<get-truncate>|<get-truncate>(){}[0]
 
-    final fun component1(): kotlin/String? // ai.torad.aisdk.providers/CohereEmbeddingModelOptions.component1|component1(){}[0]
-    final fun component2(): kotlin/String? // ai.torad.aisdk.providers/CohereEmbeddingModelOptions.component2|component2(){}[0]
-    final fun component3(): kotlin/Int? // ai.torad.aisdk.providers/CohereEmbeddingModelOptions.component3|component3(){}[0]
-    final fun copy(kotlin/String? = ..., kotlin/String? = ..., kotlin/Int? = ...): ai.torad.aisdk.providers/CohereEmbeddingModelOptions // ai.torad.aisdk.providers/CohereEmbeddingModelOptions.copy|copy(kotlin.String?;kotlin.String?;kotlin.Int?){}[0]
     final fun equals(kotlin/Any?): kotlin/Boolean // ai.torad.aisdk.providers/CohereEmbeddingModelOptions.equals|equals(kotlin.Any?){}[0]
     final fun hashCode(): kotlin/Int // ai.torad.aisdk.providers/CohereEmbeddingModelOptions.hashCode|hashCode(){}[0]
     final fun toString(): kotlin/String // ai.torad.aisdk.providers/CohereEmbeddingModelOptions.toString|toString(){}[0]
@@ -3130,14 +3124,16 @@ final class ai.torad.aisdk.providers/CohereEmbeddingModelOptions { // ai.torad.a
     }
 }
 
-final class ai.torad.aisdk.providers/CohereLanguageModelOptions { // ai.torad.aisdk.providers/CohereLanguageModelOptions|null[0]
-    constructor <init>(ai.torad.aisdk.providers/CohereThinkingOptions? = ...) // ai.torad.aisdk.providers/CohereLanguageModelOptions.<init>|<init>(ai.torad.aisdk.providers.CohereThinkingOptions?){}[0]
+final class ai.torad.aisdk.providers/CohereEmbeddingModelOptionsBuilder { // ai.torad.aisdk.providers/CohereEmbeddingModelOptionsBuilder|null[0]
+    final fun inputType(kotlin/String?) // ai.torad.aisdk.providers/CohereEmbeddingModelOptionsBuilder.inputType|inputType(kotlin.String?){}[0]
+    final fun outputDimension(kotlin/Int?) // ai.torad.aisdk.providers/CohereEmbeddingModelOptionsBuilder.outputDimension|outputDimension(kotlin.Int?){}[0]
+    final fun truncate(kotlin/String?) // ai.torad.aisdk.providers/CohereEmbeddingModelOptionsBuilder.truncate|truncate(kotlin.String?){}[0]
+}
 
+final class ai.torad.aisdk.providers/CohereLanguageModelOptions { // ai.torad.aisdk.providers/CohereLanguageModelOptions|null[0]
     final val thinking // ai.torad.aisdk.providers/CohereLanguageModelOptions.thinking|{}thinking[0]
         final fun <get-thinking>(): ai.torad.aisdk.providers/CohereThinkingOptions? // ai.torad.aisdk.providers/CohereLanguageModelOptions.thinking.<get-thinking>|<get-thinking>(){}[0]
 
-    final fun component1(): ai.torad.aisdk.providers/CohereThinkingOptions? // ai.torad.aisdk.providers/CohereLanguageModelOptions.component1|component1(){}[0]
-    final fun copy(ai.torad.aisdk.providers/CohereThinkingOptions? = ...): ai.torad.aisdk.providers/CohereLanguageModelOptions // ai.torad.aisdk.providers/CohereLanguageModelOptions.copy|copy(ai.torad.aisdk.providers.CohereThinkingOptions?){}[0]
     final fun equals(kotlin/Any?): kotlin/Boolean // ai.torad.aisdk.providers/CohereLanguageModelOptions.equals|equals(kotlin.Any?){}[0]
     final fun hashCode(): kotlin/Int // ai.torad.aisdk.providers/CohereLanguageModelOptions.hashCode|hashCode(){}[0]
     final fun toString(): kotlin/String // ai.torad.aisdk.providers/CohereLanguageModelOptions.toString|toString(){}[0]
@@ -3154,6 +3150,10 @@ final class ai.torad.aisdk.providers/CohereLanguageModelOptions { // ai.torad.ai
     final object Companion { // ai.torad.aisdk.providers/CohereLanguageModelOptions.Companion|null[0]
         final fun serializer(): kotlinx.serialization/KSerializer<ai.torad.aisdk.providers/CohereLanguageModelOptions> // ai.torad.aisdk.providers/CohereLanguageModelOptions.Companion.serializer|serializer(){}[0]
     }
+}
+
+final class ai.torad.aisdk.providers/CohereLanguageModelOptionsBuilder { // ai.torad.aisdk.providers/CohereLanguageModelOptionsBuilder|null[0]
+    final fun thinking(ai.torad.aisdk.providers/CohereThinkingOptions?) // ai.torad.aisdk.providers/CohereLanguageModelOptionsBuilder.thinking|thinking(ai.torad.aisdk.providers.CohereThinkingOptions?){}[0]
 }
 
 final class ai.torad.aisdk.providers/CohereProvider : ai.torad.aisdk/Provider { // ai.torad.aisdk.providers/CohereProvider|null[0]
@@ -3210,16 +3210,11 @@ final class ai.torad.aisdk.providers/CohereProviderSettingsBuilder { // ai.torad
 }
 
 final class ai.torad.aisdk.providers/CohereRerankingModelOptions { // ai.torad.aisdk.providers/CohereRerankingModelOptions|null[0]
-    constructor <init>(kotlin/Int? = ..., kotlin/Int? = ...) // ai.torad.aisdk.providers/CohereRerankingModelOptions.<init>|<init>(kotlin.Int?;kotlin.Int?){}[0]
-
     final val maxTokensPerDoc // ai.torad.aisdk.providers/CohereRerankingModelOptions.maxTokensPerDoc|{}maxTokensPerDoc[0]
         final fun <get-maxTokensPerDoc>(): kotlin/Int? // ai.torad.aisdk.providers/CohereRerankingModelOptions.maxTokensPerDoc.<get-maxTokensPerDoc>|<get-maxTokensPerDoc>(){}[0]
     final val priority // ai.torad.aisdk.providers/CohereRerankingModelOptions.priority|{}priority[0]
         final fun <get-priority>(): kotlin/Int? // ai.torad.aisdk.providers/CohereRerankingModelOptions.priority.<get-priority>|<get-priority>(){}[0]
 
-    final fun component1(): kotlin/Int? // ai.torad.aisdk.providers/CohereRerankingModelOptions.component1|component1(){}[0]
-    final fun component2(): kotlin/Int? // ai.torad.aisdk.providers/CohereRerankingModelOptions.component2|component2(){}[0]
-    final fun copy(kotlin/Int? = ..., kotlin/Int? = ...): ai.torad.aisdk.providers/CohereRerankingModelOptions // ai.torad.aisdk.providers/CohereRerankingModelOptions.copy|copy(kotlin.Int?;kotlin.Int?){}[0]
     final fun equals(kotlin/Any?): kotlin/Boolean // ai.torad.aisdk.providers/CohereRerankingModelOptions.equals|equals(kotlin.Any?){}[0]
     final fun hashCode(): kotlin/Int // ai.torad.aisdk.providers/CohereRerankingModelOptions.hashCode|hashCode(){}[0]
     final fun toString(): kotlin/String // ai.torad.aisdk.providers/CohereRerankingModelOptions.toString|toString(){}[0]
@@ -3238,17 +3233,17 @@ final class ai.torad.aisdk.providers/CohereRerankingModelOptions { // ai.torad.a
     }
 }
 
-final class ai.torad.aisdk.providers/CohereThinkingOptions { // ai.torad.aisdk.providers/CohereThinkingOptions|null[0]
-    constructor <init>(kotlin/String? = ..., kotlin/Int? = ...) // ai.torad.aisdk.providers/CohereThinkingOptions.<init>|<init>(kotlin.String?;kotlin.Int?){}[0]
+final class ai.torad.aisdk.providers/CohereRerankingModelOptionsBuilder { // ai.torad.aisdk.providers/CohereRerankingModelOptionsBuilder|null[0]
+    final fun maxTokensPerDoc(kotlin/Int?) // ai.torad.aisdk.providers/CohereRerankingModelOptionsBuilder.maxTokensPerDoc|maxTokensPerDoc(kotlin.Int?){}[0]
+    final fun priority(kotlin/Int?) // ai.torad.aisdk.providers/CohereRerankingModelOptionsBuilder.priority|priority(kotlin.Int?){}[0]
+}
 
+final class ai.torad.aisdk.providers/CohereThinkingOptions { // ai.torad.aisdk.providers/CohereThinkingOptions|null[0]
     final val tokenBudget // ai.torad.aisdk.providers/CohereThinkingOptions.tokenBudget|{}tokenBudget[0]
         final fun <get-tokenBudget>(): kotlin/Int? // ai.torad.aisdk.providers/CohereThinkingOptions.tokenBudget.<get-tokenBudget>|<get-tokenBudget>(){}[0]
     final val type // ai.torad.aisdk.providers/CohereThinkingOptions.type|{}type[0]
         final fun <get-type>(): kotlin/String? // ai.torad.aisdk.providers/CohereThinkingOptions.type.<get-type>|<get-type>(){}[0]
 
-    final fun component1(): kotlin/String? // ai.torad.aisdk.providers/CohereThinkingOptions.component1|component1(){}[0]
-    final fun component2(): kotlin/Int? // ai.torad.aisdk.providers/CohereThinkingOptions.component2|component2(){}[0]
-    final fun copy(kotlin/String? = ..., kotlin/Int? = ...): ai.torad.aisdk.providers/CohereThinkingOptions // ai.torad.aisdk.providers/CohereThinkingOptions.copy|copy(kotlin.String?;kotlin.Int?){}[0]
     final fun equals(kotlin/Any?): kotlin/Boolean // ai.torad.aisdk.providers/CohereThinkingOptions.equals|equals(kotlin.Any?){}[0]
     final fun hashCode(): kotlin/Int // ai.torad.aisdk.providers/CohereThinkingOptions.hashCode|hashCode(){}[0]
     final fun toString(): kotlin/String // ai.torad.aisdk.providers/CohereThinkingOptions.toString|toString(){}[0]
@@ -3265,6 +3260,11 @@ final class ai.torad.aisdk.providers/CohereThinkingOptions { // ai.torad.aisdk.p
     final object Companion { // ai.torad.aisdk.providers/CohereThinkingOptions.Companion|null[0]
         final fun serializer(): kotlinx.serialization/KSerializer<ai.torad.aisdk.providers/CohereThinkingOptions> // ai.torad.aisdk.providers/CohereThinkingOptions.Companion.serializer|serializer(){}[0]
     }
+}
+
+final class ai.torad.aisdk.providers/CohereThinkingOptionsBuilder { // ai.torad.aisdk.providers/CohereThinkingOptionsBuilder|null[0]
+    final fun tokenBudget(kotlin/Int?) // ai.torad.aisdk.providers/CohereThinkingOptionsBuilder.tokenBudget|tokenBudget(kotlin.Int?){}[0]
+    final fun type(kotlin/String?) // ai.torad.aisdk.providers/CohereThinkingOptionsBuilder.type|type(kotlin.String?){}[0]
 }
 
 final class ai.torad.aisdk.providers/DeepInfraProvider : ai.torad.aisdk/Provider { // ai.torad.aisdk.providers/DeepInfraProvider|null[0]
@@ -6561,13 +6561,9 @@ final class ai.torad.aisdk.providers/TogetherAIRerankingModel : ai.torad.aisdk/R
 }
 
 final class ai.torad.aisdk.providers/TogetherAIRerankingModelOptions { // ai.torad.aisdk.providers/TogetherAIRerankingModelOptions|null[0]
-    constructor <init>(kotlin.collections/List<kotlin/String>? = ...) // ai.torad.aisdk.providers/TogetherAIRerankingModelOptions.<init>|<init>(kotlin.collections.List<kotlin.String>?){}[0]
-
     final val rankFields // ai.torad.aisdk.providers/TogetherAIRerankingModelOptions.rankFields|{}rankFields[0]
         final fun <get-rankFields>(): kotlin.collections/List<kotlin/String>? // ai.torad.aisdk.providers/TogetherAIRerankingModelOptions.rankFields.<get-rankFields>|<get-rankFields>(){}[0]
 
-    final fun component1(): kotlin.collections/List<kotlin/String>? // ai.torad.aisdk.providers/TogetherAIRerankingModelOptions.component1|component1(){}[0]
-    final fun copy(kotlin.collections/List<kotlin/String>? = ...): ai.torad.aisdk.providers/TogetherAIRerankingModelOptions // ai.torad.aisdk.providers/TogetherAIRerankingModelOptions.copy|copy(kotlin.collections.List<kotlin.String>?){}[0]
     final fun equals(kotlin/Any?): kotlin/Boolean // ai.torad.aisdk.providers/TogetherAIRerankingModelOptions.equals|equals(kotlin.Any?){}[0]
     final fun hashCode(): kotlin/Int // ai.torad.aisdk.providers/TogetherAIRerankingModelOptions.hashCode|hashCode(){}[0]
     final fun toString(): kotlin/String // ai.torad.aisdk.providers/TogetherAIRerankingModelOptions.toString|toString(){}[0]
@@ -6586,6 +6582,10 @@ final class ai.torad.aisdk.providers/TogetherAIRerankingModelOptions { // ai.tor
 
         final fun serializer(): kotlinx.serialization/KSerializer<ai.torad.aisdk.providers/TogetherAIRerankingModelOptions> // ai.torad.aisdk.providers/TogetherAIRerankingModelOptions.Companion.serializer|serializer(){}[0]
     }
+}
+
+final class ai.torad.aisdk.providers/TogetherAIRerankingModelOptionsBuilder { // ai.torad.aisdk.providers/TogetherAIRerankingModelOptionsBuilder|null[0]
+    final fun rankFields(kotlin.collections/List<kotlin/String>?) // ai.torad.aisdk.providers/TogetherAIRerankingModelOptionsBuilder.rankFields|rankFields(kotlin.collections.List<kotlin.String>?){}[0]
 }
 
 final class ai.torad.aisdk.providers/VercelProvider : ai.torad.aisdk/Provider { // ai.torad.aisdk.providers/VercelProvider|null[0]
@@ -6636,8 +6636,6 @@ final class ai.torad.aisdk.providers/VercelProviderSettingsBuilder { // ai.torad
 }
 
 final class ai.torad.aisdk.providers/VoyageEmbeddingModelOptions { // ai.torad.aisdk.providers/VoyageEmbeddingModelOptions|null[0]
-    constructor <init>(kotlin/String? = ..., kotlin/Boolean? = ..., kotlin/Int? = ..., kotlin/String? = ...) // ai.torad.aisdk.providers/VoyageEmbeddingModelOptions.<init>|<init>(kotlin.String?;kotlin.Boolean?;kotlin.Int?;kotlin.String?){}[0]
-
     final val inputType // ai.torad.aisdk.providers/VoyageEmbeddingModelOptions.inputType|{}inputType[0]
         final fun <get-inputType>(): kotlin/String? // ai.torad.aisdk.providers/VoyageEmbeddingModelOptions.inputType.<get-inputType>|<get-inputType>(){}[0]
     final val outputDimension // ai.torad.aisdk.providers/VoyageEmbeddingModelOptions.outputDimension|{}outputDimension[0]
@@ -6647,11 +6645,6 @@ final class ai.torad.aisdk.providers/VoyageEmbeddingModelOptions { // ai.torad.a
     final val truncation // ai.torad.aisdk.providers/VoyageEmbeddingModelOptions.truncation|{}truncation[0]
         final fun <get-truncation>(): kotlin/Boolean? // ai.torad.aisdk.providers/VoyageEmbeddingModelOptions.truncation.<get-truncation>|<get-truncation>(){}[0]
 
-    final fun component1(): kotlin/String? // ai.torad.aisdk.providers/VoyageEmbeddingModelOptions.component1|component1(){}[0]
-    final fun component2(): kotlin/Boolean? // ai.torad.aisdk.providers/VoyageEmbeddingModelOptions.component2|component2(){}[0]
-    final fun component3(): kotlin/Int? // ai.torad.aisdk.providers/VoyageEmbeddingModelOptions.component3|component3(){}[0]
-    final fun component4(): kotlin/String? // ai.torad.aisdk.providers/VoyageEmbeddingModelOptions.component4|component4(){}[0]
-    final fun copy(kotlin/String? = ..., kotlin/Boolean? = ..., kotlin/Int? = ..., kotlin/String? = ...): ai.torad.aisdk.providers/VoyageEmbeddingModelOptions // ai.torad.aisdk.providers/VoyageEmbeddingModelOptions.copy|copy(kotlin.String?;kotlin.Boolean?;kotlin.Int?;kotlin.String?){}[0]
     final fun equals(kotlin/Any?): kotlin/Boolean // ai.torad.aisdk.providers/VoyageEmbeddingModelOptions.equals|equals(kotlin.Any?){}[0]
     final fun hashCode(): kotlin/Int // ai.torad.aisdk.providers/VoyageEmbeddingModelOptions.hashCode|hashCode(){}[0]
     final fun toString(): kotlin/String // ai.torad.aisdk.providers/VoyageEmbeddingModelOptions.toString|toString(){}[0]
@@ -6668,6 +6661,13 @@ final class ai.torad.aisdk.providers/VoyageEmbeddingModelOptions { // ai.torad.a
     final object Companion { // ai.torad.aisdk.providers/VoyageEmbeddingModelOptions.Companion|null[0]
         final fun serializer(): kotlinx.serialization/KSerializer<ai.torad.aisdk.providers/VoyageEmbeddingModelOptions> // ai.torad.aisdk.providers/VoyageEmbeddingModelOptions.Companion.serializer|serializer(){}[0]
     }
+}
+
+final class ai.torad.aisdk.providers/VoyageEmbeddingModelOptionsBuilder { // ai.torad.aisdk.providers/VoyageEmbeddingModelOptionsBuilder|null[0]
+    final fun inputType(kotlin/String?) // ai.torad.aisdk.providers/VoyageEmbeddingModelOptionsBuilder.inputType|inputType(kotlin.String?){}[0]
+    final fun outputDimension(kotlin/Int?) // ai.torad.aisdk.providers/VoyageEmbeddingModelOptionsBuilder.outputDimension|outputDimension(kotlin.Int?){}[0]
+    final fun outputDtype(kotlin/String?) // ai.torad.aisdk.providers/VoyageEmbeddingModelOptionsBuilder.outputDtype|outputDtype(kotlin.String?){}[0]
+    final fun truncation(kotlin/Boolean?) // ai.torad.aisdk.providers/VoyageEmbeddingModelOptionsBuilder.truncation|truncation(kotlin.Boolean?){}[0]
 }
 
 final class ai.torad.aisdk.providers/VoyageProvider : ai.torad.aisdk/Provider { // ai.torad.aisdk.providers/VoyageProvider|null[0]
@@ -6721,16 +6721,11 @@ final class ai.torad.aisdk.providers/VoyageProviderSettingsBuilder { // ai.torad
 }
 
 final class ai.torad.aisdk.providers/VoyageRerankingModelOptions { // ai.torad.aisdk.providers/VoyageRerankingModelOptions|null[0]
-    constructor <init>(kotlin/Boolean? = ..., kotlin/Boolean? = ...) // ai.torad.aisdk.providers/VoyageRerankingModelOptions.<init>|<init>(kotlin.Boolean?;kotlin.Boolean?){}[0]
-
     final val returnDocuments // ai.torad.aisdk.providers/VoyageRerankingModelOptions.returnDocuments|{}returnDocuments[0]
         final fun <get-returnDocuments>(): kotlin/Boolean? // ai.torad.aisdk.providers/VoyageRerankingModelOptions.returnDocuments.<get-returnDocuments>|<get-returnDocuments>(){}[0]
     final val truncation // ai.torad.aisdk.providers/VoyageRerankingModelOptions.truncation|{}truncation[0]
         final fun <get-truncation>(): kotlin/Boolean? // ai.torad.aisdk.providers/VoyageRerankingModelOptions.truncation.<get-truncation>|<get-truncation>(){}[0]
 
-    final fun component1(): kotlin/Boolean? // ai.torad.aisdk.providers/VoyageRerankingModelOptions.component1|component1(){}[0]
-    final fun component2(): kotlin/Boolean? // ai.torad.aisdk.providers/VoyageRerankingModelOptions.component2|component2(){}[0]
-    final fun copy(kotlin/Boolean? = ..., kotlin/Boolean? = ...): ai.torad.aisdk.providers/VoyageRerankingModelOptions // ai.torad.aisdk.providers/VoyageRerankingModelOptions.copy|copy(kotlin.Boolean?;kotlin.Boolean?){}[0]
     final fun equals(kotlin/Any?): kotlin/Boolean // ai.torad.aisdk.providers/VoyageRerankingModelOptions.equals|equals(kotlin.Any?){}[0]
     final fun hashCode(): kotlin/Int // ai.torad.aisdk.providers/VoyageRerankingModelOptions.hashCode|hashCode(){}[0]
     final fun toString(): kotlin/String // ai.torad.aisdk.providers/VoyageRerankingModelOptions.toString|toString(){}[0]
@@ -6747,6 +6742,11 @@ final class ai.torad.aisdk.providers/VoyageRerankingModelOptions { // ai.torad.a
     final object Companion { // ai.torad.aisdk.providers/VoyageRerankingModelOptions.Companion|null[0]
         final fun serializer(): kotlinx.serialization/KSerializer<ai.torad.aisdk.providers/VoyageRerankingModelOptions> // ai.torad.aisdk.providers/VoyageRerankingModelOptions.Companion.serializer|serializer(){}[0]
     }
+}
+
+final class ai.torad.aisdk.providers/VoyageRerankingModelOptionsBuilder { // ai.torad.aisdk.providers/VoyageRerankingModelOptionsBuilder|null[0]
+    final fun returnDocuments(kotlin/Boolean?) // ai.torad.aisdk.providers/VoyageRerankingModelOptionsBuilder.returnDocuments|returnDocuments(kotlin.Boolean?){}[0]
+    final fun truncation(kotlin/Boolean?) // ai.torad.aisdk.providers/VoyageRerankingModelOptionsBuilder.truncation|truncation(kotlin.Boolean?){}[0]
 }
 
 final class ai.torad.aisdk.providers/XaiImageModelOptions { // ai.torad.aisdk.providers/XaiImageModelOptions|null[0]
@@ -13903,6 +13903,7 @@ final fun ai.torad.aisdk.providers/AssemblyAIProviderSettings(kotlin/Function1<a
 final fun ai.torad.aisdk.providers/AzureOpenAI(io.ktor.client/HttpClient, ai.torad.aisdk.providers/AzureOpenAIProviderSettings = ...): ai.torad.aisdk.providers/AzureOpenAIProvider // ai.torad.aisdk.providers/AzureOpenAI|AzureOpenAI(io.ktor.client.HttpClient;ai.torad.aisdk.providers.AzureOpenAIProviderSettings){}[0]
 final fun ai.torad.aisdk.providers/AzureOpenAIProviderSettings(kotlin/Function1<ai.torad.aisdk.providers/AzureOpenAIProviderSettingsBuilder, kotlin/Unit> = ...): ai.torad.aisdk.providers/AzureOpenAIProviderSettings // ai.torad.aisdk.providers/AzureOpenAIProviderSettings|AzureOpenAIProviderSettings(kotlin.Function1<ai.torad.aisdk.providers.AzureOpenAIProviderSettingsBuilder,kotlin.Unit>){}[0]
 final fun ai.torad.aisdk.providers/Baseten(io.ktor.client/HttpClient, ai.torad.aisdk.providers/BasetenProviderSettings = ...): ai.torad.aisdk.providers/BasetenProvider // ai.torad.aisdk.providers/Baseten|Baseten(io.ktor.client.HttpClient;ai.torad.aisdk.providers.BasetenProviderSettings){}[0]
+final fun ai.torad.aisdk.providers/BasetenEmbeddingModelOptions(kotlin/Function1<ai.torad.aisdk.providers/BasetenEmbeddingModelOptionsBuilder, kotlin/Unit> = ...): ai.torad.aisdk.providers/BasetenEmbeddingModelOptions // ai.torad.aisdk.providers/BasetenEmbeddingModelOptions|BasetenEmbeddingModelOptions(kotlin.Function1<ai.torad.aisdk.providers.BasetenEmbeddingModelOptionsBuilder,kotlin.Unit>){}[0]
 final fun ai.torad.aisdk.providers/BasetenProviderSettings(kotlin/Function1<ai.torad.aisdk.providers/BasetenProviderSettingsBuilder, kotlin/Unit> = ...): ai.torad.aisdk.providers/BasetenProviderSettings // ai.torad.aisdk.providers/BasetenProviderSettings|BasetenProviderSettings(kotlin.Function1<ai.torad.aisdk.providers.BasetenProviderSettingsBuilder,kotlin.Unit>){}[0]
 final fun ai.torad.aisdk.providers/BedrockAnthropic(io.ktor.client/HttpClient, ai.torad.aisdk.providers/AmazonBedrockProviderSettings = ...): ai.torad.aisdk.providers/BedrockAnthropicProvider // ai.torad.aisdk.providers/BedrockAnthropic|BedrockAnthropic(io.ktor.client.HttpClient;ai.torad.aisdk.providers.AmazonBedrockProviderSettings){}[0]
 final fun ai.torad.aisdk.providers/BedrockMantle(io.ktor.client/HttpClient, ai.torad.aisdk.providers/AmazonBedrockProviderSettings = ...): ai.torad.aisdk.providers/BedrockMantleProvider // ai.torad.aisdk.providers/BedrockMantle|BedrockMantle(io.ktor.client.HttpClient;ai.torad.aisdk.providers.AmazonBedrockProviderSettings){}[0]
@@ -13914,7 +13915,11 @@ final fun ai.torad.aisdk.providers/Cerebras(io.ktor.client/HttpClient, ai.torad.
 final fun ai.torad.aisdk.providers/CerebrasProviderSettings(kotlin/Function1<ai.torad.aisdk.providers/CerebrasProviderSettingsBuilder, kotlin/Unit> = ...): ai.torad.aisdk.providers/CerebrasProviderSettings // ai.torad.aisdk.providers/CerebrasProviderSettings|CerebrasProviderSettings(kotlin.Function1<ai.torad.aisdk.providers.CerebrasProviderSettingsBuilder,kotlin.Unit>){}[0]
 final fun ai.torad.aisdk.providers/CodeExecution(kotlinx.serialization.json/JsonElement = ...): ai.torad.aisdk/Tool<kotlinx.serialization.json/JsonElement, kotlinx.serialization.json/JsonElement, kotlin/Any?> // ai.torad.aisdk.providers/CodeExecution|CodeExecution(kotlinx.serialization.json.JsonElement){}[0]
 final fun ai.torad.aisdk.providers/Cohere(io.ktor.client/HttpClient, ai.torad.aisdk.providers/CohereProviderSettings = ...): ai.torad.aisdk.providers/CohereProvider // ai.torad.aisdk.providers/Cohere|Cohere(io.ktor.client.HttpClient;ai.torad.aisdk.providers.CohereProviderSettings){}[0]
+final fun ai.torad.aisdk.providers/CohereEmbeddingModelOptions(kotlin/Function1<ai.torad.aisdk.providers/CohereEmbeddingModelOptionsBuilder, kotlin/Unit> = ...): ai.torad.aisdk.providers/CohereEmbeddingModelOptions // ai.torad.aisdk.providers/CohereEmbeddingModelOptions|CohereEmbeddingModelOptions(kotlin.Function1<ai.torad.aisdk.providers.CohereEmbeddingModelOptionsBuilder,kotlin.Unit>){}[0]
+final fun ai.torad.aisdk.providers/CohereLanguageModelOptions(kotlin/Function1<ai.torad.aisdk.providers/CohereLanguageModelOptionsBuilder, kotlin/Unit> = ...): ai.torad.aisdk.providers/CohereLanguageModelOptions // ai.torad.aisdk.providers/CohereLanguageModelOptions|CohereLanguageModelOptions(kotlin.Function1<ai.torad.aisdk.providers.CohereLanguageModelOptionsBuilder,kotlin.Unit>){}[0]
 final fun ai.torad.aisdk.providers/CohereProviderSettings(kotlin/Function1<ai.torad.aisdk.providers/CohereProviderSettingsBuilder, kotlin/Unit> = ...): ai.torad.aisdk.providers/CohereProviderSettings // ai.torad.aisdk.providers/CohereProviderSettings|CohereProviderSettings(kotlin.Function1<ai.torad.aisdk.providers.CohereProviderSettingsBuilder,kotlin.Unit>){}[0]
+final fun ai.torad.aisdk.providers/CohereRerankingModelOptions(kotlin/Function1<ai.torad.aisdk.providers/CohereRerankingModelOptionsBuilder, kotlin/Unit> = ...): ai.torad.aisdk.providers/CohereRerankingModelOptions // ai.torad.aisdk.providers/CohereRerankingModelOptions|CohereRerankingModelOptions(kotlin.Function1<ai.torad.aisdk.providers.CohereRerankingModelOptionsBuilder,kotlin.Unit>){}[0]
+final fun ai.torad.aisdk.providers/CohereThinkingOptions(kotlin/Function1<ai.torad.aisdk.providers/CohereThinkingOptionsBuilder, kotlin/Unit> = ...): ai.torad.aisdk.providers/CohereThinkingOptions // ai.torad.aisdk.providers/CohereThinkingOptions|CohereThinkingOptions(kotlin.Function1<ai.torad.aisdk.providers.CohereThinkingOptionsBuilder,kotlin.Unit>){}[0]
 final fun ai.torad.aisdk.providers/DeepInfra(io.ktor.client/HttpClient, ai.torad.aisdk.providers/DeepInfraProviderSettings = ...): ai.torad.aisdk.providers/DeepInfraProvider // ai.torad.aisdk.providers/DeepInfra|DeepInfra(io.ktor.client.HttpClient;ai.torad.aisdk.providers.DeepInfraProviderSettings){}[0]
 final fun ai.torad.aisdk.providers/DeepInfraProviderSettings(kotlin/Function1<ai.torad.aisdk.providers/DeepInfraProviderSettingsBuilder, kotlin/Unit> = ...): ai.torad.aisdk.providers/DeepInfraProviderSettings // ai.torad.aisdk.providers/DeepInfraProviderSettings|DeepInfraProviderSettings(kotlin.Function1<ai.torad.aisdk.providers.DeepInfraProviderSettingsBuilder,kotlin.Unit>){}[0]
 final fun ai.torad.aisdk.providers/DeepSeek(io.ktor.client/HttpClient, ai.torad.aisdk.providers/DeepSeekProviderSettings = ...): ai.torad.aisdk.providers/DeepSeekProvider // ai.torad.aisdk.providers/DeepSeek|DeepSeek(io.ktor.client.HttpClient;ai.torad.aisdk.providers.DeepSeekProviderSettings){}[0]
@@ -13986,12 +13991,15 @@ final fun ai.torad.aisdk.providers/Revai(io.ktor.client/HttpClient, ai.torad.ais
 final fun ai.torad.aisdk.providers/RevaiProviderSettings(kotlin/Function1<ai.torad.aisdk.providers/RevaiProviderSettingsBuilder, kotlin/Unit> = ...): ai.torad.aisdk.providers/RevaiProviderSettings // ai.torad.aisdk.providers/RevaiProviderSettings|RevaiProviderSettings(kotlin.Function1<ai.torad.aisdk.providers.RevaiProviderSettingsBuilder,kotlin.Unit>){}[0]
 final fun ai.torad.aisdk.providers/TogetherAI(io.ktor.client/HttpClient, ai.torad.aisdk.providers/TogetherAIProviderSettings = ...): ai.torad.aisdk.providers/TogetherAIProvider // ai.torad.aisdk.providers/TogetherAI|TogetherAI(io.ktor.client.HttpClient;ai.torad.aisdk.providers.TogetherAIProviderSettings){}[0]
 final fun ai.torad.aisdk.providers/TogetherAIProviderSettings(kotlin/Function1<ai.torad.aisdk.providers/TogetherAIProviderSettingsBuilder, kotlin/Unit> = ...): ai.torad.aisdk.providers/TogetherAIProviderSettings // ai.torad.aisdk.providers/TogetherAIProviderSettings|TogetherAIProviderSettings(kotlin.Function1<ai.torad.aisdk.providers.TogetherAIProviderSettingsBuilder,kotlin.Unit>){}[0]
+final fun ai.torad.aisdk.providers/TogetherAIRerankingModelOptions(kotlin/Function1<ai.torad.aisdk.providers/TogetherAIRerankingModelOptionsBuilder, kotlin/Unit> = ...): ai.torad.aisdk.providers/TogetherAIRerankingModelOptions // ai.torad.aisdk.providers/TogetherAIRerankingModelOptions|TogetherAIRerankingModelOptions(kotlin.Function1<ai.torad.aisdk.providers.TogetherAIRerankingModelOptionsBuilder,kotlin.Unit>){}[0]
 final fun ai.torad.aisdk.providers/Vercel(io.ktor.client/HttpClient, ai.torad.aisdk.providers/VercelProviderSettings = ...): ai.torad.aisdk.providers/VercelProvider // ai.torad.aisdk.providers/Vercel|Vercel(io.ktor.client.HttpClient;ai.torad.aisdk.providers.VercelProviderSettings){}[0]
 final fun ai.torad.aisdk.providers/VercelProviderSettings(kotlin/Function1<ai.torad.aisdk.providers/VercelProviderSettingsBuilder, kotlin/Unit> = ...): ai.torad.aisdk.providers/VercelProviderSettings // ai.torad.aisdk.providers/VercelProviderSettings|VercelProviderSettings(kotlin.Function1<ai.torad.aisdk.providers.VercelProviderSettingsBuilder,kotlin.Unit>){}[0]
 final fun ai.torad.aisdk.providers/ViewImage(kotlinx.serialization.json/JsonElement = ...): ai.torad.aisdk/Tool<kotlinx.serialization.json/JsonElement, kotlinx.serialization.json/JsonElement, kotlin/Any?> // ai.torad.aisdk.providers/ViewImage|ViewImage(kotlinx.serialization.json.JsonElement){}[0]
 final fun ai.torad.aisdk.providers/ViewXVideo(kotlinx.serialization.json/JsonElement = ...): ai.torad.aisdk/Tool<kotlinx.serialization.json/JsonElement, kotlinx.serialization.json/JsonElement, kotlin/Any?> // ai.torad.aisdk.providers/ViewXVideo|ViewXVideo(kotlinx.serialization.json.JsonElement){}[0]
 final fun ai.torad.aisdk.providers/Voyage(io.ktor.client/HttpClient, ai.torad.aisdk.providers/VoyageProviderSettings = ...): ai.torad.aisdk.providers/VoyageProvider // ai.torad.aisdk.providers/Voyage|Voyage(io.ktor.client.HttpClient;ai.torad.aisdk.providers.VoyageProviderSettings){}[0]
+final fun ai.torad.aisdk.providers/VoyageEmbeddingModelOptions(kotlin/Function1<ai.torad.aisdk.providers/VoyageEmbeddingModelOptionsBuilder, kotlin/Unit> = ...): ai.torad.aisdk.providers/VoyageEmbeddingModelOptions // ai.torad.aisdk.providers/VoyageEmbeddingModelOptions|VoyageEmbeddingModelOptions(kotlin.Function1<ai.torad.aisdk.providers.VoyageEmbeddingModelOptionsBuilder,kotlin.Unit>){}[0]
 final fun ai.torad.aisdk.providers/VoyageProviderSettings(kotlin/Function1<ai.torad.aisdk.providers/VoyageProviderSettingsBuilder, kotlin/Unit> = ...): ai.torad.aisdk.providers/VoyageProviderSettings // ai.torad.aisdk.providers/VoyageProviderSettings|VoyageProviderSettings(kotlin.Function1<ai.torad.aisdk.providers.VoyageProviderSettingsBuilder,kotlin.Unit>){}[0]
+final fun ai.torad.aisdk.providers/VoyageRerankingModelOptions(kotlin/Function1<ai.torad.aisdk.providers/VoyageRerankingModelOptionsBuilder, kotlin/Unit> = ...): ai.torad.aisdk.providers/VoyageRerankingModelOptions // ai.torad.aisdk.providers/VoyageRerankingModelOptions|VoyageRerankingModelOptions(kotlin.Function1<ai.torad.aisdk.providers.VoyageRerankingModelOptionsBuilder,kotlin.Unit>){}[0]
 final fun ai.torad.aisdk.providers/WebSearch(kotlinx.serialization.json/JsonElement = ...): ai.torad.aisdk/Tool<kotlinx.serialization.json/JsonElement, kotlinx.serialization.json/JsonElement, kotlin/Any?> // ai.torad.aisdk.providers/WebSearch|WebSearch(kotlinx.serialization.json.JsonElement){}[0]
 final fun ai.torad.aisdk.providers/XSearch(kotlinx.serialization.json/JsonElement = ...): ai.torad.aisdk/Tool<kotlinx.serialization.json/JsonElement, kotlinx.serialization.json/JsonElement, kotlin/Any?> // ai.torad.aisdk.providers/XSearch|XSearch(kotlinx.serialization.json.JsonElement){}[0]
 final fun ai.torad.aisdk.providers/Xai(io.ktor.client/HttpClient, ai.torad.aisdk.providers/XaiProviderSettings = ...): ai.torad.aisdk.providers/XaiProvider // ai.torad.aisdk.providers/Xai|Xai(io.ktor.client.HttpClient;ai.torad.aisdk.providers.XaiProviderSettings){}[0]

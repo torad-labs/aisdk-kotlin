@@ -100,28 +100,126 @@ public fun CohereProviderSettings(
     CohereProviderSettingsBuilder().apply(block).build()
 
 @Serializable
-public data class CohereLanguageModelOptions(
-    val thinking: CohereThinkingOptions? = null,
+@Poko
+public class CohereLanguageModelOptions internal constructor(
+    public val thinking: CohereThinkingOptions? = null,
 )
 
-@Serializable
-public data class CohereThinkingOptions(
-    val type: String? = null,
-    val tokenBudget: Int? = null,
-)
+public class CohereLanguageModelOptionsBuilder internal constructor() {
+    private var thinking: CohereThinkingOptions? = null
+
+    public fun thinking(value: CohereThinkingOptions?) {
+        thinking = value
+    }
+
+    internal fun build(): CohereLanguageModelOptions =
+        CohereLanguageModelOptions(thinking = thinking)
+}
+
+public fun CohereLanguageModelOptions(
+    block: CohereLanguageModelOptionsBuilder.() -> Unit = {},
+): CohereLanguageModelOptions =
+    CohereLanguageModelOptionsBuilder().apply(block).build()
 
 @Serializable
-public data class CohereEmbeddingModelOptions(
-    val inputType: String? = null,
-    val truncate: String? = null,
-    val outputDimension: Int? = null,
+@Poko
+public class CohereThinkingOptions internal constructor(
+    public val type: String? = null,
+    public val tokenBudget: Int? = null,
 )
 
+public class CohereThinkingOptionsBuilder internal constructor() {
+    private var type: String? = null
+    private var tokenBudget: Int? = null
+
+    public fun type(value: String?) {
+        type = value
+    }
+
+    public fun tokenBudget(value: Int?) {
+        tokenBudget = value
+    }
+
+    internal fun build(): CohereThinkingOptions =
+        CohereThinkingOptions(
+            type = type,
+            tokenBudget = tokenBudget,
+        )
+}
+
+public fun CohereThinkingOptions(
+    block: CohereThinkingOptionsBuilder.() -> Unit = {},
+): CohereThinkingOptions =
+    CohereThinkingOptionsBuilder().apply(block).build()
+
 @Serializable
-public data class CohereRerankingModelOptions(
-    val maxTokensPerDoc: Int? = null,
-    val priority: Int? = null,
+@Poko
+public class CohereEmbeddingModelOptions internal constructor(
+    public val inputType: String? = null,
+    public val truncate: String? = null,
+    public val outputDimension: Int? = null,
 )
+
+public class CohereEmbeddingModelOptionsBuilder internal constructor() {
+    private var inputType: String? = null
+    private var truncate: String? = null
+    private var outputDimension: Int? = null
+
+    public fun inputType(value: String?) {
+        inputType = value
+    }
+
+    public fun truncate(value: String?) {
+        truncate = value
+    }
+
+    public fun outputDimension(value: Int?) {
+        outputDimension = value
+    }
+
+    internal fun build(): CohereEmbeddingModelOptions =
+        CohereEmbeddingModelOptions(
+            inputType = inputType,
+            truncate = truncate,
+            outputDimension = outputDimension,
+        )
+}
+
+public fun CohereEmbeddingModelOptions(
+    block: CohereEmbeddingModelOptionsBuilder.() -> Unit = {},
+): CohereEmbeddingModelOptions =
+    CohereEmbeddingModelOptionsBuilder().apply(block).build()
+
+@Serializable
+@Poko
+public class CohereRerankingModelOptions internal constructor(
+    public val maxTokensPerDoc: Int? = null,
+    public val priority: Int? = null,
+)
+
+public class CohereRerankingModelOptionsBuilder internal constructor() {
+    private var maxTokensPerDoc: Int? = null
+    private var priority: Int? = null
+
+    public fun maxTokensPerDoc(value: Int?) {
+        maxTokensPerDoc = value
+    }
+
+    public fun priority(value: Int?) {
+        priority = value
+    }
+
+    internal fun build(): CohereRerankingModelOptions =
+        CohereRerankingModelOptions(
+            maxTokensPerDoc = maxTokensPerDoc,
+            priority = priority,
+        )
+}
+
+public fun CohereRerankingModelOptions(
+    block: CohereRerankingModelOptionsBuilder.() -> Unit = {},
+): CohereRerankingModelOptions =
+    CohereRerankingModelOptionsBuilder().apply(block).build()
 
 public class CohereProvider(
     private val client: HttpClient,
