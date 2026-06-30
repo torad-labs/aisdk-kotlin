@@ -140,19 +140,73 @@ public fun GroqProviderSettings(
     GroqProviderSettingsBuilder().apply(block).build()
 
 @Serializable
-public data class GroqLanguageModelOptions(
-    val raw: Map<String, JsonElement> = emptyMap(),
+@Poko
+public class GroqLanguageModelOptions internal constructor(
+    public val raw: Map<String, JsonElement> = emptyMap(),
 )
+
+public class GroqLanguageModelOptionsBuilder internal constructor() {
+    private var raw: Map<String, JsonElement> = emptyMap()
+
+    public fun raw(value: Map<String, JsonElement>) {
+        raw = value
+    }
+
+    internal fun build(): GroqLanguageModelOptions =
+        GroqLanguageModelOptions(raw = raw)
+}
+
+public fun GroqLanguageModelOptions(
+    block: GroqLanguageModelOptionsBuilder.() -> Unit = {},
+): GroqLanguageModelOptions =
+    GroqLanguageModelOptionsBuilder().apply(block).build()
 
 public typealias GroqProviderOptions = GroqLanguageModelOptions
 
 @Serializable
-public data class GroqTranscriptionModelOptions(
-    val language: String? = null,
-    val prompt: String? = null,
-    val temperature: Float? = null,
-    val responseFormat: String? = null,
+@Poko
+public class GroqTranscriptionModelOptions internal constructor(
+    public val language: String? = null,
+    public val prompt: String? = null,
+    public val temperature: Float? = null,
+    public val responseFormat: String? = null,
 )
+
+public class GroqTranscriptionModelOptionsBuilder internal constructor() {
+    private var language: String? = null
+    private var prompt: String? = null
+    private var temperature: Float? = null
+    private var responseFormat: String? = null
+
+    public fun language(value: String?) {
+        language = value
+    }
+
+    public fun prompt(value: String?) {
+        prompt = value
+    }
+
+    public fun temperature(value: Float?) {
+        temperature = value
+    }
+
+    public fun responseFormat(value: String?) {
+        responseFormat = value
+    }
+
+    internal fun build(): GroqTranscriptionModelOptions =
+        GroqTranscriptionModelOptions(
+            language = language,
+            prompt = prompt,
+            temperature = temperature,
+            responseFormat = responseFormat,
+        )
+}
+
+public fun GroqTranscriptionModelOptions(
+    block: GroqTranscriptionModelOptionsBuilder.() -> Unit = {},
+): GroqTranscriptionModelOptions =
+    GroqTranscriptionModelOptionsBuilder().apply(block).build()
 
 public class GroqProvider(
     client: HttpClient,

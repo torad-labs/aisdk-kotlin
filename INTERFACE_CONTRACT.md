@@ -261,11 +261,16 @@ Penalty, response-format, and retry fields participate in the `Step ?: Agent ?: 
   `DeepSeekLanguageModelOptions`, `ElevenLabsSpeechModelOptions`,
   `ElevenLabsTranscriptionModelOptions`, `FalImageModelOptions`,
   `FalSpeechModelOptions`, `FalTranscriptionModelOptions`,
-  `FalVideoModelOptions`, and `FireworksEmbeddingModelOptions`) expose field
-  getters and are configured through public DSL factories and builder setter
-  methods such as `CohereEmbeddingModelOptions { inputType("search") }`,
-  `DeepgramTranscriptionModelOptions { language("en") }`, or
-  `FalVideoModelOptions { resolution("720p") }`. These pure data options are
+  `FalVideoModelOptions`, `FireworksEmbeddingModelOptions`,
+  `FireworksThinkingOptions`, `FireworksLanguageModelOptions`,
+  `GladiaTranscriptionModelOptions`, `GroqLanguageModelOptions`,
+  `GroqTranscriptionModelOptions`, `HumeSpeechModelOptions`,
+  `KlingAIVideoModelOptions`, and `LumaImageModelOptions`) expose field getters
+  and are configured through public DSL factories and builder setter methods
+  such as `CohereEmbeddingModelOptions { inputType("search") }`,
+  `DeepgramTranscriptionModelOptions { language("en") }`,
+  `FalVideoModelOptions { resolution("720p") }`, or
+  `KlingAIVideoModelOptions { mode("std") }`. These pure data options are
   `@Serializable @Poko class` value-semantics types; their positional
   constructors, `copy()`, and `componentN()` are not public.
 - Provider error payloads (`BasetenErrorData`, `CerebrasErrorData`,

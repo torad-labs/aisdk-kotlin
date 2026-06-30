@@ -24,17 +24,73 @@ public const val FIREWORKS_VERSION: String = "2.0.53"
 
 
 @Serializable
-public data class FireworksThinkingOptions(
-    val type: String? = null,
-    val budgetTokens: Int? = null,
+@Poko
+public class FireworksThinkingOptions internal constructor(
+    public val type: String? = null,
+    public val budgetTokens: Int? = null,
 )
 
+public class FireworksThinkingOptionsBuilder internal constructor() {
+    private var type: String? = null
+    private var budgetTokens: Int? = null
+
+    public fun type(value: String?) {
+        type = value
+    }
+
+    public fun budgetTokens(value: Int?) {
+        budgetTokens = value
+    }
+
+    internal fun build(): FireworksThinkingOptions =
+        FireworksThinkingOptions(
+            type = type,
+            budgetTokens = budgetTokens,
+        )
+}
+
+public fun FireworksThinkingOptions(
+    block: FireworksThinkingOptionsBuilder.() -> Unit = {},
+): FireworksThinkingOptions =
+    FireworksThinkingOptionsBuilder().apply(block).build()
+
 @Serializable
-public data class FireworksLanguageModelOptions(
-    val thinking: FireworksThinkingOptions? = null,
-    val reasoningHistory: String? = null,
-    val raw: Map<String, JsonElement> = emptyMap(),
+@Poko
+public class FireworksLanguageModelOptions internal constructor(
+    public val thinking: FireworksThinkingOptions? = null,
+    public val reasoningHistory: String? = null,
+    public val raw: Map<String, JsonElement> = emptyMap(),
 )
+
+public class FireworksLanguageModelOptionsBuilder internal constructor() {
+    private var thinking: FireworksThinkingOptions? = null
+    private var reasoningHistory: String? = null
+    private var raw: Map<String, JsonElement> = emptyMap()
+
+    public fun thinking(value: FireworksThinkingOptions?) {
+        thinking = value
+    }
+
+    public fun reasoningHistory(value: String?) {
+        reasoningHistory = value
+    }
+
+    public fun raw(value: Map<String, JsonElement>) {
+        raw = value
+    }
+
+    internal fun build(): FireworksLanguageModelOptions =
+        FireworksLanguageModelOptions(
+            thinking = thinking,
+            reasoningHistory = reasoningHistory,
+            raw = raw,
+        )
+}
+
+public fun FireworksLanguageModelOptions(
+    block: FireworksLanguageModelOptionsBuilder.() -> Unit = {},
+): FireworksLanguageModelOptions =
+    FireworksLanguageModelOptionsBuilder().apply(block).build()
 
 public typealias FireworksProviderOptions = FireworksLanguageModelOptions
 

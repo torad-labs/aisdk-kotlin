@@ -20,6 +20,14 @@ import ai.torad.aisdk.providers.FalSpeechModelOptions
 import ai.torad.aisdk.providers.FalTranscriptionModelOptions
 import ai.torad.aisdk.providers.FalVideoModelOptions
 import ai.torad.aisdk.providers.FireworksEmbeddingModelOptions
+import ai.torad.aisdk.providers.FireworksLanguageModelOptions
+import ai.torad.aisdk.providers.FireworksThinkingOptions
+import ai.torad.aisdk.providers.GladiaTranscriptionModelOptions
+import ai.torad.aisdk.providers.GroqLanguageModelOptions
+import ai.torad.aisdk.providers.GroqTranscriptionModelOptions
+import ai.torad.aisdk.providers.HumeSpeechModelOptions
+import ai.torad.aisdk.providers.KlingAIVideoModelOptions
+import ai.torad.aisdk.providers.LumaImageModelOptions
 import ai.torad.aisdk.providers.DeepgramSpeechModelOptions
 import ai.torad.aisdk.providers.DeepgramTranscriptionModelOptions
 import ai.torad.aisdk.providers.TogetherAIRerankingModelOptions
@@ -28,6 +36,7 @@ import ai.torad.aisdk.providers.VoyageRerankingModelOptions
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.buildJsonArray
 import kotlinx.serialization.json.buildJsonObject
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -312,5 +321,107 @@ class ProviderModelOptionsBuilderTest {
         assertEquals("segment", falTranscriptionDefaults.chunkLevel)
         assertEquals("3", falTranscriptionDefaults.version)
         assertEquals(64, falTranscriptionDefaults.batchSize)
+    }
+
+    @Test
+    fun `facade media and transcription option DSLs keep value semantics and serialization`() {
+        val fireworksThinking = FireworksThinkingOptions {
+            type("enabled")
+            budgetTokens(256)
+        }
+        val fireworks = FireworksLanguageModelOptions {
+            thinking(fireworksThinking)
+            reasoningHistory("previous")
+            raw(mapOf("extra" to JsonPrimitive("value")))
+        }
+        val gladia = GladiaTranscriptionModelOptions {
+            contextPrompt("meeting notes")
+            customVocabulary(JsonPrimitive("torad"))
+            customVocabularyConfig(buildJsonObject { put("default_intensity", JsonPrimitive(0.4)) })
+            detectLanguage(true)
+            enableCodeSwitching(true)
+            codeSwitchingConfig(buildJsonObject { put("languages", buildJsonArray { add(JsonPrimitive("en")) }) })
+            language("en")
+            callback(true)
+            callbackConfig(buildJsonObject { put("url", JsonPrimitive("https://example.test/callback")) })
+            subtitles(true)
+            subtitlesConfig(buildJsonObject { put("format", JsonPrimitive("srt")) })
+            diarization(true)
+            diarizationConfig(buildJsonObject { put("min_speakers", JsonPrimitive(1)) })
+            translation(true)
+            translationConfig(buildJsonObject { put("target_language", JsonPrimitive("es")) })
+            summarization(true)
+            summarizationConfig(buildJsonObject { put("type", JsonPrimitive("concise")) })
+            moderation(true)
+            namedEntityRecognition(true)
+            chapterization(true)
+            nameConsistency(true)
+            customSpelling(true)
+            customSpellingConfig(buildJsonObject { put("spelling", JsonPrimitive("AI SDK")) })
+            structuredDataExtraction(true)
+            structuredDataExtractionConfig(buildJsonObject { put("schema", JsonPrimitive("summary")) })
+            sentimentAnalysis(true)
+            audioToLlm(true)
+            audioToLlmConfig(buildJsonObject { put("prompt", JsonPrimitive("summarize")) })
+            customMetadata(buildJsonObject { put("job", JsonPrimitive("batch-1")) })
+            sentences(true)
+            displayMode(true)
+            punctuationEnhanced(true)
+        }
+        val groqLanguage = GroqLanguageModelOptions {
+            raw(mapOf("reasoning_effort" to JsonPrimitive("low")))
+        }
+        val groqTranscription = GroqTranscriptionModelOptions {
+            language("en")
+            prompt("Domain terms")
+            temperature(0.2f)
+            responseFormat("json")
+        }
+        val hume = HumeSpeechModelOptions {
+            context(buildJsonObject { put("utterance", JsonPrimitive("hello")) })
+        }
+        val kling = KlingAIVideoModelOptions {
+            mode("std")
+            pollIntervalMs(500)
+            pollTimeoutMs(10_000)
+            negativePrompt("blur")
+            sound("on")
+            cfgScale(0.7f)
+            cameraControl(buildJsonObject { put("type", JsonPrimitive("pan")) })
+            imageTail("tail-image")
+            staticMask("mask")
+            dynamicMasks(buildJsonArray { add(buildJsonObject { put("id", JsonPrimitive("mask-1")) }) })
+            multiShot(true)
+            shotType("close-up")
+            multiPrompt(buildJsonArray { add(JsonPrimitive("shot one")) })
+            elementList(buildJsonArray { add(buildJsonObject { put("name", JsonPrimitive("product")) }) })
+            voiceList(buildJsonArray { add(buildJsonObject { put("voice", JsonPrimitive("narrator")) }) })
+            watermarkEnabled(false)
+            videoUrl("https://example.test/source.mp4")
+            characterOrientation("front")
+            keepOriginalSound("true")
+        }
+        val luma = LumaImageModelOptions {
+            referenceType("style")
+            images(buildJsonArray { add(JsonPrimitive("image-ref")) })
+            pollIntervalMillis(250)
+            maxPollAttempts(4)
+        }
+
+        assertEquals(fireworks, aiSdkJson.decodeFromString<FireworksLanguageModelOptions>(aiSdkJson.encodeToString(fireworks)))
+        assertEquals(gladia, aiSdkJson.decodeFromString<GladiaTranscriptionModelOptions>(aiSdkJson.encodeToString(gladia)))
+        assertEquals(groqLanguage, aiSdkJson.decodeFromString<GroqLanguageModelOptions>(aiSdkJson.encodeToString(groqLanguage)))
+        assertEquals(groqTranscription, GroqTranscriptionModelOptions {
+            language("en")
+            prompt("Domain terms")
+            temperature(0.2f)
+            responseFormat("json")
+        })
+        assertEquals(hume, aiSdkJson.decodeFromString<HumeSpeechModelOptions>(aiSdkJson.encodeToString(hume)))
+        assertEquals(kling, aiSdkJson.decodeFromString<KlingAIVideoModelOptions>(aiSdkJson.encodeToString(kling)))
+        assertEquals(luma, aiSdkJson.decodeFromString<LumaImageModelOptions>(aiSdkJson.encodeToString(luma)))
+        assertNotEquals(luma, LumaImageModelOptions {
+            referenceType("character")
+        })
     }
 }
