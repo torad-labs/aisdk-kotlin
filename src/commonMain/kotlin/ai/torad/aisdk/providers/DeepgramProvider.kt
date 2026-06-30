@@ -30,38 +30,220 @@ public const val DEEPGRAM_VERSION: String = "2.0.33"
 public typealias DeepgramSpeechCallOptions = DeepgramSpeechModelOptions
 
 @Serializable
-public data class DeepgramSpeechModelOptions(
-    val bitRate: JsonElement? = null,
-    val container: String? = null,
-    val encoding: String? = null,
-    val sampleRate: Int? = null,
-    val callback: String? = null,
-    val callbackMethod: String? = null,
-    val mipOptOut: Boolean? = null,
-    val tag: JsonElement? = null,
+@Poko
+public class DeepgramSpeechModelOptions internal constructor(
+    public val bitRate: JsonElement? = null,
+    public val container: String? = null,
+    public val encoding: String? = null,
+    public val sampleRate: Int? = null,
+    public val callback: String? = null,
+    public val callbackMethod: String? = null,
+    public val mipOptOut: Boolean? = null,
+    public val tag: JsonElement? = null,
 )
 
+public class DeepgramSpeechModelOptionsBuilder internal constructor() {
+    private var bitRate: JsonElement? = null
+    private var container: String? = null
+    private var encoding: String? = null
+    private var sampleRate: Int? = null
+    private var callback: String? = null
+    private var callbackMethod: String? = null
+    private var mipOptOut: Boolean? = null
+    private var tag: JsonElement? = null
+
+    public fun bitRate(value: JsonElement?) {
+        bitRate = value
+    }
+
+    public fun container(value: String?) {
+        container = value
+    }
+
+    public fun encoding(value: String?) {
+        encoding = value
+    }
+
+    public fun sampleRate(value: Int?) {
+        sampleRate = value
+    }
+
+    public fun callback(value: String?) {
+        callback = value
+    }
+
+    public fun callbackMethod(value: String?) {
+        callbackMethod = value
+    }
+
+    public fun mipOptOut(value: Boolean?) {
+        mipOptOut = value
+    }
+
+    public fun tag(value: JsonElement?) {
+        tag = value
+    }
+
+    internal fun build(): DeepgramSpeechModelOptions =
+        DeepgramSpeechModelOptions(
+            bitRate = bitRate,
+            container = container,
+            encoding = encoding,
+            sampleRate = sampleRate,
+            callback = callback,
+            callbackMethod = callbackMethod,
+            mipOptOut = mipOptOut,
+            tag = tag,
+        )
+}
+
+public fun DeepgramSpeechModelOptions(
+    block: DeepgramSpeechModelOptionsBuilder.() -> Unit = {},
+): DeepgramSpeechModelOptions =
+    DeepgramSpeechModelOptionsBuilder().apply(block).build()
+
 @Serializable
-public data class DeepgramTranscriptionModelOptions(
-    val language: String? = null,
-    val detectLanguage: Boolean? = null,
-    val smartFormat: Boolean? = null,
-    val punctuate: Boolean? = null,
-    val paragraphs: Boolean? = null,
-    val summarize: JsonElement? = null,
-    val topics: Boolean? = null,
-    val intents: Boolean? = null,
-    val sentiment: Boolean? = null,
-    val detectEntities: Boolean? = null,
-    val redact: JsonElement? = null,
-    val replace: String? = null,
-    val search: String? = null,
-    val keyterm: String? = null,
-    val diarize: Boolean? = null,
-    val utterances: Boolean? = null,
-    val uttSplit: Float? = null,
-    val fillerWords: Boolean? = null,
+@Poko
+public class DeepgramTranscriptionModelOptions internal constructor(
+    public val language: String? = null,
+    public val detectLanguage: Boolean? = null,
+    public val smartFormat: Boolean? = null,
+    public val punctuate: Boolean? = null,
+    public val paragraphs: Boolean? = null,
+    public val summarize: JsonElement? = null,
+    public val topics: Boolean? = null,
+    public val intents: Boolean? = null,
+    public val sentiment: Boolean? = null,
+    public val detectEntities: Boolean? = null,
+    public val redact: JsonElement? = null,
+    public val replace: String? = null,
+    public val search: String? = null,
+    public val keyterm: String? = null,
+    public val diarize: Boolean? = null,
+    public val utterances: Boolean? = null,
+    public val uttSplit: Float? = null,
+    public val fillerWords: Boolean? = null,
 )
+
+public class DeepgramTranscriptionModelOptionsBuilder internal constructor() {
+    private var language: String? = null
+    private var detectLanguage: Boolean? = null
+    private var smartFormat: Boolean? = null
+    private var punctuate: Boolean? = null
+    private var paragraphs: Boolean? = null
+    private var summarize: JsonElement? = null
+    private var topics: Boolean? = null
+    private var intents: Boolean? = null
+    private var sentiment: Boolean? = null
+    private var detectEntities: Boolean? = null
+    private var redact: JsonElement? = null
+    private var replace: String? = null
+    private var search: String? = null
+    private var keyterm: String? = null
+    private var diarize: Boolean? = null
+    private var utterances: Boolean? = null
+    private var uttSplit: Float? = null
+    private var fillerWords: Boolean? = null
+
+    public fun language(value: String?) {
+        language = value
+    }
+
+    public fun detectLanguage(value: Boolean?) {
+        detectLanguage = value
+    }
+
+    public fun smartFormat(value: Boolean?) {
+        smartFormat = value
+    }
+
+    public fun punctuate(value: Boolean?) {
+        punctuate = value
+    }
+
+    public fun paragraphs(value: Boolean?) {
+        paragraphs = value
+    }
+
+    public fun summarize(value: JsonElement?) {
+        summarize = value
+    }
+
+    public fun topics(value: Boolean?) {
+        topics = value
+    }
+
+    public fun intents(value: Boolean?) {
+        intents = value
+    }
+
+    public fun sentiment(value: Boolean?) {
+        sentiment = value
+    }
+
+    public fun detectEntities(value: Boolean?) {
+        detectEntities = value
+    }
+
+    public fun redact(value: JsonElement?) {
+        redact = value
+    }
+
+    public fun replace(value: String?) {
+        replace = value
+    }
+
+    public fun search(value: String?) {
+        search = value
+    }
+
+    public fun keyterm(value: String?) {
+        keyterm = value
+    }
+
+    public fun diarize(value: Boolean?) {
+        diarize = value
+    }
+
+    public fun utterances(value: Boolean?) {
+        utterances = value
+    }
+
+    public fun uttSplit(value: Float?) {
+        uttSplit = value
+    }
+
+    public fun fillerWords(value: Boolean?) {
+        fillerWords = value
+    }
+
+    internal fun build(): DeepgramTranscriptionModelOptions =
+        DeepgramTranscriptionModelOptions(
+            language = language,
+            detectLanguage = detectLanguage,
+            smartFormat = smartFormat,
+            punctuate = punctuate,
+            paragraphs = paragraphs,
+            summarize = summarize,
+            topics = topics,
+            intents = intents,
+            sentiment = sentiment,
+            detectEntities = detectEntities,
+            redact = redact,
+            replace = replace,
+            search = search,
+            keyterm = keyterm,
+            diarize = diarize,
+            utterances = utterances,
+            uttSplit = uttSplit,
+            fillerWords = fillerWords,
+        )
+}
+
+public fun DeepgramTranscriptionModelOptions(
+    block: DeepgramTranscriptionModelOptionsBuilder.() -> Unit = {},
+): DeepgramTranscriptionModelOptions =
+    DeepgramTranscriptionModelOptionsBuilder().apply(block).build()
 
 @Serializable
 @Poko

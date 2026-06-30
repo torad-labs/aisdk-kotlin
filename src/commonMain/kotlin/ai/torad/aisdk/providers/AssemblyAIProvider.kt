@@ -32,42 +32,259 @@ public data class AssemblyAICustomSpelling(
 )
 
 @Serializable
-public data class AssemblyAITranscriptionModelOptions(
-    val audioEndAt: Int? = null,
-    val audioStartFrom: Int? = null,
-    val autoChapters: Boolean? = null,
-    val autoHighlights: Boolean? = null,
-    val boostParam: String? = null,
-    val contentSafety: Boolean? = null,
-    val contentSafetyConfidence: Int? = null,
-    val customSpelling: List<AssemblyAICustomSpelling>? = null,
-    val disfluencies: Boolean? = null,
-    val entityDetection: Boolean? = null,
-    val filterProfanity: Boolean? = null,
-    val formatText: Boolean? = null,
-    val iabCategories: Boolean? = null,
-    val languageCode: String? = null,
-    val languageConfidenceThreshold: Float? = null,
-    val languageDetection: Boolean? = null,
-    val multichannel: Boolean? = null,
-    val punctuate: Boolean? = null,
-    val redactPii: Boolean? = null,
-    val redactPiiAudio: Boolean? = null,
-    val redactPiiAudioQuality: String? = null,
-    val redactPiiPolicies: List<String>? = null,
-    val redactPiiSub: String? = null,
-    val sentimentAnalysis: Boolean? = null,
-    val speakerLabels: Boolean? = null,
-    val speakersExpected: Int? = null,
-    val speechThreshold: Float? = null,
-    val summarization: Boolean? = null,
-    val summaryModel: String? = null,
-    val summaryType: String? = null,
-    val webhookAuthHeaderName: String? = null,
-    val webhookAuthHeaderValue: String? = null,
-    val webhookUrl: String? = null,
-    val wordBoost: List<String>? = null,
+@Poko
+public class AssemblyAITranscriptionModelOptions internal constructor(
+    public val audioEndAt: Int? = null,
+    public val audioStartFrom: Int? = null,
+    public val autoChapters: Boolean? = null,
+    public val autoHighlights: Boolean? = null,
+    public val boostParam: String? = null,
+    public val contentSafety: Boolean? = null,
+    public val contentSafetyConfidence: Int? = null,
+    public val customSpelling: List<AssemblyAICustomSpelling>? = null,
+    public val disfluencies: Boolean? = null,
+    public val entityDetection: Boolean? = null,
+    public val filterProfanity: Boolean? = null,
+    public val formatText: Boolean? = null,
+    public val iabCategories: Boolean? = null,
+    public val languageCode: String? = null,
+    public val languageConfidenceThreshold: Float? = null,
+    public val languageDetection: Boolean? = null,
+    public val multichannel: Boolean? = null,
+    public val punctuate: Boolean? = null,
+    public val redactPii: Boolean? = null,
+    public val redactPiiAudio: Boolean? = null,
+    public val redactPiiAudioQuality: String? = null,
+    public val redactPiiPolicies: List<String>? = null,
+    public val redactPiiSub: String? = null,
+    public val sentimentAnalysis: Boolean? = null,
+    public val speakerLabels: Boolean? = null,
+    public val speakersExpected: Int? = null,
+    public val speechThreshold: Float? = null,
+    public val summarization: Boolean? = null,
+    public val summaryModel: String? = null,
+    public val summaryType: String? = null,
+    public val webhookAuthHeaderName: String? = null,
+    public val webhookAuthHeaderValue: String? = null,
+    public val webhookUrl: String? = null,
+    public val wordBoost: List<String>? = null,
 )
+
+public class AssemblyAITranscriptionModelOptionsBuilder internal constructor() {
+    private var audioEndAt: Int? = null
+    private var audioStartFrom: Int? = null
+    private var autoChapters: Boolean? = null
+    private var autoHighlights: Boolean? = null
+    private var boostParam: String? = null
+    private var contentSafety: Boolean? = null
+    private var contentSafetyConfidence: Int? = null
+    private var customSpelling: List<AssemblyAICustomSpelling>? = null
+    private var disfluencies: Boolean? = null
+    private var entityDetection: Boolean? = null
+    private var filterProfanity: Boolean? = null
+    private var formatText: Boolean? = null
+    private var iabCategories: Boolean? = null
+    private var languageCode: String? = null
+    private var languageConfidenceThreshold: Float? = null
+    private var languageDetection: Boolean? = null
+    private var multichannel: Boolean? = null
+    private var punctuate: Boolean? = null
+    private var redactPii: Boolean? = null
+    private var redactPiiAudio: Boolean? = null
+    private var redactPiiAudioQuality: String? = null
+    private var redactPiiPolicies: List<String>? = null
+    private var redactPiiSub: String? = null
+    private var sentimentAnalysis: Boolean? = null
+    private var speakerLabels: Boolean? = null
+    private var speakersExpected: Int? = null
+    private var speechThreshold: Float? = null
+    private var summarization: Boolean? = null
+    private var summaryModel: String? = null
+    private var summaryType: String? = null
+    private var webhookAuthHeaderName: String? = null
+    private var webhookAuthHeaderValue: String? = null
+    private var webhookUrl: String? = null
+    private var wordBoost: List<String>? = null
+
+    public fun audioEndAt(value: Int?) {
+        audioEndAt = value
+    }
+
+    public fun audioStartFrom(value: Int?) {
+        audioStartFrom = value
+    }
+
+    public fun autoChapters(value: Boolean?) {
+        autoChapters = value
+    }
+
+    public fun autoHighlights(value: Boolean?) {
+        autoHighlights = value
+    }
+
+    public fun boostParam(value: String?) {
+        boostParam = value
+    }
+
+    public fun contentSafety(value: Boolean?) {
+        contentSafety = value
+    }
+
+    public fun contentSafetyConfidence(value: Int?) {
+        contentSafetyConfidence = value
+    }
+
+    public fun customSpelling(value: List<AssemblyAICustomSpelling>?) {
+        customSpelling = value
+    }
+
+    public fun disfluencies(value: Boolean?) {
+        disfluencies = value
+    }
+
+    public fun entityDetection(value: Boolean?) {
+        entityDetection = value
+    }
+
+    public fun filterProfanity(value: Boolean?) {
+        filterProfanity = value
+    }
+
+    public fun formatText(value: Boolean?) {
+        formatText = value
+    }
+
+    public fun iabCategories(value: Boolean?) {
+        iabCategories = value
+    }
+
+    public fun languageCode(value: String?) {
+        languageCode = value
+    }
+
+    public fun languageConfidenceThreshold(value: Float?) {
+        languageConfidenceThreshold = value
+    }
+
+    public fun languageDetection(value: Boolean?) {
+        languageDetection = value
+    }
+
+    public fun multichannel(value: Boolean?) {
+        multichannel = value
+    }
+
+    public fun punctuate(value: Boolean?) {
+        punctuate = value
+    }
+
+    public fun redactPii(value: Boolean?) {
+        redactPii = value
+    }
+
+    public fun redactPiiAudio(value: Boolean?) {
+        redactPiiAudio = value
+    }
+
+    public fun redactPiiAudioQuality(value: String?) {
+        redactPiiAudioQuality = value
+    }
+
+    public fun redactPiiPolicies(value: List<String>?) {
+        redactPiiPolicies = value
+    }
+
+    public fun redactPiiSub(value: String?) {
+        redactPiiSub = value
+    }
+
+    public fun sentimentAnalysis(value: Boolean?) {
+        sentimentAnalysis = value
+    }
+
+    public fun speakerLabels(value: Boolean?) {
+        speakerLabels = value
+    }
+
+    public fun speakersExpected(value: Int?) {
+        speakersExpected = value
+    }
+
+    public fun speechThreshold(value: Float?) {
+        speechThreshold = value
+    }
+
+    public fun summarization(value: Boolean?) {
+        summarization = value
+    }
+
+    public fun summaryModel(value: String?) {
+        summaryModel = value
+    }
+
+    public fun summaryType(value: String?) {
+        summaryType = value
+    }
+
+    public fun webhookAuthHeaderName(value: String?) {
+        webhookAuthHeaderName = value
+    }
+
+    public fun webhookAuthHeaderValue(value: String?) {
+        webhookAuthHeaderValue = value
+    }
+
+    public fun webhookUrl(value: String?) {
+        webhookUrl = value
+    }
+
+    public fun wordBoost(value: List<String>?) {
+        wordBoost = value
+    }
+
+    internal fun build(): AssemblyAITranscriptionModelOptions =
+        AssemblyAITranscriptionModelOptions(
+            audioEndAt = audioEndAt,
+            audioStartFrom = audioStartFrom,
+            autoChapters = autoChapters,
+            autoHighlights = autoHighlights,
+            boostParam = boostParam,
+            contentSafety = contentSafety,
+            contentSafetyConfidence = contentSafetyConfidence,
+            customSpelling = customSpelling,
+            disfluencies = disfluencies,
+            entityDetection = entityDetection,
+            filterProfanity = filterProfanity,
+            formatText = formatText,
+            iabCategories = iabCategories,
+            languageCode = languageCode,
+            languageConfidenceThreshold = languageConfidenceThreshold,
+            languageDetection = languageDetection,
+            multichannel = multichannel,
+            punctuate = punctuate,
+            redactPii = redactPii,
+            redactPiiAudio = redactPiiAudio,
+            redactPiiAudioQuality = redactPiiAudioQuality,
+            redactPiiPolicies = redactPiiPolicies,
+            redactPiiSub = redactPiiSub,
+            sentimentAnalysis = sentimentAnalysis,
+            speakerLabels = speakerLabels,
+            speakersExpected = speakersExpected,
+            speechThreshold = speechThreshold,
+            summarization = summarization,
+            summaryModel = summaryModel,
+            summaryType = summaryType,
+            webhookAuthHeaderName = webhookAuthHeaderName,
+            webhookAuthHeaderValue = webhookAuthHeaderValue,
+            webhookUrl = webhookUrl,
+            wordBoost = wordBoost,
+        )
+}
+
+public fun AssemblyAITranscriptionModelOptions(
+    block: AssemblyAITranscriptionModelOptionsBuilder.() -> Unit = {},
+): AssemblyAITranscriptionModelOptions =
+    AssemblyAITranscriptionModelOptionsBuilder().apply(block).build()
 
 @Serializable
 @Poko

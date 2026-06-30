@@ -29,32 +29,189 @@ public const val BLACK_FOREST_LABS_VERSION: String = "1.0.34"
 public typealias BlackForestLabsImageProviderOptions = BlackForestLabsImageModelOptions
 
 @Serializable
-public data class BlackForestLabsImageModelOptions(
-    val imagePrompt: String? = null,
-    val imagePromptStrength: Double? = null,
-    val inputImage: String? = null,
-    val inputImage2: String? = null,
-    val inputImage3: String? = null,
-    val inputImage4: String? = null,
-    val inputImage5: String? = null,
-    val inputImage6: String? = null,
-    val inputImage7: String? = null,
-    val inputImage8: String? = null,
-    val inputImage9: String? = null,
-    val inputImage10: String? = null,
-    val steps: Int? = null,
-    val guidance: Double? = null,
-    val width: Int? = null,
-    val height: Int? = null,
-    val outputFormat: String? = null,
-    val promptUpsampling: Boolean? = null,
-    val raw: Boolean? = null,
-    val safetyTolerance: Int? = null,
-    val webhookSecret: String? = null,
-    val webhookUrl: String? = null,
-    val pollIntervalMillis: Long? = null,
-    val pollTimeoutMillis: Long? = null,
+@Poko
+public class BlackForestLabsImageModelOptions internal constructor(
+    public val imagePrompt: String? = null,
+    public val imagePromptStrength: Double? = null,
+    public val inputImage: String? = null,
+    public val inputImage2: String? = null,
+    public val inputImage3: String? = null,
+    public val inputImage4: String? = null,
+    public val inputImage5: String? = null,
+    public val inputImage6: String? = null,
+    public val inputImage7: String? = null,
+    public val inputImage8: String? = null,
+    public val inputImage9: String? = null,
+    public val inputImage10: String? = null,
+    public val steps: Int? = null,
+    public val guidance: Double? = null,
+    public val width: Int? = null,
+    public val height: Int? = null,
+    public val outputFormat: String? = null,
+    public val promptUpsampling: Boolean? = null,
+    public val raw: Boolean? = null,
+    public val safetyTolerance: Int? = null,
+    public val webhookSecret: String? = null,
+    public val webhookUrl: String? = null,
+    public val pollIntervalMillis: Long? = null,
+    public val pollTimeoutMillis: Long? = null,
 )
+
+public class BlackForestLabsImageModelOptionsBuilder internal constructor() {
+    private var imagePrompt: String? = null
+    private var imagePromptStrength: Double? = null
+    private var inputImage: String? = null
+    private var inputImage2: String? = null
+    private var inputImage3: String? = null
+    private var inputImage4: String? = null
+    private var inputImage5: String? = null
+    private var inputImage6: String? = null
+    private var inputImage7: String? = null
+    private var inputImage8: String? = null
+    private var inputImage9: String? = null
+    private var inputImage10: String? = null
+    private var steps: Int? = null
+    private var guidance: Double? = null
+    private var width: Int? = null
+    private var height: Int? = null
+    private var outputFormat: String? = null
+    private var promptUpsampling: Boolean? = null
+    private var raw: Boolean? = null
+    private var safetyTolerance: Int? = null
+    private var webhookSecret: String? = null
+    private var webhookUrl: String? = null
+    private var pollIntervalMillis: Long? = null
+    private var pollTimeoutMillis: Long? = null
+
+    public fun imagePrompt(value: String?) {
+        imagePrompt = value
+    }
+
+    public fun imagePromptStrength(value: Double?) {
+        imagePromptStrength = value
+    }
+
+    public fun inputImage(value: String?) {
+        inputImage = value
+    }
+
+    public fun inputImage2(value: String?) {
+        inputImage2 = value
+    }
+
+    public fun inputImage3(value: String?) {
+        inputImage3 = value
+    }
+
+    public fun inputImage4(value: String?) {
+        inputImage4 = value
+    }
+
+    public fun inputImage5(value: String?) {
+        inputImage5 = value
+    }
+
+    public fun inputImage6(value: String?) {
+        inputImage6 = value
+    }
+
+    public fun inputImage7(value: String?) {
+        inputImage7 = value
+    }
+
+    public fun inputImage8(value: String?) {
+        inputImage8 = value
+    }
+
+    public fun inputImage9(value: String?) {
+        inputImage9 = value
+    }
+
+    public fun inputImage10(value: String?) {
+        inputImage10 = value
+    }
+
+    public fun steps(value: Int?) {
+        steps = value
+    }
+
+    public fun guidance(value: Double?) {
+        guidance = value
+    }
+
+    public fun width(value: Int?) {
+        width = value
+    }
+
+    public fun height(value: Int?) {
+        height = value
+    }
+
+    public fun outputFormat(value: String?) {
+        outputFormat = value
+    }
+
+    public fun promptUpsampling(value: Boolean?) {
+        promptUpsampling = value
+    }
+
+    public fun raw(value: Boolean?) {
+        raw = value
+    }
+
+    public fun safetyTolerance(value: Int?) {
+        safetyTolerance = value
+    }
+
+    public fun webhookSecret(value: String?) {
+        webhookSecret = value
+    }
+
+    public fun webhookUrl(value: String?) {
+        webhookUrl = value
+    }
+
+    public fun pollIntervalMillis(value: Long?) {
+        pollIntervalMillis = value
+    }
+
+    public fun pollTimeoutMillis(value: Long?) {
+        pollTimeoutMillis = value
+    }
+
+    internal fun build(): BlackForestLabsImageModelOptions =
+        BlackForestLabsImageModelOptions(
+            imagePrompt = imagePrompt,
+            imagePromptStrength = imagePromptStrength,
+            inputImage = inputImage,
+            inputImage2 = inputImage2,
+            inputImage3 = inputImage3,
+            inputImage4 = inputImage4,
+            inputImage5 = inputImage5,
+            inputImage6 = inputImage6,
+            inputImage7 = inputImage7,
+            inputImage8 = inputImage8,
+            inputImage9 = inputImage9,
+            inputImage10 = inputImage10,
+            steps = steps,
+            guidance = guidance,
+            width = width,
+            height = height,
+            outputFormat = outputFormat,
+            promptUpsampling = promptUpsampling,
+            raw = raw,
+            safetyTolerance = safetyTolerance,
+            webhookSecret = webhookSecret,
+            webhookUrl = webhookUrl,
+            pollIntervalMillis = pollIntervalMillis,
+            pollTimeoutMillis = pollTimeoutMillis,
+        )
+}
+
+public fun BlackForestLabsImageModelOptions(
+    block: BlackForestLabsImageModelOptionsBuilder.() -> Unit = {},
+): BlackForestLabsImageModelOptions =
+    BlackForestLabsImageModelOptionsBuilder().apply(block).build()
 
 @Serializable
 @Poko

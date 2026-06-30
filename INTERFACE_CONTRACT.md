@@ -253,11 +253,16 @@ Penalty, response-format, and retry fields participate in the `Step ?: Agent ?: 
   (`CohereLanguageModelOptions`, `CohereThinkingOptions`,
   `CohereEmbeddingModelOptions`, `CohereRerankingModelOptions`,
   `VoyageEmbeddingModelOptions`, `VoyageRerankingModelOptions`,
-  `BasetenEmbeddingModelOptions`, and `TogetherAIRerankingModelOptions`) expose
+  `BasetenEmbeddingModelOptions`, `TogetherAIRerankingModelOptions`,
+  `AlibabaEmbeddingModelOptions`, `AlibabaLanguageModelOptions`,
+  `AlibabaVideoModelOptions`, `AssemblyAITranscriptionModelOptions`,
+  `BlackForestLabsImageModelOptions`, `ByteDanceVideoProviderOptions`,
+  `DeepgramSpeechModelOptions`, and `DeepgramTranscriptionModelOptions`) expose
   field getters and are configured through public DSL factories and builder
-  setter methods such as `CohereEmbeddingModelOptions { inputType("search") }`.
-  These pure data options are `@Serializable @Poko class` value-semantics types;
-  their positional constructors, `copy()`, and `componentN()` are not public.
+  setter methods such as `CohereEmbeddingModelOptions { inputType("search") }`
+  or `DeepgramTranscriptionModelOptions { language("en") }`. These pure data
+  options are `@Serializable @Poko class` value-semantics types; their
+  positional constructors, `copy()`, and `componentN()` are not public.
 - Provider error payloads (`BasetenErrorData`, `CerebrasErrorData`,
   `FireworksErrorData`) are `@Serializable @Poko class` value-semantics types;
   JSON field names remain unchanged, while public `copy()` / `componentN()`
