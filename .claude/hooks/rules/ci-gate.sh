@@ -60,6 +60,9 @@ python3 .claude/hooks/rules/detect-nonintegrated-kotlin.py src --check || fail=1
 echo "== tool occurrence identity gate =="
 python3 .claude/hooks/rules/detect-tool-identity-regressions.py src/commonMain/kotlin --check || fail=1
 
+echo "== public data-class budget gate =="
+python3 .claude/hooks/rules/detect-public-data-class-budget.py src/commonMain/kotlin --check || fail=1
+
 echo "== release workflow trust gate =="
 python3 .claude/hooks/rules/detect-release-workflow-trust.py .github/workflows/release.yml --check || fail=1
 
