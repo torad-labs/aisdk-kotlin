@@ -9261,19 +9261,19 @@ final class ai.torad.aisdk/JSONRPCRequest : ai.torad.aisdk/JSONRPCMessage { // a
 }
 
 final class ai.torad.aisdk/JSONRPCResponse : ai.torad.aisdk/JSONRPCMessage { // ai.torad.aisdk/JSONRPCResponse|null[0]
-    constructor <init>(kotlinx.serialization.json/JsonElement, kotlinx.serialization.json/JsonElement = ..., kotlin/String = ...) // ai.torad.aisdk/JSONRPCResponse.<init>|<init>(kotlinx.serialization.json.JsonElement;kotlinx.serialization.json.JsonElement;kotlin.String){}[0]
+    constructor <init>(kotlinx.serialization.json/JsonElement, kotlinx.serialization.json/JsonElement? = ..., kotlin/String = ...) // ai.torad.aisdk/JSONRPCResponse.<init>|<init>(kotlinx.serialization.json.JsonElement;kotlinx.serialization.json.JsonElement?;kotlin.String){}[0]
 
     final val id // ai.torad.aisdk/JSONRPCResponse.id|{}id[0]
         final fun <get-id>(): kotlinx.serialization.json/JsonElement // ai.torad.aisdk/JSONRPCResponse.id.<get-id>|<get-id>(){}[0]
     final val jsonrpc // ai.torad.aisdk/JSONRPCResponse.jsonrpc|{}jsonrpc[0]
         final fun <get-jsonrpc>(): kotlin/String // ai.torad.aisdk/JSONRPCResponse.jsonrpc.<get-jsonrpc>|<get-jsonrpc>(){}[0]
     final val result // ai.torad.aisdk/JSONRPCResponse.result|{}result[0]
-        final fun <get-result>(): kotlinx.serialization.json/JsonElement // ai.torad.aisdk/JSONRPCResponse.result.<get-result>|<get-result>(){}[0]
+        final fun <get-result>(): kotlinx.serialization.json/JsonElement? // ai.torad.aisdk/JSONRPCResponse.result.<get-result>|<get-result>(){}[0]
 
     final fun component1(): kotlinx.serialization.json/JsonElement // ai.torad.aisdk/JSONRPCResponse.component1|component1(){}[0]
-    final fun component2(): kotlinx.serialization.json/JsonElement // ai.torad.aisdk/JSONRPCResponse.component2|component2(){}[0]
+    final fun component2(): kotlinx.serialization.json/JsonElement? // ai.torad.aisdk/JSONRPCResponse.component2|component2(){}[0]
     final fun component3(): kotlin/String // ai.torad.aisdk/JSONRPCResponse.component3|component3(){}[0]
-    final fun copy(kotlinx.serialization.json/JsonElement = ..., kotlinx.serialization.json/JsonElement = ..., kotlin/String = ...): ai.torad.aisdk/JSONRPCResponse // ai.torad.aisdk/JSONRPCResponse.copy|copy(kotlinx.serialization.json.JsonElement;kotlinx.serialization.json.JsonElement;kotlin.String){}[0]
+    final fun copy(kotlinx.serialization.json/JsonElement = ..., kotlinx.serialization.json/JsonElement? = ..., kotlin/String = ...): ai.torad.aisdk/JSONRPCResponse // ai.torad.aisdk/JSONRPCResponse.copy|copy(kotlinx.serialization.json.JsonElement;kotlinx.serialization.json.JsonElement?;kotlin.String){}[0]
     final fun equals(kotlin/Any?): kotlin/Boolean // ai.torad.aisdk/JSONRPCResponse.equals|equals(kotlin.Any?){}[0]
     final fun hashCode(): kotlin/Int // ai.torad.aisdk/JSONRPCResponse.hashCode|hashCode(){}[0]
     final fun toString(): kotlin/String // ai.torad.aisdk/JSONRPCResponse.toString|toString(){}[0]
