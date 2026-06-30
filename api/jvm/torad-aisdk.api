@@ -1845,11 +1845,6 @@ public abstract class ai/torad/aisdk/FileData {
 public final class ai/torad/aisdk/FileData$Base64 : ai/torad/aisdk/FileData {
 	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V
 	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public final fun component1 ()Ljava/lang/String;
-	public final fun component2 ()Ljava/lang/String;
-	public final fun component3 ()Ljava/lang/String;
-	public final fun copy (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)Lai/torad/aisdk/FileData$Base64;
-	public static synthetic fun copy$default (Lai/torad/aisdk/FileData$Base64;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ILjava/lang/Object;)Lai/torad/aisdk/FileData$Base64;
 	public fun equals (Ljava/lang/Object;)Z
 	public fun getFilename ()Ljava/lang/String;
 	public fun getMediaType ()Ljava/lang/String;
@@ -1872,11 +1867,6 @@ public final class ai/torad/aisdk/FileData$Bytes : ai/torad/aisdk/FileData {
 public final class ai/torad/aisdk/FileData$Url : ai/torad/aisdk/FileData {
 	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V
 	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public final fun component1 ()Ljava/lang/String;
-	public final fun component2 ()Ljava/lang/String;
-	public final fun component3 ()Ljava/lang/String;
-	public final fun copy (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)Lai/torad/aisdk/FileData$Url;
-	public static synthetic fun copy$default (Lai/torad/aisdk/FileData$Url;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ILjava/lang/Object;)Lai/torad/aisdk/FileData$Url;
 	public fun equals (Ljava/lang/Object;)Z
 	public fun getFilename ()Ljava/lang/String;
 	public fun getMediaType ()Ljava/lang/String;
@@ -2388,14 +2378,6 @@ public final class ai/torad/aisdk/GatewayTransportNotConfiguredError : ai/torad/
 public final class ai/torad/aisdk/GenerateImageResult {
 	public fun <init> (Ljava/util/List;Ljava/util/List;Lai/torad/aisdk/LanguageModelResponseMetadata;Lai/torad/aisdk/ProviderMetadata;Ljava/util/List;Lai/torad/aisdk/ImageModelUsage;)V
 	public synthetic fun <init> (Ljava/util/List;Ljava/util/List;Lai/torad/aisdk/LanguageModelResponseMetadata;Lai/torad/aisdk/ProviderMetadata;Ljava/util/List;Lai/torad/aisdk/ImageModelUsage;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public final fun component1 ()Ljava/util/List;
-	public final fun component2 ()Ljava/util/List;
-	public final fun component3 ()Lai/torad/aisdk/LanguageModelResponseMetadata;
-	public final fun component4 ()Lai/torad/aisdk/ProviderMetadata;
-	public final fun component5 ()Ljava/util/List;
-	public final fun component6 ()Lai/torad/aisdk/ImageModelUsage;
-	public final fun copy (Ljava/util/List;Ljava/util/List;Lai/torad/aisdk/LanguageModelResponseMetadata;Lai/torad/aisdk/ProviderMetadata;Ljava/util/List;Lai/torad/aisdk/ImageModelUsage;)Lai/torad/aisdk/GenerateImageResult;
-	public static synthetic fun copy$default (Lai/torad/aisdk/GenerateImageResult;Ljava/util/List;Ljava/util/List;Lai/torad/aisdk/LanguageModelResponseMetadata;Lai/torad/aisdk/ProviderMetadata;Ljava/util/List;Lai/torad/aisdk/ImageModelUsage;ILjava/lang/Object;)Lai/torad/aisdk/GenerateImageResult;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getImage ()Lai/torad/aisdk/GeneratedFile;
 	public final fun getImages ()Ljava/util/List;
@@ -2466,13 +2448,6 @@ public final class ai/torad/aisdk/GenerateResult {
 public final class ai/torad/aisdk/GenerateSpeechResult {
 	public fun <init> (Lai/torad/aisdk/GeneratedFile;Ljava/util/List;Lai/torad/aisdk/LanguageModelResponseMetadata;Lai/torad/aisdk/ProviderMetadata;Ljava/util/List;)V
 	public synthetic fun <init> (Lai/torad/aisdk/GeneratedFile;Ljava/util/List;Lai/torad/aisdk/LanguageModelResponseMetadata;Lai/torad/aisdk/ProviderMetadata;Ljava/util/List;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public final fun component1 ()Lai/torad/aisdk/GeneratedFile;
-	public final fun component2 ()Ljava/util/List;
-	public final fun component3 ()Lai/torad/aisdk/LanguageModelResponseMetadata;
-	public final fun component4 ()Lai/torad/aisdk/ProviderMetadata;
-	public final fun component5 ()Ljava/util/List;
-	public final fun copy (Lai/torad/aisdk/GeneratedFile;Ljava/util/List;Lai/torad/aisdk/LanguageModelResponseMetadata;Lai/torad/aisdk/ProviderMetadata;Ljava/util/List;)Lai/torad/aisdk/GenerateSpeechResult;
-	public static synthetic fun copy$default (Lai/torad/aisdk/GenerateSpeechResult;Lai/torad/aisdk/GeneratedFile;Ljava/util/List;Lai/torad/aisdk/LanguageModelResponseMetadata;Lai/torad/aisdk/ProviderMetadata;Ljava/util/List;ILjava/lang/Object;)Lai/torad/aisdk/GenerateSpeechResult;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getAudio ()Lai/torad/aisdk/GeneratedFile;
 	public final fun getProviderMetadata ()Lai/torad/aisdk/ProviderMetadata;
@@ -2536,13 +2511,6 @@ public final class ai/torad/aisdk/GenerateTextResult {
 public final class ai/torad/aisdk/GenerateVideoResult {
 	public fun <init> (Ljava/util/List;Ljava/util/List;Lai/torad/aisdk/LanguageModelResponseMetadata;Lai/torad/aisdk/ProviderMetadata;Ljava/util/List;)V
 	public synthetic fun <init> (Ljava/util/List;Ljava/util/List;Lai/torad/aisdk/LanguageModelResponseMetadata;Lai/torad/aisdk/ProviderMetadata;Ljava/util/List;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public final fun component1 ()Ljava/util/List;
-	public final fun component2 ()Ljava/util/List;
-	public final fun component3 ()Lai/torad/aisdk/LanguageModelResponseMetadata;
-	public final fun component4 ()Lai/torad/aisdk/ProviderMetadata;
-	public final fun component5 ()Ljava/util/List;
-	public final fun copy (Ljava/util/List;Ljava/util/List;Lai/torad/aisdk/LanguageModelResponseMetadata;Lai/torad/aisdk/ProviderMetadata;Ljava/util/List;)Lai/torad/aisdk/GenerateVideoResult;
-	public static synthetic fun copy$default (Lai/torad/aisdk/GenerateVideoResult;Ljava/util/List;Ljava/util/List;Lai/torad/aisdk/LanguageModelResponseMetadata;Lai/torad/aisdk/ProviderMetadata;Ljava/util/List;ILjava/lang/Object;)Lai/torad/aisdk/GenerateVideoResult;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getProviderMetadata ()Lai/torad/aisdk/ProviderMetadata;
 	public final fun getResponse ()Lai/torad/aisdk/LanguageModelResponseMetadata;
@@ -2557,13 +2525,6 @@ public final class ai/torad/aisdk/GenerateVideoResult {
 public final class ai/torad/aisdk/GeneratedFile {
 	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lai/torad/aisdk/ProviderMetadata;Ljava/lang/String;)V
 	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lai/torad/aisdk/ProviderMetadata;Ljava/lang/String;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public final fun component1 ()Ljava/lang/String;
-	public final fun component2 ()Ljava/lang/String;
-	public final fun component3 ()Ljava/lang/String;
-	public final fun component4 ()Lai/torad/aisdk/ProviderMetadata;
-	public final fun component5 ()Ljava/lang/String;
-	public final fun copy (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lai/torad/aisdk/ProviderMetadata;Ljava/lang/String;)Lai/torad/aisdk/GeneratedFile;
-	public static synthetic fun copy$default (Lai/torad/aisdk/GeneratedFile;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lai/torad/aisdk/ProviderMetadata;Ljava/lang/String;ILjava/lang/Object;)Lai/torad/aisdk/GeneratedFile;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getBase64 ()Ljava/lang/String;
 	public final fun getFilename ()Ljava/lang/String;
@@ -2718,12 +2679,6 @@ public final class ai/torad/aisdk/ImageGenerationFile {
 	public fun <init> ()V
 	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V
 	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public final fun component1 ()Ljava/lang/String;
-	public final fun component2 ()Ljava/lang/String;
-	public final fun component3 ()Ljava/lang/String;
-	public final fun component4 ()Ljava/lang/String;
-	public final fun copy (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)Lai/torad/aisdk/ImageGenerationFile;
-	public static synthetic fun copy$default (Lai/torad/aisdk/ImageGenerationFile;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ILjava/lang/Object;)Lai/torad/aisdk/ImageGenerationFile;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getBase64 ()Ljava/lang/String;
 	public final fun getFilename ()Ljava/lang/String;
@@ -2765,11 +2720,6 @@ public final class ai/torad/aisdk/ImageGenerationParams {
 
 public final class ai/torad/aisdk/ImageMiddlewareCallContext {
 	public fun <init> (Lai/torad/aisdk/ImageGenerationParams;Lai/torad/aisdk/ImageModel;Lkotlin/jvm/functions/Function2;)V
-	public final fun component1 ()Lai/torad/aisdk/ImageGenerationParams;
-	public final fun component2 ()Lai/torad/aisdk/ImageModel;
-	public final fun component3 ()Lkotlin/jvm/functions/Function2;
-	public final fun copy (Lai/torad/aisdk/ImageGenerationParams;Lai/torad/aisdk/ImageModel;Lkotlin/jvm/functions/Function2;)Lai/torad/aisdk/ImageMiddlewareCallContext;
-	public static synthetic fun copy$default (Lai/torad/aisdk/ImageMiddlewareCallContext;Lai/torad/aisdk/ImageGenerationParams;Lai/torad/aisdk/ImageModel;Lkotlin/jvm/functions/Function2;ILjava/lang/Object;)Lai/torad/aisdk/ImageMiddlewareCallContext;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getDoGenerate ()Lkotlin/jvm/functions/Function2;
 	public final fun getModel ()Lai/torad/aisdk/ImageModel;
@@ -2801,13 +2751,6 @@ public final class ai/torad/aisdk/ImageModelMiddleware$DefaultImpls {
 public final class ai/torad/aisdk/ImageModelResult {
 	public fun <init> (Ljava/util/List;Ljava/util/List;Lai/torad/aisdk/LanguageModelResponseMetadata;Lai/torad/aisdk/ProviderMetadata;Lai/torad/aisdk/ImageModelUsage;)V
 	public synthetic fun <init> (Ljava/util/List;Ljava/util/List;Lai/torad/aisdk/LanguageModelResponseMetadata;Lai/torad/aisdk/ProviderMetadata;Lai/torad/aisdk/ImageModelUsage;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public final fun component1 ()Ljava/util/List;
-	public final fun component2 ()Ljava/util/List;
-	public final fun component3 ()Lai/torad/aisdk/LanguageModelResponseMetadata;
-	public final fun component4 ()Lai/torad/aisdk/ProviderMetadata;
-	public final fun component5 ()Lai/torad/aisdk/ImageModelUsage;
-	public final fun copy (Ljava/util/List;Ljava/util/List;Lai/torad/aisdk/LanguageModelResponseMetadata;Lai/torad/aisdk/ProviderMetadata;Lai/torad/aisdk/ImageModelUsage;)Lai/torad/aisdk/ImageModelResult;
-	public static synthetic fun copy$default (Lai/torad/aisdk/ImageModelResult;Ljava/util/List;Ljava/util/List;Lai/torad/aisdk/LanguageModelResponseMetadata;Lai/torad/aisdk/ProviderMetadata;Lai/torad/aisdk/ImageModelUsage;ILjava/lang/Object;)Lai/torad/aisdk/ImageModelResult;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getImages ()Ljava/util/List;
 	public final fun getProviderMetadata ()Lai/torad/aisdk/ProviderMetadata;
@@ -2823,11 +2766,6 @@ public final class ai/torad/aisdk/ImageModelUsage {
 	public fun <init> ()V
 	public fun <init> (Ljava/lang/Integer;Ljava/lang/Integer;Ljava/lang/Integer;)V
 	public synthetic fun <init> (Ljava/lang/Integer;Ljava/lang/Integer;Ljava/lang/Integer;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public final fun component1 ()Ljava/lang/Integer;
-	public final fun component2 ()Ljava/lang/Integer;
-	public final fun component3 ()Ljava/lang/Integer;
-	public final fun copy (Ljava/lang/Integer;Ljava/lang/Integer;Ljava/lang/Integer;)Lai/torad/aisdk/ImageModelUsage;
-	public static synthetic fun copy$default (Lai/torad/aisdk/ImageModelUsage;Ljava/lang/Integer;Ljava/lang/Integer;Ljava/lang/Integer;ILjava/lang/Object;)Lai/torad/aisdk/ImageModelUsage;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getInputTokens ()Ljava/lang/Integer;
 	public final fun getOutputTokens ()Ljava/lang/Integer;
@@ -5343,12 +5281,6 @@ public final class ai/torad/aisdk/SpeechModel$DefaultImpls {
 public final class ai/torad/aisdk/SpeechModelResult {
 	public fun <init> (Lai/torad/aisdk/GeneratedFile;Ljava/util/List;Lai/torad/aisdk/LanguageModelResponseMetadata;Lai/torad/aisdk/ProviderMetadata;)V
 	public synthetic fun <init> (Lai/torad/aisdk/GeneratedFile;Ljava/util/List;Lai/torad/aisdk/LanguageModelResponseMetadata;Lai/torad/aisdk/ProviderMetadata;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public final fun component1 ()Lai/torad/aisdk/GeneratedFile;
-	public final fun component2 ()Ljava/util/List;
-	public final fun component3 ()Lai/torad/aisdk/LanguageModelResponseMetadata;
-	public final fun component4 ()Lai/torad/aisdk/ProviderMetadata;
-	public final fun copy (Lai/torad/aisdk/GeneratedFile;Ljava/util/List;Lai/torad/aisdk/LanguageModelResponseMetadata;Lai/torad/aisdk/ProviderMetadata;)Lai/torad/aisdk/SpeechModelResult;
-	public static synthetic fun copy$default (Lai/torad/aisdk/SpeechModelResult;Lai/torad/aisdk/GeneratedFile;Ljava/util/List;Lai/torad/aisdk/LanguageModelResponseMetadata;Lai/torad/aisdk/ProviderMetadata;ILjava/lang/Object;)Lai/torad/aisdk/SpeechModelResult;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getAudio ()Lai/torad/aisdk/GeneratedFile;
 	public final fun getProviderMetadata ()Lai/torad/aisdk/ProviderMetadata;
@@ -7247,16 +7179,6 @@ public abstract interface class ai/torad/aisdk/ToolStreamWriter {
 public final class ai/torad/aisdk/TranscribeResult {
 	public fun <init> (Ljava/lang/String;Ljava/util/List;Ljava/util/List;Lai/torad/aisdk/LanguageModelResponseMetadata;Lai/torad/aisdk/ProviderMetadata;Ljava/util/List;Ljava/lang/String;Ljava/lang/Float;)V
 	public synthetic fun <init> (Ljava/lang/String;Ljava/util/List;Ljava/util/List;Lai/torad/aisdk/LanguageModelResponseMetadata;Lai/torad/aisdk/ProviderMetadata;Ljava/util/List;Ljava/lang/String;Ljava/lang/Float;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public final fun component1 ()Ljava/lang/String;
-	public final fun component2 ()Ljava/util/List;
-	public final fun component3 ()Ljava/util/List;
-	public final fun component4 ()Lai/torad/aisdk/LanguageModelResponseMetadata;
-	public final fun component5 ()Lai/torad/aisdk/ProviderMetadata;
-	public final fun component6 ()Ljava/util/List;
-	public final fun component7 ()Ljava/lang/String;
-	public final fun component8 ()Ljava/lang/Float;
-	public final fun copy (Ljava/lang/String;Ljava/util/List;Ljava/util/List;Lai/torad/aisdk/LanguageModelResponseMetadata;Lai/torad/aisdk/ProviderMetadata;Ljava/util/List;Ljava/lang/String;Ljava/lang/Float;)Lai/torad/aisdk/TranscribeResult;
-	public static synthetic fun copy$default (Lai/torad/aisdk/TranscribeResult;Ljava/lang/String;Ljava/util/List;Ljava/util/List;Lai/torad/aisdk/LanguageModelResponseMetadata;Lai/torad/aisdk/ProviderMetadata;Ljava/util/List;Ljava/lang/String;Ljava/lang/Float;ILjava/lang/Object;)Lai/torad/aisdk/TranscribeResult;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getDurationInSeconds ()Ljava/lang/Float;
 	public final fun getLanguage ()Ljava/lang/String;
@@ -7273,11 +7195,6 @@ public final class ai/torad/aisdk/TranscribeResult {
 public final class ai/torad/aisdk/TranscriptSegment {
 	public fun <init> (Ljava/lang/String;Ljava/lang/Float;Ljava/lang/Float;)V
 	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/Float;Ljava/lang/Float;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public final fun component1 ()Ljava/lang/String;
-	public final fun component2 ()Ljava/lang/Float;
-	public final fun component3 ()Ljava/lang/Float;
-	public final fun copy (Ljava/lang/String;Ljava/lang/Float;Ljava/lang/Float;)Lai/torad/aisdk/TranscriptSegment;
-	public static synthetic fun copy$default (Lai/torad/aisdk/TranscriptSegment;Ljava/lang/String;Ljava/lang/Float;Ljava/lang/Float;ILjava/lang/Object;)Lai/torad/aisdk/TranscriptSegment;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getEndSeconds ()Ljava/lang/Float;
 	public final fun getStartSeconds ()Ljava/lang/Float;
@@ -7307,15 +7224,6 @@ public final class ai/torad/aisdk/TranscriptionModel$DefaultImpls {
 public final class ai/torad/aisdk/TranscriptionModelResult {
 	public fun <init> (Ljava/lang/String;Ljava/util/List;Ljava/util/List;Lai/torad/aisdk/LanguageModelResponseMetadata;Lai/torad/aisdk/ProviderMetadata;Ljava/lang/String;Ljava/lang/Float;)V
 	public synthetic fun <init> (Ljava/lang/String;Ljava/util/List;Ljava/util/List;Lai/torad/aisdk/LanguageModelResponseMetadata;Lai/torad/aisdk/ProviderMetadata;Ljava/lang/String;Ljava/lang/Float;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public final fun component1 ()Ljava/lang/String;
-	public final fun component2 ()Ljava/util/List;
-	public final fun component3 ()Ljava/util/List;
-	public final fun component4 ()Lai/torad/aisdk/LanguageModelResponseMetadata;
-	public final fun component5 ()Lai/torad/aisdk/ProviderMetadata;
-	public final fun component6 ()Ljava/lang/String;
-	public final fun component7 ()Ljava/lang/Float;
-	public final fun copy (Ljava/lang/String;Ljava/util/List;Ljava/util/List;Lai/torad/aisdk/LanguageModelResponseMetadata;Lai/torad/aisdk/ProviderMetadata;Ljava/lang/String;Ljava/lang/Float;)Lai/torad/aisdk/TranscriptionModelResult;
-	public static synthetic fun copy$default (Lai/torad/aisdk/TranscriptionModelResult;Ljava/lang/String;Ljava/util/List;Ljava/util/List;Lai/torad/aisdk/LanguageModelResponseMetadata;Lai/torad/aisdk/ProviderMetadata;Ljava/lang/String;Ljava/lang/Float;ILjava/lang/Object;)Lai/torad/aisdk/TranscriptionModelResult;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getDurationInSeconds ()Ljava/lang/Float;
 	public final fun getLanguage ()Ljava/lang/String;
@@ -7654,12 +7562,6 @@ public final class ai/torad/aisdk/VideoModel$DefaultImpls {
 public final class ai/torad/aisdk/VideoModelResult {
 	public fun <init> (Ljava/util/List;Ljava/util/List;Lai/torad/aisdk/LanguageModelResponseMetadata;Lai/torad/aisdk/ProviderMetadata;)V
 	public synthetic fun <init> (Ljava/util/List;Ljava/util/List;Lai/torad/aisdk/LanguageModelResponseMetadata;Lai/torad/aisdk/ProviderMetadata;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public final fun component1 ()Ljava/util/List;
-	public final fun component2 ()Ljava/util/List;
-	public final fun component3 ()Lai/torad/aisdk/LanguageModelResponseMetadata;
-	public final fun component4 ()Lai/torad/aisdk/ProviderMetadata;
-	public final fun copy (Ljava/util/List;Ljava/util/List;Lai/torad/aisdk/LanguageModelResponseMetadata;Lai/torad/aisdk/ProviderMetadata;)Lai/torad/aisdk/VideoModelResult;
-	public static synthetic fun copy$default (Lai/torad/aisdk/VideoModelResult;Ljava/util/List;Ljava/util/List;Lai/torad/aisdk/LanguageModelResponseMetadata;Lai/torad/aisdk/ProviderMetadata;ILjava/lang/Object;)Lai/torad/aisdk/VideoModelResult;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getProviderMetadata ()Lai/torad/aisdk/ProviderMetadata;
 	public final fun getResponse ()Lai/torad/aisdk/LanguageModelResponseMetadata;

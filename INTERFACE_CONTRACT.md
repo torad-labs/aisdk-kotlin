@@ -163,6 +163,9 @@ Penalty, response-format, and retry fields participate in the `Step ?: Agent ?: 
 - Video: `VideoModel`, `VideoGenerationParams`, `VideoModelResult`, `GenerateVideoResult`, `generateVideo(..., maxParallelCalls = 8)`
 - Rerank: `RerankingModel`, `RerankingParams`, `RerankedItem<T>`, `RerankResult<T>`, `rerank(...)`
 - Shared file payload: `GeneratedFile(mediaType, base64, filename?, providerMetadata)`, `FileData.Base64`, `FileData.Bytes.toByteArray()` (copy-returning), `FileData.Url`, `DefaultGeneratedFile.fromBase64/fromBytes` (`byteArray` is copy-returning).
+- Media result/metadata holders are `@Poko class` value-semantics types;
+  field access remains, but public `copy()` / `componentN()` ABI is
+  intentionally absent. Construct params remain builder-track data classes.
 - Experimental media aliases/functions require `@ExperimentalAiSdkApi`: `Experimental_GeneratedImage`, `Experimental_GenerateImageResult`, `Experimental_SpeechResult`, `Experimental_TranscriptionResult`, `experimental_generateImage`, `experimental_generateSpeech`, `experimental_transcribe`, `experimental_generateVideo`.
 - `ImageModelMiddleware`, `ImageMiddlewareCallContext`, `wrapImageModel`
 

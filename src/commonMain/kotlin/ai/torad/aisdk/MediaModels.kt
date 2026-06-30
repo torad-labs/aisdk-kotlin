@@ -1,24 +1,27 @@
 package ai.torad.aisdk
 
+import dev.drewhamilton.poko.Poko
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.intOrNull
 
-public data class GeneratedFile(
-    val mediaType: String,
-    val base64: String,
-    val filename: String? = null,
-    val providerMetadata: ProviderMetadata = ProviderMetadata.None,
-    val url: String? = null,
+@Poko
+public class GeneratedFile(
+    public val mediaType: String,
+    public val base64: String,
+    public val filename: String? = null,
+    public val providerMetadata: ProviderMetadata = ProviderMetadata.None,
+    public val url: String? = null,
 )
 
 public sealed class FileData {
     public abstract val mediaType: String?
     public abstract val filename: String?
 
-    public data class Base64(
-        val value: String,
+    @Poko
+    public class Base64(
+        public val value: String,
         override val mediaType: String? = null,
         override val filename: String? = null,
     ) : FileData()
@@ -48,8 +51,9 @@ public sealed class FileData {
             "Bytes(size=${bytesData.size}, mediaType=$mediaType, filename=$filename)"
     }
 
-    public data class Url(
-        val value: String,
+    @Poko
+    public class Url(
+        public val value: String,
         override val mediaType: String? = null,
         override val filename: String? = null,
     ) : FileData()
@@ -210,18 +214,20 @@ public data class ImageGenerationParams(
     val mask: ImageGenerationFile? = null,
 )
 
-public data class ImageGenerationFile(
-    val mediaType: String? = null,
-    val base64: String? = null,
-    val url: String? = null,
-    val filename: String? = null,
+@Poko
+public class ImageGenerationFile(
+    public val mediaType: String? = null,
+    public val base64: String? = null,
+    public val url: String? = null,
+    public val filename: String? = null,
 )
 
 /** Token usage reported by an image model, when available. Mirrors v6's `ImageModelUsage`. */
-public data class ImageModelUsage(
-    val inputTokens: Int? = null,
-    val outputTokens: Int? = null,
-    val totalTokens: Int? = null,
+@Poko
+public class ImageModelUsage(
+    public val inputTokens: Int? = null,
+    public val outputTokens: Int? = null,
+    public val totalTokens: Int? = null,
 ) {
     public companion object {
         /** Sum image usage across n-batched calls; a field stays null only if every call left it null. */
@@ -243,24 +249,26 @@ public data class ImageModelUsage(
     }
 }
 
-public data class ImageModelResult(
-    val images: List<GeneratedFile>,
-    val warnings: List<CallWarning> = emptyList(),
-    val response: LanguageModelResponseMetadata = LanguageModelResponseMetadata(),
-    val providerMetadata: ProviderMetadata = ProviderMetadata.None,
-    val usage: ImageModelUsage = ImageModelUsage(),
+@Poko
+public class ImageModelResult(
+    public val images: List<GeneratedFile>,
+    public val warnings: List<CallWarning> = emptyList(),
+    public val response: LanguageModelResponseMetadata = LanguageModelResponseMetadata(),
+    public val providerMetadata: ProviderMetadata = ProviderMetadata.None,
+    public val usage: ImageModelUsage = ImageModelUsage(),
 )
 
-public data class GenerateImageResult(
-    val images: List<GeneratedFile>,
-    val warnings: List<CallWarning> = emptyList(),
-    val response: LanguageModelResponseMetadata = LanguageModelResponseMetadata(),
-    val providerMetadata: ProviderMetadata = ProviderMetadata.None,
+@Poko
+public class GenerateImageResult(
+    public val images: List<GeneratedFile>,
+    public val warnings: List<CallWarning> = emptyList(),
+    public val response: LanguageModelResponseMetadata = LanguageModelResponseMetadata(),
+    public val providerMetadata: ProviderMetadata = ProviderMetadata.None,
     /** Per-call response metadata, one entry per underlying model call (n-batching). */
-    val responses: List<LanguageModelResponseMetadata> = listOf(response),
-    val usage: ImageModelUsage = ImageModelUsage(),
+    public val responses: List<LanguageModelResponseMetadata> = listOf(response),
+    public val usage: ImageModelUsage = ImageModelUsage(),
 ) {
-    val image: GeneratedFile get() = images.firstOrNull() ?: throw NoImageGeneratedError()
+    public val image: GeneratedFile get() = images.firstOrNull() ?: throw NoImageGeneratedError()
 }
 
 public object ImageGeneration {
@@ -348,10 +356,11 @@ public interface ImageModelMiddleware {
         context.doGenerate(context.params)
 }
 
-public data class ImageMiddlewareCallContext(
-    val params: ImageGenerationParams,
-    val model: ImageModel,
-    val doGenerate: suspend (ImageGenerationParams) -> ImageModelResult,
+@Poko
+public class ImageMiddlewareCallContext(
+    public val params: ImageGenerationParams,
+    public val model: ImageModel,
+    public val doGenerate: suspend (ImageGenerationParams) -> ImageModelResult,
 )
 
 public fun WrapImageModel(
@@ -421,19 +430,21 @@ public data class SpeechGenerationParams(
     val abortSignal: AbortSignal = AbortSignalNever,
 )
 
-public data class SpeechModelResult(
-    val audio: GeneratedFile?,
-    val warnings: List<CallWarning> = emptyList(),
-    val response: LanguageModelResponseMetadata = LanguageModelResponseMetadata(),
-    val providerMetadata: ProviderMetadata = ProviderMetadata.None,
+@Poko
+public class SpeechModelResult(
+    public val audio: GeneratedFile?,
+    public val warnings: List<CallWarning> = emptyList(),
+    public val response: LanguageModelResponseMetadata = LanguageModelResponseMetadata(),
+    public val providerMetadata: ProviderMetadata = ProviderMetadata.None,
 )
 
-public data class GenerateSpeechResult(
-    val audio: GeneratedFile,
-    val warnings: List<CallWarning> = emptyList(),
-    val response: LanguageModelResponseMetadata = LanguageModelResponseMetadata(),
-    val providerMetadata: ProviderMetadata = ProviderMetadata.None,
-    val responses: List<LanguageModelResponseMetadata> = listOf(response),
+@Poko
+public class GenerateSpeechResult(
+    public val audio: GeneratedFile,
+    public val warnings: List<CallWarning> = emptyList(),
+    public val response: LanguageModelResponseMetadata = LanguageModelResponseMetadata(),
+    public val providerMetadata: ProviderMetadata = ProviderMetadata.None,
+    public val responses: List<LanguageModelResponseMetadata> = listOf(response),
 )
 
 public object SpeechGeneration {
@@ -514,35 +525,38 @@ public data class TranscriptionParams(
     val abortSignal: AbortSignal = AbortSignalNever,
 )
 
-public data class TranscriptSegment(
-    val text: String,
-    val startSeconds: Float? = null,
-    val endSeconds: Float? = null,
+@Poko
+public class TranscriptSegment(
+    public val text: String,
+    public val startSeconds: Float? = null,
+    public val endSeconds: Float? = null,
 )
 
-public data class TranscriptionModelResult(
-    val text: String?,
-    val segments: List<TranscriptSegment> = emptyList(),
-    val warnings: List<CallWarning> = emptyList(),
-    val response: LanguageModelResponseMetadata = LanguageModelResponseMetadata(),
-    val providerMetadata: ProviderMetadata = ProviderMetadata.None,
+@Poko
+public class TranscriptionModelResult(
+    public val text: String?,
+    public val segments: List<TranscriptSegment> = emptyList(),
+    public val warnings: List<CallWarning> = emptyList(),
+    public val response: LanguageModelResponseMetadata = LanguageModelResponseMetadata(),
+    public val providerMetadata: ProviderMetadata = ProviderMetadata.None,
     /** Detected language as an ISO-639-1 code, or null if undetermined. */
-    val language: String? = null,
+    public val language: String? = null,
     /** Total audio duration in seconds, or null if undetermined. */
-    val durationInSeconds: Float? = null,
+    public val durationInSeconds: Float? = null,
 )
 
-public data class TranscribeResult(
-    val text: String,
-    val segments: List<TranscriptSegment> = emptyList(),
-    val warnings: List<CallWarning> = emptyList(),
-    val response: LanguageModelResponseMetadata = LanguageModelResponseMetadata(),
-    val providerMetadata: ProviderMetadata = ProviderMetadata.None,
-    val responses: List<LanguageModelResponseMetadata> = listOf(response),
+@Poko
+public class TranscribeResult(
+    public val text: String,
+    public val segments: List<TranscriptSegment> = emptyList(),
+    public val warnings: List<CallWarning> = emptyList(),
+    public val response: LanguageModelResponseMetadata = LanguageModelResponseMetadata(),
+    public val providerMetadata: ProviderMetadata = ProviderMetadata.None,
+    public val responses: List<LanguageModelResponseMetadata> = listOf(response),
     /** Detected language as an ISO-639-1 code, or null if undetermined. */
-    val language: String? = null,
+    public val language: String? = null,
     /** Total audio duration in seconds, or null if undetermined. */
-    val durationInSeconds: Float? = null,
+    public val durationInSeconds: Float? = null,
 )
 
 public object Transcription {
@@ -621,22 +635,24 @@ public data class VideoGenerationParams(
     val resolution: String? = null,
 )
 
-public data class VideoModelResult(
-    val videos: List<GeneratedFile>,
-    val warnings: List<CallWarning> = emptyList(),
-    val response: LanguageModelResponseMetadata = LanguageModelResponseMetadata(),
-    val providerMetadata: ProviderMetadata = ProviderMetadata.None,
+@Poko
+public class VideoModelResult(
+    public val videos: List<GeneratedFile>,
+    public val warnings: List<CallWarning> = emptyList(),
+    public val response: LanguageModelResponseMetadata = LanguageModelResponseMetadata(),
+    public val providerMetadata: ProviderMetadata = ProviderMetadata.None,
 )
 
-public data class GenerateVideoResult(
-    val videos: List<GeneratedFile>,
-    val warnings: List<CallWarning> = emptyList(),
-    val response: LanguageModelResponseMetadata = LanguageModelResponseMetadata(),
-    val providerMetadata: ProviderMetadata = ProviderMetadata.None,
+@Poko
+public class GenerateVideoResult(
+    public val videos: List<GeneratedFile>,
+    public val warnings: List<CallWarning> = emptyList(),
+    public val response: LanguageModelResponseMetadata = LanguageModelResponseMetadata(),
+    public val providerMetadata: ProviderMetadata = ProviderMetadata.None,
     /** Per-call response metadata, one entry per underlying model call (n-batching). */
-    val responses: List<LanguageModelResponseMetadata> = listOf(response),
+    public val responses: List<LanguageModelResponseMetadata> = listOf(response),
 ) {
-    val video: GeneratedFile get() = videos.firstOrNull() ?: throw NoVideoGeneratedError()
+    public val video: GeneratedFile get() = videos.firstOrNull() ?: throw NoVideoGeneratedError()
 }
 
 public object VideoGeneration {
