@@ -282,19 +282,85 @@ public data class ProdiaLanguageModelOptions(
 )
 
 @Serializable
-public data class ProdiaImageModelOptions(
-    val steps: Int? = null,
-    val width: Int? = null,
-    val height: Int? = null,
-    val stylePreset: String? = null,
-    val loras: List<String>? = null,
-    val progressive: Boolean? = null,
+@Poko
+public class ProdiaImageModelOptions internal constructor(
+    public val steps: Int? = null,
+    public val width: Int? = null,
+    public val height: Int? = null,
+    public val stylePreset: String? = null,
+    public val loras: List<String>? = null,
+    public val progressive: Boolean? = null,
 )
 
+public class ProdiaImageModelOptionsBuilder internal constructor() {
+    private var steps: Int? = null
+    private var width: Int? = null
+    private var height: Int? = null
+    private var stylePreset: String? = null
+    private var loras: List<String>? = null
+    private var progressive: Boolean? = null
+
+    public fun steps(value: Int?) {
+        steps = value
+    }
+
+    public fun width(value: Int?) {
+        width = value
+    }
+
+    public fun height(value: Int?) {
+        height = value
+    }
+
+    public fun stylePreset(value: String?) {
+        stylePreset = value
+    }
+
+    public fun loras(value: List<String>?) {
+        loras = value
+    }
+
+    public fun progressive(value: Boolean?) {
+        progressive = value
+    }
+
+    internal fun build(): ProdiaImageModelOptions =
+        ProdiaImageModelOptions(
+            steps = steps,
+            width = width,
+            height = height,
+            stylePreset = stylePreset,
+            loras = loras,
+            progressive = progressive,
+        )
+}
+
+public fun ProdiaImageModelOptions(
+    block: ProdiaImageModelOptionsBuilder.() -> Unit = {},
+): ProdiaImageModelOptions =
+    ProdiaImageModelOptionsBuilder().apply(block).build()
+
 @Serializable
-public data class ProdiaVideoModelOptions(
-    val resolution: String? = null,
+@Poko
+public class ProdiaVideoModelOptions internal constructor(
+    public val resolution: String? = null,
 )
+
+public class ProdiaVideoModelOptionsBuilder internal constructor() {
+    private var resolution: String? = null
+
+    public fun resolution(value: String?) {
+        resolution = value
+    }
+
+    internal fun build(): ProdiaVideoModelOptions =
+        ProdiaVideoModelOptions(resolution = resolution)
+}
+
+public fun ProdiaVideoModelOptions(
+    block: ProdiaVideoModelOptionsBuilder.() -> Unit = {},
+): ProdiaVideoModelOptions =
+    ProdiaVideoModelOptionsBuilder().apply(block).build()
 
 public class ProdiaProvider(
     private val client: HttpClient,

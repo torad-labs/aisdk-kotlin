@@ -32,31 +32,171 @@ public typealias ReplicateImageProviderOptions = ReplicateImageModelOptions
 public typealias ReplicateVideoProviderOptions = ReplicateVideoModelOptions
 
 @Serializable
-public data class ReplicateImageModelOptions(
-    val maxWaitTimeInSeconds: Double? = null,
-    val guidance_scale: Double? = null,
-    val num_inference_steps: Double? = null,
-    val negative_prompt: String? = null,
-    val output_format: String? = null,
-    val output_quality: Int? = null,
-    val strength: Double? = null,
+@Poko
+public class ReplicateImageModelOptions internal constructor(
+    public val maxWaitTimeInSeconds: Double? = null,
+    public val guidance_scale: Double? = null,
+    public val num_inference_steps: Double? = null,
+    public val negative_prompt: String? = null,
+    public val output_format: String? = null,
+    public val output_quality: Int? = null,
+    public val strength: Double? = null,
 )
 
+public class ReplicateImageModelOptionsBuilder internal constructor() {
+    private var maxWaitTimeInSeconds: Double? = null
+    private var guidance_scale: Double? = null
+    private var num_inference_steps: Double? = null
+    private var negative_prompt: String? = null
+    private var output_format: String? = null
+    private var output_quality: Int? = null
+    private var strength: Double? = null
+
+    public fun maxWaitTimeInSeconds(value: Double?) {
+        maxWaitTimeInSeconds = value
+    }
+
+    public fun guidance_scale(value: Double?) {
+        guidance_scale = value
+    }
+
+    public fun num_inference_steps(value: Double?) {
+        num_inference_steps = value
+    }
+
+    public fun negative_prompt(value: String?) {
+        negative_prompt = value
+    }
+
+    public fun output_format(value: String?) {
+        output_format = value
+    }
+
+    public fun output_quality(value: Int?) {
+        output_quality = value
+    }
+
+    public fun strength(value: Double?) {
+        strength = value
+    }
+
+    internal fun build(): ReplicateImageModelOptions =
+        ReplicateImageModelOptions(
+            maxWaitTimeInSeconds = maxWaitTimeInSeconds,
+            guidance_scale = guidance_scale,
+            num_inference_steps = num_inference_steps,
+            negative_prompt = negative_prompt,
+            output_format = output_format,
+            output_quality = output_quality,
+            strength = strength,
+        )
+}
+
+public fun ReplicateImageModelOptions(
+    block: ReplicateImageModelOptionsBuilder.() -> Unit = {},
+): ReplicateImageModelOptions =
+    ReplicateImageModelOptionsBuilder().apply(block).build()
+
 @Serializable
-public data class ReplicateVideoModelOptions(
-    val pollIntervalMs: Long? = null,
-    val pollTimeoutMs: Long? = null,
-    val maxWaitTimeInSeconds: Double? = null,
-    val guidance_scale: Double? = null,
-    val num_inference_steps: Double? = null,
-    val motion_bucket_id: Double? = null,
-    val cond_aug: Double? = null,
-    val decoding_t: Double? = null,
-    val video_length: String? = null,
-    val sizing_strategy: String? = null,
-    val frames_per_second: Double? = null,
-    val prompt_optimizer: Boolean? = null,
+@Poko
+public class ReplicateVideoModelOptions internal constructor(
+    public val pollIntervalMs: Long? = null,
+    public val pollTimeoutMs: Long? = null,
+    public val maxWaitTimeInSeconds: Double? = null,
+    public val guidance_scale: Double? = null,
+    public val num_inference_steps: Double? = null,
+    public val motion_bucket_id: Double? = null,
+    public val cond_aug: Double? = null,
+    public val decoding_t: Double? = null,
+    public val video_length: String? = null,
+    public val sizing_strategy: String? = null,
+    public val frames_per_second: Double? = null,
+    public val prompt_optimizer: Boolean? = null,
 )
+
+public class ReplicateVideoModelOptionsBuilder internal constructor() {
+    private var pollIntervalMs: Long? = null
+    private var pollTimeoutMs: Long? = null
+    private var maxWaitTimeInSeconds: Double? = null
+    private var guidance_scale: Double? = null
+    private var num_inference_steps: Double? = null
+    private var motion_bucket_id: Double? = null
+    private var cond_aug: Double? = null
+    private var decoding_t: Double? = null
+    private var video_length: String? = null
+    private var sizing_strategy: String? = null
+    private var frames_per_second: Double? = null
+    private var prompt_optimizer: Boolean? = null
+
+    public fun pollIntervalMs(value: Long?) {
+        pollIntervalMs = value
+    }
+
+    public fun pollTimeoutMs(value: Long?) {
+        pollTimeoutMs = value
+    }
+
+    public fun maxWaitTimeInSeconds(value: Double?) {
+        maxWaitTimeInSeconds = value
+    }
+
+    public fun guidance_scale(value: Double?) {
+        guidance_scale = value
+    }
+
+    public fun num_inference_steps(value: Double?) {
+        num_inference_steps = value
+    }
+
+    public fun motion_bucket_id(value: Double?) {
+        motion_bucket_id = value
+    }
+
+    public fun cond_aug(value: Double?) {
+        cond_aug = value
+    }
+
+    public fun decoding_t(value: Double?) {
+        decoding_t = value
+    }
+
+    public fun video_length(value: String?) {
+        video_length = value
+    }
+
+    public fun sizing_strategy(value: String?) {
+        sizing_strategy = value
+    }
+
+    public fun frames_per_second(value: Double?) {
+        frames_per_second = value
+    }
+
+    public fun prompt_optimizer(value: Boolean?) {
+        prompt_optimizer = value
+    }
+
+    internal fun build(): ReplicateVideoModelOptions =
+        ReplicateVideoModelOptions(
+            pollIntervalMs = pollIntervalMs,
+            pollTimeoutMs = pollTimeoutMs,
+            maxWaitTimeInSeconds = maxWaitTimeInSeconds,
+            guidance_scale = guidance_scale,
+            num_inference_steps = num_inference_steps,
+            motion_bucket_id = motion_bucket_id,
+            cond_aug = cond_aug,
+            decoding_t = decoding_t,
+            video_length = video_length,
+            sizing_strategy = sizing_strategy,
+            frames_per_second = frames_per_second,
+            prompt_optimizer = prompt_optimizer,
+        )
+}
+
+public fun ReplicateVideoModelOptions(
+    block: ReplicateVideoModelOptionsBuilder.() -> Unit = {},
+): ReplicateVideoModelOptions =
+    ReplicateVideoModelOptionsBuilder().apply(block).build()
 
 @Serializable
 @Poko

@@ -24,13 +24,56 @@ public const val TOGETHERAI_VERSION: String = "2.0.53"
 public typealias TogetherAIErrorData = JsonElement
 
 @Serializable
-public data class TogetherAIImageModelOptions(
-    val steps: Int? = null,
-    val guidance: Float? = null,
-    @SerialName("negative_prompt") val negativePrompt: String? = null,
-    @SerialName("disable_safety_checker") val disableSafetyChecker: Boolean? = null,
-    val raw: Map<String, JsonElement> = emptyMap(),
+@Poko
+public class TogetherAIImageModelOptions internal constructor(
+    public val steps: Int? = null,
+    public val guidance: Float? = null,
+    @SerialName("negative_prompt") public val negativePrompt: String? = null,
+    @SerialName("disable_safety_checker") public val disableSafetyChecker: Boolean? = null,
+    public val raw: Map<String, JsonElement> = emptyMap(),
 )
+
+public class TogetherAIImageModelOptionsBuilder internal constructor() {
+    private var steps: Int? = null
+    private var guidance: Float? = null
+    private var negativePrompt: String? = null
+    private var disableSafetyChecker: Boolean? = null
+    private var raw: Map<String, JsonElement> = emptyMap()
+
+    public fun steps(value: Int?) {
+        steps = value
+    }
+
+    public fun guidance(value: Float?) {
+        guidance = value
+    }
+
+    public fun negativePrompt(value: String?) {
+        negativePrompt = value
+    }
+
+    public fun disableSafetyChecker(value: Boolean?) {
+        disableSafetyChecker = value
+    }
+
+    public fun raw(value: Map<String, JsonElement>) {
+        raw = value
+    }
+
+    internal fun build(): TogetherAIImageModelOptions =
+        TogetherAIImageModelOptions(
+            steps = steps,
+            guidance = guidance,
+            negativePrompt = negativePrompt,
+            disableSafetyChecker = disableSafetyChecker,
+            raw = raw,
+        )
+}
+
+public fun TogetherAIImageModelOptions(
+    block: TogetherAIImageModelOptionsBuilder.() -> Unit = {},
+): TogetherAIImageModelOptions =
+    TogetherAIImageModelOptionsBuilder().apply(block).build()
 
 public typealias TogetherAIImageProviderOptions = TogetherAIImageModelOptions
 

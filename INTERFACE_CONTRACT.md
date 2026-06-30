@@ -265,14 +265,19 @@ Penalty, response-format, and retry fields participate in the `Step ?: Agent ?: 
   `FireworksThinkingOptions`, `FireworksLanguageModelOptions`,
   `GladiaTranscriptionModelOptions`, `GroqLanguageModelOptions`,
   `GroqTranscriptionModelOptions`, `HumeSpeechModelOptions`,
-  `KlingAIVideoModelOptions`, and `LumaImageModelOptions`) expose field getters
-  and are configured through public DSL factories and builder setter methods
-  such as `CohereEmbeddingModelOptions { inputType("search") }`,
+  `KlingAIVideoModelOptions`, `LumaImageModelOptions`,
+  `LMNTSpeechModelOptions`, `RevaiTranscriptionModelOptions`,
+  `ReplicateImageModelOptions`, `ReplicateVideoModelOptions`,
+  `ProdiaImageModelOptions`, `ProdiaVideoModelOptions`,
+  `QuiverAIImageModelOptions`, and `TogetherAIImageModelOptions`) expose field
+  getters and are configured through public DSL factories and builder setter
+  methods such as `CohereEmbeddingModelOptions { inputType("search") }`,
   `DeepgramTranscriptionModelOptions { language("en") }`,
-  `FalVideoModelOptions { resolution("720p") }`, or
-  `KlingAIVideoModelOptions { mode("std") }`. These pure data options are
-  `@Serializable @Poko class` value-semantics types; their positional
-  constructors, `copy()`, and `componentN()` are not public.
+  `FalVideoModelOptions { resolution("720p") }`,
+  `KlingAIVideoModelOptions { mode("std") }`, or
+  `ReplicateImageModelOptions { output_format("webp") }`. These pure data
+  options are `@Serializable @Poko class` value-semantics types; their
+  positional constructors, `copy()`, and `componentN()` are not public.
 - Provider error payloads (`BasetenErrorData`, `CerebrasErrorData`,
   `FireworksErrorData`) are `@Serializable @Poko class` value-semantics types;
   JSON field names remain unchanged, while public `copy()` / `componentN()`

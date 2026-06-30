@@ -29,17 +29,84 @@ public const val LMNT_VERSION: String = "2.0.33"
 
 
 @Serializable
-public data class LMNTSpeechModelOptions(
-    val model: String? = null,
-    val format: String? = null,
-    val sampleRate: Int? = null,
-    val speed: Float? = null,
-    val seed: Int? = null,
-    val conversational: Boolean? = null,
-    val length: Float? = null,
-    val topP: Float? = null,
-    val temperature: Float? = null,
+@Poko
+public class LMNTSpeechModelOptions internal constructor(
+    public val model: String? = null,
+    public val format: String? = null,
+    public val sampleRate: Int? = null,
+    public val speed: Float? = null,
+    public val seed: Int? = null,
+    public val conversational: Boolean? = null,
+    public val length: Float? = null,
+    public val topP: Float? = null,
+    public val temperature: Float? = null,
 )
+
+public class LMNTSpeechModelOptionsBuilder internal constructor() {
+    private var model: String? = null
+    private var format: String? = null
+    private var sampleRate: Int? = null
+    private var speed: Float? = null
+    private var seed: Int? = null
+    private var conversational: Boolean? = null
+    private var length: Float? = null
+    private var topP: Float? = null
+    private var temperature: Float? = null
+
+    public fun model(value: String?) {
+        model = value
+    }
+
+    public fun format(value: String?) {
+        format = value
+    }
+
+    public fun sampleRate(value: Int?) {
+        sampleRate = value
+    }
+
+    public fun speed(value: Float?) {
+        speed = value
+    }
+
+    public fun seed(value: Int?) {
+        seed = value
+    }
+
+    public fun conversational(value: Boolean?) {
+        conversational = value
+    }
+
+    public fun length(value: Float?) {
+        length = value
+    }
+
+    public fun topP(value: Float?) {
+        topP = value
+    }
+
+    public fun temperature(value: Float?) {
+        temperature = value
+    }
+
+    internal fun build(): LMNTSpeechModelOptions =
+        LMNTSpeechModelOptions(
+            model = model,
+            format = format,
+            sampleRate = sampleRate,
+            speed = speed,
+            seed = seed,
+            conversational = conversational,
+            length = length,
+            topP = topP,
+            temperature = temperature,
+        )
+}
+
+public fun LMNTSpeechModelOptions(
+    block: LMNTSpeechModelOptionsBuilder.() -> Unit = {},
+): LMNTSpeechModelOptions =
+    LMNTSpeechModelOptionsBuilder().apply(block).build()
 
 @Serializable
 @Poko
