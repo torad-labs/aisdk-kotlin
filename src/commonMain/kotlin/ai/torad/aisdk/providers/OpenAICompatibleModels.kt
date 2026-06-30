@@ -102,7 +102,7 @@ internal class OpenAICompatibleChatLanguageModel(
         with(HttpTransport) {
             forwardSseEvents(
                 events = EventStreamParser.parse(rawLines, Schemas.jsonSchema<JsonElement>(JsonObject(emptyMap())), json)
-                    .map { it.transformChatStreamEvent(prepared.body) { sseHeaders } },
+                    .map { it.transformChatStreamEvent() },
                 capturedHeaders = { sseHeaders },
                 parseErrorPrefix = "Failed to parse OpenAI-compatible stream event",
                 onEvent = { state.accept(it).forEach { e -> emit(e) } },
@@ -172,24 +172,9 @@ internal class OpenAICompatibleChatLanguageModel(
 
     private fun providerOptionsName(): String = settings.providerOptionsName ?: settings.name
 
-    private fun ParseResult<JsonElement>.transformChatStreamEvent(
-        requestBody: JsonObject,
-        responseHeaders: () -> Map<String, String>,
-    ): ParseResult<JsonElement> = when (this) {
+    private fun ParseResult<JsonElement>.transformChatStreamEvent(): ParseResult<JsonElement> = when (this) {
         is ParseResult.Failure -> this
-        is ParseResult.Success -> {
-            val transformed = applyChatResponseTransform(settings, value)
-            openAICompatibleInBandError(transformed)?.let { error ->
-                throw toApiCallError(
-                    error,
-                    url = url("/chat/completions"),
-                    requestBody = requestBody,
-                    responseBody = transformed.toString(),
-                    responseHeaders = responseHeaders(),
-                )
-            }
-            ParseResult.Success(transformed)
-        }
+        is ParseResult.Success -> ParseResult.Success(applyChatResponseTransform(settings, value))
     }
 }
 
