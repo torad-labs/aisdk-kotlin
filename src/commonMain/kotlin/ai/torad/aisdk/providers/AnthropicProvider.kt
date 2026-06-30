@@ -103,7 +103,7 @@ public data class AnthropicProviderSettings(
 
     internal companion object {
         internal fun anthropicCacheControl(metadata: Map<String, JsonElement>?): JsonElement? =
-            (metadata?.get("anthropic") as? JsonObject)?.get("cacheControl")
+            (metadata?.get("anthropic") as? JsonObject)?.let { it["cacheControl"] ?: it["cache_control"] }
 
         internal fun anthropicFileOptions(metadata: Map<String, JsonElement>?): JsonObject? {
             val options = metadata?.get("anthropic") as? JsonObject ?: return null
@@ -525,7 +525,13 @@ public class AnthropicTools(
             for (tool in tools) {
                 if (tool.providerExecuted) {
                     val mapped = anthropicProviderExecutedTool(tool.name, betas)
-                    if (mapped == null) warnings += CallWarning("unsupported", "provider-defined tool ${tool.name}") else prepared += mapped
+                    if (mapped == null) {
+                        warnings += CallWarning("unsupported", "provider-defined tool ${tool.name}")
+                    } else {
+                        val cacheControl = AnthropicProviderSettings.anthropicCacheControl(tool.providerOptions.toMap())
+                            ?: AnthropicProviderSettings.anthropicCacheControl(tool.metadata)
+                        prepared += if (cacheControl == null) mapped else JsonObject(mapped + ("cache_control" to cacheControl))
+                    }
                 } else {
                     prepared += buildJsonObject {
                         put("name", JsonPrimitive(tool.name))
@@ -533,6 +539,9 @@ public class AnthropicTools(
                         put("input_schema", aiSdkJson.parseToJsonElement(tool.parametersSchemaJson))
                         if (toolStreaming) put("eager_input_streaming", JsonPrimitive(true))
                         tool.strict?.let { put("strict", JsonPrimitive(it)) }
+                        val cacheControl = AnthropicProviderSettings.anthropicCacheControl(tool.providerOptions.toMap())
+                            ?: AnthropicProviderSettings.anthropicCacheControl(tool.metadata)
+                        cacheControl?.let { put("cache_control", it) }
                     }
                     betas += "structured-outputs-2025-11-13"
                 }
@@ -895,6 +904,7 @@ internal data class AnthropicPrompt(
                                 put("tool_use_id", JsonPrimitive(result.toolCallId))
                                 put("content", anthropicToolResultContent(result))
                                 if (result.isError) put("is_error", JsonPrimitive(true))
+                                AnthropicProviderSettings.anthropicCacheControl(result.providerMetadata.toMap())?.let { put("cache_control", it) }
                             }
                         }
                         if (content.isNotEmpty()) {
@@ -923,11 +933,13 @@ internal data class AnthropicPrompt(
             is ContentPart.Image -> buildJsonObject {
                 put("type", JsonPrimitive("image"))
                 put("source", anthropicMediaSource(part.url, part.mediaType, part.base64))
+                AnthropicProviderSettings.anthropicCacheControl(part.providerMetadata.toMap())?.let { put("cache_control", it) }
             }
             is ContentPart.File -> when {
                 part.mediaType.startsWith("image/") -> buildJsonObject {
                     put("type", JsonPrimitive("image"))
                     put("source", anthropicMediaSource(part.url, part.mediaType, part.base64))
+                    AnthropicProviderSettings.anthropicCacheControl(part.providerMetadata.toMap())?.let { put("cache_control", it) }
                 }
                 part.mediaType == "application/pdf" -> {
                     betas += "pdfs-2024-09-25"
@@ -936,6 +948,7 @@ internal data class AnthropicPrompt(
                         put("source", anthropicMediaSource(part.url, "application/pdf", part.base64))
                         part.filename?.let { put("title", JsonPrimitive(it)) }
                         AnthropicProviderSettings.anthropicFileOptions(part.providerMetadata.toMap())?.let { putJsonObjectFields(it) }
+                        AnthropicProviderSettings.anthropicCacheControl(part.providerMetadata.toMap())?.let { put("cache_control", it) }
                     }
                 }
                 part.mediaType == "text/plain" -> buildJsonObject {
@@ -947,6 +960,7 @@ internal data class AnthropicPrompt(
                     })
                     part.filename?.let { put("title", JsonPrimitive(it)) }
                     AnthropicProviderSettings.anthropicFileOptions(part.providerMetadata.toMap())?.let { putJsonObjectFields(it) }
+                    AnthropicProviderSettings.anthropicCacheControl(part.providerMetadata.toMap())?.let { put("cache_control", it) }
                 }
                 else -> throw UnsupportedFunctionalityError("file media type ${part.mediaType}", "Unsupported Anthropic file media type: ${part.mediaType}")
             }
@@ -984,6 +998,7 @@ internal data class AnthropicPrompt(
             is ContentPart.Text -> buildJsonObject {
                 put("type", JsonPrimitive("text"))
                 put("text", JsonPrimitive(if (currentIndex == lastTextIndex && lastTextIndex >= 0) part.text.trim() else part.text))
+                AnthropicProviderSettings.anthropicCacheControl(part.providerMetadata.toMap())?.let { put("cache_control", it) }
             }
             is ContentPart.Reasoning -> when {
                 !sendReasoning -> null
@@ -999,6 +1014,7 @@ internal data class AnthropicPrompt(
                 put("id", JsonPrimitive(part.toolCallId))
                 put("name", JsonPrimitive(part.toolName))
                 put("input", part.input)
+                AnthropicProviderSettings.anthropicCacheControl(part.providerMetadata.toMap())?.let { put("cache_control", it) }
             }
             is ContentPart.ToolResult,
             is ContentPart.ToolApprovalRequest,

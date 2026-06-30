@@ -121,7 +121,15 @@ class AnthropicProviderTest {
                                     },
                                 ))),
                             ),
-                            ContentPart.Image("image/png", "aW1hZ2U="),
+                            ContentPart.Image(
+                                "image/png",
+                                "aW1hZ2U=",
+                                providerMetadata = ProviderMetadata.Raw(JsonObject(mapOf(
+                                    "anthropic" to buildJsonObject {
+                                        put("cache_control", buildJsonObject { put("type", JsonPrimitive("ephemeral")) })
+                                    },
+                                ))),
+                            ),
                             ContentPart.File(
                                 mediaType = "application/pdf",
                                 base64 = pdf,
@@ -130,6 +138,7 @@ class AnthropicProviderTest {
                                     "anthropic" to buildJsonObject {
                                         put("citations", buildJsonObject { put("enabled", JsonPrimitive(true)) })
                                         put("context", JsonPrimitive("project brief"))
+                                        put("cacheControl", buildJsonObject { put("type", JsonPrimitive("ephemeral")) })
                                     },
                                 ))),
                             ),
@@ -139,7 +148,14 @@ class AnthropicProviderTest {
                     ModelMessage(
                         MessageRole.Assistant,
                         listOf(
-                            ContentPart.Text("Previous"),
+                            ContentPart.Text(
+                                "Previous",
+                                providerMetadata = ProviderMetadata.Raw(JsonObject(mapOf(
+                                    "anthropic" to buildJsonObject {
+                                        put("cacheControl", buildJsonObject { put("type", JsonPrimitive("ephemeral")) })
+                                    },
+                                ))),
+                            ),
                             ContentPart.Reasoning(
                                 "Prior reasoning",
                                 providerMetadata = ProviderMetadata.Raw(JsonObject(mapOf(
@@ -150,16 +166,40 @@ class AnthropicProviderTest {
                                 toolCallId = "toolu_old",
                                 toolName = "lookup",
                                 input = buildJsonObject { put("city", JsonPrimitive("Paris")) },
+                                providerMetadata = ProviderMetadata.Raw(JsonObject(mapOf(
+                                    "anthropic" to buildJsonObject {
+                                        put("cacheControl", buildJsonObject { put("type", JsonPrimitive("ephemeral")) })
+                                    },
+                                ))),
                             ),
                         ),
                     ),
                     ModelMessage(
                         MessageRole.Tool,
-                        listOf(ContentPart.ToolResult("toolu_old", "lookup", JsonPrimitive("France"))),
+                        listOf(ContentPart.ToolResult(
+                            "toolu_old",
+                            "lookup",
+                            JsonPrimitive("France"),
+                            providerMetadata = ProviderMetadata.Raw(JsonObject(mapOf(
+                                "anthropic" to buildJsonObject {
+                                    put("cacheControl", buildJsonObject { put("type", JsonPrimitive("ephemeral")) })
+                                },
+                            ))),
+                        )),
                     ),
                 ),
                 tools = listOf(
-                    LanguageModelTool("lookup", "Lookup a city.", objectSchema("city").toString(), strict = false),
+                    LanguageModelTool(
+                        "lookup",
+                        "Lookup a city.",
+                        objectSchema("city").toString(),
+                        strict = false,
+                        providerOptions = ProviderOptions.Raw(JsonObject(mapOf(
+                            "anthropic" to buildJsonObject {
+                                put("cache_control", buildJsonObject { put("type", JsonPrimitive("ephemeral")) })
+                            },
+                        ))),
+                    ),
                     LanguageModelTool("web_search", "Anthropic web search.", """{"type":"object"}""", providerExecuted = true),
                 ),
                 toolChoice = ToolChoice.Specific("lookup"),
@@ -273,9 +313,20 @@ class AnthropicProviderTest {
         assertEquals("text", userContent[0].jsonObject["type"]?.jsonPrimitive?.contentOrNull)
         assertEquals("ephemeral", userContent[0].jsonObject["cache_control"]?.jsonObject?.get("type")?.jsonPrimitive?.contentOrNull)
         assertEquals("image", userContent[1].jsonObject["type"]?.jsonPrimitive?.contentOrNull)
+        assertEquals("ephemeral", userContent[1].jsonObject["cache_control"]?.jsonObject?.get("type")?.jsonPrimitive?.contentOrNull)
         assertEquals("document", userContent[2].jsonObject["type"]?.jsonPrimitive?.contentOrNull)
         assertEquals("brief.pdf", userContent[2].jsonObject["title"]?.jsonPrimitive?.contentOrNull)
+        assertEquals("ephemeral", userContent[2].jsonObject["cache_control"]?.jsonObject?.get("type")?.jsonPrimitive?.contentOrNull)
         assertEquals("plain document", userContent[3].jsonObject["source"]?.jsonObject?.get("data")?.jsonPrimitive?.contentOrNull)
+        val assistantContent = body["messages"]?.jsonArray?.get(1)?.jsonObject?.get("content")?.jsonArray.orEmpty()
+        assertEquals("text", assistantContent[0].jsonObject["type"]?.jsonPrimitive?.contentOrNull)
+        assertEquals("ephemeral", assistantContent[0].jsonObject["cache_control"]?.jsonObject?.get("type")?.jsonPrimitive?.contentOrNull)
+        assertEquals("tool_use", assistantContent[2].jsonObject["type"]?.jsonPrimitive?.contentOrNull)
+        assertEquals("ephemeral", assistantContent[2].jsonObject["cache_control"]?.jsonObject?.get("type")?.jsonPrimitive?.contentOrNull)
+        val toolResultContent = body["messages"]?.jsonArray?.get(2)?.jsonObject?.get("content")?.jsonArray.orEmpty()
+        assertEquals("tool_result", toolResultContent.single().jsonObject["type"]?.jsonPrimitive?.contentOrNull)
+        assertEquals("ephemeral", toolResultContent.single().jsonObject["cache_control"]?.jsonObject?.get("type")?.jsonPrimitive?.contentOrNull)
+        assertEquals("ephemeral", body["tools"]?.jsonArray?.first()?.jsonObject?.get("cache_control")?.jsonObject?.get("type")?.jsonPrimitive?.contentOrNull)
     }
 
     @Test
