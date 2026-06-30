@@ -47,7 +47,9 @@ class CohereDefensiveParsingTest {
         )
 
         val result = provider(ModelId("command-r-plus")).generate(
-            LanguageModelCallParams(messages = listOf(UserMessage("hi"))),
+            LanguageModelCallParams {
+                messages(listOf(UserMessage("hi")))
+            },
         )
 
         assertEquals(0, result.usage.inputTokens.total, "a non-primitive input_tokens degrades to 0, no crash")
@@ -84,7 +86,9 @@ class CohereDefensiveParsingTest {
         )
 
         val result = provider(ModelId("command-r-plus")).generate(
-            LanguageModelCallParams(messages = listOf(UserMessage("hi"))),
+            LanguageModelCallParams {
+                messages(listOf(UserMessage("hi")))
+            },
         )
 
         assertEquals("hi", result.text)

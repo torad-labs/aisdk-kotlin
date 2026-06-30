@@ -24,7 +24,9 @@ class ResponseFormatTest {
     @Test
     fun `given default call params when constructed then responseFormat is Text`() {
         // GIVEN / WHEN
-        val params = LanguageModelCallParams(messages = emptyList())
+        val params = LanguageModelCallParams {
+    messages(emptyList())
+}
 
         // THEN
         assertEquals(
@@ -82,10 +84,10 @@ class ResponseFormatTest {
     @Test
     fun `given call params with Json response-format when constructed then the field is wired`() {
         // GIVEN — the wire surface a provider actually reads.
-        val params = LanguageModelCallParams(
-            messages = emptyList(),
-            responseFormat = ResponseFormat.Json(schemaName = "Recipe"),
-        )
+        val params = LanguageModelCallParams {
+    messages(emptyList())
+    responseFormat(ResponseFormat.Json(schemaName = "Recipe"))
+}
 
         // WHEN / THEN
         val rf = params.responseFormat

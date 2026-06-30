@@ -38,7 +38,9 @@ class MiddlewareTest {
         val outer = TaggingMiddleware("outer", onIn, onOut)
         val inner = TaggingMiddleware("inner", onIn, onOut)
         val wrapped = WrapLanguageModel(MockLanguageModelTextOnly("ok"), listOf(outer, inner))
-        wrapped.generate(LanguageModelCallParams(messages = listOf(UserMessage("hi"))))
+        wrapped.generate(LanguageModelCallParams {
+    messages(listOf(UserMessage("hi")))
+})
         assertEquals(listOf("outer", "inner"), onIn)
         assertEquals(listOf("inner", "outer"), onOut)
     }

@@ -62,7 +62,9 @@ class SimulateStreamingTest {
 
             // WHEN
             val events = drainAllItems(
-                wrapped.stream(LanguageModelCallParams(messages = listOf(UserMessage("hi")))),
+                wrapped.stream(LanguageModelCallParams {
+    messages(listOf(UserMessage("hi")))
+}),
             )
 
             // THEN — leads with StreamStart + ResponseMetadata (v6 parity), then the
@@ -101,7 +103,9 @@ class SimulateStreamingTest {
 
             // WHEN
             val events = drainAllItems(
-                wrapped.stream(LanguageModelCallParams(messages = listOf(UserMessage("save a note")))),
+                wrapped.stream(LanguageModelCallParams {
+    messages(listOf(UserMessage("save a note")))
+}),
             )
 
             // THEN
@@ -131,7 +135,9 @@ class SimulateStreamingTest {
 
             // WHEN
             val events = drainAllItems(
-                wrapped.stream(LanguageModelCallParams(messages = listOf(UserMessage("hi")))),
+                wrapped.stream(LanguageModelCallParams {
+    messages(listOf(UserMessage("hi")))
+}),
             )
 
             // THEN

@@ -31,10 +31,10 @@ class TelemetryRedactionTest {
             integrations(listOf(capturing))
         })
             ?: fail("telemetry should resolve")
-        val params = LanguageModelCallParams(
-            messages = listOf(UserMessage("prompt secret")),
-            headers = mapOf("Authorization" to "Bearer sk-live-secret"),
-        )
+        val params = LanguageModelCallParams {
+    messages(listOf(UserMessage("prompt secret")))
+    headers(mapOf("Authorization" to "Bearer sk-live-secret"))
+}
 
         telemetry.onEvent(call, AgentEvent.Started("prompt secret", listOf(UserMessage("prior secret")), null))
         telemetry.onEvent(call, AgentEvent.ModelCallStarted(stepNumber = 1, modelId = "model", params = params))

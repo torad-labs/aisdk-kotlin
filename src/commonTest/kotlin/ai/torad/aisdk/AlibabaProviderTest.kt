@@ -78,21 +78,21 @@ class AlibabaProviderTest {
         )
 
         val result = provider.chatModel(ModelId("qwen-plus")).generate(
-            LanguageModelCallParams(
-                messages = listOf(UserMessage("Hello")),
-                tools = listOf(
+            LanguageModelCallParams {
+                messages(listOf(UserMessage("Hello")))
+                tools(listOf(
                     LanguageModelTool("lookup", "Lookup city details.", """{"type":"object","properties":{"city":{"type":"string"}}}"""),
-                ),
-                toolChoice = ToolChoice.Required,
-                providerOptions = ProviderOptions.Raw(JsonObject(mapOf(
+                ))
+                toolChoice(ToolChoice.Required)
+                providerOptions(ProviderOptions.Raw(JsonObject(mapOf(
                     "alibaba" to buildJsonObject {
                         put("enableThinking", JsonPrimitive(true))
                         put("thinkingBudget", JsonPrimitive(2048))
                         put("parallelToolCalls", JsonPrimitive(false))
                     },
-                ))),
-                headers = mapOf("X-Request" to "request"),
-            ),
+                ))))
+                headers(mapOf("X-Request" to "request"))
+            },
         )
 
         assertEquals("alibaba.chat", provider(ModelId("qwen-plus")).provider)
@@ -256,15 +256,15 @@ class AlibabaProviderTest {
         )
 
         val result = provider.embeddingModel("text-embedding-v4").embed(
-            EmbeddingModelCallParams(
-                values = listOf("hello", "world"),
-                providerOptions = ProviderOptions.Raw(JsonObject(mapOf(
+            EmbeddingModelCallParams {
+                values(listOf("hello", "world"))
+                providerOptions(ProviderOptions.Raw(JsonObject(mapOf(
                     "alibaba" to buildJsonObject {
                         put("textType", JsonPrimitive("query"))
                         put("dimension", JsonPrimitive(2))
                     },
-                ))),
-            ),
+                ))))
+            },
         )
 
         assertEquals(10, provider.embeddingModel("text-embedding-v4").maxEmbeddingsPerCall)
@@ -280,16 +280,18 @@ class AlibabaProviderTest {
         val model = provider.embeddingModel("text-embedding-v4")
         assertFailsWith<UnsupportedFunctionalityError> {
             model.embed(
-                EmbeddingModelCallParams(
-                    values = listOf("x"),
-                    providerOptions = ProviderOptions.Raw(JsonObject(mapOf(
+                EmbeddingModelCallParams {
+                    values(listOf("x"))
+                    providerOptions(ProviderOptions.Raw(JsonObject(mapOf(
                         "alibaba" to buildJsonObject { put("outputType", JsonPrimitive("sparse")) },
-                    ))),
-                ),
+                    ))))
+                },
             )
         }
         assertFailsWith<TooManyEmbeddingValuesForCallError> {
-            model.embed(EmbeddingModelCallParams(values = List(11) { "v$it" }))
+            model.embed(EmbeddingModelCallParams {
+    values(List(11) { "v$it" })
+})
         }
     }
 

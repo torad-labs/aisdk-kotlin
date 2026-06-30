@@ -243,7 +243,7 @@ _No @Serializable. `GatewayTools` holder rides along. (Gateway *settings/params/
 
 #### Batch D9 — LanguageModel results / metadata / middleware ctx  ·  7 types  ·  @Serializable: 1  ·  copy()-coupled: 4
 
-_Rewrite `result.copy(usage=)` in Mistral/Alibaba/DeepInfra + `params`-adjacent `LanguageModelTool`. NOTE: `LanguageModelCallParams` is REVIEW (excluded)._
+_Rewrite `result.copy(usage=)` in Mistral/Alibaba/DeepInfra + `params`-adjacent `LanguageModelTool`. NOTE: `LanguageModelCallParams` was owner-resolved after the main D9 batch: DEMOTE via `@Poko` + public `toBuilder()`._
 
 | File | Line | Type | f | Ser | ⟳ | Reason |
 |---|---:|---|---:|:--:|:--:|---|
@@ -257,7 +257,7 @@ _Rewrite `result.copy(usage=)` in Mistral/Alibaba/DeepInfra + `params`-adjacent 
 
 #### Batch D10 — Embedding & rerank results  ·  8 types  ·  @Serializable: 0  ·  copy()-coupled: 0
 
-_`EmbeddingModelCallParams` is REVIEW (excluded). Plain result/usage holders otherwise._
+_`EmbeddingModelCallParams` was owner-resolved after the main D10 batch: DEMOTE via `@Poko` + public `toBuilder()`. Plain result/usage holders otherwise._
 
 | File | Line | Type | f | Ser | ⟳ | Reason |
 |---|---:|---|---:|:--:|:--:|---|
@@ -530,13 +530,18 @@ Small, frozen, wire-fixed value/ref/sealed-leaf types (Jake Wharton 2D-point car
 | `providers/LiteRTLanguageModel.kt` | 67 | `AudioBytes` | 2 |  | small frozen value/ref/sealed-leaf/wire-fixed |
 | `providers/LiteRTLanguageModel.kt` | 68 | `AudioFile` | 2 |  | small frozen value/ref/sealed-leaf/wire-fixed |
 
-### REVIEW (10) — decide before migrating
+### Owner-resolved call params — DEMOTE via `@Poko` + public `toBuilder()`
+
+| File | Line | Type | f | Ser | Decision |
+|---|---:|---|---:|:--:|---|
+| `Embedding.kt` | 29 | `EmbeddingModelCallParams` | 7 |  | framework-produced params with former `copy()` middleware idiom; demote and replace with `params.toBuilder().field(...).build()` |
+| `LanguageModel.kt` | 81 | `LanguageModelCallParams` | 17 |  | framework-produced params with former `copy()` middleware/provider idiom; demote and replace with `params.toBuilder().field(...).build()` |
+
+### REVIEW (8) — decide before migrating
 
 | File | Line | Type | f | Ser | Concern |
 |---|---:|---|---:|:--:|---|
-| `Embedding.kt` | 29 | `EmbeddingModelCallParams` | 7 |  | framework-produced params, copy()'d in Embedding.kt — same call-params dilemma as LanguageModelCallParams |
 | `Gateway.kt` | 27 | `GatewayAuthToken` | 3 |  | auth token holder consumers may construct vs framework-produced |
-| `LanguageModel.kt` | 81 | `LanguageModelCallParams` | 17 |  | framework-produced params transformed by consumer middleware via copy() — @Poko removes copy(); decide @Poko+helper vs builder |
 | `McpProtocol.kt` | 88 | `MCPBaseParams` | 2 | ✅ | MCP protocol base params struct (_meta carrier) — wire base, decide KEEP vs DEMOTE |
 | `Provider.kt` | 28 | `CustomProvider` | 11 |  | consumer-built provider impl w/ private fields+behavior; grows by model kind — builder or plain class, not data |
 | `ResponseFormat.kt` | 49 | `Json` | 4 | ✅ | consumer-CONSTRUCTED sealed leaf, @Serializable; small but may gain schema fields |
@@ -574,6 +579,6 @@ These match the budget regex but are nested in `internal`/`private`/function-loc
 - **Sealed-leaf data classes (most of the DEMOTE set).** The event/message/result hierarchies — `StreamEvent`, `AgentEvent`(+`Outcome`), `ContentPart`, `UIMessagePart`, `ToolResultOutput`, `ValidationResult`, `ExecuteToolResult`, `CompletionPhase`, `StructuredObjectPhase`, `ParseResult`, `SafeValidateUIMessagesResult`, `FileData`, `ToolLoopAgentAction.Phase` — are consumed via exhaustive `when`. Demoting drops `componentN()`; **internal code does not destructure them** (the 18 `val (a,b)=` sites are all Pairs/Triples/helper returns — verified), so the only consumer-facing loss is positional destructuring in `when`, which is rare for these. Field access is by name and unaffected.
 - **`copy()` used internally (58 flagged ⟳).** Demotion to `@Poko` removes `copy()`. Hot spots: `StreamEventTelemetryRedaction.kt` (25 calls on `StreamEvent` leaves), `MutableStateFlow.update { it.copy() }` in `ToolLoopAgent.kt`/`AgentSession.kt`/`CompletionApi.kt`/`ChatSession.kt` (state snapshots), and provider `result.copy(usage=)` / `event.copy(usage=)` shims (Mistral, Alibaba, DeepInfra). Each demotion batch must rewrite its `copy()` sites to fresh-construct — sized into the batch notes above.
 - **`@Poko` + `@Serializable` (77 DEMOTE types).** See the risk callout above — unproven in-repo; D1 is the canary.
-- **Call-params dilemma (`LanguageModelCallParams`, `EmbeddingModelCallParams`) → REVIEW.** Framework-produced (so DEMOTE-shaped) but transformed by *consumer* middleware via `params.copy(...)` (DefaultSettings, AddToolInputExamples, every provider-options shim). `@Poko` would break those middleware authors. Decide: `@Poko` + a `toBuilder()`/`with*()` helper, or keep a builder. Do **not** fold into a mechanical batch.
+- **Call-params decision (`LanguageModelCallParams`, `EmbeddingModelCallParams`) → DEMOTE via `@Poko` + public `toBuilder()`.** Framework-produced params were formerly transformed by *consumer* middleware via `params.copy(...)` (DefaultSettings, AddToolInputExamples, provider-options shims). The owner decision is to remove public `copy()` / `componentN()` and expose a public seeded builder replacement: `params.toBuilder().field(...).build()`.
 - **MCP JSON-RPC envelopes → KEEP, MCP results → DEMOTE.** `JSONRPCRequest/Notification/Response/Error/ErrorData` are frozen by JSON-RPC 2.0 (KEEP). The capability/result/resource/prompt structs follow the evolving MCP spec (DEMOTE, batch D5). `MCPBaseParams` flagged REVIEW.
 - **OAuth split.** `OAuthTokens` (response/persisted) + the two server-metadata structs → DEMOTE (D14). `OAuthClientInformation`/`OAuthClientMetadata` (consumer-supplied) → BUILDER.

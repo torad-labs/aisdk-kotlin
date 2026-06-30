@@ -53,10 +53,10 @@ class AnthropicAwsProviderTest {
         )
 
         val result = provider(ModelId("claude-sonnet-4-6")).generate(
-            LanguageModelCallParams(
-                messages = listOf(UserMessage("Hello")),
-                headers = mapOf("X-Request" to "request"),
-            ),
+            LanguageModelCallParams {
+                messages(listOf(UserMessage("Hello")))
+                headers(mapOf("X-Request" to "request"))
+            },
         )
 
         assertEquals("anthropic-aws.messages", provider.languageModel("claude-sonnet-4-6").provider)
@@ -111,7 +111,9 @@ class AnthropicAwsProviderTest {
         )
 
         val events = drainAllItems(
-            provider.messages(ModelId("claude-sonnet-4-6")).stream(LanguageModelCallParams(messages = listOf(UserMessage("hi")))),
+            provider.messages(ModelId("claude-sonnet-4-6")).stream(LanguageModelCallParams {
+    messages(listOf(UserMessage("hi")))
+}),
         )
 
         assertIs<StreamEvent.StreamStart>(events.first())
@@ -160,7 +162,9 @@ class AnthropicAwsProviderTest {
 
         assertFailsWith<NoSuchModelError> { provider.embeddingModel("embed") }
         assertEquals("advisor", provider.tools.advisor_20260301.name)
-        val result = provider.languageModel("claude-sonnet-4-6").generate(LanguageModelCallParams(messages = listOf(UserMessage("hi"))))
+        val result = provider.languageModel("claude-sonnet-4-6").generate(LanguageModelCallParams {
+    messages(listOf(UserMessage("hi")))
+})
 
         val request = fixture.calls.single()
         assertEquals("signed", result.text)

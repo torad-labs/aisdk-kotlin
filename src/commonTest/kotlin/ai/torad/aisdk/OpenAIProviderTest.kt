@@ -278,15 +278,15 @@ class OpenAIProviderTest {
         val provider = OpenAI(client, OpenAIProviderSettings { apiKey("test-api-key") })
 
         provider.responses("gpt-5").generate(
-            LanguageModelCallParams(
-                messages = listOf(UserMessage("hi")),
-                tools = listOf(
+            LanguageModelCallParams {
+                messages(listOf(UserMessage("hi")))
+                tools(listOf(
                     LanguageModelTool("lookup", "Lookup.", """{"type":"object"}"""),
                     LanguageModelTool("code_interpreter", "Run code.", """{"type":"object"}""", providerExecuted = true),
                     LanguageModelTool("web_search", "Search web.", """{"type":"object"}""", providerExecuted = true),
-                ),
-                toolChoice = ToolChoice.Specific("web_search"),
-                providerOptions = ProviderOptions.Raw(JsonObject(mapOf(
+                ))
+                toolChoice(ToolChoice.Specific("web_search"))
+                providerOptions(ProviderOptions.Raw(JsonObject(mapOf(
                     "openai" to buildJsonObject {
                         put(
                             "allowedTools",
@@ -296,8 +296,8 @@ class OpenAIProviderTest {
                             },
                         )
                     },
-                ))),
-            ),
+                ))))
+            },
         )
 
         val body = seenBody.single()
@@ -379,10 +379,10 @@ class OpenAIProviderTest {
         )
 
         provider.responses("gpt-5").generate(
-            LanguageModelCallParams(
-                messages = listOf(UserMessage("hi")),
-                tools = tools.descriptors,
-            ),
+            LanguageModelCallParams {
+                messages(listOf(UserMessage("hi")))
+                tools(tools.descriptors)
+            },
         )
 
         val byType = seenBody.single()["tools"]!!.jsonArray.associate { tool ->
@@ -421,8 +421,8 @@ class OpenAIProviderTest {
         val provider = OpenAI(client, OpenAIProviderSettings { apiKey("test-api-key") })
 
         provider.responses("gpt-4o").generate(
-            LanguageModelCallParams(
-                messages = listOf(
+            LanguageModelCallParams {
+                messages(listOf(
                     ModelMessage(
                         MessageRole.User,
                         listOf(
@@ -432,8 +432,8 @@ class OpenAIProviderTest {
                             ContentPart.File("image/png", "aW1hZ2U="),
                         ),
                     ),
-                ),
-            ),
+                ))
+            },
         )
 
         val content = seenBody.single()["input"]!!.jsonArray.single().jsonObject["content"]!!.jsonArray
@@ -477,7 +477,9 @@ class OpenAIProviderTest {
         )
         val provider = OpenAI(client, OpenAIProviderSettings { apiKey("test-api-key") })
 
-        val result = provider.responses("gpt-4o").generate(LanguageModelCallParams(messages = listOf(UserMessage("hi"))))
+        val result = provider.responses("gpt-4o").generate(LanguageModelCallParams {
+    messages(listOf(UserMessage("hi")))
+})
 
         val topLevel = result.providerMetadata.toMap()["openai"]?.jsonObject ?: error("missing openai metadata")
         assertEquals("resp_1", topLevel["responseId"]?.jsonPrimitive?.content)

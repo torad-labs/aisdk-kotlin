@@ -67,10 +67,10 @@ class GoogleSchemaConstTest {
         }
 
         provider(ModelId("gemini-2.5-flash")).generate(
-            LanguageModelCallParams(
-                messages = listOf(UserMessage("hi")),
-                responseFormat = ResponseFormat.Json(schemaJson = schema),
-            ),
+            LanguageModelCallParams {
+                messages(listOf(UserMessage("hi")))
+                responseFormat(ResponseFormat.Json(schemaJson = schema))
+            },
         )
 
         val body = fixture.calls.single().requestBodyJson.jsonObject
@@ -150,11 +150,11 @@ class GoogleSchemaConstTest {
         }
 
         provider(ModelId("gemini-2.5-flash")).generate(
-            LanguageModelCallParams(
-                messages = listOf(UserMessage("hi")),
-                tools = listOf(LanguageModelTool("lookup", "Lookup.", toolSchema.toString())),
-                responseFormat = ResponseFormat.Json(schemaJson = schema),
-            ),
+            LanguageModelCallParams {
+                messages(listOf(UserMessage("hi")))
+                tools(listOf(LanguageModelTool("lookup", "Lookup.", toolSchema.toString())))
+                responseFormat(ResponseFormat.Json(schemaJson = schema))
+            },
         )
 
         val body = fixture.calls.single().requestBodyJson.jsonObject

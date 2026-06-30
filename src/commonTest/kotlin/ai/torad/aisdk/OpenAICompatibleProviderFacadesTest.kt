@@ -141,7 +141,9 @@ class OpenAICompatibleProviderFacadesTest {
             fixture.server.start()
 
             val model = case.create(fixture.httpClient())
-            val result = model.generate(LanguageModelCallParams(listOf(UserMessage("hi"))))
+            val result = model.generate(LanguageModelCallParams {
+    messages(listOf(UserMessage("hi")))
+})
             seenRequests += fixture.calls
 
             assertEquals(case.name, result.text)
@@ -191,8 +193,8 @@ class OpenAICompatibleProviderFacadesTest {
         )
 
         val result = provider.chat("deepseek-chat").generate(
-            LanguageModelCallParams(
-                messages = listOf(
+            LanguageModelCallParams {
+                messages(listOf(
                     ModelMessage(
                         MessageRole.User,
                         listOf(
@@ -200,12 +202,12 @@ class OpenAICompatibleProviderFacadesTest {
                             ContentPart.Image("image/png", "aW1n"),
                         ),
                     ),
-                ),
-                seed = 7,
-                responseFormat = ResponseFormat.Json(
+                ))
+                seed(7)
+                responseFormat(ResponseFormat.Json(
                     schemaJson = buildJsonObject { put("type", JsonPrimitive("object")) },
-                ),
-            ),
+                ))
+            },
         )
 
         val body = fixture.calls.single().requestBodyJson.jsonObject
@@ -258,8 +260,8 @@ class OpenAICompatibleProviderFacadesTest {
         )
 
         val result = provider.languageModel("sonar").generate(
-            LanguageModelCallParams(
-                messages = listOf(
+            LanguageModelCallParams {
+                messages(listOf(
                     ModelMessage(
                         MessageRole.User,
                         listOf(ContentPart.Text("A"), ContentPart.Text("B")),
@@ -272,14 +274,14 @@ class OpenAICompatibleProviderFacadesTest {
                         MessageRole.Tool,
                         listOf(ContentPart.ToolResult("call_1", "lookup", JsonPrimitive("done"))),
                     ),
-                ),
-                tools = listOf(
+                ))
+                tools(listOf(
                     LanguageModelTool("lookup", "Lookup.", """{"type":"object"}"""),
-                ),
-                toolChoice = ToolChoice.Required,
-                stopSequences = listOf("END"),
-                seed = 12,
-            ),
+                ))
+                toolChoice(ToolChoice.Required)
+                stopSequences(listOf("END"))
+                seed(12)
+            },
         )
 
         val body = fixture.calls.single().requestBodyJson.jsonObject
@@ -330,7 +332,9 @@ class OpenAICompatibleProviderFacadesTest {
             },
         )
 
-        val result = provider.chatModel(ModelId("kimi")).generate(LanguageModelCallParams(listOf(UserMessage("hi"))))
+        val result = provider.chatModel(ModelId("kimi")).generate(LanguageModelCallParams {
+    messages(listOf(UserMessage("hi")))
+})
 
         assertEquals(3, result.usage.inputTokens.cacheRead)
         assertEquals(6, result.usage.inputTokens.noCache)
@@ -369,20 +373,20 @@ class OpenAICompatibleProviderFacadesTest {
 
         // browser_search is only valid on the gpt-oss models, so use a supported one here.
         val result = provider.chat("openai/gpt-oss-20b").generate(
-            LanguageModelCallParams(
-                messages = listOf(
+            LanguageModelCallParams {
+                messages(listOf(
                     UserMessage("hi"),
                     ModelMessage(MessageRole.Assistant, listOf(ContentPart.Reasoning("prior thought"))),
-                ),
-                tools = listOf(
+                ))
+                tools(listOf(
                     LanguageModelTool(
                         "browserSearch",
                         "Search.",
                         """{"type":"object"}""",
                         providerExecuted = true,
                     ),
-                ),
-            ),
+                ))
+            },
         )
 
         val body = fixture.calls.single().requestBodyJson.jsonObject
@@ -421,12 +425,12 @@ class OpenAICompatibleProviderFacadesTest {
             },
         )
         provider.chat("llama").generate(
-            LanguageModelCallParams(
-                messages = listOf(UserMessage("hi")),
-                tools = listOf(
+            LanguageModelCallParams {
+                messages(listOf(UserMessage("hi")))
+                tools(listOf(
                     LanguageModelTool("browserSearch", "Search.", """{"type":"object"}""", providerExecuted = true),
-                ),
-            ),
+                ))
+            },
         )
         // browser_search was the only tool and is unsupported on llama → tools key omitted entirely.
         val body = fixture.calls.single().requestBodyJson.jsonObject
@@ -468,9 +472,15 @@ class OpenAICompatibleProviderFacadesTest {
             },
         )
 
-        val chat = provider.chatModel(ModelId("model")).generate(LanguageModelCallParams(listOf(UserMessage("hi"))))
-        val completion = provider.completionModel(ModelId("model")).generate(LanguageModelCallParams(listOf(UserMessage("hi"))))
-        val embedding = provider.textEmbeddingModel(ModelId("embed")).embed(EmbeddingModelCallParams(listOf("hello")))
+        val chat = provider.chatModel(ModelId("model")).generate(LanguageModelCallParams {
+    messages(listOf(UserMessage("hi")))
+})
+        val completion = provider.completionModel(ModelId("model")).generate(LanguageModelCallParams {
+    messages(listOf(UserMessage("hi")))
+})
+        val embedding = provider.textEmbeddingModel(ModelId("embed")).embed(EmbeddingModelCallParams {
+    values(listOf("hello"))
+})
         val image = provider.image(ModelId("black-forest-labs/FLUX-1-schnell")).generate(
             ImageGenerationParams {
                 prompt("mountain")
@@ -524,9 +534,9 @@ class OpenAICompatibleProviderFacadesTest {
         )
 
         provider.chatModel(ModelId("model")).generate(
-            LanguageModelCallParams(
-                messages = listOf(UserMessage("hi")),
-                providerOptions = ProviderOptions.Raw(JsonObject(mapOf(
+            LanguageModelCallParams {
+                messages(listOf(UserMessage("hi")))
+                providerOptions(ProviderOptions.Raw(JsonObject(mapOf(
                     "fireworks" to buildJsonObject {
                         put(
                             "thinking",
@@ -537,8 +547,8 @@ class OpenAICompatibleProviderFacadesTest {
                         )
                         put("reasoningHistory", JsonPrimitive("preserved"))
                     },
-                ))),
-            ),
+                ))))
+            },
         )
         val chatBody = fixture.calls.single { it.requestUrl.endsWith("/chat/completions") }.requestBodyJson.jsonObject
         assertEquals(2048, chatBody["thinking"]?.jsonObject?.get("budget_tokens")?.jsonPrimitive?.intOrNull)
@@ -644,8 +654,12 @@ class OpenAICompatibleProviderFacadesTest {
             },
         )
 
-        assertEquals("done", provider.completionModel(ModelId("model")).generate(LanguageModelCallParams(listOf(UserMessage("hi")))).text)
-        assertEquals(listOf(0.3f, 0.4f), provider.embeddingModel("embed").embed(EmbeddingModelCallParams(listOf("hello"))).embeddings.single())
+        assertEquals("done", provider.completionModel(ModelId("model")).generate(LanguageModelCallParams {
+    messages(listOf(UserMessage("hi")))
+}).text)
+        assertEquals(listOf(0.3f, 0.4f), provider.embeddingModel("embed").embed(EmbeddingModelCallParams {
+    values(listOf("hello"))
+}).embeddings.single())
         val image = provider.image(ModelId("black-forest-labs/FLUX.1-dev")).generate(
             ImageGenerationParams {
                 prompt("house")

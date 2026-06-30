@@ -340,13 +340,13 @@ private class GoogleVertexXaiLanguageModel(
     override val supportedUrls: Map<String, List<String>> = mapOf("image/*" to listOf("^https?://.*$"))
 
     override suspend fun generate(params: LanguageModelCallParams): LanguageModelResult =
-        delegate.generate(params.copy(providerOptions = googleVertexXaiProviderOptions(params.providerOptions)))
+        delegate.generate(params.toBuilder().providerOptions(googleVertexXaiProviderOptions(params.providerOptions)).build())
 
     override fun stream(params: LanguageModelCallParams) =
-        delegate.stream(params.copy(providerOptions = googleVertexXaiProviderOptions(params.providerOptions)))
+        delegate.stream(params.toBuilder().providerOptions(googleVertexXaiProviderOptions(params.providerOptions)).build())
 
     override fun streamResult(params: LanguageModelCallParams): LanguageModelStreamResult =
-        delegate.streamResult(params.copy(providerOptions = googleVertexXaiProviderOptions(params.providerOptions)))
+        delegate.streamResult(params.toBuilder().providerOptions(googleVertexXaiProviderOptions(params.providerOptions)).build())
 
     // Snake-cases xAI searchParameters via XaiProviderSettings.xaiSnakeCaseJson (single source of
     // truth); the former local copy drifted, lacking the `xHandles` -> `included_x_handles`

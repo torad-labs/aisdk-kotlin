@@ -116,8 +116,8 @@ class HuggingFaceProviderTest {
         )
 
         val result = provider.responses(ModelId("Qwen/Qwen3-32B")).generate(
-            LanguageModelCallParams(
-                messages = listOf(
+            LanguageModelCallParams {
+                messages(listOf(
                     SystemMessage("System rules."),
                     ModelMessage(
                         MessageRole.User,
@@ -133,8 +133,8 @@ class HuggingFaceProviderTest {
                         listOf(ContentPart.Reasoning("Previous reasoning.")),
                     ),
                     ToolMessage("call-old", "old", JsonPrimitive("ignored")),
-                ),
-                tools = listOf(
+                ))
+                tools(listOf(
                     LanguageModelTool(
                         name = "lookup",
                         description = "Lookup city details.",
@@ -146,22 +146,22 @@ class HuggingFaceProviderTest {
                         parametersSchemaJson = """{"type":"object"}""",
                         providerExecuted = true,
                     ),
-                ),
-                toolChoice = ToolChoice.Specific("lookup"),
-                temperature = 0.2f,
-                topP = 0.9f,
-                topK = 10,
-                maxOutputTokens = 256,
-                stopSequences = listOf("STOP"),
-                seed = 99,
-                presencePenalty = 0.1f,
-                frequencyPenalty = 0.2f,
-                responseFormat = ResponseFormat.Json(
+                ))
+                toolChoice(ToolChoice.Specific("lookup"))
+                temperature(0.2f)
+                topP(0.9f)
+                topK(10)
+                maxOutputTokens(256)
+                stopSequences(listOf("STOP"))
+                seed(99)
+                presencePenalty(0.1f)
+                frequencyPenalty(0.2f)
+                responseFormat(ResponseFormat.Json(
                     schemaName = "Answer",
                     schemaDescription = "Structured answer.",
                     schemaJson = objectSchema("answer"),
-                ),
-                providerOptions = ProviderOptions.Raw(JsonObject(mapOf(
+                ))
+                providerOptions(ProviderOptions.Raw(JsonObject(mapOf(
                     "huggingface" to buildJsonObject {
                         put(
                             "metadata",
@@ -171,9 +171,9 @@ class HuggingFaceProviderTest {
                         put("strictJsonSchema", JsonPrimitive(true))
                         put("reasoningEffort", JsonPrimitive("medium"))
                     },
-                ))),
-                headers = mapOf("X-Request" to "request"),
-            ),
+                ))))
+                headers(mapOf("X-Request" to "request"))
+            },
         )
 
         assertEquals("huggingface.responses", provider(ModelId("Qwen/Qwen3-32B")).provider)
@@ -284,11 +284,11 @@ class HuggingFaceProviderTest {
 
         val events = drainAllItems(
             provider.responses(ModelId("meta-llama/Llama-3.1-8B-Instruct")).stream(
-                LanguageModelCallParams(
-                    messages = listOf(UserMessage("hi")),
-                    tools = listOf(LanguageModelTool("lookup", "Lookup.", objectSchema("city").toString())),
-                    toolChoice = ToolChoice.Required,
-                ),
+                LanguageModelCallParams {
+                    messages(listOf(UserMessage("hi")))
+                    tools(listOf(LanguageModelTool("lookup", "Lookup.", objectSchema("city").toString())))
+                    toolChoice(ToolChoice.Required)
+                },
             ),
         )
 
@@ -330,7 +330,9 @@ class HuggingFaceProviderTest {
             }),
         )
 
-        val events = drainAllItems(provider.responses(ModelId("meta-llama/Llama-3.1-8B-Instruct")).stream(LanguageModelCallParams(messages = listOf(UserMessage("hi")))))
+        val events = drainAllItems(provider.responses(ModelId("meta-llama/Llama-3.1-8B-Instruct")).stream(LanguageModelCallParams {
+    messages(listOf(UserMessage("hi")))
+}))
 
         val error = events.filterIsInstance<StreamEvent.Error>().single()
         assertTrue(error.message.contains("missing item"))
@@ -396,11 +398,11 @@ class HuggingFaceProviderTest {
         )
 
         val result = provider(ModelId("model")).generate(
-            LanguageModelCallParams(
-                messages = listOf(UserMessage("hi")),
-                tools = listOf(LanguageModelTool("lookup", "Lookup.", objectSchema("q").toString())),
-                toolChoice = ToolChoice.None,
-            ),
+            LanguageModelCallParams {
+                messages(listOf(UserMessage("hi")))
+                tools(listOf(LanguageModelTool("lookup", "Lookup.", objectSchema("q").toString())))
+                toolChoice(ToolChoice.None)
+            },
         )
 
         assertEquals("ok", result.text)
@@ -409,14 +411,14 @@ class HuggingFaceProviderTest {
 
         val error = assertFailsWith<AiSdkException> {
             provider(ModelId("model")).generate(
-                LanguageModelCallParams(
-                    messages = listOf(
+                LanguageModelCallParams {
+                    messages(listOf(
                         ModelMessage(
                             MessageRole.User,
                             listOf(ContentPart.File("text/plain", "dGV4dA==", "notes.txt")),
                         ),
-                    ),
-                ),
+                    ))
+                },
             )
         }
         assertTrue(error.message.orEmpty().contains("text/plain"))

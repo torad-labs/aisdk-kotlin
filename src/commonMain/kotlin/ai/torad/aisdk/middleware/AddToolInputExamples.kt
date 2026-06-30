@@ -21,10 +21,10 @@ public fun AddToolInputExamplesMiddleware(
     examplesByTool: Map<String, List<String>>,
 ): LanguageModelMiddleware = object : LanguageModelMiddleware {
     override suspend fun wrapGenerate(context: MiddlewareCallContext): LanguageModelResult =
-        context.doGenerate(context.params.copy(tools = augment(context.params.tools)))
+        context.doGenerate(context.params.toBuilder().tools(augment(context.params.tools)).build())
 
     override fun wrapStream(context: MiddlewareCallContext): Flow<StreamEvent> =
-        context.doStream(context.params.copy(tools = augment(context.params.tools)))
+        context.doStream(context.params.toBuilder().tools(augment(context.params.tools)).build())
 
     private fun augment(tools: List<LanguageModelTool>): List<LanguageModelTool> = tools.map { tool ->
         val examples = examplesByTool[tool.name] ?: return@map tool

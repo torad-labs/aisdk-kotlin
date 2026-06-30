@@ -155,9 +155,9 @@ class OpenAICompatibleProviderTest {
         )
 
         provider.languageModel("gpt-test").generate(
-            LanguageModelCallParams(
-                messages = listOf(UserMessage("hi")),
-                tools = listOf(
+            LanguageModelCallParams {
+                messages(listOf(UserMessage("hi")))
+                tools(listOf(
                     LanguageModelTool(
                         name = "default",
                         description = "Default schema",
@@ -175,8 +175,8 @@ class OpenAICompatibleProviderTest {
                         parametersSchemaJson = """{"type":"object"}""",
                         strict = false,
                     ),
-                ),
-            ),
+                ))
+            },
         )
 
         val tools = seenBodies.single()
@@ -214,13 +214,13 @@ class OpenAICompatibleProviderTest {
         )
 
         provider.languageModel("gpt-test").generate(
-            LanguageModelCallParams(
-                messages = listOf(UserMessage("hi")),
-                responseFormat = ResponseFormat.Json(
+            LanguageModelCallParams {
+                messages(listOf(UserMessage("hi")))
+                responseFormat(ResponseFormat.Json(
                     schemaName = "Answer",
                     schemaJson = JsonObject(mapOf("type" to JsonPrimitive("object"))),
-                ),
-            ),
+                ))
+            },
         )
 
         val strict = seenBodies.single()
@@ -256,7 +256,9 @@ class OpenAICompatibleProviderTest {
                 apiKey("secret")
             },
         )
-        provider.languageModel("gpt-test").generate(LanguageModelCallParams(messages = listOf(UserMessage("hi"))))
+        provider.languageModel("gpt-test").generate(LanguageModelCallParams {
+    messages(listOf(UserMessage("hi")))
+})
         // No tools → neither tools nor tool_choice in the body (strict servers reject lone tool_choice).
         val body = seenBodies.single()
         assertEquals(null, body["tool_choice"], "tool_choice omitted without tools")
@@ -298,7 +300,9 @@ class OpenAICompatibleProviderTest {
             },
         )
 
-        val events = drainAllItems(provider.languageModel("gpt-test").stream(LanguageModelCallParams(listOf(UserMessage("hi")))))
+        val events = drainAllItems(provider.languageModel("gpt-test").stream(LanguageModelCallParams {
+    messages(listOf(UserMessage("hi")))
+}))
 
         assertIs<StreamEvent.StreamStart>(events[0])
         val metadata = events.filterIsInstance<StreamEvent.ResponseMetadata>()
@@ -335,7 +339,9 @@ class OpenAICompatibleProviderTest {
             OpenAICompatibleProviderSettings { name("openai"); baseUrl("https://api.test/v1") },
         )
 
-        val events = drainAllItems(provider.languageModel("gpt-test").stream(LanguageModelCallParams(listOf(UserMessage("hi")))))
+        val events = drainAllItems(provider.languageModel("gpt-test").stream(LanguageModelCallParams {
+    messages(listOf(UserMessage("hi")))
+}))
 
         val textIndex = events.indexOfFirst { it is StreamEvent.TextDelta && it.text == "hello" }
         val errorIndex = events.indexOfFirst { it is StreamEvent.Error }
@@ -365,7 +371,9 @@ class OpenAICompatibleProviderTest {
             OpenAICompatibleProviderSettings { name("openai"); baseUrl("https://api.test/v1") },
         )
 
-        val events = drainAllItems(provider.languageModel("gpt-test").stream(LanguageModelCallParams(listOf(UserMessage("hi")))))
+        val events = drainAllItems(provider.languageModel("gpt-test").stream(LanguageModelCallParams {
+    messages(listOf(UserMessage("hi")))
+}))
 
         val error = events.filterIsInstance<StreamEvent.Error>().single()
         val finish = events.filterIsInstance<StreamEvent.Finish>().single()
@@ -410,10 +418,14 @@ class OpenAICompatibleProviderTest {
         )
 
         val generated = provider.languageModel("gpt-test").generate(
-            LanguageModelCallParams(messages = listOf(UserMessage("hi"))),
+            LanguageModelCallParams {
+                messages(listOf(UserMessage("hi")))
+            },
         )
         val events = drainAllItems(
-            provider.languageModel("gpt-test").stream(LanguageModelCallParams(messages = listOf(UserMessage("hi")))),
+            provider.languageModel("gpt-test").stream(LanguageModelCallParams {
+    messages(listOf(UserMessage("hi")))
+}),
         )
 
         assertEquals("generated", generated.text)
@@ -450,7 +462,9 @@ class OpenAICompatibleProviderTest {
         val firstDelta = CompletableDeferred<Unit>()
         val collector = launch {
             provider.languageModel("gpt-test")
-                .stream(LanguageModelCallParams(listOf(UserMessage("hi"))))
+                .stream(LanguageModelCallParams {
+    messages(listOf(UserMessage("hi")))
+})
                 .collect { event ->
                     if (event is StreamEvent.TextDelta) {
                         deltas += event.text
@@ -505,7 +519,9 @@ class OpenAICompatibleProviderTest {
         val provider = OpenAICompatible(client, OpenAICompatibleProviderSettings { name("openai"); baseUrl("https://api.test/v1") })
 
         val generated = TextGenerator(provider.completionModel("davinci")).generate(GenerationInput.Prompt("complete")).first()
-        val streamed = drainAllItems(provider.completionModel("davinci").stream(LanguageModelCallParams(listOf(UserMessage("hi")))))
+        val streamed = drainAllItems(provider.completionModel("davinci").stream(LanguageModelCallParams {
+    messages(listOf(UserMessage("hi")))
+}))
 
         assertEquals("done", generated.text)
         assertEquals(3, generated.usage.promptTokens)
@@ -791,7 +807,9 @@ class OpenAICompatibleProviderTest {
             ),
         )
 
-        model.generate(LanguageModelCallParams(messages = messages))
+        model.generate(LanguageModelCallParams {
+    messages(messages)
+})
 
         val wireMessages = seenBodies.single()["messages"]!!.jsonArray.map { it.jsonObject }
         val toolMessages = wireMessages.filter { it["role"]?.jsonPrimitive?.content == "tool" }
@@ -849,7 +867,9 @@ class OpenAICompatibleProviderTest {
             ),
         )
 
-        model.generate(LanguageModelCallParams(messages = messages))
+        model.generate(LanguageModelCallParams {
+    messages(messages)
+})
 
         val wireMessages = seenBodies.single()["messages"]!!.jsonArray.map { it.jsonObject }
         val toolMessages = wireMessages.filter { it["role"]?.jsonPrimitive?.content == "tool" }

@@ -1460,6 +1460,7 @@ public final class ai/torad/aisdk/Embedding {
 public final class ai/torad/aisdk/EmbeddingKt {
 	public static final fun DefaultEmbeddingSettingsMiddleware (Ljava/lang/Integer;Ljava/lang/Boolean;Lai/torad/aisdk/ProviderOptions;Ljava/util/Map;)Lai/torad/aisdk/EmbeddingModelMiddleware;
 	public static synthetic fun DefaultEmbeddingSettingsMiddleware$default (Ljava/lang/Integer;Ljava/lang/Boolean;Lai/torad/aisdk/ProviderOptions;Ljava/util/Map;ILjava/lang/Object;)Lai/torad/aisdk/EmbeddingModelMiddleware;
+	public static final fun EmbeddingModelCallParams (Lkotlin/jvm/functions/Function1;)Lai/torad/aisdk/EmbeddingModelCallParams;
 	public static final fun WrapEmbeddingModel (Lai/torad/aisdk/EmbeddingModel;Ljava/util/List;)Lai/torad/aisdk/EmbeddingModel;
 }
 
@@ -1493,16 +1494,6 @@ public final class ai/torad/aisdk/EmbeddingModel$DefaultImpls {
 }
 
 public final class ai/torad/aisdk/EmbeddingModelCallParams {
-	public fun <init> (Ljava/util/List;Ljava/lang/Integer;Ljava/lang/Boolean;Lai/torad/aisdk/ProviderOptions;Lai/torad/aisdk/AbortSignal;Ljava/util/Map;)V
-	public synthetic fun <init> (Ljava/util/List;Ljava/lang/Integer;Ljava/lang/Boolean;Lai/torad/aisdk/ProviderOptions;Lai/torad/aisdk/AbortSignal;Ljava/util/Map;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public final fun component1 ()Ljava/util/List;
-	public final fun component2 ()Ljava/lang/Integer;
-	public final fun component3 ()Ljava/lang/Boolean;
-	public final fun component4 ()Lai/torad/aisdk/ProviderOptions;
-	public final fun component5 ()Lai/torad/aisdk/AbortSignal;
-	public final fun component6 ()Ljava/util/Map;
-	public final fun copy (Ljava/util/List;Ljava/lang/Integer;Ljava/lang/Boolean;Lai/torad/aisdk/ProviderOptions;Lai/torad/aisdk/AbortSignal;Ljava/util/Map;)Lai/torad/aisdk/EmbeddingModelCallParams;
-	public static synthetic fun copy$default (Lai/torad/aisdk/EmbeddingModelCallParams;Ljava/util/List;Ljava/lang/Integer;Ljava/lang/Boolean;Lai/torad/aisdk/ProviderOptions;Lai/torad/aisdk/AbortSignal;Ljava/util/Map;ILjava/lang/Object;)Lai/torad/aisdk/EmbeddingModelCallParams;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getAbortSignal ()Lai/torad/aisdk/AbortSignal;
 	public final fun getHeaders ()Ljava/util/Map;
@@ -1511,7 +1502,18 @@ public final class ai/torad/aisdk/EmbeddingModelCallParams {
 	public final fun getTruncate ()Ljava/lang/Boolean;
 	public final fun getValues ()Ljava/util/List;
 	public fun hashCode ()I
+	public final fun toBuilder ()Lai/torad/aisdk/EmbeddingModelCallParamsBuilder;
 	public fun toString ()Ljava/lang/String;
+}
+
+public final class ai/torad/aisdk/EmbeddingModelCallParamsBuilder {
+	public final fun abortSignal (Lai/torad/aisdk/AbortSignal;)Lai/torad/aisdk/EmbeddingModelCallParamsBuilder;
+	public final fun build ()Lai/torad/aisdk/EmbeddingModelCallParams;
+	public final fun headers (Ljava/util/Map;)Lai/torad/aisdk/EmbeddingModelCallParamsBuilder;
+	public final fun maxEmbeddingsPerCall (Ljava/lang/Integer;)Lai/torad/aisdk/EmbeddingModelCallParamsBuilder;
+	public final fun providerOptions (Lai/torad/aisdk/ProviderOptions;)Lai/torad/aisdk/EmbeddingModelCallParamsBuilder;
+	public final fun truncate (Ljava/lang/Boolean;)Lai/torad/aisdk/EmbeddingModelCallParamsBuilder;
+	public final fun values (Ljava/util/List;)Lai/torad/aisdk/EmbeddingModelCallParamsBuilder;
 }
 
 public abstract interface class ai/torad/aisdk/EmbeddingModelMiddleware {
@@ -2732,25 +2734,6 @@ public final class ai/torad/aisdk/LanguageModel$DefaultImpls {
 }
 
 public final class ai/torad/aisdk/LanguageModelCallParams {
-	public fun <init> (Ljava/util/List;Ljava/util/List;Lai/torad/aisdk/ToolChoice;Ljava/lang/Float;Ljava/lang/Float;Ljava/lang/Integer;Ljava/lang/Integer;Ljava/util/List;Ljava/lang/Integer;Lai/torad/aisdk/ProviderOptions;Lai/torad/aisdk/AbortSignal;Ljava/lang/Float;Ljava/lang/Float;Lai/torad/aisdk/ResponseFormat;Ljava/util/Map;)V
-	public synthetic fun <init> (Ljava/util/List;Ljava/util/List;Lai/torad/aisdk/ToolChoice;Ljava/lang/Float;Ljava/lang/Float;Ljava/lang/Integer;Ljava/lang/Integer;Ljava/util/List;Ljava/lang/Integer;Lai/torad/aisdk/ProviderOptions;Lai/torad/aisdk/AbortSignal;Ljava/lang/Float;Ljava/lang/Float;Lai/torad/aisdk/ResponseFormat;Ljava/util/Map;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public final fun component1 ()Ljava/util/List;
-	public final fun component10 ()Lai/torad/aisdk/ProviderOptions;
-	public final fun component11 ()Lai/torad/aisdk/AbortSignal;
-	public final fun component12 ()Ljava/lang/Float;
-	public final fun component13 ()Ljava/lang/Float;
-	public final fun component14 ()Lai/torad/aisdk/ResponseFormat;
-	public final fun component15 ()Ljava/util/Map;
-	public final fun component2 ()Ljava/util/List;
-	public final fun component3 ()Lai/torad/aisdk/ToolChoice;
-	public final fun component4 ()Ljava/lang/Float;
-	public final fun component5 ()Ljava/lang/Float;
-	public final fun component6 ()Ljava/lang/Integer;
-	public final fun component7 ()Ljava/lang/Integer;
-	public final fun component8 ()Ljava/util/List;
-	public final fun component9 ()Ljava/lang/Integer;
-	public final fun copy (Ljava/util/List;Ljava/util/List;Lai/torad/aisdk/ToolChoice;Ljava/lang/Float;Ljava/lang/Float;Ljava/lang/Integer;Ljava/lang/Integer;Ljava/util/List;Ljava/lang/Integer;Lai/torad/aisdk/ProviderOptions;Lai/torad/aisdk/AbortSignal;Ljava/lang/Float;Ljava/lang/Float;Lai/torad/aisdk/ResponseFormat;Ljava/util/Map;)Lai/torad/aisdk/LanguageModelCallParams;
-	public static synthetic fun copy$default (Lai/torad/aisdk/LanguageModelCallParams;Ljava/util/List;Ljava/util/List;Lai/torad/aisdk/ToolChoice;Ljava/lang/Float;Ljava/lang/Float;Ljava/lang/Integer;Ljava/lang/Integer;Ljava/util/List;Ljava/lang/Integer;Lai/torad/aisdk/ProviderOptions;Lai/torad/aisdk/AbortSignal;Ljava/lang/Float;Ljava/lang/Float;Lai/torad/aisdk/ResponseFormat;Ljava/util/Map;ILjava/lang/Object;)Lai/torad/aisdk/LanguageModelCallParams;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getAbortSignal ()Lai/torad/aisdk/AbortSignal;
 	public final fun getFrequencyPenalty ()Ljava/lang/Float;
@@ -2768,7 +2751,31 @@ public final class ai/torad/aisdk/LanguageModelCallParams {
 	public final fun getTopK ()Ljava/lang/Integer;
 	public final fun getTopP ()Ljava/lang/Float;
 	public fun hashCode ()I
+	public final fun toBuilder ()Lai/torad/aisdk/LanguageModelCallParamsBuilder;
 	public fun toString ()Ljava/lang/String;
+}
+
+public final class ai/torad/aisdk/LanguageModelCallParamsBuilder {
+	public final fun abortSignal (Lai/torad/aisdk/AbortSignal;)Lai/torad/aisdk/LanguageModelCallParamsBuilder;
+	public final fun build ()Lai/torad/aisdk/LanguageModelCallParams;
+	public final fun frequencyPenalty (Ljava/lang/Float;)Lai/torad/aisdk/LanguageModelCallParamsBuilder;
+	public final fun headers (Ljava/util/Map;)Lai/torad/aisdk/LanguageModelCallParamsBuilder;
+	public final fun maxOutputTokens (Ljava/lang/Integer;)Lai/torad/aisdk/LanguageModelCallParamsBuilder;
+	public final fun messages (Ljava/util/List;)Lai/torad/aisdk/LanguageModelCallParamsBuilder;
+	public final fun presencePenalty (Ljava/lang/Float;)Lai/torad/aisdk/LanguageModelCallParamsBuilder;
+	public final fun providerOptions (Lai/torad/aisdk/ProviderOptions;)Lai/torad/aisdk/LanguageModelCallParamsBuilder;
+	public final fun responseFormat (Lai/torad/aisdk/ResponseFormat;)Lai/torad/aisdk/LanguageModelCallParamsBuilder;
+	public final fun seed (Ljava/lang/Integer;)Lai/torad/aisdk/LanguageModelCallParamsBuilder;
+	public final fun stopSequences (Ljava/util/List;)Lai/torad/aisdk/LanguageModelCallParamsBuilder;
+	public final fun temperature (Ljava/lang/Float;)Lai/torad/aisdk/LanguageModelCallParamsBuilder;
+	public final fun toolChoice (Lai/torad/aisdk/ToolChoice;)Lai/torad/aisdk/LanguageModelCallParamsBuilder;
+	public final fun tools (Ljava/util/List;)Lai/torad/aisdk/LanguageModelCallParamsBuilder;
+	public final fun topK (Ljava/lang/Integer;)Lai/torad/aisdk/LanguageModelCallParamsBuilder;
+	public final fun topP (Ljava/lang/Float;)Lai/torad/aisdk/LanguageModelCallParamsBuilder;
+}
+
+public final class ai/torad/aisdk/LanguageModelKt {
+	public static final fun LanguageModelCallParams (Lkotlin/jvm/functions/Function1;)Lai/torad/aisdk/LanguageModelCallParams;
 }
 
 public abstract interface class ai/torad/aisdk/LanguageModelMiddleware {

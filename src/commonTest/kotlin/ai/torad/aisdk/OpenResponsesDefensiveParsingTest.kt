@@ -49,7 +49,9 @@ class OpenResponsesDefensiveParsingTest {
         )
 
         val result = provider.responses("m").generate(
-            LanguageModelCallParams(messages = listOf(UserMessage("hi"))),
+            LanguageModelCallParams {
+                messages(listOf(UserMessage("hi")))
+            },
         )
 
         assertEquals(0, result.usage.inputTokens.total, "a non-primitive input_tokens degrades to 0, no crash")
@@ -89,7 +91,9 @@ class OpenResponsesDefensiveParsingTest {
         )
 
         val result = provider.responses("m").generate(
-            LanguageModelCallParams(messages = listOf(UserMessage("hi"))),
+            LanguageModelCallParams {
+                messages(listOf(UserMessage("hi")))
+            },
         )
 
         assertEquals(

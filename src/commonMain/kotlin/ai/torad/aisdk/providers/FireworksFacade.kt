@@ -198,13 +198,13 @@ private class FireworksLanguageModel(
     private val delegate: LanguageModel,
 ) : LanguageModel by delegate {
     override suspend fun generate(params: LanguageModelCallParams): LanguageModelResult =
-        delegate.generate(params.copy(providerOptions = transformFireworksProviderOptions(params.providerOptions)))
+        delegate.generate(params.toBuilder().providerOptions(transformFireworksProviderOptions(params.providerOptions)).build())
 
     override fun stream(params: LanguageModelCallParams): Flow<StreamEvent> =
-        delegate.stream(params.copy(providerOptions = transformFireworksProviderOptions(params.providerOptions)))
+        delegate.stream(params.toBuilder().providerOptions(transformFireworksProviderOptions(params.providerOptions)).build())
 
     override fun streamResult(params: LanguageModelCallParams): LanguageModelStreamResult =
-        delegate.streamResult(params.copy(providerOptions = transformFireworksProviderOptions(params.providerOptions)))
+        delegate.streamResult(params.toBuilder().providerOptions(transformFireworksProviderOptions(params.providerOptions)).build())
 
     private fun transformFireworksProviderOptions(options: ProviderOptions): ProviderOptions {
         val map = options.toMap()

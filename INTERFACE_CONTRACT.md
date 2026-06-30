@@ -134,7 +134,7 @@ Penalty, response-format, and retry fields participate in the `Step ?: Agent ?: 
 
 - `interface LanguageModel { val modelId; @LowLevelLanguageModelApi suspend fun generate(...); @LowLevelLanguageModelApi fun stream(...); @LowLevelLanguageModelApi fun streamResult(...) }`
 - `annotation class LowLevelLanguageModelApi` — `@RequiresOptIn(ERROR)` marker for direct language-model execution. Use agents or high-level generation helpers for application prompts; opt in only for provider implementations, tests, and deliberate low-level calls.
-- `data class LanguageModelCallParams(messages, tools, toolChoice, temperature?, topP?, topK?, maxOutputTokens?, stopSequences, seed?, providerOptions, abortSignal, presencePenalty?, frequencyPenalty?, responseFormat)`
+- `@Poko class LanguageModelCallParams(messages, tools, toolChoice, temperature?, topP?, topK?, maxOutputTokens?, stopSequences, seed?, providerOptions, abortSignal, presencePenalty?, frequencyPenalty?, responseFormat, headers)` — field access and value equality remain; construct with `LanguageModelCallParams { messages(...); ... }`. Public `copy()` / `componentN()` ABI is intentionally absent; middleware/provider shims use `params.toBuilder().providerOptions(...).build()` for one-field overrides.
 - `@Poko class LanguageModelTool(name, description, parametersSchemaJson, ..., strict: Boolean? = null, ...)`
 - `@Poko class LanguageModelResult(text, toolCalls, finishReason, usage, providerMetadata, content, rawFinishReason?, warnings, request, response)`
 - `@Poko class CallWarning(type, message?, details?)` — value semantics and
@@ -165,7 +165,7 @@ Penalty, response-format, and retry fields participate in the `Step ?: Agent ?: 
 ### Embeddings
 
 - `interface EmbeddingModel { val modelId; val provider; suspend fun embed(params): EmbeddingModelResult }`
-- `data class EmbeddingModelCallParams(values, maxEmbeddingsPerCall?, truncate?, providerOptions, abortSignal, headers)`
+- `@Poko class EmbeddingModelCallParams(values, maxEmbeddingsPerCall?, truncate?, providerOptions, abortSignal, headers)` — field access and value equality remain; construct with `EmbeddingModelCallParams { values(...); ... }`. Public `copy()` / `componentN()` ABI is intentionally absent; embedding middleware uses `params.toBuilder().providerOptions(...).build()` for one-field overrides.
 - `@Poko class EmbeddingModelResult(embeddings, usage, warnings, request, response, providerMetadata)`
 - `@Poko class EmbeddingUsage(tokens, raw?)`
 - `suspend fun embed(model, value, providerOptions?, abortSignal?, headers?): EmbedResult<String>`

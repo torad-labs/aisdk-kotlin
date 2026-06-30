@@ -39,9 +39,9 @@ class OpenResponsesProviderOptionsTest {
 
         assertFailsWith<InvalidArgumentError> {
             provider.responses("gpt-resp").generate(
-                LanguageModelCallParams(
-                    messages = listOf(UserMessage("hi")),
-                    providerOptions = ProviderOptions.Raw(
+                LanguageModelCallParams {
+                    messages(listOf(UserMessage("hi")))
+                    providerOptions(ProviderOptions.Raw(
                         JsonObject(
                             mapOf(
                                 "openresponses" to buildJsonObject {
@@ -49,8 +49,8 @@ class OpenResponsesProviderOptionsTest {
                                 },
                             ),
                         ),
-                    ),
-                ),
+                    ))
+                },
             )
         }
     }
@@ -82,9 +82,9 @@ class OpenResponsesProviderOptionsTest {
         )
 
         provider.responses("gpt-resp").generate(
-            LanguageModelCallParams(
-                messages = listOf(UserMessage("hi")),
-                providerOptions = ProviderOptions.Raw(
+            LanguageModelCallParams {
+                messages(listOf(UserMessage("hi")))
+                providerOptions(ProviderOptions.Raw(
                     JsonObject(
                         mapOf(
                             "open-responses" to buildJsonObject {
@@ -92,8 +92,8 @@ class OpenResponsesProviderOptionsTest {
                             },
                         ),
                     ),
-                ),
-            ),
+                ))
+            },
         )
 
         val previousResponseId = assertNotNull(seenBodies.single()["previous_response_id"])

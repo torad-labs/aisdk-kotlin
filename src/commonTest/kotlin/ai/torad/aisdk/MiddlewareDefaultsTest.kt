@@ -33,7 +33,9 @@ class MiddlewareDefaultsTest {
                 CaptureMiddleware { observed = it },
             ),
         )
-        wrapped.generate(LanguageModelCallParams(messages = listOf(UserMessage("hi"))))
+        wrapped.generate(LanguageModelCallParams {
+    messages(listOf(UserMessage("hi")))
+})
         val captured = assertNotNull(observed)
         assertEquals(0.7f, captured.temperature)
         assertEquals(200, captured.maxOutputTokens)
@@ -50,10 +52,10 @@ class MiddlewareDefaultsTest {
             ),
         )
         wrapped.generate(
-            LanguageModelCallParams(
-                messages = listOf(UserMessage("hi")),
-                temperature = 0.2f,
-            )
+            LanguageModelCallParams {
+                messages(listOf(UserMessage("hi")))
+                temperature(0.2f)
+            }
         )
         val captured = assertNotNull(observed)
         assertEquals(0.2f, captured.temperature, "call-site temperature wins over default")
@@ -75,7 +77,9 @@ class MiddlewareDefaultsTest {
             ),
         )
 
-        wrapped.generate(LanguageModelCallParams(messages = listOf(UserMessage("hi"))))
+        wrapped.generate(LanguageModelCallParams {
+    messages(listOf(UserMessage("hi")))
+})
 
         val captured = assertNotNull(observed)
         assertEquals(0.3f, captured.presencePenalty)
@@ -96,10 +100,10 @@ class MiddlewareDefaultsTest {
         )
 
         wrapped.generate(
-            LanguageModelCallParams(
-                messages = listOf(UserMessage("hi")),
-                responseFormat = explicit,
-            ),
+            LanguageModelCallParams {
+                messages(listOf(UserMessage("hi")))
+                responseFormat(explicit)
+            },
         )
 
         assertEquals(explicit, assertNotNull(observed).responseFormat)

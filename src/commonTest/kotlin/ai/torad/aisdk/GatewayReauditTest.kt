@@ -22,10 +22,10 @@ import kotlin.test.assertTrue
  * Each test pins one CONFIRMED bug fixed in the re-audit pass.
  */
 class GatewayReauditTest {
-    private val params = LanguageModelCallParams(
-        listOf(UserMessage("hi")),
-        headers = mapOf("x-call-header" to "call-value"),
-    )
+    private val params = LanguageModelCallParams {
+    messages(listOf(UserMessage("hi")))
+    headers(mapOf("x-call-header" to "call-value"))
+}
 
     private fun gateway(client: HttpClient): GatewayProvider =
         CreateGatewayHttpProvider(client, GatewayProviderSettings { apiKey("key") })

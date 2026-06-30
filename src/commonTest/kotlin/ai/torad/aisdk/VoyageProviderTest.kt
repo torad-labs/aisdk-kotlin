@@ -44,17 +44,17 @@ class VoyageProviderTest {
         ).embedding(ModelId("voyage-4"))
 
         val result = model.embed(
-            EmbeddingModelCallParams(
-                values = listOf("first", "second"),
-                providerOptions = ProviderOptions.Raw(JsonObject(mapOf(
+            EmbeddingModelCallParams {
+                values(listOf("first", "second"))
+                providerOptions(ProviderOptions.Raw(JsonObject(mapOf(
                     "voyage" to buildJsonObject {
                         put("inputType", JsonPrimitive("document"))
                         put("truncation", JsonPrimitive(true))
                         put("outputDimension", JsonPrimitive(256))
                         put("outputDtype", JsonPrimitive("int8"))
                     },
-                ))),
-            ),
+                ))))
+            },
         )
 
         assertEquals("voyage.embedding", model.provider)
@@ -133,7 +133,9 @@ class VoyageProviderTest {
         ).embedding(ModelId("voyage-4"))
 
         val error = assertFailsWith<InvalidArgumentError> {
-            model.embed(EmbeddingModelCallParams(values = List(129) { "value-$it" }))
+            model.embed(EmbeddingModelCallParams {
+    values(List(129) { "value-$it" })
+})
         }
 
         assertTrue(error.message.orEmpty().contains("128 values"))

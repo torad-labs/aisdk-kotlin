@@ -36,7 +36,9 @@ class BasetenProviderTest {
         fixture.server.start()
         val provider = Baseten(fixture.httpClient(), BasetenProviderSettings { apiKey("key") })
 
-        val result = provider.chatModel(ModelId("deepseek-ai/DeepSeek-V3-0324")).generate(LanguageModelCallParams(listOf(UserMessage("hi"))))
+        val result = provider.chatModel(ModelId("deepseek-ai/DeepSeek-V3-0324")).generate(LanguageModelCallParams {
+    messages(listOf(UserMessage("hi")))
+})
 
         assertEquals("ok", result.text)
         assertEquals("baseten.chat", provider.chatModel(ModelId("deepseek-ai/DeepSeek-V3-0324")).provider)
@@ -69,7 +71,9 @@ class BasetenProviderTest {
             },
         )
 
-        val result = provider.chatModel().generate(LanguageModelCallParams(listOf(UserMessage("hi"))))
+        val result = provider.chatModel().generate(LanguageModelCallParams {
+    messages(listOf(UserMessage("hi")))
+})
 
         assertEquals("custom", result.text)
         assertEquals("placeholder", fixture.calls.single().requestBodyJson.jsonObject["model"]?.jsonPrimitive?.contentOrNull)
@@ -112,7 +116,9 @@ class BasetenProviderTest {
             },
         )
 
-        val result = provider.embeddingModel().embed(EmbeddingModelCallParams(listOf("hello")))
+        val result = provider.embeddingModel().embed(EmbeddingModelCallParams {
+    values(listOf("hello"))
+})
 
         assertEquals(listOf(0.1f, 0.2f), result.embeddings.single())
         assertEquals(3, result.usage.tokens)

@@ -27,14 +27,74 @@ public interface EmbeddingModel {
     public suspend fun embed(params: EmbeddingModelCallParams): EmbeddingModelResult
 }
 
-public data class EmbeddingModelCallParams(
-    val values: List<String>,
-    val maxEmbeddingsPerCall: Int? = null,
-    val truncate: Boolean? = null,
-    val providerOptions: ProviderOptions = ProviderOptions.None,
-    val abortSignal: AbortSignal = AbortSignalNever,
-    val headers: Map<String, String> = emptyMap(),
-)
+@Poko
+public class EmbeddingModelCallParams internal constructor(
+    public val values: List<String>,
+    public val maxEmbeddingsPerCall: Int? = null,
+    public val truncate: Boolean? = null,
+    public val providerOptions: ProviderOptions = ProviderOptions.None,
+    public val abortSignal: AbortSignal = AbortSignalNever,
+    public val headers: Map<String, String> = emptyMap(),
+) {
+    public fun toBuilder(): EmbeddingModelCallParamsBuilder =
+        EmbeddingModelCallParamsBuilder().also {
+            it.values(values)
+            it.maxEmbeddingsPerCall(maxEmbeddingsPerCall)
+            it.truncate(truncate)
+            it.providerOptions(providerOptions)
+            it.abortSignal(abortSignal)
+            it.headers(headers)
+        }
+}
+
+@AiSdkDsl
+public class EmbeddingModelCallParamsBuilder internal constructor() {
+    private var values: List<String>? = null
+    private var maxEmbeddingsPerCall: Int? = null
+    private var truncate: Boolean? = null
+    private var providerOptions: ProviderOptions = ProviderOptions.None
+    private var abortSignal: AbortSignal = AbortSignalNever
+    private var headers: Map<String, String> = emptyMap()
+
+    public fun values(value: List<String>): EmbeddingModelCallParamsBuilder = apply {
+        values = value
+    }
+
+    public fun maxEmbeddingsPerCall(value: Int?): EmbeddingModelCallParamsBuilder = apply {
+        maxEmbeddingsPerCall = value
+    }
+
+    public fun truncate(value: Boolean?): EmbeddingModelCallParamsBuilder = apply {
+        truncate = value
+    }
+
+    public fun providerOptions(value: ProviderOptions): EmbeddingModelCallParamsBuilder = apply {
+        providerOptions = value
+    }
+
+    public fun abortSignal(value: AbortSignal): EmbeddingModelCallParamsBuilder = apply {
+        abortSignal = value
+    }
+
+    public fun headers(value: Map<String, String>): EmbeddingModelCallParamsBuilder = apply {
+        headers = value
+    }
+
+    public fun build(): EmbeddingModelCallParams =
+        EmbeddingModelCallParams(
+            values = requireNotNull(values) { "EmbeddingModelCallParams.values is required" },
+            maxEmbeddingsPerCall = maxEmbeddingsPerCall,
+            truncate = truncate,
+            providerOptions = providerOptions,
+            abortSignal = abortSignal,
+            headers = headers,
+        )
+}
+
+public fun EmbeddingModelCallParams(
+    block: EmbeddingModelCallParamsBuilder.() -> Unit,
+): EmbeddingModelCallParams =
+    EmbeddingModelCallParamsBuilder().apply(block).build()
 
 @Poko
 public class EmbeddingModelResult(
@@ -99,12 +159,12 @@ public object Embedding {
             maxRetries(maxRetries)
         }.execute(retryableApiError) {
             model.embed(
-                EmbeddingModelCallParams(
-                    values = listOf(value),
-                    providerOptions = providerOptions,
-                    abortSignal = abortSignal,
-                    headers = headers,
-                ),
+                EmbeddingModelCallParams {
+                    values(listOf(value))
+                    providerOptions(providerOptions)
+                    abortSignal(abortSignal)
+                    headers(headers)
+                },
             )
         }
         val embedding = result.embeddings.singleOrNull()
@@ -141,13 +201,13 @@ public object Embedding {
                 maxRetries(maxRetries)
             }.execute(retryableApiError) {
                 model.embed(
-                    EmbeddingModelCallParams(
-                        values = batch,
-                        maxEmbeddingsPerCall = maxEmbeddingsPerCall,
-                        providerOptions = providerOptions,
-                        abortSignal = abortSignal,
-                        headers = headers,
-                    ),
+                    EmbeddingModelCallParams {
+                        values(batch)
+                        maxEmbeddingsPerCall(maxEmbeddingsPerCall)
+                        providerOptions(providerOptions)
+                        abortSignal(abortSignal)
+                        headers(headers)
+                    },
                 )
             }
             require(result.embeddings.size == batch.size) {
@@ -208,12 +268,12 @@ public fun DefaultEmbeddingSettingsMiddleware(
 ): EmbeddingModelMiddleware = object : EmbeddingModelMiddleware {
     override suspend fun wrapEmbed(context: EmbeddingMiddlewareCallContext): EmbeddingModelResult =
         context.doEmbed(
-            context.params.copy(
-                maxEmbeddingsPerCall = context.params.maxEmbeddingsPerCall ?: maxEmbeddingsPerCall,
-                truncate = context.params.truncate ?: truncate,
-                providerOptions = providerOptions.mergedWith(context.params.providerOptions),
-                headers = headers + context.params.headers,
-            ),
+            context.params.toBuilder()
+                .maxEmbeddingsPerCall(context.params.maxEmbeddingsPerCall ?: maxEmbeddingsPerCall)
+                .truncate(context.params.truncate ?: truncate)
+                .providerOptions(providerOptions.mergedWith(context.params.providerOptions))
+                .headers(headers + context.params.headers)
+                .build(),
         )
 }
 

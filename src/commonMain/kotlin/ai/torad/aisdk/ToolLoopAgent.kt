@@ -811,32 +811,32 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
                 stepMessages
             }
 
-            val callParams = LanguageModelCallParams(
-                messages = effectiveMessages,
-                tools = stepTools.descriptors,
-                toolChoice = stepToolChoice,
-                temperature = stepSettings.temperature
-                    ?: resolvedSettings.temperature ?: temperature,
-                topP = stepSettings.topP ?: resolvedSettings.topP ?: topP,
-                topK = stepSettings.topK ?: resolvedSettings.topK ?: topK,
-                maxOutputTokens = stepSettings.maxOutputTokens
-                    ?: resolvedSettings.maxOutputTokens ?: maxOutputTokens,
-                stopSequences = resolveStopSequences(stepSettings, resolvedSettings),
-                seed = stepSettings.seed ?: resolvedSettings.seed ?: seed,
-                providerOptions = stepProviderOptions,
-                abortSignal = abortSignal,
-                presencePenalty = stepSettings.presencePenalty
-                    ?: resolvedSettings.presencePenalty ?: presencePenalty,
-                frequencyPenalty = stepSettings.frequencyPenalty
-                    ?: resolvedSettings.frequencyPenalty ?: frequencyPenalty,
-                responseFormat = stepSettings.responseFormat
+            val callParams = LanguageModelCallParams {
+    messages(effectiveMessages)
+    tools(stepTools.descriptors)
+    toolChoice(stepToolChoice)
+    temperature(stepSettings.temperature
+                    ?: resolvedSettings.temperature ?: temperature)
+    topP(stepSettings.topP ?: resolvedSettings.topP ?: topP)
+    topK(stepSettings.topK ?: resolvedSettings.topK ?: topK)
+    maxOutputTokens(stepSettings.maxOutputTokens
+                    ?: resolvedSettings.maxOutputTokens ?: maxOutputTokens)
+    stopSequences(resolveStopSequences(stepSettings, resolvedSettings))
+    seed(stepSettings.seed ?: resolvedSettings.seed ?: seed)
+    providerOptions(stepProviderOptions)
+    abortSignal(abortSignal)
+    presencePenalty(stepSettings.presencePenalty
+                    ?: resolvedSettings.presencePenalty ?: presencePenalty)
+    frequencyPenalty(stepSettings.frequencyPenalty
+                    ?: resolvedSettings.frequencyPenalty ?: frequencyPenalty)
+    responseFormat(stepSettings.responseFormat
                     ?: resolvedSettings.responseFormat
                     ?: if (responseFormat == ResponseFormat.Text && output != null) {
                         output.toResponseFormat()
                     } else {
                         responseFormat
-                    },
-            )
+                    })
+}
 
             // Fire onStepStart AFTER prepareStep + callParams so the event carries the
             // fully-resolved request (post prepareStep overrides) and the accumulated

@@ -7849,8 +7849,6 @@ final class ai.torad.aisdk/EmbeddingMiddlewareCallContext { // ai.torad.aisdk/Em
 }
 
 final class ai.torad.aisdk/EmbeddingModelCallParams { // ai.torad.aisdk/EmbeddingModelCallParams|null[0]
-    constructor <init>(kotlin.collections/List<kotlin/String>, kotlin/Int? = ..., kotlin/Boolean? = ..., ai.torad.aisdk/ProviderOptions = ..., ai.torad.aisdk/AbortSignal = ..., kotlin.collections/Map<kotlin/String, kotlin/String> = ...) // ai.torad.aisdk/EmbeddingModelCallParams.<init>|<init>(kotlin.collections.List<kotlin.String>;kotlin.Int?;kotlin.Boolean?;ai.torad.aisdk.ProviderOptions;ai.torad.aisdk.AbortSignal;kotlin.collections.Map<kotlin.String,kotlin.String>){}[0]
-
     final val abortSignal // ai.torad.aisdk/EmbeddingModelCallParams.abortSignal|{}abortSignal[0]
         final fun <get-abortSignal>(): ai.torad.aisdk/AbortSignal // ai.torad.aisdk/EmbeddingModelCallParams.abortSignal.<get-abortSignal>|<get-abortSignal>(){}[0]
     final val headers // ai.torad.aisdk/EmbeddingModelCallParams.headers|{}headers[0]
@@ -7864,16 +7862,20 @@ final class ai.torad.aisdk/EmbeddingModelCallParams { // ai.torad.aisdk/Embeddin
     final val values // ai.torad.aisdk/EmbeddingModelCallParams.values|{}values[0]
         final fun <get-values>(): kotlin.collections/List<kotlin/String> // ai.torad.aisdk/EmbeddingModelCallParams.values.<get-values>|<get-values>(){}[0]
 
-    final fun component1(): kotlin.collections/List<kotlin/String> // ai.torad.aisdk/EmbeddingModelCallParams.component1|component1(){}[0]
-    final fun component2(): kotlin/Int? // ai.torad.aisdk/EmbeddingModelCallParams.component2|component2(){}[0]
-    final fun component3(): kotlin/Boolean? // ai.torad.aisdk/EmbeddingModelCallParams.component3|component3(){}[0]
-    final fun component4(): ai.torad.aisdk/ProviderOptions // ai.torad.aisdk/EmbeddingModelCallParams.component4|component4(){}[0]
-    final fun component5(): ai.torad.aisdk/AbortSignal // ai.torad.aisdk/EmbeddingModelCallParams.component5|component5(){}[0]
-    final fun component6(): kotlin.collections/Map<kotlin/String, kotlin/String> // ai.torad.aisdk/EmbeddingModelCallParams.component6|component6(){}[0]
-    final fun copy(kotlin.collections/List<kotlin/String> = ..., kotlin/Int? = ..., kotlin/Boolean? = ..., ai.torad.aisdk/ProviderOptions = ..., ai.torad.aisdk/AbortSignal = ..., kotlin.collections/Map<kotlin/String, kotlin/String> = ...): ai.torad.aisdk/EmbeddingModelCallParams // ai.torad.aisdk/EmbeddingModelCallParams.copy|copy(kotlin.collections.List<kotlin.String>;kotlin.Int?;kotlin.Boolean?;ai.torad.aisdk.ProviderOptions;ai.torad.aisdk.AbortSignal;kotlin.collections.Map<kotlin.String,kotlin.String>){}[0]
     final fun equals(kotlin/Any?): kotlin/Boolean // ai.torad.aisdk/EmbeddingModelCallParams.equals|equals(kotlin.Any?){}[0]
     final fun hashCode(): kotlin/Int // ai.torad.aisdk/EmbeddingModelCallParams.hashCode|hashCode(){}[0]
+    final fun toBuilder(): ai.torad.aisdk/EmbeddingModelCallParamsBuilder // ai.torad.aisdk/EmbeddingModelCallParams.toBuilder|toBuilder(){}[0]
     final fun toString(): kotlin/String // ai.torad.aisdk/EmbeddingModelCallParams.toString|toString(){}[0]
+}
+
+final class ai.torad.aisdk/EmbeddingModelCallParamsBuilder { // ai.torad.aisdk/EmbeddingModelCallParamsBuilder|null[0]
+    final fun abortSignal(ai.torad.aisdk/AbortSignal): ai.torad.aisdk/EmbeddingModelCallParamsBuilder // ai.torad.aisdk/EmbeddingModelCallParamsBuilder.abortSignal|abortSignal(ai.torad.aisdk.AbortSignal){}[0]
+    final fun build(): ai.torad.aisdk/EmbeddingModelCallParams // ai.torad.aisdk/EmbeddingModelCallParamsBuilder.build|build(){}[0]
+    final fun headers(kotlin.collections/Map<kotlin/String, kotlin/String>): ai.torad.aisdk/EmbeddingModelCallParamsBuilder // ai.torad.aisdk/EmbeddingModelCallParamsBuilder.headers|headers(kotlin.collections.Map<kotlin.String,kotlin.String>){}[0]
+    final fun maxEmbeddingsPerCall(kotlin/Int?): ai.torad.aisdk/EmbeddingModelCallParamsBuilder // ai.torad.aisdk/EmbeddingModelCallParamsBuilder.maxEmbeddingsPerCall|maxEmbeddingsPerCall(kotlin.Int?){}[0]
+    final fun providerOptions(ai.torad.aisdk/ProviderOptions): ai.torad.aisdk/EmbeddingModelCallParamsBuilder // ai.torad.aisdk/EmbeddingModelCallParamsBuilder.providerOptions|providerOptions(ai.torad.aisdk.ProviderOptions){}[0]
+    final fun truncate(kotlin/Boolean?): ai.torad.aisdk/EmbeddingModelCallParamsBuilder // ai.torad.aisdk/EmbeddingModelCallParamsBuilder.truncate|truncate(kotlin.Boolean?){}[0]
+    final fun values(kotlin.collections/List<kotlin/String>): ai.torad.aisdk/EmbeddingModelCallParamsBuilder // ai.torad.aisdk/EmbeddingModelCallParamsBuilder.values|values(kotlin.collections.List<kotlin.String>){}[0]
 }
 
 final class ai.torad.aisdk/EmbeddingModelResult { // ai.torad.aisdk/EmbeddingModelResult|null[0]
@@ -8819,8 +8821,6 @@ final class ai.torad.aisdk/KtorGatewayTransport : ai.torad.aisdk/GatewayTranspor
 }
 
 final class ai.torad.aisdk/LanguageModelCallParams { // ai.torad.aisdk/LanguageModelCallParams|null[0]
-    constructor <init>(kotlin.collections/List<ai.torad.aisdk/ModelMessage>, kotlin.collections/List<ai.torad.aisdk/LanguageModelTool> = ..., ai.torad.aisdk/ToolChoice = ..., kotlin/Float? = ..., kotlin/Float? = ..., kotlin/Int? = ..., kotlin/Int? = ..., kotlin.collections/List<kotlin/String> = ..., kotlin/Int? = ..., ai.torad.aisdk/ProviderOptions = ..., ai.torad.aisdk/AbortSignal = ..., kotlin/Float? = ..., kotlin/Float? = ..., ai.torad.aisdk/ResponseFormat = ..., kotlin.collections/Map<kotlin/String, kotlin/String> = ...) // ai.torad.aisdk/LanguageModelCallParams.<init>|<init>(kotlin.collections.List<ai.torad.aisdk.ModelMessage>;kotlin.collections.List<ai.torad.aisdk.LanguageModelTool>;ai.torad.aisdk.ToolChoice;kotlin.Float?;kotlin.Float?;kotlin.Int?;kotlin.Int?;kotlin.collections.List<kotlin.String>;kotlin.Int?;ai.torad.aisdk.ProviderOptions;ai.torad.aisdk.AbortSignal;kotlin.Float?;kotlin.Float?;ai.torad.aisdk.ResponseFormat;kotlin.collections.Map<kotlin.String,kotlin.String>){}[0]
-
     final val abortSignal // ai.torad.aisdk/LanguageModelCallParams.abortSignal|{}abortSignal[0]
         final fun <get-abortSignal>(): ai.torad.aisdk/AbortSignal // ai.torad.aisdk/LanguageModelCallParams.abortSignal.<get-abortSignal>|<get-abortSignal>(){}[0]
     final val frequencyPenalty // ai.torad.aisdk/LanguageModelCallParams.frequencyPenalty|{}frequencyPenalty[0]
@@ -8852,25 +8852,29 @@ final class ai.torad.aisdk/LanguageModelCallParams { // ai.torad.aisdk/LanguageM
     final val topP // ai.torad.aisdk/LanguageModelCallParams.topP|{}topP[0]
         final fun <get-topP>(): kotlin/Float? // ai.torad.aisdk/LanguageModelCallParams.topP.<get-topP>|<get-topP>(){}[0]
 
-    final fun component1(): kotlin.collections/List<ai.torad.aisdk/ModelMessage> // ai.torad.aisdk/LanguageModelCallParams.component1|component1(){}[0]
-    final fun component10(): ai.torad.aisdk/ProviderOptions // ai.torad.aisdk/LanguageModelCallParams.component10|component10(){}[0]
-    final fun component11(): ai.torad.aisdk/AbortSignal // ai.torad.aisdk/LanguageModelCallParams.component11|component11(){}[0]
-    final fun component12(): kotlin/Float? // ai.torad.aisdk/LanguageModelCallParams.component12|component12(){}[0]
-    final fun component13(): kotlin/Float? // ai.torad.aisdk/LanguageModelCallParams.component13|component13(){}[0]
-    final fun component14(): ai.torad.aisdk/ResponseFormat // ai.torad.aisdk/LanguageModelCallParams.component14|component14(){}[0]
-    final fun component15(): kotlin.collections/Map<kotlin/String, kotlin/String> // ai.torad.aisdk/LanguageModelCallParams.component15|component15(){}[0]
-    final fun component2(): kotlin.collections/List<ai.torad.aisdk/LanguageModelTool> // ai.torad.aisdk/LanguageModelCallParams.component2|component2(){}[0]
-    final fun component3(): ai.torad.aisdk/ToolChoice // ai.torad.aisdk/LanguageModelCallParams.component3|component3(){}[0]
-    final fun component4(): kotlin/Float? // ai.torad.aisdk/LanguageModelCallParams.component4|component4(){}[0]
-    final fun component5(): kotlin/Float? // ai.torad.aisdk/LanguageModelCallParams.component5|component5(){}[0]
-    final fun component6(): kotlin/Int? // ai.torad.aisdk/LanguageModelCallParams.component6|component6(){}[0]
-    final fun component7(): kotlin/Int? // ai.torad.aisdk/LanguageModelCallParams.component7|component7(){}[0]
-    final fun component8(): kotlin.collections/List<kotlin/String> // ai.torad.aisdk/LanguageModelCallParams.component8|component8(){}[0]
-    final fun component9(): kotlin/Int? // ai.torad.aisdk/LanguageModelCallParams.component9|component9(){}[0]
-    final fun copy(kotlin.collections/List<ai.torad.aisdk/ModelMessage> = ..., kotlin.collections/List<ai.torad.aisdk/LanguageModelTool> = ..., ai.torad.aisdk/ToolChoice = ..., kotlin/Float? = ..., kotlin/Float? = ..., kotlin/Int? = ..., kotlin/Int? = ..., kotlin.collections/List<kotlin/String> = ..., kotlin/Int? = ..., ai.torad.aisdk/ProviderOptions = ..., ai.torad.aisdk/AbortSignal = ..., kotlin/Float? = ..., kotlin/Float? = ..., ai.torad.aisdk/ResponseFormat = ..., kotlin.collections/Map<kotlin/String, kotlin/String> = ...): ai.torad.aisdk/LanguageModelCallParams // ai.torad.aisdk/LanguageModelCallParams.copy|copy(kotlin.collections.List<ai.torad.aisdk.ModelMessage>;kotlin.collections.List<ai.torad.aisdk.LanguageModelTool>;ai.torad.aisdk.ToolChoice;kotlin.Float?;kotlin.Float?;kotlin.Int?;kotlin.Int?;kotlin.collections.List<kotlin.String>;kotlin.Int?;ai.torad.aisdk.ProviderOptions;ai.torad.aisdk.AbortSignal;kotlin.Float?;kotlin.Float?;ai.torad.aisdk.ResponseFormat;kotlin.collections.Map<kotlin.String,kotlin.String>){}[0]
     final fun equals(kotlin/Any?): kotlin/Boolean // ai.torad.aisdk/LanguageModelCallParams.equals|equals(kotlin.Any?){}[0]
     final fun hashCode(): kotlin/Int // ai.torad.aisdk/LanguageModelCallParams.hashCode|hashCode(){}[0]
+    final fun toBuilder(): ai.torad.aisdk/LanguageModelCallParamsBuilder // ai.torad.aisdk/LanguageModelCallParams.toBuilder|toBuilder(){}[0]
     final fun toString(): kotlin/String // ai.torad.aisdk/LanguageModelCallParams.toString|toString(){}[0]
+}
+
+final class ai.torad.aisdk/LanguageModelCallParamsBuilder { // ai.torad.aisdk/LanguageModelCallParamsBuilder|null[0]
+    final fun abortSignal(ai.torad.aisdk/AbortSignal): ai.torad.aisdk/LanguageModelCallParamsBuilder // ai.torad.aisdk/LanguageModelCallParamsBuilder.abortSignal|abortSignal(ai.torad.aisdk.AbortSignal){}[0]
+    final fun build(): ai.torad.aisdk/LanguageModelCallParams // ai.torad.aisdk/LanguageModelCallParamsBuilder.build|build(){}[0]
+    final fun frequencyPenalty(kotlin/Float?): ai.torad.aisdk/LanguageModelCallParamsBuilder // ai.torad.aisdk/LanguageModelCallParamsBuilder.frequencyPenalty|frequencyPenalty(kotlin.Float?){}[0]
+    final fun headers(kotlin.collections/Map<kotlin/String, kotlin/String>): ai.torad.aisdk/LanguageModelCallParamsBuilder // ai.torad.aisdk/LanguageModelCallParamsBuilder.headers|headers(kotlin.collections.Map<kotlin.String,kotlin.String>){}[0]
+    final fun maxOutputTokens(kotlin/Int?): ai.torad.aisdk/LanguageModelCallParamsBuilder // ai.torad.aisdk/LanguageModelCallParamsBuilder.maxOutputTokens|maxOutputTokens(kotlin.Int?){}[0]
+    final fun messages(kotlin.collections/List<ai.torad.aisdk/ModelMessage>): ai.torad.aisdk/LanguageModelCallParamsBuilder // ai.torad.aisdk/LanguageModelCallParamsBuilder.messages|messages(kotlin.collections.List<ai.torad.aisdk.ModelMessage>){}[0]
+    final fun presencePenalty(kotlin/Float?): ai.torad.aisdk/LanguageModelCallParamsBuilder // ai.torad.aisdk/LanguageModelCallParamsBuilder.presencePenalty|presencePenalty(kotlin.Float?){}[0]
+    final fun providerOptions(ai.torad.aisdk/ProviderOptions): ai.torad.aisdk/LanguageModelCallParamsBuilder // ai.torad.aisdk/LanguageModelCallParamsBuilder.providerOptions|providerOptions(ai.torad.aisdk.ProviderOptions){}[0]
+    final fun responseFormat(ai.torad.aisdk/ResponseFormat): ai.torad.aisdk/LanguageModelCallParamsBuilder // ai.torad.aisdk/LanguageModelCallParamsBuilder.responseFormat|responseFormat(ai.torad.aisdk.ResponseFormat){}[0]
+    final fun seed(kotlin/Int?): ai.torad.aisdk/LanguageModelCallParamsBuilder // ai.torad.aisdk/LanguageModelCallParamsBuilder.seed|seed(kotlin.Int?){}[0]
+    final fun stopSequences(kotlin.collections/List<kotlin/String>): ai.torad.aisdk/LanguageModelCallParamsBuilder // ai.torad.aisdk/LanguageModelCallParamsBuilder.stopSequences|stopSequences(kotlin.collections.List<kotlin.String>){}[0]
+    final fun temperature(kotlin/Float?): ai.torad.aisdk/LanguageModelCallParamsBuilder // ai.torad.aisdk/LanguageModelCallParamsBuilder.temperature|temperature(kotlin.Float?){}[0]
+    final fun toolChoice(ai.torad.aisdk/ToolChoice): ai.torad.aisdk/LanguageModelCallParamsBuilder // ai.torad.aisdk/LanguageModelCallParamsBuilder.toolChoice|toolChoice(ai.torad.aisdk.ToolChoice){}[0]
+    final fun tools(kotlin.collections/List<ai.torad.aisdk/LanguageModelTool>): ai.torad.aisdk/LanguageModelCallParamsBuilder // ai.torad.aisdk/LanguageModelCallParamsBuilder.tools|tools(kotlin.collections.List<ai.torad.aisdk.LanguageModelTool>){}[0]
+    final fun topK(kotlin/Int?): ai.torad.aisdk/LanguageModelCallParamsBuilder // ai.torad.aisdk/LanguageModelCallParamsBuilder.topK|topK(kotlin.Int?){}[0]
+    final fun topP(kotlin/Float?): ai.torad.aisdk/LanguageModelCallParamsBuilder // ai.torad.aisdk/LanguageModelCallParamsBuilder.topP|topP(kotlin.Float?){}[0]
 }
 
 final class ai.torad.aisdk/LanguageModelRequestMetadata { // ai.torad.aisdk/LanguageModelRequestMetadata|null[0]
@@ -13969,6 +13973,7 @@ final fun ai.torad.aisdk/CreateMcpTransport(io.ktor.client/HttpClient, ai.torad.
 final fun ai.torad.aisdk/DefaultEmbeddingSettingsMiddleware(kotlin/Int? = ..., kotlin/Boolean? = ..., ai.torad.aisdk/ProviderOptions = ..., kotlin.collections/Map<kotlin/String, kotlin/String> = ...): ai.torad.aisdk/EmbeddingModelMiddleware // ai.torad.aisdk/DefaultEmbeddingSettingsMiddleware|DefaultEmbeddingSettingsMiddleware(kotlin.Int?;kotlin.Boolean?;ai.torad.aisdk.ProviderOptions;kotlin.collections.Map<kotlin.String,kotlin.String>){}[0]
 final fun ai.torad.aisdk/DevToolsMiddleware(ai.torad.aisdk/DevToolsRecorder = ..., kotlin/String = ..., kotlin/String = ..., kotlin/Function0<kotlin/String> = ...): ai.torad.aisdk/LanguageModelMiddleware // ai.torad.aisdk/DevToolsMiddleware|DevToolsMiddleware(ai.torad.aisdk.DevToolsRecorder;kotlin.String;kotlin.String;kotlin.Function0<kotlin.String>){}[0]
 final fun ai.torad.aisdk/ElicitationCapability(kotlin/Function1<ai.torad.aisdk/ElicitationCapabilityBuilder, kotlin/Unit> = ...): ai.torad.aisdk/ElicitationCapability // ai.torad.aisdk/ElicitationCapability|ElicitationCapability(kotlin.Function1<ai.torad.aisdk.ElicitationCapabilityBuilder,kotlin.Unit>){}[0]
+final fun ai.torad.aisdk/EmbeddingModelCallParams(kotlin/Function1<ai.torad.aisdk/EmbeddingModelCallParamsBuilder, kotlin/Unit>): ai.torad.aisdk/EmbeddingModelCallParams // ai.torad.aisdk/EmbeddingModelCallParams|EmbeddingModelCallParams(kotlin.Function1<ai.torad.aisdk.EmbeddingModelCallParamsBuilder,kotlin.Unit>){}[0]
 final fun ai.torad.aisdk/Gateway(ai.torad.aisdk/GatewayProviderSettings = ...): ai.torad.aisdk/GatewayProvider // ai.torad.aisdk/Gateway|Gateway(ai.torad.aisdk.GatewayProviderSettings){}[0]
 final fun ai.torad.aisdk/GatewayGenerationInfoParams(kotlin/Function1<ai.torad.aisdk/GatewayGenerationInfoParamsBuilder, kotlin/Unit> = ...): ai.torad.aisdk/GatewayGenerationInfoParams // ai.torad.aisdk/GatewayGenerationInfoParams|GatewayGenerationInfoParams(kotlin.Function1<ai.torad.aisdk.GatewayGenerationInfoParamsBuilder,kotlin.Unit>){}[0]
 final fun ai.torad.aisdk/GatewayProvider(ai.torad.aisdk/GatewayProviderSettings = ...): ai.torad.aisdk/GatewayProvider // ai.torad.aisdk/GatewayProvider|GatewayProvider(ai.torad.aisdk.GatewayProviderSettings){}[0]
@@ -13978,6 +13983,7 @@ final fun ai.torad.aisdk/GeneratedFile(ai.torad.aisdk/FileData, kotlin/String = 
 final fun ai.torad.aisdk/HasToolCall(kotlin/String): ai.torad.aisdk/StopCondition // ai.torad.aisdk/HasToolCall|HasToolCall(kotlin.String){}[0]
 final fun ai.torad.aisdk/ImageGenerationFile(ai.torad.aisdk/FileData): ai.torad.aisdk/ImageGenerationFile // ai.torad.aisdk/ImageGenerationFile|ImageGenerationFile(ai.torad.aisdk.FileData){}[0]
 final fun ai.torad.aisdk/ImageGenerationParams(kotlin/Function1<ai.torad.aisdk/ImageGenerationParamsBuilder, kotlin/Unit> = ...): ai.torad.aisdk/ImageGenerationParams // ai.torad.aisdk/ImageGenerationParams|ImageGenerationParams(kotlin.Function1<ai.torad.aisdk.ImageGenerationParamsBuilder,kotlin.Unit>){}[0]
+final fun ai.torad.aisdk/LanguageModelCallParams(kotlin/Function1<ai.torad.aisdk/LanguageModelCallParamsBuilder, kotlin/Unit>): ai.torad.aisdk/LanguageModelCallParams // ai.torad.aisdk/LanguageModelCallParams|LanguageModelCallParams(kotlin.Function1<ai.torad.aisdk.LanguageModelCallParamsBuilder,kotlin.Unit>){}[0]
 final fun ai.torad.aisdk/MCPClientConfig(kotlin/Function1<ai.torad.aisdk/MCPClientConfigBuilder, kotlin/Unit> = ...): ai.torad.aisdk/MCPClientConfig // ai.torad.aisdk/MCPClientConfig|MCPClientConfig(kotlin.Function1<ai.torad.aisdk.MCPClientConfigBuilder,kotlin.Unit>){}[0]
 final fun ai.torad.aisdk/MCPReconnectionOptions(kotlin/Function1<ai.torad.aisdk/MCPReconnectionOptionsBuilder, kotlin/Unit> = ...): ai.torad.aisdk/MCPReconnectionOptions // ai.torad.aisdk/MCPReconnectionOptions|MCPReconnectionOptions(kotlin.Function1<ai.torad.aisdk.MCPReconnectionOptionsBuilder,kotlin.Unit>){}[0]
 final fun ai.torad.aisdk/MCPRequestOptions(kotlin/Function1<ai.torad.aisdk/MCPRequestOptionsBuilder, kotlin/Unit> = ...): ai.torad.aisdk/MCPRequestOptions // ai.torad.aisdk/MCPRequestOptions|MCPRequestOptions(kotlin.Function1<ai.torad.aisdk.MCPRequestOptionsBuilder,kotlin.Unit>){}[0]

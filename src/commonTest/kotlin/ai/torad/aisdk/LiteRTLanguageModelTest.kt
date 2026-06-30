@@ -102,23 +102,23 @@ class LiteRTLanguageModelTest {
         )
 
         val result = model.generate(
-            LanguageModelCallParams(
-                messages = listOf(SystemMessage("system"), UserMessage("hello")),
-                tools = listOf(
+            LanguageModelCallParams {
+                messages(listOf(SystemMessage("system"), UserMessage("hello")))
+                tools(listOf(
                     LanguageModelTool(
                         name = "lookup",
                         description = "Lookup docs",
                         parametersSchemaJson = """{"type":"object"}""",
                     ),
-                ),
-                temperature = 0.2f,
-                providerOptions = ProviderOptions.ofPairs(
+                ))
+                temperature(0.2f)
+                providerOptions(ProviderOptions.ofPairs(
                     "litert" to buildJsonObject {
                         put("enableThinking", JsonPrimitive(true))
                         put("extraContext", buildJsonObject { put("screen", JsonPrimitive("home")) })
                     },
-                ),
-            ),
+                ))
+            },
         )
 
         assertEquals("answer", result.text)
@@ -175,7 +175,9 @@ class LiteRTLanguageModelTest {
             ),
         )
 
-        val events = model.stream(LanguageModelCallParams(messages = listOf(UserMessage("hello")))).toList()
+        val events = model.stream(LanguageModelCallParams {
+    messages(listOf(UserMessage("hello")))
+}).toList()
 
         assertEquals(listOf("Hel", "lo"), events.filterIsInstance<StreamEvent.TextDelta>().map { it.text })
         assertEquals(listOf("why", " now"), events.filterIsInstance<StreamEvent.ReasoningDelta>().map { it.text })

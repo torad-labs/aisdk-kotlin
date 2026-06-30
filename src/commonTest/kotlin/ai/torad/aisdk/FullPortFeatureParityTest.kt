@@ -73,11 +73,11 @@ class FullPortFeatureParityTest {
         )
 
         wrapped.embed(
-            EmbeddingModelCallParams(
-                values = listOf("x"),
-                truncate = false,
-                providerOptions = ProviderOptions.Raw(JsonObject(mapOf("explicit" to JsonPrimitive(1)))),
-            ),
+            EmbeddingModelCallParams {
+                values(listOf("x"))
+                truncate(false)
+                providerOptions(ProviderOptions.Raw(JsonObject(mapOf("explicit" to JsonPrimitive(1)))))
+            },
         )
 
         val captured = assertNotNull(model.captured)

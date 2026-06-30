@@ -31,7 +31,9 @@ class DevToolsMiddlewareTest {
         )
         val wrapped = WrapLanguageModel(MockLanguageModelTextOnly("ok"), listOf(middleware))
 
-        wrapped.generate(LanguageModelCallParams(messages = listOf(UserMessage("hi"))))
+        wrapped.generate(LanguageModelCallParams {
+    messages(listOf(UserMessage("hi")))
+})
 
         assertEquals(listOf("run_1"), recorder.runs)
         val step = recorder.steps.single()
@@ -58,7 +60,9 @@ class DevToolsMiddlewareTest {
         )
         val wrapped = WrapLanguageModel(StreamingFixtureModel(), listOf(middleware))
 
-        val events = wrapped.stream(LanguageModelCallParams(messages = listOf(UserMessage("hi")))).toList()
+        val events = wrapped.stream(LanguageModelCallParams {
+    messages(listOf(UserMessage("hi")))
+}).toList()
 
         assertTrue(events.any { it is StreamEvent.TextDelta && it.text == "hello" })
         val result = assertNotNull(recorder.results["step_1"])
