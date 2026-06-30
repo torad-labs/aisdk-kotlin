@@ -112,6 +112,9 @@ public data class AnthropicProviderSettings(
             }.takeIf { it.isNotEmpty() }
         }
 
+        internal val anthropicRejectsSamplingParameterModelFragments: Set<String> =
+            setOf("claude-opus-4-8", "claude-opus-4-7", "claude-fable-5")
+
         /**
          * The default `max_tokens` for a Claude model when the caller omits maxOutputTokens.
          * Ports upstream's getModelCapabilities table — hardcoding 4096 truncated output on
@@ -621,26 +624,64 @@ internal data class PreparedAnthropicRequest(
             val temperature = params.temperature?.coerceIn(0f, 1f)?.also {
                 if (params.temperature != it) warnings += CallWarning("unsupported", "temperature")
             }
-            val topP = if (isThinking) {
-                if (params.topP != null) warnings += CallWarning("unsupported", "topP")
-                null
-            } else if (temperature != null && params.topP != null && modelId.startsWith("claude-")) {
-                warnings += CallWarning("unsupported", "topP")
+            val rejectsSamplingParameters =
+                AnthropicProviderSettings.anthropicRejectsSamplingParameterModelFragments.any { modelId.contains(it) }
+            val samplingTemperature = if (rejectsSamplingParameters) {
+                if (temperature != null) {
+                    warnings += CallWarning(
+                        type = "unsupported",
+                        message = "temperature",
+                        details = JsonPrimitive("temperature is not supported by $modelId and will be ignored"),
+                    )
+                }
                 null
             } else {
-                params.topP
+                temperature
             }
-            val topK = if (isThinking) {
-                if (params.topK != null) warnings += CallWarning("unsupported", "topK")
+            val samplingTopK = if (rejectsSamplingParameters) {
+                if (params.topK != null) {
+                    warnings += CallWarning(
+                        type = "unsupported",
+                        message = "topK",
+                        details = JsonPrimitive("topK is not supported by $modelId and will be ignored"),
+                    )
+                }
                 null
             } else {
                 params.topK
             }
-            val finalTemperature = if (isThinking) {
-                if (temperature != null) warnings += CallWarning("unsupported", "temperature")
+            val samplingTopP = if (rejectsSamplingParameters) {
+                if (params.topP != null) {
+                    warnings += CallWarning(
+                        type = "unsupported",
+                        message = "topP",
+                        details = JsonPrimitive("topP is not supported by $modelId and will be ignored"),
+                    )
+                }
                 null
             } else {
-                temperature
+                params.topP
+            }
+            val topP = if (isThinking) {
+                if (samplingTopP != null) warnings += CallWarning("unsupported", "topP")
+                null
+            } else if (samplingTemperature != null && samplingTopP != null && modelId.startsWith("claude-")) {
+                warnings += CallWarning("unsupported", "topP")
+                null
+            } else {
+                samplingTopP
+            }
+            val topK = if (isThinking) {
+                if (samplingTopK != null) warnings += CallWarning("unsupported", "topK")
+                null
+            } else {
+                samplingTopK
+            }
+            val finalTemperature = if (isThinking) {
+                if (samplingTemperature != null) warnings += CallWarning("unsupported", "temperature")
+                null
+            } else {
+                samplingTemperature
             }
 
             val preparedTools = AnthropicTools.anthropicPrepareTools(params.tools, params.toolChoice, options, params.responseFormat)
