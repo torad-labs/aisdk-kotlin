@@ -55,16 +55,21 @@ Kotlin/JVM SDKs do, including the two most directly comparable to this one:
       public val headers: Map<String, String> = emptyMap(),
   )
   public class CohereProviderSettingsBuilder internal constructor() {
-      public var baseURL: String = "..."        // or setter methods, match the repo idiom
-      public var apiKey: String? = null
-      public var headers: Map<String, String> = emptyMap()
+      // private var + public SETTER METHODS — matches CallSettingsBuilder and avoids
+      // the no-public-mutable-var gate (a public var here would fail the gate).
+      private var baseURL: String = "..."
+      private var apiKey: String? = null
+      private var headers: Map<String, String> = emptyMap()
+      public fun baseURL(value: String) { baseURL = value }
+      public fun apiKey(value: String?) { apiKey = value }
+      public fun headers(value: Map<String, String>) { headers = value }
       internal fun build() = CohereProviderSettings(baseURL, apiKey, headers)
   }
   public fun CohereProviderSettings(block: CohereProviderSettingsBuilder.() -> Unit = {}):
       CohereProviderSettings = CohereProviderSettingsBuilder().apply(block).build()
   ```
   Result: no public positional constructor (it's `internal`), no `copy()`/`componentN()`
-  (`@Poko`), construction via the DSL factory `CohereProviderSettings { apiKey = "..." }`.
+  (`@Poko`), construction via the DSL factory `CohereProviderSettings { apiKey("...") }`.
   Adding a field later = add a builder property + an internal-constructor param — no ABI
   break. Migrate every existing `CohereProviderSettings(apiKey = ...)` call site to the DSL.
 - **`data class` is allowed ONLY for genuinely-frozen, small, wire-shaped value
