@@ -75,8 +75,8 @@ tests must stay green.
 | BL-052 | UI residual: same-name tool placeholder mis-drop; Text/Reasoning id-collision stuck | Low | Optional | CONFIRMED | OPEN |
 | BL-053 | Media transcription base64 ~2× peak memory (structural) | Low | Optional | CONFIRMED | OPEN |
 
-| BL-054 | ~~SigV4 path needs double-encode~~ → FALSE POSITIVE (boto3: single `%3A` is correct); lock w/ test | ~~Critical~~ | Recommended | REFUTED | TEST-LOCK |
-| BL-055 | ~~Bedrock ARN should be raw~~ → FALSE POSITIVE (boto3 encodes ARN wholesale); lock w/ test | ~~High~~ | Recommended | REFUTED | TEST-LOCK |
+| BL-054 | ~~SigV4 path needs double-encode~~ → FALSE POSITIVE (boto3: single `%3A` is correct); locked w/ test | ~~Critical~~ | Recommended | REFUTED | DONE (locked) |
+| BL-055 | ~~Bedrock ARN should be raw~~ → FALSE POSITIVE (boto3 encodes ARN wholesale); locked w/ test | ~~High~~ | Recommended | REFUTED | DONE (locked) |
 | BL-056 | Bedrock eventstream frames not CRC-validated | Low | Optional | CONFIRMED | OPEN |
 | BL-057 | Wiki/README/llms.txt code samples don't compile against the real API | High | Recommended | CONFIRMED | OPEN |
 | BL-058 | Public API evolvability: data-class traps, no top-level verbs, Java-uncallable fns | High | Recommended | CONFIRMED | OPEN |

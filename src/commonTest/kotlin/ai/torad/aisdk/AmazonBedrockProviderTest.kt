@@ -39,6 +39,20 @@ import kotlin.test.assertTrue
 @OptIn(ExperimentalCoroutinesApi::class)
 class AmazonBedrockProviderTest {
     @Test
+    fun `bedrock model ids are percent encoded like boto3 path segments`() {
+        val settings = AmazonBedrockProviderSettings()
+
+        assertEquals(
+            "arn%3Aaws%3Abedrock%3Aus-east-1%3A123456789012%3Aapplication-inference-profile%2Fabc123",
+            settings.bedrockEncodeModelId("arn:aws:bedrock:us-east-1:123456789012:application-inference-profile/abc123"),
+        )
+        assertEquals(
+            "anthropic.claude-3-5-sonnet-20240620-v1%3A0",
+            settings.bedrockEncodeModelId("anthropic.claude-3-5-sonnet-20240620-v1:0"),
+        )
+    }
+
+    @Test
     fun `chat model maps Converse request response metadata and auth`() = runTest {
         val fixture = TestServer.createTestServer(
             mutableMapOf(
