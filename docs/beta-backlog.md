@@ -56,7 +56,7 @@ tests must stay green.
 | BL-035 | OpenAI-compatible always sends tool `strict:true` → 400 on real OpenAI/Azure | High | Recommended | CONFIRMED | OPEN |
 | BL-036 | xAI streaming never requests usage → zero token accounting | High | Recommended | CONFIRMED | DONE |
 | BL-037 | Cohere `stream()` is a fake stream (blocking call, no SSE) | High | Recommended | CONFIRMED | OPEN |
-| BL-038 | Mistral `model_length` finish reason mismapped to `Other` | Med-High | Recommended | CONFIRMED | OPEN |
+| BL-038 | Mistral `model_length` finish reason mismapped to `Other` | Med-High | Recommended | CONFIRMED | DONE |
 | BL-039 | Anthropic provider-executed tools keyed by name, args dropped → 400 | Medium | Optional | CONFIRMED | OPEN |
 | BL-040 | OpenResponses built-in tool outputs silently dropped | Medium | Optional | CONFIRMED | OPEN |
 | BL-041 | Anthropic `cache_control` dropped on non-text blocks (no doc caching) | Medium | Recommended | CONFIRMED | OPEN |

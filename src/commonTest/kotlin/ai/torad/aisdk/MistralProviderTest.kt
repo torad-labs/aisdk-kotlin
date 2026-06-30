@@ -250,6 +250,94 @@ class MistralProviderTest {
     }
 
     @Test
+    fun `chat finish reasons map model_length to length for generate and stream`() = runTest {
+        val fixture = TestServer.createTestServer(
+            mutableMapOf(
+                "https://api.mistral.ai/v1/chat/completions" to UrlHandler(
+                    listOf(
+                        UrlResponse.JsonValue(
+                            Json.parseToJsonElement(
+                                """{"id":"gen-model-length","model":"mistral-small-latest","choices":[{"message":{"role":"assistant","content":"truncated"},"finish_reason":"model_length"}],"usage":{"prompt_tokens":1,"completion_tokens":2,"total_tokens":3}}""",
+                            ),
+                        ),
+                        UrlResponse.JsonValue(
+                            Json.parseToJsonElement(
+                                """{"id":"gen-length","model":"mistral-small-latest","choices":[{"message":{"role":"assistant","content":"length"},"finish_reason":"length"}],"usage":{"prompt_tokens":1,"completion_tokens":2,"total_tokens":3}}""",
+                            ),
+                        ),
+                        UrlResponse.JsonValue(
+                            Json.parseToJsonElement(
+                                """{"id":"gen-stop","model":"mistral-small-latest","choices":[{"message":{"role":"assistant","content":"stop"},"finish_reason":"stop"}],"usage":{"prompt_tokens":1,"completion_tokens":2,"total_tokens":3}}""",
+                            ),
+                        ),
+                        UrlResponse.StreamChunks(
+                            listOf(
+                                """
+                                data: {"id":"stream-model-length","model":"mistral-small-latest","choices":[{"delta":{"role":"assistant","content":"truncated"},"finish_reason":null}]}
+
+                                data: {"id":"stream-model-length","model":"mistral-small-latest","choices":[{"delta":{"content":""},"finish_reason":"model_length"}],"usage":{"prompt_tokens":1,"completion_tokens":2,"total_tokens":3}}
+
+                                data: [DONE]
+
+                                """.trimIndent(),
+                            ),
+                        ),
+                        UrlResponse.StreamChunks(
+                            listOf(
+                                """
+                                data: {"id":"stream-length","model":"mistral-small-latest","choices":[{"delta":{"role":"assistant","content":"length"},"finish_reason":null}]}
+
+                                data: {"id":"stream-length","model":"mistral-small-latest","choices":[{"delta":{"content":""},"finish_reason":"length"}],"usage":{"prompt_tokens":1,"completion_tokens":2,"total_tokens":3}}
+
+                                data: [DONE]
+
+                                """.trimIndent(),
+                            ),
+                        ),
+                        UrlResponse.StreamChunks(
+                            listOf(
+                                """
+                                data: {"id":"stream-stop","model":"mistral-small-latest","choices":[{"delta":{"role":"assistant","content":"stop"},"finish_reason":null}]}
+
+                                data: {"id":"stream-stop","model":"mistral-small-latest","choices":[{"delta":{"content":""},"finish_reason":"stop"}],"usage":{"prompt_tokens":1,"completion_tokens":2,"total_tokens":3}}
+
+                                data: [DONE]
+
+                                """.trimIndent(),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+        fixture.server.start()
+        val provider = Mistral(fixture.httpClient(), MistralProviderSettings(apiKey = "key"))
+        val model = provider.chat(ModelId("mistral-small-latest"))
+
+        val generatedModelLength = model.generate(LanguageModelCallParams(messages = listOf(UserMessage("hi"))))
+        val generatedLength = model.generate(LanguageModelCallParams(messages = listOf(UserMessage("hi"))))
+        val generatedStop = model.generate(LanguageModelCallParams(messages = listOf(UserMessage("hi"))))
+        val streamedModelLength = drainAllItems(model.stream(LanguageModelCallParams(messages = listOf(UserMessage("hi")))))
+            .filterIsInstance<StreamEvent.Finish>()
+            .single()
+        val streamedLength = drainAllItems(model.stream(LanguageModelCallParams(messages = listOf(UserMessage("hi")))))
+            .filterIsInstance<StreamEvent.Finish>()
+            .single()
+        val streamedStop = drainAllItems(model.stream(LanguageModelCallParams(messages = listOf(UserMessage("hi")))))
+            .filterIsInstance<StreamEvent.Finish>()
+            .single()
+
+        assertEquals(FinishReason.Length, generatedModelLength.finishReason)
+        assertEquals("model_length", generatedModelLength.rawFinishReason)
+        assertEquals(FinishReason.Length, generatedLength.finishReason)
+        assertEquals(FinishReason.Stop, generatedStop.finishReason)
+        assertEquals(FinishReason.Length, streamedModelLength.finishReason)
+        assertEquals("model_length", streamedModelLength.rawFinishReason)
+        assertEquals(FinishReason.Length, streamedLength.finishReason)
+        assertEquals(FinishReason.Stop, streamedStop.finishReason)
+    }
+
+    @Test
     fun `unsupported model families and unconfigured singleton fail explicitly`() {
         val provider = Mistral(TestServer.createTestServer(mutableMapOf()).httpClient(), MistralProviderSettings(apiKey = "key"))
 
