@@ -1,5 +1,6 @@
 package ai.torad.aisdk
 
+import dev.drewhamilton.poko.Poko
 import kotlinx.serialization.json.JsonElement
 
 public interface EmbeddingModel {
@@ -35,40 +36,44 @@ public data class EmbeddingModelCallParams(
     val headers: Map<String, String> = emptyMap(),
 )
 
-public data class EmbeddingModelResult(
-    val embeddings: List<List<Float>>,
-    val usage: EmbeddingUsage = EmbeddingUsage(),
-    val warnings: List<CallWarning> = emptyList(),
-    val request: LanguageModelRequestMetadata = LanguageModelRequestMetadata(),
-    val response: LanguageModelResponseMetadata = LanguageModelResponseMetadata(),
-    val providerMetadata: ProviderMetadata = ProviderMetadata.None,
+@Poko
+public class EmbeddingModelResult(
+    public val embeddings: List<List<Float>>,
+    public val usage: EmbeddingUsage = EmbeddingUsage(),
+    public val warnings: List<CallWarning> = emptyList(),
+    public val request: LanguageModelRequestMetadata = LanguageModelRequestMetadata(),
+    public val response: LanguageModelResponseMetadata = LanguageModelResponseMetadata(),
+    public val providerMetadata: ProviderMetadata = ProviderMetadata.None,
 )
 
-public data class EmbeddingUsage(
-    val tokens: Int = 0,
-    val raw: JsonElement? = null,
+@Poko
+public class EmbeddingUsage(
+    public val tokens: Int = 0,
+    public val raw: JsonElement? = null,
 )
 
-public data class EmbedResult<TValue>(
-    val value: TValue,
-    val embedding: List<Float>,
-    val usage: EmbeddingUsage,
-    val warnings: List<CallWarning> = emptyList(),
-    val request: LanguageModelRequestMetadata = LanguageModelRequestMetadata(),
-    val response: LanguageModelResponseMetadata = LanguageModelResponseMetadata(),
-    val providerMetadata: ProviderMetadata = ProviderMetadata.None,
+@Poko
+public class EmbedResult<TValue>(
+    public val value: TValue,
+    public val embedding: List<Float>,
+    public val usage: EmbeddingUsage,
+    public val warnings: List<CallWarning> = emptyList(),
+    public val request: LanguageModelRequestMetadata = LanguageModelRequestMetadata(),
+    public val response: LanguageModelResponseMetadata = LanguageModelResponseMetadata(),
+    public val providerMetadata: ProviderMetadata = ProviderMetadata.None,
 )
 
-public data class EmbedManyResult<TValue>(
-    val values: List<TValue>,
-    val embeddings: List<List<Float>>,
-    val usage: EmbeddingUsage,
-    val warnings: List<CallWarning> = emptyList(),
-    val request: LanguageModelRequestMetadata = LanguageModelRequestMetadata(),
-    val response: LanguageModelResponseMetadata = LanguageModelResponseMetadata(),
+@Poko
+public class EmbedManyResult<TValue>(
+    public val values: List<TValue>,
+    public val embeddings: List<List<Float>>,
+    public val usage: EmbeddingUsage,
+    public val warnings: List<CallWarning> = emptyList(),
+    public val request: LanguageModelRequestMetadata = LanguageModelRequestMetadata(),
+    public val response: LanguageModelResponseMetadata = LanguageModelResponseMetadata(),
     /** Per-batch response metadata, in batch order — one entry per underlying model call. */
-    val responses: List<LanguageModelResponseMetadata> = emptyList(),
-    val providerMetadata: ProviderMetadata = ProviderMetadata.None,
+    public val responses: List<LanguageModelResponseMetadata> = emptyList(),
+    public val providerMetadata: ProviderMetadata = ProviderMetadata.None,
 )
 
 internal val retryableApiError: (Throwable) -> Boolean = {
@@ -176,10 +181,11 @@ public interface EmbeddingModelMiddleware {
         context.doEmbed(context.params)
 }
 
-public data class EmbeddingMiddlewareCallContext(
-    val params: EmbeddingModelCallParams,
-    val model: EmbeddingModel,
-    val doEmbed: suspend (EmbeddingModelCallParams) -> EmbeddingModelResult,
+@Poko
+public class EmbeddingMiddlewareCallContext(
+    public val params: EmbeddingModelCallParams,
+    public val model: EmbeddingModel,
+    public val doEmbed: suspend (EmbeddingModelCallParams) -> EmbeddingModelResult,
 )
 
 public fun WrapEmbeddingModel(

@@ -152,10 +152,13 @@ Penalty, response-format, and retry fields participate in the `Step ?: Agent ?: 
 
 - `interface EmbeddingModel { val modelId; val provider; suspend fun embed(params): EmbeddingModelResult }`
 - `data class EmbeddingModelCallParams(values, maxEmbeddingsPerCall?, truncate?, providerOptions, abortSignal, headers)`
-- `data class EmbeddingModelResult(embeddings, usage, warnings, request, response, providerMetadata)`
-- `data class EmbeddingUsage(tokens, raw?)`
+- `@Poko class EmbeddingModelResult(embeddings, usage, warnings, request, response, providerMetadata)`
+- `@Poko class EmbeddingUsage(tokens, raw?)`
 - `suspend fun embed(model, value, providerOptions?, abortSignal?, headers?): EmbedResult<String>`
 - `suspend fun embedMany(model, values, maxEmbeddingsPerCall?, maxParallelCalls = 8, providerOptions?, abortSignal?, headers?): EmbedManyResult<String>`
+- `EmbedResult`, `EmbedManyResult`, and `EmbeddingMiddlewareCallContext` are
+  `@Poko class` value-semantics result/context types; field access remains,
+  but public `copy()` / `componentN()` ABI is intentionally absent.
 - `interface EmbeddingModelMiddleware`; `wrapEmbeddingModel`; `defaultEmbeddingSettingsMiddleware`
 
 ### Media And Reranking
@@ -165,6 +168,9 @@ Penalty, response-format, and retry fields participate in the `Step ?: Agent ?: 
 - Transcription: `TranscriptionModel`, `AudioSource`, `TranscriptionParams`, `TranscriptSegment`, `TranscribeResult`, `transcribe(...)`
 - Video: `VideoModel`, `VideoGenerationParams`, `VideoModelResult`, `GenerateVideoResult`, `generateVideo(..., maxParallelCalls = 8)`
 - Rerank: `RerankingModel`, `RerankingParams`, `RerankedItem<T>`, `RerankResult<T>`, `rerank(...)`
+  - Rerank result holders are `@Poko class` value-semantics types; field
+    access remains, but public `copy()` / `componentN()` ABI is intentionally
+    absent. `RerankingParams` stays on the builder/data-class track.
 - Shared file payload: `GeneratedFile(mediaType, base64, filename?, providerMetadata)`, `FileData.Base64`, `FileData.Bytes.toByteArray()` (copy-returning), `FileData.Url`, `DefaultGeneratedFile.fromBase64/fromBytes` (`byteArray` is copy-returning).
 - Media result/metadata holders are `@Poko class` value-semantics types;
   field access remains, but public `copy()` / `componentN()` ABI is
