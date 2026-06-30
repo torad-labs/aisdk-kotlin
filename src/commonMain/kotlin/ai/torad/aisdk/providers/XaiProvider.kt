@@ -38,10 +38,11 @@ public typealias XaiVideoProviderOptions = XaiVideoModelOptions
 public typealias XaiErrorData = JsonElement
 
 @Serializable
-public data class XaiProviderSettings(
-    val baseURL: String = "https://api.x.ai/v1",
-    val apiKey: String? = null,
-    val headers: Map<String, String> = emptyMap(),
+@Poko
+public class XaiProviderSettings internal constructor(
+    public val baseURL: String = "https://api.x.ai/v1",
+    public val apiKey: String? = null,
+    public val headers: Map<String, String> = emptyMap(),
 ) {
     internal fun xaiHeaders(callHeaders: Map<String, String> = emptyMap()): Map<String, String> {
         val base = linkedMapOf<String, String?>()
@@ -164,6 +165,36 @@ public data class XaiProviderSettings(
             }
     }
 }
+
+public class XaiProviderSettingsBuilder internal constructor() {
+    private var baseURL: String = "https://api.x.ai/v1"
+    private var apiKey: String? = null
+    private var headers: Map<String, String> = emptyMap()
+
+    public fun baseURL(value: String) {
+        baseURL = value
+    }
+
+    public fun apiKey(value: String?) {
+        apiKey = value
+    }
+
+    public fun headers(value: Map<String, String>) {
+        headers = value
+    }
+
+    internal fun build(): XaiProviderSettings =
+        XaiProviderSettings(
+            baseURL = baseURL,
+            apiKey = apiKey,
+            headers = headers,
+        )
+}
+
+public fun XaiProviderSettings(
+    block: XaiProviderSettingsBuilder.() -> Unit = {},
+): XaiProviderSettings =
+    XaiProviderSettingsBuilder().apply(block).build()
 
 @Serializable
 public data class XaiLanguageModelChatOptions(

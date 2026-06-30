@@ -62,8 +62,12 @@ This project follows Semantic Versioning once the first stable release is cut.
   `GroqProviderSettings`, `CerebrasProviderSettings`,
   `DeepInfraProviderSettings`, `DeepSeekProviderSettings`,
   `FireworksProviderSettings`, `TogetherAIProviderSettings`,
-  `PerplexityProviderSettings`, and `MoonshotAIProviderSettings`)
-  are now `@Serializable @Poko class` values with internal positional
+  `PerplexityProviderSettings`, `MoonshotAIProviderSettings`,
+  `XaiProviderSettings`, `VoyageProviderSettings`,
+  `QuiverAIProviderSettings`, `BasetenProviderSettings`,
+  `VercelProviderSettings`, `OpenAIProviderSettings`,
+  `AzureOpenAIProviderSettings`, and `GoogleGenerativeAIProviderSettings`)
+  are now `@Poko class` values (and remain `@Serializable` where applicable) with internal positional
   constructors and public DSL factories such as
   `CohereProviderSettings { apiKey("..."); baseURL("...") }`. Field access,
   equality, hashCode, toString, and JSON serialization remain; public

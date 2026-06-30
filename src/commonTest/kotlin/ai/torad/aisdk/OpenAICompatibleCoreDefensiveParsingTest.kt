@@ -60,7 +60,7 @@ class OpenAICompatibleCoreDefensiveParsingTest {
                 )
             },
         )
-        val provider = Xai(client, XaiProviderSettings(apiKey = "key"))
+        val provider = Xai(client, XaiProviderSettings { apiKey("key") })
 
         val error = assertFails {
             provider.chat(ModelId("grok-3")).generate(
@@ -91,7 +91,7 @@ class OpenAICompatibleCoreDefensiveParsingTest {
                 )
             },
         )
-        val provider = Xai(client, XaiProviderSettings(apiKey = "key"))
+        val provider = Xai(client, XaiProviderSettings { apiKey("key") })
 
         val error = assertFails {
             provider.chat(ModelId("grok-3")).generate(
@@ -124,7 +124,7 @@ class OpenAICompatibleCoreDefensiveParsingTest {
                 )
             },
         )
-        val result = Xai(client, XaiProviderSettings(apiKey = "key"))
+        val result = Xai(client, XaiProviderSettings { apiKey("key") })
             .chat(ModelId("grok-3"))
             .generate(LanguageModelCallParams(messages = listOf(UserMessage("hi"))))
         assertEquals("hi", result.text)

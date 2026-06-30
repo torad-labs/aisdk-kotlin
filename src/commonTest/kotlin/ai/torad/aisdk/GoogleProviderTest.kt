@@ -71,11 +71,11 @@ class GoogleProviderTest {
         fixture.server.start()
         val provider = GoogleGenerativeAI(
             fixture.httpClient(),
-            GoogleGenerativeAIProviderSettings(
-                apiKey = "key",
-                baseURL = "https://google.test/v1beta",
-                headers = mapOf("X-Provider" to "provider"),
-            ),
+            GoogleGenerativeAIProviderSettings {
+                apiKey("key")
+                baseURL("https://google.test/v1beta")
+                headers(mapOf("X-Provider" to "provider"))
+            },
         )
 
         val result = provider(ModelId("gemini-2.5-flash")).generate(
@@ -167,7 +167,7 @@ class GoogleProviderTest {
         fixture.server.start()
         val provider = GoogleGenerativeAI(
             fixture.httpClient(),
-            GoogleGenerativeAIProviderSettings(apiKey = "key", baseURL = "https://google.test/v1beta"),
+            GoogleGenerativeAIProviderSettings { apiKey("key"); baseURL("https://google.test/v1beta") },
         )
         val imageUrl = "https://generativelanguage.googleapis.com/v1beta/files/image-1"
         val fileUrl = "gs://bucket/doc.pdf"
@@ -232,7 +232,7 @@ class GoogleProviderTest {
         fixture.server.start()
         val provider = GoogleGenerativeAI(
             fixture.httpClient(),
-            GoogleGenerativeAIProviderSettings(apiKey = "key", baseURL = "https://google.test/v1beta"),
+            GoogleGenerativeAIProviderSettings { apiKey("key"); baseURL("https://google.test/v1beta") },
         )
 
         val events = drainAllItems(
@@ -288,7 +288,7 @@ class GoogleProviderTest {
         fixture.server.start()
         val provider = GoogleGenerativeAI(
             fixture.httpClient(),
-            GoogleGenerativeAIProviderSettings(apiKey = "key", baseURL = "https://google.test/v1beta"),
+            GoogleGenerativeAIProviderSettings { apiKey("key"); baseURL("https://google.test/v1beta") },
         )
 
         val result = provider(ModelId("gemini-2.5-flash")).generate(
@@ -322,7 +322,7 @@ class GoogleProviderTest {
         fixture.server.start()
         val provider = GoogleGenerativeAI(
             fixture.httpClient(),
-            GoogleGenerativeAIProviderSettings(apiKey = "key", baseURL = "https://google.test/v1beta"),
+            GoogleGenerativeAIProviderSettings { apiKey("key"); baseURL("https://google.test/v1beta") },
         )
         val result = provider(ModelId("gemini-2.5-flash")).generate(
             LanguageModelCallParams(messages = listOf(UserMessage("hi"))),
@@ -352,7 +352,7 @@ class GoogleProviderTest {
         fixture.server.start()
         val provider = GoogleGenerativeAI(
             fixture.httpClient(),
-            GoogleGenerativeAIProviderSettings(apiKey = "key", baseURL = "https://google.test/v1beta"),
+            GoogleGenerativeAIProviderSettings { apiKey("key"); baseURL("https://google.test/v1beta") },
         )
 
         val result = provider(ModelId("gemini-2.5-flash")).generate(
@@ -384,7 +384,7 @@ class GoogleProviderTest {
         fixture.server.start()
         val provider = GoogleGenerativeAI(
             fixture.httpClient(),
-            GoogleGenerativeAIProviderSettings(apiKey = "key", baseURL = "https://google.test/v1beta"),
+            GoogleGenerativeAIProviderSettings { apiKey("key"); baseURL("https://google.test/v1beta") },
         )
 
         val events = drainAllItems(
@@ -437,11 +437,11 @@ class GoogleProviderTest {
         fixture.server.start()
         val provider = GoogleGenerativeAI(
             fixture.httpClient(),
-            GoogleGenerativeAIProviderSettings(
-                apiKey = "key",
-                baseURL = "https://google.test/v1beta",
-                videoPollIntervalMillis = 0,
-            ),
+            GoogleGenerativeAIProviderSettings {
+                apiKey("key")
+                baseURL("https://google.test/v1beta")
+                videoPollIntervalMillis(0)
+            },
         )
 
         val embeddings = provider.embedding(ModelId("text-embedding-004")).embed(
@@ -526,7 +526,11 @@ class GoogleProviderTest {
         fixture.server.start()
         val provider = GoogleGenerativeAI(
             fixture.httpClient(),
-            GoogleGenerativeAIProviderSettings(apiKey = "key", baseURL = "https://google.test/v1beta", videoPollIntervalMillis = 0),
+            GoogleGenerativeAIProviderSettings {
+                apiKey("key")
+                baseURL("https://google.test/v1beta")
+                videoPollIntervalMillis(0)
+            },
         )
 
         val imageError = assertFailsWith<WireDecodeException> {
@@ -596,11 +600,11 @@ class GoogleProviderTest {
         fixture.server.start()
         val provider = GoogleGenerativeAI(
             fixture.httpClient(),
-            GoogleGenerativeAIProviderSettings(
-                apiKey = "key",
-                baseURL = "https://google.test/v1beta",
-                headers = mapOf("X-Provider" to "provider"),
-            ),
+            GoogleGenerativeAIProviderSettings {
+                apiKey("key")
+                baseURL("https://google.test/v1beta")
+                headers(mapOf("X-Provider" to "provider"))
+            },
         )
 
         val result = provider.interactions(ModelId("gemini-2.5-flash")).generate(
@@ -710,7 +714,7 @@ class GoogleProviderTest {
         fixture.server.start()
         val provider = GoogleGenerativeAI(
             fixture.httpClient(),
-            GoogleGenerativeAIProviderSettings(apiKey = "key", baseURL = "https://google.test/v1beta"),
+            GoogleGenerativeAIProviderSettings { apiKey("key"); baseURL("https://google.test/v1beta") },
         )
 
         val events = drainAllItems(
@@ -763,7 +767,7 @@ class GoogleProviderTest {
         fixture.server.start()
         val provider = GoogleGenerativeAI(
             fixture.httpClient(),
-            GoogleGenerativeAIProviderSettings(apiKey = "key", baseURL = "https://google.test/v1beta"),
+            GoogleGenerativeAIProviderSettings { apiKey("key"); baseURL("https://google.test/v1beta") },
         )
 
         val events = drainAllItems(

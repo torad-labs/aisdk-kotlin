@@ -9,15 +9,70 @@ import kotlinx.serialization.json.JsonElement
 public const val AZURE_VERSION: String = "3.0.69"
 
 
-public data class AzureOpenAIProviderSettings(
-    val resourceName: String? = null,
-    val baseURL: String? = null,
-    val apiKey: String? = null,
-    val tokenProvider: (suspend () -> String)? = null,
-    val headers: Map<String, String> = emptyMap(),
-    val apiVersion: String = "v1",
-    val useDeploymentBasedUrls: Boolean = false,
+@Poko
+public class AzureOpenAIProviderSettings internal constructor(
+    public val resourceName: String? = null,
+    public val baseURL: String? = null,
+    public val apiKey: String? = null,
+    public val tokenProvider: (suspend () -> String)? = null,
+    public val headers: Map<String, String> = emptyMap(),
+    public val apiVersion: String = "v1",
+    public val useDeploymentBasedUrls: Boolean = false,
 )
+
+public class AzureOpenAIProviderSettingsBuilder internal constructor() {
+    private var resourceName: String? = null
+    private var baseURL: String? = null
+    private var apiKey: String? = null
+    private var tokenProvider: (suspend () -> String)? = null
+    private var headers: Map<String, String> = emptyMap()
+    private var apiVersion: String = "v1"
+    private var useDeploymentBasedUrls: Boolean = false
+
+    public fun resourceName(value: String?) {
+        resourceName = value
+    }
+
+    public fun baseURL(value: String?) {
+        baseURL = value
+    }
+
+    public fun apiKey(value: String?) {
+        apiKey = value
+    }
+
+    public fun tokenProvider(value: (suspend () -> String)?) {
+        tokenProvider = value
+    }
+
+    public fun headers(value: Map<String, String>) {
+        headers = value
+    }
+
+    public fun apiVersion(value: String) {
+        apiVersion = value
+    }
+
+    public fun useDeploymentBasedUrls(value: Boolean) {
+        useDeploymentBasedUrls = value
+    }
+
+    internal fun build(): AzureOpenAIProviderSettings =
+        AzureOpenAIProviderSettings(
+            resourceName = resourceName,
+            baseURL = baseURL,
+            apiKey = apiKey,
+            tokenProvider = tokenProvider,
+            headers = headers,
+            apiVersion = apiVersion,
+            useDeploymentBasedUrls = useDeploymentBasedUrls,
+        )
+}
+
+public fun AzureOpenAIProviderSettings(
+    block: AzureOpenAIProviderSettingsBuilder.() -> Unit = {},
+): AzureOpenAIProviderSettings =
+    AzureOpenAIProviderSettingsBuilder().apply(block).build()
 
 public class AzureOpenAIProvider(
     private val client: HttpClient,

@@ -12,15 +12,16 @@ public const val VERSION: String = "3.0.67"
 public val OPENAI_RESPONSES_SUPPORTED_URLS: Map<String, List<String>> = OPEN_RESPONSES_SUPPORTED_URLS +
     ("application/pdf" to listOf("^https?://.*$"))
 
-public data class OpenAIProviderSettings(
-    val baseURL: String = "https://api.openai.com/v1",
-    val apiKey: String? = null,
-    val organization: String? = null,
-    val project: String? = null,
-    val headers: Map<String, String> = emptyMap(),
-    val name: String = "openai",
-    val queryParams: Map<String, String> = emptyMap(),
-    val includeUsage: Boolean = false,
+@Poko
+public class OpenAIProviderSettings internal constructor(
+    public val baseURL: String = "https://api.openai.com/v1",
+    public val apiKey: String? = null,
+    public val organization: String? = null,
+    public val project: String? = null,
+    public val headers: Map<String, String> = emptyMap(),
+    public val name: String = "openai",
+    public val queryParams: Map<String, String> = emptyMap(),
+    public val includeUsage: Boolean = false,
 ) {
     internal fun toCompatibleSettings(): OpenAICompatibleProviderSettings {
         val headersWithUserAgent = ProviderHeaders.withUserAgentSuffix(openAIHeaders(), "ai-sdk/openai/$VERSION")
@@ -54,6 +55,66 @@ public data class OpenAIProviderSettings(
         }
     }
 }
+
+public class OpenAIProviderSettingsBuilder internal constructor() {
+    private var baseURL: String = "https://api.openai.com/v1"
+    private var apiKey: String? = null
+    private var organization: String? = null
+    private var project: String? = null
+    private var headers: Map<String, String> = emptyMap()
+    private var name: String = "openai"
+    private var queryParams: Map<String, String> = emptyMap()
+    private var includeUsage: Boolean = false
+
+    public fun baseURL(value: String) {
+        baseURL = value
+    }
+
+    public fun apiKey(value: String?) {
+        apiKey = value
+    }
+
+    public fun organization(value: String?) {
+        organization = value
+    }
+
+    public fun project(value: String?) {
+        project = value
+    }
+
+    public fun headers(value: Map<String, String>) {
+        headers = value
+    }
+
+    public fun name(value: String) {
+        name = value
+    }
+
+    public fun queryParams(value: Map<String, String>) {
+        queryParams = value
+    }
+
+    public fun includeUsage(value: Boolean) {
+        includeUsage = value
+    }
+
+    internal fun build(): OpenAIProviderSettings =
+        OpenAIProviderSettings(
+            baseURL = baseURL,
+            apiKey = apiKey,
+            organization = organization,
+            project = project,
+            headers = headers,
+            name = name,
+            queryParams = queryParams,
+            includeUsage = includeUsage,
+        )
+}
+
+public fun OpenAIProviderSettings(
+    block: OpenAIProviderSettingsBuilder.() -> Unit = {},
+): OpenAIProviderSettings =
+    OpenAIProviderSettingsBuilder().apply(block).build()
 
 public typealias OpenAISettings = OpenAIProviderSettings
 
