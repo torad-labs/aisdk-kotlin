@@ -12,6 +12,7 @@ import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpMethod
 import io.ktor.http.contentType
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.emitAll
 import kotlinx.coroutines.flow.flow
 import kotlinx.serialization.encodeToString
@@ -196,18 +197,54 @@ public class AnthropicMessagesLanguageModel(
 
     override fun stream(params: LanguageModelCallParams): Flow<StreamEvent> = flow {
         val prepared = PreparedAnthropicRequest.anthropicRequestBody(settings, modelId, params, stream = true)
-        emit(StreamEvent.StreamStart(prepared.warnings))
         val state = AnthropicStreamState(settings, aiSdkJson)
         var sseHeaders: Map<String, String> = emptyMap()
         val rawLines = anthropicStreamSse(prepared.body, prepared.betas, params.headers) { sseHeaders = it }
-        with(HttpTransport) {
-            forwardSseEvents(
-                events = EventStreamParser.parse(rawLines, Schemas.jsonSchema<JsonElement>(JsonObject(emptyMap())), aiSdkJson),
-                capturedHeaders = { sseHeaders },
-                parseErrorPrefix = "Failed to parse Anthropic stream event",
-                onEvent = { state.accept(it).forEach { e -> emit(e) } },
-            )
+        val baseURL = settings.baseURL.trimEnd('/')
+        val requestUrl = settings.buildRequestUrl?.invoke(baseURL, modelId, true) ?: "$baseURL/messages"
+        val parsedEvents = EventStreamParser.parse(rawLines, Schemas.jsonSchema<JsonElement>(JsonObject(emptyMap())), aiSdkJson)
+        val firstProviderEvent = BooleanArray(1) { true }
+        val streamStartEmitted = BooleanArray(1)
+        val responseMetadataEmitted = BooleanArray(1)
+        val emitStartAndMetadata: suspend () -> Unit = {
+            if (!streamStartEmitted[0]) {
+                emit(StreamEvent.StreamStart(prepared.warnings))
+                streamStartEmitted[0] = true
+            }
+            if (!responseMetadataEmitted[0]) {
+                emit(StreamEvent.ResponseMetadata(headers = sseHeaders))
+                responseMetadataEmitted[0] = true
+            }
         }
+
+        parsedEvents.collect { result ->
+            if (firstProviderEvent[0] && result is ParseResult.Success) {
+                val obj = result.value as? JsonObject
+                if ((obj?.get("type") as? JsonPrimitive)?.contentOrNull == "error") {
+                    val error = JsonAccess.obj(obj, "error") ?: obj
+                    val errorType = (error["type"] as? JsonPrimitive)?.contentOrNull
+                    val statusCode = if (errorType == "overloaded_error") 529 else 500
+                    throw APICallError(
+                        message = anthropicErrorMessage(obj["error"] ?: obj, obj.toString()),
+                        url = requestUrl,
+                        requestBodyValues = prepared.body,
+                        statusCode = statusCode,
+                        responseHeaders = sseHeaders,
+                        responseBody = obj.toString(),
+                        isRetryable = errorType == "overloaded_error",
+                    )
+                }
+            }
+            firstProviderEvent[0] = false
+            emitStartAndMetadata()
+            when (result) {
+                is ParseResult.Success -> state.accept(result.value).forEach { emit(it) }
+                is ParseResult.Failure -> emit(
+                    StreamEvent.Error("Failed to parse Anthropic stream event: ${result.error.message}"),
+                )
+            }
+        }
+        emitStartAndMetadata()
         state.finish().forEach { emit(it) }
     }
 
