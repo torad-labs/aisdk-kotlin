@@ -1,5 +1,6 @@
 [versions]
 kotlin = "2.4.0"
+poko = "0.23.0"
 agp = "9.2.0"
 android-min-sdk = "26"
 android-compile-sdk = "36"
@@ -36,5 +37,6 @@ junit-platform-launcher = { module = "org.junit.platform:junit-platform-launcher
 android-kotlin-multiplatform-library = { id = "com.android.kotlin.multiplatform.library", version.ref = "agp" }
 kotlin-multiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }
 kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
+poko = { id = "dev.drewhamilton.poko", version.ref = "poko" }
 kover = { id = "org.jetbrains.kotlinx.kover", version.ref = "kover" }
 dokka = { id = "org.jetbrains.dokka", version.ref = "dokka" }
