@@ -38,7 +38,7 @@ public object EventStreamParser {
             eventData = mutableListOf()
             // Blank joined data (a lone empty `data:`) is valid, payload-less SSE — a no-op, NOT a
             // parse error. Only [DONE] is likewise skipped.
-            if (data.isNotBlank() && data != "[DONE]") emit(safeParseJson(data, schema, json))
+            if (data.isNotBlank() && data.trim() != "[DONE]") emit(safeParseJson(data, schema, json))
         }
         fun recordNonSse(line: String) {
             if (sseFieldPrefixes.any { line.startsWith(it) }) return
@@ -84,7 +84,7 @@ public object EventStreamParser {
         serverSentEventData(text).mapNotNull { data ->
             // Blank data (a lone empty `data:`) is payload-less SSE — skip it; parsing "" would
             // wrongly yield a ParseResult.Failure. Mirrors the Flow overload above.
-            if (data.isBlank() || data == "[DONE]") null else safeParseJson(data, schema, json)
+            if (data.isBlank() || data.trim() == "[DONE]") null else safeParseJson(data, schema, json)
         }
 
     private fun serverSentEventData(text: String): List<String> {
