@@ -59,7 +59,7 @@ tests must stay green.
 | BL-038 | Mistral `model_length` finish reason mismapped to `Other` | Med-High | Recommended | CONFIRMED | DONE |
 | BL-039 | Anthropic provider-executed tools keyed by name, args dropped → 400 | Medium | Optional | CONFIRMED | OPEN |
 | BL-040 | OpenResponses built-in tool outputs silently dropped | Medium | Optional | CONFIRMED | OPEN |
-| BL-041 | Anthropic `cache_control` dropped on non-text blocks (no doc caching) | Medium | Recommended | CONFIRMED | OPEN |
+| BL-041 | Anthropic `cache_control` dropped on non-text blocks (no doc caching) | Medium | Recommended | CONFIRMED | DONE |
 | BL-042 | OpenAI-compatible mid-stream in-band error throws instead of emitting Error+Finish | Medium | Recommended | CONFIRMED | DONE |
 | BL-043 | Anthropic in-band `overloaded_error` surfaced as terminal (not retryable 529) | Medium | Recommended | CONFIRMED | DONE |
 | BL-044 | Provider parity — 12 additional confirmed mapping/usage/metadata gaps | Mixed | Mixed | CONFIRMED | OPEN |
