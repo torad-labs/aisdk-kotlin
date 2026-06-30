@@ -301,7 +301,13 @@ public class KtorGatewayTransport(
     }
 
     override suspend fun getCredits(context: GatewayRequestContext): GatewayCreditsResponse {
-        val response = getJson(context.copy(baseUrl = gatewayMetadataBaseUrl(context.baseUrl)), "/v1/credits")
+        val response = getJson(
+            GatewayRequestContext(
+                baseUrl = gatewayMetadataBaseUrl(context.baseUrl),
+                headers = context.headers,
+            ),
+            "/v1/credits",
+        )
         val obj = response.value.jsonObject
         return GatewayCreditsResponse(
             balance = (obj["balance"] as? JsonPrimitive)?.contentOrNull.orEmpty(),
@@ -325,7 +331,13 @@ public class KtorGatewayTransport(
             params.credentialType?.let { add("credential_type=${UrlOps.encode(it.wireValue)}") }
             if (params.tags.isNotEmpty()) add("tags=${UrlOps.encode(params.tags.joinToString(","))}")
         }.joinToString("&")
-        val response = getJson(context.copy(baseUrl = gatewayMetadataBaseUrl(context.baseUrl)), "/v1/report?$query")
+        val response = getJson(
+            GatewayRequestContext(
+                baseUrl = gatewayMetadataBaseUrl(context.baseUrl),
+                headers = context.headers,
+            ),
+            "/v1/report?$query",
+        )
         return GatewaySpendReportResponse(
             results = (JsonAccess.arr(response.value.jsonObject, "results")).orEmpty().mapNotNull { row ->
                 val obj = row as? JsonObject ?: return@mapNotNull null
@@ -362,7 +374,10 @@ public class KtorGatewayTransport(
         params: GatewayGenerationInfoParams,
     ): GatewayGenerationInfo {
         val response = getJson(
-            context.copy(baseUrl = gatewayMetadataBaseUrl(context.baseUrl)),
+            GatewayRequestContext(
+                baseUrl = gatewayMetadataBaseUrl(context.baseUrl),
+                headers = context.headers,
+            ),
             "/v1/generation?id=${UrlOps.encode(params.id)}",
         )
         val data = (JsonAccess.obj(response.value.jsonObject, "data")) ?: response.value.jsonObject
