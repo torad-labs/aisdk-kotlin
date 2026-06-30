@@ -40,26 +40,26 @@ class DeepgramProviderTest {
         ).speech(ModelId("aura-2-helena-en"))
 
         val result = model.generate(
-            SpeechGenerationParams(
-                text = "hello",
-                voice = "different",
-                speed = 1.2f,
-                instructions = "soft",
-                responseFormat = "opus",
-                providerOptions = ProviderOptions.Raw(JsonObject(mapOf(
-                    "deepgram" to buildJsonObject {
-                        put("bitRate", JsonPrimitive(64000))
-                        put("sampleRate", JsonPrimitive(16000))
-                        put("callback", JsonPrimitive("https://example.com/hook"))
-                        put("callbackMethod", JsonPrimitive("POST"))
-                        put("mipOptOut", JsonPrimitive(true))
-                        put("tag", buildJsonArray {
-                            add(JsonPrimitive("alpha"))
-                            add(JsonPrimitive("beta"))
-                        })
-                    },
-                ))),
-            ),
+            SpeechGenerationParams {
+                text("hello")
+                voice("different")
+                speed(1.2f)
+                instructions("soft")
+                responseFormat("opus")
+                providerOptions(ProviderOptions.Raw(JsonObject(mapOf(
+                                    "deepgram" to buildJsonObject {
+                                        put("bitRate", JsonPrimitive(64000))
+                                        put("sampleRate", JsonPrimitive(16000))
+                                        put("callback", JsonPrimitive("https://example.com/hook"))
+                                        put("callbackMethod", JsonPrimitive("POST"))
+                                        put("mipOptOut", JsonPrimitive(true))
+                                        put("tag", buildJsonArray {
+                                            add(JsonPrimitive("alpha"))
+                                            add(JsonPrimitive("beta"))
+                                        })
+                                    },
+                                ))))
+            },
         )
 
         assertEquals("deepgram.speech", model.provider)
@@ -101,37 +101,37 @@ class DeepgramProviderTest {
         ).transcription(ModelId("nova-3"))
 
         val result = model.transcribe(
-            TranscriptionParams(
-                audio = AudioSource(
-                    mediaType = "audio/wav",
-                    base64 = Base64Codec.encode("abc".encodeToByteArray()),
-                    filename = "clip.wav",
-                ),
-                providerOptions = ProviderOptions.Raw(JsonObject(mapOf(
-                    "deepgram" to buildJsonObject {
-                        put("diarize", JsonPrimitive(false))
-                        put("detectLanguage", JsonPrimitive(true))
-                        put("fillerWords", JsonPrimitive(true))
-                        put("language", JsonPrimitive("en"))
-                        put("punctuate", JsonPrimitive(true))
-                        put("redact", buildJsonArray {
-                            add(JsonPrimitive("pii"))
-                            add(JsonPrimitive("ssn"))
-                        })
-                        put("search", JsonPrimitive("Kotlin"))
-                        put("smartFormat", JsonPrimitive(true))
-                        put("summarize", JsonPrimitive("v2"))
-                        put("topics", JsonPrimitive(true))
-                        put("utterances", JsonPrimitive(true))
-                        put("uttSplit", JsonPrimitive(0.8f))
-                        put("paragraphs", JsonPrimitive(true))
-                        put("intents", JsonPrimitive(true))
-                        put("sentiment", JsonPrimitive(true))
-                        put("replace", JsonPrimitive("redacted"))
-                        put("keyterm", JsonPrimitive("sdk"))
-                    },
-                ))),
-            ),
+            TranscriptionParams {
+                audio(AudioSource(
+                                    mediaType = "audio/wav",
+                                    base64 = Base64Codec.encode("abc".encodeToByteArray()),
+                                    filename = "clip.wav",
+                                ))
+                providerOptions(ProviderOptions.Raw(JsonObject(mapOf(
+                                    "deepgram" to buildJsonObject {
+                                        put("diarize", JsonPrimitive(false))
+                                        put("detectLanguage", JsonPrimitive(true))
+                                        put("fillerWords", JsonPrimitive(true))
+                                        put("language", JsonPrimitive("en"))
+                                        put("punctuate", JsonPrimitive(true))
+                                        put("redact", buildJsonArray {
+                                            add(JsonPrimitive("pii"))
+                                            add(JsonPrimitive("ssn"))
+                                        })
+                                        put("search", JsonPrimitive("Kotlin"))
+                                        put("smartFormat", JsonPrimitive(true))
+                                        put("summarize", JsonPrimitive("v2"))
+                                        put("topics", JsonPrimitive(true))
+                                        put("utterances", JsonPrimitive(true))
+                                        put("uttSplit", JsonPrimitive(0.8f))
+                                        put("paragraphs", JsonPrimitive(true))
+                                        put("intents", JsonPrimitive(true))
+                                        put("sentiment", JsonPrimitive(true))
+                                        put("replace", JsonPrimitive("redacted"))
+                                        put("keyterm", JsonPrimitive("sdk"))
+                                    },
+                                ))))
+            },
         )
 
         assertEquals("deepgram.transcription", model.provider)
@@ -173,10 +173,10 @@ class DeepgramProviderTest {
         ).transcription(ModelId("nova-3"))
 
         val result = model.transcribe(
-            TranscriptionParams(
-                audio = AudioSource("audio/wav", Base64Codec.encode(byteArrayOf(1))),
-                language = "pt",
-            ),
+            TranscriptionParams {
+                audio(AudioSource("audio/wav", Base64Codec.encode(byteArrayOf(1))))
+                language("pt")
+            },
         )
 
         assertEquals("ola", result.text)

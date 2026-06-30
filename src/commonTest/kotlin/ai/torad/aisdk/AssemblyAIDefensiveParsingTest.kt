@@ -40,9 +40,9 @@ class AssemblyAIDefensiveParsingTest {
 
         val error = assertFails {
             model.transcribe(
-                TranscriptionParams(
-                    audio = AudioSource(mediaType = "audio/mpeg", base64 = Base64Codec.encode(byteArrayOf(1, 2, 3))),
-                ),
+                TranscriptionParams {
+                    audio(AudioSource(mediaType = "audio/mpeg", base64 = Base64Codec.encode(byteArrayOf(1, 2, 3))))
+                },
             )
         }
 
@@ -78,9 +78,9 @@ class AssemblyAIDefensiveParsingTest {
 
         val error = assertFails {
             model.transcribe(
-                TranscriptionParams(
-                    audio = AudioSource(mediaType = "audio/mpeg", base64 = Base64Codec.encode(byteArrayOf(1, 2, 3))),
-                ),
+                TranscriptionParams {
+                    audio(AudioSource(mediaType = "audio/mpeg", base64 = Base64Codec.encode(byteArrayOf(1, 2, 3))))
+                },
             )
         }
 

@@ -34,7 +34,10 @@ class ProdiaDefensiveParsingTest {
         val model = Prodia(client, ProdiaProviderSettings { apiKey("key") }).image(ModelId("sdxl"))
 
         val error = assertFails {
-            model.generate(ImageGenerationParams(prompt = "x", n = 1))
+            model.generate(ImageGenerationParams {
+                prompt("x")
+                n(1)
+            })
         }
 
         assertTrue(

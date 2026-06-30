@@ -70,26 +70,26 @@ class FalProviderTest {
         )
 
         val result = provider.image(ModelId("fal-ai/qwen-image")).generate(
-            ImageGenerationParams(
-                prompt = "A clean product render",
-                n = 1,
-                size = "1024x1024",
-                seed = 123,
-                files = listOf(
-                    ImageGenerationFile(mediaType = "image/png", base64 = "aW1hZ2U="),
-                    ImageGenerationFile(url = "https://example.com/second.png"),
-                ),
-                mask = ImageGenerationFile(mediaType = "image/png", base64 = "bWFzaw=="),
-                providerOptions = ProviderOptions.Raw(JsonObject(mapOf(
-                    "fal" to buildJsonObject {
-                        put("guidanceScale", JsonPrimitive(7.5f))
-                        put("num_inference_steps", JsonPrimitive(30))
-                        put("enableSafetyChecker", JsonPrimitive(false))
-                        put("extra_param", JsonPrimitive("extra"))
-                    },
-                ))),
-                headers = mapOf("X-Request" to "request"),
-            ),
+            ImageGenerationParams {
+                prompt("A clean product render")
+                n(1)
+                size("1024x1024")
+                seed(123)
+                files(listOf(
+                                    ImageGenerationFile(mediaType = "image/png", base64 = "aW1hZ2U="),
+                                    ImageGenerationFile(url = "https://example.com/second.png"),
+                                ))
+                mask(ImageGenerationFile(mediaType = "image/png", base64 = "bWFzaw=="))
+                providerOptions(ProviderOptions.Raw(JsonObject(mapOf(
+                                    "fal" to buildJsonObject {
+                                        put("guidanceScale", JsonPrimitive(7.5f))
+                                        put("num_inference_steps", JsonPrimitive(30))
+                                        put("enableSafetyChecker", JsonPrimitive(false))
+                                        put("extra_param", JsonPrimitive("extra"))
+                                    },
+                                ))))
+                headers(mapOf("X-Request" to "request"))
+            },
         )
 
         assertEquals("fal.image", provider.imageModel("fal-ai/qwen-image").provider)
@@ -154,22 +154,22 @@ class FalProviderTest {
         val provider = Fal(fixture.httpClient(), FalProviderSettings { apiKey("key") })
 
         val result = provider.speech(ModelId("fal-ai/minimax/speech-02-hd")).generate(
-            SpeechGenerationParams(
-                text = "Hello from the AI SDK!",
-                voice = "voice-1",
-                instructions = "Speak softly.",
-                speed = 1.2f,
-                responseFormat = "wav",
-                providerOptions = ProviderOptions.Raw(JsonObject(mapOf(
-                    "fal" to buildJsonObject {
-                        put(
-                            "voice_setting",
-                            buildJsonObject { put("emotion", JsonPrimitive("happy")) },
-                        )
-                    },
-                ))),
-                headers = mapOf("X-Request" to "request"),
-            ),
+            SpeechGenerationParams {
+                text("Hello from the AI SDK!")
+                voice("voice-1")
+                instructions("Speak softly.")
+                speed(1.2f)
+                responseFormat("wav")
+                providerOptions(ProviderOptions.Raw(JsonObject(mapOf(
+                                    "fal" to buildJsonObject {
+                                        put(
+                                            "voice_setting",
+                                            buildJsonObject { put("emotion", JsonPrimitive("happy")) },
+                                        )
+                                    },
+                                ))))
+                headers(mapOf("X-Request" to "request"))
+            },
         )
 
         assertEquals("fal.speech", provider.speechModel("fal-ai/minimax/speech-02-hd").provider)
@@ -226,19 +226,19 @@ class FalProviderTest {
         )
 
         val result = provider.transcription(ModelId("wizper")).transcribe(
-            TranscriptionParams(
-                audio = AudioSource("audio/wav", "YXVkaW8=", "clip.wav"),
-                language = "pt",
-                providerOptions = ProviderOptions.Raw(JsonObject(mapOf(
-                    "fal" to buildJsonObject {
-                        put("diarize", JsonPrimitive(false))
-                        put("chunkLevel", JsonPrimitive("segment"))
-                        put("batchSize", JsonPrimitive(16))
-                        put("numSpeakers", JsonPrimitive(2))
-                    },
-                ))),
-                headers = mapOf("X-Request" to "request"),
-            ),
+            TranscriptionParams {
+                audio(AudioSource("audio/wav", "YXVkaW8=", "clip.wav"))
+                language("pt")
+                providerOptions(ProviderOptions.Raw(JsonObject(mapOf(
+                                    "fal" to buildJsonObject {
+                                        put("diarize", JsonPrimitive(false))
+                                        put("chunkLevel", JsonPrimitive("segment"))
+                                        put("batchSize", JsonPrimitive(16))
+                                        put("numSpeakers", JsonPrimitive(2))
+                                    },
+                                ))))
+                headers(mapOf("X-Request" to "request"))
+            },
         )
 
         assertEquals("fal.transcription", provider.transcriptionModel("wizper").provider)
@@ -313,24 +313,24 @@ class FalProviderTest {
         )
 
         val result = provider.video(ModelId("fal-ai/luma-dream-machine")).generate(
-            VideoGenerationParams(
-                prompt = "A futuristic city",
-                image = GeneratedFile("image/png", "aW1hZ2U="),
-                durationSeconds = 5f,
-                aspectRatio = "16:9",
-                seed = 42,
-                providerOptions = ProviderOptions.Raw(JsonObject(mapOf(
-                    "fal" to buildJsonObject {
-                        put("pollIntervalMs", JsonPrimitive(1))
-                        put("pollTimeoutMs", JsonPrimitive(2))
-                        put("motionStrength", JsonPrimitive(0.7f))
-                        put("negativePrompt", JsonPrimitive("blur"))
-                        put("promptOptimizer", JsonPrimitive(true))
-                        put("customFlag", JsonPrimitive("custom"))
-                    },
-                ))),
-                headers = mapOf("X-Request" to "request"),
-            ),
+            VideoGenerationParams {
+                prompt("A futuristic city")
+                image(GeneratedFile("image/png", "aW1hZ2U="))
+                durationSeconds(5f)
+                aspectRatio("16:9")
+                seed(42)
+                providerOptions(ProviderOptions.Raw(JsonObject(mapOf(
+                                    "fal" to buildJsonObject {
+                                        put("pollIntervalMs", JsonPrimitive(1))
+                                        put("pollTimeoutMs", JsonPrimitive(2))
+                                        put("motionStrength", JsonPrimitive(0.7f))
+                                        put("negativePrompt", JsonPrimitive("blur"))
+                                        put("promptOptimizer", JsonPrimitive(true))
+                                        put("customFlag", JsonPrimitive("custom"))
+                                    },
+                                ))))
+                headers(mapOf("X-Request" to "request"))
+            },
         )
 
         assertEquals("fal.video", provider.videoModel("fal-ai/luma-dream-machine").provider)

@@ -283,10 +283,16 @@ Penalty, response-format, and retry fields participate in the `Step ?: Agent ?: 
   `@Serializable @Poko class` value-semantics types; their positional
   constructors, `copy()`, and `componentN()` are not public.
 - Simple construct params on the builder track (`GatewaySpendReportParams`,
-  `GatewayGenerationInfoParams`, and `AuthOptions`) expose field getters and
-  are configured through public DSL factories. The gateway params are `@Poko`
-  value-semantics types. `AuthOptions` is a regular class with identity
-  equality because it may hold an `HttpClient`.
+  `GatewayGenerationInfoParams`, `AuthOptions`, `ImageGenerationParams`,
+  `SpeechGenerationParams`, `TranscriptionParams`, `VideoGenerationParams`,
+  `RerankingParams`, `CompletionRequestOptions`, `CallCompletionApiOptions`,
+  and `HuggingFaceResponsesSettings`) expose field getters and are configured
+  through public DSL factories. The gateway params, `CompletionRequestOptions`,
+  and `HuggingFaceResponsesSettings` are `@Poko` value-semantics types.
+  `AuthOptions`, media/rerank params, and `CallCompletionApiOptions` are
+  regular classes with identity equality because they may hold clients, abort
+  signals, transports, callbacks, or model input objects. The positional
+  constructors, `copy()`, and `componentN()` are not public.
 - Provider error payloads (`BasetenErrorData`, `CerebrasErrorData`,
   `FireworksErrorData`) are `@Serializable @Poko class` value-semantics types;
   JSON field names remain unchanged, while public `copy()` / `componentN()`

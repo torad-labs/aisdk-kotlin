@@ -44,7 +44,11 @@ class FalDefensiveParsingTest {
         )
 
         val result = provider.image(ModelId("fal-ai/qwen-image")).generate(
-            ImageGenerationParams(prompt = "x", n = 1, size = "1024x1024"),
+            ImageGenerationParams {
+                prompt("x")
+                n(1)
+                size("1024x1024")
+            },
         )
 
         assertEquals(

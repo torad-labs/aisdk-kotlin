@@ -468,18 +468,22 @@ class AmazonBedrockProviderTest {
             ),
         )
         val image = provider.image(ModelId("amazon.titan-image-generator-v2:0")).generate(
-            ImageGenerationParams(
-                prompt = "A product render",
-                n = 2,
-                size = "512x768",
-                seed = 42,
-                providerOptions = ProviderOptions.Raw(JsonObject(mapOf(
-                    "bedrock" to buildJsonObject { put("negativeText", JsonPrimitive("blur")) },
-                ))),
-            ),
+            ImageGenerationParams {
+                prompt("A product render")
+                n(2)
+                size("512x768")
+                seed(42)
+                providerOptions(ProviderOptions.Raw(JsonObject(mapOf(
+                                    "bedrock" to buildJsonObject { put("negativeText", JsonPrimitive("blur")) },
+                                ))))
+            },
         )
         val rerank = provider.reranking(ModelId("amazon.rerank-v1:0")).rerank(
-            RerankingParams(query = "best", documents = listOf("first", "second"), topN = 2),
+            RerankingParams {
+                query("best")
+                documents(listOf("first", "second"))
+                topN(2)
+            },
         )
 
         assertEquals(listOf(1.0f, 2.0f), embedding.embeddings.single())

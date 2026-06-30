@@ -299,32 +299,32 @@ class XaiProviderTest {
         val model = provider.image(ModelId("grok-imagine-image"))
 
         val generated = model.generate(
-            ImageGenerationParams(
-                prompt = "A cute baby sea otter",
-                n = 1,
-                size = "1024x1024",
-                seed = 42,
-                aspectRatio = "16:9",
-                providerOptions = ProviderOptions.Raw(JsonObject(mapOf(
-                    "xai" to buildJsonObject {
-                        put("output_format", JsonPrimitive("jpeg"))
-                        put("sync_mode", JsonPrimitive(true))
-                        put("resolution", JsonPrimitive("2k"))
-                        put("quality", JsonPrimitive("high"))
-                        put("user", JsonPrimitive("user-1"))
-                    },
-                ))),
-            ),
+            ImageGenerationParams {
+                prompt("A cute baby sea otter")
+                n(1)
+                size("1024x1024")
+                seed(42)
+                aspectRatio("16:9")
+                providerOptions(ProviderOptions.Raw(JsonObject(mapOf(
+                                    "xai" to buildJsonObject {
+                                        put("output_format", JsonPrimitive("jpeg"))
+                                        put("sync_mode", JsonPrimitive(true))
+                                        put("resolution", JsonPrimitive("2k"))
+                                        put("quality", JsonPrimitive("high"))
+                                        put("user", JsonPrimitive("user-1"))
+                                    },
+                                ))))
+            },
         )
         val edited = model.generate(
-            ImageGenerationParams(
-                prompt = "combine",
-                files = listOf(
-                    ImageGenerationFile(url = "https://example.com/input.png"),
-                    ImageGenerationFile(mediaType = "image/png", base64 = "iVBORw=="),
-                ),
-                mask = ImageGenerationFile(mediaType = "image/png", base64 = "mask"),
-            ),
+            ImageGenerationParams {
+                prompt("combine")
+                files(listOf(
+                                    ImageGenerationFile(url = "https://example.com/input.png"),
+                                    ImageGenerationFile(mediaType = "image/png", base64 = "iVBORw=="),
+                                ))
+                mask(ImageGenerationFile(mediaType = "image/png", base64 = "mask"))
+            },
         )
 
         assertEquals("xai.image", model.provider)
@@ -388,35 +388,35 @@ class XaiProviderTest {
         val model = provider.video(ModelId("grok-imagine-video"))
 
         val generated = model.generate(
-            VideoGenerationParams(
-                prompt = "A chicken flying into the sunset",
-                n = 2,
-                image = GeneratedFile(mediaType = "image/png", base64 = "", url = "https://example.com/ref.png"),
-                durationSeconds = 5f,
-                aspectRatio = "16:9",
-                resolution = "1280x720",
-                fps = 24,
-                seed = 7,
-                providerOptions = ProviderOptions.Raw(JsonObject(mapOf("xai" to buildJsonObject {
-                    put("pollIntervalMs", JsonPrimitive(0))
-                    put("pollTimeoutMs", JsonPrimitive(1))
-                    put("custom_option", JsonPrimitive("kept"))
-                }))),
-            ),
+            VideoGenerationParams {
+                prompt("A chicken flying into the sunset")
+                n(2)
+                image(GeneratedFile(mediaType = "image/png", base64 = "", url = "https://example.com/ref.png"))
+                durationSeconds(5f)
+                aspectRatio("16:9")
+                resolution("1280x720")
+                fps(24)
+                seed(7)
+                providerOptions(ProviderOptions.Raw(JsonObject(mapOf("xai" to buildJsonObject {
+                                    put("pollIntervalMs", JsonPrimitive(0))
+                                    put("pollTimeoutMs", JsonPrimitive(1))
+                                    put("custom_option", JsonPrimitive("kept"))
+                                }))))
+            },
         )
         val edited = model.generate(
-            VideoGenerationParams(
-                prompt = "edit",
-                durationSeconds = 3f,
-                aspectRatio = "1:1",
-                resolution = "1280x720",
-                providerOptions = ProviderOptions.Raw(JsonObject(mapOf("xai" to buildJsonObject {
-                    put("mode", JsonPrimitive("edit-video"))
-                    put("videoUrl", JsonPrimitive("https://example.com/source.mp4"))
-                    put("pollIntervalMs", JsonPrimitive(0))
-                    put("pollTimeoutMs", JsonPrimitive(1))
-                }))),
-            ),
+            VideoGenerationParams {
+                prompt("edit")
+                durationSeconds(3f)
+                aspectRatio("1:1")
+                resolution("1280x720")
+                providerOptions(ProviderOptions.Raw(JsonObject(mapOf("xai" to buildJsonObject {
+                                    put("mode", JsonPrimitive("edit-video"))
+                                    put("videoUrl", JsonPrimitive("https://example.com/source.mp4"))
+                                    put("pollIntervalMs", JsonPrimitive(0))
+                                    put("pollTimeoutMs", JsonPrimitive(1))
+                                }))))
+            },
         )
 
         assertEquals("xai.video", model.provider)

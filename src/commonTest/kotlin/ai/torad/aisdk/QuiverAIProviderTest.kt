@@ -45,22 +45,22 @@ class QuiverAIProviderTest {
         ).image(ModelId("arrow-1"))
 
         val result = model.generate(
-            ImageGenerationParams(
-                prompt = "Draw a square icon.",
-                files = listOf(
-                    ImageGenerationFile(url = "https://example.com/ref.png"),
-                    ImageGenerationFile(mediaType = "image/png", base64 = "BAUG"),
-                ),
-                providerOptions = ProviderOptions.Raw(JsonObject(mapOf(
-                    "quiverai" to buildJsonObject {
-                        put("instructions", JsonPrimitive("Use clean geometry."))
-                        put("temperature", JsonPrimitive(0.4))
-                        put("topP", JsonPrimitive(0.95))
-                        put("presencePenalty", JsonPrimitive(0.2))
-                        put("maxOutputTokens", JsonPrimitive(4096))
-                    },
-                ))),
-            ),
+            ImageGenerationParams {
+                prompt("Draw a square icon.")
+                files(listOf(
+                                    ImageGenerationFile(url = "https://example.com/ref.png"),
+                                    ImageGenerationFile(mediaType = "image/png", base64 = "BAUG"),
+                                ))
+                providerOptions(ProviderOptions.Raw(JsonObject(mapOf(
+                                    "quiverai" to buildJsonObject {
+                                        put("instructions", JsonPrimitive("Use clean geometry."))
+                                        put("temperature", JsonPrimitive(0.4))
+                                        put("topP", JsonPrimitive(0.95))
+                                        put("presencePenalty", JsonPrimitive(0.2))
+                                        put("maxOutputTokens", JsonPrimitive(4096))
+                                    },
+                                ))))
+            },
         )
 
         assertEquals("quiverai.image", model.provider)
@@ -109,20 +109,20 @@ class QuiverAIProviderTest {
         val model = QuiverAI(fixture.httpClient(), QuiverAIProviderSettings { apiKey("key") }).image(ModelId("arrow-1"))
 
         model.generate(
-            ImageGenerationParams(
-                prompt = "",
-                n = 2,
-                files = listOf(ImageGenerationFile(url = "https://example.com/logo.png")),
-                providerOptions = ProviderOptions.Raw(JsonObject(mapOf(
-                    "quiverai" to buildJsonObject {
-                        put("operation", JsonPrimitive("vectorize"))
-                        put("temperature", JsonPrimitive(0.3))
-                        put("topP", JsonPrimitive(0.9))
-                        put("autoCrop", JsonPrimitive(true))
-                        put("targetSize", JsonPrimitive(1024))
-                    },
-                ))),
-            ),
+            ImageGenerationParams {
+                prompt("")
+                n(2)
+                files(listOf(ImageGenerationFile(url = "https://example.com/logo.png")))
+                providerOptions(ProviderOptions.Raw(JsonObject(mapOf(
+                                    "quiverai" to buildJsonObject {
+                                        put("operation", JsonPrimitive("vectorize"))
+                                        put("temperature", JsonPrimitive(0.3))
+                                        put("topP", JsonPrimitive(0.9))
+                                        put("autoCrop", JsonPrimitive(true))
+                                        put("targetSize", JsonPrimitive(1024))
+                                    },
+                                ))))
+            },
         )
 
         val body = fixture.calls.single().requestBodyJson.jsonObject
@@ -149,39 +149,39 @@ class QuiverAIProviderTest {
 
         assertFailsWith<InvalidArgumentError> {
             provider.image(ModelId("arrow-1")).generate(
-                ImageGenerationParams(
-                    prompt = "x",
-                    files = List(5) { ImageGenerationFile(url = "https://example.com/$it.png") },
-                ),
+                ImageGenerationParams {
+                    prompt("x")
+                    files(List(5) { ImageGenerationFile(url = "https://example.com/$it.png") })
+                },
             )
         }
         assertFailsWith<InvalidArgumentError> {
             provider.image(ModelId("arrow-1")).generate(
-                ImageGenerationParams(
-                    prompt = "",
-                    providerOptions = ProviderOptions.Raw(JsonObject(mapOf("quiverai" to buildJsonObject { put("operation", JsonPrimitive("vectorize")) }))),
-                ),
+                ImageGenerationParams {
+                    prompt("")
+                    providerOptions(ProviderOptions.Raw(JsonObject(mapOf("quiverai" to buildJsonObject { put("operation", JsonPrimitive("vectorize")) }))))
+                },
             )
         }
         assertFailsWith<InvalidArgumentError> {
             provider.image(ModelId("arrow-1")).generate(
-                ImageGenerationParams(
-                    prompt = "",
-                    files = listOf(ImageGenerationFile(url = "a"), ImageGenerationFile(url = "b")),
-                    providerOptions = ProviderOptions.Raw(JsonObject(mapOf("quiverai" to buildJsonObject { put("operation", JsonPrimitive("vectorize")) }))),
-                ),
+                ImageGenerationParams {
+                    prompt("")
+                    files(listOf(ImageGenerationFile(url = "a"), ImageGenerationFile(url = "b")))
+                    providerOptions(ProviderOptions.Raw(JsonObject(mapOf("quiverai" to buildJsonObject { put("operation", JsonPrimitive("vectorize")) }))))
+                },
             )
         }
 
         val result = provider.image(ModelId("arrow-1.1-max")).generate(
-            ImageGenerationParams(
-                prompt = "x",
-                files = List(16) { ImageGenerationFile(url = "https://example.com/$it.png") },
-                size = "1024x1024",
-                aspectRatio = "1:1",
-                seed = 42,
-                mask = ImageGenerationFile(url = "https://example.com/mask.png"),
-            ),
+            ImageGenerationParams {
+                prompt("x")
+                files(List(16) { ImageGenerationFile(url = "https://example.com/$it.png") })
+                size("1024x1024")
+                aspectRatio("1:1")
+                seed(42)
+                mask(ImageGenerationFile(url = "https://example.com/mask.png"))
+            },
         )
 
         assertEquals(4, result.warnings.size)

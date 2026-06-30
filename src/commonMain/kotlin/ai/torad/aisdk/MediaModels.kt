@@ -201,18 +201,90 @@ public interface ImageModel {
     public suspend fun generate(params: ImageGenerationParams): ImageModelResult
 }
 
-public data class ImageGenerationParams(
-    val prompt: String,
-    val n: Int = 1,
-    val size: String? = null,
-    val aspectRatio: String? = null,
-    val seed: Int? = null,
-    val providerOptions: ProviderOptions = ProviderOptions.None,
-    val headers: Map<String, String> = emptyMap(),
-    val abortSignal: AbortSignal = AbortSignalNever,
-    val files: List<ImageGenerationFile> = emptyList(),
-    val mask: ImageGenerationFile? = null,
+public class ImageGenerationParams internal constructor(
+    public val prompt: String,
+    public val n: Int = 1,
+    public val size: String? = null,
+    public val aspectRatio: String? = null,
+    public val seed: Int? = null,
+    public val providerOptions: ProviderOptions = ProviderOptions.None,
+    public val headers: Map<String, String> = emptyMap(),
+    public val abortSignal: AbortSignal = AbortSignalNever,
+    public val files: List<ImageGenerationFile> = emptyList(),
+    public val mask: ImageGenerationFile? = null,
 )
+
+public class ImageGenerationParamsBuilder internal constructor() {
+    private var prompt: String? = null
+    private var n: Int = 1
+    private var size: String? = null
+    private var aspectRatio: String? = null
+    private var seed: Int? = null
+    private var providerOptions: ProviderOptions = ProviderOptions.None
+    private var headers: Map<String, String> = emptyMap()
+    private var abortSignal: AbortSignal = AbortSignalNever
+    private var files: List<ImageGenerationFile> = emptyList()
+    private var mask: ImageGenerationFile? = null
+
+    public fun prompt(value: String) {
+        prompt = value
+    }
+
+    public fun n(value: Int) {
+        n = value
+    }
+
+    public fun size(value: String?) {
+        size = value
+    }
+
+    public fun aspectRatio(value: String?) {
+        aspectRatio = value
+    }
+
+    public fun seed(value: Int?) {
+        seed = value
+    }
+
+    public fun providerOptions(value: ProviderOptions) {
+        providerOptions = value
+    }
+
+    public fun headers(value: Map<String, String>) {
+        headers = value
+    }
+
+    public fun abortSignal(value: AbortSignal) {
+        abortSignal = value
+    }
+
+    public fun files(value: List<ImageGenerationFile>) {
+        files = value
+    }
+
+    public fun mask(value: ImageGenerationFile?) {
+        mask = value
+    }
+
+    internal fun build(): ImageGenerationParams =
+        ImageGenerationParams(
+            prompt = requireNotNull(prompt) { "ImageGenerationParams.prompt is required" },
+            n = n,
+            size = size,
+            aspectRatio = aspectRatio,
+            seed = seed,
+            providerOptions = providerOptions,
+            headers = headers,
+            abortSignal = abortSignal,
+            files = files,
+            mask = mask,
+        )
+}
+
+public fun ImageGenerationParams(
+    block: ImageGenerationParamsBuilder.() -> Unit = {},
+): ImageGenerationParams =
+    ImageGenerationParamsBuilder().apply(block).build()
 
 @Poko
 public class ImageGenerationFile(
@@ -293,9 +365,20 @@ public object ImageGeneration {
         // Split into ceil(n / maxImagesPerCall) calls when the model is limited, so a
         // request for n images from a model capped at < n returns all n (was returning
         // only one call's worth). Calls run concurrently up to maxParallelCalls.
-        fun paramsFor(count: Int) = ImageGenerationParams(
-            prompt, count, size, aspectRatio, seed, providerOptions, headers, abortSignal, files, mask,
-        )
+        val paramsFor: (Int) -> ImageGenerationParams = { count ->
+            ImageGenerationParams {
+                prompt(prompt)
+                n(count)
+                size(size)
+                aspectRatio(aspectRatio)
+                seed(seed)
+                providerOptions(providerOptions)
+                headers(headers)
+                abortSignal(abortSignal)
+                files(files)
+                mask(mask)
+            }
+        }
         val maxPerCall = model.maxImagesPerCall?.coerceAtLeast(1) ?: n
         val counts = if (n <= maxPerCall) {
             listOf(n)
@@ -417,18 +500,84 @@ public interface SpeechModel {
     public suspend fun generate(params: SpeechGenerationParams): SpeechModelResult
 }
 
-public data class SpeechGenerationParams(
-    val text: String,
-    val voice: String? = null,
-    val instructions: String? = null,
-    val speed: Float? = null,
-    val responseFormat: String? = null,
+public class SpeechGenerationParams internal constructor(
+    public val text: String,
+    public val voice: String? = null,
+    public val instructions: String? = null,
+    public val speed: Float? = null,
+    public val responseFormat: String? = null,
     /** ISO 639-1 language code (e.g. "en") or "auto". Mirrors upstream's `language`. */
-    val language: String? = null,
-    val providerOptions: ProviderOptions = ProviderOptions.None,
-    val headers: Map<String, String> = emptyMap(),
-    val abortSignal: AbortSignal = AbortSignalNever,
+    public val language: String? = null,
+    public val providerOptions: ProviderOptions = ProviderOptions.None,
+    public val headers: Map<String, String> = emptyMap(),
+    public val abortSignal: AbortSignal = AbortSignalNever,
 )
+
+public class SpeechGenerationParamsBuilder internal constructor() {
+    private var text: String? = null
+    private var voice: String? = null
+    private var instructions: String? = null
+    private var speed: Float? = null
+    private var responseFormat: String? = null
+    private var language: String? = null
+    private var providerOptions: ProviderOptions = ProviderOptions.None
+    private var headers: Map<String, String> = emptyMap()
+    private var abortSignal: AbortSignal = AbortSignalNever
+
+    public fun text(value: String) {
+        text = value
+    }
+
+    public fun voice(value: String?) {
+        voice = value
+    }
+
+    public fun instructions(value: String?) {
+        instructions = value
+    }
+
+    public fun speed(value: Float?) {
+        speed = value
+    }
+
+    public fun responseFormat(value: String?) {
+        responseFormat = value
+    }
+
+    public fun language(value: String?) {
+        language = value
+    }
+
+    public fun providerOptions(value: ProviderOptions) {
+        providerOptions = value
+    }
+
+    public fun headers(value: Map<String, String>) {
+        headers = value
+    }
+
+    public fun abortSignal(value: AbortSignal) {
+        abortSignal = value
+    }
+
+    internal fun build(): SpeechGenerationParams =
+        SpeechGenerationParams(
+            text = requireNotNull(text) { "SpeechGenerationParams.text is required" },
+            voice = voice,
+            instructions = instructions,
+            speed = speed,
+            responseFormat = responseFormat,
+            language = language,
+            providerOptions = providerOptions,
+            headers = headers,
+            abortSignal = abortSignal,
+        )
+}
+
+public fun SpeechGenerationParams(
+    block: SpeechGenerationParamsBuilder.() -> Unit = {},
+): SpeechGenerationParams =
+    SpeechGenerationParamsBuilder().apply(block).build()
 
 @Poko
 public class SpeechModelResult(
@@ -463,9 +612,17 @@ public object SpeechGeneration {
     ): GenerateSpeechResult {
         require(text.isNotBlank()) { "generateSpeech: text must not be blank" }
         val result = model.generate(
-            SpeechGenerationParams(
-                text, voice, instructions, speed, responseFormat, language, providerOptions, headers, abortSignal,
-            ),
+            SpeechGenerationParams {
+                text(text)
+                voice(voice)
+                instructions(instructions)
+                speed(speed)
+                responseFormat(responseFormat)
+                language(language)
+                providerOptions(providerOptions)
+                headers(headers)
+                abortSignal(abortSignal)
+            },
         )
         result.warnings.forEach { logger.warn(it.format()) }
         return GenerateSpeechResult(
@@ -516,14 +673,62 @@ public data class AudioSource(
     val filename: String? = null,
 )
 
-public data class TranscriptionParams(
-    val audio: AudioSource,
-    val language: String? = null,
-    val prompt: String? = null,
-    val providerOptions: ProviderOptions = ProviderOptions.None,
-    val headers: Map<String, String> = emptyMap(),
-    val abortSignal: AbortSignal = AbortSignalNever,
+public class TranscriptionParams internal constructor(
+    public val audio: AudioSource,
+    public val language: String? = null,
+    public val prompt: String? = null,
+    public val providerOptions: ProviderOptions = ProviderOptions.None,
+    public val headers: Map<String, String> = emptyMap(),
+    public val abortSignal: AbortSignal = AbortSignalNever,
 )
+
+public class TranscriptionParamsBuilder internal constructor() {
+    private var audio: AudioSource? = null
+    private var language: String? = null
+    private var prompt: String? = null
+    private var providerOptions: ProviderOptions = ProviderOptions.None
+    private var headers: Map<String, String> = emptyMap()
+    private var abortSignal: AbortSignal = AbortSignalNever
+
+    public fun audio(value: AudioSource) {
+        audio = value
+    }
+
+    public fun language(value: String?) {
+        language = value
+    }
+
+    public fun prompt(value: String?) {
+        prompt = value
+    }
+
+    public fun providerOptions(value: ProviderOptions) {
+        providerOptions = value
+    }
+
+    public fun headers(value: Map<String, String>) {
+        headers = value
+    }
+
+    public fun abortSignal(value: AbortSignal) {
+        abortSignal = value
+    }
+
+    internal fun build(): TranscriptionParams =
+        TranscriptionParams(
+            audio = requireNotNull(audio) { "TranscriptionParams.audio is required" },
+            language = language,
+            prompt = prompt,
+            providerOptions = providerOptions,
+            headers = headers,
+            abortSignal = abortSignal,
+        )
+}
+
+public fun TranscriptionParams(
+    block: TranscriptionParamsBuilder.() -> Unit = {},
+): TranscriptionParams =
+    TranscriptionParamsBuilder().apply(block).build()
 
 @Poko
 public class TranscriptSegment(
@@ -572,7 +777,14 @@ public object Transcription {
     ): TranscribeResult {
         require(audio.base64.isNotBlank()) { "transcribe: audio base64 must not be blank" }
         val result = model.transcribe(
-            TranscriptionParams(audio, language, prompt, providerOptions, headers, abortSignal),
+            TranscriptionParams {
+                audio(audio)
+                language(language)
+                prompt(prompt)
+                providerOptions(providerOptions)
+                headers(headers)
+                abortSignal(abortSignal)
+            },
         )
         result.warnings.forEach { logger.warn(it.format()) }
         return TranscribeResult(
@@ -620,20 +832,104 @@ public interface VideoModel {
     public suspend fun generate(params: VideoGenerationParams): VideoModelResult
 }
 
-public data class VideoGenerationParams(
-    val prompt: String,
-    val n: Int = 1,
-    val image: GeneratedFile? = null,
-    val durationSeconds: Float? = null,
-    val size: String? = null,
-    val aspectRatio: String? = null,
-    val providerOptions: ProviderOptions = ProviderOptions.None,
-    val headers: Map<String, String> = emptyMap(),
-    val abortSignal: AbortSignal = AbortSignalNever,
-    val seed: Int? = null,
-    val fps: Int? = null,
-    val resolution: String? = null,
+public class VideoGenerationParams internal constructor(
+    public val prompt: String,
+    public val n: Int = 1,
+    public val image: GeneratedFile? = null,
+    public val durationSeconds: Float? = null,
+    public val size: String? = null,
+    public val aspectRatio: String? = null,
+    public val providerOptions: ProviderOptions = ProviderOptions.None,
+    public val headers: Map<String, String> = emptyMap(),
+    public val abortSignal: AbortSignal = AbortSignalNever,
+    public val seed: Int? = null,
+    public val fps: Int? = null,
+    public val resolution: String? = null,
 )
+
+public class VideoGenerationParamsBuilder internal constructor() {
+    private var prompt: String? = null
+    private var n: Int = 1
+    private var image: GeneratedFile? = null
+    private var durationSeconds: Float? = null
+    private var size: String? = null
+    private var aspectRatio: String? = null
+    private var providerOptions: ProviderOptions = ProviderOptions.None
+    private var headers: Map<String, String> = emptyMap()
+    private var abortSignal: AbortSignal = AbortSignalNever
+    private var seed: Int? = null
+    private var fps: Int? = null
+    private var resolution: String? = null
+
+    public fun prompt(value: String) {
+        prompt = value
+    }
+
+    public fun n(value: Int) {
+        n = value
+    }
+
+    public fun image(value: GeneratedFile?) {
+        image = value
+    }
+
+    public fun durationSeconds(value: Float?) {
+        durationSeconds = value
+    }
+
+    public fun size(value: String?) {
+        size = value
+    }
+
+    public fun aspectRatio(value: String?) {
+        aspectRatio = value
+    }
+
+    public fun providerOptions(value: ProviderOptions) {
+        providerOptions = value
+    }
+
+    public fun headers(value: Map<String, String>) {
+        headers = value
+    }
+
+    public fun abortSignal(value: AbortSignal) {
+        abortSignal = value
+    }
+
+    public fun seed(value: Int?) {
+        seed = value
+    }
+
+    public fun fps(value: Int?) {
+        fps = value
+    }
+
+    public fun resolution(value: String?) {
+        resolution = value
+    }
+
+    internal fun build(): VideoGenerationParams =
+        VideoGenerationParams(
+            prompt = requireNotNull(prompt) { "VideoGenerationParams.prompt is required" },
+            n = n,
+            image = image,
+            durationSeconds = durationSeconds,
+            size = size,
+            aspectRatio = aspectRatio,
+            providerOptions = providerOptions,
+            headers = headers,
+            abortSignal = abortSignal,
+            seed = seed,
+            fps = fps,
+            resolution = resolution,
+        )
+}
+
+public fun VideoGenerationParams(
+    block: VideoGenerationParamsBuilder.() -> Unit = {},
+): VideoGenerationParams =
+    VideoGenerationParamsBuilder().apply(block).build()
 
 @Poko
 public class VideoModelResult(
@@ -676,20 +972,22 @@ public object VideoGeneration {
     ): GenerateVideoResult {
         require(prompt.isNotBlank()) { "generateVideo: prompt must not be blank" }
         require(n > 0) { "generateVideo: n must be > 0" }
-        fun paramsFor(count: Int) = VideoGenerationParams(
-            prompt = prompt,
-            n = count,
-            image = image,
-            durationSeconds = durationSeconds,
-            size = size,
-            aspectRatio = aspectRatio,
-            providerOptions = providerOptions,
-            headers = headers,
-            abortSignal = abortSignal,
-            seed = seed,
-            fps = fps,
-            resolution = resolution,
-        )
+        val paramsFor: (Int) -> VideoGenerationParams = { count ->
+            VideoGenerationParams {
+                prompt(prompt)
+                n(count)
+                image(image)
+                durationSeconds(durationSeconds)
+                size(size)
+                aspectRatio(aspectRatio)
+                providerOptions(providerOptions)
+                headers(headers)
+                abortSignal(abortSignal)
+                seed(seed)
+                fps(fps)
+                resolution(resolution)
+            }
+        }
         // Split into ceil(n / maxVideosPerCall) calls when the model is limited.
         val maxPerCall = model.maxVideosPerCall?.coerceAtLeast(1) ?: n
         val counts = if (n <= maxPerCall) {

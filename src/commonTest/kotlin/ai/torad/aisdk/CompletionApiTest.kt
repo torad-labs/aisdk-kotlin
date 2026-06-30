@@ -22,13 +22,13 @@ class CompletionApiTest {
 
         assertFailsWith<CancellationException> {
             CompletionApi.callCompletionApi(
-                CallCompletionApiOptions(
-                    prompt = "hello",
-                    transport = transport,
-                    setLoading = { loading = it },
-                    setError = { error = it },
-                    onError = { onErrorCalls += 1 },
-                ),
+                CallCompletionApiOptions {
+                    prompt("hello")
+                    transport(transport)
+                    setLoading({ loading = it })
+                    setError({ error = it })
+                    onError({ onErrorCalls += 1 })
+                },
             )
         }
 

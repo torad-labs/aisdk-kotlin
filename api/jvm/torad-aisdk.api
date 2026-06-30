@@ -514,24 +514,6 @@ public final class ai/torad/aisdk/Base64Codec {
 }
 
 public final class ai/torad/aisdk/CallCompletionApiOptions {
-	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;Ljava/util/Map;Lai/torad/aisdk/CompletionStreamProtocol;Lai/torad/aisdk/CompletionTransport;Lai/torad/aisdk/AbortSignal;Lkotlin/jvm/functions/Function1;Lkotlin/jvm/functions/Function1;Lkotlin/jvm/functions/Function1;Lkotlin/jvm/functions/Function3;Lkotlin/jvm/functions/Function2;)V
-	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;Ljava/util/Map;Lai/torad/aisdk/CompletionStreamProtocol;Lai/torad/aisdk/CompletionTransport;Lai/torad/aisdk/AbortSignal;Lkotlin/jvm/functions/Function1;Lkotlin/jvm/functions/Function1;Lkotlin/jvm/functions/Function1;Lkotlin/jvm/functions/Function3;Lkotlin/jvm/functions/Function2;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public final fun component1 ()Ljava/lang/String;
-	public final fun component10 ()Lkotlin/jvm/functions/Function1;
-	public final fun component11 ()Lkotlin/jvm/functions/Function1;
-	public final fun component12 ()Lkotlin/jvm/functions/Function3;
-	public final fun component13 ()Lkotlin/jvm/functions/Function2;
-	public final fun component2 ()Ljava/lang/String;
-	public final fun component3 ()Ljava/lang/String;
-	public final fun component4 ()Ljava/util/Map;
-	public final fun component5 ()Ljava/util/Map;
-	public final fun component6 ()Lai/torad/aisdk/CompletionStreamProtocol;
-	public final fun component7 ()Lai/torad/aisdk/CompletionTransport;
-	public final fun component8 ()Lai/torad/aisdk/AbortSignal;
-	public final fun component9 ()Lkotlin/jvm/functions/Function1;
-	public final fun copy (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;Ljava/util/Map;Lai/torad/aisdk/CompletionStreamProtocol;Lai/torad/aisdk/CompletionTransport;Lai/torad/aisdk/AbortSignal;Lkotlin/jvm/functions/Function1;Lkotlin/jvm/functions/Function1;Lkotlin/jvm/functions/Function1;Lkotlin/jvm/functions/Function3;Lkotlin/jvm/functions/Function2;)Lai/torad/aisdk/CallCompletionApiOptions;
-	public static synthetic fun copy$default (Lai/torad/aisdk/CallCompletionApiOptions;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;Ljava/util/Map;Lai/torad/aisdk/CompletionStreamProtocol;Lai/torad/aisdk/CompletionTransport;Lai/torad/aisdk/AbortSignal;Lkotlin/jvm/functions/Function1;Lkotlin/jvm/functions/Function1;Lkotlin/jvm/functions/Function1;Lkotlin/jvm/functions/Function3;Lkotlin/jvm/functions/Function2;ILjava/lang/Object;)Lai/torad/aisdk/CallCompletionApiOptions;
-	public fun equals (Ljava/lang/Object;)Z
 	public final fun getAbortSignal ()Lai/torad/aisdk/AbortSignal;
 	public final fun getApi ()Ljava/lang/String;
 	public final fun getBody ()Ljava/util/Map;
@@ -545,8 +527,22 @@ public final class ai/torad/aisdk/CallCompletionApiOptions {
 	public final fun getSetLoading ()Lkotlin/jvm/functions/Function1;
 	public final fun getStreamProtocol ()Lai/torad/aisdk/CompletionStreamProtocol;
 	public final fun getTransport ()Lai/torad/aisdk/CompletionTransport;
-	public fun hashCode ()I
-	public fun toString ()Ljava/lang/String;
+}
+
+public final class ai/torad/aisdk/CallCompletionApiOptionsBuilder {
+	public final fun abortSignal (Lai/torad/aisdk/AbortSignal;)V
+	public final fun api (Ljava/lang/String;)V
+	public final fun body (Ljava/util/Map;)V
+	public final fun headers (Ljava/util/Map;)V
+	public final fun id (Ljava/lang/String;)V
+	public final fun onError (Lkotlin/jvm/functions/Function2;)V
+	public final fun onFinish (Lkotlin/jvm/functions/Function3;)V
+	public final fun prompt (Ljava/lang/String;)V
+	public final fun setCompletion (Lkotlin/jvm/functions/Function1;)V
+	public final fun setError (Lkotlin/jvm/functions/Function1;)V
+	public final fun setLoading (Lkotlin/jvm/functions/Function1;)V
+	public final fun streamProtocol (Lai/torad/aisdk/CompletionStreamProtocol;)V
+	public final fun transport (Lai/torad/aisdk/CompletionTransport;)V
 }
 
 public final class ai/torad/aisdk/CallConfig {
@@ -755,6 +751,13 @@ public final class ai/torad/aisdk/CompletionApi {
 	public final fun callCompletionApi (Lai/torad/aisdk/CallCompletionApiOptions;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 }
 
+public final class ai/torad/aisdk/CompletionApiKt {
+	public static final fun CallCompletionApiOptions (Lkotlin/jvm/functions/Function1;)Lai/torad/aisdk/CallCompletionApiOptions;
+	public static synthetic fun CallCompletionApiOptions$default (Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Lai/torad/aisdk/CallCompletionApiOptions;
+	public static final fun CompletionRequestOptions (Lkotlin/jvm/functions/Function1;)Lai/torad/aisdk/CompletionRequestOptions;
+	public static synthetic fun CompletionRequestOptions$default (Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Lai/torad/aisdk/CompletionRequestOptions;
+}
+
 public abstract class ai/torad/aisdk/CompletionPhase {
 }
 
@@ -815,18 +818,16 @@ public final class ai/torad/aisdk/CompletionRequest {
 }
 
 public final class ai/torad/aisdk/CompletionRequestOptions {
-	public fun <init> ()V
-	public fun <init> (Ljava/util/Map;Ljava/util/Map;)V
-	public synthetic fun <init> (Ljava/util/Map;Ljava/util/Map;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public final fun component1 ()Ljava/util/Map;
-	public final fun component2 ()Ljava/util/Map;
-	public final fun copy (Ljava/util/Map;Ljava/util/Map;)Lai/torad/aisdk/CompletionRequestOptions;
-	public static synthetic fun copy$default (Lai/torad/aisdk/CompletionRequestOptions;Ljava/util/Map;Ljava/util/Map;ILjava/lang/Object;)Lai/torad/aisdk/CompletionRequestOptions;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getBody ()Ljava/util/Map;
 	public final fun getHeaders ()Ljava/util/Map;
 	public fun hashCode ()I
 	public fun toString ()Ljava/lang/String;
+}
+
+public final class ai/torad/aisdk/CompletionRequestOptionsBuilder {
+	public final fun body (Ljava/util/Map;)V
+	public final fun headers (Ljava/util/Map;)V
 }
 
 public final class ai/torad/aisdk/CompletionState {
@@ -2341,21 +2342,6 @@ public final class ai/torad/aisdk/ImageGenerationFile {
 }
 
 public final class ai/torad/aisdk/ImageGenerationParams {
-	public fun <init> (Ljava/lang/String;ILjava/lang/String;Ljava/lang/String;Ljava/lang/Integer;Lai/torad/aisdk/ProviderOptions;Ljava/util/Map;Lai/torad/aisdk/AbortSignal;Ljava/util/List;Lai/torad/aisdk/ImageGenerationFile;)V
-	public synthetic fun <init> (Ljava/lang/String;ILjava/lang/String;Ljava/lang/String;Ljava/lang/Integer;Lai/torad/aisdk/ProviderOptions;Ljava/util/Map;Lai/torad/aisdk/AbortSignal;Ljava/util/List;Lai/torad/aisdk/ImageGenerationFile;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public final fun component1 ()Ljava/lang/String;
-	public final fun component10 ()Lai/torad/aisdk/ImageGenerationFile;
-	public final fun component2 ()I
-	public final fun component3 ()Ljava/lang/String;
-	public final fun component4 ()Ljava/lang/String;
-	public final fun component5 ()Ljava/lang/Integer;
-	public final fun component6 ()Lai/torad/aisdk/ProviderOptions;
-	public final fun component7 ()Ljava/util/Map;
-	public final fun component8 ()Lai/torad/aisdk/AbortSignal;
-	public final fun component9 ()Ljava/util/List;
-	public final fun copy (Ljava/lang/String;ILjava/lang/String;Ljava/lang/String;Ljava/lang/Integer;Lai/torad/aisdk/ProviderOptions;Ljava/util/Map;Lai/torad/aisdk/AbortSignal;Ljava/util/List;Lai/torad/aisdk/ImageGenerationFile;)Lai/torad/aisdk/ImageGenerationParams;
-	public static synthetic fun copy$default (Lai/torad/aisdk/ImageGenerationParams;Ljava/lang/String;ILjava/lang/String;Ljava/lang/String;Ljava/lang/Integer;Lai/torad/aisdk/ProviderOptions;Ljava/util/Map;Lai/torad/aisdk/AbortSignal;Ljava/util/List;Lai/torad/aisdk/ImageGenerationFile;ILjava/lang/Object;)Lai/torad/aisdk/ImageGenerationParams;
-	public fun equals (Ljava/lang/Object;)Z
 	public final fun getAbortSignal ()Lai/torad/aisdk/AbortSignal;
 	public final fun getAspectRatio ()Ljava/lang/String;
 	public final fun getFiles ()Ljava/util/List;
@@ -2366,8 +2352,19 @@ public final class ai/torad/aisdk/ImageGenerationParams {
 	public final fun getProviderOptions ()Lai/torad/aisdk/ProviderOptions;
 	public final fun getSeed ()Ljava/lang/Integer;
 	public final fun getSize ()Ljava/lang/String;
-	public fun hashCode ()I
-	public fun toString ()Ljava/lang/String;
+}
+
+public final class ai/torad/aisdk/ImageGenerationParamsBuilder {
+	public final fun abortSignal (Lai/torad/aisdk/AbortSignal;)V
+	public final fun aspectRatio (Ljava/lang/String;)V
+	public final fun files (Ljava/util/List;)V
+	public final fun headers (Ljava/util/Map;)V
+	public final fun mask (Lai/torad/aisdk/ImageGenerationFile;)V
+	public final fun n (I)V
+	public final fun prompt (Ljava/lang/String;)V
+	public final fun providerOptions (Lai/torad/aisdk/ProviderOptions;)V
+	public final fun seed (Ljava/lang/Integer;)V
+	public final fun size (Ljava/lang/String;)V
 }
 
 public final class ai/torad/aisdk/ImageMiddlewareCallContext {
@@ -3468,6 +3465,14 @@ public final class ai/torad/aisdk/MediaModelsKt {
 	public static final fun GeneratedFile (Lai/torad/aisdk/FileData;Ljava/lang/String;Ljava/lang/String;Lai/torad/aisdk/ProviderMetadata;)Lai/torad/aisdk/GeneratedFile;
 	public static synthetic fun GeneratedFile$default (Lai/torad/aisdk/FileData;Ljava/lang/String;Ljava/lang/String;Lai/torad/aisdk/ProviderMetadata;ILjava/lang/Object;)Lai/torad/aisdk/GeneratedFile;
 	public static final fun ImageGenerationFile (Lai/torad/aisdk/FileData;)Lai/torad/aisdk/ImageGenerationFile;
+	public static final fun ImageGenerationParams (Lkotlin/jvm/functions/Function1;)Lai/torad/aisdk/ImageGenerationParams;
+	public static synthetic fun ImageGenerationParams$default (Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Lai/torad/aisdk/ImageGenerationParams;
+	public static final fun SpeechGenerationParams (Lkotlin/jvm/functions/Function1;)Lai/torad/aisdk/SpeechGenerationParams;
+	public static synthetic fun SpeechGenerationParams$default (Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Lai/torad/aisdk/SpeechGenerationParams;
+	public static final fun TranscriptionParams (Lkotlin/jvm/functions/Function1;)Lai/torad/aisdk/TranscriptionParams;
+	public static synthetic fun TranscriptionParams$default (Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Lai/torad/aisdk/TranscriptionParams;
+	public static final fun VideoGenerationParams (Lkotlin/jvm/functions/Function1;)Lai/torad/aisdk/VideoGenerationParams;
+	public static synthetic fun VideoGenerationParams$default (Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Lai/torad/aisdk/VideoGenerationParams;
 	public static final fun WrapImageModel (Lai/torad/aisdk/ImageModel;Ljava/util/List;)Lai/torad/aisdk/ImageModel;
 }
 
@@ -4460,6 +4465,11 @@ public final class ai/torad/aisdk/RedactorKt {
 	public static final fun getAiSdkDefaultRedactor ()Lai/torad/aisdk/Redactor;
 }
 
+public final class ai/torad/aisdk/RerankKt {
+	public static final fun RerankingParams (Lkotlin/jvm/functions/Function1;)Lai/torad/aisdk/RerankingParams;
+	public static synthetic fun RerankingParams$default (Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Lai/torad/aisdk/RerankingParams;
+}
+
 public final class ai/torad/aisdk/RerankResult {
 	public fun <init> (Ljava/util/List;Ljava/util/List;Lai/torad/aisdk/Usage;Ljava/util/List;Lai/torad/aisdk/LanguageModelResponseMetadata;Lai/torad/aisdk/ProviderMetadata;)V
 	public synthetic fun <init> (Ljava/util/List;Ljava/util/List;Lai/torad/aisdk/Usage;Ljava/util/List;Lai/torad/aisdk/LanguageModelResponseMetadata;Lai/torad/aisdk/ProviderMetadata;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
@@ -4515,25 +4525,21 @@ public final class ai/torad/aisdk/RerankingModelResult {
 }
 
 public final class ai/torad/aisdk/RerankingParams {
-	public fun <init> (Ljava/lang/String;Ljava/util/List;Ljava/lang/Integer;Lai/torad/aisdk/ProviderOptions;Ljava/util/Map;Lai/torad/aisdk/AbortSignal;)V
-	public synthetic fun <init> (Ljava/lang/String;Ljava/util/List;Ljava/lang/Integer;Lai/torad/aisdk/ProviderOptions;Ljava/util/Map;Lai/torad/aisdk/AbortSignal;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public final fun component1 ()Ljava/lang/String;
-	public final fun component2 ()Ljava/util/List;
-	public final fun component3 ()Ljava/lang/Integer;
-	public final fun component4 ()Lai/torad/aisdk/ProviderOptions;
-	public final fun component5 ()Ljava/util/Map;
-	public final fun component6 ()Lai/torad/aisdk/AbortSignal;
-	public final fun copy (Ljava/lang/String;Ljava/util/List;Ljava/lang/Integer;Lai/torad/aisdk/ProviderOptions;Ljava/util/Map;Lai/torad/aisdk/AbortSignal;)Lai/torad/aisdk/RerankingParams;
-	public static synthetic fun copy$default (Lai/torad/aisdk/RerankingParams;Ljava/lang/String;Ljava/util/List;Ljava/lang/Integer;Lai/torad/aisdk/ProviderOptions;Ljava/util/Map;Lai/torad/aisdk/AbortSignal;ILjava/lang/Object;)Lai/torad/aisdk/RerankingParams;
-	public fun equals (Ljava/lang/Object;)Z
 	public final fun getAbortSignal ()Lai/torad/aisdk/AbortSignal;
 	public final fun getDocuments ()Ljava/util/List;
 	public final fun getHeaders ()Ljava/util/Map;
 	public final fun getProviderOptions ()Lai/torad/aisdk/ProviderOptions;
 	public final fun getQuery ()Ljava/lang/String;
 	public final fun getTopN ()Ljava/lang/Integer;
-	public fun hashCode ()I
-	public fun toString ()Ljava/lang/String;
+}
+
+public final class ai/torad/aisdk/RerankingParamsBuilder {
+	public final fun abortSignal (Lai/torad/aisdk/AbortSignal;)V
+	public final fun documents (Ljava/util/List;)V
+	public final fun headers (Ljava/util/Map;)V
+	public final fun providerOptions (Lai/torad/aisdk/ProviderOptions;)V
+	public final fun query (Ljava/lang/String;)V
+	public final fun topN (Ljava/lang/Integer;)V
 }
 
 public abstract interface class ai/torad/aisdk/ResponseFormat {
@@ -4694,20 +4700,6 @@ public final class ai/torad/aisdk/SpeechGeneration {
 }
 
 public final class ai/torad/aisdk/SpeechGenerationParams {
-	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Float;Ljava/lang/String;Ljava/lang/String;Lai/torad/aisdk/ProviderOptions;Ljava/util/Map;Lai/torad/aisdk/AbortSignal;)V
-	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Float;Ljava/lang/String;Ljava/lang/String;Lai/torad/aisdk/ProviderOptions;Ljava/util/Map;Lai/torad/aisdk/AbortSignal;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public final fun component1 ()Ljava/lang/String;
-	public final fun component2 ()Ljava/lang/String;
-	public final fun component3 ()Ljava/lang/String;
-	public final fun component4 ()Ljava/lang/Float;
-	public final fun component5 ()Ljava/lang/String;
-	public final fun component6 ()Ljava/lang/String;
-	public final fun component7 ()Lai/torad/aisdk/ProviderOptions;
-	public final fun component8 ()Ljava/util/Map;
-	public final fun component9 ()Lai/torad/aisdk/AbortSignal;
-	public final fun copy (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Float;Ljava/lang/String;Ljava/lang/String;Lai/torad/aisdk/ProviderOptions;Ljava/util/Map;Lai/torad/aisdk/AbortSignal;)Lai/torad/aisdk/SpeechGenerationParams;
-	public static synthetic fun copy$default (Lai/torad/aisdk/SpeechGenerationParams;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Float;Ljava/lang/String;Ljava/lang/String;Lai/torad/aisdk/ProviderOptions;Ljava/util/Map;Lai/torad/aisdk/AbortSignal;ILjava/lang/Object;)Lai/torad/aisdk/SpeechGenerationParams;
-	public fun equals (Ljava/lang/Object;)Z
 	public final fun getAbortSignal ()Lai/torad/aisdk/AbortSignal;
 	public final fun getHeaders ()Ljava/util/Map;
 	public final fun getInstructions ()Ljava/lang/String;
@@ -4717,8 +4709,18 @@ public final class ai/torad/aisdk/SpeechGenerationParams {
 	public final fun getSpeed ()Ljava/lang/Float;
 	public final fun getText ()Ljava/lang/String;
 	public final fun getVoice ()Ljava/lang/String;
-	public fun hashCode ()I
-	public fun toString ()Ljava/lang/String;
+}
+
+public final class ai/torad/aisdk/SpeechGenerationParamsBuilder {
+	public final fun abortSignal (Lai/torad/aisdk/AbortSignal;)V
+	public final fun headers (Ljava/util/Map;)V
+	public final fun instructions (Ljava/lang/String;)V
+	public final fun language (Ljava/lang/String;)V
+	public final fun providerOptions (Lai/torad/aisdk/ProviderOptions;)V
+	public final fun responseFormat (Ljava/lang/String;)V
+	public final fun speed (Ljava/lang/Float;)V
+	public final fun text (Ljava/lang/String;)V
+	public final fun voice (Ljava/lang/String;)V
 }
 
 public abstract interface class ai/torad/aisdk/SpeechModel {
@@ -6604,25 +6606,21 @@ public final class ai/torad/aisdk/TranscriptionModelResult {
 }
 
 public final class ai/torad/aisdk/TranscriptionParams {
-	public fun <init> (Lai/torad/aisdk/AudioSource;Ljava/lang/String;Ljava/lang/String;Lai/torad/aisdk/ProviderOptions;Ljava/util/Map;Lai/torad/aisdk/AbortSignal;)V
-	public synthetic fun <init> (Lai/torad/aisdk/AudioSource;Ljava/lang/String;Ljava/lang/String;Lai/torad/aisdk/ProviderOptions;Ljava/util/Map;Lai/torad/aisdk/AbortSignal;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public final fun component1 ()Lai/torad/aisdk/AudioSource;
-	public final fun component2 ()Ljava/lang/String;
-	public final fun component3 ()Ljava/lang/String;
-	public final fun component4 ()Lai/torad/aisdk/ProviderOptions;
-	public final fun component5 ()Ljava/util/Map;
-	public final fun component6 ()Lai/torad/aisdk/AbortSignal;
-	public final fun copy (Lai/torad/aisdk/AudioSource;Ljava/lang/String;Ljava/lang/String;Lai/torad/aisdk/ProviderOptions;Ljava/util/Map;Lai/torad/aisdk/AbortSignal;)Lai/torad/aisdk/TranscriptionParams;
-	public static synthetic fun copy$default (Lai/torad/aisdk/TranscriptionParams;Lai/torad/aisdk/AudioSource;Ljava/lang/String;Ljava/lang/String;Lai/torad/aisdk/ProviderOptions;Ljava/util/Map;Lai/torad/aisdk/AbortSignal;ILjava/lang/Object;)Lai/torad/aisdk/TranscriptionParams;
-	public fun equals (Ljava/lang/Object;)Z
 	public final fun getAbortSignal ()Lai/torad/aisdk/AbortSignal;
 	public final fun getAudio ()Lai/torad/aisdk/AudioSource;
 	public final fun getHeaders ()Ljava/util/Map;
 	public final fun getLanguage ()Ljava/lang/String;
 	public final fun getPrompt ()Ljava/lang/String;
 	public final fun getProviderOptions ()Lai/torad/aisdk/ProviderOptions;
-	public fun hashCode ()I
-	public fun toString ()Ljava/lang/String;
+}
+
+public final class ai/torad/aisdk/TranscriptionParamsBuilder {
+	public final fun abortSignal (Lai/torad/aisdk/AbortSignal;)V
+	public final fun audio (Lai/torad/aisdk/AudioSource;)V
+	public final fun headers (Ljava/util/Map;)V
+	public final fun language (Ljava/lang/String;)V
+	public final fun prompt (Ljava/lang/String;)V
+	public final fun providerOptions (Lai/torad/aisdk/ProviderOptions;)V
 }
 
 public final class ai/torad/aisdk/TypeValidationContext {
@@ -6852,23 +6850,6 @@ public final class ai/torad/aisdk/VideoGeneration {
 }
 
 public final class ai/torad/aisdk/VideoGenerationParams {
-	public fun <init> (Ljava/lang/String;ILai/torad/aisdk/GeneratedFile;Ljava/lang/Float;Ljava/lang/String;Ljava/lang/String;Lai/torad/aisdk/ProviderOptions;Ljava/util/Map;Lai/torad/aisdk/AbortSignal;Ljava/lang/Integer;Ljava/lang/Integer;Ljava/lang/String;)V
-	public synthetic fun <init> (Ljava/lang/String;ILai/torad/aisdk/GeneratedFile;Ljava/lang/Float;Ljava/lang/String;Ljava/lang/String;Lai/torad/aisdk/ProviderOptions;Ljava/util/Map;Lai/torad/aisdk/AbortSignal;Ljava/lang/Integer;Ljava/lang/Integer;Ljava/lang/String;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public final fun component1 ()Ljava/lang/String;
-	public final fun component10 ()Ljava/lang/Integer;
-	public final fun component11 ()Ljava/lang/Integer;
-	public final fun component12 ()Ljava/lang/String;
-	public final fun component2 ()I
-	public final fun component3 ()Lai/torad/aisdk/GeneratedFile;
-	public final fun component4 ()Ljava/lang/Float;
-	public final fun component5 ()Ljava/lang/String;
-	public final fun component6 ()Ljava/lang/String;
-	public final fun component7 ()Lai/torad/aisdk/ProviderOptions;
-	public final fun component8 ()Ljava/util/Map;
-	public final fun component9 ()Lai/torad/aisdk/AbortSignal;
-	public final fun copy (Ljava/lang/String;ILai/torad/aisdk/GeneratedFile;Ljava/lang/Float;Ljava/lang/String;Ljava/lang/String;Lai/torad/aisdk/ProviderOptions;Ljava/util/Map;Lai/torad/aisdk/AbortSignal;Ljava/lang/Integer;Ljava/lang/Integer;Ljava/lang/String;)Lai/torad/aisdk/VideoGenerationParams;
-	public static synthetic fun copy$default (Lai/torad/aisdk/VideoGenerationParams;Ljava/lang/String;ILai/torad/aisdk/GeneratedFile;Ljava/lang/Float;Ljava/lang/String;Ljava/lang/String;Lai/torad/aisdk/ProviderOptions;Ljava/util/Map;Lai/torad/aisdk/AbortSignal;Ljava/lang/Integer;Ljava/lang/Integer;Ljava/lang/String;ILjava/lang/Object;)Lai/torad/aisdk/VideoGenerationParams;
-	public fun equals (Ljava/lang/Object;)Z
 	public final fun getAbortSignal ()Lai/torad/aisdk/AbortSignal;
 	public final fun getAspectRatio ()Ljava/lang/String;
 	public final fun getDurationSeconds ()Ljava/lang/Float;
@@ -6881,8 +6862,21 @@ public final class ai/torad/aisdk/VideoGenerationParams {
 	public final fun getResolution ()Ljava/lang/String;
 	public final fun getSeed ()Ljava/lang/Integer;
 	public final fun getSize ()Ljava/lang/String;
-	public fun hashCode ()I
-	public fun toString ()Ljava/lang/String;
+}
+
+public final class ai/torad/aisdk/VideoGenerationParamsBuilder {
+	public final fun abortSignal (Lai/torad/aisdk/AbortSignal;)V
+	public final fun aspectRatio (Ljava/lang/String;)V
+	public final fun durationSeconds (Ljava/lang/Float;)V
+	public final fun fps (Ljava/lang/Integer;)V
+	public final fun headers (Ljava/util/Map;)V
+	public final fun image (Lai/torad/aisdk/GeneratedFile;)V
+	public final fun n (I)V
+	public final fun prompt (Ljava/lang/String;)V
+	public final fun providerOptions (Lai/torad/aisdk/ProviderOptions;)V
+	public final fun resolution (Ljava/lang/String;)V
+	public final fun seed (Ljava/lang/Integer;)V
+	public final fun size (Ljava/lang/String;)V
 }
 
 public abstract interface class ai/torad/aisdk/VideoModel {
@@ -9693,6 +9687,8 @@ public final class ai/torad/aisdk/providers/HuggingFaceProviderKt {
 	public static synthetic fun HuggingFace$default (Lio/ktor/client/HttpClient;Lai/torad/aisdk/providers/HuggingFaceProviderSettings;ILjava/lang/Object;)Lai/torad/aisdk/providers/HuggingFaceProvider;
 	public static final fun HuggingFaceProviderSettings (Lkotlin/jvm/functions/Function1;)Lai/torad/aisdk/providers/HuggingFaceProviderSettings;
 	public static synthetic fun HuggingFaceProviderSettings$default (Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Lai/torad/aisdk/providers/HuggingFaceProviderSettings;
+	public static final fun HuggingFaceResponsesSettings (Lkotlin/jvm/functions/Function1;)Lai/torad/aisdk/providers/HuggingFaceResponsesSettings;
+	public static synthetic fun HuggingFaceResponsesSettings$default (Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Lai/torad/aisdk/providers/HuggingFaceResponsesSettings;
 }
 
 public final class ai/torad/aisdk/providers/HuggingFaceProviderSettings {
@@ -9711,15 +9707,6 @@ public final class ai/torad/aisdk/providers/HuggingFaceProviderSettingsBuilder {
 
 public final class ai/torad/aisdk/providers/HuggingFaceResponsesSettings {
 	public static final field Companion Lai/torad/aisdk/providers/HuggingFaceResponsesSettings$Companion;
-	public fun <init> ()V
-	public fun <init> (Ljava/util/Map;Ljava/lang/String;Ljava/lang/Boolean;Ljava/lang/String;)V
-	public synthetic fun <init> (Ljava/util/Map;Ljava/lang/String;Ljava/lang/Boolean;Ljava/lang/String;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public final fun component1 ()Ljava/util/Map;
-	public final fun component2 ()Ljava/lang/String;
-	public final fun component3 ()Ljava/lang/Boolean;
-	public final fun component4 ()Ljava/lang/String;
-	public final fun copy (Ljava/util/Map;Ljava/lang/String;Ljava/lang/Boolean;Ljava/lang/String;)Lai/torad/aisdk/providers/HuggingFaceResponsesSettings;
-	public static synthetic fun copy$default (Lai/torad/aisdk/providers/HuggingFaceResponsesSettings;Ljava/util/Map;Ljava/lang/String;Ljava/lang/Boolean;Ljava/lang/String;ILjava/lang/Object;)Lai/torad/aisdk/providers/HuggingFaceResponsesSettings;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getInstructions ()Ljava/lang/String;
 	public final fun getMetadata ()Ljava/util/Map;
@@ -9742,6 +9729,13 @@ public final synthetic class ai/torad/aisdk/providers/HuggingFaceResponsesSettin
 
 public final class ai/torad/aisdk/providers/HuggingFaceResponsesSettings$Companion {
 	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public final class ai/torad/aisdk/providers/HuggingFaceResponsesSettingsBuilder {
+	public final fun instructions (Ljava/lang/String;)V
+	public final fun metadata (Ljava/util/Map;)V
+	public final fun reasoningEffort (Ljava/lang/String;)V
+	public final fun strictJsonSchema (Ljava/lang/Boolean;)V
 }
 
 public final class ai/torad/aisdk/providers/HumeProvider : ai/torad/aisdk/Provider {

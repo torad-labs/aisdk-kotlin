@@ -34,21 +34,21 @@ class LMNTProviderTest {
         ).speech(ModelId("aurora"))
 
         val result = model.generate(
-            SpeechGenerationParams(
-                text = "hello",
-                voice = "ava",
-                responseFormat = "wav",
-                language = "fr",
-                speed = 1.1f,
-                providerOptions = ProviderOptions.Raw(JsonObject(mapOf(
-                    "lmnt" to buildJsonObject {
-                        put("seed", JsonPrimitive(123))
-                        put("sampleRate", JsonPrimitive(24000))
-                        put("topP", JsonPrimitive(0.9f))
-                        put("temperature", JsonPrimitive(0.5f))
-                    },
-                ))),
-            ),
+            SpeechGenerationParams {
+                text("hello")
+                voice("ava")
+                responseFormat("wav")
+                language("fr")
+                speed(1.1f)
+                providerOptions(ProviderOptions.Raw(JsonObject(mapOf(
+                                    "lmnt" to buildJsonObject {
+                                        put("seed", JsonPrimitive(123))
+                                        put("sampleRate", JsonPrimitive(24000))
+                                        put("topP", JsonPrimitive(0.9f))
+                                        put("temperature", JsonPrimitive(0.5f))
+                                    },
+                                ))))
+            },
         )
 
         assertEquals("lmnt.speech", model.provider)
@@ -88,7 +88,10 @@ class LMNTProviderTest {
         ).speech(ModelId("aurora"))
 
         val result = model.generate(
-            SpeechGenerationParams(text = "hello", responseFormat = "flac"),
+            SpeechGenerationParams {
+                text("hello")
+                responseFormat("flac")
+            },
         )
 
         assertEquals("unsupported", result.warnings.single().type)

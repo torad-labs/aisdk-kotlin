@@ -15,10 +15,35 @@ public enum class CompletionStreamProtocol(public val wireValue: String) {
     Text("text"),
 }
 
-public data class CompletionRequestOptions(
-    val headers: Map<String, String> = emptyMap(),
-    val body: Map<String, JsonElement> = emptyMap(),
+@Poko
+public class CompletionRequestOptions internal constructor(
+    public val headers: Map<String, String> = emptyMap(),
+    public val body: Map<String, JsonElement> = emptyMap(),
 )
+
+public class CompletionRequestOptionsBuilder internal constructor() {
+    private var headers: Map<String, String> = emptyMap()
+    private var body: Map<String, JsonElement> = emptyMap()
+
+    public fun headers(value: Map<String, String>) {
+        headers = value
+    }
+
+    public fun body(value: Map<String, JsonElement>) {
+        body = value
+    }
+
+    internal fun build(): CompletionRequestOptions =
+        CompletionRequestOptions(
+            headers = headers,
+            body = body,
+        )
+}
+
+public fun CompletionRequestOptions(
+    block: CompletionRequestOptionsBuilder.() -> Unit = {},
+): CompletionRequestOptions =
+    CompletionRequestOptionsBuilder().apply(block).build()
 
 public data class CompletionRequest(
     val api: String,
@@ -53,21 +78,111 @@ public data class UseCompletionOptions(
     val onError: suspend (Throwable) -> Unit = {},
 )
 
-public data class CallCompletionApiOptions(
-    val api: String = "/api/completion",
-    val id: String = IdGenerator.generate("completion"),
-    val prompt: String,
-    val headers: Map<String, String> = emptyMap(),
-    val body: Map<String, JsonElement> = emptyMap(),
-    val streamProtocol: CompletionStreamProtocol = CompletionStreamProtocol.Data,
-    val transport: CompletionTransport,
-    val abortSignal: AbortSignal = AbortSignalNever,
-    val setCompletion: (String) -> Unit = {},
-    val setLoading: (Boolean) -> Unit = {},
-    val setError: (Throwable?) -> Unit = {},
-    val onFinish: suspend (prompt: String, completion: String) -> Unit = { _, _ -> },
-    val onError: suspend (Throwable) -> Unit = {},
+public class CallCompletionApiOptions internal constructor(
+    public val api: String = "/api/completion",
+    public val id: String = IdGenerator.generate("completion"),
+    public val prompt: String,
+    public val headers: Map<String, String> = emptyMap(),
+    public val body: Map<String, JsonElement> = emptyMap(),
+    public val streamProtocol: CompletionStreamProtocol = CompletionStreamProtocol.Data,
+    public val transport: CompletionTransport,
+    public val abortSignal: AbortSignal = AbortSignalNever,
+    public val setCompletion: (String) -> Unit = {},
+    public val setLoading: (Boolean) -> Unit = {},
+    public val setError: (Throwable?) -> Unit = {},
+    public val onFinish: suspend (prompt: String, completion: String) -> Unit = { _, _ -> },
+    public val onError: suspend (Throwable) -> Unit = {},
 )
+
+public class CallCompletionApiOptionsBuilder internal constructor() {
+    private var api: String = "/api/completion"
+    private var id: String = IdGenerator.generate("completion")
+    private var prompt: String? = null
+    private var headers: Map<String, String> = emptyMap()
+    private var body: Map<String, JsonElement> = emptyMap()
+    private var streamProtocol: CompletionStreamProtocol = CompletionStreamProtocol.Data
+    private var transport: CompletionTransport? = null
+    private var abortSignal: AbortSignal = AbortSignalNever
+    private var setCompletion: (String) -> Unit = {}
+    private var setLoading: (Boolean) -> Unit = {}
+    private var setError: (Throwable?) -> Unit = {}
+    private var onFinish: suspend (prompt: String, completion: String) -> Unit = { _, _ -> }
+    private var onError: suspend (Throwable) -> Unit = {}
+
+    public fun api(value: String) {
+        api = value
+    }
+
+    public fun id(value: String) {
+        id = value
+    }
+
+    public fun prompt(value: String) {
+        prompt = value
+    }
+
+    public fun headers(value: Map<String, String>) {
+        headers = value
+    }
+
+    public fun body(value: Map<String, JsonElement>) {
+        body = value
+    }
+
+    public fun streamProtocol(value: CompletionStreamProtocol) {
+        streamProtocol = value
+    }
+
+    public fun transport(value: CompletionTransport) {
+        transport = value
+    }
+
+    public fun abortSignal(value: AbortSignal) {
+        abortSignal = value
+    }
+
+    public fun setCompletion(value: (String) -> Unit) {
+        setCompletion = value
+    }
+
+    public fun setLoading(value: (Boolean) -> Unit) {
+        setLoading = value
+    }
+
+    public fun setError(value: (Throwable?) -> Unit) {
+        setError = value
+    }
+
+    public fun onFinish(value: suspend (prompt: String, completion: String) -> Unit) {
+        onFinish = value
+    }
+
+    public fun onError(value: suspend (Throwable) -> Unit) {
+        onError = value
+    }
+
+    internal fun build(): CallCompletionApiOptions =
+        CallCompletionApiOptions(
+            api = api,
+            id = id,
+            prompt = requireNotNull(prompt) { "CallCompletionApiOptions.prompt is required" },
+            headers = headers,
+            body = body,
+            streamProtocol = streamProtocol,
+            transport = requireNotNull(transport) { "CallCompletionApiOptions.transport is required" },
+            abortSignal = abortSignal,
+            setCompletion = setCompletion,
+            setLoading = setLoading,
+            setError = setError,
+            onFinish = onFinish,
+            onError = onError,
+        )
+}
+
+public fun CallCompletionApiOptions(
+    block: CallCompletionApiOptionsBuilder.() -> Unit = {},
+): CallCompletionApiOptions =
+    CallCompletionApiOptionsBuilder().apply(block).build()
 
 public object CompletionApi {
     public suspend fun callCompletionApi(options: CallCompletionApiOptions): String? {
@@ -175,19 +290,19 @@ public class Completion(
         val controller = AbortController()
         abortController = controller
         return CompletionApi.callCompletionApi(
-            CallCompletionApiOptions(
-                api = options.api,
-                id = options.id,
-                prompt = prompt,
-                headers = options.headers + requestOptions.headers,
-                body = options.body + requestOptions.body,
-                streamProtocol = options.streamProtocol,
-                transport = options.transport,
-                abortSignal = controller.signal,
-                setCompletion = { text ->
+            CallCompletionApiOptions {
+                api(options.api)
+                id(options.id)
+                prompt(prompt)
+                headers(options.headers + requestOptions.headers)
+                body(options.body + requestOptions.body)
+                streamProtocol(options.streamProtocol)
+                transport(options.transport)
+                abortSignal(controller.signal)
+                setCompletion { text ->
                     mutableState.update { it.copy(phase = CompletionPhase.Streaming(text)) }
-                },
-                setLoading = { isLoading ->
+                }
+                setLoading { isLoading ->
                     mutableState.update { s ->
                         if (isLoading) {
                             s.copy(phase = CompletionPhase.Streaming(s.completion))
@@ -205,17 +320,17 @@ public class Completion(
                             )
                         }
                     }
-                },
-                setError = { err ->
+                }
+                setError { err ->
                     if (err != null) {
                         mutableState.update { s ->
                             s.copy(phase = CompletionPhase.Failed(s.completion, err))
                         }
                     }
-                },
-                onFinish = options.onFinish,
-                onError = options.onError,
-            ),
+                }
+                onFinish(options.onFinish)
+                onError(options.onError)
+            },
         ).also {
             abortController = null
         }

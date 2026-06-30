@@ -35,9 +35,9 @@ class GladiaDefensiveParsingTest {
 
         val error = assertFails {
             model.transcribe(
-                TranscriptionParams(
-                    audio = AudioSource(mediaType = "audio/wav", base64 = Base64Codec.encode(byteArrayOf(1))),
-                ),
+                TranscriptionParams {
+                    audio(AudioSource(mediaType = "audio/wav", base64 = Base64Codec.encode(byteArrayOf(1))))
+                },
             )
         }
 
@@ -68,9 +68,9 @@ class GladiaDefensiveParsingTest {
 
         val error = assertFails {
             model.transcribe(
-                TranscriptionParams(
-                    audio = AudioSource(mediaType = "audio/wav", base64 = Base64Codec.encode(byteArrayOf(1))),
-                ),
+                TranscriptionParams {
+                    audio(AudioSource(mediaType = "audio/wav", base64 = Base64Codec.encode(byteArrayOf(1))))
+                },
             )
         }
 

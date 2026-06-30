@@ -472,14 +472,14 @@ class OpenAICompatibleProviderFacadesTest {
         val completion = provider.completionModel(ModelId("model")).generate(LanguageModelCallParams(listOf(UserMessage("hi"))))
         val embedding = provider.textEmbeddingModel(ModelId("embed")).embed(EmbeddingModelCallParams(listOf("hello")))
         val image = provider.image(ModelId("black-forest-labs/FLUX-1-schnell")).generate(
-            ImageGenerationParams(
-                prompt = "mountain",
-                n = 2,
-                size = "512x768",
-                aspectRatio = "1:1",
-                seed = 7,
-                providerOptions = ProviderOptions.Raw(JsonObject(mapOf("deepinfra" to buildJsonObject { put("scheduler", JsonPrimitive("fast")) }))),
-            ),
+            ImageGenerationParams {
+                prompt("mountain")
+                n(2)
+                size("512x768")
+                aspectRatio("1:1")
+                seed(7)
+                providerOptions(ProviderOptions.Raw(JsonObject(mapOf("deepinfra" to buildJsonObject { put("scheduler", JsonPrimitive("fast")) }))))
+            },
         )
 
         assertEquals(13, chat.usage.completionTokens)
@@ -545,10 +545,20 @@ class OpenAICompatibleProviderFacadesTest {
         assertEquals("preserved", chatBody["reasoning_history"]?.jsonPrimitive?.contentOrNull)
 
         val workflowImage = provider.image(ModelId("accounts/fireworks/models/flux-1-dev-fp8")).generate(
-            ImageGenerationParams(prompt = "cat", n = 1, size = "512x512", aspectRatio = "1:1"),
+            ImageGenerationParams {
+                prompt("cat")
+                n(1)
+                size("512x512")
+                aspectRatio("1:1")
+            },
         )
         val imageGenerationImage = provider.image(ModelId("accounts/fireworks/models/SSD-1B")).generate(
-            ImageGenerationParams(prompt = "dog", n = 1, size = "768x512", aspectRatio = "16:9"),
+            ImageGenerationParams {
+                prompt("dog")
+                n(1)
+                size("768x512")
+                aspectRatio("16:9")
+            },
         )
 
         assertEquals(Base64Codec.encode(byteArrayOf(1, 2, 3)), workflowImage.images.single().base64)
@@ -586,7 +596,9 @@ class OpenAICompatibleProviderFacadesTest {
             },
         )
 
-        val image = provider.image(ModelId("accounts/fireworks/models/flux-kontext-pro")).generate(ImageGenerationParams(prompt = "edit"))
+        val image = provider.image(ModelId("accounts/fireworks/models/flux-kontext-pro")).generate(ImageGenerationParams {
+            prompt("edit")
+        })
 
         assertEquals(Base64Codec.encode(byteArrayOf(9, 8, 7)), image.images.single().base64)
         assertEquals(
@@ -635,26 +647,26 @@ class OpenAICompatibleProviderFacadesTest {
         assertEquals("done", provider.completionModel(ModelId("model")).generate(LanguageModelCallParams(listOf(UserMessage("hi")))).text)
         assertEquals(listOf(0.3f, 0.4f), provider.embeddingModel("embed").embed(EmbeddingModelCallParams(listOf("hello"))).embeddings.single())
         val image = provider.image(ModelId("black-forest-labs/FLUX.1-dev")).generate(
-            ImageGenerationParams(
-                prompt = "house",
-                n = 2,
-                size = "1024x768",
-                seed = 12,
-                providerOptions = ProviderOptions.Raw(JsonObject(mapOf(
-                    "togetherai" to buildJsonObject {
-                        put("steps", JsonPrimitive(8))
-                        put("disable_safety_checker", JsonPrimitive(true))
-                    },
-                ))),
-            ),
+            ImageGenerationParams {
+                prompt("house")
+                n(2)
+                size("1024x768")
+                seed(12)
+                providerOptions(ProviderOptions.Raw(JsonObject(mapOf(
+                                    "togetherai" to buildJsonObject {
+                                        put("steps", JsonPrimitive(8))
+                                        put("disable_safety_checker", JsonPrimitive(true))
+                                    },
+                                ))))
+            },
         )
         val ranking = provider.reranking(ModelId("ranker")).rerank(
-            RerankingParams(
-                query = "best",
-                documents = listOf("alpha", "beta"),
-                topN = 1,
-                providerOptions = ProviderOptions.Raw(JsonObject(mapOf("togetherai" to buildJsonObject { put("rankFields", JsonArray(listOf(JsonPrimitive("text")))) }))),
-            ),
+            RerankingParams {
+                query("best")
+                documents(listOf("alpha", "beta"))
+                topN(1)
+                providerOptions(ProviderOptions.Raw(JsonObject(mapOf("togetherai" to buildJsonObject { put("rankFields", JsonArray(listOf(JsonPrimitive("text")))) }))))
+            },
         )
 
         assertEquals("aW1n", image.images.single().base64)
@@ -695,9 +707,9 @@ class OpenAICompatibleProviderFacadesTest {
         )
 
         val transcript = provider.transcription("whisper-large-v3").transcribe(
-            TranscriptionParams(
-                audio = AudioSource(mediaType = "audio/mpeg", base64 = Base64Codec.encode(byteArrayOf(1, 2))),
-            ),
+            TranscriptionParams {
+                audio(AudioSource(mediaType = "audio/mpeg", base64 = Base64Codec.encode(byteArrayOf(1, 2))))
+            },
         )
 
         assertEquals("transcribed", transcript.text)

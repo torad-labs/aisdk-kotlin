@@ -35,7 +35,10 @@ class QuiverAIDefensiveParsingTest {
         val model = QuiverAI(client, QuiverAIProviderSettings { apiKey("key") }).image(ModelId("arrow-1"))
 
         val error = assertFails {
-            model.generate(ImageGenerationParams(prompt = "x", n = 1))
+            model.generate(ImageGenerationParams {
+                prompt("x")
+                n(1)
+            })
         }
 
         assertTrue(

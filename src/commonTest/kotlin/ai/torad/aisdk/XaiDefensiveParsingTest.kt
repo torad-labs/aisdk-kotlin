@@ -40,7 +40,10 @@ class XaiDefensiveParsingTest {
         val provider = Xai(client, XaiProviderSettings { apiKey("key") })
 
         val result = provider.image(ModelId("grok-2-image")).generate(
-            ImageGenerationParams(prompt = "x", n = 1),
+            ImageGenerationParams {
+                prompt("x")
+                n(1)
+            },
         )
 
         assertEquals(1, result.images.size, "a non-primitive revised_prompt degrades to omitted metadata, no crash")
@@ -66,7 +69,10 @@ class XaiDefensiveParsingTest {
         val provider = Xai(client, XaiProviderSettings { apiKey("key") })
 
         val error = assertFails {
-            provider.image(ModelId("grok-2-image")).generate(ImageGenerationParams(prompt = "x", n = 1))
+            provider.image(ModelId("grok-2-image")).generate(ImageGenerationParams {
+                prompt("x")
+                n(1)
+            })
         }
 
         assertTrue(
@@ -94,7 +100,10 @@ class XaiDefensiveParsingTest {
         )
         val result = Xai(client, XaiProviderSettings { apiKey("key") })
             .image(ModelId("grok-2-image"))
-            .generate(ImageGenerationParams(prompt = "x", n = 1))
+            .generate(ImageGenerationParams {
+                prompt("x")
+                n(1)
+            })
         assertEquals(1, result.images.size)
     }
 }

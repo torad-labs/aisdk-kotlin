@@ -56,34 +56,34 @@ class AssemblyAIProviderTest {
         ).transcription(ModelId("best"))
 
         val result = model.transcribe(
-            TranscriptionParams(
-                audio = AudioSource(
-                    mediaType = "audio/mpeg",
-                    base64 = Base64Codec.encode("abc".encodeToByteArray()),
-                    filename = "clip.mp3",
-                ),
-                language = "en_us",
-                providerOptions = ProviderOptions.Raw(JsonObject(mapOf(
-                    "assemblyai" to buildJsonObject {
-                        put("audioEndAt", JsonPrimitive(10))
-                        put("autoChapters", JsonPrimitive(true))
-                        put("contentSafetyConfidence", JsonPrimitive(75))
-                        put("customSpelling", buildJsonArray {
-                            add(
-                                buildJsonObject {
-                                    put("from", buildJsonArray { add(JsonPrimitive("sdk")) })
-                                    put("to", JsonPrimitive("SDK"))
-                                },
-                            )
-                        })
-                        put("languageCode", JsonPrimitive("en"))
-                        put("languageDetection", JsonPrimitive(true))
-                        put("speakerLabels", JsonPrimitive(true))
-                        put("speechThreshold", JsonPrimitive(0.7f))
-                        put("wordBoost", buildJsonArray { add(JsonPrimitive("Kotlin")) })
-                    },
-                ))),
-            ),
+            TranscriptionParams {
+                audio(AudioSource(
+                                    mediaType = "audio/mpeg",
+                                    base64 = Base64Codec.encode("abc".encodeToByteArray()),
+                                    filename = "clip.mp3",
+                                ))
+                language("en_us")
+                providerOptions(ProviderOptions.Raw(JsonObject(mapOf(
+                                    "assemblyai" to buildJsonObject {
+                                        put("audioEndAt", JsonPrimitive(10))
+                                        put("autoChapters", JsonPrimitive(true))
+                                        put("contentSafetyConfidence", JsonPrimitive(75))
+                                        put("customSpelling", buildJsonArray {
+                                            add(
+                                                buildJsonObject {
+                                                    put("from", buildJsonArray { add(JsonPrimitive("sdk")) })
+                                                    put("to", JsonPrimitive("SDK"))
+                                                },
+                                            )
+                                        })
+                                        put("languageCode", JsonPrimitive("en"))
+                                        put("languageDetection", JsonPrimitive(true))
+                                        put("speakerLabels", JsonPrimitive(true))
+                                        put("speechThreshold", JsonPrimitive(0.7f))
+                                        put("wordBoost", buildJsonArray { add(JsonPrimitive("Kotlin")) })
+                                    },
+                                ))))
+            },
         )
 
         assertEquals("assemblyai.transcription", model.provider)
@@ -151,10 +151,10 @@ class AssemblyAIProviderTest {
         ).transcription(ModelId("nano"))
 
         model.transcribe(
-            TranscriptionParams(
-                audio = AudioSource("audio/wav", Base64Codec.encode(byteArrayOf(1))),
-                language = "pt",
-            ),
+            TranscriptionParams {
+                audio(AudioSource("audio/wav", Base64Codec.encode(byteArrayOf(1))))
+                language("pt")
+            },
         )
 
         assertEquals("pt", fixture.calls[1].requestBodyJson.jsonObject["language_code"]?.jsonPrimitive?.contentOrNull)
@@ -185,7 +185,9 @@ class AssemblyAIProviderTest {
         ).transcription(ModelId("best"))
 
         val error = assertFailsWith<AiSdkException> {
-            model.transcribe(TranscriptionParams(audio = AudioSource("audio/wav", Base64Codec.encode(byteArrayOf(1)))))
+            model.transcribe(TranscriptionParams {
+                audio(AudioSource("audio/wav", Base64Codec.encode(byteArrayOf(1))))
+            })
         }
         assertTrue(error.message.orEmpty().contains("bad audio"))
     }

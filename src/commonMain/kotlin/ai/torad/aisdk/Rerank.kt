@@ -10,14 +10,62 @@ public interface RerankingModel {
     public suspend fun rerank(params: RerankingParams): RerankingModelResult
 }
 
-public data class RerankingParams(
-    val query: String,
-    val documents: List<String>,
-    val topN: Int? = null,
-    val providerOptions: ProviderOptions = ProviderOptions.None,
-    val headers: Map<String, String> = emptyMap(),
-    val abortSignal: AbortSignal = AbortSignalNever,
+public class RerankingParams internal constructor(
+    public val query: String,
+    public val documents: List<String>,
+    public val topN: Int? = null,
+    public val providerOptions: ProviderOptions = ProviderOptions.None,
+    public val headers: Map<String, String> = emptyMap(),
+    public val abortSignal: AbortSignal = AbortSignalNever,
 )
+
+public class RerankingParamsBuilder internal constructor() {
+    private var query: String? = null
+    private var documents: List<String>? = null
+    private var topN: Int? = null
+    private var providerOptions: ProviderOptions = ProviderOptions.None
+    private var headers: Map<String, String> = emptyMap()
+    private var abortSignal: AbortSignal = AbortSignalNever
+
+    public fun query(value: String) {
+        query = value
+    }
+
+    public fun documents(value: List<String>) {
+        documents = value
+    }
+
+    public fun topN(value: Int?) {
+        topN = value
+    }
+
+    public fun providerOptions(value: ProviderOptions) {
+        providerOptions = value
+    }
+
+    public fun headers(value: Map<String, String>) {
+        headers = value
+    }
+
+    public fun abortSignal(value: AbortSignal) {
+        abortSignal = value
+    }
+
+    internal fun build(): RerankingParams =
+        RerankingParams(
+            query = requireNotNull(query) { "RerankingParams.query is required" },
+            documents = requireNotNull(documents) { "RerankingParams.documents is required" },
+            topN = topN,
+            providerOptions = providerOptions,
+            headers = headers,
+            abortSignal = abortSignal,
+        )
+}
+
+public fun RerankingParams(
+    block: RerankingParamsBuilder.() -> Unit = {},
+): RerankingParams =
+    RerankingParamsBuilder().apply(block).build()
 
 @Poko
 public class RerankedItem<T>(
@@ -69,7 +117,16 @@ public object Reranking {
         topN?.let { require(it > 0) { "rerank: topN must be > 0" } }
         if (documents.isEmpty()) return RerankResult(results = emptyList(), originalDocuments = emptyList())
         val result = RetryPolicy(maxRetries = maxRetries).execute(retryableApiError) {
-            model.rerank(RerankingParams(query, documents, topN, providerOptions, headers, abortSignal))
+            model.rerank(
+                RerankingParams {
+                    query(query)
+                    documents(documents)
+                    topN(topN)
+                    providerOptions(providerOptions)
+                    headers(headers)
+                    abortSignal(abortSignal)
+                },
+            )
         }
         return RerankResult(
             results = result.results,

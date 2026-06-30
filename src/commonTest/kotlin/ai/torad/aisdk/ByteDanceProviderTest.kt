@@ -48,39 +48,39 @@ class ByteDanceProviderTest {
         ).video(ModelId("seedance-1-0-pro-250528"))
 
         val result = model.generate(
-            VideoGenerationParams(
-                prompt = "A futuristic city",
-                n = 2,
-                image = GeneratedFile(mediaType = "image/png", base64 = "frame"),
-                durationSeconds = 5f,
-                aspectRatio = "16:9",
-                resolution = "1920x1080",
-                seed = 42,
-                fps = 30,
-                providerOptions = ProviderOptions.Raw(JsonObject(mapOf(
-                    "bytedance" to buildJsonObject {
-                        put("watermark", JsonPrimitive(true))
-                        put("generateAudio", JsonPrimitive(false))
-                        put("cameraFixed", JsonPrimitive(true))
-                        put("returnLastFrame", JsonPrimitive(true))
-                        put("serviceTier", JsonPrimitive("flex"))
-                        put("draft", JsonPrimitive(false))
-                        put("lastFrameImage", JsonPrimitive("https://example.com/last.png"))
-                        put("referenceImages", kotlinx.serialization.json.buildJsonArray {
-                            add(JsonPrimitive("https://example.com/ref.png"))
-                        })
-                        put("referenceVideos", kotlinx.serialization.json.buildJsonArray {
-                            add(JsonPrimitive("https://example.com/ref.mp4"))
-                        })
-                        put("referenceAudio", kotlinx.serialization.json.buildJsonArray {
-                            add(JsonPrimitive("https://example.com/ref.mp3"))
-                        })
-                        put("pollIntervalMs", JsonPrimitive(0))
-                        put("pollTimeoutMs", JsonPrimitive(1))
-                        put("custom_option", JsonPrimitive("kept"))
-                    },
-                ))),
-            ),
+            VideoGenerationParams {
+                prompt("A futuristic city")
+                n(2)
+                image(GeneratedFile(mediaType = "image/png", base64 = "frame"))
+                durationSeconds(5f)
+                aspectRatio("16:9")
+                resolution("1920x1080")
+                seed(42)
+                fps(30)
+                providerOptions(ProviderOptions.Raw(JsonObject(mapOf(
+                                    "bytedance" to buildJsonObject {
+                                        put("watermark", JsonPrimitive(true))
+                                        put("generateAudio", JsonPrimitive(false))
+                                        put("cameraFixed", JsonPrimitive(true))
+                                        put("returnLastFrame", JsonPrimitive(true))
+                                        put("serviceTier", JsonPrimitive("flex"))
+                                        put("draft", JsonPrimitive(false))
+                                        put("lastFrameImage", JsonPrimitive("https://example.com/last.png"))
+                                        put("referenceImages", kotlinx.serialization.json.buildJsonArray {
+                                            add(JsonPrimitive("https://example.com/ref.png"))
+                                        })
+                                        put("referenceVideos", kotlinx.serialization.json.buildJsonArray {
+                                            add(JsonPrimitive("https://example.com/ref.mp4"))
+                                        })
+                                        put("referenceAudio", kotlinx.serialization.json.buildJsonArray {
+                                            add(JsonPrimitive("https://example.com/ref.mp3"))
+                                        })
+                                        put("pollIntervalMs", JsonPrimitive(0))
+                                        put("pollTimeoutMs", JsonPrimitive(1))
+                                        put("custom_option", JsonPrimitive("kept"))
+                                    },
+                                ))))
+            },
         )
 
         assertEquals("bytedance.video", model.provider)
@@ -139,13 +139,13 @@ class ByteDanceProviderTest {
 
         assertFailsWith<AiSdkException> {
             provider.video(ModelId("seedance")).generate(
-                VideoGenerationParams(
-                    prompt = "x",
-                    providerOptions = ProviderOptions.Raw(JsonObject(mapOf("bytedance" to buildJsonObject {
-                        put("pollIntervalMs", JsonPrimitive(0))
-                        put("pollTimeoutMs", JsonPrimitive(1))
-                    }))),
-                ),
+                VideoGenerationParams {
+                    prompt("x")
+                    providerOptions(ProviderOptions.Raw(JsonObject(mapOf("bytedance" to buildJsonObject {
+                                            put("pollIntervalMs", JsonPrimitive(0))
+                                            put("pollTimeoutMs", JsonPrimitive(1))
+                                        }))))
+                },
             )
         }
         assertFailsWith<NoSuchModelError> { provider.languageModel("model") }

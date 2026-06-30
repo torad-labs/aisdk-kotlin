@@ -36,7 +36,10 @@ class ByteDanceDefensiveParsingTest {
 
         val error = assertFails {
             model.generate(
-                VideoGenerationParams(prompt = "x", image = GeneratedFile(mediaType = "image/png", base64 = "AQID")),
+                VideoGenerationParams {
+                    prompt("x")
+                    image(GeneratedFile(mediaType = "image/png", base64 = "AQID"))
+                },
             )
         }
 
