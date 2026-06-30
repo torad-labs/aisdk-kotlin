@@ -147,9 +147,26 @@ public fun DeepSeekProviderSettings(
     DeepSeekProviderSettingsBuilder().apply(block).build()
 
 @Serializable
-public data class DeepSeekLanguageModelOptions(
-    val raw: Map<String, JsonElement> = emptyMap(),
+@Poko
+public class DeepSeekLanguageModelOptions internal constructor(
+    public val raw: Map<String, JsonElement> = emptyMap(),
 )
+
+public class DeepSeekLanguageModelOptionsBuilder internal constructor() {
+    private var raw: Map<String, JsonElement> = emptyMap()
+
+    public fun raw(value: Map<String, JsonElement>) {
+        raw = value
+    }
+
+    internal fun build(): DeepSeekLanguageModelOptions =
+        DeepSeekLanguageModelOptions(raw = raw)
+}
+
+public fun DeepSeekLanguageModelOptions(
+    block: DeepSeekLanguageModelOptionsBuilder.() -> Unit = {},
+): DeepSeekLanguageModelOptions =
+    DeepSeekLanguageModelOptionsBuilder().apply(block).build()
 
 public typealias DeepSeekChatOptions = DeepSeekLanguageModelOptions
 public typealias DeepSeekErrorData = JsonElement

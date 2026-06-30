@@ -257,12 +257,17 @@ Penalty, response-format, and retry fields participate in the `Step ?: Agent ?: 
   `AlibabaEmbeddingModelOptions`, `AlibabaLanguageModelOptions`,
   `AlibabaVideoModelOptions`, `AssemblyAITranscriptionModelOptions`,
   `BlackForestLabsImageModelOptions`, `ByteDanceVideoProviderOptions`,
-  `DeepgramSpeechModelOptions`, and `DeepgramTranscriptionModelOptions`) expose
-  field getters and are configured through public DSL factories and builder
-  setter methods such as `CohereEmbeddingModelOptions { inputType("search") }`
-  or `DeepgramTranscriptionModelOptions { language("en") }`. These pure data
-  options are `@Serializable @Poko class` value-semantics types; their
-  positional constructors, `copy()`, and `componentN()` are not public.
+  `DeepgramSpeechModelOptions`, `DeepgramTranscriptionModelOptions`,
+  `DeepSeekLanguageModelOptions`, `ElevenLabsSpeechModelOptions`,
+  `ElevenLabsTranscriptionModelOptions`, `FalImageModelOptions`,
+  `FalSpeechModelOptions`, `FalTranscriptionModelOptions`,
+  `FalVideoModelOptions`, and `FireworksEmbeddingModelOptions`) expose field
+  getters and are configured through public DSL factories and builder setter
+  methods such as `CohereEmbeddingModelOptions { inputType("search") }`,
+  `DeepgramTranscriptionModelOptions { language("en") }`, or
+  `FalVideoModelOptions { resolution("720p") }`. These pure data options are
+  `@Serializable @Poko class` value-semantics types; their positional
+  constructors, `copy()`, and `componentN()` are not public.
 - Provider error payloads (`BasetenErrorData`, `CerebrasErrorData`,
   `FireworksErrorData`) are `@Serializable @Poko class` value-semantics types;
   JSON field names remain unchanged, while public `copy()` / `componentN()`

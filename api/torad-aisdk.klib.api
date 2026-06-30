@@ -3318,13 +3318,9 @@ final class ai.torad.aisdk.providers/DeepInfraProviderSettingsBuilder { // ai.to
 }
 
 final class ai.torad.aisdk.providers/DeepSeekLanguageModelOptions { // ai.torad.aisdk.providers/DeepSeekLanguageModelOptions|null[0]
-    constructor <init>(kotlin.collections/Map<kotlin/String, kotlinx.serialization.json/JsonElement> = ...) // ai.torad.aisdk.providers/DeepSeekLanguageModelOptions.<init>|<init>(kotlin.collections.Map<kotlin.String,kotlinx.serialization.json.JsonElement>){}[0]
-
     final val raw // ai.torad.aisdk.providers/DeepSeekLanguageModelOptions.raw|{}raw[0]
         final fun <get-raw>(): kotlin.collections/Map<kotlin/String, kotlinx.serialization.json/JsonElement> // ai.torad.aisdk.providers/DeepSeekLanguageModelOptions.raw.<get-raw>|<get-raw>(){}[0]
 
-    final fun component1(): kotlin.collections/Map<kotlin/String, kotlinx.serialization.json/JsonElement> // ai.torad.aisdk.providers/DeepSeekLanguageModelOptions.component1|component1(){}[0]
-    final fun copy(kotlin.collections/Map<kotlin/String, kotlinx.serialization.json/JsonElement> = ...): ai.torad.aisdk.providers/DeepSeekLanguageModelOptions // ai.torad.aisdk.providers/DeepSeekLanguageModelOptions.copy|copy(kotlin.collections.Map<kotlin.String,kotlinx.serialization.json.JsonElement>){}[0]
     final fun equals(kotlin/Any?): kotlin/Boolean // ai.torad.aisdk.providers/DeepSeekLanguageModelOptions.equals|equals(kotlin.Any?){}[0]
     final fun hashCode(): kotlin/Int // ai.torad.aisdk.providers/DeepSeekLanguageModelOptions.hashCode|hashCode(){}[0]
     final fun toString(): kotlin/String // ai.torad.aisdk.providers/DeepSeekLanguageModelOptions.toString|toString(){}[0]
@@ -3343,6 +3339,10 @@ final class ai.torad.aisdk.providers/DeepSeekLanguageModelOptions { // ai.torad.
 
         final fun serializer(): kotlinx.serialization/KSerializer<ai.torad.aisdk.providers/DeepSeekLanguageModelOptions> // ai.torad.aisdk.providers/DeepSeekLanguageModelOptions.Companion.serializer|serializer(){}[0]
     }
+}
+
+final class ai.torad.aisdk.providers/DeepSeekLanguageModelOptionsBuilder { // ai.torad.aisdk.providers/DeepSeekLanguageModelOptionsBuilder|null[0]
+    final fun raw(kotlin.collections/Map<kotlin/String, kotlinx.serialization.json/JsonElement>) // ai.torad.aisdk.providers/DeepSeekLanguageModelOptionsBuilder.raw|raw(kotlin.collections.Map<kotlin.String,kotlinx.serialization.json.JsonElement>){}[0]
 }
 
 final class ai.torad.aisdk.providers/DeepSeekProvider : ai.torad.aisdk/Provider { // ai.torad.aisdk.providers/DeepSeekProvider|null[0]
@@ -3626,8 +3626,6 @@ final class ai.torad.aisdk.providers/ElevenLabsProviderSettingsBuilder { // ai.t
 }
 
 final class ai.torad.aisdk.providers/ElevenLabsSpeechModelOptions { // ai.torad.aisdk.providers/ElevenLabsSpeechModelOptions|null[0]
-    constructor <init>(kotlin/String? = ..., kotlinx.serialization.json/JsonObject? = ..., kotlin.collections/List<kotlinx.serialization.json/JsonObject>? = ..., kotlin/Int? = ..., kotlin/String? = ..., kotlin/String? = ..., kotlin.collections/List<kotlin/String>? = ..., kotlin.collections/List<kotlin/String>? = ..., kotlin/String? = ..., kotlin/Boolean? = ..., kotlin/Boolean? = ...) // ai.torad.aisdk.providers/ElevenLabsSpeechModelOptions.<init>|<init>(kotlin.String?;kotlinx.serialization.json.JsonObject?;kotlin.collections.List<kotlinx.serialization.json.JsonObject>?;kotlin.Int?;kotlin.String?;kotlin.String?;kotlin.collections.List<kotlin.String>?;kotlin.collections.List<kotlin.String>?;kotlin.String?;kotlin.Boolean?;kotlin.Boolean?){}[0]
-
     final val applyLanguageTextNormalization // ai.torad.aisdk.providers/ElevenLabsSpeechModelOptions.applyLanguageTextNormalization|{}applyLanguageTextNormalization[0]
         final fun <get-applyLanguageTextNormalization>(): kotlin/Boolean? // ai.torad.aisdk.providers/ElevenLabsSpeechModelOptions.applyLanguageTextNormalization.<get-applyLanguageTextNormalization>|<get-applyLanguageTextNormalization>(){}[0]
     final val applyTextNormalization // ai.torad.aisdk.providers/ElevenLabsSpeechModelOptions.applyTextNormalization|{}applyTextNormalization[0]
@@ -3651,18 +3649,6 @@ final class ai.torad.aisdk.providers/ElevenLabsSpeechModelOptions { // ai.torad.
     final val voiceSettings // ai.torad.aisdk.providers/ElevenLabsSpeechModelOptions.voiceSettings|{}voiceSettings[0]
         final fun <get-voiceSettings>(): kotlinx.serialization.json/JsonObject? // ai.torad.aisdk.providers/ElevenLabsSpeechModelOptions.voiceSettings.<get-voiceSettings>|<get-voiceSettings>(){}[0]
 
-    final fun component1(): kotlin/String? // ai.torad.aisdk.providers/ElevenLabsSpeechModelOptions.component1|component1(){}[0]
-    final fun component10(): kotlin/Boolean? // ai.torad.aisdk.providers/ElevenLabsSpeechModelOptions.component10|component10(){}[0]
-    final fun component11(): kotlin/Boolean? // ai.torad.aisdk.providers/ElevenLabsSpeechModelOptions.component11|component11(){}[0]
-    final fun component2(): kotlinx.serialization.json/JsonObject? // ai.torad.aisdk.providers/ElevenLabsSpeechModelOptions.component2|component2(){}[0]
-    final fun component3(): kotlin.collections/List<kotlinx.serialization.json/JsonObject>? // ai.torad.aisdk.providers/ElevenLabsSpeechModelOptions.component3|component3(){}[0]
-    final fun component4(): kotlin/Int? // ai.torad.aisdk.providers/ElevenLabsSpeechModelOptions.component4|component4(){}[0]
-    final fun component5(): kotlin/String? // ai.torad.aisdk.providers/ElevenLabsSpeechModelOptions.component5|component5(){}[0]
-    final fun component6(): kotlin/String? // ai.torad.aisdk.providers/ElevenLabsSpeechModelOptions.component6|component6(){}[0]
-    final fun component7(): kotlin.collections/List<kotlin/String>? // ai.torad.aisdk.providers/ElevenLabsSpeechModelOptions.component7|component7(){}[0]
-    final fun component8(): kotlin.collections/List<kotlin/String>? // ai.torad.aisdk.providers/ElevenLabsSpeechModelOptions.component8|component8(){}[0]
-    final fun component9(): kotlin/String? // ai.torad.aisdk.providers/ElevenLabsSpeechModelOptions.component9|component9(){}[0]
-    final fun copy(kotlin/String? = ..., kotlinx.serialization.json/JsonObject? = ..., kotlin.collections/List<kotlinx.serialization.json/JsonObject>? = ..., kotlin/Int? = ..., kotlin/String? = ..., kotlin/String? = ..., kotlin.collections/List<kotlin/String>? = ..., kotlin.collections/List<kotlin/String>? = ..., kotlin/String? = ..., kotlin/Boolean? = ..., kotlin/Boolean? = ...): ai.torad.aisdk.providers/ElevenLabsSpeechModelOptions // ai.torad.aisdk.providers/ElevenLabsSpeechModelOptions.copy|copy(kotlin.String?;kotlinx.serialization.json.JsonObject?;kotlin.collections.List<kotlinx.serialization.json.JsonObject>?;kotlin.Int?;kotlin.String?;kotlin.String?;kotlin.collections.List<kotlin.String>?;kotlin.collections.List<kotlin.String>?;kotlin.String?;kotlin.Boolean?;kotlin.Boolean?){}[0]
     final fun equals(kotlin/Any?): kotlin/Boolean // ai.torad.aisdk.providers/ElevenLabsSpeechModelOptions.equals|equals(kotlin.Any?){}[0]
     final fun hashCode(): kotlin/Int // ai.torad.aisdk.providers/ElevenLabsSpeechModelOptions.hashCode|hashCode(){}[0]
     final fun toString(): kotlin/String // ai.torad.aisdk.providers/ElevenLabsSpeechModelOptions.toString|toString(){}[0]
@@ -3683,9 +3669,21 @@ final class ai.torad.aisdk.providers/ElevenLabsSpeechModelOptions { // ai.torad.
     }
 }
 
-final class ai.torad.aisdk.providers/ElevenLabsTranscriptionModelOptions { // ai.torad.aisdk.providers/ElevenLabsTranscriptionModelOptions|null[0]
-    constructor <init>(kotlin/String? = ..., kotlin/Boolean? = ..., kotlin/Int? = ..., kotlin/String? = ..., kotlin/Boolean? = ..., kotlin/String? = ...) // ai.torad.aisdk.providers/ElevenLabsTranscriptionModelOptions.<init>|<init>(kotlin.String?;kotlin.Boolean?;kotlin.Int?;kotlin.String?;kotlin.Boolean?;kotlin.String?){}[0]
+final class ai.torad.aisdk.providers/ElevenLabsSpeechModelOptionsBuilder { // ai.torad.aisdk.providers/ElevenLabsSpeechModelOptionsBuilder|null[0]
+    final fun applyLanguageTextNormalization(kotlin/Boolean?) // ai.torad.aisdk.providers/ElevenLabsSpeechModelOptionsBuilder.applyLanguageTextNormalization|applyLanguageTextNormalization(kotlin.Boolean?){}[0]
+    final fun applyTextNormalization(kotlin/String?) // ai.torad.aisdk.providers/ElevenLabsSpeechModelOptionsBuilder.applyTextNormalization|applyTextNormalization(kotlin.String?){}[0]
+    final fun enableLogging(kotlin/Boolean?) // ai.torad.aisdk.providers/ElevenLabsSpeechModelOptionsBuilder.enableLogging|enableLogging(kotlin.Boolean?){}[0]
+    final fun languageCode(kotlin/String?) // ai.torad.aisdk.providers/ElevenLabsSpeechModelOptionsBuilder.languageCode|languageCode(kotlin.String?){}[0]
+    final fun nextRequestIds(kotlin.collections/List<kotlin/String>?) // ai.torad.aisdk.providers/ElevenLabsSpeechModelOptionsBuilder.nextRequestIds|nextRequestIds(kotlin.collections.List<kotlin.String>?){}[0]
+    final fun nextText(kotlin/String?) // ai.torad.aisdk.providers/ElevenLabsSpeechModelOptionsBuilder.nextText|nextText(kotlin.String?){}[0]
+    final fun previousRequestIds(kotlin.collections/List<kotlin/String>?) // ai.torad.aisdk.providers/ElevenLabsSpeechModelOptionsBuilder.previousRequestIds|previousRequestIds(kotlin.collections.List<kotlin.String>?){}[0]
+    final fun previousText(kotlin/String?) // ai.torad.aisdk.providers/ElevenLabsSpeechModelOptionsBuilder.previousText|previousText(kotlin.String?){}[0]
+    final fun pronunciationDictionaryLocators(kotlin.collections/List<kotlinx.serialization.json/JsonObject>?) // ai.torad.aisdk.providers/ElevenLabsSpeechModelOptionsBuilder.pronunciationDictionaryLocators|pronunciationDictionaryLocators(kotlin.collections.List<kotlinx.serialization.json.JsonObject>?){}[0]
+    final fun seed(kotlin/Int?) // ai.torad.aisdk.providers/ElevenLabsSpeechModelOptionsBuilder.seed|seed(kotlin.Int?){}[0]
+    final fun voiceSettings(kotlinx.serialization.json/JsonObject?) // ai.torad.aisdk.providers/ElevenLabsSpeechModelOptionsBuilder.voiceSettings|voiceSettings(kotlinx.serialization.json.JsonObject?){}[0]
+}
 
+final class ai.torad.aisdk.providers/ElevenLabsTranscriptionModelOptions { // ai.torad.aisdk.providers/ElevenLabsTranscriptionModelOptions|null[0]
     final val diarize // ai.torad.aisdk.providers/ElevenLabsTranscriptionModelOptions.diarize|{}diarize[0]
         final fun <get-diarize>(): kotlin/Boolean? // ai.torad.aisdk.providers/ElevenLabsTranscriptionModelOptions.diarize.<get-diarize>|<get-diarize>(){}[0]
     final val fileFormat // ai.torad.aisdk.providers/ElevenLabsTranscriptionModelOptions.fileFormat|{}fileFormat[0]
@@ -3699,13 +3697,6 @@ final class ai.torad.aisdk.providers/ElevenLabsTranscriptionModelOptions { // ai
     final val timestampsGranularity // ai.torad.aisdk.providers/ElevenLabsTranscriptionModelOptions.timestampsGranularity|{}timestampsGranularity[0]
         final fun <get-timestampsGranularity>(): kotlin/String? // ai.torad.aisdk.providers/ElevenLabsTranscriptionModelOptions.timestampsGranularity.<get-timestampsGranularity>|<get-timestampsGranularity>(){}[0]
 
-    final fun component1(): kotlin/String? // ai.torad.aisdk.providers/ElevenLabsTranscriptionModelOptions.component1|component1(){}[0]
-    final fun component2(): kotlin/Boolean? // ai.torad.aisdk.providers/ElevenLabsTranscriptionModelOptions.component2|component2(){}[0]
-    final fun component3(): kotlin/Int? // ai.torad.aisdk.providers/ElevenLabsTranscriptionModelOptions.component3|component3(){}[0]
-    final fun component4(): kotlin/String? // ai.torad.aisdk.providers/ElevenLabsTranscriptionModelOptions.component4|component4(){}[0]
-    final fun component5(): kotlin/Boolean? // ai.torad.aisdk.providers/ElevenLabsTranscriptionModelOptions.component5|component5(){}[0]
-    final fun component6(): kotlin/String? // ai.torad.aisdk.providers/ElevenLabsTranscriptionModelOptions.component6|component6(){}[0]
-    final fun copy(kotlin/String? = ..., kotlin/Boolean? = ..., kotlin/Int? = ..., kotlin/String? = ..., kotlin/Boolean? = ..., kotlin/String? = ...): ai.torad.aisdk.providers/ElevenLabsTranscriptionModelOptions // ai.torad.aisdk.providers/ElevenLabsTranscriptionModelOptions.copy|copy(kotlin.String?;kotlin.Boolean?;kotlin.Int?;kotlin.String?;kotlin.Boolean?;kotlin.String?){}[0]
     final fun equals(kotlin/Any?): kotlin/Boolean // ai.torad.aisdk.providers/ElevenLabsTranscriptionModelOptions.equals|equals(kotlin.Any?){}[0]
     final fun hashCode(): kotlin/Int // ai.torad.aisdk.providers/ElevenLabsTranscriptionModelOptions.hashCode|hashCode(){}[0]
     final fun toString(): kotlin/String // ai.torad.aisdk.providers/ElevenLabsTranscriptionModelOptions.toString|toString(){}[0]
@@ -3724,14 +3715,19 @@ final class ai.torad.aisdk.providers/ElevenLabsTranscriptionModelOptions { // ai
     }
 }
 
-final class ai.torad.aisdk.providers/FalImageModelOptions { // ai.torad.aisdk.providers/FalImageModelOptions|null[0]
-    constructor <init>(kotlin/Boolean? = ...) // ai.torad.aisdk.providers/FalImageModelOptions.<init>|<init>(kotlin.Boolean?){}[0]
+final class ai.torad.aisdk.providers/ElevenLabsTranscriptionModelOptionsBuilder { // ai.torad.aisdk.providers/ElevenLabsTranscriptionModelOptionsBuilder|null[0]
+    final fun diarize(kotlin/Boolean?) // ai.torad.aisdk.providers/ElevenLabsTranscriptionModelOptionsBuilder.diarize|diarize(kotlin.Boolean?){}[0]
+    final fun fileFormat(kotlin/String?) // ai.torad.aisdk.providers/ElevenLabsTranscriptionModelOptionsBuilder.fileFormat|fileFormat(kotlin.String?){}[0]
+    final fun languageCode(kotlin/String?) // ai.torad.aisdk.providers/ElevenLabsTranscriptionModelOptionsBuilder.languageCode|languageCode(kotlin.String?){}[0]
+    final fun numSpeakers(kotlin/Int?) // ai.torad.aisdk.providers/ElevenLabsTranscriptionModelOptionsBuilder.numSpeakers|numSpeakers(kotlin.Int?){}[0]
+    final fun tagAudioEvents(kotlin/Boolean?) // ai.torad.aisdk.providers/ElevenLabsTranscriptionModelOptionsBuilder.tagAudioEvents|tagAudioEvents(kotlin.Boolean?){}[0]
+    final fun timestampsGranularity(kotlin/String?) // ai.torad.aisdk.providers/ElevenLabsTranscriptionModelOptionsBuilder.timestampsGranularity|timestampsGranularity(kotlin.String?){}[0]
+}
 
+final class ai.torad.aisdk.providers/FalImageModelOptions { // ai.torad.aisdk.providers/FalImageModelOptions|null[0]
     final val useMultipleImages // ai.torad.aisdk.providers/FalImageModelOptions.useMultipleImages|{}useMultipleImages[0]
         final fun <get-useMultipleImages>(): kotlin/Boolean? // ai.torad.aisdk.providers/FalImageModelOptions.useMultipleImages.<get-useMultipleImages>|<get-useMultipleImages>(){}[0]
 
-    final fun component1(): kotlin/Boolean? // ai.torad.aisdk.providers/FalImageModelOptions.component1|component1(){}[0]
-    final fun copy(kotlin/Boolean? = ...): ai.torad.aisdk.providers/FalImageModelOptions // ai.torad.aisdk.providers/FalImageModelOptions.copy|copy(kotlin.Boolean?){}[0]
     final fun equals(kotlin/Any?): kotlin/Boolean // ai.torad.aisdk.providers/FalImageModelOptions.equals|equals(kotlin.Any?){}[0]
     final fun hashCode(): kotlin/Int // ai.torad.aisdk.providers/FalImageModelOptions.hashCode|hashCode(){}[0]
     final fun toString(): kotlin/String // ai.torad.aisdk.providers/FalImageModelOptions.toString|toString(){}[0]
@@ -3748,6 +3744,10 @@ final class ai.torad.aisdk.providers/FalImageModelOptions { // ai.torad.aisdk.pr
     final object Companion { // ai.torad.aisdk.providers/FalImageModelOptions.Companion|null[0]
         final fun serializer(): kotlinx.serialization/KSerializer<ai.torad.aisdk.providers/FalImageModelOptions> // ai.torad.aisdk.providers/FalImageModelOptions.Companion.serializer|serializer(){}[0]
     }
+}
+
+final class ai.torad.aisdk.providers/FalImageModelOptionsBuilder { // ai.torad.aisdk.providers/FalImageModelOptionsBuilder|null[0]
+    final fun useMultipleImages(kotlin/Boolean?) // ai.torad.aisdk.providers/FalImageModelOptionsBuilder.useMultipleImages|useMultipleImages(kotlin.Boolean?){}[0]
 }
 
 final class ai.torad.aisdk.providers/FalProvider : ai.torad.aisdk/Provider { // ai.torad.aisdk.providers/FalProvider|null[0]
@@ -3818,8 +3818,6 @@ final class ai.torad.aisdk.providers/FalProviderSettingsBuilder { // ai.torad.ai
 }
 
 final class ai.torad.aisdk.providers/FalSpeechModelOptions { // ai.torad.aisdk.providers/FalSpeechModelOptions|null[0]
-    constructor <init>(kotlinx.serialization.json/JsonObject? = ..., kotlinx.serialization.json/JsonObject? = ..., kotlin/String? = ..., kotlinx.serialization.json/JsonObject? = ...) // ai.torad.aisdk.providers/FalSpeechModelOptions.<init>|<init>(kotlinx.serialization.json.JsonObject?;kotlinx.serialization.json.JsonObject?;kotlin.String?;kotlinx.serialization.json.JsonObject?){}[0]
-
     final val audio_setting // ai.torad.aisdk.providers/FalSpeechModelOptions.audio_setting|{}audio_setting[0]
         final fun <get-audio_setting>(): kotlinx.serialization.json/JsonObject? // ai.torad.aisdk.providers/FalSpeechModelOptions.audio_setting.<get-audio_setting>|<get-audio_setting>(){}[0]
     final val language_boost // ai.torad.aisdk.providers/FalSpeechModelOptions.language_boost|{}language_boost[0]
@@ -3829,11 +3827,6 @@ final class ai.torad.aisdk.providers/FalSpeechModelOptions { // ai.torad.aisdk.p
     final val voice_setting // ai.torad.aisdk.providers/FalSpeechModelOptions.voice_setting|{}voice_setting[0]
         final fun <get-voice_setting>(): kotlinx.serialization.json/JsonObject? // ai.torad.aisdk.providers/FalSpeechModelOptions.voice_setting.<get-voice_setting>|<get-voice_setting>(){}[0]
 
-    final fun component1(): kotlinx.serialization.json/JsonObject? // ai.torad.aisdk.providers/FalSpeechModelOptions.component1|component1(){}[0]
-    final fun component2(): kotlinx.serialization.json/JsonObject? // ai.torad.aisdk.providers/FalSpeechModelOptions.component2|component2(){}[0]
-    final fun component3(): kotlin/String? // ai.torad.aisdk.providers/FalSpeechModelOptions.component3|component3(){}[0]
-    final fun component4(): kotlinx.serialization.json/JsonObject? // ai.torad.aisdk.providers/FalSpeechModelOptions.component4|component4(){}[0]
-    final fun copy(kotlinx.serialization.json/JsonObject? = ..., kotlinx.serialization.json/JsonObject? = ..., kotlin/String? = ..., kotlinx.serialization.json/JsonObject? = ...): ai.torad.aisdk.providers/FalSpeechModelOptions // ai.torad.aisdk.providers/FalSpeechModelOptions.copy|copy(kotlinx.serialization.json.JsonObject?;kotlinx.serialization.json.JsonObject?;kotlin.String?;kotlinx.serialization.json.JsonObject?){}[0]
     final fun equals(kotlin/Any?): kotlin/Boolean // ai.torad.aisdk.providers/FalSpeechModelOptions.equals|equals(kotlin.Any?){}[0]
     final fun hashCode(): kotlin/Int // ai.torad.aisdk.providers/FalSpeechModelOptions.hashCode|hashCode(){}[0]
     final fun toString(): kotlin/String // ai.torad.aisdk.providers/FalSpeechModelOptions.toString|toString(){}[0]
@@ -3852,9 +3845,14 @@ final class ai.torad.aisdk.providers/FalSpeechModelOptions { // ai.torad.aisdk.p
     }
 }
 
-final class ai.torad.aisdk.providers/FalTranscriptionModelOptions { // ai.torad.aisdk.providers/FalTranscriptionModelOptions|null[0]
-    constructor <init>(kotlin/String? = ..., kotlin/Boolean? = ..., kotlin/String? = ..., kotlin/String? = ..., kotlin/Int? = ..., kotlin/Int? = ...) // ai.torad.aisdk.providers/FalTranscriptionModelOptions.<init>|<init>(kotlin.String?;kotlin.Boolean?;kotlin.String?;kotlin.String?;kotlin.Int?;kotlin.Int?){}[0]
+final class ai.torad.aisdk.providers/FalSpeechModelOptionsBuilder { // ai.torad.aisdk.providers/FalSpeechModelOptionsBuilder|null[0]
+    final fun audio_setting(kotlinx.serialization.json/JsonObject?) // ai.torad.aisdk.providers/FalSpeechModelOptionsBuilder.audio_setting|audio_setting(kotlinx.serialization.json.JsonObject?){}[0]
+    final fun language_boost(kotlin/String?) // ai.torad.aisdk.providers/FalSpeechModelOptionsBuilder.language_boost|language_boost(kotlin.String?){}[0]
+    final fun pronunciation_dict(kotlinx.serialization.json/JsonObject?) // ai.torad.aisdk.providers/FalSpeechModelOptionsBuilder.pronunciation_dict|pronunciation_dict(kotlinx.serialization.json.JsonObject?){}[0]
+    final fun voice_setting(kotlinx.serialization.json/JsonObject?) // ai.torad.aisdk.providers/FalSpeechModelOptionsBuilder.voice_setting|voice_setting(kotlinx.serialization.json.JsonObject?){}[0]
+}
 
+final class ai.torad.aisdk.providers/FalTranscriptionModelOptions { // ai.torad.aisdk.providers/FalTranscriptionModelOptions|null[0]
     final val batchSize // ai.torad.aisdk.providers/FalTranscriptionModelOptions.batchSize|{}batchSize[0]
         final fun <get-batchSize>(): kotlin/Int? // ai.torad.aisdk.providers/FalTranscriptionModelOptions.batchSize.<get-batchSize>|<get-batchSize>(){}[0]
     final val chunkLevel // ai.torad.aisdk.providers/FalTranscriptionModelOptions.chunkLevel|{}chunkLevel[0]
@@ -3868,13 +3866,6 @@ final class ai.torad.aisdk.providers/FalTranscriptionModelOptions { // ai.torad.
     final val version // ai.torad.aisdk.providers/FalTranscriptionModelOptions.version|{}version[0]
         final fun <get-version>(): kotlin/String? // ai.torad.aisdk.providers/FalTranscriptionModelOptions.version.<get-version>|<get-version>(){}[0]
 
-    final fun component1(): kotlin/String? // ai.torad.aisdk.providers/FalTranscriptionModelOptions.component1|component1(){}[0]
-    final fun component2(): kotlin/Boolean? // ai.torad.aisdk.providers/FalTranscriptionModelOptions.component2|component2(){}[0]
-    final fun component3(): kotlin/String? // ai.torad.aisdk.providers/FalTranscriptionModelOptions.component3|component3(){}[0]
-    final fun component4(): kotlin/String? // ai.torad.aisdk.providers/FalTranscriptionModelOptions.component4|component4(){}[0]
-    final fun component5(): kotlin/Int? // ai.torad.aisdk.providers/FalTranscriptionModelOptions.component5|component5(){}[0]
-    final fun component6(): kotlin/Int? // ai.torad.aisdk.providers/FalTranscriptionModelOptions.component6|component6(){}[0]
-    final fun copy(kotlin/String? = ..., kotlin/Boolean? = ..., kotlin/String? = ..., kotlin/String? = ..., kotlin/Int? = ..., kotlin/Int? = ...): ai.torad.aisdk.providers/FalTranscriptionModelOptions // ai.torad.aisdk.providers/FalTranscriptionModelOptions.copy|copy(kotlin.String?;kotlin.Boolean?;kotlin.String?;kotlin.String?;kotlin.Int?;kotlin.Int?){}[0]
     final fun equals(kotlin/Any?): kotlin/Boolean // ai.torad.aisdk.providers/FalTranscriptionModelOptions.equals|equals(kotlin.Any?){}[0]
     final fun hashCode(): kotlin/Int // ai.torad.aisdk.providers/FalTranscriptionModelOptions.hashCode|hashCode(){}[0]
     final fun toString(): kotlin/String // ai.torad.aisdk.providers/FalTranscriptionModelOptions.toString|toString(){}[0]
@@ -3893,9 +3884,16 @@ final class ai.torad.aisdk.providers/FalTranscriptionModelOptions { // ai.torad.
     }
 }
 
-final class ai.torad.aisdk.providers/FalVideoModelOptions { // ai.torad.aisdk.providers/FalVideoModelOptions|null[0]
-    constructor <init>(kotlin/Boolean? = ..., kotlin/Float? = ..., kotlin/Long? = ..., kotlin/Long? = ..., kotlin/String? = ..., kotlin/String? = ..., kotlin/Boolean? = ...) // ai.torad.aisdk.providers/FalVideoModelOptions.<init>|<init>(kotlin.Boolean?;kotlin.Float?;kotlin.Long?;kotlin.Long?;kotlin.String?;kotlin.String?;kotlin.Boolean?){}[0]
+final class ai.torad.aisdk.providers/FalTranscriptionModelOptionsBuilder { // ai.torad.aisdk.providers/FalTranscriptionModelOptionsBuilder|null[0]
+    final fun batchSize(kotlin/Int?) // ai.torad.aisdk.providers/FalTranscriptionModelOptionsBuilder.batchSize|batchSize(kotlin.Int?){}[0]
+    final fun chunkLevel(kotlin/String?) // ai.torad.aisdk.providers/FalTranscriptionModelOptionsBuilder.chunkLevel|chunkLevel(kotlin.String?){}[0]
+    final fun diarize(kotlin/Boolean?) // ai.torad.aisdk.providers/FalTranscriptionModelOptionsBuilder.diarize|diarize(kotlin.Boolean?){}[0]
+    final fun language(kotlin/String?) // ai.torad.aisdk.providers/FalTranscriptionModelOptionsBuilder.language|language(kotlin.String?){}[0]
+    final fun numSpeakers(kotlin/Int?) // ai.torad.aisdk.providers/FalTranscriptionModelOptionsBuilder.numSpeakers|numSpeakers(kotlin.Int?){}[0]
+    final fun version(kotlin/String?) // ai.torad.aisdk.providers/FalTranscriptionModelOptionsBuilder.version|version(kotlin.String?){}[0]
+}
 
+final class ai.torad.aisdk.providers/FalVideoModelOptions { // ai.torad.aisdk.providers/FalVideoModelOptions|null[0]
     final val loop // ai.torad.aisdk.providers/FalVideoModelOptions.loop|{}loop[0]
         final fun <get-loop>(): kotlin/Boolean? // ai.torad.aisdk.providers/FalVideoModelOptions.loop.<get-loop>|<get-loop>(){}[0]
     final val motionStrength // ai.torad.aisdk.providers/FalVideoModelOptions.motionStrength|{}motionStrength[0]
@@ -3911,14 +3909,6 @@ final class ai.torad.aisdk.providers/FalVideoModelOptions { // ai.torad.aisdk.pr
     final val resolution // ai.torad.aisdk.providers/FalVideoModelOptions.resolution|{}resolution[0]
         final fun <get-resolution>(): kotlin/String? // ai.torad.aisdk.providers/FalVideoModelOptions.resolution.<get-resolution>|<get-resolution>(){}[0]
 
-    final fun component1(): kotlin/Boolean? // ai.torad.aisdk.providers/FalVideoModelOptions.component1|component1(){}[0]
-    final fun component2(): kotlin/Float? // ai.torad.aisdk.providers/FalVideoModelOptions.component2|component2(){}[0]
-    final fun component3(): kotlin/Long? // ai.torad.aisdk.providers/FalVideoModelOptions.component3|component3(){}[0]
-    final fun component4(): kotlin/Long? // ai.torad.aisdk.providers/FalVideoModelOptions.component4|component4(){}[0]
-    final fun component5(): kotlin/String? // ai.torad.aisdk.providers/FalVideoModelOptions.component5|component5(){}[0]
-    final fun component6(): kotlin/String? // ai.torad.aisdk.providers/FalVideoModelOptions.component6|component6(){}[0]
-    final fun component7(): kotlin/Boolean? // ai.torad.aisdk.providers/FalVideoModelOptions.component7|component7(){}[0]
-    final fun copy(kotlin/Boolean? = ..., kotlin/Float? = ..., kotlin/Long? = ..., kotlin/Long? = ..., kotlin/String? = ..., kotlin/String? = ..., kotlin/Boolean? = ...): ai.torad.aisdk.providers/FalVideoModelOptions // ai.torad.aisdk.providers/FalVideoModelOptions.copy|copy(kotlin.Boolean?;kotlin.Float?;kotlin.Long?;kotlin.Long?;kotlin.String?;kotlin.String?;kotlin.Boolean?){}[0]
     final fun equals(kotlin/Any?): kotlin/Boolean // ai.torad.aisdk.providers/FalVideoModelOptions.equals|equals(kotlin.Any?){}[0]
     final fun hashCode(): kotlin/Int // ai.torad.aisdk.providers/FalVideoModelOptions.hashCode|hashCode(){}[0]
     final fun toString(): kotlin/String // ai.torad.aisdk.providers/FalVideoModelOptions.toString|toString(){}[0]
@@ -3937,14 +3927,20 @@ final class ai.torad.aisdk.providers/FalVideoModelOptions { // ai.torad.aisdk.pr
     }
 }
 
-final class ai.torad.aisdk.providers/FireworksEmbeddingModelOptions { // ai.torad.aisdk.providers/FireworksEmbeddingModelOptions|null[0]
-    constructor <init>(kotlin.collections/Map<kotlin/String, kotlinx.serialization.json/JsonElement> = ...) // ai.torad.aisdk.providers/FireworksEmbeddingModelOptions.<init>|<init>(kotlin.collections.Map<kotlin.String,kotlinx.serialization.json.JsonElement>){}[0]
+final class ai.torad.aisdk.providers/FalVideoModelOptionsBuilder { // ai.torad.aisdk.providers/FalVideoModelOptionsBuilder|null[0]
+    final fun loop(kotlin/Boolean?) // ai.torad.aisdk.providers/FalVideoModelOptionsBuilder.loop|loop(kotlin.Boolean?){}[0]
+    final fun motionStrength(kotlin/Float?) // ai.torad.aisdk.providers/FalVideoModelOptionsBuilder.motionStrength|motionStrength(kotlin.Float?){}[0]
+    final fun negativePrompt(kotlin/String?) // ai.torad.aisdk.providers/FalVideoModelOptionsBuilder.negativePrompt|negativePrompt(kotlin.String?){}[0]
+    final fun pollIntervalMs(kotlin/Long?) // ai.torad.aisdk.providers/FalVideoModelOptionsBuilder.pollIntervalMs|pollIntervalMs(kotlin.Long?){}[0]
+    final fun pollTimeoutMs(kotlin/Long?) // ai.torad.aisdk.providers/FalVideoModelOptionsBuilder.pollTimeoutMs|pollTimeoutMs(kotlin.Long?){}[0]
+    final fun promptOptimizer(kotlin/Boolean?) // ai.torad.aisdk.providers/FalVideoModelOptionsBuilder.promptOptimizer|promptOptimizer(kotlin.Boolean?){}[0]
+    final fun resolution(kotlin/String?) // ai.torad.aisdk.providers/FalVideoModelOptionsBuilder.resolution|resolution(kotlin.String?){}[0]
+}
 
+final class ai.torad.aisdk.providers/FireworksEmbeddingModelOptions { // ai.torad.aisdk.providers/FireworksEmbeddingModelOptions|null[0]
     final val raw // ai.torad.aisdk.providers/FireworksEmbeddingModelOptions.raw|{}raw[0]
         final fun <get-raw>(): kotlin.collections/Map<kotlin/String, kotlinx.serialization.json/JsonElement> // ai.torad.aisdk.providers/FireworksEmbeddingModelOptions.raw.<get-raw>|<get-raw>(){}[0]
 
-    final fun component1(): kotlin.collections/Map<kotlin/String, kotlinx.serialization.json/JsonElement> // ai.torad.aisdk.providers/FireworksEmbeddingModelOptions.component1|component1(){}[0]
-    final fun copy(kotlin.collections/Map<kotlin/String, kotlinx.serialization.json/JsonElement> = ...): ai.torad.aisdk.providers/FireworksEmbeddingModelOptions // ai.torad.aisdk.providers/FireworksEmbeddingModelOptions.copy|copy(kotlin.collections.Map<kotlin.String,kotlinx.serialization.json.JsonElement>){}[0]
     final fun equals(kotlin/Any?): kotlin/Boolean // ai.torad.aisdk.providers/FireworksEmbeddingModelOptions.equals|equals(kotlin.Any?){}[0]
     final fun hashCode(): kotlin/Int // ai.torad.aisdk.providers/FireworksEmbeddingModelOptions.hashCode|hashCode(){}[0]
     final fun toString(): kotlin/String // ai.torad.aisdk.providers/FireworksEmbeddingModelOptions.toString|toString(){}[0]
@@ -3963,6 +3959,10 @@ final class ai.torad.aisdk.providers/FireworksEmbeddingModelOptions { // ai.tora
 
         final fun serializer(): kotlinx.serialization/KSerializer<ai.torad.aisdk.providers/FireworksEmbeddingModelOptions> // ai.torad.aisdk.providers/FireworksEmbeddingModelOptions.Companion.serializer|serializer(){}[0]
     }
+}
+
+final class ai.torad.aisdk.providers/FireworksEmbeddingModelOptionsBuilder { // ai.torad.aisdk.providers/FireworksEmbeddingModelOptionsBuilder|null[0]
+    final fun raw(kotlin.collections/Map<kotlin/String, kotlinx.serialization.json/JsonElement>) // ai.torad.aisdk.providers/FireworksEmbeddingModelOptionsBuilder.raw|raw(kotlin.collections.Map<kotlin.String,kotlinx.serialization.json.JsonElement>){}[0]
 }
 
 final class ai.torad.aisdk.providers/FireworksErrorData { // ai.torad.aisdk.providers/FireworksErrorData|null[0]
@@ -13929,6 +13929,7 @@ final fun ai.torad.aisdk.providers/CohereThinkingOptions(kotlin/Function1<ai.tor
 final fun ai.torad.aisdk.providers/DeepInfra(io.ktor.client/HttpClient, ai.torad.aisdk.providers/DeepInfraProviderSettings = ...): ai.torad.aisdk.providers/DeepInfraProvider // ai.torad.aisdk.providers/DeepInfra|DeepInfra(io.ktor.client.HttpClient;ai.torad.aisdk.providers.DeepInfraProviderSettings){}[0]
 final fun ai.torad.aisdk.providers/DeepInfraProviderSettings(kotlin/Function1<ai.torad.aisdk.providers/DeepInfraProviderSettingsBuilder, kotlin/Unit> = ...): ai.torad.aisdk.providers/DeepInfraProviderSettings // ai.torad.aisdk.providers/DeepInfraProviderSettings|DeepInfraProviderSettings(kotlin.Function1<ai.torad.aisdk.providers.DeepInfraProviderSettingsBuilder,kotlin.Unit>){}[0]
 final fun ai.torad.aisdk.providers/DeepSeek(io.ktor.client/HttpClient, ai.torad.aisdk.providers/DeepSeekProviderSettings = ...): ai.torad.aisdk.providers/DeepSeekProvider // ai.torad.aisdk.providers/DeepSeek|DeepSeek(io.ktor.client.HttpClient;ai.torad.aisdk.providers.DeepSeekProviderSettings){}[0]
+final fun ai.torad.aisdk.providers/DeepSeekLanguageModelOptions(kotlin/Function1<ai.torad.aisdk.providers/DeepSeekLanguageModelOptionsBuilder, kotlin/Unit> = ...): ai.torad.aisdk.providers/DeepSeekLanguageModelOptions // ai.torad.aisdk.providers/DeepSeekLanguageModelOptions|DeepSeekLanguageModelOptions(kotlin.Function1<ai.torad.aisdk.providers.DeepSeekLanguageModelOptionsBuilder,kotlin.Unit>){}[0]
 final fun ai.torad.aisdk.providers/DeepSeekProviderSettings(kotlin/Function1<ai.torad.aisdk.providers/DeepSeekProviderSettingsBuilder, kotlin/Unit> = ...): ai.torad.aisdk.providers/DeepSeekProviderSettings // ai.torad.aisdk.providers/DeepSeekProviderSettings|DeepSeekProviderSettings(kotlin.Function1<ai.torad.aisdk.providers.DeepSeekProviderSettingsBuilder,kotlin.Unit>){}[0]
 final fun ai.torad.aisdk.providers/Deepgram(io.ktor.client/HttpClient, ai.torad.aisdk.providers/DeepgramProviderSettings = ...): ai.torad.aisdk.providers/DeepgramProvider // ai.torad.aisdk.providers/Deepgram|Deepgram(io.ktor.client.HttpClient;ai.torad.aisdk.providers.DeepgramProviderSettings){}[0]
 final fun ai.torad.aisdk.providers/DeepgramProviderSettings(kotlin/Function1<ai.torad.aisdk.providers/DeepgramProviderSettingsBuilder, kotlin/Unit> = ...): ai.torad.aisdk.providers/DeepgramProviderSettings // ai.torad.aisdk.providers/DeepgramProviderSettings|DeepgramProviderSettings(kotlin.Function1<ai.torad.aisdk.providers.DeepgramProviderSettingsBuilder,kotlin.Unit>){}[0]
@@ -13936,10 +13937,17 @@ final fun ai.torad.aisdk.providers/DeepgramSpeechModelOptions(kotlin/Function1<a
 final fun ai.torad.aisdk.providers/DeepgramTranscriptionModelOptions(kotlin/Function1<ai.torad.aisdk.providers/DeepgramTranscriptionModelOptionsBuilder, kotlin/Unit> = ...): ai.torad.aisdk.providers/DeepgramTranscriptionModelOptions // ai.torad.aisdk.providers/DeepgramTranscriptionModelOptions|DeepgramTranscriptionModelOptions(kotlin.Function1<ai.torad.aisdk.providers.DeepgramTranscriptionModelOptionsBuilder,kotlin.Unit>){}[0]
 final fun ai.torad.aisdk.providers/ElevenLabs(io.ktor.client/HttpClient, ai.torad.aisdk.providers/ElevenLabsProviderSettings = ...): ai.torad.aisdk.providers/ElevenLabsProvider // ai.torad.aisdk.providers/ElevenLabs|ElevenLabs(io.ktor.client.HttpClient;ai.torad.aisdk.providers.ElevenLabsProviderSettings){}[0]
 final fun ai.torad.aisdk.providers/ElevenLabsProviderSettings(kotlin/Function1<ai.torad.aisdk.providers/ElevenLabsProviderSettingsBuilder, kotlin/Unit> = ...): ai.torad.aisdk.providers/ElevenLabsProviderSettings // ai.torad.aisdk.providers/ElevenLabsProviderSettings|ElevenLabsProviderSettings(kotlin.Function1<ai.torad.aisdk.providers.ElevenLabsProviderSettingsBuilder,kotlin.Unit>){}[0]
+final fun ai.torad.aisdk.providers/ElevenLabsSpeechModelOptions(kotlin/Function1<ai.torad.aisdk.providers/ElevenLabsSpeechModelOptionsBuilder, kotlin/Unit> = ...): ai.torad.aisdk.providers/ElevenLabsSpeechModelOptions // ai.torad.aisdk.providers/ElevenLabsSpeechModelOptions|ElevenLabsSpeechModelOptions(kotlin.Function1<ai.torad.aisdk.providers.ElevenLabsSpeechModelOptionsBuilder,kotlin.Unit>){}[0]
+final fun ai.torad.aisdk.providers/ElevenLabsTranscriptionModelOptions(kotlin/Function1<ai.torad.aisdk.providers/ElevenLabsTranscriptionModelOptionsBuilder, kotlin/Unit> = ...): ai.torad.aisdk.providers/ElevenLabsTranscriptionModelOptions // ai.torad.aisdk.providers/ElevenLabsTranscriptionModelOptions|ElevenLabsTranscriptionModelOptions(kotlin.Function1<ai.torad.aisdk.providers.ElevenLabsTranscriptionModelOptionsBuilder,kotlin.Unit>){}[0]
 final fun ai.torad.aisdk.providers/Fal(io.ktor.client/HttpClient, ai.torad.aisdk.providers/FalProviderSettings = ...): ai.torad.aisdk.providers/FalProvider // ai.torad.aisdk.providers/Fal|Fal(io.ktor.client.HttpClient;ai.torad.aisdk.providers.FalProviderSettings){}[0]
+final fun ai.torad.aisdk.providers/FalImageModelOptions(kotlin/Function1<ai.torad.aisdk.providers/FalImageModelOptionsBuilder, kotlin/Unit> = ...): ai.torad.aisdk.providers/FalImageModelOptions // ai.torad.aisdk.providers/FalImageModelOptions|FalImageModelOptions(kotlin.Function1<ai.torad.aisdk.providers.FalImageModelOptionsBuilder,kotlin.Unit>){}[0]
 final fun ai.torad.aisdk.providers/FalProviderSettings(kotlin/Function1<ai.torad.aisdk.providers/FalProviderSettingsBuilder, kotlin/Unit> = ...): ai.torad.aisdk.providers/FalProviderSettings // ai.torad.aisdk.providers/FalProviderSettings|FalProviderSettings(kotlin.Function1<ai.torad.aisdk.providers.FalProviderSettingsBuilder,kotlin.Unit>){}[0]
+final fun ai.torad.aisdk.providers/FalSpeechModelOptions(kotlin/Function1<ai.torad.aisdk.providers/FalSpeechModelOptionsBuilder, kotlin/Unit> = ...): ai.torad.aisdk.providers/FalSpeechModelOptions // ai.torad.aisdk.providers/FalSpeechModelOptions|FalSpeechModelOptions(kotlin.Function1<ai.torad.aisdk.providers.FalSpeechModelOptionsBuilder,kotlin.Unit>){}[0]
+final fun ai.torad.aisdk.providers/FalTranscriptionModelOptions(kotlin/Function1<ai.torad.aisdk.providers/FalTranscriptionModelOptionsBuilder, kotlin/Unit> = ...): ai.torad.aisdk.providers/FalTranscriptionModelOptions // ai.torad.aisdk.providers/FalTranscriptionModelOptions|FalTranscriptionModelOptions(kotlin.Function1<ai.torad.aisdk.providers.FalTranscriptionModelOptionsBuilder,kotlin.Unit>){}[0]
+final fun ai.torad.aisdk.providers/FalVideoModelOptions(kotlin/Function1<ai.torad.aisdk.providers/FalVideoModelOptionsBuilder, kotlin/Unit> = ...): ai.torad.aisdk.providers/FalVideoModelOptions // ai.torad.aisdk.providers/FalVideoModelOptions|FalVideoModelOptions(kotlin.Function1<ai.torad.aisdk.providers.FalVideoModelOptionsBuilder,kotlin.Unit>){}[0]
 final fun ai.torad.aisdk.providers/FileSearch(kotlinx.serialization.json/JsonElement = ...): ai.torad.aisdk/Tool<kotlinx.serialization.json/JsonElement, kotlinx.serialization.json/JsonElement, kotlin/Any?> // ai.torad.aisdk.providers/FileSearch|FileSearch(kotlinx.serialization.json.JsonElement){}[0]
 final fun ai.torad.aisdk.providers/Fireworks(io.ktor.client/HttpClient, ai.torad.aisdk.providers/FireworksProviderSettings = ...): ai.torad.aisdk.providers/FireworksProvider // ai.torad.aisdk.providers/Fireworks|Fireworks(io.ktor.client.HttpClient;ai.torad.aisdk.providers.FireworksProviderSettings){}[0]
+final fun ai.torad.aisdk.providers/FireworksEmbeddingModelOptions(kotlin/Function1<ai.torad.aisdk.providers/FireworksEmbeddingModelOptionsBuilder, kotlin/Unit> = ...): ai.torad.aisdk.providers/FireworksEmbeddingModelOptions // ai.torad.aisdk.providers/FireworksEmbeddingModelOptions|FireworksEmbeddingModelOptions(kotlin.Function1<ai.torad.aisdk.providers.FireworksEmbeddingModelOptionsBuilder,kotlin.Unit>){}[0]
 final fun ai.torad.aisdk.providers/FireworksProviderSettings(kotlin/Function1<ai.torad.aisdk.providers/FireworksProviderSettingsBuilder, kotlin/Unit> = ...): ai.torad.aisdk.providers/FireworksProviderSettings // ai.torad.aisdk.providers/FireworksProviderSettings|FireworksProviderSettings(kotlin.Function1<ai.torad.aisdk.providers.FireworksProviderSettingsBuilder,kotlin.Unit>){}[0]
 final fun ai.torad.aisdk.providers/Gladia(io.ktor.client/HttpClient, ai.torad.aisdk.providers/GladiaProviderSettings = ...): ai.torad.aisdk.providers/GladiaProvider // ai.torad.aisdk.providers/Gladia|Gladia(io.ktor.client.HttpClient;ai.torad.aisdk.providers.GladiaProviderSettings){}[0]
 final fun ai.torad.aisdk.providers/GladiaProviderSettings(kotlin/Function1<ai.torad.aisdk.providers/GladiaProviderSettingsBuilder, kotlin/Unit> = ...): ai.torad.aisdk.providers/GladiaProviderSettings // ai.torad.aisdk.providers/GladiaProviderSettings|GladiaProviderSettings(kotlin.Function1<ai.torad.aisdk.providers.GladiaProviderSettingsBuilder,kotlin.Unit>){}[0]

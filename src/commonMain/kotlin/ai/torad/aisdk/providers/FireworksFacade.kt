@@ -39,9 +39,26 @@ public data class FireworksLanguageModelOptions(
 public typealias FireworksProviderOptions = FireworksLanguageModelOptions
 
 @Serializable
-public data class FireworksEmbeddingModelOptions(
-    val raw: Map<String, JsonElement> = emptyMap(),
+@Poko
+public class FireworksEmbeddingModelOptions internal constructor(
+    public val raw: Map<String, JsonElement> = emptyMap(),
 )
+
+public class FireworksEmbeddingModelOptionsBuilder internal constructor() {
+    private var raw: Map<String, JsonElement> = emptyMap()
+
+    public fun raw(value: Map<String, JsonElement>) {
+        raw = value
+    }
+
+    internal fun build(): FireworksEmbeddingModelOptions =
+        FireworksEmbeddingModelOptions(raw = raw)
+}
+
+public fun FireworksEmbeddingModelOptions(
+    block: FireworksEmbeddingModelOptionsBuilder.() -> Unit = {},
+): FireworksEmbeddingModelOptions =
+    FireworksEmbeddingModelOptionsBuilder().apply(block).build()
 
 public typealias FireworksEmbeddingProviderOptions = FireworksEmbeddingModelOptions
 
