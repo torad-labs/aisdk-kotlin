@@ -31,7 +31,7 @@ class HumeProviderTest {
         fixture.server.start()
         val model = Hume(
             fixture.httpClient(),
-            HumeProviderSettings(apiKey = "key"),
+            HumeProviderSettings { apiKey("key") },
         ).speech()
 
         val result = model.generate(
@@ -93,7 +93,7 @@ class HumeProviderTest {
         fixture.server.start()
         val model = Hume(
             fixture.httpClient(),
-            HumeProviderSettings(apiKey = "key"),
+            HumeProviderSettings { apiKey("key") },
         ).speech()
 
         val result = model.generate(SpeechGenerationParams(text = "hello", responseFormat = "flac"))

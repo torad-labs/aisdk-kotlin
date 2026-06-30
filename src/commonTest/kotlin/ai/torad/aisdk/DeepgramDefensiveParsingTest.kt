@@ -20,7 +20,9 @@ class DeepgramDefensiveParsingTest {
             put("error", buildJsonObject { put("message", buildJsonObject { put("oops", JsonPrimitive(1)) }) })
         }
 
-        val message = DeepgramProviderSettings(apiKey = "k").deepgramErrorMessage(400, parsed, "raw-body")
+        val message = DeepgramProviderSettings {
+            apiKey("k")
+        }.deepgramErrorMessage(400, parsed, "raw-body")
 
         assertTrue(
             message.contains("Deepgram request failed (400)"),
@@ -38,7 +40,9 @@ class DeepgramDefensiveParsingTest {
     fun `deepgramErrorMessage degrades on a primitive error instead of an object`() {
         val parsed = buildJsonObject { put("error", JsonPrimitive("plain string")) }
 
-        val message = DeepgramProviderSettings(apiKey = "k").deepgramErrorMessage(400, parsed, "raw-body")
+        val message = DeepgramProviderSettings {
+            apiKey("k")
+        }.deepgramErrorMessage(400, parsed, "raw-body")
 
         assertTrue(
             message.contains("Deepgram request failed (400)"),

@@ -44,7 +44,10 @@ class RevaiProviderTest {
         fixture.server.start()
         val model = Revai(
             fixture.httpClient(),
-            RevaiProviderSettings(apiKey = "key", pollingIntervalMillis = 0),
+            RevaiProviderSettings {
+                apiKey("key")
+                pollingIntervalMillis(0)
+            },
         ).transcription(ModelId("machine"))
 
         val result = model.transcribe(
@@ -146,7 +149,10 @@ class RevaiProviderTest {
         fixture.server.start()
         val model = Revai(
             fixture.httpClient(),
-            RevaiProviderSettings(apiKey = "key", pollingIntervalMillis = 0),
+            RevaiProviderSettings {
+                apiKey("key")
+                pollingIntervalMillis(0)
+            },
         ).transcription(ModelId("machine"))
 
         val error = assertFailsWith<AiSdkException> {
@@ -158,7 +164,7 @@ class RevaiProviderTest {
     @Test
     fun `default provider and unsupported model families fail explicitly`() {
         val fixture = TestServer.createTestServer(mutableMapOf())
-        val provider = Revai(fixture.httpClient(), RevaiProviderSettings(apiKey = "key"))
+        val provider = Revai(fixture.httpClient(), RevaiProviderSettings { apiKey("key") })
 
         assertFailsWith<NoSuchModelError> { provider.languageModel("model") }
         assertFailsWith<NoSuchModelError> { provider.embeddingModel("embed") }

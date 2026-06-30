@@ -50,7 +50,9 @@ class AssemblyAIProviderTest {
         fixture.server.start()
         val model = AssemblyAI(
             fixture.httpClient(),
-            AssemblyAIProviderSettings(apiKey = "key"),
+            AssemblyAIProviderSettings {
+                apiKey("key")
+            },
         ).transcription(ModelId("best"))
 
         val result = model.transcribe(
@@ -143,7 +145,9 @@ class AssemblyAIProviderTest {
         fixture.server.start()
         val model = AssemblyAI(
             fixture.httpClient(),
-            AssemblyAIProviderSettings(apiKey = "key"),
+            AssemblyAIProviderSettings {
+                apiKey("key")
+            },
         ).transcription(ModelId("nano"))
 
         model.transcribe(
@@ -174,7 +178,10 @@ class AssemblyAIProviderTest {
         fixture.server.start()
         val model = AssemblyAI(
             fixture.httpClient(),
-            AssemblyAIProviderSettings(apiKey = "key", pollingIntervalMillis = 0),
+            AssemblyAIProviderSettings {
+                apiKey("key")
+                pollingIntervalMillis(0)
+            },
         ).transcription(ModelId("best"))
 
         val error = assertFailsWith<AiSdkException> {
@@ -186,7 +193,12 @@ class AssemblyAIProviderTest {
     @Test
     fun `default provider and unsupported model families fail explicitly`() {
         val fixture = TestServer.createTestServer(mutableMapOf())
-        val provider = AssemblyAI(fixture.httpClient(), AssemblyAIProviderSettings(apiKey = "key"))
+        val provider = AssemblyAI(
+            fixture.httpClient(),
+            AssemblyAIProviderSettings {
+                apiKey("key")
+            },
+        )
 
         assertFailsWith<NoSuchModelError> { provider.languageModel("model") }
         assertFailsWith<NoSuchModelError> { provider.embeddingModel("embed") }

@@ -31,7 +31,12 @@ class AssemblyAIDefensiveParsingTest {
                 )
             },
         )
-        val model = AssemblyAI(client, AssemblyAIProviderSettings(apiKey = "key")).transcription(ModelId("best"))
+        val model = AssemblyAI(
+            client,
+            AssemblyAIProviderSettings {
+                apiKey("key")
+            },
+        ).transcription(ModelId("best"))
 
         val error = assertFails {
             model.transcribe(
@@ -64,7 +69,12 @@ class AssemblyAIDefensiveParsingTest {
                 )
             },
         )
-        val model = AssemblyAI(client, AssemblyAIProviderSettings(apiKey = "key")).transcription(ModelId("best"))
+        val model = AssemblyAI(
+            client,
+            AssemblyAIProviderSettings {
+                apiKey("key")
+            },
+        ).transcription(ModelId("best"))
 
         val error = assertFails {
             model.transcribe(

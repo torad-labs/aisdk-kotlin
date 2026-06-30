@@ -1,6 +1,7 @@
 package ai.torad.aisdk.providers
 
 import ai.torad.aisdk.*
+import dev.drewhamilton.poko.Poko
 import io.ktor.client.HttpClient
 import io.ktor.client.request.header
 import io.ktor.client.request.request
@@ -69,12 +70,13 @@ public data class AssemblyAITranscriptionModelOptions(
 )
 
 @Serializable
-public data class AssemblyAIProviderSettings(
-    val apiKey: String? = null,
-    val headers: Map<String, String> = emptyMap(),
-    val pollingIntervalMillis: Long = 3_000L,
+@Poko
+public class AssemblyAIProviderSettings internal constructor(
+    public val apiKey: String? = null,
+    public val headers: Map<String, String> = emptyMap(),
+    public val pollingIntervalMillis: Long = 3_000L,
     /** Upper bound on transcript poll attempts (120 × 3s ≈ 6 min) so a stuck job can't hang forever. */
-    val maxPollAttempts: Int = 120,
+    public val maxPollAttempts: Int = 120,
 ) {
     internal fun requestHeaders(callHeaders: Map<String, String>): Map<String, String> {
         val base = linkedMapOf<String, String>()
@@ -84,6 +86,42 @@ public data class AssemblyAIProviderSettings(
         return ProviderHeaders.withUserAgentSuffix(base, "ai-sdk/assemblyai/$ASSEMBLYAI_VERSION")
     }
 }
+
+public class AssemblyAIProviderSettingsBuilder internal constructor() {
+    private var apiKey: String? = null
+    private var headers: Map<String, String> = emptyMap()
+    private var pollingIntervalMillis: Long = 3_000L
+    private var maxPollAttempts: Int = 120
+
+    public fun apiKey(value: String?) {
+        apiKey = value
+    }
+
+    public fun headers(value: Map<String, String>) {
+        headers = value
+    }
+
+    public fun pollingIntervalMillis(value: Long) {
+        pollingIntervalMillis = value
+    }
+
+    public fun maxPollAttempts(value: Int) {
+        maxPollAttempts = value
+    }
+
+    internal fun build(): AssemblyAIProviderSettings =
+        AssemblyAIProviderSettings(
+            apiKey = apiKey,
+            headers = headers,
+            pollingIntervalMillis = pollingIntervalMillis,
+            maxPollAttempts = maxPollAttempts,
+        )
+}
+
+public fun AssemblyAIProviderSettings(
+    block: AssemblyAIProviderSettingsBuilder.() -> Unit = {},
+): AssemblyAIProviderSettings =
+    AssemblyAIProviderSettingsBuilder().apply(block).build()
 
 public class AssemblyAIProvider(
     private val client: HttpClient,

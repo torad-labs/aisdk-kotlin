@@ -1,6 +1,7 @@
 package ai.torad.aisdk.providers
 
 import ai.torad.aisdk.*
+import dev.drewhamilton.poko.Poko
 import io.ktor.client.HttpClient
 import io.ktor.client.request.forms.MultiPartFormDataContent
 import io.ktor.client.request.forms.formData
@@ -57,9 +58,10 @@ public data class ElevenLabsTranscriptionModelOptions(
 )
 
 @Serializable
-public data class ElevenLabsProviderSettings(
-    val apiKey: String? = null,
-    val headers: Map<String, String> = emptyMap(),
+@Poko
+public class ElevenLabsProviderSettings internal constructor(
+    public val apiKey: String? = null,
+    public val headers: Map<String, String> = emptyMap(),
 ) {
     internal fun elevenLabsHeaders(callHeaders: Map<String, String>): Map<String, String> {
         val base = linkedMapOf<String, String>()
@@ -72,6 +74,30 @@ public data class ElevenLabsProviderSettings(
     internal fun elevenLabsOptions(providerOptions: ProviderOptions): JsonObject =
         JsonAccess.obj(providerOptions.toMap(), "elevenlabs") ?: JsonObject(emptyMap())
 }
+
+public class ElevenLabsProviderSettingsBuilder internal constructor() {
+    private var apiKey: String? = null
+    private var headers: Map<String, String> = emptyMap()
+
+    public fun apiKey(value: String?) {
+        apiKey = value
+    }
+
+    public fun headers(value: Map<String, String>) {
+        headers = value
+    }
+
+    internal fun build(): ElevenLabsProviderSettings =
+        ElevenLabsProviderSettings(
+            apiKey = apiKey,
+            headers = headers,
+        )
+}
+
+public fun ElevenLabsProviderSettings(
+    block: ElevenLabsProviderSettingsBuilder.() -> Unit = {},
+): ElevenLabsProviderSettings =
+    ElevenLabsProviderSettingsBuilder().apply(block).build()
 
 public class ElevenLabsProvider(
     private val client: HttpClient,

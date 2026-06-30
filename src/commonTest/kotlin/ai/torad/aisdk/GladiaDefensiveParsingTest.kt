@@ -31,7 +31,7 @@ class GladiaDefensiveParsingTest {
                 )
             },
         )
-        val model = Gladia(client, GladiaProviderSettings(apiKey = "key")).transcription()
+        val model = Gladia(client, GladiaProviderSettings { apiKey("key") }).transcription()
 
         val error = assertFails {
             model.transcribe(
@@ -64,7 +64,7 @@ class GladiaDefensiveParsingTest {
                 )
             },
         )
-        val model = Gladia(client, GladiaProviderSettings(apiKey = "key")).transcription()
+        val model = Gladia(client, GladiaProviderSettings { apiKey("key") }).transcription()
 
         val error = assertFails {
             model.transcribe(

@@ -1,6 +1,7 @@
 package ai.torad.aisdk.providers
 
 import ai.torad.aisdk.*
+import dev.drewhamilton.poko.Poko
 import io.ktor.client.HttpClient
 import io.ktor.client.request.request
 import io.ktor.http.HttpHeaders
@@ -34,11 +35,42 @@ public data class LumaImageModelOptions(
 )
 
 @Serializable
-public data class LumaProviderSettings(
-    val apiKey: String? = null,
-    val baseURL: String = "https://api.lumalabs.ai",
-    val headers: Map<String, String> = emptyMap(),
+@Poko
+public class LumaProviderSettings internal constructor(
+    public val apiKey: String? = null,
+    public val baseURL: String = "https://api.lumalabs.ai",
+    public val headers: Map<String, String> = emptyMap(),
 )
+
+public class LumaProviderSettingsBuilder internal constructor() {
+    private var apiKey: String? = null
+    private var baseURL: String = "https://api.lumalabs.ai"
+    private var headers: Map<String, String> = emptyMap()
+
+    public fun apiKey(value: String?) {
+        apiKey = value
+    }
+
+    public fun baseURL(value: String) {
+        baseURL = value
+    }
+
+    public fun headers(value: Map<String, String>) {
+        headers = value
+    }
+
+    internal fun build(): LumaProviderSettings =
+        LumaProviderSettings(
+            apiKey = apiKey,
+            baseURL = baseURL,
+            headers = headers,
+        )
+}
+
+public fun LumaProviderSettings(
+    block: LumaProviderSettingsBuilder.() -> Unit = {},
+): LumaProviderSettings =
+    LumaProviderSettingsBuilder().apply(block).build()
 
 public class LumaProvider(
     private val client: HttpClient,
