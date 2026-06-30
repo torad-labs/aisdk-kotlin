@@ -90,7 +90,9 @@ class PrepareCallTest {
             tools = ToolSet(),
             prepareCall = {
                 callCount += 1
-                AgentSettings(instructions = "overridden for ${options ?: "no-context"}")
+                AgentSettings {
+                    instructions("overridden for ${options ?: "no-context"}")
+                }
             },
         )
         agent.generate("hello", options = "marcos").first()

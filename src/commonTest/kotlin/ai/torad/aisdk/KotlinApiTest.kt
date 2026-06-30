@@ -63,18 +63,18 @@ class KotlinApiTest {
                 prompt = "answer",
             ),
             system = "be concise",
-            settings = CallSettings(
-                temperature = 0.1f,
-                topP = 0.2f,
-                topK = 3,
-                maxOutputTokens = 200,
-                stopSequences = listOf("</done>"),
-                seed = 42,
-                providerOptions = providerOptions,
-                presencePenalty = 0.4f,
-                frequencyPenalty = 0.5f,
-                maxRetries = 4,
-            ),
+            settings = CallSettings {
+                temperature(0.1f)
+                topP(0.2f)
+                topK(3)
+                maxOutputTokens(200)
+                stopSequences(listOf("</done>"))
+                seed(42)
+                providerOptions(providerOptions)
+                presencePenalty(0.4f)
+                frequencyPenalty(0.5f)
+                maxRetries(4)
+            },
         )
         val msgs = buildList<ModelMessage> {
             if (request.system != null) add(SystemMessage(request.system))
@@ -83,19 +83,19 @@ class KotlinApiTest {
         val s = request.settings
         val result = TextGenerator(
             model,
-            CallConfig(
-                temperature = s.temperature,
-                topP = s.topP,
-                topK = s.topK,
-                maxOutputTokens = s.maxOutputTokens,
-                stopSequences = s.stopSequences ?: emptyList(),
-                seed = s.seed,
-                providerOptions = s.providerOptions,
-                presencePenalty = s.presencePenalty,
-                frequencyPenalty = s.frequencyPenalty,
-                responseFormat = s.responseFormat ?: ResponseFormat.Text,
-                maxRetries = s.maxRetries,
-            ),
+            CallConfig {
+                temperature(s.temperature)
+                topP(s.topP)
+                topK(s.topK)
+                maxOutputTokens(s.maxOutputTokens)
+                stopSequences(s.stopSequences ?: emptyList())
+                seed(s.seed)
+                providerOptions(s.providerOptions)
+                presencePenalty(s.presencePenalty)
+                frequencyPenalty(s.frequencyPenalty)
+                responseFormat(s.responseFormat ?: ResponseFormat.Text)
+                maxRetries(s.maxRetries)
+            },
         ).generate(GenerationInput.from(prompt = request.prompt, messages = msgs)).first()
 
         assertEquals("ok", result.text)
@@ -188,14 +188,14 @@ class KotlinApiTest {
 
         TextGenerator(
             model,
-            CallConfig(
-                temperature = 0.9f,
-                topP = 0.3f,
-                providerOptions = ProviderOptions.Raw(JsonObject(mapOf(
+            CallConfig {
+                temperature(0.9f)
+                topP(0.3f)
+                providerOptions(ProviderOptions.Raw(JsonObject(mapOf(
                     "base" to JsonPrimitive("yes"),
                     "call" to JsonPrimitive("yes"),
-                ))),
-            ),
+                ))))
+            },
         ).generate(GenerationInput.Prompt("answer")).first()
 
         val params = assertNotNull(model.generateParams)
@@ -229,7 +229,10 @@ class KotlinApiTest {
         val model = CapturingModel()
         val events = TextGenerator(
             model,
-            CallConfig(presencePenalty = 0.7f, frequencyPenalty = 0.8f),
+            CallConfig {
+                presencePenalty(0.7f)
+                frequencyPenalty(0.8f)
+            },
         ).stream(GenerationInput.Prompt("answer"))
 
         assertNull(model.streamParams)

@@ -116,9 +116,9 @@ and repaired values are byte-identical to the JS SDK.
 ### Prepare scopes
 
 - `class PrepareCallScope<TContext>(options, instructions, model, tools)`
-- `data class AgentSettings<TContext>(instructions?, model?, tools?, providerOptions?, temperature?, topP?, topK?, maxOutputTokens?, stopSequences?, seed?, presencePenalty?, frequencyPenalty?, responseFormat?, maxRetries?)`
+- `AgentSettings<TContext> { instructions(...); model(...); tools(...); activeTools(...); providerOptions(...); temperature(...); topP(...); topK(...); maxOutputTokens(...); stopSequences(...); seed(...); presencePenalty(...); frequencyPenalty(...); responseFormat(...); maxRetries(...) }` — regular builder-backed class with identity equality because it can hold model/tool objects. The positional constructor, `copy()`, and `componentN()` are not public.
 - `class PrepareStepScope<TContext>(stepNumber, model, steps, messages, context)`
-- `data class StepSettings(model?, activeTools?, toolChoice?, messages?, system?, providerOptions?, temperature?, topP?, topK?, maxOutputTokens?, stopSequences?, seed?, presencePenalty?, frequencyPenalty?, responseFormat?, maxRetries?)`
+- `StepSettings<TContext> { model(...); activeTools(...); toolChoice(...); messages(...); system(...); providerOptions(...); temperature(...); topP(...); topK(...); maxOutputTokens(...); stopSequences(...); seed(...); presencePenalty(...); frequencyPenalty(...); responseFormat(...); maxRetries(...); experimental_context(...) }` — regular builder-backed class with identity equality because it can hold model/tool objects. The positional constructor, `copy()`, and `componentN()` are not public.
 
 Penalty, response-format, and retry fields participate in the `Step ?: Agent ?: agent-default ?: provider-default` resolution chain — same as the existing sampler params. `maxRetries` applies to non-streaming model round-trips only.
 
@@ -299,7 +299,8 @@ Penalty, response-format, and retry fields participate in the `Step ?: Agent ?: 
   `LiteRTSamplerConfig`, `LiteRTConversationRequest`, and
   `LiteRTLanguageModelSettings`, `OAuthClientInformation`,
   `OAuthClientMetadata`, `Configuration`, `ElicitationCapability`,
-  `ProviderMiddleware`, `RetryPolicy`, and `ToolExecutionPolicy`) expose field
+  `ProviderMiddleware`, `RetryPolicy`, `ToolExecutionPolicy`, `CallSettings`,
+  `CallConfig`, `AgentSettings`, and `StepSettings`) expose field
   getters and are configured through public DSL factories. The gateway params,
   `TextGenerationRequest`,
   `ChatRequest`, `CompletionRequestOptions`, `HuggingFaceResponsesSettings`,
@@ -308,18 +309,20 @@ Penalty, response-format, and retry fields participate in the `Step ?: Agent ?: 
   `OpenResponsesOptions`, `OpenResponsesAllowedTools`,
   `XaiLanguageModelChatOptions`, `XaiLanguageModelResponsesOptions`, and
   `LiteRTSamplerConfig`, `OAuthClientInformation`, `OAuthClientMetadata`,
-  `Configuration`, `ElicitationCapability`, and `ToolExecutionPolicy` are
-  `@Poko` value-semantics types. `AuthOptions`,
+  `Configuration`, `ElicitationCapability`, `ToolExecutionPolicy`,
+  `CallSettings`, and `CallConfig` are `@Poko` value-semantics types.
+  `AuthOptions`,
   media/rerank params, `CompletionRequest`, `StructuredObjectRequest`,
   `TelemetrySettings`, `MCPClientConfig`, `MCPTransportConfig`,
   `MCPRequestOptions`, `CallCompletionApiOptions`, `UseCompletionOptions`,
   `StructuredObjectOptions`, `LoggingOptions`, `ProviderToolFactoryOptions`,
   `ToolPredicateOptions`, `LiteRTConversationRequest`, and
-  `LiteRTLanguageModelSettings`, `ProviderMiddleware`, and `RetryPolicy` are
-  regular classes with identity equality because they may hold clients, abort
-  signals, transports, callbacks, coroutine contexts, telemetry integrations,
-  serializers, functions, tool definitions, middleware instances, retry delay
-  generators, arbitrary context values, or model input objects. The positional
+  `LiteRTLanguageModelSettings`, `ProviderMiddleware`, `RetryPolicy`,
+  `AgentSettings`, and `StepSettings` are regular classes with identity
+  equality because they may hold clients, abort signals, transports, callbacks,
+  coroutine contexts, telemetry integrations, serializers, functions, tool
+  definitions, middleware instances, retry delay generators, arbitrary context
+  values, model input objects, language models, or tool sets. The positional
   constructors, `copy()`, and `componentN()` are not public.
 - Provider error payloads (`BasetenErrorData`, `CerebrasErrorData`,
   `FireworksErrorData`) are `@Serializable @Poko class` value-semantics types;
@@ -365,7 +368,7 @@ Penalty, response-format, and retry fields participate in the `Step ?: Agent ?: 
 
 ### Top-level inference
 
-- `data class CallSettings(..., maxRetries = 2)` / `data class CallConfig(..., maxRetries = 2)` — non-streaming text/object generation retries typed retryable `APICallError` / `GatewayError` per model round-trip; `maxRetries = 0` disables retries.
+- `CallSettings { ...; maxRetries(2) }` / `CallConfig { ...; maxRetries(2) }` — `@Poko` builder-backed value types used by top-level generation APIs. Non-streaming text/object generation retries typed retryable `APICallError` / `GatewayError` per model round-trip; `maxRetries = 0` disables retries. The positional constructors, `copy()`, and `componentN()` are not public.
 - `suspend fun <TOutput> generateText(model, prompt? | messages?, system?, output?, temperature?, ..., abortSignal?, presencePenalty?, frequencyPenalty?, responseFormat?, maxRetries = 2): @Poko GenerateTextResult<TOutput>`
 - `fun streamText(model, prompt? | messages?, system?, ..., abortSignal?, output?, presencePenalty?, frequencyPenalty?, responseFormat?): Flow<StreamEvent>`
 - `@Deprecated suspend fun <TOutput> generateObject(model, output, prompt? | messages?, ..., maxRetries = 2): @Poko GenerateObjectResult<TOutput>`

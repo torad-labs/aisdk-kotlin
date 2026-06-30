@@ -137,17 +137,17 @@ class GenerateTextParityTest {
         // WHEN
         val result = TextGenerator(
             model,
-            CallConfig(
-                temperature = 0.1f,
-                topP = 0.2f,
-                topK = 3,
-                maxOutputTokens = 200,
-                stopSequences = listOf("</json>"),
-                seed = 42,
-                providerOptions = providerOptions,
-                presencePenalty = 0.4f,
-                frequencyPenalty = 0.5f,
-            ),
+            CallConfig {
+                temperature(0.1f)
+                topP(0.2f)
+                topK(3)
+                maxOutputTokens(200)
+                stopSequences(listOf("</json>"))
+                seed(42)
+                providerOptions(providerOptions)
+                presencePenalty(0.4f)
+                frequencyPenalty(0.5f)
+            },
         ).generate(
             GenerationInput.from(
                 prompt = "recipe",
@@ -189,7 +189,9 @@ class GenerateTextParityTest {
         // WHEN
         TextGenerator(
             model,
-            CallConfig(responseFormat = explicit),
+            CallConfig {
+                responseFormat(explicit)
+            },
         ).generate(GenerationInput.Prompt("recipe"), OutputObj<Recipe>(serializer())).first()
 
         // THEN
@@ -256,11 +258,11 @@ class GenerateTextParityTest {
         val output = OutputObj<Recipe>(serializer(), name = "Recipe")
         val flow = TextGenerator(
             model,
-            CallConfig(
-                presencePenalty = 0.7f,
-                frequencyPenalty = 0.8f,
-                responseFormat = output.toResponseFormat(),
-            ),
+            CallConfig {
+                presencePenalty(0.7f)
+                frequencyPenalty(0.8f)
+                responseFormat(output.toResponseFormat())
+            },
         ).stream(GenerationInput.Prompt("recipe"))
 
         // WHEN
@@ -380,7 +382,9 @@ class GenerateTextParityTest {
         drainAllItems(
             TextGenerator(
                 model,
-                CallConfig(responseFormat = output.toResponseFormat()),
+                CallConfig {
+                    responseFormat(output.toResponseFormat())
+                },
             ).stream(GenerationInput.Prompt("choose")),
         )
 

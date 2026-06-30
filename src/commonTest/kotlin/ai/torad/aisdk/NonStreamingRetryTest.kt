@@ -93,7 +93,12 @@ class NonStreamingRetryTest {
         val model = FlakyTextModel(mutableListOf(ApiError(429)))
 
         val error = assertFailsWith<APICallError> {
-            TextGenerator(model, CallConfig(maxRetries = 0)).generate(GenerationInput.Prompt("hi")).first()
+            TextGenerator(
+                model,
+                CallConfig {
+                    maxRetries(0)
+                },
+            ).generate(GenerationInput.Prompt("hi")).first()
         }
 
         assertEquals(429, error.statusCode)

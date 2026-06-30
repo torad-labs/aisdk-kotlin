@@ -65,7 +65,9 @@ class PrepareStepTest {
             tools = ToolSet(ping),
             prepareStep = {
                 recordedStepNumbers.add(stepNumber)
-                StepSettings(activeTools = listOf("ping"))
+                StepSettings {
+                    activeTools(listOf("ping"))
+                }
             },
         )
         agent.generate("go").first()
@@ -98,7 +100,11 @@ class PrepareStepTest {
             instructions = "x",
             tools = ToolSet(testTool("ping"), testTool("pong")),
             activeTools = listOf("ping"),
-            prepareCall = { AgentSettings(activeTools = listOf("pong")) },
+            prepareCall = {
+                AgentSettings {
+                    activeTools(listOf("pong"))
+                }
+            },
         )
 
         agent.generate("go").first()
@@ -115,8 +121,16 @@ class PrepareStepTest {
             instructions = "x",
             tools = ToolSet(testTool("ping"), testTool("pong")),
             activeTools = listOf("ping"),
-            prepareCall = { AgentSettings(activeTools = listOf("pong")) },
-            prepareStep = { StepSettings(activeTools = listOf("ping")) },
+            prepareCall = {
+                AgentSettings {
+                    activeTools(listOf("pong"))
+                }
+            },
+            prepareStep = {
+                StepSettings {
+                    activeTools(listOf("ping"))
+                }
+            },
         )
 
         agent.generate("go").first()

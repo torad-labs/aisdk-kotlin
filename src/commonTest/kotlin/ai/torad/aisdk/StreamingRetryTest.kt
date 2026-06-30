@@ -79,7 +79,12 @@ class StreamingRetryTest {
         )
 
         val error = assertFailsWith<APICallError> {
-            TextGenerator(model, CallConfig(maxRetries = 0))
+            TextGenerator(
+                model,
+                CallConfig {
+                    maxRetries(0)
+                },
+            )
                 .streamResult(GenerationInput.Prompt("hi"))
                 .fullStream
                 .toList()

@@ -90,12 +90,12 @@ class OpenAICompatibleProviderTest {
 
         val result = TextGenerator(
             provider.languageModel("gpt-test"),
-            CallConfig(
-                responseFormat = ResponseFormat.Json(
+            CallConfig {
+                responseFormat(ResponseFormat.Json(
                     schemaName = "Answer",
                     schemaJson = JsonObject(mapOf("type" to JsonPrimitive("object"))),
-                ),
-                providerOptions = ProviderOptions.Raw(JsonObject(mapOf(
+                ))
+                providerOptions(ProviderOptions.Raw(JsonObject(mapOf(
                     "openai" to JsonObject(
                         mapOf(
                             "user" to JsonPrimitive("user_1"),
@@ -104,8 +104,8 @@ class OpenAICompatibleProviderTest {
                             "parallel_tool_calls" to JsonPrimitive(false),
                         ),
                     ),
-                ))),
-            ),
+                ))))
+            },
         ).generate(GenerationInput.Prompt("hi")).first()
 
         val body = seenBodies.single()
