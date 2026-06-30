@@ -35,8 +35,9 @@ This project follows Semantic Versioning once the first stable release is cut.
   generated `copy()` / `componentN()` ABI as they are demoted from public
   `data class` to `@Poko class`. This begins with `CallWarning` as the
   standalone `@Serializable` canary and continues with the `UIMessagePart`
-  sealed-leaf family as the polymorphic serialization canary; field access,
-  equality, hashCode, toString, and JSON serialization remain supported.
+  and `StreamEvent` sealed-leaf families as polymorphic serialization
+  canaries; field access, equality, hashCode, toString, and JSON serialization
+  remain supported.
 
 - **Tools are now class-based and extensible (breaking ABI change).** `Tool` is an `abstract class`
   you can extend for reusable, dependency-injected tools — mirroring how a concrete agent extends

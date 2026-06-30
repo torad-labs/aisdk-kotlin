@@ -5528,10 +5528,6 @@ public final class ai/torad/aisdk/StreamEvent$Error : ai/torad/aisdk/StreamEvent
 	public static final field Companion Lai/torad/aisdk/StreamEvent$Error$Companion;
 	public fun <init> (Ljava/lang/String;Ljava/lang/Throwable;)V
 	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/Throwable;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public final fun component1 ()Ljava/lang/String;
-	public final fun component2 ()Ljava/lang/Throwable;
-	public final fun copy (Ljava/lang/String;Ljava/lang/Throwable;)Lai/torad/aisdk/StreamEvent$Error;
-	public static synthetic fun copy$default (Lai/torad/aisdk/StreamEvent$Error;Ljava/lang/String;Ljava/lang/Throwable;ILjava/lang/Object;)Lai/torad/aisdk/StreamEvent$Error;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getCause ()Ljava/lang/Throwable;
 	public final fun getMessage ()Ljava/lang/String;
@@ -5558,12 +5554,6 @@ public final class ai/torad/aisdk/StreamEvent$FilePart : ai/torad/aisdk/StreamEv
 	public static final field Companion Lai/torad/aisdk/StreamEvent$FilePart$Companion;
 	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lai/torad/aisdk/ProviderMetadata;)V
 	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lai/torad/aisdk/ProviderMetadata;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public final fun component1 ()Ljava/lang/String;
-	public final fun component2 ()Ljava/lang/String;
-	public final fun component3 ()Ljava/lang/String;
-	public final fun component4 ()Lai/torad/aisdk/ProviderMetadata;
-	public final fun copy (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lai/torad/aisdk/ProviderMetadata;)Lai/torad/aisdk/StreamEvent$FilePart;
-	public static synthetic fun copy$default (Lai/torad/aisdk/StreamEvent$FilePart;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lai/torad/aisdk/ProviderMetadata;ILjava/lang/Object;)Lai/torad/aisdk/StreamEvent$FilePart;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getBase64 ()Ljava/lang/String;
 	public final fun getId ()Ljava/lang/String;
@@ -5592,13 +5582,6 @@ public final class ai/torad/aisdk/StreamEvent$Finish : ai/torad/aisdk/StreamEven
 	public static final field Companion Lai/torad/aisdk/StreamEvent$Finish$Companion;
 	public fun <init> (ILai/torad/aisdk/FinishReason;Lai/torad/aisdk/Usage;Lai/torad/aisdk/ProviderMetadata;Ljava/lang/String;)V
 	public synthetic fun <init> (ILai/torad/aisdk/FinishReason;Lai/torad/aisdk/Usage;Lai/torad/aisdk/ProviderMetadata;Ljava/lang/String;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public final fun component1 ()I
-	public final fun component2 ()Lai/torad/aisdk/FinishReason;
-	public final fun component3 ()Lai/torad/aisdk/Usage;
-	public final fun component4 ()Lai/torad/aisdk/ProviderMetadata;
-	public final fun component5 ()Ljava/lang/String;
-	public final fun copy (ILai/torad/aisdk/FinishReason;Lai/torad/aisdk/Usage;Lai/torad/aisdk/ProviderMetadata;Ljava/lang/String;)Lai/torad/aisdk/StreamEvent$Finish;
-	public static synthetic fun copy$default (Lai/torad/aisdk/StreamEvent$Finish;ILai/torad/aisdk/FinishReason;Lai/torad/aisdk/Usage;Lai/torad/aisdk/ProviderMetadata;Ljava/lang/String;ILjava/lang/Object;)Lai/torad/aisdk/StreamEvent$Finish;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getFinishReason ()Lai/torad/aisdk/FinishReason;
 	public final fun getProviderMetadata ()Lai/torad/aisdk/ProviderMetadata;
@@ -5627,9 +5610,6 @@ public final class ai/torad/aisdk/StreamEvent$Finish$Companion {
 public final class ai/torad/aisdk/StreamEvent$Raw : ai/torad/aisdk/StreamEvent {
 	public static final field Companion Lai/torad/aisdk/StreamEvent$Raw$Companion;
 	public fun <init> (Lkotlinx/serialization/json/JsonElement;)V
-	public final fun component1 ()Lkotlinx/serialization/json/JsonElement;
-	public final fun copy (Lkotlinx/serialization/json/JsonElement;)Lai/torad/aisdk/StreamEvent$Raw;
-	public static synthetic fun copy$default (Lai/torad/aisdk/StreamEvent$Raw;Lkotlinx/serialization/json/JsonElement;ILjava/lang/Object;)Lai/torad/aisdk/StreamEvent$Raw;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getRawValue ()Lkotlinx/serialization/json/JsonElement;
 	public fun hashCode ()I
@@ -5655,11 +5635,6 @@ public final class ai/torad/aisdk/StreamEvent$ReasoningDelta : ai/torad/aisdk/St
 	public static final field Companion Lai/torad/aisdk/StreamEvent$ReasoningDelta$Companion;
 	public fun <init> (Ljava/lang/String;Ljava/lang/String;Lai/torad/aisdk/ProviderMetadata;)V
 	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;Lai/torad/aisdk/ProviderMetadata;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public final fun component1 ()Ljava/lang/String;
-	public final fun component2 ()Ljava/lang/String;
-	public final fun component3 ()Lai/torad/aisdk/ProviderMetadata;
-	public final fun copy (Ljava/lang/String;Ljava/lang/String;Lai/torad/aisdk/ProviderMetadata;)Lai/torad/aisdk/StreamEvent$ReasoningDelta;
-	public static synthetic fun copy$default (Lai/torad/aisdk/StreamEvent$ReasoningDelta;Ljava/lang/String;Ljava/lang/String;Lai/torad/aisdk/ProviderMetadata;ILjava/lang/Object;)Lai/torad/aisdk/StreamEvent$ReasoningDelta;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getId ()Ljava/lang/String;
 	public final fun getProviderMetadata ()Lai/torad/aisdk/ProviderMetadata;
@@ -5687,10 +5662,6 @@ public final class ai/torad/aisdk/StreamEvent$ReasoningEnd : ai/torad/aisdk/Stre
 	public static final field Companion Lai/torad/aisdk/StreamEvent$ReasoningEnd$Companion;
 	public fun <init> (Ljava/lang/String;Lai/torad/aisdk/ProviderMetadata;)V
 	public synthetic fun <init> (Ljava/lang/String;Lai/torad/aisdk/ProviderMetadata;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public final fun component1 ()Ljava/lang/String;
-	public final fun component2 ()Lai/torad/aisdk/ProviderMetadata;
-	public final fun copy (Ljava/lang/String;Lai/torad/aisdk/ProviderMetadata;)Lai/torad/aisdk/StreamEvent$ReasoningEnd;
-	public static synthetic fun copy$default (Lai/torad/aisdk/StreamEvent$ReasoningEnd;Ljava/lang/String;Lai/torad/aisdk/ProviderMetadata;ILjava/lang/Object;)Lai/torad/aisdk/StreamEvent$ReasoningEnd;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getId ()Ljava/lang/String;
 	public final fun getProviderMetadata ()Lai/torad/aisdk/ProviderMetadata;
@@ -5717,10 +5688,6 @@ public final class ai/torad/aisdk/StreamEvent$ReasoningStart : ai/torad/aisdk/St
 	public static final field Companion Lai/torad/aisdk/StreamEvent$ReasoningStart$Companion;
 	public fun <init> (Ljava/lang/String;Lai/torad/aisdk/ProviderMetadata;)V
 	public synthetic fun <init> (Ljava/lang/String;Lai/torad/aisdk/ProviderMetadata;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public final fun component1 ()Ljava/lang/String;
-	public final fun component2 ()Lai/torad/aisdk/ProviderMetadata;
-	public final fun copy (Ljava/lang/String;Lai/torad/aisdk/ProviderMetadata;)Lai/torad/aisdk/StreamEvent$ReasoningStart;
-	public static synthetic fun copy$default (Lai/torad/aisdk/StreamEvent$ReasoningStart;Ljava/lang/String;Lai/torad/aisdk/ProviderMetadata;ILjava/lang/Object;)Lai/torad/aisdk/StreamEvent$ReasoningStart;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getId ()Ljava/lang/String;
 	public final fun getProviderMetadata ()Lai/torad/aisdk/ProviderMetadata;
@@ -5748,13 +5715,6 @@ public final class ai/torad/aisdk/StreamEvent$ResponseMetadata : ai/torad/aisdk/
 	public fun <init> ()V
 	public fun <init> (Ljava/lang/String;Ljava/lang/Long;Ljava/lang/String;Ljava/util/Map;Lkotlinx/serialization/json/JsonElement;)V
 	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/Long;Ljava/lang/String;Ljava/util/Map;Lkotlinx/serialization/json/JsonElement;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public final fun component1 ()Ljava/lang/String;
-	public final fun component2 ()Ljava/lang/Long;
-	public final fun component3 ()Ljava/lang/String;
-	public final fun component4 ()Ljava/util/Map;
-	public final fun component5 ()Lkotlinx/serialization/json/JsonElement;
-	public final fun copy (Ljava/lang/String;Ljava/lang/Long;Ljava/lang/String;Ljava/util/Map;Lkotlinx/serialization/json/JsonElement;)Lai/torad/aisdk/StreamEvent$ResponseMetadata;
-	public static synthetic fun copy$default (Lai/torad/aisdk/StreamEvent$ResponseMetadata;Ljava/lang/String;Ljava/lang/Long;Ljava/lang/String;Ljava/util/Map;Lkotlinx/serialization/json/JsonElement;ILjava/lang/Object;)Lai/torad/aisdk/StreamEvent$ResponseMetadata;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getBody ()Lkotlinx/serialization/json/JsonElement;
 	public final fun getHeaders ()Ljava/util/Map;
@@ -5784,14 +5744,6 @@ public final class ai/torad/aisdk/StreamEvent$SourcePart : ai/torad/aisdk/Stream
 	public static final field Companion Lai/torad/aisdk/StreamEvent$SourcePart$Companion;
 	public fun <init> (Ljava/lang/String;Lai/torad/aisdk/StreamEvent$SourcePart$SourceType;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lai/torad/aisdk/ProviderMetadata;)V
 	public synthetic fun <init> (Ljava/lang/String;Lai/torad/aisdk/StreamEvent$SourcePart$SourceType;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lai/torad/aisdk/ProviderMetadata;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public final fun component1 ()Ljava/lang/String;
-	public final fun component2 ()Lai/torad/aisdk/StreamEvent$SourcePart$SourceType;
-	public final fun component3 ()Ljava/lang/String;
-	public final fun component4 ()Ljava/lang/String;
-	public final fun component5 ()Ljava/lang/String;
-	public final fun component6 ()Lai/torad/aisdk/ProviderMetadata;
-	public final fun copy (Ljava/lang/String;Lai/torad/aisdk/StreamEvent$SourcePart$SourceType;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lai/torad/aisdk/ProviderMetadata;)Lai/torad/aisdk/StreamEvent$SourcePart;
-	public static synthetic fun copy$default (Lai/torad/aisdk/StreamEvent$SourcePart;Ljava/lang/String;Lai/torad/aisdk/StreamEvent$SourcePart$SourceType;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lai/torad/aisdk/ProviderMetadata;ILjava/lang/Object;)Lai/torad/aisdk/StreamEvent$SourcePart;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getId ()Ljava/lang/String;
 	public final fun getMediaType ()Ljava/lang/String;
@@ -5835,12 +5787,6 @@ public final class ai/torad/aisdk/StreamEvent$StepFinish : ai/torad/aisdk/Stream
 	public static final field Companion Lai/torad/aisdk/StreamEvent$StepFinish$Companion;
 	public fun <init> (ILai/torad/aisdk/FinishReason;Lai/torad/aisdk/Usage;Lai/torad/aisdk/ProviderMetadata;)V
 	public synthetic fun <init> (ILai/torad/aisdk/FinishReason;Lai/torad/aisdk/Usage;Lai/torad/aisdk/ProviderMetadata;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public final fun component1 ()I
-	public final fun component2 ()Lai/torad/aisdk/FinishReason;
-	public final fun component3 ()Lai/torad/aisdk/Usage;
-	public final fun component4 ()Lai/torad/aisdk/ProviderMetadata;
-	public final fun copy (ILai/torad/aisdk/FinishReason;Lai/torad/aisdk/Usage;Lai/torad/aisdk/ProviderMetadata;)Lai/torad/aisdk/StreamEvent$StepFinish;
-	public static synthetic fun copy$default (Lai/torad/aisdk/StreamEvent$StepFinish;ILai/torad/aisdk/FinishReason;Lai/torad/aisdk/Usage;Lai/torad/aisdk/ProviderMetadata;ILjava/lang/Object;)Lai/torad/aisdk/StreamEvent$StepFinish;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getFinishReason ()Lai/torad/aisdk/FinishReason;
 	public final fun getProviderMetadata ()Lai/torad/aisdk/ProviderMetadata;
@@ -5869,10 +5815,6 @@ public final class ai/torad/aisdk/StreamEvent$StepStart : ai/torad/aisdk/StreamE
 	public static final field Companion Lai/torad/aisdk/StreamEvent$StepStart$Companion;
 	public fun <init> (ILai/torad/aisdk/ProviderMetadata;)V
 	public synthetic fun <init> (ILai/torad/aisdk/ProviderMetadata;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public final fun component1 ()I
-	public final fun component2 ()Lai/torad/aisdk/ProviderMetadata;
-	public final fun copy (ILai/torad/aisdk/ProviderMetadata;)Lai/torad/aisdk/StreamEvent$StepStart;
-	public static synthetic fun copy$default (Lai/torad/aisdk/StreamEvent$StepStart;ILai/torad/aisdk/ProviderMetadata;ILjava/lang/Object;)Lai/torad/aisdk/StreamEvent$StepStart;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getProviderMetadata ()Lai/torad/aisdk/ProviderMetadata;
 	public final fun getStepNumber ()I
@@ -5900,9 +5842,6 @@ public final class ai/torad/aisdk/StreamEvent$StreamStart : ai/torad/aisdk/Strea
 	public fun <init> ()V
 	public fun <init> (Ljava/util/List;)V
 	public synthetic fun <init> (Ljava/util/List;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public final fun component1 ()Ljava/util/List;
-	public final fun copy (Ljava/util/List;)Lai/torad/aisdk/StreamEvent$StreamStart;
-	public static synthetic fun copy$default (Lai/torad/aisdk/StreamEvent$StreamStart;Ljava/util/List;ILjava/lang/Object;)Lai/torad/aisdk/StreamEvent$StreamStart;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getWarnings ()Ljava/util/List;
 	public fun hashCode ()I
@@ -5928,11 +5867,6 @@ public final class ai/torad/aisdk/StreamEvent$TextDelta : ai/torad/aisdk/StreamE
 	public static final field Companion Lai/torad/aisdk/StreamEvent$TextDelta$Companion;
 	public fun <init> (Ljava/lang/String;Ljava/lang/String;Lai/torad/aisdk/ProviderMetadata;)V
 	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;Lai/torad/aisdk/ProviderMetadata;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public final fun component1 ()Ljava/lang/String;
-	public final fun component2 ()Ljava/lang/String;
-	public final fun component3 ()Lai/torad/aisdk/ProviderMetadata;
-	public final fun copy (Ljava/lang/String;Ljava/lang/String;Lai/torad/aisdk/ProviderMetadata;)Lai/torad/aisdk/StreamEvent$TextDelta;
-	public static synthetic fun copy$default (Lai/torad/aisdk/StreamEvent$TextDelta;Ljava/lang/String;Ljava/lang/String;Lai/torad/aisdk/ProviderMetadata;ILjava/lang/Object;)Lai/torad/aisdk/StreamEvent$TextDelta;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getId ()Ljava/lang/String;
 	public final fun getProviderMetadata ()Lai/torad/aisdk/ProviderMetadata;
@@ -5960,10 +5894,6 @@ public final class ai/torad/aisdk/StreamEvent$TextEnd : ai/torad/aisdk/StreamEve
 	public static final field Companion Lai/torad/aisdk/StreamEvent$TextEnd$Companion;
 	public fun <init> (Ljava/lang/String;Lai/torad/aisdk/ProviderMetadata;)V
 	public synthetic fun <init> (Ljava/lang/String;Lai/torad/aisdk/ProviderMetadata;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public final fun component1 ()Ljava/lang/String;
-	public final fun component2 ()Lai/torad/aisdk/ProviderMetadata;
-	public final fun copy (Ljava/lang/String;Lai/torad/aisdk/ProviderMetadata;)Lai/torad/aisdk/StreamEvent$TextEnd;
-	public static synthetic fun copy$default (Lai/torad/aisdk/StreamEvent$TextEnd;Ljava/lang/String;Lai/torad/aisdk/ProviderMetadata;ILjava/lang/Object;)Lai/torad/aisdk/StreamEvent$TextEnd;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getId ()Ljava/lang/String;
 	public final fun getProviderMetadata ()Lai/torad/aisdk/ProviderMetadata;
@@ -5990,10 +5920,6 @@ public final class ai/torad/aisdk/StreamEvent$TextStart : ai/torad/aisdk/StreamE
 	public static final field Companion Lai/torad/aisdk/StreamEvent$TextStart$Companion;
 	public fun <init> (Ljava/lang/String;Lai/torad/aisdk/ProviderMetadata;)V
 	public synthetic fun <init> (Ljava/lang/String;Lai/torad/aisdk/ProviderMetadata;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public final fun component1 ()Ljava/lang/String;
-	public final fun component2 ()Lai/torad/aisdk/ProviderMetadata;
-	public final fun copy (Ljava/lang/String;Lai/torad/aisdk/ProviderMetadata;)Lai/torad/aisdk/StreamEvent$TextStart;
-	public static synthetic fun copy$default (Lai/torad/aisdk/StreamEvent$TextStart;Ljava/lang/String;Lai/torad/aisdk/ProviderMetadata;ILjava/lang/Object;)Lai/torad/aisdk/StreamEvent$TextStart;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getId ()Ljava/lang/String;
 	public final fun getProviderMetadata ()Lai/torad/aisdk/ProviderMetadata;
@@ -6020,14 +5946,6 @@ public final class ai/torad/aisdk/StreamEvent$ToolApprovalRequest : ai/torad/ais
 	public static final field Companion Lai/torad/aisdk/StreamEvent$ToolApprovalRequest$Companion;
 	public fun <init> (Ljava/lang/String;Ljava/lang/String;Lkotlinx/serialization/json/JsonElement;Ljava/lang/String;Ljava/lang/String;Lai/torad/aisdk/ProviderMetadata;)V
 	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;Lkotlinx/serialization/json/JsonElement;Ljava/lang/String;Ljava/lang/String;Lai/torad/aisdk/ProviderMetadata;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public final fun component1 ()Ljava/lang/String;
-	public final fun component2 ()Ljava/lang/String;
-	public final fun component3 ()Lkotlinx/serialization/json/JsonElement;
-	public final fun component4 ()Ljava/lang/String;
-	public final fun component5 ()Ljava/lang/String;
-	public final fun component6 ()Lai/torad/aisdk/ProviderMetadata;
-	public final fun copy (Ljava/lang/String;Ljava/lang/String;Lkotlinx/serialization/json/JsonElement;Ljava/lang/String;Ljava/lang/String;Lai/torad/aisdk/ProviderMetadata;)Lai/torad/aisdk/StreamEvent$ToolApprovalRequest;
-	public static synthetic fun copy$default (Lai/torad/aisdk/StreamEvent$ToolApprovalRequest;Ljava/lang/String;Ljava/lang/String;Lkotlinx/serialization/json/JsonElement;Ljava/lang/String;Ljava/lang/String;Lai/torad/aisdk/ProviderMetadata;ILjava/lang/Object;)Lai/torad/aisdk/StreamEvent$ToolApprovalRequest;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getApprovalId ()Ljava/lang/String;
 	public final fun getInputJson ()Lkotlinx/serialization/json/JsonElement;
@@ -6058,12 +5976,6 @@ public final class ai/torad/aisdk/StreamEvent$ToolCall : ai/torad/aisdk/StreamEv
 	public static final field Companion Lai/torad/aisdk/StreamEvent$ToolCall$Companion;
 	public fun <init> (Ljava/lang/String;Ljava/lang/String;Lkotlinx/serialization/json/JsonElement;Lai/torad/aisdk/ProviderMetadata;)V
 	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;Lkotlinx/serialization/json/JsonElement;Lai/torad/aisdk/ProviderMetadata;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public final fun component1 ()Ljava/lang/String;
-	public final fun component2 ()Ljava/lang/String;
-	public final fun component3 ()Lkotlinx/serialization/json/JsonElement;
-	public final fun component4 ()Lai/torad/aisdk/ProviderMetadata;
-	public final fun copy (Ljava/lang/String;Ljava/lang/String;Lkotlinx/serialization/json/JsonElement;Lai/torad/aisdk/ProviderMetadata;)Lai/torad/aisdk/StreamEvent$ToolCall;
-	public static synthetic fun copy$default (Lai/torad/aisdk/StreamEvent$ToolCall;Ljava/lang/String;Ljava/lang/String;Lkotlinx/serialization/json/JsonElement;Lai/torad/aisdk/ProviderMetadata;ILjava/lang/Object;)Lai/torad/aisdk/StreamEvent$ToolCall;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getInputJson ()Lkotlinx/serialization/json/JsonElement;
 	public final fun getProviderMetadata ()Lai/torad/aisdk/ProviderMetadata;
@@ -6092,13 +6004,6 @@ public final class ai/torad/aisdk/StreamEvent$ToolError : ai/torad/aisdk/StreamE
 	public static final field Companion Lai/torad/aisdk/StreamEvent$ToolError$Companion;
 	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lai/torad/aisdk/AgentError;Lai/torad/aisdk/ProviderMetadata;)V
 	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lai/torad/aisdk/AgentError;Lai/torad/aisdk/ProviderMetadata;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public final fun component1 ()Ljava/lang/String;
-	public final fun component2 ()Ljava/lang/String;
-	public final fun component3 ()Ljava/lang/String;
-	public final fun component4 ()Lai/torad/aisdk/AgentError;
-	public final fun component5 ()Lai/torad/aisdk/ProviderMetadata;
-	public final fun copy (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lai/torad/aisdk/AgentError;Lai/torad/aisdk/ProviderMetadata;)Lai/torad/aisdk/StreamEvent$ToolError;
-	public static synthetic fun copy$default (Lai/torad/aisdk/StreamEvent$ToolError;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lai/torad/aisdk/AgentError;Lai/torad/aisdk/ProviderMetadata;ILjava/lang/Object;)Lai/torad/aisdk/StreamEvent$ToolError;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getError ()Lai/torad/aisdk/AgentError;
 	public final fun getMessage ()Ljava/lang/String;
@@ -6128,11 +6033,6 @@ public final class ai/torad/aisdk/StreamEvent$ToolInputDelta : ai/torad/aisdk/St
 	public static final field Companion Lai/torad/aisdk/StreamEvent$ToolInputDelta$Companion;
 	public fun <init> (Ljava/lang/String;Ljava/lang/String;Lai/torad/aisdk/ProviderMetadata;)V
 	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;Lai/torad/aisdk/ProviderMetadata;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public final fun component1 ()Ljava/lang/String;
-	public final fun component2 ()Ljava/lang/String;
-	public final fun component3 ()Lai/torad/aisdk/ProviderMetadata;
-	public final fun copy (Ljava/lang/String;Ljava/lang/String;Lai/torad/aisdk/ProviderMetadata;)Lai/torad/aisdk/StreamEvent$ToolInputDelta;
-	public static synthetic fun copy$default (Lai/torad/aisdk/StreamEvent$ToolInputDelta;Ljava/lang/String;Ljava/lang/String;Lai/torad/aisdk/ProviderMetadata;ILjava/lang/Object;)Lai/torad/aisdk/StreamEvent$ToolInputDelta;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getDelta ()Ljava/lang/String;
 	public final fun getId ()Ljava/lang/String;
@@ -6160,10 +6060,6 @@ public final class ai/torad/aisdk/StreamEvent$ToolInputEnd : ai/torad/aisdk/Stre
 	public static final field Companion Lai/torad/aisdk/StreamEvent$ToolInputEnd$Companion;
 	public fun <init> (Ljava/lang/String;Lai/torad/aisdk/ProviderMetadata;)V
 	public synthetic fun <init> (Ljava/lang/String;Lai/torad/aisdk/ProviderMetadata;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public final fun component1 ()Ljava/lang/String;
-	public final fun component2 ()Lai/torad/aisdk/ProviderMetadata;
-	public final fun copy (Ljava/lang/String;Lai/torad/aisdk/ProviderMetadata;)Lai/torad/aisdk/StreamEvent$ToolInputEnd;
-	public static synthetic fun copy$default (Lai/torad/aisdk/StreamEvent$ToolInputEnd;Ljava/lang/String;Lai/torad/aisdk/ProviderMetadata;ILjava/lang/Object;)Lai/torad/aisdk/StreamEvent$ToolInputEnd;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getId ()Ljava/lang/String;
 	public final fun getProviderMetadata ()Lai/torad/aisdk/ProviderMetadata;
@@ -6190,11 +6086,6 @@ public final class ai/torad/aisdk/StreamEvent$ToolInputStart : ai/torad/aisdk/St
 	public static final field Companion Lai/torad/aisdk/StreamEvent$ToolInputStart$Companion;
 	public fun <init> (Ljava/lang/String;Ljava/lang/String;Lai/torad/aisdk/ProviderMetadata;)V
 	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;Lai/torad/aisdk/ProviderMetadata;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public final fun component1 ()Ljava/lang/String;
-	public final fun component2 ()Ljava/lang/String;
-	public final fun component3 ()Lai/torad/aisdk/ProviderMetadata;
-	public final fun copy (Ljava/lang/String;Ljava/lang/String;Lai/torad/aisdk/ProviderMetadata;)Lai/torad/aisdk/StreamEvent$ToolInputStart;
-	public static synthetic fun copy$default (Lai/torad/aisdk/StreamEvent$ToolInputStart;Ljava/lang/String;Ljava/lang/String;Lai/torad/aisdk/ProviderMetadata;ILjava/lang/Object;)Lai/torad/aisdk/StreamEvent$ToolInputStart;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getId ()Ljava/lang/String;
 	public final fun getProviderMetadata ()Lai/torad/aisdk/ProviderMetadata;
@@ -6222,13 +6113,6 @@ public final class ai/torad/aisdk/StreamEvent$ToolOutputDenied : ai/torad/aisdk/
 	public static final field Companion Lai/torad/aisdk/StreamEvent$ToolOutputDenied$Companion;
 	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lai/torad/aisdk/ProviderMetadata;)V
 	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lai/torad/aisdk/ProviderMetadata;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public final fun component1 ()Ljava/lang/String;
-	public final fun component2 ()Ljava/lang/String;
-	public final fun component3 ()Ljava/lang/String;
-	public final fun component4 ()Ljava/lang/String;
-	public final fun component5 ()Lai/torad/aisdk/ProviderMetadata;
-	public final fun copy (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lai/torad/aisdk/ProviderMetadata;)Lai/torad/aisdk/StreamEvent$ToolOutputDenied;
-	public static synthetic fun copy$default (Lai/torad/aisdk/StreamEvent$ToolOutputDenied;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lai/torad/aisdk/ProviderMetadata;ILjava/lang/Object;)Lai/torad/aisdk/StreamEvent$ToolOutputDenied;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getApprovalId ()Ljava/lang/String;
 	public final fun getProviderMetadata ()Lai/torad/aisdk/ProviderMetadata;
@@ -6258,16 +6142,6 @@ public final class ai/torad/aisdk/StreamEvent$ToolResult : ai/torad/aisdk/Stream
 	public static final field Companion Lai/torad/aisdk/StreamEvent$ToolResult$Companion;
 	public fun <init> (Ljava/lang/String;Ljava/lang/String;Lkotlinx/serialization/json/JsonElement;Lai/torad/aisdk/ToolResultOutput;Lai/torad/aisdk/ToolResultOutput;ZZLai/torad/aisdk/ProviderMetadata;)V
 	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;Lkotlinx/serialization/json/JsonElement;Lai/torad/aisdk/ToolResultOutput;Lai/torad/aisdk/ToolResultOutput;ZZLai/torad/aisdk/ProviderMetadata;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public final fun component1 ()Ljava/lang/String;
-	public final fun component2 ()Ljava/lang/String;
-	public final fun component3 ()Lkotlinx/serialization/json/JsonElement;
-	public final fun component4 ()Lai/torad/aisdk/ToolResultOutput;
-	public final fun component5 ()Lai/torad/aisdk/ToolResultOutput;
-	public final fun component6 ()Z
-	public final fun component7 ()Z
-	public final fun component8 ()Lai/torad/aisdk/ProviderMetadata;
-	public final fun copy (Ljava/lang/String;Ljava/lang/String;Lkotlinx/serialization/json/JsonElement;Lai/torad/aisdk/ToolResultOutput;Lai/torad/aisdk/ToolResultOutput;ZZLai/torad/aisdk/ProviderMetadata;)Lai/torad/aisdk/StreamEvent$ToolResult;
-	public static synthetic fun copy$default (Lai/torad/aisdk/StreamEvent$ToolResult;Ljava/lang/String;Ljava/lang/String;Lkotlinx/serialization/json/JsonElement;Lai/torad/aisdk/ToolResultOutput;Lai/torad/aisdk/ToolResultOutput;ZZLai/torad/aisdk/ProviderMetadata;ILjava/lang/Object;)Lai/torad/aisdk/StreamEvent$ToolResult;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getModelOutput ()Lai/torad/aisdk/ToolResultOutput;
 	public final fun getOutput ()Lai/torad/aisdk/ToolResultOutput;
