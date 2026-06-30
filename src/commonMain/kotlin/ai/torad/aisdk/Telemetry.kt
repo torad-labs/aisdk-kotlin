@@ -251,7 +251,11 @@ private object TelemetryRedaction {
             is AgentEvent.Finished<*, *> -> AgentEvent.Finished<Any?, Any?>(
                 output = if (settings.recordOutputs) output else null,
                 totalSteps = totalSteps,
-                usage = usage.sanitizedUsage(),
+                usage = Usage(
+                    inputTokens = usage.inputTokens,
+                    outputTokens = usage.outputTokens,
+                    raw = null,
+                ),
                 pendingApprovals = pendingApprovals.sanitizedPendingApprovals(settings, redactor),
                 messages = messages.sanitizedMessages(settings, redactor),
                 experimentalContext = if (settings.recordInputs) experimentalContext else null,
@@ -489,7 +493,11 @@ private object TelemetryRedaction {
                 emptyList()
             },
             finishReason = finishReason,
-            usage = usage.sanitizedUsage(),
+            usage = Usage(
+                inputTokens = usage.inputTokens,
+                outputTokens = usage.outputTokens,
+                raw = null,
+            ),
             warnings = warnings,
             request = request.sanitizedRequestMetadata(settings, redactor),
             response = response.sanitizedResponseMetadata(settings, redactor),
@@ -544,9 +552,6 @@ private object TelemetryRedaction {
             headers = redactor.redactHeaders(headers),
             body = body?.takeIf { settings.recordOutputs }?.let(redactor::redactJson),
         )
-
-    private fun Usage.sanitizedUsage(): Usage = copy(raw = null)
-
     private fun Map<String, JsonElement>.sanitizedAttributes(
         settings: TelemetrySettings,
         redactor: Redactor,

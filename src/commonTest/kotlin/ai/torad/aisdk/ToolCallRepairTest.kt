@@ -55,7 +55,14 @@ class ToolCallRepairTest {
                 experimental_repairToolCall = { failedCall, _, _, _ ->
                     // Rewrite `location` → `city`.
                     val original = failedCall.input.jsonObject["location"]?.jsonPrimitive?.content ?: ""
-                    failedCall.copy(input = buildJsonObject { put("city", JsonPrimitive(original)) })
+                    ContentPart.ToolCall(
+                        toolCallId = failedCall.toolCallId,
+                        toolName = failedCall.toolName,
+                        input = buildJsonObject { put("city", JsonPrimitive(original)) },
+                        providerExecuted = failedCall.providerExecuted,
+                        dynamic = failedCall.dynamic,
+                        providerMetadata = failedCall.providerMetadata,
+                    )
                 },
             )
 
@@ -176,9 +183,13 @@ class ToolCallRepairTest {
                 instructions = "",
                 tools = ToolSet(weatherTool, forecastTool),
                 experimental_repairToolCall = { failedCall, _, _, _ ->
-                    failedCall.copy(
+                    ContentPart.ToolCall(
+                        toolCallId = failedCall.toolCallId,
                         toolName = "forecast",
                         input = buildJsonObject { put("city", JsonPrimitive("Paris")) },
+                        providerExecuted = failedCall.providerExecuted,
+                        dynamic = failedCall.dynamic,
+                        providerMetadata = failedCall.providerMetadata,
                     )
                 },
             )
@@ -227,9 +238,13 @@ class ToolCallRepairTest {
                 instructions = "",
                 tools = ToolSet(weatherTool, forecastTool),
                 experimental_repairToolCall = { failedCall, _, _, _ ->
-                    failedCall.copy(
+                    ContentPart.ToolCall(
+                        toolCallId = failedCall.toolCallId,
                         toolName = "forecast",
                         input = buildJsonObject { put("city", JsonPrimitive("Paris")) },
+                        providerExecuted = failedCall.providerExecuted,
+                        dynamic = failedCall.dynamic,
+                        providerMetadata = failedCall.providerMetadata,
                     )
                 },
             )

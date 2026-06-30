@@ -1,5 +1,6 @@
 package ai.torad.aisdk
 
+import dev.drewhamilton.poko.Poko
 import kotlinx.serialization.EncodeDefault
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.SerialName
@@ -22,9 +23,10 @@ import kotlinx.serialization.json.intOrNull
  * approval state is persisted in the message log alongside everything else.
  */
 @Serializable
-public data class ModelMessage(
-    val role: MessageRole,
-    val content: List<ContentPart>,
+@Poko
+public class ModelMessage(
+    public val role: MessageRole,
+    public val content: List<ContentPart>,
 )
 
 // Top-level convenience constructors.
@@ -74,32 +76,35 @@ public sealed class ContentPart {
 
     @Serializable
     @SerialName("text")
-    public data class Text(
-        val text: String,
+    @Poko
+    public class Text(
+        public val text: String,
         @EncodeDefault(EncodeDefault.Mode.NEVER)
-        val providerMetadata: ProviderMetadata = ProviderMetadata.None,
+        public val providerMetadata: ProviderMetadata = ProviderMetadata.None,
     ) : ContentPart()
 
     @Serializable
     @SerialName("reasoning")
-    public data class Reasoning(
-        val text: String,
+    @Poko
+    public class Reasoning(
+        public val text: String,
         @EncodeDefault(EncodeDefault.Mode.NEVER)
-        val providerMetadata: ProviderMetadata = ProviderMetadata.None,
+        public val providerMetadata: ProviderMetadata = ProviderMetadata.None,
     ) : ContentPart()
 
     @Serializable
     @SerialName("tool-call")
-    public data class ToolCall(
-        val toolCallId: String,
-        val toolName: String,
-        val input: JsonElement,
+    @Poko
+    public class ToolCall(
+        public val toolCallId: String,
+        public val toolName: String,
+        public val input: JsonElement,
         /** Provider ran the tool itself (e.g. server-side tools). v6 parity. */
-        val providerExecuted: Boolean = false,
+        public val providerExecuted: Boolean = false,
         /** Call made against a dynamic (runtime-typed) tool. v6 parity. */
-        val dynamic: Boolean = false,
+        public val dynamic: Boolean = false,
         @EncodeDefault(EncodeDefault.Mode.NEVER)
-        val providerMetadata: ProviderMetadata = ProviderMetadata.None,
+        public val providerMetadata: ProviderMetadata = ProviderMetadata.None,
     ) : ContentPart() {
         public companion object {
             /**
@@ -143,18 +148,19 @@ public sealed class ContentPart {
      */
     @Serializable
     @SerialName("tool-result")
-    public data class ToolResult(
-        val toolCallId: String,
-        val toolName: String,
-        val output: JsonElement,
-        val isError: Boolean = false,
-        val modelVisible: JsonElement = output,
+    @Poko
+    public class ToolResult(
+        public val toolCallId: String,
+        public val toolName: String,
+        public val output: JsonElement,
+        public val isError: Boolean = false,
+        public val modelVisible: JsonElement = output,
         /** Result of a dynamic (runtime-typed) tool call. v6 parity. */
-        val dynamic: Boolean = false,
+        public val dynamic: Boolean = false,
         /** Tool was executed by the provider. v6 parity. */
-        val providerExecuted: Boolean = false,
+        public val providerExecuted: Boolean = false,
         @EncodeDefault(EncodeDefault.Mode.NEVER)
-        val providerMetadata: ProviderMetadata = ProviderMetadata.None,
+        public val providerMetadata: ProviderMetadata = ProviderMetadata.None,
     ) : ContentPart()
 
     /** Assistant content: the LLM called a tool that requires approval. */
@@ -186,28 +192,30 @@ public sealed class ContentPart {
     /** Tool content: the host's decision on a previously requested approval. */
     @Serializable
     @SerialName("tool-approval-response")
-    public data class ToolApprovalResponse(
-        val toolCallId: String,
-        val approved: Boolean,
-        val reason: String? = null,
-        val approvalId: String? = null,
+    @Poko
+    public class ToolApprovalResponse(
+        public val toolCallId: String,
+        public val approved: Boolean,
+        public val reason: String? = null,
+        public val approvalId: String? = null,
     ) : ContentPart()
 
     @Serializable
     @SerialName("source")
-    public data class Source(
-        val sourceType: StreamEvent.SourcePart.SourceType,
+    @Poko
+    public class Source(
+        public val sourceType: StreamEvent.SourcePart.SourceType,
         /** Provider's stable handle for the source so repeated mentions can be deduped;
          *  survives the UIMessage -> ModelMessage round-trip (was silently dropped). */
-        val sourceId: String? = null,
-        val url: String? = null,
-        val title: String? = null,
+        public val sourceId: String? = null,
+        public val url: String? = null,
+        public val title: String? = null,
         @EncodeDefault(EncodeDefault.Mode.NEVER)
-        val providerMetadata: ProviderMetadata = ProviderMetadata.None,
+        public val providerMetadata: ProviderMetadata = ProviderMetadata.None,
         /** Media type of a document source (e.g. application/pdf). */
-        val mediaType: String? = null,
+        public val mediaType: String? = null,
         /** Optional display name of a document source. */
-        val filename: String? = null,
+        public val filename: String? = null,
     ) : ContentPart()
 
     /**
@@ -220,19 +228,20 @@ public sealed class ContentPart {
      */
     @Serializable
     @SerialName("file")
-    public data class File(
-        val mediaType: String,
-        val base64: String = "",
+    @Poko
+    public class File(
+        public val mediaType: String,
+        public val base64: String = "",
         /** Optional display name. v6 calls this `filename`. */
-        val filename: String? = null,
+        public val filename: String? = null,
         @EncodeDefault(EncodeDefault.Mode.NEVER)
-        val providerMetadata: ProviderMetadata = ProviderMetadata.None,
+        public val providerMetadata: ProviderMetadata = ProviderMetadata.None,
         /**
          * Remote (or data) URL for the file content, when not provided inline as
          * [base64]. Mirrors v6's `data: DataContent | URL`. Resolve with
          * `convertToLanguageModelPrompt` for providers that don't accept URLs.
          */
-        val url: String? = null,
+        public val url: String? = null,
     ) : ContentPart()
 
     /**
@@ -249,17 +258,18 @@ public sealed class ContentPart {
      */
     @Serializable
     @SerialName("image")
-    public data class Image(
-        val mediaType: String,
-        val base64: String = "",
+    @Poko
+    public class Image(
+        public val mediaType: String,
+        public val base64: String = "",
         @EncodeDefault(EncodeDefault.Mode.NEVER)
-        val providerMetadata: ProviderMetadata = ProviderMetadata.None,
+        public val providerMetadata: ProviderMetadata = ProviderMetadata.None,
         /**
          * Remote (or data) URL for the image, when not provided inline as
          * [base64]. Mirrors v6's `image: DataContent | URL`. Resolve with
          * `convertToLanguageModelPrompt` for providers that don't accept URLs.
          */
-        val url: String? = null,
+        public val url: String? = null,
     ) : ContentPart()
 }
 
@@ -281,10 +291,11 @@ public sealed class ContentPart {
  * keep working unchanged.
  */
 @Serializable
-public data class Usage(
-    val inputTokens: InputTokenBreakdown = InputTokenBreakdown(),
-    val outputTokens: OutputTokenBreakdown = OutputTokenBreakdown(),
-    val raw: JsonElement? = null,
+@Poko
+public class Usage(
+    public val inputTokens: InputTokenBreakdown = InputTokenBreakdown(),
+    public val outputTokens: OutputTokenBreakdown = OutputTokenBreakdown(),
+    public val raw: JsonElement? = null,
 ) {
     public companion object {
         /**
@@ -421,23 +432,24 @@ public data class Usage(
     }
 
     /** Legacy flat accessor — `inputTokens.total`. */
-    val promptTokens: Int get() = inputTokens.total
+    public val promptTokens: Int get() = inputTokens.total
 
     /** Legacy flat accessor — `outputTokens.total`. */
-    val completionTokens: Int get() = outputTokens.total
+    public val completionTokens: Int get() = outputTokens.total
 
     /** Legacy flat accessor — `promptTokens + completionTokens`. */
-    val totalTokens: Int get() = promptTokens + completionTokens
+    public val totalTokens: Int get() = promptTokens + completionTokens
 
     @Serializable
-    public data class InputTokenBreakdown(
-        val total: Int = 0,
+    @Poko
+    public class InputTokenBreakdown(
+        public val total: Int = 0,
         /** Tokens that were billed without cache participation. */
-        val noCache: Int = 0,
+        public val noCache: Int = 0,
         /** Tokens read from a provider prompt cache (saves billing). */
-        val cacheRead: Int = 0,
+        public val cacheRead: Int = 0,
         /** Tokens written to a provider prompt cache (first-time cost). */
-        val cacheWrite: Int = 0,
+        public val cacheWrite: Int = 0,
     ) {
         init {
             require(total >= 0) { "inputTokens.total must be non-negative." }
@@ -451,12 +463,13 @@ public data class Usage(
     }
 
     @Serializable
-    public data class OutputTokenBreakdown(
-        val total: Int = 0,
+    @Poko
+    public class OutputTokenBreakdown(
+        public val total: Int = 0,
         /** Visible response tokens. */
-        val text: Int = 0,
+        public val text: Int = 0,
         /** Hidden reasoning tokens (Anthropic thinking, OpenAI reasoning). */
-        val reasoning: Int = 0,
+        public val reasoning: Int = 0,
     ) {
         init {
             require(total >= 0) { "outputTokens.total must be non-negative." }

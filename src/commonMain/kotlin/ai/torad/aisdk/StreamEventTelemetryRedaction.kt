@@ -107,13 +107,21 @@ internal object StreamEventTelemetryRedaction {
             is StreamEvent.StepFinish -> StreamEvent.StepFinish(
                 stepNumber = event.stepNumber,
                 finishReason = event.finishReason,
-                usage = event.usage.sanitizedForTelemetry(),
+                usage = Usage(
+                    inputTokens = event.usage.inputTokens,
+                    outputTokens = event.usage.outputTokens,
+                    raw = null,
+                ),
                 providerMetadata = ProviderMetadata.None,
             )
             is StreamEvent.Finish -> StreamEvent.Finish(
                 totalSteps = event.totalSteps,
                 finishReason = event.finishReason,
-                usage = event.usage.sanitizedForTelemetry(),
+                usage = Usage(
+                    inputTokens = event.usage.inputTokens,
+                    outputTokens = event.usage.outputTokens,
+                    raw = null,
+                ),
                 providerMetadata = ProviderMetadata.None,
                 rawFinishReason = event.rawFinishReason,
             )
@@ -206,6 +214,4 @@ internal object StreamEventTelemetryRedaction {
         } else {
             StreamEvent.Raw(rawValue = JsonObject(emptyMap()))
         }
-
-    private fun Usage.sanitizedForTelemetry(): Usage = copy(raw = null)
 }
