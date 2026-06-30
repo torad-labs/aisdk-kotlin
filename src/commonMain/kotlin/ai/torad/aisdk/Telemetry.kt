@@ -211,20 +211,41 @@ private object TelemetryRedaction {
                 priorMessages = priorMessages.sanitizedMessages(settings, redactor),
                 options = if (settings.recordInputs) options else null,
             )
-            is AgentEvent.StepStarted -> copy(
+            is AgentEvent.StepStarted -> AgentEvent.StepStarted(
+                stepNumber = stepNumber,
                 messages = messages.sanitizedMessages(settings, redactor),
                 request = request.sanitizedParams(settings, redactor),
                 priorSteps = priorSteps.map { it.sanitizedStep(settings, redactor) },
             )
-            is AgentEvent.Chunk -> copy(event = StreamEventTelemetryRedaction.sanitize(event, settings, redactor))
-            is AgentEvent.StepFinished -> copy(step = step.sanitizedStep(settings, redactor))
-            is AgentEvent.ToolCallStarted -> copy(
+            is AgentEvent.Chunk -> AgentEvent.Chunk(
+                event = StreamEventTelemetryRedaction.sanitize(event, settings, redactor),
+                stepNumber = stepNumber,
+            )
+            is AgentEvent.StepFinished -> AgentEvent.StepFinished(
+                stepNumber = stepNumber,
+                step = step.sanitizedStep(settings, redactor),
+            )
+            is AgentEvent.ToolCallStarted -> AgentEvent.ToolCallStarted(
+                toolCallId = toolCallId,
+                toolName = toolName,
                 input = if (settings.recordInputs) redactor.redactJson(input) else JsonObject(emptyMap()),
+                stepNumber = stepNumber,
                 messages = messages.sanitizedMessages(settings, redactor),
             )
-            is AgentEvent.ToolCallFinished -> copy(outcome = outcome.sanitizedOutcome(settings, redactor))
-            is AgentEvent.Errored -> copy(error = error.redactedThrowable(redactor))
-            is AgentEvent.Aborted -> copy(steps = steps.map { it.sanitizedStep(settings, redactor) })
+            is AgentEvent.ToolCallFinished -> AgentEvent.ToolCallFinished(
+                toolCallId = toolCallId,
+                toolName = toolName,
+                outcome = outcome.sanitizedOutcome(settings, redactor),
+                stepNumber = stepNumber,
+            )
+            is AgentEvent.Errored -> AgentEvent.Errored(
+                error = error.redactedThrowable(redactor),
+                stepNumber = stepNumber,
+                source = source,
+            )
+            is AgentEvent.Aborted -> AgentEvent.Aborted(
+                steps = steps.map { it.sanitizedStep(settings, redactor) },
+            )
             is AgentEvent.Finished<*, *> -> AgentEvent.Finished<Any?, Any?>(
                 output = if (settings.recordOutputs) output else null,
                 totalSteps = totalSteps,
@@ -233,9 +254,23 @@ private object TelemetryRedaction {
                 messages = messages.sanitizedMessages(settings, redactor),
                 experimentalContext = if (settings.recordInputs) experimentalContext else null,
             )
-            is AgentEvent.ModelCallStarted -> copy(params = params.sanitizedParams(settings, redactor))
-            is AgentEvent.ModelCallFinished -> copy(response = response.sanitizedResponseMetadata(settings, redactor))
-            is AgentEvent.SpanEmitted -> copy(attributes = attributes.sanitizedAttributes(settings, redactor))
+            is AgentEvent.ModelCallStarted -> AgentEvent.ModelCallStarted(
+                stepNumber = stepNumber,
+                modelId = modelId,
+                params = params.sanitizedParams(settings, redactor),
+            )
+            is AgentEvent.ModelCallFinished -> AgentEvent.ModelCallFinished(
+                stepNumber = stepNumber,
+                modelId = modelId,
+                finishReason = finishReason,
+                usage = usage,
+                response = response.sanitizedResponseMetadata(settings, redactor),
+                rawFinishReason = rawFinishReason,
+            )
+            is AgentEvent.SpanEmitted -> AgentEvent.SpanEmitted(
+                name = name,
+                attributes = attributes.sanitizedAttributes(settings, redactor),
+            )
         }
 
     private fun AgentEvent.ToolCallFinished.Outcome.sanitizedOutcome(
@@ -350,7 +385,8 @@ private object TelemetryRedaction {
     }
 
     private fun StepResult.sanitizedStep(settings: TelemetrySettings, redactor: Redactor): StepResult =
-        copy(
+        StepResult(
+            stepNumber = stepNumber,
             text = if (settings.recordOutputs) redactor.redactText(text) else "",
             reasoning = if (settings.recordOutputs) redactor.redactText(reasoning) else "",
             toolCalls = if (settings.recordInputs) {
@@ -385,10 +421,14 @@ private object TelemetryRedaction {
             } else {
                 emptyList()
             },
+            finishReason = finishReason,
             usage = usage.sanitizedUsage(),
+            warnings = warnings,
             request = request.sanitizedRequestMetadata(settings, redactor),
             response = response.sanitizedResponseMetadata(settings, redactor),
             providerMetadata = ProviderMetadata.None,
+            rawFinishReason = rawFinishReason,
+            model = model,
             experimentalContext = if (settings.recordInputs) experimentalContext else null,
         )
 

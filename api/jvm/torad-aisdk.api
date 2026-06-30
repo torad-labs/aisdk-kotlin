@@ -132,9 +132,6 @@ public abstract class ai/torad/aisdk/AgentEvent {
 
 public final class ai/torad/aisdk/AgentEvent$Aborted : ai/torad/aisdk/AgentEvent {
 	public fun <init> (Ljava/util/List;)V
-	public final fun component1 ()Ljava/util/List;
-	public final fun copy (Ljava/util/List;)Lai/torad/aisdk/AgentEvent$Aborted;
-	public static synthetic fun copy$default (Lai/torad/aisdk/AgentEvent$Aborted;Ljava/util/List;ILjava/lang/Object;)Lai/torad/aisdk/AgentEvent$Aborted;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getSteps ()Ljava/util/List;
 	public fun hashCode ()I
@@ -143,10 +140,6 @@ public final class ai/torad/aisdk/AgentEvent$Aborted : ai/torad/aisdk/AgentEvent
 
 public final class ai/torad/aisdk/AgentEvent$Chunk : ai/torad/aisdk/AgentEvent {
 	public fun <init> (Lai/torad/aisdk/StreamEvent;I)V
-	public final fun component1 ()Lai/torad/aisdk/StreamEvent;
-	public final fun component2 ()I
-	public final fun copy (Lai/torad/aisdk/StreamEvent;I)Lai/torad/aisdk/AgentEvent$Chunk;
-	public static synthetic fun copy$default (Lai/torad/aisdk/AgentEvent$Chunk;Lai/torad/aisdk/StreamEvent;IILjava/lang/Object;)Lai/torad/aisdk/AgentEvent$Chunk;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getEvent ()Lai/torad/aisdk/StreamEvent;
 	public final fun getStepNumber ()I
@@ -156,11 +149,6 @@ public final class ai/torad/aisdk/AgentEvent$Chunk : ai/torad/aisdk/AgentEvent {
 
 public final class ai/torad/aisdk/AgentEvent$Errored : ai/torad/aisdk/AgentEvent {
 	public fun <init> (Ljava/lang/Throwable;ILai/torad/aisdk/AgentEvent$Errored$ErrorSource;)V
-	public final fun component1 ()Ljava/lang/Throwable;
-	public final fun component2 ()I
-	public final fun component3 ()Lai/torad/aisdk/AgentEvent$Errored$ErrorSource;
-	public final fun copy (Ljava/lang/Throwable;ILai/torad/aisdk/AgentEvent$Errored$ErrorSource;)Lai/torad/aisdk/AgentEvent$Errored;
-	public static synthetic fun copy$default (Lai/torad/aisdk/AgentEvent$Errored;Ljava/lang/Throwable;ILai/torad/aisdk/AgentEvent$Errored$ErrorSource;ILjava/lang/Object;)Lai/torad/aisdk/AgentEvent$Errored;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getError ()Ljava/lang/Throwable;
 	public final fun getSource ()Lai/torad/aisdk/AgentEvent$Errored$ErrorSource;
@@ -184,14 +172,6 @@ public final class ai/torad/aisdk/AgentEvent$Errored$ErrorSource : java/lang/Enu
 public final class ai/torad/aisdk/AgentEvent$Finished : ai/torad/aisdk/AgentEvent {
 	public fun <init> (Ljava/lang/Object;ILai/torad/aisdk/Usage;Ljava/util/List;Ljava/util/List;Ljava/lang/Object;)V
 	public synthetic fun <init> (Ljava/lang/Object;ILai/torad/aisdk/Usage;Ljava/util/List;Ljava/util/List;Ljava/lang/Object;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public final fun component1 ()Ljava/lang/Object;
-	public final fun component2 ()I
-	public final fun component3 ()Lai/torad/aisdk/Usage;
-	public final fun component4 ()Ljava/util/List;
-	public final fun component5 ()Ljava/util/List;
-	public final fun component6 ()Ljava/lang/Object;
-	public final fun copy (Ljava/lang/Object;ILai/torad/aisdk/Usage;Ljava/util/List;Ljava/util/List;Ljava/lang/Object;)Lai/torad/aisdk/AgentEvent$Finished;
-	public static synthetic fun copy$default (Lai/torad/aisdk/AgentEvent$Finished;Ljava/lang/Object;ILai/torad/aisdk/Usage;Ljava/util/List;Ljava/util/List;Ljava/lang/Object;ILjava/lang/Object;)Lai/torad/aisdk/AgentEvent$Finished;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getExperimentalContext ()Ljava/lang/Object;
 	public final fun getMessages ()Ljava/util/List;
@@ -206,14 +186,6 @@ public final class ai/torad/aisdk/AgentEvent$Finished : ai/torad/aisdk/AgentEven
 public final class ai/torad/aisdk/AgentEvent$ModelCallFinished : ai/torad/aisdk/AgentEvent {
 	public fun <init> (ILjava/lang/String;Lai/torad/aisdk/FinishReason;Lai/torad/aisdk/Usage;Lai/torad/aisdk/LanguageModelResponseMetadata;Ljava/lang/String;)V
 	public synthetic fun <init> (ILjava/lang/String;Lai/torad/aisdk/FinishReason;Lai/torad/aisdk/Usage;Lai/torad/aisdk/LanguageModelResponseMetadata;Ljava/lang/String;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public final fun component1 ()I
-	public final fun component2 ()Ljava/lang/String;
-	public final fun component3 ()Lai/torad/aisdk/FinishReason;
-	public final fun component4 ()Lai/torad/aisdk/Usage;
-	public final fun component5 ()Lai/torad/aisdk/LanguageModelResponseMetadata;
-	public final fun component6 ()Ljava/lang/String;
-	public final fun copy (ILjava/lang/String;Lai/torad/aisdk/FinishReason;Lai/torad/aisdk/Usage;Lai/torad/aisdk/LanguageModelResponseMetadata;Ljava/lang/String;)Lai/torad/aisdk/AgentEvent$ModelCallFinished;
-	public static synthetic fun copy$default (Lai/torad/aisdk/AgentEvent$ModelCallFinished;ILjava/lang/String;Lai/torad/aisdk/FinishReason;Lai/torad/aisdk/Usage;Lai/torad/aisdk/LanguageModelResponseMetadata;Ljava/lang/String;ILjava/lang/Object;)Lai/torad/aisdk/AgentEvent$ModelCallFinished;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getFinishReason ()Lai/torad/aisdk/FinishReason;
 	public final fun getModelId ()Ljava/lang/String;
@@ -227,11 +199,6 @@ public final class ai/torad/aisdk/AgentEvent$ModelCallFinished : ai/torad/aisdk/
 
 public final class ai/torad/aisdk/AgentEvent$ModelCallStarted : ai/torad/aisdk/AgentEvent {
 	public fun <init> (ILjava/lang/String;Lai/torad/aisdk/LanguageModelCallParams;)V
-	public final fun component1 ()I
-	public final fun component2 ()Ljava/lang/String;
-	public final fun component3 ()Lai/torad/aisdk/LanguageModelCallParams;
-	public final fun copy (ILjava/lang/String;Lai/torad/aisdk/LanguageModelCallParams;)Lai/torad/aisdk/AgentEvent$ModelCallStarted;
-	public static synthetic fun copy$default (Lai/torad/aisdk/AgentEvent$ModelCallStarted;ILjava/lang/String;Lai/torad/aisdk/LanguageModelCallParams;ILjava/lang/Object;)Lai/torad/aisdk/AgentEvent$ModelCallStarted;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getModelId ()Ljava/lang/String;
 	public final fun getParams ()Lai/torad/aisdk/LanguageModelCallParams;
@@ -243,10 +210,6 @@ public final class ai/torad/aisdk/AgentEvent$ModelCallStarted : ai/torad/aisdk/A
 public final class ai/torad/aisdk/AgentEvent$SpanEmitted : ai/torad/aisdk/AgentEvent {
 	public fun <init> (Ljava/lang/String;Ljava/util/Map;)V
 	public synthetic fun <init> (Ljava/lang/String;Ljava/util/Map;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public final fun component1 ()Ljava/lang/String;
-	public final fun component2 ()Ljava/util/Map;
-	public final fun copy (Ljava/lang/String;Ljava/util/Map;)Lai/torad/aisdk/AgentEvent$SpanEmitted;
-	public static synthetic fun copy$default (Lai/torad/aisdk/AgentEvent$SpanEmitted;Ljava/lang/String;Ljava/util/Map;ILjava/lang/Object;)Lai/torad/aisdk/AgentEvent$SpanEmitted;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getAttributes ()Ljava/util/Map;
 	public final fun getName ()Ljava/lang/String;
@@ -256,11 +219,6 @@ public final class ai/torad/aisdk/AgentEvent$SpanEmitted : ai/torad/aisdk/AgentE
 
 public final class ai/torad/aisdk/AgentEvent$Started : ai/torad/aisdk/AgentEvent {
 	public fun <init> (Ljava/lang/String;Ljava/util/List;Ljava/lang/Object;)V
-	public final fun component1 ()Ljava/lang/String;
-	public final fun component2 ()Ljava/util/List;
-	public final fun component3 ()Ljava/lang/Object;
-	public final fun copy (Ljava/lang/String;Ljava/util/List;Ljava/lang/Object;)Lai/torad/aisdk/AgentEvent$Started;
-	public static synthetic fun copy$default (Lai/torad/aisdk/AgentEvent$Started;Ljava/lang/String;Ljava/util/List;Ljava/lang/Object;ILjava/lang/Object;)Lai/torad/aisdk/AgentEvent$Started;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getOptions ()Ljava/lang/Object;
 	public final fun getPriorMessages ()Ljava/util/List;
@@ -271,10 +229,6 @@ public final class ai/torad/aisdk/AgentEvent$Started : ai/torad/aisdk/AgentEvent
 
 public final class ai/torad/aisdk/AgentEvent$StepFinished : ai/torad/aisdk/AgentEvent {
 	public fun <init> (ILai/torad/aisdk/StepResult;)V
-	public final fun component1 ()I
-	public final fun component2 ()Lai/torad/aisdk/StepResult;
-	public final fun copy (ILai/torad/aisdk/StepResult;)Lai/torad/aisdk/AgentEvent$StepFinished;
-	public static synthetic fun copy$default (Lai/torad/aisdk/AgentEvent$StepFinished;ILai/torad/aisdk/StepResult;ILjava/lang/Object;)Lai/torad/aisdk/AgentEvent$StepFinished;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getStep ()Lai/torad/aisdk/StepResult;
 	public final fun getStepNumber ()I
@@ -284,12 +238,6 @@ public final class ai/torad/aisdk/AgentEvent$StepFinished : ai/torad/aisdk/Agent
 
 public final class ai/torad/aisdk/AgentEvent$StepStarted : ai/torad/aisdk/AgentEvent {
 	public fun <init> (ILjava/util/List;Lai/torad/aisdk/LanguageModelCallParams;Ljava/util/List;)V
-	public final fun component1 ()I
-	public final fun component2 ()Ljava/util/List;
-	public final fun component3 ()Lai/torad/aisdk/LanguageModelCallParams;
-	public final fun component4 ()Ljava/util/List;
-	public final fun copy (ILjava/util/List;Lai/torad/aisdk/LanguageModelCallParams;Ljava/util/List;)Lai/torad/aisdk/AgentEvent$StepStarted;
-	public static synthetic fun copy$default (Lai/torad/aisdk/AgentEvent$StepStarted;ILjava/util/List;Lai/torad/aisdk/LanguageModelCallParams;Ljava/util/List;ILjava/lang/Object;)Lai/torad/aisdk/AgentEvent$StepStarted;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getMessages ()Ljava/util/List;
 	public final fun getPriorSteps ()Ljava/util/List;
@@ -301,12 +249,6 @@ public final class ai/torad/aisdk/AgentEvent$StepStarted : ai/torad/aisdk/AgentE
 
 public final class ai/torad/aisdk/AgentEvent$ToolCallFinished : ai/torad/aisdk/AgentEvent {
 	public fun <init> (Ljava/lang/String;Ljava/lang/String;Lai/torad/aisdk/AgentEvent$ToolCallFinished$Outcome;I)V
-	public final fun component1 ()Ljava/lang/String;
-	public final fun component2 ()Ljava/lang/String;
-	public final fun component3 ()Lai/torad/aisdk/AgentEvent$ToolCallFinished$Outcome;
-	public final fun component4 ()I
-	public final fun copy (Ljava/lang/String;Ljava/lang/String;Lai/torad/aisdk/AgentEvent$ToolCallFinished$Outcome;I)Lai/torad/aisdk/AgentEvent$ToolCallFinished;
-	public static synthetic fun copy$default (Lai/torad/aisdk/AgentEvent$ToolCallFinished;Ljava/lang/String;Ljava/lang/String;Lai/torad/aisdk/AgentEvent$ToolCallFinished$Outcome;IILjava/lang/Object;)Lai/torad/aisdk/AgentEvent$ToolCallFinished;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getOutcome ()Lai/torad/aisdk/AgentEvent$ToolCallFinished$Outcome;
 	public final fun getStepNumber ()I
@@ -321,9 +263,6 @@ public abstract class ai/torad/aisdk/AgentEvent$ToolCallFinished$Outcome {
 
 public final class ai/torad/aisdk/AgentEvent$ToolCallFinished$Outcome$Failure : ai/torad/aisdk/AgentEvent$ToolCallFinished$Outcome {
 	public fun <init> (Ljava/lang/String;)V
-	public final fun component1 ()Ljava/lang/String;
-	public final fun copy (Ljava/lang/String;)Lai/torad/aisdk/AgentEvent$ToolCallFinished$Outcome$Failure;
-	public static synthetic fun copy$default (Lai/torad/aisdk/AgentEvent$ToolCallFinished$Outcome$Failure;Ljava/lang/String;ILjava/lang/Object;)Lai/torad/aisdk/AgentEvent$ToolCallFinished$Outcome$Failure;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getErrorMessage ()Ljava/lang/String;
 	public fun hashCode ()I
@@ -332,9 +271,6 @@ public final class ai/torad/aisdk/AgentEvent$ToolCallFinished$Outcome$Failure : 
 
 public final class ai/torad/aisdk/AgentEvent$ToolCallFinished$Outcome$Success : ai/torad/aisdk/AgentEvent$ToolCallFinished$Outcome {
 	public fun <init> (Lkotlinx/serialization/json/JsonElement;)V
-	public final fun component1 ()Lkotlinx/serialization/json/JsonElement;
-	public final fun copy (Lkotlinx/serialization/json/JsonElement;)Lai/torad/aisdk/AgentEvent$ToolCallFinished$Outcome$Success;
-	public static synthetic fun copy$default (Lai/torad/aisdk/AgentEvent$ToolCallFinished$Outcome$Success;Lkotlinx/serialization/json/JsonElement;ILjava/lang/Object;)Lai/torad/aisdk/AgentEvent$ToolCallFinished$Outcome$Success;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getOutputJson ()Lkotlinx/serialization/json/JsonElement;
 	public fun hashCode ()I
@@ -343,13 +279,6 @@ public final class ai/torad/aisdk/AgentEvent$ToolCallFinished$Outcome$Success : 
 
 public final class ai/torad/aisdk/AgentEvent$ToolCallStarted : ai/torad/aisdk/AgentEvent {
 	public fun <init> (Ljava/lang/String;Ljava/lang/String;Lkotlinx/serialization/json/JsonElement;ILjava/util/List;)V
-	public final fun component1 ()Ljava/lang/String;
-	public final fun component2 ()Ljava/lang/String;
-	public final fun component3 ()Lkotlinx/serialization/json/JsonElement;
-	public final fun component4 ()I
-	public final fun component5 ()Ljava/util/List;
-	public final fun copy (Ljava/lang/String;Ljava/lang/String;Lkotlinx/serialization/json/JsonElement;ILjava/util/List;)Lai/torad/aisdk/AgentEvent$ToolCallStarted;
-	public static synthetic fun copy$default (Lai/torad/aisdk/AgentEvent$ToolCallStarted;Ljava/lang/String;Ljava/lang/String;Lkotlinx/serialization/json/JsonElement;ILjava/util/List;ILjava/lang/Object;)Lai/torad/aisdk/AgentEvent$ToolCallStarted;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getInput ()Lkotlinx/serialization/json/JsonElement;
 	public final fun getMessages ()Ljava/util/List;
@@ -5339,23 +5268,6 @@ public final class ai/torad/aisdk/StdioConfig$Companion {
 public final class ai/torad/aisdk/StepResult {
 	public fun <init> (ILjava/lang/String;Ljava/lang/String;Ljava/util/List;Ljava/util/List;Ljava/util/List;Lai/torad/aisdk/FinishReason;Lai/torad/aisdk/Usage;Ljava/util/List;Lai/torad/aisdk/LanguageModelRequestMetadata;Lai/torad/aisdk/LanguageModelResponseMetadata;Lai/torad/aisdk/ProviderMetadata;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Object;)V
 	public synthetic fun <init> (ILjava/lang/String;Ljava/lang/String;Ljava/util/List;Ljava/util/List;Ljava/util/List;Lai/torad/aisdk/FinishReason;Lai/torad/aisdk/Usage;Ljava/util/List;Lai/torad/aisdk/LanguageModelRequestMetadata;Lai/torad/aisdk/LanguageModelResponseMetadata;Lai/torad/aisdk/ProviderMetadata;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Object;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public final fun component1 ()I
-	public final fun component10 ()Lai/torad/aisdk/LanguageModelRequestMetadata;
-	public final fun component11 ()Lai/torad/aisdk/LanguageModelResponseMetadata;
-	public final fun component12 ()Lai/torad/aisdk/ProviderMetadata;
-	public final fun component13 ()Ljava/lang/String;
-	public final fun component14 ()Ljava/lang/String;
-	public final fun component15 ()Ljava/lang/Object;
-	public final fun component2 ()Ljava/lang/String;
-	public final fun component3 ()Ljava/lang/String;
-	public final fun component4 ()Ljava/util/List;
-	public final fun component5 ()Ljava/util/List;
-	public final fun component6 ()Ljava/util/List;
-	public final fun component7 ()Lai/torad/aisdk/FinishReason;
-	public final fun component8 ()Lai/torad/aisdk/Usage;
-	public final fun component9 ()Ljava/util/List;
-	public final fun copy (ILjava/lang/String;Ljava/lang/String;Ljava/util/List;Ljava/util/List;Ljava/util/List;Lai/torad/aisdk/FinishReason;Lai/torad/aisdk/Usage;Ljava/util/List;Lai/torad/aisdk/LanguageModelRequestMetadata;Lai/torad/aisdk/LanguageModelResponseMetadata;Lai/torad/aisdk/ProviderMetadata;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Object;)Lai/torad/aisdk/StepResult;
-	public static synthetic fun copy$default (Lai/torad/aisdk/StepResult;ILjava/lang/String;Ljava/lang/String;Ljava/util/List;Ljava/util/List;Ljava/util/List;Lai/torad/aisdk/FinishReason;Lai/torad/aisdk/Usage;Ljava/util/List;Lai/torad/aisdk/LanguageModelRequestMetadata;Lai/torad/aisdk/LanguageModelResponseMetadata;Lai/torad/aisdk/ProviderMetadata;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Object;ILjava/lang/Object;)Lai/torad/aisdk/StepResult;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getDynamicToolCalls ()Ljava/util/List;
 	public final fun getDynamicToolResults ()Ljava/util/List;
