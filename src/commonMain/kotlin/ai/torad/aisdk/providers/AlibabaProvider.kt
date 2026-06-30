@@ -140,35 +140,164 @@ public fun AlibabaProviderSettings(
 /** Provider options for [AlibabaProvider.embeddingModel] — pass under the
  *  `"alibaba"` key in [EmbeddingModelCallParams.providerOptions]. */
 @Serializable
-public data class AlibabaEmbeddingModelOptions(
+@Poko
+public class AlibabaEmbeddingModelOptions internal constructor(
     /** `"query"` or `"document"` (asymmetric retrieval); defaults to `document`. */
-    val textType: String? = null,
+    public val textType: String? = null,
     /** Output vector dimension; defaults to 1024 (`text-embedding-v4` also allows 1536/2048). */
-    val dimension: Int? = null,
+    public val dimension: Int? = null,
     /** `"dense"` (default), `"sparse"`, or `"dense&sparse"`. `sparse` is rejected —
      *  the embedding interface requires dense float arrays. */
-    val outputType: String? = null,
+    public val outputType: String? = null,
 )
 
-@Serializable
-public data class AlibabaLanguageModelOptions(
-    val enableThinking: Boolean? = null,
-    val thinkingBudget: Int? = null,
-    val parallelToolCalls: Boolean? = null,
-)
+public class AlibabaEmbeddingModelOptionsBuilder internal constructor() {
+    private var textType: String? = null
+    private var dimension: Int? = null
+    private var outputType: String? = null
+
+    public fun textType(value: String?) {
+        textType = value
+    }
+
+    public fun dimension(value: Int?) {
+        dimension = value
+    }
+
+    public fun outputType(value: String?) {
+        outputType = value
+    }
+
+    internal fun build(): AlibabaEmbeddingModelOptions =
+        AlibabaEmbeddingModelOptions(
+            textType = textType,
+            dimension = dimension,
+            outputType = outputType,
+        )
+}
+
+public fun AlibabaEmbeddingModelOptions(
+    block: AlibabaEmbeddingModelOptionsBuilder.() -> Unit = {},
+): AlibabaEmbeddingModelOptions =
+    AlibabaEmbeddingModelOptionsBuilder().apply(block).build()
 
 @Serializable
-public data class AlibabaVideoModelOptions(
-    val negativePrompt: String? = null,
-    val audioUrl: String? = null,
-    val promptExtend: Boolean? = null,
-    val shotType: String? = null,
-    val watermark: Boolean? = null,
-    val audio: Boolean? = null,
-    val referenceUrls: List<String>? = null,
-    val pollIntervalMs: Long? = null,
-    val pollTimeoutMs: Long? = null,
+@Poko
+public class AlibabaLanguageModelOptions internal constructor(
+    public val enableThinking: Boolean? = null,
+    public val thinkingBudget: Int? = null,
+    public val parallelToolCalls: Boolean? = null,
 )
+
+public class AlibabaLanguageModelOptionsBuilder internal constructor() {
+    private var enableThinking: Boolean? = null
+    private var thinkingBudget: Int? = null
+    private var parallelToolCalls: Boolean? = null
+
+    public fun enableThinking(value: Boolean?) {
+        enableThinking = value
+    }
+
+    public fun thinkingBudget(value: Int?) {
+        thinkingBudget = value
+    }
+
+    public fun parallelToolCalls(value: Boolean?) {
+        parallelToolCalls = value
+    }
+
+    internal fun build(): AlibabaLanguageModelOptions =
+        AlibabaLanguageModelOptions(
+            enableThinking = enableThinking,
+            thinkingBudget = thinkingBudget,
+            parallelToolCalls = parallelToolCalls,
+        )
+}
+
+public fun AlibabaLanguageModelOptions(
+    block: AlibabaLanguageModelOptionsBuilder.() -> Unit = {},
+): AlibabaLanguageModelOptions =
+    AlibabaLanguageModelOptionsBuilder().apply(block).build()
+
+@Serializable
+@Poko
+public class AlibabaVideoModelOptions internal constructor(
+    public val negativePrompt: String? = null,
+    public val audioUrl: String? = null,
+    public val promptExtend: Boolean? = null,
+    public val shotType: String? = null,
+    public val watermark: Boolean? = null,
+    public val audio: Boolean? = null,
+    public val referenceUrls: List<String>? = null,
+    public val pollIntervalMs: Long? = null,
+    public val pollTimeoutMs: Long? = null,
+)
+
+public class AlibabaVideoModelOptionsBuilder internal constructor() {
+    private var negativePrompt: String? = null
+    private var audioUrl: String? = null
+    private var promptExtend: Boolean? = null
+    private var shotType: String? = null
+    private var watermark: Boolean? = null
+    private var audio: Boolean? = null
+    private var referenceUrls: List<String>? = null
+    private var pollIntervalMs: Long? = null
+    private var pollTimeoutMs: Long? = null
+
+    public fun negativePrompt(value: String?) {
+        negativePrompt = value
+    }
+
+    public fun audioUrl(value: String?) {
+        audioUrl = value
+    }
+
+    public fun promptExtend(value: Boolean?) {
+        promptExtend = value
+    }
+
+    public fun shotType(value: String?) {
+        shotType = value
+    }
+
+    public fun watermark(value: Boolean?) {
+        watermark = value
+    }
+
+    public fun audio(value: Boolean?) {
+        audio = value
+    }
+
+    public fun referenceUrls(value: List<String>?) {
+        referenceUrls = value
+    }
+
+    public fun pollIntervalMs(value: Long?) {
+        pollIntervalMs = value
+    }
+
+    public fun pollTimeoutMs(value: Long?) {
+        pollTimeoutMs = value
+    }
+
+    internal fun build(): AlibabaVideoModelOptions =
+        AlibabaVideoModelOptions(
+            negativePrompt = negativePrompt,
+            audioUrl = audioUrl,
+            promptExtend = promptExtend,
+            shotType = shotType,
+            watermark = watermark,
+            audio = audio,
+            referenceUrls = referenceUrls,
+            pollIntervalMs = pollIntervalMs,
+            pollTimeoutMs = pollTimeoutMs,
+        )
+}
+
+public fun AlibabaVideoModelOptions(
+    block: AlibabaVideoModelOptionsBuilder.() -> Unit = {},
+): AlibabaVideoModelOptions =
+    AlibabaVideoModelOptionsBuilder().apply(block).build()
 
 public class AlibabaProvider(
     private val client: HttpClient,

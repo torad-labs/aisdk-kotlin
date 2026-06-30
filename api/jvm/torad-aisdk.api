@@ -6965,14 +6965,6 @@ public final class ai/torad/aisdk/middleware/SimulateStreamingKt {
 
 public final class ai/torad/aisdk/providers/AlibabaEmbeddingModelOptions {
 	public static final field Companion Lai/torad/aisdk/providers/AlibabaEmbeddingModelOptions$Companion;
-	public fun <init> ()V
-	public fun <init> (Ljava/lang/String;Ljava/lang/Integer;Ljava/lang/String;)V
-	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/Integer;Ljava/lang/String;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public final fun component1 ()Ljava/lang/String;
-	public final fun component2 ()Ljava/lang/Integer;
-	public final fun component3 ()Ljava/lang/String;
-	public final fun copy (Ljava/lang/String;Ljava/lang/Integer;Ljava/lang/String;)Lai/torad/aisdk/providers/AlibabaEmbeddingModelOptions;
-	public static synthetic fun copy$default (Lai/torad/aisdk/providers/AlibabaEmbeddingModelOptions;Ljava/lang/String;Ljava/lang/Integer;Ljava/lang/String;ILjava/lang/Object;)Lai/torad/aisdk/providers/AlibabaEmbeddingModelOptions;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getDimension ()Ljava/lang/Integer;
 	public final fun getOutputType ()Ljava/lang/String;
@@ -6996,16 +6988,14 @@ public final class ai/torad/aisdk/providers/AlibabaEmbeddingModelOptions$Compani
 	public final fun serializer ()Lkotlinx/serialization/KSerializer;
 }
 
+public final class ai/torad/aisdk/providers/AlibabaEmbeddingModelOptionsBuilder {
+	public final fun dimension (Ljava/lang/Integer;)V
+	public final fun outputType (Ljava/lang/String;)V
+	public final fun textType (Ljava/lang/String;)V
+}
+
 public final class ai/torad/aisdk/providers/AlibabaLanguageModelOptions {
 	public static final field Companion Lai/torad/aisdk/providers/AlibabaLanguageModelOptions$Companion;
-	public fun <init> ()V
-	public fun <init> (Ljava/lang/Boolean;Ljava/lang/Integer;Ljava/lang/Boolean;)V
-	public synthetic fun <init> (Ljava/lang/Boolean;Ljava/lang/Integer;Ljava/lang/Boolean;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public final fun component1 ()Ljava/lang/Boolean;
-	public final fun component2 ()Ljava/lang/Integer;
-	public final fun component3 ()Ljava/lang/Boolean;
-	public final fun copy (Ljava/lang/Boolean;Ljava/lang/Integer;Ljava/lang/Boolean;)Lai/torad/aisdk/providers/AlibabaLanguageModelOptions;
-	public static synthetic fun copy$default (Lai/torad/aisdk/providers/AlibabaLanguageModelOptions;Ljava/lang/Boolean;Ljava/lang/Integer;Ljava/lang/Boolean;ILjava/lang/Object;)Lai/torad/aisdk/providers/AlibabaLanguageModelOptions;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getEnableThinking ()Ljava/lang/Boolean;
 	public final fun getParallelToolCalls ()Ljava/lang/Boolean;
@@ -7029,6 +7019,12 @@ public final class ai/torad/aisdk/providers/AlibabaLanguageModelOptions$Companio
 	public final fun serializer ()Lkotlinx/serialization/KSerializer;
 }
 
+public final class ai/torad/aisdk/providers/AlibabaLanguageModelOptionsBuilder {
+	public final fun enableThinking (Ljava/lang/Boolean;)V
+	public final fun parallelToolCalls (Ljava/lang/Boolean;)V
+	public final fun thinkingBudget (Ljava/lang/Integer;)V
+}
+
 public final class ai/torad/aisdk/providers/AlibabaProvider : ai/torad/aisdk/Provider {
 	public fun <init> (Lio/ktor/client/HttpClient;Lai/torad/aisdk/providers/AlibabaProviderSettings;)V
 	public final fun chatModel-tDyRgq0 (Ljava/lang/String;)Lai/torad/aisdk/LanguageModel;
@@ -7049,8 +7045,14 @@ public final class ai/torad/aisdk/providers/AlibabaProviderKt {
 	public static final field ALIBABA_VERSION Ljava/lang/String;
 	public static final fun Alibaba (Lio/ktor/client/HttpClient;Lai/torad/aisdk/providers/AlibabaProviderSettings;)Lai/torad/aisdk/providers/AlibabaProvider;
 	public static synthetic fun Alibaba$default (Lio/ktor/client/HttpClient;Lai/torad/aisdk/providers/AlibabaProviderSettings;ILjava/lang/Object;)Lai/torad/aisdk/providers/AlibabaProvider;
+	public static final fun AlibabaEmbeddingModelOptions (Lkotlin/jvm/functions/Function1;)Lai/torad/aisdk/providers/AlibabaEmbeddingModelOptions;
+	public static synthetic fun AlibabaEmbeddingModelOptions$default (Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Lai/torad/aisdk/providers/AlibabaEmbeddingModelOptions;
+	public static final fun AlibabaLanguageModelOptions (Lkotlin/jvm/functions/Function1;)Lai/torad/aisdk/providers/AlibabaLanguageModelOptions;
+	public static synthetic fun AlibabaLanguageModelOptions$default (Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Lai/torad/aisdk/providers/AlibabaLanguageModelOptions;
 	public static final fun AlibabaProviderSettings (Lkotlin/jvm/functions/Function1;)Lai/torad/aisdk/providers/AlibabaProviderSettings;
 	public static synthetic fun AlibabaProviderSettings$default (Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Lai/torad/aisdk/providers/AlibabaProviderSettings;
+	public static final fun AlibabaVideoModelOptions (Lkotlin/jvm/functions/Function1;)Lai/torad/aisdk/providers/AlibabaVideoModelOptions;
+	public static synthetic fun AlibabaVideoModelOptions$default (Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Lai/torad/aisdk/providers/AlibabaVideoModelOptions;
 }
 
 public final class ai/torad/aisdk/providers/AlibabaProviderSettings {
@@ -7092,20 +7094,6 @@ public final class ai/torad/aisdk/providers/AlibabaProviderSettingsBuilder {
 
 public final class ai/torad/aisdk/providers/AlibabaVideoModelOptions {
 	public static final field Companion Lai/torad/aisdk/providers/AlibabaVideoModelOptions$Companion;
-	public fun <init> ()V
-	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/Boolean;Ljava/lang/String;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/util/List;Ljava/lang/Long;Ljava/lang/Long;)V
-	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/Boolean;Ljava/lang/String;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/util/List;Ljava/lang/Long;Ljava/lang/Long;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public final fun component1 ()Ljava/lang/String;
-	public final fun component2 ()Ljava/lang/String;
-	public final fun component3 ()Ljava/lang/Boolean;
-	public final fun component4 ()Ljava/lang/String;
-	public final fun component5 ()Ljava/lang/Boolean;
-	public final fun component6 ()Ljava/lang/Boolean;
-	public final fun component7 ()Ljava/util/List;
-	public final fun component8 ()Ljava/lang/Long;
-	public final fun component9 ()Ljava/lang/Long;
-	public final fun copy (Ljava/lang/String;Ljava/lang/String;Ljava/lang/Boolean;Ljava/lang/String;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/util/List;Ljava/lang/Long;Ljava/lang/Long;)Lai/torad/aisdk/providers/AlibabaVideoModelOptions;
-	public static synthetic fun copy$default (Lai/torad/aisdk/providers/AlibabaVideoModelOptions;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Boolean;Ljava/lang/String;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/util/List;Ljava/lang/Long;Ljava/lang/Long;ILjava/lang/Object;)Lai/torad/aisdk/providers/AlibabaVideoModelOptions;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getAudio ()Ljava/lang/Boolean;
 	public final fun getAudioUrl ()Ljava/lang/String;
@@ -7133,6 +7121,18 @@ public final synthetic class ai/torad/aisdk/providers/AlibabaVideoModelOptions$$
 
 public final class ai/torad/aisdk/providers/AlibabaVideoModelOptions$Companion {
 	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public final class ai/torad/aisdk/providers/AlibabaVideoModelOptionsBuilder {
+	public final fun audio (Ljava/lang/Boolean;)V
+	public final fun audioUrl (Ljava/lang/String;)V
+	public final fun negativePrompt (Ljava/lang/String;)V
+	public final fun pollIntervalMs (Ljava/lang/Long;)V
+	public final fun pollTimeoutMs (Ljava/lang/Long;)V
+	public final fun promptExtend (Ljava/lang/Boolean;)V
+	public final fun referenceUrls (Ljava/util/List;)V
+	public final fun shotType (Ljava/lang/String;)V
+	public final fun watermark (Ljava/lang/Boolean;)V
 }
 
 public final class ai/torad/aisdk/providers/AmazonBedrockProvider : ai/torad/aisdk/Provider {
@@ -7417,6 +7417,8 @@ public final class ai/torad/aisdk/providers/AssemblyAIProviderKt {
 	public static synthetic fun AssemblyAI$default (Lio/ktor/client/HttpClient;Lai/torad/aisdk/providers/AssemblyAIProviderSettings;ILjava/lang/Object;)Lai/torad/aisdk/providers/AssemblyAIProvider;
 	public static final fun AssemblyAIProviderSettings (Lkotlin/jvm/functions/Function1;)Lai/torad/aisdk/providers/AssemblyAIProviderSettings;
 	public static synthetic fun AssemblyAIProviderSettings$default (Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Lai/torad/aisdk/providers/AssemblyAIProviderSettings;
+	public static final fun AssemblyAITranscriptionModelOptions (Lkotlin/jvm/functions/Function1;)Lai/torad/aisdk/providers/AssemblyAITranscriptionModelOptions;
+	public static synthetic fun AssemblyAITranscriptionModelOptions$default (Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Lai/torad/aisdk/providers/AssemblyAITranscriptionModelOptions;
 }
 
 public final class ai/torad/aisdk/providers/AssemblyAIProviderSettings {
@@ -7454,45 +7456,7 @@ public final class ai/torad/aisdk/providers/AssemblyAIProviderSettingsBuilder {
 
 public final class ai/torad/aisdk/providers/AssemblyAITranscriptionModelOptions {
 	public static final field Companion Lai/torad/aisdk/providers/AssemblyAITranscriptionModelOptions$Companion;
-	public fun <init> ()V
-	public fun <init> (Ljava/lang/Integer;Ljava/lang/Integer;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/String;Ljava/lang/Boolean;Ljava/lang/Integer;Ljava/util/List;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/String;Ljava/lang/Float;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/String;Ljava/util/List;Ljava/lang/String;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Integer;Ljava/lang/Float;Ljava/lang/Boolean;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/util/List;)V
 	public synthetic fun <init> (Ljava/lang/Integer;Ljava/lang/Integer;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/String;Ljava/lang/Boolean;Ljava/lang/Integer;Ljava/util/List;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/String;Ljava/lang/Float;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/String;Ljava/util/List;Ljava/lang/String;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Integer;Ljava/lang/Float;Ljava/lang/Boolean;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/util/List;IILkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public final fun component1 ()Ljava/lang/Integer;
-	public final fun component10 ()Ljava/lang/Boolean;
-	public final fun component11 ()Ljava/lang/Boolean;
-	public final fun component12 ()Ljava/lang/Boolean;
-	public final fun component13 ()Ljava/lang/Boolean;
-	public final fun component14 ()Ljava/lang/String;
-	public final fun component15 ()Ljava/lang/Float;
-	public final fun component16 ()Ljava/lang/Boolean;
-	public final fun component17 ()Ljava/lang/Boolean;
-	public final fun component18 ()Ljava/lang/Boolean;
-	public final fun component19 ()Ljava/lang/Boolean;
-	public final fun component2 ()Ljava/lang/Integer;
-	public final fun component20 ()Ljava/lang/Boolean;
-	public final fun component21 ()Ljava/lang/String;
-	public final fun component22 ()Ljava/util/List;
-	public final fun component23 ()Ljava/lang/String;
-	public final fun component24 ()Ljava/lang/Boolean;
-	public final fun component25 ()Ljava/lang/Boolean;
-	public final fun component26 ()Ljava/lang/Integer;
-	public final fun component27 ()Ljava/lang/Float;
-	public final fun component28 ()Ljava/lang/Boolean;
-	public final fun component29 ()Ljava/lang/String;
-	public final fun component3 ()Ljava/lang/Boolean;
-	public final fun component30 ()Ljava/lang/String;
-	public final fun component31 ()Ljava/lang/String;
-	public final fun component32 ()Ljava/lang/String;
-	public final fun component33 ()Ljava/lang/String;
-	public final fun component34 ()Ljava/util/List;
-	public final fun component4 ()Ljava/lang/Boolean;
-	public final fun component5 ()Ljava/lang/String;
-	public final fun component6 ()Ljava/lang/Boolean;
-	public final fun component7 ()Ljava/lang/Integer;
-	public final fun component8 ()Ljava/util/List;
-	public final fun component9 ()Ljava/lang/Boolean;
-	public final fun copy (Ljava/lang/Integer;Ljava/lang/Integer;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/String;Ljava/lang/Boolean;Ljava/lang/Integer;Ljava/util/List;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/String;Ljava/lang/Float;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/String;Ljava/util/List;Ljava/lang/String;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Integer;Ljava/lang/Float;Ljava/lang/Boolean;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/util/List;)Lai/torad/aisdk/providers/AssemblyAITranscriptionModelOptions;
-	public static synthetic fun copy$default (Lai/torad/aisdk/providers/AssemblyAITranscriptionModelOptions;Ljava/lang/Integer;Ljava/lang/Integer;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/String;Ljava/lang/Boolean;Ljava/lang/Integer;Ljava/util/List;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/String;Ljava/lang/Float;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/String;Ljava/util/List;Ljava/lang/String;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Integer;Ljava/lang/Float;Ljava/lang/Boolean;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/util/List;IILjava/lang/Object;)Lai/torad/aisdk/providers/AssemblyAITranscriptionModelOptions;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getAudioEndAt ()Ljava/lang/Integer;
 	public final fun getAudioStartFrom ()Ljava/lang/Integer;
@@ -7545,6 +7509,43 @@ public final synthetic class ai/torad/aisdk/providers/AssemblyAITranscriptionMod
 
 public final class ai/torad/aisdk/providers/AssemblyAITranscriptionModelOptions$Companion {
 	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public final class ai/torad/aisdk/providers/AssemblyAITranscriptionModelOptionsBuilder {
+	public final fun audioEndAt (Ljava/lang/Integer;)V
+	public final fun audioStartFrom (Ljava/lang/Integer;)V
+	public final fun autoChapters (Ljava/lang/Boolean;)V
+	public final fun autoHighlights (Ljava/lang/Boolean;)V
+	public final fun boostParam (Ljava/lang/String;)V
+	public final fun contentSafety (Ljava/lang/Boolean;)V
+	public final fun contentSafetyConfidence (Ljava/lang/Integer;)V
+	public final fun customSpelling (Ljava/util/List;)V
+	public final fun disfluencies (Ljava/lang/Boolean;)V
+	public final fun entityDetection (Ljava/lang/Boolean;)V
+	public final fun filterProfanity (Ljava/lang/Boolean;)V
+	public final fun formatText (Ljava/lang/Boolean;)V
+	public final fun iabCategories (Ljava/lang/Boolean;)V
+	public final fun languageCode (Ljava/lang/String;)V
+	public final fun languageConfidenceThreshold (Ljava/lang/Float;)V
+	public final fun languageDetection (Ljava/lang/Boolean;)V
+	public final fun multichannel (Ljava/lang/Boolean;)V
+	public final fun punctuate (Ljava/lang/Boolean;)V
+	public final fun redactPii (Ljava/lang/Boolean;)V
+	public final fun redactPiiAudio (Ljava/lang/Boolean;)V
+	public final fun redactPiiAudioQuality (Ljava/lang/String;)V
+	public final fun redactPiiPolicies (Ljava/util/List;)V
+	public final fun redactPiiSub (Ljava/lang/String;)V
+	public final fun sentimentAnalysis (Ljava/lang/Boolean;)V
+	public final fun speakerLabels (Ljava/lang/Boolean;)V
+	public final fun speakersExpected (Ljava/lang/Integer;)V
+	public final fun speechThreshold (Ljava/lang/Float;)V
+	public final fun summarization (Ljava/lang/Boolean;)V
+	public final fun summaryModel (Ljava/lang/String;)V
+	public final fun summaryType (Ljava/lang/String;)V
+	public final fun webhookAuthHeaderName (Ljava/lang/String;)V
+	public final fun webhookAuthHeaderValue (Ljava/lang/String;)V
+	public final fun webhookUrl (Ljava/lang/String;)V
+	public final fun wordBoost (Ljava/util/List;)V
 }
 
 public final class ai/torad/aisdk/providers/AzureOpenAIProvider : ai/torad/aisdk/Provider {
@@ -7800,35 +7801,6 @@ public final class ai/torad/aisdk/providers/BedrockMantleProvider : ai/torad/ais
 
 public final class ai/torad/aisdk/providers/BlackForestLabsImageModelOptions {
 	public static final field Companion Lai/torad/aisdk/providers/BlackForestLabsImageModelOptions$Companion;
-	public fun <init> ()V
-	public fun <init> (Ljava/lang/String;Ljava/lang/Double;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Integer;Ljava/lang/Double;Ljava/lang/Integer;Ljava/lang/Integer;Ljava/lang/String;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Integer;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Long;Ljava/lang/Long;)V
-	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/Double;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Integer;Ljava/lang/Double;Ljava/lang/Integer;Ljava/lang/Integer;Ljava/lang/String;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Integer;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Long;Ljava/lang/Long;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public final fun component1 ()Ljava/lang/String;
-	public final fun component10 ()Ljava/lang/String;
-	public final fun component11 ()Ljava/lang/String;
-	public final fun component12 ()Ljava/lang/String;
-	public final fun component13 ()Ljava/lang/Integer;
-	public final fun component14 ()Ljava/lang/Double;
-	public final fun component15 ()Ljava/lang/Integer;
-	public final fun component16 ()Ljava/lang/Integer;
-	public final fun component17 ()Ljava/lang/String;
-	public final fun component18 ()Ljava/lang/Boolean;
-	public final fun component19 ()Ljava/lang/Boolean;
-	public final fun component2 ()Ljava/lang/Double;
-	public final fun component20 ()Ljava/lang/Integer;
-	public final fun component21 ()Ljava/lang/String;
-	public final fun component22 ()Ljava/lang/String;
-	public final fun component23 ()Ljava/lang/Long;
-	public final fun component24 ()Ljava/lang/Long;
-	public final fun component3 ()Ljava/lang/String;
-	public final fun component4 ()Ljava/lang/String;
-	public final fun component5 ()Ljava/lang/String;
-	public final fun component6 ()Ljava/lang/String;
-	public final fun component7 ()Ljava/lang/String;
-	public final fun component8 ()Ljava/lang/String;
-	public final fun component9 ()Ljava/lang/String;
-	public final fun copy (Ljava/lang/String;Ljava/lang/Double;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Integer;Ljava/lang/Double;Ljava/lang/Integer;Ljava/lang/Integer;Ljava/lang/String;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Integer;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Long;Ljava/lang/Long;)Lai/torad/aisdk/providers/BlackForestLabsImageModelOptions;
-	public static synthetic fun copy$default (Lai/torad/aisdk/providers/BlackForestLabsImageModelOptions;Ljava/lang/String;Ljava/lang/Double;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Integer;Ljava/lang/Double;Ljava/lang/Integer;Ljava/lang/Integer;Ljava/lang/String;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Integer;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Long;Ljava/lang/Long;ILjava/lang/Object;)Lai/torad/aisdk/providers/BlackForestLabsImageModelOptions;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getGuidance ()Ljava/lang/Double;
 	public final fun getHeight ()Ljava/lang/Integer;
@@ -7873,6 +7845,33 @@ public final class ai/torad/aisdk/providers/BlackForestLabsImageModelOptions$Com
 	public final fun serializer ()Lkotlinx/serialization/KSerializer;
 }
 
+public final class ai/torad/aisdk/providers/BlackForestLabsImageModelOptionsBuilder {
+	public final fun guidance (Ljava/lang/Double;)V
+	public final fun height (Ljava/lang/Integer;)V
+	public final fun imagePrompt (Ljava/lang/String;)V
+	public final fun imagePromptStrength (Ljava/lang/Double;)V
+	public final fun inputImage (Ljava/lang/String;)V
+	public final fun inputImage10 (Ljava/lang/String;)V
+	public final fun inputImage2 (Ljava/lang/String;)V
+	public final fun inputImage3 (Ljava/lang/String;)V
+	public final fun inputImage4 (Ljava/lang/String;)V
+	public final fun inputImage5 (Ljava/lang/String;)V
+	public final fun inputImage6 (Ljava/lang/String;)V
+	public final fun inputImage7 (Ljava/lang/String;)V
+	public final fun inputImage8 (Ljava/lang/String;)V
+	public final fun inputImage9 (Ljava/lang/String;)V
+	public final fun outputFormat (Ljava/lang/String;)V
+	public final fun pollIntervalMillis (Ljava/lang/Long;)V
+	public final fun pollTimeoutMillis (Ljava/lang/Long;)V
+	public final fun promptUpsampling (Ljava/lang/Boolean;)V
+	public final fun raw (Ljava/lang/Boolean;)V
+	public final fun safetyTolerance (Ljava/lang/Integer;)V
+	public final fun steps (Ljava/lang/Integer;)V
+	public final fun webhookSecret (Ljava/lang/String;)V
+	public final fun webhookUrl (Ljava/lang/String;)V
+	public final fun width (Ljava/lang/Integer;)V
+}
+
 public abstract interface class ai/torad/aisdk/providers/BlackForestLabsProvider : ai/torad/aisdk/Provider {
 	public abstract fun image-tDyRgq0 (Ljava/lang/String;)Lai/torad/aisdk/ImageModel;
 	public fun imageModel (Ljava/lang/String;)Lai/torad/aisdk/ImageModel;
@@ -7894,6 +7893,8 @@ public final class ai/torad/aisdk/providers/BlackForestLabsProviderKt {
 	public static final field BLACK_FOREST_LABS_VERSION Ljava/lang/String;
 	public static final fun BlackForestLabs (Lio/ktor/client/HttpClient;Lai/torad/aisdk/providers/BlackForestLabsProviderSettings;)Lai/torad/aisdk/providers/BlackForestLabsProvider;
 	public static synthetic fun BlackForestLabs$default (Lio/ktor/client/HttpClient;Lai/torad/aisdk/providers/BlackForestLabsProviderSettings;ILjava/lang/Object;)Lai/torad/aisdk/providers/BlackForestLabsProvider;
+	public static final fun BlackForestLabsImageModelOptions (Lkotlin/jvm/functions/Function1;)Lai/torad/aisdk/providers/BlackForestLabsImageModelOptions;
+	public static synthetic fun BlackForestLabsImageModelOptions$default (Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Lai/torad/aisdk/providers/BlackForestLabsImageModelOptions;
 	public static final fun BlackForestLabsProviderSettings (Lkotlin/jvm/functions/Function1;)Lai/torad/aisdk/providers/BlackForestLabsProviderSettings;
 	public static synthetic fun BlackForestLabsProviderSettings$default (Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Lai/torad/aisdk/providers/BlackForestLabsProviderSettings;
 	public static final fun getBlackForestLabs ()Lai/torad/aisdk/providers/BlackForestLabsProvider;
@@ -7955,6 +7956,8 @@ public final class ai/torad/aisdk/providers/ByteDanceProviderKt {
 	public static synthetic fun ByteDance$default (Lio/ktor/client/HttpClient;Lai/torad/aisdk/providers/ByteDanceProviderSettings;ILjava/lang/Object;)Lai/torad/aisdk/providers/ByteDanceProvider;
 	public static final fun ByteDanceProviderSettings (Lkotlin/jvm/functions/Function1;)Lai/torad/aisdk/providers/ByteDanceProviderSettings;
 	public static synthetic fun ByteDanceProviderSettings$default (Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Lai/torad/aisdk/providers/ByteDanceProviderSettings;
+	public static final fun ByteDanceVideoProviderOptions (Lkotlin/jvm/functions/Function1;)Lai/torad/aisdk/providers/ByteDanceVideoProviderOptions;
+	public static synthetic fun ByteDanceVideoProviderOptions$default (Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Lai/torad/aisdk/providers/ByteDanceVideoProviderOptions;
 	public static final fun getByteDance ()Lai/torad/aisdk/providers/ByteDanceProvider;
 }
 
@@ -7991,23 +7994,6 @@ public final class ai/torad/aisdk/providers/ByteDanceProviderSettingsBuilder {
 
 public final class ai/torad/aisdk/providers/ByteDanceVideoProviderOptions {
 	public static final field Companion Lai/torad/aisdk/providers/ByteDanceVideoProviderOptions$Companion;
-	public fun <init> ()V
-	public fun <init> (Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/String;Ljava/lang/Boolean;Ljava/lang/String;Ljava/util/List;Ljava/util/List;Ljava/util/List;Ljava/lang/Long;Ljava/lang/Long;)V
-	public synthetic fun <init> (Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/String;Ljava/lang/Boolean;Ljava/lang/String;Ljava/util/List;Ljava/util/List;Ljava/util/List;Ljava/lang/Long;Ljava/lang/Long;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public final fun component1 ()Ljava/lang/Boolean;
-	public final fun component10 ()Ljava/util/List;
-	public final fun component11 ()Ljava/lang/Long;
-	public final fun component12 ()Ljava/lang/Long;
-	public final fun component2 ()Ljava/lang/Boolean;
-	public final fun component3 ()Ljava/lang/Boolean;
-	public final fun component4 ()Ljava/lang/Boolean;
-	public final fun component5 ()Ljava/lang/String;
-	public final fun component6 ()Ljava/lang/Boolean;
-	public final fun component7 ()Ljava/lang/String;
-	public final fun component8 ()Ljava/util/List;
-	public final fun component9 ()Ljava/util/List;
-	public final fun copy (Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/String;Ljava/lang/Boolean;Ljava/lang/String;Ljava/util/List;Ljava/util/List;Ljava/util/List;Ljava/lang/Long;Ljava/lang/Long;)Lai/torad/aisdk/providers/ByteDanceVideoProviderOptions;
-	public static synthetic fun copy$default (Lai/torad/aisdk/providers/ByteDanceVideoProviderOptions;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/String;Ljava/lang/Boolean;Ljava/lang/String;Ljava/util/List;Ljava/util/List;Ljava/util/List;Ljava/lang/Long;Ljava/lang/Long;ILjava/lang/Object;)Lai/torad/aisdk/providers/ByteDanceVideoProviderOptions;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getCameraFixed ()Ljava/lang/Boolean;
 	public final fun getDraft ()Ljava/lang/Boolean;
@@ -8038,6 +8024,21 @@ public final synthetic class ai/torad/aisdk/providers/ByteDanceVideoProviderOpti
 
 public final class ai/torad/aisdk/providers/ByteDanceVideoProviderOptions$Companion {
 	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public final class ai/torad/aisdk/providers/ByteDanceVideoProviderOptionsBuilder {
+	public final fun cameraFixed (Ljava/lang/Boolean;)V
+	public final fun draft (Ljava/lang/Boolean;)V
+	public final fun generateAudio (Ljava/lang/Boolean;)V
+	public final fun lastFrameImage (Ljava/lang/String;)V
+	public final fun pollIntervalMs (Ljava/lang/Long;)V
+	public final fun pollTimeoutMs (Ljava/lang/Long;)V
+	public final fun referenceAudio (Ljava/util/List;)V
+	public final fun referenceImages (Ljava/util/List;)V
+	public final fun referenceVideos (Ljava/util/List;)V
+	public final fun returnLastFrame (Ljava/lang/Boolean;)V
+	public final fun serviceTier (Ljava/lang/String;)V
+	public final fun watermark (Ljava/lang/Boolean;)V
 }
 
 public final class ai/torad/aisdk/providers/CerebrasErrorData {
@@ -8466,6 +8467,10 @@ public final class ai/torad/aisdk/providers/DeepgramProviderKt {
 	public static synthetic fun Deepgram$default (Lio/ktor/client/HttpClient;Lai/torad/aisdk/providers/DeepgramProviderSettings;ILjava/lang/Object;)Lai/torad/aisdk/providers/DeepgramProvider;
 	public static final fun DeepgramProviderSettings (Lkotlin/jvm/functions/Function1;)Lai/torad/aisdk/providers/DeepgramProviderSettings;
 	public static synthetic fun DeepgramProviderSettings$default (Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Lai/torad/aisdk/providers/DeepgramProviderSettings;
+	public static final fun DeepgramSpeechModelOptions (Lkotlin/jvm/functions/Function1;)Lai/torad/aisdk/providers/DeepgramSpeechModelOptions;
+	public static synthetic fun DeepgramSpeechModelOptions$default (Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Lai/torad/aisdk/providers/DeepgramSpeechModelOptions;
+	public static final fun DeepgramTranscriptionModelOptions (Lkotlin/jvm/functions/Function1;)Lai/torad/aisdk/providers/DeepgramTranscriptionModelOptions;
+	public static synthetic fun DeepgramTranscriptionModelOptions$default (Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Lai/torad/aisdk/providers/DeepgramTranscriptionModelOptions;
 }
 
 public final class ai/torad/aisdk/providers/DeepgramProviderSettings {
@@ -8506,19 +8511,6 @@ public final class ai/torad/aisdk/providers/DeepgramSpeechModel : ai/torad/aisdk
 
 public final class ai/torad/aisdk/providers/DeepgramSpeechModelOptions {
 	public static final field Companion Lai/torad/aisdk/providers/DeepgramSpeechModelOptions$Companion;
-	public fun <init> ()V
-	public fun <init> (Lkotlinx/serialization/json/JsonElement;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Integer;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Boolean;Lkotlinx/serialization/json/JsonElement;)V
-	public synthetic fun <init> (Lkotlinx/serialization/json/JsonElement;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Integer;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Boolean;Lkotlinx/serialization/json/JsonElement;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public final fun component1 ()Lkotlinx/serialization/json/JsonElement;
-	public final fun component2 ()Ljava/lang/String;
-	public final fun component3 ()Ljava/lang/String;
-	public final fun component4 ()Ljava/lang/Integer;
-	public final fun component5 ()Ljava/lang/String;
-	public final fun component6 ()Ljava/lang/String;
-	public final fun component7 ()Ljava/lang/Boolean;
-	public final fun component8 ()Lkotlinx/serialization/json/JsonElement;
-	public final fun copy (Lkotlinx/serialization/json/JsonElement;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Integer;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Boolean;Lkotlinx/serialization/json/JsonElement;)Lai/torad/aisdk/providers/DeepgramSpeechModelOptions;
-	public static synthetic fun copy$default (Lai/torad/aisdk/providers/DeepgramSpeechModelOptions;Lkotlinx/serialization/json/JsonElement;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Integer;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Boolean;Lkotlinx/serialization/json/JsonElement;ILjava/lang/Object;)Lai/torad/aisdk/providers/DeepgramSpeechModelOptions;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getBitRate ()Lkotlinx/serialization/json/JsonElement;
 	public final fun getCallback ()Ljava/lang/String;
@@ -8547,31 +8539,19 @@ public final class ai/torad/aisdk/providers/DeepgramSpeechModelOptions$Companion
 	public final fun serializer ()Lkotlinx/serialization/KSerializer;
 }
 
+public final class ai/torad/aisdk/providers/DeepgramSpeechModelOptionsBuilder {
+	public final fun bitRate (Lkotlinx/serialization/json/JsonElement;)V
+	public final fun callback (Ljava/lang/String;)V
+	public final fun callbackMethod (Ljava/lang/String;)V
+	public final fun container (Ljava/lang/String;)V
+	public final fun encoding (Ljava/lang/String;)V
+	public final fun mipOptOut (Ljava/lang/Boolean;)V
+	public final fun sampleRate (Ljava/lang/Integer;)V
+	public final fun tag (Lkotlinx/serialization/json/JsonElement;)V
+}
+
 public final class ai/torad/aisdk/providers/DeepgramTranscriptionModelOptions {
 	public static final field Companion Lai/torad/aisdk/providers/DeepgramTranscriptionModelOptions$Companion;
-	public fun <init> ()V
-	public fun <init> (Ljava/lang/String;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Lkotlinx/serialization/json/JsonElement;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Lkotlinx/serialization/json/JsonElement;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Float;Ljava/lang/Boolean;)V
-	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Lkotlinx/serialization/json/JsonElement;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Lkotlinx/serialization/json/JsonElement;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Float;Ljava/lang/Boolean;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public final fun component1 ()Ljava/lang/String;
-	public final fun component10 ()Ljava/lang/Boolean;
-	public final fun component11 ()Lkotlinx/serialization/json/JsonElement;
-	public final fun component12 ()Ljava/lang/String;
-	public final fun component13 ()Ljava/lang/String;
-	public final fun component14 ()Ljava/lang/String;
-	public final fun component15 ()Ljava/lang/Boolean;
-	public final fun component16 ()Ljava/lang/Boolean;
-	public final fun component17 ()Ljava/lang/Float;
-	public final fun component18 ()Ljava/lang/Boolean;
-	public final fun component2 ()Ljava/lang/Boolean;
-	public final fun component3 ()Ljava/lang/Boolean;
-	public final fun component4 ()Ljava/lang/Boolean;
-	public final fun component5 ()Ljava/lang/Boolean;
-	public final fun component6 ()Lkotlinx/serialization/json/JsonElement;
-	public final fun component7 ()Ljava/lang/Boolean;
-	public final fun component8 ()Ljava/lang/Boolean;
-	public final fun component9 ()Ljava/lang/Boolean;
-	public final fun copy (Ljava/lang/String;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Lkotlinx/serialization/json/JsonElement;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Lkotlinx/serialization/json/JsonElement;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Float;Ljava/lang/Boolean;)Lai/torad/aisdk/providers/DeepgramTranscriptionModelOptions;
-	public static synthetic fun copy$default (Lai/torad/aisdk/providers/DeepgramTranscriptionModelOptions;Ljava/lang/String;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Lkotlinx/serialization/json/JsonElement;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Lkotlinx/serialization/json/JsonElement;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Float;Ljava/lang/Boolean;ILjava/lang/Object;)Lai/torad/aisdk/providers/DeepgramTranscriptionModelOptions;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getDetectEntities ()Ljava/lang/Boolean;
 	public final fun getDetectLanguage ()Ljava/lang/Boolean;
@@ -8608,6 +8588,27 @@ public final synthetic class ai/torad/aisdk/providers/DeepgramTranscriptionModel
 
 public final class ai/torad/aisdk/providers/DeepgramTranscriptionModelOptions$Companion {
 	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public final class ai/torad/aisdk/providers/DeepgramTranscriptionModelOptionsBuilder {
+	public final fun detectEntities (Ljava/lang/Boolean;)V
+	public final fun detectLanguage (Ljava/lang/Boolean;)V
+	public final fun diarize (Ljava/lang/Boolean;)V
+	public final fun fillerWords (Ljava/lang/Boolean;)V
+	public final fun intents (Ljava/lang/Boolean;)V
+	public final fun keyterm (Ljava/lang/String;)V
+	public final fun language (Ljava/lang/String;)V
+	public final fun paragraphs (Ljava/lang/Boolean;)V
+	public final fun punctuate (Ljava/lang/Boolean;)V
+	public final fun redact (Lkotlinx/serialization/json/JsonElement;)V
+	public final fun replace (Ljava/lang/String;)V
+	public final fun search (Ljava/lang/String;)V
+	public final fun sentiment (Ljava/lang/Boolean;)V
+	public final fun smartFormat (Ljava/lang/Boolean;)V
+	public final fun summarize (Lkotlinx/serialization/json/JsonElement;)V
+	public final fun topics (Ljava/lang/Boolean;)V
+	public final fun uttSplit (Ljava/lang/Float;)V
+	public final fun utterances (Ljava/lang/Boolean;)V
 }
 
 public final class ai/torad/aisdk/providers/ElevenLabsProvider : ai/torad/aisdk/Provider {

@@ -23,20 +23,105 @@ public const val BYTEDANCE_VERSION: String = "1.0.15"
 
 
 @Serializable
-public data class ByteDanceVideoProviderOptions(
-    val watermark: Boolean? = null,
-    val generateAudio: Boolean? = null,
-    val cameraFixed: Boolean? = null,
-    val returnLastFrame: Boolean? = null,
-    val serviceTier: String? = null,
-    val draft: Boolean? = null,
-    val lastFrameImage: String? = null,
-    val referenceImages: List<String>? = null,
-    val referenceVideos: List<String>? = null,
-    val referenceAudio: List<String>? = null,
-    val pollIntervalMs: Long? = null,
-    val pollTimeoutMs: Long? = null,
+@Poko
+public class ByteDanceVideoProviderOptions internal constructor(
+    public val watermark: Boolean? = null,
+    public val generateAudio: Boolean? = null,
+    public val cameraFixed: Boolean? = null,
+    public val returnLastFrame: Boolean? = null,
+    public val serviceTier: String? = null,
+    public val draft: Boolean? = null,
+    public val lastFrameImage: String? = null,
+    public val referenceImages: List<String>? = null,
+    public val referenceVideos: List<String>? = null,
+    public val referenceAudio: List<String>? = null,
+    public val pollIntervalMs: Long? = null,
+    public val pollTimeoutMs: Long? = null,
 )
+
+public class ByteDanceVideoProviderOptionsBuilder internal constructor() {
+    private var watermark: Boolean? = null
+    private var generateAudio: Boolean? = null
+    private var cameraFixed: Boolean? = null
+    private var returnLastFrame: Boolean? = null
+    private var serviceTier: String? = null
+    private var draft: Boolean? = null
+    private var lastFrameImage: String? = null
+    private var referenceImages: List<String>? = null
+    private var referenceVideos: List<String>? = null
+    private var referenceAudio: List<String>? = null
+    private var pollIntervalMs: Long? = null
+    private var pollTimeoutMs: Long? = null
+
+    public fun watermark(value: Boolean?) {
+        watermark = value
+    }
+
+    public fun generateAudio(value: Boolean?) {
+        generateAudio = value
+    }
+
+    public fun cameraFixed(value: Boolean?) {
+        cameraFixed = value
+    }
+
+    public fun returnLastFrame(value: Boolean?) {
+        returnLastFrame = value
+    }
+
+    public fun serviceTier(value: String?) {
+        serviceTier = value
+    }
+
+    public fun draft(value: Boolean?) {
+        draft = value
+    }
+
+    public fun lastFrameImage(value: String?) {
+        lastFrameImage = value
+    }
+
+    public fun referenceImages(value: List<String>?) {
+        referenceImages = value
+    }
+
+    public fun referenceVideos(value: List<String>?) {
+        referenceVideos = value
+    }
+
+    public fun referenceAudio(value: List<String>?) {
+        referenceAudio = value
+    }
+
+    public fun pollIntervalMs(value: Long?) {
+        pollIntervalMs = value
+    }
+
+    public fun pollTimeoutMs(value: Long?) {
+        pollTimeoutMs = value
+    }
+
+    internal fun build(): ByteDanceVideoProviderOptions =
+        ByteDanceVideoProviderOptions(
+            watermark = watermark,
+            generateAudio = generateAudio,
+            cameraFixed = cameraFixed,
+            returnLastFrame = returnLastFrame,
+            serviceTier = serviceTier,
+            draft = draft,
+            lastFrameImage = lastFrameImage,
+            referenceImages = referenceImages,
+            referenceVideos = referenceVideos,
+            referenceAudio = referenceAudio,
+            pollIntervalMs = pollIntervalMs,
+            pollTimeoutMs = pollTimeoutMs,
+        )
+}
+
+public fun ByteDanceVideoProviderOptions(
+    block: ByteDanceVideoProviderOptionsBuilder.() -> Unit = {},
+): ByteDanceVideoProviderOptions =
+    ByteDanceVideoProviderOptionsBuilder().apply(block).build()
 
 @Serializable
 @Poko
