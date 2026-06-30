@@ -19,11 +19,38 @@ import kotlinx.serialization.json.jsonPrimitive
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
+import kotlin.test.assertNotEquals
 import kotlin.test.assertTrue
 import ai.torad.aisdk.providers.Cohere
 import kotlinx.serialization.json.JsonObject
 
 class CohereProviderTest {
+    @Test
+    fun `CohereProviderSettings DSL builds settings with value semantics`() {
+        val settings = CohereProviderSettings {
+            apiKey("k")
+            baseURL("https://x")
+            headers(mapOf("X-Test" to "yes"))
+        }
+        val equal = CohereProviderSettings {
+            apiKey("k")
+            baseURL("https://x")
+            headers(mapOf("X-Test" to "yes"))
+        }
+        val different = CohereProviderSettings {
+            apiKey("other")
+            baseURL("https://x")
+            headers(mapOf("X-Test" to "yes"))
+        }
+
+        assertEquals("k", settings.apiKey)
+        assertEquals("https://x", settings.baseURL)
+        assertEquals(mapOf("X-Test" to "yes"), settings.headers)
+        assertEquals(settings, equal)
+        assertEquals(settings.hashCode(), equal.hashCode())
+        assertNotEquals(settings, different)
+    }
+
     @Test
     fun `chat model sends Cohere request shape and maps response content`() = runTest {
         val fixture = TestServer.createTestServer(
@@ -73,11 +100,11 @@ class CohereProviderTest {
         fixture.server.start()
         val provider = Cohere(
             fixture.httpClient(),
-            CohereProviderSettings(
-                apiKey = "key",
-                baseURL = "https://cohere.test/v2",
-                headers = mapOf("X-Provider" to "provider"),
-            ),
+            CohereProviderSettings {
+                apiKey("key")
+                baseURL("https://cohere.test/v2")
+                headers(mapOf("X-Provider" to "provider"))
+            },
         )
         val documentBase64 = Base64Codec.encode("Paris document".encodeToByteArray())
 
@@ -212,7 +239,10 @@ class CohereProviderTest {
         fixture.server.start()
         val provider = Cohere(
             fixture.httpClient(),
-            CohereProviderSettings(apiKey = "key", baseURL = "https://cohere.test/v2"),
+            CohereProviderSettings {
+                apiKey("key")
+                baseURL("https://cohere.test/v2")
+            },
         )
 
         val result = provider.embedding(ModelId("embed-v4.0")).embed(
@@ -275,7 +305,10 @@ class CohereProviderTest {
         fixture.server.start()
         val model = Cohere(
             fixture.httpClient(),
-            CohereProviderSettings(apiKey = "key", baseURL = "https://cohere.test/v2"),
+            CohereProviderSettings {
+                apiKey("key")
+                baseURL("https://cohere.test/v2")
+            },
         ).reranking(ModelId("rerank-v3.5"))
 
         val result = model.rerank(
@@ -342,7 +375,10 @@ class CohereProviderTest {
         fixture.server.start()
         val model = Cohere(
             fixture.httpClient(),
-            CohereProviderSettings(apiKey = "key", baseURL = "https://cohere.test/v2"),
+            CohereProviderSettings {
+                apiKey("key")
+                baseURL("https://cohere.test/v2")
+            },
         ).languageModel("command-r-plus")
 
         val events = model.stream(
@@ -381,7 +417,12 @@ class CohereProviderTest {
 
     @Test
     fun `unsupported Cohere surfaces and unconfigured singleton fail explicitly`() = runTest {
-        val provider = Cohere(TestServer.createTestServer(mutableMapOf()).httpClient(), CohereProviderSettings(apiKey = "key"))
+        val provider = Cohere(
+            TestServer.createTestServer(mutableMapOf()).httpClient(),
+            CohereProviderSettings {
+                apiKey("key")
+            },
+        )
 
         assertFailsWith<NoSuchModelError> { provider.imageModel("image") }
 
@@ -423,7 +464,10 @@ class CohereProviderTest {
         fixture.server.start()
         val model = Cohere(
             fixture.httpClient(),
-            CohereProviderSettings(apiKey = "key", baseURL = "https://cohere.test/v2"),
+            CohereProviderSettings {
+                apiKey("key")
+                baseURL("https://cohere.test/v2")
+            },
         ).languageModel("command-r-plus")
 
         model.generate(

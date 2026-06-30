@@ -3,6 +3,7 @@
 package ai.torad.aisdk.providers
 
 import ai.torad.aisdk.*
+import dev.drewhamilton.poko.Poko
 import io.ktor.client.HttpClient
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpMethod
@@ -26,10 +27,11 @@ public typealias CohereChatModelOptions = CohereLanguageModelOptions
 public typealias CohereRerankingOptions = CohereRerankingModelOptions
 
 @Serializable
-public data class CohereProviderSettings(
-    val baseURL: String = "https://api.cohere.com/v2",
-    val apiKey: String? = null,
-    val headers: Map<String, String> = emptyMap(),
+@Poko
+public class CohereProviderSettings internal constructor(
+    public val baseURL: String = "https://api.cohere.com/v2",
+    public val apiKey: String? = null,
+    public val headers: Map<String, String> = emptyMap(),
 ) {
     internal fun cohereHeaders(callHeaders: Map<String, String>): Map<String, String> {
         val base = linkedMapOf<String, String?>()
@@ -66,6 +68,36 @@ public data class CohereProviderSettings(
         return "Cohere request failed ($statusCode): $detail"
     }
 }
+
+public class CohereProviderSettingsBuilder internal constructor() {
+    private var baseURL: String = "https://api.cohere.com/v2"
+    private var apiKey: String? = null
+    private var headers: Map<String, String> = emptyMap()
+
+    public fun baseURL(value: String) {
+        baseURL = value
+    }
+
+    public fun apiKey(value: String?) {
+        apiKey = value
+    }
+
+    public fun headers(value: Map<String, String>) {
+        headers = value
+    }
+
+    internal fun build(): CohereProviderSettings =
+        CohereProviderSettings(
+            baseURL = baseURL,
+            apiKey = apiKey,
+            headers = headers,
+        )
+}
+
+public fun CohereProviderSettings(
+    block: CohereProviderSettingsBuilder.() -> Unit = {},
+): CohereProviderSettings =
+    CohereProviderSettingsBuilder().apply(block).build()
 
 @Serializable
 public data class CohereLanguageModelOptions(

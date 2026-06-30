@@ -222,6 +222,12 @@ Penalty, response-format, and retry fields participate in the `Step ?: Agent ?: 
   `GoogleTools`, `XaiTools`, `AzureOpenAITools`, and `GroqTools` are
   `@Poko class` value-semantics types; field access remains, but public
   `copy()` / `componentN()` ABI is intentionally absent.
+- `CohereProviderSettings { ... }` is the public construction surface for
+  Cohere provider configuration. `CohereProviderSettings` is an
+  `@Serializable @Poko class` with field getters and value semantics; configure
+  it through `CohereProviderSettingsBuilder` setter methods (`baseURL`, `apiKey`,
+  `headers`). The positional constructor, `copy()`, and `componentN()` are not
+  public.
 - Provider error payloads (`BasetenErrorData`, `CerebrasErrorData`,
   `FireworksErrorData`) are `@Serializable @Poko class` value-semantics types;
   JSON field names remain unchanged, while public `copy()` / `componentN()`
