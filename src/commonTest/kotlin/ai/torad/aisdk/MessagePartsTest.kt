@@ -74,6 +74,27 @@ class MessagePartsTest {
     }
 
     @Test
+    fun `late tool input delta does not revert output available tool card`() = runTest {
+        val input = JsonObject(mapOf("location" to JsonPrimitive("nyc")))
+        val output = JsonObject(mapOf("temp" to JsonPrimitive(72)))
+        val lateInput = JsonObject(mapOf("location" to JsonPrimitive("la")))
+        val events = flow {
+            emit(StreamEvent.ToolInputStart("call_1", "weather"))
+            emit(StreamEvent.ToolInputDelta("call_1", input.toString()))
+            emit(StreamEvent.ToolResult("call_1", "weather", output))
+            emit(StreamEvent.ToolInputDelta("call_1", lateInput.toString()))
+            emit(StreamEvent.Finish(1, FinishReason.Stop, Usage()))
+        }
+
+        val final = drainAllItems(StreamToUiMessages(events, "msg_late_tool_delta")).last()
+
+        val tool = final.parts.filterIsInstance<UIMessagePart.ToolUI>().single()
+        assertEquals(ToolCallState.OutputAvailable, tool.state)
+        assertEquals(input, tool.input)
+        assertEquals(output, tool.output)
+    }
+
+    @Test
     fun `duplicate tool call ids receive UI results by occurrence order`() = runTest {
         val firstInput = JsonObject(mapOf("message" to JsonPrimitive("first")))
         val secondInput = JsonObject(mapOf("message" to JsonPrimitive("second")))

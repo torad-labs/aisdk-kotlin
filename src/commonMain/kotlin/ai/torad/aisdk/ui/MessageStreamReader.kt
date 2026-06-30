@@ -315,12 +315,22 @@ public fun StreamToUiMessages(
                 buf.append(event.delta)
                 val partial = runCatching { aiSdkJson.parseToJsonElement(buf.toString()) }.getOrNull()
                 val toolName = toolNameByInputId[event.id] ?: return@collect
+                val targetIndex = lastToolIndex(event.id)
+                if (
+                    targetIndex?.let {
+                        val state = toolAt(it)?.state
+                        state == ToolCallState.OutputAvailable ||
+                            state == ToolCallState.OutputError ||
+                            state == ToolCallState.OutputDenied
+                    } == true
+                ) return@collect
                 upsertTool(
                     toolCallId = event.id,
                     toolName = toolName,
                     state = ToolCallState.InputStreaming,
                     input = partial,
                     providerMetadata = event.providerMetadata,
+                    existingIndex = targetIndex,
                 )
                 emit(snapshot())
             }
