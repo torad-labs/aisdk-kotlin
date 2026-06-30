@@ -120,7 +120,9 @@ Penalty, response-format, and retry fields participate in the `Step ?: Agent ?: 
 - `data class LanguageModelCallParams(messages, tools, toolChoice, temperature?, topP?, topK?, maxOutputTokens?, stopSequences, seed?, providerOptions, abortSignal, presencePenalty?, frequencyPenalty?, responseFormat)`
 - `data class LanguageModelTool(name, description, parametersSchemaJson, ..., strict: Boolean? = null, ...)`
 - `data class LanguageModelResult(text, toolCalls, finishReason, usage, providerMetadata, content, rawFinishReason?, warnings, request, response)`
-- `data class CallWarning(type, message?, details?)`
+- `@Poko class CallWarning(type, message?, details?)` — value semantics and
+  serialization remain; public `copy()` / `componentN()` ABI is intentionally
+  absent for result/metadata value types.
 - `data class LanguageModelRequestMetadata(body?)`
 - `data class LanguageModelResponseMetadata(id?, timestampMillis?, modelId?, headers, body?)`
 - `class ai.torad.aisdk.providers.MockLanguageModel(...)` — for tests only

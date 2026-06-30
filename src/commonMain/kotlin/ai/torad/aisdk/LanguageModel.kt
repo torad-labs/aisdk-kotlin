@@ -1,5 +1,6 @@
 package ai.torad.aisdk
 
+import dev.drewhamilton.poko.Poko
 import kotlinx.coroutines.flow.Flow
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonElement
@@ -161,10 +162,11 @@ public data class LanguageModelStreamResult(
  * into common code.
  */
 @Serializable
-public data class CallWarning(
-    val type: String,
-    val message: String? = null,
-    val details: JsonElement? = null,
+@Poko
+public class CallWarning(
+    public val type: String,
+    public val message: String? = null,
+    public val details: JsonElement? = null,
 ) {
     /** Render this warning for the logger seam (upstream's logWarnings). */
     internal fun format(): String =

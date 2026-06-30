@@ -31,6 +31,11 @@ This project follows Semantic Versioning once the first stable release is cut.
   configures `initialReconnectionDelayMillis`, `reconnectionDelayGrowFactor`,
   `maxReconnectionDelayMillis`, and `maxRetries` for `HttpMCPTransport` and
   `MCPTransportConfig`.
+- data class -> @Poko migration (pre-beta): result/metadata value types lose
+  generated `copy()` / `componentN()` ABI as they are demoted from public
+  `data class` to `@Poko class`. This begins with `CallWarning` as the
+  standalone `@Serializable` canary; field access, equality, hashCode,
+  toString, and JSON serialization remain supported.
 
 - **Tools are now class-based and extensible (breaking ABI change).** `Tool` is an `abstract class`
   you can extend for reusable, dependency-injected tools — mirroring how a concrete agent extends
