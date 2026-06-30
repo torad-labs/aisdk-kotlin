@@ -19,6 +19,7 @@ import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.doubleOrNull
 import kotlinx.serialization.json.longOrNull
 import kotlinx.serialization.serializer
+import kotlin.jvm.JvmOverloads
 
 /** LLM-visible metadata for a [Tool]. Separates schema from executor. */
 @Poko
@@ -269,6 +270,7 @@ public class ToolSetBuilder<TContext> internal constructor() {
 
 /** Single-value [Tool] factory — executor is a suspend function returning [TOutput]. */
 @Suppress("LongParameterList")
+@JvmOverloads
 public fun <TInput, TOutput, TContext> Tool(
     name: String,
     description: String,
@@ -330,6 +332,7 @@ public inline fun <reified TInput, reified TOutput, TContext> Tool(
 
 /** Streaming [Tool] factory — executor returns Flow<TOutput>, each emission is a value. */
 @Suppress("LongParameterList")
+@JvmOverloads
 public fun <TInput, TOutput, TContext> StreamingTool(
     name: String,
     description: String,
@@ -393,6 +396,7 @@ public inline fun <reified TInput, reified TOutput, TContext> StreamingTool(
  * Runtime-typed tool — inputs and outputs are raw [JsonElement]. Schema is
  * supplied as a JSON string and stored in [ToolSchema.metadata] under "inputSchema".
  */
+@JvmOverloads
 public fun <TContext> DynamicTool(
     name: String,
     description: String,

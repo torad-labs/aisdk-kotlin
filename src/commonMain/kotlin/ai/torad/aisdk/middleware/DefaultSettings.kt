@@ -8,6 +8,7 @@ import ai.torad.aisdk.MiddlewareOperation
 import ai.torad.aisdk.ResponseFormat
 import ai.torad.aisdk.ToolChoice
 import ai.torad.aisdk.ProviderOptions
+import kotlin.jvm.JvmOverloads
 
 /**
  * Applies default per-call settings to every model invocation. Explicitly
@@ -20,6 +21,7 @@ import ai.torad.aisdk.ProviderOptions
  *   - default `tools` / `toolChoice` / `headers`
  *   - default `providerOptions` like `{ openai: { reasoningEffort: "high" } }`
  */
+@JvmOverloads
 public fun DefaultSettingsMiddleware(
     temperature: Float? = null,
     topP: Float? = null,

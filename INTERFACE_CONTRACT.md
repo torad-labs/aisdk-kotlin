@@ -19,6 +19,12 @@
   compatibility and are not the Java source API. Low-level coroutine bridge
   methods may still expose compiler bridge names; prefer the public boxed
   factories, provider/facade entrypoints, and high-level helpers from Java.
+- Headline construction factories expose Java-callable `@JvmOverloads`
+  telescoping overloads where Java cannot use Kotlin default parameters:
+  `Tool`, `StreamingTool`, `DynamicTool`, `TextGenerator`, `Provider`,
+  `GeneratedFile`, `DefaultSettingsMiddleware`, `DevToolsMiddleware`, and
+  `ExtractReasoningMiddleware`. Builder-DSL factories that take a single
+  Kotlin function block remain a separate Java interop track.
 - Known limitation: Kotlin cannot box-expose open/interface members
   (`-Xjvm-expose-boxed` errors on them by design). `GatewayProvider` and
   `AnthropicAwsProvider`'s `ModelId`-typed shorthand (`chat(ModelId)`,

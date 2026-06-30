@@ -5,6 +5,7 @@ import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.intOrNull
+import kotlin.jvm.JvmOverloads
 
 @Poko
 public class GeneratedFile(
@@ -59,6 +60,7 @@ public sealed class FileData {
     ) : FileData()
 }
 
+@JvmOverloads
 public fun GeneratedFile(
     data: FileData,
     mediaType: String = data.mediaType ?: "application/octet-stream",

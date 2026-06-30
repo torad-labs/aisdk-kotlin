@@ -7,6 +7,7 @@ import ai.torad.aisdk.MiddlewareCallContext
 import ai.torad.aisdk.StreamEvent
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
+import kotlin.jvm.JvmOverloads
 
 /**
  * Extracts XML-tagged reasoning sections from generated text and
@@ -20,6 +21,7 @@ import kotlinx.coroutines.flow.flow
  * models that emit thinking inline rather than via dedicated reasoning
  * channels.
  */
+@JvmOverloads
 public fun ExtractReasoningMiddleware(
     tagName: String = "reasoning",
     separator: String = "\n",

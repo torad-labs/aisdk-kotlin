@@ -1,6 +1,7 @@
 package ai.torad.aisdk
 
 import dev.drewhamilton.poko.Poko
+import kotlin.jvm.JvmOverloads
 import kotlin.time.TimeSource
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.collect
@@ -61,6 +62,7 @@ public class InMemoryDevToolsRecorder : DevToolsRecorder {
     }
 }
 
+@JvmOverloads
 public fun DevToolsMiddleware(
     recorder: DevToolsRecorder = InMemoryDevToolsRecorder(),
     environment: String = "development",

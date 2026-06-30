@@ -1,5 +1,7 @@
 package ai.torad.aisdk
 
+import kotlin.jvm.JvmOverloads
+
 public interface Provider {
     public val providerId: String
 
@@ -152,6 +154,7 @@ public class CustomProviderBuilder internal constructor() {
 public fun CustomProvider(block: CustomProviderBuilder.() -> Unit): CustomProvider =
     CustomProviderBuilder().apply(block).build()
 
+@JvmOverloads
 public fun Provider(
     providerId: String,
     languageModels: Map<String, LanguageModel> = emptyMap(),
