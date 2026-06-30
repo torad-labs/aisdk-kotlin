@@ -72,6 +72,15 @@ Kotlin/JVM SDKs do, including the two most directly comparable to this one:
   (`@Poko`), construction via the DSL factory `CohereProviderSettings { apiKey("...") }`.
   Adding a field later = add a builder property + an internal-constructor param — no ABI
   break. Migrate every existing `CohereProviderSettings(apiKey = ...)` call site to the DSL.
+  - **Construct-types that hold a FUNCTION or other non-value field** (a transform
+    lambda, an auth/id provider, a transport object) are NOT value types — value
+    equality on a closure is meaningless. Make these a plain **regular class**
+    (NOT `@Poko`, NOT `data class`) + `internal` constructor + builder + DSL factory.
+    A regular class already has no `copy()`/`componentN()`, and the internal
+    constructor removes the public positional ctor, so it is just as ABI-evolvable —
+    it just keeps Kotlin's honest identity equality instead of a fake or field-skipped
+    value equality. Do NOT reach for `@Poko.Skip` to force value semantics onto a
+    closure-holder; that hides a field from `equals` and lies about the type.
 - **`data class` is allowed ONLY for genuinely-frozen, small, wire-shaped value
   types** you are confident will never grow (Jake Wharton's "2D point" carve-out
   — e.g. a 2-field id/ref). "Probably won't change" is not "won't change." When
