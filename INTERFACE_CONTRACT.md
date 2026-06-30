@@ -167,6 +167,8 @@ Penalty, response-format, and retry fields participate in the `Step ?: Agent ?: 
 ### MCP
 
 - `MCPTransport`, `MCPClientConfig`, `MCPClient`, `CreateMCPClient(config)`.
+- `MCPReconnectionOptions(initialReconnectionDelayMillis = 1000, reconnectionDelayGrowFactor = 1.5, maxReconnectionDelayMillis = 30000, maxRetries = 2)` — HTTP inbound SSE reconnect policy; `maxRetries = 0` disables automatic error reconnects.
+- `MCPTransportConfig(..., reconnectionOptions = MCPReconnectionOptions())` and `HttpMCPTransport(..., reconnectionOptions = MCPReconnectionOptions())`.
 - `MCPClient` resource/tool APIs: `tools`, `toolsFromDefinitions`, `listTools`, `listResources`, `readResource`, `listResourceTemplates`, `onElicitationRequest`, `close`.
 - Experimental MCP aliases/functions require `@ExperimentalAiSdkApi`: `experimental_MCPClientConfig`, `experimental_MCPClient`, `experimental_MCPClientCapabilities`, `experimental_listPrompts`, `experimental_getPrompt`, `Experimental_CreateMCPClient`, `Experimental_StdioMCPTransport`.
 

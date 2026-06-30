@@ -892,7 +892,161 @@ class MCPClientTest {
     }
 
     @Test
-    fun `HTTP MCP transport reconnects inbound SSE after a clean drop so accepted requests still resolve`() = runTest {
+    fun `HTTP inbound SSE clean EOF stops without reconnecting`() = runTest {
+        val fixture = TestServer.createTestServer(
+            mutableMapOf(
+                "https://mcp.test/mcp" to UrlHandler(
+                    { request, _ ->
+                        when (request.method) {
+                            "GET" -> UrlResponse.StreamChunks(emptyList())
+                            else -> UrlResponse.Empty(status = 202)
+                        }
+                    },
+                ),
+            ),
+        )
+        fixture.server.start()
+        val transport = HttpMCPTransport(
+            client = fixture.httpClient(),
+            url = "https://mcp.test/mcp",
+            reconnectionOptions = MCPReconnectionOptions(
+                initialReconnectionDelayMillis = 30,
+                reconnectionDelayGrowFactor = 1.5,
+                maxReconnectionDelayMillis = 1_000,
+                maxRetries = 2,
+            ),
+        )
+
+        transport.start()
+        waitForRealTime { fixture.calls.count { it.requestMethod == "GET" } >= 1 }
+        assertEquals(1, fixture.calls.count { it.requestMethod == "GET" })
+
+        withContext(Dispatchers.Default) { delay(100) }
+
+        assertEquals(1, fixture.calls.count { it.requestMethod == "GET" })
+        transport.close()
+    }
+
+    @Test
+    fun `HTTP inbound SSE errors reconnect with capped exponential backoff`() = runTest {
+        val oversizedSSEFrame = buildString {
+            repeat(1_001) { append("data: x\n") }
+            append('\n')
+        }
+        val errors = mutableListOf<Throwable>()
+        val fixture = TestServer.createTestServer(
+            mutableMapOf(
+                "https://mcp.test/mcp" to UrlHandler(
+                    { request, _ ->
+                        when (request.method) {
+                            "GET" -> UrlResponse.StreamChunks(listOf(oversizedSSEFrame))
+                            else -> UrlResponse.Empty(status = 202)
+                        }
+                    },
+                ),
+            ),
+        )
+        fixture.server.start()
+        val transport = HttpMCPTransport(
+            client = fixture.httpClient(),
+            url = "https://mcp.test/mcp",
+            reconnectionOptions = MCPReconnectionOptions(
+                initialReconnectionDelayMillis = 30,
+                reconnectionDelayGrowFactor = 10.0,
+                maxReconnectionDelayMillis = 1_000,
+                maxRetries = 2,
+            ),
+        )
+        transport.setOnError { errors += it }
+
+        transport.start()
+        waitForRealTime { errors.isNotEmpty() }
+        assertEquals(1, fixture.calls.count { it.requestMethod == "GET" })
+
+        withContext(Dispatchers.Default) { delay(15) }
+        assertEquals(1, fixture.calls.count { it.requestMethod == "GET" })
+
+        waitForRealTime { errors.size >= 2 }
+        assertEquals(2, fixture.calls.count { it.requestMethod == "GET" })
+
+        withContext(Dispatchers.Default) { delay(100) }
+        assertEquals(2, fixture.calls.count { it.requestMethod == "GET" })
+
+        waitForRealTime { errors.any { it.message?.contains("Maximum reconnection attempts (2) exceeded") == true } }
+        assertEquals(3, fixture.calls.count { it.requestMethod == "GET" })
+
+        withContext(Dispatchers.Default) { delay(100) }
+
+        assertEquals(3, fixture.calls.count { it.requestMethod == "GET" })
+        assertTrue(errors.any { it.message?.contains("Maximum reconnection attempts (2) exceeded") == true })
+        transport.close()
+    }
+
+    @Test
+    fun `HTTP inbound SSE parsed event resets reconnect attempt counter`() = runTest {
+        val oversizedSSEFrame = buildString {
+            repeat(1_001) { append("data: x\n") }
+            append('\n')
+        }
+        val notification = JSONRPCNotification(method = "notifications/progress").toJsonElement()
+        val errors = mutableListOf<Throwable>()
+        val getAttempts = intArrayOf(0)
+        val received = intArrayOf(0)
+        val fixture = TestServer.createTestServer(
+            mutableMapOf(
+                "https://mcp.test/mcp" to UrlHandler(
+                    { request, _ ->
+                        when (request.method) {
+                            "GET" -> when (getAttempts[0]++) {
+                                0 -> UrlResponse.StreamChunks(listOf(oversizedSSEFrame))
+                                1 -> UrlResponse.StreamChunks(
+                                    listOf(
+                                        "event: message\ndata: $notification\n\n",
+                                        oversizedSSEFrame,
+                                    ),
+                                )
+                                else -> UrlResponse.StreamChunks(emptyList())
+                            }
+                            else -> UrlResponse.Empty(status = 202)
+                        }
+                    },
+                ),
+            ),
+        )
+        fixture.server.start()
+        val transport = HttpMCPTransport(
+            client = fixture.httpClient(),
+            url = "https://mcp.test/mcp",
+            reconnectionOptions = MCPReconnectionOptions(
+                initialReconnectionDelayMillis = 30,
+                reconnectionDelayGrowFactor = 1.5,
+                maxReconnectionDelayMillis = 1_000,
+                maxRetries = 1,
+            ),
+        )
+        transport.setOnMessage { received[0] += 1 }
+        transport.setOnError { errors += it }
+
+        transport.start()
+        waitForRealTime { errors.isNotEmpty() }
+        assertEquals(1, fixture.calls.count { it.requestMethod == "GET" })
+
+        waitForRealTime { received[0] == 1 }
+        assertEquals(2, fixture.calls.count { it.requestMethod == "GET" })
+        assertEquals(1, received[0])
+
+        withContext(Dispatchers.Default) {
+            withTimeout(1_000) {
+                while (fixture.calls.count { it.requestMethod == "GET" } < 3) delay(10)
+            }
+        }
+
+        assertEquals(3, fixture.calls.count { it.requestMethod == "GET" })
+        transport.close()
+    }
+
+    @Test
+    fun `HTTP MCP transport reconnects inbound SSE after accepted request explicitly retries`() = runTest {
         val firstInbound = TestResponseController()
         var getAttempts = 0
         val fixture = TestServer.createTestServer(
@@ -937,7 +1091,7 @@ class MCPClientTest {
         assertEquals("echo", tools.tools.single().name)
         assertTrue(
             fixture.calls.count { it.requestMethod == "GET" } >= 2,
-            "a clean inbound SSE close must trigger a reconnect before the request times out",
+            "an accepted 202 request must re-request inbound SSE before the request times out",
         )
         client.close()
     }

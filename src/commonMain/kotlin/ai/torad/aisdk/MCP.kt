@@ -24,6 +24,7 @@ import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.cancelAndJoin
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -49,6 +50,8 @@ import kotlin.concurrent.atomics.ExperimentalAtomicApi
 import kotlin.coroutines.CoroutineContext
 import kotlin.coroutines.cancellation.CancellationException
 import kotlin.coroutines.coroutineContext
+import kotlin.math.pow
+import kotlin.math.roundToLong
 
 public const val MCP_PACKAGE_VERSION: String = "1.0.46"
 public const val LATEST_PROTOCOL_VERSION: String = "2025-11-25"
@@ -898,12 +901,27 @@ public data class MCPTransportConfig(
     val headers: Map<String, String> = emptyMap(),
     val authProvider: OAuthClientProvider? = null,
     val engineContext: CoroutineContext = Dispatchers.Default,
+    val reconnectionOptions: MCPReconnectionOptions = MCPReconnectionOptions(),
+)
+
+public data class MCPReconnectionOptions(
+    val initialReconnectionDelayMillis: Long = 1_000,
+    val reconnectionDelayGrowFactor: Double = 1.5,
+    val maxReconnectionDelayMillis: Long = 30_000,
+    val maxRetries: Int = 2,
 )
 
 public fun CreateMcpTransport(client: HttpClient, config: MCPTransportConfig): MCPTransport =
     when (config.type) {
         MCPTransportKind.Http ->
-            HttpMCPTransport(client, config.url, config.headers, config.authProvider, config.engineContext)
+            HttpMCPTransport(
+                client,
+                config.url,
+                config.headers,
+                config.authProvider,
+                config.engineContext,
+                config.reconnectionOptions,
+            )
         MCPTransportKind.Sse ->
             SseMCPTransport(client, config.url, config.headers, config.authProvider, config.engineContext)
     }
@@ -1013,6 +1031,7 @@ public class HttpMCPTransport(
     private val headers: Map<String, String> = emptyMap(),
     private val authProvider: OAuthClientProvider? = null,
     private val engineContext: CoroutineContext = Dispatchers.Default,
+    private val reconnectionOptions: MCPReconnectionOptions = MCPReconnectionOptions(),
 ) : MCPTransport {
     private var onClose: (() -> Unit)? = null
     private var onError: ((Throwable) -> Unit)? = null
@@ -1028,6 +1047,7 @@ public class HttpMCPTransport(
     private var sessionId: String? = null
     private var inboundJob: Job? = null
     private var inboundRetryRequested: Boolean = false
+    private val inboundReconnectAttempts = intArrayOf(0)
     private val inboundMutex = Mutex()
 
     override suspend fun start() {
@@ -1070,6 +1090,7 @@ public class HttpMCPTransport(
             withContext(NonCancellable) {
                 val job = inboundMutex.withLock {
                     inboundRetryRequested = false
+                    inboundReconnectAttempts[0] = 0
                     inboundJob.also { inboundJob = null }
                 }
                 connectionScope.cancel()
@@ -1174,12 +1195,13 @@ public class HttpMCPTransport(
         }
     }
 
-    private suspend fun ensureInboundSse() {
+    private suspend fun ensureInboundSse(resetReconnectAttempts: Boolean = true) {
         val activeScope = lifecycle.scopeOrNull() ?: return
         inboundMutex.withLock {
             val current = inboundJob
             if (current == null || current.isCompleted) {
                 inboundRetryRequested = false
+                if (resetReconnectAttempts) inboundReconnectAttempts[0] = 0
                 inboundJob = activeScope.launch(start = CoroutineStart.UNDISPATCHED) { readInboundSse() }
             } else {
                 inboundRetryRequested = true
@@ -1187,9 +1209,14 @@ public class HttpMCPTransport(
         }
     }
 
+    private enum class InboundSseCompletion {
+        Clean,
+        Error,
+    }
+
     @Suppress("CyclomaticComplexMethod")
     private suspend fun readInboundSse() {
-        var shouldReconnect = false
+        var completion = InboundSseCompletion.Clean
         try {
             val response = client.request(url) {
                 method = HttpMethod.Get
@@ -1208,8 +1235,12 @@ public class HttpMCPTransport(
                 onError?.invoke(error)
                 return
             }
-            shouldReconnect = true
+            val receivedEvent = booleanArrayOf(false)
             McpSseFrame.parseStreamReleasing(response.bodyAsChannel()) { event ->
+                if (!receivedEvent[0]) {
+                    receivedEvent[0] = true
+                    inboundMutex.withLock { inboundReconnectAttempts[0] = 0 }
+                }
                 if (event.event == "message") {
                     // Isolate per-message handling (mirrors the stdio reader): a malformed/unknown-ID
                     // frame is a NON-fatal protocol error routed to onError — it must not unwind
@@ -1224,20 +1255,79 @@ public class HttpMCPTransport(
             }
         } catch (error: Throwable) {
             if (error is CancellationException) throw error
+            completion = InboundSseCompletion.Error
             if (lifecycle.isActive) onError?.invoke(error)
         } finally {
+            finishInboundSse(completion)
+        }
+    }
+
+    private suspend fun finishInboundSse(completion: InboundSseCompletion) {
+        val currentJob = coroutineContext[Job]
+        var restartImmediately = false
+        var reconnectDelayMillis: Long? = null
+        var maxRetriesExceeded: Int? = null
+        inboundMutex.withLock {
+            when {
+                !lifecycle.isActive -> {
+                    inboundRetryRequested = false
+                    inboundReconnectAttempts[0] = 0
+                    inboundJob = null
+                }
+                inboundRetryRequested -> {
+                    inboundRetryRequested = false
+                    inboundReconnectAttempts[0] = 0
+                    inboundJob = null
+                    restartImmediately = true
+                }
+                completion == InboundSseCompletion.Error -> {
+                    reconnectDelayMillis = nextInboundReconnectDelayMillis()
+                    if (reconnectDelayMillis == null) {
+                        inboundJob = null
+                        if (reconnectionOptions.maxRetries > 0) {
+                            maxRetriesExceeded = reconnectionOptions.maxRetries
+                        }
+                    }
+                }
+                else -> {
+                    inboundReconnectAttempts[0] = 0
+                    inboundJob = null
+                }
+            }
+        }
+        maxRetriesExceeded?.let { maxRetries ->
+            onError?.invoke(MCPClientError("MCP HTTP Transport Error: Maximum reconnection attempts ($maxRetries) exceeded."))
+        }
+        if (restartImmediately) {
+            ensureInboundSse(resetReconnectAttempts = true)
+            return
+        }
+        reconnectDelayMillis?.let { delayMillis ->
+            delay(delayMillis)
             var restart = false
             inboundMutex.withLock {
-                inboundJob = null
-                if (lifecycle.isActive && (inboundRetryRequested || shouldReconnect)) {
-                    inboundRetryRequested = false
+                if (lifecycle.isActive && inboundJob === currentJob) {
+                    inboundJob = null
                     restart = true
                 }
             }
             if (restart) {
-                ensureInboundSse()
+                ensureInboundSse(resetReconnectAttempts = false)
             }
         }
+    }
+
+    private fun nextInboundReconnectDelayMillis(): Long? {
+        val maxRetries = reconnectionOptions.maxRetries
+        if (maxRetries <= 0 || inboundReconnectAttempts[0] >= maxRetries) return null
+        val initial = reconnectionOptions.initialReconnectionDelayMillis.coerceAtLeast(0)
+        val factor = reconnectionOptions.reconnectionDelayGrowFactor
+            .takeIf { it.isFinite() && it > 0.0 }
+            ?: 1.0
+        val maxDelay = reconnectionOptions.maxReconnectionDelayMillis.coerceAtLeast(0)
+        val delayMillis = (initial * factor.pow(inboundReconnectAttempts[0])).roundToLong()
+        inboundReconnectAttempts[0] += 1
+        return delayMillis.coerceAtMost(maxDelay)
     }
 
     private suspend fun mcpCommonHeaders(base: Map<String, String>): Map<String, String> {

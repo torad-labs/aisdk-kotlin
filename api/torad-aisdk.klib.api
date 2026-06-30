@@ -8834,7 +8834,7 @@ final class ai.torad.aisdk/GetPromptResult { // ai.torad.aisdk/GetPromptResult|n
 }
 
 final class ai.torad.aisdk/HttpMCPTransport : ai.torad.aisdk/MCPTransport { // ai.torad.aisdk/HttpMCPTransport|null[0]
-    constructor <init>(io.ktor.client/HttpClient, kotlin/String, kotlin.collections/Map<kotlin/String, kotlin/String> = ..., ai.torad.aisdk/OAuthClientProvider? = ..., kotlin.coroutines/CoroutineContext = ...) // ai.torad.aisdk/HttpMCPTransport.<init>|<init>(io.ktor.client.HttpClient;kotlin.String;kotlin.collections.Map<kotlin.String,kotlin.String>;ai.torad.aisdk.OAuthClientProvider?;kotlin.coroutines.CoroutineContext){}[0]
+    constructor <init>(io.ktor.client/HttpClient, kotlin/String, kotlin.collections/Map<kotlin/String, kotlin/String> = ..., ai.torad.aisdk/OAuthClientProvider? = ..., kotlin.coroutines/CoroutineContext = ..., ai.torad.aisdk/MCPReconnectionOptions = ...) // ai.torad.aisdk/HttpMCPTransport.<init>|<init>(io.ktor.client.HttpClient;kotlin.String;kotlin.collections.Map<kotlin.String,kotlin.String>;ai.torad.aisdk.OAuthClientProvider?;kotlin.coroutines.CoroutineContext;ai.torad.aisdk.MCPReconnectionOptions){}[0]
 
     final fun setOnClose(kotlin/Function0<kotlin/Unit>?) // ai.torad.aisdk/HttpMCPTransport.setOnClose|setOnClose(kotlin.Function0<kotlin.Unit>?){}[0]
     final fun setOnError(kotlin/Function1<kotlin/Throwable, kotlin/Unit>?) // ai.torad.aisdk/HttpMCPTransport.setOnError|setOnError(kotlin.Function1<kotlin.Throwable,kotlin.Unit>?){}[0]
@@ -9854,6 +9854,28 @@ final class ai.torad.aisdk/MCPPromptMessage { // ai.torad.aisdk/MCPPromptMessage
     }
 }
 
+final class ai.torad.aisdk/MCPReconnectionOptions { // ai.torad.aisdk/MCPReconnectionOptions|null[0]
+    constructor <init>(kotlin/Long = ..., kotlin/Double = ..., kotlin/Long = ..., kotlin/Int = ...) // ai.torad.aisdk/MCPReconnectionOptions.<init>|<init>(kotlin.Long;kotlin.Double;kotlin.Long;kotlin.Int){}[0]
+
+    final val initialReconnectionDelayMillis // ai.torad.aisdk/MCPReconnectionOptions.initialReconnectionDelayMillis|{}initialReconnectionDelayMillis[0]
+        final fun <get-initialReconnectionDelayMillis>(): kotlin/Long // ai.torad.aisdk/MCPReconnectionOptions.initialReconnectionDelayMillis.<get-initialReconnectionDelayMillis>|<get-initialReconnectionDelayMillis>(){}[0]
+    final val maxReconnectionDelayMillis // ai.torad.aisdk/MCPReconnectionOptions.maxReconnectionDelayMillis|{}maxReconnectionDelayMillis[0]
+        final fun <get-maxReconnectionDelayMillis>(): kotlin/Long // ai.torad.aisdk/MCPReconnectionOptions.maxReconnectionDelayMillis.<get-maxReconnectionDelayMillis>|<get-maxReconnectionDelayMillis>(){}[0]
+    final val maxRetries // ai.torad.aisdk/MCPReconnectionOptions.maxRetries|{}maxRetries[0]
+        final fun <get-maxRetries>(): kotlin/Int // ai.torad.aisdk/MCPReconnectionOptions.maxRetries.<get-maxRetries>|<get-maxRetries>(){}[0]
+    final val reconnectionDelayGrowFactor // ai.torad.aisdk/MCPReconnectionOptions.reconnectionDelayGrowFactor|{}reconnectionDelayGrowFactor[0]
+        final fun <get-reconnectionDelayGrowFactor>(): kotlin/Double // ai.torad.aisdk/MCPReconnectionOptions.reconnectionDelayGrowFactor.<get-reconnectionDelayGrowFactor>|<get-reconnectionDelayGrowFactor>(){}[0]
+
+    final fun component1(): kotlin/Long // ai.torad.aisdk/MCPReconnectionOptions.component1|component1(){}[0]
+    final fun component2(): kotlin/Double // ai.torad.aisdk/MCPReconnectionOptions.component2|component2(){}[0]
+    final fun component3(): kotlin/Long // ai.torad.aisdk/MCPReconnectionOptions.component3|component3(){}[0]
+    final fun component4(): kotlin/Int // ai.torad.aisdk/MCPReconnectionOptions.component4|component4(){}[0]
+    final fun copy(kotlin/Long = ..., kotlin/Double = ..., kotlin/Long = ..., kotlin/Int = ...): ai.torad.aisdk/MCPReconnectionOptions // ai.torad.aisdk/MCPReconnectionOptions.copy|copy(kotlin.Long;kotlin.Double;kotlin.Long;kotlin.Int){}[0]
+    final fun equals(kotlin/Any?): kotlin/Boolean // ai.torad.aisdk/MCPReconnectionOptions.equals|equals(kotlin.Any?){}[0]
+    final fun hashCode(): kotlin/Int // ai.torad.aisdk/MCPReconnectionOptions.hashCode|hashCode(){}[0]
+    final fun toString(): kotlin/String // ai.torad.aisdk/MCPReconnectionOptions.toString|toString(){}[0]
+}
+
 final class ai.torad.aisdk/MCPRequestOptions { // ai.torad.aisdk/MCPRequestOptions|null[0]
     constructor <init>(ai.torad.aisdk/AbortSignal? = ..., kotlin/Long? = ..., kotlin/Long? = ...) // ai.torad.aisdk/MCPRequestOptions.<init>|<init>(ai.torad.aisdk.AbortSignal?;kotlin.Long?;kotlin.Long?){}[0]
 
@@ -10067,7 +10089,7 @@ final class ai.torad.aisdk/MCPToolSchema { // ai.torad.aisdk/MCPToolSchema|null[
 }
 
 final class ai.torad.aisdk/MCPTransportConfig { // ai.torad.aisdk/MCPTransportConfig|null[0]
-    constructor <init>(ai.torad.aisdk/MCPTransportKind, kotlin/String, kotlin.collections/Map<kotlin/String, kotlin/String> = ..., ai.torad.aisdk/OAuthClientProvider? = ..., kotlin.coroutines/CoroutineContext = ...) // ai.torad.aisdk/MCPTransportConfig.<init>|<init>(ai.torad.aisdk.MCPTransportKind;kotlin.String;kotlin.collections.Map<kotlin.String,kotlin.String>;ai.torad.aisdk.OAuthClientProvider?;kotlin.coroutines.CoroutineContext){}[0]
+    constructor <init>(ai.torad.aisdk/MCPTransportKind, kotlin/String, kotlin.collections/Map<kotlin/String, kotlin/String> = ..., ai.torad.aisdk/OAuthClientProvider? = ..., kotlin.coroutines/CoroutineContext = ..., ai.torad.aisdk/MCPReconnectionOptions = ...) // ai.torad.aisdk/MCPTransportConfig.<init>|<init>(ai.torad.aisdk.MCPTransportKind;kotlin.String;kotlin.collections.Map<kotlin.String,kotlin.String>;ai.torad.aisdk.OAuthClientProvider?;kotlin.coroutines.CoroutineContext;ai.torad.aisdk.MCPReconnectionOptions){}[0]
 
     final val authProvider // ai.torad.aisdk/MCPTransportConfig.authProvider|{}authProvider[0]
         final fun <get-authProvider>(): ai.torad.aisdk/OAuthClientProvider? // ai.torad.aisdk/MCPTransportConfig.authProvider.<get-authProvider>|<get-authProvider>(){}[0]
@@ -10075,6 +10097,8 @@ final class ai.torad.aisdk/MCPTransportConfig { // ai.torad.aisdk/MCPTransportCo
         final fun <get-engineContext>(): kotlin.coroutines/CoroutineContext // ai.torad.aisdk/MCPTransportConfig.engineContext.<get-engineContext>|<get-engineContext>(){}[0]
     final val headers // ai.torad.aisdk/MCPTransportConfig.headers|{}headers[0]
         final fun <get-headers>(): kotlin.collections/Map<kotlin/String, kotlin/String> // ai.torad.aisdk/MCPTransportConfig.headers.<get-headers>|<get-headers>(){}[0]
+    final val reconnectionOptions // ai.torad.aisdk/MCPTransportConfig.reconnectionOptions|{}reconnectionOptions[0]
+        final fun <get-reconnectionOptions>(): ai.torad.aisdk/MCPReconnectionOptions // ai.torad.aisdk/MCPTransportConfig.reconnectionOptions.<get-reconnectionOptions>|<get-reconnectionOptions>(){}[0]
     final val type // ai.torad.aisdk/MCPTransportConfig.type|{}type[0]
         final fun <get-type>(): ai.torad.aisdk/MCPTransportKind // ai.torad.aisdk/MCPTransportConfig.type.<get-type>|<get-type>(){}[0]
     final val url // ai.torad.aisdk/MCPTransportConfig.url|{}url[0]
@@ -10085,7 +10109,8 @@ final class ai.torad.aisdk/MCPTransportConfig { // ai.torad.aisdk/MCPTransportCo
     final fun component3(): kotlin.collections/Map<kotlin/String, kotlin/String> // ai.torad.aisdk/MCPTransportConfig.component3|component3(){}[0]
     final fun component4(): ai.torad.aisdk/OAuthClientProvider? // ai.torad.aisdk/MCPTransportConfig.component4|component4(){}[0]
     final fun component5(): kotlin.coroutines/CoroutineContext // ai.torad.aisdk/MCPTransportConfig.component5|component5(){}[0]
-    final fun copy(ai.torad.aisdk/MCPTransportKind = ..., kotlin/String = ..., kotlin.collections/Map<kotlin/String, kotlin/String> = ..., ai.torad.aisdk/OAuthClientProvider? = ..., kotlin.coroutines/CoroutineContext = ...): ai.torad.aisdk/MCPTransportConfig // ai.torad.aisdk/MCPTransportConfig.copy|copy(ai.torad.aisdk.MCPTransportKind;kotlin.String;kotlin.collections.Map<kotlin.String,kotlin.String>;ai.torad.aisdk.OAuthClientProvider?;kotlin.coroutines.CoroutineContext){}[0]
+    final fun component6(): ai.torad.aisdk/MCPReconnectionOptions // ai.torad.aisdk/MCPTransportConfig.component6|component6(){}[0]
+    final fun copy(ai.torad.aisdk/MCPTransportKind = ..., kotlin/String = ..., kotlin.collections/Map<kotlin/String, kotlin/String> = ..., ai.torad.aisdk/OAuthClientProvider? = ..., kotlin.coroutines/CoroutineContext = ..., ai.torad.aisdk/MCPReconnectionOptions = ...): ai.torad.aisdk/MCPTransportConfig // ai.torad.aisdk/MCPTransportConfig.copy|copy(ai.torad.aisdk.MCPTransportKind;kotlin.String;kotlin.collections.Map<kotlin.String,kotlin.String>;ai.torad.aisdk.OAuthClientProvider?;kotlin.coroutines.CoroutineContext;ai.torad.aisdk.MCPReconnectionOptions){}[0]
     final fun equals(kotlin/Any?): kotlin/Boolean // ai.torad.aisdk/MCPTransportConfig.equals|equals(kotlin.Any?){}[0]
     final fun hashCode(): kotlin/Int // ai.torad.aisdk/MCPTransportConfig.hashCode|hashCode(){}[0]
     final fun toString(): kotlin/String // ai.torad.aisdk/MCPTransportConfig.toString|toString(){}[0]
