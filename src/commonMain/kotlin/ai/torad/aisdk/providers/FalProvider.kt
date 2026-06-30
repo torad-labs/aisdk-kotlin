@@ -4,7 +4,6 @@ import ai.torad.aisdk.*
 import io.ktor.client.HttpClient
 import io.ktor.client.request.header
 import io.ktor.client.request.request
-import io.ktor.client.statement.bodyAsBytes
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpMethod
 import kotlinx.coroutines.delay
@@ -115,20 +114,25 @@ public data class FalProviderSettings(
         abortSignal: AbortSignal,
     ): FalBinaryResponse {
         abortSignal.throwIfAborted()
-        val response = client.request(url) {
-            method = HttpMethod.Get
-            headers.forEach { (name, value) -> header(name, value) }
+        val (statusCode, flattened, bytes) = HttpTransport.withRealTimeout(DEFAULT_REQUEST_TIMEOUT_MS) {
+            val response = client.request(url) {
+                method = HttpMethod.Get
+                headers.forEach { (name, value) -> header(name, value) }
+            }
+            Triple(
+                response.status.value,
+                with(HttpTransport) { response.flattenedHeaders() },
+                with(HttpTransport) { response.bodyAsBytesCapped(url) },
+            )
         }
-        val bytes = response.bodyAsBytes()
-        val flattened = with(HttpTransport) { response.flattenedHeaders() }
-        if (response.status.value !in 200..299) {
+        if (statusCode !in 200..299) {
             val raw = bytes.decodeToString()
             throw ApiCallError(
                 url = url,
-                statusCode = response.status.value,
+                statusCode = statusCode,
                 rawBody = raw,
                 headers = flattened,
-                message = "fal binary request failed with status ${response.status.value}: $raw",
+                message = "fal binary request failed with status $statusCode: $raw",
             )
         }
         return FalBinaryResponse(

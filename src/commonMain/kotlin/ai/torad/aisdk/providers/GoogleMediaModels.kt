@@ -7,7 +7,6 @@ import io.ktor.client.request.header
 import io.ktor.client.request.request
 import io.ktor.client.request.setBody
 import io.ktor.client.statement.HttpResponse
-import io.ktor.client.statement.bodyAsText
 import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpMethod
@@ -270,14 +269,19 @@ internal class GoogleGenerativeAIVideoModel(
         var attempt = 0
         while (true) {
             abortSignal.throwIfAborted()
-            val response = client.request(url) {
-                method = HttpMethod.Get
-                headers.forEach { (name, value) -> header(name, value) }
+            val parsed = HttpTransport.withRealTimeout(DEFAULT_REQUEST_TIMEOUT_MS) {
+                val response = client.request(url) {
+                    method = HttpMethod.Get
+                    headers.forEach { (name, value) -> header(name, value) }
+                }
+                if (response.status.value !in 500..599 || attempt >= maxRetries) {
+                    with(GoogleHttp) { response.parseGoogleResponse(url, parseJson = parseJson) }
+                } else {
+                    with(HttpTransport) { response.bodyAsTextCapped(url) }
+                    null
+                }
             }
-            if (response.status.value !in 500..599 || attempt >= maxRetries) {
-                return with(GoogleHttp) { response.parseGoogleResponse(url, parseJson = parseJson) }
-            }
-            response.bodyAsText()
+            if (parsed != null) return parsed
             attempt += 1
             if (retryDelayMillis > 0) delay(retryDelayMillis)
         }

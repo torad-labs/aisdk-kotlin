@@ -69,7 +69,7 @@ tests must stay green.
 | BL-047 | No `data-*` UI chunk encoder (decode-only; can't emit custom data parts) | Medium | Optional | CONFIRMED | OPEN |
 | BL-048 | Gateway content-part decode drops unknown types (vs Raw on stream path) | Low | Optional | CONFIRMED | OPEN |
 
-| BL-049 | Media binary downloads + Google poll GET bypass timeout & body cap (hang+OOM) | Med-High | Recommended | CONFIRMED | OPEN |
+| BL-049 | Media binary downloads + Google poll GET bypass timeout & body cap (hang+OOM) | Med-High | Recommended | CONFIRMED | DONE |
 | BL-050 | UI: late/duplicate `ToolInputDelta` reverts a finished tool card, wiping output | Medium | Recommended | CONFIRMED | OPEN |
 | BL-051 | Media poll loops: abort not honored in-flight; KlingAI unfloored timeout; Google spin | Medium | Optional | CONFIRMED | OPEN |
 | BL-052 | UI residual: same-name tool placeholder mis-drop; Text/Reasoning id-collision stuck | Low | Optional | CONFIRMED | OPEN |
