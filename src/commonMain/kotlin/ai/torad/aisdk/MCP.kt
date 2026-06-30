@@ -845,21 +845,27 @@ suspend fun auth(
     }
 
     if (currentTokens?.refreshToken?.isNotBlank() == true && options.client != null && clientInformation != null) {
-        val tokens = McpOAuthFlow.refreshAuthorization(
-            client = options.client,
-            authorizationServerUrl = authorizationServerUrl,
-            metadata = metadata,
-            clientInformation = clientInformation,
-            refreshToken = currentTokens.refreshToken,
-            resource = resource,
-            addClientAuthentication = { headers, params, url, metadata ->
-                val result = provider.addClientAuthentication(headers, params, url, metadata)
-                headers.putAll(result.additionalHeaders)
-                params.putAll(result.additionalParams)
-            },
-        )
-        provider.saveTokens(tokens)
-        return AuthResult.AUTHORIZED
+        try {
+            val tokens = McpOAuthFlow.refreshAuthorization(
+                client = options.client,
+                authorizationServerUrl = authorizationServerUrl,
+                metadata = metadata,
+                clientInformation = clientInformation,
+                refreshToken = currentTokens.refreshToken,
+                resource = resource,
+                addClientAuthentication = { headers, params, url, metadata ->
+                    val result = provider.addClientAuthentication(headers, params, url, metadata)
+                    headers.putAll(result.additionalHeaders)
+                    params.putAll(result.additionalParams)
+                },
+            )
+            provider.saveTokens(tokens)
+            return AuthResult.AUTHORIZED
+        } catch (error: CancellationException) {
+            throw error
+        } catch (_: Throwable) {
+            // Expired/revoked refresh tokens should fall through to a fresh authorization redirect.
+        }
     }
 
     if (currentTokens?.accessToken?.isNotBlank() == true && !reauthorize) {

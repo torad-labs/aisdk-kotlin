@@ -586,6 +586,61 @@ class MCPClientTest {
     }
 
     @Test
+    fun `auth falls back to redirect when reauthorize refresh token is invalid grant`() = runTest {
+        val fixture = TestServer.createTestServer(
+            mutableMapOf(
+                "https://auth.example.com/.well-known/oauth-authorization-server" to UrlHandler(
+                    UrlResponse.JsonValue(
+                        Json.parseToJsonElement(
+                            """
+                            {
+                              "authorization_endpoint":"https://auth.example.com/authorize",
+                              "token_endpoint":"https://auth.example.com/token",
+                              "response_types_supported":["code"],
+                              "grant_types_supported":["authorization_code","refresh_token"],
+                              "token_endpoint_auth_methods_supported":["client_secret_post"],
+                              "code_challenge_methods_supported":["S256"]
+                            }
+                            """.trimIndent(),
+                        ),
+                    ),
+                ),
+                "https://auth.example.com/token" to UrlHandler(
+                    { request, _ ->
+                        assertTrue(request.body.contains("grant_type=refresh_token"))
+                        assertTrue(request.body.contains("refresh_token=revoked-refresh"))
+                        UrlResponse.Error(
+                            status = 400,
+                            body = """{"error":"invalid_grant"}""",
+                            headers = mapOf(HttpHeaders.ContentType to "application/json"),
+                        )
+                    },
+                ),
+            ),
+        )
+        fixture.server.start()
+        val provider = MemoryOAuthProvider(
+            tokens = OAuthTokens(accessToken = "expired-token", tokenType = "Bearer", refreshToken = "revoked-refresh"),
+            clientInformation = OAuthClientInformation(clientId = "client-id", clientSecret = "client-secret"),
+        )
+
+        assertEquals(
+            AuthResult.REDIRECT,
+            McpAuth.auth(
+                provider,
+                AuthOptions(serverUrl = "https://auth.example.com", client = fixture.httpClient()),
+                reauthorize = true,
+            ),
+        )
+
+        val authorizationUrl = assertNotNull(provider.lastAuthorizationUrl)
+        assertTrue(authorizationUrl.startsWith("https://auth.example.com/authorize?"))
+        assertTrue("client_id=client-id" in authorizationUrl)
+        assertTrue("code_challenge=" in authorizationUrl)
+        assertEquals("expired-token", provider.tokens()?.accessToken)
+    }
+
+    @Test
     fun `auth uses protected resource metadata for authorization server and redirect resource`() = runTest {
         val fixture = TestServer.createTestServer(
             mutableMapOf(
