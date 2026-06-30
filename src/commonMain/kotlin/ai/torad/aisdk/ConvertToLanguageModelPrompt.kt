@@ -49,7 +49,14 @@ public object PromptConversion {
         validateNoDanglingToolCalls(messages)
         val resolved = messages.map { message ->
             val converted = message.content.map { part -> resolveAssetPart(part, supportedUrls, download) }
-            if (converted == message.content) message else message.copy(content = converted)
+            if (converted == message.content) {
+                message
+            } else {
+                ModelMessage(
+                    role = message.role,
+                    content = converted,
+                )
+            }
         }
         return combineConsecutiveToolMessages(resolved)
     }
@@ -63,7 +70,10 @@ public object PromptConversion {
         for (message in messages) {
             val last = result.lastOrNull()
             if (message.role == MessageRole.Tool && last?.role == MessageRole.Tool) {
-                result[result.size - 1] = last.copy(content = last.content + message.content)
+                result[result.size - 1] = ModelMessage(
+                    role = last.role,
+                    content = last.content + message.content,
+                )
             } else {
                 result += message
             }
@@ -81,11 +91,22 @@ public object PromptConversion {
         // declared type.
         is ContentPart.Image ->
             resolveMedia(part.url, part.base64, part.mediaType, supportedUrls, download, detectImage = true)?.let {
-                part.copy(base64 = it.base64, mediaType = it.mediaType, url = if (it.clearUrl) null else part.url)
+                ContentPart.Image(
+                    mediaType = it.mediaType,
+                    base64 = it.base64,
+                    providerMetadata = part.providerMetadata,
+                    url = if (it.clearUrl) null else part.url,
+                )
             } ?: part
         is ContentPart.File ->
             resolveMedia(part.url, part.base64, part.mediaType, supportedUrls, download, detectImage = false)?.let {
-                part.copy(base64 = it.base64, mediaType = it.mediaType, url = if (it.clearUrl) null else part.url)
+                ContentPart.File(
+                    mediaType = it.mediaType,
+                    base64 = it.base64,
+                    filename = part.filename,
+                    providerMetadata = part.providerMetadata,
+                    url = if (it.clearUrl) null else part.url,
+                )
             } ?: part
         // A tool result returning a `content` output may embed image-url/file-url items;
         // inline them so a URL-rejecting provider sees data (upstream parity).
@@ -118,11 +139,18 @@ public object PromptConversion {
         return if (!changed) {
             part
         } else {
-            part.copy(
+            ContentPart.ToolResult(
+                toolCallId = part.toolCallId,
+                toolName = part.toolName,
                 output = buildJsonObject {
                     obj.forEach { (k, v) -> if (k != "value") put(k, v) }
                     put("value", JsonArray(rewritten))
                 },
+                isError = part.isError,
+                modelVisible = part.modelVisible,
+                dynamic = part.dynamic,
+                providerExecuted = part.providerExecuted,
+                providerMetadata = part.providerMetadata,
             )
         }
     }

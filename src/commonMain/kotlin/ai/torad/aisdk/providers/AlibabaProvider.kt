@@ -219,14 +219,19 @@ private class AlibabaChatLanguageModel(
         val cacheRead = usage.inputTokens.cacheRead
         val reasoning = usage.outputTokens.reasoning
         val outputTotal = usage.outputTokens.total
-        return usage.copy(
-            inputTokens = usage.inputTokens.copy(
+        return Usage(
+            inputTokens = Usage.InputTokenBreakdown(
+                total = usage.inputTokens.total,
                 cacheWrite = cacheWrite,
+                cacheRead = usage.inputTokens.cacheRead,
                 noCache = (inputTotal - cacheRead - cacheWrite).coerceAtLeast(0),
             ),
-            outputTokens = usage.outputTokens.copy(
+            outputTokens = Usage.OutputTokenBreakdown(
+                total = usage.outputTokens.total,
                 text = (outputTotal - reasoning).coerceAtLeast(0),
+                reasoning = usage.outputTokens.reasoning,
             ),
+            raw = usage.raw,
         )
     }
 }

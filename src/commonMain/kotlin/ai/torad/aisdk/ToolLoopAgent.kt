@@ -1460,7 +1460,14 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
                 if (resolvedTool.name == call.toolName) {
                     call
                 } else {
-                    call.copy(toolName = resolvedTool.name)
+                    ContentPart.ToolCall(
+                        toolCallId = call.toolCallId,
+                        toolName = resolvedTool.name,
+                        input = call.input,
+                        providerExecuted = call.providerExecuted,
+                        dynamic = call.dynamic,
+                        providerMetadata = call.providerMetadata,
+                    )
                 }
             effectiveCallForFailure = effectiveCall
             // Telemetry brackets the execution HERE (not at the dispatch site) so
