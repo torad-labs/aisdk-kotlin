@@ -38,17 +38,17 @@ public typealias AnthropicToolOptions = JsonObject
 public typealias AnthropicMessageMetadata = JsonObject
 public typealias AnthropicUsageIteration = JsonObject
 
-public data class AnthropicProviderSettings(
-    val baseURL: String = "https://api.anthropic.com/v1",
-    val apiKey: String? = null,
-    val authToken: String? = null,
-    val headers: Map<String, String> = emptyMap(),
-    val requestHeadersProvider: (suspend (url: String, body: String, headers: Map<String, String>) -> Map<String, String>)? = null,
-    val buildRequestUrl: ((baseURL: String, modelId: String, isStreaming: Boolean) -> String)? = null,
-    val transformRequestBody: ((modelId: String, body: JsonObject, isStreaming: Boolean) -> JsonObject)? = null,
-    val supportedUrls: Map<String, List<String>>? = null,
-    val generateId: () -> String = { IdGenerator.generate() },
-    val name: String = "anthropic.messages",
+public class AnthropicProviderSettings internal constructor(
+    public val baseURL: String = "https://api.anthropic.com/v1",
+    public val apiKey: String? = null,
+    public val authToken: String? = null,
+    public val headers: Map<String, String> = emptyMap(),
+    public val requestHeadersProvider: (suspend (url: String, body: String, headers: Map<String, String>) -> Map<String, String>)? = null,
+    public val buildRequestUrl: ((baseURL: String, modelId: String, isStreaming: Boolean) -> String)? = null,
+    public val transformRequestBody: ((modelId: String, body: JsonObject, isStreaming: Boolean) -> JsonObject)? = null,
+    public val supportedUrls: Map<String, List<String>>? = null,
+    public val generateId: () -> String = { IdGenerator.generate() },
+    public val name: String = "anthropic.messages",
 ) {
     internal fun anthropicHeaders(
         extra: Map<String, String>,
@@ -139,6 +139,78 @@ public data class AnthropicProviderSettings(
             anthropicMaxOutputTokensOrNull(modelId) ?: 4_096
     }
 }
+
+public class AnthropicProviderSettingsBuilder internal constructor() {
+    private var baseURL: String = "https://api.anthropic.com/v1"
+    private var apiKey: String? = null
+    private var authToken: String? = null
+    private var headers: Map<String, String> = emptyMap()
+    private var requestHeadersProvider: (suspend (url: String, body: String, headers: Map<String, String>) -> Map<String, String>)? = null
+    private var buildRequestUrl: ((baseURL: String, modelId: String, isStreaming: Boolean) -> String)? = null
+    private var transformRequestBody: ((modelId: String, body: JsonObject, isStreaming: Boolean) -> JsonObject)? = null
+    private var supportedUrls: Map<String, List<String>>? = null
+    private var generateId: () -> String = { IdGenerator.generate() }
+    private var name: String = "anthropic.messages"
+
+    public fun baseURL(value: String) {
+        baseURL = value
+    }
+
+    public fun apiKey(value: String?) {
+        apiKey = value
+    }
+
+    public fun authToken(value: String?) {
+        authToken = value
+    }
+
+    public fun headers(value: Map<String, String>) {
+        headers = value
+    }
+
+    public fun requestHeadersProvider(value: (suspend (url: String, body: String, headers: Map<String, String>) -> Map<String, String>)?) {
+        requestHeadersProvider = value
+    }
+
+    public fun buildRequestUrl(value: ((baseURL: String, modelId: String, isStreaming: Boolean) -> String)?) {
+        buildRequestUrl = value
+    }
+
+    public fun transformRequestBody(value: ((modelId: String, body: JsonObject, isStreaming: Boolean) -> JsonObject)?) {
+        transformRequestBody = value
+    }
+
+    public fun supportedUrls(value: Map<String, List<String>>?) {
+        supportedUrls = value
+    }
+
+    public fun generateId(value: () -> String) {
+        generateId = value
+    }
+
+    public fun name(value: String) {
+        name = value
+    }
+
+    internal fun build(): AnthropicProviderSettings =
+        AnthropicProviderSettings(
+            baseURL = baseURL,
+            apiKey = apiKey,
+            authToken = authToken,
+            headers = headers,
+            requestHeadersProvider = requestHeadersProvider,
+            buildRequestUrl = buildRequestUrl,
+            transformRequestBody = transformRequestBody,
+            supportedUrls = supportedUrls,
+            generateId = generateId,
+            name = name,
+        )
+}
+
+public fun AnthropicProviderSettings(
+    block: AnthropicProviderSettingsBuilder.() -> Unit = {},
+): AnthropicProviderSettings =
+    AnthropicProviderSettingsBuilder().apply(block).build()
 
 public class AnthropicProvider(
     private val client: HttpClient,

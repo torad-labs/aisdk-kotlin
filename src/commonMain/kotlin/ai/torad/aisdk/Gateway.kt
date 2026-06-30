@@ -41,20 +41,20 @@ public data class GatewayAuthToken(
     }
 }
 
-public data class GatewayProviderSettings(
-    val baseUrl: String = AI_GATEWAY_DEFAULT_BASE_URL,
-    val apiKey: String? = null,
-    val headers: Map<String, String> = emptyMap(),
-    val transport: GatewayTransport = GatewayTransportNotConfigured,
-    val metadataCacheRefreshMillis: Long = 5 * 60 * 1000L,
-    val nowMillis: () -> Long = { Clock.System.now().toEpochMilliseconds() },
-    val authTokenProvider: (suspend () -> GatewayAuthToken?)? = null,
+public class GatewayProviderSettings internal constructor(
+    public val baseUrl: String = AI_GATEWAY_DEFAULT_BASE_URL,
+    public val apiKey: String? = null,
+    public val headers: Map<String, String> = emptyMap(),
+    public val transport: GatewayTransport = GatewayTransportNotConfigured,
+    public val metadataCacheRefreshMillis: Long = 5 * 60 * 1000L,
+    public val nowMillis: () -> Long = { Clock.System.now().toEpochMilliseconds() },
+    public val authTokenProvider: (suspend () -> GatewayAuthToken?)? = null,
     /**
      * Host-supplied environment. When [apiKey] is null, `AI_GATEWAY_API_KEY` here
      * is used — the KMP-idiomatic equivalent of upstream's process.env lookup
      * (commonMain has no platform `getenv`; the host passes the map).
      */
-    val environment: Map<String, String> = emptyMap(),
+    public val environment: Map<String, String> = emptyMap(),
 ) {
     internal suspend fun gatewayHeaders(): Map<String, String> {
         val auth = GatewayAuthToken.fromSettings(this)
@@ -79,6 +79,66 @@ public data class GatewayProviderSettings(
         return ProviderHeaders.withUserAgentSuffix(base, "ai-sdk/gateway-kotlin")
     }
 }
+
+public class GatewayProviderSettingsBuilder internal constructor() {
+    private var baseUrl: String = AI_GATEWAY_DEFAULT_BASE_URL
+    private var apiKey: String? = null
+    private var headers: Map<String, String> = emptyMap()
+    private var transport: GatewayTransport = GatewayTransportNotConfigured
+    private var metadataCacheRefreshMillis: Long = 5 * 60 * 1000L
+    private var nowMillis: () -> Long = { Clock.System.now().toEpochMilliseconds() }
+    private var authTokenProvider: (suspend () -> GatewayAuthToken?)? = null
+    private var environment: Map<String, String> = emptyMap()
+
+    public fun baseUrl(value: String) {
+        baseUrl = value
+    }
+
+    public fun apiKey(value: String?) {
+        apiKey = value
+    }
+
+    public fun headers(value: Map<String, String>) {
+        headers = value
+    }
+
+    public fun transport(value: GatewayTransport) {
+        transport = value
+    }
+
+    public fun metadataCacheRefreshMillis(value: Long) {
+        metadataCacheRefreshMillis = value
+    }
+
+    public fun nowMillis(value: () -> Long) {
+        nowMillis = value
+    }
+
+    public fun authTokenProvider(value: (suspend () -> GatewayAuthToken?)?) {
+        authTokenProvider = value
+    }
+
+    public fun environment(value: Map<String, String>) {
+        environment = value
+    }
+
+    internal fun build(): GatewayProviderSettings =
+        GatewayProviderSettings(
+            baseUrl = baseUrl,
+            apiKey = apiKey,
+            headers = headers,
+            transport = transport,
+            metadataCacheRefreshMillis = metadataCacheRefreshMillis,
+            nowMillis = nowMillis,
+            authTokenProvider = authTokenProvider,
+            environment = environment,
+        )
+}
+
+public fun GatewayProviderSettings(
+    block: GatewayProviderSettingsBuilder.() -> Unit = {},
+): GatewayProviderSettings =
+    GatewayProviderSettingsBuilder().apply(block).build()
 
 @Poko
 public class GatewayRequestContext(

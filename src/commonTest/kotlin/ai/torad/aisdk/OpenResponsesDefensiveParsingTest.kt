@@ -41,7 +41,11 @@ class OpenResponsesDefensiveParsingTest {
         )
         val provider = OpenResponses(
             client,
-            OpenResponsesProviderSettings(url = "https://api.test/v1/responses", name = "openresponses", apiKey = "k"),
+            OpenResponsesProviderSettings {
+                url("https://api.test/v1/responses")
+                name("openresponses")
+                apiKey("k")
+            },
         )
 
         val result = provider.responses("m").generate(
@@ -77,7 +81,11 @@ class OpenResponsesDefensiveParsingTest {
         )
         val provider = OpenResponses(
             client,
-            OpenResponsesProviderSettings(url = "https://api.test/v1/responses", name = "openresponses", apiKey = "k"),
+            OpenResponsesProviderSettings {
+                url("https://api.test/v1/responses")
+                name("openresponses")
+                apiKey("k")
+            },
         )
 
         val result = provider.responses("m").generate(

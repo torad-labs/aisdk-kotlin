@@ -49,12 +49,12 @@ class GoogleVertexProviderTest {
         fixture.server.start()
         val provider = GoogleVertex(
             fixture.httpClient(),
-            GoogleVertexProviderSettings(
-                project = "project-1",
-                location = "us-central1",
-                accessToken = "token",
-                headers = mapOf("X-Provider" to "provider"),
-            ),
+            GoogleVertexProviderSettings(block = {
+                project("project-1")
+                location("us-central1")
+                accessToken("token")
+                headers(mapOf("X-Provider" to "provider"))
+            }),
         )
 
         val result = provider.chat(ModelId("gemini-2.5-flash")).generate(
@@ -121,11 +121,19 @@ class GoogleVertexProviderTest {
 
         val eu = GoogleVertex(
             fixture.httpClient(),
-            GoogleVertexProviderSettings(project = "project-1", location = "eu", accessToken = "token"),
+            GoogleVertexProviderSettings(block = {
+                project("project-1")
+                location("eu")
+                accessToken("token")
+            }),
         )
         val us = GoogleVertex(
             fixture.httpClient(),
-            GoogleVertexProviderSettings(project = "project-1", location = "us", accessToken = "token"),
+            GoogleVertexProviderSettings(block = {
+                project("project-1")
+                location("us")
+                accessToken("token")
+            }),
         )
 
         assertEquals("eu", eu.chat(ModelId("gemini-2.5-flash")).generate(LanguageModelCallParams(messages = listOf(UserMessage("hi")))).text)
@@ -162,7 +170,10 @@ class GoogleVertexProviderTest {
         fixture.server.start()
         val provider = GoogleVertexMaas(
             fixture.httpClient(),
-            GoogleVertexMaasProviderSettings(baseURL = "https://vertex-openai.test/v1", accessToken = "token"),
+            GoogleVertexProviderSettings(block = {
+                baseURL("https://vertex-openai.test/v1")
+                accessToken("token")
+            }),
         )
 
         val result = provider.chat(ModelId("llama-model")).generate(LanguageModelCallParams(messages = listOf(UserMessage("hi"))))
@@ -199,15 +210,27 @@ class GoogleVertexProviderTest {
 
         val global = GoogleVertexMaas(
             fixture.httpClient(),
-            GoogleVertexMaasProviderSettings(project = "project-1", location = "global", accessToken = "token"),
+            GoogleVertexProviderSettings(block = {
+                project("project-1")
+                location("global")
+                accessToken("token")
+            }),
         )
         val regional = GoogleVertexMaas(
             fixture.httpClient(),
-            GoogleVertexMaasProviderSettings(project = "project-1", location = "us-central1", accessToken = "token"),
+            GoogleVertexProviderSettings(block = {
+                project("project-1")
+                location("us-central1")
+                accessToken("token")
+            }),
         )
         val eu = GoogleVertexMaas(
             fixture.httpClient(),
-            GoogleVertexMaasProviderSettings(project = "project-1", location = "eu", accessToken = "token"),
+            GoogleVertexProviderSettings(block = {
+                project("project-1")
+                location("eu")
+                accessToken("token")
+            }),
         )
 
         assertEquals("global", global.chat(ModelId("llama")).generate(LanguageModelCallParams(messages = listOf(UserMessage("hi")))).text)
@@ -247,13 +270,21 @@ class GoogleVertexProviderTest {
         )
         fixture.server.start()
         val missingProject = assertFailsWith<AiSdkException> {
-            GoogleVertex(fixture.httpClient(), GoogleVertexProviderSettings(accessToken = "token"))
+            GoogleVertex(
+                fixture.httpClient(),
+                GoogleVertexProviderSettings(block = {
+                    accessToken("token")
+                }),
+            )
         }
         assertTrue(missingProject.message.orEmpty().contains("project is required"))
 
         val anthropic = GoogleVertexAnthropic(
             fixture.httpClient(),
-            GoogleVertexAnthropicProviderSettings(project = "project-1", accessToken = "token"),
+            GoogleVertexProviderSettings(block = {
+                project("project-1")
+                accessToken("token")
+            }),
         )
         assertEquals("vertex.anthropic.messages", anthropic.languageModel("claude-sonnet-4").provider)
         assertEquals("vertex.anthropic.messages", anthropic.messages(ModelId("claude-sonnet-4")).provider)
@@ -321,11 +352,19 @@ class GoogleVertexProviderTest {
 
         val eu = GoogleVertexAnthropic(
             fixture.httpClient(),
-            GoogleVertexAnthropicProviderSettings(project = "project-1", location = "eu", accessToken = "token"),
+            GoogleVertexProviderSettings(block = {
+                project("project-1")
+                location("eu")
+                accessToken("token")
+            }),
         )
         val us = GoogleVertexAnthropic(
             fixture.httpClient(),
-            GoogleVertexAnthropicProviderSettings(project = "project-1", location = "us", accessToken = "token"),
+            GoogleVertexProviderSettings(block = {
+                project("project-1")
+                location("us")
+                accessToken("token")
+            }),
         )
 
         assertEquals("eu", eu.messages(ModelId("claude-sonnet-4")).generate(LanguageModelCallParams(messages = listOf(UserMessage("hi")))).text)
@@ -367,7 +406,11 @@ class GoogleVertexProviderTest {
         fixture.server.start()
         val provider = GoogleVertexXai(
             fixture.httpClient(),
-            GoogleVertexXaiProviderSettings(project = "project-1", location = "global", accessToken = "token"),
+            GoogleVertexProviderSettings(block = {
+                project("project-1")
+                location("global")
+                accessToken("token")
+            }),
         )
 
         val result = provider.chatModel(ModelId("grok")).generate(

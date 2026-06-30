@@ -23,7 +23,18 @@ public fun CreateGatewayHttpProvider(
     client: HttpClient,
     settings: GatewayProviderSettings = GatewayProviderSettings(),
     json: Json = aiSdkJson,
-): GatewayProvider = GatewayProvider(settings.copy(transport = KtorGatewayTransport(client, json)))
+): GatewayProvider = GatewayProvider(
+    GatewayProviderSettings {
+        baseUrl(settings.baseUrl)
+        apiKey(settings.apiKey)
+        headers(settings.headers)
+        transport(KtorGatewayTransport(client, json))
+        metadataCacheRefreshMillis(settings.metadataCacheRefreshMillis)
+        nowMillis(settings.nowMillis)
+        authTokenProvider(settings.authTokenProvider)
+        environment(settings.environment)
+    },
+)
 
 public class KtorGatewayTransport(
     private val client: HttpClient,

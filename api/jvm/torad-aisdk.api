@@ -1787,6 +1787,8 @@ public final class ai/torad/aisdk/GatewayKt {
 	public static synthetic fun Gateway$default (Lai/torad/aisdk/GatewayProviderSettings;ILjava/lang/Object;)Lai/torad/aisdk/GatewayProvider;
 	public static final fun GatewayProvider (Lai/torad/aisdk/GatewayProviderSettings;)Lai/torad/aisdk/GatewayProvider;
 	public static synthetic fun GatewayProvider$default (Lai/torad/aisdk/GatewayProviderSettings;ILjava/lang/Object;)Lai/torad/aisdk/GatewayProvider;
+	public static final fun GatewayProviderSettings (Lkotlin/jvm/functions/Function1;)Lai/torad/aisdk/GatewayProviderSettings;
+	public static synthetic fun GatewayProviderSettings$default (Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Lai/torad/aisdk/GatewayProviderSettings;
 	public static final fun getGateway ()Lai/torad/aisdk/GatewayProvider;
 }
 
@@ -1879,20 +1881,6 @@ public final class ai/torad/aisdk/GatewayProvider$DefaultImpls {
 }
 
 public final class ai/torad/aisdk/GatewayProviderSettings {
-	public fun <init> ()V
-	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;Lai/torad/aisdk/GatewayTransport;JLkotlin/jvm/functions/Function0;Lkotlin/jvm/functions/Function1;Ljava/util/Map;)V
-	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;Lai/torad/aisdk/GatewayTransport;JLkotlin/jvm/functions/Function0;Lkotlin/jvm/functions/Function1;Ljava/util/Map;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public final fun component1 ()Ljava/lang/String;
-	public final fun component2 ()Ljava/lang/String;
-	public final fun component3 ()Ljava/util/Map;
-	public final fun component4 ()Lai/torad/aisdk/GatewayTransport;
-	public final fun component5 ()J
-	public final fun component6 ()Lkotlin/jvm/functions/Function0;
-	public final fun component7 ()Lkotlin/jvm/functions/Function1;
-	public final fun component8 ()Ljava/util/Map;
-	public final fun copy (Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;Lai/torad/aisdk/GatewayTransport;JLkotlin/jvm/functions/Function0;Lkotlin/jvm/functions/Function1;Ljava/util/Map;)Lai/torad/aisdk/GatewayProviderSettings;
-	public static synthetic fun copy$default (Lai/torad/aisdk/GatewayProviderSettings;Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;Lai/torad/aisdk/GatewayTransport;JLkotlin/jvm/functions/Function0;Lkotlin/jvm/functions/Function1;Ljava/util/Map;ILjava/lang/Object;)Lai/torad/aisdk/GatewayProviderSettings;
-	public fun equals (Ljava/lang/Object;)Z
 	public final fun getApiKey ()Ljava/lang/String;
 	public final fun getAuthTokenProvider ()Lkotlin/jvm/functions/Function1;
 	public final fun getBaseUrl ()Ljava/lang/String;
@@ -1901,8 +1889,17 @@ public final class ai/torad/aisdk/GatewayProviderSettings {
 	public final fun getMetadataCacheRefreshMillis ()J
 	public final fun getNowMillis ()Lkotlin/jvm/functions/Function0;
 	public final fun getTransport ()Lai/torad/aisdk/GatewayTransport;
-	public fun hashCode ()I
-	public fun toString ()Ljava/lang/String;
+}
+
+public final class ai/torad/aisdk/GatewayProviderSettingsBuilder {
+	public final fun apiKey (Ljava/lang/String;)V
+	public final fun authTokenProvider (Lkotlin/jvm/functions/Function1;)V
+	public final fun baseUrl (Ljava/lang/String;)V
+	public final fun environment (Ljava/util/Map;)V
+	public final fun headers (Ljava/util/Map;)V
+	public final fun metadataCacheRefreshMillis (J)V
+	public final fun nowMillis (Lkotlin/jvm/functions/Function0;)V
+	public final fun transport (Lai/torad/aisdk/GatewayTransport;)V
 }
 
 public final class ai/torad/aisdk/GatewayRateLimitError : ai/torad/aisdk/GatewayError {
@@ -7162,6 +7159,8 @@ public final class ai/torad/aisdk/providers/AmazonBedrockProviderKt {
 	public static final field AMAZON_BEDROCK_VERSION Ljava/lang/String;
 	public static final fun AmazonBedrock (Lio/ktor/client/HttpClient;Lai/torad/aisdk/providers/AmazonBedrockProviderSettings;)Lai/torad/aisdk/providers/AmazonBedrockProvider;
 	public static synthetic fun AmazonBedrock$default (Lio/ktor/client/HttpClient;Lai/torad/aisdk/providers/AmazonBedrockProviderSettings;ILjava/lang/Object;)Lai/torad/aisdk/providers/AmazonBedrockProvider;
+	public static final fun AmazonBedrockProviderSettings (Lkotlin/jvm/functions/Function1;)Lai/torad/aisdk/providers/AmazonBedrockProviderSettings;
+	public static synthetic fun AmazonBedrockProviderSettings$default (Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Lai/torad/aisdk/providers/AmazonBedrockProviderSettings;
 	public static final fun BedrockAnthropic (Lio/ktor/client/HttpClient;Lai/torad/aisdk/providers/AmazonBedrockProviderSettings;)Lai/torad/aisdk/providers/BedrockAnthropicProvider;
 	public static synthetic fun BedrockAnthropic$default (Lio/ktor/client/HttpClient;Lai/torad/aisdk/providers/AmazonBedrockProviderSettings;ILjava/lang/Object;)Lai/torad/aisdk/providers/BedrockAnthropicProvider;
 	public static final fun BedrockMantle (Lio/ktor/client/HttpClient;Lai/torad/aisdk/providers/AmazonBedrockProviderSettings;)Lai/torad/aisdk/providers/BedrockMantleProvider;
@@ -7169,22 +7168,6 @@ public final class ai/torad/aisdk/providers/AmazonBedrockProviderKt {
 }
 
 public final class ai/torad/aisdk/providers/AmazonBedrockProviderSettings {
-	public fun <init> ()V
-	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lkotlin/jvm/functions/Function1;Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;Lkotlin/jvm/functions/Function0;)V
-	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lkotlin/jvm/functions/Function1;Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;Lkotlin/jvm/functions/Function0;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public final fun component1 ()Ljava/lang/String;
-	public final fun component10 ()Lkotlin/jvm/functions/Function0;
-	public final fun component2 ()Ljava/lang/String;
-	public final fun component3 ()Ljava/lang/String;
-	public final fun component4 ()Ljava/lang/String;
-	public final fun component5 ()Ljava/lang/String;
-	public final fun component6 ()Lkotlin/jvm/functions/Function1;
-	public final fun component7 ()Ljava/lang/String;
-	public final fun component8 ()Ljava/lang/String;
-	public final fun component9 ()Ljava/util/Map;
-	public final fun copy (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lkotlin/jvm/functions/Function1;Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;Lkotlin/jvm/functions/Function0;)Lai/torad/aisdk/providers/AmazonBedrockProviderSettings;
-	public static synthetic fun copy$default (Lai/torad/aisdk/providers/AmazonBedrockProviderSettings;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lkotlin/jvm/functions/Function1;Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;Lkotlin/jvm/functions/Function0;ILjava/lang/Object;)Lai/torad/aisdk/providers/AmazonBedrockProviderSettings;
-	public fun equals (Ljava/lang/Object;)Z
 	public final fun getAccessKeyId ()Ljava/lang/String;
 	public final fun getAgentBaseURL ()Ljava/lang/String;
 	public final fun getApiKey ()Ljava/lang/String;
@@ -7195,8 +7178,19 @@ public final class ai/torad/aisdk/providers/AmazonBedrockProviderSettings {
 	public final fun getRegion ()Ljava/lang/String;
 	public final fun getSecretAccessKey ()Ljava/lang/String;
 	public final fun getSessionToken ()Ljava/lang/String;
-	public fun hashCode ()I
-	public fun toString ()Ljava/lang/String;
+}
+
+public final class ai/torad/aisdk/providers/AmazonBedrockProviderSettingsBuilder {
+	public final fun accessKeyId (Ljava/lang/String;)V
+	public final fun agentBaseURL (Ljava/lang/String;)V
+	public final fun apiKey (Ljava/lang/String;)V
+	public final fun baseURL (Ljava/lang/String;)V
+	public final fun credentialProvider (Lkotlin/jvm/functions/Function1;)V
+	public final fun generateId (Lkotlin/jvm/functions/Function0;)V
+	public final fun headers (Ljava/util/Map;)V
+	public final fun region (Ljava/lang/String;)V
+	public final fun secretAccessKey (Ljava/lang/String;)V
+	public final fun sessionToken (Ljava/lang/String;)V
 }
 
 public abstract interface class ai/torad/aisdk/providers/AnthropicAwsProvider : ai/torad/aisdk/Provider {
@@ -7226,27 +7220,13 @@ public final class ai/torad/aisdk/providers/AnthropicAwsProviderKt {
 	public static final field ANTHROPIC_AWS_VERSION Ljava/lang/String;
 	public static final fun AnthropicAws (Lio/ktor/client/HttpClient;Lai/torad/aisdk/providers/AnthropicAwsProviderSettings;)Lai/torad/aisdk/providers/AnthropicAwsProvider;
 	public static synthetic fun AnthropicAws$default (Lio/ktor/client/HttpClient;Lai/torad/aisdk/providers/AnthropicAwsProviderSettings;ILjava/lang/Object;)Lai/torad/aisdk/providers/AnthropicAwsProvider;
+	public static final fun AnthropicAwsProviderSettings (Lkotlin/jvm/functions/Function1;)Lai/torad/aisdk/providers/AnthropicAwsProviderSettings;
+	public static synthetic fun AnthropicAwsProviderSettings$default (Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Lai/torad/aisdk/providers/AnthropicAwsProviderSettings;
 	public static final fun getAnthropicAws ()Lai/torad/aisdk/providers/AnthropicAwsProvider;
 }
 
 public final class ai/torad/aisdk/providers/AnthropicAwsProviderSettings {
 	public static final field Companion Lai/torad/aisdk/providers/AnthropicAwsProviderSettings$Companion;
-	public fun <init> ()V
-	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;Lkotlin/jvm/functions/Function1;Lkotlin/jvm/functions/Function0;)V
-	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;Lkotlin/jvm/functions/Function1;Lkotlin/jvm/functions/Function0;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public final fun component1 ()Ljava/lang/String;
-	public final fun component10 ()Lkotlin/jvm/functions/Function0;
-	public final fun component2 ()Ljava/lang/String;
-	public final fun component3 ()Ljava/lang/String;
-	public final fun component4 ()Ljava/lang/String;
-	public final fun component5 ()Ljava/lang/String;
-	public final fun component6 ()Ljava/lang/String;
-	public final fun component7 ()Ljava/lang/String;
-	public final fun component8 ()Ljava/util/Map;
-	public final fun component9 ()Lkotlin/jvm/functions/Function1;
-	public final fun copy (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;Lkotlin/jvm/functions/Function1;Lkotlin/jvm/functions/Function0;)Lai/torad/aisdk/providers/AnthropicAwsProviderSettings;
-	public static synthetic fun copy$default (Lai/torad/aisdk/providers/AnthropicAwsProviderSettings;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;Lkotlin/jvm/functions/Function1;Lkotlin/jvm/functions/Function0;ILjava/lang/Object;)Lai/torad/aisdk/providers/AnthropicAwsProviderSettings;
-	public fun equals (Ljava/lang/Object;)Z
 	public final fun getAccessKeyId ()Ljava/lang/String;
 	public final fun getApiKey ()Ljava/lang/String;
 	public final fun getBaseURL ()Ljava/lang/String;
@@ -7257,8 +7237,6 @@ public final class ai/torad/aisdk/providers/AnthropicAwsProviderSettings {
 	public final fun getSecretAccessKey ()Ljava/lang/String;
 	public final fun getSessionToken ()Ljava/lang/String;
 	public final fun getWorkspaceId ()Ljava/lang/String;
-	public fun hashCode ()I
-	public fun toString ()Ljava/lang/String;
 }
 
 public final synthetic class ai/torad/aisdk/providers/AnthropicAwsProviderSettings$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
@@ -7274,6 +7252,19 @@ public final synthetic class ai/torad/aisdk/providers/AnthropicAwsProviderSettin
 
 public final class ai/torad/aisdk/providers/AnthropicAwsProviderSettings$Companion {
 	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public final class ai/torad/aisdk/providers/AnthropicAwsProviderSettingsBuilder {
+	public final fun accessKeyId (Ljava/lang/String;)V
+	public final fun apiKey (Ljava/lang/String;)V
+	public final fun baseURL (Ljava/lang/String;)V
+	public final fun credentialProvider (Lkotlin/jvm/functions/Function1;)V
+	public final fun generateId (Lkotlin/jvm/functions/Function0;)V
+	public final fun headers (Ljava/util/Map;)V
+	public final fun region (Ljava/lang/String;)V
+	public final fun secretAccessKey (Ljava/lang/String;)V
+	public final fun sessionToken (Ljava/lang/String;)V
+	public final fun workspaceId (Ljava/lang/String;)V
 }
 
 public final class ai/torad/aisdk/providers/AnthropicMessagesLanguageModel : ai/torad/aisdk/LanguageModel {
@@ -7314,26 +7305,12 @@ public final class ai/torad/aisdk/providers/AnthropicProviderKt {
 	public static final field ANTHROPIC_VERSION Ljava/lang/String;
 	public static final fun Anthropic (Lio/ktor/client/HttpClient;Lai/torad/aisdk/providers/AnthropicProviderSettings;)Lai/torad/aisdk/providers/AnthropicProvider;
 	public static synthetic fun Anthropic$default (Lio/ktor/client/HttpClient;Lai/torad/aisdk/providers/AnthropicProviderSettings;ILjava/lang/Object;)Lai/torad/aisdk/providers/AnthropicProvider;
+	public static final fun AnthropicProviderSettings (Lkotlin/jvm/functions/Function1;)Lai/torad/aisdk/providers/AnthropicProviderSettings;
+	public static synthetic fun AnthropicProviderSettings$default (Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Lai/torad/aisdk/providers/AnthropicProviderSettings;
 	public static final fun getAnthropicTools ()Lai/torad/aisdk/providers/AnthropicTools;
 }
 
 public final class ai/torad/aisdk/providers/AnthropicProviderSettings {
-	public fun <init> ()V
-	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;Lkotlin/jvm/functions/Function4;Lkotlin/jvm/functions/Function3;Lkotlin/jvm/functions/Function3;Ljava/util/Map;Lkotlin/jvm/functions/Function0;Ljava/lang/String;)V
-	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;Lkotlin/jvm/functions/Function4;Lkotlin/jvm/functions/Function3;Lkotlin/jvm/functions/Function3;Ljava/util/Map;Lkotlin/jvm/functions/Function0;Ljava/lang/String;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public final fun component1 ()Ljava/lang/String;
-	public final fun component10 ()Ljava/lang/String;
-	public final fun component2 ()Ljava/lang/String;
-	public final fun component3 ()Ljava/lang/String;
-	public final fun component4 ()Ljava/util/Map;
-	public final fun component5 ()Lkotlin/jvm/functions/Function4;
-	public final fun component6 ()Lkotlin/jvm/functions/Function3;
-	public final fun component7 ()Lkotlin/jvm/functions/Function3;
-	public final fun component8 ()Ljava/util/Map;
-	public final fun component9 ()Lkotlin/jvm/functions/Function0;
-	public final fun copy (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;Lkotlin/jvm/functions/Function4;Lkotlin/jvm/functions/Function3;Lkotlin/jvm/functions/Function3;Ljava/util/Map;Lkotlin/jvm/functions/Function0;Ljava/lang/String;)Lai/torad/aisdk/providers/AnthropicProviderSettings;
-	public static synthetic fun copy$default (Lai/torad/aisdk/providers/AnthropicProviderSettings;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;Lkotlin/jvm/functions/Function4;Lkotlin/jvm/functions/Function3;Lkotlin/jvm/functions/Function3;Ljava/util/Map;Lkotlin/jvm/functions/Function0;Ljava/lang/String;ILjava/lang/Object;)Lai/torad/aisdk/providers/AnthropicProviderSettings;
-	public fun equals (Ljava/lang/Object;)Z
 	public final fun getApiKey ()Ljava/lang/String;
 	public final fun getAuthToken ()Ljava/lang/String;
 	public final fun getBaseURL ()Ljava/lang/String;
@@ -7344,8 +7321,19 @@ public final class ai/torad/aisdk/providers/AnthropicProviderSettings {
 	public final fun getRequestHeadersProvider ()Lkotlin/jvm/functions/Function4;
 	public final fun getSupportedUrls ()Ljava/util/Map;
 	public final fun getTransformRequestBody ()Lkotlin/jvm/functions/Function3;
-	public fun hashCode ()I
-	public fun toString ()Ljava/lang/String;
+}
+
+public final class ai/torad/aisdk/providers/AnthropicProviderSettingsBuilder {
+	public final fun apiKey (Ljava/lang/String;)V
+	public final fun authToken (Ljava/lang/String;)V
+	public final fun baseURL (Ljava/lang/String;)V
+	public final fun buildRequestUrl (Lkotlin/jvm/functions/Function3;)V
+	public final fun generateId (Lkotlin/jvm/functions/Function0;)V
+	public final fun headers (Ljava/util/Map;)V
+	public final fun name (Ljava/lang/String;)V
+	public final fun requestHeadersProvider (Lkotlin/jvm/functions/Function4;)V
+	public final fun supportedUrls (Ljava/util/Map;)V
+	public final fun transformRequestBody (Lkotlin/jvm/functions/Function3;)V
 }
 
 public final class ai/torad/aisdk/providers/AnthropicTools {
@@ -9493,25 +9481,14 @@ public final class ai/torad/aisdk/providers/GoogleVertexProviderKt {
 	public static synthetic fun GoogleVertexAnthropic$default (Lio/ktor/client/HttpClient;Lai/torad/aisdk/providers/GoogleVertexProviderSettings;ILjava/lang/Object;)Lai/torad/aisdk/providers/GoogleVertexAnthropicProvider;
 	public static final fun GoogleVertexMaas (Lio/ktor/client/HttpClient;Lai/torad/aisdk/providers/GoogleVertexProviderSettings;)Lai/torad/aisdk/providers/GoogleVertexMaasProvider;
 	public static synthetic fun GoogleVertexMaas$default (Lio/ktor/client/HttpClient;Lai/torad/aisdk/providers/GoogleVertexProviderSettings;ILjava/lang/Object;)Lai/torad/aisdk/providers/GoogleVertexMaasProvider;
+	public static final fun GoogleVertexProviderSettings (Lkotlin/jvm/functions/Function1;)Lai/torad/aisdk/providers/GoogleVertexProviderSettings;
+	public static synthetic fun GoogleVertexProviderSettings$default (Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Lai/torad/aisdk/providers/GoogleVertexProviderSettings;
 	public static final fun GoogleVertexXai (Lio/ktor/client/HttpClient;Lai/torad/aisdk/providers/GoogleVertexProviderSettings;)Lai/torad/aisdk/providers/GoogleVertexXaiProvider;
 	public static synthetic fun GoogleVertexXai$default (Lio/ktor/client/HttpClient;Lai/torad/aisdk/providers/GoogleVertexProviderSettings;ILjava/lang/Object;)Lai/torad/aisdk/providers/GoogleVertexXaiProvider;
 }
 
 public final class ai/torad/aisdk/providers/GoogleVertexProviderSettings {
 	public static final field Companion Lai/torad/aisdk/providers/GoogleVertexProviderSettings$Companion;
-	public fun <init> ()V
-	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;Lkotlin/jvm/functions/Function0;)V
-	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;Lkotlin/jvm/functions/Function0;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public final fun component1 ()Ljava/lang/String;
-	public final fun component2 ()Ljava/lang/String;
-	public final fun component3 ()Ljava/lang/String;
-	public final fun component4 ()Ljava/lang/String;
-	public final fun component5 ()Ljava/lang/String;
-	public final fun component6 ()Ljava/util/Map;
-	public final fun component7 ()Lkotlin/jvm/functions/Function0;
-	public final fun copy (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;Lkotlin/jvm/functions/Function0;)Lai/torad/aisdk/providers/GoogleVertexProviderSettings;
-	public static synthetic fun copy$default (Lai/torad/aisdk/providers/GoogleVertexProviderSettings;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;Lkotlin/jvm/functions/Function0;ILjava/lang/Object;)Lai/torad/aisdk/providers/GoogleVertexProviderSettings;
-	public fun equals (Ljava/lang/Object;)Z
 	public final fun getAccessToken ()Ljava/lang/String;
 	public final fun getApiKey ()Ljava/lang/String;
 	public final fun getBaseURL ()Ljava/lang/String;
@@ -9519,8 +9496,6 @@ public final class ai/torad/aisdk/providers/GoogleVertexProviderSettings {
 	public final fun getHeaders ()Ljava/util/Map;
 	public final fun getLocation ()Ljava/lang/String;
 	public final fun getProject ()Ljava/lang/String;
-	public fun hashCode ()I
-	public fun toString ()Ljava/lang/String;
 }
 
 public final synthetic class ai/torad/aisdk/providers/GoogleVertexProviderSettings$$serializer : kotlinx/serialization/internal/GeneratedSerializer {
@@ -9536,6 +9511,16 @@ public final synthetic class ai/torad/aisdk/providers/GoogleVertexProviderSettin
 
 public final class ai/torad/aisdk/providers/GoogleVertexProviderSettings$Companion {
 	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public final class ai/torad/aisdk/providers/GoogleVertexProviderSettingsBuilder {
+	public final fun accessToken (Ljava/lang/String;)V
+	public final fun apiKey (Ljava/lang/String;)V
+	public final fun baseURL (Ljava/lang/String;)V
+	public final fun generateId (Lkotlin/jvm/functions/Function0;)V
+	public final fun headers (Ljava/util/Map;)V
+	public final fun location (Ljava/lang/String;)V
+	public final fun project (Ljava/lang/String;)V
 }
 
 public final class ai/torad/aisdk/providers/GoogleVertexXaiProvider : ai/torad/aisdk/Provider {
@@ -9701,25 +9686,22 @@ public final class ai/torad/aisdk/providers/HuggingFaceProviderKt {
 	public static final field HUGGINGFACE_VERSION Ljava/lang/String;
 	public static final fun HuggingFace (Lio/ktor/client/HttpClient;Lai/torad/aisdk/providers/HuggingFaceProviderSettings;)Lai/torad/aisdk/providers/HuggingFaceProvider;
 	public static synthetic fun HuggingFace$default (Lio/ktor/client/HttpClient;Lai/torad/aisdk/providers/HuggingFaceProviderSettings;ILjava/lang/Object;)Lai/torad/aisdk/providers/HuggingFaceProvider;
+	public static final fun HuggingFaceProviderSettings (Lkotlin/jvm/functions/Function1;)Lai/torad/aisdk/providers/HuggingFaceProviderSettings;
+	public static synthetic fun HuggingFaceProviderSettings$default (Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Lai/torad/aisdk/providers/HuggingFaceProviderSettings;
 }
 
 public final class ai/torad/aisdk/providers/HuggingFaceProviderSettings {
-	public fun <init> ()V
-	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;Lkotlin/jvm/functions/Function0;)V
-	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;Lkotlin/jvm/functions/Function0;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public final fun component1 ()Ljava/lang/String;
-	public final fun component2 ()Ljava/lang/String;
-	public final fun component3 ()Ljava/util/Map;
-	public final fun component4 ()Lkotlin/jvm/functions/Function0;
-	public final fun copy (Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;Lkotlin/jvm/functions/Function0;)Lai/torad/aisdk/providers/HuggingFaceProviderSettings;
-	public static synthetic fun copy$default (Lai/torad/aisdk/providers/HuggingFaceProviderSettings;Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;Lkotlin/jvm/functions/Function0;ILjava/lang/Object;)Lai/torad/aisdk/providers/HuggingFaceProviderSettings;
-	public fun equals (Ljava/lang/Object;)Z
 	public final fun getApiKey ()Ljava/lang/String;
 	public final fun getBaseURL ()Ljava/lang/String;
 	public final fun getGenerateId ()Lkotlin/jvm/functions/Function0;
 	public final fun getHeaders ()Ljava/util/Map;
-	public fun hashCode ()I
-	public fun toString ()Ljava/lang/String;
+}
+
+public final class ai/torad/aisdk/providers/HuggingFaceProviderSettingsBuilder {
+	public final fun apiKey (Ljava/lang/String;)V
+	public final fun baseURL (Ljava/lang/String;)V
+	public final fun generateId (Lkotlin/jvm/functions/Function0;)V
+	public final fun headers (Ljava/util/Map;)V
 }
 
 public final class ai/torad/aisdk/providers/HuggingFaceResponsesSettings {
@@ -10704,32 +10686,11 @@ public final class ai/torad/aisdk/providers/OpenAICompatibleProvider$DefaultImpl
 public final class ai/torad/aisdk/providers/OpenAICompatibleProviderKt {
 	public static final fun OpenAICompatible (Lio/ktor/client/HttpClient;Lai/torad/aisdk/providers/OpenAICompatibleProviderSettings;Lkotlinx/serialization/json/Json;)Lai/torad/aisdk/providers/OpenAICompatibleProvider;
 	public static synthetic fun OpenAICompatible$default (Lio/ktor/client/HttpClient;Lai/torad/aisdk/providers/OpenAICompatibleProviderSettings;Lkotlinx/serialization/json/Json;ILjava/lang/Object;)Lai/torad/aisdk/providers/OpenAICompatibleProvider;
+	public static final fun OpenAICompatibleProviderSettings (Lkotlin/jvm/functions/Function1;)Lai/torad/aisdk/providers/OpenAICompatibleProviderSettings;
+	public static synthetic fun OpenAICompatibleProviderSettings$default (Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Lai/torad/aisdk/providers/OpenAICompatibleProviderSettings;
 }
 
 public final class ai/torad/aisdk/providers/OpenAICompatibleProviderSettings {
-	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;Ljava/util/Map;ZZLjava/util/Map;ILkotlin/jvm/functions/Function1;Lkotlin/jvm/functions/Function2;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lkotlin/jvm/functions/Function1;Lkotlin/jvm/functions/Function1;Lkotlin/jvm/functions/Function1;)V
-	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;Ljava/util/Map;ZZLjava/util/Map;ILkotlin/jvm/functions/Function1;Lkotlin/jvm/functions/Function2;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lkotlin/jvm/functions/Function1;Lkotlin/jvm/functions/Function1;Lkotlin/jvm/functions/Function1;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public final fun component1 ()Ljava/lang/String;
-	public final fun component10 ()Lkotlin/jvm/functions/Function1;
-	public final fun component11 ()Lkotlin/jvm/functions/Function2;
-	public final fun component12 ()Ljava/lang/String;
-	public final fun component13 ()Ljava/lang/String;
-	public final fun component14 ()Ljava/lang/String;
-	public final fun component15 ()Ljava/lang/String;
-	public final fun component16 ()Lkotlin/jvm/functions/Function1;
-	public final fun component17 ()Lkotlin/jvm/functions/Function1;
-	public final fun component18 ()Lkotlin/jvm/functions/Function1;
-	public final fun component2 ()Ljava/lang/String;
-	public final fun component3 ()Ljava/lang/String;
-	public final fun component4 ()Ljava/util/Map;
-	public final fun component5 ()Ljava/util/Map;
-	public final fun component6 ()Z
-	public final fun component7 ()Z
-	public final fun component8 ()Ljava/util/Map;
-	public final fun component9 ()I
-	public final fun copy (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;Ljava/util/Map;ZZLjava/util/Map;ILkotlin/jvm/functions/Function1;Lkotlin/jvm/functions/Function2;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lkotlin/jvm/functions/Function1;Lkotlin/jvm/functions/Function1;Lkotlin/jvm/functions/Function1;)Lai/torad/aisdk/providers/OpenAICompatibleProviderSettings;
-	public static synthetic fun copy$default (Lai/torad/aisdk/providers/OpenAICompatibleProviderSettings;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;Ljava/util/Map;ZZLjava/util/Map;ILkotlin/jvm/functions/Function1;Lkotlin/jvm/functions/Function2;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lkotlin/jvm/functions/Function1;Lkotlin/jvm/functions/Function1;Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Lai/torad/aisdk/providers/OpenAICompatibleProviderSettings;
-	public fun equals (Ljava/lang/Object;)Z
 	public final fun getApiKey ()Ljava/lang/String;
 	public final fun getAuthHeadersProvider ()Lkotlin/jvm/functions/Function1;
 	public final fun getBaseUrl ()Ljava/lang/String;
@@ -10748,8 +10709,27 @@ public final class ai/torad/aisdk/providers/OpenAICompatibleProviderSettings {
 	public final fun getTransformChatResponse ()Lkotlin/jvm/functions/Function1;
 	public final fun getUrlBuilder ()Lkotlin/jvm/functions/Function2;
 	public final fun getUserAgentSuffix ()Ljava/lang/String;
-	public fun hashCode ()I
-	public fun toString ()Ljava/lang/String;
+}
+
+public final class ai/torad/aisdk/providers/OpenAICompatibleProviderSettingsBuilder {
+	public final fun apiKey (Ljava/lang/String;)V
+	public final fun authHeadersProvider (Lkotlin/jvm/functions/Function1;)V
+	public final fun baseUrl (Ljava/lang/String;)V
+	public final fun chatMaxOutputTokensKey (Ljava/lang/String;)V
+	public final fun chatSeedKey (Ljava/lang/String;)V
+	public final fun convertUsage (Lkotlin/jvm/functions/Function1;)V
+	public final fun headers (Ljava/util/Map;)V
+	public final fun includeUsage (Z)V
+	public final fun maxEmbeddingsPerCall (I)V
+	public final fun name (Ljava/lang/String;)V
+	public final fun providerOptionsName (Ljava/lang/String;)V
+	public final fun queryParams (Ljava/util/Map;)V
+	public final fun supportedUrls (Ljava/util/Map;)V
+	public final fun supportsStructuredOutputs (Z)V
+	public final fun transformChatRequestBody (Lkotlin/jvm/functions/Function1;)V
+	public final fun transformChatResponse (Lkotlin/jvm/functions/Function1;)V
+	public final fun urlBuilder (Lkotlin/jvm/functions/Function2;)V
+	public final fun userAgentSuffix (Ljava/lang/String;)V
 }
 
 public final class ai/torad/aisdk/providers/OpenAIProvider : ai/torad/aisdk/Provider {
@@ -10974,24 +10954,12 @@ public final class ai/torad/aisdk/providers/OpenResponsesProviderKt {
 	public static final field OPEN_RESPONSES_VERSION Ljava/lang/String;
 	public static final fun OpenResponses (Lio/ktor/client/HttpClient;Lai/torad/aisdk/providers/OpenResponsesProviderSettings;Lkotlinx/serialization/json/Json;)Lai/torad/aisdk/providers/OpenResponsesProvider;
 	public static synthetic fun OpenResponses$default (Lio/ktor/client/HttpClient;Lai/torad/aisdk/providers/OpenResponsesProviderSettings;Lkotlinx/serialization/json/Json;ILjava/lang/Object;)Lai/torad/aisdk/providers/OpenResponsesProvider;
+	public static final fun OpenResponsesProviderSettings (Lkotlin/jvm/functions/Function1;)Lai/torad/aisdk/providers/OpenResponsesProviderSettings;
+	public static synthetic fun OpenResponsesProviderSettings$default (Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Lai/torad/aisdk/providers/OpenResponsesProviderSettings;
 	public static final fun getOPEN_RESPONSES_SUPPORTED_URLS ()Ljava/util/Map;
 }
 
 public final class ai/torad/aisdk/providers/OpenResponsesProviderSettings {
-	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;Lkotlin/jvm/functions/Function1;Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;Ljava/util/List;)V
-	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;Lkotlin/jvm/functions/Function1;Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;Ljava/util/List;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public final fun component1 ()Ljava/lang/String;
-	public final fun component2 ()Ljava/lang/String;
-	public final fun component3 ()Ljava/lang/String;
-	public final fun component4 ()Ljava/util/Map;
-	public final fun component5 ()Lkotlin/jvm/functions/Function1;
-	public final fun component6 ()Ljava/lang/String;
-	public final fun component7 ()Ljava/lang/String;
-	public final fun component8 ()Ljava/util/Map;
-	public final fun component9 ()Ljava/util/List;
-	public final fun copy (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;Lkotlin/jvm/functions/Function1;Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;Ljava/util/List;)Lai/torad/aisdk/providers/OpenResponsesProviderSettings;
-	public static synthetic fun copy$default (Lai/torad/aisdk/providers/OpenResponsesProviderSettings;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;Lkotlin/jvm/functions/Function1;Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;Ljava/util/List;ILjava/lang/Object;)Lai/torad/aisdk/providers/OpenResponsesProviderSettings;
-	public fun equals (Ljava/lang/Object;)Z
 	public final fun getApiKey ()Ljava/lang/String;
 	public final fun getAuthHeadersProvider ()Lkotlin/jvm/functions/Function1;
 	public final fun getFileIdPrefixes ()Ljava/util/List;
@@ -11001,8 +10969,18 @@ public final class ai/torad/aisdk/providers/OpenResponsesProviderSettings {
 	public final fun getSupportedUrls ()Ljava/util/Map;
 	public final fun getUrl ()Ljava/lang/String;
 	public final fun getUserAgentSuffix ()Ljava/lang/String;
-	public fun hashCode ()I
-	public fun toString ()Ljava/lang/String;
+}
+
+public final class ai/torad/aisdk/providers/OpenResponsesProviderSettingsBuilder {
+	public final fun apiKey (Ljava/lang/String;)V
+	public final fun authHeadersProvider (Lkotlin/jvm/functions/Function1;)V
+	public final fun fileIdPrefixes (Ljava/util/List;)V
+	public final fun headers (Ljava/util/Map;)V
+	public final fun name (Ljava/lang/String;)V
+	public final fun providerOptionsName (Ljava/lang/String;)V
+	public final fun supportedUrls (Ljava/util/Map;)V
+	public final fun url (Ljava/lang/String;)V
+	public final fun userAgentSuffix (Ljava/lang/String;)V
 }
 
 public final class ai/torad/aisdk/providers/PerplexityFacadeKt {

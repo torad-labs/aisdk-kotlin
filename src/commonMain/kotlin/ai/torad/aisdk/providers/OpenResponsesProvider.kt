@@ -37,17 +37,83 @@ public const val OPEN_RESPONSES_TOP_LOGPROBS_MAX: Int = 20
 
 public val OPEN_RESPONSES_SUPPORTED_URLS: Map<String, List<String>> = mapOf("image/*" to listOf("^https?://.*$"))
 
-public data class OpenResponsesProviderSettings(
-    val url: String,
-    val name: String,
-    val apiKey: String? = null,
-    val headers: Map<String, String> = emptyMap(),
-    val authHeadersProvider: (suspend () -> Map<String, String>)? = null,
-    val userAgentSuffix: String? = "ai-sdk/open-responses/$OPEN_RESPONSES_VERSION",
-    val providerOptionsName: String? = null,
-    val supportedUrls: Map<String, List<String>> = OPEN_RESPONSES_SUPPORTED_URLS,
-    val fileIdPrefixes: List<String> = emptyList(),
+public class OpenResponsesProviderSettings internal constructor(
+    public val url: String,
+    public val name: String,
+    public val apiKey: String? = null,
+    public val headers: Map<String, String> = emptyMap(),
+    public val authHeadersProvider: (suspend () -> Map<String, String>)? = null,
+    public val userAgentSuffix: String? = "ai-sdk/open-responses/$OPEN_RESPONSES_VERSION",
+    public val providerOptionsName: String? = null,
+    public val supportedUrls: Map<String, List<String>> = OPEN_RESPONSES_SUPPORTED_URLS,
+    public val fileIdPrefixes: List<String> = emptyList(),
 )
+
+public class OpenResponsesProviderSettingsBuilder internal constructor() {
+    private var url: String? = null
+    private var name: String? = null
+    private var apiKey: String? = null
+    private var headers: Map<String, String> = emptyMap()
+    private var authHeadersProvider: (suspend () -> Map<String, String>)? = null
+    private var userAgentSuffix: String? = "ai-sdk/open-responses/$OPEN_RESPONSES_VERSION"
+    private var providerOptionsName: String? = null
+    private var supportedUrls: Map<String, List<String>> = OPEN_RESPONSES_SUPPORTED_URLS
+    private var fileIdPrefixes: List<String> = emptyList()
+
+    public fun url(value: String) {
+        url = value
+    }
+
+    public fun name(value: String) {
+        name = value
+    }
+
+    public fun apiKey(value: String?) {
+        apiKey = value
+    }
+
+    public fun headers(value: Map<String, String>) {
+        headers = value
+    }
+
+    public fun authHeadersProvider(value: (suspend () -> Map<String, String>)?) {
+        authHeadersProvider = value
+    }
+
+    public fun userAgentSuffix(value: String?) {
+        userAgentSuffix = value
+    }
+
+    public fun providerOptionsName(value: String?) {
+        providerOptionsName = value
+    }
+
+    public fun supportedUrls(value: Map<String, List<String>>) {
+        supportedUrls = value
+    }
+
+    public fun fileIdPrefixes(value: List<String>) {
+        fileIdPrefixes = value
+    }
+
+    internal fun build(): OpenResponsesProviderSettings =
+        OpenResponsesProviderSettings(
+            url = requireNotNull(url) { "OpenResponsesProviderSettings.url is required" },
+            name = requireNotNull(name) { "OpenResponsesProviderSettings.name is required" },
+            apiKey = apiKey,
+            headers = headers,
+            authHeadersProvider = authHeadersProvider,
+            userAgentSuffix = userAgentSuffix,
+            providerOptionsName = providerOptionsName,
+            supportedUrls = supportedUrls,
+            fileIdPrefixes = fileIdPrefixes,
+        )
+}
+
+public fun OpenResponsesProviderSettings(
+    block: OpenResponsesProviderSettingsBuilder.() -> Unit = {},
+): OpenResponsesProviderSettings =
+    OpenResponsesProviderSettingsBuilder().apply(block).build()
 
 @Serializable
 public data class OpenResponsesOptions(

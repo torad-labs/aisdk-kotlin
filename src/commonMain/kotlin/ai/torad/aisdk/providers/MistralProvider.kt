@@ -29,22 +29,22 @@ public class MistralProviderSettings internal constructor(
     public val headers: Map<String, String> = emptyMap(),
 ) {
     internal fun toCompatible(): OpenAICompatibleProviderSettings =
-        OpenAICompatibleProviderSettings(
-            name = "mistral",
-            baseUrl = baseURL.trimEnd('/'),
-            apiKey = apiKey,
-            headers = ProviderHeaders.withUserAgentSuffix(headers, "ai-sdk/mistral/$MISTRAL_VERSION"),
-            providerOptionsName = "mistral",
-            supportsStructuredOutputs = true,
-            chatSeedKey = "random_seed",
-            maxEmbeddingsPerCall = MISTRAL_MAX_EMBEDDINGS_PER_CALL,
+        OpenAICompatibleProviderSettings {
+            name("mistral")
+            baseUrl(baseURL.trimEnd('/'))
+            apiKey(apiKey)
+            headers(ProviderHeaders.withUserAgentSuffix(headers, "ai-sdk/mistral/$MISTRAL_VERSION"))
+            providerOptionsName("mistral")
+            supportsStructuredOutputs(true)
+            chatSeedKey("random_seed")
+            maxEmbeddingsPerCall(MISTRAL_MAX_EMBEDDINGS_PER_CALL)
             // Mistral accepts PDFs by URL (sent as document_url), so they pass through.
-            supportedUrls = mapOf("application/pdf" to listOf("^https://.*$")),
+            supportedUrls(mapOf("application/pdf" to listOf("^https://.*$")))
             // Mistral's chat wire shape differs from OpenAI's; rewrite the OpenAI-shaped body
             // into Mistral's shape post-build (the message converter is otherwise shared).
-            transformChatRequestBody = { mistralTransformChatBody(it) },
-            transformChatResponse = { transformChatResponse(it) },
-        )
+            transformChatRequestBody { mistralTransformChatBody(it) }
+            transformChatResponse { transformChatResponse(it) }
+        }
 
     /** Wire-shape helpers translating between the OpenAI-compatible body and Mistral's API. */
     public companion object {

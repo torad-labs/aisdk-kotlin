@@ -7,10 +7,10 @@ import kotlin.test.Test
 import kotlin.test.assertTrue
 
 class BedrockSigningRegionTest {
-    private val sigV4Settings = AmazonBedrockProviderSettings(
-        accessKeyId = "id",
-        secretAccessKey = "secret",
-    )
+    private val sigV4Settings = AmazonBedrockProviderSettings(block = {
+        accessKeyId("id")
+        secretAccessKey("secret")
+    })
 
     private suspend fun credentialScope(url: String): String {
         val headers = BedrockHttp.bedrockHeaders(
@@ -49,7 +49,11 @@ class BedrockSigningRegionTest {
     fun `custom proxy host falls back to configured region`() = runTest {
         val scope = BedrockHttp.headerValue(
             BedrockHttp.bedrockHeaders(
-                settings = sigV4Settings.copy(region = "ap-south-1"),
+                settings = AmazonBedrockProviderSettings(block = {
+                    accessKeyId(sigV4Settings.accessKeyId)
+                    secretAccessKey(sigV4Settings.secretAccessKey)
+                    region("ap-south-1")
+                }),
                 extra = emptyMap(),
                 url = "https://bedrock.test/model/x/converse",
                 body = "{}",

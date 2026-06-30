@@ -96,12 +96,12 @@ class AnthropicProviderTest {
         fixture.server.start()
         val provider = Anthropic(
             fixture.httpClient(),
-            AnthropicProviderSettings(
-                apiKey = "key",
-                baseURL = "https://anthropic.test/v1",
-                headers = mapOf("X-Provider" to "provider"),
-                generateId = { "source-1" },
-            ),
+            AnthropicProviderSettings {
+                apiKey("key")
+                baseURL("https://anthropic.test/v1")
+                headers(mapOf("X-Provider" to "provider"))
+                generateId { "source-1" }
+            },
         )
 
         val pdf = Base64Codec.encode("pdf".encodeToByteArray())
@@ -353,7 +353,7 @@ class AnthropicProviderTest {
             ),
         )
         fixture.server.start()
-        val provider = Anthropic(fixture.httpClient(), AnthropicProviderSettings(baseURL = "https://anthropic.test/v1"))
+        val provider = Anthropic(fixture.httpClient(), AnthropicProviderSettings { baseURL("https://anthropic.test/v1") })
 
         val error = assertFailsWith<WireDecodeException> {
             provider.messages(ModelId("claude-sonnet-4-5")).generate(LanguageModelCallParams(messages = listOf(UserMessage("hi"))))
@@ -389,7 +389,7 @@ class AnthropicProviderTest {
             ),
         )
         fixture.server.start()
-        val provider = Anthropic(fixture.httpClient(), AnthropicProviderSettings(baseURL = "https://anthropic.test/v1"))
+        val provider = Anthropic(fixture.httpClient(), AnthropicProviderSettings { baseURL("https://anthropic.test/v1") })
 
         val error = assertFailsWith<WireDecodeException> {
             provider.messages(ModelId("claude-sonnet-4-5")).generate(LanguageModelCallParams(messages = listOf(UserMessage("hi"))))
@@ -425,7 +425,7 @@ class AnthropicProviderTest {
             ),
         )
         fixture.server.start()
-        val provider = Anthropic(fixture.httpClient(), AnthropicProviderSettings(baseURL = "https://anthropic.test/v1"))
+        val provider = Anthropic(fixture.httpClient(), AnthropicProviderSettings { baseURL("https://anthropic.test/v1") })
 
         val error = assertFailsWith<WireDecodeException> {
             provider.messages(ModelId("claude-sonnet-4-5")).generate(LanguageModelCallParams(messages = listOf(UserMessage("hi"))))
@@ -462,7 +462,7 @@ class AnthropicProviderTest {
             ),
         )
         fixture.server.start()
-        val provider = Anthropic(fixture.httpClient(), AnthropicProviderSettings(baseURL = "https://anthropic.test/v1"))
+        val provider = Anthropic(fixture.httpClient(), AnthropicProviderSettings { baseURL("https://anthropic.test/v1") })
 
         val error = assertFailsWith<WireDecodeException> {
             provider.messages(ModelId("claude-sonnet-4-5")).generate(LanguageModelCallParams(messages = listOf(UserMessage("hi"))))
@@ -490,7 +490,10 @@ class AnthropicProviderTest {
         fixture.server.start()
         val provider = Anthropic(
             fixture.httpClient(),
-            AnthropicProviderSettings(apiKey = "key", baseURL = "https://anthropic.test/v1"),
+            AnthropicProviderSettings {
+                apiKey("key")
+                baseURL("https://anthropic.test/v1")
+            },
         )
 
         val events = drainAllItems(
@@ -515,7 +518,7 @@ class AnthropicProviderTest {
             ),
         )
         fixture.server.start()
-        val provider = Anthropic(fixture.httpClient(), AnthropicProviderSettings(baseURL = "https://anthropic.test/v1"))
+        val provider = Anthropic(fixture.httpClient(), AnthropicProviderSettings { baseURL("https://anthropic.test/v1") })
         val emitted = mutableListOf<StreamEvent>()
 
         val error = assertFailsWith<APICallError> {
@@ -553,7 +556,7 @@ class AnthropicProviderTest {
             ),
         )
         fixture.server.start()
-        val provider = Anthropic(fixture.httpClient(), AnthropicProviderSettings(baseURL = "https://anthropic.test/v1"))
+        val provider = Anthropic(fixture.httpClient(), AnthropicProviderSettings { baseURL("https://anthropic.test/v1") })
 
         val events = drainAllItems(
             provider.messages(ModelId("claude-sonnet-4-5")).stream(
@@ -608,7 +611,7 @@ class AnthropicProviderTest {
             ),
         )
         fixture.server.start()
-        val provider = Anthropic(fixture.httpClient(), AnthropicProviderSettings(baseURL = "https://anthropic.test/v1"))
+        val provider = Anthropic(fixture.httpClient(), AnthropicProviderSettings { baseURL("https://anthropic.test/v1") })
 
         val events = drainAllItems(
             provider.messages(ModelId("claude-sonnet-4-5")).stream(
@@ -652,7 +655,7 @@ class AnthropicProviderTest {
             ),
         )
         fixture.server.start()
-        val provider = Anthropic(fixture.httpClient(), AnthropicProviderSettings(baseURL = "https://anthropic.test/v1"))
+        val provider = Anthropic(fixture.httpClient(), AnthropicProviderSettings { baseURL("https://anthropic.test/v1") })
 
         val events = drainAllItems(provider.messages(ModelId("claude-sonnet-4-5")).stream(LanguageModelCallParams(messages = listOf(UserMessage("hi")))))
 
@@ -686,7 +689,7 @@ class AnthropicProviderTest {
             ),
         )
         fixture.server.start()
-        val provider = Anthropic(fixture.httpClient(), AnthropicProviderSettings(baseURL = "https://anthropic.test/v1"))
+        val provider = Anthropic(fixture.httpClient(), AnthropicProviderSettings { baseURL("https://anthropic.test/v1") })
         val events = drainAllItems(
             provider.messages(ModelId("claude-sonnet-4-5")).stream(
                 LanguageModelCallParams(messages = listOf(UserMessage("hi"))),
@@ -713,7 +716,7 @@ class AnthropicProviderTest {
             ),
         )
         fixture.server.start()
-        val provider = Anthropic(fixture.httpClient(), AnthropicProviderSettings(baseURL = "https://anthropic.test/v1"))
+        val provider = Anthropic(fixture.httpClient(), AnthropicProviderSettings { baseURL("https://anthropic.test/v1") })
         provider.messages(ModelId("claude-opus-4-8")).generate(
             LanguageModelCallParams(messages = listOf(UserMessage("hi"))),
         )
@@ -735,7 +738,7 @@ class AnthropicProviderTest {
             ),
         )
         fixture.server.start()
-        val provider = Anthropic(fixture.httpClient(), AnthropicProviderSettings(baseURL = "https://anthropic.test/v1"))
+        val provider = Anthropic(fixture.httpClient(), AnthropicProviderSettings { baseURL("https://anthropic.test/v1") })
         val thinkingOptions = ProviderOptions.Raw(JsonObject(mapOf(
             "anthropic" to buildJsonObject {
                 put(
@@ -799,7 +802,7 @@ class AnthropicProviderTest {
             ),
         )
         fixture.server.start()
-        val provider = Anthropic(fixture.httpClient(), AnthropicProviderSettings(baseURL = "https://anthropic.test/v1"))
+        val provider = Anthropic(fixture.httpClient(), AnthropicProviderSettings { baseURL("https://anthropic.test/v1") })
         val rejectedModels = listOf("claude-opus-4-8", "claude-opus-4-7", "claude-fable-5")
         val samplingFeatures = setOf("temperature", "topK", "topP")
 
@@ -866,7 +869,7 @@ class AnthropicProviderTest {
             ),
         )
         fixture.server.start()
-        val provider = Anthropic(fixture.httpClient(), AnthropicProviderSettings(baseURL = "https://anthropic.test/v1"))
+        val provider = Anthropic(fixture.httpClient(), AnthropicProviderSettings { baseURL("https://anthropic.test/v1") })
         // The last message is a pre-filled assistant turn with trailing whitespace.
         provider.messages(ModelId("claude-sonnet-4-5")).generate(
             LanguageModelCallParams(messages = listOf(UserMessage("hi"), AssistantMessage("The answer is  \n  "))),
@@ -896,7 +899,7 @@ class AnthropicProviderTest {
             ),
         )
         fixture.server.start()
-        val provider = Anthropic(fixture.httpClient(), AnthropicProviderSettings(baseURL = "https://anthropic.test/v1"))
+        val provider = Anthropic(fixture.httpClient(), AnthropicProviderSettings { baseURL("https://anthropic.test/v1") })
 
         val events = drainAllItems(provider.messages(ModelId("claude-sonnet-4-5")).stream(LanguageModelCallParams(messages = listOf(UserMessage("hi")))))
 
@@ -927,7 +930,7 @@ class AnthropicProviderTest {
             ),
         )
         fixture.server.start()
-        val provider = Anthropic(fixture.httpClient(), AnthropicProviderSettings(baseURL = "https://anthropic.test/v1"))
+        val provider = Anthropic(fixture.httpClient(), AnthropicProviderSettings { baseURL("https://anthropic.test/v1") })
 
         val events = drainAllItems(provider.messages(ModelId("claude-sonnet-4-5")).stream(LanguageModelCallParams(messages = listOf(UserMessage("hi")))))
 
@@ -941,7 +944,9 @@ class AnthropicProviderTest {
         val fixture = TestServer.createTestServer(mutableMapOf())
         val provider = Anthropic(
             fixture.httpClient(),
-            AnthropicProviderSettings(authToken = "token"),
+            AnthropicProviderSettings {
+                authToken("token")
+            },
         )
 
         val tool = provider.tools.webSearch_20260209
@@ -951,7 +956,10 @@ class AnthropicProviderTest {
         assertFailsWith<InvalidArgumentError> {
             Anthropic(
                 fixture.httpClient(),
-                AnthropicProviderSettings(apiKey = "key", authToken = "token"),
+                AnthropicProviderSettings {
+                    apiKey("key")
+                    authToken("token")
+                },
             )
         }
         assertFailsWith<NoSuchModelError> { provider.embeddingModel("embed") }

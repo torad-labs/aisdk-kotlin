@@ -31,7 +31,7 @@ class OpenResponsesStreamFailureTest {
                     data: {"type":"response.completed","response":{}}
                 """,
             ),
-            OpenResponsesProviderSettings("https://api.test/v1/responses", "openresponses"),
+            OpenResponsesProviderSettings { url("https://api.test/v1/responses"); name("openresponses") },
         )
 
         val events = drainAllItems(
@@ -52,7 +52,7 @@ class OpenResponsesStreamFailureTest {
                     data: {"type":"response.failed","response":{"status":"failed","error":{"code":"server_error","message":"bad gateway"},"usage":{"input_tokens":1,"output_tokens":0,"total_tokens":1}}}
                 """,
             ),
-            OpenResponsesProviderSettings("https://api.test/v1/responses", "openresponses"),
+            OpenResponsesProviderSettings { url("https://api.test/v1/responses"); name("openresponses") },
         )
 
         val events = drainAllItems(

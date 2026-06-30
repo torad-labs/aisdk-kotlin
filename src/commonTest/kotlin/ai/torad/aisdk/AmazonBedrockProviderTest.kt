@@ -103,11 +103,11 @@ class AmazonBedrockProviderTest {
         fixture.server.start()
         val provider = AmazonBedrock(
             fixture.httpClient(),
-            AmazonBedrockProviderSettings(
-                apiKey = "key",
-                baseURL = "https://bedrock.test",
-                headers = mapOf("X-Provider" to "provider"),
-            ),
+            AmazonBedrockProviderSettings(block = {
+                apiKey("key")
+                baseURL("https://bedrock.test")
+                headers(mapOf("X-Provider" to "provider"))
+            }),
         )
 
         val result = provider(ModelId("anthropic.claude-3-7-sonnet-20250219-v1:0")).generate(
@@ -216,7 +216,7 @@ class AmazonBedrockProviderTest {
         fixture.server.start()
         val provider = AmazonBedrock(
             fixture.httpClient(),
-            AmazonBedrockProviderSettings(apiKey = "key", baseURL = "https://bedrock.test"),
+            AmazonBedrockProviderSettings(block = { apiKey("key"); baseURL("https://bedrock.test") }),
         )
         provider(ModelId("anthropic.claude-3-7-sonnet-20250219-v1:0")).generate(
             LanguageModelCallParams(
@@ -278,7 +278,7 @@ class AmazonBedrockProviderTest {
         fixture.server.start()
         val provider = AmazonBedrock(
             fixture.httpClient(),
-            AmazonBedrockProviderSettings(apiKey = "key", baseURL = "https://bedrock.test"),
+            AmazonBedrockProviderSettings(block = { apiKey("key"); baseURL("https://bedrock.test") }),
         )
 
         val events = drainAllItems(
@@ -325,7 +325,7 @@ class AmazonBedrockProviderTest {
         fixture.server.start()
         val provider = AmazonBedrock(
             fixture.httpClient(),
-            AmazonBedrockProviderSettings(apiKey = "key", baseURL = "https://bedrock.test"),
+            AmazonBedrockProviderSettings(block = { apiKey("key"); baseURL("https://bedrock.test") }),
         )
 
         val events = drainAllItems(
@@ -367,7 +367,7 @@ class AmazonBedrockProviderTest {
         fixture.server.start()
         val provider = AmazonBedrock(
             fixture.httpClient(),
-            AmazonBedrockProviderSettings(apiKey = "key", baseURL = "https://bedrock.test"),
+            AmazonBedrockProviderSettings(block = { apiKey("key"); baseURL("https://bedrock.test") }),
         )
 
         val events = drainAllItems(
@@ -403,7 +403,7 @@ class AmazonBedrockProviderTest {
         )
         val provider = AmazonBedrock(
             client,
-            AmazonBedrockProviderSettings(apiKey = "key", baseURL = "https://bedrock.test"),
+            AmazonBedrockProviderSettings(block = { apiKey("key"); baseURL("https://bedrock.test") }),
         )
 
         val deltas = mutableListOf<String>()
@@ -448,12 +448,12 @@ class AmazonBedrockProviderTest {
         fixture.server.start()
         val provider = AmazonBedrock(
             fixture.httpClient(),
-            AmazonBedrockProviderSettings(
-                apiKey = "key",
-                region = "us-east-1",
-                baseURL = "https://bedrock.test",
-                agentBaseURL = "https://bedrock-agent.test",
-            ),
+            AmazonBedrockProviderSettings(block = {
+                apiKey("key")
+                region("us-east-1")
+                baseURL("https://bedrock.test")
+                agentBaseURL("https://bedrock-agent.test")
+            }),
         )
 
         val embedding = provider.embedding(ModelId("amazon.titan-embed-text-v2:0")).embed(
@@ -540,7 +540,10 @@ class AmazonBedrockProviderTest {
         fixture.server.start()
         val provider = BedrockMantle(
             fixture.httpClient(),
-            BedrockMantleProviderSettings(apiKey = "key", baseURL = "https://mantle.test/v1"),
+            AmazonBedrockProviderSettings(block = {
+                apiKey("key")
+                baseURL("https://mantle.test/v1")
+            }),
         )
 
         val result = provider.chat(ModelId("openai.gpt-oss-20b-1:0")).generate(
@@ -556,12 +559,12 @@ class AmazonBedrockProviderTest {
 
         val sigV4Provider = AmazonBedrock(
             fixture.httpClient(),
-            AmazonBedrockProviderSettings(
-                accessKeyId = "id",
-                secretAccessKey = "secret",
-                sessionToken = "token",
-                baseURL = "https://bedrock.test",
-            ),
+            AmazonBedrockProviderSettings(block = {
+                accessKeyId("id")
+                secretAccessKey("secret")
+                sessionToken("token")
+                baseURL("https://bedrock.test")
+            }),
         )
         val signed = sigV4Provider.languageModel("amazon.nova-lite-v1:0").generate(
             LanguageModelCallParams(messages = listOf(UserMessage("hi"))),
@@ -590,7 +593,10 @@ class AmazonBedrockProviderTest {
         fixture.server.start()
         val provider = BedrockMantle(
             fixture.httpClient(),
-            BedrockMantleProviderSettings(apiKey = "key", baseURL = "https://mantle.test/v1"),
+            AmazonBedrockProviderSettings(block = {
+                apiKey("key")
+                baseURL("https://mantle.test/v1")
+            }),
         )
         val result = provider.chat(ModelId("m")).generate(
             LanguageModelCallParams(messages = listOf(UserMessage("hi"))),
@@ -622,11 +628,11 @@ class AmazonBedrockProviderTest {
         fixture.server.start()
         val provider = AmazonBedrock(
             fixture.httpClient(),
-            AmazonBedrockProviderSettings(
-                accessKeyId = "id",
-                secretAccessKey = "secret",
-                baseURL = "https://bedrock.test",
-            ),
+            AmazonBedrockProviderSettings(block = {
+                accessKeyId("id")
+                secretAccessKey("secret")
+                baseURL("https://bedrock.test")
+            }),
         )
 
         val error = assertFailsWith<APICallError> {

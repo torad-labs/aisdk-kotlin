@@ -44,12 +44,12 @@ class OpenAICompatibleStructuredOutputsTest {
         )
         val provider = OpenAICompatible(
             client,
-            OpenAICompatibleProviderSettings(
-                name = "openai",
-                baseUrl = "https://api.test/v1",
-                apiKey = "secret",
+            OpenAICompatibleProviderSettings {
+                name("openai")
+                baseUrl("https://api.test/v1")
+                apiKey("secret")
                 // supportsStructuredOutputs defaults to false — the case under test.
-            ),
+            },
         )
 
         val result = TextGenerator(

@@ -24,14 +24,14 @@ public typealias GoogleVertexVideoModelOptions = JsonObject
 public typealias GoogleVertexVideoProviderOptions = JsonObject
 
 @Serializable
-public data class GoogleVertexProviderSettings(
-    val project: String? = null,
-    val location: String = "us-central1",
-    val baseURL: String? = null,
-    val accessToken: String? = null,
-    val apiKey: String? = null,
-    val headers: Map<String, String> = emptyMap(),
-    val generateId: () -> String = { IdGenerator.generate() },
+public class GoogleVertexProviderSettings internal constructor(
+    public val project: String? = null,
+    public val location: String = "us-central1",
+    public val baseURL: String? = null,
+    public val accessToken: String? = null,
+    public val apiKey: String? = null,
+    public val headers: Map<String, String> = emptyMap(),
+    public val generateId: () -> String = { IdGenerator.generate() },
 ) {
     internal fun googleVertexPublisherBaseURL(): String =
         baseURL?.trimEnd('/')
@@ -82,6 +82,60 @@ public data class GoogleVertexProviderSettings(
         return googleVertexHeaders() + passthrough
     }
 }
+
+public class GoogleVertexProviderSettingsBuilder internal constructor() {
+    private var project: String? = null
+    private var location: String = "us-central1"
+    private var baseURL: String? = null
+    private var accessToken: String? = null
+    private var apiKey: String? = null
+    private var headers: Map<String, String> = emptyMap()
+    private var generateId: () -> String = { IdGenerator.generate() }
+
+    public fun project(value: String?) {
+        project = value
+    }
+
+    public fun location(value: String) {
+        location = value
+    }
+
+    public fun baseURL(value: String?) {
+        baseURL = value
+    }
+
+    public fun accessToken(value: String?) {
+        accessToken = value
+    }
+
+    public fun apiKey(value: String?) {
+        apiKey = value
+    }
+
+    public fun headers(value: Map<String, String>) {
+        headers = value
+    }
+
+    public fun generateId(value: () -> String) {
+        generateId = value
+    }
+
+    internal fun build(): GoogleVertexProviderSettings =
+        GoogleVertexProviderSettings(
+            project = project,
+            location = location,
+            baseURL = baseURL,
+            accessToken = accessToken,
+            apiKey = apiKey,
+            headers = headers,
+            generateId = generateId,
+        )
+}
+
+public fun GoogleVertexProviderSettings(
+    block: GoogleVertexProviderSettingsBuilder.() -> Unit = {},
+): GoogleVertexProviderSettings =
+    GoogleVertexProviderSettingsBuilder().apply(block).build()
 
 public class GoogleVertexProvider(
     client: HttpClient,
@@ -147,18 +201,18 @@ public class GoogleVertexAnthropicProvider(
 
     private val delegate = Anthropic(
         client,
-        AnthropicProviderSettings(
-            baseURL = settings.googleVertexAnthropicBaseURL(),
-            headers = emptyMap(),
-            requestHeadersProvider = { _, _, headers -> settings.googleVertexAnthropicHeaders(headers) },
-            buildRequestUrl = { baseURL, modelId, isStreaming ->
+        AnthropicProviderSettings {
+            baseURL(settings.googleVertexAnthropicBaseURL())
+            headers(emptyMap())
+            requestHeadersProvider { _, _, headers -> settings.googleVertexAnthropicHeaders(headers) }
+            buildRequestUrl { baseURL, modelId, isStreaming ->
                 "$baseURL/$modelId:${if (isStreaming) "streamRawPredict" else "rawPredict"}"
-            },
-            transformRequestBody = { _, body, _ -> googleVertexAnthropicBody(body) },
-            supportedUrls = emptyMap(),
-            generateId = settings.generateId,
-            name = "vertex.anthropic.messages",
-        ),
+            }
+            transformRequestBody { _, body, _ -> googleVertexAnthropicBody(body) }
+            supportedUrls(emptyMap())
+            generateId(settings.generateId)
+            name("vertex.anthropic.messages")
+        },
     )
 
     public operator fun invoke(modelId: ModelId): LanguageModel = languageModel(modelId.value)
@@ -186,12 +240,12 @@ public class GoogleVertexMaasProvider(
 
     private val delegate = OpenAICompatible(
         client,
-        OpenAICompatibleProviderSettings(
-            name = "google-vertex-maas",
-            baseUrl = settings.googleVertexOpenAIBaseURL(),
-            headers = settings.googleVertexHeaders(),
-            userAgentSuffix = "ai-sdk/google-vertex/$GOOGLE_VERTEX_VERSION",
-        ),
+        OpenAICompatibleProviderSettings {
+            name("google-vertex-maas")
+            baseUrl(settings.googleVertexOpenAIBaseURL())
+            headers(settings.googleVertexHeaders())
+            userAgentSuffix("ai-sdk/google-vertex/$GOOGLE_VERTEX_VERSION")
+        },
     )
 
     public operator fun invoke(modelId: ModelId): LanguageModel = languageModel(modelId.value)
@@ -208,18 +262,18 @@ public class GoogleVertexXaiProvider(
 
     private val delegate = OpenAICompatible(
         client,
-        OpenAICompatibleProviderSettings(
-            name = "googleVertex.xai",
-            baseUrl = settings.googleVertexOpenAIBaseURL(),
-            headers = settings.googleVertexHeaders(),
-            includeUsage = true,
-            supportsStructuredOutputs = true,
-            supportedUrls = mapOf("image/*" to listOf("^https?://.*$")),
-            userAgentSuffix = "ai-sdk/google-vertex/$GOOGLE_VERTEX_VERSION",
-            providerOptionsName = "xai",
-            transformChatRequestBody = this::googleVertexXaiRequestBody,
-            convertUsage = this::googleVertexXaiUsage,
-        ),
+        OpenAICompatibleProviderSettings {
+            name("googleVertex.xai")
+            baseUrl(settings.googleVertexOpenAIBaseURL())
+            headers(settings.googleVertexHeaders())
+            includeUsage(true)
+            supportsStructuredOutputs(true)
+            supportedUrls(mapOf("image/*" to listOf("^https?://.*$")))
+            userAgentSuffix("ai-sdk/google-vertex/$GOOGLE_VERTEX_VERSION")
+            providerOptionsName("xai")
+            transformChatRequestBody(this@GoogleVertexXaiProvider::googleVertexXaiRequestBody)
+            convertUsage(this@GoogleVertexXaiProvider::googleVertexXaiUsage)
+        },
     )
 
     public operator fun invoke(modelId: ModelId): LanguageModel = languageModel(modelId.value)
