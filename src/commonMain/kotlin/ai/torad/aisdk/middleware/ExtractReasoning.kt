@@ -57,7 +57,18 @@ public fun ExtractReasoningMiddleware(
                 cleanedText.append(clean)
             }
         }
-        return raw.copy(text = cleanedText.toString(), content = rebuilt)
+        return LanguageModelResult(
+            text = cleanedText.toString(),
+            toolCalls = raw.toolCalls,
+            finishReason = raw.finishReason,
+            usage = raw.usage,
+            providerMetadata = raw.providerMetadata,
+            content = rebuilt,
+            rawFinishReason = raw.rawFinishReason,
+            warnings = raw.warnings,
+            request = raw.request,
+            response = raw.response,
+        )
     }
 
     override fun wrapStream(context: MiddlewareCallContext): Flow<StreamEvent> = flow {

@@ -121,13 +121,13 @@ Penalty, response-format, and retry fields participate in the `Step ?: Agent ?: 
 - `interface LanguageModel { val modelId; @LowLevelLanguageModelApi suspend fun generate(...); @LowLevelLanguageModelApi fun stream(...); @LowLevelLanguageModelApi fun streamResult(...) }`
 - `annotation class LowLevelLanguageModelApi` — `@RequiresOptIn(ERROR)` marker for direct language-model execution. Use agents or high-level generation helpers for application prompts; opt in only for provider implementations, tests, and deliberate low-level calls.
 - `data class LanguageModelCallParams(messages, tools, toolChoice, temperature?, topP?, topK?, maxOutputTokens?, stopSequences, seed?, providerOptions, abortSignal, presencePenalty?, frequencyPenalty?, responseFormat)`
-- `data class LanguageModelTool(name, description, parametersSchemaJson, ..., strict: Boolean? = null, ...)`
-- `data class LanguageModelResult(text, toolCalls, finishReason, usage, providerMetadata, content, rawFinishReason?, warnings, request, response)`
+- `@Poko class LanguageModelTool(name, description, parametersSchemaJson, ..., strict: Boolean? = null, ...)`
+- `@Poko class LanguageModelResult(text, toolCalls, finishReason, usage, providerMetadata, content, rawFinishReason?, warnings, request, response)`
 - `@Poko class CallWarning(type, message?, details?)` — value semantics and
   serialization remain; public `copy()` / `componentN()` ABI is intentionally
   absent for result/metadata value types.
-- `data class LanguageModelRequestMetadata(body?)`
-- `data class LanguageModelResponseMetadata(id?, timestampMillis?, modelId?, headers, body?)`
+- `@Poko class LanguageModelRequestMetadata(body?)`
+- `@Poko class LanguageModelResponseMetadata(id?, timestampMillis?, modelId?, headers, body?)`
 - `class ai.torad.aisdk.providers.MockLanguageModel(...)` — for tests only
 
 ### Middleware
@@ -135,7 +135,7 @@ Penalty, response-format, and retry fields participate in the `Step ?: Agent ?: 
 - `interface LanguageModelMiddleware`
   - `suspend fun wrapGenerate(context: MiddlewareCallContext): LanguageModelResult` — default passes through to `context.doGenerate(context.params)`
   - `fun wrapStream(context: MiddlewareCallContext): Flow<StreamEvent>` — default passes through to `context.doStream(context.params)`
-- `data class MiddlewareCallContext(params, model, doGenerate, doStream)` — both `doGenerate` and `doStream` target the rest of the chain past THIS middleware. A middleware's `wrapStream` calling `context.doGenerate(...)` skips its own `wrapGenerate` and invokes the downstream chain's generate path. This is the v6 `{doGenerate, doStream, params, model}` shape — load-bearing for `simulateStreamingMiddleware`, fallback / cache / retry middlewares, and anything that synthesizes one direction from the other.
+- `@Poko class MiddlewareCallContext(params, model, doGenerate, doStream)` — both `doGenerate` and `doStream` target the rest of the chain past THIS middleware. A middleware's `wrapStream` calling `context.doGenerate(...)` skips its own `wrapGenerate` and invokes the downstream chain's generate path. This is the v6 `{doGenerate, doStream, params, model}` shape — load-bearing for `simulateStreamingMiddleware`, fallback / cache / retry middlewares, and anything that synthesizes one direction from the other.
 - `fun wrapLanguageModel(model, middlewares): LanguageModel`
 - Built-ins (`ai.torad.aisdk.middleware.*`):
   - `defaultSettingsMiddleware(temperature?, topP?, topK?, maxOutputTokens?, stopSequences, seed?, providerOptions, presencePenalty?, frequencyPenalty?, responseFormat)`

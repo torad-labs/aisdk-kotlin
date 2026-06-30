@@ -249,8 +249,17 @@ private class MistralChatLanguageModel(
 ) : LanguageModel by delegate {
     override suspend fun generate(params: LanguageModelCallParams): LanguageModelResult =
         delegate.generate(params.copy(providerOptions = transformMistralProviderOptions(params.providerOptions))).let {
-            it.copy(
+            LanguageModelResult(
+                text = it.text,
+                toolCalls = it.toolCalls,
                 finishReason = if (it.rawFinishReason == "model_length") FinishReason.Length else it.finishReason,
+                usage = it.usage,
+                providerMetadata = it.providerMetadata,
+                content = it.content,
+                rawFinishReason = it.rawFinishReason,
+                warnings = it.warnings,
+                request = it.request,
+                response = it.response,
             )
         }
 
@@ -271,7 +280,7 @@ private class MistralChatLanguageModel(
 
     override fun streamResult(params: LanguageModelCallParams): LanguageModelStreamResult =
         delegate.streamResult(params.copy(providerOptions = transformMistralProviderOptions(params.providerOptions))).let {
-            it.copy(
+            LanguageModelStreamResult(
                 stream = it.stream.map { event ->
                     if (event is StreamEvent.Finish && event.rawFinishReason == "model_length") {
                         StreamEvent.Finish(
@@ -285,6 +294,8 @@ private class MistralChatLanguageModel(
                         event
                     }
                 },
+                request = it.request,
+                response = it.response,
             )
         }
 

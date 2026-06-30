@@ -446,13 +446,18 @@ private object TelemetryRedaction {
         settings: TelemetrySettings,
         redactor: Redactor,
     ): LanguageModelRequestMetadata =
-        copy(body = body?.takeIf { settings.recordInputs }?.let(redactor::redactJson))
+        LanguageModelRequestMetadata(
+            body = body?.takeIf { settings.recordInputs }?.let(redactor::redactJson),
+        )
 
     private fun LanguageModelResponseMetadata.sanitizedResponseMetadata(
         settings: TelemetrySettings,
         redactor: Redactor,
     ): LanguageModelResponseMetadata =
-        copy(
+        LanguageModelResponseMetadata(
+            id = id,
+            timestampMillis = timestampMillis,
+            modelId = modelId,
             headers = redactor.redactHeaders(headers),
             body = body?.takeIf { settings.recordOutputs }?.let(redactor::redactJson),
         )

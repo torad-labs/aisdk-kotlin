@@ -322,7 +322,11 @@ private class XaiChatLanguageModel(
 
     override fun streamResult(params: LanguageModelCallParams): LanguageModelStreamResult =
         delegate.streamResult(params.copy(providerOptions = transformXaiChatProviderOptions(params.providerOptions))).let {
-            it.copy(stream = it.stream.map { event -> event })
+            LanguageModelStreamResult(
+                stream = it.stream.map { event -> event },
+                request = it.request,
+                response = it.response,
+            )
         }
 
     private fun transformXaiChatProviderOptions(options: ProviderOptions): ProviderOptions {
@@ -356,7 +360,22 @@ private class XaiChatLanguageModel(
                     url = url,
                 )
             }
-        return if (citations.isEmpty()) this else copy(content = content + citations)
+        return if (citations.isEmpty()) {
+            this
+        } else {
+            LanguageModelResult(
+                text = text,
+                toolCalls = toolCalls,
+                finishReason = finishReason,
+                usage = usage,
+                providerMetadata = providerMetadata,
+                content = content + citations,
+                rawFinishReason = rawFinishReason,
+                warnings = warnings,
+                request = request,
+                response = response,
+            )
+        }
     }
 }
 

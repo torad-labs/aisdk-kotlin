@@ -1715,10 +1715,12 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
     ): LanguageModelStreamResult =
         when (mode) {
             ModelCallMode.Stream -> stepModel.streamResult(callParams).let { result ->
-                result.copy(
+                LanguageModelStreamResult(
                     stream = StreamOpenRetry.wrap(maxRetries) {
                         result.stream
                     },
+                    request = result.request,
+                    response = result.response,
                 )
             }
             ModelCallMode.Generate -> {

@@ -66,13 +66,32 @@ private class DeepInfraChatLanguageModel(
     private val delegate: LanguageModel,
 ) : LanguageModel by delegate {
     override suspend fun generate(params: LanguageModelCallParams): LanguageModelResult =
-        delegate.generate(params).let { result -> result.copy(usage = result.usage.fixDeepInfraUsage()) }
+        delegate.generate(params).let { result ->
+            LanguageModelResult(
+                text = result.text,
+                toolCalls = result.toolCalls,
+                finishReason = result.finishReason,
+                usage = result.usage.fixDeepInfraUsage(),
+                providerMetadata = result.providerMetadata,
+                content = result.content,
+                rawFinishReason = result.rawFinishReason,
+                warnings = result.warnings,
+                request = result.request,
+                response = result.response,
+            )
+        }
 
     override fun stream(params: LanguageModelCallParams): Flow<StreamEvent> =
         delegate.stream(params).map(::fixDeepInfraUsageEvent)
 
     override fun streamResult(params: LanguageModelCallParams): LanguageModelStreamResult =
-        delegate.streamResult(params).let { result -> result.copy(stream = result.stream.map(::fixDeepInfraUsageEvent)) }
+        delegate.streamResult(params).let { result ->
+            LanguageModelStreamResult(
+                stream = result.stream.map(::fixDeepInfraUsageEvent),
+                request = result.request,
+                response = result.response,
+            )
+        }
 
     private fun fixDeepInfraUsageEvent(event: StreamEvent): StreamEvent =
         when (event) {

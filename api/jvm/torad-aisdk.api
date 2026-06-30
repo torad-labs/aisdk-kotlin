@@ -3057,9 +3057,6 @@ public final class ai/torad/aisdk/LanguageModelRequestMetadata {
 	public fun <init> ()V
 	public fun <init> (Lkotlinx/serialization/json/JsonElement;)V
 	public synthetic fun <init> (Lkotlinx/serialization/json/JsonElement;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public final fun component1 ()Lkotlinx/serialization/json/JsonElement;
-	public final fun copy (Lkotlinx/serialization/json/JsonElement;)Lai/torad/aisdk/LanguageModelRequestMetadata;
-	public static synthetic fun copy$default (Lai/torad/aisdk/LanguageModelRequestMetadata;Lkotlinx/serialization/json/JsonElement;ILjava/lang/Object;)Lai/torad/aisdk/LanguageModelRequestMetadata;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getBody ()Lkotlinx/serialization/json/JsonElement;
 	public fun hashCode ()I
@@ -3070,13 +3067,6 @@ public final class ai/torad/aisdk/LanguageModelResponseMetadata {
 	public fun <init> ()V
 	public fun <init> (Ljava/lang/String;Ljava/lang/Long;Ljava/lang/String;Ljava/util/Map;Lkotlinx/serialization/json/JsonElement;)V
 	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/Long;Ljava/lang/String;Ljava/util/Map;Lkotlinx/serialization/json/JsonElement;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public final fun component1 ()Ljava/lang/String;
-	public final fun component2 ()Ljava/lang/Long;
-	public final fun component3 ()Ljava/lang/String;
-	public final fun component4 ()Ljava/util/Map;
-	public final fun component5 ()Lkotlinx/serialization/json/JsonElement;
-	public final fun copy (Ljava/lang/String;Ljava/lang/Long;Ljava/lang/String;Ljava/util/Map;Lkotlinx/serialization/json/JsonElement;)Lai/torad/aisdk/LanguageModelResponseMetadata;
-	public static synthetic fun copy$default (Lai/torad/aisdk/LanguageModelResponseMetadata;Ljava/lang/String;Ljava/lang/Long;Ljava/lang/String;Ljava/util/Map;Lkotlinx/serialization/json/JsonElement;ILjava/lang/Object;)Lai/torad/aisdk/LanguageModelResponseMetadata;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getBody ()Lkotlinx/serialization/json/JsonElement;
 	public final fun getHeaders ()Ljava/util/Map;
@@ -3090,18 +3080,6 @@ public final class ai/torad/aisdk/LanguageModelResponseMetadata {
 public final class ai/torad/aisdk/LanguageModelResult {
 	public fun <init> (Ljava/lang/String;Ljava/util/List;Lai/torad/aisdk/FinishReason;Lai/torad/aisdk/Usage;Lai/torad/aisdk/ProviderMetadata;Ljava/util/List;Ljava/lang/String;Ljava/util/List;Lai/torad/aisdk/LanguageModelRequestMetadata;Lai/torad/aisdk/LanguageModelResponseMetadata;)V
 	public synthetic fun <init> (Ljava/lang/String;Ljava/util/List;Lai/torad/aisdk/FinishReason;Lai/torad/aisdk/Usage;Lai/torad/aisdk/ProviderMetadata;Ljava/util/List;Ljava/lang/String;Ljava/util/List;Lai/torad/aisdk/LanguageModelRequestMetadata;Lai/torad/aisdk/LanguageModelResponseMetadata;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public final fun component1 ()Ljava/lang/String;
-	public final fun component10 ()Lai/torad/aisdk/LanguageModelResponseMetadata;
-	public final fun component2 ()Ljava/util/List;
-	public final fun component3 ()Lai/torad/aisdk/FinishReason;
-	public final fun component4 ()Lai/torad/aisdk/Usage;
-	public final fun component5 ()Lai/torad/aisdk/ProviderMetadata;
-	public final fun component6 ()Ljava/util/List;
-	public final fun component7 ()Ljava/lang/String;
-	public final fun component8 ()Ljava/util/List;
-	public final fun component9 ()Lai/torad/aisdk/LanguageModelRequestMetadata;
-	public final fun copy (Ljava/lang/String;Ljava/util/List;Lai/torad/aisdk/FinishReason;Lai/torad/aisdk/Usage;Lai/torad/aisdk/ProviderMetadata;Ljava/util/List;Ljava/lang/String;Ljava/util/List;Lai/torad/aisdk/LanguageModelRequestMetadata;Lai/torad/aisdk/LanguageModelResponseMetadata;)Lai/torad/aisdk/LanguageModelResult;
-	public static synthetic fun copy$default (Lai/torad/aisdk/LanguageModelResult;Ljava/lang/String;Ljava/util/List;Lai/torad/aisdk/FinishReason;Lai/torad/aisdk/Usage;Lai/torad/aisdk/ProviderMetadata;Ljava/util/List;Ljava/lang/String;Ljava/util/List;Lai/torad/aisdk/LanguageModelRequestMetadata;Lai/torad/aisdk/LanguageModelResponseMetadata;ILjava/lang/Object;)Lai/torad/aisdk/LanguageModelResult;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getContent ()Ljava/util/List;
 	public final fun getFinishReason ()Lai/torad/aisdk/FinishReason;
@@ -3120,11 +3098,6 @@ public final class ai/torad/aisdk/LanguageModelResult {
 public final class ai/torad/aisdk/LanguageModelStreamResult {
 	public fun <init> (Lkotlinx/coroutines/flow/Flow;Lai/torad/aisdk/LanguageModelRequestMetadata;Lai/torad/aisdk/LanguageModelResponseMetadata;)V
 	public synthetic fun <init> (Lkotlinx/coroutines/flow/Flow;Lai/torad/aisdk/LanguageModelRequestMetadata;Lai/torad/aisdk/LanguageModelResponseMetadata;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public final fun component1 ()Lkotlinx/coroutines/flow/Flow;
-	public final fun component2 ()Lai/torad/aisdk/LanguageModelRequestMetadata;
-	public final fun component3 ()Lai/torad/aisdk/LanguageModelResponseMetadata;
-	public final fun copy (Lkotlinx/coroutines/flow/Flow;Lai/torad/aisdk/LanguageModelRequestMetadata;Lai/torad/aisdk/LanguageModelResponseMetadata;)Lai/torad/aisdk/LanguageModelStreamResult;
-	public static synthetic fun copy$default (Lai/torad/aisdk/LanguageModelStreamResult;Lkotlinx/coroutines/flow/Flow;Lai/torad/aisdk/LanguageModelRequestMetadata;Lai/torad/aisdk/LanguageModelResponseMetadata;ILjava/lang/Object;)Lai/torad/aisdk/LanguageModelStreamResult;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getRequest ()Lai/torad/aisdk/LanguageModelRequestMetadata;
 	public final fun getResponse ()Lai/torad/aisdk/LanguageModelResponseMetadata;
@@ -3136,15 +3109,6 @@ public final class ai/torad/aisdk/LanguageModelStreamResult {
 public final class ai/torad/aisdk/LanguageModelTool {
 	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ZLjava/util/Map;Ljava/lang/Boolean;Lai/torad/aisdk/ProviderOptions;)V
 	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ZLjava/util/Map;Ljava/lang/Boolean;Lai/torad/aisdk/ProviderOptions;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public final fun component1 ()Ljava/lang/String;
-	public final fun component2 ()Ljava/lang/String;
-	public final fun component3 ()Ljava/lang/String;
-	public final fun component4 ()Z
-	public final fun component5 ()Ljava/util/Map;
-	public final fun component6 ()Ljava/lang/Boolean;
-	public final fun component7 ()Lai/torad/aisdk/ProviderOptions;
-	public final fun copy (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ZLjava/util/Map;Ljava/lang/Boolean;Lai/torad/aisdk/ProviderOptions;)Lai/torad/aisdk/LanguageModelTool;
-	public static synthetic fun copy$default (Lai/torad/aisdk/LanguageModelTool;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ZLjava/util/Map;Ljava/lang/Boolean;Lai/torad/aisdk/ProviderOptions;ILjava/lang/Object;)Lai/torad/aisdk/LanguageModelTool;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getDescription ()Ljava/lang/String;
 	public final fun getMetadata ()Ljava/util/Map;
@@ -3861,12 +3825,6 @@ public final class ai/torad/aisdk/MessageRole$Companion {
 
 public final class ai/torad/aisdk/MiddlewareCallContext {
 	public fun <init> (Lai/torad/aisdk/LanguageModelCallParams;Lai/torad/aisdk/LanguageModel;Lkotlin/jvm/functions/Function2;Lkotlin/jvm/functions/Function1;)V
-	public final fun component1 ()Lai/torad/aisdk/LanguageModelCallParams;
-	public final fun component2 ()Lai/torad/aisdk/LanguageModel;
-	public final fun component3 ()Lkotlin/jvm/functions/Function2;
-	public final fun component4 ()Lkotlin/jvm/functions/Function1;
-	public final fun copy (Lai/torad/aisdk/LanguageModelCallParams;Lai/torad/aisdk/LanguageModel;Lkotlin/jvm/functions/Function2;Lkotlin/jvm/functions/Function1;)Lai/torad/aisdk/MiddlewareCallContext;
-	public static synthetic fun copy$default (Lai/torad/aisdk/MiddlewareCallContext;Lai/torad/aisdk/LanguageModelCallParams;Lai/torad/aisdk/LanguageModel;Lkotlin/jvm/functions/Function2;Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Lai/torad/aisdk/MiddlewareCallContext;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getDoGenerate ()Lkotlin/jvm/functions/Function2;
 	public final fun getDoStream ()Lkotlin/jvm/functions/Function1;

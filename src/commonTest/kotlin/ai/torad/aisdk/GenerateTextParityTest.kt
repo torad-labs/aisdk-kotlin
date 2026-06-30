@@ -7,6 +7,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
 import kotlin.test.assertNotNull
+import kotlin.test.assertNotEquals
 import kotlin.test.assertNull
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
@@ -24,6 +25,61 @@ class GenerateTextParityTest {
 
     @Serializable
     data class Recipe(val name: String, val ingredients: List<String> = emptyList())
+
+    @Test
+    fun `language model Poko result types keep value semantics`() {
+        val tool = LanguageModelTool(
+            name = "lookup",
+            description = "Lookup a city.",
+            parametersSchemaJson = """{"type":"object"}""",
+            strict = true,
+        )
+        val equalTool = LanguageModelTool(
+            name = "lookup",
+            description = "Lookup a city.",
+            parametersSchemaJson = """{"type":"object"}""",
+            strict = true,
+        )
+        val differentTool = LanguageModelTool(
+            name = "lookup",
+            description = "Lookup something else.",
+            parametersSchemaJson = """{"type":"object"}""",
+            strict = true,
+        )
+        assertEquals(tool, equalTool)
+        assertEquals(tool.hashCode(), equalTool.hashCode())
+        assertNotEquals(tool, differentTool)
+
+        val response = LanguageModelResponseMetadata(id = "resp_1", modelId = "m", headers = mapOf("x" to "y"))
+        val result = LanguageModelResult(
+            text = "ok",
+            finishReason = FinishReason.Stop,
+            usage = Usage.of(promptTokens = 1, completionTokens = 2),
+            response = response,
+        )
+        val equalResult = LanguageModelResult(
+            text = "ok",
+            finishReason = FinishReason.Stop,
+            usage = Usage.of(promptTokens = 1, completionTokens = 2),
+            response = LanguageModelResponseMetadata(id = "resp_1", modelId = "m", headers = mapOf("x" to "y")),
+        )
+        val differentResult = LanguageModelResult(
+            text = "different",
+            finishReason = FinishReason.Stop,
+            usage = Usage.of(promptTokens = 1, completionTokens = 2),
+            response = response,
+        )
+        assertEquals(result, equalResult)
+        assertEquals(result.hashCode(), equalResult.hashCode())
+        assertNotEquals(result, differentResult)
+
+        val request = LanguageModelRequestMetadata(body = JsonPrimitive("body"))
+        val equalRequest = LanguageModelRequestMetadata(body = JsonPrimitive("body"))
+        val differentRequest = LanguageModelRequestMetadata(body = JsonPrimitive("other"))
+        assertEquals(request, equalRequest)
+        assertEquals(request.hashCode(), equalRequest.hashCode())
+        assertNotEquals(request, differentRequest)
+    }
 
     private class CapturingModel(
         private val generateResult: LanguageModelResult = LanguageModelResult(
