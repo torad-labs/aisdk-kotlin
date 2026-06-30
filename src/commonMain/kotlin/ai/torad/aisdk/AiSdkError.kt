@@ -1,5 +1,6 @@
 package ai.torad.aisdk
 
+import dev.drewhamilton.poko.Poko
 import kotlinx.serialization.json.JsonElement
 
 public sealed class AiSdkException(
@@ -68,10 +69,11 @@ public class TooManyEmbeddingValuesForCallError(
         "$maxEmbeddingsPerCall values per call, but ${values.size} values were provided.",
 )
 
-public data class TypeValidationContext(
-    val field: String? = null,
-    val entityName: String? = null,
-    val entityId: String? = null,
+@Poko
+public class TypeValidationContext(
+    public val field: String? = null,
+    public val entityName: String? = null,
+    public val entityId: String? = null,
 )
 
 public class TypeValidationError(
@@ -246,11 +248,12 @@ public enum class RetryErrorReason {
     Abort,
 }
 
-public data class RetryAttemptDetail(
-    val attempt: Int,
-    val error: Throwable,
-    val retryable: Boolean,
-    val delayMs: Long?,
+@Poko
+public class RetryAttemptDetail(
+    public val attempt: Int,
+    public val error: Throwable,
+    public val retryable: Boolean,
+    public val delayMs: Long?,
 )
 
 public class RetryError(

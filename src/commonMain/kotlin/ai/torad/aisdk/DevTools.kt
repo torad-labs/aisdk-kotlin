@@ -1,5 +1,6 @@
 package ai.torad.aisdk
 
+import dev.drewhamilton.poko.Poko
 import kotlin.time.TimeSource
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.collect
@@ -10,25 +11,27 @@ import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
 
-public data class DevToolsStep(
-    val id: String,
-    val runId: String,
-    val stepNumber: Int,
-    val type: String,
-    val modelId: String,
-    val provider: String,
-    val input: JsonElement,
-    val providerOptions: ProviderOptions,
+@Poko
+public class DevToolsStep(
+    public val id: String,
+    public val runId: String,
+    public val stepNumber: Int,
+    public val type: String,
+    public val modelId: String,
+    public val provider: String,
+    public val input: JsonElement,
+    public val providerOptions: ProviderOptions,
 )
 
-public data class DevToolsStepResult(
-    val durationMs: Long,
-    val output: JsonElement?,
-    val usage: Usage?,
-    val error: String?,
-    val rawRequest: JsonElement? = null,
-    val rawResponse: JsonElement? = null,
-    val rawChunks: List<JsonElement> = emptyList(),
+@Poko
+public class DevToolsStepResult(
+    public val durationMs: Long,
+    public val output: JsonElement?,
+    public val usage: Usage?,
+    public val error: String?,
+    public val rawRequest: JsonElement? = null,
+    public val rawResponse: JsonElement? = null,
+    public val rawChunks: List<JsonElement> = emptyList(),
 )
 
 public interface DevToolsRecorder {

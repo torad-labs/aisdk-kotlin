@@ -1,5 +1,6 @@
 package ai.torad.aisdk
 
+import dev.drewhamilton.poko.Poko
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
@@ -117,7 +118,9 @@ internal sealed class TelemetryAttribute {
 
 public sealed class TelemetrySpanStatus {
     public data object Ok : TelemetrySpanStatus()
-    public data class Error(val message: String? = null) : TelemetrySpanStatus()
+
+    @Poko
+    public class Error(public val message: String? = null) : TelemetrySpanStatus()
 }
 
 

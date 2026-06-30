@@ -2,6 +2,7 @@
 
 package ai.torad.aisdk
 
+import dev.drewhamilton.poko.Poko
 import io.ktor.client.HttpClient
 import io.ktor.client.request.header
 import io.ktor.client.request.request
@@ -17,13 +18,14 @@ import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.JsonElement
 
 @Serializable
-public data class OAuthTokens(
-    @SerialName("access_token") val accessToken: String,
-    @SerialName("token_type") val tokenType: String,
-    @SerialName("id_token") val idToken: String? = null,
-    @SerialName("expires_in") val expiresIn: Long? = null,
-    val scope: String? = null,
-    @SerialName("refresh_token") val refreshToken: String? = null,
+@Poko
+public class OAuthTokens(
+    @SerialName("access_token") public val accessToken: String,
+    @SerialName("token_type") public val tokenType: String,
+    @SerialName("id_token") public val idToken: String? = null,
+    @SerialName("expires_in") public val expiresIn: Long? = null,
+    public val scope: String? = null,
+    @SerialName("refresh_token") public val refreshToken: String? = null,
 )
 
 @Serializable
@@ -55,25 +57,27 @@ public data class OAuthClientMetadata(
 )
 
 @Serializable
-public data class AuthorizationServerMetadata(
-    val issuer: String? = null,
-    @SerialName("authorization_endpoint") val authorizationEndpoint: String? = null,
-    @SerialName("token_endpoint") val tokenEndpoint: String? = null,
-    @SerialName("registration_endpoint") val registrationEndpoint: String? = null,
-    @SerialName("response_types_supported") val responseTypesSupported: List<String>? = null,
-    @SerialName("grant_types_supported") val grantTypesSupported: List<String>? = null,
-    @SerialName("token_endpoint_auth_methods_supported") val tokenEndpointAuthMethodsSupported: List<String>? = null,
-    @SerialName("code_challenge_methods_supported") val codeChallengeMethodsSupported: List<String>? = null,
+@Poko
+public class AuthorizationServerMetadata(
+    public val issuer: String? = null,
+    @SerialName("authorization_endpoint") public val authorizationEndpoint: String? = null,
+    @SerialName("token_endpoint") public val tokenEndpoint: String? = null,
+    @SerialName("registration_endpoint") public val registrationEndpoint: String? = null,
+    @SerialName("response_types_supported") public val responseTypesSupported: List<String>? = null,
+    @SerialName("grant_types_supported") public val grantTypesSupported: List<String>? = null,
+    @SerialName("token_endpoint_auth_methods_supported") public val tokenEndpointAuthMethodsSupported: List<String>? = null,
+    @SerialName("code_challenge_methods_supported") public val codeChallengeMethodsSupported: List<String>? = null,
 )
 
 @Serializable
-public data class OAuthProtectedResourceMetadata(
-    val resource: String,
-    @SerialName("authorization_servers") val authorizationServers: List<String>? = null,
-    @SerialName("jwks_uri") val jwksUri: String? = null,
-    @SerialName("scopes_supported") val scopesSupported: List<String>? = null,
-    @SerialName("bearer_methods_supported") val bearerMethodsSupported: List<String>? = null,
-    @SerialName("resource_name") val resourceName: String? = null,
+@Poko
+public class OAuthProtectedResourceMetadata(
+    public val resource: String,
+    @SerialName("authorization_servers") public val authorizationServers: List<String>? = null,
+    @SerialName("jwks_uri") public val jwksUri: String? = null,
+    @SerialName("scopes_supported") public val scopesSupported: List<String>? = null,
+    @SerialName("bearer_methods_supported") public val bearerMethodsSupported: List<String>? = null,
+    @SerialName("resource_name") public val resourceName: String? = null,
 )
 
 public class UnauthorizedError(message: String = "Unauthorized") : AiSdkException(message)
@@ -286,7 +290,18 @@ internal object McpOAuthFlow {
             addClientAuthentication
         )
         val tokens = postOAuthTokenRequest(client, tokenUrl, headers, params)
-        return if (tokens.refreshToken.isNullOrBlank()) tokens.copy(refreshToken = refreshToken) else tokens
+        return if (tokens.refreshToken.isNullOrBlank()) {
+            OAuthTokens(
+                accessToken = tokens.accessToken,
+                tokenType = tokens.tokenType,
+                idToken = tokens.idToken,
+                expiresIn = tokens.expiresIn,
+                scope = tokens.scope,
+                refreshToken = refreshToken,
+            )
+        } else {
+            tokens
+        }
     }
 
     fun startAuthorization(

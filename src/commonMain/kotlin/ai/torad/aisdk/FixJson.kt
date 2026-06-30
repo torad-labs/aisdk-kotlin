@@ -1,5 +1,6 @@
 package ai.torad.aisdk
 
+import dev.drewhamilton.poko.Poko
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
@@ -54,7 +55,8 @@ public enum class PartialJsonState { UndefinedInput, SuccessfulParse, RepairedPa
 
 /** Result of [PartialJson.parsePartialJson]: [value] is non-null only on the two
  *  success states. */
-public data class PartialJsonResult(val value: JsonElement?, val state: PartialJsonState)
+@Poko
+public class PartialJsonResult(public val value: JsonElement?, public val state: PartialJsonState)
 
 /**
  * Streaming-safe partial-JSON repair + parse operations. Grouped into an

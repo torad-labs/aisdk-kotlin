@@ -1,6 +1,7 @@
 package ai.torad.aisdk.providers
 
 import ai.torad.aisdk.*
+import dev.drewhamilton.poko.Poko
 import io.ktor.client.HttpClient
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonElement
@@ -14,8 +15,9 @@ public data class BasetenEmbeddingModelOptions(
 )
 
 @Serializable
-public data class BasetenErrorData(
-    val error: String,
+@Poko
+public class BasetenErrorData(
+    public val error: String,
 )
 
 @Serializable

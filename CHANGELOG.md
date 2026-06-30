@@ -42,8 +42,9 @@ This project follows Semantic Versioning once the first stable release is cut.
   response/spec/metadata holders, provider tool-namespace holders, and MCP
   protocol result/capability holders, plus tool result/output and approval
   holders, structured-object result/phase holders, and UI stream result
-  holders; field access, equality, hashCode, toString, and JSON serialization
-  remain supported where applicable.
+  holders, error/parser/devtools/telemetry result holders, OAuth metadata/token
+  payloads, and provider error payloads; field access, equality, hashCode,
+  toString, and JSON serialization remain supported where applicable.
 
 - **Tools are now class-based and extensible (breaking ABI change).** `Tool` is an `abstract class`
   you can extend for reusable, dependency-injected tools — mirroring how a concrete agent extends

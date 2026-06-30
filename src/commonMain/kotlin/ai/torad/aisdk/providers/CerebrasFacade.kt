@@ -1,6 +1,7 @@
 package ai.torad.aisdk.providers
 
 import ai.torad.aisdk.*
+import dev.drewhamilton.poko.Poko
 import io.ktor.client.HttpClient
 import kotlinx.serialization.Serializable
 
@@ -21,11 +22,12 @@ public data class CerebrasProviderSettings(
 }
 
 @Serializable
-public data class CerebrasErrorData(
-    val message: String,
-    val type: String? = null,
-    val param: String? = null,
-    val code: String? = null,
+@Poko
+public class CerebrasErrorData(
+    public val message: String,
+    public val type: String? = null,
+    public val param: String? = null,
+    public val code: String? = null,
 )
 
 public class CerebrasProvider(

@@ -8,6 +8,7 @@ import ai.torad.aisdk.providers.FacadeHttp.postFacadeBinary
 import ai.torad.aisdk.providers.FacadeHttp.postFacadeJson
 import ai.torad.aisdk.providers.FacadeHttp.providerFacadeHeaders
 import ai.torad.aisdk.providers.FacadeHttp.putProviderSpecificOptions
+import dev.drewhamilton.poko.Poko
 import io.ktor.client.HttpClient
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
@@ -45,8 +46,9 @@ public data class FireworksEmbeddingModelOptions(
 public typealias FireworksEmbeddingProviderOptions = FireworksEmbeddingModelOptions
 
 @Serializable
-public data class FireworksErrorData(
-    val error: String,
+@Poko
+public class FireworksErrorData(
+    public val error: String,
 )
 
 @Serializable
