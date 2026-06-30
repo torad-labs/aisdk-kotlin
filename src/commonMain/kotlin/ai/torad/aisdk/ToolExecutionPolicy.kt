@@ -13,19 +13,23 @@ import kotlin.time.Duration
 @Poko
 public class ToolExecutionPolicy internal constructor(
     /** Maximum tool executors that may run concurrently within one model step. */
-    public val maxParallelToolCalls: Int = DEFAULT_MAX_PARALLEL_TOOL_CALLS,
+    public val maxParallelToolCalls: Int,
     /** Maximum tool calls accepted from one model step before the loop fails closed. */
-    public val maxToolCallsPerStep: Int = DEFAULT_MAX_TOOL_CALLS_PER_STEP,
+    public val maxToolCallsPerStep: Int,
     /** Buffer capacity for preliminary tool progress events before the parent collector applies them. */
-    public val progressBufferCapacity: Int = DEFAULT_PROGRESS_BUFFER_CAPACITY,
-    /** Optional per-tool execution timeout. Null leaves individual tool duration uncapped. */
-    public val toolExecutionTimeout: Duration? = null,
+    public val progressBufferCapacity: Int,
+    private val toolExecutionTimeoutBox: Any?,
 ) {
+    /** Optional per-tool execution timeout. Null leaves individual tool duration uncapped. */
+    public val toolExecutionTimeout: Duration?
+        get() = toolExecutionTimeoutBox as Duration?
+
     init {
         require(maxParallelToolCalls > 0) { "maxParallelToolCalls must be greater than zero" }
         require(maxToolCallsPerStep > 0) { "maxToolCallsPerStep must be greater than zero" }
         require(progressBufferCapacity >= 0) { "progressBufferCapacity must be zero or greater" }
-        require(toolExecutionTimeout == null || toolExecutionTimeout.isPositive()) {
+        val timeout = toolExecutionTimeout
+        require(timeout == null || timeout.isPositive()) {
             "toolExecutionTimeout must be positive when set"
         }
     }
@@ -68,10 +72,10 @@ public class ToolExecutionPolicyBuilder internal constructor() {
 
     internal fun build(): ToolExecutionPolicy =
         ToolExecutionPolicy(
-            maxParallelToolCalls = maxParallelToolCalls,
-            maxToolCallsPerStep = maxToolCallsPerStep,
-            progressBufferCapacity = progressBufferCapacity,
-            toolExecutionTimeout = toolExecutionTimeout,
+            maxParallelToolCalls,
+            maxToolCallsPerStep,
+            progressBufferCapacity,
+            toolExecutionTimeout as Any?,
         )
 }
 

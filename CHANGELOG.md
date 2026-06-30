@@ -17,6 +17,12 @@ This project follows Semantic Versioning once the first stable release is cut.
   MCP transports (`HttpMCPTransport`, `SseMCPTransport`) remain public but are
   gated with `@InternalAiSdkApi`. `DataUrl` remains public as a documented
   consumer-facing data URL value.
+- Java interop hardening: JVM and Android bytecode now enable Kotlin's
+  additive boxed value-class exposure (`-Xjvm-expose-boxed`). Java consumers can
+  construct and call SDK ID value classes (`ModelId`, `ProviderId`,
+  `ToolCallId`, `ToolName`, and `ApprovalId`) through boxed constructors,
+  accessors, and `of(String)` factories, while the existing Kotlin/JVM mangled
+  bridge signatures remain for binary compatibility.
 - Beta contract correction: the checked ABI now exposes `Tool` as a non-sealed
   `abstract class`, so external modules can subclass it exactly as the beta
   docs and migration notes describe. Open Responses streaming now emits a

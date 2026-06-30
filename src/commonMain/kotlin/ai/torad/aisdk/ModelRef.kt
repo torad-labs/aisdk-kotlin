@@ -5,6 +5,8 @@ import kotlin.jvm.JvmExposeBoxed
 import kotlin.jvm.JvmInline
 
 @JvmInline
+@OptIn(ExperimentalStdlibApi::class)
+@JvmExposeBoxed
 public value class ProviderId(public val value: String) {
     init {
         require(value.isNotBlank()) { "ProviderId must not be blank." }
@@ -12,6 +14,12 @@ public value class ProviderId(public val value: String) {
     }
 
     override fun toString(): String = value
+
+    public companion object {
+        @JvmExposeBoxed
+        @AiSdkJvmStatic
+        public fun of(value: String): ProviderId = ProviderId(value)
+    }
 }
 
 @JvmInline

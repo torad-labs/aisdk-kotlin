@@ -7,6 +7,30 @@
 
 ## Module: `aisdk-kotlin` — `ai.torad.aisdk`
 
+### Java Interop
+
+- JVM and Android bytecode expose boxed Java-callable overloads for SDK ID
+  value classes via Kotlin's additive `-Xjvm-expose-boxed` mode. Java callers
+  can use `ModelId.of("...")`, `ProviderId.of("...")`,
+  `ToolCallId.of("...")`, `ToolName.of("...")`, and
+  `ApprovalId.of("...")`, and public boxed accessors such as
+  `ModelRef.getModelId()` / `ModelRef.copy(ModelId, ProviderId)`.
+- Existing Kotlin/JVM mangled bridge methods remain in the bytecode for binary
+  compatibility and are not the Java source API. Low-level coroutine bridge
+  methods may still expose compiler bridge names; prefer the public boxed
+  factories, provider/facade entrypoints, and high-level helpers from Java.
+- Known limitation: Kotlin cannot box-expose open/interface members
+  (`-Xjvm-expose-boxed` errors on them by design). `GatewayProvider` and
+  `AnthropicAwsProvider`'s `ModelId`-typed shorthand (`chat(ModelId)`,
+  `image(ModelId)`, `video(ModelId)`, etc.) stay mangled when called through
+  the interface type. This is not a functional gap: each has a
+  never-mangled `String`-typed sibling on the same interface
+  (`languageModel(String)`, `imageModel(String)`, `videoModel(String)`,
+  etc.) that Java callers should use instead when holding an
+  interface-typed reference. Concrete provider classes (e.g.
+  `BlackForestLabsProvider`) still expose their own boxed `ModelId`
+  overloads directly.
+
 ### Agent
 
 - `interface Agent<TContext, TOutput>`

@@ -89,6 +89,7 @@ kotlin {
         compilerOptions {
             jvmTarget.set(JvmTarget.JVM_17)
             jvmDefault.set(JvmDefaultMode.ENABLE)
+            freeCompilerArgs.add("-Xjvm-expose-boxed")
         }
     }
 
@@ -96,6 +97,7 @@ kotlin {
         compilerOptions {
             jvmTarget.set(JvmTarget.JVM_17)
             jvmDefault.set(JvmDefaultMode.ENABLE)
+            freeCompilerArgs.add("-Xjvm-expose-boxed")
         }
     }
 
