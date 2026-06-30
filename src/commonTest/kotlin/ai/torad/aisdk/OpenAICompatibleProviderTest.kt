@@ -78,14 +78,14 @@ class OpenAICompatibleProviderTest {
         )
         val provider = OpenAICompatible(
             client,
-            OpenAICompatibleProviderSettings(
-                name = "openai",
-                baseUrl = "https://api.test/v1",
-                apiKey = "secret",
-                headers = mapOf("x-project" to "aisdk"),
-                queryParams = mapOf("api-version" to "2026-06-03"),
-                supportsStructuredOutputs = true,
-            ),
+            OpenAICompatibleProviderSettings {
+                name("openai")
+                baseUrl("https://api.test/v1")
+                apiKey("secret")
+                headers(mapOf("x-project" to "aisdk"))
+                queryParams(mapOf("api-version" to "2026-06-03"))
+                supportsStructuredOutputs(true)
+            },
         )
 
         val result = TextGenerator(
@@ -147,7 +147,11 @@ class OpenAICompatibleProviderTest {
         )
         val provider = OpenAICompatible(
             client,
-            OpenAICompatibleProviderSettings(name = "openai", baseUrl = "https://api.test/v1", apiKey = "secret"),
+            OpenAICompatibleProviderSettings {
+                name("openai")
+                baseUrl("https://api.test/v1")
+                apiKey("secret")
+            },
         )
 
         provider.languageModel("gpt-test").generate(
@@ -201,12 +205,12 @@ class OpenAICompatibleProviderTest {
         )
         val provider = OpenAICompatible(
             client,
-            OpenAICompatibleProviderSettings(
-                name = "openai",
-                baseUrl = "https://api.test/v1",
-                apiKey = "secret",
-                supportsStructuredOutputs = true,
-            ),
+            OpenAICompatibleProviderSettings {
+                name("openai")
+                baseUrl("https://api.test/v1")
+                apiKey("secret")
+                supportsStructuredOutputs(true)
+            },
         )
 
         provider.languageModel("gpt-test").generate(
@@ -246,7 +250,11 @@ class OpenAICompatibleProviderTest {
         )
         val provider = OpenAICompatible(
             client,
-            OpenAICompatibleProviderSettings(name = "openai", baseUrl = "https://api.test/v1", apiKey = "secret"),
+            OpenAICompatibleProviderSettings {
+                name("openai")
+                baseUrl("https://api.test/v1")
+                apiKey("secret")
+            },
         )
         provider.languageModel("gpt-test").generate(LanguageModelCallParams(messages = listOf(UserMessage("hi"))))
         // No tools → neither tools nor tool_choice in the body (strict servers reject lone tool_choice).
@@ -283,7 +291,11 @@ class OpenAICompatibleProviderTest {
         )
         val provider = OpenAICompatible(
             client,
-            OpenAICompatibleProviderSettings(name = "openai", baseUrl = "https://api.test/v1", includeUsage = true),
+            OpenAICompatibleProviderSettings {
+                name("openai")
+                baseUrl("https://api.test/v1")
+                includeUsage(true)
+            },
         )
 
         val events = drainAllItems(provider.languageModel("gpt-test").stream(LanguageModelCallParams(listOf(UserMessage("hi")))))
@@ -320,7 +332,7 @@ class OpenAICompatibleProviderTest {
         )
         val provider = OpenAICompatible(
             client,
-            OpenAICompatibleProviderSettings(name = "openai", baseUrl = "https://api.test/v1"),
+            OpenAICompatibleProviderSettings { name("openai"); baseUrl("https://api.test/v1") },
         )
 
         val events = drainAllItems(provider.languageModel("gpt-test").stream(LanguageModelCallParams(listOf(UserMessage("hi")))))
@@ -350,7 +362,7 @@ class OpenAICompatibleProviderTest {
         )
         val provider = OpenAICompatible(
             client,
-            OpenAICompatibleProviderSettings(name = "openai", baseUrl = "https://api.test/v1"),
+            OpenAICompatibleProviderSettings { name("openai"); baseUrl("https://api.test/v1") },
         )
 
         val events = drainAllItems(provider.languageModel("gpt-test").stream(LanguageModelCallParams(listOf(UserMessage("hi")))))
@@ -390,11 +402,11 @@ class OpenAICompatibleProviderTest {
         )
         val provider = OpenAICompatible(
             client,
-            OpenAICompatibleProviderSettings(
-                name = "openai",
-                baseUrl = "https://api.test/v1",
-                transformChatResponse = ::rewriteWireContentResponse,
-            ),
+            OpenAICompatibleProviderSettings {
+                name("openai")
+                baseUrl("https://api.test/v1")
+                transformChatResponse(::rewriteWireContentResponse)
+            },
         )
 
         val generated = provider.languageModel("gpt-test").generate(
@@ -427,7 +439,11 @@ class OpenAICompatibleProviderTest {
         )
         val provider = OpenAICompatible(
             client,
-            OpenAICompatibleProviderSettings(name = "openai", baseUrl = "https://api.test/v1", includeUsage = true),
+            OpenAICompatibleProviderSettings {
+                name("openai")
+                baseUrl("https://api.test/v1")
+                includeUsage(true)
+            },
         )
 
         val deltas = mutableListOf<String>()
@@ -486,7 +502,7 @@ class OpenAICompatibleProviderTest {
                 }
             },
         )
-        val provider = OpenAICompatible(client, OpenAICompatibleProviderSettings("openai", "https://api.test/v1"))
+        val provider = OpenAICompatible(client, OpenAICompatibleProviderSettings { name("openai"); baseUrl("https://api.test/v1") })
 
         val generated = TextGenerator(provider.completionModel("davinci")).generate(GenerationInput.Prompt("complete")).first()
         val streamed = drainAllItems(provider.completionModel("davinci").stream(LanguageModelCallParams(listOf(UserMessage("hi")))))
@@ -509,7 +525,7 @@ class OpenAICompatibleProviderTest {
                 )
             },
         )
-        val provider = OpenAICompatible(client, OpenAICompatibleProviderSettings("openai", "https://api.test/v1"))
+        val provider = OpenAICompatible(client, OpenAICompatibleProviderSettings { name("openai"); baseUrl("https://api.test/v1") })
 
         val image = ImageGeneration.generateImage(provider.imageModel("image"), prompt = "logo")
 
@@ -557,7 +573,7 @@ class OpenAICompatibleProviderTest {
                 }
             },
         )
-        val provider = OpenAICompatible(client, OpenAICompatibleProviderSettings("openai", "https://api.test/v1"))
+        val provider = OpenAICompatible(client, OpenAICompatibleProviderSettings { name("openai"); baseUrl("https://api.test/v1") })
 
         val embedding = Embedding.embedMany(provider.embeddingModel("embed"), listOf("a", "b"))
         val image = ImageGeneration.generateImage(provider.imageModel("image"), prompt = "logo", aspectRatio = "1:1", seed = 1)
@@ -601,7 +617,7 @@ class OpenAICompatibleProviderTest {
                 )
             },
         )
-        val provider = OpenAICompatible(client, OpenAICompatibleProviderSettings("openai", "https://api.test/v1"))
+        val provider = OpenAICompatible(client, OpenAICompatibleProviderSettings { name("openai"); baseUrl("https://api.test/v1") })
 
         val image = ImageGeneration.generateImage(
             model = provider.imageModel("image"),
@@ -626,7 +642,7 @@ class OpenAICompatibleProviderTest {
                 )
             },
         )
-        val provider = OpenAICompatible(client, OpenAICompatibleProviderSettings("openai", "https://api.test/v1"))
+        val provider = OpenAICompatible(client, OpenAICompatibleProviderSettings { name("openai"); baseUrl("https://api.test/v1") })
 
         val error = assertFailsWith<WireDecodeException> {
             Embedding.embed(provider.embeddingModel("embed"), "a")
@@ -647,7 +663,7 @@ class OpenAICompatibleProviderTest {
                 )
             },
         )
-        val provider = OpenAICompatible(client, OpenAICompatibleProviderSettings("openai", "https://api.test/v1"))
+        val provider = OpenAICompatible(client, OpenAICompatibleProviderSettings { name("openai"); baseUrl("https://api.test/v1") })
 
         val error = assertFailsWith<WireDecodeException> {
             TextGenerator(provider.languageModel("gpt-test")).generate(GenerationInput.Prompt("hi")).first()
@@ -681,7 +697,7 @@ class OpenAICompatibleProviderTest {
                 }
             },
         )
-        val provider = OpenAICompatible(client, OpenAICompatibleProviderSettings("openai", "https://api.test/v1"))
+        val provider = OpenAICompatible(client, OpenAICompatibleProviderSettings { name("openai"); baseUrl("https://api.test/v1") })
 
         val completionError = assertFailsWith<WireDecodeException> {
             TextGenerator(provider.completionModel("davinci")).generate(GenerationInput.Prompt("complete")).first()
@@ -712,7 +728,7 @@ class OpenAICompatibleProviderTest {
                 )
             },
         )
-        val provider = OpenAICompatible(client, OpenAICompatibleProviderSettings("openai", "https://api.test/v1"))
+        val provider = OpenAICompatible(client, OpenAICompatibleProviderSettings { name("openai"); baseUrl("https://api.test/v1") })
 
         val error = assertFailsWith<APICallError> {
             TextGenerator(provider.languageModel("gpt-test")).generate(GenerationInput.Prompt("hi")).first()
@@ -752,7 +768,11 @@ class OpenAICompatibleProviderTest {
         )
         val model = OpenAICompatible(
             client,
-            OpenAICompatibleProviderSettings(name = "test", baseUrl = "https://api.test/v1", apiKey = "k"),
+            OpenAICompatibleProviderSettings {
+                name("test")
+                baseUrl("https://api.test/v1")
+                apiKey("k")
+            },
         ).languageModel("m")
         val gatedInput = JsonObject(mapOf("configPath" to JsonPrimitive("run.yaml")))
         val messages = listOf(
@@ -804,7 +824,11 @@ class OpenAICompatibleProviderTest {
         )
         val model = OpenAICompatible(
             client,
-            OpenAICompatibleProviderSettings(name = "test", baseUrl = "https://api.test/v1", apiKey = "k"),
+            OpenAICompatibleProviderSettings {
+                name("test")
+                baseUrl("https://api.test/v1")
+                apiKey("k")
+            },
         ).languageModel("m")
         val messages = listOf(
             ModelMessage(MessageRole.User, listOf(ContentPart.Text("run both"))),

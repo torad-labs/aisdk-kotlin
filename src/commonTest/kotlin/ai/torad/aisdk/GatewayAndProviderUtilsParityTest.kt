@@ -49,12 +49,12 @@ class GatewayAndProviderUtilsParityTest {
     fun `gateway provider exposes v6 model aliases and routes through transport`() = runTest {
         val transport = CapturingGatewayTransport()
         val provider = Gateway(
-            GatewayProviderSettings(
-                baseUrl = "https://gateway.test/v3/ai/",
-                apiKey = "secret",
-                headers = mapOf("x-team" to "torad"),
-                transport = transport,
-            ),
+            GatewayProviderSettings {
+                baseUrl("https://gateway.test/v3/ai/")
+                apiKey("secret")
+                headers(mapOf("x-team" to "torad"))
+                transport(transport)
+            },
         )
 
         val text = TextGenerator(provider(ModelId("chat-model"))).generate(GenerationInput.Prompt("hi")).single()
@@ -88,12 +88,12 @@ class GatewayAndProviderUtilsParityTest {
         var now = 1_000L
         val transport = CapturingGatewayTransport()
         val provider = GatewayProvider(
-            GatewayProviderSettings(
-                apiKey = "secret",
-                transport = transport,
-                metadataCacheRefreshMillis = 500L,
-                nowMillis = { now },
-            ),
+            GatewayProviderSettings {
+                apiKey("secret")
+                transport(transport)
+                metadataCacheRefreshMillis(500L)
+                nowMillis { now }
+            },
         )
 
         val first = provider.getAvailableModels()
@@ -126,11 +126,11 @@ class GatewayAndProviderUtilsParityTest {
     fun `gateway metadata cache uses system clock by default`() = runTest {
         val transport = CapturingGatewayTransport()
         val provider = GatewayProvider(
-            GatewayProviderSettings(
-                apiKey = "secret",
-                transport = transport,
-                metadataCacheRefreshMillis = 0L,
-            ),
+            GatewayProviderSettings {
+                apiKey("secret")
+                transport(transport)
+                metadataCacheRefreshMillis(0L)
+            },
         )
 
         val first = provider.getAvailableModels()
@@ -255,10 +255,10 @@ class GatewayAndProviderUtilsParityTest {
 
     @Test
     fun `gateway headers and errors mirror public gateway package behavior`() = runTest {
-        val apiKeyHeaders = GatewayProviderSettings(
-            apiKey = "key",
-            headers = mapOf("User-Agent" to "app"),
-        ).gatewayHeaders()
+        val apiKeyHeaders = GatewayProviderSettings {
+            apiKey("key")
+            headers(mapOf("User-Agent" to "app"))
+        }.gatewayHeaders()
         assertEquals("Bearer key", apiKeyHeaders["authorization"])
         assertEquals("app ai-sdk/gateway-kotlin", apiKeyHeaders["user-agent"])
 
@@ -626,7 +626,7 @@ class GatewayAndProviderUtilsParityTest {
         )
         val provider = CreateGatewayHttpProvider(
             client,
-            GatewayProviderSettings(baseUrl = "https://gateway.test/v3/ai", apiKey = "secret"),
+            GatewayProviderSettings { baseUrl("https://gateway.test/v3/ai"); apiKey("secret") },
         )
 
         val generated = TextGenerator(provider.languageModel("gpt-test")).generate(GenerationInput.Prompt("hi")).single()
@@ -657,7 +657,7 @@ class GatewayAndProviderUtilsParityTest {
         )
         val provider = CreateGatewayHttpProvider(
             client,
-            GatewayProviderSettings(baseUrl = "https://gateway.test/v3/ai", apiKey = "secret"),
+            GatewayProviderSettings { baseUrl("https://gateway.test/v3/ai"); apiKey("secret") },
         )
 
         val error = assertFailsWith<WireDecodeException> {
@@ -686,7 +686,7 @@ class GatewayAndProviderUtilsParityTest {
         )
         val provider = CreateGatewayHttpProvider(
             client,
-            GatewayProviderSettings(baseUrl = "https://gateway.test/v3/ai", apiKey = "secret"),
+            GatewayProviderSettings { baseUrl("https://gateway.test/v3/ai"); apiKey("secret") },
         )
 
         val models = provider.getAvailableModels()
@@ -730,7 +730,7 @@ class GatewayAndProviderUtilsParityTest {
         )
         val provider = CreateGatewayHttpProvider(
             client,
-            GatewayProviderSettings(baseUrl = "https://gateway.test/v3/ai", apiKey = "secret"),
+            GatewayProviderSettings { baseUrl("https://gateway.test/v3/ai"); apiKey("secret") },
         )
 
         val embedding = Embedding.embed(provider.embeddingModel("embed"), "abc")
@@ -750,12 +750,12 @@ class GatewayAndProviderUtilsParityTest {
     fun `concurrent getAvailableModels within refresh window calls transport at most once`() = runTest {
         val transport = CapturingGatewayTransport()
         val provider = GatewayProvider(
-            GatewayProviderSettings(
-                apiKey = "secret",
-                transport = transport,
-                metadataCacheRefreshMillis = 60_000L,
-                nowMillis = { 1_000L },
-            ),
+            GatewayProviderSettings {
+                apiKey("secret")
+                transport(transport)
+                metadataCacheRefreshMillis(60_000L)
+                nowMillis { 1_000L }
+            },
         )
 
         val results = (1..10).map { async { provider.getAvailableModels() } }.awaitAll()

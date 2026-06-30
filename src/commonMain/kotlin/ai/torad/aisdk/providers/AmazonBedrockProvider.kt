@@ -34,17 +34,17 @@ public data class BedrockCredentials(
     val region: String? = null,
 )
 
-public data class AmazonBedrockProviderSettings(
-    val region: String? = null,
-    val apiKey: String? = null,
-    val accessKeyId: String? = null,
-    val secretAccessKey: String? = null,
-    val sessionToken: String? = null,
-    val credentialProvider: (suspend () -> BedrockCredentials)? = null,
-    val baseURL: String? = null,
-    val agentBaseURL: String? = null,
-    val headers: Map<String, String> = emptyMap(),
-    val generateId: () -> String = { IdGenerator.generate() },
+public class AmazonBedrockProviderSettings internal constructor(
+    public val region: String? = null,
+    public val apiKey: String? = null,
+    public val accessKeyId: String? = null,
+    public val secretAccessKey: String? = null,
+    public val sessionToken: String? = null,
+    public val credentialProvider: (suspend () -> BedrockCredentials)? = null,
+    public val baseURL: String? = null,
+    public val agentBaseURL: String? = null,
+    public val headers: Map<String, String> = emptyMap(),
+    public val generateId: () -> String = { IdGenerator.generate() },
 ) {
     internal fun bedrockRuntimeBaseURL(): String =
         baseURL?.trimEnd('/')
@@ -70,6 +70,78 @@ public data class AmazonBedrockProviderSettings(
             }
         }.joinToString("")
 }
+
+public class AmazonBedrockProviderSettingsBuilder internal constructor() {
+    private var region: String? = null
+    private var apiKey: String? = null
+    private var accessKeyId: String? = null
+    private var secretAccessKey: String? = null
+    private var sessionToken: String? = null
+    private var credentialProvider: (suspend () -> BedrockCredentials)? = null
+    private var baseURL: String? = null
+    private var agentBaseURL: String? = null
+    private var headers: Map<String, String> = emptyMap()
+    private var generateId: () -> String = { IdGenerator.generate() }
+
+    public fun region(value: String?) {
+        region = value
+    }
+
+    public fun apiKey(value: String?) {
+        apiKey = value
+    }
+
+    public fun accessKeyId(value: String?) {
+        accessKeyId = value
+    }
+
+    public fun secretAccessKey(value: String?) {
+        secretAccessKey = value
+    }
+
+    public fun sessionToken(value: String?) {
+        sessionToken = value
+    }
+
+    public fun credentialProvider(value: (suspend () -> BedrockCredentials)?) {
+        credentialProvider = value
+    }
+
+    public fun baseURL(value: String?) {
+        baseURL = value
+    }
+
+    public fun agentBaseURL(value: String?) {
+        agentBaseURL = value
+    }
+
+    public fun headers(value: Map<String, String>) {
+        headers = value
+    }
+
+    public fun generateId(value: () -> String) {
+        generateId = value
+    }
+
+    internal fun build(): AmazonBedrockProviderSettings =
+        AmazonBedrockProviderSettings(
+            region = region,
+            apiKey = apiKey,
+            accessKeyId = accessKeyId,
+            secretAccessKey = secretAccessKey,
+            sessionToken = sessionToken,
+            credentialProvider = credentialProvider,
+            baseURL = baseURL,
+            agentBaseURL = agentBaseURL,
+            headers = headers,
+            generateId = generateId,
+        )
+}
+
+public fun AmazonBedrockProviderSettings(
+    block: AmazonBedrockProviderSettingsBuilder.() -> Unit = {},
+): AmazonBedrockProviderSettings =
+    AmazonBedrockProviderSettingsBuilder().apply(block).build()
 
 public class AmazonBedrockProvider(
     private val client: HttpClient,

@@ -65,7 +65,7 @@ class AnthropicReAuditTest {
             ),
         )
         fixture.server.start()
-        val provider = Anthropic(fixture.httpClient(), AnthropicProviderSettings(baseURL = "https://anthropic.test/v1"))
+        val provider = Anthropic(fixture.httpClient(), AnthropicProviderSettings { baseURL("https://anthropic.test/v1") })
 
         val events = drainAllItems(
             provider.messages(ModelId("claude-sonnet-4-5")).stream(
@@ -95,7 +95,7 @@ class AnthropicReAuditTest {
     fun `tool result decodes MCP content with text plus image into Anthropic content blocks`() = runTest {
         val fixture = anthropicEchoFixture()
         fixture.server.start()
-        val provider = Anthropic(fixture.httpClient(), AnthropicProviderSettings(baseURL = "https://anthropic.test/v1"))
+        val provider = Anthropic(fixture.httpClient(), AnthropicProviderSettings { baseURL("https://anthropic.test/v1") })
 
         val mcpContent = with(ToolResultOutputs) {
             ToolResultOutput.Content(
@@ -147,7 +147,7 @@ class AnthropicReAuditTest {
     fun `tool result does not leak the error wrapper into the prompt`() = runTest {
         val fixture = anthropicEchoFixture()
         fixture.server.start()
-        val provider = Anthropic(fixture.httpClient(), AnthropicProviderSettings(baseURL = "https://anthropic.test/v1"))
+        val provider = Anthropic(fixture.httpClient(), AnthropicProviderSettings { baseURL("https://anthropic.test/v1") })
 
         val errorOutput = with(ToolResultOutputs) {
             ToolResultOutput.Error("upstream timed out").toJsonElement()

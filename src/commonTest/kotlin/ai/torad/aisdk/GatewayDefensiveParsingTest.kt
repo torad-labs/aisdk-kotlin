@@ -22,7 +22,7 @@ class GatewayDefensiveParsingTest {
                 )
             },
         )
-        return CreateGatewayHttpProvider(client, GatewayProviderSettings(apiKey = "key"))
+        return CreateGatewayHttpProvider(client, GatewayProviderSettings { apiKey("key") })
     }
 
     /**

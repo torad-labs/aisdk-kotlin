@@ -238,11 +238,17 @@ Penalty, response-format, and retry fields participate in the `Step ?: Agent ?: 
   `XaiProviderSettings`, `VoyageProviderSettings`,
   `QuiverAIProviderSettings`, `BasetenProviderSettings`,
   `VercelProviderSettings`, `OpenAIProviderSettings`,
-  `AzureOpenAIProviderSettings`, and `GoogleGenerativeAIProviderSettings`)
-  are `@Poko class` values (and remain `@Serializable` where applicable) with field getters and value semantics;
-  configure them through their public DSL factories and builder setter methods
-  such as `CohereProviderSettings { apiKey("..."); baseURL("...") }`. The
-  positional constructors, `copy()`, and `componentN()` are not public.
+  `AzureOpenAIProviderSettings`, `GoogleGenerativeAIProviderSettings`,
+  `OpenAICompatibleProviderSettings`, `OpenResponsesProviderSettings`,
+  `GatewayProviderSettings`, `AmazonBedrockProviderSettings`,
+  `AnthropicAwsProviderSettings`, `GoogleVertexProviderSettings`,
+  `HuggingFaceProviderSettings`, and `AnthropicProviderSettings`) expose field
+  getters and are configured through public DSL factories and builder setter
+  methods such as `CohereProviderSettings { apiKey("..."); baseURL("...") }`.
+  Pure data-only settings are `@Poko class` value-semantics types. Settings
+  that hold functions or transport objects are regular classes with identity
+  equality. The positional constructors, `copy()`, and `componentN()` are not
+  public.
 - Provider error payloads (`BasetenErrorData`, `CerebrasErrorData`,
   `FireworksErrorData`) are `@Serializable @Poko class` value-semantics types;
   JSON field names remain unchanged, while public `copy()` / `componentN()`

@@ -97,15 +97,15 @@ public class AzureOpenAIProvider(
     public fun responses(deploymentId: String): LanguageModel =
         OpenResponses(
             client,
-            OpenResponsesProviderSettings(
-                url = azureUrl("/responses", deploymentId),
-                name = "azure",
-                authHeadersProvider = { azureHeaders() },
-                userAgentSuffix = null,
-                providerOptionsName = "openai",
-                supportedUrls = OPENAI_RESPONSES_SUPPORTED_URLS,
-                fileIdPrefixes = listOf("assistant-"),
-            ),
+            OpenResponsesProviderSettings {
+                url(azureUrl("/responses", deploymentId))
+                name("azure")
+                authHeadersProvider { azureHeaders() }
+                userAgentSuffix(null)
+                providerOptionsName("openai")
+                supportedUrls(OPENAI_RESPONSES_SUPPORTED_URLS)
+                fileIdPrefixes(listOf("assistant-"))
+            },
         ).responses(deploymentId)
 
     public fun chat(deploymentId: ModelId): LanguageModel =
@@ -135,15 +135,15 @@ public class AzureOpenAIProvider(
     override fun speechModel(modelId: String): SpeechModel = speech(ModelId(modelId))
 
     private fun compatibleSettings(): OpenAICompatibleProviderSettings =
-        OpenAICompatibleProviderSettings(
-            name = "azure",
-            baseUrl = "https://azure.openai.invalid/openai/v1",
-            authHeadersProvider = { azureHeaders() },
-            urlBuilder = ::azureUrl,
-            userAgentSuffix = null,
-            providerOptionsName = "openai",
-            supportsStructuredOutputs = true,
-        )
+        OpenAICompatibleProviderSettings {
+            name("azure")
+            baseUrl("https://azure.openai.invalid/openai/v1")
+            authHeadersProvider { azureHeaders() }
+            urlBuilder(::azureUrl)
+            userAgentSuffix(null)
+            providerOptionsName("openai")
+            supportsStructuredOutputs(true)
+        }
 
     private suspend fun azureHeaders(): Map<String, String> {
         val base = linkedMapOf<String, String>()

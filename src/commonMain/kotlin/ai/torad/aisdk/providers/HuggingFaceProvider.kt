@@ -37,11 +37,11 @@ public const val HUGGINGFACE_VERSION: String = "1.0.50"
 
 public typealias HuggingFaceErrorData = JsonObject
 
-public data class HuggingFaceProviderSettings(
-    val apiKey: String? = null,
-    val baseURL: String = "https://router.huggingface.co/v1",
-    val headers: Map<String, String> = emptyMap(),
-    val generateId: () -> String = { IdGenerator.generate() },
+public class HuggingFaceProviderSettings internal constructor(
+    public val apiKey: String? = null,
+    public val baseURL: String = "https://router.huggingface.co/v1",
+    public val headers: Map<String, String> = emptyMap(),
+    public val generateId: () -> String = { IdGenerator.generate() },
 ) {
     internal fun huggingFaceHeaders(extra: Map<String, String>): Map<String, String> {
         val merged = linkedMapOf<String, String?>()
@@ -111,6 +111,42 @@ public data class HuggingFaceProviderSettings(
             ?: error.toString()
     }
 }
+
+public class HuggingFaceProviderSettingsBuilder internal constructor() {
+    private var apiKey: String? = null
+    private var baseURL: String = "https://router.huggingface.co/v1"
+    private var headers: Map<String, String> = emptyMap()
+    private var generateId: () -> String = { IdGenerator.generate() }
+
+    public fun apiKey(value: String?) {
+        apiKey = value
+    }
+
+    public fun baseURL(value: String) {
+        baseURL = value
+    }
+
+    public fun headers(value: Map<String, String>) {
+        headers = value
+    }
+
+    public fun generateId(value: () -> String) {
+        generateId = value
+    }
+
+    internal fun build(): HuggingFaceProviderSettings =
+        HuggingFaceProviderSettings(
+            apiKey = apiKey,
+            baseURL = baseURL,
+            headers = headers,
+            generateId = generateId,
+        )
+}
+
+public fun HuggingFaceProviderSettings(
+    block: HuggingFaceProviderSettingsBuilder.() -> Unit = {},
+): HuggingFaceProviderSettings =
+    HuggingFaceProviderSettingsBuilder().apply(block).build()
 
 @Serializable
 public data class HuggingFaceResponsesSettings(

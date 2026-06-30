@@ -178,16 +178,16 @@ public class AlibabaProvider(
     private val chatProvider: OpenAICompatibleProvider =
         OpenAICompatible(
             client,
-            OpenAICompatibleProviderSettings(
-                name = "alibaba",
-                baseUrl = settings.baseURL.trimEnd('/'),
-                apiKey = settings.apiKey,
-                headers = settings.headers,
-                includeUsage = settings.includeUsage,
-                supportedUrls = mapOf("image/*" to listOf("^https?://.*$")),
-                userAgentSuffix = "ai-sdk/alibaba/$ALIBABA_VERSION",
-                providerOptionsName = "alibaba",
-            ),
+            OpenAICompatibleProviderSettings {
+                name("alibaba")
+                baseUrl(settings.baseURL.trimEnd('/'))
+                apiKey(settings.apiKey)
+                headers(settings.headers)
+                includeUsage(settings.includeUsage)
+                supportedUrls(mapOf("image/*" to listOf("^https?://.*$")))
+                userAgentSuffix("ai-sdk/alibaba/$ALIBABA_VERSION")
+                providerOptionsName("alibaba")
+            },
         )
 
     public operator fun invoke(modelId: ModelId): LanguageModel = languageModel(modelId.value)

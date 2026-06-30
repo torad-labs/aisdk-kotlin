@@ -13,17 +13,17 @@ public const val ANTHROPIC_AWS_VERSION: String = "1.0.3"
 public typealias AnthropicAwsCredentials = BedrockCredentials
 
 @Serializable
-public data class AnthropicAwsProviderSettings(
-    val region: String? = null,
-    val workspaceId: String? = null,
-    val apiKey: String? = null,
-    val accessKeyId: String? = null,
-    val secretAccessKey: String? = null,
-    val sessionToken: String? = null,
-    val baseURL: String? = null,
-    val headers: Map<String, String> = emptyMap(),
-    val credentialProvider: (suspend () -> AnthropicAwsCredentials)? = null,
-    val generateId: () -> String = { IdGenerator.generate() },
+public class AnthropicAwsProviderSettings internal constructor(
+    public val region: String? = null,
+    public val workspaceId: String? = null,
+    public val apiKey: String? = null,
+    public val accessKeyId: String? = null,
+    public val secretAccessKey: String? = null,
+    public val sessionToken: String? = null,
+    public val baseURL: String? = null,
+    public val headers: Map<String, String> = emptyMap(),
+    public val credentialProvider: (suspend () -> AnthropicAwsCredentials)? = null,
+    public val generateId: () -> String = { IdGenerator.generate() },
 ) {
     internal fun anthropicAwsBaseURL(): String =
         baseURL?.trimEnd('/')
@@ -69,6 +69,78 @@ public data class AnthropicAwsProviderSettings(
         amzDate = amzDate,)
     }
 }
+
+public class AnthropicAwsProviderSettingsBuilder internal constructor() {
+    private var region: String? = null
+    private var workspaceId: String? = null
+    private var apiKey: String? = null
+    private var accessKeyId: String? = null
+    private var secretAccessKey: String? = null
+    private var sessionToken: String? = null
+    private var baseURL: String? = null
+    private var headers: Map<String, String> = emptyMap()
+    private var credentialProvider: (suspend () -> AnthropicAwsCredentials)? = null
+    private var generateId: () -> String = { IdGenerator.generate() }
+
+    public fun region(value: String?) {
+        region = value
+    }
+
+    public fun workspaceId(value: String?) {
+        workspaceId = value
+    }
+
+    public fun apiKey(value: String?) {
+        apiKey = value
+    }
+
+    public fun accessKeyId(value: String?) {
+        accessKeyId = value
+    }
+
+    public fun secretAccessKey(value: String?) {
+        secretAccessKey = value
+    }
+
+    public fun sessionToken(value: String?) {
+        sessionToken = value
+    }
+
+    public fun baseURL(value: String?) {
+        baseURL = value
+    }
+
+    public fun headers(value: Map<String, String>) {
+        headers = value
+    }
+
+    public fun credentialProvider(value: (suspend () -> AnthropicAwsCredentials)?) {
+        credentialProvider = value
+    }
+
+    public fun generateId(value: () -> String) {
+        generateId = value
+    }
+
+    internal fun build(): AnthropicAwsProviderSettings =
+        AnthropicAwsProviderSettings(
+            region = region,
+            workspaceId = workspaceId,
+            apiKey = apiKey,
+            accessKeyId = accessKeyId,
+            secretAccessKey = secretAccessKey,
+            sessionToken = sessionToken,
+            baseURL = baseURL,
+            headers = headers,
+            credentialProvider = credentialProvider,
+            generateId = generateId,
+        )
+}
+
+public fun AnthropicAwsProviderSettings(
+    block: AnthropicAwsProviderSettingsBuilder.() -> Unit = {},
+): AnthropicAwsProviderSettings =
+    AnthropicAwsProviderSettingsBuilder().apply(block).build()
 
 public interface AnthropicAwsProvider : Provider {
     public val settings: AnthropicAwsProviderSettings
@@ -116,18 +188,18 @@ private class AnthropicAwsMessagesLanguageModel(
 ) : LanguageModel {
     private val delegate = AnthropicMessagesLanguageModel(
         client = client,
-        settings = AnthropicProviderSettings(
-            baseURL = settings.anthropicAwsBaseURL(),
-            apiKey = settings.apiKey,
-            headers = settings.anthropicAwsHeaders(),
-            requestHeadersProvider = if (settings.apiKey.isNullOrBlank()) {
+        settings = AnthropicProviderSettings {
+            baseURL(settings.anthropicAwsBaseURL())
+            apiKey(settings.apiKey)
+            headers(settings.anthropicAwsHeaders())
+            requestHeadersProvider(if (settings.apiKey.isNullOrBlank()) {
                 { url, body, headers -> settings.anthropicAwsSigV4Headers(url, body, headers) }
             } else {
                 null
-            },
-            generateId = settings.generateId,
-            name = "anthropic-aws.messages",
-        ),
+            })
+            generateId(settings.generateId)
+            name("anthropic-aws.messages")
+        },
         modelId = modelId,
     )
 

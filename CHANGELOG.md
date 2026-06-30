@@ -66,13 +66,18 @@ This project follows Semantic Versioning once the first stable release is cut.
   `XaiProviderSettings`, `VoyageProviderSettings`,
   `QuiverAIProviderSettings`, `BasetenProviderSettings`,
   `VercelProviderSettings`, `OpenAIProviderSettings`,
-  `AzureOpenAIProviderSettings`, and `GoogleGenerativeAIProviderSettings`)
-  are now `@Poko class` values (and remain `@Serializable` where applicable) with internal positional
-  constructors and public DSL factories such as
-  `CohereProviderSettings { apiKey("..."); baseURL("...") }`. Field access,
-  equality, hashCode, toString, and JSON serialization remain; public
-  positional construction, `copy()`, and `componentN()` are intentionally
-  absent so settings can grow without ABI breaks.
+  `AzureOpenAIProviderSettings`, `GoogleGenerativeAIProviderSettings`,
+  `OpenAICompatibleProviderSettings`, `OpenResponsesProviderSettings`,
+  `GatewayProviderSettings`, `AmazonBedrockProviderSettings`,
+  `AnthropicAwsProviderSettings`, `GoogleVertexProviderSettings`,
+  `HuggingFaceProviderSettings`, and `AnthropicProviderSettings`) now have
+  internal positional constructors and public DSL factories such as
+  `CohereProviderSettings { apiKey("..."); baseURL("...") }`. Pure data-only
+  settings are `@Poko class` values with generated equality/hashCode/toString;
+  settings that hold functions or transport objects are regular classes with
+  identity equality. Field access and JSON serialization remain where
+  applicable; public positional construction, `copy()`, and `componentN()` are
+  intentionally absent so settings can grow without ABI breaks.
 
 - **Tools are now class-based and extensible (breaking ABI change).** `Tool` is an `abstract class`
   you can extend for reusable, dependency-injected tools — mirroring how a concrete agent extends

@@ -44,12 +44,12 @@ class AnthropicAwsProviderTest {
         fixture.server.start()
         val provider = AnthropicAws(
             fixture.httpClient(),
-            AnthropicAwsProviderSettings(
-                apiKey = "aws-key",
-                workspaceId = "wrkspc_123",
-                baseURL = "https://aws-anthropic.test/v1/",
-                headers = mapOf("X-Provider" to "provider"),
-            ),
+            AnthropicAwsProviderSettings(block = {
+                apiKey("aws-key")
+                workspaceId("wrkspc_123")
+                baseURL("https://aws-anthropic.test/v1/")
+                headers(mapOf("X-Provider" to "provider"))
+            }),
         )
 
         val result = provider(ModelId("claude-sonnet-4-6")).generate(
@@ -103,7 +103,11 @@ class AnthropicAwsProviderTest {
         fixture.server.start()
         val provider = AnthropicAws(
             fixture.httpClient(),
-            AnthropicAwsProviderSettings(apiKey = "key", workspaceId = "wrkspc_123", region = "us-east-1"),
+            AnthropicAwsProviderSettings(block = {
+                apiKey("key")
+                workspaceId("wrkspc_123")
+                region("us-east-1")
+            }),
         )
 
         val events = drainAllItems(
@@ -144,14 +148,14 @@ class AnthropicAwsProviderTest {
         fixture.server.start()
         val provider = AnthropicAws(
             fixture.httpClient(),
-            AnthropicAwsProviderSettings(
-                workspaceId = "wrkspc_123",
-                accessKeyId = "id",
-                secretAccessKey = "secret",
-                sessionToken = "token",
-                region = "us-east-1",
-                baseURL = "https://aws-anthropic.test/v1",
-            ),
+            AnthropicAwsProviderSettings(block = {
+                workspaceId("wrkspc_123")
+                accessKeyId("id")
+                secretAccessKey("secret")
+                sessionToken("token")
+                region("us-east-1")
+                baseURL("https://aws-anthropic.test/v1")
+            }),
         )
 
         assertFailsWith<NoSuchModelError> { provider.embeddingModel("embed") }

@@ -248,12 +248,12 @@ public class XaiProvider(
     public fun responses(modelId: ModelId): LanguageModel =
         OpenResponses(
             client,
-            OpenResponsesProviderSettings(
-                url = "${settings.baseURL.trimEnd('/')}/responses",
-                name = "xai",
-                authHeadersProvider = { settings.xaiHeaders() },
-                userAgentSuffix = null,
-            ),
+            OpenResponsesProviderSettings {
+                url("${settings.baseURL.trimEnd('/')}/responses")
+                name("xai")
+                authHeadersProvider { settings.xaiHeaders() }
+                userAgentSuffix(null)
+            },
         ).responses(modelId.value)
 
     public fun image(modelId: ModelId): ImageModel =
@@ -270,17 +270,17 @@ public class XaiProvider(
     public fun textEmbeddingModel(modelId: String): Nothing = throw NoSuchModelError(providerId, "embeddingModel", modelId)
 
     private fun xaiCompatibleSettings(): OpenAICompatibleProviderSettings =
-        OpenAICompatibleProviderSettings(
-            name = "xai",
-            baseUrl = settings.baseURL.trimEnd('/'),
-            authHeadersProvider = { settings.xaiHeaders() },
-            userAgentSuffix = null,
-            providerOptionsName = "xai",
-            chatMaxOutputTokensKey = "max_completion_tokens",
-            supportedUrls = mapOf("image/*" to listOf("^https?://.*$")),
-            transformChatRequestBody = settings::xaiTransformChatBody,
-            includeUsage = true,
-        )
+        OpenAICompatibleProviderSettings {
+            name("xai")
+            baseUrl(settings.baseURL.trimEnd('/'))
+            authHeadersProvider { settings.xaiHeaders() }
+            userAgentSuffix(null)
+            providerOptionsName("xai")
+            chatMaxOutputTokensKey("max_completion_tokens")
+            supportedUrls(mapOf("image/*" to listOf("^https?://.*$")))
+            transformChatRequestBody(settings::xaiTransformChatBody)
+            includeUsage(true)
+        }
 }
 
 @Poko

@@ -31,7 +31,10 @@ class OpenResponsesProviderOptionsTest {
         val client = HttpClient(MockEngine { throw AssertionError("request should fail before network") })
         val provider = OpenResponses(
             client,
-            OpenResponsesProviderSettings(url = "https://api.test/v1/responses", name = "openresponses"),
+            OpenResponsesProviderSettings {
+                url("https://api.test/v1/responses")
+                name("openresponses")
+            },
         )
 
         assertFailsWith<InvalidArgumentError> {
@@ -72,7 +75,10 @@ class OpenResponsesProviderOptionsTest {
         )
         val provider = OpenResponses(
             client,
-            OpenResponsesProviderSettings(url = "https://api.test/v1/responses", name = "openresponses"),
+            OpenResponsesProviderSettings {
+                url("https://api.test/v1/responses")
+                name("openresponses")
+            },
         )
 
         provider.responses("gpt-resp").generate(

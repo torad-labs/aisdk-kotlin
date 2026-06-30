@@ -107,12 +107,12 @@ class HuggingFaceProviderTest {
         fixture.server.start()
         val provider = HuggingFace(
             fixture.httpClient(),
-            HuggingFaceProviderSettings(
-                apiKey = "key",
-                baseURL = "https://hf.test/v1",
-                headers = mapOf("X-Provider" to "provider"),
-                generateId = { "generated-id" },
-            ),
+            HuggingFaceProviderSettings(block = {
+                apiKey("key")
+                baseURL("https://hf.test/v1")
+                headers(mapOf("X-Provider" to "provider"))
+                generateId { "generated-id" }
+            }),
         )
 
         val result = provider.responses(ModelId("Qwen/Qwen3-32B")).generate(
@@ -277,7 +277,9 @@ class HuggingFaceProviderTest {
         fixture.server.start()
         val provider = HuggingFace(
             fixture.httpClient(),
-            HuggingFaceProviderSettings(baseURL = "https://hf.test/v1"),
+            HuggingFaceProviderSettings(block = {
+                baseURL("https://hf.test/v1")
+            }),
         )
 
         val events = drainAllItems(
@@ -321,7 +323,12 @@ class HuggingFaceProviderTest {
             ),
         )
         fixture.server.start()
-        val provider = HuggingFace(fixture.httpClient(), HuggingFaceProviderSettings(baseURL = "https://hf.test/v1"))
+        val provider = HuggingFace(
+            fixture.httpClient(),
+            HuggingFaceProviderSettings(block = {
+                baseURL("https://hf.test/v1")
+            }),
+        )
 
         val events = drainAllItems(provider.responses(ModelId("meta-llama/Llama-3.1-8B-Instruct")).stream(LanguageModelCallParams(messages = listOf(UserMessage("hi")))))
 
@@ -383,7 +390,9 @@ class HuggingFaceProviderTest {
         fixture.server.start()
         val provider = HuggingFace(
             fixture.httpClient(),
-            HuggingFaceProviderSettings(baseURL = "https://hf.test/v1"),
+            HuggingFaceProviderSettings(block = {
+                baseURL("https://hf.test/v1")
+            }),
         )
 
         val result = provider(ModelId("model")).generate(

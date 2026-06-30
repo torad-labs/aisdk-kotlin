@@ -25,18 +25,18 @@ public class OpenAIProviderSettings internal constructor(
 ) {
     internal fun toCompatibleSettings(): OpenAICompatibleProviderSettings {
         val headersWithUserAgent = ProviderHeaders.withUserAgentSuffix(openAIHeaders(), "ai-sdk/openai/$VERSION")
-        return OpenAICompatibleProviderSettings(
-            name = name,
-            baseUrl = baseURL.trimEnd('/'),
-            apiKey = apiKey,
-            headers = headersWithUserAgent,
+        return OpenAICompatibleProviderSettings {
+            name(name)
+            baseUrl(baseURL.trimEnd('/'))
+            apiKey(apiKey)
+            headers(headersWithUserAgent)
             // UA already embedded in headersWithUserAgent — null the default suffix to avoid
             // commonHeaders() appending "ai-sdk/openai-compatible-kotlin" a second time.
-            userAgentSuffix = null,
-            queryParams = queryParams,
-            includeUsage = includeUsage,
-            supportsStructuredOutputs = true,
-        )
+            userAgentSuffix(null)
+            queryParams(queryParams)
+            includeUsage(includeUsage)
+            supportsStructuredOutputs(true)
+        }
     }
 
     internal fun openAIHeaders(): Map<String, String> {
@@ -137,16 +137,16 @@ public class OpenAIProvider(
     public fun responses(modelId: String): LanguageModel =
         OpenResponses(
             client,
-            OpenResponsesProviderSettings(
-                url = settings.responsesUrl(),
-                name = settings.name,
-                apiKey = settings.apiKey,
-                headers = settings.openAIHeaders(),
-                userAgentSuffix = "ai-sdk/openai/$VERSION",
-                providerOptionsName = "openai",
-                supportedUrls = OPENAI_RESPONSES_SUPPORTED_URLS,
-                fileIdPrefixes = listOf("file-"),
-            ),
+            OpenResponsesProviderSettings {
+                url(settings.responsesUrl())
+                name(settings.name)
+                apiKey(settings.apiKey)
+                headers(settings.openAIHeaders())
+                userAgentSuffix("ai-sdk/openai/$VERSION")
+                providerOptionsName("openai")
+                supportedUrls(OPENAI_RESPONSES_SUPPORTED_URLS)
+                fileIdPrefixes(listOf("file-"))
+            },
         ).responses(modelId)
 
     public fun completion(modelId: String): LanguageModel =

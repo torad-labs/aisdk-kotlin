@@ -28,7 +28,7 @@ class GatewayReauditTest {
     )
 
     private fun gateway(client: HttpClient): GatewayProvider =
-        CreateGatewayHttpProvider(client, GatewayProviderSettings(apiKey = "key"))
+        CreateGatewayHttpProvider(client, GatewayProviderSettings { apiKey("key") })
 
     private fun jsonClient(capture: (String?) -> Unit): HttpClient =
         HttpClient(
@@ -221,7 +221,10 @@ class GatewayReauditTest {
         )
         val provider = CreateGatewayHttpProvider(
             client,
-            GatewayProviderSettings(baseUrl = "https://gateway.test/tenant/v3/ai", apiKey = "key"),
+            GatewayProviderSettings {
+                baseUrl("https://gateway.test/tenant/v3/ai")
+                apiKey("key")
+            },
         )
 
         provider.getCredits()

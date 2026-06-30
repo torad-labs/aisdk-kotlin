@@ -34,11 +34,11 @@ class OpenAICompatibleSpeechContentTypeTest {
         )
         val provider = OpenAICompatible(
             client,
-            OpenAICompatibleProviderSettings(
-                name = "openai",
-                baseUrl = "https://api.test/v1",
-                apiKey = "secret",
-            ),
+            OpenAICompatibleProviderSettings {
+                name("openai")
+                baseUrl("https://api.test/v1")
+                apiKey("secret")
+            },
         )
 
         val result = provider.speechModel("tts-1")

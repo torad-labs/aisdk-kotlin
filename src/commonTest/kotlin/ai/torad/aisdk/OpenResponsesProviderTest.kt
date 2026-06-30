@@ -68,12 +68,12 @@ class OpenResponsesProviderTest {
         )
         val provider = OpenResponses(
             client,
-            OpenResponsesProviderSettings(
-                url = "https://api.test/v1/responses",
-                name = "openresponses",
-                apiKey = "secret",
-                headers = mapOf("x-project" to "aisdk"),
-            ),
+            OpenResponsesProviderSettings {
+                url("https://api.test/v1/responses")
+                name("openresponses")
+                apiKey("secret")
+                headers(mapOf("x-project" to "aisdk"))
+            },
         )
         val result = provider.responses("gpt-resp").generate(
             LanguageModelCallParams(
@@ -152,7 +152,7 @@ class OpenResponsesProviderTest {
                 )
             },
         )
-        val provider = OpenResponses(client, OpenResponsesProviderSettings("https://api.test/v1/responses", "openresponses"))
+        val provider = OpenResponses(client, OpenResponsesProviderSettings { url("https://api.test/v1/responses"); name("openresponses") })
 
         val error = assertFailsWith<WireDecodeException> {
             provider.responses("gpt-resp").generate(LanguageModelCallParams(listOf(UserMessage("hi"))))
@@ -182,7 +182,7 @@ class OpenResponsesProviderTest {
                 )
             },
         )
-        val provider = OpenResponses(client, OpenResponsesProviderSettings("https://api.test/v1/responses", "openresponses"))
+        val provider = OpenResponses(client, OpenResponsesProviderSettings { url("https://api.test/v1/responses"); name("openresponses") })
 
         val error = assertFailsWith<WireDecodeException> {
             provider.responses("gpt-resp").generate(LanguageModelCallParams(listOf(UserMessage("hi"))))
@@ -232,7 +232,7 @@ class OpenResponsesProviderTest {
                 )
             },
         )
-        val provider = OpenResponses(client, OpenResponsesProviderSettings("https://api.test/v1/responses", "openresponses"))
+        val provider = OpenResponses(client, OpenResponsesProviderSettings { url("https://api.test/v1/responses"); name("openresponses") })
 
         val events = drainAllItems(provider.languageModel("gpt-resp").stream(LanguageModelCallParams(listOf(UserMessage("hi")))))
 
@@ -265,7 +265,7 @@ class OpenResponsesProviderTest {
                 )
             },
         )
-        val provider = OpenResponses(client, OpenResponsesProviderSettings("https://api.test/v1/responses", "openresponses"))
+        val provider = OpenResponses(client, OpenResponsesProviderSettings { url("https://api.test/v1/responses"); name("openresponses") })
 
         val events = drainAllItems(provider.languageModel("gpt-resp").stream(LanguageModelCallParams(listOf(UserMessage("hi")))))
 
@@ -290,7 +290,7 @@ class OpenResponsesProviderTest {
                 )
             },
         )
-        val provider = OpenResponses(client, OpenResponsesProviderSettings("https://api.test/v1/responses", "openresponses"))
+        val provider = OpenResponses(client, OpenResponsesProviderSettings { url("https://api.test/v1/responses"); name("openresponses") })
 
         val events = drainAllItems(provider.languageModel("gpt-resp").stream(LanguageModelCallParams(listOf(UserMessage("hi")))))
 
@@ -312,7 +312,7 @@ class OpenResponsesProviderTest {
                 )
             },
         )
-        val provider = OpenResponses(client, OpenResponsesProviderSettings("https://api.test/v1/responses", "openresponses"))
+        val provider = OpenResponses(client, OpenResponsesProviderSettings { url("https://api.test/v1/responses"); name("openresponses") })
 
         val events = drainAllItems(provider.languageModel("gpt-resp").stream(LanguageModelCallParams(listOf(UserMessage("hi")))))
 
@@ -333,7 +333,7 @@ class OpenResponsesProviderTest {
                 )
             },
         )
-        val provider = OpenResponses(client, OpenResponsesProviderSettings("https://api.test/v1/responses", "openresponses"))
+        val provider = OpenResponses(client, OpenResponsesProviderSettings { url("https://api.test/v1/responses"); name("openresponses") })
 
         val modelVisible = ToolResultOutput.Content(
             value = listOf(
@@ -401,7 +401,7 @@ class OpenResponsesProviderTest {
                 )
             },
         )
-        val provider = OpenResponses(client, OpenResponsesProviderSettings("https://api.test/v1/responses", "openresponses"))
+        val provider = OpenResponses(client, OpenResponsesProviderSettings { url("https://api.test/v1/responses"); name("openresponses") })
 
         // modelVisible defaults to the tool's RAW output. This success object collides on the
         // "text" discriminator yet carries no `value` companion: the old path threw a hard
@@ -449,11 +449,11 @@ class OpenResponsesProviderTest {
         )
         val provider = OpenResponses(
             client,
-            OpenResponsesProviderSettings(
-                url = "https://api.test/v1/responses",
-                name = "openresponses",
-                fileIdPrefixes = listOf("file-"),
-            ),
+            OpenResponsesProviderSettings {
+                url("https://api.test/v1/responses")
+                name("openresponses")
+                fileIdPrefixes(listOf("file-"))
+            },
         )
 
         provider.languageModel("gpt-resp").generate(
@@ -505,7 +505,7 @@ class OpenResponsesProviderTest {
                 )
             },
         )
-        val provider = OpenResponses(client, OpenResponsesProviderSettings("https://api.test/v1/responses", "openresponses"))
+        val provider = OpenResponses(client, OpenResponsesProviderSettings { url("https://api.test/v1/responses"); name("openresponses") })
         val imageUrl = "https://cdn.test/image.png"
         val fileUrl = "https://cdn.test/paper.pdf"
 
