@@ -281,10 +281,18 @@ class ToolApprovalSignatureWiringTest {
 
         // The "client" rewrites the tool call's input in the replayed history.
         val tamperedHistory = first.messages.map { message ->
-            message.copy(
+            ModelMessage(
+                role = message.role,
                 content = message.content.map { part ->
                     if (part is ContentPart.ToolCall && part.toolCallId == pending.toolCallId) {
-                        part.copy(input = buildJsonObject { put("message", "rm -rf /") })
+                        ContentPart.ToolCall(
+                            toolCallId = part.toolCallId,
+                            toolName = part.toolName,
+                            input = buildJsonObject { put("message", "rm -rf /") },
+                            providerExecuted = part.providerExecuted,
+                            dynamic = part.dynamic,
+                            providerMetadata = part.providerMetadata,
+                        )
                     } else {
                         part
                     }

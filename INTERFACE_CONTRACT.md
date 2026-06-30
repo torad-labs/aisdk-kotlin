@@ -274,21 +274,26 @@ Penalty, response-format, and retry fields participate in the `Step ?: Agent ?: 
 
 ### Messages
 
-- `data class ModelMessage(role, content: List<ContentPart>)`
+- `@Serializable @Poko class ModelMessage(role, content: List<ContentPart>)`
 - Top-level factories: `systemMessage(text)`, `userMessage(text)`, `assistantMessage(text)`, `toolMessage(callId, name, output)`, `toolApprovalResponseMessage(callId, approved, reason?, approvalId?)`
 - `enum MessageRole { System, User, Assistant, Tool }`
-- `sealed interface ContentPart`
-  - `Text(text)`
-  - `Reasoning(text)`
-  - `ToolCall(callId, name, input)`
-  - `ToolResult(callId, name, output, isError = false)`
+- `sealed class ContentPart`
+  - `@Serializable @Poko class Text(text)`
+  - `@Serializable @Poko class Reasoning(text)`
+  - `@Serializable @Poko class ToolCall(callId, name, input)`
+  - `@Serializable @Poko class ToolResult(callId, name, output, isError = false)`
   - `ToolApprovalRequest(toolCallId, toolName, input, approvalId: String? = null)` — assistant content
-  - `ToolApprovalResponse(toolCallId, approved, reason?, approvalId: String? = null)` — tool content (resume signal)
-  - `Source(sourceType, url?, title?)`
-  - `File(mediaType, base64)`
+  - `@Serializable @Poko class ToolApprovalResponse(toolCallId, approved, reason?, approvalId: String? = null)` — tool content (resume signal)
+  - `@Serializable @Poko class Source(sourceType, url?, title?)`
+  - `@Serializable @Poko class File(mediaType, base64)`
   - **+ `providerMetadata: Map<String, JsonElement>? = null`** on every variant above EXCEPT `ToolApprovalResponse` (a host decision — no provider produced it). gap #11.
-  - `Image(mediaType, base64)` — multimodal forward-parity (gap #39)
-- `data class Usage(promptTokens, completionTokens, totalTokens)`
+  - `@Serializable @Poko class Image(mediaType, base64)` — multimodal forward-parity (gap #39)
+- `@Serializable @Poko class Usage(promptTokens, completionTokens, totalTokens)`
+  - `@Serializable @Poko class Usage.InputTokenBreakdown(...)`
+  - `@Serializable @Poko class Usage.OutputTokenBreakdown(...)`
+  - JSON field names and `ContentPart` discriminators remain unchanged, while
+    public `copy()` / `componentN()` ABI is intentionally absent for these
+    message/content/usage value types.
 - `enum FinishReason { Stop, Length, ToolCalls, ContentFilter, Error, ToolApprovalRequested, Other }`
 - `enum ToolChoice { Auto, None, Required, Specific(toolName) }` (sealed)
 

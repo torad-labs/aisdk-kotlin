@@ -920,13 +920,6 @@ public final class ai/torad/aisdk/ContentPart$File : ai/torad/aisdk/ContentPart 
 	public static final field Companion Lai/torad/aisdk/ContentPart$File$Companion;
 	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lai/torad/aisdk/ProviderMetadata;Ljava/lang/String;)V
 	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lai/torad/aisdk/ProviderMetadata;Ljava/lang/String;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public final fun component1 ()Ljava/lang/String;
-	public final fun component2 ()Ljava/lang/String;
-	public final fun component3 ()Ljava/lang/String;
-	public final fun component4 ()Lai/torad/aisdk/ProviderMetadata;
-	public final fun component5 ()Ljava/lang/String;
-	public final fun copy (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lai/torad/aisdk/ProviderMetadata;Ljava/lang/String;)Lai/torad/aisdk/ContentPart$File;
-	public static synthetic fun copy$default (Lai/torad/aisdk/ContentPart$File;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lai/torad/aisdk/ProviderMetadata;Ljava/lang/String;ILjava/lang/Object;)Lai/torad/aisdk/ContentPart$File;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getBase64 ()Ljava/lang/String;
 	public final fun getFilename ()Ljava/lang/String;
@@ -956,12 +949,6 @@ public final class ai/torad/aisdk/ContentPart$Image : ai/torad/aisdk/ContentPart
 	public static final field Companion Lai/torad/aisdk/ContentPart$Image$Companion;
 	public fun <init> (Ljava/lang/String;Ljava/lang/String;Lai/torad/aisdk/ProviderMetadata;Ljava/lang/String;)V
 	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;Lai/torad/aisdk/ProviderMetadata;Ljava/lang/String;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public final fun component1 ()Ljava/lang/String;
-	public final fun component2 ()Ljava/lang/String;
-	public final fun component3 ()Lai/torad/aisdk/ProviderMetadata;
-	public final fun component4 ()Ljava/lang/String;
-	public final fun copy (Ljava/lang/String;Ljava/lang/String;Lai/torad/aisdk/ProviderMetadata;Ljava/lang/String;)Lai/torad/aisdk/ContentPart$Image;
-	public static synthetic fun copy$default (Lai/torad/aisdk/ContentPart$Image;Ljava/lang/String;Ljava/lang/String;Lai/torad/aisdk/ProviderMetadata;Ljava/lang/String;ILjava/lang/Object;)Lai/torad/aisdk/ContentPart$Image;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getBase64 ()Ljava/lang/String;
 	public final fun getMediaType ()Ljava/lang/String;
@@ -990,10 +977,6 @@ public final class ai/torad/aisdk/ContentPart$Reasoning : ai/torad/aisdk/Content
 	public static final field Companion Lai/torad/aisdk/ContentPart$Reasoning$Companion;
 	public fun <init> (Ljava/lang/String;Lai/torad/aisdk/ProviderMetadata;)V
 	public synthetic fun <init> (Ljava/lang/String;Lai/torad/aisdk/ProviderMetadata;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public final fun component1 ()Ljava/lang/String;
-	public final fun component2 ()Lai/torad/aisdk/ProviderMetadata;
-	public final fun copy (Ljava/lang/String;Lai/torad/aisdk/ProviderMetadata;)Lai/torad/aisdk/ContentPart$Reasoning;
-	public static synthetic fun copy$default (Lai/torad/aisdk/ContentPart$Reasoning;Ljava/lang/String;Lai/torad/aisdk/ProviderMetadata;ILjava/lang/Object;)Lai/torad/aisdk/ContentPart$Reasoning;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getProviderMetadata ()Lai/torad/aisdk/ProviderMetadata;
 	public final fun getText ()Ljava/lang/String;
@@ -1020,15 +1003,6 @@ public final class ai/torad/aisdk/ContentPart$Source : ai/torad/aisdk/ContentPar
 	public static final field Companion Lai/torad/aisdk/ContentPart$Source$Companion;
 	public fun <init> (Lai/torad/aisdk/StreamEvent$SourcePart$SourceType;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lai/torad/aisdk/ProviderMetadata;Ljava/lang/String;Ljava/lang/String;)V
 	public synthetic fun <init> (Lai/torad/aisdk/StreamEvent$SourcePart$SourceType;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lai/torad/aisdk/ProviderMetadata;Ljava/lang/String;Ljava/lang/String;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public final fun component1 ()Lai/torad/aisdk/StreamEvent$SourcePart$SourceType;
-	public final fun component2 ()Ljava/lang/String;
-	public final fun component3 ()Ljava/lang/String;
-	public final fun component4 ()Ljava/lang/String;
-	public final fun component5 ()Lai/torad/aisdk/ProviderMetadata;
-	public final fun component6 ()Ljava/lang/String;
-	public final fun component7 ()Ljava/lang/String;
-	public final fun copy (Lai/torad/aisdk/StreamEvent$SourcePart$SourceType;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lai/torad/aisdk/ProviderMetadata;Ljava/lang/String;Ljava/lang/String;)Lai/torad/aisdk/ContentPart$Source;
-	public static synthetic fun copy$default (Lai/torad/aisdk/ContentPart$Source;Lai/torad/aisdk/StreamEvent$SourcePart$SourceType;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lai/torad/aisdk/ProviderMetadata;Ljava/lang/String;Ljava/lang/String;ILjava/lang/Object;)Lai/torad/aisdk/ContentPart$Source;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getFilename ()Ljava/lang/String;
 	public final fun getMediaType ()Ljava/lang/String;
@@ -1060,10 +1034,6 @@ public final class ai/torad/aisdk/ContentPart$Text : ai/torad/aisdk/ContentPart 
 	public static final field Companion Lai/torad/aisdk/ContentPart$Text$Companion;
 	public fun <init> (Ljava/lang/String;Lai/torad/aisdk/ProviderMetadata;)V
 	public synthetic fun <init> (Ljava/lang/String;Lai/torad/aisdk/ProviderMetadata;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public final fun component1 ()Ljava/lang/String;
-	public final fun component2 ()Lai/torad/aisdk/ProviderMetadata;
-	public final fun copy (Ljava/lang/String;Lai/torad/aisdk/ProviderMetadata;)Lai/torad/aisdk/ContentPart$Text;
-	public static synthetic fun copy$default (Lai/torad/aisdk/ContentPart$Text;Ljava/lang/String;Lai/torad/aisdk/ProviderMetadata;ILjava/lang/Object;)Lai/torad/aisdk/ContentPart$Text;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getProviderMetadata ()Lai/torad/aisdk/ProviderMetadata;
 	public final fun getText ()Ljava/lang/String;
@@ -1128,12 +1098,6 @@ public final class ai/torad/aisdk/ContentPart$ToolApprovalResponse : ai/torad/ai
 	public static final field Companion Lai/torad/aisdk/ContentPart$ToolApprovalResponse$Companion;
 	public fun <init> (Ljava/lang/String;ZLjava/lang/String;Ljava/lang/String;)V
 	public synthetic fun <init> (Ljava/lang/String;ZLjava/lang/String;Ljava/lang/String;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public final fun component1 ()Ljava/lang/String;
-	public final fun component2 ()Z
-	public final fun component3 ()Ljava/lang/String;
-	public final fun component4 ()Ljava/lang/String;
-	public final fun copy (Ljava/lang/String;ZLjava/lang/String;Ljava/lang/String;)Lai/torad/aisdk/ContentPart$ToolApprovalResponse;
-	public static synthetic fun copy$default (Lai/torad/aisdk/ContentPart$ToolApprovalResponse;Ljava/lang/String;ZLjava/lang/String;Ljava/lang/String;ILjava/lang/Object;)Lai/torad/aisdk/ContentPart$ToolApprovalResponse;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getApprovalId ()Ljava/lang/String;
 	public final fun getApproved ()Z
@@ -1162,14 +1126,6 @@ public final class ai/torad/aisdk/ContentPart$ToolCall : ai/torad/aisdk/ContentP
 	public static final field Companion Lai/torad/aisdk/ContentPart$ToolCall$Companion;
 	public fun <init> (Ljava/lang/String;Ljava/lang/String;Lkotlinx/serialization/json/JsonElement;ZZLai/torad/aisdk/ProviderMetadata;)V
 	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;Lkotlinx/serialization/json/JsonElement;ZZLai/torad/aisdk/ProviderMetadata;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public final fun component1 ()Ljava/lang/String;
-	public final fun component2 ()Ljava/lang/String;
-	public final fun component3 ()Lkotlinx/serialization/json/JsonElement;
-	public final fun component4 ()Z
-	public final fun component5 ()Z
-	public final fun component6 ()Lai/torad/aisdk/ProviderMetadata;
-	public final fun copy (Ljava/lang/String;Ljava/lang/String;Lkotlinx/serialization/json/JsonElement;ZZLai/torad/aisdk/ProviderMetadata;)Lai/torad/aisdk/ContentPart$ToolCall;
-	public static synthetic fun copy$default (Lai/torad/aisdk/ContentPart$ToolCall;Ljava/lang/String;Ljava/lang/String;Lkotlinx/serialization/json/JsonElement;ZZLai/torad/aisdk/ProviderMetadata;ILjava/lang/Object;)Lai/torad/aisdk/ContentPart$ToolCall;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getDynamic ()Z
 	public final fun getInput ()Lkotlinx/serialization/json/JsonElement;
@@ -1200,16 +1156,6 @@ public final class ai/torad/aisdk/ContentPart$ToolResult : ai/torad/aisdk/Conten
 	public static final field Companion Lai/torad/aisdk/ContentPart$ToolResult$Companion;
 	public fun <init> (Ljava/lang/String;Ljava/lang/String;Lkotlinx/serialization/json/JsonElement;ZLkotlinx/serialization/json/JsonElement;ZZLai/torad/aisdk/ProviderMetadata;)V
 	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;Lkotlinx/serialization/json/JsonElement;ZLkotlinx/serialization/json/JsonElement;ZZLai/torad/aisdk/ProviderMetadata;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public final fun component1 ()Ljava/lang/String;
-	public final fun component2 ()Ljava/lang/String;
-	public final fun component3 ()Lkotlinx/serialization/json/JsonElement;
-	public final fun component4 ()Z
-	public final fun component5 ()Lkotlinx/serialization/json/JsonElement;
-	public final fun component6 ()Z
-	public final fun component7 ()Z
-	public final fun component8 ()Lai/torad/aisdk/ProviderMetadata;
-	public final fun copy (Ljava/lang/String;Ljava/lang/String;Lkotlinx/serialization/json/JsonElement;ZLkotlinx/serialization/json/JsonElement;ZZLai/torad/aisdk/ProviderMetadata;)Lai/torad/aisdk/ContentPart$ToolResult;
-	public static synthetic fun copy$default (Lai/torad/aisdk/ContentPart$ToolResult;Ljava/lang/String;Ljava/lang/String;Lkotlinx/serialization/json/JsonElement;ZLkotlinx/serialization/json/JsonElement;ZZLai/torad/aisdk/ProviderMetadata;ILjava/lang/Object;)Lai/torad/aisdk/ContentPart$ToolResult;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getDynamic ()Z
 	public final fun getModelVisible ()Lkotlinx/serialization/json/JsonElement;
@@ -3659,10 +3605,6 @@ public final class ai/torad/aisdk/ModelIdentifiers {
 public final class ai/torad/aisdk/ModelMessage {
 	public static final field Companion Lai/torad/aisdk/ModelMessage$Companion;
 	public fun <init> (Lai/torad/aisdk/MessageRole;Ljava/util/List;)V
-	public final fun component1 ()Lai/torad/aisdk/MessageRole;
-	public final fun component2 ()Ljava/util/List;
-	public final fun copy (Lai/torad/aisdk/MessageRole;Ljava/util/List;)Lai/torad/aisdk/ModelMessage;
-	public static synthetic fun copy$default (Lai/torad/aisdk/ModelMessage;Lai/torad/aisdk/MessageRole;Ljava/util/List;ILjava/lang/Object;)Lai/torad/aisdk/ModelMessage;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getContent ()Ljava/util/List;
 	public final fun getRole ()Lai/torad/aisdk/MessageRole;
@@ -6820,11 +6762,6 @@ public final class ai/torad/aisdk/Usage {
 	public fun <init> ()V
 	public fun <init> (Lai/torad/aisdk/Usage$InputTokenBreakdown;Lai/torad/aisdk/Usage$OutputTokenBreakdown;Lkotlinx/serialization/json/JsonElement;)V
 	public synthetic fun <init> (Lai/torad/aisdk/Usage$InputTokenBreakdown;Lai/torad/aisdk/Usage$OutputTokenBreakdown;Lkotlinx/serialization/json/JsonElement;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public final fun component1 ()Lai/torad/aisdk/Usage$InputTokenBreakdown;
-	public final fun component2 ()Lai/torad/aisdk/Usage$OutputTokenBreakdown;
-	public final fun component3 ()Lkotlinx/serialization/json/JsonElement;
-	public final fun copy (Lai/torad/aisdk/Usage$InputTokenBreakdown;Lai/torad/aisdk/Usage$OutputTokenBreakdown;Lkotlinx/serialization/json/JsonElement;)Lai/torad/aisdk/Usage;
-	public static synthetic fun copy$default (Lai/torad/aisdk/Usage;Lai/torad/aisdk/Usage$InputTokenBreakdown;Lai/torad/aisdk/Usage$OutputTokenBreakdown;Lkotlinx/serialization/json/JsonElement;ILjava/lang/Object;)Lai/torad/aisdk/Usage;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getCompletionTokens ()I
 	public final fun getInputTokens ()Lai/torad/aisdk/Usage$InputTokenBreakdown;
@@ -6857,12 +6794,6 @@ public final class ai/torad/aisdk/Usage$InputTokenBreakdown {
 	public fun <init> ()V
 	public fun <init> (IIII)V
 	public synthetic fun <init> (IIIIILkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public final fun component1 ()I
-	public final fun component2 ()I
-	public final fun component3 ()I
-	public final fun component4 ()I
-	public final fun copy (IIII)Lai/torad/aisdk/Usage$InputTokenBreakdown;
-	public static synthetic fun copy$default (Lai/torad/aisdk/Usage$InputTokenBreakdown;IIIIILjava/lang/Object;)Lai/torad/aisdk/Usage$InputTokenBreakdown;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getCacheRead ()I
 	public final fun getCacheWrite ()I
@@ -6892,11 +6823,6 @@ public final class ai/torad/aisdk/Usage$OutputTokenBreakdown {
 	public fun <init> ()V
 	public fun <init> (III)V
 	public synthetic fun <init> (IIIILkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public final fun component1 ()I
-	public final fun component2 ()I
-	public final fun component3 ()I
-	public final fun copy (III)Lai/torad/aisdk/Usage$OutputTokenBreakdown;
-	public static synthetic fun copy$default (Lai/torad/aisdk/Usage$OutputTokenBreakdown;IIIILjava/lang/Object;)Lai/torad/aisdk/Usage$OutputTokenBreakdown;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getReasoning ()I
 	public final fun getText ()I

@@ -184,7 +184,14 @@ class ToolSubclassTest {
             tools = ToolSet(CityTool()),
             experimental_repairToolCall = { failedCall, _, _, _ ->
                 val original = failedCall.input.jsonObject["location"]?.jsonPrimitive?.content ?: ""
-                failedCall.copy(input = buildJsonObject { put("city", JsonPrimitive(original)) })
+                ContentPart.ToolCall(
+                    toolCallId = failedCall.toolCallId,
+                    toolName = failedCall.toolName,
+                    input = buildJsonObject { put("city", JsonPrimitive(original)) },
+                    providerExecuted = failedCall.providerExecuted,
+                    dynamic = failedCall.dynamic,
+                    providerMetadata = failedCall.providerMetadata,
+                )
             },
         )
 
