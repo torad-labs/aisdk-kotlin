@@ -70,7 +70,7 @@ fun render(part: UIMessagePart) {
 ```
 
 Text and reasoning parts carry `Streaming` or `Done` state. Tool parts carry
-tool-call lifecycle state and can mark preliminary output from `streamingTool`.
+tool-call lifecycle state and can mark preliminary output from `StreamingTool`.
 
 ## Typed Tool UI
 

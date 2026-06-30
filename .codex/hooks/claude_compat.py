@@ -36,16 +36,29 @@ def main() -> int:
 
     lifecycle = sys.argv[1].lower()
     target = Path(sys.argv[2]).expanduser()
+    if lifecycle != "pretooluse":
+        print(json.dumps({
+            "decision": "block",
+            "reason": f"Unsupported local Claude hook lifecycle for Codex adapter: {lifecycle}",
+        }))
+        return 0
+
     try:
         data = json.load(sys.stdin)
     except (json.JSONDecodeError, OSError):
+        print(json.dumps({
+            "decision": "block",
+            "reason": "Local Claude PreToolUse hook received invalid JSON input.",
+        }))
         return 0
     if not isinstance(data, dict):
+        print(json.dumps({
+            "decision": "block",
+            "reason": "Local Claude PreToolUse hook received a non-object JSON event.",
+        }))
         return 0
 
-    if lifecycle == "pretooluse":
-        return _run_pretooluse(target, data)
-    return 0
+    return _run_pretooluse(target, data)
 
 
 def _run_pretooluse(target: Path, data: dict[str, Any]) -> int:

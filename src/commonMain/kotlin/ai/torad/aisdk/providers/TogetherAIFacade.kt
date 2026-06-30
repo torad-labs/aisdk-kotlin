@@ -116,7 +116,7 @@ private class TogetherAIImageModel(
                 userAgent = "ai-sdk/togetherai/$TOGETHERAI_VERSION",
             ),
         )
-        val images = (response.value.jsonObject["data"] as? JsonArray).orEmpty().mapIndexed { index, item ->
+        val images = (JsonAccess.arr(response.value.jsonObject, "data")).orEmpty().mapIndexed { index, item ->
             val obj = WireDecoder.objectValue(item, "togetherai", "image generation response", "$.data[$index]")
             GeneratedFile(
                 mediaType = "image/png",
@@ -150,7 +150,7 @@ public class TogetherAIRerankingModel(
                 put("documents", JsonArray(params.documents.map(::JsonPrimitive)))
                 put("query", JsonPrimitive(params.query))
                 params.topN?.let { put("top_n", JsonPrimitive(it)) }
-                (options["rankFields"] as? JsonArray)?.let { put("rank_fields", it) }
+                (JsonAccess.arr(options, "rankFields"))?.let { put("rank_fields", it) }
                 put("return_documents", JsonPrimitive(false))
             },
             headers = providerFacadeHeaders(
@@ -161,7 +161,7 @@ public class TogetherAIRerankingModel(
             ),
         )
         val value = response.value.jsonObject
-        val ranking = (value["results"] as? JsonArray).orEmpty().mapNotNull { item ->
+        val ranking = (JsonAccess.arr(value, "results")).orEmpty().mapNotNull { item ->
             val obj = item as? JsonObject ?: return@mapNotNull null
             val index = (obj["index"] as? JsonPrimitive)?.intOrNull ?: 0
             RerankedItem(

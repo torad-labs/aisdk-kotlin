@@ -1,10 +1,5 @@
 package ai.torad.aisdk
 
-import kotlinx.coroutines.async
-import kotlinx.coroutines.awaitAll
-import kotlinx.coroutines.coroutineScope
-import kotlinx.coroutines.sync.Semaphore
-import kotlinx.coroutines.sync.withPermit
 import kotlinx.serialization.json.JsonElement
 
 public interface EmbeddingModel {
@@ -118,11 +113,12 @@ public object Embedding {
         )
     }
 
+    @Suppress("LongParameterList")
     public suspend fun embedMany(
         model: EmbeddingModel,
         values: List<String>,
         maxEmbeddingsPerCall: Int? = null,
-        maxParallelCalls: Int = Int.MAX_VALUE,
+        maxParallelCalls: Int = DEFAULT_MAX_PARALLEL_CALLS,
         providerOptions: ProviderOptions = ProviderOptions.None,
         abortSignal: AbortSignal = AbortSignalNever,
         headers: Map<String, String> = emptyMap(),
@@ -152,10 +148,7 @@ public object Embedding {
         }
 
         val results: List<EmbeddingModelResult> = if (model.supportsParallelCalls && batches.size > 1) {
-            val permits = Semaphore(maxParallelCalls.coerceAtLeast(1))
-            coroutineScope {
-                batches.map { batch -> async { permits.withPermit { embedBatch(batch) } } }.awaitAll()
-            }
+            BoundedParallel.map(batches, maxParallelCalls) { embedBatch(it) }
         } else {
             batches.map { embedBatch(it) }
         }

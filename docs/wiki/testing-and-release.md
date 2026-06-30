@@ -66,11 +66,14 @@ val model = mockLanguageModelToolThenText(
     finalText = "Use streamTextResult for replayable adapters.",
 )
 
-val agent = ToolLoopAgent<AppContext, String>(
-    model = model,
-    instructions = "Search before answering.",
-    tools = toolSetOf(searchDocs),
-)
+class SearchAgent(model: LanguageModel, tools: ToolSet<AppContext>) :
+    ToolLoopAgent<AppContext, String>(
+        model = model,
+        instructions = "Search before answering.",
+        tools = tools,
+    )
+
+val agent = SearchAgent(model, ToolSet(searchDocs))
 
 val result = agent.generate(
     prompt = "How do I render stream output?",
@@ -101,14 +104,15 @@ artifacts for publication verification, but it cannot run simulator tests.
 ## Coordinates
 
 ```text
-ai.torad:aisdk-kotlin:<version>
+ai.torad:torad-aisdk:<version>
 ```
 
 The version comes from `VERSION_NAME` in `gradle.properties`.
 
-## GitHub Packages
+## Maven Central And GitHub Packages
 
-Tagged releases run `.github/workflows/release.yml`, which publishes to:
+Tagged releases run `.github/workflows/release.yml`, which publishes to Maven
+Central through the Central Portal. GitHub Packages is a best-effort mirror:
 
 ```text
 https://maven.pkg.github.com/torad-labs/aisdk-kotlin
@@ -118,11 +122,10 @@ Required repository secrets:
 
 - `SIGNING_KEY`: in-memory PGP private key.
 - `SIGNING_PASSWORD`: PGP key password.
+- `SONATYPE_USERNAME`: Central Portal token username.
+- `SONATYPE_PASSWORD`: Central Portal token password.
 
-GitHub provides `GITHUB_TOKEN` for package publication.
-
-Maven Central publication is not wired yet. Add it only after package
-metadata, signing, and release ownership are finalized.
+GitHub provides `GITHUB_TOKEN` for the package mirror.
 
 ## Release Checklist
 
@@ -130,9 +133,10 @@ metadata, signing, and release ownership are finalized.
 2. Update `CHANGELOG.md`.
 3. Run parity checks.
 4. Run `./gradlew check publishToMavenLocal`.
-5. Confirm generated artifacts and POM metadata.
-6. Commit to `main` and tag with `v<version>`.
-7. Push the tag and verify the release workflow.
+5. Run `tools/beta-readiness-check --strict-readme`.
+6. Confirm generated artifacts and POM metadata.
+7. Commit to `main` and tag with `v<version>`.
+8. Push the tag and verify the release workflow.
 
 ## Related
 

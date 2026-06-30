@@ -9,7 +9,29 @@ internal object UiMediaMessageChunkCodec {
     fun chunk(event: StreamEvent): JsonObject? = when (event) {
         is StreamEvent.SourcePart -> source(event)
         is StreamEvent.FilePart -> file(event)
-        else -> null
+        is StreamEvent.StreamStart,
+        is StreamEvent.ResponseMetadata,
+        is StreamEvent.StepStart,
+        is StreamEvent.TextStart,
+        is StreamEvent.TextDelta,
+        is StreamEvent.TextEnd,
+        is StreamEvent.ReasoningStart,
+        is StreamEvent.ReasoningDelta,
+        is StreamEvent.ReasoningEnd,
+        is StreamEvent.ToolInputStart,
+        is StreamEvent.ToolInputDelta,
+        is StreamEvent.ToolInputEnd,
+        is StreamEvent.ToolCall,
+        is StreamEvent.ToolResult,
+        is StreamEvent.ToolError,
+        is StreamEvent.ToolApprovalRequest,
+        is StreamEvent.ToolOutputDenied,
+        is StreamEvent.StepFinish,
+        is StreamEvent.Finish,
+        StreamEvent.Abort,
+        is StreamEvent.Error,
+        is StreamEvent.Raw,
+        -> null
     }
 
     private fun source(event: StreamEvent.SourcePart): JsonObject = when (event.sourceType) {

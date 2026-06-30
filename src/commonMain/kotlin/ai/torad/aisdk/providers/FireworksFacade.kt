@@ -1,3 +1,5 @@
+@file:OptIn(ai.torad.aisdk.LowLevelLanguageModelApi::class)
+
 package ai.torad.aisdk.providers
 
 import ai.torad.aisdk.*
@@ -100,7 +102,7 @@ private class FireworksLanguageModel(
 
     private fun transformFireworksProviderOptions(options: ProviderOptions): ProviderOptions {
         val map = options.toMap()
-        val fireworksOptions = map["fireworks"] as? JsonObject ?: return options
+        val fireworksOptions = JsonAccess.obj(map, "fireworks") ?: return options
         val transformed = buildJsonObject {
             for ((key, value) in fireworksOptions) {
                 when (key) {
@@ -208,7 +210,7 @@ public class FireworksImageModel(
             val status = (response.value.jsonObject["status"] as? JsonPrimitive)?.contentOrNull
             when (status) {
                 "Ready" -> {
-                    val sample = (response.value.jsonObject["result"] as? JsonObject)?.get("sample")
+                    val sample = (JsonAccess.obj(response.value.jsonObject, "result"))?.get("sample")
                     return (sample as? JsonPrimitive)?.contentOrNull
                         ?: throw InvalidResponseDataError(
                             response.value,

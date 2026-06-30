@@ -1,9 +1,10 @@
-import io.gitlab.arturbosch.detekt.Detekt
-import io.gitlab.arturbosch.detekt.DetektCreateBaselineTask
 import kotlinx.kover.gradle.plugin.dsl.AggregationType
 import kotlinx.kover.gradle.plugin.dsl.CoverageUnit
+import org.gradle.api.file.ConfigurableFileCollection
+import org.gradle.api.tasks.Classpath
 import org.gradle.api.publish.maven.MavenPublication
 import org.gradle.api.publish.maven.tasks.PublishToMavenRepository
+import org.gradle.process.CommandLineArgumentProvider
 import org.jetbrains.kotlin.gradle.dsl.JvmDefaultMode
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.jetbrains.kotlin.gradle.dsl.abi.ExperimentalAbiValidation
@@ -13,7 +14,6 @@ plugins {
     alias(libs.plugins.kotlin.multiplatform)
     alias(libs.plugins.android.kotlin.multiplatform.library)
     alias(libs.plugins.kotlin.serialization)
-    alias(libs.plugins.detekt)
     alias(libs.plugins.kover)
     alias(libs.plugins.dokka)
     `maven-publish`
@@ -22,6 +22,17 @@ plugins {
 
 group = providers.gradleProperty("GROUP").get()
 version = providers.gradleProperty("VERSION_NAME").get()
+
+val detektCliRuntime by configurations.creating
+val detektPluginClasspath by configurations.creating
+
+abstract class DetektPluginsArgumentProvider : CommandLineArgumentProvider {
+    @get:Classpath
+    abstract val pluginClasspath: ConfigurableFileCollection
+
+    override fun asArguments(): Iterable<String> =
+        listOf("--plugins", pluginClasspath.files.joinToString(",") { it.absolutePath })
+}
 
 kotlin {
     jvmToolchain(21)
@@ -146,45 +157,84 @@ kotlin {
     }
 }
 
+dependencies {
+    detektCliRuntime(libs.detekt.cli)
+    detektPluginClasspath(libs.detekt.formatting)
+    // The project's own architectural tenets as detekt rules (mirrors of the ast-grep
+    // PreToolUse hook rules), so they surface in the IDE + `check` for every developer.
+    detektPluginClasspath(project(":detekt-rules"))
+}
+
 // --- Static analysis: detekt (1.23.x) + ktlint-backed formatting rules ---
 // Runs WITHOUT type resolution: detekt 1.23.x bundles an older Kotlin front-end and
 // cannot resolve types for KMP non-JVM source sets anyway (detekt#5961), and detekt 2.0
-// is config-cache-incompatible + KMP-variant-exploding (detekt#8882). Style/formatting
-// rules are compiler-version-agnostic, so we point detekt straight at the KMP source dirs.
-detekt {
-    buildUponDefaultConfig = true
-    parallel = true
-    config.setFrom(file("$projectDir/detekt.yml"))
-    baseline = file("$projectDir/detekt-baseline.xml")
-    source.setFrom(
-        "src/commonMain/kotlin",
-        "src/jvmAndAndroidMain/kotlin",
-        "src/jvmMain/kotlin",
-        "src/androidMain/kotlin",
-        "src/nativeMain/kotlin",
-        "src/commonTest/kotlin",
-    )
+// is still alpha. Style/formatting rules are compiler-version-agnostic, so we point
+// detekt straight at the KMP source dirs. This uses the stable CLI instead of the 1.x
+// Gradle plugin because the plugin calls a Gradle API removed in Gradle 10.
+val detektSourceDirs = listOf(
+    "src/commonMain/kotlin",
+    "src/jvmAndAndroidMain/kotlin",
+    "src/jvmMain/kotlin",
+    "src/androidMain/kotlin",
+    "src/nativeMain/kotlin",
+    "src/commonTest/kotlin",
+)
+val detektExistingSourceDirs = detektSourceDirs
+    .map { layout.projectDirectory.dir(it).asFile }
+    .filter { it.isDirectory }
+val detektConfigFile = layout.projectDirectory.file("detekt.yml")
+val detektBaselineFile = layout.projectDirectory.file("detekt-baseline.xml")
+val detektHtmlReport = layout.buildDirectory.file("reports/detekt/detekt.html")
+val detektXmlReport = layout.buildDirectory.file("reports/detekt/detekt.xml")
+val detektPluginArgumentProvider = objects.newInstance<DetektPluginsArgumentProvider>().apply {
+    pluginClasspath.from(detektPluginClasspath)
 }
 
-dependencies {
-    detektPlugins(libs.detekt.formatting)
-    // The project's own architectural tenets as detekt rules (mirrors of the ast-grep
-    // PreToolUse hook rules), so they surface in the IDE + `check` for every developer.
-    detektPlugins(project(":detekt-rules"))
+val detektCliArguments = listOf(
+    "--build-upon-default-config",
+    "--parallel",
+    "--jvm-target",
+    JvmTarget.JVM_17.target,
+    "--config",
+    detektConfigFile.asFile.absolutePath,
+    "--baseline",
+    detektBaselineFile.asFile.absolutePath,
+    "--input",
+    detektExistingSourceDirs.joinToString(",") { it.absolutePath },
+    "--report",
+    "html:${detektHtmlReport.get().asFile.absolutePath}",
+    "--report",
+    "xml:${detektXmlReport.get().asFile.absolutePath}",
+)
+
+val detekt by tasks.registering(JavaExec::class) {
+    description = "Runs detekt over the Kotlin source tree."
+    group = LifecycleBasePlugin.VERIFICATION_GROUP
+    dependsOn(":detekt-rules:jar")
+    mainClass.set("io.gitlab.arturbosch.detekt.cli.Main")
+    classpath = detektCliRuntime
+    args(detektCliArguments)
+    argumentProviders.add(detektPluginArgumentProvider)
+    inputs.files(detektExistingSourceDirs).withPropertyName("sources")
+    inputs.file(detektConfigFile).withPropertyName("config")
+    inputs.file(detektBaselineFile).withPropertyName("baseline")
+    inputs.files(detektPluginClasspath).withPropertyName("plugins").withNormalizer(ClasspathNormalizer::class)
+    outputs.file(detektHtmlReport).withPropertyName("htmlReport")
+    outputs.file(detektXmlReport).withPropertyName("xmlReport")
 }
 
-tasks.withType<Detekt>().configureEach {
-    jvmTarget = JvmTarget.JVM_17.target
-    reports {
-        html.required.set(true)
-        xml.required.set(true)
-        sarif.required.set(false)
-        md.required.set(false)
-    }
-}
-
-tasks.withType<DetektCreateBaselineTask>().configureEach {
-    jvmTarget = JvmTarget.JVM_17.target
+val detektBaseline by tasks.registering(JavaExec::class) {
+    description = "Regenerates detekt-baseline.xml using the stable detekt CLI."
+    group = LifecycleBasePlugin.VERIFICATION_GROUP
+    dependsOn(":detekt-rules:jar")
+    mainClass.set("io.gitlab.arturbosch.detekt.cli.Main")
+    classpath = detektCliRuntime
+    args(detektCliArguments + "--create-baseline")
+    argumentProviders.add(detektPluginArgumentProvider)
+    inputs.files(detektExistingSourceDirs).withPropertyName("sources")
+    inputs.file(detektConfigFile).withPropertyName("config")
+    inputs.files(detektPluginClasspath).withPropertyName("plugins").withNormalizer(ClasspathNormalizer::class)
+    outputs.file(detektBaselineFile).withPropertyName("baseline")
 }
 
 // --- Coverage: Kover (0.9.x). Measures the JVM target; excludes generated serializers. ---
@@ -225,6 +275,7 @@ val detektBaselineBudgetCheck by tasks.registering(Exec::class) {
 tasks.named("check").configure {
     dependsOn("koverVerify")
     dependsOn(detektBaselineBudgetCheck)
+    dependsOn(detekt)
 }
 
 // --- API docs: Dokka 2.x. HTML output (`./gradlew dokkaGenerate` → build/dokka/html). ---
@@ -303,7 +354,7 @@ val publishingToRemoteRepository = providers.provider {
 }
 
 signing {
-    isRequired = publishingToRemoteRepository.get()
+    isRequired = publishingToRemoteRepository.get() && signingKey.isPresent && signingPassword.isPresent
     if (signingKey.isPresent && signingPassword.isPresent) {
         useInMemoryPgpKeys(signingKey.get(), signingPassword.get())
     }

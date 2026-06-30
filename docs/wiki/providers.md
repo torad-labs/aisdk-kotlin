@@ -10,6 +10,7 @@ package boundaries for a future split.
 |---|---|---|
 | Gateway | Routing across providers by model id. | `createGateway()` / `gateway` |
 | OpenAI-compatible | OpenAI-shaped HTTP APIs and local model servers. | `createOpenAICompatible()` |
+| LiteRT-LM | On-device Android/JVM LiteRT-LM engines. | `LiteRTLanguageModel(...)` |
 | Dedicated facade | Provider-specific options, metadata, auth, tools, or media APIs. | `createAnthropic()`, `createGoogleGenerativeAI()`, etc. |
 | Custom provider | Internal services, fakes, unsupported providers. | `customProvider(...)` |
 
@@ -55,6 +56,40 @@ val model = provider.chatModel("llama3.2")
 The settings include auth headers, query parameters, structured output support,
 supported URL patterns, usage conversion, and request/response transforms for
 providers that are almost OpenAI-compatible but need small corrections.
+
+## LiteRT-LM
+
+Use `LiteRTLanguageModel` for on-device LiteRT-LM engines. The SDK owns the
+`LanguageModel` contract; the host app supplies a `LiteRTConversationFactory`
+that maps the prepared request to Google LiteRT-LM's `Engine.createConversation`
+and `Conversation.sendMessage` / `sendMessageAsync` APIs.
+
+The prepared `LiteRTConversationRequest` mirrors LiteRT-LM's
+`ConversationConfig`: `systemInstruction`, `initialMessages`, `tools`,
+`samplerConfig`, `channels`, and `extraContext`. The adapter always sets
+`automaticToolCalling = false`. LiteRT may return tool calls, but the SDK agent
+executes tools, records tool results, handles approvals, and calls the model
+again. This prevents mobile apps from accidentally bypassing the agent loop by
+piping prompts or tool execution directly through the local model runtime.
+
+Reasoning channels are preserved. By default `thinking` and `reasoning`
+channels become `ContentPart.Reasoning` / `StreamEvent.ReasoningDelta`, while
+normal LiteRT text content becomes text output. For Gemma-style prompt
+templates, pass template context through provider options:
+
+```kotlin
+val params = LanguageModelCallParams(
+    messages = listOf(UserMessage("Plan the next step.")),
+    providerOptions = ProviderOptions.ofPairs(
+        "litert" to buildJsonObject {
+            put("enableThinking", JsonPrimitive(true))
+            put("extraContext", buildJsonObject {
+                put("screen", JsonPrimitive("home"))
+            })
+        },
+    ),
+)
+```
 
 ## Dedicated Facades
 
@@ -130,6 +165,14 @@ Providers implement only the model families they support:
 - `TranscriptionModel`
 - `RerankingModel`
 - `VideoModel`
+
+For language models, `generate`, `stream`, and `streamResult` are low-level
+execution methods. Provider implementations and tests opt in explicitly;
+application code should pass `LanguageModel` values into agents or high-level
+generation helpers.
+If a provider exposes a public concrete `LanguageModel` implementation, annotate
+its execution overrides with `@LowLevelLanguageModelApi` so direct calls on that
+concrete type require the same explicit opt-in.
 
 Each result should preserve provider metadata, warnings, request metadata,
 response metadata, usage, and raw finish reasons where available.

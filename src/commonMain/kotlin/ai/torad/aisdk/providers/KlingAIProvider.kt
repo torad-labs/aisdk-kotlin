@@ -140,7 +140,8 @@ private class KlingAIVideoModel(
             headers = settings.klingAIHeaders(params.headers, clock),
             body = body,
         )
-        val taskId = ((create.value.jsonObject["data"] as? JsonObject)?.get("task_id") as? JsonPrimitive)?.contentOrNull
+        val data = JsonAccess.obj(create.value.jsonObject, "data")
+        val taskId = (data?.get("task_id") as? JsonPrimitive)?.contentOrNull
             ?: throw InvalidResponseDataError(create.value, "No task_id returned from KlingAI API. Response: ${create.value}")
 
         val pollIntervalMs = (options["pollIntervalMs"] as? JsonPrimitive)?.contentOrNull?.toLongOrNull() ?: 5_000L
@@ -160,7 +161,7 @@ private class KlingAIVideoModel(
                 headers = settings.klingAIHeaders(params.headers, clock),
             )
             headers = status.headers
-            val data = (status.value.jsonObject["data"] as? JsonObject) ?: JsonObject(emptyMap())
+            val data = (JsonAccess.obj(status.value.jsonObject, "data")) ?: JsonObject(emptyMap())
             when (val taskStatus = (data["task_status"] as? JsonPrimitive)?.contentOrNull) {
                 "succeed" -> return klingAISuccessResult(taskId, data, headers, warnings)
                 "failed" -> {
@@ -179,7 +180,7 @@ private class KlingAIVideoModel(
         headers: Map<String, String>,
         warnings: List<CallWarning>,
     ): VideoModelResult {
-        val videos = ((data["task_result"] as? JsonObject)?.get("videos") as? JsonArray).orEmpty()
+        val videos = ((JsonAccess.obj(data, "task_result"))?.get("videos") as? JsonArray).orEmpty()
         val generated = videos.mapNotNull { item ->
             val obj = item as? JsonObject ?: return@mapNotNull null
             val url = (obj["url"] as? JsonPrimitive)?.contentOrNull ?: return@mapNotNull null
@@ -205,7 +206,7 @@ private class KlingAIVideoModel(
     }
 
     private fun klingAIOptions(providerOptions: ProviderOptions): JsonObject =
-        providerOptions.toMap()["klingai"] as? JsonObject ?: JsonObject(emptyMap())
+        JsonAccess.obj(providerOptions.toMap(), "klingai") ?: JsonObject(emptyMap())
 
     private fun klingAIDetectMode(modelId: String): KlingAIVideoMode = when {
         modelId.endsWith("-t2v") -> KlingAIVideoMode.TextToVideo

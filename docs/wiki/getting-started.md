@@ -6,21 +6,20 @@ bind platform HTTP clients, credentials, storage, and UI from the host app.
 
 ## Install
 
-Until a stable release is published, publish the artifact locally:
+Use the published beta from Maven Central:
+
+```kotlin
+dependencies {
+    implementation("ai.torad:torad-aisdk:0.3.0-beta01")
+}
+```
+
+For application development against a checkout, publish locally or use a
+composite build:
 
 ```sh
 ./gradlew publishToMavenLocal
 ```
-
-Then add the dependency:
-
-```kotlin
-dependencies {
-    implementation("ai.torad:aisdk-kotlin:0.1.0-SNAPSHOT")
-}
-```
-
-For application development against a checkout, use a composite build:
 
 ```kotlin
 // settings.gradle.kts
@@ -40,9 +39,9 @@ There are three normal ways to get a model:
 For tests and examples, use mock models:
 
 ```kotlin
-import ai.torad.aisdk.providers.MockLanguageModel
+import ai.torad.aisdk.providers.MockLanguageModelTextOnly
 
-val model = MockLanguageModel.textOnly("Hello from AI SDK Kotlin.")
+val model = MockLanguageModelTextOnly("Hello from AI SDK Kotlin.")
 ```
 
 ## Generate Text
@@ -106,7 +105,7 @@ data class WeatherInput(val city: String)
 @Serializable
 data class WeatherOutput(val summary: String)
 
-val weatherTool = tool<WeatherInput, WeatherOutput, Unit>(
+val weatherTool = Tool<WeatherInput, WeatherOutput, Unit>(
     name = "weather",
     description = "Get the weather for a city.",
     inputSerializer = serializer(),
@@ -116,17 +115,15 @@ val weatherTool = tool<WeatherInput, WeatherOutput, Unit>(
 }
 ```
 
-The Kotlin-first tool-set builder can infer serializers:
+The reified tool factory can infer serializers:
 
 ```kotlin
-val tools = toolSet<Unit> {
-    tool<WeatherInput, WeatherOutput>(
+val tools = ToolSet(
+    Tool<WeatherInput, WeatherOutput, Unit>(
         name = "weather",
         description = "Get the weather for a city.",
-    ) { input ->
-        WeatherOutput(summary = "Mild in ${input.city}.")
-    }
-}
+    ) { input -> WeatherOutput(summary = "Mild in ${input.city}.") },
+)
 ```
 
 ## Build An Agent
@@ -134,13 +131,15 @@ val tools = toolSet<Unit> {
 Use `ToolLoopAgent` when the model should decide when to call tools.
 
 ```kotlin
-val agent = ToolLoopAgent<Unit, String>(
-    model = model,
-    instructions = "Use tools when they help. Be brief.",
-    tools = toolSetOf(weatherTool),
-    stopWhen = stepCountIs(6),
-)
+class WeatherAgent(model: LanguageModel, tools: ToolSet<Unit>) :
+    ToolLoopAgent<Unit, String>(
+        model = model,
+        instructions = "Use tools when they help. Be brief.",
+        tools = tools,
+        stopWhen = StepCountIs(6),
+    )
 
+val agent = WeatherAgent(model, ToolSet(weatherTool))
 val answer = agent.generate(prompt = "What is the weather in Paris?")
 println(answer.text)
 ```

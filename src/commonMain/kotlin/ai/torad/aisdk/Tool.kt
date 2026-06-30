@@ -58,7 +58,7 @@ public sealed class ToolResult<out O> {
  *
  * **2. Use the [Tool] / [StreamingTool] PascalCase factories** — anonymous subclass for inline tools.
  */
-public sealed class Tool<TInput, TOutput, TContext> {
+public abstract class Tool<TInput, TOutput, TContext> {
     public abstract val schema: ToolSchema
     public abstract val inputSerializer: KSerializer<TInput>
     public abstract val outputSerializer: KSerializer<TOutput>
@@ -885,7 +885,7 @@ public object ToolResultOutputs {
     }
 
     private fun contentOutputOrNull(obj: JsonObject): ToolResultOutput.Content? =
-        (obj["value"] as? JsonArray)?.let { value ->
+        (JsonAccess.arr(obj, "value"))?.let { value ->
             ToolResultOutput.Content(
                 value = value.toList(),
                 isError = (obj["isError"] as? JsonPrimitive)?.booleanOrNull ?: false,

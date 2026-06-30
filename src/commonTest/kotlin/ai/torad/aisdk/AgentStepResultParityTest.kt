@@ -1,3 +1,5 @@
+@file:OptIn(LowLevelLanguageModelApi::class)
+
 package ai.torad.aisdk
 
 import kotlinx.coroutines.flow.Flow
@@ -17,7 +19,15 @@ class AgentStepResultParityTest {
     private fun richModel(finish: FinishReason) = object : LanguageModel {
         override val modelId = "m"
         override suspend fun generate(params: LanguageModelCallParams) =
-            LanguageModelResult(text = "hello", finishReason = finish, usage = Usage())
+            LanguageModelResult(
+                text = "hello",
+                finishReason = finish,
+                usage = Usage(),
+                providerMetadata = ProviderMetadata.Raw(buildJsonObject { put("p", JsonPrimitive(1)) }),
+                rawFinishReason = "stop_sequence",
+                warnings = listOf(CallWarning(type = "other", message = "heads up")),
+                response = LanguageModelResponseMetadata(id = "resp_1", modelId = "m"),
+            )
         override fun stream(params: LanguageModelCallParams): Flow<StreamEvent> = flow {
             emit(StreamEvent.StreamStart(listOf(CallWarning(type = "other", message = "heads up"))))
             emit(StreamEvent.ResponseMetadata(id = "resp_1", modelId = "m"))

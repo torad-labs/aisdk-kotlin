@@ -1,3 +1,5 @@
+@file:OptIn(LowLevelLanguageModelApi::class)
+
 package ai.torad.aisdk
 import ai.torad.aisdk.providers.BASETEN_VERSION
 import ai.torad.aisdk.providers.BasetenProviderSettings

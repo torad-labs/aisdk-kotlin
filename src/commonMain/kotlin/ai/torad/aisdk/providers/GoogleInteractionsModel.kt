@@ -1,3 +1,5 @@
+@file:OptIn(ai.torad.aisdk.LowLevelLanguageModelApi::class)
+
 package ai.torad.aisdk.providers
 
 import ai.torad.aisdk.*
@@ -183,7 +185,7 @@ internal class GoogleInteractionsStreamState(
 
     fun accept(event: JsonObject): List<StreamEvent> {
         val events = mutableListOf<StreamEvent>()
-        val interaction = (event["interaction"] as? JsonObject)
+        val interaction = (JsonAccess.obj(event, "interaction"))
         val interactionId = (interaction?.get("id") as? JsonPrimitive)?.contentOrNull
         if (interaction != null) {
             events += StreamEvent.ResponseMetadata(
@@ -192,7 +194,7 @@ internal class GoogleInteractionsStreamState(
                 body = interaction,
             )
         }
-        val step = (event["step"] as? JsonObject)
+        val step = (JsonAccess.obj(event, "step"))
         if (step != null) {
             events += acceptStep(step, interactionId)
         }
@@ -221,7 +223,7 @@ internal class GoogleInteractionsStreamState(
             modelId = (response["model"] as? JsonPrimitive)?.contentOrNull,
             body = response,
         )
-        (response["steps"] as? JsonArray).orEmpty().forEach { step ->
+        (JsonAccess.arr(response, "steps")).orEmpty().forEach { step ->
             (step as? JsonObject)?.let { events += acceptStep(it, interactionId) }
         }
         usage = googleInteractionsUsage(response["usage"])
@@ -243,7 +245,7 @@ internal class GoogleInteractionsStreamState(
         val events = mutableListOf<StreamEvent>()
         when (val type = (step["type"] as? JsonPrimitive)?.contentOrNull) {
             "model_output" -> {
-                (step["content"] as? JsonArray).orEmpty().forEachIndexed { index, blockElement ->
+                (JsonAccess.arr(step, "content")).orEmpty().forEachIndexed { index, blockElement ->
                     val block = try {
                         WireDecoder.objectValue(blockElement, "google", "interactions stream step", "$.content[$index]")
                     } catch (error: WireDecodeException) {
@@ -286,7 +288,7 @@ internal class GoogleInteractionsStreamState(
                 events += StreamEvent.ReasoningStart(id, metadata)
                 events += StreamEvent.ReasoningDelta(
                     id,
-                    (step["summary"] as? JsonArray).orEmpty()
+                    (JsonAccess.arr(step, "summary")).orEmpty()
                         .mapNotNull { ((it as? JsonObject)?.get("text") as? JsonPrimitive)?.contentOrNull }
                         .joinToString("\n"),
                     metadata,
@@ -344,8 +346,6 @@ internal class GoogleInteractionsStreamState(
         }.orEmpty()
 }
 
-// Google Interactions API: request assembly, response/stream decoding, polling,
-// and SSE collection. Extracted verbatim from GoogleProvider.kt.
 internal object GoogleInteractions {
     fun googleInteractionsRequestBody(
     input: GoogleInteractionsModelInput,
@@ -353,7 +353,7 @@ internal object GoogleInteractions {
     stream: Boolean,
 ): GoogleInteractionsPreparedRequest {
     val warnings = mutableListOf<CallWarning>()
-    val options = params.providerOptions.toMap()["google"] as? JsonObject ?: JsonObject(emptyMap())
+    val options = JsonAccess.obj(params.providerOptions.toMap(), "google") ?: JsonObject(emptyMap())
     val isAgent = input !is GoogleInteractionsModelInput.Model
     val isBackground = (options["background"] as? JsonPrimitive)?.booleanOrNull == true
     val converted = googleInteractionsInput(
@@ -594,8 +594,8 @@ internal object GoogleInteractions {
             }
         }
     }
-    entries += (options["responseFormat"] as? JsonArray).orEmpty().mapNotNull(::googleInteractionsFormatEntry)
-    (options["imageConfig"] as? JsonObject)?.let { image ->
+    entries += (JsonAccess.arr(options, "responseFormat")).orEmpty().mapNotNull(::googleInteractionsFormatEntry)
+    (JsonAccess.obj(options, "imageConfig"))?.let { image ->
         warnings += CallWarning("other", "google.interactions: providerOptions.google.imageConfig is deprecated. Use providerOptions.google.responseFormat with an image entry instead.")
         if (entries.none { (it.jsonObject["type"] as? JsonPrimitive)?.contentOrNull == "image" }) {
             entries += buildJsonObject {
@@ -633,9 +633,8 @@ internal object GoogleInteractions {
                     put("type", JsonPrimitive("retrieval"))
                     put("retrieval_types", JsonArray(listOf(JsonPrimitive("vertex_ai_search"))))
                 }
-                else -> {
+                else -> null.also {
                     warnings += CallWarning("unsupported", "provider-defined tool ${tool.name} is not supported by google.interactions; tool dropped.")
-                    null
                 }
             }
         }
@@ -658,7 +657,7 @@ internal object GoogleInteractions {
 }
 
     fun googleInteractionsAgentConfig(options: JsonObject): JsonObject? {
-    val config = (options["agentConfig"] as? JsonObject) ?: return null
+    val config = (JsonAccess.obj(options, "agentConfig")) ?: return null
     val type = (config["type"] as? JsonPrimitive)?.contentOrNull ?: return null
     return buildJsonObject {
         put("type", JsonPrimitive(type))
@@ -680,12 +679,13 @@ internal object GoogleInteractions {
         warnings += CallWarning("other", "google.interactions: environment is only supported when an agent is set; environment will be omitted from the request body.")
         return null
     }
-    if (element is JsonPrimitive) return element
-    val obj = element as? JsonObject ?: return element
-    return buildJsonObject {
-        put("type", obj["type"] ?: JsonPrimitive("remote"))
-        obj["sources"]?.let { put("sources", it) }
-        obj["network"]?.let { put("network", googleInteractionsNetwork(it)) }
+    return when (element) {
+        !is JsonObject -> element
+        else -> buildJsonObject {
+            put("type", element["type"] ?: JsonPrimitive("remote"))
+            element["sources"]?.let { put("sources", it) }
+            element["network"]?.let { put("network", googleInteractionsNetwork(it)) }
+        }
     }
 }
 
@@ -707,7 +707,7 @@ internal object GoogleInteractions {
     settings: GoogleGenerativeAIProviderSettings,
 ): LanguageModelResult {
     val interactionId = (response["id"] as? JsonPrimitive)?.contentOrNull?.takeIf { it.isNotBlank() }
-    val parsed = googleInteractionsContent(response["steps"] as? JsonArray, settings.generateId, interactionId)
+    val parsed = googleInteractionsContent(JsonAccess.arr(response, "steps"), settings.generateId, interactionId)
     val text = parsed.content.filterIsInstance<ContentPart.Text>().joinToString("") { it.text }
     val status = (response["status"] as? JsonPrimitive)?.contentOrNull
     val serviceTier = (response["service_tier"] as? JsonPrimitive)?.contentOrNull ?: headers["x-gemini-service-tier"]
@@ -744,14 +744,16 @@ internal object GoogleInteractions {
         val step = stepElement as? JsonObject ?: return@forEach
         when (val type = (step["type"] as? JsonPrimitive)?.contentOrNull) {
             "model_output" -> {
-                (step["content"] as? JsonArray).orEmpty().forEach { blockElement ->
+                (JsonAccess.arr(step, "content")).orEmpty().forEach { blockElement ->
                     val block = blockElement as? JsonObject ?: return@forEach
                     when ((block["type"] as? JsonPrimitive)?.contentOrNull) {
                         "text" -> {
                             val metadata = googleInteractionsMetadata(interactionId = interactionId)
                             val blockText = (block["text"] as? JsonPrimitive)?.contentOrNull.orEmpty()
                             content += ContentPart.Text(blockText, metadata)
-                            content += googleInteractionsAnnotationSources(block["annotations"] as? JsonArray, generateId, metadata.toMap().ifEmpty { null })
+                            content += googleInteractionsAnnotationSources(
+                                JsonAccess.arr(block, "annotations"), generateId, metadata.toMap().ifEmpty { null },
+                            )
                         }
                         "image" -> {
                             val metadata = googleInteractionsMetadata(
@@ -770,7 +772,7 @@ internal object GoogleInteractions {
             }
             "thought" -> {
                 content += ContentPart.Reasoning(
-                    text = (step["summary"] as? JsonArray).orEmpty()
+                    text = (JsonAccess.arr(step, "summary")).orEmpty()
                         .mapNotNull { ((it as? JsonObject)?.get("text") as? JsonPrimitive)?.contentOrNull }
                         .joinToString("\n"),
                     providerMetadata = googleInteractionsMetadata(

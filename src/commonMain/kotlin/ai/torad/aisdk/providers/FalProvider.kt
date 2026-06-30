@@ -47,7 +47,7 @@ public data class FalProviderSettings(
         }
 
     internal fun falOptions(providerOptions: ProviderOptions): JsonObject =
-        providerOptions.toMap()["fal"] as? JsonObject ?: JsonObject(emptyMap())
+        JsonAccess.obj(providerOptions.toMap(), "fal") ?: JsonObject(emptyMap())
 
     internal fun putJsonObjectFields(builder: JsonObjectBuilder, fields: JsonObject) {
         fields.forEach { (key, value) ->
@@ -348,23 +348,23 @@ private class FalImageModel(
         key.replace(Regex("_([a-z])")) { it.groupValues[1].uppercase() }
 
     private fun falResponseImages(value: JsonObject): List<JsonObject> {
-        (value["images"] as? JsonArray)?.let { images -> return images.mapNotNull { it as? JsonObject } }
-        (value["image"] as? JsonObject)?.let { return listOf(it) }
+        (JsonAccess.arr(value, "images"))?.let { images -> return images.mapNotNull { it as? JsonObject } }
+        (JsonAccess.obj(value, "image"))?.let { return listOf(it) }
         return emptyList()
     }
 
-    private fun falImageProviderMetadata(
-        value: JsonObject,
-        images: List<JsonObject>,
-    ): JsonObject = buildJsonObject {
-        put("images", JsonArray(images.mapIndexed { index, image ->
-            buildJsonObject {
-                settings.putJsonObjectFields(this, falImageMetadata(image))
-                val nsfw = (value["has_nsfw_concepts"] as? JsonArray)?.getOrNull(index)
-                    ?: (value["nsfw_content_detected"] as? JsonArray)?.getOrNull(index)
-                nsfw?.let { put("nsfw", it) }
-            }
-        }))
+    private fun falImageProviderMetadata(value: JsonObject, images: List<JsonObject>): JsonObject = buildJsonObject {
+        put(
+            "images",
+            JsonArray(images.mapIndexed { index, image ->
+                buildJsonObject {
+                    settings.putJsonObjectFields(this, falImageMetadata(image))
+                    val nsfw = (JsonAccess.arr(value, "has_nsfw_concepts"))?.getOrNull(index)
+                        ?: (JsonAccess.arr(value, "nsfw_content_detected"))?.getOrNull(index)
+                    nsfw?.let { put("nsfw", it) }
+                }
+            }),
+        )
         for ((key, item) in value) {
             if (key !in setOf("images", "image", "prompt", "has_nsfw_concepts", "nsfw_content_detected") && item !is JsonNull) {
                 put(key, item)
@@ -399,7 +399,7 @@ private class FalSpeechModel(
             body = prepared.body,
             headers = settings.falHeaders(params.headers),
         )
-        val audioObj = response.value.jsonObject["audio"] as? JsonObject
+        val audioObj = JsonAccess.obj(response.value.jsonObject, "audio")
         val audioUrl = (audioObj?.get("url") as? JsonPrimitive)?.contentOrNull
             ?: throw NoSpeechGeneratedError("fal speech response is missing audio.url")
         val audio = settings.falGetBinary(client, audioUrl, emptyMap(), params.abortSignal)
@@ -468,12 +468,12 @@ private class FalTranscriptionModel(
             timeoutMessage = "Transcription request timed out after ${settings.transcriptionPollIntervalMillis * settings.transcriptionMaxPollAttempts}ms",
         )
         val value = result.value.jsonObject
-        val chunks = value["chunks"] as? JsonArray ?: JsonArray(emptyList())
+        val chunks = JsonAccess.arr(value, "chunks") ?: JsonArray(emptyList())
         return TranscriptionModelResult(
             text = (value["text"] as? JsonPrimitive)?.contentOrNull,
             segments = chunks.mapNotNull { chunk ->
                 val obj = chunk as? JsonObject ?: return@mapNotNull null
-                val timestamp = obj["timestamp"] as? JsonArray
+                val timestamp = JsonAccess.arr(obj, "timestamp")
                 TranscriptSegment(
                     text = (obj["text"] as? JsonPrimitive)?.contentOrNull.orEmpty(),
                     startSeconds = (timestamp?.getOrNull(0) as? JsonPrimitive)?.floatOrNull,
@@ -535,7 +535,7 @@ private class FalVideoModel(
             timeoutMessage = "Video generation request timed out",
         )
         val value = result.value.jsonObject
-        val video = (value["video"] as? JsonObject) ?: throw NoVideoGeneratedError("No video URL in response")
+        val video = (JsonAccess.obj(value, "video")) ?: throw NoVideoGeneratedError("No video URL in response")
         val videoUrl = (video["url"] as? JsonPrimitive)?.contentOrNull
             ?: throw NoVideoGeneratedError("No video URL in response")
         val mediaType = (video["content_type"] as? JsonPrimitive)?.contentOrNull ?: "video/mp4"
@@ -647,12 +647,12 @@ private val falErrorMessage: ErrorMessageExtractor = { _, parsed, raw ->
         obj == null -> raw
         validation != null -> validation.joinToString("\n") { item ->
             val detail = item as? JsonObject ?: return@joinToString ""
-            val loc = (detail["loc"] as? JsonArray)
+            val loc = (JsonAccess.arr(detail, "loc"))
                 ?.joinToString(".") { (it as? JsonPrimitive)?.contentOrNull.orEmpty() }
             val msg = (detail["msg"] as? JsonPrimitive)?.contentOrNull.orEmpty()
             listOfNotNull(loc?.takeIf { it.isNotBlank() }, msg.takeIf { it.isNotBlank() }).joinToString(": ")
         }
-        else -> ((obj["error"] as? JsonObject)?.get("message") as? JsonPrimitive)?.contentOrNull
+        else -> ((JsonAccess.obj(obj, "error"))?.get("message") as? JsonPrimitive)?.contentOrNull
             ?: (obj["message"] as? JsonPrimitive)?.contentOrNull
             ?: raw
     }

@@ -70,14 +70,16 @@ time. Prefer typed serializers inside application code.
 @Serializable
 data class Answer(val summary: String, val sources: List<String>)
 
-val agent = ToolLoopAgent<AppContext, Answer>(
-    model = model,
-    instructions = "Search docs before answering.",
-    tools = toolSetOf(searchDocs),
-    output = outputObj(serializer<Answer>()),
-    stopWhen = stepCountIs(6),
-)
+class AnswerAgent(model: LanguageModel, tools: ToolSet<AppContext>) :
+    ToolLoopAgent<AppContext, Answer>(
+        model = model,
+        instructions = "Search docs before answering.",
+        tools = tools,
+        output = outputObj(serializer<Answer>()),
+        stopWhen = StepCountIs(6),
+    )
 
+val agent = AnswerAgent(model, ToolSet(searchDocs))
 val result = agent.generate(messages = messages, options = context)
 ```
 

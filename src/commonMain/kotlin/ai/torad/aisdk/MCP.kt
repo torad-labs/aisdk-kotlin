@@ -386,7 +386,7 @@ private class DefaultMCPClient(config: MCPClientConfig) : MCPClient {
         // v6 parity: MCP tool names come from an external server and v6's
         // client tolerates duplicates with last-wins (not a hard failure).
         // The strict requireUniqueToolNames policy applies only to
-        // caller-owned tool sets (toolSetOf / ToolSet.plus / the builder).
+        // caller-owned tool sets (ToolSet / ToolSet.plus / the builder).
         return ToolSet(tools.associateBy { it.name })
     }
 
@@ -691,7 +691,7 @@ private class DefaultMCPClient(config: MCPClientConfig) : MCPClient {
 
     private fun mcpToModelOutput(output: JsonElement): ToolResultOutput {
         val obj = output as? JsonObject ?: return ToolResultOutput.Json(output)
-        val content = obj["content"] as? JsonArray ?: return ToolResultOutput.Json(output)
+        val content = JsonAccess.arr(obj, "content") ?: return ToolResultOutput.Json(output)
         val converted = content.map { part ->
             val partObj = part as? JsonObject
             // `as? JsonPrimitive` (not `?.jsonPrimitive`, which throws on a non-primitive value):

@@ -65,7 +65,7 @@ public data class ReplicateProviderSettings(
     val headers: Map<String, String> = emptyMap(),
 ) {
     internal fun replicateOptions(providerOptions: ProviderOptions): JsonObject =
-        providerOptions.toMap()["replicate"] as? JsonObject ?: JsonObject(emptyMap())
+        JsonAccess.obj(providerOptions.toMap(), "replicate") ?: JsonObject(emptyMap())
 
     internal fun replicatePreferHeader(options: JsonObject): Map<String, String> {
         val maxWait = (options["maxWaitTimeInSeconds"] as? JsonPrimitive)?.contentOrNull
@@ -398,7 +398,7 @@ private class ReplicateVideoModel(
             }
             if (pollIntervalMs > 0) delay(pollIntervalMs)
             abortSignal.throwIfAborted()
-            val pollUrl = ((prediction["urls"] as? JsonObject)?.get("get") as? JsonPrimitive)?.contentOrNull
+            val pollUrl = ((JsonAccess.obj(prediction, "urls"))?.get("get") as? JsonPrimitive)?.contentOrNull
                 ?: throw InvalidResponseDataError(null, "Replicate prediction response is missing urls.get")
             prediction = settings.replicateGetJson(
                 client = client,

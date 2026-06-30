@@ -175,7 +175,7 @@ internal object BedrockHttp {
     fun bedrockErrorMessage(parsed: JsonElement?, raw: String): String {
         val obj = parsed as? JsonObject ?: return raw
         val message = (obj["message"] as? JsonPrimitive)?.contentOrNull
-            ?: ((obj["error"] as? JsonObject)?.get("message") as? JsonPrimitive)?.contentOrNull
+            ?: ((JsonAccess.obj(obj, "error"))?.get("message") as? JsonPrimitive)?.contentOrNull
             ?: (obj["type"] as? JsonPrimitive)?.contentOrNull
             ?: raw
         val code = (obj["__type"] as? JsonPrimitive)?.contentOrNull

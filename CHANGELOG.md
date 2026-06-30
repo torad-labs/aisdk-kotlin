@@ -11,20 +11,24 @@ This project follows Semantic Versioning once the first stable release is cut.
 - Privacy hardening: telemetry integrations are metadata-only by default (`recordInputs=false`, `recordOutputs=false`) and receive a redacted event projection. `LoggingMiddleware` now logs tool metadata and byte counts by default; raw/redacted payload logging is explicit via `LoggingOptions` and the shared `Redactor` seam.
 - Release gates: coverage thresholds, detekt baseline budget ratchet, dependency verification metadata, provider capability/API review checks, local-staging consumer smoke fixtures, SHA-pinned GitHub Actions, workflow timeouts, and a `tools/beta-readiness-check` gate were added.
 - Public API hardening: JVM default-method compatibility is now pinned to `JvmDefaultMode.ENABLE`; experimental MCP/media aliases and functions now require `@ExperimentalAiSdkApi`; mutable byte payloads now defensively copy on input/output (`FileData.Bytes.toByteArray()`, `DefaultGeneratedFile.byteArray`); and `MutableTelemetrySpan` now accepts a read-only `Map` instead of a public `MutableMap`.
+- Beta contract correction: the checked ABI now exposes `Tool` as a non-sealed
+  `abstract class`, so external modules can subclass it exactly as the beta
+  docs and migration notes describe. Open Responses streaming now emits a
+  terminal `StreamEvent.Error` for `response.failed` events and prefers final
+  `output_item.done` tool-call arguments over an empty pending placeholder.
 
 - **Tools are now class-based and extensible (breaking ABI change).** `Tool` is an `abstract class`
   you can extend for reusable, dependency-injected tools — mirroring how a concrete agent extends
   `ToolLoopAgent`:
   ```kotlin
   class SearchDocsTool(private val repo: DocRepository) :
-      Tool<SearchInput, List<SearchResult>, AppContext>(
-          name = "searchDocs",
-          description = "Search the product documentation",
-          inputSerializer = serializer(),
-          outputSerializer = serializer(),
-      ) {
-      override suspend fun ToolExecutionContext<AppContext>.execute(input: SearchInput) =
-          repo.search(input.query)
+      Tool<SearchInput, List<SearchResult>, AppContext>() {
+      override val schema = ToolSchema("searchDocs", "Search the product documentation")
+      override val inputSerializer = serializer<SearchInput>()
+      override val outputSerializer = serializer<List<SearchResult>>()
+      override fun execute(input: SearchInput, ctx: ToolExecutionContext<AppContext>) = flow {
+          emit(ToolResult.Success(repo.search(input.query)))
+      }
   }
   // usage: ToolSet(SearchDocsTool(repo))
   ```
@@ -38,9 +42,8 @@ This project follows Semantic Versioning once the first stable release is cut.
   Migration: the `Tool(...)` constructor is no longer invoked directly, and the public `Tool.executor`
   / `Tool.needsApproval` / `Tool.toModelOutput` / `Tool.onInput*` *fields* are removed (they became
   methods). Keep using the factories (unchanged), or extend `Tool` / `StreamingTool`. To drive a tool's
-  executor directly, prefer `executeTool(tool, input, ctx)` — it collects the Flow and works for any
-  tool; `with(tool) { ctx.execute(input) }` is only valid for a known plain `Tool` (it throws on a
-  `StreamingTool`, which produces values via `executeStream`).
+  executor directly, prefer `ExecuteTool(tool, input, ctx)` — it handles preliminary/final emissions
+  consistently for both plain and streaming tools.
 
   Tool-call repair + approval: the loop now resolves a call's input (decode + a single
   `experimental_repairToolCall` attempt) ONCE, before the approval gate, so repair reaches every tool —

@@ -11,7 +11,7 @@ This page is the map. Use the linked pages for deeper examples.
 | Concept | Kotlin type | Use it when |
 |---|---|---|
 | Provider | `Provider` | You need models from Gateway, OpenAI-compatible APIs, dedicated provider facades, or a custom test provider. |
-| Model | `LanguageModel`, `EmbeddingModel`, `ImageModel`, etc. | You are making a provider-neutral call. |
+| Model | `LanguageModel`, `EmbeddingModel`, `ImageModel`, etc. | You are selecting a provider-neutral model for agents or high-level generation helpers. |
 | Prompt | `prompt`, `system`, `messages` | You are sending model input. |
 | Message | `ModelMessage` | You are preserving a conversation, tool result, source, file, or approval decision. |
 | Tool | `Tool<TInput, TOutput, TContext>` | The model needs to call app code or a provider-side action. |
@@ -44,13 +44,16 @@ val result = streamTextResult(
 Use an agent when the model should call tools:
 
 ```kotlin
-val agent = ToolLoopAgent<AppContext, Answer>(
-    model = model,
-    instructions = "Search docs before answering.",
-    tools = toolSetOf(searchDocs),
-    output = outputObj(serializer<Answer>()),
-    stopWhen = stepCountIs(6),
-)
+class AnswerAgent(model: LanguageModel, tools: ToolSet<AppContext>) :
+    ToolLoopAgent<AppContext, Answer>(
+        model = model,
+        instructions = "Search docs before answering.",
+        tools = tools,
+        output = outputObj(serializer<Answer>()),
+        stopWhen = StepCountIs(6),
+    )
+
+val agent = AnswerAgent(model, ToolSet(searchDocs))
 ```
 
 ## Kotlin Differences From Upstream
@@ -92,6 +95,7 @@ For a UI:
 ## Tips
 
 - Start with `generateText` until the app needs visible progress. Move to `streamTextResult` when you need adapters or replayable streams.
+- Keep prompts on `Agent.generate` / `Agent.stream` or `generateText` / `streamText`. Direct `LanguageModel.generate`, `LanguageModel.stream`, and `LanguageModel.streamResult` calls are low-level provider APIs and require `@OptIn(LowLevelLanguageModelApi::class)`.
 - Persist messages at boundaries. Approval state, tool results, files, and sources all belong in the message log.
 - Use `Output` instead of parsing text. The old object helpers remain for compatibility, but `generateText(output = ...)` and `streamText(output = ...)` match v6.
 - Keep provider differences in provider options or middleware. Agent code should not branch on model ids.

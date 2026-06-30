@@ -8,6 +8,7 @@ import ai.torad.aisdk.LanguageModelCallParams
 import ai.torad.aisdk.LanguageModelRequestMetadata
 import ai.torad.aisdk.LanguageModelResponseMetadata
 import ai.torad.aisdk.LanguageModelResult
+import ai.torad.aisdk.LowLevelLanguageModelApi
 import ai.torad.aisdk.ProviderMetadata
 import ai.torad.aisdk.StreamEvent
 import ai.torad.aisdk.Usage
@@ -33,6 +34,7 @@ public class MockLanguageModel(
 
     private var callIndex: Int = 0
 
+    @LowLevelLanguageModelApi
     override suspend fun generate(params: LanguageModelCallParams): LanguageModelResult {
         val response = nextResponse()
         val text = response.events
@@ -81,6 +83,7 @@ public class MockLanguageModel(
         )
     }
 
+    @LowLevelLanguageModelApi
     override fun stream(params: LanguageModelCallParams): Flow<StreamEvent> = flow {
         val response = nextResponse()
         for (event in response.events) emit(event)

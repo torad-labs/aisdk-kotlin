@@ -164,7 +164,7 @@ public data class StepResult(
     /** The non-empty reasoning text for this step, or null — mirrors upstream's `reasoningText`. */
     val reasoningText: String? get() = reasoning.takeIf { it.isNotEmpty() }
 
-    /** Tool calls/results split by static (`tool(...)`) vs dynamic (`dynamicTool(...)`), per upstream. */
+    /** Tool calls/results split by static (`Tool(...)`) vs dynamic (`DynamicTool(...)`). */
     val staticToolCalls: List<ContentPart.ToolCall> get() = toolCalls.filter { !it.dynamic }
     val dynamicToolCalls: List<ContentPart.ToolCall> get() = toolCalls.filter { it.dynamic }
     val staticToolResults: List<ContentPart.ToolResult> get() = toolResults.filter { !it.dynamic }

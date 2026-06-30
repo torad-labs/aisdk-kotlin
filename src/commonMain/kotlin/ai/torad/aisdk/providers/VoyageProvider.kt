@@ -63,7 +63,7 @@ public data class VoyageProviderSettings(
     }
 
     internal fun voyageOptions(providerOptions: ProviderOptions): JsonObject =
-        providerOptions.toMap()["voyage"] as? JsonObject ?: JsonObject(emptyMap())
+        JsonAccess.obj(providerOptions.toMap(), "voyage") ?: JsonObject(emptyMap())
 
     private fun voyageErrorMessage(statusCode: Int, parsed: JsonElement?, raw: String): String {
         val obj = parsed as? JsonObject
@@ -130,13 +130,15 @@ private class VoyageEmbeddingModel(
         )
         val value = response.value.jsonObject
         return EmbeddingModelResult(
-            embeddings = (value["data"] as? JsonArray).orEmpty()
+            embeddings = (JsonAccess.arr(value, "data")).orEmpty()
                 .map { item ->
-                    val row = ((item as? JsonObject)?.get("embedding") as? JsonArray).orEmpty()
+                    val embedding = item as? JsonObject
+                    val row = JsonAccess.arr(embedding, "embedding").orEmpty()
                     row.map { WireDecoder.embeddingFloat(it, provider) }
                 },
             usage = EmbeddingUsage(
-                tokens = ((value["usage"] as? JsonObject)?.get("total_tokens") as? JsonPrimitive)?.intOrNull ?: 0,
+                tokens = (JsonAccess.obj(value, "usage")?.get("total_tokens") as? JsonPrimitive)?.intOrNull
+                    ?: 0,
                 raw = value["usage"],
             ),
             request = LanguageModelRequestMetadata(body = body),
@@ -168,7 +170,7 @@ private class VoyageRerankingModel(
             headers = settings.voyageHeaders(params.headers),
         )
         val value = response.value.jsonObject
-        val results = (value["data"] as? JsonArray).orEmpty().mapNotNull { item ->
+        val results = (JsonAccess.arr(value, "data")).orEmpty().mapNotNull { item ->
             val obj = item as? JsonObject ?: return@mapNotNull null
             val index = (obj["index"] as? JsonPrimitive)?.intOrNull ?: 0
             RerankedItem(
@@ -177,7 +179,8 @@ private class VoyageRerankingModel(
                 index = index,
             )
         }
-        val totalTokens = ((value["usage"] as? JsonObject)?.get("total_tokens") as? JsonPrimitive)?.intOrNull ?: 0
+        val totalTokens = (JsonAccess.obj(value, "usage")?.get("total_tokens") as? JsonPrimitive)?.intOrNull
+            ?: 0
         return RerankingModelResult(
             results = results,
             usage = Usage.of(promptTokens = totalTokens, completionTokens = 0),

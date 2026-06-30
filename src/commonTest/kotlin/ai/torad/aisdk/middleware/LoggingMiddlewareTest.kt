@@ -1,3 +1,5 @@
+@file:OptIn(ai.torad.aisdk.LowLevelLanguageModelApi::class)
+
 package ai.torad.aisdk.middleware
 
 import ai.torad.aisdk.AgentError

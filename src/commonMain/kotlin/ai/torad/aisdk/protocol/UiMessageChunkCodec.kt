@@ -19,7 +19,29 @@ internal object UiMessageChunkCodec {
         is StreamEvent.StepStart -> jsonChunk("start-step") {
             put("stepNumber", event.stepNumber)
         }
-        else -> null
+        is StreamEvent.ResponseMetadata,
+        is StreamEvent.TextStart,
+        is StreamEvent.TextDelta,
+        is StreamEvent.TextEnd,
+        is StreamEvent.ReasoningStart,
+        is StreamEvent.ReasoningDelta,
+        is StreamEvent.ReasoningEnd,
+        is StreamEvent.SourcePart,
+        is StreamEvent.FilePart,
+        is StreamEvent.ToolInputStart,
+        is StreamEvent.ToolInputDelta,
+        is StreamEvent.ToolInputEnd,
+        is StreamEvent.ToolCall,
+        is StreamEvent.ToolResult,
+        is StreamEvent.ToolError,
+        is StreamEvent.ToolApprovalRequest,
+        is StreamEvent.ToolOutputDenied,
+        is StreamEvent.StepFinish,
+        is StreamEvent.Finish,
+        StreamEvent.Abort,
+        is StreamEvent.Error,
+        is StreamEvent.Raw,
+        -> null
     }
 
     private fun text(event: StreamEvent): JsonObject? = when (event) {
@@ -29,7 +51,28 @@ internal object UiMessageChunkCodec {
             put("delta", event.text)
         }
         is StreamEvent.TextEnd -> jsonChunk("text-end") { put("id", event.id) }
-        else -> null
+        is StreamEvent.StreamStart,
+        is StreamEvent.ResponseMetadata,
+        is StreamEvent.StepStart,
+        is StreamEvent.ReasoningStart,
+        is StreamEvent.ReasoningDelta,
+        is StreamEvent.ReasoningEnd,
+        is StreamEvent.SourcePart,
+        is StreamEvent.FilePart,
+        is StreamEvent.ToolInputStart,
+        is StreamEvent.ToolInputDelta,
+        is StreamEvent.ToolInputEnd,
+        is StreamEvent.ToolCall,
+        is StreamEvent.ToolResult,
+        is StreamEvent.ToolError,
+        is StreamEvent.ToolApprovalRequest,
+        is StreamEvent.ToolOutputDenied,
+        is StreamEvent.StepFinish,
+        is StreamEvent.Finish,
+        StreamEvent.Abort,
+        is StreamEvent.Error,
+        is StreamEvent.Raw,
+        -> null
     }
 
     private fun reasoning(event: StreamEvent): JsonObject? = when (event) {
@@ -39,6 +82,27 @@ internal object UiMessageChunkCodec {
             put("delta", event.text)
         }
         is StreamEvent.ReasoningEnd -> jsonChunk("reasoning-end") { put("id", event.id) }
-        else -> null
+        is StreamEvent.StreamStart,
+        is StreamEvent.ResponseMetadata,
+        is StreamEvent.StepStart,
+        is StreamEvent.TextStart,
+        is StreamEvent.TextDelta,
+        is StreamEvent.TextEnd,
+        is StreamEvent.SourcePart,
+        is StreamEvent.FilePart,
+        is StreamEvent.ToolInputStart,
+        is StreamEvent.ToolInputDelta,
+        is StreamEvent.ToolInputEnd,
+        is StreamEvent.ToolCall,
+        is StreamEvent.ToolResult,
+        is StreamEvent.ToolError,
+        is StreamEvent.ToolApprovalRequest,
+        is StreamEvent.ToolOutputDenied,
+        is StreamEvent.StepFinish,
+        is StreamEvent.Finish,
+        StreamEvent.Abort,
+        is StreamEvent.Error,
+        is StreamEvent.Raw,
+        -> null
     }
 }

@@ -16,7 +16,7 @@ model translated into the language Kotlin actually wants to use.
 
 | Layer | Status |
 |---|---|
-| AI SDK Core (`generateText`, `streamText`, `Output`, `tool()`, `dynamicTool()`, `Agent` + `ToolLoopAgent`, `wrapLanguageModel`, `stopWhen`, `LanguageModel`, lifecycle hooks, `prepareCall` / `prepareStep`) | ✅ ported |
+| AI SDK Core (`generateText`, `streamText`, `Output`, `Tool()`, `DynamicTool()`, `Agent` + `ToolLoopAgent`, `wrapLanguageModel`, `stopWhen`, `LanguageModel`, lifecycle hooks, `prepareCall` / `prepareStep`) | ✅ ported |
 | AI SDK UI patterns (message parts, tool call states, `InferAgentUIMessage` equivalent, message stream reader, chat transports) | ✅ ported as Kotlin types/flows — Compose components live elsewhere |
 | `useChat` React hook | ✅ Kotlin equivalent is `Chat` + `ChatTransport` + `Flow<UIMessage>` collection |
 | `DefaultChatTransport`, text/UI stream response helpers | ✅ ported as `ChatTransport`, `TextStreamResponse`, `UIMessageStreamResponse`, and `ServerResponseWriter` |
@@ -35,7 +35,7 @@ The validator references make these renames non-negotiable:
 | v5 (DEAD) | v6 (LIVE) |
 |---|---|
 | `parameters: z.object({...})` | `inputSerializer = serializer<T>()` (Kotlin) / `inputSchema: z.object()` (TS) |
-| `maxSteps: 5` | `stopWhen = stepCountIs(5)` |
+| `maxSteps: 5` | `stopWhen = StepCountIs(5)` |
 | `maxTokens: 512` | `maxOutputTokens = 512` |
 | `generateObject({schema})` | Prefer `generateText(output = Output.obj(serializer<T>()))`; deprecated `generateObject(output = ...)` exists for compatibility |
 | `streamObject(...)` | Prefer `streamText(output = Output.obj(...))`; deprecated `streamObject(output = ...)` exists for compatibility |
@@ -53,12 +53,12 @@ The validator references make these renames non-negotiable:
 |---|---|
 | `Agent` interface | `Agent.kt` |
 | `ToolLoopAgent` class | `ToolLoopAgent.kt` |
-| `tool({...})` factory | `Tool.kt` (top-level `tool()` function + `Tool` class + `ToolSet`) |
+| `tool({...})` factory | `Tool.kt` (top-level `Tool()` function + `Tool` class + `ToolSet`) |
 | `needsApproval`, `addToolOutput` | `ToolApproval.kt` (`PendingApproval`) + `ContentPart.ToolApprovalRequest` / `ToolApprovalResponse` (RPC return-then-resume) |
 | `LanguageModel`, `LanguageModelV3` | `LanguageModel.kt` (interface + `LanguageModelCallParams`) |
 | `wrapLanguageModel`, `LanguageModelMiddleware` | `Middleware.kt` |
 | `Output.object`, `Output.array`, `Output.choice`, `Output.json` | `Output.kt` (`Output.obj` instead of `object` — Kotlin keyword) |
-| `stepCountIs`, `hasToolCall`, `StopCondition` | `StopCondition.kt` |
+| `stepCountIs`, `hasToolCall`, `StopCondition` | `StopCondition.kt` (`StepCountIs`, `HasToolCall`) |
 | `onStart`, `onStepFinish`, `onFinish`, `onError` | `Lifecycle.kt` |
 | `prepareCall`, `prepareStep` scopes | `Context.kt` |
 | `ToolExecutionContext` | `Context.kt` (member of) |

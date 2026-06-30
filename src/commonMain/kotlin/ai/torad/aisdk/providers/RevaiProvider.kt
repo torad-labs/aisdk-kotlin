@@ -281,7 +281,7 @@ private class RevaiTranscriptionModel(
     }
 
     private fun revaiOptions(providerOptions: ProviderOptions): JsonObject =
-        providerOptions.toMap()["revai"] as? JsonObject ?: JsonObject(emptyMap())
+        JsonAccess.obj(providerOptions.toMap(), "revai") ?: JsonObject(emptyMap())
 
     private fun revaiErrorMessage(statusCode: Int, parsed: JsonElement?, raw: String): String {
         val obj = parsed as? JsonObject

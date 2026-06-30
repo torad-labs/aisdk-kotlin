@@ -5,27 +5,32 @@ tool, and UI state. Telemetry integrations record the same kind of lifecycle at
 an observability boundary.
 
 The top-level `generateText` and `streamText` functions do not take lifecycle
-callback options in this port. Use `ToolLoopAgent` hooks when you need
-request-scoped callbacks, middleware when you need model-call wrapping, and
-telemetry integrations when you need app-wide observation.
+callback options in this port. Use `ToolLoopAgent.events(...)` or per-call
+`AgentCallHooks` when you need request-scoped callbacks, middleware when you
+need model-call wrapping, and telemetry integrations when you need app-wide
+observation.
 
 ## Agent Hooks
 
-Use constructor hooks for app-wide observation:
+Use the lifecycle event stream for full-loop observation:
 
 ```kotlin
-val agent = ToolLoopAgent<AppContext, String>(
-    model = model,
-    instructions = "Use tools when they help.",
-    tools = toolSetOf(searchDocs),
-    stopWhen = stepCountIs(8),
-    onStepFinish = {
-        audit.step(stepNumber, step.finishReason, step.usage.totalTokens)
-    },
-    onFinish = {
-        audit.finish(totalSteps, usage.totalTokens, pendingApprovals.size)
-    },
-)
+class AuditAgent(model: LanguageModel, tools: ToolSet<AppContext>) :
+    ToolLoopAgent<AppContext, String>(
+        model = model,
+        instructions = "Use tools when they help.",
+        tools = tools,
+        stopWhen = StepCountIs(8),
+    )
+
+val agent = AuditAgent(model, ToolSet(searchDocs))
+agent.events(prompt = prompt, options = context).collect { event ->
+    when (event) {
+        is AgentEvent.StepFinished -> audit.step(event.stepNumber, event.step.usage.totalTokens)
+        is AgentEvent.Finished<*, *> -> audit.finish(event.totalSteps, event.usage.totalTokens)
+        else -> Unit
+    }
+}
 ```
 
 Use per-call hooks for a single request:
@@ -42,7 +47,7 @@ val result = agent.generate(
 )
 ```
 
-Constructor hooks and per-call hooks both run when both are supplied.
+Use per-call hooks when you only need a small subset of lifecycle events.
 
 ## Hook Events
 
@@ -86,7 +91,7 @@ host wants lifecycle observation without taking over rendering.
 Tool input can stream before it is available as typed data:
 
 ```kotlin
-val lookup = tool<LookupInput, LookupResult, AppContext>(
+val lookup = Tool<LookupInput, LookupResult, AppContext>(
     name = "lookup",
     description = "Look up one record.",
     onInputStart = { id -> ui.startInput(id) },

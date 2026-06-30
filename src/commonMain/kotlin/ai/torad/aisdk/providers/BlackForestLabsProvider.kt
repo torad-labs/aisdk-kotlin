@@ -257,7 +257,7 @@ private class BlackForestLabsImageModel(
                 ?: throw InvalidResponseDataError(null, "Missing status in Black Forest Labs poll response")
             when (status) {
                 "Ready" -> {
-                    val result = (poll["result"] as? JsonObject)
+                    val result = (JsonAccess.obj(poll, "result"))
                         ?: throw InvalidResponseDataError(
                             null,
                             "Black Forest Labs poll response is Ready but missing result.sample",
@@ -270,7 +270,7 @@ private class BlackForestLabsImageModel(
                     return BflPollResult(imageUrl = imageUrl, result = result)
                 }
                 "Error", "Failed", "Content Moderated", "Request Moderated", "Task not found" -> {
-                    val reasons = ((poll["details"] as? JsonObject)?.get("Moderation Reasons") as? JsonArray)
+                    val reasons = ((JsonAccess.obj(poll, "details"))?.get("Moderation Reasons") as? JsonArray)
                         ?.joinToString(", ") { (it as? JsonPrimitive)?.contentOrNull.orEmpty() }
                     throw NoImageGeneratedError(
                         "Black Forest Labs generation $status" +
@@ -329,7 +329,7 @@ private class BlackForestLabsImageModel(
     }
 
     private fun bflOptions(providerOptions: ProviderOptions): JsonObject =
-        providerOptions.toMap()["blackForestLabs"] as? JsonObject ?: JsonObject(emptyMap())
+        JsonAccess.obj(providerOptions.toMap(), "blackForestLabs") ?: JsonObject(emptyMap())
 
     private fun bflPollUrl(pollingUrl: String, requestId: String): String {
         val hasId = pollingUrl.substringAfter('?', missingDelimiterValue = "").split('&').any { it.substringBefore('=') == "id" }

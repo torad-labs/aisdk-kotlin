@@ -13,12 +13,17 @@
   - `suspend fun generate(prompt?, messages = emptyList(), options?, abortSignal?, hooks?): GenerateResult<TOutput>`
   - `fun stream(prompt?, messages = emptyList(), options?, abortSignal?, hooks?): Flow<StreamEvent>`
 - `abstract class ToolLoopAgent<TContext, TOutput>(...) : Agent<TContext, TOutput>` — extend-only default loop implementation; applications provide a named subclass
+  - `val engineState: StateFlow<ToolLoopAgentState>`
+  - `fun dispatchEngineAction(action: ToolLoopAgentAction<TContext>)`
+  - `fun close()`
+- `data class ToolLoopAgentState(messages, streamingAssistantText, currentToolCalls, pendingApprovals, phase, totalSteps, lastFinishReason)` — state-holder surface for long-lived hosts
+- `sealed class ToolLoopAgentAction<TContext>` — `UserSubmitPrompt`, `ApproveToolCall`, `DenyToolCall`, `Cancel`, `Reset`
 - `data class GenerateResult<TOutput>(output, text, steps, finishReason, usage, pendingApprovals = [], messages = [])`
 - `data class AgentCallHooks(onStart?, onStepStart?, onStepFinish?, onFinish?, onError?, onChunk?)` — per-call hook surface
 
 ### Tool definition
 
-- `sealed class Tool<TInput, TOutput, TContext>` — extend it for named tools, or construct via PascalCase factories:
+- `abstract class Tool<TInput, TOutput, TContext>` — extend it for named tools, or construct via PascalCase factories:
   - `fun Tool(...): Tool<...>` — single-value executor `suspend ToolExecutionContext<TContext>.(TInput) -> TOutput`. Factory wraps in a one-emission flow. Use for the common case where the tool produces exactly one result.
   - `fun StreamingTool(...): Tool<...>` — `Flow<TOutput>`-returning executor. Each emission becomes a `StreamEvent.ToolResult`; the LAST emission is final (feeds the model on subsequent turns), earlier emissions are `preliminary = true` (UI-only progress). Empty flow → `StreamEvent.ToolError("tool emitted no values")`. Use when a tool can produce a useful early snapshot before the full result is ready.
   - `fun DynamicTool(...): Tool<JsonElement, JsonElement, TContext>` — runtime-typed JSON tool.
@@ -109,7 +114,8 @@ Penalty and response-format fields participate in the `Step ?: Agent ?: agent-de
 
 ### Provider abstraction
 
-- `interface LanguageModel { val modelId; suspend fun generate(...); fun stream(...) }`
+- `interface LanguageModel { val modelId; @LowLevelLanguageModelApi suspend fun generate(...); @LowLevelLanguageModelApi fun stream(...); @LowLevelLanguageModelApi fun streamResult(...) }`
+- `annotation class LowLevelLanguageModelApi` — `@RequiresOptIn(ERROR)` marker for direct language-model execution. Use agents or high-level generation helpers for application prompts; opt in only for provider implementations, tests, and deliberate low-level calls.
 - `data class LanguageModelCallParams(messages, tools, toolChoice, temperature?, topP?, topK?, maxOutputTokens?, stopSequences, seed?, providerOptions, abortSignal, presencePenalty?, frequencyPenalty?, responseFormat)`
 - `data class LanguageModelTool(name, description, parametersSchemaJson)`
 - `data class LanguageModelResult(text, toolCalls, finishReason, usage, providerMetadata, content, rawFinishReason?, warnings, request, response)`
@@ -143,15 +149,15 @@ Penalty and response-format fields participate in the `Step ?: Agent ?: agent-de
 - `data class EmbeddingModelResult(embeddings, usage, warnings, request, response, providerMetadata)`
 - `data class EmbeddingUsage(tokens, raw?)`
 - `suspend fun embed(model, value, providerOptions?, abortSignal?, headers?): EmbedResult<String>`
-- `suspend fun embedMany(model, values, maxEmbeddingsPerCall?, providerOptions?, abortSignal?, headers?): EmbedManyResult<String>`
+- `suspend fun embedMany(model, values, maxEmbeddingsPerCall?, maxParallelCalls = 8, providerOptions?, abortSignal?, headers?): EmbedManyResult<String>`
 - `interface EmbeddingModelMiddleware`; `wrapEmbeddingModel`; `defaultEmbeddingSettingsMiddleware`
 
 ### Media And Reranking
 
-- Image: `ImageModel`, `ImageGenerationParams`, `ImageModelResult`, `GenerateImageResult`, `generateImage(...)`
+- Image: `ImageModel`, `ImageGenerationParams`, `ImageModelResult`, `GenerateImageResult`, `generateImage(..., maxParallelCalls = 8)`
 - Speech: `SpeechModel`, `SpeechGenerationParams`, `SpeechModelResult`, `GenerateSpeechResult`, `generateSpeech(...)`
 - Transcription: `TranscriptionModel`, `AudioSource`, `TranscriptionParams`, `TranscriptSegment`, `TranscribeResult`, `transcribe(...)`
-- Video: `VideoModel`, `VideoGenerationParams`, `VideoModelResult`, `GenerateVideoResult`, `generateVideo(...)`
+- Video: `VideoModel`, `VideoGenerationParams`, `VideoModelResult`, `GenerateVideoResult`, `generateVideo(..., maxParallelCalls = 8)`
 - Rerank: `RerankingModel`, `RerankingParams`, `RerankedItem<T>`, `RerankResult<T>`, `rerank(...)`
 - Shared file payload: `GeneratedFile(mediaType, base64, filename?, providerMetadata)`, `FileData.Base64`, `FileData.Bytes.toByteArray()` (copy-returning), `FileData.Url`, `DefaultGeneratedFile.fromBase64/fromBytes` (`byteArray` is copy-returning).
 - Experimental media aliases/functions require `@ExperimentalAiSdkApi`: `Experimental_GeneratedImage`, `Experimental_GenerateImageResult`, `Experimental_SpeechResult`, `Experimental_TranscriptionResult`, `experimental_generateImage`, `experimental_generateSpeech`, `experimental_transcribe`, `experimental_generateVideo`.
@@ -244,9 +250,9 @@ Penalty and response-format fields participate in the `Step ?: Agent ?: agent-de
 
 ### UI types — `ai.torad.aisdk.ui.*`
 
-- Text/UI stream helpers: `TextStreamResponse`, `UIMessageStreamResponse`, `ServerResponseWriter`, `textStreamFromEvents`, `createTextStreamResponse`, `pipeTextStreamToResponse`, `createUiMessageStream`, `createUiMessageStreamResponse`, `pipeUiMessageStreamToResponse`, `readUiMessageStream`, `transformTextToUiMessageStream`.
+- Text/UI stream helpers: `TextStreamResponse`, `UIMessageStreamResponse`, `ServerResponseWriter`, `TextStreamFromEvents`, `CreateTextStreamResponse`, `CreateUiMessageStream`, `CreateUiMessageStreamResponse`, `ReadUiMessageStream`, `TransformTextToUiMessageStream`, `UiMessageStreams.pipeTextStreamToResponse`, `UiMessageStreams.pipeUiMessageStreamToResponse`.
 - Chat: `ChatRequest`, `ChatTransport`, `DirectChatTransport`, `DefaultChatTransport`, `TextStreamChatTransport`, `Chat`.
-- Validation/completion helpers: `validateUiMessages`, `getResponseUiMessageId`, `handleUiMessageStreamFinish`, `lastAssistantMessageIsCompleteWithToolCalls`, `lastAssistantMessageIsCompleteWithApprovalResponses`.
+- Validation/completion helpers: `UiMessageStreams.validateUiMessages`, `UiMessageStreams.validateUIMessages`, `UiMessageStreams.safeValidateUIMessages`, `UiMessageStreams.getResponseUiMessageId`, `UiMessageStreams.handleUiMessageStreamFinish`, `UiMessageStreams.lastAssistantMessageIsCompleteWithToolCalls`, `UiMessageStreams.lastAssistantMessageIsCompleteWithApprovalResponses`.
 
 - `data class UIMessage(id, role, parts: List<UIMessagePart>, createdAtMs?, metadata: Map<String, JsonElement>? = null)` — `metadata` is the monomorphic substitute for v6's `<METADATA, DATA_PARTS, TOOLS>` generics; apps can attach source-agent identity or routing metadata under their own namespaced keys.
 - `enum UIMessageRole { System, User, Assistant }`
@@ -258,10 +264,10 @@ Penalty and response-format fields participate in the `Step ?: Agent ?: agent-de
   - `File(mediaType, base64)`
   - **+ `providerMetadata: Map<String, JsonElement>? = null`** on `Text`, `ToolUI`, `DynamicToolUI`, `Reasoning`, `SourceUrl`, `SourceDocument`, `File` (not `Error` / `StepStart` — terminal / boundary). gap #11.
 - `enum ToolCallState { InputStreaming, InputAvailable, ApprovalRequested, ApprovalResponded, OutputAvailable, OutputError, OutputDenied }` — v6's full 7-state taxonomy. Renames: `ApprovalRequired → ApprovalRequested`, `Error → OutputError`. New states: `ApprovalResponded` (user answered, tool not yet run), `OutputDenied` (approval was denied).
-- `fun <T> outputAs(part: UIMessagePart.ToolUI, serializer): T?`
-- `fun <T> inputAs(part: UIMessagePart.ToolUI, serializer): T?`
-- `fun streamToUiMessages(events: Flow<StreamEvent>, assistantMessageId): Flow<UIMessage>`
-- `fun convertToModelMessages(messages: List<UIMessage>, ignoreIncompleteToolCalls: Boolean = false): List<ModelMessage>` — inverse of `streamToUiMessages`. UI-shape history → model-shape history for replay / crash recovery / subagent continuation. Drops UI-only parts (`StepStart`, `Source`, `File`, `Error`). Tool calls in `OutputAvailable` state split into an `Assistant` message carrying `ToolCall` followed by a `Tool` message carrying `ToolResult`. Preliminary `ToolUI` outputs are dropped (only final emissions feed the model). `InputStreaming` / `InputAvailable` parts are incomplete — silently dropped if `ignoreIncompleteToolCalls`, otherwise throw.
+- `UIMessagePart.ToolUI.outputAs(serializer)` / `inputAs(serializer)` plus reified overloads
+- `UIMessagePart.DynamicToolUI.outputAs(serializer)` / `inputAs(serializer)` plus reified overloads
+- `fun StreamToUiMessages(events: Flow<StreamEvent>, assistantMessageId): Flow<UIMessage>`
+- `ModelMessageConversion.convertToModelMessages(messages: List<UIMessage>, ignoreIncompleteToolCalls: Boolean = false): List<ModelMessage>` — inverse of `StreamToUiMessages`. UI-shape history → model-shape history for replay / crash recovery / subagent continuation. Drops UI-only parts (`StepStart`, `Source`, `File`, `Error`). Tool calls in `OutputAvailable` state split into an `Assistant` message carrying `ToolCall` followed by a `Tool` message carrying `ToolResult`. Preliminary `ToolUI` outputs are dropped (only final emissions feed the model). `InputStreaming` / `InputAvailable` parts are incomplete — silently dropped if `ignoreIncompleteToolCalls`, otherwise throw.
 - `class UIToolInvocation<TInput, TOutput>(toolCallId, toolName, state, input?, output?, error?)`
 - `class ToolPartHandlerRegistry<TRenderResult>` — typed dispatch per tool name
 - `fun buildToolPartHandlerRegistry(fallback) { register(tool, render) ... }`

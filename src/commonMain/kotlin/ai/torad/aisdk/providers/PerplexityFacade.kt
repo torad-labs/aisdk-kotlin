@@ -67,7 +67,7 @@ public data class PerplexityProviderSettings(
     }
 
     private fun perplexityTextMessage(message: JsonObject): JsonObject {
-        val content = message["content"] as? JsonArray
+        val content = JsonAccess.arr(message, "content")
         val textOnly = content?.all {
             ((it as? JsonObject)?.get("type") as? JsonPrimitive)?.contentOrNull == "text"
         } == true

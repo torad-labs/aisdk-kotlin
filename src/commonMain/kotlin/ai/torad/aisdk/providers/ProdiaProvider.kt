@@ -1,3 +1,5 @@
+@file:OptIn(ai.torad.aisdk.LowLevelLanguageModelApi::class)
+
 package ai.torad.aisdk.providers
 
 import ai.torad.aisdk.*
@@ -43,7 +45,7 @@ public data class ProdiaProviderSettings(
     val headers: Map<String, String> = emptyMap(),
 ) {
     internal fun prodiaOptions(providerOptions: ProviderOptions): JsonObject =
-        providerOptions.toMap()["prodia"] as? JsonObject ?: JsonObject(emptyMap())
+        JsonAccess.obj(providerOptions.toMap(), "prodia") ?: JsonObject(emptyMap())
 
     internal fun prodiaHeaders(callHeaders: Map<String, String>): Map<String, String> {
         val base = linkedMapOf<String, String?>()
@@ -538,13 +540,13 @@ internal data class ProdiaMultipartResult(
 ) {
     internal fun jobMetadata(): JsonObject = buildJsonObject {
         (job["id"] as? JsonPrimitive)?.contentOrNull?.let { put("jobId", JsonPrimitive(it)) }
-        ((job["config"] as? JsonObject)?.get("seed") as? JsonPrimitive)?.intOrNull?.let {
+        ((JsonAccess.obj(job, "config"))?.get("seed") as? JsonPrimitive)?.intOrNull?.let {
             put("seed", JsonPrimitive(it))
         }
-        ((job["metrics"] as? JsonObject)?.get("elapsed") as? JsonPrimitive)?.doubleOrNull?.let {
+        ((JsonAccess.obj(job, "metrics"))?.get("elapsed") as? JsonPrimitive)?.doubleOrNull?.let {
             put("elapsed", JsonPrimitive(it))
         }
-        ((job["metrics"] as? JsonObject)?.get("ips") as? JsonPrimitive)?.doubleOrNull?.let {
+        ((JsonAccess.obj(job, "metrics"))?.get("ips") as? JsonPrimitive)?.doubleOrNull?.let {
             put("iterationsPerSecond", JsonPrimitive(it))
         }
         (job["created_at"] as? JsonPrimitive)?.contentOrNull?.let { put("createdAt", JsonPrimitive(it)) }

@@ -1,3 +1,5 @@
+@file:OptIn(LowLevelLanguageModelApi::class)
+
 package ai.torad.aisdk
 import ai.torad.aisdk.providers.GOOGLE_VERSION
 import ai.torad.aisdk.providers.GoogleGenerativeAIProviderSettings

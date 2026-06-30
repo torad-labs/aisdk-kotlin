@@ -1,6 +1,7 @@
 package ai.torad.aisdk.protocol
 
 import ai.torad.aisdk.CallWarning
+import ai.torad.aisdk.JsonAccess
 import ai.torad.aisdk.StreamEvent
 import ai.torad.aisdk.WireDecoder
 import kotlinx.serialization.json.JsonArray
@@ -44,7 +45,7 @@ internal object GatewayLifecycleStreamCodec {
                 ?.let { runCatching { Instant.parse(it).toEpochMilliseconds() }.getOrNull() }
 
     private fun headers(obj: JsonObject): Map<String, String> =
-        (obj["headers"] as? JsonObject)
+        (JsonAccess.obj(obj, "headers"))
             ?.mapValues { (_, value) -> (value as? JsonPrimitive)?.contentOrNull.orEmpty() }
             .orEmpty()
 

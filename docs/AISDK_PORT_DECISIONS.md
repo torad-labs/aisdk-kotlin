@@ -68,7 +68,7 @@ single-shot.
 
 ## Decision 5 — Tool registration: typed builder DSL with internal Map
 
-**Choice.** Public API is `toolSetOf(toolA, toolB, ...)` returning a
+**Choice.** Public API is `ToolSet(toolA, toolB, ...)` returning a
 `ToolSet<TContext>` that internally holds `Map<String, Tool<*, *, TContext>>`.
 
 **Rationale.** `Map<String, Tool>` directly is too easy to misuse. A typed

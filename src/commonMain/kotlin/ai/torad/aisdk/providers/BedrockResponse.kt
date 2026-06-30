@@ -29,26 +29,26 @@ internal object BedrockResponse {
         val content = mutableListOf<ContentPart>()
         val toolCalls = mutableListOf<ContentPart.ToolCall>()
         var isJsonResponseFromTool = false
-        val outputMessage = (response["output"] as? JsonObject)?.get("message") as? JsonObject
+        val outputMessage = (JsonAccess.obj(response, "output"))?.get("message") as? JsonObject
         val parts = (outputMessage?.get("content") as? JsonArray) ?: JsonArray(emptyList())
         for (part in parts) {
             val obj = part as? JsonObject ?: continue
             (obj["text"] as? JsonPrimitive)?.contentOrNull?.let { content += ContentPart.Text(it) }
-            (obj["reasoningContent"] as? JsonObject)?.let { reasoning ->
-                (reasoning["reasoningText"] as? JsonObject)?.let {
+            (JsonAccess.obj(obj, "reasoningContent"))?.let { reasoning ->
+                (JsonAccess.obj(reasoning, "reasoningText"))?.let {
                     content += ContentPart.Reasoning(
                         text = (it["text"] as? JsonPrimitive)?.contentOrNull.orEmpty(),
                         providerMetadata = ProviderMetadata.Raw(JsonObject(mapOf("bedrock" to buildJsonObject { it["signature"]?.let { signature -> put("signature", signature) } }))),
                     )
                 }
-                (reasoning["redactedReasoning"] as? JsonObject)?.let {
+                (JsonAccess.obj(reasoning, "redactedReasoning"))?.let {
                     content += ContentPart.Reasoning(
                         text = "",
                         providerMetadata = ProviderMetadata.Raw(JsonObject(mapOf("bedrock" to buildJsonObject { it["data"]?.let { data -> put("redactedData", data) } }))),
                     )
                 }
             }
-            (obj["toolUse"] as? JsonObject)?.let { tool ->
+            (JsonAccess.obj(obj, "toolUse"))?.let { tool ->
                 val name = (tool["name"] as? JsonPrimitive)?.contentOrNull.orEmpty()
                 if (usesJsonResponseTool && name == "json") {
                     isJsonResponseFromTool = true
@@ -72,7 +72,8 @@ internal object BedrockResponse {
             response["serviceTier"]?.let { put("serviceTier", it) }
             response["usage"]?.let { put("usage", it) }
             if (isJsonResponseFromTool) put("isJsonResponseFromTool", JsonPrimitive(true))
-            val responseDelta = (response["additionalModelResponseFields"] as? JsonObject)?.get("delta") as? JsonObject
+            val responseFields = JsonAccess.obj(response, "additionalModelResponseFields")
+            val responseDelta = responseFields?.get("delta") as? JsonObject
             responseDelta?.get("stop_sequence")?.let { put("stopSequence", it) }
         }
         return LanguageModelResult(
@@ -95,7 +96,7 @@ internal object BedrockResponse {
     }
 
     fun bedrockEmbeddingVector(response: JsonObject): List<Float> {
-        (response["embedding"] as? JsonArray)?.let { arr ->
+        (JsonAccess.arr(response, "embedding"))?.let { arr ->
             return arr.map { item -> WireDecoder.embeddingFloat(item, "amazon-bedrock.embedding") }
         }
         val embeddings = response["embeddings"]
@@ -103,7 +104,7 @@ internal object BedrockResponse {
             val first = embeddings.firstOrNull() ?: return emptyList()
             if (first is JsonArray) return first.map { WireDecoder.embeddingFloat(it, "amazon-bedrock.embedding") }
             val obj = first as? JsonObject ?: return emptyList()
-            return (obj["embedding"] as? JsonArray).orEmpty()
+            return (JsonAccess.arr(obj, "embedding")).orEmpty()
                 .map { WireDecoder.embeddingFloat(it, "amazon-bedrock.embedding") }
         }
         val floatEmbeddings = (((embeddings as? JsonObject)?.get("float") as? JsonArray)?.firstOrNull() as? JsonArray)
@@ -174,19 +175,20 @@ internal class BedrockStreamState(
             events += StreamEvent.Error(error.toString())
             return events
         }
-        (value["messageStop"] as? JsonObject)?.let { stop ->
+        (JsonAccess.obj(value, "messageStop"))?.let { stop ->
             rawStopReason = (stop["stopReason"] as? JsonPrimitive)?.contentOrNull
             finishReason = BedrockResponse.mapBedrockFinishReason(rawStopReason, isJsonResponseFromTool)
-            val stopDelta = (stop["additionalModelResponseFields"] as? JsonObject)?.get("delta") as? JsonObject
+            val stopResponseFields = JsonAccess.obj(stop, "additionalModelResponseFields")
+            val stopDelta = stopResponseFields?.get("delta") as? JsonObject
             stopSequence = stopDelta?.get("stop_sequence")
         }
-        (value["metadata"] as? JsonObject)?.let { metadata ->
+        (JsonAccess.obj(value, "metadata"))?.let { metadata ->
             metadata["usage"]?.let { usage = BedrockResponse.bedrockUsage(it) }
             providerMetadata = metadata
         }
-        (value["contentBlockStart"] as? JsonObject)?.let { start ->
+        (JsonAccess.obj(value, "contentBlockStart"))?.let { start ->
             val index = (start["contentBlockIndex"] as? JsonPrimitive)?.intOrNull ?: return@let
-            val toolUse = (start["start"] as? JsonObject)?.get("toolUse") as? JsonObject
+            val toolUse = (JsonAccess.obj(start, "start"))?.get("toolUse") as? JsonObject
             if (toolUse != null) {
                 val id = (toolUse["toolUseId"] as? JsonPrimitive)?.contentOrNull ?: IdGenerator.generate()
                 val name = (toolUse["name"] as? JsonPrimitive)?.contentOrNull.orEmpty()
@@ -198,9 +200,9 @@ internal class BedrockStreamState(
                 events += StreamEvent.TextStart(index.toString())
             }
         }
-        (value["contentBlockDelta"] as? JsonObject)?.let { deltaEvent ->
+        (JsonAccess.obj(value, "contentBlockDelta"))?.let { deltaEvent ->
             val index = (deltaEvent["contentBlockIndex"] as? JsonPrimitive)?.intOrNull ?: 0
-            val delta = deltaEvent["delta"] as? JsonObject ?: return@let
+            val delta = JsonAccess.obj(deltaEvent, "delta") ?: return@let
             (delta["text"] as? JsonPrimitive)?.contentOrNull?.let { text ->
                 if (blocks[index] == null) {
                     blocks[index] = BedrockStreamBlock.Text
@@ -208,7 +210,7 @@ internal class BedrockStreamState(
                 }
                 events += StreamEvent.TextDelta(index.toString(), text)
             }
-            (delta["reasoningContent"] as? JsonObject)?.let { reasoning ->
+            (JsonAccess.obj(delta, "reasoningContent"))?.let { reasoning ->
                 if (blocks[index] == null) {
                     blocks[index] = BedrockStreamBlock.Reasoning
                     events += StreamEvent.ReasoningStart(index.toString())
@@ -220,13 +222,15 @@ internal class BedrockStreamState(
                 val reasoningText = (reasoning["text"] as? JsonPrimitive)?.contentOrNull.orEmpty()
                 events += StreamEvent.ReasoningDelta(index.toString(), reasoningText, metadata)
             }
-            ((delta["toolUse"] as? JsonObject)?.get("input") as? JsonPrimitive)?.contentOrNull?.let { inputDelta ->
+            val toolUse = JsonAccess.obj(delta, "toolUse")
+            val toolUseInput = (toolUse?.get("input") as? JsonPrimitive)?.contentOrNull
+            toolUseInput?.let { inputDelta ->
                 val block = blocks[index] as? BedrockStreamBlock.Tool ?: return@let
                 block.input += inputDelta
                 if (!block.isJsonResponseTool) events += StreamEvent.ToolInputDelta(block.id, inputDelta)
             }
         }
-        (value["contentBlockStop"] as? JsonObject)?.let { stop ->
+        (JsonAccess.obj(value, "contentBlockStop"))?.let { stop ->
             val index = (stop["contentBlockIndex"] as? JsonPrimitive)?.intOrNull ?: return@let
             when (val block = blocks.remove(index)) {
                 BedrockStreamBlock.Text -> events += StreamEvent.TextEnd(index.toString())

@@ -42,7 +42,7 @@ public data class QuiverAIProviderSettings(
     val headers: Map<String, String> = emptyMap(),
 ) {
     internal fun quiverAIOptions(providerOptions: ProviderOptions): JsonObject =
-        providerOptions.toMap()["quiverai"] as? JsonObject ?: JsonObject(emptyMap())
+        JsonAccess.obj(providerOptions.toMap(), "quiverai") ?: JsonObject(emptyMap())
 
     internal fun quiverAIHeaders(callHeaders: Map<String, String>): Map<String, String> {
         val base = linkedMapOf<String, String?>()
@@ -114,7 +114,7 @@ private class QuiverAIImageModel(
             headers = settings.quiverAIHeaders(params.headers),
         )
         val root = response.value.jsonObject
-        val data = (root["data"] as? JsonArray)
+        val data = (JsonAccess.arr(root, "data"))
             ?: throw InvalidResponseDataError(response.value, "QuiverAI response is missing data")
         return ImageModelResult(
             images = data.mapNotNull { item ->
@@ -225,7 +225,7 @@ private class QuiverAIImageModel(
     }
 
     private fun quiverAIProviderMetadata(root: JsonObject): JsonElement = buildJsonObject {
-        val data = (root["data"] as? JsonArray).orEmpty()
+        val data = (JsonAccess.arr(root, "data")).orEmpty()
         val imageEntries = data.mapIndexed { index, item ->
             buildJsonObject {
                 put("index", JsonPrimitive(index))

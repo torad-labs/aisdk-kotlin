@@ -1,3 +1,5 @@
+@file:OptIn(LowLevelLanguageModelApi::class)
+
 package ai.torad.aisdk
 
 import ai.torad.aisdk.providers.MockLanguageModelTextOnly
@@ -56,7 +58,26 @@ class ToolApprovalSignatureWiringTest {
         private var calls = 0
 
         override suspend fun generate(params: LanguageModelCallParams): LanguageModelResult =
-            LanguageModelResult(text = "done", finishReason = FinishReason.Stop, usage = Usage())
+            if (calls++ == 0) {
+                val first = ContentPart.ToolCall(
+                    toolCallId = "dup",
+                    toolName = "send",
+                    input = buildJsonObject { put("message", "first") },
+                )
+                val second = ContentPart.ToolCall(
+                    toolCallId = "dup",
+                    toolName = "send",
+                    input = buildJsonObject { put("message", "second") },
+                )
+                LanguageModelResult(
+                    text = "",
+                    toolCalls = listOf(first, second),
+                    finishReason = FinishReason.ToolCalls,
+                    usage = Usage(),
+                )
+            } else {
+                LanguageModelResult(text = "done", finishReason = FinishReason.Stop, usage = Usage())
+            }
 
         override fun stream(params: LanguageModelCallParams): Flow<StreamEvent> = flow {
             if (calls++ == 0) {

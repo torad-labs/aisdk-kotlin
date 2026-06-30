@@ -76,7 +76,7 @@ public data class DeepgramProviderSettings(
     }
 
     internal fun deepgramOptions(providerOptions: ProviderOptions): JsonObject =
-        providerOptions.toMap()["deepgram"] as? JsonObject ?: JsonObject(emptyMap())
+        JsonAccess.obj(providerOptions.toMap(), "deepgram") ?: JsonObject(emptyMap())
 
     internal fun deepgramErrorMessage(statusCode: Int, parsed: JsonElement?, raw: String): String {
         val obj = parsed as? JsonObject
@@ -415,7 +415,7 @@ private class DeepgramTranscriptionModel(
             headers = settings.deepgramHeaders(params.headers),
         )
         val value = response.value.jsonObject
-        val results = value["results"] as? JsonObject
+        val results = JsonAccess.obj(value, "results")
         val firstChannel = (results?.get("channels") as? JsonArray)?.firstOrNull() as? JsonObject
         val firstAlternative = (firstChannel?.get("alternatives") as? JsonArray)?.firstOrNull() as? JsonObject
         val words = (firstAlternative?.get("words") as? JsonArray).orEmpty()
@@ -437,7 +437,7 @@ private class DeepgramTranscriptionModel(
             ),
             providerMetadata = ProviderMetadata.Raw(JsonObject(mapOf("deepgram" to response.value))),
             language = (firstChannel?.get("detected_language") as? JsonPrimitive)?.contentOrNull,
-            durationInSeconds = ((value["metadata"] as? JsonObject)?.get("duration") as? JsonPrimitive)?.floatOrNull,
+            durationInSeconds = (JsonAccess.obj(value, "metadata")?.get("duration") as? JsonPrimitive)?.floatOrNull,
         )
     }
 

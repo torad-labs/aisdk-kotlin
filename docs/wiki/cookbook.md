@@ -158,13 +158,15 @@ Read next: [Utilities](utilities.md), [UI Stream Protocols](ui-stream-protocols.
 ## Build A Tool-Using Agent
 
 ```kotlin
-val agent = ToolLoopAgent<AppContext, String>(
-    model = model,
-    instructions = "Search docs before answering SDK questions.",
-    tools = toolSetOf(searchDocs),
-    stopWhen = stepCountIs(6),
-)
+class DocsAgent(model: LanguageModel, tools: ToolSet<AppContext>) :
+    ToolLoopAgent<AppContext, String>(
+        model = model,
+        instructions = "Search docs before answering SDK questions.",
+        tools = tools,
+        stopWhen = StepCountIs(6),
+    )
 
+val agent = DocsAgent(model, ToolSet(searchDocs))
 val result = agent.generate(
     prompt = "How do I validate UI messages?",
     options = AppContext(workspaceId = "docs"),
@@ -176,7 +178,7 @@ Read next: [Tools](tools.md), [Agents](agents.md).
 ## Require Approval For A Write Tool
 
 ```kotlin
-val archiveProject = tool<ArchiveInput, ArchiveResult, AppContext>(
+val archiveProject = Tool<ArchiveInput, ArchiveResult, AppContext>(
     name = "archiveProject",
     description = "Archive a project by id.",
     needsApproval = { _, options ->
@@ -252,11 +254,14 @@ val mcp = createMCPClient(
     ),
 )
 
-val agent = ToolLoopAgent<AppContext, String>(
-    model = model,
-    tools = mcp.tools<AppContext>(),
-    stopWhen = stepCountIs(8),
-)
+class McpAgent(model: LanguageModel, tools: ToolSet<AppContext>) :
+    ToolLoopAgent<AppContext, String>(
+        model = model,
+        tools = tools,
+        stopWhen = StepCountIs(8),
+    )
+
+val agent = McpAgent(model, mcp.tools<AppContext>())
 ```
 
 Read next: [Model Context Protocol](mcp.md).

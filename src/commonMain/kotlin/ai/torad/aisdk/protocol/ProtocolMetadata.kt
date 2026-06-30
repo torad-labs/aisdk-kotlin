@@ -1,5 +1,6 @@
 package ai.torad.aisdk.protocol
 
+import ai.torad.aisdk.JsonAccess
 import ai.torad.aisdk.ProviderMetadata
 import ai.torad.aisdk.WireDecoder
 import kotlinx.serialization.json.JsonElement
@@ -15,7 +16,7 @@ internal object ProtocolMetadata {
 
     fun string(metadata: ProviderMetadata, key: String): String? {
         val raw = metadata.toMap()
-        val gateway = raw["gateway"] as? JsonObject
+        val gateway = JsonAccess.obj(raw, "gateway")
         return (raw[key] as? JsonPrimitive)?.contentOrNull
             ?: (gateway?.get(key) as? JsonPrimitive)?.contentOrNull
     }

@@ -1,3 +1,5 @@
+@file:OptIn(ai.torad.aisdk.LowLevelLanguageModelApi::class)
+
 package ai.torad.aisdk.providers
 
 import ai.torad.aisdk.*
@@ -61,9 +63,10 @@ public data class AnthropicProviderSettings(
     }
 
     internal fun anthropicOptions(providerOptions: ProviderOptions): JsonObject {
-        val canonical = providerOptions.toMap()["anthropic"] as? JsonObject ?: JsonObject(emptyMap())
+        val options = providerOptions.toMap()
+        val canonical = JsonAccess.obj(options, "anthropic") ?: JsonObject(emptyMap())
         val customName = name.substringBefore('.')
-        val custom = if (customName != "anthropic") providerOptions.toMap()[customName] as? JsonObject else null
+        val custom = if (customName != "anthropic") JsonAccess.obj(options, customName) else null
         return canonical.deepMergedWith(custom ?: JsonObject(emptyMap()))
     }
 
@@ -103,7 +106,7 @@ public data class AnthropicProviderSettings(
         internal fun anthropicFileOptions(metadata: Map<String, JsonElement>?): JsonObject? {
             val options = metadata?.get("anthropic") as? JsonObject ?: return null
             return buildJsonObject {
-                (options["citations"] as? JsonObject)?.let { put("citations", it) }
+                (JsonAccess.obj(options, "citations"))?.let { put("citations", it) }
                 options["title"]?.let { put("title", it) }
                 options["context"]?.let { put("context", it) }
             }.takeIf { it.isNotEmpty() }
@@ -269,13 +272,13 @@ public class AnthropicMessagesLanguageModel(
     ): LanguageModelResult {
         val content = mutableListOf<ContentPart>()
         val toolCalls = mutableListOf<ContentPart.ToolCall>()
-        (response["content"] as? JsonArray).orEmpty().forEachIndexed { index, part ->
+        (JsonAccess.arr(response, "content")).orEmpty().forEachIndexed { index, part ->
             val obj = part as? JsonObject ?: return@forEachIndexed
             val path = "$.content[$index]"
             when ((obj["type"] as? JsonPrimitive)?.contentOrNull) {
                 "text" -> {
                     (obj["text"] as? JsonPrimitive)?.contentOrNull?.let { text -> content += ContentPart.Text(text) }
-                    for (citation in (obj["citations"] as? JsonArray).orEmpty()) {
+                    for (citation in (JsonAccess.arr(obj, "citations")).orEmpty()) {
                         val citationObj = citation as? JsonObject ?: continue
                         settings.anthropicCitationSource(citationObj)?.let { content += it }
                     }
@@ -392,7 +395,7 @@ public class AnthropicMessagesLanguageModel(
             steps: List<Map<String, JsonElement>>,
         ): Map<String, JsonElement>? {
             for (step in steps.asReversed()) {
-                val containerObj = (step["anthropic"] as? JsonObject)?.get("container") as? JsonObject
+                val containerObj = (JsonAccess.obj(step, "anthropic"))?.get("container") as? JsonObject
                 val idElement = containerObj?.get("id")
                 val containerId = (idElement as? JsonPrimitive)?.contentOrNull
                 if (!containerId.isNullOrBlank()) {
@@ -408,7 +411,7 @@ public class AnthropicMessagesLanguageModel(
 
         internal fun anthropicErrorMessage(parsed: JsonElement?, raw: String): String {
             val obj = parsed as? JsonObject ?: return raw
-            val error = obj["error"] as? JsonObject
+            val error = JsonAccess.obj(obj, "error")
             return (error?.get("message") as? JsonPrimitive)?.contentOrNull
                 ?: (error?.get("type") as? JsonPrimitive)?.contentOrNull
                 ?: (obj["message"] as? JsonPrimitive)?.contentOrNull
@@ -589,12 +592,12 @@ internal data class PreparedAnthropicRequest(
 
             val options = settings.anthropicOptions(params.providerOptions)
             val betas = linkedSetOf<String>()
-            (options["anthropicBeta"] as? JsonArray)?.forEach { (it as? JsonPrimitive)?.contentOrNull?.let(betas::add) }
+            JsonAccess.arr(options, "anthropicBeta")?.forEach { (it as? JsonPrimitive)?.contentOrNull?.let(betas::add) }
             val sendReasoning = (options["sendReasoning"] as? JsonPrimitive)?.booleanOrNull ?: true
             val prompt = AnthropicPrompt.anthropicPrompt(params.messages, sendReasoning)
             betas += prompt.betas
 
-            val thinking = options["thinking"] as? JsonObject
+            val thinking = JsonAccess.obj(options, "thinking")
             val thinkingType = (thinking?.get("type") as? JsonPrimitive)?.contentOrNull
             val isThinking = thinkingType == "enabled" || thinkingType == "adaptive"
             val rawThinkingBudget = (thinking?.get("budgetTokens") as? JsonPrimitive)?.intOrNull
@@ -673,7 +676,7 @@ internal data class PreparedAnthropicRequest(
                         put("mcp_servers", it)
                         betas += "mcp-client-2025-04-04"
                     }
-                    anthropicContainer(options)?.let { container ->
+                    AnthropicRequestJson.container(options)?.let { container ->
                         put("container", container)
                         if (container is JsonObject && container["skills"] != null) {
                             betas += setOf("code-execution-2025-08-25", "skills-2025-10-02", "files-api-2025-04-14")
@@ -708,13 +711,13 @@ internal data class PreparedAnthropicRequest(
         }
 
         private fun anthropicMetadata(options: JsonObject): JsonObject? {
-            val metadata = options["metadata"] as? JsonObject ?: return null
+            val metadata = JsonAccess.obj(options, "metadata") ?: return null
             val userId = metadata["userId"] ?: return null
             return buildJsonObject { put("user_id", userId) }
         }
 
         private fun anthropicMcpServers(options: JsonObject): JsonArray? {
-            val servers = options["mcpServers"] as? JsonArray ?: return null
+            val servers = JsonAccess.arr(options, "mcpServers") ?: return null
             if (servers.isEmpty()) return null
             return JsonArray(servers.mapNotNull { server ->
                 val obj = server as? JsonObject ?: return@mapNotNull null
@@ -723,22 +726,9 @@ internal data class PreparedAnthropicRequest(
                     put("name", obj["name"] ?: JsonPrimitive(""))
                     put("url", obj["url"] ?: JsonPrimitive(""))
                     obj["authorizationToken"]?.let { put("authorization_token", it) }
-                    (obj["toolConfiguration"] as? JsonObject)?.let { put("tool_configuration", camelToSnakeJson(it)) }
+                    JsonAccess.obj(obj, "toolConfiguration")?.let { put("tool_configuration", camelToSnakeJson(it)) }
                 }
             })
-        }
-
-        private fun anthropicContainer(options: JsonObject): JsonElement? {
-            val container = options["container"] as? JsonObject ?: return null
-            val skills = container["skills"] as? JsonArray
-            return if (skills != null && skills.isNotEmpty()) {
-                buildJsonObject {
-                    container["id"]?.let { put("id", it) }
-                    put("skills", JsonArray(skills.map { skill -> camelToSnakeJson(skill) }))
-                }
-            } else {
-                container["id"]
-            }
         }
 
         internal fun camelToSnakeJson(element: JsonElement): JsonElement = when (element) {
@@ -894,12 +884,15 @@ internal data class AnthropicPrompt(
                 put("type", JsonPrimitive("text"))
                 put("text", JsonPrimitive(if (currentIndex == lastTextIndex && lastTextIndex >= 0) part.text.trim() else part.text))
             }
-            is ContentPart.Reasoning -> if (sendReasoning) buildJsonObject {
-                val metadata = part.providerMetadata.toMap()["anthropic"] as? JsonObject
-                put("type", JsonPrimitive("thinking"))
-                put("thinking", JsonPrimitive(part.text))
-                metadata?.get("signature")?.let { put("signature", it) }
-            } else null
+            is ContentPart.Reasoning -> when {
+                !sendReasoning -> null
+                else -> buildJsonObject {
+                    val metadata = JsonAccess.obj(part.providerMetadata.toMap(), "anthropic")
+                    put("type", JsonPrimitive("thinking"))
+                    put("thinking", JsonPrimitive(part.text))
+                    metadata?.get("signature")?.let { put("signature", it) }
+                }
+            }
             is ContentPart.ToolCall -> buildJsonObject {
                 put("type", JsonPrimitive("tool_use"))
                 put("id", JsonPrimitive(part.toolCallId))
@@ -1142,7 +1135,7 @@ private class AnthropicStreamState(
                 }
             }
             "message_delta" -> {
-                val delta = (obj["delta"] as? JsonObject) ?: JsonObject(emptyMap())
+                val delta = (JsonAccess.obj(obj, "delta")) ?: JsonObject(emptyMap())
                 rawStopReason = (delta["stop_reason"] as? JsonPrimitive)?.contentOrNull
                 finishReason = FinishReason.fromAnthropicStopReason(rawStopReason)
                 // Merge onto the message_start usage (delta usually has only output_tokens).
@@ -1170,7 +1163,7 @@ private class AnthropicStreamState(
     /** Map a streamed `citations_delta` to a [StreamEvent.SourcePart], reusing the non-streaming
      *  citation decoder; null when the delta carries no parsable citation. */
     private fun citationSourceEvent(delta: JsonObject): StreamEvent.SourcePart? =
-        (delta["citation"] as? JsonObject)
+        (JsonAccess.obj(delta, "citation"))
             ?.let { settings.anthropicCitationSource(it) }
             ?.let { source ->
                 StreamEvent.SourcePart(

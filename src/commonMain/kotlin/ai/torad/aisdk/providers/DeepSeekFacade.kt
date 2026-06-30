@@ -38,7 +38,7 @@ public data class DeepSeekProviderSettings(
         )
 
     private fun deepSeekTransformChatBody(body: JsonObject): JsonObject {
-        val responseFormat = body["response_format"] as? JsonObject
+        val responseFormat = JsonAccess.obj(body, "response_format")
         val responseFormatType = (responseFormat?.get("type") as? JsonPrimitive)?.contentOrNull
         val schema = (responseFormat?.get("json_schema") as? JsonObject)?.get("schema")
         val jsonRequested = responseFormatType == "json_object" || responseFormatType == "json_schema"

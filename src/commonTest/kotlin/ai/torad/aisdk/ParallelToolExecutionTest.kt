@@ -1,3 +1,5 @@
+@file:OptIn(LowLevelLanguageModelApi::class)
+
 package ai.torad.aisdk
 
 import kotlinx.coroutines.CompletableDeferred
@@ -31,7 +33,18 @@ class ParallelToolExecutionTest {
         override val modelId = "m"
         var calls = 0
         override suspend fun generate(params: LanguageModelCallParams) =
-            LanguageModelResult(text = "done", finishReason = FinishReason.Stop, usage = Usage())
+            if (calls++ == 0) {
+                val first = ContentPart.ToolCall("c_a", "toolA", JsonObject(emptyMap()))
+                val second = ContentPart.ToolCall("c_b", "toolB", JsonObject(emptyMap()))
+                LanguageModelResult(
+                    text = "",
+                    toolCalls = listOf(first, second),
+                    finishReason = FinishReason.ToolCalls,
+                    usage = Usage(),
+                )
+            } else {
+                LanguageModelResult(text = "done", finishReason = FinishReason.Stop, usage = Usage())
+            }
         override fun stream(params: LanguageModelCallParams): Flow<StreamEvent> = flow {
             if (calls++ == 0) {
                 emit(StreamEvent.ToolCall("c_a", "toolA", JsonObject(emptyMap())))
@@ -52,7 +65,17 @@ class ParallelToolExecutionTest {
         override val modelId = "m"
         private var calls = 0
         override suspend fun generate(params: LanguageModelCallParams) =
-            LanguageModelResult(text = "done", finishReason = FinishReason.Stop, usage = Usage())
+            if (calls++ == 0) {
+                val call = ContentPart.ToolCall("c_a", "toolA", JsonObject(emptyMap()))
+                LanguageModelResult(
+                    text = "",
+                    toolCalls = listOf(call),
+                    finishReason = FinishReason.ToolCalls,
+                    usage = Usage(),
+                )
+            } else {
+                LanguageModelResult(text = "done", finishReason = FinishReason.Stop, usage = Usage())
+            }
         override fun stream(params: LanguageModelCallParams): Flow<StreamEvent> = flow {
             if (calls++ == 0) {
                 emit(StreamEvent.ToolCall("c_a", "toolA", JsonObject(emptyMap())))
@@ -71,7 +94,19 @@ class ParallelToolExecutionTest {
         override val modelId = "m"
         private var calls = 0
         override suspend fun generate(params: LanguageModelCallParams) =
-            LanguageModelResult(text = "done", finishReason = FinishReason.Stop, usage = Usage())
+            if (calls++ == 0) {
+                val calls = List(toolCallCount) { index ->
+                    ContentPart.ToolCall("c_$index", "tool", JsonObject(emptyMap()))
+                }
+                LanguageModelResult(
+                    text = "",
+                    toolCalls = calls,
+                    finishReason = FinishReason.ToolCalls,
+                    usage = Usage(),
+                )
+            } else {
+                LanguageModelResult(text = "done", finishReason = FinishReason.Stop, usage = Usage())
+            }
         override fun stream(params: LanguageModelCallParams): Flow<StreamEvent> = flow {
             if (calls++ == 0) {
                 repeat(toolCallCount) { index ->

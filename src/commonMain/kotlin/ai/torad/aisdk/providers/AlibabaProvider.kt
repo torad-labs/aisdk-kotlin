@@ -1,3 +1,5 @@
+@file:OptIn(ai.torad.aisdk.LowLevelLanguageModelApi::class)
+
 package ai.torad.aisdk.providers
 
 import ai.torad.aisdk.*
@@ -74,7 +76,7 @@ public data class AlibabaProviderSettings(
         }
 
     internal fun alibabaOptions(providerOptions: ProviderOptions): JsonObject =
-        providerOptions.toMap()["alibaba"] as? JsonObject ?: JsonObject(emptyMap())
+        JsonAccess.obj(providerOptions.toMap(), "alibaba") ?: JsonObject(emptyMap())
 
     private fun alibabaErrorMessage(statusCode: Int, parsed: JsonElement?, raw: String): String {
         val obj = parsed as? JsonObject
@@ -174,7 +176,7 @@ private class AlibabaChatLanguageModel(
 
     private fun transformAlibabaChatOptions(providerOptions: ProviderOptions): ProviderOptions {
         val map = providerOptions.toMap()
-        val options = map["alibaba"] as? JsonObject ?: return providerOptions
+        val options = JsonAccess.obj(map, "alibaba") ?: return providerOptions
         val transformed = buildJsonObject {
             options["enableThinking"]?.let { put("enable_thinking", it) }
             options["thinkingBudget"]?.let { put("thinking_budget", it) }
@@ -230,7 +232,7 @@ private class AlibabaVideoModel(
             body = body,
             headers = settings.alibabaHeaders(params.headers + mapOf("X-DashScope-Async" to "enable")),
         )
-        val createOutput = create.value.jsonObject["output"] as? JsonObject
+        val createOutput = JsonAccess.obj(create.value.jsonObject, "output")
         val taskId = (createOutput?.get("task_id") as? JsonPrimitive)?.contentOrNull
             ?: throw NoVideoGeneratedError("No task_id returned from Alibaba API. Response: ${create.value}")
 
@@ -250,7 +252,7 @@ private class AlibabaVideoModel(
                 headers = settings.alibabaHeaders(params.headers),
             )
             headers = status.headers
-            val output = (status.value.jsonObject["output"] as? JsonObject) ?: JsonObject(emptyMap())
+            val output = (JsonAccess.obj(status.value.jsonObject, "output")) ?: JsonObject(emptyMap())
             when (val taskStatus = (output["task_status"] as? JsonPrimitive)?.contentOrNull) {
                 "SUCCEEDED" -> {
                     val videoUrl = (output["video_url"] as? JsonPrimitive)?.contentOrNull
@@ -349,11 +351,11 @@ private class AlibabaVideoModel(
     }
 
     private fun alibabaVideoMetadata(taskId: String, videoUrl: String, value: JsonObject): JsonObject = buildJsonObject {
-        val output = (value["output"] as? JsonObject) ?: JsonObject(emptyMap())
+        val output = (JsonAccess.obj(value, "output")) ?: JsonObject(emptyMap())
         put("taskId", JsonPrimitive(taskId))
         put("videoUrl", JsonPrimitive(videoUrl))
         (output["actual_prompt"] as? JsonPrimitive)?.contentOrNull?.let { put("actualPrompt", JsonPrimitive(it)) }
-        (value["usage"] as? JsonObject)?.let { usage ->
+        (JsonAccess.obj(value, "usage"))?.let { usage ->
             put("usage", buildJsonObject {
                 usage["duration"]?.let { put("duration", it) }
                 usage["output_video_duration"]?.let { put("outputVideoDuration", it) }
@@ -415,8 +417,11 @@ private class AlibabaEmbeddingModel(
             headers = settings.alibabaHeaders(params.headers),
         )
         val value = response.value.jsonObject
-        val items = ((value["output"] as? JsonObject)?.get("embeddings") as? JsonArray).orEmpty()
+        val output = JsonAccess.obj(value, "output")
+        val items = (output?.get("embeddings") as? JsonArray).orEmpty()
             .sortedBy { ((it as? JsonObject)?.get("text_index") as? JsonPrimitive)?.intOrNull ?: Int.MAX_VALUE }
+        val usage = JsonAccess.obj(value, "usage")
+        val usageTokens = (usage?.get("total_tokens") as? JsonPrimitive)?.intOrNull ?: 0
         return EmbeddingModelResult(
             embeddings = items.map { item ->
                 // Decode each element strictly (like Cohere/Google) — the old `?: 0f` silently
@@ -425,7 +430,7 @@ private class AlibabaEmbeddingModel(
                 row.map { WireDecoder.embeddingFloat(it, "alibaba") }
             },
             usage = EmbeddingUsage(
-                tokens = ((value["usage"] as? JsonObject)?.get("total_tokens") as? JsonPrimitive)?.intOrNull ?: 0,
+                tokens = usageTokens,
                 raw = value["usage"],
             ),
             request = LanguageModelRequestMetadata(body = body),

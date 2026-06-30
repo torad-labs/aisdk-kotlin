@@ -118,7 +118,8 @@ private class ByteDanceVideoModel(
                 ?: DEFAULT_BYTEDANCE_POLL_TIMEOUT_MS,
         )
         val statusBody = status.value.jsonObject
-        val videoUrl = ((statusBody["content"] as? JsonObject)?.get("video_url") as? JsonPrimitive)?.contentOrNull
+        val content = JsonAccess.obj(statusBody, "content")
+        val videoUrl = (content?.get("video_url") as? JsonPrimitive)?.contentOrNull
             ?: throw InvalidResponseDataError(null, "No video URL in ByteDance response")
         return VideoModelResult(
             videos = listOf(
@@ -174,15 +175,15 @@ private class ByteDanceVideoModel(
         (options["lastFrameImage"] as? JsonPrimitive)?.contentOrNull?.let { url ->
             add(byteDanceMediaContent("image_url", "image_url", url, "last_frame"))
         }
-        (options["referenceImages"] as? JsonArray).orEmpty().forEach { url ->
+        (JsonAccess.arr(options, "referenceImages")).orEmpty().forEach { url ->
             val ref = (url as? JsonPrimitive)?.contentOrNull.orEmpty()
             add(byteDanceMediaContent("image_url", "image_url", ref, "reference_image"))
         }
-        (options["referenceVideos"] as? JsonArray).orEmpty().forEach { url ->
+        (JsonAccess.arr(options, "referenceVideos")).orEmpty().forEach { url ->
             val ref = (url as? JsonPrimitive)?.contentOrNull.orEmpty()
             add(byteDanceMediaContent("video_url", "video_url", ref, "reference_video"))
         }
-        (options["referenceAudio"] as? JsonArray).orEmpty().forEach { url ->
+        (JsonAccess.arr(options, "referenceAudio")).orEmpty().forEach { url ->
             val ref = (url as? JsonPrimitive)?.contentOrNull.orEmpty()
             add(byteDanceMediaContent("audio_url", "audio_url", ref, "reference_audio"))
         }
@@ -265,7 +266,7 @@ private class ByteDanceVideoModel(
     }
 
     private fun byteDanceOptions(providerOptions: ProviderOptions): JsonObject =
-        providerOptions.toMap()["bytedance"] as? JsonObject ?: JsonObject(emptyMap())
+        JsonAccess.obj(providerOptions.toMap(), "bytedance") ?: JsonObject(emptyMap())
 
     private fun byteDanceErrorMessage(statusCode: Int, parsed: JsonElement?, raw: String): String {
         val obj = parsed as? JsonObject

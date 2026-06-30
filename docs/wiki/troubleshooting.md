@@ -14,7 +14,7 @@ If consuming from local Maven, publish first:
 Then confirm the consumer uses the same version:
 
 ```kotlin
-implementation("ai.torad:aisdk-kotlin:0.1.0-SNAPSHOT")
+implementation("ai.torad:torad-aisdk:0.3.0-beta01")
 ```
 
 For source checkouts, prefer a composite build with `includeBuild`.

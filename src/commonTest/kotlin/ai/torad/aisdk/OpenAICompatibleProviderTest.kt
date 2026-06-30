@@ -1,3 +1,5 @@
+@file:OptIn(LowLevelLanguageModelApi::class)
+
 package ai.torad.aisdk
 import ai.torad.aisdk.providers.OpenAICompatibleProviderSettings
 import ai.torad.aisdk.providers.OpenAICompatible

@@ -41,7 +41,7 @@ import kotlin.coroutines.coroutineContext
  *   - A finish reason other than `tool-calls` is returned, OR
  *   - A tool that is invoked does not have an execute function, OR
  *   - **A tool call needs approval**, OR
- *   - A stop condition is met (default `stepCountIs(20)`).
+ *   - A stop condition is met (default `StepCountIs(20)`).
  *
  * ## Approval flow (v6 RPC semantics)
  *
@@ -514,7 +514,16 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
         }
         val finalMessagesRef = MessageHolder()
         val stepsRef = StepsHolder(collectedSteps)
-        streamInternal(prompt, messages, options, abortSignal, null, finalMessagesRef, stepsRef)
+        streamInternal(
+            prompt,
+            messages,
+            options,
+            abortSignal,
+            null,
+            finalMessagesRef,
+            stepsRef,
+            modelCallMode = ModelCallMode.Generate,
+        )
             .collect { event ->
                 captureCollector.consume(event)
             }
@@ -644,6 +653,7 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
         finalMessagesRef: MessageHolder?,
         stepsCapture: StepsHolder?,
         onActiveContextChanged: ((TContext?) -> Unit)? = null,
+        modelCallMode: ModelCallMode = ModelCallMode.Stream,
     ): Flow<StreamEvent> = flow {
         val validatedOptions = validateCallOptions(options)
         onActiveContextChanged?.invoke(validatedOptions)
@@ -882,8 +892,9 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
                 onEvent(it, AgentEvent.ModelCallStarted(stepNumber, stepModel.modelId, callParams))
             }
             try {
-                val stepStreamResult = stepModel.streamResult(callParams)
+                val stepStreamResult = executeModelStep(stepModel, callParams, modelCallMode)
                 stepRequest = stepStreamResult.request
+                stepResponse = stepStreamResult.response
                 stepStreamResult.stream.collect { event ->
                     abortSignal.throwIfAborted()
                     dispatcher.runHook(stepNumber, feed, hooks) {
@@ -1686,6 +1697,26 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
 
     private fun hasSystemMessage(messages: List<ModelMessage>): Boolean =
         messages.any { it.role == MessageRole.System }
+
+    private enum class ModelCallMode { Generate, Stream }
+
+    @OptIn(LowLevelLanguageModelApi::class)
+    private suspend fun executeModelStep(
+        stepModel: LanguageModel,
+        callParams: LanguageModelCallParams,
+        mode: ModelCallMode,
+    ): LanguageModelStreamResult =
+        when (mode) {
+            ModelCallMode.Stream -> stepModel.streamResult(callParams)
+            ModelCallMode.Generate -> {
+                val result = stepModel.generate(callParams)
+                LanguageModelStreamResult(
+                    stream = LanguageModelResultStreamEvents.from(result),
+                    request = result.request,
+                    response = result.response,
+                )
+            }
+        }
 
     // The parallel-tool channel signals (ParallelToolSignal / OrderedToolCompletion /
     // ChannelToolEventCollector), the tool-execution result types (ToolExecutionResult /
