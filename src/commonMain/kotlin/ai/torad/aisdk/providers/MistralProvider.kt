@@ -257,7 +257,13 @@ private class MistralChatLanguageModel(
     override fun stream(params: LanguageModelCallParams): Flow<StreamEvent> =
         delegate.stream(params.copy(providerOptions = transformMistralProviderOptions(params.providerOptions))).map { event ->
             if (event is StreamEvent.Finish && event.rawFinishReason == "model_length") {
-                event.copy(finishReason = FinishReason.Length)
+                StreamEvent.Finish(
+                    totalSteps = event.totalSteps,
+                    finishReason = FinishReason.Length,
+                    usage = event.usage,
+                    providerMetadata = event.providerMetadata,
+                    rawFinishReason = event.rawFinishReason,
+                )
             } else {
                 event
             }
@@ -268,7 +274,13 @@ private class MistralChatLanguageModel(
             it.copy(
                 stream = it.stream.map { event ->
                     if (event is StreamEvent.Finish && event.rawFinishReason == "model_length") {
-                        event.copy(finishReason = FinishReason.Length)
+                        StreamEvent.Finish(
+                            totalSteps = event.totalSteps,
+                            finishReason = FinishReason.Length,
+                            usage = event.usage,
+                            providerMetadata = event.providerMetadata,
+                            rawFinishReason = event.rawFinishReason,
+                        )
                     } else {
                         event
                     }

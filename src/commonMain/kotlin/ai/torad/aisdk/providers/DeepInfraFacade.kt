@@ -76,8 +76,19 @@ private class DeepInfraChatLanguageModel(
 
     private fun fixDeepInfraUsageEvent(event: StreamEvent): StreamEvent =
         when (event) {
-            is StreamEvent.StepFinish -> event.copy(usage = event.usage.fixDeepInfraUsage())
-            is StreamEvent.Finish -> event.copy(usage = event.usage.fixDeepInfraUsage())
+            is StreamEvent.StepFinish -> StreamEvent.StepFinish(
+                stepNumber = event.stepNumber,
+                finishReason = event.finishReason,
+                usage = event.usage.fixDeepInfraUsage(),
+                providerMetadata = event.providerMetadata,
+            )
+            is StreamEvent.Finish -> StreamEvent.Finish(
+                totalSteps = event.totalSteps,
+                finishReason = event.finishReason,
+                usage = event.usage.fixDeepInfraUsage(),
+                providerMetadata = event.providerMetadata,
+                rawFinishReason = event.rawFinishReason,
+            )
             is StreamEvent.StreamStart,
             is StreamEvent.ResponseMetadata,
             is StreamEvent.StepStart,
