@@ -54,7 +54,11 @@ This project follows Semantic Versioning once the first stable release is cut.
   simple audio/media provider settings (`DeepgramProviderSettings`,
   `AssemblyAIProviderSettings`, `GladiaProviderSettings`,
   `RevaiProviderSettings`, `ElevenLabsProviderSettings`,
-  `HumeProviderSettings`, `LMNTProviderSettings`, and `LumaProviderSettings`)
+  `HumeProviderSettings`, `LMNTProviderSettings`, `LumaProviderSettings`,
+  `FalProviderSettings`, `ReplicateProviderSettings`,
+  `KlingAIProviderSettings`, `BlackForestLabsProviderSettings`,
+  `ProdiaProviderSettings`, `ByteDanceProviderSettings`,
+  `MistralProviderSettings`, and `AlibabaProviderSettings`)
   are now `@Serializable @Poko class` values with internal positional
   constructors and public DSL factories such as
   `CohereProviderSettings { apiKey("..."); baseURL("...") }`. Field access,

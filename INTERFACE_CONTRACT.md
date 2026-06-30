@@ -226,7 +226,11 @@ Penalty, response-format, and retry fields participate in the `Step ?: Agent ?: 
   (`CohereProviderSettings`, `DeepgramProviderSettings`,
   `AssemblyAIProviderSettings`, `GladiaProviderSettings`,
   `RevaiProviderSettings`, `ElevenLabsProviderSettings`,
-  `HumeProviderSettings`, `LMNTProviderSettings`, and `LumaProviderSettings`)
+  `HumeProviderSettings`, `LMNTProviderSettings`, `LumaProviderSettings`,
+  `FalProviderSettings`, `ReplicateProviderSettings`,
+  `KlingAIProviderSettings`, `BlackForestLabsProviderSettings`,
+  `ProdiaProviderSettings`, `ByteDanceProviderSettings`,
+  `MistralProviderSettings`, and `AlibabaProviderSettings`)
   are `@Serializable @Poko class` values with field getters and value semantics;
   configure them through their public DSL factories and builder setter methods
   such as `CohereProviderSettings { apiKey("..."); baseURL("...") }`. The

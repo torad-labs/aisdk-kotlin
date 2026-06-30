@@ -37,7 +37,10 @@ class FalDefensiveParsingTest {
         fixture.server.start()
         val provider = Fal(
             fixture.httpClient(),
-            FalProviderSettings(apiKey = "key", baseURL = "https://fal.test"),
+            FalProviderSettings {
+                apiKey("key")
+                baseURL("https://fal.test")
+            },
         )
 
         val result = provider.image(ModelId("fal-ai/qwen-image")).generate(

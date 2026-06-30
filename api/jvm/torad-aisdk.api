@@ -7052,21 +7052,12 @@ public final class ai/torad/aisdk/providers/AlibabaProviderKt {
 	public static final field ALIBABA_VERSION Ljava/lang/String;
 	public static final fun Alibaba (Lio/ktor/client/HttpClient;Lai/torad/aisdk/providers/AlibabaProviderSettings;)Lai/torad/aisdk/providers/AlibabaProvider;
 	public static synthetic fun Alibaba$default (Lio/ktor/client/HttpClient;Lai/torad/aisdk/providers/AlibabaProviderSettings;ILjava/lang/Object;)Lai/torad/aisdk/providers/AlibabaProvider;
+	public static final fun AlibabaProviderSettings (Lkotlin/jvm/functions/Function1;)Lai/torad/aisdk/providers/AlibabaProviderSettings;
+	public static synthetic fun AlibabaProviderSettings$default (Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Lai/torad/aisdk/providers/AlibabaProviderSettings;
 }
 
 public final class ai/torad/aisdk/providers/AlibabaProviderSettings {
 	public static final field Companion Lai/torad/aisdk/providers/AlibabaProviderSettings$Companion;
-	public fun <init> ()V
-	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;Z)V
-	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;ZILkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public final fun component1 ()Ljava/lang/String;
-	public final fun component2 ()Ljava/lang/String;
-	public final fun component3 ()Ljava/lang/String;
-	public final fun component4 ()Ljava/lang/String;
-	public final fun component5 ()Ljava/util/Map;
-	public final fun component6 ()Z
-	public final fun copy (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;Z)Lai/torad/aisdk/providers/AlibabaProviderSettings;
-	public static synthetic fun copy$default (Lai/torad/aisdk/providers/AlibabaProviderSettings;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;ZILjava/lang/Object;)Lai/torad/aisdk/providers/AlibabaProviderSettings;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getApiKey ()Ljava/lang/String;
 	public final fun getBaseURL ()Ljava/lang/String;
@@ -7091,6 +7082,15 @@ public final synthetic class ai/torad/aisdk/providers/AlibabaProviderSettings$$s
 
 public final class ai/torad/aisdk/providers/AlibabaProviderSettings$Companion {
 	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public final class ai/torad/aisdk/providers/AlibabaProviderSettingsBuilder {
+	public final fun apiKey (Ljava/lang/String;)V
+	public final fun baseURL (Ljava/lang/String;)V
+	public final fun embeddingBaseURL (Ljava/lang/String;)V
+	public final fun headers (Ljava/util/Map;)V
+	public final fun includeUsage (Z)V
+	public final fun videoBaseURL (Ljava/lang/String;)V
 }
 
 public final class ai/torad/aisdk/providers/AlibabaVideoModelOptions {
@@ -7906,21 +7906,13 @@ public final class ai/torad/aisdk/providers/BlackForestLabsProviderKt {
 	public static final field BLACK_FOREST_LABS_VERSION Ljava/lang/String;
 	public static final fun BlackForestLabs (Lio/ktor/client/HttpClient;Lai/torad/aisdk/providers/BlackForestLabsProviderSettings;)Lai/torad/aisdk/providers/BlackForestLabsProvider;
 	public static synthetic fun BlackForestLabs$default (Lio/ktor/client/HttpClient;Lai/torad/aisdk/providers/BlackForestLabsProviderSettings;ILjava/lang/Object;)Lai/torad/aisdk/providers/BlackForestLabsProvider;
+	public static final fun BlackForestLabsProviderSettings (Lkotlin/jvm/functions/Function1;)Lai/torad/aisdk/providers/BlackForestLabsProviderSettings;
+	public static synthetic fun BlackForestLabsProviderSettings$default (Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Lai/torad/aisdk/providers/BlackForestLabsProviderSettings;
 	public static final fun getBlackForestLabs ()Lai/torad/aisdk/providers/BlackForestLabsProvider;
 }
 
 public final class ai/torad/aisdk/providers/BlackForestLabsProviderSettings {
 	public static final field Companion Lai/torad/aisdk/providers/BlackForestLabsProviderSettings$Companion;
-	public fun <init> ()V
-	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;Ljava/lang/Long;Ljava/lang/Long;)V
-	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;Ljava/lang/Long;Ljava/lang/Long;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public final fun component1 ()Ljava/lang/String;
-	public final fun component2 ()Ljava/lang/String;
-	public final fun component3 ()Ljava/util/Map;
-	public final fun component4 ()Ljava/lang/Long;
-	public final fun component5 ()Ljava/lang/Long;
-	public final fun copy (Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;Ljava/lang/Long;Ljava/lang/Long;)Lai/torad/aisdk/providers/BlackForestLabsProviderSettings;
-	public static synthetic fun copy$default (Lai/torad/aisdk/providers/BlackForestLabsProviderSettings;Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;Ljava/lang/Long;Ljava/lang/Long;ILjava/lang/Object;)Lai/torad/aisdk/providers/BlackForestLabsProviderSettings;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getApiKey ()Ljava/lang/String;
 	public final fun getBaseURL ()Ljava/lang/String;
@@ -7946,6 +7938,14 @@ public final class ai/torad/aisdk/providers/BlackForestLabsProviderSettings$Comp
 	public final fun serializer ()Lkotlinx/serialization/KSerializer;
 }
 
+public final class ai/torad/aisdk/providers/BlackForestLabsProviderSettingsBuilder {
+	public final fun apiKey (Ljava/lang/String;)V
+	public final fun baseURL (Ljava/lang/String;)V
+	public final fun headers (Ljava/util/Map;)V
+	public final fun pollIntervalMillis (Ljava/lang/Long;)V
+	public final fun pollTimeoutMillis (Ljava/lang/Long;)V
+}
+
 public abstract interface class ai/torad/aisdk/providers/ByteDanceProvider : ai/torad/aisdk/Provider {
 	public abstract fun video-tDyRgq0 (Ljava/lang/String;)Lai/torad/aisdk/VideoModel;
 	public fun videoModel (Ljava/lang/String;)Lai/torad/aisdk/VideoModel;
@@ -7965,19 +7965,13 @@ public final class ai/torad/aisdk/providers/ByteDanceProviderKt {
 	public static final field BYTEDANCE_VERSION Ljava/lang/String;
 	public static final fun ByteDance (Lio/ktor/client/HttpClient;Lai/torad/aisdk/providers/ByteDanceProviderSettings;)Lai/torad/aisdk/providers/ByteDanceProvider;
 	public static synthetic fun ByteDance$default (Lio/ktor/client/HttpClient;Lai/torad/aisdk/providers/ByteDanceProviderSettings;ILjava/lang/Object;)Lai/torad/aisdk/providers/ByteDanceProvider;
+	public static final fun ByteDanceProviderSettings (Lkotlin/jvm/functions/Function1;)Lai/torad/aisdk/providers/ByteDanceProviderSettings;
+	public static synthetic fun ByteDanceProviderSettings$default (Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Lai/torad/aisdk/providers/ByteDanceProviderSettings;
 	public static final fun getByteDance ()Lai/torad/aisdk/providers/ByteDanceProvider;
 }
 
 public final class ai/torad/aisdk/providers/ByteDanceProviderSettings {
 	public static final field Companion Lai/torad/aisdk/providers/ByteDanceProviderSettings$Companion;
-	public fun <init> ()V
-	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;)V
-	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public final fun component1 ()Ljava/lang/String;
-	public final fun component2 ()Ljava/lang/String;
-	public final fun component3 ()Ljava/util/Map;
-	public final fun copy (Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;)Lai/torad/aisdk/providers/ByteDanceProviderSettings;
-	public static synthetic fun copy$default (Lai/torad/aisdk/providers/ByteDanceProviderSettings;Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;ILjava/lang/Object;)Lai/torad/aisdk/providers/ByteDanceProviderSettings;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getApiKey ()Ljava/lang/String;
 	public final fun getBaseURL ()Ljava/lang/String;
@@ -7999,6 +7993,12 @@ public final synthetic class ai/torad/aisdk/providers/ByteDanceProviderSettings$
 
 public final class ai/torad/aisdk/providers/ByteDanceProviderSettings$Companion {
 	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public final class ai/torad/aisdk/providers/ByteDanceProviderSettingsBuilder {
+	public final fun apiKey (Ljava/lang/String;)V
+	public final fun baseURL (Ljava/lang/String;)V
+	public final fun headers (Ljava/util/Map;)V
 }
 
 public final class ai/torad/aisdk/providers/ByteDanceVideoProviderOptions {
@@ -8816,22 +8816,12 @@ public final class ai/torad/aisdk/providers/FalProviderKt {
 	public static final field FAL_VERSION Ljava/lang/String;
 	public static final fun Fal (Lio/ktor/client/HttpClient;Lai/torad/aisdk/providers/FalProviderSettings;)Lai/torad/aisdk/providers/FalProvider;
 	public static synthetic fun Fal$default (Lio/ktor/client/HttpClient;Lai/torad/aisdk/providers/FalProviderSettings;ILjava/lang/Object;)Lai/torad/aisdk/providers/FalProvider;
+	public static final fun FalProviderSettings (Lkotlin/jvm/functions/Function1;)Lai/torad/aisdk/providers/FalProviderSettings;
+	public static synthetic fun FalProviderSettings$default (Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Lai/torad/aisdk/providers/FalProviderSettings;
 }
 
 public final class ai/torad/aisdk/providers/FalProviderSettings {
 	public static final field Companion Lai/torad/aisdk/providers/FalProviderSettings$Companion;
-	public fun <init> ()V
-	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;JIJI)V
-	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;JIJIILkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public final fun component1 ()Ljava/lang/String;
-	public final fun component2 ()Ljava/lang/String;
-	public final fun component3 ()Ljava/util/Map;
-	public final fun component4 ()J
-	public final fun component5 ()I
-	public final fun component6 ()J
-	public final fun component7 ()I
-	public final fun copy (Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;JIJI)Lai/torad/aisdk/providers/FalProviderSettings;
-	public static synthetic fun copy$default (Lai/torad/aisdk/providers/FalProviderSettings;Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;JIJIILjava/lang/Object;)Lai/torad/aisdk/providers/FalProviderSettings;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getApiKey ()Ljava/lang/String;
 	public final fun getBaseURL ()Ljava/lang/String;
@@ -8857,6 +8847,16 @@ public final synthetic class ai/torad/aisdk/providers/FalProviderSettings$$seria
 
 public final class ai/torad/aisdk/providers/FalProviderSettings$Companion {
 	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public final class ai/torad/aisdk/providers/FalProviderSettingsBuilder {
+	public final fun apiKey (Ljava/lang/String;)V
+	public final fun baseURL (Ljava/lang/String;)V
+	public final fun headers (Ljava/util/Map;)V
+	public final fun transcriptionMaxPollAttempts (I)V
+	public final fun transcriptionPollIntervalMillis (J)V
+	public final fun videoMaxPollAttempts (I)V
+	public final fun videoPollIntervalMillis (J)V
 }
 
 public final class ai/torad/aisdk/providers/FalSpeechModelOptions {
@@ -9856,19 +9856,12 @@ public final class ai/torad/aisdk/providers/KlingAIProviderKt {
 	public static final field KLINGAI_VERSION Ljava/lang/String;
 	public static final fun KlingAI (Lio/ktor/client/HttpClient;Lai/torad/aisdk/providers/KlingAIProviderSettings;)Lai/torad/aisdk/providers/KlingAIProvider;
 	public static synthetic fun KlingAI$default (Lio/ktor/client/HttpClient;Lai/torad/aisdk/providers/KlingAIProviderSettings;ILjava/lang/Object;)Lai/torad/aisdk/providers/KlingAIProvider;
+	public static final fun KlingAIProviderSettings (Lkotlin/jvm/functions/Function1;)Lai/torad/aisdk/providers/KlingAIProviderSettings;
+	public static synthetic fun KlingAIProviderSettings$default (Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Lai/torad/aisdk/providers/KlingAIProviderSettings;
 }
 
 public final class ai/torad/aisdk/providers/KlingAIProviderSettings {
 	public static final field Companion Lai/torad/aisdk/providers/KlingAIProviderSettings$Companion;
-	public fun <init> ()V
-	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;)V
-	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public final fun component1 ()Ljava/lang/String;
-	public final fun component2 ()Ljava/lang/String;
-	public final fun component3 ()Ljava/lang/String;
-	public final fun component4 ()Ljava/util/Map;
-	public final fun copy (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;)Lai/torad/aisdk/providers/KlingAIProviderSettings;
-	public static synthetic fun copy$default (Lai/torad/aisdk/providers/KlingAIProviderSettings;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;ILjava/lang/Object;)Lai/torad/aisdk/providers/KlingAIProviderSettings;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getAccessKey ()Ljava/lang/String;
 	public final fun getBaseURL ()Ljava/lang/String;
@@ -9891,6 +9884,13 @@ public final synthetic class ai/torad/aisdk/providers/KlingAIProviderSettings$$s
 
 public final class ai/torad/aisdk/providers/KlingAIProviderSettings$Companion {
 	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public final class ai/torad/aisdk/providers/KlingAIProviderSettingsBuilder {
+	public final fun accessKey (Ljava/lang/String;)V
+	public final fun baseURL (Ljava/lang/String;)V
+	public final fun headers (Ljava/util/Map;)V
+	public final fun secretKey (Ljava/lang/String;)V
 }
 
 public final class ai/torad/aisdk/providers/KlingAIVideoModelOptions {
@@ -10481,18 +10481,12 @@ public final class ai/torad/aisdk/providers/MistralProviderKt {
 	public static final field MISTRAL_VERSION Ljava/lang/String;
 	public static final fun Mistral (Lio/ktor/client/HttpClient;Lai/torad/aisdk/providers/MistralProviderSettings;)Lai/torad/aisdk/providers/MistralProvider;
 	public static synthetic fun Mistral$default (Lio/ktor/client/HttpClient;Lai/torad/aisdk/providers/MistralProviderSettings;ILjava/lang/Object;)Lai/torad/aisdk/providers/MistralProvider;
+	public static final fun MistralProviderSettings (Lkotlin/jvm/functions/Function1;)Lai/torad/aisdk/providers/MistralProviderSettings;
+	public static synthetic fun MistralProviderSettings$default (Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Lai/torad/aisdk/providers/MistralProviderSettings;
 }
 
 public final class ai/torad/aisdk/providers/MistralProviderSettings {
 	public static final field Companion Lai/torad/aisdk/providers/MistralProviderSettings$Companion;
-	public fun <init> ()V
-	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;)V
-	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public final fun component1 ()Ljava/lang/String;
-	public final fun component2 ()Ljava/lang/String;
-	public final fun component3 ()Ljava/util/Map;
-	public final fun copy (Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;)Lai/torad/aisdk/providers/MistralProviderSettings;
-	public static synthetic fun copy$default (Lai/torad/aisdk/providers/MistralProviderSettings;Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;ILjava/lang/Object;)Lai/torad/aisdk/providers/MistralProviderSettings;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getApiKey ()Ljava/lang/String;
 	public final fun getBaseURL ()Ljava/lang/String;
@@ -10514,6 +10508,12 @@ public final synthetic class ai/torad/aisdk/providers/MistralProviderSettings$$s
 
 public final class ai/torad/aisdk/providers/MistralProviderSettings$Companion {
 	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public final class ai/torad/aisdk/providers/MistralProviderSettingsBuilder {
+	public final fun apiKey (Ljava/lang/String;)V
+	public final fun baseURL (Ljava/lang/String;)V
+	public final fun headers (Ljava/util/Map;)V
 }
 
 public final class ai/torad/aisdk/providers/MockEmbeddingModel : ai/torad/aisdk/EmbeddingModel {
@@ -11147,18 +11147,12 @@ public final class ai/torad/aisdk/providers/ProdiaProviderKt {
 	public static final field PRODIA_VERSION Ljava/lang/String;
 	public static final fun Prodia (Lio/ktor/client/HttpClient;Lai/torad/aisdk/providers/ProdiaProviderSettings;)Lai/torad/aisdk/providers/ProdiaProvider;
 	public static synthetic fun Prodia$default (Lio/ktor/client/HttpClient;Lai/torad/aisdk/providers/ProdiaProviderSettings;ILjava/lang/Object;)Lai/torad/aisdk/providers/ProdiaProvider;
+	public static final fun ProdiaProviderSettings (Lkotlin/jvm/functions/Function1;)Lai/torad/aisdk/providers/ProdiaProviderSettings;
+	public static synthetic fun ProdiaProviderSettings$default (Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Lai/torad/aisdk/providers/ProdiaProviderSettings;
 }
 
 public final class ai/torad/aisdk/providers/ProdiaProviderSettings {
 	public static final field Companion Lai/torad/aisdk/providers/ProdiaProviderSettings$Companion;
-	public fun <init> ()V
-	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;)V
-	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public final fun component1 ()Ljava/lang/String;
-	public final fun component2 ()Ljava/lang/String;
-	public final fun component3 ()Ljava/util/Map;
-	public final fun copy (Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;)Lai/torad/aisdk/providers/ProdiaProviderSettings;
-	public static synthetic fun copy$default (Lai/torad/aisdk/providers/ProdiaProviderSettings;Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;ILjava/lang/Object;)Lai/torad/aisdk/providers/ProdiaProviderSettings;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getApiKey ()Ljava/lang/String;
 	public final fun getBaseURL ()Ljava/lang/String;
@@ -11180,6 +11174,12 @@ public final synthetic class ai/torad/aisdk/providers/ProdiaProviderSettings$$se
 
 public final class ai/torad/aisdk/providers/ProdiaProviderSettings$Companion {
 	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public final class ai/torad/aisdk/providers/ProdiaProviderSettingsBuilder {
+	public final fun apiKey (Ljava/lang/String;)V
+	public final fun baseURL (Ljava/lang/String;)V
+	public final fun headers (Ljava/util/Map;)V
 }
 
 public final class ai/torad/aisdk/providers/ProdiaVideoModelOptions {
@@ -11368,18 +11368,12 @@ public final class ai/torad/aisdk/providers/ReplicateProviderKt {
 	public static final field REPLICATE_VERSION Ljava/lang/String;
 	public static final fun Replicate (Lio/ktor/client/HttpClient;Lai/torad/aisdk/providers/ReplicateProviderSettings;)Lai/torad/aisdk/providers/ReplicateProvider;
 	public static synthetic fun Replicate$default (Lio/ktor/client/HttpClient;Lai/torad/aisdk/providers/ReplicateProviderSettings;ILjava/lang/Object;)Lai/torad/aisdk/providers/ReplicateProvider;
+	public static final fun ReplicateProviderSettings (Lkotlin/jvm/functions/Function1;)Lai/torad/aisdk/providers/ReplicateProviderSettings;
+	public static synthetic fun ReplicateProviderSettings$default (Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Lai/torad/aisdk/providers/ReplicateProviderSettings;
 }
 
 public final class ai/torad/aisdk/providers/ReplicateProviderSettings {
 	public static final field Companion Lai/torad/aisdk/providers/ReplicateProviderSettings$Companion;
-	public fun <init> ()V
-	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;)V
-	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public final fun component1 ()Ljava/lang/String;
-	public final fun component2 ()Ljava/lang/String;
-	public final fun component3 ()Ljava/util/Map;
-	public final fun copy (Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;)Lai/torad/aisdk/providers/ReplicateProviderSettings;
-	public static synthetic fun copy$default (Lai/torad/aisdk/providers/ReplicateProviderSettings;Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;ILjava/lang/Object;)Lai/torad/aisdk/providers/ReplicateProviderSettings;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getApiToken ()Ljava/lang/String;
 	public final fun getBaseURL ()Ljava/lang/String;
@@ -11401,6 +11395,12 @@ public final synthetic class ai/torad/aisdk/providers/ReplicateProviderSettings$
 
 public final class ai/torad/aisdk/providers/ReplicateProviderSettings$Companion {
 	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public final class ai/torad/aisdk/providers/ReplicateProviderSettingsBuilder {
+	public final fun apiToken (Ljava/lang/String;)V
+	public final fun baseURL (Ljava/lang/String;)V
+	public final fun headers (Ljava/util/Map;)V
 }
 
 public final class ai/torad/aisdk/providers/ReplicateVideoModelOptions {

@@ -40,7 +40,11 @@ class ByteDanceProviderTest {
         fixture.server.start()
         val model = ByteDance(
             fixture.httpClient(),
-            ByteDanceProviderSettings(apiKey = "key", baseURL = "https://ark.test/api/v3", headers = mapOf("X-Test" to "1")),
+            ByteDanceProviderSettings {
+                apiKey("key")
+                baseURL("https://ark.test/api/v3")
+                headers(mapOf("X-Test" to "1"))
+            },
         ).video(ModelId("seedance-1-0-pro-250528"))
 
         val result = model.generate(
@@ -125,7 +129,13 @@ class ByteDanceProviderTest {
             ),
         )
         fixture.server.start()
-        val provider = ByteDance(fixture.httpClient(), ByteDanceProviderSettings(apiKey = "key", baseURL = "https://ark.test/api/v3"))
+        val provider = ByteDance(
+            fixture.httpClient(),
+            ByteDanceProviderSettings {
+                apiKey("key")
+                baseURL("https://ark.test/api/v3")
+            },
+        )
 
         assertFailsWith<AiSdkException> {
             provider.video(ModelId("seedance")).generate(

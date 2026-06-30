@@ -48,7 +48,7 @@ class BlackForestLabsProviderTest {
         fixture.server.start()
         val model = BlackForestLabs(
             fixture.httpClient(),
-            BlackForestLabsProviderSettings(apiKey = "bfl-key"),
+            BlackForestLabsProviderSettings { apiKey("bfl-key") },
         ).image(ModelId("flux-pro-1.1"))
 
         val result = model.generate(
@@ -136,7 +136,7 @@ class BlackForestLabsProviderTest {
         fixture.server.start()
         val model = BlackForestLabs(
             fixture.httpClient(),
-            BlackForestLabsProviderSettings(apiKey = "key"),
+            BlackForestLabsProviderSettings { apiKey("key") },
         ).image(ModelId("flux-pro-1.0-fill"))
 
         val result = model.generate(
@@ -181,7 +181,7 @@ class BlackForestLabsProviderTest {
         fixture.server.start()
         val model = BlackForestLabs(
             fixture.httpClient(),
-            BlackForestLabsProviderSettings(apiKey = "key"),
+            BlackForestLabsProviderSettings { apiKey("key") },
         ).image(ModelId("flux-pro-1.1"))
 
         assertFailsWith<AiSdkException> {
@@ -222,7 +222,7 @@ class BlackForestLabsProviderTest {
         fixture.server.start()
         val model = BlackForestLabs(
             fixture.httpClient(),
-            BlackForestLabsProviderSettings(apiKey = "key"),
+            BlackForestLabsProviderSettings { apiKey("key") },
         ).image(ModelId("flux-pro-1.1"))
 
         val error = assertFailsWith<NoImageGeneratedError> {
@@ -248,7 +248,7 @@ class BlackForestLabsProviderTest {
     @Test
     fun `default provider and unsupported model families fail explicitly`() {
         val fixture = TestServer.createTestServer(mutableMapOf())
-        val provider = BlackForestLabs(fixture.httpClient(), BlackForestLabsProviderSettings(apiKey = "key"))
+        val provider = BlackForestLabs(fixture.httpClient(), BlackForestLabsProviderSettings { apiKey("key") })
 
         assertFailsWith<NoSuchModelError> { provider.languageModel("model") }
         assertFailsWith<NoSuchModelError> { provider.embeddingModel("embed") }

@@ -2,6 +2,7 @@ package ai.torad.aisdk.providers
 
 import ai.torad.aisdk.*
 import ai.torad.aisdk.ProviderMetadata
+import dev.drewhamilton.poko.Poko
 import io.ktor.client.HttpClient
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpMethod
@@ -23,11 +24,12 @@ public const val KLINGAI_VERSION: String = "3.0.18"
 public typealias KlingAIVideoProviderOptions = KlingAIVideoModelOptions
 
 @Serializable
-public data class KlingAIProviderSettings(
-    val accessKey: String? = null,
-    val secretKey: String? = null,
-    val baseURL: String = "https://api-singapore.klingai.com",
-    val headers: Map<String, String> = emptyMap(),
+@Poko
+public class KlingAIProviderSettings internal constructor(
+    public val accessKey: String? = null,
+    public val secretKey: String? = null,
+    public val baseURL: String = "https://api-singapore.klingai.com",
+    public val headers: Map<String, String> = emptyMap(),
 ) {
     internal fun klingAIHeaders(
         callHeaders: Map<String, String>,
@@ -63,6 +65,42 @@ public data class KlingAIProviderSettings(
     private fun base64Url(bytes: ByteArray): String =
         Base64Codec.encode(bytes).replace('+', '-').replace('/', '_').trimEnd('=')
 }
+
+public class KlingAIProviderSettingsBuilder internal constructor() {
+    private var accessKey: String? = null
+    private var secretKey: String? = null
+    private var baseURL: String = "https://api-singapore.klingai.com"
+    private var headers: Map<String, String> = emptyMap()
+
+    public fun accessKey(value: String?) {
+        accessKey = value
+    }
+
+    public fun secretKey(value: String?) {
+        secretKey = value
+    }
+
+    public fun baseURL(value: String) {
+        baseURL = value
+    }
+
+    public fun headers(value: Map<String, String>) {
+        headers = value
+    }
+
+    internal fun build(): KlingAIProviderSettings =
+        KlingAIProviderSettings(
+            accessKey = accessKey,
+            secretKey = secretKey,
+            baseURL = baseURL,
+            headers = headers,
+        )
+}
+
+public fun KlingAIProviderSettings(
+    block: KlingAIProviderSettingsBuilder.() -> Unit = {},
+): KlingAIProviderSettings =
+    KlingAIProviderSettingsBuilder().apply(block).build()
 
 @Serializable
 public data class KlingAIVideoModelOptions(

@@ -40,7 +40,7 @@ class ReplicateProviderTest {
         fixture.server.start()
         val model = Replicate(
             fixture.httpClient(),
-            ReplicateProviderSettings(apiToken = "token"),
+            ReplicateProviderSettings { apiToken("token") },
         ).image(ModelId("owner/model:version-123"))
 
         val result = model.generate(
@@ -103,7 +103,7 @@ class ReplicateProviderTest {
         fixture.server.start()
         val model = Replicate(
             fixture.httpClient(),
-            ReplicateProviderSettings(apiToken = "token"),
+            ReplicateProviderSettings { apiToken("token") },
         ).image(ModelId("black-forest-labs/flux-2-pro"))
 
         val result = model.generate(
@@ -147,7 +147,7 @@ class ReplicateProviderTest {
         fixture.server.start()
         val model = Replicate(
             fixture.httpClient(),
-            ReplicateProviderSettings(apiToken = "token"),
+            ReplicateProviderSettings { apiToken("token") },
         ).video(ModelId("minimax/video-01"))
 
         val result = model.generate(
@@ -215,7 +215,7 @@ class ReplicateProviderTest {
         fixture.server.start()
         val model = Replicate(
             fixture.httpClient(),
-            ReplicateProviderSettings(apiToken = "token"),
+            ReplicateProviderSettings { apiToken("token") },
         ).video(ModelId("minimax/video-01"))
 
         val result = model.generate(VideoGenerationParams(prompt = "array output"))
@@ -237,7 +237,7 @@ class ReplicateProviderTest {
             ),
         )
         fixture.server.start()
-        val provider = Replicate(fixture.httpClient(), ReplicateProviderSettings(apiToken = "token"))
+        val provider = Replicate(fixture.httpClient(), ReplicateProviderSettings { apiToken("token") })
 
         assertFailsWith<AiSdkException> {
             provider.video(ModelId("minimax/video-01")).generate(VideoGenerationParams(prompt = "x"))

@@ -32,7 +32,13 @@ class KlingAIDefensiveParsingTest {
                 )
             },
         )
-        val model = KlingAI(client, KlingAIProviderSettings(accessKey = "a", secretKey = "s"))
+        val model = KlingAI(
+            client,
+            KlingAIProviderSettings {
+                accessKey("a")
+                secretKey("s")
+            },
+        )
             .video(ModelId("kling-v2.6-t2v"))
 
         val error = assertFails {

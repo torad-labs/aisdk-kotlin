@@ -62,11 +62,11 @@ class FalProviderTest {
         fixture.server.start()
         val provider = Fal(
             fixture.httpClient(),
-            FalProviderSettings(
-                apiKey = "key",
-                baseURL = "https://fal.test",
-                headers = mapOf("X-Provider" to "provider"),
-            ),
+            FalProviderSettings {
+                apiKey("key")
+                baseURL("https://fal.test")
+                headers(mapOf("X-Provider" to "provider"))
+            },
         )
 
         val result = provider.image(ModelId("fal-ai/qwen-image")).generate(
@@ -151,7 +151,7 @@ class FalProviderTest {
             ),
         )
         fixture.server.start()
-        val provider = Fal(fixture.httpClient(), FalProviderSettings(apiKey = "key"))
+        val provider = Fal(fixture.httpClient(), FalProviderSettings { apiKey("key") })
 
         val result = provider.speech(ModelId("fal-ai/minimax/speech-02-hd")).generate(
             SpeechGenerationParams(
@@ -219,7 +219,10 @@ class FalProviderTest {
         fixture.server.start()
         val provider = Fal(
             fixture.httpClient(),
-            FalProviderSettings(apiKey = "key", transcriptionPollIntervalMillis = 0),
+            FalProviderSettings {
+                apiKey("key")
+                transcriptionPollIntervalMillis(0)
+            },
         )
 
         val result = provider.transcription(ModelId("wizper")).transcribe(
@@ -303,7 +306,10 @@ class FalProviderTest {
         fixture.server.start()
         val provider = Fal(
             fixture.httpClient(),
-            FalProviderSettings(apiKey = "key", videoPollIntervalMillis = 10),
+            FalProviderSettings {
+                apiKey("key")
+                videoPollIntervalMillis(10)
+            },
         )
 
         val result = provider.video(ModelId("fal-ai/luma-dream-machine")).generate(

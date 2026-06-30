@@ -3,6 +3,7 @@
 package ai.torad.aisdk.providers
 
 import ai.torad.aisdk.*
+import dev.drewhamilton.poko.Poko
 import io.ktor.client.HttpClient
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpMethod
@@ -31,15 +32,16 @@ public typealias AlibabaUsage = Usage
 public typealias AlibabaCacheControl = JsonObject
 
 @Serializable
-public data class AlibabaProviderSettings(
-    val baseURL: String = "https://dashscope-intl.aliyuncs.com/compatible-mode/v1",
-    val videoBaseURL: String = "https://dashscope-intl.aliyuncs.com",
+@Poko
+public class AlibabaProviderSettings internal constructor(
+    public val baseURL: String = "https://dashscope-intl.aliyuncs.com/compatible-mode/v1",
+    public val videoBaseURL: String = "https://dashscope-intl.aliyuncs.com",
     // The embedding API uses the DashScope native endpoint, not the
     // OpenAI-compatible one (`compatible-mode/v1`).
-    val embeddingBaseURL: String = "https://dashscope-intl.aliyuncs.com/api/v1",
-    val apiKey: String? = null,
-    val headers: Map<String, String> = emptyMap(),
-    val includeUsage: Boolean = true,
+    public val embeddingBaseURL: String = "https://dashscope-intl.aliyuncs.com/api/v1",
+    public val apiKey: String? = null,
+    public val headers: Map<String, String> = emptyMap(),
+    public val includeUsage: Boolean = true,
 ) {
     internal suspend fun alibabaPostJson(
         client: HttpClient,
@@ -86,6 +88,54 @@ public data class AlibabaProviderSettings(
         return "Alibaba request failed ($statusCode): $detail"
     }
 }
+
+public class AlibabaProviderSettingsBuilder internal constructor() {
+    private var baseURL: String = "https://dashscope-intl.aliyuncs.com/compatible-mode/v1"
+    private var videoBaseURL: String = "https://dashscope-intl.aliyuncs.com"
+    private var embeddingBaseURL: String = "https://dashscope-intl.aliyuncs.com/api/v1"
+    private var apiKey: String? = null
+    private var headers: Map<String, String> = emptyMap()
+    private var includeUsage: Boolean = true
+
+    public fun baseURL(value: String) {
+        baseURL = value
+    }
+
+    public fun videoBaseURL(value: String) {
+        videoBaseURL = value
+    }
+
+    public fun embeddingBaseURL(value: String) {
+        embeddingBaseURL = value
+    }
+
+    public fun apiKey(value: String?) {
+        apiKey = value
+    }
+
+    public fun headers(value: Map<String, String>) {
+        headers = value
+    }
+
+    public fun includeUsage(value: Boolean) {
+        includeUsage = value
+    }
+
+    internal fun build(): AlibabaProviderSettings =
+        AlibabaProviderSettings(
+            baseURL = baseURL,
+            videoBaseURL = videoBaseURL,
+            embeddingBaseURL = embeddingBaseURL,
+            apiKey = apiKey,
+            headers = headers,
+            includeUsage = includeUsage,
+        )
+}
+
+public fun AlibabaProviderSettings(
+    block: AlibabaProviderSettingsBuilder.() -> Unit = {},
+): AlibabaProviderSettings =
+    AlibabaProviderSettingsBuilder().apply(block).build()
 
 /** Provider options for [AlibabaProvider.embeddingModel] — pass under the
  *  `"alibaba"` key in [EmbeddingModelCallParams.providerOptions]. */

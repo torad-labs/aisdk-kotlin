@@ -4,6 +4,7 @@ package ai.torad.aisdk.providers
 
 import ai.torad.aisdk.*
 import ai.torad.aisdk.ProviderMetadata
+import dev.drewhamilton.poko.Poko
 import io.ktor.client.HttpClient
 import io.ktor.client.request.forms.MultiPartFormDataContent
 import io.ktor.client.request.forms.formData
@@ -39,10 +40,11 @@ public const val PRODIA_VERSION: String = "1.0.31"
 public typealias ProdiaImageProviderOptions = ProdiaImageModelOptions
 
 @Serializable
-public data class ProdiaProviderSettings(
-    val apiKey: String? = null,
-    val baseURL: String = "https://inference.prodia.com/v2",
-    val headers: Map<String, String> = emptyMap(),
+@Poko
+public class ProdiaProviderSettings internal constructor(
+    public val apiKey: String? = null,
+    public val baseURL: String = "https://inference.prodia.com/v2",
+    public val headers: Map<String, String> = emptyMap(),
 ) {
     internal fun prodiaOptions(providerOptions: ProviderOptions): JsonObject =
         JsonAccess.obj(providerOptions.toMap(), "prodia") ?: JsonObject(emptyMap())
@@ -243,6 +245,36 @@ public data class ProdiaProviderSettings(
             ?: raw.ifBlank { "request failed" }
     }
 }
+
+public class ProdiaProviderSettingsBuilder internal constructor() {
+    private var apiKey: String? = null
+    private var baseURL: String = "https://inference.prodia.com/v2"
+    private var headers: Map<String, String> = emptyMap()
+
+    public fun apiKey(value: String?) {
+        apiKey = value
+    }
+
+    public fun baseURL(value: String) {
+        baseURL = value
+    }
+
+    public fun headers(value: Map<String, String>) {
+        headers = value
+    }
+
+    internal fun build(): ProdiaProviderSettings =
+        ProdiaProviderSettings(
+            apiKey = apiKey,
+            baseURL = baseURL,
+            headers = headers,
+        )
+}
+
+public fun ProdiaProviderSettings(
+    block: ProdiaProviderSettingsBuilder.() -> Unit = {},
+): ProdiaProviderSettings =
+    ProdiaProviderSettingsBuilder().apply(block).build()
 
 @Serializable
 public data class ProdiaLanguageModelOptions(

@@ -70,11 +70,11 @@ class AlibabaProviderTest {
         fixture.server.start()
         val provider = Alibaba(
             fixture.httpClient(),
-            AlibabaProviderSettings(
-                apiKey = "key",
-                baseURL = "https://alibaba.test/compatible-mode/v1",
-                headers = mapOf("X-Provider" to "provider"),
-            ),
+            AlibabaProviderSettings {
+                apiKey("key")
+                baseURL("https://alibaba.test/compatible-mode/v1")
+                headers(mapOf("X-Provider" to "provider"))
+            },
         )
 
         val result = provider.chatModel(ModelId("qwen-plus")).generate(
@@ -153,7 +153,10 @@ class AlibabaProviderTest {
         fixture.server.start()
         val model = Alibaba(
             fixture.httpClient(),
-            AlibabaProviderSettings(apiKey = "key", videoBaseURL = "https://dash.test"),
+            AlibabaProviderSettings {
+                apiKey("key")
+                videoBaseURL("https://dash.test")
+            },
         ).video(ModelId("wan2.6-i2v"))
 
         val result = model.generate(
@@ -246,7 +249,10 @@ class AlibabaProviderTest {
         fixture.server.start()
         val provider = Alibaba(
             fixture.httpClient(),
-            AlibabaProviderSettings(apiKey = "key", embeddingBaseURL = "https://alibaba.test/api/v1"),
+            AlibabaProviderSettings {
+                apiKey("key")
+                embeddingBaseURL("https://alibaba.test/api/v1")
+            },
         )
 
         val result = provider.embeddingModel("text-embedding-v4").embed(
@@ -270,7 +276,7 @@ class AlibabaProviderTest {
 
     @Test
     fun `embedding model rejects sparse output and over-limit batches`() = runTest {
-        val provider = Alibaba(TestServer.createTestServer(mutableMapOf()).httpClient(), AlibabaProviderSettings(apiKey = "key"))
+        val provider = Alibaba(TestServer.createTestServer(mutableMapOf()).httpClient(), AlibabaProviderSettings { apiKey("key") })
         val model = provider.embeddingModel("text-embedding-v4")
         assertFailsWith<UnsupportedFunctionalityError> {
             model.embed(
@@ -289,7 +295,7 @@ class AlibabaProviderTest {
 
     @Test
     fun `unsupported Alibaba surfaces and unconfigured singleton fail explicitly`() {
-        val provider = Alibaba(TestServer.createTestServer(mutableMapOf()).httpClient(), AlibabaProviderSettings(apiKey = "key"))
+        val provider = Alibaba(TestServer.createTestServer(mutableMapOf()).httpClient(), AlibabaProviderSettings { apiKey("key") })
 
         assertFailsWith<NoSuchModelError> { provider.imageModel("image") }
     }
