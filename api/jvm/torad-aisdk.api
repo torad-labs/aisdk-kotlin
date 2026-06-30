@@ -600,21 +600,23 @@ public final class ai/torad/aisdk/CallSettings {
 }
 
 public final class ai/torad/aisdk/CallSettingsBuilder {
-	public final fun abortSignal (Lai/torad/aisdk/AbortSignal;)V
-	public final fun frequencyPenalty (Ljava/lang/Float;)V
-	public final fun maxOutputTokens (Ljava/lang/Integer;)V
-	public final fun maxRetries (I)V
-	public final fun presencePenalty (Ljava/lang/Float;)V
-	public final fun providerOption (Ljava/lang/String;Lkotlinx/serialization/json/JsonElement;)V
-	public final fun providerOptions (Lai/torad/aisdk/ProviderOptions;)V
-	public final fun providerOptions (Lkotlin/jvm/functions/Function1;)V
-	public final fun responseFormat (Lai/torad/aisdk/ResponseFormat;)V
-	public final fun seed (Ljava/lang/Integer;)V
-	public final fun stopSequence (Ljava/lang/String;)V
-	public final fun stopSequences (Ljava/lang/Iterable;)V
-	public final fun temperature (Ljava/lang/Float;)V
-	public final fun topK (Ljava/lang/Integer;)V
-	public final fun topP (Ljava/lang/Float;)V
+	public fun <init> ()V
+	public final fun abortSignal (Lai/torad/aisdk/AbortSignal;)Lai/torad/aisdk/CallSettingsBuilder;
+	public final fun build ()Lai/torad/aisdk/CallSettings;
+	public final fun frequencyPenalty (Ljava/lang/Float;)Lai/torad/aisdk/CallSettingsBuilder;
+	public final fun maxOutputTokens (Ljava/lang/Integer;)Lai/torad/aisdk/CallSettingsBuilder;
+	public final fun maxRetries (I)Lai/torad/aisdk/CallSettingsBuilder;
+	public final fun presencePenalty (Ljava/lang/Float;)Lai/torad/aisdk/CallSettingsBuilder;
+	public final fun providerOption (Ljava/lang/String;Lkotlinx/serialization/json/JsonElement;)Lai/torad/aisdk/CallSettingsBuilder;
+	public final fun providerOptions (Lai/torad/aisdk/ProviderOptions;)Lai/torad/aisdk/CallSettingsBuilder;
+	public final fun providerOptions (Lkotlin/jvm/functions/Function1;)Lai/torad/aisdk/CallSettingsBuilder;
+	public final fun responseFormat (Lai/torad/aisdk/ResponseFormat;)Lai/torad/aisdk/CallSettingsBuilder;
+	public final fun seed (Ljava/lang/Integer;)Lai/torad/aisdk/CallSettingsBuilder;
+	public final fun stopSequence (Ljava/lang/String;)Lai/torad/aisdk/CallSettingsBuilder;
+	public final fun stopSequences (Ljava/lang/Iterable;)Lai/torad/aisdk/CallSettingsBuilder;
+	public final fun temperature (Ljava/lang/Float;)Lai/torad/aisdk/CallSettingsBuilder;
+	public final fun topK (Ljava/lang/Integer;)Lai/torad/aisdk/CallSettingsBuilder;
+	public final fun topP (Ljava/lang/Float;)Lai/torad/aisdk/CallSettingsBuilder;
 }
 
 public final class ai/torad/aisdk/CallToolResult {
@@ -6092,11 +6094,13 @@ public final class ai/torad/aisdk/ToolExecutionPolicy$Companion {
 }
 
 public final class ai/torad/aisdk/ToolExecutionPolicyBuilder {
-	public final fun maxParallelToolCalls (I)V
-	public final fun maxToolCallsPerStep (I)V
-	public final fun progressBufferCapacity (I)V
-	public final fun toolExecutionTimeout (Lkotlin/time/Duration;)V
-	public final fun toolExecutionTimeout-BwNAW2A (Lkotlin/time/Duration;)V
+	public fun <init> ()V
+	public final fun build ()Lai/torad/aisdk/ToolExecutionPolicy;
+	public final fun maxParallelToolCalls (I)Lai/torad/aisdk/ToolExecutionPolicyBuilder;
+	public final fun maxToolCallsPerStep (I)Lai/torad/aisdk/ToolExecutionPolicyBuilder;
+	public final fun progressBufferCapacity (I)Lai/torad/aisdk/ToolExecutionPolicyBuilder;
+	public final fun toolExecutionTimeout (Lkotlin/time/Duration;)Lai/torad/aisdk/ToolExecutionPolicyBuilder;
+	public final fun toolExecutionTimeout-BwNAW2A (Lkotlin/time/Duration;)Lai/torad/aisdk/ToolExecutionPolicyBuilder;
 }
 
 public final class ai/torad/aisdk/ToolExecutionPolicyKt {
