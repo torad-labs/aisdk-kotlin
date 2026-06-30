@@ -93,7 +93,9 @@ class TelemetryWiringTest {
         ),
         instructions = "x",
         tools = ToolSet(echoTool()),
-        telemetry = rec?.let { TelemetrySettings(integrations = listOf(it)) },
+        telemetry = rec?.let { TelemetrySettings {
+            integrations(listOf(it))
+        } },
     )
 
     @Test
@@ -131,7 +133,9 @@ class TelemetryWiringTest {
             model = MockLanguageModelTextOnly("hi"),
             instructions = "x",
             tools = ToolSet(),
-            telemetry = TelemetrySettings(integrations = listOf(rec)),
+            telemetry = TelemetrySettings {
+                integrations(listOf(rec))
+            },
         )
         agent.generate(prompt = "one").first()
         agent.generate(prompt = "two").first()
@@ -159,7 +163,9 @@ class TelemetryWiringTest {
             model = MockLanguageModelTextOnly("hi"),
             instructions = "x",
             tools = ToolSet(),
-            telemetry = TelemetrySettings(integrations = listOf(ExplodingTelemetry())),
+            telemetry = TelemetrySettings {
+                integrations(listOf(ExplodingTelemetry()))
+            },
             logger = tellLogger,
         )
         val result = agent.generate(prompt = "go").first()
@@ -197,7 +203,9 @@ class TelemetryWiringTest {
                 model = MockLanguageModelTextOnly("hi"),
                 instructions = "x",
                 tools = ToolSet(),
-                telemetry = TelemetrySettings(integrations = listOf(local)),
+                telemetry = TelemetrySettings {
+                    integrations(listOf(local))
+                },
             )
             agent.generate(prompt = "go").first()
         } finally {
@@ -222,7 +230,9 @@ class TelemetryWiringTest {
             model = brokenModel,
             instructions = "x",
             tools = ToolSet(),
-            telemetry = TelemetrySettings(integrations = listOf(rec)),
+            telemetry = TelemetrySettings {
+                integrations(listOf(rec))
+            },
         )
         assertFailsWith<AiSdkException> { agent.generate(prompt = "go").first() }
         assertTrue(rec.events.contains("error:Model"), "got: ${rec.events}")
@@ -237,7 +247,9 @@ class TelemetryWiringTest {
             model = MockLanguageModelTextOnly("hi"),
             instructions = "x",
             tools = ToolSet(),
-            telemetry = TelemetrySettings(integrations = listOf(rec)),
+            telemetry = TelemetrySettings {
+                integrations(listOf(rec))
+            },
         )
         val events = drainAllItems(agent.stream(prompt = "go", abortSignal = controller.signal))
         assertTrue(events.any { it is StreamEvent.Abort })
@@ -254,7 +266,9 @@ class TelemetryWiringTest {
                 model = MockLanguageModelTextOnly("hi"),
                 instructions = "x",
                 tools = ToolSet(),
-                telemetry = TelemetrySettings(isEnabled = false),
+                telemetry = TelemetrySettings {
+                    isEnabled(false)
+                },
             )
             agent.generate(prompt = "go").first()
         } finally {
@@ -275,7 +289,9 @@ class TelemetryWiringTest {
             model = MockLanguageModelTextOnly("hi"),
             instructions = "x",
             tools = ToolSet(),
-            telemetry = TelemetrySettings(integrations = listOf(cancelling)),
+            telemetry = TelemetrySettings {
+                integrations(listOf(cancelling))
+            },
         )
         assertFailsWith<CancellationException> { agent.generate(prompt = "go").first() }
     }
@@ -295,7 +311,9 @@ class TelemetryWiringTest {
             tools = ToolSet(),
             // Two integrations force the CompositeTelemetry path — its broadcast guard must
             // still let cancellation through (and stop the remaining integrations).
-            telemetry = TelemetrySettings(integrations = listOf(cancelling, survivor)),
+            telemetry = TelemetrySettings {
+                integrations(listOf(cancelling, survivor))
+            },
         )
         assertFailsWith<CancellationException> { agent.generate(prompt = "go").first() }
         assertTrue(survivor.events.isEmpty(), "cancellation stops the broadcast, not just the member")
@@ -318,7 +336,9 @@ class TelemetryWiringTest {
             model = erroringStreamModel,
             instructions = "x",
             tools = ToolSet(),
-            telemetry = TelemetrySettings(integrations = listOf(rec)),
+            telemetry = TelemetrySettings {
+                integrations(listOf(rec))
+            },
         )
         drainAllItems(agent.stream(prompt = "go"))
         assertTrue(
@@ -344,7 +364,9 @@ class TelemetryWiringTest {
             ),
             instructions = "x",
             tools = ToolSet(failingTool),
-            telemetry = TelemetrySettings(integrations = listOf(rec)),
+            telemetry = TelemetrySettings {
+                integrations(listOf(rec))
+            },
         )
         agent.generate(prompt = "go").first()
         assertTrue(rec.events.contains("toolCallFinish:echo:err"), "got: ${rec.events}")
@@ -369,7 +391,9 @@ class TelemetryWiringTest {
             ),
             instructions = "x",
             tools = ToolSet(gated),
-            telemetry = TelemetrySettings(integrations = listOf(rec)),
+            telemetry = TelemetrySettings {
+                integrations(listOf(rec))
+            },
         )
         val first = agent.generate(prompt = "go").first()
         val pending = first.pendingApprovals.single()

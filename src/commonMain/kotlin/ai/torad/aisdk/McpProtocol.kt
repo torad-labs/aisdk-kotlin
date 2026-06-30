@@ -48,11 +48,41 @@ public data class JSONRPCErrorData(
     val data: JsonElement? = null,
 )
 
-public data class MCPRequestOptions(
-    val signal: AbortSignal? = null,
-    val timeoutMillis: Long? = null,
-    val maxTotalTimeoutMillis: Long? = null,
+public class MCPRequestOptions internal constructor(
+    public val signal: AbortSignal? = null,
+    public val timeoutMillis: Long? = null,
+    public val maxTotalTimeoutMillis: Long? = null,
 )
+
+public class MCPRequestOptionsBuilder internal constructor() {
+    private var signal: AbortSignal? = null
+    private var timeoutMillis: Long? = null
+    private var maxTotalTimeoutMillis: Long? = null
+
+    public fun signal(value: AbortSignal?) {
+        signal = value
+    }
+
+    public fun timeoutMillis(value: Long?) {
+        timeoutMillis = value
+    }
+
+    public fun maxTotalTimeoutMillis(value: Long?) {
+        maxTotalTimeoutMillis = value
+    }
+
+    internal fun build(): MCPRequestOptions =
+        MCPRequestOptions(
+            signal = signal,
+            timeoutMillis = timeoutMillis,
+            maxTotalTimeoutMillis = maxTotalTimeoutMillis,
+        )
+}
+
+public fun MCPRequestOptions(
+    block: MCPRequestOptionsBuilder.() -> Unit = {},
+): MCPRequestOptions =
+    MCPRequestOptionsBuilder().apply(block).build()
 
 @Serializable
 public data class Configuration(

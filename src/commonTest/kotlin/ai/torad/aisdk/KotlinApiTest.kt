@@ -116,10 +116,10 @@ class KotlinApiTest {
     @Test
     fun `compat request constructor derives owned typed input and still executes`() = runTest {
         val model = CapturingModel()
-        val request = TextGenerationRequest(
-            messages = listOf(UserMessage("history")),
-            prompt = "answer",
-        )
+        val request = TextGenerationRequest {
+            messages(listOf(UserMessage("history")))
+            prompt("answer")
+        }
 
         val input = assertIs<TextGenerationRequest.Input.MessageHistoryWithPrompt>(request.input)
 
@@ -171,7 +171,7 @@ class KotlinApiTest {
 
     @Test
     fun `empty compat request fails at execution boundary`() = runTest {
-        val request = TextGenerationRequest()
+        val request = TextGenerationRequest {}
 
         assertFailsWith<IllegalArgumentException> {
             val msgs = buildList<ModelMessage> {

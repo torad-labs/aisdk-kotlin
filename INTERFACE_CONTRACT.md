@@ -286,12 +286,18 @@ Penalty, response-format, and retry fields participate in the `Step ?: Agent ?: 
   `GatewayGenerationInfoParams`, `AuthOptions`, `ImageGenerationParams`,
   `SpeechGenerationParams`, `TranscriptionParams`, `VideoGenerationParams`,
   `RerankingParams`, `CompletionRequestOptions`, `CallCompletionApiOptions`,
-  and `HuggingFaceResponsesSettings`) expose field getters and are configured
-  through public DSL factories. The gateway params, `CompletionRequestOptions`,
-  and `HuggingFaceResponsesSettings` are `@Poko` value-semantics types.
-  `AuthOptions`, media/rerank params, and `CallCompletionApiOptions` are
-  regular classes with identity equality because they may hold clients, abort
-  signals, transports, callbacks, or model input objects. The positional
+  `HuggingFaceResponsesSettings`, `TextGenerationRequest`,
+  `CompletionRequest`, `StructuredObjectRequest`, `ChatRequest`,
+  `TelemetrySettings`, `MCPClientConfig`, `MCPTransportConfig`, and
+  `MCPRequestOptions`) expose field getters and are configured through public
+  DSL factories. The gateway params, `TextGenerationRequest`, `ChatRequest`,
+  `CompletionRequestOptions`, and `HuggingFaceResponsesSettings` are `@Poko`
+  value-semantics types. `AuthOptions`, media/rerank params,
+  `CompletionRequest`, `StructuredObjectRequest`, `TelemetrySettings`,
+  `MCPClientConfig`, `MCPTransportConfig`, `MCPRequestOptions`, and
+  `CallCompletionApiOptions` are regular classes with identity equality because
+  they may hold clients, abort signals, transports, callbacks, coroutine
+  contexts, telemetry integrations, or model input objects. The positional
   constructors, `copy()`, and `componentN()` are not public.
 - Provider error payloads (`BasetenErrorData`, `CerebrasErrorData`,
   `FireworksErrorData`) are `@Serializable @Poko class` value-semantics types;

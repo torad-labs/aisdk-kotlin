@@ -27,13 +27,60 @@ import kotlinx.serialization.json.jsonPrimitive
 @Poko
 public class DeepPartial<T>(public val value: T?)
 
-public data class StructuredObjectRequest<INPUT>(
-    val api: String,
-    val id: String,
-    val input: INPUT,
-    val headers: Map<String, String> = emptyMap(),
-    val abortSignal: AbortSignal = AbortSignalNever,
+public class StructuredObjectRequest<INPUT> internal constructor(
+    public val api: String,
+    public val id: String,
+    public val input: INPUT,
+    public val headers: Map<String, String> = emptyMap(),
+    public val abortSignal: AbortSignal = AbortSignalNever,
 )
+
+public class StructuredObjectRequestBuilder<INPUT> internal constructor() {
+    private var api: String? = null
+    private var id: String? = null
+    private var input: INPUT? = null
+    private var inputSet: Boolean = false
+    private var headers: Map<String, String> = emptyMap()
+    private var abortSignal: AbortSignal = AbortSignalNever
+
+    public fun api(value: String) {
+        api = value
+    }
+
+    public fun id(value: String) {
+        id = value
+    }
+
+    public fun input(value: INPUT) {
+        input = value
+        inputSet = true
+    }
+
+    public fun headers(value: Map<String, String>) {
+        headers = value
+    }
+
+    public fun abortSignal(value: AbortSignal) {
+        abortSignal = value
+    }
+
+    internal fun build(): StructuredObjectRequest<INPUT> {
+        check(inputSet) { "StructuredObjectRequest.input is required" }
+        @Suppress("UNCHECKED_CAST")
+        return StructuredObjectRequest(
+            api = requireNotNull(api) { "StructuredObjectRequest.api is required" },
+            id = requireNotNull(id) { "StructuredObjectRequest.id is required" },
+            input = input as INPUT,
+            headers = headers,
+            abortSignal = abortSignal,
+        )
+    }
+}
+
+public fun <INPUT> StructuredObjectRequest(
+    block: StructuredObjectRequestBuilder<INPUT>.() -> Unit = {},
+): StructuredObjectRequest<INPUT> =
+    StructuredObjectRequestBuilder<INPUT>().apply(block).build()
 
 public interface StructuredObjectTransport<INPUT> {
     public fun submit(request: StructuredObjectRequest<INPUT>): Flow<String>
@@ -129,13 +176,13 @@ public class StructuredObject<RESULT, INPUT>(
         clearObject()
         val controller = AbortController()
         abortController = controller
-        val request = StructuredObjectRequest(
-            api = options.api,
-            id = options.id,
-            input = input,
-            headers = options.headers,
-            abortSignal = controller.signal,
-        )
+        val request = StructuredObjectRequest<INPUT> {
+            api(options.api)
+            id(options.id)
+            input(input)
+            headers(options.headers)
+            abortSignal(controller.signal)
+        }
         try {
             // Reuse the shared parse/validate loop; drive the StateFlow from its phases.
             phases(options.transport.submit(request), options.schema, controller.signal).collect { phase ->

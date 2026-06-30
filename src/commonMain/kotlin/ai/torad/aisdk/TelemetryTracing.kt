@@ -8,7 +8,7 @@ import kotlinx.serialization.json.JsonPrimitive
 // The LEGACY tracer/span half of telemetry (pre-v7): manual spans, attribute selection,
 // and the in-memory tracer the parity tests exercise. The v7 integration seam — the
 // `Telemetry` interface the agent loop feeds automatically — lives in Telemetry.kt.
-// This half is opt-IN via an explicit `TelemetrySettings(isEnabled = true)` and is kept
+// This half is opt-IN via an explicit `TelemetrySettings { isEnabled(true) }` and is kept
 // for span-shaped consumers until a GenAI-conventions integration replaces it.
 
 // Decision-C cleanup: all file-local telemetry/tracing helpers are grouped as members of

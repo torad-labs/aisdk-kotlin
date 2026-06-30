@@ -45,15 +45,69 @@ public fun CompletionRequestOptions(
 ): CompletionRequestOptions =
     CompletionRequestOptionsBuilder().apply(block).build()
 
-public data class CompletionRequest(
-    val api: String,
-    val id: String,
-    val prompt: String,
-    val headers: Map<String, String> = emptyMap(),
-    val body: Map<String, JsonElement> = emptyMap(),
-    val streamProtocol: CompletionStreamProtocol = CompletionStreamProtocol.Data,
-    val abortSignal: AbortSignal = AbortSignalNever,
+public class CompletionRequest internal constructor(
+    public val api: String,
+    public val id: String,
+    public val prompt: String,
+    public val headers: Map<String, String> = emptyMap(),
+    public val body: Map<String, JsonElement> = emptyMap(),
+    public val streamProtocol: CompletionStreamProtocol = CompletionStreamProtocol.Data,
+    public val abortSignal: AbortSignal = AbortSignalNever,
 )
+
+public class CompletionRequestBuilder internal constructor() {
+    private var api: String? = null
+    private var id: String? = null
+    private var prompt: String? = null
+    private var headers: Map<String, String> = emptyMap()
+    private var body: Map<String, JsonElement> = emptyMap()
+    private var streamProtocol: CompletionStreamProtocol = CompletionStreamProtocol.Data
+    private var abortSignal: AbortSignal = AbortSignalNever
+
+    public fun api(value: String) {
+        api = value
+    }
+
+    public fun id(value: String) {
+        id = value
+    }
+
+    public fun prompt(value: String) {
+        prompt = value
+    }
+
+    public fun headers(value: Map<String, String>) {
+        headers = value
+    }
+
+    public fun body(value: Map<String, JsonElement>) {
+        body = value
+    }
+
+    public fun streamProtocol(value: CompletionStreamProtocol) {
+        streamProtocol = value
+    }
+
+    public fun abortSignal(value: AbortSignal) {
+        abortSignal = value
+    }
+
+    internal fun build(): CompletionRequest =
+        CompletionRequest(
+            api = requireNotNull(api) { "CompletionRequest.api is required" },
+            id = requireNotNull(id) { "CompletionRequest.id is required" },
+            prompt = requireNotNull(prompt) { "CompletionRequest.prompt is required" },
+            headers = headers,
+            body = body,
+            streamProtocol = streamProtocol,
+            abortSignal = abortSignal,
+        )
+}
+
+public fun CompletionRequest(
+    block: CompletionRequestBuilder.() -> Unit = {},
+): CompletionRequest =
+    CompletionRequestBuilder().apply(block).build()
 
 public interface CompletionTransport {
     public fun complete(request: CompletionRequest): Flow<String>
@@ -186,15 +240,15 @@ public fun CallCompletionApiOptions(
 
 public object CompletionApi {
     public suspend fun callCompletionApi(options: CallCompletionApiOptions): String? {
-        val request = CompletionRequest(
-            api = options.api,
-            id = options.id,
-            prompt = options.prompt,
-            headers = options.headers,
-            body = options.body,
-            streamProtocol = options.streamProtocol,
-            abortSignal = options.abortSignal,
-        )
+        val request = CompletionRequest {
+            api(options.api)
+            id(options.id)
+            prompt(options.prompt)
+            headers(options.headers)
+            body(options.body)
+            streamProtocol(options.streamProtocol)
+            abortSignal(options.abortSignal)
+        }
         val builder = StringBuilder()
         options.setLoading(true)
         options.setError(null)

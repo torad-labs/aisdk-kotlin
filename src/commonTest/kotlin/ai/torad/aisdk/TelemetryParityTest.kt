@@ -18,11 +18,17 @@ class TelemetryParityTest {
     @Test
     fun `disabled telemetry selects no attributes and enabled telemetry honors input output gates`() = runTest {
         val disabled = TelemetryTracing.selectTelemetryAttributes(
-            TelemetrySettings(isEnabled = false),
+            TelemetrySettings {
+                isEnabled(false)
+            },
             mapOf("input" to TelemetryTracing.telemetryInput { JsonPrimitive("secret") }),
         )
         val noInputs = TelemetryTracing.selectTelemetryAttributes(
-            TelemetrySettings(isEnabled = true, recordInputs = false, recordOutputs = true),
+            TelemetrySettings {
+                isEnabled(true)
+                recordInputs(false)
+                recordOutputs(true)
+            },
             mapOf(
                 "simple" to TelemetryTracing.telemetryAttribute(JsonPrimitive("value")),
                 "input" to TelemetryTracing.telemetryInput { JsonPrimitive("in") },
@@ -40,7 +46,9 @@ class TelemetryParityTest {
     fun `operation name attributes match v6 telemetry shape`() {
         val attributes = TelemetryTracing.assembleOperationNameAttributes(
             operationId = "ai.generateText",
-            telemetry = TelemetrySettings(functionId = "chat"),
+            telemetry = TelemetrySettings {
+                functionId("chat")
+            },
         )
 
         assertEquals(JsonPrimitive("ai.generateText chat"), attributes["operation.name"])

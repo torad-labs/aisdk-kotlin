@@ -216,13 +216,13 @@ class FullPortFeatureParityTest {
     fun `telemetry helpers assemble names select attributes and record spans`() = runTest {
         val tracer = InMemoryTelemetryTracer()
 
-        val settings = TelemetrySettings(
-            isEnabled = true,
-            functionId = "chat",
-            metadata = mapOf("custom" to JsonPrimitive("value")),
-            recordInputs = true,
-            recordOutputs = true,
-        )
+        val settings = TelemetrySettings {
+            isEnabled(true)
+            functionId("chat")
+            metadata(mapOf("custom" to JsonPrimitive("value")))
+            recordInputs(true)
+            recordOutputs(true)
+        }
         val attributes = TelemetryTracing.selectTelemetryAttributes(
             telemetry = settings,
             input = JsonPrimitive("in"),
@@ -343,7 +343,9 @@ class FullPortFeatureParityTest {
         val emitted = drainAllItems(chat.sendMessage(UIMessage("u1", UIMessageRole.User, listOf(UIMessagePart.Text("ping")))))
         val textTransport = TextStreamChatTransport(handler = { flowOf("he", "llo") })
         val textMessages = drainAllItems(
-            textTransport.sendMessages(ChatRequest(listOf(UIMessage("u2", UIMessageRole.User, listOf(UIMessagePart.Text("hi")))))),
+            textTransport.sendMessages(ChatRequest {
+                messages(listOf(UIMessage("u2", UIMessageRole.User, listOf(UIMessagePart.Text("hi")))))
+            }),
         )
 
         assertEquals("pong", (emitted.single().parts.single() as UIMessagePart.Text).text)
