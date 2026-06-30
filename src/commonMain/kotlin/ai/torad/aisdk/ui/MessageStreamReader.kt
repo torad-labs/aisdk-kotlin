@@ -187,6 +187,8 @@ public fun StreamToUiMessages(
         )
     }
 
+    data class ToolUpsertOptions(val preliminary: Boolean = false, val appendNew: Boolean = false)
+
     fun upsertTool(
         toolCallId: String,
         toolName: String,
@@ -194,17 +196,16 @@ public fun StreamToUiMessages(
         input: JsonElement? = null,
         output: JsonElement? = null,
         error: String? = null,
-        preliminary: Boolean = false,
         approvalId: String? = null,
         signature: String? = null,
         providerMetadata: ProviderMetadata = ProviderMetadata.None,
         existingIndex: Int? = null,
-        appendNew: Boolean = false,
+        options: ToolUpsertOptions = ToolUpsertOptions(),
         matchExisting: ((UIMessagePart.ToolUI) -> Boolean)? = null,
     ) {
         val targetIndex = when {
             existingIndex != null -> existingIndex
-            appendNew -> null
+            options.appendNew -> null
             matchExisting != null -> firstToolIndex(toolCallId, matchExisting)
             else -> lastToolIndex(toolCallId)
         }
@@ -216,7 +217,7 @@ public fun StreamToUiMessages(
             input = input,
             output = output,
             error = error,
-            preliminary = preliminary,
+            preliminary = options.preliminary,
             approvalId = approvalId ?: existing?.approvalId,
             signature = signature ?: existing?.signature,
             providerMetadata = existing?.providerMetadata?.plus(providerMetadata) ?: providerMetadata,
@@ -358,7 +359,7 @@ public fun StreamToUiMessages(
                     state = ToolCallState.InputAvailable,
                     input = event.inputJson,
                     providerMetadata = event.providerMetadata,
-                    appendNew = true,
+                    options = ToolUpsertOptions(appendNew = true),
                 )
                 emit(snapshot())
             }
@@ -422,10 +423,9 @@ public fun StreamToUiMessages(
                     input = existingInput,
                     output = event.outputJson,
                     error = resultError,
-                    preliminary = event.preliminary,
                     providerMetadata = event.providerMetadata,
                     existingIndex = resultIndex,
-                    appendNew = resultIndex == null,
+                    options = ToolUpsertOptions(preliminary = event.preliminary, appendNew = resultIndex == null),
                 )
                 emit(snapshot())
             }
@@ -445,7 +445,7 @@ public fun StreamToUiMessages(
                     error = event.message,
                     providerMetadata = event.providerMetadata,
                     existingIndex = errorIndex,
-                    appendNew = errorIndex == null,
+                    options = ToolUpsertOptions(appendNew = errorIndex == null),
                 )
                 emit(snapshot())
             }
@@ -469,7 +469,7 @@ public fun StreamToUiMessages(
                     error = event.reason,
                     providerMetadata = event.providerMetadata,
                     existingIndex = deniedIndex,
-                    appendNew = deniedIndex == null,
+                    options = ToolUpsertOptions(appendNew = deniedIndex == null),
                 )
                 emit(snapshot())
             }

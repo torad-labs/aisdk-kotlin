@@ -105,12 +105,15 @@ important enough to audit.
 Use an agent when the model needs to choose tools or delegate:
 
 ```kotlin
-val agent = ToolLoopAgent<AppContext, String>(
-    model = model,
-    instructions = "Choose the smallest safe workflow for the user request.",
-    tools = toolSetOf(searchDocs, createTicket, runSubagent),
-    stopWhen = stepCountIs(8),
-)
+class WorkflowAgent(model: LanguageModel, tools: ToolSet<AppContext>) :
+    ToolLoopAgent<AppContext, String>(
+        model = model,
+        instructions = "Choose the smallest safe workflow for the user request.",
+        tools = tools,
+        stopWhen = StepCountIs(8),
+    )
+
+val agent = WorkflowAgent(model, ToolSet(searchDocs, createTicket, runSubagent))
 ```
 
 For deterministic workflows, keep orchestration in Kotlin. For open-ended tool

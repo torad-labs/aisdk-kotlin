@@ -82,7 +82,7 @@ Expose memory as explicit tools when the model should decide what to read or
 write:
 
 ```kotlin
-val rememberPreference = tool<PreferenceInput, PreferenceResult, AppContext>(
+val rememberPreference = Tool<PreferenceInput, PreferenceResult, AppContext>(
     name = "rememberPreference",
     description = "Store a user preference after approval.",
     needsApproval = { _, _ -> true },

@@ -140,7 +140,7 @@ private class LMNTSpeechModel(
     }
 
     private fun lmntOptions(providerOptions: ProviderOptions): JsonObject =
-        providerOptions.toMap()["lmnt"] as? JsonObject ?: JsonObject(emptyMap())
+        JsonAccess.obj(providerOptions.toMap(), "lmnt") ?: JsonObject(emptyMap())
 
     private fun lmntResponseFormat(value: String?, warnings: MutableList<CallWarning>): String {
         val format = value ?: "mp3"

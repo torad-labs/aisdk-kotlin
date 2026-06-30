@@ -1,3 +1,5 @@
+@file:OptIn(LowLevelLanguageModelApi::class)
+
 package ai.torad.aisdk
 
 import kotlinx.coroutines.flow.Flow
@@ -22,7 +24,26 @@ class DuplicateToolCallIdTest {
         override val modelId = "m"
         private var calls = 0
         override suspend fun generate(params: LanguageModelCallParams) =
-            LanguageModelResult(text = "done", finishReason = FinishReason.Stop, usage = Usage())
+            if (calls++ == 0) {
+                val first = ContentPart.ToolCall(
+                    toolCallId = "dup",
+                    toolName = "echo",
+                    input = buildJsonObject { put("v", JsonPrimitive("A")) },
+                )
+                val second = ContentPart.ToolCall(
+                    toolCallId = "dup",
+                    toolName = "echo",
+                    input = buildJsonObject { put("v", JsonPrimitive("B")) },
+                )
+                LanguageModelResult(
+                    text = "",
+                    toolCalls = listOf(first, second),
+                    finishReason = FinishReason.ToolCalls,
+                    usage = Usage(),
+                )
+            } else {
+                LanguageModelResult(text = "done", finishReason = FinishReason.Stop, usage = Usage())
+            }
         override fun stream(params: LanguageModelCallParams): Flow<StreamEvent> = flow {
             if (calls++ == 0) {
                 emit(StreamEvent.ToolCall("dup", "echo", buildJsonObject { put("v", JsonPrimitive("A")) }))

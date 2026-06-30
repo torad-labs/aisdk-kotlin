@@ -68,7 +68,7 @@ The model chooses tools from names, descriptions, schemas, and examples. Keep
 the prompt focused on policy and task; put action details on the tool:
 
 ```kotlin
-val searchDocs = tool<SearchInput, List<SearchHit>, AppContext>(
+val searchDocs = Tool<SearchInput, List<SearchHit>, AppContext>(
     name = "searchDocs",
     description = "Search AI SDK Kotlin docs when the user asks about API usage.",
     inputExamples = listOf("""{"query":"streamTextResult UI messages","limit":5}"""),

@@ -243,7 +243,7 @@ public sealed class StreamEvent {
      * converters.
      *
      * Tools whose executor is a [kotlinx.coroutines.flow.Flow] (built
-     * via `streamingTool { ... }`) can emit intermediate progress
+     * via `StreamingTool { ... }`) can emit intermediate progress
      * snapshots before the final value; those land as
      * `ToolResult(preliminary = true)`. Preliminary results show in
      * the UI (state stays `OutputAvailable`, `preliminary` flag set)

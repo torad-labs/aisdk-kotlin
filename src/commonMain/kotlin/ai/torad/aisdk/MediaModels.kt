@@ -1,8 +1,5 @@
 package ai.torad.aisdk
 
-import kotlinx.coroutines.async
-import kotlinx.coroutines.awaitAll
-import kotlinx.coroutines.coroutineScope
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
@@ -267,14 +264,7 @@ public data class GenerateImageResult(
 }
 
 public object ImageGeneration {
-    /** Split this count into chunks of at most [perChunk] — e.g. (5, 2) → [2, 2, 1]. */
-    private fun Int.splitCount(perChunk: Int): List<Int> {
-        if (perChunk <= 0 || this <= perChunk) return listOf(this)
-        val full = this / perChunk
-        val remainder = this % perChunk
-        return List(full) { perChunk } + if (remainder > 0) listOf(remainder) else emptyList()
-    }
-
+    @Suppress("LongParameterList")
     public suspend fun generateImage(
         model: ImageModel,
         prompt: String,
@@ -288,20 +278,26 @@ public object ImageGeneration {
         files: List<ImageGenerationFile> = emptyList(),
         mask: ImageGenerationFile? = null,
         logger: Logger = NoopLogger,
+        maxParallelCalls: Int = DEFAULT_MAX_PARALLEL_CALLS,
     ): GenerateImageResult {
         require(prompt.isNotBlank()) { "generateImage: prompt must not be blank" }
         require(n > 0) { "generateImage: n must be > 0" }
         // Split into ceil(n / maxImagesPerCall) calls when the model is limited, so a
         // request for n images from a model capped at < n returns all n (was returning
-        // only one call's worth). Calls run concurrently and results are aggregated.
+        // only one call's worth). Calls run concurrently up to maxParallelCalls.
         fun paramsFor(count: Int) = ImageGenerationParams(
             prompt, count, size, aspectRatio, seed, providerOptions, headers, abortSignal, files, mask,
         )
-        val counts = n.splitCount(model.maxImagesPerCall?.coerceAtLeast(1) ?: n)
+        val maxPerCall = model.maxImagesPerCall?.coerceAtLeast(1) ?: n
+        val counts = if (n <= maxPerCall) {
+            listOf(n)
+        } else {
+            List(n / maxPerCall) { maxPerCall } + listOfNotNull((n % maxPerCall).takeIf { it > 0 })
+        }
         val results = if (counts.size == 1) {
             listOf(model.generate(paramsFor(n)))
         } else {
-            coroutineScope { counts.map { async { model.generate(paramsFor(it)) } }.awaitAll() }
+            BoundedParallel.map(counts, maxParallelCalls) { model.generate(paramsFor(it)) }
         }
         val images = results.flatMap { it.images }
         if (images.isEmpty()) throw NoImageGeneratedError(responses = results.map { it.response })
@@ -317,7 +313,7 @@ public object ImageGeneration {
     }
 
     @ExperimentalAiSdkApi
-    @Suppress("FunctionNaming")
+    @Suppress("FunctionNaming", "LongParameterList")
     public suspend fun experimental_generateImage(
         model: ImageModel,
         prompt: String,
@@ -330,6 +326,7 @@ public object ImageGeneration {
         abortSignal: AbortSignal = AbortSignalNever,
         files: List<ImageGenerationFile> = emptyList(),
         mask: ImageGenerationFile? = null,
+        maxParallelCalls: Int = DEFAULT_MAX_PARALLEL_CALLS,
     ): GenerateImageResult = generateImage(
         model = model,
         prompt = prompt,
@@ -342,6 +339,7 @@ public object ImageGeneration {
         abortSignal = abortSignal,
         files = files,
         mask = mask,
+        maxParallelCalls = maxParallelCalls,
     )
 }
 
@@ -642,14 +640,7 @@ public data class GenerateVideoResult(
 }
 
 public object VideoGeneration {
-    /** Split this count into chunks of at most [perChunk] — e.g. (5, 2) → [2, 2, 1]. */
-    private fun Int.splitCount(perChunk: Int): List<Int> {
-        if (perChunk <= 0 || this <= perChunk) return listOf(this)
-        val full = this / perChunk
-        val remainder = this % perChunk
-        return List(full) { perChunk } + if (remainder > 0) listOf(remainder) else emptyList()
-    }
-
+    @Suppress("LongParameterList")
     public suspend fun generateVideo(
         model: VideoModel,
         prompt: String,
@@ -665,6 +656,7 @@ public object VideoGeneration {
         fps: Int? = null,
         resolution: String? = null,
         logger: Logger = NoopLogger,
+        maxParallelCalls: Int = DEFAULT_MAX_PARALLEL_CALLS,
     ): GenerateVideoResult {
         require(prompt.isNotBlank()) { "generateVideo: prompt must not be blank" }
         require(n > 0) { "generateVideo: n must be > 0" }
@@ -682,12 +674,17 @@ public object VideoGeneration {
             fps = fps,
             resolution = resolution,
         )
-        // Split into ceil(n / maxVideosPerCall) concurrent calls when the model is limited.
-        val counts = n.splitCount(model.maxVideosPerCall?.coerceAtLeast(1) ?: n)
+        // Split into ceil(n / maxVideosPerCall) calls when the model is limited.
+        val maxPerCall = model.maxVideosPerCall?.coerceAtLeast(1) ?: n
+        val counts = if (n <= maxPerCall) {
+            listOf(n)
+        } else {
+            List(n / maxPerCall) { maxPerCall } + listOfNotNull((n % maxPerCall).takeIf { it > 0 })
+        }
         val results = if (counts.size == 1) {
             listOf(model.generate(paramsFor(n)))
         } else {
-            coroutineScope { counts.map { async { model.generate(paramsFor(it)) } }.awaitAll() }
+            BoundedParallel.map(counts, maxParallelCalls) { model.generate(paramsFor(it)) }
         }
         val videos = results.flatMap { it.videos }
         if (videos.isEmpty()) throw NoVideoGeneratedError(responses = results.map { it.response })
@@ -702,7 +699,7 @@ public object VideoGeneration {
     }
 
     @ExperimentalAiSdkApi
-    @Suppress("FunctionNaming")
+    @Suppress("FunctionNaming", "LongParameterList")
     public suspend fun experimental_generateVideo(
         model: VideoModel,
         prompt: String,
@@ -717,6 +714,7 @@ public object VideoGeneration {
         seed: Int? = null,
         fps: Int? = null,
         resolution: String? = null,
+        maxParallelCalls: Int = DEFAULT_MAX_PARALLEL_CALLS,
     ): GenerateVideoResult = generateVideo(
         model = model,
         prompt = prompt,
@@ -731,5 +729,6 @@ public object VideoGeneration {
         seed = seed,
         fps = fps,
         resolution = resolution,
+        maxParallelCalls = maxParallelCalls,
     )
 }

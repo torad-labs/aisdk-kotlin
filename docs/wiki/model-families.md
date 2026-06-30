@@ -31,7 +31,8 @@ result.embeddings.zip(chunks).forEach { (embedding, chunk) ->
 ```
 
 `embedMany` respects explicit batch size, then the model's
-`maxEmbeddingsPerCall`, then one batch.
+`maxEmbeddingsPerCall`, then one batch. When a model supports parallel calls,
+batch concurrency defaults to 8; pass `maxParallelCalls` to raise or lower it.
 
 ## Reranking
 
@@ -58,6 +59,7 @@ val result = generateImage(
     prompt = "A clean diagram of Kotlin Flow streaming into UI messages.",
     n = 2,
     aspectRatio = "16:9",
+    maxParallelCalls = 4,
 )
 
 val firstImage = result.image
@@ -114,6 +116,7 @@ val result = generateVideo(
     prompt = "A calm product walkthrough animation.",
     durationSeconds = 5f,
     aspectRatio = "16:9",
+    maxParallelCalls = 2,
 )
 
 val video = result.video
@@ -142,7 +145,7 @@ val local = generated.fileData()
 
 - Keep media generation behind provider capability checks.
 - Persist `response`, `warnings`, and `providerMetadata` with generated media.
-- Use `maxParallelCalls` to bound embedding load in servers.
+- Use `maxParallelCalls` to bound embedding, image, and video load in servers.
 - Treat reranking as a relevance pass, not as a replacement for retrieval.
 
 ## Related

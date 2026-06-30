@@ -448,14 +448,11 @@ internal abstract class OpenAICompatibleHttpModel(
         }
     }
 
-    protected fun openAIResponseFormat(
-        format: ResponseFormat,
-        strictJsonSchema: Boolean,
-        supportsStructuredOutputs: Boolean,
-    ): JsonElement? = when (format) {
+    protected fun openAIResponseFormat(format: ResponseFormat, capabilities: ResponseFormatCapabilities): JsonElement? =
+        when (format) {
         ResponseFormat.Text -> null
         is ResponseFormat.Json -> {
-            if (format.schemaJson != null && supportsStructuredOutputs) {
+            if (format.schemaJson != null && capabilities.structuredOutputs) {
                 buildJsonObject {
                     put("type", JsonPrimitive("json_schema"))
                     put(
@@ -464,7 +461,7 @@ internal abstract class OpenAICompatibleHttpModel(
                             put("name", JsonPrimitive(format.schemaName ?: "response"))
                             format.schemaDescription?.let { put("description", JsonPrimitive(it)) }
                             put("schema", format.schemaJson)
-                            put("strict", JsonPrimitive(strictJsonSchema))
+                            put("strict", JsonPrimitive(capabilities.strict))
                         },
                     )
                 }
@@ -472,7 +469,9 @@ internal abstract class OpenAICompatibleHttpModel(
                 buildJsonObject { put("type", JsonPrimitive("json_object")) }
             }
         }
-    }
+        }
+
+    protected data class ResponseFormatCapabilities(val strict: Boolean, val structuredOutputs: Boolean)
 
     protected fun openAICompletionPrompt(messages: List<ModelMessage>): String =
         messages.joinToString("\n") { message ->
@@ -531,7 +530,7 @@ internal abstract class OpenAICompatibleHttpModel(
         val keys = listOf("openai-compatible", "openaiCompatible", providerName, toOpenAICamelCase(providerName))
         var merged = JsonObject(emptyMap())
         for (key in keys.distinct()) {
-            val obj = options[key] as? JsonObject ?: continue
+            val obj = JsonAccess.obj(options, key) ?: continue
             merged = merged.deepMergedWith(obj)
         }
         return merged

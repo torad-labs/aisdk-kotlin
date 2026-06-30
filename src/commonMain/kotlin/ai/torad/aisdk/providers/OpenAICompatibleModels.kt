@@ -1,3 +1,5 @@
+@file:OptIn(ai.torad.aisdk.LowLevelLanguageModelApi::class)
+
 package ai.torad.aisdk.providers
 
 import ai.torad.aisdk.*
@@ -137,8 +139,7 @@ internal class OpenAICompatibleChatLanguageModel(
             params.seed?.let { put(settings.chatSeedKey, JsonPrimitive(it)) }
             val responseFormat = openAIResponseFormat(
                 params.responseFormat,
-                strictJsonSchema,
-                settings.supportsStructuredOutputs,
+                ResponseFormatCapabilities(strictJsonSchema, settings.supportsStructuredOutputs),
             )
             if (responseFormat != null) put("response_format", responseFormat)
             if (params.tools.isNotEmpty()) {
@@ -239,7 +240,7 @@ internal class OpenAICompatibleCompletionLanguageModel(
                         }
                     }
                     value["usage"]?.let { usage = Usage.fromOpenAI(it) }
-                    val choice = ((value["choices"] as? JsonArray)?.firstOrNull() as? JsonObject)
+                    val choice = ((JsonAccess.arr(value, "choices"))?.firstOrNull() as? JsonObject)
                     val text = (choice?.get("text") as? JsonPrimitive)?.contentOrNull
                     if (!text.isNullOrEmpty()) {
                         if (!activeText) {
@@ -315,13 +316,14 @@ internal class OpenAICompatibleEmbeddingModel(
         val response = postJson("/embeddings", body, params.headers)
         val value = response.value.jsonObject
         return EmbeddingModelResult(
-            embeddings = (value["data"] as? JsonArray).orEmpty()
+            embeddings = (JsonAccess.arr(value, "data")).orEmpty()
                 .map { item ->
-                    val row = ((item as? JsonObject)?.get("embedding") as? JsonArray).orEmpty()
+                    val row = JsonAccess.arr(item as? JsonObject, "embedding").orEmpty()
                     row.map { WireDecoder.embeddingFloat(it, provider) }
                 },
             usage = EmbeddingUsage(
-                tokens = ((value["usage"] as? JsonObject)?.get("prompt_tokens") as? JsonPrimitive)?.intOrNull ?: 0,
+                tokens = (JsonAccess.obj(value, "usage")?.get("prompt_tokens") as? JsonPrimitive)?.intOrNull
+                    ?: 0,
                 raw = value["usage"],
             ),
             warnings = emptyList(),

@@ -1,3 +1,5 @@
+@file:OptIn(ai.torad.aisdk.LowLevelLanguageModelApi::class)
+
 package ai.torad.aisdk.providers
 
 import ai.torad.aisdk.*
@@ -248,7 +250,7 @@ private class BedrockEmbeddingModel(
         }
         val value = params.values.singleOrNull()
             ?: throw InvalidArgumentError("values", "Amazon Bedrock embedding requires one value.")
-        val options = params.providerOptions.toMap()["bedrock"] as? JsonObject ?: JsonObject(emptyMap())
+        val options = JsonAccess.obj(params.providerOptions.toMap(), "bedrock") ?: JsonObject(emptyMap())
         val body = BedrockRequest.bedrockEmbeddingBody(modelId, value, options)
         val response = BedrockHttp.bedrockPostJson(
             client = client,
@@ -292,7 +294,7 @@ private class BedrockImageModel(
         if ((obj["status"] as? JsonPrimitive)?.contentOrNull == "Request Moderated") {
             throw NoImageGeneratedError("Amazon Bedrock request was moderated: ${obj["details"] ?: "Unknown"}")
         }
-        val images = (obj["images"] as? JsonArray).orEmpty().mapNotNull {
+        val images = (JsonAccess.arr(obj, "images")).orEmpty().mapNotNull {
             val base64 = (it as? JsonPrimitive)?.content ?: return@mapNotNull null
             GeneratedFile(mediaType = "image/png", base64 = base64)
         }
@@ -315,7 +317,7 @@ private class BedrockRerankingModel(
 
     override suspend fun rerank(params: RerankingParams): RerankingModelResult {
         params.abortSignal.throwIfAborted()
-        val options = params.providerOptions.toMap()["bedrock"] as? JsonObject ?: JsonObject(emptyMap())
+        val options = JsonAccess.obj(params.providerOptions.toMap(), "bedrock") ?: JsonObject(emptyMap())
         // Default region must match bedrockAgentRuntimeBaseURL's "us-west-2" default — the ARN
         // region is validated against the endpoint region, so a us-east-1 ARN on the us-west-2
         // endpoint failed every out-of-the-box rerank call.
@@ -329,7 +331,7 @@ private class BedrockRerankingModel(
             abortSignal = params.abortSignal,
             parseJson = true,
         )
-        val results = (response.value.jsonObject["results"] as? JsonArray).orEmpty().mapNotNull { item ->
+        val results = (JsonAccess.arr(response.value.jsonObject, "results")).orEmpty().mapNotNull { item ->
             val obj = item as? JsonObject ?: return@mapNotNull null
             val index = (obj["index"] as? JsonPrimitive)?.intOrNull ?: 0
             RerankedItem(
@@ -378,12 +380,12 @@ private class BedrockMantleChatLanguageModel(
             parseJson = true,
         )
         val obj = response.value.jsonObject
-        val choice = ((obj["choices"] as? JsonArray)?.firstOrNull() as? JsonObject)
+        val choice = ((JsonAccess.arr(obj, "choices"))?.firstOrNull() as? JsonObject)
         val message = (choice?.get("message") as? JsonObject)
         val content = (message?.get("content") as? JsonPrimitive)?.contentOrNull.orEmpty()
         val toolCalls = (message?.get("tool_calls") as? JsonArray).orEmpty().mapNotNull { call ->
             val callObj = call as? JsonObject ?: return@mapNotNull null
-            val function = callObj["function"] as? JsonObject ?: return@mapNotNull null
+            val function = JsonAccess.obj(callObj, "function") ?: return@mapNotNull null
             val toolName = (function["name"] as? JsonPrimitive)?.contentOrNull ?: return@mapNotNull null
             val arguments = (function["arguments"] as? JsonPrimitive)?.contentOrNull
             ContentPart.ToolCall(

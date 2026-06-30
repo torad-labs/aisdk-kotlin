@@ -88,7 +88,8 @@ public val AiSdkDefaultRedactor: Redactor = DefaultRedactor()
 
 internal object RedactionPredicates {
     fun String.isSensitiveKey(): Boolean {
-        val normalized = lowercase()
+        val normalized = replace(CAMEL_CASE_BOUNDARY, "$1-$2")
+            .lowercase()
             .replace("_", "-")
             .replace(" ", "-")
         return normalized == "authorization" ||
@@ -122,4 +123,6 @@ internal object RedactionPredicates {
             it.isLetterOrDigit() || it == '+' || it == '/' || it == '=' || it == '-' || it == '_'
         }
     }
+
+    private val CAMEL_CASE_BOUNDARY: Regex = Regex("([a-z0-9])([A-Z])")
 }

@@ -216,7 +216,7 @@ private object TelemetryRedaction {
                 request = request.sanitizedParams(settings, redactor),
                 priorSteps = priorSteps.map { it.sanitizedStep(settings, redactor) },
             )
-            is AgentEvent.Chunk -> copy(event = event.sanitizedStreamEvent(settings, redactor))
+            is AgentEvent.Chunk -> copy(event = StreamEventTelemetryRedaction.sanitize(event, settings, redactor))
             is AgentEvent.StepFinished -> copy(step = step.sanitizedStep(settings, redactor))
             is AgentEvent.ToolCallStarted -> copy(
                 input = if (settings.recordInputs) redactor.redactJson(input) else JsonObject(emptyMap()),
@@ -419,65 +419,25 @@ private object TelemetryRedaction {
 
     private fun Usage.sanitizedUsage(): Usage = copy(raw = null)
 
-    private fun StreamEvent.sanitizedStreamEvent(settings: TelemetrySettings, redactor: Redactor): StreamEvent =
-        when (this) {
-            is StreamEvent.TextDelta -> if (settings.recordOutputs) {
-                copy(text = redactor.redactText(text))
-            } else {
-                copy(text = "")
-            }
-            is StreamEvent.ReasoningDelta -> if (settings.recordOutputs) {
-                copy(text = redactor.redactText(text))
-            } else {
-                copy(text = "")
-            }
-            is StreamEvent.ToolCall ->
-                copy(
-                    inputJson = if (settings.recordInputs) {
-                        redactor.redactJson(inputJson)
-                    } else {
-                        JsonObject(emptyMap())
-                    },
-                )
-            is StreamEvent.ToolResult ->
-                StreamEvent.ToolResult(
-                    toolCallId = toolCallId,
-                    toolName = toolName,
-                    outputJson = if (settings.recordOutputs) {
-                        redactor.redactJson(outputJson)
-                    } else {
-                        JsonObject(emptyMap())
-                    },
-                    preliminary = preliminary,
-                )
-            is StreamEvent.ToolError -> copy(message = redactor.redactText(message))
-            is StreamEvent.Error -> copy(
-                message = redactor.redactText(message),
-                cause = cause?.redactedThrowable(redactor),
-            )
-            is StreamEvent.FilePart -> copy(base64 = "", providerMetadata = ProviderMetadata.None)
-            else -> this
-        }
-
     private fun Map<String, JsonElement>.sanitizedAttributes(
         settings: TelemetrySettings,
         redactor: Redactor,
     ): Map<String, JsonElement> = buildMap {
         for ((key, value) in this@sanitizedAttributes) {
             val normalized = key.lowercase()
-            val isInput = normalized.containsAny("input", "prompt", "request")
-            val isOutput = normalized.containsAny("output", "response", "completion")
-            if (shouldDropTelemetryAttribute(isInput, isOutput, settings)) continue
+            if (shouldDropTelemetryAttribute(normalized, settings)) continue
             put(key, redactor.redactJson(value))
         }
     }
 
     private fun shouldDropTelemetryAttribute(
-        isInput: Boolean,
-        isOutput: Boolean,
+        normalizedKey: String,
         settings: TelemetrySettings,
-    ): Boolean =
-        (isInput && !settings.recordInputs) || (isOutput && !settings.recordOutputs)
+    ): Boolean {
+        val isInput = normalizedKey.containsAny("input", "prompt", "request")
+        val isOutput = normalizedKey.containsAny("output", "response", "completion")
+        return (isInput && !settings.recordInputs) || (isOutput && !settings.recordOutputs)
+    }
 
     private fun String.containsAny(vararg needles: String): Boolean =
         needles.any { it in this }

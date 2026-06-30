@@ -105,11 +105,11 @@ public class KtorGatewayTransport(
         )
         val value = response.value.jsonObject
         return EmbeddingModelResult(
-            embeddings = (value["embeddings"] as? JsonArray).orEmpty().map { row ->
+            embeddings = (JsonAccess.arr(value, "embeddings")).orEmpty().map { row ->
                 (row as? JsonArray).orEmpty().map { WireDecoder.embeddingFloat(it, "gateway.embedding") }
             },
             usage = EmbeddingUsage(
-                tokens = ((value["usage"] as? JsonObject)?.get("tokens") as? JsonPrimitive)?.intOrNull ?: 0,
+                tokens = ((JsonAccess.obj(value, "usage"))?.get("tokens") as? JsonPrimitive)?.intOrNull ?: 0,
             ),
             response = LanguageModelResponseMetadata(headers = response.headers, body = response.value),
             providerMetadata = value["providerMetadata"].let { if (it is JsonObject) ProviderMetadata.Raw(it) else ProviderMetadata.None },
@@ -139,7 +139,7 @@ public class KtorGatewayTransport(
         )
         val value = response.value.jsonObject
         return ImageModelResult(
-            images = (value["images"] as? JsonArray).orEmpty().map {
+            images = (JsonAccess.arr(value, "images")).orEmpty().map {
                 GeneratedFile(mediaType = "image/png", base64 = (it as? JsonPrimitive)?.content.orEmpty())
             },
             warnings = callWarnings(value["warnings"]),
@@ -219,7 +219,7 @@ public class KtorGatewayTransport(
             )
         }
         return VideoModelResult(
-            videos = (event["videos"] as? JsonArray).orEmpty().mapNotNull { video ->
+            videos = (JsonAccess.arr(event, "videos")).orEmpty().mapNotNull { video ->
                 val obj = video as? JsonObject ?: return@mapNotNull null
                 GeneratedFile(
                     mediaType = (obj["mediaType"] as? JsonPrimitive)?.contentOrNull ?: "video/mp4",
@@ -255,7 +255,7 @@ public class KtorGatewayTransport(
         )
         val value = response.value.jsonObject
         return RerankingModelResult(
-            results = (value["ranking"] as? JsonArray).orEmpty().mapNotNull { item ->
+            results = (JsonAccess.arr(value, "ranking")).orEmpty().mapNotNull { item ->
                 val obj = item as? JsonObject ?: return@mapNotNull null
                 val index = (obj["index"] as? JsonPrimitive)?.intOrNull ?: 0
                 RerankedItem(
@@ -271,14 +271,14 @@ public class KtorGatewayTransport(
 
     override suspend fun getAvailableModels(context: GatewayRequestContext): GatewayFetchMetadataResponse {
         val response = getJson(context, "/config")
-        val models = (response.value.jsonObject["models"] as? JsonArray).orEmpty().mapNotNull { model ->
+        val models = (JsonAccess.arr(response.value.jsonObject, "models")).orEmpty().mapNotNull { model ->
             val obj = model as? JsonObject ?: return@mapNotNull null
-            val spec = (obj["specification"] as? JsonObject) ?: return@mapNotNull null
+            val spec = (JsonAccess.obj(obj, "specification")) ?: return@mapNotNull null
             GatewayLanguageModelEntry(
                 id = (obj["id"] as? JsonPrimitive)?.contentOrNull ?: return@mapNotNull null,
                 name = (obj["name"] as? JsonPrimitive)?.contentOrNull.orEmpty(),
                 description = (obj["description"] as? JsonPrimitive)?.contentOrNull,
-                pricing = (obj["pricing"] as? JsonObject)?.let { pricing ->
+                pricing = (JsonAccess.obj(obj, "pricing"))?.let { pricing ->
                     GatewayPricing(
                         input = (pricing["input"] as? JsonPrimitive)?.contentOrNull.orEmpty(),
                         output = (pricing["output"] as? JsonPrimitive)?.contentOrNull.orEmpty(),
@@ -327,7 +327,7 @@ public class KtorGatewayTransport(
         }.joinToString("&")
         val response = getJson(context.copy(baseUrl = gatewayMetadataBaseUrl(context.baseUrl)), "/v1/report?$query")
         return GatewaySpendReportResponse(
-            results = (response.value.jsonObject["results"] as? JsonArray).orEmpty().mapNotNull { row ->
+            results = (JsonAccess.arr(response.value.jsonObject, "results")).orEmpty().mapNotNull { row ->
                 val obj = row as? JsonObject ?: return@mapNotNull null
                 GatewaySpendReportRow(
                     day = (obj["day"] as? JsonPrimitive)?.contentOrNull,
@@ -365,7 +365,7 @@ public class KtorGatewayTransport(
             context.copy(baseUrl = gatewayMetadataBaseUrl(context.baseUrl)),
             "/v1/generation?id=${UrlOps.encode(params.id)}",
         )
-        val data = (response.value.jsonObject["data"] as? JsonObject) ?: response.value.jsonObject
+        val data = (JsonAccess.obj(response.value.jsonObject, "data")) ?: response.value.jsonObject
         return GatewayGenerationInfo(
             id = (data["id"] as? JsonPrimitive)?.contentOrNull.orEmpty(),
             totalCost = TypedJsonOps.jsonNumber(data, "total_cost", "totalCost"),

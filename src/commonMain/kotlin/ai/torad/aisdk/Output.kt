@@ -94,7 +94,7 @@ public sealed class Output<T> {
             val element = aiSdkOutputJson.parseToJsonElement(text)
             val elements = when (element) {
                 is JsonArray -> element
-                is JsonObject -> element["elements"] as? JsonArray
+                is JsonObject -> JsonAccess.arr(element, "elements")
                 else -> null
             } ?: throw InvalidResponseDataError(element, "Expected a JSON array or an object with an 'elements' array")
             return aiSdkOutputJson.decodeFromJsonElement(listSerializer, elements)

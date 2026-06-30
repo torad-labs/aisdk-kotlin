@@ -98,7 +98,7 @@ private class HumeSpeechModel(
                 ),
             )
             put("format", buildJsonObject { put("type", JsonPrimitive(format)) })
-            (humeOptions(params.providerOptions)["context"] as? JsonObject)?.let { context ->
+            (JsonAccess.obj(humeOptions(params.providerOptions), "context"))?.let { context ->
                 put("context", humeContext(context))
             }
         }
@@ -140,7 +140,7 @@ private class HumeSpeechModel(
     }
 
     private fun humeOptions(providerOptions: ProviderOptions): JsonObject =
-        providerOptions.toMap()["hume"] as? JsonObject ?: JsonObject(emptyMap())
+        JsonAccess.obj(providerOptions.toMap(), "hume") ?: JsonObject(emptyMap())
 
     private fun humeContext(context: JsonObject): JsonObject =
         when {
@@ -151,7 +151,7 @@ private class HumeSpeechModel(
                 put(
                     "utterances",
                     JsonArray(
-                        (context["utterances"] as? JsonArray).orEmpty().mapNotNull { item ->
+                        (JsonAccess.arr(context, "utterances")).orEmpty().mapNotNull { item ->
                             val utterance = item as? JsonObject ?: return@mapNotNull null
                             buildJsonObject {
                                 utterance["text"]?.let { put("text", it) }

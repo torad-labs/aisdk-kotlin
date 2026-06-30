@@ -13,16 +13,18 @@ This is a green-room Kotlin rewrite of the architectural contracts, not a TypeSc
 
 ## Install
 
-Until the first release is published, use a source dependency or `publishToMavenLocal`:
-
-```sh
-./gradlew publishToMavenLocal
-```
+Use the published beta from Maven Central:
 
 ```kotlin
 dependencies {
-    implementation("ai.torad:aisdk-kotlin:0.1.0-SNAPSHOT")
+    implementation("ai.torad:torad-aisdk:0.3.0-beta01")
 }
+```
+
+For local development against a checkout, use a source dependency or `publishToMavenLocal`:
+
+```sh
+./gradlew publishToMavenLocal
 ```
 
 ## Quick Start
@@ -63,6 +65,12 @@ val agent = HelloAgent(
 ```
 <!-- beta-readiness:readme-sample:end -->
 
+Send application prompts through `Agent.generate` / `Agent.stream` or the
+top-level `generateText` / `streamText` helpers. Direct
+`LanguageModel.generate`, `LanguageModel.stream`, and `LanguageModel.streamResult`
+calls are still supported for provider authors and low-level integrations, but
+they require `@OptIn(LowLevelLanguageModelApi::class)`.
+
 ## What Is Included
 
 - `Agent` and `ToolLoopAgent`.
@@ -74,6 +82,7 @@ val agent = HelloAgent(
 - Provider registry and `customProvider` routing.
 - Gateway facade with `createGateway`, `gateway`, gateway metadata APIs, gateway errors, provider-executed gateway tool descriptors, and a Ktor-backed `KtorGatewayTransport`.
 - OpenAI-compatible Ktor provider for chat, completions, embeddings, images, speech, and transcription through `createOpenAICompatible`.
+- LiteRT-LM adapter for on-device Android/JVM inference via `LiteRTLanguageModel`, preserving SDK-owned generate, stream, reasoning-channel, and tool-loop routing.
 - Provider-utils parity helpers: schemas, IDs, JSON event stream parsing, headers, base64 byte helpers, media and URL validation utilities.
 - Text stream, UI message stream, and chat transport primitives for Kotlin hosts.
 - Telemetry helpers, global/local telemetry integrations, and a KMP tracer/span abstraction.

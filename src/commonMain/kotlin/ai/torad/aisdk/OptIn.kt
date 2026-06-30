@@ -46,3 +46,25 @@ public annotation class ExperimentalAiSdkApi
 @Retention(BINARY)
 @Target(CLASS, FUNCTION, PROPERTY, PROPERTY_GETTER, PROPERTY_SETTER, CONSTRUCTOR, TYPEALIAS)
 public annotation class InternalAiSdkApi
+
+/**
+ * Marks direct [LanguageModel] execution as low-level provider access.
+ *
+ * Application prompts should normally go through an [Agent] or another
+ * high-level SDK API so tool loops, middleware, telemetry, persistence, and
+ * output handling stay in one place. Calling the model directly is still
+ * supported for provider authors, tests, and deliberately low-level integrations,
+ * but it must be explicit via `@OptIn(LowLevelLanguageModelApi::class)`.
+ *
+ * Public concrete [LanguageModel] implementations should put this marker on
+ * their execution overrides so direct calls on the concrete type stay gated too.
+ */
+@RequiresOptIn(
+    level = RequiresOptIn.Level.ERROR,
+    message = "Direct LanguageModel execution is a low-level provider API. " +
+        "Use Agent.generate/Agent.stream or a high-level SDK API for application prompts, " +
+        "or opt in with @OptIn(LowLevelLanguageModelApi::class).",
+)
+@Retention(BINARY)
+@Target(CLASS, FUNCTION, PROPERTY, PROPERTY_GETTER, PROPERTY_SETTER, CONSTRUCTOR, TYPEALIAS)
+public annotation class LowLevelLanguageModelApi

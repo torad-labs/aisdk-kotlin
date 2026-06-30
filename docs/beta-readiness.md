@@ -108,7 +108,7 @@ Post-hardening gates additionally run green:
 
 **Evidence found:**
 
-- README imports `stepCountIs`, `tool`, `toolSetOf`; current code uses PascalCase factories such as `StepCountIs`, `Tool`, `ToolSet`.
+- README examples must use PascalCase factories such as `StepCountIs`, `Tool`, and `ToolSet`; the beta quickstart now follows that shape.
 - README instantiates `ToolLoopAgent`, but `ToolLoopAgent` is now `public abstract class`.
 - `INTERFACE_CONTRACT.md` still says `class ToolLoopAgent(...) — default impl`, while the source says `public abstract class ToolLoopAgent`.
 

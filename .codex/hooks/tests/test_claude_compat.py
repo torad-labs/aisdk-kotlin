@@ -4,6 +4,7 @@ from __future__ import annotations
 import json
 import subprocess
 import sys
+import unittest
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
@@ -21,12 +22,22 @@ def run(payload: dict) -> subprocess.CompletedProcess[str]:
     )
 
 
+def run_raw(lifecycle: str, stdin: str) -> subprocess.CompletedProcess[str]:
+    return subprocess.run(
+        [sys.executable, str(WRAPPER), lifecycle, str(TARGET)],
+        input=stdin,
+        capture_output=True,
+        text=True,
+        timeout=15,
+    )
+
+
 def check(name: str, condition: bool, failures: list[str]) -> None:
     if not condition:
         failures.append(name)
 
 
-def main() -> int:
+def collect_failures() -> list[str]:
     failures: list[str] = []
     hook_config = json.loads((ROOT / ".codex" / "hooks.json").read_text())
     command = hook_config["hooks"]["PreToolUse"][0]["hooks"][0]["command"]
@@ -75,6 +86,29 @@ def main() -> int:
     })
     check("safe apply_patch passes", allowed.stdout.strip() == "", failures)
 
+    invalid_json = run_raw("pretooluse", "{not-json")
+    check("invalid JSON fails closed", '"decision": "block"' in invalid_json.stdout, failures)
+    check("invalid JSON block explains malformed input", "invalid JSON input" in invalid_json.stdout, failures)
+
+    non_object = run_raw("pretooluse", "[]")
+    check("non-object JSON fails closed", '"decision": "block"' in non_object.stdout, failures)
+    check("non-object JSON block explains event shape", "non-object JSON event" in non_object.stdout, failures)
+
+    unsupported_lifecycle = run_raw("posttooluse", json.dumps({"tool_name": "Write", "tool_input": {}}))
+    check("unsupported lifecycle fails closed", '"decision": "block"' in unsupported_lifecycle.stdout, failures)
+    check("unsupported lifecycle block names lifecycle", "posttooluse" in unsupported_lifecycle.stdout, failures)
+
+    return failures
+
+
+class ClaudeCompatHookTest(unittest.TestCase):
+    def test_local_codex_hook_compatibility(self) -> None:
+        failures = collect_failures()
+        self.assertEqual([], failures)
+
+
+def main() -> int:
+    failures = collect_failures()
     if failures:
         print(f"{len(failures)} failed")
         for failure in failures:

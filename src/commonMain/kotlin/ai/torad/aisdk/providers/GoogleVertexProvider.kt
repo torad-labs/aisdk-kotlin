@@ -1,10 +1,11 @@
+@file:OptIn(ai.torad.aisdk.LowLevelLanguageModelApi::class)
+
 package ai.torad.aisdk.providers
 
 import ai.torad.aisdk.*
 import io.ktor.client.HttpClient
 import io.ktor.http.HttpHeaders
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
@@ -241,9 +242,9 @@ public class GoogleVertexXaiProvider(
         val obj = value as? JsonObject ?: return Usage()
         val promptTokens = (obj["prompt_tokens"] as? JsonPrimitive)?.intOrNull ?: 0
         val completionTokens = (obj["completion_tokens"] as? JsonPrimitive)?.intOrNull ?: 0
-        val cacheReadTokens = (((obj["prompt_tokens_details"] as? JsonObject)?.get("cached_tokens") as? JsonPrimitive)?.intOrNull ?: 0)
+        val cacheReadTokens = (((JsonAccess.obj(obj, "prompt_tokens_details"))?.get("cached_tokens") as? JsonPrimitive)?.intOrNull ?: 0)
             .coerceIn(0, promptTokens)
-        val reasoningTokens = (((obj["completion_tokens_details"] as? JsonObject)?.get("reasoning_tokens") as? JsonPrimitive)?.intOrNull ?: 0)
+        val reasoningTokens = (((JsonAccess.obj(obj, "completion_tokens_details"))?.get("reasoning_tokens") as? JsonPrimitive)?.intOrNull ?: 0)
             .coerceAtLeast(0)
         return Usage(
             inputTokens = Usage.InputTokenBreakdown(
@@ -298,7 +299,7 @@ private class GoogleVertexXaiLanguageModel(
     // special-case and the `index > 0` leading-underscore guard.
     private fun googleVertexXaiProviderOptions(options: ProviderOptions): ProviderOptions {
         val map = options.toMap()
-        val xai = map["xai"] as? JsonObject ?: return options
+        val xai = JsonAccess.obj(map, "xai") ?: return options
         val transformed = buildJsonObject {
             for ((key, value) in xai) {
                 when (key) {

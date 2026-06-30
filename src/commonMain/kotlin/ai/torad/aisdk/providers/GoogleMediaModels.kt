@@ -48,7 +48,7 @@ internal class GoogleGenerativeAIEmbeddingModel(
         if (params.values.size > maxEmbeddingsPerCall) {
             throw TooManyEmbeddingValuesForCallError(provider, modelId, maxEmbeddingsPerCall, params.values)
         }
-        val options = params.providerOptions.toMap()["google"] as? JsonObject ?: JsonObject(emptyMap())
+        val options = JsonAccess.obj(params.providerOptions.toMap(), "google") ?: JsonObject(emptyMap())
         val single = params.values.size == 1
         val body = if (single) {
             GoogleMedia.googleSingleEmbeddingBody(modelId, params.values.single(), options)
@@ -64,12 +64,13 @@ internal class GoogleGenerativeAIEmbeddingModel(
             parseJson = true,
         )
         val embeddings = if (single) {
+            val embedding = JsonAccess.obj(response.value.jsonObject, "embedding")
+            val values = (embedding?.get("values") as? JsonArray).orEmpty()
             listOf(
-                ((response.value.jsonObject["embedding"] as? JsonObject)?.get("values") as? JsonArray).orEmpty()
-                    .map { WireDecoder.embeddingFloat(it, provider) },
+                values.map { WireDecoder.embeddingFloat(it, provider) },
             )
         } else {
-            (response.value.jsonObject["embeddings"] as? JsonArray).orEmpty().map { item ->
+            (JsonAccess.arr(response.value.jsonObject, "embeddings")).orEmpty().map { item ->
                 val values = ((item as? JsonObject)?.get("values") as? JsonArray).orEmpty()
                 values.map { WireDecoder.embeddingFloat(it, provider) }
             }
@@ -105,7 +106,7 @@ internal class GoogleGenerativeAIImageModel(
         val warnings = mutableListOf<CallWarning>()
         if (params.size != null) warnings += CallWarning("unsupported", "size")
         if (params.seed != null) warnings += CallWarning("unsupported", "seed")
-        val options = params.providerOptions.toMap()["google"] as? JsonObject ?: JsonObject(emptyMap())
+        val options = JsonAccess.obj(params.providerOptions.toMap(), "google") ?: JsonObject(emptyMap())
         val body = buildJsonObject {
             put("instances", JsonArray(listOf(buildJsonObject { put("prompt", JsonPrimitive(params.prompt)) })))
             put(
@@ -182,7 +183,7 @@ internal class GoogleGenerativeAIVideoModel(
 
     override suspend fun generate(params: VideoGenerationParams): VideoModelResult {
         params.abortSignal.throwIfAborted()
-        val options = params.providerOptions.toMap()["google"] as? JsonObject ?: JsonObject(emptyMap())
+        val options = JsonAccess.obj(params.providerOptions.toMap(), "google") ?: JsonObject(emptyMap())
         val body = GoogleMedia.googleVideoRequestBody(params, options)
         val operation = googlePostJson(
             client = client,
@@ -215,7 +216,7 @@ internal class GoogleGenerativeAIVideoModel(
         if ((current["done"] as? JsonPrimitive)?.booleanOrNull != true) {
             throw NoVideoGeneratedError("Google video generation timed out after $maxAttempts poll attempts.")
         }
-        (current["error"] as? JsonObject)?.let { error ->
+        (JsonAccess.obj(current, "error"))?.let { error ->
             val message = (error["message"] as? JsonPrimitive)?.contentOrNull ?: error
             throw NoVideoGeneratedError("Google video generation failed: $message")
         }

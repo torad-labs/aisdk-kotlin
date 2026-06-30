@@ -7,6 +7,9 @@ errors, and helpers for non-text model families.
 ## Text Generation
 
 Use `generateText` for a one-shot model call.
+Do not call `LanguageModel.generate` from application prompt paths unless you
+are deliberately using the low-level provider API with
+`@OptIn(LowLevelLanguageModelApi::class)`.
 
 ```kotlin
 val result = generateText(

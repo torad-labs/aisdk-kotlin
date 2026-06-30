@@ -1,3 +1,5 @@
+@file:OptIn(LowLevelLanguageModelApi::class)
+
 package ai.torad.aisdk
 
 import ai.torad.aisdk.AgentSessions.session
@@ -263,19 +265,21 @@ class AgentSessionTest {
     @Test
     fun `rapid resubmission converges to the latest submission's result`() = runTest {
         val firstCallGate = CompletableDeferred<Unit>()
-        // The agent drives the model through stream() even for generate(), so
-        // the gate lives in stream(). The first (soon-superseded) call parks
-        // until released; the second returns immediately.
+        // The first non-streaming generate call parks until released; the
+        // second returns immediately after superseding it.
         val model = object : LanguageModel {
             override val modelId: String = "test/gated"
             var calls = 0
 
             override suspend fun generate(params: LanguageModelCallParams): LanguageModelResult =
-                LanguageModelResult(
-                    text = "",
-                    finishReason = FinishReason.Stop,
-                    usage = Usage.of(promptTokens = 1, completionTokens = 1),
-                )
+                (++calls).let { n ->
+                    if (n == 1) firstCallGate.await()
+                    LanguageModelResult(
+                        text = "call$n",
+                        finishReason = FinishReason.Stop,
+                        usage = Usage.of(promptTokens = 1, completionTokens = 1),
+                    )
+                }
 
             override fun stream(params: LanguageModelCallParams): Flow<StreamEvent> = flow {
                 val n = ++calls

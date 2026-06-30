@@ -35,7 +35,28 @@ public class StreamObjectResult<TOutput> internal constructor(
                     emit(decoded)
                 }
                 is StreamEvent.Error -> throw UiMessageStreamError(event.message, event.cause)
-                else -> Unit
+                is StreamEvent.StreamStart,
+                is StreamEvent.ResponseMetadata,
+                is StreamEvent.StepStart,
+                is StreamEvent.TextEnd,
+                is StreamEvent.ReasoningStart,
+                is StreamEvent.ReasoningDelta,
+                is StreamEvent.ReasoningEnd,
+                is StreamEvent.SourcePart,
+                is StreamEvent.FilePart,
+                is StreamEvent.ToolInputStart,
+                is StreamEvent.ToolInputDelta,
+                is StreamEvent.ToolInputEnd,
+                is StreamEvent.ToolCall,
+                is StreamEvent.ToolResult,
+                is StreamEvent.ToolError,
+                is StreamEvent.ToolApprovalRequest,
+                is StreamEvent.ToolOutputDenied,
+                is StreamEvent.StepFinish,
+                is StreamEvent.Finish,
+                StreamEvent.Abort,
+                is StreamEvent.Raw,
+                -> Unit
             }
         }
     }
@@ -85,7 +106,27 @@ public class StreamObjectResult<TOutput> internal constructor(
                     flushStableSuffixes()
                 }
                 is StreamEvent.Error -> throw UiMessageStreamError(event.message, event.cause)
-                else -> Unit
+                is StreamEvent.StreamStart,
+                is StreamEvent.ResponseMetadata,
+                is StreamEvent.StepStart,
+                is StreamEvent.ReasoningStart,
+                is StreamEvent.ReasoningDelta,
+                is StreamEvent.ReasoningEnd,
+                is StreamEvent.SourcePart,
+                is StreamEvent.FilePart,
+                is StreamEvent.ToolInputStart,
+                is StreamEvent.ToolInputDelta,
+                is StreamEvent.ToolInputEnd,
+                is StreamEvent.ToolCall,
+                is StreamEvent.ToolResult,
+                is StreamEvent.ToolError,
+                is StreamEvent.ToolApprovalRequest,
+                is StreamEvent.ToolOutputDenied,
+                is StreamEvent.StepFinish,
+                is StreamEvent.Finish,
+                StreamEvent.Abort,
+                is StreamEvent.Raw,
+                -> Unit
             }
         }
     }
@@ -101,7 +142,28 @@ public class StreamObjectResult<TOutput> internal constructor(
                     decoder.ready(textBlocks.append(event.id, event.text), complete = false).forEach { emit(it) }
                 }
                 is StreamEvent.Error -> throw UiMessageStreamError(event.message, event.cause)
-                else -> Unit
+                is StreamEvent.StreamStart,
+                is StreamEvent.ResponseMetadata,
+                is StreamEvent.StepStart,
+                is StreamEvent.TextEnd,
+                is StreamEvent.ReasoningStart,
+                is StreamEvent.ReasoningDelta,
+                is StreamEvent.ReasoningEnd,
+                is StreamEvent.SourcePart,
+                is StreamEvent.FilePart,
+                is StreamEvent.ToolInputStart,
+                is StreamEvent.ToolInputDelta,
+                is StreamEvent.ToolInputEnd,
+                is StreamEvent.ToolCall,
+                is StreamEvent.ToolResult,
+                is StreamEvent.ToolError,
+                is StreamEvent.ToolApprovalRequest,
+                is StreamEvent.ToolOutputDenied,
+                is StreamEvent.StepFinish,
+                is StreamEvent.Finish,
+                StreamEvent.Abort,
+                is StreamEvent.Raw,
+                -> Unit
             }
         }
         decoder.ready(textBlocks.joinedText(), complete = true).forEach { emit(it) }
@@ -224,7 +286,7 @@ public class StreamObjectResult<TOutput> internal constructor(
         private fun parsedElements(text: String): JsonArray? =
             when (val parsed = PartialJson.parsePartialJson(text).value) {
                 is JsonArray -> parsed
-                is JsonObject -> parsed["elements"] as? JsonArray
+                is JsonObject -> JsonAccess.arr(parsed, "elements")
                 else -> null
             }
 

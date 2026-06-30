@@ -1,3 +1,5 @@
+@file:OptIn(LowLevelLanguageModelApi::class)
+
 package ai.torad.aisdk
 
 import kotlinx.coroutines.CompletableDeferred
@@ -23,7 +25,18 @@ class ToolErrorIsErrorFlagTest {
         override val modelId = "m"
         private var calls = 0
         override suspend fun generate(params: LanguageModelCallParams) =
-            LanguageModelResult(text = "", finishReason = FinishReason.Stop, usage = Usage())
+            if (calls++ == 0) {
+                val call = ContentPart.ToolCall("c1", "boom", JsonObject(emptyMap()))
+                LanguageModelResult(
+                    text = "",
+                    toolCalls = listOf(call),
+                    finishReason = FinishReason.ToolCalls,
+                    usage = Usage(),
+                )
+            } else {
+                secondRequest.complete(params.messages)
+                LanguageModelResult(text = "ok", finishReason = FinishReason.Stop, usage = Usage())
+            }
         override fun stream(params: LanguageModelCallParams): Flow<StreamEvent> = flow {
             if (calls++ == 0) {
                 emit(StreamEvent.ToolCall("c1", "boom", JsonObject(emptyMap())))

@@ -1,3 +1,5 @@
+@file:OptIn(ai.torad.aisdk.LowLevelLanguageModelApi::class)
+
 package ai.torad.aisdk.providers
 
 import ai.torad.aisdk.*
@@ -52,7 +54,7 @@ public data class MistralProviderSettings(
          * - the final assistant message gets `prefix: true`.
          */
         private fun mistralTransformChatBody(body: JsonObject): JsonObject {
-            val messages = body["messages"] as? JsonArray
+            val messages = JsonAccess.arr(body, "messages")
             val toolCallNames = mistralToolCallNameMap(messages)
             val lastAssistantIndex = messages?.indexOfLast {
                 ((it as? JsonObject)?.get("role") as? JsonPrimitive)?.content == "assistant"
@@ -76,7 +78,7 @@ public data class MistralProviderSettings(
                 ((msg as? JsonObject)?.get("tool_calls") as? JsonArray)?.forEach { call ->
                     val obj = call as? JsonObject ?: return@forEach
                     val id = (obj["id"] as? JsonPrimitive)?.content
-                    val name = ((obj["function"] as? JsonObject)?.get("name") as? JsonPrimitive)?.content
+                    val name = ((JsonAccess.obj(obj, "function"))?.get("name") as? JsonPrimitive)?.content
                     if (id != null && name != null) put(id, name)
                 }
             }
@@ -127,11 +129,11 @@ public data class MistralProviderSettings(
 
         /** Rewrite user `file` content parts to Mistral's `document_url` shape. */
         private fun mistralRewriteUserContent(message: JsonObject): JsonObject {
-            val content = message["content"] as? JsonArray ?: return message
+            val content = JsonAccess.arr(message, "content") ?: return message
             val rewritten = content.map { part ->
                 val obj = part as? JsonObject ?: return@map part
                 if ((obj["type"] as? JsonPrimitive)?.content != "file") return@map part
-                val fileData = (obj["file"] as? JsonObject)?.get("file_data") ?: return@map part
+                val fileData = (JsonAccess.obj(obj, "file"))?.get("file_data") ?: return@map part
                 buildJsonObject {
                     put("type", JsonPrimitive("document_url"))
                     put("document_url", fileData)
@@ -141,7 +143,7 @@ public data class MistralProviderSettings(
         }
 
         private fun transformChatResponse(body: JsonObject): JsonObject {
-            val choices = body["choices"] as? JsonArray
+            val choices = JsonAccess.arr(body, "choices")
             return if (choices == null) {
                 body
             } else {
@@ -153,10 +155,10 @@ public data class MistralProviderSettings(
             val obj = choice as? JsonObject
             val updates = obj?.let {
                 buildMap<String, JsonElement> {
-                    (it["message"] as? JsonObject)?.let(::transformResponseContent)?.let { message ->
+                    (JsonAccess.obj(it, "message"))?.let(::transformResponseContent)?.let { message ->
                         put("message", message)
                     }
-                    (it["delta"] as? JsonObject)?.let(::transformResponseContent)?.let { delta ->
+                    (JsonAccess.obj(it, "delta"))?.let(::transformResponseContent)?.let { delta ->
                         put("delta", delta)
                     }
                 }
@@ -165,7 +167,7 @@ public data class MistralProviderSettings(
         }
 
         private fun transformResponseContent(value: JsonObject): JsonObject {
-            val content = value["content"] as? JsonArray
+            val content = JsonAccess.arr(value, "content")
             return if (content == null) {
                 value
             } else {
@@ -258,7 +260,7 @@ private class MistralChatLanguageModel(
 
     private fun transformMistralProviderOptions(options: ProviderOptions): ProviderOptions {
         val map = options.toMap()
-        val mistral = map["mistral"] as? JsonObject ?: return options
+        val mistral = JsonAccess.obj(map, "mistral") ?: return options
         val transformed = buildJsonObject {
             for ((key, value) in mistral) {
                 when (key) {

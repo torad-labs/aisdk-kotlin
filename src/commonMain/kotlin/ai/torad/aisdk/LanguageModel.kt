@@ -9,8 +9,11 @@ import kotlinx.serialization.json.JsonElement
  * never depends on a specific provider — it depends on this interface, and
  * provider-specific differences live in middleware (see [LanguageModelMiddleware]).
  *
- * Two operations: `generate` for one-shot completions, `stream` for
- * incremental events. Both accept the same [LanguageModelCallParams].
+ * Two low-level execution operations: `generate` for one-shot completions,
+ * `stream` for incremental events. Both accept the same [LanguageModelCallParams].
+ * Direct execution intentionally requires [LowLevelLanguageModelApi] opt-in;
+ * application prompts should normally flow through [Agent] APIs so the agent owns
+ * tool loops, middleware, telemetry, persistence, and output handling.
  *
  * Provider implementations live in their own modules:
  *   - `aisdk-provider-litert` (Android, on-device)
@@ -46,10 +49,15 @@ public interface LanguageModel {
     public val supportedUrls: Map<String, List<String>>
         get() = emptyMap()
 
-    /** One-shot completion. */
+    /** One-shot completion. Requires explicit low-level opt-in at direct call sites. */
+    @LowLevelLanguageModelApi
     public suspend fun generate(params: LanguageModelCallParams): LanguageModelResult
 
-    /** Streaming completion. Cold until collected, then drives one upstream call per collection. */
+    /**
+     * Streaming completion. Cold until collected, then drives one upstream call per
+     * collection. Requires explicit low-level opt-in at direct call sites.
+     */
+    @LowLevelLanguageModelApi
     public fun stream(params: LanguageModelCallParams): Flow<StreamEvent>
 
     /**
@@ -60,6 +68,7 @@ public interface LanguageModel {
      * Providers can override this to expose request bodies and response
      * headers while preserving the v6 `doStream` result shape.
      */
+    @LowLevelLanguageModelApi
     public fun streamResult(params: LanguageModelCallParams): LanguageModelStreamResult =
         LanguageModelStreamResult(stream = stream(params))
 }

@@ -39,7 +39,7 @@ public data class GroqProviderSettings(
 
     private fun groqTransformChatBody(body: JsonObject): JsonObject {
         val modelId = (body["model"] as? JsonPrimitive)?.contentOrNull
-        val tools = groqTools(body["tools"] as? JsonArray, modelId)
+        val tools = groqTools(JsonAccess.arr(body, "tools"), modelId)
         return buildJsonObject {
             for ((key, value) in body) {
                 when (key) {
@@ -68,7 +68,7 @@ public data class GroqProviderSettings(
     private fun groqTools(tools: JsonArray?, modelId: String?): JsonArray = JsonArray(
         tools.orEmpty().mapNotNull { tool ->
             val obj = tool as? JsonObject ?: return@mapNotNull tool
-            val function = obj["function"] as? JsonObject ?: return@mapNotNull tool
+            val function = JsonAccess.obj(obj, "function") ?: return@mapNotNull tool
             val name = (function["name"] as? JsonPrimitive)?.contentOrNull
             if (name == "browserSearch" || name == "browser_search") {
                 // Gate the browser_search tool to the models that support it; drop it elsewhere
@@ -85,7 +85,7 @@ public data class GroqProviderSettings(
     )
 
     private fun groqTransformChatResponse(body: JsonObject): JsonObject {
-        val usage = (body["x_groq"] as? JsonObject)?.get("usage")
+        val usage = (JsonAccess.obj(body, "x_groq"))?.get("usage")
         return if (body["usage"] == null && usage != null) {
             JsonObject(body + ("usage" to usage))
         } else {

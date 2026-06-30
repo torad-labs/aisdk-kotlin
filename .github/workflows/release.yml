@@ -96,8 +96,10 @@ jobs:
         run: node tools/check-ai-sdk-reference.mjs
       - name: Verify parity ledgers
         run: node tools/generate-parity-ledger.mjs --check
+      - name: Install locked Node tooling
+        run: npm ci
       - name: Architecture gate (ast-grep rules + structural checks)
-        run: npm exec --yes --package @ast-grep/cli@0.42.1 -- bash .claude/hooks/rules/ci-gate.sh
+        run: ./node_modules/.bin/ast-grep --version && PATH="$PWD/node_modules/.bin:$PATH" bash .claude/hooks/rules/ci-gate.sh
       - name: Beta readiness gate
         run: tools/beta-readiness-check
       - name: Verify checks

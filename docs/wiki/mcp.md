@@ -30,12 +30,15 @@ platforms where process support exists.
 ```kotlin
 val mcpTools = mcp.tools<AppContext>()
 
-val agent = ToolLoopAgent<AppContext, String>(
-    model = model,
-    instructions = "Use connected tools when they are relevant.",
-    tools = mcpTools,
-    stopWhen = stepCountIs(8),
-)
+class ConnectedToolsAgent(model: LanguageModel, tools: ToolSet<AppContext>) :
+    ToolLoopAgent<AppContext, String>(
+        model = model,
+        instructions = "Use connected tools when they are relevant.",
+        tools = tools,
+        stopWhen = StepCountIs(8),
+    )
+
+val agent = ConnectedToolsAgent(model, mcpTools)
 ```
 
 MCP tool definitions are converted to the same `ToolSet<TContext>` shape as

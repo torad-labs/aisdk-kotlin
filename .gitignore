@@ -29,5 +29,7 @@ local.properties
 !.claude/hooks/**
 .claude/hooks/**/__pycache__/
 .claude/hooks/**/*.pyc
+.codex/hooks/**/__pycache__/
+.codex/hooks/**/*.pyc
 !.claude/skills/
 !.claude/skills/**

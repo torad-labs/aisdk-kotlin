@@ -36,7 +36,7 @@ internal object FacadeSupport {
         (this[name] as? JsonPrimitive)?.intOrNull ?: 0
 
     fun JsonObject.nestedIntField(objectName: String, fieldName: String): Int =
-        (this[objectName] as? JsonObject)?.intField(fieldName) ?: 0
+        (JsonAccess.obj(this, objectName))?.intField(fieldName) ?: 0
 
     fun textFromContentParts(content: JsonArray): String =
         content.mapNotNull { part ->
@@ -134,7 +134,7 @@ internal object FacadeHttp {
     }
 
     fun providerSpecificOptions(options: Map<String, JsonElement>, provider: String): JsonObject =
-        options[provider] as? JsonObject ?: JsonObject(emptyMap())
+        JsonAccess.obj(options, provider) ?: JsonObject(emptyMap())
 
     fun JsonObjectBuilder.putProviderSpecificOptions(options: Map<String, JsonElement>, provider: String) {
         for ((key, value) in providerSpecificOptions(options, provider)) {

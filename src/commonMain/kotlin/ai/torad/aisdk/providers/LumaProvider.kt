@@ -138,7 +138,7 @@ private class LumaImageModel(
         }
         if (params.files.isEmpty()) return
         val referenceType = (options["referenceType"] as? JsonPrimitive)?.contentOrNull ?: "image"
-        val imageConfigs = (options["images"] as? JsonArray).orEmpty().mapNotNull { it as? JsonObject }
+        val imageConfigs = (JsonAccess.arr(options, "images")).orEmpty().mapNotNull { it as? JsonObject }
         params.files.forEach { file ->
             if (file.url.isNullOrBlank()) {
                 throw UnsupportedFunctionalityError(
@@ -240,8 +240,11 @@ private class LumaImageModel(
             val status = getJson("$baseURL/dream-machine/v1/generations/$generationId", headers)
             val body = status.value.jsonObject
             when ((body["state"] as? JsonPrimitive)?.contentOrNull) {
-                "completed" -> return ((body["assets"] as? JsonObject)?.get("image") as? JsonPrimitive)?.contentOrNull
-                    ?: throw NoImageGeneratedError("Image generation completed but no image was found.")
+                "completed" -> {
+                    val assets = JsonAccess.obj(body, "assets")
+                    return (assets?.get("image") as? JsonPrimitive)?.contentOrNull
+                        ?: throw NoImageGeneratedError("Image generation completed but no image was found.")
+                }
                 "failed" -> throw NoImageGeneratedError("Image generation failed.")
             }
             if (pollIntervalMillis > 0 && attempt < maxPollAttempts - 1) delay(pollIntervalMillis)
@@ -282,7 +285,7 @@ private class LumaImageModel(
     }
 
     private fun lumaOptions(providerOptions: ProviderOptions): JsonObject =
-        providerOptions.toMap()["luma"] as? JsonObject ?: JsonObject(emptyMap())
+        JsonAccess.obj(providerOptions.toMap(), "luma") ?: JsonObject(emptyMap())
 
     private fun lumaErrorMessage(statusCode: Int, parsed: JsonElement?, raw: String): String {
         val obj = parsed as? JsonObject

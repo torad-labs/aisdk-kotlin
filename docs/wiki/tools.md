@@ -12,7 +12,7 @@ data class SearchInput(val query: String, val limit: Int = 5)
 @Serializable
 data class SearchHit(val title: String, val url: String, val snippet: String)
 
-val searchDocs = tool<SearchInput, List<SearchHit>, AppContext>(
+val searchDocs = Tool<SearchInput, List<SearchHit>, AppContext>(
     name = "searchDocs",
     description = "Search product documentation by query.",
     inputExamples = listOf("""{"query":"streamTextResult adapters","limit":3}"""),
@@ -27,13 +27,15 @@ serializer-explicit overload when the type is not reified at the call site.
 ## Use Tools With Agents
 
 ```kotlin
-val supportAgent = ToolLoopAgent<AppContext, String>(
-    model = model,
-    instructions = "Use documentation search before answering SDK questions.",
-    tools = toolSetOf(searchDocs, createTicket),
-    stopWhen = anyOf(stepCountIs(8), repeatedToolCallLoop(3)),
-)
+class SupportAgent(model: LanguageModel, tools: ToolSet<AppContext>) :
+    ToolLoopAgent<AppContext, String>(
+        model = model,
+        instructions = "Use documentation search before answering SDK questions.",
+        tools = tools,
+        stopWhen = AnyOf(StepCountIs(8), RepeatedToolCallLoop(3)),
+    )
 
+val supportAgent = SupportAgent(model, ToolSet(searchDocs, createTicket))
 val result = supportAgent.generate(
     prompt = "How do I persist chat messages?",
     options = context,
@@ -54,7 +56,7 @@ Use `needsApproval` for tools that write data, spend money, contact users, or
 run privileged operations.
 
 ```kotlin
-val createTicket = tool<CreateTicket, Ticket, AppContext>(
+val createTicket = Tool<CreateTicket, Ticket, AppContext>(
     name = "createTicket",
     description = "Create a customer support ticket.",
     needsApproval = { input, options ->
@@ -76,7 +78,7 @@ Use `toModelOutput` when a tool returns rich UI data but the model only needs
 a summary:
 
 ```kotlin
-val searchDocs = tool<SearchInput, List<SearchHit>, AppContext>(
+val searchDocs = Tool<SearchInput, List<SearchHit>, AppContext>(
     name = "searchDocs",
     description = "Search product documentation.",
     toModelOutput = { hits, _ ->
@@ -94,10 +96,10 @@ context.
 
 ## Streaming Tools
 
-Use `streamingTool` when a tool can show progress before the final result:
+Use `StreamingTool` when a tool can show progress before the final result:
 
 ```kotlin
-val lookupIssue = streamingTool<IssueInput, IssueSnapshot, AppContext>(
+val lookupIssue = StreamingTool<IssueInput, IssueSnapshot, AppContext>(
     name = "lookupIssue",
     description = "Fetch issue details and stream progress.",
 ) { input ->
@@ -113,10 +115,10 @@ result used by the model on the next step.
 
 ## Dynamic And Provider-Executed Tools
 
-Use `dynamicTool` when the schema is runtime-defined:
+Use `DynamicTool` when the schema is runtime-defined:
 
 ```kotlin
-val external = dynamicTool<AppContext>(
+val external = DynamicTool<AppContext>(
     name = "externalAction",
     description = "Call an externally registered action.",
     inputSchemaJson = runtimeSchemaJson,
@@ -133,7 +135,7 @@ runs the tool on its side. Keep local executors for app-owned side effects.
 Use input hooks to surface streamed tool-call input:
 
 ```kotlin
-val draftEmail = tool<DraftInput, Draft, AppContext>(
+val draftEmail = Tool<DraftInput, Draft, AppContext>(
     name = "draftEmail",
     description = "Draft an email.",
     onInputStart = { id -> ui.markToolInputStarted(id) },

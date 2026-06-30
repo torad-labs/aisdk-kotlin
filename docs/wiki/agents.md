@@ -6,6 +6,11 @@ decide which actions to take, run tools, see results, and continue.
 For direct one-step calls, use `generateText` or `streamText`. For multi-step
 tool work, use `ToolLoopAgent`.
 
+Application prompts and responses should cross the agent boundary, not the
+underlying `LanguageModel` execution methods. Direct model execution remains
+available for deliberate low-level integrations, but requires
+`@OptIn(LowLevelLanguageModelApi::class)`.
+
 ## Agent Contract
 
 Application code should depend on `Agent<TContext, TOutput>`.
@@ -34,19 +39,22 @@ entitlements, retrieval state, or request metadata. `TOutput` is usually
 cannot run, a tool needs approval, or a stop condition is met.
 
 ```kotlin
-val agent = ToolLoopAgent<AppContext, String>(
-    model = model,
-    instructions = "Answer using project tools when needed.",
-    tools = toolSetOf(searchDocs, createTicket),
-    stopWhen = anyOf(
-        stepCountIs(8),
-        hasToolCall("finalizeAnswer"),
-    ),
-    callOptionsSchema = serializer<AppContext>(),
-)
+class SupportAgent(model: LanguageModel, tools: ToolSet<AppContext>) :
+    ToolLoopAgent<AppContext, String>(
+        model = model,
+        instructions = "Answer using project tools when needed.",
+        tools = tools,
+        stopWhen = AnyOf(
+            StepCountIs(8),
+            HasToolCall("finalizeAnswer"),
+        ),
+        callOptionsSchema = serializer<AppContext>(),
+    )
+
+val agent = SupportAgent(model, ToolSet(searchDocs, createTicket))
 ```
 
-The default stop condition is `stepCountIs(20)`. Set a domain-specific stop
+The default stop condition is `StepCountIs(20)`. Set a domain-specific stop
 condition anyway so the loop shape is obvious at the call site.
 
 ## Tools
@@ -55,7 +63,7 @@ Tools are stateless actions. They have a name, description, input serializer,
 output serializer, and executor.
 
 ```kotlin
-val searchDocs = tool<SearchInput, List<SearchResult>, AppContext>(
+val searchDocs = Tool<SearchInput, List<SearchResult>, AppContext>(
     name = "searchDocs",
     description = "Search product documentation.",
     inputSerializer = serializer(),
@@ -65,7 +73,7 @@ val searchDocs = tool<SearchInput, List<SearchResult>, AppContext>(
 }
 ```
 
-Use `dynamicTool` only when the schema or result type is not known at compile
+Use `DynamicTool` only when the schema or result type is not known at compile
 time. Use `providerExecuted = true` for tools run by the provider instead of
 the local executor.
 
@@ -83,11 +91,11 @@ and provider-executed tools, see [Tools](tools.md).
 
 ## Streaming Tools
 
-Use `streamingTool` when a tool can produce useful preliminary results before
+Use `StreamingTool` when a tool can produce useful preliminary results before
 its final value.
 
 ```kotlin
-val lookup = streamingTool<Query, LookupResult, AppContext>(
+val lookup = StreamingTool<Query, LookupResult, AppContext>(
     name = "lookup",
     description = "Search records and stream progress.",
     inputSerializer = serializer(),
@@ -108,9 +116,9 @@ last emission is the final tool result that is added to the model message log.
 Stop conditions compose:
 
 ```kotlin
-stopWhen = anyOf(
-    stepCountIs(8),
-    repeatedToolCallLoop(3),
+stopWhen = AnyOf(
+    StepCountIs(8),
+    RepeatedToolCallLoop(3),
 )
 ```
 
@@ -154,7 +162,7 @@ hooks.
 Use `needsApproval` for tools that affect external state or other users.
 
 ```kotlin
-val sendMessage = tool<SendInput, SendResult, AppContext>(
+val sendMessage = Tool<SendInput, SendResult, AppContext>(
     name = "sendMessage",
     description = "Send a message to a user.",
     inputSerializer = serializer(),
@@ -239,7 +247,7 @@ Use a subagent when a subtask has its own loop, policy, or tool set. Expose it
 as a tool and forward context and cancellation.
 
 ```kotlin
-val researchTool = tool<ResearchInput, String, AppContext>(
+val researchTool = Tool<ResearchInput, String, AppContext>(
     name = "deepResearch",
     description = "Run a focused research agent.",
     inputSerializer = serializer(),

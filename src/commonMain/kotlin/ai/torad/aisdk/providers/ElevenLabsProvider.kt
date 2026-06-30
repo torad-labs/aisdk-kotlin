@@ -70,7 +70,7 @@ public data class ElevenLabsProviderSettings(
     }
 
     internal fun elevenLabsOptions(providerOptions: ProviderOptions): JsonObject =
-        providerOptions.toMap()["elevenlabs"] as? JsonObject ?: JsonObject(emptyMap())
+        JsonAccess.obj(providerOptions.toMap(), "elevenlabs") ?: JsonObject(emptyMap())
 }
 
 public class ElevenLabsProvider(
@@ -125,7 +125,7 @@ private class ElevenLabsSpeechModel(
                 ?.let { put("language_code", JsonPrimitive(it)) }
             val voiceSettings = buildJsonObject {
                 params.speed?.let { put("speed", JsonPrimitive(it)) }
-                (options["voiceSettings"] as? JsonObject)?.let { settings ->
+                (JsonAccess.obj(options, "voiceSettings"))?.let { settings ->
                     settings["stability"]?.let { put("stability", it) }
                     settings["similarityBoost"]?.let { put("similarity_boost", it) }
                     settings["style"]?.let { put("style", it) }
@@ -133,7 +133,7 @@ private class ElevenLabsSpeechModel(
                 }
             }
             if (voiceSettings.isNotEmpty()) put("voice_settings", voiceSettings)
-            (options["pronunciationDictionaryLocators"] as? JsonArray)?.let { locators ->
+            (JsonAccess.arr(options, "pronunciationDictionaryLocators"))?.let { locators ->
                 put(
                     "pronunciation_dictionary_locators",
                     JsonArray(
@@ -264,7 +264,7 @@ private class ElevenLabsTranscriptionModel(
         }
         val response = with(HttpTransport) { rawResponse.toJsonResponse(url = "https://api.elevenlabs.io/v1/speech-to-text", errorMessage = ::elevenLabsErrorMessage) }
         val value = response.value.jsonObject
-        val words = (value["words"] as? JsonArray).orEmpty()
+        val words = (JsonAccess.arr(value, "words")).orEmpty()
         return TranscriptionModelResult(
             text = (value["text"] as? JsonPrimitive)?.contentOrNull,
             segments = words.mapNotNull { word ->

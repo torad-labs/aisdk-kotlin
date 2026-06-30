@@ -4,7 +4,6 @@ import kotlinx.serialization.EncodeDefault
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonClassDiscriminator
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
@@ -122,7 +121,7 @@ public sealed class ContentPart {
 
             /** Google `thought_signature` provider-metadata pulled from an OpenAI-compatible tool-call object. */
             internal fun thoughtSignatureMetadata(value: JsonObject): Map<String, JsonElement>? {
-                val google = (value["extra_content"] as? JsonObject)?.get("google") as? JsonObject
+                val google = (JsonAccess.obj(value, "extra_content"))?.get("google") as? JsonObject
                 val element = google?.get("thought_signature")
                 val signature = (element as? JsonPrimitive)?.contentOrNull
                 return signature?.let { mapOf("thoughtSignature" to JsonPrimitive(it)) }
@@ -308,9 +307,9 @@ public data class Usage(
             val obj = (value as? JsonObject) ?: return Usage()
             val promptTokens = (obj["prompt_tokens"] as? JsonPrimitive)?.intOrNull ?: 0
             val completionTokens = (obj["completion_tokens"] as? JsonPrimitive)?.intOrNull ?: 0
-            val cachedTokens = (((obj["prompt_tokens_details"] as? JsonObject)?.get("cached_tokens") as? JsonPrimitive)?.intOrNull ?: 0)
+            val cachedTokens = (((JsonAccess.obj(obj, "prompt_tokens_details"))?.get("cached_tokens") as? JsonPrimitive)?.intOrNull ?: 0)
                 .coerceIn(0, promptTokens)
-            val reasoningTokens = (((obj["completion_tokens_details"] as? JsonObject)?.get("reasoning_tokens") as? JsonPrimitive)?.intOrNull ?: 0)
+            val reasoningTokens = (((JsonAccess.obj(obj, "completion_tokens_details"))?.get("reasoning_tokens") as? JsonPrimitive)?.intOrNull ?: 0)
                 .coerceAtLeast(0)
             val outputTotal = if (reasoningTokens > completionTokens) {
                 completionTokens + reasoningTokens
@@ -366,7 +365,7 @@ public data class Usage(
             val baseOutput = (obj["output_tokens"] as? JsonPrimitive)?.intOrNull ?: 0
             val cacheWrite = (obj["cache_creation_input_tokens"] as? JsonPrimitive)?.intOrNull ?: 0
             val cacheRead = (obj["cache_read_input_tokens"] as? JsonPrimitive)?.intOrNull ?: 0
-            val iterations = obj["iterations"] as? JsonArray
+            val iterations = JsonAccess.arr(obj, "iterations")
             val executorIterations = iterations.orEmpty().mapNotNull { it as? JsonObject }
                 .filter { (it["type"] as? JsonPrimitive)?.contentOrNull in setOf("compaction", "message") }
             val input = if (executorIterations.isNotEmpty()) {

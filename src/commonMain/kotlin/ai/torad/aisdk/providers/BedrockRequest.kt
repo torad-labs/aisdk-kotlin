@@ -15,10 +15,7 @@ internal data class BedrockPreparedChatRequest(
     val usesJsonResponseTool: Boolean,
 )
 
-internal data class BedrockPreparedImageRequest(
-    val body: JsonObject,
-    val warnings: List<CallWarning>,
-)
+internal data class BedrockPreparedImageRequest(val body: JsonObject, val warnings: List<CallWarning>)
 
 internal data class BedrockConvertedMessages(
     val system: JsonArray,
@@ -49,11 +46,11 @@ internal object BedrockRequest {
         params.frequencyPenalty?.let { warnings += CallWarning("unsupported", "frequencyPenalty") }
         params.presencePenalty?.let { warnings += CallWarning("unsupported", "presencePenalty") }
         params.seed?.let { warnings += CallWarning("unsupported", "seed") }
-        val options = params.providerOptions.toMap()["bedrock"] as? JsonObject ?: JsonObject(emptyMap())
+        val options = JsonAccess.obj(params.providerOptions.toMap(), "bedrock") ?: JsonObject(emptyMap())
         // Anthropic thinking changes inferenceConfig: the thinking budget is added to maxTokens
         // (Bedrock counts it against the output budget) and Bedrock rejects temperature/topP/topK
         // for thinking-enabled Anthropic calls, so they're stripped (matching upstream).
-        val reasoningConfig = options["reasoningConfig"] as? JsonObject
+        val reasoningConfig = JsonAccess.obj(options, "reasoningConfig")
         val isAnthropicThinking = modelId.contains("anthropic") &&
             (reasoningConfig?.get("type") as? JsonPrimitive)?.contentOrNull in setOf("enabled", "adaptive")
         val thinkingBudget = (reasoningConfig?.get("budgetTokens") as? JsonPrimitive)?.intOrNull
@@ -188,7 +185,9 @@ internal object BedrockRequest {
                         "reasoningText",
                         buildJsonObject {
                             put("text", JsonPrimitive(part.text))
-                            (part.providerMetadata.toMap()["bedrock"] as? JsonObject)?.get("signature")?.let { put("signature", it) }
+                            JsonAccess.obj(part.providerMetadata.toMap(), "bedrock")
+                                ?.get("signature")
+                                ?.let { put("signature", it) }
                         },
                     )
                 },
@@ -321,8 +320,8 @@ internal object BedrockRequest {
         modelId: String,
         responseFormat: ResponseFormat,
     ): JsonObject {
-        val additional = (options["additionalModelRequestFields"] as? JsonObject)?.toMutableMap() ?: mutableMapOf()
-        val reasoningConfig = options["reasoningConfig"] as? JsonObject
+        val additional = JsonAccess.obj(options, "additionalModelRequestFields")?.toMutableMap() ?: mutableMapOf()
+        val reasoningConfig = JsonAccess.obj(options, "reasoningConfig")
         val reasoningType = (reasoningConfig?.get("type") as? JsonPrimitive)?.contentOrNull
         val maxReasoningEffort = (reasoningConfig?.get("maxReasoningEffort") as? JsonPrimitive)?.contentOrNull
         if (modelId.contains("anthropic") && reasoningType in setOf("enabled", "adaptive")) {
@@ -334,7 +333,7 @@ internal object BedrockRequest {
         }
         if (maxReasoningEffort != null) {
             if (modelId.contains("anthropic")) {
-                val existing = additional["output_config"] as? JsonObject ?: JsonObject(emptyMap())
+                val existing = JsonAccess.obj(additional, "output_config") ?: JsonObject(emptyMap())
                 additional["output_config"] = JsonObject(existing + ("effort" to JsonPrimitive(maxReasoningEffort)))
             } else if (modelId.startsWith("openai.")) {
                 additional["reasoning_effort"] = JsonPrimitive(maxReasoningEffort)
@@ -347,7 +346,7 @@ internal object BedrockRequest {
             }
         }
         if (modelId.contains("anthropic") && responseFormat is ResponseFormat.Json && responseFormat.schemaJson != null && reasoningType in setOf("enabled", "adaptive")) {
-            val existing = additional["output_config"] as? JsonObject ?: JsonObject(emptyMap())
+            val existing = JsonAccess.obj(additional, "output_config") ?: JsonObject(emptyMap())
             additional["output_config"] = JsonObject(
                 existing + ("format" to buildJsonObject {
                     put("type", JsonPrimitive("json_schema"))
@@ -355,7 +354,7 @@ internal object BedrockRequest {
                 }),
             )
         }
-        (options["anthropicBeta"] as? JsonArray)?.let { additional["anthropic_beta"] = it }
+        (JsonAccess.arr(options, "anthropicBeta"))?.let { additional["anthropic_beta"] = it }
         return JsonObject(additional)
     }
 
@@ -394,7 +393,7 @@ internal object BedrockRequest {
     fun bedrockImageBody(params: ImageGenerationParams): BedrockPreparedImageRequest {
         val warnings = mutableListOf<CallWarning>()
         if (params.aspectRatio != null) warnings += CallWarning("unsupported", "aspectRatio")
-        val options = params.providerOptions.toMap()["bedrock"] as? JsonObject ?: JsonObject(emptyMap())
+        val options = JsonAccess.obj(params.providerOptions.toMap(), "bedrock") ?: JsonObject(emptyMap())
         val sizeParts = params.size?.split("x")?.mapNotNull { it.toIntOrNull() }.orEmpty()
         val imageGenerationConfig = buildJsonObject {
             sizeParts.getOrNull(0)?.let { put("width", JsonPrimitive(it)) }

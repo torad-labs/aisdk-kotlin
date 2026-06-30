@@ -1,3 +1,5 @@
+@file:OptIn(LowLevelLanguageModelApi::class)
+
 package ai.torad.aisdk
 
 import ai.torad.aisdk.testing.FlowDrain.drainAllItems
@@ -88,8 +90,26 @@ internal class CountingStreamModel(
     val callCount: Int
         get() = streamCalls
 
+    private val generatedResult: LanguageModelResult
+        get() {
+            val response = responses[streamCalls.coerceAtMost(responses.lastIndex)]
+            streamCalls += 1
+            val text = response.events
+                .filterIsInstance<StreamEvent.TextDelta>()
+                .joinToString("") { it.text }
+            val toolCalls = response.events
+                .filterIsInstance<StreamEvent.ToolCall>()
+                .map { ContentPart.ToolCall(it.toolCallId, it.toolName, it.inputJson) }
+            return LanguageModelResult(
+                text = text,
+                toolCalls = toolCalls,
+                finishReason = response.finishReason,
+                usage = response.usage,
+            )
+        }
+
     override suspend fun generate(params: LanguageModelCallParams): LanguageModelResult =
-        error("CountingStreamModel is intended for stream-driven agent tests")
+        generatedResult
 
     override fun stream(params: LanguageModelCallParams): Flow<StreamEvent> = flow {
         val response = responses[streamCalls.coerceAtMost(responses.lastIndex)]

@@ -11,7 +11,6 @@ import io.ktor.http.HttpMethod
 import io.ktor.http.contentType
 import kotlinx.coroutines.delay
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonObject
@@ -147,7 +146,7 @@ private class AssemblyAITranscriptionModel(
             abortSignal = params.abortSignal,
         )
         val body = transcript.value.jsonObject
-        val words = (body["words"] as? JsonArray).orEmpty()
+        val words = (JsonAccess.arr(body, "words")).orEmpty()
         return TranscriptionModelResult(
             text = (body["text"] as? JsonPrimitive)?.contentOrNull.orEmpty(),
             segments = words.mapNotNull { word ->
@@ -264,7 +263,7 @@ private class AssemblyAITranscriptionModel(
     }
 
     private fun options(providerOptions: ProviderOptions): JsonObject =
-        providerOptions.toMap()["assemblyai"] as? JsonObject ?: JsonObject(emptyMap())
+        JsonAccess.obj(providerOptions.toMap(), "assemblyai") ?: JsonObject(emptyMap())
 
     private fun errorMessage(statusCode: Int, parsed: JsonElement?, raw: String): String {
         val obj = parsed as? JsonObject

@@ -13,7 +13,6 @@ import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpMethod
 import kotlinx.coroutines.delay
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonObject
@@ -155,10 +154,13 @@ private class GladiaTranscriptionModel(
             abortSignal = params.abortSignal,
         )
         val responseBody = result.value.jsonObject
-        val resultObj = responseBody["result"] as? JsonObject
+        val resultObj = JsonAccess.obj(responseBody, "result")
         val transcript = (resultObj?.get("transcription") as? JsonObject)
             ?: throw NoTranscriptGeneratedError("Transcription result is empty")
-        val utterances = (transcript["utterances"] as? JsonArray).orEmpty()
+        val utterances = (JsonAccess.arr(transcript, "utterances")).orEmpty()
+        val detectedLanguage = (JsonAccess.arr(transcript, "languages")
+            ?.firstOrNull() as? JsonPrimitive)
+            ?.contentOrNull
         return TranscriptionModelResult(
             text = (transcript["full_transcript"] as? JsonPrimitive)?.contentOrNull.orEmpty(),
             segments = utterances.mapNotNull { utterance ->
@@ -175,8 +177,8 @@ private class GladiaTranscriptionModel(
                 body = result.value,
             ),
             providerMetadata = ProviderMetadata.Raw(JsonObject(mapOf("gladia" to result.value))),
-            language = ((transcript["languages"] as? JsonArray)?.firstOrNull() as? JsonPrimitive)?.contentOrNull,
-            durationInSeconds = ((resultObj["metadata"] as? JsonObject)
+            language = detectedLanguage,
+            durationInSeconds = ((JsonAccess.obj(resultObj, "metadata"))
                 ?.get("audio_duration") as? JsonPrimitive)
                 ?.floatOrNull,
         )
@@ -351,7 +353,7 @@ private class GladiaTranscriptionModel(
     }
 
     private fun options(providerOptions: ProviderOptions): JsonObject =
-        providerOptions.toMap()["gladia"] as? JsonObject ?: JsonObject(emptyMap())
+        JsonAccess.obj(providerOptions.toMap(), "gladia") ?: JsonObject(emptyMap())
 
     private fun JsonElement.jsonObjectOrNull(): JsonObject? = this as? JsonObject
 

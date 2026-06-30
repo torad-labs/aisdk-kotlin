@@ -1,3 +1,5 @@
+@file:OptIn(ai.torad.aisdk.LowLevelLanguageModelApi::class)
+
 package ai.torad.aisdk.providers
 
 import ai.torad.aisdk.*
@@ -256,7 +258,7 @@ private class OpenResponsesLanguageModel(
     ): ProviderMetadata {
         val metadata = buildJsonObject {
             itemId?.let { put("itemId", JsonPrimitive(it)) }
-            (obj["annotations"] as? JsonArray)?.takeIf { it.isNotEmpty() }?.let { put("annotations", it) }
+            (JsonAccess.arr(obj, "annotations"))?.takeIf { it.isNotEmpty() }?.let { put("annotations", it) }
             obj["logprobs"]?.let { put("logprobs", it) }
             obj["encrypted_content"]?.let { put("encryptedContent", it) }
         }
@@ -278,13 +280,13 @@ private class OpenResponsesLanguageModel(
         val logprobs = mutableListOf<JsonElement>()
         var hasToolCalls = false
 
-        (response["output"] as? JsonArray).orEmpty().forEachIndexed { index, part ->
+        (JsonAccess.arr(response, "output")).orEmpty().forEachIndexed { index, part ->
             val obj = part as? JsonObject ?: return@forEachIndexed
             val itemId = (obj["id"] as? JsonPrimitive)?.contentOrNull
             val path = "$.output[$index]"
             when ((obj["type"] as? JsonPrimitive)?.contentOrNull) {
                 "reasoning" -> {
-                    val reasoningParts = (obj["content"] as? JsonArray) ?: (obj["summary"] as? JsonArray) ?: JsonArray(emptyList())
+                    val reasoningParts = JsonAccess.arr(obj, "content") ?: JsonAccess.arr(obj, "summary").orEmpty()
                     reasoningParts.forEach { reasoning ->
                         val reasoningObj = reasoning as? JsonObject ?: return@forEach
                         val text = (reasoningObj["text"] as? JsonPrimitive)?.contentOrNull
@@ -297,7 +299,7 @@ private class OpenResponsesLanguageModel(
                     }
                 }
                 "message" -> {
-                    (obj["content"] as? JsonArray).orEmpty().forEach { messagePart ->
+                    (JsonAccess.arr(obj, "content")).orEmpty().forEach { messagePart ->
                         val messageObj = messagePart as? JsonObject ?: return@forEach
                         val text = (messageObj["text"] as? JsonPrimitive)?.contentOrNull
                             ?: (messageObj["refusal"] as? JsonPrimitive)?.contentOrNull
@@ -341,7 +343,7 @@ private class OpenResponsesLanguageModel(
             }
         }
 
-        val reasonElement = (response["incomplete_details"] as? JsonObject)?.get("reason")
+        val reasonElement = (JsonAccess.obj(response, "incomplete_details"))?.get("reason")
         val incompleteReason = (reasonElement as? JsonPrimitive)?.contentOrNull
         val text = content.filterIsInstance<ContentPart.Text>().joinToString("") { it.text }
         return LanguageModelResult(
@@ -370,10 +372,10 @@ private class OpenResponsesLanguageModel(
     private fun openResponsesUsage(element: JsonElement?): Usage {
         val obj = element as? JsonObject ?: return Usage()
         val inputTokens = (obj["input_tokens"] as? JsonPrimitive)?.intOrNull ?: 0
-        val cachedInputTokens = (((obj["input_tokens_details"] as? JsonObject)?.get("cached_tokens") as? JsonPrimitive)?.intOrNull ?: 0)
+        val cachedInputTokens = (((JsonAccess.obj(obj, "input_tokens_details"))?.get("cached_tokens") as? JsonPrimitive)?.intOrNull ?: 0)
             .coerceIn(0, inputTokens)
         val outputTokens = (obj["output_tokens"] as? JsonPrimitive)?.intOrNull ?: 0
-        val reasoningTokens = (((obj["output_tokens_details"] as? JsonObject)?.get("reasoning_tokens") as? JsonPrimitive)?.intOrNull ?: 0)
+        val reasoningTokens = (((JsonAccess.obj(obj, "output_tokens_details"))?.get("reasoning_tokens") as? JsonPrimitive)?.intOrNull ?: 0)
             .coerceAtLeast(0)
         val outputTotal = if (reasoningTokens > outputTokens) outputTokens + reasoningTokens else outputTokens
         return Usage(
@@ -412,7 +414,7 @@ private class OpenResponsesLanguageModel(
     ): APICallError {
         val message = runCatching {
             val obj = openResponsesJson.parseToJsonElement(raw).jsonObject
-            ((obj["error"] as? JsonObject)?.get("message") as? JsonPrimitive)?.contentOrNull
+            ((JsonAccess.obj(obj, "error"))?.get("message") as? JsonPrimitive)?.contentOrNull
         }.getOrNull()
         return ApiCallError(
             url = response.call.request.url.toString(),
@@ -437,7 +439,7 @@ private class OpenResponsesLanguageModel(
             val events = mutableListOf<StreamEvent>()
             when (type) {
                 "response.output_item.added" -> {
-                    val item = obj["item"] as? JsonObject
+                    val item = JsonAccess.obj(obj, "item")
                         ?: return listOf(StreamEvent.Error("Open Responses stream protocol error: response.output_item.added missing item."))
                     val itemType = (item["type"] as? JsonPrimitive)?.contentOrNull
                     when (itemType) {
@@ -473,7 +475,7 @@ private class OpenResponsesLanguageModel(
                     pending.arguments = (obj["arguments"] as? JsonPrimitive)?.contentOrNull.orEmpty()
                 }
                 "response.output_item.done" -> {
-                    val item = obj["item"] as? JsonObject
+                    val item = JsonAccess.obj(obj, "item")
                         ?: return listOf(StreamEvent.Error("Open Responses stream protocol error: response.output_item.done missing item."))
                     val itemType = (item["type"] as? JsonPrimitive)?.contentOrNull
                     when (itemType) {
@@ -486,7 +488,7 @@ private class OpenResponsesLanguageModel(
                             val toolCallId = pending?.toolCallId?.takeIf { it.isNotBlank() }
                                 ?: (item["call_id"] as? JsonPrimitive)?.contentOrNull?.takeIf { it.isNotBlank() }
                                 ?: return listOf(missingIdentityError(type, "call_id"))
-                            val arguments = pending?.arguments ?: (item["arguments"] as? JsonPrimitive)?.contentOrNull
+                            val arguments = (item["arguments"] as? JsonPrimitive)?.contentOrNull ?: pending?.arguments
                             events += StreamEvent.ToolCall(toolCallId, toolName, parseToolInput(arguments, json))
                             hasToolCalls = true
                         }
@@ -503,8 +505,6 @@ private class OpenResponsesLanguageModel(
                         }
                     }
                 }
-                // OpenAI emits reasoning deltas as `response.reasoning_summary_text.delta`
-                // (the `reasoning_text` variant is never sent), so all streamed reasoning was lost.
                 "response.reasoning_summary_text.delta", "response.reasoning_text.delta" ->
                     events += StreamEvent.ReasoningDelta(
                         id = (obj["item_id"] as? JsonPrimitive)?.contentOrNull ?: activeReasoningId ?: "reasoning-0",
@@ -517,18 +517,19 @@ private class OpenResponsesLanguageModel(
                 "response.completed",
                 "response.incomplete",
                 -> {
-                    val response = (obj["response"] as? JsonObject) ?: JsonObject(emptyMap())
-                    val reasonElement = (response["incomplete_details"] as? JsonObject)?.get("reason")
+                    val response = (JsonAccess.obj(obj, "response")) ?: JsonObject(emptyMap())
+                    val reasonElement = (JsonAccess.obj(response, "incomplete_details"))?.get("reason")
                     rawFinishReason = (reasonElement as? JsonPrimitive)?.contentOrNull
                     finishReason = mapOpenResponsesFinishReason(rawFinishReason, hasToolCalls)
                     usage = openResponsesUsage(response["usage"])
                 }
                 "response.failed" -> {
-                    val response = (obj["response"] as? JsonObject) ?: JsonObject(emptyMap())
+                    val response = (JsonAccess.obj(obj, "response")) ?: JsonObject(emptyMap())
                     finishReason = FinishReason.Error
-                    rawFinishReason = ((response["error"] as? JsonObject)?.get("code") as? JsonPrimitive)?.contentOrNull
+                    rawFinishReason = (JsonAccess.obj(response, "error")?.get("code") as? JsonPrimitive)?.contentOrNull
                         ?: (response["status"] as? JsonPrimitive)?.contentOrNull
                     usage = openResponsesUsage(response["usage"])
+                    events += StreamEvent.Error(OpenResponsesStreamFailure.message(response))
                 }
             }
             return events
@@ -888,8 +889,8 @@ internal data class PreparedOpenResponsesRequest(
         }
 
         private fun openResponsesProviderToolArgs(tool: LanguageModelTool): JsonObject =
-            (tool.metadata["providerToolArgs"] as? JsonObject)
-                ?: (tool.metadata["providerOptions"] as? JsonObject)
+            (JsonAccess.obj(tool.metadata, "providerToolArgs"))
+                ?: (JsonAccess.obj(tool.metadata, "providerOptions"))
                 ?: JsonObject(emptyMap())
 
         private fun openResponsesProviderToolType(tool: LanguageModelTool): String {
@@ -913,7 +914,7 @@ internal data class PreparedOpenResponsesRequest(
         }
 
         private fun openResponsesRankingOptions(args: JsonObject): JsonObject? {
-            val ranking = args["ranking"] as? JsonObject ?: return null
+            val ranking = JsonAccess.obj(args, "ranking") ?: return null
             val mapped = buildJsonObject {
                 putOpenResponsesField("ranker", ranking["ranker"])
                 putOpenResponsesField("score_threshold", ranking["scoreThreshold"] ?: ranking["score_threshold"])
@@ -956,7 +957,7 @@ internal data class PreparedOpenResponsesRequest(
 
         private fun openResponsesRequireApproval(value: JsonElement?): JsonElement? {
             val obj = value as? JsonObject ?: return value
-            val never = obj["never"] as? JsonObject ?: return value
+            val never = JsonAccess.obj(obj, "never") ?: return value
             return buildJsonObject {
                 put(
                     "never",
