@@ -121,7 +121,7 @@ public data class AnthropicProviderSettings(
          * every modern Claude model.
          */
         @Suppress("MagicNumber") // the values ARE the per-model max-output-token limits
-        internal fun anthropicMaxOutputTokensForModel(modelId: String): Int = when {
+        internal fun anthropicMaxOutputTokensOrNull(modelId: String): Int? = when {
             modelId.contains("claude-opus-4-8") || modelId.contains("claude-opus-4-7") -> 128_000
             modelId.contains("claude-sonnet-4-6") || modelId.contains("claude-opus-4-6") -> 128_000
             modelId.contains("claude-sonnet-4-5") || modelId.contains("claude-opus-4-5") ||
@@ -129,8 +129,12 @@ public data class AnthropicProviderSettings(
             modelId.contains("claude-opus-4-1") -> 32_000
             modelId.contains("claude-sonnet-4-") -> 64_000
             modelId.contains("claude-opus-4-") -> 32_000
-            else -> 4_096
+            modelId.contains("claude-3-haiku") -> 4_096
+            else -> null
         }
+
+        internal fun anthropicMaxOutputTokensForModel(modelId: String): Int =
+            anthropicMaxOutputTokensOrNull(modelId) ?: 4_096
     }
 }
 
@@ -604,21 +608,38 @@ internal data class PreparedAnthropicRequest(
             val thinkingType = (thinking?.get("type") as? JsonPrimitive)?.contentOrNull
             val isThinking = thinkingType == "enabled" || thinkingType == "adaptive"
             val rawThinkingBudget = (thinking?.get("budgetTokens") as? JsonPrimitive)?.intOrNull
+            val modelMaxOutputTokens = AnthropicProviderSettings.anthropicMaxOutputTokensOrNull(modelId)
             val maxTokensBase = params.maxOutputTokens ?: AnthropicProviderSettings.anthropicMaxOutputTokensForModel(modelId)
             // `thinkingBudget` is the effective budget (defaulting to 1024 only when thinking is
             // explicitly enabled and the caller omitted it); `maxTokens` folds it into the base.
             val thinkingBudget: Int?
-            val maxTokens: Int
+            val computedMaxTokens: Int
             if (isThinking && thinkingType == "enabled") {
                 val budget = rawThinkingBudget ?: run {
                     warnings += CallWarning("compatibility", "thinking budget is required when thinking is enabled. using default budget of 1024 tokens.")
                     1024
                 }
                 thinkingBudget = budget
-                maxTokens = maxTokensBase + budget
+                computedMaxTokens = maxTokensBase + budget
             } else {
                 thinkingBudget = rawThinkingBudget
-                maxTokens = maxTokensBase
+                computedMaxTokens = maxTokensBase
+            }
+            val maxTokens = if (modelMaxOutputTokens != null && computedMaxTokens > modelMaxOutputTokens) {
+                if (params.maxOutputTokens != null) {
+                    warnings += CallWarning(
+                        type = "unsupported",
+                        message = "maxOutputTokens",
+                        details = JsonPrimitive(
+                            "$computedMaxTokens (maxOutputTokens + thinkingBudget) is greater than " +
+                                "$modelId $modelMaxOutputTokens max output tokens. " +
+                                "The max output tokens have been limited to $modelMaxOutputTokens.",
+                        ),
+                    )
+                }
+                modelMaxOutputTokens
+            } else {
+                computedMaxTokens
             }
 
             val temperature = params.temperature?.coerceIn(0f, 1f)?.also {

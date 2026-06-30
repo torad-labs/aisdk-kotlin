@@ -603,6 +603,68 @@ class AnthropicProviderTest {
     }
 
     @Test
+    fun `thinking max_tokens clamps to model ceiling and warns only for explicit maxOutputTokens`() = runTest {
+        val response = Json.parseToJsonElement(
+            """{"id":"m","model":"claude-sonnet-4-5","stop_reason":"end_turn",
+               "content":[{"type":"text","text":"ok"}],
+               "usage":{"input_tokens":1,"output_tokens":1}}""",
+        )
+        val fixture = TestServer.createTestServer(
+            mutableMapOf(
+                "https://anthropic.test/v1/messages" to UrlHandler { UrlResponse.JsonValue(response) },
+            ),
+        )
+        fixture.server.start()
+        val provider = Anthropic(fixture.httpClient(), AnthropicProviderSettings(baseURL = "https://anthropic.test/v1"))
+        val thinkingOptions = ProviderOptions.Raw(JsonObject(mapOf(
+            "anthropic" to buildJsonObject {
+                put(
+                    "thinking",
+                    buildJsonObject {
+                        put("type", JsonPrimitive("enabled"))
+                        put("budgetTokens", JsonPrimitive(10_000))
+                    },
+                )
+            },
+        )))
+
+        val implicit = provider.messages(ModelId("claude-sonnet-4-5")).generate(
+            LanguageModelCallParams(
+                messages = listOf(UserMessage("hi")),
+                providerOptions = thinkingOptions,
+            ),
+        )
+        val explicit = provider.messages(ModelId("claude-sonnet-4-5")).generate(
+            LanguageModelCallParams(
+                messages = listOf(UserMessage("hi")),
+                maxOutputTokens = 60_000,
+                providerOptions = thinkingOptions,
+            ),
+        )
+        val unknown = provider.messages(ModelId("claude-fictional-9")).generate(
+            LanguageModelCallParams(
+                messages = listOf(UserMessage("hi")),
+                providerOptions = thinkingOptions,
+            ),
+        )
+
+        assertEquals(64_000, fixture.calls[0].requestBodyJson.jsonObject["max_tokens"]?.jsonPrimitive?.intOrNull)
+        assertTrue(implicit.warnings.none { it.message == "maxOutputTokens" })
+
+        assertEquals(64_000, fixture.calls[1].requestBodyJson.jsonObject["max_tokens"]?.jsonPrimitive?.intOrNull)
+        val warning = explicit.warnings.single { it.message == "maxOutputTokens" }
+        assertEquals("unsupported", warning.type)
+        assertEquals(
+            "70000 (maxOutputTokens + thinkingBudget) is greater than claude-sonnet-4-5 64000 max output tokens. " +
+                "The max output tokens have been limited to 64000.",
+            warning.details?.jsonPrimitive?.contentOrNull,
+        )
+
+        assertEquals(14_096, fixture.calls[2].requestBodyJson.jsonObject["max_tokens"]?.jsonPrimitive?.intOrNull)
+        assertTrue(unknown.warnings.none { it.message == "maxOutputTokens" })
+    }
+
+    @Test
     fun `models that reject sampling parameters omit them and warn while other models forward them`() = runTest {
         val response = Json.parseToJsonElement(
             """{"id":"m","model":"claude","stop_reason":"end_turn",
