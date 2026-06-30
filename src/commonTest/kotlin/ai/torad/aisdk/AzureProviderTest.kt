@@ -156,20 +156,20 @@ class AzureProviderTest {
         )
 
         val image = provider.imageModel("dalle-deployment").generate(
-            ImageGenerationParams(
-                prompt = "A cute baby sea otter",
-                n = 2,
-                size = "1024x1024",
-                providerOptions = ProviderOptions.Raw(JsonObject(mapOf("openai" to JsonObject(mapOf("style" to JsonPrimitive("natural")))))),
-            ),
+            ImageGenerationParams {
+                prompt("A cute baby sea otter")
+                n(2)
+                size("1024x1024")
+                providerOptions(ProviderOptions.Raw(JsonObject(mapOf("openai" to JsonObject(mapOf("style" to JsonPrimitive("natural")))))))
+            },
         )
         val transcript = provider.transcription(ModelId("whisper-1")).transcribe(
-            TranscriptionParams(
-                audio = AudioSource(
-                    mediaType = "audio/wav",
-                    base64 = Base64Codec.encode(byteArrayOf(1, 2, 3)),
-                ),
-            ),
+            TranscriptionParams {
+                audio(AudioSource(
+                                    mediaType = "audio/wav",
+                                    base64 = Base64Codec.encode(byteArrayOf(1, 2, 3)),
+                                ))
+            },
         )
 
         assertEquals("base64-image-1", image.images.single().base64)

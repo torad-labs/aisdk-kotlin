@@ -312,18 +312,18 @@ class CohereProviderTest {
         ).reranking(ModelId("rerank-v3.5"))
 
         val result = model.rerank(
-            RerankingParams(
-                query = "capital",
-                documents = listOf("Berlin", "Paris"),
-                topN = 1,
-                providerOptions = ProviderOptions.Raw(JsonObject(mapOf(
-                    "cohere" to buildJsonObject {
-                        put("maxTokensPerDoc", JsonPrimitive(64))
-                        put("priority", JsonPrimitive(1))
-                    },
-                ))),
-                headers = mapOf("X-Request" to "request"),
-            ),
+            RerankingParams {
+                query("capital")
+                documents(listOf("Berlin", "Paris"))
+                topN(1)
+                providerOptions(ProviderOptions.Raw(JsonObject(mapOf(
+                                    "cohere" to buildJsonObject {
+                                        put("maxTokensPerDoc", JsonPrimitive(64))
+                                        put("priority", JsonPrimitive(1))
+                                    },
+                                ))))
+                headers(mapOf("X-Request" to "request"))
+            },
         )
 
         assertEquals("cohere.reranking", model.provider)

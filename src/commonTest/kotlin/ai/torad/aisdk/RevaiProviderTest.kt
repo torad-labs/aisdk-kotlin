@@ -51,55 +51,55 @@ class RevaiProviderTest {
         ).transcription(ModelId("machine"))
 
         val result = model.transcribe(
-            TranscriptionParams(
-                audio = AudioSource(
-                    mediaType = "audio/wav",
-                    base64 = Base64Codec.encode("abc".encodeToByteArray()),
-                    filename = "clip.wav",
-                ),
-                language = "en",
-                providerOptions = ProviderOptions.Raw(JsonObject(mapOf(
-                    "revai" to buildJsonObject {
-                        put("metadata", JsonPrimitive("job-metadata"))
-                        put("rush", JsonPrimitive(true))
-                        put("test_mode", JsonPrimitive(true))
-                        put("skip_diarization", JsonPrimitive(true))
-                        put("filter_profanity", JsonPrimitive(true))
-                        put("language", JsonPrimitive("en-us"))
-                        put("forced_alignment", JsonPrimitive(true))
-                        put("segments_to_transcribe", buildJsonArray {
-                            add(buildJsonObject {
-                                put("start", JsonPrimitive(0))
-                                put("end", JsonPrimitive(60))
-                            })
-                        })
-                        put(
-                            "notification_config",
-                            buildJsonObject {
-                                put("url", JsonPrimitive("https://example.com/hook"))
-                                put("auth_headers", buildJsonObject {
-                                    put("Authorization", JsonPrimitive("Bearer hook"))
-                                })
-                            },
-                        )
-                        put(
-                            "summarization_config",
-                            buildJsonObject {
-                                put("model", JsonPrimitive("premium"))
-                                put("type", JsonPrimitive("bullets"))
-                            },
-                        )
-                        put(
-                            "translation_config",
-                            buildJsonObject {
-                                put("target_languages", buildJsonArray {
-                                    add(buildJsonObject { put("language", JsonPrimitive("es")) })
-                                })
-                            },
-                        )
-                    },
-                ))),
-            ),
+            TranscriptionParams {
+                audio(AudioSource(
+                                    mediaType = "audio/wav",
+                                    base64 = Base64Codec.encode("abc".encodeToByteArray()),
+                                    filename = "clip.wav",
+                                ))
+                language("en")
+                providerOptions(ProviderOptions.Raw(JsonObject(mapOf(
+                                    "revai" to buildJsonObject {
+                                        put("metadata", JsonPrimitive("job-metadata"))
+                                        put("rush", JsonPrimitive(true))
+                                        put("test_mode", JsonPrimitive(true))
+                                        put("skip_diarization", JsonPrimitive(true))
+                                        put("filter_profanity", JsonPrimitive(true))
+                                        put("language", JsonPrimitive("en-us"))
+                                        put("forced_alignment", JsonPrimitive(true))
+                                        put("segments_to_transcribe", buildJsonArray {
+                                            add(buildJsonObject {
+                                                put("start", JsonPrimitive(0))
+                                                put("end", JsonPrimitive(60))
+                                            })
+                                        })
+                                        put(
+                                            "notification_config",
+                                            buildJsonObject {
+                                                put("url", JsonPrimitive("https://example.com/hook"))
+                                                put("auth_headers", buildJsonObject {
+                                                    put("Authorization", JsonPrimitive("Bearer hook"))
+                                                })
+                                            },
+                                        )
+                                        put(
+                                            "summarization_config",
+                                            buildJsonObject {
+                                                put("model", JsonPrimitive("premium"))
+                                                put("type", JsonPrimitive("bullets"))
+                                            },
+                                        )
+                                        put(
+                                            "translation_config",
+                                            buildJsonObject {
+                                                put("target_languages", buildJsonArray {
+                                                    add(buildJsonObject { put("language", JsonPrimitive("es")) })
+                                                })
+                                            },
+                                        )
+                                    },
+                                ))))
+            },
         )
 
         assertEquals("revai.transcription", model.provider)
@@ -156,7 +156,9 @@ class RevaiProviderTest {
         ).transcription(ModelId("machine"))
 
         val error = assertFailsWith<AiSdkException> {
-            model.transcribe(TranscriptionParams(audio = AudioSource("audio/wav", Base64Codec.encode(byteArrayOf(1)))))
+            model.transcribe(TranscriptionParams {
+                audio(AudioSource("audio/wav", Base64Codec.encode(byteArrayOf(1))))
+            })
         }
         assertTrue(error.message.orEmpty().contains("Failed to submit"))
     }

@@ -160,30 +160,30 @@ class AlibabaProviderTest {
         ).video(ModelId("wan2.6-i2v"))
 
         val result = model.generate(
-            VideoGenerationParams(
-                prompt = "Animate this",
-                image = GeneratedFile(mediaType = "image/png", base64 = "", url = "https://example.com/start.png"),
-                durationSeconds = 5f,
-                seed = 12,
-                resolution = "1280x720",
-                aspectRatio = "16:9",
-                fps = 24,
-                n = 2,
-                providerOptions = ProviderOptions.Raw(JsonObject(mapOf(
-                    "alibaba" to buildJsonObject {
-                        put("pollIntervalMs", JsonPrimitive(0))
-                        put("pollTimeoutMs", JsonPrimitive(1_000))
-                        put("negativePrompt", JsonPrimitive("blur"))
-                        put("audioUrl", JsonPrimitive("https://example.com/audio.mp3"))
-                        put("promptExtend", JsonPrimitive(true))
-                        put("shotType", JsonPrimitive("single"))
-                        put("watermark", JsonPrimitive(false))
-                        put("audio", JsonPrimitive(true))
-                        put("custom_parameter", JsonPrimitive("kept"))
-                    },
-                ))),
-                headers = mapOf("X-Request" to "request"),
-            ),
+            VideoGenerationParams {
+                prompt("Animate this")
+                image(GeneratedFile(mediaType = "image/png", base64 = "", url = "https://example.com/start.png"))
+                durationSeconds(5f)
+                seed(12)
+                resolution("1280x720")
+                aspectRatio("16:9")
+                fps(24)
+                n(2)
+                providerOptions(ProviderOptions.Raw(JsonObject(mapOf(
+                                    "alibaba" to buildJsonObject {
+                                        put("pollIntervalMs", JsonPrimitive(0))
+                                        put("pollTimeoutMs", JsonPrimitive(1_000))
+                                        put("negativePrompt", JsonPrimitive("blur"))
+                                        put("audioUrl", JsonPrimitive("https://example.com/audio.mp3"))
+                                        put("promptExtend", JsonPrimitive(true))
+                                        put("shotType", JsonPrimitive("single"))
+                                        put("watermark", JsonPrimitive(false))
+                                        put("audio", JsonPrimitive(true))
+                                        put("custom_parameter", JsonPrimitive("kept"))
+                                    },
+                                ))))
+                headers(mapOf("X-Request" to "request"))
+            },
         )
 
         assertEquals("alibaba.video", model.provider)

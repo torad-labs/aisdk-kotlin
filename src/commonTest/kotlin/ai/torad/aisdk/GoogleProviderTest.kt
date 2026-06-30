@@ -456,22 +456,22 @@ class GoogleProviderTest {
             ),
         )
         val image = provider.image(ModelId("imagen-4.0-generate-001")).generate(
-            ImageGenerationParams(
-                prompt = "A product render",
-                n = 1,
-                aspectRatio = "16:9",
-                providerOptions = ProviderOptions.Raw(JsonObject(mapOf("google" to buildJsonObject { put("personGeneration", JsonPrimitive("dont_allow")) }))),
-            ),
+            ImageGenerationParams {
+                prompt("A product render")
+                n(1)
+                aspectRatio("16:9")
+                providerOptions(ProviderOptions.Raw(JsonObject(mapOf("google" to buildJsonObject { put("personGeneration", JsonPrimitive("dont_allow")) }))))
+            },
         )
         val video = provider.video(ModelId("veo-3.1-generate-preview")).generate(
-            VideoGenerationParams(
-                prompt = "A clean motion shot",
-                n = 1,
-                aspectRatio = "16:9",
-                durationSeconds = 4f,
-                resolution = "1920x1080",
-                providerOptions = ProviderOptions.Raw(JsonObject(mapOf("google" to buildJsonObject { put("negativePrompt", JsonPrimitive("blur")) }))),
-            ),
+            VideoGenerationParams {
+                prompt("A clean motion shot")
+                n(1)
+                aspectRatio("16:9")
+                durationSeconds(4f)
+                resolution("1920x1080")
+                providerOptions(ProviderOptions.Raw(JsonObject(mapOf("google" to buildJsonObject { put("negativePrompt", JsonPrimitive("blur")) }))))
+            },
         )
 
         assertEquals(listOf(1.0f, 2.0f), embeddings.embeddings.first())
@@ -534,10 +534,14 @@ class GoogleProviderTest {
         )
 
         val imageError = assertFailsWith<WireDecodeException> {
-            provider.image(ModelId("imagen-4.0-generate-001")).generate(ImageGenerationParams(prompt = "x"))
+            provider.image(ModelId("imagen-4.0-generate-001")).generate(ImageGenerationParams {
+                prompt("x")
+            })
         }
         val videoError = assertFailsWith<WireDecodeException> {
-            provider.video(ModelId("veo-3.1-generate-preview")).generate(VideoGenerationParams(prompt = "x"))
+            provider.video(ModelId("veo-3.1-generate-preview")).generate(VideoGenerationParams {
+                prompt("x")
+            })
         }
 
         assertTrue(imageError.message.orEmpty().contains("bytesBase64Encoded"))

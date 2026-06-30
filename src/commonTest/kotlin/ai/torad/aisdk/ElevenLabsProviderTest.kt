@@ -35,29 +35,29 @@ class ElevenLabsProviderTest {
         ).speech(ModelId("eleven_multilingual_v2"))
 
         val result = model.generate(
-            SpeechGenerationParams(
-                text = "hello",
-                voice = "voice-1",
-                responseFormat = "mp3_192",
-                language = "es",
-                speed = 1.2f,
-                instructions = "ignore",
-                providerOptions = ProviderOptions.Raw(JsonObject(mapOf(
-                    "elevenlabs" to buildJsonObject {
-                        put("seed", JsonPrimitive(123))
-                        // languageCode is set too, but params.language ("es") must win (upstream order).
-                        put("languageCode", JsonPrimitive("fr"))
-                        put("enableLogging", JsonPrimitive(false))
-                        put(
-                            "voiceSettings",
-                            buildJsonObject {
-                                put("similarityBoost", JsonPrimitive(0.7f))
-                                put("useSpeakerBoost", JsonPrimitive(true))
-                            },
-                        )
-                    },
-                ))),
-            ),
+            SpeechGenerationParams {
+                text("hello")
+                voice("voice-1")
+                responseFormat("mp3_192")
+                language("es")
+                speed(1.2f)
+                instructions("ignore")
+                providerOptions(ProviderOptions.Raw(JsonObject(mapOf(
+                                    "elevenlabs" to buildJsonObject {
+                                        put("seed", JsonPrimitive(123))
+                                        // languageCode is set too, but params.language ("es") must win (upstream order).
+                                        put("languageCode", JsonPrimitive("fr"))
+                                        put("enableLogging", JsonPrimitive(false))
+                                        put(
+                                            "voiceSettings",
+                                            buildJsonObject {
+                                                put("similarityBoost", JsonPrimitive(0.7f))
+                                                put("useSpeakerBoost", JsonPrimitive(true))
+                                            },
+                                        )
+                                    },
+                                ))))
+            },
         )
 
         assertEquals("elevenlabs.speech", model.provider)
@@ -96,22 +96,22 @@ class ElevenLabsProviderTest {
         ).transcription(ModelId("scribe_v1"))
 
         val result = model.transcribe(
-            TranscriptionParams(
-                audio = AudioSource(
-                    mediaType = "audio/mpeg",
-                    base64 = Base64Codec.encode(byteArrayOf(1, 2, 3)),
-                    filename = "clip.mp3",
-                ),
-                providerOptions = ProviderOptions.Raw(JsonObject(mapOf(
-                    "elevenlabs" to buildJsonObject {
-                        put("languageCode", JsonPrimitive("en"))
-                        put("diarize", JsonPrimitive(false))
-                        put("numSpeakers", JsonPrimitive(2))
-                        put("timestampsGranularity", JsonPrimitive("word"))
-                        put("fileFormat", JsonPrimitive("other"))
-                    },
-                ))),
-            ),
+            TranscriptionParams {
+                audio(AudioSource(
+                                    mediaType = "audio/mpeg",
+                                    base64 = Base64Codec.encode(byteArrayOf(1, 2, 3)),
+                                    filename = "clip.mp3",
+                                ))
+                providerOptions(ProviderOptions.Raw(JsonObject(mapOf(
+                                    "elevenlabs" to buildJsonObject {
+                                        put("languageCode", JsonPrimitive("en"))
+                                        put("diarize", JsonPrimitive(false))
+                                        put("numSpeakers", JsonPrimitive(2))
+                                        put("timestampsGranularity", JsonPrimitive("word"))
+                                        put("fileFormat", JsonPrimitive("other"))
+                                    },
+                                ))))
+            },
         )
 
         assertEquals("elevenlabs.transcription", model.provider)

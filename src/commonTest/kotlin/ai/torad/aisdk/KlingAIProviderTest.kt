@@ -36,45 +36,45 @@ class KlingAIProviderTest {
         ).video(ModelId("kling-v2.6-t2v"))
 
         val result = model.generate(
-            VideoGenerationParams(
-                prompt = "A character dances",
-                n = 2,
-                image = GeneratedFile(mediaType = "image/png", base64 = "ignored"),
-                durationSeconds = 5f,
-                aspectRatio = "16:9",
-                seed = 9,
-                fps = 24,
-                resolution = "720p",
-                providerOptions = ProviderOptions.Raw(JsonObject(mapOf(
-                    "klingai" to buildJsonObject {
-                        put("mode", JsonPrimitive("pro"))
-                        put("pollIntervalMs", JsonPrimitive(0))
-                        put("pollTimeoutMs", JsonPrimitive(1_000))
-                        put("negativePrompt", JsonPrimitive("blur"))
-                        put("sound", JsonPrimitive("on"))
-                        put("cfgScale", JsonPrimitive(0.7f))
-                        put("cameraControl", buildJsonObject {
-                            put("type", JsonPrimitive("simple"))
-                            put("config", buildJsonObject { put("zoom", JsonPrimitive(0.2f)) })
-                        })
-                        put("multiShot", JsonPrimitive(true))
-                        put("shotType", JsonPrimitive("intelligence"))
-                        put("multiPrompt", buildJsonArray {
-                            add(buildJsonObject {
-                                put("index", JsonPrimitive(1))
-                                put("prompt", JsonPrimitive("wide shot"))
-                                put("duration", JsonPrimitive("5"))
-                            })
-                        })
-                        put("voiceList", buildJsonArray {
-                            add(buildJsonObject { put("voice_id", JsonPrimitive("voice_1")) })
-                        })
-                        put("watermarkEnabled", JsonPrimitive(false))
-                        put("custom_passthrough", JsonPrimitive("kept"))
-                    },
-                ))),
-                headers = mapOf("X-Request" to "request"),
-            ),
+            VideoGenerationParams {
+                prompt("A character dances")
+                n(2)
+                image(GeneratedFile(mediaType = "image/png", base64 = "ignored"))
+                durationSeconds(5f)
+                aspectRatio("16:9")
+                seed(9)
+                fps(24)
+                resolution("720p")
+                providerOptions(ProviderOptions.Raw(JsonObject(mapOf(
+                                    "klingai" to buildJsonObject {
+                                        put("mode", JsonPrimitive("pro"))
+                                        put("pollIntervalMs", JsonPrimitive(0))
+                                        put("pollTimeoutMs", JsonPrimitive(1_000))
+                                        put("negativePrompt", JsonPrimitive("blur"))
+                                        put("sound", JsonPrimitive("on"))
+                                        put("cfgScale", JsonPrimitive(0.7f))
+                                        put("cameraControl", buildJsonObject {
+                                            put("type", JsonPrimitive("simple"))
+                                            put("config", buildJsonObject { put("zoom", JsonPrimitive(0.2f)) })
+                                        })
+                                        put("multiShot", JsonPrimitive(true))
+                                        put("shotType", JsonPrimitive("intelligence"))
+                                        put("multiPrompt", buildJsonArray {
+                                            add(buildJsonObject {
+                                                put("index", JsonPrimitive(1))
+                                                put("prompt", JsonPrimitive("wide shot"))
+                                                put("duration", JsonPrimitive("5"))
+                                            })
+                                        })
+                                        put("voiceList", buildJsonArray {
+                                            add(buildJsonObject { put("voice_id", JsonPrimitive("voice_1")) })
+                                        })
+                                        put("watermarkEnabled", JsonPrimitive(false))
+                                        put("custom_passthrough", JsonPrimitive("kept"))
+                                    },
+                                ))))
+                headers(mapOf("X-Request" to "request"))
+            },
         )
 
         assertEquals("klingai.video", model.provider)
@@ -130,35 +130,35 @@ class KlingAIProviderTest {
         ).video(ModelId("kling-v3.0-i2v"))
 
         model.generate(
-            VideoGenerationParams(
-                prompt = "Animate this frame",
-                image = GeneratedFile(mediaType = "image/png", base64 = "frameb64"),
-                durationSeconds = 10f,
-                aspectRatio = "1:1",
-                providerOptions = ProviderOptions.Raw(JsonObject(mapOf(
-                    "klingai" to buildJsonObject {
-                        put("mode", JsonPrimitive("std"))
-                        put("pollIntervalMs", JsonPrimitive(0))
-                        put("imageTail", JsonPrimitive("tailb64"))
-                        put("staticMask", JsonPrimitive("maskb64"))
-                        put("dynamicMasks", buildJsonArray {
-                            add(buildJsonObject {
-                                put("mask", JsonPrimitive("dynmask"))
-                                put("trajectories", buildJsonArray {
-                                    add(buildJsonObject {
-                                        put("x", JsonPrimitive(1))
-                                        put("y", JsonPrimitive(2))
-                                    })
-                                })
-                            })
-                        })
-                        put("elementList", buildJsonArray {
-                            add(buildJsonObject { put("element_id", JsonPrimitive(3)) })
-                        })
-                        put("watermarkEnabled", JsonPrimitive(true))
-                    },
-                ))),
-            ),
+            VideoGenerationParams {
+                prompt("Animate this frame")
+                image(GeneratedFile(mediaType = "image/png", base64 = "frameb64"))
+                durationSeconds(10f)
+                aspectRatio("1:1")
+                providerOptions(ProviderOptions.Raw(JsonObject(mapOf(
+                                    "klingai" to buildJsonObject {
+                                        put("mode", JsonPrimitive("std"))
+                                        put("pollIntervalMs", JsonPrimitive(0))
+                                        put("imageTail", JsonPrimitive("tailb64"))
+                                        put("staticMask", JsonPrimitive("maskb64"))
+                                        put("dynamicMasks", buildJsonArray {
+                                            add(buildJsonObject {
+                                                put("mask", JsonPrimitive("dynmask"))
+                                                put("trajectories", buildJsonArray {
+                                                    add(buildJsonObject {
+                                                        put("x", JsonPrimitive(1))
+                                                        put("y", JsonPrimitive(2))
+                                                    })
+                                                })
+                                            })
+                                        })
+                                        put("elementList", buildJsonArray {
+                                            add(buildJsonObject { put("element_id", JsonPrimitive(3)) })
+                                        })
+                                        put("watermarkEnabled", JsonPrimitive(true))
+                                    },
+                                ))))
+            },
         )
 
         val body = fixture.calls[0].requestBodyJson.jsonObject
@@ -185,28 +185,30 @@ class KlingAIProviderTest {
         ).video(ModelId("kling-v2.6-motion-control"))
 
         val missing = assertFailsWith<AiSdkException> {
-            model.generate(VideoGenerationParams(prompt = "missing options"))
+            model.generate(VideoGenerationParams {
+                prompt("missing options")
+            })
         }
         assertTrue(missing.message.orEmpty().contains("Motion Control"))
 
         val result = model.generate(
-            VideoGenerationParams(
-                prompt = "Follow the reference motion",
-                image = GeneratedFile(mediaType = "image/png", base64 = "", url = "https://example.com/ref.png"),
-                durationSeconds = 5f,
-                aspectRatio = "16:9",
-                providerOptions = ProviderOptions.Raw(JsonObject(mapOf(
-                    "klingai" to buildJsonObject {
-                        put("pollIntervalMs", JsonPrimitive(0))
-                        put("videoUrl", JsonPrimitive("https://example.com/ref.mp4"))
-                        put("characterOrientation", JsonPrimitive("image"))
-                        put("mode", JsonPrimitive("std"))
-                        put("keepOriginalSound", JsonPrimitive("yes"))
-                        put("watermarkEnabled", JsonPrimitive(false))
-                        put("custom_motion", JsonPrimitive("kept"))
-                    },
-                ))),
-            ),
+            VideoGenerationParams {
+                prompt("Follow the reference motion")
+                image(GeneratedFile(mediaType = "image/png", base64 = "", url = "https://example.com/ref.png"))
+                durationSeconds(5f)
+                aspectRatio("16:9")
+                providerOptions(ProviderOptions.Raw(JsonObject(mapOf(
+                                    "klingai" to buildJsonObject {
+                                        put("pollIntervalMs", JsonPrimitive(0))
+                                        put("videoUrl", JsonPrimitive("https://example.com/ref.mp4"))
+                                        put("characterOrientation", JsonPrimitive("image"))
+                                        put("mode", JsonPrimitive("std"))
+                                        put("keepOriginalSound", JsonPrimitive("yes"))
+                                        put("watermarkEnabled", JsonPrimitive(false))
+                                        put("custom_motion", JsonPrimitive("kept"))
+                                    },
+                                ))))
+            },
         )
 
         assertTrue(result.warnings.any { it.message.orEmpty().contains("aspectRatio") })
@@ -235,7 +237,9 @@ class KlingAIProviderTest {
         assertFailsWith<NoSuchModelError> { provider.languageModel("model") }
         assertFailsWith<NoSuchModelError> { provider.embeddingModel("embed") }
         assertFailsWith<NoSuchModelError> { provider.imageModel("image") }
-        assertFailsWith<NoSuchModelError> { provider.video(ModelId("unknown-model")).generate(VideoGenerationParams(prompt = "x")) }
+        assertFailsWith<NoSuchModelError> { provider.video(ModelId("unknown-model")).generate(VideoGenerationParams {
+            prompt("x")
+        }) }
     }
 
     private fun createKlingAIFixture(endpoint: String): CreatedTestServer {

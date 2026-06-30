@@ -99,17 +99,17 @@ class VoyageProviderTest {
         ).reranking(ModelId("rerank-2.5"))
 
         val result = model.rerank(
-            RerankingParams(
-                query = "best",
-                documents = listOf("alpha", "beta"),
-                topN = 1,
-                providerOptions = ProviderOptions.Raw(JsonObject(mapOf(
-                    "voyage" to buildJsonObject {
-                        put("returnDocuments", JsonPrimitive(false))
-                        put("truncation", JsonPrimitive(true))
-                    },
-                ))),
-            ),
+            RerankingParams {
+                query("best")
+                documents(listOf("alpha", "beta"))
+                topN(1)
+                providerOptions(ProviderOptions.Raw(JsonObject(mapOf(
+                                    "voyage" to buildJsonObject {
+                                        put("returnDocuments", JsonPrimitive(false))
+                                        put("truncation", JsonPrimitive(true))
+                                    },
+                                ))))
+            },
         )
 
         assertEquals("voyage.reranking", model.provider)

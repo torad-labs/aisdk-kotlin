@@ -35,33 +35,33 @@ class HumeProviderTest {
         ).speech()
 
         val result = model.generate(
-            SpeechGenerationParams(
-                text = "hello",
-                voice = "voice-1",
-                instructions = "calm",
-                speed = 1.1f,
-                responseFormat = "wav",
-                providerOptions = ProviderOptions.Raw(JsonObject(mapOf(
-                    "hume" to buildJsonObject {
-                        put(
-                            "context",
-                            buildJsonObject {
-                                put(
-                                    "utterances",
-                                    buildJsonArray {
-                                        add(
+            SpeechGenerationParams {
+                text("hello")
+                voice("voice-1")
+                instructions("calm")
+                speed(1.1f)
+                responseFormat("wav")
+                providerOptions(ProviderOptions.Raw(JsonObject(mapOf(
+                                    "hume" to buildJsonObject {
+                                        put(
+                                            "context",
                                             buildJsonObject {
-                                                put("text", JsonPrimitive("prior"))
-                                                put("trailingSilence", JsonPrimitive(0.2f))
+                                                put(
+                                                    "utterances",
+                                                    buildJsonArray {
+                                                        add(
+                                                            buildJsonObject {
+                                                                put("text", JsonPrimitive("prior"))
+                                                                put("trailingSilence", JsonPrimitive(0.2f))
+                                                            },
+                                                        )
+                                                    },
+                                                )
                                             },
                                         )
                                     },
-                                )
-                            },
-                        )
-                    },
-                ))),
-            ),
+                                ))))
+            },
         )
 
         assertEquals("hume.speech", model.provider)
@@ -96,7 +96,10 @@ class HumeProviderTest {
             HumeProviderSettings { apiKey("key") },
         ).speech()
 
-        val result = model.generate(SpeechGenerationParams(text = "hello", responseFormat = "flac"))
+        val result = model.generate(SpeechGenerationParams {
+            text("hello")
+            responseFormat("flac")
+        })
 
         assertEquals("unsupported", result.warnings.single().type)
         assertEquals("mp3", fixture.calls.single().requestBodyJson.jsonObject["format"]?.jsonObject?.get("type")?.jsonPrimitive?.contentOrNull)

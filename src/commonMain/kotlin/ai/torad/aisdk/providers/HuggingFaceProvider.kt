@@ -4,6 +4,7 @@ package ai.torad.aisdk.providers
 
 import ai.torad.aisdk.*
 import ai.torad.aisdk.ProviderMetadata
+import dev.drewhamilton.poko.Poko
 import io.ktor.client.HttpClient
 import io.ktor.client.request.header
 import io.ktor.client.request.request
@@ -149,12 +150,49 @@ public fun HuggingFaceProviderSettings(
     HuggingFaceProviderSettingsBuilder().apply(block).build()
 
 @Serializable
-public data class HuggingFaceResponsesSettings(
-    val metadata: Map<String, String>? = null,
-    val instructions: String? = null,
-    val strictJsonSchema: Boolean? = null,
-    val reasoningEffort: String? = null,
+@Poko
+public class HuggingFaceResponsesSettings internal constructor(
+    public val metadata: Map<String, String>? = null,
+    public val instructions: String? = null,
+    public val strictJsonSchema: Boolean? = null,
+    public val reasoningEffort: String? = null,
 )
+
+public class HuggingFaceResponsesSettingsBuilder internal constructor() {
+    private var metadata: Map<String, String>? = null
+    private var instructions: String? = null
+    private var strictJsonSchema: Boolean? = null
+    private var reasoningEffort: String? = null
+
+    public fun metadata(value: Map<String, String>?) {
+        metadata = value
+    }
+
+    public fun instructions(value: String?) {
+        instructions = value
+    }
+
+    public fun strictJsonSchema(value: Boolean?) {
+        strictJsonSchema = value
+    }
+
+    public fun reasoningEffort(value: String?) {
+        reasoningEffort = value
+    }
+
+    internal fun build(): HuggingFaceResponsesSettings =
+        HuggingFaceResponsesSettings(
+            metadata = metadata,
+            instructions = instructions,
+            strictJsonSchema = strictJsonSchema,
+            reasoningEffort = reasoningEffort,
+        )
+}
+
+public fun HuggingFaceResponsesSettings(
+    block: HuggingFaceResponsesSettingsBuilder.() -> Unit = {},
+): HuggingFaceResponsesSettings =
+    HuggingFaceResponsesSettingsBuilder().apply(block).build()
 
 public class HuggingFaceProvider(
     private val client: HttpClient,

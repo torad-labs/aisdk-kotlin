@@ -52,32 +52,32 @@ class BlackForestLabsProviderTest {
         ).image(ModelId("flux-pro-1.1"))
 
         val result = model.generate(
-            ImageGenerationParams(
-                prompt = "a detailed city model",
-                size = "1024x512",
-                seed = 7,
-                files = listOf(
-                    ImageGenerationFile(url = "https://example.com/ref.png"),
-                    ImageGenerationFile(mediaType = "image/png", base64 = "abc123"),
-                ),
-                mask = ImageGenerationFile(mediaType = "image/png", base64 = "mask123"),
-                providerOptions = ProviderOptions.Raw(JsonObject(mapOf(
-                    "blackForestLabs" to buildJsonObject {
-                        put("steps", JsonPrimitive(4))
-                        put("guidance", JsonPrimitive(2.5))
-                        put("imagePromptStrength", JsonPrimitive(0.7))
-                        put("imagePrompt", JsonPrimitive("prompt-image"))
-                        put("outputFormat", JsonPrimitive("jpeg"))
-                        put("promptUpsampling", JsonPrimitive(true))
-                        put("raw", JsonPrimitive(false))
-                        put("safetyTolerance", JsonPrimitive(3))
-                        put("webhookSecret", JsonPrimitive("secret"))
-                        put("webhookUrl", JsonPrimitive("https://hooks.example/bfl"))
-                        put("pollIntervalMillis", JsonPrimitive(1))
-                        put("pollTimeoutMillis", JsonPrimitive(1))
-                    },
-                ))),
-            ),
+            ImageGenerationParams {
+                prompt("a detailed city model")
+                size("1024x512")
+                seed(7)
+                files(listOf(
+                                    ImageGenerationFile(url = "https://example.com/ref.png"),
+                                    ImageGenerationFile(mediaType = "image/png", base64 = "abc123"),
+                                ))
+                mask(ImageGenerationFile(mediaType = "image/png", base64 = "mask123"))
+                providerOptions(ProviderOptions.Raw(JsonObject(mapOf(
+                                    "blackForestLabs" to buildJsonObject {
+                                        put("steps", JsonPrimitive(4))
+                                        put("guidance", JsonPrimitive(2.5))
+                                        put("imagePromptStrength", JsonPrimitive(0.7))
+                                        put("imagePrompt", JsonPrimitive("prompt-image"))
+                                        put("outputFormat", JsonPrimitive("jpeg"))
+                                        put("promptUpsampling", JsonPrimitive(true))
+                                        put("raw", JsonPrimitive(false))
+                                        put("safetyTolerance", JsonPrimitive(3))
+                                        put("webhookSecret", JsonPrimitive("secret"))
+                                        put("webhookUrl", JsonPrimitive("https://hooks.example/bfl"))
+                                        put("pollIntervalMillis", JsonPrimitive(1))
+                                        put("pollTimeoutMillis", JsonPrimitive(1))
+                                    },
+                                ))))
+            },
         )
 
         assertEquals("black-forest-labs.image", model.provider)
@@ -140,21 +140,21 @@ class BlackForestLabsProviderTest {
         ).image(ModelId("flux-pro-1.0-fill"))
 
         val result = model.generate(
-            ImageGenerationParams(
-                prompt = "replace the sky",
-                size = "1024x1024",
-                aspectRatio = "16:9",
-                files = listOf(
-                    ImageGenerationFile(url = "https://example.com/input.png"),
-                    ImageGenerationFile(url = "https://example.com/second.png"),
-                ),
-                providerOptions = ProviderOptions.Raw(JsonObject(mapOf(
-                    "blackForestLabs" to buildJsonObject {
-                        put("width", JsonPrimitive(1280))
-                        put("height", JsonPrimitive(720))
-                    },
-                ))),
-            ),
+            ImageGenerationParams {
+                prompt("replace the sky")
+                size("1024x1024")
+                aspectRatio("16:9")
+                files(listOf(
+                                    ImageGenerationFile(url = "https://example.com/input.png"),
+                                    ImageGenerationFile(url = "https://example.com/second.png"),
+                                ))
+                providerOptions(ProviderOptions.Raw(JsonObject(mapOf(
+                                    "blackForestLabs" to buildJsonObject {
+                                        put("width", JsonPrimitive(1280))
+                                        put("height", JsonPrimitive(720))
+                                    },
+                                ))))
+            },
         )
 
         val body = fixture.calls.first().requestBodyJson.jsonObject
@@ -186,22 +186,22 @@ class BlackForestLabsProviderTest {
 
         assertFailsWith<AiSdkException> {
             model.generate(
-                ImageGenerationParams(
-                    prompt = "x",
-                    providerOptions = ProviderOptions.Raw(JsonObject(mapOf("blackForestLabs" to buildJsonObject {
-                        put("pollIntervalMillis", JsonPrimitive(1))
-                        put("pollTimeoutMillis", JsonPrimitive(1))
-                    }))),
-                ),
+                ImageGenerationParams {
+                    prompt("x")
+                    providerOptions(ProviderOptions.Raw(JsonObject(mapOf("blackForestLabs" to buildJsonObject {
+                                            put("pollIntervalMillis", JsonPrimitive(1))
+                                            put("pollTimeoutMillis", JsonPrimitive(1))
+                                        }))))
+                },
             )
         }
 
         assertFailsWith<AiSdkException> {
             model.generate(
-                ImageGenerationParams(
-                    prompt = "x",
-                    files = List(11) { ImageGenerationFile(url = "https://example.com/$it.png") },
-                ),
+                ImageGenerationParams {
+                    prompt("x")
+                    files(List(11) { ImageGenerationFile(url = "https://example.com/$it.png") })
+                },
             )
         }
     }
@@ -227,13 +227,13 @@ class BlackForestLabsProviderTest {
 
         val error = assertFailsWith<NoImageGeneratedError> {
             model.generate(
-                ImageGenerationParams(
-                    prompt = "x",
-                    providerOptions = ProviderOptions.Raw(JsonObject(mapOf("blackForestLabs" to buildJsonObject {
-                        put("pollIntervalMillis", JsonPrimitive(1))
-                        put("pollTimeoutMillis", JsonPrimitive(100))
-                    }))),
-                ),
+                ImageGenerationParams {
+                    prompt("x")
+                    providerOptions(ProviderOptions.Raw(JsonObject(mapOf("blackForestLabs" to buildJsonObject {
+                                            put("pollIntervalMillis", JsonPrimitive(1))
+                                            put("pollTimeoutMillis", JsonPrimitive(100))
+                                        }))))
+                },
             )
         }
 

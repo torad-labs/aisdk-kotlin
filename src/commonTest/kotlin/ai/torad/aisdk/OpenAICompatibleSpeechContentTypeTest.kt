@@ -42,7 +42,10 @@ class OpenAICompatibleSpeechContentTypeTest {
         )
 
         val result = provider.speechModel("tts-1")
-            .generate(SpeechGenerationParams(text = "hello", responseFormat = "wav"))
+            .generate(SpeechGenerationParams {
+                text("hello")
+                responseFormat("wav")
+            })
 
         assertEquals("audio/aac", result.audio?.mediaType)
     }

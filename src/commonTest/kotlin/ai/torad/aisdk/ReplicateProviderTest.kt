@@ -44,23 +44,23 @@ class ReplicateProviderTest {
         ).image(ModelId("owner/model:version-123"))
 
         val result = model.generate(
-            ImageGenerationParams(
-                prompt = "make an icon",
-                n = 2,
-                size = "1024x1024",
-                aspectRatio = "1:1",
-                seed = 9,
-                files = listOf(ImageGenerationFile(mediaType = "image/png", base64 = "imgb64")),
-                mask = ImageGenerationFile(url = "https://example.com/mask.png"),
-                providerOptions = ProviderOptions.Raw(JsonObject(mapOf(
-                    "replicate" to buildJsonObject {
-                        put("maxWaitTimeInSeconds", JsonPrimitive(5))
-                        put("guidance_scale", JsonPrimitive(3.5))
-                        put("negative_prompt", JsonPrimitive("blur"))
-                        put("custom_option", JsonPrimitive("kept"))
-                    },
-                ))),
-            ),
+            ImageGenerationParams {
+                prompt("make an icon")
+                n(2)
+                size("1024x1024")
+                aspectRatio("1:1")
+                seed(9)
+                files(listOf(ImageGenerationFile(mediaType = "image/png", base64 = "imgb64")))
+                mask(ImageGenerationFile(url = "https://example.com/mask.png"))
+                providerOptions(ProviderOptions.Raw(JsonObject(mapOf(
+                                    "replicate" to buildJsonObject {
+                                        put("maxWaitTimeInSeconds", JsonPrimitive(5))
+                                        put("guidance_scale", JsonPrimitive(3.5))
+                                        put("negative_prompt", JsonPrimitive("blur"))
+                                        put("custom_option", JsonPrimitive("kept"))
+                                    },
+                                ))))
+            },
         )
 
         assertEquals("replicate", model.provider)
@@ -107,11 +107,11 @@ class ReplicateProviderTest {
         ).image(ModelId("black-forest-labs/flux-2-pro"))
 
         val result = model.generate(
-            ImageGenerationParams(
-                prompt = "blend refs",
-                files = List(9) { ImageGenerationFile(url = "https://example.com/$it.png") },
-                mask = ImageGenerationFile(url = "https://example.com/mask.png"),
-            ),
+            ImageGenerationParams {
+                prompt("blend refs")
+                files(List(9) { ImageGenerationFile(url = "https://example.com/$it.png") })
+                mask(ImageGenerationFile(url = "https://example.com/mask.png"))
+            },
         )
 
         val input = fixture.calls.first().requestBodyJson.jsonObject["input"]?.jsonObject
@@ -151,25 +151,25 @@ class ReplicateProviderTest {
         ).video(ModelId("minimax/video-01"))
 
         val result = model.generate(
-            VideoGenerationParams(
-                prompt = "camera push in",
-                image = GeneratedFile(mediaType = "image/png", base64 = "frameb64"),
-                durationSeconds = 3f,
-                aspectRatio = "16:9",
-                seed = 77,
-                fps = 24,
-                resolution = "720p",
-                providerOptions = ProviderOptions.Raw(JsonObject(mapOf(
-                    "replicate" to buildJsonObject {
-                        put("maxWaitTimeInSeconds", JsonPrimitive(1))
-                        put("pollIntervalMs", JsonPrimitive(0))
-                        put("pollTimeoutMs", JsonPrimitive(1))
-                        put("guidance_scale", JsonPrimitive(2.0))
-                        put("prompt_optimizer", JsonPrimitive(true))
-                        put("custom_video_option", JsonPrimitive("kept"))
-                    },
-                ))),
-            ),
+            VideoGenerationParams {
+                prompt("camera push in")
+                image(GeneratedFile(mediaType = "image/png", base64 = "frameb64"))
+                durationSeconds(3f)
+                aspectRatio("16:9")
+                seed(77)
+                fps(24)
+                resolution("720p")
+                providerOptions(ProviderOptions.Raw(JsonObject(mapOf(
+                                    "replicate" to buildJsonObject {
+                                        put("maxWaitTimeInSeconds", JsonPrimitive(1))
+                                        put("pollIntervalMs", JsonPrimitive(0))
+                                        put("pollTimeoutMs", JsonPrimitive(1))
+                                        put("guidance_scale", JsonPrimitive(2.0))
+                                        put("prompt_optimizer", JsonPrimitive(true))
+                                        put("custom_video_option", JsonPrimitive("kept"))
+                                    },
+                                ))))
+            },
         )
 
         assertEquals("replicate.video", model.provider)
@@ -218,7 +218,9 @@ class ReplicateProviderTest {
             ReplicateProviderSettings { apiToken("token") },
         ).video(ModelId("minimax/video-01"))
 
-        val result = model.generate(VideoGenerationParams(prompt = "array output"))
+        val result = model.generate(VideoGenerationParams {
+            prompt("array output")
+        })
 
         assertEquals("https://cdn.example/array.mp4", result.videos.single().url)
     }
@@ -240,7 +242,9 @@ class ReplicateProviderTest {
         val provider = Replicate(fixture.httpClient(), ReplicateProviderSettings { apiToken("token") })
 
         assertFailsWith<AiSdkException> {
-            provider.video(ModelId("minimax/video-01")).generate(VideoGenerationParams(prompt = "x"))
+            provider.video(ModelId("minimax/video-01")).generate(VideoGenerationParams {
+                prompt("x")
+            })
         }
         assertFailsWith<NoSuchModelError> { provider.languageModel("model") }
         assertFailsWith<NoSuchModelError> { provider.embeddingModel("embed") }

@@ -33,7 +33,10 @@ class ReplicateDefensiveParsingTest {
         val model = Replicate(client).image(ModelId("owner/model:version-123"))
 
         val error = assertFails {
-            model.generate(ImageGenerationParams(prompt = "x", n = 1))
+            model.generate(ImageGenerationParams {
+                prompt("x")
+                n(1)
+            })
         }
 
         assertTrue(

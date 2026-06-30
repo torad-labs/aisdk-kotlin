@@ -49,24 +49,24 @@ class ProdiaProviderTest {
         ).image(ModelId("sdxl"))
 
         val result = model.generate(
-            ImageGenerationParams(
-                prompt = "a glass city",
-                n = 2,
-                size = "512x768",
-                seed = 9,
-                providerOptions = ProviderOptions.Raw(JsonObject(mapOf(
-                    "prodia" to buildJsonObject {
-                        put("width", JsonPrimitive(640))
-                        put("steps", JsonPrimitive(4))
-                        put("stylePreset", JsonPrimitive("cinematic"))
-                        put("loras", buildJsonArray {
-                            add(JsonPrimitive("detail-lora"))
-                        })
-                        put("progressive", JsonPrimitive(true))
-                    },
-                ))),
-                headers = mapOf("X-Request" to "request"),
-            ),
+            ImageGenerationParams {
+                prompt("a glass city")
+                n(2)
+                size("512x768")
+                seed(9)
+                providerOptions(ProviderOptions.Raw(JsonObject(mapOf(
+                                    "prodia" to buildJsonObject {
+                                        put("width", JsonPrimitive(640))
+                                        put("steps", JsonPrimitive(4))
+                                        put("stylePreset", JsonPrimitive("cinematic"))
+                                        put("loras", buildJsonArray {
+                                            add(JsonPrimitive("detail-lora"))
+                                        })
+                                        put("progressive", JsonPrimitive(true))
+                                    },
+                                ))))
+                headers(mapOf("X-Request" to "request"))
+            },
         )
 
         assertEquals("prodia.image", model.provider)
@@ -205,18 +205,18 @@ class ProdiaProviderTest {
         ).video(ModelId("minimax/video"))
 
         val textResult = model.generate(
-            VideoGenerationParams(
-                prompt = "camera pan",
-                seed = 77,
-                providerOptions = ProviderOptions.Raw(JsonObject(mapOf("prodia" to buildJsonObject { put("resolution", JsonPrimitive("720p")) }))),
-            ),
+            VideoGenerationParams {
+                prompt("camera pan")
+                seed(77)
+                providerOptions(ProviderOptions.Raw(JsonObject(mapOf("prodia" to buildJsonObject { put("resolution", JsonPrimitive("720p")) }))))
+            },
         )
         val imageResult = model.generate(
-            VideoGenerationParams(
-                prompt = "animate frame",
-                image = GeneratedFile(mediaType = "image/png", base64 = "", url = "https://example.com/input.png"),
-                resolution = "480p",
-            ),
+            VideoGenerationParams {
+                prompt("animate frame")
+                image(GeneratedFile(mediaType = "image/png", base64 = "", url = "https://example.com/input.png"))
+                resolution("480p")
+            },
         )
 
         assertEquals("prodia.video", model.provider)

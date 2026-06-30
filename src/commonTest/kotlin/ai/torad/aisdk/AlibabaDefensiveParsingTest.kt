@@ -37,10 +37,10 @@ class AlibabaDefensiveParsingTest {
 
         val error = assertFails {
             model.generate(
-                VideoGenerationParams(
-                    prompt = "x",
-                    image = GeneratedFile(mediaType = "image/png", base64 = "", url = "https://example.com/start.png"),
-                ),
+                VideoGenerationParams {
+                    prompt("x")
+                    image(GeneratedFile(mediaType = "image/png", base64 = "", url = "https://example.com/start.png"))
+                },
             )
         }
 
@@ -72,10 +72,10 @@ class AlibabaDefensiveParsingTest {
 
         val error = assertFails {
             model.generate(
-                VideoGenerationParams(
-                    prompt = "x",
-                    image = GeneratedFile(mediaType = "image/png", base64 = "", url = "https://example.com/start.png"),
-                ),
+                VideoGenerationParams {
+                    prompt("x")
+                    image(GeneratedFile(mediaType = "image/png", base64 = "", url = "https://example.com/start.png"))
+                },
             )
         }
 

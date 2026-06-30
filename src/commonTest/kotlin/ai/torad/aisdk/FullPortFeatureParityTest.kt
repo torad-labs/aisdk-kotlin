@@ -187,9 +187,21 @@ class FullPortFeatureParityTest {
                 object : ImageModelMiddleware {
                     override suspend fun wrapGenerate(context: ImageMiddlewareCallContext): ImageModelResult =
                         context.doGenerate(
-                            context.params.copy(
-                                providerOptions = context.params.providerOptions + ProviderOptions.Raw(JsonObject(mapOf("wrapped" to JsonPrimitive(true) as JsonElement))),
-                            ),
+                            ImageGenerationParams {
+                                prompt(context.params.prompt)
+                                n(context.params.n)
+                                size(context.params.size)
+                                aspectRatio(context.params.aspectRatio)
+                                seed(context.params.seed)
+                                providerOptions(
+                                    context.params.providerOptions +
+                                        ProviderOptions.Raw(JsonObject(mapOf("wrapped" to JsonPrimitive(true) as JsonElement))),
+                                )
+                                headers(context.params.headers)
+                                abortSignal(context.params.abortSignal)
+                                files(context.params.files)
+                                mask(context.params.mask)
+                            },
                         )
                 },
             ),

@@ -63,7 +63,10 @@ class VoyageDefensiveParsingTest {
         )
         val result = Voyage(client, VoyageProviderSettings { apiKey("key") })
             .reranking(ModelId("rerank-2"))
-            .rerank(RerankingParams(query = "q", documents = listOf("a", "b")))
+            .rerank(RerankingParams {
+                query("q")
+                documents(listOf("a", "b"))
+            })
         assertEquals(1, result.results.size)
     }
 

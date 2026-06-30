@@ -38,7 +38,10 @@ class TogetherAIDefensiveParsingTest {
         val model = TogetherAI(client, TogetherAIProviderSettings { apiKey("key") })
             .reranking(ModelId("Salesforce/Llama-Rank-V1"))
 
-        val result = model.rerank(RerankingParams(query = "q", documents = listOf("doc")))
+        val result = model.rerank(RerankingParams {
+            query("q")
+            documents(listOf("doc"))
+        })
 
         assertEquals(
             0f,
