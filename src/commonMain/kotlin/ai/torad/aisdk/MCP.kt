@@ -72,6 +72,9 @@ private const val MCP_SSE_MAX_DATA_LINES = 1_000
 /** Default ceiling for the MCP connect handshake (initialize round-trip, SSE endpoint event). */
 private const val MCP_DEFAULT_HANDSHAKE_TIMEOUT_MS = 30_000L
 
+/** Default ceiling for non-init JSON-RPC requests that otherwise could await forever. */
+private const val MCP_DEFAULT_REQUEST_TIMEOUT_MS = 30_000L
+
 /** Best-effort timeout for the session-cleanup DELETE on HTTP transport close. */
 private const val MCP_CLOSE_DELETE_TIMEOUT_MS = 5_000L
 
@@ -476,15 +479,11 @@ private class DefaultMCPClient(config: MCPClientConfig) : MCPClient {
         serializer: KSerializer<T>,
         options: MCPRequestOptions? = null,
     ): T {
-        val timeout = options?.timeoutMillis ?: options?.maxTotalTimeoutMillis
-        return if (timeout != null) {
-            // Real-time so a JSON-RPC response that never correlates back (server
-            // ACKed the POST but never answers) can't hang the caller forever, and
-            // so the bound doesn't spuriously fire under runTest's virtual clock.
-            HttpTransport.withRealTimeout(timeout) { requestWithoutTimeout(method, params, serializer, options) }
-        } else {
-            requestWithoutTimeout(method, params, serializer, options)
-        }
+        val timeout = options?.timeoutMillis ?: options?.maxTotalTimeoutMillis ?: MCP_DEFAULT_REQUEST_TIMEOUT_MS
+        // Real-time so a JSON-RPC response that never correlates back (server
+        // ACKed the POST but never answers) can't hang the caller forever, and
+        // so the bound doesn't spuriously fire under runTest's virtual clock.
+        return HttpTransport.withRealTimeout(timeout) { requestWithoutTimeout(method, params, serializer, options) }
     }
 
     private suspend fun <T> requestWithoutTimeout(
@@ -506,6 +505,9 @@ private class DefaultMCPClient(config: MCPClientConfig) : MCPClient {
             }
             JsonPrimitive(requestMessageId++).also { responseHandlers[rpcIdKey(it)] = deferred }
         }
+        val abortRegistration = options?.signal?.register {
+            deferred.completeExceptionally(AbortError())
+        }
         try {
             transport.send(JSONRPCRequest(id = id, method = method, params = params))
             options?.signal?.throwIfAborted()
@@ -523,6 +525,7 @@ private class DefaultMCPClient(config: MCPClientConfig) : MCPClient {
             // acquiring the lock, so the remove never runs and this handler is stranded in
             // responseHandlers until close(). NonCancellable guarantees the removal completes.
             withContext(NonCancellable) {
+                abortRegistration?.cancel()
                 responseHandlersMutex.withLock { responseHandlers.remove(rpcIdKey(id)) }
             }
         }

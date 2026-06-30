@@ -4,6 +4,7 @@ import ai.torad.aisdk.JSONRPCMessage.Companion.toJsonElement
 import io.ktor.http.HttpHeaders
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.delay
@@ -11,6 +12,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeout
@@ -24,6 +26,7 @@ import kotlinx.serialization.json.encodeToJsonElement
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
+import kotlin.coroutines.cancellation.CancellationException
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -32,7 +35,7 @@ import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
-@OptIn(ExperimentalAiSdkApi::class)
+@OptIn(ExperimentalAiSdkApi::class, ExperimentalCoroutinesApi::class)
 class MCPClientTest {
 
     @Test
@@ -425,6 +428,90 @@ class MCPClientTest {
             .filter { it.method == "tools/list" }
             .map { it.id.toString() }
         assertEquals(ids.size, ids.toSet().size)
+    }
+
+    @Test
+    fun `abort interrupts in-flight MCP request await and cleans pending handler`() = runTest {
+        val controller = AbortController()
+        val toolsRequestId = CompletableDeferred<JsonElement>()
+        val transport = FakeMCPTransport { message ->
+            when {
+                message is JSONRPCRequest && message.method == "initialize" ->
+                    respond(message.id, initializeResult())
+                message is JSONRPCRequest && message.method == "tools/list" ->
+                    toolsRequestId.complete(message.id)
+            }
+        }
+        val client = CreateMCPClient(MCPClientConfig(transport = transport))
+
+        val pending = backgroundScope.async {
+            client.listTools(options = MCPRequestOptions(signal = controller.signal))
+        }
+        runCurrent()
+        waitForRealTime { toolsRequestId.isCompleted }
+        val requestId = toolsRequestId.await()
+
+        controller.abort()
+
+        withContext(Dispatchers.Default) {
+            withTimeout(10_000) {
+                assertFailsWith<AbortError> { pending.await() }
+            }
+        }
+        val lateResponse = assertFailsWith<MCPClientError> {
+            transport.emitFromServer(JSONRPCResponse(id = requestId, result = listToolsResult()))
+        }
+        assertTrue(assertNotNull(lateResponse.message).contains("unknown message ID"))
+        client.close()
+    }
+
+    @Test
+    fun `scope cancellation during MCP request await propagates and cleans pending handler`() = runTest {
+        val toolsRequestId = CompletableDeferred<JsonElement>()
+        val transport = FakeMCPTransport { message ->
+            when {
+                message is JSONRPCRequest && message.method == "initialize" ->
+                    respond(message.id, initializeResult())
+                message is JSONRPCRequest && message.method == "tools/list" ->
+                    toolsRequestId.complete(message.id)
+            }
+        }
+        val client = CreateMCPClient(MCPClientConfig(transport = transport))
+
+        val pending = backgroundScope.async { client.listTools() }
+        runCurrent()
+        waitForRealTime { toolsRequestId.isCompleted }
+        val requestId = toolsRequestId.await()
+
+        pending.cancel(CancellationException("caller scope canceled"))
+
+        val error = withContext(Dispatchers.Default) {
+            withTimeout(10_000) {
+                assertFailsWith<CancellationException> { pending.await() }
+            }
+        }
+        assertTrue(assertNotNull(error.message).contains("caller scope canceled"))
+        val lateResponse = assertFailsWith<MCPClientError> {
+            transport.emitFromServer(JSONRPCResponse(id = requestId, result = listToolsResult()))
+        }
+        assertTrue(assertNotNull(lateResponse.message).contains("unknown message ID"))
+        client.close()
+    }
+
+    @Test
+    fun `normal MCP request resolves under default per-request timeout`() = runTest {
+        val transport = FakeMCPTransport { message ->
+            when {
+                message is JSONRPCRequest && message.method == "initialize" ->
+                    respond(message.id, initializeResult())
+                message is JSONRPCRequest && message.method == "tools/list" ->
+                    respond(message.id, listToolsResult())
+            }
+        }
+        val client = CreateMCPClient(MCPClientConfig(transport = transport))
+
+        assertEquals("echo", client.listTools().tools.single().name)
+        client.close()
     }
 
     @Test
