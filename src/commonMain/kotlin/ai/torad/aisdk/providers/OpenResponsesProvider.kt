@@ -1119,7 +1119,7 @@ internal data class ConvertedOpenResponsesInput(
                 if (fileId != null) {
                     put("file_id", JsonPrimitive(fileId))
                 } else {
-                    put("image_url", JsonPrimitive("data:${part.mediaType};base64,${part.base64}"))
+                    put("image_url", JsonPrimitive(part.url ?: "data:${part.mediaType};base64,${part.base64}"))
                 }
             }
             is ContentPart.File -> if (part.mediaType.startsWith("image/")) {
@@ -1129,17 +1129,20 @@ internal data class ConvertedOpenResponsesInput(
                     if (fileId != null) {
                         put("file_id", JsonPrimitive(fileId))
                     } else {
-                        put("image_url", JsonPrimitive("data:${part.mediaType};base64,${part.base64}"))
+                        put("image_url", JsonPrimitive(part.url ?: "data:${part.mediaType};base64,${part.base64}"))
                     }
                 }
             } else {
                 buildJsonObject {
                     put("type", JsonPrimitive("input_file"))
-                    put("filename", JsonPrimitive(part.filename ?: "data"))
                     val fileId = openResponsesFileId(part.base64, fileIdPrefixes, part.providerMetadata)
                     if (fileId != null) {
+                        put("filename", JsonPrimitive(part.filename ?: "data"))
                         put("file_id", JsonPrimitive(fileId))
+                    } else if (part.url != null) {
+                        put("file_url", JsonPrimitive(part.url))
                     } else {
+                        put("filename", JsonPrimitive(part.filename ?: "data"))
                         put("file_data", JsonPrimitive("data:${part.mediaType};base64,${part.base64}"))
                     }
                 }

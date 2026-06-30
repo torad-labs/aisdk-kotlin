@@ -52,7 +52,7 @@ tests must stay green.
 | BL-031 | Anthropic `max_tokens` not clamped to model ceiling → 400 | High | Recommended | CONFIRMED | DONE |
 | BL-032 | Anthropic sends sampling params to models that reject them (incl. `claude-opus-4-8`) | High | Recommended | CONFIRMED | DONE |
 | BL-033 | Google drops URL-based images/files (empty `inlineData`) | High | Recommended | CONFIRMED | DONE |
-| BL-034 | OpenResponses drops URL-based images/files (empty `data:`) | High | Recommended | CONFIRMED | OPEN |
+| BL-034 | OpenResponses drops URL-based images/files (empty `data:`) | High | Recommended | CONFIRMED | DONE |
 | BL-035 | OpenAI-compatible always sends tool `strict:true` → 400 on real OpenAI/Azure | High | Recommended | CONFIRMED | OPEN |
 | BL-036 | xAI streaming never requests usage → zero token accounting | High | Recommended | CONFIRMED | DONE |
 | BL-037 | Cohere `stream()` is a fake stream (blocking call, no SSE) | High | Recommended | CONFIRMED | OPEN |
