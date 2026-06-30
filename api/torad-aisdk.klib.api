@@ -10977,6 +10977,10 @@ final value class ai.torad.aisdk/ModelId { // ai.torad.aisdk/ModelId|null[0]
     final fun equals(kotlin/Any?): kotlin/Boolean // ai.torad.aisdk/ModelId.equals|equals(kotlin.Any?){}[0]
     final fun hashCode(): kotlin/Int // ai.torad.aisdk/ModelId.hashCode|hashCode(){}[0]
     final fun toString(): kotlin/String // ai.torad.aisdk/ModelId.toString|toString(){}[0]
+
+    final object Companion { // ai.torad.aisdk/ModelId.Companion|null[0]
+        final fun of(kotlin/String): ai.torad.aisdk/ModelId // ai.torad.aisdk/ModelId.Companion.of|of(kotlin.String){}[0]
+    }
 }
 
 final value class ai.torad.aisdk/ProviderId { // ai.torad.aisdk/ProviderId|null[0]

@@ -1,5 +1,7 @@
 package ai.torad.aisdk
 
+import kotlin.ExperimentalStdlibApi
+import kotlin.jvm.JvmExposeBoxed
 import kotlin.jvm.JvmInline
 
 @JvmInline
@@ -13,12 +15,20 @@ public value class ProviderId(public val value: String) {
 }
 
 @JvmInline
+@OptIn(ExperimentalStdlibApi::class)
+@JvmExposeBoxed
 public value class ModelId(public val value: String) {
     init {
         require(value.isNotBlank()) { "ModelId must not be blank." }
     }
 
     override fun toString(): String = value
+
+    public companion object {
+        @JvmExposeBoxed
+        @AiSdkJvmStatic
+        public fun of(value: String): ModelId = ModelId(value)
+    }
 }
 
 public data class ModelRef(

@@ -3508,6 +3508,8 @@ public final class ai/torad/aisdk/MissingToolResultsError : ai/torad/aisdk/AiSdk
 }
 
 public final class ai/torad/aisdk/ModelId {
+	public static final field Companion Lai/torad/aisdk/ModelId$Companion;
+	public fun <init> (Ljava/lang/String;)V
 	public static final synthetic fun box-impl (Ljava/lang/String;)Lai/torad/aisdk/ModelId;
 	public static fun constructor-impl (Ljava/lang/String;)Ljava/lang/String;
 	public fun equals (Ljava/lang/Object;)Z
@@ -3516,9 +3518,16 @@ public final class ai/torad/aisdk/ModelId {
 	public final fun getValue ()Ljava/lang/String;
 	public fun hashCode ()I
 	public static fun hashCode-impl (Ljava/lang/String;)I
+	public static final fun of (Ljava/lang/String;)Lai/torad/aisdk/ModelId;
+	public static final fun of-rRR6yo4 (Ljava/lang/String;)Ljava/lang/String;
 	public fun toString ()Ljava/lang/String;
 	public static fun toString-impl (Ljava/lang/String;)Ljava/lang/String;
 	public final synthetic fun unbox-impl ()Ljava/lang/String;
+}
+
+public final class ai/torad/aisdk/ModelId$Companion {
+	public final fun of (Ljava/lang/String;)Lai/torad/aisdk/ModelId;
+	public final fun of-rRR6yo4 (Ljava/lang/String;)Ljava/lang/String;
 }
 
 public final class ai/torad/aisdk/ModelIdentifiers {

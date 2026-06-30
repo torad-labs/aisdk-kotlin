@@ -158,6 +158,10 @@ kotlin {
     }
 }
 
+tasks.withType<org.gradle.api.tasks.compile.JavaCompile>().configureEach {
+    options.release.set(17)
+}
+
 dependencies {
     detektCliRuntime(libs.detekt.cli)
     detektPluginClasspath(libs.detekt.formatting)
