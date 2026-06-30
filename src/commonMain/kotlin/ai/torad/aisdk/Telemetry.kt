@@ -437,9 +437,25 @@ private object TelemetryRedaction {
         redactor: Redactor,
     ): List<PendingApproval> =
         if (settings.recordInputs) {
-            map { it.copy(input = redactor.redactJson(it.input), signature = null) }
+            map {
+                PendingApproval(
+                    toolCallId = it.toolCallId,
+                    toolName = it.toolName,
+                    input = redactor.redactJson(it.input),
+                    approvalId = it.approvalId,
+                    signature = null,
+                )
+            }
         } else {
-            map { it.copy(input = JsonObject(emptyMap()), signature = null) }
+            map {
+                PendingApproval(
+                    toolCallId = it.toolCallId,
+                    toolName = it.toolName,
+                    input = JsonObject(emptyMap()),
+                    approvalId = it.approvalId,
+                    signature = null,
+                )
+            }
         }
 
     private fun LanguageModelRequestMetadata.sanitizedRequestMetadata(

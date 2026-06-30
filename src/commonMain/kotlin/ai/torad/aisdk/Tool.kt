@@ -1,5 +1,6 @@
 package ai.torad.aisdk
 
+import dev.drewhamilton.poko.Poko
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.flow
@@ -20,14 +21,15 @@ import kotlinx.serialization.json.longOrNull
 import kotlinx.serialization.serializer
 
 /** LLM-visible metadata for a [Tool]. Separates schema from executor. */
-public data class ToolSchema(
-    val name: String,
-    val description: String,
-    val strict: Boolean? = null,
-    val inputExamples: List<String> = emptyList(),
-    val metadata: Map<String, JsonElement> = emptyMap(),
-    val providerExecuted: Boolean = false,
-    val providerOptions: ProviderOptions = ProviderOptions.None,
+@Poko
+public class ToolSchema(
+    public val name: String,
+    public val description: String,
+    public val strict: Boolean? = null,
+    public val inputExamples: List<String> = emptyList(),
+    public val metadata: Map<String, JsonElement> = emptyMap(),
+    public val providerExecuted: Boolean = false,
+    public val providerOptions: ProviderOptions = ProviderOptions.None,
 )
 
 /** Bundles selected [ToolSchema] flags for factory functions. */
@@ -38,7 +40,8 @@ public data class ToolSchemaOptions(
 
 /** Wrapper emitted by [Tool.execute] — currently only [Success]; sealed for future variants. */
 public sealed class ToolResult<out O> {
-    public data class Success<out O>(public val value: O) : ToolResult<O>()
+    @Poko
+    public class Success<out O>(public val value: O) : ToolResult<O>()
 }
 
 /**
@@ -435,9 +438,10 @@ public fun <TInput, TOutput, TContext> ExecuteTool(
     emit(final)
 }
 
-public data class Schema<T>(
-    val jsonSchema: JsonElement,
-    val validate: ((JsonElement) -> T)? = null,
+@Poko
+public class Schema<T>(
+    public val jsonSchema: JsonElement,
+    public val validate: ((JsonElement) -> T)? = null,
 )
 
 public class LazySchema<T>(
@@ -450,14 +454,16 @@ public class LazySchema<T>(
 }
 
 public sealed class ValidationResult<out T> {
-    public data class Success<T>(
-        val value: T,
-        val rawValue: JsonElement,
+    @Poko
+    public class Success<T>(
+        public val value: T,
+        public val rawValue: JsonElement,
     ) : ValidationResult<T>()
 
-    public data class Failure(
-        val error: TypeValidationError,
-        val rawValue: JsonElement,
+    @Poko
+    public class Failure(
+        public val error: TypeValidationError,
+        public val rawValue: JsonElement,
     ) : ValidationResult<Nothing>()
 }
 
@@ -558,8 +564,11 @@ public object Schemas {
 }
 
 public sealed class ExecuteToolResult<out TOutput> {
-    public data class Preliminary<TOutput>(val output: TOutput) : ExecuteToolResult<TOutput>()
-    public data class Final<TOutput>(val output: TOutput) : ExecuteToolResult<TOutput>()
+    @Poko
+    public class Preliminary<TOutput>(public val output: TOutput) : ExecuteToolResult<TOutput>()
+
+    @Poko
+    public class Final<TOutput>(public val output: TOutput) : ExecuteToolResult<TOutput>()
 }
 
 public data class ToolNameMapping(
@@ -781,7 +790,8 @@ public sealed class ToolChoice {
      */
     @kotlinx.serialization.Serializable
     @SerialName("specific")
-    public data class Specific(val toolName: String) : ToolChoice()
+    @Poko
+    public class Specific(public val toolName: String) : ToolChoice()
 }
 
 /**
@@ -827,29 +837,35 @@ public data class ToolPredicateOptions<TContext>(
 public sealed class ToolResultOutput {
     @Serializable
     @SerialName("text")
-    public data class Text(val text: String) : ToolResultOutput()
+    @Poko
+    public class Text(public val text: String) : ToolResultOutput()
 
     @Serializable
     @SerialName("json")
-    public data class Json(val json: JsonElement) : ToolResultOutput()
+    @Poko
+    public class Json(public val json: JsonElement) : ToolResultOutput()
 
     @Serializable
     @SerialName("error")
-    public data class Error(val message: String) : ToolResultOutput()
+    @Poko
+    public class Error(public val message: String) : ToolResultOutput()
 
     @Serializable
     @SerialName("error-json")
-    public data class ErrorJson(val json: JsonElement) : ToolResultOutput()
+    @Poko
+    public class ErrorJson(public val json: JsonElement) : ToolResultOutput()
 
     @Serializable
     @SerialName("execution-denied")
-    public data class ExecutionDenied(val reason: String? = null) : ToolResultOutput()
+    @Poko
+    public class ExecutionDenied(public val reason: String? = null) : ToolResultOutput()
 
     @Serializable
     @SerialName("content")
-    public data class Content(
-        val value: List<JsonElement>,
-        val isError: Boolean = false,
+    @Poko
+    public class Content(
+        public val value: List<JsonElement>,
+        public val isError: Boolean = false,
     ) : ToolResultOutput()
 }
 

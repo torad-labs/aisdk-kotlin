@@ -1,5 +1,6 @@
 package ai.torad.aisdk
 
+import dev.drewhamilton.poko.Poko
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonElement
 
@@ -15,10 +16,11 @@ import kotlinx.serialization.json.JsonElement
  * across process restarts.
  */
 @Serializable
-public data class PendingApproval(
-    val toolCallId: String,
-    val toolName: String,
-    val input: JsonElement,
+@Poko
+public class PendingApproval(
+    public val toolCallId: String,
+    public val toolName: String,
+    public val input: JsonElement,
     /**
      * Approval-identity key. Mirrors v6's `approvalId` (per
      * historical parity gap #7). Distinct from [toolCallId] because
@@ -28,14 +30,14 @@ public data class PendingApproval(
      * null, the host treats `approvalId = toolCallId` — adequate for
      * the common single-approval case.
      */
-    val approvalId: String? = null,
+    public val approvalId: String? = null,
     /**
      * HMAC-SHA256 signature binding this approval to its tool call
      * (v6.0.202). Present only when the issuing agent holds an
      * `experimental_toolApprovalSecret`; the host persists and replays
      * it untouched — only the secret holder can mint or verify it.
      */
-    val signature: String? = null,
+    public val signature: String? = null,
 )
 
 /** Approval-identity helpers for [PendingApproval]. */
