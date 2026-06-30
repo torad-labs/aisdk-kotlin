@@ -1,8 +1,15 @@
 package ai.torad.aisdk;
 
+import ai.torad.aisdk.providers.AnthropicAwsProviderSettings;
+import ai.torad.aisdk.providers.AnthropicAwsProviderSettingsBuilder;
+import ai.torad.aisdk.providers.AssemblyAICustomSpelling;
+import ai.torad.aisdk.providers.AssemblyAICustomSpellingBuilder;
+import ai.torad.aisdk.providers.BlackForestLabsImageModelOptions;
+import ai.torad.aisdk.providers.BlackForestLabsImageModelOptionsBuilder;
 import org.junit.Test;
 
 import java.util.Arrays;
+import java.util.Collections;
 
 import static org.junit.Assert.assertEquals;
 
@@ -65,5 +72,38 @@ public final class BuilderFluentInteropTest {
         assertEquals("fn", telemetry.getFunctionId());
         assertEquals(true, telemetry.getRecordInputs());
         assertEquals(true, telemetry.getRecordOutputs());
+    }
+
+    @Test
+    public void providerChunkBuildersChainAndBuildFromJava() {
+        AnthropicAwsProviderSettings anthropicAws = new AnthropicAwsProviderSettingsBuilder()
+            .region("us-east-1")
+            .workspaceId("workspace")
+            .apiKey("key")
+            .headers(Collections.singletonMap("x-test", "1"))
+            .build();
+
+        assertEquals("us-east-1", anthropicAws.getRegion());
+        assertEquals("workspace", anthropicAws.getWorkspaceId());
+        assertEquals("key", anthropicAws.getApiKey());
+        assertEquals(Collections.singletonMap("x-test", "1"), anthropicAws.getHeaders());
+
+        BlackForestLabsImageModelOptions blackForest = new BlackForestLabsImageModelOptionsBuilder()
+            .imagePrompt("reference")
+            .steps(12)
+            .guidance(2.5)
+            .build();
+
+        assertEquals("reference", blackForest.getImagePrompt());
+        assertEquals(Integer.valueOf(12), blackForest.getSteps());
+        assertEquals(Double.valueOf(2.5), blackForest.getGuidance());
+
+        AssemblyAICustomSpelling spelling = new AssemblyAICustomSpellingBuilder()
+            .from(Arrays.asList("torad"))
+            .to("Torad")
+            .build();
+
+        assertEquals(Arrays.asList("torad"), spelling.getFrom());
+        assertEquals("Torad", spelling.getTo());
     }
 }

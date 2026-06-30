@@ -32,19 +32,21 @@ public class AssemblyAICustomSpelling internal constructor(
     public val to: String,
 )
 
-public class AssemblyAICustomSpellingBuilder internal constructor() {
+public class AssemblyAICustomSpellingBuilder {
     private var from: List<String>? = null
     private var to: String? = null
 
-    public fun from(value: List<String>) {
+    public fun from(value: List<String>): AssemblyAICustomSpellingBuilder {
         from = value
+        return this
     }
 
-    public fun to(value: String) {
+    public fun to(value: String): AssemblyAICustomSpellingBuilder {
         to = value
+        return this
     }
 
-    internal fun build(): AssemblyAICustomSpelling =
+    public fun build(): AssemblyAICustomSpelling =
         AssemblyAICustomSpelling(
             from = requireNotNull(from) { "AssemblyAICustomSpelling.from is required" },
             to = requireNotNull(to) { "AssemblyAICustomSpelling.to is required" },
@@ -95,7 +97,7 @@ public class AssemblyAITranscriptionModelOptions internal constructor(
     public val wordBoost: List<String>? = null,
 )
 
-public class AssemblyAITranscriptionModelOptionsBuilder internal constructor() {
+public class AssemblyAITranscriptionModelOptionsBuilder {
     private var audioEndAt: Int? = null
     private var audioStartFrom: Int? = null
     private var autoChapters: Boolean? = null
@@ -131,143 +133,177 @@ public class AssemblyAITranscriptionModelOptionsBuilder internal constructor() {
     private var webhookUrl: String? = null
     private var wordBoost: List<String>? = null
 
-    public fun audioEndAt(value: Int?) {
+    public fun audioEndAt(value: Int?): AssemblyAITranscriptionModelOptionsBuilder {
         audioEndAt = value
+        return this
     }
 
-    public fun audioStartFrom(value: Int?) {
+    public fun audioStartFrom(value: Int?): AssemblyAITranscriptionModelOptionsBuilder {
         audioStartFrom = value
+        return this
     }
 
-    public fun autoChapters(value: Boolean?) {
+    public fun autoChapters(value: Boolean?): AssemblyAITranscriptionModelOptionsBuilder {
         autoChapters = value
+        return this
     }
 
-    public fun autoHighlights(value: Boolean?) {
+    public fun autoHighlights(value: Boolean?): AssemblyAITranscriptionModelOptionsBuilder {
         autoHighlights = value
+        return this
     }
 
-    public fun boostParam(value: String?) {
+    public fun boostParam(value: String?): AssemblyAITranscriptionModelOptionsBuilder {
         boostParam = value
+        return this
     }
 
-    public fun contentSafety(value: Boolean?) {
+    public fun contentSafety(value: Boolean?): AssemblyAITranscriptionModelOptionsBuilder {
         contentSafety = value
+        return this
     }
 
-    public fun contentSafetyConfidence(value: Int?) {
+    public fun contentSafetyConfidence(value: Int?): AssemblyAITranscriptionModelOptionsBuilder {
         contentSafetyConfidence = value
+        return this
     }
 
-    public fun customSpelling(value: List<AssemblyAICustomSpelling>?) {
+    public fun customSpelling(value: List<AssemblyAICustomSpelling>?): AssemblyAITranscriptionModelOptionsBuilder {
         customSpelling = value
+        return this
     }
 
-    public fun disfluencies(value: Boolean?) {
+    public fun disfluencies(value: Boolean?): AssemblyAITranscriptionModelOptionsBuilder {
         disfluencies = value
+        return this
     }
 
-    public fun entityDetection(value: Boolean?) {
+    public fun entityDetection(value: Boolean?): AssemblyAITranscriptionModelOptionsBuilder {
         entityDetection = value
+        return this
     }
 
-    public fun filterProfanity(value: Boolean?) {
+    public fun filterProfanity(value: Boolean?): AssemblyAITranscriptionModelOptionsBuilder {
         filterProfanity = value
+        return this
     }
 
-    public fun formatText(value: Boolean?) {
+    public fun formatText(value: Boolean?): AssemblyAITranscriptionModelOptionsBuilder {
         formatText = value
+        return this
     }
 
-    public fun iabCategories(value: Boolean?) {
+    public fun iabCategories(value: Boolean?): AssemblyAITranscriptionModelOptionsBuilder {
         iabCategories = value
+        return this
     }
 
-    public fun languageCode(value: String?) {
+    public fun languageCode(value: String?): AssemblyAITranscriptionModelOptionsBuilder {
         languageCode = value
+        return this
     }
 
-    public fun languageConfidenceThreshold(value: Float?) {
+    public fun languageConfidenceThreshold(value: Float?): AssemblyAITranscriptionModelOptionsBuilder {
         languageConfidenceThreshold = value
+        return this
     }
 
-    public fun languageDetection(value: Boolean?) {
+    public fun languageDetection(value: Boolean?): AssemblyAITranscriptionModelOptionsBuilder {
         languageDetection = value
+        return this
     }
 
-    public fun multichannel(value: Boolean?) {
+    public fun multichannel(value: Boolean?): AssemblyAITranscriptionModelOptionsBuilder {
         multichannel = value
+        return this
     }
 
-    public fun punctuate(value: Boolean?) {
+    public fun punctuate(value: Boolean?): AssemblyAITranscriptionModelOptionsBuilder {
         punctuate = value
+        return this
     }
 
-    public fun redactPii(value: Boolean?) {
+    public fun redactPii(value: Boolean?): AssemblyAITranscriptionModelOptionsBuilder {
         redactPii = value
+        return this
     }
 
-    public fun redactPiiAudio(value: Boolean?) {
+    public fun redactPiiAudio(value: Boolean?): AssemblyAITranscriptionModelOptionsBuilder {
         redactPiiAudio = value
+        return this
     }
 
-    public fun redactPiiAudioQuality(value: String?) {
+    public fun redactPiiAudioQuality(value: String?): AssemblyAITranscriptionModelOptionsBuilder {
         redactPiiAudioQuality = value
+        return this
     }
 
-    public fun redactPiiPolicies(value: List<String>?) {
+    public fun redactPiiPolicies(value: List<String>?): AssemblyAITranscriptionModelOptionsBuilder {
         redactPiiPolicies = value
+        return this
     }
 
-    public fun redactPiiSub(value: String?) {
+    public fun redactPiiSub(value: String?): AssemblyAITranscriptionModelOptionsBuilder {
         redactPiiSub = value
+        return this
     }
 
-    public fun sentimentAnalysis(value: Boolean?) {
+    public fun sentimentAnalysis(value: Boolean?): AssemblyAITranscriptionModelOptionsBuilder {
         sentimentAnalysis = value
+        return this
     }
 
-    public fun speakerLabels(value: Boolean?) {
+    public fun speakerLabels(value: Boolean?): AssemblyAITranscriptionModelOptionsBuilder {
         speakerLabels = value
+        return this
     }
 
-    public fun speakersExpected(value: Int?) {
+    public fun speakersExpected(value: Int?): AssemblyAITranscriptionModelOptionsBuilder {
         speakersExpected = value
+        return this
     }
 
-    public fun speechThreshold(value: Float?) {
+    public fun speechThreshold(value: Float?): AssemblyAITranscriptionModelOptionsBuilder {
         speechThreshold = value
+        return this
     }
 
-    public fun summarization(value: Boolean?) {
+    public fun summarization(value: Boolean?): AssemblyAITranscriptionModelOptionsBuilder {
         summarization = value
+        return this
     }
 
-    public fun summaryModel(value: String?) {
+    public fun summaryModel(value: String?): AssemblyAITranscriptionModelOptionsBuilder {
         summaryModel = value
+        return this
     }
 
-    public fun summaryType(value: String?) {
+    public fun summaryType(value: String?): AssemblyAITranscriptionModelOptionsBuilder {
         summaryType = value
+        return this
     }
 
-    public fun webhookAuthHeaderName(value: String?) {
+    public fun webhookAuthHeaderName(value: String?): AssemblyAITranscriptionModelOptionsBuilder {
         webhookAuthHeaderName = value
+        return this
     }
 
-    public fun webhookAuthHeaderValue(value: String?) {
+    public fun webhookAuthHeaderValue(value: String?): AssemblyAITranscriptionModelOptionsBuilder {
         webhookAuthHeaderValue = value
+        return this
     }
 
-    public fun webhookUrl(value: String?) {
+    public fun webhookUrl(value: String?): AssemblyAITranscriptionModelOptionsBuilder {
         webhookUrl = value
+        return this
     }
 
-    public fun wordBoost(value: List<String>?) {
+    public fun wordBoost(value: List<String>?): AssemblyAITranscriptionModelOptionsBuilder {
         wordBoost = value
+        return this
     }
 
-    internal fun build(): AssemblyAITranscriptionModelOptions =
+    public fun build(): AssemblyAITranscriptionModelOptions =
         AssemblyAITranscriptionModelOptions(
             audioEndAt = audioEndAt,
             audioStartFrom = audioStartFrom,
@@ -329,29 +365,33 @@ public class AssemblyAIProviderSettings internal constructor(
     }
 }
 
-public class AssemblyAIProviderSettingsBuilder internal constructor() {
+public class AssemblyAIProviderSettingsBuilder {
     private var apiKey: String? = null
     private var headers: Map<String, String> = emptyMap()
     private var pollingIntervalMillis: Long = 3_000L
     private var maxPollAttempts: Int = 120
 
-    public fun apiKey(value: String?) {
+    public fun apiKey(value: String?): AssemblyAIProviderSettingsBuilder {
         apiKey = value
+        return this
     }
 
-    public fun headers(value: Map<String, String>) {
+    public fun headers(value: Map<String, String>): AssemblyAIProviderSettingsBuilder {
         headers = value
+        return this
     }
 
-    public fun pollingIntervalMillis(value: Long) {
+    public fun pollingIntervalMillis(value: Long): AssemblyAIProviderSettingsBuilder {
         pollingIntervalMillis = value
+        return this
     }
 
-    public fun maxPollAttempts(value: Int) {
+    public fun maxPollAttempts(value: Int): AssemblyAIProviderSettingsBuilder {
         maxPollAttempts = value
+        return this
     }
 
-    internal fun build(): AssemblyAIProviderSettings =
+    public fun build(): AssemblyAIProviderSettings =
         AssemblyAIProviderSettings(
             apiKey = apiKey,
             headers = headers,

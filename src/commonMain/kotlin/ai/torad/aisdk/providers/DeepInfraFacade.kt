@@ -33,24 +33,27 @@ public class DeepInfraProviderSettings internal constructor(
     public val headers: Map<String, String> = emptyMap(),
 )
 
-public class DeepInfraProviderSettingsBuilder internal constructor() {
+public class DeepInfraProviderSettingsBuilder {
     private var apiKey: String? = null
     private var baseURL: String = "https://api.deepinfra.com/v1"
     private var headers: Map<String, String> = emptyMap()
 
-    public fun apiKey(value: String?) {
+    public fun apiKey(value: String?): DeepInfraProviderSettingsBuilder {
         apiKey = value
+        return this
     }
 
-    public fun baseURL(value: String) {
+    public fun baseURL(value: String): DeepInfraProviderSettingsBuilder {
         baseURL = value
+        return this
     }
 
-    public fun headers(value: Map<String, String>) {
+    public fun headers(value: Map<String, String>): DeepInfraProviderSettingsBuilder {
         headers = value
+        return this
     }
 
-    internal fun build(): DeepInfraProviderSettings =
+    public fun build(): DeepInfraProviderSettings =
         DeepInfraProviderSettings(
             apiKey = apiKey,
             baseURL = baseURL,

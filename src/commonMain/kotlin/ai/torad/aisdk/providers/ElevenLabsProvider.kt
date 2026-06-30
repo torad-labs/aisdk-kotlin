@@ -48,7 +48,7 @@ public class ElevenLabsSpeechModelOptions internal constructor(
     public val enableLogging: Boolean? = null,
 )
 
-public class ElevenLabsSpeechModelOptionsBuilder internal constructor() {
+public class ElevenLabsSpeechModelOptionsBuilder {
     private var languageCode: String? = null
     private var voiceSettings: JsonObject? = null
     private var pronunciationDictionaryLocators: List<JsonObject>? = null
@@ -61,51 +61,62 @@ public class ElevenLabsSpeechModelOptionsBuilder internal constructor() {
     private var applyLanguageTextNormalization: Boolean? = null
     private var enableLogging: Boolean? = null
 
-    public fun languageCode(value: String?) {
+    public fun languageCode(value: String?): ElevenLabsSpeechModelOptionsBuilder {
         languageCode = value
+        return this
     }
 
-    public fun voiceSettings(value: JsonObject?) {
+    public fun voiceSettings(value: JsonObject?): ElevenLabsSpeechModelOptionsBuilder {
         voiceSettings = value
+        return this
     }
 
-    public fun pronunciationDictionaryLocators(value: List<JsonObject>?) {
+    public fun pronunciationDictionaryLocators(value: List<JsonObject>?): ElevenLabsSpeechModelOptionsBuilder {
         pronunciationDictionaryLocators = value
+        return this
     }
 
-    public fun seed(value: Int?) {
+    public fun seed(value: Int?): ElevenLabsSpeechModelOptionsBuilder {
         seed = value
+        return this
     }
 
-    public fun previousText(value: String?) {
+    public fun previousText(value: String?): ElevenLabsSpeechModelOptionsBuilder {
         previousText = value
+        return this
     }
 
-    public fun nextText(value: String?) {
+    public fun nextText(value: String?): ElevenLabsSpeechModelOptionsBuilder {
         nextText = value
+        return this
     }
 
-    public fun previousRequestIds(value: List<String>?) {
+    public fun previousRequestIds(value: List<String>?): ElevenLabsSpeechModelOptionsBuilder {
         previousRequestIds = value
+        return this
     }
 
-    public fun nextRequestIds(value: List<String>?) {
+    public fun nextRequestIds(value: List<String>?): ElevenLabsSpeechModelOptionsBuilder {
         nextRequestIds = value
+        return this
     }
 
-    public fun applyTextNormalization(value: String?) {
+    public fun applyTextNormalization(value: String?): ElevenLabsSpeechModelOptionsBuilder {
         applyTextNormalization = value
+        return this
     }
 
-    public fun applyLanguageTextNormalization(value: Boolean?) {
+    public fun applyLanguageTextNormalization(value: Boolean?): ElevenLabsSpeechModelOptionsBuilder {
         applyLanguageTextNormalization = value
+        return this
     }
 
-    public fun enableLogging(value: Boolean?) {
+    public fun enableLogging(value: Boolean?): ElevenLabsSpeechModelOptionsBuilder {
         enableLogging = value
+        return this
     }
 
-    internal fun build(): ElevenLabsSpeechModelOptions =
+    public fun build(): ElevenLabsSpeechModelOptions =
         ElevenLabsSpeechModelOptions(
             languageCode = languageCode,
             voiceSettings = voiceSettings,
@@ -137,7 +148,7 @@ public class ElevenLabsTranscriptionModelOptions internal constructor(
     public val fileFormat: String? = null,
 )
 
-public class ElevenLabsTranscriptionModelOptionsBuilder internal constructor() {
+public class ElevenLabsTranscriptionModelOptionsBuilder {
     private var languageCode: String? = null
     private var tagAudioEvents: Boolean? = null
     private var numSpeakers: Int? = null
@@ -145,31 +156,37 @@ public class ElevenLabsTranscriptionModelOptionsBuilder internal constructor() {
     private var diarize: Boolean? = null
     private var fileFormat: String? = null
 
-    public fun languageCode(value: String?) {
+    public fun languageCode(value: String?): ElevenLabsTranscriptionModelOptionsBuilder {
         languageCode = value
+        return this
     }
 
-    public fun tagAudioEvents(value: Boolean?) {
+    public fun tagAudioEvents(value: Boolean?): ElevenLabsTranscriptionModelOptionsBuilder {
         tagAudioEvents = value
+        return this
     }
 
-    public fun numSpeakers(value: Int?) {
+    public fun numSpeakers(value: Int?): ElevenLabsTranscriptionModelOptionsBuilder {
         numSpeakers = value
+        return this
     }
 
-    public fun timestampsGranularity(value: String?) {
+    public fun timestampsGranularity(value: String?): ElevenLabsTranscriptionModelOptionsBuilder {
         timestampsGranularity = value
+        return this
     }
 
-    public fun diarize(value: Boolean?) {
+    public fun diarize(value: Boolean?): ElevenLabsTranscriptionModelOptionsBuilder {
         diarize = value
+        return this
     }
 
-    public fun fileFormat(value: String?) {
+    public fun fileFormat(value: String?): ElevenLabsTranscriptionModelOptionsBuilder {
         fileFormat = value
+        return this
     }
 
-    internal fun build(): ElevenLabsTranscriptionModelOptions =
+    public fun build(): ElevenLabsTranscriptionModelOptions =
         ElevenLabsTranscriptionModelOptions(
             languageCode = languageCode,
             tagAudioEvents = tagAudioEvents,
@@ -203,19 +220,21 @@ public class ElevenLabsProviderSettings internal constructor(
         JsonAccess.obj(providerOptions.toMap(), "elevenlabs") ?: JsonObject(emptyMap())
 }
 
-public class ElevenLabsProviderSettingsBuilder internal constructor() {
+public class ElevenLabsProviderSettingsBuilder {
     private var apiKey: String? = null
     private var headers: Map<String, String> = emptyMap()
 
-    public fun apiKey(value: String?) {
+    public fun apiKey(value: String?): ElevenLabsProviderSettingsBuilder {
         apiKey = value
+        return this
     }
 
-    public fun headers(value: Map<String, String>) {
+    public fun headers(value: Map<String, String>): ElevenLabsProviderSettingsBuilder {
         headers = value
+        return this
     }
 
-    internal fun build(): ElevenLabsProviderSettings =
+    public fun build(): ElevenLabsProviderSettings =
         ElevenLabsProviderSettings(
             apiKey = apiKey,
             headers = headers,

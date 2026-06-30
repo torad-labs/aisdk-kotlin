@@ -83,7 +83,7 @@ public class GoogleVertexProviderSettings internal constructor(
     }
 }
 
-public class GoogleVertexProviderSettingsBuilder internal constructor() {
+public class GoogleVertexProviderSettingsBuilder {
     private var project: String? = null
     private var location: String = "us-central1"
     private var baseURL: String? = null
@@ -92,35 +92,42 @@ public class GoogleVertexProviderSettingsBuilder internal constructor() {
     private var headers: Map<String, String> = emptyMap()
     private var generateId: () -> String = { IdGenerator.generate() }
 
-    public fun project(value: String?) {
+    public fun project(value: String?): GoogleVertexProviderSettingsBuilder {
         project = value
+        return this
     }
 
-    public fun location(value: String) {
+    public fun location(value: String): GoogleVertexProviderSettingsBuilder {
         location = value
+        return this
     }
 
-    public fun baseURL(value: String?) {
+    public fun baseURL(value: String?): GoogleVertexProviderSettingsBuilder {
         baseURL = value
+        return this
     }
 
-    public fun accessToken(value: String?) {
+    public fun accessToken(value: String?): GoogleVertexProviderSettingsBuilder {
         accessToken = value
+        return this
     }
 
-    public fun apiKey(value: String?) {
+    public fun apiKey(value: String?): GoogleVertexProviderSettingsBuilder {
         apiKey = value
+        return this
     }
 
-    public fun headers(value: Map<String, String>) {
+    public fun headers(value: Map<String, String>): GoogleVertexProviderSettingsBuilder {
         headers = value
+        return this
     }
 
-    public fun generateId(value: () -> String) {
+    public fun generateId(value: () -> String): GoogleVertexProviderSettingsBuilder {
         generateId = value
+        return this
     }
 
-    internal fun build(): GoogleVertexProviderSettings =
+    public fun build(): GoogleVertexProviderSettings =
         GoogleVertexProviderSettings(
             project = project,
             location = location,

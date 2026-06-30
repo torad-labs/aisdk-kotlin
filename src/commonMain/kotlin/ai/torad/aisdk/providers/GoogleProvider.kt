@@ -86,7 +86,7 @@ public class GoogleGenerativeAIProviderSettings internal constructor(
         googleHeaders(extra) + ("Api-Revision" to "2026-05-20")
 }
 
-public class GoogleGenerativeAIProviderSettingsBuilder internal constructor() {
+public class GoogleGenerativeAIProviderSettingsBuilder {
     private var baseURL: String = "https://generativelanguage.googleapis.com/v1beta"
     private var apiKey: String? = null
     private var headers: Map<String, String> = emptyMap()
@@ -95,35 +95,42 @@ public class GoogleGenerativeAIProviderSettingsBuilder internal constructor() {
     private var videoPollIntervalMillis: Long = 1_000L
     private var videoMaxPollAttempts: Int = 120
 
-    public fun baseURL(value: String) {
+    public fun baseURL(value: String): GoogleGenerativeAIProviderSettingsBuilder {
         baseURL = value
+        return this
     }
 
-    public fun apiKey(value: String?) {
+    public fun apiKey(value: String?): GoogleGenerativeAIProviderSettingsBuilder {
         apiKey = value
+        return this
     }
 
-    public fun headers(value: Map<String, String>) {
+    public fun headers(value: Map<String, String>): GoogleGenerativeAIProviderSettingsBuilder {
         headers = value
+        return this
     }
 
-    public fun generateId(value: () -> String) {
+    public fun generateId(value: () -> String): GoogleGenerativeAIProviderSettingsBuilder {
         generateId = value
+        return this
     }
 
-    public fun name(value: String) {
+    public fun name(value: String): GoogleGenerativeAIProviderSettingsBuilder {
         name = value
+        return this
     }
 
-    public fun videoPollIntervalMillis(value: Long) {
+    public fun videoPollIntervalMillis(value: Long): GoogleGenerativeAIProviderSettingsBuilder {
         videoPollIntervalMillis = value
+        return this
     }
 
-    public fun videoMaxPollAttempts(value: Int) {
+    public fun videoMaxPollAttempts(value: Int): GoogleGenerativeAIProviderSettingsBuilder {
         videoMaxPollAttempts = value
+        return this
     }
 
-    internal fun build(): GoogleGenerativeAIProviderSettings =
+    public fun build(): GoogleGenerativeAIProviderSettings =
         GoogleGenerativeAIProviderSettings(
             baseURL = baseURL,
             apiKey = apiKey,

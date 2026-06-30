@@ -70,7 +70,7 @@ public class AnthropicAwsProviderSettings internal constructor(
     }
 }
 
-public class AnthropicAwsProviderSettingsBuilder internal constructor() {
+public class AnthropicAwsProviderSettingsBuilder {
     private var region: String? = null
     private var workspaceId: String? = null
     private var apiKey: String? = null
@@ -82,47 +82,57 @@ public class AnthropicAwsProviderSettingsBuilder internal constructor() {
     private var credentialProvider: (suspend () -> AnthropicAwsCredentials)? = null
     private var generateId: () -> String = { IdGenerator.generate() }
 
-    public fun region(value: String?) {
+    public fun region(value: String?): AnthropicAwsProviderSettingsBuilder {
         region = value
+        return this
     }
 
-    public fun workspaceId(value: String?) {
+    public fun workspaceId(value: String?): AnthropicAwsProviderSettingsBuilder {
         workspaceId = value
+        return this
     }
 
-    public fun apiKey(value: String?) {
+    public fun apiKey(value: String?): AnthropicAwsProviderSettingsBuilder {
         apiKey = value
+        return this
     }
 
-    public fun accessKeyId(value: String?) {
+    public fun accessKeyId(value: String?): AnthropicAwsProviderSettingsBuilder {
         accessKeyId = value
+        return this
     }
 
-    public fun secretAccessKey(value: String?) {
+    public fun secretAccessKey(value: String?): AnthropicAwsProviderSettingsBuilder {
         secretAccessKey = value
+        return this
     }
 
-    public fun sessionToken(value: String?) {
+    public fun sessionToken(value: String?): AnthropicAwsProviderSettingsBuilder {
         sessionToken = value
+        return this
     }
 
-    public fun baseURL(value: String?) {
+    public fun baseURL(value: String?): AnthropicAwsProviderSettingsBuilder {
         baseURL = value
+        return this
     }
 
-    public fun headers(value: Map<String, String>) {
+    public fun headers(value: Map<String, String>): AnthropicAwsProviderSettingsBuilder {
         headers = value
+        return this
     }
 
-    public fun credentialProvider(value: (suspend () -> AnthropicAwsCredentials)?) {
+    public fun credentialProvider(value: (suspend () -> AnthropicAwsCredentials)?): AnthropicAwsProviderSettingsBuilder {
         credentialProvider = value
+        return this
     }
 
-    public fun generateId(value: () -> String) {
+    public fun generateId(value: () -> String): AnthropicAwsProviderSettingsBuilder {
         generateId = value
+        return this
     }
 
-    internal fun build(): AnthropicAwsProviderSettings =
+    public fun build(): AnthropicAwsProviderSettings =
         AnthropicAwsProviderSettings(
             region = region,
             workspaceId = workspaceId,

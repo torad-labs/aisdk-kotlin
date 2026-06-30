@@ -36,29 +36,33 @@ public class BedrockCredentials internal constructor(
     public val region: String? = null,
 )
 
-public class BedrockCredentialsBuilder internal constructor() {
+public class BedrockCredentialsBuilder {
     private var accessKeyId: String? = null
     private var secretAccessKey: String? = null
     private var sessionToken: String? = null
     private var region: String? = null
 
-    public fun accessKeyId(value: String) {
+    public fun accessKeyId(value: String): BedrockCredentialsBuilder {
         accessKeyId = value
+        return this
     }
 
-    public fun secretAccessKey(value: String) {
+    public fun secretAccessKey(value: String): BedrockCredentialsBuilder {
         secretAccessKey = value
+        return this
     }
 
-    public fun sessionToken(value: String?) {
+    public fun sessionToken(value: String?): BedrockCredentialsBuilder {
         sessionToken = value
+        return this
     }
 
-    public fun region(value: String?) {
+    public fun region(value: String?): BedrockCredentialsBuilder {
         region = value
+        return this
     }
 
-    internal fun build(): BedrockCredentials =
+    public fun build(): BedrockCredentials =
         BedrockCredentials(
             accessKeyId = requireNotNull(accessKeyId) { "BedrockCredentials.accessKeyId is required" },
             secretAccessKey = requireNotNull(secretAccessKey) { "BedrockCredentials.secretAccessKey is required" },
@@ -109,7 +113,7 @@ public class AmazonBedrockProviderSettings internal constructor(
         }.joinToString("")
 }
 
-public class AmazonBedrockProviderSettingsBuilder internal constructor() {
+public class AmazonBedrockProviderSettingsBuilder {
     private var region: String? = null
     private var apiKey: String? = null
     private var accessKeyId: String? = null
@@ -121,47 +125,57 @@ public class AmazonBedrockProviderSettingsBuilder internal constructor() {
     private var headers: Map<String, String> = emptyMap()
     private var generateId: () -> String = { IdGenerator.generate() }
 
-    public fun region(value: String?) {
+    public fun region(value: String?): AmazonBedrockProviderSettingsBuilder {
         region = value
+        return this
     }
 
-    public fun apiKey(value: String?) {
+    public fun apiKey(value: String?): AmazonBedrockProviderSettingsBuilder {
         apiKey = value
+        return this
     }
 
-    public fun accessKeyId(value: String?) {
+    public fun accessKeyId(value: String?): AmazonBedrockProviderSettingsBuilder {
         accessKeyId = value
+        return this
     }
 
-    public fun secretAccessKey(value: String?) {
+    public fun secretAccessKey(value: String?): AmazonBedrockProviderSettingsBuilder {
         secretAccessKey = value
+        return this
     }
 
-    public fun sessionToken(value: String?) {
+    public fun sessionToken(value: String?): AmazonBedrockProviderSettingsBuilder {
         sessionToken = value
+        return this
     }
 
-    public fun credentialProvider(value: (suspend () -> BedrockCredentials)?) {
+    public fun credentialProvider(value: (suspend () -> BedrockCredentials)?): AmazonBedrockProviderSettingsBuilder {
         credentialProvider = value
+        return this
     }
 
-    public fun baseURL(value: String?) {
+    public fun baseURL(value: String?): AmazonBedrockProviderSettingsBuilder {
         baseURL = value
+        return this
     }
 
-    public fun agentBaseURL(value: String?) {
+    public fun agentBaseURL(value: String?): AmazonBedrockProviderSettingsBuilder {
         agentBaseURL = value
+        return this
     }
 
-    public fun headers(value: Map<String, String>) {
+    public fun headers(value: Map<String, String>): AmazonBedrockProviderSettingsBuilder {
         headers = value
+        return this
     }
 
-    public fun generateId(value: () -> String) {
+    public fun generateId(value: () -> String): AmazonBedrockProviderSettingsBuilder {
         generateId = value
+        return this
     }
 
-    internal fun build(): AmazonBedrockProviderSettings =
+    public fun build(): AmazonBedrockProviderSettings =
         AmazonBedrockProviderSettings(
             region = region,
             apiKey = apiKey,
