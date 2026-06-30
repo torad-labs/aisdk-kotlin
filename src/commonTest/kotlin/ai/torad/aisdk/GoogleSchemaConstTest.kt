@@ -40,7 +40,10 @@ class GoogleSchemaConstTest {
         fixture.server.start()
         val provider = GoogleGenerativeAI(
             fixture.httpClient(),
-            GoogleGenerativeAIProviderSettings(apiKey = "key", baseURL = "https://google.test/v1beta"),
+            GoogleGenerativeAIProviderSettings {
+                apiKey("key")
+                baseURL("https://google.test/v1beta")
+            },
         )
 
         val enumAB = JsonArray(listOf(JsonPrimitive("a"), JsonPrimitive("b")))
@@ -99,7 +102,10 @@ class GoogleSchemaConstTest {
         fixture.server.start()
         val provider = GoogleGenerativeAI(
             fixture.httpClient(),
-            GoogleGenerativeAIProviderSettings(apiKey = "key", baseURL = "https://google.test/v1beta"),
+            GoogleGenerativeAIProviderSettings {
+                apiKey("key")
+                baseURL("https://google.test/v1beta")
+            },
         )
         val nullableString = buildJsonObject {
             put(

@@ -2,6 +2,7 @@ package ai.torad.aisdk.providers
 
 import ai.torad.aisdk.*
 import ai.torad.aisdk.ProviderMetadata
+import dev.drewhamilton.poko.Poko
 import io.ktor.client.HttpClient
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpMethod
@@ -36,10 +37,11 @@ public data class QuiverAIImageModelOptions(
 )
 
 @Serializable
-public data class QuiverAIProviderSettings(
-    val apiKey: String? = null,
-    val baseURL: String = "https://api.quiver.ai/v1",
-    val headers: Map<String, String> = emptyMap(),
+@Poko
+public class QuiverAIProviderSettings internal constructor(
+    public val apiKey: String? = null,
+    public val baseURL: String = "https://api.quiver.ai/v1",
+    public val headers: Map<String, String> = emptyMap(),
 ) {
     internal fun quiverAIOptions(providerOptions: ProviderOptions): JsonObject =
         JsonAccess.obj(providerOptions.toMap(), "quiverai") ?: JsonObject(emptyMap())
@@ -74,6 +76,36 @@ public data class QuiverAIProviderSettings(
         return "QuiverAI request failed ($statusCode): $detail"
     }
 }
+
+public class QuiverAIProviderSettingsBuilder internal constructor() {
+    private var apiKey: String? = null
+    private var baseURL: String = "https://api.quiver.ai/v1"
+    private var headers: Map<String, String> = emptyMap()
+
+    public fun apiKey(value: String?) {
+        apiKey = value
+    }
+
+    public fun baseURL(value: String) {
+        baseURL = value
+    }
+
+    public fun headers(value: Map<String, String>) {
+        headers = value
+    }
+
+    internal fun build(): QuiverAIProviderSettings =
+        QuiverAIProviderSettings(
+            apiKey = apiKey,
+            baseURL = baseURL,
+            headers = headers,
+        )
+}
+
+public fun QuiverAIProviderSettings(
+    block: QuiverAIProviderSettingsBuilder.() -> Unit = {},
+): QuiverAIProviderSettings =
+    QuiverAIProviderSettingsBuilder().apply(block).build()
 
 public class QuiverAIProvider(
     private val client: HttpClient,

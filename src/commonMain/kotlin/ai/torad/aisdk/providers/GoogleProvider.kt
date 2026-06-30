@@ -63,14 +63,15 @@ public sealed class GoogleInteractionsModelInput {
 }
 
 @Serializable
-public data class GoogleGenerativeAIProviderSettings(
-    val baseURL: String = "https://generativelanguage.googleapis.com/v1beta",
-    val apiKey: String? = null,
-    val headers: Map<String, String> = emptyMap(),
-    val generateId: () -> String = { IdGenerator.generate() },
-    val name: String = "google.generative-ai",
-    val videoPollIntervalMillis: Long = 1_000L,
-    val videoMaxPollAttempts: Int = 120,
+@Poko
+public class GoogleGenerativeAIProviderSettings internal constructor(
+    public val baseURL: String = "https://generativelanguage.googleapis.com/v1beta",
+    public val apiKey: String? = null,
+    public val headers: Map<String, String> = emptyMap(),
+    public val generateId: () -> String = { IdGenerator.generate() },
+    public val name: String = "google.generative-ai",
+    public val videoPollIntervalMillis: Long = 1_000L,
+    public val videoMaxPollAttempts: Int = 120,
 ) {
     internal fun googleHeaders(extra: Map<String, String>): Map<String, String> {
         val headers = linkedMapOf<String, String>()
@@ -84,6 +85,60 @@ public data class GoogleGenerativeAIProviderSettings(
     internal fun googleInteractionsHeaders(extra: Map<String, String>): Map<String, String> =
         googleHeaders(extra) + ("Api-Revision" to "2026-05-20")
 }
+
+public class GoogleGenerativeAIProviderSettingsBuilder internal constructor() {
+    private var baseURL: String = "https://generativelanguage.googleapis.com/v1beta"
+    private var apiKey: String? = null
+    private var headers: Map<String, String> = emptyMap()
+    private var generateId: () -> String = { IdGenerator.generate() }
+    private var name: String = "google.generative-ai"
+    private var videoPollIntervalMillis: Long = 1_000L
+    private var videoMaxPollAttempts: Int = 120
+
+    public fun baseURL(value: String) {
+        baseURL = value
+    }
+
+    public fun apiKey(value: String?) {
+        apiKey = value
+    }
+
+    public fun headers(value: Map<String, String>) {
+        headers = value
+    }
+
+    public fun generateId(value: () -> String) {
+        generateId = value
+    }
+
+    public fun name(value: String) {
+        name = value
+    }
+
+    public fun videoPollIntervalMillis(value: Long) {
+        videoPollIntervalMillis = value
+    }
+
+    public fun videoMaxPollAttempts(value: Int) {
+        videoMaxPollAttempts = value
+    }
+
+    internal fun build(): GoogleGenerativeAIProviderSettings =
+        GoogleGenerativeAIProviderSettings(
+            baseURL = baseURL,
+            apiKey = apiKey,
+            headers = headers,
+            generateId = generateId,
+            name = name,
+            videoPollIntervalMillis = videoPollIntervalMillis,
+            videoMaxPollAttempts = videoMaxPollAttempts,
+        )
+}
+
+public fun GoogleGenerativeAIProviderSettings(
+    block: GoogleGenerativeAIProviderSettingsBuilder.() -> Unit = {},
+): GoogleGenerativeAIProviderSettings =
+    GoogleGenerativeAIProviderSettingsBuilder().apply(block).build()
 
 public class GoogleGenerativeAIProvider(
     private val client: HttpClient,

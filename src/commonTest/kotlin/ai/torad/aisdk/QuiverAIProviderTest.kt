@@ -38,7 +38,10 @@ class QuiverAIProviderTest {
         fixture.server.start()
         val model = QuiverAI(
             fixture.httpClient(),
-            QuiverAIProviderSettings(apiKey = "key", headers = mapOf("X-Test" to "1")),
+            QuiverAIProviderSettings {
+                apiKey("key")
+                headers(mapOf("X-Test" to "1"))
+            },
         ).image(ModelId("arrow-1"))
 
         val result = model.generate(
@@ -103,7 +106,7 @@ class QuiverAIProviderTest {
             ),
         )
         fixture.server.start()
-        val model = QuiverAI(fixture.httpClient(), QuiverAIProviderSettings(apiKey = "key")).image(ModelId("arrow-1"))
+        val model = QuiverAI(fixture.httpClient(), QuiverAIProviderSettings { apiKey("key") }).image(ModelId("arrow-1"))
 
         model.generate(
             ImageGenerationParams(
@@ -142,7 +145,7 @@ class QuiverAIProviderTest {
             ),
         )
         fixture.server.start()
-        val provider = QuiverAI(fixture.httpClient(), QuiverAIProviderSettings(apiKey = "key"))
+        val provider = QuiverAI(fixture.httpClient(), QuiverAIProviderSettings { apiKey("key") })
 
         assertFailsWith<InvalidArgumentError> {
             provider.image(ModelId("arrow-1")).generate(
@@ -191,7 +194,7 @@ class QuiverAIProviderTest {
     @Test
     fun `default provider and unsupported model families fail explicitly`() {
         val fixture = TestServer.createTestServer(mutableMapOf())
-        val provider = QuiverAI(fixture.httpClient(), QuiverAIProviderSettings(apiKey = "key"))
+        val provider = QuiverAI(fixture.httpClient(), QuiverAIProviderSettings { apiKey("key") })
 
         assertFailsWith<NoSuchModelError> { provider.languageModel("model") }
         assertFailsWith<NoSuchModelError> { provider.embeddingModel("embed") }

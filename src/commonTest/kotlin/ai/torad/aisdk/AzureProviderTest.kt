@@ -46,11 +46,11 @@ class AzureProviderTest {
         )
         val provider = AzureOpenAI(
             client,
-            AzureOpenAIProviderSettings(
-                resourceName = "test-resource",
-                apiKey = "test-api-key",
-                headers = mapOf("Custom-Provider-Header" to "provider-header-value"),
-            ),
+            AzureOpenAIProviderSettings {
+                resourceName("test-resource")
+                apiKey("test-api-key")
+                headers(mapOf("Custom-Provider-Header" to "provider-header-value"))
+            },
         )
 
         val result = provider("test-deployment").generate(
@@ -103,11 +103,11 @@ class AzureProviderTest {
         )
         val provider = AzureOpenAI(
             client,
-            AzureOpenAIProviderSettings(
-                resourceName = "test-resource",
-                tokenProvider = { "token-${++tokenCount}" },
-                apiVersion = "2025-04-01-preview",
-            ),
+            AzureOpenAIProviderSettings {
+                resourceName("test-resource")
+                tokenProvider { "token-${++tokenCount}" }
+                apiVersion("2025-04-01-preview")
+            },
         )
 
         provider.chat(ModelId("test-deployment")).generate(LanguageModelCallParams(listOf(UserMessage("Hi"))))
@@ -148,11 +148,11 @@ class AzureProviderTest {
         )
         val provider = AzureOpenAI(
             client,
-            AzureOpenAIProviderSettings(
-                baseURL = "https://proxy.example/openai/",
-                apiKey = "test-api-key",
-                useDeploymentBasedUrls = true,
-            ),
+            AzureOpenAIProviderSettings {
+                baseURL("https://proxy.example/openai/")
+                apiKey("test-api-key")
+                useDeploymentBasedUrls(true)
+            },
         )
 
         val image = provider.imageModel("dalle-deployment").generate(
@@ -196,7 +196,10 @@ class AzureProviderTest {
     fun `tools mirror Azure OpenAI hosted tool subset`() {
         val tools = AzureOpenAI(
             HttpClient(MockEngine { respond("{}") }),
-            AzureOpenAIProviderSettings(resourceName = "test-resource", apiKey = "test-api-key"),
+            AzureOpenAIProviderSettings {
+                resourceName("test-resource")
+                apiKey("test-api-key")
+            },
         ).tools
 
         assertProviderTool(tools.codeInterpreter, "code_interpreter", "openai.code_interpreter")
@@ -211,11 +214,11 @@ class AzureProviderTest {
         val error = assertFailsWith<InvalidArgumentError> {
             AzureOpenAI(
                 HttpClient(MockEngine { respond("{}") }),
-                AzureOpenAIProviderSettings(
-                    resourceName = "test-resource",
-                    apiKey = "test-api-key",
-                    tokenProvider = { "token" },
-                ),
+                AzureOpenAIProviderSettings {
+                    resourceName("test-resource")
+                    apiKey("test-api-key")
+                    tokenProvider { "token" }
+                },
             )
         }
         assertTrue(error.message.orEmpty().contains("Both apiKey and tokenProvider were provided"))

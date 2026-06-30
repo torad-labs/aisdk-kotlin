@@ -60,12 +60,12 @@ class OpenAIProviderTest {
 
         val provider = OpenAI(
             client,
-            OpenAIProviderSettings(
-                apiKey = "test-api-key",
-                organization = "org_123",
-                project = "proj_123",
-                headers = mapOf("x-extra" to "yes"),
-            ),
+            OpenAIProviderSettings {
+                apiKey("test-api-key")
+                organization("org_123")
+                project("proj_123")
+                headers(mapOf("x-extra" to "yes"))
+            },
         )
 
         val result = Embedding.embed(provider.embedding("text-embedding-3-small"), "hello")
@@ -108,10 +108,10 @@ class OpenAIProviderTest {
         )
         val provider = OpenAI(
             client,
-            OpenAIProviderSettings(
-                baseURL = "https://proxy.openai.example/v1/",
-                apiKey = "test-api-key",
-            ),
+            OpenAIProviderSettings {
+                baseURL("https://proxy.openai.example/v1/")
+                apiKey("test-api-key")
+            },
         )
 
         val responses = TextGenerator(provider("gpt-5")).generate(GenerationInput.Prompt("hi")).first()
@@ -150,7 +150,7 @@ class OpenAIProviderTest {
                 )
             },
         )
-        val provider = OpenAI(client, OpenAIProviderSettings(apiKey = "test-api-key"))
+        val provider = OpenAI(client, OpenAIProviderSettings { apiKey("test-api-key") })
 
         TextGenerator(
             provider.chat("gpt-5"),
@@ -183,15 +183,15 @@ class OpenAIProviderTest {
         )
         val provider = OpenAI(
             client,
-            OpenAIProviderSettings(
-                baseURL = "https://proxy.openai.example/v1/",
-                apiKey = "test-api-key",
-                organization = "org_123",
-                project = "proj_123",
-                headers = mapOf("x-extra" to "yes"),
-                name = "custom",
-                queryParams = mapOf("api-version" to "2026-06-03"),
-            ),
+            OpenAIProviderSettings {
+                baseURL("https://proxy.openai.example/v1/")
+                apiKey("test-api-key")
+                organization("org_123")
+                project("proj_123")
+                headers(mapOf("x-extra" to "yes"))
+                name("custom")
+                queryParams(mapOf("api-version" to "2026-06-03"))
+            },
         )
 
         val model = provider.responses("gpt-5")
@@ -275,7 +275,7 @@ class OpenAIProviderTest {
                 )
             },
         )
-        val provider = OpenAI(client, OpenAIProviderSettings(apiKey = "test-api-key"))
+        val provider = OpenAI(client, OpenAIProviderSettings { apiKey("test-api-key") })
 
         provider.responses("gpt-5").generate(
             LanguageModelCallParams(
@@ -329,7 +329,7 @@ class OpenAIProviderTest {
                 )
             },
         )
-        val provider = OpenAI(client, OpenAIProviderSettings(apiKey = "test-api-key"))
+        val provider = OpenAI(client, OpenAIProviderSettings { apiKey("test-api-key") })
         val tools = ToolSet<Any?>(
             OpenAIFileSearch(
                 buildJsonObject {
@@ -418,7 +418,7 @@ class OpenAIProviderTest {
                 )
             },
         )
-        val provider = OpenAI(client, OpenAIProviderSettings(apiKey = "test-api-key"))
+        val provider = OpenAI(client, OpenAIProviderSettings { apiKey("test-api-key") })
 
         provider.responses("gpt-4o").generate(
             LanguageModelCallParams(
@@ -475,7 +475,7 @@ class OpenAIProviderTest {
                 )
             },
         )
-        val provider = OpenAI(client, OpenAIProviderSettings(apiKey = "test-api-key"))
+        val provider = OpenAI(client, OpenAIProviderSettings { apiKey("test-api-key") })
 
         val result = provider.responses("gpt-4o").generate(LanguageModelCallParams(messages = listOf(UserMessage("hi"))))
 

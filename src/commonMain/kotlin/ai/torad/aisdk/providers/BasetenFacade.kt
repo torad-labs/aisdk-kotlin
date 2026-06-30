@@ -21,11 +21,12 @@ public class BasetenErrorData(
 )
 
 @Serializable
-public data class BasetenProviderSettings(
-    val apiKey: String? = null,
-    val baseURL: String = "https://inference.baseten.co/v1",
-    val modelURL: String? = null,
-    val headers: Map<String, String> = emptyMap(),
+@Poko
+public class BasetenProviderSettings internal constructor(
+    public val apiKey: String? = null,
+    public val baseURL: String = "https://inference.baseten.co/v1",
+    public val modelURL: String? = null,
+    public val headers: Map<String, String> = emptyMap(),
 ) {
     internal fun toCompatible(
         name: String,
@@ -35,6 +36,42 @@ public data class BasetenProviderSettings(
     ): OpenAICompatibleProviderSettings =
         OpenAICompatibleProviderSettings.forFacade(name, version, baseURL, apiKey, headers, capabilities)
 }
+
+public class BasetenProviderSettingsBuilder internal constructor() {
+    private var apiKey: String? = null
+    private var baseURL: String = "https://inference.baseten.co/v1"
+    private var modelURL: String? = null
+    private var headers: Map<String, String> = emptyMap()
+
+    public fun apiKey(value: String?) {
+        apiKey = value
+    }
+
+    public fun baseURL(value: String) {
+        baseURL = value
+    }
+
+    public fun modelURL(value: String?) {
+        modelURL = value
+    }
+
+    public fun headers(value: Map<String, String>) {
+        headers = value
+    }
+
+    internal fun build(): BasetenProviderSettings =
+        BasetenProviderSettings(
+            apiKey = apiKey,
+            baseURL = baseURL,
+            modelURL = modelURL,
+            headers = headers,
+        )
+}
+
+public fun BasetenProviderSettings(
+    block: BasetenProviderSettingsBuilder.() -> Unit = {},
+): BasetenProviderSettings =
+    BasetenProviderSettingsBuilder().apply(block).build()
 
 public class BasetenProvider(
     private val client: HttpClient,

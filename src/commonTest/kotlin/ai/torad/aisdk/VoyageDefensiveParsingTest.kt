@@ -33,7 +33,7 @@ class VoyageDefensiveParsingTest {
                 )
             },
         )
-        val model = Voyage(client, VoyageProviderSettings(apiKey = "key")).embedding(ModelId("voyage-4"))
+        val model = Voyage(client, VoyageProviderSettings { apiKey("key") }).embedding(ModelId("voyage-4"))
 
         val error = assertFails {
             model.embed(EmbeddingModelCallParams(values = listOf("hi")))
@@ -61,7 +61,7 @@ class VoyageDefensiveParsingTest {
                 )
             },
         )
-        val result = Voyage(client, VoyageProviderSettings(apiKey = "key"))
+        val result = Voyage(client, VoyageProviderSettings { apiKey("key") })
             .reranking(ModelId("rerank-2"))
             .rerank(RerankingParams(query = "q", documents = listOf("a", "b")))
         assertEquals(1, result.results.size)
@@ -83,7 +83,7 @@ class VoyageDefensiveParsingTest {
                 )
             },
         )
-        val result = Voyage(client, VoyageProviderSettings(apiKey = "key"))
+        val result = Voyage(client, VoyageProviderSettings { apiKey("key") })
             .embedding(ModelId("voyage-4"))
             .embed(EmbeddingModelCallParams(values = listOf("hi", "yo")))
         assertEquals(2, result.embeddings.size)

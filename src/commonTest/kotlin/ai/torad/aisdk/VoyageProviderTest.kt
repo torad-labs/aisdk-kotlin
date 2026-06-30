@@ -37,7 +37,10 @@ class VoyageProviderTest {
         fixture.server.start()
         val model = Voyage(
             fixture.httpClient(),
-            VoyageProviderSettings(apiKey = "key", baseURL = "https://voyage.test/v1"),
+            VoyageProviderSettings {
+                apiKey("key")
+                baseURL("https://voyage.test/v1")
+            },
         ).embedding(ModelId("voyage-4"))
 
         val result = model.embed(
@@ -89,7 +92,10 @@ class VoyageProviderTest {
         fixture.server.start()
         val model = Voyage(
             fixture.httpClient(),
-            VoyageProviderSettings(apiKey = "key", baseURL = "https://voyage.test/v1"),
+            VoyageProviderSettings {
+                apiKey("key")
+                baseURL("https://voyage.test/v1")
+            },
         ).reranking(ModelId("rerank-2.5"))
 
         val result = model.rerank(
@@ -123,7 +129,7 @@ class VoyageProviderTest {
     fun `embedding model enforces voyage max values per call`() = runTest {
         val model = Voyage(
             TestServer(mutableMapOf()).httpClient(),
-            VoyageProviderSettings(baseURL = "https://voyage.test/v1"),
+            VoyageProviderSettings { baseURL("https://voyage.test/v1") },
         ).embedding(ModelId("voyage-4"))
 
         val error = assertFailsWith<InvalidArgumentError> {

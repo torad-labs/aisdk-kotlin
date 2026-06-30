@@ -119,7 +119,9 @@ class OpenAICompatibleProviderFacadesTest {
                 name = "vercel",
                 expectedChatUrl = "https://vercel.test/v1/chat/completions",
                 expectedUserAgent = "ai-sdk/vercel/$VERCEL_VERSION",
-                create = { client -> Vercel(client, VercelProviderSettings(apiKey = "key", baseURL = "https://vercel.test/v1")).languageModel("model") },
+                create = { client ->
+                    Vercel(client, VercelProviderSettings { apiKey("key"); baseURL("https://vercel.test/v1") }).languageModel("model")
+                },
             ),
         )
 
@@ -718,7 +720,7 @@ class OpenAICompatibleProviderFacadesTest {
 
         val vercel = Vercel(
             TestServer(mutableMapOf()).httpClient(),
-            VercelProviderSettings(baseURL = "https://vercel.test/v1"),
+            VercelProviderSettings { baseURL("https://vercel.test/v1") },
         )
         val vercelError = assertFailsWith<NoSuchModelError> {
             vercel.imageModel("image")

@@ -1,6 +1,7 @@
 package ai.torad.aisdk.providers
 
 import ai.torad.aisdk.*
+import dev.drewhamilton.poko.Poko
 import io.ktor.client.HttpClient
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpMethod
@@ -33,10 +34,11 @@ public data class VoyageRerankingModelOptions(
 )
 
 @Serializable
-public data class VoyageProviderSettings(
-    val baseURL: String = "https://api.voyageai.com/v1",
-    val apiKey: String? = null,
-    val headers: Map<String, String> = emptyMap(),
+@Poko
+public class VoyageProviderSettings internal constructor(
+    public val baseURL: String = "https://api.voyageai.com/v1",
+    public val apiKey: String? = null,
+    public val headers: Map<String, String> = emptyMap(),
 ) {
     internal suspend fun voyagePostJson(
         client: HttpClient,
@@ -75,6 +77,36 @@ public data class VoyageProviderSettings(
         return "Voyage request failed ($statusCode): $message"
     }
 }
+
+public class VoyageProviderSettingsBuilder internal constructor() {
+    private var baseURL: String = "https://api.voyageai.com/v1"
+    private var apiKey: String? = null
+    private var headers: Map<String, String> = emptyMap()
+
+    public fun baseURL(value: String) {
+        baseURL = value
+    }
+
+    public fun apiKey(value: String?) {
+        apiKey = value
+    }
+
+    public fun headers(value: Map<String, String>) {
+        headers = value
+    }
+
+    internal fun build(): VoyageProviderSettings =
+        VoyageProviderSettings(
+            baseURL = baseURL,
+            apiKey = apiKey,
+            headers = headers,
+        )
+}
+
+public fun VoyageProviderSettings(
+    block: VoyageProviderSettingsBuilder.() -> Unit = {},
+): VoyageProviderSettings =
+    VoyageProviderSettingsBuilder().apply(block).build()
 
 public class VoyageProvider(
     private val client: HttpClient,

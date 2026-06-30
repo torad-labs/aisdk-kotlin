@@ -92,13 +92,13 @@ public class GoogleVertexProvider(
 
     private val delegate: GoogleGenerativeAIProvider = GoogleGenerativeAI(
         client,
-        GoogleGenerativeAIProviderSettings(
-            baseURL = settings.googleVertexPublisherBaseURL(),
-            apiKey = settings.apiKey,
-            headers = settings.googleVertexHeaders(),
-            generateId = settings.generateId,
-            name = "google.vertex",
-        ),
+        GoogleGenerativeAIProviderSettings {
+            baseURL(settings.googleVertexPublisherBaseURL())
+            apiKey(settings.apiKey)
+            headers(settings.googleVertexHeaders())
+            generateId(settings.generateId)
+            name("google.vertex")
+        },
     )
 
     public operator fun invoke(modelId: ModelId): LanguageModel = languageModel(modelId.value)
