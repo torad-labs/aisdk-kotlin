@@ -184,6 +184,11 @@ Penalty, response-format, and retry fields participate in the `Step ?: Agent ?: 
 - `MCPReconnectionOptions(initialReconnectionDelayMillis = 1000, reconnectionDelayGrowFactor = 1.5, maxReconnectionDelayMillis = 30000, maxRetries = 2)` — HTTP inbound SSE reconnect policy; `maxRetries = 0` disables automatic error reconnects.
 - `MCPTransportConfig(..., reconnectionOptions = MCPReconnectionOptions())` and `HttpMCPTransport(..., reconnectionOptions = MCPReconnectionOptions())`.
 - `MCPClient` resource/tool APIs: `tools`, `toolsFromDefinitions`, `listTools`, `listResources`, `readResource`, `listResourceTemplates`, `onElicitationRequest`, `close`.
+- MCP protocol result/capability holders are `@Serializable @Poko class`
+  value-semantics types; JSON field names and `_meta` wire names remain
+  unchanged, while public `copy()` / `componentN()` ABI is intentionally
+  absent. JSON-RPC envelopes and request/params structs stay on their existing
+  KEEP/builder tracks.
 - Experimental MCP aliases/functions require `@ExperimentalAiSdkApi`: `experimental_MCPClientConfig`, `experimental_MCPClient`, `experimental_MCPClientCapabilities`, `experimental_listPrompts`, `experimental_getPrompt`, `Experimental_CreateMCPClient`, `Experimental_StdioMCPTransport`.
 
 ### Provider Registry

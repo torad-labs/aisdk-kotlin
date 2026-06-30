@@ -2,6 +2,7 @@
 
 package ai.torad.aisdk
 
+import dev.drewhamilton.poko.Poko
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonElement
@@ -66,22 +67,24 @@ public data class ElicitationCapability(
 )
 
 @Serializable
-public data class MCPClientCapabilities(
-    val elicitation: ElicitationCapability? = null,
-    val experimental: JsonObject? = null,
+@Poko
+public class MCPClientCapabilities(
+    public val elicitation: ElicitationCapability? = null,
+    public val experimental: JsonObject? = null,
 )
 
 @ExperimentalAiSdkApi
 public typealias experimental_MCPClientCapabilities = MCPClientCapabilities
 
 @Serializable
-public data class MCPServerCapabilities(
-    val experimental: JsonObject? = null,
-    val logging: JsonObject? = null,
-    val prompts: JsonObject? = null,
-    val resources: JsonObject? = null,
-    val tools: JsonObject? = null,
-    val elicitation: ElicitationCapability? = null,
+@Poko
+public class MCPServerCapabilities(
+    public val experimental: JsonObject? = null,
+    public val logging: JsonObject? = null,
+    public val prompts: JsonObject? = null,
+    public val resources: JsonObject? = null,
+    public val tools: JsonObject? = null,
+    public val elicitation: ElicitationCapability? = null,
 )
 
 @Serializable
@@ -90,23 +93,25 @@ public data class MCPBaseParams(
 )
 
 @Serializable
-public data class InitializeResult(
-    val protocolVersion: String,
-    val capabilities: MCPServerCapabilities = MCPServerCapabilities(),
-    val serverInfo: Configuration,
-    val instructions: String? = null,
-    @SerialName("_meta") val meta: JsonObject? = null,
+@Poko
+public class InitializeResult(
+    public val protocolVersion: String,
+    public val capabilities: MCPServerCapabilities = MCPServerCapabilities(),
+    public val serverInfo: Configuration,
+    public val instructions: String? = null,
+    @SerialName("_meta") public val meta: JsonObject? = null,
 )
 
 @Serializable
-public data class MCPToolDefinition(
-    val name: String,
-    val title: String? = null,
-    val description: String? = null,
-    val inputSchema: JsonObject = JsonObject(mapOf("type" to JsonPrimitive("object"))),
-    val outputSchema: JsonObject? = null,
-    val annotations: JsonObject? = null,
-    @SerialName("_meta") val meta: JsonObject? = null,
+@Poko
+public class MCPToolDefinition(
+    public val name: String,
+    public val title: String? = null,
+    public val description: String? = null,
+    public val inputSchema: JsonObject = JsonObject(mapOf("type" to JsonPrimitive("object"))),
+    public val outputSchema: JsonObject? = null,
+    public val annotations: JsonObject? = null,
+    @SerialName("_meta") public val meta: JsonObject? = null,
 ) {
     internal fun toolMetadata(clientInfo: Configuration): Map<String, JsonElement> = buildMap {
         put("clientName", JsonPrimitive(clientInfo.name))
@@ -117,27 +122,30 @@ public data class MCPToolDefinition(
 }
 
 @Serializable
-public data class ListToolsResult(
-    val tools: List<MCPToolDefinition>,
-    val nextCursor: String? = null,
-    @SerialName("_meta") val meta: JsonObject? = null,
+@Poko
+public class ListToolsResult(
+    public val tools: List<MCPToolDefinition>,
+    public val nextCursor: String? = null,
+    @SerialName("_meta") public val meta: JsonObject? = null,
 )
 
 @Serializable
-public data class MCPToolSchema(
-    val inputSchema: JsonElement,
-    val outputSchema: JsonElement? = null,
+@Poko
+public class MCPToolSchema(
+    public val inputSchema: JsonElement,
+    public val outputSchema: JsonElement? = null,
 )
 
 public typealias MCPToolSchemas = Map<String, MCPToolSchema>
 
 @Serializable
-public data class CallToolResult(
-    val content: List<JsonObject> = emptyList(),
-    val structuredContent: JsonElement? = null,
-    val isError: Boolean = false,
-    val toolResult: JsonElement? = null,
-    @SerialName("_meta") val meta: JsonObject? = null,
+@Poko
+public class CallToolResult(
+    public val content: List<JsonObject> = emptyList(),
+    public val structuredContent: JsonElement? = null,
+    public val isError: Boolean = false,
+    public val toolResult: JsonElement? = null,
+    @SerialName("_meta") public val meta: JsonObject? = null,
 ) {
     internal fun extractStructuredContent(outputSchema: JsonElement, toolName: String): JsonElement {
         structuredContent?.let { return it }
@@ -168,77 +176,87 @@ public data class CallToolResult(
 }
 
 @Serializable
-public data class MCPResource(
-    val uri: String,
-    val name: String,
-    val title: String? = null,
-    val description: String? = null,
-    val mimeType: String? = null,
-    val size: Long? = null,
+@Poko
+public class MCPResource(
+    public val uri: String,
+    public val name: String,
+    public val title: String? = null,
+    public val description: String? = null,
+    public val mimeType: String? = null,
+    public val size: Long? = null,
 )
 
 @Serializable
-public data class ListResourcesResult(
-    val resources: List<MCPResource>,
-    val nextCursor: String? = null,
-    @SerialName("_meta") val meta: JsonObject? = null,
+@Poko
+public class ListResourcesResult(
+    public val resources: List<MCPResource>,
+    public val nextCursor: String? = null,
+    @SerialName("_meta") public val meta: JsonObject? = null,
 )
 
 @Serializable
-public data class MCPResourceTemplate(
-    val uriTemplate: String,
-    val name: String,
-    val title: String? = null,
-    val description: String? = null,
-    val mimeType: String? = null,
+@Poko
+public class MCPResourceTemplate(
+    public val uriTemplate: String,
+    public val name: String,
+    public val title: String? = null,
+    public val description: String? = null,
+    public val mimeType: String? = null,
 )
 
 @Serializable
-public data class ListResourceTemplatesResult(
-    val resourceTemplates: List<MCPResourceTemplate>,
-    val nextCursor: String? = null,
-    @SerialName("_meta") val meta: JsonObject? = null,
+@Poko
+public class ListResourceTemplatesResult(
+    public val resourceTemplates: List<MCPResourceTemplate>,
+    public val nextCursor: String? = null,
+    @SerialName("_meta") public val meta: JsonObject? = null,
 )
 
 @Serializable
-public data class ReadResourceResult(
-    val contents: List<JsonObject>,
-    @SerialName("_meta") val meta: JsonObject? = null,
+@Poko
+public class ReadResourceResult(
+    public val contents: List<JsonObject>,
+    @SerialName("_meta") public val meta: JsonObject? = null,
 )
 
 @Serializable
-public data class MCPPromptArgument(
-    val name: String,
-    val description: String? = null,
-    val required: Boolean? = null,
+@Poko
+public class MCPPromptArgument(
+    public val name: String,
+    public val description: String? = null,
+    public val required: Boolean? = null,
 )
 
 @Serializable
-public data class MCPPrompt(
-    val name: String,
-    val title: String? = null,
-    val description: String? = null,
-    val arguments: List<MCPPromptArgument>? = null,
+@Poko
+public class MCPPrompt(
+    public val name: String,
+    public val title: String? = null,
+    public val description: String? = null,
+    public val arguments: List<MCPPromptArgument>? = null,
 )
 
 @Serializable
-public data class ListPromptsResult(
-    val prompts: List<MCPPrompt>,
-    val nextCursor: String? = null,
-    @SerialName("_meta") val meta: JsonObject? = null,
+@Poko
+public class ListPromptsResult(
+    public val prompts: List<MCPPrompt>,
+    public val nextCursor: String? = null,
+    @SerialName("_meta") public val meta: JsonObject? = null,
 )
 
 @Serializable
-public data class MCPPromptMessage(
-    val role: String,
-    val content: JsonObject,
+@Poko
+public class MCPPromptMessage(
+    public val role: String,
+    public val content: JsonObject,
 )
 
 @Serializable
-public data class GetPromptResult(
-    val messages: List<MCPPromptMessage>,
-    val description: String? = null,
-    @SerialName("_meta") val meta: JsonObject? = null,
+@Poko
+public class GetPromptResult(
+    public val messages: List<MCPPromptMessage>,
+    public val description: String? = null,
+    @SerialName("_meta") public val meta: JsonObject? = null,
 )
 
 public object ElicitationRequestSchema
@@ -258,8 +276,9 @@ public data class ElicitationRequest(
 )
 
 @Serializable
-public data class ElicitResult(
-    val action: String,
-    val content: JsonObject? = null,
-    @SerialName("_meta") val meta: JsonObject? = null,
+@Poko
+public class ElicitResult(
+    public val action: String,
+    public val content: JsonObject? = null,
+    @SerialName("_meta") public val meta: JsonObject? = null,
 )
