@@ -2,6 +2,7 @@
 
 package ai.torad.aisdk
 
+import dev.drewhamilton.poko.Poko
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emitAll
 import kotlinx.coroutines.flow.flow
@@ -79,22 +80,25 @@ public data class GatewayProviderSettings(
     }
 }
 
-public data class GatewayRequestContext(
-    val baseUrl: String,
-    val headers: Map<String, String>,
+@Poko
+public class GatewayRequestContext(
+    public val baseUrl: String,
+    public val headers: Map<String, String>,
 )
 
-public data class GatewayPricing(
-    val input: String,
-    val output: String,
-    val cachedInputTokens: String? = null,
-    val cacheCreationInputTokens: String? = null,
+@Poko
+public class GatewayPricing(
+    public val input: String,
+    public val output: String,
+    public val cachedInputTokens: String? = null,
+    public val cacheCreationInputTokens: String? = null,
 )
 
-public data class GatewayLanguageModelSpecification(
-    val specificationVersion: String = "v3",
-    val provider: String,
-    val modelId: String,
+@Poko
+public class GatewayLanguageModelSpecification(
+    public val specificationVersion: String = "v3",
+    public val provider: String,
+    public val modelId: String,
 )
 
 public enum class GatewayModelType {
@@ -117,24 +121,27 @@ public enum class GatewayModelType {
     }
 }
 
-public data class GatewayLanguageModelEntry(
-    val id: String,
-    val name: String,
-    val description: String? = null,
-    val pricing: GatewayPricing? = null,
-    val specification: GatewayLanguageModelSpecification,
-    val modelType: GatewayModelType? = null,
+@Poko
+public class GatewayLanguageModelEntry(
+    public val id: String,
+    public val name: String,
+    public val description: String? = null,
+    public val pricing: GatewayPricing? = null,
+    public val specification: GatewayLanguageModelSpecification,
+    public val modelType: GatewayModelType? = null,
 )
 
 public typealias GatewayModelEntry = GatewayLanguageModelEntry
 
-public data class GatewayFetchMetadataResponse(
-    val models: List<GatewayLanguageModelEntry>,
+@Poko
+public class GatewayFetchMetadataResponse(
+    public val models: List<GatewayLanguageModelEntry>,
 )
 
-public data class GatewayCreditsResponse(
-    val balance: String,
-    val totalUsed: String,
+@Poko
+public class GatewayCreditsResponse(
+    public val balance: String,
+    public val totalUsed: String,
 )
 
 public enum class GatewaySpendReportGroupBy(public val wireValue: String) {
@@ -177,51 +184,54 @@ public data class GatewaySpendReportParams(
     val tags: List<String> = emptyList(),
 )
 
-public data class GatewaySpendReportRow(
-    val day: String? = null,
-    val hour: String? = null,
-    val user: String? = null,
-    val model: String? = null,
-    val tag: String? = null,
-    val provider: String? = null,
-    val credentialType: GatewayCredentialType? = null,
-    val totalCost: Double,
-    val marketCost: Double? = null,
-    val inputTokens: Int? = null,
-    val outputTokens: Int? = null,
-    val cachedInputTokens: Int? = null,
-    val cacheCreationInputTokens: Int? = null,
-    val reasoningTokens: Int? = null,
-    val requestCount: Int? = null,
+@Poko
+public class GatewaySpendReportRow(
+    public val day: String? = null,
+    public val hour: String? = null,
+    public val user: String? = null,
+    public val model: String? = null,
+    public val tag: String? = null,
+    public val provider: String? = null,
+    public val credentialType: GatewayCredentialType? = null,
+    public val totalCost: Double,
+    public val marketCost: Double? = null,
+    public val inputTokens: Int? = null,
+    public val outputTokens: Int? = null,
+    public val cachedInputTokens: Int? = null,
+    public val cacheCreationInputTokens: Int? = null,
+    public val reasoningTokens: Int? = null,
+    public val requestCount: Int? = null,
 )
 
-public data class GatewaySpendReportResponse(
-    val results: List<GatewaySpendReportRow>,
+@Poko
+public class GatewaySpendReportResponse(
+    public val results: List<GatewaySpendReportRow>,
 )
 
 public data class GatewayGenerationInfoParams(
     val id: String,
 )
 
-public data class GatewayGenerationInfo(
-    val id: String,
-    val totalCost: Double,
-    val upstreamInferenceCost: Double,
-    val usage: Double,
-    val createdAt: String,
-    val model: String,
-    val isByok: Boolean,
-    val providerName: String,
-    val streamed: Boolean,
-    val finishReason: String,
-    val latency: Int,
-    val generationTime: Int,
-    val promptTokens: Int,
-    val completionTokens: Int,
-    val reasoningTokens: Int,
-    val cachedTokens: Int,
-    val cacheCreationTokens: Int,
-    val billableWebSearchCalls: Int,
+@Poko
+public class GatewayGenerationInfo(
+    public val id: String,
+    public val totalCost: Double,
+    public val upstreamInferenceCost: Double,
+    public val usage: Double,
+    public val createdAt: String,
+    public val model: String,
+    public val isByok: Boolean,
+    public val providerName: String,
+    public val streamed: Boolean,
+    public val finishReason: String,
+    public val latency: Int,
+    public val generationTime: Int,
+    public val promptTokens: Int,
+    public val completionTokens: Int,
+    public val reasoningTokens: Int,
+    public val cachedTokens: Int,
+    public val cacheCreationTokens: Int,
+    public val billableWebSearchCalls: Int,
 )
 
 public interface GatewayTransport {
@@ -422,14 +432,15 @@ private class GatewayRerankingModel(
         transport.rerank(context(), ModelId(modelId), params)
 }
 
-public data class GatewayTools(
-    val parallelSearch: Tool<JsonElement, JsonElement, Any?> = ProviderExecutedTool(
+@Poko
+public class GatewayTools(
+    public val parallelSearch: Tool<JsonElement, JsonElement, Any?> = ProviderExecutedTool(
         name = "parallelSearch",
         description = "Search the web using Parallel AI's Search API for LLM-optimized excerpts.",
         inputSerializer = JsonElement.serializer(),
         outputSerializer = JsonElement.serializer(),
     ),
-    val perplexitySearch: Tool<JsonElement, JsonElement, Any?> = ProviderExecutedTool(
+    public val perplexitySearch: Tool<JsonElement, JsonElement, Any?> = ProviderExecutedTool(
         name = "perplexitySearch",
         description = "Search the web using Perplexity's Search API for real-time information.",
         inputSerializer = JsonElement.serializer(),

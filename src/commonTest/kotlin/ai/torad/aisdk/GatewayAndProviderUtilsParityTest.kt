@@ -38,6 +38,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertIs
 import kotlin.test.assertNotNull
+import kotlin.test.assertNotEquals
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
@@ -138,6 +139,118 @@ class GatewayAndProviderUtilsParityTest {
         assertEquals("model-1", first.models.single().id)
         assertEquals("model-2", second.models.single().id)
         assertEquals(2, transport.metadataCalls)
+    }
+
+    @Test
+    fun `gateway Poko response types keep value semantics`() {
+        val pricing = GatewayPricing(input = "0.10", output = "0.20")
+        val entry = GatewayLanguageModelEntry(
+            id = "model-1",
+            name = "Model 1",
+            pricing = pricing,
+            specification = GatewayLanguageModelSpecification(provider = "gateway", modelId = "model-1"),
+            modelType = GatewayModelType.Language,
+        )
+        val equalEntry = GatewayLanguageModelEntry(
+            id = "model-1",
+            name = "Model 1",
+            pricing = GatewayPricing(input = "0.10", output = "0.20"),
+            specification = GatewayLanguageModelSpecification(provider = "gateway", modelId = "model-1"),
+            modelType = GatewayModelType.Language,
+        )
+        val differentEntry = GatewayLanguageModelEntry(
+            id = "model-2",
+            name = "Model 2",
+            pricing = pricing,
+            specification = GatewayLanguageModelSpecification(provider = "gateway", modelId = "model-2"),
+            modelType = GatewayModelType.Language,
+        )
+        assertEquals(entry, equalEntry)
+        assertEquals(entry.hashCode(), equalEntry.hashCode())
+        assertNotEquals(entry, differentEntry)
+
+        val report = GatewaySpendReportResponse(
+            results = listOf(
+                GatewaySpendReportRow(model = "model-1", totalCost = 1.5, requestCount = 3),
+            ),
+        )
+        val equalReport = GatewaySpendReportResponse(
+            results = listOf(
+                GatewaySpendReportRow(model = "model-1", totalCost = 1.5, requestCount = 3),
+            ),
+        )
+        val differentReport = GatewaySpendReportResponse(
+            results = listOf(
+                GatewaySpendReportRow(model = "model-1", totalCost = 2.0, requestCount = 3),
+            ),
+        )
+        assertEquals(report, equalReport)
+        assertEquals(report.hashCode(), equalReport.hashCode())
+        assertNotEquals(report, differentReport)
+
+        val generation = GatewayGenerationInfo(
+            id = "gen_1",
+            totalCost = 1.0,
+            upstreamInferenceCost = 0.5,
+            usage = 1.0,
+            createdAt = "2026-06-03T00:00:00Z",
+            model = "model",
+            isByok = true,
+            providerName = "gateway",
+            streamed = false,
+            finishReason = "stop",
+            latency = 10,
+            generationTime = 20,
+            promptTokens = 1,
+            completionTokens = 2,
+            reasoningTokens = 0,
+            cachedTokens = 0,
+            cacheCreationTokens = 0,
+            billableWebSearchCalls = 0,
+        )
+        val equalGeneration = GatewayGenerationInfo(
+            id = "gen_1",
+            totalCost = 1.0,
+            upstreamInferenceCost = 0.5,
+            usage = 1.0,
+            createdAt = "2026-06-03T00:00:00Z",
+            model = "model",
+            isByok = true,
+            providerName = "gateway",
+            streamed = false,
+            finishReason = "stop",
+            latency = 10,
+            generationTime = 20,
+            promptTokens = 1,
+            completionTokens = 2,
+            reasoningTokens = 0,
+            cachedTokens = 0,
+            cacheCreationTokens = 0,
+            billableWebSearchCalls = 0,
+        )
+        val differentGeneration = GatewayGenerationInfo(
+            id = "gen_2",
+            totalCost = 1.0,
+            upstreamInferenceCost = 0.5,
+            usage = 1.0,
+            createdAt = "2026-06-03T00:00:00Z",
+            model = "model",
+            isByok = true,
+            providerName = "gateway",
+            streamed = false,
+            finishReason = "stop",
+            latency = 10,
+            generationTime = 20,
+            promptTokens = 1,
+            completionTokens = 2,
+            reasoningTokens = 0,
+            cachedTokens = 0,
+            cacheCreationTokens = 0,
+            billableWebSearchCalls = 0,
+        )
+        assertEquals(generation, equalGeneration)
+        assertEquals(generation.hashCode(), equalGeneration.hashCode())
+        assertNotEquals(generation, differentGeneration)
     }
 
     @Test

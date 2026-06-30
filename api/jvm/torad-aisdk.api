@@ -1825,10 +1825,6 @@ public final class ai/torad/aisdk/GatewayCredentialType : java/lang/Enum {
 
 public final class ai/torad/aisdk/GatewayCreditsResponse {
 	public fun <init> (Ljava/lang/String;Ljava/lang/String;)V
-	public final fun component1 ()Ljava/lang/String;
-	public final fun component2 ()Ljava/lang/String;
-	public final fun copy (Ljava/lang/String;Ljava/lang/String;)Lai/torad/aisdk/GatewayCreditsResponse;
-	public static synthetic fun copy$default (Lai/torad/aisdk/GatewayCreditsResponse;Ljava/lang/String;Ljava/lang/String;ILjava/lang/Object;)Lai/torad/aisdk/GatewayCreditsResponse;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getBalance ()Ljava/lang/String;
 	public final fun getTotalUsed ()Ljava/lang/String;
@@ -1847,9 +1843,6 @@ public class ai/torad/aisdk/GatewayError : ai/torad/aisdk/AiSdkException {
 
 public final class ai/torad/aisdk/GatewayFetchMetadataResponse {
 	public fun <init> (Ljava/util/List;)V
-	public final fun component1 ()Ljava/util/List;
-	public final fun copy (Ljava/util/List;)Lai/torad/aisdk/GatewayFetchMetadataResponse;
-	public static synthetic fun copy$default (Lai/torad/aisdk/GatewayFetchMetadataResponse;Ljava/util/List;ILjava/lang/Object;)Lai/torad/aisdk/GatewayFetchMetadataResponse;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getModels ()Ljava/util/List;
 	public fun hashCode ()I
@@ -1858,26 +1851,6 @@ public final class ai/torad/aisdk/GatewayFetchMetadataResponse {
 
 public final class ai/torad/aisdk/GatewayGenerationInfo {
 	public fun <init> (Ljava/lang/String;DDDLjava/lang/String;Ljava/lang/String;ZLjava/lang/String;ZLjava/lang/String;IIIIIIII)V
-	public final fun component1 ()Ljava/lang/String;
-	public final fun component10 ()Ljava/lang/String;
-	public final fun component11 ()I
-	public final fun component12 ()I
-	public final fun component13 ()I
-	public final fun component14 ()I
-	public final fun component15 ()I
-	public final fun component16 ()I
-	public final fun component17 ()I
-	public final fun component18 ()I
-	public final fun component2 ()D
-	public final fun component3 ()D
-	public final fun component4 ()D
-	public final fun component5 ()Ljava/lang/String;
-	public final fun component6 ()Ljava/lang/String;
-	public final fun component7 ()Z
-	public final fun component8 ()Ljava/lang/String;
-	public final fun component9 ()Z
-	public final fun copy (Ljava/lang/String;DDDLjava/lang/String;Ljava/lang/String;ZLjava/lang/String;ZLjava/lang/String;IIIIIIII)Lai/torad/aisdk/GatewayGenerationInfo;
-	public static synthetic fun copy$default (Lai/torad/aisdk/GatewayGenerationInfo;Ljava/lang/String;DDDLjava/lang/String;Ljava/lang/String;ZLjava/lang/String;ZLjava/lang/String;IIIIIIIIILjava/lang/Object;)Lai/torad/aisdk/GatewayGenerationInfo;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getBillableWebSearchCalls ()I
 	public final fun getCacheCreationTokens ()I
@@ -1938,14 +1911,6 @@ public final class ai/torad/aisdk/GatewayKt {
 public final class ai/torad/aisdk/GatewayLanguageModelEntry {
 	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lai/torad/aisdk/GatewayPricing;Lai/torad/aisdk/GatewayLanguageModelSpecification;Lai/torad/aisdk/GatewayModelType;)V
 	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lai/torad/aisdk/GatewayPricing;Lai/torad/aisdk/GatewayLanguageModelSpecification;Lai/torad/aisdk/GatewayModelType;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public final fun component1 ()Ljava/lang/String;
-	public final fun component2 ()Ljava/lang/String;
-	public final fun component3 ()Ljava/lang/String;
-	public final fun component4 ()Lai/torad/aisdk/GatewayPricing;
-	public final fun component5 ()Lai/torad/aisdk/GatewayLanguageModelSpecification;
-	public final fun component6 ()Lai/torad/aisdk/GatewayModelType;
-	public final fun copy (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lai/torad/aisdk/GatewayPricing;Lai/torad/aisdk/GatewayLanguageModelSpecification;Lai/torad/aisdk/GatewayModelType;)Lai/torad/aisdk/GatewayLanguageModelEntry;
-	public static synthetic fun copy$default (Lai/torad/aisdk/GatewayLanguageModelEntry;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lai/torad/aisdk/GatewayPricing;Lai/torad/aisdk/GatewayLanguageModelSpecification;Lai/torad/aisdk/GatewayModelType;ILjava/lang/Object;)Lai/torad/aisdk/GatewayLanguageModelEntry;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getDescription ()Ljava/lang/String;
 	public final fun getId ()Ljava/lang/String;
@@ -1960,11 +1925,6 @@ public final class ai/torad/aisdk/GatewayLanguageModelEntry {
 public final class ai/torad/aisdk/GatewayLanguageModelSpecification {
 	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V
 	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public final fun component1 ()Ljava/lang/String;
-	public final fun component2 ()Ljava/lang/String;
-	public final fun component3 ()Ljava/lang/String;
-	public final fun copy (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)Lai/torad/aisdk/GatewayLanguageModelSpecification;
-	public static synthetic fun copy$default (Lai/torad/aisdk/GatewayLanguageModelSpecification;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ILjava/lang/Object;)Lai/torad/aisdk/GatewayLanguageModelSpecification;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getModelId ()Ljava/lang/String;
 	public final fun getProvider ()Ljava/lang/String;
@@ -1994,12 +1954,6 @@ public final class ai/torad/aisdk/GatewayModelType : java/lang/Enum {
 public final class ai/torad/aisdk/GatewayPricing {
 	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V
 	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public final fun component1 ()Ljava/lang/String;
-	public final fun component2 ()Ljava/lang/String;
-	public final fun component3 ()Ljava/lang/String;
-	public final fun component4 ()Ljava/lang/String;
-	public final fun copy (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)Lai/torad/aisdk/GatewayPricing;
-	public static synthetic fun copy$default (Lai/torad/aisdk/GatewayPricing;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ILjava/lang/Object;)Lai/torad/aisdk/GatewayPricing;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getCacheCreationInputTokens ()Ljava/lang/String;
 	public final fun getCachedInputTokens ()Ljava/lang/String;
@@ -2077,10 +2031,6 @@ public final class ai/torad/aisdk/GatewayRateLimitError : ai/torad/aisdk/Gateway
 
 public final class ai/torad/aisdk/GatewayRequestContext {
 	public fun <init> (Ljava/lang/String;Ljava/util/Map;)V
-	public final fun component1 ()Ljava/lang/String;
-	public final fun component2 ()Ljava/util/Map;
-	public final fun copy (Ljava/lang/String;Ljava/util/Map;)Lai/torad/aisdk/GatewayRequestContext;
-	public static synthetic fun copy$default (Lai/torad/aisdk/GatewayRequestContext;Ljava/lang/String;Ljava/util/Map;ILjava/lang/Object;)Lai/torad/aisdk/GatewayRequestContext;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getBaseUrl ()Ljava/lang/String;
 	public final fun getHeaders ()Ljava/util/Map;
@@ -2147,9 +2097,6 @@ public final class ai/torad/aisdk/GatewaySpendReportParams {
 
 public final class ai/torad/aisdk/GatewaySpendReportResponse {
 	public fun <init> (Ljava/util/List;)V
-	public final fun component1 ()Ljava/util/List;
-	public final fun copy (Ljava/util/List;)Lai/torad/aisdk/GatewaySpendReportResponse;
-	public static synthetic fun copy$default (Lai/torad/aisdk/GatewaySpendReportResponse;Ljava/util/List;ILjava/lang/Object;)Lai/torad/aisdk/GatewaySpendReportResponse;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getResults ()Ljava/util/List;
 	public fun hashCode ()I
@@ -2159,23 +2106,6 @@ public final class ai/torad/aisdk/GatewaySpendReportResponse {
 public final class ai/torad/aisdk/GatewaySpendReportRow {
 	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lai/torad/aisdk/GatewayCredentialType;DLjava/lang/Double;Ljava/lang/Integer;Ljava/lang/Integer;Ljava/lang/Integer;Ljava/lang/Integer;Ljava/lang/Integer;Ljava/lang/Integer;)V
 	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lai/torad/aisdk/GatewayCredentialType;DLjava/lang/Double;Ljava/lang/Integer;Ljava/lang/Integer;Ljava/lang/Integer;Ljava/lang/Integer;Ljava/lang/Integer;Ljava/lang/Integer;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public final fun component1 ()Ljava/lang/String;
-	public final fun component10 ()Ljava/lang/Integer;
-	public final fun component11 ()Ljava/lang/Integer;
-	public final fun component12 ()Ljava/lang/Integer;
-	public final fun component13 ()Ljava/lang/Integer;
-	public final fun component14 ()Ljava/lang/Integer;
-	public final fun component15 ()Ljava/lang/Integer;
-	public final fun component2 ()Ljava/lang/String;
-	public final fun component3 ()Ljava/lang/String;
-	public final fun component4 ()Ljava/lang/String;
-	public final fun component5 ()Ljava/lang/String;
-	public final fun component6 ()Ljava/lang/String;
-	public final fun component7 ()Lai/torad/aisdk/GatewayCredentialType;
-	public final fun component8 ()D
-	public final fun component9 ()Ljava/lang/Double;
-	public final fun copy (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lai/torad/aisdk/GatewayCredentialType;DLjava/lang/Double;Ljava/lang/Integer;Ljava/lang/Integer;Ljava/lang/Integer;Ljava/lang/Integer;Ljava/lang/Integer;Ljava/lang/Integer;)Lai/torad/aisdk/GatewaySpendReportRow;
-	public static synthetic fun copy$default (Lai/torad/aisdk/GatewaySpendReportRow;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lai/torad/aisdk/GatewayCredentialType;DLjava/lang/Double;Ljava/lang/Integer;Ljava/lang/Integer;Ljava/lang/Integer;Ljava/lang/Integer;Ljava/lang/Integer;Ljava/lang/Integer;ILjava/lang/Object;)Lai/torad/aisdk/GatewaySpendReportRow;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getCacheCreationInputTokens ()Ljava/lang/Integer;
 	public final fun getCachedInputTokens ()Ljava/lang/Integer;
@@ -2206,10 +2136,6 @@ public final class ai/torad/aisdk/GatewayTools {
 	public fun <init> ()V
 	public fun <init> (Lai/torad/aisdk/Tool;Lai/torad/aisdk/Tool;)V
 	public synthetic fun <init> (Lai/torad/aisdk/Tool;Lai/torad/aisdk/Tool;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public final fun component1 ()Lai/torad/aisdk/Tool;
-	public final fun component2 ()Lai/torad/aisdk/Tool;
-	public final fun copy (Lai/torad/aisdk/Tool;Lai/torad/aisdk/Tool;)Lai/torad/aisdk/GatewayTools;
-	public static synthetic fun copy$default (Lai/torad/aisdk/GatewayTools;Lai/torad/aisdk/Tool;Lai/torad/aisdk/Tool;ILjava/lang/Object;)Lai/torad/aisdk/GatewayTools;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getParallelSearch ()Lai/torad/aisdk/Tool;
 	public final fun getPerplexitySearch ()Lai/torad/aisdk/Tool;

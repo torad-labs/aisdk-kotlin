@@ -190,6 +190,10 @@ Penalty, response-format, and retry fields participate in the `Step ?: Agent ?: 
 
 - `interface Provider` with `languageModel`, `embeddingModel`, `imageModel`, `speechModel`, `transcriptionModel`, `rerankingModel`, and `videoModel`.
 - `customProvider(...)`, `CustomProvider`, `ProviderRegistry`, `createProviderRegistry(...)`, `wrapProvider(...)`, `ProviderMiddleware`.
+- Gateway response/spec/metadata holders are `@Poko class` value-semantics
+  types; field access remains, but public `copy()` / `componentN()` ABI is
+  intentionally absent. Gateway settings and call params stay on the
+  builder/data-class track.
 - Errors: `AiSdkException`, `InvalidArgumentError`, `UnsupportedModelVersionError`, `NoSuchProviderError`, `NoSuchModelError`, `NoOutputGeneratedError`, `NoObjectGeneratedError`, `NoImageGeneratedError`, `NoSpeechGeneratedError`, `NoTranscriptGeneratedError`, `NoVideoGeneratedError`, `UiMessageStreamError`.
 
 ### Telemetry
