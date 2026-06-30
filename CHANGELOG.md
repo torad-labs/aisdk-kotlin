@@ -44,8 +44,12 @@ This project follows Semantic Versioning once the first stable release is cut.
   holders, structured-object result/phase holders, and UI stream result
   holders, error/parser/devtools/telemetry result holders, OAuth metadata/token
   payloads, provider error payloads, and model message/content/usage wire
-  types; field access, equality, hashCode, toString, and JSON serialization
-  remain supported where applicable.
+  types, plus generate result holders, loop snapshots, and clean state-machine
+  phase leaves; field access, equality, hashCode, toString, and JSON
+  serialization remain supported where applicable. State containers such as
+  `AgentSessionState`, `ToolLoopAgentState`, `ChatState`, and `CompletionState`
+  intentionally remain data classes for `StateFlow.update { it.copy(...) }`
+  MVI usage.
 
 - **Tools are now class-based and extensible (breaking ABI change).** `Tool` is an `abstract class`
   you can extend for reusable, dependency-injected tools — mirroring how a concrete agent extends

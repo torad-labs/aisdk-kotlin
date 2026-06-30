@@ -16,9 +16,9 @@
   - `val engineState: StateFlow<ToolLoopAgentState>`
   - `fun dispatchEngineAction(action: ToolLoopAgentAction<TContext>)`
   - `fun close()`
-- `data class ToolLoopAgentState(messages, streamingAssistantText, currentToolCalls, pendingApprovals, phase, totalSteps, lastFinishReason)` — state-holder surface for long-lived hosts
+- `data class ToolLoopAgentState(messages, streamingAssistantText, currentToolCalls, pendingApprovals, phase, totalSteps, lastFinishReason)` — state-holder surface for long-lived hosts; remains a data class for `StateFlow.update { it.copy(...) }` MVI usage. `ToolLoopAgentState.Phase.Error` is an `@Poko class` value-semantics leaf.
 - `sealed class ToolLoopAgentAction<TContext>` — `UserSubmitPrompt`, `ApproveToolCall`, `DenyToolCall`, `Cancel`, `Reset`
-- `data class GenerateResult<TOutput>(output, text, steps, finishReason, usage, pendingApprovals = [], messages = [])`
+- `@Poko class GenerateResult<TOutput>(output, text, steps, finishReason, usage, pendingApprovals = [], messages = [])`
 - `data class AgentCallHooks(onStart?, onStepStart?, onStepFinish?, onFinish?, onError?, onChunk?)` — per-call hook surface
 
 ### Tool definition
@@ -91,7 +91,7 @@ and repaired values are byte-identical to the JS SDK.
 ### Stop conditions
 
 - `fun interface StopCondition`
-- `data class LoopState(stepNumber, totalSteps, lastFinishReason, toolCallsThisStep, toolCallsAllSteps)`
+- `@Poko class LoopState(stepNumber, totalSteps, lastFinishReason, toolCallsThisStep, toolCallsAllSteps)`
 - `fun StepCountIs(n: Int): StopCondition`
 - `fun HasToolCall(toolName: String): StopCondition`
 - `fun AnyOf(vararg conditions): StopCondition`
@@ -267,10 +267,13 @@ Penalty, response-format, and retry fields participate in the `Step ?: Agent ?: 
 ### Top-level inference
 
 - `data class CallSettings(..., maxRetries = 2)` / `data class CallConfig(..., maxRetries = 2)` — non-streaming text/object generation retries typed retryable `APICallError` / `GatewayError` per model round-trip; `maxRetries = 0` disables retries.
-- `suspend fun <TOutput> generateText(model, prompt? | messages?, system?, output?, temperature?, ..., abortSignal?, presencePenalty?, frequencyPenalty?, responseFormat?, maxRetries = 2): GenerateTextResult<TOutput>`
+- `suspend fun <TOutput> generateText(model, prompt? | messages?, system?, output?, temperature?, ..., abortSignal?, presencePenalty?, frequencyPenalty?, responseFormat?, maxRetries = 2): @Poko GenerateTextResult<TOutput>`
 - `fun streamText(model, prompt? | messages?, system?, ..., abortSignal?, output?, presencePenalty?, frequencyPenalty?, responseFormat?): Flow<StreamEvent>`
-- `@Deprecated suspend fun <TOutput> generateObject(model, output, prompt? | messages?, ..., maxRetries = 2): GenerateObjectResult<TOutput>`
+- `@Deprecated suspend fun <TOutput> generateObject(model, output, prompt? | messages?, ..., maxRetries = 2): @Poko GenerateObjectResult<TOutput>`
 - `@Deprecated fun <TOutput> streamObject(model, output, prompt? | messages?, ...): Flow<StreamEvent>`
+- Completion helper state: `CompletionState` remains a data class for state
+  updates, while `CompletionPhase.Streaming`, `CompletionPhase.Done`, and
+  `CompletionPhase.Failed` are `@Poko class` value-semantics leaves.
 
 ### Messages
 

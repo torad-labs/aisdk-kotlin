@@ -1,5 +1,7 @@
 package ai.torad.aisdk
 
+import dev.drewhamilton.poko.Poko
+
 /**
  * First-class loop stop conditions (invariant I-7). The SDK manages the
  * loop; consumers express completion as a [StopCondition] passed to the
@@ -20,12 +22,13 @@ public fun interface StopCondition {
     public suspend fun shouldStop(state: LoopState): Boolean
 }
 
-public data class LoopState(
-    val stepNumber: Int,
-    val totalSteps: Int,
-    val lastFinishReason: FinishReason,
-    val toolCallsThisStep: List<ContentPart.ToolCall>,
-    val toolCallsAllSteps: List<ContentPart.ToolCall>,
+@Poko
+public class LoopState(
+    public val stepNumber: Int,
+    public val totalSteps: Int,
+    public val lastFinishReason: FinishReason,
+    public val toolCallsThisStep: List<ContentPart.ToolCall>,
+    public val toolCallsAllSteps: List<ContentPart.ToolCall>,
     /**
      * All completed steps so far, in order. Mirrors v6's
      * `{steps: StepResult[]}` parameter shape (per
@@ -34,7 +37,7 @@ public data class LoopState(
      * the synthesized aggregate fields above. Empty during the
      * pre-first-step check.
      */
-    val steps: List<StepResult> = emptyList(),
+    public val steps: List<StepResult> = emptyList(),
 )
 
 /** Stop after [n] completed steps. v6's default is 20 if `stopWhen` omitted. */
