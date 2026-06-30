@@ -29,7 +29,7 @@ little evolvability benefit. **Decision: the 4 state containers stay `data class
 
 ## Classification
 
-_Generated 2026-06-30 by an automated classification pass over `src/commonMain/kotlin` (mirrors the budget gate's detection regex). Counts: DEMOTE 178 · BUILDER 139 · KEEP 34 · REVIEW 10 · NON-PUBLIC 17 = 378._
+_Generated 2026-06-30 by an automated classification pass over `src/commonMain/kotlin` (mirrors the budget gate's detection regex). Initial counts: DEMOTE 178 · BUILDER 139 · KEEP 34 · REVIEW 10 · NON-PUBLIC 17 = 378. Subsequent owner decisions and KEEP-floor audit resolutions are recorded below._
 
 ### Summary
 
@@ -489,7 +489,7 @@ Construct types consumers build; front each with a builder/DSL (the `CallSetting
 | `providers/XaiProvider.kt` | 193 | `XaiVideoModelOptions` | 7 | ✅ |  | provider config/options consumers build (grows) |
 | `ui/Chat.kt` | 19 | `ChatRequest` | 4 |  |  | request consumers build |
 
-### KEEP `data class` (34)
+### KEEP `data class` floor
 
 Small, frozen, wire-fixed value/ref/sealed-leaf types (Jake Wharton 2D-point carve-out). Leave as `data class`.
 
@@ -499,7 +499,6 @@ Small, frozen, wire-fixed value/ref/sealed-leaf types (Jake Wharton 2D-point car
 | `GenerationInput.kt` | 5 | `Prompt` | 1 |  | small frozen value/ref/sealed-leaf/wire-fixed |
 | `GenerationInput.kt` | 7 | `Messages` | 1 |  | small frozen value/ref/sealed-leaf/wire-fixed |
 | `GenerationInput.kt` | 9 | `MessagesWithPrompt` | 3 |  | small frozen value/ref/sealed-leaf/wire-fixed |
-| `IdGenerator.kt` | 5 | `IdGenerator` | 6 |  | small frozen value/ref/sealed-leaf/wire-fixed |
 | `KotlinApi.kt` | 178 | `PromptText` | 2 |  | small frozen value/ref/sealed-leaf/wire-fixed |
 | `KotlinApi.kt` | 185 | `MessageHistory` | 2 |  | small frozen value/ref/sealed-leaf/wire-fixed |
 | `KotlinApi.kt` | 192 | `MessageHistoryWithPrompt` | 3 |  | small frozen value/ref/sealed-leaf/wire-fixed |
@@ -537,18 +536,38 @@ Small, frozen, wire-fixed value/ref/sealed-leaf types (Jake Wharton 2D-point car
 | `Embedding.kt` | 29 | `EmbeddingModelCallParams` | 7 |  | framework-produced params with former `copy()` middleware idiom; demote and replace with `params.toBuilder().field(...).build()` |
 | `LanguageModel.kt` | 81 | `LanguageModelCallParams` | 17 |  | framework-produced params with former `copy()` middleware/provider idiom; demote and replace with `params.toBuilder().field(...).build()` |
 
-### REVIEW (8) — decide before migrating
+### KEEP-floor audit stragglers — BUILDER regular class
 
-| File | Line | Type | f | Ser | Concern |
+| File | Line | Type | f | Ser | Decision |
 |---|---:|---|---:|:--:|---|
-| `Gateway.kt` | 27 | `GatewayAuthToken` | 3 |  | auth token holder consumers may construct vs framework-produced |
-| `McpProtocol.kt` | 88 | `MCPBaseParams` | 2 | ✅ | MCP protocol base params struct (_meta carrier) — wire base, decide KEEP vs DEMOTE |
-| `Provider.kt` | 28 | `CustomProvider` | 11 |  | consumer-built provider impl w/ private fields+behavior; grows by model kind — builder or plain class, not data |
-| `ResponseFormat.kt` | 49 | `Json` | 4 | ✅ | consumer-CONSTRUCTED sealed leaf, @Serializable; small but may gain schema fields |
-| `providers/LiteRTLanguageModel.kt` | 57 | `LiteRTChannel` | 4 |  | LiteRT provider channel holder — low-traffic, decide KEEP vs DEMOTE |
-| `providers/LiteRTLanguageModel.kt` | 69 | `ToolResponse` | 2 |  | LiteRT content leaf |
-| `providers/LiteRTLanguageModel.kt` | 72 | `LiteRTToolCall` | 5 |  | LiteRT tool-call holder |
-| `providers/LiteRTLanguageModel.kt` | 79 | `LiteRTMessage` | 6 |  | LiteRT message holder (consumer-built request content vs produced) |
+| `IdGenerator.kt` | 5 | `IdGenerator` | 6 |  | consumer-configured generator with `Random`; regular builder-backed class, straggler caught in KEEP-floor audit |
+| `Provider.kt` | 28 | `CustomProvider` | 11 |  | consumer-configured provider over model object maps; regular builder-backed class, straggler caught in KEEP-floor audit |
+
+### CONFIRMED KEEP after KEEP-floor audit
+
+These rows were explicitly re-audited after the builder/demote migration. They
+remain public `data class`es because they are frozen/wire/state/value surfaces,
+not growable consumer construct types.
+
+The audit also confirmed the existing KEEP floor: Google provider
+`Model`/`Agent`/`ManagedAgent` leaves, `ToolNameMapping`, JSON-RPC/MCP wire
+envelopes, `Elicitation*`, `ToolApprovalRequest`, the four state containers,
+generation-input/prompt/content sealed leaves, `Raw`/`Json`/`Pattern` leaves,
+`ScriptedResponse`, and `UIMessage`.
+
+| File | Line | Type | f | Ser | Reason |
+|---|---:|---|---:|:--:|---|
+| `Gateway.kt` | 27 | `GatewayAuthToken` | 3 |  | confirmed KEEP token value in KEEP-floor audit |
+| `McpProtocol.kt` | 88 | `MCPBaseParams` | 2 | ✅ | confirmed KEEP MCP protocol base params struct (`_meta` carrier) |
+| `ResponseFormat.kt` | 49 | `Json` | 4 | ✅ | confirmed KEEP small sealed response-format leaf |
+| `providers/LiteRTLanguageModel.kt` | 57 | `LiteRTChannel` | 4 |  | confirmed KEEP LiteRT channel holder |
+| `providers/LiteRTLanguageModel.kt` | 69 | `ToolResponse` | 2 |  | confirmed KEEP LiteRT content leaf |
+| `providers/LiteRTLanguageModel.kt` | 72 | `LiteRTToolCall` | 5 |  | confirmed KEEP LiteRT tool-call holder |
+| `providers/LiteRTLanguageModel.kt` | 79 | `LiteRTMessage` | 6 |  | confirmed KEEP LiteRT message holder |
+
+### REVIEW (0)
+
+_No remaining REVIEW rows after the Batch 18 KEEP-floor audit._
 
 ### NON-PUBLIC gate artifacts (17) — not real public ABI
 
@@ -580,5 +599,5 @@ These match the budget regex but are nested in `internal`/`private`/function-loc
 - **`copy()` used internally (58 flagged ⟳).** Demotion to `@Poko` removes `copy()`. Hot spots: `StreamEventTelemetryRedaction.kt` (25 calls on `StreamEvent` leaves), `MutableStateFlow.update { it.copy() }` in `ToolLoopAgent.kt`/`AgentSession.kt`/`CompletionApi.kt`/`ChatSession.kt` (state snapshots), and provider `result.copy(usage=)` / `event.copy(usage=)` shims (Mistral, Alibaba, DeepInfra). Each demotion batch must rewrite its `copy()` sites to fresh-construct — sized into the batch notes above.
 - **`@Poko` + `@Serializable` (77 DEMOTE types).** See the risk callout above — unproven in-repo; D1 is the canary.
 - **Call-params decision (`LanguageModelCallParams`, `EmbeddingModelCallParams`) → DEMOTE via `@Poko` + public `toBuilder()`.** Framework-produced params were formerly transformed by *consumer* middleware via `params.copy(...)` (DefaultSettings, AddToolInputExamples, provider-options shims). The owner decision is to remove public `copy()` / `componentN()` and expose a public seeded builder replacement: `params.toBuilder().field(...).build()`.
-- **MCP JSON-RPC envelopes → KEEP, MCP results → DEMOTE.** `JSONRPCRequest/Notification/Response/Error/ErrorData` are frozen by JSON-RPC 2.0 (KEEP). The capability/result/resource/prompt structs follow the evolving MCP spec (DEMOTE, batch D5). `MCPBaseParams` flagged REVIEW.
+- **MCP JSON-RPC envelopes → KEEP, MCP results → DEMOTE.** `JSONRPCRequest/Notification/Response/Error/ErrorData` are frozen by JSON-RPC 2.0 (KEEP). The capability/result/resource/prompt structs follow the evolving MCP spec (DEMOTE, batch D5). `MCPBaseParams` was confirmed KEEP in the Batch 18 KEEP-floor audit as the `_meta` wire base carrier.
 - **OAuth split.** `OAuthTokens` (response/persisted) + the two server-metadata structs → DEMOTE (D14). `OAuthClientInformation`/`OAuthClientMetadata` (consumer-supplied) → BUILDER.

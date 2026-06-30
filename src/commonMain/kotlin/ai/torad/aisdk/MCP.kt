@@ -937,7 +937,11 @@ suspend fun auth(
     // seeded Random.Default — RFC 7636 §4.1 requires high-entropy cryptographic random.
     val state = provider.state() ?: IdGenerator.generate(prefix = "mcp", random = SecureRandom())
     provider.saveState(state)
-    val codeVerifier = IdGenerator(prefix = "mcp-verifier", size = 48, random = SecureRandom()).generate()
+    val codeVerifier = IdGenerator {
+        prefix("mcp-verifier")
+        size(48)
+        random(SecureRandom())
+    }.generate()
     provider.saveCodeVerifier(codeVerifier)
 
     val authClientInformation = clientInformation
