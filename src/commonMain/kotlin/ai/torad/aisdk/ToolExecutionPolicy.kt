@@ -48,29 +48,33 @@ public class ToolExecutionPolicy internal constructor(
     }
 }
 
-public class ToolExecutionPolicyBuilder internal constructor() {
+public class ToolExecutionPolicyBuilder {
     private var maxParallelToolCalls: Int = ToolExecutionPolicy.DEFAULT_MAX_PARALLEL_TOOL_CALLS
     private var maxToolCallsPerStep: Int = ToolExecutionPolicy.DEFAULT_MAX_TOOL_CALLS_PER_STEP
     private var progressBufferCapacity: Int = ToolExecutionPolicy.DEFAULT_PROGRESS_BUFFER_CAPACITY
     private var toolExecutionTimeout: Duration? = null
 
-    public fun maxParallelToolCalls(value: Int) {
+    public fun maxParallelToolCalls(value: Int): ToolExecutionPolicyBuilder {
         maxParallelToolCalls = value
+        return this
     }
 
-    public fun maxToolCallsPerStep(value: Int) {
+    public fun maxToolCallsPerStep(value: Int): ToolExecutionPolicyBuilder {
         maxToolCallsPerStep = value
+        return this
     }
 
-    public fun progressBufferCapacity(value: Int) {
+    public fun progressBufferCapacity(value: Int): ToolExecutionPolicyBuilder {
         progressBufferCapacity = value
+        return this
     }
 
-    public fun toolExecutionTimeout(value: Duration?) {
+    public fun toolExecutionTimeout(value: Duration?): ToolExecutionPolicyBuilder {
         toolExecutionTimeout = value
+        return this
     }
 
-    internal fun build(): ToolExecutionPolicy =
+    public fun build(): ToolExecutionPolicy =
         ToolExecutionPolicy(
             maxParallelToolCalls,
             maxToolCallsPerStep,

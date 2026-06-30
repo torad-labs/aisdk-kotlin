@@ -7358,21 +7358,24 @@ final class ai.torad.aisdk/CallSettings { // ai.torad.aisdk/CallSettings|null[0]
 }
 
 final class ai.torad.aisdk/CallSettingsBuilder { // ai.torad.aisdk/CallSettingsBuilder|null[0]
-    final fun abortSignal(ai.torad.aisdk/AbortSignal?) // ai.torad.aisdk/CallSettingsBuilder.abortSignal|abortSignal(ai.torad.aisdk.AbortSignal?){}[0]
-    final fun frequencyPenalty(kotlin/Float?) // ai.torad.aisdk/CallSettingsBuilder.frequencyPenalty|frequencyPenalty(kotlin.Float?){}[0]
-    final fun maxOutputTokens(kotlin/Int?) // ai.torad.aisdk/CallSettingsBuilder.maxOutputTokens|maxOutputTokens(kotlin.Int?){}[0]
-    final fun maxRetries(kotlin/Int) // ai.torad.aisdk/CallSettingsBuilder.maxRetries|maxRetries(kotlin.Int){}[0]
-    final fun presencePenalty(kotlin/Float?) // ai.torad.aisdk/CallSettingsBuilder.presencePenalty|presencePenalty(kotlin.Float?){}[0]
-    final fun providerOption(kotlin/String, kotlinx.serialization.json/JsonElement) // ai.torad.aisdk/CallSettingsBuilder.providerOption|providerOption(kotlin.String;kotlinx.serialization.json.JsonElement){}[0]
-    final fun providerOptions(ai.torad.aisdk/ProviderOptions) // ai.torad.aisdk/CallSettingsBuilder.providerOptions|providerOptions(ai.torad.aisdk.ProviderOptions){}[0]
-    final fun providerOptions(kotlin/Function1<ai.torad.aisdk/ProviderOptionsBuilder, kotlin/Unit>) // ai.torad.aisdk/CallSettingsBuilder.providerOptions|providerOptions(kotlin.Function1<ai.torad.aisdk.ProviderOptionsBuilder,kotlin.Unit>){}[0]
-    final fun responseFormat(ai.torad.aisdk/ResponseFormat?) // ai.torad.aisdk/CallSettingsBuilder.responseFormat|responseFormat(ai.torad.aisdk.ResponseFormat?){}[0]
-    final fun seed(kotlin/Int?) // ai.torad.aisdk/CallSettingsBuilder.seed|seed(kotlin.Int?){}[0]
-    final fun stopSequence(kotlin/String) // ai.torad.aisdk/CallSettingsBuilder.stopSequence|stopSequence(kotlin.String){}[0]
-    final fun stopSequences(kotlin.collections/Iterable<kotlin/String>) // ai.torad.aisdk/CallSettingsBuilder.stopSequences|stopSequences(kotlin.collections.Iterable<kotlin.String>){}[0]
-    final fun temperature(kotlin/Float?) // ai.torad.aisdk/CallSettingsBuilder.temperature|temperature(kotlin.Float?){}[0]
-    final fun topK(kotlin/Int?) // ai.torad.aisdk/CallSettingsBuilder.topK|topK(kotlin.Int?){}[0]
-    final fun topP(kotlin/Float?) // ai.torad.aisdk/CallSettingsBuilder.topP|topP(kotlin.Float?){}[0]
+    constructor <init>() // ai.torad.aisdk/CallSettingsBuilder.<init>|<init>(){}[0]
+
+    final fun abortSignal(ai.torad.aisdk/AbortSignal?): ai.torad.aisdk/CallSettingsBuilder // ai.torad.aisdk/CallSettingsBuilder.abortSignal|abortSignal(ai.torad.aisdk.AbortSignal?){}[0]
+    final fun build(): ai.torad.aisdk/CallSettings // ai.torad.aisdk/CallSettingsBuilder.build|build(){}[0]
+    final fun frequencyPenalty(kotlin/Float?): ai.torad.aisdk/CallSettingsBuilder // ai.torad.aisdk/CallSettingsBuilder.frequencyPenalty|frequencyPenalty(kotlin.Float?){}[0]
+    final fun maxOutputTokens(kotlin/Int?): ai.torad.aisdk/CallSettingsBuilder // ai.torad.aisdk/CallSettingsBuilder.maxOutputTokens|maxOutputTokens(kotlin.Int?){}[0]
+    final fun maxRetries(kotlin/Int): ai.torad.aisdk/CallSettingsBuilder // ai.torad.aisdk/CallSettingsBuilder.maxRetries|maxRetries(kotlin.Int){}[0]
+    final fun presencePenalty(kotlin/Float?): ai.torad.aisdk/CallSettingsBuilder // ai.torad.aisdk/CallSettingsBuilder.presencePenalty|presencePenalty(kotlin.Float?){}[0]
+    final fun providerOption(kotlin/String, kotlinx.serialization.json/JsonElement): ai.torad.aisdk/CallSettingsBuilder // ai.torad.aisdk/CallSettingsBuilder.providerOption|providerOption(kotlin.String;kotlinx.serialization.json.JsonElement){}[0]
+    final fun providerOptions(ai.torad.aisdk/ProviderOptions): ai.torad.aisdk/CallSettingsBuilder // ai.torad.aisdk/CallSettingsBuilder.providerOptions|providerOptions(ai.torad.aisdk.ProviderOptions){}[0]
+    final fun providerOptions(kotlin/Function1<ai.torad.aisdk/ProviderOptionsBuilder, kotlin/Unit>): ai.torad.aisdk/CallSettingsBuilder // ai.torad.aisdk/CallSettingsBuilder.providerOptions|providerOptions(kotlin.Function1<ai.torad.aisdk.ProviderOptionsBuilder,kotlin.Unit>){}[0]
+    final fun responseFormat(ai.torad.aisdk/ResponseFormat?): ai.torad.aisdk/CallSettingsBuilder // ai.torad.aisdk/CallSettingsBuilder.responseFormat|responseFormat(ai.torad.aisdk.ResponseFormat?){}[0]
+    final fun seed(kotlin/Int?): ai.torad.aisdk/CallSettingsBuilder // ai.torad.aisdk/CallSettingsBuilder.seed|seed(kotlin.Int?){}[0]
+    final fun stopSequence(kotlin/String): ai.torad.aisdk/CallSettingsBuilder // ai.torad.aisdk/CallSettingsBuilder.stopSequence|stopSequence(kotlin.String){}[0]
+    final fun stopSequences(kotlin.collections/Iterable<kotlin/String>): ai.torad.aisdk/CallSettingsBuilder // ai.torad.aisdk/CallSettingsBuilder.stopSequences|stopSequences(kotlin.collections.Iterable<kotlin.String>){}[0]
+    final fun temperature(kotlin/Float?): ai.torad.aisdk/CallSettingsBuilder // ai.torad.aisdk/CallSettingsBuilder.temperature|temperature(kotlin.Float?){}[0]
+    final fun topK(kotlin/Int?): ai.torad.aisdk/CallSettingsBuilder // ai.torad.aisdk/CallSettingsBuilder.topK|topK(kotlin.Int?){}[0]
+    final fun topP(kotlin/Float?): ai.torad.aisdk/CallSettingsBuilder // ai.torad.aisdk/CallSettingsBuilder.topP|topP(kotlin.Float?){}[0]
 }
 
 final class ai.torad.aisdk/CallToolResult { // ai.torad.aisdk/CallToolResult|null[0]
@@ -10491,10 +10494,13 @@ final class ai.torad.aisdk/ToolExecutionPolicy { // ai.torad.aisdk/ToolExecution
 }
 
 final class ai.torad.aisdk/ToolExecutionPolicyBuilder { // ai.torad.aisdk/ToolExecutionPolicyBuilder|null[0]
-    final fun maxParallelToolCalls(kotlin/Int) // ai.torad.aisdk/ToolExecutionPolicyBuilder.maxParallelToolCalls|maxParallelToolCalls(kotlin.Int){}[0]
-    final fun maxToolCallsPerStep(kotlin/Int) // ai.torad.aisdk/ToolExecutionPolicyBuilder.maxToolCallsPerStep|maxToolCallsPerStep(kotlin.Int){}[0]
-    final fun progressBufferCapacity(kotlin/Int) // ai.torad.aisdk/ToolExecutionPolicyBuilder.progressBufferCapacity|progressBufferCapacity(kotlin.Int){}[0]
-    final fun toolExecutionTimeout(kotlin.time/Duration?) // ai.torad.aisdk/ToolExecutionPolicyBuilder.toolExecutionTimeout|toolExecutionTimeout(kotlin.time.Duration?){}[0]
+    constructor <init>() // ai.torad.aisdk/ToolExecutionPolicyBuilder.<init>|<init>(){}[0]
+
+    final fun build(): ai.torad.aisdk/ToolExecutionPolicy // ai.torad.aisdk/ToolExecutionPolicyBuilder.build|build(){}[0]
+    final fun maxParallelToolCalls(kotlin/Int): ai.torad.aisdk/ToolExecutionPolicyBuilder // ai.torad.aisdk/ToolExecutionPolicyBuilder.maxParallelToolCalls|maxParallelToolCalls(kotlin.Int){}[0]
+    final fun maxToolCallsPerStep(kotlin/Int): ai.torad.aisdk/ToolExecutionPolicyBuilder // ai.torad.aisdk/ToolExecutionPolicyBuilder.maxToolCallsPerStep|maxToolCallsPerStep(kotlin.Int){}[0]
+    final fun progressBufferCapacity(kotlin/Int): ai.torad.aisdk/ToolExecutionPolicyBuilder // ai.torad.aisdk/ToolExecutionPolicyBuilder.progressBufferCapacity|progressBufferCapacity(kotlin.Int){}[0]
+    final fun toolExecutionTimeout(kotlin.time/Duration?): ai.torad.aisdk/ToolExecutionPolicyBuilder // ai.torad.aisdk/ToolExecutionPolicyBuilder.toolExecutionTimeout|toolExecutionTimeout(kotlin.time.Duration?){}[0]
 }
 
 final class ai.torad.aisdk/ToolLoopAgentState { // ai.torad.aisdk/ToolLoopAgentState|null[0]

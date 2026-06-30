@@ -33,7 +33,7 @@ public class CallSettings internal constructor(
 }
 
 @AiSdkDsl
-public class CallSettingsBuilder internal constructor() {
+public class CallSettingsBuilder {
     private var temperature: Float? = null
     private var topP: Float? = null
     private var topK: Int? = null
@@ -49,35 +49,82 @@ public class CallSettingsBuilder internal constructor() {
 
     private val stopSequences = mutableListOf<String>()
 
-    public fun temperature(value: Float?) { temperature = value }
-    public fun topP(value: Float?) { topP = value }
-    public fun topK(value: Int?) { topK = value }
-    public fun maxOutputTokens(value: Int?) { maxOutputTokens = value }
-    public fun seed(value: Int?) { seed = value }
-    public fun maxRetries(value: Int) { maxRetries = value }
-    public fun providerOptions(value: ProviderOptions) { providerOptions = value }
-    public fun abortSignal(value: AbortSignal?) { abortSignal = value }
-    public fun presencePenalty(value: Float?) { presencePenalty = value }
-    public fun frequencyPenalty(value: Float?) { frequencyPenalty = value }
-    public fun responseFormat(value: ResponseFormat?) { responseFormat = value }
+    public fun temperature(value: Float?): CallSettingsBuilder {
+        temperature = value
+        return this
+    }
 
-    public fun stopSequence(value: String) {
+    public fun topP(value: Float?): CallSettingsBuilder {
+        topP = value
+        return this
+    }
+
+    public fun topK(value: Int?): CallSettingsBuilder {
+        topK = value
+        return this
+    }
+
+    public fun maxOutputTokens(value: Int?): CallSettingsBuilder {
+        maxOutputTokens = value
+        return this
+    }
+
+    public fun seed(value: Int?): CallSettingsBuilder {
+        seed = value
+        return this
+    }
+
+    public fun maxRetries(value: Int): CallSettingsBuilder {
+        maxRetries = value
+        return this
+    }
+
+    public fun providerOptions(value: ProviderOptions): CallSettingsBuilder {
+        providerOptions = value
+        return this
+    }
+
+    public fun abortSignal(value: AbortSignal?): CallSettingsBuilder {
+        abortSignal = value
+        return this
+    }
+
+    public fun presencePenalty(value: Float?): CallSettingsBuilder {
+        presencePenalty = value
+        return this
+    }
+
+    public fun frequencyPenalty(value: Float?): CallSettingsBuilder {
+        frequencyPenalty = value
+        return this
+    }
+
+    public fun responseFormat(value: ResponseFormat?): CallSettingsBuilder {
+        responseFormat = value
+        return this
+    }
+
+    public fun stopSequence(value: String): CallSettingsBuilder {
         stopSequences += value
+        return this
     }
 
-    public fun stopSequences(values: Iterable<String>) {
+    public fun stopSequences(values: Iterable<String>): CallSettingsBuilder {
         stopSequences += values
+        return this
     }
 
-    public fun providerOption(name: String, value: JsonElement) {
+    public fun providerOption(name: String, value: JsonElement): CallSettingsBuilder {
         providerOptions = providerOptions + ProviderOptions.Raw(JsonObject(mapOf(name to value)))
+        return this
     }
 
-    public fun providerOptions(block: ProviderOptionsBuilder.() -> Unit) {
+    public fun providerOptions(block: ProviderOptionsBuilder.() -> Unit): CallSettingsBuilder {
         providerOptions = providerOptions + ProviderOptions.Raw(JsonObject(ProviderOptionsDsl.build(block)))
+        return this
     }
 
-    internal fun build(): CallSettings = CallSettings(
+    public fun build(): CallSettings = CallSettings(
         temperature = temperature,
         topP = topP,
         topK = topK,
