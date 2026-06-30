@@ -29,7 +29,7 @@ public data class JSONRPCNotification(
 @Serializable
 public data class JSONRPCResponse(
     val id: JsonElement,
-    val result: JsonElement = JsonObject(emptyMap()),
+    val result: JsonElement? = JsonObject(emptyMap()),
     val jsonrpc: String = JSONRPC_VERSION,
 ) : JSONRPCMessage
 

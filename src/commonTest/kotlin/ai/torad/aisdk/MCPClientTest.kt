@@ -29,6 +29,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertIs
 import kotlin.test.assertNotNull
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 @OptIn(ExperimentalAiSdkApi::class)
@@ -281,8 +282,12 @@ class MCPClientTest {
         )
 
         val response = transport.sent.filterIsInstance<JSONRPCResponse>().single { it.id == JsonPrimitive(99) }
-        assertEquals("accept", response.result.jsonObject["action"]!!.jsonPrimitive.content)
-        assertEquals(true, response.result.jsonObject["content"]!!.jsonObject["confirmed"]!!.jsonPrimitive.content.toBoolean())
+        val result = assertNotNull(response.result)
+        val action = assertNotNull(result.jsonObject["action"])
+        val content = assertNotNull(result.jsonObject["content"])
+        val confirmed = assertNotNull(content.jsonObject["confirmed"])
+        assertEquals("accept", action.jsonPrimitive.content)
+        assertEquals(true, confirmed.jsonPrimitive.content.toBoolean())
     }
 
     @Test
@@ -325,10 +330,41 @@ class MCPClientTest {
         assertIs<JSONRPCRequest>(JSONRPCMessage.fromJson("""{"jsonrpc":"2.0","id":1,"method":"tools/list"}"""))
         assertIs<JSONRPCNotification>(JSONRPCMessage.fromJson("""{"jsonrpc":"2.0","method":"notifications/initialized"}"""))
         assertIs<JSONRPCResponse>(JSONRPCMessage.fromJson("""{"jsonrpc":"2.0","id":1,"result":{"ok":true}}"""))
+        val nullResult = assertIs<JSONRPCResponse>(
+            JSONRPCMessage.fromJson("""{"jsonrpc":"2.0","id":7,"result":null}"""),
+        )
+        assertNull(nullResult.result)
         val error = assertIs<JSONRPCError>(
             JSONRPCMessage.fromJson("""{"jsonrpc":"2.0","id":1,"error":{"code":-1,"message":"bad"}}"""),
         )
         assertEquals(-1, error.error.code)
+    }
+
+    @Test
+    fun `JSON-RPC null result response settles pending request instead of hanging`() = runTest {
+        val uncaught = mutableListOf<Throwable>()
+        val transport = FakeMCPTransport { message ->
+            when {
+                message is JSONRPCRequest && message.method == "initialize" ->
+                    respond(message.id, initializeResult())
+                message is JSONRPCRequest && message.method == "tools/list" ->
+                    emitFromServer(JSONRPCMessage.fromJson("""{"jsonrpc":"2.0","id":${message.id},"result":null}"""))
+            }
+        }
+        val client = CreateMCPClient(
+            MCPClientConfig(
+                transport = transport,
+                onUncaughtError = { uncaught += it },
+            ),
+        )
+
+        val error = assertFailsWith<MCPClientError> {
+            client.listTools(options = MCPRequestOptions(timeoutMillis = 50))
+        }
+
+        assertEquals("Failed to parse server response", error.message)
+        assertTrue(uncaught.isEmpty(), "null result response should not be routed to uncaught parse errors")
+        client.close()
     }
 
     @Test

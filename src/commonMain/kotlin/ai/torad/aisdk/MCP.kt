@@ -131,13 +131,13 @@ public sealed interface JSONRPCMessage {
                     "mcp",
                     "json-rpc notification"
                 )
-                envelope.result != null && hasId -> WireDecoder.decode(
+                hasId && envelope.error == null -> WireDecoder.decode(
                     JSONRPCResponse.serializer(),
                     obj,
                     "mcp",
                     "json-rpc response"
                 )
-                envelope.error != null && hasId -> WireDecoder.decode(JSONRPCError.serializer(), obj, "mcp", "json-rpc error")
+                hasId -> WireDecoder.decode(JSONRPCError.serializer(), obj, "mcp", "json-rpc error")
                 else -> WireDecoder.fail("mcp", "json-rpc message", "$", "invalid JSON-RPC envelope", obj)
             }
         }
@@ -259,7 +259,7 @@ private class DefaultMCPClient(config: MCPClientConfig) : MCPClient {
         version = config.version,
     )
     private val clientCapabilities = config.capabilities
-    private val responseHandlers = mutableMapOf<String, CompletableDeferred<JsonElement>>()
+    private val responseHandlers = mutableMapOf<String, CompletableDeferred<JsonElement?>>()
     private val responseHandlersMutex = Mutex()
     private var requestMessageId: Long = 0
     private val isClosed = AtomicBoolean(true)
@@ -496,7 +496,7 @@ private class DefaultMCPClient(config: MCPClientConfig) : MCPClient {
         assertCapability(method)
         options?.signal?.throwIfAborted()
 
-        val deferred = CompletableDeferred<JsonElement>()
+        val deferred = CompletableDeferred<JsonElement?>()
         // Check isClosed under the same lock the drain uses, so a close()/onClose
         // draining concurrently can't run between the check and the insert and leave
         // this handler stranded (awaiting a response that will never come).
@@ -512,7 +512,7 @@ private class DefaultMCPClient(config: MCPClientConfig) : MCPClient {
             val result = deferred.await()
             options?.signal?.throwIfAborted()
             return try {
-                mcpJson.decodeFromJsonElement(serializer, result)
+                mcpJson.decodeFromJsonElement(serializer, result ?: JsonNull)
             } catch (error: Throwable) {
                 throw MCPClientError("Failed to parse server response", cause = error)
             }

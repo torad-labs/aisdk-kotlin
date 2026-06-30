@@ -41,7 +41,7 @@ tests must stay green.
 | BL-021 | MCP SSE reconnect loses messages (`last-event-id` not implemented) | Medium | Optional | CONFIRMED | OPEN |
 | BL-022 | MCP inbound GET SSE never re-auths on 401 | Medium | Optional | CONFIRMED | OPEN |
 | BL-023 | MCP OAuth refresh race under concurrent 401s (no single-flight) | Medium | Recommended | SUSPECTED | OPEN |
-| BL-024 | MCP rejects spec-valid `"result": null`, hanging that request | Low-Med | Optional | CONFIRMED | OPEN |
+| BL-024 | MCP rejects spec-valid `"result": null`, hanging that request | Low-Med | Optional | CONFIRMED | DONE |
 | BL-025 | MCP no default per-request timeout; abort not honored mid-await | Low-Med | Recommended | CONFIRMED | OPEN |
 | BL-026 | MCP stdio close SIGTERMs then immediately SIGKILLs | Low | Optional | CONFIRMED | OPEN |
 | BL-027 | MCP stdio unbounded line buffering (huge-line OOM) | Low | Optional | CONFIRMED | OPEN |
