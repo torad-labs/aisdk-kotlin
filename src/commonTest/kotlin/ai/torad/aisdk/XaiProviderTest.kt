@@ -1,6 +1,9 @@
+@file:OptIn(LowLevelLanguageModelApi::class)
+
 package ai.torad.aisdk
 import ai.torad.aisdk.providers.XAI_VERSION
 import ai.torad.aisdk.providers.XaiProviderSettings
+import ai.torad.aisdk.testing.FlowDrain.drainAllItems
 
 import io.ktor.http.HttpHeaders
 import kotlinx.coroutines.test.runTest
@@ -136,6 +139,37 @@ class XaiProviderTest {
         assertEquals(true, search?.get("return_citations")?.jsonPrimitive?.booleanOrNull)
         assertEquals(10, search?.get("max_search_results")?.jsonPrimitive?.intOrNull)
         assertEquals("example.com", search?.get("sources")?.jsonArray?.single()?.jsonObject?.get("allowed_websites")?.jsonArray?.single()?.jsonPrimitive?.contentOrNull)
+    }
+
+    @Test
+    fun `chat stream requests include usage stream option`() = runTest {
+        val fixture = TestServer.createTestServer(
+            mutableMapOf(
+                "https://api.x.ai/v1/chat/completions" to UrlHandler(
+                    UrlResponse.StreamChunks(
+                        listOf(
+                            """
+                            data: {"id":"chat-1","choices":[{"delta":{"content":"hello"}}]}
+
+                            data: {"id":"chat-1","choices":[{"finish_reason":"stop"}],"usage":{"prompt_tokens":1,"completion_tokens":1}}
+
+                            data: [DONE]
+
+                            """.trimIndent(),
+                        ),
+                    ),
+                ),
+            ),
+        )
+        fixture.server.start()
+        val provider = Xai(fixture.httpClient(), XaiProviderSettings(apiKey = "key"))
+
+        drainAllItems(provider.chat(ModelId("grok-3")).stream(LanguageModelCallParams(messages = listOf(UserMessage("hi")))))
+
+        val bodyText = fixture.calls.single().requestBodyText
+        assertTrue(bodyText.contains(""""stream_options":{"include_usage":true}"""))
+        val body = fixture.calls.single().requestBodyJson.jsonObject
+        assertEquals(true, body["stream_options"]?.jsonObject?.get("include_usage")?.jsonPrimitive?.booleanOrNull)
     }
 
     @Test
