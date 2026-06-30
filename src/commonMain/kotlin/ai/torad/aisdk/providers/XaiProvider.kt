@@ -197,19 +197,87 @@ public fun XaiProviderSettings(
     XaiProviderSettingsBuilder().apply(block).build()
 
 @Serializable
-public data class XaiLanguageModelChatOptions(
-    val reasoningEffort: String? = null,
-    val logprobs: Boolean? = null,
-    val topLogprobs: Int? = null,
-    val parallel_function_calling: Boolean? = null,
-    val searchParameters: JsonElement? = null,
+@Poko
+public class XaiLanguageModelChatOptions internal constructor(
+    public val reasoningEffort: String? = null,
+    public val logprobs: Boolean? = null,
+    public val topLogprobs: Int? = null,
+    public val parallel_function_calling: Boolean? = null,
+    public val searchParameters: JsonElement? = null,
 )
 
+public class XaiLanguageModelChatOptionsBuilder internal constructor() {
+    private var reasoningEffort: String? = null
+    private var logprobs: Boolean? = null
+    private var topLogprobs: Int? = null
+    private var parallelFunctionCalling: Boolean? = null
+    private var searchParameters: JsonElement? = null
+
+    public fun reasoningEffort(value: String?) {
+        reasoningEffort = value
+    }
+
+    public fun logprobs(value: Boolean?) {
+        logprobs = value
+    }
+
+    public fun topLogprobs(value: Int?) {
+        topLogprobs = value
+    }
+
+    public fun parallel_function_calling(value: Boolean?) {
+        parallelFunctionCalling = value
+    }
+
+    public fun searchParameters(value: JsonElement?) {
+        searchParameters = value
+    }
+
+    internal fun build(): XaiLanguageModelChatOptions =
+        XaiLanguageModelChatOptions(
+            reasoningEffort = reasoningEffort,
+            logprobs = logprobs,
+            topLogprobs = topLogprobs,
+            parallel_function_calling = parallelFunctionCalling,
+            searchParameters = searchParameters,
+        )
+}
+
+public fun XaiLanguageModelChatOptions(
+    block: XaiLanguageModelChatOptionsBuilder.() -> Unit = {},
+): XaiLanguageModelChatOptions =
+    XaiLanguageModelChatOptionsBuilder().apply(block).build()
+
 @Serializable
-public data class XaiLanguageModelResponsesOptions(
-    val reasoningEffort: String? = null,
-    val reasoningSummary: String? = null,
+@Poko
+public class XaiLanguageModelResponsesOptions internal constructor(
+    public val reasoningEffort: String? = null,
+    public val reasoningSummary: String? = null,
 )
+
+public class XaiLanguageModelResponsesOptionsBuilder internal constructor() {
+    private var reasoningEffort: String? = null
+    private var reasoningSummary: String? = null
+
+    public fun reasoningEffort(value: String?) {
+        reasoningEffort = value
+    }
+
+    public fun reasoningSummary(value: String?) {
+        reasoningSummary = value
+    }
+
+    internal fun build(): XaiLanguageModelResponsesOptions =
+        XaiLanguageModelResponsesOptions(
+            reasoningEffort = reasoningEffort,
+            reasoningSummary = reasoningSummary,
+        )
+}
+
+public fun XaiLanguageModelResponsesOptions(
+    block: XaiLanguageModelResponsesOptionsBuilder.() -> Unit = {},
+): XaiLanguageModelResponsesOptions =
+    XaiLanguageModelResponsesOptionsBuilder().apply(block).build()
 
 @Serializable
 @Poko

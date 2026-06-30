@@ -1,5 +1,6 @@
 package ai.torad.aisdk
 
+import dev.drewhamilton.poko.Poko
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonNull
@@ -13,14 +14,45 @@ public interface Redactor {
     public fun redactJson(value: JsonElement): JsonElement
 }
 
-public data class RedactionOptions(
-    val replacement: String = "[REDACTED]",
-    val maxStringLength: Int = 256,
-    val minBase64Length: Int = 64,
+@Poko
+public class RedactionOptions internal constructor(
+    public val replacement: String = "[REDACTED]",
+    public val maxStringLength: Int = 256,
+    public val minBase64Length: Int = 64,
 )
 
+public class RedactionOptionsBuilder internal constructor() {
+    private var replacement: String = "[REDACTED]"
+    private var maxStringLength: Int = 256
+    private var minBase64Length: Int = 64
+
+    public fun replacement(value: String) {
+        replacement = value
+    }
+
+    public fun maxStringLength(value: Int) {
+        maxStringLength = value
+    }
+
+    public fun minBase64Length(value: Int) {
+        minBase64Length = value
+    }
+
+    internal fun build(): RedactionOptions =
+        RedactionOptions(
+            replacement = replacement,
+            maxStringLength = maxStringLength,
+            minBase64Length = minBase64Length,
+        )
+}
+
+public fun RedactionOptions(
+    block: RedactionOptionsBuilder.() -> Unit = {},
+): RedactionOptions =
+    RedactionOptionsBuilder().apply(block).build()
+
 public class DefaultRedactor(
-    private val options: RedactionOptions = RedactionOptions(),
+    private val options: RedactionOptions = RedactionOptions {},
 ) : Redactor {
     override fun redactText(value: String): String {
         val tokenRedacted = TOKEN_PATTERNS.fold(value) { current, pattern ->

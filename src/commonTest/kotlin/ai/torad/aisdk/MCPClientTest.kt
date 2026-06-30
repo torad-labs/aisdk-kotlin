@@ -117,7 +117,11 @@ class MCPClientTest {
 
         val modelOutput = echoTool.toModelOutput(
             output,
-            ToolPredicateOptions(toolCallId = "call_1", messages = emptyList(), experimental_context = Unit),
+            ToolPredicateOptions {
+                toolCallId("call_1")
+                messages(emptyList())
+                experimental_context(Unit)
+            },
         )
         val content = assertIs<ToolResultOutput.Content>(modelOutput)
         assertEquals(false, content.isError)
@@ -1133,12 +1137,12 @@ class MCPClientTest {
         val transport = HttpMCPTransport(
             client = fixture.httpClient(),
             url = "https://mcp.test/mcp",
-            reconnectionOptions = MCPReconnectionOptions(
-                initialReconnectionDelayMillis = 30,
-                reconnectionDelayGrowFactor = 1.5,
-                maxReconnectionDelayMillis = 1_000,
-                maxRetries = 2,
-            ),
+            reconnectionOptions = MCPReconnectionOptions {
+                initialReconnectionDelayMillis(30)
+                reconnectionDelayGrowFactor(1.5)
+                maxReconnectionDelayMillis(1_000)
+                maxRetries(2)
+            },
         )
 
         transport.start()
@@ -1174,12 +1178,12 @@ class MCPClientTest {
         val transport = HttpMCPTransport(
             client = fixture.httpClient(),
             url = "https://mcp.test/mcp",
-            reconnectionOptions = MCPReconnectionOptions(
-                initialReconnectionDelayMillis = 30,
-                reconnectionDelayGrowFactor = 10.0,
-                maxReconnectionDelayMillis = 1_000,
-                maxRetries = 2,
-            ),
+            reconnectionOptions = MCPReconnectionOptions {
+                initialReconnectionDelayMillis(30)
+                reconnectionDelayGrowFactor(10.0)
+                maxReconnectionDelayMillis(1_000)
+                maxRetries(2)
+            },
         )
         transport.setOnError { errors += it }
 
@@ -1241,12 +1245,12 @@ class MCPClientTest {
         val transport = HttpMCPTransport(
             client = fixture.httpClient(),
             url = "https://mcp.test/mcp",
-            reconnectionOptions = MCPReconnectionOptions(
-                initialReconnectionDelayMillis = 30,
-                reconnectionDelayGrowFactor = 1.5,
-                maxReconnectionDelayMillis = 1_000,
-                maxRetries = 1,
-            ),
+            reconnectionOptions = MCPReconnectionOptions {
+                initialReconnectionDelayMillis(30)
+                reconnectionDelayGrowFactor(1.5)
+                maxReconnectionDelayMillis(1_000)
+                maxRetries(1)
+            },
         )
         transport.setOnMessage { received[0] += 1 }
         transport.setOnError { errors += it }
@@ -1323,10 +1327,10 @@ class MCPClientTest {
     @Test
     fun `stdio transport exchanges newline-delimited JSON-RPC with process`() = runTest {
         val transport = Experimental_StdioMCPTransport(
-            StdioConfig(
-                command = "/bin/sh",
-                args = listOf("-c", "while IFS= read -r line; do printf '%s\\n' \"\$line\"; done"),
-            ),
+            StdioConfig {
+                command("/bin/sh")
+                args(listOf("-c", "while IFS= read -r line; do printf '%s\\n' \"\$line\"; done"))
+            },
         )
         var received: JSONRPCMessage? = null
         transport.setOnMessage { received = it }
@@ -1354,15 +1358,17 @@ class MCPClientTest {
         // banner/diagnostics to stderr blocks on the write once the ~64KB pipe buffer fills, then
         // stops producing stdout and hangs the JSON-RPC reader forever.
         val transport = Experimental_StdioMCPTransport(
-            StdioConfig(
-                command = "/bin/sh",
+            StdioConfig {
+                command("/bin/sh")
                 // Write ~256KB to stderr (well past the pipe buffer) BEFORE emitting any stdout.
-                args = listOf(
-                    "-c",
-                    "yes 0123456789abcdef | head -c 262144 1>&2; " +
-                        "printf '%s\\n' '{\"jsonrpc\":\"2.0\",\"method\":\"notifications/ready\"}'",
-                ),
-            ),
+                args(
+                    listOf(
+                        "-c",
+                        "yes 0123456789abcdef | head -c 262144 1>&2; " +
+                            "printf '%s\\n' '{\"jsonrpc\":\"2.0\",\"method\":\"notifications/ready\"}'",
+                    ),
+                )
+            },
         )
         var received: JSONRPCMessage? = null
         transport.setOnMessage { received = it }
@@ -1456,7 +1462,10 @@ class MCPClientTest {
         // overwrite the still-open process). Observable proxy: post-fix the field is nulled, so a
         // send after EOF reports the clean "not connected" error instead of a write-to-dead-pipe.
         val transport = Experimental_StdioMCPTransport(
-            StdioConfig(command = "/bin/sh", args = listOf("-c", "exit 0")), // exits immediately -> reader EOF
+            StdioConfig {
+                command("/bin/sh")
+                args(listOf("-c", "exit 0"))
+            }, // exits immediately -> reader EOF
         )
         var closed = false
         transport.setOnClose { closed = true }

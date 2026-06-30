@@ -26,10 +26,35 @@ public const val ASSEMBLYAI_VERSION: String = "2.0.33"
 
 
 @Serializable
-public data class AssemblyAICustomSpelling(
-    val from: List<String>,
-    val to: String,
+@Poko
+public class AssemblyAICustomSpelling internal constructor(
+    public val from: List<String>,
+    public val to: String,
 )
+
+public class AssemblyAICustomSpellingBuilder internal constructor() {
+    private var from: List<String>? = null
+    private var to: String? = null
+
+    public fun from(value: List<String>) {
+        from = value
+    }
+
+    public fun to(value: String) {
+        to = value
+    }
+
+    internal fun build(): AssemblyAICustomSpelling =
+        AssemblyAICustomSpelling(
+            from = requireNotNull(from) { "AssemblyAICustomSpelling.from is required" },
+            to = requireNotNull(to) { "AssemblyAICustomSpelling.to is required" },
+        )
+}
+
+public fun AssemblyAICustomSpelling(
+    block: AssemblyAICustomSpellingBuilder.() -> Unit = {},
+): AssemblyAICustomSpelling =
+    AssemblyAICustomSpellingBuilder().apply(block).build()
 
 @Serializable
 @Poko

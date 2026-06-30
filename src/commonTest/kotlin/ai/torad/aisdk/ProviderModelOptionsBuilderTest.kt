@@ -169,7 +169,10 @@ class ProviderModelOptionsBuilderTest {
         val assembly = AssemblyAITranscriptionModelOptions {
             languageCode("en")
             autoChapters(true)
-            customSpelling(listOf(AssemblyAICustomSpelling(listOf("ai sdk"), "AI SDK")))
+            customSpelling(listOf(AssemblyAICustomSpelling {
+                from(listOf("ai sdk"))
+                to("AI SDK")
+            }))
             wordBoost(listOf("torad"))
         }
         val blackForestLabs = BlackForestLabsImageModelOptions {

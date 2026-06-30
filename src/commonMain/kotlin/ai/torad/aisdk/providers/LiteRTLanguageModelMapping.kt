@@ -48,18 +48,18 @@ internal class LiteRTCallPreparer(
                 "LiteRT empty prompt",
                 "LiteRTLanguageModel requires at least one non-system message.",
             )
-        val request = LiteRTConversationRequest(
-            systemInstruction = messageMapper.systemInstruction(params.messages),
-            initialMessages = nonSystemMessages.dropLast(1).map(messageMapper::message),
-            message = messageMapper.message(message),
-            tools = tools(params, warnings),
-            samplerConfig = sampler(params),
-            automaticToolCalling = false,
-            channels = settings.channels,
-            extraContext = extraContext(params.providerOptions),
-            warnings = warnings,
-            callParams = params,
-        )
+        val request = LiteRTConversationRequest {
+            systemInstruction(messageMapper.systemInstruction(params.messages))
+            initialMessages(nonSystemMessages.dropLast(1).map(messageMapper::message))
+            message(messageMapper.message(message))
+            tools(tools(params, warnings))
+            samplerConfig(sampler(params))
+            automaticToolCalling(false)
+            channels(settings.channels)
+            extraContext(extraContext(params.providerOptions))
+            warnings(warnings)
+            callParams(params)
+        }
         return PreparedLiteRTCall(request, warnings)
     }
 
@@ -128,12 +128,12 @@ internal class LiteRTCallPreparer(
             return null
         }
         val base = settings.defaultSamplerConfig ?: LiteRTSamplerConfig.Default
-        return LiteRTSamplerConfig(
-            topK = params.topK ?: base.topK,
-            topP = params.topP?.toDouble() ?: base.topP,
-            temperature = params.temperature?.toDouble() ?: base.temperature,
-            seed = params.seed ?: base.seed,
-        )
+        return LiteRTSamplerConfig {
+            topK(params.topK ?: base.topK)
+            topP(params.topP?.toDouble() ?: base.topP)
+            temperature(params.temperature?.toDouble() ?: base.temperature)
+            seed(params.seed ?: base.seed)
+        }
     }
 
     fun hasSamplerOverride(params: LanguageModelCallParams): Boolean =

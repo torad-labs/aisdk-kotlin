@@ -3,6 +3,7 @@
 package ai.torad.aisdk.providers
 
 import ai.torad.aisdk.*
+import dev.drewhamilton.poko.Poko
 import io.ktor.client.HttpClient
 import io.ktor.http.HttpHeaders
 import kotlinx.coroutines.flow.Flow
@@ -27,12 +28,49 @@ public typealias AmazonBedrockRerankingModelOptions = JsonObject
 public typealias BedrockRerankingOptions = JsonObject
 
 @Serializable
-public data class BedrockCredentials(
-    val accessKeyId: String,
-    val secretAccessKey: String,
-    val sessionToken: String? = null,
-    val region: String? = null,
+@Poko
+public class BedrockCredentials internal constructor(
+    public val accessKeyId: String,
+    public val secretAccessKey: String,
+    public val sessionToken: String? = null,
+    public val region: String? = null,
 )
+
+public class BedrockCredentialsBuilder internal constructor() {
+    private var accessKeyId: String? = null
+    private var secretAccessKey: String? = null
+    private var sessionToken: String? = null
+    private var region: String? = null
+
+    public fun accessKeyId(value: String) {
+        accessKeyId = value
+    }
+
+    public fun secretAccessKey(value: String) {
+        secretAccessKey = value
+    }
+
+    public fun sessionToken(value: String?) {
+        sessionToken = value
+    }
+
+    public fun region(value: String?) {
+        region = value
+    }
+
+    internal fun build(): BedrockCredentials =
+        BedrockCredentials(
+            accessKeyId = requireNotNull(accessKeyId) { "BedrockCredentials.accessKeyId is required" },
+            secretAccessKey = requireNotNull(secretAccessKey) { "BedrockCredentials.secretAccessKey is required" },
+            sessionToken = sessionToken,
+            region = region,
+        )
+}
+
+public fun BedrockCredentials(
+    block: BedrockCredentialsBuilder.() -> Unit = {},
+): BedrockCredentials =
+    BedrockCredentialsBuilder().apply(block).build()
 
 public class AmazonBedrockProviderSettings internal constructor(
     public val region: String? = null,

@@ -118,7 +118,18 @@ This project follows Semantic Versioning once the first stable release is cut.
   `MCPClientConfig`, `MCPTransportConfig`, `MCPRequestOptions`, and
   `CallCompletionApiOptions` are regular classes with identity equality because
   they may hold clients, abort signals, transports, callbacks, coroutine
-  contexts, telemetry integrations, or model input objects.
+  contexts, telemetry integrations, or model input objects. The remaining
+  non-flagship construct types (`UseCompletionOptions`,
+  `StructuredObjectOptions`, `LoggingOptions`, `RedactionOptions`,
+  `MCPReconnectionOptions`, `StdioConfig`, `ToolSchemaOptions`,
+  `ProviderToolFactoryOptions`, `ToolPredicateOptions`, `BedrockCredentials`,
+  `AssemblyAICustomSpelling`, `OpenResponsesOptions`,
+  `OpenResponsesAllowedTools`, `XaiLanguageModelChatOptions`,
+  `XaiLanguageModelResponsesOptions`, `LiteRTSamplerConfig`,
+  `LiteRTConversationRequest`, and `LiteRTLanguageModelSettings`) now follow
+  the same builder pattern. Pure data-only options/configs/credentials are
+  `@Poko` value-semantics classes; callback-, transport-, serializer-, or
+  arbitrary-context-bearing options are regular classes with identity equality.
 
 - **Tools are now class-based and extensible (breaking ABI change).** `Tool` is an `abstract class`
   you can extend for reusable, dependency-injected tools — mirroring how a concrete agent extends

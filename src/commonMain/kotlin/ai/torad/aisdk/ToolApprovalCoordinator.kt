@@ -125,11 +125,11 @@ internal class ToolApprovalCoordinator<TContext>(
     ): Boolean {
         @Suppress("UNCHECKED_CAST")
         val gated = toolDef as Tool<Any?, Any?, TContext>
-        val predicateOptions = ToolPredicateOptions(
-            toolCallId = call.toolCallId,
-            messages = messages,
-            experimental_context = options,
-        )
+        val predicateOptions = ToolPredicateOptions<TContext> {
+            toolCallId(call.toolCallId)
+            messages(messages)
+            experimental_context(options)
+        }
         return try {
             gated.needsApproval(typedInput, predicateOptions)
         } catch (ce: CancellationException) {
