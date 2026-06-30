@@ -262,7 +262,10 @@ Penalty, response-format, and retry fields participate in the `Step ?: Agent ?: 
 
 - `data class UIMessage(id, role, parts: List<UIMessagePart>, createdAtMs?, metadata: Map<String, JsonElement>? = null)` — `metadata` is the monomorphic substitute for v6's `<METADATA, DATA_PARTS, TOOLS>` generics; apps can attach source-agent identity or routing metadata under their own namespaced keys.
 - `enum UIMessageRole { System, User, Assistant }`
-- `sealed interface UIMessagePart { Text; ToolUI; DynamicToolUI; Reasoning; SourceUrl; SourceDocument; File; Error; StepStart }`
+- `sealed interface UIMessagePart { Text; ToolUI; DynamicToolUI; Reasoning; SourceUrl; SourceDocument; File; Error; Data; StepStart }`
+  - Public leaves are `@Poko class` value-semantics types; serialization and
+    field access remain, but public `copy()` / `componentN()` ABI is
+    intentionally absent.
   - `ToolUI(toolCallId, toolName, state, input?, output?, error?, preliminary = false)` — `preliminary = true` while a `StreamingTool` is still mid-flight (state stays `OutputAvailable`, UI shows "loading more" affordance)
   - `DynamicToolUI(toolCallId, toolName, state, input?, output?, error?, preliminary = false)` — runtime-typed tool variant (subagent prep — parent's static handler registry can't dispatch the subagent's tools)
   - `StepStart(stepNumber)` — multi-step boundary; emitted on `StreamEvent.StepStart` for step 2+ so multi-tool flows / subagent handoffs render a visible divider

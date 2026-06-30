@@ -138,7 +138,8 @@ public fun StreamToUiMessages(
     fun closeTextPart(id: String, providerMetadata: ProviderMetadata) {
         val idx = partIndexById[id] ?: return
         val existing = parts[idx] as? UIMessagePart.Text ?: return
-        parts[idx] = existing.copy(
+        parts[idx] = UIMessagePart.Text(
+            text = existing.text,
             state = TextUIPartState.Done,
             providerMetadata = existing.providerMetadata + providerMetadata,
         )
@@ -181,7 +182,8 @@ public fun StreamToUiMessages(
     fun closeReasoningPart(id: String, providerMetadata: ProviderMetadata) {
         val idx = partIndexById[id] ?: return
         val existing = parts[idx] as? UIMessagePart.Reasoning ?: return
-        parts[idx] = existing.copy(
+        parts[idx] = UIMessagePart.Reasoning(
+            text = existing.text,
             state = TextUIPartState.Done,
             providerMetadata = existing.providerMetadata + providerMetadata,
         )
