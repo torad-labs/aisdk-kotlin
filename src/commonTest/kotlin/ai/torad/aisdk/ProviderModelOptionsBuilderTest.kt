@@ -27,9 +27,17 @@ import ai.torad.aisdk.providers.GroqLanguageModelOptions
 import ai.torad.aisdk.providers.GroqTranscriptionModelOptions
 import ai.torad.aisdk.providers.HumeSpeechModelOptions
 import ai.torad.aisdk.providers.KlingAIVideoModelOptions
+import ai.torad.aisdk.providers.LMNTSpeechModelOptions
 import ai.torad.aisdk.providers.LumaImageModelOptions
+import ai.torad.aisdk.providers.ProdiaImageModelOptions
+import ai.torad.aisdk.providers.ProdiaVideoModelOptions
+import ai.torad.aisdk.providers.QuiverAIImageModelOptions
+import ai.torad.aisdk.providers.ReplicateImageModelOptions
+import ai.torad.aisdk.providers.ReplicateVideoModelOptions
+import ai.torad.aisdk.providers.RevaiTranscriptionModelOptions
 import ai.torad.aisdk.providers.DeepgramSpeechModelOptions
 import ai.torad.aisdk.providers.DeepgramTranscriptionModelOptions
+import ai.torad.aisdk.providers.TogetherAIImageModelOptions
 import ai.torad.aisdk.providers.TogetherAIRerankingModelOptions
 import ai.torad.aisdk.providers.VoyageEmbeddingModelOptions
 import ai.torad.aisdk.providers.VoyageRerankingModelOptions
@@ -41,6 +49,7 @@ import kotlinx.serialization.json.buildJsonObject
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotEquals
+import kotlin.test.assertTrue
 
 class ProviderModelOptionsBuilderTest {
     @Test
@@ -423,5 +432,111 @@ class ProviderModelOptionsBuilderTest {
         assertNotEquals(luma, LumaImageModelOptions {
             referenceType("character")
         })
+    }
+
+    @Test
+    fun `media audio and image option DSLs keep value semantics and serialization`() {
+        val lmnt = LMNTSpeechModelOptions {
+            model("aurora")
+            format("mp3")
+            sampleRate(24000)
+            speed(1.1f)
+            seed(42)
+            conversational(true)
+            length(0.8f)
+            topP(0.9f)
+            temperature(0.4f)
+        }
+        val revai = RevaiTranscriptionModelOptions {
+            metadata("batch-1")
+            notification_config(buildJsonObject { put("url", JsonPrimitive("https://example.test/revai")) })
+            delete_after_seconds(3600)
+            verbatim(true)
+            rush(false)
+            test_mode(true)
+            segments_to_transcribe(buildJsonArray { add(JsonPrimitive("segment-1")) })
+            speaker_names(buildJsonArray { add(JsonPrimitive("Ada")) })
+            skip_diarization(false)
+            skip_postprocessing(false)
+            skip_punctuation(false)
+            remove_disfluencies(true)
+            remove_atmospherics(true)
+            filter_profanity(false)
+            speaker_channels_count(2)
+            speakers_count(2)
+            diarization_type("premium")
+            custom_vocabulary_id("vocab-1")
+            custom_vocabularies(buildJsonArray { add(JsonPrimitive("torad")) })
+            strict_custom_vocabulary(true)
+            summarization_config(buildJsonObject { put("type", JsonPrimitive("brief")) })
+            translation_config(buildJsonObject { put("target_language", JsonPrimitive("es")) })
+            language("en")
+            forced_alignment(true)
+        }
+        val replicateImage = ReplicateImageModelOptions {
+            maxWaitTimeInSeconds(20.0)
+            guidance_scale(3.5)
+            num_inference_steps(24.0)
+            negative_prompt("blur")
+            output_format("webp")
+            output_quality(90)
+            strength(0.7)
+        }
+        val replicateVideo = ReplicateVideoModelOptions {
+            pollIntervalMs(500)
+            pollTimeoutMs(10_000)
+            maxWaitTimeInSeconds(30.0)
+            guidance_scale(2.0)
+            num_inference_steps(18.0)
+            motion_bucket_id(127.0)
+            cond_aug(0.1)
+            decoding_t(7.0)
+            video_length("14_frames")
+            sizing_strategy("maintain_aspect_ratio")
+            frames_per_second(8.0)
+            prompt_optimizer(true)
+        }
+        val prodiaImage = ProdiaImageModelOptions {
+            steps(30)
+            width(1024)
+            height(768)
+            stylePreset("photographic")
+            loras(listOf("detail"))
+            progressive(true)
+        }
+        val prodiaVideo = ProdiaVideoModelOptions {
+            resolution("720p")
+        }
+        val quiver = QuiverAIImageModelOptions {
+            operation("edit")
+            instructions("remove background")
+            temperature(0.2)
+            topP(0.8)
+            presencePenalty(0.1)
+            maxOutputTokens(256)
+            autoCrop(true)
+            targetSize(1024)
+        }
+        val togetherImage = TogetherAIImageModelOptions {
+            steps(20)
+            guidance(7.5f)
+            negativePrompt("low quality")
+            disableSafetyChecker(false)
+            raw(mapOf("seed" to JsonPrimitive(123)))
+        }
+
+        assertEquals(lmnt, aiSdkJson.decodeFromString<LMNTSpeechModelOptions>(aiSdkJson.encodeToString(lmnt)))
+        assertEquals(revai, aiSdkJson.decodeFromString<RevaiTranscriptionModelOptions>(aiSdkJson.encodeToString(revai)))
+        assertEquals(replicateImage, aiSdkJson.decodeFromString<ReplicateImageModelOptions>(aiSdkJson.encodeToString(replicateImage)))
+        assertEquals(replicateVideo, aiSdkJson.decodeFromString<ReplicateVideoModelOptions>(aiSdkJson.encodeToString(replicateVideo)))
+        assertEquals(prodiaImage, aiSdkJson.decodeFromString<ProdiaImageModelOptions>(aiSdkJson.encodeToString(prodiaImage)))
+        assertEquals(prodiaVideo, ProdiaVideoModelOptions { resolution("720p") })
+        assertEquals(quiver, aiSdkJson.decodeFromString<QuiverAIImageModelOptions>(aiSdkJson.encodeToString(quiver)))
+        assertNotEquals(quiver, QuiverAIImageModelOptions { operation("generate") })
+        assertEquals(togetherImage, aiSdkJson.decodeFromString<TogetherAIImageModelOptions>(aiSdkJson.encodeToString(togetherImage)))
+
+        val togetherJson = aiSdkJson.encodeToString(togetherImage)
+        assertTrue(togetherJson.contains("\"negative_prompt\""))
+        assertTrue(togetherJson.contains("\"disable_safety_checker\""))
     }
 }

@@ -94,8 +94,12 @@ This project follows Semantic Versioning once the first stable release is cut.
   `FireworksThinkingOptions`, `FireworksLanguageModelOptions`,
   `GladiaTranscriptionModelOptions`, `GroqLanguageModelOptions`,
   `GroqTranscriptionModelOptions`, `HumeSpeechModelOptions`,
-  `KlingAIVideoModelOptions`, and `LumaImageModelOptions`) now follow the same
-  DSL builder pattern with `@Serializable @Poko class` value semantics.
+  `KlingAIVideoModelOptions`, `LumaImageModelOptions`,
+  `LMNTSpeechModelOptions`, `RevaiTranscriptionModelOptions`,
+  `ReplicateImageModelOptions`, `ReplicateVideoModelOptions`,
+  `ProdiaImageModelOptions`, `ProdiaVideoModelOptions`,
+  `QuiverAIImageModelOptions`, and `TogetherAIImageModelOptions`) now follow
+  the same DSL builder pattern with `@Serializable @Poko class` value semantics.
 
 - **Tools are now class-based and extensible (breaking ABI change).** `Tool` is an `abstract class`
   you can extend for reusable, dependency-injected tools — mirroring how a concrete agent extends

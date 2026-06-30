@@ -25,16 +25,77 @@ private const val QUIVERAI_MAX_IMAGES_PER_CALL: Int = 16
 
 
 @Serializable
-public data class QuiverAIImageModelOptions(
-    val operation: String? = null,
-    val instructions: String? = null,
-    val temperature: Double? = null,
-    val topP: Double? = null,
-    val presencePenalty: Double? = null,
-    val maxOutputTokens: Int? = null,
-    val autoCrop: Boolean? = null,
-    val targetSize: Int? = null,
+@Poko
+public class QuiverAIImageModelOptions internal constructor(
+    public val operation: String? = null,
+    public val instructions: String? = null,
+    public val temperature: Double? = null,
+    public val topP: Double? = null,
+    public val presencePenalty: Double? = null,
+    public val maxOutputTokens: Int? = null,
+    public val autoCrop: Boolean? = null,
+    public val targetSize: Int? = null,
 )
+
+public class QuiverAIImageModelOptionsBuilder internal constructor() {
+    private var operation: String? = null
+    private var instructions: String? = null
+    private var temperature: Double? = null
+    private var topP: Double? = null
+    private var presencePenalty: Double? = null
+    private var maxOutputTokens: Int? = null
+    private var autoCrop: Boolean? = null
+    private var targetSize: Int? = null
+
+    public fun operation(value: String?) {
+        operation = value
+    }
+
+    public fun instructions(value: String?) {
+        instructions = value
+    }
+
+    public fun temperature(value: Double?) {
+        temperature = value
+    }
+
+    public fun topP(value: Double?) {
+        topP = value
+    }
+
+    public fun presencePenalty(value: Double?) {
+        presencePenalty = value
+    }
+
+    public fun maxOutputTokens(value: Int?) {
+        maxOutputTokens = value
+    }
+
+    public fun autoCrop(value: Boolean?) {
+        autoCrop = value
+    }
+
+    public fun targetSize(value: Int?) {
+        targetSize = value
+    }
+
+    internal fun build(): QuiverAIImageModelOptions =
+        QuiverAIImageModelOptions(
+            operation = operation,
+            instructions = instructions,
+            temperature = temperature,
+            topP = topP,
+            presencePenalty = presencePenalty,
+            maxOutputTokens = maxOutputTokens,
+            autoCrop = autoCrop,
+            targetSize = targetSize,
+        )
+}
+
+public fun QuiverAIImageModelOptions(
+    block: QuiverAIImageModelOptionsBuilder.() -> Unit = {},
+): QuiverAIImageModelOptions =
+    QuiverAIImageModelOptionsBuilder().apply(block).build()
 
 @Serializable
 @Poko

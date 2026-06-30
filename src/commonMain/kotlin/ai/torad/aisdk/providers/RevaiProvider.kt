@@ -30,32 +30,189 @@ public const val REVAI_VERSION: String = "2.0.33"
 
 
 @Serializable
-public data class RevaiTranscriptionModelOptions(
-    val metadata: String? = null,
-    val notification_config: JsonObject? = null,
-    val delete_after_seconds: Int? = null,
-    val verbatim: Boolean? = null,
-    val rush: Boolean? = null,
-    val test_mode: Boolean? = null,
-    val segments_to_transcribe: JsonElement? = null,
-    val speaker_names: JsonElement? = null,
-    val skip_diarization: Boolean? = null,
-    val skip_postprocessing: Boolean? = null,
-    val skip_punctuation: Boolean? = null,
-    val remove_disfluencies: Boolean? = null,
-    val remove_atmospherics: Boolean? = null,
-    val filter_profanity: Boolean? = null,
-    val speaker_channels_count: Int? = null,
-    val speakers_count: Int? = null,
-    val diarization_type: String? = null,
-    val custom_vocabulary_id: String? = null,
-    val custom_vocabularies: JsonElement? = null,
-    val strict_custom_vocabulary: Boolean? = null,
-    val summarization_config: JsonObject? = null,
-    val translation_config: JsonObject? = null,
-    val language: String? = null,
-    val forced_alignment: Boolean? = null,
+@Poko
+public class RevaiTranscriptionModelOptions internal constructor(
+    public val metadata: String? = null,
+    public val notification_config: JsonObject? = null,
+    public val delete_after_seconds: Int? = null,
+    public val verbatim: Boolean? = null,
+    public val rush: Boolean? = null,
+    public val test_mode: Boolean? = null,
+    public val segments_to_transcribe: JsonElement? = null,
+    public val speaker_names: JsonElement? = null,
+    public val skip_diarization: Boolean? = null,
+    public val skip_postprocessing: Boolean? = null,
+    public val skip_punctuation: Boolean? = null,
+    public val remove_disfluencies: Boolean? = null,
+    public val remove_atmospherics: Boolean? = null,
+    public val filter_profanity: Boolean? = null,
+    public val speaker_channels_count: Int? = null,
+    public val speakers_count: Int? = null,
+    public val diarization_type: String? = null,
+    public val custom_vocabulary_id: String? = null,
+    public val custom_vocabularies: JsonElement? = null,
+    public val strict_custom_vocabulary: Boolean? = null,
+    public val summarization_config: JsonObject? = null,
+    public val translation_config: JsonObject? = null,
+    public val language: String? = null,
+    public val forced_alignment: Boolean? = null,
 )
+
+public class RevaiTranscriptionModelOptionsBuilder internal constructor() {
+    private var metadata: String? = null
+    private var notification_config: JsonObject? = null
+    private var delete_after_seconds: Int? = null
+    private var verbatim: Boolean? = null
+    private var rush: Boolean? = null
+    private var test_mode: Boolean? = null
+    private var segments_to_transcribe: JsonElement? = null
+    private var speaker_names: JsonElement? = null
+    private var skip_diarization: Boolean? = null
+    private var skip_postprocessing: Boolean? = null
+    private var skip_punctuation: Boolean? = null
+    private var remove_disfluencies: Boolean? = null
+    private var remove_atmospherics: Boolean? = null
+    private var filter_profanity: Boolean? = null
+    private var speaker_channels_count: Int? = null
+    private var speakers_count: Int? = null
+    private var diarization_type: String? = null
+    private var custom_vocabulary_id: String? = null
+    private var custom_vocabularies: JsonElement? = null
+    private var strict_custom_vocabulary: Boolean? = null
+    private var summarization_config: JsonObject? = null
+    private var translation_config: JsonObject? = null
+    private var language: String? = null
+    private var forced_alignment: Boolean? = null
+
+    public fun metadata(value: String?) {
+        metadata = value
+    }
+
+    public fun notification_config(value: JsonObject?) {
+        notification_config = value
+    }
+
+    public fun delete_after_seconds(value: Int?) {
+        delete_after_seconds = value
+    }
+
+    public fun verbatim(value: Boolean?) {
+        verbatim = value
+    }
+
+    public fun rush(value: Boolean?) {
+        rush = value
+    }
+
+    public fun test_mode(value: Boolean?) {
+        test_mode = value
+    }
+
+    public fun segments_to_transcribe(value: JsonElement?) {
+        segments_to_transcribe = value
+    }
+
+    public fun speaker_names(value: JsonElement?) {
+        speaker_names = value
+    }
+
+    public fun skip_diarization(value: Boolean?) {
+        skip_diarization = value
+    }
+
+    public fun skip_postprocessing(value: Boolean?) {
+        skip_postprocessing = value
+    }
+
+    public fun skip_punctuation(value: Boolean?) {
+        skip_punctuation = value
+    }
+
+    public fun remove_disfluencies(value: Boolean?) {
+        remove_disfluencies = value
+    }
+
+    public fun remove_atmospherics(value: Boolean?) {
+        remove_atmospherics = value
+    }
+
+    public fun filter_profanity(value: Boolean?) {
+        filter_profanity = value
+    }
+
+    public fun speaker_channels_count(value: Int?) {
+        speaker_channels_count = value
+    }
+
+    public fun speakers_count(value: Int?) {
+        speakers_count = value
+    }
+
+    public fun diarization_type(value: String?) {
+        diarization_type = value
+    }
+
+    public fun custom_vocabulary_id(value: String?) {
+        custom_vocabulary_id = value
+    }
+
+    public fun custom_vocabularies(value: JsonElement?) {
+        custom_vocabularies = value
+    }
+
+    public fun strict_custom_vocabulary(value: Boolean?) {
+        strict_custom_vocabulary = value
+    }
+
+    public fun summarization_config(value: JsonObject?) {
+        summarization_config = value
+    }
+
+    public fun translation_config(value: JsonObject?) {
+        translation_config = value
+    }
+
+    public fun language(value: String?) {
+        language = value
+    }
+
+    public fun forced_alignment(value: Boolean?) {
+        forced_alignment = value
+    }
+
+    internal fun build(): RevaiTranscriptionModelOptions =
+        RevaiTranscriptionModelOptions(
+            metadata = metadata,
+            notification_config = notification_config,
+            delete_after_seconds = delete_after_seconds,
+            verbatim = verbatim,
+            rush = rush,
+            test_mode = test_mode,
+            segments_to_transcribe = segments_to_transcribe,
+            speaker_names = speaker_names,
+            skip_diarization = skip_diarization,
+            skip_postprocessing = skip_postprocessing,
+            skip_punctuation = skip_punctuation,
+            remove_disfluencies = remove_disfluencies,
+            remove_atmospherics = remove_atmospherics,
+            filter_profanity = filter_profanity,
+            speaker_channels_count = speaker_channels_count,
+            speakers_count = speakers_count,
+            diarization_type = diarization_type,
+            custom_vocabulary_id = custom_vocabulary_id,
+            custom_vocabularies = custom_vocabularies,
+            strict_custom_vocabulary = strict_custom_vocabulary,
+            summarization_config = summarization_config,
+            translation_config = translation_config,
+            language = language,
+            forced_alignment = forced_alignment,
+        )
+}
+
+public fun RevaiTranscriptionModelOptions(
+    block: RevaiTranscriptionModelOptionsBuilder.() -> Unit = {},
+): RevaiTranscriptionModelOptions =
+    RevaiTranscriptionModelOptionsBuilder().apply(block).build()
 
 @Serializable
 @Poko
