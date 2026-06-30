@@ -116,24 +116,27 @@ public class DeepSeekProviderSettings internal constructor(
     }
 }
 
-public class DeepSeekProviderSettingsBuilder internal constructor() {
+public class DeepSeekProviderSettingsBuilder {
     private var apiKey: String? = null
     private var baseURL: String = "https://api.deepseek.com"
     private var headers: Map<String, String> = emptyMap()
 
-    public fun apiKey(value: String?) {
+    public fun apiKey(value: String?): DeepSeekProviderSettingsBuilder {
         apiKey = value
+        return this
     }
 
-    public fun baseURL(value: String) {
+    public fun baseURL(value: String): DeepSeekProviderSettingsBuilder {
         baseURL = value
+        return this
     }
 
-    public fun headers(value: Map<String, String>) {
+    public fun headers(value: Map<String, String>): DeepSeekProviderSettingsBuilder {
         headers = value
+        return this
     }
 
-    internal fun build(): DeepSeekProviderSettings =
+    public fun build(): DeepSeekProviderSettings =
         DeepSeekProviderSettings(
             apiKey = apiKey,
             baseURL = baseURL,
@@ -152,14 +155,15 @@ public class DeepSeekLanguageModelOptions internal constructor(
     public val raw: Map<String, JsonElement> = emptyMap(),
 )
 
-public class DeepSeekLanguageModelOptionsBuilder internal constructor() {
+public class DeepSeekLanguageModelOptionsBuilder {
     private var raw: Map<String, JsonElement> = emptyMap()
 
-    public fun raw(value: Map<String, JsonElement>) {
+    public fun raw(value: Map<String, JsonElement>): DeepSeekLanguageModelOptionsBuilder {
         raw = value
+        return this
     }
 
-    internal fun build(): DeepSeekLanguageModelOptions =
+    public fun build(): DeepSeekLanguageModelOptions =
         DeepSeekLanguageModelOptions(raw = raw)
 }
 

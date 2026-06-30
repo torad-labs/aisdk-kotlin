@@ -42,7 +42,7 @@ public class DeepgramSpeechModelOptions internal constructor(
     public val tag: JsonElement? = null,
 )
 
-public class DeepgramSpeechModelOptionsBuilder internal constructor() {
+public class DeepgramSpeechModelOptionsBuilder {
     private var bitRate: JsonElement? = null
     private var container: String? = null
     private var encoding: String? = null
@@ -52,39 +52,47 @@ public class DeepgramSpeechModelOptionsBuilder internal constructor() {
     private var mipOptOut: Boolean? = null
     private var tag: JsonElement? = null
 
-    public fun bitRate(value: JsonElement?) {
+    public fun bitRate(value: JsonElement?): DeepgramSpeechModelOptionsBuilder {
         bitRate = value
+        return this
     }
 
-    public fun container(value: String?) {
+    public fun container(value: String?): DeepgramSpeechModelOptionsBuilder {
         container = value
+        return this
     }
 
-    public fun encoding(value: String?) {
+    public fun encoding(value: String?): DeepgramSpeechModelOptionsBuilder {
         encoding = value
+        return this
     }
 
-    public fun sampleRate(value: Int?) {
+    public fun sampleRate(value: Int?): DeepgramSpeechModelOptionsBuilder {
         sampleRate = value
+        return this
     }
 
-    public fun callback(value: String?) {
+    public fun callback(value: String?): DeepgramSpeechModelOptionsBuilder {
         callback = value
+        return this
     }
 
-    public fun callbackMethod(value: String?) {
+    public fun callbackMethod(value: String?): DeepgramSpeechModelOptionsBuilder {
         callbackMethod = value
+        return this
     }
 
-    public fun mipOptOut(value: Boolean?) {
+    public fun mipOptOut(value: Boolean?): DeepgramSpeechModelOptionsBuilder {
         mipOptOut = value
+        return this
     }
 
-    public fun tag(value: JsonElement?) {
+    public fun tag(value: JsonElement?): DeepgramSpeechModelOptionsBuilder {
         tag = value
+        return this
     }
 
-    internal fun build(): DeepgramSpeechModelOptions =
+    public fun build(): DeepgramSpeechModelOptions =
         DeepgramSpeechModelOptions(
             bitRate = bitRate,
             container = container,
@@ -125,7 +133,7 @@ public class DeepgramTranscriptionModelOptions internal constructor(
     public val fillerWords: Boolean? = null,
 )
 
-public class DeepgramTranscriptionModelOptionsBuilder internal constructor() {
+public class DeepgramTranscriptionModelOptionsBuilder {
     private var language: String? = null
     private var detectLanguage: Boolean? = null
     private var smartFormat: Boolean? = null
@@ -145,79 +153,97 @@ public class DeepgramTranscriptionModelOptionsBuilder internal constructor() {
     private var uttSplit: Float? = null
     private var fillerWords: Boolean? = null
 
-    public fun language(value: String?) {
+    public fun language(value: String?): DeepgramTranscriptionModelOptionsBuilder {
         language = value
+        return this
     }
 
-    public fun detectLanguage(value: Boolean?) {
+    public fun detectLanguage(value: Boolean?): DeepgramTranscriptionModelOptionsBuilder {
         detectLanguage = value
+        return this
     }
 
-    public fun smartFormat(value: Boolean?) {
+    public fun smartFormat(value: Boolean?): DeepgramTranscriptionModelOptionsBuilder {
         smartFormat = value
+        return this
     }
 
-    public fun punctuate(value: Boolean?) {
+    public fun punctuate(value: Boolean?): DeepgramTranscriptionModelOptionsBuilder {
         punctuate = value
+        return this
     }
 
-    public fun paragraphs(value: Boolean?) {
+    public fun paragraphs(value: Boolean?): DeepgramTranscriptionModelOptionsBuilder {
         paragraphs = value
+        return this
     }
 
-    public fun summarize(value: JsonElement?) {
+    public fun summarize(value: JsonElement?): DeepgramTranscriptionModelOptionsBuilder {
         summarize = value
+        return this
     }
 
-    public fun topics(value: Boolean?) {
+    public fun topics(value: Boolean?): DeepgramTranscriptionModelOptionsBuilder {
         topics = value
+        return this
     }
 
-    public fun intents(value: Boolean?) {
+    public fun intents(value: Boolean?): DeepgramTranscriptionModelOptionsBuilder {
         intents = value
+        return this
     }
 
-    public fun sentiment(value: Boolean?) {
+    public fun sentiment(value: Boolean?): DeepgramTranscriptionModelOptionsBuilder {
         sentiment = value
+        return this
     }
 
-    public fun detectEntities(value: Boolean?) {
+    public fun detectEntities(value: Boolean?): DeepgramTranscriptionModelOptionsBuilder {
         detectEntities = value
+        return this
     }
 
-    public fun redact(value: JsonElement?) {
+    public fun redact(value: JsonElement?): DeepgramTranscriptionModelOptionsBuilder {
         redact = value
+        return this
     }
 
-    public fun replace(value: String?) {
+    public fun replace(value: String?): DeepgramTranscriptionModelOptionsBuilder {
         replace = value
+        return this
     }
 
-    public fun search(value: String?) {
+    public fun search(value: String?): DeepgramTranscriptionModelOptionsBuilder {
         search = value
+        return this
     }
 
-    public fun keyterm(value: String?) {
+    public fun keyterm(value: String?): DeepgramTranscriptionModelOptionsBuilder {
         keyterm = value
+        return this
     }
 
-    public fun diarize(value: Boolean?) {
+    public fun diarize(value: Boolean?): DeepgramTranscriptionModelOptionsBuilder {
         diarize = value
+        return this
     }
 
-    public fun utterances(value: Boolean?) {
+    public fun utterances(value: Boolean?): DeepgramTranscriptionModelOptionsBuilder {
         utterances = value
+        return this
     }
 
-    public fun uttSplit(value: Float?) {
+    public fun uttSplit(value: Float?): DeepgramTranscriptionModelOptionsBuilder {
         uttSplit = value
+        return this
     }
 
-    public fun fillerWords(value: Boolean?) {
+    public fun fillerWords(value: Boolean?): DeepgramTranscriptionModelOptionsBuilder {
         fillerWords = value
+        return this
     }
 
-    internal fun build(): DeepgramTranscriptionModelOptions =
+    public fun build(): DeepgramTranscriptionModelOptions =
         DeepgramTranscriptionModelOptions(
             language = language,
             detectLanguage = detectLanguage,
@@ -281,19 +307,21 @@ public class DeepgramProviderSettings internal constructor(
         params.entries.joinToString("&") { (key, value) -> "${UrlOps.encode(key)}=${UrlOps.encode(value)}" }
 }
 
-public class DeepgramProviderSettingsBuilder internal constructor() {
+public class DeepgramProviderSettingsBuilder {
     private var apiKey: String? = null
     private var headers: Map<String, String> = emptyMap()
 
-    public fun apiKey(value: String?) {
+    public fun apiKey(value: String?): DeepgramProviderSettingsBuilder {
         apiKey = value
+        return this
     }
 
-    public fun headers(value: Map<String, String>) {
+    public fun headers(value: Map<String, String>): DeepgramProviderSettingsBuilder {
         headers = value
+        return this
     }
 
-    internal fun build(): DeepgramProviderSettings =
+    public fun build(): DeepgramProviderSettings =
         DeepgramProviderSettings(
             apiKey = apiKey,
             headers = headers,

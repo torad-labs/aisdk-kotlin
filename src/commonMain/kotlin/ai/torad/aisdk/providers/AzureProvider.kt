@@ -20,7 +20,7 @@ public class AzureOpenAIProviderSettings internal constructor(
     public val useDeploymentBasedUrls: Boolean = false,
 )
 
-public class AzureOpenAIProviderSettingsBuilder internal constructor() {
+public class AzureOpenAIProviderSettingsBuilder {
     private var resourceName: String? = null
     private var baseURL: String? = null
     private var apiKey: String? = null
@@ -29,35 +29,42 @@ public class AzureOpenAIProviderSettingsBuilder internal constructor() {
     private var apiVersion: String = "v1"
     private var useDeploymentBasedUrls: Boolean = false
 
-    public fun resourceName(value: String?) {
+    public fun resourceName(value: String?): AzureOpenAIProviderSettingsBuilder {
         resourceName = value
+        return this
     }
 
-    public fun baseURL(value: String?) {
+    public fun baseURL(value: String?): AzureOpenAIProviderSettingsBuilder {
         baseURL = value
+        return this
     }
 
-    public fun apiKey(value: String?) {
+    public fun apiKey(value: String?): AzureOpenAIProviderSettingsBuilder {
         apiKey = value
+        return this
     }
 
-    public fun tokenProvider(value: (suspend () -> String)?) {
+    public fun tokenProvider(value: (suspend () -> String)?): AzureOpenAIProviderSettingsBuilder {
         tokenProvider = value
+        return this
     }
 
-    public fun headers(value: Map<String, String>) {
+    public fun headers(value: Map<String, String>): AzureOpenAIProviderSettingsBuilder {
         headers = value
+        return this
     }
 
-    public fun apiVersion(value: String) {
+    public fun apiVersion(value: String): AzureOpenAIProviderSettingsBuilder {
         apiVersion = value
+        return this
     }
 
-    public fun useDeploymentBasedUrls(value: Boolean) {
+    public fun useDeploymentBasedUrls(value: Boolean): AzureOpenAIProviderSettingsBuilder {
         useDeploymentBasedUrls = value
+        return this
     }
 
-    internal fun build(): AzureOpenAIProviderSettings =
+    public fun build(): AzureOpenAIProviderSettings =
         AzureOpenAIProviderSettings(
             resourceName = resourceName,
             baseURL = baseURL,

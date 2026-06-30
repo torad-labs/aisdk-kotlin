@@ -15,14 +15,15 @@ public class BasetenEmbeddingModelOptions internal constructor(
     public val raw: Map<String, JsonElement> = emptyMap(),
 )
 
-public class BasetenEmbeddingModelOptionsBuilder internal constructor() {
+public class BasetenEmbeddingModelOptionsBuilder {
     private var raw: Map<String, JsonElement> = emptyMap()
 
-    public fun raw(value: Map<String, JsonElement>) {
+    public fun raw(value: Map<String, JsonElement>): BasetenEmbeddingModelOptionsBuilder {
         raw = value
+        return this
     }
 
-    internal fun build(): BasetenEmbeddingModelOptions =
+    public fun build(): BasetenEmbeddingModelOptions =
         BasetenEmbeddingModelOptions(raw = raw)
 }
 
@@ -54,29 +55,33 @@ public class BasetenProviderSettings internal constructor(
         OpenAICompatibleProviderSettings.forFacade(name, version, baseURL, apiKey, headers, capabilities)
 }
 
-public class BasetenProviderSettingsBuilder internal constructor() {
+public class BasetenProviderSettingsBuilder {
     private var apiKey: String? = null
     private var baseURL: String = "https://inference.baseten.co/v1"
     private var modelURL: String? = null
     private var headers: Map<String, String> = emptyMap()
 
-    public fun apiKey(value: String?) {
+    public fun apiKey(value: String?): BasetenProviderSettingsBuilder {
         apiKey = value
+        return this
     }
 
-    public fun baseURL(value: String) {
+    public fun baseURL(value: String): BasetenProviderSettingsBuilder {
         baseURL = value
+        return this
     }
 
-    public fun modelURL(value: String?) {
+    public fun modelURL(value: String?): BasetenProviderSettingsBuilder {
         modelURL = value
+        return this
     }
 
-    public fun headers(value: Map<String, String>) {
+    public fun headers(value: Map<String, String>): BasetenProviderSettingsBuilder {
         headers = value
+        return this
     }
 
-    internal fun build(): BasetenProviderSettings =
+    public fun build(): BasetenProviderSettings =
         BasetenProviderSettings(
             apiKey = apiKey,
             baseURL = baseURL,

@@ -109,24 +109,27 @@ public class GroqProviderSettings internal constructor(
     }
 }
 
-public class GroqProviderSettingsBuilder internal constructor() {
+public class GroqProviderSettingsBuilder {
     private var apiKey: String? = null
     private var baseURL: String = "https://api.groq.com/openai/v1"
     private var headers: Map<String, String> = emptyMap()
 
-    public fun apiKey(value: String?) {
+    public fun apiKey(value: String?): GroqProviderSettingsBuilder {
         apiKey = value
+        return this
     }
 
-    public fun baseURL(value: String) {
+    public fun baseURL(value: String): GroqProviderSettingsBuilder {
         baseURL = value
+        return this
     }
 
-    public fun headers(value: Map<String, String>) {
+    public fun headers(value: Map<String, String>): GroqProviderSettingsBuilder {
         headers = value
+        return this
     }
 
-    internal fun build(): GroqProviderSettings =
+    public fun build(): GroqProviderSettings =
         GroqProviderSettings(
             apiKey = apiKey,
             baseURL = baseURL,
@@ -145,14 +148,15 @@ public class GroqLanguageModelOptions internal constructor(
     public val raw: Map<String, JsonElement> = emptyMap(),
 )
 
-public class GroqLanguageModelOptionsBuilder internal constructor() {
+public class GroqLanguageModelOptionsBuilder {
     private var raw: Map<String, JsonElement> = emptyMap()
 
-    public fun raw(value: Map<String, JsonElement>) {
+    public fun raw(value: Map<String, JsonElement>): GroqLanguageModelOptionsBuilder {
         raw = value
+        return this
     }
 
-    internal fun build(): GroqLanguageModelOptions =
+    public fun build(): GroqLanguageModelOptions =
         GroqLanguageModelOptions(raw = raw)
 }
 
@@ -172,29 +176,33 @@ public class GroqTranscriptionModelOptions internal constructor(
     public val responseFormat: String? = null,
 )
 
-public class GroqTranscriptionModelOptionsBuilder internal constructor() {
+public class GroqTranscriptionModelOptionsBuilder {
     private var language: String? = null
     private var prompt: String? = null
     private var temperature: Float? = null
     private var responseFormat: String? = null
 
-    public fun language(value: String?) {
+    public fun language(value: String?): GroqTranscriptionModelOptionsBuilder {
         language = value
+        return this
     }
 
-    public fun prompt(value: String?) {
+    public fun prompt(value: String?): GroqTranscriptionModelOptionsBuilder {
         prompt = value
+        return this
     }
 
-    public fun temperature(value: Float?) {
+    public fun temperature(value: Float?): GroqTranscriptionModelOptionsBuilder {
         temperature = value
+        return this
     }
 
-    public fun responseFormat(value: String?) {
+    public fun responseFormat(value: String?): GroqTranscriptionModelOptionsBuilder {
         responseFormat = value
+        return this
     }
 
-    internal fun build(): GroqTranscriptionModelOptions =
+    public fun build(): GroqTranscriptionModelOptions =
         GroqTranscriptionModelOptions(
             language = language,
             prompt = prompt,

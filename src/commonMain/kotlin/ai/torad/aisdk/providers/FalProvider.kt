@@ -144,7 +144,7 @@ public class FalProviderSettings internal constructor(
     }
 }
 
-public class FalProviderSettingsBuilder internal constructor() {
+public class FalProviderSettingsBuilder {
     private var apiKey: String? = null
     private var baseURL: String = "https://fal.run"
     private var headers: Map<String, String> = emptyMap()
@@ -153,35 +153,42 @@ public class FalProviderSettingsBuilder internal constructor() {
     private var videoPollIntervalMillis: Long = 2_000L
     private var videoMaxPollAttempts: Int = 150
 
-    public fun apiKey(value: String?) {
+    public fun apiKey(value: String?): FalProviderSettingsBuilder {
         apiKey = value
+        return this
     }
 
-    public fun baseURL(value: String) {
+    public fun baseURL(value: String): FalProviderSettingsBuilder {
         baseURL = value
+        return this
     }
 
-    public fun headers(value: Map<String, String>) {
+    public fun headers(value: Map<String, String>): FalProviderSettingsBuilder {
         headers = value
+        return this
     }
 
-    public fun transcriptionPollIntervalMillis(value: Long) {
+    public fun transcriptionPollIntervalMillis(value: Long): FalProviderSettingsBuilder {
         transcriptionPollIntervalMillis = value
+        return this
     }
 
-    public fun transcriptionMaxPollAttempts(value: Int) {
+    public fun transcriptionMaxPollAttempts(value: Int): FalProviderSettingsBuilder {
         transcriptionMaxPollAttempts = value
+        return this
     }
 
-    public fun videoPollIntervalMillis(value: Long) {
+    public fun videoPollIntervalMillis(value: Long): FalProviderSettingsBuilder {
         videoPollIntervalMillis = value
+        return this
     }
 
-    public fun videoMaxPollAttempts(value: Int) {
+    public fun videoMaxPollAttempts(value: Int): FalProviderSettingsBuilder {
         videoMaxPollAttempts = value
+        return this
     }
 
-    internal fun build(): FalProviderSettings =
+    public fun build(): FalProviderSettings =
         FalProviderSettings(
             apiKey = apiKey,
             baseURL = baseURL,
@@ -204,14 +211,15 @@ public class FalImageModelOptions internal constructor(
     public val useMultipleImages: Boolean? = null,
 )
 
-public class FalImageModelOptionsBuilder internal constructor() {
+public class FalImageModelOptionsBuilder {
     private var useMultipleImages: Boolean? = null
 
-    public fun useMultipleImages(value: Boolean?) {
+    public fun useMultipleImages(value: Boolean?): FalImageModelOptionsBuilder {
         useMultipleImages = value
+        return this
     }
 
-    internal fun build(): FalImageModelOptions =
+    public fun build(): FalImageModelOptions =
         FalImageModelOptions(useMultipleImages = useMultipleImages)
 }
 
@@ -229,29 +237,33 @@ public class FalSpeechModelOptions internal constructor(
     public val pronunciation_dict: JsonObject? = null,
 )
 
-public class FalSpeechModelOptionsBuilder internal constructor() {
+public class FalSpeechModelOptionsBuilder {
     private var voice_setting: JsonObject? = null
     private var audio_setting: JsonObject? = null
     private var language_boost: String? = null
     private var pronunciation_dict: JsonObject? = null
 
-    public fun voice_setting(value: JsonObject?) {
+    public fun voice_setting(value: JsonObject?): FalSpeechModelOptionsBuilder {
         voice_setting = value
+        return this
     }
 
-    public fun audio_setting(value: JsonObject?) {
+    public fun audio_setting(value: JsonObject?): FalSpeechModelOptionsBuilder {
         audio_setting = value
+        return this
     }
 
-    public fun language_boost(value: String?) {
+    public fun language_boost(value: String?): FalSpeechModelOptionsBuilder {
         language_boost = value
+        return this
     }
 
-    public fun pronunciation_dict(value: JsonObject?) {
+    public fun pronunciation_dict(value: JsonObject?): FalSpeechModelOptionsBuilder {
         pronunciation_dict = value
+        return this
     }
 
-    internal fun build(): FalSpeechModelOptions =
+    public fun build(): FalSpeechModelOptions =
         FalSpeechModelOptions(
             voice_setting = voice_setting,
             audio_setting = audio_setting,
@@ -276,7 +288,7 @@ public class FalTranscriptionModelOptions internal constructor(
     public val numSpeakers: Int? = null,
 )
 
-public class FalTranscriptionModelOptionsBuilder internal constructor() {
+public class FalTranscriptionModelOptionsBuilder {
     private var language: String? = "en"
     private var diarize: Boolean? = true
     private var chunkLevel: String? = "segment"
@@ -284,31 +296,37 @@ public class FalTranscriptionModelOptionsBuilder internal constructor() {
     private var batchSize: Int? = 64
     private var numSpeakers: Int? = null
 
-    public fun language(value: String?) {
+    public fun language(value: String?): FalTranscriptionModelOptionsBuilder {
         language = value
+        return this
     }
 
-    public fun diarize(value: Boolean?) {
+    public fun diarize(value: Boolean?): FalTranscriptionModelOptionsBuilder {
         diarize = value
+        return this
     }
 
-    public fun chunkLevel(value: String?) {
+    public fun chunkLevel(value: String?): FalTranscriptionModelOptionsBuilder {
         chunkLevel = value
+        return this
     }
 
-    public fun version(value: String?) {
+    public fun version(value: String?): FalTranscriptionModelOptionsBuilder {
         version = value
+        return this
     }
 
-    public fun batchSize(value: Int?) {
+    public fun batchSize(value: Int?): FalTranscriptionModelOptionsBuilder {
         batchSize = value
+        return this
     }
 
-    public fun numSpeakers(value: Int?) {
+    public fun numSpeakers(value: Int?): FalTranscriptionModelOptionsBuilder {
         numSpeakers = value
+        return this
     }
 
-    internal fun build(): FalTranscriptionModelOptions =
+    public fun build(): FalTranscriptionModelOptions =
         FalTranscriptionModelOptions(
             language = language,
             diarize = diarize,
@@ -336,7 +354,7 @@ public class FalVideoModelOptions internal constructor(
     public val promptOptimizer: Boolean? = null,
 )
 
-public class FalVideoModelOptionsBuilder internal constructor() {
+public class FalVideoModelOptionsBuilder {
     private var loop: Boolean? = null
     private var motionStrength: Float? = null
     private var pollIntervalMs: Long? = null
@@ -345,35 +363,42 @@ public class FalVideoModelOptionsBuilder internal constructor() {
     private var negativePrompt: String? = null
     private var promptOptimizer: Boolean? = null
 
-    public fun loop(value: Boolean?) {
+    public fun loop(value: Boolean?): FalVideoModelOptionsBuilder {
         loop = value
+        return this
     }
 
-    public fun motionStrength(value: Float?) {
+    public fun motionStrength(value: Float?): FalVideoModelOptionsBuilder {
         motionStrength = value
+        return this
     }
 
-    public fun pollIntervalMs(value: Long?) {
+    public fun pollIntervalMs(value: Long?): FalVideoModelOptionsBuilder {
         pollIntervalMs = value
+        return this
     }
 
-    public fun pollTimeoutMs(value: Long?) {
+    public fun pollTimeoutMs(value: Long?): FalVideoModelOptionsBuilder {
         pollTimeoutMs = value
+        return this
     }
 
-    public fun resolution(value: String?) {
+    public fun resolution(value: String?): FalVideoModelOptionsBuilder {
         resolution = value
+        return this
     }
 
-    public fun negativePrompt(value: String?) {
+    public fun negativePrompt(value: String?): FalVideoModelOptionsBuilder {
         negativePrompt = value
+        return this
     }
 
-    public fun promptOptimizer(value: Boolean?) {
+    public fun promptOptimizer(value: Boolean?): FalVideoModelOptionsBuilder {
         promptOptimizer = value
+        return this
     }
 
-    internal fun build(): FalVideoModelOptions =
+    public fun build(): FalVideoModelOptions =
         FalVideoModelOptions(
             loop = loop,
             motionStrength = motionStrength,

@@ -140,7 +140,7 @@ public class AnthropicProviderSettings internal constructor(
     }
 }
 
-public class AnthropicProviderSettingsBuilder internal constructor() {
+public class AnthropicProviderSettingsBuilder {
     private var baseURL: String = "https://api.anthropic.com/v1"
     private var apiKey: String? = null
     private var authToken: String? = null
@@ -152,47 +152,57 @@ public class AnthropicProviderSettingsBuilder internal constructor() {
     private var generateId: () -> String = { IdGenerator.generate() }
     private var name: String = "anthropic.messages"
 
-    public fun baseURL(value: String) {
+    public fun baseURL(value: String): AnthropicProviderSettingsBuilder {
         baseURL = value
+        return this
     }
 
-    public fun apiKey(value: String?) {
+    public fun apiKey(value: String?): AnthropicProviderSettingsBuilder {
         apiKey = value
+        return this
     }
 
-    public fun authToken(value: String?) {
+    public fun authToken(value: String?): AnthropicProviderSettingsBuilder {
         authToken = value
+        return this
     }
 
-    public fun headers(value: Map<String, String>) {
+    public fun headers(value: Map<String, String>): AnthropicProviderSettingsBuilder {
         headers = value
+        return this
     }
 
-    public fun requestHeadersProvider(value: (suspend (url: String, body: String, headers: Map<String, String>) -> Map<String, String>)?) {
+    public fun requestHeadersProvider(value: (suspend (url: String, body: String, headers: Map<String, String>) -> Map<String, String>)?): AnthropicProviderSettingsBuilder {
         requestHeadersProvider = value
+        return this
     }
 
-    public fun buildRequestUrl(value: ((baseURL: String, modelId: String, isStreaming: Boolean) -> String)?) {
+    public fun buildRequestUrl(value: ((baseURL: String, modelId: String, isStreaming: Boolean) -> String)?): AnthropicProviderSettingsBuilder {
         buildRequestUrl = value
+        return this
     }
 
-    public fun transformRequestBody(value: ((modelId: String, body: JsonObject, isStreaming: Boolean) -> JsonObject)?) {
+    public fun transformRequestBody(value: ((modelId: String, body: JsonObject, isStreaming: Boolean) -> JsonObject)?): AnthropicProviderSettingsBuilder {
         transformRequestBody = value
+        return this
     }
 
-    public fun supportedUrls(value: Map<String, List<String>>?) {
+    public fun supportedUrls(value: Map<String, List<String>>?): AnthropicProviderSettingsBuilder {
         supportedUrls = value
+        return this
     }
 
-    public fun generateId(value: () -> String) {
+    public fun generateId(value: () -> String): AnthropicProviderSettingsBuilder {
         generateId = value
+        return this
     }
 
-    public fun name(value: String) {
+    public fun name(value: String): AnthropicProviderSettingsBuilder {
         name = value
+        return this
     }
 
-    internal fun build(): AnthropicProviderSettings =
+    public fun build(): AnthropicProviderSettings =
         AnthropicProviderSettings(
             baseURL = baseURL,
             apiKey = apiKey,

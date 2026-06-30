@@ -22,24 +22,27 @@ public class CerebrasProviderSettings internal constructor(
         OpenAICompatibleProviderSettings.forFacade(name, version, baseURL, apiKey, headers, capabilities)
 }
 
-public class CerebrasProviderSettingsBuilder internal constructor() {
+public class CerebrasProviderSettingsBuilder {
     private var apiKey: String? = null
     private var baseURL: String = "https://api.cerebras.ai/v1"
     private var headers: Map<String, String> = emptyMap()
 
-    public fun apiKey(value: String?) {
+    public fun apiKey(value: String?): CerebrasProviderSettingsBuilder {
         apiKey = value
+        return this
     }
 
-    public fun baseURL(value: String) {
+    public fun baseURL(value: String): CerebrasProviderSettingsBuilder {
         baseURL = value
+        return this
     }
 
-    public fun headers(value: Map<String, String>) {
+    public fun headers(value: Map<String, String>): CerebrasProviderSettingsBuilder {
         headers = value
+        return this
     }
 
-    internal fun build(): CerebrasProviderSettings =
+    public fun build(): CerebrasProviderSettings =
         CerebrasProviderSettings(
             apiKey = apiKey,
             baseURL = baseURL,

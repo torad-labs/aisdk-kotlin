@@ -57,7 +57,7 @@ public class BlackForestLabsImageModelOptions internal constructor(
     public val pollTimeoutMillis: Long? = null,
 )
 
-public class BlackForestLabsImageModelOptionsBuilder internal constructor() {
+public class BlackForestLabsImageModelOptionsBuilder {
     private var imagePrompt: String? = null
     private var imagePromptStrength: Double? = null
     private var inputImage: String? = null
@@ -83,103 +83,127 @@ public class BlackForestLabsImageModelOptionsBuilder internal constructor() {
     private var pollIntervalMillis: Long? = null
     private var pollTimeoutMillis: Long? = null
 
-    public fun imagePrompt(value: String?) {
+    public fun imagePrompt(value: String?): BlackForestLabsImageModelOptionsBuilder {
         imagePrompt = value
+        return this
     }
 
-    public fun imagePromptStrength(value: Double?) {
+    public fun imagePromptStrength(value: Double?): BlackForestLabsImageModelOptionsBuilder {
         imagePromptStrength = value
+        return this
     }
 
-    public fun inputImage(value: String?) {
+    public fun inputImage(value: String?): BlackForestLabsImageModelOptionsBuilder {
         inputImage = value
+        return this
     }
 
-    public fun inputImage2(value: String?) {
+    public fun inputImage2(value: String?): BlackForestLabsImageModelOptionsBuilder {
         inputImage2 = value
+        return this
     }
 
-    public fun inputImage3(value: String?) {
+    public fun inputImage3(value: String?): BlackForestLabsImageModelOptionsBuilder {
         inputImage3 = value
+        return this
     }
 
-    public fun inputImage4(value: String?) {
+    public fun inputImage4(value: String?): BlackForestLabsImageModelOptionsBuilder {
         inputImage4 = value
+        return this
     }
 
-    public fun inputImage5(value: String?) {
+    public fun inputImage5(value: String?): BlackForestLabsImageModelOptionsBuilder {
         inputImage5 = value
+        return this
     }
 
-    public fun inputImage6(value: String?) {
+    public fun inputImage6(value: String?): BlackForestLabsImageModelOptionsBuilder {
         inputImage6 = value
+        return this
     }
 
-    public fun inputImage7(value: String?) {
+    public fun inputImage7(value: String?): BlackForestLabsImageModelOptionsBuilder {
         inputImage7 = value
+        return this
     }
 
-    public fun inputImage8(value: String?) {
+    public fun inputImage8(value: String?): BlackForestLabsImageModelOptionsBuilder {
         inputImage8 = value
+        return this
     }
 
-    public fun inputImage9(value: String?) {
+    public fun inputImage9(value: String?): BlackForestLabsImageModelOptionsBuilder {
         inputImage9 = value
+        return this
     }
 
-    public fun inputImage10(value: String?) {
+    public fun inputImage10(value: String?): BlackForestLabsImageModelOptionsBuilder {
         inputImage10 = value
+        return this
     }
 
-    public fun steps(value: Int?) {
+    public fun steps(value: Int?): BlackForestLabsImageModelOptionsBuilder {
         steps = value
+        return this
     }
 
-    public fun guidance(value: Double?) {
+    public fun guidance(value: Double?): BlackForestLabsImageModelOptionsBuilder {
         guidance = value
+        return this
     }
 
-    public fun width(value: Int?) {
+    public fun width(value: Int?): BlackForestLabsImageModelOptionsBuilder {
         width = value
+        return this
     }
 
-    public fun height(value: Int?) {
+    public fun height(value: Int?): BlackForestLabsImageModelOptionsBuilder {
         height = value
+        return this
     }
 
-    public fun outputFormat(value: String?) {
+    public fun outputFormat(value: String?): BlackForestLabsImageModelOptionsBuilder {
         outputFormat = value
+        return this
     }
 
-    public fun promptUpsampling(value: Boolean?) {
+    public fun promptUpsampling(value: Boolean?): BlackForestLabsImageModelOptionsBuilder {
         promptUpsampling = value
+        return this
     }
 
-    public fun raw(value: Boolean?) {
+    public fun raw(value: Boolean?): BlackForestLabsImageModelOptionsBuilder {
         raw = value
+        return this
     }
 
-    public fun safetyTolerance(value: Int?) {
+    public fun safetyTolerance(value: Int?): BlackForestLabsImageModelOptionsBuilder {
         safetyTolerance = value
+        return this
     }
 
-    public fun webhookSecret(value: String?) {
+    public fun webhookSecret(value: String?): BlackForestLabsImageModelOptionsBuilder {
         webhookSecret = value
+        return this
     }
 
-    public fun webhookUrl(value: String?) {
+    public fun webhookUrl(value: String?): BlackForestLabsImageModelOptionsBuilder {
         webhookUrl = value
+        return this
     }
 
-    public fun pollIntervalMillis(value: Long?) {
+    public fun pollIntervalMillis(value: Long?): BlackForestLabsImageModelOptionsBuilder {
         pollIntervalMillis = value
+        return this
     }
 
-    public fun pollTimeoutMillis(value: Long?) {
+    public fun pollTimeoutMillis(value: Long?): BlackForestLabsImageModelOptionsBuilder {
         pollTimeoutMillis = value
+        return this
     }
 
-    internal fun build(): BlackForestLabsImageModelOptions =
+    public fun build(): BlackForestLabsImageModelOptions =
         BlackForestLabsImageModelOptions(
             imagePrompt = imagePrompt,
             imagePromptStrength = imagePromptStrength,
@@ -231,34 +255,39 @@ public class BlackForestLabsProviderSettings internal constructor(
     }
 }
 
-public class BlackForestLabsProviderSettingsBuilder internal constructor() {
+public class BlackForestLabsProviderSettingsBuilder {
     private var apiKey: String? = null
     private var baseURL: String = "https://api.bfl.ai/v1"
     private var headers: Map<String, String> = emptyMap()
     private var pollIntervalMillis: Long? = null
     private var pollTimeoutMillis: Long? = null
 
-    public fun apiKey(value: String?) {
+    public fun apiKey(value: String?): BlackForestLabsProviderSettingsBuilder {
         apiKey = value
+        return this
     }
 
-    public fun baseURL(value: String) {
+    public fun baseURL(value: String): BlackForestLabsProviderSettingsBuilder {
         baseURL = value
+        return this
     }
 
-    public fun headers(value: Map<String, String>) {
+    public fun headers(value: Map<String, String>): BlackForestLabsProviderSettingsBuilder {
         headers = value
+        return this
     }
 
-    public fun pollIntervalMillis(value: Long?) {
+    public fun pollIntervalMillis(value: Long?): BlackForestLabsProviderSettingsBuilder {
         pollIntervalMillis = value
+        return this
     }
 
-    public fun pollTimeoutMillis(value: Long?) {
+    public fun pollTimeoutMillis(value: Long?): BlackForestLabsProviderSettingsBuilder {
         pollTimeoutMillis = value
+        return this
     }
 
-    internal fun build(): BlackForestLabsProviderSettings =
+    public fun build(): BlackForestLabsProviderSettings =
         BlackForestLabsProviderSettings(
             apiKey = apiKey,
             baseURL = baseURL,

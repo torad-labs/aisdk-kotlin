@@ -89,7 +89,7 @@ public class AlibabaProviderSettings internal constructor(
     }
 }
 
-public class AlibabaProviderSettingsBuilder internal constructor() {
+public class AlibabaProviderSettingsBuilder {
     private var baseURL: String = "https://dashscope-intl.aliyuncs.com/compatible-mode/v1"
     private var videoBaseURL: String = "https://dashscope-intl.aliyuncs.com"
     private var embeddingBaseURL: String = "https://dashscope-intl.aliyuncs.com/api/v1"
@@ -97,31 +97,37 @@ public class AlibabaProviderSettingsBuilder internal constructor() {
     private var headers: Map<String, String> = emptyMap()
     private var includeUsage: Boolean = true
 
-    public fun baseURL(value: String) {
+    public fun baseURL(value: String): AlibabaProviderSettingsBuilder {
         baseURL = value
+        return this
     }
 
-    public fun videoBaseURL(value: String) {
+    public fun videoBaseURL(value: String): AlibabaProviderSettingsBuilder {
         videoBaseURL = value
+        return this
     }
 
-    public fun embeddingBaseURL(value: String) {
+    public fun embeddingBaseURL(value: String): AlibabaProviderSettingsBuilder {
         embeddingBaseURL = value
+        return this
     }
 
-    public fun apiKey(value: String?) {
+    public fun apiKey(value: String?): AlibabaProviderSettingsBuilder {
         apiKey = value
+        return this
     }
 
-    public fun headers(value: Map<String, String>) {
+    public fun headers(value: Map<String, String>): AlibabaProviderSettingsBuilder {
         headers = value
+        return this
     }
 
-    public fun includeUsage(value: Boolean) {
+    public fun includeUsage(value: Boolean): AlibabaProviderSettingsBuilder {
         includeUsage = value
+        return this
     }
 
-    internal fun build(): AlibabaProviderSettings =
+    public fun build(): AlibabaProviderSettings =
         AlibabaProviderSettings(
             baseURL = baseURL,
             videoBaseURL = videoBaseURL,
@@ -151,24 +157,27 @@ public class AlibabaEmbeddingModelOptions internal constructor(
     public val outputType: String? = null,
 )
 
-public class AlibabaEmbeddingModelOptionsBuilder internal constructor() {
+public class AlibabaEmbeddingModelOptionsBuilder {
     private var textType: String? = null
     private var dimension: Int? = null
     private var outputType: String? = null
 
-    public fun textType(value: String?) {
+    public fun textType(value: String?): AlibabaEmbeddingModelOptionsBuilder {
         textType = value
+        return this
     }
 
-    public fun dimension(value: Int?) {
+    public fun dimension(value: Int?): AlibabaEmbeddingModelOptionsBuilder {
         dimension = value
+        return this
     }
 
-    public fun outputType(value: String?) {
+    public fun outputType(value: String?): AlibabaEmbeddingModelOptionsBuilder {
         outputType = value
+        return this
     }
 
-    internal fun build(): AlibabaEmbeddingModelOptions =
+    public fun build(): AlibabaEmbeddingModelOptions =
         AlibabaEmbeddingModelOptions(
             textType = textType,
             dimension = dimension,
@@ -189,24 +198,27 @@ public class AlibabaLanguageModelOptions internal constructor(
     public val parallelToolCalls: Boolean? = null,
 )
 
-public class AlibabaLanguageModelOptionsBuilder internal constructor() {
+public class AlibabaLanguageModelOptionsBuilder {
     private var enableThinking: Boolean? = null
     private var thinkingBudget: Int? = null
     private var parallelToolCalls: Boolean? = null
 
-    public fun enableThinking(value: Boolean?) {
+    public fun enableThinking(value: Boolean?): AlibabaLanguageModelOptionsBuilder {
         enableThinking = value
+        return this
     }
 
-    public fun thinkingBudget(value: Int?) {
+    public fun thinkingBudget(value: Int?): AlibabaLanguageModelOptionsBuilder {
         thinkingBudget = value
+        return this
     }
 
-    public fun parallelToolCalls(value: Boolean?) {
+    public fun parallelToolCalls(value: Boolean?): AlibabaLanguageModelOptionsBuilder {
         parallelToolCalls = value
+        return this
     }
 
-    internal fun build(): AlibabaLanguageModelOptions =
+    public fun build(): AlibabaLanguageModelOptions =
         AlibabaLanguageModelOptions(
             enableThinking = enableThinking,
             thinkingBudget = thinkingBudget,
@@ -233,7 +245,7 @@ public class AlibabaVideoModelOptions internal constructor(
     public val pollTimeoutMs: Long? = null,
 )
 
-public class AlibabaVideoModelOptionsBuilder internal constructor() {
+public class AlibabaVideoModelOptionsBuilder {
     private var negativePrompt: String? = null
     private var audioUrl: String? = null
     private var promptExtend: Boolean? = null
@@ -244,43 +256,52 @@ public class AlibabaVideoModelOptionsBuilder internal constructor() {
     private var pollIntervalMs: Long? = null
     private var pollTimeoutMs: Long? = null
 
-    public fun negativePrompt(value: String?) {
+    public fun negativePrompt(value: String?): AlibabaVideoModelOptionsBuilder {
         negativePrompt = value
+        return this
     }
 
-    public fun audioUrl(value: String?) {
+    public fun audioUrl(value: String?): AlibabaVideoModelOptionsBuilder {
         audioUrl = value
+        return this
     }
 
-    public fun promptExtend(value: Boolean?) {
+    public fun promptExtend(value: Boolean?): AlibabaVideoModelOptionsBuilder {
         promptExtend = value
+        return this
     }
 
-    public fun shotType(value: String?) {
+    public fun shotType(value: String?): AlibabaVideoModelOptionsBuilder {
         shotType = value
+        return this
     }
 
-    public fun watermark(value: Boolean?) {
+    public fun watermark(value: Boolean?): AlibabaVideoModelOptionsBuilder {
         watermark = value
+        return this
     }
 
-    public fun audio(value: Boolean?) {
+    public fun audio(value: Boolean?): AlibabaVideoModelOptionsBuilder {
         audio = value
+        return this
     }
 
-    public fun referenceUrls(value: List<String>?) {
+    public fun referenceUrls(value: List<String>?): AlibabaVideoModelOptionsBuilder {
         referenceUrls = value
+        return this
     }
 
-    public fun pollIntervalMs(value: Long?) {
+    public fun pollIntervalMs(value: Long?): AlibabaVideoModelOptionsBuilder {
         pollIntervalMs = value
+        return this
     }
 
-    public fun pollTimeoutMs(value: Long?) {
+    public fun pollTimeoutMs(value: Long?): AlibabaVideoModelOptionsBuilder {
         pollTimeoutMs = value
+        return this
     }
 
-    internal fun build(): AlibabaVideoModelOptions =
+    public fun build(): AlibabaVideoModelOptions =
         AlibabaVideoModelOptions(
             negativePrompt = negativePrompt,
             audioUrl = audioUrl,

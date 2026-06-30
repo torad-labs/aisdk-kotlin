@@ -69,24 +69,27 @@ public class CohereProviderSettings internal constructor(
     }
 }
 
-public class CohereProviderSettingsBuilder internal constructor() {
+public class CohereProviderSettingsBuilder {
     private var baseURL: String = "https://api.cohere.com/v2"
     private var apiKey: String? = null
     private var headers: Map<String, String> = emptyMap()
 
-    public fun baseURL(value: String) {
+    public fun baseURL(value: String): CohereProviderSettingsBuilder {
         baseURL = value
+        return this
     }
 
-    public fun apiKey(value: String?) {
+    public fun apiKey(value: String?): CohereProviderSettingsBuilder {
         apiKey = value
+        return this
     }
 
-    public fun headers(value: Map<String, String>) {
+    public fun headers(value: Map<String, String>): CohereProviderSettingsBuilder {
         headers = value
+        return this
     }
 
-    internal fun build(): CohereProviderSettings =
+    public fun build(): CohereProviderSettings =
         CohereProviderSettings(
             baseURL = baseURL,
             apiKey = apiKey,
@@ -105,14 +108,15 @@ public class CohereLanguageModelOptions internal constructor(
     public val thinking: CohereThinkingOptions? = null,
 )
 
-public class CohereLanguageModelOptionsBuilder internal constructor() {
+public class CohereLanguageModelOptionsBuilder {
     private var thinking: CohereThinkingOptions? = null
 
-    public fun thinking(value: CohereThinkingOptions?) {
+    public fun thinking(value: CohereThinkingOptions?): CohereLanguageModelOptionsBuilder {
         thinking = value
+        return this
     }
 
-    internal fun build(): CohereLanguageModelOptions =
+    public fun build(): CohereLanguageModelOptions =
         CohereLanguageModelOptions(thinking = thinking)
 }
 
@@ -128,19 +132,21 @@ public class CohereThinkingOptions internal constructor(
     public val tokenBudget: Int? = null,
 )
 
-public class CohereThinkingOptionsBuilder internal constructor() {
+public class CohereThinkingOptionsBuilder {
     private var type: String? = null
     private var tokenBudget: Int? = null
 
-    public fun type(value: String?) {
+    public fun type(value: String?): CohereThinkingOptionsBuilder {
         type = value
+        return this
     }
 
-    public fun tokenBudget(value: Int?) {
+    public fun tokenBudget(value: Int?): CohereThinkingOptionsBuilder {
         tokenBudget = value
+        return this
     }
 
-    internal fun build(): CohereThinkingOptions =
+    public fun build(): CohereThinkingOptions =
         CohereThinkingOptions(
             type = type,
             tokenBudget = tokenBudget,
@@ -160,24 +166,27 @@ public class CohereEmbeddingModelOptions internal constructor(
     public val outputDimension: Int? = null,
 )
 
-public class CohereEmbeddingModelOptionsBuilder internal constructor() {
+public class CohereEmbeddingModelOptionsBuilder {
     private var inputType: String? = null
     private var truncate: String? = null
     private var outputDimension: Int? = null
 
-    public fun inputType(value: String?) {
+    public fun inputType(value: String?): CohereEmbeddingModelOptionsBuilder {
         inputType = value
+        return this
     }
 
-    public fun truncate(value: String?) {
+    public fun truncate(value: String?): CohereEmbeddingModelOptionsBuilder {
         truncate = value
+        return this
     }
 
-    public fun outputDimension(value: Int?) {
+    public fun outputDimension(value: Int?): CohereEmbeddingModelOptionsBuilder {
         outputDimension = value
+        return this
     }
 
-    internal fun build(): CohereEmbeddingModelOptions =
+    public fun build(): CohereEmbeddingModelOptions =
         CohereEmbeddingModelOptions(
             inputType = inputType,
             truncate = truncate,
@@ -197,19 +206,21 @@ public class CohereRerankingModelOptions internal constructor(
     public val priority: Int? = null,
 )
 
-public class CohereRerankingModelOptionsBuilder internal constructor() {
+public class CohereRerankingModelOptionsBuilder {
     private var maxTokensPerDoc: Int? = null
     private var priority: Int? = null
 
-    public fun maxTokensPerDoc(value: Int?) {
+    public fun maxTokensPerDoc(value: Int?): CohereRerankingModelOptionsBuilder {
         maxTokensPerDoc = value
+        return this
     }
 
-    public fun priority(value: Int?) {
+    public fun priority(value: Int?): CohereRerankingModelOptionsBuilder {
         priority = value
+        return this
     }
 
-    internal fun build(): CohereRerankingModelOptions =
+    public fun build(): CohereRerankingModelOptions =
         CohereRerankingModelOptions(
             maxTokensPerDoc = maxTokensPerDoc,
             priority = priority,

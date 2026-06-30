@@ -39,7 +39,7 @@ public class ByteDanceVideoProviderOptions internal constructor(
     public val pollTimeoutMs: Long? = null,
 )
 
-public class ByteDanceVideoProviderOptionsBuilder internal constructor() {
+public class ByteDanceVideoProviderOptionsBuilder {
     private var watermark: Boolean? = null
     private var generateAudio: Boolean? = null
     private var cameraFixed: Boolean? = null
@@ -53,55 +53,67 @@ public class ByteDanceVideoProviderOptionsBuilder internal constructor() {
     private var pollIntervalMs: Long? = null
     private var pollTimeoutMs: Long? = null
 
-    public fun watermark(value: Boolean?) {
+    public fun watermark(value: Boolean?): ByteDanceVideoProviderOptionsBuilder {
         watermark = value
+        return this
     }
 
-    public fun generateAudio(value: Boolean?) {
+    public fun generateAudio(value: Boolean?): ByteDanceVideoProviderOptionsBuilder {
         generateAudio = value
+        return this
     }
 
-    public fun cameraFixed(value: Boolean?) {
+    public fun cameraFixed(value: Boolean?): ByteDanceVideoProviderOptionsBuilder {
         cameraFixed = value
+        return this
     }
 
-    public fun returnLastFrame(value: Boolean?) {
+    public fun returnLastFrame(value: Boolean?): ByteDanceVideoProviderOptionsBuilder {
         returnLastFrame = value
+        return this
     }
 
-    public fun serviceTier(value: String?) {
+    public fun serviceTier(value: String?): ByteDanceVideoProviderOptionsBuilder {
         serviceTier = value
+        return this
     }
 
-    public fun draft(value: Boolean?) {
+    public fun draft(value: Boolean?): ByteDanceVideoProviderOptionsBuilder {
         draft = value
+        return this
     }
 
-    public fun lastFrameImage(value: String?) {
+    public fun lastFrameImage(value: String?): ByteDanceVideoProviderOptionsBuilder {
         lastFrameImage = value
+        return this
     }
 
-    public fun referenceImages(value: List<String>?) {
+    public fun referenceImages(value: List<String>?): ByteDanceVideoProviderOptionsBuilder {
         referenceImages = value
+        return this
     }
 
-    public fun referenceVideos(value: List<String>?) {
+    public fun referenceVideos(value: List<String>?): ByteDanceVideoProviderOptionsBuilder {
         referenceVideos = value
+        return this
     }
 
-    public fun referenceAudio(value: List<String>?) {
+    public fun referenceAudio(value: List<String>?): ByteDanceVideoProviderOptionsBuilder {
         referenceAudio = value
+        return this
     }
 
-    public fun pollIntervalMs(value: Long?) {
+    public fun pollIntervalMs(value: Long?): ByteDanceVideoProviderOptionsBuilder {
         pollIntervalMs = value
+        return this
     }
 
-    public fun pollTimeoutMs(value: Long?) {
+    public fun pollTimeoutMs(value: Long?): ByteDanceVideoProviderOptionsBuilder {
         pollTimeoutMs = value
+        return this
     }
 
-    internal fun build(): ByteDanceVideoProviderOptions =
+    public fun build(): ByteDanceVideoProviderOptions =
         ByteDanceVideoProviderOptions(
             watermark = watermark,
             generateAudio = generateAudio,
@@ -140,24 +152,27 @@ public class ByteDanceProviderSettings internal constructor(
     }
 }
 
-public class ByteDanceProviderSettingsBuilder internal constructor() {
+public class ByteDanceProviderSettingsBuilder {
     private var apiKey: String? = null
     private var baseURL: String = "https://ark.ap-southeast.bytepluses.com/api/v3"
     private var headers: Map<String, String> = emptyMap()
 
-    public fun apiKey(value: String?) {
+    public fun apiKey(value: String?): ByteDanceProviderSettingsBuilder {
         apiKey = value
+        return this
     }
 
-    public fun baseURL(value: String) {
+    public fun baseURL(value: String): ByteDanceProviderSettingsBuilder {
         baseURL = value
+        return this
     }
 
-    public fun headers(value: Map<String, String>) {
+    public fun headers(value: Map<String, String>): ByteDanceProviderSettingsBuilder {
         headers = value
+        return this
     }
 
-    internal fun build(): ByteDanceProviderSettings =
+    public fun build(): ByteDanceProviderSettings =
         ByteDanceProviderSettings(
             apiKey = apiKey,
             baseURL = baseURL,

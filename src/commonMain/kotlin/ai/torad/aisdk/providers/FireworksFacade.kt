@@ -30,19 +30,21 @@ public class FireworksThinkingOptions internal constructor(
     public val budgetTokens: Int? = null,
 )
 
-public class FireworksThinkingOptionsBuilder internal constructor() {
+public class FireworksThinkingOptionsBuilder {
     private var type: String? = null
     private var budgetTokens: Int? = null
 
-    public fun type(value: String?) {
+    public fun type(value: String?): FireworksThinkingOptionsBuilder {
         type = value
+        return this
     }
 
-    public fun budgetTokens(value: Int?) {
+    public fun budgetTokens(value: Int?): FireworksThinkingOptionsBuilder {
         budgetTokens = value
+        return this
     }
 
-    internal fun build(): FireworksThinkingOptions =
+    public fun build(): FireworksThinkingOptions =
         FireworksThinkingOptions(
             type = type,
             budgetTokens = budgetTokens,
@@ -62,24 +64,27 @@ public class FireworksLanguageModelOptions internal constructor(
     public val raw: Map<String, JsonElement> = emptyMap(),
 )
 
-public class FireworksLanguageModelOptionsBuilder internal constructor() {
+public class FireworksLanguageModelOptionsBuilder {
     private var thinking: FireworksThinkingOptions? = null
     private var reasoningHistory: String? = null
     private var raw: Map<String, JsonElement> = emptyMap()
 
-    public fun thinking(value: FireworksThinkingOptions?) {
+    public fun thinking(value: FireworksThinkingOptions?): FireworksLanguageModelOptionsBuilder {
         thinking = value
+        return this
     }
 
-    public fun reasoningHistory(value: String?) {
+    public fun reasoningHistory(value: String?): FireworksLanguageModelOptionsBuilder {
         reasoningHistory = value
+        return this
     }
 
-    public fun raw(value: Map<String, JsonElement>) {
+    public fun raw(value: Map<String, JsonElement>): FireworksLanguageModelOptionsBuilder {
         raw = value
+        return this
     }
 
-    internal fun build(): FireworksLanguageModelOptions =
+    public fun build(): FireworksLanguageModelOptions =
         FireworksLanguageModelOptions(
             thinking = thinking,
             reasoningHistory = reasoningHistory,
@@ -100,14 +105,15 @@ public class FireworksEmbeddingModelOptions internal constructor(
     public val raw: Map<String, JsonElement> = emptyMap(),
 )
 
-public class FireworksEmbeddingModelOptionsBuilder internal constructor() {
+public class FireworksEmbeddingModelOptionsBuilder {
     private var raw: Map<String, JsonElement> = emptyMap()
 
-    public fun raw(value: Map<String, JsonElement>) {
+    public fun raw(value: Map<String, JsonElement>): FireworksEmbeddingModelOptionsBuilder {
         raw = value
+        return this
     }
 
-    internal fun build(): FireworksEmbeddingModelOptions =
+    public fun build(): FireworksEmbeddingModelOptions =
         FireworksEmbeddingModelOptions(raw = raw)
 }
 
@@ -139,24 +145,27 @@ public class FireworksProviderSettings internal constructor(
         OpenAICompatibleProviderSettings.forFacade(name, version, baseURL, apiKey, headers, capabilities)
 }
 
-public class FireworksProviderSettingsBuilder internal constructor() {
+public class FireworksProviderSettingsBuilder {
     private var apiKey: String? = null
     private var baseURL: String = "https://api.fireworks.ai/inference/v1"
     private var headers: Map<String, String> = emptyMap()
 
-    public fun apiKey(value: String?) {
+    public fun apiKey(value: String?): FireworksProviderSettingsBuilder {
         apiKey = value
+        return this
     }
 
-    public fun baseURL(value: String) {
+    public fun baseURL(value: String): FireworksProviderSettingsBuilder {
         baseURL = value
+        return this
     }
 
-    public fun headers(value: Map<String, String>) {
+    public fun headers(value: Map<String, String>): FireworksProviderSettingsBuilder {
         headers = value
+        return this
     }
 
-    internal fun build(): FireworksProviderSettings =
+    public fun build(): FireworksProviderSettings =
         FireworksProviderSettings(
             apiKey = apiKey,
             baseURL = baseURL,

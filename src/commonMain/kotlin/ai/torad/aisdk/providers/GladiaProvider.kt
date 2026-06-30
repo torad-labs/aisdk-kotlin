@@ -64,7 +64,7 @@ public class GladiaTranscriptionModelOptions internal constructor(
     public val punctuationEnhanced: Boolean? = null,
 )
 
-public class GladiaTranscriptionModelOptionsBuilder internal constructor() {
+public class GladiaTranscriptionModelOptionsBuilder {
     private var contextPrompt: String? = null
     private var customVocabulary: JsonElement? = null
     private var customVocabularyConfig: JsonObject? = null
@@ -98,135 +98,167 @@ public class GladiaTranscriptionModelOptionsBuilder internal constructor() {
     private var displayMode: Boolean? = null
     private var punctuationEnhanced: Boolean? = null
 
-    public fun contextPrompt(value: String?) {
+    public fun contextPrompt(value: String?): GladiaTranscriptionModelOptionsBuilder {
         contextPrompt = value
+        return this
     }
 
-    public fun customVocabulary(value: JsonElement?) {
+    public fun customVocabulary(value: JsonElement?): GladiaTranscriptionModelOptionsBuilder {
         customVocabulary = value
+        return this
     }
 
-    public fun customVocabularyConfig(value: JsonObject?) {
+    public fun customVocabularyConfig(value: JsonObject?): GladiaTranscriptionModelOptionsBuilder {
         customVocabularyConfig = value
+        return this
     }
 
-    public fun detectLanguage(value: Boolean?) {
+    public fun detectLanguage(value: Boolean?): GladiaTranscriptionModelOptionsBuilder {
         detectLanguage = value
+        return this
     }
 
-    public fun enableCodeSwitching(value: Boolean?) {
+    public fun enableCodeSwitching(value: Boolean?): GladiaTranscriptionModelOptionsBuilder {
         enableCodeSwitching = value
+        return this
     }
 
-    public fun codeSwitchingConfig(value: JsonObject?) {
+    public fun codeSwitchingConfig(value: JsonObject?): GladiaTranscriptionModelOptionsBuilder {
         codeSwitchingConfig = value
+        return this
     }
 
-    public fun language(value: String?) {
+    public fun language(value: String?): GladiaTranscriptionModelOptionsBuilder {
         language = value
+        return this
     }
 
-    public fun callback(value: Boolean?) {
+    public fun callback(value: Boolean?): GladiaTranscriptionModelOptionsBuilder {
         callback = value
+        return this
     }
 
-    public fun callbackConfig(value: JsonObject?) {
+    public fun callbackConfig(value: JsonObject?): GladiaTranscriptionModelOptionsBuilder {
         callbackConfig = value
+        return this
     }
 
-    public fun subtitles(value: Boolean?) {
+    public fun subtitles(value: Boolean?): GladiaTranscriptionModelOptionsBuilder {
         subtitles = value
+        return this
     }
 
-    public fun subtitlesConfig(value: JsonObject?) {
+    public fun subtitlesConfig(value: JsonObject?): GladiaTranscriptionModelOptionsBuilder {
         subtitlesConfig = value
+        return this
     }
 
-    public fun diarization(value: Boolean?) {
+    public fun diarization(value: Boolean?): GladiaTranscriptionModelOptionsBuilder {
         diarization = value
+        return this
     }
 
-    public fun diarizationConfig(value: JsonObject?) {
+    public fun diarizationConfig(value: JsonObject?): GladiaTranscriptionModelOptionsBuilder {
         diarizationConfig = value
+        return this
     }
 
-    public fun translation(value: Boolean?) {
+    public fun translation(value: Boolean?): GladiaTranscriptionModelOptionsBuilder {
         translation = value
+        return this
     }
 
-    public fun translationConfig(value: JsonObject?) {
+    public fun translationConfig(value: JsonObject?): GladiaTranscriptionModelOptionsBuilder {
         translationConfig = value
+        return this
     }
 
-    public fun summarization(value: Boolean?) {
+    public fun summarization(value: Boolean?): GladiaTranscriptionModelOptionsBuilder {
         summarization = value
+        return this
     }
 
-    public fun summarizationConfig(value: JsonObject?) {
+    public fun summarizationConfig(value: JsonObject?): GladiaTranscriptionModelOptionsBuilder {
         summarizationConfig = value
+        return this
     }
 
-    public fun moderation(value: Boolean?) {
+    public fun moderation(value: Boolean?): GladiaTranscriptionModelOptionsBuilder {
         moderation = value
+        return this
     }
 
-    public fun namedEntityRecognition(value: Boolean?) {
+    public fun namedEntityRecognition(value: Boolean?): GladiaTranscriptionModelOptionsBuilder {
         namedEntityRecognition = value
+        return this
     }
 
-    public fun chapterization(value: Boolean?) {
+    public fun chapterization(value: Boolean?): GladiaTranscriptionModelOptionsBuilder {
         chapterization = value
+        return this
     }
 
-    public fun nameConsistency(value: Boolean?) {
+    public fun nameConsistency(value: Boolean?): GladiaTranscriptionModelOptionsBuilder {
         nameConsistency = value
+        return this
     }
 
-    public fun customSpelling(value: Boolean?) {
+    public fun customSpelling(value: Boolean?): GladiaTranscriptionModelOptionsBuilder {
         customSpelling = value
+        return this
     }
 
-    public fun customSpellingConfig(value: JsonObject?) {
+    public fun customSpellingConfig(value: JsonObject?): GladiaTranscriptionModelOptionsBuilder {
         customSpellingConfig = value
+        return this
     }
 
-    public fun structuredDataExtraction(value: Boolean?) {
+    public fun structuredDataExtraction(value: Boolean?): GladiaTranscriptionModelOptionsBuilder {
         structuredDataExtraction = value
+        return this
     }
 
-    public fun structuredDataExtractionConfig(value: JsonObject?) {
+    public fun structuredDataExtractionConfig(value: JsonObject?): GladiaTranscriptionModelOptionsBuilder {
         structuredDataExtractionConfig = value
+        return this
     }
 
-    public fun sentimentAnalysis(value: Boolean?) {
+    public fun sentimentAnalysis(value: Boolean?): GladiaTranscriptionModelOptionsBuilder {
         sentimentAnalysis = value
+        return this
     }
 
-    public fun audioToLlm(value: Boolean?) {
+    public fun audioToLlm(value: Boolean?): GladiaTranscriptionModelOptionsBuilder {
         audioToLlm = value
+        return this
     }
 
-    public fun audioToLlmConfig(value: JsonObject?) {
+    public fun audioToLlmConfig(value: JsonObject?): GladiaTranscriptionModelOptionsBuilder {
         audioToLlmConfig = value
+        return this
     }
 
-    public fun customMetadata(value: JsonObject?) {
+    public fun customMetadata(value: JsonObject?): GladiaTranscriptionModelOptionsBuilder {
         customMetadata = value
+        return this
     }
 
-    public fun sentences(value: Boolean?) {
+    public fun sentences(value: Boolean?): GladiaTranscriptionModelOptionsBuilder {
         sentences = value
+        return this
     }
 
-    public fun displayMode(value: Boolean?) {
+    public fun displayMode(value: Boolean?): GladiaTranscriptionModelOptionsBuilder {
         displayMode = value
+        return this
     }
 
-    public fun punctuationEnhanced(value: Boolean?) {
+    public fun punctuationEnhanced(value: Boolean?): GladiaTranscriptionModelOptionsBuilder {
         punctuationEnhanced = value
+        return this
     }
 
-    internal fun build(): GladiaTranscriptionModelOptions =
+    public fun build(): GladiaTranscriptionModelOptions =
         GladiaTranscriptionModelOptions(
             contextPrompt = contextPrompt,
             customVocabulary = customVocabulary,
@@ -277,29 +309,33 @@ public class GladiaProviderSettings internal constructor(
     public val maxPollAttempts: Int = 60,
 )
 
-public class GladiaProviderSettingsBuilder internal constructor() {
+public class GladiaProviderSettingsBuilder {
     private var apiKey: String? = null
     private var headers: Map<String, String> = emptyMap()
     private var pollingIntervalMillis: Long = 1_000L
     private var maxPollAttempts: Int = 60
 
-    public fun apiKey(value: String?) {
+    public fun apiKey(value: String?): GladiaProviderSettingsBuilder {
         apiKey = value
+        return this
     }
 
-    public fun headers(value: Map<String, String>) {
+    public fun headers(value: Map<String, String>): GladiaProviderSettingsBuilder {
         headers = value
+        return this
     }
 
-    public fun pollingIntervalMillis(value: Long) {
+    public fun pollingIntervalMillis(value: Long): GladiaProviderSettingsBuilder {
         pollingIntervalMillis = value
+        return this
     }
 
-    public fun maxPollAttempts(value: Int) {
+    public fun maxPollAttempts(value: Int): GladiaProviderSettingsBuilder {
         maxPollAttempts = value
+        return this
     }
 
-    internal fun build(): GladiaProviderSettings =
+    public fun build(): GladiaProviderSettings =
         GladiaProviderSettings(
             apiKey = apiKey,
             headers = headers,
