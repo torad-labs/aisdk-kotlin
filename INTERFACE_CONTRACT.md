@@ -72,6 +72,10 @@ the repair half (`fixJson` / `parsePartialJson`) recovers a usable value
 from truncated streaming output. Both ported verbatim from v6 so prompts
 and repaired values are byte-identical to the JS SDK.
 
+- Structured-object result/phase holders (`DeepPartial`,
+  `StructuredObjectFinish`, `StructuredObjectPhase.Streaming` / `Done`, and
+  `StreamObjectFinish`) are `@Poko class` value-semantics types; field access
+  remains, but public `copy()` / `componentN()` ABI is intentionally absent.
 - `fun fixJson(input: String): String` — close a truncated JSON fragment
   (drains the open-frame stack, completes literals/numbers/strings).
 - `fun parsePartialJson(jsonText: String?): PartialJsonResult`
@@ -291,6 +295,10 @@ Penalty, response-format, and retry fields participate in the `Step ?: Agent ?: 
 ### UI types — `ai.torad.aisdk.ui.*`
 
 - Text/UI stream helpers: `TextStreamResponse`, `UIMessageStreamResponse`, `ServerResponseWriter`, `TextStreamFromEvents`, `CreateTextStreamResponse`, `CreateUiMessageStream`, `CreateUiMessageStreamResponse`, `ReadUiMessageStream`, `TransformTextToUiMessageStream`, `UiMessageStreams.pipeTextStreamToResponse`, `UiMessageStreams.pipeUiMessageStreamToResponse`.
+  `TextStreamResponse`, `UIMessageStreamResponse`, and
+  `SafeValidateUIMessagesResult` leaves are `@Poko class` value-semantics
+  types; field access remains, but public `copy()` / `componentN()` ABI is
+  intentionally absent.
 - Chat: `ChatRequest`, `ChatTransport`, `DirectChatTransport`, `DefaultChatTransport`, `TextStreamChatTransport`, `Chat`.
 - Validation/completion helpers: `UiMessageStreams.validateUiMessages`, `UiMessageStreams.validateUIMessages`, `UiMessageStreams.safeValidateUIMessages`, `UiMessageStreams.getResponseUiMessageId`, `UiMessageStreams.handleUiMessageStreamFinish`, `UiMessageStreams.lastAssistantMessageIsCompleteWithToolCalls`, `UiMessageStreams.lastAssistantMessageIsCompleteWithApprovalResponses`.
 
@@ -311,6 +319,6 @@ Penalty, response-format, and retry fields participate in the `Step ?: Agent ?: 
 - `UIMessagePart.DynamicToolUI.outputAs(serializer)` / `inputAs(serializer)` plus reified overloads
 - `fun StreamToUiMessages(events: Flow<StreamEvent>, assistantMessageId): Flow<UIMessage>`
 - `ModelMessageConversion.convertToModelMessages(messages: List<UIMessage>, ignoreIncompleteToolCalls: Boolean = false): List<ModelMessage>` — inverse of `StreamToUiMessages`. UI-shape history → model-shape history for replay / crash recovery / subagent continuation. Drops UI-only parts (`StepStart`, `Source`, `File`, `Error`). Tool calls in `OutputAvailable` state split into an `Assistant` message carrying `ToolCall` followed by a `Tool` message carrying `ToolResult`. Preliminary `ToolUI` outputs are dropped (only final emissions feed the model). `InputStreaming` / `InputAvailable` parts are incomplete — silently dropped if `ignoreIncompleteToolCalls`, otherwise throw.
-- `class UIToolInvocation<TInput, TOutput>(toolCallId, toolName, state, input?, output?, error?)`
+- `class UIToolInvocation<TInput, TOutput>(toolCallId, toolName, state, input?, output?, error?)`; `UIToolInvocationPayload` and `UIToolInvocationMetadata` are `@Poko class` value-semantics holders with field access and no public `copy()` / `componentN()` ABI.
 - `class ToolPartHandlerRegistry<TRenderResult>` — typed dispatch per tool name
 - `fun buildToolPartHandlerRegistry(fallback) { register(tool, render) ... }`

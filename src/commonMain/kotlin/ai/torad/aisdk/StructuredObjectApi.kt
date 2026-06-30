@@ -2,6 +2,7 @@
 
 package ai.torad.aisdk
 
+import dev.drewhamilton.poko.Poko
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -23,7 +24,8 @@ import kotlinx.serialization.json.booleanOrNull
 import kotlinx.serialization.json.doubleOrNull
 import kotlinx.serialization.json.jsonPrimitive
 
-public data class DeepPartial<T>(val value: T?)
+@Poko
+public class DeepPartial<T>(public val value: T?)
 
 public data class StructuredObjectRequest<INPUT>(
     val api: String,
@@ -43,10 +45,11 @@ public class DirectStructuredObjectTransport<INPUT>(
     override fun submit(request: StructuredObjectRequest<INPUT>): Flow<String> = handler(request)
 }
 
-public data class StructuredObjectFinish<RESULT>(
-    val value: RESULT?,
-    val error: Throwable?,
-    val rawValue: JsonElement?,
+@Poko
+public class StructuredObjectFinish<RESULT>(
+    public val value: RESULT?,
+    public val error: Throwable?,
+    public val rawValue: JsonElement?,
 )
 
 public data class StructuredObjectOptions<RESULT, INPUT>(
@@ -62,15 +65,18 @@ public data class StructuredObjectOptions<RESULT, INPUT>(
 
 public sealed class StructuredObjectPhase<out RESULT> {
     public data object Idle : StructuredObjectPhase<Nothing>()
-    public data class Streaming<out RESULT>(
-        val partial: RESULT?,
-        val raw: JsonElement?,
-        val error: Throwable?,
+    @Poko
+    public class Streaming<out RESULT>(
+        public val partial: RESULT?,
+        public val raw: JsonElement?,
+        public val error: Throwable?,
     ) : StructuredObjectPhase<RESULT>()
-    public data class Done<out RESULT>(
-        val value: RESULT?,
-        val raw: JsonElement?,
-        val error: Throwable?,
+
+    @Poko
+    public class Done<out RESULT>(
+        public val value: RESULT?,
+        public val raw: JsonElement?,
+        public val error: Throwable?,
     ) : StructuredObjectPhase<RESULT>()
 }
 

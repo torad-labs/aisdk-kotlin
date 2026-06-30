@@ -2,6 +2,7 @@ package ai.torad.aisdk.ui
 
 import ai.torad.aisdk.AiSdkDsl
 import ai.torad.aisdk.Tool
+import dev.drewhamilton.poko.Poko
 
 /**
  * Kotlin substitute for v6's `InferAgentUIMessage<typeof agent>` type
@@ -48,13 +49,15 @@ import ai.torad.aisdk.Tool
  * Typed invocation handle — what a per-tool renderer receives. Carries
  * the typed input + output via the tool's own serializers.
  */
-public data class UIToolInvocationPayload<TInput, TOutput>(
+@Poko
+public class UIToolInvocationPayload<TInput, TOutput>(
     public val input: TInput?,
     public val output: TOutput?,
     public val error: String?,
 )
 
-public data class UIToolInvocationMetadata(
+@Poko
+public class UIToolInvocationMetadata(
     public val preliminary: Boolean = false,
     public val approvalId: String? = null,
     public val signature: String? = null,
