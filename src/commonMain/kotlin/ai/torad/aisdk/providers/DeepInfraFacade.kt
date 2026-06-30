@@ -148,8 +148,9 @@ private class DeepInfraChatLanguageModel(
                 put("total_tokens", JsonPrimitive(total + reasoningTokens))
             }
         }
-        return copy(
-            outputTokens = outputTokens.copy(
+        return Usage(
+            inputTokens = inputTokens,
+            outputTokens = Usage.OutputTokenBreakdown(
                 total = correctedCompletionTokens,
                 text = correctedCompletionTokens - reasoningTokens,
                 reasoning = reasoningTokens,

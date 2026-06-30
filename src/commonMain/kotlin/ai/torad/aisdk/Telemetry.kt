@@ -303,7 +303,12 @@ private object TelemetryRedaction {
         if (!settings.recordInputs && !settings.recordOutputs) return emptyList()
         return mapNotNull { message ->
             val content = message.content.mapNotNull { it.sanitizedContent(message.role, settings, redactor) }
-            content.takeIf { it.isNotEmpty() }?.let { message.copy(content = it) }
+            content.takeIf { it.isNotEmpty() }?.let {
+                ModelMessage(
+                    role = message.role,
+                    content = it,
+                )
+            }
         }
     }
 
@@ -316,35 +321,56 @@ private object TelemetryRedaction {
         is ContentPart.Text -> when (role) {
             MessageRole.System, MessageRole.User ->
                 if (settings.recordInputs) {
-                    copy(text = redactor.redactText(text), providerMetadata = ProviderMetadata.None)
+                    ContentPart.Text(
+                        text = redactor.redactText(text),
+                        providerMetadata = ProviderMetadata.None,
+                    )
                 } else {
                     null
                 }
             MessageRole.Assistant, MessageRole.Tool ->
                 if (settings.recordOutputs) {
-                    copy(text = redactor.redactText(text), providerMetadata = ProviderMetadata.None)
+                    ContentPart.Text(
+                        text = redactor.redactText(text),
+                        providerMetadata = ProviderMetadata.None,
+                    )
                 } else {
                     null
                 }
         }
         is ContentPart.Reasoning ->
             if (settings.recordOutputs) {
-                copy(text = redactor.redactText(text), providerMetadata = ProviderMetadata.None)
+                ContentPart.Reasoning(
+                    text = redactor.redactText(text),
+                    providerMetadata = ProviderMetadata.None,
+                )
             } else {
                 null
             }
         is ContentPart.ToolCall ->
             if (settings.recordInputs) {
-                copy(input = redactor.redactJson(input), providerMetadata = ProviderMetadata.None)
+                ContentPart.ToolCall(
+                    toolCallId = toolCallId,
+                    toolName = toolName,
+                    input = redactor.redactJson(input),
+                    providerExecuted = providerExecuted,
+                    dynamic = dynamic,
+                    providerMetadata = ProviderMetadata.None,
+                )
             } else {
                 null
             }
         is ContentPart.ToolResult ->
             if (settings.recordOutputs) {
                 val output = redactor.redactJson(output)
-                copy(
+                ContentPart.ToolResult(
+                    toolCallId = toolCallId,
+                    toolName = toolName,
                     output = output,
+                    isError = isError,
                     modelVisible = redactor.redactJson(modelVisible),
+                    dynamic = dynamic,
+                    providerExecuted = providerExecuted,
                     providerMetadata = ProviderMetadata.None,
                 )
             } else {
@@ -352,8 +378,11 @@ private object TelemetryRedaction {
             }
         is ContentPart.ToolApprovalRequest ->
             if (settings.recordInputs) {
-                copy(
+                ContentPart.ToolApprovalRequest(
+                    toolCallId = toolCallId,
+                    toolName = toolName,
                     input = redactor.redactJson(input),
+                    approvalId = approvalId,
                     signature = null,
                     providerMetadata = ProviderMetadata.None,
                 )
@@ -361,26 +390,50 @@ private object TelemetryRedaction {
                 null
             }
         is ContentPart.ToolApprovalResponse ->
-            if (settings.recordInputs) copy(reason = reason?.let(redactor::redactText)) else null
+            if (settings.recordInputs) {
+                ContentPart.ToolApprovalResponse(
+                    toolCallId = toolCallId,
+                    approved = approved,
+                    reason = reason?.let(redactor::redactText),
+                    approvalId = approvalId,
+                )
+            } else {
+                null
+            }
         is ContentPart.Source ->
             if (settings.recordOutputs) {
-                copy(
+                ContentPart.Source(
+                    sourceType = sourceType,
+                    sourceId = sourceId,
                     url = null,
                     title = title?.let(redactor::redactText),
                     providerMetadata = ProviderMetadata.None,
+                    mediaType = mediaType,
+                    filename = filename,
                 )
             } else {
                 null
             }
         is ContentPart.File ->
             if (settings.recordOutputs) {
-                copy(base64 = "", url = null, providerMetadata = ProviderMetadata.None)
+                ContentPart.File(
+                    mediaType = mediaType,
+                    base64 = "",
+                    filename = filename,
+                    providerMetadata = ProviderMetadata.None,
+                    url = null,
+                )
             } else {
                 null
             }
         is ContentPart.Image ->
             if (settings.recordOutputs) {
-                copy(base64 = "", url = null, providerMetadata = ProviderMetadata.None)
+                ContentPart.Image(
+                    mediaType = mediaType,
+                    base64 = "",
+                    providerMetadata = ProviderMetadata.None,
+                    url = null,
+                )
             } else {
                 null
             }
@@ -393,8 +446,12 @@ private object TelemetryRedaction {
             reasoning = if (settings.recordOutputs) redactor.redactText(reasoning) else "",
             toolCalls = if (settings.recordInputs) {
                 toolCalls.map {
-                    it.copy(
+                    ContentPart.ToolCall(
+                        toolCallId = it.toolCallId,
+                        toolName = it.toolName,
                         input = redactor.redactJson(it.input),
+                        providerExecuted = it.providerExecuted,
+                        dynamic = it.dynamic,
                         providerMetadata = ProviderMetadata.None,
                     )
                 }
@@ -403,9 +460,14 @@ private object TelemetryRedaction {
             },
             toolResults = if (settings.recordOutputs) {
                 toolResults.map {
-                    it.copy(
+                    ContentPart.ToolResult(
+                        toolCallId = it.toolCallId,
+                        toolName = it.toolName,
                         output = redactor.redactJson(it.output),
+                        isError = it.isError,
                         modelVisible = redactor.redactJson(it.modelVisible),
+                        dynamic = it.dynamic,
+                        providerExecuted = it.providerExecuted,
                         providerMetadata = ProviderMetadata.None,
                     )
                 }
@@ -414,8 +476,11 @@ private object TelemetryRedaction {
             },
             toolApprovalRequests = if (settings.recordInputs) {
                 toolApprovalRequests.map {
-                    it.copy(
+                    ContentPart.ToolApprovalRequest(
+                        toolCallId = it.toolCallId,
+                        toolName = it.toolName,
                         input = redactor.redactJson(it.input),
+                        approvalId = it.approvalId,
                         signature = null,
                         providerMetadata = ProviderMetadata.None,
                     )

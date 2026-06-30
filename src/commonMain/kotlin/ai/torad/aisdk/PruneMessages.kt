@@ -66,7 +66,10 @@ public object MessagePruning {
                 ) {
                     message
                 } else {
-                    message.copy(content = message.content.filterNot { it is ContentPart.Reasoning })
+                    ModelMessage(
+                        role = message.role,
+                        content = message.content.filterNot { it is ContentPart.Reasoning },
+                    )
                 }
             }
         }
@@ -94,7 +97,8 @@ public object MessagePruning {
             if (shouldKeepMessageUnchanged(message, index, firstKeptMessageIndex)) {
                 message
             } else {
-                message.copy(
+                ModelMessage(
+                    role = message.role,
                     content = message.content.filterIndexed { partIndex, part ->
                         val position = PartPosition(index, partIndex)
                         val approvalOccurrence = retentionIndex.approvalOccurrences[position]
