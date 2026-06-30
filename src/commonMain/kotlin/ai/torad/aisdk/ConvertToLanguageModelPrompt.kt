@@ -5,13 +5,15 @@
 
 package ai.torad.aisdk
 
+import dev.drewhamilton.poko.Poko
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
 
 /** The base64 bytes + media type of a downloaded asset. */
-public data class DownloadedAsset(val base64: String, val mediaType: String?)
+@Poko
+public class DownloadedAsset(public val base64: String, public val mediaType: String?)
 
 /** Downloads a remote asset for [PromptConversion.convertToLanguageModelPrompt]. */
 public typealias DownloadFunction = suspend (url: String) -> DownloadedAsset

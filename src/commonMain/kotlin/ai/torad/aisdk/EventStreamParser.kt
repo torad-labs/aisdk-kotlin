@@ -1,5 +1,6 @@
 package ai.torad.aisdk
 
+import dev.drewhamilton.poko.Poko
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.serialization.SerializationException
@@ -7,8 +8,11 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonElement
 
 public sealed class ParseResult<out T> {
-    public data class Success<T>(val value: T) : ParseResult<T>()
-    public data class Failure(val error: Throwable, val text: String) : ParseResult<Nothing>()
+    @Poko
+    public class Success<T>(public val value: T) : ParseResult<T>()
+
+    @Poko
+    public class Failure(public val error: Throwable, public val text: String) : ParseResult<Nothing>()
 }
 
 public object EventStreamParser {

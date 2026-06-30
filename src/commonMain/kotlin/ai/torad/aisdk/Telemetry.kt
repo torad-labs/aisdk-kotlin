@@ -2,6 +2,7 @@
 
 package ai.torad.aisdk
 
+import dev.drewhamilton.poko.Poko
 import kotlinx.coroutines.CancellationException
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
@@ -48,12 +49,13 @@ public data class TelemetrySettings(
  * mirror [Agent.id]/[Agent.version] (parity gap #33: "useful for telemetry");
  * [functionId] comes from [TelemetrySettings.functionId].
  */
-public data class TelemetryCall(
-    val callId: String,
-    val agentId: String,
-    val agentVersion: String? = null,
-    val modelId: String? = null,
-    val functionId: String? = null,
+@Poko
+public class TelemetryCall(
+    public val callId: String,
+    public val agentId: String,
+    public val agentVersion: String? = null,
+    public val modelId: String? = null,
+    public val functionId: String? = null,
 )
 
 /**

@@ -79,8 +79,12 @@ and repaired values are byte-identical to the JS SDK.
 - `fun fixJson(input: String): String` — close a truncated JSON fragment
   (drains the open-frame stack, completes literals/numbers/strings).
 - `fun parsePartialJson(jsonText: String?): PartialJsonResult`
-  - `data class PartialJsonResult(value: JsonElement?, state: PartialJsonState)`
+  - `@Poko class PartialJsonResult(value: JsonElement?, state: PartialJsonState)`
   - `enum PartialJsonState { UndefinedInput, SuccessfulParse, RepairedParse, FailedParse }`
+- Parser/result helpers (`DownloadedAsset`, `ParseResult.Success` /
+  `Failure`, and `PartialJsonResult`) are `@Poko class` value-semantics
+  types; field access remains, but public `copy()` / `componentN()` ABI is
+  intentionally absent.
 - `fun injectJsonInstruction(prompt? = null, schema? = null, schemaPrefix? = …, schemaSuffix? = …): String`
 - `fun injectJsonInstructionIntoMessages(messages, schema? = null, schemaPrefix? = …, schemaSuffix? = …): List<ModelMessage>`
 
@@ -199,6 +203,11 @@ Penalty, response-format, and retry fields participate in the `Step ?: Agent ?: 
   unchanged, while public `copy()` / `componentN()` ABI is intentionally
   absent. JSON-RPC envelopes and request/params structs stay on their existing
   KEEP/builder tracks.
+- OAuth response/server-metadata holders (`OAuthTokens`,
+  `AuthorizationServerMetadata`, `OAuthProtectedResourceMetadata`) are
+  `@Serializable @Poko class` value-semantics types; JSON field names remain
+  unchanged, while public `copy()` / `componentN()` ABI is intentionally
+  absent. OAuth client information/metadata structs stay on the builder track.
 - Experimental MCP aliases/functions require `@ExperimentalAiSdkApi`: `experimental_MCPClientConfig`, `experimental_MCPClient`, `experimental_MCPClientCapabilities`, `experimental_listPrompts`, `experimental_getPrompt`, `Experimental_CreateMCPClient`, `Experimental_StdioMCPTransport`.
 
 ### Provider Registry
@@ -213,12 +222,22 @@ Penalty, response-format, and retry fields participate in the `Step ?: Agent ?: 
   `GoogleTools`, `XaiTools`, `AzureOpenAITools`, and `GroqTools` are
   `@Poko class` value-semantics types; field access remains, but public
   `copy()` / `componentN()` ABI is intentionally absent.
+- Provider error payloads (`BasetenErrorData`, `CerebrasErrorData`,
+  `FireworksErrorData`) are `@Serializable @Poko class` value-semantics types;
+  JSON field names remain unchanged, while public `copy()` / `componentN()`
+  ABI is intentionally absent.
 - Errors: `AiSdkException`, `InvalidArgumentError`, `UnsupportedModelVersionError`, `NoSuchProviderError`, `NoSuchModelError`, `NoOutputGeneratedError`, `NoObjectGeneratedError`, `NoImageGeneratedError`, `NoSpeechGeneratedError`, `NoTranscriptGeneratedError`, `NoVideoGeneratedError`, `UiMessageStreamError`.
+  Error helper payloads (`TypeValidationContext`, `RetryAttemptDetail`) are
+  `@Poko class` value-semantics types; field access remains, but public
+  `copy()` / `componentN()` ABI is intentionally absent.
 
 ### Telemetry
 
 - `TelemetrySettings`, `TelemetryCall`, `Telemetry`, `registerTelemetry`, `clearGlobalTelemetry`, `globalTelemetry`, `NoopTelemetry`.
 - Tracing helpers: `TelemetryTracer`, `TelemetryActiveSpan`, `NoopTelemetryTracer`, `NoopTelemetryActiveSpan`, `InMemoryTelemetryTracer`, `MutableTelemetrySpan(name, initialAttributes: Map<String, JsonElement> = emptyMap())`, `TelemetryTracing.withActiveSpan`, `TelemetryTracing.recordErrorOnSpan`, `TelemetryTracing.selectTelemetryAttributes`.
+- `TelemetryCall` and `TelemetrySpanStatus.Error` are `@Poko class`
+  value-semantics types; field access remains, but public `copy()` /
+  `componentN()` ABI is intentionally absent.
 
 ### Provider-Utils Helpers
 
@@ -232,6 +251,12 @@ Penalty, response-format, and retry fields participate in the `Step ?: Agent ?: 
 - `DataUrl`, `splitDataUrl`, `detectMediaType`, `prepareHeaders`.
 - `RetryPolicy(maxRetries, baseDelayMs, maxDelayMs, clock, delayGenerator, totalTimeoutMs?, perAttemptTimeoutMs?)`, `RetryDelayGenerator`, `RetryAttemptDetail`, `retryWithExponentialBackoff`, `SerialJobExecutor`. Defaults retry only typed retryable `APICallError` / `GatewayError`, honor `Retry-After`, use full jitter, and preserve attempt history in `RetryError.attempts`.
 - `mergeAbortSignals`, `abortSignalFromJobs`.
+
+### DevTools
+
+- `DevToolsStep` and `DevToolsStepResult` are `@Poko class`
+  value-semantics types; field access remains, but public `copy()` /
+  `componentN()` ABI is intentionally absent.
 
 ### Streaming helpers
 
