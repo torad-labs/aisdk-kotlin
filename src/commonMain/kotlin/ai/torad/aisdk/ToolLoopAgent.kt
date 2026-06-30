@@ -1714,7 +1714,13 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
         maxRetries: Int,
     ): LanguageModelStreamResult =
         when (mode) {
-            ModelCallMode.Stream -> stepModel.streamResult(callParams)
+            ModelCallMode.Stream -> stepModel.streamResult(callParams).let { result ->
+                result.copy(
+                    stream = StreamOpenRetry.wrap(maxRetries) {
+                        result.stream
+                    },
+                )
+            }
             ModelCallMode.Generate -> {
                 val result = RetryPolicy(maxRetries = maxRetries).execute {
                     stepModel.generate(callParams)
