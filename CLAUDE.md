@@ -45,8 +45,28 @@ Kotlin/JVM SDKs do, including the two most directly comparable to this one:
   `copy()` a result, so the cost is near zero.
 - **Construct-types** that consumers build (settings/params/options/config):
   front them with a **builder/DSL** so a positional constructor is never frozen
-  into the ABI (the `CallSettingsBuilder` pattern). The backing class is internal
-  detail.
+  into the ABI. The complete ABI-evolvable pattern (note: a public `data class`
+  with a DSL bolted on, like the original `CallSettings`, does NOT fix the trap —
+  its public constructor + `copy()` are still frozen):
+  ```kotlin
+  @Poko public class CohereProviderSettings internal constructor(
+      public val baseURL: String = "...",
+      public val apiKey: String? = null,
+      public val headers: Map<String, String> = emptyMap(),
+  )
+  public class CohereProviderSettingsBuilder internal constructor() {
+      public var baseURL: String = "..."        // or setter methods, match the repo idiom
+      public var apiKey: String? = null
+      public var headers: Map<String, String> = emptyMap()
+      internal fun build() = CohereProviderSettings(baseURL, apiKey, headers)
+  }
+  public fun CohereProviderSettings(block: CohereProviderSettingsBuilder.() -> Unit = {}):
+      CohereProviderSettings = CohereProviderSettingsBuilder().apply(block).build()
+  ```
+  Result: no public positional constructor (it's `internal`), no `copy()`/`componentN()`
+  (`@Poko`), construction via the DSL factory `CohereProviderSettings { apiKey = "..." }`.
+  Adding a field later = add a builder property + an internal-constructor param — no ABI
+  break. Migrate every existing `CohereProviderSettings(apiKey = ...)` call site to the DSL.
 - **`data class` is allowed ONLY for genuinely-frozen, small, wire-shaped value
   types** you are confident will never grow (Jake Wharton's "2D point" carve-out
   — e.g. a 2-field id/ref). "Probably won't change" is not "won't change." When
