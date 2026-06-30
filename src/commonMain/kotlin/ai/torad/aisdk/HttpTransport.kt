@@ -176,7 +176,16 @@ internal object HttpTransport {
     internal suspend fun HttpResponse.bodyAsTextCapped(
         url: String,
         maxBytes: Long = MAX_RESPONSE_BODY_BYTES,
-    ): String {
+    ): String = bodyAsBytesCapped(url, maxBytes).decodeToString()
+
+    /**
+     * Binary sibling of [bodyAsTextCapped]. Reads response bytes in chunks, enforcing
+     * the same cap before assembling the final [ByteArray].
+     */
+    internal suspend fun HttpResponse.bodyAsBytesCapped(
+        url: String,
+        maxBytes: Long = MAX_RESPONSE_BODY_BYTES,
+    ): ByteArray {
         val channel = bodyAsChannel()
         val chunk = ByteArray(BODY_READ_CHUNK_SIZE)
         val acc = ArrayList<ByteArray>()
@@ -214,7 +223,7 @@ internal object HttpTransport {
             slice.copyInto(full, pos)
             pos += slice.size
         }
-        return full.decodeToString()
+        return full
     }
 
     /**

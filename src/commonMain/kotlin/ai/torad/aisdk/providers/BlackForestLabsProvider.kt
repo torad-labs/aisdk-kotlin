@@ -4,7 +4,6 @@ import ai.torad.aisdk.*
 import io.ktor.client.HttpClient
 import io.ktor.client.request.header
 import io.ktor.client.request.request
-import io.ktor.client.statement.bodyAsBytes
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpMethod
 import kotlinx.coroutines.delay
@@ -290,21 +289,26 @@ private class BlackForestLabsImageModel(
         abortSignal: AbortSignal,
     ): BflDownloadedImage {
         abortSignal.throwIfAborted()
-        val response = client.request(url) {
-            method = HttpMethod.Get
-            headers.forEach { (name, value) -> header(name, value) }
+        val (statusCode, headersMap, bytes) = HttpTransport.withRealTimeout(DEFAULT_REQUEST_TIMEOUT_MS) {
+            val response = client.request(url) {
+                method = HttpMethod.Get
+                headers.forEach { (name, value) -> header(name, value) }
+            }
+            Triple(
+                response.status.value,
+                with(HttpTransport) { response.flattenedHeaders() },
+                with(HttpTransport) { response.bodyAsBytesCapped(url) },
+            )
         }
-        val bytes = response.bodyAsBytes()
-        val headersMap = with(HttpTransport) { response.flattenedHeaders() }
-        if (response.status.value !in 200..299) {
+        if (statusCode !in 200..299) {
             val raw = bytes.decodeToString()
             val detail = raw.ifBlank { "request failed" }
             throw ApiCallError(
                 url = url,
-                statusCode = response.status.value,
+                statusCode = statusCode,
                 rawBody = raw,
                 headers = headersMap,
-                message = "Black Forest Labs image download failed (${response.status.value}): $detail",
+                message = "Black Forest Labs image download failed ($statusCode): $detail",
             )
         }
         return BflDownloadedImage(
