@@ -41,6 +41,7 @@ This project follows Semantic Versioning once the first stable release is cut.
   language-model result/metadata/middleware-context holders, and gateway
   response/spec/metadata holders, provider tool-namespace holders, and MCP
   protocol result/capability holders, plus tool result/output and approval
+  holders, structured-object result/phase holders, and UI stream result
   holders; field access, equality, hashCode, toString, and JSON serialization
   remain supported where applicable.
 

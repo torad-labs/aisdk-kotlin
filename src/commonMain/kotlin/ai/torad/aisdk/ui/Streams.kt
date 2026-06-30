@@ -2,6 +2,7 @@ package ai.torad.aisdk.ui
 
 import ai.torad.aisdk.StreamEvent
 import ai.torad.aisdk.aiSdkOutputJson
+import dev.drewhamilton.poko.Poko
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.channelFlow
@@ -11,16 +12,18 @@ import kotlinx.coroutines.flow.map
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.JsonElement
 
-public data class TextStreamResponse(
-    val textStream: Flow<String>,
-    val status: Int = 200,
-    val headers: Map<String, String> = UiMessageStreams.textStreamHeaders(),
+@Poko
+public class TextStreamResponse(
+    public val textStream: Flow<String>,
+    public val status: Int = 200,
+    public val headers: Map<String, String> = UiMessageStreams.textStreamHeaders(),
 )
 
-public data class UIMessageStreamResponse(
-    val stream: Flow<UIMessage>,
-    val status: Int = 200,
-    val headers: Map<String, String> = UiMessageStreams.uiMessageStreamHeaders(),
+@Poko
+public class UIMessageStreamResponse(
+    public val stream: Flow<UIMessage>,
+    public val status: Int = 200,
+    public val headers: Map<String, String> = UiMessageStreams.uiMessageStreamHeaders(),
 )
 
 public interface ServerResponseWriter {
@@ -91,8 +94,11 @@ public fun CreateUiMessageStream(
 public fun ReadUiMessageStream(stream: Flow<UIMessage>): Flow<UIMessage> = stream
 
 public sealed class SafeValidateUIMessagesResult {
-    public data class Success(val messages: List<UIMessage>) : SafeValidateUIMessagesResult()
-    public data class Failure(val error: Throwable) : SafeValidateUIMessagesResult()
+    @Poko
+    public class Success(public val messages: List<UIMessage>) : SafeValidateUIMessagesResult()
+
+    @Poko
+    public class Failure(public val error: Throwable) : SafeValidateUIMessagesResult()
 }
 
 public fun TransformTextToUiMessageStream(

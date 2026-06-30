@@ -1,5 +1,6 @@
 package ai.torad.aisdk
 
+import dev.drewhamilton.poko.Poko
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.filterIsInstance
 import kotlinx.coroutines.flow.flow
@@ -297,12 +298,13 @@ public class StreamObjectResult<TOutput> internal constructor(
     }
 }
 
-public data class StreamObjectFinish<TOutput>(
-    val value: TOutput,
-    val usage: Usage,
-    val finishReason: FinishReason,
-    val warnings: List<CallWarning>,
-    val response: LanguageModelResponseMetadata,
+@Poko
+public class StreamObjectFinish<TOutput>(
+    public val value: TOutput,
+    public val usage: Usage,
+    public val finishReason: FinishReason,
+    public val warnings: List<CallWarning>,
+    public val response: LanguageModelResponseMetadata,
 )
 
 public fun <TOutput> StreamObjectResult(
