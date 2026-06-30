@@ -7,6 +7,7 @@ import ai.torad.aisdk.providers.AnthropicMessagesLanguageModel.Companion.forward
 
 import ai.torad.aisdk.testing.FlowDrain.drainAllItems
 import io.ktor.http.HttpHeaders
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
@@ -447,6 +448,74 @@ class AnthropicProviderTest {
 
         val error = events.filterIsInstance<StreamEvent.Error>().single()
         assertTrue(error.message.contains("$.index"))
+    }
+
+    @Test
+    fun `stream leading Anthropic overloaded error throws retryable API call error before emitting events`() = runTest {
+        val fixture = TestServer.createTestServer(
+            mutableMapOf(
+                "https://anthropic.test/v1/messages" to UrlHandler(
+                    UrlResponse.StreamChunks(
+                        listOf(
+                            """data: {"type":"error","error":{"type":"overloaded_error"}}""",
+                        ),
+                    ),
+                ),
+            ),
+        )
+        fixture.server.start()
+        val provider = Anthropic(fixture.httpClient(), AnthropicProviderSettings(baseURL = "https://anthropic.test/v1"))
+        val emitted = mutableListOf<StreamEvent>()
+
+        val error = assertFailsWith<APICallError> {
+            provider.messages(ModelId("claude-sonnet-4-5"))
+                .stream(LanguageModelCallParams(messages = listOf(UserMessage("hi"))))
+                .collect { emitted += it }
+        }
+
+        assertEquals(529, error.statusCode)
+        assertEquals(true, error.isRetryable)
+        assertTrue(error.message?.contains("overloaded_error") == true)
+        assertTrue(emitted.isEmpty(), "retryable leading error must throw before StreamStart or metadata is emitted")
+    }
+
+    @Test
+    fun `stream mid Anthropic error stays a terminal stream error after text delta`() = runTest {
+        val fixture = TestServer.createTestServer(
+            mutableMapOf(
+                "https://anthropic.test/v1/messages" to UrlHandler(
+                    UrlResponse.StreamChunks(
+                        listOf(
+                            """
+                            data: {"type":"message_start","message":{"id":"msg_stream","model":"claude-sonnet-4-5","usage":{"input_tokens":1,"output_tokens":0}}}
+
+                            data: {"type":"content_block_start","index":0,"content_block":{"type":"text","id":"text-1"}}
+
+                            data: {"type":"content_block_delta","index":0,"delta":{"type":"text_delta","text":"hello"}}
+
+                            data: {"type":"error","error":{"type":"server_error","message":"after text"}}
+
+                            """.trimIndent(),
+                        ),
+                    ),
+                ),
+            ),
+        )
+        fixture.server.start()
+        val provider = Anthropic(fixture.httpClient(), AnthropicProviderSettings(baseURL = "https://anthropic.test/v1"))
+
+        val events = drainAllItems(
+            provider.messages(ModelId("claude-sonnet-4-5")).stream(
+                LanguageModelCallParams(messages = listOf(UserMessage("hi"))),
+            ),
+        )
+
+        val textIndex = events.indexOfFirst { it is StreamEvent.TextDelta && it.text == "hello" }
+        val errorIndex = events.indexOfFirst { it is StreamEvent.Error }
+        assertTrue(textIndex >= 0, events.toString())
+        assertTrue(errorIndex > textIndex, events.toString())
+        val error = events.filterIsInstance<StreamEvent.Error>().single()
+        assertEquals("after text", error.message)
     }
 
     @Test

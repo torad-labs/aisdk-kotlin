@@ -61,7 +61,7 @@ tests must stay green.
 | BL-040 | OpenResponses built-in tool outputs silently dropped | Medium | Optional | CONFIRMED | OPEN |
 | BL-041 | Anthropic `cache_control` dropped on non-text blocks (no doc caching) | Medium | Recommended | CONFIRMED | OPEN |
 | BL-042 | OpenAI-compatible mid-stream in-band error throws instead of emitting Error+Finish | Medium | Recommended | CONFIRMED | OPEN |
-| BL-043 | Anthropic in-band `overloaded_error` surfaced as terminal (not retryable 529) | Medium | Recommended | CONFIRMED | OPEN |
+| BL-043 | Anthropic in-band `overloaded_error` surfaced as terminal (not retryable 529) | Medium | Recommended | CONFIRMED | DONE |
 | BL-044 | Provider parity — 12 additional confirmed mapping/usage/metadata gaps | Mixed | Mixed | CONFIRMED | OPEN |
 
 | BL-045 | ~~UI-stream encoder breaks `@ai-sdk/react`~~ → OUT OF SCOPE (React interop not a goal; use Vercel SDK for React) | — | Post-beta | WONTFIX (beta) | DECIDED |
