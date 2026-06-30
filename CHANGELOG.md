@@ -58,7 +58,11 @@ This project follows Semantic Versioning once the first stable release is cut.
   `FalProviderSettings`, `ReplicateProviderSettings`,
   `KlingAIProviderSettings`, `BlackForestLabsProviderSettings`,
   `ProdiaProviderSettings`, `ByteDanceProviderSettings`,
-  `MistralProviderSettings`, and `AlibabaProviderSettings`)
+  `MistralProviderSettings`, `AlibabaProviderSettings`,
+  `GroqProviderSettings`, `CerebrasProviderSettings`,
+  `DeepInfraProviderSettings`, `DeepSeekProviderSettings`,
+  `FireworksProviderSettings`, `TogetherAIProviderSettings`,
+  `PerplexityProviderSettings`, and `MoonshotAIProviderSettings`)
   are now `@Serializable @Poko class` values with internal positional
   constructors and public DSL factories such as
   `CohereProviderSettings { apiKey("..."); baseURL("...") }`. Field access,

@@ -7,6 +7,7 @@ import ai.torad.aisdk.providers.FacadeHttp.postFacadeJson
 import ai.torad.aisdk.providers.FacadeHttp.providerFacadeHeaders
 import ai.torad.aisdk.providers.FacadeHttp.putProviderSpecificOptions
 import ai.torad.aisdk.providers.FacadeHttp.stripDataUriPrefix
+import dev.drewhamilton.poko.Poko
 import io.ktor.client.HttpClient
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
@@ -25,11 +26,42 @@ public const val DEEPINFRA_VERSION: String = "2.0.52"
 public typealias DeepInfraErrorData = JsonElement
 
 @Serializable
-public data class DeepInfraProviderSettings(
-    val apiKey: String? = null,
-    val baseURL: String = "https://api.deepinfra.com/v1",
-    val headers: Map<String, String> = emptyMap(),
+@Poko
+public class DeepInfraProviderSettings internal constructor(
+    public val apiKey: String? = null,
+    public val baseURL: String = "https://api.deepinfra.com/v1",
+    public val headers: Map<String, String> = emptyMap(),
 )
+
+public class DeepInfraProviderSettingsBuilder internal constructor() {
+    private var apiKey: String? = null
+    private var baseURL: String = "https://api.deepinfra.com/v1"
+    private var headers: Map<String, String> = emptyMap()
+
+    public fun apiKey(value: String?) {
+        apiKey = value
+    }
+
+    public fun baseURL(value: String) {
+        baseURL = value
+    }
+
+    public fun headers(value: Map<String, String>) {
+        headers = value
+    }
+
+    internal fun build(): DeepInfraProviderSettings =
+        DeepInfraProviderSettings(
+            apiKey = apiKey,
+            baseURL = baseURL,
+            headers = headers,
+        )
+}
+
+public fun DeepInfraProviderSettings(
+    block: DeepInfraProviderSettingsBuilder.() -> Unit = {},
+): DeepInfraProviderSettings =
+    DeepInfraProviderSettingsBuilder().apply(block).build()
 
 public class DeepInfraProvider(
     private val client: HttpClient,

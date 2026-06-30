@@ -4,6 +4,7 @@ import ai.torad.aisdk.*
 import ai.torad.aisdk.providers.FacadeSupport.intField
 import ai.torad.aisdk.providers.FacadeSupport.nestedIntField
 import ai.torad.aisdk.providers.FacadeSupport.textFromContentParts
+import dev.drewhamilton.poko.Poko
 import io.ktor.client.HttpClient
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonArray
@@ -16,10 +17,11 @@ import kotlinx.serialization.json.contentOrNull
 public const val DEEPSEEK_VERSION: String = "2.0.35"
 
 @Serializable
-public data class DeepSeekProviderSettings(
-    val apiKey: String? = null,
-    val baseURL: String = "https://api.deepseek.com",
-    val headers: Map<String, String> = emptyMap(),
+@Poko
+public class DeepSeekProviderSettings internal constructor(
+    public val apiKey: String? = null,
+    public val baseURL: String = "https://api.deepseek.com",
+    public val headers: Map<String, String> = emptyMap(),
 ) {
     internal fun toCompatible(
         name: String,
@@ -113,6 +115,36 @@ public data class DeepSeekProviderSettings(
         return Usage.fromParts(promptTokens, completionTokens, cacheRead, reasoning, obj)
     }
 }
+
+public class DeepSeekProviderSettingsBuilder internal constructor() {
+    private var apiKey: String? = null
+    private var baseURL: String = "https://api.deepseek.com"
+    private var headers: Map<String, String> = emptyMap()
+
+    public fun apiKey(value: String?) {
+        apiKey = value
+    }
+
+    public fun baseURL(value: String) {
+        baseURL = value
+    }
+
+    public fun headers(value: Map<String, String>) {
+        headers = value
+    }
+
+    internal fun build(): DeepSeekProviderSettings =
+        DeepSeekProviderSettings(
+            apiKey = apiKey,
+            baseURL = baseURL,
+            headers = headers,
+        )
+}
+
+public fun DeepSeekProviderSettings(
+    block: DeepSeekProviderSettingsBuilder.() -> Unit = {},
+): DeepSeekProviderSettings =
+    DeepSeekProviderSettingsBuilder().apply(block).build()
 
 @Serializable
 public data class DeepSeekLanguageModelOptions(

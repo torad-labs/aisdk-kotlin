@@ -8,10 +8,11 @@ import kotlinx.serialization.Serializable
 public const val CEREBRAS_VERSION: String = "2.0.54"
 
 @Serializable
-public data class CerebrasProviderSettings(
-    val apiKey: String? = null,
-    val baseURL: String = "https://api.cerebras.ai/v1",
-    val headers: Map<String, String> = emptyMap(),
+@Poko
+public class CerebrasProviderSettings internal constructor(
+    public val apiKey: String? = null,
+    public val baseURL: String = "https://api.cerebras.ai/v1",
+    public val headers: Map<String, String> = emptyMap(),
 ) {
     internal fun toCompatible(
         name: String,
@@ -20,6 +21,36 @@ public data class CerebrasProviderSettings(
     ): OpenAICompatibleProviderSettings =
         OpenAICompatibleProviderSettings.forFacade(name, version, baseURL, apiKey, headers, capabilities)
 }
+
+public class CerebrasProviderSettingsBuilder internal constructor() {
+    private var apiKey: String? = null
+    private var baseURL: String = "https://api.cerebras.ai/v1"
+    private var headers: Map<String, String> = emptyMap()
+
+    public fun apiKey(value: String?) {
+        apiKey = value
+    }
+
+    public fun baseURL(value: String) {
+        baseURL = value
+    }
+
+    public fun headers(value: Map<String, String>) {
+        headers = value
+    }
+
+    internal fun build(): CerebrasProviderSettings =
+        CerebrasProviderSettings(
+            apiKey = apiKey,
+            baseURL = baseURL,
+            headers = headers,
+        )
+}
+
+public fun CerebrasProviderSettings(
+    block: CerebrasProviderSettingsBuilder.() -> Unit = {},
+): CerebrasProviderSettings =
+    CerebrasProviderSettingsBuilder().apply(block).build()
 
 @Serializable
 @Poko

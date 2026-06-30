@@ -8084,6 +8084,8 @@ public final class ai/torad/aisdk/providers/CerebrasFacadeKt {
 	public static final field CEREBRAS_VERSION Ljava/lang/String;
 	public static final fun Cerebras (Lio/ktor/client/HttpClient;Lai/torad/aisdk/providers/CerebrasProviderSettings;)Lai/torad/aisdk/providers/CerebrasProvider;
 	public static synthetic fun Cerebras$default (Lio/ktor/client/HttpClient;Lai/torad/aisdk/providers/CerebrasProviderSettings;ILjava/lang/Object;)Lai/torad/aisdk/providers/CerebrasProvider;
+	public static final fun CerebrasProviderSettings (Lkotlin/jvm/functions/Function1;)Lai/torad/aisdk/providers/CerebrasProviderSettings;
+	public static synthetic fun CerebrasProviderSettings$default (Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Lai/torad/aisdk/providers/CerebrasProviderSettings;
 }
 
 public final class ai/torad/aisdk/providers/CerebrasProvider : ai/torad/aisdk/Provider {
@@ -8103,14 +8105,6 @@ public final class ai/torad/aisdk/providers/CerebrasProvider : ai/torad/aisdk/Pr
 
 public final class ai/torad/aisdk/providers/CerebrasProviderSettings {
 	public static final field Companion Lai/torad/aisdk/providers/CerebrasProviderSettings$Companion;
-	public fun <init> ()V
-	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;)V
-	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public final fun component1 ()Ljava/lang/String;
-	public final fun component2 ()Ljava/lang/String;
-	public final fun component3 ()Ljava/util/Map;
-	public final fun copy (Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;)Lai/torad/aisdk/providers/CerebrasProviderSettings;
-	public static synthetic fun copy$default (Lai/torad/aisdk/providers/CerebrasProviderSettings;Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;ILjava/lang/Object;)Lai/torad/aisdk/providers/CerebrasProviderSettings;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getApiKey ()Ljava/lang/String;
 	public final fun getBaseURL ()Ljava/lang/String;
@@ -8132,6 +8126,12 @@ public final synthetic class ai/torad/aisdk/providers/CerebrasProviderSettings$$
 
 public final class ai/torad/aisdk/providers/CerebrasProviderSettings$Companion {
 	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public final class ai/torad/aisdk/providers/CerebrasProviderSettingsBuilder {
+	public final fun apiKey (Ljava/lang/String;)V
+	public final fun baseURL (Ljava/lang/String;)V
+	public final fun headers (Ljava/util/Map;)V
 }
 
 public final class ai/torad/aisdk/providers/CohereEmbeddingModelOptions {
@@ -8319,6 +8319,8 @@ public final class ai/torad/aisdk/providers/DeepInfraFacadeKt {
 	public static final field DEEPINFRA_VERSION Ljava/lang/String;
 	public static final fun DeepInfra (Lio/ktor/client/HttpClient;Lai/torad/aisdk/providers/DeepInfraProviderSettings;)Lai/torad/aisdk/providers/DeepInfraProvider;
 	public static synthetic fun DeepInfra$default (Lio/ktor/client/HttpClient;Lai/torad/aisdk/providers/DeepInfraProviderSettings;ILjava/lang/Object;)Lai/torad/aisdk/providers/DeepInfraProvider;
+	public static final fun DeepInfraProviderSettings (Lkotlin/jvm/functions/Function1;)Lai/torad/aisdk/providers/DeepInfraProviderSettings;
+	public static synthetic fun DeepInfraProviderSettings$default (Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Lai/torad/aisdk/providers/DeepInfraProviderSettings;
 }
 
 public final class ai/torad/aisdk/providers/DeepInfraProvider : ai/torad/aisdk/Provider {
@@ -8340,14 +8342,6 @@ public final class ai/torad/aisdk/providers/DeepInfraProvider : ai/torad/aisdk/P
 
 public final class ai/torad/aisdk/providers/DeepInfraProviderSettings {
 	public static final field Companion Lai/torad/aisdk/providers/DeepInfraProviderSettings$Companion;
-	public fun <init> ()V
-	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;)V
-	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public final fun component1 ()Ljava/lang/String;
-	public final fun component2 ()Ljava/lang/String;
-	public final fun component3 ()Ljava/util/Map;
-	public final fun copy (Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;)Lai/torad/aisdk/providers/DeepInfraProviderSettings;
-	public static synthetic fun copy$default (Lai/torad/aisdk/providers/DeepInfraProviderSettings;Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;ILjava/lang/Object;)Lai/torad/aisdk/providers/DeepInfraProviderSettings;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getApiKey ()Ljava/lang/String;
 	public final fun getBaseURL ()Ljava/lang/String;
@@ -8371,10 +8365,18 @@ public final class ai/torad/aisdk/providers/DeepInfraProviderSettings$Companion 
 	public final fun serializer ()Lkotlinx/serialization/KSerializer;
 }
 
+public final class ai/torad/aisdk/providers/DeepInfraProviderSettingsBuilder {
+	public final fun apiKey (Ljava/lang/String;)V
+	public final fun baseURL (Ljava/lang/String;)V
+	public final fun headers (Ljava/util/Map;)V
+}
+
 public final class ai/torad/aisdk/providers/DeepSeekFacadeKt {
 	public static final field DEEPSEEK_VERSION Ljava/lang/String;
 	public static final fun DeepSeek (Lio/ktor/client/HttpClient;Lai/torad/aisdk/providers/DeepSeekProviderSettings;)Lai/torad/aisdk/providers/DeepSeekProvider;
 	public static synthetic fun DeepSeek$default (Lio/ktor/client/HttpClient;Lai/torad/aisdk/providers/DeepSeekProviderSettings;ILjava/lang/Object;)Lai/torad/aisdk/providers/DeepSeekProvider;
+	public static final fun DeepSeekProviderSettings (Lkotlin/jvm/functions/Function1;)Lai/torad/aisdk/providers/DeepSeekProviderSettings;
+	public static synthetic fun DeepSeekProviderSettings$default (Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Lai/torad/aisdk/providers/DeepSeekProviderSettings;
 }
 
 public final class ai/torad/aisdk/providers/DeepSeekLanguageModelOptions {
@@ -8423,14 +8425,6 @@ public final class ai/torad/aisdk/providers/DeepSeekProvider : ai/torad/aisdk/Pr
 
 public final class ai/torad/aisdk/providers/DeepSeekProviderSettings {
 	public static final field Companion Lai/torad/aisdk/providers/DeepSeekProviderSettings$Companion;
-	public fun <init> ()V
-	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;)V
-	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public final fun component1 ()Ljava/lang/String;
-	public final fun component2 ()Ljava/lang/String;
-	public final fun component3 ()Ljava/util/Map;
-	public final fun copy (Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;)Lai/torad/aisdk/providers/DeepSeekProviderSettings;
-	public static synthetic fun copy$default (Lai/torad/aisdk/providers/DeepSeekProviderSettings;Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;ILjava/lang/Object;)Lai/torad/aisdk/providers/DeepSeekProviderSettings;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getApiKey ()Ljava/lang/String;
 	public final fun getBaseURL ()Ljava/lang/String;
@@ -8452,6 +8446,12 @@ public final synthetic class ai/torad/aisdk/providers/DeepSeekProviderSettings$$
 
 public final class ai/torad/aisdk/providers/DeepSeekProviderSettings$Companion {
 	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public final class ai/torad/aisdk/providers/DeepSeekProviderSettingsBuilder {
+	public final fun apiKey (Ljava/lang/String;)V
+	public final fun baseURL (Ljava/lang/String;)V
+	public final fun headers (Ljava/util/Map;)V
 }
 
 public final class ai/torad/aisdk/providers/DeepgramProvider : ai/torad/aisdk/Provider {
@@ -9031,6 +9031,8 @@ public final class ai/torad/aisdk/providers/FireworksFacadeKt {
 	public static final field FIREWORKS_VERSION Ljava/lang/String;
 	public static final fun Fireworks (Lio/ktor/client/HttpClient;Lai/torad/aisdk/providers/FireworksProviderSettings;)Lai/torad/aisdk/providers/FireworksProvider;
 	public static synthetic fun Fireworks$default (Lio/ktor/client/HttpClient;Lai/torad/aisdk/providers/FireworksProviderSettings;ILjava/lang/Object;)Lai/torad/aisdk/providers/FireworksProvider;
+	public static final fun FireworksProviderSettings (Lkotlin/jvm/functions/Function1;)Lai/torad/aisdk/providers/FireworksProviderSettings;
+	public static synthetic fun FireworksProviderSettings$default (Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Lai/torad/aisdk/providers/FireworksProviderSettings;
 }
 
 public final class ai/torad/aisdk/providers/FireworksImageModel : ai/torad/aisdk/ImageModel {
@@ -9093,14 +9095,6 @@ public final class ai/torad/aisdk/providers/FireworksProvider : ai/torad/aisdk/P
 
 public final class ai/torad/aisdk/providers/FireworksProviderSettings {
 	public static final field Companion Lai/torad/aisdk/providers/FireworksProviderSettings$Companion;
-	public fun <init> ()V
-	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;)V
-	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public final fun component1 ()Ljava/lang/String;
-	public final fun component2 ()Ljava/lang/String;
-	public final fun component3 ()Ljava/util/Map;
-	public final fun copy (Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;)Lai/torad/aisdk/providers/FireworksProviderSettings;
-	public static synthetic fun copy$default (Lai/torad/aisdk/providers/FireworksProviderSettings;Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;ILjava/lang/Object;)Lai/torad/aisdk/providers/FireworksProviderSettings;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getApiKey ()Ljava/lang/String;
 	public final fun getBaseURL ()Ljava/lang/String;
@@ -9122,6 +9116,12 @@ public final synthetic class ai/torad/aisdk/providers/FireworksProviderSettings$
 
 public final class ai/torad/aisdk/providers/FireworksProviderSettings$Companion {
 	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public final class ai/torad/aisdk/providers/FireworksProviderSettingsBuilder {
+	public final fun apiKey (Ljava/lang/String;)V
+	public final fun baseURL (Ljava/lang/String;)V
+	public final fun headers (Ljava/util/Map;)V
 }
 
 public final class ai/torad/aisdk/providers/FireworksThinkingOptions {
@@ -9559,6 +9559,8 @@ public final class ai/torad/aisdk/providers/GroqFacadeKt {
 	public static final field GROQ_VERSION Ljava/lang/String;
 	public static final fun Groq (Lio/ktor/client/HttpClient;Lai/torad/aisdk/providers/GroqProviderSettings;)Lai/torad/aisdk/providers/GroqProvider;
 	public static synthetic fun Groq$default (Lio/ktor/client/HttpClient;Lai/torad/aisdk/providers/GroqProviderSettings;ILjava/lang/Object;)Lai/torad/aisdk/providers/GroqProvider;
+	public static final fun GroqProviderSettings (Lkotlin/jvm/functions/Function1;)Lai/torad/aisdk/providers/GroqProviderSettings;
+	public static synthetic fun GroqProviderSettings$default (Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Lai/torad/aisdk/providers/GroqProviderSettings;
 	public static final fun getBrowserSearch ()Lai/torad/aisdk/Tool;
 }
 
@@ -9609,14 +9611,6 @@ public final class ai/torad/aisdk/providers/GroqProvider : ai/torad/aisdk/Provid
 }
 
 public final class ai/torad/aisdk/providers/GroqProviderSettings {
-	public fun <init> ()V
-	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;)V
-	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public final fun component1 ()Ljava/lang/String;
-	public final fun component2 ()Ljava/lang/String;
-	public final fun component3 ()Ljava/util/Map;
-	public final fun copy (Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;)Lai/torad/aisdk/providers/GroqProviderSettings;
-	public static synthetic fun copy$default (Lai/torad/aisdk/providers/GroqProviderSettings;Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;ILjava/lang/Object;)Lai/torad/aisdk/providers/GroqProviderSettings;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getApiKey ()Ljava/lang/String;
 	public final fun getBaseURL ()Ljava/lang/String;
@@ -9634,6 +9628,12 @@ public final synthetic class ai/torad/aisdk/providers/GroqProviderSettings$$seri
 	public final fun serialize (Lkotlinx/serialization/encoding/Encoder;Lai/torad/aisdk/providers/GroqProviderSettings;)V
 	public synthetic fun serialize (Lkotlinx/serialization/encoding/Encoder;Ljava/lang/Object;)V
 	public fun typeParametersSerializers ()[Lkotlinx/serialization/KSerializer;
+}
+
+public final class ai/torad/aisdk/providers/GroqProviderSettingsBuilder {
+	public final fun apiKey (Ljava/lang/String;)V
+	public final fun baseURL (Ljava/lang/String;)V
+	public final fun headers (Ljava/util/Map;)V
 }
 
 public final class ai/torad/aisdk/providers/GroqTools {
@@ -10606,6 +10606,8 @@ public final class ai/torad/aisdk/providers/MoonshotAIFacadeKt {
 	public static final field MOONSHOTAI_VERSION Ljava/lang/String;
 	public static final fun MoonshotAI (Lio/ktor/client/HttpClient;Lai/torad/aisdk/providers/MoonshotAIProviderSettings;)Lai/torad/aisdk/providers/MoonshotAIProvider;
 	public static synthetic fun MoonshotAI$default (Lio/ktor/client/HttpClient;Lai/torad/aisdk/providers/MoonshotAIProviderSettings;ILjava/lang/Object;)Lai/torad/aisdk/providers/MoonshotAIProvider;
+	public static final fun MoonshotAIProviderSettings (Lkotlin/jvm/functions/Function1;)Lai/torad/aisdk/providers/MoonshotAIProviderSettings;
+	public static synthetic fun MoonshotAIProviderSettings$default (Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Lai/torad/aisdk/providers/MoonshotAIProviderSettings;
 }
 
 public final class ai/torad/aisdk/providers/MoonshotAILanguageModelOptions {
@@ -10653,14 +10655,6 @@ public final class ai/torad/aisdk/providers/MoonshotAIProvider : ai/torad/aisdk/
 
 public final class ai/torad/aisdk/providers/MoonshotAIProviderSettings {
 	public static final field Companion Lai/torad/aisdk/providers/MoonshotAIProviderSettings$Companion;
-	public fun <init> ()V
-	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;)V
-	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public final fun component1 ()Ljava/lang/String;
-	public final fun component2 ()Ljava/lang/String;
-	public final fun component3 ()Ljava/util/Map;
-	public final fun copy (Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;)Lai/torad/aisdk/providers/MoonshotAIProviderSettings;
-	public static synthetic fun copy$default (Lai/torad/aisdk/providers/MoonshotAIProviderSettings;Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;ILjava/lang/Object;)Lai/torad/aisdk/providers/MoonshotAIProviderSettings;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getApiKey ()Ljava/lang/String;
 	public final fun getBaseURL ()Ljava/lang/String;
@@ -10682,6 +10676,12 @@ public final synthetic class ai/torad/aisdk/providers/MoonshotAIProviderSettings
 
 public final class ai/torad/aisdk/providers/MoonshotAIProviderSettings$Companion {
 	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public final class ai/torad/aisdk/providers/MoonshotAIProviderSettingsBuilder {
+	public final fun apiKey (Ljava/lang/String;)V
+	public final fun baseURL (Ljava/lang/String;)V
+	public final fun headers (Ljava/util/Map;)V
 }
 
 public abstract interface class ai/torad/aisdk/providers/OpenAICompatibleProvider : ai/torad/aisdk/Provider {
@@ -11009,6 +11009,8 @@ public final class ai/torad/aisdk/providers/PerplexityFacadeKt {
 	public static final field PERPLEXITY_VERSION Ljava/lang/String;
 	public static final fun Perplexity (Lio/ktor/client/HttpClient;Lai/torad/aisdk/providers/PerplexityProviderSettings;)Lai/torad/aisdk/providers/PerplexityProvider;
 	public static synthetic fun Perplexity$default (Lio/ktor/client/HttpClient;Lai/torad/aisdk/providers/PerplexityProviderSettings;ILjava/lang/Object;)Lai/torad/aisdk/providers/PerplexityProvider;
+	public static final fun PerplexityProviderSettings (Lkotlin/jvm/functions/Function1;)Lai/torad/aisdk/providers/PerplexityProviderSettings;
+	public static synthetic fun PerplexityProviderSettings$default (Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Lai/torad/aisdk/providers/PerplexityProviderSettings;
 }
 
 public final class ai/torad/aisdk/providers/PerplexityProvider : ai/torad/aisdk/Provider {
@@ -11027,14 +11029,6 @@ public final class ai/torad/aisdk/providers/PerplexityProvider : ai/torad/aisdk/
 
 public final class ai/torad/aisdk/providers/PerplexityProviderSettings {
 	public static final field Companion Lai/torad/aisdk/providers/PerplexityProviderSettings$Companion;
-	public fun <init> ()V
-	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;)V
-	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public final fun component1 ()Ljava/lang/String;
-	public final fun component2 ()Ljava/lang/String;
-	public final fun component3 ()Ljava/util/Map;
-	public final fun copy (Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;)Lai/torad/aisdk/providers/PerplexityProviderSettings;
-	public static synthetic fun copy$default (Lai/torad/aisdk/providers/PerplexityProviderSettings;Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;ILjava/lang/Object;)Lai/torad/aisdk/providers/PerplexityProviderSettings;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getApiKey ()Ljava/lang/String;
 	public final fun getBaseURL ()Ljava/lang/String;
@@ -11056,6 +11050,12 @@ public final synthetic class ai/torad/aisdk/providers/PerplexityProviderSettings
 
 public final class ai/torad/aisdk/providers/PerplexityProviderSettings$Companion {
 	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public final class ai/torad/aisdk/providers/PerplexityProviderSettingsBuilder {
+	public final fun apiKey (Ljava/lang/String;)V
+	public final fun baseURL (Ljava/lang/String;)V
+	public final fun headers (Ljava/util/Map;)V
 }
 
 public final class ai/torad/aisdk/providers/ProdiaImageModelOptions {
@@ -11617,6 +11617,8 @@ public final class ai/torad/aisdk/providers/TogetherAIFacadeKt {
 	public static final field TOGETHERAI_VERSION Ljava/lang/String;
 	public static final fun TogetherAI (Lio/ktor/client/HttpClient;Lai/torad/aisdk/providers/TogetherAIProviderSettings;)Lai/torad/aisdk/providers/TogetherAIProvider;
 	public static synthetic fun TogetherAI$default (Lio/ktor/client/HttpClient;Lai/torad/aisdk/providers/TogetherAIProviderSettings;ILjava/lang/Object;)Lai/torad/aisdk/providers/TogetherAIProvider;
+	public static final fun TogetherAIProviderSettings (Lkotlin/jvm/functions/Function1;)Lai/torad/aisdk/providers/TogetherAIProviderSettings;
+	public static synthetic fun TogetherAIProviderSettings$default (Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Lai/torad/aisdk/providers/TogetherAIProviderSettings;
 }
 
 public final class ai/torad/aisdk/providers/TogetherAIImageModelOptions {
@@ -11676,14 +11678,6 @@ public final class ai/torad/aisdk/providers/TogetherAIProvider : ai/torad/aisdk/
 
 public final class ai/torad/aisdk/providers/TogetherAIProviderSettings {
 	public static final field Companion Lai/torad/aisdk/providers/TogetherAIProviderSettings$Companion;
-	public fun <init> ()V
-	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;)V
-	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public final fun component1 ()Ljava/lang/String;
-	public final fun component2 ()Ljava/lang/String;
-	public final fun component3 ()Ljava/util/Map;
-	public final fun copy (Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;)Lai/torad/aisdk/providers/TogetherAIProviderSettings;
-	public static synthetic fun copy$default (Lai/torad/aisdk/providers/TogetherAIProviderSettings;Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;ILjava/lang/Object;)Lai/torad/aisdk/providers/TogetherAIProviderSettings;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getApiKey ()Ljava/lang/String;
 	public final fun getBaseURL ()Ljava/lang/String;
@@ -11705,6 +11699,12 @@ public final synthetic class ai/torad/aisdk/providers/TogetherAIProviderSettings
 
 public final class ai/torad/aisdk/providers/TogetherAIProviderSettings$Companion {
 	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public final class ai/torad/aisdk/providers/TogetherAIProviderSettingsBuilder {
+	public final fun apiKey (Ljava/lang/String;)V
+	public final fun baseURL (Ljava/lang/String;)V
+	public final fun headers (Ljava/util/Map;)V
 }
 
 public final class ai/torad/aisdk/providers/TogetherAIRerankingModel : ai/torad/aisdk/RerankingModel {
