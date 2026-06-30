@@ -27,12 +27,49 @@ public const val LUMA_VERSION: String = "2.0.33"
 public typealias LumaImageProviderOptions = LumaImageModelOptions
 
 @Serializable
-public data class LumaImageModelOptions(
-    val referenceType: String? = null,
-    val images: JsonArray? = null,
-    val pollIntervalMillis: Long? = null,
-    val maxPollAttempts: Int? = null,
+@Poko
+public class LumaImageModelOptions internal constructor(
+    public val referenceType: String? = null,
+    public val images: JsonArray? = null,
+    public val pollIntervalMillis: Long? = null,
+    public val maxPollAttempts: Int? = null,
 )
+
+public class LumaImageModelOptionsBuilder internal constructor() {
+    private var referenceType: String? = null
+    private var images: JsonArray? = null
+    private var pollIntervalMillis: Long? = null
+    private var maxPollAttempts: Int? = null
+
+    public fun referenceType(value: String?) {
+        referenceType = value
+    }
+
+    public fun images(value: JsonArray?) {
+        images = value
+    }
+
+    public fun pollIntervalMillis(value: Long?) {
+        pollIntervalMillis = value
+    }
+
+    public fun maxPollAttempts(value: Int?) {
+        maxPollAttempts = value
+    }
+
+    internal fun build(): LumaImageModelOptions =
+        LumaImageModelOptions(
+            referenceType = referenceType,
+            images = images,
+            pollIntervalMillis = pollIntervalMillis,
+            maxPollAttempts = maxPollAttempts,
+        )
+}
+
+public fun LumaImageModelOptions(
+    block: LumaImageModelOptionsBuilder.() -> Unit = {},
+): LumaImageModelOptions =
+    LumaImageModelOptionsBuilder().apply(block).build()
 
 @Serializable
 @Poko

@@ -28,40 +28,245 @@ public const val GLADIA_VERSION: String = "2.0.33"
 
 
 @Serializable
-public data class GladiaTranscriptionModelOptions(
-    val contextPrompt: String? = null,
-    val customVocabulary: JsonElement? = null,
-    val customVocabularyConfig: JsonObject? = null,
-    val detectLanguage: Boolean? = null,
-    val enableCodeSwitching: Boolean? = null,
-    val codeSwitchingConfig: JsonObject? = null,
-    val language: String? = null,
-    val callback: Boolean? = null,
-    val callbackConfig: JsonObject? = null,
-    val subtitles: Boolean? = null,
-    val subtitlesConfig: JsonObject? = null,
-    val diarization: Boolean? = null,
-    val diarizationConfig: JsonObject? = null,
-    val translation: Boolean? = null,
-    val translationConfig: JsonObject? = null,
-    val summarization: Boolean? = null,
-    val summarizationConfig: JsonObject? = null,
-    val moderation: Boolean? = null,
-    val namedEntityRecognition: Boolean? = null,
-    val chapterization: Boolean? = null,
-    val nameConsistency: Boolean? = null,
-    val customSpelling: Boolean? = null,
-    val customSpellingConfig: JsonObject? = null,
-    val structuredDataExtraction: Boolean? = null,
-    val structuredDataExtractionConfig: JsonObject? = null,
-    val sentimentAnalysis: Boolean? = null,
-    val audioToLlm: Boolean? = null,
-    val audioToLlmConfig: JsonObject? = null,
-    val customMetadata: JsonObject? = null,
-    val sentences: Boolean? = null,
-    val displayMode: Boolean? = null,
-    val punctuationEnhanced: Boolean? = null,
+@Poko
+public class GladiaTranscriptionModelOptions internal constructor(
+    public val contextPrompt: String? = null,
+    public val customVocabulary: JsonElement? = null,
+    public val customVocabularyConfig: JsonObject? = null,
+    public val detectLanguage: Boolean? = null,
+    public val enableCodeSwitching: Boolean? = null,
+    public val codeSwitchingConfig: JsonObject? = null,
+    public val language: String? = null,
+    public val callback: Boolean? = null,
+    public val callbackConfig: JsonObject? = null,
+    public val subtitles: Boolean? = null,
+    public val subtitlesConfig: JsonObject? = null,
+    public val diarization: Boolean? = null,
+    public val diarizationConfig: JsonObject? = null,
+    public val translation: Boolean? = null,
+    public val translationConfig: JsonObject? = null,
+    public val summarization: Boolean? = null,
+    public val summarizationConfig: JsonObject? = null,
+    public val moderation: Boolean? = null,
+    public val namedEntityRecognition: Boolean? = null,
+    public val chapterization: Boolean? = null,
+    public val nameConsistency: Boolean? = null,
+    public val customSpelling: Boolean? = null,
+    public val customSpellingConfig: JsonObject? = null,
+    public val structuredDataExtraction: Boolean? = null,
+    public val structuredDataExtractionConfig: JsonObject? = null,
+    public val sentimentAnalysis: Boolean? = null,
+    public val audioToLlm: Boolean? = null,
+    public val audioToLlmConfig: JsonObject? = null,
+    public val customMetadata: JsonObject? = null,
+    public val sentences: Boolean? = null,
+    public val displayMode: Boolean? = null,
+    public val punctuationEnhanced: Boolean? = null,
 )
+
+public class GladiaTranscriptionModelOptionsBuilder internal constructor() {
+    private var contextPrompt: String? = null
+    private var customVocabulary: JsonElement? = null
+    private var customVocabularyConfig: JsonObject? = null
+    private var detectLanguage: Boolean? = null
+    private var enableCodeSwitching: Boolean? = null
+    private var codeSwitchingConfig: JsonObject? = null
+    private var language: String? = null
+    private var callback: Boolean? = null
+    private var callbackConfig: JsonObject? = null
+    private var subtitles: Boolean? = null
+    private var subtitlesConfig: JsonObject? = null
+    private var diarization: Boolean? = null
+    private var diarizationConfig: JsonObject? = null
+    private var translation: Boolean? = null
+    private var translationConfig: JsonObject? = null
+    private var summarization: Boolean? = null
+    private var summarizationConfig: JsonObject? = null
+    private var moderation: Boolean? = null
+    private var namedEntityRecognition: Boolean? = null
+    private var chapterization: Boolean? = null
+    private var nameConsistency: Boolean? = null
+    private var customSpelling: Boolean? = null
+    private var customSpellingConfig: JsonObject? = null
+    private var structuredDataExtraction: Boolean? = null
+    private var structuredDataExtractionConfig: JsonObject? = null
+    private var sentimentAnalysis: Boolean? = null
+    private var audioToLlm: Boolean? = null
+    private var audioToLlmConfig: JsonObject? = null
+    private var customMetadata: JsonObject? = null
+    private var sentences: Boolean? = null
+    private var displayMode: Boolean? = null
+    private var punctuationEnhanced: Boolean? = null
+
+    public fun contextPrompt(value: String?) {
+        contextPrompt = value
+    }
+
+    public fun customVocabulary(value: JsonElement?) {
+        customVocabulary = value
+    }
+
+    public fun customVocabularyConfig(value: JsonObject?) {
+        customVocabularyConfig = value
+    }
+
+    public fun detectLanguage(value: Boolean?) {
+        detectLanguage = value
+    }
+
+    public fun enableCodeSwitching(value: Boolean?) {
+        enableCodeSwitching = value
+    }
+
+    public fun codeSwitchingConfig(value: JsonObject?) {
+        codeSwitchingConfig = value
+    }
+
+    public fun language(value: String?) {
+        language = value
+    }
+
+    public fun callback(value: Boolean?) {
+        callback = value
+    }
+
+    public fun callbackConfig(value: JsonObject?) {
+        callbackConfig = value
+    }
+
+    public fun subtitles(value: Boolean?) {
+        subtitles = value
+    }
+
+    public fun subtitlesConfig(value: JsonObject?) {
+        subtitlesConfig = value
+    }
+
+    public fun diarization(value: Boolean?) {
+        diarization = value
+    }
+
+    public fun diarizationConfig(value: JsonObject?) {
+        diarizationConfig = value
+    }
+
+    public fun translation(value: Boolean?) {
+        translation = value
+    }
+
+    public fun translationConfig(value: JsonObject?) {
+        translationConfig = value
+    }
+
+    public fun summarization(value: Boolean?) {
+        summarization = value
+    }
+
+    public fun summarizationConfig(value: JsonObject?) {
+        summarizationConfig = value
+    }
+
+    public fun moderation(value: Boolean?) {
+        moderation = value
+    }
+
+    public fun namedEntityRecognition(value: Boolean?) {
+        namedEntityRecognition = value
+    }
+
+    public fun chapterization(value: Boolean?) {
+        chapterization = value
+    }
+
+    public fun nameConsistency(value: Boolean?) {
+        nameConsistency = value
+    }
+
+    public fun customSpelling(value: Boolean?) {
+        customSpelling = value
+    }
+
+    public fun customSpellingConfig(value: JsonObject?) {
+        customSpellingConfig = value
+    }
+
+    public fun structuredDataExtraction(value: Boolean?) {
+        structuredDataExtraction = value
+    }
+
+    public fun structuredDataExtractionConfig(value: JsonObject?) {
+        structuredDataExtractionConfig = value
+    }
+
+    public fun sentimentAnalysis(value: Boolean?) {
+        sentimentAnalysis = value
+    }
+
+    public fun audioToLlm(value: Boolean?) {
+        audioToLlm = value
+    }
+
+    public fun audioToLlmConfig(value: JsonObject?) {
+        audioToLlmConfig = value
+    }
+
+    public fun customMetadata(value: JsonObject?) {
+        customMetadata = value
+    }
+
+    public fun sentences(value: Boolean?) {
+        sentences = value
+    }
+
+    public fun displayMode(value: Boolean?) {
+        displayMode = value
+    }
+
+    public fun punctuationEnhanced(value: Boolean?) {
+        punctuationEnhanced = value
+    }
+
+    internal fun build(): GladiaTranscriptionModelOptions =
+        GladiaTranscriptionModelOptions(
+            contextPrompt = contextPrompt,
+            customVocabulary = customVocabulary,
+            customVocabularyConfig = customVocabularyConfig,
+            detectLanguage = detectLanguage,
+            enableCodeSwitching = enableCodeSwitching,
+            codeSwitchingConfig = codeSwitchingConfig,
+            language = language,
+            callback = callback,
+            callbackConfig = callbackConfig,
+            subtitles = subtitles,
+            subtitlesConfig = subtitlesConfig,
+            diarization = diarization,
+            diarizationConfig = diarizationConfig,
+            translation = translation,
+            translationConfig = translationConfig,
+            summarization = summarization,
+            summarizationConfig = summarizationConfig,
+            moderation = moderation,
+            namedEntityRecognition = namedEntityRecognition,
+            chapterization = chapterization,
+            nameConsistency = nameConsistency,
+            customSpelling = customSpelling,
+            customSpellingConfig = customSpellingConfig,
+            structuredDataExtraction = structuredDataExtraction,
+            structuredDataExtractionConfig = structuredDataExtractionConfig,
+            sentimentAnalysis = sentimentAnalysis,
+            audioToLlm = audioToLlm,
+            audioToLlmConfig = audioToLlmConfig,
+            customMetadata = customMetadata,
+            sentences = sentences,
+            displayMode = displayMode,
+            punctuationEnhanced = punctuationEnhanced,
+        )
+}
+
+public fun GladiaTranscriptionModelOptions(
+    block: GladiaTranscriptionModelOptionsBuilder.() -> Unit = {},
+): GladiaTranscriptionModelOptions =
+    GladiaTranscriptionModelOptionsBuilder().apply(block).build()
 
 @Serializable
 @Poko

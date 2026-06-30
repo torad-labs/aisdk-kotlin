@@ -4003,8 +4003,6 @@ final class ai.torad.aisdk.providers/FireworksImageModel : ai.torad.aisdk/ImageM
 }
 
 final class ai.torad.aisdk.providers/FireworksLanguageModelOptions { // ai.torad.aisdk.providers/FireworksLanguageModelOptions|null[0]
-    constructor <init>(ai.torad.aisdk.providers/FireworksThinkingOptions? = ..., kotlin/String? = ..., kotlin.collections/Map<kotlin/String, kotlinx.serialization.json/JsonElement> = ...) // ai.torad.aisdk.providers/FireworksLanguageModelOptions.<init>|<init>(ai.torad.aisdk.providers.FireworksThinkingOptions?;kotlin.String?;kotlin.collections.Map<kotlin.String,kotlinx.serialization.json.JsonElement>){}[0]
-
     final val raw // ai.torad.aisdk.providers/FireworksLanguageModelOptions.raw|{}raw[0]
         final fun <get-raw>(): kotlin.collections/Map<kotlin/String, kotlinx.serialization.json/JsonElement> // ai.torad.aisdk.providers/FireworksLanguageModelOptions.raw.<get-raw>|<get-raw>(){}[0]
     final val reasoningHistory // ai.torad.aisdk.providers/FireworksLanguageModelOptions.reasoningHistory|{}reasoningHistory[0]
@@ -4012,10 +4010,6 @@ final class ai.torad.aisdk.providers/FireworksLanguageModelOptions { // ai.torad
     final val thinking // ai.torad.aisdk.providers/FireworksLanguageModelOptions.thinking|{}thinking[0]
         final fun <get-thinking>(): ai.torad.aisdk.providers/FireworksThinkingOptions? // ai.torad.aisdk.providers/FireworksLanguageModelOptions.thinking.<get-thinking>|<get-thinking>(){}[0]
 
-    final fun component1(): ai.torad.aisdk.providers/FireworksThinkingOptions? // ai.torad.aisdk.providers/FireworksLanguageModelOptions.component1|component1(){}[0]
-    final fun component2(): kotlin/String? // ai.torad.aisdk.providers/FireworksLanguageModelOptions.component2|component2(){}[0]
-    final fun component3(): kotlin.collections/Map<kotlin/String, kotlinx.serialization.json/JsonElement> // ai.torad.aisdk.providers/FireworksLanguageModelOptions.component3|component3(){}[0]
-    final fun copy(ai.torad.aisdk.providers/FireworksThinkingOptions? = ..., kotlin/String? = ..., kotlin.collections/Map<kotlin/String, kotlinx.serialization.json/JsonElement> = ...): ai.torad.aisdk.providers/FireworksLanguageModelOptions // ai.torad.aisdk.providers/FireworksLanguageModelOptions.copy|copy(ai.torad.aisdk.providers.FireworksThinkingOptions?;kotlin.String?;kotlin.collections.Map<kotlin.String,kotlinx.serialization.json.JsonElement>){}[0]
     final fun equals(kotlin/Any?): kotlin/Boolean // ai.torad.aisdk.providers/FireworksLanguageModelOptions.equals|equals(kotlin.Any?){}[0]
     final fun hashCode(): kotlin/Int // ai.torad.aisdk.providers/FireworksLanguageModelOptions.hashCode|hashCode(){}[0]
     final fun toString(): kotlin/String // ai.torad.aisdk.providers/FireworksLanguageModelOptions.toString|toString(){}[0]
@@ -4034,6 +4028,12 @@ final class ai.torad.aisdk.providers/FireworksLanguageModelOptions { // ai.torad
 
         final fun serializer(): kotlinx.serialization/KSerializer<ai.torad.aisdk.providers/FireworksLanguageModelOptions> // ai.torad.aisdk.providers/FireworksLanguageModelOptions.Companion.serializer|serializer(){}[0]
     }
+}
+
+final class ai.torad.aisdk.providers/FireworksLanguageModelOptionsBuilder { // ai.torad.aisdk.providers/FireworksLanguageModelOptionsBuilder|null[0]
+    final fun raw(kotlin.collections/Map<kotlin/String, kotlinx.serialization.json/JsonElement>) // ai.torad.aisdk.providers/FireworksLanguageModelOptionsBuilder.raw|raw(kotlin.collections.Map<kotlin.String,kotlinx.serialization.json.JsonElement>){}[0]
+    final fun reasoningHistory(kotlin/String?) // ai.torad.aisdk.providers/FireworksLanguageModelOptionsBuilder.reasoningHistory|reasoningHistory(kotlin.String?){}[0]
+    final fun thinking(ai.torad.aisdk.providers/FireworksThinkingOptions?) // ai.torad.aisdk.providers/FireworksLanguageModelOptionsBuilder.thinking|thinking(ai.torad.aisdk.providers.FireworksThinkingOptions?){}[0]
 }
 
 final class ai.torad.aisdk.providers/FireworksProvider : ai.torad.aisdk/Provider { // ai.torad.aisdk.providers/FireworksProvider|null[0]
@@ -4087,16 +4087,11 @@ final class ai.torad.aisdk.providers/FireworksProviderSettingsBuilder { // ai.to
 }
 
 final class ai.torad.aisdk.providers/FireworksThinkingOptions { // ai.torad.aisdk.providers/FireworksThinkingOptions|null[0]
-    constructor <init>(kotlin/String? = ..., kotlin/Int? = ...) // ai.torad.aisdk.providers/FireworksThinkingOptions.<init>|<init>(kotlin.String?;kotlin.Int?){}[0]
-
     final val budgetTokens // ai.torad.aisdk.providers/FireworksThinkingOptions.budgetTokens|{}budgetTokens[0]
         final fun <get-budgetTokens>(): kotlin/Int? // ai.torad.aisdk.providers/FireworksThinkingOptions.budgetTokens.<get-budgetTokens>|<get-budgetTokens>(){}[0]
     final val type // ai.torad.aisdk.providers/FireworksThinkingOptions.type|{}type[0]
         final fun <get-type>(): kotlin/String? // ai.torad.aisdk.providers/FireworksThinkingOptions.type.<get-type>|<get-type>(){}[0]
 
-    final fun component1(): kotlin/String? // ai.torad.aisdk.providers/FireworksThinkingOptions.component1|component1(){}[0]
-    final fun component2(): kotlin/Int? // ai.torad.aisdk.providers/FireworksThinkingOptions.component2|component2(){}[0]
-    final fun copy(kotlin/String? = ..., kotlin/Int? = ...): ai.torad.aisdk.providers/FireworksThinkingOptions // ai.torad.aisdk.providers/FireworksThinkingOptions.copy|copy(kotlin.String?;kotlin.Int?){}[0]
     final fun equals(kotlin/Any?): kotlin/Boolean // ai.torad.aisdk.providers/FireworksThinkingOptions.equals|equals(kotlin.Any?){}[0]
     final fun hashCode(): kotlin/Int // ai.torad.aisdk.providers/FireworksThinkingOptions.hashCode|hashCode(){}[0]
     final fun toString(): kotlin/String // ai.torad.aisdk.providers/FireworksThinkingOptions.toString|toString(){}[0]
@@ -4113,6 +4108,11 @@ final class ai.torad.aisdk.providers/FireworksThinkingOptions { // ai.torad.aisd
     final object Companion { // ai.torad.aisdk.providers/FireworksThinkingOptions.Companion|null[0]
         final fun serializer(): kotlinx.serialization/KSerializer<ai.torad.aisdk.providers/FireworksThinkingOptions> // ai.torad.aisdk.providers/FireworksThinkingOptions.Companion.serializer|serializer(){}[0]
     }
+}
+
+final class ai.torad.aisdk.providers/FireworksThinkingOptionsBuilder { // ai.torad.aisdk.providers/FireworksThinkingOptionsBuilder|null[0]
+    final fun budgetTokens(kotlin/Int?) // ai.torad.aisdk.providers/FireworksThinkingOptionsBuilder.budgetTokens|budgetTokens(kotlin.Int?){}[0]
+    final fun type(kotlin/String?) // ai.torad.aisdk.providers/FireworksThinkingOptionsBuilder.type|type(kotlin.String?){}[0]
 }
 
 final class ai.torad.aisdk.providers/GladiaProvider : ai.torad.aisdk/Provider { // ai.torad.aisdk.providers/GladiaProvider|null[0]
@@ -4165,8 +4165,6 @@ final class ai.torad.aisdk.providers/GladiaProviderSettingsBuilder { // ai.torad
 }
 
 final class ai.torad.aisdk.providers/GladiaTranscriptionModelOptions { // ai.torad.aisdk.providers/GladiaTranscriptionModelOptions|null[0]
-    constructor <init>(kotlin/String? = ..., kotlinx.serialization.json/JsonElement? = ..., kotlinx.serialization.json/JsonObject? = ..., kotlin/Boolean? = ..., kotlin/Boolean? = ..., kotlinx.serialization.json/JsonObject? = ..., kotlin/String? = ..., kotlin/Boolean? = ..., kotlinx.serialization.json/JsonObject? = ..., kotlin/Boolean? = ..., kotlinx.serialization.json/JsonObject? = ..., kotlin/Boolean? = ..., kotlinx.serialization.json/JsonObject? = ..., kotlin/Boolean? = ..., kotlinx.serialization.json/JsonObject? = ..., kotlin/Boolean? = ..., kotlinx.serialization.json/JsonObject? = ..., kotlin/Boolean? = ..., kotlin/Boolean? = ..., kotlin/Boolean? = ..., kotlin/Boolean? = ..., kotlin/Boolean? = ..., kotlinx.serialization.json/JsonObject? = ..., kotlin/Boolean? = ..., kotlinx.serialization.json/JsonObject? = ..., kotlin/Boolean? = ..., kotlin/Boolean? = ..., kotlinx.serialization.json/JsonObject? = ..., kotlinx.serialization.json/JsonObject? = ..., kotlin/Boolean? = ..., kotlin/Boolean? = ..., kotlin/Boolean? = ...) // ai.torad.aisdk.providers/GladiaTranscriptionModelOptions.<init>|<init>(kotlin.String?;kotlinx.serialization.json.JsonElement?;kotlinx.serialization.json.JsonObject?;kotlin.Boolean?;kotlin.Boolean?;kotlinx.serialization.json.JsonObject?;kotlin.String?;kotlin.Boolean?;kotlinx.serialization.json.JsonObject?;kotlin.Boolean?;kotlinx.serialization.json.JsonObject?;kotlin.Boolean?;kotlinx.serialization.json.JsonObject?;kotlin.Boolean?;kotlinx.serialization.json.JsonObject?;kotlin.Boolean?;kotlinx.serialization.json.JsonObject?;kotlin.Boolean?;kotlin.Boolean?;kotlin.Boolean?;kotlin.Boolean?;kotlin.Boolean?;kotlinx.serialization.json.JsonObject?;kotlin.Boolean?;kotlinx.serialization.json.JsonObject?;kotlin.Boolean?;kotlin.Boolean?;kotlinx.serialization.json.JsonObject?;kotlinx.serialization.json.JsonObject?;kotlin.Boolean?;kotlin.Boolean?;kotlin.Boolean?){}[0]
-
     final val audioToLlm // ai.torad.aisdk.providers/GladiaTranscriptionModelOptions.audioToLlm|{}audioToLlm[0]
         final fun <get-audioToLlm>(): kotlin/Boolean? // ai.torad.aisdk.providers/GladiaTranscriptionModelOptions.audioToLlm.<get-audioToLlm>|<get-audioToLlm>(){}[0]
     final val audioToLlmConfig // ai.torad.aisdk.providers/GladiaTranscriptionModelOptions.audioToLlmConfig|{}audioToLlmConfig[0]
@@ -4232,39 +4230,6 @@ final class ai.torad.aisdk.providers/GladiaTranscriptionModelOptions { // ai.tor
     final val translationConfig // ai.torad.aisdk.providers/GladiaTranscriptionModelOptions.translationConfig|{}translationConfig[0]
         final fun <get-translationConfig>(): kotlinx.serialization.json/JsonObject? // ai.torad.aisdk.providers/GladiaTranscriptionModelOptions.translationConfig.<get-translationConfig>|<get-translationConfig>(){}[0]
 
-    final fun component1(): kotlin/String? // ai.torad.aisdk.providers/GladiaTranscriptionModelOptions.component1|component1(){}[0]
-    final fun component10(): kotlin/Boolean? // ai.torad.aisdk.providers/GladiaTranscriptionModelOptions.component10|component10(){}[0]
-    final fun component11(): kotlinx.serialization.json/JsonObject? // ai.torad.aisdk.providers/GladiaTranscriptionModelOptions.component11|component11(){}[0]
-    final fun component12(): kotlin/Boolean? // ai.torad.aisdk.providers/GladiaTranscriptionModelOptions.component12|component12(){}[0]
-    final fun component13(): kotlinx.serialization.json/JsonObject? // ai.torad.aisdk.providers/GladiaTranscriptionModelOptions.component13|component13(){}[0]
-    final fun component14(): kotlin/Boolean? // ai.torad.aisdk.providers/GladiaTranscriptionModelOptions.component14|component14(){}[0]
-    final fun component15(): kotlinx.serialization.json/JsonObject? // ai.torad.aisdk.providers/GladiaTranscriptionModelOptions.component15|component15(){}[0]
-    final fun component16(): kotlin/Boolean? // ai.torad.aisdk.providers/GladiaTranscriptionModelOptions.component16|component16(){}[0]
-    final fun component17(): kotlinx.serialization.json/JsonObject? // ai.torad.aisdk.providers/GladiaTranscriptionModelOptions.component17|component17(){}[0]
-    final fun component18(): kotlin/Boolean? // ai.torad.aisdk.providers/GladiaTranscriptionModelOptions.component18|component18(){}[0]
-    final fun component19(): kotlin/Boolean? // ai.torad.aisdk.providers/GladiaTranscriptionModelOptions.component19|component19(){}[0]
-    final fun component2(): kotlinx.serialization.json/JsonElement? // ai.torad.aisdk.providers/GladiaTranscriptionModelOptions.component2|component2(){}[0]
-    final fun component20(): kotlin/Boolean? // ai.torad.aisdk.providers/GladiaTranscriptionModelOptions.component20|component20(){}[0]
-    final fun component21(): kotlin/Boolean? // ai.torad.aisdk.providers/GladiaTranscriptionModelOptions.component21|component21(){}[0]
-    final fun component22(): kotlin/Boolean? // ai.torad.aisdk.providers/GladiaTranscriptionModelOptions.component22|component22(){}[0]
-    final fun component23(): kotlinx.serialization.json/JsonObject? // ai.torad.aisdk.providers/GladiaTranscriptionModelOptions.component23|component23(){}[0]
-    final fun component24(): kotlin/Boolean? // ai.torad.aisdk.providers/GladiaTranscriptionModelOptions.component24|component24(){}[0]
-    final fun component25(): kotlinx.serialization.json/JsonObject? // ai.torad.aisdk.providers/GladiaTranscriptionModelOptions.component25|component25(){}[0]
-    final fun component26(): kotlin/Boolean? // ai.torad.aisdk.providers/GladiaTranscriptionModelOptions.component26|component26(){}[0]
-    final fun component27(): kotlin/Boolean? // ai.torad.aisdk.providers/GladiaTranscriptionModelOptions.component27|component27(){}[0]
-    final fun component28(): kotlinx.serialization.json/JsonObject? // ai.torad.aisdk.providers/GladiaTranscriptionModelOptions.component28|component28(){}[0]
-    final fun component29(): kotlinx.serialization.json/JsonObject? // ai.torad.aisdk.providers/GladiaTranscriptionModelOptions.component29|component29(){}[0]
-    final fun component3(): kotlinx.serialization.json/JsonObject? // ai.torad.aisdk.providers/GladiaTranscriptionModelOptions.component3|component3(){}[0]
-    final fun component30(): kotlin/Boolean? // ai.torad.aisdk.providers/GladiaTranscriptionModelOptions.component30|component30(){}[0]
-    final fun component31(): kotlin/Boolean? // ai.torad.aisdk.providers/GladiaTranscriptionModelOptions.component31|component31(){}[0]
-    final fun component32(): kotlin/Boolean? // ai.torad.aisdk.providers/GladiaTranscriptionModelOptions.component32|component32(){}[0]
-    final fun component4(): kotlin/Boolean? // ai.torad.aisdk.providers/GladiaTranscriptionModelOptions.component4|component4(){}[0]
-    final fun component5(): kotlin/Boolean? // ai.torad.aisdk.providers/GladiaTranscriptionModelOptions.component5|component5(){}[0]
-    final fun component6(): kotlinx.serialization.json/JsonObject? // ai.torad.aisdk.providers/GladiaTranscriptionModelOptions.component6|component6(){}[0]
-    final fun component7(): kotlin/String? // ai.torad.aisdk.providers/GladiaTranscriptionModelOptions.component7|component7(){}[0]
-    final fun component8(): kotlin/Boolean? // ai.torad.aisdk.providers/GladiaTranscriptionModelOptions.component8|component8(){}[0]
-    final fun component9(): kotlinx.serialization.json/JsonObject? // ai.torad.aisdk.providers/GladiaTranscriptionModelOptions.component9|component9(){}[0]
-    final fun copy(kotlin/String? = ..., kotlinx.serialization.json/JsonElement? = ..., kotlinx.serialization.json/JsonObject? = ..., kotlin/Boolean? = ..., kotlin/Boolean? = ..., kotlinx.serialization.json/JsonObject? = ..., kotlin/String? = ..., kotlin/Boolean? = ..., kotlinx.serialization.json/JsonObject? = ..., kotlin/Boolean? = ..., kotlinx.serialization.json/JsonObject? = ..., kotlin/Boolean? = ..., kotlinx.serialization.json/JsonObject? = ..., kotlin/Boolean? = ..., kotlinx.serialization.json/JsonObject? = ..., kotlin/Boolean? = ..., kotlinx.serialization.json/JsonObject? = ..., kotlin/Boolean? = ..., kotlin/Boolean? = ..., kotlin/Boolean? = ..., kotlin/Boolean? = ..., kotlin/Boolean? = ..., kotlinx.serialization.json/JsonObject? = ..., kotlin/Boolean? = ..., kotlinx.serialization.json/JsonObject? = ..., kotlin/Boolean? = ..., kotlin/Boolean? = ..., kotlinx.serialization.json/JsonObject? = ..., kotlinx.serialization.json/JsonObject? = ..., kotlin/Boolean? = ..., kotlin/Boolean? = ..., kotlin/Boolean? = ...): ai.torad.aisdk.providers/GladiaTranscriptionModelOptions // ai.torad.aisdk.providers/GladiaTranscriptionModelOptions.copy|copy(kotlin.String?;kotlinx.serialization.json.JsonElement?;kotlinx.serialization.json.JsonObject?;kotlin.Boolean?;kotlin.Boolean?;kotlinx.serialization.json.JsonObject?;kotlin.String?;kotlin.Boolean?;kotlinx.serialization.json.JsonObject?;kotlin.Boolean?;kotlinx.serialization.json.JsonObject?;kotlin.Boolean?;kotlinx.serialization.json.JsonObject?;kotlin.Boolean?;kotlinx.serialization.json.JsonObject?;kotlin.Boolean?;kotlinx.serialization.json.JsonObject?;kotlin.Boolean?;kotlin.Boolean?;kotlin.Boolean?;kotlin.Boolean?;kotlin.Boolean?;kotlinx.serialization.json.JsonObject?;kotlin.Boolean?;kotlinx.serialization.json.JsonObject?;kotlin.Boolean?;kotlin.Boolean?;kotlinx.serialization.json.JsonObject?;kotlinx.serialization.json.JsonObject?;kotlin.Boolean?;kotlin.Boolean?;kotlin.Boolean?){}[0]
     final fun equals(kotlin/Any?): kotlin/Boolean // ai.torad.aisdk.providers/GladiaTranscriptionModelOptions.equals|equals(kotlin.Any?){}[0]
     final fun hashCode(): kotlin/Int // ai.torad.aisdk.providers/GladiaTranscriptionModelOptions.hashCode|hashCode(){}[0]
     final fun toString(): kotlin/String // ai.torad.aisdk.providers/GladiaTranscriptionModelOptions.toString|toString(){}[0]
@@ -4281,6 +4246,41 @@ final class ai.torad.aisdk.providers/GladiaTranscriptionModelOptions { // ai.tor
     final object Companion { // ai.torad.aisdk.providers/GladiaTranscriptionModelOptions.Companion|null[0]
         final fun serializer(): kotlinx.serialization/KSerializer<ai.torad.aisdk.providers/GladiaTranscriptionModelOptions> // ai.torad.aisdk.providers/GladiaTranscriptionModelOptions.Companion.serializer|serializer(){}[0]
     }
+}
+
+final class ai.torad.aisdk.providers/GladiaTranscriptionModelOptionsBuilder { // ai.torad.aisdk.providers/GladiaTranscriptionModelOptionsBuilder|null[0]
+    final fun audioToLlm(kotlin/Boolean?) // ai.torad.aisdk.providers/GladiaTranscriptionModelOptionsBuilder.audioToLlm|audioToLlm(kotlin.Boolean?){}[0]
+    final fun audioToLlmConfig(kotlinx.serialization.json/JsonObject?) // ai.torad.aisdk.providers/GladiaTranscriptionModelOptionsBuilder.audioToLlmConfig|audioToLlmConfig(kotlinx.serialization.json.JsonObject?){}[0]
+    final fun callback(kotlin/Boolean?) // ai.torad.aisdk.providers/GladiaTranscriptionModelOptionsBuilder.callback|callback(kotlin.Boolean?){}[0]
+    final fun callbackConfig(kotlinx.serialization.json/JsonObject?) // ai.torad.aisdk.providers/GladiaTranscriptionModelOptionsBuilder.callbackConfig|callbackConfig(kotlinx.serialization.json.JsonObject?){}[0]
+    final fun chapterization(kotlin/Boolean?) // ai.torad.aisdk.providers/GladiaTranscriptionModelOptionsBuilder.chapterization|chapterization(kotlin.Boolean?){}[0]
+    final fun codeSwitchingConfig(kotlinx.serialization.json/JsonObject?) // ai.torad.aisdk.providers/GladiaTranscriptionModelOptionsBuilder.codeSwitchingConfig|codeSwitchingConfig(kotlinx.serialization.json.JsonObject?){}[0]
+    final fun contextPrompt(kotlin/String?) // ai.torad.aisdk.providers/GladiaTranscriptionModelOptionsBuilder.contextPrompt|contextPrompt(kotlin.String?){}[0]
+    final fun customMetadata(kotlinx.serialization.json/JsonObject?) // ai.torad.aisdk.providers/GladiaTranscriptionModelOptionsBuilder.customMetadata|customMetadata(kotlinx.serialization.json.JsonObject?){}[0]
+    final fun customSpelling(kotlin/Boolean?) // ai.torad.aisdk.providers/GladiaTranscriptionModelOptionsBuilder.customSpelling|customSpelling(kotlin.Boolean?){}[0]
+    final fun customSpellingConfig(kotlinx.serialization.json/JsonObject?) // ai.torad.aisdk.providers/GladiaTranscriptionModelOptionsBuilder.customSpellingConfig|customSpellingConfig(kotlinx.serialization.json.JsonObject?){}[0]
+    final fun customVocabulary(kotlinx.serialization.json/JsonElement?) // ai.torad.aisdk.providers/GladiaTranscriptionModelOptionsBuilder.customVocabulary|customVocabulary(kotlinx.serialization.json.JsonElement?){}[0]
+    final fun customVocabularyConfig(kotlinx.serialization.json/JsonObject?) // ai.torad.aisdk.providers/GladiaTranscriptionModelOptionsBuilder.customVocabularyConfig|customVocabularyConfig(kotlinx.serialization.json.JsonObject?){}[0]
+    final fun detectLanguage(kotlin/Boolean?) // ai.torad.aisdk.providers/GladiaTranscriptionModelOptionsBuilder.detectLanguage|detectLanguage(kotlin.Boolean?){}[0]
+    final fun diarization(kotlin/Boolean?) // ai.torad.aisdk.providers/GladiaTranscriptionModelOptionsBuilder.diarization|diarization(kotlin.Boolean?){}[0]
+    final fun diarizationConfig(kotlinx.serialization.json/JsonObject?) // ai.torad.aisdk.providers/GladiaTranscriptionModelOptionsBuilder.diarizationConfig|diarizationConfig(kotlinx.serialization.json.JsonObject?){}[0]
+    final fun displayMode(kotlin/Boolean?) // ai.torad.aisdk.providers/GladiaTranscriptionModelOptionsBuilder.displayMode|displayMode(kotlin.Boolean?){}[0]
+    final fun enableCodeSwitching(kotlin/Boolean?) // ai.torad.aisdk.providers/GladiaTranscriptionModelOptionsBuilder.enableCodeSwitching|enableCodeSwitching(kotlin.Boolean?){}[0]
+    final fun language(kotlin/String?) // ai.torad.aisdk.providers/GladiaTranscriptionModelOptionsBuilder.language|language(kotlin.String?){}[0]
+    final fun moderation(kotlin/Boolean?) // ai.torad.aisdk.providers/GladiaTranscriptionModelOptionsBuilder.moderation|moderation(kotlin.Boolean?){}[0]
+    final fun nameConsistency(kotlin/Boolean?) // ai.torad.aisdk.providers/GladiaTranscriptionModelOptionsBuilder.nameConsistency|nameConsistency(kotlin.Boolean?){}[0]
+    final fun namedEntityRecognition(kotlin/Boolean?) // ai.torad.aisdk.providers/GladiaTranscriptionModelOptionsBuilder.namedEntityRecognition|namedEntityRecognition(kotlin.Boolean?){}[0]
+    final fun punctuationEnhanced(kotlin/Boolean?) // ai.torad.aisdk.providers/GladiaTranscriptionModelOptionsBuilder.punctuationEnhanced|punctuationEnhanced(kotlin.Boolean?){}[0]
+    final fun sentences(kotlin/Boolean?) // ai.torad.aisdk.providers/GladiaTranscriptionModelOptionsBuilder.sentences|sentences(kotlin.Boolean?){}[0]
+    final fun sentimentAnalysis(kotlin/Boolean?) // ai.torad.aisdk.providers/GladiaTranscriptionModelOptionsBuilder.sentimentAnalysis|sentimentAnalysis(kotlin.Boolean?){}[0]
+    final fun structuredDataExtraction(kotlin/Boolean?) // ai.torad.aisdk.providers/GladiaTranscriptionModelOptionsBuilder.structuredDataExtraction|structuredDataExtraction(kotlin.Boolean?){}[0]
+    final fun structuredDataExtractionConfig(kotlinx.serialization.json/JsonObject?) // ai.torad.aisdk.providers/GladiaTranscriptionModelOptionsBuilder.structuredDataExtractionConfig|structuredDataExtractionConfig(kotlinx.serialization.json.JsonObject?){}[0]
+    final fun subtitles(kotlin/Boolean?) // ai.torad.aisdk.providers/GladiaTranscriptionModelOptionsBuilder.subtitles|subtitles(kotlin.Boolean?){}[0]
+    final fun subtitlesConfig(kotlinx.serialization.json/JsonObject?) // ai.torad.aisdk.providers/GladiaTranscriptionModelOptionsBuilder.subtitlesConfig|subtitlesConfig(kotlinx.serialization.json.JsonObject?){}[0]
+    final fun summarization(kotlin/Boolean?) // ai.torad.aisdk.providers/GladiaTranscriptionModelOptionsBuilder.summarization|summarization(kotlin.Boolean?){}[0]
+    final fun summarizationConfig(kotlinx.serialization.json/JsonObject?) // ai.torad.aisdk.providers/GladiaTranscriptionModelOptionsBuilder.summarizationConfig|summarizationConfig(kotlinx.serialization.json.JsonObject?){}[0]
+    final fun translation(kotlin/Boolean?) // ai.torad.aisdk.providers/GladiaTranscriptionModelOptionsBuilder.translation|translation(kotlin.Boolean?){}[0]
+    final fun translationConfig(kotlinx.serialization.json/JsonObject?) // ai.torad.aisdk.providers/GladiaTranscriptionModelOptionsBuilder.translationConfig|translationConfig(kotlinx.serialization.json.JsonObject?){}[0]
 }
 
 final class ai.torad.aisdk.providers/GoogleGenerativeAIProvider : ai.torad.aisdk/Provider { // ai.torad.aisdk.providers/GoogleGenerativeAIProvider|null[0]
@@ -4496,13 +4496,9 @@ final class ai.torad.aisdk.providers/GoogleVertexXaiProvider : ai.torad.aisdk/Pr
 }
 
 final class ai.torad.aisdk.providers/GroqLanguageModelOptions { // ai.torad.aisdk.providers/GroqLanguageModelOptions|null[0]
-    constructor <init>(kotlin.collections/Map<kotlin/String, kotlinx.serialization.json/JsonElement> = ...) // ai.torad.aisdk.providers/GroqLanguageModelOptions.<init>|<init>(kotlin.collections.Map<kotlin.String,kotlinx.serialization.json.JsonElement>){}[0]
-
     final val raw // ai.torad.aisdk.providers/GroqLanguageModelOptions.raw|{}raw[0]
         final fun <get-raw>(): kotlin.collections/Map<kotlin/String, kotlinx.serialization.json/JsonElement> // ai.torad.aisdk.providers/GroqLanguageModelOptions.raw.<get-raw>|<get-raw>(){}[0]
 
-    final fun component1(): kotlin.collections/Map<kotlin/String, kotlinx.serialization.json/JsonElement> // ai.torad.aisdk.providers/GroqLanguageModelOptions.component1|component1(){}[0]
-    final fun copy(kotlin.collections/Map<kotlin/String, kotlinx.serialization.json/JsonElement> = ...): ai.torad.aisdk.providers/GroqLanguageModelOptions // ai.torad.aisdk.providers/GroqLanguageModelOptions.copy|copy(kotlin.collections.Map<kotlin.String,kotlinx.serialization.json.JsonElement>){}[0]
     final fun equals(kotlin/Any?): kotlin/Boolean // ai.torad.aisdk.providers/GroqLanguageModelOptions.equals|equals(kotlin.Any?){}[0]
     final fun hashCode(): kotlin/Int // ai.torad.aisdk.providers/GroqLanguageModelOptions.hashCode|hashCode(){}[0]
     final fun toString(): kotlin/String // ai.torad.aisdk.providers/GroqLanguageModelOptions.toString|toString(){}[0]
@@ -4521,6 +4517,10 @@ final class ai.torad.aisdk.providers/GroqLanguageModelOptions { // ai.torad.aisd
 
         final fun serializer(): kotlinx.serialization/KSerializer<ai.torad.aisdk.providers/GroqLanguageModelOptions> // ai.torad.aisdk.providers/GroqLanguageModelOptions.Companion.serializer|serializer(){}[0]
     }
+}
+
+final class ai.torad.aisdk.providers/GroqLanguageModelOptionsBuilder { // ai.torad.aisdk.providers/GroqLanguageModelOptionsBuilder|null[0]
+    final fun raw(kotlin.collections/Map<kotlin/String, kotlinx.serialization.json/JsonElement>) // ai.torad.aisdk.providers/GroqLanguageModelOptionsBuilder.raw|raw(kotlin.collections.Map<kotlin.String,kotlinx.serialization.json.JsonElement>){}[0]
 }
 
 final class ai.torad.aisdk.providers/GroqProvider : ai.torad.aisdk/Provider { // ai.torad.aisdk.providers/GroqProvider|null[0]
@@ -4581,8 +4581,6 @@ final class ai.torad.aisdk.providers/GroqTools { // ai.torad.aisdk.providers/Gro
 }
 
 final class ai.torad.aisdk.providers/GroqTranscriptionModelOptions { // ai.torad.aisdk.providers/GroqTranscriptionModelOptions|null[0]
-    constructor <init>(kotlin/String? = ..., kotlin/String? = ..., kotlin/Float? = ..., kotlin/String? = ...) // ai.torad.aisdk.providers/GroqTranscriptionModelOptions.<init>|<init>(kotlin.String?;kotlin.String?;kotlin.Float?;kotlin.String?){}[0]
-
     final val language // ai.torad.aisdk.providers/GroqTranscriptionModelOptions.language|{}language[0]
         final fun <get-language>(): kotlin/String? // ai.torad.aisdk.providers/GroqTranscriptionModelOptions.language.<get-language>|<get-language>(){}[0]
     final val prompt // ai.torad.aisdk.providers/GroqTranscriptionModelOptions.prompt|{}prompt[0]
@@ -4592,11 +4590,6 @@ final class ai.torad.aisdk.providers/GroqTranscriptionModelOptions { // ai.torad
     final val temperature // ai.torad.aisdk.providers/GroqTranscriptionModelOptions.temperature|{}temperature[0]
         final fun <get-temperature>(): kotlin/Float? // ai.torad.aisdk.providers/GroqTranscriptionModelOptions.temperature.<get-temperature>|<get-temperature>(){}[0]
 
-    final fun component1(): kotlin/String? // ai.torad.aisdk.providers/GroqTranscriptionModelOptions.component1|component1(){}[0]
-    final fun component2(): kotlin/String? // ai.torad.aisdk.providers/GroqTranscriptionModelOptions.component2|component2(){}[0]
-    final fun component3(): kotlin/Float? // ai.torad.aisdk.providers/GroqTranscriptionModelOptions.component3|component3(){}[0]
-    final fun component4(): kotlin/String? // ai.torad.aisdk.providers/GroqTranscriptionModelOptions.component4|component4(){}[0]
-    final fun copy(kotlin/String? = ..., kotlin/String? = ..., kotlin/Float? = ..., kotlin/String? = ...): ai.torad.aisdk.providers/GroqTranscriptionModelOptions // ai.torad.aisdk.providers/GroqTranscriptionModelOptions.copy|copy(kotlin.String?;kotlin.String?;kotlin.Float?;kotlin.String?){}[0]
     final fun equals(kotlin/Any?): kotlin/Boolean // ai.torad.aisdk.providers/GroqTranscriptionModelOptions.equals|equals(kotlin.Any?){}[0]
     final fun hashCode(): kotlin/Int // ai.torad.aisdk.providers/GroqTranscriptionModelOptions.hashCode|hashCode(){}[0]
     final fun toString(): kotlin/String // ai.torad.aisdk.providers/GroqTranscriptionModelOptions.toString|toString(){}[0]
@@ -4613,6 +4606,13 @@ final class ai.torad.aisdk.providers/GroqTranscriptionModelOptions { // ai.torad
     final object Companion { // ai.torad.aisdk.providers/GroqTranscriptionModelOptions.Companion|null[0]
         final fun serializer(): kotlinx.serialization/KSerializer<ai.torad.aisdk.providers/GroqTranscriptionModelOptions> // ai.torad.aisdk.providers/GroqTranscriptionModelOptions.Companion.serializer|serializer(){}[0]
     }
+}
+
+final class ai.torad.aisdk.providers/GroqTranscriptionModelOptionsBuilder { // ai.torad.aisdk.providers/GroqTranscriptionModelOptionsBuilder|null[0]
+    final fun language(kotlin/String?) // ai.torad.aisdk.providers/GroqTranscriptionModelOptionsBuilder.language|language(kotlin.String?){}[0]
+    final fun prompt(kotlin/String?) // ai.torad.aisdk.providers/GroqTranscriptionModelOptionsBuilder.prompt|prompt(kotlin.String?){}[0]
+    final fun responseFormat(kotlin/String?) // ai.torad.aisdk.providers/GroqTranscriptionModelOptionsBuilder.responseFormat|responseFormat(kotlin.String?){}[0]
+    final fun temperature(kotlin/Float?) // ai.torad.aisdk.providers/GroqTranscriptionModelOptionsBuilder.temperature|temperature(kotlin.Float?){}[0]
 }
 
 final class ai.torad.aisdk.providers/HuggingFaceProvider : ai.torad.aisdk/Provider { // ai.torad.aisdk.providers/HuggingFaceProvider|null[0]
@@ -4734,13 +4734,9 @@ final class ai.torad.aisdk.providers/HumeProviderSettingsBuilder { // ai.torad.a
 }
 
 final class ai.torad.aisdk.providers/HumeSpeechModelOptions { // ai.torad.aisdk.providers/HumeSpeechModelOptions|null[0]
-    constructor <init>(kotlinx.serialization.json/JsonObject? = ...) // ai.torad.aisdk.providers/HumeSpeechModelOptions.<init>|<init>(kotlinx.serialization.json.JsonObject?){}[0]
-
     final val context // ai.torad.aisdk.providers/HumeSpeechModelOptions.context|{}context[0]
         final fun <get-context>(): kotlinx.serialization.json/JsonObject? // ai.torad.aisdk.providers/HumeSpeechModelOptions.context.<get-context>|<get-context>(){}[0]
 
-    final fun component1(): kotlinx.serialization.json/JsonObject? // ai.torad.aisdk.providers/HumeSpeechModelOptions.component1|component1(){}[0]
-    final fun copy(kotlinx.serialization.json/JsonObject? = ...): ai.torad.aisdk.providers/HumeSpeechModelOptions // ai.torad.aisdk.providers/HumeSpeechModelOptions.copy|copy(kotlinx.serialization.json.JsonObject?){}[0]
     final fun equals(kotlin/Any?): kotlin/Boolean // ai.torad.aisdk.providers/HumeSpeechModelOptions.equals|equals(kotlin.Any?){}[0]
     final fun hashCode(): kotlin/Int // ai.torad.aisdk.providers/HumeSpeechModelOptions.hashCode|hashCode(){}[0]
     final fun toString(): kotlin/String // ai.torad.aisdk.providers/HumeSpeechModelOptions.toString|toString(){}[0]
@@ -4757,6 +4753,10 @@ final class ai.torad.aisdk.providers/HumeSpeechModelOptions { // ai.torad.aisdk.
     final object Companion { // ai.torad.aisdk.providers/HumeSpeechModelOptions.Companion|null[0]
         final fun serializer(): kotlinx.serialization/KSerializer<ai.torad.aisdk.providers/HumeSpeechModelOptions> // ai.torad.aisdk.providers/HumeSpeechModelOptions.Companion.serializer|serializer(){}[0]
     }
+}
+
+final class ai.torad.aisdk.providers/HumeSpeechModelOptionsBuilder { // ai.torad.aisdk.providers/HumeSpeechModelOptionsBuilder|null[0]
+    final fun context(kotlinx.serialization.json/JsonObject?) // ai.torad.aisdk.providers/HumeSpeechModelOptionsBuilder.context|context(kotlinx.serialization.json.JsonObject?){}[0]
 }
 
 final class ai.torad.aisdk.providers/KlingAIProvider : ai.torad.aisdk/Provider { // ai.torad.aisdk.providers/KlingAIProvider|null[0]
@@ -4812,8 +4812,6 @@ final class ai.torad.aisdk.providers/KlingAIProviderSettingsBuilder { // ai.tora
 }
 
 final class ai.torad.aisdk.providers/KlingAIVideoModelOptions { // ai.torad.aisdk.providers/KlingAIVideoModelOptions|null[0]
-    constructor <init>(kotlin/String? = ..., kotlin/Long? = ..., kotlin/Long? = ..., kotlin/String? = ..., kotlin/String? = ..., kotlin/Float? = ..., kotlinx.serialization.json/JsonObject? = ..., kotlin/String? = ..., kotlin/String? = ..., kotlinx.serialization.json/JsonArray? = ..., kotlin/Boolean? = ..., kotlin/String? = ..., kotlinx.serialization.json/JsonArray? = ..., kotlinx.serialization.json/JsonArray? = ..., kotlinx.serialization.json/JsonArray? = ..., kotlin/Boolean? = ..., kotlin/String? = ..., kotlin/String? = ..., kotlin/String? = ...) // ai.torad.aisdk.providers/KlingAIVideoModelOptions.<init>|<init>(kotlin.String?;kotlin.Long?;kotlin.Long?;kotlin.String?;kotlin.String?;kotlin.Float?;kotlinx.serialization.json.JsonObject?;kotlin.String?;kotlin.String?;kotlinx.serialization.json.JsonArray?;kotlin.Boolean?;kotlin.String?;kotlinx.serialization.json.JsonArray?;kotlinx.serialization.json.JsonArray?;kotlinx.serialization.json.JsonArray?;kotlin.Boolean?;kotlin.String?;kotlin.String?;kotlin.String?){}[0]
-
     final val cameraControl // ai.torad.aisdk.providers/KlingAIVideoModelOptions.cameraControl|{}cameraControl[0]
         final fun <get-cameraControl>(): kotlinx.serialization.json/JsonObject? // ai.torad.aisdk.providers/KlingAIVideoModelOptions.cameraControl.<get-cameraControl>|<get-cameraControl>(){}[0]
     final val cfgScale // ai.torad.aisdk.providers/KlingAIVideoModelOptions.cfgScale|{}cfgScale[0]
@@ -4853,26 +4851,6 @@ final class ai.torad.aisdk.providers/KlingAIVideoModelOptions { // ai.torad.aisd
     final val watermarkEnabled // ai.torad.aisdk.providers/KlingAIVideoModelOptions.watermarkEnabled|{}watermarkEnabled[0]
         final fun <get-watermarkEnabled>(): kotlin/Boolean? // ai.torad.aisdk.providers/KlingAIVideoModelOptions.watermarkEnabled.<get-watermarkEnabled>|<get-watermarkEnabled>(){}[0]
 
-    final fun component1(): kotlin/String? // ai.torad.aisdk.providers/KlingAIVideoModelOptions.component1|component1(){}[0]
-    final fun component10(): kotlinx.serialization.json/JsonArray? // ai.torad.aisdk.providers/KlingAIVideoModelOptions.component10|component10(){}[0]
-    final fun component11(): kotlin/Boolean? // ai.torad.aisdk.providers/KlingAIVideoModelOptions.component11|component11(){}[0]
-    final fun component12(): kotlin/String? // ai.torad.aisdk.providers/KlingAIVideoModelOptions.component12|component12(){}[0]
-    final fun component13(): kotlinx.serialization.json/JsonArray? // ai.torad.aisdk.providers/KlingAIVideoModelOptions.component13|component13(){}[0]
-    final fun component14(): kotlinx.serialization.json/JsonArray? // ai.torad.aisdk.providers/KlingAIVideoModelOptions.component14|component14(){}[0]
-    final fun component15(): kotlinx.serialization.json/JsonArray? // ai.torad.aisdk.providers/KlingAIVideoModelOptions.component15|component15(){}[0]
-    final fun component16(): kotlin/Boolean? // ai.torad.aisdk.providers/KlingAIVideoModelOptions.component16|component16(){}[0]
-    final fun component17(): kotlin/String? // ai.torad.aisdk.providers/KlingAIVideoModelOptions.component17|component17(){}[0]
-    final fun component18(): kotlin/String? // ai.torad.aisdk.providers/KlingAIVideoModelOptions.component18|component18(){}[0]
-    final fun component19(): kotlin/String? // ai.torad.aisdk.providers/KlingAIVideoModelOptions.component19|component19(){}[0]
-    final fun component2(): kotlin/Long? // ai.torad.aisdk.providers/KlingAIVideoModelOptions.component2|component2(){}[0]
-    final fun component3(): kotlin/Long? // ai.torad.aisdk.providers/KlingAIVideoModelOptions.component3|component3(){}[0]
-    final fun component4(): kotlin/String? // ai.torad.aisdk.providers/KlingAIVideoModelOptions.component4|component4(){}[0]
-    final fun component5(): kotlin/String? // ai.torad.aisdk.providers/KlingAIVideoModelOptions.component5|component5(){}[0]
-    final fun component6(): kotlin/Float? // ai.torad.aisdk.providers/KlingAIVideoModelOptions.component6|component6(){}[0]
-    final fun component7(): kotlinx.serialization.json/JsonObject? // ai.torad.aisdk.providers/KlingAIVideoModelOptions.component7|component7(){}[0]
-    final fun component8(): kotlin/String? // ai.torad.aisdk.providers/KlingAIVideoModelOptions.component8|component8(){}[0]
-    final fun component9(): kotlin/String? // ai.torad.aisdk.providers/KlingAIVideoModelOptions.component9|component9(){}[0]
-    final fun copy(kotlin/String? = ..., kotlin/Long? = ..., kotlin/Long? = ..., kotlin/String? = ..., kotlin/String? = ..., kotlin/Float? = ..., kotlinx.serialization.json/JsonObject? = ..., kotlin/String? = ..., kotlin/String? = ..., kotlinx.serialization.json/JsonArray? = ..., kotlin/Boolean? = ..., kotlin/String? = ..., kotlinx.serialization.json/JsonArray? = ..., kotlinx.serialization.json/JsonArray? = ..., kotlinx.serialization.json/JsonArray? = ..., kotlin/Boolean? = ..., kotlin/String? = ..., kotlin/String? = ..., kotlin/String? = ...): ai.torad.aisdk.providers/KlingAIVideoModelOptions // ai.torad.aisdk.providers/KlingAIVideoModelOptions.copy|copy(kotlin.String?;kotlin.Long?;kotlin.Long?;kotlin.String?;kotlin.String?;kotlin.Float?;kotlinx.serialization.json.JsonObject?;kotlin.String?;kotlin.String?;kotlinx.serialization.json.JsonArray?;kotlin.Boolean?;kotlin.String?;kotlinx.serialization.json.JsonArray?;kotlinx.serialization.json.JsonArray?;kotlinx.serialization.json.JsonArray?;kotlin.Boolean?;kotlin.String?;kotlin.String?;kotlin.String?){}[0]
     final fun equals(kotlin/Any?): kotlin/Boolean // ai.torad.aisdk.providers/KlingAIVideoModelOptions.equals|equals(kotlin.Any?){}[0]
     final fun hashCode(): kotlin/Int // ai.torad.aisdk.providers/KlingAIVideoModelOptions.hashCode|hashCode(){}[0]
     final fun toString(): kotlin/String // ai.torad.aisdk.providers/KlingAIVideoModelOptions.toString|toString(){}[0]
@@ -4889,6 +4867,28 @@ final class ai.torad.aisdk.providers/KlingAIVideoModelOptions { // ai.torad.aisd
     final object Companion { // ai.torad.aisdk.providers/KlingAIVideoModelOptions.Companion|null[0]
         final fun serializer(): kotlinx.serialization/KSerializer<ai.torad.aisdk.providers/KlingAIVideoModelOptions> // ai.torad.aisdk.providers/KlingAIVideoModelOptions.Companion.serializer|serializer(){}[0]
     }
+}
+
+final class ai.torad.aisdk.providers/KlingAIVideoModelOptionsBuilder { // ai.torad.aisdk.providers/KlingAIVideoModelOptionsBuilder|null[0]
+    final fun cameraControl(kotlinx.serialization.json/JsonObject?) // ai.torad.aisdk.providers/KlingAIVideoModelOptionsBuilder.cameraControl|cameraControl(kotlinx.serialization.json.JsonObject?){}[0]
+    final fun cfgScale(kotlin/Float?) // ai.torad.aisdk.providers/KlingAIVideoModelOptionsBuilder.cfgScale|cfgScale(kotlin.Float?){}[0]
+    final fun characterOrientation(kotlin/String?) // ai.torad.aisdk.providers/KlingAIVideoModelOptionsBuilder.characterOrientation|characterOrientation(kotlin.String?){}[0]
+    final fun dynamicMasks(kotlinx.serialization.json/JsonArray?) // ai.torad.aisdk.providers/KlingAIVideoModelOptionsBuilder.dynamicMasks|dynamicMasks(kotlinx.serialization.json.JsonArray?){}[0]
+    final fun elementList(kotlinx.serialization.json/JsonArray?) // ai.torad.aisdk.providers/KlingAIVideoModelOptionsBuilder.elementList|elementList(kotlinx.serialization.json.JsonArray?){}[0]
+    final fun imageTail(kotlin/String?) // ai.torad.aisdk.providers/KlingAIVideoModelOptionsBuilder.imageTail|imageTail(kotlin.String?){}[0]
+    final fun keepOriginalSound(kotlin/String?) // ai.torad.aisdk.providers/KlingAIVideoModelOptionsBuilder.keepOriginalSound|keepOriginalSound(kotlin.String?){}[0]
+    final fun mode(kotlin/String?) // ai.torad.aisdk.providers/KlingAIVideoModelOptionsBuilder.mode|mode(kotlin.String?){}[0]
+    final fun multiPrompt(kotlinx.serialization.json/JsonArray?) // ai.torad.aisdk.providers/KlingAIVideoModelOptionsBuilder.multiPrompt|multiPrompt(kotlinx.serialization.json.JsonArray?){}[0]
+    final fun multiShot(kotlin/Boolean?) // ai.torad.aisdk.providers/KlingAIVideoModelOptionsBuilder.multiShot|multiShot(kotlin.Boolean?){}[0]
+    final fun negativePrompt(kotlin/String?) // ai.torad.aisdk.providers/KlingAIVideoModelOptionsBuilder.negativePrompt|negativePrompt(kotlin.String?){}[0]
+    final fun pollIntervalMs(kotlin/Long?) // ai.torad.aisdk.providers/KlingAIVideoModelOptionsBuilder.pollIntervalMs|pollIntervalMs(kotlin.Long?){}[0]
+    final fun pollTimeoutMs(kotlin/Long?) // ai.torad.aisdk.providers/KlingAIVideoModelOptionsBuilder.pollTimeoutMs|pollTimeoutMs(kotlin.Long?){}[0]
+    final fun shotType(kotlin/String?) // ai.torad.aisdk.providers/KlingAIVideoModelOptionsBuilder.shotType|shotType(kotlin.String?){}[0]
+    final fun sound(kotlin/String?) // ai.torad.aisdk.providers/KlingAIVideoModelOptionsBuilder.sound|sound(kotlin.String?){}[0]
+    final fun staticMask(kotlin/String?) // ai.torad.aisdk.providers/KlingAIVideoModelOptionsBuilder.staticMask|staticMask(kotlin.String?){}[0]
+    final fun videoUrl(kotlin/String?) // ai.torad.aisdk.providers/KlingAIVideoModelOptionsBuilder.videoUrl|videoUrl(kotlin.String?){}[0]
+    final fun voiceList(kotlinx.serialization.json/JsonArray?) // ai.torad.aisdk.providers/KlingAIVideoModelOptionsBuilder.voiceList|voiceList(kotlinx.serialization.json.JsonArray?){}[0]
+    final fun watermarkEnabled(kotlin/Boolean?) // ai.torad.aisdk.providers/KlingAIVideoModelOptionsBuilder.watermarkEnabled|watermarkEnabled(kotlin.Boolean?){}[0]
 }
 
 final class ai.torad.aisdk.providers/LMNTProvider : ai.torad.aisdk/Provider { // ai.torad.aisdk.providers/LMNTProvider|null[0]
@@ -5180,8 +5180,6 @@ final class ai.torad.aisdk.providers/LiteRTToolCall { // ai.torad.aisdk.provider
 }
 
 final class ai.torad.aisdk.providers/LumaImageModelOptions { // ai.torad.aisdk.providers/LumaImageModelOptions|null[0]
-    constructor <init>(kotlin/String? = ..., kotlinx.serialization.json/JsonArray? = ..., kotlin/Long? = ..., kotlin/Int? = ...) // ai.torad.aisdk.providers/LumaImageModelOptions.<init>|<init>(kotlin.String?;kotlinx.serialization.json.JsonArray?;kotlin.Long?;kotlin.Int?){}[0]
-
     final val images // ai.torad.aisdk.providers/LumaImageModelOptions.images|{}images[0]
         final fun <get-images>(): kotlinx.serialization.json/JsonArray? // ai.torad.aisdk.providers/LumaImageModelOptions.images.<get-images>|<get-images>(){}[0]
     final val maxPollAttempts // ai.torad.aisdk.providers/LumaImageModelOptions.maxPollAttempts|{}maxPollAttempts[0]
@@ -5191,11 +5189,6 @@ final class ai.torad.aisdk.providers/LumaImageModelOptions { // ai.torad.aisdk.p
     final val referenceType // ai.torad.aisdk.providers/LumaImageModelOptions.referenceType|{}referenceType[0]
         final fun <get-referenceType>(): kotlin/String? // ai.torad.aisdk.providers/LumaImageModelOptions.referenceType.<get-referenceType>|<get-referenceType>(){}[0]
 
-    final fun component1(): kotlin/String? // ai.torad.aisdk.providers/LumaImageModelOptions.component1|component1(){}[0]
-    final fun component2(): kotlinx.serialization.json/JsonArray? // ai.torad.aisdk.providers/LumaImageModelOptions.component2|component2(){}[0]
-    final fun component3(): kotlin/Long? // ai.torad.aisdk.providers/LumaImageModelOptions.component3|component3(){}[0]
-    final fun component4(): kotlin/Int? // ai.torad.aisdk.providers/LumaImageModelOptions.component4|component4(){}[0]
-    final fun copy(kotlin/String? = ..., kotlinx.serialization.json/JsonArray? = ..., kotlin/Long? = ..., kotlin/Int? = ...): ai.torad.aisdk.providers/LumaImageModelOptions // ai.torad.aisdk.providers/LumaImageModelOptions.copy|copy(kotlin.String?;kotlinx.serialization.json.JsonArray?;kotlin.Long?;kotlin.Int?){}[0]
     final fun equals(kotlin/Any?): kotlin/Boolean // ai.torad.aisdk.providers/LumaImageModelOptions.equals|equals(kotlin.Any?){}[0]
     final fun hashCode(): kotlin/Int // ai.torad.aisdk.providers/LumaImageModelOptions.hashCode|hashCode(){}[0]
     final fun toString(): kotlin/String // ai.torad.aisdk.providers/LumaImageModelOptions.toString|toString(){}[0]
@@ -5212,6 +5205,13 @@ final class ai.torad.aisdk.providers/LumaImageModelOptions { // ai.torad.aisdk.p
     final object Companion { // ai.torad.aisdk.providers/LumaImageModelOptions.Companion|null[0]
         final fun serializer(): kotlinx.serialization/KSerializer<ai.torad.aisdk.providers/LumaImageModelOptions> // ai.torad.aisdk.providers/LumaImageModelOptions.Companion.serializer|serializer(){}[0]
     }
+}
+
+final class ai.torad.aisdk.providers/LumaImageModelOptionsBuilder { // ai.torad.aisdk.providers/LumaImageModelOptionsBuilder|null[0]
+    final fun images(kotlinx.serialization.json/JsonArray?) // ai.torad.aisdk.providers/LumaImageModelOptionsBuilder.images|images(kotlinx.serialization.json.JsonArray?){}[0]
+    final fun maxPollAttempts(kotlin/Int?) // ai.torad.aisdk.providers/LumaImageModelOptionsBuilder.maxPollAttempts|maxPollAttempts(kotlin.Int?){}[0]
+    final fun pollIntervalMillis(kotlin/Long?) // ai.torad.aisdk.providers/LumaImageModelOptionsBuilder.pollIntervalMillis|pollIntervalMillis(kotlin.Long?){}[0]
+    final fun referenceType(kotlin/String?) // ai.torad.aisdk.providers/LumaImageModelOptionsBuilder.referenceType|referenceType(kotlin.String?){}[0]
 }
 
 final class ai.torad.aisdk.providers/LumaProvider : ai.torad.aisdk/Provider { // ai.torad.aisdk.providers/LumaProvider|null[0]
@@ -13948,9 +13948,12 @@ final fun ai.torad.aisdk.providers/FalVideoModelOptions(kotlin/Function1<ai.tora
 final fun ai.torad.aisdk.providers/FileSearch(kotlinx.serialization.json/JsonElement = ...): ai.torad.aisdk/Tool<kotlinx.serialization.json/JsonElement, kotlinx.serialization.json/JsonElement, kotlin/Any?> // ai.torad.aisdk.providers/FileSearch|FileSearch(kotlinx.serialization.json.JsonElement){}[0]
 final fun ai.torad.aisdk.providers/Fireworks(io.ktor.client/HttpClient, ai.torad.aisdk.providers/FireworksProviderSettings = ...): ai.torad.aisdk.providers/FireworksProvider // ai.torad.aisdk.providers/Fireworks|Fireworks(io.ktor.client.HttpClient;ai.torad.aisdk.providers.FireworksProviderSettings){}[0]
 final fun ai.torad.aisdk.providers/FireworksEmbeddingModelOptions(kotlin/Function1<ai.torad.aisdk.providers/FireworksEmbeddingModelOptionsBuilder, kotlin/Unit> = ...): ai.torad.aisdk.providers/FireworksEmbeddingModelOptions // ai.torad.aisdk.providers/FireworksEmbeddingModelOptions|FireworksEmbeddingModelOptions(kotlin.Function1<ai.torad.aisdk.providers.FireworksEmbeddingModelOptionsBuilder,kotlin.Unit>){}[0]
+final fun ai.torad.aisdk.providers/FireworksLanguageModelOptions(kotlin/Function1<ai.torad.aisdk.providers/FireworksLanguageModelOptionsBuilder, kotlin/Unit> = ...): ai.torad.aisdk.providers/FireworksLanguageModelOptions // ai.torad.aisdk.providers/FireworksLanguageModelOptions|FireworksLanguageModelOptions(kotlin.Function1<ai.torad.aisdk.providers.FireworksLanguageModelOptionsBuilder,kotlin.Unit>){}[0]
 final fun ai.torad.aisdk.providers/FireworksProviderSettings(kotlin/Function1<ai.torad.aisdk.providers/FireworksProviderSettingsBuilder, kotlin/Unit> = ...): ai.torad.aisdk.providers/FireworksProviderSettings // ai.torad.aisdk.providers/FireworksProviderSettings|FireworksProviderSettings(kotlin.Function1<ai.torad.aisdk.providers.FireworksProviderSettingsBuilder,kotlin.Unit>){}[0]
+final fun ai.torad.aisdk.providers/FireworksThinkingOptions(kotlin/Function1<ai.torad.aisdk.providers/FireworksThinkingOptionsBuilder, kotlin/Unit> = ...): ai.torad.aisdk.providers/FireworksThinkingOptions // ai.torad.aisdk.providers/FireworksThinkingOptions|FireworksThinkingOptions(kotlin.Function1<ai.torad.aisdk.providers.FireworksThinkingOptionsBuilder,kotlin.Unit>){}[0]
 final fun ai.torad.aisdk.providers/Gladia(io.ktor.client/HttpClient, ai.torad.aisdk.providers/GladiaProviderSettings = ...): ai.torad.aisdk.providers/GladiaProvider // ai.torad.aisdk.providers/Gladia|Gladia(io.ktor.client.HttpClient;ai.torad.aisdk.providers.GladiaProviderSettings){}[0]
 final fun ai.torad.aisdk.providers/GladiaProviderSettings(kotlin/Function1<ai.torad.aisdk.providers/GladiaProviderSettingsBuilder, kotlin/Unit> = ...): ai.torad.aisdk.providers/GladiaProviderSettings // ai.torad.aisdk.providers/GladiaProviderSettings|GladiaProviderSettings(kotlin.Function1<ai.torad.aisdk.providers.GladiaProviderSettingsBuilder,kotlin.Unit>){}[0]
+final fun ai.torad.aisdk.providers/GladiaTranscriptionModelOptions(kotlin/Function1<ai.torad.aisdk.providers/GladiaTranscriptionModelOptionsBuilder, kotlin/Unit> = ...): ai.torad.aisdk.providers/GladiaTranscriptionModelOptions // ai.torad.aisdk.providers/GladiaTranscriptionModelOptions|GladiaTranscriptionModelOptions(kotlin.Function1<ai.torad.aisdk.providers.GladiaTranscriptionModelOptionsBuilder,kotlin.Unit>){}[0]
 final fun ai.torad.aisdk.providers/GoogleGenerativeAI(io.ktor.client/HttpClient, ai.torad.aisdk.providers/GoogleGenerativeAIProviderSettings = ...): ai.torad.aisdk.providers/GoogleGenerativeAIProvider // ai.torad.aisdk.providers/GoogleGenerativeAI|GoogleGenerativeAI(io.ktor.client.HttpClient;ai.torad.aisdk.providers.GoogleGenerativeAIProviderSettings){}[0]
 final fun ai.torad.aisdk.providers/GoogleGenerativeAIProviderSettings(kotlin/Function1<ai.torad.aisdk.providers/GoogleGenerativeAIProviderSettingsBuilder, kotlin/Unit> = ...): ai.torad.aisdk.providers/GoogleGenerativeAIProviderSettings // ai.torad.aisdk.providers/GoogleGenerativeAIProviderSettings|GoogleGenerativeAIProviderSettings(kotlin.Function1<ai.torad.aisdk.providers.GoogleGenerativeAIProviderSettingsBuilder,kotlin.Unit>){}[0]
 final fun ai.torad.aisdk.providers/GoogleVertex(io.ktor.client/HttpClient, ai.torad.aisdk.providers/GoogleVertexProviderSettings = ...): ai.torad.aisdk.providers/GoogleVertexProvider // ai.torad.aisdk.providers/GoogleVertex|GoogleVertex(io.ktor.client.HttpClient;ai.torad.aisdk.providers.GoogleVertexProviderSettings){}[0]
@@ -13959,16 +13962,21 @@ final fun ai.torad.aisdk.providers/GoogleVertexMaas(io.ktor.client/HttpClient, a
 final fun ai.torad.aisdk.providers/GoogleVertexProviderSettings(kotlin/Function1<ai.torad.aisdk.providers/GoogleVertexProviderSettingsBuilder, kotlin/Unit> = ...): ai.torad.aisdk.providers/GoogleVertexProviderSettings // ai.torad.aisdk.providers/GoogleVertexProviderSettings|GoogleVertexProviderSettings(kotlin.Function1<ai.torad.aisdk.providers.GoogleVertexProviderSettingsBuilder,kotlin.Unit>){}[0]
 final fun ai.torad.aisdk.providers/GoogleVertexXai(io.ktor.client/HttpClient, ai.torad.aisdk.providers/GoogleVertexProviderSettings = ...): ai.torad.aisdk.providers/GoogleVertexXaiProvider // ai.torad.aisdk.providers/GoogleVertexXai|GoogleVertexXai(io.ktor.client.HttpClient;ai.torad.aisdk.providers.GoogleVertexProviderSettings){}[0]
 final fun ai.torad.aisdk.providers/Groq(io.ktor.client/HttpClient, ai.torad.aisdk.providers/GroqProviderSettings = ...): ai.torad.aisdk.providers/GroqProvider // ai.torad.aisdk.providers/Groq|Groq(io.ktor.client.HttpClient;ai.torad.aisdk.providers.GroqProviderSettings){}[0]
+final fun ai.torad.aisdk.providers/GroqLanguageModelOptions(kotlin/Function1<ai.torad.aisdk.providers/GroqLanguageModelOptionsBuilder, kotlin/Unit> = ...): ai.torad.aisdk.providers/GroqLanguageModelOptions // ai.torad.aisdk.providers/GroqLanguageModelOptions|GroqLanguageModelOptions(kotlin.Function1<ai.torad.aisdk.providers.GroqLanguageModelOptionsBuilder,kotlin.Unit>){}[0]
 final fun ai.torad.aisdk.providers/GroqProviderSettings(kotlin/Function1<ai.torad.aisdk.providers/GroqProviderSettingsBuilder, kotlin/Unit> = ...): ai.torad.aisdk.providers/GroqProviderSettings // ai.torad.aisdk.providers/GroqProviderSettings|GroqProviderSettings(kotlin.Function1<ai.torad.aisdk.providers.GroqProviderSettingsBuilder,kotlin.Unit>){}[0]
+final fun ai.torad.aisdk.providers/GroqTranscriptionModelOptions(kotlin/Function1<ai.torad.aisdk.providers/GroqTranscriptionModelOptionsBuilder, kotlin/Unit> = ...): ai.torad.aisdk.providers/GroqTranscriptionModelOptions // ai.torad.aisdk.providers/GroqTranscriptionModelOptions|GroqTranscriptionModelOptions(kotlin.Function1<ai.torad.aisdk.providers.GroqTranscriptionModelOptionsBuilder,kotlin.Unit>){}[0]
 final fun ai.torad.aisdk.providers/HuggingFace(io.ktor.client/HttpClient, ai.torad.aisdk.providers/HuggingFaceProviderSettings = ...): ai.torad.aisdk.providers/HuggingFaceProvider // ai.torad.aisdk.providers/HuggingFace|HuggingFace(io.ktor.client.HttpClient;ai.torad.aisdk.providers.HuggingFaceProviderSettings){}[0]
 final fun ai.torad.aisdk.providers/HuggingFaceProviderSettings(kotlin/Function1<ai.torad.aisdk.providers/HuggingFaceProviderSettingsBuilder, kotlin/Unit> = ...): ai.torad.aisdk.providers/HuggingFaceProviderSettings // ai.torad.aisdk.providers/HuggingFaceProviderSettings|HuggingFaceProviderSettings(kotlin.Function1<ai.torad.aisdk.providers.HuggingFaceProviderSettingsBuilder,kotlin.Unit>){}[0]
 final fun ai.torad.aisdk.providers/Hume(io.ktor.client/HttpClient, ai.torad.aisdk.providers/HumeProviderSettings = ...): ai.torad.aisdk.providers/HumeProvider // ai.torad.aisdk.providers/Hume|Hume(io.ktor.client.HttpClient;ai.torad.aisdk.providers.HumeProviderSettings){}[0]
 final fun ai.torad.aisdk.providers/HumeProviderSettings(kotlin/Function1<ai.torad.aisdk.providers/HumeProviderSettingsBuilder, kotlin/Unit> = ...): ai.torad.aisdk.providers/HumeProviderSettings // ai.torad.aisdk.providers/HumeProviderSettings|HumeProviderSettings(kotlin.Function1<ai.torad.aisdk.providers.HumeProviderSettingsBuilder,kotlin.Unit>){}[0]
+final fun ai.torad.aisdk.providers/HumeSpeechModelOptions(kotlin/Function1<ai.torad.aisdk.providers/HumeSpeechModelOptionsBuilder, kotlin/Unit> = ...): ai.torad.aisdk.providers/HumeSpeechModelOptions // ai.torad.aisdk.providers/HumeSpeechModelOptions|HumeSpeechModelOptions(kotlin.Function1<ai.torad.aisdk.providers.HumeSpeechModelOptionsBuilder,kotlin.Unit>){}[0]
 final fun ai.torad.aisdk.providers/KlingAI(io.ktor.client/HttpClient, ai.torad.aisdk.providers/KlingAIProviderSettings = ...): ai.torad.aisdk.providers/KlingAIProvider // ai.torad.aisdk.providers/KlingAI|KlingAI(io.ktor.client.HttpClient;ai.torad.aisdk.providers.KlingAIProviderSettings){}[0]
 final fun ai.torad.aisdk.providers/KlingAIProviderSettings(kotlin/Function1<ai.torad.aisdk.providers/KlingAIProviderSettingsBuilder, kotlin/Unit> = ...): ai.torad.aisdk.providers/KlingAIProviderSettings // ai.torad.aisdk.providers/KlingAIProviderSettings|KlingAIProviderSettings(kotlin.Function1<ai.torad.aisdk.providers.KlingAIProviderSettingsBuilder,kotlin.Unit>){}[0]
+final fun ai.torad.aisdk.providers/KlingAIVideoModelOptions(kotlin/Function1<ai.torad.aisdk.providers/KlingAIVideoModelOptionsBuilder, kotlin/Unit> = ...): ai.torad.aisdk.providers/KlingAIVideoModelOptions // ai.torad.aisdk.providers/KlingAIVideoModelOptions|KlingAIVideoModelOptions(kotlin.Function1<ai.torad.aisdk.providers.KlingAIVideoModelOptionsBuilder,kotlin.Unit>){}[0]
 final fun ai.torad.aisdk.providers/LMNT(io.ktor.client/HttpClient, ai.torad.aisdk.providers/LMNTProviderSettings = ...): ai.torad.aisdk.providers/LMNTProvider // ai.torad.aisdk.providers/LMNT|LMNT(io.ktor.client.HttpClient;ai.torad.aisdk.providers.LMNTProviderSettings){}[0]
 final fun ai.torad.aisdk.providers/LMNTProviderSettings(kotlin/Function1<ai.torad.aisdk.providers/LMNTProviderSettingsBuilder, kotlin/Unit> = ...): ai.torad.aisdk.providers/LMNTProviderSettings // ai.torad.aisdk.providers/LMNTProviderSettings|LMNTProviderSettings(kotlin.Function1<ai.torad.aisdk.providers.LMNTProviderSettingsBuilder,kotlin.Unit>){}[0]
 final fun ai.torad.aisdk.providers/Luma(io.ktor.client/HttpClient, ai.torad.aisdk.providers/LumaProviderSettings = ...): ai.torad.aisdk.providers/LumaProvider // ai.torad.aisdk.providers/Luma|Luma(io.ktor.client.HttpClient;ai.torad.aisdk.providers.LumaProviderSettings){}[0]
+final fun ai.torad.aisdk.providers/LumaImageModelOptions(kotlin/Function1<ai.torad.aisdk.providers/LumaImageModelOptionsBuilder, kotlin/Unit> = ...): ai.torad.aisdk.providers/LumaImageModelOptions // ai.torad.aisdk.providers/LumaImageModelOptions|LumaImageModelOptions(kotlin.Function1<ai.torad.aisdk.providers.LumaImageModelOptionsBuilder,kotlin.Unit>){}[0]
 final fun ai.torad.aisdk.providers/LumaProviderSettings(kotlin/Function1<ai.torad.aisdk.providers/LumaProviderSettingsBuilder, kotlin/Unit> = ...): ai.torad.aisdk.providers/LumaProviderSettings // ai.torad.aisdk.providers/LumaProviderSettings|LumaProviderSettings(kotlin.Function1<ai.torad.aisdk.providers.LumaProviderSettingsBuilder,kotlin.Unit>){}[0]
 final fun ai.torad.aisdk.providers/McpServer(kotlinx.serialization.json/JsonElement = ...): ai.torad.aisdk/Tool<kotlinx.serialization.json/JsonElement, kotlinx.serialization.json/JsonElement, kotlin/Any?> // ai.torad.aisdk.providers/McpServer|McpServer(kotlinx.serialization.json.JsonElement){}[0]
 final fun ai.torad.aisdk.providers/Mistral(io.ktor.client/HttpClient, ai.torad.aisdk.providers/MistralProviderSettings = ...): ai.torad.aisdk.providers/MistralProvider // ai.torad.aisdk.providers/Mistral|Mistral(io.ktor.client.HttpClient;ai.torad.aisdk.providers.MistralProviderSettings){}[0]

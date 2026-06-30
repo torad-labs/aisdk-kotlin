@@ -103,27 +103,154 @@ public fun KlingAIProviderSettings(
     KlingAIProviderSettingsBuilder().apply(block).build()
 
 @Serializable
-public data class KlingAIVideoModelOptions(
-    val mode: String? = null,
-    val pollIntervalMs: Long? = null,
-    val pollTimeoutMs: Long? = null,
-    val negativePrompt: String? = null,
-    val sound: String? = null,
-    val cfgScale: Float? = null,
-    val cameraControl: JsonObject? = null,
-    val imageTail: String? = null,
-    val staticMask: String? = null,
-    val dynamicMasks: JsonArray? = null,
-    val multiShot: Boolean? = null,
-    val shotType: String? = null,
-    val multiPrompt: JsonArray? = null,
-    val elementList: JsonArray? = null,
-    val voiceList: JsonArray? = null,
-    val watermarkEnabled: Boolean? = null,
-    val videoUrl: String? = null,
-    val characterOrientation: String? = null,
-    val keepOriginalSound: String? = null,
+@Poko
+public class KlingAIVideoModelOptions internal constructor(
+    public val mode: String? = null,
+    public val pollIntervalMs: Long? = null,
+    public val pollTimeoutMs: Long? = null,
+    public val negativePrompt: String? = null,
+    public val sound: String? = null,
+    public val cfgScale: Float? = null,
+    public val cameraControl: JsonObject? = null,
+    public val imageTail: String? = null,
+    public val staticMask: String? = null,
+    public val dynamicMasks: JsonArray? = null,
+    public val multiShot: Boolean? = null,
+    public val shotType: String? = null,
+    public val multiPrompt: JsonArray? = null,
+    public val elementList: JsonArray? = null,
+    public val voiceList: JsonArray? = null,
+    public val watermarkEnabled: Boolean? = null,
+    public val videoUrl: String? = null,
+    public val characterOrientation: String? = null,
+    public val keepOriginalSound: String? = null,
 )
+
+public class KlingAIVideoModelOptionsBuilder internal constructor() {
+    private var mode: String? = null
+    private var pollIntervalMs: Long? = null
+    private var pollTimeoutMs: Long? = null
+    private var negativePrompt: String? = null
+    private var sound: String? = null
+    private var cfgScale: Float? = null
+    private var cameraControl: JsonObject? = null
+    private var imageTail: String? = null
+    private var staticMask: String? = null
+    private var dynamicMasks: JsonArray? = null
+    private var multiShot: Boolean? = null
+    private var shotType: String? = null
+    private var multiPrompt: JsonArray? = null
+    private var elementList: JsonArray? = null
+    private var voiceList: JsonArray? = null
+    private var watermarkEnabled: Boolean? = null
+    private var videoUrl: String? = null
+    private var characterOrientation: String? = null
+    private var keepOriginalSound: String? = null
+
+    public fun mode(value: String?) {
+        mode = value
+    }
+
+    public fun pollIntervalMs(value: Long?) {
+        pollIntervalMs = value
+    }
+
+    public fun pollTimeoutMs(value: Long?) {
+        pollTimeoutMs = value
+    }
+
+    public fun negativePrompt(value: String?) {
+        negativePrompt = value
+    }
+
+    public fun sound(value: String?) {
+        sound = value
+    }
+
+    public fun cfgScale(value: Float?) {
+        cfgScale = value
+    }
+
+    public fun cameraControl(value: JsonObject?) {
+        cameraControl = value
+    }
+
+    public fun imageTail(value: String?) {
+        imageTail = value
+    }
+
+    public fun staticMask(value: String?) {
+        staticMask = value
+    }
+
+    public fun dynamicMasks(value: JsonArray?) {
+        dynamicMasks = value
+    }
+
+    public fun multiShot(value: Boolean?) {
+        multiShot = value
+    }
+
+    public fun shotType(value: String?) {
+        shotType = value
+    }
+
+    public fun multiPrompt(value: JsonArray?) {
+        multiPrompt = value
+    }
+
+    public fun elementList(value: JsonArray?) {
+        elementList = value
+    }
+
+    public fun voiceList(value: JsonArray?) {
+        voiceList = value
+    }
+
+    public fun watermarkEnabled(value: Boolean?) {
+        watermarkEnabled = value
+    }
+
+    public fun videoUrl(value: String?) {
+        videoUrl = value
+    }
+
+    public fun characterOrientation(value: String?) {
+        characterOrientation = value
+    }
+
+    public fun keepOriginalSound(value: String?) {
+        keepOriginalSound = value
+    }
+
+    internal fun build(): KlingAIVideoModelOptions =
+        KlingAIVideoModelOptions(
+            mode = mode,
+            pollIntervalMs = pollIntervalMs,
+            pollTimeoutMs = pollTimeoutMs,
+            negativePrompt = negativePrompt,
+            sound = sound,
+            cfgScale = cfgScale,
+            cameraControl = cameraControl,
+            imageTail = imageTail,
+            staticMask = staticMask,
+            dynamicMasks = dynamicMasks,
+            multiShot = multiShot,
+            shotType = shotType,
+            multiPrompt = multiPrompt,
+            elementList = elementList,
+            voiceList = voiceList,
+            watermarkEnabled = watermarkEnabled,
+            videoUrl = videoUrl,
+            characterOrientation = characterOrientation,
+            keepOriginalSound = keepOriginalSound,
+        )
+}
+
+public fun KlingAIVideoModelOptions(
+    block: KlingAIVideoModelOptionsBuilder.() -> Unit = {},
+): KlingAIVideoModelOptions =
+    KlingAIVideoModelOptionsBuilder().apply(block).build()
 
 public class KlingAIProvider(
     private val client: HttpClient,

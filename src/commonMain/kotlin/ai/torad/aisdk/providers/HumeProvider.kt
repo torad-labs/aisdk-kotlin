@@ -27,9 +27,26 @@ import kotlinx.serialization.json.jsonPrimitive
 public const val HUME_VERSION: String = "2.0.33"
 
 @Serializable
-public data class HumeSpeechModelOptions(
-    val context: JsonObject? = null,
+@Poko
+public class HumeSpeechModelOptions internal constructor(
+    public val context: JsonObject? = null,
 )
+
+public class HumeSpeechModelOptionsBuilder internal constructor() {
+    private var context: JsonObject? = null
+
+    public fun context(value: JsonObject?) {
+        context = value
+    }
+
+    internal fun build(): HumeSpeechModelOptions =
+        HumeSpeechModelOptions(context = context)
+}
+
+public fun HumeSpeechModelOptions(
+    block: HumeSpeechModelOptionsBuilder.() -> Unit = {},
+): HumeSpeechModelOptions =
+    HumeSpeechModelOptionsBuilder().apply(block).build()
 
 @Serializable
 @Poko
