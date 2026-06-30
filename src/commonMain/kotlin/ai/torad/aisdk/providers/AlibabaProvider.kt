@@ -170,7 +170,19 @@ private class AlibabaChatLanguageModel(
 
     override fun stream(params: LanguageModelCallParams): Flow<StreamEvent> = flow {
         delegate.stream(params.copy(providerOptions = transformAlibabaChatOptions(params.providerOptions))).collect { event ->
-            emit(if (event is StreamEvent.Finish) event.copy(usage = alibabaUsage(event.usage)) else event)
+            emit(
+                if (event is StreamEvent.Finish) {
+                    StreamEvent.Finish(
+                        totalSteps = event.totalSteps,
+                        finishReason = event.finishReason,
+                        usage = alibabaUsage(event.usage),
+                        providerMetadata = event.providerMetadata,
+                        rawFinishReason = event.rawFinishReason,
+                    )
+                } else {
+                    event
+                },
+            )
         }
     }
 
