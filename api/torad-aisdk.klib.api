@@ -10964,6 +10964,7 @@ final value class ai.torad.aisdk/ApprovalId { // ai.torad.aisdk/ApprovalId|null[
     }
 
     final object Companion { // ai.torad.aisdk/ApprovalId.Companion|null[0]
+        final fun of(kotlin/String): ai.torad.aisdk/ApprovalId // ai.torad.aisdk/ApprovalId.Companion.of|of(kotlin.String){}[0]
         final fun serializer(): kotlinx.serialization/KSerializer<ai.torad.aisdk/ApprovalId> // ai.torad.aisdk/ApprovalId.Companion.serializer|serializer(){}[0]
     }
 }
@@ -10992,6 +10993,10 @@ final value class ai.torad.aisdk/ProviderId { // ai.torad.aisdk/ProviderId|null[
     final fun equals(kotlin/Any?): kotlin/Boolean // ai.torad.aisdk/ProviderId.equals|equals(kotlin.Any?){}[0]
     final fun hashCode(): kotlin/Int // ai.torad.aisdk/ProviderId.hashCode|hashCode(){}[0]
     final fun toString(): kotlin/String // ai.torad.aisdk/ProviderId.toString|toString(){}[0]
+
+    final object Companion { // ai.torad.aisdk/ProviderId.Companion|null[0]
+        final fun of(kotlin/String): ai.torad.aisdk/ProviderId // ai.torad.aisdk/ProviderId.Companion.of|of(kotlin.String){}[0]
+    }
 }
 
 final value class ai.torad.aisdk/ToolCallId { // ai.torad.aisdk/ToolCallId|null[0]
@@ -11014,6 +11019,7 @@ final value class ai.torad.aisdk/ToolCallId { // ai.torad.aisdk/ToolCallId|null[
     }
 
     final object Companion { // ai.torad.aisdk/ToolCallId.Companion|null[0]
+        final fun of(kotlin/String): ai.torad.aisdk/ToolCallId // ai.torad.aisdk/ToolCallId.Companion.of|of(kotlin.String){}[0]
         final fun serializer(): kotlinx.serialization/KSerializer<ai.torad.aisdk/ToolCallId> // ai.torad.aisdk/ToolCallId.Companion.serializer|serializer(){}[0]
     }
 }
@@ -11038,6 +11044,7 @@ final value class ai.torad.aisdk/ToolName { // ai.torad.aisdk/ToolName|null[0]
     }
 
     final object Companion { // ai.torad.aisdk/ToolName.Companion|null[0]
+        final fun of(kotlin/String): ai.torad.aisdk/ToolName // ai.torad.aisdk/ToolName.Companion.of|of(kotlin.String){}[0]
         final fun serializer(): kotlinx.serialization/KSerializer<ai.torad.aisdk/ToolName> // ai.torad.aisdk/ToolName.Companion.serializer|serializer(){}[0]
     }
 }
