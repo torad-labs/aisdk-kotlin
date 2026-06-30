@@ -47,7 +47,7 @@ tests must stay green.
 | BL-027 | MCP stdio unbounded line buffering (huge-line OOM) | Low | Optional | CONFIRMED | OPEN |
 | BL-028 | MCP unsynchronized `sessionId`/`protocolVersion`/`endpoint` | Low | Optional | SUSPECTED | OPEN |
 
-| BL-029 | Google Interactions streaming parses wrong event shape — all text dropped | Critical | Recommended | CONFIRMED | OPEN |
+| BL-029 | Google Interactions streaming parses wrong event shape — all text dropped | Critical | Recommended | CONFIRMED | DONE |
 | BL-030 | Google nullable/union schemas emit invalid `{"type":"null"}` → 400 | High | Recommended | CONFIRMED | DONE |
 | BL-031 | Anthropic `max_tokens` not clamped to model ceiling → 400 | High | Recommended | CONFIRMED | DONE |
 | BL-032 | Anthropic sends sampling params to models that reject them (incl. `claude-opus-4-8`) | High | Recommended | CONFIRMED | DONE |

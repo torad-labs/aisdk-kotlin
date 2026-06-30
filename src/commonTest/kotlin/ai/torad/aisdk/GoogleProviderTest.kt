@@ -674,22 +674,32 @@ class GoogleProviderTest {
     }
 
     @Test
-    fun `interactions stream maps SSE steps into stream events`() = runTest {
+    fun `interactions live stream maps event_type SSE events into stream events`() = runTest {
         val fixture = TestServer.createTestServer(
             mutableMapOf(
                 "https://google.test/v1beta/interactions" to UrlHandler(
                     UrlResponse.StreamChunks(
                         listOf(
                             """
-                            data: {"type":"interaction.created","interaction":{"id":"interaction-2","model":"gemini-2.5-flash","status":"in_progress"}}
+                            data: {"event_type":"interaction.created","interaction":{"id":"interaction-2","model":"gemini-2.5-flash","status":"in_progress"}}
 
-                            data: {"type":"step.start","step":{"type":"model_output","content":[{"type":"text","text":"Hello "}]},"interaction":{"id":"interaction-2"}}
+                            data: {"event_type":"step.start","index":0,"step":{"type":"model_output"}}
 
-                            data: {"type":"step.start","step":{"type":"model_output","content":[{"type":"text","text":"stream"}]},"interaction":{"id":"interaction-2"}}
+                            data: {"event_type":"step.delta","index":0,"delta":{"type":"text","text":"Hello "}}
 
-                            data: {"type":"step.start","step":{"type":"function_call","id":"call-2","name":"lookup","arguments":{"city":"Berlin"}},"interaction":{"id":"interaction-2"}}
+                            data: {"event_type":"step.delta","index":0,"delta":{"type":"text","text":"stream"}}
 
-                            data: {"type":"interaction.complete","interaction":{"id":"interaction-2","model":"gemini-2.5-flash","status":"completed","usage":{"total_input_tokens":1,"total_output_tokens":2}}}
+                            data: {"event_type":"step.stop","index":0}
+
+                            data: {"event_type":"step.start","index":1,"step":{"type":"function_call","id":"call-2","name":"lookup","signature":"call-sig"}}
+
+                            data: {"event_type":"step.delta","index":1,"delta":{"type":"arguments_delta","arguments":"{\"city\":"}}
+
+                            data: {"event_type":"step.delta","index":1,"delta":{"type":"arguments_delta","arguments":"\"Berlin\"}"}}
+
+                            data: {"event_type":"step.stop","index":1}
+
+                            data: {"event_type":"interaction.completed","interaction":{"id":"interaction-2","status":"completed","service_tier":"priority","usage":{"total_input_tokens":1,"total_output_tokens":2}}}
 
                             """.trimIndent(),
                         ),
@@ -709,8 +719,11 @@ class GoogleProviderTest {
 
         assertIs<StreamEvent.StreamStart>(events.first())
         assertTrue(events.any { it is StreamEvent.ResponseMetadata && it.id == "interaction-2" })
-        assertTrue(events.any { it is StreamEvent.TextDelta && it.text == "Hello " })
-        assertTrue(events.any { it is StreamEvent.TextDelta && it.text == "stream" })
+        assertEquals(listOf("Hello ", "stream"), events.filterIsInstance<StreamEvent.TextDelta>().map { it.text })
+        assertEquals(
+            listOf("""{"city":""", """"Berlin"}"""),
+            events.filterIsInstance<StreamEvent.ToolInputDelta>().map { it.delta },
+        )
         val toolCall = events.filterIsInstance<StreamEvent.ToolCall>().single()
         assertEquals("lookup", toolCall.toolName)
         assertEquals("Berlin", toolCall.inputJson.jsonObject["city"]?.jsonPrimitive?.contentOrNull)
@@ -718,6 +731,8 @@ class GoogleProviderTest {
         assertEquals(FinishReason.ToolCalls, finish.finishReason)
         assertEquals(1, finish.usage.promptTokens)
         assertEquals(2, finish.usage.completionTokens)
+        assertEquals("interaction-2", finish.providerMetadata.toMap()["google"]?.jsonObject?.get("interactionId")?.jsonPrimitive?.contentOrNull)
+        assertEquals("priority", finish.providerMetadata.toMap()["google"]?.jsonObject?.get("serviceTier")?.jsonPrimitive?.contentOrNull)
 
         val request = fixture.calls.single()
         assertEquals("2026-05-20", request.requestHeaders.headerValue("Api-Revision"))
