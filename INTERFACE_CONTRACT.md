@@ -24,7 +24,7 @@
 ### Tool definition
 
 - `abstract class Tool<TInput, TOutput, TContext>` — extend it for named tools, or construct via PascalCase factories:
-  - `val schema: ToolSchema` where `strict: Boolean? = null` means provider-default tool strictness; explicit `true` / `false` is forwarded only by providers that support tool strict mode.
+  - `val schema: ToolSchema` where `strict: Boolean? = null` means provider-default tool strictness; explicit `true` / `false` is forwarded only by providers that support tool strict mode. `ToolSchema` is an `@Poko class` value-semantics type; field access remains, but public `copy()` / `componentN()` ABI is intentionally absent.
   - `fun Tool(...): Tool<...>` — single-value executor `suspend ToolExecutionContext<TContext>.(TInput) -> TOutput`. Factory wraps in a one-emission flow. Use for the common case where the tool produces exactly one result.
   - `fun StreamingTool(...): Tool<...>` — `Flow<TOutput>`-returning executor. Each emission becomes a `StreamEvent.ToolResult`; the LAST emission is final (feeds the model on subsequent turns), earlier emissions are `preliminary = true` (UI-only progress). Empty flow → `StreamEvent.ToolError("tool emitted no values")`. Use when a tool can produce a useful early snapshot before the full result is ready.
   - `fun DynamicTool(...): Tool<JsonElement, JsonElement, TContext>` — runtime-typed JSON tool.
@@ -40,8 +40,14 @@
 
 ### Tool approval (RPC return-then-resume)
 
-- `data class PendingApproval(toolCallId, toolName, input, approvalId: String? = null)` — surfaced via `GenerateResult.pendingApprovals`. `approvalId` distinct from `toolCallId` per v6 (two approvals can share a tool-call id).
+- `@Serializable @Poko class PendingApproval(toolCallId, toolName, input, approvalId: String? = null)` — surfaced via `GenerateResult.pendingApprovals`. `approvalId` distinct from `toolCallId` per v6 (two approvals can share a tool-call id). Field access and JSON wire shape remain; public `copy()` / `componentN()` ABI is intentionally absent.
 - `fun effectiveApprovalId(approval: PendingApproval): String` — top-level helper returning the explicit `approvalId` or falling back to `toolCallId`.
+
+Tool result/output holders (`ToolResult.Success`, `ValidationResult.Success` /
+`Failure`, `ExecuteToolResult.Preliminary` / `Final`, `ToolChoice.Specific`,
+and `ToolResultOutput` leaves) are `@Poko class` value-semantics types; sealed
+parents and serialization wire names remain unchanged, while public `copy()` /
+`componentN()` ABI is intentionally absent.
 - Approval flow: tool calls `needsApproval` → loop ends → host inspects `pendingApprovals` →
   resumes with `agent.generate(messages = result.messages + toolApprovalResponseMessage(toolCallId, approved, reason?, approvalId?))`
 

@@ -197,7 +197,11 @@ internal class ToolApprovalCoordinator<TContext>(
             }
             val requestIndex = if (exactIndex != -1) exactIndex else fallbackIndex
             if (requestIndex != -1) {
-                remaining[requestIndex] = remaining[requestIndex].copy(request = request)
+                val occurrence = remaining[requestIndex]
+                remaining[requestIndex] = PendingApprovalOccurrence(
+                    call = occurrence.call,
+                    request = request,
+                )
             }
         }
         messages.asSequence()
