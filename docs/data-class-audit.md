@@ -12,6 +12,21 @@ ratchet that blocks new public `data class`es and ratchets down as types migrate
 - **Scope:** audit all public `data class`es case-by-case.
 - **Current budget:** `378` public `data class` declarations in commonMain (seed).
 
+## D11 reclassification (owner-overridable) — 2026-06-30
+
+Case-by-case review of D11 ("agent + state-machine snapshots") splits it: the
+**result/leaf types** (`GenerateResult`, `GenerateTextResult`,
+`GenerateObjectResult`, `LoopState`, `CompletionPhase` leaves,
+`ToolLoopAgentState.Phase.Error`) are clean growable read-only types → **DEMOTE
+to @Poko**. The **state containers** (`AgentSessionState`, `ToolLoopAgentState`,
+`ChatState`, `CompletionState`) are updated via `MutableStateFlow.update{it.copy()}`
+at **29 internal sites** — `copy()` is contractual for the StateFlow/MVI update
+idiom, which is exactly CLAUDE.md's "keep `data class` where copy()/destructuring
+is contractual" carve-out. Converting them would force 29 verbose full-constructor
+rewrites (ToolLoopAgentState alone has 12 fields), degrading the state machine for
+little evolvability benefit. **Decision: the 4 state containers stay `data class`
+(KEEP); they remain in the budget legitimately.** Owner can override to demote.
+
 ## Classification
 
 _Generated 2026-06-30 by an automated classification pass over `src/commonMain/kotlin` (mirrors the budget gate's detection regex). Counts: DEMOTE 178 · BUILDER 139 · KEEP 34 · REVIEW 10 · NON-PUBLIC 17 = 378._
