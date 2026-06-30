@@ -1127,7 +1127,10 @@ public class HttpMCPTransport(
             if (
                 McpAuth.auth(
                     authProvider,
-                    AuthOptions(serverUrl = url, client = client),
+                    AuthOptions {
+                        serverUrl(url)
+                        client(client)
+                    },
                     reauthorize = true,
                 ) != AuthResult.AUTHORIZED
             ) {
@@ -1470,7 +1473,10 @@ public class SseMCPTransport(
             if (
                 McpAuth.auth(
                     authProvider,
-                    AuthOptions(serverUrl = url, client = client),
+                    AuthOptions {
+                        serverUrl(url)
+                        client(client)
+                    },
                     reauthorize = true,
                 ) != AuthResult.AUTHORIZED
             ) {
@@ -1500,7 +1506,10 @@ public class SseMCPTransport(
             if (
                 McpAuth.auth(
                     authProvider,
-                    AuthOptions(serverUrl = url, client = client),
+                    AuthOptions {
+                        serverUrl(url)
+                        client(client)
+                    },
                     reauthorize = true,
                 ) != AuthResult.AUTHORIZED
             ) {

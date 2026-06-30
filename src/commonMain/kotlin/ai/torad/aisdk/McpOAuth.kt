@@ -87,14 +87,62 @@ public enum class AuthResult {
     REDIRECT,
 }
 
-public data class AuthOptions(
-    val serverUrl: String,
-    val authorizationCode: String? = null,
-    val callbackState: String? = null,
-    val scope: String? = null,
-    val resourceMetadataUrl: String? = null,
-    val client: HttpClient? = null,
+public class AuthOptions internal constructor(
+    public val serverUrl: String,
+    public val authorizationCode: String? = null,
+    public val callbackState: String? = null,
+    public val scope: String? = null,
+    public val resourceMetadataUrl: String? = null,
+    public val client: HttpClient? = null,
 )
+
+public class AuthOptionsBuilder internal constructor() {
+    private var serverUrl: String? = null
+    private var authorizationCode: String? = null
+    private var callbackState: String? = null
+    private var scope: String? = null
+    private var resourceMetadataUrl: String? = null
+    private var client: HttpClient? = null
+
+    public fun serverUrl(value: String) {
+        serverUrl = value
+    }
+
+    public fun authorizationCode(value: String?) {
+        authorizationCode = value
+    }
+
+    public fun callbackState(value: String?) {
+        callbackState = value
+    }
+
+    public fun scope(value: String?) {
+        scope = value
+    }
+
+    public fun resourceMetadataUrl(value: String?) {
+        resourceMetadataUrl = value
+    }
+
+    public fun client(value: HttpClient?) {
+        client = value
+    }
+
+    internal fun build(): AuthOptions =
+        AuthOptions(
+            serverUrl = requireNotNull(serverUrl) { "AuthOptions.serverUrl is required" },
+            authorizationCode = authorizationCode,
+            callbackState = callbackState,
+            scope = scope,
+            resourceMetadataUrl = resourceMetadataUrl,
+            client = client,
+        )
+}
+
+public fun AuthOptions(
+    block: AuthOptionsBuilder.() -> Unit = {},
+): AuthOptions =
+    AuthOptionsBuilder().apply(block).build()
 
 /** Resource-URL canonicalization for OAuth 2.0 Protected Resource validation. */
 internal object McpResourceUrl {

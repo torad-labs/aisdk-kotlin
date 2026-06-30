@@ -449,25 +449,21 @@ public final class ai/torad/aisdk/AudioSource {
 }
 
 public final class ai/torad/aisdk/AuthOptions {
-	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lio/ktor/client/HttpClient;)V
-	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lio/ktor/client/HttpClient;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public final fun component1 ()Ljava/lang/String;
-	public final fun component2 ()Ljava/lang/String;
-	public final fun component3 ()Ljava/lang/String;
-	public final fun component4 ()Ljava/lang/String;
-	public final fun component5 ()Ljava/lang/String;
-	public final fun component6 ()Lio/ktor/client/HttpClient;
-	public final fun copy (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lio/ktor/client/HttpClient;)Lai/torad/aisdk/AuthOptions;
-	public static synthetic fun copy$default (Lai/torad/aisdk/AuthOptions;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lio/ktor/client/HttpClient;ILjava/lang/Object;)Lai/torad/aisdk/AuthOptions;
-	public fun equals (Ljava/lang/Object;)Z
 	public final fun getAuthorizationCode ()Ljava/lang/String;
 	public final fun getCallbackState ()Ljava/lang/String;
 	public final fun getClient ()Lio/ktor/client/HttpClient;
 	public final fun getResourceMetadataUrl ()Ljava/lang/String;
 	public final fun getScope ()Ljava/lang/String;
 	public final fun getServerUrl ()Ljava/lang/String;
-	public fun hashCode ()I
-	public fun toString ()Ljava/lang/String;
+}
+
+public final class ai/torad/aisdk/AuthOptionsBuilder {
+	public final fun authorizationCode (Ljava/lang/String;)V
+	public final fun callbackState (Ljava/lang/String;)V
+	public final fun client (Lio/ktor/client/HttpClient;)V
+	public final fun resourceMetadataUrl (Ljava/lang/String;)V
+	public final fun scope (Ljava/lang/String;)V
+	public final fun serverUrl (Ljava/lang/String;)V
 }
 
 public final class ai/torad/aisdk/AuthResult : java/lang/Enum {
@@ -1757,14 +1753,14 @@ public final class ai/torad/aisdk/GatewayGenerationInfo {
 }
 
 public final class ai/torad/aisdk/GatewayGenerationInfoParams {
-	public fun <init> (Ljava/lang/String;)V
-	public final fun component1 ()Ljava/lang/String;
-	public final fun copy (Ljava/lang/String;)Lai/torad/aisdk/GatewayGenerationInfoParams;
-	public static synthetic fun copy$default (Lai/torad/aisdk/GatewayGenerationInfoParams;Ljava/lang/String;ILjava/lang/Object;)Lai/torad/aisdk/GatewayGenerationInfoParams;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getId ()Ljava/lang/String;
 	public fun hashCode ()I
 	public fun toString ()Ljava/lang/String;
+}
+
+public final class ai/torad/aisdk/GatewayGenerationInfoParamsBuilder {
+	public final fun id (Ljava/lang/String;)V
 }
 
 public final class ai/torad/aisdk/GatewayInternalServerError : ai/torad/aisdk/GatewayError {
@@ -1785,10 +1781,14 @@ public final class ai/torad/aisdk/GatewayKt {
 	public static final field GATEWAY_AUTH_METHOD_HEADER Ljava/lang/String;
 	public static final fun Gateway (Lai/torad/aisdk/GatewayProviderSettings;)Lai/torad/aisdk/GatewayProvider;
 	public static synthetic fun Gateway$default (Lai/torad/aisdk/GatewayProviderSettings;ILjava/lang/Object;)Lai/torad/aisdk/GatewayProvider;
+	public static final fun GatewayGenerationInfoParams (Lkotlin/jvm/functions/Function1;)Lai/torad/aisdk/GatewayGenerationInfoParams;
+	public static synthetic fun GatewayGenerationInfoParams$default (Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Lai/torad/aisdk/GatewayGenerationInfoParams;
 	public static final fun GatewayProvider (Lai/torad/aisdk/GatewayProviderSettings;)Lai/torad/aisdk/GatewayProvider;
 	public static synthetic fun GatewayProvider$default (Lai/torad/aisdk/GatewayProviderSettings;ILjava/lang/Object;)Lai/torad/aisdk/GatewayProvider;
 	public static final fun GatewayProviderSettings (Lkotlin/jvm/functions/Function1;)Lai/torad/aisdk/GatewayProviderSettings;
 	public static synthetic fun GatewayProviderSettings$default (Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Lai/torad/aisdk/GatewayProviderSettings;
+	public static final fun GatewaySpendReportParams (Lkotlin/jvm/functions/Function1;)Lai/torad/aisdk/GatewaySpendReportParams;
+	public static synthetic fun GatewaySpendReportParams$default (Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Lai/torad/aisdk/GatewaySpendReportParams;
 	public static final fun getGateway ()Lai/torad/aisdk/GatewayProvider;
 }
 
@@ -1947,19 +1947,6 @@ public final class ai/torad/aisdk/GatewaySpendReportGroupBy : java/lang/Enum {
 }
 
 public final class ai/torad/aisdk/GatewaySpendReportParams {
-	public fun <init> (Ljava/lang/String;Ljava/lang/String;Lai/torad/aisdk/GatewaySpendReportGroupBy;Lai/torad/aisdk/GatewaySpendReportDatePart;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lai/torad/aisdk/GatewayCredentialType;Ljava/util/List;)V
-	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;Lai/torad/aisdk/GatewaySpendReportGroupBy;Lai/torad/aisdk/GatewaySpendReportDatePart;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lai/torad/aisdk/GatewayCredentialType;Ljava/util/List;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public final fun component1 ()Ljava/lang/String;
-	public final fun component2 ()Ljava/lang/String;
-	public final fun component3 ()Lai/torad/aisdk/GatewaySpendReportGroupBy;
-	public final fun component4 ()Lai/torad/aisdk/GatewaySpendReportDatePart;
-	public final fun component5 ()Ljava/lang/String;
-	public final fun component6 ()Ljava/lang/String;
-	public final fun component7 ()Ljava/lang/String;
-	public final fun component8 ()Lai/torad/aisdk/GatewayCredentialType;
-	public final fun component9 ()Ljava/util/List;
-	public final fun copy (Ljava/lang/String;Ljava/lang/String;Lai/torad/aisdk/GatewaySpendReportGroupBy;Lai/torad/aisdk/GatewaySpendReportDatePart;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lai/torad/aisdk/GatewayCredentialType;Ljava/util/List;)Lai/torad/aisdk/GatewaySpendReportParams;
-	public static synthetic fun copy$default (Lai/torad/aisdk/GatewaySpendReportParams;Ljava/lang/String;Ljava/lang/String;Lai/torad/aisdk/GatewaySpendReportGroupBy;Lai/torad/aisdk/GatewaySpendReportDatePart;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lai/torad/aisdk/GatewayCredentialType;Ljava/util/List;ILjava/lang/Object;)Lai/torad/aisdk/GatewaySpendReportParams;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getCredentialType ()Lai/torad/aisdk/GatewayCredentialType;
 	public final fun getDatePart ()Lai/torad/aisdk/GatewaySpendReportDatePart;
@@ -1972,6 +1959,18 @@ public final class ai/torad/aisdk/GatewaySpendReportParams {
 	public final fun getUserId ()Ljava/lang/String;
 	public fun hashCode ()I
 	public fun toString ()Ljava/lang/String;
+}
+
+public final class ai/torad/aisdk/GatewaySpendReportParamsBuilder {
+	public final fun credentialType (Lai/torad/aisdk/GatewayCredentialType;)V
+	public final fun datePart (Lai/torad/aisdk/GatewaySpendReportDatePart;)V
+	public final fun endDate (Ljava/lang/String;)V
+	public final fun groupBy (Lai/torad/aisdk/GatewaySpendReportGroupBy;)V
+	public final fun model (Ljava/lang/String;)V
+	public final fun provider (Ljava/lang/String;)V
+	public final fun startDate (Ljava/lang/String;)V
+	public final fun tags (Ljava/util/List;)V
+	public final fun userId (Ljava/lang/String;)V
 }
 
 public final class ai/torad/aisdk/GatewaySpendReportResponse {
@@ -3458,6 +3457,11 @@ public final class ai/torad/aisdk/MCPTransportKind : java/lang/Enum {
 	public static fun getEntries ()Lkotlin/enums/EnumEntries;
 	public static fun valueOf (Ljava/lang/String;)Lai/torad/aisdk/MCPTransportKind;
 	public static fun values ()[Lai/torad/aisdk/MCPTransportKind;
+}
+
+public final class ai/torad/aisdk/McpOAuthKt {
+	public static final fun AuthOptions (Lkotlin/jvm/functions/Function1;)Lai/torad/aisdk/AuthOptions;
+	public static synthetic fun AuthOptions$default (Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Lai/torad/aisdk/AuthOptions;
 }
 
 public final class ai/torad/aisdk/MediaModelsKt {
@@ -10403,18 +10407,6 @@ public final class ai/torad/aisdk/providers/LumaProviderSettingsBuilder {
 
 public final class ai/torad/aisdk/providers/MistralLanguageModelOptions {
 	public static final field Companion Lai/torad/aisdk/providers/MistralLanguageModelOptions$Companion;
-	public fun <init> ()V
-	public fun <init> (Ljava/lang/Boolean;Ljava/lang/Integer;Ljava/lang/Integer;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/String;)V
-	public synthetic fun <init> (Ljava/lang/Boolean;Ljava/lang/Integer;Ljava/lang/Integer;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/String;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public final fun component1 ()Ljava/lang/Boolean;
-	public final fun component2 ()Ljava/lang/Integer;
-	public final fun component3 ()Ljava/lang/Integer;
-	public final fun component4 ()Ljava/lang/Boolean;
-	public final fun component5 ()Ljava/lang/Boolean;
-	public final fun component6 ()Ljava/lang/Boolean;
-	public final fun component7 ()Ljava/lang/String;
-	public final fun copy (Ljava/lang/Boolean;Ljava/lang/Integer;Ljava/lang/Integer;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/String;)Lai/torad/aisdk/providers/MistralLanguageModelOptions;
-	public static synthetic fun copy$default (Lai/torad/aisdk/providers/MistralLanguageModelOptions;Ljava/lang/Boolean;Ljava/lang/Integer;Ljava/lang/Integer;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/Boolean;Ljava/lang/String;ILjava/lang/Object;)Lai/torad/aisdk/providers/MistralLanguageModelOptions;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getDocumentImageLimit ()Ljava/lang/Integer;
 	public final fun getDocumentPageLimit ()Ljava/lang/Integer;
@@ -10442,6 +10434,16 @@ public final class ai/torad/aisdk/providers/MistralLanguageModelOptions$Companio
 	public final fun serializer ()Lkotlinx/serialization/KSerializer;
 }
 
+public final class ai/torad/aisdk/providers/MistralLanguageModelOptionsBuilder {
+	public final fun documentImageLimit (Ljava/lang/Integer;)V
+	public final fun documentPageLimit (Ljava/lang/Integer;)V
+	public final fun parallelToolCalls (Ljava/lang/Boolean;)V
+	public final fun reasoningEffort (Ljava/lang/String;)V
+	public final fun safePrompt (Ljava/lang/Boolean;)V
+	public final fun strictJsonSchema (Ljava/lang/Boolean;)V
+	public final fun structuredOutputs (Ljava/lang/Boolean;)V
+}
+
 public final class ai/torad/aisdk/providers/MistralProvider : ai/torad/aisdk/Provider {
 	public fun <init> (Lio/ktor/client/HttpClient;Lai/torad/aisdk/providers/MistralProviderSettings;)V
 	public final fun chat-tDyRgq0 (Ljava/lang/String;)Lai/torad/aisdk/LanguageModel;
@@ -10464,6 +10466,8 @@ public final class ai/torad/aisdk/providers/MistralProviderKt {
 	public static final field MISTRAL_VERSION Ljava/lang/String;
 	public static final fun Mistral (Lio/ktor/client/HttpClient;Lai/torad/aisdk/providers/MistralProviderSettings;)Lai/torad/aisdk/providers/MistralProvider;
 	public static synthetic fun Mistral$default (Lio/ktor/client/HttpClient;Lai/torad/aisdk/providers/MistralProviderSettings;ILjava/lang/Object;)Lai/torad/aisdk/providers/MistralProvider;
+	public static final fun MistralLanguageModelOptions (Lkotlin/jvm/functions/Function1;)Lai/torad/aisdk/providers/MistralLanguageModelOptions;
+	public static synthetic fun MistralLanguageModelOptions$default (Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Lai/torad/aisdk/providers/MistralLanguageModelOptions;
 	public static final fun MistralProviderSettings (Lkotlin/jvm/functions/Function1;)Lai/torad/aisdk/providers/MistralProviderSettings;
 	public static synthetic fun MistralProviderSettings$default (Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Lai/torad/aisdk/providers/MistralProviderSettings;
 }
@@ -10589,18 +10593,14 @@ public final class ai/torad/aisdk/providers/MoonshotAIFacadeKt {
 	public static final field MOONSHOTAI_VERSION Ljava/lang/String;
 	public static final fun MoonshotAI (Lio/ktor/client/HttpClient;Lai/torad/aisdk/providers/MoonshotAIProviderSettings;)Lai/torad/aisdk/providers/MoonshotAIProvider;
 	public static synthetic fun MoonshotAI$default (Lio/ktor/client/HttpClient;Lai/torad/aisdk/providers/MoonshotAIProviderSettings;ILjava/lang/Object;)Lai/torad/aisdk/providers/MoonshotAIProvider;
+	public static final fun MoonshotAILanguageModelOptions (Lkotlin/jvm/functions/Function1;)Lai/torad/aisdk/providers/MoonshotAILanguageModelOptions;
+	public static synthetic fun MoonshotAILanguageModelOptions$default (Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Lai/torad/aisdk/providers/MoonshotAILanguageModelOptions;
 	public static final fun MoonshotAIProviderSettings (Lkotlin/jvm/functions/Function1;)Lai/torad/aisdk/providers/MoonshotAIProviderSettings;
 	public static synthetic fun MoonshotAIProviderSettings$default (Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Lai/torad/aisdk/providers/MoonshotAIProviderSettings;
 }
 
 public final class ai/torad/aisdk/providers/MoonshotAILanguageModelOptions {
 	public static final field Companion Lai/torad/aisdk/providers/MoonshotAILanguageModelOptions$Companion;
-	public fun <init> ()V
-	public fun <init> (Ljava/util/Map;)V
-	public synthetic fun <init> (Ljava/util/Map;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public final fun component1 ()Ljava/util/Map;
-	public final fun copy (Ljava/util/Map;)Lai/torad/aisdk/providers/MoonshotAILanguageModelOptions;
-	public static synthetic fun copy$default (Lai/torad/aisdk/providers/MoonshotAILanguageModelOptions;Ljava/util/Map;ILjava/lang/Object;)Lai/torad/aisdk/providers/MoonshotAILanguageModelOptions;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getRaw ()Ljava/util/Map;
 	public fun hashCode ()I
@@ -10620,6 +10620,10 @@ public final synthetic class ai/torad/aisdk/providers/MoonshotAILanguageModelOpt
 
 public final class ai/torad/aisdk/providers/MoonshotAILanguageModelOptions$Companion {
 	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public final class ai/torad/aisdk/providers/MoonshotAILanguageModelOptionsBuilder {
+	public final fun raw (Ljava/util/Map;)V
 }
 
 public final class ai/torad/aisdk/providers/MoonshotAIProvider : ai/torad/aisdk/Provider {
@@ -11076,12 +11080,6 @@ public final class ai/torad/aisdk/providers/ProdiaImageModelOptionsBuilder {
 
 public final class ai/torad/aisdk/providers/ProdiaLanguageModelOptions {
 	public static final field Companion Lai/torad/aisdk/providers/ProdiaLanguageModelOptions$Companion;
-	public fun <init> ()V
-	public fun <init> (Ljava/lang/String;)V
-	public synthetic fun <init> (Ljava/lang/String;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public final fun component1 ()Ljava/lang/String;
-	public final fun copy (Ljava/lang/String;)Lai/torad/aisdk/providers/ProdiaLanguageModelOptions;
-	public static synthetic fun copy$default (Lai/torad/aisdk/providers/ProdiaLanguageModelOptions;Ljava/lang/String;ILjava/lang/Object;)Lai/torad/aisdk/providers/ProdiaLanguageModelOptions;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getAspectRatio ()Ljava/lang/String;
 	public fun hashCode ()I
@@ -11101,6 +11099,10 @@ public final synthetic class ai/torad/aisdk/providers/ProdiaLanguageModelOptions
 
 public final class ai/torad/aisdk/providers/ProdiaLanguageModelOptions$Companion {
 	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public final class ai/torad/aisdk/providers/ProdiaLanguageModelOptionsBuilder {
+	public final fun aspectRatio (Ljava/lang/String;)V
 }
 
 public final class ai/torad/aisdk/providers/ProdiaProvider : ai/torad/aisdk/Provider {
@@ -11126,6 +11128,8 @@ public final class ai/torad/aisdk/providers/ProdiaProviderKt {
 	public static synthetic fun Prodia$default (Lio/ktor/client/HttpClient;Lai/torad/aisdk/providers/ProdiaProviderSettings;ILjava/lang/Object;)Lai/torad/aisdk/providers/ProdiaProvider;
 	public static final fun ProdiaImageModelOptions (Lkotlin/jvm/functions/Function1;)Lai/torad/aisdk/providers/ProdiaImageModelOptions;
 	public static synthetic fun ProdiaImageModelOptions$default (Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Lai/torad/aisdk/providers/ProdiaImageModelOptions;
+	public static final fun ProdiaLanguageModelOptions (Lkotlin/jvm/functions/Function1;)Lai/torad/aisdk/providers/ProdiaLanguageModelOptions;
+	public static synthetic fun ProdiaLanguageModelOptions$default (Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Lai/torad/aisdk/providers/ProdiaLanguageModelOptions;
 	public static final fun ProdiaProviderSettings (Lkotlin/jvm/functions/Function1;)Lai/torad/aisdk/providers/ProdiaProviderSettings;
 	public static synthetic fun ProdiaProviderSettings$default (Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Lai/torad/aisdk/providers/ProdiaProviderSettings;
 	public static final fun ProdiaVideoModelOptions (Lkotlin/jvm/functions/Function1;)Lai/torad/aisdk/providers/ProdiaVideoModelOptions;
@@ -11899,17 +11903,6 @@ public final class ai/torad/aisdk/providers/VoyageRerankingModelOptionsBuilder {
 
 public final class ai/torad/aisdk/providers/XaiImageModelOptions {
 	public static final field Companion Lai/torad/aisdk/providers/XaiImageModelOptions$Companion;
-	public fun <init> ()V
-	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/Boolean;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V
-	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/Boolean;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public final fun component1 ()Ljava/lang/String;
-	public final fun component2 ()Ljava/lang/String;
-	public final fun component3 ()Ljava/lang/Boolean;
-	public final fun component4 ()Ljava/lang/String;
-	public final fun component5 ()Ljava/lang/String;
-	public final fun component6 ()Ljava/lang/String;
-	public final fun copy (Ljava/lang/String;Ljava/lang/String;Ljava/lang/Boolean;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)Lai/torad/aisdk/providers/XaiImageModelOptions;
-	public static synthetic fun copy$default (Lai/torad/aisdk/providers/XaiImageModelOptions;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Boolean;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ILjava/lang/Object;)Lai/torad/aisdk/providers/XaiImageModelOptions;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getAspect_ratio ()Ljava/lang/String;
 	public final fun getOutput_format ()Ljava/lang/String;
@@ -11934,6 +11927,15 @@ public final synthetic class ai/torad/aisdk/providers/XaiImageModelOptions$$seri
 
 public final class ai/torad/aisdk/providers/XaiImageModelOptions$Companion {
 	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public final class ai/torad/aisdk/providers/XaiImageModelOptionsBuilder {
+	public final fun aspect_ratio (Ljava/lang/String;)V
+	public final fun output_format (Ljava/lang/String;)V
+	public final fun quality (Ljava/lang/String;)V
+	public final fun resolution (Ljava/lang/String;)V
+	public final fun sync_mode (Ljava/lang/Boolean;)V
+	public final fun user (Ljava/lang/String;)V
 }
 
 public final class ai/torad/aisdk/providers/XaiLanguageModelChatOptions {
@@ -12042,8 +12044,12 @@ public final class ai/torad/aisdk/providers/XaiProviderKt {
 	public static synthetic fun XSearch$default (Lkotlinx/serialization/json/JsonElement;ILjava/lang/Object;)Lai/torad/aisdk/Tool;
 	public static final fun Xai (Lio/ktor/client/HttpClient;Lai/torad/aisdk/providers/XaiProviderSettings;)Lai/torad/aisdk/providers/XaiProvider;
 	public static synthetic fun Xai$default (Lio/ktor/client/HttpClient;Lai/torad/aisdk/providers/XaiProviderSettings;ILjava/lang/Object;)Lai/torad/aisdk/providers/XaiProvider;
+	public static final fun XaiImageModelOptions (Lkotlin/jvm/functions/Function1;)Lai/torad/aisdk/providers/XaiImageModelOptions;
+	public static synthetic fun XaiImageModelOptions$default (Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Lai/torad/aisdk/providers/XaiImageModelOptions;
 	public static final fun XaiProviderSettings (Lkotlin/jvm/functions/Function1;)Lai/torad/aisdk/providers/XaiProviderSettings;
 	public static synthetic fun XaiProviderSettings$default (Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Lai/torad/aisdk/providers/XaiProviderSettings;
+	public static final fun XaiVideoModelOptions (Lkotlin/jvm/functions/Function1;)Lai/torad/aisdk/providers/XaiVideoModelOptions;
+	public static synthetic fun XaiVideoModelOptions$default (Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Lai/torad/aisdk/providers/XaiVideoModelOptions;
 	public static final fun getXaiTools ()Lai/torad/aisdk/providers/XaiTools;
 }
 
@@ -12091,17 +12097,6 @@ public final class ai/torad/aisdk/providers/XaiTools {
 
 public final class ai/torad/aisdk/providers/XaiVideoModelOptions {
 	public static final field Companion Lai/torad/aisdk/providers/XaiVideoModelOptions$Companion;
-	public fun <init> ()V
-	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/util/List;Ljava/lang/Long;Ljava/lang/Long;Ljava/lang/String;)V
-	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/util/List;Ljava/lang/Long;Ljava/lang/Long;Ljava/lang/String;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public final fun component1 ()Ljava/lang/String;
-	public final fun component2 ()Ljava/lang/String;
-	public final fun component3 ()Ljava/util/List;
-	public final fun component4 ()Ljava/lang/Long;
-	public final fun component5 ()Ljava/lang/Long;
-	public final fun component6 ()Ljava/lang/String;
-	public final fun copy (Ljava/lang/String;Ljava/lang/String;Ljava/util/List;Ljava/lang/Long;Ljava/lang/Long;Ljava/lang/String;)Lai/torad/aisdk/providers/XaiVideoModelOptions;
-	public static synthetic fun copy$default (Lai/torad/aisdk/providers/XaiVideoModelOptions;Ljava/lang/String;Ljava/lang/String;Ljava/util/List;Ljava/lang/Long;Ljava/lang/Long;Ljava/lang/String;ILjava/lang/Object;)Lai/torad/aisdk/providers/XaiVideoModelOptions;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getMode ()Ljava/lang/String;
 	public final fun getPollIntervalMs ()Ljava/lang/Long;
@@ -12126,6 +12121,15 @@ public final synthetic class ai/torad/aisdk/providers/XaiVideoModelOptions$$seri
 
 public final class ai/torad/aisdk/providers/XaiVideoModelOptions$Companion {
 	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public final class ai/torad/aisdk/providers/XaiVideoModelOptionsBuilder {
+	public final fun mode (Ljava/lang/String;)V
+	public final fun pollIntervalMs (Ljava/lang/Long;)V
+	public final fun pollTimeoutMs (Ljava/lang/Long;)V
+	public final fun referenceImageUrls (Ljava/util/List;)V
+	public final fun resolution (Ljava/lang/String;)V
+	public final fun videoUrl (Ljava/lang/String;)V
 }
 
 public final class ai/torad/aisdk/ui/Chat {

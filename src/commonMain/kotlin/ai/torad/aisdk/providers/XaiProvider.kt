@@ -212,24 +212,122 @@ public data class XaiLanguageModelResponsesOptions(
 )
 
 @Serializable
-public data class XaiImageModelOptions(
-    val aspect_ratio: String? = null,
-    val output_format: String? = null,
-    val sync_mode: Boolean? = null,
-    val resolution: String? = null,
-    val quality: String? = null,
-    val user: String? = null,
+@Poko
+public class XaiImageModelOptions internal constructor(
+    public val aspect_ratio: String? = null,
+    public val output_format: String? = null,
+    public val sync_mode: Boolean? = null,
+    public val resolution: String? = null,
+    public val quality: String? = null,
+    public val user: String? = null,
 )
 
+public class XaiImageModelOptionsBuilder internal constructor() {
+    private var aspect_ratio: String? = null
+    private var output_format: String? = null
+    private var sync_mode: Boolean? = null
+    private var resolution: String? = null
+    private var quality: String? = null
+    private var user: String? = null
+
+    public fun aspect_ratio(value: String?) {
+        aspect_ratio = value
+    }
+
+    public fun output_format(value: String?) {
+        output_format = value
+    }
+
+    public fun sync_mode(value: Boolean?) {
+        sync_mode = value
+    }
+
+    public fun resolution(value: String?) {
+        resolution = value
+    }
+
+    public fun quality(value: String?) {
+        quality = value
+    }
+
+    public fun user(value: String?) {
+        user = value
+    }
+
+    internal fun build(): XaiImageModelOptions =
+        XaiImageModelOptions(
+            aspect_ratio = aspect_ratio,
+            output_format = output_format,
+            sync_mode = sync_mode,
+            resolution = resolution,
+            quality = quality,
+            user = user,
+        )
+}
+
+public fun XaiImageModelOptions(
+    block: XaiImageModelOptionsBuilder.() -> Unit = {},
+): XaiImageModelOptions =
+    XaiImageModelOptionsBuilder().apply(block).build()
+
 @Serializable
-public data class XaiVideoModelOptions(
-    val mode: String? = null,
-    val videoUrl: String? = null,
-    val referenceImageUrls: List<String>? = null,
-    val pollIntervalMs: Long? = null,
-    val pollTimeoutMs: Long? = null,
-    val resolution: String? = null,
+@Poko
+public class XaiVideoModelOptions internal constructor(
+    public val mode: String? = null,
+    public val videoUrl: String? = null,
+    public val referenceImageUrls: List<String>? = null,
+    public val pollIntervalMs: Long? = null,
+    public val pollTimeoutMs: Long? = null,
+    public val resolution: String? = null,
 )
+
+public class XaiVideoModelOptionsBuilder internal constructor() {
+    private var mode: String? = null
+    private var videoUrl: String? = null
+    private var referenceImageUrls: List<String>? = null
+    private var pollIntervalMs: Long? = null
+    private var pollTimeoutMs: Long? = null
+    private var resolution: String? = null
+
+    public fun mode(value: String?) {
+        mode = value
+    }
+
+    public fun videoUrl(value: String?) {
+        videoUrl = value
+    }
+
+    public fun referenceImageUrls(value: List<String>?) {
+        referenceImageUrls = value
+    }
+
+    public fun pollIntervalMs(value: Long?) {
+        pollIntervalMs = value
+    }
+
+    public fun pollTimeoutMs(value: Long?) {
+        pollTimeoutMs = value
+    }
+
+    public fun resolution(value: String?) {
+        resolution = value
+    }
+
+    internal fun build(): XaiVideoModelOptions =
+        XaiVideoModelOptions(
+            mode = mode,
+            videoUrl = videoUrl,
+            referenceImageUrls = referenceImageUrls,
+            pollIntervalMs = pollIntervalMs,
+            pollTimeoutMs = pollTimeoutMs,
+            resolution = resolution,
+        )
+}
+
+public fun XaiVideoModelOptions(
+    block: XaiVideoModelOptionsBuilder.() -> Unit = {},
+): XaiVideoModelOptions =
+    XaiVideoModelOptionsBuilder().apply(block).build()
 
 public class XaiProvider(
     private val client: HttpClient,

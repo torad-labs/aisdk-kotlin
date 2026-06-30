@@ -102,15 +102,15 @@ class GatewayAndProviderUtilsParityTest {
         val third = provider.getAvailableModels()
         val credits = provider.getCredits()
         val spend = provider.getSpendReport(
-            GatewaySpendReportParams(
-                startDate = "2026-06-01",
-                endDate = "2026-06-03",
-                groupBy = GatewaySpendReportGroupBy.Model,
-                credentialType = GatewayCredentialType.Byok,
-                tags = listOf("prod", "mobile"),
-            ),
+            GatewaySpendReportParams {
+                startDate("2026-06-01")
+                endDate("2026-06-03")
+                groupBy(GatewaySpendReportGroupBy.Model)
+                credentialType(GatewayCredentialType.Byok)
+                tags(listOf("prod", "mobile"))
+            },
         )
-        val generation = provider.getGenerationInfo(GatewayGenerationInfoParams("gen_123"))
+        val generation = provider.getGenerationInfo(GatewayGenerationInfoParams { id("gen_123") })
 
         assertEquals("model-1", first.models.single().id)
         assertEquals(first, second)
@@ -691,8 +691,11 @@ class GatewayAndProviderUtilsParityTest {
 
         val models = provider.getAvailableModels()
         val credits = provider.getCredits()
-        val spend = provider.getSpendReport(GatewaySpendReportParams("2026-06-01", "2026-06-03"))
-        val generation = provider.getGenerationInfo(GatewayGenerationInfoParams("gen_1"))
+        val spend = provider.getSpendReport(GatewaySpendReportParams {
+            startDate("2026-06-01")
+            endDate("2026-06-03")
+        })
+        val generation = provider.getGenerationInfo(GatewayGenerationInfoParams { id("gen_1") })
 
         assertEquals("m1", models.models.single().id)
         assertEquals(GatewayModelType.Language, models.models.single().modelType)
