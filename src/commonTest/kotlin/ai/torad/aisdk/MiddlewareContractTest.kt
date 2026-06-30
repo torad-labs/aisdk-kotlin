@@ -29,10 +29,12 @@ class MiddlewareContractTest {
                 operation: MiddlewareOperation,
                 params: LanguageModelCallParams,
                 model: LanguageModel,
-            ): LanguageModelCallParams = params.copy(temperature = 0.42f)
+            ): LanguageModelCallParams = params.toBuilder().temperature(0.42f).build()
         }
         val wrapped = WrapLanguageModel(inner, listOf(mw))
-        wrapped.generate(LanguageModelCallParams(messages = listOf(UserMessage("hi"))))
+        wrapped.generate(LanguageModelCallParams {
+    messages(listOf(UserMessage("hi")))
+})
         assertEquals(0.42f, inner.seen?.temperature, "transformParams applied before generate")
     }
 
@@ -63,7 +65,9 @@ class MiddlewareContractTest {
                 ),
             ),
         )
-        wrapped.generate(LanguageModelCallParams(messages = listOf(UserMessage("hi"))))
+        wrapped.generate(LanguageModelCallParams {
+    messages(listOf(UserMessage("hi")))
+})
         assertEquals(listOf("t"), inner.seen?.tools?.map { it.name })
         assertEquals(ToolChoice.Required, inner.seen?.toolChoice)
         assertEquals("1", inner.seen?.headers?.get("x-default"))

@@ -36,7 +36,9 @@ class MiddlewareBugfixTest {
             ),
         )
         val wrapped = WrapLanguageModel(inner, listOf(ExtractReasoningMiddleware()))
-        val result = wrapped.generate(LanguageModelCallParams(messages = listOf(UserMessage("hi"))))
+        val result = wrapped.generate(LanguageModelCallParams {
+    messages(listOf(UserMessage("hi")))
+})
 
         // text is cleaned of the tag
         assertEquals("beforeafter", result.text)
@@ -55,7 +57,9 @@ class MiddlewareBugfixTest {
             ),
         )
         val wrapped = WrapLanguageModel(inner, listOf(ExtractReasoningMiddleware()))
-        val result = wrapped.generate(LanguageModelCallParams(messages = listOf(UserMessage("hi"))))
+        val result = wrapped.generate(LanguageModelCallParams {
+    messages(listOf(UserMessage("hi")))
+})
         // Empty tags must still be stripped — no literal <reasoning> in visible text.
         assertEquals("beforeafter", result.text)
         assertTrue(result.content.filterIsInstance<ContentPart.Text>().none { "<reasoning>" in it.text })
@@ -70,12 +74,12 @@ class MiddlewareBugfixTest {
         val inner = model(LanguageModelResult(text = "ok", finishReason = FinishReason.Stop, usage = Usage()))
         val wrapped = WrapLanguageModel(inner, listOf(DefaultSettingsMiddleware(providerOptions = defaults)))
         wrapped.generate(
-            LanguageModelCallParams(
-                messages = listOf(UserMessage("hi")),
-                providerOptions = ProviderOptions.Raw(JsonObject(mapOf(
+            LanguageModelCallParams {
+                messages(listOf(UserMessage("hi")))
+                providerOptions(ProviderOptions.Raw(JsonObject(mapOf(
                     "openai" to buildJsonObject { put("user", JsonPrimitive("u1")) },
-                ))),
-            ),
+                ))))
+            },
         )
         val merged = inner.seen?.providerOptions?.toMap()?.get("openai")?.jsonObject
         assertEquals("high", merged?.get("reasoningEffort")?.let { (it as JsonPrimitive).content }, "default key kept")

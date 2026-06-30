@@ -138,6 +138,11 @@ This project follows Semantic Versioning once the first stable release is cut.
   `CallSettings` and `CallConfig` are `@Poko` value-semantics classes;
   `AgentSettings` and `StepSettings` are regular classes with identity equality
   because they can hold model and tool objects.
+  Call-parameter envelopes (`LanguageModelCallParams` and
+  `EmbeddingModelCallParams`) are now `@Poko` value-semantics classes with
+  internal positional constructors, public DSL factories for fresh
+  construction, and public seeded `toBuilder()` helpers for middleware/provider
+  one-field overrides. Their public `copy()` and `componentN()` ABI is removed.
 
 - **Tools are now class-based and extensible (breaking ABI change).** `Tool` is an `abstract class`
   you can extend for reusable, dependency-injected tools — mirroring how a concrete agent extends

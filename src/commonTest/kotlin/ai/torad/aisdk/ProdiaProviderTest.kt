@@ -125,8 +125,8 @@ class ProdiaProviderTest {
         ).languageModel("stabilityai/sdxl")
 
         val result = model.generate(
-            LanguageModelCallParams(
-                messages = listOf(
+            LanguageModelCallParams {
+                messages(listOf(
                     SystemMessage("System line."),
                     ModelMessage(
                         MessageRole.User,
@@ -135,13 +135,13 @@ class ProdiaProviderTest {
                             ContentPart.Image("image/png", "iVBORw0="),
                         ),
                     ),
-                ),
-                temperature = 0.4f,
-                tools = listOf(LanguageModelTool("ignored", "ignored", """{"type":"object"}""")),
-                responseFormat = ResponseFormat.Json(),
-                providerOptions = ProviderOptions.Raw(JsonObject(mapOf("prodia" to buildJsonObject { put("aspectRatio", JsonPrimitive("16:9")) }))),
-                headers = mapOf("X-Request" to "request"),
-            ),
+                ))
+                temperature(0.4f)
+                tools(listOf(LanguageModelTool("ignored", "ignored", """{"type":"object"}""")))
+                responseFormat(ResponseFormat.Json())
+                providerOptions(ProviderOptions.Raw(JsonObject(mapOf("prodia" to buildJsonObject { put("aspectRatio", JsonPrimitive("16:9")) }))))
+                headers(mapOf("X-Request" to "request"))
+            },
         )
 
         assertEquals("prodia.language", model.provider)

@@ -54,19 +54,19 @@ class AzureProviderTest {
         )
 
         val result = provider("test-deployment").generate(
-            LanguageModelCallParams(
-                messages = listOf(UserMessage("Hello")),
-                maxOutputTokens = 64,
-                providerOptions = ProviderOptions.Raw(JsonObject(mapOf(
+            LanguageModelCallParams {
+                messages(listOf(UserMessage("Hello")))
+                maxOutputTokens(64)
+                providerOptions(ProviderOptions.Raw(JsonObject(mapOf(
                     "openai" to JsonObject(
                         mapOf(
                             "reasoningEffort" to JsonPrimitive("low"),
                             "reasoningSummary" to JsonPrimitive("concise"),
                         ),
                     ),
-                ))),
-                headers = mapOf("Custom-Request-Header" to "request-header-value"),
-            ),
+                ))))
+                headers(mapOf("Custom-Request-Header" to "request-header-value"))
+            },
         )
 
         val request = seenRequests.single()
@@ -110,8 +110,12 @@ class AzureProviderTest {
             },
         )
 
-        provider.chat(ModelId("test-deployment")).generate(LanguageModelCallParams(listOf(UserMessage("Hi"))))
-        provider.chat(ModelId("test-deployment")).generate(LanguageModelCallParams(listOf(UserMessage("Hi again"))))
+        provider.chat(ModelId("test-deployment")).generate(LanguageModelCallParams {
+    messages(listOf(UserMessage("Hi")))
+})
+        provider.chat(ModelId("test-deployment")).generate(LanguageModelCallParams {
+    messages(listOf(UserMessage("Hi again")))
+})
 
         assertEquals(2, tokenCount)
         assertEquals(

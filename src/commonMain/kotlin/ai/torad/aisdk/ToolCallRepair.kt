@@ -70,11 +70,11 @@ internal data class RepairRequest(
     suspend fun reprompt(model: LanguageModel, messages: List<ModelMessage>): JsonElement? {
         val prompt = toPrompt()
         val result = model.generate(
-            LanguageModelCallParams(
-                messages = messages + UserMessage(prompt),
-                tools = emptyList(),
-                toolChoice = ToolChoice.None,
-            ),
+            LanguageModelCallParams {
+                messages(messages + UserMessage(prompt))
+                tools(emptyList())
+                toolChoice(ToolChoice.None)
+            },
         )
         val text = stripCodeFences(result.text.trim())
         return TypedJsonOps.parseJsonElementOrNull(aiSdkJson, text)

@@ -79,29 +79,30 @@ public interface LanguageModel {
  * can wrap both the same way and `wrapLanguageModel` only needs one
  * pass-through shape.
  */
-public data class LanguageModelCallParams(
-    val messages: List<ModelMessage>,
-    val tools: List<LanguageModelTool> = emptyList(),
-    val toolChoice: ToolChoice = ToolChoice.Auto,
-    val temperature: Float? = null,
-    val topP: Float? = null,
-    val topK: Int? = null,
-    val maxOutputTokens: Int? = null,        // v6 name (was maxTokens)
-    val stopSequences: List<String> = emptyList(),
-    val seed: Int? = null,
-    val providerOptions: ProviderOptions = ProviderOptions.None,
-    val abortSignal: AbortSignal = AbortSignalNever,
+@Poko
+public class LanguageModelCallParams internal constructor(
+    public val messages: List<ModelMessage>,
+    public val tools: List<LanguageModelTool> = emptyList(),
+    public val toolChoice: ToolChoice = ToolChoice.Auto,
+    public val temperature: Float? = null,
+    public val topP: Float? = null,
+    public val topK: Int? = null,
+    public val maxOutputTokens: Int? = null,        // v6 name (was maxTokens)
+    public val stopSequences: List<String> = emptyList(),
+    public val seed: Int? = null,
+    public val providerOptions: ProviderOptions = ProviderOptions.None,
+    public val abortSignal: AbortSignal = AbortSignalNever,
     /**
      * Penalty for repeating tokens that already appeared in the
      * response, regardless of frequency. Mirrors v6's `CallSettings`
      * (per historical parity gap #3 closure). Null = provider default.
      */
-    val presencePenalty: Float? = null,
+    public val presencePenalty: Float? = null,
     /**
      * Penalty proportional to how often a token has appeared.
      * Mirrors v6's `CallSettings`. Null = provider default.
      */
-    val frequencyPenalty: Float? = null,
+    public val frequencyPenalty: Float? = null,
     /**
      * Wire-level shape constraint. Mirrors v6's
      * `LanguageModelV3CallOptions.responseFormat` (per
@@ -109,9 +110,131 @@ public data class LanguageModelCallParams(
      * decoding honor it; others ignore. Default [ResponseFormat.Text]
      * = no constraint.
      */
-    val responseFormat: ResponseFormat = ResponseFormat.Text,
-    val headers: Map<String, String> = emptyMap(),
-)
+    public val responseFormat: ResponseFormat = ResponseFormat.Text,
+    public val headers: Map<String, String> = emptyMap(),
+) {
+    public fun toBuilder(): LanguageModelCallParamsBuilder =
+        LanguageModelCallParamsBuilder().also {
+            it.messages(messages)
+            it.tools(tools)
+            it.toolChoice(toolChoice)
+            it.temperature(temperature)
+            it.topP(topP)
+            it.topK(topK)
+            it.maxOutputTokens(maxOutputTokens)
+            it.stopSequences(stopSequences)
+            it.seed(seed)
+            it.providerOptions(providerOptions)
+            it.abortSignal(abortSignal)
+            it.presencePenalty(presencePenalty)
+            it.frequencyPenalty(frequencyPenalty)
+            it.responseFormat(responseFormat)
+            it.headers(headers)
+        }
+}
+
+@AiSdkDsl
+public class LanguageModelCallParamsBuilder internal constructor() {
+    private var messages: List<ModelMessage>? = null
+    private var tools: List<LanguageModelTool> = emptyList()
+    private var toolChoice: ToolChoice = ToolChoice.Auto
+    private var temperature: Float? = null
+    private var topP: Float? = null
+    private var topK: Int? = null
+    private var maxOutputTokens: Int? = null
+    private var stopSequences: List<String> = emptyList()
+    private var seed: Int? = null
+    private var providerOptions: ProviderOptions = ProviderOptions.None
+    private var abortSignal: AbortSignal = AbortSignalNever
+    private var presencePenalty: Float? = null
+    private var frequencyPenalty: Float? = null
+    private var responseFormat: ResponseFormat = ResponseFormat.Text
+    private var headers: Map<String, String> = emptyMap()
+
+    public fun messages(value: List<ModelMessage>): LanguageModelCallParamsBuilder = apply {
+        messages = value
+    }
+
+    public fun tools(value: List<LanguageModelTool>): LanguageModelCallParamsBuilder = apply {
+        tools = value
+    }
+
+    public fun toolChoice(value: ToolChoice): LanguageModelCallParamsBuilder = apply {
+        toolChoice = value
+    }
+
+    public fun temperature(value: Float?): LanguageModelCallParamsBuilder = apply {
+        temperature = value
+    }
+
+    public fun topP(value: Float?): LanguageModelCallParamsBuilder = apply {
+        topP = value
+    }
+
+    public fun topK(value: Int?): LanguageModelCallParamsBuilder = apply {
+        topK = value
+    }
+
+    public fun maxOutputTokens(value: Int?): LanguageModelCallParamsBuilder = apply {
+        maxOutputTokens = value
+    }
+
+    public fun stopSequences(value: List<String>): LanguageModelCallParamsBuilder = apply {
+        stopSequences = value
+    }
+
+    public fun seed(value: Int?): LanguageModelCallParamsBuilder = apply {
+        seed = value
+    }
+
+    public fun providerOptions(value: ProviderOptions): LanguageModelCallParamsBuilder = apply {
+        providerOptions = value
+    }
+
+    public fun abortSignal(value: AbortSignal): LanguageModelCallParamsBuilder = apply {
+        abortSignal = value
+    }
+
+    public fun presencePenalty(value: Float?): LanguageModelCallParamsBuilder = apply {
+        presencePenalty = value
+    }
+
+    public fun frequencyPenalty(value: Float?): LanguageModelCallParamsBuilder = apply {
+        frequencyPenalty = value
+    }
+
+    public fun responseFormat(value: ResponseFormat): LanguageModelCallParamsBuilder = apply {
+        responseFormat = value
+    }
+
+    public fun headers(value: Map<String, String>): LanguageModelCallParamsBuilder = apply {
+        headers = value
+    }
+
+    public fun build(): LanguageModelCallParams =
+        LanguageModelCallParams(
+            messages = requireNotNull(messages) { "LanguageModelCallParams.messages is required" },
+            tools = tools,
+            toolChoice = toolChoice,
+            temperature = temperature,
+            topP = topP,
+            topK = topK,
+            maxOutputTokens = maxOutputTokens,
+            stopSequences = stopSequences,
+            seed = seed,
+            providerOptions = providerOptions,
+            abortSignal = abortSignal,
+            presencePenalty = presencePenalty,
+            frequencyPenalty = frequencyPenalty,
+            responseFormat = responseFormat,
+            headers = headers,
+        )
+}
+
+public fun LanguageModelCallParams(
+    block: LanguageModelCallParamsBuilder.() -> Unit,
+): LanguageModelCallParams =
+    LanguageModelCallParamsBuilder().apply(block).build()
 
 /**
  * Tool advertisement at the model surface — the JSON-schema shape the

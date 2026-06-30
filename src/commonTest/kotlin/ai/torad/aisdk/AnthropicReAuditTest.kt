@@ -69,7 +69,9 @@ class AnthropicReAuditTest {
 
         val events = drainAllItems(
             provider.messages(ModelId("claude-sonnet-4-5")).stream(
-                LanguageModelCallParams(messages = listOf(UserMessage("hi"))),
+                LanguageModelCallParams {
+                    messages(listOf(UserMessage("hi")))
+                },
             ),
         )
 
@@ -114,8 +116,8 @@ class AnthropicReAuditTest {
         }
 
         provider.messages(ModelId("claude-sonnet-4-5")).generate(
-            LanguageModelCallParams(
-                messages = listOf(
+            LanguageModelCallParams {
+                messages(listOf(
                     ModelMessage(
                         MessageRole.Tool,
                         listOf(
@@ -127,8 +129,8 @@ class AnthropicReAuditTest {
                             ),
                         ),
                     ),
-                ),
-            ),
+                ))
+            },
         )
 
         val toolContent = lastToolResultContent(fixture)
@@ -154,8 +156,8 @@ class AnthropicReAuditTest {
         }
 
         provider.messages(ModelId("claude-sonnet-4-5")).generate(
-            LanguageModelCallParams(
-                messages = listOf(
+            LanguageModelCallParams {
+                messages(listOf(
                     ModelMessage(
                         MessageRole.Tool,
                         listOf(
@@ -168,8 +170,8 @@ class AnthropicReAuditTest {
                             ),
                         ),
                     ),
-                ),
-            ),
+                ))
+            },
         )
 
         // Decoded to the bare message string — NOT the {"type":"error-text",...} wrapper.

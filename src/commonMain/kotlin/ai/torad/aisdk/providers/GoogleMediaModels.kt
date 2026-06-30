@@ -151,20 +151,20 @@ internal class GoogleGenerativeAIImageModel(
             },
         )
         val result = GoogleGenerativeAILanguageModel(client, settings, modelId).generate(
-            LanguageModelCallParams(
-                messages = listOf(message),
-                seed = params.seed,
-                providerOptions = ProviderOptions.ofPairs(
+            LanguageModelCallParams {
+                messages(listOf(message))
+                seed(params.seed)
+                providerOptions(ProviderOptions.ofPairs(
                     "google" to buildJsonObject {
                         put("responseModalities", JsonArray(listOf(JsonPrimitive("IMAGE"))))
                         params.aspectRatio?.let {
                             put("imageConfig", buildJsonObject { put("aspectRatio", JsonPrimitive(it)) })
                         }
                     },
-                ),
-                headers = params.headers,
-                abortSignal = params.abortSignal,
-            ),
+                ))
+                headers(params.headers)
+                abortSignal(params.abortSignal)
+            },
         )
         val images = result.content.filterIsInstance<ContentPart.File>()
             .map { GeneratedFile(mediaType = it.mediaType, base64 = it.base64, filename = it.filename, providerMetadata = it.providerMetadata) }

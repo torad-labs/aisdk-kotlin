@@ -55,11 +55,11 @@ class MistralProviderTest {
         )
 
         val result = provider.chat(ModelId("mistral-small-latest")).generate(
-            LanguageModelCallParams(
-                messages = listOf(UserMessage("Hello")),
-                maxOutputTokens = 256,
-                seed = 77,
-                providerOptions = ProviderOptions.Raw(JsonObject(mapOf(
+            LanguageModelCallParams {
+                messages(listOf(UserMessage("Hello")))
+                maxOutputTokens(256)
+                seed(77)
+                providerOptions(ProviderOptions.Raw(JsonObject(mapOf(
                     "mistral" to buildJsonObject {
                         put("safePrompt", JsonPrimitive(true))
                         put("documentImageLimit", JsonPrimitive(2))
@@ -68,9 +68,9 @@ class MistralProviderTest {
                         put("reasoningEffort", JsonPrimitive("high"))
                         put("strictJsonSchema", JsonPrimitive(false))
                     },
-                ))),
-                headers = mapOf("X-Request" to "request"),
-            ),
+                ))))
+                headers(mapOf("X-Request" to "request"))
+            },
         )
 
         assertEquals("mistral.chat", provider(ModelId("mistral-small-latest")).provider)
@@ -117,10 +117,10 @@ class MistralProviderTest {
         )
 
         val result = provider.embedding(ModelId("mistral-embed")).embed(
-            EmbeddingModelCallParams(
-                values = listOf("sunny day", "rainy city"),
-                headers = mapOf("X-Request" to "request"),
-            ),
+            EmbeddingModelCallParams {
+                values(listOf("sunny day", "rainy city"))
+                headers(mapOf("X-Request" to "request"))
+            },
         )
 
         assertEquals("mistral.embedding", provider.embeddingModel("mistral-embed").provider)
@@ -157,8 +157,8 @@ class MistralProviderTest {
         fixture.server.start()
         val provider = Mistral(fixture.httpClient(), MistralProviderSettings { apiKey("key") })
         provider.chat(ModelId("mistral-small-latest")).generate(
-            LanguageModelCallParams(
-                messages = listOf(
+            LanguageModelCallParams {
+                messages(listOf(
                     UserMessage("go"),
                     ModelMessage(
                         MessageRole.Assistant,
@@ -168,13 +168,13 @@ class MistralProviderTest {
                         MessageRole.Tool,
                         listOf(ContentPart.ToolResult("t1", "lookup", JsonPrimitive("done"))),
                     ),
-                ),
-                tools = listOf(
+                ))
+                tools(listOf(
                     LanguageModelTool("lookup", "d", "{\"type\":\"object\"}"),
                     LanguageModelTool("other", "d", "{\"type\":\"object\"}"),
-                ),
-                toolChoice = ToolChoice.Specific("lookup"),
-            ),
+                ))
+                toolChoice(ToolChoice.Specific("lookup"))
+            },
         )
         val body = fixture.calls.single().requestBodyJson.jsonObject
         // tool_choice "any" + tools filtered to the named one.
@@ -242,10 +242,14 @@ class MistralProviderTest {
         val provider = Mistral(fixture.httpClient(), MistralProviderSettings { apiKey("key") })
 
         val generated = provider.chat(ModelId("magistral-small-2507")).generate(
-            LanguageModelCallParams(messages = listOf(UserMessage("hi"))),
+            LanguageModelCallParams {
+                messages(listOf(UserMessage("hi")))
+            },
         )
         val events = drainAllItems(
-            provider.chat(ModelId("magistral-small-2507")).stream(LanguageModelCallParams(messages = listOf(UserMessage("hi")))),
+            provider.chat(ModelId("magistral-small-2507")).stream(LanguageModelCallParams {
+    messages(listOf(UserMessage("hi")))
+}),
         )
 
         assertEquals("Final answer.", generated.text)
@@ -320,16 +324,28 @@ class MistralProviderTest {
         val provider = Mistral(fixture.httpClient(), MistralProviderSettings { apiKey("key") })
         val model = provider.chat(ModelId("mistral-small-latest"))
 
-        val generatedModelLength = model.generate(LanguageModelCallParams(messages = listOf(UserMessage("hi"))))
-        val generatedLength = model.generate(LanguageModelCallParams(messages = listOf(UserMessage("hi"))))
-        val generatedStop = model.generate(LanguageModelCallParams(messages = listOf(UserMessage("hi"))))
-        val streamedModelLength = drainAllItems(model.stream(LanguageModelCallParams(messages = listOf(UserMessage("hi")))))
+        val generatedModelLength = model.generate(LanguageModelCallParams {
+    messages(listOf(UserMessage("hi")))
+})
+        val generatedLength = model.generate(LanguageModelCallParams {
+    messages(listOf(UserMessage("hi")))
+})
+        val generatedStop = model.generate(LanguageModelCallParams {
+    messages(listOf(UserMessage("hi")))
+})
+        val streamedModelLength = drainAllItems(model.stream(LanguageModelCallParams {
+    messages(listOf(UserMessage("hi")))
+}))
             .filterIsInstance<StreamEvent.Finish>()
             .single()
-        val streamedLength = drainAllItems(model.stream(LanguageModelCallParams(messages = listOf(UserMessage("hi")))))
+        val streamedLength = drainAllItems(model.stream(LanguageModelCallParams {
+    messages(listOf(UserMessage("hi")))
+}))
             .filterIsInstance<StreamEvent.Finish>()
             .single()
-        val streamedStop = drainAllItems(model.stream(LanguageModelCallParams(messages = listOf(UserMessage("hi")))))
+        val streamedStop = drainAllItems(model.stream(LanguageModelCallParams {
+    messages(listOf(UserMessage("hi")))
+}))
             .filterIsInstance<StreamEvent.Finish>()
             .single()
 

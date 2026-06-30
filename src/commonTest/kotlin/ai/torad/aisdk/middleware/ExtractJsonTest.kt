@@ -28,7 +28,9 @@ import kotlin.test.assertTrue
 class ExtractJsonTest {
 
     private fun genContext(rawText: String) = MiddlewareCallContext(
-        params = LanguageModelCallParams(messages = listOf(UserMessage("x"))),
+        params = LanguageModelCallParams {
+    messages(listOf(UserMessage("x")))
+},
         model = MockLanguageModelTextOnly("x"),
         doGenerate = { LanguageModelResult(rawText, emptyList(), FinishReason.Stop, Usage.of(1, 1)) },
         doStream = { flowOf() },
@@ -109,7 +111,9 @@ class ExtractJsonTest {
     fun `given a truncated object streamed when stream-wrapped then a repaired json delta is emitted`() = runTest {
         // GIVEN a text block whose content is an open object.
         val ctx = MiddlewareCallContext(
-            params = LanguageModelCallParams(messages = listOf(UserMessage("x"))),
+            params = LanguageModelCallParams {
+    messages(listOf(UserMessage("x")))
+},
             model = MockLanguageModelTextOnly("x"),
             doGenerate = { LanguageModelResult("x", emptyList(), FinishReason.Stop, Usage.of(1, 1)) },
             doStream = {
@@ -138,7 +142,9 @@ class ExtractJsonTest {
     @Test
     fun `given fenced json streamed in split chunks when stream-wrapped then fences are stripped`() = runTest {
         val ctx = MiddlewareCallContext(
-            params = LanguageModelCallParams(messages = listOf(UserMessage("x"))),
+            params = LanguageModelCallParams {
+    messages(listOf(UserMessage("x")))
+},
             model = MockLanguageModelTextOnly("x"),
             doGenerate = { LanguageModelResult("x", emptyList(), FinishReason.Stop, Usage.of(1, 1)) },
             doStream = {
@@ -167,7 +173,9 @@ class ExtractJsonTest {
     fun `given large fenced json when stream-wrapped then text streams before text end`() = runTest {
         val largeJson = """{"data":"${"x".repeat(100)}","nested":[0,1,2,3]}"""
         val ctx = MiddlewareCallContext(
-            params = LanguageModelCallParams(messages = listOf(UserMessage("x"))),
+            params = LanguageModelCallParams {
+    messages(listOf(UserMessage("x")))
+},
             model = MockLanguageModelTextOnly("x"),
             doGenerate = { LanguageModelResult("x", emptyList(), FinishReason.Stop, Usage.of(1, 1)) },
             doStream = {
@@ -193,7 +201,9 @@ class ExtractJsonTest {
     @Test
     fun `given custom transform when stream-wrapped then text is buffered and transformed at text end`() = runTest {
         val ctx = MiddlewareCallContext(
-            params = LanguageModelCallParams(messages = listOf(UserMessage("x"))),
+            params = LanguageModelCallParams {
+    messages(listOf(UserMessage("x")))
+},
             model = MockLanguageModelTextOnly("x"),
             doGenerate = { LanguageModelResult("x", emptyList(), FinishReason.Stop, Usage.of(1, 1)) },
             doStream = {

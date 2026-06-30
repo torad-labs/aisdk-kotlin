@@ -67,20 +67,20 @@ public class TextGenerator(
     }
 
     private fun buildParams(input: GenerationInput, output: Output<*>?): LanguageModelCallParams =
-        LanguageModelCallParams(
-            messages = input.toMessages(null),
-            temperature = config.temperature,
-            topP = config.topP,
-            topK = config.topK,
-            maxOutputTokens = config.maxOutputTokens,
-            stopSequences = config.stopSequences,
-            seed = config.seed,
-            providerOptions = config.providerOptions,
-            abortSignal = config.abortSignal,
-            presencePenalty = config.presencePenalty,
-            frequencyPenalty = config.frequencyPenalty,
-            responseFormat = output?.let { o ->
+        LanguageModelCallParams {
+            messages(input.toMessages(null))
+            temperature(config.temperature)
+            topP(config.topP)
+            topK(config.topK)
+            maxOutputTokens(config.maxOutputTokens)
+            stopSequences(config.stopSequences)
+            seed(config.seed)
+            providerOptions(config.providerOptions)
+            abortSignal(config.abortSignal)
+            presencePenalty(config.presencePenalty)
+            frequencyPenalty(config.frequencyPenalty)
+            responseFormat(output?.let { o ->
                 if (config.responseFormat == ResponseFormat.Text) o.toResponseFormat() else config.responseFormat
-            } ?: config.responseFormat,
-        )
+            } ?: config.responseFormat)
+        }
 }

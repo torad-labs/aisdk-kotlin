@@ -513,14 +513,14 @@ private class XaiChatLanguageModel(
     override val supportedUrls: Map<String, List<String>> = mapOf("image/*" to listOf("^https?://.*$"))
 
     override suspend fun generate(params: LanguageModelCallParams): LanguageModelResult =
-        delegate.generate(params.copy(providerOptions = transformXaiChatProviderOptions(params.providerOptions)))
+        delegate.generate(params.toBuilder().providerOptions(transformXaiChatProviderOptions(params.providerOptions)).build())
             .withXaiCitations()
 
     override fun stream(params: LanguageModelCallParams): Flow<StreamEvent> =
-        delegate.stream(params.copy(providerOptions = transformXaiChatProviderOptions(params.providerOptions)))
+        delegate.stream(params.toBuilder().providerOptions(transformXaiChatProviderOptions(params.providerOptions)).build())
 
     override fun streamResult(params: LanguageModelCallParams): LanguageModelStreamResult =
-        delegate.streamResult(params.copy(providerOptions = transformXaiChatProviderOptions(params.providerOptions))).let {
+        delegate.streamResult(params.toBuilder().providerOptions(transformXaiChatProviderOptions(params.providerOptions)).build()).let {
             LanguageModelStreamResult(
                 stream = it.stream.map { event -> event },
                 request = it.request,

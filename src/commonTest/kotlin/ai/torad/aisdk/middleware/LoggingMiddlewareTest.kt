@@ -41,7 +41,9 @@ class LoggingMiddlewareTest {
         }
     }
 
-    private val params = LanguageModelCallParams(messages = listOf(UserMessage("hi")))
+    private val params = LanguageModelCallParams {
+    messages(listOf(UserMessage("hi")))
+}
 
     @Test
     fun `given a model that emits a tool call when logging-wrapped then the call is logged at debug`() = runTest {

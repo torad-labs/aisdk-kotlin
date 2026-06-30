@@ -36,7 +36,9 @@ class OpenResponsesStreamFailureTest {
 
         val events = drainAllItems(
             provider.languageModel("gpt-resp").stream(
-                LanguageModelCallParams(listOf(UserMessage("hi"))),
+                LanguageModelCallParams {
+                    messages(listOf(UserMessage("hi")))
+                },
             ),
         )
 
@@ -57,7 +59,9 @@ class OpenResponsesStreamFailureTest {
 
         val events = drainAllItems(
             provider.languageModel("gpt-resp").stream(
-                LanguageModelCallParams(listOf(UserMessage("hi"))),
+                LanguageModelCallParams {
+                    messages(listOf(UserMessage("hi")))
+                },
             ),
         )
 

@@ -630,7 +630,9 @@ class GatewayAndProviderUtilsParityTest {
         )
 
         val generated = TextGenerator(provider.languageModel("gpt-test")).generate(GenerationInput.Prompt("hi")).single()
-        val streamed = drainAllItems(provider.languageModel("gpt-test").stream(LanguageModelCallParams(listOf(UserMessage("hi")))))
+        val streamed = drainAllItems(provider.languageModel("gpt-test").stream(LanguageModelCallParams {
+    messages(listOf(UserMessage("hi")))
+}))
 
         assertEquals("hello", generated.text)
         assertEquals(JsonPrimitive("gen_1"), generated.providerMetadata.toMap()["gateway"]?.jsonObject?.get("id"))
@@ -661,7 +663,9 @@ class GatewayAndProviderUtilsParityTest {
         )
 
         val error = assertFailsWith<WireDecodeException> {
-            drainAllItems(provider.languageModel("gpt-test").stream(LanguageModelCallParams(listOf(UserMessage("hi")))))
+            drainAllItems(provider.languageModel("gpt-test").stream(LanguageModelCallParams {
+    messages(listOf(UserMessage("hi")))
+}))
         }
 
         assertEquals("gateway", error.provider)

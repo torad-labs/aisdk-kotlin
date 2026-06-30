@@ -76,31 +76,31 @@ class OpenResponsesProviderTest {
             },
         )
         val result = provider.responses("gpt-resp").generate(
-            LanguageModelCallParams(
-                messages = listOf(SystemMessage("system rules"), UserMessage("hi")),
-                tools = listOf(
+            LanguageModelCallParams {
+                messages(listOf(SystemMessage("system rules"), UserMessage("hi")))
+                tools(listOf(
                     LanguageModelTool(
                         name = "search",
                         description = "Search docs",
                         parametersSchemaJson = objectSchema("q").toString(),
                         strict = false,
                     ),
-                ),
-                toolChoice = ToolChoice.Specific("search"),
-                maxOutputTokens = 100,
-                temperature = 0.5f,
-                topP = 0.9f,
-                responseFormat = ResponseFormat.Json(
+                ))
+                toolChoice(ToolChoice.Specific("search"))
+                maxOutputTokens(100)
+                temperature(0.5f)
+                topP(0.9f)
+                responseFormat(ResponseFormat.Json(
                     schemaName = "Answer",
                     schemaJson = objectSchema("answer"),
-                ),
-                providerOptions = ProviderOptions.Raw(JsonObject(mapOf(
+                ))
+                providerOptions(ProviderOptions.Raw(JsonObject(mapOf(
                     "openresponses" to buildJsonObject {
                         put("reasoningEffort", JsonPrimitive("low"))
                         put("reasoningSummary", JsonPrimitive("concise"))
                     },
-                ))),
-            ),
+                ))))
+            },
         )
 
         val body = seenBodies.single()
@@ -155,7 +155,9 @@ class OpenResponsesProviderTest {
         val provider = OpenResponses(client, OpenResponsesProviderSettings { url("https://api.test/v1/responses"); name("openresponses") })
 
         val error = assertFailsWith<WireDecodeException> {
-            provider.responses("gpt-resp").generate(LanguageModelCallParams(listOf(UserMessage("hi"))))
+            provider.responses("gpt-resp").generate(LanguageModelCallParams {
+    messages(listOf(UserMessage("hi")))
+})
         }
 
         val message = error.message.orEmpty()
@@ -185,7 +187,9 @@ class OpenResponsesProviderTest {
         val provider = OpenResponses(client, OpenResponsesProviderSettings { url("https://api.test/v1/responses"); name("openresponses") })
 
         val error = assertFailsWith<WireDecodeException> {
-            provider.responses("gpt-resp").generate(LanguageModelCallParams(listOf(UserMessage("hi"))))
+            provider.responses("gpt-resp").generate(LanguageModelCallParams {
+    messages(listOf(UserMessage("hi")))
+})
         }
 
         val message = error.message.orEmpty()
@@ -234,7 +238,9 @@ class OpenResponsesProviderTest {
         )
         val provider = OpenResponses(client, OpenResponsesProviderSettings { url("https://api.test/v1/responses"); name("openresponses") })
 
-        val events = drainAllItems(provider.languageModel("gpt-resp").stream(LanguageModelCallParams(listOf(UserMessage("hi")))))
+        val events = drainAllItems(provider.languageModel("gpt-resp").stream(LanguageModelCallParams {
+    messages(listOf(UserMessage("hi")))
+}))
 
         assertIs<StreamEvent.StreamStart>(events.first())
         assertTrue(events.any { it is StreamEvent.ReasoningDelta && it.text == "think" })
@@ -267,7 +273,9 @@ class OpenResponsesProviderTest {
         )
         val provider = OpenResponses(client, OpenResponsesProviderSettings { url("https://api.test/v1/responses"); name("openresponses") })
 
-        val events = drainAllItems(provider.languageModel("gpt-resp").stream(LanguageModelCallParams(listOf(UserMessage("hi")))))
+        val events = drainAllItems(provider.languageModel("gpt-resp").stream(LanguageModelCallParams {
+    messages(listOf(UserMessage("hi")))
+}))
 
         val error = events.filterIsInstance<StreamEvent.Error>().single()
         assertTrue(error.message.contains("item_id"), error.message)
@@ -292,7 +300,9 @@ class OpenResponsesProviderTest {
         )
         val provider = OpenResponses(client, OpenResponsesProviderSettings { url("https://api.test/v1/responses"); name("openresponses") })
 
-        val events = drainAllItems(provider.languageModel("gpt-resp").stream(LanguageModelCallParams(listOf(UserMessage("hi")))))
+        val events = drainAllItems(provider.languageModel("gpt-resp").stream(LanguageModelCallParams {
+    messages(listOf(UserMessage("hi")))
+}))
 
         val errors = events.filterIsInstance<StreamEvent.Error>()
         assertEquals(2, errors.size)
@@ -314,7 +324,9 @@ class OpenResponsesProviderTest {
         )
         val provider = OpenResponses(client, OpenResponsesProviderSettings { url("https://api.test/v1/responses"); name("openresponses") })
 
-        val events = drainAllItems(provider.languageModel("gpt-resp").stream(LanguageModelCallParams(listOf(UserMessage("hi")))))
+        val events = drainAllItems(provider.languageModel("gpt-resp").stream(LanguageModelCallParams {
+    messages(listOf(UserMessage("hi")))
+}))
 
         val error = events.filterIsInstance<StreamEvent.Error>().single()
         assertTrue(error.message.contains("missing item"))
@@ -349,8 +361,8 @@ class OpenResponsesProviderTest {
             ),
         ).toJsonElement()
         provider.languageModel("gpt-resp").generate(
-            LanguageModelCallParams(
-                messages = listOf(
+            LanguageModelCallParams {
+                messages(listOf(
                     ModelMessage(
                         MessageRole.Assistant,
                         listOf(
@@ -372,8 +384,8 @@ class OpenResponsesProviderTest {
                             ),
                         ),
                     ),
-                ),
-            ),
+                ))
+            },
         )
 
         val input = seenBodies.single()["input"]!!.jsonArray
@@ -412,8 +424,8 @@ class OpenResponsesProviderTest {
             put("message", JsonPrimitive("hi"))
         }
         provider.languageModel("gpt-resp").generate(
-            LanguageModelCallParams(
-                messages = listOf(
+            LanguageModelCallParams {
+                messages(listOf(
                     ModelMessage(
                         MessageRole.Tool,
                         listOf(
@@ -425,8 +437,8 @@ class OpenResponsesProviderTest {
                             ),
                         ),
                     ),
-                ),
-            ),
+                ))
+            },
         )
 
         val output = seenBodies.single().getValue("input").jsonArray.single().jsonObject
@@ -457,8 +469,8 @@ class OpenResponsesProviderTest {
         )
 
         provider.languageModel("gpt-resp").generate(
-            LanguageModelCallParams(
-                messages = listOf(
+            LanguageModelCallParams {
+                messages(listOf(
                     ModelMessage(
                         MessageRole.User,
                         listOf(
@@ -479,8 +491,8 @@ class OpenResponsesProviderTest {
                             ),
                         ),
                     ),
-                ),
-            ),
+                ))
+            },
         )
 
         val content = seenBodies.single()["input"]!!.jsonArray.single().jsonObject["content"]!!.jsonArray
@@ -510,8 +522,8 @@ class OpenResponsesProviderTest {
         val fileUrl = "https://cdn.test/paper.pdf"
 
         provider.languageModel("gpt-resp").generate(
-            LanguageModelCallParams(
-                messages = listOf(
+            LanguageModelCallParams {
+                messages(listOf(
                     ModelMessage(
                         MessageRole.User,
                         listOf(
@@ -521,8 +533,8 @@ class OpenResponsesProviderTest {
                             ContentPart.File(mediaType = "text/plain", base64 = "ZG9j", filename = "note.txt"),
                         ),
                     ),
-                ),
-            ),
+                ))
+            },
         )
 
         val content = seenBodies.single().getValue("input")

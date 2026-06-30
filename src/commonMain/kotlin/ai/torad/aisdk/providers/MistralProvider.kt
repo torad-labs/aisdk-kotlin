@@ -335,7 +335,7 @@ private class MistralChatLanguageModel(
     private val delegate: LanguageModel,
 ) : LanguageModel by delegate {
     override suspend fun generate(params: LanguageModelCallParams): LanguageModelResult =
-        delegate.generate(params.copy(providerOptions = transformMistralProviderOptions(params.providerOptions))).let {
+        delegate.generate(params.toBuilder().providerOptions(transformMistralProviderOptions(params.providerOptions)).build()).let {
             LanguageModelResult(
                 text = it.text,
                 toolCalls = it.toolCalls,
@@ -351,7 +351,7 @@ private class MistralChatLanguageModel(
         }
 
     override fun stream(params: LanguageModelCallParams): Flow<StreamEvent> =
-        delegate.stream(params.copy(providerOptions = transformMistralProviderOptions(params.providerOptions))).map { event ->
+        delegate.stream(params.toBuilder().providerOptions(transformMistralProviderOptions(params.providerOptions)).build()).map { event ->
             if (event is StreamEvent.Finish && event.rawFinishReason == "model_length") {
                 StreamEvent.Finish(
                     totalSteps = event.totalSteps,
@@ -366,7 +366,7 @@ private class MistralChatLanguageModel(
         }
 
     override fun streamResult(params: LanguageModelCallParams): LanguageModelStreamResult =
-        delegate.streamResult(params.copy(providerOptions = transformMistralProviderOptions(params.providerOptions))).let {
+        delegate.streamResult(params.toBuilder().providerOptions(transformMistralProviderOptions(params.providerOptions)).build()).let {
             LanguageModelStreamResult(
                 stream = it.stream.map { event ->
                     if (event is StreamEvent.Finish && event.rawFinishReason == "model_length") {

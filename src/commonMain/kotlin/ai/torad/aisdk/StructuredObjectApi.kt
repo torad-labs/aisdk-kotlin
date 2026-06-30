@@ -433,27 +433,29 @@ public class StructuredObjectGenerator<RESULT>(
         }
 
     private fun buildParams(input: GenerationInput): LanguageModelCallParams =
-        LanguageModelCallParams(
-            messages = input.toMessages(null),
-            temperature = config.temperature,
-            topP = config.topP,
-            topK = config.topK,
-            maxOutputTokens = config.maxOutputTokens,
-            stopSequences = config.stopSequences,
-            seed = config.seed,
-            providerOptions = config.providerOptions,
-            abortSignal = config.abortSignal,
-            presencePenalty = config.presencePenalty,
-            frequencyPenalty = config.frequencyPenalty,
+        LanguageModelCallParams {
+            messages(input.toMessages(null))
+            temperature(config.temperature)
+            topP(config.topP)
+            topK(config.topK)
+            maxOutputTokens(config.maxOutputTokens)
+            stopSequences(config.stopSequences)
+            seed(config.seed)
+            providerOptions(config.providerOptions)
+            abortSignal(config.abortSignal)
+            presencePenalty(config.presencePenalty)
+            frequencyPenalty(config.frequencyPenalty)
             // Constrain the model to JSON for our schema unless the caller pinned a responseFormat.
-            responseFormat = if (config.responseFormat == ResponseFormat.Text) {
-                ResponseFormat.Json(
-                    schemaName = schemaName,
-                    schemaDescription = schemaDescription,
-                    schemaJson = schema.jsonSchema,
-                )
-            } else {
-                config.responseFormat
-            },
-        )
+            responseFormat(
+                if (config.responseFormat == ResponseFormat.Text) {
+                    ResponseFormat.Json(
+                        schemaName = schemaName,
+                        schemaDescription = schemaDescription,
+                        schemaJson = schema.jsonSchema,
+                    )
+                } else {
+                    config.responseFormat
+                },
+            )
+        }
 }

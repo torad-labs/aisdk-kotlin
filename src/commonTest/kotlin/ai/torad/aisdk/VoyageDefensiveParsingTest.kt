@@ -36,7 +36,9 @@ class VoyageDefensiveParsingTest {
         val model = Voyage(client, VoyageProviderSettings { apiKey("key") }).embedding(ModelId("voyage-4"))
 
         val error = assertFails {
-            model.embed(EmbeddingModelCallParams(values = listOf("hi")))
+            model.embed(EmbeddingModelCallParams {
+    values(listOf("hi"))
+})
         }
 
         assertTrue(
@@ -88,7 +90,9 @@ class VoyageDefensiveParsingTest {
         )
         val result = Voyage(client, VoyageProviderSettings { apiKey("key") })
             .embedding(ModelId("voyage-4"))
-            .embed(EmbeddingModelCallParams(values = listOf("hi", "yo")))
+            .embed(EmbeddingModelCallParams {
+    values(listOf("hi", "yo"))
+})
         assertEquals(2, result.embeddings.size)
         assertTrue(result.embeddings[1].isEmpty(), "the malformed row degrades to an empty embedding, count preserved")
     }

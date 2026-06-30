@@ -82,10 +82,10 @@ class XaiProviderTest {
         )
 
         val chat = provider.chat(ModelId("grok-3")).generate(
-            LanguageModelCallParams(
-                messages = listOf(UserMessage("Hello")),
-                maxOutputTokens = 128,
-                providerOptions = ProviderOptions.Raw(JsonObject(mapOf(
+            LanguageModelCallParams {
+                messages(listOf(UserMessage("Hello")))
+                maxOutputTokens(128)
+                providerOptions(ProviderOptions.Raw(JsonObject(mapOf(
                     "xai" to buildJsonObject {
                         put("topLogprobs", JsonPrimitive(3))
                         put(
@@ -109,15 +109,15 @@ class XaiProviderTest {
                             },
                         )
                     },
-                ))),
-                headers = mapOf("X-Request" to "request"),
-            ),
+                ))))
+                headers(mapOf("X-Request" to "request"))
+            },
         )
         val responses = provider.responses(ModelId("grok-4")).generate(
-            LanguageModelCallParams(
-                messages = listOf(UserMessage("Hi")),
-                providerOptions = ProviderOptions.Raw(JsonObject(mapOf("xai" to buildJsonObject { put("reasoningEffort", JsonPrimitive("low")) }))),
-            ),
+            LanguageModelCallParams {
+                messages(listOf(UserMessage("Hi")))
+                providerOptions(ProviderOptions.Raw(JsonObject(mapOf("xai" to buildJsonObject { put("reasoningEffort", JsonPrimitive("low")) }))))
+            },
         )
 
         assertEquals("answer", chat.text)
@@ -167,7 +167,9 @@ class XaiProviderTest {
         fixture.server.start()
         val provider = Xai(fixture.httpClient(), XaiProviderSettings { apiKey("key") })
 
-        drainAllItems(provider.chat(ModelId("grok-3")).stream(LanguageModelCallParams(messages = listOf(UserMessage("hi")))))
+        drainAllItems(provider.chat(ModelId("grok-3")).stream(LanguageModelCallParams {
+    messages(listOf(UserMessage("hi")))
+}))
 
         val bodyText = fixture.calls.single().requestBodyText
         assertTrue(bodyText.contains(""""stream_options":{"include_usage":true}"""))
@@ -194,17 +196,17 @@ class XaiProviderTest {
         fixture.server.start()
         val provider = Xai(fixture.httpClient(), XaiProviderSettings { apiKey("key") })
         provider.chat(ModelId("grok-3")).generate(
-            LanguageModelCallParams(
-                messages = listOf(UserMessage("go")),
-                stopSequences = listOf("END"),
-                tools = listOf(
+            LanguageModelCallParams {
+                messages(listOf(UserMessage("go")))
+                stopSequences(listOf("END"))
+                tools(listOf(
                     LanguageModelTool(
                         "lookup",
                         "d",
                         xaiUnsupportedToolSchema(),
                     ),
-                ),
-                providerOptions = ProviderOptions.Raw(JsonObject(mapOf(
+                ))
+                providerOptions(ProviderOptions.Raw(JsonObject(mapOf(
                     "xai" to buildJsonObject {
                         put(
                             "searchParameters",
@@ -223,8 +225,8 @@ class XaiProviderTest {
                             },
                         )
                     },
-                ))),
-            ),
+                ))))
+            },
         )
         val body = fixture.calls.single().requestBodyJson.jsonObject
         assertEquals(null, body["stop"], "stop dropped (xAI unsupported)")
@@ -263,7 +265,9 @@ class XaiProviderTest {
         val provider = Xai(fixture.httpClient(), XaiProviderSettings { apiKey("key") })
 
         val error = assertFailsWith<APICallError> {
-            provider.chat(ModelId("grok-3")).generate(LanguageModelCallParams(messages = listOf(UserMessage("hi"))))
+            provider.chat(ModelId("grok-3")).generate(LanguageModelCallParams {
+    messages(listOf(UserMessage("hi")))
+})
         }
 
         assertEquals("Timed out waiting for first token", error.message)

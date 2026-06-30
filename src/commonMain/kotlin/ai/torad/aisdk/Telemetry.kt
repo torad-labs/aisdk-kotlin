@@ -348,11 +348,11 @@ private object TelemetryRedaction {
     private fun LanguageModelCallParams.sanitizedParams(
         settings: TelemetrySettings,
         redactor: Redactor,
-    ): LanguageModelCallParams = copy(
-        messages = messages.sanitizedMessages(settings, redactor),
-        providerOptions = ProviderOptions.None,
-        headers = redactor.redactHeaders(headers),
-    )
+    ): LanguageModelCallParams = toBuilder()
+        .messages(messages.sanitizedMessages(settings, redactor))
+        .providerOptions(ProviderOptions.None)
+        .headers(redactor.redactHeaders(headers))
+        .build()
 
     private fun List<ModelMessage>.sanitizedMessages(
         settings: TelemetrySettings,

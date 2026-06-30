@@ -109,8 +109,8 @@ class CohereProviderTest {
         val documentBase64 = Base64Codec.encode("Paris document".encodeToByteArray())
 
         val result = provider(ModelId("command-r-plus")).generate(
-            LanguageModelCallParams(
-                messages = listOf(
+            LanguageModelCallParams {
+                messages(listOf(
                     SystemMessage("Use documents when available."),
                     ModelMessage(
                         MessageRole.User,
@@ -124,8 +124,8 @@ class CohereProviderTest {
                             ),
                         ),
                     ),
-                ),
-                tools = listOf(
+                ))
+                tools(listOf(
                     LanguageModelTool(
                         name = "lookup",
                         description = "Look up a place.",
@@ -137,29 +137,29 @@ class CohereProviderTest {
                         parametersSchemaJson = """{"type":"object"}""",
                         providerExecuted = true,
                     ),
-                ),
-                toolChoice = ToolChoice.Specific("lookup"),
-                maxOutputTokens = 256,
-                temperature = 0.2f,
-                topP = 0.9f,
-                topK = 25,
-                presencePenalty = 0.1f,
-                frequencyPenalty = 0.2f,
-                seed = 7,
-                stopSequences = listOf("STOP"),
-                responseFormat = ResponseFormat.Json(
+                ))
+                toolChoice(ToolChoice.Specific("lookup"))
+                maxOutputTokens(256)
+                temperature(0.2f)
+                topP(0.9f)
+                topK(25)
+                presencePenalty(0.1f)
+                frequencyPenalty(0.2f)
+                seed(7)
+                stopSequences(listOf("STOP"))
+                responseFormat(ResponseFormat.Json(
                     schemaJson = buildJsonObject {
                         put("type", JsonPrimitive("object"))
                         put("additionalProperties", JsonPrimitive(false))
                     },
-                ),
-                providerOptions = ProviderOptions.Raw(JsonObject(mapOf(
+                ))
+                providerOptions(ProviderOptions.Raw(JsonObject(mapOf(
                     "cohere" to buildJsonObject {
                         put("thinking", buildJsonObject { put("tokenBudget", JsonPrimitive(128)) })
                     },
-                ))),
-                headers = mapOf("X-Request" to "request"),
-            ),
+                ))))
+                headers(mapOf("X-Request" to "request"))
+            },
         )
 
         assertEquals("cohere.chat", provider(ModelId("command-r-plus")).provider)
@@ -246,18 +246,18 @@ class CohereProviderTest {
         )
 
         val result = provider.embedding(ModelId("embed-v4.0")).embed(
-            EmbeddingModelCallParams(
-                values = listOf("alpha", "beta"),
-                truncate = false,
-                providerOptions = ProviderOptions.Raw(JsonObject(mapOf(
+            EmbeddingModelCallParams {
+                values(listOf("alpha", "beta"))
+                truncate(false)
+                providerOptions(ProviderOptions.Raw(JsonObject(mapOf(
                     "cohere" to buildJsonObject {
                         put("inputType", JsonPrimitive("classification"))
                         put("truncate", JsonPrimitive("START"))
                         put("outputDimension", JsonPrimitive(512))
                     },
-                ))),
-                headers = mapOf("X-Request" to "request"),
-            ),
+                ))))
+                headers(mapOf("X-Request" to "request"))
+            },
         )
 
         assertEquals("cohere.textEmbedding", provider.embeddingModel("embed-v4.0").provider)
@@ -382,16 +382,16 @@ class CohereProviderTest {
         ).languageModel("command-r-plus")
 
         val events = model.stream(
-            LanguageModelCallParams(
-                messages = listOf(UserMessage("where")),
-                tools = listOf(
+            LanguageModelCallParams {
+                messages(listOf(UserMessage("where")))
+                tools(listOf(
                     LanguageModelTool(
                         name = "lookup",
                         description = "Look up a place.",
                         parametersSchemaJson = """{"type":"object","properties":{"city":{"type":"string"}}}""",
                     ),
-                ),
-            ),
+                ))
+            },
         ).toList()
 
         assertEquals(
@@ -428,14 +428,14 @@ class CohereProviderTest {
 
         val unsupportedFile = assertFailsWith<InvalidArgumentError> {
             provider(ModelId("command-r")).generate(
-                LanguageModelCallParams(
-                    messages = listOf(
+                LanguageModelCallParams {
+                    messages(listOf(
                         ModelMessage(
                             MessageRole.User,
                             listOf(ContentPart.File(mediaType = "application/pdf", base64 = "AA==", filename = "paper.pdf")),
                         ),
-                    ),
-                ),
+                    ))
+                },
             )
         }
         assertTrue(unsupportedFile.message.orEmpty().contains("application/pdf"))
@@ -471,8 +471,8 @@ class CohereProviderTest {
         ).languageModel("command-r-plus")
 
         model.generate(
-            LanguageModelCallParams(
-                messages = listOf(
+            LanguageModelCallParams {
+                messages(listOf(
                     ModelMessage(
                         MessageRole.User,
                         listOf(
@@ -483,8 +483,8 @@ class CohereProviderTest {
                             ),
                         ),
                     ),
-                ),
-            ),
+                ))
+            },
         )
 
         val body = fixture.calls.single().requestBodyJson.jsonObject

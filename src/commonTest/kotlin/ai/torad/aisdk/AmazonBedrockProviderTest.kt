@@ -111,8 +111,8 @@ class AmazonBedrockProviderTest {
         )
 
         val result = provider(ModelId("anthropic.claude-3-7-sonnet-20250219-v1:0")).generate(
-            LanguageModelCallParams(
-                messages = listOf(
+            LanguageModelCallParams {
+                messages(listOf(
                     ModelMessage(
                         MessageRole.System,
                         listOf(ContentPart.Text("Follow policy.")),
@@ -134,15 +134,15 @@ class AmazonBedrockProviderTest {
                             ),
                         ),
                     ),
-                ),
-                tools = listOf(LanguageModelTool("lookup", "Lookup a city.", objectSchema("city").toString())),
-                toolChoice = ToolChoice.Specific("lookup"),
-                temperature = 2f,
-                topP = 0.5f,
-                topK = 10,
-                maxOutputTokens = 64,
-                responseFormat = ResponseFormat.Json(schemaJson = objectSchema("answer")),
-                providerOptions = ProviderOptions.Raw(JsonObject(mapOf(
+                ))
+                tools(listOf(LanguageModelTool("lookup", "Lookup a city.", objectSchema("city").toString())))
+                toolChoice(ToolChoice.Specific("lookup"))
+                temperature(2f)
+                topP(0.5f)
+                topK(10)
+                maxOutputTokens(64)
+                responseFormat(ResponseFormat.Json(schemaJson = objectSchema("answer")))
+                providerOptions(ProviderOptions.Raw(JsonObject(mapOf(
                     "bedrock" to buildJsonObject {
                         put("serviceTier", JsonPrimitive("priority"))
                         put(
@@ -155,9 +155,9 @@ class AmazonBedrockProviderTest {
                         )
                         put("anthropicBeta", Json.parseToJsonElement("""["beta-1"]"""))
                     },
-                ))),
-                headers = mapOf("X-Request" to "request"),
-            ),
+                ))))
+                headers(mapOf("X-Request" to "request"))
+            },
         )
 
         assertEquals("Answer", result.text)
@@ -219,8 +219,8 @@ class AmazonBedrockProviderTest {
             AmazonBedrockProviderSettings(block = { apiKey("key"); baseURL("https://bedrock.test") }),
         )
         provider(ModelId("anthropic.claude-3-7-sonnet-20250219-v1:0")).generate(
-            LanguageModelCallParams(
-                messages = listOf(
+            LanguageModelCallParams {
+                messages(listOf(
                     ModelMessage(MessageRole.User, listOf(ContentPart.Text("go"))),
                     ModelMessage(
                         MessageRole.Assistant,
@@ -238,8 +238,8 @@ class AmazonBedrockProviderTest {
                             ),
                         ),
                     ),
-                ),
-            ),
+                ))
+            },
         )
         val messages = fixture.calls.single().requestBodyJson.jsonObject["messages"]!!.jsonArray
         val lastContent = messages.last().jsonObject["content"]!!.jsonArray.single().jsonObject
@@ -283,7 +283,9 @@ class AmazonBedrockProviderTest {
 
         val events = drainAllItems(
             provider.languageModel("anthropic.claude-3-7-sonnet-20250219-v1:0").stream(
-                LanguageModelCallParams(messages = listOf(UserMessage("hi"))),
+                LanguageModelCallParams {
+                    messages(listOf(UserMessage("hi")))
+                },
             ),
         )
 
@@ -330,7 +332,9 @@ class AmazonBedrockProviderTest {
 
         val events = drainAllItems(
             provider.languageModel("amazon.nova-lite-v1:0").stream(
-                LanguageModelCallParams(messages = listOf(UserMessage("hi"))),
+                LanguageModelCallParams {
+                    messages(listOf(UserMessage("hi")))
+                },
             ),
         )
 
@@ -372,7 +376,9 @@ class AmazonBedrockProviderTest {
 
         val events = drainAllItems(
             provider.languageModel("amazon.nova-lite-v1:0").stream(
-                LanguageModelCallParams(messages = listOf(UserMessage("hi"))),
+                LanguageModelCallParams {
+                    messages(listOf(UserMessage("hi")))
+                },
             ),
         )
 
@@ -409,7 +415,9 @@ class AmazonBedrockProviderTest {
         val deltas = mutableListOf<String>()
         val collector = launch {
             provider.languageModel("amazon.nova-lite-v1:0")
-                .stream(LanguageModelCallParams(messages = listOf(UserMessage("hi"))))
+                .stream(LanguageModelCallParams {
+    messages(listOf(UserMessage("hi")))
+})
                 .collect { if (it is StreamEvent.TextDelta) deltas += it.text }
         }
 
@@ -457,15 +465,15 @@ class AmazonBedrockProviderTest {
         )
 
         val embedding = provider.embedding(ModelId("amazon.titan-embed-text-v2:0")).embed(
-            EmbeddingModelCallParams(
-                values = listOf("embed me"),
-                providerOptions = ProviderOptions.Raw(JsonObject(mapOf(
+            EmbeddingModelCallParams {
+                values(listOf("embed me"))
+                providerOptions(ProviderOptions.Raw(JsonObject(mapOf(
                     "bedrock" to buildJsonObject {
                         put("dimensions", JsonPrimitive(256))
                         put("normalize", JsonPrimitive(true))
                     },
-                ))),
-            ),
+                ))))
+            },
         )
         val image = provider.image(ModelId("amazon.titan-image-generator-v2:0")).generate(
             ImageGenerationParams {
@@ -551,7 +559,9 @@ class AmazonBedrockProviderTest {
         )
 
         val result = provider.chat(ModelId("openai.gpt-oss-20b-1:0")).generate(
-            LanguageModelCallParams(messages = listOf(UserMessage("hi"))),
+            LanguageModelCallParams {
+                messages(listOf(UserMessage("hi")))
+            },
         )
 
         assertEquals("hello", result.text)
@@ -571,7 +581,9 @@ class AmazonBedrockProviderTest {
             }),
         )
         val signed = sigV4Provider.languageModel("amazon.nova-lite-v1:0").generate(
-            LanguageModelCallParams(messages = listOf(UserMessage("hi"))),
+            LanguageModelCallParams {
+                messages(listOf(UserMessage("hi")))
+            },
         )
         val signedRequest = fixture.calls.last()
         assertEquals("signed", signed.text)
@@ -603,7 +615,9 @@ class AmazonBedrockProviderTest {
             }),
         )
         val result = provider.chat(ModelId("m")).generate(
-            LanguageModelCallParams(messages = listOf(UserMessage("hi"))),
+            LanguageModelCallParams {
+                messages(listOf(UserMessage("hi")))
+            },
         )
         assertEquals(FinishReason.ToolCalls, result.finishReason)
         val call = result.toolCalls.single()
@@ -641,7 +655,9 @@ class AmazonBedrockProviderTest {
 
         val error = assertFailsWith<APICallError> {
             provider.languageModel("amazon.nova-lite-v1:0").generate(
-                LanguageModelCallParams(messages = listOf(UserMessage("hi"))),
+                LanguageModelCallParams {
+                    messages(listOf(UserMessage("hi")))
+                },
             )
         }
 

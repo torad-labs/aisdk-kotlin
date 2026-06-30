@@ -79,8 +79,8 @@ class GoogleProviderTest {
         )
 
         val result = provider(ModelId("gemini-2.5-flash")).generate(
-            LanguageModelCallParams(
-                messages = listOf(
+            LanguageModelCallParams {
+                messages(listOf(
                     SystemMessage("Follow policy."),
                     ModelMessage(
                         MessageRole.User,
@@ -89,26 +89,26 @@ class GoogleProviderTest {
                             ContentPart.Image("image/png", "aW1hZ2U="),
                         ),
                     ),
-                ),
-                tools = listOf(
+                ))
+                tools(listOf(
                     LanguageModelTool("lookup", "Lookup a city.", objectSchema("city").toString()),
                     LanguageModelTool("google_search", "Search.", """{"type":"object"}""", providerExecuted = true),
-                ),
-                toolChoice = ToolChoice.Specific("lookup"),
-                temperature = 0.3f,
-                topP = 0.8f,
-                topK = 40,
-                maxOutputTokens = 64,
-                responseFormat = ResponseFormat.Json(schemaJson = objectSchema("answer")),
-                providerOptions = ProviderOptions.Raw(JsonObject(mapOf(
+                ))
+                toolChoice(ToolChoice.Specific("lookup"))
+                temperature(0.3f)
+                topP(0.8f)
+                topK(40)
+                maxOutputTokens(64)
+                responseFormat(ResponseFormat.Json(schemaJson = objectSchema("answer")))
+                providerOptions(ProviderOptions.Raw(JsonObject(mapOf(
                     "google" to buildJsonObject {
                         put("responseModalities", Json.parseToJsonElement("""["TEXT"]"""))
                         put("thinkingConfig", buildJsonObject { put("thinkingBudget", JsonPrimitive(128)) })
                         put("serviceTier", JsonPrimitive("priority"))
                     },
-                ))),
-                headers = mapOf("X-Request" to "request"),
-            ),
+                ))))
+                headers(mapOf("X-Request" to "request"))
+            },
         )
 
         assertEquals("Hello", result.text)
@@ -173,8 +173,8 @@ class GoogleProviderTest {
         val fileUrl = "gs://bucket/doc.pdf"
 
         provider(ModelId("gemini-2.5-flash")).generate(
-            LanguageModelCallParams(
-                messages = listOf(
+            LanguageModelCallParams {
+                messages(listOf(
                     ModelMessage(
                         MessageRole.User,
                         listOf(
@@ -185,8 +185,8 @@ class GoogleProviderTest {
                             ContentPart.File(mediaType = "text/plain", base64 = "ZG9j"),
                         ),
                     ),
-                ),
-            ),
+                ))
+            },
         )
 
         val parts = fixture.calls.single().requestBodyJson.jsonObject["contents"]
@@ -236,7 +236,9 @@ class GoogleProviderTest {
         )
 
         val events = drainAllItems(
-            provider.chat(ModelId("gemini-2.5-flash")).stream(LanguageModelCallParams(messages = listOf(UserMessage("hi")))),
+            provider.chat(ModelId("gemini-2.5-flash")).stream(LanguageModelCallParams {
+    messages(listOf(UserMessage("hi")))
+}),
         )
 
         assertIs<StreamEvent.StreamStart>(events.first())
@@ -292,10 +294,10 @@ class GoogleProviderTest {
         )
 
         val result = provider(ModelId("gemini-2.5-flash")).generate(
-            LanguageModelCallParams(
-                messages = listOf(UserMessage("hi")),
-                tools = listOf(LanguageModelTool("lookup", "Lookup.", objectSchema("city").toString())),
-            ),
+            LanguageModelCallParams {
+                messages(listOf(UserMessage("hi")))
+                tools(listOf(LanguageModelTool("lookup", "Lookup.", objectSchema("city").toString())))
+            },
         )
 
         assertEquals(FinishReason.Length, result.finishReason)
@@ -325,7 +327,9 @@ class GoogleProviderTest {
             GoogleGenerativeAIProviderSettings { apiKey("key"); baseURL("https://google.test/v1beta") },
         )
         val result = provider(ModelId("gemini-2.5-flash")).generate(
-            LanguageModelCallParams(messages = listOf(UserMessage("hi"))),
+            LanguageModelCallParams {
+                messages(listOf(UserMessage("hi")))
+            },
         )
         // Upstream maps MALFORMED_FUNCTION_CALL to error, not content-filter.
         assertEquals(FinishReason.Error, result.finishReason)
@@ -356,10 +360,10 @@ class GoogleProviderTest {
         )
 
         val result = provider(ModelId("gemini-2.5-flash")).generate(
-            LanguageModelCallParams(
-                messages = listOf(UserMessage("hi")),
-                toolChoice = ToolChoice.Required,
-            ),
+            LanguageModelCallParams {
+                messages(listOf(UserMessage("hi")))
+                toolChoice(ToolChoice.Required)
+            },
         )
 
         assertEquals("ok", result.text)
@@ -388,7 +392,9 @@ class GoogleProviderTest {
         )
 
         val events = drainAllItems(
-            provider.chat(ModelId("gemini-2.5-flash")).stream(LanguageModelCallParams(messages = listOf(UserMessage("hi")))),
+            provider.chat(ModelId("gemini-2.5-flash")).stream(LanguageModelCallParams {
+    messages(listOf(UserMessage("hi")))
+}),
         )
 
         val error = events.filterIsInstance<StreamEvent.Error>().single()
@@ -445,15 +451,15 @@ class GoogleProviderTest {
         )
 
         val embeddings = provider.embedding(ModelId("text-embedding-004")).embed(
-            EmbeddingModelCallParams(
-                values = listOf("one", "two"),
-                providerOptions = ProviderOptions.Raw(JsonObject(mapOf(
+            EmbeddingModelCallParams {
+                values(listOf("one", "two"))
+                providerOptions(ProviderOptions.Raw(JsonObject(mapOf(
                     "google" to buildJsonObject {
                         put("taskType", JsonPrimitive("RETRIEVAL_QUERY"))
                         put("outputDimensionality", JsonPrimitive(256))
                     },
-                ))),
-            ),
+                ))))
+            },
         )
         val image = provider.image(ModelId("imagen-4.0-generate-001")).generate(
             ImageGenerationParams {
@@ -612,20 +618,20 @@ class GoogleProviderTest {
         )
 
         val result = provider.interactions(ModelId("gemini-2.5-flash")).generate(
-            LanguageModelCallParams(
-                messages = listOf(
+            LanguageModelCallParams {
+                messages(listOf(
                     SystemMessage("Follow policy."),
                     UserMessage("Use interactions."),
-                ),
-                tools = listOf(LanguageModelTool("lookup", "Lookup a city.", objectSchema("city").toString())),
-                toolChoice = ToolChoice.Required,
-                temperature = 0.2f,
-                topP = 0.9f,
-                maxOutputTokens = 128,
-                stopSequences = listOf("END"),
-                seed = 7,
-                responseFormat = ResponseFormat.Json(schemaJson = objectSchema("answer")),
-                providerOptions = ProviderOptions.Raw(JsonObject(mapOf(
+                ))
+                tools(listOf(LanguageModelTool("lookup", "Lookup a city.", objectSchema("city").toString())))
+                toolChoice(ToolChoice.Required)
+                temperature(0.2f)
+                topP(0.9f)
+                maxOutputTokens(128)
+                stopSequences(listOf("END"))
+                seed(7)
+                responseFormat(ResponseFormat.Json(schemaJson = objectSchema("answer")))
+                providerOptions(ProviderOptions.Raw(JsonObject(mapOf(
                     "google" to buildJsonObject {
                         put("store", JsonPrimitive(true))
                         put("previousInteractionId", JsonPrimitive("prior-1"))
@@ -638,9 +644,9 @@ class GoogleProviderTest {
                         )
                         put("serviceTier", JsonPrimitive("priority"))
                     },
-                ))),
-                headers = mapOf("X-Request" to "request"),
-            ),
+                ))))
+                headers(mapOf("X-Request" to "request"))
+            },
         )
 
         assertEquals("Hello from interactions.", result.text)
@@ -722,7 +728,9 @@ class GoogleProviderTest {
         )
 
         val events = drainAllItems(
-            provider.interactions(ModelId("gemini-2.5-flash")).stream(LanguageModelCallParams(messages = listOf(UserMessage("hi")))),
+            provider.interactions(ModelId("gemini-2.5-flash")).stream(LanguageModelCallParams {
+    messages(listOf(UserMessage("hi")))
+}),
         )
 
         assertIs<StreamEvent.StreamStart>(events.first())
@@ -776,11 +784,11 @@ class GoogleProviderTest {
 
         val events = drainAllItems(
             provider.agentInteraction("deep-research").stream(
-                LanguageModelCallParams(
-                    messages = listOf(UserMessage("research this")),
-                    tools = listOf(LanguageModelTool("lookup", "Lookup.", objectSchema("q").toString())),
-                    temperature = 0.1f,
-                    providerOptions = ProviderOptions.Raw(JsonObject(mapOf(
+                LanguageModelCallParams {
+                    messages(listOf(UserMessage("research this")))
+                    tools(listOf(LanguageModelTool("lookup", "Lookup.", objectSchema("q").toString())))
+                    temperature(0.1f)
+                    providerOptions(ProviderOptions.Raw(JsonObject(mapOf(
                         "google" to buildJsonObject {
                             put("background", JsonPrimitive(true))
                             put(
@@ -792,8 +800,8 @@ class GoogleProviderTest {
                                 Json.parseToJsonElement("""{"type":"remote","sources":[{"type":"inline","content":"notes","target":"/tmp/notes.txt"}],"network":{"allowlist":[{"domain":"example.com"}]}}"""),
                             )
                         },
-                    ))),
-                ),
+                    ))))
+                },
             ),
         )
 

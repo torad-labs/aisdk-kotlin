@@ -39,19 +39,19 @@ public fun DefaultSettingsMiddleware(
         operation: MiddlewareOperation,
         params: LanguageModelCallParams,
         model: LanguageModel,
-    ): LanguageModelCallParams = params.copy(
-        temperature = params.temperature ?: temperature,
-        topP = params.topP ?: topP,
-        topK = params.topK ?: topK,
-        maxOutputTokens = params.maxOutputTokens ?: maxOutputTokens,
-        stopSequences = params.stopSequences.ifEmpty { stopSequences },
-        seed = params.seed ?: seed,
-        tools = params.tools.ifEmpty { tools },
-        toolChoice = if (params.toolChoice == ToolChoice.Auto && toolChoice != null) toolChoice else params.toolChoice,
-        headers = headers + params.headers,
-        providerOptions = providerOptions.mergedWith(params.providerOptions),
-        presencePenalty = params.presencePenalty ?: presencePenalty,
-        frequencyPenalty = params.frequencyPenalty ?: frequencyPenalty,
-        responseFormat = if (params.responseFormat == ResponseFormat.Text) responseFormat else params.responseFormat,
-    )
+    ): LanguageModelCallParams = params.toBuilder()
+        .temperature(params.temperature ?: temperature)
+        .topP(params.topP ?: topP)
+        .topK(params.topK ?: topK)
+        .maxOutputTokens(params.maxOutputTokens ?: maxOutputTokens)
+        .stopSequences(params.stopSequences.ifEmpty { stopSequences })
+        .seed(params.seed ?: seed)
+        .tools(params.tools.ifEmpty { tools })
+        .toolChoice(if (params.toolChoice == ToolChoice.Auto && toolChoice != null) toolChoice else params.toolChoice)
+        .headers(headers + params.headers)
+        .providerOptions(providerOptions.mergedWith(params.providerOptions))
+        .presencePenalty(params.presencePenalty ?: presencePenalty)
+        .frequencyPenalty(params.frequencyPenalty ?: frequencyPenalty)
+        .responseFormat(if (params.responseFormat == ResponseFormat.Text) responseFormat else params.responseFormat)
+        .build()
 }

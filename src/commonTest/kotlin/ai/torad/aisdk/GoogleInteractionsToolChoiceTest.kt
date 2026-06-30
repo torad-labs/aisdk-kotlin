@@ -39,11 +39,11 @@ class GoogleInteractionsToolChoiceTest {
     fun `omits tool_choice when only provider-executed tools are present`() {
         val prepared = GoogleInteractions.googleInteractionsRequestBody(
             input = GoogleInteractionsModelInput.Model("gemini-2.0"),
-            params = LanguageModelCallParams(
-                messages = listOf(UserMessage("Hello")),
-                tools = listOf(googleSearchTool),
-                toolChoice = ToolChoice.Required,
-            ),
+            params = LanguageModelCallParams {
+    messages(listOf(UserMessage("Hello")))
+    tools(listOf(googleSearchTool))
+    toolChoice(ToolChoice.Required)
+},
             stream = false,
         )
 
@@ -58,11 +58,11 @@ class GoogleInteractionsToolChoiceTest {
     fun `emits tool_choice when a real function tool is present`() {
         val prepared = GoogleInteractions.googleInteractionsRequestBody(
             input = GoogleInteractionsModelInput.Model("gemini-2.0"),
-            params = LanguageModelCallParams(
-                messages = listOf(UserMessage("Hello")),
-                tools = listOf(googleSearchTool, functionTool),
-                toolChoice = ToolChoice.Required,
-            ),
+            params = LanguageModelCallParams {
+    messages(listOf(UserMessage("Hello")))
+    tools(listOf(googleSearchTool, functionTool))
+    toolChoice(ToolChoice.Required)
+},
             stream = false,
         )
 
@@ -77,8 +77,8 @@ class GoogleInteractionsToolChoiceTest {
         val fileUrl = "gs://bucket/doc.pdf"
         val prepared = GoogleInteractions.googleInteractionsRequestBody(
             input = GoogleInteractionsModelInput.Model("gemini-2.0"),
-            params = LanguageModelCallParams(
-                messages = listOf(
+            params = LanguageModelCallParams {
+    messages(listOf(
                     ModelMessage(
                         MessageRole.User,
                         listOf(
@@ -88,8 +88,8 @@ class GoogleInteractionsToolChoiceTest {
                             ContentPart.File(mediaType = "text/plain", base64 = "ZG9j"),
                         ),
                     ),
-                ),
-            ),
+                ))
+},
             stream = false,
         )
 
@@ -154,11 +154,11 @@ class GoogleInteractionsToolChoiceTest {
 
         val prepared = GoogleInteractions.googleInteractionsRequestBody(
             input = GoogleInteractionsModelInput.Model("gemini-2.0"),
-            params = LanguageModelCallParams(
-                messages = listOf(UserMessage("Hello")),
-                tools = listOf(LanguageModelTool("lookup", "Lookup.", toolSchema.toString())),
-                responseFormat = ResponseFormat.Json(schemaJson = schema),
-            ),
+            params = LanguageModelCallParams {
+    messages(listOf(UserMessage("Hello")))
+    tools(listOf(LanguageModelTool("lookup", "Lookup.", toolSchema.toString())))
+    responseFormat(ResponseFormat.Json(schemaJson = schema))
+},
             stream = false,
         )
 

@@ -18,7 +18,9 @@ class ExtractReasoningTest {
     @Test
     fun `stream keeps split reasoning tags buffered`() = runTest {
         val ctx = MiddlewareCallContext(
-            params = LanguageModelCallParams(messages = listOf(UserMessage("x"))),
+            params = LanguageModelCallParams {
+    messages(listOf(UserMessage("x")))
+},
             model = MockLanguageModelTextOnly("x"),
             doGenerate = { LanguageModelResult("x", emptyList(), FinishReason.Stop, Usage.of(1, 1)) },
             doStream = {

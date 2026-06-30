@@ -343,7 +343,7 @@ private class AlibabaChatLanguageModel(
     override val supportedUrls: Map<String, List<String>> = delegate.supportedUrls
 
     override suspend fun generate(params: LanguageModelCallParams): LanguageModelResult {
-        val result = delegate.generate(params.copy(providerOptions = transformAlibabaChatOptions(params.providerOptions)))
+        val result = delegate.generate(params.toBuilder().providerOptions(transformAlibabaChatOptions(params.providerOptions)).build())
         return LanguageModelResult(
             text = result.text,
             toolCalls = result.toolCalls,
@@ -359,7 +359,7 @@ private class AlibabaChatLanguageModel(
     }
 
     override fun stream(params: LanguageModelCallParams): Flow<StreamEvent> = flow {
-        delegate.stream(params.copy(providerOptions = transformAlibabaChatOptions(params.providerOptions))).collect { event ->
+        delegate.stream(params.toBuilder().providerOptions(transformAlibabaChatOptions(params.providerOptions)).build()).collect { event ->
             emit(
                 if (event is StreamEvent.Finish) {
                     StreamEvent.Finish(
