@@ -15,7 +15,7 @@ public sealed class ParseResult<out T> {
     public class Failure(public val error: Throwable, public val text: String) : ParseResult<Nothing>()
 }
 
-public object EventStreamParser {
+internal object EventStreamParser {
 
     // SSE line prefixes the parser treats as framing (data: it consumes; the rest it ignores). Used
     // only to distinguish a genuinely non-SSE body from a normal stream when nothing was emitted.

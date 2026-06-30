@@ -495,7 +495,7 @@ Small, frozen, wire-fixed value/ref/sealed-leaf types (Jake Wharton 2D-point car
 
 | File | Line | Type | f | Ser | Reason |
 |---|---:|---|---:|:--:|---|
-| `DataUrl.kt` | 3 | `DataUrl` | 3 |  | small frozen value/ref/sealed-leaf/wire-fixed |
+| `DataUrl.kt` | 3 | `DataUrl` | 3 |  | small frozen data URL value; documented public utility, not an A4 visibility leak |
 | `GenerationInput.kt` | 5 | `Prompt` | 1 |  | small frozen value/ref/sealed-leaf/wire-fixed |
 | `GenerationInput.kt` | 7 | `Messages` | 1 |  | small frozen value/ref/sealed-leaf/wire-fixed |
 | `GenerationInput.kt` | 9 | `MessagesWithPrompt` | 3 |  | small frozen value/ref/sealed-leaf/wire-fixed |

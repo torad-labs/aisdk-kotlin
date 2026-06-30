@@ -86,7 +86,7 @@ public interface StructuredObjectTransport<INPUT> {
     public fun submit(request: StructuredObjectRequest<INPUT>): Flow<String>
 }
 
-public class DirectStructuredObjectTransport<INPUT>(
+internal class DirectStructuredObjectTransport<INPUT>(
     private val handler: (StructuredObjectRequest<INPUT>) -> Flow<String>,
 ) : StructuredObjectTransport<INPUT> {
     override fun submit(request: StructuredObjectRequest<INPUT>): Flow<String> = handler(request)

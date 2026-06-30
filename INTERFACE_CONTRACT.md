@@ -196,7 +196,7 @@ Penalty, response-format, and retry fields participate in the `Step ?: Agent ?: 
 
 - `MCPTransport`, `MCPClientConfig`, `MCPClient`, `CreateMCPClient(config)`.
 - `MCPReconnectionOptions { initialReconnectionDelayMillis(1000); reconnectionDelayGrowFactor(1.5); maxReconnectionDelayMillis(30000); maxRetries(2) }` — `@Poko` HTTP inbound SSE reconnect policy; `maxRetries = 0` disables automatic error reconnects. The positional constructor, `copy()`, and `componentN()` are not public.
-- `MCPTransportConfig { reconnectionOptions(MCPReconnectionOptions { ... }) }`, `HttpMCPTransport(..., reconnectionOptions = MCPReconnectionOptions { ... })`, and `StdioConfig { command("..."); args([...]) }`. `StdioConfig` remains `@Serializable` and is an `@Poko` value-semantics class with no public positional constructor, `copy()`, or `componentN()`.
+- `MCPTransportConfig { reconnectionOptions(MCPReconnectionOptions { ... }) }`, `@InternalAiSdkApi HttpMCPTransport(..., reconnectionOptions = MCPReconnectionOptions { ... })`, `@InternalAiSdkApi SseMCPTransport(...)`, and `StdioConfig { command("..."); args([...]) }`. The concrete HTTP/SSE transports stay public for advanced custom transport work but are internal, unstable SDK surface that requires explicit opt-in. `StdioConfig` remains `@Serializable` and is an `@Poko` value-semantics class with no public positional constructor, `copy()`, or `componentN()`.
 - `MCPClient` resource/tool APIs: `tools`, `toolsFromDefinitions`, `listTools`, `listResources`, `readResource`, `listResourceTemplates`, `onElicitationRequest`, `close`.
 - MCP protocol result/capability holders are `@Serializable @Poko class`
   value-semantics types; JSON field names and `_meta` wire names remain
@@ -353,7 +353,7 @@ Penalty, response-format, and retry fields participate in the `Step ?: Agent ?: 
 ### General Utilities
 
 - `cosineSimilarity`, `splitArray`, `asArray`, `mergeJsonObjects`, `isDeepEqualData`.
-- `DataUrl`, `splitDataUrl`, `detectMediaType`, `prepareHeaders`.
+- `DataUrl`, `splitDataUrl`, `detectMediaType`, `prepareHeaders`. `DataUrl` remains public because data URL parsing is documented general utility surface and `DataUrl.parse(...)` returns the consumer-facing value.
 - `RetryPolicy { maxRetries(2); baseDelayMs(100); maxDelayMs(2000); clock(Clock.System); delayGenerator(...); totalTimeoutMs(null); perAttemptTimeoutMs(null) }`, `RetryDelayGenerator`, `RetryAttemptDetail`, `retryWithExponentialBackoff`, `SerialJobExecutor`. Defaults retry only typed retryable `APICallError` / `GatewayError`, honor `Retry-After`, use full jitter, and preserve attempt history in `RetryError.attempts`. `RetryPolicy` is a regular builder-backed class because delay generators may be stateful; the positional constructor, `copy()`, and `componentN()` are not public.
 - `mergeAbortSignals`, `abortSignalFromJobs`.
 
