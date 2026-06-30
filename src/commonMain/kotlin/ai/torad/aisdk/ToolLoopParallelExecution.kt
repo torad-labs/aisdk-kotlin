@@ -44,8 +44,7 @@ internal sealed class OrderedToolCompletion {
      * A child whose tool execution unwound with [AbortError] (the cooperative stop signal).
      * Because that abort does NOT structurally cancel the parent scope (DECISION 3 decouples
      * AbortSignal from coroutine cancellation), the child sends this terminal marker on its way
-     * out so the collector's count still completes instead of waiting forever on a dead child;
-     * the loop then surfaces a single [StreamEvent.Abort] for the step.
+     * out so the loop can surface a single [StreamEvent.Abort] for the step.
      */
     class Aborted(override val index: Int) : OrderedToolCompletion()
 }
@@ -76,7 +75,8 @@ private class IndexedToolCall(
  *
  * The parent drains progress and terminal signals, applying terminal completions
  * in original call order even when workers finish out of order. Returns true if
- * any worker reported [OrderedToolCompletion.Aborted].
+ * any worker reported [OrderedToolCompletion.Aborted], or if the worker pool
+ * closed before every queued call produced an ordered terminal completion.
  */
 internal object ToolLoopParallelExecution {
     suspend fun runBoundedParallelToolCalls(
@@ -94,7 +94,7 @@ internal object ToolLoopParallelExecution {
             val workerCount = policy.workerCountFor(toolCalls.size)
             val work = Channel<IndexedToolCall>(workerCount)
 
-            launch {
+            val producer = launch {
                 try {
                     toolCalls.forEachIndexed { index, call ->
                         work.send(IndexedToolCall(index, call))
@@ -104,7 +104,7 @@ internal object ToolLoopParallelExecution {
                 }
             }
 
-            repeat(workerCount) {
+            val workers = List(workerCount) {
                 launch {
                     for (item in work) {
                         try {
@@ -124,15 +124,20 @@ internal object ToolLoopParallelExecution {
                     }
                 }
             }
+            // The collector is driven by worker-pool shutdown, not by total queued call count:
+            // abort can end every worker while unstarted calls remain in `work`.
+            launch {
+                workers.forEach { worker -> worker.join() }
+                producer.cancel()
+                signals.close()
+            }
 
             val completions = mutableMapOf<Int, OrderedToolCompletion>()
-            var completedChildren = 0
             var nextToApply = 0
-            while (completedChildren < toolCalls.size) {
-                when (val signal = signals.receive()) {
+            for (signal in signals) {
+                when (signal) {
                     is ParallelToolSignal.Progress -> parentOut.emit(signal.event)
                     is ParallelToolSignal.Completed -> {
-                        completedChildren += 1
                         completions[signal.completion.index] = signal.completion
                         while (true) {
                             val completion = completions.remove(nextToApply) ?: break
@@ -143,6 +148,7 @@ internal object ToolLoopParallelExecution {
                     }
                 }
             }
+            if (nextToApply < toolCalls.size) sawAbort = true
         }
         return sawAbort
     }

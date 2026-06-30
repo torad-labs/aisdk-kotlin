@@ -4,6 +4,7 @@ package ai.torad.aisdk
 
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.async
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
@@ -158,6 +159,74 @@ class ParallelToolExecutionTest {
     }
 
     @Test
+    fun `abort with queued tool calls over explicit parallel cap does not hang`() = runTest {
+        val controller = AbortController()
+        val firstWaveStarted = CompletableDeferred<Unit>()
+        val release = CompletableDeferred<Unit>()
+        val startedIds = mutableListOf<String>()
+        val abortAwareTool = AbortAwareTool(
+            firstWaveSize = 2,
+            firstWaveStarted = firstWaveStarted,
+            release = release,
+            startedIds = startedIds,
+        )
+        val agent = TestToolLoopAgent<Unit, String>(
+            model = ManyToolsThenText(toolCallCount = 3),
+            instructions = "x",
+            tools = ToolSet(abortAwareTool),
+            maxParallelToolCalls = 2,
+        )
+
+        val eventsDeferred = async {
+            withTimeout(10_000) {
+                agent.stream(prompt = "go", abortSignal = controller.signal).toList()
+            }
+        }
+        firstWaveStarted.await()
+        controller.abort()
+        release.complete(Unit)
+
+        val events = eventsDeferred.await()
+        assertEquals(setOf("c_0", "c_1"), startedIds.toSet())
+        assertEquals(1, events.count { it == StreamEvent.Abort }, "aborted over-cap step emits one terminal Abort")
+    }
+
+    @Test
+    fun `abort with queued tool calls over default parallel cap does not hang`() = runTest {
+        val controller = AbortController()
+        val firstWaveStarted = CompletableDeferred<Unit>()
+        val release = CompletableDeferred<Unit>()
+        val startedIds = mutableListOf<String>()
+        val abortAwareTool = AbortAwareTool(
+            firstWaveSize = ToolExecutionPolicy.DEFAULT_MAX_PARALLEL_TOOL_CALLS,
+            firstWaveStarted = firstWaveStarted,
+            release = release,
+            startedIds = startedIds,
+        )
+        val agent = TestToolLoopAgent<Unit, String>(
+            model = ManyToolsThenText(toolCallCount = ToolExecutionPolicy.DEFAULT_MAX_PARALLEL_TOOL_CALLS + 1),
+            instructions = "x",
+            tools = ToolSet(abortAwareTool),
+        )
+
+        val eventsDeferred = async {
+            withTimeout(10_000) {
+                agent.stream(prompt = "go", abortSignal = controller.signal).toList()
+            }
+        }
+        firstWaveStarted.await()
+        controller.abort()
+        release.complete(Unit)
+
+        val events = eventsDeferred.await()
+        assertEquals(
+            (0 until ToolExecutionPolicy.DEFAULT_MAX_PARALLEL_TOOL_CALLS).map { "c_$it" }.toSet(),
+            startedIds.toSet(),
+        )
+        assertEquals(1, events.count { it == StreamEvent.Abort }, "aborted default-cap step emits one terminal Abort")
+    }
+
+    @Test
     fun `a step's two tools run concurrently and results apply in call order`() = runTest {
         // Gate: each tool reports it has started; the gate opens only when BOTH have started.
         // Serial execution would deadlock (toolA awaits the gate, but toolB never starts), so
@@ -206,6 +275,31 @@ class ParallelToolExecutionTest {
         )
         val result = agent.generate(prompt = "go").first()
         assertEquals(listOf("c_a", "c_b"), result.steps.first().toolResults.map { it.toolCallId })
+    }
+
+    @Test
+    fun `normal over-cap tool calls all apply results in call order`() = runTest {
+        val toolCallCount = 5
+        val tool = Tool<Empty, String, Unit>(
+            name = "tool",
+            description = "delayed echo",
+            inputSerializer = serializer(),
+            outputSerializer = serializer(),
+        ) { _ ->
+            val index = toolCallId.substringAfter("c_").toInt()
+            delay((toolCallCount - index).toLong())
+            "ok-$index"
+        }
+        val agent = TestToolLoopAgent<Unit, String>(
+            model = ManyToolsThenText(toolCallCount),
+            instructions = "x",
+            tools = ToolSet(tool),
+            maxParallelToolCalls = 2,
+        )
+
+        val result = agent.generate(prompt = "go").first()
+
+        assertEquals((0 until toolCallCount).map { "c_$it" }, result.steps.first().toolResults.map { it.toolCallId })
     }
 
     @Test
@@ -420,5 +514,23 @@ class ParallelToolExecutionTest {
             events.any { it is StreamEvent.TextDelta && it.text == "done" },
             "a timed-out tool is reported as a tool failure and the model gets a retry step",
         )
+    }
+
+    private fun AbortAwareTool(
+        firstWaveSize: Int,
+        firstWaveStarted: CompletableDeferred<Unit>,
+        release: CompletableDeferred<Unit>,
+        startedIds: MutableList<String>,
+    ): Tool<Empty, String, Unit> = Tool(
+        name = "tool",
+        description = "abort-aware tool",
+        inputSerializer = serializer(),
+        outputSerializer = serializer(),
+    ) { _ ->
+        startedIds += toolCallId
+        if (startedIds.size == firstWaveSize) firstWaveStarted.complete(Unit)
+        release.await()
+        abortSignal.throwIfAborted()
+        "unreachable"
     }
 }

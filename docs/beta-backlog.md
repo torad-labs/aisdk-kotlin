@@ -18,7 +18,7 @@ tests must stay green.
 
 | ID | Title | Severity | Beta gate | Confidence | Status |
 |----|-------|----------|-----------|------------|--------|
-| BL-001 | Stop/abort hangs agent when tool calls exceed parallel cap | High | Recommended | CONFIRMED | OPEN |
+| BL-001 | Stop/abort hangs agent when tool calls exceed parallel cap | High | Recommended | CONFIRMED | DONE |
 | BL-002 | `generateText`/`streamText`/`generateObject` have no retry | High | Recommended | CONFIRMED | OPEN |
 | BL-003 | Concurrent `StreamTextResult` collectors are coupled | Med-High | Recommended | CONFIRMED | OPEN |
 | BL-004 | `StreamTextResult` re-drives provider after non-terminal failure | Medium | Recommended | CONFIRMED | OPEN |
