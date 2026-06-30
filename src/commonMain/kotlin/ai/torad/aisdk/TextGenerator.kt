@@ -4,8 +4,9 @@ package ai.torad.aisdk
 
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
+import kotlin.jvm.JvmOverloads
 
-public class TextGenerator(
+public class TextGenerator @JvmOverloads constructor(
     private val model: LanguageModel,
     private val config: CallConfig = CallConfig(),
 ) {

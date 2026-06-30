@@ -22,7 +22,9 @@ This project follows Semantic Versioning once the first stable release is cut.
   construct and call SDK ID value classes (`ModelId`, `ProviderId`,
   `ToolCallId`, `ToolName`, and `ApprovalId`) through boxed constructors,
   accessors, and `of(String)` factories, while the existing Kotlin/JVM mangled
-  bridge signatures remain for binary compatibility.
+  bridge signatures remain for binary compatibility. Headline factory APIs now
+  expose Java-callable telescoping overloads via `@JvmOverloads` for tools,
+  providers, generated files, text generation, and middleware wiring.
 - Beta contract correction: the checked ABI now exposes `Tool` as a non-sealed
   `abstract class`, so external modules can subclass it exactly as the beta
   docs and migration notes describe. Open Responses streaming now emits a
