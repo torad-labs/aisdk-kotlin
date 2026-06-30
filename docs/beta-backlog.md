@@ -19,7 +19,7 @@ tests must stay green.
 | ID | Title | Severity | Beta gate | Confidence | Status |
 |----|-------|----------|-----------|------------|--------|
 | BL-001 | Stop/abort hangs agent when tool calls exceed parallel cap | High | Recommended | CONFIRMED | DONE |
-| BL-002 | `generateText`/`streamText`/`generateObject` have no retry | High | Recommended | CONFIRMED | PARTIAL (002a non-stream DONE; 002b stream next) |
+| BL-002 | `generateText`/`streamText`/`generateObject` have no retry | High | Recommended | CONFIRMED | DONE (002a non-stream + 002b stream-open) |
 | BL-003 | Concurrent `StreamTextResult` collectors are coupled | Med-High | Recommended | CONFIRMED | OPEN |
 | BL-004 | `StreamTextResult` re-drives provider after non-terminal failure | Medium | Recommended | CONFIRMED | OPEN |
 | BL-005 | RetryPolicy per-attempt timeout aborts whole loop | Medium | Recommended | CONFIRMED | OPEN |

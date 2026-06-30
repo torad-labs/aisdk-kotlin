@@ -18,13 +18,19 @@ public class TextGenerator(
     }
 
     public fun stream(input: GenerationInput): Flow<StreamEvent> =
-        model.stream(buildParams(input, null))
+        buildParams(input, null).let { params ->
+            StreamOpenRetry.wrap(config.maxRetries) {
+                model.stream(params)
+            }
+        }
 
     public fun streamResult(input: GenerationInput): StreamTextResult {
         val params = buildParams(input, null)
         val result = model.streamResult(params)
         return StreamTextResult(
-            sourceStream = result.stream,
+            sourceStream = StreamOpenRetry.wrap(config.maxRetries) {
+                result.stream
+            },
             request = result.request,
             initialResponse = result.response,
         )
