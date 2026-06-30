@@ -26,6 +26,11 @@ This project follows Semantic Versioning once the first stable release is cut.
   `AgentSettings`, and `StepSettings` expose `maxRetries` (`2` by default, `0`
   disables). Retries wrap each individual `LanguageModel.generate` round-trip,
   so a later model retry in a tool loop does not re-run already-executed tools.
+- MCP HTTP inbound SSE reconnects now stop on clean EOF and only retry after
+  stream errors with capped exponential backoff. `MCPReconnectionOptions`
+  configures `initialReconnectionDelayMillis`, `reconnectionDelayGrowFactor`,
+  `maxReconnectionDelayMillis`, and `maxRetries` for `HttpMCPTransport` and
+  `MCPTransportConfig`.
 
 - **Tools are now class-based and extensible (breaking ABI change).** `Tool` is an `abstract class`
   you can extend for reusable, dependency-injected tools — mirroring how a concrete agent extends
