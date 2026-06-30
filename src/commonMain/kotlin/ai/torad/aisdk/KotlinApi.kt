@@ -1,5 +1,6 @@
 package ai.torad.aisdk
 
+import dev.drewhamilton.poko.Poko
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
@@ -134,11 +135,12 @@ public object ProviderOptionsDsl {
         ProviderOptionsBuilder().apply(block).build()
 }
 
-public data class TextGenerationRequest public constructor(
-    val prompt: String? = null,
-    val messages: List<ModelMessage> = emptyList(),
-    val system: String? = null,
-    val settings: CallSettings = CallSettings(),
+@Poko
+public class TextGenerationRequest internal constructor(
+    public val prompt: String? = null,
+    public val messages: List<ModelMessage> = emptyList(),
+    public val system: String? = null,
+    public val settings: CallSettings = CallSettings(),
 ) {
     public companion object {
         public fun of(
@@ -266,5 +268,5 @@ public class TextGenerationRequestBuilder internal constructor() {
     )
 }
 
-public fun TextGenerationRequest(block: TextGenerationRequestBuilder.() -> Unit): TextGenerationRequest =
+public fun TextGenerationRequest(block: TextGenerationRequestBuilder.() -> Unit = {}): TextGenerationRequest =
     TextGenerationRequestBuilder().apply(block).build()

@@ -108,11 +108,17 @@ This project follows Semantic Versioning once the first stable release is cut.
   (`ImageGenerationParams`, `SpeechGenerationParams`, `TranscriptionParams`,
   `VideoGenerationParams`, `RerankingParams`, `CompletionRequestOptions`,
   `CallCompletionApiOptions`, and `HuggingFaceResponsesSettings`) also move to
-  builder factories. `CompletionRequestOptions` and
-  `HuggingFaceResponsesSettings` are value-semantics `@Poko` classes;
-  `AuthOptions`, the media/rerank params, and `CallCompletionApiOptions` are
-  regular classes with identity equality because they may hold clients, abort
-  signals, transports, callbacks, or model input objects.
+  builder factories. Additional request/config construct types
+  (`TextGenerationRequest`, `CompletionRequest`, `StructuredObjectRequest`,
+  `ChatRequest`, `TelemetrySettings`, `MCPClientConfig`, `MCPTransportConfig`,
+  and `MCPRequestOptions`) now follow the same pattern. `TextGenerationRequest`,
+  `ChatRequest`, `CompletionRequestOptions`, and `HuggingFaceResponsesSettings`
+  are value-semantics `@Poko` classes; `AuthOptions`, the media/rerank params,
+  `CompletionRequest`, `StructuredObjectRequest`, `TelemetrySettings`,
+  `MCPClientConfig`, `MCPTransportConfig`, `MCPRequestOptions`, and
+  `CallCompletionApiOptions` are regular classes with identity equality because
+  they may hold clients, abort signals, transports, callbacks, coroutine
+  contexts, telemetry integrations, or model input objects.
 
 - **Tools are now class-based and extensible (breaking ABI change).** `Tool` is an `abstract class`
   you can extend for reusable, dependency-injected tools — mirroring how a concrete agent extends

@@ -1,5 +1,6 @@
 package ai.torad.aisdk.ui
 
+import dev.drewhamilton.poko.Poko
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.currentCoroutineContext
@@ -16,11 +17,42 @@ import kotlinx.serialization.json.JsonPrimitive
 import kotlin.concurrent.atomics.AtomicReference
 import kotlin.concurrent.atomics.ExperimentalAtomicApi
 
-public data class ChatRequest(
-    val messages: List<UIMessage>,
-    val body: Map<String, JsonElement> = emptyMap(),
-    val headers: Map<String, String> = emptyMap(),
+@Poko
+public class ChatRequest internal constructor(
+    public val messages: List<UIMessage>,
+    public val body: Map<String, JsonElement> = emptyMap(),
+    public val headers: Map<String, String> = emptyMap(),
 )
+
+public class ChatRequestBuilder internal constructor() {
+    private var messages: List<UIMessage>? = null
+    private var body: Map<String, JsonElement> = emptyMap()
+    private var headers: Map<String, String> = emptyMap()
+
+    public fun messages(value: List<UIMessage>) {
+        messages = value
+    }
+
+    public fun body(value: Map<String, JsonElement>) {
+        body = value
+    }
+
+    public fun headers(value: Map<String, String>) {
+        headers = value
+    }
+
+    internal fun build(): ChatRequest =
+        ChatRequest(
+            messages = requireNotNull(messages) { "ChatRequest.messages is required" },
+            body = body,
+            headers = headers,
+        )
+}
+
+public fun ChatRequest(
+    block: ChatRequestBuilder.() -> Unit = {},
+): ChatRequest =
+    ChatRequestBuilder().apply(block).build()
 
 public interface ChatTransport {
     public fun sendMessages(request: ChatRequest): Flow<UIMessage>
@@ -195,7 +227,12 @@ public class Chat(
         currentOpRef.store(op)
         val request = applyState {
             copy(messages = transformMessages(messages), status = ChatStatus.Submitted, error = null)
-        }.let { ChatRequest(messages = it.messages, body = body) }
+        }.let {
+            ChatRequest {
+                messages(it.messages)
+                body(body)
+            }
+        }
         try {
             transport.sendMessages(request).collect { response ->
                 if (currentOpRef.load() === op) {

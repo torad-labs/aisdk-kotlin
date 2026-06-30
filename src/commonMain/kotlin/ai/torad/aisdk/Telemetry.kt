@@ -31,15 +31,69 @@ import kotlin.concurrent.atomics.update
  * path receives a safe projection of [AgentEvent]; raw in-process lifecycle hooks
  * remain unchanged.
  */
-public data class TelemetrySettings(
-    val isEnabled: Boolean? = null,
-    val functionId: String? = null,
-    val metadata: Map<String, JsonElement> = emptyMap(),
-    val recordInputs: Boolean = false,
-    val recordOutputs: Boolean = false,
-    val integrations: List<Telemetry> = emptyList(),
-    val tracer: TelemetryTracer? = null,
+public class TelemetrySettings internal constructor(
+    public val isEnabled: Boolean? = null,
+    public val functionId: String? = null,
+    public val metadata: Map<String, JsonElement> = emptyMap(),
+    public val recordInputs: Boolean = false,
+    public val recordOutputs: Boolean = false,
+    public val integrations: List<Telemetry> = emptyList(),
+    public val tracer: TelemetryTracer? = null,
 )
+
+public class TelemetrySettingsBuilder internal constructor() {
+    private var isEnabled: Boolean? = null
+    private var functionId: String? = null
+    private var metadata: Map<String, JsonElement> = emptyMap()
+    private var recordInputs: Boolean = false
+    private var recordOutputs: Boolean = false
+    private var integrations: List<Telemetry> = emptyList()
+    private var tracer: TelemetryTracer? = null
+
+    public fun isEnabled(value: Boolean?) {
+        isEnabled = value
+    }
+
+    public fun functionId(value: String?) {
+        functionId = value
+    }
+
+    public fun metadata(value: Map<String, JsonElement>) {
+        metadata = value
+    }
+
+    public fun recordInputs(value: Boolean) {
+        recordInputs = value
+    }
+
+    public fun recordOutputs(value: Boolean) {
+        recordOutputs = value
+    }
+
+    public fun integrations(value: List<Telemetry>) {
+        integrations = value
+    }
+
+    public fun tracer(value: TelemetryTracer?) {
+        tracer = value
+    }
+
+    internal fun build(): TelemetrySettings =
+        TelemetrySettings(
+            isEnabled = isEnabled,
+            functionId = functionId,
+            metadata = metadata,
+            recordInputs = recordInputs,
+            recordOutputs = recordOutputs,
+            integrations = integrations,
+            tracer = tracer,
+        )
+}
+
+public fun TelemetrySettings(
+    block: TelemetrySettingsBuilder.() -> Unit = {},
+): TelemetrySettings =
+    TelemetrySettingsBuilder().apply(block).build()
 
 /**
  * Correlation envelope for one agent invocation (one `generate`/`stream`

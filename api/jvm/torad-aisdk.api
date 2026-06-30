@@ -754,6 +754,8 @@ public final class ai/torad/aisdk/CompletionApi {
 public final class ai/torad/aisdk/CompletionApiKt {
 	public static final fun CallCompletionApiOptions (Lkotlin/jvm/functions/Function1;)Lai/torad/aisdk/CallCompletionApiOptions;
 	public static synthetic fun CallCompletionApiOptions$default (Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Lai/torad/aisdk/CallCompletionApiOptions;
+	public static final fun CompletionRequest (Lkotlin/jvm/functions/Function1;)Lai/torad/aisdk/CompletionRequest;
+	public static synthetic fun CompletionRequest$default (Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Lai/torad/aisdk/CompletionRequest;
 	public static final fun CompletionRequestOptions (Lkotlin/jvm/functions/Function1;)Lai/torad/aisdk/CompletionRequestOptions;
 	public static synthetic fun CompletionRequestOptions$default (Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Lai/torad/aisdk/CompletionRequestOptions;
 }
@@ -794,18 +796,6 @@ public final class ai/torad/aisdk/CompletionPhase$Streaming : ai/torad/aisdk/Com
 }
 
 public final class ai/torad/aisdk/CompletionRequest {
-	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;Ljava/util/Map;Lai/torad/aisdk/CompletionStreamProtocol;Lai/torad/aisdk/AbortSignal;)V
-	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;Ljava/util/Map;Lai/torad/aisdk/CompletionStreamProtocol;Lai/torad/aisdk/AbortSignal;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public final fun component1 ()Ljava/lang/String;
-	public final fun component2 ()Ljava/lang/String;
-	public final fun component3 ()Ljava/lang/String;
-	public final fun component4 ()Ljava/util/Map;
-	public final fun component5 ()Ljava/util/Map;
-	public final fun component6 ()Lai/torad/aisdk/CompletionStreamProtocol;
-	public final fun component7 ()Lai/torad/aisdk/AbortSignal;
-	public final fun copy (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;Ljava/util/Map;Lai/torad/aisdk/CompletionStreamProtocol;Lai/torad/aisdk/AbortSignal;)Lai/torad/aisdk/CompletionRequest;
-	public static synthetic fun copy$default (Lai/torad/aisdk/CompletionRequest;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/util/Map;Ljava/util/Map;Lai/torad/aisdk/CompletionStreamProtocol;Lai/torad/aisdk/AbortSignal;ILjava/lang/Object;)Lai/torad/aisdk/CompletionRequest;
-	public fun equals (Ljava/lang/Object;)Z
 	public final fun getAbortSignal ()Lai/torad/aisdk/AbortSignal;
 	public final fun getApi ()Ljava/lang/String;
 	public final fun getBody ()Ljava/util/Map;
@@ -813,8 +803,16 @@ public final class ai/torad/aisdk/CompletionRequest {
 	public final fun getId ()Ljava/lang/String;
 	public final fun getPrompt ()Ljava/lang/String;
 	public final fun getStreamProtocol ()Lai/torad/aisdk/CompletionStreamProtocol;
-	public fun hashCode ()I
-	public fun toString ()Ljava/lang/String;
+}
+
+public final class ai/torad/aisdk/CompletionRequestBuilder {
+	public final fun abortSignal (Lai/torad/aisdk/AbortSignal;)V
+	public final fun api (Ljava/lang/String;)V
+	public final fun body (Ljava/util/Map;)V
+	public final fun headers (Ljava/util/Map;)V
+	public final fun id (Ljava/lang/String;)V
+	public final fun prompt (Ljava/lang/String;)V
+	public final fun streamProtocol (Lai/torad/aisdk/CompletionStreamProtocol;)V
 }
 
 public final class ai/torad/aisdk/CompletionRequestOptions {
@@ -2707,6 +2705,7 @@ public final class ai/torad/aisdk/JsonInstruction {
 public final class ai/torad/aisdk/KotlinApiKt {
 	public static final fun CallSettings (Lkotlin/jvm/functions/Function1;)Lai/torad/aisdk/CallSettings;
 	public static final fun TextGenerationRequest (Lkotlin/jvm/functions/Function1;)Lai/torad/aisdk/TextGenerationRequest;
+	public static synthetic fun TextGenerationRequest$default (Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Lai/torad/aisdk/TextGenerationRequest;
 }
 
 public final class ai/torad/aisdk/KtorGatewayTransport : ai/torad/aisdk/GatewayTransport {
@@ -3116,25 +3115,21 @@ public final class ai/torad/aisdk/MCPClientCapabilities$Companion {
 }
 
 public final class ai/torad/aisdk/MCPClientConfig {
-	public fun <init> (Lai/torad/aisdk/MCPTransport;Lkotlin/jvm/functions/Function1;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lai/torad/aisdk/MCPClientCapabilities;)V
-	public synthetic fun <init> (Lai/torad/aisdk/MCPTransport;Lkotlin/jvm/functions/Function1;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lai/torad/aisdk/MCPClientCapabilities;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public final fun component1 ()Lai/torad/aisdk/MCPTransport;
-	public final fun component2 ()Lkotlin/jvm/functions/Function1;
-	public final fun component3 ()Ljava/lang/String;
-	public final fun component4 ()Ljava/lang/String;
-	public final fun component5 ()Ljava/lang/String;
-	public final fun component6 ()Lai/torad/aisdk/MCPClientCapabilities;
-	public final fun copy (Lai/torad/aisdk/MCPTransport;Lkotlin/jvm/functions/Function1;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lai/torad/aisdk/MCPClientCapabilities;)Lai/torad/aisdk/MCPClientConfig;
-	public static synthetic fun copy$default (Lai/torad/aisdk/MCPClientConfig;Lai/torad/aisdk/MCPTransport;Lkotlin/jvm/functions/Function1;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lai/torad/aisdk/MCPClientCapabilities;ILjava/lang/Object;)Lai/torad/aisdk/MCPClientConfig;
-	public fun equals (Ljava/lang/Object;)Z
 	public final fun getCapabilities ()Lai/torad/aisdk/MCPClientCapabilities;
 	public final fun getClientName ()Ljava/lang/String;
 	public final fun getName ()Ljava/lang/String;
 	public final fun getOnUncaughtError ()Lkotlin/jvm/functions/Function1;
 	public final fun getTransport ()Lai/torad/aisdk/MCPTransport;
 	public final fun getVersion ()Ljava/lang/String;
-	public fun hashCode ()I
-	public fun toString ()Ljava/lang/String;
+}
+
+public final class ai/torad/aisdk/MCPClientConfigBuilder {
+	public final fun capabilities (Lai/torad/aisdk/MCPClientCapabilities;)V
+	public final fun clientName (Ljava/lang/String;)V
+	public final fun name (Ljava/lang/String;)V
+	public final fun onUncaughtError (Lkotlin/jvm/functions/Function1;)V
+	public final fun transport (Lai/torad/aisdk/MCPTransport;)V
+	public final fun version (Ljava/lang/String;)V
 }
 
 public final class ai/torad/aisdk/MCPClientError : ai/torad/aisdk/AiSdkException {
@@ -3150,6 +3145,10 @@ public final class ai/torad/aisdk/MCPKt {
 	public static final fun CreateMCPClient (Lai/torad/aisdk/MCPClientConfig;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public static final fun CreateMcpTransport (Lio/ktor/client/HttpClient;Lai/torad/aisdk/MCPTransportConfig;)Lai/torad/aisdk/MCPTransport;
 	public static final fun Experimental_CreateMCPClient (Lai/torad/aisdk/MCPClientConfig;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public static final fun MCPClientConfig (Lkotlin/jvm/functions/Function1;)Lai/torad/aisdk/MCPClientConfig;
+	public static synthetic fun MCPClientConfig$default (Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Lai/torad/aisdk/MCPClientConfig;
+	public static final fun MCPTransportConfig (Lkotlin/jvm/functions/Function1;)Lai/torad/aisdk/MCPTransportConfig;
+	public static synthetic fun MCPTransportConfig$default (Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Lai/torad/aisdk/MCPTransportConfig;
 	public static final fun getSUPPORTED_PROTOCOL_VERSIONS ()Ljava/util/List;
 }
 
@@ -3253,20 +3252,15 @@ public final class ai/torad/aisdk/MCPReconnectionOptions {
 }
 
 public final class ai/torad/aisdk/MCPRequestOptions {
-	public fun <init> ()V
-	public fun <init> (Lai/torad/aisdk/AbortSignal;Ljava/lang/Long;Ljava/lang/Long;)V
-	public synthetic fun <init> (Lai/torad/aisdk/AbortSignal;Ljava/lang/Long;Ljava/lang/Long;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public final fun component1 ()Lai/torad/aisdk/AbortSignal;
-	public final fun component2 ()Ljava/lang/Long;
-	public final fun component3 ()Ljava/lang/Long;
-	public final fun copy (Lai/torad/aisdk/AbortSignal;Ljava/lang/Long;Ljava/lang/Long;)Lai/torad/aisdk/MCPRequestOptions;
-	public static synthetic fun copy$default (Lai/torad/aisdk/MCPRequestOptions;Lai/torad/aisdk/AbortSignal;Ljava/lang/Long;Ljava/lang/Long;ILjava/lang/Object;)Lai/torad/aisdk/MCPRequestOptions;
-	public fun equals (Ljava/lang/Object;)Z
 	public final fun getMaxTotalTimeoutMillis ()Ljava/lang/Long;
 	public final fun getSignal ()Lai/torad/aisdk/AbortSignal;
 	public final fun getTimeoutMillis ()Ljava/lang/Long;
-	public fun hashCode ()I
-	public fun toString ()Ljava/lang/String;
+}
+
+public final class ai/torad/aisdk/MCPRequestOptionsBuilder {
+	public final fun maxTotalTimeoutMillis (Ljava/lang/Long;)V
+	public final fun signal (Lai/torad/aisdk/AbortSignal;)V
+	public final fun timeoutMillis (Ljava/lang/Long;)V
 }
 
 public final class ai/torad/aisdk/MCPResource {
@@ -3427,25 +3421,21 @@ public abstract interface class ai/torad/aisdk/MCPTransport {
 }
 
 public final class ai/torad/aisdk/MCPTransportConfig {
-	public fun <init> (Lai/torad/aisdk/MCPTransportKind;Ljava/lang/String;Ljava/util/Map;Lai/torad/aisdk/OAuthClientProvider;Lkotlin/coroutines/CoroutineContext;Lai/torad/aisdk/MCPReconnectionOptions;)V
-	public synthetic fun <init> (Lai/torad/aisdk/MCPTransportKind;Ljava/lang/String;Ljava/util/Map;Lai/torad/aisdk/OAuthClientProvider;Lkotlin/coroutines/CoroutineContext;Lai/torad/aisdk/MCPReconnectionOptions;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public final fun component1 ()Lai/torad/aisdk/MCPTransportKind;
-	public final fun component2 ()Ljava/lang/String;
-	public final fun component3 ()Ljava/util/Map;
-	public final fun component4 ()Lai/torad/aisdk/OAuthClientProvider;
-	public final fun component5 ()Lkotlin/coroutines/CoroutineContext;
-	public final fun component6 ()Lai/torad/aisdk/MCPReconnectionOptions;
-	public final fun copy (Lai/torad/aisdk/MCPTransportKind;Ljava/lang/String;Ljava/util/Map;Lai/torad/aisdk/OAuthClientProvider;Lkotlin/coroutines/CoroutineContext;Lai/torad/aisdk/MCPReconnectionOptions;)Lai/torad/aisdk/MCPTransportConfig;
-	public static synthetic fun copy$default (Lai/torad/aisdk/MCPTransportConfig;Lai/torad/aisdk/MCPTransportKind;Ljava/lang/String;Ljava/util/Map;Lai/torad/aisdk/OAuthClientProvider;Lkotlin/coroutines/CoroutineContext;Lai/torad/aisdk/MCPReconnectionOptions;ILjava/lang/Object;)Lai/torad/aisdk/MCPTransportConfig;
-	public fun equals (Ljava/lang/Object;)Z
 	public final fun getAuthProvider ()Lai/torad/aisdk/OAuthClientProvider;
 	public final fun getEngineContext ()Lkotlin/coroutines/CoroutineContext;
 	public final fun getHeaders ()Ljava/util/Map;
 	public final fun getReconnectionOptions ()Lai/torad/aisdk/MCPReconnectionOptions;
 	public final fun getType ()Lai/torad/aisdk/MCPTransportKind;
 	public final fun getUrl ()Ljava/lang/String;
-	public fun hashCode ()I
-	public fun toString ()Ljava/lang/String;
+}
+
+public final class ai/torad/aisdk/MCPTransportConfigBuilder {
+	public final fun authProvider (Lai/torad/aisdk/OAuthClientProvider;)V
+	public final fun engineContext (Lkotlin/coroutines/CoroutineContext;)V
+	public final fun headers (Ljava/util/Map;)V
+	public final fun reconnectionOptions (Lai/torad/aisdk/MCPReconnectionOptions;)V
+	public final fun type (Lai/torad/aisdk/MCPTransportKind;)V
+	public final fun url (Ljava/lang/String;)V
 }
 
 public final class ai/torad/aisdk/MCPTransportKind : java/lang/Enum {
@@ -3459,6 +3449,11 @@ public final class ai/torad/aisdk/MCPTransportKind : java/lang/Enum {
 public final class ai/torad/aisdk/McpOAuthKt {
 	public static final fun AuthOptions (Lkotlin/jvm/functions/Function1;)Lai/torad/aisdk/AuthOptions;
 	public static synthetic fun AuthOptions$default (Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Lai/torad/aisdk/AuthOptions;
+}
+
+public final class ai/torad/aisdk/McpProtocolKt {
+	public static final fun MCPRequestOptions (Lkotlin/jvm/functions/Function1;)Lai/torad/aisdk/MCPRequestOptions;
+	public static synthetic fun MCPRequestOptions$default (Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Lai/torad/aisdk/MCPRequestOptions;
 }
 
 public final class ai/torad/aisdk/MediaModelsKt {
@@ -5603,6 +5598,11 @@ public final class ai/torad/aisdk/StructuredObject {
 public final class ai/torad/aisdk/StructuredObject$Companion {
 }
 
+public final class ai/torad/aisdk/StructuredObjectApiKt {
+	public static final fun StructuredObjectRequest (Lkotlin/jvm/functions/Function1;)Lai/torad/aisdk/StructuredObjectRequest;
+	public static synthetic fun StructuredObjectRequest$default (Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Lai/torad/aisdk/StructuredObjectRequest;
+}
+
 public final class ai/torad/aisdk/StructuredObjectFinish {
 	public fun <init> (Ljava/lang/Object;Ljava/lang/Throwable;Lkotlinx/serialization/json/JsonElement;)V
 	public fun equals (Ljava/lang/Object;)Z
@@ -5677,23 +5677,19 @@ public final class ai/torad/aisdk/StructuredObjectPhase$Streaming : ai/torad/ais
 }
 
 public final class ai/torad/aisdk/StructuredObjectRequest {
-	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/Object;Ljava/util/Map;Lai/torad/aisdk/AbortSignal;)V
-	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/Object;Ljava/util/Map;Lai/torad/aisdk/AbortSignal;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public final fun component1 ()Ljava/lang/String;
-	public final fun component2 ()Ljava/lang/String;
-	public final fun component3 ()Ljava/lang/Object;
-	public final fun component4 ()Ljava/util/Map;
-	public final fun component5 ()Lai/torad/aisdk/AbortSignal;
-	public final fun copy (Ljava/lang/String;Ljava/lang/String;Ljava/lang/Object;Ljava/util/Map;Lai/torad/aisdk/AbortSignal;)Lai/torad/aisdk/StructuredObjectRequest;
-	public static synthetic fun copy$default (Lai/torad/aisdk/StructuredObjectRequest;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Object;Ljava/util/Map;Lai/torad/aisdk/AbortSignal;ILjava/lang/Object;)Lai/torad/aisdk/StructuredObjectRequest;
-	public fun equals (Ljava/lang/Object;)Z
 	public final fun getAbortSignal ()Lai/torad/aisdk/AbortSignal;
 	public final fun getApi ()Ljava/lang/String;
 	public final fun getHeaders ()Ljava/util/Map;
 	public final fun getId ()Ljava/lang/String;
 	public final fun getInput ()Ljava/lang/Object;
-	public fun hashCode ()I
-	public fun toString ()Ljava/lang/String;
+}
+
+public final class ai/torad/aisdk/StructuredObjectRequestBuilder {
+	public final fun abortSignal (Lai/torad/aisdk/AbortSignal;)V
+	public final fun api (Ljava/lang/String;)V
+	public final fun headers (Ljava/util/Map;)V
+	public final fun id (Ljava/lang/String;)V
+	public final fun input (Ljava/lang/Object;)V
 }
 
 public abstract interface class ai/torad/aisdk/StructuredObjectTransport {
@@ -5743,6 +5739,8 @@ public final class ai/torad/aisdk/TelemetryCall {
 }
 
 public final class ai/torad/aisdk/TelemetryKt {
+	public static final fun TelemetrySettings (Lkotlin/jvm/functions/Function1;)Lai/torad/aisdk/TelemetrySettings;
+	public static synthetic fun TelemetrySettings$default (Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Lai/torad/aisdk/TelemetrySettings;
 	public static final fun getGlobalTelemetry ()Lai/torad/aisdk/TelemetryRegistry;
 }
 
@@ -5757,28 +5755,23 @@ public final class ai/torad/aisdk/TelemetryRegistry {
 }
 
 public final class ai/torad/aisdk/TelemetrySettings {
-	public fun <init> ()V
-	public fun <init> (Ljava/lang/Boolean;Ljava/lang/String;Ljava/util/Map;ZZLjava/util/List;Lai/torad/aisdk/TelemetryTracer;)V
-	public synthetic fun <init> (Ljava/lang/Boolean;Ljava/lang/String;Ljava/util/Map;ZZLjava/util/List;Lai/torad/aisdk/TelemetryTracer;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public final fun component1 ()Ljava/lang/Boolean;
-	public final fun component2 ()Ljava/lang/String;
-	public final fun component3 ()Ljava/util/Map;
-	public final fun component4 ()Z
-	public final fun component5 ()Z
-	public final fun component6 ()Ljava/util/List;
-	public final fun component7 ()Lai/torad/aisdk/TelemetryTracer;
-	public final fun copy (Ljava/lang/Boolean;Ljava/lang/String;Ljava/util/Map;ZZLjava/util/List;Lai/torad/aisdk/TelemetryTracer;)Lai/torad/aisdk/TelemetrySettings;
-	public static synthetic fun copy$default (Lai/torad/aisdk/TelemetrySettings;Ljava/lang/Boolean;Ljava/lang/String;Ljava/util/Map;ZZLjava/util/List;Lai/torad/aisdk/TelemetryTracer;ILjava/lang/Object;)Lai/torad/aisdk/TelemetrySettings;
-	public fun equals (Ljava/lang/Object;)Z
 	public final fun getFunctionId ()Ljava/lang/String;
 	public final fun getIntegrations ()Ljava/util/List;
 	public final fun getMetadata ()Ljava/util/Map;
 	public final fun getRecordInputs ()Z
 	public final fun getRecordOutputs ()Z
 	public final fun getTracer ()Lai/torad/aisdk/TelemetryTracer;
-	public fun hashCode ()I
 	public final fun isEnabled ()Ljava/lang/Boolean;
-	public fun toString ()Ljava/lang/String;
+}
+
+public final class ai/torad/aisdk/TelemetrySettingsBuilder {
+	public final fun functionId (Ljava/lang/String;)V
+	public final fun integrations (Ljava/util/List;)V
+	public final fun isEnabled (Ljava/lang/Boolean;)V
+	public final fun metadata (Ljava/util/Map;)V
+	public final fun recordInputs (Z)V
+	public final fun recordOutputs (Z)V
+	public final fun tracer (Lai/torad/aisdk/TelemetryTracer;)V
 }
 
 public abstract class ai/torad/aisdk/TelemetrySpanStatus {
@@ -5812,15 +5805,6 @@ public final class ai/torad/aisdk/TelemetryTracer$DefaultImpls {
 
 public final class ai/torad/aisdk/TextGenerationRequest {
 	public static final field Companion Lai/torad/aisdk/TextGenerationRequest$Companion;
-	public fun <init> ()V
-	public fun <init> (Ljava/lang/String;Ljava/util/List;Ljava/lang/String;Lai/torad/aisdk/CallSettings;)V
-	public synthetic fun <init> (Ljava/lang/String;Ljava/util/List;Ljava/lang/String;Lai/torad/aisdk/CallSettings;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public final fun component1 ()Ljava/lang/String;
-	public final fun component2 ()Ljava/util/List;
-	public final fun component3 ()Ljava/lang/String;
-	public final fun component4 ()Lai/torad/aisdk/CallSettings;
-	public final fun copy (Ljava/lang/String;Ljava/util/List;Ljava/lang/String;Lai/torad/aisdk/CallSettings;)Lai/torad/aisdk/TextGenerationRequest;
-	public static synthetic fun copy$default (Lai/torad/aisdk/TextGenerationRequest;Ljava/lang/String;Ljava/util/List;Ljava/lang/String;Lai/torad/aisdk/CallSettings;ILjava/lang/Object;)Lai/torad/aisdk/TextGenerationRequest;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getInput ()Lai/torad/aisdk/TextGenerationRequest$Input;
 	public final fun getMessages ()Ljava/util/List;
@@ -12153,20 +12137,24 @@ public final class ai/torad/aisdk/ui/Chat {
 	public final fun stop ()V
 }
 
+public final class ai/torad/aisdk/ui/ChatKt {
+	public static final fun ChatRequest (Lkotlin/jvm/functions/Function1;)Lai/torad/aisdk/ui/ChatRequest;
+	public static synthetic fun ChatRequest$default (Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Lai/torad/aisdk/ui/ChatRequest;
+}
+
 public final class ai/torad/aisdk/ui/ChatRequest {
-	public fun <init> (Ljava/util/List;Ljava/util/Map;Ljava/util/Map;)V
-	public synthetic fun <init> (Ljava/util/List;Ljava/util/Map;Ljava/util/Map;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public final fun component1 ()Ljava/util/List;
-	public final fun component2 ()Ljava/util/Map;
-	public final fun component3 ()Ljava/util/Map;
-	public final fun copy (Ljava/util/List;Ljava/util/Map;Ljava/util/Map;)Lai/torad/aisdk/ui/ChatRequest;
-	public static synthetic fun copy$default (Lai/torad/aisdk/ui/ChatRequest;Ljava/util/List;Ljava/util/Map;Ljava/util/Map;ILjava/lang/Object;)Lai/torad/aisdk/ui/ChatRequest;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getBody ()Ljava/util/Map;
 	public final fun getHeaders ()Ljava/util/Map;
 	public final fun getMessages ()Ljava/util/List;
 	public fun hashCode ()I
 	public fun toString ()Ljava/lang/String;
+}
+
+public final class ai/torad/aisdk/ui/ChatRequestBuilder {
+	public final fun body (Ljava/util/Map;)V
+	public final fun headers (Ljava/util/Map;)V
+	public final fun messages (Ljava/util/List;)V
 }
 
 public final class ai/torad/aisdk/ui/ChatSession {

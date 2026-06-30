@@ -1819,8 +1819,6 @@ final class <#A: kotlin/Any?> ai.torad.aisdk/StructuredObjectGenerator { // ai.t
 }
 
 final class <#A: kotlin/Any?> ai.torad.aisdk/StructuredObjectRequest { // ai.torad.aisdk/StructuredObjectRequest|null[0]
-    constructor <init>(kotlin/String, kotlin/String, #A, kotlin.collections/Map<kotlin/String, kotlin/String> = ..., ai.torad.aisdk/AbortSignal = ...) // ai.torad.aisdk/StructuredObjectRequest.<init>|<init>(kotlin.String;kotlin.String;1:0;kotlin.collections.Map<kotlin.String,kotlin.String>;ai.torad.aisdk.AbortSignal){}[0]
-
     final val abortSignal // ai.torad.aisdk/StructuredObjectRequest.abortSignal|{}abortSignal[0]
         final fun <get-abortSignal>(): ai.torad.aisdk/AbortSignal // ai.torad.aisdk/StructuredObjectRequest.abortSignal.<get-abortSignal>|<get-abortSignal>(){}[0]
     final val api // ai.torad.aisdk/StructuredObjectRequest.api|{}api[0]
@@ -1831,16 +1829,14 @@ final class <#A: kotlin/Any?> ai.torad.aisdk/StructuredObjectRequest { // ai.tor
         final fun <get-id>(): kotlin/String // ai.torad.aisdk/StructuredObjectRequest.id.<get-id>|<get-id>(){}[0]
     final val input // ai.torad.aisdk/StructuredObjectRequest.input|{}input[0]
         final fun <get-input>(): #A // ai.torad.aisdk/StructuredObjectRequest.input.<get-input>|<get-input>(){}[0]
+}
 
-    final fun component1(): kotlin/String // ai.torad.aisdk/StructuredObjectRequest.component1|component1(){}[0]
-    final fun component2(): kotlin/String // ai.torad.aisdk/StructuredObjectRequest.component2|component2(){}[0]
-    final fun component3(): #A // ai.torad.aisdk/StructuredObjectRequest.component3|component3(){}[0]
-    final fun component4(): kotlin.collections/Map<kotlin/String, kotlin/String> // ai.torad.aisdk/StructuredObjectRequest.component4|component4(){}[0]
-    final fun component5(): ai.torad.aisdk/AbortSignal // ai.torad.aisdk/StructuredObjectRequest.component5|component5(){}[0]
-    final fun copy(kotlin/String = ..., kotlin/String = ..., #A = ..., kotlin.collections/Map<kotlin/String, kotlin/String> = ..., ai.torad.aisdk/AbortSignal = ...): ai.torad.aisdk/StructuredObjectRequest<#A> // ai.torad.aisdk/StructuredObjectRequest.copy|copy(kotlin.String;kotlin.String;1:0;kotlin.collections.Map<kotlin.String,kotlin.String>;ai.torad.aisdk.AbortSignal){}[0]
-    final fun equals(kotlin/Any?): kotlin/Boolean // ai.torad.aisdk/StructuredObjectRequest.equals|equals(kotlin.Any?){}[0]
-    final fun hashCode(): kotlin/Int // ai.torad.aisdk/StructuredObjectRequest.hashCode|hashCode(){}[0]
-    final fun toString(): kotlin/String // ai.torad.aisdk/StructuredObjectRequest.toString|toString(){}[0]
+final class <#A: kotlin/Any?> ai.torad.aisdk/StructuredObjectRequestBuilder { // ai.torad.aisdk/StructuredObjectRequestBuilder|null[0]
+    final fun abortSignal(ai.torad.aisdk/AbortSignal) // ai.torad.aisdk/StructuredObjectRequestBuilder.abortSignal|abortSignal(ai.torad.aisdk.AbortSignal){}[0]
+    final fun api(kotlin/String) // ai.torad.aisdk/StructuredObjectRequestBuilder.api|api(kotlin.String){}[0]
+    final fun headers(kotlin.collections/Map<kotlin/String, kotlin/String>) // ai.torad.aisdk/StructuredObjectRequestBuilder.headers|headers(kotlin.collections.Map<kotlin.String,kotlin.String>){}[0]
+    final fun id(kotlin/String) // ai.torad.aisdk/StructuredObjectRequestBuilder.id|id(kotlin.String){}[0]
+    final fun input(#A) // ai.torad.aisdk/StructuredObjectRequestBuilder.input|input(1:0){}[0]
 }
 
 final class <#A: kotlin/Any?> ai.torad.aisdk/ToolExecutionContext { // ai.torad.aisdk/ToolExecutionContext|null[0]
@@ -7000,8 +6996,6 @@ final class ai.torad.aisdk.ui/Chat { // ai.torad.aisdk.ui/Chat|null[0]
 }
 
 final class ai.torad.aisdk.ui/ChatRequest { // ai.torad.aisdk.ui/ChatRequest|null[0]
-    constructor <init>(kotlin.collections/List<ai.torad.aisdk.ui/UIMessage>, kotlin.collections/Map<kotlin/String, kotlinx.serialization.json/JsonElement> = ..., kotlin.collections/Map<kotlin/String, kotlin/String> = ...) // ai.torad.aisdk.ui/ChatRequest.<init>|<init>(kotlin.collections.List<ai.torad.aisdk.ui.UIMessage>;kotlin.collections.Map<kotlin.String,kotlinx.serialization.json.JsonElement>;kotlin.collections.Map<kotlin.String,kotlin.String>){}[0]
-
     final val body // ai.torad.aisdk.ui/ChatRequest.body|{}body[0]
         final fun <get-body>(): kotlin.collections/Map<kotlin/String, kotlinx.serialization.json/JsonElement> // ai.torad.aisdk.ui/ChatRequest.body.<get-body>|<get-body>(){}[0]
     final val headers // ai.torad.aisdk.ui/ChatRequest.headers|{}headers[0]
@@ -7009,13 +7003,15 @@ final class ai.torad.aisdk.ui/ChatRequest { // ai.torad.aisdk.ui/ChatRequest|nul
     final val messages // ai.torad.aisdk.ui/ChatRequest.messages|{}messages[0]
         final fun <get-messages>(): kotlin.collections/List<ai.torad.aisdk.ui/UIMessage> // ai.torad.aisdk.ui/ChatRequest.messages.<get-messages>|<get-messages>(){}[0]
 
-    final fun component1(): kotlin.collections/List<ai.torad.aisdk.ui/UIMessage> // ai.torad.aisdk.ui/ChatRequest.component1|component1(){}[0]
-    final fun component2(): kotlin.collections/Map<kotlin/String, kotlinx.serialization.json/JsonElement> // ai.torad.aisdk.ui/ChatRequest.component2|component2(){}[0]
-    final fun component3(): kotlin.collections/Map<kotlin/String, kotlin/String> // ai.torad.aisdk.ui/ChatRequest.component3|component3(){}[0]
-    final fun copy(kotlin.collections/List<ai.torad.aisdk.ui/UIMessage> = ..., kotlin.collections/Map<kotlin/String, kotlinx.serialization.json/JsonElement> = ..., kotlin.collections/Map<kotlin/String, kotlin/String> = ...): ai.torad.aisdk.ui/ChatRequest // ai.torad.aisdk.ui/ChatRequest.copy|copy(kotlin.collections.List<ai.torad.aisdk.ui.UIMessage>;kotlin.collections.Map<kotlin.String,kotlinx.serialization.json.JsonElement>;kotlin.collections.Map<kotlin.String,kotlin.String>){}[0]
     final fun equals(kotlin/Any?): kotlin/Boolean // ai.torad.aisdk.ui/ChatRequest.equals|equals(kotlin.Any?){}[0]
     final fun hashCode(): kotlin/Int // ai.torad.aisdk.ui/ChatRequest.hashCode|hashCode(){}[0]
     final fun toString(): kotlin/String // ai.torad.aisdk.ui/ChatRequest.toString|toString(){}[0]
+}
+
+final class ai.torad.aisdk.ui/ChatRequestBuilder { // ai.torad.aisdk.ui/ChatRequestBuilder|null[0]
+    final fun body(kotlin.collections/Map<kotlin/String, kotlinx.serialization.json/JsonElement>) // ai.torad.aisdk.ui/ChatRequestBuilder.body|body(kotlin.collections.Map<kotlin.String,kotlinx.serialization.json.JsonElement>){}[0]
+    final fun headers(kotlin.collections/Map<kotlin/String, kotlin/String>) // ai.torad.aisdk.ui/ChatRequestBuilder.headers|headers(kotlin.collections.Map<kotlin.String,kotlin.String>){}[0]
+    final fun messages(kotlin.collections/List<ai.torad.aisdk.ui/UIMessage>) // ai.torad.aisdk.ui/ChatRequestBuilder.messages|messages(kotlin.collections.List<ai.torad.aisdk.ui.UIMessage>){}[0]
 }
 
 final class ai.torad.aisdk.ui/ChatSession { // ai.torad.aisdk.ui/ChatSession|null[0]
@@ -7531,8 +7527,6 @@ final class ai.torad.aisdk/Completion { // ai.torad.aisdk/Completion|null[0]
 }
 
 final class ai.torad.aisdk/CompletionRequest { // ai.torad.aisdk/CompletionRequest|null[0]
-    constructor <init>(kotlin/String, kotlin/String, kotlin/String, kotlin.collections/Map<kotlin/String, kotlin/String> = ..., kotlin.collections/Map<kotlin/String, kotlinx.serialization.json/JsonElement> = ..., ai.torad.aisdk/CompletionStreamProtocol = ..., ai.torad.aisdk/AbortSignal = ...) // ai.torad.aisdk/CompletionRequest.<init>|<init>(kotlin.String;kotlin.String;kotlin.String;kotlin.collections.Map<kotlin.String,kotlin.String>;kotlin.collections.Map<kotlin.String,kotlinx.serialization.json.JsonElement>;ai.torad.aisdk.CompletionStreamProtocol;ai.torad.aisdk.AbortSignal){}[0]
-
     final val abortSignal // ai.torad.aisdk/CompletionRequest.abortSignal|{}abortSignal[0]
         final fun <get-abortSignal>(): ai.torad.aisdk/AbortSignal // ai.torad.aisdk/CompletionRequest.abortSignal.<get-abortSignal>|<get-abortSignal>(){}[0]
     final val api // ai.torad.aisdk/CompletionRequest.api|{}api[0]
@@ -7547,18 +7541,16 @@ final class ai.torad.aisdk/CompletionRequest { // ai.torad.aisdk/CompletionReque
         final fun <get-prompt>(): kotlin/String // ai.torad.aisdk/CompletionRequest.prompt.<get-prompt>|<get-prompt>(){}[0]
     final val streamProtocol // ai.torad.aisdk/CompletionRequest.streamProtocol|{}streamProtocol[0]
         final fun <get-streamProtocol>(): ai.torad.aisdk/CompletionStreamProtocol // ai.torad.aisdk/CompletionRequest.streamProtocol.<get-streamProtocol>|<get-streamProtocol>(){}[0]
+}
 
-    final fun component1(): kotlin/String // ai.torad.aisdk/CompletionRequest.component1|component1(){}[0]
-    final fun component2(): kotlin/String // ai.torad.aisdk/CompletionRequest.component2|component2(){}[0]
-    final fun component3(): kotlin/String // ai.torad.aisdk/CompletionRequest.component3|component3(){}[0]
-    final fun component4(): kotlin.collections/Map<kotlin/String, kotlin/String> // ai.torad.aisdk/CompletionRequest.component4|component4(){}[0]
-    final fun component5(): kotlin.collections/Map<kotlin/String, kotlinx.serialization.json/JsonElement> // ai.torad.aisdk/CompletionRequest.component5|component5(){}[0]
-    final fun component6(): ai.torad.aisdk/CompletionStreamProtocol // ai.torad.aisdk/CompletionRequest.component6|component6(){}[0]
-    final fun component7(): ai.torad.aisdk/AbortSignal // ai.torad.aisdk/CompletionRequest.component7|component7(){}[0]
-    final fun copy(kotlin/String = ..., kotlin/String = ..., kotlin/String = ..., kotlin.collections/Map<kotlin/String, kotlin/String> = ..., kotlin.collections/Map<kotlin/String, kotlinx.serialization.json/JsonElement> = ..., ai.torad.aisdk/CompletionStreamProtocol = ..., ai.torad.aisdk/AbortSignal = ...): ai.torad.aisdk/CompletionRequest // ai.torad.aisdk/CompletionRequest.copy|copy(kotlin.String;kotlin.String;kotlin.String;kotlin.collections.Map<kotlin.String,kotlin.String>;kotlin.collections.Map<kotlin.String,kotlinx.serialization.json.JsonElement>;ai.torad.aisdk.CompletionStreamProtocol;ai.torad.aisdk.AbortSignal){}[0]
-    final fun equals(kotlin/Any?): kotlin/Boolean // ai.torad.aisdk/CompletionRequest.equals|equals(kotlin.Any?){}[0]
-    final fun hashCode(): kotlin/Int // ai.torad.aisdk/CompletionRequest.hashCode|hashCode(){}[0]
-    final fun toString(): kotlin/String // ai.torad.aisdk/CompletionRequest.toString|toString(){}[0]
+final class ai.torad.aisdk/CompletionRequestBuilder { // ai.torad.aisdk/CompletionRequestBuilder|null[0]
+    final fun abortSignal(ai.torad.aisdk/AbortSignal) // ai.torad.aisdk/CompletionRequestBuilder.abortSignal|abortSignal(ai.torad.aisdk.AbortSignal){}[0]
+    final fun api(kotlin/String) // ai.torad.aisdk/CompletionRequestBuilder.api|api(kotlin.String){}[0]
+    final fun body(kotlin.collections/Map<kotlin/String, kotlinx.serialization.json/JsonElement>) // ai.torad.aisdk/CompletionRequestBuilder.body|body(kotlin.collections.Map<kotlin.String,kotlinx.serialization.json.JsonElement>){}[0]
+    final fun headers(kotlin.collections/Map<kotlin/String, kotlin/String>) // ai.torad.aisdk/CompletionRequestBuilder.headers|headers(kotlin.collections.Map<kotlin.String,kotlin.String>){}[0]
+    final fun id(kotlin/String) // ai.torad.aisdk/CompletionRequestBuilder.id|id(kotlin.String){}[0]
+    final fun prompt(kotlin/String) // ai.torad.aisdk/CompletionRequestBuilder.prompt|prompt(kotlin.String){}[0]
+    final fun streamProtocol(ai.torad.aisdk/CompletionStreamProtocol) // ai.torad.aisdk/CompletionRequestBuilder.streamProtocol|streamProtocol(ai.torad.aisdk.CompletionStreamProtocol){}[0]
 }
 
 final class ai.torad.aisdk/CompletionRequestOptions { // ai.torad.aisdk/CompletionRequestOptions|null[0]
@@ -9229,8 +9221,6 @@ final class ai.torad.aisdk/MCPClientCapabilities { // ai.torad.aisdk/MCPClientCa
 }
 
 final class ai.torad.aisdk/MCPClientConfig { // ai.torad.aisdk/MCPClientConfig|null[0]
-    constructor <init>(ai.torad.aisdk/MCPTransport, kotlin/Function1<kotlin/Throwable, kotlin/Unit>? = ..., kotlin/String? = ..., kotlin/String? = ..., kotlin/String = ..., ai.torad.aisdk/MCPClientCapabilities = ...) // ai.torad.aisdk/MCPClientConfig.<init>|<init>(ai.torad.aisdk.MCPTransport;kotlin.Function1<kotlin.Throwable,kotlin.Unit>?;kotlin.String?;kotlin.String?;kotlin.String;ai.torad.aisdk.MCPClientCapabilities){}[0]
-
     final val capabilities // ai.torad.aisdk/MCPClientConfig.capabilities|{}capabilities[0]
         final fun <get-capabilities>(): ai.torad.aisdk/MCPClientCapabilities // ai.torad.aisdk/MCPClientConfig.capabilities.<get-capabilities>|<get-capabilities>(){}[0]
     final val clientName // ai.torad.aisdk/MCPClientConfig.clientName|{}clientName[0]
@@ -9243,17 +9233,15 @@ final class ai.torad.aisdk/MCPClientConfig { // ai.torad.aisdk/MCPClientConfig|n
         final fun <get-transport>(): ai.torad.aisdk/MCPTransport // ai.torad.aisdk/MCPClientConfig.transport.<get-transport>|<get-transport>(){}[0]
     final val version // ai.torad.aisdk/MCPClientConfig.version|{}version[0]
         final fun <get-version>(): kotlin/String // ai.torad.aisdk/MCPClientConfig.version.<get-version>|<get-version>(){}[0]
+}
 
-    final fun component1(): ai.torad.aisdk/MCPTransport // ai.torad.aisdk/MCPClientConfig.component1|component1(){}[0]
-    final fun component2(): kotlin/Function1<kotlin/Throwable, kotlin/Unit>? // ai.torad.aisdk/MCPClientConfig.component2|component2(){}[0]
-    final fun component3(): kotlin/String? // ai.torad.aisdk/MCPClientConfig.component3|component3(){}[0]
-    final fun component4(): kotlin/String? // ai.torad.aisdk/MCPClientConfig.component4|component4(){}[0]
-    final fun component5(): kotlin/String // ai.torad.aisdk/MCPClientConfig.component5|component5(){}[0]
-    final fun component6(): ai.torad.aisdk/MCPClientCapabilities // ai.torad.aisdk/MCPClientConfig.component6|component6(){}[0]
-    final fun copy(ai.torad.aisdk/MCPTransport = ..., kotlin/Function1<kotlin/Throwable, kotlin/Unit>? = ..., kotlin/String? = ..., kotlin/String? = ..., kotlin/String = ..., ai.torad.aisdk/MCPClientCapabilities = ...): ai.torad.aisdk/MCPClientConfig // ai.torad.aisdk/MCPClientConfig.copy|copy(ai.torad.aisdk.MCPTransport;kotlin.Function1<kotlin.Throwable,kotlin.Unit>?;kotlin.String?;kotlin.String?;kotlin.String;ai.torad.aisdk.MCPClientCapabilities){}[0]
-    final fun equals(kotlin/Any?): kotlin/Boolean // ai.torad.aisdk/MCPClientConfig.equals|equals(kotlin.Any?){}[0]
-    final fun hashCode(): kotlin/Int // ai.torad.aisdk/MCPClientConfig.hashCode|hashCode(){}[0]
-    final fun toString(): kotlin/String // ai.torad.aisdk/MCPClientConfig.toString|toString(){}[0]
+final class ai.torad.aisdk/MCPClientConfigBuilder { // ai.torad.aisdk/MCPClientConfigBuilder|null[0]
+    final fun capabilities(ai.torad.aisdk/MCPClientCapabilities) // ai.torad.aisdk/MCPClientConfigBuilder.capabilities|capabilities(ai.torad.aisdk.MCPClientCapabilities){}[0]
+    final fun clientName(kotlin/String?) // ai.torad.aisdk/MCPClientConfigBuilder.clientName|clientName(kotlin.String?){}[0]
+    final fun name(kotlin/String?) // ai.torad.aisdk/MCPClientConfigBuilder.name|name(kotlin.String?){}[0]
+    final fun onUncaughtError(kotlin/Function1<kotlin/Throwable, kotlin/Unit>?) // ai.torad.aisdk/MCPClientConfigBuilder.onUncaughtError|onUncaughtError(kotlin.Function1<kotlin.Throwable,kotlin.Unit>?){}[0]
+    final fun transport(ai.torad.aisdk/MCPTransport) // ai.torad.aisdk/MCPClientConfigBuilder.transport|transport(ai.torad.aisdk.MCPTransport){}[0]
+    final fun version(kotlin/String) // ai.torad.aisdk/MCPClientConfigBuilder.version|version(kotlin.String){}[0]
 }
 
 final class ai.torad.aisdk/MCPClientError : ai.torad.aisdk/AiSdkException { // ai.torad.aisdk/MCPClientError|null[0]
@@ -9374,22 +9362,18 @@ final class ai.torad.aisdk/MCPReconnectionOptions { // ai.torad.aisdk/MCPReconne
 }
 
 final class ai.torad.aisdk/MCPRequestOptions { // ai.torad.aisdk/MCPRequestOptions|null[0]
-    constructor <init>(ai.torad.aisdk/AbortSignal? = ..., kotlin/Long? = ..., kotlin/Long? = ...) // ai.torad.aisdk/MCPRequestOptions.<init>|<init>(ai.torad.aisdk.AbortSignal?;kotlin.Long?;kotlin.Long?){}[0]
-
     final val maxTotalTimeoutMillis // ai.torad.aisdk/MCPRequestOptions.maxTotalTimeoutMillis|{}maxTotalTimeoutMillis[0]
         final fun <get-maxTotalTimeoutMillis>(): kotlin/Long? // ai.torad.aisdk/MCPRequestOptions.maxTotalTimeoutMillis.<get-maxTotalTimeoutMillis>|<get-maxTotalTimeoutMillis>(){}[0]
     final val signal // ai.torad.aisdk/MCPRequestOptions.signal|{}signal[0]
         final fun <get-signal>(): ai.torad.aisdk/AbortSignal? // ai.torad.aisdk/MCPRequestOptions.signal.<get-signal>|<get-signal>(){}[0]
     final val timeoutMillis // ai.torad.aisdk/MCPRequestOptions.timeoutMillis|{}timeoutMillis[0]
         final fun <get-timeoutMillis>(): kotlin/Long? // ai.torad.aisdk/MCPRequestOptions.timeoutMillis.<get-timeoutMillis>|<get-timeoutMillis>(){}[0]
+}
 
-    final fun component1(): ai.torad.aisdk/AbortSignal? // ai.torad.aisdk/MCPRequestOptions.component1|component1(){}[0]
-    final fun component2(): kotlin/Long? // ai.torad.aisdk/MCPRequestOptions.component2|component2(){}[0]
-    final fun component3(): kotlin/Long? // ai.torad.aisdk/MCPRequestOptions.component3|component3(){}[0]
-    final fun copy(ai.torad.aisdk/AbortSignal? = ..., kotlin/Long? = ..., kotlin/Long? = ...): ai.torad.aisdk/MCPRequestOptions // ai.torad.aisdk/MCPRequestOptions.copy|copy(ai.torad.aisdk.AbortSignal?;kotlin.Long?;kotlin.Long?){}[0]
-    final fun equals(kotlin/Any?): kotlin/Boolean // ai.torad.aisdk/MCPRequestOptions.equals|equals(kotlin.Any?){}[0]
-    final fun hashCode(): kotlin/Int // ai.torad.aisdk/MCPRequestOptions.hashCode|hashCode(){}[0]
-    final fun toString(): kotlin/String // ai.torad.aisdk/MCPRequestOptions.toString|toString(){}[0]
+final class ai.torad.aisdk/MCPRequestOptionsBuilder { // ai.torad.aisdk/MCPRequestOptionsBuilder|null[0]
+    final fun maxTotalTimeoutMillis(kotlin/Long?) // ai.torad.aisdk/MCPRequestOptionsBuilder.maxTotalTimeoutMillis|maxTotalTimeoutMillis(kotlin.Long?){}[0]
+    final fun signal(ai.torad.aisdk/AbortSignal?) // ai.torad.aisdk/MCPRequestOptionsBuilder.signal|signal(ai.torad.aisdk.AbortSignal?){}[0]
+    final fun timeoutMillis(kotlin/Long?) // ai.torad.aisdk/MCPRequestOptionsBuilder.timeoutMillis|timeoutMillis(kotlin.Long?){}[0]
 }
 
 final class ai.torad.aisdk/MCPResource { // ai.torad.aisdk/MCPResource|null[0]
@@ -9555,8 +9539,6 @@ final class ai.torad.aisdk/MCPToolSchema { // ai.torad.aisdk/MCPToolSchema|null[
 }
 
 final class ai.torad.aisdk/MCPTransportConfig { // ai.torad.aisdk/MCPTransportConfig|null[0]
-    constructor <init>(ai.torad.aisdk/MCPTransportKind, kotlin/String, kotlin.collections/Map<kotlin/String, kotlin/String> = ..., ai.torad.aisdk/OAuthClientProvider? = ..., kotlin.coroutines/CoroutineContext = ..., ai.torad.aisdk/MCPReconnectionOptions = ...) // ai.torad.aisdk/MCPTransportConfig.<init>|<init>(ai.torad.aisdk.MCPTransportKind;kotlin.String;kotlin.collections.Map<kotlin.String,kotlin.String>;ai.torad.aisdk.OAuthClientProvider?;kotlin.coroutines.CoroutineContext;ai.torad.aisdk.MCPReconnectionOptions){}[0]
-
     final val authProvider // ai.torad.aisdk/MCPTransportConfig.authProvider|{}authProvider[0]
         final fun <get-authProvider>(): ai.torad.aisdk/OAuthClientProvider? // ai.torad.aisdk/MCPTransportConfig.authProvider.<get-authProvider>|<get-authProvider>(){}[0]
     final val engineContext // ai.torad.aisdk/MCPTransportConfig.engineContext|{}engineContext[0]
@@ -9569,17 +9551,15 @@ final class ai.torad.aisdk/MCPTransportConfig { // ai.torad.aisdk/MCPTransportCo
         final fun <get-type>(): ai.torad.aisdk/MCPTransportKind // ai.torad.aisdk/MCPTransportConfig.type.<get-type>|<get-type>(){}[0]
     final val url // ai.torad.aisdk/MCPTransportConfig.url|{}url[0]
         final fun <get-url>(): kotlin/String // ai.torad.aisdk/MCPTransportConfig.url.<get-url>|<get-url>(){}[0]
+}
 
-    final fun component1(): ai.torad.aisdk/MCPTransportKind // ai.torad.aisdk/MCPTransportConfig.component1|component1(){}[0]
-    final fun component2(): kotlin/String // ai.torad.aisdk/MCPTransportConfig.component2|component2(){}[0]
-    final fun component3(): kotlin.collections/Map<kotlin/String, kotlin/String> // ai.torad.aisdk/MCPTransportConfig.component3|component3(){}[0]
-    final fun component4(): ai.torad.aisdk/OAuthClientProvider? // ai.torad.aisdk/MCPTransportConfig.component4|component4(){}[0]
-    final fun component5(): kotlin.coroutines/CoroutineContext // ai.torad.aisdk/MCPTransportConfig.component5|component5(){}[0]
-    final fun component6(): ai.torad.aisdk/MCPReconnectionOptions // ai.torad.aisdk/MCPTransportConfig.component6|component6(){}[0]
-    final fun copy(ai.torad.aisdk/MCPTransportKind = ..., kotlin/String = ..., kotlin.collections/Map<kotlin/String, kotlin/String> = ..., ai.torad.aisdk/OAuthClientProvider? = ..., kotlin.coroutines/CoroutineContext = ..., ai.torad.aisdk/MCPReconnectionOptions = ...): ai.torad.aisdk/MCPTransportConfig // ai.torad.aisdk/MCPTransportConfig.copy|copy(ai.torad.aisdk.MCPTransportKind;kotlin.String;kotlin.collections.Map<kotlin.String,kotlin.String>;ai.torad.aisdk.OAuthClientProvider?;kotlin.coroutines.CoroutineContext;ai.torad.aisdk.MCPReconnectionOptions){}[0]
-    final fun equals(kotlin/Any?): kotlin/Boolean // ai.torad.aisdk/MCPTransportConfig.equals|equals(kotlin.Any?){}[0]
-    final fun hashCode(): kotlin/Int // ai.torad.aisdk/MCPTransportConfig.hashCode|hashCode(){}[0]
-    final fun toString(): kotlin/String // ai.torad.aisdk/MCPTransportConfig.toString|toString(){}[0]
+final class ai.torad.aisdk/MCPTransportConfigBuilder { // ai.torad.aisdk/MCPTransportConfigBuilder|null[0]
+    final fun authProvider(ai.torad.aisdk/OAuthClientProvider?) // ai.torad.aisdk/MCPTransportConfigBuilder.authProvider|authProvider(ai.torad.aisdk.OAuthClientProvider?){}[0]
+    final fun engineContext(kotlin.coroutines/CoroutineContext) // ai.torad.aisdk/MCPTransportConfigBuilder.engineContext|engineContext(kotlin.coroutines.CoroutineContext){}[0]
+    final fun headers(kotlin.collections/Map<kotlin/String, kotlin/String>) // ai.torad.aisdk/MCPTransportConfigBuilder.headers|headers(kotlin.collections.Map<kotlin.String,kotlin.String>){}[0]
+    final fun reconnectionOptions(ai.torad.aisdk/MCPReconnectionOptions) // ai.torad.aisdk/MCPTransportConfigBuilder.reconnectionOptions|reconnectionOptions(ai.torad.aisdk.MCPReconnectionOptions){}[0]
+    final fun type(ai.torad.aisdk/MCPTransportKind) // ai.torad.aisdk/MCPTransportConfigBuilder.type|type(ai.torad.aisdk.MCPTransportKind){}[0]
+    final fun url(kotlin/String) // ai.torad.aisdk/MCPTransportConfigBuilder.url|url(kotlin.String){}[0]
 }
 
 final class ai.torad.aisdk/MessageConversionError : ai.torad.aisdk/AiSdkException { // ai.torad.aisdk/MessageConversionError|null[0]
@@ -10393,8 +10373,6 @@ final class ai.torad.aisdk/TelemetryRegistry { // ai.torad.aisdk/TelemetryRegist
 }
 
 final class ai.torad.aisdk/TelemetrySettings { // ai.torad.aisdk/TelemetrySettings|null[0]
-    constructor <init>(kotlin/Boolean? = ..., kotlin/String? = ..., kotlin.collections/Map<kotlin/String, kotlinx.serialization.json/JsonElement> = ..., kotlin/Boolean = ..., kotlin/Boolean = ..., kotlin.collections/List<ai.torad.aisdk/Telemetry> = ..., ai.torad.aisdk/TelemetryTracer? = ...) // ai.torad.aisdk/TelemetrySettings.<init>|<init>(kotlin.Boolean?;kotlin.String?;kotlin.collections.Map<kotlin.String,kotlinx.serialization.json.JsonElement>;kotlin.Boolean;kotlin.Boolean;kotlin.collections.List<ai.torad.aisdk.Telemetry>;ai.torad.aisdk.TelemetryTracer?){}[0]
-
     final val functionId // ai.torad.aisdk/TelemetrySettings.functionId|{}functionId[0]
         final fun <get-functionId>(): kotlin/String? // ai.torad.aisdk/TelemetrySettings.functionId.<get-functionId>|<get-functionId>(){}[0]
     final val integrations // ai.torad.aisdk/TelemetrySettings.integrations|{}integrations[0]
@@ -10409,23 +10387,19 @@ final class ai.torad.aisdk/TelemetrySettings { // ai.torad.aisdk/TelemetrySettin
         final fun <get-recordOutputs>(): kotlin/Boolean // ai.torad.aisdk/TelemetrySettings.recordOutputs.<get-recordOutputs>|<get-recordOutputs>(){}[0]
     final val tracer // ai.torad.aisdk/TelemetrySettings.tracer|{}tracer[0]
         final fun <get-tracer>(): ai.torad.aisdk/TelemetryTracer? // ai.torad.aisdk/TelemetrySettings.tracer.<get-tracer>|<get-tracer>(){}[0]
+}
 
-    final fun component1(): kotlin/Boolean? // ai.torad.aisdk/TelemetrySettings.component1|component1(){}[0]
-    final fun component2(): kotlin/String? // ai.torad.aisdk/TelemetrySettings.component2|component2(){}[0]
-    final fun component3(): kotlin.collections/Map<kotlin/String, kotlinx.serialization.json/JsonElement> // ai.torad.aisdk/TelemetrySettings.component3|component3(){}[0]
-    final fun component4(): kotlin/Boolean // ai.torad.aisdk/TelemetrySettings.component4|component4(){}[0]
-    final fun component5(): kotlin/Boolean // ai.torad.aisdk/TelemetrySettings.component5|component5(){}[0]
-    final fun component6(): kotlin.collections/List<ai.torad.aisdk/Telemetry> // ai.torad.aisdk/TelemetrySettings.component6|component6(){}[0]
-    final fun component7(): ai.torad.aisdk/TelemetryTracer? // ai.torad.aisdk/TelemetrySettings.component7|component7(){}[0]
-    final fun copy(kotlin/Boolean? = ..., kotlin/String? = ..., kotlin.collections/Map<kotlin/String, kotlinx.serialization.json/JsonElement> = ..., kotlin/Boolean = ..., kotlin/Boolean = ..., kotlin.collections/List<ai.torad.aisdk/Telemetry> = ..., ai.torad.aisdk/TelemetryTracer? = ...): ai.torad.aisdk/TelemetrySettings // ai.torad.aisdk/TelemetrySettings.copy|copy(kotlin.Boolean?;kotlin.String?;kotlin.collections.Map<kotlin.String,kotlinx.serialization.json.JsonElement>;kotlin.Boolean;kotlin.Boolean;kotlin.collections.List<ai.torad.aisdk.Telemetry>;ai.torad.aisdk.TelemetryTracer?){}[0]
-    final fun equals(kotlin/Any?): kotlin/Boolean // ai.torad.aisdk/TelemetrySettings.equals|equals(kotlin.Any?){}[0]
-    final fun hashCode(): kotlin/Int // ai.torad.aisdk/TelemetrySettings.hashCode|hashCode(){}[0]
-    final fun toString(): kotlin/String // ai.torad.aisdk/TelemetrySettings.toString|toString(){}[0]
+final class ai.torad.aisdk/TelemetrySettingsBuilder { // ai.torad.aisdk/TelemetrySettingsBuilder|null[0]
+    final fun functionId(kotlin/String?) // ai.torad.aisdk/TelemetrySettingsBuilder.functionId|functionId(kotlin.String?){}[0]
+    final fun integrations(kotlin.collections/List<ai.torad.aisdk/Telemetry>) // ai.torad.aisdk/TelemetrySettingsBuilder.integrations|integrations(kotlin.collections.List<ai.torad.aisdk.Telemetry>){}[0]
+    final fun isEnabled(kotlin/Boolean?) // ai.torad.aisdk/TelemetrySettingsBuilder.isEnabled|isEnabled(kotlin.Boolean?){}[0]
+    final fun metadata(kotlin.collections/Map<kotlin/String, kotlinx.serialization.json/JsonElement>) // ai.torad.aisdk/TelemetrySettingsBuilder.metadata|metadata(kotlin.collections.Map<kotlin.String,kotlinx.serialization.json.JsonElement>){}[0]
+    final fun recordInputs(kotlin/Boolean) // ai.torad.aisdk/TelemetrySettingsBuilder.recordInputs|recordInputs(kotlin.Boolean){}[0]
+    final fun recordOutputs(kotlin/Boolean) // ai.torad.aisdk/TelemetrySettingsBuilder.recordOutputs|recordOutputs(kotlin.Boolean){}[0]
+    final fun tracer(ai.torad.aisdk/TelemetryTracer?) // ai.torad.aisdk/TelemetrySettingsBuilder.tracer|tracer(ai.torad.aisdk.TelemetryTracer?){}[0]
 }
 
 final class ai.torad.aisdk/TextGenerationRequest { // ai.torad.aisdk/TextGenerationRequest|null[0]
-    constructor <init>(kotlin/String? = ..., kotlin.collections/List<ai.torad.aisdk/ModelMessage> = ..., kotlin/String? = ..., ai.torad.aisdk/CallSettings = ...) // ai.torad.aisdk/TextGenerationRequest.<init>|<init>(kotlin.String?;kotlin.collections.List<ai.torad.aisdk.ModelMessage>;kotlin.String?;ai.torad.aisdk.CallSettings){}[0]
-
     final val input // ai.torad.aisdk/TextGenerationRequest.input|{}input[0]
         final fun <get-input>(): ai.torad.aisdk/TextGenerationRequest.Input // ai.torad.aisdk/TextGenerationRequest.input.<get-input>|<get-input>(){}[0]
     final val messages // ai.torad.aisdk/TextGenerationRequest.messages|{}messages[0]
@@ -10437,11 +10411,6 @@ final class ai.torad.aisdk/TextGenerationRequest { // ai.torad.aisdk/TextGenerat
     final val system // ai.torad.aisdk/TextGenerationRequest.system|{}system[0]
         final fun <get-system>(): kotlin/String? // ai.torad.aisdk/TextGenerationRequest.system.<get-system>|<get-system>(){}[0]
 
-    final fun component1(): kotlin/String? // ai.torad.aisdk/TextGenerationRequest.component1|component1(){}[0]
-    final fun component2(): kotlin.collections/List<ai.torad.aisdk/ModelMessage> // ai.torad.aisdk/TextGenerationRequest.component2|component2(){}[0]
-    final fun component3(): kotlin/String? // ai.torad.aisdk/TextGenerationRequest.component3|component3(){}[0]
-    final fun component4(): ai.torad.aisdk/CallSettings // ai.torad.aisdk/TextGenerationRequest.component4|component4(){}[0]
-    final fun copy(kotlin/String? = ..., kotlin.collections/List<ai.torad.aisdk/ModelMessage> = ..., kotlin/String? = ..., ai.torad.aisdk/CallSettings = ...): ai.torad.aisdk/TextGenerationRequest // ai.torad.aisdk/TextGenerationRequest.copy|copy(kotlin.String?;kotlin.collections.List<ai.torad.aisdk.ModelMessage>;kotlin.String?;ai.torad.aisdk.CallSettings){}[0]
     final fun equals(kotlin/Any?): kotlin/Boolean // ai.torad.aisdk/TextGenerationRequest.equals|equals(kotlin.Any?){}[0]
     final fun hashCode(): kotlin/Int // ai.torad.aisdk/TextGenerationRequest.hashCode|hashCode(){}[0]
     final fun toString(): kotlin/String // ai.torad.aisdk/TextGenerationRequest.toString|toString(){}[0]
@@ -13854,6 +13823,7 @@ final fun <#A: kotlin/Any?> ai.torad.aisdk/OutputArray(kotlinx.serialization/KSe
 final fun <#A: kotlin/Any?> ai.torad.aisdk/OutputChoice(kotlin.collections/Iterable<#A>, kotlin/Function1<#A, kotlin/String>, kotlin/Function1<kotlin/String, #A>, kotlin/String = ..., kotlin/String? = ...): ai.torad.aisdk/Output<#A> // ai.torad.aisdk/OutputChoice|OutputChoice(kotlin.collections.Iterable<0:0>;kotlin.Function1<0:0,kotlin.String>;kotlin.Function1<kotlin.String,0:0>;kotlin.String;kotlin.String?){0§<kotlin.Any?>}[0]
 final fun <#A: kotlin/Any?> ai.torad.aisdk/OutputObj(kotlinx.serialization/KSerializer<#A>, kotlin/String = ..., kotlin/String? = ...): ai.torad.aisdk/Output<#A> // ai.torad.aisdk/OutputObj|OutputObj(kotlinx.serialization.KSerializer<0:0>;kotlin.String;kotlin.String?){0§<kotlin.Any?>}[0]
 final fun <#A: kotlin/Any?> ai.torad.aisdk/StreamObjectResult(ai.torad.aisdk/LanguageModel, ai.torad.aisdk/Output<#A>, kotlin/String? = ..., kotlin.collections/List<ai.torad.aisdk/ModelMessage> = ..., kotlin/String? = ..., kotlin/Float? = ..., kotlin/Float? = ..., kotlin/Int? = ..., kotlin/Int? = ..., kotlin.collections/List<kotlin/String> = ..., kotlin/Int? = ..., ai.torad.aisdk/ProviderOptions = ..., ai.torad.aisdk/AbortSignal = ..., kotlin/Float? = ..., kotlin/Float? = ..., ai.torad.aisdk/ResponseFormat = ..., kotlin/Function1<kotlin/String, kotlin/String?>? = ...): ai.torad.aisdk/StreamObjectResult<#A> // ai.torad.aisdk/StreamObjectResult|StreamObjectResult(ai.torad.aisdk.LanguageModel;ai.torad.aisdk.Output<0:0>;kotlin.String?;kotlin.collections.List<ai.torad.aisdk.ModelMessage>;kotlin.String?;kotlin.Float?;kotlin.Float?;kotlin.Int?;kotlin.Int?;kotlin.collections.List<kotlin.String>;kotlin.Int?;ai.torad.aisdk.ProviderOptions;ai.torad.aisdk.AbortSignal;kotlin.Float?;kotlin.Float?;ai.torad.aisdk.ResponseFormat;kotlin.Function1<kotlin.String,kotlin.String?>?){0§<kotlin.Any?>}[0]
+final fun <#A: kotlin/Any?> ai.torad.aisdk/StructuredObjectRequest(kotlin/Function1<ai.torad.aisdk/StructuredObjectRequestBuilder<#A>, kotlin/Unit> = ...): ai.torad.aisdk/StructuredObjectRequest<#A> // ai.torad.aisdk/StructuredObjectRequest|StructuredObjectRequest(kotlin.Function1<ai.torad.aisdk.StructuredObjectRequestBuilder<0:0>,kotlin.Unit>){0§<kotlin.Any?>}[0]
 final fun <#A: kotlin/Any?> ai.torad.aisdk/ToolSet(kotlin/Array<out ai.torad.aisdk/Tool<*, *, #A>>...): ai.torad.aisdk/ToolSet<#A> // ai.torad.aisdk/ToolSet|ToolSet(kotlin.Array<out|ai.torad.aisdk.Tool<*,*,0:0>>...){0§<kotlin.Any?>}[0]
 final fun ai.torad.aisdk.middleware/AddToolInputExamplesMiddleware(kotlin.collections/Map<kotlin/String, kotlin.collections/List<kotlin/String>>): ai.torad.aisdk/LanguageModelMiddleware // ai.torad.aisdk.middleware/AddToolInputExamplesMiddleware|AddToolInputExamplesMiddleware(kotlin.collections.Map<kotlin.String,kotlin.collections.List<kotlin.String>>){}[0]
 final fun ai.torad.aisdk.middleware/DefaultSettingsMiddleware(kotlin/Float? = ..., kotlin/Float? = ..., kotlin/Int? = ..., kotlin/Int? = ..., kotlin.collections/List<kotlin/String> = ..., kotlin/Int? = ..., kotlin.collections/List<ai.torad.aisdk/LanguageModelTool> = ..., ai.torad.aisdk/ToolChoice? = ..., kotlin.collections/Map<kotlin/String, kotlin/String> = ..., ai.torad.aisdk/ProviderOptions = ..., kotlin/Float? = ..., kotlin/Float? = ..., ai.torad.aisdk/ResponseFormat = ...): ai.torad.aisdk/LanguageModelMiddleware // ai.torad.aisdk.middleware/DefaultSettingsMiddleware|DefaultSettingsMiddleware(kotlin.Float?;kotlin.Float?;kotlin.Int?;kotlin.Int?;kotlin.collections.List<kotlin.String>;kotlin.Int?;kotlin.collections.List<ai.torad.aisdk.LanguageModelTool>;ai.torad.aisdk.ToolChoice?;kotlin.collections.Map<kotlin.String,kotlin.String>;ai.torad.aisdk.ProviderOptions;kotlin.Float?;kotlin.Float?;ai.torad.aisdk.ResponseFormat){}[0]
@@ -14014,6 +13984,7 @@ final fun ai.torad.aisdk.providers/Xai(io.ktor.client/HttpClient, ai.torad.aisdk
 final fun ai.torad.aisdk.providers/XaiImageModelOptions(kotlin/Function1<ai.torad.aisdk.providers/XaiImageModelOptionsBuilder, kotlin/Unit> = ...): ai.torad.aisdk.providers/XaiImageModelOptions // ai.torad.aisdk.providers/XaiImageModelOptions|XaiImageModelOptions(kotlin.Function1<ai.torad.aisdk.providers.XaiImageModelOptionsBuilder,kotlin.Unit>){}[0]
 final fun ai.torad.aisdk.providers/XaiProviderSettings(kotlin/Function1<ai.torad.aisdk.providers/XaiProviderSettingsBuilder, kotlin/Unit> = ...): ai.torad.aisdk.providers/XaiProviderSettings // ai.torad.aisdk.providers/XaiProviderSettings|XaiProviderSettings(kotlin.Function1<ai.torad.aisdk.providers.XaiProviderSettingsBuilder,kotlin.Unit>){}[0]
 final fun ai.torad.aisdk.providers/XaiVideoModelOptions(kotlin/Function1<ai.torad.aisdk.providers/XaiVideoModelOptionsBuilder, kotlin/Unit> = ...): ai.torad.aisdk.providers/XaiVideoModelOptions // ai.torad.aisdk.providers/XaiVideoModelOptions|XaiVideoModelOptions(kotlin.Function1<ai.torad.aisdk.providers.XaiVideoModelOptionsBuilder,kotlin.Unit>){}[0]
+final fun ai.torad.aisdk.ui/ChatRequest(kotlin/Function1<ai.torad.aisdk.ui/ChatRequestBuilder, kotlin/Unit> = ...): ai.torad.aisdk.ui/ChatRequest // ai.torad.aisdk.ui/ChatRequest|ChatRequest(kotlin.Function1<ai.torad.aisdk.ui.ChatRequestBuilder,kotlin.Unit>){}[0]
 final fun ai.torad.aisdk.ui/ChatSession(kotlin/String = ..., kotlin.collections/List<ai.torad.aisdk.ui/UIMessage> = ..., ai.torad.aisdk.ui/ChatTransport): ai.torad.aisdk.ui/ChatSession // ai.torad.aisdk.ui/ChatSession|ChatSession(kotlin.String;kotlin.collections.List<ai.torad.aisdk.ui.UIMessage>;ai.torad.aisdk.ui.ChatTransport){}[0]
 final fun ai.torad.aisdk.ui/CreateTextStreamResponse(kotlinx.coroutines.flow/Flow<kotlin/String>, kotlin/Int = ..., kotlin.collections/Map<kotlin/String, kotlin/String> = ...): ai.torad.aisdk.ui/TextStreamResponse // ai.torad.aisdk.ui/CreateTextStreamResponse|CreateTextStreamResponse(kotlinx.coroutines.flow.Flow<kotlin.String>;kotlin.Int;kotlin.collections.Map<kotlin.String,kotlin.String>){}[0]
 final fun ai.torad.aisdk.ui/CreateUiMessageStream(kotlin/Function1<kotlin/Throwable, ai.torad.aisdk.ui/UIMessage> = ..., kotlin.coroutines/SuspendFunction1<ai.torad.aisdk.ui/UIMessageStreamWriter, kotlin/Unit>): kotlinx.coroutines.flow/Flow<ai.torad.aisdk.ui/UIMessage> // ai.torad.aisdk.ui/CreateUiMessageStream|CreateUiMessageStream(kotlin.Function1<kotlin.Throwable,ai.torad.aisdk.ui.UIMessage>;kotlin.coroutines.SuspendFunction1<ai.torad.aisdk.ui.UIMessageStreamWriter,kotlin.Unit>){}[0]
@@ -14032,6 +14003,7 @@ final fun ai.torad.aisdk/AuthOptions(kotlin/Function1<ai.torad.aisdk/AuthOptions
 final fun ai.torad.aisdk/CallCompletionApiOptions(kotlin/Function1<ai.torad.aisdk/CallCompletionApiOptionsBuilder, kotlin/Unit> = ...): ai.torad.aisdk/CallCompletionApiOptions // ai.torad.aisdk/CallCompletionApiOptions|CallCompletionApiOptions(kotlin.Function1<ai.torad.aisdk.CallCompletionApiOptionsBuilder,kotlin.Unit>){}[0]
 final fun ai.torad.aisdk/CallSettings(kotlin/Function1<ai.torad.aisdk/CallSettingsBuilder, kotlin/Unit>): ai.torad.aisdk/CallSettings // ai.torad.aisdk/CallSettings|CallSettings(kotlin.Function1<ai.torad.aisdk.CallSettingsBuilder,kotlin.Unit>){}[0]
 final fun ai.torad.aisdk/CombineAbortSignals(kotlin/Array<out ai.torad.aisdk/AbortSignal>...): ai.torad.aisdk/AbortSignal // ai.torad.aisdk/CombineAbortSignals|CombineAbortSignals(kotlin.Array<out|ai.torad.aisdk.AbortSignal>...){}[0]
+final fun ai.torad.aisdk/CompletionRequest(kotlin/Function1<ai.torad.aisdk/CompletionRequestBuilder, kotlin/Unit> = ...): ai.torad.aisdk/CompletionRequest // ai.torad.aisdk/CompletionRequest|CompletionRequest(kotlin.Function1<ai.torad.aisdk.CompletionRequestBuilder,kotlin.Unit>){}[0]
 final fun ai.torad.aisdk/CompletionRequestOptions(kotlin/Function1<ai.torad.aisdk/CompletionRequestOptionsBuilder, kotlin/Unit> = ...): ai.torad.aisdk/CompletionRequestOptions // ai.torad.aisdk/CompletionRequestOptions|CompletionRequestOptions(kotlin.Function1<ai.torad.aisdk.CompletionRequestOptionsBuilder,kotlin.Unit>){}[0]
 final fun ai.torad.aisdk/CreateGatewayHttpProvider(io.ktor.client/HttpClient, ai.torad.aisdk/GatewayProviderSettings = ..., kotlinx.serialization.json/Json = ...): ai.torad.aisdk/GatewayProvider // ai.torad.aisdk/CreateGatewayHttpProvider|CreateGatewayHttpProvider(io.ktor.client.HttpClient;ai.torad.aisdk.GatewayProviderSettings;kotlinx.serialization.json.Json){}[0]
 final fun ai.torad.aisdk/CreateMcpTransport(io.ktor.client/HttpClient, ai.torad.aisdk/MCPTransportConfig): ai.torad.aisdk/MCPTransport // ai.torad.aisdk/CreateMcpTransport|CreateMcpTransport(io.ktor.client.HttpClient;ai.torad.aisdk.MCPTransportConfig){}[0]
@@ -14046,6 +14018,9 @@ final fun ai.torad.aisdk/GeneratedFile(ai.torad.aisdk/FileData, kotlin/String = 
 final fun ai.torad.aisdk/HasToolCall(kotlin/String): ai.torad.aisdk/StopCondition // ai.torad.aisdk/HasToolCall|HasToolCall(kotlin.String){}[0]
 final fun ai.torad.aisdk/ImageGenerationFile(ai.torad.aisdk/FileData): ai.torad.aisdk/ImageGenerationFile // ai.torad.aisdk/ImageGenerationFile|ImageGenerationFile(ai.torad.aisdk.FileData){}[0]
 final fun ai.torad.aisdk/ImageGenerationParams(kotlin/Function1<ai.torad.aisdk/ImageGenerationParamsBuilder, kotlin/Unit> = ...): ai.torad.aisdk/ImageGenerationParams // ai.torad.aisdk/ImageGenerationParams|ImageGenerationParams(kotlin.Function1<ai.torad.aisdk.ImageGenerationParamsBuilder,kotlin.Unit>){}[0]
+final fun ai.torad.aisdk/MCPClientConfig(kotlin/Function1<ai.torad.aisdk/MCPClientConfigBuilder, kotlin/Unit> = ...): ai.torad.aisdk/MCPClientConfig // ai.torad.aisdk/MCPClientConfig|MCPClientConfig(kotlin.Function1<ai.torad.aisdk.MCPClientConfigBuilder,kotlin.Unit>){}[0]
+final fun ai.torad.aisdk/MCPRequestOptions(kotlin/Function1<ai.torad.aisdk/MCPRequestOptionsBuilder, kotlin/Unit> = ...): ai.torad.aisdk/MCPRequestOptions // ai.torad.aisdk/MCPRequestOptions|MCPRequestOptions(kotlin.Function1<ai.torad.aisdk.MCPRequestOptionsBuilder,kotlin.Unit>){}[0]
+final fun ai.torad.aisdk/MCPTransportConfig(kotlin/Function1<ai.torad.aisdk/MCPTransportConfigBuilder, kotlin/Unit> = ...): ai.torad.aisdk/MCPTransportConfig // ai.torad.aisdk/MCPTransportConfig|MCPTransportConfig(kotlin.Function1<ai.torad.aisdk.MCPTransportConfigBuilder,kotlin.Unit>){}[0]
 final fun ai.torad.aisdk/ModelRef(ai.torad.aisdk/ProviderId, ai.torad.aisdk/ModelId): ai.torad.aisdk/ModelRef // ai.torad.aisdk/ModelRef|ModelRef(ai.torad.aisdk.ProviderId;ai.torad.aisdk.ModelId){}[0]
 final fun ai.torad.aisdk/ModelRef(kotlin/String): ai.torad.aisdk/ModelRef // ai.torad.aisdk/ModelRef|ModelRef(kotlin.String){}[0]
 final fun ai.torad.aisdk/ModelRef(kotlin/String, kotlin/String): ai.torad.aisdk/ModelRef // ai.torad.aisdk/ModelRef|ModelRef(kotlin.String;kotlin.String){}[0]
@@ -14059,7 +14034,8 @@ final fun ai.torad.aisdk/SmoothStream(kotlinx.coroutines.flow/Flow<ai.torad.aisd
 final fun ai.torad.aisdk/SpeechGenerationParams(kotlin/Function1<ai.torad.aisdk/SpeechGenerationParamsBuilder, kotlin/Unit> = ...): ai.torad.aisdk/SpeechGenerationParams // ai.torad.aisdk/SpeechGenerationParams|SpeechGenerationParams(kotlin.Function1<ai.torad.aisdk.SpeechGenerationParamsBuilder,kotlin.Unit>){}[0]
 final fun ai.torad.aisdk/StepCountIs(kotlin/Int): ai.torad.aisdk/StopCondition // ai.torad.aisdk/StepCountIs|StepCountIs(kotlin.Int){}[0]
 final fun ai.torad.aisdk/SystemMessage(kotlin/String): ai.torad.aisdk/ModelMessage // ai.torad.aisdk/SystemMessage|SystemMessage(kotlin.String){}[0]
-final fun ai.torad.aisdk/TextGenerationRequest(kotlin/Function1<ai.torad.aisdk/TextGenerationRequestBuilder, kotlin/Unit>): ai.torad.aisdk/TextGenerationRequest // ai.torad.aisdk/TextGenerationRequest|TextGenerationRequest(kotlin.Function1<ai.torad.aisdk.TextGenerationRequestBuilder,kotlin.Unit>){}[0]
+final fun ai.torad.aisdk/TelemetrySettings(kotlin/Function1<ai.torad.aisdk/TelemetrySettingsBuilder, kotlin/Unit> = ...): ai.torad.aisdk/TelemetrySettings // ai.torad.aisdk/TelemetrySettings|TelemetrySettings(kotlin.Function1<ai.torad.aisdk.TelemetrySettingsBuilder,kotlin.Unit>){}[0]
+final fun ai.torad.aisdk/TextGenerationRequest(kotlin/Function1<ai.torad.aisdk/TextGenerationRequestBuilder, kotlin/Unit> = ...): ai.torad.aisdk/TextGenerationRequest // ai.torad.aisdk/TextGenerationRequest|TextGenerationRequest(kotlin.Function1<ai.torad.aisdk.TextGenerationRequestBuilder,kotlin.Unit>){}[0]
 final fun ai.torad.aisdk/ToolApprovalResponseMessage(kotlin/String, kotlin/Boolean, kotlin/String? = ..., kotlin/String? = ...): ai.torad.aisdk/ModelMessage // ai.torad.aisdk/ToolApprovalResponseMessage|ToolApprovalResponseMessage(kotlin.String;kotlin.Boolean;kotlin.String?;kotlin.String?){}[0]
 final fun ai.torad.aisdk/ToolMessage(kotlin/String, kotlin/String, kotlinx.serialization.json/JsonElement): ai.torad.aisdk/ModelMessage // ai.torad.aisdk/ToolMessage|ToolMessage(kotlin.String;kotlin.String;kotlinx.serialization.json.JsonElement){}[0]
 final fun ai.torad.aisdk/ToolNameMapping(kotlin.collections/List<ai.torad.aisdk/LanguageModelTool> = ..., kotlin.collections/Map<kotlin/String, kotlin/String>, kotlin/Function1<ai.torad.aisdk/LanguageModelTool, kotlin/String?>? = ...): ai.torad.aisdk/ToolNameMapping // ai.torad.aisdk/ToolNameMapping|ToolNameMapping(kotlin.collections.List<ai.torad.aisdk.LanguageModelTool>;kotlin.collections.Map<kotlin.String,kotlin.String>;kotlin.Function1<ai.torad.aisdk.LanguageModelTool,kotlin.String?>?){}[0]

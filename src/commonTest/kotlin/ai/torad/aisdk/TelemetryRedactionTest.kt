@@ -27,7 +27,9 @@ class TelemetryRedactionTest {
     @Test
     fun `telemetry defaults to metadata-only event projection`() = runTest {
         val capturing = CapturingTelemetry()
-        val telemetry = Telemetry.resolveTelemetry(TelemetrySettings(integrations = listOf(capturing)))
+        val telemetry = Telemetry.resolveTelemetry(TelemetrySettings {
+            integrations(listOf(capturing))
+        })
             ?: fail("telemetry should resolve")
         val params = LanguageModelCallParams(
             messages = listOf(UserMessage("prompt secret")),
@@ -83,7 +85,10 @@ class TelemetryRedactionTest {
     fun `recordInputs opt-in still redacts authorization and sensitive keys`() = runTest {
         val capturing = CapturingTelemetry()
         val telemetry = Telemetry.resolveTelemetry(
-            TelemetrySettings(recordInputs = true, integrations = listOf(capturing)),
+            TelemetrySettings {
+                recordInputs(true)
+                integrations(listOf(capturing))
+            },
         ) ?: fail("telemetry should resolve")
 
         telemetry.onEvent(
@@ -112,7 +117,9 @@ class TelemetryRedactionTest {
     @Suppress("LongMethod")
     fun `chunk telemetry redacts approval input raw payloads and streamed tool input by default`() = runTest {
         val capturing = CapturingTelemetry()
-        val telemetry = Telemetry.resolveTelemetry(TelemetrySettings(integrations = listOf(capturing)))
+        val telemetry = Telemetry.resolveTelemetry(TelemetrySettings {
+            integrations(listOf(capturing))
+        })
             ?: fail("telemetry should resolve")
 
         telemetry.onEvent(
@@ -181,7 +188,10 @@ class TelemetryRedactionTest {
     fun `chunk telemetry recordInputs still redacts sensitive approval fields`() = runTest {
         val capturing = CapturingTelemetry()
         val telemetry = Telemetry.resolveTelemetry(
-            TelemetrySettings(recordInputs = true, integrations = listOf(capturing)),
+            TelemetrySettings {
+                recordInputs(true)
+                integrations(listOf(capturing))
+            },
         ) ?: fail("telemetry should resolve")
 
         telemetry.onEvent(
@@ -213,7 +223,9 @@ class TelemetryRedactionTest {
     @Suppress("CyclomaticComplexMethod", "LongMethod")
     fun `chunk telemetry strips provider metadata from stream events`() = runTest {
         val capturing = CapturingTelemetry()
-        val telemetry = Telemetry.resolveTelemetry(TelemetrySettings(integrations = listOf(capturing)))
+        val telemetry = Telemetry.resolveTelemetry(TelemetrySettings {
+            integrations(listOf(capturing))
+        })
             ?: fail("telemetry should resolve")
         val metadata = ProviderMetadata.Raw(buildJsonObject { put("token", "raw-meta-secret") })
         val rawUsage = Usage(raw = buildJsonObject { put("payload", "raw-usage-secret") })
@@ -306,7 +318,10 @@ class TelemetryRedactionTest {
     fun `chunk telemetry raw payloads require input and output opt in`() = runTest {
         val inputOnly = CapturingTelemetry()
         val inputOnlyTelemetry = Telemetry.resolveTelemetry(
-            TelemetrySettings(recordInputs = true, integrations = listOf(inputOnly)),
+            TelemetrySettings {
+                recordInputs(true)
+                integrations(listOf(inputOnly))
+            },
         ) ?: fail("telemetry should resolve")
         inputOnlyTelemetry.onEvent(
             call,
@@ -320,7 +335,11 @@ class TelemetryRedactionTest {
 
         val fullOptIn = CapturingTelemetry()
         val fullOptInTelemetry = Telemetry.resolveTelemetry(
-            TelemetrySettings(recordInputs = true, recordOutputs = true, integrations = listOf(fullOptIn)),
+            TelemetrySettings {
+                recordInputs(true)
+                recordOutputs(true)
+                integrations(listOf(fullOptIn))
+            },
         ) ?: fail("telemetry should resolve")
         fullOptInTelemetry.onEvent(
             call,
@@ -343,7 +362,10 @@ class TelemetryRedactionTest {
     fun `chunk telemetry output source keeps title but strips urls`() = runTest {
         val capturing = CapturingTelemetry()
         val telemetry = Telemetry.resolveTelemetry(
-            TelemetrySettings(recordOutputs = true, integrations = listOf(capturing)),
+            TelemetrySettings {
+                recordOutputs(true)
+                integrations(listOf(capturing))
+            },
         ) ?: fail("telemetry should resolve")
 
         telemetry.onEvent(

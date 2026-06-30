@@ -47,11 +47,11 @@ class MCPClientTest {
         }
 
         val client = CreateMCPClient(
-            MCPClientConfig(
-                transport = transport,
-                clientName = "fixture-client",
-                version = "9.9.9",
-            ),
+            MCPClientConfig {
+                transport(transport)
+                clientName("fixture-client")
+                version("9.9.9")
+            },
         )
 
         assertEquals(1, transport.startCount)
@@ -95,7 +95,9 @@ class MCPClientTest {
                 }
             }
         }
-        val client = CreateMCPClient(MCPClientConfig(transport = transport))
+        val client = CreateMCPClient(MCPClientConfig {
+            transport(transport)
+        })
 
         val toolSet = client.tools<Unit>()
         val echoTool = toolSet.byName["echo"].asJsonTool()
@@ -139,7 +141,9 @@ class MCPClientTest {
                 )
             }
         }
-        val client = CreateMCPClient(MCPClientConfig(transport = transport))
+        val client = CreateMCPClient(MCPClientConfig {
+            transport(transport)
+        })
         val definitions = ListToolsResult(
             tools = listOf(
                 MCPToolDefinition(
@@ -241,7 +245,9 @@ class MCPClientTest {
                 )
             }
         }
-        val client = CreateMCPClient(MCPClientConfig(transport = transport))
+        val client = CreateMCPClient(MCPClientConfig {
+            transport(transport)
+        })
 
         assertEquals("a.txt", client.listResources().resources.single().name)
         assertEquals("hello", client.readResource("file://a").contents.single()["text"]!!.jsonPrimitive.content)
@@ -264,7 +270,9 @@ class MCPClientTest {
                 respond(message.id, initializeResult())
             }
         }
-        val client = CreateMCPClient(MCPClientConfig(transport = transport))
+        val client = CreateMCPClient(MCPClientConfig {
+            transport(transport)
+        })
         client.onElicitationRequest(ElicitationRequestSchema) { request ->
             assertEquals("Need confirmation", request.params.message)
             ElicitResult(
@@ -303,7 +311,9 @@ class MCPClientTest {
                     fail(message.id, code = -32000, message = "boom")
             }
         }
-        val client = CreateMCPClient(MCPClientConfig(transport = transport))
+        val client = CreateMCPClient(MCPClientConfig {
+            transport(transport)
+        })
 
         val error = assertFailsWith<MCPClientError> { client.listTools() }
         assertEquals(-32000, error.code)
@@ -320,7 +330,9 @@ class MCPClientTest {
                 )
             }
         }
-        val client = CreateMCPClient(MCPClientConfig(transport = transport))
+        val client = CreateMCPClient(MCPClientConfig {
+            transport(transport)
+        })
 
         val before = transport.sent.size
         val error = assertFailsWith<MCPClientError> { client.listTools() }
@@ -355,14 +367,16 @@ class MCPClientTest {
             }
         }
         val client = CreateMCPClient(
-            MCPClientConfig(
-                transport = transport,
-                onUncaughtError = { uncaught += it },
-            ),
+            MCPClientConfig {
+                transport(transport)
+                onUncaughtError({ uncaught += it })
+            },
         )
 
         val error = assertFailsWith<MCPClientError> {
-            client.listTools(options = MCPRequestOptions(timeoutMillis = 50))
+            client.listTools(options = MCPRequestOptions {
+                timeoutMillis(50)
+            })
         }
 
         assertEquals("Failed to parse server response", error.message)
@@ -395,7 +409,10 @@ class MCPClientTest {
                 }
             }
         }
-        val client = CreateMCPClient(MCPClientConfig(transport = transport, onUncaughtError = { uncaught += it }))
+        val client = CreateMCPClient(MCPClientConfig {
+            transport(transport)
+            onUncaughtError({ uncaught += it })
+        })
 
         assertEquals("echo", client.listTools().tools.single().name)
         assertTrue(uncaught.isEmpty(), "JSON-RPC notifications are advisory and must not trip uncaught errors")
@@ -411,7 +428,9 @@ class MCPClientTest {
                     respond(message.id, listToolsResult())
             }
         }
-        val client = CreateMCPClient(MCPClientConfig(transport = transport))
+        val client = CreateMCPClient(MCPClientConfig {
+            transport(transport)
+        })
         val gate = CompletableDeferred<Unit>()
 
         val jobs = List(100) {
@@ -442,10 +461,14 @@ class MCPClientTest {
                     toolsRequestId.complete(message.id)
             }
         }
-        val client = CreateMCPClient(MCPClientConfig(transport = transport))
+        val client = CreateMCPClient(MCPClientConfig {
+            transport(transport)
+        })
 
         val pending = backgroundScope.async {
-            client.listTools(options = MCPRequestOptions(signal = controller.signal))
+            client.listTools(options = MCPRequestOptions {
+                signal(controller.signal)
+            })
         }
         runCurrent()
         waitForRealTime { toolsRequestId.isCompleted }
@@ -476,7 +499,9 @@ class MCPClientTest {
                     toolsRequestId.complete(message.id)
             }
         }
-        val client = CreateMCPClient(MCPClientConfig(transport = transport))
+        val client = CreateMCPClient(MCPClientConfig {
+            transport(transport)
+        })
 
         val pending = backgroundScope.async { client.listTools() }
         runCurrent()
@@ -508,7 +533,9 @@ class MCPClientTest {
                     respond(message.id, listToolsResult())
             }
         }
-        val client = CreateMCPClient(MCPClientConfig(transport = transport))
+        val client = CreateMCPClient(MCPClientConfig {
+            transport(transport)
+        })
 
         assertEquals("echo", client.listTools().tools.single().name)
         client.close()
@@ -927,13 +954,13 @@ class MCPClientTest {
         fixture.server.start()
 
         val client = CreateMCPClient(
-            MCPClientConfig(
-                transport = HttpMCPTransport(
-                    client = fixture.httpClient(),
-                    url = "https://mcp.test/mcp",
-                    headers = mapOf("X-Test" to "transport"),
-                ),
-            ),
+            MCPClientConfig {
+                transport(HttpMCPTransport(
+                                    client = fixture.httpClient(),
+                                    url = "https://mcp.test/mcp",
+                                    headers = mapOf("X-Test" to "transport"),
+                                ))
+            },
         )
 
         assertEquals("fixture-server", client.serverInfo.name)
@@ -1275,12 +1302,12 @@ class MCPClientTest {
         )
         fixture.server.start()
         val client = CreateMCPClient(
-            MCPClientConfig(
-                transport = HttpMCPTransport(
-                    client = fixture.httpClient(),
-                    url = "https://mcp.test/mcp",
-                ),
-            ),
+            MCPClientConfig {
+                transport(HttpMCPTransport(
+                                    client = fixture.httpClient(),
+                                    url = "https://mcp.test/mcp",
+                                ))
+            },
         )
 
         val tools = withContext(Dispatchers.Default) { withTimeout(20_000) { client.listTools() } }
@@ -1462,7 +1489,9 @@ class MCPClientTest {
                     respond(JsonPrimitive(message.id.jsonPrimitive.content), listToolsResult())
             }
         }
-        val client = CreateMCPClient(MCPClientConfig(transport = transport))
+        val client = CreateMCPClient(MCPClientConfig {
+            transport(transport)
+        })
 
         // Pre-fix: the string-typed echo misses the handler and throws out of send().
         val tools = client.listTools()
@@ -1501,7 +1530,9 @@ class MCPClientTest {
         )
         fixture.server.start()
         val transport = HttpMCPTransport(fixture.httpClient(), "https://mcp.test/mcp")
-        val client = CreateMCPClient(MCPClientConfig(transport = transport))
+        val client = CreateMCPClient(MCPClientConfig {
+            transport(transport)
+        })
 
         val tools = withContext(Dispatchers.Default) { withTimeout(20_000) { client.listTools() } }
         assertEquals("echo", tools.tools.single().name)

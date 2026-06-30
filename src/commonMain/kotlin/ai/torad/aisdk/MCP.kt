@@ -180,14 +180,62 @@ public interface MCPTransport {
     public suspend fun close()
 }
 
-public data class MCPClientConfig(
-    val transport: MCPTransport,
-    val onUncaughtError: ((Throwable) -> Unit)? = null,
-    val clientName: String? = null,
-    val name: String? = null,
-    val version: String = DEFAULT_MCP_CLIENT_VERSION,
-    val capabilities: MCPClientCapabilities = MCPClientCapabilities(),
+public class MCPClientConfig internal constructor(
+    public val transport: MCPTransport,
+    public val onUncaughtError: ((Throwable) -> Unit)? = null,
+    public val clientName: String? = null,
+    public val name: String? = null,
+    public val version: String = DEFAULT_MCP_CLIENT_VERSION,
+    public val capabilities: MCPClientCapabilities = MCPClientCapabilities(),
 )
+
+public class MCPClientConfigBuilder internal constructor() {
+    private var transport: MCPTransport? = null
+    private var onUncaughtError: ((Throwable) -> Unit)? = null
+    private var clientName: String? = null
+    private var name: String? = null
+    private var version: String = DEFAULT_MCP_CLIENT_VERSION
+    private var capabilities: MCPClientCapabilities = MCPClientCapabilities()
+
+    public fun transport(value: MCPTransport) {
+        transport = value
+    }
+
+    public fun onUncaughtError(value: ((Throwable) -> Unit)?) {
+        onUncaughtError = value
+    }
+
+    public fun clientName(value: String?) {
+        clientName = value
+    }
+
+    public fun name(value: String?) {
+        name = value
+    }
+
+    public fun version(value: String) {
+        version = value
+    }
+
+    public fun capabilities(value: MCPClientCapabilities) {
+        capabilities = value
+    }
+
+    internal fun build(): MCPClientConfig =
+        MCPClientConfig(
+            transport = requireNotNull(transport) { "MCPClientConfig.transport is required" },
+            onUncaughtError = onUncaughtError,
+            clientName = clientName,
+            name = name,
+            version = version,
+            capabilities = capabilities,
+        )
+}
+
+public fun MCPClientConfig(
+    block: MCPClientConfigBuilder.() -> Unit = {},
+): MCPClientConfig =
+    MCPClientConfigBuilder().apply(block).build()
 
 @ExperimentalAiSdkApi
 public typealias experimental_MCPClientConfig = MCPClientConfig
@@ -301,7 +349,9 @@ private class DefaultMCPClient(config: MCPClientConfig) : MCPClient {
                     put("clientInfo", mcpJson.encodeToJsonElement(Configuration.serializer(), clientInfo))
                 },
                 serializer = InitializeResult.serializer(),
-                options = MCPRequestOptions(timeoutMillis = MCP_DEFAULT_HANDSHAKE_TIMEOUT_MS),
+                options = MCPRequestOptions {
+                    timeoutMillis(MCP_DEFAULT_HANDSHAKE_TIMEOUT_MS)
+                },
             )
 
             if (result.protocolVersion !in SUPPORTED_PROTOCOL_VERSIONS) {
@@ -380,7 +430,9 @@ private class DefaultMCPClient(config: MCPClientConfig) : MCPClient {
                 val result = callTool(
                     name = definition.name,
                     args = asArgumentsObject(input),
-                    options = MCPRequestOptions(signal = abortSignal),
+                    options = MCPRequestOptions {
+                        signal(abortSignal)
+                    },
                 )
                 if (!result.isError && outputSchema != null) {
                     result.extractStructuredContent(outputSchema, definition.name)
@@ -904,14 +956,62 @@ public enum class MCPTransportKind {
     Sse,
 }
 
-public data class MCPTransportConfig(
-    val type: MCPTransportKind,
-    val url: String,
-    val headers: Map<String, String> = emptyMap(),
-    val authProvider: OAuthClientProvider? = null,
-    val engineContext: CoroutineContext = Dispatchers.Default,
-    val reconnectionOptions: MCPReconnectionOptions = MCPReconnectionOptions(),
+public class MCPTransportConfig internal constructor(
+    public val type: MCPTransportKind,
+    public val url: String,
+    public val headers: Map<String, String> = emptyMap(),
+    public val authProvider: OAuthClientProvider? = null,
+    public val engineContext: CoroutineContext = Dispatchers.Default,
+    public val reconnectionOptions: MCPReconnectionOptions = MCPReconnectionOptions(),
 )
+
+public class MCPTransportConfigBuilder internal constructor() {
+    private var type: MCPTransportKind? = null
+    private var url: String? = null
+    private var headers: Map<String, String> = emptyMap()
+    private var authProvider: OAuthClientProvider? = null
+    private var engineContext: CoroutineContext = Dispatchers.Default
+    private var reconnectionOptions: MCPReconnectionOptions = MCPReconnectionOptions()
+
+    public fun type(value: MCPTransportKind) {
+        type = value
+    }
+
+    public fun url(value: String) {
+        url = value
+    }
+
+    public fun headers(value: Map<String, String>) {
+        headers = value
+    }
+
+    public fun authProvider(value: OAuthClientProvider?) {
+        authProvider = value
+    }
+
+    public fun engineContext(value: CoroutineContext) {
+        engineContext = value
+    }
+
+    public fun reconnectionOptions(value: MCPReconnectionOptions) {
+        reconnectionOptions = value
+    }
+
+    internal fun build(): MCPTransportConfig =
+        MCPTransportConfig(
+            type = requireNotNull(type) { "MCPTransportConfig.type is required" },
+            url = requireNotNull(url) { "MCPTransportConfig.url is required" },
+            headers = headers,
+            authProvider = authProvider,
+            engineContext = engineContext,
+            reconnectionOptions = reconnectionOptions,
+        )
+}
+
+public fun MCPTransportConfig(
+    block: MCPTransportConfigBuilder.() -> Unit = {},
+): MCPTransportConfig =
+    MCPTransportConfigBuilder().apply(block).build()
 
 public data class MCPReconnectionOptions(
     val initialReconnectionDelayMillis: Long = 1_000,
