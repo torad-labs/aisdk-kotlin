@@ -29,32 +29,178 @@ public class OAuthTokens(
 )
 
 @Serializable
-public data class OAuthClientInformation(
-    @SerialName("client_id") val clientId: String,
-    @SerialName("client_secret") val clientSecret: String? = null,
-    @SerialName("client_id_issued_at") val clientIdIssuedAt: Long? = null,
-    @SerialName("client_secret_expires_at") val clientSecretExpiresAt: Long? = null,
+@Poko
+public class OAuthClientInformation internal constructor(
+    @SerialName("client_id") public val clientId: String,
+    @SerialName("client_secret") public val clientSecret: String? = null,
+    @SerialName("client_id_issued_at") public val clientIdIssuedAt: Long? = null,
+    @SerialName("client_secret_expires_at") public val clientSecretExpiresAt: Long? = null,
 )
 
+public class OAuthClientInformationBuilder internal constructor() {
+    private var clientId: String? = null
+    private var clientSecret: String? = null
+    private var clientIdIssuedAt: Long? = null
+    private var clientSecretExpiresAt: Long? = null
+
+    public fun clientId(value: String) {
+        clientId = value
+    }
+
+    public fun clientSecret(value: String?) {
+        clientSecret = value
+    }
+
+    public fun clientIdIssuedAt(value: Long?) {
+        clientIdIssuedAt = value
+    }
+
+    public fun clientSecretExpiresAt(value: Long?) {
+        clientSecretExpiresAt = value
+    }
+
+    internal fun build(): OAuthClientInformation =
+        OAuthClientInformation(
+            clientId = requireNotNull(clientId) { "OAuthClientInformation.clientId is required" },
+            clientSecret = clientSecret,
+            clientIdIssuedAt = clientIdIssuedAt,
+            clientSecretExpiresAt = clientSecretExpiresAt,
+        )
+}
+
+public fun OAuthClientInformation(
+    block: OAuthClientInformationBuilder.() -> Unit = {},
+): OAuthClientInformation =
+    OAuthClientInformationBuilder().apply(block).build()
+
 @Serializable
-public data class OAuthClientMetadata(
-    @SerialName("redirect_uris") val redirectUris: List<String>,
-    @SerialName("token_endpoint_auth_method") val tokenEndpointAuthMethod: String? = null,
-    @SerialName("grant_types") val grantTypes: List<String>? = null,
-    @SerialName("response_types") val responseTypes: List<String>? = null,
-    @SerialName("client_name") val clientName: String? = null,
-    @SerialName("client_uri") val clientUri: String? = null,
-    @SerialName("logo_uri") val logoUri: String? = null,
-    val scope: String? = null,
-    val contacts: List<String>? = null,
-    @SerialName("tos_uri") val tosUri: String? = null,
-    @SerialName("policy_uri") val policyUri: String? = null,
-    @SerialName("jwks_uri") val jwksUri: String? = null,
-    val jwks: JsonElement? = null,
-    @SerialName("software_id") val softwareId: String? = null,
-    @SerialName("software_version") val softwareVersion: String? = null,
-    @SerialName("software_statement") val softwareStatement: String? = null,
+@Poko
+public class OAuthClientMetadata internal constructor(
+    @SerialName("redirect_uris") public val redirectUris: List<String>,
+    @SerialName("token_endpoint_auth_method") public val tokenEndpointAuthMethod: String? = null,
+    @SerialName("grant_types") public val grantTypes: List<String>? = null,
+    @SerialName("response_types") public val responseTypes: List<String>? = null,
+    @SerialName("client_name") public val clientName: String? = null,
+    @SerialName("client_uri") public val clientUri: String? = null,
+    @SerialName("logo_uri") public val logoUri: String? = null,
+    public val scope: String? = null,
+    public val contacts: List<String>? = null,
+    @SerialName("tos_uri") public val tosUri: String? = null,
+    @SerialName("policy_uri") public val policyUri: String? = null,
+    @SerialName("jwks_uri") public val jwksUri: String? = null,
+    public val jwks: JsonElement? = null,
+    @SerialName("software_id") public val softwareId: String? = null,
+    @SerialName("software_version") public val softwareVersion: String? = null,
+    @SerialName("software_statement") public val softwareStatement: String? = null,
 )
+
+public class OAuthClientMetadataBuilder internal constructor() {
+    private var redirectUris: List<String>? = null
+    private var tokenEndpointAuthMethod: String? = null
+    private var grantTypes: List<String>? = null
+    private var responseTypes: List<String>? = null
+    private var clientName: String? = null
+    private var clientUri: String? = null
+    private var logoUri: String? = null
+    private var scope: String? = null
+    private var contacts: List<String>? = null
+    private var tosUri: String? = null
+    private var policyUri: String? = null
+    private var jwksUri: String? = null
+    private var jwks: JsonElement? = null
+    private var softwareId: String? = null
+    private var softwareVersion: String? = null
+    private var softwareStatement: String? = null
+
+    public fun redirectUris(value: List<String>) {
+        redirectUris = value
+    }
+
+    public fun tokenEndpointAuthMethod(value: String?) {
+        tokenEndpointAuthMethod = value
+    }
+
+    public fun grantTypes(value: List<String>?) {
+        grantTypes = value
+    }
+
+    public fun responseTypes(value: List<String>?) {
+        responseTypes = value
+    }
+
+    public fun clientName(value: String?) {
+        clientName = value
+    }
+
+    public fun clientUri(value: String?) {
+        clientUri = value
+    }
+
+    public fun logoUri(value: String?) {
+        logoUri = value
+    }
+
+    public fun scope(value: String?) {
+        scope = value
+    }
+
+    public fun contacts(value: List<String>?) {
+        contacts = value
+    }
+
+    public fun tosUri(value: String?) {
+        tosUri = value
+    }
+
+    public fun policyUri(value: String?) {
+        policyUri = value
+    }
+
+    public fun jwksUri(value: String?) {
+        jwksUri = value
+    }
+
+    public fun jwks(value: JsonElement?) {
+        jwks = value
+    }
+
+    public fun softwareId(value: String?) {
+        softwareId = value
+    }
+
+    public fun softwareVersion(value: String?) {
+        softwareVersion = value
+    }
+
+    public fun softwareStatement(value: String?) {
+        softwareStatement = value
+    }
+
+    internal fun build(): OAuthClientMetadata =
+        OAuthClientMetadata(
+            redirectUris = requireNotNull(redirectUris) { "OAuthClientMetadata.redirectUris is required" },
+            tokenEndpointAuthMethod = tokenEndpointAuthMethod,
+            grantTypes = grantTypes,
+            responseTypes = responseTypes,
+            clientName = clientName,
+            clientUri = clientUri,
+            logoUri = logoUri,
+            scope = scope,
+            contacts = contacts,
+            tosUri = tosUri,
+            policyUri = policyUri,
+            jwksUri = jwksUri,
+            jwks = jwks,
+            softwareId = softwareId,
+            softwareVersion = softwareVersion,
+            softwareStatement = softwareStatement,
+        )
+}
+
+public fun OAuthClientMetadata(
+    block: OAuthClientMetadataBuilder.() -> Unit = {},
+): OAuthClientMetadata =
+    OAuthClientMetadataBuilder().apply(block).build()
 
 @Serializable
 @Poko

@@ -9,7 +9,9 @@ internal object StreamOpenRetry {
     fun <T> wrap(maxRetries: Int, upstream: () -> Flow<T>): Flow<T> = flow {
         var emitted = false
         try {
-            RetryPolicy(maxRetries = maxRetries).execute {
+            RetryPolicy {
+                maxRetries(maxRetries)
+            }.execute {
                 try {
                     upstream().collect { event ->
                         emitted = true

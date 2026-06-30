@@ -32,14 +32,14 @@ public fun interface RetryDelayGenerator {
 }
 
 @Suppress("TooManyFunctions")
-public data class RetryPolicy(
-    val maxRetries: Int = 2,
-    val baseDelayMs: Long = 100L,
-    val maxDelayMs: Long = 2_000L,
-    val clock: Clock = Clock.System,
-    val delayGenerator: RetryDelayGenerator = RetryDelayGenerator.fullJitter(),
-    val totalTimeoutMs: Long? = null,
-    val perAttemptTimeoutMs: Long? = null,
+public class RetryPolicy internal constructor(
+    public val maxRetries: Int = 2,
+    public val baseDelayMs: Long = 100L,
+    public val maxDelayMs: Long = 2_000L,
+    public val clock: Clock = Clock.System,
+    public val delayGenerator: RetryDelayGenerator = RetryDelayGenerator.fullJitter(),
+    public val totalTimeoutMs: Long? = null,
+    public val perAttemptTimeoutMs: Long? = null,
 ) {
     init {
         require(maxRetries >= 0) { "maxRetries must be >= 0" }
@@ -242,3 +242,57 @@ public data class RetryPolicy(
                 (t as? GatewayError)?.isRetryable == true
     }
 }
+
+public class RetryPolicyBuilder internal constructor() {
+    private var maxRetries: Int = 2
+    private var baseDelayMs: Long = 100L
+    private var maxDelayMs: Long = 2_000L
+    private var clock: Clock = Clock.System
+    private var delayGenerator: RetryDelayGenerator = RetryDelayGenerator.fullJitter()
+    private var totalTimeoutMs: Long? = null
+    private var perAttemptTimeoutMs: Long? = null
+
+    public fun maxRetries(value: Int) {
+        maxRetries = value
+    }
+
+    public fun baseDelayMs(value: Long) {
+        baseDelayMs = value
+    }
+
+    public fun maxDelayMs(value: Long) {
+        maxDelayMs = value
+    }
+
+    public fun clock(value: Clock) {
+        clock = value
+    }
+
+    public fun delayGenerator(value: RetryDelayGenerator) {
+        delayGenerator = value
+    }
+
+    public fun totalTimeoutMs(value: Long?) {
+        totalTimeoutMs = value
+    }
+
+    public fun perAttemptTimeoutMs(value: Long?) {
+        perAttemptTimeoutMs = value
+    }
+
+    internal fun build(): RetryPolicy =
+        RetryPolicy(
+            maxRetries = maxRetries,
+            baseDelayMs = baseDelayMs,
+            maxDelayMs = maxDelayMs,
+            clock = clock,
+            delayGenerator = delayGenerator,
+            totalTimeoutMs = totalTimeoutMs,
+            perAttemptTimeoutMs = perAttemptTimeoutMs,
+        )
+}
+
+public fun RetryPolicy(
+    block: RetryPolicyBuilder.() -> Unit = {},
+): RetryPolicy =
+    RetryPolicyBuilder().apply(block).build()

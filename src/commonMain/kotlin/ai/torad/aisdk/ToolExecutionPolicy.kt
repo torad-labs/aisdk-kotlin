@@ -1,5 +1,6 @@
 package ai.torad.aisdk
 
+import dev.drewhamilton.poko.Poko
 import kotlin.time.Duration
 
 /**
@@ -9,7 +10,8 @@ import kotlin.time.Duration
  * coroutine creation or unbounded in-step tool execution unless the host opts
  * into larger limits explicitly.
  */
-public data class ToolExecutionPolicy(
+@Poko
+public class ToolExecutionPolicy internal constructor(
     /** Maximum tool executors that may run concurrently within one model step. */
     public val maxParallelToolCalls: Int = DEFAULT_MAX_PARALLEL_TOOL_CALLS,
     /** Maximum tool calls accepted from one model step before the loop fails closed. */
@@ -41,3 +43,39 @@ public data class ToolExecutionPolicy(
         public const val DEFAULT_PROGRESS_BUFFER_CAPACITY: Int = 64
     }
 }
+
+public class ToolExecutionPolicyBuilder internal constructor() {
+    private var maxParallelToolCalls: Int = ToolExecutionPolicy.DEFAULT_MAX_PARALLEL_TOOL_CALLS
+    private var maxToolCallsPerStep: Int = ToolExecutionPolicy.DEFAULT_MAX_TOOL_CALLS_PER_STEP
+    private var progressBufferCapacity: Int = ToolExecutionPolicy.DEFAULT_PROGRESS_BUFFER_CAPACITY
+    private var toolExecutionTimeout: Duration? = null
+
+    public fun maxParallelToolCalls(value: Int) {
+        maxParallelToolCalls = value
+    }
+
+    public fun maxToolCallsPerStep(value: Int) {
+        maxToolCallsPerStep = value
+    }
+
+    public fun progressBufferCapacity(value: Int) {
+        progressBufferCapacity = value
+    }
+
+    public fun toolExecutionTimeout(value: Duration?) {
+        toolExecutionTimeout = value
+    }
+
+    internal fun build(): ToolExecutionPolicy =
+        ToolExecutionPolicy(
+            maxParallelToolCalls = maxParallelToolCalls,
+            maxToolCallsPerStep = maxToolCallsPerStep,
+            progressBufferCapacity = progressBufferCapacity,
+            toolExecutionTimeout = toolExecutionTimeout,
+        )
+}
+
+public fun ToolExecutionPolicy(
+    block: ToolExecutionPolicyBuilder.() -> Unit = {},
+): ToolExecutionPolicy =
+    ToolExecutionPolicyBuilder().apply(block).build()

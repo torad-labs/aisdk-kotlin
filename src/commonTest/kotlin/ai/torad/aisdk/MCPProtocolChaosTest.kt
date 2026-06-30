@@ -106,7 +106,10 @@ class MCPProtocolChaosTest {
         InitializeResult(
             protocolVersion = LATEST_PROTOCOL_VERSION,
             capabilities = capabilities,
-            serverInfo = Configuration(name = "chaos-server", version = "1.0.0"),
+            serverInfo = Configuration {
+                name("chaos-server")
+                version("1.0.0")
+            },
         ),
     )
 

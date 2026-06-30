@@ -49,7 +49,10 @@ class RetryableGatewayErrorTest {
     @Test
     fun `RetryPolicy actually retries a retryable GatewayError through the embedding predicate`() = runTest {
         var attempt = 0
-        val result = RetryPolicy(maxRetries = 2, baseDelayMs = 0).execute(retryableApiError) {
+        val result = RetryPolicy {
+            maxRetries(2)
+            baseDelayMs(0)
+        }.execute(retryableApiError) {
             if (attempt++ == 0) throw GatewayRateLimitError()
             "ok"
         }

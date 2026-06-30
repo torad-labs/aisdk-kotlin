@@ -98,9 +98,9 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
      * tool executors and total accepted tool calls so a model cannot create unbounded
      * child coroutines or unbounded in-step work.
      */
-    public val toolExecutionPolicy: ToolExecutionPolicy = ToolExecutionPolicy(
-        maxParallelToolCalls = maxParallelToolCalls,
-    ),
+    public val toolExecutionPolicy: ToolExecutionPolicy = ToolExecutionPolicy {
+        maxParallelToolCalls(maxParallelToolCalls)
+    },
     /**
      * Self-healing callback fired when a tool call's arguments fail to
      * decode. Return a corrected call to retry, or null to surface
@@ -1731,7 +1731,9 @@ public abstract class ToolLoopAgent<TContext, TOutput>(
                 )
             }
             ModelCallMode.Generate -> {
-                val result = RetryPolicy(maxRetries = maxRetries).execute {
+                val result = RetryPolicy {
+                    maxRetries(maxRetries)
+                }.execute {
                     stepModel.generate(callParams)
                 }
                 LanguageModelStreamResult(

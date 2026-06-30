@@ -85,16 +85,66 @@ public fun MCPRequestOptions(
     MCPRequestOptionsBuilder().apply(block).build()
 
 @Serializable
-public data class Configuration(
-    val name: String,
-    val version: String,
-    val title: String? = null,
+@Poko
+public class Configuration internal constructor(
+    public val name: String,
+    public val version: String,
+    public val title: String? = null,
 )
 
+public class ConfigurationBuilder internal constructor() {
+    private var name: String? = null
+    private var version: String? = null
+    private var title: String? = null
+
+    public fun name(value: String) {
+        name = value
+    }
+
+    public fun version(value: String) {
+        version = value
+    }
+
+    public fun title(value: String?) {
+        title = value
+    }
+
+    internal fun build(): Configuration =
+        Configuration(
+            name = requireNotNull(name) { "Configuration.name is required" },
+            version = requireNotNull(version) { "Configuration.version is required" },
+            title = title,
+        )
+}
+
+public fun Configuration(
+    block: ConfigurationBuilder.() -> Unit = {},
+): Configuration =
+    ConfigurationBuilder().apply(block).build()
+
 @Serializable
-public data class ElicitationCapability(
-    val applyDefaults: Boolean? = null,
+@Poko
+public class ElicitationCapability internal constructor(
+    public val applyDefaults: Boolean? = null,
 )
+
+public class ElicitationCapabilityBuilder internal constructor() {
+    private var applyDefaults: Boolean? = null
+
+    public fun applyDefaults(value: Boolean?) {
+        applyDefaults = value
+    }
+
+    internal fun build(): ElicitationCapability =
+        ElicitationCapability(
+            applyDefaults = applyDefaults,
+        )
+}
+
+public fun ElicitationCapability(
+    block: ElicitationCapabilityBuilder.() -> Unit = {},
+): ElicitationCapability =
+    ElicitationCapabilityBuilder().apply(block).build()
 
 @Serializable
 @Poko

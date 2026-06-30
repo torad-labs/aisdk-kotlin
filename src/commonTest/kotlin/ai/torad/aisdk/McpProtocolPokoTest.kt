@@ -23,7 +23,10 @@ class McpProtocolPokoTest {
                 tools = buildJsonObject { put("listChanged", JsonPrimitive(true)) },
                 resources = buildJsonObject { put("subscribe", JsonPrimitive(false)) },
             ),
-            serverInfo = Configuration(name = "server", version = "1.0.0"),
+            serverInfo = Configuration {
+                name("server")
+                version("1.0.0")
+            },
             instructions = "Use tools carefully.",
             meta = buildJsonObject { put("traceId", JsonPrimitive("init-1")) },
         )

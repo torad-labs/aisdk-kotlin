@@ -20,6 +20,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotEquals
 import kotlin.test.assertSame
+import kotlin.time.Duration.Companion.seconds
 
 class RemainingBuilderConstructsTest {
     @Test
@@ -50,6 +51,18 @@ class RemainingBuilderConstructsTest {
             temperature(0.6)
             seed(4)
         }
+        val toolPolicy = ToolExecutionPolicy {
+            maxParallelToolCalls(2)
+            maxToolCallsPerStep(4)
+            progressBufferCapacity(8)
+            toolExecutionTimeout(5.seconds)
+        }
+        val equalToolPolicy = ToolExecutionPolicy {
+            maxParallelToolCalls(2)
+            maxToolCallsPerStep(4)
+            progressBufferCapacity(8)
+            toolExecutionTimeout(5.seconds)
+        }
 
         assertEquals(equalRedaction, redaction)
         assertEquals(equalRedaction.hashCode(), redaction.hashCode())
@@ -57,6 +70,8 @@ class RemainingBuilderConstructsTest {
         assertEquals(3, reconnect.maxRetries)
         assertEquals(false, schemaOptions.strict)
         assertEquals(8, sampler.topK)
+        assertEquals(equalToolPolicy, toolPolicy)
+        assertEquals(equalToolPolicy.hashCode(), toolPolicy.hashCode())
     }
 
     @Test
@@ -95,6 +110,24 @@ class RemainingBuilderConstructsTest {
             reasoningEffort("high")
             reasoningSummary("detailed")
         }
+        val clientInformation = OAuthClientInformation {
+            clientId("client-id")
+            clientSecret("client-secret")
+            clientIdIssuedAt(1)
+        }
+        val clientMetadata = OAuthClientMetadata {
+            redirectUris(listOf("https://app.example.com/callback"))
+            clientName("client")
+            scope("tools")
+        }
+        val configuration = Configuration {
+            name("mcp-client")
+            version("1.0.0")
+            title("MCP Client")
+        }
+        val elicitationCapability = ElicitationCapability {
+            applyDefaults(true)
+        }
 
         assertEquals(stdio, aiSdkJson.decodeFromString(aiSdkJson.encodeToString(stdio)))
         assertEquals(credentials, aiSdkJson.decodeFromString(aiSdkJson.encodeToString(credentials)))
@@ -102,6 +135,10 @@ class RemainingBuilderConstructsTest {
         assertEquals(openResponses, aiSdkJson.decodeFromString(aiSdkJson.encodeToString(openResponses)))
         assertEquals(xaiChat, aiSdkJson.decodeFromString(aiSdkJson.encodeToString(xaiChat)))
         assertEquals(xaiResponses, aiSdkJson.decodeFromString(aiSdkJson.encodeToString(xaiResponses)))
+        assertEquals(clientInformation, aiSdkJson.decodeFromString(aiSdkJson.encodeToString(clientInformation)))
+        assertEquals(clientMetadata, aiSdkJson.decodeFromString(aiSdkJson.encodeToString(clientMetadata)))
+        assertEquals(configuration, aiSdkJson.decodeFromString(aiSdkJson.encodeToString(configuration)))
+        assertEquals(elicitationCapability, aiSdkJson.decodeFromString(aiSdkJson.encodeToString(elicitationCapability)))
     }
 
     @Test
@@ -150,6 +187,21 @@ class RemainingBuilderConstructsTest {
                 toolCallIdGenerator { "call-fixed" }
             },
         )
+        val retryPolicy = RetryPolicy {
+            maxRetries(1)
+            baseDelayMs(0)
+            delayGenerator(RetryDelayGenerator.deterministic(0))
+        }
+        val equalShapeRetryPolicy = RetryPolicy {
+            maxRetries(1)
+            baseDelayMs(0)
+            delayGenerator(retryPolicy.delayGenerator)
+        }
+        val providerMiddleware = ProviderMiddleware {
+            languageModelMiddlewares(emptyList())
+            embeddingModelMiddlewares(emptyList())
+            imageModelMiddlewares(emptyList())
+        }
 
         assertSame(transport, completion.transport)
         assertNotEquals(equalShapeCompletion, completion)
@@ -159,5 +211,8 @@ class RemainingBuilderConstructsTest {
         assertEquals("providerTool", providerOptions.name)
         assertEquals("call-1", predicate.toolCallId)
         assertEquals("call-fixed", settings.toolCallIdGenerator())
+        assertEquals(1, retryPolicy.maxRetries)
+        assertNotEquals(equalShapeRetryPolicy, retryPolicy)
+        assertEquals(0, providerMiddleware.languageModelMiddlewares.size)
     }
 }

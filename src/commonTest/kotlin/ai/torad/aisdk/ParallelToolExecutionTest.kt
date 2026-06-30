@@ -434,10 +434,10 @@ class ParallelToolExecutionTest {
             model = ManyToolsThenText(toolCallCount),
             instructions = "x",
             tools = ToolSet(blockingTool),
-            toolExecutionPolicy = ToolExecutionPolicy(
-                maxParallelToolCalls = maxParallel,
-                maxToolCallsPerStep = toolCallCount,
-            ),
+            toolExecutionPolicy = ToolExecutionPolicy {
+                maxParallelToolCalls(maxParallel)
+                maxToolCallsPerStep(toolCallCount)
+            },
         )
 
         val job = launch { agent.generate(prompt = "go").first() }
@@ -471,10 +471,10 @@ class ParallelToolExecutionTest {
             model = ManyToolsThenText(toolCallCount = 3),
             instructions = "x",
             tools = ToolSet(tool),
-            toolExecutionPolicy = ToolExecutionPolicy(
-                maxParallelToolCalls = 2,
-                maxToolCallsPerStep = 2,
-            ),
+            toolExecutionPolicy = ToolExecutionPolicy {
+                maxParallelToolCalls(2)
+                maxToolCallsPerStep(2)
+            },
         )
 
         val events = agent.stream(prompt = "go").toList()
@@ -499,11 +499,11 @@ class ParallelToolExecutionTest {
             model = ManyToolsThenText(toolCallCount = 1),
             instructions = "x",
             tools = ToolSet(slowTool),
-            toolExecutionPolicy = ToolExecutionPolicy(
-                maxParallelToolCalls = 1,
-                maxToolCallsPerStep = 1,
-                toolExecutionTimeout = 10.milliseconds,
-            ),
+            toolExecutionPolicy = ToolExecutionPolicy {
+                maxParallelToolCalls(1)
+                maxToolCallsPerStep(1)
+                toolExecutionTimeout(10.milliseconds)
+            },
         )
 
         val events = agent.stream(prompt = "go").toList()
