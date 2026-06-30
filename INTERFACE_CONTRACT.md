@@ -94,7 +94,10 @@ and repaired values are byte-identical to the JS SDK.
 - `data class OnChunkEvent(event: StreamEvent, stepNumber)`
 - `data class OnToolCallStartEvent(toolCallId, toolName, input, stepNumber, messages)`
 - `data class OnToolCallFinishEvent(toolCallId, toolName, outputJson?, errorMessage?, stepNumber)`
-- `data class StepResult(stepNumber, text, reasoning, toolCalls, toolResults, toolApprovalRequests, finishReason, usage)`
+- `@Poko class StepResult(stepNumber, text, reasoning, toolCalls, toolResults, toolApprovalRequests, finishReason, usage)`
+- `AgentEvent` leaves, nested `ToolCallFinished.Outcome` leaves, and
+  `StepResult` are `@Poko class` value-semantics types; field access remains,
+  but public `copy()` / `componentN()` ABI is intentionally absent.
 
 ### Prepare scopes
 

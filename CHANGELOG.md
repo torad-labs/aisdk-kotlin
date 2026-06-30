@@ -36,8 +36,9 @@ This project follows Semantic Versioning once the first stable release is cut.
   `data class` to `@Poko class`. This begins with `CallWarning` as the
   standalone `@Serializable` canary and continues with the `UIMessagePart`
   and `StreamEvent` sealed-leaf families as polymorphic serialization
-  canaries, plus media-model result/metadata holders; field access, equality,
-  hashCode, toString, and JSON serialization remain supported where applicable.
+  canaries, plus media-model result/metadata holders and lifecycle
+  `AgentEvent` / `StepResult` payloads; field access, equality, hashCode,
+  toString, and JSON serialization remain supported where applicable.
 
 - **Tools are now class-based and extensible (breaking ABI change).** `Tool` is an `abstract class`
   you can extend for reusable, dependency-injected tools — mirroring how a concrete agent extends

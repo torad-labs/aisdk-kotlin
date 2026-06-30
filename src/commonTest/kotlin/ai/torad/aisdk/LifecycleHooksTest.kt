@@ -6,6 +6,7 @@ import ai.torad.aisdk.providers.MockToolInput
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
+import kotlin.test.assertNotEquals
 import kotlin.test.assertTrue
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.Serializable
@@ -21,6 +22,87 @@ import kotlinx.serialization.serializer
 class LifecycleHooksTest {
     @Serializable
     private data class Empty(val unused: String = "")
+
+    @Test
+    fun `lifecycle Poko types keep value semantics`() {
+        val step = StepResult(
+            stepNumber = 1,
+            text = "done",
+            reasoning = "because",
+            toolCalls = emptyList(),
+            toolResults = emptyList(),
+            toolApprovalRequests = emptyList(),
+            finishReason = FinishReason.Stop,
+            usage = Usage.of(promptTokens = 1, completionTokens = 2),
+        )
+        val equalStep = StepResult(
+            stepNumber = 1,
+            text = "done",
+            reasoning = "because",
+            toolCalls = emptyList(),
+            toolResults = emptyList(),
+            toolApprovalRequests = emptyList(),
+            finishReason = FinishReason.Stop,
+            usage = Usage.of(promptTokens = 1, completionTokens = 2),
+        )
+        val differentStep = StepResult(
+            stepNumber = 1,
+            text = "different",
+            reasoning = "because",
+            toolCalls = emptyList(),
+            toolResults = emptyList(),
+            toolApprovalRequests = emptyList(),
+            finishReason = FinishReason.Stop,
+            usage = Usage.of(promptTokens = 1, completionTokens = 2),
+        )
+        assertEquals(step, equalStep)
+        assertEquals(step.hashCode(), equalStep.hashCode())
+        assertNotEquals(step, differentStep)
+
+        val toolFinished = AgentEvent.ToolCallFinished(
+            toolCallId = "call_1",
+            toolName = "lookup",
+            outcome = AgentEvent.ToolCallFinished.Outcome.Success(JsonPrimitive("ok")),
+            stepNumber = 1,
+        )
+        val equalToolFinished = AgentEvent.ToolCallFinished(
+            toolCallId = "call_1",
+            toolName = "lookup",
+            outcome = AgentEvent.ToolCallFinished.Outcome.Success(JsonPrimitive("ok")),
+            stepNumber = 1,
+        )
+        val differentToolFinished = AgentEvent.ToolCallFinished(
+            toolCallId = "call_1",
+            toolName = "lookup",
+            outcome = AgentEvent.ToolCallFinished.Outcome.Failure("failed"),
+            stepNumber = 1,
+        )
+        assertEquals(toolFinished, equalToolFinished)
+        assertEquals(toolFinished.hashCode(), equalToolFinished.hashCode())
+        assertNotEquals(toolFinished, differentToolFinished)
+
+        val finished = AgentEvent.Finished<Unit, String>(
+            output = "done",
+            totalSteps = 1,
+            usage = Usage.of(promptTokens = 1, completionTokens = 2),
+            messages = listOf(AssistantMessage("done")),
+        )
+        val equalFinished = AgentEvent.Finished<Unit, String>(
+            output = "done",
+            totalSteps = 1,
+            usage = Usage.of(promptTokens = 1, completionTokens = 2),
+            messages = listOf(AssistantMessage("done")),
+        )
+        val differentFinished = AgentEvent.Finished<Unit, String>(
+            output = "different",
+            totalSteps = 1,
+            usage = Usage.of(promptTokens = 1, completionTokens = 2),
+            messages = listOf(AssistantMessage("done")),
+        )
+        assertEquals(finished, equalFinished)
+        assertEquals(finished.hashCode(), equalFinished.hashCode())
+        assertNotEquals(finished, differentFinished)
+    }
 
     @Test
     fun `events fire in order Started StepFinished Finished`() = runTest {
