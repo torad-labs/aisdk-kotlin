@@ -80,10 +80,10 @@ class PrepareCallPenaltiesTest {
             presencePenalty = 0.2f,
             frequencyPenalty = 0.4f,
             prepareCall = {
-                AgentSettings(
-                    presencePenalty = 0.7f,
-                    frequencyPenalty = 0.9f,
-                )
+                AgentSettings {
+                    presencePenalty(0.7f)
+                    frequencyPenalty(0.9f)
+                }
             },
         )
 
@@ -104,8 +104,16 @@ class PrepareCallPenaltiesTest {
             instructions = "",
             tools = ToolSet(),
             presencePenalty = 0.2f,
-            prepareCall = { AgentSettings(presencePenalty = 0.5f) },
-            prepareStep = { StepSettings(presencePenalty = 0.9f) },
+            prepareCall = {
+                AgentSettings {
+                    presencePenalty(0.5f)
+                }
+            },
+            prepareStep = {
+                StepSettings {
+                    presencePenalty(0.9f)
+                }
+            },
         )
 
         // WHEN
@@ -146,8 +154,16 @@ class PrepareCallPenaltiesTest {
             model = capture,
             instructions = "",
             tools = ToolSet(),
-            prepareCall = { AgentSettings(responseFormat = callFormat) },
-            prepareStep = { StepSettings(responseFormat = stepFormat) },
+            prepareCall = {
+                AgentSettings {
+                    responseFormat(callFormat)
+                }
+            },
+            prepareStep = {
+                StepSettings {
+                    responseFormat(stepFormat)
+                }
+            },
         )
 
         // WHEN
@@ -166,10 +182,14 @@ class PrepareCallPenaltiesTest {
             instructions = "",
             tools = ToolSet(),
             prepareCall = {
-                AgentSettings(providerOptions = ProviderOptions.Raw(JsonObject(mapOf("common" to JsonPrimitive("call"), "callOnly" to JsonPrimitive(true)))))
+                AgentSettings {
+                    providerOptions(ProviderOptions.Raw(JsonObject(mapOf("common" to JsonPrimitive("call"), "callOnly" to JsonPrimitive(true)))))
+                }
             },
             prepareStep = {
-                StepSettings(providerOptions = ProviderOptions.Raw(JsonObject(mapOf("common" to JsonPrimitive("step"), "stepOnly" to JsonPrimitive(1)))))
+                StepSettings {
+                    providerOptions(ProviderOptions.Raw(JsonObject(mapOf("common" to JsonPrimitive("step"), "stepOnly" to JsonPrimitive(1)))))
+                }
             },
         )
 

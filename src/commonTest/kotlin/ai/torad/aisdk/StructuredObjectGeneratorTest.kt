@@ -128,7 +128,9 @@ class StructuredObjectGeneratorTest {
         val generator = StructuredObjectGenerator(
             model = model,
             schema = personSchema,
-            config = CallConfig(abortSignal = controller.signal),
+            config = CallConfig {
+                abortSignal(controller.signal)
+            },
         )
 
         val done = generator.stream(GenerationInput.Prompt("make a person")).toList().last()

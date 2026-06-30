@@ -154,13 +154,13 @@ class OpenAIProviderTest {
 
         TextGenerator(
             provider.chat("gpt-5"),
-            CallConfig(
-                providerOptions = ProviderOptions.Raw(JsonObject(mapOf(
+            CallConfig {
+                providerOptions(ProviderOptions.Raw(JsonObject(mapOf(
                     "openai" to JsonObject(
                         mapOf("parallel_tool_calls" to JsonPrimitive(false)),
                     ),
-                ))),
-            ),
+                ))))
+            },
         ).generate(GenerationInput.Prompt("hi")).first()
 
         assertEquals(JsonPrimitive(false), seenBody.single()["parallel_tool_calls"])
@@ -197,8 +197,8 @@ class OpenAIProviderTest {
         val model = provider.responses("gpt-5")
         val result = TextGenerator(
             model,
-            CallConfig(
-                providerOptions = ProviderOptions.Raw(JsonObject(mapOf(
+            CallConfig {
+                providerOptions(ProviderOptions.Raw(JsonObject(mapOf(
                     "openai" to buildJsonObject {
                         put("conversation", JsonPrimitive("conv_123"))
                         put("include", JsonArray(listOf(JsonPrimitive("file_search_call.results"))))
@@ -221,9 +221,9 @@ class OpenAIProviderTest {
                         put("user", JsonPrimitive("user_123"))
                         put("forceReasoning", JsonPrimitive(true))
                     },
-                ))),
-                responseFormat = ResponseFormat.Json(schemaName = "Answer", schemaJson = JsonObject(emptyMap())),
-            ),
+                ))))
+                responseFormat(ResponseFormat.Json(schemaName = "Answer", schemaJson = JsonObject(emptyMap())))
+            },
         ).generate(GenerationInput.Prompt("hi")).first()
 
         val request = seenRequests.single()

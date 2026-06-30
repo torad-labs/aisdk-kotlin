@@ -12,19 +12,20 @@ import kotlinx.serialization.serializer
 @DslMarker
 public annotation class AiSdkDsl
 
-public data class CallSettings(
-    val temperature: Float? = null,
-    val topP: Float? = null,
-    val topK: Int? = null,
-    val maxOutputTokens: Int? = null,
-    val stopSequences: List<String>? = null,
-    val seed: Int? = null,
-    val providerOptions: ProviderOptions = ProviderOptions.None,
-    val abortSignal: AbortSignal? = null,
-    val presencePenalty: Float? = null,
-    val frequencyPenalty: Float? = null,
-    val responseFormat: ResponseFormat? = null,
-    val maxRetries: Int = 2,
+@Poko
+public class CallSettings internal constructor(
+    public val temperature: Float? = null,
+    public val topP: Float? = null,
+    public val topK: Int? = null,
+    public val maxOutputTokens: Int? = null,
+    public val stopSequences: List<String>? = null,
+    public val seed: Int? = null,
+    public val providerOptions: ProviderOptions = ProviderOptions.None,
+    public val abortSignal: AbortSignal? = null,
+    public val presencePenalty: Float? = null,
+    public val frequencyPenalty: Float? = null,
+    public val responseFormat: ResponseFormat? = null,
+    public val maxRetries: Int = 2,
 ) {
     init {
         require(maxRetries >= 0) { "maxRetries must be >= 0" }
@@ -92,7 +93,7 @@ public class CallSettingsBuilder internal constructor() {
     )
 }
 
-public fun CallSettings(block: CallSettingsBuilder.() -> Unit): CallSettings =
+public fun CallSettings(block: CallSettingsBuilder.() -> Unit = {}): CallSettings =
     CallSettingsBuilder().apply(block).build()
 
 @AiSdkDsl

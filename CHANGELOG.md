@@ -133,6 +133,11 @@ This project follows Semantic Versioning once the first stable release is cut.
   options/configs/credentials/policies are `@Poko` value-semantics classes;
   callback-, transport-, serializer-, middleware-, retry-generator-, or
   arbitrary-context-bearing options are regular classes with identity equality.
+  Flagship settings types (`CallSettings`, `CallConfig`, `AgentSettings`, and
+  `StepSettings`) now follow the same internal-constructor builder pattern.
+  `CallSettings` and `CallConfig` are `@Poko` value-semantics classes;
+  `AgentSettings` and `StepSettings` are regular classes with identity equality
+  because they can hold model and tool objects.
 
 - **Tools are now class-based and extensible (breaking ABI change).** `Tool` is an `abstract class`
   you can extend for reusable, dependency-injected tools — mirroring how a concrete agent extends

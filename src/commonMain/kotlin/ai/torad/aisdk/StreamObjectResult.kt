@@ -339,19 +339,19 @@ public fun <TOutput> StreamObjectResult(
     return StreamObjectResult(
         events = TextGenerator(
             model,
-            CallConfig(
-                temperature = temperature,
-                topP = topP,
-                topK = topK,
-                maxOutputTokens = maxOutputTokens,
-                stopSequences = stopSequences,
-                seed = seed,
-                providerOptions = providerOptions,
-                abortSignal = abortSignal,
-                presencePenalty = presencePenalty,
-                frequencyPenalty = frequencyPenalty,
-                responseFormat = effectiveResponseFormat,
-            ),
+            CallConfig {
+                temperature(temperature)
+                topP(topP)
+                topK(topK)
+                maxOutputTokens(maxOutputTokens)
+                stopSequences(stopSequences)
+                seed(seed)
+                providerOptions(providerOptions)
+                abortSignal(abortSignal)
+                presencePenalty(presencePenalty)
+                frequencyPenalty(frequencyPenalty)
+                responseFormat(effectiveResponseFormat)
+            },
         ).stream(input),
         output = output,
         repairText = repairText,

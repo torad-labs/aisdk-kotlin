@@ -67,7 +67,11 @@ class ToolLoopContractGapsTest {
             model = MockLanguageModelToolThenText("probe", MockToolInput("unused" to ""), "done"),
             instructions = "run probe",
             tools = ToolSet(probe),
-            prepareStep = { StepSettings(experimental_context = "augmented") },
+            prepareStep = {
+                StepSettings {
+                    experimental_context("augmented")
+                }
+            },
         )
 
         // WHEN streamed with "initial" but the step overrides it.

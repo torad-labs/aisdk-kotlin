@@ -247,7 +247,11 @@ class ToolApprovalTest {
             ),
             instructions = "use send",
             tools = ToolSet(sendTool),
-            prepareStep = { StepSettings(experimental_context = "step-context") },
+            prepareStep = {
+                StepSettings {
+                    experimental_context("step-context")
+                }
+            },
         )
 
         agent.dispatchEngineAction(ToolLoopAgentAction.UserSubmitPrompt("trigger", context = "request-context"))
