@@ -199,38 +199,196 @@ public fun FalProviderSettings(
     FalProviderSettingsBuilder().apply(block).build()
 
 @Serializable
-public data class FalImageModelOptions(
-    val useMultipleImages: Boolean? = null,
+@Poko
+public class FalImageModelOptions internal constructor(
+    public val useMultipleImages: Boolean? = null,
 )
 
-@Serializable
-public data class FalSpeechModelOptions(
-    val voice_setting: JsonObject? = null,
-    val audio_setting: JsonObject? = null,
-    val language_boost: String? = null,
-    val pronunciation_dict: JsonObject? = null,
-)
+public class FalImageModelOptionsBuilder internal constructor() {
+    private var useMultipleImages: Boolean? = null
+
+    public fun useMultipleImages(value: Boolean?) {
+        useMultipleImages = value
+    }
+
+    internal fun build(): FalImageModelOptions =
+        FalImageModelOptions(useMultipleImages = useMultipleImages)
+}
+
+public fun FalImageModelOptions(
+    block: FalImageModelOptionsBuilder.() -> Unit = {},
+): FalImageModelOptions =
+    FalImageModelOptionsBuilder().apply(block).build()
 
 @Serializable
-public data class FalTranscriptionModelOptions(
-    val language: String? = "en",
-    val diarize: Boolean? = true,
-    val chunkLevel: String? = "segment",
-    val version: String? = "3",
-    val batchSize: Int? = 64,
-    val numSpeakers: Int? = null,
+@Poko
+public class FalSpeechModelOptions internal constructor(
+    public val voice_setting: JsonObject? = null,
+    public val audio_setting: JsonObject? = null,
+    public val language_boost: String? = null,
+    public val pronunciation_dict: JsonObject? = null,
 )
 
+public class FalSpeechModelOptionsBuilder internal constructor() {
+    private var voice_setting: JsonObject? = null
+    private var audio_setting: JsonObject? = null
+    private var language_boost: String? = null
+    private var pronunciation_dict: JsonObject? = null
+
+    public fun voice_setting(value: JsonObject?) {
+        voice_setting = value
+    }
+
+    public fun audio_setting(value: JsonObject?) {
+        audio_setting = value
+    }
+
+    public fun language_boost(value: String?) {
+        language_boost = value
+    }
+
+    public fun pronunciation_dict(value: JsonObject?) {
+        pronunciation_dict = value
+    }
+
+    internal fun build(): FalSpeechModelOptions =
+        FalSpeechModelOptions(
+            voice_setting = voice_setting,
+            audio_setting = audio_setting,
+            language_boost = language_boost,
+            pronunciation_dict = pronunciation_dict,
+        )
+}
+
+public fun FalSpeechModelOptions(
+    block: FalSpeechModelOptionsBuilder.() -> Unit = {},
+): FalSpeechModelOptions =
+    FalSpeechModelOptionsBuilder().apply(block).build()
+
 @Serializable
-public data class FalVideoModelOptions(
-    val loop: Boolean? = null,
-    val motionStrength: Float? = null,
-    val pollIntervalMs: Long? = null,
-    val pollTimeoutMs: Long? = null,
-    val resolution: String? = null,
-    val negativePrompt: String? = null,
-    val promptOptimizer: Boolean? = null,
+@Poko
+public class FalTranscriptionModelOptions internal constructor(
+    public val language: String? = "en",
+    public val diarize: Boolean? = true,
+    public val chunkLevel: String? = "segment",
+    public val version: String? = "3",
+    public val batchSize: Int? = 64,
+    public val numSpeakers: Int? = null,
 )
+
+public class FalTranscriptionModelOptionsBuilder internal constructor() {
+    private var language: String? = "en"
+    private var diarize: Boolean? = true
+    private var chunkLevel: String? = "segment"
+    private var version: String? = "3"
+    private var batchSize: Int? = 64
+    private var numSpeakers: Int? = null
+
+    public fun language(value: String?) {
+        language = value
+    }
+
+    public fun diarize(value: Boolean?) {
+        diarize = value
+    }
+
+    public fun chunkLevel(value: String?) {
+        chunkLevel = value
+    }
+
+    public fun version(value: String?) {
+        version = value
+    }
+
+    public fun batchSize(value: Int?) {
+        batchSize = value
+    }
+
+    public fun numSpeakers(value: Int?) {
+        numSpeakers = value
+    }
+
+    internal fun build(): FalTranscriptionModelOptions =
+        FalTranscriptionModelOptions(
+            language = language,
+            diarize = diarize,
+            chunkLevel = chunkLevel,
+            version = version,
+            batchSize = batchSize,
+            numSpeakers = numSpeakers,
+        )
+}
+
+public fun FalTranscriptionModelOptions(
+    block: FalTranscriptionModelOptionsBuilder.() -> Unit = {},
+): FalTranscriptionModelOptions =
+    FalTranscriptionModelOptionsBuilder().apply(block).build()
+
+@Serializable
+@Poko
+public class FalVideoModelOptions internal constructor(
+    public val loop: Boolean? = null,
+    public val motionStrength: Float? = null,
+    public val pollIntervalMs: Long? = null,
+    public val pollTimeoutMs: Long? = null,
+    public val resolution: String? = null,
+    public val negativePrompt: String? = null,
+    public val promptOptimizer: Boolean? = null,
+)
+
+public class FalVideoModelOptionsBuilder internal constructor() {
+    private var loop: Boolean? = null
+    private var motionStrength: Float? = null
+    private var pollIntervalMs: Long? = null
+    private var pollTimeoutMs: Long? = null
+    private var resolution: String? = null
+    private var negativePrompt: String? = null
+    private var promptOptimizer: Boolean? = null
+
+    public fun loop(value: Boolean?) {
+        loop = value
+    }
+
+    public fun motionStrength(value: Float?) {
+        motionStrength = value
+    }
+
+    public fun pollIntervalMs(value: Long?) {
+        pollIntervalMs = value
+    }
+
+    public fun pollTimeoutMs(value: Long?) {
+        pollTimeoutMs = value
+    }
+
+    public fun resolution(value: String?) {
+        resolution = value
+    }
+
+    public fun negativePrompt(value: String?) {
+        negativePrompt = value
+    }
+
+    public fun promptOptimizer(value: Boolean?) {
+        promptOptimizer = value
+    }
+
+    internal fun build(): FalVideoModelOptions =
+        FalVideoModelOptions(
+            loop = loop,
+            motionStrength = motionStrength,
+            pollIntervalMs = pollIntervalMs,
+            pollTimeoutMs = pollTimeoutMs,
+            resolution = resolution,
+            negativePrompt = negativePrompt,
+            promptOptimizer = promptOptimizer,
+        )
+}
+
+public fun FalVideoModelOptions(
+    block: FalVideoModelOptionsBuilder.() -> Unit = {},
+): FalVideoModelOptions =
+    FalVideoModelOptionsBuilder().apply(block).build()
 
 public class FalProvider(
     private val client: HttpClient,

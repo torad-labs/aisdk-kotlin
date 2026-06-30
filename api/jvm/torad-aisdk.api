@@ -8364,18 +8364,14 @@ public final class ai/torad/aisdk/providers/DeepSeekFacadeKt {
 	public static final field DEEPSEEK_VERSION Ljava/lang/String;
 	public static final fun DeepSeek (Lio/ktor/client/HttpClient;Lai/torad/aisdk/providers/DeepSeekProviderSettings;)Lai/torad/aisdk/providers/DeepSeekProvider;
 	public static synthetic fun DeepSeek$default (Lio/ktor/client/HttpClient;Lai/torad/aisdk/providers/DeepSeekProviderSettings;ILjava/lang/Object;)Lai/torad/aisdk/providers/DeepSeekProvider;
+	public static final fun DeepSeekLanguageModelOptions (Lkotlin/jvm/functions/Function1;)Lai/torad/aisdk/providers/DeepSeekLanguageModelOptions;
+	public static synthetic fun DeepSeekLanguageModelOptions$default (Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Lai/torad/aisdk/providers/DeepSeekLanguageModelOptions;
 	public static final fun DeepSeekProviderSettings (Lkotlin/jvm/functions/Function1;)Lai/torad/aisdk/providers/DeepSeekProviderSettings;
 	public static synthetic fun DeepSeekProviderSettings$default (Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Lai/torad/aisdk/providers/DeepSeekProviderSettings;
 }
 
 public final class ai/torad/aisdk/providers/DeepSeekLanguageModelOptions {
 	public static final field Companion Lai/torad/aisdk/providers/DeepSeekLanguageModelOptions$Companion;
-	public fun <init> ()V
-	public fun <init> (Ljava/util/Map;)V
-	public synthetic fun <init> (Ljava/util/Map;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public final fun component1 ()Ljava/util/Map;
-	public final fun copy (Ljava/util/Map;)Lai/torad/aisdk/providers/DeepSeekLanguageModelOptions;
-	public static synthetic fun copy$default (Lai/torad/aisdk/providers/DeepSeekLanguageModelOptions;Ljava/util/Map;ILjava/lang/Object;)Lai/torad/aisdk/providers/DeepSeekLanguageModelOptions;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getRaw ()Ljava/util/Map;
 	public fun hashCode ()I
@@ -8395,6 +8391,10 @@ public final synthetic class ai/torad/aisdk/providers/DeepSeekLanguageModelOptio
 
 public final class ai/torad/aisdk/providers/DeepSeekLanguageModelOptions$Companion {
 	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public final class ai/torad/aisdk/providers/DeepSeekLanguageModelOptionsBuilder {
+	public final fun raw (Ljava/util/Map;)V
 }
 
 public final class ai/torad/aisdk/providers/DeepSeekProvider : ai/torad/aisdk/Provider {
@@ -8635,6 +8635,10 @@ public final class ai/torad/aisdk/providers/ElevenLabsProviderKt {
 	public static synthetic fun ElevenLabs$default (Lio/ktor/client/HttpClient;Lai/torad/aisdk/providers/ElevenLabsProviderSettings;ILjava/lang/Object;)Lai/torad/aisdk/providers/ElevenLabsProvider;
 	public static final fun ElevenLabsProviderSettings (Lkotlin/jvm/functions/Function1;)Lai/torad/aisdk/providers/ElevenLabsProviderSettings;
 	public static synthetic fun ElevenLabsProviderSettings$default (Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Lai/torad/aisdk/providers/ElevenLabsProviderSettings;
+	public static final fun ElevenLabsSpeechModelOptions (Lkotlin/jvm/functions/Function1;)Lai/torad/aisdk/providers/ElevenLabsSpeechModelOptions;
+	public static synthetic fun ElevenLabsSpeechModelOptions$default (Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Lai/torad/aisdk/providers/ElevenLabsSpeechModelOptions;
+	public static final fun ElevenLabsTranscriptionModelOptions (Lkotlin/jvm/functions/Function1;)Lai/torad/aisdk/providers/ElevenLabsTranscriptionModelOptions;
+	public static synthetic fun ElevenLabsTranscriptionModelOptions$default (Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Lai/torad/aisdk/providers/ElevenLabsTranscriptionModelOptions;
 }
 
 public final class ai/torad/aisdk/providers/ElevenLabsProviderSettings {
@@ -8668,22 +8672,6 @@ public final class ai/torad/aisdk/providers/ElevenLabsProviderSettingsBuilder {
 
 public final class ai/torad/aisdk/providers/ElevenLabsSpeechModelOptions {
 	public static final field Companion Lai/torad/aisdk/providers/ElevenLabsSpeechModelOptions$Companion;
-	public fun <init> ()V
-	public fun <init> (Ljava/lang/String;Lkotlinx/serialization/json/JsonObject;Ljava/util/List;Ljava/lang/Integer;Ljava/lang/String;Ljava/lang/String;Ljava/util/List;Ljava/util/List;Ljava/lang/String;Ljava/lang/Boolean;Ljava/lang/Boolean;)V
-	public synthetic fun <init> (Ljava/lang/String;Lkotlinx/serialization/json/JsonObject;Ljava/util/List;Ljava/lang/Integer;Ljava/lang/String;Ljava/lang/String;Ljava/util/List;Ljava/util/List;Ljava/lang/String;Ljava/lang/Boolean;Ljava/lang/Boolean;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public final fun component1 ()Ljava/lang/String;
-	public final fun component10 ()Ljava/lang/Boolean;
-	public final fun component11 ()Ljava/lang/Boolean;
-	public final fun component2 ()Lkotlinx/serialization/json/JsonObject;
-	public final fun component3 ()Ljava/util/List;
-	public final fun component4 ()Ljava/lang/Integer;
-	public final fun component5 ()Ljava/lang/String;
-	public final fun component6 ()Ljava/lang/String;
-	public final fun component7 ()Ljava/util/List;
-	public final fun component8 ()Ljava/util/List;
-	public final fun component9 ()Ljava/lang/String;
-	public final fun copy (Ljava/lang/String;Lkotlinx/serialization/json/JsonObject;Ljava/util/List;Ljava/lang/Integer;Ljava/lang/String;Ljava/lang/String;Ljava/util/List;Ljava/util/List;Ljava/lang/String;Ljava/lang/Boolean;Ljava/lang/Boolean;)Lai/torad/aisdk/providers/ElevenLabsSpeechModelOptions;
-	public static synthetic fun copy$default (Lai/torad/aisdk/providers/ElevenLabsSpeechModelOptions;Ljava/lang/String;Lkotlinx/serialization/json/JsonObject;Ljava/util/List;Ljava/lang/Integer;Ljava/lang/String;Ljava/lang/String;Ljava/util/List;Ljava/util/List;Ljava/lang/String;Ljava/lang/Boolean;Ljava/lang/Boolean;ILjava/lang/Object;)Lai/torad/aisdk/providers/ElevenLabsSpeechModelOptions;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getApplyLanguageTextNormalization ()Ljava/lang/Boolean;
 	public final fun getApplyTextNormalization ()Ljava/lang/String;
@@ -8715,19 +8703,22 @@ public final class ai/torad/aisdk/providers/ElevenLabsSpeechModelOptions$Compani
 	public final fun serializer ()Lkotlinx/serialization/KSerializer;
 }
 
+public final class ai/torad/aisdk/providers/ElevenLabsSpeechModelOptionsBuilder {
+	public final fun applyLanguageTextNormalization (Ljava/lang/Boolean;)V
+	public final fun applyTextNormalization (Ljava/lang/String;)V
+	public final fun enableLogging (Ljava/lang/Boolean;)V
+	public final fun languageCode (Ljava/lang/String;)V
+	public final fun nextRequestIds (Ljava/util/List;)V
+	public final fun nextText (Ljava/lang/String;)V
+	public final fun previousRequestIds (Ljava/util/List;)V
+	public final fun previousText (Ljava/lang/String;)V
+	public final fun pronunciationDictionaryLocators (Ljava/util/List;)V
+	public final fun seed (Ljava/lang/Integer;)V
+	public final fun voiceSettings (Lkotlinx/serialization/json/JsonObject;)V
+}
+
 public final class ai/torad/aisdk/providers/ElevenLabsTranscriptionModelOptions {
 	public static final field Companion Lai/torad/aisdk/providers/ElevenLabsTranscriptionModelOptions$Companion;
-	public fun <init> ()V
-	public fun <init> (Ljava/lang/String;Ljava/lang/Boolean;Ljava/lang/Integer;Ljava/lang/String;Ljava/lang/Boolean;Ljava/lang/String;)V
-	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/Boolean;Ljava/lang/Integer;Ljava/lang/String;Ljava/lang/Boolean;Ljava/lang/String;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public final fun component1 ()Ljava/lang/String;
-	public final fun component2 ()Ljava/lang/Boolean;
-	public final fun component3 ()Ljava/lang/Integer;
-	public final fun component4 ()Ljava/lang/String;
-	public final fun component5 ()Ljava/lang/Boolean;
-	public final fun component6 ()Ljava/lang/String;
-	public final fun copy (Ljava/lang/String;Ljava/lang/Boolean;Ljava/lang/Integer;Ljava/lang/String;Ljava/lang/Boolean;Ljava/lang/String;)Lai/torad/aisdk/providers/ElevenLabsTranscriptionModelOptions;
-	public static synthetic fun copy$default (Lai/torad/aisdk/providers/ElevenLabsTranscriptionModelOptions;Ljava/lang/String;Ljava/lang/Boolean;Ljava/lang/Integer;Ljava/lang/String;Ljava/lang/Boolean;Ljava/lang/String;ILjava/lang/Object;)Lai/torad/aisdk/providers/ElevenLabsTranscriptionModelOptions;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getDiarize ()Ljava/lang/Boolean;
 	public final fun getFileFormat ()Ljava/lang/String;
@@ -8754,14 +8745,17 @@ public final class ai/torad/aisdk/providers/ElevenLabsTranscriptionModelOptions$
 	public final fun serializer ()Lkotlinx/serialization/KSerializer;
 }
 
+public final class ai/torad/aisdk/providers/ElevenLabsTranscriptionModelOptionsBuilder {
+	public final fun diarize (Ljava/lang/Boolean;)V
+	public final fun fileFormat (Ljava/lang/String;)V
+	public final fun languageCode (Ljava/lang/String;)V
+	public final fun numSpeakers (Ljava/lang/Integer;)V
+	public final fun tagAudioEvents (Ljava/lang/Boolean;)V
+	public final fun timestampsGranularity (Ljava/lang/String;)V
+}
+
 public final class ai/torad/aisdk/providers/FalImageModelOptions {
 	public static final field Companion Lai/torad/aisdk/providers/FalImageModelOptions$Companion;
-	public fun <init> ()V
-	public fun <init> (Ljava/lang/Boolean;)V
-	public synthetic fun <init> (Ljava/lang/Boolean;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public final fun component1 ()Ljava/lang/Boolean;
-	public final fun copy (Ljava/lang/Boolean;)Lai/torad/aisdk/providers/FalImageModelOptions;
-	public static synthetic fun copy$default (Lai/torad/aisdk/providers/FalImageModelOptions;Ljava/lang/Boolean;ILjava/lang/Object;)Lai/torad/aisdk/providers/FalImageModelOptions;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getUseMultipleImages ()Ljava/lang/Boolean;
 	public fun hashCode ()I
@@ -8781,6 +8775,10 @@ public final synthetic class ai/torad/aisdk/providers/FalImageModelOptions$$seri
 
 public final class ai/torad/aisdk/providers/FalImageModelOptions$Companion {
 	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public final class ai/torad/aisdk/providers/FalImageModelOptionsBuilder {
+	public final fun useMultipleImages (Ljava/lang/Boolean;)V
 }
 
 public final class ai/torad/aisdk/providers/FalProvider : ai/torad/aisdk/Provider {
@@ -8805,8 +8803,16 @@ public final class ai/torad/aisdk/providers/FalProviderKt {
 	public static final field FAL_VERSION Ljava/lang/String;
 	public static final fun Fal (Lio/ktor/client/HttpClient;Lai/torad/aisdk/providers/FalProviderSettings;)Lai/torad/aisdk/providers/FalProvider;
 	public static synthetic fun Fal$default (Lio/ktor/client/HttpClient;Lai/torad/aisdk/providers/FalProviderSettings;ILjava/lang/Object;)Lai/torad/aisdk/providers/FalProvider;
+	public static final fun FalImageModelOptions (Lkotlin/jvm/functions/Function1;)Lai/torad/aisdk/providers/FalImageModelOptions;
+	public static synthetic fun FalImageModelOptions$default (Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Lai/torad/aisdk/providers/FalImageModelOptions;
 	public static final fun FalProviderSettings (Lkotlin/jvm/functions/Function1;)Lai/torad/aisdk/providers/FalProviderSettings;
 	public static synthetic fun FalProviderSettings$default (Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Lai/torad/aisdk/providers/FalProviderSettings;
+	public static final fun FalSpeechModelOptions (Lkotlin/jvm/functions/Function1;)Lai/torad/aisdk/providers/FalSpeechModelOptions;
+	public static synthetic fun FalSpeechModelOptions$default (Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Lai/torad/aisdk/providers/FalSpeechModelOptions;
+	public static final fun FalTranscriptionModelOptions (Lkotlin/jvm/functions/Function1;)Lai/torad/aisdk/providers/FalTranscriptionModelOptions;
+	public static synthetic fun FalTranscriptionModelOptions$default (Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Lai/torad/aisdk/providers/FalTranscriptionModelOptions;
+	public static final fun FalVideoModelOptions (Lkotlin/jvm/functions/Function1;)Lai/torad/aisdk/providers/FalVideoModelOptions;
+	public static synthetic fun FalVideoModelOptions$default (Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Lai/torad/aisdk/providers/FalVideoModelOptions;
 }
 
 public final class ai/torad/aisdk/providers/FalProviderSettings {
@@ -8850,15 +8856,6 @@ public final class ai/torad/aisdk/providers/FalProviderSettingsBuilder {
 
 public final class ai/torad/aisdk/providers/FalSpeechModelOptions {
 	public static final field Companion Lai/torad/aisdk/providers/FalSpeechModelOptions$Companion;
-	public fun <init> ()V
-	public fun <init> (Lkotlinx/serialization/json/JsonObject;Lkotlinx/serialization/json/JsonObject;Ljava/lang/String;Lkotlinx/serialization/json/JsonObject;)V
-	public synthetic fun <init> (Lkotlinx/serialization/json/JsonObject;Lkotlinx/serialization/json/JsonObject;Ljava/lang/String;Lkotlinx/serialization/json/JsonObject;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public final fun component1 ()Lkotlinx/serialization/json/JsonObject;
-	public final fun component2 ()Lkotlinx/serialization/json/JsonObject;
-	public final fun component3 ()Ljava/lang/String;
-	public final fun component4 ()Lkotlinx/serialization/json/JsonObject;
-	public final fun copy (Lkotlinx/serialization/json/JsonObject;Lkotlinx/serialization/json/JsonObject;Ljava/lang/String;Lkotlinx/serialization/json/JsonObject;)Lai/torad/aisdk/providers/FalSpeechModelOptions;
-	public static synthetic fun copy$default (Lai/torad/aisdk/providers/FalSpeechModelOptions;Lkotlinx/serialization/json/JsonObject;Lkotlinx/serialization/json/JsonObject;Ljava/lang/String;Lkotlinx/serialization/json/JsonObject;ILjava/lang/Object;)Lai/torad/aisdk/providers/FalSpeechModelOptions;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getAudio_setting ()Lkotlinx/serialization/json/JsonObject;
 	public final fun getLanguage_boost ()Ljava/lang/String;
@@ -8883,19 +8880,15 @@ public final class ai/torad/aisdk/providers/FalSpeechModelOptions$Companion {
 	public final fun serializer ()Lkotlinx/serialization/KSerializer;
 }
 
+public final class ai/torad/aisdk/providers/FalSpeechModelOptionsBuilder {
+	public final fun audio_setting (Lkotlinx/serialization/json/JsonObject;)V
+	public final fun language_boost (Ljava/lang/String;)V
+	public final fun pronunciation_dict (Lkotlinx/serialization/json/JsonObject;)V
+	public final fun voice_setting (Lkotlinx/serialization/json/JsonObject;)V
+}
+
 public final class ai/torad/aisdk/providers/FalTranscriptionModelOptions {
 	public static final field Companion Lai/torad/aisdk/providers/FalTranscriptionModelOptions$Companion;
-	public fun <init> ()V
-	public fun <init> (Ljava/lang/String;Ljava/lang/Boolean;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Integer;Ljava/lang/Integer;)V
-	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/Boolean;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Integer;Ljava/lang/Integer;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public final fun component1 ()Ljava/lang/String;
-	public final fun component2 ()Ljava/lang/Boolean;
-	public final fun component3 ()Ljava/lang/String;
-	public final fun component4 ()Ljava/lang/String;
-	public final fun component5 ()Ljava/lang/Integer;
-	public final fun component6 ()Ljava/lang/Integer;
-	public final fun copy (Ljava/lang/String;Ljava/lang/Boolean;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Integer;Ljava/lang/Integer;)Lai/torad/aisdk/providers/FalTranscriptionModelOptions;
-	public static synthetic fun copy$default (Lai/torad/aisdk/providers/FalTranscriptionModelOptions;Ljava/lang/String;Ljava/lang/Boolean;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Integer;Ljava/lang/Integer;ILjava/lang/Object;)Lai/torad/aisdk/providers/FalTranscriptionModelOptions;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getBatchSize ()Ljava/lang/Integer;
 	public final fun getChunkLevel ()Ljava/lang/String;
@@ -8922,20 +8915,17 @@ public final class ai/torad/aisdk/providers/FalTranscriptionModelOptions$Compani
 	public final fun serializer ()Lkotlinx/serialization/KSerializer;
 }
 
+public final class ai/torad/aisdk/providers/FalTranscriptionModelOptionsBuilder {
+	public final fun batchSize (Ljava/lang/Integer;)V
+	public final fun chunkLevel (Ljava/lang/String;)V
+	public final fun diarize (Ljava/lang/Boolean;)V
+	public final fun language (Ljava/lang/String;)V
+	public final fun numSpeakers (Ljava/lang/Integer;)V
+	public final fun version (Ljava/lang/String;)V
+}
+
 public final class ai/torad/aisdk/providers/FalVideoModelOptions {
 	public static final field Companion Lai/torad/aisdk/providers/FalVideoModelOptions$Companion;
-	public fun <init> ()V
-	public fun <init> (Ljava/lang/Boolean;Ljava/lang/Float;Ljava/lang/Long;Ljava/lang/Long;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Boolean;)V
-	public synthetic fun <init> (Ljava/lang/Boolean;Ljava/lang/Float;Ljava/lang/Long;Ljava/lang/Long;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Boolean;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public final fun component1 ()Ljava/lang/Boolean;
-	public final fun component2 ()Ljava/lang/Float;
-	public final fun component3 ()Ljava/lang/Long;
-	public final fun component4 ()Ljava/lang/Long;
-	public final fun component5 ()Ljava/lang/String;
-	public final fun component6 ()Ljava/lang/String;
-	public final fun component7 ()Ljava/lang/Boolean;
-	public final fun copy (Ljava/lang/Boolean;Ljava/lang/Float;Ljava/lang/Long;Ljava/lang/Long;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Boolean;)Lai/torad/aisdk/providers/FalVideoModelOptions;
-	public static synthetic fun copy$default (Lai/torad/aisdk/providers/FalVideoModelOptions;Ljava/lang/Boolean;Ljava/lang/Float;Ljava/lang/Long;Ljava/lang/Long;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Boolean;ILjava/lang/Object;)Lai/torad/aisdk/providers/FalVideoModelOptions;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getLoop ()Ljava/lang/Boolean;
 	public final fun getMotionStrength ()Ljava/lang/Float;
@@ -8963,14 +8953,18 @@ public final class ai/torad/aisdk/providers/FalVideoModelOptions$Companion {
 	public final fun serializer ()Lkotlinx/serialization/KSerializer;
 }
 
+public final class ai/torad/aisdk/providers/FalVideoModelOptionsBuilder {
+	public final fun loop (Ljava/lang/Boolean;)V
+	public final fun motionStrength (Ljava/lang/Float;)V
+	public final fun negativePrompt (Ljava/lang/String;)V
+	public final fun pollIntervalMs (Ljava/lang/Long;)V
+	public final fun pollTimeoutMs (Ljava/lang/Long;)V
+	public final fun promptOptimizer (Ljava/lang/Boolean;)V
+	public final fun resolution (Ljava/lang/String;)V
+}
+
 public final class ai/torad/aisdk/providers/FireworksEmbeddingModelOptions {
 	public static final field Companion Lai/torad/aisdk/providers/FireworksEmbeddingModelOptions$Companion;
-	public fun <init> ()V
-	public fun <init> (Ljava/util/Map;)V
-	public synthetic fun <init> (Ljava/util/Map;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public final fun component1 ()Ljava/util/Map;
-	public final fun copy (Ljava/util/Map;)Lai/torad/aisdk/providers/FireworksEmbeddingModelOptions;
-	public static synthetic fun copy$default (Lai/torad/aisdk/providers/FireworksEmbeddingModelOptions;Ljava/util/Map;ILjava/lang/Object;)Lai/torad/aisdk/providers/FireworksEmbeddingModelOptions;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getRaw ()Ljava/util/Map;
 	public fun hashCode ()I
@@ -8990,6 +8984,10 @@ public final synthetic class ai/torad/aisdk/providers/FireworksEmbeddingModelOpt
 
 public final class ai/torad/aisdk/providers/FireworksEmbeddingModelOptions$Companion {
 	public final fun serializer ()Lkotlinx/serialization/KSerializer;
+}
+
+public final class ai/torad/aisdk/providers/FireworksEmbeddingModelOptionsBuilder {
+	public final fun raw (Ljava/util/Map;)V
 }
 
 public final class ai/torad/aisdk/providers/FireworksErrorData {
@@ -9020,6 +9018,8 @@ public final class ai/torad/aisdk/providers/FireworksFacadeKt {
 	public static final field FIREWORKS_VERSION Ljava/lang/String;
 	public static final fun Fireworks (Lio/ktor/client/HttpClient;Lai/torad/aisdk/providers/FireworksProviderSettings;)Lai/torad/aisdk/providers/FireworksProvider;
 	public static synthetic fun Fireworks$default (Lio/ktor/client/HttpClient;Lai/torad/aisdk/providers/FireworksProviderSettings;ILjava/lang/Object;)Lai/torad/aisdk/providers/FireworksProvider;
+	public static final fun FireworksEmbeddingModelOptions (Lkotlin/jvm/functions/Function1;)Lai/torad/aisdk/providers/FireworksEmbeddingModelOptions;
+	public static synthetic fun FireworksEmbeddingModelOptions$default (Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Lai/torad/aisdk/providers/FireworksEmbeddingModelOptions;
 	public static final fun FireworksProviderSettings (Lkotlin/jvm/functions/Function1;)Lai/torad/aisdk/providers/FireworksProviderSettings;
 	public static synthetic fun FireworksProviderSettings$default (Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Lai/torad/aisdk/providers/FireworksProviderSettings;
 }

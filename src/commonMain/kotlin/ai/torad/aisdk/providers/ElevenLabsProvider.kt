@@ -33,29 +33,157 @@ public const val ELEVENLABS_VERSION: String = "2.0.33"
 
 
 @Serializable
-public data class ElevenLabsSpeechModelOptions(
-    val languageCode: String? = null,
-    val voiceSettings: JsonObject? = null,
-    val pronunciationDictionaryLocators: List<JsonObject>? = null,
-    val seed: Int? = null,
-    val previousText: String? = null,
-    val nextText: String? = null,
-    val previousRequestIds: List<String>? = null,
-    val nextRequestIds: List<String>? = null,
-    val applyTextNormalization: String? = null,
-    val applyLanguageTextNormalization: Boolean? = null,
-    val enableLogging: Boolean? = null,
+@Poko
+public class ElevenLabsSpeechModelOptions internal constructor(
+    public val languageCode: String? = null,
+    public val voiceSettings: JsonObject? = null,
+    public val pronunciationDictionaryLocators: List<JsonObject>? = null,
+    public val seed: Int? = null,
+    public val previousText: String? = null,
+    public val nextText: String? = null,
+    public val previousRequestIds: List<String>? = null,
+    public val nextRequestIds: List<String>? = null,
+    public val applyTextNormalization: String? = null,
+    public val applyLanguageTextNormalization: Boolean? = null,
+    public val enableLogging: Boolean? = null,
 )
 
+public class ElevenLabsSpeechModelOptionsBuilder internal constructor() {
+    private var languageCode: String? = null
+    private var voiceSettings: JsonObject? = null
+    private var pronunciationDictionaryLocators: List<JsonObject>? = null
+    private var seed: Int? = null
+    private var previousText: String? = null
+    private var nextText: String? = null
+    private var previousRequestIds: List<String>? = null
+    private var nextRequestIds: List<String>? = null
+    private var applyTextNormalization: String? = null
+    private var applyLanguageTextNormalization: Boolean? = null
+    private var enableLogging: Boolean? = null
+
+    public fun languageCode(value: String?) {
+        languageCode = value
+    }
+
+    public fun voiceSettings(value: JsonObject?) {
+        voiceSettings = value
+    }
+
+    public fun pronunciationDictionaryLocators(value: List<JsonObject>?) {
+        pronunciationDictionaryLocators = value
+    }
+
+    public fun seed(value: Int?) {
+        seed = value
+    }
+
+    public fun previousText(value: String?) {
+        previousText = value
+    }
+
+    public fun nextText(value: String?) {
+        nextText = value
+    }
+
+    public fun previousRequestIds(value: List<String>?) {
+        previousRequestIds = value
+    }
+
+    public fun nextRequestIds(value: List<String>?) {
+        nextRequestIds = value
+    }
+
+    public fun applyTextNormalization(value: String?) {
+        applyTextNormalization = value
+    }
+
+    public fun applyLanguageTextNormalization(value: Boolean?) {
+        applyLanguageTextNormalization = value
+    }
+
+    public fun enableLogging(value: Boolean?) {
+        enableLogging = value
+    }
+
+    internal fun build(): ElevenLabsSpeechModelOptions =
+        ElevenLabsSpeechModelOptions(
+            languageCode = languageCode,
+            voiceSettings = voiceSettings,
+            pronunciationDictionaryLocators = pronunciationDictionaryLocators,
+            seed = seed,
+            previousText = previousText,
+            nextText = nextText,
+            previousRequestIds = previousRequestIds,
+            nextRequestIds = nextRequestIds,
+            applyTextNormalization = applyTextNormalization,
+            applyLanguageTextNormalization = applyLanguageTextNormalization,
+            enableLogging = enableLogging,
+        )
+}
+
+public fun ElevenLabsSpeechModelOptions(
+    block: ElevenLabsSpeechModelOptionsBuilder.() -> Unit = {},
+): ElevenLabsSpeechModelOptions =
+    ElevenLabsSpeechModelOptionsBuilder().apply(block).build()
+
 @Serializable
-public data class ElevenLabsTranscriptionModelOptions(
-    val languageCode: String? = null,
-    val tagAudioEvents: Boolean? = null,
-    val numSpeakers: Int? = null,
-    val timestampsGranularity: String? = null,
-    val diarize: Boolean? = null,
-    val fileFormat: String? = null,
+@Poko
+public class ElevenLabsTranscriptionModelOptions internal constructor(
+    public val languageCode: String? = null,
+    public val tagAudioEvents: Boolean? = null,
+    public val numSpeakers: Int? = null,
+    public val timestampsGranularity: String? = null,
+    public val diarize: Boolean? = null,
+    public val fileFormat: String? = null,
 )
+
+public class ElevenLabsTranscriptionModelOptionsBuilder internal constructor() {
+    private var languageCode: String? = null
+    private var tagAudioEvents: Boolean? = null
+    private var numSpeakers: Int? = null
+    private var timestampsGranularity: String? = null
+    private var diarize: Boolean? = null
+    private var fileFormat: String? = null
+
+    public fun languageCode(value: String?) {
+        languageCode = value
+    }
+
+    public fun tagAudioEvents(value: Boolean?) {
+        tagAudioEvents = value
+    }
+
+    public fun numSpeakers(value: Int?) {
+        numSpeakers = value
+    }
+
+    public fun timestampsGranularity(value: String?) {
+        timestampsGranularity = value
+    }
+
+    public fun diarize(value: Boolean?) {
+        diarize = value
+    }
+
+    public fun fileFormat(value: String?) {
+        fileFormat = value
+    }
+
+    internal fun build(): ElevenLabsTranscriptionModelOptions =
+        ElevenLabsTranscriptionModelOptions(
+            languageCode = languageCode,
+            tagAudioEvents = tagAudioEvents,
+            numSpeakers = numSpeakers,
+            timestampsGranularity = timestampsGranularity,
+            diarize = diarize,
+            fileFormat = fileFormat,
+        )
+}
+
+public fun ElevenLabsTranscriptionModelOptions(
+    block: ElevenLabsTranscriptionModelOptionsBuilder.() -> Unit = {},
+): ElevenLabsTranscriptionModelOptions =
+    ElevenLabsTranscriptionModelOptionsBuilder().apply(block).build()
 
 @Serializable
 @Poko

@@ -12,6 +12,14 @@ import ai.torad.aisdk.providers.CohereEmbeddingModelOptions
 import ai.torad.aisdk.providers.CohereLanguageModelOptions
 import ai.torad.aisdk.providers.CohereRerankingModelOptions
 import ai.torad.aisdk.providers.CohereThinkingOptions
+import ai.torad.aisdk.providers.DeepSeekLanguageModelOptions
+import ai.torad.aisdk.providers.ElevenLabsSpeechModelOptions
+import ai.torad.aisdk.providers.ElevenLabsTranscriptionModelOptions
+import ai.torad.aisdk.providers.FalImageModelOptions
+import ai.torad.aisdk.providers.FalSpeechModelOptions
+import ai.torad.aisdk.providers.FalTranscriptionModelOptions
+import ai.torad.aisdk.providers.FalVideoModelOptions
+import ai.torad.aisdk.providers.FireworksEmbeddingModelOptions
 import ai.torad.aisdk.providers.DeepgramSpeechModelOptions
 import ai.torad.aisdk.providers.DeepgramTranscriptionModelOptions
 import ai.torad.aisdk.providers.TogetherAIRerankingModelOptions
@@ -20,6 +28,7 @@ import ai.torad.aisdk.providers.VoyageRerankingModelOptions
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.buildJsonObject
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotEquals
@@ -224,5 +233,84 @@ class ProviderModelOptionsBuilderTest {
             deepgramTranscription,
             aiSdkJson.decodeFromString<DeepgramTranscriptionModelOptions>(aiSdkJson.encodeToString(deepgramTranscription)),
         )
+    }
+
+    @Test
+    fun `additional provider option DSLs keep value semantics and serialization`() {
+        val deepSeek = DeepSeekLanguageModelOptions {
+            raw(mapOf("temperature" to JsonPrimitive(0.2)))
+        }
+        val elevenLabsSpeech = ElevenLabsSpeechModelOptions {
+            languageCode("en")
+            voiceSettings(buildJsonObject { put("stability", JsonPrimitive(0.5)) })
+            seed(12)
+            previousText("before")
+            nextText("after")
+            previousRequestIds(listOf("prev"))
+            nextRequestIds(listOf("next"))
+            applyTextNormalization("auto")
+            applyLanguageTextNormalization(true)
+            enableLogging(false)
+        }
+        val elevenLabsTranscription = ElevenLabsTranscriptionModelOptions {
+            languageCode("en")
+            tagAudioEvents(true)
+            numSpeakers(2)
+            timestampsGranularity("word")
+            diarize(true)
+            fileFormat("mp3")
+        }
+        val falImage = FalImageModelOptions {
+            useMultipleImages(true)
+        }
+        val falSpeech = FalSpeechModelOptions {
+            voice_setting(buildJsonObject { put("similarity_boost", JsonPrimitive(0.7)) })
+            audio_setting(buildJsonObject { put("format", JsonPrimitive("mp3")) })
+            language_boost("en")
+            pronunciation_dict(buildJsonObject { put("id", JsonPrimitive("dict-1")) })
+        }
+        val falTranscription = FalTranscriptionModelOptions {
+            language("es")
+            diarize(false)
+            chunkLevel("word")
+            version("4")
+            batchSize(32)
+            numSpeakers(2)
+        }
+        val falVideo = FalVideoModelOptions {
+            loop(true)
+            motionStrength(0.4f)
+            pollIntervalMs(250)
+            pollTimeoutMs(5_000)
+            resolution("720p")
+            negativePrompt("blur")
+            promptOptimizer(true)
+        }
+        val fireworks = FireworksEmbeddingModelOptions {
+            raw(mapOf("user" to JsonPrimitive("test-user")))
+        }
+
+        assertEquals(deepSeek, aiSdkJson.decodeFromString<DeepSeekLanguageModelOptions>(aiSdkJson.encodeToString(deepSeek)))
+        assertEquals(elevenLabsSpeech, aiSdkJson.decodeFromString<ElevenLabsSpeechModelOptions>(aiSdkJson.encodeToString(elevenLabsSpeech)))
+        assertEquals(elevenLabsTranscription, ElevenLabsTranscriptionModelOptions {
+            languageCode("en")
+            tagAudioEvents(true)
+            numSpeakers(2)
+            timestampsGranularity("word")
+            diarize(true)
+            fileFormat("mp3")
+        })
+        assertEquals(falImage, aiSdkJson.decodeFromString<FalImageModelOptions>(aiSdkJson.encodeToString(falImage)))
+        assertEquals(falSpeech, aiSdkJson.decodeFromString<FalSpeechModelOptions>(aiSdkJson.encodeToString(falSpeech)))
+        assertEquals(falTranscription, aiSdkJson.decodeFromString<FalTranscriptionModelOptions>(aiSdkJson.encodeToString(falTranscription)))
+        assertNotEquals(falVideo, FalVideoModelOptions { resolution("1080p") })
+        assertEquals(fireworks, aiSdkJson.decodeFromString<FireworksEmbeddingModelOptions>(aiSdkJson.encodeToString(fireworks)))
+
+        val falTranscriptionDefaults = FalTranscriptionModelOptions()
+        assertEquals("en", falTranscriptionDefaults.language)
+        assertEquals(true, falTranscriptionDefaults.diarize)
+        assertEquals("segment", falTranscriptionDefaults.chunkLevel)
+        assertEquals("3", falTranscriptionDefaults.version)
+        assertEquals(64, falTranscriptionDefaults.batchSize)
     }
 }
