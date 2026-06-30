@@ -2,11 +2,14 @@ package ai.torad.aisdk
 
 import ai.torad.aisdk.providers.GoogleInteractions
 import ai.torad.aisdk.providers.GoogleInteractionsModelInput
+import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
+import kotlinx.serialization.json.put
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
@@ -116,5 +119,72 @@ class GoogleInteractionsToolChoiceTest {
         assertEquals("ZG9j", base64File["data"]?.jsonPrimitive?.contentOrNull)
         assertEquals("text/plain", base64File["mime_type"]?.jsonPrimitive?.contentOrNull)
         assertNull(base64File["uri"])
+    }
+
+    @Test
+    fun `interactions maps tool and response schemas to Google OpenAPI subset`() {
+        val nullableString = buildJsonObject {
+            put(
+                "anyOf",
+                JsonArray(
+                    listOf(
+                        buildJsonObject { put("type", JsonPrimitive("string")) },
+                        buildJsonObject { put("type", JsonPrimitive("null")) },
+                    ),
+                ),
+            )
+        }
+        val multiType = buildJsonObject {
+            put("type", JsonArray(listOf(JsonPrimitive("string"), JsonPrimitive("number"))))
+        }
+        val schema = buildJsonObject {
+            put("type", JsonPrimitive("object"))
+            put(
+                "properties",
+                buildJsonObject {
+                    put("optionalName", nullableString)
+                    put("stringOrNumber", multiType)
+                },
+            )
+        }
+        val toolSchema = buildJsonObject {
+            put("type", JsonPrimitive("object"))
+            put("properties", buildJsonObject { put("unit", nullableString) })
+        }
+
+        val prepared = GoogleInteractions.googleInteractionsRequestBody(
+            input = GoogleInteractionsModelInput.Model("gemini-2.0"),
+            params = LanguageModelCallParams(
+                messages = listOf(UserMessage("Hello")),
+                tools = listOf(LanguageModelTool("lookup", "Lookup.", toolSchema.toString())),
+                responseFormat = ResponseFormat.Json(schemaJson = schema),
+            ),
+            stream = false,
+        )
+
+        val bodyText = prepared.body.toString()
+        assertTrue("\"type\":\"null\"" !in bodyText, "Interactions schemas must not include null as a type")
+        assertTrue("\"type\":[" !in bodyText, "Interactions schemas must not include JSON-Schema type arrays")
+        val responseSchema = prepared.body.getValue("response_format")
+            .jsonArray
+            .single()
+            .jsonObject
+            .getValue("schema")
+            .jsonObject
+        val optionalName = responseSchema.getValue("properties").jsonObject.getValue("optionalName").jsonObject
+        assertEquals("string", optionalName["type"]?.jsonPrimitive?.contentOrNull)
+        assertEquals(true, optionalName["nullable"]?.jsonPrimitive?.contentOrNull?.toBoolean())
+        val stringOrNumber = responseSchema.getValue("properties").jsonObject.getValue("stringOrNumber").jsonObject
+        assertEquals(listOf("string", "number"), stringOrNumber["anyOf"]?.jsonArray?.map { it.jsonObject["type"]?.jsonPrimitive?.contentOrNull })
+        val parameters = prepared.body.getValue("tools")
+            .jsonArray
+            .single()
+            .jsonObject
+            .getValue("parameters")
+            .jsonObject
+        val unit = parameters.getValue("properties").jsonObject.getValue("unit").jsonObject
+        assertEquals("string", unit["type"]?.jsonPrimitive?.contentOrNull)
+        assertEquals(true, unit["nullable"]?.jsonPrimitive?.contentOrNull?.toBoolean())
+        assertTrue("anyOf" !in unit, "Interactions nullable parameter must flatten")
     }
 }
