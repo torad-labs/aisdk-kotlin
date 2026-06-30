@@ -64,8 +64,8 @@ tests must stay green.
 | BL-043 | Anthropic in-band `overloaded_error` surfaced as terminal (not retryable 529) | Medium | Recommended | CONFIRMED | OPEN |
 | BL-044 | Provider parity — 12 additional confirmed mapping/usage/metadata gaps | Mixed | Mixed | CONFIRMED | OPEN |
 
-| BL-045 | UI-message-stream encoder emits provider-union shapes → breaks `@ai-sdk/react` | High | Recommended | CONFIRMED | OPEN |
-| BL-046 | UI-stream path lacks SSE framing, `[DONE]`, and required headers | High | Recommended | CONFIRMED | OPEN |
+| BL-045 | ~~UI-stream encoder breaks `@ai-sdk/react`~~ → OUT OF SCOPE (React interop not a goal; use Vercel SDK for React) | — | Post-beta | WONTFIX (beta) | DECIDED |
+| BL-046 | ~~UI-stream SSE framing/headers for JS clients~~ → OUT OF SCOPE (Kotlin encode/decode round-trip works; no JS-client target) | — | Post-beta | WONTFIX (beta) | DECIDED |
 | BL-047 | No `data-*` UI chunk encoder (decode-only; can't emit custom data parts) | Medium | Optional | CONFIRMED | OPEN |
 | BL-048 | Gateway content-part decode drops unknown types (vs Raw on stream path) | Low | Optional | CONFIRMED | OPEN |
 
@@ -750,7 +750,7 @@ compile-guard. A2/B1, A3, A1, B8 were independently re-verified in source.
 
 - **Severity:** High · **Beta gate:** Recommended (first users copy-paste these) · **Confidence:** CONFIRMED (re-verified B11/B12/B16/A2-B1/B8)
 - **Root cause:** docs target a v6-style API (top-level `generateText`, `create*` factories, `.text` on a direct result) that doesn't exist; the port uses PascalCase factories, object-qualified members, and `Flow`-returning agents. Only `ReadmeQuickStartTest` compiles one snippet; all 33 wiki pages + llms.txt + INTERFACE_CONTRACT have no compile guard (B10), so drift went unchecked.
-- **Fix direction:** mechanical doc rewrite + add `*DocSnippetTest` compile guards for the first-hit pages. Tie B1-B3 to the BL-058/A2 decision (if top-level verb wrappers are added, ~80% of broken snippets resolve automatically).
+- **Fix direction (per A2 decision — NO loose top-level functions):** rewrite the docs to match the REAL idiomatic Kotlin API — `TextGenerator(model).generate(...)`/`.streamResult(...)`, object-qualified `Embedding.embed`/`ImageGeneration.generateImage`/etc., PascalCase factories — NOT by inventing `generateText(...)` loose verbs. Add `*DocSnippetTest` compile guards for the first-hit pages so the corrected snippets can't regress.
 - **Acceptance criteria:** each break fixed AND a compile-guard test added so it can't regress.
   - [ ] **B1** top-level `generateText`/`streamText` (getting-started:52,64,80; core:15,27,45,78,132; structured-output; foundations; README:68,78; INTERFACE_CONTRACT:204) → don't exist; rewrite to `TextGenerator(model).generate(GenerationInput.Prompt(...))` or add the wrappers (BL-058/A2).
   - [ ] **B2** `create*` factories (~45 refs across providers.md, README:83, llms.txt:93) → PascalCase `Gateway()`/`Anthropic()`/`OpenAICompatible()`; plus renames `createAzure`→`AzureOpenAI`, `createVertex`→`GoogleVertex`, `createVertexAnthropic`→`GoogleVertexAnthropic`, `createVertexMaas`→`GoogleVertexMaas`.
@@ -773,9 +773,11 @@ compile-guard. A2/B1, A3, A1, B8 were independently re-verified in source.
 
 - **Severity:** High · **Beta gate:** Recommended (decide before publishing) · **Confidence:** CONFIRMED (A1/A2/A3 re-verified)
 - **Why now:** once `0.3.0-beta01` publishes, these are binary-compatibility-breaking to change. This is the one section that is cheap now and expensive later.
-- **Acceptance criteria (decisions + mechanical changes):**
-  - [ ] **A1 [HIGH] Data-class trap:** ~358 public `data class`es (442 decls incl. internal). `copy()`/`componentN()`/`equals` make adding a field a binary break. Demote consumer-**read** types (`*Result`/`*Response`/`*Metadata`/`Usage`/`StepResult`) to regular `class` so fields append additively; keep `data` only where `copy`/destructuring is contractual, and reserve a trailing extensibility bag there. Priority offenders: `GenerateTextResult` (18 fields), `GenerateObjectResult`, `Usage`, `StepResult`, `CallSettings`, `LanguageModelCallParams`, `EmbedResult`/`EmbedManyResult`, `RerankResult`, every `*ProviderSettings`/`*ModelOptions`.
-  - [ ] **A2 [HIGH] No top-level `generateText`/`streamText`/`generateObject`/`streamObject`** (only `Gateway` members + `TextGenerator(model).generate(...)`). Decide before freeze: add the v6-style top-level wrappers (recommended — also fixes most of BL-057) OR drop them from the contract + docs.
+- **DECISIONS (owner, 2026-06-30):**
+  - **A2 — DECIDED: do NOT add loose top-level functions.** Owner's call: adapt to idiomatic Kotlin, not Vercel's loose-function shape ("loose functions are hard to test/debug/find"). Keep the structured API (`TextGenerator(model).generate(...)`, object-qualified `Embedding.embed`/etc.). Consequence: BL-057 docs are fixed to match the REAL structured Kotlin API, NOT by adding verbs. No action on A2 itself beyond the docs rewrite.
+  - **A1 — PENDING RESEARCH:** owner wants evidence on how top Kotlin SDKs handle public `data class` evolvability before deciding. Research agent dispatched (OkHttp / AWS SDK Kotlin / Ktor / openai-java / anthropic-sdk / kotlinx.serialization + JetBrains guidance). Recommendation to follow.
+- **Acceptance criteria (remaining mechanical changes):**
+  - [ ] **A1 [HIGH] Data-class trap** (pending the research verdict): if "demote," convert consumer-**read** types (`*Result`/`*Response`/`*Metadata`/`Usage`/`StepResult`) from `data class` to regular `class` so fields append additively; keep `data` only where `copy`/destructuring is contractual. Priority offenders: `GenerateTextResult` (18 fields), `GenerateObjectResult`, `Usage`, `StepResult`, `EmbedResult`/`EmbedManyResult`, `RerankResult`, every `*ProviderSettings`/`*ModelOptions`. (CallSettings/LanguageModelCallParams are builder-fronted — lower risk.)
   - [ ] **A3 [HIGH] Java/Android consumers:** 0 `@JvmOverloads` vs 555 `$default` bridges; ~145-184 value-class-mangled public fns (`chat-tDyRgq0`, `getModelId-o4H4ZZ8`) are uncallable from Java; `Tool()` has 14 params/11 defaulted. Add `@JvmOverloads` to headline factories + `ModelId.of(String)`/`@JvmName` for value-class accessors, OR explicitly declare Java unsupported for beta (Android Kotlin is fine; Java interop is the gap).
   - [ ] **A4 [MED] Visibility leaks:** `EventStreamParser`, `Base64Codec`, `TypedJsonOps`, `DataUrl`, `DirectCompletionTransport`, `DirectStructuredObjectTransport`, `HttpMCPTransport`, `SseMCPTransport` are `public` with no `@InternalAiSdkApi` (the marker exists and is used elsewhere) → frozen into the ABI. Annotate `@InternalAiSdkApi` or make `internal`.
   - [ ] (A5 enum-vs-sealed and A6 experimental-gating verified correct — no action; see Verified solid.)
