@@ -234,7 +234,10 @@ Penalty, response-format, and retry fields participate in the `Step ?: Agent ?: 
 
 ### Streaming events — v6 block-aware
 
-- `sealed interface StreamEvent`
+- `sealed class StreamEvent`
+  - Public leaves are `@Poko class` value-semantics types; serialization and
+    field access remain, but public `copy()` / `componentN()` ABI is
+    intentionally absent.
   - `StreamStart`
   - `StepStart(stepNumber)`
   - `TextStart(id) / TextDelta(id, text) / TextEnd(id)`
