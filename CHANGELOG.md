@@ -16,6 +16,11 @@ This project follows Semantic Versioning once the first stable release is cut.
   docs and migration notes describe. Open Responses streaming now emits a
   terminal `StreamEvent.Error` for `response.failed` events and prefers final
   `output_item.done` tool-call arguments over an empty pending placeholder.
+- Tool strictness is now opt-in (breaking ABI change): `ToolSchema.strict`,
+  `ToolSchemaOptions.strict`, `Tool.strict`, and `LanguageModelTool.strict` are
+  `Boolean?` values defaulting to `null`. OpenAI-compatible tool requests omit
+  `strict` unless callers explicitly set `true` or `false`; structured-output
+  `response_format` strict behavior is unchanged.
 
 - **Tools are now class-based and extensible (breaking ABI change).** `Tool` is an `abstract class`
   you can extend for reusable, dependency-injected tools — mirroring how a concrete agent extends

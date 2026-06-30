@@ -24,6 +24,7 @@
 ### Tool definition
 
 - `abstract class Tool<TInput, TOutput, TContext>` — extend it for named tools, or construct via PascalCase factories:
+  - `val schema: ToolSchema` where `strict: Boolean? = null` means provider-default tool strictness; explicit `true` / `false` is forwarded only by providers that support tool strict mode.
   - `fun Tool(...): Tool<...>` — single-value executor `suspend ToolExecutionContext<TContext>.(TInput) -> TOutput`. Factory wraps in a one-emission flow. Use for the common case where the tool produces exactly one result.
   - `fun StreamingTool(...): Tool<...>` — `Flow<TOutput>`-returning executor. Each emission becomes a `StreamEvent.ToolResult`; the LAST emission is final (feeds the model on subsequent turns), earlier emissions are `preliminary = true` (UI-only progress). Empty flow → `StreamEvent.ToolError("tool emitted no values")`. Use when a tool can produce a useful early snapshot before the full result is ready.
   - `fun DynamicTool(...): Tool<JsonElement, JsonElement, TContext>` — runtime-typed JSON tool.
@@ -117,7 +118,7 @@ Penalty and response-format fields participate in the `Step ?: Agent ?: agent-de
 - `interface LanguageModel { val modelId; @LowLevelLanguageModelApi suspend fun generate(...); @LowLevelLanguageModelApi fun stream(...); @LowLevelLanguageModelApi fun streamResult(...) }`
 - `annotation class LowLevelLanguageModelApi` — `@RequiresOptIn(ERROR)` marker for direct language-model execution. Use agents or high-level generation helpers for application prompts; opt in only for provider implementations, tests, and deliberate low-level calls.
 - `data class LanguageModelCallParams(messages, tools, toolChoice, temperature?, topP?, topK?, maxOutputTokens?, stopSequences, seed?, providerOptions, abortSignal, presencePenalty?, frequencyPenalty?, responseFormat)`
-- `data class LanguageModelTool(name, description, parametersSchemaJson)`
+- `data class LanguageModelTool(name, description, parametersSchemaJson, ..., strict: Boolean? = null, ...)`
 - `data class LanguageModelResult(text, toolCalls, finishReason, usage, providerMetadata, content, rawFinishReason?, warnings, request, response)`
 - `data class CallWarning(type, message?, details?)`
 - `data class LanguageModelRequestMetadata(body?)`

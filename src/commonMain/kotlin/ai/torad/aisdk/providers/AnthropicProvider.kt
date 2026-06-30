@@ -493,7 +493,7 @@ public data class AnthropicTools(
                         put("description", JsonPrimitive(tool.description))
                         put("input_schema", aiSdkJson.parseToJsonElement(tool.parametersSchemaJson))
                         if (toolStreaming) put("eager_input_streaming", JsonPrimitive(true))
-                        put("strict", JsonPrimitive(tool.strict))
+                        tool.strict?.let { put("strict", JsonPrimitive(it)) }
                     }
                     betas += "structured-outputs-2025-11-13"
                 }
