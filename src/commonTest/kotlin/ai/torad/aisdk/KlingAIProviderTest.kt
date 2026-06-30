@@ -27,12 +27,12 @@ class KlingAIProviderTest {
         val fixture = createKlingAIFixture("/v1/videos/text2video")
         val model = KlingAI(
             fixture.httpClient(),
-            KlingAIProviderSettings(
-                accessKey = "access-key",
-                secretKey = "secret-key",
-                baseURL = KLING_TEST_BASE_URL,
-                headers = mapOf("X-Provider" to "provider"),
-            ),
+            KlingAIProviderSettings {
+                accessKey("access-key")
+                secretKey("secret-key")
+                baseURL(KLING_TEST_BASE_URL)
+                headers(mapOf("X-Provider" to "provider"))
+            },
         ).video(ModelId("kling-v2.6-t2v"))
 
         val result = model.generate(
@@ -122,7 +122,11 @@ class KlingAIProviderTest {
         val fixture = createKlingAIFixture("/v1/videos/image2video")
         val model = KlingAI(
             fixture.httpClient(),
-            KlingAIProviderSettings(accessKey = "access-key", secretKey = "secret-key", baseURL = KLING_TEST_BASE_URL),
+            KlingAIProviderSettings {
+                accessKey("access-key")
+                secretKey("secret-key")
+                baseURL(KLING_TEST_BASE_URL)
+            },
         ).video(ModelId("kling-v3.0-i2v"))
 
         model.generate(
@@ -173,7 +177,11 @@ class KlingAIProviderTest {
         val fixture = createKlingAIFixture("/v1/videos/motion-control")
         val model = KlingAI(
             fixture.httpClient(),
-            KlingAIProviderSettings(accessKey = "access-key", secretKey = "secret-key", baseURL = KLING_TEST_BASE_URL),
+            KlingAIProviderSettings {
+                accessKey("access-key")
+                secretKey("secret-key")
+                baseURL(KLING_TEST_BASE_URL)
+            },
         ).video(ModelId("kling-v2.6-motion-control"))
 
         val missing = assertFailsWith<AiSdkException> {
@@ -218,7 +226,10 @@ class KlingAIProviderTest {
     fun `unsupported KlingAI surfaces and unconfigured singleton fail explicitly`() = runTest {
         val provider = KlingAI(
             TestServer.createTestServer(mutableMapOf()).httpClient(),
-            KlingAIProviderSettings(accessKey = "access-key", secretKey = "secret-key"),
+            KlingAIProviderSettings {
+                accessKey("access-key")
+                secretKey("secret-key")
+            },
         )
 
         assertFailsWith<NoSuchModelError> { provider.languageModel("model") }

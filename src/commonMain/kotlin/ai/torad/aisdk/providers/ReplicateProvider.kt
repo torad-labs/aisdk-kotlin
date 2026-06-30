@@ -2,6 +2,7 @@ package ai.torad.aisdk.providers
 
 import ai.torad.aisdk.*
 import ai.torad.aisdk.ProviderMetadata
+import dev.drewhamilton.poko.Poko
 import io.ktor.client.HttpClient
 import io.ktor.client.request.request
 import io.ktor.http.HttpHeaders
@@ -58,10 +59,11 @@ public data class ReplicateVideoModelOptions(
 )
 
 @Serializable
-public data class ReplicateProviderSettings(
-    val apiToken: String? = null,
-    val baseURL: String = "https://api.replicate.com/v1",
-    val headers: Map<String, String> = emptyMap(),
+@Poko
+public class ReplicateProviderSettings internal constructor(
+    public val apiToken: String? = null,
+    public val baseURL: String = "https://api.replicate.com/v1",
+    public val headers: Map<String, String> = emptyMap(),
 ) {
     internal fun replicateOptions(providerOptions: ProviderOptions): JsonObject =
         JsonAccess.obj(providerOptions.toMap(), "replicate") ?: JsonObject(emptyMap())
@@ -129,6 +131,36 @@ public data class ReplicateProviderSettings(
         return "Replicate request failed ($statusCode): $detail"
     }
 }
+
+public class ReplicateProviderSettingsBuilder internal constructor() {
+    private var apiToken: String? = null
+    private var baseURL: String = "https://api.replicate.com/v1"
+    private var headers: Map<String, String> = emptyMap()
+
+    public fun apiToken(value: String?) {
+        apiToken = value
+    }
+
+    public fun baseURL(value: String) {
+        baseURL = value
+    }
+
+    public fun headers(value: Map<String, String>) {
+        headers = value
+    }
+
+    internal fun build(): ReplicateProviderSettings =
+        ReplicateProviderSettings(
+            apiToken = apiToken,
+            baseURL = baseURL,
+            headers = headers,
+        )
+}
+
+public fun ReplicateProviderSettings(
+    block: ReplicateProviderSettingsBuilder.() -> Unit = {},
+): ReplicateProviderSettings =
+    ReplicateProviderSettingsBuilder().apply(block).build()
 
 public class ReplicateProvider(
     private val client: HttpClient,

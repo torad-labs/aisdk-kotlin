@@ -1,6 +1,7 @@
 package ai.torad.aisdk.providers
 
 import ai.torad.aisdk.*
+import dev.drewhamilton.poko.Poko
 import io.ktor.client.HttpClient
 import io.ktor.client.request.header
 import io.ktor.client.request.request
@@ -56,12 +57,13 @@ public data class BlackForestLabsImageModelOptions(
 )
 
 @Serializable
-public data class BlackForestLabsProviderSettings(
-    val apiKey: String? = null,
-    val baseURL: String = "https://api.bfl.ai/v1",
-    val headers: Map<String, String> = emptyMap(),
-    val pollIntervalMillis: Long? = null,
-    val pollTimeoutMillis: Long? = null,
+@Poko
+public class BlackForestLabsProviderSettings internal constructor(
+    public val apiKey: String? = null,
+    public val baseURL: String = "https://api.bfl.ai/v1",
+    public val headers: Map<String, String> = emptyMap(),
+    public val pollIntervalMillis: Long? = null,
+    public val pollTimeoutMillis: Long? = null,
 ) {
     internal fun bflHeaders(callHeaders: Map<String, String>): Map<String, String> {
         val base = linkedMapOf<String, String?>()
@@ -71,6 +73,48 @@ public data class BlackForestLabsProviderSettings(
         return ProviderHeaders.withUserAgentSuffix(base, "ai-sdk/black-forest-labs/$BLACK_FOREST_LABS_VERSION")
     }
 }
+
+public class BlackForestLabsProviderSettingsBuilder internal constructor() {
+    private var apiKey: String? = null
+    private var baseURL: String = "https://api.bfl.ai/v1"
+    private var headers: Map<String, String> = emptyMap()
+    private var pollIntervalMillis: Long? = null
+    private var pollTimeoutMillis: Long? = null
+
+    public fun apiKey(value: String?) {
+        apiKey = value
+    }
+
+    public fun baseURL(value: String) {
+        baseURL = value
+    }
+
+    public fun headers(value: Map<String, String>) {
+        headers = value
+    }
+
+    public fun pollIntervalMillis(value: Long?) {
+        pollIntervalMillis = value
+    }
+
+    public fun pollTimeoutMillis(value: Long?) {
+        pollTimeoutMillis = value
+    }
+
+    internal fun build(): BlackForestLabsProviderSettings =
+        BlackForestLabsProviderSettings(
+            apiKey = apiKey,
+            baseURL = baseURL,
+            headers = headers,
+            pollIntervalMillis = pollIntervalMillis,
+            pollTimeoutMillis = pollTimeoutMillis,
+        )
+}
+
+public fun BlackForestLabsProviderSettings(
+    block: BlackForestLabsProviderSettingsBuilder.() -> Unit = {},
+): BlackForestLabsProviderSettings =
+    BlackForestLabsProviderSettingsBuilder().apply(block).build()
 
 public interface BlackForestLabsProvider : Provider {
     public fun image(modelId: ModelId): ImageModel

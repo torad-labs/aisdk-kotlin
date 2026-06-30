@@ -31,7 +31,7 @@ class ByteDanceDefensiveParsingTest {
                 )
             },
         )
-        val model = ByteDance(client, ByteDanceProviderSettings(apiKey = "key"))
+        val model = ByteDance(client, ByteDanceProviderSettings { apiKey("key") })
             .video(ModelId("seedance-1-0-pro-250528"))
 
         val error = assertFails {

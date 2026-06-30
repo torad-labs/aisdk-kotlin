@@ -48,7 +48,10 @@ class MistralProviderTest {
         fixture.server.start()
         val provider = Mistral(
             fixture.httpClient(),
-            MistralProviderSettings(apiKey = "key", headers = mapOf("X-Provider" to "provider")),
+            MistralProviderSettings {
+                apiKey("key")
+                headers(mapOf("X-Provider" to "provider"))
+            },
         )
 
         val result = provider.chat(ModelId("mistral-small-latest")).generate(
@@ -107,7 +110,10 @@ class MistralProviderTest {
         fixture.server.start()
         val provider = Mistral(
             fixture.httpClient(),
-            MistralProviderSettings(baseURL = "https://mistral.test/v1", apiKey = "key"),
+            MistralProviderSettings {
+                baseURL("https://mistral.test/v1")
+                apiKey("key")
+            },
         )
 
         val result = provider.embedding(ModelId("mistral-embed")).embed(
@@ -149,7 +155,7 @@ class MistralProviderTest {
             ),
         )
         fixture.server.start()
-        val provider = Mistral(fixture.httpClient(), MistralProviderSettings(apiKey = "key"))
+        val provider = Mistral(fixture.httpClient(), MistralProviderSettings { apiKey("key") })
         provider.chat(ModelId("mistral-small-latest")).generate(
             LanguageModelCallParams(
                 messages = listOf(
@@ -233,7 +239,7 @@ class MistralProviderTest {
             ),
         )
         fixture.server.start()
-        val provider = Mistral(fixture.httpClient(), MistralProviderSettings(apiKey = "key"))
+        val provider = Mistral(fixture.httpClient(), MistralProviderSettings { apiKey("key") })
 
         val generated = provider.chat(ModelId("magistral-small-2507")).generate(
             LanguageModelCallParams(messages = listOf(UserMessage("hi"))),
@@ -311,7 +317,7 @@ class MistralProviderTest {
             ),
         )
         fixture.server.start()
-        val provider = Mistral(fixture.httpClient(), MistralProviderSettings(apiKey = "key"))
+        val provider = Mistral(fixture.httpClient(), MistralProviderSettings { apiKey("key") })
         val model = provider.chat(ModelId("mistral-small-latest"))
 
         val generatedModelLength = model.generate(LanguageModelCallParams(messages = listOf(UserMessage("hi"))))
@@ -339,7 +345,7 @@ class MistralProviderTest {
 
     @Test
     fun `unsupported model families and unconfigured singleton fail explicitly`() {
-        val provider = Mistral(TestServer.createTestServer(mutableMapOf()).httpClient(), MistralProviderSettings(apiKey = "key"))
+        val provider = Mistral(TestServer.createTestServer(mutableMapOf()).httpClient(), MistralProviderSettings { apiKey("key") })
 
         assertFailsWith<NoSuchModelError> { provider.imageModel("pixtral") }
     }

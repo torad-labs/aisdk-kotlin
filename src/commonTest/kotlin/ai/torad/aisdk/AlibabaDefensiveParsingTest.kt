@@ -32,7 +32,7 @@ class AlibabaDefensiveParsingTest {
                 )
             },
         )
-        val model = Alibaba(client, AlibabaProviderSettings(apiKey = "key"))
+        val model = Alibaba(client, AlibabaProviderSettings { apiKey("key") })
             .video(ModelId("wan2.6-i2v"))
 
         val error = assertFails {
@@ -67,7 +67,7 @@ class AlibabaDefensiveParsingTest {
                 )
             },
         )
-        val model = Alibaba(client, AlibabaProviderSettings(apiKey = "key"))
+        val model = Alibaba(client, AlibabaProviderSettings { apiKey("key") })
             .video(ModelId("wan2.6-i2v"))
 
         val error = assertFails {

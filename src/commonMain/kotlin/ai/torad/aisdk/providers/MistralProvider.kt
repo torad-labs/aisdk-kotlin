@@ -3,6 +3,7 @@
 package ai.torad.aisdk.providers
 
 import ai.torad.aisdk.*
+import dev.drewhamilton.poko.Poko
 import io.ktor.client.HttpClient
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
@@ -21,10 +22,11 @@ private const val MISTRAL_MAX_EMBEDDINGS_PER_CALL: Int = 32
 public typealias MistralProviderOptions = MistralLanguageModelOptions
 
 @Serializable
-public data class MistralProviderSettings(
-    val baseURL: String = "https://api.mistral.ai/v1",
-    val apiKey: String? = null,
-    val headers: Map<String, String> = emptyMap(),
+@Poko
+public class MistralProviderSettings internal constructor(
+    public val baseURL: String = "https://api.mistral.ai/v1",
+    public val apiKey: String? = null,
+    public val headers: Map<String, String> = emptyMap(),
 ) {
     internal fun toCompatible(): OpenAICompatibleProviderSettings =
         OpenAICompatibleProviderSettings(
@@ -201,6 +203,36 @@ public data class MistralProviderSettings(
             }.joinToString("")
     }
 }
+
+public class MistralProviderSettingsBuilder internal constructor() {
+    private var baseURL: String = "https://api.mistral.ai/v1"
+    private var apiKey: String? = null
+    private var headers: Map<String, String> = emptyMap()
+
+    public fun baseURL(value: String) {
+        baseURL = value
+    }
+
+    public fun apiKey(value: String?) {
+        apiKey = value
+    }
+
+    public fun headers(value: Map<String, String>) {
+        headers = value
+    }
+
+    internal fun build(): MistralProviderSettings =
+        MistralProviderSettings(
+            baseURL = baseURL,
+            apiKey = apiKey,
+            headers = headers,
+        )
+}
+
+public fun MistralProviderSettings(
+    block: MistralProviderSettingsBuilder.() -> Unit = {},
+): MistralProviderSettings =
+    MistralProviderSettingsBuilder().apply(block).build()
 
 @Serializable
 public data class MistralLanguageModelOptions(

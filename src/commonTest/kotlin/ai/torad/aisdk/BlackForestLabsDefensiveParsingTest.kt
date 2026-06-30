@@ -33,7 +33,7 @@ class BlackForestLabsDefensiveParsingTest {
                 )
             },
         )
-        val model = BlackForestLabs(client, BlackForestLabsProviderSettings(apiKey = "k"))
+        val model = BlackForestLabs(client, BlackForestLabsProviderSettings { apiKey("k") })
             .image(ModelId("flux-pro-1.1"))
 
         val error = assertFails {

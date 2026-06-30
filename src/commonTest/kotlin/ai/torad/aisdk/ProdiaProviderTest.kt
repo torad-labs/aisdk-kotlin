@@ -41,11 +41,11 @@ class ProdiaProviderTest {
         fixture.server.start()
         val model = Prodia(
             fixture.httpClient(),
-            ProdiaProviderSettings(
-                apiKey = "token",
-                baseURL = "https://prodia.test/v2",
-                headers = mapOf("X-Provider" to "provider"),
-            ),
+            ProdiaProviderSettings {
+                apiKey("token")
+                baseURL("https://prodia.test/v2")
+                headers(mapOf("X-Provider" to "provider"))
+            },
         ).image(ModelId("sdxl"))
 
         val result = model.generate(
@@ -118,7 +118,10 @@ class ProdiaProviderTest {
         fixture.server.start()
         val model = Prodia(
             fixture.httpClient(),
-            ProdiaProviderSettings(apiKey = "token", baseURL = "https://prodia.test/v2"),
+            ProdiaProviderSettings {
+                apiKey("token")
+                baseURL("https://prodia.test/v2")
+            },
         ).languageModel("stabilityai/sdxl")
 
         val result = model.generate(
@@ -195,7 +198,10 @@ class ProdiaProviderTest {
         fixture.server.start()
         val model = Prodia(
             fixture.httpClient(),
-            ProdiaProviderSettings(apiKey = "token", baseURL = "https://prodia.test/v2"),
+            ProdiaProviderSettings {
+                apiKey("token")
+                baseURL("https://prodia.test/v2")
+            },
         ).video(ModelId("minimax/video"))
 
         val textResult = model.generate(
@@ -238,7 +244,7 @@ class ProdiaProviderTest {
 
     @Test
     fun `unsupported Prodia surfaces and unconfigured singleton fail explicitly`() {
-        val provider = Prodia(TestServer.createTestServer(mutableMapOf()).httpClient(), ProdiaProviderSettings(apiKey = "token"))
+        val provider = Prodia(TestServer.createTestServer(mutableMapOf()).httpClient(), ProdiaProviderSettings { apiKey("token") })
 
         assertFailsWith<NoSuchModelError> { provider.embeddingModel("embed") }
         assertFailsWith<NoSuchModelError> { provider.textEmbeddingModel("embed") }

@@ -1,6 +1,7 @@
 package ai.torad.aisdk.providers
 
 import ai.torad.aisdk.*
+import dev.drewhamilton.poko.Poko
 import io.ktor.client.HttpClient
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpMethod
@@ -38,10 +39,11 @@ public data class ByteDanceVideoProviderOptions(
 )
 
 @Serializable
-public data class ByteDanceProviderSettings(
-    val apiKey: String? = null,
-    val baseURL: String = "https://ark.ap-southeast.bytepluses.com/api/v3",
-    val headers: Map<String, String> = emptyMap(),
+@Poko
+public class ByteDanceProviderSettings internal constructor(
+    public val apiKey: String? = null,
+    public val baseURL: String = "https://ark.ap-southeast.bytepluses.com/api/v3",
+    public val headers: Map<String, String> = emptyMap(),
 ) {
     internal fun byteDanceHeaders(callHeaders: Map<String, String>): Map<String, String> {
         val base = linkedMapOf<String, String>()
@@ -52,6 +54,36 @@ public data class ByteDanceProviderSettings(
         return base
     }
 }
+
+public class ByteDanceProviderSettingsBuilder internal constructor() {
+    private var apiKey: String? = null
+    private var baseURL: String = "https://ark.ap-southeast.bytepluses.com/api/v3"
+    private var headers: Map<String, String> = emptyMap()
+
+    public fun apiKey(value: String?) {
+        apiKey = value
+    }
+
+    public fun baseURL(value: String) {
+        baseURL = value
+    }
+
+    public fun headers(value: Map<String, String>) {
+        headers = value
+    }
+
+    internal fun build(): ByteDanceProviderSettings =
+        ByteDanceProviderSettings(
+            apiKey = apiKey,
+            baseURL = baseURL,
+            headers = headers,
+        )
+}
+
+public fun ByteDanceProviderSettings(
+    block: ByteDanceProviderSettingsBuilder.() -> Unit = {},
+): ByteDanceProviderSettings =
+    ByteDanceProviderSettingsBuilder().apply(block).build()
 
 public interface ByteDanceProvider : Provider {
     public fun video(modelId: ModelId): VideoModel

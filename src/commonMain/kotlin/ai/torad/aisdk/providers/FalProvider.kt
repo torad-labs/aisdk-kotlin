@@ -1,6 +1,7 @@
 package ai.torad.aisdk.providers
 
 import ai.torad.aisdk.*
+import dev.drewhamilton.poko.Poko
 import io.ktor.client.HttpClient
 import io.ktor.client.request.header
 import io.ktor.client.request.request
@@ -31,14 +32,15 @@ public typealias FalVideoProviderOptions = FalVideoModelOptions
 public typealias FalErrorData = JsonObject
 
 @Serializable
-public data class FalProviderSettings(
-    val apiKey: String? = null,
-    val baseURL: String = "https://fal.run",
-    val headers: Map<String, String> = emptyMap(),
-    val transcriptionPollIntervalMillis: Long = 1_000L,
-    val transcriptionMaxPollAttempts: Int = 60,
-    val videoPollIntervalMillis: Long = 2_000L,
-    val videoMaxPollAttempts: Int = 150,
+@Poko
+public class FalProviderSettings internal constructor(
+    public val apiKey: String? = null,
+    public val baseURL: String = "https://fal.run",
+    public val headers: Map<String, String> = emptyMap(),
+    public val transcriptionPollIntervalMillis: Long = 1_000L,
+    public val transcriptionMaxPollAttempts: Int = 60,
+    public val videoPollIntervalMillis: Long = 2_000L,
+    public val videoMaxPollAttempts: Int = 150,
 ) {
     internal fun falHeaders(extra: Map<String, String>): Map<String, String> =
         ProviderHeaders.build(headers, extra, "ai-sdk/fal/$FAL_VERSION") { built ->
@@ -141,6 +143,60 @@ public data class FalProviderSettings(
         )
     }
 }
+
+public class FalProviderSettingsBuilder internal constructor() {
+    private var apiKey: String? = null
+    private var baseURL: String = "https://fal.run"
+    private var headers: Map<String, String> = emptyMap()
+    private var transcriptionPollIntervalMillis: Long = 1_000L
+    private var transcriptionMaxPollAttempts: Int = 60
+    private var videoPollIntervalMillis: Long = 2_000L
+    private var videoMaxPollAttempts: Int = 150
+
+    public fun apiKey(value: String?) {
+        apiKey = value
+    }
+
+    public fun baseURL(value: String) {
+        baseURL = value
+    }
+
+    public fun headers(value: Map<String, String>) {
+        headers = value
+    }
+
+    public fun transcriptionPollIntervalMillis(value: Long) {
+        transcriptionPollIntervalMillis = value
+    }
+
+    public fun transcriptionMaxPollAttempts(value: Int) {
+        transcriptionMaxPollAttempts = value
+    }
+
+    public fun videoPollIntervalMillis(value: Long) {
+        videoPollIntervalMillis = value
+    }
+
+    public fun videoMaxPollAttempts(value: Int) {
+        videoMaxPollAttempts = value
+    }
+
+    internal fun build(): FalProviderSettings =
+        FalProviderSettings(
+            apiKey = apiKey,
+            baseURL = baseURL,
+            headers = headers,
+            transcriptionPollIntervalMillis = transcriptionPollIntervalMillis,
+            transcriptionMaxPollAttempts = transcriptionMaxPollAttempts,
+            videoPollIntervalMillis = videoPollIntervalMillis,
+            videoMaxPollAttempts = videoMaxPollAttempts,
+        )
+}
+
+public fun FalProviderSettings(
+    block: FalProviderSettingsBuilder.() -> Unit = {},
+): FalProviderSettings =
+    FalProviderSettingsBuilder().apply(block).build()
 
 @Serializable
 public data class FalImageModelOptions(
