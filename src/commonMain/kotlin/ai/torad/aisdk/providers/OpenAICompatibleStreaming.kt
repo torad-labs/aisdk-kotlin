@@ -34,10 +34,14 @@ internal class OpenAIChatStreamState(
         // gracefully instead of throwing on the `.jsonObject` accessor.
         val error = obj["error"]?.takeUnless { it is JsonNull }
         if (error != null) {
+            val errorObj = error as? JsonObject
             events += StreamEvent.Error(
-                ((error as? JsonObject)?.get("message") as? JsonPrimitive)?.contentOrNull
-                    ?: (error as? JsonPrimitive)?.contentOrNull
-                    ?: "OpenAI-compatible stream error",
+                when (error) {
+                    is JsonPrimitive -> error.contentOrNull ?: error.content
+                    is JsonObject -> (errorObj?.get("message") as? JsonPrimitive)?.contentOrNull
+                        ?: (errorObj?.get("type") as? JsonPrimitive)?.contentOrNull
+                    else -> null
+                } ?: (obj["message"] as? JsonPrimitive)?.contentOrNull ?: error.toString(),
             )
             finishReason = FinishReason.Error
             return events

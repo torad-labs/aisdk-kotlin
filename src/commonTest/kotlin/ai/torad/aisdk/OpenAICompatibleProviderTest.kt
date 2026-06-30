@@ -303,6 +303,65 @@ class OpenAICompatibleProviderTest {
     }
 
     @Test
+    fun `chat stream emits mid-stream in-band error and finish after text delta`() = runTest {
+        val client = HttpClient(
+            MockEngine {
+                respond(
+                    content = """
+                        data: {"id":"1","choices":[{"delta":{"content":"hello"}}]}
+
+                        data: {"error":{"message":"provider exploded","type":"server_error"}}
+
+                    """.trimIndent(),
+                    status = HttpStatusCode.OK,
+                    headers = headersOf(HttpHeaders.ContentType, "text/event-stream"),
+                )
+            },
+        )
+        val provider = OpenAICompatible(
+            client,
+            OpenAICompatibleProviderSettings(name = "openai", baseUrl = "https://api.test/v1"),
+        )
+
+        val events = drainAllItems(provider.languageModel("gpt-test").stream(LanguageModelCallParams(listOf(UserMessage("hi")))))
+
+        val textIndex = events.indexOfFirst { it is StreamEvent.TextDelta && it.text == "hello" }
+        val errorIndex = events.indexOfFirst { it is StreamEvent.Error }
+        val finish = events.filterIsInstance<StreamEvent.Finish>().single()
+        assertTrue(textIndex >= 0, events.toString())
+        assertTrue(errorIndex > textIndex, events.toString())
+        assertEquals("provider exploded", events.filterIsInstance<StreamEvent.Error>().single().message)
+        assertEquals(FinishReason.Error, finish.finishReason)
+    }
+
+    @Test
+    fun `chat stream error-only chunk without choices still surfaces as stream error`() = runTest {
+        val client = HttpClient(
+            MockEngine {
+                respond(
+                    content = """
+                        data: {"error":{"type":"rate_limit_exceeded"}}
+
+                    """.trimIndent(),
+                    status = HttpStatusCode.OK,
+                    headers = headersOf(HttpHeaders.ContentType, "text/event-stream"),
+                )
+            },
+        )
+        val provider = OpenAICompatible(
+            client,
+            OpenAICompatibleProviderSettings(name = "openai", baseUrl = "https://api.test/v1"),
+        )
+
+        val events = drainAllItems(provider.languageModel("gpt-test").stream(LanguageModelCallParams(listOf(UserMessage("hi")))))
+
+        val error = events.filterIsInstance<StreamEvent.Error>().single()
+        val finish = events.filterIsInstance<StreamEvent.Finish>().single()
+        assertEquals("rate_limit_exceeded", error.message)
+        assertEquals(FinishReason.Error, finish.finishReason)
+    }
+
+    @Test
     fun `chat response transform applies to generate and stream events`() = runTest {
         val client = HttpClient(
             MockEngine { request ->
