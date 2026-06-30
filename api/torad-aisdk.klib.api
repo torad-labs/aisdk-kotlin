@@ -1153,7 +1153,7 @@ abstract class <#A: kotlin/Any?, #B: kotlin/Any?, #C: kotlin/Any?> ai.torad.aisd
     final val providerOptions // ai.torad.aisdk/Tool.providerOptions|{}providerOptions[0]
         final fun <get-providerOptions>(): ai.torad.aisdk/ProviderOptions // ai.torad.aisdk/Tool.providerOptions.<get-providerOptions>|<get-providerOptions>(){}[0]
     final val strict // ai.torad.aisdk/Tool.strict|{}strict[0]
-        final fun <get-strict>(): kotlin/Boolean // ai.torad.aisdk/Tool.strict.<get-strict>|<get-strict>(){}[0]
+        final fun <get-strict>(): kotlin/Boolean? // ai.torad.aisdk/Tool.strict.<get-strict>|<get-strict>(){}[0]
 
     abstract fun execute(#A, ai.torad.aisdk/ToolExecutionContext<#C>): kotlinx.coroutines.flow/Flow<ai.torad.aisdk/ToolResult<#B>> // ai.torad.aisdk/Tool.execute|execute(1:0;ai.torad.aisdk.ToolExecutionContext<1:2>){}[0]
     open fun toModelOutput(#B, ai.torad.aisdk/ToolPredicateOptions<#C>): ai.torad.aisdk/ToolResultOutput? // ai.torad.aisdk/Tool.toModelOutput|toModelOutput(1:1;ai.torad.aisdk.ToolPredicateOptions<1:2>){}[0]
@@ -9445,7 +9445,7 @@ final class ai.torad.aisdk/LanguageModelStreamResult { // ai.torad.aisdk/Languag
 }
 
 final class ai.torad.aisdk/LanguageModelTool { // ai.torad.aisdk/LanguageModelTool|null[0]
-    constructor <init>(kotlin/String, kotlin/String, kotlin/String, kotlin/Boolean = ..., kotlin.collections/Map<kotlin/String, kotlinx.serialization.json/JsonElement> = ..., kotlin/Boolean = ..., ai.torad.aisdk/ProviderOptions = ...) // ai.torad.aisdk/LanguageModelTool.<init>|<init>(kotlin.String;kotlin.String;kotlin.String;kotlin.Boolean;kotlin.collections.Map<kotlin.String,kotlinx.serialization.json.JsonElement>;kotlin.Boolean;ai.torad.aisdk.ProviderOptions){}[0]
+    constructor <init>(kotlin/String, kotlin/String, kotlin/String, kotlin/Boolean = ..., kotlin.collections/Map<kotlin/String, kotlinx.serialization.json/JsonElement> = ..., kotlin/Boolean? = ..., ai.torad.aisdk/ProviderOptions = ...) // ai.torad.aisdk/LanguageModelTool.<init>|<init>(kotlin.String;kotlin.String;kotlin.String;kotlin.Boolean;kotlin.collections.Map<kotlin.String,kotlinx.serialization.json.JsonElement>;kotlin.Boolean?;ai.torad.aisdk.ProviderOptions){}[0]
 
     final val description // ai.torad.aisdk/LanguageModelTool.description|{}description[0]
         final fun <get-description>(): kotlin/String // ai.torad.aisdk/LanguageModelTool.description.<get-description>|<get-description>(){}[0]
@@ -9462,16 +9462,16 @@ final class ai.torad.aisdk/LanguageModelTool { // ai.torad.aisdk/LanguageModelTo
     final val providerOptions // ai.torad.aisdk/LanguageModelTool.providerOptions|{}providerOptions[0]
         final fun <get-providerOptions>(): ai.torad.aisdk/ProviderOptions // ai.torad.aisdk/LanguageModelTool.providerOptions.<get-providerOptions>|<get-providerOptions>(){}[0]
     final val strict // ai.torad.aisdk/LanguageModelTool.strict|{}strict[0]
-        final fun <get-strict>(): kotlin/Boolean // ai.torad.aisdk/LanguageModelTool.strict.<get-strict>|<get-strict>(){}[0]
+        final fun <get-strict>(): kotlin/Boolean? // ai.torad.aisdk/LanguageModelTool.strict.<get-strict>|<get-strict>(){}[0]
 
     final fun component1(): kotlin/String // ai.torad.aisdk/LanguageModelTool.component1|component1(){}[0]
     final fun component2(): kotlin/String // ai.torad.aisdk/LanguageModelTool.component2|component2(){}[0]
     final fun component3(): kotlin/String // ai.torad.aisdk/LanguageModelTool.component3|component3(){}[0]
     final fun component4(): kotlin/Boolean // ai.torad.aisdk/LanguageModelTool.component4|component4(){}[0]
     final fun component5(): kotlin.collections/Map<kotlin/String, kotlinx.serialization.json/JsonElement> // ai.torad.aisdk/LanguageModelTool.component5|component5(){}[0]
-    final fun component6(): kotlin/Boolean // ai.torad.aisdk/LanguageModelTool.component6|component6(){}[0]
+    final fun component6(): kotlin/Boolean? // ai.torad.aisdk/LanguageModelTool.component6|component6(){}[0]
     final fun component7(): ai.torad.aisdk/ProviderOptions // ai.torad.aisdk/LanguageModelTool.component7|component7(){}[0]
-    final fun copy(kotlin/String = ..., kotlin/String = ..., kotlin/String = ..., kotlin/Boolean = ..., kotlin.collections/Map<kotlin/String, kotlinx.serialization.json/JsonElement> = ..., kotlin/Boolean = ..., ai.torad.aisdk/ProviderOptions = ...): ai.torad.aisdk/LanguageModelTool // ai.torad.aisdk/LanguageModelTool.copy|copy(kotlin.String;kotlin.String;kotlin.String;kotlin.Boolean;kotlin.collections.Map<kotlin.String,kotlinx.serialization.json.JsonElement>;kotlin.Boolean;ai.torad.aisdk.ProviderOptions){}[0]
+    final fun copy(kotlin/String = ..., kotlin/String = ..., kotlin/String = ..., kotlin/Boolean = ..., kotlin.collections/Map<kotlin/String, kotlinx.serialization.json/JsonElement> = ..., kotlin/Boolean? = ..., ai.torad.aisdk/ProviderOptions = ...): ai.torad.aisdk/LanguageModelTool // ai.torad.aisdk/LanguageModelTool.copy|copy(kotlin.String;kotlin.String;kotlin.String;kotlin.Boolean;kotlin.collections.Map<kotlin.String,kotlinx.serialization.json.JsonElement>;kotlin.Boolean?;ai.torad.aisdk.ProviderOptions){}[0]
     final fun equals(kotlin/Any?): kotlin/Boolean // ai.torad.aisdk/LanguageModelTool.equals|equals(kotlin.Any?){}[0]
     final fun hashCode(): kotlin/Int // ai.torad.aisdk/LanguageModelTool.hashCode|hashCode(){}[0]
     final fun toString(): kotlin/String // ai.torad.aisdk/LanguageModelTool.toString|toString(){}[0]
@@ -11255,7 +11255,7 @@ final class ai.torad.aisdk/ToolNameMapping { // ai.torad.aisdk/ToolNameMapping|n
 }
 
 final class ai.torad.aisdk/ToolSchema { // ai.torad.aisdk/ToolSchema|null[0]
-    constructor <init>(kotlin/String, kotlin/String, kotlin/Boolean = ..., kotlin.collections/List<kotlin/String> = ..., kotlin.collections/Map<kotlin/String, kotlinx.serialization.json/JsonElement> = ..., kotlin/Boolean = ..., ai.torad.aisdk/ProviderOptions = ...) // ai.torad.aisdk/ToolSchema.<init>|<init>(kotlin.String;kotlin.String;kotlin.Boolean;kotlin.collections.List<kotlin.String>;kotlin.collections.Map<kotlin.String,kotlinx.serialization.json.JsonElement>;kotlin.Boolean;ai.torad.aisdk.ProviderOptions){}[0]
+    constructor <init>(kotlin/String, kotlin/String, kotlin/Boolean? = ..., kotlin.collections/List<kotlin/String> = ..., kotlin.collections/Map<kotlin/String, kotlinx.serialization.json/JsonElement> = ..., kotlin/Boolean = ..., ai.torad.aisdk/ProviderOptions = ...) // ai.torad.aisdk/ToolSchema.<init>|<init>(kotlin.String;kotlin.String;kotlin.Boolean?;kotlin.collections.List<kotlin.String>;kotlin.collections.Map<kotlin.String,kotlinx.serialization.json.JsonElement>;kotlin.Boolean;ai.torad.aisdk.ProviderOptions){}[0]
 
     final val description // ai.torad.aisdk/ToolSchema.description|{}description[0]
         final fun <get-description>(): kotlin/String // ai.torad.aisdk/ToolSchema.description.<get-description>|<get-description>(){}[0]
@@ -11270,32 +11270,32 @@ final class ai.torad.aisdk/ToolSchema { // ai.torad.aisdk/ToolSchema|null[0]
     final val providerOptions // ai.torad.aisdk/ToolSchema.providerOptions|{}providerOptions[0]
         final fun <get-providerOptions>(): ai.torad.aisdk/ProviderOptions // ai.torad.aisdk/ToolSchema.providerOptions.<get-providerOptions>|<get-providerOptions>(){}[0]
     final val strict // ai.torad.aisdk/ToolSchema.strict|{}strict[0]
-        final fun <get-strict>(): kotlin/Boolean // ai.torad.aisdk/ToolSchema.strict.<get-strict>|<get-strict>(){}[0]
+        final fun <get-strict>(): kotlin/Boolean? // ai.torad.aisdk/ToolSchema.strict.<get-strict>|<get-strict>(){}[0]
 
     final fun component1(): kotlin/String // ai.torad.aisdk/ToolSchema.component1|component1(){}[0]
     final fun component2(): kotlin/String // ai.torad.aisdk/ToolSchema.component2|component2(){}[0]
-    final fun component3(): kotlin/Boolean // ai.torad.aisdk/ToolSchema.component3|component3(){}[0]
+    final fun component3(): kotlin/Boolean? // ai.torad.aisdk/ToolSchema.component3|component3(){}[0]
     final fun component4(): kotlin.collections/List<kotlin/String> // ai.torad.aisdk/ToolSchema.component4|component4(){}[0]
     final fun component5(): kotlin.collections/Map<kotlin/String, kotlinx.serialization.json/JsonElement> // ai.torad.aisdk/ToolSchema.component5|component5(){}[0]
     final fun component6(): kotlin/Boolean // ai.torad.aisdk/ToolSchema.component6|component6(){}[0]
     final fun component7(): ai.torad.aisdk/ProviderOptions // ai.torad.aisdk/ToolSchema.component7|component7(){}[0]
-    final fun copy(kotlin/String = ..., kotlin/String = ..., kotlin/Boolean = ..., kotlin.collections/List<kotlin/String> = ..., kotlin.collections/Map<kotlin/String, kotlinx.serialization.json/JsonElement> = ..., kotlin/Boolean = ..., ai.torad.aisdk/ProviderOptions = ...): ai.torad.aisdk/ToolSchema // ai.torad.aisdk/ToolSchema.copy|copy(kotlin.String;kotlin.String;kotlin.Boolean;kotlin.collections.List<kotlin.String>;kotlin.collections.Map<kotlin.String,kotlinx.serialization.json.JsonElement>;kotlin.Boolean;ai.torad.aisdk.ProviderOptions){}[0]
+    final fun copy(kotlin/String = ..., kotlin/String = ..., kotlin/Boolean? = ..., kotlin.collections/List<kotlin/String> = ..., kotlin.collections/Map<kotlin/String, kotlinx.serialization.json/JsonElement> = ..., kotlin/Boolean = ..., ai.torad.aisdk/ProviderOptions = ...): ai.torad.aisdk/ToolSchema // ai.torad.aisdk/ToolSchema.copy|copy(kotlin.String;kotlin.String;kotlin.Boolean?;kotlin.collections.List<kotlin.String>;kotlin.collections.Map<kotlin.String,kotlinx.serialization.json.JsonElement>;kotlin.Boolean;ai.torad.aisdk.ProviderOptions){}[0]
     final fun equals(kotlin/Any?): kotlin/Boolean // ai.torad.aisdk/ToolSchema.equals|equals(kotlin.Any?){}[0]
     final fun hashCode(): kotlin/Int // ai.torad.aisdk/ToolSchema.hashCode|hashCode(){}[0]
     final fun toString(): kotlin/String // ai.torad.aisdk/ToolSchema.toString|toString(){}[0]
 }
 
 final class ai.torad.aisdk/ToolSchemaOptions { // ai.torad.aisdk/ToolSchemaOptions|null[0]
-    constructor <init>(kotlin/Boolean = ..., kotlin/Boolean = ...) // ai.torad.aisdk/ToolSchemaOptions.<init>|<init>(kotlin.Boolean;kotlin.Boolean){}[0]
+    constructor <init>(kotlin/Boolean? = ..., kotlin/Boolean = ...) // ai.torad.aisdk/ToolSchemaOptions.<init>|<init>(kotlin.Boolean?;kotlin.Boolean){}[0]
 
     final val providerExecuted // ai.torad.aisdk/ToolSchemaOptions.providerExecuted|{}providerExecuted[0]
         final fun <get-providerExecuted>(): kotlin/Boolean // ai.torad.aisdk/ToolSchemaOptions.providerExecuted.<get-providerExecuted>|<get-providerExecuted>(){}[0]
     final val strict // ai.torad.aisdk/ToolSchemaOptions.strict|{}strict[0]
-        final fun <get-strict>(): kotlin/Boolean // ai.torad.aisdk/ToolSchemaOptions.strict.<get-strict>|<get-strict>(){}[0]
+        final fun <get-strict>(): kotlin/Boolean? // ai.torad.aisdk/ToolSchemaOptions.strict.<get-strict>|<get-strict>(){}[0]
 
-    final fun component1(): kotlin/Boolean // ai.torad.aisdk/ToolSchemaOptions.component1|component1(){}[0]
+    final fun component1(): kotlin/Boolean? // ai.torad.aisdk/ToolSchemaOptions.component1|component1(){}[0]
     final fun component2(): kotlin/Boolean // ai.torad.aisdk/ToolSchemaOptions.component2|component2(){}[0]
-    final fun copy(kotlin/Boolean = ..., kotlin/Boolean = ...): ai.torad.aisdk/ToolSchemaOptions // ai.torad.aisdk/ToolSchemaOptions.copy|copy(kotlin.Boolean;kotlin.Boolean){}[0]
+    final fun copy(kotlin/Boolean? = ..., kotlin/Boolean = ...): ai.torad.aisdk/ToolSchemaOptions // ai.torad.aisdk/ToolSchemaOptions.copy|copy(kotlin.Boolean?;kotlin.Boolean){}[0]
     final fun equals(kotlin/Any?): kotlin/Boolean // ai.torad.aisdk/ToolSchemaOptions.equals|equals(kotlin.Any?){}[0]
     final fun hashCode(): kotlin/Int // ai.torad.aisdk/ToolSchemaOptions.hashCode|hashCode(){}[0]
     final fun toString(): kotlin/String // ai.torad.aisdk/ToolSchemaOptions.toString|toString(){}[0]

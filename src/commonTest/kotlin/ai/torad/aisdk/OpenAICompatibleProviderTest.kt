@@ -133,7 +133,7 @@ class OpenAICompatibleProviderTest {
     }
 
     @Test
-    fun `chat model preserves per-tool strict flag in OpenAI-compatible request`() = runTest {
+    fun `chat model omits default tool strict and preserves explicit strict flags`() = runTest {
         val seenBodies = mutableListOf<JsonObject>()
         val client = HttpClient(
             MockEngine { request ->
@@ -155,6 +155,17 @@ class OpenAICompatibleProviderTest {
                 messages = listOf(UserMessage("hi")),
                 tools = listOf(
                     LanguageModelTool(
+                        name = "default",
+                        description = "Default schema",
+                        parametersSchemaJson = """{"type":"object"}""",
+                    ),
+                    LanguageModelTool(
+                        name = "strict",
+                        description = "Strict schema",
+                        parametersSchemaJson = """{"type":"object"}""",
+                        strict = true,
+                    ),
+                    LanguageModelTool(
                         name = "loose",
                         description = "Loose schema",
                         parametersSchemaJson = """{"type":"object"}""",
@@ -164,17 +175,59 @@ class OpenAICompatibleProviderTest {
             ),
         )
 
-        val strict = seenBodies.single()
+        val tools = seenBodies.single()
             .getValue("tools")
             .jsonArray
-            .single()
+            .map { toolJson ->
+                toolJson.jsonObject.getValue("function").jsonObject
+            }
+        assertTrue("strict" !in tools[0])
+        assertEquals(true, tools[1].getValue("strict").jsonPrimitive.booleanOrNull)
+        assertEquals(false, tools[2].getValue("strict").jsonPrimitive.booleanOrNull)
+    }
+
+    @Test
+    fun `chat model keeps response format strict separate from tool strict`() = runTest {
+        val seenBodies = mutableListOf<JsonObject>()
+        val client = HttpClient(
+            MockEngine { request ->
+                seenBodies += Json.parseToJsonElement(requestBodyText(request)).jsonObject
+                respond(
+                    content = """{"id":"chatcmpl_1","choices":[{"message":{"role":"assistant","content":"ok"},"finish_reason":"stop"}]}""",
+                    status = HttpStatusCode.OK,
+                    headers = headersOf(HttpHeaders.ContentType, "application/json"),
+                )
+            },
+        )
+        val provider = OpenAICompatible(
+            client,
+            OpenAICompatibleProviderSettings(
+                name = "openai",
+                baseUrl = "https://api.test/v1",
+                apiKey = "secret",
+                supportsStructuredOutputs = true,
+            ),
+        )
+
+        provider.languageModel("gpt-test").generate(
+            LanguageModelCallParams(
+                messages = listOf(UserMessage("hi")),
+                responseFormat = ResponseFormat.Json(
+                    schemaName = "Answer",
+                    schemaJson = JsonObject(mapOf("type" to JsonPrimitive("object"))),
+                ),
+            ),
+        )
+
+        val strict = seenBodies.single()
+            .getValue("response_format")
             .jsonObject
-            .getValue("function")
+            .getValue("json_schema")
             .jsonObject
             .getValue("strict")
             .jsonPrimitive
             .booleanOrNull
-        assertEquals(false, strict)
+        assertEquals(true, strict)
     }
 
     @Test

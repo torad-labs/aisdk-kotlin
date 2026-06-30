@@ -123,7 +123,7 @@ public data class LanguageModelTool(
     val parametersSchemaJson: String,
     val providerExecuted: Boolean = false,
     val metadata: Map<String, JsonElement> = emptyMap(),
-    val strict: Boolean = true,
+    val strict: Boolean? = null,
     /** Provider-specific config sent to the model for this tool (upstream's `tool.providerOptions`). */
     val providerOptions: ProviderOptions = ProviderOptions.None,
 ) {

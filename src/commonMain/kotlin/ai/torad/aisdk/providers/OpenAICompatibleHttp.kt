@@ -431,7 +431,7 @@ internal abstract class OpenAICompatibleHttpModel(
                 put("name", JsonPrimitive(tool.name))
                 put("description", JsonPrimitive(tool.description))
                 put("parameters", aiSdkJson.parseToJsonElement(tool.parametersSchemaJson))
-                put("strict", JsonPrimitive(tool.strict))
+                tool.strict?.let { put("strict", JsonPrimitive(it)) }
             },
         )
         // Per-tool provider config (e.g. cache_control), merged at the top level.

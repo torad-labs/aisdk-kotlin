@@ -23,16 +23,16 @@ import kotlinx.serialization.serializer
 public data class ToolSchema(
     val name: String,
     val description: String,
-    val strict: Boolean = true,
+    val strict: Boolean? = null,
     val inputExamples: List<String> = emptyList(),
     val metadata: Map<String, JsonElement> = emptyMap(),
     val providerExecuted: Boolean = false,
     val providerOptions: ProviderOptions = ProviderOptions.None,
 )
 
-/** Bundles the two [ToolSchema] boolean flags for factory functions. */
+/** Bundles selected [ToolSchema] flags for factory functions. */
 public data class ToolSchemaOptions(
-    val strict: Boolean = true,
+    val strict: Boolean? = null,
     val providerExecuted: Boolean = false,
 )
 
@@ -73,7 +73,7 @@ public abstract class Tool<TInput, TOutput, TContext> {
     // Backward-compat properties so ToolLoopAgent compiles unchanged.
     public val name: String get() = schema.name
     public val description: String get() = schema.description
-    public val strict: Boolean get() = schema.strict
+    public val strict: Boolean? get() = schema.strict
     public val inputExamples: List<String> get() = schema.inputExamples
     public val metadata: Map<String, JsonElement> get() = schema.metadata
     public val providerExecuted: Boolean get() = schema.providerExecuted
@@ -695,7 +695,6 @@ public object ProviderTools {
             schema = ToolSchema(
                 name = resolvedName,
                 description = options.description ?: defaultDescription,
-                strict = true,
                 inputExamples = emptyList(),
                 metadata = options.metadata + buildProviderToolMetadata(
                     id = id,

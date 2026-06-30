@@ -728,7 +728,7 @@ internal data class PreparedOpenResponsesRequest(
             put("name", JsonPrimitive(tool.name))
             put("description", JsonPrimitive(tool.description))
             put("parameters", openResponsesJson.parseToJsonElement(tool.parametersSchemaJson))
-            put("strict", JsonPrimitive(tool.strict))
+            tool.strict?.let { put("strict", JsonPrimitive(it)) }
         }
 
         private fun openResponsesProviderToolJson(tool: LanguageModelTool): JsonObject = buildJsonObject {

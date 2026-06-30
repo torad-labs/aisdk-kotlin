@@ -487,7 +487,7 @@ public class KtorGatewayTransport(
         put("name", JsonPrimitive(tool.name))
         put("description", JsonPrimitive(tool.description))
         put("inputSchema", aiSdkJson.parseToJsonElement(tool.parametersSchemaJson))
-        put("strict", JsonPrimitive(tool.strict))
+        tool.strict?.let { put("strict", JsonPrimitive(it)) }
         if (tool.providerExecuted) put("providerExecuted", JsonPrimitive(true))
         if (tool.providerOptions.toMap().isNotEmpty()) put("providerOptions", JsonObject(tool.providerOptions.toMap()))
     }
