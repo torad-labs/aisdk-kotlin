@@ -49,6 +49,7 @@ import kotlinx.serialization.json.JsonElement
  * `ReasoningDelta` and flips to [Done] on the matching `*End`.
  */
 @Serializable
+/** @since 0.3.0-beta01 */
 public enum class TextUIPartState {
     Streaming,
     Done,
@@ -56,15 +57,20 @@ public enum class TextUIPartState {
 
 @Serializable
 @JsonClassDiscriminator("type")
+/** @since 0.3.0-beta01 */
 public sealed interface UIMessagePart {
 
     @Serializable
     @SerialName("text")
     @Poko
+    /** @since 0.3.0-beta01 */
     public class Text(
+        /** @since 0.3.0-beta01 */
         public val text: String,
+        /** @since 0.3.0-beta01 */
         public val state: TextUIPartState = TextUIPartState.Done,
         @EncodeDefault(EncodeDefault.Mode.NEVER)
+        /** @since 0.3.0-beta01 */
         public val providerMetadata: ProviderMetadata = ProviderMetadata.None,
     ) : UIMessagePart
 
@@ -82,12 +88,19 @@ public sealed interface UIMessagePart {
     @Serializable
     @SerialName("tool")
     @Poko
+    /** @since 0.3.0-beta01 */
     public class ToolUI(
+        /** @since 0.3.0-beta01 */
         public val toolCallId: String,
+        /** @since 0.3.0-beta01 */
         public val toolName: String,
+        /** @since 0.3.0-beta01 */
         public val state: ToolCallState,
+        /** @since 0.3.0-beta01 */
         public val input: JsonElement? = null,
+        /** @since 0.3.0-beta01 */
         public val output: JsonElement? = null,
+        /** @since 0.3.0-beta01 */
         public val error: String? = null,
         /**
          * True when [output] is an intermediate snapshot from a
@@ -97,6 +110,7 @@ public sealed interface UIMessagePart {
          * "loading more" indicator on a still-incomplete card without
          * collapsing back to `InputAvailable`. Mirrors v6's
          * `preliminary?: boolean` on `output-available`.
+          * @since 0.3.0-beta01
          */
         public val preliminary: Boolean = false,
         /**
@@ -104,15 +118,18 @@ public sealed interface UIMessagePart {
          * states — carried so a UI round-trip (convert to model messages,
          * resume) preserves the approval's correlation key. Null outside
          * the approval states. Mirrors v6's `approval.id`.
+          * @since 0.3.0-beta01
          */
         public val approvalId: String? = null,
         /**
          * HMAC-SHA256 approval signature (v6.0.202, `approval.signature`).
          * Must survive the UI round-trip untouched: with a configured
          * approval secret, a replay missing it is denied fail-closed.
+          * @since 0.3.0-beta01
          */
         public val signature: String? = null,
         @EncodeDefault(EncodeDefault.Mode.NEVER)
+        /** @since 0.3.0-beta01 */
         public val providerMetadata: ProviderMetadata = ProviderMetadata.None,
     ) : UIMessagePart {
         /**
@@ -145,10 +162,14 @@ public sealed interface UIMessagePart {
     @Serializable
     @SerialName("reasoning")
     @Poko
+    /** @since 0.3.0-beta01 */
     public class Reasoning(
+        /** @since 0.3.0-beta01 */
         public val text: String,
+        /** @since 0.3.0-beta01 */
         public val state: TextUIPartState = TextUIPartState.Done,
         @EncodeDefault(EncodeDefault.Mode.NEVER)
+        /** @since 0.3.0-beta01 */
         public val providerMetadata: ProviderMetadata = ProviderMetadata.None,
     ) : UIMessagePart
 
@@ -159,15 +180,20 @@ public sealed interface UIMessagePart {
      *
      * `sourceId` is the provider's stable handle for the source so
      * repeated mentions across multiple parts can be deduped.
+      * @since 0.3.0-beta01
      */
     @Serializable
     @SerialName("source-url")
     @Poko
     public class SourceUrl(
+        /** @since 0.3.0-beta01 */
         public val sourceId: String,
+        /** @since 0.3.0-beta01 */
         public val url: String,
+        /** @since 0.3.0-beta01 */
         public val title: String? = null,
         @EncodeDefault(EncodeDefault.Mode.NEVER)
+        /** @since 0.3.0-beta01 */
         public val providerMetadata: ProviderMetadata = ProviderMetadata.None,
     ) : UIMessagePart
 
@@ -177,58 +203,80 @@ public sealed interface UIMessagePart {
      * Distinct from [File] which carries the file's payload — this
      * variant is a CITATION POINTER to a document the model read,
      * not a file the model produced.
+      * @since 0.3.0-beta01
      */
     @Serializable
     @SerialName("source-document")
     @Poko
     public class SourceDocument(
+        /** @since 0.3.0-beta01 */
         public val sourceId: String,
+        /** @since 0.3.0-beta01 */
         public val mediaType: String,
+        /** @since 0.3.0-beta01 */
         public val title: String,
+        /** @since 0.3.0-beta01 */
         public val filename: String? = null,
         @EncodeDefault(EncodeDefault.Mode.NEVER)
+        /** @since 0.3.0-beta01 */
         public val providerMetadata: ProviderMetadata = ProviderMetadata.None,
     ) : UIMessagePart
 
-    /** Generated file (image, audio, etc.). */
+    /**
+     * Generated file (image, audio, etc.).
+     * @since 0.3.0-beta01
+     */
     @Serializable
     @SerialName("file")
     @Poko
     public class File(
+        /** @since 0.3.0-beta01 */
         public val mediaType: String,
+        /** @since 0.3.0-beta01 */
         public val base64: String,
-        /** Optional display name (v6's `filename`), carried through to the model. */
+        /**
+         * Optional display name (v6's `filename`), carried through to the model.
+         * @since 0.3.0-beta01
+         */
         public val filename: String? = null,
         @EncodeDefault(EncodeDefault.Mode.NEVER)
+        /** @since 0.3.0-beta01 */
         public val providerMetadata: ProviderMetadata = ProviderMetadata.None,
     ) : UIMessagePart
 
     @Serializable
     @SerialName("error")
     @Poko
+    /** @since 0.3.0-beta01 */
     public class Error(public val message: String) : UIMessagePart
 
     /**
      * Typed custom data part. Mirrors v6 `data-*` UI parts while using
      * an explicit [type] string instead of TypeScript literal keys.
+      * @since 0.3.0-beta01
      */
     @Serializable
     @SerialName("data")
     @Poko
     public class Data(
+        /** @since 0.3.0-beta01 */
         public val type: String,
+        /** @since 0.3.0-beta01 */
         public val data: JsonElement,
         @EncodeDefault(EncodeDefault.Mode.NEVER)
+        /** @since 0.3.0-beta01 */
         public val providerMetadata: ProviderMetadata = ProviderMetadata.None,
         /**
          * Optional stable id. Streaming data parts that share an id replace the
          * prior one in place (e.g. a progress indicator that updates) rather than
          * appending a duplicate — matching v6's keyed data parts.
+          * @since 0.3.0-beta01
          */
         public val id: String? = null,
         /**
          * Transient parts are shown live but not meant to be persisted in stored
          * message history. Mirrors v6's `transient` data-chunk flag.
+          * @since 0.3.0-beta01
          */
         public val transient: Boolean = false,
     ) : UIMessagePart {
@@ -245,6 +293,7 @@ public sealed interface UIMessagePart {
      * next LLM call). Preserves the v6 `step-start` UI part so a
      * subagent handoff or multi-tool flow can render a visible
      * divider in the chat list. Per historical parity gap #8.
+      * @since 0.3.0-beta01
      */
     @Serializable
     @SerialName("step-start")
@@ -259,19 +308,28 @@ public sealed interface UIMessagePart {
      * branch on `is DynamicToolUI` and fall back to a generic
      * "Calling [toolName]…" card with JSON-printed input / output.
      * Per historical parity gap #9.
+      * @since 0.3.0-beta01
      */
     @Serializable
     @SerialName("dynamic-tool")
     @Poko
     public class DynamicToolUI(
+        /** @since 0.3.0-beta01 */
         public val toolCallId: String,
+        /** @since 0.3.0-beta01 */
         public val toolName: String,
+        /** @since 0.3.0-beta01 */
         public val state: ToolCallState,
+        /** @since 0.3.0-beta01 */
         public val input: JsonElement? = null,
+        /** @since 0.3.0-beta01 */
         public val output: JsonElement? = null,
+        /** @since 0.3.0-beta01 */
         public val error: String? = null,
+        /** @since 0.3.0-beta01 */
         public val preliminary: Boolean = false,
         @EncodeDefault(EncodeDefault.Mode.NEVER)
+        /** @since 0.3.0-beta01 */
         public val providerMetadata: ProviderMetadata = ProviderMetadata.None,
     ) : UIMessagePart {
         public fun <TOutput> outputAs(serializer: KSerializer<TOutput>): TOutput? {

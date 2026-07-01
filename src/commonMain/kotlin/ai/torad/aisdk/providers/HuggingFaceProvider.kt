@@ -38,10 +38,15 @@ public const val HUGGINGFACE_VERSION: String = "1.0.50"
 
 public typealias HuggingFaceErrorData = JsonObject
 
+/** @since 0.3.0-beta01 */
 public class HuggingFaceProviderSettings internal constructor(
+    /** @since 0.3.0-beta01 */
     public val apiKey: String? = null,
+    /** @since 0.3.0-beta01 */
     public val baseURL: String = "https://router.huggingface.co/v1",
+    /** @since 0.3.0-beta01 */
     public val headers: Map<String, String> = emptyMap(),
+    /** @since 0.3.0-beta01 */
     public val generateId: () -> String = { IdGenerator.generate() },
 ) {
     internal fun huggingFaceHeaders(extra: Map<String, String>): Map<String, String> {
@@ -113,32 +118,38 @@ public class HuggingFaceProviderSettings internal constructor(
     }
 }
 
+/** @since 0.3.0-beta01 */
 public class HuggingFaceProviderSettingsBuilder {
     private var apiKey: String? = null
     private var baseURL: String = "https://router.huggingface.co/v1"
     private var headers: Map<String, String> = emptyMap()
     private var generateId: () -> String = { IdGenerator.generate() }
 
+    /** @since 0.3.0-beta01 */
     public fun apiKey(value: String?): HuggingFaceProviderSettingsBuilder {
         apiKey = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun baseURL(value: String): HuggingFaceProviderSettingsBuilder {
         baseURL = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun headers(value: Map<String, String>): HuggingFaceProviderSettingsBuilder {
         headers = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun generateId(value: () -> String): HuggingFaceProviderSettingsBuilder {
         generateId = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun build(): HuggingFaceProviderSettings =
         HuggingFaceProviderSettings(
             apiKey = apiKey,
@@ -148,6 +159,7 @@ public class HuggingFaceProviderSettingsBuilder {
         )
 }
 
+/** @since 0.3.0-beta01 */
 public fun HuggingFaceProviderSettings(
     block: HuggingFaceProviderSettingsBuilder.() -> Unit = {},
 ): HuggingFaceProviderSettings =
@@ -155,39 +167,50 @@ public fun HuggingFaceProviderSettings(
 
 @Serializable
 @Poko
+/** @since 0.3.0-beta01 */
 public class HuggingFaceResponsesSettings internal constructor(
+    /** @since 0.3.0-beta01 */
     public val metadata: Map<String, String>? = null,
+    /** @since 0.3.0-beta01 */
     public val instructions: String? = null,
+    /** @since 0.3.0-beta01 */
     public val strictJsonSchema: Boolean? = null,
+    /** @since 0.3.0-beta01 */
     public val reasoningEffort: String? = null,
 )
 
+/** @since 0.3.0-beta01 */
 public class HuggingFaceResponsesSettingsBuilder {
     private var metadata: Map<String, String>? = null
     private var instructions: String? = null
     private var strictJsonSchema: Boolean? = null
     private var reasoningEffort: String? = null
 
+    /** @since 0.3.0-beta01 */
     public fun metadata(value: Map<String, String>?): HuggingFaceResponsesSettingsBuilder {
         metadata = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun instructions(value: String?): HuggingFaceResponsesSettingsBuilder {
         instructions = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun strictJsonSchema(value: Boolean?): HuggingFaceResponsesSettingsBuilder {
         strictJsonSchema = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun reasoningEffort(value: String?): HuggingFaceResponsesSettingsBuilder {
         reasoningEffort = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun build(): HuggingFaceResponsesSettings =
         HuggingFaceResponsesSettings(
             metadata = metadata,
@@ -197,21 +220,26 @@ public class HuggingFaceResponsesSettingsBuilder {
         )
 }
 
+/** @since 0.3.0-beta01 */
 public fun HuggingFaceResponsesSettings(
     block: HuggingFaceResponsesSettingsBuilder.() -> Unit = {},
 ): HuggingFaceResponsesSettings =
     HuggingFaceResponsesSettingsBuilder().apply(block).build()
 
+/** @since 0.3.0-beta01 */
 public class HuggingFaceProvider(
     private val client: HttpClient,
+    /** @since 0.3.0-beta01 */
     public val settings: HuggingFaceProviderSettings,
 ) : Provider {
     override val providerId: String = "huggingface"
 
     public operator fun invoke(modelId: ModelId): LanguageModel = languageModel(modelId.value)
 
+    /** @since 0.3.0-beta01 */
     public fun responses(modelId: ModelId): LanguageModel = languageModel(modelId.value)
 
+    /** @since 0.3.0-beta01 */
     public fun textEmbeddingModel(modelId: String): Nothing = throw huggingFaceNoEmbeddingModel(providerId, modelId)
 
     override fun languageModel(modelId: String): LanguageModel =
@@ -240,7 +268,10 @@ public class HuggingFaceProvider(
         )
 }
 
-/** PascalCase factory — mirrors `OpenAI(...)`. */
+/**
+ * PascalCase factory — mirrors `OpenAI(...)`.
+ * @since 0.3.0-beta01
+ */
 public fun HuggingFace(
     client: HttpClient,
     settings: HuggingFaceProviderSettings = HuggingFaceProviderSettings(),

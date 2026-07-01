@@ -2,8 +2,10 @@ package ai.torad.aisdk
 
 import kotlin.math.sqrt
 
+/** @since 0.3.0-beta01 */
 public object EmbeddingMath {
 
+    /** @since 0.3.0-beta01 */
     public fun cosineSimilarity(left: List<Float>, right: List<Float>): Float {
         require(left.size == right.size) { "Embedding vectors must have the same dimension" }
         require(left.isNotEmpty()) { "Embedding vectors must not be empty" }

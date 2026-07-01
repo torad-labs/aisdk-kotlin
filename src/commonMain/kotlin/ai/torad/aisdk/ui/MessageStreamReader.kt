@@ -36,6 +36,7 @@ import kotlinx.serialization.json.jsonObject
  *     .stateIn(scope, SharingStarted.Eagerly, emptyList())
  * ```
  */
+/** @since 0.3.0-beta01 */
 public fun StreamToUiMessages(
     events: Flow<StreamEvent>,
     assistantMessageId: String,

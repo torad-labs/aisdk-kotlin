@@ -1,9 +1,13 @@
 package ai.torad.aisdk
 
+/** @since 0.3.0-beta01 */
 public class DownloadError(
+    /** @since 0.3.0-beta01 */
     public val url: String,
     message: String,
+    /** @since 0.3.0-beta01 */
     public val statusCode: Int? = null,
+    /** @since 0.3.0-beta01 */
     public val statusText: String? = null,
     cause: Throwable? = null,
 ) : AiSdkException(message, cause)

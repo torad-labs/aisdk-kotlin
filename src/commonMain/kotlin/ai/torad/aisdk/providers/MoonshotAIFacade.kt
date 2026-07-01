@@ -16,9 +16,13 @@ public const val MOONSHOTAI_VERSION: String = "2.0.23"
 
 @Serializable
 @Poko
+/** @since 0.3.0-beta01 */
 public class MoonshotAIProviderSettings internal constructor(
+    /** @since 0.3.0-beta01 */
     public val apiKey: String? = null,
+    /** @since 0.3.0-beta01 */
     public val baseURL: String = "https://api.moonshot.ai/v1",
+    /** @since 0.3.0-beta01 */
     public val headers: Map<String, String> = emptyMap(),
 ) {
     internal fun toCompatible(
@@ -49,26 +53,31 @@ public class MoonshotAIProviderSettings internal constructor(
     }
 }
 
+/** @since 0.3.0-beta01 */
 public class MoonshotAIProviderSettingsBuilder {
     private var apiKey: String? = null
     private var baseURL: String = "https://api.moonshot.ai/v1"
     private var headers: Map<String, String> = emptyMap()
 
+    /** @since 0.3.0-beta01 */
     public fun apiKey(value: String?): MoonshotAIProviderSettingsBuilder {
         apiKey = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun baseURL(value: String): MoonshotAIProviderSettingsBuilder {
         baseURL = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun headers(value: Map<String, String>): MoonshotAIProviderSettingsBuilder {
         headers = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun build(): MoonshotAIProviderSettings =
         MoonshotAIProviderSettings(
             apiKey = apiKey,
@@ -77,6 +86,7 @@ public class MoonshotAIProviderSettingsBuilder {
         )
 }
 
+/** @since 0.3.0-beta01 */
 public fun MoonshotAIProviderSettings(
     block: MoonshotAIProviderSettingsBuilder.() -> Unit = {},
 ): MoonshotAIProviderSettings =
@@ -84,22 +94,28 @@ public fun MoonshotAIProviderSettings(
 
 @Serializable
 @Poko
+/** @since 0.3.0-beta01 */
 public class MoonshotAILanguageModelOptions internal constructor(
+    /** @since 0.3.0-beta01 */
     public val raw: Map<String, JsonElement> = emptyMap(),
 )
 
+/** @since 0.3.0-beta01 */
 public class MoonshotAILanguageModelOptionsBuilder {
     private var raw: Map<String, JsonElement> = emptyMap()
 
+    /** @since 0.3.0-beta01 */
     public fun raw(value: Map<String, JsonElement>): MoonshotAILanguageModelOptionsBuilder {
         raw = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun build(): MoonshotAILanguageModelOptions =
         MoonshotAILanguageModelOptions(raw = raw)
 }
 
+/** @since 0.3.0-beta01 */
 public fun MoonshotAILanguageModelOptions(
     block: MoonshotAILanguageModelOptionsBuilder.() -> Unit = {},
 ): MoonshotAILanguageModelOptions =
@@ -107,6 +123,7 @@ public fun MoonshotAILanguageModelOptions(
 
 public typealias MoonshotAIProviderOptions = MoonshotAILanguageModelOptions
 
+/** @since 0.3.0-beta01 */
 public class MoonshotAIProvider(
     client: HttpClient,
     settings: MoonshotAIProviderSettings,
@@ -119,11 +136,13 @@ public class MoonshotAIProvider(
 
     public operator fun invoke(modelId: ModelId): LanguageModel = languageModel(modelId.value)
     override fun languageModel(modelId: String): LanguageModel = chatModel(ModelId(modelId))
+    /** @since 0.3.0-beta01 */
     public fun chatModel(modelId: ModelId): LanguageModel = compatible.chatModel(modelId.value)
     override fun embeddingModel(modelId: String): EmbeddingModel = throw NoSuchModelError(providerId, "embeddingModel", modelId)
     override fun imageModel(modelId: String): ImageModel = throw NoSuchModelError(providerId, "imageModel", modelId)
 }
 
+/** @since 0.3.0-beta01 */
 public fun MoonshotAI(
     client: HttpClient,
     settings: MoonshotAIProviderSettings = MoonshotAIProviderSettings(),

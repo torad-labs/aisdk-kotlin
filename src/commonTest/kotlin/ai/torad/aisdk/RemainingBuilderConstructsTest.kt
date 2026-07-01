@@ -131,16 +131,16 @@ class RemainingBuilderConstructsTest {
             applyDefaults(true)
         }
 
-        assertEquals(stdio, aiSdkJson.decodeFromString(aiSdkJson.encodeToString(stdio)))
-        assertEquals(credentials, aiSdkJson.decodeFromString(aiSdkJson.encodeToString(credentials)))
-        assertEquals(spelling, aiSdkJson.decodeFromString(aiSdkJson.encodeToString(spelling)))
-        assertEquals(openResponses, aiSdkJson.decodeFromString(aiSdkJson.encodeToString(openResponses)))
-        assertEquals(xaiChat, aiSdkJson.decodeFromString(aiSdkJson.encodeToString(xaiChat)))
-        assertEquals(xaiResponses, aiSdkJson.decodeFromString(aiSdkJson.encodeToString(xaiResponses)))
-        assertEquals(clientInformation, aiSdkJson.decodeFromString(aiSdkJson.encodeToString(clientInformation)))
-        assertEquals(clientMetadata, aiSdkJson.decodeFromString(aiSdkJson.encodeToString(clientMetadata)))
-        assertEquals(configuration, aiSdkJson.decodeFromString(aiSdkJson.encodeToString(configuration)))
-        assertEquals(elicitationCapability, aiSdkJson.decodeFromString(aiSdkJson.encodeToString(elicitationCapability)))
+        assertEquals(stdio, aiSdkJson.decodeFromString(aiSdkOutputJson.encodeToString(stdio)))
+        assertEquals(credentials, aiSdkJson.decodeFromString(aiSdkOutputJson.encodeToString(credentials)))
+        assertEquals(spelling, aiSdkJson.decodeFromString(aiSdkOutputJson.encodeToString(spelling)))
+        assertEquals(openResponses, aiSdkJson.decodeFromString(aiSdkOutputJson.encodeToString(openResponses)))
+        assertEquals(xaiChat, aiSdkJson.decodeFromString(aiSdkOutputJson.encodeToString(xaiChat)))
+        assertEquals(xaiResponses, aiSdkJson.decodeFromString(aiSdkOutputJson.encodeToString(xaiResponses)))
+        assertEquals(clientInformation, aiSdkJson.decodeFromString(aiSdkOutputJson.encodeToString(clientInformation)))
+        assertEquals(clientMetadata, aiSdkJson.decodeFromString(aiSdkOutputJson.encodeToString(clientMetadata)))
+        assertEquals(configuration, aiSdkJson.decodeFromString(aiSdkOutputJson.encodeToString(configuration)))
+        assertEquals(elicitationCapability, aiSdkJson.decodeFromString(aiSdkOutputJson.encodeToString(elicitationCapability)))
     }
 
     @Test

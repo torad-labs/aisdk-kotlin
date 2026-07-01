@@ -58,6 +58,7 @@ import kotlin.math.roundToLong
 public const val MCP_PACKAGE_VERSION: String = "1.0.46"
 public const val LATEST_PROTOCOL_VERSION: String = "2025-11-25"
 
+/** @since 0.3.0-beta01 */
 public val SUPPORTED_PROTOCOL_VERSIONS: List<String> = listOf(
     LATEST_PROTOCOL_VERSION,
     "2025-06-18",
@@ -87,14 +88,18 @@ internal val mcpJson: Json = Json {
     explicitNulls = false
 }
 
+/** @since 0.3.0-beta01 */
 public class MCPClientError(
     message: String,
+    /** @since 0.3.0-beta01 */
     public val code: Int? = null,
+    /** @since 0.3.0-beta01 */
     public val data: JsonElement? = null,
     cause: Throwable? = null,
 ) : AiSdkException(message, cause)
 
 @Serializable
+/** @since 0.3.0-beta01 */
 public sealed interface JSONRPCMessage {
     public companion object {
         internal fun JSONRPCMessage.toJsonElement(): JsonObject = when (this) {
@@ -171,11 +176,16 @@ private data class JSONRPCEnvelope(
 /**
  * Transport interface for MCP communication. Implementations may wrap stdio,
  * Streamable HTTP, SSE, WebSockets, or a test fixture.
+  * @since 0.3.0-beta01
  */
 public interface MCPTransport {
+    /** @since 0.3.0-beta01 */
     public fun setOnClose(handler: (() -> Unit)?)
+    /** @since 0.3.0-beta01 */
     public fun setOnError(handler: ((Throwable) -> Unit)?)
+    /** @since 0.3.0-beta01 */
     public fun setOnMessage(handler: (suspend (JSONRPCMessage) -> Unit)?)
+    /** @since 0.3.0-beta01 */
     public fun setProtocolVersion(version: String?)
 
     public suspend fun start()
@@ -183,15 +193,23 @@ public interface MCPTransport {
     public suspend fun close()
 }
 
+/** @since 0.3.0-beta01 */
 public class MCPClientConfig internal constructor(
+    /** @since 0.3.0-beta01 */
     public val transport: MCPTransport,
+    /** @since 0.3.0-beta01 */
     public val onUncaughtError: ((Throwable) -> Unit)? = null,
+    /** @since 0.3.0-beta01 */
     public val clientName: String? = null,
+    /** @since 0.3.0-beta01 */
     public val name: String? = null,
+    /** @since 0.3.0-beta01 */
     public val version: String = DEFAULT_MCP_CLIENT_VERSION,
+    /** @since 0.3.0-beta01 */
     public val capabilities: MCPClientCapabilities = MCPClientCapabilities(),
 )
 
+/** @since 0.3.0-beta01 */
 public class MCPClientConfigBuilder {
     private var transport: MCPTransport? = null
     private var onUncaughtError: ((Throwable) -> Unit)? = null
@@ -200,36 +218,43 @@ public class MCPClientConfigBuilder {
     private var version: String = DEFAULT_MCP_CLIENT_VERSION
     private var capabilities: MCPClientCapabilities = MCPClientCapabilities()
 
+    /** @since 0.3.0-beta01 */
     public fun transport(value: MCPTransport): MCPClientConfigBuilder {
         transport = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun onUncaughtError(value: ((Throwable) -> Unit)?): MCPClientConfigBuilder {
         onUncaughtError = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun clientName(value: String?): MCPClientConfigBuilder {
         clientName = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun name(value: String?): MCPClientConfigBuilder {
         name = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun version(value: String): MCPClientConfigBuilder {
         version = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun capabilities(value: MCPClientCapabilities): MCPClientConfigBuilder {
         capabilities = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun build(): MCPClientConfig =
         MCPClientConfig(
             transport = requireNotNull(transport) { "MCPClientConfig.transport is required" },
@@ -241,6 +266,7 @@ public class MCPClientConfigBuilder {
         )
 }
 
+/** @since 0.3.0-beta01 */
 public fun MCPClientConfig(
     block: MCPClientConfigBuilder.() -> Unit = {},
 ): MCPClientConfig =
@@ -249,8 +275,11 @@ public fun MCPClientConfig(
 @ExperimentalAiSdkApi
 public typealias experimental_MCPClientConfig = MCPClientConfig
 
+/** @since 0.3.0-beta01 */
 public interface MCPClient {
+    /** @since 0.3.0-beta01 */
     public val serverInfo: Configuration
+    /** @since 0.3.0-beta01 */
     public val instructions: String?
 
     public suspend fun <TContext> tools(schemas: MCPToolSchemas? = null): ToolSet<TContext>
@@ -292,6 +321,7 @@ public interface MCPClient {
         options: MCPRequestOptions? = null,
     ): GetPromptResult
 
+    /** @since 0.3.0-beta01 */
     public fun onElicitationRequest(
         schema: ElicitationRequestSchema,
         handler: suspend (ElicitationRequest) -> ElicitResult,
@@ -798,13 +828,19 @@ private class DefaultMCPClient(config: MCPClientConfig) : MCPClient {
     }
 }
 
+/** @since 0.3.0-beta01 */
 public class ClientAuthResult(
+    /** @since 0.3.0-beta01 */
     public val additionalHeaders: Map<String, String> = emptyMap(),
+    /** @since 0.3.0-beta01 */
     public val additionalParams: Map<String, String> = emptyMap(),
 )
 
+/** @since 0.3.0-beta01 */
 public interface OAuthClientProvider {
+    /** @since 0.3.0-beta01 */
     public val redirectUrl: String
+    /** @since 0.3.0-beta01 */
     public val clientMetadata: OAuthClientMetadata
 
     public suspend fun tokens(): OAuthTokens?
@@ -971,20 +1007,29 @@ suspend fun auth(
 }
 }
 
+/** @since 0.3.0-beta01 */
 public enum class MCPTransportKind {
     Http,
     Sse,
 }
 
+/** @since 0.3.0-beta01 */
 public class MCPTransportConfig internal constructor(
+    /** @since 0.3.0-beta01 */
     public val type: MCPTransportKind,
+    /** @since 0.3.0-beta01 */
     public val url: String,
+    /** @since 0.3.0-beta01 */
     public val headers: Map<String, String> = emptyMap(),
+    /** @since 0.3.0-beta01 */
     public val authProvider: OAuthClientProvider? = null,
+    /** @since 0.3.0-beta01 */
     public val engineContext: CoroutineContext = Dispatchers.Default,
+    /** @since 0.3.0-beta01 */
     public val reconnectionOptions: MCPReconnectionOptions = MCPReconnectionOptions {},
 )
 
+/** @since 0.3.0-beta01 */
 public class MCPTransportConfigBuilder {
     private var type: MCPTransportKind? = null
     private var url: String? = null
@@ -993,36 +1038,43 @@ public class MCPTransportConfigBuilder {
     private var engineContext: CoroutineContext = Dispatchers.Default
     private var reconnectionOptions: MCPReconnectionOptions = MCPReconnectionOptions()
 
+    /** @since 0.3.0-beta01 */
     public fun type(value: MCPTransportKind): MCPTransportConfigBuilder {
         type = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun url(value: String): MCPTransportConfigBuilder {
         url = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun headers(value: Map<String, String>): MCPTransportConfigBuilder {
         headers = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun authProvider(value: OAuthClientProvider?): MCPTransportConfigBuilder {
         authProvider = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun engineContext(value: CoroutineContext): MCPTransportConfigBuilder {
         engineContext = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun reconnectionOptions(value: MCPReconnectionOptions): MCPTransportConfigBuilder {
         reconnectionOptions = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun build(): MCPTransportConfig =
         MCPTransportConfig(
             type = requireNotNull(type) { "MCPTransportConfig.type is required" },
@@ -1034,45 +1086,57 @@ public class MCPTransportConfigBuilder {
         )
 }
 
+/** @since 0.3.0-beta01 */
 public fun MCPTransportConfig(
     block: MCPTransportConfigBuilder.() -> Unit = {},
 ): MCPTransportConfig =
     MCPTransportConfigBuilder().apply(block).build()
 
 @Poko
+/** @since 0.3.0-beta01 */
 public class MCPReconnectionOptions internal constructor(
+    /** @since 0.3.0-beta01 */
     public val initialReconnectionDelayMillis: Long = 1_000,
+    /** @since 0.3.0-beta01 */
     public val reconnectionDelayGrowFactor: Double = 1.5,
+    /** @since 0.3.0-beta01 */
     public val maxReconnectionDelayMillis: Long = 30_000,
+    /** @since 0.3.0-beta01 */
     public val maxRetries: Int = 2,
 )
 
+/** @since 0.3.0-beta01 */
 public class MCPReconnectionOptionsBuilder {
     private var initialReconnectionDelayMillis: Long = 1_000
     private var reconnectionDelayGrowFactor: Double = 1.5
     private var maxReconnectionDelayMillis: Long = 30_000
     private var maxRetries: Int = 2
 
+    /** @since 0.3.0-beta01 */
     public fun initialReconnectionDelayMillis(value: Long): MCPReconnectionOptionsBuilder {
         initialReconnectionDelayMillis = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun reconnectionDelayGrowFactor(value: Double): MCPReconnectionOptionsBuilder {
         reconnectionDelayGrowFactor = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun maxReconnectionDelayMillis(value: Long): MCPReconnectionOptionsBuilder {
         maxReconnectionDelayMillis = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun maxRetries(value: Int): MCPReconnectionOptionsBuilder {
         maxRetries = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun build(): MCPReconnectionOptions =
         MCPReconnectionOptions(
             initialReconnectionDelayMillis = initialReconnectionDelayMillis,
@@ -1082,12 +1146,14 @@ public class MCPReconnectionOptionsBuilder {
         )
 }
 
+/** @since 0.3.0-beta01 */
 public fun MCPReconnectionOptions(
     block: MCPReconnectionOptionsBuilder.() -> Unit = {},
 ): MCPReconnectionOptions =
     MCPReconnectionOptionsBuilder().apply(block).build()
 
 @OptIn(InternalAiSdkApi::class)
+/** @since 0.3.0-beta01 */
 public fun CreateMcpTransport(client: HttpClient, config: MCPTransportConfig): MCPTransport =
     when (config.type) {
         MCPTransportKind.Http ->
@@ -1277,6 +1343,7 @@ private class McpOAuthReauthorizer(
 }
 
 @InternalAiSdkApi
+/** @since 0.3.0-beta01 */
 public class HttpMCPTransport(
     private val client: HttpClient,
     private val url: String,
@@ -1628,6 +1695,7 @@ public class HttpMCPTransport(
 }
 
 @InternalAiSdkApi
+/** @since 0.3.0-beta01 */
 public class SseMCPTransport(
     private val client: HttpClient,
     private val url: String,
@@ -1895,39 +1963,50 @@ internal object McpUrl {
 
 @Serializable
 @Poko
+/** @since 0.3.0-beta01 */
 public class StdioConfig internal constructor(
+    /** @since 0.3.0-beta01 */
     public val command: String,
+    /** @since 0.3.0-beta01 */
     public val args: List<String> = emptyList(),
+    /** @since 0.3.0-beta01 */
     public val env: Map<String, String> = emptyMap(),
+    /** @since 0.3.0-beta01 */
     public val cwd: String? = null,
 )
 
+/** @since 0.3.0-beta01 */
 public class StdioConfigBuilder {
     private var command: String? = null
     private var args: List<String> = emptyList()
     private var env: Map<String, String> = emptyMap()
     private var cwd: String? = null
 
+    /** @since 0.3.0-beta01 */
     public fun command(value: String): StdioConfigBuilder {
         command = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun args(value: List<String>): StdioConfigBuilder {
         args = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun env(value: Map<String, String>): StdioConfigBuilder {
         env = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun cwd(value: String?): StdioConfigBuilder {
         cwd = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun build(): StdioConfig =
         StdioConfig(
             command = requireNotNull(command) { "StdioConfig.command is required" },
@@ -1937,6 +2016,7 @@ public class StdioConfigBuilder {
         )
 }
 
+/** @since 0.3.0-beta01 */
 public fun StdioConfig(
     block: StdioConfigBuilder.() -> Unit = {},
 ): StdioConfig =
@@ -1951,7 +2031,9 @@ internal interface MCPStdioProcess {
 internal expect fun CreateMCPStdioProcess(config: StdioConfig): MCPStdioProcess
 
 @ExperimentalAiSdkApi
+/** @since 0.3.0-beta01 */
 public class Experimental_StdioMCPTransport(
+    /** @since 0.3.0-beta01 */
     public val config: StdioConfig,
     private val engineContext: CoroutineContext = Dispatchers.Default,
 ) : MCPTransport {

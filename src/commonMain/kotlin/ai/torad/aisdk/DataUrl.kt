@@ -1,10 +1,12 @@
 package ai.torad.aisdk
 
+/** @since 0.3.0-beta01 */
 public data class DataUrl(
     val mediaType: String,
     val base64: String,
 ) {
     public companion object {
+        /** @since 0.3.0-beta01 */
         public fun parse(dataUrl: String): DataUrl {
             require(dataUrl.startsWith("data:")) { "Not a data URL" }
             val comma = dataUrl.indexOf(',')

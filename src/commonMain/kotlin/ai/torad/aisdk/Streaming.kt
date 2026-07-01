@@ -57,13 +57,18 @@ import kotlinx.serialization.json.doubleOrNull
 @OptIn(ExperimentalSerializationApi::class)
 @Serializable
 @JsonClassDiscriminator("type")
+/** @since 0.3.0-beta01 */
 public sealed class StreamEvent {
 
-    /** Stream began. Emitted exactly once at the very top. */
+    /**
+     * Stream began. Emitted exactly once at the very top.
+     * @since 0.3.0-beta01
+     */
     @Serializable
     @SerialName("stream-start")
     @Poko
     public class StreamStart(
+        /** @since 0.3.0-beta01 */
         public val warnings: List<CallWarning> = emptyList(),
     ) : StreamEvent()
 
@@ -72,15 +77,21 @@ public sealed class StreamEvent {
      * stream request starts. Mirrors v6's `response-metadata` stream
      * part so [StreamTextResult.response] can expose IDs, timestamps,
      * model IDs, headers, and retained response bodies.
+      * @since 0.3.0-beta01
      */
     @Serializable
     @SerialName("response-metadata")
     @Poko
     public class ResponseMetadata(
+        /** @since 0.3.0-beta01 */
         public val id: String? = null,
+        /** @since 0.3.0-beta01 */
         public val timestampMillis: Long? = null,
+        /** @since 0.3.0-beta01 */
         public val modelId: String? = null,
+        /** @since 0.3.0-beta01 */
         public val headers: Map<String, String> = emptyMap(),
+        /** @since 0.3.0-beta01 */
         public val body: JsonElement? = null,
     ) : StreamEvent() {
         internal fun toLanguageModelResponseMetadata(): LanguageModelResponseMetadata =
@@ -113,143 +124,211 @@ public sealed class StreamEvent {
         }
     }
 
-    /** New step (one LLM call) began. Emitted at the start of every loop iteration. */
+    /**
+     * New step (one LLM call) began. Emitted at the start of every loop iteration.
+     * @since 0.3.0-beta01
+     */
     @Serializable
     @SerialName("step-start")
     @Poko
     public class StepStart(
+        /** @since 0.3.0-beta01 */
         public val stepNumber: Int,
         @EncodeDefault(EncodeDefault.Mode.NEVER)
+        /** @since 0.3.0-beta01 */
         public val providerMetadata: ProviderMetadata = ProviderMetadata.None,
     ) : StreamEvent()
 
     @Serializable
     @SerialName("text-start")
     @Poko
+    /** @since 0.3.0-beta01 */
     public class TextStart(
+        /** @since 0.3.0-beta01 */
         public val id: String,
         @EncodeDefault(EncodeDefault.Mode.NEVER)
+        /** @since 0.3.0-beta01 */
         public val providerMetadata: ProviderMetadata = ProviderMetadata.None,
     ) : StreamEvent()
 
     @Serializable
     @SerialName("text-delta")
     @Poko
+    /** @since 0.3.0-beta01 */
     public class TextDelta(
+        /** @since 0.3.0-beta01 */
         public val id: String,
+        /** @since 0.3.0-beta01 */
         public val text: String,
         @EncodeDefault(EncodeDefault.Mode.NEVER)
+        /** @since 0.3.0-beta01 */
         public val providerMetadata: ProviderMetadata = ProviderMetadata.None,
     ) : StreamEvent()
 
     @Serializable
     @SerialName("text-end")
     @Poko
+    /** @since 0.3.0-beta01 */
     public class TextEnd(
+        /** @since 0.3.0-beta01 */
         public val id: String,
         @EncodeDefault(EncodeDefault.Mode.NEVER)
+        /** @since 0.3.0-beta01 */
         public val providerMetadata: ProviderMetadata = ProviderMetadata.None,
     ) : StreamEvent()
 
     @Serializable
     @SerialName("reasoning-start")
     @Poko
+    /** @since 0.3.0-beta01 */
     public class ReasoningStart(
+        /** @since 0.3.0-beta01 */
         public val id: String,
         @EncodeDefault(EncodeDefault.Mode.NEVER)
+        /** @since 0.3.0-beta01 */
         public val providerMetadata: ProviderMetadata = ProviderMetadata.None,
     ) : StreamEvent()
 
     @Serializable
     @SerialName("reasoning-delta")
     @Poko
+    /** @since 0.3.0-beta01 */
     public class ReasoningDelta(
+        /** @since 0.3.0-beta01 */
         public val id: String,
+        /** @since 0.3.0-beta01 */
         public val text: String,
         @EncodeDefault(EncodeDefault.Mode.NEVER)
+        /** @since 0.3.0-beta01 */
         public val providerMetadata: ProviderMetadata = ProviderMetadata.None,
     ) : StreamEvent()
 
     @Serializable
     @SerialName("reasoning-end")
     @Poko
+    /** @since 0.3.0-beta01 */
     public class ReasoningEnd(
+        /** @since 0.3.0-beta01 */
         public val id: String,
         @EncodeDefault(EncodeDefault.Mode.NEVER)
+        /** @since 0.3.0-beta01 */
         public val providerMetadata: ProviderMetadata = ProviderMetadata.None,
     ) : StreamEvent()
 
-    /** Citation / web grounding source. */
+    /**
+     * Citation / web grounding source.
+     * @since 0.3.0-beta01
+     */
     @Serializable
     @SerialName("source")
     @Poko
     public class SourcePart(
+        /** @since 0.3.0-beta01 */
         public val id: String,
+        /** @since 0.3.0-beta01 */
         public val sourceType: SourceType,
+        /** @since 0.3.0-beta01 */
         public val url: String? = null,
+        /** @since 0.3.0-beta01 */
         public val title: String? = null,
+        /** @since 0.3.0-beta01 */
         public val mediaType: String? = null,
         @EncodeDefault(EncodeDefault.Mode.NEVER)
+        /** @since 0.3.0-beta01 */
         public val providerMetadata: ProviderMetadata = ProviderMetadata.None,
     ) : StreamEvent() {
         @Serializable
+        /** @since 0.3.0-beta01 */
         public enum class SourceType { Url, Document }
     }
 
-    /** Generated file (image, audio, etc.). */
+    /**
+     * Generated file (image, audio, etc.).
+     * @since 0.3.0-beta01
+     */
     @Serializable
     @SerialName("file")
     @Poko
     public class FilePart(
+        /** @since 0.3.0-beta01 */
         public val id: String,
+        /** @since 0.3.0-beta01 */
         public val mediaType: String,
-        /** Base64-encoded contents — keep small, large files should stream via providerMetadata URLs. */
+        /**
+         * Base64-encoded contents — keep small, large files should stream via providerMetadata URLs.
+         * @since 0.3.0-beta01
+         */
         public val base64: String,
         @EncodeDefault(EncodeDefault.Mode.NEVER)
+        /** @since 0.3.0-beta01 */
         public val providerMetadata: ProviderMetadata = ProviderMetadata.None,
     ) : StreamEvent()
 
-    /** Tool input streaming opens — the model has decided which tool to call. */
+    /**
+     * Tool input streaming opens — the model has decided which tool to call.
+     * @since 0.3.0-beta01
+     */
     @Serializable
     @SerialName("tool-input-start")
     @Poko
     public class ToolInputStart(
+        /** @since 0.3.0-beta01 */
         public val id: String,
+        /** @since 0.3.0-beta01 */
         public val toolName: String,
         @EncodeDefault(EncodeDefault.Mode.NEVER)
+        /** @since 0.3.0-beta01 */
         public val providerMetadata: ProviderMetadata = ProviderMetadata.None,
     ) : StreamEvent()
 
-    /** Incremental input bytes for the in-flight tool call. */
+    /**
+     * Incremental input bytes for the in-flight tool call.
+     * @since 0.3.0-beta01
+     */
     @Serializable
     @SerialName("tool-input-delta")
     @Poko
     public class ToolInputDelta(
+        /** @since 0.3.0-beta01 */
         public val id: String,
+        /** @since 0.3.0-beta01 */
         public val delta: String,
         @EncodeDefault(EncodeDefault.Mode.NEVER)
+        /** @since 0.3.0-beta01 */
         public val providerMetadata: ProviderMetadata = ProviderMetadata.None,
     ) : StreamEvent()
 
-    /** Tool input streaming ends — full JSON has been received. */
+    /**
+     * Tool input streaming ends — full JSON has been received.
+     * @since 0.3.0-beta01
+     */
     @Serializable
     @SerialName("tool-input-end")
     @Poko
     public class ToolInputEnd(
+        /** @since 0.3.0-beta01 */
         public val id: String,
         @EncodeDefault(EncodeDefault.Mode.NEVER)
+        /** @since 0.3.0-beta01 */
         public val providerMetadata: ProviderMetadata = ProviderMetadata.None,
     ) : StreamEvent()
 
-    /** Final, parsed tool call envelope. Emitted once `ToolInputEnd` fires and JSON parses. */
+    /**
+     * Final, parsed tool call envelope. Emitted once `ToolInputEnd` fires and JSON parses.
+     * @since 0.3.0-beta01
+     */
     @Serializable
     @SerialName("tool-call")
     @Poko
     public class ToolCall(
+        /** @since 0.3.0-beta01 */
         public val toolCallId: String,
+        /** @since 0.3.0-beta01 */
         public val toolName: String,
+        /** @since 0.3.0-beta01 */
         public val inputJson: JsonElement,
         @EncodeDefault(EncodeDefault.Mode.NEVER)
+        /** @since 0.3.0-beta01 */
         public val providerMetadata: ProviderMetadata = ProviderMetadata.None,
     ) : StreamEvent()
 
@@ -269,17 +348,26 @@ public sealed class StreamEvent {
     @Serializable
     @SerialName("tool-result")
     @Poko
+    /** @since 0.3.0-beta01 */
     public class ToolResult(
+        /** @since 0.3.0-beta01 */
         public val toolCallId: String,
+        /** @since 0.3.0-beta01 */
         public val toolName: String,
+        /** @since 0.3.0-beta01 */
         public val outputJson: JsonElement,
+        /** @since 0.3.0-beta01 */
         public val output: ToolResultOutput = ToolResultOutputs.toolResultOutputFromJson(outputJson),
+        /** @since 0.3.0-beta01 */
         public val modelOutput: ToolResultOutput = output,
         // Canonical error check — also true for Content(isError = true) (the MCP shape),
         // which the old inline expression missed, diverging from isToolResultError().
+        /** @since 0.3.0-beta01 */
         public val isError: Boolean = with(ToolResultOutputs) { modelOutput.isToolResultError() },
+        /** @since 0.3.0-beta01 */
         public val preliminary: Boolean = false,
         @EncodeDefault(EncodeDefault.Mode.NEVER)
+        /** @since 0.3.0-beta01 */
         public val providerMetadata: ProviderMetadata = ProviderMetadata.None,
     ) : StreamEvent()
 
@@ -290,16 +378,21 @@ public sealed class StreamEvent {
      * substring-matching [message]. `@Transient` — it's dropped on
      * serialization (AgentError isn't `@Serializable`); [message] is the
      * wire-stable rendering and stays the single source of display text.
+      * @since 0.3.0-beta01
      */
     @Serializable
     @SerialName("tool-error")
     @Poko
     public class ToolError(
+        /** @since 0.3.0-beta01 */
         public val toolCallId: String,
+        /** @since 0.3.0-beta01 */
         public val toolName: String,
+        /** @since 0.3.0-beta01 */
         public val message: String,
         @Transient public val error: AgentError? = null,
         @EncodeDefault(EncodeDefault.Mode.NEVER)
+        /** @since 0.3.0-beta01 */
         public val providerMetadata: ProviderMetadata = ProviderMetadata.None,
     ) : StreamEvent()
 
@@ -309,24 +402,33 @@ public sealed class StreamEvent {
      * is added to the assistant message in the result, and the host calls
      * [Agent.generate] again with a tool message containing
      * [ai.torad.aisdk.ContentPart.ToolApprovalResponse] to resume.
+      * @since 0.3.0-beta01
      */
     @Serializable
     @SerialName("tool-approval-request")
     @Poko
     public class ToolApprovalRequest(
+        /** @since 0.3.0-beta01 */
         public val toolCallId: String,
+        /** @since 0.3.0-beta01 */
         public val toolName: String,
+        /** @since 0.3.0-beta01 */
         public val inputJson: JsonElement,
         /**
          * Approval-identity key, distinct from [toolCallId] per v6.
          * Null defaults to [toolCallId] for the common case (single
          * approval per call). Explicit when two approvals share a
          * tool-call id and need separate correlation.
+          * @since 0.3.0-beta01
          */
         public val approvalId: String? = null,
-        /** HMAC-SHA256 approval signature (v6.0.202) — set only when the agent holds an approval secret. */
+        /**
+         * HMAC-SHA256 approval signature (v6.0.202) — set only when the agent holds an approval secret.
+         * @since 0.3.0-beta01
+         */
         public val signature: String? = null,
         @EncodeDefault(EncodeDefault.Mode.NEVER)
+        /** @since 0.3.0-beta01 */
         public val providerMetadata: ProviderMetadata = ProviderMetadata.None,
     ) : StreamEvent()
 
@@ -336,16 +438,22 @@ public sealed class StreamEvent {
      * Distinct from [ToolError] — denial is a CHOICE, not a failure.
      * The matching UI part transitions through
      * [ai.torad.aisdk.ui.ToolCallState.OutputDenied].
+      * @since 0.3.0-beta01
      */
     @Serializable
     @SerialName("tool-output-denied")
     @Poko
     public class ToolOutputDenied(
+        /** @since 0.3.0-beta01 */
         public val toolCallId: String,
+        /** @since 0.3.0-beta01 */
         public val toolName: String,
+        /** @since 0.3.0-beta01 */
         public val approvalId: String,
+        /** @since 0.3.0-beta01 */
         public val reason: String? = null,
         @EncodeDefault(EncodeDefault.Mode.NEVER)
+        /** @since 0.3.0-beta01 */
         public val providerMetadata: ProviderMetadata = ProviderMetadata.None,
     ) : StreamEvent()
 
@@ -353,30 +461,42 @@ public sealed class StreamEvent {
      *  Per historical parity gap #18 (slice), [providerMetadata]
      *  carries provider-specific payloads (Anthropic prompt-cache
      *  hints, OpenAI reasoning trace tokens, etc.) so consumers can
+      * @since 0.3.0-beta01
      *  measure cache-hit rate per step without parsing raw streams. */
     @Serializable
     @SerialName("step-finish")
     @Poko
     public class StepFinish(
+        /** @since 0.3.0-beta01 */
         public val stepNumber: Int,
+        /** @since 0.3.0-beta01 */
         public val finishReason: FinishReason,
+        /** @since 0.3.0-beta01 */
         public val usage: Usage,
         /** Optional provider-specific payload; null on providers that
+          * @since 0.3.0-beta01
          *  don't expose it. Mirrors v6's `finishStep.providerMetadata`. */
         @EncodeDefault(EncodeDefault.Mode.NEVER)
         public val providerMetadata: ProviderMetadata = ProviderMetadata.None,
     ) : StreamEvent()
 
-    /** Loop ended — final aggregated finish reason + usage. */
+    /**
+     * Loop ended — final aggregated finish reason + usage.
+     * @since 0.3.0-beta01
+     */
     @Serializable
     @SerialName("finish")
     @Poko
     public class Finish(
+        /** @since 0.3.0-beta01 */
         public val totalSteps: Int,
+        /** @since 0.3.0-beta01 */
         public val finishReason: FinishReason,
+        /** @since 0.3.0-beta01 */
         public val usage: Usage,
         /** Provider-specific summary payload on completion (per
          *  historical parity gap #18 slice). Routing layers measure
+          * @since 0.3.0-beta01
          *  end-to-end cache rate here without parsing each step. */
         @EncodeDefault(EncodeDefault.Mode.NEVER)
         public val providerMetadata: ProviderMetadata = ProviderMetadata.None,
@@ -390,20 +510,28 @@ public sealed class StreamEvent {
          *  (`incomplete_details.reason`), Amazon Bedrock (`stopReason`), and
          *  `ai.torad.aisdk.middleware.simulateStreamingMiddleware` (propagated from the generate result).
          *  Null when the provider does not send a finish-reason string (e.g. KtorGatewayTransport,
+          * @since 0.3.0-beta01
          *  which receives an already-mapped enum value on the wire). */
         public val rawFinishReason: String? = null,
     ) : StreamEvent()
 
-    /** Generation aborted via [AbortSignal]. Loop unwinds. */
+    /**
+     * Generation aborted via [AbortSignal]. Loop unwinds.
+     * @since 0.3.0-beta01
+     */
     @Serializable
     @SerialName("abort")
     public data object Abort : StreamEvent()
 
-    /** Terminal error. Loop unwinds. */
+    /**
+     * Terminal error. Loop unwinds.
+     * @since 0.3.0-beta01
+     */
     @Serializable
     @SerialName("error")
     @Poko
     public class Error(
+        /** @since 0.3.0-beta01 */
         public val message: String,
         /** Typed cause when available, preserved to the boundary; not serialized. */
         @Transient public val cause: Throwable? = null,
@@ -414,6 +542,7 @@ public sealed class StreamEvent {
      * provider features that the SDK doesn't yet wrap in a typed event.
      * Off by default — providers opt in via call params. [rawValue] already
      * IS the provider payload, so no separate `providerMetadata` slot.
+      * @since 0.3.0-beta01
      */
     @Serializable
     @SerialName("raw")

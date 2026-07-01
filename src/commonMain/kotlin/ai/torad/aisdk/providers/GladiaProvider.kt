@@ -29,41 +29,75 @@ public const val GLADIA_VERSION: String = "2.0.33"
 
 @Serializable
 @Poko
+/** @since 0.3.0-beta01 */
 public class GladiaTranscriptionModelOptions internal constructor(
+    /** @since 0.3.0-beta01 */
     public val contextPrompt: String? = null,
+    /** @since 0.3.0-beta01 */
     public val customVocabulary: JsonElement? = null,
+    /** @since 0.3.0-beta01 */
     public val customVocabularyConfig: JsonObject? = null,
+    /** @since 0.3.0-beta01 */
     public val detectLanguage: Boolean? = null,
+    /** @since 0.3.0-beta01 */
     public val enableCodeSwitching: Boolean? = null,
+    /** @since 0.3.0-beta01 */
     public val codeSwitchingConfig: JsonObject? = null,
+    /** @since 0.3.0-beta01 */
     public val language: String? = null,
+    /** @since 0.3.0-beta01 */
     public val callback: Boolean? = null,
+    /** @since 0.3.0-beta01 */
     public val callbackConfig: JsonObject? = null,
+    /** @since 0.3.0-beta01 */
     public val subtitles: Boolean? = null,
+    /** @since 0.3.0-beta01 */
     public val subtitlesConfig: JsonObject? = null,
+    /** @since 0.3.0-beta01 */
     public val diarization: Boolean? = null,
+    /** @since 0.3.0-beta01 */
     public val diarizationConfig: JsonObject? = null,
+    /** @since 0.3.0-beta01 */
     public val translation: Boolean? = null,
+    /** @since 0.3.0-beta01 */
     public val translationConfig: JsonObject? = null,
+    /** @since 0.3.0-beta01 */
     public val summarization: Boolean? = null,
+    /** @since 0.3.0-beta01 */
     public val summarizationConfig: JsonObject? = null,
+    /** @since 0.3.0-beta01 */
     public val moderation: Boolean? = null,
+    /** @since 0.3.0-beta01 */
     public val namedEntityRecognition: Boolean? = null,
+    /** @since 0.3.0-beta01 */
     public val chapterization: Boolean? = null,
+    /** @since 0.3.0-beta01 */
     public val nameConsistency: Boolean? = null,
+    /** @since 0.3.0-beta01 */
     public val customSpelling: Boolean? = null,
+    /** @since 0.3.0-beta01 */
     public val customSpellingConfig: JsonObject? = null,
+    /** @since 0.3.0-beta01 */
     public val structuredDataExtraction: Boolean? = null,
+    /** @since 0.3.0-beta01 */
     public val structuredDataExtractionConfig: JsonObject? = null,
+    /** @since 0.3.0-beta01 */
     public val sentimentAnalysis: Boolean? = null,
+    /** @since 0.3.0-beta01 */
     public val audioToLlm: Boolean? = null,
+    /** @since 0.3.0-beta01 */
     public val audioToLlmConfig: JsonObject? = null,
+    /** @since 0.3.0-beta01 */
     public val customMetadata: JsonObject? = null,
+    /** @since 0.3.0-beta01 */
     public val sentences: Boolean? = null,
+    /** @since 0.3.0-beta01 */
     public val displayMode: Boolean? = null,
+    /** @since 0.3.0-beta01 */
     public val punctuationEnhanced: Boolean? = null,
 )
 
+/** @since 0.3.0-beta01 */
 public class GladiaTranscriptionModelOptionsBuilder {
     private var contextPrompt: String? = null
     private var customVocabulary: JsonElement? = null
@@ -98,166 +132,199 @@ public class GladiaTranscriptionModelOptionsBuilder {
     private var displayMode: Boolean? = null
     private var punctuationEnhanced: Boolean? = null
 
+    /** @since 0.3.0-beta01 */
     public fun contextPrompt(value: String?): GladiaTranscriptionModelOptionsBuilder {
         contextPrompt = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun customVocabulary(value: JsonElement?): GladiaTranscriptionModelOptionsBuilder {
         customVocabulary = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun customVocabularyConfig(value: JsonObject?): GladiaTranscriptionModelOptionsBuilder {
         customVocabularyConfig = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun detectLanguage(value: Boolean?): GladiaTranscriptionModelOptionsBuilder {
         detectLanguage = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun enableCodeSwitching(value: Boolean?): GladiaTranscriptionModelOptionsBuilder {
         enableCodeSwitching = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun codeSwitchingConfig(value: JsonObject?): GladiaTranscriptionModelOptionsBuilder {
         codeSwitchingConfig = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun language(value: String?): GladiaTranscriptionModelOptionsBuilder {
         language = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun callback(value: Boolean?): GladiaTranscriptionModelOptionsBuilder {
         callback = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun callbackConfig(value: JsonObject?): GladiaTranscriptionModelOptionsBuilder {
         callbackConfig = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun subtitles(value: Boolean?): GladiaTranscriptionModelOptionsBuilder {
         subtitles = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun subtitlesConfig(value: JsonObject?): GladiaTranscriptionModelOptionsBuilder {
         subtitlesConfig = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun diarization(value: Boolean?): GladiaTranscriptionModelOptionsBuilder {
         diarization = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun diarizationConfig(value: JsonObject?): GladiaTranscriptionModelOptionsBuilder {
         diarizationConfig = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun translation(value: Boolean?): GladiaTranscriptionModelOptionsBuilder {
         translation = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun translationConfig(value: JsonObject?): GladiaTranscriptionModelOptionsBuilder {
         translationConfig = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun summarization(value: Boolean?): GladiaTranscriptionModelOptionsBuilder {
         summarization = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun summarizationConfig(value: JsonObject?): GladiaTranscriptionModelOptionsBuilder {
         summarizationConfig = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun moderation(value: Boolean?): GladiaTranscriptionModelOptionsBuilder {
         moderation = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun namedEntityRecognition(value: Boolean?): GladiaTranscriptionModelOptionsBuilder {
         namedEntityRecognition = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun chapterization(value: Boolean?): GladiaTranscriptionModelOptionsBuilder {
         chapterization = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun nameConsistency(value: Boolean?): GladiaTranscriptionModelOptionsBuilder {
         nameConsistency = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun customSpelling(value: Boolean?): GladiaTranscriptionModelOptionsBuilder {
         customSpelling = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun customSpellingConfig(value: JsonObject?): GladiaTranscriptionModelOptionsBuilder {
         customSpellingConfig = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun structuredDataExtraction(value: Boolean?): GladiaTranscriptionModelOptionsBuilder {
         structuredDataExtraction = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun structuredDataExtractionConfig(value: JsonObject?): GladiaTranscriptionModelOptionsBuilder {
         structuredDataExtractionConfig = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun sentimentAnalysis(value: Boolean?): GladiaTranscriptionModelOptionsBuilder {
         sentimentAnalysis = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun audioToLlm(value: Boolean?): GladiaTranscriptionModelOptionsBuilder {
         audioToLlm = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun audioToLlmConfig(value: JsonObject?): GladiaTranscriptionModelOptionsBuilder {
         audioToLlmConfig = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun customMetadata(value: JsonObject?): GladiaTranscriptionModelOptionsBuilder {
         customMetadata = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun sentences(value: Boolean?): GladiaTranscriptionModelOptionsBuilder {
         sentences = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun displayMode(value: Boolean?): GladiaTranscriptionModelOptionsBuilder {
         displayMode = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun punctuationEnhanced(value: Boolean?): GladiaTranscriptionModelOptionsBuilder {
         punctuationEnhanced = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun build(): GladiaTranscriptionModelOptions =
         GladiaTranscriptionModelOptions(
             contextPrompt = contextPrompt,
@@ -295,6 +362,7 @@ public class GladiaTranscriptionModelOptionsBuilder {
         )
 }
 
+/** @since 0.3.0-beta01 */
 public fun GladiaTranscriptionModelOptions(
     block: GladiaTranscriptionModelOptionsBuilder.() -> Unit = {},
 ): GladiaTranscriptionModelOptions =
@@ -302,39 +370,50 @@ public fun GladiaTranscriptionModelOptions(
 
 @Serializable
 @Poko
+/** @since 0.3.0-beta01 */
 public class GladiaProviderSettings internal constructor(
+    /** @since 0.3.0-beta01 */
     public val apiKey: String? = null,
+    /** @since 0.3.0-beta01 */
     public val headers: Map<String, String> = emptyMap(),
+    /** @since 0.3.0-beta01 */
     public val pollingIntervalMillis: Long = 1_000L,
+    /** @since 0.3.0-beta01 */
     public val maxPollAttempts: Int = 60,
 )
 
+/** @since 0.3.0-beta01 */
 public class GladiaProviderSettingsBuilder {
     private var apiKey: String? = null
     private var headers: Map<String, String> = emptyMap()
     private var pollingIntervalMillis: Long = 1_000L
     private var maxPollAttempts: Int = 60
 
+    /** @since 0.3.0-beta01 */
     public fun apiKey(value: String?): GladiaProviderSettingsBuilder {
         apiKey = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun headers(value: Map<String, String>): GladiaProviderSettingsBuilder {
         headers = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun pollingIntervalMillis(value: Long): GladiaProviderSettingsBuilder {
         pollingIntervalMillis = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun maxPollAttempts(value: Int): GladiaProviderSettingsBuilder {
         maxPollAttempts = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun build(): GladiaProviderSettings =
         GladiaProviderSettings(
             apiKey = apiKey,
@@ -344,11 +423,13 @@ public class GladiaProviderSettingsBuilder {
         )
 }
 
+/** @since 0.3.0-beta01 */
 public fun GladiaProviderSettings(
     block: GladiaProviderSettingsBuilder.() -> Unit = {},
 ): GladiaProviderSettings =
     GladiaProviderSettingsBuilder().apply(block).build()
 
+/** @since 0.3.0-beta01 */
 public class GladiaProvider(
     private val client: HttpClient,
     private val settings: GladiaProviderSettings,
@@ -357,15 +438,20 @@ public class GladiaProvider(
 
     public operator fun invoke(): TranscriptionModel = transcription()
 
+    /** @since 0.3.0-beta01 */
     public fun transcription(): TranscriptionModel = GladiaTranscriptionModel(client, settings)
 
+    /** @since 0.3.0-beta01 */
     public fun textEmbeddingModel(modelId: String): Nothing =
         throw NoSuchModelError(providerId, "embeddingModel", modelId)
 
     override fun transcriptionModel(modelId: String): TranscriptionModel = transcription()
 }
 
-/** PascalCase factory — mirrors the [OpenAI] reference pattern. */
+/**
+ * PascalCase factory — mirrors the [OpenAI] reference pattern.
+ * @since 0.3.0-beta01
+ */
 public fun Gladia(
     client: HttpClient,
     settings: GladiaProviderSettings = GladiaProviderSettings(),

@@ -17,17 +17,24 @@ import dev.drewhamilton.poko.Poko
  * Custom: implement [StopCondition] directly. Receives a snapshot of the
  * loop state on every check.
  */
+/** @since 0.3.0-beta01 */
 public fun interface StopCondition {
     /** True if the loop should stop after the just-completed step. */
     public suspend fun shouldStop(state: LoopState): Boolean
 }
 
 @Poko
+/** @since 0.3.0-beta01 */
 public class LoopState(
+    /** @since 0.3.0-beta01 */
     public val stepNumber: Int,
+    /** @since 0.3.0-beta01 */
     public val totalSteps: Int,
+    /** @since 0.3.0-beta01 */
     public val lastFinishReason: FinishReason,
+    /** @since 0.3.0-beta01 */
     public val toolCallsThisStep: List<ContentPart.ToolCall>,
+    /** @since 0.3.0-beta01 */
     public val toolCallsAllSteps: List<ContentPart.ToolCall>,
     /**
      * All completed steps so far, in order. Mirrors v6's
@@ -36,24 +43,37 @@ public class LoopState(
      * inspect per-step text / reasoning / usage instead of only
      * the synthesized aggregate fields above. Empty during the
      * pre-first-step check.
+      * @since 0.3.0-beta01
      */
     public val steps: List<StepResult> = emptyList(),
 )
 
-/** Stop after [n] completed steps. v6's default is 20 if `stopWhen` omitted. */
+/**
+ * Stop after [n] completed steps. v6's default is 20 if `stopWhen` omitted.
+ * @since 0.3.0-beta01
+ */
 public fun StepCountIs(n: Int): StopCondition = StopCondition { state -> state.totalSteps >= n }
 
-/** Stop the moment the named tool is called in any step. */
+/**
+ * Stop the moment the named tool is called in any step.
+ * @since 0.3.0-beta01
+ */
 public fun HasToolCall(toolName: String): StopCondition = StopCondition { state ->
     state.toolCallsAllSteps.any { it.toolName == toolName }
 }
 
-/** Stop when any of [conditions] reports done. v6's array-of-conditions shape. */
+/**
+ * Stop when any of [conditions] reports done. v6's array-of-conditions shape.
+ * @since 0.3.0-beta01
+ */
 public fun AnyOf(vararg conditions: StopCondition): StopCondition = StopCondition { state ->
     conditions.any { it.shouldStop(state) }
 }
 
-/** Stop only when all [conditions] report done. */
+/**
+ * Stop only when all [conditions] report done.
+ * @since 0.3.0-beta01
+ */
 public fun AllOf(vararg conditions: StopCondition): StopCondition = StopCondition { state ->
     conditions.all { it.shouldStop(state) }
 }
@@ -69,6 +89,7 @@ public fun AllOf(vararg conditions: StopCondition): StopCondition = StopConditio
  * Compares only the FIRST tool call of each step (small models call one
  * tool per step in practice); per-step JSON identity uses the raw
  * `input` JsonElement's stringified form so identical args match.
+  * @since 0.3.0-beta01
  */
 public fun RepeatedToolCallLoop(n: Int): StopCondition = StopCondition { state ->
     if (n < 2 || state.steps.size < n) return@StopCondition false

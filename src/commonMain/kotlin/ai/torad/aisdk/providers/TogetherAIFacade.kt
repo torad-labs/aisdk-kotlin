@@ -25,14 +25,19 @@ public typealias TogetherAIErrorData = JsonElement
 
 @Serializable
 @Poko
+/** @since 0.3.0-beta01 */
 public class TogetherAIImageModelOptions internal constructor(
+    /** @since 0.3.0-beta01 */
     public val steps: Int? = null,
+    /** @since 0.3.0-beta01 */
     public val guidance: Float? = null,
     @SerialName("negative_prompt") public val negativePrompt: String? = null,
     @SerialName("disable_safety_checker") public val disableSafetyChecker: Boolean? = null,
+    /** @since 0.3.0-beta01 */
     public val raw: Map<String, JsonElement> = emptyMap(),
 )
 
+/** @since 0.3.0-beta01 */
 public class TogetherAIImageModelOptionsBuilder {
     private var steps: Int? = null
     private var guidance: Float? = null
@@ -40,31 +45,37 @@ public class TogetherAIImageModelOptionsBuilder {
     private var disableSafetyChecker: Boolean? = null
     private var raw: Map<String, JsonElement> = emptyMap()
 
+    /** @since 0.3.0-beta01 */
     public fun steps(value: Int?): TogetherAIImageModelOptionsBuilder {
         steps = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun guidance(value: Float?): TogetherAIImageModelOptionsBuilder {
         guidance = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun negativePrompt(value: String?): TogetherAIImageModelOptionsBuilder {
         negativePrompt = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun disableSafetyChecker(value: Boolean?): TogetherAIImageModelOptionsBuilder {
         disableSafetyChecker = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun raw(value: Map<String, JsonElement>): TogetherAIImageModelOptionsBuilder {
         raw = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun build(): TogetherAIImageModelOptions =
         TogetherAIImageModelOptions(
             steps = steps,
@@ -75,6 +86,7 @@ public class TogetherAIImageModelOptionsBuilder {
         )
 }
 
+/** @since 0.3.0-beta01 */
 public fun TogetherAIImageModelOptions(
     block: TogetherAIImageModelOptionsBuilder.() -> Unit = {},
 ): TogetherAIImageModelOptions =
@@ -84,22 +96,28 @@ public typealias TogetherAIImageProviderOptions = TogetherAIImageModelOptions
 
 @Serializable
 @Poko
+/** @since 0.3.0-beta01 */
 public class TogetherAIRerankingModelOptions internal constructor(
+    /** @since 0.3.0-beta01 */
     public val rankFields: List<String>? = null,
 )
 
+/** @since 0.3.0-beta01 */
 public class TogetherAIRerankingModelOptionsBuilder {
     private var rankFields: List<String>? = null
 
+    /** @since 0.3.0-beta01 */
     public fun rankFields(value: List<String>?): TogetherAIRerankingModelOptionsBuilder {
         rankFields = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun build(): TogetherAIRerankingModelOptions =
         TogetherAIRerankingModelOptions(rankFields = rankFields)
 }
 
+/** @since 0.3.0-beta01 */
 public fun TogetherAIRerankingModelOptions(
     block: TogetherAIRerankingModelOptionsBuilder.() -> Unit = {},
 ): TogetherAIRerankingModelOptions =
@@ -109,9 +127,13 @@ public typealias TogetherAIRerankingOptions = TogetherAIRerankingModelOptions
 
 @Serializable
 @Poko
+/** @since 0.3.0-beta01 */
 public class TogetherAIProviderSettings internal constructor(
+    /** @since 0.3.0-beta01 */
     public val apiKey: String? = null,
+    /** @since 0.3.0-beta01 */
     public val baseURL: String = "https://api.together.xyz/v1",
+    /** @since 0.3.0-beta01 */
     public val headers: Map<String, String> = emptyMap(),
 ) {
     internal fun toCompatible(
@@ -122,26 +144,31 @@ public class TogetherAIProviderSettings internal constructor(
         OpenAICompatibleProviderSettings.forFacade(name, version, baseURL, apiKey, headers, capabilities)
 }
 
+/** @since 0.3.0-beta01 */
 public class TogetherAIProviderSettingsBuilder {
     private var apiKey: String? = null
     private var baseURL: String = "https://api.together.xyz/v1"
     private var headers: Map<String, String> = emptyMap()
 
+    /** @since 0.3.0-beta01 */
     public fun apiKey(value: String?): TogetherAIProviderSettingsBuilder {
         apiKey = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun baseURL(value: String): TogetherAIProviderSettingsBuilder {
         baseURL = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun headers(value: Map<String, String>): TogetherAIProviderSettingsBuilder {
         headers = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun build(): TogetherAIProviderSettings =
         TogetherAIProviderSettings(
             apiKey = apiKey,
@@ -150,11 +177,13 @@ public class TogetherAIProviderSettingsBuilder {
         )
 }
 
+/** @since 0.3.0-beta01 */
 public fun TogetherAIProviderSettings(
     block: TogetherAIProviderSettingsBuilder.() -> Unit = {},
 ): TogetherAIProviderSettings =
     TogetherAIProviderSettingsBuilder().apply(block).build()
 
+/** @since 0.3.0-beta01 */
 public class TogetherAIProvider(
     private val client: HttpClient,
     private val settings: TogetherAIProviderSettings,
@@ -167,16 +196,22 @@ public class TogetherAIProvider(
 
     public operator fun invoke(modelId: ModelId): LanguageModel = languageModel(modelId.value)
     override fun languageModel(modelId: String): LanguageModel = chatModel(ModelId(modelId))
+    /** @since 0.3.0-beta01 */
     public fun chatModel(modelId: ModelId): LanguageModel = compatible.chatModel(modelId.value)
+    /** @since 0.3.0-beta01 */
     public fun completionModel(modelId: ModelId): LanguageModel = compatible.completionModel(modelId.value)
+    /** @since 0.3.0-beta01 */
     public fun textEmbeddingModel(modelId: ModelId): EmbeddingModel = embeddingModel(modelId.value)
+    /** @since 0.3.0-beta01 */
     public fun image(modelId: ModelId): ImageModel = imageModel(modelId.value)
+    /** @since 0.3.0-beta01 */
     public fun reranking(modelId: ModelId): RerankingModel = rerankingModel(modelId.value)
     override fun embeddingModel(modelId: String): EmbeddingModel = compatible.embeddingModel(modelId)
     override fun imageModel(modelId: String): ImageModel = TogetherAIImageModel(client, settings, modelId)
     override fun rerankingModel(modelId: String): RerankingModel = TogetherAIRerankingModel(client, settings, modelId)
 }
 
+/** @since 0.3.0-beta01 */
 public fun TogetherAI(
     client: HttpClient,
     settings: TogetherAIProviderSettings = TogetherAIProviderSettings(),
@@ -234,6 +269,7 @@ private class TogetherAIImageModel(
     }
 }
 
+/** @since 0.3.0-beta01 */
 public class TogetherAIRerankingModel(
     private val client: HttpClient,
     private val settings: TogetherAIProviderSettings,

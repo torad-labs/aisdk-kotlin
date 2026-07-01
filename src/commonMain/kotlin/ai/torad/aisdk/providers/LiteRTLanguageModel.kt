@@ -22,11 +22,13 @@ import kotlinx.serialization.json.JsonObject
 
 public typealias LiteRTProviderOptions = JsonObject
 
+/** @since 0.3.0-beta01 */
 public enum class LiteRTStreamTextMode {
     Delta,
     Cumulative,
 }
 
+/** @since 0.3.0-beta01 */
 public enum class LiteRTMessageRole {
     System,
     User,
@@ -34,20 +36,28 @@ public enum class LiteRTMessageRole {
     Tool,
 }
 
+/** @since 0.3.0-beta01 */
 public class LiteRTBytes(bytes: ByteArray) {
     private val value: ByteArray = bytes.copyOf()
 
+    /** @since 0.3.0-beta01 */
     public fun toByteArray(): ByteArray = value.copyOf()
 }
 
 @Poko
+/** @since 0.3.0-beta01 */
 public class LiteRTSamplerConfig internal constructor(
+    /** @since 0.3.0-beta01 */
     public val topK: Int,
+    /** @since 0.3.0-beta01 */
     public val topP: Double,
+    /** @since 0.3.0-beta01 */
     public val temperature: Double,
+    /** @since 0.3.0-beta01 */
     public val seed: Int = 0,
 ) {
     public companion object {
+        /** @since 0.3.0-beta01 */
         public val Default: LiteRTSamplerConfig = LiteRTSamplerConfig(
             topK = 40,
             topP = 0.95,
@@ -56,32 +66,38 @@ public class LiteRTSamplerConfig internal constructor(
     }
 }
 
+/** @since 0.3.0-beta01 */
 public class LiteRTSamplerConfigBuilder {
     private var topK: Int? = null
     private var topP: Double? = null
     private var temperature: Double? = null
     private var seed: Int = 0
 
+    /** @since 0.3.0-beta01 */
     public fun topK(value: Int): LiteRTSamplerConfigBuilder {
         topK = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun topP(value: Double): LiteRTSamplerConfigBuilder {
         topP = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun temperature(value: Double): LiteRTSamplerConfigBuilder {
         temperature = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun seed(value: Int): LiteRTSamplerConfigBuilder {
         seed = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun build(): LiteRTSamplerConfig =
         LiteRTSamplerConfig(
             topK = requireNotNull(topK) { "LiteRTSamplerConfig.topK is required" },
@@ -91,26 +107,36 @@ public class LiteRTSamplerConfigBuilder {
         )
 }
 
+/** @since 0.3.0-beta01 */
 public fun LiteRTSamplerConfig(
     block: LiteRTSamplerConfigBuilder.() -> Unit = {},
 ): LiteRTSamplerConfig =
     LiteRTSamplerConfigBuilder().apply(block).build()
 
+/** @since 0.3.0-beta01 */
 public data class LiteRTChannel(
     val channelName: String,
     val start: String,
     val end: String,
 )
 
+/** @since 0.3.0-beta01 */
 public sealed class LiteRTContent {
+    /** @since 0.3.0-beta01 */
     public data class Text(val text: String) : LiteRTContent()
+    /** @since 0.3.0-beta01 */
     public data class ImageBytes(val bytes: LiteRTBytes, val mediaType: String? = null) : LiteRTContent()
+    /** @since 0.3.0-beta01 */
     public data class ImageFile(val absolutePath: String, val mediaType: String? = null) : LiteRTContent()
+    /** @since 0.3.0-beta01 */
     public data class AudioBytes(val bytes: LiteRTBytes, val mediaType: String? = null) : LiteRTContent()
+    /** @since 0.3.0-beta01 */
     public data class AudioFile(val absolutePath: String, val mediaType: String? = null) : LiteRTContent()
+    /** @since 0.3.0-beta01 */
     public data class ToolResponse(val name: String, val response: JsonElement) : LiteRTContent()
 }
 
+/** @since 0.3.0-beta01 */
 public data class LiteRTToolCall(
     val name: String,
     val arguments: JsonElement = JsonObject(emptyMap()),
@@ -118,6 +144,7 @@ public data class LiteRTToolCall(
     val providerMetadata: ProviderMetadata = ProviderMetadata.None,
 )
 
+/** @since 0.3.0-beta01 */
 public data class LiteRTMessage(
     val role: LiteRTMessageRole,
     val content: List<LiteRTContent> = emptyList(),
@@ -126,19 +153,31 @@ public data class LiteRTMessage(
     val providerMetadata: ProviderMetadata = ProviderMetadata.None,
 )
 
+/** @since 0.3.0-beta01 */
 public class LiteRTConversationRequest internal constructor(
+    /** @since 0.3.0-beta01 */
     public val systemInstruction: List<LiteRTContent> = emptyList(),
+    /** @since 0.3.0-beta01 */
     public val initialMessages: List<LiteRTMessage> = emptyList(),
+    /** @since 0.3.0-beta01 */
     public val message: LiteRTMessage,
+    /** @since 0.3.0-beta01 */
     public val tools: List<LanguageModelTool> = emptyList(),
+    /** @since 0.3.0-beta01 */
     public val samplerConfig: LiteRTSamplerConfig? = null,
+    /** @since 0.3.0-beta01 */
     public val automaticToolCalling: Boolean = false,
+    /** @since 0.3.0-beta01 */
     public val channels: List<LiteRTChannel>? = null,
+    /** @since 0.3.0-beta01 */
     public val extraContext: Map<String, Any?> = emptyMap(),
+    /** @since 0.3.0-beta01 */
     public val warnings: List<CallWarning> = emptyList(),
+    /** @since 0.3.0-beta01 */
     public val callParams: LanguageModelCallParams,
 )
 
+/** @since 0.3.0-beta01 */
 public class LiteRTConversationRequestBuilder {
     private var systemInstruction: List<LiteRTContent> = emptyList()
     private var initialMessages: List<LiteRTMessage> = emptyList()
@@ -151,56 +190,67 @@ public class LiteRTConversationRequestBuilder {
     private var warnings: List<CallWarning> = emptyList()
     private var callParams: LanguageModelCallParams? = null
 
+    /** @since 0.3.0-beta01 */
     public fun systemInstruction(value: List<LiteRTContent>): LiteRTConversationRequestBuilder {
         systemInstruction = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun initialMessages(value: List<LiteRTMessage>): LiteRTConversationRequestBuilder {
         initialMessages = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun message(value: LiteRTMessage): LiteRTConversationRequestBuilder {
         message = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun tools(value: List<LanguageModelTool>): LiteRTConversationRequestBuilder {
         tools = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun samplerConfig(value: LiteRTSamplerConfig?): LiteRTConversationRequestBuilder {
         samplerConfig = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun automaticToolCalling(value: Boolean): LiteRTConversationRequestBuilder {
         automaticToolCalling = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun channels(value: List<LiteRTChannel>?): LiteRTConversationRequestBuilder {
         channels = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun extraContext(value: Map<String, Any?>): LiteRTConversationRequestBuilder {
         extraContext = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun warnings(value: List<CallWarning>): LiteRTConversationRequestBuilder {
         warnings = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun callParams(value: LanguageModelCallParams): LiteRTConversationRequestBuilder {
         callParams = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun build(): LiteRTConversationRequest =
         LiteRTConversationRequest(
             systemInstruction = systemInstruction,
@@ -216,37 +266,54 @@ public class LiteRTConversationRequestBuilder {
         )
 }
 
+/** @since 0.3.0-beta01 */
 public fun LiteRTConversationRequest(
     block: LiteRTConversationRequestBuilder.() -> Unit = {},
 ): LiteRTConversationRequest =
     LiteRTConversationRequestBuilder().apply(block).build()
 
+/** @since 0.3.0-beta01 */
 public fun interface LiteRTConversationFactory {
     public suspend fun create(request: LiteRTConversationRequest): LiteRTConversation
 }
 
+/** @since 0.3.0-beta01 */
 public interface LiteRTConversation {
     public suspend fun send(message: LiteRTMessage, extraContext: Map<String, Any?> = emptyMap()): LiteRTMessage
 
+    /** @since 0.3.0-beta01 */
     public fun stream(message: LiteRTMessage, extraContext: Map<String, Any?> = emptyMap()): Flow<LiteRTMessage>
 
+    /** @since 0.3.0-beta01 */
     public fun cancel(): Unit = Unit
 
+    /** @since 0.3.0-beta01 */
     public fun close(): Unit = Unit
 }
 
+/** @since 0.3.0-beta01 */
 public class LiteRTLanguageModelSettings internal constructor(
+    /** @since 0.3.0-beta01 */
     public val provider: String = "litert-lm",
+    /** @since 0.3.0-beta01 */
     public val supportedUrls: Map<String, List<String>> = emptyMap(),
+    /** @since 0.3.0-beta01 */
     public val defaultSamplerConfig: LiteRTSamplerConfig? = null,
+    /** @since 0.3.0-beta01 */
     public val streamTextMode: LiteRTStreamTextMode = LiteRTStreamTextMode.Delta,
+    /** @since 0.3.0-beta01 */
     public val reasoningChannelNames: Set<String> = setOf("thinking", "reasoning"),
+    /** @since 0.3.0-beta01 */
     public val assistantReasoningChannelName: String = "thinking",
+    /** @since 0.3.0-beta01 */
     public val channels: List<LiteRTChannel>? = null,
+    /** @since 0.3.0-beta01 */
     public val extraContext: Map<String, Any?> = emptyMap(),
+    /** @since 0.3.0-beta01 */
     public val toolCallIdGenerator: () -> String = { IdGenerator.generate("call") },
 )
 
+/** @since 0.3.0-beta01 */
 public class LiteRTLanguageModelSettingsBuilder {
     private var provider: String = "litert-lm"
     private var supportedUrls: Map<String, List<String>> = emptyMap()
@@ -258,51 +325,61 @@ public class LiteRTLanguageModelSettingsBuilder {
     private var extraContext: Map<String, Any?> = emptyMap()
     private var toolCallIdGenerator: () -> String = { IdGenerator.generate("call") }
 
+    /** @since 0.3.0-beta01 */
     public fun provider(value: String): LiteRTLanguageModelSettingsBuilder {
         provider = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun supportedUrls(value: Map<String, List<String>>): LiteRTLanguageModelSettingsBuilder {
         supportedUrls = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun defaultSamplerConfig(value: LiteRTSamplerConfig?): LiteRTLanguageModelSettingsBuilder {
         defaultSamplerConfig = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun streamTextMode(value: LiteRTStreamTextMode): LiteRTLanguageModelSettingsBuilder {
         streamTextMode = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun reasoningChannelNames(value: Set<String>): LiteRTLanguageModelSettingsBuilder {
         reasoningChannelNames = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun assistantReasoningChannelName(value: String): LiteRTLanguageModelSettingsBuilder {
         assistantReasoningChannelName = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun channels(value: List<LiteRTChannel>?): LiteRTLanguageModelSettingsBuilder {
         channels = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun extraContext(value: Map<String, Any?>): LiteRTLanguageModelSettingsBuilder {
         extraContext = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun toolCallIdGenerator(value: () -> String): LiteRTLanguageModelSettingsBuilder {
         toolCallIdGenerator = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun build(): LiteRTLanguageModelSettings =
         LiteRTLanguageModelSettings(
             provider = provider,
@@ -317,11 +394,13 @@ public class LiteRTLanguageModelSettingsBuilder {
         )
 }
 
+/** @since 0.3.0-beta01 */
 public fun LiteRTLanguageModelSettings(
     block: LiteRTLanguageModelSettingsBuilder.() -> Unit = {},
 ): LiteRTLanguageModelSettings =
     LiteRTLanguageModelSettingsBuilder().apply(block).build()
 
+/** @since 0.3.0-beta01 */
 public class LiteRTLanguageModel(
     override val modelId: String,
     private val conversationFactory: LiteRTConversationFactory,

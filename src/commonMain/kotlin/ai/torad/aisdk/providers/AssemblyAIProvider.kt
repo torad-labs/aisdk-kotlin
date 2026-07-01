@@ -27,25 +27,32 @@ public const val ASSEMBLYAI_VERSION: String = "2.0.33"
 
 @Serializable
 @Poko
+/** @since 0.3.0-beta01 */
 public class AssemblyAICustomSpelling internal constructor(
+    /** @since 0.3.0-beta01 */
     public val from: List<String>,
+    /** @since 0.3.0-beta01 */
     public val to: String,
 )
 
+/** @since 0.3.0-beta01 */
 public class AssemblyAICustomSpellingBuilder {
     private var from: List<String>? = null
     private var to: String? = null
 
+    /** @since 0.3.0-beta01 */
     public fun from(value: List<String>): AssemblyAICustomSpellingBuilder {
         from = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun to(value: String): AssemblyAICustomSpellingBuilder {
         to = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun build(): AssemblyAICustomSpelling =
         AssemblyAICustomSpelling(
             from = requireNotNull(from) { "AssemblyAICustomSpelling.from is required" },
@@ -53,6 +60,7 @@ public class AssemblyAICustomSpellingBuilder {
         )
 }
 
+/** @since 0.3.0-beta01 */
 public fun AssemblyAICustomSpelling(
     block: AssemblyAICustomSpellingBuilder.() -> Unit = {},
 ): AssemblyAICustomSpelling =
@@ -60,43 +68,79 @@ public fun AssemblyAICustomSpelling(
 
 @Serializable
 @Poko
+/** @since 0.3.0-beta01 */
 public class AssemblyAITranscriptionModelOptions internal constructor(
+    /** @since 0.3.0-beta01 */
     public val audioEndAt: Int? = null,
+    /** @since 0.3.0-beta01 */
     public val audioStartFrom: Int? = null,
+    /** @since 0.3.0-beta01 */
     public val autoChapters: Boolean? = null,
+    /** @since 0.3.0-beta01 */
     public val autoHighlights: Boolean? = null,
+    /** @since 0.3.0-beta01 */
     public val boostParam: String? = null,
+    /** @since 0.3.0-beta01 */
     public val contentSafety: Boolean? = null,
+    /** @since 0.3.0-beta01 */
     public val contentSafetyConfidence: Int? = null,
+    /** @since 0.3.0-beta01 */
     public val customSpelling: List<AssemblyAICustomSpelling>? = null,
+    /** @since 0.3.0-beta01 */
     public val disfluencies: Boolean? = null,
+    /** @since 0.3.0-beta01 */
     public val entityDetection: Boolean? = null,
+    /** @since 0.3.0-beta01 */
     public val filterProfanity: Boolean? = null,
+    /** @since 0.3.0-beta01 */
     public val formatText: Boolean? = null,
+    /** @since 0.3.0-beta01 */
     public val iabCategories: Boolean? = null,
+    /** @since 0.3.0-beta01 */
     public val languageCode: String? = null,
+    /** @since 0.3.0-beta01 */
     public val languageConfidenceThreshold: Float? = null,
+    /** @since 0.3.0-beta01 */
     public val languageDetection: Boolean? = null,
+    /** @since 0.3.0-beta01 */
     public val multichannel: Boolean? = null,
+    /** @since 0.3.0-beta01 */
     public val punctuate: Boolean? = null,
+    /** @since 0.3.0-beta01 */
     public val redactPii: Boolean? = null,
+    /** @since 0.3.0-beta01 */
     public val redactPiiAudio: Boolean? = null,
+    /** @since 0.3.0-beta01 */
     public val redactPiiAudioQuality: String? = null,
+    /** @since 0.3.0-beta01 */
     public val redactPiiPolicies: List<String>? = null,
+    /** @since 0.3.0-beta01 */
     public val redactPiiSub: String? = null,
+    /** @since 0.3.0-beta01 */
     public val sentimentAnalysis: Boolean? = null,
+    /** @since 0.3.0-beta01 */
     public val speakerLabels: Boolean? = null,
+    /** @since 0.3.0-beta01 */
     public val speakersExpected: Int? = null,
+    /** @since 0.3.0-beta01 */
     public val speechThreshold: Float? = null,
+    /** @since 0.3.0-beta01 */
     public val summarization: Boolean? = null,
+    /** @since 0.3.0-beta01 */
     public val summaryModel: String? = null,
+    /** @since 0.3.0-beta01 */
     public val summaryType: String? = null,
+    /** @since 0.3.0-beta01 */
     public val webhookAuthHeaderName: String? = null,
+    /** @since 0.3.0-beta01 */
     public val webhookAuthHeaderValue: String? = null,
+    /** @since 0.3.0-beta01 */
     public val webhookUrl: String? = null,
+    /** @since 0.3.0-beta01 */
     public val wordBoost: List<String>? = null,
 )
 
+/** @since 0.3.0-beta01 */
 public class AssemblyAITranscriptionModelOptionsBuilder {
     private var audioEndAt: Int? = null
     private var audioStartFrom: Int? = null
@@ -133,176 +177,211 @@ public class AssemblyAITranscriptionModelOptionsBuilder {
     private var webhookUrl: String? = null
     private var wordBoost: List<String>? = null
 
+    /** @since 0.3.0-beta01 */
     public fun audioEndAt(value: Int?): AssemblyAITranscriptionModelOptionsBuilder {
         audioEndAt = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun audioStartFrom(value: Int?): AssemblyAITranscriptionModelOptionsBuilder {
         audioStartFrom = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun autoChapters(value: Boolean?): AssemblyAITranscriptionModelOptionsBuilder {
         autoChapters = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun autoHighlights(value: Boolean?): AssemblyAITranscriptionModelOptionsBuilder {
         autoHighlights = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun boostParam(value: String?): AssemblyAITranscriptionModelOptionsBuilder {
         boostParam = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun contentSafety(value: Boolean?): AssemblyAITranscriptionModelOptionsBuilder {
         contentSafety = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun contentSafetyConfidence(value: Int?): AssemblyAITranscriptionModelOptionsBuilder {
         contentSafetyConfidence = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun customSpelling(value: List<AssemblyAICustomSpelling>?): AssemblyAITranscriptionModelOptionsBuilder {
         customSpelling = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun disfluencies(value: Boolean?): AssemblyAITranscriptionModelOptionsBuilder {
         disfluencies = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun entityDetection(value: Boolean?): AssemblyAITranscriptionModelOptionsBuilder {
         entityDetection = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun filterProfanity(value: Boolean?): AssemblyAITranscriptionModelOptionsBuilder {
         filterProfanity = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun formatText(value: Boolean?): AssemblyAITranscriptionModelOptionsBuilder {
         formatText = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun iabCategories(value: Boolean?): AssemblyAITranscriptionModelOptionsBuilder {
         iabCategories = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun languageCode(value: String?): AssemblyAITranscriptionModelOptionsBuilder {
         languageCode = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun languageConfidenceThreshold(value: Float?): AssemblyAITranscriptionModelOptionsBuilder {
         languageConfidenceThreshold = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun languageDetection(value: Boolean?): AssemblyAITranscriptionModelOptionsBuilder {
         languageDetection = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun multichannel(value: Boolean?): AssemblyAITranscriptionModelOptionsBuilder {
         multichannel = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun punctuate(value: Boolean?): AssemblyAITranscriptionModelOptionsBuilder {
         punctuate = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun redactPii(value: Boolean?): AssemblyAITranscriptionModelOptionsBuilder {
         redactPii = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun redactPiiAudio(value: Boolean?): AssemblyAITranscriptionModelOptionsBuilder {
         redactPiiAudio = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun redactPiiAudioQuality(value: String?): AssemblyAITranscriptionModelOptionsBuilder {
         redactPiiAudioQuality = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun redactPiiPolicies(value: List<String>?): AssemblyAITranscriptionModelOptionsBuilder {
         redactPiiPolicies = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun redactPiiSub(value: String?): AssemblyAITranscriptionModelOptionsBuilder {
         redactPiiSub = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun sentimentAnalysis(value: Boolean?): AssemblyAITranscriptionModelOptionsBuilder {
         sentimentAnalysis = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun speakerLabels(value: Boolean?): AssemblyAITranscriptionModelOptionsBuilder {
         speakerLabels = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun speakersExpected(value: Int?): AssemblyAITranscriptionModelOptionsBuilder {
         speakersExpected = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun speechThreshold(value: Float?): AssemblyAITranscriptionModelOptionsBuilder {
         speechThreshold = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun summarization(value: Boolean?): AssemblyAITranscriptionModelOptionsBuilder {
         summarization = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun summaryModel(value: String?): AssemblyAITranscriptionModelOptionsBuilder {
         summaryModel = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun summaryType(value: String?): AssemblyAITranscriptionModelOptionsBuilder {
         summaryType = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun webhookAuthHeaderName(value: String?): AssemblyAITranscriptionModelOptionsBuilder {
         webhookAuthHeaderName = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun webhookAuthHeaderValue(value: String?): AssemblyAITranscriptionModelOptionsBuilder {
         webhookAuthHeaderValue = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun webhookUrl(value: String?): AssemblyAITranscriptionModelOptionsBuilder {
         webhookUrl = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun wordBoost(value: List<String>?): AssemblyAITranscriptionModelOptionsBuilder {
         wordBoost = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun build(): AssemblyAITranscriptionModelOptions =
         AssemblyAITranscriptionModelOptions(
             audioEndAt = audioEndAt,
@@ -342,6 +421,7 @@ public class AssemblyAITranscriptionModelOptionsBuilder {
         )
 }
 
+/** @since 0.3.0-beta01 */
 public fun AssemblyAITranscriptionModelOptions(
     block: AssemblyAITranscriptionModelOptionsBuilder.() -> Unit = {},
 ): AssemblyAITranscriptionModelOptions =
@@ -349,11 +429,18 @@ public fun AssemblyAITranscriptionModelOptions(
 
 @Serializable
 @Poko
+/** @since 0.3.0-beta01 */
 public class AssemblyAIProviderSettings internal constructor(
+    /** @since 0.3.0-beta01 */
     public val apiKey: String? = null,
+    /** @since 0.3.0-beta01 */
     public val headers: Map<String, String> = emptyMap(),
+    /** @since 0.3.0-beta01 */
     public val pollingIntervalMillis: Long = 3_000L,
-    /** Upper bound on transcript poll attempts (120 × 3s ≈ 6 min) so a stuck job can't hang forever. */
+    /**
+     * Upper bound on transcript poll attempts (120 × 3s ≈ 6 min) so a stuck job can't hang forever.
+     * @since 0.3.0-beta01
+     */
     public val maxPollAttempts: Int = 120,
 ) {
     internal fun requestHeaders(callHeaders: Map<String, String>): Map<String, String> {
@@ -365,32 +452,38 @@ public class AssemblyAIProviderSettings internal constructor(
     }
 }
 
+/** @since 0.3.0-beta01 */
 public class AssemblyAIProviderSettingsBuilder {
     private var apiKey: String? = null
     private var headers: Map<String, String> = emptyMap()
     private var pollingIntervalMillis: Long = 3_000L
     private var maxPollAttempts: Int = 120
 
+    /** @since 0.3.0-beta01 */
     public fun apiKey(value: String?): AssemblyAIProviderSettingsBuilder {
         apiKey = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun headers(value: Map<String, String>): AssemblyAIProviderSettingsBuilder {
         headers = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun pollingIntervalMillis(value: Long): AssemblyAIProviderSettingsBuilder {
         pollingIntervalMillis = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun maxPollAttempts(value: Int): AssemblyAIProviderSettingsBuilder {
         maxPollAttempts = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun build(): AssemblyAIProviderSettings =
         AssemblyAIProviderSettings(
             apiKey = apiKey,
@@ -400,22 +493,27 @@ public class AssemblyAIProviderSettingsBuilder {
         )
 }
 
+/** @since 0.3.0-beta01 */
 public fun AssemblyAIProviderSettings(
     block: AssemblyAIProviderSettingsBuilder.() -> Unit = {},
 ): AssemblyAIProviderSettings =
     AssemblyAIProviderSettingsBuilder().apply(block).build()
 
+/** @since 0.3.0-beta01 */
 public class AssemblyAIProvider(
     private val client: HttpClient,
+    /** @since 0.3.0-beta01 */
     public val settings: AssemblyAIProviderSettings,
 ) : Provider {
     override val providerId: String = "assemblyai"
 
     public operator fun invoke(modelId: ModelId = ModelId("best")): TranscriptionModel = transcription(modelId)
 
+    /** @since 0.3.0-beta01 */
     public fun transcription(modelId: ModelId): TranscriptionModel =
         AssemblyAITranscriptionModel(client, settings, modelId.value)
 
+    /** @since 0.3.0-beta01 */
     public fun textEmbeddingModel(modelId: String): Nothing = throw NoSuchModelError(providerId, "embeddingModel", modelId)
 
     override fun transcriptionModel(modelId: String): TranscriptionModel = transcription(ModelId(modelId))
@@ -424,7 +522,10 @@ public class AssemblyAIProvider(
     override fun imageModel(modelId: String): ImageModel = throw NoSuchModelError(providerId, "imageModel", modelId)
 }
 
-/** PascalCase factory — mirrors the OpenAI reference pattern. */
+/**
+ * PascalCase factory — mirrors the OpenAI reference pattern.
+ * @since 0.3.0-beta01
+ */
 public fun AssemblyAI(
     client: HttpClient,
     settings: AssemblyAIProviderSettings = AssemblyAIProviderSettings(),

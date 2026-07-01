@@ -17,9 +17,13 @@ public const val PERPLEXITY_VERSION: String = "3.0.33"
 
 @Serializable
 @Poko
+/** @since 0.3.0-beta01 */
 public class PerplexityProviderSettings internal constructor(
+    /** @since 0.3.0-beta01 */
     public val apiKey: String? = null,
+    /** @since 0.3.0-beta01 */
     public val baseURL: String = "https://api.perplexity.ai",
+    /** @since 0.3.0-beta01 */
     public val headers: Map<String, String> = emptyMap(),
 ) {
     internal fun toCompatible(
@@ -89,26 +93,31 @@ public class PerplexityProviderSettings internal constructor(
     }
 }
 
+/** @since 0.3.0-beta01 */
 public class PerplexityProviderSettingsBuilder {
     private var apiKey: String? = null
     private var baseURL: String = "https://api.perplexity.ai"
     private var headers: Map<String, String> = emptyMap()
 
+    /** @since 0.3.0-beta01 */
     public fun apiKey(value: String?): PerplexityProviderSettingsBuilder {
         apiKey = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun baseURL(value: String): PerplexityProviderSettingsBuilder {
         baseURL = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun headers(value: Map<String, String>): PerplexityProviderSettingsBuilder {
         headers = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun build(): PerplexityProviderSettings =
         PerplexityProviderSettings(
             apiKey = apiKey,
@@ -117,11 +126,13 @@ public class PerplexityProviderSettingsBuilder {
         )
 }
 
+/** @since 0.3.0-beta01 */
 public fun PerplexityProviderSettings(
     block: PerplexityProviderSettingsBuilder.() -> Unit = {},
 ): PerplexityProviderSettings =
     PerplexityProviderSettingsBuilder().apply(block).build()
 
+/** @since 0.3.0-beta01 */
 public class PerplexityProvider(
     client: HttpClient,
     settings: PerplexityProviderSettings,
@@ -134,11 +145,13 @@ public class PerplexityProvider(
 
     public operator fun invoke(modelId: String): LanguageModel = languageModel(modelId)
     override fun languageModel(modelId: String): LanguageModel = compatible.chatModel(modelId)
+    /** @since 0.3.0-beta01 */
     public fun textEmbeddingModel(modelId: String): Nothing = throw NoSuchModelError(providerId, "embeddingModel", modelId)
     override fun embeddingModel(modelId: String): EmbeddingModel = throw NoSuchModelError(providerId, "embeddingModel", modelId)
     override fun imageModel(modelId: String): ImageModel = throw NoSuchModelError(providerId, "imageModel", modelId)
 }
 
+/** @since 0.3.0-beta01 */
 public fun Perplexity(
     client: HttpClient,
     settings: PerplexityProviderSettings = PerplexityProviderSettings(),

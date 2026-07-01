@@ -3,18 +3,31 @@ package ai.torad.aisdk
 import dev.drewhamilton.poko.Poko
 
 @Poko
+/** @since 0.3.0-beta01 */
 public class CallConfig internal constructor(
+    /** @since 0.3.0-beta01 */
     public val temperature: Float? = null,
+    /** @since 0.3.0-beta01 */
     public val topP: Float? = null,
+    /** @since 0.3.0-beta01 */
     public val topK: Int? = null,
+    /** @since 0.3.0-beta01 */
     public val maxOutputTokens: Int? = null,
+    /** @since 0.3.0-beta01 */
     public val stopSequences: List<String> = emptyList(),
+    /** @since 0.3.0-beta01 */
     public val seed: Int? = null,
+    /** @since 0.3.0-beta01 */
     public val providerOptions: ProviderOptions = ProviderOptions.None,
+    /** @since 0.3.0-beta01 */
     public val abortSignal: AbortSignal = AbortSignalNever,
+    /** @since 0.3.0-beta01 */
     public val presencePenalty: Float? = null,
+    /** @since 0.3.0-beta01 */
     public val frequencyPenalty: Float? = null,
+    /** @since 0.3.0-beta01 */
     public val responseFormat: ResponseFormat = ResponseFormat.Text,
+    /** @since 0.3.0-beta01 */
     public val maxRetries: Int = 2,
 ) {
     init {
@@ -23,6 +36,7 @@ public class CallConfig internal constructor(
 }
 
 @AiSdkDsl
+/** @since 0.3.0-beta01 */
 public class CallConfigBuilder {
     private var temperature: Float? = null
     private var topP: Float? = null
@@ -37,66 +51,79 @@ public class CallConfigBuilder {
     private var responseFormat: ResponseFormat = ResponseFormat.Text
     private var maxRetries: Int = 2
 
+    /** @since 0.3.0-beta01 */
     public fun temperature(value: Float?): CallConfigBuilder {
         temperature = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun topP(value: Float?): CallConfigBuilder {
         topP = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun topK(value: Int?): CallConfigBuilder {
         topK = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun maxOutputTokens(value: Int?): CallConfigBuilder {
         maxOutputTokens = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun stopSequences(value: List<String>): CallConfigBuilder {
         stopSequences = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun seed(value: Int?): CallConfigBuilder {
         seed = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun providerOptions(value: ProviderOptions): CallConfigBuilder {
         providerOptions = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun abortSignal(value: AbortSignal): CallConfigBuilder {
         abortSignal = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun presencePenalty(value: Float?): CallConfigBuilder {
         presencePenalty = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun frequencyPenalty(value: Float?): CallConfigBuilder {
         frequencyPenalty = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun responseFormat(value: ResponseFormat): CallConfigBuilder {
         responseFormat = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun maxRetries(value: Int): CallConfigBuilder {
         maxRetries = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun build(): CallConfig =
         CallConfig(
             temperature = temperature,
@@ -114,5 +141,6 @@ public class CallConfigBuilder {
         )
 }
 
+/** @since 0.3.0-beta01 */
 public fun CallConfig(block: CallConfigBuilder.() -> Unit = {}): CallConfig =
     CallConfigBuilder().apply(block).build()

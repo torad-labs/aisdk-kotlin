@@ -13,40 +13,62 @@ import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
 
 @Poko
+/** @since 0.3.0-beta01 */
 public class DevToolsStep(
+    /** @since 0.3.0-beta01 */
     public val id: String,
+    /** @since 0.3.0-beta01 */
     public val runId: String,
+    /** @since 0.3.0-beta01 */
     public val stepNumber: Int,
+    /** @since 0.3.0-beta01 */
     public val type: String,
+    /** @since 0.3.0-beta01 */
     public val modelId: String,
+    /** @since 0.3.0-beta01 */
     public val provider: String,
+    /** @since 0.3.0-beta01 */
     public val input: JsonElement,
+    /** @since 0.3.0-beta01 */
     public val providerOptions: ProviderOptions,
 )
 
 @Poko
+/** @since 0.3.0-beta01 */
 public class DevToolsStepResult(
+    /** @since 0.3.0-beta01 */
     public val durationMs: Long,
+    /** @since 0.3.0-beta01 */
     public val output: JsonElement?,
+    /** @since 0.3.0-beta01 */
     public val usage: Usage?,
+    /** @since 0.3.0-beta01 */
     public val error: String?,
+    /** @since 0.3.0-beta01 */
     public val rawRequest: JsonElement? = null,
+    /** @since 0.3.0-beta01 */
     public val rawResponse: JsonElement? = null,
+    /** @since 0.3.0-beta01 */
     public val rawChunks: List<JsonElement> = emptyList(),
 )
 
+/** @since 0.3.0-beta01 */
 public interface DevToolsRecorder {
     public suspend fun createRun(runId: String)
     public suspend fun createStep(step: DevToolsStep)
     public suspend fun updateStepResult(stepId: String, result: DevToolsStepResult)
 }
 
+/** @since 0.3.0-beta01 */
 public class InMemoryDevToolsRecorder : DevToolsRecorder {
     private val _runs: MutableList<String> = mutableListOf()
     private val _steps: MutableList<DevToolsStep> = mutableListOf()
     private val _results: MutableMap<String, DevToolsStepResult> = linkedMapOf()
+    /** @since 0.3.0-beta01 */
     public val runs: List<String> get() = _runs
+    /** @since 0.3.0-beta01 */
     public val steps: List<DevToolsStep> get() = _steps
+    /** @since 0.3.0-beta01 */
     public val results: Map<String, DevToolsStepResult> get() = _results
 
     override suspend fun createRun(runId: String) {
@@ -63,6 +85,7 @@ public class InMemoryDevToolsRecorder : DevToolsRecorder {
 }
 
 @JvmOverloads
+/** @since 0.3.0-beta01 */
 public fun DevToolsMiddleware(
     recorder: DevToolsRecorder = InMemoryDevToolsRecorder(),
     environment: String = "development",

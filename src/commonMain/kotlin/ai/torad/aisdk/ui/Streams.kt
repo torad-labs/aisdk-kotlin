@@ -13,46 +13,62 @@ import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.JsonElement
 
 @Poko
+/** @since 0.3.0-beta01 */
 public class TextStreamResponse(
+    /** @since 0.3.0-beta01 */
     public val textStream: Flow<String>,
+    /** @since 0.3.0-beta01 */
     public val status: Int = 200,
+    /** @since 0.3.0-beta01 */
     public val headers: Map<String, String> = UiMessageStreams.textStreamHeaders(),
 )
 
 @Poko
+/** @since 0.3.0-beta01 */
 public class UIMessageStreamResponse(
+    /** @since 0.3.0-beta01 */
     public val stream: Flow<UIMessage>,
+    /** @since 0.3.0-beta01 */
     public val status: Int = 200,
+    /** @since 0.3.0-beta01 */
     public val headers: Map<String, String> = UiMessageStreams.uiMessageStreamHeaders(),
 )
 
+/** @since 0.3.0-beta01 */
 public interface ServerResponseWriter {
+    /** @since 0.3.0-beta01 */
     public fun setStatus(status: Int)
+    /** @since 0.3.0-beta01 */
     public fun setHeader(name: String, value: String)
     public suspend fun write(chunk: String)
 }
 
+/** @since 0.3.0-beta01 */
 public fun TextStreamFromEvents(events: Flow<StreamEvent>): Flow<String> =
     events.filterIsInstance<StreamEvent.TextDelta>().map { it.text }
 
+/** @since 0.3.0-beta01 */
 public fun CreateTextStreamResponse(
     textStream: Flow<String>,
     status: Int = 200,
     headers: Map<String, String> = UiMessageStreams.textStreamHeaders(),
 ): TextStreamResponse = TextStreamResponse(textStream, status, headers)
 
+/** @since 0.3.0-beta01 */
 public fun CreateUiMessageStreamResponse(
     stream: Flow<UIMessage>,
     status: Int = 200,
     headers: Map<String, String> = UiMessageStreams.uiMessageStreamHeaders(),
 ): UIMessageStreamResponse = UIMessageStreamResponse(stream, status, headers)
 
+/** @since 0.3.0-beta01 */
 public interface UIMessageStreamWriter {
     public suspend fun write(message: UIMessage)
     public suspend fun merge(stream: Flow<UIMessage>)
     public suspend fun error(message: String)
 }
 
+/** @since 0.3.0-beta01 */
 public fun CreateUiMessageStream(
     onError: (Throwable) -> UIMessage = { throwable ->
         UIMessage(
@@ -91,16 +107,21 @@ public fun CreateUiMessageStream(
     }
 }
 
+/** @since 0.3.0-beta01 */
 public fun ReadUiMessageStream(stream: Flow<UIMessage>): Flow<UIMessage> = stream
 
+/** @since 0.3.0-beta01 */
 public sealed class SafeValidateUIMessagesResult {
     @Poko
+    /** @since 0.3.0-beta01 */
     public class Success(public val messages: List<UIMessage>) : SafeValidateUIMessagesResult()
 
     @Poko
+    /** @since 0.3.0-beta01 */
     public class Failure(public val error: Throwable) : SafeValidateUIMessagesResult()
 }
 
+/** @since 0.3.0-beta01 */
 public fun TransformTextToUiMessageStream(
     textStream: Flow<String>,
     assistantMessageId: String,
@@ -128,13 +149,17 @@ public fun TransformTextToUiMessageStream(
     )
 }
 
+/** @since 0.3.0-beta01 */
 public fun UiMessageStreamError(message: String, cause: Throwable? = null): ai.torad.aisdk.UiMessageStreamError =
     ai.torad.aisdk.UiMessageStreamError(message, cause)
 
+/** @since 0.3.0-beta01 */
 public object UiMessageStreams {
+    /** @since 0.3.0-beta01 */
     public fun textStreamHeaders(): Map<String, String> =
         mapOf("Content-Type" to "text/plain; charset=utf-8")
 
+    /** @since 0.3.0-beta01 */
     public fun uiMessageStreamHeaders(): Map<String, String> =
         mapOf("Content-Type" to "text/event-stream; charset=utf-8")
 
@@ -164,9 +189,11 @@ public object UiMessageStreams {
         stream.collect { response.write(encoder(it)) }
     }
 
+    /** @since 0.3.0-beta01 */
     public fun getResponseUiMessageId(messages: List<UIMessage>, createId: () -> String = { "msg_${messages.size + 1}" }): String =
         messages.lastOrNull { it.role == UIMessageRole.Assistant }?.id ?: createId()
 
+    /** @since 0.3.0-beta01 */
     public fun handleUiMessageStreamFinish(
         messages: List<UIMessage>,
         onFinish: (List<UIMessage>) -> Unit,
@@ -174,6 +201,7 @@ public object UiMessageStreams {
         onFinish(messages)
     }
 
+    /** @since 0.3.0-beta01 */
     public fun validateUiMessages(messages: List<UIMessage>) {
         // An empty list is valid (it is the default constructor state) — `setMessages(emptyList())`
         // is the canonical "clear chat" op. Validate only id uniqueness / non-blank / non-empty parts.
@@ -185,8 +213,10 @@ public object UiMessageStreams {
         }
     }
 
+    /** @since 0.3.0-beta01 */
     public fun validateUIMessages(messages: List<UIMessage>): Unit = validateUiMessages(messages)
 
+    /** @since 0.3.0-beta01 */
     public fun safeValidateUIMessages(messages: List<UIMessage>?): SafeValidateUIMessagesResult =
         try {
             require(messages != null) { "messages parameter must be provided" }
@@ -196,6 +226,7 @@ public object UiMessageStreams {
             SafeValidateUIMessagesResult.Failure(t)
         }
 
+    /** @since 0.3.0-beta01 */
     public fun lastAssistantMessageIsCompleteWithToolCalls(messages: List<UIMessage>): Boolean {
         val last = messages.lastOrNull { it.role == UIMessageRole.Assistant } ?: return true
         return last.parts.filterIsInstance<UIMessagePart.ToolUI>().all {
@@ -205,6 +236,7 @@ public object UiMessageStreams {
         }
     }
 
+    /** @since 0.3.0-beta01 */
     public fun lastAssistantMessageIsCompleteWithApprovalResponses(messages: List<UIMessage>): Boolean =
         messages.lastOrNull { it.role == UIMessageRole.Assistant }
             ?.parts

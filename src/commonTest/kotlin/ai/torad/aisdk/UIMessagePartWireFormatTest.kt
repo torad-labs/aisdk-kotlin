@@ -49,7 +49,7 @@ class UIMessagePartWireFormatTest {
         )
 
         for (part in parts) {
-            val encoded = aiSdkJson.encodeToString(UIMessagePart.serializer(), part)
+            val encoded = aiSdkOutputJson.encodeToString(UIMessagePart.serializer(), part)
             val decoded = aiSdkJson.decodeFromString(UIMessagePart.serializer(), encoded)
 
             assertEquals(part, decoded, encoded)

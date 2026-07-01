@@ -30,6 +30,7 @@ private const val DEFAULT_GENERIC_SUFFIX = "You MUST answer with JSON."
  *
  * Groups the splice-half procedures ported from Vercel AI SDK v6
  * `inject-json-instruction.ts`.
+  * @since 0.3.0-beta01
  */
 public object JsonInstruction {
     /**
@@ -60,6 +61,7 @@ public object JsonInstruction {
  * @param schemaSuffix closing instruction. Defaults to the
      *   schema-aware suffix when a schema is present, else the generic one.
      */
+    /** @since 0.3.0-beta01 */
     public fun injectJsonInstruction(
         prompt: String? = null,
         schema: JsonElement? = null,
@@ -84,6 +86,7 @@ public object JsonInstruction {
      * This is the provider-side entry point a LiteRt [LanguageModel] would
      * call before generation when the caller requested structured output
      * but the engine has no native JSON mode.
+      * @since 0.3.0-beta01
      */
     public fun injectJsonInstructionIntoMessages(
         messages: List<ModelMessage>,

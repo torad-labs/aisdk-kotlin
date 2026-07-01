@@ -18,7 +18,7 @@ class PokoSerializableCanaryTest {
             },
         )
 
-        val encoded = aiSdkJson.encodeToString(CallWarning.serializer(), original)
+        val encoded = aiSdkOutputJson.encodeToString(CallWarning.serializer(), original)
         val decoded = aiSdkJson.decodeFromString(CallWarning.serializer(), encoded)
 
         assertEquals(original, decoded)

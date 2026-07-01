@@ -20,6 +20,7 @@ import kotlin.jvm.JvmOverloads
  *   - app-wide `temperature = 0.7`, `maxOutputTokens = 1000`
  *   - default `tools` / `toolChoice` / `headers`
  *   - default `providerOptions` like `{ openai: { reasoningEffort: "high" } }`
+  * @since 0.3.0-beta01
  */
 @JvmOverloads
 public fun DefaultSettingsMiddleware(

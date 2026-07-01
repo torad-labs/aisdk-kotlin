@@ -17,9 +17,13 @@ import kotlinx.serialization.json.JsonElement
  */
 @Serializable
 @Poko
+/** @since 0.3.0-beta01 */
 public class PendingApproval(
+    /** @since 0.3.0-beta01 */
     public val toolCallId: String,
+    /** @since 0.3.0-beta01 */
     public val toolName: String,
+    /** @since 0.3.0-beta01 */
     public val input: JsonElement,
     /**
      * Approval-identity key. Mirrors v6's `approvalId` (per
@@ -29,6 +33,7 @@ public class PendingApproval(
      * SAME id twice and each side needs separate approval). When
      * null, the host treats `approvalId = toolCallId` — adequate for
      * the common single-approval case.
+      * @since 0.3.0-beta01
      */
     public val approvalId: String? = null,
     /**
@@ -36,13 +41,18 @@ public class PendingApproval(
      * (v6.0.202). Present only when the issuing agent holds an
      * `experimental_toolApprovalSecret`; the host persists and replays
      * it untouched — only the secret holder can mint or verify it.
+      * @since 0.3.0-beta01
      */
     public val signature: String? = null,
 )
 
-/** Approval-identity helpers for [PendingApproval]. */
+/**
+ * Approval-identity helpers for [PendingApproval].
+ * @since 0.3.0-beta01
+ */
 public object ApprovalIds {
     /** The effective approval ID — explicit [PendingApproval.approvalId] or
+      * @since 0.3.0-beta01
      *  fallback to [PendingApproval.toolCallId]. */
     public fun effectiveApprovalId(approval: PendingApproval): String =
         approval.approvalId ?: approval.toolCallId

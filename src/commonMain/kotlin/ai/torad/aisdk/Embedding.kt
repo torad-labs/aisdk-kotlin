@@ -3,8 +3,11 @@ package ai.torad.aisdk
 import dev.drewhamilton.poko.Poko
 import kotlinx.serialization.json.JsonElement
 
+/** @since 0.3.0-beta01 */
 public interface EmbeddingModel {
+    /** @since 0.3.0-beta01 */
     public val modelId: String
+    /** @since 0.3.0-beta01 */
     public val provider: String
         get() = "unknown"
 
@@ -12,6 +15,7 @@ public interface EmbeddingModel {
      * How many values this model accepts in a single call, if limited.
      * `embedMany` consults this to auto-split large requests into batches when the
      * caller doesn't pass an explicit `maxEmbeddingsPerCall`. Null = no limit.
+      * @since 0.3.0-beta01
      */
     public val maxEmbeddingsPerCall: Int?
         get() = null
@@ -20,6 +24,7 @@ public interface EmbeddingModel {
      * Whether the model permits its embedding batches to run concurrently.
      * When true, `embedMany` fans batches out (bounded by `maxParallelCalls`)
      * instead of running them serially.
+      * @since 0.3.0-beta01
      */
     public val supportsParallelCalls: Boolean
         get() = false
@@ -28,14 +33,22 @@ public interface EmbeddingModel {
 }
 
 @Poko
+/** @since 0.3.0-beta01 */
 public class EmbeddingModelCallParams internal constructor(
+    /** @since 0.3.0-beta01 */
     public val values: List<String>,
+    /** @since 0.3.0-beta01 */
     public val maxEmbeddingsPerCall: Int? = null,
+    /** @since 0.3.0-beta01 */
     public val truncate: Boolean? = null,
+    /** @since 0.3.0-beta01 */
     public val providerOptions: ProviderOptions = ProviderOptions.None,
+    /** @since 0.3.0-beta01 */
     public val abortSignal: AbortSignal = AbortSignalNever,
+    /** @since 0.3.0-beta01 */
     public val headers: Map<String, String> = emptyMap(),
 ) {
+    /** @since 0.3.0-beta01 */
     public fun toBuilder(): EmbeddingModelCallParamsBuilder =
         EmbeddingModelCallParamsBuilder().also {
             it.values(values)
@@ -48,6 +61,7 @@ public class EmbeddingModelCallParams internal constructor(
 }
 
 @AiSdkDsl
+/** @since 0.3.0-beta01 */
 public class EmbeddingModelCallParamsBuilder internal constructor() {
     private var values: List<String>? = null
     private var maxEmbeddingsPerCall: Int? = null
@@ -56,30 +70,37 @@ public class EmbeddingModelCallParamsBuilder internal constructor() {
     private var abortSignal: AbortSignal = AbortSignalNever
     private var headers: Map<String, String> = emptyMap()
 
+    /** @since 0.3.0-beta01 */
     public fun values(value: List<String>): EmbeddingModelCallParamsBuilder = apply {
         values = value
     }
 
+    /** @since 0.3.0-beta01 */
     public fun maxEmbeddingsPerCall(value: Int?): EmbeddingModelCallParamsBuilder = apply {
         maxEmbeddingsPerCall = value
     }
 
+    /** @since 0.3.0-beta01 */
     public fun truncate(value: Boolean?): EmbeddingModelCallParamsBuilder = apply {
         truncate = value
     }
 
+    /** @since 0.3.0-beta01 */
     public fun providerOptions(value: ProviderOptions): EmbeddingModelCallParamsBuilder = apply {
         providerOptions = value
     }
 
+    /** @since 0.3.0-beta01 */
     public fun abortSignal(value: AbortSignal): EmbeddingModelCallParamsBuilder = apply {
         abortSignal = value
     }
 
+    /** @since 0.3.0-beta01 */
     public fun headers(value: Map<String, String>): EmbeddingModelCallParamsBuilder = apply {
         headers = value
     }
 
+    /** @since 0.3.0-beta01 */
     public fun build(): EmbeddingModelCallParams =
         EmbeddingModelCallParams(
             values = requireNotNull(values) { "EmbeddingModelCallParams.values is required" },
@@ -91,48 +112,78 @@ public class EmbeddingModelCallParamsBuilder internal constructor() {
         )
 }
 
+/** @since 0.3.0-beta01 */
 public fun EmbeddingModelCallParams(
     block: EmbeddingModelCallParamsBuilder.() -> Unit,
 ): EmbeddingModelCallParams =
     EmbeddingModelCallParamsBuilder().apply(block).build()
 
 @Poko
+/** @since 0.3.0-beta01 */
 public class EmbeddingModelResult(
+    /** @since 0.3.0-beta01 */
     public val embeddings: List<List<Float>>,
+    /** @since 0.3.0-beta01 */
     public val usage: EmbeddingUsage = EmbeddingUsage(),
+    /** @since 0.3.0-beta01 */
     public val warnings: List<CallWarning> = emptyList(),
+    /** @since 0.3.0-beta01 */
     public val request: LanguageModelRequestMetadata = LanguageModelRequestMetadata(),
+    /** @since 0.3.0-beta01 */
     public val response: LanguageModelResponseMetadata = LanguageModelResponseMetadata(),
+    /** @since 0.3.0-beta01 */
     public val providerMetadata: ProviderMetadata = ProviderMetadata.None,
 )
 
 @Poko
+/** @since 0.3.0-beta01 */
 public class EmbeddingUsage(
+    /** @since 0.3.0-beta01 */
     public val tokens: Int = 0,
+    /** @since 0.3.0-beta01 */
     public val raw: JsonElement? = null,
 )
 
 @Poko
+/** @since 0.3.0-beta01 */
 public class EmbedResult<TValue>(
+    /** @since 0.3.0-beta01 */
     public val value: TValue,
+    /** @since 0.3.0-beta01 */
     public val embedding: List<Float>,
+    /** @since 0.3.0-beta01 */
     public val usage: EmbeddingUsage,
+    /** @since 0.3.0-beta01 */
     public val warnings: List<CallWarning> = emptyList(),
+    /** @since 0.3.0-beta01 */
     public val request: LanguageModelRequestMetadata = LanguageModelRequestMetadata(),
+    /** @since 0.3.0-beta01 */
     public val response: LanguageModelResponseMetadata = LanguageModelResponseMetadata(),
+    /** @since 0.3.0-beta01 */
     public val providerMetadata: ProviderMetadata = ProviderMetadata.None,
 )
 
 @Poko
+/** @since 0.3.0-beta01 */
 public class EmbedManyResult<TValue>(
+    /** @since 0.3.0-beta01 */
     public val values: List<TValue>,
+    /** @since 0.3.0-beta01 */
     public val embeddings: List<List<Float>>,
+    /** @since 0.3.0-beta01 */
     public val usage: EmbeddingUsage,
+    /** @since 0.3.0-beta01 */
     public val warnings: List<CallWarning> = emptyList(),
+    /** @since 0.3.0-beta01 */
     public val request: LanguageModelRequestMetadata = LanguageModelRequestMetadata(),
+    /** @since 0.3.0-beta01 */
     public val response: LanguageModelResponseMetadata = LanguageModelResponseMetadata(),
-    /** Per-batch response metadata, in batch order — one entry per underlying model call. */
+    /**
+     * Per-batch response metadata, in batch order — one entry per underlying model call.
+     * @since 0.3.0-beta01
+     */
     public val responses: List<LanguageModelResponseMetadata> = emptyList(),
+    /** @since 0.3.0-beta01 */
     public val providerMetadata: ProviderMetadata = ProviderMetadata.None,
 )
 
@@ -140,6 +191,7 @@ internal val retryableApiError: (Throwable) -> Boolean = {
     (it as? APICallError)?.isRetryable == true || (it as? GatewayError)?.isRetryable == true
 }
 
+/** @since 0.3.0-beta01 */
 public object Embedding {
 
     private fun <T> List<T>.splitArray(chunkSize: Int): List<List<T>> {
@@ -240,18 +292,24 @@ public object Embedding {
     }
 }
 
+/** @since 0.3.0-beta01 */
 public interface EmbeddingModelMiddleware {
     public suspend fun wrapEmbed(context: EmbeddingMiddlewareCallContext): EmbeddingModelResult =
         context.doEmbed(context.params)
 }
 
 @Poko
+/** @since 0.3.0-beta01 */
 public class EmbeddingMiddlewareCallContext(
+    /** @since 0.3.0-beta01 */
     public val params: EmbeddingModelCallParams,
+    /** @since 0.3.0-beta01 */
     public val model: EmbeddingModel,
+    /** @since 0.3.0-beta01 */
     public val doEmbed: suspend (EmbeddingModelCallParams) -> EmbeddingModelResult,
 )
 
+/** @since 0.3.0-beta01 */
 public fun WrapEmbeddingModel(
     model: EmbeddingModel,
     middlewares: List<EmbeddingModelMiddleware>,
@@ -260,6 +318,7 @@ public fun WrapEmbeddingModel(
     return WrappedEmbeddingModel(model, middlewares)
 }
 
+/** @since 0.3.0-beta01 */
 public fun DefaultEmbeddingSettingsMiddleware(
     maxEmbeddingsPerCall: Int? = null,
     truncate: Boolean? = null,

@@ -38,16 +38,27 @@ public typealias AnthropicToolOptions = JsonObject
 public typealias AnthropicMessageMetadata = JsonObject
 public typealias AnthropicUsageIteration = JsonObject
 
+/** @since 0.3.0-beta01 */
 public class AnthropicProviderSettings internal constructor(
+    /** @since 0.3.0-beta01 */
     public val baseURL: String = "https://api.anthropic.com/v1",
+    /** @since 0.3.0-beta01 */
     public val apiKey: String? = null,
+    /** @since 0.3.0-beta01 */
     public val authToken: String? = null,
+    /** @since 0.3.0-beta01 */
     public val headers: Map<String, String> = emptyMap(),
+    /** @since 0.3.0-beta01 */
     public val requestHeadersProvider: (suspend (url: String, body: String, headers: Map<String, String>) -> Map<String, String>)? = null,
+    /** @since 0.3.0-beta01 */
     public val buildRequestUrl: ((baseURL: String, modelId: String, isStreaming: Boolean) -> String)? = null,
+    /** @since 0.3.0-beta01 */
     public val transformRequestBody: ((modelId: String, body: JsonObject, isStreaming: Boolean) -> JsonObject)? = null,
+    /** @since 0.3.0-beta01 */
     public val supportedUrls: Map<String, List<String>>? = null,
+    /** @since 0.3.0-beta01 */
     public val generateId: () -> String = { IdGenerator.generate() },
+    /** @since 0.3.0-beta01 */
     public val name: String = "anthropic.messages",
 ) {
     internal fun anthropicHeaders(
@@ -152,6 +163,7 @@ public class AnthropicProviderSettings internal constructor(
     }
 }
 
+/** @since 0.3.0-beta01 */
 public class AnthropicProviderSettingsBuilder {
     private var baseURL: String = "https://api.anthropic.com/v1"
     private var apiKey: String? = null
@@ -164,56 +176,67 @@ public class AnthropicProviderSettingsBuilder {
     private var generateId: () -> String = { IdGenerator.generate() }
     private var name: String = "anthropic.messages"
 
+    /** @since 0.3.0-beta01 */
     public fun baseURL(value: String): AnthropicProviderSettingsBuilder {
         baseURL = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun apiKey(value: String?): AnthropicProviderSettingsBuilder {
         apiKey = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun authToken(value: String?): AnthropicProviderSettingsBuilder {
         authToken = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun headers(value: Map<String, String>): AnthropicProviderSettingsBuilder {
         headers = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun requestHeadersProvider(value: (suspend (url: String, body: String, headers: Map<String, String>) -> Map<String, String>)?): AnthropicProviderSettingsBuilder {
         requestHeadersProvider = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun buildRequestUrl(value: ((baseURL: String, modelId: String, isStreaming: Boolean) -> String)?): AnthropicProviderSettingsBuilder {
         buildRequestUrl = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun transformRequestBody(value: ((modelId: String, body: JsonObject, isStreaming: Boolean) -> JsonObject)?): AnthropicProviderSettingsBuilder {
         transformRequestBody = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun supportedUrls(value: Map<String, List<String>>?): AnthropicProviderSettingsBuilder {
         supportedUrls = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun generateId(value: () -> String): AnthropicProviderSettingsBuilder {
         generateId = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun name(value: String): AnthropicProviderSettingsBuilder {
         name = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun build(): AnthropicProviderSettings =
         AnthropicProviderSettings(
             baseURL = baseURL,
@@ -229,13 +252,16 @@ public class AnthropicProviderSettingsBuilder {
         )
 }
 
+/** @since 0.3.0-beta01 */
 public fun AnthropicProviderSettings(
     block: AnthropicProviderSettingsBuilder.() -> Unit = {},
 ): AnthropicProviderSettings =
     AnthropicProviderSettingsBuilder().apply(block).build()
 
+/** @since 0.3.0-beta01 */
 public class AnthropicProvider(
     private val client: HttpClient,
+    /** @since 0.3.0-beta01 */
     public val settings: AnthropicProviderSettings = AnthropicProviderSettings(),
 ) : Provider {
     init {
@@ -245,10 +271,13 @@ public class AnthropicProvider(
     }
 
     override val providerId: String = "anthropic"
+    /** @since 0.3.0-beta01 */
     public val tools: AnthropicTools = anthropicTools
 
     public operator fun invoke(modelId: ModelId): LanguageModel = languageModel(modelId.value)
+    /** @since 0.3.0-beta01 */
     public fun chat(modelId: ModelId): LanguageModel = languageModel(modelId.value)
+    /** @since 0.3.0-beta01 */
     public fun messages(modelId: ModelId): LanguageModel = languageModel(modelId.value)
 
     override fun languageModel(modelId: String): LanguageModel =
@@ -256,15 +285,20 @@ public class AnthropicProvider(
 
     override fun embeddingModel(modelId: String): EmbeddingModel = throw NoSuchModelError(providerId, "embeddingModel", modelId)
     override fun imageModel(modelId: String): ImageModel = throw NoSuchModelError(providerId, "imageModel", modelId)
+    /** @since 0.3.0-beta01 */
     public fun textEmbeddingModel(modelId: String): Nothing = throw NoSuchModelError(providerId, "embeddingModel", modelId)
 }
 
-/** PascalCase factory — mirrors the reference `OpenAI(...)` faux-constructor. */
+/**
+ * PascalCase factory — mirrors the reference `OpenAI(...)` faux-constructor.
+ * @since 0.3.0-beta01
+ */
 public fun Anthropic(
     client: HttpClient,
     settings: AnthropicProviderSettings = AnthropicProviderSettings(),
 ): AnthropicProvider = AnthropicProvider(client, settings)
 
+/** @since 0.3.0-beta01 */
 public class AnthropicMessagesLanguageModel(
     private val client: HttpClient,
     private val settings: AnthropicProviderSettings,
@@ -530,6 +564,7 @@ public class AnthropicMessagesLanguageModel(
     }
 
     public companion object {
+        /** @since 0.3.0-beta01 */
         public fun forwardAnthropicContainerIdFromLastStep(
             steps: List<Map<String, JsonElement>>,
         ): Map<String, JsonElement>? {
@@ -560,45 +595,66 @@ public class AnthropicMessagesLanguageModel(
 }
 
 @Poko
+/** @since 0.3.0-beta01 */
 public class AnthropicTools(
+    /** @since 0.3.0-beta01 */
     public val advisor_20260301: Tool<JsonElement, JsonElement, Any?> =
         anthropicProviderTool("advisor", "anthropic.advisor_20260301", "Consult an Anthropic advisor model during generation."),
+    /** @since 0.3.0-beta01 */
     public val bash_20241022: Tool<JsonElement, JsonElement, Any?> =
         anthropicProviderTool("bash", "anthropic.bash_20241022", "Use Anthropic's hosted Bash tool."),
+    /** @since 0.3.0-beta01 */
     public val bash_20250124: Tool<JsonElement, JsonElement, Any?> =
         anthropicProviderTool("bash", "anthropic.bash_20250124", "Use Anthropic's hosted Bash tool."),
+    /** @since 0.3.0-beta01 */
     public val codeExecution_20250522: Tool<JsonElement, JsonElement, Any?> =
         anthropicProviderTool("code_execution", "anthropic.code_execution_20250522", "Use Anthropic hosted code execution."),
+    /** @since 0.3.0-beta01 */
     public val codeExecution_20250825: Tool<JsonElement, JsonElement, Any?> =
         anthropicProviderTool("code_execution", "anthropic.code_execution_20250825", "Use Anthropic hosted code execution."),
+    /** @since 0.3.0-beta01 */
     public val codeExecution_20260120: Tool<JsonElement, JsonElement, Any?> =
         anthropicProviderTool("code_execution", "anthropic.code_execution_20260120", "Use Anthropic hosted code execution."),
+    /** @since 0.3.0-beta01 */
     public val computer_20241022: Tool<JsonElement, JsonElement, Any?> =
         anthropicProviderTool("computer", "anthropic.computer_20241022", "Use Anthropic computer control."),
+    /** @since 0.3.0-beta01 */
     public val computer_20250124: Tool<JsonElement, JsonElement, Any?> =
         anthropicProviderTool("computer", "anthropic.computer_20250124", "Use Anthropic computer control."),
+    /** @since 0.3.0-beta01 */
     public val computer_20251124: Tool<JsonElement, JsonElement, Any?> =
         anthropicProviderTool("computer", "anthropic.computer_20251124", "Use Anthropic computer control with zoom."),
+    /** @since 0.3.0-beta01 */
     public val memory_20250818: Tool<JsonElement, JsonElement, Any?> =
         anthropicProviderTool("memory", "anthropic.memory_20250818", "Use Anthropic memory."),
+    /** @since 0.3.0-beta01 */
     public val textEditor_20241022: Tool<JsonElement, JsonElement, Any?> =
         anthropicProviderTool("str_replace_editor", "anthropic.text_editor_20241022", "Use Anthropic text editor."),
+    /** @since 0.3.0-beta01 */
     public val textEditor_20250124: Tool<JsonElement, JsonElement, Any?> =
         anthropicProviderTool("str_replace_editor", "anthropic.text_editor_20250124", "Use Anthropic text editor."),
+    /** @since 0.3.0-beta01 */
     public val textEditor_20250429: Tool<JsonElement, JsonElement, Any?> =
         anthropicProviderTool("str_replace_based_edit_tool", "anthropic.text_editor_20250429", "Use Anthropic text editor."),
+    /** @since 0.3.0-beta01 */
     public val textEditor_20250728: Tool<JsonElement, JsonElement, Any?> =
         anthropicProviderTool("str_replace_based_edit_tool", "anthropic.text_editor_20250728", "Use Anthropic text editor."),
+    /** @since 0.3.0-beta01 */
     public val webFetch_20250910: Tool<JsonElement, JsonElement, Any?> =
         anthropicProviderTool("web_fetch", "anthropic.web_fetch_20250910", "Fetch web content through Anthropic."),
+    /** @since 0.3.0-beta01 */
     public val webFetch_20260209: Tool<JsonElement, JsonElement, Any?> =
         anthropicProviderTool("web_fetch", "anthropic.web_fetch_20260209", "Fetch web content through Anthropic."),
+    /** @since 0.3.0-beta01 */
     public val webSearch_20250305: Tool<JsonElement, JsonElement, Any?> =
         anthropicProviderTool("web_search", "anthropic.web_search_20250305", "Search the web through Anthropic."),
+    /** @since 0.3.0-beta01 */
     public val webSearch_20260209: Tool<JsonElement, JsonElement, Any?> =
         anthropicProviderTool("web_search", "anthropic.web_search_20260209", "Search the web through Anthropic."),
+    /** @since 0.3.0-beta01 */
     public val toolSearchRegex_20251119: Tool<JsonElement, JsonElement, Any?> =
         anthropicProviderTool("tool_search_tool_regex", "anthropic.tool_search_regex_20251119", "Search deferred tools with regex."),
+    /** @since 0.3.0-beta01 */
     public val toolSearchBm25_20251119: Tool<JsonElement, JsonElement, Any?> =
         anthropicProviderTool("tool_search_tool_bm25", "anthropic.tool_search_bm25_20251119", "Search deferred tools with BM25."),
 ) {
@@ -837,6 +893,7 @@ public class AnthropicTools(
     }
 }
 
+/** @since 0.3.0-beta01 */
 public val anthropicTools: AnthropicTools = AnthropicTools()
 
 internal data class PreparedAnthropicRequest(

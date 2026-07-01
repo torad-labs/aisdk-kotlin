@@ -7,10 +7,13 @@ import kotlinx.coroutines.withTimeoutOrNull
 import kotlin.random.Random
 import kotlin.time.Clock
 
+/** @since 0.3.0-beta01 */
 public fun interface RetryDelayGenerator {
+    /** @since 0.3.0-beta01 */
     public fun nextDelayMs(maxDelayMs: Long): Long
 
     public companion object {
+        /** @since 0.3.0-beta01 */
         public fun fullJitter(random: Random = Random.Default): RetryDelayGenerator =
             RetryDelayGenerator { maxDelayMs ->
                 when {
@@ -20,6 +23,7 @@ public fun interface RetryDelayGenerator {
                 }
             }
 
+        /** @since 0.3.0-beta01 */
         public fun deterministic(vararg delaysMs: Long): RetryDelayGenerator =
             object : RetryDelayGenerator {
                 private var index: Int = 0
@@ -33,13 +37,21 @@ public fun interface RetryDelayGenerator {
 }
 
 @Suppress("TooManyFunctions")
+/** @since 0.3.0-beta01 */
 public class RetryPolicy internal constructor(
+    /** @since 0.3.0-beta01 */
     public val maxRetries: Int = 2,
+    /** @since 0.3.0-beta01 */
     public val baseDelayMs: Long = 100L,
+    /** @since 0.3.0-beta01 */
     public val maxDelayMs: Long = 2_000L,
+    /** @since 0.3.0-beta01 */
     public val clock: Clock = Clock.System,
+    /** @since 0.3.0-beta01 */
     public val delayGenerator: RetryDelayGenerator = RetryDelayGenerator.fullJitter(),
+    /** @since 0.3.0-beta01 */
     public val totalTimeoutMs: Long? = null,
+    /** @since 0.3.0-beta01 */
     public val perAttemptTimeoutMs: Long? = null,
 ) {
     init {
@@ -272,6 +284,7 @@ public class RetryPolicy internal constructor(
     }
 }
 
+/** @since 0.3.0-beta01 */
 public class RetryPolicyBuilder {
     private var maxRetries: Int = 2
     private var baseDelayMs: Long = 100L
@@ -281,41 +294,49 @@ public class RetryPolicyBuilder {
     private var totalTimeoutMs: Long? = null
     private var perAttemptTimeoutMs: Long? = null
 
+    /** @since 0.3.0-beta01 */
     public fun maxRetries(value: Int): RetryPolicyBuilder {
         maxRetries = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun baseDelayMs(value: Long): RetryPolicyBuilder {
         baseDelayMs = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun maxDelayMs(value: Long): RetryPolicyBuilder {
         maxDelayMs = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun clock(value: Clock): RetryPolicyBuilder {
         clock = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun delayGenerator(value: RetryDelayGenerator): RetryPolicyBuilder {
         delayGenerator = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun totalTimeoutMs(value: Long?): RetryPolicyBuilder {
         totalTimeoutMs = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun perAttemptTimeoutMs(value: Long?): RetryPolicyBuilder {
         perAttemptTimeoutMs = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun build(): RetryPolicy =
         RetryPolicy(
             maxRetries = maxRetries,
@@ -328,6 +349,7 @@ public class RetryPolicyBuilder {
         )
 }
 
+/** @since 0.3.0-beta01 */
 public fun RetryPolicy(
     block: RetryPolicyBuilder.() -> Unit = {},
 ): RetryPolicy =

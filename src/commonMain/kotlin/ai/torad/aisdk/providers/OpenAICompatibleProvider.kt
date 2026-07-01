@@ -6,24 +6,43 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 
+/** @since 0.3.0-beta01 */
 public class OpenAICompatibleProviderSettings internal constructor(
+    /** @since 0.3.0-beta01 */
     public val name: String,
+    /** @since 0.3.0-beta01 */
     public val baseUrl: String,
+    /** @since 0.3.0-beta01 */
     public val apiKey: String? = null,
+    /** @since 0.3.0-beta01 */
     public val headers: Map<String, String> = emptyMap(),
+    /** @since 0.3.0-beta01 */
     public val queryParams: Map<String, String> = emptyMap(),
+    /** @since 0.3.0-beta01 */
     public val includeUsage: Boolean = false,
+    /** @since 0.3.0-beta01 */
     public val supportsStructuredOutputs: Boolean = false,
+    /** @since 0.3.0-beta01 */
     public val supportedUrls: Map<String, List<String>> = emptyMap(),
+    /** @since 0.3.0-beta01 */
     public val maxEmbeddingsPerCall: Int = 2048,
+    /** @since 0.3.0-beta01 */
     public val authHeadersProvider: (suspend () -> Map<String, String>)? = null,
+    /** @since 0.3.0-beta01 */
     public val urlBuilder: ((path: String, modelId: String) -> String)? = null,
+    /** @since 0.3.0-beta01 */
     public val userAgentSuffix: String? = "ai-sdk/openai-compatible-kotlin",
+    /** @since 0.3.0-beta01 */
     public val providerOptionsName: String? = null,
+    /** @since 0.3.0-beta01 */
     public val chatMaxOutputTokensKey: String = "max_tokens",
+    /** @since 0.3.0-beta01 */
     public val chatSeedKey: String = "seed",
+    /** @since 0.3.0-beta01 */
     public val transformChatRequestBody: ((JsonObject) -> JsonObject)? = null,
+    /** @since 0.3.0-beta01 */
     public val convertUsage: ((JsonElement?) -> Usage)? = null,
+    /** @since 0.3.0-beta01 */
     public val transformChatResponse: ((JsonObject) -> JsonObject)? = null,
 ) {
     internal companion object {
@@ -57,6 +76,7 @@ public class OpenAICompatibleProviderSettings internal constructor(
     }
 }
 
+/** @since 0.3.0-beta01 */
 public class OpenAICompatibleProviderSettingsBuilder {
     private var name: String? = null
     private var baseUrl: String? = null
@@ -77,96 +97,115 @@ public class OpenAICompatibleProviderSettingsBuilder {
     private var convertUsage: ((JsonElement?) -> Usage)? = null
     private var transformChatResponse: ((JsonObject) -> JsonObject)? = null
 
+    /** @since 0.3.0-beta01 */
     public fun name(value: String): OpenAICompatibleProviderSettingsBuilder {
         name = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun baseUrl(value: String): OpenAICompatibleProviderSettingsBuilder {
         baseUrl = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun apiKey(value: String?): OpenAICompatibleProviderSettingsBuilder {
         apiKey = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun headers(value: Map<String, String>): OpenAICompatibleProviderSettingsBuilder {
         headers = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun queryParams(value: Map<String, String>): OpenAICompatibleProviderSettingsBuilder {
         queryParams = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun includeUsage(value: Boolean): OpenAICompatibleProviderSettingsBuilder {
         includeUsage = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun supportsStructuredOutputs(value: Boolean): OpenAICompatibleProviderSettingsBuilder {
         supportsStructuredOutputs = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun supportedUrls(value: Map<String, List<String>>): OpenAICompatibleProviderSettingsBuilder {
         supportedUrls = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun maxEmbeddingsPerCall(value: Int): OpenAICompatibleProviderSettingsBuilder {
         maxEmbeddingsPerCall = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun authHeadersProvider(value: (suspend () -> Map<String, String>)?): OpenAICompatibleProviderSettingsBuilder {
         authHeadersProvider = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun urlBuilder(value: ((path: String, modelId: String) -> String)?): OpenAICompatibleProviderSettingsBuilder {
         urlBuilder = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun userAgentSuffix(value: String?): OpenAICompatibleProviderSettingsBuilder {
         userAgentSuffix = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun providerOptionsName(value: String?): OpenAICompatibleProviderSettingsBuilder {
         providerOptionsName = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun chatMaxOutputTokensKey(value: String): OpenAICompatibleProviderSettingsBuilder {
         chatMaxOutputTokensKey = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun chatSeedKey(value: String): OpenAICompatibleProviderSettingsBuilder {
         chatSeedKey = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun transformChatRequestBody(value: ((JsonObject) -> JsonObject)?): OpenAICompatibleProviderSettingsBuilder {
         transformChatRequestBody = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun convertUsage(value: ((JsonElement?) -> Usage)?): OpenAICompatibleProviderSettingsBuilder {
         convertUsage = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun transformChatResponse(value: ((JsonObject) -> JsonObject)?): OpenAICompatibleProviderSettingsBuilder {
         transformChatResponse = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun build(): OpenAICompatibleProviderSettings =
         OpenAICompatibleProviderSettings(
             name = requireNotNull(name) { "OpenAICompatibleProviderSettings.name is required" },
@@ -190,17 +229,23 @@ public class OpenAICompatibleProviderSettingsBuilder {
         )
 }
 
+/** @since 0.3.0-beta01 */
 public fun OpenAICompatibleProviderSettings(
     block: OpenAICompatibleProviderSettingsBuilder.() -> Unit = {},
 ): OpenAICompatibleProviderSettings =
     OpenAICompatibleProviderSettingsBuilder().apply(block).build()
 
+/** @since 0.3.0-beta01 */
 public interface OpenAICompatibleProvider : Provider {
+    /** @since 0.3.0-beta01 */
     public fun chatModel(modelId: String): LanguageModel
+    /** @since 0.3.0-beta01 */
     public fun completionModel(modelId: String): LanguageModel
+    /** @since 0.3.0-beta01 */
     public fun textEmbeddingModel(modelId: String): EmbeddingModel = embeddingModel(modelId)
 }
 
+/** @since 0.3.0-beta01 */
 public fun OpenAICompatible(
     client: HttpClient,
     settings: OpenAICompatibleProviderSettings,

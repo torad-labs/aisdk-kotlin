@@ -36,20 +36,32 @@ import kotlinx.serialization.json.jsonObject
 public const val OPEN_RESPONSES_VERSION: String = "1.0.16"
 public const val OPEN_RESPONSES_TOP_LOGPROBS_MAX: Int = 20
 
+/** @since 0.3.0-beta01 */
 public val OPEN_RESPONSES_SUPPORTED_URLS: Map<String, List<String>> = mapOf("image/*" to listOf("^https?://.*$"))
 
+/** @since 0.3.0-beta01 */
 public class OpenResponsesProviderSettings internal constructor(
+    /** @since 0.3.0-beta01 */
     public val url: String,
+    /** @since 0.3.0-beta01 */
     public val name: String,
+    /** @since 0.3.0-beta01 */
     public val apiKey: String? = null,
+    /** @since 0.3.0-beta01 */
     public val headers: Map<String, String> = emptyMap(),
+    /** @since 0.3.0-beta01 */
     public val authHeadersProvider: (suspend () -> Map<String, String>)? = null,
+    /** @since 0.3.0-beta01 */
     public val userAgentSuffix: String? = "ai-sdk/open-responses/$OPEN_RESPONSES_VERSION",
+    /** @since 0.3.0-beta01 */
     public val providerOptionsName: String? = null,
+    /** @since 0.3.0-beta01 */
     public val supportedUrls: Map<String, List<String>> = OPEN_RESPONSES_SUPPORTED_URLS,
+    /** @since 0.3.0-beta01 */
     public val fileIdPrefixes: List<String> = emptyList(),
 )
 
+/** @since 0.3.0-beta01 */
 public class OpenResponsesProviderSettingsBuilder {
     private var url: String? = null
     private var name: String? = null
@@ -61,51 +73,61 @@ public class OpenResponsesProviderSettingsBuilder {
     private var supportedUrls: Map<String, List<String>> = OPEN_RESPONSES_SUPPORTED_URLS
     private var fileIdPrefixes: List<String> = emptyList()
 
+    /** @since 0.3.0-beta01 */
     public fun url(value: String): OpenResponsesProviderSettingsBuilder {
         url = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun name(value: String): OpenResponsesProviderSettingsBuilder {
         name = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun apiKey(value: String?): OpenResponsesProviderSettingsBuilder {
         apiKey = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun headers(value: Map<String, String>): OpenResponsesProviderSettingsBuilder {
         headers = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun authHeadersProvider(value: (suspend () -> Map<String, String>)?): OpenResponsesProviderSettingsBuilder {
         authHeadersProvider = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun userAgentSuffix(value: String?): OpenResponsesProviderSettingsBuilder {
         userAgentSuffix = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun providerOptionsName(value: String?): OpenResponsesProviderSettingsBuilder {
         providerOptionsName = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun supportedUrls(value: Map<String, List<String>>): OpenResponsesProviderSettingsBuilder {
         supportedUrls = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun fileIdPrefixes(value: List<String>): OpenResponsesProviderSettingsBuilder {
         fileIdPrefixes = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun build(): OpenResponsesProviderSettings =
         OpenResponsesProviderSettings(
             url = requireNotNull(url) { "OpenResponsesProviderSettings.url is required" },
@@ -120,6 +142,7 @@ public class OpenResponsesProviderSettingsBuilder {
         )
 }
 
+/** @since 0.3.0-beta01 */
 public fun OpenResponsesProviderSettings(
     block: OpenResponsesProviderSettingsBuilder.() -> Unit = {},
 ): OpenResponsesProviderSettings =
@@ -127,32 +150,57 @@ public fun OpenResponsesProviderSettings(
 
 @Serializable
 @Poko
+/** @since 0.3.0-beta01 */
 public class OpenResponsesOptions internal constructor(
+    /** @since 0.3.0-beta01 */
     public val conversation: String? = null,
+    /** @since 0.3.0-beta01 */
     public val include: List<String>? = null,
+    /** @since 0.3.0-beta01 */
     public val instructions: String? = null,
+    /** @since 0.3.0-beta01 */
     public val logprobs: JsonElement? = null,
+    /** @since 0.3.0-beta01 */
     public val maxToolCalls: Int? = null,
+    /** @since 0.3.0-beta01 */
     public val metadata: JsonElement? = null,
+    /** @since 0.3.0-beta01 */
     public val parallelToolCalls: Boolean? = null,
+    /** @since 0.3.0-beta01 */
     public val previousResponseId: String? = null,
+    /** @since 0.3.0-beta01 */
     public val promptCacheKey: String? = null,
+    /** @since 0.3.0-beta01 */
     public val promptCacheRetention: String? = null,
+    /** @since 0.3.0-beta01 */
     public val reasoningEffort: String? = null,
+    /** @since 0.3.0-beta01 */
     public val reasoningSummary: String? = null,
+    /** @since 0.3.0-beta01 */
     public val safetyIdentifier: String? = null,
+    /** @since 0.3.0-beta01 */
     public val serviceTier: String? = null,
+    /** @since 0.3.0-beta01 */
     public val store: Boolean? = null,
+    /** @since 0.3.0-beta01 */
     public val passThroughUnsupportedFiles: Boolean? = null,
+    /** @since 0.3.0-beta01 */
     public val strictJsonSchema: Boolean? = null,
+    /** @since 0.3.0-beta01 */
     public val textVerbosity: String? = null,
+    /** @since 0.3.0-beta01 */
     public val truncation: String? = null,
+    /** @since 0.3.0-beta01 */
     public val user: String? = null,
+    /** @since 0.3.0-beta01 */
     public val systemMessageMode: String? = null,
+    /** @since 0.3.0-beta01 */
     public val forceReasoning: Boolean? = null,
+    /** @since 0.3.0-beta01 */
     public val allowedTools: OpenResponsesAllowedTools? = null,
 )
 
+/** @since 0.3.0-beta01 */
 public class OpenResponsesOptionsBuilder {
     private var conversation: String? = null
     private var include: List<String>? = null
@@ -178,121 +226,145 @@ public class OpenResponsesOptionsBuilder {
     private var forceReasoning: Boolean? = null
     private var allowedTools: OpenResponsesAllowedTools? = null
 
+    /** @since 0.3.0-beta01 */
     public fun conversation(value: String?): OpenResponsesOptionsBuilder {
         conversation = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun include(value: List<String>?): OpenResponsesOptionsBuilder {
         include = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun instructions(value: String?): OpenResponsesOptionsBuilder {
         instructions = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun logprobs(value: JsonElement?): OpenResponsesOptionsBuilder {
         logprobs = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun maxToolCalls(value: Int?): OpenResponsesOptionsBuilder {
         maxToolCalls = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun metadata(value: JsonElement?): OpenResponsesOptionsBuilder {
         metadata = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun parallelToolCalls(value: Boolean?): OpenResponsesOptionsBuilder {
         parallelToolCalls = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun previousResponseId(value: String?): OpenResponsesOptionsBuilder {
         previousResponseId = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun promptCacheKey(value: String?): OpenResponsesOptionsBuilder {
         promptCacheKey = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun promptCacheRetention(value: String?): OpenResponsesOptionsBuilder {
         promptCacheRetention = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun reasoningEffort(value: String?): OpenResponsesOptionsBuilder {
         reasoningEffort = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun reasoningSummary(value: String?): OpenResponsesOptionsBuilder {
         reasoningSummary = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun safetyIdentifier(value: String?): OpenResponsesOptionsBuilder {
         safetyIdentifier = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun serviceTier(value: String?): OpenResponsesOptionsBuilder {
         serviceTier = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun store(value: Boolean?): OpenResponsesOptionsBuilder {
         store = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun passThroughUnsupportedFiles(value: Boolean?): OpenResponsesOptionsBuilder {
         passThroughUnsupportedFiles = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun strictJsonSchema(value: Boolean?): OpenResponsesOptionsBuilder {
         strictJsonSchema = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun textVerbosity(value: String?): OpenResponsesOptionsBuilder {
         textVerbosity = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun truncation(value: String?): OpenResponsesOptionsBuilder {
         truncation = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun user(value: String?): OpenResponsesOptionsBuilder {
         user = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun systemMessageMode(value: String?): OpenResponsesOptionsBuilder {
         systemMessageMode = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun forceReasoning(value: Boolean?): OpenResponsesOptionsBuilder {
         forceReasoning = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun allowedTools(value: OpenResponsesAllowedTools?): OpenResponsesOptionsBuilder {
         allowedTools = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun build(): OpenResponsesOptions =
         OpenResponsesOptions(
             conversation = conversation,
@@ -321,6 +393,7 @@ public class OpenResponsesOptionsBuilder {
         )
 }
 
+/** @since 0.3.0-beta01 */
 public fun OpenResponsesOptions(
     block: OpenResponsesOptionsBuilder.() -> Unit = {},
 ): OpenResponsesOptions =
@@ -328,25 +401,32 @@ public fun OpenResponsesOptions(
 
 @Serializable
 @Poko
+/** @since 0.3.0-beta01 */
 public class OpenResponsesAllowedTools internal constructor(
+    /** @since 0.3.0-beta01 */
     public val toolNames: List<String> = emptyList(),
+    /** @since 0.3.0-beta01 */
     public val mode: String? = null,
 )
 
+/** @since 0.3.0-beta01 */
 public class OpenResponsesAllowedToolsBuilder {
     private var toolNames: List<String> = emptyList()
     private var mode: String? = null
 
+    /** @since 0.3.0-beta01 */
     public fun toolNames(value: List<String>): OpenResponsesAllowedToolsBuilder {
         toolNames = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun mode(value: String?): OpenResponsesAllowedToolsBuilder {
         mode = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun build(): OpenResponsesAllowedTools =
         OpenResponsesAllowedTools(
             toolNames = toolNames,
@@ -354,16 +434,20 @@ public class OpenResponsesAllowedToolsBuilder {
         )
 }
 
+/** @since 0.3.0-beta01 */
 public fun OpenResponsesAllowedTools(
     block: OpenResponsesAllowedToolsBuilder.() -> Unit = {},
 ): OpenResponsesAllowedTools =
     OpenResponsesAllowedToolsBuilder().apply(block).build()
 
+/** @since 0.3.0-beta01 */
 public interface OpenResponsesProvider : Provider {
     public operator fun invoke(modelId: String): LanguageModel = languageModel(modelId)
+    /** @since 0.3.0-beta01 */
     public fun responses(modelId: String): LanguageModel = languageModel(modelId)
 }
 
+/** @since 0.3.0-beta01 */
 public fun OpenResponses(
     client: HttpClient,
     settings: OpenResponsesProviderSettings,

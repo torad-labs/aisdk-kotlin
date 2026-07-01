@@ -22,24 +22,32 @@ import kotlinx.serialization.json.intOrNull
  * results travel as their own content part variants. Tool approval
  * (request and response) likewise rides on dedicated content parts so
  * approval state is persisted in the message log alongside everything else.
+  * @since 0.3.0-beta01
  */
 @Serializable
 @Poko
 public class ModelMessage(
+    /** @since 0.3.0-beta01 */
     public val role: MessageRole,
+    /** @since 0.3.0-beta01 */
     public val content: List<ContentPart>,
 )
 
 // Top-level convenience constructors.
 // Naming: `<role>Message(...)` for the four role-shaped factories.
 
+/** @since 0.3.0-beta01 */
 public fun SystemMessage(text: String): ModelMessage = ModelMessage(MessageRole.System, listOf(ContentPart.Text(text)))
+/** @since 0.3.0-beta01 */
 public fun UserMessage(text: String): ModelMessage = ModelMessage(MessageRole.User, listOf(ContentPart.Text(text)))
+/** @since 0.3.0-beta01 */
 public fun AssistantMessage(text: String): ModelMessage = ModelMessage(MessageRole.Assistant, listOf(ContentPart.Text(text)))
+/** @since 0.3.0-beta01 */
 public fun ToolMessage(toolCallId: String, toolName: String, output: JsonElement): ModelMessage = ModelMessage(
     MessageRole.Tool,
     listOf(ContentPart.ToolResult(toolCallId, toolName, output)),
 )
+/** @since 0.3.0-beta01 */
 public fun ToolApprovalResponseMessage(
     toolCallId: String,
     approved: Boolean,
@@ -51,6 +59,7 @@ public fun ToolApprovalResponseMessage(
 )
 
 @Serializable
+/** @since 0.3.0-beta01 */
 public enum class MessageRole { System, User, Assistant, Tool }
 
 /**
@@ -73,38 +82,56 @@ public enum class MessageRole { System, User, Assistant, Tool }
 @OptIn(ExperimentalSerializationApi::class)
 @Serializable
 @JsonClassDiscriminator("type")
+/** @since 0.3.0-beta01 */
 public sealed class ContentPart {
 
     @Serializable
     @SerialName("text")
     @Poko
+    /** @since 0.3.0-beta01 */
     public class Text(
+        /** @since 0.3.0-beta01 */
         public val text: String,
         @EncodeDefault(EncodeDefault.Mode.NEVER)
+        /** @since 0.3.0-beta01 */
         public val providerMetadata: ProviderMetadata = ProviderMetadata.None,
     ) : ContentPart()
 
     @Serializable
     @SerialName("reasoning")
     @Poko
+    /** @since 0.3.0-beta01 */
     public class Reasoning(
+        /** @since 0.3.0-beta01 */
         public val text: String,
         @EncodeDefault(EncodeDefault.Mode.NEVER)
+        /** @since 0.3.0-beta01 */
         public val providerMetadata: ProviderMetadata = ProviderMetadata.None,
     ) : ContentPart()
 
     @Serializable
     @SerialName("tool-call")
     @Poko
+    /** @since 0.3.0-beta01 */
     public class ToolCall(
+        /** @since 0.3.0-beta01 */
         public val toolCallId: String,
+        /** @since 0.3.0-beta01 */
         public val toolName: String,
+        /** @since 0.3.0-beta01 */
         public val input: JsonElement,
-        /** Provider ran the tool itself (e.g. server-side tools). v6 parity. */
+        /**
+         * Provider ran the tool itself (e.g. server-side tools). v6 parity.
+         * @since 0.3.0-beta01
+         */
         public val providerExecuted: Boolean = false,
-        /** Call made against a dynamic (runtime-typed) tool. v6 parity. */
+        /**
+         * Call made against a dynamic (runtime-typed) tool. v6 parity.
+         * @since 0.3.0-beta01
+         */
         public val dynamic: Boolean = false,
         @EncodeDefault(EncodeDefault.Mode.NEVER)
+        /** @since 0.3.0-beta01 */
         public val providerMetadata: ProviderMetadata = ProviderMetadata.None,
     ) : ContentPart() {
         public companion object {
@@ -150,21 +177,37 @@ public sealed class ContentPart {
     @Serializable
     @SerialName("tool-result")
     @Poko
+    /** @since 0.3.0-beta01 */
     public class ToolResult(
+        /** @since 0.3.0-beta01 */
         public val toolCallId: String,
+        /** @since 0.3.0-beta01 */
         public val toolName: String,
+        /** @since 0.3.0-beta01 */
         public val output: JsonElement,
+        /** @since 0.3.0-beta01 */
         public val isError: Boolean = false,
+        /** @since 0.3.0-beta01 */
         public val modelVisible: JsonElement = output,
-        /** Result of a dynamic (runtime-typed) tool call. v6 parity. */
+        /**
+         * Result of a dynamic (runtime-typed) tool call. v6 parity.
+         * @since 0.3.0-beta01
+         */
         public val dynamic: Boolean = false,
-        /** Tool was executed by the provider. v6 parity. */
+        /**
+         * Tool was executed by the provider. v6 parity.
+         * @since 0.3.0-beta01
+         */
         public val providerExecuted: Boolean = false,
         @EncodeDefault(EncodeDefault.Mode.NEVER)
+        /** @since 0.3.0-beta01 */
         public val providerMetadata: ProviderMetadata = ProviderMetadata.None,
     ) : ContentPart()
 
-    /** Assistant content: the LLM called a tool that requires approval. */
+    /**
+     * Assistant content: the LLM called a tool that requires approval.
+     * @since 0.3.0-beta01
+     */
     @Serializable
     @SerialName("tool-approval-request")
     public data class ToolApprovalRequest(
@@ -190,32 +233,51 @@ public sealed class ContentPart {
         val providerMetadata: ProviderMetadata = ProviderMetadata.None,
     ) : ContentPart()
 
-    /** Tool content: the host's decision on a previously requested approval. */
+    /**
+     * Tool content: the host's decision on a previously requested approval.
+     * @since 0.3.0-beta01
+     */
     @Serializable
     @SerialName("tool-approval-response")
     @Poko
     public class ToolApprovalResponse(
+        /** @since 0.3.0-beta01 */
         public val toolCallId: String,
+        /** @since 0.3.0-beta01 */
         public val approved: Boolean,
+        /** @since 0.3.0-beta01 */
         public val reason: String? = null,
+        /** @since 0.3.0-beta01 */
         public val approvalId: String? = null,
     ) : ContentPart()
 
     @Serializable
     @SerialName("source")
     @Poko
+    /** @since 0.3.0-beta01 */
     public class Source(
+        /** @since 0.3.0-beta01 */
         public val sourceType: StreamEvent.SourcePart.SourceType,
         /** Provider's stable handle for the source so repeated mentions can be deduped;
+          * @since 0.3.0-beta01
          *  survives the UIMessage -> ModelMessage round-trip (was silently dropped). */
         public val sourceId: String? = null,
+        /** @since 0.3.0-beta01 */
         public val url: String? = null,
+        /** @since 0.3.0-beta01 */
         public val title: String? = null,
         @EncodeDefault(EncodeDefault.Mode.NEVER)
+        /** @since 0.3.0-beta01 */
         public val providerMetadata: ProviderMetadata = ProviderMetadata.None,
-        /** Media type of a document source (e.g. application/pdf). */
+        /**
+         * Media type of a document source (e.g. application/pdf).
+         * @since 0.3.0-beta01
+         */
         public val mediaType: String? = null,
-        /** Optional display name of a document source. */
+        /**
+         * Optional display name of a document source.
+         * @since 0.3.0-beta01
+         */
         public val filename: String? = null,
     ) : ContentPart()
 
@@ -226,21 +288,29 @@ public sealed class ContentPart {
      * data shape; a URL-shaped variant lives in [Source]. `filename`
      * is the user-facing label (Anthropic models produce it for
      * artifact-like outputs; v6 has a dedicated slot for it).
+      * @since 0.3.0-beta01
      */
     @Serializable
     @SerialName("file")
     @Poko
     public class File(
+        /** @since 0.3.0-beta01 */
         public val mediaType: String,
+        /** @since 0.3.0-beta01 */
         public val base64: String = "",
-        /** Optional display name. v6 calls this `filename`. */
+        /**
+         * Optional display name. v6 calls this `filename`.
+         * @since 0.3.0-beta01
+         */
         public val filename: String? = null,
         @EncodeDefault(EncodeDefault.Mode.NEVER)
+        /** @since 0.3.0-beta01 */
         public val providerMetadata: ProviderMetadata = ProviderMetadata.None,
         /**
          * Remote (or data) URL for the file content, when not provided inline as
          * [base64]. Mirrors v6's `data: DataContent | URL`. Resolve with
          * `convertToLanguageModelPrompt` for providers that don't accept URLs.
+          * @since 0.3.0-beta01
          */
         public val url: String? = null,
     ) : ContentPart()
@@ -260,15 +330,20 @@ public sealed class ContentPart {
     @Serializable
     @SerialName("image")
     @Poko
+    /** @since 0.3.0-beta01 */
     public class Image(
+        /** @since 0.3.0-beta01 */
         public val mediaType: String,
+        /** @since 0.3.0-beta01 */
         public val base64: String = "",
         @EncodeDefault(EncodeDefault.Mode.NEVER)
+        /** @since 0.3.0-beta01 */
         public val providerMetadata: ProviderMetadata = ProviderMetadata.None,
         /**
          * Remote (or data) URL for the image, when not provided inline as
          * [base64]. Mirrors v6's `image: DataContent | URL`. Resolve with
          * `convertToLanguageModelPrompt` for providers that don't accept URLs.
+          * @since 0.3.0-beta01
          */
         public val url: String? = null,
     ) : ContentPart()
@@ -277,6 +352,7 @@ public sealed class ContentPart {
      * Forward-compatible escape hatch for content parts a gateway or provider
      * knows about before this SDK does. The raw JSON is preserved so callers
      * can inspect or round-trip it instead of silently losing content.
+      * @since 0.3.0-beta01
      */
     @Serializable
     @SerialName("raw")
@@ -303,9 +379,13 @@ public sealed class ContentPart {
  */
 @Serializable
 @Poko
+/** @since 0.3.0-beta01 */
 public class Usage(
+    /** @since 0.3.0-beta01 */
     public val inputTokens: InputTokenBreakdown = InputTokenBreakdown(),
+    /** @since 0.3.0-beta01 */
     public val outputTokens: OutputTokenBreakdown = OutputTokenBreakdown(),
+    /** @since 0.3.0-beta01 */
     public val raw: JsonElement? = null,
 ) {
     public companion object {
@@ -314,6 +394,7 @@ public class Usage(
          * replaces the old secondary constructor. Unambiguous because
          * BOTH params are required; the primary constructor's `Usage()`
          * no-arg path goes through default breakdown defaults.
+          * @since 0.3.0-beta01
          */
         public fun of(promptTokens: Int, completionTokens: Int): Usage = Usage(
             inputTokens = InputTokenBreakdown(total = promptTokens),
@@ -441,24 +522,44 @@ public class Usage(
         }
     }
 
-    /** Legacy flat accessor — `inputTokens.total`. */
+    /**
+     * Legacy flat accessor — `inputTokens.total`.
+     * @since 0.3.0-beta01
+     */
     public val promptTokens: Int get() = inputTokens.total
 
-    /** Legacy flat accessor — `outputTokens.total`. */
+    /**
+     * Legacy flat accessor — `outputTokens.total`.
+     * @since 0.3.0-beta01
+     */
     public val completionTokens: Int get() = outputTokens.total
 
-    /** Legacy flat accessor — `promptTokens + completionTokens`. */
+    /**
+     * Legacy flat accessor — `promptTokens + completionTokens`.
+     * @since 0.3.0-beta01
+     */
     public val totalTokens: Int get() = promptTokens + completionTokens
 
     @Serializable
     @Poko
+    /** @since 0.3.0-beta01 */
     public class InputTokenBreakdown(
+        /** @since 0.3.0-beta01 */
         public val total: Int = 0,
-        /** Tokens that were billed without cache participation. */
+        /**
+         * Tokens that were billed without cache participation.
+         * @since 0.3.0-beta01
+         */
         public val noCache: Int = 0,
-        /** Tokens read from a provider prompt cache (saves billing). */
+        /**
+         * Tokens read from a provider prompt cache (saves billing).
+         * @since 0.3.0-beta01
+         */
         public val cacheRead: Int = 0,
-        /** Tokens written to a provider prompt cache (first-time cost). */
+        /**
+         * Tokens written to a provider prompt cache (first-time cost).
+         * @since 0.3.0-beta01
+         */
         public val cacheWrite: Int = 0,
     ) {
         init {
@@ -474,11 +575,19 @@ public class Usage(
 
     @Serializable
     @Poko
+    /** @since 0.3.0-beta01 */
     public class OutputTokenBreakdown(
+        /** @since 0.3.0-beta01 */
         public val total: Int = 0,
-        /** Visible response tokens. */
+        /**
+         * Visible response tokens.
+         * @since 0.3.0-beta01
+         */
         public val text: Int = 0,
-        /** Hidden reasoning tokens (Anthropic thinking, OpenAI reasoning). */
+        /**
+         * Hidden reasoning tokens (Anthropic thinking, OpenAI reasoning).
+         * @since 0.3.0-beta01
+         */
         public val reasoning: Int = 0,
     ) {
         init {
@@ -496,6 +605,7 @@ public class Usage(
  * Arithmetic over [Usage]. The `+` operator lives here as a member-extension
  * (decision-C: no loose top-level funs). Call sites bring it into scope with
  * `with(UsageArithmetic) { a + b }` or a member import.
+  * @since 0.3.0-beta01
  */
 public object UsageArithmetic {
     public operator fun Usage.plus(other: Usage): Usage = Usage(
@@ -514,7 +624,10 @@ public object UsageArithmetic {
     )
 }
 
-/** Why a generation step ended. */
+/**
+ * Why a generation step ended.
+ * @since 0.3.0-beta01
+ */
 @Serializable
 public enum class FinishReason {
     Stop,

@@ -28,6 +28,7 @@ import kotlinx.serialization.Serializable
  *   ```
  */
 @Serializable
+/** @since 0.3.0-beta01 */
 public enum class ToolCallState {
     InputStreaming,
     InputAvailable,

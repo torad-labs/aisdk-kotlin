@@ -11,22 +11,28 @@ public const val BASETEN_VERSION: String = "1.0.51"
 
 @Serializable
 @Poko
+/** @since 0.3.0-beta01 */
 public class BasetenEmbeddingModelOptions internal constructor(
+    /** @since 0.3.0-beta01 */
     public val raw: Map<String, JsonElement> = emptyMap(),
 )
 
+/** @since 0.3.0-beta01 */
 public class BasetenEmbeddingModelOptionsBuilder {
     private var raw: Map<String, JsonElement> = emptyMap()
 
+    /** @since 0.3.0-beta01 */
     public fun raw(value: Map<String, JsonElement>): BasetenEmbeddingModelOptionsBuilder {
         raw = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun build(): BasetenEmbeddingModelOptions =
         BasetenEmbeddingModelOptions(raw = raw)
 }
 
+/** @since 0.3.0-beta01 */
 public fun BasetenEmbeddingModelOptions(
     block: BasetenEmbeddingModelOptionsBuilder.() -> Unit = {},
 ): BasetenEmbeddingModelOptions =
@@ -34,16 +40,23 @@ public fun BasetenEmbeddingModelOptions(
 
 @Serializable
 @Poko
+/** @since 0.3.0-beta01 */
 public class BasetenErrorData(
+    /** @since 0.3.0-beta01 */
     public val error: String,
 )
 
 @Serializable
 @Poko
+/** @since 0.3.0-beta01 */
 public class BasetenProviderSettings internal constructor(
+    /** @since 0.3.0-beta01 */
     public val apiKey: String? = null,
+    /** @since 0.3.0-beta01 */
     public val baseURL: String = "https://inference.baseten.co/v1",
+    /** @since 0.3.0-beta01 */
     public val modelURL: String? = null,
+    /** @since 0.3.0-beta01 */
     public val headers: Map<String, String> = emptyMap(),
 ) {
     internal fun toCompatible(
@@ -55,32 +68,38 @@ public class BasetenProviderSettings internal constructor(
         OpenAICompatibleProviderSettings.forFacade(name, version, baseURL, apiKey, headers, capabilities)
 }
 
+/** @since 0.3.0-beta01 */
 public class BasetenProviderSettingsBuilder {
     private var apiKey: String? = null
     private var baseURL: String = "https://inference.baseten.co/v1"
     private var modelURL: String? = null
     private var headers: Map<String, String> = emptyMap()
 
+    /** @since 0.3.0-beta01 */
     public fun apiKey(value: String?): BasetenProviderSettingsBuilder {
         apiKey = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun baseURL(value: String): BasetenProviderSettingsBuilder {
         baseURL = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun modelURL(value: String?): BasetenProviderSettingsBuilder {
         modelURL = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun headers(value: Map<String, String>): BasetenProviderSettingsBuilder {
         headers = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun build(): BasetenProviderSettings =
         BasetenProviderSettings(
             apiKey = apiKey,
@@ -90,11 +109,13 @@ public class BasetenProviderSettingsBuilder {
         )
 }
 
+/** @since 0.3.0-beta01 */
 public fun BasetenProviderSettings(
     block: BasetenProviderSettingsBuilder.() -> Unit = {},
 ): BasetenProviderSettings =
     BasetenProviderSettingsBuilder().apply(block).build()
 
+/** @since 0.3.0-beta01 */
 public class BasetenProvider(
     private val client: HttpClient,
     private val settings: BasetenProviderSettings,
@@ -103,13 +124,19 @@ public class BasetenProvider(
 
     public operator fun invoke(): LanguageModel = chatModel()
     public operator fun invoke(modelId: ModelId): LanguageModel = chatModel(modelId)
+    /** @since 0.3.0-beta01 */
     public fun chatModel(): LanguageModel = createChatModel(null)
+    /** @since 0.3.0-beta01 */
     public fun chatModel(modelId: ModelId): LanguageModel = createChatModel(modelId.value)
+    /** @since 0.3.0-beta01 */
     public fun languageModel(): LanguageModel = chatModel()
     override fun languageModel(modelId: String): LanguageModel = chatModel(ModelId(modelId))
+    /** @since 0.3.0-beta01 */
     public fun embeddingModel(): EmbeddingModel = createEmbeddingModel(null)
     override fun embeddingModel(modelId: String): EmbeddingModel = createEmbeddingModel(modelId)
+    /** @since 0.3.0-beta01 */
     public fun textEmbeddingModel(): EmbeddingModel = embeddingModel()
+    /** @since 0.3.0-beta01 */
     public fun textEmbeddingModel(modelId: ModelId): EmbeddingModel = embeddingModel(modelId.value)
     override fun imageModel(modelId: String): ImageModel = throw NoSuchModelError(providerId, "imageModel", modelId)
 
@@ -148,6 +175,7 @@ public class BasetenProvider(
     }
 }
 
+/** @since 0.3.0-beta01 */
 public fun Baseten(
     client: HttpClient,
     settings: BasetenProviderSettings = BasetenProviderSettings(),

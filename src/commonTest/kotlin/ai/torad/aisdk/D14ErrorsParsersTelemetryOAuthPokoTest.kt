@@ -197,7 +197,7 @@ class D14ErrorsParsersTelemetryOAuthPokoTest {
     }
 
     private fun <T> assertAiSdkRoundTrip(serializer: KSerializer<T>, value: T) {
-        val encoded = aiSdkJson.encodeToString(serializer, value)
+        val encoded = aiSdkOutputJson.encodeToString(serializer, value)
         val decoded = aiSdkJson.decodeFromString(serializer, encoded)
         assertEquals(value, decoded)
     }

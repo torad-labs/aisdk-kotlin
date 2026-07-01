@@ -20,25 +20,38 @@ import kotlinx.coroutines.SupervisorJob
  * scope cancels, the signal aborts, and any subagent/tool execution
  * observing [throwIfAborted] or [register] surfaces the cancellation.
  */
+/** @since 0.3.0-beta01 */
 public interface AbortSignal {
-    /** True once any cancellation source has fired. */
+    /**
+     * True once any cancellation source has fired.
+     * @since 0.3.0-beta01
+     */
     public val isAborted: Boolean
 
-    /** Throws [AbortError] if [isAborted]. Cheap to call repeatedly. */
+    /**
+     * Throws [AbortError] if [isAborted]. Cheap to call repeatedly.
+     * @since 0.3.0-beta01
+     */
     public fun throwIfAborted()
 
     /**
      * Register a callback that fires exactly once on abort. If already
      * aborted, fires synchronously. Returns a handle to deregister.
+      * @since 0.3.0-beta01
      */
     public fun register(onAbort: () -> Unit): AbortRegistration
 
+    /** @since 0.3.0-beta01 */
     public interface AbortRegistration {
+        /** @since 0.3.0-beta01 */
         public fun cancel()
     }
 }
 
-/** A signal that is never aborted. Useful as a default. */
+/**
+ * A signal that is never aborted. Useful as a default.
+ * @since 0.3.0-beta01
+ */
 public val AbortSignalNever: AbortSignal = object : AbortSignal {
     override val isAborted: Boolean = false
     override fun throwIfAborted() = Unit
@@ -50,6 +63,7 @@ public val AbortSignalNever: AbortSignal = object : AbortSignal {
  * Mutable abort source — the v6 equivalent of `AbortController`. Hold the
  * controller, hand the [signal] to the agent, call [abort] from the UI's
  * stop button.
+  * @since 0.3.0-beta01
  */
 @OptIn(ExperimentalAtomicApi::class)
 public class AbortController {
@@ -60,8 +74,10 @@ public class AbortController {
     // coroutine), so a plain mutableListOf would race — and is UB on Native.
     private val callbacks = AtomicReference<List<() -> Unit>>(emptyList())
 
+    /** @since 0.3.0-beta01 */
     public val signal: AbortSignal = SignalImpl()
 
+    /** @since 0.3.0-beta01 */
     public fun abort() {
         if (backing.isCancelled) return
         backing.cancel()
@@ -120,13 +136,17 @@ public class AbortController {
     }
 }
 
-/** Thrown from [AbortSignal.throwIfAborted] when the signal has fired. */
+/**
+ * Thrown from [AbortSignal.throwIfAborted] when the signal has fired.
+ * @since 0.3.0-beta01
+ */
 public class AbortError(message: String = "operation aborted") : kotlin.coroutines.cancellation.CancellationException(message)
 
 /**
  * Bind an abort signal to a [Job] so the signal fires when the job
  * completes (cancelled or otherwise). Lets a parent scope's lifetime
  * automatically cancel anything observing the signal.
+  * @since 0.3.0-beta01
  */
 public fun AbortSignalFromJob(job: Job): AbortSignal {
     val controller = AbortController()
@@ -134,10 +154,15 @@ public fun AbortSignalFromJob(job: Job): AbortSignal {
     return controller.signal
 }
 
-/** Member-extensions converting coroutine handles into [AbortSignal]s. */
+/**
+ * Member-extensions converting coroutine handles into [AbortSignal]s.
+ * @since 0.3.0-beta01
+ */
 public object AbortSignals {
+    /** @since 0.3.0-beta01 */
     public fun Job.asAbortSignal(): AbortSignal = AbortSignalFromJob(this)
 
+    /** @since 0.3.0-beta01 */
     public fun CoroutineScope.asAbortSignal(): AbortSignal =
         coroutineContext[Job]?.asAbortSignal() ?: AbortSignalNever
 }
@@ -146,6 +171,7 @@ public object AbortSignals {
 // early returns for the empty / single / already-aborted fast paths — long-standing, baselined.
 @OptIn(ExperimentalAtomicApi::class)
 @Suppress("FunctionNaming", "ReturnCount")
+/** @since 0.3.0-beta01 */
 public fun CombineAbortSignals(vararg signals: AbortSignal): AbortSignal {
     val active = signals.filterNot { it === AbortSignalNever }
     if (active.isEmpty()) return AbortSignalNever

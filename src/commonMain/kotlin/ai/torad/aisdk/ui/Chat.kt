@@ -18,32 +18,41 @@ import kotlin.concurrent.atomics.AtomicReference
 import kotlin.concurrent.atomics.ExperimentalAtomicApi
 
 @Poko
+/** @since 0.3.0-beta01 */
 public class ChatRequest internal constructor(
+    /** @since 0.3.0-beta01 */
     public val messages: List<UIMessage>,
+    /** @since 0.3.0-beta01 */
     public val body: Map<String, JsonElement> = emptyMap(),
+    /** @since 0.3.0-beta01 */
     public val headers: Map<String, String> = emptyMap(),
 )
 
+/** @since 0.3.0-beta01 */
 public class ChatRequestBuilder {
     private var messages: List<UIMessage>? = null
     private var body: Map<String, JsonElement> = emptyMap()
     private var headers: Map<String, String> = emptyMap()
 
+    /** @since 0.3.0-beta01 */
     public fun messages(value: List<UIMessage>): ChatRequestBuilder {
         messages = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun body(value: Map<String, JsonElement>): ChatRequestBuilder {
         body = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun headers(value: Map<String, String>): ChatRequestBuilder {
         headers = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun build(): ChatRequest =
         ChatRequest(
             messages = requireNotNull(messages) { "ChatRequest.messages is required" },
@@ -52,23 +61,29 @@ public class ChatRequestBuilder {
         )
 }
 
+/** @since 0.3.0-beta01 */
 public fun ChatRequest(
     block: ChatRequestBuilder.() -> Unit = {},
 ): ChatRequest =
     ChatRequestBuilder().apply(block).build()
 
+/** @since 0.3.0-beta01 */
 public interface ChatTransport {
+    /** @since 0.3.0-beta01 */
     public fun sendMessages(request: ChatRequest): Flow<UIMessage>
 
+    /** @since 0.3.0-beta01 */
     public fun reconnectToStream(chatId: String, headers: Map<String, String> = emptyMap()): Flow<UIMessage>? = null
 }
 
+/** @since 0.3.0-beta01 */
 public class DirectChatTransport(
     private val handler: (ChatRequest) -> Flow<UIMessage>,
 ) : ChatTransport {
     override fun sendMessages(request: ChatRequest): Flow<UIMessage> = handler(request)
 }
 
+/** @since 0.3.0-beta01 */
 public class DefaultChatTransport(
     private val delegate: ChatTransport,
 ) : ChatTransport {
@@ -79,6 +94,7 @@ public class DefaultChatTransport(
         delegate.reconnectToStream(chatId, headers)
 }
 
+/** @since 0.3.0-beta01 */
 public class TextStreamChatTransport(
     private val handler: (ChatRequest) -> Flow<String>,
     private val assistantMessageId: (ChatRequest) -> String = { request ->
@@ -89,6 +105,7 @@ public class TextStreamChatTransport(
         TransformTextToUiMessageStream(handler(request), assistantMessageId(request))
 }
 
+/** @since 0.3.0-beta01 */
 public enum class ChatStatus {
     Ready,
     Submitted,
@@ -97,7 +114,9 @@ public enum class ChatStatus {
 }
 
 @OptIn(ExperimentalAtomicApi::class)
+/** @since 0.3.0-beta01 */
 public class Chat(
+    /** @since 0.3.0-beta01 */
     public val id: String = "chat",
     initialMessages: List<UIMessage> = emptyList(),
     private val transport: ChatTransport,
@@ -116,6 +135,7 @@ public class Chat(
     // Observable state view — always reflects the latest InternalState.
     private val _state = MutableStateFlow(internalState.value.toChatState())
 
+    /** @since 0.3.0-beta01 */
     public val state: StateFlow<ChatState> = _state.asStateFlow()
 
     // Cross-thread visibility via AtomicReference: an in-flight sendMessage/regenerate
@@ -124,12 +144,15 @@ public class Chat(
     private val currentOpRef = AtomicReference<Any?>(null)
     private val currentOpJobRef = AtomicReference<Job?>(null as Job?)
 
+    /** @since 0.3.0-beta01 */
     public val status: ChatStatus
         get() = internalState.value.status
 
+    /** @since 0.3.0-beta01 */
     public val error: Throwable?
         get() = internalState.value.error
 
+    /** @since 0.3.0-beta01 */
     public val messages: List<UIMessage>
         get() = internalState.value.messages
 
@@ -151,6 +174,7 @@ public class Chat(
         error = error,
     )
 
+    /** @since 0.3.0-beta01 */
     public fun setMessages(messages: List<UIMessage>) {
         UiMessageStreams.validateUiMessages(messages)
         applyState {
@@ -161,6 +185,7 @@ public class Chat(
         }
     }
 
+    /** @since 0.3.0-beta01 */
     public fun clearError() {
         applyState {
             copy(
@@ -170,6 +195,7 @@ public class Chat(
         }
     }
 
+    /** @since 0.3.0-beta01 */
     public fun addToolApprovalResponse(
         toolCallId: String,
         approved: Boolean,
@@ -187,6 +213,7 @@ public class Chat(
         appendToolMessage(responsePart)
     }
 
+    /** @since 0.3.0-beta01 */
     public fun addToolOutput(
         toolCallId: String,
         output: JsonElement,
@@ -203,15 +230,18 @@ public class Chat(
     }
 
     @Deprecated("Use addToolOutput instead.")
+    /** @since 0.3.0-beta01 */
     public fun addToolResult(
         toolCallId: String,
         output: JsonElement,
         toolName: String = "tool",
     ): Unit = addToolOutput(toolCallId, output, toolName)
 
+    /** @since 0.3.0-beta01 */
     public fun sendMessage(message: UIMessage, body: Map<String, JsonElement> = emptyMap()): Flow<UIMessage> =
         sendInternal(body) { it + message }
 
+    /** @since 0.3.0-beta01 */
     public fun regenerate(body: Map<String, JsonElement> = emptyMap()): Flow<UIMessage> {
         // Re-run from the existing history with the trailing assistant turn(s) dropped. Do NOT
         // re-append the last user message — it is already present, and appending it (as the old
@@ -263,6 +293,7 @@ public class Chat(
         }
     }
 
+    /** @since 0.3.0-beta01 */
     public fun stop() {
         currentOpJobRef.load()?.cancel()
         currentOpJobRef.store(null)
@@ -270,9 +301,11 @@ public class Chat(
         applyState { copy(status = ChatStatus.Ready) }
     }
 
+    /** @since 0.3.0-beta01 */
     public fun reconnectToStream(headers: Map<String, String> = emptyMap()): Flow<UIMessage>? =
         transport.reconnectToStream(id, headers)
 
+    /** @since 0.3.0-beta01 */
     public fun resumeStream(headers: Map<String, String> = emptyMap()): Flow<UIMessage> =
         reconnectToStream(headers) ?: emptyFlow()
 

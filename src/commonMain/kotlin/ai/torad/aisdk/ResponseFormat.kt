@@ -25,10 +25,12 @@ import kotlinx.serialization.json.JsonElement
  * Sealed interface form is the port-idiomatic shape.
  */
 @Serializable
+/** @since 0.3.0-beta01 */
 public sealed interface ResponseFormat {
 
     @Serializable
     @SerialName("text")
+    /** @since 0.3.0-beta01 */
     public data object Text : ResponseFormat
 
     /**
@@ -46,6 +48,7 @@ public sealed interface ResponseFormat {
      */
     @Serializable
     @SerialName("json")
+    /** @since 0.3.0-beta01 */
     public data class Json(
         val schemaName: String? = null,
         val schemaDescription: String? = null,

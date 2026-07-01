@@ -7,11 +7,14 @@ import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonElement
 
+/** @since 0.3.0-beta01 */
 public sealed class ParseResult<out T> {
     @Poko
+    /** @since 0.3.0-beta01 */
     public class Success<T>(public val value: T) : ParseResult<T>()
 
     @Poko
+    /** @since 0.3.0-beta01 */
     public class Failure(public val error: Throwable, public val text: String) : ParseResult<Nothing>()
 }
 

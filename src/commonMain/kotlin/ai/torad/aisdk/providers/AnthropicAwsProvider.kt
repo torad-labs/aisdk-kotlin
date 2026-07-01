@@ -13,16 +13,27 @@ public const val ANTHROPIC_AWS_VERSION: String = "1.0.3"
 public typealias AnthropicAwsCredentials = BedrockCredentials
 
 @Serializable
+/** @since 0.3.0-beta01 */
 public class AnthropicAwsProviderSettings internal constructor(
+    /** @since 0.3.0-beta01 */
     public val region: String? = null,
+    /** @since 0.3.0-beta01 */
     public val workspaceId: String? = null,
+    /** @since 0.3.0-beta01 */
     public val apiKey: String? = null,
+    /** @since 0.3.0-beta01 */
     public val accessKeyId: String? = null,
+    /** @since 0.3.0-beta01 */
     public val secretAccessKey: String? = null,
+    /** @since 0.3.0-beta01 */
     public val sessionToken: String? = null,
+    /** @since 0.3.0-beta01 */
     public val baseURL: String? = null,
+    /** @since 0.3.0-beta01 */
     public val headers: Map<String, String> = emptyMap(),
+    /** @since 0.3.0-beta01 */
     public val credentialProvider: (suspend () -> AnthropicAwsCredentials)? = null,
+    /** @since 0.3.0-beta01 */
     public val generateId: () -> String = { IdGenerator.generate() },
 ) {
     internal fun anthropicAwsBaseURL(): String =
@@ -70,6 +81,7 @@ public class AnthropicAwsProviderSettings internal constructor(
     }
 }
 
+/** @since 0.3.0-beta01 */
 public class AnthropicAwsProviderSettingsBuilder {
     private var region: String? = null
     private var workspaceId: String? = null
@@ -82,56 +94,67 @@ public class AnthropicAwsProviderSettingsBuilder {
     private var credentialProvider: (suspend () -> AnthropicAwsCredentials)? = null
     private var generateId: () -> String = { IdGenerator.generate() }
 
+    /** @since 0.3.0-beta01 */
     public fun region(value: String?): AnthropicAwsProviderSettingsBuilder {
         region = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun workspaceId(value: String?): AnthropicAwsProviderSettingsBuilder {
         workspaceId = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun apiKey(value: String?): AnthropicAwsProviderSettingsBuilder {
         apiKey = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun accessKeyId(value: String?): AnthropicAwsProviderSettingsBuilder {
         accessKeyId = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun secretAccessKey(value: String?): AnthropicAwsProviderSettingsBuilder {
         secretAccessKey = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun sessionToken(value: String?): AnthropicAwsProviderSettingsBuilder {
         sessionToken = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun baseURL(value: String?): AnthropicAwsProviderSettingsBuilder {
         baseURL = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun headers(value: Map<String, String>): AnthropicAwsProviderSettingsBuilder {
         headers = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun credentialProvider(value: (suspend () -> AnthropicAwsCredentials)?): AnthropicAwsProviderSettingsBuilder {
         credentialProvider = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun generateId(value: () -> String): AnthropicAwsProviderSettingsBuilder {
         generateId = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun build(): AnthropicAwsProviderSettings =
         AnthropicAwsProviderSettings(
             region = region,
@@ -147,26 +170,35 @@ public class AnthropicAwsProviderSettingsBuilder {
         )
 }
 
+/** @since 0.3.0-beta01 */
 public fun AnthropicAwsProviderSettings(
     block: AnthropicAwsProviderSettingsBuilder.() -> Unit = {},
 ): AnthropicAwsProviderSettings =
     AnthropicAwsProviderSettingsBuilder().apply(block).build()
 
+/** @since 0.3.0-beta01 */
 public interface AnthropicAwsProvider : Provider {
+    /** @since 0.3.0-beta01 */
     public val settings: AnthropicAwsProviderSettings
+    /** @since 0.3.0-beta01 */
     public val tools: AnthropicTools
 
     public operator fun invoke(modelId: ModelId): LanguageModel = languageModel(modelId.value)
+    /** @since 0.3.0-beta01 */
     public fun chat(modelId: ModelId): LanguageModel = languageModel(modelId.value)
+    /** @since 0.3.0-beta01 */
     public fun messages(modelId: ModelId): LanguageModel = languageModel(modelId.value)
+    /** @since 0.3.0-beta01 */
     public fun textEmbeddingModel(modelId: String): Nothing = throw NoSuchModelError(providerId, "embeddingModel", modelId)
 }
 
+/** @since 0.3.0-beta01 */
 public fun AnthropicAws(
     client: HttpClient,
     settings: AnthropicAwsProviderSettings = AnthropicAwsProviderSettings(),
 ): AnthropicAwsProvider = DefaultAnthropicAwsProvider(client, settings)
 
+/** @since 0.3.0-beta01 */
 public val anthropicAws: AnthropicAwsProvider = object : AnthropicAwsProvider {
     override val providerId: String = "anthropic-aws"
     override val settings: AnthropicAwsProviderSettings = AnthropicAwsProviderSettings()

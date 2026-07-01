@@ -10,31 +10,39 @@ import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.serialization.json.JsonElement
 
+/** @since 0.3.0-beta01 */
 public enum class CompletionStreamProtocol(public val wireValue: String) {
     Data("data"),
     Text("text"),
 }
 
 @Poko
+/** @since 0.3.0-beta01 */
 public class CompletionRequestOptions internal constructor(
+    /** @since 0.3.0-beta01 */
     public val headers: Map<String, String> = emptyMap(),
+    /** @since 0.3.0-beta01 */
     public val body: Map<String, JsonElement> = emptyMap(),
 )
 
+/** @since 0.3.0-beta01 */
 public class CompletionRequestOptionsBuilder {
     private var headers: Map<String, String> = emptyMap()
     private var body: Map<String, JsonElement> = emptyMap()
 
+    /** @since 0.3.0-beta01 */
     public fun headers(value: Map<String, String>): CompletionRequestOptionsBuilder {
         headers = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun body(value: Map<String, JsonElement>): CompletionRequestOptionsBuilder {
         body = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun build(): CompletionRequestOptions =
         CompletionRequestOptions(
             headers = headers,
@@ -42,21 +50,31 @@ public class CompletionRequestOptionsBuilder {
         )
 }
 
+/** @since 0.3.0-beta01 */
 public fun CompletionRequestOptions(
     block: CompletionRequestOptionsBuilder.() -> Unit = {},
 ): CompletionRequestOptions =
     CompletionRequestOptionsBuilder().apply(block).build()
 
+/** @since 0.3.0-beta01 */
 public class CompletionRequest internal constructor(
+    /** @since 0.3.0-beta01 */
     public val api: String,
+    /** @since 0.3.0-beta01 */
     public val id: String,
+    /** @since 0.3.0-beta01 */
     public val prompt: String,
+    /** @since 0.3.0-beta01 */
     public val headers: Map<String, String> = emptyMap(),
+    /** @since 0.3.0-beta01 */
     public val body: Map<String, JsonElement> = emptyMap(),
+    /** @since 0.3.0-beta01 */
     public val streamProtocol: CompletionStreamProtocol = CompletionStreamProtocol.Data,
+    /** @since 0.3.0-beta01 */
     public val abortSignal: AbortSignal = AbortSignalNever,
 )
 
+/** @since 0.3.0-beta01 */
 public class CompletionRequestBuilder {
     private var api: String? = null
     private var id: String? = null
@@ -66,41 +84,49 @@ public class CompletionRequestBuilder {
     private var streamProtocol: CompletionStreamProtocol = CompletionStreamProtocol.Data
     private var abortSignal: AbortSignal = AbortSignalNever
 
+    /** @since 0.3.0-beta01 */
     public fun api(value: String): CompletionRequestBuilder {
         api = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun id(value: String): CompletionRequestBuilder {
         id = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun prompt(value: String): CompletionRequestBuilder {
         prompt = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun headers(value: Map<String, String>): CompletionRequestBuilder {
         headers = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun body(value: Map<String, JsonElement>): CompletionRequestBuilder {
         body = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun streamProtocol(value: CompletionStreamProtocol): CompletionRequestBuilder {
         streamProtocol = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun abortSignal(value: AbortSignal): CompletionRequestBuilder {
         abortSignal = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun build(): CompletionRequest =
         CompletionRequest(
             api = requireNotNull(api) { "CompletionRequest.api is required" },
@@ -113,12 +139,15 @@ public class CompletionRequestBuilder {
         )
 }
 
+/** @since 0.3.0-beta01 */
 public fun CompletionRequest(
     block: CompletionRequestBuilder.() -> Unit = {},
 ): CompletionRequest =
     CompletionRequestBuilder().apply(block).build()
 
+/** @since 0.3.0-beta01 */
 public interface CompletionTransport {
+    /** @since 0.3.0-beta01 */
     public fun complete(request: CompletionRequest): Flow<String>
 }
 
@@ -128,19 +157,31 @@ internal class DirectCompletionTransport(
     override fun complete(request: CompletionRequest): Flow<String> = handler(request)
 }
 
+/** @since 0.3.0-beta01 */
 public class UseCompletionOptions internal constructor(
+    /** @since 0.3.0-beta01 */
     public val api: String = "/api/completion",
+    /** @since 0.3.0-beta01 */
     public val id: String = IdGenerator.generate("completion"),
+    /** @since 0.3.0-beta01 */
     public val initialCompletion: String = "",
+    /** @since 0.3.0-beta01 */
     public val initialInput: String = "",
+    /** @since 0.3.0-beta01 */
     public val headers: Map<String, String> = emptyMap(),
+    /** @since 0.3.0-beta01 */
     public val body: Map<String, JsonElement> = emptyMap(),
+    /** @since 0.3.0-beta01 */
     public val streamProtocol: CompletionStreamProtocol = CompletionStreamProtocol.Data,
+    /** @since 0.3.0-beta01 */
     public val transport: CompletionTransport = DirectCompletionTransport { emptyFlow() },
+    /** @since 0.3.0-beta01 */
     public val onFinish: suspend (prompt: String, completion: String) -> Unit = { _, _ -> },
+    /** @since 0.3.0-beta01 */
     public val onError: suspend (Throwable) -> Unit = {},
 )
 
+/** @since 0.3.0-beta01 */
 public class UseCompletionOptionsBuilder {
     private var api: String = "/api/completion"
     private var id: String = IdGenerator.generate("completion")
@@ -153,56 +194,67 @@ public class UseCompletionOptionsBuilder {
     private var onFinish: suspend (prompt: String, completion: String) -> Unit = { _, _ -> }
     private var onError: suspend (Throwable) -> Unit = {}
 
+    /** @since 0.3.0-beta01 */
     public fun api(value: String): UseCompletionOptionsBuilder {
         api = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun id(value: String): UseCompletionOptionsBuilder {
         id = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun initialCompletion(value: String): UseCompletionOptionsBuilder {
         initialCompletion = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun initialInput(value: String): UseCompletionOptionsBuilder {
         initialInput = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun headers(value: Map<String, String>): UseCompletionOptionsBuilder {
         headers = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun body(value: Map<String, JsonElement>): UseCompletionOptionsBuilder {
         body = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun streamProtocol(value: CompletionStreamProtocol): UseCompletionOptionsBuilder {
         streamProtocol = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun transport(value: CompletionTransport): UseCompletionOptionsBuilder {
         transport = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun onFinish(value: suspend (prompt: String, completion: String) -> Unit): UseCompletionOptionsBuilder {
         onFinish = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun onError(value: suspend (Throwable) -> Unit): UseCompletionOptionsBuilder {
         onError = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun build(): UseCompletionOptions =
         UseCompletionOptions(
             api = api,
@@ -218,27 +270,43 @@ public class UseCompletionOptionsBuilder {
         )
 }
 
+/** @since 0.3.0-beta01 */
 public fun UseCompletionOptions(
     block: UseCompletionOptionsBuilder.() -> Unit = {},
 ): UseCompletionOptions =
     UseCompletionOptionsBuilder().apply(block).build()
 
+/** @since 0.3.0-beta01 */
 public class CallCompletionApiOptions internal constructor(
+    /** @since 0.3.0-beta01 */
     public val api: String = "/api/completion",
+    /** @since 0.3.0-beta01 */
     public val id: String = IdGenerator.generate("completion"),
+    /** @since 0.3.0-beta01 */
     public val prompt: String,
+    /** @since 0.3.0-beta01 */
     public val headers: Map<String, String> = emptyMap(),
+    /** @since 0.3.0-beta01 */
     public val body: Map<String, JsonElement> = emptyMap(),
+    /** @since 0.3.0-beta01 */
     public val streamProtocol: CompletionStreamProtocol = CompletionStreamProtocol.Data,
+    /** @since 0.3.0-beta01 */
     public val transport: CompletionTransport,
+    /** @since 0.3.0-beta01 */
     public val abortSignal: AbortSignal = AbortSignalNever,
+    /** @since 0.3.0-beta01 */
     public val setCompletion: (String) -> Unit = {},
+    /** @since 0.3.0-beta01 */
     public val setLoading: (Boolean) -> Unit = {},
+    /** @since 0.3.0-beta01 */
     public val setError: (Throwable?) -> Unit = {},
+    /** @since 0.3.0-beta01 */
     public val onFinish: suspend (prompt: String, completion: String) -> Unit = { _, _ -> },
+    /** @since 0.3.0-beta01 */
     public val onError: suspend (Throwable) -> Unit = {},
 )
 
+/** @since 0.3.0-beta01 */
 public class CallCompletionApiOptionsBuilder {
     private var api: String = "/api/completion"
     private var id: String = IdGenerator.generate("completion")
@@ -254,71 +322,85 @@ public class CallCompletionApiOptionsBuilder {
     private var onFinish: suspend (prompt: String, completion: String) -> Unit = { _, _ -> }
     private var onError: suspend (Throwable) -> Unit = {}
 
+    /** @since 0.3.0-beta01 */
     public fun api(value: String): CallCompletionApiOptionsBuilder {
         api = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun id(value: String): CallCompletionApiOptionsBuilder {
         id = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun prompt(value: String): CallCompletionApiOptionsBuilder {
         prompt = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun headers(value: Map<String, String>): CallCompletionApiOptionsBuilder {
         headers = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun body(value: Map<String, JsonElement>): CallCompletionApiOptionsBuilder {
         body = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun streamProtocol(value: CompletionStreamProtocol): CallCompletionApiOptionsBuilder {
         streamProtocol = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun transport(value: CompletionTransport): CallCompletionApiOptionsBuilder {
         transport = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun abortSignal(value: AbortSignal): CallCompletionApiOptionsBuilder {
         abortSignal = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun setCompletion(value: (String) -> Unit): CallCompletionApiOptionsBuilder {
         setCompletion = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun setLoading(value: (Boolean) -> Unit): CallCompletionApiOptionsBuilder {
         setLoading = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun setError(value: (Throwable?) -> Unit): CallCompletionApiOptionsBuilder {
         setError = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun onFinish(value: suspend (prompt: String, completion: String) -> Unit): CallCompletionApiOptionsBuilder {
         onFinish = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun onError(value: suspend (Throwable) -> Unit): CallCompletionApiOptionsBuilder {
         onError = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun build(): CallCompletionApiOptions =
         CallCompletionApiOptions(
             api = api,
@@ -337,11 +419,13 @@ public class CallCompletionApiOptionsBuilder {
         )
 }
 
+/** @since 0.3.0-beta01 */
 public fun CallCompletionApiOptions(
     block: CallCompletionApiOptionsBuilder.() -> Unit = {},
 ): CallCompletionApiOptions =
     CallCompletionApiOptionsBuilder().apply(block).build()
 
+/** @since 0.3.0-beta01 */
 public object CompletionApi {
     public suspend fun callCompletionApi(options: CallCompletionApiOptions): String? {
         val request = CompletionRequest {
@@ -379,20 +463,27 @@ public object CompletionApi {
     }
 }
 
+/** @since 0.3.0-beta01 */
 public sealed class CompletionPhase {
+    /** @since 0.3.0-beta01 */
     public data object Idle : CompletionPhase()
     @Poko
+    /** @since 0.3.0-beta01 */
     public class Streaming(public val text: String) : CompletionPhase()
     @Poko
+    /** @since 0.3.0-beta01 */
     public class Done(public val text: String) : CompletionPhase()
     @Poko
+    /** @since 0.3.0-beta01 */
     public class Failed(public val text: String, public val cause: Throwable) : CompletionPhase()
 }
 
+/** @since 0.3.0-beta01 */
 public data class CompletionState(
     val input: String = "",
     val phase: CompletionPhase = CompletionPhase.Idle,
 ) {
+    /** @since 0.3.0-beta01 */
     public val completion: String
         get() = when (val p = phase) {
             is CompletionPhase.Idle -> ""
@@ -400,17 +491,23 @@ public data class CompletionState(
             is CompletionPhase.Done -> p.text
             is CompletionPhase.Failed -> p.text
         }
+    /** @since 0.3.0-beta01 */
     public val error: Throwable?
         get() = (phase as? CompletionPhase.Failed)?.cause
+    /** @since 0.3.0-beta01 */
     public val loading: Boolean
         get() = phase is CompletionPhase.Streaming
 }
 
+/** @since 0.3.0-beta01 */
 public class Completion(
     private val options: UseCompletionOptions = UseCompletionOptions(block = {}),
 ) {
+    /** @since 0.3.0-beta01 */
     public val id: String = options.id
+    /** @since 0.3.0-beta01 */
     public val api: String = options.api
+    /** @since 0.3.0-beta01 */
     public val streamProtocol: CompletionStreamProtocol = options.streamProtocol
 
     private val mutableState = MutableStateFlow(
@@ -424,19 +521,26 @@ public class Completion(
         ),
     )
 
+    /** @since 0.3.0-beta01 */
     public val state: StateFlow<CompletionState> = mutableState.asStateFlow()
 
+    /** @since 0.3.0-beta01 */
     public val completion: String get() = mutableState.value.completion
+    /** @since 0.3.0-beta01 */
     public val input: String get() = mutableState.value.input
+    /** @since 0.3.0-beta01 */
     public val error: Throwable? get() = mutableState.value.error
+    /** @since 0.3.0-beta01 */
     public val loading: Boolean get() = mutableState.value.loading
 
     private var abortController: AbortController? = null
 
+    /** @since 0.3.0-beta01 */
     public fun setInput(input: String) {
         mutableState.update { it.copy(input = input) }
     }
 
+    /** @since 0.3.0-beta01 */
     public fun setCompletion(completion: String) {
         mutableState.update { it.copy(phase = CompletionPhase.Done(completion)) }
     }
@@ -497,6 +601,7 @@ public class Completion(
     public suspend fun handleSubmit(): String? =
         input.takeIf { it.isNotEmpty() }?.let { complete(it) }
 
+    /** @since 0.3.0-beta01 */
     public fun stop() {
         abortController?.abort()
         abortController = null

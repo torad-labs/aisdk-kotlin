@@ -9,6 +9,7 @@ import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 
+/** @since 0.3.0-beta01 */
 public class StreamObjectResult<TOutput> internal constructor(
     events: Flow<StreamEvent>,
     private val output: Output<TOutput>,
@@ -20,6 +21,7 @@ public class StreamObjectResult<TOutput> internal constructor(
     // every accessor through one StreamTextResult so the provider is hit at most once and replayed.
     private val stream: Flow<StreamEvent> = StreamTextResult(events).fullStream
 
+    /** @since 0.3.0-beta01 */
     public val partialObjectStream: Flow<TOutput> = flow {
         val textBlocks = OrderedTextBlocks()
         var lastKey: String? = null
@@ -62,6 +64,7 @@ public class StreamObjectResult<TOutput> internal constructor(
         }
     }
 
+    /** @since 0.3.0-beta01 */
     public val textStream: Flow<String> = flow {
         data class TextBlock(
             val buffer: StringBuilder = StringBuilder(),
@@ -301,11 +304,17 @@ public class StreamObjectResult<TOutput> internal constructor(
 }
 
 @Poko
+/** @since 0.3.0-beta01 */
 public class StreamObjectFinish<TOutput>(
+    /** @since 0.3.0-beta01 */
     public val value: TOutput,
+    /** @since 0.3.0-beta01 */
     public val usage: Usage,
+    /** @since 0.3.0-beta01 */
     public val finishReason: FinishReason,
+    /** @since 0.3.0-beta01 */
     public val warnings: List<CallWarning>,
+    /** @since 0.3.0-beta01 */
     public val response: LanguageModelResponseMetadata,
 )
 

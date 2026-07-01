@@ -30,18 +30,29 @@ public const val LMNT_VERSION: String = "2.0.33"
 
 @Serializable
 @Poko
+/** @since 0.3.0-beta01 */
 public class LMNTSpeechModelOptions internal constructor(
+    /** @since 0.3.0-beta01 */
     public val model: String? = null,
+    /** @since 0.3.0-beta01 */
     public val format: String? = null,
+    /** @since 0.3.0-beta01 */
     public val sampleRate: Int? = null,
+    /** @since 0.3.0-beta01 */
     public val speed: Float? = null,
+    /** @since 0.3.0-beta01 */
     public val seed: Int? = null,
+    /** @since 0.3.0-beta01 */
     public val conversational: Boolean? = null,
+    /** @since 0.3.0-beta01 */
     public val length: Float? = null,
+    /** @since 0.3.0-beta01 */
     public val topP: Float? = null,
+    /** @since 0.3.0-beta01 */
     public val temperature: Float? = null,
 )
 
+/** @since 0.3.0-beta01 */
 public class LMNTSpeechModelOptionsBuilder {
     private var model: String? = null
     private var format: String? = null
@@ -53,51 +64,61 @@ public class LMNTSpeechModelOptionsBuilder {
     private var topP: Float? = null
     private var temperature: Float? = null
 
+    /** @since 0.3.0-beta01 */
     public fun model(value: String?): LMNTSpeechModelOptionsBuilder {
         model = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun format(value: String?): LMNTSpeechModelOptionsBuilder {
         format = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun sampleRate(value: Int?): LMNTSpeechModelOptionsBuilder {
         sampleRate = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun speed(value: Float?): LMNTSpeechModelOptionsBuilder {
         speed = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun seed(value: Int?): LMNTSpeechModelOptionsBuilder {
         seed = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun conversational(value: Boolean?): LMNTSpeechModelOptionsBuilder {
         conversational = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun length(value: Float?): LMNTSpeechModelOptionsBuilder {
         length = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun topP(value: Float?): LMNTSpeechModelOptionsBuilder {
         topP = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun temperature(value: Float?): LMNTSpeechModelOptionsBuilder {
         temperature = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun build(): LMNTSpeechModelOptions =
         LMNTSpeechModelOptions(
             model = model,
@@ -112,6 +133,7 @@ public class LMNTSpeechModelOptionsBuilder {
         )
 }
 
+/** @since 0.3.0-beta01 */
 public fun LMNTSpeechModelOptions(
     block: LMNTSpeechModelOptionsBuilder.() -> Unit = {},
 ): LMNTSpeechModelOptions =
@@ -119,8 +141,11 @@ public fun LMNTSpeechModelOptions(
 
 @Serializable
 @Poko
+/** @since 0.3.0-beta01 */
 public class LMNTProviderSettings internal constructor(
+    /** @since 0.3.0-beta01 */
     public val apiKey: String? = null,
+    /** @since 0.3.0-beta01 */
     public val headers: Map<String, String> = emptyMap(),
 ) {
     internal fun lmntHeaders(callHeaders: Map<String, String>): Map<String, String> {
@@ -132,20 +157,24 @@ public class LMNTProviderSettings internal constructor(
     }
 }
 
+/** @since 0.3.0-beta01 */
 public class LMNTProviderSettingsBuilder {
     private var apiKey: String? = null
     private var headers: Map<String, String> = emptyMap()
 
+    /** @since 0.3.0-beta01 */
     public fun apiKey(value: String?): LMNTProviderSettingsBuilder {
         apiKey = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun headers(value: Map<String, String>): LMNTProviderSettingsBuilder {
         headers = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun build(): LMNTProviderSettings =
         LMNTProviderSettings(
             apiKey = apiKey,
@@ -153,19 +182,23 @@ public class LMNTProviderSettingsBuilder {
         )
 }
 
+/** @since 0.3.0-beta01 */
 public fun LMNTProviderSettings(
     block: LMNTProviderSettingsBuilder.() -> Unit = {},
 ): LMNTProviderSettings =
     LMNTProviderSettingsBuilder().apply(block).build()
 
+/** @since 0.3.0-beta01 */
 public class LMNTProvider(
     private val client: HttpClient,
+    /** @since 0.3.0-beta01 */
     public val settings: LMNTProviderSettings,
 ) : Provider {
     override val providerId: String = "lmnt"
 
     public operator fun invoke(modelId: ModelId = ModelId("aurora")): SpeechModel = speech(modelId)
 
+    /** @since 0.3.0-beta01 */
     public fun speech(modelId: ModelId): SpeechModel = LMNTSpeechModel(client, settings, modelId.value)
 
     override fun speechModel(modelId: String): SpeechModel = speech(ModelId(modelId))
@@ -174,7 +207,10 @@ public class LMNTProvider(
     override fun imageModel(modelId: String): ImageModel = throw NoSuchModelError(providerId, "imageModel", modelId)
 }
 
-/** PascalCase factory — mirrors the OpenAI(...) reference pattern. */
+/**
+ * PascalCase factory — mirrors the OpenAI(...) reference pattern.
+ * @since 0.3.0-beta01
+ */
 public fun LMNT(
     client: HttpClient,
     settings: LMNTProviderSettings = LMNTProviderSettings(),

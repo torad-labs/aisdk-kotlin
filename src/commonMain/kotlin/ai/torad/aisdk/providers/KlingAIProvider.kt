@@ -25,10 +25,15 @@ public typealias KlingAIVideoProviderOptions = KlingAIVideoModelOptions
 
 @Serializable
 @Poko
+/** @since 0.3.0-beta01 */
 public class KlingAIProviderSettings internal constructor(
+    /** @since 0.3.0-beta01 */
     public val accessKey: String? = null,
+    /** @since 0.3.0-beta01 */
     public val secretKey: String? = null,
+    /** @since 0.3.0-beta01 */
     public val baseURL: String = "https://api-singapore.klingai.com",
+    /** @since 0.3.0-beta01 */
     public val headers: Map<String, String> = emptyMap(),
 ) {
     internal fun klingAIHeaders(
@@ -66,32 +71,38 @@ public class KlingAIProviderSettings internal constructor(
         Base64Codec.encode(bytes).replace('+', '-').replace('/', '_').trimEnd('=')
 }
 
+/** @since 0.3.0-beta01 */
 public class KlingAIProviderSettingsBuilder {
     private var accessKey: String? = null
     private var secretKey: String? = null
     private var baseURL: String = "https://api-singapore.klingai.com"
     private var headers: Map<String, String> = emptyMap()
 
+    /** @since 0.3.0-beta01 */
     public fun accessKey(value: String?): KlingAIProviderSettingsBuilder {
         accessKey = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun secretKey(value: String?): KlingAIProviderSettingsBuilder {
         secretKey = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun baseURL(value: String): KlingAIProviderSettingsBuilder {
         baseURL = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun headers(value: Map<String, String>): KlingAIProviderSettingsBuilder {
         headers = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun build(): KlingAIProviderSettings =
         KlingAIProviderSettings(
             accessKey = accessKey,
@@ -101,6 +112,7 @@ public class KlingAIProviderSettingsBuilder {
         )
 }
 
+/** @since 0.3.0-beta01 */
 public fun KlingAIProviderSettings(
     block: KlingAIProviderSettingsBuilder.() -> Unit = {},
 ): KlingAIProviderSettings =
@@ -108,28 +120,49 @@ public fun KlingAIProviderSettings(
 
 @Serializable
 @Poko
+/** @since 0.3.0-beta01 */
 public class KlingAIVideoModelOptions internal constructor(
+    /** @since 0.3.0-beta01 */
     public val mode: String? = null,
+    /** @since 0.3.0-beta01 */
     public val pollIntervalMs: Long? = null,
+    /** @since 0.3.0-beta01 */
     public val pollTimeoutMs: Long? = null,
+    /** @since 0.3.0-beta01 */
     public val negativePrompt: String? = null,
+    /** @since 0.3.0-beta01 */
     public val sound: String? = null,
+    /** @since 0.3.0-beta01 */
     public val cfgScale: Float? = null,
+    /** @since 0.3.0-beta01 */
     public val cameraControl: JsonObject? = null,
+    /** @since 0.3.0-beta01 */
     public val imageTail: String? = null,
+    /** @since 0.3.0-beta01 */
     public val staticMask: String? = null,
+    /** @since 0.3.0-beta01 */
     public val dynamicMasks: JsonArray? = null,
+    /** @since 0.3.0-beta01 */
     public val multiShot: Boolean? = null,
+    /** @since 0.3.0-beta01 */
     public val shotType: String? = null,
+    /** @since 0.3.0-beta01 */
     public val multiPrompt: JsonArray? = null,
+    /** @since 0.3.0-beta01 */
     public val elementList: JsonArray? = null,
+    /** @since 0.3.0-beta01 */
     public val voiceList: JsonArray? = null,
+    /** @since 0.3.0-beta01 */
     public val watermarkEnabled: Boolean? = null,
+    /** @since 0.3.0-beta01 */
     public val videoUrl: String? = null,
+    /** @since 0.3.0-beta01 */
     public val characterOrientation: String? = null,
+    /** @since 0.3.0-beta01 */
     public val keepOriginalSound: String? = null,
 )
 
+/** @since 0.3.0-beta01 */
 public class KlingAIVideoModelOptionsBuilder {
     private var mode: String? = null
     private var pollIntervalMs: Long? = null
@@ -151,101 +184,121 @@ public class KlingAIVideoModelOptionsBuilder {
     private var characterOrientation: String? = null
     private var keepOriginalSound: String? = null
 
+    /** @since 0.3.0-beta01 */
     public fun mode(value: String?): KlingAIVideoModelOptionsBuilder {
         mode = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun pollIntervalMs(value: Long?): KlingAIVideoModelOptionsBuilder {
         pollIntervalMs = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun pollTimeoutMs(value: Long?): KlingAIVideoModelOptionsBuilder {
         pollTimeoutMs = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun negativePrompt(value: String?): KlingAIVideoModelOptionsBuilder {
         negativePrompt = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun sound(value: String?): KlingAIVideoModelOptionsBuilder {
         sound = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun cfgScale(value: Float?): KlingAIVideoModelOptionsBuilder {
         cfgScale = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun cameraControl(value: JsonObject?): KlingAIVideoModelOptionsBuilder {
         cameraControl = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun imageTail(value: String?): KlingAIVideoModelOptionsBuilder {
         imageTail = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun staticMask(value: String?): KlingAIVideoModelOptionsBuilder {
         staticMask = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun dynamicMasks(value: JsonArray?): KlingAIVideoModelOptionsBuilder {
         dynamicMasks = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun multiShot(value: Boolean?): KlingAIVideoModelOptionsBuilder {
         multiShot = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun shotType(value: String?): KlingAIVideoModelOptionsBuilder {
         shotType = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun multiPrompt(value: JsonArray?): KlingAIVideoModelOptionsBuilder {
         multiPrompt = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun elementList(value: JsonArray?): KlingAIVideoModelOptionsBuilder {
         elementList = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun voiceList(value: JsonArray?): KlingAIVideoModelOptionsBuilder {
         voiceList = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun watermarkEnabled(value: Boolean?): KlingAIVideoModelOptionsBuilder {
         watermarkEnabled = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun videoUrl(value: String?): KlingAIVideoModelOptionsBuilder {
         videoUrl = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun characterOrientation(value: String?): KlingAIVideoModelOptionsBuilder {
         characterOrientation = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun keepOriginalSound(value: String?): KlingAIVideoModelOptionsBuilder {
         keepOriginalSound = value
         return this
     }
 
+    /** @since 0.3.0-beta01 */
     public fun build(): KlingAIVideoModelOptions =
         KlingAIVideoModelOptions(
             mode = mode,
@@ -270,17 +323,21 @@ public class KlingAIVideoModelOptionsBuilder {
         )
 }
 
+/** @since 0.3.0-beta01 */
 public fun KlingAIVideoModelOptions(
     block: KlingAIVideoModelOptionsBuilder.() -> Unit = {},
 ): KlingAIVideoModelOptions =
     KlingAIVideoModelOptionsBuilder().apply(block).build()
 
+/** @since 0.3.0-beta01 */
 public class KlingAIProvider(
     private val client: HttpClient,
+    /** @since 0.3.0-beta01 */
     public val settings: KlingAIProviderSettings,
 ) : Provider {
     override val providerId: String = "klingai"
 
+    /** @since 0.3.0-beta01 */
     public fun video(modelId: ModelId): VideoModel = videoModel(modelId.value)
 
     override fun videoModel(modelId: String): VideoModel = KlingAIVideoModel(client, settings, modelId)
@@ -289,7 +346,10 @@ public class KlingAIProvider(
     override fun imageModel(modelId: String): ImageModel = throw NoSuchModelError(providerId, "imageModel", modelId)
 }
 
-/** PascalCase factory — mirrors the OpenAI(...) reference pattern. */
+/**
+ * PascalCase factory — mirrors the OpenAI(...) reference pattern.
+ * @since 0.3.0-beta01
+ */
 public fun KlingAI(
     client: HttpClient,
     settings: KlingAIProviderSettings = KlingAIProviderSettings(),
