@@ -399,11 +399,11 @@ Penalty, response-format, and retry fields participate in the `Step ?: Agent ?: 
 
 - `sealed interface ChunkBy { Word; Line; Pattern(regex) }`
 - `fun smoothStream(upstream, delayMs = 10L, chunkBy = Word): Flow<StreamEvent>`
-- `fun simulateReadableStream(events, initialDelayMs = 0L, chunkDelayMs = 10L): Flow<StreamEvent>`
+- `fun SimulateReadableStream(chunks, delayMillis = 0L): Flow<T>`
 
 ### Structured generation entrypoints
 
-- `CallSettings { ...; maxRetries(2) }` / `CallConfig { ...; maxRetries(2) }` — `@Poko` builder-backed value types used by high-level generation APIs. Non-streaming text/object generation retries typed retryable `APICallError` / `GatewayError` per model round-trip; `maxRetries = 0` disables retries. The positional constructors, `copy()`, and `componentN()` are not public.
+- `CallSettings { ...; headers(mapOf("X-Trace" to "...")); maxRetries(2) }` / `CallConfig { ...; headers(mapOf("X-Trace" to "...")); maxRetries(2) }` — `@Poko` builder-backed value types used by high-level generation APIs. Non-streaming text/object generation retries typed retryable `APICallError` / `GatewayError` per model round-trip; per-call `headers` flow into `LanguageModelCallParams.headers`; `maxRetries = 0` disables retries. The positional constructors, `copy()`, and `componentN()` are not public.
 - `class TextGenerator(model, config = CallConfig())`
   - `fun generate(input: GenerationInput): Flow<GenerateTextResult<String>>`
   - `fun <T> generate(input: GenerationInput, output: Output<T>): Flow<GenerateTextResult<T>>`

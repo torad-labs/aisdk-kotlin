@@ -506,7 +506,6 @@ public class StructuredObjectGenerator<RESULT>(
             is StructuredObjectPhase.Streaming -> StructuredObjectFinish(terminal.partial, terminal.error, terminal.raw)
             StructuredObjectPhase.Idle -> StructuredObjectFinish(null, null, null)
         }
-
     private fun buildParams(input: GenerationInput): LanguageModelCallParams =
         LanguageModelCallParams {
             messages(input.toMessages(null))
@@ -520,6 +519,7 @@ public class StructuredObjectGenerator<RESULT>(
             abortSignal(config.abortSignal)
             presencePenalty(config.presencePenalty)
             frequencyPenalty(config.frequencyPenalty)
+            headers(config.headers)
             // Constrain the model to JSON for our schema unless the caller pinned a responseFormat.
             responseFormat(
                 if (config.responseFormat == ResponseFormat.Text) {

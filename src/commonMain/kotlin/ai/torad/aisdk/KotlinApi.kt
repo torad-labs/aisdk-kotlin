@@ -38,6 +38,8 @@ public class CallSettings internal constructor(
     /** @since 0.3.0-beta01 */
     public val responseFormat: ResponseFormat? = null,
     /** @since 0.3.0-beta01 */
+    public val headers: Map<String, String> = emptyMap(),
+    /** @since 0.3.0-beta01 */
     public val maxRetries: Int = 2,
 ) {
     init {
@@ -62,6 +64,7 @@ public class CallSettingsBuilder {
     private var maxRetries: Int = 2
 
     private val stopSequences = mutableListOf<String>()
+    private val headers = linkedMapOf<String, String>()
 
     /** @since 0.3.0-beta01 */
     public fun temperature(value: Float?): CallSettingsBuilder {
@@ -130,6 +133,13 @@ public class CallSettingsBuilder {
     }
 
     /** @since 0.3.0-beta01 */
+    public fun headers(value: Map<String, String>): CallSettingsBuilder {
+        headers.clear()
+        headers.putAll(value)
+        return this
+    }
+
+    /** @since 0.3.0-beta01 */
     public fun stopSequence(value: String): CallSettingsBuilder {
         stopSequences += value
         return this
@@ -166,6 +176,7 @@ public class CallSettingsBuilder {
         presencePenalty = presencePenalty,
         frequencyPenalty = frequencyPenalty,
         responseFormat = responseFormat,
+        headers = headers.toMap(),
         maxRetries = maxRetries,
     )
 }

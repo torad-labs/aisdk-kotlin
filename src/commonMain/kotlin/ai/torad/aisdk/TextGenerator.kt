@@ -84,6 +84,7 @@ public class TextGenerator @JvmOverloads constructor(
             abortSignal(config.abortSignal)
             presencePenalty(config.presencePenalty)
             frequencyPenalty(config.frequencyPenalty)
+            headers(config.headers)
             responseFormat(output?.let { o ->
                 if (config.responseFormat == ResponseFormat.Text) o.toResponseFormat() else config.responseFormat
             } ?: config.responseFormat)
