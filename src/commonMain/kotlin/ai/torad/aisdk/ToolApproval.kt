@@ -9,7 +9,7 @@ import kotlinx.serialization.json.JsonElement
  * [Agent.stream]. Per v6 RPC semantics, generation completes when one or
  * more tools require approval — the host inspects [GenerateResult.pendingApprovals],
  * presents UI, and resumes by calling [Agent.generate] again with
- * `messages = result.messages + toolApprovalResponseMessage(...)`.
+ * `messages = result.messages + ToolApprovalResponseMessage(...)`.
  *
  * There is no `Agent.submitApproval` — approval flows entirely through
  * the message log so it is serializable, persistable, and resumable
