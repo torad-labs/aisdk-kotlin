@@ -152,7 +152,11 @@ public fun SmoothStream(
                 StreamEvent.Abort,
                 is StreamEvent.Error,
                 is StreamEvent.Raw,
-                -> emit(event)
+                -> {
+                    for (id in textBuffers.keys.toList()) flushText(id, all = true)
+                    for (id in reasoningBuffers.keys.toList()) flushReasoning(id, all = true)
+                    emit(event)
+                }
             }
         }
     } catch (ce: CancellationException) {

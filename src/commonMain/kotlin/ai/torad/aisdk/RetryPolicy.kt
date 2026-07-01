@@ -3,6 +3,7 @@ package ai.torad.aisdk
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withTimeout
+import kotlinx.coroutines.withTimeoutOrNull
 import kotlin.random.Random
 import kotlin.time.Clock
 
@@ -93,9 +94,8 @@ public class RetryPolicy internal constructor(
         if (perAttemptTimeoutMs == null) {
             block(attempt)
         } else {
-            withTimeout(perAttemptTimeoutMs) {
-                block(attempt)
-            }
+            val result = withTimeoutOrNull(perAttemptTimeoutMs) { RetryAttemptValue(block(attempt)) }
+            result?.value ?: throw RetryAttemptTimeoutException(perAttemptTimeoutMs)
         }
 
     @Suppress("ThrowsCount")
@@ -179,6 +179,11 @@ public class RetryPolicy internal constructor(
             "attempt=${detail.attempt},retryable=${detail.retryable},delayMs=${detail.delayMs}"
         }
 
+    private class RetryAttemptValue<T>(val value: T)
+
+    private class RetryAttemptTimeoutException(timeoutMs: Long) :
+        RuntimeException("Retry attempt timed out after ${timeoutMs}ms")
+
     @Suppress("ReturnCount", "MagicNumber", "ComplexCondition")
     private fun parseHttpDateEpochMilliseconds(value: String): Long? {
         val match = HTTP_DATE_REGEX.matchEntire(value.trim()) ?: return null
@@ -239,7 +244,31 @@ public class RetryPolicy internal constructor(
 
         private fun isDefaultRetryable(t: Throwable): Boolean =
             (t as? APICallError)?.isRetryable == true ||
-                (t as? GatewayError)?.isRetryable == true
+                (t as? GatewayError)?.isRetryable == true ||
+                t is RetryAttemptTimeoutException ||
+                (
+                    t !is CancellationException &&
+                        (
+                            t::class.qualifiedName.orEmpty() == "io.ktor.client.plugins.HttpRequestTimeoutException" ||
+                                t::class.qualifiedName.orEmpty() == "io.ktor.client.network.sockets.ConnectTimeoutException" ||
+                                t::class.qualifiedName.orEmpty() == "io.ktor.utils.io.errors.IOException" ||
+                                t::class.qualifiedName.orEmpty() == "kotlinx.io.IOException" ||
+                                t::class.qualifiedName.orEmpty() == "java.io.IOException" ||
+                                t::class.qualifiedName.orEmpty().endsWith(".IOException") ||
+                                t::class.simpleName.orEmpty() in transientNetworkExceptionNames
+                            )
+                    )
+
+        private val transientNetworkExceptionNames = setOf(
+            "ConnectException",
+            "ConnectionResetException",
+            "EOFException",
+            "NoRouteToHostException",
+            "ProtocolException",
+            "SocketException",
+            "SocketTimeoutException",
+            "UnknownHostException",
+        )
     }
 }
 
