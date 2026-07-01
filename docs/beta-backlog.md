@@ -28,10 +28,10 @@ tests must stay green.
 | BL-008 | `EventStreamParser` errors on `data: [DONE]` with trailing whitespace | Low-Med | Optional | CONFIRMED | DONE |
 | BL-009 | `StreamObjectResult` drops later-block text when earlier block unclosed | Low | Optional | CONFIRMED | DONE (903b3bc) |
 | BL-010 | `StreamObjectResult` overwrites instead of merges `ResponseMetadata` | Low | Optional | CONFIRMED | DONE (903b3bc) |
-| BL-011 | `StreamTextResult` retains full event history for single consumer | Low | Optional | CONFIRMED | OPEN |
+| BL-011 | `StreamTextResult` retains full event history for single consumer | Low | Optional | CONFIRMED | DONE (documented tradeoff, d5210c3) |
 | BL-012 | `ConvertToModelMessages` hardcodes `"approval"` tool-name | Low | Optional | CONFIRMED | DONE (a610243) |
 | BL-013 | Parity ledger overclaims 3 unimplemented adapters | Medium | Recommended | CONFIRMED | DONE (langchain/llamaindex/valibot reconciled, tools/check-parity-claims.mjs gates CI) |
-| BL-014 | No per-call `timeout` in `CallSettings` | Low-Med | Optional | CONFIRMED | OPEN |
+| BL-014 | No per-call `timeout` in `CallSettings` | Low-Med | Optional | CONFIRMED | DONE (d5210c3) |
 | BL-015 | `simulateReadableStream` test helper missing | Low | Optional | CONFIRMED | DONE (a610243) |
 | BL-016 | Native provider structured-output (`json_schema`) not used — document | Medium | Recommended | CONFIRMED | DONE (structured-output.md + capability matrix document the SDK strategy) |
 | BL-017 | `headers` reachable only via low-level call params, not `CallSettings` builder | Low | Optional | CONFIRMED | DONE (a610243) |
@@ -77,7 +77,7 @@ tests must stay green.
 
 | BL-054 | ~~SigV4 path needs double-encode~~ → FALSE POSITIVE (boto3: single `%3A` is correct); locked w/ test | ~~Critical~~ | Recommended | REFUTED | DONE (locked) |
 | BL-055 | ~~Bedrock ARN should be raw~~ → FALSE POSITIVE (boto3 encodes ARN wholesale); locked w/ test | ~~High~~ | Recommended | REFUTED | DONE (locked) |
-| BL-056 | Bedrock eventstream frames not CRC-validated | Low | Optional | CONFIRMED | OPEN |
+| BL-056 | Bedrock eventstream frames not CRC-validated | Low | Optional | CONFIRMED | DONE (d5210c3) |
 | BL-057 | Wiki/README/llms.txt code samples don't compile against the real API | High | Recommended | CONFIRMED | DONE (all 17 sub-items B1-B17/B10/B18 — see detail section) |
 | BL-058 | Public API evolvability: data-class traps, no top-level verbs, Java-uncallable fns | High | Recommended | CONFIRMED | DONE (A1/A2/A3/A4 all landed — see detail section) |
 | BL-059 | Native provider structured output (`json_schema`) for OpenAI/Google | Medium | Post-beta | CONFIRMED | OPEN (tracked per BL-016) |
@@ -217,8 +217,8 @@ BL-029..044. Gateway/UI codecs → BL-045..048. UI/media → BL-049..053. SigV4/
 - **Problem:** The primary collector buffers every `StreamEvent` for replay even when no second collector ever materializes. Long generations (tens of thousands of deltas) hold their full event log until completion — peak-memory pressure on constrained Android/Native targets. Not a leak (freed on completion).
 - **Fix direction:** Retain the buffer only once a second collector actually arrives (lazy capture), or document as an intentional tradeoff.
 - **Acceptance criteria:**
-  - [ ] Decision recorded: lazy-capture vs documented tradeoff.
-  - [ ] If lazy-capture implemented: test that the single-consumer path does not retain the full event list after completion.
+  - [x] Decision recorded: documented tradeoff (see KDoc on `StreamTextResult` in `Generate.kt`) -- lazy-capture would either weaken the full-replay guarantee for a late second collector or require a materially different concurrency design, not justified for a Low-severity/not-a-leak issue.
+  - [x] N/A -- lazy-capture was not the chosen path (see above).
 
 ## BL-012 — `ConvertToModelMessages` hardcodes the `"approval"` tool-name
 
@@ -260,9 +260,9 @@ implemented — not stubbed. The gaps below are narrow.
 - **Problem:** No per-request `timeout` option; callers must construct their own `AbortSignal` + timer. (Note: non-streaming requests already have a default 120s ceiling in `HttpTransport.kt:36`, so this is convenience/parity, not an unbounded-hang bug.)
 - **Fix direction:** Add `timeout: Duration?` to `CallSettings`, wiring it to an abort signal / `withTimeout` on the call.
 - **Acceptance criteria:**
-  - [ ] `CallSettings`/builder accepts `timeout`.
-  - [ ] Test: a call exceeding `timeout` fails with a timeout error and cancels the in-flight request.
-  - [ ] Streaming semantics documented (does `timeout` bound the open, the whole stream, or idle gap?).
+  - [x] `CallSettings`/builder accepts `timeout`.
+  - [x] Test: a call exceeding `timeout` fails with a timeout error and cancels the in-flight request (`CallTimeoutTest` uses a hanging model double that only completes via genuine coroutine cancellation, not just the outer call returning).
+  - [x] Streaming semantics documented: bounds the whole call/stream lifetime, not just connection-open and not idle-gaps (see KDoc on `CallTimeout`).
 
 ## BL-015 — `simulateReadableStream` test helper missing
 
@@ -735,7 +735,7 @@ bug; BL-054 was independently re-verified in source.
 - **Location:** `BedrockEventStream.kt:23-33,78-101` (prelude-CRC and message-CRC offsets correct but skipped, not checked).
 - **Problem:** A bit-flipped frame is silently misparsed as content instead of rejected. Correctness-under-corruption only; not security.
 - **Acceptance criteria:**
-  - [ ] Both CRC32s validated; mismatch throws `InvalidResponseDataError`.
+  - [x] Both CRC32s validated; mismatch throws `InvalidResponseDataError`.
 
 ---
 
