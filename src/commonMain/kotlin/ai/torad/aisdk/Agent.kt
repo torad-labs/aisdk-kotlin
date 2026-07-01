@@ -21,7 +21,7 @@ import kotlinx.coroutines.flow.Flow
  * The host resumes by calling [generate] again with:
  * ```
  * agent.generate(
- *   messages = result.messages + toolApprovalResponseMessage(toolCallId, approved = true),
+ *   messages = result.messages + ToolApprovalResponseMessage(toolCallId, approved = true),
  *   options = ...
  * )
  * ```

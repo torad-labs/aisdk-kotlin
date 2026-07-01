@@ -51,7 +51,7 @@ import kotlin.coroutines.coroutineContext
  *   3. **End the loop** — return control to the host with
  *      `GenerateResult.pendingApprovals` populated.
  *   4. Host calls [generate] again with
- *      `messages = result.messages + toolApprovalResponseMessage(...)`.
+ *      `messages = result.messages + ToolApprovalResponseMessage(...)`.
  *   5. Loop resumes; approved tools execute; denied tools are skipped
  *      and the denial reason flows back to the model as a tool result.
  *

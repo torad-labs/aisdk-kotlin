@@ -8,11 +8,11 @@ package boundaries for a future split.
 
 | Path | Best for | Entry point |
 |---|---|---|
-| Gateway | Routing across providers by model id. | `createGateway()` / `gateway` |
-| OpenAI-compatible | OpenAI-shaped HTTP APIs and local model servers. | `createOpenAICompatible()` |
+| Gateway | Routing across providers by model id. | `Gateway(...)` / `gateway` |
+| OpenAI-compatible | OpenAI-shaped HTTP APIs and local model servers. | `OpenAICompatible(...)` |
 | LiteRT-LM | On-device Android/JVM LiteRT-LM engines. | `LiteRTLanguageModel(...)` |
-| Dedicated facade | Provider-specific options, metadata, auth, tools, or media APIs. | `createAnthropic()`, `createGoogleGenerativeAI()`, etc. |
-| Custom provider | Internal services, fakes, unsupported providers. | `customProvider(...)` |
+| Dedicated facade | Provider-specific options, metadata, auth, tools, or media APIs. | `Anthropic(...)`, `GoogleGenerativeAI(...)`, etc. |
+| Custom provider | Internal services, fakes, unsupported providers. | `Provider(...)` |
 
 ## Gateway
 
@@ -21,11 +21,11 @@ metadata, credits, spend reports, generation info, hosted tools, and Gateway
 errors.
 
 ```kotlin
-val gatewayProvider = createGateway(
-    GatewayProviderSettings(
-        apiKey = gatewayApiKey,
-        transport = KtorGatewayTransport(client),
-    ),
+val gatewayProvider = Gateway(
+    GatewayProviderSettings {
+        apiKey(gatewayApiKey)
+        transport(KtorGatewayTransport(client))
+    },
 )
 
 val model = gatewayProvider.languageModel("anthropic/claude-sonnet-4.5")
@@ -36,18 +36,18 @@ through settings, host config, or the `environment` map.
 
 ## OpenAI-Compatible
 
-Use `createOpenAICompatible` when the service follows OpenAI-compatible chat,
+Use `OpenAICompatible` when the service follows OpenAI-compatible chat,
 completion, embedding, image, speech, or transcription routes.
 
 ```kotlin
-val provider = createOpenAICompatible(
+val provider = OpenAICompatible(
     client = client,
-    settings = OpenAICompatibleProviderSettings(
-        name = "local",
-        baseUrl = "http://localhost:11434/v1",
-        apiKey = localApiKey,
-        includeUsage = true,
-    ),
+    settings = OpenAICompatibleProviderSettings {
+        name("local")
+        baseUrl("http://localhost:11434/v1")
+        apiKey(localApiKey)
+        includeUsage(true)
+    },
 )
 
 val model = provider.chatModel("llama3.2")
@@ -78,17 +78,19 @@ normal LiteRT text content becomes text output. For Gemma-style prompt
 templates, pass template context through provider options:
 
 ```kotlin
-val params = LanguageModelCallParams(
-    messages = listOf(UserMessage("Plan the next step.")),
-    providerOptions = ProviderOptions.ofPairs(
-        "litert" to buildJsonObject {
-            put("enableThinking", JsonPrimitive(true))
-            put("extraContext", buildJsonObject {
-                put("screen", JsonPrimitive("home"))
-            })
-        },
-    ),
-)
+val params = LanguageModelCallParams {
+    messages(listOf(UserMessage("Plan the next step.")))
+    providerOptions(
+        ProviderOptions.ofPairs(
+            "litert" to buildJsonObject {
+                put("enableThinking", JsonPrimitive(true))
+                put("extraContext", buildJsonObject {
+                    put("screen", JsonPrimitive("home"))
+                })
+            },
+        ),
+    )
+}
 ```
 
 ## Dedicated Facades
@@ -96,37 +98,39 @@ val params = LanguageModelCallParams(
 Dedicated facades are available for providers whose behavior needs custom
 mapping. Current public factories include:
 
-- `createOpenAI`, `createOpenResponses`, `createAzure`
-- `createAnthropic`, `createAnthropicAws`
-- `createAmazonBedrock`, `createBedrockAnthropic`, `createBedrockMantle`
-- `createGoogleGenerativeAI`, `createVertex`, `createVertexAnthropic`,
-  `createVertexMaas`, `createGoogleVertexXai`
-- `createXai`, `createMistral`, `createCohere`, `createHuggingFace`
-- `createDeepSeek`, `createGroq`, `createPerplexity`, `createTogetherAI`
-- `createFal`, `createLuma`, `createReplicate`, `createBlackForestLabs`,
-  `createKlingAI`, `createByteDance`, `createProdia`, `createQuiverAI`
-- `createDeepgram`, `createElevenLabs`, `createGladia`, `createHume`,
-  `createLMNT`, `createAssemblyAI`, `createRevai`
-- `createVoyage`, `createAlibaba`, `createBaseten`, `createCerebras`,
-  `createDeepInfra`, `createFireworks`, `createMoonshotAI`, `createVercel`
+- `OpenAI`, `OpenResponses`, `AzureOpenAI`
+- `Anthropic`, `AnthropicAws`
+- `AmazonBedrock`, `BedrockAnthropic`, `BedrockMantle`
+- `GoogleGenerativeAI`, `GoogleVertex`, `GoogleVertexAnthropic`,
+  `GoogleVertexMaas`, `GoogleVertexXai`
+- `Xai`, `Mistral`, `Cohere`, `HuggingFace`
+- `DeepSeek`, `Groq`, `Perplexity`, `TogetherAI`
+- `Fal`, `Luma`, `Replicate`, `BlackForestLabs`,
+  `KlingAI`, `ByteDance`, `Prodia`, `QuiverAI`
+- `Deepgram`, `ElevenLabs`, `Gladia`, `Hume`,
+  `LMNT`, `AssemblyAI`, `Revai`
+- `Voyage`, `Alibaba`, `Baseten`, `Cerebras`,
+  `DeepInfra`, `Fireworks`, `MoonshotAI`, `Vercel`
 
 Some top-level singleton facades intentionally throw until configured with the
-required client/settings. Prefer explicit `create...` factories in apps.
+required client/settings. Prefer explicit PascalCase factories in apps.
 
 The generated [parity ledgers](../parity/README.md) list provider-package
 coverage and export mapping.
 
 ## Provider Registry
 
-Use `createProviderRegistry` when application code resolves models from string
+Use `ProviderRegistry` when application code resolves models from string
 ids.
 
 ```kotlin
-val registry = createProviderRegistry(
-    "gateway" to gatewayProvider,
-    "openai" to openaiProvider,
+val registry = ProviderRegistry(
+    providers = mapOf(
+        "gateway" to gatewayProvider,
+        "openai" to openaiProvider,
+    ),
     defaultProviderId = "gateway",
-    languageModelMiddleware = listOf(loggingMiddleware(logger)),
+    languageModelMiddleware = listOf(LoggingMiddleware(logger)),
 )
 
 val model = registry.languageModel("gateway:anthropic/claude-sonnet-4.5")
@@ -137,12 +141,12 @@ than one provider, include the prefix or set `defaultProviderId`.
 
 ## Custom Providers
 
-Use `customProvider` for internal services, local models, fakes, and tests.
+Use `Provider` for internal services, local models, fakes, and tests.
 
 ```kotlin
-val provider = customProvider(
+val provider = Provider(
     providerId = "test",
-    languageModels = mapOf("small" to mockLanguageModelTextOnly("ok")),
+    languageModels = mapOf("small" to MockLanguageModelTextOnly("ok")),
 )
 
 val model = provider.languageModel("small")
