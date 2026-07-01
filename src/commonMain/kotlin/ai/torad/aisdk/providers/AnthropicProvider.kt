@@ -58,9 +58,21 @@ public class AnthropicProviderSettings internal constructor(
         headers["anthropic-version"] = "2023-06-01"
         authToken?.takeIf { it.isNotBlank() }?.let { headers[HttpHeaders.Authorization] = "Bearer $it" }
             ?: apiKey?.takeIf { it.isNotBlank() }?.let { headers["x-api-key"] = it }
+        val suppliedBetas = (this.headers.entries + extra.entries)
+            .filter { it.key.equals("anthropic-beta", ignoreCase = true) }
+            .flatMap { (_, value) -> value.split(',') }
+            .map { it.trim() }
+            .filter { it.isNotEmpty() }
         headers.putAll(this.headers)
         headers.putAll(extra)
-        if (betas.isNotEmpty()) headers["anthropic-beta"] = betas.joinToString(",")
+        headers.keys
+            .filter { it.equals("anthropic-beta", ignoreCase = true) }
+            .toList()
+            .forEach { headers.remove(it) }
+        val mergedBetas = linkedSetOf<String>()
+        mergedBetas += suppliedBetas
+        mergedBetas += betas
+        if (mergedBetas.isNotEmpty()) headers["anthropic-beta"] = mergedBetas.joinToString(",")
         return ProviderHeaders.withUserAgentSuffix(headers, "ai-sdk/anthropic/$ANTHROPIC_VERSION")
     }
 
@@ -956,7 +968,11 @@ internal data class PreparedAnthropicRequest(
             warnings += preparedTools.warnings
             betas += preparedTools.betas
             val outputConfig = anthropicOutputConfig(options, params.responseFormat)
-            if (outputConfig != null) betas += "structured-outputs-2025-11-13"
+            if (params.responseFormat is ResponseFormat.Json && params.responseFormat.schemaJson != null) {
+                betas += "structured-outputs-2025-11-13"
+            }
+            if (options["taskBudget"] != null) betas += "task-budgets-2026-03-13"
+            if ((options["speed"] as? JsonPrimitive)?.contentOrNull == "fast") betas += "fast-mode-2026-02-01"
 
             return PreparedAnthropicRequest(
                 body = buildJsonObject {
@@ -1356,7 +1372,13 @@ private class AnthropicStreamState(
                 blocks[index] = AnthropicStreamBlock(id, blockType, toolName, anthropicInitialStreamInput(block["input"]))
                 when (blockType) {
                     "text" -> events += StreamEvent.TextStart(id)
-                    "thinking", "redacted_thinking" -> events += StreamEvent.ReasoningStart(id)
+                    "thinking" -> events += StreamEvent.ReasoningStart(id)
+                    "redacted_thinking" -> events += StreamEvent.ReasoningStart(
+                        id,
+                        providerMetadata = block["data"]?.let { data ->
+                            ProviderMetadata.Raw(JsonObject(mapOf("anthropic" to buildJsonObject { put("redactedData", data) })))
+                        } ?: ProviderMetadata.None,
+                    )
                     "tool_use", "server_tool_use", "mcp_tool_use" -> {
                         events += StreamEvent.ToolInputStart(id, toolName ?: return listOf(missingToolIdentityError(type, "name")))
                     }
