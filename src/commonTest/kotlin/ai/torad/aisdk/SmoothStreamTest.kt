@@ -35,6 +35,36 @@ class SmoothStreamTest {
     }
 
     @Test
+    fun `terminal event flushes buffered text before finish`() = runTest {
+        val events = flow {
+            emit(StreamEvent.TextDelta("t_1", "done"))
+            emit(StreamEvent.Finish(1, FinishReason.Stop, Usage()))
+        }
+        val out = drainAllItems(SmoothStream(events, delayMs = 0L))
+
+        assertEquals(
+            listOf(StreamEvent.TextDelta::class, StreamEvent.Finish::class),
+            out.map { it::class },
+        )
+        assertEquals("done", out.filterIsInstance<StreamEvent.TextDelta>().single().text)
+    }
+
+    @Test
+    fun `non-text event flushes buffered text before passthrough`() = runTest {
+        val events = flow {
+            emit(StreamEvent.TextDelta("t_1", "partial"))
+            emit(StreamEvent.SourcePart("s_1", StreamEvent.SourcePart.SourceType.Url, url = "https://example.test"))
+        }
+        val out = drainAllItems(SmoothStream(events, delayMs = 0L))
+
+        assertEquals(
+            listOf(StreamEvent.TextDelta::class, StreamEvent.SourcePart::class),
+            out.map { it::class },
+        )
+        assertEquals("partial", out.filterIsInstance<StreamEvent.TextDelta>().single().text)
+    }
+
+    @Test
     fun `line_chunking_splits_on_newlines`() = runTest {
         val events = flow {
             emit(StreamEvent.TextDelta("t_1", "line one\nline two\n"))

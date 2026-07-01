@@ -5,6 +5,8 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.withTimeout
+import kotlinx.io.IOException
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -267,16 +269,44 @@ class RetryBackoffTest {
     }
 
     @Test
-    fun `per-attempt timeout cancels a stalled attempt`() = runTest {
-        assertFailsWith<TimeoutCancellationException> {
+    fun `per-attempt timeout retries a stalled attempt and then succeeds`() = runTest {
+        var attempts = 0
+        val result = RetryPolicy {
+            maxRetries(1)
+            baseDelayMs(0)
+            perAttemptTimeoutMs(100)
+        }.execute<String> {
+            attempts += 1
+            if (attempts == 1) {
+                delay(101)
+                "late"
+            } else {
+                "ok"
+            }
+        }
+
+        assertEquals("ok", result)
+        assertEquals(2, attempts)
+        assertEquals(100L, testScheduler.currentTime)
+    }
+
+    @Test
+    fun `per-attempt timeout is recorded in retry history when exhausted`() = runTest {
+        val failure = assertFailsWith<RetryError> {
             RetryPolicy {
+                maxRetries(1)
+                baseDelayMs(0)
                 perAttemptTimeoutMs(100)
             }.execute<String> {
                 delay(101)
                 "late"
             }
         }
-        assertEquals(100L, testScheduler.currentTime)
+
+        assertEquals(RetryErrorReason.MaxRetriesExceeded, failure.reason)
+        assertEquals(2, failure.errors.size)
+        assertTrue(failure.errors.all { it.message.orEmpty().contains("timed out") })
+        assertEquals(listOf(true, false), failure.attempts.map { it.retryable })
     }
 
     @Test
@@ -307,5 +337,42 @@ class RetryBackoffTest {
             }
         }
         assertEquals(1, attempts)
+    }
+
+    @Test
+    fun `external timeout cancellation is not retried as a per-attempt timeout`() = runTest {
+        var attempts = 0
+        assertFailsWith<TimeoutCancellationException> {
+            withTimeout(100) {
+                RetryPolicy {
+                    maxRetries(3)
+                    baseDelayMs(0)
+                    perAttemptTimeoutMs(1_000)
+                }.execute<String> {
+                    attempts += 1
+                    delay(1_001)
+                    "late"
+                }
+            }
+        }
+
+        assertEquals(1, attempts)
+        assertEquals(100L, testScheduler.currentTime)
+    }
+
+    @Test
+    fun `default predicate retries transient Ktor IO errors`() = runTest {
+        var attempts = 0
+        val result = RetryPolicy {
+            maxRetries(1)
+            baseDelayMs(0)
+        }.execute<String> {
+            attempts += 1
+            if (attempts == 1) throw IOException("connection reset")
+            "ok"
+        }
+
+        assertEquals("ok", result)
+        assertEquals(2, attempts)
     }
 }
