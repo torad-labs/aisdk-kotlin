@@ -22,12 +22,12 @@ tests must stay green.
 | BL-002 | `generateText`/`streamText`/`generateObject` have no retry | High | Recommended | CONFIRMED | DONE (002a non-stream + 002b stream-open) |
 | BL-003 | Concurrent `StreamTextResult` collectors are coupled | Med-High | Recommended | CONFIRMED | DONE |
 | BL-004 | `StreamTextResult` re-drives provider after non-terminal failure | Medium | Recommended | CONFIRMED | DONE |
-| BL-005 | RetryPolicy per-attempt timeout aborts whole loop | Medium | Recommended | CONFIRMED | OPEN |
-| BL-006 | Default retry predicate won't retry raw network errors | Medium | Recommended | CONFIRMED | OPEN |
-| BL-007 | `SmoothStream` can emit buffered text after terminal event | Medium | Optional | CONFIRMED | OPEN |
+| BL-005 | RetryPolicy per-attempt timeout aborts whole loop | Medium | Recommended | CONFIRMED | DONE (7e79449) |
+| BL-006 | Default retry predicate won't retry raw network errors | Medium | Recommended | CONFIRMED | DONE (7e79449) |
+| BL-007 | `SmoothStream` can emit buffered text after terminal event | Medium | Optional | CONFIRMED | DONE (7e79449) |
 | BL-008 | `EventStreamParser` errors on `data: [DONE]` with trailing whitespace | Low-Med | Optional | CONFIRMED | DONE |
-| BL-009 | `StreamObjectResult` drops later-block text when earlier block unclosed | Low | Optional | CONFIRMED | OPEN |
-| BL-010 | `StreamObjectResult` overwrites instead of merges `ResponseMetadata` | Low | Optional | CONFIRMED | OPEN |
+| BL-009 | `StreamObjectResult` drops later-block text when earlier block unclosed | Low | Optional | CONFIRMED | DONE (903b3bc) |
+| BL-010 | `StreamObjectResult` overwrites instead of merges `ResponseMetadata` | Low | Optional | CONFIRMED | DONE (903b3bc) |
 | BL-011 | `StreamTextResult` retains full event history for single consumer | Low | Optional | CONFIRMED | OPEN |
 | BL-012 | `ConvertToModelMessages` hardcodes `"approval"` tool-name | Low | Optional | CONFIRMED | OPEN |
 | BL-013 | Parity ledger overclaims 3 unimplemented adapters | Medium | Recommended | CONFIRMED | OPEN |
@@ -38,14 +38,14 @@ tests must stay green.
 | BL-018 | No reactive UI binding (Compose `useChat`-style) | — | Post-beta | CONFIRMED | OPEN |
 | BL-019 | MCP inbound SSE reconnect storm (no backoff/cap, reconnects on clean EOF) | High | Recommended | CONFIRMED | DONE |
 | BL-020 | MCP OAuth refresh failure hard-fails instead of re-authorizing | Med-High | Recommended | CONFIRMED | DONE |
-| BL-021 | MCP SSE reconnect loses messages (`last-event-id` not implemented) | Medium | Optional | CONFIRMED | OPEN |
-| BL-022 | MCP inbound GET SSE never re-auths on 401 | Medium | Optional | CONFIRMED | OPEN |
-| BL-023 | MCP OAuth refresh race under concurrent 401s (no single-flight) | Medium | Recommended | SUSPECTED | OPEN |
+| BL-021 | MCP SSE reconnect loses messages (`last-event-id` not implemented) | Medium | Optional | CONFIRMED | DONE (98ac70f) |
+| BL-022 | MCP inbound GET SSE never re-auths on 401 | Medium | Optional | CONFIRMED | DONE (ed83665) |
+| BL-023 | MCP OAuth refresh race under concurrent 401s (no single-flight) | Medium | Recommended | SUSPECTED | DONE (ed83665) |
 | BL-024 | MCP rejects spec-valid `"result": null`, hanging that request | Low-Med | Optional | CONFIRMED | DONE |
 | BL-025 | MCP no default per-request timeout; abort not honored mid-await | Low-Med | Recommended | CONFIRMED | DONE |
-| BL-026 | MCP stdio close SIGTERMs then immediately SIGKILLs | Low | Optional | CONFIRMED | OPEN |
-| BL-027 | MCP stdio unbounded line buffering (huge-line OOM) | Low | Optional | CONFIRMED | OPEN |
-| BL-028 | MCP unsynchronized `sessionId`/`protocolVersion`/`endpoint` | Low | Optional | SUSPECTED | OPEN |
+| BL-026 | MCP stdio close SIGTERMs then immediately SIGKILLs | Low | Optional | CONFIRMED | DONE (b5dcc64) |
+| BL-027 | MCP stdio unbounded line buffering (huge-line OOM) | Low | Optional | CONFIRMED | DONE (b5dcc64) |
+| BL-028 | MCP unsynchronized `sessionId`/`protocolVersion`/`endpoint` | Low | Optional | SUSPECTED | DONE (b5dcc64) |
 
 | BL-029 | Google Interactions streaming parses wrong event shape — all text dropped | Critical | Recommended | CONFIRMED | DONE |
 | BL-030 | Google nullable/union schemas emit invalid `{"type":"null"}` → 400 | High | Recommended | CONFIRMED | DONE |
@@ -55,31 +55,31 @@ tests must stay green.
 | BL-034 | OpenResponses drops URL-based images/files (empty `data:`) | High | Recommended | CONFIRMED | DONE |
 | BL-035 | OpenAI-compatible always sends tool `strict:true` → 400 on real OpenAI/Azure | High | Recommended | CONFIRMED | DONE |
 | BL-036 | xAI streaming never requests usage → zero token accounting | High | Recommended | CONFIRMED | DONE |
-| BL-037 | Cohere `stream()` is a fake stream (blocking call, no SSE) | High | Recommended | CONFIRMED | OPEN |
+| BL-037 | Cohere `stream()` is a fake stream (blocking call, no SSE) | High | Recommended | CONFIRMED | DONE (3148067) |
 | BL-038 | Mistral `model_length` finish reason mismapped to `Other` | Med-High | Recommended | CONFIRMED | DONE |
-| BL-039 | Anthropic provider-executed tools keyed by name, args dropped → 400 | Medium | Optional | CONFIRMED | OPEN |
-| BL-040 | OpenResponses built-in tool outputs silently dropped | Medium | Optional | CONFIRMED | OPEN |
+| BL-039 | Anthropic provider-executed tools keyed by name, args dropped → 400 | Medium | Optional | CONFIRMED | DONE (14f617d) |
+| BL-040 | OpenResponses built-in tool outputs silently dropped | Medium | Optional | CONFIRMED | DONE (14f617d) |
 | BL-041 | Anthropic `cache_control` dropped on non-text blocks (no doc caching) | Medium | Recommended | CONFIRMED | DONE |
 | BL-042 | OpenAI-compatible mid-stream in-band error throws instead of emitting Error+Finish | Medium | Recommended | CONFIRMED | DONE |
 | BL-043 | Anthropic in-band `overloaded_error` surfaced as terminal (not retryable 529) | Medium | Recommended | CONFIRMED | DONE |
-| BL-044 | Provider parity — 12 additional confirmed mapping/usage/metadata gaps | Mixed | Mixed | CONFIRMED | OPEN |
+| BL-044 | Provider parity — 12 additional confirmed mapping/usage/metadata gaps | Mixed | Mixed | CONFIRMED | DONE (63e4ddf, bf3071b, 1c3787c) |
 
 | BL-045 | ~~UI-stream encoder breaks `@ai-sdk/react`~~ → OUT OF SCOPE (React interop not a goal; use Vercel SDK for React) | — | Post-beta | WONTFIX (beta) | DECIDED |
 | BL-046 | ~~UI-stream SSE framing/headers for JS clients~~ → OUT OF SCOPE (Kotlin encode/decode round-trip works; no JS-client target) | — | Post-beta | WONTFIX (beta) | DECIDED |
 | BL-047 | No `data-*` UI chunk encoder (decode-only; can't emit custom data parts) | Medium | Optional | CONFIRMED | OPEN |
-| BL-048 | Gateway content-part decode drops unknown types (vs Raw on stream path) | Low | Optional | CONFIRMED | OPEN |
+| BL-048 | Gateway content-part decode drops unknown types (vs Raw on stream path) | Low | Optional | CONFIRMED | DONE (903b3bc) |
 
 | BL-049 | Media binary downloads + Google poll GET bypass timeout & body cap (hang+OOM) | Med-High | Recommended | CONFIRMED | DONE |
 | BL-050 | UI: late/duplicate `ToolInputDelta` reverts a finished tool card, wiping output | Medium | Recommended | CONFIRMED | DONE |
 | BL-051 | Media poll loops: abort not honored in-flight; KlingAI unfloored timeout; Google spin | Medium | Optional | CONFIRMED | OPEN |
-| BL-052 | UI residual: same-name tool placeholder mis-drop; Text/Reasoning id-collision stuck | Low | Optional | CONFIRMED | OPEN |
+| BL-052 | UI residual: same-name tool placeholder mis-drop; Text/Reasoning id-collision stuck | Low | Optional | CONFIRMED | DONE (903b3bc) |
 | BL-053 | Media transcription base64 ~2× peak memory (structural) | Low | Optional | CONFIRMED | OPEN |
 
 | BL-054 | ~~SigV4 path needs double-encode~~ → FALSE POSITIVE (boto3: single `%3A` is correct); locked w/ test | ~~Critical~~ | Recommended | REFUTED | DONE (locked) |
 | BL-055 | ~~Bedrock ARN should be raw~~ → FALSE POSITIVE (boto3 encodes ARN wholesale); locked w/ test | ~~High~~ | Recommended | REFUTED | DONE (locked) |
 | BL-056 | Bedrock eventstream frames not CRC-validated | Low | Optional | CONFIRMED | OPEN |
 | BL-057 | Wiki/README/llms.txt code samples don't compile against the real API | High | Recommended | CONFIRMED | OPEN |
-| BL-058 | Public API evolvability: data-class traps, no top-level verbs, Java-uncallable fns | High | Recommended | CONFIRMED | OPEN |
+| BL-058 | Public API evolvability: data-class traps, no top-level verbs, Java-uncallable fns | High | Recommended | CONFIRMED | DONE (A1/A2/A3/A4 all landed — see detail section) |
 
 All audit areas COMPLETE. Integrations → BL-013..018. MCP → BL-019..028. Core
 providers → BL-029..044. Gateway/UI codecs → BL-045..048. UI/media → BL-049..053.
