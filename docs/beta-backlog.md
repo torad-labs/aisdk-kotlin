@@ -29,12 +29,12 @@ tests must stay green.
 | BL-009 | `StreamObjectResult` drops later-block text when earlier block unclosed | Low | Optional | CONFIRMED | DONE (903b3bc) |
 | BL-010 | `StreamObjectResult` overwrites instead of merges `ResponseMetadata` | Low | Optional | CONFIRMED | DONE (903b3bc) |
 | BL-011 | `StreamTextResult` retains full event history for single consumer | Low | Optional | CONFIRMED | OPEN |
-| BL-012 | `ConvertToModelMessages` hardcodes `"approval"` tool-name | Low | Optional | CONFIRMED | OPEN |
+| BL-012 | `ConvertToModelMessages` hardcodes `"approval"` tool-name | Low | Optional | CONFIRMED | DONE (a610243) |
 | BL-013 | Parity ledger overclaims 3 unimplemented adapters | Medium | Recommended | CONFIRMED | DONE (langchain/llamaindex/valibot reconciled, tools/check-parity-claims.mjs gates CI) |
 | BL-014 | No per-call `timeout` in `CallSettings` | Low-Med | Optional | CONFIRMED | OPEN |
-| BL-015 | `simulateReadableStream` test helper missing | Low | Optional | CONFIRMED | OPEN |
+| BL-015 | `simulateReadableStream` test helper missing | Low | Optional | CONFIRMED | DONE (a610243) |
 | BL-016 | Native provider structured-output (`json_schema`) not used — document | Medium | Recommended | CONFIRMED | DONE (structured-output.md + capability matrix document the SDK strategy) |
-| BL-017 | `headers` reachable only via low-level call params, not `CallSettings` builder | Low | Optional | CONFIRMED | OPEN |
+| BL-017 | `headers` reachable only via low-level call params, not `CallSettings` builder | Low | Optional | CONFIRMED | DONE (a610243) |
 | BL-018 | No reactive UI binding (Compose `useChat`-style) | — | Post-beta | CONFIRMED | OPEN |
 | BL-019 | MCP inbound SSE reconnect storm (no backoff/cap, reconnects on clean EOF) | High | Recommended | CONFIRMED | DONE |
 | BL-020 | MCP OAuth refresh failure hard-fails instead of re-authorizing | Med-High | Recommended | CONFIRMED | DONE |
@@ -227,8 +227,8 @@ BL-029..044. Gateway/UI codecs → BL-045..048. UI/media → BL-049..053. SigV4/
 - **Problem:** `approvalResponseMessage` identifies approval responses by the literal `toolName == "approval"` on a single-part user message. A user tool genuinely named `approval` would be misinterpreted as an approval response on history replay.
 - **Fix direction:** Identify approval responses by a structural marker (dedicated UI part type / explicit flag), not the tool name string.
 - **Acceptance criteria:**
-  - [ ] Test: a real tool named `approval` with a normal `OutputAvailable` result round-trips through `convertToModelMessages` as a `ToolCall` + `ToolResult`, not as a `ToolApprovalResponse`.
-  - [ ] Existing approval-flow round-trip tests still pass.
+  - [x] Test: a real tool named `approval` with a normal `OutputAvailable` result round-trips through `convertToModelMessages` as a `ToolCall` + `ToolResult`, not as a `ToolApprovalResponse`.
+  - [x] Existing approval-flow round-trip tests still pass.
 
 ---
 
@@ -270,8 +270,8 @@ implemented — not stubbed. The gaps below are narrow.
 - **Location:** TS `packages/ai/src/util/simulate-readable-stream.ts`. (`simulateStreamingMiddleware` IS ported; the standalone helper is not.)
 - **Problem:** No public helper to turn fixed chunks into a delayed stream for consumer tests.
 - **Acceptance criteria:**
-  - [ ] Public `SimulateReadableStream(chunks, delayMillis)` (or equivalent) returning a cold `Flow`.
-  - [ ] Test verifying chunk order and inter-chunk delay.
+  - [x] Public `SimulateReadableStream(chunks, delayMillis)` (or equivalent) returning a cold `Flow`.
+  - [x] Test verifying chunk order and inter-chunk delay.
 
 ## BL-016 — Native provider structured output (`response_format: json_schema`) not used — document the limitation
 
@@ -290,8 +290,8 @@ implemented — not stubbed. The gaps below are narrow.
 - **Location:** `LanguageModel.kt:112` (`LanguageModelCallParams.headers`) vs `KotlinApi.kt` `CallSettingsBuilder` (no `headers`).
 - **Problem:** Per-call custom headers exist but require dropping to `LanguageModelCallParams`; the ergonomic high-level builder omits them (TS exposes `headers` as a first-class call setting).
 - **Acceptance criteria:**
-  - [ ] `CallSettings`/builder exposes `headers: Map<String,String>`, forwarded to the call params.
-  - [ ] Test: builder-set headers reach the outgoing request.
+  - [x] `CallSettings`/builder exposes `headers: Map<String,String>`, forwarded to the call params.
+  - [x] Test: builder-set headers reach the outgoing request.
 
 ## BL-018 — No reactive UI binding (Compose `useChat`-style) — post-beta
 
