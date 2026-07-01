@@ -721,6 +721,77 @@ class AnthropicProviderTest {
     }
 
     @Test
+    fun `stream usage merges message_delta iterations into totals`() = runTest {
+        val fixture = TestServer.createTestServer(
+            mutableMapOf(
+                "https://anthropic.test/v1/messages" to UrlHandler(
+                    UrlResponse.StreamChunks(
+                        listOf(
+                            """
+                            data: {"type":"message_start","message":{"id":"m","model":"claude-sonnet-4-5","usage":{"input_tokens":5,"output_tokens":1}}}
+
+                            data: {"type":"message_delta","delta":{"stop_reason":"end_turn"},"usage":{"output_tokens":2,"iterations":[{"type":"message","input_tokens":40,"output_tokens":6},{"type":"compaction","input_tokens":8,"output_tokens":0}]}}
+
+                            data: {"type":"message_stop"}
+
+                            """.trimIndent(),
+                        ),
+                    ),
+                ),
+            ),
+        )
+        fixture.server.start()
+        val provider = Anthropic(fixture.httpClient(), AnthropicProviderSettings { baseURL("https://anthropic.test/v1") })
+
+        val events = drainAllItems(provider.messages(ModelId("claude-sonnet-4-5")).stream(LanguageModelCallParams {
+            messages(listOf(UserMessage("hi")))
+        }))
+
+        val finish = events.filterIsInstance<StreamEvent.Finish>().single()
+        assertEquals(48, finish.usage.promptTokens)
+        assertEquals(6, finish.usage.completionTokens)
+        assertEquals(2, finish.usage.raw?.jsonObject?.get("iterations")?.jsonArray?.size)
+    }
+
+    @Test
+    fun `stream redacted thinking keeps redacted data in reasoning metadata`() = runTest {
+        val fixture = TestServer.createTestServer(
+            mutableMapOf(
+                "https://anthropic.test/v1/messages" to UrlHandler(
+                    UrlResponse.StreamChunks(
+                        listOf(
+                            """
+                            data: {"type":"message_start","message":{"id":"m","model":"claude-sonnet-4-5","usage":{"input_tokens":1,"output_tokens":0}}}
+
+                            data: {"type":"content_block_start","index":0,"content_block":{"type":"redacted_thinking","data":"redacted-thinking-data"}}
+
+                            data: {"type":"content_block_stop","index":0}
+
+                            data: {"type":"message_delta","delta":{"stop_reason":"end_turn"},"usage":{"output_tokens":1}}
+
+                            data: {"type":"message_stop"}
+
+                            """.trimIndent(),
+                        ),
+                    ),
+                ),
+            ),
+        )
+        fixture.server.start()
+        val provider = Anthropic(fixture.httpClient(), AnthropicProviderSettings { baseURL("https://anthropic.test/v1") })
+
+        val events = drainAllItems(provider.messages(ModelId("claude-sonnet-4-5")).stream(LanguageModelCallParams {
+            messages(listOf(UserMessage("hi")))
+        }))
+
+        val reasoningStart = events.filterIsInstance<StreamEvent.ReasoningStart>().single()
+        assertEquals(
+            "redacted-thinking-data",
+            reasoningStart.providerMetadata.toMap()["anthropic"]?.jsonObject?.get("redactedData")?.jsonPrimitive?.contentOrNull,
+        )
+    }
+
+    @Test
     fun `max_tokens defaults to the per-model limit when caller omits maxOutputTokens`() = runTest {
         val fixture = TestServer.createTestServer(
             mutableMapOf(
@@ -1135,6 +1206,132 @@ class AnthropicProviderTest {
         assertTrue(betaHeader.contains("computer-use-2024-10-22"), betaHeader)
         assertTrue(betaHeader.contains("computer-use-2025-11-24"), betaHeader)
         assertTrue(betaHeader.contains("computer-use-2025-01-24"), betaHeader)
+    }
+
+    @Test
+    fun `anthropic-beta headers from caller and computed betas are unioned`() = runTest {
+        val fixture = TestServer.createTestServer(
+            mutableMapOf(
+                "https://anthropic.test/v1/messages" to UrlHandler(
+                    UrlResponse.JsonValue(
+                        Json.parseToJsonElement(
+                            """
+                            {
+                              "id":"msg_beta",
+                              "type":"message",
+                              "role":"assistant",
+                              "model":"claude-sonnet-4-5",
+                              "stop_reason":"end_turn",
+                              "usage":{"input_tokens":1,"output_tokens":1},
+                              "content":[{"type":"text","text":"ok"}]
+                            }
+                            """.trimIndent(),
+                        ),
+                    ),
+                ),
+            ),
+        )
+        fixture.server.start()
+        val provider = Anthropic(
+            fixture.httpClient(),
+            AnthropicProviderSettings {
+                baseURL("https://anthropic.test/v1")
+                apiKey("key")
+                headers(mapOf("anthropic-beta" to "config-beta-1, config-beta-2"))
+            },
+        )
+
+        provider.messages(ModelId("claude-sonnet-4-5")).generate(LanguageModelCallParams {
+            messages(listOf(UserMessage("hi")))
+            headers(mapOf("anthropic-beta" to "request-beta-1"))
+            tools(listOf(LanguageModelTool(
+                name = "lookup",
+                description = "Lookup.",
+                parametersSchemaJson = """{"type":"object"}""",
+            )))
+        })
+
+        val betaHeader = fixture.calls.single().requestHeaders.headerValue("anthropic-beta").orEmpty()
+        assertTrue(betaHeader.contains("config-beta-1"), betaHeader)
+        assertTrue(betaHeader.contains("config-beta-2"), betaHeader)
+        assertTrue(betaHeader.contains("request-beta-1"), betaHeader)
+        assertTrue(betaHeader.contains("structured-outputs-2025-11-13"), betaHeader)
+    }
+
+    @Test
+    fun `speed and task budget set required betas without structured output beta for effort only`() = runTest {
+        val fixture = TestServer.createTestServer(
+            mutableMapOf(
+                "https://anthropic.test/v1/messages" to UrlHandler(
+                    UrlResponse.JsonValue(
+                        Json.parseToJsonElement(
+                            """
+                            {
+                              "id":"msg_options",
+                              "type":"message",
+                              "role":"assistant",
+                              "model":"claude-opus-4-8",
+                              "stop_reason":"end_turn",
+                              "usage":{"input_tokens":1,"output_tokens":1},
+                              "content":[{"type":"text","text":"ok"}]
+                            }
+                            """.trimIndent(),
+                        ),
+                    ),
+                ),
+            ),
+        )
+        fixture.server.start()
+        val provider = Anthropic(
+            fixture.httpClient(),
+            AnthropicProviderSettings {
+                baseURL("https://anthropic.test/v1")
+                apiKey("key")
+            },
+        )
+
+        provider.messages(ModelId("claude-opus-4-8")).generate(LanguageModelCallParams {
+            messages(listOf(UserMessage("hi")))
+            providerOptions(ProviderOptions.Raw(JsonObject(mapOf(
+                "anthropic" to buildJsonObject { put("speed", JsonPrimitive("fast")) },
+            ))))
+        })
+        provider.messages(ModelId("claude-opus-4-8")).generate(LanguageModelCallParams {
+            messages(listOf(UserMessage("hi")))
+            providerOptions(ProviderOptions.Raw(JsonObject(mapOf(
+                "anthropic" to buildJsonObject {
+                    put("taskBudget", buildJsonObject {
+                        put("type", JsonPrimitive("tokens"))
+                        put("total", JsonPrimitive(400_000))
+                    })
+                },
+            ))))
+        })
+        provider.messages(ModelId("claude-opus-4-8")).generate(LanguageModelCallParams {
+            messages(listOf(UserMessage("hi")))
+            providerOptions(ProviderOptions.Raw(JsonObject(mapOf(
+                "anthropic" to buildJsonObject { put("effort", JsonPrimitive("medium")) },
+            ))))
+        })
+
+        val speedRequest = fixture.calls[0]
+        assertEquals("fast", speedRequest.requestBodyJson.jsonObject["speed"]?.jsonPrimitive?.contentOrNull)
+        assertTrue(speedRequest.requestHeaders.headerValue("anthropic-beta").orEmpty().contains("fast-mode-2026-02-01"))
+
+        val taskBudgetRequest = fixture.calls[1]
+        assertEquals(
+            400_000,
+            taskBudgetRequest.requestBodyJson.jsonObject["output_config"]?.jsonObject
+                ?.get("task_budget")?.jsonObject
+                ?.get("total")?.jsonPrimitive?.intOrNull,
+        )
+        val taskBudgetBeta = taskBudgetRequest.requestHeaders.headerValue("anthropic-beta").orEmpty()
+        assertTrue(taskBudgetBeta.contains("task-budgets-2026-03-13"), taskBudgetBeta)
+        assertTrue(!taskBudgetBeta.contains("structured-outputs-2025-11-13"), taskBudgetBeta)
+
+        val effortRequest = fixture.calls[2]
+        assertEquals("medium", effortRequest.requestBodyJson.jsonObject["output_config"]?.jsonObject?.get("effort")?.jsonPrimitive?.contentOrNull)
+        assertEquals(null, effortRequest.requestHeaders.headerValue("anthropic-beta"))
     }
 
     private fun objectSchema(vararg required: String): JsonObject = buildJsonObject {

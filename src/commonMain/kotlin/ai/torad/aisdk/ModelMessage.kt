@@ -9,6 +9,7 @@ import kotlinx.serialization.json.JsonClassDiscriminator
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.intOrNull
 
@@ -410,24 +411,23 @@ public class Usage(
          */
         internal fun mergeAnthropic(existing: Usage, deltaElement: JsonElement?): Usage {
             val obj = deltaElement as? JsonObject ?: return existing
-            val deltaInput = (obj["input_tokens"] as? JsonPrimitive)?.intOrNull
-            val deltaOutput = (obj["output_tokens"] as? JsonPrimitive)?.intOrNull
-            val deltaCacheRead = (obj["cache_read_input_tokens"] as? JsonPrimitive)?.intOrNull
-            val deltaCacheWrite = (obj["cache_creation_input_tokens"] as? JsonPrimitive)?.intOrNull
-            val input = deltaInput ?: existing.inputTokens.noCache
-            val cacheRead = deltaCacheRead ?: existing.inputTokens.cacheRead
-            val cacheWrite = deltaCacheWrite ?: existing.inputTokens.cacheWrite
-            val output = deltaOutput ?: existing.outputTokens.total
-            return Usage(
-                inputTokens = InputTokenBreakdown(
-                    total = input + cacheWrite + cacheRead,
-                    noCache = input,
-                    cacheRead = cacheRead,
-                    cacheWrite = cacheWrite,
-                ),
-                outputTokens = OutputTokenBreakdown(total = output),
-                raw = deltaElement,
-            )
+            val base = existing.raw as? JsonObject
+            val merged = if (base == null) {
+                buildJsonObject {
+                    put("input_tokens", JsonPrimitive(existing.inputTokens.noCache))
+                    put("output_tokens", JsonPrimitive(existing.outputTokens.total))
+                    if (existing.inputTokens.cacheRead != 0) {
+                        put("cache_read_input_tokens", JsonPrimitive(existing.inputTokens.cacheRead))
+                    }
+                    if (existing.inputTokens.cacheWrite != 0) {
+                        put("cache_creation_input_tokens", JsonPrimitive(existing.inputTokens.cacheWrite))
+                    }
+                    obj.forEach { (key, value) -> put(key, value) }
+                }
+            } else {
+                JsonObject(base + obj)
+            }
+            return fromAnthropic(merged)
         }
     }
 
