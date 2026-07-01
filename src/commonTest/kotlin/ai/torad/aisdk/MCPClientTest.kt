@@ -1087,6 +1087,197 @@ class MCPClientTest {
     }
 
     @Test
+    fun `HTTP MCP transport single-flights concurrent reauthorization after 401`() = runTest {
+        val parallelism = 5
+        val tokenController = TestResponseController()
+        val fixture = TestServer.createTestServer(
+            mutableMapOf(
+                "https://mcp.test/mcp" to UrlHandler(
+                    { request, _ ->
+                        when {
+                            request.method == "GET" -> UrlResponse.Error(status = 405, body = "GET not supported")
+                            "\"method\":\"initialize\"" in request.body -> UrlResponse.JsonValue(
+                                JSONRPCResponse(
+                                    id = Json.parseToJsonElement(request.body).jsonObject["id"] ?: JsonPrimitive(0),
+                                    result = initializeResult(),
+                                ).toJsonElement(),
+                            )
+                            "\"method\":\"notifications/initialized\"" in request.body -> UrlResponse.Empty(status = 202)
+                            "\"method\":\"tools/list\"" in request.body &&
+                                request.headers.headerValue(HttpHeaders.Authorization) == "Bearer stale-token" ->
+                                UrlResponse.Error(status = 401, body = "unauthorized")
+                            "\"method\":\"tools/list\"" in request.body &&
+                                request.headers.headerValue(HttpHeaders.Authorization) == "Bearer refreshed-token" ->
+                                UrlResponse.JsonValue(
+                                    JSONRPCResponse(
+                                        id = Json.parseToJsonElement(request.body).jsonObject["id"] ?: JsonPrimitive(0),
+                                        result = listToolsResult(),
+                                    ).toJsonElement(),
+                                )
+                            else -> UrlResponse.Error(status = 500, body = "unexpected request: ${request.body}")
+                        }
+                    },
+                ),
+                "https://mcp.test/.well-known/oauth-protected-resource/mcp" to UrlHandler(
+                    UrlResponse.JsonValue(
+                        Json.parseToJsonElement(
+                            """{"resource":"https://mcp.test/mcp","authorization_servers":["https://auth.mcp.test"]}""",
+                        ),
+                    ),
+                ),
+                "https://auth.mcp.test/.well-known/oauth-authorization-server" to UrlHandler(
+                    UrlResponse.JsonValue(
+                        Json.parseToJsonElement(
+                            """
+                            {
+                              "authorization_endpoint":"https://auth.mcp.test/authorize",
+                              "token_endpoint":"https://auth.mcp.test/token",
+                              "grant_types_supported":["refresh_token"],
+                              "token_endpoint_auth_methods_supported":["client_secret_post"]
+                            }
+                            """.trimIndent(),
+                        ),
+                    ),
+                ),
+                "https://auth.mcp.test/token" to UrlHandler(
+                    { request, _ ->
+                        assertTrue(request.body.contains("grant_type=refresh_token"))
+                        assertTrue(request.body.contains("refresh_token=refresh-token"))
+                        UrlResponse.ControlledStream(
+                            tokenController,
+                            headers = mapOf(HttpHeaders.ContentType to "application/json"),
+                        )
+                    },
+                ),
+            ),
+        )
+        fixture.server.start()
+        val authProvider = MemoryOAuthProvider(
+            tokens = OAuthTokens(accessToken = "stale-token", tokenType = "Bearer", refreshToken = "refresh-token"),
+            clientInformation = OAuthClientInformation {
+                clientId("client-id")
+                clientSecret("client-secret")
+            },
+        )
+        val client = CreateMCPClient(
+            MCPClientConfig {
+                transport(HttpMCPTransport(fixture.httpClient(), "https://mcp.test/mcp", authProvider = authProvider))
+            },
+        )
+        val gate = CompletableDeferred<Unit>()
+        val requests = List(parallelism) {
+            async(Dispatchers.Default) {
+                gate.await()
+                client.listTools()
+            }
+        }
+
+        gate.complete(Unit)
+        waitForRealTime {
+            fixture.calls.count {
+                it.requestUrl == "https://mcp.test/mcp" &&
+                    it.requestMethod == "POST" &&
+                    it.requestBodyText.contains("\"method\":\"tools/list\"") &&
+                    it.requestHeaders.headerValue(HttpHeaders.Authorization) == "Bearer stale-token"
+            } == parallelism &&
+                fixture.calls.count { it.requestUrl == "https://auth.mcp.test/token" } == 1
+        }
+        tokenController.write("""{"access_token":"refreshed-token","token_type":"Bearer","refresh_token":"refresh-token"}""")
+        tokenController.close()
+
+        requests.awaitAll().forEach { assertEquals("echo", it.tools.single().name) }
+
+        assertEquals(1, fixture.calls.count { it.requestUrl == "https://auth.mcp.test/token" })
+        assertEquals(
+            parallelism,
+            fixture.calls.count {
+                it.requestUrl == "https://mcp.test/mcp" &&
+                    it.requestMethod == "POST" &&
+                    it.requestBodyText.contains("\"method\":\"tools/list\"") &&
+                    it.requestHeaders.headerValue(HttpHeaders.Authorization) == "Bearer refreshed-token"
+            },
+        )
+        client.close()
+    }
+
+    @Test
+    fun `HTTP inbound SSE retries once after authorized auth on 401`() = runTest {
+        val notification = JSONRPCNotification(method = "notifications/server").toJsonElement()
+        val fixture = TestServer.createTestServer(
+            mutableMapOf(
+                "https://mcp.test/mcp" to UrlHandler(
+                    { request, _ ->
+                        when {
+                            request.method == "GET" &&
+                                request.headers.headerValue(HttpHeaders.Authorization) == "Bearer stale-token" ->
+                                UrlResponse.Error(status = 401, body = "unauthorized")
+                            request.method == "GET" &&
+                                request.headers.headerValue(HttpHeaders.Authorization) == "Bearer refreshed-token" ->
+                                UrlResponse.StreamChunks(listOf("event: message\ndata: $notification\n\n"))
+                            request.method == "POST" -> UrlResponse.Empty(status = 202)
+                            else -> UrlResponse.Error(status = 500, body = "unexpected request")
+                        }
+                    },
+                ),
+                "https://mcp.test/.well-known/oauth-protected-resource/mcp" to UrlHandler(
+                    UrlResponse.JsonValue(
+                        Json.parseToJsonElement(
+                            """{"resource":"https://mcp.test/mcp","authorization_servers":["https://auth.mcp.test"]}""",
+                        ),
+                    ),
+                ),
+                "https://auth.mcp.test/.well-known/oauth-authorization-server" to UrlHandler(
+                    UrlResponse.JsonValue(
+                        Json.parseToJsonElement(
+                            """
+                            {
+                              "authorization_endpoint":"https://auth.mcp.test/authorize",
+                              "token_endpoint":"https://auth.mcp.test/token",
+                              "grant_types_supported":["refresh_token"],
+                              "token_endpoint_auth_methods_supported":["client_secret_post"]
+                            }
+                            """.trimIndent(),
+                        ),
+                    ),
+                ),
+                "https://auth.mcp.test/token" to UrlHandler(
+                    { request, _ ->
+                        assertTrue(request.body.contains("grant_type=refresh_token"))
+                        assertTrue(request.body.contains("refresh_token=refresh-token"))
+                        UrlResponse.JsonValue(
+                            Json.parseToJsonElement(
+                                """{"access_token":"refreshed-token","token_type":"Bearer","refresh_token":"refresh-token"}""",
+                            ),
+                        )
+                    },
+                ),
+            ),
+        )
+        fixture.server.start()
+        val authProvider = MemoryOAuthProvider(
+            tokens = OAuthTokens(accessToken = "stale-token", tokenType = "Bearer", refreshToken = "refresh-token"),
+            clientInformation = OAuthClientInformation {
+                clientId("client-id")
+                clientSecret("client-secret")
+            },
+        )
+        val transport = HttpMCPTransport(fixture.httpClient(), "https://mcp.test/mcp", authProvider = authProvider)
+        var received: JSONRPCMessage? = null
+        transport.setOnMessage { received = it }
+
+        transport.start()
+        waitForRealTime { received != null }
+
+        assertEquals("notifications/server", assertIs<JSONRPCNotification>(received).method)
+        val gets = fixture.calls.filter { it.requestUrl == "https://mcp.test/mcp" && it.requestMethod == "GET" }
+        assertEquals(2, gets.size)
+        assertEquals("Bearer stale-token", gets[0].requestHeaders.headerValue(HttpHeaders.Authorization))
+        assertEquals("Bearer refreshed-token", gets[1].requestHeaders.headerValue(HttpHeaders.Authorization))
+        assertEquals(1, fixture.calls.count { it.requestUrl == "https://auth.mcp.test/token" })
+        transport.close()
+    }
+
+    @Test
     fun `HTTP MCP transport starts at most one inbound SSE reader after concurrent accepted notifications`() = runTest {
         val controller = TestResponseController()
         var getAttempts = 0

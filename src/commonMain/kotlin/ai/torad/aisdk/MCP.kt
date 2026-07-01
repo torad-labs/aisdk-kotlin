@@ -1200,6 +1200,80 @@ internal class McpConnectionLifecycle {
     }
 }
 
+private class McpOAuthReauthorizer(
+    private val authProvider: OAuthClientProvider?,
+    private val serverUrl: String,
+    private val client: HttpClient,
+) {
+    private sealed interface Decision {
+        class Done(val result: AuthResult) : Decision
+        class Await(val result: CompletableDeferred<AuthResult>) : Decision
+        class Run(val result: CompletableDeferred<AuthResult>) : Decision
+    }
+
+    private val mutex = Mutex()
+    private var inFlight: CompletableDeferred<AuthResult>? = null
+
+    suspend fun reauthorizeAfter401(staleAccessToken: String?): AuthResult {
+        val provider = authProvider ?: return AuthResult.REDIRECT
+        val decision = mutex.withLock {
+            val currentAccessToken = provider.tokens()?.accessToken?.takeIf { it.isNotBlank() }
+            when {
+                staleAccessToken != null &&
+                    currentAccessToken != null &&
+                    currentAccessToken != staleAccessToken ->
+                    Decision.Done(AuthResult.AUTHORIZED)
+                inFlight?.isCompleted == false ->
+                    Decision.Await(requireNotNull(inFlight))
+                else -> {
+                    val result = CompletableDeferred<AuthResult>()
+                    inFlight = result
+                    Decision.Run(result)
+                }
+            }
+        }
+
+        return when (decision) {
+            is Decision.Done -> decision.result
+            is Decision.Await -> decision.result.await()
+            is Decision.Run -> runReauthorization(provider, decision.result)
+        }
+    }
+
+    private suspend fun runReauthorization(
+        provider: OAuthClientProvider,
+        result: CompletableDeferred<AuthResult>,
+    ): AuthResult {
+        try {
+            val authResult = McpAuth.auth(
+                provider,
+                AuthOptions {
+                    serverUrl(serverUrl)
+                    client(client)
+                },
+                reauthorize = true,
+            )
+            result.complete(authResult)
+            return authResult
+        } catch (error: Throwable) {
+            result.completeExceptionally(error)
+            throw error
+        } finally {
+            mutex.withLock {
+                if (inFlight === result) inFlight = null
+            }
+        }
+    }
+
+    companion object {
+        fun bearerAccessToken(headers: Map<String, String>): String? =
+            headers.entries.firstOrNull { it.key.equals(HttpHeaders.Authorization, ignoreCase = true) }
+                ?.value
+                ?.removePrefix("Bearer ")
+                ?.takeIf { it.isNotBlank() }
+    }
+}
+
 @InternalAiSdkApi
 public class HttpMCPTransport(
     private val client: HttpClient,
@@ -1225,6 +1299,7 @@ public class HttpMCPTransport(
     private var inboundRetryRequested: Boolean = false
     private val inboundReconnectAttempts = intArrayOf(0)
     private val inboundMutex = Mutex()
+    private val oauthReauthorizer = McpOAuthReauthorizer(authProvider, url, client)
 
     override suspend fun start() {
         // begin() atomically claims Idle→Active and is the already-started guard.
@@ -1278,29 +1353,22 @@ public class HttpMCPTransport(
     }
 
     private suspend fun postMessage(message: JSONRPCMessage, triedAuth: Boolean) {
+        val requestHeaders = mcpCommonHeaders(
+            mapOf(
+                HttpHeaders.ContentType to ContentType.Application.Json.toString(),
+                HttpHeaders.Accept to "application/json, text/event-stream",
+            ),
+        )
+        val requestAccessToken = McpOAuthReauthorizer.bearerAccessToken(requestHeaders)
         val response = client.request(url) {
             method = HttpMethod.Post
             contentType(ContentType.Application.Json)
-            mcpCommonHeaders(
-                mapOf(
-                    HttpHeaders.ContentType to ContentType.Application.Json.toString(),
-                    HttpHeaders.Accept to "application/json, text/event-stream",
-                ),
-            ).forEach { (name, value) -> header(name, value) }
+            requestHeaders.forEach { (name, value) -> header(name, value) }
             setBody(message.toJsonString())
         }
         mcpSessionId(response)?.let { sessionId = it }
         if (response.status.value == 401 && authProvider != null && !triedAuth) {
-            if (
-                McpAuth.auth(
-                    authProvider,
-                    AuthOptions {
-                        serverUrl(url)
-                        client(client)
-                    },
-                    reauthorize = true,
-                ) != AuthResult.AUTHORIZED
-            ) {
+            if (oauthReauthorizer.reauthorizeAfter401(requestAccessToken) != AuthResult.AUTHORIZED) {
                 throw UnauthorizedError()
             }
             postMessage(message, triedAuth = true)
@@ -1397,11 +1465,23 @@ public class HttpMCPTransport(
     private suspend fun readInboundSse() {
         var completion = InboundSseCompletion.Clean
         try {
-            val response = client.request(url) {
+            val firstHeaders = mcpCommonHeaders(mapOf(HttpHeaders.Accept to "text/event-stream"))
+            val firstAccessToken = McpOAuthReauthorizer.bearerAccessToken(firstHeaders)
+            val firstResponse = client.request(url) {
                 method = HttpMethod.Get
-                mcpCommonHeaders(
-                    mapOf(HttpHeaders.Accept to "text/event-stream")
-                ).forEach { (name, value) -> header(name, value) }
+                firstHeaders.forEach { (name, value) -> header(name, value) }
+            }
+            val response = if (firstResponse.status.value == 401 && authProvider != null) {
+                if (oauthReauthorizer.reauthorizeAfter401(firstAccessToken) != AuthResult.AUTHORIZED) {
+                    throw UnauthorizedError()
+                }
+                val retryHeaders = mcpCommonHeaders(mapOf(HttpHeaders.Accept to "text/event-stream"))
+                client.request(url) {
+                    method = HttpMethod.Get
+                    retryHeaders.forEach { (name, value) -> header(name, value) }
+                }
+            } else {
+                firstResponse
             }
             mcpSessionId(response)?.let { sessionId = it }
             if (response.status.value == 405) return
@@ -1545,6 +1625,7 @@ public class SseMCPTransport(
 
     private val lifecycle = McpConnectionLifecycle()
     private var endpoint: String? = null
+    private val oauthReauthorizer = McpOAuthReauthorizer(authProvider, url, client)
 
     // SSE handshake + per-event dispatch + reader teardown; the branchiness is
     // inherent to a transport's start path.
@@ -1631,23 +1712,14 @@ public class SseMCPTransport(
     }
 
     private suspend fun openSseConnection(triedAuth: Boolean): HttpResponse {
+        val requestHeaders = mcpCommonHeaders(mapOf(HttpHeaders.Accept to "text/event-stream"))
+        val requestAccessToken = McpOAuthReauthorizer.bearerAccessToken(requestHeaders)
         val response = client.request(url) {
             method = HttpMethod.Get
-            mcpCommonHeaders(
-                mapOf(HttpHeaders.Accept to "text/event-stream")
-            ).forEach { (name, value) -> header(name, value) }
+            requestHeaders.forEach { (name, value) -> header(name, value) }
         }
         if (response.status.value == 401 && authProvider != null && !triedAuth) {
-            if (
-                McpAuth.auth(
-                    authProvider,
-                    AuthOptions {
-                        serverUrl(url)
-                        client(client)
-                    },
-                    reauthorize = true,
-                ) != AuthResult.AUTHORIZED
-            ) {
+            if (oauthReauthorizer.reauthorizeAfter401(requestAccessToken) != AuthResult.AUTHORIZED) {
                 throw UnauthorizedError()
             }
             return openSseConnection(triedAuth = true)
@@ -1662,25 +1734,18 @@ public class SseMCPTransport(
     @Suppress("ThrowsCount")
     private suspend fun sendInternal(message: JSONRPCMessage, triedAuth: Boolean) {
         val destination = endpoint ?: throw MCPClientError("MCP SSE Transport Error: Not connected")
+        val requestHeaders = mcpCommonHeaders(
+            mapOf(HttpHeaders.ContentType to ContentType.Application.Json.toString())
+        )
+        val requestAccessToken = McpOAuthReauthorizer.bearerAccessToken(requestHeaders)
         val response = client.request(destination) {
             method = HttpMethod.Post
             contentType(ContentType.Application.Json)
-            mcpCommonHeaders(
-                mapOf(HttpHeaders.ContentType to ContentType.Application.Json.toString())
-            ).forEach { (name, value) -> header(name, value) }
+            requestHeaders.forEach { (name, value) -> header(name, value) }
             setBody(message.toJsonString())
         }
         if (response.status.value == 401 && authProvider != null && !triedAuth) {
-            if (
-                McpAuth.auth(
-                    authProvider,
-                    AuthOptions {
-                        serverUrl(url)
-                        client(client)
-                    },
-                    reauthorize = true,
-                ) != AuthResult.AUTHORIZED
-            ) {
+            if (oauthReauthorizer.reauthorizeAfter401(requestAccessToken) != AuthResult.AUTHORIZED) {
                 throw UnauthorizedError()
             }
             sendInternal(message, triedAuth = true)
