@@ -42,8 +42,8 @@
 ### Agent
 
 - `interface Agent<TContext, TOutput>`
-  - `suspend fun generate(prompt?, messages = emptyList(), options?, abortSignal?, hooks?): GenerateResult<TOutput>`
-  - `fun stream(prompt?, messages = emptyList(), options?, abortSignal?, hooks?): Flow<StreamEvent>`
+  - `fun generate(prompt?, messages = emptyList(), options?, abortSignal?): Flow<GenerateResult<TOutput>>`
+  - `fun stream(prompt?, messages = emptyList(), options?, abortSignal?): Flow<StreamEvent>`
 - `abstract class ToolLoopAgent<TContext, TOutput>(...) : Agent<TContext, TOutput>` — extend-only default loop implementation; applications provide a named subclass
   - `val engineState: StateFlow<ToolLoopAgentState>`
   - `fun dispatchEngineAction(action: ToolLoopAgentAction<TContext>)`
@@ -81,7 +81,7 @@ and `ToolResultOutput` leaves) are `@Poko class` value-semantics types; sealed
 parents and serialization wire names remain unchanged, while public `copy()` /
 `componentN()` ABI is intentionally absent.
 - Approval flow: tool calls `needsApproval` → loop ends → host inspects `pendingApprovals` →
-  resumes with `agent.generate(messages = result.messages + toolApprovalResponseMessage(toolCallId, approved, reason?, approvalId?))`
+  resumes with `agent.generate(messages = result.messages + ToolApprovalResponseMessage(toolCallId, approved, reason?, approvalId?))`
 
 ### Output
 
@@ -91,10 +91,10 @@ parents and serialization wire names remain unchanged, while public `copy()` /
   - `Output.choice(values: Iterable<String> | vararg String, name?, description?): Output<String>`
   - `Output.json(name?, description?): Output<JsonElement>`
 - Top-level mirrors:
-  - `outputObj(serializer, name?, description?)`
-  - `outputArray(elementSerializer, name?, description?)`
-  - `outputChoice(values | vararg values, name?, description?)`
-  - `outputJson(name?, description?)`
+  - `OutputObj(serializer, name?, description?)`
+  - `OutputArray(elementSerializer, name?, description?)`
+  - `OutputChoice(values | vararg values, name?, description?)`
+  - `OutputJson(name?, description?)`
 
 ### Structured-output utilities
 
@@ -181,14 +181,14 @@ Penalty, response-format, and retry fields participate in the `Step ?: Agent ?: 
 - `interface LanguageModelMiddleware`
   - `suspend fun wrapGenerate(context: MiddlewareCallContext): LanguageModelResult` — default passes through to `context.doGenerate(context.params)`
   - `fun wrapStream(context: MiddlewareCallContext): Flow<StreamEvent>` — default passes through to `context.doStream(context.params)`
-- `@Poko class MiddlewareCallContext(params, model, doGenerate, doStream)` — both `doGenerate` and `doStream` target the rest of the chain past THIS middleware. A middleware's `wrapStream` calling `context.doGenerate(...)` skips its own `wrapGenerate` and invokes the downstream chain's generate path. This is the v6 `{doGenerate, doStream, params, model}` shape — load-bearing for `simulateStreamingMiddleware`, fallback / cache / retry middlewares, and anything that synthesizes one direction from the other.
-- `fun wrapLanguageModel(model, middlewares): LanguageModel`
+- `@Poko class MiddlewareCallContext(params, model, doGenerate, doStream)` — both `doGenerate` and `doStream` target the rest of the chain past THIS middleware. A middleware's `wrapStream` calling `context.doGenerate(...)` skips its own `wrapGenerate` and invokes the downstream chain's generate path. This is the v6 `{doGenerate, doStream, params, model}` shape — load-bearing for `SimulateStreamingMiddleware`, fallback / cache / retry middlewares, and anything that synthesizes one direction from the other.
+- `fun WrapLanguageModel(model, middlewares): LanguageModel`
 - Built-ins (`ai.torad.aisdk.middleware.*`):
-  - `defaultSettingsMiddleware(temperature?, topP?, topK?, maxOutputTokens?, stopSequences, seed?, providerOptions, presencePenalty?, frequencyPenalty?, responseFormat)`
-  - `extractReasoningMiddleware(tagName = "reasoning", separator = "\n")`
-  - `simulateStreamingMiddleware()` — calls `doGenerate` then synthesizes `TextStart / TextDelta / TextEnd / ToolCall* / StepFinish / Finish`
-  - `addToolInputExamplesMiddleware(examplesByTool)`
-  - `extractJsonMiddleware()`
+  - `DefaultSettingsMiddleware(temperature?, topP?, topK?, maxOutputTokens?, stopSequences, seed?, providerOptions, presencePenalty?, frequencyPenalty?, responseFormat)`
+  - `ExtractReasoningMiddleware(tagName = "reasoning", separator = "\n")`
+  - `SimulateStreamingMiddleware()` — calls `doGenerate` then synthesizes `TextStart / TextDelta / TextEnd / ToolCall* / StepFinish / Finish`
+  - `AddToolInputExamplesMiddleware(examplesByTool)`
+  - `ExtractJsonMiddleware()`
   - `LoggingMiddleware(logger: Logger, tag = "agent")` — routes tool-call boundary events to `logger.debug` and errors to `logger.warn` (passing the `@Transient` typed `ToolError.error` as the throwable). Default logging records metadata/byte counts, not raw payloads.
   - `LoggingMiddleware(logger, options: LoggingOptions, tag = "agent")` — opt into redacted or raw input/output logging. `LoggingOptions { recordInputs(true); recordOutputs(true); allowRawValues(false); redactor(AiSdkDefaultRedactor) }` is a regular builder-backed class with identity equality because it holds a redactor object.
   - `interface Redactor`, `DefaultRedactor`, `RedactionOptions`, `AiSdkDefaultRedactor` — shared redaction seam for headers, text, and JSON payloads. `RedactionOptions { replacement("[REDACTED]") }` is an `@Poko` value-semantics class.
@@ -200,8 +200,8 @@ Penalty, response-format, and retry fields participate in the `Step ?: Agent ?: 
 - `@Poko class EmbeddingModelCallParams(values, maxEmbeddingsPerCall?, truncate?, providerOptions, abortSignal, headers)` — field access and value equality remain; construct with `EmbeddingModelCallParams { values(...); ... }`. Public `copy()` / `componentN()` ABI is intentionally absent; embedding middleware uses `params.toBuilder().providerOptions(...).build()` for one-field overrides.
 - `@Poko class EmbeddingModelResult(embeddings, usage, warnings, request, response, providerMetadata)`
 - `@Poko class EmbeddingUsage(tokens, raw?)`
-- `suspend fun embed(model, value, providerOptions?, abortSignal?, headers?): EmbedResult<String>`
-- `suspend fun embedMany(model, values, maxEmbeddingsPerCall?, maxParallelCalls = 8, providerOptions?, abortSignal?, headers?): EmbedManyResult<String>`
+- `suspend fun Embedding.embed(model, value, providerOptions?, abortSignal?, headers?): EmbedResult<String>`
+- `suspend fun Embedding.embedMany(model, values, maxEmbeddingsPerCall?, maxParallelCalls = 8, providerOptions?, abortSignal?, headers?): EmbedManyResult<String>`
 - `EmbedResult`, `EmbedManyResult`, and `EmbeddingMiddlewareCallContext` are
   `@Poko class` value-semantics result/context types; field access remains,
   but public `copy()` / `componentN()` ABI is intentionally absent.
@@ -209,11 +209,11 @@ Penalty, response-format, and retry fields participate in the `Step ?: Agent ?: 
 
 ### Media And Reranking
 
-- Image: `ImageModel`, `ImageGenerationParams`, `ImageModelResult`, `GenerateImageResult`, `generateImage(..., maxParallelCalls = 8)`
-- Speech: `SpeechModel`, `SpeechGenerationParams`, `SpeechModelResult`, `GenerateSpeechResult`, `generateSpeech(...)`
-- Transcription: `TranscriptionModel`, `AudioSource`, `TranscriptionParams`, `TranscriptSegment`, `TranscribeResult`, `transcribe(...)`
-- Video: `VideoModel`, `VideoGenerationParams`, `VideoModelResult`, `GenerateVideoResult`, `generateVideo(..., maxParallelCalls = 8)`
-- Rerank: `RerankingModel`, `RerankingParams`, `RerankedItem<T>`, `RerankResult<T>`, `rerank(...)`
+- Image: `ImageModel`, `ImageGenerationParams`, `ImageModelResult`, `GenerateImageResult`, `ImageGeneration.generateImage(..., maxParallelCalls = 8)`
+- Speech: `SpeechModel`, `SpeechGenerationParams`, `SpeechModelResult`, `GenerateSpeechResult`, `SpeechGeneration.generateSpeech(...)`
+- Transcription: `TranscriptionModel`, `AudioSource`, `TranscriptionParams`, `TranscriptSegment`, `TranscribeResult`, `Transcription.transcribe(...)`
+- Video: `VideoModel`, `VideoGenerationParams`, `VideoModelResult`, `GenerateVideoResult`, `VideoGeneration.generateVideo(..., maxParallelCalls = 8)`
+- Rerank: `RerankingModel`, `RerankingParams`, `RerankedItem<T>`, `RerankResult<T>`, `Reranking.rerank(...)`
   - Rerank result holders are `@Poko class` value-semantics types; field
     access remains, but public `copy()` / `componentN()` ABI is intentionally
     absent. `RerankingParams` stays on the builder/data-class track.
@@ -246,7 +246,7 @@ Penalty, response-format, and retry fields participate in the `Step ?: Agent ?: 
 ### Provider Registry
 
 - `interface Provider` with `languageModel`, `embeddingModel`, `imageModel`, `speechModel`, `transcriptionModel`, `rerankingModel`, and `videoModel`.
-- `customProvider(...)`, `CustomProvider { providerId(...); languageModel(id, model); embeddingModel(id, model); imageModel(id, model); speechModel(id, model); transcriptionModel(id, model); rerankingModel(id, model); videoModel(id, model); fallbackProvider(...) }`, `ProviderRegistry`, `createProviderRegistry(...)`, `wrapProvider(...)`, `ProviderMiddleware { languageModelMiddlewares(...); embeddingModelMiddlewares(...); imageModelMiddlewares(...) }`.
+- `Provider(providerId, languageModels, embeddingModels, imageModels, speechModels, transcriptionModels, rerankingModels, videoModels, fallbackProvider)`, `CustomProvider { providerId(...); languageModel(id, model); embeddingModel(id, model); imageModel(id, model); speechModel(id, model); transcriptionModel(id, model); rerankingModel(id, model); videoModel(id, model); fallbackProvider(...) }`, `ProviderRegistry`, `ProviderRegistry.createProviderRegistry(...)`, `WrapProvider(...)`, `ProviderMiddleware { languageModelMiddlewares(...); embeddingModelMiddlewares(...); imageModelMiddlewares(...) }`.
 - `CustomProvider` is a regular builder-backed class with identity equality
   because it holds model objects; the positional constructor, `copy()`, and
   `componentN()` are not public.
@@ -380,7 +380,7 @@ Penalty, response-format, and retry fields participate in the `Step ?: Agent ?: 
 
 - `DynamicTool(name, description, inputSchemaJson?, metadata?, executor)`
 - `Schema<T>`, `jsonSchema`, `asSchema`, `zodSchema`
-- `IdGenerator { prefix(...); size(...); alphabet(...); separator(...); random(...) }`, `createIdGenerator`, `generateId`. `IdGenerator` is a regular builder-backed class with identity equality because it holds a `Random`; the positional constructor, `copy()`, and `componentN()` are not public.
+- `IdGenerator { prefix(...); size(...); alphabet(...); separator(...); random(...) }`, `IdGenerator.generate(prefix?, random?)`, and instance `generate()`. `IdGenerator` is a regular builder-backed class with identity equality because it holds a `Random`; the positional constructor, `copy()`, and `componentN()` are not public.
 
 ### General Utilities
 
@@ -401,13 +401,16 @@ Penalty, response-format, and retry fields participate in the `Step ?: Agent ?: 
 - `fun smoothStream(upstream, delayMs = 10L, chunkBy = Word): Flow<StreamEvent>`
 - `fun simulateReadableStream(events, initialDelayMs = 0L, chunkDelayMs = 10L): Flow<StreamEvent>`
 
-### Top-level inference
+### Structured generation entrypoints
 
-- `CallSettings { ...; maxRetries(2) }` / `CallConfig { ...; maxRetries(2) }` — `@Poko` builder-backed value types used by top-level generation APIs. Non-streaming text/object generation retries typed retryable `APICallError` / `GatewayError` per model round-trip; `maxRetries = 0` disables retries. The positional constructors, `copy()`, and `componentN()` are not public.
-- `suspend fun <TOutput> generateText(model, prompt? | messages?, system?, output?, temperature?, ..., abortSignal?, presencePenalty?, frequencyPenalty?, responseFormat?, maxRetries = 2): @Poko GenerateTextResult<TOutput>`
-- `fun streamText(model, prompt? | messages?, system?, ..., abortSignal?, output?, presencePenalty?, frequencyPenalty?, responseFormat?): Flow<StreamEvent>`
-- `@Deprecated suspend fun <TOutput> generateObject(model, output, prompt? | messages?, ..., maxRetries = 2): @Poko GenerateObjectResult<TOutput>`
-- `@Deprecated fun <TOutput> streamObject(model, output, prompt? | messages?, ...): Flow<StreamEvent>`
+- `CallSettings { ...; maxRetries(2) }` / `CallConfig { ...; maxRetries(2) }` — `@Poko` builder-backed value types used by high-level generation APIs. Non-streaming text/object generation retries typed retryable `APICallError` / `GatewayError` per model round-trip; `maxRetries = 0` disables retries. The positional constructors, `copy()`, and `componentN()` are not public.
+- `class TextGenerator(model, config = CallConfig())`
+  - `fun generate(input: GenerationInput): Flow<GenerateTextResult<String>>`
+  - `fun <T> generate(input: GenerationInput, output: Output<T>): Flow<GenerateTextResult<T>>`
+  - `fun stream(input: GenerationInput): Flow<StreamEvent>`
+  - `fun streamResult(input: GenerationInput): StreamTextResult`
+- `fun <TOutput> StreamObjectResult(model, output, prompt?, messages = emptyList(), system?, temperature?, topP?, topK?, maxOutputTokens?, stopSequences, seed?, providerOptions, abortSignal, presencePenalty?, frequencyPenalty?, responseFormat?, maxRetries = 2): StreamObjectResult<TOutput>`
+- `@Poko class GenerateObjectResult<TOutput>` remains the structured-output result holder; there are no loose top-level object-generation shims.
 - Completion helper state: `CompletionState` remains a data class for state
   updates, while `CompletionPhase.Streaming`, `CompletionPhase.Done`, and
   `CompletionPhase.Failed` are `@Poko class` value-semantics leaves.
@@ -415,7 +418,7 @@ Penalty, response-format, and retry fields participate in the `Step ?: Agent ?: 
 ### Messages
 
 - `@Serializable @Poko class ModelMessage(role, content: List<ContentPart>)`
-- Top-level factories: `systemMessage(text)`, `userMessage(text)`, `assistantMessage(text)`, `toolMessage(callId, name, output)`, `toolApprovalResponseMessage(callId, approved, reason?, approvalId?)`
+- Top-level factories: `SystemMessage(text)`, `UserMessage(text)`, `AssistantMessage(text)`, `ToolMessage(callId, name, output)`, `ToolApprovalResponseMessage(callId, approved, reason?, approvalId?)`
 - `enum MessageRole { System, User, Assistant, Tool }`
 - `sealed class ContentPart`
   - `@Serializable @Poko class Text(text)`
