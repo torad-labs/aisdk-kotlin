@@ -48,8 +48,11 @@ This project follows Semantic Versioning once the first stable release is cut.
   so a later model retry in a tool loop does not re-run already-executed tools.
 - High-level call configuration now exposes per-call HTTP headers through
   `CallSettings { headers(...) }` and `CallConfig { headers(...) }`, forwarding
-  them to `LanguageModelCallParams.headers`. `SimulateReadableStream(...)` was
-  added as a cold `Flow` helper for deterministic stream replay in tests.
+  them to `LanguageModelCallParams.headers`. `CallSettings { timeout(...) }` and
+  `CallConfig { timeout(...) }` add a total high-level call timeout; non-streaming
+  calls and full streaming collection are cancelled with `CallTimeoutError` when
+  the deadline is exceeded. `SimulateReadableStream(...)` was added as a cold
+  `Flow` helper for deterministic stream replay in tests.
   UI-to-model history conversion now identifies tool approval responses by the
   approval marker instead of the user-controlled tool name, so a real tool named
   `approval` replays as a normal tool call/result.

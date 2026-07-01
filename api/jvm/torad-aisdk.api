@@ -562,6 +562,8 @@ public final class ai/torad/aisdk/CallConfig {
 	public final fun getSeed ()Ljava/lang/Integer;
 	public final fun getStopSequences ()Ljava/util/List;
 	public final fun getTemperature ()Ljava/lang/Float;
+	public final fun getTimeout ()Lkotlin/time/Duration;
+	public final fun getTimeout-FghU774 ()Lkotlin/time/Duration;
 	public final fun getTopK ()Ljava/lang/Integer;
 	public final fun getTopP ()Ljava/lang/Float;
 	public fun hashCode ()I
@@ -582,6 +584,8 @@ public final class ai/torad/aisdk/CallConfigBuilder {
 	public final fun seed (Ljava/lang/Integer;)Lai/torad/aisdk/CallConfigBuilder;
 	public final fun stopSequences (Ljava/util/List;)Lai/torad/aisdk/CallConfigBuilder;
 	public final fun temperature (Ljava/lang/Float;)Lai/torad/aisdk/CallConfigBuilder;
+	public final fun timeout (Lkotlin/time/Duration;)Lai/torad/aisdk/CallConfigBuilder;
+	public final fun timeout-BwNAW2A (Lkotlin/time/Duration;)Lai/torad/aisdk/CallConfigBuilder;
 	public final fun topK (Ljava/lang/Integer;)Lai/torad/aisdk/CallConfigBuilder;
 	public final fun topP (Ljava/lang/Float;)Lai/torad/aisdk/CallConfigBuilder;
 }
@@ -604,6 +608,8 @@ public final class ai/torad/aisdk/CallSettings {
 	public final fun getSeed ()Ljava/lang/Integer;
 	public final fun getStopSequences ()Ljava/util/List;
 	public final fun getTemperature ()Ljava/lang/Float;
+	public final fun getTimeout ()Lkotlin/time/Duration;
+	public final fun getTimeout-FghU774 ()Lkotlin/time/Duration;
 	public final fun getTopK ()Ljava/lang/Integer;
 	public final fun getTopP ()Ljava/lang/Float;
 	public fun hashCode ()I
@@ -627,8 +633,18 @@ public final class ai/torad/aisdk/CallSettingsBuilder {
 	public final fun stopSequence (Ljava/lang/String;)Lai/torad/aisdk/CallSettingsBuilder;
 	public final fun stopSequences (Ljava/lang/Iterable;)Lai/torad/aisdk/CallSettingsBuilder;
 	public final fun temperature (Ljava/lang/Float;)Lai/torad/aisdk/CallSettingsBuilder;
+	public final fun timeout (Lkotlin/time/Duration;)Lai/torad/aisdk/CallSettingsBuilder;
+	public final fun timeout-BwNAW2A (Lkotlin/time/Duration;)Lai/torad/aisdk/CallSettingsBuilder;
 	public final fun topK (Ljava/lang/Integer;)Lai/torad/aisdk/CallSettingsBuilder;
 	public final fun topP (Ljava/lang/Float;)Lai/torad/aisdk/CallSettingsBuilder;
+}
+
+public final class ai/torad/aisdk/CallTimeoutError : ai/torad/aisdk/AiSdkException {
+	public synthetic fun <init> (JLjava/lang/String;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public synthetic fun <init> (JLjava/lang/String;Lkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun <init> (Lkotlin/time/Duration;Ljava/lang/String;)V
+	public final fun getTimeout ()Lkotlin/time/Duration;
+	public final fun getTimeout-UwyO8pc ()J
 }
 
 public final class ai/torad/aisdk/CallToolResult {

@@ -7624,6 +7624,8 @@ final class ai.torad.aisdk/CallConfig { // ai.torad.aisdk/CallConfig|null[0]
         final fun <get-stopSequences>(): kotlin.collections/List<kotlin/String> // ai.torad.aisdk/CallConfig.stopSequences.<get-stopSequences>|<get-stopSequences>(){}[0]
     final val temperature // ai.torad.aisdk/CallConfig.temperature|{}temperature[0]
         final fun <get-temperature>(): kotlin/Float? // ai.torad.aisdk/CallConfig.temperature.<get-temperature>|<get-temperature>(){}[0]
+    final val timeout // ai.torad.aisdk/CallConfig.timeout|{}timeout[0]
+        final fun <get-timeout>(): kotlin.time/Duration? // ai.torad.aisdk/CallConfig.timeout.<get-timeout>|<get-timeout>(){}[0]
     final val topK // ai.torad.aisdk/CallConfig.topK|{}topK[0]
         final fun <get-topK>(): kotlin/Int? // ai.torad.aisdk/CallConfig.topK.<get-topK>|<get-topK>(){}[0]
     final val topP // ai.torad.aisdk/CallConfig.topP|{}topP[0]
@@ -7649,6 +7651,7 @@ final class ai.torad.aisdk/CallConfigBuilder { // ai.torad.aisdk/CallConfigBuild
     final fun seed(kotlin/Int?): ai.torad.aisdk/CallConfigBuilder // ai.torad.aisdk/CallConfigBuilder.seed|seed(kotlin.Int?){}[0]
     final fun stopSequences(kotlin.collections/List<kotlin/String>): ai.torad.aisdk/CallConfigBuilder // ai.torad.aisdk/CallConfigBuilder.stopSequences|stopSequences(kotlin.collections.List<kotlin.String>){}[0]
     final fun temperature(kotlin/Float?): ai.torad.aisdk/CallConfigBuilder // ai.torad.aisdk/CallConfigBuilder.temperature|temperature(kotlin.Float?){}[0]
+    final fun timeout(kotlin.time/Duration?): ai.torad.aisdk/CallConfigBuilder // ai.torad.aisdk/CallConfigBuilder.timeout|timeout(kotlin.time.Duration?){}[0]
     final fun topK(kotlin/Int?): ai.torad.aisdk/CallConfigBuilder // ai.torad.aisdk/CallConfigBuilder.topK|topK(kotlin.Int?){}[0]
     final fun topP(kotlin/Float?): ai.torad.aisdk/CallConfigBuilder // ai.torad.aisdk/CallConfigBuilder.topP|topP(kotlin.Float?){}[0]
 }
@@ -7676,6 +7679,8 @@ final class ai.torad.aisdk/CallSettings { // ai.torad.aisdk/CallSettings|null[0]
         final fun <get-stopSequences>(): kotlin.collections/List<kotlin/String>? // ai.torad.aisdk/CallSettings.stopSequences.<get-stopSequences>|<get-stopSequences>(){}[0]
     final val temperature // ai.torad.aisdk/CallSettings.temperature|{}temperature[0]
         final fun <get-temperature>(): kotlin/Float? // ai.torad.aisdk/CallSettings.temperature.<get-temperature>|<get-temperature>(){}[0]
+    final val timeout // ai.torad.aisdk/CallSettings.timeout|{}timeout[0]
+        final fun <get-timeout>(): kotlin.time/Duration? // ai.torad.aisdk/CallSettings.timeout.<get-timeout>|<get-timeout>(){}[0]
     final val topK // ai.torad.aisdk/CallSettings.topK|{}topK[0]
         final fun <get-topK>(): kotlin/Int? // ai.torad.aisdk/CallSettings.topK.<get-topK>|<get-topK>(){}[0]
     final val topP // ai.torad.aisdk/CallSettings.topP|{}topP[0]
@@ -7704,8 +7709,16 @@ final class ai.torad.aisdk/CallSettingsBuilder { // ai.torad.aisdk/CallSettingsB
     final fun stopSequence(kotlin/String): ai.torad.aisdk/CallSettingsBuilder // ai.torad.aisdk/CallSettingsBuilder.stopSequence|stopSequence(kotlin.String){}[0]
     final fun stopSequences(kotlin.collections/Iterable<kotlin/String>): ai.torad.aisdk/CallSettingsBuilder // ai.torad.aisdk/CallSettingsBuilder.stopSequences|stopSequences(kotlin.collections.Iterable<kotlin.String>){}[0]
     final fun temperature(kotlin/Float?): ai.torad.aisdk/CallSettingsBuilder // ai.torad.aisdk/CallSettingsBuilder.temperature|temperature(kotlin.Float?){}[0]
+    final fun timeout(kotlin.time/Duration?): ai.torad.aisdk/CallSettingsBuilder // ai.torad.aisdk/CallSettingsBuilder.timeout|timeout(kotlin.time.Duration?){}[0]
     final fun topK(kotlin/Int?): ai.torad.aisdk/CallSettingsBuilder // ai.torad.aisdk/CallSettingsBuilder.topK|topK(kotlin.Int?){}[0]
     final fun topP(kotlin/Float?): ai.torad.aisdk/CallSettingsBuilder // ai.torad.aisdk/CallSettingsBuilder.topP|topP(kotlin.Float?){}[0]
+}
+
+final class ai.torad.aisdk/CallTimeoutError : ai.torad.aisdk/AiSdkException { // ai.torad.aisdk/CallTimeoutError|null[0]
+    constructor <init>(kotlin.time/Duration, kotlin/String = ...) // ai.torad.aisdk/CallTimeoutError.<init>|<init>(kotlin.time.Duration;kotlin.String){}[0]
+
+    final val timeout // ai.torad.aisdk/CallTimeoutError.timeout|{}timeout[0]
+        final fun <get-timeout>(): kotlin.time/Duration // ai.torad.aisdk/CallTimeoutError.timeout.<get-timeout>|<get-timeout>(){}[0]
 }
 
 final class ai.torad.aisdk/CallToolResult { // ai.torad.aisdk/CallToolResult|null[0]

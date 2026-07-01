@@ -347,6 +347,74 @@ class AmazonBedrockProviderTest {
     }
 
     @Test
+    fun `chat stream rejects Smithy frame with corrupt prelude CRC`() = runTest {
+        val frame = bedrockSmithyEventStream(
+            "messageStart" to """{"role":"assistant"}""",
+        ).also { it[8] = (it[8].toInt() xor 0x01).toByte() }
+        val fixture = TestServer.createTestServer(
+            mutableMapOf(
+                "https://bedrock.test/model/amazon.nova-lite-v1%3A0/converse-stream" to UrlHandler(
+                    UrlResponse.Binary(
+                        frame,
+                        headers = mapOf(HttpHeaders.ContentType to "application/vnd.amazon.eventstream"),
+                    ),
+                ),
+            ),
+        )
+        fixture.server.start()
+        val provider = AmazonBedrock(
+            fixture.httpClient(),
+            AmazonBedrockProviderSettings(block = { apiKey("key"); baseURL("https://bedrock.test") }),
+        )
+
+        val error = assertFailsWith<InvalidResponseDataError> {
+            drainAllItems(
+                provider.languageModel("amazon.nova-lite-v1:0").stream(
+                    LanguageModelCallParams {
+                        messages(listOf(UserMessage("hi")))
+                    },
+                ),
+            )
+        }
+
+        assertTrue(error.message.orEmpty().contains("prelude CRC mismatch"))
+    }
+
+    @Test
+    fun `chat stream rejects Smithy frame with corrupt message CRC`() = runTest {
+        val frame = bedrockSmithyEventStream(
+            "messageStart" to """{"role":"assistant"}""",
+        ).also { it[it.lastIndex - 1] = (it[it.lastIndex - 1].toInt() xor 0x01).toByte() }
+        val fixture = TestServer.createTestServer(
+            mutableMapOf(
+                "https://bedrock.test/model/amazon.nova-lite-v1%3A0/converse-stream" to UrlHandler(
+                    UrlResponse.Binary(
+                        frame,
+                        headers = mapOf(HttpHeaders.ContentType to "application/vnd.amazon.eventstream"),
+                    ),
+                ),
+            ),
+        )
+        fixture.server.start()
+        val provider = AmazonBedrock(
+            fixture.httpClient(),
+            AmazonBedrockProviderSettings(block = { apiKey("key"); baseURL("https://bedrock.test") }),
+        )
+
+        val error = assertFailsWith<InvalidResponseDataError> {
+            drainAllItems(
+                provider.languageModel("amazon.nova-lite-v1:0").stream(
+                    LanguageModelCallParams {
+                        messages(listOf(UserMessage("hi")))
+                    },
+                ),
+            )
+        }
+
+        assertTrue(error.message.orEmpty().contains("message CRC mismatch"))
+    }
+
+    @Test
     fun `chat stream surfaces a mid-stream modeled exception sent via colon-exception-type`() = runTest {
         // AWS sends a modeled error event with :message-type=exception and the
         // union member name in :exception-type (camelCase) -- NOT :event-type and
@@ -695,8 +763,10 @@ class AmazonBedrockProviderTest {
         return ByteArray(totalLength).also { frame ->
             frame.writeInt32BE(0, totalLength)
             frame.writeInt32BE(4, headers.size)
+            frame.writeInt32BE(8, bedrockCrc32(frame, 0, 8))
             headers.copyInto(frame, destinationOffset = 12)
             payload.copyInto(frame, destinationOffset = 12 + headers.size)
+            frame.writeInt32BE(totalLength - 4, bedrockCrc32(frame, 0, totalLength - 4))
         }
     }
 
@@ -717,6 +787,25 @@ class AmazonBedrockProviderTest {
         this[index + 3] = value.toByte()
     }
 
+    private fun bedrockCrc32(bytes: ByteArray, start: Int, end: Int): Int {
+        var crc = -1
+        for (index in start until end) {
+            crc = crc xor (bytes[index].toInt() and 0xff)
+            repeat(8) {
+                crc = if ((crc and 1) != 0) {
+                    (crc ushr 1) xor CRC32_POLYNOMIAL
+                } else {
+                    crc ushr 1
+                }
+            }
+        }
+        return crc.inv()
+    }
+
     private fun Map<String, String>.headerValue(name: String): String? =
         entries.firstOrNull { it.key.equals(name, ignoreCase = true) }?.value
+
+    private companion object {
+        const val CRC32_POLYNOMIAL: Int = -306674912 // 0xedb88320
+    }
 }
