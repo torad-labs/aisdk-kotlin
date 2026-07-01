@@ -131,6 +131,61 @@ class OpenResponsesProviderTest {
     }
 
     @Test
+    fun `generate surfaces web search call as provider-executed tool call and result`() = runTest {
+        val client = HttpClient(
+            MockEngine {
+                respond(
+                    content = """
+                        {
+                          "id":"resp_web_search",
+                          "created_at":1780000003,
+                          "model":"gpt-resp",
+                          "output":[
+                            {
+                              "type":"web_search_call",
+                              "id":"ws_1",
+                              "status":"completed",
+                              "action":{
+                                "type":"search",
+                                "query":"kotlin ai sdk",
+                                "sources":[{"url":"https://example.com","title":"Example"}]
+                              }
+                            },
+                            {"type":"message","id":"msg_1","role":"assistant","content":[{"type":"output_text","text":"done"}]}
+                          ],
+                          "usage":{"input_tokens":1,"output_tokens":2,"total_tokens":3}
+                        }
+                    """.trimIndent(),
+                    status = HttpStatusCode.OK,
+                    headers = headersOf(HttpHeaders.ContentType, "application/json"),
+                )
+            },
+        )
+        val provider = OpenResponses(client, OpenResponsesProviderSettings { url("https://api.test/v1/responses"); name("openresponses") })
+
+        val result = provider.responses("gpt-resp").generate(LanguageModelCallParams {
+            messages(listOf(UserMessage("hi")))
+        })
+
+        val toolCall = result.content.filterIsInstance<ContentPart.ToolCall>().single()
+        assertEquals("ws_1", toolCall.toolCallId)
+        assertEquals("web_search", toolCall.toolName)
+        assertEquals(JsonObject(emptyMap()), toolCall.input)
+        assertEquals(true, toolCall.providerExecuted)
+        val toolResult = result.content.filterIsInstance<ContentPart.ToolResult>().single()
+        assertEquals("ws_1", toolResult.toolCallId)
+        assertEquals("web_search", toolResult.toolName)
+        assertEquals(true, toolResult.providerExecuted)
+        assertEquals("search", toolResult.output.jsonObject.getValue("action").jsonObject.getValue("type").jsonPrimitive.content)
+        assertEquals("kotlin ai sdk", toolResult.output.jsonObject.getValue("action").jsonObject.getValue("query").jsonPrimitive.content)
+        assertEquals("https://example.com", toolResult.output.jsonObject.getValue("sources").jsonArray.single().jsonObject.getValue("url").jsonPrimitive.content)
+        assertEquals("done", result.text)
+        assertEquals(FinishReason.Stop, result.finishReason)
+        assertEquals(1, result.usage.promptTokens)
+        assertEquals(2, result.usage.completionTokens)
+    }
+
+    @Test
     fun `generate rejects function call missing call id`() = runTest {
         runOpenResponsesMissingCallId()
     }
@@ -253,6 +308,45 @@ class OpenResponsesProviderTest {
         assertEquals(1, finish.usage.promptTokens)
         assertEquals(2, finish.usage.completionTokens)
         assertEquals("gpt-resp", seenBodies.single()["model"]!!.jsonPrimitive.content)
+    }
+
+    @Test
+    fun `stream surfaces web search call as tool call and result`() = runTest {
+        val client = HttpClient(
+            MockEngine {
+                respond(
+                    content = """
+                        data: {"type":"response.output_item.added","item":{"type":"web_search_call","id":"ws_1","status":"in_progress","action":{"type":"search","query":"streamed"}}}
+
+                        data: {"type":"response.output_item.done","item":{"type":"web_search_call","id":"ws_1","status":"completed","action":{"type":"search","query":"streamed","sources":[{"url":"https://example.com"}]}}}
+
+                        data: {"type":"response.completed","response":{"usage":{"input_tokens":1,"output_tokens":2,"total_tokens":3}}}
+
+                    """.trimIndent(),
+                    status = HttpStatusCode.OK,
+                    headers = headersOf(HttpHeaders.ContentType, "text/event-stream"),
+                )
+            },
+        )
+        val provider = OpenResponses(client, OpenResponsesProviderSettings { url("https://api.test/v1/responses"); name("openresponses") })
+
+        val events = drainAllItems(provider.languageModel("gpt-resp").stream(LanguageModelCallParams {
+            messages(listOf(UserMessage("hi")))
+        }))
+
+        val toolCall = events.filterIsInstance<StreamEvent.ToolCall>().single()
+        assertEquals("ws_1", toolCall.toolCallId)
+        assertEquals("web_search", toolCall.toolName)
+        assertEquals(JsonObject(emptyMap()), toolCall.inputJson)
+        val toolResult = events.filterIsInstance<StreamEvent.ToolResult>().single()
+        assertEquals("ws_1", toolResult.toolCallId)
+        assertEquals("web_search", toolResult.toolName)
+        assertEquals("search", toolResult.outputJson.jsonObject.getValue("action").jsonObject.getValue("type").jsonPrimitive.content)
+        assertEquals("streamed", toolResult.outputJson.jsonObject.getValue("action").jsonObject.getValue("query").jsonPrimitive.content)
+        val finish = events.filterIsInstance<StreamEvent.Finish>().single()
+        assertEquals(FinishReason.Stop, finish.finishReason)
+        assertEquals(1, finish.usage.promptTokens)
+        assertEquals(2, finish.usage.completionTokens)
     }
 
     @Test
