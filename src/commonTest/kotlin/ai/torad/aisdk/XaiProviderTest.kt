@@ -145,6 +145,69 @@ class XaiProviderTest {
     }
 
     @Test
+    fun `chat usage treats xAI reasoning as additive and handles non inclusive cached tokens`() = runTest {
+        val fixture = TestServer.createTestServer(
+            mutableMapOf(
+                "https://api.x.ai/v1/chat/completions" to UrlHandler(
+                    listOf(
+                        UrlResponse.JsonValue(
+                            Json.parseToJsonElement(
+                                """
+                                {
+                                  "id":"chat-usage-1",
+                                  "created":1780000000,
+                                  "model":"grok-3-mini",
+                                  "choices":[{"message":{"role":"assistant","content":"answer"},"finish_reason":"stop"}],
+                                  "usage":{
+                                    "prompt_tokens":4142,
+                                    "completion_tokens":254,
+                                    "total_tokens":8724,
+                                    "prompt_tokens_details":{"cached_tokens":4328},
+                                    "completion_tokens_details":{"reasoning_tokens":10}
+                                  }
+                                }
+                                """.trimIndent(),
+                            ),
+                        ),
+                        UrlResponse.StreamChunks(
+                            listOf(
+                                """
+                                data: {"id":"chat-usage-2","choices":[{"delta":{"content":"answer"}}]}
+
+                                data: {"id":"chat-usage-2","choices":[{"finish_reason":"stop"}],"usage":{"prompt_tokens":4142,"completion_tokens":254,"total_tokens":8724,"prompt_tokens_details":{"cached_tokens":4328},"completion_tokens_details":{"reasoning_tokens":10}}}
+
+                                data: [DONE]
+
+                                """.trimIndent(),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+        fixture.server.start()
+        val provider = Xai(fixture.httpClient(), XaiProviderSettings { apiKey("key") })
+
+        val generated = provider.chat(ModelId("grok-3-mini")).generate(
+            LanguageModelCallParams {
+                messages(listOf(UserMessage("hi")))
+            },
+        )
+        val streamedFinish = drainAllItems(provider.chat(ModelId("grok-3-mini")).stream(LanguageModelCallParams {
+            messages(listOf(UserMessage("hi")))
+        })).filterIsInstance<StreamEvent.Finish>().single()
+
+        listOf(generated.usage, streamedFinish.usage).forEach { usage ->
+            assertEquals(8470, usage.inputTokens.total)
+            assertEquals(4142, usage.inputTokens.noCache)
+            assertEquals(4328, usage.inputTokens.cacheRead)
+            assertEquals(264, usage.outputTokens.total)
+            assertEquals(254, usage.outputTokens.text)
+            assertEquals(10, usage.outputTokens.reasoning)
+        }
+    }
+
+    @Test
     fun `chat stream requests include usage stream option`() = runTest {
         val fixture = TestServer.createTestServer(
             mutableMapOf(

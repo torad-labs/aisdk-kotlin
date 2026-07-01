@@ -124,7 +124,9 @@ internal class GoogleGenerativeAILanguageModel(
             params.seed?.let { put("seed", JsonPrimitive(it)) }
             if (params.responseFormat is ResponseFormat.Json) {
                 put("responseMimeType", JsonPrimitive("application/json"))
-                params.responseFormat.schemaJson?.let { put("responseSchema", googleSchema(it)) }
+                if ((options["structuredOutputs"] as? JsonPrimitive)?.booleanOrNull != false) {
+                    params.responseFormat.schemaJson?.let { put("responseSchema", googleSchema(it)) }
+                }
             }
             options["responseModalities"]?.let { put("responseModalities", it) }
             options["thinkingConfig"]?.let { put("thinkingConfig", it) }
@@ -307,14 +309,37 @@ internal class GoogleGenerativeAILanguageModel(
             result += buildJsonObject { put("functionDeclarations", JsonArray(functionDeclarations)) }
         }
         declarations.filter { it.providerExecuted }.forEach { tool ->
+            val googleOptions = JsonAccess.obj(tool.providerOptions.toMap(), "google")
+            val args = JsonAccess.obj(tool.metadata, "args")
+                ?: JsonAccess.obj(googleOptions, "args")
+                ?: JsonAccess.obj(googleOptions, tool.name)
+                ?: googleOptions
+                ?: JsonObject(emptyMap())
             when (tool.name) {
                 "google_search" -> result += buildJsonObject { put("googleSearch", buildJsonObject { }) }
                 "enterprise_web_search" -> result += buildJsonObject { put("enterpriseWebSearch", buildJsonObject { }) }
                 "google_maps" -> result += buildJsonObject { put("googleMaps", buildJsonObject { }) }
                 "url_context" -> result += buildJsonObject { put("urlContext", buildJsonObject { }) }
-                "file_search" -> result += buildJsonObject { put("fileSearch", buildJsonObject { }) }
+                "file_search" -> result += buildJsonObject { put("fileSearch", args) }
                 "code_execution" -> result += buildJsonObject { put("codeExecution", buildJsonObject { }) }
-                "vertex_rag_store" -> result += buildJsonObject { put("retrieval", buildJsonObject { put("vertexRagStore", buildJsonObject { }) }) }
+                "vertex_rag_store" -> result += buildJsonObject {
+                    put(
+                        "retrieval",
+                        buildJsonObject {
+                            put(
+                                "vertex_rag_store",
+                                buildJsonObject {
+                                    args["rag_resources"]?.let { put("rag_resources", it) }
+                                        ?: (args["ragCorpus"] ?: args["rag_corpus"])?.let { ragCorpus ->
+                                            put("rag_resources", buildJsonObject { put("rag_corpus", ragCorpus) })
+                                        }
+                                    args["similarity_top_k"]?.let { put("similarity_top_k", it) }
+                                        ?: (args["topK"] ?: args["top_k"] ?: args["similarityTopK"])?.let { put("similarity_top_k", it) }
+                                },
+                            )
+                        },
+                    )
+                }
             }
         }
         options["googleSearch"]?.let { result += buildJsonObject { put("googleSearch", it) } }
@@ -521,15 +546,25 @@ private class GoogleStreamState(
     private var finishReason = FinishReason.Other
     private var rawFinishReason: String? = null
     private var usage = Usage()
+    private val providerMetadata = linkedMapOf<String, JsonElement>()
     private var textId: String? = null
     private var reasoningId: String? = null
     private var blockCounter = 0
     private var hasToolCalls = false
+    private val emittedSourceKeys = mutableSetOf<String>()
 
     fun accept(value: JsonObject): List<StreamEvent> {
         val events = mutableListOf<StreamEvent>()
-        value["usageMetadata"]?.let { usage = GoogleGenerativeAILanguageModel.googleUsage(it) }
+        value["promptFeedback"]?.let { providerMetadata["promptFeedback"] = it }
+        value["usageMetadata"]?.let {
+            providerMetadata["usageMetadata"] = it
+            usage = GoogleGenerativeAILanguageModel.googleUsage(it)
+        }
         val candidate = ((JsonAccess.arr(value, "candidates"))?.firstOrNull() as? JsonObject) ?: return events
+        candidate["groundingMetadata"]?.let { providerMetadata["groundingMetadata"] = it }
+        candidate["urlContextMetadata"]?.let { providerMetadata["urlContextMetadata"] = it }
+        candidate["safetyRatings"]?.let { providerMetadata["safetyRatings"] = it }
+        candidate["finishMessage"]?.let { providerMetadata["finishMessage"] = it }
         val parts = ((JsonAccess.obj(candidate, "content"))?.get("parts") as? JsonArray).orEmpty()
         for ((index, part) in parts.withIndex()) {
             val obj = try {
@@ -605,6 +640,11 @@ private class GoogleStreamState(
         }
         GoogleGenerativeAILanguageModel.googleSources(candidate, generateId).forEach { source ->
             val googleMeta = JsonAccess.obj(source.providerMetadata.toMap(), "google")
+            val sourceKey = source.url
+                ?: googleMeta?.get("groundingChunk")?.toString()
+                ?: source.title
+                ?: source.sourceType.name
+            if (!emittedSourceKeys.add(sourceKey)) return@forEach
             events += StreamEvent.SourcePart(
                 id = (googleMeta?.get("id") as? JsonPrimitive)?.contentOrNull
                     ?: IdGenerator.generate(),
@@ -625,7 +665,17 @@ private class GoogleStreamState(
         val events = mutableListOf<StreamEvent>()
         textId?.let { events += StreamEvent.TextEnd(it) }
         reasoningId?.let { events += StreamEvent.ReasoningEnd(it) }
-        events += StreamEvent.Finish(1, finishReason, usage, rawFinishReason = rawFinishReason)
+        events += StreamEvent.Finish(
+            totalSteps = 1,
+            finishReason = finishReason,
+            usage = usage,
+            providerMetadata = if (providerMetadata.isEmpty()) {
+                ProviderMetadata.None
+            } else {
+                ProviderMetadata.Raw(JsonObject(mapOf("google" to JsonObject(providerMetadata))))
+            },
+            rawFinishReason = rawFinishReason,
+        )
         return events
     }
 }

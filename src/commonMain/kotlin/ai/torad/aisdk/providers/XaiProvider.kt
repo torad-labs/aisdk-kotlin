@@ -467,6 +467,33 @@ public class XaiProvider(
             chatMaxOutputTokensKey("max_completion_tokens")
             supportedUrls(mapOf("image/*" to listOf("^https?://.*$")))
             transformChatRequestBody(settings::xaiTransformChatBody)
+            convertUsage { value ->
+                val obj = value as? JsonObject ?: return@convertUsage Usage()
+                val promptTokens = (obj["prompt_tokens"] as? JsonPrimitive)?.intOrNull?.coerceAtLeast(0) ?: 0
+                val completionTokens = (obj["completion_tokens"] as? JsonPrimitive)?.intOrNull?.coerceAtLeast(0) ?: 0
+                val cacheReadTokens = (JsonAccess.obj(obj, "prompt_tokens_details")?.get("cached_tokens") as? JsonPrimitive)
+                    ?.intOrNull
+                    ?.coerceAtLeast(0)
+                    ?: 0
+                val reasoningTokens = (JsonAccess.obj(obj, "completion_tokens_details")?.get("reasoning_tokens") as? JsonPrimitive)
+                    ?.intOrNull
+                    ?.coerceAtLeast(0)
+                    ?: 0
+                val promptTokensIncludesCached = cacheReadTokens <= promptTokens
+                Usage(
+                    inputTokens = Usage.InputTokenBreakdown(
+                        total = if (promptTokensIncludesCached) promptTokens else promptTokens + cacheReadTokens,
+                        noCache = if (promptTokensIncludesCached) promptTokens - cacheReadTokens else promptTokens,
+                        cacheRead = cacheReadTokens,
+                    ),
+                    outputTokens = Usage.OutputTokenBreakdown(
+                        total = completionTokens + reasoningTokens,
+                        text = completionTokens,
+                        reasoning = reasoningTokens,
+                    ),
+                    raw = value,
+                )
+            }
             includeUsage(true)
         }
 }
