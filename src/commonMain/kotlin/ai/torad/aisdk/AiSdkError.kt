@@ -2,6 +2,7 @@ package ai.torad.aisdk
 
 import dev.drewhamilton.poko.Poko
 import kotlinx.serialization.json.JsonElement
+import kotlin.time.Duration
 
 /** @since 0.3.0-beta01 */
 public sealed class AiSdkException(
@@ -37,6 +38,13 @@ public class APICallError(
 
 /** @since 0.3.0-beta01 */
 public class EmptyResponseBodyError(message: String = "Empty response body") : AiSdkException(message)
+
+/** @since 0.3.0-beta01 */
+public class CallTimeoutError(
+    /** @since 0.3.0-beta01 */
+    public val timeout: Duration,
+    message: String = "Call timed out after $timeout.",
+) : AiSdkException(message)
 
 /** The platform cryptographic entropy source could not be read (native CSPRNG seam). */
 internal class SecureRandomUnavailableError(

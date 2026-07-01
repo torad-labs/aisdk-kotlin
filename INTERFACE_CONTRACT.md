@@ -403,7 +403,7 @@ Penalty, response-format, and retry fields participate in the `Step ?: Agent ?: 
 
 ### Structured generation entrypoints
 
-- `CallSettings { ...; headers(mapOf("X-Trace" to "...")); maxRetries(2) }` / `CallConfig { ...; headers(mapOf("X-Trace" to "...")); maxRetries(2) }` — `@Poko` builder-backed value types used by high-level generation APIs. Non-streaming text/object generation retries typed retryable `APICallError` / `GatewayError` per model round-trip; per-call `headers` flow into `LanguageModelCallParams.headers`; `maxRetries = 0` disables retries. The positional constructors, `copy()`, and `componentN()` are not public.
+- `CallSettings { ...; headers(mapOf("X-Trace" to "...")); timeout(30.seconds); maxRetries(2) }` / `CallConfig { ...; headers(mapOf("X-Trace" to "...")); timeout(30.seconds); maxRetries(2) }` — `@Poko` builder-backed value types used by high-level generation APIs. Non-streaming text/object generation retries typed retryable `APICallError` / `GatewayError` per model round-trip; per-call `headers` flow into `LanguageModelCallParams.headers`; `timeout` is a total high-level call deadline that cancels a non-streaming call or the full streaming collection with `CallTimeoutError` (it is not an idle-gap timeout between stream events); `maxRetries = 0` disables retries. The positional constructors, `copy()`, and `componentN()` are not public.
 - `class TextGenerator(model, config = CallConfig())`
   - `fun generate(input: GenerationInput): Flow<GenerateTextResult<String>>`
   - `fun <T> generate(input: GenerationInput, output: Output<T>): Flow<GenerateTextResult<T>>`

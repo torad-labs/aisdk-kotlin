@@ -1,6 +1,7 @@
 package ai.torad.aisdk
 
 import dev.drewhamilton.poko.Poko
+import kotlin.time.Duration
 
 @Poko
 /** @since 0.3.0-beta01 */
@@ -29,11 +30,23 @@ public class CallConfig internal constructor(
     public val responseFormat: ResponseFormat = ResponseFormat.Text,
     /** @since 0.3.0-beta01 */
     public val headers: Map<String, String> = emptyMap(),
+    private val timeoutBox: Any? = null,
     /** @since 0.3.0-beta01 */
     public val maxRetries: Int = 2,
 ) {
+    /**
+     * Optional total timeout for one high-level model call. For streaming calls this bounds the
+     * full collection lifetime, not the idle gap between individual events.
+     * @since 0.3.0-beta01
+     */
+    public val timeout: Duration?
+        get() = timeoutBox as Duration?
+
     init {
         require(maxRetries >= 0) { "maxRetries must be >= 0" }
+        require(timeout == null || timeout?.isPositive() == true) {
+            "timeout must be positive when set"
+        }
     }
 }
 
@@ -51,6 +64,7 @@ public class CallConfigBuilder {
     private var presencePenalty: Float? = null
     private var frequencyPenalty: Float? = null
     private var responseFormat: ResponseFormat = ResponseFormat.Text
+    private var timeout: Duration? = null
     private var maxRetries: Int = 2
     private val headers = linkedMapOf<String, String>()
 
@@ -127,6 +141,16 @@ public class CallConfigBuilder {
         return this
     }
 
+    /**
+     * Set a total timeout for one high-level call. For streaming calls this bounds the whole
+     * stream collection, not the time between chunks.
+     * @since 0.3.0-beta01
+     */
+    public fun timeout(value: Duration?): CallConfigBuilder {
+        timeout = value
+        return this
+    }
+
     /** @since 0.3.0-beta01 */
     public fun maxRetries(value: Int): CallConfigBuilder {
         maxRetries = value
@@ -148,6 +172,7 @@ public class CallConfigBuilder {
             frequencyPenalty = frequencyPenalty,
             responseFormat = responseFormat,
             headers = headers.toMap(),
+            timeoutBox = timeout as Any?,
             maxRetries = maxRetries,
         )
 }

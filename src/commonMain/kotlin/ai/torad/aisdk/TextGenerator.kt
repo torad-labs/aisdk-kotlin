@@ -26,16 +26,19 @@ public class TextGenerator @JvmOverloads constructor(
             StreamOpenRetry.wrap(config.maxRetries) {
                 model.stream(params)
             }
-        }
+        }.let { CallTimeout.flow(it, config.timeout) }
 
     /** @since 0.3.0-beta01 */
     public fun streamResult(input: GenerationInput): StreamTextResult {
         val params = buildParams(input, null)
         val result = model.streamResult(params)
         return StreamTextResult(
-            sourceStream = StreamOpenRetry.wrap(config.maxRetries) {
-                result.stream
-            },
+            sourceStream = CallTimeout.flow(
+                StreamOpenRetry.wrap(config.maxRetries) {
+                    result.stream
+                },
+                config.timeout,
+            ),
             request = result.request,
             initialResponse = result.response,
         )
@@ -47,10 +50,12 @@ public class TextGenerator @JvmOverloads constructor(
         decode: (String) -> T,
     ): GenerateTextResult<T> {
         val params = buildParams(input, output)
-        val raw = RetryPolicy {
-            maxRetries(config.maxRetries)
-        }.execute {
-            model.generate(params)
+        val raw = CallTimeout.run(config.timeout) {
+            RetryPolicy {
+                maxRetries(config.maxRetries)
+            }.execute {
+                model.generate(params)
+            }
         }
         return GenerateTextResult(
             output = decode(raw.text),

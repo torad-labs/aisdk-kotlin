@@ -4,6 +4,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertNotEquals
+import kotlin.time.Duration.Companion.seconds
 
 class CallSettingsContextBuilderTest {
     @Test
@@ -12,34 +13,40 @@ class CallSettingsContextBuilderTest {
             temperature(0.2f)
             stopSequences(listOf("stop"))
             headers(mapOf("X-Call" to "settings"))
+            timeout(5.seconds)
             maxRetries(1)
         }
         val equalSettings = CallSettings {
             temperature(0.2f)
             stopSequences(listOf("stop"))
             headers(mapOf("X-Call" to "settings"))
+            timeout(5.seconds)
             maxRetries(1)
         }
         val config = CallConfig {
             topP(0.8f)
             stopSequences(listOf("done"))
             headers(mapOf("X-Call" to "config"))
+            timeout(3.seconds)
             maxRetries(0)
         }
         val equalConfig = CallConfig {
             topP(0.8f)
             stopSequences(listOf("done"))
             headers(mapOf("X-Call" to "config"))
+            timeout(3.seconds)
             maxRetries(0)
         }
 
         assertEquals(equalSettings, settings)
         assertEquals(equalSettings.hashCode(), settings.hashCode())
         assertEquals(mapOf("X-Call" to "settings"), settings.headers)
+        assertEquals(5.seconds, settings.timeout)
         assertNotEquals(CallSettings { temperature(0.3f) }, settings)
         assertEquals(equalConfig, config)
         assertEquals(equalConfig.hashCode(), config.hashCode())
         assertEquals(mapOf("X-Call" to "config"), config.headers)
+        assertEquals(3.seconds, config.timeout)
         assertNotEquals(CallConfig { topP(0.9f) }, config)
     }
 
@@ -83,6 +90,12 @@ class CallSettingsContextBuilderTest {
         }
         assertFailsWith<IllegalArgumentException> {
             CallConfig { maxRetries(-1) }
+        }
+        assertFailsWith<IllegalArgumentException> {
+            CallSettings { timeout((-1).seconds) }
+        }
+        assertFailsWith<IllegalArgumentException> {
+            CallConfig { timeout((-1).seconds) }
         }
         assertFailsWith<IllegalArgumentException> {
             AgentSettings<Unit> { maxRetries(-1) }

@@ -82,6 +82,16 @@ internal object BedrockEventStream {
             val totalLength = readInt32BE(bytes, offset)
             val headersLength = readInt32BE(bytes, offset + 4)
             if (totalLength < 16 || headersLength < 0 || offset + totalLength > bytes.size) break
+            validateCrc32(
+                expected = readInt32BE(bytes, offset + 8),
+                actual = crc32(bytes, offset, offset + 8),
+                label = "prelude",
+            )
+            validateCrc32(
+                expected = readInt32BE(bytes, offset + totalLength - 4),
+                actual = crc32(bytes, offset, offset + totalLength - 4),
+                label = "message",
+            )
             val headersStart = offset + 12
             val payloadStart = headersStart + headersLength
             val payloadEnd = offset + totalLength - 4
@@ -140,4 +150,32 @@ internal object BedrockEventStream {
 
     private fun readUInt16BE(bytes: ByteArray, index: Int): Int =
         ((bytes[index].toInt() and 0xff) shl 8) or (bytes[index + 1].toInt() and 0xff)
+
+    private fun validateCrc32(expected: Int, actual: Int, label: String) {
+        if (expected != actual) {
+            throw InvalidResponseDataError(
+                null,
+                "Bedrock event stream $label CRC mismatch: expected ${expected.toUIntString()}, got ${actual.toUIntString()}",
+            )
+        }
+    }
+
+    private fun crc32(bytes: ByteArray, start: Int, end: Int): Int {
+        var crc = -1
+        for (index in start until end) {
+            crc = crc xor (bytes[index].toInt() and 0xff)
+            repeat(8) {
+                crc = if ((crc and 1) != 0) {
+                    (crc ushr 1) xor CRC32_POLYNOMIAL
+                } else {
+                    crc ushr 1
+                }
+            }
+        }
+        return crc.inv()
+    }
+
+    private fun Int.toUIntString(): String = (toLong() and 0xffff_ffffL).toString()
+
+    private const val CRC32_POLYNOMIAL: Int = -306674912 // 0xedb88320
 }

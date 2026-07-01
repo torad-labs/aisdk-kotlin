@@ -487,10 +487,13 @@ public class StructuredObjectGenerator<RESULT>(
       * @since 0.3.0-beta01
      */
     public fun stream(input: GenerationInput): Flow<StructuredObjectPhase<RESULT>> =
-        StructuredObject.phases(
-            chunks = model.stream(buildParams(input)).textDeltas(),
-            schema = schema,
-            abortSignal = config.abortSignal,
+        CallTimeout.flow(
+            StructuredObject.phases(
+                chunks = model.stream(buildParams(input)).textDeltas(),
+                schema = schema,
+                abortSignal = config.abortSignal,
+            ),
+            config.timeout,
         )
 
     /** Text-delta payloads from the model stream, surfacing any in-band [StreamEvent.Error]. */
