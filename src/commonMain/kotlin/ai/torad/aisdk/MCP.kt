@@ -70,6 +70,7 @@ private const val HTTP_METHOD_NOT_ALLOWED = 405
 private const val DEFAULT_MCP_CLIENT_NAME = "ai-sdk-mcp-client"
 private const val DEFAULT_MCP_CLIENT_VERSION = "1.0.0"
 private const val MCP_SSE_MAX_DATA_LINES = 1_000
+private const val MCP_LAST_EVENT_ID_HEADER = "Last-Event-ID"
 
 /** Default ceiling for the MCP connect handshake (initialize round-trip, SSE endpoint event). */
 private const val MCP_DEFAULT_HANDSHAKE_TIMEOUT_MS = 30_000L
@@ -1296,6 +1297,7 @@ public class HttpMCPTransport(
 
     private val lifecycle = McpConnectionLifecycle()
     private val sessionId = AtomicReference<String?>(null)
+    private val lastInboundEventId = AtomicReference<String?>(null)
     private var inboundJob: Job? = null
     private var inboundRetryRequested: Boolean = false
     private val inboundReconnectAttempts = intArrayOf(0)
@@ -1450,7 +1452,9 @@ public class HttpMCPTransport(
             if (current == null || current.isCompleted) {
                 inboundRetryRequested = false
                 if (resetReconnectAttempts) inboundReconnectAttempts[0] = 0
-                inboundJob = activeScope.launch(start = CoroutineStart.UNDISPATCHED) { readInboundSse() }
+                inboundJob = activeScope.launch(start = CoroutineStart.UNDISPATCHED) {
+                    readInboundSse(includeLastEventId = !resetReconnectAttempts)
+                }
             } else {
                 inboundRetryRequested = true
             }
@@ -1463,10 +1467,18 @@ public class HttpMCPTransport(
     }
 
     @Suppress("CyclomaticComplexMethod")
-    private suspend fun readInboundSse() {
+    private suspend fun readInboundSse(includeLastEventId: Boolean) {
         var completion = InboundSseCompletion.Clean
         try {
-            val firstHeaders = mcpCommonHeaders(mapOf(HttpHeaders.Accept to "text/event-stream"))
+            val firstHeaders = mcpCommonHeaders(
+                linkedMapOf(HttpHeaders.Accept to "text/event-stream").apply {
+                    if (includeLastEventId) {
+                        lastInboundEventId.load()?.takeIf { it.isNotEmpty() }?.let {
+                            put(MCP_LAST_EVENT_ID_HEADER, it)
+                        }
+                    }
+                },
+            )
             val firstAccessToken = McpOAuthReauthorizer.bearerAccessToken(firstHeaders)
             val firstResponse = client.request(url) {
                 method = HttpMethod.Get
@@ -1476,7 +1488,15 @@ public class HttpMCPTransport(
                 if (oauthReauthorizer.reauthorizeAfter401(firstAccessToken) != AuthResult.AUTHORIZED) {
                     throw UnauthorizedError()
                 }
-                val retryHeaders = mcpCommonHeaders(mapOf(HttpHeaders.Accept to "text/event-stream"))
+                val retryHeaders = mcpCommonHeaders(
+                    linkedMapOf(HttpHeaders.Accept to "text/event-stream").apply {
+                        if (includeLastEventId) {
+                            lastInboundEventId.load()?.takeIf { it.isNotEmpty() }?.let {
+                                put(MCP_LAST_EVENT_ID_HEADER, it)
+                            }
+                        }
+                    },
+                )
                 client.request(url) {
                     method = HttpMethod.Get
                     retryHeaders.forEach { (name, value) -> header(name, value) }
@@ -1497,6 +1517,7 @@ public class HttpMCPTransport(
             }
             val receivedEvent = booleanArrayOf(false)
             McpSseFrame.parseStreamReleasing(response.bodyAsChannel()) { event ->
+                event.id?.let { id -> lastInboundEventId.store(id.takeIf { it.isNotEmpty() }) }
                 if (!receivedEvent[0]) {
                     receivedEvent[0] = true
                     inboundMutex.withLock { inboundReconnectAttempts[0] = 0 }

@@ -1418,6 +1418,57 @@ class MCPClientTest {
     }
 
     @Test
+    fun `HTTP inbound SSE reconnect sends last event id`() = runTest {
+        val oversizedSSEFrame = buildString {
+            repeat(1_001) { append("data: x\n") }
+            append('\n')
+        }
+        val notification = JSONRPCNotification(method = "notifications/progress").toJsonElement()
+        val received = intArrayOf(0)
+        val getAttempts = intArrayOf(0)
+        val fixture = TestServer.createTestServer(
+            mutableMapOf(
+                "https://mcp.test/mcp" to UrlHandler(
+                    { request, _ ->
+                        when (request.method) {
+                            "GET" -> when (getAttempts[0]++) {
+                                0 -> UrlResponse.StreamChunks(
+                                    listOf(
+                                        "id: event-1\nevent: message\ndata: $notification\n\n",
+                                        oversizedSSEFrame,
+                                    ),
+                                )
+                                else -> UrlResponse.StreamChunks(emptyList())
+                            }
+                            else -> UrlResponse.Empty(status = 202)
+                        }
+                    },
+                ),
+            ),
+        )
+        fixture.server.start()
+        val transport = HttpMCPTransport(
+            client = fixture.httpClient(),
+            url = "https://mcp.test/mcp",
+            reconnectionOptions = MCPReconnectionOptions {
+                initialReconnectionDelayMillis(30)
+                reconnectionDelayGrowFactor(1.5)
+                maxReconnectionDelayMillis(1_000)
+                maxRetries(1)
+            },
+        )
+        transport.setOnMessage { received[0] += 1 }
+
+        transport.start()
+        waitForRealTime { received[0] == 1 && fixture.calls.count { it.requestMethod == "GET" } >= 2 }
+
+        val gets = fixture.calls.filter { it.requestMethod == "GET" }
+        assertNull(gets[0].requestHeaders.headerValue("Last-Event-ID"))
+        assertEquals("event-1", gets[1].requestHeaders.headerValue("Last-Event-ID"))
+        transport.close()
+    }
+
+    @Test
     fun `HTTP inbound SSE parsed event resets reconnect attempt counter`() = runTest {
         val oversizedSSEFrame = buildString {
             repeat(1_001) { append("data: x\n") }
