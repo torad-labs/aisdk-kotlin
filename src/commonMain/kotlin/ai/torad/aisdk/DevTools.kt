@@ -240,6 +240,7 @@ private class DevToolsStreamCollector {
             is StreamEvent.StepStart,
             is StreamEvent.SourcePart,
             is StreamEvent.FilePart,
+            is StreamEvent.Data,
             is StreamEvent.ToolInputStart,
             is StreamEvent.ToolInputDelta,
             is StreamEvent.ToolInputEnd,
@@ -324,6 +325,12 @@ internal object DevToolsJson {
     is StreamEvent.Raw -> buildJsonObject {
         put("type", JsonPrimitive("raw"))
         put("rawValue", event.rawValue)
+    }
+    is StreamEvent.Data -> buildJsonObject {
+        put("type", JsonPrimitive("data-${event.name}"))
+        event.id?.let { put("id", JsonPrimitive(it)) }
+        put("data", event.data)
+        if (event.transient) put("transient", JsonPrimitive(true))
     }
     is StreamEvent.StreamStart,
     is StreamEvent.ResponseMetadata,

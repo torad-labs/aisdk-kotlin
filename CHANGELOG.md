@@ -56,6 +56,11 @@ This project follows Semantic Versioning once the first stable release is cut.
   UI-to-model history conversion now identifies tool approval responses by the
   approval marker instead of the user-controlled tool name, so a real tool named
   `approval` replays as a normal tool call/result.
+- UI stream encoding now supports custom `data-*` chunks through
+  `StreamEvent.Data(name, data, id, transient)`, matching the existing
+  `UIMessagePart.Data` decoder path for Kotlin-server-to-JS-client data parts.
+  Transcription docs now call out that audio input is currently base64-backed
+  in memory, with streaming upload input tracked as future work.
 - MCP HTTP inbound SSE reconnects now stop on clean EOF and only retry after
   stream errors with capped exponential backoff. `MCPReconnectionOptions`
   configures `initialReconnectionDelayMillis`, `reconnectionDelayGrowFactor`,

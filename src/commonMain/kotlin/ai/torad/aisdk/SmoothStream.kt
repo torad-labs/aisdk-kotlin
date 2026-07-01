@@ -144,6 +144,7 @@ public fun SmoothStream(
                 is StreamEvent.ReasoningStart,
                 is StreamEvent.SourcePart,
                 is StreamEvent.FilePart,
+                is StreamEvent.Data,
                 is StreamEvent.ToolInputStart,
                 is StreamEvent.ToolInputDelta,
                 is StreamEvent.ToolInputEnd,

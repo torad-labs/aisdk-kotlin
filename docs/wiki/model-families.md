@@ -108,6 +108,10 @@ println(transcript.text)
 Transcription can also return segments, detected language, duration, warnings,
 response metadata, and provider metadata when the provider supplies them.
 
+Current transcription inputs use base64 strings. Providers decode that string
+into bytes before upload, so large audio files can briefly require roughly twice
+the file size in memory. A streaming upload source is tracked as future work.
+
 ## Video
 
 ```kotlin

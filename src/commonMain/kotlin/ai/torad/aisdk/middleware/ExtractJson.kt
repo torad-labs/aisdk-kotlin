@@ -103,6 +103,7 @@ public fun ExtractJsonMiddleware(
                 is StreamEvent.ReasoningEnd,
                 is StreamEvent.SourcePart,
                 is StreamEvent.FilePart,
+                is StreamEvent.Data,
                 is StreamEvent.ToolInputStart,
                 is StreamEvent.ToolInputDelta,
                 is StreamEvent.ToolInputEnd,

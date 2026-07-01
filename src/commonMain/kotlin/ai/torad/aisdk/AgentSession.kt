@@ -384,6 +384,7 @@ public class AgentSession<TContext, TOutput>(
                     is StreamEvent.StepStart,
                     is StreamEvent.TextStart,
                     is StreamEvent.TextEnd,
+                    is StreamEvent.Data,
                     is StreamEvent.ToolInputStart,
                     is StreamEvent.ToolInputDelta,
                     is StreamEvent.ToolInputEnd,

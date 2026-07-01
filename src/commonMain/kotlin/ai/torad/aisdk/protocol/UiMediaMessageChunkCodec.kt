@@ -19,6 +19,7 @@ internal object UiMediaMessageChunkCodec {
         is StreamEvent.ReasoningDelta,
         is StreamEvent.ReasoningEnd,
         is StreamEvent.ToolInputStart,
+        is StreamEvent.Data,
         is StreamEvent.ToolInputDelta,
         is StreamEvent.ToolInputEnd,
         is StreamEvent.ToolCall,

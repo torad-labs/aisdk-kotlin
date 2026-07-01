@@ -265,6 +265,28 @@ public sealed class StreamEvent {
     ) : StreamEvent()
 
     /**
+     * Custom UI data part. Encodes to the v6 UI-message chunk shape
+     * `{ type: "data-$name", id?, data, transient? }`.
+     * @since 0.3.0-beta01
+     */
+    @Serializable
+    @SerialName("data")
+    @Poko
+    public class Data(
+        /**
+         * Name suffix for the UI chunk type, without the `data-` prefix.
+         * @since 0.3.0-beta01
+         */
+        public val name: String,
+        /** @since 0.3.0-beta01 */
+        public val data: JsonElement,
+        /** @since 0.3.0-beta01 */
+        public val id: String? = null,
+        /** @since 0.3.0-beta01 */
+        public val transient: Boolean = false,
+    ) : StreamEvent()
+
+    /**
      * Tool input streaming opens — the model has decided which tool to call.
      * @since 0.3.0-beta01
      */

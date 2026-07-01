@@ -12900,6 +12900,36 @@ sealed class ai.torad.aisdk/PruneToolCalls { // ai.torad.aisdk/PruneToolCalls|nu
 }
 
 sealed class ai.torad.aisdk/StreamEvent { // ai.torad.aisdk/StreamEvent|null[0]
+    final class Data : ai.torad.aisdk/StreamEvent { // ai.torad.aisdk/StreamEvent.Data|null[0]
+        constructor <init>(kotlin/String, kotlinx.serialization.json/JsonElement, kotlin/String? = ..., kotlin/Boolean = ...) // ai.torad.aisdk/StreamEvent.Data.<init>|<init>(kotlin.String;kotlinx.serialization.json.JsonElement;kotlin.String?;kotlin.Boolean){}[0]
+
+        final val data // ai.torad.aisdk/StreamEvent.Data.data|{}data[0]
+            final fun <get-data>(): kotlinx.serialization.json/JsonElement // ai.torad.aisdk/StreamEvent.Data.data.<get-data>|<get-data>(){}[0]
+        final val id // ai.torad.aisdk/StreamEvent.Data.id|{}id[0]
+            final fun <get-id>(): kotlin/String? // ai.torad.aisdk/StreamEvent.Data.id.<get-id>|<get-id>(){}[0]
+        final val name // ai.torad.aisdk/StreamEvent.Data.name|{}name[0]
+            final fun <get-name>(): kotlin/String // ai.torad.aisdk/StreamEvent.Data.name.<get-name>|<get-name>(){}[0]
+        final val transient // ai.torad.aisdk/StreamEvent.Data.transient|{}transient[0]
+            final fun <get-transient>(): kotlin/Boolean // ai.torad.aisdk/StreamEvent.Data.transient.<get-transient>|<get-transient>(){}[0]
+
+        final fun equals(kotlin/Any?): kotlin/Boolean // ai.torad.aisdk/StreamEvent.Data.equals|equals(kotlin.Any?){}[0]
+        final fun hashCode(): kotlin/Int // ai.torad.aisdk/StreamEvent.Data.hashCode|hashCode(){}[0]
+        final fun toString(): kotlin/String // ai.torad.aisdk/StreamEvent.Data.toString|toString(){}[0]
+
+        final object $serializer : kotlinx.serialization.internal/GeneratedSerializer<ai.torad.aisdk/StreamEvent.Data> { // ai.torad.aisdk/StreamEvent.Data.$serializer|null[0]
+            final val descriptor // ai.torad.aisdk/StreamEvent.Data.$serializer.descriptor|{}descriptor[0]
+                final fun <get-descriptor>(): kotlinx.serialization.descriptors/SerialDescriptor // ai.torad.aisdk/StreamEvent.Data.$serializer.descriptor.<get-descriptor>|<get-descriptor>(){}[0]
+
+            final fun childSerializers(): kotlin/Array<kotlinx.serialization/KSerializer<*>> // ai.torad.aisdk/StreamEvent.Data.$serializer.childSerializers|childSerializers(){}[0]
+            final fun deserialize(kotlinx.serialization.encoding/Decoder): ai.torad.aisdk/StreamEvent.Data // ai.torad.aisdk/StreamEvent.Data.$serializer.deserialize|deserialize(kotlinx.serialization.encoding.Decoder){}[0]
+            final fun serialize(kotlinx.serialization.encoding/Encoder, ai.torad.aisdk/StreamEvent.Data) // ai.torad.aisdk/StreamEvent.Data.$serializer.serialize|serialize(kotlinx.serialization.encoding.Encoder;ai.torad.aisdk.StreamEvent.Data){}[0]
+        }
+
+        final object Companion { // ai.torad.aisdk/StreamEvent.Data.Companion|null[0]
+            final fun serializer(): kotlinx.serialization/KSerializer<ai.torad.aisdk/StreamEvent.Data> // ai.torad.aisdk/StreamEvent.Data.Companion.serializer|serializer(){}[0]
+        }
+    }
+
     final class Error : ai.torad.aisdk/StreamEvent { // ai.torad.aisdk/StreamEvent.Error|null[0]
         constructor <init>(kotlin/String, kotlin/Throwable? = ...) // ai.torad.aisdk/StreamEvent.Error.<init>|<init>(kotlin.String;kotlin.Throwable?){}[0]
 

@@ -63,6 +63,7 @@ public val StreamEvent.metadata: ProviderMetadata
         is StreamEvent.ReasoningEnd -> providerMetadata
         is StreamEvent.SourcePart -> providerMetadata
         is StreamEvent.FilePart -> providerMetadata
+        is StreamEvent.Data -> ProviderMetadata.None
         is StreamEvent.ToolInputStart -> providerMetadata
         is StreamEvent.ToolInputDelta -> providerMetadata
         is StreamEvent.ToolInputEnd -> providerMetadata

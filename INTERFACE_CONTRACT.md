@@ -63,7 +63,7 @@
 - `class ToolSet<TContext>(...)` — `find(name): Tool?`, `names(): List<String>`, `descriptors`, `plus(other)`
 - `fun ToolSet<TContext>(vararg tools: Tool<*, *, TContext>): ToolSet<TContext>`
 - `class ToolExecutionContext<TContext>(context, abortSignal, stepNumber, messages, toolCallId, writer: ToolStreamWriter = NoopToolStreamWriter)` — `this` inside tool executor. `context` is the running typed context (a `prepareStep.experimental_context` override flows in here, gap #16). `writer` writes back into the active stream (gap #21).
-- `interface ToolStreamWriter { suspend fun write(event: StreamEvent); suspend fun writeData(value: JsonElement) }` — v6's `UIMessageStreamWriter` (gap #21). `writeData` emits `StreamEvent.Raw(value)`. `object NoopToolStreamWriter` is the off-loop default. Writes interleave with the tool's own emissions in stream order; `streamToUiMessages` ignores `Raw`, so a consumer that wants the custom data intercepts the `Flow<StreamEvent>` pre-conversion.
+- `interface ToolStreamWriter { suspend fun write(event: StreamEvent); suspend fun writeData(value: JsonElement) }` — v6's `UIMessageStreamWriter` (gap #21). `writeData` remains a low-level raw event escape hatch; named UI data chunks should be emitted as `StreamEvent.Data(name, data, id?, transient)`, which encodes to `data-*` UI-message chunks. `object NoopToolStreamWriter` is the off-loop default. Writes interleave with the tool's own emissions in stream order.
 - `ToolPredicateOptions<TContext> { toolCallId(...); messages(...); experimental_context(...) }` — regular builder-backed class passed to `Tool.needsApproval` / `Tool.toModelOutput` (gap #17) so a predicate can decide on conversation history or call identity. The positional constructor, `copy()`, and `componentN()` are not public.
 - Tool lifecycle hooks (gap #18), all optional + loop-invoked, `runHook`-guarded: `onInputStart(streamingId)` on `ToolInputStart`, `onInputDelta(streamingId, delta)` on `ToolInputDelta`, `onInputAvailable(toolCallId, input)` just before the executor runs.
 - `ToolExecutionPolicy { maxParallelToolCalls(8); maxToolCallsPerStep(128); progressBufferCapacity(64); toolExecutionTimeout(null) }` — `@Poko` explicit bounded policy for local tool execution inside one step. `ToolLoopAgent.maxParallelToolCalls` remains as shorthand for the policy parallelism cap. The positional constructor, `copy()`, and `componentN()` are not public.
@@ -212,6 +212,9 @@ Penalty, response-format, and retry fields participate in the `Step ?: Agent ?: 
 - Image: `ImageModel`, `ImageGenerationParams`, `ImageModelResult`, `GenerateImageResult`, `ImageGeneration.generateImage(..., maxParallelCalls = 8)`
 - Speech: `SpeechModel`, `SpeechGenerationParams`, `SpeechModelResult`, `GenerateSpeechResult`, `SpeechGeneration.generateSpeech(...)`
 - Transcription: `TranscriptionModel`, `AudioSource`, `TranscriptionParams`, `TranscriptSegment`, `TranscribeResult`, `Transcription.transcribe(...)`
+  - Audio input is currently base64-backed in memory; providers decode the
+    base64 payload before upload, so large inputs can briefly require roughly
+    twice the audio size in memory. Streaming upload input is future work.
 - Video: `VideoModel`, `VideoGenerationParams`, `VideoModelResult`, `GenerateVideoResult`, `VideoGeneration.generateVideo(..., maxParallelCalls = 8)`
 - Rerank: `RerankingModel`, `RerankingParams`, `RerankedItem<T>`, `RerankResult<T>`, `Reranking.rerank(...)`
   - Rerank result holders are `@Poko class` value-semantics types; field
@@ -453,6 +456,7 @@ Penalty, response-format, and retry fields participate in the `Step ?: Agent ?: 
   - `ReasoningStart(id) / ReasoningDelta(id, text) / ReasoningEnd(id)`
   - `SourcePart(id, sourceType, url?, title?, mediaType?)`
   - `FilePart(id, mediaType, base64)`
+  - `Data(name, data, id?, transient = false)` — custom UI data part; encodes to `{ type: "data-$name", id?, data, transient? }` for JS UI-message clients
   - `ToolInputStart(id, toolName) / ToolInputDelta(id, delta) / ToolInputEnd(id)`
   - `ToolCall(toolCallId, toolName, inputJson)` — final, parsed
   - `ToolResult(toolCallId, toolName, outputJson, preliminary = false)` — `preliminary = true` for intermediate snapshots from a `StreamingTool` executor; the final emission (and any tool built via the single-value `Tool(...)` factory) carries `preliminary = false` and feeds the model on subsequent turns
@@ -487,6 +491,7 @@ Penalty, response-format, and retry fields participate in the `Step ?: Agent ?: 
   - `StepStart(stepNumber)` — multi-step boundary; emitted on `StreamEvent.StepStart` for step 2+ so multi-tool flows / subagent handoffs render a visible divider
   - `SourceUrl(sourceId, url, title?)` / `SourceDocument(sourceId, mediaType, title, filename?)` — split per gap #29
   - `File(mediaType, base64)`
+  - `Data(type, data, id?, transient = false)` — typed custom `data-*` UI part; `StreamEvent.Data(name, ...)` is the encoder-side source for these chunks.
   - **+ `providerMetadata: Map<String, JsonElement>? = null`** on `Text`, `ToolUI`, `DynamicToolUI`, `Reasoning`, `SourceUrl`, `SourceDocument`, `File` (not `Error` / `StepStart` — terminal / boundary). gap #11.
 - `enum ToolCallState { InputStreaming, InputAvailable, ApprovalRequested, ApprovalResponded, OutputAvailable, OutputError, OutputDenied }` — v6's full 7-state taxonomy. Renames: `ApprovalRequired → ApprovalRequested`, `Error → OutputError`. New states: `ApprovalResponded` (user answered, tool not yet run), `OutputDenied` (approval was denied).
 - `UIMessagePart.ToolUI.outputAs(serializer)` / `inputAs(serializer)` plus reified overloads
