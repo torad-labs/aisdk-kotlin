@@ -113,29 +113,33 @@ public class HuggingFaceProviderSettings internal constructor(
     }
 }
 
-public class HuggingFaceProviderSettingsBuilder internal constructor() {
+public class HuggingFaceProviderSettingsBuilder {
     private var apiKey: String? = null
     private var baseURL: String = "https://router.huggingface.co/v1"
     private var headers: Map<String, String> = emptyMap()
     private var generateId: () -> String = { IdGenerator.generate() }
 
-    public fun apiKey(value: String?) {
+    public fun apiKey(value: String?): HuggingFaceProviderSettingsBuilder {
         apiKey = value
+        return this
     }
 
-    public fun baseURL(value: String) {
+    public fun baseURL(value: String): HuggingFaceProviderSettingsBuilder {
         baseURL = value
+        return this
     }
 
-    public fun headers(value: Map<String, String>) {
+    public fun headers(value: Map<String, String>): HuggingFaceProviderSettingsBuilder {
         headers = value
+        return this
     }
 
-    public fun generateId(value: () -> String) {
+    public fun generateId(value: () -> String): HuggingFaceProviderSettingsBuilder {
         generateId = value
+        return this
     }
 
-    internal fun build(): HuggingFaceProviderSettings =
+    public fun build(): HuggingFaceProviderSettings =
         HuggingFaceProviderSettings(
             apiKey = apiKey,
             baseURL = baseURL,
@@ -158,29 +162,33 @@ public class HuggingFaceResponsesSettings internal constructor(
     public val reasoningEffort: String? = null,
 )
 
-public class HuggingFaceResponsesSettingsBuilder internal constructor() {
+public class HuggingFaceResponsesSettingsBuilder {
     private var metadata: Map<String, String>? = null
     private var instructions: String? = null
     private var strictJsonSchema: Boolean? = null
     private var reasoningEffort: String? = null
 
-    public fun metadata(value: Map<String, String>?) {
+    public fun metadata(value: Map<String, String>?): HuggingFaceResponsesSettingsBuilder {
         metadata = value
+        return this
     }
 
-    public fun instructions(value: String?) {
+    public fun instructions(value: String?): HuggingFaceResponsesSettingsBuilder {
         instructions = value
+        return this
     }
 
-    public fun strictJsonSchema(value: Boolean?) {
+    public fun strictJsonSchema(value: Boolean?): HuggingFaceResponsesSettingsBuilder {
         strictJsonSchema = value
+        return this
     }
 
-    public fun reasoningEffort(value: String?) {
+    public fun reasoningEffort(value: String?): HuggingFaceResponsesSettingsBuilder {
         reasoningEffort = value
+        return this
     }
 
-    internal fun build(): HuggingFaceResponsesSettings =
+    public fun build(): HuggingFaceResponsesSettings =
         HuggingFaceResponsesSettings(
             metadata = metadata,
             instructions = instructions,

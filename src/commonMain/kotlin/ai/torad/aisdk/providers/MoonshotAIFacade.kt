@@ -49,24 +49,27 @@ public class MoonshotAIProviderSettings internal constructor(
     }
 }
 
-public class MoonshotAIProviderSettingsBuilder internal constructor() {
+public class MoonshotAIProviderSettingsBuilder {
     private var apiKey: String? = null
     private var baseURL: String = "https://api.moonshot.ai/v1"
     private var headers: Map<String, String> = emptyMap()
 
-    public fun apiKey(value: String?) {
+    public fun apiKey(value: String?): MoonshotAIProviderSettingsBuilder {
         apiKey = value
+        return this
     }
 
-    public fun baseURL(value: String) {
+    public fun baseURL(value: String): MoonshotAIProviderSettingsBuilder {
         baseURL = value
+        return this
     }
 
-    public fun headers(value: Map<String, String>) {
+    public fun headers(value: Map<String, String>): MoonshotAIProviderSettingsBuilder {
         headers = value
+        return this
     }
 
-    internal fun build(): MoonshotAIProviderSettings =
+    public fun build(): MoonshotAIProviderSettings =
         MoonshotAIProviderSettings(
             apiKey = apiKey,
             baseURL = baseURL,
@@ -85,14 +88,15 @@ public class MoonshotAILanguageModelOptions internal constructor(
     public val raw: Map<String, JsonElement> = emptyMap(),
 )
 
-public class MoonshotAILanguageModelOptionsBuilder internal constructor() {
+public class MoonshotAILanguageModelOptionsBuilder {
     private var raw: Map<String, JsonElement> = emptyMap()
 
-    public fun raw(value: Map<String, JsonElement>) {
+    public fun raw(value: Map<String, JsonElement>): MoonshotAILanguageModelOptionsBuilder {
         raw = value
+        return this
     }
 
-    internal fun build(): MoonshotAILanguageModelOptions =
+    public fun build(): MoonshotAILanguageModelOptions =
         MoonshotAILanguageModelOptions(raw = raw)
 }
 

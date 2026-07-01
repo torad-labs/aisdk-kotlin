@@ -9993,10 +9993,12 @@ public final class ai/torad/aisdk/providers/HuggingFaceProviderSettings {
 }
 
 public final class ai/torad/aisdk/providers/HuggingFaceProviderSettingsBuilder {
-	public final fun apiKey (Ljava/lang/String;)V
-	public final fun baseURL (Ljava/lang/String;)V
-	public final fun generateId (Lkotlin/jvm/functions/Function0;)V
-	public final fun headers (Ljava/util/Map;)V
+	public fun <init> ()V
+	public final fun apiKey (Ljava/lang/String;)Lai/torad/aisdk/providers/HuggingFaceProviderSettingsBuilder;
+	public final fun baseURL (Ljava/lang/String;)Lai/torad/aisdk/providers/HuggingFaceProviderSettingsBuilder;
+	public final fun build ()Lai/torad/aisdk/providers/HuggingFaceProviderSettings;
+	public final fun generateId (Lkotlin/jvm/functions/Function0;)Lai/torad/aisdk/providers/HuggingFaceProviderSettingsBuilder;
+	public final fun headers (Ljava/util/Map;)Lai/torad/aisdk/providers/HuggingFaceProviderSettingsBuilder;
 }
 
 public final class ai/torad/aisdk/providers/HuggingFaceResponsesSettings {
@@ -10026,10 +10028,12 @@ public final class ai/torad/aisdk/providers/HuggingFaceResponsesSettings$Compani
 }
 
 public final class ai/torad/aisdk/providers/HuggingFaceResponsesSettingsBuilder {
-	public final fun instructions (Ljava/lang/String;)V
-	public final fun metadata (Ljava/util/Map;)V
-	public final fun reasoningEffort (Ljava/lang/String;)V
-	public final fun strictJsonSchema (Ljava/lang/Boolean;)V
+	public fun <init> ()V
+	public final fun build ()Lai/torad/aisdk/providers/HuggingFaceResponsesSettings;
+	public final fun instructions (Ljava/lang/String;)Lai/torad/aisdk/providers/HuggingFaceResponsesSettingsBuilder;
+	public final fun metadata (Ljava/util/Map;)Lai/torad/aisdk/providers/HuggingFaceResponsesSettingsBuilder;
+	public final fun reasoningEffort (Ljava/lang/String;)Lai/torad/aisdk/providers/HuggingFaceResponsesSettingsBuilder;
+	public final fun strictJsonSchema (Ljava/lang/Boolean;)Lai/torad/aisdk/providers/HuggingFaceResponsesSettingsBuilder;
 }
 
 public final class ai/torad/aisdk/providers/HumeProvider : ai/torad/aisdk/Provider {
@@ -10082,8 +10086,10 @@ public final class ai/torad/aisdk/providers/HumeProviderSettings$Companion {
 }
 
 public final class ai/torad/aisdk/providers/HumeProviderSettingsBuilder {
-	public final fun apiKey (Ljava/lang/String;)V
-	public final fun headers (Ljava/util/Map;)V
+	public fun <init> ()V
+	public final fun apiKey (Ljava/lang/String;)Lai/torad/aisdk/providers/HumeProviderSettingsBuilder;
+	public final fun build ()Lai/torad/aisdk/providers/HumeProviderSettings;
+	public final fun headers (Ljava/util/Map;)Lai/torad/aisdk/providers/HumeProviderSettingsBuilder;
 }
 
 public final class ai/torad/aisdk/providers/HumeSpeechModelOptions {
@@ -10110,7 +10116,9 @@ public final class ai/torad/aisdk/providers/HumeSpeechModelOptions$Companion {
 }
 
 public final class ai/torad/aisdk/providers/HumeSpeechModelOptionsBuilder {
-	public final fun context (Lkotlinx/serialization/json/JsonObject;)V
+	public fun <init> ()V
+	public final fun build ()Lai/torad/aisdk/providers/HumeSpeechModelOptions;
+	public final fun context (Lkotlinx/serialization/json/JsonObject;)Lai/torad/aisdk/providers/HumeSpeechModelOptionsBuilder;
 }
 
 public final class ai/torad/aisdk/providers/KlingAIProvider : ai/torad/aisdk/Provider {
@@ -10165,10 +10173,12 @@ public final class ai/torad/aisdk/providers/KlingAIProviderSettings$Companion {
 }
 
 public final class ai/torad/aisdk/providers/KlingAIProviderSettingsBuilder {
-	public final fun accessKey (Ljava/lang/String;)V
-	public final fun baseURL (Ljava/lang/String;)V
-	public final fun headers (Ljava/util/Map;)V
-	public final fun secretKey (Ljava/lang/String;)V
+	public fun <init> ()V
+	public final fun accessKey (Ljava/lang/String;)Lai/torad/aisdk/providers/KlingAIProviderSettingsBuilder;
+	public final fun baseURL (Ljava/lang/String;)Lai/torad/aisdk/providers/KlingAIProviderSettingsBuilder;
+	public final fun build ()Lai/torad/aisdk/providers/KlingAIProviderSettings;
+	public final fun headers (Ljava/util/Map;)Lai/torad/aisdk/providers/KlingAIProviderSettingsBuilder;
+	public final fun secretKey (Ljava/lang/String;)Lai/torad/aisdk/providers/KlingAIProviderSettingsBuilder;
 }
 
 public final class ai/torad/aisdk/providers/KlingAIVideoModelOptions {
@@ -10213,25 +10223,27 @@ public final class ai/torad/aisdk/providers/KlingAIVideoModelOptions$Companion {
 }
 
 public final class ai/torad/aisdk/providers/KlingAIVideoModelOptionsBuilder {
-	public final fun cameraControl (Lkotlinx/serialization/json/JsonObject;)V
-	public final fun cfgScale (Ljava/lang/Float;)V
-	public final fun characterOrientation (Ljava/lang/String;)V
-	public final fun dynamicMasks (Lkotlinx/serialization/json/JsonArray;)V
-	public final fun elementList (Lkotlinx/serialization/json/JsonArray;)V
-	public final fun imageTail (Ljava/lang/String;)V
-	public final fun keepOriginalSound (Ljava/lang/String;)V
-	public final fun mode (Ljava/lang/String;)V
-	public final fun multiPrompt (Lkotlinx/serialization/json/JsonArray;)V
-	public final fun multiShot (Ljava/lang/Boolean;)V
-	public final fun negativePrompt (Ljava/lang/String;)V
-	public final fun pollIntervalMs (Ljava/lang/Long;)V
-	public final fun pollTimeoutMs (Ljava/lang/Long;)V
-	public final fun shotType (Ljava/lang/String;)V
-	public final fun sound (Ljava/lang/String;)V
-	public final fun staticMask (Ljava/lang/String;)V
-	public final fun videoUrl (Ljava/lang/String;)V
-	public final fun voiceList (Lkotlinx/serialization/json/JsonArray;)V
-	public final fun watermarkEnabled (Ljava/lang/Boolean;)V
+	public fun <init> ()V
+	public final fun build ()Lai/torad/aisdk/providers/KlingAIVideoModelOptions;
+	public final fun cameraControl (Lkotlinx/serialization/json/JsonObject;)Lai/torad/aisdk/providers/KlingAIVideoModelOptionsBuilder;
+	public final fun cfgScale (Ljava/lang/Float;)Lai/torad/aisdk/providers/KlingAIVideoModelOptionsBuilder;
+	public final fun characterOrientation (Ljava/lang/String;)Lai/torad/aisdk/providers/KlingAIVideoModelOptionsBuilder;
+	public final fun dynamicMasks (Lkotlinx/serialization/json/JsonArray;)Lai/torad/aisdk/providers/KlingAIVideoModelOptionsBuilder;
+	public final fun elementList (Lkotlinx/serialization/json/JsonArray;)Lai/torad/aisdk/providers/KlingAIVideoModelOptionsBuilder;
+	public final fun imageTail (Ljava/lang/String;)Lai/torad/aisdk/providers/KlingAIVideoModelOptionsBuilder;
+	public final fun keepOriginalSound (Ljava/lang/String;)Lai/torad/aisdk/providers/KlingAIVideoModelOptionsBuilder;
+	public final fun mode (Ljava/lang/String;)Lai/torad/aisdk/providers/KlingAIVideoModelOptionsBuilder;
+	public final fun multiPrompt (Lkotlinx/serialization/json/JsonArray;)Lai/torad/aisdk/providers/KlingAIVideoModelOptionsBuilder;
+	public final fun multiShot (Ljava/lang/Boolean;)Lai/torad/aisdk/providers/KlingAIVideoModelOptionsBuilder;
+	public final fun negativePrompt (Ljava/lang/String;)Lai/torad/aisdk/providers/KlingAIVideoModelOptionsBuilder;
+	public final fun pollIntervalMs (Ljava/lang/Long;)Lai/torad/aisdk/providers/KlingAIVideoModelOptionsBuilder;
+	public final fun pollTimeoutMs (Ljava/lang/Long;)Lai/torad/aisdk/providers/KlingAIVideoModelOptionsBuilder;
+	public final fun shotType (Ljava/lang/String;)Lai/torad/aisdk/providers/KlingAIVideoModelOptionsBuilder;
+	public final fun sound (Ljava/lang/String;)Lai/torad/aisdk/providers/KlingAIVideoModelOptionsBuilder;
+	public final fun staticMask (Ljava/lang/String;)Lai/torad/aisdk/providers/KlingAIVideoModelOptionsBuilder;
+	public final fun videoUrl (Ljava/lang/String;)Lai/torad/aisdk/providers/KlingAIVideoModelOptionsBuilder;
+	public final fun voiceList (Lkotlinx/serialization/json/JsonArray;)Lai/torad/aisdk/providers/KlingAIVideoModelOptionsBuilder;
+	public final fun watermarkEnabled (Ljava/lang/Boolean;)Lai/torad/aisdk/providers/KlingAIVideoModelOptionsBuilder;
 }
 
 public final class ai/torad/aisdk/providers/LMNTProvider : ai/torad/aisdk/Provider {
@@ -10287,8 +10299,10 @@ public final class ai/torad/aisdk/providers/LMNTProviderSettings$Companion {
 }
 
 public final class ai/torad/aisdk/providers/LMNTProviderSettingsBuilder {
-	public final fun apiKey (Ljava/lang/String;)V
-	public final fun headers (Ljava/util/Map;)V
+	public fun <init> ()V
+	public final fun apiKey (Ljava/lang/String;)Lai/torad/aisdk/providers/LMNTProviderSettingsBuilder;
+	public final fun build ()Lai/torad/aisdk/providers/LMNTProviderSettings;
+	public final fun headers (Ljava/util/Map;)Lai/torad/aisdk/providers/LMNTProviderSettingsBuilder;
 }
 
 public final class ai/torad/aisdk/providers/LMNTSpeechModelOptions {
@@ -10323,15 +10337,17 @@ public final class ai/torad/aisdk/providers/LMNTSpeechModelOptions$Companion {
 }
 
 public final class ai/torad/aisdk/providers/LMNTSpeechModelOptionsBuilder {
-	public final fun conversational (Ljava/lang/Boolean;)V
-	public final fun format (Ljava/lang/String;)V
-	public final fun length (Ljava/lang/Float;)V
-	public final fun model (Ljava/lang/String;)V
-	public final fun sampleRate (Ljava/lang/Integer;)V
-	public final fun seed (Ljava/lang/Integer;)V
-	public final fun speed (Ljava/lang/Float;)V
-	public final fun temperature (Ljava/lang/Float;)V
-	public final fun topP (Ljava/lang/Float;)V
+	public fun <init> ()V
+	public final fun build ()Lai/torad/aisdk/providers/LMNTSpeechModelOptions;
+	public final fun conversational (Ljava/lang/Boolean;)Lai/torad/aisdk/providers/LMNTSpeechModelOptionsBuilder;
+	public final fun format (Ljava/lang/String;)Lai/torad/aisdk/providers/LMNTSpeechModelOptionsBuilder;
+	public final fun length (Ljava/lang/Float;)Lai/torad/aisdk/providers/LMNTSpeechModelOptionsBuilder;
+	public final fun model (Ljava/lang/String;)Lai/torad/aisdk/providers/LMNTSpeechModelOptionsBuilder;
+	public final fun sampleRate (Ljava/lang/Integer;)Lai/torad/aisdk/providers/LMNTSpeechModelOptionsBuilder;
+	public final fun seed (Ljava/lang/Integer;)Lai/torad/aisdk/providers/LMNTSpeechModelOptionsBuilder;
+	public final fun speed (Ljava/lang/Float;)Lai/torad/aisdk/providers/LMNTSpeechModelOptionsBuilder;
+	public final fun temperature (Ljava/lang/Float;)Lai/torad/aisdk/providers/LMNTSpeechModelOptionsBuilder;
+	public final fun topP (Ljava/lang/Float;)Lai/torad/aisdk/providers/LMNTSpeechModelOptionsBuilder;
 }
 
 public final class ai/torad/aisdk/providers/LiteRTBytes {
@@ -10471,16 +10487,18 @@ public final class ai/torad/aisdk/providers/LiteRTConversationRequest {
 }
 
 public final class ai/torad/aisdk/providers/LiteRTConversationRequestBuilder {
-	public final fun automaticToolCalling (Z)V
-	public final fun callParams (Lai/torad/aisdk/LanguageModelCallParams;)V
-	public final fun channels (Ljava/util/List;)V
-	public final fun extraContext (Ljava/util/Map;)V
-	public final fun initialMessages (Ljava/util/List;)V
-	public final fun message (Lai/torad/aisdk/providers/LiteRTMessage;)V
-	public final fun samplerConfig (Lai/torad/aisdk/providers/LiteRTSamplerConfig;)V
-	public final fun systemInstruction (Ljava/util/List;)V
-	public final fun tools (Ljava/util/List;)V
-	public final fun warnings (Ljava/util/List;)V
+	public fun <init> ()V
+	public final fun automaticToolCalling (Z)Lai/torad/aisdk/providers/LiteRTConversationRequestBuilder;
+	public final fun build ()Lai/torad/aisdk/providers/LiteRTConversationRequest;
+	public final fun callParams (Lai/torad/aisdk/LanguageModelCallParams;)Lai/torad/aisdk/providers/LiteRTConversationRequestBuilder;
+	public final fun channels (Ljava/util/List;)Lai/torad/aisdk/providers/LiteRTConversationRequestBuilder;
+	public final fun extraContext (Ljava/util/Map;)Lai/torad/aisdk/providers/LiteRTConversationRequestBuilder;
+	public final fun initialMessages (Ljava/util/List;)Lai/torad/aisdk/providers/LiteRTConversationRequestBuilder;
+	public final fun message (Lai/torad/aisdk/providers/LiteRTMessage;)Lai/torad/aisdk/providers/LiteRTConversationRequestBuilder;
+	public final fun samplerConfig (Lai/torad/aisdk/providers/LiteRTSamplerConfig;)Lai/torad/aisdk/providers/LiteRTConversationRequestBuilder;
+	public final fun systemInstruction (Ljava/util/List;)Lai/torad/aisdk/providers/LiteRTConversationRequestBuilder;
+	public final fun tools (Ljava/util/List;)Lai/torad/aisdk/providers/LiteRTConversationRequestBuilder;
+	public final fun warnings (Ljava/util/List;)Lai/torad/aisdk/providers/LiteRTConversationRequestBuilder;
 }
 
 public final class ai/torad/aisdk/providers/LiteRTLanguageModel : ai/torad/aisdk/LanguageModel {
@@ -10516,15 +10534,17 @@ public final class ai/torad/aisdk/providers/LiteRTLanguageModelSettings {
 }
 
 public final class ai/torad/aisdk/providers/LiteRTLanguageModelSettingsBuilder {
-	public final fun assistantReasoningChannelName (Ljava/lang/String;)V
-	public final fun channels (Ljava/util/List;)V
-	public final fun defaultSamplerConfig (Lai/torad/aisdk/providers/LiteRTSamplerConfig;)V
-	public final fun extraContext (Ljava/util/Map;)V
-	public final fun provider (Ljava/lang/String;)V
-	public final fun reasoningChannelNames (Ljava/util/Set;)V
-	public final fun streamTextMode (Lai/torad/aisdk/providers/LiteRTStreamTextMode;)V
-	public final fun supportedUrls (Ljava/util/Map;)V
-	public final fun toolCallIdGenerator (Lkotlin/jvm/functions/Function0;)V
+	public fun <init> ()V
+	public final fun assistantReasoningChannelName (Ljava/lang/String;)Lai/torad/aisdk/providers/LiteRTLanguageModelSettingsBuilder;
+	public final fun build ()Lai/torad/aisdk/providers/LiteRTLanguageModelSettings;
+	public final fun channels (Ljava/util/List;)Lai/torad/aisdk/providers/LiteRTLanguageModelSettingsBuilder;
+	public final fun defaultSamplerConfig (Lai/torad/aisdk/providers/LiteRTSamplerConfig;)Lai/torad/aisdk/providers/LiteRTLanguageModelSettingsBuilder;
+	public final fun extraContext (Ljava/util/Map;)Lai/torad/aisdk/providers/LiteRTLanguageModelSettingsBuilder;
+	public final fun provider (Ljava/lang/String;)Lai/torad/aisdk/providers/LiteRTLanguageModelSettingsBuilder;
+	public final fun reasoningChannelNames (Ljava/util/Set;)Lai/torad/aisdk/providers/LiteRTLanguageModelSettingsBuilder;
+	public final fun streamTextMode (Lai/torad/aisdk/providers/LiteRTStreamTextMode;)Lai/torad/aisdk/providers/LiteRTLanguageModelSettingsBuilder;
+	public final fun supportedUrls (Ljava/util/Map;)Lai/torad/aisdk/providers/LiteRTLanguageModelSettingsBuilder;
+	public final fun toolCallIdGenerator (Lkotlin/jvm/functions/Function0;)Lai/torad/aisdk/providers/LiteRTLanguageModelSettingsBuilder;
 }
 
 public final class ai/torad/aisdk/providers/LiteRTMessage {
@@ -10573,10 +10593,12 @@ public final class ai/torad/aisdk/providers/LiteRTSamplerConfig$Companion {
 }
 
 public final class ai/torad/aisdk/providers/LiteRTSamplerConfigBuilder {
-	public final fun seed (I)V
-	public final fun temperature (D)V
-	public final fun topK (I)V
-	public final fun topP (D)V
+	public fun <init> ()V
+	public final fun build ()Lai/torad/aisdk/providers/LiteRTSamplerConfig;
+	public final fun seed (I)Lai/torad/aisdk/providers/LiteRTSamplerConfigBuilder;
+	public final fun temperature (D)Lai/torad/aisdk/providers/LiteRTSamplerConfigBuilder;
+	public final fun topK (I)Lai/torad/aisdk/providers/LiteRTSamplerConfigBuilder;
+	public final fun topP (D)Lai/torad/aisdk/providers/LiteRTSamplerConfigBuilder;
 }
 
 public final class ai/torad/aisdk/providers/LiteRTStreamTextMode : java/lang/Enum {
@@ -10632,10 +10654,12 @@ public final class ai/torad/aisdk/providers/LumaImageModelOptions$Companion {
 }
 
 public final class ai/torad/aisdk/providers/LumaImageModelOptionsBuilder {
-	public final fun images (Lkotlinx/serialization/json/JsonArray;)V
-	public final fun maxPollAttempts (Ljava/lang/Integer;)V
-	public final fun pollIntervalMillis (Ljava/lang/Long;)V
-	public final fun referenceType (Ljava/lang/String;)V
+	public fun <init> ()V
+	public final fun build ()Lai/torad/aisdk/providers/LumaImageModelOptions;
+	public final fun images (Lkotlinx/serialization/json/JsonArray;)Lai/torad/aisdk/providers/LumaImageModelOptionsBuilder;
+	public final fun maxPollAttempts (Ljava/lang/Integer;)Lai/torad/aisdk/providers/LumaImageModelOptionsBuilder;
+	public final fun pollIntervalMillis (Ljava/lang/Long;)Lai/torad/aisdk/providers/LumaImageModelOptionsBuilder;
+	public final fun referenceType (Ljava/lang/String;)Lai/torad/aisdk/providers/LumaImageModelOptionsBuilder;
 }
 
 public final class ai/torad/aisdk/providers/LumaProvider : ai/torad/aisdk/Provider {
@@ -10691,9 +10715,11 @@ public final class ai/torad/aisdk/providers/LumaProviderSettings$Companion {
 }
 
 public final class ai/torad/aisdk/providers/LumaProviderSettingsBuilder {
-	public final fun apiKey (Ljava/lang/String;)V
-	public final fun baseURL (Ljava/lang/String;)V
-	public final fun headers (Ljava/util/Map;)V
+	public fun <init> ()V
+	public final fun apiKey (Ljava/lang/String;)Lai/torad/aisdk/providers/LumaProviderSettingsBuilder;
+	public final fun baseURL (Ljava/lang/String;)Lai/torad/aisdk/providers/LumaProviderSettingsBuilder;
+	public final fun build ()Lai/torad/aisdk/providers/LumaProviderSettings;
+	public final fun headers (Ljava/util/Map;)Lai/torad/aisdk/providers/LumaProviderSettingsBuilder;
 }
 
 public final class ai/torad/aisdk/providers/MistralLanguageModelOptions {
@@ -10726,13 +10752,15 @@ public final class ai/torad/aisdk/providers/MistralLanguageModelOptions$Companio
 }
 
 public final class ai/torad/aisdk/providers/MistralLanguageModelOptionsBuilder {
-	public final fun documentImageLimit (Ljava/lang/Integer;)V
-	public final fun documentPageLimit (Ljava/lang/Integer;)V
-	public final fun parallelToolCalls (Ljava/lang/Boolean;)V
-	public final fun reasoningEffort (Ljava/lang/String;)V
-	public final fun safePrompt (Ljava/lang/Boolean;)V
-	public final fun strictJsonSchema (Ljava/lang/Boolean;)V
-	public final fun structuredOutputs (Ljava/lang/Boolean;)V
+	public fun <init> ()V
+	public final fun build ()Lai/torad/aisdk/providers/MistralLanguageModelOptions;
+	public final fun documentImageLimit (Ljava/lang/Integer;)Lai/torad/aisdk/providers/MistralLanguageModelOptionsBuilder;
+	public final fun documentPageLimit (Ljava/lang/Integer;)Lai/torad/aisdk/providers/MistralLanguageModelOptionsBuilder;
+	public final fun parallelToolCalls (Ljava/lang/Boolean;)Lai/torad/aisdk/providers/MistralLanguageModelOptionsBuilder;
+	public final fun reasoningEffort (Ljava/lang/String;)Lai/torad/aisdk/providers/MistralLanguageModelOptionsBuilder;
+	public final fun safePrompt (Ljava/lang/Boolean;)Lai/torad/aisdk/providers/MistralLanguageModelOptionsBuilder;
+	public final fun strictJsonSchema (Ljava/lang/Boolean;)Lai/torad/aisdk/providers/MistralLanguageModelOptionsBuilder;
+	public final fun structuredOutputs (Ljava/lang/Boolean;)Lai/torad/aisdk/providers/MistralLanguageModelOptionsBuilder;
 }
 
 public final class ai/torad/aisdk/providers/MistralProvider : ai/torad/aisdk/Provider {
@@ -10794,9 +10822,11 @@ public final class ai/torad/aisdk/providers/MistralProviderSettings$Companion {
 }
 
 public final class ai/torad/aisdk/providers/MistralProviderSettingsBuilder {
-	public final fun apiKey (Ljava/lang/String;)V
-	public final fun baseURL (Ljava/lang/String;)V
-	public final fun headers (Ljava/util/Map;)V
+	public fun <init> ()V
+	public final fun apiKey (Ljava/lang/String;)Lai/torad/aisdk/providers/MistralProviderSettingsBuilder;
+	public final fun baseURL (Ljava/lang/String;)Lai/torad/aisdk/providers/MistralProviderSettingsBuilder;
+	public final fun build ()Lai/torad/aisdk/providers/MistralProviderSettings;
+	public final fun headers (Ljava/util/Map;)Lai/torad/aisdk/providers/MistralProviderSettingsBuilder;
 }
 
 public final class ai/torad/aisdk/providers/MockEmbeddingModel : ai/torad/aisdk/EmbeddingModel {
@@ -10919,7 +10949,9 @@ public final class ai/torad/aisdk/providers/MoonshotAILanguageModelOptions$Compa
 }
 
 public final class ai/torad/aisdk/providers/MoonshotAILanguageModelOptionsBuilder {
-	public final fun raw (Ljava/util/Map;)V
+	public fun <init> ()V
+	public final fun build ()Lai/torad/aisdk/providers/MoonshotAILanguageModelOptions;
+	public final fun raw (Ljava/util/Map;)Lai/torad/aisdk/providers/MoonshotAILanguageModelOptionsBuilder;
 }
 
 public final class ai/torad/aisdk/providers/MoonshotAIProvider : ai/torad/aisdk/Provider {
@@ -10964,9 +10996,11 @@ public final class ai/torad/aisdk/providers/MoonshotAIProviderSettings$Companion
 }
 
 public final class ai/torad/aisdk/providers/MoonshotAIProviderSettingsBuilder {
-	public final fun apiKey (Ljava/lang/String;)V
-	public final fun baseURL (Ljava/lang/String;)V
-	public final fun headers (Ljava/util/Map;)V
+	public fun <init> ()V
+	public final fun apiKey (Ljava/lang/String;)Lai/torad/aisdk/providers/MoonshotAIProviderSettingsBuilder;
+	public final fun baseURL (Ljava/lang/String;)Lai/torad/aisdk/providers/MoonshotAIProviderSettingsBuilder;
+	public final fun build ()Lai/torad/aisdk/providers/MoonshotAIProviderSettings;
+	public final fun headers (Ljava/util/Map;)Lai/torad/aisdk/providers/MoonshotAIProviderSettingsBuilder;
 }
 
 public abstract interface class ai/torad/aisdk/providers/OpenAICompatibleProvider : ai/torad/aisdk/Provider {
@@ -11015,24 +11049,26 @@ public final class ai/torad/aisdk/providers/OpenAICompatibleProviderSettings {
 }
 
 public final class ai/torad/aisdk/providers/OpenAICompatibleProviderSettingsBuilder {
-	public final fun apiKey (Ljava/lang/String;)V
-	public final fun authHeadersProvider (Lkotlin/jvm/functions/Function1;)V
-	public final fun baseUrl (Ljava/lang/String;)V
-	public final fun chatMaxOutputTokensKey (Ljava/lang/String;)V
-	public final fun chatSeedKey (Ljava/lang/String;)V
-	public final fun convertUsage (Lkotlin/jvm/functions/Function1;)V
-	public final fun headers (Ljava/util/Map;)V
-	public final fun includeUsage (Z)V
-	public final fun maxEmbeddingsPerCall (I)V
-	public final fun name (Ljava/lang/String;)V
-	public final fun providerOptionsName (Ljava/lang/String;)V
-	public final fun queryParams (Ljava/util/Map;)V
-	public final fun supportedUrls (Ljava/util/Map;)V
-	public final fun supportsStructuredOutputs (Z)V
-	public final fun transformChatRequestBody (Lkotlin/jvm/functions/Function1;)V
-	public final fun transformChatResponse (Lkotlin/jvm/functions/Function1;)V
-	public final fun urlBuilder (Lkotlin/jvm/functions/Function2;)V
-	public final fun userAgentSuffix (Ljava/lang/String;)V
+	public fun <init> ()V
+	public final fun apiKey (Ljava/lang/String;)Lai/torad/aisdk/providers/OpenAICompatibleProviderSettingsBuilder;
+	public final fun authHeadersProvider (Lkotlin/jvm/functions/Function1;)Lai/torad/aisdk/providers/OpenAICompatibleProviderSettingsBuilder;
+	public final fun baseUrl (Ljava/lang/String;)Lai/torad/aisdk/providers/OpenAICompatibleProviderSettingsBuilder;
+	public final fun build ()Lai/torad/aisdk/providers/OpenAICompatibleProviderSettings;
+	public final fun chatMaxOutputTokensKey (Ljava/lang/String;)Lai/torad/aisdk/providers/OpenAICompatibleProviderSettingsBuilder;
+	public final fun chatSeedKey (Ljava/lang/String;)Lai/torad/aisdk/providers/OpenAICompatibleProviderSettingsBuilder;
+	public final fun convertUsage (Lkotlin/jvm/functions/Function1;)Lai/torad/aisdk/providers/OpenAICompatibleProviderSettingsBuilder;
+	public final fun headers (Ljava/util/Map;)Lai/torad/aisdk/providers/OpenAICompatibleProviderSettingsBuilder;
+	public final fun includeUsage (Z)Lai/torad/aisdk/providers/OpenAICompatibleProviderSettingsBuilder;
+	public final fun maxEmbeddingsPerCall (I)Lai/torad/aisdk/providers/OpenAICompatibleProviderSettingsBuilder;
+	public final fun name (Ljava/lang/String;)Lai/torad/aisdk/providers/OpenAICompatibleProviderSettingsBuilder;
+	public final fun providerOptionsName (Ljava/lang/String;)Lai/torad/aisdk/providers/OpenAICompatibleProviderSettingsBuilder;
+	public final fun queryParams (Ljava/util/Map;)Lai/torad/aisdk/providers/OpenAICompatibleProviderSettingsBuilder;
+	public final fun supportedUrls (Ljava/util/Map;)Lai/torad/aisdk/providers/OpenAICompatibleProviderSettingsBuilder;
+	public final fun supportsStructuredOutputs (Z)Lai/torad/aisdk/providers/OpenAICompatibleProviderSettingsBuilder;
+	public final fun transformChatRequestBody (Lkotlin/jvm/functions/Function1;)Lai/torad/aisdk/providers/OpenAICompatibleProviderSettingsBuilder;
+	public final fun transformChatResponse (Lkotlin/jvm/functions/Function1;)Lai/torad/aisdk/providers/OpenAICompatibleProviderSettingsBuilder;
+	public final fun urlBuilder (Lkotlin/jvm/functions/Function2;)Lai/torad/aisdk/providers/OpenAICompatibleProviderSettingsBuilder;
+	public final fun userAgentSuffix (Ljava/lang/String;)Lai/torad/aisdk/providers/OpenAICompatibleProviderSettingsBuilder;
 }
 
 public final class ai/torad/aisdk/providers/OpenAIProvider : ai/torad/aisdk/Provider {
@@ -11102,14 +11138,16 @@ public final class ai/torad/aisdk/providers/OpenAIProviderSettings {
 }
 
 public final class ai/torad/aisdk/providers/OpenAIProviderSettingsBuilder {
-	public final fun apiKey (Ljava/lang/String;)V
-	public final fun baseURL (Ljava/lang/String;)V
-	public final fun headers (Ljava/util/Map;)V
-	public final fun includeUsage (Z)V
-	public final fun name (Ljava/lang/String;)V
-	public final fun organization (Ljava/lang/String;)V
-	public final fun project (Ljava/lang/String;)V
-	public final fun queryParams (Ljava/util/Map;)V
+	public fun <init> ()V
+	public final fun apiKey (Ljava/lang/String;)Lai/torad/aisdk/providers/OpenAIProviderSettingsBuilder;
+	public final fun baseURL (Ljava/lang/String;)Lai/torad/aisdk/providers/OpenAIProviderSettingsBuilder;
+	public final fun build ()Lai/torad/aisdk/providers/OpenAIProviderSettings;
+	public final fun headers (Ljava/util/Map;)Lai/torad/aisdk/providers/OpenAIProviderSettingsBuilder;
+	public final fun includeUsage (Z)Lai/torad/aisdk/providers/OpenAIProviderSettingsBuilder;
+	public final fun name (Ljava/lang/String;)Lai/torad/aisdk/providers/OpenAIProviderSettingsBuilder;
+	public final fun organization (Ljava/lang/String;)Lai/torad/aisdk/providers/OpenAIProviderSettingsBuilder;
+	public final fun project (Ljava/lang/String;)Lai/torad/aisdk/providers/OpenAIProviderSettingsBuilder;
+	public final fun queryParams (Ljava/util/Map;)Lai/torad/aisdk/providers/OpenAIProviderSettingsBuilder;
 }
 
 public final class ai/torad/aisdk/providers/OpenAITools {
@@ -11156,8 +11194,10 @@ public final class ai/torad/aisdk/providers/OpenResponsesAllowedTools$Companion 
 }
 
 public final class ai/torad/aisdk/providers/OpenResponsesAllowedToolsBuilder {
-	public final fun mode (Ljava/lang/String;)V
-	public final fun toolNames (Ljava/util/List;)V
+	public fun <init> ()V
+	public final fun build ()Lai/torad/aisdk/providers/OpenResponsesAllowedTools;
+	public final fun mode (Ljava/lang/String;)Lai/torad/aisdk/providers/OpenResponsesAllowedToolsBuilder;
+	public final fun toolNames (Ljava/util/List;)Lai/torad/aisdk/providers/OpenResponsesAllowedToolsBuilder;
 }
 
 public final class ai/torad/aisdk/providers/OpenResponsesOptions {
@@ -11206,29 +11246,31 @@ public final class ai/torad/aisdk/providers/OpenResponsesOptions$Companion {
 }
 
 public final class ai/torad/aisdk/providers/OpenResponsesOptionsBuilder {
-	public final fun allowedTools (Lai/torad/aisdk/providers/OpenResponsesAllowedTools;)V
-	public final fun conversation (Ljava/lang/String;)V
-	public final fun forceReasoning (Ljava/lang/Boolean;)V
-	public final fun include (Ljava/util/List;)V
-	public final fun instructions (Ljava/lang/String;)V
-	public final fun logprobs (Lkotlinx/serialization/json/JsonElement;)V
-	public final fun maxToolCalls (Ljava/lang/Integer;)V
-	public final fun metadata (Lkotlinx/serialization/json/JsonElement;)V
-	public final fun parallelToolCalls (Ljava/lang/Boolean;)V
-	public final fun passThroughUnsupportedFiles (Ljava/lang/Boolean;)V
-	public final fun previousResponseId (Ljava/lang/String;)V
-	public final fun promptCacheKey (Ljava/lang/String;)V
-	public final fun promptCacheRetention (Ljava/lang/String;)V
-	public final fun reasoningEffort (Ljava/lang/String;)V
-	public final fun reasoningSummary (Ljava/lang/String;)V
-	public final fun safetyIdentifier (Ljava/lang/String;)V
-	public final fun serviceTier (Ljava/lang/String;)V
-	public final fun store (Ljava/lang/Boolean;)V
-	public final fun strictJsonSchema (Ljava/lang/Boolean;)V
-	public final fun systemMessageMode (Ljava/lang/String;)V
-	public final fun textVerbosity (Ljava/lang/String;)V
-	public final fun truncation (Ljava/lang/String;)V
-	public final fun user (Ljava/lang/String;)V
+	public fun <init> ()V
+	public final fun allowedTools (Lai/torad/aisdk/providers/OpenResponsesAllowedTools;)Lai/torad/aisdk/providers/OpenResponsesOptionsBuilder;
+	public final fun build ()Lai/torad/aisdk/providers/OpenResponsesOptions;
+	public final fun conversation (Ljava/lang/String;)Lai/torad/aisdk/providers/OpenResponsesOptionsBuilder;
+	public final fun forceReasoning (Ljava/lang/Boolean;)Lai/torad/aisdk/providers/OpenResponsesOptionsBuilder;
+	public final fun include (Ljava/util/List;)Lai/torad/aisdk/providers/OpenResponsesOptionsBuilder;
+	public final fun instructions (Ljava/lang/String;)Lai/torad/aisdk/providers/OpenResponsesOptionsBuilder;
+	public final fun logprobs (Lkotlinx/serialization/json/JsonElement;)Lai/torad/aisdk/providers/OpenResponsesOptionsBuilder;
+	public final fun maxToolCalls (Ljava/lang/Integer;)Lai/torad/aisdk/providers/OpenResponsesOptionsBuilder;
+	public final fun metadata (Lkotlinx/serialization/json/JsonElement;)Lai/torad/aisdk/providers/OpenResponsesOptionsBuilder;
+	public final fun parallelToolCalls (Ljava/lang/Boolean;)Lai/torad/aisdk/providers/OpenResponsesOptionsBuilder;
+	public final fun passThroughUnsupportedFiles (Ljava/lang/Boolean;)Lai/torad/aisdk/providers/OpenResponsesOptionsBuilder;
+	public final fun previousResponseId (Ljava/lang/String;)Lai/torad/aisdk/providers/OpenResponsesOptionsBuilder;
+	public final fun promptCacheKey (Ljava/lang/String;)Lai/torad/aisdk/providers/OpenResponsesOptionsBuilder;
+	public final fun promptCacheRetention (Ljava/lang/String;)Lai/torad/aisdk/providers/OpenResponsesOptionsBuilder;
+	public final fun reasoningEffort (Ljava/lang/String;)Lai/torad/aisdk/providers/OpenResponsesOptionsBuilder;
+	public final fun reasoningSummary (Ljava/lang/String;)Lai/torad/aisdk/providers/OpenResponsesOptionsBuilder;
+	public final fun safetyIdentifier (Ljava/lang/String;)Lai/torad/aisdk/providers/OpenResponsesOptionsBuilder;
+	public final fun serviceTier (Ljava/lang/String;)Lai/torad/aisdk/providers/OpenResponsesOptionsBuilder;
+	public final fun store (Ljava/lang/Boolean;)Lai/torad/aisdk/providers/OpenResponsesOptionsBuilder;
+	public final fun strictJsonSchema (Ljava/lang/Boolean;)Lai/torad/aisdk/providers/OpenResponsesOptionsBuilder;
+	public final fun systemMessageMode (Ljava/lang/String;)Lai/torad/aisdk/providers/OpenResponsesOptionsBuilder;
+	public final fun textVerbosity (Ljava/lang/String;)Lai/torad/aisdk/providers/OpenResponsesOptionsBuilder;
+	public final fun truncation (Ljava/lang/String;)Lai/torad/aisdk/providers/OpenResponsesOptionsBuilder;
+	public final fun user (Ljava/lang/String;)Lai/torad/aisdk/providers/OpenResponsesOptionsBuilder;
 }
 
 public abstract interface class ai/torad/aisdk/providers/OpenResponsesProvider : ai/torad/aisdk/Provider {
@@ -11275,15 +11317,17 @@ public final class ai/torad/aisdk/providers/OpenResponsesProviderSettings {
 }
 
 public final class ai/torad/aisdk/providers/OpenResponsesProviderSettingsBuilder {
-	public final fun apiKey (Ljava/lang/String;)V
-	public final fun authHeadersProvider (Lkotlin/jvm/functions/Function1;)V
-	public final fun fileIdPrefixes (Ljava/util/List;)V
-	public final fun headers (Ljava/util/Map;)V
-	public final fun name (Ljava/lang/String;)V
-	public final fun providerOptionsName (Ljava/lang/String;)V
-	public final fun supportedUrls (Ljava/util/Map;)V
-	public final fun url (Ljava/lang/String;)V
-	public final fun userAgentSuffix (Ljava/lang/String;)V
+	public fun <init> ()V
+	public final fun apiKey (Ljava/lang/String;)Lai/torad/aisdk/providers/OpenResponsesProviderSettingsBuilder;
+	public final fun authHeadersProvider (Lkotlin/jvm/functions/Function1;)Lai/torad/aisdk/providers/OpenResponsesProviderSettingsBuilder;
+	public final fun build ()Lai/torad/aisdk/providers/OpenResponsesProviderSettings;
+	public final fun fileIdPrefixes (Ljava/util/List;)Lai/torad/aisdk/providers/OpenResponsesProviderSettingsBuilder;
+	public final fun headers (Ljava/util/Map;)Lai/torad/aisdk/providers/OpenResponsesProviderSettingsBuilder;
+	public final fun name (Ljava/lang/String;)Lai/torad/aisdk/providers/OpenResponsesProviderSettingsBuilder;
+	public final fun providerOptionsName (Ljava/lang/String;)Lai/torad/aisdk/providers/OpenResponsesProviderSettingsBuilder;
+	public final fun supportedUrls (Ljava/util/Map;)Lai/torad/aisdk/providers/OpenResponsesProviderSettingsBuilder;
+	public final fun url (Ljava/lang/String;)Lai/torad/aisdk/providers/OpenResponsesProviderSettingsBuilder;
+	public final fun userAgentSuffix (Ljava/lang/String;)Lai/torad/aisdk/providers/OpenResponsesProviderSettingsBuilder;
 }
 
 public final class ai/torad/aisdk/providers/PerplexityFacadeKt {
@@ -11334,9 +11378,11 @@ public final class ai/torad/aisdk/providers/PerplexityProviderSettings$Companion
 }
 
 public final class ai/torad/aisdk/providers/PerplexityProviderSettingsBuilder {
-	public final fun apiKey (Ljava/lang/String;)V
-	public final fun baseURL (Ljava/lang/String;)V
-	public final fun headers (Ljava/util/Map;)V
+	public fun <init> ()V
+	public final fun apiKey (Ljava/lang/String;)Lai/torad/aisdk/providers/PerplexityProviderSettingsBuilder;
+	public final fun baseURL (Ljava/lang/String;)Lai/torad/aisdk/providers/PerplexityProviderSettingsBuilder;
+	public final fun build ()Lai/torad/aisdk/providers/PerplexityProviderSettings;
+	public final fun headers (Ljava/util/Map;)Lai/torad/aisdk/providers/PerplexityProviderSettingsBuilder;
 }
 
 public final class ai/torad/aisdk/providers/ProdiaImageModelOptions {
@@ -11368,12 +11414,14 @@ public final class ai/torad/aisdk/providers/ProdiaImageModelOptions$Companion {
 }
 
 public final class ai/torad/aisdk/providers/ProdiaImageModelOptionsBuilder {
-	public final fun height (Ljava/lang/Integer;)V
-	public final fun loras (Ljava/util/List;)V
-	public final fun progressive (Ljava/lang/Boolean;)V
-	public final fun steps (Ljava/lang/Integer;)V
-	public final fun stylePreset (Ljava/lang/String;)V
-	public final fun width (Ljava/lang/Integer;)V
+	public fun <init> ()V
+	public final fun build ()Lai/torad/aisdk/providers/ProdiaImageModelOptions;
+	public final fun height (Ljava/lang/Integer;)Lai/torad/aisdk/providers/ProdiaImageModelOptionsBuilder;
+	public final fun loras (Ljava/util/List;)Lai/torad/aisdk/providers/ProdiaImageModelOptionsBuilder;
+	public final fun progressive (Ljava/lang/Boolean;)Lai/torad/aisdk/providers/ProdiaImageModelOptionsBuilder;
+	public final fun steps (Ljava/lang/Integer;)Lai/torad/aisdk/providers/ProdiaImageModelOptionsBuilder;
+	public final fun stylePreset (Ljava/lang/String;)Lai/torad/aisdk/providers/ProdiaImageModelOptionsBuilder;
+	public final fun width (Ljava/lang/Integer;)Lai/torad/aisdk/providers/ProdiaImageModelOptionsBuilder;
 }
 
 public final class ai/torad/aisdk/providers/ProdiaLanguageModelOptions {
@@ -11400,7 +11448,9 @@ public final class ai/torad/aisdk/providers/ProdiaLanguageModelOptions$Companion
 }
 
 public final class ai/torad/aisdk/providers/ProdiaLanguageModelOptionsBuilder {
-	public final fun aspectRatio (Ljava/lang/String;)V
+	public fun <init> ()V
+	public final fun aspectRatio (Ljava/lang/String;)Lai/torad/aisdk/providers/ProdiaLanguageModelOptionsBuilder;
+	public final fun build ()Lai/torad/aisdk/providers/ProdiaLanguageModelOptions;
 }
 
 public final class ai/torad/aisdk/providers/ProdiaProvider : ai/torad/aisdk/Provider {
@@ -11463,9 +11513,11 @@ public final class ai/torad/aisdk/providers/ProdiaProviderSettings$Companion {
 }
 
 public final class ai/torad/aisdk/providers/ProdiaProviderSettingsBuilder {
-	public final fun apiKey (Ljava/lang/String;)V
-	public final fun baseURL (Ljava/lang/String;)V
-	public final fun headers (Ljava/util/Map;)V
+	public fun <init> ()V
+	public final fun apiKey (Ljava/lang/String;)Lai/torad/aisdk/providers/ProdiaProviderSettingsBuilder;
+	public final fun baseURL (Ljava/lang/String;)Lai/torad/aisdk/providers/ProdiaProviderSettingsBuilder;
+	public final fun build ()Lai/torad/aisdk/providers/ProdiaProviderSettings;
+	public final fun headers (Ljava/util/Map;)Lai/torad/aisdk/providers/ProdiaProviderSettingsBuilder;
 }
 
 public final class ai/torad/aisdk/providers/ProdiaVideoModelOptions {
@@ -11492,7 +11544,9 @@ public final class ai/torad/aisdk/providers/ProdiaVideoModelOptions$Companion {
 }
 
 public final class ai/torad/aisdk/providers/ProdiaVideoModelOptionsBuilder {
-	public final fun resolution (Ljava/lang/String;)V
+	public fun <init> ()V
+	public final fun build ()Lai/torad/aisdk/providers/ProdiaVideoModelOptions;
+	public final fun resolution (Ljava/lang/String;)Lai/torad/aisdk/providers/ProdiaVideoModelOptionsBuilder;
 }
 
 public final class ai/torad/aisdk/providers/QuiverAIImageModelOptions {
@@ -11526,14 +11580,16 @@ public final class ai/torad/aisdk/providers/QuiverAIImageModelOptions$Companion 
 }
 
 public final class ai/torad/aisdk/providers/QuiverAIImageModelOptionsBuilder {
-	public final fun autoCrop (Ljava/lang/Boolean;)V
-	public final fun instructions (Ljava/lang/String;)V
-	public final fun maxOutputTokens (Ljava/lang/Integer;)V
-	public final fun operation (Ljava/lang/String;)V
-	public final fun presencePenalty (Ljava/lang/Double;)V
-	public final fun targetSize (Ljava/lang/Integer;)V
-	public final fun temperature (Ljava/lang/Double;)V
-	public final fun topP (Ljava/lang/Double;)V
+	public fun <init> ()V
+	public final fun autoCrop (Ljava/lang/Boolean;)Lai/torad/aisdk/providers/QuiverAIImageModelOptionsBuilder;
+	public final fun build ()Lai/torad/aisdk/providers/QuiverAIImageModelOptions;
+	public final fun instructions (Ljava/lang/String;)Lai/torad/aisdk/providers/QuiverAIImageModelOptionsBuilder;
+	public final fun maxOutputTokens (Ljava/lang/Integer;)Lai/torad/aisdk/providers/QuiverAIImageModelOptionsBuilder;
+	public final fun operation (Ljava/lang/String;)Lai/torad/aisdk/providers/QuiverAIImageModelOptionsBuilder;
+	public final fun presencePenalty (Ljava/lang/Double;)Lai/torad/aisdk/providers/QuiverAIImageModelOptionsBuilder;
+	public final fun targetSize (Ljava/lang/Integer;)Lai/torad/aisdk/providers/QuiverAIImageModelOptionsBuilder;
+	public final fun temperature (Ljava/lang/Double;)Lai/torad/aisdk/providers/QuiverAIImageModelOptionsBuilder;
+	public final fun topP (Ljava/lang/Double;)Lai/torad/aisdk/providers/QuiverAIImageModelOptionsBuilder;
 }
 
 public final class ai/torad/aisdk/providers/QuiverAIProvider : ai/torad/aisdk/Provider {
@@ -11588,9 +11644,11 @@ public final class ai/torad/aisdk/providers/QuiverAIProviderSettings$Companion {
 }
 
 public final class ai/torad/aisdk/providers/QuiverAIProviderSettingsBuilder {
-	public final fun apiKey (Ljava/lang/String;)V
-	public final fun baseURL (Ljava/lang/String;)V
-	public final fun headers (Ljava/util/Map;)V
+	public fun <init> ()V
+	public final fun apiKey (Ljava/lang/String;)Lai/torad/aisdk/providers/QuiverAIProviderSettingsBuilder;
+	public final fun baseURL (Ljava/lang/String;)Lai/torad/aisdk/providers/QuiverAIProviderSettingsBuilder;
+	public final fun build ()Lai/torad/aisdk/providers/QuiverAIProviderSettings;
+	public final fun headers (Ljava/util/Map;)Lai/torad/aisdk/providers/QuiverAIProviderSettingsBuilder;
 }
 
 public final class ai/torad/aisdk/providers/ReplicateImageModelOptions {
@@ -11623,13 +11681,15 @@ public final class ai/torad/aisdk/providers/ReplicateImageModelOptions$Companion
 }
 
 public final class ai/torad/aisdk/providers/ReplicateImageModelOptionsBuilder {
-	public final fun guidance_scale (Ljava/lang/Double;)V
-	public final fun maxWaitTimeInSeconds (Ljava/lang/Double;)V
-	public final fun negative_prompt (Ljava/lang/String;)V
-	public final fun num_inference_steps (Ljava/lang/Double;)V
-	public final fun output_format (Ljava/lang/String;)V
-	public final fun output_quality (Ljava/lang/Integer;)V
-	public final fun strength (Ljava/lang/Double;)V
+	public fun <init> ()V
+	public final fun build ()Lai/torad/aisdk/providers/ReplicateImageModelOptions;
+	public final fun guidance_scale (Ljava/lang/Double;)Lai/torad/aisdk/providers/ReplicateImageModelOptionsBuilder;
+	public final fun maxWaitTimeInSeconds (Ljava/lang/Double;)Lai/torad/aisdk/providers/ReplicateImageModelOptionsBuilder;
+	public final fun negative_prompt (Ljava/lang/String;)Lai/torad/aisdk/providers/ReplicateImageModelOptionsBuilder;
+	public final fun num_inference_steps (Ljava/lang/Double;)Lai/torad/aisdk/providers/ReplicateImageModelOptionsBuilder;
+	public final fun output_format (Ljava/lang/String;)Lai/torad/aisdk/providers/ReplicateImageModelOptionsBuilder;
+	public final fun output_quality (Ljava/lang/Integer;)Lai/torad/aisdk/providers/ReplicateImageModelOptionsBuilder;
+	public final fun strength (Ljava/lang/Double;)Lai/torad/aisdk/providers/ReplicateImageModelOptionsBuilder;
 }
 
 public final class ai/torad/aisdk/providers/ReplicateProvider : ai/torad/aisdk/Provider {
@@ -11687,9 +11747,11 @@ public final class ai/torad/aisdk/providers/ReplicateProviderSettings$Companion 
 }
 
 public final class ai/torad/aisdk/providers/ReplicateProviderSettingsBuilder {
-	public final fun apiToken (Ljava/lang/String;)V
-	public final fun baseURL (Ljava/lang/String;)V
-	public final fun headers (Ljava/util/Map;)V
+	public fun <init> ()V
+	public final fun apiToken (Ljava/lang/String;)Lai/torad/aisdk/providers/ReplicateProviderSettingsBuilder;
+	public final fun baseURL (Ljava/lang/String;)Lai/torad/aisdk/providers/ReplicateProviderSettingsBuilder;
+	public final fun build ()Lai/torad/aisdk/providers/ReplicateProviderSettings;
+	public final fun headers (Ljava/util/Map;)Lai/torad/aisdk/providers/ReplicateProviderSettingsBuilder;
 }
 
 public final class ai/torad/aisdk/providers/ReplicateVideoModelOptions {
@@ -11727,18 +11789,20 @@ public final class ai/torad/aisdk/providers/ReplicateVideoModelOptions$Companion
 }
 
 public final class ai/torad/aisdk/providers/ReplicateVideoModelOptionsBuilder {
-	public final fun cond_aug (Ljava/lang/Double;)V
-	public final fun decoding_t (Ljava/lang/Double;)V
-	public final fun frames_per_second (Ljava/lang/Double;)V
-	public final fun guidance_scale (Ljava/lang/Double;)V
-	public final fun maxWaitTimeInSeconds (Ljava/lang/Double;)V
-	public final fun motion_bucket_id (Ljava/lang/Double;)V
-	public final fun num_inference_steps (Ljava/lang/Double;)V
-	public final fun pollIntervalMs (Ljava/lang/Long;)V
-	public final fun pollTimeoutMs (Ljava/lang/Long;)V
-	public final fun prompt_optimizer (Ljava/lang/Boolean;)V
-	public final fun sizing_strategy (Ljava/lang/String;)V
-	public final fun video_length (Ljava/lang/String;)V
+	public fun <init> ()V
+	public final fun build ()Lai/torad/aisdk/providers/ReplicateVideoModelOptions;
+	public final fun cond_aug (Ljava/lang/Double;)Lai/torad/aisdk/providers/ReplicateVideoModelOptionsBuilder;
+	public final fun decoding_t (Ljava/lang/Double;)Lai/torad/aisdk/providers/ReplicateVideoModelOptionsBuilder;
+	public final fun frames_per_second (Ljava/lang/Double;)Lai/torad/aisdk/providers/ReplicateVideoModelOptionsBuilder;
+	public final fun guidance_scale (Ljava/lang/Double;)Lai/torad/aisdk/providers/ReplicateVideoModelOptionsBuilder;
+	public final fun maxWaitTimeInSeconds (Ljava/lang/Double;)Lai/torad/aisdk/providers/ReplicateVideoModelOptionsBuilder;
+	public final fun motion_bucket_id (Ljava/lang/Double;)Lai/torad/aisdk/providers/ReplicateVideoModelOptionsBuilder;
+	public final fun num_inference_steps (Ljava/lang/Double;)Lai/torad/aisdk/providers/ReplicateVideoModelOptionsBuilder;
+	public final fun pollIntervalMs (Ljava/lang/Long;)Lai/torad/aisdk/providers/ReplicateVideoModelOptionsBuilder;
+	public final fun pollTimeoutMs (Ljava/lang/Long;)Lai/torad/aisdk/providers/ReplicateVideoModelOptionsBuilder;
+	public final fun prompt_optimizer (Ljava/lang/Boolean;)Lai/torad/aisdk/providers/ReplicateVideoModelOptionsBuilder;
+	public final fun sizing_strategy (Ljava/lang/String;)Lai/torad/aisdk/providers/ReplicateVideoModelOptionsBuilder;
+	public final fun video_length (Ljava/lang/String;)Lai/torad/aisdk/providers/ReplicateVideoModelOptionsBuilder;
 }
 
 public final class ai/torad/aisdk/providers/RevaiProvider : ai/torad/aisdk/Provider {
@@ -11797,10 +11861,12 @@ public final class ai/torad/aisdk/providers/RevaiProviderSettings$Companion {
 }
 
 public final class ai/torad/aisdk/providers/RevaiProviderSettingsBuilder {
-	public final fun apiKey (Ljava/lang/String;)V
-	public final fun headers (Ljava/util/Map;)V
-	public final fun maxPollAttempts (I)V
-	public final fun pollingIntervalMillis (J)V
+	public fun <init> ()V
+	public final fun apiKey (Ljava/lang/String;)Lai/torad/aisdk/providers/RevaiProviderSettingsBuilder;
+	public final fun build ()Lai/torad/aisdk/providers/RevaiProviderSettings;
+	public final fun headers (Ljava/util/Map;)Lai/torad/aisdk/providers/RevaiProviderSettingsBuilder;
+	public final fun maxPollAttempts (I)Lai/torad/aisdk/providers/RevaiProviderSettingsBuilder;
+	public final fun pollingIntervalMillis (J)Lai/torad/aisdk/providers/RevaiProviderSettingsBuilder;
 }
 
 public final class ai/torad/aisdk/providers/RevaiTranscriptionModelOptions {
@@ -11850,30 +11916,32 @@ public final class ai/torad/aisdk/providers/RevaiTranscriptionModelOptions$Compa
 }
 
 public final class ai/torad/aisdk/providers/RevaiTranscriptionModelOptionsBuilder {
-	public final fun custom_vocabularies (Lkotlinx/serialization/json/JsonElement;)V
-	public final fun custom_vocabulary_id (Ljava/lang/String;)V
-	public final fun delete_after_seconds (Ljava/lang/Integer;)V
-	public final fun diarization_type (Ljava/lang/String;)V
-	public final fun filter_profanity (Ljava/lang/Boolean;)V
-	public final fun forced_alignment (Ljava/lang/Boolean;)V
-	public final fun language (Ljava/lang/String;)V
-	public final fun metadata (Ljava/lang/String;)V
-	public final fun notification_config (Lkotlinx/serialization/json/JsonObject;)V
-	public final fun remove_atmospherics (Ljava/lang/Boolean;)V
-	public final fun remove_disfluencies (Ljava/lang/Boolean;)V
-	public final fun rush (Ljava/lang/Boolean;)V
-	public final fun segments_to_transcribe (Lkotlinx/serialization/json/JsonElement;)V
-	public final fun skip_diarization (Ljava/lang/Boolean;)V
-	public final fun skip_postprocessing (Ljava/lang/Boolean;)V
-	public final fun skip_punctuation (Ljava/lang/Boolean;)V
-	public final fun speaker_channels_count (Ljava/lang/Integer;)V
-	public final fun speaker_names (Lkotlinx/serialization/json/JsonElement;)V
-	public final fun speakers_count (Ljava/lang/Integer;)V
-	public final fun strict_custom_vocabulary (Ljava/lang/Boolean;)V
-	public final fun summarization_config (Lkotlinx/serialization/json/JsonObject;)V
-	public final fun test_mode (Ljava/lang/Boolean;)V
-	public final fun translation_config (Lkotlinx/serialization/json/JsonObject;)V
-	public final fun verbatim (Ljava/lang/Boolean;)V
+	public fun <init> ()V
+	public final fun build ()Lai/torad/aisdk/providers/RevaiTranscriptionModelOptions;
+	public final fun custom_vocabularies (Lkotlinx/serialization/json/JsonElement;)Lai/torad/aisdk/providers/RevaiTranscriptionModelOptionsBuilder;
+	public final fun custom_vocabulary_id (Ljava/lang/String;)Lai/torad/aisdk/providers/RevaiTranscriptionModelOptionsBuilder;
+	public final fun delete_after_seconds (Ljava/lang/Integer;)Lai/torad/aisdk/providers/RevaiTranscriptionModelOptionsBuilder;
+	public final fun diarization_type (Ljava/lang/String;)Lai/torad/aisdk/providers/RevaiTranscriptionModelOptionsBuilder;
+	public final fun filter_profanity (Ljava/lang/Boolean;)Lai/torad/aisdk/providers/RevaiTranscriptionModelOptionsBuilder;
+	public final fun forced_alignment (Ljava/lang/Boolean;)Lai/torad/aisdk/providers/RevaiTranscriptionModelOptionsBuilder;
+	public final fun language (Ljava/lang/String;)Lai/torad/aisdk/providers/RevaiTranscriptionModelOptionsBuilder;
+	public final fun metadata (Ljava/lang/String;)Lai/torad/aisdk/providers/RevaiTranscriptionModelOptionsBuilder;
+	public final fun notification_config (Lkotlinx/serialization/json/JsonObject;)Lai/torad/aisdk/providers/RevaiTranscriptionModelOptionsBuilder;
+	public final fun remove_atmospherics (Ljava/lang/Boolean;)Lai/torad/aisdk/providers/RevaiTranscriptionModelOptionsBuilder;
+	public final fun remove_disfluencies (Ljava/lang/Boolean;)Lai/torad/aisdk/providers/RevaiTranscriptionModelOptionsBuilder;
+	public final fun rush (Ljava/lang/Boolean;)Lai/torad/aisdk/providers/RevaiTranscriptionModelOptionsBuilder;
+	public final fun segments_to_transcribe (Lkotlinx/serialization/json/JsonElement;)Lai/torad/aisdk/providers/RevaiTranscriptionModelOptionsBuilder;
+	public final fun skip_diarization (Ljava/lang/Boolean;)Lai/torad/aisdk/providers/RevaiTranscriptionModelOptionsBuilder;
+	public final fun skip_postprocessing (Ljava/lang/Boolean;)Lai/torad/aisdk/providers/RevaiTranscriptionModelOptionsBuilder;
+	public final fun skip_punctuation (Ljava/lang/Boolean;)Lai/torad/aisdk/providers/RevaiTranscriptionModelOptionsBuilder;
+	public final fun speaker_channels_count (Ljava/lang/Integer;)Lai/torad/aisdk/providers/RevaiTranscriptionModelOptionsBuilder;
+	public final fun speaker_names (Lkotlinx/serialization/json/JsonElement;)Lai/torad/aisdk/providers/RevaiTranscriptionModelOptionsBuilder;
+	public final fun speakers_count (Ljava/lang/Integer;)Lai/torad/aisdk/providers/RevaiTranscriptionModelOptionsBuilder;
+	public final fun strict_custom_vocabulary (Ljava/lang/Boolean;)Lai/torad/aisdk/providers/RevaiTranscriptionModelOptionsBuilder;
+	public final fun summarization_config (Lkotlinx/serialization/json/JsonObject;)Lai/torad/aisdk/providers/RevaiTranscriptionModelOptionsBuilder;
+	public final fun test_mode (Ljava/lang/Boolean;)Lai/torad/aisdk/providers/RevaiTranscriptionModelOptionsBuilder;
+	public final fun translation_config (Lkotlinx/serialization/json/JsonObject;)Lai/torad/aisdk/providers/RevaiTranscriptionModelOptionsBuilder;
+	public final fun verbatim (Ljava/lang/Boolean;)Lai/torad/aisdk/providers/RevaiTranscriptionModelOptionsBuilder;
 }
 
 public final class ai/torad/aisdk/providers/ScriptedResponse {
@@ -11942,11 +12010,13 @@ public final class ai/torad/aisdk/providers/TogetherAIImageModelOptions$Companio
 }
 
 public final class ai/torad/aisdk/providers/TogetherAIImageModelOptionsBuilder {
-	public final fun disableSafetyChecker (Ljava/lang/Boolean;)V
-	public final fun guidance (Ljava/lang/Float;)V
-	public final fun negativePrompt (Ljava/lang/String;)V
-	public final fun raw (Ljava/util/Map;)V
-	public final fun steps (Ljava/lang/Integer;)V
+	public fun <init> ()V
+	public final fun build ()Lai/torad/aisdk/providers/TogetherAIImageModelOptions;
+	public final fun disableSafetyChecker (Ljava/lang/Boolean;)Lai/torad/aisdk/providers/TogetherAIImageModelOptionsBuilder;
+	public final fun guidance (Ljava/lang/Float;)Lai/torad/aisdk/providers/TogetherAIImageModelOptionsBuilder;
+	public final fun negativePrompt (Ljava/lang/String;)Lai/torad/aisdk/providers/TogetherAIImageModelOptionsBuilder;
+	public final fun raw (Ljava/util/Map;)Lai/torad/aisdk/providers/TogetherAIImageModelOptionsBuilder;
+	public final fun steps (Ljava/lang/Integer;)Lai/torad/aisdk/providers/TogetherAIImageModelOptionsBuilder;
 }
 
 public final class ai/torad/aisdk/providers/TogetherAIProvider : ai/torad/aisdk/Provider {
@@ -11999,9 +12069,11 @@ public final class ai/torad/aisdk/providers/TogetherAIProviderSettings$Companion
 }
 
 public final class ai/torad/aisdk/providers/TogetherAIProviderSettingsBuilder {
-	public final fun apiKey (Ljava/lang/String;)V
-	public final fun baseURL (Ljava/lang/String;)V
-	public final fun headers (Ljava/util/Map;)V
+	public fun <init> ()V
+	public final fun apiKey (Ljava/lang/String;)Lai/torad/aisdk/providers/TogetherAIProviderSettingsBuilder;
+	public final fun baseURL (Ljava/lang/String;)Lai/torad/aisdk/providers/TogetherAIProviderSettingsBuilder;
+	public final fun build ()Lai/torad/aisdk/providers/TogetherAIProviderSettings;
+	public final fun headers (Ljava/util/Map;)Lai/torad/aisdk/providers/TogetherAIProviderSettingsBuilder;
 }
 
 public final class ai/torad/aisdk/providers/TogetherAIRerankingModel : ai/torad/aisdk/RerankingModel {
@@ -12035,7 +12107,9 @@ public final class ai/torad/aisdk/providers/TogetherAIRerankingModelOptions$Comp
 }
 
 public final class ai/torad/aisdk/providers/TogetherAIRerankingModelOptionsBuilder {
-	public final fun rankFields (Ljava/util/List;)V
+	public fun <init> ()V
+	public final fun build ()Lai/torad/aisdk/providers/TogetherAIRerankingModelOptions;
+	public final fun rankFields (Ljava/util/List;)Lai/torad/aisdk/providers/TogetherAIRerankingModelOptionsBuilder;
 }
 
 public final class ai/torad/aisdk/providers/VercelFacadeKt {
@@ -12087,9 +12161,11 @@ public final class ai/torad/aisdk/providers/VercelProviderSettings$Companion {
 }
 
 public final class ai/torad/aisdk/providers/VercelProviderSettingsBuilder {
-	public final fun apiKey (Ljava/lang/String;)V
-	public final fun baseURL (Ljava/lang/String;)V
-	public final fun headers (Ljava/util/Map;)V
+	public fun <init> ()V
+	public final fun apiKey (Ljava/lang/String;)Lai/torad/aisdk/providers/VercelProviderSettingsBuilder;
+	public final fun baseURL (Ljava/lang/String;)Lai/torad/aisdk/providers/VercelProviderSettingsBuilder;
+	public final fun build ()Lai/torad/aisdk/providers/VercelProviderSettings;
+	public final fun headers (Ljava/util/Map;)Lai/torad/aisdk/providers/VercelProviderSettingsBuilder;
 }
 
 public final class ai/torad/aisdk/providers/VoyageEmbeddingModelOptions {
@@ -12119,10 +12195,12 @@ public final class ai/torad/aisdk/providers/VoyageEmbeddingModelOptions$Companio
 }
 
 public final class ai/torad/aisdk/providers/VoyageEmbeddingModelOptionsBuilder {
-	public final fun inputType (Ljava/lang/String;)V
-	public final fun outputDimension (Ljava/lang/Integer;)V
-	public final fun outputDtype (Ljava/lang/String;)V
-	public final fun truncation (Ljava/lang/Boolean;)V
+	public fun <init> ()V
+	public final fun build ()Lai/torad/aisdk/providers/VoyageEmbeddingModelOptions;
+	public final fun inputType (Ljava/lang/String;)Lai/torad/aisdk/providers/VoyageEmbeddingModelOptionsBuilder;
+	public final fun outputDimension (Ljava/lang/Integer;)Lai/torad/aisdk/providers/VoyageEmbeddingModelOptionsBuilder;
+	public final fun outputDtype (Ljava/lang/String;)Lai/torad/aisdk/providers/VoyageEmbeddingModelOptionsBuilder;
+	public final fun truncation (Ljava/lang/Boolean;)Lai/torad/aisdk/providers/VoyageEmbeddingModelOptionsBuilder;
 }
 
 public final class ai/torad/aisdk/providers/VoyageProvider : ai/torad/aisdk/Provider {
@@ -12184,9 +12262,11 @@ public final class ai/torad/aisdk/providers/VoyageProviderSettings$Companion {
 }
 
 public final class ai/torad/aisdk/providers/VoyageProviderSettingsBuilder {
-	public final fun apiKey (Ljava/lang/String;)V
-	public final fun baseURL (Ljava/lang/String;)V
-	public final fun headers (Ljava/util/Map;)V
+	public fun <init> ()V
+	public final fun apiKey (Ljava/lang/String;)Lai/torad/aisdk/providers/VoyageProviderSettingsBuilder;
+	public final fun baseURL (Ljava/lang/String;)Lai/torad/aisdk/providers/VoyageProviderSettingsBuilder;
+	public final fun build ()Lai/torad/aisdk/providers/VoyageProviderSettings;
+	public final fun headers (Ljava/util/Map;)Lai/torad/aisdk/providers/VoyageProviderSettingsBuilder;
 }
 
 public final class ai/torad/aisdk/providers/VoyageRerankingModelOptions {
@@ -12214,8 +12294,10 @@ public final class ai/torad/aisdk/providers/VoyageRerankingModelOptions$Companio
 }
 
 public final class ai/torad/aisdk/providers/VoyageRerankingModelOptionsBuilder {
-	public final fun returnDocuments (Ljava/lang/Boolean;)V
-	public final fun truncation (Ljava/lang/Boolean;)V
+	public fun <init> ()V
+	public final fun build ()Lai/torad/aisdk/providers/VoyageRerankingModelOptions;
+	public final fun returnDocuments (Ljava/lang/Boolean;)Lai/torad/aisdk/providers/VoyageRerankingModelOptionsBuilder;
+	public final fun truncation (Ljava/lang/Boolean;)Lai/torad/aisdk/providers/VoyageRerankingModelOptionsBuilder;
 }
 
 public final class ai/torad/aisdk/providers/XaiImageModelOptions {
@@ -12247,12 +12329,14 @@ public final class ai/torad/aisdk/providers/XaiImageModelOptions$Companion {
 }
 
 public final class ai/torad/aisdk/providers/XaiImageModelOptionsBuilder {
-	public final fun aspect_ratio (Ljava/lang/String;)V
-	public final fun output_format (Ljava/lang/String;)V
-	public final fun quality (Ljava/lang/String;)V
-	public final fun resolution (Ljava/lang/String;)V
-	public final fun sync_mode (Ljava/lang/Boolean;)V
-	public final fun user (Ljava/lang/String;)V
+	public fun <init> ()V
+	public final fun aspect_ratio (Ljava/lang/String;)Lai/torad/aisdk/providers/XaiImageModelOptionsBuilder;
+	public final fun build ()Lai/torad/aisdk/providers/XaiImageModelOptions;
+	public final fun output_format (Ljava/lang/String;)Lai/torad/aisdk/providers/XaiImageModelOptionsBuilder;
+	public final fun quality (Ljava/lang/String;)Lai/torad/aisdk/providers/XaiImageModelOptionsBuilder;
+	public final fun resolution (Ljava/lang/String;)Lai/torad/aisdk/providers/XaiImageModelOptionsBuilder;
+	public final fun sync_mode (Ljava/lang/Boolean;)Lai/torad/aisdk/providers/XaiImageModelOptionsBuilder;
+	public final fun user (Ljava/lang/String;)Lai/torad/aisdk/providers/XaiImageModelOptionsBuilder;
 }
 
 public final class ai/torad/aisdk/providers/XaiLanguageModelChatOptions {
@@ -12283,11 +12367,13 @@ public final class ai/torad/aisdk/providers/XaiLanguageModelChatOptions$Companio
 }
 
 public final class ai/torad/aisdk/providers/XaiLanguageModelChatOptionsBuilder {
-	public final fun logprobs (Ljava/lang/Boolean;)V
-	public final fun parallel_function_calling (Ljava/lang/Boolean;)V
-	public final fun reasoningEffort (Ljava/lang/String;)V
-	public final fun searchParameters (Lkotlinx/serialization/json/JsonElement;)V
-	public final fun topLogprobs (Ljava/lang/Integer;)V
+	public fun <init> ()V
+	public final fun build ()Lai/torad/aisdk/providers/XaiLanguageModelChatOptions;
+	public final fun logprobs (Ljava/lang/Boolean;)Lai/torad/aisdk/providers/XaiLanguageModelChatOptionsBuilder;
+	public final fun parallel_function_calling (Ljava/lang/Boolean;)Lai/torad/aisdk/providers/XaiLanguageModelChatOptionsBuilder;
+	public final fun reasoningEffort (Ljava/lang/String;)Lai/torad/aisdk/providers/XaiLanguageModelChatOptionsBuilder;
+	public final fun searchParameters (Lkotlinx/serialization/json/JsonElement;)Lai/torad/aisdk/providers/XaiLanguageModelChatOptionsBuilder;
+	public final fun topLogprobs (Ljava/lang/Integer;)Lai/torad/aisdk/providers/XaiLanguageModelChatOptionsBuilder;
 }
 
 public final class ai/torad/aisdk/providers/XaiLanguageModelResponsesOptions {
@@ -12315,8 +12401,10 @@ public final class ai/torad/aisdk/providers/XaiLanguageModelResponsesOptions$Com
 }
 
 public final class ai/torad/aisdk/providers/XaiLanguageModelResponsesOptionsBuilder {
-	public final fun reasoningEffort (Ljava/lang/String;)V
-	public final fun reasoningSummary (Ljava/lang/String;)V
+	public fun <init> ()V
+	public final fun build ()Lai/torad/aisdk/providers/XaiLanguageModelResponsesOptions;
+	public final fun reasoningEffort (Ljava/lang/String;)Lai/torad/aisdk/providers/XaiLanguageModelResponsesOptionsBuilder;
+	public final fun reasoningSummary (Ljava/lang/String;)Lai/torad/aisdk/providers/XaiLanguageModelResponsesOptionsBuilder;
 }
 
 public final class ai/torad/aisdk/providers/XaiProvider : ai/torad/aisdk/Provider {
@@ -12396,9 +12484,11 @@ public final synthetic class ai/torad/aisdk/providers/XaiProviderSettings$$seria
 }
 
 public final class ai/torad/aisdk/providers/XaiProviderSettingsBuilder {
-	public final fun apiKey (Ljava/lang/String;)V
-	public final fun baseURL (Ljava/lang/String;)V
-	public final fun headers (Ljava/util/Map;)V
+	public fun <init> ()V
+	public final fun apiKey (Ljava/lang/String;)Lai/torad/aisdk/providers/XaiProviderSettingsBuilder;
+	public final fun baseURL (Ljava/lang/String;)Lai/torad/aisdk/providers/XaiProviderSettingsBuilder;
+	public final fun build ()Lai/torad/aisdk/providers/XaiProviderSettings;
+	public final fun headers (Ljava/util/Map;)Lai/torad/aisdk/providers/XaiProviderSettingsBuilder;
 }
 
 public final class ai/torad/aisdk/providers/XaiTools {
@@ -12446,12 +12536,14 @@ public final class ai/torad/aisdk/providers/XaiVideoModelOptions$Companion {
 }
 
 public final class ai/torad/aisdk/providers/XaiVideoModelOptionsBuilder {
-	public final fun mode (Ljava/lang/String;)V
-	public final fun pollIntervalMs (Ljava/lang/Long;)V
-	public final fun pollTimeoutMs (Ljava/lang/Long;)V
-	public final fun referenceImageUrls (Ljava/util/List;)V
-	public final fun resolution (Ljava/lang/String;)V
-	public final fun videoUrl (Ljava/lang/String;)V
+	public fun <init> ()V
+	public final fun build ()Lai/torad/aisdk/providers/XaiVideoModelOptions;
+	public final fun mode (Ljava/lang/String;)Lai/torad/aisdk/providers/XaiVideoModelOptionsBuilder;
+	public final fun pollIntervalMs (Ljava/lang/Long;)Lai/torad/aisdk/providers/XaiVideoModelOptionsBuilder;
+	public final fun pollTimeoutMs (Ljava/lang/Long;)Lai/torad/aisdk/providers/XaiVideoModelOptionsBuilder;
+	public final fun referenceImageUrls (Ljava/util/List;)Lai/torad/aisdk/providers/XaiVideoModelOptionsBuilder;
+	public final fun resolution (Ljava/lang/String;)Lai/torad/aisdk/providers/XaiVideoModelOptionsBuilder;
+	public final fun videoUrl (Ljava/lang/String;)Lai/torad/aisdk/providers/XaiVideoModelOptionsBuilder;
 }
 
 public final class ai/torad/aisdk/ui/Chat {

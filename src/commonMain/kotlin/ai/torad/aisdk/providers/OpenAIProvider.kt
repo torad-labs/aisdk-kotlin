@@ -56,7 +56,7 @@ public class OpenAIProviderSettings internal constructor(
     }
 }
 
-public class OpenAIProviderSettingsBuilder internal constructor() {
+public class OpenAIProviderSettingsBuilder {
     private var baseURL: String = "https://api.openai.com/v1"
     private var apiKey: String? = null
     private var organization: String? = null
@@ -66,39 +66,47 @@ public class OpenAIProviderSettingsBuilder internal constructor() {
     private var queryParams: Map<String, String> = emptyMap()
     private var includeUsage: Boolean = false
 
-    public fun baseURL(value: String) {
+    public fun baseURL(value: String): OpenAIProviderSettingsBuilder {
         baseURL = value
+        return this
     }
 
-    public fun apiKey(value: String?) {
+    public fun apiKey(value: String?): OpenAIProviderSettingsBuilder {
         apiKey = value
+        return this
     }
 
-    public fun organization(value: String?) {
+    public fun organization(value: String?): OpenAIProviderSettingsBuilder {
         organization = value
+        return this
     }
 
-    public fun project(value: String?) {
+    public fun project(value: String?): OpenAIProviderSettingsBuilder {
         project = value
+        return this
     }
 
-    public fun headers(value: Map<String, String>) {
+    public fun headers(value: Map<String, String>): OpenAIProviderSettingsBuilder {
         headers = value
+        return this
     }
 
-    public fun name(value: String) {
+    public fun name(value: String): OpenAIProviderSettingsBuilder {
         name = value
+        return this
     }
 
-    public fun queryParams(value: Map<String, String>) {
+    public fun queryParams(value: Map<String, String>): OpenAIProviderSettingsBuilder {
         queryParams = value
+        return this
     }
 
-    public fun includeUsage(value: Boolean) {
+    public fun includeUsage(value: Boolean): OpenAIProviderSettingsBuilder {
         includeUsage = value
+        return this
     }
 
-    internal fun build(): OpenAIProviderSettings =
+    public fun build(): OpenAIProviderSettings =
         OpenAIProviderSettings(
             baseURL = baseURL,
             apiKey = apiKey,

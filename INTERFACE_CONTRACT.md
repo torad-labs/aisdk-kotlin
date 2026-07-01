@@ -23,12 +23,10 @@
   telescoping overloads where Java cannot use Kotlin default parameters:
   `Tool`, `StreamingTool`, `DynamicTool`, `TextGenerator`, `Provider`,
   `GeneratedFile`, `DefaultSettingsMiddleware`, `DevToolsMiddleware`, and
-  `ExtractReasoningMiddleware`. Builder-DSL factories that take a single
-  Kotlin function block remain a separate Java interop track.
-- Java builder interop is being hardened with public builder constructors,
-  fluent setter methods, and public `build()` methods. The core non-provider
-  builders are the first rollout chunk; provider builders follow the same
-  contract as they are converted.
+  `ExtractReasoningMiddleware`.
+- SDK DSL builders expose public constructors, fluent setter methods, and
+  public `build()` methods for Java callers. Kotlin callers can keep using the
+  top-level DSL factories; Java callers should use `new XBuilder().field(...).build()`.
 - Known limitation: Kotlin cannot box-expose open/interface members
   (`-Xjvm-expose-boxed` errors on them by design). `GatewayProvider` and
   `AnthropicAwsProvider`'s `ModelId`-typed shorthand (`chat(ModelId)`,

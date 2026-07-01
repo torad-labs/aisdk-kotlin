@@ -6,6 +6,12 @@ import ai.torad.aisdk.providers.AssemblyAICustomSpelling;
 import ai.torad.aisdk.providers.AssemblyAICustomSpellingBuilder;
 import ai.torad.aisdk.providers.BlackForestLabsImageModelOptions;
 import ai.torad.aisdk.providers.BlackForestLabsImageModelOptionsBuilder;
+import ai.torad.aisdk.providers.OpenAICompatibleProviderSettings;
+import ai.torad.aisdk.providers.OpenAICompatibleProviderSettingsBuilder;
+import ai.torad.aisdk.providers.ReplicateImageModelOptions;
+import ai.torad.aisdk.providers.ReplicateImageModelOptionsBuilder;
+import ai.torad.aisdk.providers.XaiProviderSettings;
+import ai.torad.aisdk.providers.XaiProviderSettingsBuilder;
 import org.junit.Test;
 
 import java.util.Arrays;
@@ -105,5 +111,39 @@ public final class BuilderFluentInteropTest {
 
         assertEquals(Arrays.asList("torad"), spelling.getFrom());
         assertEquals("Torad", spelling.getTo());
+    }
+
+    @Test
+    public void finalProviderChunkBuildersChainAndBuildFromJava() {
+        OpenAICompatibleProviderSettings compatible = new OpenAICompatibleProviderSettingsBuilder()
+            .name("custom")
+            .baseUrl("https://example.test/v1")
+            .includeUsage(true)
+            .transformChatRequestBody(body -> body)
+            .build();
+
+        assertEquals("custom", compatible.getName());
+        assertEquals("https://example.test/v1", compatible.getBaseUrl());
+        assertEquals(true, compatible.getIncludeUsage());
+
+        XaiProviderSettings xai = new XaiProviderSettingsBuilder()
+            .baseURL("https://x.test/v1")
+            .apiKey("x-key")
+            .headers(Collections.singletonMap("x-test", "1"))
+            .build();
+
+        assertEquals("https://x.test/v1", xai.getBaseURL());
+        assertEquals("x-key", xai.getApiKey());
+        assertEquals(Collections.singletonMap("x-test", "1"), xai.getHeaders());
+
+        ReplicateImageModelOptions replicate = new ReplicateImageModelOptionsBuilder()
+            .maxWaitTimeInSeconds(30.0)
+            .guidance_scale(3.5)
+            .output_format("png")
+            .build();
+
+        assertEquals(Double.valueOf(30.0), replicate.getMaxWaitTimeInSeconds());
+        assertEquals(Double.valueOf(3.5), replicate.getGuidance_scale());
+        assertEquals("png", replicate.getOutput_format());
     }
 }
