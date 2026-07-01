@@ -3,7 +3,7 @@
 - Version: 2.0.31
 - Upstream path: `.reference/vercel-ai-sdk-ai-6.0.208/packages/valibot`
 - Kotlin parity area: `:aisdk-validation`
-- Current parity status: ported: valibotSchema is represented as a Kotlin-native Schema adapter folded into the root module
+- Current parity status: not-applicable: Valibot is a TypeScript validation library; no valibotSchema public API is shipped, and Kotlin schema work uses kotlinx.serialization and the SDK Schema/Output surfaces
 
 ## Entrypoints
 
