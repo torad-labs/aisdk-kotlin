@@ -71,6 +71,7 @@ class KotlinApiTest {
                 stopSequences(listOf("</done>"))
                 seed(42)
                 providerOptions(providerOptions)
+                headers(mapOf("X-Request" to "from-settings"))
                 presencePenalty(0.4f)
                 frequencyPenalty(0.5f)
                 maxRetries(4)
@@ -91,6 +92,7 @@ class KotlinApiTest {
                 stopSequences(s.stopSequences ?: emptyList())
                 seed(s.seed)
                 providerOptions(s.providerOptions)
+                headers(s.headers)
                 presencePenalty(s.presencePenalty)
                 frequencyPenalty(s.frequencyPenalty)
                 responseFormat(s.responseFormat ?: ResponseFormat.Text)
@@ -108,6 +110,7 @@ class KotlinApiTest {
         assertEquals(listOf("</done>"), params.stopSequences)
         assertEquals(42, params.seed)
         assertEquals(providerOptions, params.providerOptions)
+        assertEquals(mapOf("X-Request" to "from-settings"), params.headers)
         assertEquals(0.4f, params.presencePenalty)
         assertEquals(0.5f, params.frequencyPenalty)
         assertEquals(4, request.settings.maxRetries)
@@ -191,6 +194,7 @@ class KotlinApiTest {
             CallConfig {
                 temperature(0.9f)
                 topP(0.3f)
+                headers(mapOf("X-Text" to "yes"))
                 providerOptions(ProviderOptions.Raw(JsonObject(mapOf(
                     "base" to JsonPrimitive("yes"),
                     "call" to JsonPrimitive("yes"),
@@ -201,6 +205,7 @@ class KotlinApiTest {
         val params = assertNotNull(model.generateParams)
         assertEquals(0.9f, params.temperature)
         assertEquals(0.3f, params.topP)
+        assertEquals(mapOf("X-Text" to "yes"), params.headers)
         assertEquals("yes", params.providerOptions.toMap()["base"]?.jsonPrimitive?.content)
         assertEquals("yes", params.providerOptions.toMap()["call"]?.jsonPrimitive?.content)
     }

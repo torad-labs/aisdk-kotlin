@@ -36,10 +36,9 @@ chunks for a chat UI. Non-text events pass through without delay.
 ## Replay Recorded Streams
 
 ```kotlin
-val replay = simulateReadableStream(
-    events = cachedEvents,
-    initialDelayMs = 0,
-    chunkDelayMs = 5,
+val replay = SimulateReadableStream(
+    chunks = cachedEvents,
+    delayMillis = 5,
 )
 
 replay.collect { event -> render(event) }

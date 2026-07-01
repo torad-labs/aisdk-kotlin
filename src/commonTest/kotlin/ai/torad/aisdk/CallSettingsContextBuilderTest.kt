@@ -11,29 +11,35 @@ class CallSettingsContextBuilderTest {
         val settings = CallSettings {
             temperature(0.2f)
             stopSequences(listOf("stop"))
+            headers(mapOf("X-Call" to "settings"))
             maxRetries(1)
         }
         val equalSettings = CallSettings {
             temperature(0.2f)
             stopSequences(listOf("stop"))
+            headers(mapOf("X-Call" to "settings"))
             maxRetries(1)
         }
         val config = CallConfig {
             topP(0.8f)
             stopSequences(listOf("done"))
+            headers(mapOf("X-Call" to "config"))
             maxRetries(0)
         }
         val equalConfig = CallConfig {
             topP(0.8f)
             stopSequences(listOf("done"))
+            headers(mapOf("X-Call" to "config"))
             maxRetries(0)
         }
 
         assertEquals(equalSettings, settings)
         assertEquals(equalSettings.hashCode(), settings.hashCode())
+        assertEquals(mapOf("X-Call" to "settings"), settings.headers)
         assertNotEquals(CallSettings { temperature(0.3f) }, settings)
         assertEquals(equalConfig, config)
         assertEquals(equalConfig.hashCode(), config.hashCode())
+        assertEquals(mapOf("X-Call" to "config"), config.headers)
         assertNotEquals(CallConfig { topP(0.9f) }, config)
     }
 

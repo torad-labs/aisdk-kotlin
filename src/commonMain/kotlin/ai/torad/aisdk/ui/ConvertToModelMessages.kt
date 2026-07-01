@@ -5,8 +5,6 @@ import ai.torad.aisdk.MessageRole
 import ai.torad.aisdk.ModelMessage
 import ai.torad.aisdk.ProviderMetadata
 import ai.torad.aisdk.StreamEvent
-import kotlinx.serialization.json.JsonPrimitive
-import kotlinx.serialization.json.contentOrNull
 
 /**
  * UI-to-model message conversion. Groups [convertToModelMessages] and its
@@ -117,16 +115,11 @@ public object ModelMessageConversion {
     private fun approvalResponseMessage(uiMsg: UIMessage): ModelMessage? {
         if (uiMsg.role != UIMessageRole.User || uiMsg.parts.size != 1) return null
         val part = uiMsg.parts.single() as? UIMessagePart.ToolUI ?: return null
-        if (part.toolName != "approval") return null
+        val approvalId = part.approvalId ?: return null
         val approved = when (part.state) {
             ToolCallState.OutputAvailable -> true
             ToolCallState.OutputDenied -> false
             else -> return null
-        }
-        val approvalId = part.approvalId ?: when (val output = part.output) {
-            null -> part.toolCallId
-            is JsonPrimitive -> output.contentOrNull ?: part.toolCallId
-            else -> throw IllegalArgumentException("Approval response output must be a string approval id.")
         }
         return ModelMessage(
             role = MessageRole.Tool,

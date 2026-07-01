@@ -553,6 +553,7 @@ public final class ai/torad/aisdk/CallConfig {
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getAbortSignal ()Lai/torad/aisdk/AbortSignal;
 	public final fun getFrequencyPenalty ()Ljava/lang/Float;
+	public final fun getHeaders ()Ljava/util/Map;
 	public final fun getMaxOutputTokens ()Ljava/lang/Integer;
 	public final fun getMaxRetries ()I
 	public final fun getPresencePenalty ()Ljava/lang/Float;
@@ -572,6 +573,7 @@ public final class ai/torad/aisdk/CallConfigBuilder {
 	public final fun abortSignal (Lai/torad/aisdk/AbortSignal;)Lai/torad/aisdk/CallConfigBuilder;
 	public final fun build ()Lai/torad/aisdk/CallConfig;
 	public final fun frequencyPenalty (Ljava/lang/Float;)Lai/torad/aisdk/CallConfigBuilder;
+	public final fun headers (Ljava/util/Map;)Lai/torad/aisdk/CallConfigBuilder;
 	public final fun maxOutputTokens (Ljava/lang/Integer;)Lai/torad/aisdk/CallConfigBuilder;
 	public final fun maxRetries (I)Lai/torad/aisdk/CallConfigBuilder;
 	public final fun presencePenalty (Ljava/lang/Float;)Lai/torad/aisdk/CallConfigBuilder;
@@ -593,6 +595,7 @@ public final class ai/torad/aisdk/CallSettings {
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getAbortSignal ()Lai/torad/aisdk/AbortSignal;
 	public final fun getFrequencyPenalty ()Ljava/lang/Float;
+	public final fun getHeaders ()Ljava/util/Map;
 	public final fun getMaxOutputTokens ()Ljava/lang/Integer;
 	public final fun getMaxRetries ()I
 	public final fun getPresencePenalty ()Ljava/lang/Float;
@@ -612,6 +615,7 @@ public final class ai/torad/aisdk/CallSettingsBuilder {
 	public final fun abortSignal (Lai/torad/aisdk/AbortSignal;)Lai/torad/aisdk/CallSettingsBuilder;
 	public final fun build ()Lai/torad/aisdk/CallSettings;
 	public final fun frequencyPenalty (Ljava/lang/Float;)Lai/torad/aisdk/CallSettingsBuilder;
+	public final fun headers (Ljava/util/Map;)Lai/torad/aisdk/CallSettingsBuilder;
 	public final fun maxOutputTokens (Ljava/lang/Integer;)Lai/torad/aisdk/CallSettingsBuilder;
 	public final fun maxRetries (I)Lai/torad/aisdk/CallSettingsBuilder;
 	public final fun presencePenalty (Ljava/lang/Float;)Lai/torad/aisdk/CallSettingsBuilder;
@@ -4791,6 +4795,11 @@ public final class ai/torad/aisdk/Schemas {
 	public final fun validateTypes (Lkotlinx/serialization/json/JsonElement;Lai/torad/aisdk/Schema;Lai/torad/aisdk/TypeValidationContext;)Ljava/lang/Object;
 	public static synthetic fun validateTypes$default (Lai/torad/aisdk/Schemas;Lkotlinx/serialization/json/JsonElement;Lai/torad/aisdk/LazySchema;Lai/torad/aisdk/TypeValidationContext;ILjava/lang/Object;)Ljava/lang/Object;
 	public static synthetic fun validateTypes$default (Lai/torad/aisdk/Schemas;Lkotlinx/serialization/json/JsonElement;Lai/torad/aisdk/Schema;Lai/torad/aisdk/TypeValidationContext;ILjava/lang/Object;)Ljava/lang/Object;
+}
+
+public final class ai/torad/aisdk/SimulateReadableStreamKt {
+	public static final fun SimulateReadableStream (Ljava/lang/Iterable;J)Lkotlinx/coroutines/flow/Flow;
+	public static synthetic fun SimulateReadableStream$default (Ljava/lang/Iterable;JILjava/lang/Object;)Lkotlinx/coroutines/flow/Flow;
 }
 
 public final class ai/torad/aisdk/SmoothStreamKt {

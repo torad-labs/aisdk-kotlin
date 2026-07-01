@@ -28,6 +28,8 @@ public class CallConfig internal constructor(
     /** @since 0.3.0-beta01 */
     public val responseFormat: ResponseFormat = ResponseFormat.Text,
     /** @since 0.3.0-beta01 */
+    public val headers: Map<String, String> = emptyMap(),
+    /** @since 0.3.0-beta01 */
     public val maxRetries: Int = 2,
 ) {
     init {
@@ -50,6 +52,7 @@ public class CallConfigBuilder {
     private var frequencyPenalty: Float? = null
     private var responseFormat: ResponseFormat = ResponseFormat.Text
     private var maxRetries: Int = 2
+    private val headers = linkedMapOf<String, String>()
 
     /** @since 0.3.0-beta01 */
     public fun temperature(value: Float?): CallConfigBuilder {
@@ -118,6 +121,13 @@ public class CallConfigBuilder {
     }
 
     /** @since 0.3.0-beta01 */
+    public fun headers(value: Map<String, String>): CallConfigBuilder {
+        headers.clear()
+        headers.putAll(value)
+        return this
+    }
+
+    /** @since 0.3.0-beta01 */
     public fun maxRetries(value: Int): CallConfigBuilder {
         maxRetries = value
         return this
@@ -137,6 +147,7 @@ public class CallConfigBuilder {
             presencePenalty = presencePenalty,
             frequencyPenalty = frequencyPenalty,
             responseFormat = responseFormat,
+            headers = headers.toMap(),
             maxRetries = maxRetries,
         )
 }
