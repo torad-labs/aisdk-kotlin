@@ -10,6 +10,7 @@ import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.intOrNull
 import kotlin.jvm.JvmOverloads
 
+/** @since 0.3.0-beta01 */
 public interface TranscriptionModel {
     /** @since 0.3.0-beta01 */
     public val modelId: String
