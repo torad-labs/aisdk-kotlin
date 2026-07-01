@@ -37,6 +37,7 @@ import ai.torad.aisdk.Tool
 import ai.torad.aisdk.ToolLoopAgent
 import ai.torad.aisdk.ToolSet
 import ai.torad.aisdk.providers.MockLanguageModelTextOnly
+import kotlinx.coroutines.flow.first
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.serializer
 
@@ -58,15 +59,21 @@ class HelloAgent(model: LanguageModel, tools: ToolSet<Unit>) :
         stopWhen = StepCountIs(3),
     )
 
-val agent = HelloAgent(
-    model = MockLanguageModelTextOnly("Welcome."),
-    tools = ToolSet(helloTool),
-)
+suspend fun main() {
+    val agent = HelloAgent(
+        model = MockLanguageModelTextOnly("Welcome."),
+        tools = ToolSet(helloTool),
+    )
+
+    val result = agent.generate(prompt = "Say hi").first()
+    println(result.text)
+}
 ```
 <!-- beta-readiness:readme-sample:end -->
 
-Send application prompts through `Agent.generate` / `Agent.stream` or the
-top-level `generateText` / `streamText` helpers. Direct
+Send application prompts through `Agent.generate` / `Agent.stream`, or use
+`TextGenerator(model).generate(...)`, `TextGenerator(model).stream(...)`, and
+`TextGenerator(model).streamResult(...)` for direct text calls. Direct
 `LanguageModel.generate`, `LanguageModel.stream`, and `LanguageModel.streamResult`
 calls are still supported for provider authors and low-level integrations, but
 they require `@OptIn(LowLevelLanguageModelApi::class)`.
@@ -75,13 +82,13 @@ they require `@OptIn(LowLevelLanguageModelApi::class)`.
 
 - `Agent` and `ToolLoopAgent`.
 - Typed `Tool()` definitions, `DynamicTool()`, schemas, and `ToolSet`.
-- `generateText`, `streamText`, and cold `Flow<StreamEvent>` streaming.
+- `TextGenerator(model).generate(...)`, `TextGenerator(model).stream(...)`, and cold `Flow<StreamEvent>` streaming.
 - Structured output through `Output.obj`, `Output.array`, `Output.choice`, and `Output.json`.
-- Deprecated v6 compatibility shims: `generateObject` and `streamObject`.
+- Structured text helpers through `TextGenerator.streamResult(...)` and `StreamTextResult`.
 - Embeddings, reranking, image generation, speech generation, transcription, and video generation model contracts.
-- Provider registry and `customProvider` routing.
-- Gateway facade with `createGateway`, `gateway`, gateway metadata APIs, gateway errors, provider-executed gateway tool descriptors, and a Ktor-backed `KtorGatewayTransport`.
-- OpenAI-compatible Ktor provider for chat, completions, embeddings, images, speech, and transcription through `createOpenAICompatible`.
+- Provider registry and `Provider(...)` routing.
+- Gateway facade with `Gateway()`, `gateway`, gateway metadata APIs, gateway errors, provider-executed gateway tool descriptors, and a Ktor-backed `KtorGatewayTransport`.
+- OpenAI-compatible Ktor provider for chat, completions, embeddings, images, speech, and transcription through `OpenAICompatible(...)`.
 - LiteRT-LM adapter for on-device Android/JVM inference via `LiteRTLanguageModel`, preserving SDK-owned generate, stream, reasoning-channel, and tool-loop routing.
 - Provider-utils parity helpers: schemas, IDs, JSON event stream parsing, headers, base64 byte helpers, media and URL validation utilities.
 - Text stream, UI message stream, and chat transport primitives for Kotlin hosts.
