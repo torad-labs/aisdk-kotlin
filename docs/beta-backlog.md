@@ -30,10 +30,10 @@ tests must stay green.
 | BL-010 | `StreamObjectResult` overwrites instead of merges `ResponseMetadata` | Low | Optional | CONFIRMED | DONE (903b3bc) |
 | BL-011 | `StreamTextResult` retains full event history for single consumer | Low | Optional | CONFIRMED | OPEN |
 | BL-012 | `ConvertToModelMessages` hardcodes `"approval"` tool-name | Low | Optional | CONFIRMED | OPEN |
-| BL-013 | Parity ledger overclaims 3 unimplemented adapters | Medium | Recommended | CONFIRMED | OPEN |
+| BL-013 | Parity ledger overclaims 3 unimplemented adapters | Medium | Recommended | CONFIRMED | DONE (langchain/llamaindex/valibot reconciled, tools/check-parity-claims.mjs gates CI) |
 | BL-014 | No per-call `timeout` in `CallSettings` | Low-Med | Optional | CONFIRMED | OPEN |
 | BL-015 | `simulateReadableStream` test helper missing | Low | Optional | CONFIRMED | OPEN |
-| BL-016 | Native provider structured-output (`json_schema`) not used — document | Medium | Recommended | CONFIRMED | OPEN |
+| BL-016 | Native provider structured-output (`json_schema`) not used — document | Medium | Recommended | CONFIRMED | DONE (structured-output.md + capability matrix document the SDK strategy) |
 | BL-017 | `headers` reachable only via low-level call params, not `CallSettings` builder | Low | Optional | CONFIRMED | OPEN |
 | BL-018 | No reactive UI binding (Compose `useChat`-style) | — | Post-beta | CONFIRMED | OPEN |
 | BL-019 | MCP inbound SSE reconnect storm (no backoff/cap, reconnects on clean EOF) | High | Recommended | CONFIRMED | DONE |
@@ -80,6 +80,7 @@ tests must stay green.
 | BL-056 | Bedrock eventstream frames not CRC-validated | Low | Optional | CONFIRMED | OPEN |
 | BL-057 | Wiki/README/llms.txt code samples don't compile against the real API | High | Recommended | CONFIRMED | DONE (all 17 sub-items B1-B17/B10/B18 — see detail section) |
 | BL-058 | Public API evolvability: data-class traps, no top-level verbs, Java-uncallable fns | High | Recommended | CONFIRMED | DONE (A1/A2/A3/A4 all landed — see detail section) |
+| BL-059 | Native provider structured output (`json_schema`) for OpenAI/Google | Medium | Post-beta | CONFIRMED | OPEN (tracked per BL-016) |
 
 All audit areas COMPLETE. Integrations → BL-013..018. MCP → BL-019..028. Core
 providers → BL-029..044. Gateway/UI codecs → BL-045..048. UI/media → BL-049..053.
@@ -248,9 +249,9 @@ implemented — not stubbed. The gaps below are narrow.
 - **Problem:** The parity ledger marks these "ported" with named symbols (`toBaseMessages`, `convertModelMessages`, `LangSmithDeploymentTransport`, `LlamaIndexEngineResponse`, `valibotSchema`), but none exist in any source set or in `api/*.api`/`.klib.api`, and no test asserts them. A *parity* ledger that overclaims is a credibility risk at beta.
 - **Fix direction:** Either implement Kotlin-native equivalents (on JVM a LangChain4j bridge is the only sensible one; JS-LangChain/valibot bridging is N/A for Kotlin) or downgrade these rows to `not-applicable`/`not-ported`. Also tighten `docs/parity/ai-sdk-test-server.md` (the test server lives in `commonTest`, not shipped runtime).
 - **Acceptance criteria:**
-  - [ ] Every "ported" claim in `docs/parity/` maps to a real symbol in `api/torad-aisdk.klib.api` or `api/jvm/torad-aisdk.api`, OR the row is re-labeled `not-applicable`/`not-ported` with a one-line reason.
-  - [ ] A check (extend `tools/check-provider-*` or a new `tools/check-parity-claims.mjs`) fails CI if a ledger row claims a symbol absent from the API dumps.
-  - [ ] `langchain`, `llamaindex`, `valibot`, and `test-server` rows reconciled.
+  - [x] Every "ported" claim in `docs/parity/` maps to a real symbol in `api/torad-aisdk.klib.api` or `api/jvm/torad-aisdk.api`, OR the row is re-labeled `not-applicable`/`not-ported` with a one-line reason.
+  - [x] A check (extend `tools/check-provider-*` or a new `tools/check-parity-claims.mjs`) fails CI if a ledger row claims a symbol absent from the API dumps.
+  - [x] `langchain`, `llamaindex`, `valibot`, and `test-server` rows reconciled.
 
 ## BL-014 — No per-call `timeout` in `CallSettings`
 
@@ -279,9 +280,9 @@ implemented — not stubbed. The gaps below are narrow.
 - **Problem:** Object generation is achieved via the SDK strategy (tool-call / JSON-instruction), not each provider's native constrained-decoding `json_schema` mode. This is the most systematic capability difference vs TS and affects output reliability (native constrained decoding is stricter). It is a reasonable v1 design, but should be explicitly documented so users don't assume native schema enforcement.
 - **Fix direction:** Document clearly in `docs/wiki/structured-output.md` and the capability matrix; native `json_schema` for OpenAI/Google can follow as a separate item.
 - **Acceptance criteria:**
-  - [ ] `docs/wiki/structured-output.md` states which strategy is used per provider and that native `json_schema` constrained decoding is not used.
-  - [ ] Capability matrix `partial` cells link to that explanation.
-  - [ ] Native `json_schema` support for OpenAI and Google tracked as its own backlog item with provider/test acceptance criteria.
+  - [x] `docs/wiki/structured-output.md` states which strategy is used per provider and that native `json_schema` constrained decoding is not used.
+  - [x] Capability matrix `partial` cells link to that explanation.
+  - [x] Native `json_schema` support for OpenAI and Google tracked as its own backlog item with provider/test acceptance criteria — see BL-059.
 
 ## BL-017 — `headers` reachable only via low-level call params, not the `CallSettings` builder
 
@@ -794,6 +795,19 @@ compile-guard. A2/B1, A3, A1, B8 were independently re-verified in source.
   - [x] **A3 [HIGH] Java/Android consumers:** JVM/Android bytecode enables additive boxed value-class exposure (`-Xjvm-expose-boxed`) for Java-callable ID value classes and boxed accessors; headline factories expose Java-callable `@JvmOverloads`; and SDK DSL builders expose public constructors, fluent setters, and public `build()` methods for Java callers. Java smoke tests cover value classes, headline overloads, and builder chain-and-build paths.
   - [x] **A4 [MED] Visibility leaks:** `EventStreamParser`, `Base64Codec`, `TypedJsonOps`, `DirectCompletionTransport`, and `DirectStructuredObjectTransport` are internal implementation details; `HttpMCPTransport` and `SseMCPTransport` remain public but are gated with `@InternalAiSdkApi` for advanced custom transport work. `DataUrl` was removed from the leak set because it is documented general utility surface (`DataUrl.parse(...)`, `INTERFACE_CONTRACT.md`) and is plausibly consumer-constructed.
   - [ ] (A5 enum-vs-sealed and A6 experimental-gating verified correct — no action; see Verified solid.)
+
+## BL-059 — Native provider structured output (`json_schema` constrained decoding) for OpenAI/Google
+
+- **Severity:** Medium · **Beta gate:** Post-beta (tracked per BL-016's acceptance criteria; SDK-strategy fallback documented and correct for beta) · **Confidence:** CONFIRMED
+- **Location:** `StructuredObjectApi.kt` (SDK-side tool-call/JSON-instruction strategy); OpenAI-compatible and Google language model request builders (native `response_format`/response-schema wiring point).
+- **Problem:** Object generation currently always goes through the SDK's own tool-call/JSON-instruction strategy (documented in `docs/wiki/structured-output.md`'s "Provider Strategy And Native Json Schema" section), never through OpenAI's `response_format: { type: "json_schema" }` or Google's native response-schema constrained decoding. Native constrained decoding is stricter than instruction-following and would improve reliability for these two providers specifically.
+- **Fix direction:** Wire native `response_format`/response-schema support into the OpenAI-compatible and Google request builders, falling back to the existing SDK strategy for providers without native support.
+- **Acceptance criteria:**
+  - [ ] OpenAI/OpenAI-compatible requests use native `response_format: { type: "json_schema", ... }` when the model supports it.
+  - [ ] Google requests use the native response-schema shape when supported.
+  - [ ] Fallback to the SDK tool-call/JSON-instruction strategy remains for providers/models without native support.
+  - [ ] Tests cover both the native path and the fallback path per provider.
+  - [ ] `docs/wiki/structured-output.md` and the capability matrix updated once native support lands.
 
 ---
 
