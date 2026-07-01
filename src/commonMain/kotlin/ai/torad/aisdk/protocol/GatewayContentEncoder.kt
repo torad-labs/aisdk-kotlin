@@ -18,6 +18,9 @@ internal object GatewayContentEncoder {
         is ContentPart.Source -> GatewayMediaContentEncoder.encodeSource(part)
         is ContentPart.File -> GatewayMediaContentEncoder.encodeFile(part)
         is ContentPart.Image -> GatewayMediaContentEncoder.encodeImage(part)
+        is ContentPart.Raw -> part.rawValue as? JsonObject ?: contentJson("raw", part) {
+            put("rawValue", part.rawValue)
+        }
     }
 
     private fun encodeText(part: ContentPart.Text): JsonObject = contentJson("text", part) {

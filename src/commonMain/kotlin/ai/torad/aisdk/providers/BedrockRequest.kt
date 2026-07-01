@@ -173,6 +173,7 @@ internal object BedrockRequest {
         is ContentPart.ToolApprovalRequest -> null
         is ContentPart.ToolApprovalResponse -> null
         is ContentPart.Source -> null
+        is ContentPart.Raw -> null
     }
 
     private fun bedrockAssistantPart(part: ContentPart): JsonElement? = when (part) {
@@ -209,6 +210,7 @@ internal object BedrockRequest {
         is ContentPart.ToolApprovalRequest -> null
         is ContentPart.ToolApprovalResponse -> null
         is ContentPart.Source -> null
+        is ContentPart.Raw -> null
     }
 
     private fun bedrockToolResultPart(part: ContentPart): JsonElement? = when (part) {
@@ -241,6 +243,7 @@ internal object BedrockRequest {
         is ContentPart.Source -> null
         is ContentPart.File -> null
         is ContentPart.Image -> null
+        is ContentPart.Raw -> null
     }
 
     private fun bedrockToolResultContent(output: JsonElement): JsonObject =

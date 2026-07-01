@@ -50,6 +50,7 @@ internal object LanguageModelResultStreamEvents {
                             providerMetadata = part.providerMetadata,
                         ),
                     )
+                is ContentPart.Raw -> out.emit(StreamEvent.Raw(part.rawValue))
                 is ContentPart.ToolResult,
                 is ContentPart.ToolApprovalRequest,
                 is ContentPart.ToolApprovalResponse,

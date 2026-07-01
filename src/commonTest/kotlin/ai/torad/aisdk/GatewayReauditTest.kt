@@ -127,6 +127,33 @@ class GatewayReauditTest {
     }
 
     @Test
+    fun `generate preserves unknown gateway content parts as raw`() = runTest {
+        val client = HttpClient(
+            MockEngine {
+                respond(
+                    content =
+                        """
+                        {
+                          "content":[
+                            {"type":"future-part","payload":{"value":1},"providerMetadata":{"gateway":{"trace":"raw"}}}
+                          ],
+                          "finishReason":"stop"
+                        }
+                        """.trimIndent(),
+                    status = HttpStatusCode.OK,
+                    headers = headersOf(HttpHeaders.ContentType, "application/json"),
+                )
+            },
+        )
+
+        val result = gateway(client).languageModel("m").generate(params)
+
+        val raw = assertIs<ContentPart.Raw>(result.content.single())
+        assertEquals("future-part", raw.rawValue.jsonObject["type"]?.jsonPrimitive?.content)
+        assertEquals("1", raw.rawValue.jsonObject["payload"]?.jsonObject?.get("value")?.jsonPrimitive?.content)
+    }
+
+    @Test
     fun `stream maps approval denied source document and file parts to typed events`() = runTest {
         val body =
             """

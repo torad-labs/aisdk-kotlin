@@ -41,7 +41,8 @@ public fun StreamToUiMessages(
     assistantMessageId: String,
 ): Flow<UIMessage> = flow {
     val parts = mutableListOf<UIMessagePart>()
-    val partIndexById = mutableMapOf<String, Int>()
+    val textPartIndexById = mutableMapOf<String, Int>()
+    val reasoningPartIndexById = mutableMapOf<String, Int>()
     val toolIndexesByCallId = mutableMapOf<String, MutableList<Int>>()
     val toolInputBufById = mutableMapOf<String, StringBuilder>()
     val toolNameByInputId = mutableMapOf<String, String>()
@@ -68,8 +69,11 @@ public fun StreamToUiMessages(
                 toolIndexesByCallId[key] = shifted.toMutableList()
             }
         }
-        for ((key, value) in partIndexById.toMap()) {
-            if (value > removedIndex) partIndexById[key] = value - 1
+        for ((key, value) in textPartIndexById.toMap()) {
+            if (value > removedIndex) textPartIndexById[key] = value - 1
+        }
+        for ((key, value) in reasoningPartIndexById.toMap()) {
+            if (value > removedIndex) reasoningPartIndexById[key] = value - 1
         }
         // dataPartIndexById also stores ABSOLUTE part indices — it must shift too, or a keyed Raw
         // data part recorded after the removed placeholder gets a stale index and a later upsert
@@ -101,7 +105,7 @@ public fun StreamToUiMessages(
             ?.lastOrNull { index -> toolAt(index)?.let(predicate) == true }
 
     fun openTextPart(id: String, providerMetadata: ProviderMetadata) {
-        if (partIndexById.containsKey(id)) return
+        if (textPartIndexById.containsKey(id)) return
         parts.add(
             UIMessagePart.Text(
                 text = "",
@@ -109,11 +113,11 @@ public fun StreamToUiMessages(
                 providerMetadata = providerMetadata,
             ),
         )
-        partIndexById[id] = parts.size - 1
+        textPartIndexById[id] = parts.size - 1
     }
 
     fun appendTextPart(id: String, delta: String, providerMetadata: ProviderMetadata) {
-        val idx = partIndexById[id]
+        val idx = textPartIndexById[id]
         val existing = idx?.let { parts[it] as? UIMessagePart.Text }
         if (idx == null || existing == null) {
             // No part yet, OR the id was first opened as a different kind (a text/reasoning id
@@ -125,7 +129,7 @@ public fun StreamToUiMessages(
                     providerMetadata = providerMetadata,
                 ),
             )
-            partIndexById[id] = parts.size - 1
+            textPartIndexById[id] = parts.size - 1
             return
         }
         parts[idx] = UIMessagePart.Text(
@@ -136,7 +140,7 @@ public fun StreamToUiMessages(
     }
 
     fun closeTextPart(id: String, providerMetadata: ProviderMetadata) {
-        val idx = partIndexById[id] ?: return
+        val idx = textPartIndexById[id] ?: return
         val existing = parts[idx] as? UIMessagePart.Text ?: return
         parts[idx] = UIMessagePart.Text(
             text = existing.text,
@@ -146,7 +150,7 @@ public fun StreamToUiMessages(
     }
 
     fun openReasoningPart(id: String, providerMetadata: ProviderMetadata) {
-        if (partIndexById.containsKey(id)) return
+        if (reasoningPartIndexById.containsKey(id)) return
         parts.add(
             UIMessagePart.Reasoning(
                 text = "",
@@ -154,11 +158,11 @@ public fun StreamToUiMessages(
                 providerMetadata = providerMetadata,
             ),
         )
-        partIndexById[id] = parts.size - 1
+        reasoningPartIndexById[id] = parts.size - 1
     }
 
     fun appendReasoningPart(id: String, delta: String, providerMetadata: ProviderMetadata) {
-        val idx = partIndexById[id]
+        val idx = reasoningPartIndexById[id]
         val existing = idx?.let { parts[it] as? UIMessagePart.Reasoning }
         if (idx == null || existing == null) {
             // Mirror appendTextPart: a fresh Reasoning part on an absent index or a kind mismatch.
@@ -169,7 +173,7 @@ public fun StreamToUiMessages(
                     providerMetadata = providerMetadata,
                 ),
             )
-            partIndexById[id] = parts.size - 1
+            reasoningPartIndexById[id] = parts.size - 1
             return
         }
         parts[idx] = UIMessagePart.Reasoning(
@@ -180,7 +184,7 @@ public fun StreamToUiMessages(
     }
 
     fun closeReasoningPart(id: String, providerMetadata: ProviderMetadata) {
-        val idx = partIndexById[id] ?: return
+        val idx = reasoningPartIndexById[id] ?: return
         val existing = parts[idx] as? UIMessagePart.Reasoning ?: return
         parts[idx] = UIMessagePart.Reasoning(
             text = existing.text,
@@ -353,7 +357,15 @@ public fun StreamToUiMessages(
                 val placeholderId = when {
                     event.toolCallId in toolNameByInputId -> event.toolCallId
                     else -> toolNameByInputId.entries
-                        .firstOrNull { it.value == event.toolName && it.key != event.toolCallId }
+                        .firstOrNull {
+                            if (it.value != event.toolName || it.key == event.toolCallId) return@firstOrNull false
+                            val raw = toolInputBufById[it.key]?.toString()?.trim().orEmpty()
+                            if (raw.isEmpty()) return@firstOrNull false
+                            runCatching { aiSdkJson.parseToJsonElement(raw) }
+                                .getOrNull()
+                                ?.let { buffered -> return@firstOrNull buffered == event.inputJson }
+                            event.inputJson.toString().startsWith(raw)
+                        }
                         ?.key
                 }
                 if (placeholderId != null) {

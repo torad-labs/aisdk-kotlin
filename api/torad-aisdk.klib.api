@@ -12386,6 +12386,30 @@ sealed class ai.torad.aisdk/ContentPart { // ai.torad.aisdk/ContentPart|null[0]
         }
     }
 
+    final class Raw : ai.torad.aisdk/ContentPart { // ai.torad.aisdk/ContentPart.Raw|null[0]
+        constructor <init>(kotlinx.serialization.json/JsonElement) // ai.torad.aisdk/ContentPart.Raw.<init>|<init>(kotlinx.serialization.json.JsonElement){}[0]
+
+        final val rawValue // ai.torad.aisdk/ContentPart.Raw.rawValue|{}rawValue[0]
+            final fun <get-rawValue>(): kotlinx.serialization.json/JsonElement // ai.torad.aisdk/ContentPart.Raw.rawValue.<get-rawValue>|<get-rawValue>(){}[0]
+
+        final fun equals(kotlin/Any?): kotlin/Boolean // ai.torad.aisdk/ContentPart.Raw.equals|equals(kotlin.Any?){}[0]
+        final fun hashCode(): kotlin/Int // ai.torad.aisdk/ContentPart.Raw.hashCode|hashCode(){}[0]
+        final fun toString(): kotlin/String // ai.torad.aisdk/ContentPart.Raw.toString|toString(){}[0]
+
+        final object $serializer : kotlinx.serialization.internal/GeneratedSerializer<ai.torad.aisdk/ContentPart.Raw> { // ai.torad.aisdk/ContentPart.Raw.$serializer|null[0]
+            final val descriptor // ai.torad.aisdk/ContentPart.Raw.$serializer.descriptor|{}descriptor[0]
+                final fun <get-descriptor>(): kotlinx.serialization.descriptors/SerialDescriptor // ai.torad.aisdk/ContentPart.Raw.$serializer.descriptor.<get-descriptor>|<get-descriptor>(){}[0]
+
+            final fun childSerializers(): kotlin/Array<kotlinx.serialization/KSerializer<*>> // ai.torad.aisdk/ContentPart.Raw.$serializer.childSerializers|childSerializers(){}[0]
+            final fun deserialize(kotlinx.serialization.encoding/Decoder): ai.torad.aisdk/ContentPart.Raw // ai.torad.aisdk/ContentPart.Raw.$serializer.deserialize|deserialize(kotlinx.serialization.encoding.Decoder){}[0]
+            final fun serialize(kotlinx.serialization.encoding/Encoder, ai.torad.aisdk/ContentPart.Raw) // ai.torad.aisdk/ContentPart.Raw.$serializer.serialize|serialize(kotlinx.serialization.encoding.Encoder;ai.torad.aisdk.ContentPart.Raw){}[0]
+        }
+
+        final object Companion { // ai.torad.aisdk/ContentPart.Raw.Companion|null[0]
+            final fun serializer(): kotlinx.serialization/KSerializer<ai.torad.aisdk/ContentPart.Raw> // ai.torad.aisdk/ContentPart.Raw.Companion.serializer|serializer(){}[0]
+        }
+    }
+
     final class Reasoning : ai.torad.aisdk/ContentPart { // ai.torad.aisdk/ContentPart.Reasoning|null[0]
         constructor <init>(kotlin/String, ai.torad.aisdk/ProviderMetadata = ...) // ai.torad.aisdk/ContentPart.Reasoning.<init>|<init>(kotlin.String;ai.torad.aisdk.ProviderMetadata){}[0]
 

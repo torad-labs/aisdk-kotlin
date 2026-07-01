@@ -552,6 +552,7 @@ private class HuggingFaceResponsesLanguageModel(
                         is ContentPart.Source,
                         is ContentPart.File,
                         is ContentPart.Image,
+                        is ContentPart.Raw,
                         -> Unit
                     }
                 }
@@ -574,6 +575,7 @@ private class HuggingFaceResponsesLanguageModel(
                 is ContentPart.Source,
                 is ContentPart.File,
                 is ContentPart.Image,
+                is ContentPart.Raw,
                 -> ""
             }
         }
@@ -617,6 +619,7 @@ private class HuggingFaceResponsesLanguageModel(
         is ContentPart.ToolApprovalRequest,
         is ContentPart.ToolApprovalResponse,
         is ContentPart.Source,
+        is ContentPart.Raw,
         -> null
     }
 

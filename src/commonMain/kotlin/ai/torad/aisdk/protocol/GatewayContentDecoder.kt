@@ -21,7 +21,7 @@ internal object GatewayContentDecoder {
             "source-document" -> decodeSource(obj, StreamEvent.SourcePart.SourceType.Document)
             "file" -> decodeFile(obj)
             "image" -> decodeImage(obj)
-            else -> null
+            else -> ContentPart.Raw(value)
         }
     }
 

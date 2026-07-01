@@ -45,6 +45,7 @@ public val ContentPart.metadata: ProviderMetadata
         is ContentPart.Source -> providerMetadata
         is ContentPart.File -> providerMetadata
         is ContentPart.Image -> providerMetadata
+        is ContentPart.Raw -> ProviderMetadata.None
     }
 
 public val StreamEvent.metadata: ProviderMetadata
