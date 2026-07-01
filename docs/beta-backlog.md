@@ -66,14 +66,14 @@ tests must stay green.
 
 | BL-045 | ~~UI-stream encoder breaks `@ai-sdk/react`~~ → OUT OF SCOPE (React interop not a goal; use Vercel SDK for React) | — | Post-beta | WONTFIX (beta) | DECIDED |
 | BL-046 | ~~UI-stream SSE framing/headers for JS clients~~ → OUT OF SCOPE (Kotlin encode/decode round-trip works; no JS-client target) | — | Post-beta | WONTFIX (beta) | DECIDED |
-| BL-047 | No `data-*` UI chunk encoder (decode-only; can't emit custom data parts) | Medium | Optional | CONFIRMED | OPEN |
+| BL-047 | No `data-*` UI chunk encoder (decode-only; can't emit custom data parts) | Medium | Optional | CONFIRMED | DONE (daed633) |
 | BL-048 | Gateway content-part decode drops unknown types (vs Raw on stream path) | Low | Optional | CONFIRMED | DONE (903b3bc) |
 
 | BL-049 | Media binary downloads + Google poll GET bypass timeout & body cap (hang+OOM) | Med-High | Recommended | CONFIRMED | DONE |
 | BL-050 | UI: late/duplicate `ToolInputDelta` reverts a finished tool card, wiping output | Medium | Recommended | CONFIRMED | DONE |
 | BL-051 | Media poll loops: abort not honored in-flight; KlingAI unfloored timeout; Google spin | Medium | Optional | CONFIRMED | OPEN |
 | BL-052 | UI residual: same-name tool placeholder mis-drop; Text/Reasoning id-collision stuck | Low | Optional | CONFIRMED | DONE (903b3bc) |
-| BL-053 | Media transcription base64 ~2× peak memory (structural) | Low | Optional | CONFIRMED | OPEN |
+| BL-053 | Media transcription base64 ~2× peak memory (structural) | Low | Optional | CONFIRMED | DONE (documented, daed633) |
 
 | BL-054 | ~~SigV4 path needs double-encode~~ → FALSE POSITIVE (boto3: single `%3A` is correct); locked w/ test | ~~Critical~~ | Recommended | REFUTED | DONE (locked) |
 | BL-055 | ~~Bedrock ARN should be raw~~ → FALSE POSITIVE (boto3 encodes ARN wholesale); locked w/ test | ~~High~~ | Recommended | REFUTED | DONE (locked) |
@@ -626,8 +626,8 @@ drop to "post-beta interop." Decide and document.
 - **Location:** no `Ui*ChunkCodec` branch emits `{type:"data-…"}` and `StreamEvent` has no data-part variant; yet `MessageStreamReader.kt:483-501` decodes `data-*` and `UIMessagePart.Data` exists. TS: `ui-message-chunks.ts:150-159`.
 - **Problem:** A Kotlin server can't emit custom/transient `data-*` parts to a JS client; the feature is one-directional.
 - **Acceptance criteria:**
-  - [ ] A `data-*` emitter (likely a `StreamEvent.Data` variant) produces `{type:"data-$name",id?,data,transient?}`.
-  - [ ] Encode→decode round-trip test.
+  - [x] A `data-*` emitter (likely a `StreamEvent.Data` variant) produces `{type:"data-$name",id?,data,transient?}`.
+  - [x] Encode→decode round-trip test.
 
 ## BL-048 — Gateway content-part decode drops unknown types
 
@@ -687,7 +687,7 @@ drop to "post-beta interop." Decide and document.
 - **Location:** `AssemblyAIProvider.kt:124`, `GladiaProvider.kt:201`, `RevaiProvider.kt:178`, `FalProvider.kt:409` — audio arrives as `audio.base64: String` (whole file in RAM) then `Base64Codec.decode` produces a second full ByteArray.
 - **Problem:** Large audio/video → ~2× peak memory; no streaming-upload path. Matches the upstream Vercel input contract — lowest priority.
 - **Acceptance criteria:**
-  - [ ] Documented as a known limitation, or a streaming `Source` input type added (post-beta).
+  - [x] Documented as a known limitation, or a streaming `Source` input type added (post-beta).
 
 ---
 
